@@ -1,0 +1,65 @@
+services:
+  db:
+    image: mariadb:10.11
+    container_name: trinity-cata-db
+    environment:
+      MARIADB_ROOT_PASSWORD: root
+      TRINITY_DB_USER: trinity
+      TRINITY_DB_PASSWORD: trinity
+    volumes:
+      - trinity-db:/var/lib/mysql
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
+      - ./sql:/trinity/sql:ro
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  authserver:
+    build:
+      context: .
+      dockerfile: docker/server/Dockerfile
+    image: trinity-cata-server:local
+    container_name: trinity-cata-auth
+    command: ["authserver"]
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      TC_DB_HOST: db
+      TC_DB_PORT: 3306
+      TC_DB_USER: trinity
+      TC_DB_PASSWORD: trinity
+      TC_REALM_ADDRESS: ${TC_REALM_ADDRESS:-127.0.0.1}
+    ports:
+      - "3724:3724"
+    volumes:
+      - ./server:/opt/trinity
+
+  worldserver:
+    image: trinity-cata-server:local
+    container_name: trinity-cata-world
+    command: ["worldserver"]
+    depends_on:
+      db:
+        condition: service_healthy
+      authserver:
+        condition: service_started
+    environment:
+      TC_DB_HOST: db
+      TC_DB_PORT: 3306
+      TC_DB_USER: trinity
+      TC_DB_PASSWORD: trinity
+      TC_DATA_DIR: /opt/trinity/data
+      TC_REALM_ADDRESS: ${TC_REALM_ADDRESS:-127.0.0.1}
+    ports:
+      - "8085:8085"
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./server:/opt/trinity
+      - ./data:/opt/trinity/data:ro
+
+volumes:
+  trinity-db:

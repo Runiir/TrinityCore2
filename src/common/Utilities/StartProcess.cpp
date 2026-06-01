@@ -23,6 +23,7 @@
 #include "Util.h"
 
 #include <boost/algorithm/string/join.hpp>
+#if __has_include(<boost/process/args.hpp>)
 #include <boost/process/args.hpp>
 #include <boost/process/child.hpp>
 #include <boost/process/env.hpp>
@@ -30,6 +31,16 @@
 #include <boost/process/io.hpp>
 #include <boost/process/pipe.hpp>
 #include <boost/process/search_path.hpp>
+#else
+#define BOOST_PROCESS_VERSION 1
+#include <boost/process/v1/args.hpp>
+#include <boost/process/v1/child.hpp>
+#include <boost/process/v1/env.hpp>
+#include <boost/process/v1/exe.hpp>
+#include <boost/process/v1/io.hpp>
+#include <boost/process/v1/pipe.hpp>
+#include <boost/process/v1/search_path.hpp>
+#endif
 
 using namespace boost::process;
 

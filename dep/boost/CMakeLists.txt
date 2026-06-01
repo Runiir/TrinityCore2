@@ -41,15 +41,26 @@ else()
   set(BOOST_REQUIRED_VERSION 1.74)
 endif()
 
+set(BOOST_REQUIRED_COMPONENTS
+  filesystem
+  thread
+  program_options
+  regex
+  locale)
+
+if(WIN32)
+  list(PREPEND BOOST_REQUIRED_COMPONENTS system)
+else()
+  find_library(BOOST_SYSTEM_LIBRARY boost_system)
+  if(BOOST_SYSTEM_LIBRARY)
+    list(PREPEND BOOST_REQUIRED_COMPONENTS system)
+  endif()
+endif()
+
 find_package(Boost ${BOOST_REQUIRED_VERSION}
   REQUIRED
-  COMPONENTS 
-    system
-    filesystem
-    thread
-    program_options
-    regex
-    locale
+  COMPONENTS
+    ${BOOST_REQUIRED_COMPONENTS}
   CONFIG
   HINTS
     ${BOOST_SEARCH_HINTS})

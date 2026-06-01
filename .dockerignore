@@ -1,0 +1,8 @@
+.git
+build
+server
+data
+docker/server/config
+*.log
+*.tar
+*.tar.gz
