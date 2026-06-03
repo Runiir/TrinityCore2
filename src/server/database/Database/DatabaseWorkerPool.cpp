@@ -34,6 +34,8 @@
 #include "Transaction.h"
 #include "MySQLWorkaround.h"
 #include <mysqld_error.h>
+#include <cstdlib>
+#include <cstring>
 
 #define MIN_MYSQL_SERVER_VERSION 50700u
 #define MIN_MYSQL_SERVER_VERSION_STRING "5.7"
@@ -54,6 +56,40 @@ class PingOperation : public SQLOperation
         return true;
     }
 };
+
+namespace
+{
+bool IsSupportedMariaDBServer(char const* serverInfo)
+{
+    char const* mariaDbMarker = serverInfo ? std::strstr(serverInfo, "MariaDB") : nullptr;
+    if (!mariaDbMarker)
+        return false;
+
+    char const* versionEnd = mariaDbMarker;
+    if (versionEnd != serverInfo && *(versionEnd - 1) == '-')
+        --versionEnd;
+
+    char const* versionStart = versionEnd;
+    while (versionStart != serverInfo && *(versionStart - 1) != '-')
+        --versionStart;
+
+    uint32 major = 0;
+    uint32 minor = 0;
+    uint32 patch = 0;
+    char* end = nullptr;
+    major = uint32(std::strtoul(versionStart, &end, 10));
+    if (!end || *end != '.')
+        return false;
+
+    minor = uint32(std::strtoul(end + 1, &end, 10));
+    if (!end || *end != '.')
+        return false;
+
+    patch = uint32(std::strtoul(end + 1, nullptr, 10));
+    uint32 version = major * 10000 + minor * 100 + patch;
+    return version >= MIN_MARIADB_SERVER_VERSION;
+}
+}
 
 template <class T>
 DatabaseWorkerPool<T>::DatabaseWorkerPool()
@@ -392,11 +428,13 @@ uint32 DatabaseWorkerPool<T>::OpenConnections(InternalIndex type, uint8 numConne
             _connections[type].clear();
             return error;
         }
+        else if (
 #ifndef LIBMARIADB
-        else if (connection->GetServerVersion() < MIN_MYSQL_SERVER_VERSION)
+            connection->GetServerVersion() < MIN_MYSQL_SERVER_VERSION &&
 #else
-        else if (connection->GetServerVersion() < MIN_MARIADB_SERVER_VERSION)
+            connection->GetServerVersion() < MIN_MARIADB_SERVER_VERSION &&
 #endif
+            !IsSupportedMariaDBServer(connection->GetServerInfo()))
         {
 #ifndef LIBMARIADB
             TC_LOG_ERROR("sql.driver", "TrinityCore does not support MySQL versions below " MIN_MYSQL_SERVER_VERSION_STRING " (found id %u, need id >= %u), please update your MySQL server", connection->GetServerVersion(), MIN_MYSQL_SERVER_VERSION);
@@ -521,4 +559,3 @@ template class TC_DATABASE_API DatabaseWorkerPool<LoginDatabaseConnection>;
 template class TC_DATABASE_API DatabaseWorkerPool<WorldDatabaseConnection>;
 template class TC_DATABASE_API DatabaseWorkerPool<CharacterDatabaseConnection>;
 template class TC_DATABASE_API DatabaseWorkerPool<HotfixDatabaseConnection>;
-

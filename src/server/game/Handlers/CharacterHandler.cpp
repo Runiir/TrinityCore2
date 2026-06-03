@@ -24,6 +24,7 @@
 #include "CharacterCache.h"
 #include "CharacterPackets.h"
 #include "Chat.h"
+#include "Config.h"
 #include "DatabaseEnv.h"
 #include "DBCStores.h"
 #include "GameObject.h"
@@ -59,25 +60,15 @@
 #include "WorldPacket.h"
 #include "boost/asio/ip/address.hpp"
 
-class LoginQueryHolder : public CharacterDatabaseQueryHolder
-{
-    private:
-        uint32 m_accountId;
-        ObjectGuid m_guid;
-    public:
-        LoginQueryHolder(uint32 accountId, ObjectGuid guid)
-            : m_accountId(accountId), m_guid(guid) { }
-        ObjectGuid GetGuid() const { return m_guid; }
-        uint32 GetAccountId() const { return m_accountId; }
-        bool Initialize();
-};
+LoginQueryHolder::LoginQueryHolder(uint32 accountId, ObjectGuid guid)
+    : _accountId(accountId), _guid(guid) { }
 
 bool LoginQueryHolder::Initialize()
 {
     SetSize(MAX_PLAYER_LOGIN_QUERY);
 
     bool res = true;
-    ObjectGuid::LowType lowGuid = m_guid.GetCounter();
+    ObjectGuid::LowType lowGuid = _guid.GetCounter();
 
     CharacterDatabasePreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_CHARACTER);
     stmt->setUInt32(0, lowGuid);
@@ -219,7 +210,7 @@ bool LoginQueryHolder::Initialize()
     res &= SetPreparedQuery(PLAYER_LOGIN_QUERY_LOAD_QUEST_STATUS_REW, stmt);
 
     stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_ACCOUNT_INSTANCELOCKTIMES);
-    stmt->setUInt32(0, m_accountId);
+    stmt->setUInt32(0, _accountId);
     res &= SetPreparedQuery(PLAYER_LOGIN_QUERY_LOAD_INSTANCE_LOCK_TIMES, stmt);
 
     stmt = CharacterDatabase.GetPreparedStatement(CHAR_SEL_PLAYER_CURRENCY);
@@ -745,6 +736,13 @@ void WorldSession::HandlePlayerLoginOpcode(WorldPackets::Character::PlayerLogin&
     {
         TC_LOG_ERROR("network", "Account (%u) can't login with that character (%s).", GetAccountId(), packet.Guid.ToString().c_str());
         KickPlayer();
+        return;
+    }
+
+    if (sConfigMgr->GetBoolDefault("PlayerBot.Enable", false) && CharacterDatabase.PQuery("SELECT 1 FROM character_bot_pool WHERE guid = %u LIMIT 1", packet.Guid.GetCounter()))
+    {
+        TC_LOG_ERROR("network", "Account (%u) attempted to login reserved player bot character (%s).", GetAccountId(), packet.Guid.ToString().c_str());
+        AbortLogin(WorldPackets::Character::LoginFailureReason::Failed);
         return;
     }
 

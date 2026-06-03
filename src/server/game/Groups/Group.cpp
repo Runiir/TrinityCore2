@@ -393,6 +393,8 @@ Player* Group::GetInvited(const std::string& name) const
 
 bool Group::AddMember(Player* player)
 {
+    bool const isBotSession = player->GetSession() && player->GetSession()->IsBotSession();
+
     // Get first not-full group
     uint8 subGroup = 0;
     if (m_subGroupsCounts)
@@ -460,7 +462,7 @@ bool Group::AddMember(Player* player)
     SendRaidMarkerUpdateToPlayer(player->GetGUID());
     sScriptMgr->OnGroupAddMember(this, player->GetGUID());
 
-    if (!IsLeader(player->GetGUID()) && !isBGGroup() && !isBFGroup())
+    if (!isBotSession && !IsLeader(player->GetGUID()) && !isBGGroup() && !isBFGroup())
     {
         // reset the new member's instances, unless he is currently in one of them
         // including raid/heroic instances that they are not permanently bound to!
@@ -485,14 +487,17 @@ bool Group::AddMember(Player* player)
     if (player->GetPet())
         player->SetGroupUpdateFlag(GROUP_UPDATE_PET);
 
-    UpdatePlayerOutOfRange(player);
+    if (!isBotSession)
+        UpdatePlayerOutOfRange(player);
 
     // quest related GO state dependent from raid membership
-    if (isRaidGroup())
+    if (!isBotSession && isRaidGroup())
         player->UpdateVisibleGameobjectsOrSpellClicks();
 
-    player->FailAchievementCriteria(AchievementCriteriaFailEvent::ModifyPartyStatus, 0);
+    if (!isBotSession)
+        player->FailAchievementCriteria(AchievementCriteriaFailEvent::ModifyPartyStatus, 0);
 
+    if (!isBotSession)
     {
         // Broadcast new player group member fields to rest of the group
         player->SetFieldNotifyFlag(UF_FLAG_PARTY_MEMBER);

@@ -22900,7 +22900,8 @@ void Player::SetGroup(Group* group, int8 subgroup)
         m_group.setSubGroup((uint8)subgroup);
     }
 
-    UpdateObjectVisibility(false);
+    if (!GetSession() || !GetSession()->IsBotSession())
+        UpdateObjectVisibility(false);
 }
 
 void Player::SendInitialPacketsBeforeAddToMap(bool firstLogin /*= false*/)

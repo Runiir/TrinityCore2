@@ -33,6 +33,7 @@
 #include "LockedQueue.h"
 #include "ObjectGuid.h"
 #include "Packet.h"
+#include "QueryHolder.h"
 #include "SharedDefines.h"
 
 class BigNumber;
@@ -41,7 +42,6 @@ class GameClient;
 class GameObject;
 class InstanceSave;
 class Item;
-class LoginQueryHolder;
 class Object;
 class Player;
 class Quest;
@@ -58,6 +58,20 @@ struct DeclinedName;
 struct ItemTemplate;
 struct MovementInfo;
 struct Petition;
+
+class LoginQueryHolder : public CharacterDatabaseQueryHolder
+{
+public:
+    LoginQueryHolder(uint32 accountId, ObjectGuid guid);
+
+    ObjectGuid GetGuid() const { return _guid; }
+    uint32 GetAccountId() const { return _accountId; }
+    bool Initialize();
+
+private:
+    uint32 _accountId;
+    ObjectGuid _guid;
+};
 
 namespace lfg
 {
@@ -475,7 +489,7 @@ struct PacketCounter
 class TC_GAME_API WorldSession
 {
     public:
-        WorldSession(uint32 id, std::string&& name, std::shared_ptr<WorldSocket> sock, AccountTypes sec, uint8 expansion, time_t mute_time, LocaleConstant locale, uint32 recruiter, bool isARecruiter);
+        WorldSession(uint32 id, std::string&& name, std::shared_ptr<WorldSocket> sock, AccountTypes sec, uint8 expansion, time_t mute_time, LocaleConstant locale, uint32 recruiter, bool isARecruiter, bool botSession = false);
         ~WorldSession();
 
         bool PlayerLoading() const { return !m_playerLoading.IsEmpty(); }
@@ -514,6 +528,7 @@ class TC_GAME_API WorldSession
         AccountTypes GetSecurity() const { return _security; }
         uint32 GetAccountId() const { return _accountId; }
         Player* GetPlayer() const { return _player; }
+        bool IsBotSession() const { return _botSession; }
         std::string const& GetPlayerName() const;
         std::string GetPlayerInfo() const;
 
@@ -1354,6 +1369,7 @@ class TC_GAME_API WorldSession
         ObjectGuid::LowType m_GUIDLow;                      // set logined or recently logout player (while m_playerRecentlyLogout set)
         Player* _player;
         std::shared_ptr<WorldSocket> m_Socket[2];
+        bool _botSession;
         std::string m_Address;                              // Current Remote Address
      // std::string m_LAddress;                             // Last Attempted Remote Adress - we can not set attempted ip for a non-existing session!
 

@@ -273,7 +273,7 @@ Compression = 1
 #        Default:     0   - (Disabled, Both sockets are used and required)
 #                     1   - (Enabled, One the first socket is being used)
 
-LegacyConnectionModeEnabled = 0
+LegacyConnectionModeEnabled = 1
 
 #
 #    PlayerLimit
@@ -3381,6 +3381,42 @@ PreventRenameCharacterOnCustomization = 0
 
 #
 ###################################################################################################
+
+###################################################################################################
+# PLAYER BOT SETTINGS
+#
+#    PlayerBot.Enable
+#        Description: Enables the local player-backed bot subsystem.
+#        Default:     0
+#
+#    PlayerBot.Record.Enable
+#        Description: Writes JSONL healer decision frames even when per-bot recording was not
+#                     enabled with ".playerbot record on".
+#        Default:     0
+#
+#    PlayerBot.Record.Path
+#        Description: JSONL output path for raw healer frames.
+#        Default:     "dataset/raw/healer_frames_playerbot.jsonl"
+#
+#    PlayerBot.ExperimentId
+#        Description: Optional experiment/run identifier added to recorded JSONL frames.
+#        Default:     ""
+#
+#    PlayerBot.UpdateMs
+#        Description: Bot think interval in milliseconds.
+#        Default:     500
+#
+#    PlayerBot.Debug
+#        Description: Enables verbose player bot debug logging.
+#        Default:     0
+#
+
+PlayerBot.Enable = 0
+PlayerBot.Record.Enable = 0
+PlayerBot.Record.Path = "dataset/raw/healer_frames_playerbot.jsonl"
+PlayerBot.ExperimentId = ""
+PlayerBot.UpdateMs = 500
+PlayerBot.Debug = 0
 
 ###################################################################################################
 # AUCTION HOUSE BOT SETTINGS

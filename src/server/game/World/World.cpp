@@ -28,6 +28,7 @@
 #include "AuctionHouseBot.h"
 #include "AuctionHouseMgr.h"
 #include "BattlefieldMgr.h"
+#include "Bots/BotMgr.h"
 #include "BattlegroundMgr.h"
 #include "CalendarMgr.h"
 #include "Channel.h"
@@ -2417,6 +2418,8 @@ void World::Update(uint32 diff)
 
     // Record update if recording set in log and diff is greater then minimum set in log
     sWorldUpdateTime.RecordUpdateTime(GameTime::GetGameTimeMS(), diff, GetActiveSessionCount());
+
+    sBotMgr->Update(diff);
 
     ///- Update the different timers
     for (int i = 0; i < WUPDATE_COUNT; ++i)

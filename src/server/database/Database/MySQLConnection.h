@@ -81,6 +81,7 @@ class TC_DATABASE_API MySQLConnection
         void Ping();
 
         uint32 GetLastError();
+        char const* GetServerInfo() const;
 
     protected:
         /// Tries to acquire lock. If lock is acquired by another thread

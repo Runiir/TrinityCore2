@@ -108,12 +108,13 @@ bool WorldSessionFilter::Process(WorldPacket* packet)
 }
 
 /// WorldSession constructor
-WorldSession::WorldSession(uint32 id, std::string&& name, std::shared_ptr<WorldSocket> sock, AccountTypes sec, uint8 expansion, time_t mute_time, LocaleConstant locale, uint32 recruiter, bool isARecruiter) :
+WorldSession::WorldSession(uint32 id, std::string&& name, std::shared_ptr<WorldSocket> sock, AccountTypes sec, uint8 expansion, time_t mute_time, LocaleConstant locale, uint32 recruiter, bool isARecruiter, bool botSession) :
     m_muteTime(mute_time),
     m_timeOutTime(0),
     AntiDOS(this),
     m_GUIDLow(0),
     _player(nullptr),
+    _botSession(botSession),
     _security(sec),
     _accountId(id),
     _accountName(std::move(name)),
@@ -223,6 +224,9 @@ ObjectGuid::LowType WorldSession::GetGUIDLow() const
 /// Send a packet to the client
 void WorldSession::SendPacket(WorldPacket const* packet, bool forced /*= false*/)
 {
+    if (_botSession)
+        return;
+
     if (packet->GetOpcode() == NULL_OPCODE)
     {
         TC_LOG_ERROR("network.opcode", "Prevented sending of NULL_OPCODE to %s", GetPlayerInfo().c_str());
@@ -342,6 +346,12 @@ bool WorldSession::Update(uint32 diff, PacketFilter& updater)
 {
     /// Update Timeout timer.
     UpdateTimeOutTime(diff);
+
+    if (_botSession)
+    {
+        ProcessQueryCallbacks();
+        return true;
+    }
 
     ///- Before we process anything:
     /// If necessary, kick the player from the character select screen

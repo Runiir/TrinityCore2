@@ -30,6 +30,41 @@
 #include <errmsg.h>
 #include "MySQLWorkaround.h"
 #include <mysqld_error.h>
+#include <cstdlib>
+#include <cstring>
+
+#define MIN_MARIADB_SERVER_VERSION 100209u
+
+namespace
+{
+uint32 ParseMariaDBServerVersion(char const* serverInfo)
+{
+    char const* mariaDbMarker = serverInfo ? std::strstr(serverInfo, "MariaDB") : nullptr;
+    if (!mariaDbMarker)
+        return 0;
+
+    char const* versionEnd = mariaDbMarker;
+    if (versionEnd != serverInfo && *(versionEnd - 1) == '-')
+        --versionEnd;
+
+    char const* versionStart = versionEnd;
+    while (versionStart != serverInfo && *(versionStart - 1) != '-')
+        --versionStart;
+
+    char* end = nullptr;
+    uint32 major = uint32(std::strtoul(versionStart, &end, 10));
+    if (!end || *end != '.')
+        return 0;
+
+    uint32 minor = uint32(std::strtoul(end + 1, &end, 10));
+    if (!end || *end != '.')
+        return 0;
+
+    uint32 patch = uint32(std::strtoul(end + 1, nullptr, 10));
+    uint32 version = major * 10000 + minor * 100 + patch;
+    return version >= MIN_MARIADB_SERVER_VERSION ? version : 0;
+}
+}
 
 MySQLConnectionInfo::MySQLConnectionInfo(std::string const& infoString)
 {
@@ -444,7 +479,15 @@ void MySQLConnection::Unlock()
 
 uint32 MySQLConnection::GetServerVersion() const
 {
+    if (uint32 mariaDBVersion = ParseMariaDBServerVersion(mysql_get_server_info(m_Mysql)))
+        return mariaDBVersion;
+
     return mysql_get_server_version(m_Mysql);
+}
+
+char const* MySQLConnection::GetServerInfo() const
+{
+    return mysql_get_server_info(m_Mysql);
 }
 
 MySQLPreparedStatement* MySQLConnection::GetPreparedStatement(uint32 index)

@@ -5,8 +5,10 @@ INSTALL_DIR ?= server
 CLIENT_DIR ?=
 DATA_DIR ?= $(CURDIR)/data
 JOBS ?= $(shell nproc)
+AUTH_TEST_CONF ?= trinity-authserver-test.conf
+WORLD_TEST_CONF ?= trinity-worldserver-test.conf
 
-.PHONY: help build binaries runtime-image local-configure local-build local-install db up down logs shell auth world clean-db clean-images data-dir require-client extract-maps extract-vmaps assemble-vmaps extract-mmaps extract-assets
+.PHONY: help build binaries runtime-image local-configure local-build local-install db up down logs shell auth world test-configs host-auth host-world clean-db clean-images data-dir require-client extract-maps extract-vmaps assemble-vmaps extract-mmaps extract-assets
 
 help:
 	@printf '%s\n' \
@@ -25,6 +27,9 @@ help:
 		'  make up           Start db, authserver, and worldserver' \
 		'  make auth         Run authserver attached' \
 		'  make world        Run worldserver attached with console stdin' \
+		'  make test-configs Create local host-run test configs' \
+		'  make host-auth    Run host-built authserver with trinity-authserver-test.conf' \
+		'  make host-world   Run host-built worldserver with trinity-worldserver-test.conf' \
 		'  make logs         Follow all service logs' \
 		'  make shell        Open a shell in the server image' \
 		'  make down         Stop containers' \
@@ -79,6 +84,20 @@ extract-assets: extract-maps extract-vmaps assemble-vmaps extract-mmaps
 
 db:
 	$(COMPOSE) up -d db
+
+test-configs:
+	cp src/server/authserver/authserver.conf.dist "$(AUTH_TEST_CONF)"
+	cp src/server/worldserver/worldserver.conf.dist "$(WORLD_TEST_CONF)"
+	perl -0pi -e 's|LoginDatabaseInfo\s*=\s*"127\.0\.0\.1;3306;trinity;trinity;auth"|LoginDatabaseInfo = "172.20.0.2;3306;trinity;trinity;auth"|g' "$(AUTH_TEST_CONF)"
+	perl -0pi -e 's|DataDir\s*=\s*"."|DataDir = "$(DATA_DIR)"|g; s|LoginDatabaseInfo\s*=\s*"127\.0\.0\.1;3306;trinity;trinity;auth"|LoginDatabaseInfo = "172.20.0.2;3306;trinity;trinity;auth"|g; s|WorldDatabaseInfo\s*=\s*"127\.0\.0\.1;3306;trinity;trinity;world"|WorldDatabaseInfo = "172.20.0.2;3306;trinity;trinity;world"|g; s|CharacterDatabaseInfo\s*=\s*"127\.0\.0\.1;3306;trinity;trinity;characters"|CharacterDatabaseInfo = "172.20.0.2;3306;trinity;trinity;characters"|g; s|HotfixDatabaseInfo\s*=\s*"127\.0\.0\.1;3306;trinity;trinity;hotfixes"|HotfixDatabaseInfo = "172.20.0.2;3306;trinity;trinity;hotfixes"|g; s|PlayerBot\.Enable\s*=\s*0|PlayerBot.Enable = 1|g; s|Ra\.Enable\s*=\s*0|Ra.Enable = 1|g; s|SOAP\.Enabled\s*=\s*0|SOAP.Enabled = 1|g' "$(WORLD_TEST_CONF)"
+
+host-auth: local-configure db test-configs
+	cmake --build $(BUILD_DIR) --target authserver -j"$(JOBS)"
+	ulimit -c unlimited && $(BUILD_DIR)/src/server/authserver/authserver --config "$(AUTH_TEST_CONF)"
+
+host-world: local-configure db test-configs
+	cmake --build $(BUILD_DIR) --target worldserver -j"$(JOBS)"
+	ulimit -c unlimited && $(BUILD_DIR)/src/server/worldserver/worldserver --config "$(WORLD_TEST_CONF)"
 
 up: build
 	$(COMPOSE) up
