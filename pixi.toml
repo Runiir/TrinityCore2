@@ -1,0 +1,15 @@
+[workspace]
+authors = ["Runiir <runiir.beltran@gmail.com>"]
+channels = ["conda-forge"]
+name = "trinity-cata"
+platforms = ["linux-64"]
+version = "0.1.0"
+
+[tasks]
+dvc-status = "dvc status"
+dvc-add-dataset = "dvc add dataset"
+dvc-push = "dvc push"
+dvc-pull = "dvc pull"
+
+[dependencies]
+dvc = ">=3.67.1,<4"

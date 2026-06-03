@@ -24,3 +24,18 @@ cmake-build-*/
 .vs
 data/
 server/
+!/src/server/
+!/src/server/game/
+!/src/server/game/Bots/
+!/src/server/game/Bots/*
+!/src/server/scripts/
+!/src/server/scripts/Commands/
+!/src/server/scripts/Commands/cs_healerbot.cpp
+trinity-authserver-test.conf
+trinity-worldserver-test.conf
+logs/
+*.log
+/dataset
+# pixi environments
+.pixi/*
+!.pixi/config.toml
