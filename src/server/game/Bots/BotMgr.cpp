@@ -259,18 +259,22 @@ bool BotMgr::SetRecording(Player* owner, bool enabled)
 std::string BotMgr::GetStatus(Player* owner) const
 {
     std::vector<ObjectGuid> botGuids = GetOwnedBots(owner ? owner->GetGUID() : ObjectGuid::Empty);
-    if (!botGuids.empty())
+    std::ostringstream ss;
+    ss << "{\"ok\":true,\"count\":" << botGuids.size() << ",\"bots\":[";
+    bool first = true;
+    for (ObjectGuid botGuid : botGuids)
     {
-        std::ostringstream ss;
-        ss << "playerbot result=ok count=" << botGuids.size();
-        for (ObjectGuid botGuid : botGuids)
-            if (BotController const* controller = GetController(botGuid))
-                ss << " [" << controller->GetStatus(FindLoadedPlayer(controller->GetOwnerGuid()), FindLoadedPlayer(botGuid)) << "]";
-
-        return ss.str();
+        if (BotController const* controller = GetController(botGuid))
+        {
+            if (!first)
+                ss << ',';
+            ss << controller->GetStatus(FindLoadedPlayer(controller->GetOwnerGuid()), FindLoadedPlayer(botGuid));
+            first = false;
+        }
     }
 
-    return "playerbot result=ok state=none";
+    ss << "],\"failure_reason\":null}";
+    return ss.str();
 }
 
 char const* BotMgr::GetBotRoleName(ObjectGuid botGuid) const

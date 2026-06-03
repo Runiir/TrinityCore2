@@ -9,6 +9,8 @@
 #include "Player.h"
 #include "RBAC.h"
 #include "WorldSession.h"
+#include <iomanip>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -46,6 +48,57 @@ private:
         std::vector<std::string> positional;
         std::string ownerSelector;
     };
+
+    static std::string JsonEscape(std::string const& value)
+    {
+        std::ostringstream escaped;
+        for (char c : value)
+        {
+            switch (c)
+            {
+                case '\\': escaped << "\\\\"; break;
+                case '"': escaped << "\\\""; break;
+                case '\b': escaped << "\\b"; break;
+                case '\f': escaped << "\\f"; break;
+                case '\n': escaped << "\\n"; break;
+                case '\r': escaped << "\\r"; break;
+                case '\t': escaped << "\\t"; break;
+                default:
+                    if (static_cast<unsigned char>(c) < 0x20)
+                        escaped << "\\u" << std::hex << std::setw(4) << std::setfill('0') << uint32(static_cast<unsigned char>(c)) << std::dec;
+                    else
+                        escaped << c;
+                    break;
+            }
+        }
+
+        return escaped.str();
+    }
+
+    static void SendResult(ChatHandler* handler, bool ok, char const* action, char const* failureReason, ObjectGuid botGuid = ObjectGuid::Empty, std::string const& name = "", char const* role = "", char const* state = "", uint32 count = 0, std::string const& selector = "", char const* mode = "")
+    {
+        if (!handler)
+            return;
+
+        std::ostringstream json;
+        json << "{\"ok\":" << (ok ? "true" : "false")
+             << ",\"action\":\"" << JsonEscape(action ? action : "")
+             << "\",\"bot_guid\":" << (botGuid.IsEmpty() ? 0 : botGuid.GetCounter())
+             << ",\"name\":\"" << JsonEscape(name)
+             << "\",\"role\":\"" << JsonEscape(role ? role : "")
+             << "\",\"class_spec_tag\":\"" << JsonEscape(role ? role : "")
+             << "\",\"state\":\"" << JsonEscape(state ? state : "")
+             << "\",\"count\":" << count
+             << ",\"selector\":\"" << JsonEscape(selector)
+             << "\",\"mode\":\"" << JsonEscape(mode ? mode : "")
+             << "\",\"failure_reason\":";
+        if (failureReason)
+            json << "\"" << JsonEscape(failureReason) << "\"";
+        else
+            json << "null";
+        json << "}";
+        handler->PSendSysMessage("%s", json.str().c_str());
+    }
 
     static CommandArgs ParseCommandArgs(char const* args)
     {
@@ -92,7 +145,7 @@ private:
 
         if (handler)
         {
-            handler->PSendSysMessage("playerbot result=fail reason=owner_required usage=\"playerbot <command> ... owner <name|guid>\"");
+            SendResult(handler, false, "", "owner_required");
             handler->SetSentErrorMessage(true);
         }
 
@@ -108,14 +161,16 @@ private:
 
         if (parsed.positional.empty())
         {
-            handler->PSendSysMessage("Usage: .playerbot spawn <role> [name|guid] [owner name|guid]");
+            SendResult(handler, false, "spawn", "invalid_usage");
+            handler->SetSentErrorMessage(true);
             return false;
         }
 
         std::string role = NormalizeBotRole(parsed.positional[0]);
         if (!IsKnownBotRole(role) && !IsMixedBotRoleSelector(role))
         {
-            handler->PSendSysMessage("Usage: .playerbot spawn <holy_paladin|warrior|hunter|rogue|priest|death_knight|shaman|mage|warlock|druid|mixed> [name|guid] [owner name|guid]");
+            SendResult(handler, false, "spawn", "unknown_role", ObjectGuid::Empty, "", role.c_str());
+            handler->SetSentErrorMessage(true);
             return false;
         }
 
@@ -125,11 +180,11 @@ private:
 
         if (Player* bot = sBotMgr->Spawn(owner, role, selector))
         {
-            handler->PSendSysMessage("playerbot result=ok action=spawn guid=%u name=%s role=%s state=online", bot->GetGUID().GetCounter(), bot->GetName().c_str(), sBotMgr->GetBotRoleName(bot->GetGUID()));
+            SendResult(handler, true, "spawn", nullptr, bot->GetGUID(), bot->GetName(), sBotMgr->GetBotRoleName(bot->GetGUID()), "spawned", 1, selector);
             return true;
         }
 
-        handler->PSendSysMessage("playerbot result=fail action=spawn role=%s reason=no_enabled_available_pool_character_or_load_failed", role.c_str());
+        SendResult(handler, false, "spawn", "no_enabled_available_pool_character_or_load_failed", ObjectGuid::Empty, "", role.c_str());
         handler->SetSentErrorMessage(true);
         return false;
     }
@@ -156,9 +211,9 @@ private:
         std::string selector = parsed.positional.empty() ? "all" : parsed.positional[0];
         uint32 removed = sBotMgr->Remove(owner, selector);
         if (removed)
-            handler->PSendSysMessage("playerbot result=ok action=remove selector=%s count=%u", selector.c_str(), removed);
+            SendResult(handler, true, "remove", nullptr, ObjectGuid::Empty, "", "", "removed", removed, selector);
         else
-            handler->PSendSysMessage("playerbot result=ok action=remove selector=%s count=0 reason=no_matching_bot", selector.c_str());
+            SendResult(handler, true, "remove", "no_matching_bot", ObjectGuid::Empty, "", "", "none", 0, selector);
 
         sBotMgr->ReleaseHeadlessOwnerIfIdle(owner);
         return true;
@@ -188,7 +243,7 @@ private:
 
         std::string status = sBotMgr->GetStatus(owner);
         handler->PSendSysMessage("%s", status.c_str());
-        if (status.find("state=none") != std::string::npos)
+        if (status.find("\"count\":0") != std::string::npos)
             sBotMgr->ReleaseHeadlessOwnerIfIdle(owner);
         return true;
     }
@@ -201,7 +256,11 @@ private:
             return RequireOwner(handler, parsed.ownerSelector);
 
         if (parsed.positional.empty())
+        {
+            SendResult(handler, false, "record", "invalid_usage");
+            handler->SetSentErrorMessage(true);
             return false;
+        }
 
         bool enabled;
         if (stricmp(parsed.positional[0].c_str(), "on") == 0)
@@ -209,16 +268,20 @@ private:
         else if (stricmp(parsed.positional[0].c_str(), "off") == 0)
             enabled = false;
         else
-            return false;
-
-        if (!sBotMgr->SetRecording(owner, enabled))
         {
-            handler->PSendSysMessage("playerbot result=fail action=record reason=no_active_bot");
+            SendResult(handler, false, "record", "invalid_usage");
             handler->SetSentErrorMessage(true);
             return false;
         }
 
-        handler->PSendSysMessage("playerbot result=ok action=record state=%s", enabled ? "on" : "off");
+        if (!sBotMgr->SetRecording(owner, enabled))
+        {
+            SendResult(handler, false, "record", "no_active_bot");
+            handler->SetSentErrorMessage(true);
+            return false;
+        }
+
+        SendResult(handler, true, "record", nullptr, ObjectGuid::Empty, "", "", enabled ? "on" : "off");
         return true;
     }
 
@@ -231,21 +294,23 @@ private:
 
         if (parsed.positional.size() < 2)
         {
-            handler->PSendSysMessage("Usage: .playerbot partyfill dungeon5 <holy_paladin|warrior|hunter|rogue|priest|death_knight|shaman|mage|warlock|druid|mixed> [owner name|guid]");
+            SendResult(handler, false, "partyfill", "invalid_usage");
+            handler->SetSentErrorMessage(true);
             return false;
         }
 
         std::string role = NormalizeBotRole(parsed.positional[1]);
         if (!IsKnownBotRole(role) && !IsMixedBotRoleSelector(role))
         {
-            handler->PSendSysMessage("Usage: .playerbot partyfill dungeon5 <holy_paladin|warrior|hunter|rogue|priest|death_knight|shaman|mage|warlock|druid|mixed> [owner name|guid]");
+            SendResult(handler, false, "partyfill", "unknown_role", ObjectGuid::Empty, "", role.c_str());
+            handler->SetSentErrorMessage(true);
             return false;
         }
 
         std::vector<Player*> bots = sBotMgr->PartyFill(owner, parsed.positional[0], role);
-        handler->PSendSysMessage("playerbot result=%s action=partyfill party=%s role=%s count=%u", bots.empty() ? "fail" : "ok", parsed.positional[0].c_str(), role.c_str(), uint32(bots.size()));
+        SendResult(handler, !bots.empty(), "partyfill", bots.empty() ? "no_enabled_available_pool_character_or_load_failed" : nullptr, ObjectGuid::Empty, "", role.c_str(), bots.empty() ? "none" : "spawned", uint32(bots.size()), parsed.positional[0]);
         for (Player* bot : bots)
-            handler->PSendSysMessage("playerbot result=ok action=partyfill guid=%u name=%s role=%s state=online", bot->GetGUID().GetCounter(), bot->GetName().c_str(), sBotMgr->GetBotRoleName(bot->GetGUID()));
+            SendResult(handler, true, "partyfill", nullptr, bot->GetGUID(), bot->GetName(), sBotMgr->GetBotRoleName(bot->GetGUID()), "spawned", 1, parsed.positional[0]);
 
         if (bots.empty())
             handler->SetSentErrorMessage(true);
@@ -264,12 +329,12 @@ private:
         uint32 changed = sBotMgr->SetMovement(owner, mode, selector);
         if (!changed)
         {
-            handler->PSendSysMessage("playerbot result=fail action=movement selector=%s reason=no_matching_bot", selector.c_str());
+            SendResult(handler, false, "movement", "no_matching_bot", ObjectGuid::Empty, "", "", "", 0, selector, ToString(mode));
             handler->SetSentErrorMessage(true);
             return false;
         }
 
-        handler->PSendSysMessage("playerbot result=ok action=movement selector=%s mode=%s count=%u", selector.c_str(), ToString(mode), changed);
+        SendResult(handler, true, "movement", nullptr, ObjectGuid::Empty, "", "", "", changed, selector, ToString(mode));
         return true;
     }
 };

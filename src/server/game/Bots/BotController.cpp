@@ -133,14 +133,16 @@ void BotController::Update(uint32 diff, BotActionExecutor& executor, Player* own
 std::string BotController::GetStatus(Player const* owner, Player const* bot) const
 {
     std::ostringstream ss;
-    ss << "guid=" << _botGuid.GetCounter()
-       << " name=" << (bot ? bot->GetName() : "offline")
-       << " role=" << ToString(_role)
-       << " state=" << (bot && bot->IsInWorld() ? "online" : "offline")
-       << " owner_guid=" << _ownerGuid.GetCounter()
-       << " owner_name=" << (owner ? owner->GetName() : "offline")
-       << " mode=" << ToString(_movementMode)
-       << " recording=" << (_recording ? "on" : "off");
+    ss << "{\"bot_guid\":" << _botGuid.GetCounter()
+       << ",\"name\":\"" << JsonEscape(bot ? bot->GetName() : "offline")
+       << "\",\"role\":\"" << ToString(_role)
+       << "\",\"class_spec_tag\":\"" << ToString(_role)
+       << "\",\"state\":\"" << (bot && bot->IsInWorld() ? "online" : "offline")
+       << "\",\"owner_guid\":" << _ownerGuid.GetCounter()
+       << ",\"owner_name\":\"" << JsonEscape(owner ? owner->GetName() : "offline")
+       << "\",\"mode\":\"" << ToString(_movementMode)
+       << "\",\"recording\":\"" << (_recording ? "on" : "off")
+       << "\"}";
     return ss.str();
 }
 
