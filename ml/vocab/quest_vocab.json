@@ -1,0 +1,43 @@
+{
+  "class_spec_embedding": [
+    "holy_paladin",
+    "warrior",
+    "hunter",
+    "rogue",
+    "priest",
+    "death_knight",
+    "shaman",
+    "mage",
+    "warlock",
+    "druid"
+  ],
+  "creature_entry_embedding": [
+    41234
+  ],
+  "gameobject_entry_embedding": [
+    190001
+  ],
+  "item_id_embedding": [
+    6948
+  ],
+  "npc_entry_embedding": [
+    100001
+  ],
+  "objective_type_embedding": [
+    "kill",
+    "collect",
+    "interact_gameobject",
+    "talk_to_npc",
+    "use_item"
+  ],
+  "quest_id_embedding": [
+    28808,
+    28809
+  ],
+  "terrain_area_embedding": [
+    "flat_test_area"
+  ],
+  "zone_id_embedding": [
+    12
+  ]
+}

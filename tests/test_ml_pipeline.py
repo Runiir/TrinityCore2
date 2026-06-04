@@ -6,7 +6,7 @@ from pathlib import Path
 from ml.evaluation.evaluate_action_frequency import main as evaluate_main
 from ml.preprocessing.preprocess_frames import main as preprocess_main
 from ml.training.train_action_frequency import main as train_main
-from experiments.run_experiment import load_config, make_adapter, movement_metrics, run_experiment, solo_combat_metrics
+from experiments.run_experiment import load_config, make_adapter, movement_metrics, quest_metrics, run_experiment, solo_combat_metrics
 
 
 def write_jsonl(path: Path, rows: list[dict]) -> None:
@@ -83,5 +83,24 @@ def test_headless_solo_combat_smoke_records_metrics(tmp_path):
     assert metrics["kill_success_rate"] == 1.0
     assert metrics["death_rate"] == 0.0
     assert metrics["loot_success"] is True
+    assert metrics["invalid_action_rate"] == 0.0
+    assert recomputed == metrics
+
+
+def test_headless_simple_kill_quest_smoke_records_metrics(tmp_path):
+    config = load_config(Path("experiments/configs/headless_simple_kill_quest_smoke_001.json"))
+    adapter = make_adapter(config, force_local=True)
+
+    summary = run_experiment(config, adapter, tmp_path / "runs", tmp_path / "raw")
+
+    assert summary["result"] == "success"
+    metrics_path = tmp_path / summary["paths"]["quest_metrics"]
+    frames_path = tmp_path / summary["paths"]["frames"]
+    metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
+    recomputed = quest_metrics(frames_path)
+
+    assert metrics["quest_frame_count"] >= 2
+    assert metrics["quest_completion_success"] is True
+    assert metrics["deaths_per_quest"] == 0
     assert metrics["invalid_action_rate"] == 0.0
     assert recomputed == metrics

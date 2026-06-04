@@ -52,8 +52,8 @@ plots:
     x: step
 artifacts:
   run_summary:
-    path: experiments/runs/run_000009/summary.json
+    path: experiments/runs/run_000011/summary.json
     type: json
   run_metadata:
-    path: experiments/runs/run_000009/metadata.json
+    path: experiments/runs/run_000011/metadata.json
     type: json

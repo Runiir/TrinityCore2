@@ -1,0 +1,52 @@
+{
+  "adapter": {
+    "type": "local"
+  },
+  "cleanup": {
+    "remove_bots": true,
+    "stop_recording": true
+  },
+  "controller": "external_script",
+  "domain": "quest",
+  "execution_mode": "headless_ra_soap",
+  "experiment_id": "headless_collect_interact_quest_smoke_001",
+  "live_client_present": false,
+  "map_id": 0,
+  "owner_selector": "Dorala",
+  "party_template": {
+    "solo": "holy_paladin"
+  },
+  "quest": {
+    "objective_area": {
+      "center": [
+        6.0,
+        0.0,
+        0.0
+      ],
+      "map_id": 0,
+      "radius": 40.0,
+      "zone_id": 12
+    },
+    "objective_index": 0,
+    "objective_type": "interact_gameobject",
+    "progress_required": 3,
+    "quest_id": 28809,
+    "target_entry": 190001
+  },
+  "run": {
+    "quest_ticks": 5,
+    "success_conditions": [
+      "quest_accepted",
+      "objective_progressed",
+      "quest_turned_in",
+      "quest_frames_recorded",
+      "quest_metrics_generated"
+    ],
+    "timeout_sec": 60
+  },
+  "setup": {
+    "recording": true
+  },
+  "server_build": "wow_4.3.4",
+  "zone_id": 12
+}

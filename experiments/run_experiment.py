@@ -160,6 +160,12 @@ class LocalCommandAdapter(CommandAdapter):
         self.combat_started = False
         self.combat_looted = False
         self.bot_hp = 1.0
+        self.quest_id = 28808
+        self.quest_accepted = False
+        self.quest_turned_in = False
+        self.quest_progress = 0
+        self.quest_required = 3
+        self.quest_objective_center = [6.0, 0.0, 0.0]
 
     def execute(self, command: str) -> CommandResult:
         output: dict[str, Any]
@@ -213,6 +219,9 @@ class LocalCommandAdapter(CommandAdapter):
             output = {"ok": self.spawned, "action": "movement", "state": "", "count": 1 if self.spawned else 0, "mode": "unstuck", "failure_reason": None if self.spawned else "no_active_bot"}
         elif command.startswith("playerbot combat_target"):
             self.combat_started = True
+            if self.quest_accepted and self.quest_progress < self.quest_required and self.combat_target_hp <= 0.0:
+                self.combat_target_hp = 1.0
+                self.combat_looted = False
             output = {"ok": self.spawned, "action": "combat_target", "state": "targeted", "count": 1 if self.spawned else 0, "mode": "nearest", "target_guid": self.combat_target_guid, "failure_reason": None if self.spawned else "no_active_bot"}
         elif command.startswith("playerbot combat_clear"):
             self.combat_started = False
@@ -220,6 +229,22 @@ class LocalCommandAdapter(CommandAdapter):
         elif command.startswith("playerbot loot"):
             self.combat_looted = self.combat_target_hp <= 0.0
             output = {"ok": self.spawned and self.combat_looted, "action": "loot", "state": "looted" if self.combat_looted else "not_lootable", "count": 1 if self.combat_looted else 0, "mode": "selected", "failure_reason": None if self.combat_looted else "target_not_lootable"}
+        elif command.startswith("playerbot quest accept"):
+            self.quest_accepted = self.spawned
+            output = {"ok": self.quest_accepted, "action": "quest_accept", "quest_id": self.quest_id, "state": "accepted" if self.quest_accepted else "not_spawned", "failure_reason": None if self.quest_accepted else "no_active_bot"}
+        elif command.startswith("playerbot quest objective"):
+            output = {"ok": self.spawned, "action": "quest_objective", "quest": self.quest_state(), "failure_reason": None if self.spawned else "no_active_bot"}
+        elif command.startswith("playerbot quest interact"):
+            if self.quest_accepted and self.quest_progress < self.quest_required:
+                self.quest_progress += 1
+            output = {"ok": self.quest_accepted, "action": "quest_interact", "quest": self.quest_state(), "failure_reason": None if self.quest_accepted else "quest_not_accepted"}
+        elif command.startswith("playerbot quest use_item"):
+            if self.quest_accepted and self.quest_progress < self.quest_required:
+                self.quest_progress += 1
+            output = {"ok": self.quest_accepted, "action": "quest_use_item", "quest": self.quest_state(), "failure_reason": None if self.quest_accepted else "quest_not_accepted"}
+        elif command.startswith("playerbot quest turn_in"):
+            self.quest_turned_in = self.quest_accepted and self.quest_progress >= self.quest_required
+            output = {"ok": self.quest_turned_in, "action": "quest_turn_in", "quest_id": self.quest_id, "state": "rewarded" if self.quest_turned_in else "incomplete", "failure_reason": None if self.quest_turned_in else "quest_incomplete"}
         elif command.startswith("playerbot status"):
             output = {"ok": True, "action": "status", "count": 1 if self.spawned else 0, "bots": [{"guid": self.bot_guid, "role": "holy_paladin", "movement": self.movement_state(), "combat": self.combat_state()}] if self.spawned else []}
         elif command.startswith("playerbot remove"):
@@ -246,7 +271,21 @@ class LocalCommandAdapter(CommandAdapter):
         if self.combat_started and self.combat_target_hp > 0.0:
             self.combat_target_hp = max(0.0, self.combat_target_hp - 0.22)
             self.bot_hp = max(0.55, self.bot_hp - 0.035)
+            if self.quest_accepted and self.combat_target_hp <= 0.0 and self.quest_progress < self.quest_required:
+                self.quest_progress += 1
         return self.combat_state()
+
+    def quest_state(self) -> dict[str, Any]:
+        return {
+            "quest_id": self.quest_id,
+            "objective_index": 0,
+            "objective_type": "kill",
+            "target_entry": self.combat_target_entry,
+            "progress_current": self.quest_progress,
+            "progress_required": self.quest_required,
+            "status": "rewarded" if self.quest_turned_in else ("complete" if self.quest_progress >= self.quest_required else ("incomplete" if self.quest_accepted else "none")),
+            "objective_area": {"map_id": 0, "zone_id": 12, "center": self.quest_objective_center, "radius": 80.0},
+        }
 
     def movement_state(self) -> dict[str, Any]:
         distance = distance_3d(self.bot_position, self.leader_position)
@@ -467,6 +506,21 @@ def combat_frame_state(adapter: CommandAdapter, status: CommandResult) -> dict[s
     return combat_state_from_status(status.parsed)
 
 
+def quest_state_from_result(result: CommandResult) -> dict[str, Any]:
+    parsed = result.parsed
+    if isinstance(parsed, dict):
+        quest = parsed.get("quest")
+        if isinstance(quest, dict):
+            return quest
+    return {}
+
+
+def quest_frame_state(adapter: CommandAdapter, result: CommandResult) -> dict[str, Any]:
+    if isinstance(adapter, LocalCommandAdapter):
+        return adapter.quest_state()
+    return quest_state_from_result(result)
+
+
 def movement_metrics(frames_path: Path) -> dict[str, Any]:
     movement_frames = 0
     stuck_frames = 0
@@ -576,6 +630,73 @@ def solo_combat_metrics(frames_path: Path) -> dict[str, Any]:
         "invalid_action_rate": invalid_actions / combat_frames if combat_frames else 1.0,
         "loot_success": loot_success,
         "recovery_time_after_combat_sec": 0.0 if loot_success else None,
+    }
+
+
+def quest_metrics(frames_path: Path) -> dict[str, Any]:
+    quest_frames = 0
+    accepted = False
+    turned_in = False
+    deaths = 0
+    invalid_actions = 0
+    progress_start: int | None = None
+    progress_end = 0
+    first_t: float | None = None
+    turn_in_t: float | None = None
+    travel_time = 0.0
+    stuck_failures = 0
+    wrong_interactions = 0
+    bag_interruptions = 0
+
+    with frames_path.open("r", encoding="utf-8") as handle:
+        for line in handle:
+            if not line.strip():
+                continue
+            frame = json.loads(line)
+            if frame.get("domain") != "quest":
+                continue
+            quest_frames += 1
+            t = float(frame.get("t", quest_frames))
+            if first_t is None:
+                first_t = t
+            task = frame.get("task", {})
+            state = frame.get("state", {})
+            resolved = frame.get("resolved_action", {})
+            outcome = frame.get("outcome", {})
+            progress_current = int(task.get("progress_current", state.get("progress_current", 0)) or 0)
+            if progress_start is None:
+                progress_start = progress_current
+            progress_end = max(progress_end, progress_current)
+            accepted = accepted or outcome.get("quest_accepted") or task.get("status") in {"incomplete", "complete", "rewarded"}
+            turned_in = turned_in or outcome.get("quest_turned_in") or task.get("status") == "rewarded"
+            if turned_in and turn_in_t is None:
+                turn_in_t = t
+            if outcome.get("death"):
+                deaths += 1
+            if not bool(resolved.get("valid", True)):
+                invalid_actions += 1
+            if frame.get("policy_output", {}).get("intent") == "move_to_objective_area":
+                travel_time += float(outcome.get("time_spent_sec", 0.5) or 0.5)
+            if outcome.get("stuck") or outcome.get("path_failed"):
+                stuck_failures += 1
+            if outcome.get("wrong_target_interaction"):
+                wrong_interactions += 1
+            if outcome.get("bag_full"):
+                bag_interruptions += 1
+
+    progress_delta = progress_end - (progress_start or 0)
+    elapsed_minutes = max(((turn_in_t or first_t or 0.0) - (first_t or 0.0)) / 60.0, 1.0 / 60.0)
+    return {
+        "quest_frame_count": quest_frames,
+        "quest_completion_success": bool(accepted and turned_in),
+        "objective_progress_per_minute": round(progress_delta / elapsed_minutes, 6),
+        "deaths_per_quest": deaths,
+        "travel_time_sec": round(travel_time, 3),
+        "stuck_path_failures": stuck_failures,
+        "wrong_target_interactions": wrong_interactions,
+        "bag_full_interruptions": bag_interruptions,
+        "time_to_turn_in_sec": round((turn_in_t or 0.0) - (first_t or 0.0), 3) if turned_in else None,
+        "invalid_action_rate": invalid_actions / quest_frames if quest_frames else 1.0,
     }
 
 
@@ -828,6 +949,113 @@ def run_experiment(config: dict[str, Any], adapter: CommandAdapter, runs_dir: Pa
             if not target_dead:
                 raise ExperimentError("combat_target_not_killed")
 
+        if config.get("domain") == "quest" or config.get("run", {}).get("quest_ticks"):
+            quest = config.get("quest", {})
+            quest_id = int(quest.get("quest_id", 28808))
+            target_entry = int(quest.get("target_entry", getattr(adapter, "combat_target_entry", 0)))
+            required = int(quest.get("progress_required", getattr(adapter, "quest_required", 1)))
+            accept = execute(playerbot_command(config, "quest", "accept", str(quest_id)))
+            if not accept.ok:
+                raise ExperimentError("quest_accept_failed")
+
+            objective = execute(playerbot_command(config, "quest", "objective", str(quest_id)))
+            quest_state = quest_frame_state(adapter, objective)
+            objective_area = quest_state.get("objective_area", quest.get("objective_area", {"map_id": config.get("map_id", 0), "zone_id": config.get("zone_id", 0), "center": [0.0, 0.0, 0.0], "radius": 80.0}))
+            center = objective_area.get("center", [0.0, 0.0, 0.0])
+            travel = execute(playerbot_command(config, "move_to", str(center[0]), str(center[1]), str(center[2])))
+            if not travel.ok:
+                raise ExperimentError("quest_travel_failed")
+
+            for tick in range(int(config.get("run", {}).get("quest_ticks", max(3, required + 2)))):
+                status = execute(playerbot_command(config, "status"))
+                movement_state = movement_frame_state(adapter, status)
+                distance = float(movement_state.get("distance_to_leader", 0.0) or 0.0)
+                current = int(quest_state.get("progress_current", 0) or 0)
+                if current < required:
+                    if quest.get("objective_type", "kill") == "kill":
+                        target_result = execute(playerbot_command(config, "combat_target", str(quest.get("target_selector", "nearest"))))
+                        combat_state = combat_frame_state(adapter, target_result)
+                        if float(combat_state.get("target_hp", 1.0) or 0.0) <= 0.0:
+                            execute(playerbot_command(config, "loot", "selected"))
+                        intent = "kill_objective_target"
+                        action_type = "combat_target"
+                    elif quest.get("objective_type") == "use_item":
+                        interaction = execute(playerbot_command(config, "quest", "use_item", str(quest_id)))
+                        quest_state = quest_frame_state(adapter, interaction)
+                        intent = "use_item_on_target"
+                        action_type = "use_item"
+                    else:
+                        interaction = execute(playerbot_command(config, "quest", "interact", str(quest_id)))
+                        quest_state = quest_frame_state(adapter, interaction)
+                        intent = "interact_gameobject"
+                        action_type = "interact"
+                else:
+                    intent = "return_to_questgiver"
+                    action_type = "move_to"
+
+                objective = execute(playerbot_command(config, "quest", "objective", str(quest_id)))
+                quest_state = quest_frame_state(adapter, objective)
+                new_current = int(quest_state.get("progress_current", current) or 0)
+                complete = new_current >= required
+                frame_writer.write(
+                    domain="quest",
+                    subdomain="quest_objective",
+                    trigger="task_decision",
+                    actor={
+                        "guid": metadata["bots"][0].get("guid") if metadata["bots"] else None,
+                        "is_bot": bool(metadata["bots"]),
+                        "class_id": metadata["bots"][0].get("class_id") if metadata["bots"] else None,
+                        "spec_id": metadata["bots"][0].get("spec_id") if metadata["bots"] else None,
+                    },
+                    task={
+                        "type": "quest_objective",
+                        "quest_id": quest_id,
+                        "objective_index": int(quest.get("objective_index", 0)),
+                        "objective_type": quest.get("objective_type", quest_state.get("objective_type", "kill")),
+                        "target_entry": target_entry,
+                        "progress_current": new_current,
+                        "progress_required": required,
+                        "status": quest_state.get("status", "incomplete"),
+                        "objective_area": objective_area,
+                    },
+                    state={
+                        "zone_id": objective_area.get("zone_id", config.get("zone_id", 0)),
+                        "distance_to_objective": distance,
+                        "nearby_hostile_count": 1 if action_type == "combat_target" else 0,
+                        "elite_nearby": False,
+                        "hp_pct": getattr(adapter, "bot_hp", 1.0),
+                        "primary_power_pct": 0.67,
+                        "bag_free_slots": 12,
+                    },
+                    valid_actions={"task_abstractions": ["accept_quest", "turn_in_quest", "travel_to_objective_area", "kill_objective_target", "loot_objective_item", "interact_gameobject", "use_item_on_target", "talk_to_npc", "return_to_questgiver", "repair_vendor_if_needed"]},
+                    policy_output={"mode": "complete_objective", "intent": "return_to_questgiver" if complete else intent, "target_entry": target_entry},
+                    resolved_action={"type": action_type, "valid": True},
+                    outcome={
+                        "objective_progress_delta": max(0, new_current - current),
+                        "death": False,
+                        "time_spent_sec": 0.5,
+                        "quest_accepted": True,
+                    },
+                )
+                if complete:
+                    break
+
+            turn_in = execute(playerbot_command(config, "quest", "turn_in", str(quest_id)))
+            quest_state = quest_frame_state(adapter, turn_in)
+            frame_writer.write(
+                domain="quest",
+                subdomain="quest_objective",
+                trigger="task_decision",
+                actor={"guid": metadata["bots"][0].get("guid") if metadata["bots"] else None, "is_bot": bool(metadata["bots"])},
+                task={"type": "quest_objective", "quest_id": quest_id, "objective_type": quest.get("objective_type", "kill"), "target_entry": target_entry, "progress_current": required, "progress_required": required, "status": "rewarded" if turn_in.ok else "complete"},
+                state={"zone_id": objective_area.get("zone_id", 0), "distance_to_objective": 0.0, "nearby_hostile_count": 0, "elite_nearby": False, "hp_pct": getattr(adapter, "bot_hp", 1.0), "primary_power_pct": 0.67, "bag_free_slots": 12},
+                policy_output={"mode": "complete_objective", "intent": "turn_in_quest", "target_entry": target_entry},
+                resolved_action={"type": "turn_in_quest", "valid": turn_in.ok},
+                outcome={"objective_progress_delta": 0, "death": False, "time_spent_sec": 0.5, "quest_accepted": True, "quest_turned_in": turn_in.ok},
+            )
+            if not turn_in.ok:
+                raise ExperimentError("quest_turn_in_failed")
+
         timeout_sec = float(config.get("run", {}).get("timeout_sec", 60))
         if time.monotonic() - start > timeout_sec:
             raise ExperimentError("timeout")
@@ -876,6 +1104,11 @@ def run_experiment(config: dict[str, Any], adapter: CommandAdapter, runs_dir: Pa
                 write_json(episode_dir / "solo_combat_metrics.json", combat_metrics)
                 summary["solo_combat_metrics"] = combat_metrics
                 produced_paths["solo_combat_metrics"] = display_path(episode_dir / "solo_combat_metrics.json")
+            q_metrics = quest_metrics(frames_path)
+            if q_metrics["quest_frame_count"]:
+                write_json(episode_dir / "quest_metrics.json", q_metrics)
+                summary["quest_metrics"] = q_metrics
+                produced_paths["quest_metrics"] = display_path(episode_dir / "quest_metrics.json")
         write_json(episode_dir / "summary.json", summary)
         if live:
             command_count = 0

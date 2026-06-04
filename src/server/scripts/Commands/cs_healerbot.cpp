@@ -6,7 +6,9 @@
 #include "Bots/BotMgr.h"
 #include "Bots/BotTypes.h"
 #include "Chat.h"
+#include "ObjectMgr.h"
 #include "Player.h"
+#include "Quests/QuestDef.h"
 #include "RBAC.h"
 #include "WorldSession.h"
 #include <cstdlib>
@@ -37,6 +39,7 @@ public:
             { "combat_target", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleCombatTargetCommand, "" },
             { "combat_clear", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleCombatClearCommand, "" },
             { "loot", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleLootCommand, "" },
+            { "quest", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleQuestCommand, "" },
             { "status", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleStatusCommand, "" },
             { "record", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleRecordCommand, "" },
             { "partyfill", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandlePartyFillCommand, "" },
@@ -296,6 +299,166 @@ private:
     static bool HandleLootCommand(ChatHandler* handler, char const* args)
     {
         return HandleCombatTargetCommand(handler, args && *args ? args : "selected");
+    }
+
+    static std::string QuestStatusName(QuestStatus status)
+    {
+        switch (status)
+        {
+            case QUEST_STATUS_NONE: return "none";
+            case QUEST_STATUS_COMPLETE: return "complete";
+            case QUEST_STATUS_INCOMPLETE: return "incomplete";
+            case QUEST_STATUS_FAILED: return "failed";
+            case QUEST_STATUS_REWARDED: return "rewarded";
+            default: return "unknown";
+        }
+    }
+
+    static void SendQuestResult(ChatHandler* handler, bool ok, char const* action, uint32 questId, Quest const* quest, Player* player, char const* failureReason = nullptr)
+    {
+        if (!handler)
+            return;
+
+        QuestStatus status = player ? player->GetQuestStatus(questId) : QUEST_STATUS_NONE;
+        uint16 slot = player ? player->FindQuestSlot(questId) : MAX_QUEST_LOG_SIZE;
+        uint32 objectiveIndex = 0;
+        std::string objectiveType = "none";
+        int32 targetEntry = 0;
+        uint32 progressCurrent = 0;
+        uint32 progressRequired = 1;
+        if (quest)
+        {
+            for (uint32 i = 0; i < QUEST_OBJECTIVES_COUNT; ++i)
+            {
+                if (quest->RequiredNpcOrGoCount[i])
+                {
+                    objectiveIndex = i;
+                    targetEntry = quest->RequiredNpcOrGo[i] < 0 ? -quest->RequiredNpcOrGo[i] : quest->RequiredNpcOrGo[i];
+                    objectiveType = quest->RequiredNpcOrGo[i] < 0 ? "interact_gameobject" : "kill";
+                    progressRequired = quest->RequiredNpcOrGoCount[i];
+                    progressCurrent = slot < MAX_QUEST_LOG_SIZE ? player->GetQuestSlotCounter(slot, i) : 0;
+                    break;
+                }
+            }
+            if (objectiveType == "none")
+            {
+                for (uint32 i = 0; i < QUEST_ITEM_OBJECTIVES_COUNT; ++i)
+                {
+                    if (quest->RequiredItemCount[i])
+                    {
+                        objectiveIndex = i;
+                        targetEntry = quest->RequiredItemId[i];
+                        objectiveType = "collect";
+                        progressRequired = quest->RequiredItemCount[i];
+                        progressCurrent = player ? std::min<uint32>(player->GetItemCount(quest->RequiredItemId[i], true), progressRequired) : 0;
+                        break;
+                    }
+                }
+            }
+        }
+
+        std::ostringstream json;
+        json << "{\"ok\":" << (ok ? "true" : "false")
+             << ",\"action\":\"" << JsonEscape(action ? action : "")
+             << "\",\"quest\":{\"quest_id\":" << questId
+             << ",\"objective_index\":" << objectiveIndex
+             << ",\"objective_type\":\"" << objectiveType
+             << "\",\"target_entry\":" << targetEntry
+             << ",\"progress_current\":" << progressCurrent
+             << ",\"progress_required\":" << progressRequired
+             << ",\"status\":\"" << QuestStatusName(status)
+             << "\",\"objective_area\":{\"map_id\":" << (player ? player->GetMapId() : 0)
+             << ",\"zone_id\":" << (player ? player->GetZoneId() : 0)
+             << ",\"center\":[" << (player ? player->GetPositionX() : 0.0f)
+             << "," << (player ? player->GetPositionY() : 0.0f)
+             << "," << (player ? player->GetPositionZ() : 0.0f)
+             << "],\"radius\":80.0}}"
+             << ",\"failure_reason\":";
+        if (failureReason)
+            json << "\"" << JsonEscape(failureReason) << "\"";
+        else
+            json << "null";
+        json << "}";
+        handler->PSendSysMessage("%s", json.str().c_str());
+    }
+
+    static bool HandleQuestCommand(ChatHandler* handler, char const* args)
+    {
+        CommandArgs parsed = ParseCommandArgs(args);
+        Player* owner = GetOwner(handler, parsed.ownerSelector);
+        if (!owner)
+            return RequireOwner(handler, parsed.ownerSelector);
+
+        if (parsed.positional.size() < 2)
+        {
+            SendResult(handler, false, "quest", "invalid_usage");
+            handler->SetSentErrorMessage(true);
+            return false;
+        }
+
+        std::string action = parsed.positional[0];
+        uint32 questId = uint32(std::strtoul(parsed.positional[1].c_str(), nullptr, 10));
+        Quest const* quest = sObjectMgr->GetQuestTemplate(questId);
+        if (!quest)
+        {
+            SendQuestResult(handler, false, action.c_str(), questId, nullptr, owner, "unknown_quest");
+            handler->SetSentErrorMessage(true);
+            return false;
+        }
+
+        if (stricmp(action.c_str(), "accept") == 0)
+        {
+            if (owner->GetQuestStatus(questId) == QUEST_STATUS_NONE && owner->CanAddQuest(quest, false) && owner->CanTakeQuest(quest, false))
+                owner->AddQuestAndCheckCompletion(quest, owner);
+            bool ok = owner->GetQuestStatus(questId) != QUEST_STATUS_NONE;
+            SendQuestResult(handler, ok, "quest_accept", questId, quest, owner, ok ? nullptr : "cannot_accept");
+            if (!ok)
+                handler->SetSentErrorMessage(true);
+            return ok;
+        }
+
+        if (stricmp(action.c_str(), "turn_in") == 0)
+        {
+            bool ok = owner->CanRewardQuest(quest, false);
+            if (ok)
+                owner->RewardQuest(quest, 0, owner);
+            SendQuestResult(handler, ok, "quest_turn_in", questId, quest, owner, ok ? nullptr : "quest_incomplete");
+            if (!ok)
+                handler->SetSentErrorMessage(true);
+            return ok;
+        }
+
+        if (stricmp(action.c_str(), "interact") == 0)
+        {
+            if (parsed.positional.size() > 2)
+            {
+                uint32 entry = uint32(std::strtoul(parsed.positional[2].c_str(), nullptr, 10));
+                owner->KilledMonsterCredit(entry);
+            }
+            SendQuestResult(handler, true, "quest_interact", questId, quest, owner);
+            return true;
+        }
+
+        if (stricmp(action.c_str(), "use_item") == 0)
+        {
+            if (parsed.positional.size() > 2)
+            {
+                uint32 entry = uint32(std::strtoul(parsed.positional[2].c_str(), nullptr, 10));
+                owner->ItemAddedQuestCheck(entry, 1);
+            }
+            SendQuestResult(handler, true, "quest_use_item", questId, quest, owner);
+            return true;
+        }
+
+        if (stricmp(action.c_str(), "objective") == 0 || stricmp(action.c_str(), "status") == 0)
+        {
+            SendQuestResult(handler, true, "quest_objective", questId, quest, owner);
+            return true;
+        }
+
+        SendQuestResult(handler, false, action.c_str(), questId, quest, owner, "unknown_quest_action");
+        handler->SetSentErrorMessage(true);
+        return false;
     }
 
     static bool HandleMoveToCommand(ChatHandler* handler, char const* args)

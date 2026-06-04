@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "objective_area": {
+      "additionalProperties": false,
+      "properties": {
+        "center": {
+          "items": {
+            "type": "number"
+          },
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        },
+        "map_id": {
+          "type": "integer"
+        },
+        "radius": {
+          "minimum": 0,
+          "type": "number"
+        },
+        "zone_id": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "map_id",
+        "zone_id",
+        "center",
+        "radius"
+      ],
+      "type": "object"
+    },
+    "objective_index": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "objective_type": {
+      "enum": [
+        "kill",
+        "collect",
+        "interact_gameobject",
+        "talk_to_npc",
+        "use_item"
+      ]
+    },
+    "progress_current": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "progress_required": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "quest_id": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "target_entry": {
+      "minimum": 0,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "quest_id",
+    "objective_index",
+    "objective_type",
+    "target_entry",
+    "progress_current",
+    "progress_required",
+    "objective_area"
+  ],
+  "type": "object"
+}
