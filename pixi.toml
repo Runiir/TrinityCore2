@@ -7,9 +7,17 @@ version = "0.1.0"
 
 [tasks]
 dvc-status = "dvc status"
-dvc-add-dataset = "dvc add dataset"
+dvc-repro = "dvc repro"
+dvc-exp-run = "dvc exp run"
+dvc-exp-show = "dvc exp show"
 dvc-push = "dvc push"
 dvc-pull = "dvc pull"
+test = "pytest"
+experiment-smoke = "python experiments/run_experiment.py experiments/configs/headless_playerbot_smoke_001.json --local"
+setup-dvc-s3 = "python scripts/setup_dvc_s3_remote.py"
 
 [dependencies]
 dvc = ">=3.67.1,<4"
+dvclive = ">=3.49.0,<4"
+dvc-s3 = ">=3.3.0,<4"
+pytest = ">=9.0.3,<10"

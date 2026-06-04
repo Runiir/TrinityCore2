@@ -1,0 +1,30 @@
+{
+  "experiment_id": "headless_playerbot_smoke_001",
+  "domain": "system_smoke",
+  "execution_mode": "headless_ra_soap",
+  "live_client_present": false,
+  "party_template": {
+    "healer": "holy_paladin"
+  },
+  "setup": {
+    "recording": true
+  },
+  "run": {
+    "timeout_sec": 60,
+    "success_conditions": [
+      "bot_spawned",
+      "recording_file_created"
+    ],
+    "failure_conditions": [
+      "timeout",
+      "bot_spawn_failed"
+    ]
+  },
+  "cleanup": {
+    "remove_bots": true,
+    "stop_recording": true
+  },
+  "adapter": {
+    "type": "local"
+  }
+}

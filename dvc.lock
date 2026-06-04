@@ -1,0 +1,98 @@
+schema: '2.0'
+stages:
+  capture:
+    cmd: python experiments/run_experiment.py 
+      experiments/configs/headless_playerbot_smoke_001.json --raw-dir 
+      dataset/raw --runs-dir experiments/runs --live-dir dvclive --local
+    deps:
+    - path: experiments/configs/headless_playerbot_smoke_001.json
+      hash: md5
+      md5: d3d445398c635afb2ccf38c1ec5aa7b4
+      size: 564
+    - path: experiments/run_experiment.py
+      hash: md5
+      md5: d66b2370b81375116ea86ec99eec0528
+      size: 21207
+    outs:
+    - path: dataset/raw
+      hash: md5
+      md5: c20776887414b9aebfe982032cd3285d.dir
+      size: 4576
+      nfiles: 4
+    - path: dvclive
+      hash: md5
+      md5: e5f922eb9b1339308a4932722e47cc12.dir
+      size: 317
+      nfiles: 6
+    - path: experiments/runs
+      hash: md5
+      md5: 646474756393556ef9d4aca00f6c480a.dir
+      size: 5451
+      nfiles: 7
+  preprocess:
+    cmd: python ml/preprocessing/preprocess_frames.py --raw-dir dataset/raw 
+      --output dataset/processed/frames.jsonl --manifest 
+      dataset/processed/manifest.json
+    deps:
+    - path: dataset/raw
+      hash: md5
+      md5: c20776887414b9aebfe982032cd3285d.dir
+      size: 4576
+      nfiles: 4
+    - path: ml/preprocessing/preprocess_frames.py
+      hash: md5
+      md5: d16316ea6c13f99004330f9e3abc8436
+      size: 4216
+    outs:
+    - path: dataset/processed/frames.jsonl
+      hash: md5
+      md5: 3c93d680505140622f7d8f60a9f875a5
+      size: 4475
+    - path: dataset/processed/manifest.json
+      hash: md5
+      md5: 4d2e21bc8db758aed8fd9966dae0dfb7
+      size: 197
+  train:
+    cmd: python ml/training/train_action_frequency.py --frames 
+      dataset/processed/frames.jsonl --model models/action_frequency_model.json
+    deps:
+    - path: dataset/processed/frames.jsonl
+      hash: md5
+      md5: 3c93d680505140622f7d8f60a9f875a5
+      size: 4475
+    - path: ml/training/train_action_frequency.py
+      hash: md5
+      md5: bb7c5f90b83165ba24b54d62c691e3db
+      size: 1379
+    outs:
+    - path: models/action_frequency_model.json
+      hash: md5
+      md5: e2dd3c746c0558445584f55131820516
+      size: 243
+  evaluate:
+    cmd: python ml/evaluation/evaluate_action_frequency.py --frames 
+      dataset/processed/frames.jsonl --model models/action_frequency_model.json 
+      --metrics dataset/evaluations/metrics.json --report 
+      dataset/evaluations/report.json
+    deps:
+    - path: dataset/processed/frames.jsonl
+      hash: md5
+      md5: 3c93d680505140622f7d8f60a9f875a5
+      size: 4475
+    - path: ml/evaluation/evaluate_action_frequency.py
+      hash: md5
+      md5: 6661befc7f329972914519b3841a1343
+      size: 1853
+    - path: models/action_frequency_model.json
+      hash: md5
+      md5: e2dd3c746c0558445584f55131820516
+      size: 243
+    outs:
+    - path: dataset/evaluations/metrics.json
+      hash: md5
+      md5: 90a3f7fd4e5a8dabb294d7c48c4c0fc7
+      size: 74
+    - path: dataset/evaluations/report.json
+      hash: md5
+      md5: 7d5837c1fd691e88866f5b7acccef55d
+      size: 249

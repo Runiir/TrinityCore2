@@ -1,0 +1,17 @@
+capture:
+  config: experiments/configs/headless_playerbot_smoke_001.json
+  local: true
+preprocess:
+  raw_dir: dataset/raw
+  output: dataset/processed/frames.jsonl
+  manifest: dataset/processed/manifest.json
+train:
+  processed_frames: dataset/processed/frames.jsonl
+  model: models/action_frequency_model.json
+evaluate:
+  processed_frames: dataset/processed/frames.jsonl
+  model: models/action_frequency_model.json
+  metrics: dataset/evaluations/metrics.json
+  report: dataset/evaluations/report.json
+tracking:
+  live_dir: dvclive

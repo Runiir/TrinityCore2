@@ -20,6 +20,7 @@ nbproject/*
 .idea/*
 .browse.VC*
 .vscode
+.codex/
 cmake-build-*/
 .vs
 data/
@@ -35,7 +36,12 @@ trinity-authserver-test.conf
 trinity-worldserver-test.conf
 logs/
 *.log
+__pycache__/
+.pytest_cache/
 /dataset
+/experiments/runs
+/dvclive
+/models
 # pixi environments
 .pixi/*
 !.pixi/config.toml

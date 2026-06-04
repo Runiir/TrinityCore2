@@ -1,0 +1,6 @@
+[core]
+    remote = object
+['remote "object"']
+    url = s3://artifacts/trinity-cata
+    endpointurl = http://192.168.111.161:9000
+    region = us-east-1

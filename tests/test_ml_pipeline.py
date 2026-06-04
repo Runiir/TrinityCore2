@@ -1,0 +1,48 @@
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+from ml.evaluation.evaluate_action_frequency import main as evaluate_main
+from ml.preprocessing.preprocess_frames import main as preprocess_main
+from ml.training.train_action_frequency import main as train_main
+
+
+def write_jsonl(path: Path, rows: list[dict]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as handle:
+        for row in rows:
+            handle.write(json.dumps(row) + "\n")
+
+
+def test_preprocess_train_evaluate_pipeline(tmp_path, monkeypatch):
+    raw_dir = tmp_path / "raw"
+    processed = tmp_path / "processed" / "frames.jsonl"
+    manifest = tmp_path / "processed" / "manifest.json"
+    model = tmp_path / "models" / "action_frequency_model.json"
+    metrics = tmp_path / "evaluations" / "metrics.json"
+    report = tmp_path / "evaluations" / "report.json"
+
+    write_jsonl(raw_dir / "run_000001" / "frames.jsonl", [
+        {
+            "episode_id": "run_000001",
+            "frame_id": 1,
+            "domain": "system_smoke",
+            "trigger": "task_change",
+            "resolved_action": {"command": "playerbot status"},
+        }
+    ])
+
+    monkeypatch.setattr("sys.argv", ["preprocess", "--raw-dir", str(raw_dir), "--output", str(processed), "--manifest", str(manifest)])
+    assert preprocess_main() == 0
+
+    monkeypatch.setattr("sys.argv", ["train", "--frames", str(processed), "--model", str(model)])
+    assert train_main() == 0
+
+    monkeypatch.setattr("sys.argv", ["evaluate", "--frames", str(processed), "--model", str(model), "--metrics", str(metrics), "--report", str(report)])
+    assert evaluate_main() == 0
+
+    loaded_metrics = json.loads(metrics.read_text(encoding="utf-8"))
+    assert loaded_metrics["frame_count"] == 1
+    assert loaded_metrics["known_action_rate"] == 1.0
+    assert loaded_metrics["unique_actions"] == 1

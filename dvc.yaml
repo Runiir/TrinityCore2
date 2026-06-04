@@ -1,0 +1,59 @@
+stages:
+  capture:
+    cmd: python experiments/run_experiment.py ${capture.config} --raw-dir 
+      dataset/raw --runs-dir experiments/runs --live-dir ${tracking.live_dir} 
+      --local
+    deps:
+    - experiments/run_experiment.py
+    - ${capture.config}
+    outs:
+    - dataset/raw:
+        persist: true
+    - experiments/runs:
+        persist: true
+    - ${tracking.live_dir}:
+        persist: true
+  preprocess:
+    cmd: python ml/preprocessing/preprocess_frames.py --raw-dir 
+      ${preprocess.raw_dir} --output ${preprocess.output} --manifest 
+      ${preprocess.manifest}
+    deps:
+    - ml/preprocessing/preprocess_frames.py
+    - ${preprocess.raw_dir}
+    outs:
+    - ${preprocess.output}
+    - ${preprocess.manifest}
+  train:
+    cmd: python ml/training/train_action_frequency.py --frames 
+      ${train.processed_frames} --model ${train.model}
+    deps:
+    - ml/training/train_action_frequency.py
+    - ${train.processed_frames}
+    outs:
+    - ${train.model}
+  evaluate:
+    cmd: python ml/evaluation/evaluate_action_frequency.py --frames 
+      ${evaluate.processed_frames} --model ${evaluate.model} --metrics 
+      ${evaluate.metrics} --report ${evaluate.report}
+    deps:
+    - ml/evaluation/evaluate_action_frequency.py
+    - ${evaluate.processed_frames}
+    - ${evaluate.model}
+    metrics:
+    - ${evaluate.metrics}
+    outs:
+    - ${evaluate.report}
+params:
+- dvclive/params.yaml
+metrics:
+- dvclive/metrics.json
+plots:
+- dvclive/plots/metrics:
+    x: step
+artifacts:
+  run_summary:
+    path: experiments/runs/run_000003/summary.json
+    type: json
+  run_metadata:
+    path: experiments/runs/run_000003/metadata.json
+    type: json
