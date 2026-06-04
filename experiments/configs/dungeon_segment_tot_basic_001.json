@@ -1,0 +1,26 @@
+{
+  "adapter": {"type": "local"},
+  "cleanup": {"remove_bots": true, "stop_recording": true},
+  "controller": "external_script",
+  "domain": "dungeon",
+  "dungeon_id": 1,
+  "execution_mode": "headless_ra_soap",
+  "experiment_id": "dungeon_segment_tot_basic_001",
+  "live_client_present": false,
+  "map_id": 0,
+  "owner_selector": "Dorala",
+  "party_template": {
+    "tank": "protection_warrior",
+    "healer": "holy_paladin",
+    "dps": ["assassination_rogue", "fire_mage", "marksmanship_hunter"]
+  },
+  "route_config": "experiments/routes/tot_basic_route_001.json",
+  "run": {
+    "group_ticks": 8,
+    "success_conditions": ["route_completed", "party_alive", "future_labels_generated", "comparison_metrics_generated"],
+    "timeout_sec": 180
+  },
+  "server_build": "wow_4.3.4",
+  "setup": {"recording": true},
+  "zone_id": 12
+}

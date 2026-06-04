@@ -1,0 +1,23 @@
+{
+  "description": "Local Phase 07 Tol'vir-style dungeon segment route for planner and metric smoke validation.",
+  "dungeon_id": 1,
+  "map_id": 0,
+  "route_id": "tot_basic_route_001",
+  "steps": [
+    {"type": "move", "position": [6.0, 0.0, 0.0], "strategy": "group_move"},
+    {"type": "pull_pack", "pack_id": "trash_001", "strategy": "small_pull", "expected_duration_sec": 18},
+    {"type": "move", "position": [12.0, 0.0, 0.0], "strategy": "line_of_sight"},
+    {
+      "type": "boss",
+      "boss_id": 1045,
+      "strategy": "basic",
+      "expected_duration_sec": 30,
+      "mechanics": [
+        {"mechanic_family": "interrupt", "spell_id": 900201, "eta": 2.0, "severity": 0.7, "expected_damage": 0.08, "targeting": "party", "preparation_window": 1.5, "recovery_window": 1.0},
+        {"mechanic_family": "tank_buster", "spell_id": 900301, "eta": 5.0, "severity": 0.9, "expected_damage": 0.22, "targeting": "tank", "preparation_window": 2.0, "recovery_window": 3.0},
+        {"mechanic_family": "group_aoe", "spell_id": 900302, "eta": 8.0, "severity": 0.8, "expected_damage": 0.18, "targeting": "party", "preparation_window": 2.0, "recovery_window": 4.0}
+      ]
+    }
+  ],
+  "zone_id": 12
+}

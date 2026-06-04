@@ -25,6 +25,8 @@ if str(REPO_ROOT) not in sys.path:
 
 from dvclive import Live
 
+from ml.dungeon.labels import future_labels
+from ml.dungeon.planners import planner_for_role
 from ml.group_roles.coordination import ReservationStore
 from ml.group_roles.frames import coordination_frame, role_frame
 from ml.group_roles.metrics import group_role_metrics
@@ -490,7 +492,27 @@ def load_config(path: Path) -> dict[str, Any]:
     mode = config.get("execution_mode", "headless_ra_soap")
     if mode not in EXECUTION_MODES:
         raise ExperimentError(f"unsupported execution_mode: {mode}")
+    if config.get("route_config"):
+        config["route"] = load_route_config(resolve_repo_path(Path(config["route_config"])))
     return config
+
+
+def load_route_config(path: Path) -> dict[str, Any]:
+    with path.open("r", encoding="utf-8") as handle:
+        route = json.load(handle)
+    if not route.get("route_id"):
+        raise ExperimentError("route_config_missing_route_id")
+    if "map_id" not in route:
+        raise ExperimentError("route_config_missing_map_id")
+    steps = route.get("steps")
+    if not isinstance(steps, list) or not steps:
+        raise ExperimentError("route_config_missing_steps")
+    for index, step in enumerate(steps):
+        if not isinstance(step, dict) or step.get("type") not in {"move", "pull_pack", "boss", "recover", "checkpoint"}:
+            raise ExperimentError(f"route_config_invalid_step:{index}")
+        if step.get("type") == "move" and len(step.get("position", [])) != 3:
+            raise ExperimentError(f"route_config_invalid_move_position:{index}")
+    return route
 
 
 def next_episode_id(runs_dir: Path) -> str:
@@ -862,6 +884,52 @@ def group_smoke_state(config: dict[str, Any], tick: int) -> dict[str, Any]:
     }
 
 
+def dungeon_route_metrics(frames_path: Path) -> dict[str, Any]:
+    route_frames = 0
+    completed_steps: set[int] = set()
+    future_label_frames = 0
+    planner_roles: set[str] = set()
+    with frames_path.open("r", encoding="utf-8") as handle:
+        for line in handle:
+            if not line.strip():
+                continue
+            frame = json.loads(line)
+            if frame.get("domain") != "dungeon":
+                continue
+            route_frames += 1
+            task = frame.get("task", {})
+            if frame.get("outcome", {}).get("step_complete"):
+                completed_steps.add(int(task.get("step_index", -1)))
+            if frame.get("future_labels"):
+                future_label_frames += 1
+            role = frame.get("actor", {}).get("role")
+            if role:
+                planner_roles.add(str(role))
+    return {
+        "dungeon_route_frame_count": route_frames,
+        "route_steps_completed": len(completed_steps),
+        "future_label_frame_count": future_label_frames,
+        "planner_roles": sorted(planner_roles),
+        "route_completed": route_frames > 0 and len(completed_steps) > 0,
+    }
+
+
+def comparison_metrics(frames_path: Path) -> dict[str, Any]:
+    group_metrics = group_role_metrics(frames_path)
+    route_metrics = dungeon_route_metrics(frames_path)
+    return {
+        "scripted_baseline": {"success": group_metrics["success"], "route_completed": route_metrics["route_completed"]},
+        "ml_role_policy_without_planner": {"available": False, "reason": "inference_adapter_stub"},
+        "ml_role_policy_with_planner": {"available": False, "reason": "inference_adapter_stub"},
+        "group_coordination_on": {"success": group_metrics["success"], "coordination_frames": group_metrics["group_coordination_frame_count"]},
+        "group_coordination_off": {"available": False, "reason": "not_run_in_v1_segment"},
+        "mechanic_abstraction_on": {"future_label_frames": route_metrics["future_label_frame_count"]},
+        "mechanic_abstraction_off": {"available": False, "reason": "not_run_in_v1_segment"},
+        "mechanic_dropout_on": {"available": False, "reason": "training_hook_only"},
+        "mechanic_dropout_off": {"available": True},
+    }
+
+
 def write_jsonl_row(path: Path, row: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a", encoding="utf-8") as handle:
@@ -936,7 +1004,7 @@ def run_experiment(config: dict[str, Any], adapter: CommandAdapter, runs_dir: Pa
         return command_result
 
     try:
-        members = party_members(config) if config.get("domain") == "group_roles" else [(first_party_role(config), first_party_role(config))]
+        members = party_members(config) if config.get("domain") in {"group_roles", "dungeon"} else [(first_party_role(config), first_party_role(config))]
         for requested_role, class_spec in members:
             spawn = execute(playerbot_command(config, "spawn", class_spec))
             if not spawn.ok:
@@ -948,7 +1016,7 @@ def run_experiment(config: dict[str, Any], adapter: CommandAdapter, runs_dir: Pa
                 metadata["bots"].append({
                     "guid": bot_guid,
                     "name": spawn.parsed.get("name"),
-                    "role": requested_role if config.get("domain") == "group_roles" else spawn.parsed.get("role") or requested_role,
+                "role": requested_role if config.get("domain") in {"group_roles", "dungeon"} else spawn.parsed.get("role") or requested_role,
                     "class_spec_tag": class_spec_tag,
                     "class_id": spawn.parsed.get("class_id", class_spec_hint.get("class_id")),
                     "spec_id": spawn.parsed.get("spec_id", class_spec_hint.get("spec_id")),
@@ -977,7 +1045,7 @@ def run_experiment(config: dict[str, Any], adapter: CommandAdapter, runs_dir: Pa
             outcome={"recording_file_created": frames_path.exists(), "bot_spawned": bool(metadata["bots"])},
         )
 
-        if config.get("domain") == "group_roles":
+        if config.get("domain") in {"group_roles", "dungeon"}:
             required_roles = {"tank", "healer", "melee_dps", "ranged_dps"}
             available_roles = {str(bot.get("role")) for bot in metadata["bots"]}
             if not required_roles.issubset(available_roles):
@@ -1122,6 +1190,65 @@ def run_experiment(config: dict[str, Any], adapter: CommandAdapter, runs_dir: Pa
                     write_jsonl_row(role_frame_paths["role_frames"], written_frame)
                     write_jsonl_row(role_frame_paths[f"{role}_frames"], written_frame)
                 store.tick(1.0)
+
+        if config.get("domain") == "dungeon":
+            route = config.get("route") or {}
+            route_frame_path = raw_episode_dir / f"dungeon_route_{episode_id}.jsonl"
+            produced_paths["dungeon_route"] = display_path(route_frame_path)
+            route_steps = route.get("steps", [])
+            for step_index, step in enumerate(route_steps):
+                step_type = str(step.get("type"))
+                if step_type == "move":
+                    position = step.get("position", [0.0, 0.0, 0.0])
+                    move_result = execute(playerbot_command(config, "move_to", str(position[0]), str(position[1]), str(position[2])))
+                    if not move_result.ok:
+                        raise ExperimentError(f"dungeon_route_move_failed:{step_index}")
+                else:
+                    move_result = CommandResult(True, "planner_step", "{}", {})
+
+                mechanics = step.get("mechanics") or [{"mechanic_family": "pull_setup", "expected_damage": 0.06, "severity": 0.2}]
+                for mechanic_index, mechanic in enumerate(mechanics):
+                    smoke_state = {
+                        "tick": step_index,
+                        "mob_count": 3 if step_type == "pull_pack" else 1,
+                        "tank_hp_pct": 0.86 if mechanic.get("mechanic_family") == "tank_buster" else 0.94,
+                        "lowest_party_hp_pct": 0.78 if mechanic.get("mechanic_family") == "group_aoe" else 0.92,
+                        "healer_mana_pct": 0.72,
+                        "mechanic_family": mechanic.get("mechanic_family", "none"),
+                        "expected_damage": mechanic.get("expected_damage", 0.1),
+                    }
+                    labels = future_labels(smoke_state)
+                    for bot in metadata["bots"]:
+                        role = str(bot["role"])
+                        planner_role = "dps" if role in {"melee_dps", "ranged_dps"} else role
+                        planner_policy = planner_for_role(planner_role).plan(smoke_state)
+                        frame = frame_writer.write(
+                            domain="dungeon",
+                            subdomain="route_step",
+                            trigger="route_step_execution",
+                            actor={"guid": bot.get("guid"), "is_bot": True, "role": role, "class_id": bot.get("class_id"), "spec_id": bot.get("spec_id")},
+                            task={
+                                "type": "dungeon_route_step",
+                                "route_id": route.get("route_id"),
+                                "step_index": step_index,
+                                "step_type": step_type,
+                                "pack_id": step.get("pack_id"),
+                                "boss_id": step.get("boss_id"),
+                                "strategy": step.get("strategy", "basic"),
+                                "mechanic_index": mechanic_index,
+                            },
+                            state={
+                                "party": {"party_size": len(metadata["bots"]), "tank_hp_pct": smoke_state["tank_hp_pct"], "lowest_party_hp_pct": smoke_state["lowest_party_hp_pct"], "healer_mana_pct": smoke_state["healer_mana_pct"], "alive": True},
+                                "route": {"map_id": route.get("map_id"), "dungeon_id": route.get("dungeon_id"), "position": step.get("position")},
+                                "mechanic": mechanic,
+                            },
+                            valid_actions={"planner_modes": planner_policy.get("valid_modes", [])},
+                            policy_output=planner_policy,
+                            resolved_action={"type": planner_policy.get("mode"), "valid": move_result.ok, "result": "ok"},
+                            future_labels=labels,
+                            outcome={"step_complete": True, "wipe": False, "hard_blocker": None},
+                        )
+                        write_jsonl_row(route_frame_path, frame)
 
         if config.get("domain") == "profession" or config.get("run", {}).get("profession_ticks"):
             profession = config.get("profession", {})
@@ -1522,6 +1649,15 @@ def run_experiment(config: dict[str, Any], adapter: CommandAdapter, runs_dir: Pa
                 write_json(episode_dir / "group_role_metrics.json", g_metrics)
                 summary["group_role_metrics"] = g_metrics
                 produced_paths["group_role_metrics"] = display_path(episode_dir / "group_role_metrics.json")
+            d_metrics = dungeon_route_metrics(frames_path)
+            if d_metrics["dungeon_route_frame_count"]:
+                write_json(episode_dir / "dungeon_route_metrics.json", d_metrics)
+                summary["dungeon_route_metrics"] = d_metrics
+                produced_paths["dungeon_route_metrics"] = display_path(episode_dir / "dungeon_route_metrics.json")
+                c_metrics = comparison_metrics(frames_path)
+                write_json(episode_dir / "comparison_metrics.json", c_metrics)
+                summary["comparison_metrics"] = c_metrics
+                produced_paths["comparison_metrics"] = display_path(episode_dir / "comparison_metrics.json")
         write_json(episode_dir / "summary.json", summary)
         if live:
             command_count = 0

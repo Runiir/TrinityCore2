@@ -9,7 +9,10 @@ from ml.group_roles.metrics import group_role_metrics
 from ml.group_roles.policies import policy_for_role
 from ml.preprocessing.preprocess_frames import main as preprocess_main
 from ml.training.train_action_frequency import main as train_main
-from experiments.run_experiment import load_config, make_adapter, movement_metrics, profession_metrics, quest_metrics, run_experiment, solo_combat_metrics
+from experiments.run_experiment import dungeon_route_metrics, load_config, make_adapter, movement_metrics, profession_metrics, quest_metrics, run_experiment, solo_combat_metrics
+from ml.dungeon.inference import RolePolicyInferenceAdapter
+from ml.dungeon.labels import future_labels
+from ml.dungeon.planners import DPSPlanner, HealerPlanner, TankPlanner
 
 
 def write_jsonl(path: Path, rows: list[dict]) -> None:
@@ -193,3 +196,38 @@ def test_full_party_trash_pull_smoke_records_role_and_group_metrics(tmp_path):
     assert (tmp_path / summary["paths"]["ranged_dps_frames"]).exists()
     assert (tmp_path / summary["paths"]["group_coordination"]).exists()
     assert recomputed == metrics
+
+
+def test_phase07_dungeon_segment_records_route_labels_and_comparisons(tmp_path):
+    config = load_config(Path("experiments/configs/dungeon_segment_tot_basic_001.json"))
+    adapter = make_adapter(config, force_local=True)
+
+    summary = run_experiment(config, adapter, tmp_path / "runs", tmp_path / "raw")
+
+    assert summary["result"] == "success"
+    frames_path = tmp_path / summary["paths"]["frames"]
+    metrics_path = tmp_path / summary["paths"]["dungeon_route_metrics"]
+    comparison_path = tmp_path / summary["paths"]["comparison_metrics"]
+    metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
+
+    assert summary["paths"]["dungeon_route"].endswith(".jsonl")
+    assert metrics["route_steps_completed"] == 4
+    assert metrics["future_label_frame_count"] >= 5
+    assert set(metrics["planner_roles"]) == {"healer", "melee_dps", "ranged_dps", "tank"}
+    assert dungeon_route_metrics(frames_path) == metrics
+    comparison = json.loads(comparison_path.read_text(encoding="utf-8"))
+    assert comparison["scripted_baseline"]["route_completed"] is True
+    assert comparison["group_coordination_on"]["success"] is True
+
+
+def test_phase07_planners_labels_and_inference_stub():
+    state = {"mechanic_family": "tank_buster", "expected_damage": 0.2, "tank_hp_pct": 0.5, "lowest_party_hp_pct": 0.8}
+
+    assert TankPlanner().plan(state)["mode"] == "defensive_timing"
+    assert HealerPlanner().plan({"mechanic_family": "group_aoe", "lowest_party_hp_pct": 0.8})["mode"] == "prepare"
+    assert DPSPlanner().plan({"mechanic_family": "interrupt"})["mode"] == "interrupt_assignment"
+    labels = future_labels(state)
+    assert labels["party_damage_next_2s"] > 0
+    assert labels["tank_burst_risk"] == 0.85
+    prediction = RolePolicyInferenceAdapter().predict("tank", {"policy_output": {"mode": "hold_threat", "intent": "hold_threat"}})
+    assert prediction["adapter"] == "scripted_stub"
