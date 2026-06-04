@@ -256,6 +256,40 @@ uint32 BotMgr::SetMoveTarget(Player* owner, float x, float y, float z, std::stri
     return changed;
 }
 
+uint32 BotMgr::SetCombatTarget(Player* owner, std::string const& targetSelector, std::string const& botSelector)
+{
+    Unit* target = ResolveHostileTarget(owner, targetSelector);
+    if (!target)
+        return 0;
+
+    uint32 changed = 0;
+    for (ObjectGuid botGuid : ResolveTargets(owner, botSelector))
+    {
+        if (BotController* controller = GetController(botGuid))
+        {
+            controller->SetCombatTarget(target->GetGUID());
+            ++changed;
+        }
+    }
+
+    return changed;
+}
+
+uint32 BotMgr::ClearCombatTarget(Player* owner, std::string const& selector)
+{
+    uint32 changed = 0;
+    for (ObjectGuid botGuid : ResolveTargets(owner, selector))
+    {
+        if (BotController* controller = GetController(botGuid))
+        {
+            controller->ClearCombatTarget();
+            ++changed;
+        }
+    }
+
+    return changed;
+}
+
 bool BotMgr::SetRecording(Player* owner, bool enabled)
 {
     bool changed = false;
@@ -487,6 +521,24 @@ std::vector<ObjectGuid> BotMgr::ResolveTargets(Player* owner, std::string const&
     }
 
     return botGuids;
+}
+
+Unit* BotMgr::ResolveHostileTarget(Player* owner, std::string const& targetSelector) const
+{
+    if (!owner)
+        return nullptr;
+
+    Unit* target = nullptr;
+    if (targetSelector.empty() || stricmp(targetSelector.c_str(), "selected") == 0)
+        target = owner->GetSelectedUnit();
+    else if (stricmp(targetSelector.c_str(), "nearest") == 0)
+        target = owner->SelectNearbyTarget(nullptr, 40.0f);
+    else if (targetSelector.find_first_not_of("0123456789") == std::string::npos)
+        target = ObjectAccessor::GetUnit(*owner, ObjectGuid(HighGuid::Unit, uint32(atoul(targetSelector.c_str()))));
+
+    if (!target || !owner->IsValidAttackTarget(target))
+        return nullptr;
+    return target;
 }
 
 bool BotMgr::IsOwnedBot(ObjectGuid botGuid) const

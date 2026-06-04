@@ -1,5 +1,5 @@
 capture:
-  config: experiments/configs/headless_movement_smoke_001.json
+  config: experiments/configs/headless_solo_combat_smoke_001.json
   local: true
 preprocess:
   raw_dir: dataset/raw

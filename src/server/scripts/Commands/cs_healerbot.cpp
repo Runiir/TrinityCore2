@@ -34,6 +34,9 @@ public:
             { "return_to_group", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleReturnToGroupCommand, "" },
             { "move_safe", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleMoveSafeCommand, "" },
             { "unstuck", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleUnstuckCommand, "" },
+            { "combat_target", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleCombatTargetCommand, "" },
+            { "combat_clear", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleCombatClearCommand, "" },
+            { "loot", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleLootCommand, "" },
             { "status", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleStatusCommand, "" },
             { "record", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleRecordCommand, "" },
             { "partyfill", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandlePartyFillCommand, "" },
@@ -252,6 +255,47 @@ private:
     static bool HandleUnstuckCommand(ChatHandler* handler, char const* args)
     {
         return SetMovement(handler, BotMovementMode::Unstuck, args);
+    }
+
+    static bool HandleCombatTargetCommand(ChatHandler* handler, char const* args)
+    {
+        CommandArgs parsed = ParseCommandArgs(args);
+        Player* owner = GetOwner(handler, parsed.ownerSelector);
+        if (!owner)
+            return RequireOwner(handler, parsed.ownerSelector);
+
+        std::string targetSelector = parsed.positional.empty() ? "nearest" : parsed.positional[0];
+        std::string botSelector = parsed.positional.size() > 1 ? parsed.positional[1] : "all";
+        uint32 changed = sBotMgr->SetCombatTarget(owner, targetSelector, botSelector);
+        if (!changed)
+        {
+            SendResult(handler, false, "combat_target", "no_hostile_target_or_matching_bot", ObjectGuid::Empty, "", "", "", 0, botSelector, targetSelector.c_str());
+            handler->SetSentErrorMessage(true);
+            return false;
+        }
+
+        SendResult(handler, true, "combat_target", nullptr, ObjectGuid::Empty, "", "", "targeted", changed, botSelector, targetSelector.c_str());
+        return true;
+    }
+
+    static bool HandleCombatClearCommand(ChatHandler* handler, char const* args)
+    {
+        CommandArgs parsed = ParseCommandArgs(args);
+        Player* owner = GetOwner(handler, parsed.ownerSelector);
+        if (!owner)
+            return RequireOwner(handler, parsed.ownerSelector);
+
+        std::string selector = parsed.positional.empty() ? "all" : parsed.positional[0];
+        uint32 changed = sBotMgr->ClearCombatTarget(owner, selector);
+        SendResult(handler, changed > 0, "combat_clear", changed ? nullptr : "no_matching_bot", ObjectGuid::Empty, "", "", "cleared", changed, selector);
+        if (!changed)
+            handler->SetSentErrorMessage(true);
+        return changed > 0;
+    }
+
+    static bool HandleLootCommand(ChatHandler* handler, char const* args)
+    {
+        return HandleCombatTargetCommand(handler, args && *args ? args : "selected");
     }
 
     static bool HandleMoveToCommand(ChatHandler* handler, char const* args)

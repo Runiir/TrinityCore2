@@ -1,0 +1,35 @@
+{
+  "experiment_id": "headless_solo_combat_smoke_001",
+  "domain": "combat",
+  "execution_mode": "headless_ra_soap",
+  "live_client_present": false,
+  "server_build": "wow_4.3.4",
+  "map_id": 0,
+  "controller": "external_script",
+  "owner_selector": null,
+  "party_template": {
+    "solo": "warrior"
+  },
+  "adapter": {
+    "type": "local"
+  },
+  "setup": {
+    "recording": true
+  },
+  "run": {
+    "target_selector": "nearest",
+    "combat_ticks": 8,
+    "timeout_sec": 60,
+    "success_conditions": [
+      "bot_kills_simple_world_mob",
+      "bot_loots_after_kill",
+      "combat_frames_recorded",
+      "metrics_generated",
+      "no_repeated_chain_pull"
+    ]
+  },
+  "cleanup": {
+    "stop_recording": true,
+    "remove_bots": true
+  }
+}

@@ -2,33 +2,33 @@ schema: '2.0'
 stages:
   capture:
     cmd: python experiments/run_experiment.py 
-      experiments/configs/headless_movement_smoke_001.json --raw-dir dataset/raw
-      --runs-dir experiments/runs --live-dir dvclive --local
+      experiments/configs/headless_solo_combat_smoke_001.json --raw-dir 
+      dataset/raw --runs-dir experiments/runs --live-dir dvclive --local
     deps:
-    - path: experiments/configs/headless_movement_smoke_001.json
+    - path: experiments/configs/headless_solo_combat_smoke_001.json
       hash: md5
-      md5: 7670e46de4ff9d86271c740cc7d13d18
-      size: 950
+      md5: fbc825cf10e9942cf1c91d2e28db0772
+      size: 744
     - path: experiments/run_experiment.py
       hash: md5
-      md5: cc0ac183ac85981221f9a3d4c17a994d
-      size: 32511
+      md5: aa28f051f6b95cc7b891973917f5905a
+      size: 42796
     outs:
     - path: dataset/raw
       hash: md5
-      md5: 4aff270f6db33c7eb8054617c2fbaa5e.dir
-      size: 28442
-      nfiles: 6
+      md5: e019a4fb8f5c47e8e37d0db91dde6f60.dir
+      size: 55114
+      nfiles: 10
     - path: dvclive
       hash: md5
-      md5: 83c49391e847473d9045a2f4a928286d.dir
-      size: 314
+      md5: 923e8ebc01c610bc2dbac8f033a7710f.dir
+      size: 315
       nfiles: 6
     - path: experiments/runs
       hash: md5
-      md5: d6e921ed3c383e023ba75332504c24d9.dir
-      size: 34387
-      nfiles: 15
+      md5: 29819654d967d5c5e79e0c396c6d8e38.dir
+      size: 76903
+      nfiles: 31
   preprocess:
     cmd: python ml/preprocessing/preprocess_frames.py --raw-dir dataset/raw 
       --output dataset/processed/frames.jsonl --manifest 
@@ -36,9 +36,9 @@ stages:
     deps:
     - path: dataset/raw
       hash: md5
-      md5: 4aff270f6db33c7eb8054617c2fbaa5e.dir
-      size: 28442
-      nfiles: 6
+      md5: e019a4fb8f5c47e8e37d0db91dde6f60.dir
+      size: 55114
+      nfiles: 10
     - path: ml/preprocessing/preprocess_frames.py
       hash: md5
       md5: d16316ea6c13f99004330f9e3abc8436
@@ -46,20 +46,20 @@ stages:
     outs:
     - path: dataset/processed/frames.jsonl
       hash: md5
-      md5: 4d3bdd459ecdc9955cac79677da144f5
-      size: 25509
+      md5: 7bb2c5dc77255c33fc452de366b9623a
+      size: 47149
     - path: dataset/processed/manifest.json
       hash: md5
-      md5: 239a0db81edd471cd36933a9fba9ccd0
-      size: 259
+      md5: 56126b755ffc6ef54a95d39c40498d2f
+      size: 352
   train:
     cmd: python ml/training/train_action_frequency.py --frames 
       dataset/processed/frames.jsonl --model models/action_frequency_model.json
     deps:
     - path: dataset/processed/frames.jsonl
       hash: md5
-      md5: 4d3bdd459ecdc9955cac79677da144f5
-      size: 25509
+      md5: 7bb2c5dc77255c33fc452de366b9623a
+      size: 47149
     - path: ml/training/train_action_frequency.py
       hash: md5
       md5: bb7c5f90b83165ba24b54d62c691e3db
@@ -67,8 +67,8 @@ stages:
     outs:
     - path: models/action_frequency_model.json
       hash: md5
-      md5: b8857bd199b0c5a400228d10b23ee52c
-      size: 258
+      md5: adce7e72a41228e8874d98ed7d60ed8b
+      size: 300
   evaluate:
     cmd: python ml/evaluation/evaluate_action_frequency.py --frames 
       dataset/processed/frames.jsonl --model models/action_frequency_model.json 
@@ -77,22 +77,22 @@ stages:
     deps:
     - path: dataset/processed/frames.jsonl
       hash: md5
-      md5: 4d3bdd459ecdc9955cac79677da144f5
-      size: 25509
+      md5: 7bb2c5dc77255c33fc452de366b9623a
+      size: 47149
     - path: ml/evaluation/evaluate_action_frequency.py
       hash: md5
       md5: 6661befc7f329972914519b3841a1343
       size: 1853
     - path: models/action_frequency_model.json
       hash: md5
-      md5: b8857bd199b0c5a400228d10b23ee52c
-      size: 258
+      md5: adce7e72a41228e8874d98ed7d60ed8b
+      size: 300
     outs:
     - path: dataset/evaluations/metrics.json
       hash: md5
-      md5: a193289a61af385817fa9a6a7baa615f
+      md5: a8a1b79d304c4a60292e2ac233d94340
       size: 75
     - path: dataset/evaluations/report.json
       hash: md5
-      md5: e2fae2ad8f42be30d1dd11f1f4ef8e0b
+      md5: 759775825d515250cdc32d8222bf311a
       size: 289

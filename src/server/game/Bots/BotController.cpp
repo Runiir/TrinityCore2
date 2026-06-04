@@ -8,6 +8,7 @@
 #include "MotionMaster.h"
 #include "ObjectAccessor.h"
 #include "Player.h"
+#include "Creature.h"
 #include "Transport.h"
 #include "Spell.h"
 #include "SpellAuras.h"
@@ -70,6 +71,16 @@ void BotController::SetMoveTarget(float x, float y, float z)
     _movementTarget.Active = true;
 }
 
+void BotController::SetCombatTarget(ObjectGuid targetGuid)
+{
+    _combatTargetGuid = targetGuid;
+}
+
+void BotController::ClearCombatTarget()
+{
+    _combatTargetGuid.Clear();
+}
+
 void BotController::SetRecording(bool recording)
 {
     _recording = recording;
@@ -100,6 +111,24 @@ void BotController::Update(uint32 diff, BotActionExecutor& executor, Player* own
     }
 
     BotRecentEvents recentEvents = sBotMgr->ConsumeRecentEvents(_botGuid);
+    BotCombatState combatState = BuildCombatState(owner, bot, recentEvents);
+    if (!_combatTargetGuid.IsEmpty() || combatState.InCombat || combatState.TargetLootable)
+    {
+        BotCombatDecision combatDecision = DecideSoloCombat(combatState);
+        ResolvedCombatAction combatAction = ResolveSoloCombat(combatDecision, combatState);
+        BotActionResult combatResult = executor.ExecuteCombat(owner, bot, combatAction);
+        if (combatDecision.Intent == BotCombatIntent::Loot && combatResult == BotActionResult::Ok)
+            ClearCombatTarget();
+
+        if (_recording || sConfigMgr->GetBoolDefault("PlayerBot.Record.Enable", false))
+        {
+            RecordCombatFrame(combatState, combatDecision, combatAction, combatResult, owner, bot);
+            RecordMovementFrame(movementFrame, ToString(_movementMode), ToString(combatDecision.Intent), combatAction.DebugName.c_str(), combatResult != BotActionResult::Disabled, owner, bot);
+        }
+
+        return;
+    }
+
     HealerFrame frame = BuildFrame(owner, bot, recentEvents);
     if (!IsHealerBotRole(_role))
     {
@@ -156,6 +185,7 @@ std::string BotController::GetStatus(Player const* owner, Player const* bot) con
        << ",\"name\":\"" << JsonEscape(bot ? bot->GetName() : "offline")
        << "\",\"role\":\"" << ToString(_role)
        << "\",\"class_spec_tag\":\"" << ToString(_role)
+       << "\",\"combat_archetype\":\"" << ToString(GetSoloCombatArchetype(_role))
        << "\",\"state\":\"" << (bot && bot->IsInWorld() ? "online" : "offline")
        << "\",\"owner_guid\":" << _ownerGuid.GetCounter()
        << ",\"owner_name\":\"" << JsonEscape(owner ? owner->GetName() : "offline")
@@ -168,6 +198,8 @@ std::string BotController::GetStatus(Player const* owner, Player const* bot) con
        << ",\"path_available\":" << (movement.PathAvailable ? "true" : "false")
        << ",\"nearby_hazard\":" << (movement.NearbyHazard ? "true" : "false")
        << ",\"safe_position_available\":" << (movement.SafePositionAvailable ? "true" : "false") << "}"
+       << ",\"combat\":{\"target_guid\":" << (_combatTargetGuid.IsEmpty() ? 0 : _combatTargetGuid.GetCounter())
+       << ",\"archetype\":\"" << ToString(GetSoloCombatArchetype(_role)) << "\"}"
        << "}";
     return ss.str();
 }
@@ -245,6 +277,154 @@ BotMovementFrame BotController::BuildMovementFrame(Player* owner, Player* bot, u
     frame.LastProgressTimeMs = _lastProgressMs;
     frame.StuckScore = _stuckScore;
     return frame;
+}
+
+BotCombatState BotController::BuildCombatState(Player* owner, Player* bot, BotRecentEvents const& recentEvents) const
+{
+    BotCombatState frame;
+    frame.ClassId = bot->getClass();
+    frame.SpecId = 0;
+    frame.Moving = bot->isMoving() || bot->HasUnitState(UNIT_STATE_MOVING);
+    frame.Casting = bot->HasUnitState(UNIT_STATE_CASTING);
+    frame.ActiveAuraCount = bot->GetAppliedAuras().size();
+    frame.InCombat = bot->IsInCombat() || owner->IsInCombat() || recentEvents.DamageTaken > 0;
+    frame.SafePositionAvailable = owner->IsAlive() && bot->GetMap() == owner->GetMap() && !bot->IsFalling() && !bot->IsInWater();
+
+    uint32 maxHealth = bot->GetMaxHealth();
+    frame.SelfHpPct = maxHealth ? float(bot->GetHealth()) / float(maxHealth) : 0.0f;
+    Powers power = bot->GetPowerType();
+    uint32 maxPower = bot->GetMaxPower(power);
+    frame.SelfPowerPct = maxPower ? float(bot->GetPower(power)) / float(maxPower) : 1.0f;
+
+    SpellInfo const* gcdProbe = sSpellMgr->GetSpellInfo(6603);
+    frame.GcdReady = !gcdProbe || !bot->GetSpellHistory()->HasGlobalCooldown(gcdProbe);
+
+    Unit* target = nullptr;
+    if (!_combatTargetGuid.IsEmpty())
+        target = ObjectAccessor::GetUnit(*bot, _combatTargetGuid);
+    if (!target && bot->GetVictim())
+        target = bot->GetVictim();
+
+    if (target)
+    {
+        frame.TargetGuid = target->GetGUID();
+        if (Creature* creature = target->ToCreature())
+        {
+            frame.TargetEntry = creature->GetEntry();
+            frame.TargetLootable = creature->isDead() && creature->hasLootRecipient();
+        }
+
+        frame.TargetDead = !target->IsAlive();
+        uint32 targetMaxHealth = target->GetMaxHealth();
+        frame.TargetHpPct = targetMaxHealth ? float(target->GetHealth()) / float(targetMaxHealth) : 0.0f;
+        frame.TargetDistance = bot->GetExactDist(target);
+        if (Spell* spell = target->GetCurrentSpell(CURRENT_GENERIC_SPELL))
+        {
+            frame.TargetCastingSpellId = spell->GetSpellInfo()->Id;
+            frame.TargetInterruptible = true;
+        }
+    }
+
+    if (Unit* nearby = bot->SelectNearbyTarget(target, 8.0f))
+    {
+        ++frame.NearbyHostileCount;
+        if (Creature* creature = nearby->ToCreature())
+            if (creature->isElite())
+                frame.EliteNearby = true;
+    }
+    if (Unit* nearby = bot->SelectNearbyTarget(target, 16.0f))
+    {
+        ++frame.NearbyHostileCount;
+        if (Creature* creature = nearby->ToCreature())
+            if (creature->isElite())
+                frame.EliteNearby = true;
+    }
+    if (Unit* nearby = bot->SelectNearbyTarget(target, 24.0f))
+    {
+        ++frame.NearbyHostileCount;
+        if (Creature* creature = nearby->ToCreature())
+            if (creature->isElite())
+                frame.EliteNearby = true;
+    }
+    frame.ExtraPullRisk = std::min(1.0f, frame.NearbyHostileCount / 3.0f);
+    return frame;
+}
+
+BotCombatDecision BotController::DecideSoloCombat(BotCombatState const& state) const
+{
+    BotCombatDecision decision;
+    decision.TargetGuid = state.TargetGuid;
+    if (state.TargetGuid.IsEmpty())
+        decision.Intent = BotCombatIntent::Wait;
+    else if (state.TargetLootable)
+        decision.Intent = BotCombatIntent::Loot;
+    else if (state.TargetDead)
+        decision.Intent = BotCombatIntent::Recover;
+    else if (state.SelfHpPct < 0.35f && GetSoloCombatArchetype(_role) == BotCombatArchetype::HealerSolo)
+        decision.Intent = BotCombatIntent::HealSelf;
+    else if (state.SelfHpPct < 0.30f)
+        decision.Intent = BotCombatIntent::UseDefensive;
+    else if (state.TargetCastingSpellId && state.TargetInterruptible)
+        decision.Intent = BotCombatIntent::Interrupt;
+    else if (state.TargetDistance > 5.0f && GetSoloCombatArchetype(_role) != BotCombatArchetype::RangedCaster && GetSoloCombatArchetype(_role) != BotCombatArchetype::RangedPhysical)
+        decision.Intent = BotCombatIntent::MoveToRange;
+    else if (!state.InCombat)
+        decision.Intent = BotCombatIntent::PullTarget;
+    else
+        decision.Intent = BotCombatIntent::MaintainRotation;
+    return decision;
+}
+
+ResolvedCombatAction BotController::ResolveSoloCombat(BotCombatDecision const& decision, BotCombatState const& state) const
+{
+    ResolvedCombatAction action;
+    action.TargetGuid = decision.TargetGuid;
+    action.DebugName = ToString(decision.Intent);
+    switch (decision.Intent)
+    {
+        case BotCombatIntent::Loot:
+            action.Type = "loot";
+            break;
+        case BotCombatIntent::MoveToRange:
+        case BotCombatIntent::PullTarget:
+            action.Type = "pull";
+            break;
+        case BotCombatIntent::HealSelf:
+            action.Type = "cast";
+            action.TargetGuid = _botGuid;
+            action.SpellId = _role == BotRole::HolyPaladinHealer ? 635 : 0;
+            break;
+        case BotCombatIntent::UseDefensive:
+            action.Type = "cast";
+            action.SpellId = _role == BotRole::Warrior ? 871 : 0;
+            break;
+        case BotCombatIntent::Interrupt:
+            action.Type = "cast";
+            action.SpellId = _role == BotRole::Warrior ? 6552 : 0;
+            break;
+        case BotCombatIntent::MaintainRotation:
+            action.Type = "cast";
+            if (GetSoloCombatArchetype(_role) == BotCombatArchetype::RangedCaster)
+                action.SpellId = _role == BotRole::Mage ? 133 : 585;
+            else if (_role == BotRole::Hunter)
+                action.SpellId = 75;
+            else if (_role == BotRole::HolyPaladinHealer)
+                action.SpellId = 20271;
+            else
+                action.SpellId = 6603;
+            break;
+        case BotCombatIntent::Recover:
+        case BotCombatIntent::Wait:
+        default:
+            action.Type = "wait";
+            break;
+    }
+
+    if (!action.SpellId && action.Type == "cast")
+        action.Valid = false;
+    if (state.TargetGuid.IsEmpty() && action.TargetGuid != _botGuid)
+        action.Valid = false;
+    return action;
 }
 
 void BotController::ApplyMovementPolicy(BotActionExecutor& executor, Player* owner, Player* bot, BotMovementFrame const& movementFrame)
@@ -411,6 +591,66 @@ void BotController::RecordFrame(HealerFrame const& frame, HealerDecision const& 
     }
 
     out << "]}\n";
+}
+
+void BotController::RecordCombatFrame(BotCombatState const& frame, BotCombatDecision const& decision, ResolvedCombatAction const& action, BotActionResult result, Player* owner, Player* bot) const
+{
+    std::string path = sConfigMgr->GetStringDefault("PlayerBot.Record.Path", "dataset/raw/healer_frames_playerbot.jsonl");
+    boost::filesystem::path outputPath(path);
+    if (outputPath.has_parent_path())
+        boost::filesystem::create_directories(outputPath.parent_path());
+
+    std::ofstream out(path.c_str(), std::ios::app);
+    if (!out)
+        return;
+
+    std::string experimentId = sConfigMgr->GetStringDefault("PlayerBot.ExperimentId", "");
+    out << "{\"domain\":\"combat\""
+        << ",\"subdomain\":\"solo_combat\""
+        << ",\"trigger\":\"gcd_ready\""
+        << ",\"seq\":" << ++_sequence
+        << ",\"time\":" << GameTime::GetGameTime()
+        << ",\"experiment_id\":\"" << JsonEscape(experimentId)
+        << "\",\"actor\":{\"guid\":" << (bot ? bot->GetGUID().GetCounter() : 0)
+        << ",\"class_id\":" << uint32(frame.ClassId)
+        << ",\"spec_id\":" << frame.SpecId
+        << ",\"role\":\"solo\""
+        << ",\"class_spec_tag\":\"" << ToString(_role)
+        << "\",\"archetype\":\"" << ToString(GetSoloCombatArchetype(_role)) << "\"}"
+        << ",\"state\":{\"self\":{\"hp_pct\":" << frame.SelfHpPct
+        << ",\"primary_power_pct\":" << frame.SelfPowerPct
+        << ",\"class_id\":" << uint32(frame.ClassId)
+        << ",\"spec_id\":" << frame.SpecId
+        << ",\"moving\":" << (frame.Moving ? "true" : "false")
+        << ",\"casting\":" << (frame.Casting ? "true" : "false")
+        << ",\"gcd_ready\":" << (frame.GcdReady ? "true" : "false")
+        << ",\"active_aura_count\":" << frame.ActiveAuraCount << "}"
+        << ",\"target\":{\"guid\":" << frame.TargetGuid.GetCounter()
+        << ",\"entry_id\":" << frame.TargetEntry
+        << ",\"hp_pct\":" << frame.TargetHpPct
+        << ",\"distance\":" << frame.TargetDistance
+        << ",\"casting_spell_id\":" << frame.TargetCastingSpellId
+        << ",\"cast_remaining\":" << frame.TargetCastRemaining
+        << ",\"interruptible\":" << (frame.TargetInterruptible ? "true" : "false")
+        << ",\"dead\":" << (frame.TargetDead ? "true" : "false")
+        << ",\"lootable\":" << (frame.TargetLootable ? "true" : "false") << "}"
+        << ",\"environment\":{\"nearby_hostile_count\":" << frame.NearbyHostileCount
+        << ",\"elite_nearby\":" << (frame.EliteNearby ? "true" : "false")
+        << ",\"extra_pull_risk\":" << frame.ExtraPullRisk
+        << ",\"safe_position_available\":" << (frame.SafePositionAvailable ? "true" : "false") << "}}"
+        << ",\"valid_actions\":{\"intents\":[\"pull_target\",\"maintain_rotation\",\"interrupt\",\"use_defensive\",\"heal_self\",\"move_to_range\",\"loot\",\"recover\",\"wait\"]}"
+        << ",\"policy_output\":{\"mode\":\"" << JsonEscape(decision.Mode)
+        << "\",\"intent\":\"" << ToString(decision.Intent) << "\"}"
+        << ",\"resolved_action\":{\"type\":\"" << JsonEscape(action.Type)
+        << "\",\"spell_id\":" << action.SpellId
+        << ",\"target_guid\":" << action.TargetGuid.GetCounter()
+        << ",\"valid\":" << (action.Valid ? "true" : "false")
+        << ",\"result\":\"" << ToString(result) << "\"}"
+        << ",\"outcome\":{\"target_hp_delta_3s\":0"
+        << ",\"self_hp_delta_3s\":0"
+        << ",\"target_dead_10s\":" << (frame.TargetDead ? "true" : "false")
+        << ",\"loot_success\":" << (decision.Intent == BotCombatIntent::Loot && result == BotActionResult::Ok ? "true" : "false") << "}"
+        << "}\n";
 }
 
 void BotController::RecordMovementFrame(BotMovementFrame const& frame, char const* policyMode, char const* intent, char const* action, bool valid, Player* owner, Player* bot) const

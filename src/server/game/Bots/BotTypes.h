@@ -9,6 +9,35 @@
 
 class Unit;
 
+enum class BotCombatArchetype : uint8
+{
+    MeleeDps,
+    RangedCaster,
+    RangedPhysical,
+    PetClass,
+    TankLikeMelee,
+    HealerSolo
+};
+
+enum class BotCombatIntent : uint8
+{
+    PullTarget,
+    MaintainRotation,
+    UseBuilder,
+    UseSpender,
+    UseDot,
+    UseProc,
+    Interrupt,
+    Stun,
+    UseDefensive,
+    HealSelf,
+    MoveToRange,
+    Kite,
+    Wait,
+    Loot,
+    Recover
+};
+
 enum class BotRole : uint8
 {
     HolyPaladinHealer,
@@ -71,6 +100,48 @@ struct BotMovementFrame
     uint32 LastProgressTimeMs = 0;
     bool NearbyHazard = false;
     bool SafePositionAvailable = false;
+};
+
+struct BotCombatState
+{
+    ObjectGuid TargetGuid;
+    uint32 TargetEntry = 0;
+    float SelfHpPct = 1.0f;
+    float SelfPowerPct = 1.0f;
+    uint8 ClassId = 0;
+    uint32 SpecId = 0;
+    bool Moving = false;
+    bool Casting = false;
+    bool GcdReady = true;
+    uint32 ActiveAuraCount = 0;
+    float TargetHpPct = 0.0f;
+    float TargetDistance = 0.0f;
+    uint32 TargetCastingSpellId = 0;
+    float TargetCastRemaining = 0.0f;
+    bool TargetInterruptible = false;
+    uint32 NearbyHostileCount = 0;
+    bool EliteNearby = false;
+    float ExtraPullRisk = 0.0f;
+    bool SafePositionAvailable = false;
+    bool TargetDead = false;
+    bool TargetLootable = false;
+    bool InCombat = false;
+};
+
+struct BotCombatDecision
+{
+    std::string Mode = "single_target";
+    BotCombatIntent Intent = BotCombatIntent::Wait;
+    ObjectGuid TargetGuid;
+};
+
+struct ResolvedCombatAction
+{
+    std::string Type = "wait";
+    uint32 SpellId = 0;
+    ObjectGuid TargetGuid;
+    bool Valid = true;
+    std::string DebugName;
 };
 
 enum class HealerMode : uint8
@@ -188,6 +259,8 @@ enum class BotActionResult : uint8
 };
 
 char const* ToString(BotMovementMode mode);
+char const* ToString(BotCombatArchetype archetype);
+char const* ToString(BotCombatIntent intent);
 char const* ToString(BotRole role);
 char const* ToString(HealerMode mode);
 char const* ToString(HealerIntent intent);
@@ -198,5 +271,6 @@ BotRoleCategory GetBotRoleCategory(BotRole role);
 bool IsKnownBotRole(std::string const& role);
 bool IsMixedBotRoleSelector(std::string const& role);
 bool IsHealerBotRole(BotRole role);
+BotCombatArchetype GetSoloCombatArchetype(BotRole role);
 
 #endif

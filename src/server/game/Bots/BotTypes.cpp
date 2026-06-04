@@ -27,6 +27,43 @@ char const* ToString(BotMovementMode mode)
     }
 }
 
+char const* ToString(BotCombatArchetype archetype)
+{
+    switch (archetype)
+    {
+        case BotCombatArchetype::MeleeDps: return "melee_dps";
+        case BotCombatArchetype::RangedCaster: return "ranged_caster";
+        case BotCombatArchetype::RangedPhysical: return "ranged_physical";
+        case BotCombatArchetype::PetClass: return "pet_class";
+        case BotCombatArchetype::TankLikeMelee: return "tank_like_melee";
+        case BotCombatArchetype::HealerSolo: return "healer_solo";
+        default: return "unknown";
+    }
+}
+
+char const* ToString(BotCombatIntent intent)
+{
+    switch (intent)
+    {
+        case BotCombatIntent::PullTarget: return "pull_target";
+        case BotCombatIntent::MaintainRotation: return "maintain_rotation";
+        case BotCombatIntent::UseBuilder: return "use_builder";
+        case BotCombatIntent::UseSpender: return "use_spender";
+        case BotCombatIntent::UseDot: return "use_dot";
+        case BotCombatIntent::UseProc: return "use_proc";
+        case BotCombatIntent::Interrupt: return "interrupt";
+        case BotCombatIntent::Stun: return "stun";
+        case BotCombatIntent::UseDefensive: return "use_defensive";
+        case BotCombatIntent::HealSelf: return "heal_self";
+        case BotCombatIntent::MoveToRange: return "move_to_range";
+        case BotCombatIntent::Kite: return "kite";
+        case BotCombatIntent::Wait: return "wait";
+        case BotCombatIntent::Loot: return "loot";
+        case BotCombatIntent::Recover: return "recover";
+        default: return "unknown";
+    }
+}
+
 char const* ToString(BotRole role)
 {
     switch (role)
@@ -153,6 +190,29 @@ bool IsMixedBotRoleSelector(std::string const& role)
 bool IsHealerBotRole(BotRole role)
 {
     return role == BotRole::HolyPaladinHealer;
+}
+
+BotCombatArchetype GetSoloCombatArchetype(BotRole role)
+{
+    switch (role)
+    {
+        case BotRole::Hunter: return BotCombatArchetype::RangedPhysical;
+        case BotRole::Mage:
+        case BotRole::Priest:
+        case BotRole::Shaman:
+            return BotCombatArchetype::RangedCaster;
+        case BotRole::Warlock: return BotCombatArchetype::PetClass;
+        case BotRole::Warrior:
+        case BotRole::DeathKnight:
+            return BotCombatArchetype::TankLikeMelee;
+        case BotRole::HolyPaladinHealer:
+        case BotRole::Druid:
+            return BotCombatArchetype::HealerSolo;
+        case BotRole::Rogue:
+        case BotRole::Generic:
+        default:
+            return BotCombatArchetype::MeleeDps;
+    }
 }
 
 char const* ToString(BotActionResult result)

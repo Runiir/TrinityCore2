@@ -12,6 +12,9 @@ class BotActionExecutor
 {
 public:
     BotActionResult Execute(Player* owner, Player* bot, ResolvedBotAction const& action);
+    BotActionResult ExecuteCombat(Player* owner, Player* bot, ResolvedCombatAction const& action);
+    BotActionResult Pull(Player* bot, Unit* target);
+    BotActionResult Loot(Player* bot, Unit* target);
     void MoveFollow(Player* owner, Player* bot);
     void MoveStay(Player* bot);
     void MoveStop(Player* bot);
@@ -22,6 +25,7 @@ public:
 
 private:
     BotActionResult CheckSpell(Player* owner, Player* bot, Unit* target, uint32 spellId) const;
+    BotActionResult CheckHostileSpell(Player* owner, Player* bot, Unit* target, uint32 spellId) const;
     bool IsThrottled(ObjectGuid botGuid, uint32 spellId, ObjectGuid targetGuid);
     void RecordFailure(ObjectGuid botGuid, uint32 spellId, ObjectGuid targetGuid);
     void RecordSuccess(ObjectGuid botGuid);

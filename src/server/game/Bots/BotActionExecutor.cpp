@@ -48,6 +48,78 @@ BotActionResult BotActionExecutor::Execute(Player* owner, Player* bot, ResolvedB
     return BotActionResult::Ok;
 }
 
+BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, ResolvedCombatAction const& action)
+{
+    if (!owner)
+        return BotActionResult::NoOwner;
+    if (!bot || !bot->IsAlive())
+        return BotActionResult::NoBot;
+
+    Unit* target = action.TargetGuid.IsEmpty() ? nullptr : ObjectAccessor::GetUnit(*bot, action.TargetGuid);
+    if (action.Type == "pull" || action.Type == "move_to_range")
+        return Pull(bot, target);
+    if (action.Type == "loot")
+        return Loot(bot, target);
+    if (!action.SpellId)
+        return BotActionResult::NoAction;
+
+    BotActionResult check = CheckHostileSpell(owner, bot, target, action.SpellId);
+    if (check != BotActionResult::Ok)
+    {
+        RecordFailure(bot->GetGUID(), action.SpellId, action.TargetGuid);
+        return check;
+    }
+
+    if (IsThrottled(bot->GetGUID(), action.SpellId, action.TargetGuid))
+        return BotActionResult::Throttled;
+
+    SpellCastResult result = bot->CastSpell(target, action.SpellId, false);
+    if (result != SPELL_CAST_OK)
+    {
+        RecordFailure(bot->GetGUID(), action.SpellId, action.TargetGuid);
+        return BotActionResult::CastFailed;
+    }
+
+    bot->Attack(target, true);
+    RecordSuccess(bot->GetGUID());
+    return BotActionResult::Ok;
+}
+
+BotActionResult BotActionExecutor::Pull(Player* bot, Unit* target)
+{
+    if (!bot || !bot->IsAlive())
+        return BotActionResult::NoBot;
+    if (!target)
+        return BotActionResult::InvalidTarget;
+    if (!target->IsAlive())
+        return BotActionResult::DeadTarget;
+    if (!bot->IsValidAttackTarget(target))
+        return BotActionResult::InvalidTarget;
+    if (!bot->IsWithinLOSInMap(target))
+        return BotActionResult::NoLineOfSight;
+
+    Face(bot, target);
+    bot->Attack(target, true);
+    bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+    bot->GetMotionMaster()->MoveChase(target);
+    return BotActionResult::Ok;
+}
+
+BotActionResult BotActionExecutor::Loot(Player* bot, Unit* target)
+{
+    if (!bot || !bot->IsAlive())
+        return BotActionResult::NoBot;
+    if (!target)
+        return BotActionResult::InvalidTarget;
+    if (target->IsAlive())
+        return BotActionResult::InvalidTarget;
+    if (!bot->IsWithinDistInMap(target, INTERACTION_DISTANCE))
+        return BotActionResult::OutOfRange;
+
+    bot->SendLoot(target->GetGUID(), LOOT_CORPSE);
+    return BotActionResult::Ok;
+}
+
 void BotActionExecutor::MoveFollow(Player* owner, Player* bot)
 {
     if (!owner || !bot || !bot->IsAlive())
@@ -150,6 +222,35 @@ BotActionResult BotActionExecutor::CheckSpell(Player* owner, Player* bot, Unit* 
     if (owner && bot->GetMap() != owner->GetMap())
         return BotActionResult::NoOwner;
 
+    return BotActionResult::Ok;
+}
+
+BotActionResult BotActionExecutor::CheckHostileSpell(Player* owner, Player* bot, Unit* target, uint32 spellId) const
+{
+    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+    if (!spellInfo)
+        return BotActionResult::BadSpell;
+    if (!target)
+        return BotActionResult::InvalidTarget;
+    if (!target->IsAlive())
+        return BotActionResult::DeadTarget;
+    if (!bot->IsValidAttackTarget(target, spellInfo))
+        return BotActionResult::InvalidTarget;
+    if (!bot->IsWithinLOSInMap(target))
+        return BotActionResult::NoLineOfSight;
+    if (!bot->IsWithinDistInMap(target, std::max(5.0f, spellInfo->GetMaxRange(false))))
+        return BotActionResult::OutOfRange;
+    if (bot->HasUnitState(UNIT_STATE_CASTING))
+        return BotActionResult::Casting;
+    if (bot->GetSpellHistory()->HasGlobalCooldown(spellInfo))
+        return BotActionResult::GlobalCooldown;
+    if (!bot->GetSpellHistory()->IsReady(spellInfo))
+        return BotActionResult::Cooldown;
+    int32 powerCost = spellInfo->CalcPowerCost(bot, spellInfo->GetSchoolMask());
+    if (powerCost > 0 && bot->GetPower(POWER_MANA) < uint32(powerCost))
+        return BotActionResult::NoMana;
+    if (owner && bot->GetMap() != owner->GetMap())
+        return BotActionResult::NoOwner;
     return BotActionResult::Ok;
 }
 

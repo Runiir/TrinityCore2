@@ -31,6 +31,8 @@ public:
     bool Remove(Player* owner, ObjectGuid botGuid);
     uint32 SetMovement(Player* owner, BotMovementMode mode, std::string const& selector = "all");
     uint32 SetMoveTarget(Player* owner, float x, float y, float z, std::string const& selector = "all");
+    uint32 SetCombatTarget(Player* owner, std::string const& targetSelector, std::string const& botSelector = "all");
+    uint32 ClearCombatTarget(Player* owner, std::string const& selector = "all");
     bool SetRecording(Player* owner, bool enabled);
     std::string GetStatus(Player* owner) const;
     char const* GetBotRoleName(ObjectGuid botGuid) const;
@@ -49,6 +51,7 @@ private:
     Player* FindLoadedPlayer(ObjectGuid guid) const;
     std::vector<ObjectGuid> GetOwnedBots(ObjectGuid ownerGuid) const;
     std::vector<ObjectGuid> ResolveTargets(Player* owner, std::string const& selector) const;
+    Unit* ResolveHostileTarget(Player* owner, std::string const& targetSelector) const;
     bool IsOwnedBot(ObjectGuid botGuid) const;
     ObjectGuid GetOwnerGuid(ObjectGuid botGuid) const;
     bool IsTrackedPartyMember(ObjectGuid botGuid, ObjectGuid unitGuid) const;

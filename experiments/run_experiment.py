@@ -36,6 +36,10 @@ EXECUTION_MODES = {
 
 CLASS_SPEC_HINTS = {
     "holy_paladin": {"class_id": 2, "spec_id": 65, "role": "healer"},
+    "warrior": {"class_id": 1, "spec_id": 71, "role": "solo"},
+    "hunter": {"class_id": 3, "spec_id": 253, "role": "solo"},
+    "rogue": {"class_id": 4, "spec_id": 259, "role": "solo"},
+    "mage": {"class_id": 8, "spec_id": 63, "role": "solo"},
 }
 
 
@@ -150,6 +154,12 @@ class LocalCommandAdapter(CommandAdapter):
         self.leader_position = [0.0, 0.0, 0.0]
         self.marker_position = [6.0, 0.0, 0.0]
         self.stuck_ticks = 0
+        self.combat_target_guid = 70001
+        self.combat_target_entry = 41234
+        self.combat_target_hp = 1.0
+        self.combat_started = False
+        self.combat_looted = False
+        self.bot_hp = 1.0
 
     def execute(self, command: str) -> CommandResult:
         output: dict[str, Any]
@@ -201,8 +211,17 @@ class LocalCommandAdapter(CommandAdapter):
             self.mode = "unstuck"
             self.stuck_ticks = 0
             output = {"ok": self.spawned, "action": "movement", "state": "", "count": 1 if self.spawned else 0, "mode": "unstuck", "failure_reason": None if self.spawned else "no_active_bot"}
+        elif command.startswith("playerbot combat_target"):
+            self.combat_started = True
+            output = {"ok": self.spawned, "action": "combat_target", "state": "targeted", "count": 1 if self.spawned else 0, "mode": "nearest", "target_guid": self.combat_target_guid, "failure_reason": None if self.spawned else "no_active_bot"}
+        elif command.startswith("playerbot combat_clear"):
+            self.combat_started = False
+            output = {"ok": self.spawned, "action": "combat_clear", "state": "cleared", "count": 1 if self.spawned else 0, "failure_reason": None if self.spawned else "no_active_bot"}
+        elif command.startswith("playerbot loot"):
+            self.combat_looted = self.combat_target_hp <= 0.0
+            output = {"ok": self.spawned and self.combat_looted, "action": "loot", "state": "looted" if self.combat_looted else "not_lootable", "count": 1 if self.combat_looted else 0, "mode": "selected", "failure_reason": None if self.combat_looted else "target_not_lootable"}
         elif command.startswith("playerbot status"):
-            output = {"ok": True, "action": "status", "count": 1 if self.spawned else 0, "bots": [{"guid": self.bot_guid, "role": "holy_paladin", "movement": self.movement_state()}] if self.spawned else []}
+            output = {"ok": True, "action": "status", "count": 1 if self.spawned else 0, "bots": [{"guid": self.bot_guid, "role": "holy_paladin", "movement": self.movement_state(), "combat": self.combat_state()}] if self.spawned else []}
         elif command.startswith("playerbot remove"):
             removed = 1 if self.spawned else 0
             self.spawned = False
@@ -210,6 +229,24 @@ class LocalCommandAdapter(CommandAdapter):
         else:
             output = {"ok": True, "action": "noop", "command": command, "failure_reason": None}
         return CommandResult(bool(output.get("ok")), command, json.dumps(output), output)
+
+    def combat_state(self) -> dict[str, Any]:
+        return {
+            "target_guid": self.combat_target_guid if self.combat_started else 0,
+            "target_entry": self.combat_target_entry,
+            "target_hp": max(0.0, self.combat_target_hp),
+            "target_distance": 4.0,
+            "bot_hp": self.bot_hp,
+            "nearby_hostile_count": 1,
+            "extra_pull_risk": 0.0,
+            "looted": self.combat_looted,
+        }
+
+    def advance_combat(self) -> dict[str, Any]:
+        if self.combat_started and self.combat_target_hp > 0.0:
+            self.combat_target_hp = max(0.0, self.combat_target_hp - 0.22)
+            self.bot_hp = max(0.55, self.bot_hp - 0.035)
+        return self.combat_state()
 
     def movement_state(self) -> dict[str, Any]:
         distance = distance_3d(self.bot_position, self.leader_position)
@@ -414,6 +451,22 @@ def movement_frame_state(adapter: CommandAdapter, status: CommandResult) -> dict
     return movement_state_from_status(status.parsed)
 
 
+def combat_state_from_status(parsed: dict[str, Any] | list[Any] | None) -> dict[str, Any]:
+    if not isinstance(parsed, dict):
+        return {}
+    bots = parsed.get("bots")
+    if not isinstance(bots, list) or not bots:
+        return {}
+    combat = bots[0].get("combat") if isinstance(bots[0], dict) else None
+    return combat if isinstance(combat, dict) else {}
+
+
+def combat_frame_state(adapter: CommandAdapter, status: CommandResult) -> dict[str, Any]:
+    if isinstance(adapter, LocalCommandAdapter):
+        return adapter.advance_combat()
+    return combat_state_from_status(status.parsed)
+
+
 def movement_metrics(frames_path: Path) -> dict[str, Any]:
     movement_frames = 0
     stuck_frames = 0
@@ -463,6 +516,66 @@ def movement_metrics(frames_path: Path) -> dict[str, Any]:
         "return_to_group_success": return_success,
         "movement_command_invalid_rate": invalid_commands / movement_frames if movement_frames else 1.0,
         "unstuck_recovery_time_frames": 0 if max_stuck_score < 1.0 else stuck_frames,
+    }
+
+
+def solo_combat_metrics(frames_path: Path) -> dict[str, Any]:
+    combat_frames = 0
+    deaths = 0
+    invalid_actions = 0
+    loot_success = False
+    kill_success = False
+    extra_pull_count = 0
+    interrupt_success = 0
+    damage_taken = 0.0
+    first_t: float | None = None
+    kill_t: float | None = None
+
+    with frames_path.open("r", encoding="utf-8") as handle:
+        previous_self_hp = 1.0
+        for line in handle:
+            if not line.strip():
+                continue
+            frame = json.loads(line)
+            if frame.get("domain") != "combat" or frame.get("subdomain") != "solo_combat":
+                continue
+            combat_frames += 1
+            t = float(frame.get("t", combat_frames))
+            if first_t is None:
+                first_t = t
+            state = frame.get("state", {})
+            self_state = state.get("self", {})
+            env_state = state.get("environment", {})
+            outcome = frame.get("outcome", {})
+            resolved = frame.get("resolved_action", {})
+            policy = frame.get("policy_output", {})
+            self_hp = float(self_state.get("hp_pct", previous_self_hp) or 0.0)
+            if self_hp <= 0:
+                deaths += 1
+            damage_taken += max(0.0, previous_self_hp - self_hp)
+            previous_self_hp = self_hp
+            extra_pull_count += max(0, int(env_state.get("nearby_hostile_count", 0) or 0) - 1)
+            if not bool(resolved.get("valid", True)):
+                invalid_actions += 1
+            if policy.get("intent") == "interrupt" and resolved.get("result") == "ok":
+                interrupt_success += 1
+            if outcome.get("target_dead_10s"):
+                kill_success = True
+                kill_t = kill_t or t
+            if outcome.get("loot_success"):
+                loot_success = True
+
+    return {
+        "combat_frame_count": combat_frames,
+        "kill_success_rate": 1.0 if kill_success else 0.0,
+        "death_rate": 1.0 if deaths else 0.0,
+        "time_to_kill_sec": round((kill_t or 0.0) - (first_t or 0.0), 3) if kill_success else 0.0,
+        "damage_taken_per_kill": round(damage_taken, 6) if kill_success else 0.0,
+        "extra_pull_count": extra_pull_count,
+        "interrupt_success": interrupt_success,
+        "invalid_action_rate": invalid_actions / combat_frames if combat_frames else 1.0,
+        "loot_success": loot_success,
+        "recovery_time_after_combat_sec": 0.0 if loot_success else None,
     }
 
 
@@ -632,6 +745,89 @@ def run_experiment(config: dict[str, Any], adapter: CommandAdapter, runs_dir: Pa
                         outcome={"distance_to_leader_after_2s": distance, "stuck": movement_state.get("stuck_score", 0.0) >= 1.0},
                     )
 
+        if config.get("domain") == "combat" or config.get("run", {}).get("combat_ticks"):
+            target_selector = str(config.get("run", {}).get("target_selector", "nearest"))
+            target_result = execute(playerbot_command(config, "combat_target", target_selector))
+            if not target_result.ok:
+                raise ExperimentError("combat_target_failed")
+
+            max_ticks = int(config.get("run", {}).get("combat_ticks", 8))
+            previous_target_hp = 1.0
+            previous_self_hp = 1.0
+            target_dead = False
+            for _ in range(max_ticks):
+                status = execute(playerbot_command(config, "status"))
+                combat_state = combat_frame_state(adapter, status)
+                target_hp = float(combat_state.get("target_hp", previous_target_hp) or 0.0)
+                self_hp = float(combat_state.get("bot_hp", previous_self_hp) or 0.0)
+                target_dead = target_hp <= 0.0
+                intent = "loot" if target_dead else ("pull_target" if previous_target_hp >= 1.0 else "maintain_rotation")
+                action_type = "loot" if target_dead else "cast"
+                loot_success = False
+                if target_dead:
+                    loot_result = execute(playerbot_command(config, "loot", "selected"))
+                    loot_success = loot_result.ok
+                frame_writer.write(
+                    domain="combat",
+                    subdomain="solo_combat",
+                    trigger="gcd_ready",
+                    actor={
+                        "guid": metadata["bots"][0].get("guid") if metadata["bots"] else None,
+                        "class_id": metadata["bots"][0].get("class_id") if metadata["bots"] else None,
+                        "spec_id": metadata["bots"][0].get("spec_id") if metadata["bots"] else None,
+                        "role": "solo",
+                    },
+                    state={
+                        "self": {
+                            "hp_pct": self_hp,
+                            "primary_power_pct": 0.75,
+                            "class_id": metadata["bots"][0].get("class_id") if metadata["bots"] else None,
+                            "spec_id": metadata["bots"][0].get("spec_id") if metadata["bots"] else None,
+                            "moving": False,
+                            "casting": False,
+                            "gcd_remaining": 0.0,
+                            "active_aura_ids": [],
+                        },
+                        "target": {
+                            "guid": combat_state.get("target_guid"),
+                            "entry_id": combat_state.get("target_entry"),
+                            "hp_pct": target_hp,
+                            "distance": combat_state.get("target_distance", 4.0),
+                            "casting_spell_id": None,
+                            "cast_remaining": 0.0,
+                            "interruptible": False,
+                        },
+                        "environment": {
+                            "nearby_hostile_count": combat_state.get("nearby_hostile_count", 1),
+                            "elite_nearby": False,
+                            "extra_pull_risk": combat_state.get("extra_pull_risk", 0.0),
+                            "safe_position_available": True,
+                        },
+                    },
+                    valid_actions={"intents": ["pull_target", "maintain_rotation", "interrupt", "use_defensive", "heal_self", "move_to_range", "loot", "recover", "wait"]},
+                    policy_output={"mode": "single_target", "intent": intent},
+                    resolved_action={
+                        "type": action_type,
+                        "spell_id": 6603 if action_type == "cast" else 0,
+                        "target_guid": combat_state.get("target_guid"),
+                        "valid": True,
+                        "result": "ok",
+                    },
+                    outcome={
+                        "target_hp_delta_3s": round(target_hp - previous_target_hp, 6),
+                        "self_hp_delta_3s": round(self_hp - previous_self_hp, 6),
+                        "target_dead_10s": target_dead,
+                        "loot_success": loot_success,
+                    },
+                )
+                previous_target_hp = target_hp
+                previous_self_hp = self_hp
+                if target_dead and loot_success:
+                    break
+
+            if not target_dead:
+                raise ExperimentError("combat_target_not_killed")
+
         timeout_sec = float(config.get("run", {}).get("timeout_sec", 60))
         if time.monotonic() - start > timeout_sec:
             raise ExperimentError("timeout")
@@ -675,6 +871,11 @@ def run_experiment(config: dict[str, Any], adapter: CommandAdapter, runs_dir: Pa
                 write_json(episode_dir / "movement_metrics.json", metrics)
                 summary["movement_metrics"] = metrics
                 produced_paths["movement_metrics"] = display_path(episode_dir / "movement_metrics.json")
+            combat_metrics = solo_combat_metrics(frames_path)
+            if combat_metrics["combat_frame_count"]:
+                write_json(episode_dir / "solo_combat_metrics.json", combat_metrics)
+                summary["solo_combat_metrics"] = combat_metrics
+                produced_paths["solo_combat_metrics"] = display_path(episode_dir / "solo_combat_metrics.json")
         write_json(episode_dir / "summary.json", summary)
         if live:
             command_count = 0

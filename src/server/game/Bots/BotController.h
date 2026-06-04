@@ -23,6 +23,8 @@ public:
 
     void SetMovementMode(BotMovementMode mode);
     void SetMoveTarget(float x, float y, float z);
+    void SetCombatTarget(ObjectGuid targetGuid);
+    void ClearCombatTarget();
     void SetRecording(bool recording);
     void Update(uint32 diff, BotActionExecutor& executor, Player* owner, Player* bot);
     std::string GetStatus(Player const* owner, Player const* bot) const;
@@ -30,15 +32,20 @@ public:
 private:
     HealerFrame BuildFrame(Player* owner, Player* bot, BotRecentEvents const& recentEvents) const;
     BotMovementFrame BuildMovementFrame(Player* owner, Player* bot, uint32 diff) const;
+    BotCombatState BuildCombatState(Player* owner, Player* bot, BotRecentEvents const& recentEvents) const;
+    BotCombatDecision DecideSoloCombat(BotCombatState const& state) const;
+    ResolvedCombatAction ResolveSoloCombat(BotCombatDecision const& decision, BotCombatState const& state) const;
     void ApplyMovementPolicy(BotActionExecutor& executor, Player* owner, Player* bot, BotMovementFrame const& movementFrame);
     void RecordFrame(HealerFrame const& frame, HealerDecision const& decision, ResolvedBotAction const* action, BotActionResult result, Player* owner, Player* bot) const;
     void RecordMovementFrame(BotMovementFrame const& frame, char const* policyMode, char const* intent, char const* action, bool valid, Player* owner, Player* bot) const;
+    void RecordCombatFrame(BotCombatState const& frame, BotCombatDecision const& decision, ResolvedCombatAction const& action, BotActionResult result, Player* owner, Player* bot) const;
 
     ObjectGuid _ownerGuid;
     ObjectGuid _botGuid;
     BotRole _role;
     BotMovementMode _movementMode = BotMovementMode::Follow;
     BotMovementTarget _movementTarget;
+    ObjectGuid _combatTargetGuid;
     uint32 _updateTimer = 0;
     bool _recording = false;
     mutable uint32 _sequence = 0;
