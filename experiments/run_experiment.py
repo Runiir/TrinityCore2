@@ -47,11 +47,22 @@ def now_ms() -> int:
     return int(time.time() * 1000)
 
 
+def distance_3d(a: list[float], b: list[float]) -> float:
+    return sum((a[i] - b[i]) ** 2 for i in range(3)) ** 0.5
+
+
 def write_json(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as handle:
         json.dump(payload, handle, indent=2, sort_keys=True)
         handle.write("\n")
+
+
+def display_path(path: Path) -> str:
+    try:
+        return str(path.relative_to(REPO_ROOT))
+    except ValueError:
+        return str(path)
 
 
 class JsonlFrameWriter:
@@ -131,8 +142,14 @@ class LocalCommandAdapter(CommandAdapter):
 
     def __init__(self) -> None:
         self.bot_guid = 50101
+        self.leader_guid = 10001
         self.recording = False
         self.spawned = False
+        self.mode = "stay"
+        self.bot_position = [18.0, 0.0, 0.0]
+        self.leader_position = [0.0, 0.0, 0.0]
+        self.marker_position = [6.0, 0.0, 0.0]
+        self.stuck_ticks = 0
 
     def execute(self, command: str) -> CommandResult:
         output: dict[str, Any]
@@ -159,8 +176,33 @@ class LocalCommandAdapter(CommandAdapter):
         elif command.startswith("playerbot record off"):
             self.recording = False
             output = {"ok": True, "action": "record", "state": "off", "failure_reason": None}
+        elif command.startswith("playerbot follow"):
+            self.mode = "follow_leader"
+            output = {"ok": self.spawned, "action": "movement", "state": "", "count": 1 if self.spawned else 0, "mode": "follow", "failure_reason": None if self.spawned else "no_active_bot"}
+        elif command.startswith("playerbot stay"):
+            self.mode = "stay_position"
+            output = {"ok": self.spawned, "action": "movement", "state": "", "count": 1 if self.spawned else 0, "mode": "stay", "failure_reason": None if self.spawned else "no_active_bot"}
+        elif command.startswith("playerbot stop"):
+            self.mode = "stop"
+            output = {"ok": self.spawned, "action": "movement", "state": "", "count": 1 if self.spawned else 0, "mode": "stop", "failure_reason": None if self.spawned else "no_active_bot"}
+        elif command.startswith("playerbot move_to"):
+            parts = command.split()
+            if len(parts) >= 5:
+                self.marker_position = [float(parts[2]), float(parts[3]), float(parts[4])]
+            self.mode = "move_to_marker"
+            output = {"ok": self.spawned, "action": "movement", "state": "", "count": 1 if self.spawned else 0, "mode": "move_to", "failure_reason": None if self.spawned else "no_active_bot"}
+        elif command.startswith("playerbot return_to_group"):
+            self.mode = "return_to_group"
+            output = {"ok": self.spawned, "action": "movement", "state": "", "count": 1 if self.spawned else 0, "mode": "return_to_group", "failure_reason": None if self.spawned else "no_active_bot"}
+        elif command.startswith("playerbot move_safe"):
+            self.mode = "avoid_hazard"
+            output = {"ok": self.spawned, "action": "movement", "state": "", "count": 1 if self.spawned else 0, "mode": "move_safe", "failure_reason": None if self.spawned else "no_active_bot"}
+        elif command.startswith("playerbot unstuck"):
+            self.mode = "unstuck"
+            self.stuck_ticks = 0
+            output = {"ok": self.spawned, "action": "movement", "state": "", "count": 1 if self.spawned else 0, "mode": "unstuck", "failure_reason": None if self.spawned else "no_active_bot"}
         elif command.startswith("playerbot status"):
-            output = {"ok": True, "action": "status", "count": 1 if self.spawned else 0, "bots": [{"guid": self.bot_guid, "role": "holy_paladin"}] if self.spawned else []}
+            output = {"ok": True, "action": "status", "count": 1 if self.spawned else 0, "bots": [{"guid": self.bot_guid, "role": "holy_paladin", "movement": self.movement_state()}] if self.spawned else []}
         elif command.startswith("playerbot remove"):
             removed = 1 if self.spawned else 0
             self.spawned = False
@@ -168,6 +210,38 @@ class LocalCommandAdapter(CommandAdapter):
         else:
             output = {"ok": True, "action": "noop", "command": command, "failure_reason": None}
         return CommandResult(bool(output.get("ok")), command, json.dumps(output), output)
+
+    def movement_state(self) -> dict[str, Any]:
+        distance = distance_3d(self.bot_position, self.leader_position)
+        return {
+            "distance_to_leader": distance,
+            "distance_to_group_center": distance,
+            "line_of_sight_to_leader": True,
+            "stuck_score": min(1.0, self.stuck_ticks / 4.0),
+            "path_available": True,
+            "nearby_hazard": False,
+            "safe_position_available": True,
+        }
+
+    def advance_movement(self) -> dict[str, Any]:
+        if self.mode in {"follow_leader", "return_to_group", "avoid_hazard", "unstuck"}:
+            target = self.leader_position
+            follow_range = 6.0
+        elif self.mode == "move_to_marker":
+            target = self.marker_position
+            follow_range = 1.0
+        else:
+            target = self.bot_position
+            follow_range = 0.0
+
+        before = distance_3d(self.bot_position, target)
+        if before > follow_range:
+            step = min(5.0, before - follow_range)
+            for i in range(3):
+                self.bot_position[i] += (target[i] - self.bot_position[i]) / before * step
+        after = distance_3d(self.bot_position, self.leader_position)
+        self.stuck_ticks = 0 if after < before or self.mode in {"stay_position", "stop"} else self.stuck_ticks + 1
+        return self.movement_state()
 
 
 class RACommandAdapter(CommandAdapter):
@@ -324,6 +398,74 @@ def first_party_role(config: dict[str, Any]) -> str:
     return str(next(iter(party_template.values())))
 
 
+def movement_state_from_status(parsed: dict[str, Any] | list[Any] | None) -> dict[str, Any]:
+    if not isinstance(parsed, dict):
+        return {}
+    bots = parsed.get("bots")
+    if not isinstance(bots, list) or not bots:
+        return {}
+    movement = bots[0].get("movement") if isinstance(bots[0], dict) else None
+    return movement if isinstance(movement, dict) else {}
+
+
+def movement_frame_state(adapter: CommandAdapter, status: CommandResult) -> dict[str, Any]:
+    if isinstance(adapter, LocalCommandAdapter):
+        return adapter.advance_movement()
+    return movement_state_from_status(status.parsed)
+
+
+def movement_metrics(frames_path: Path) -> dict[str, Any]:
+    movement_frames = 0
+    stuck_frames = 0
+    los_failures = 0
+    hazard_hits = 0
+    invalid_commands = 0
+    distances: list[float] = []
+    return_success = False
+    max_stuck_score = 0.0
+
+    with frames_path.open("r", encoding="utf-8") as handle:
+        for line in handle:
+            if not line.strip():
+                continue
+            frame = json.loads(line)
+            if frame.get("domain") != "movement":
+                continue
+            movement_frames += 1
+            state = frame.get("state", {})
+            self_state = state.get("self", state)
+            nav_state = state.get("navigation", {})
+            distance = float(self_state.get("distance_to_leader", state.get("distance_to_leader", 0.0)) or 0.0)
+            stuck_score = float(nav_state.get("stuck_score", state.get("stuck_score", 0.0)) or 0.0)
+            distances.append(distance)
+            max_stuck_score = max(max_stuck_score, stuck_score)
+            if stuck_score >= 1.0 or frame.get("outcome", {}).get("stuck"):
+                stuck_frames += 1
+            if not bool(self_state.get("line_of_sight_to_leader", state.get("line_of_sight_to_leader", True))):
+                los_failures += 1
+            if bool(nav_state.get("nearby_hazard", state.get("nearby_hazard", False))):
+                hazard_hits += 1
+            if not bool(frame.get("resolved_action", {}).get("valid", True)):
+                invalid_commands += 1
+            task = frame.get("task", {})
+            if task.get("task_type") in {"return_to_group", "follow_leader"} and distance <= 8.0:
+                return_success = True
+
+    average_distance = sum(distances) / len(distances) if distances else 0.0
+    return {
+        "movement_frame_count": movement_frames,
+        "time_stuck_frames": stuck_frames,
+        "path_failure_rate": 0.0 if movement_frames else 1.0,
+        "average_distance_to_leader": average_distance,
+        "max_distance_to_leader": max(distances) if distances else 0.0,
+        "line_of_sight_failure_count": los_failures,
+        "hazard_hits": hazard_hits,
+        "return_to_group_success": return_success,
+        "movement_command_invalid_rate": invalid_commands / movement_frames if movement_frames else 1.0,
+        "unstuck_recovery_time_frames": 0 if max_stuck_score < 1.0 else stuck_frames,
+    }
+
+
 def write_initial_metadata(config: dict[str, Any], episode_id: str, episode_dir: Path) -> dict[str, Any]:
     metadata = {
         "episode_id": episode_id,
@@ -367,10 +509,10 @@ def run_experiment(config: dict[str, Any], adapter: CommandAdapter, runs_dir: Pa
     result = "success"
     quality = "usable"
     produced_paths = {
-        "episode_dir": str(episode_dir.relative_to(REPO_ROOT)),
-        "metadata": str((episode_dir / "metadata.json").relative_to(REPO_ROOT)),
-        "command_log": str(command_log_path.relative_to(REPO_ROOT)),
-        "frames": str(frames_path.relative_to(REPO_ROOT)),
+        "episode_dir": display_path(episode_dir),
+        "metadata": display_path(episode_dir / "metadata.json"),
+        "command_log": display_path(command_log_path),
+        "frames": display_path(frames_path),
     }
 
     if live:
@@ -432,6 +574,64 @@ def run_experiment(config: dict[str, Any], adapter: CommandAdapter, runs_dir: Pa
             outcome={"recording_file_created": frames_path.exists(), "bot_spawned": bool(metadata["bots"])},
         )
 
+        if config.get("domain") == "movement" or config.get("run", {}).get("movement_ticks"):
+            movement_modes = config.get("run", {}).get("movement_modes", ["follow", "stay", "return_to_group", "move_safe", "unstuck"])
+            ticks_per_mode = int(config.get("run", {}).get("movement_ticks_per_mode", 2))
+            marker = config.get("run", {}).get("marker_position", [3.0, 0.0, 0.0])
+            for mode in movement_modes:
+                if mode == "move_to_marker":
+                    movement_command = playerbot_command(config, "move_to", str(marker[0]), str(marker[1]), str(marker[2]))
+                elif mode == "follow_leader":
+                    movement_command = playerbot_command(config, "follow")
+                elif mode == "stay_position":
+                    movement_command = playerbot_command(config, "stay")
+                else:
+                    movement_command = playerbot_command(config, mode)
+                movement_result = execute(movement_command)
+                if not movement_result.ok:
+                    raise ExperimentError(f"movement_command_failed:{mode}")
+                for _ in range(ticks_per_mode):
+                    status = execute(playerbot_command(config, "status"))
+                    movement_state = movement_frame_state(adapter, status)
+                    distance = float(movement_state.get("distance_to_leader", 0.0) or 0.0)
+                    frame_writer.write(
+                        domain="movement",
+                        subdomain="follow",
+                        trigger="movement_tick",
+                        actor={
+                            "guid": metadata["bots"][0].get("guid") if metadata["bots"] else None,
+                            "is_bot": bool(metadata["bots"]),
+                            "role": metadata["bots"][0].get("role") if metadata["bots"] else None,
+                        },
+                        task={"task_type": mode, "leader_guid": getattr(adapter, "leader_guid", config.get("owner_guid"))},
+                        state={
+                            "self": {
+                                "position": getattr(adapter, "bot_position", [0.0, 0.0, 0.0]),
+                                "orientation": 0.0,
+                                "moving": mode not in {"stay_position", "stop"},
+                                "mounted": False,
+                                "in_combat": False,
+                                "hp_pct": 1.0,
+                                "distance_to_leader": distance,
+                                "distance_to_group_center": movement_state.get("distance_to_group_center", distance),
+                                "line_of_sight_to_leader": movement_state.get("line_of_sight_to_leader", True),
+                                "on_transport": False,
+                                "indoors": False,
+                            },
+                            "navigation": {
+                                "current_path_length": distance,
+                                "path_available": movement_state.get("path_available", True),
+                                "stuck_score": movement_state.get("stuck_score", 0.0),
+                                "last_progress_time_ms": 0,
+                                "nearby_hazard": movement_state.get("nearby_hazard", False),
+                                "safe_position_available": movement_state.get("safe_position_available", True),
+                            },
+                        },
+                        policy_output={"mode": mode, "intent": "move_to_follow_range" if mode == "follow_leader" else mode},
+                        resolved_action={"type": movement_command.split()[1], "valid": movement_result.ok},
+                        outcome={"distance_to_leader_after_2s": distance, "stuck": movement_state.get("stuck_score", 0.0) >= 1.0},
+                    )
+
         timeout_sec = float(config.get("run", {}).get("timeout_sec", 60))
         if time.monotonic() - start > timeout_sec:
             raise ExperimentError("timeout")
@@ -469,6 +669,12 @@ def run_experiment(config: dict[str, Any], adapter: CommandAdapter, runs_dir: Pa
             "episode_quality": quality,
             "paths": produced_paths,
         }
+        if frames_path.exists():
+            metrics = movement_metrics(frames_path)
+            if metrics["movement_frame_count"]:
+                write_json(episode_dir / "movement_metrics.json", metrics)
+                summary["movement_metrics"] = metrics
+                produced_paths["movement_metrics"] = display_path(episode_dir / "movement_metrics.json")
         write_json(episode_dir / "summary.json", summary)
         if live:
             command_count = 0

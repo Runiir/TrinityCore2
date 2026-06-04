@@ -8,6 +8,7 @@
 #include "MotionMaster.h"
 #include "ObjectAccessor.h"
 #include "Player.h"
+#include "Transport.h"
 #include "Spell.h"
 #include "SpellAuras.h"
 #include "SpellHistory.h"
@@ -16,6 +17,7 @@
 #include "Unit.h"
 #include <algorithm>
 #include <boost/filesystem.hpp>
+#include <cmath>
 #include <fstream>
 #include <iomanip>
 #include <sstream>
@@ -59,6 +61,15 @@ void BotController::SetMovementMode(BotMovementMode mode)
     _movementMode = mode;
 }
 
+void BotController::SetMoveTarget(float x, float y, float z)
+{
+    _movementMode = BotMovementMode::MoveTo;
+    _movementTarget.X = x;
+    _movementTarget.Y = y;
+    _movementTarget.Z = z;
+    _movementTarget.Active = true;
+}
+
 void BotController::SetRecording(bool recording)
 {
     _recording = recording;
@@ -78,12 +89,15 @@ void BotController::Update(uint32 diff, BotActionExecutor& executor, Player* own
     if (!owner || !bot || !bot->IsAlive())
         return;
 
-    if (_movementMode == BotMovementMode::Follow)
-        executor.MoveFollow(owner, bot);
-    else if (_movementMode == BotMovementMode::Stay)
-        executor.MoveStay(bot);
-    else
+    BotMovementFrame movementFrame = BuildMovementFrame(owner, bot, updateMs);
+    ApplyMovementPolicy(executor, owner, bot, movementFrame);
+
+    if (_movementMode == BotMovementMode::Stop)
+    {
+        if (_recording || sConfigMgr->GetBoolDefault("PlayerBot.Record.Enable", false))
+            RecordMovementFrame(movementFrame, ToString(_movementMode), "stop", "stop", true, owner, bot);
         return;
+    }
 
     BotRecentEvents recentEvents = sBotMgr->ConsumeRecentEvents(_botGuid);
     HealerFrame frame = BuildFrame(owner, bot, recentEvents);
@@ -95,6 +109,7 @@ void BotController::Update(uint32 diff, BotActionExecutor& executor, Player* own
             ResolvedBotAction action;
             action.DebugName = "generic_class_controller";
             RecordFrame(frame, decision, &action, BotActionResult::NoAction, owner, bot);
+            RecordMovementFrame(movementFrame, ToString(_movementMode), "wait", action.DebugName.c_str(), true, owner, bot);
         }
 
         return;
@@ -124,7 +139,10 @@ void BotController::Update(uint32 diff, BotActionExecutor& executor, Player* own
     }
 
     if (_recording || sConfigMgr->GetBoolDefault("PlayerBot.Record.Enable", false))
+    {
         RecordFrame(frame, decision, resolved, result, owner, bot);
+        RecordMovementFrame(movementFrame, ToString(_movementMode), ToString(decision.Intent), resolved ? resolved->DebugName.c_str() : "wait", result != BotActionResult::Disabled, owner, bot);
+    }
 
     if (sConfigMgr->GetBoolDefault("PlayerBot.Debug", false) && result != BotActionResult::NoAction)
         TC_LOG_DEBUG("entities.unit", "PlayerBot %s decision=%s result=%s", _botGuid.ToString().c_str(), ToString(decision.Intent), ToString(result));
@@ -132,6 +150,7 @@ void BotController::Update(uint32 diff, BotActionExecutor& executor, Player* own
 
 std::string BotController::GetStatus(Player const* owner, Player const* bot) const
 {
+    BotMovementFrame movement = owner && bot ? BuildMovementFrame(const_cast<Player*>(owner), const_cast<Player*>(bot), 0) : BotMovementFrame();
     std::ostringstream ss;
     ss << "{\"bot_guid\":" << _botGuid.GetCounter()
        << ",\"name\":\"" << JsonEscape(bot ? bot->GetName() : "offline")
@@ -142,8 +161,111 @@ std::string BotController::GetStatus(Player const* owner, Player const* bot) con
        << ",\"owner_name\":\"" << JsonEscape(owner ? owner->GetName() : "offline")
        << "\",\"mode\":\"" << ToString(_movementMode)
        << "\",\"recording\":\"" << (_recording ? "on" : "off")
-       << "\"}";
+       << "\",\"movement\":{\"distance_to_leader\":" << movement.DistanceToLeader
+       << ",\"distance_to_group_center\":" << movement.DistanceToGroupCenter
+       << ",\"line_of_sight_to_leader\":" << (movement.LineOfSightToLeader ? "true" : "false")
+       << ",\"stuck_score\":" << movement.StuckScore
+       << ",\"path_available\":" << (movement.PathAvailable ? "true" : "false")
+       << ",\"nearby_hazard\":" << (movement.NearbyHazard ? "true" : "false")
+       << ",\"safe_position_available\":" << (movement.SafePositionAvailable ? "true" : "false") << "}"
+       << "}";
     return ss.str();
+}
+
+BotMovementFrame BotController::BuildMovementFrame(Player* owner, Player* bot, uint32 diff) const
+{
+    BotMovementFrame frame;
+    frame.X = bot->GetPositionX();
+    frame.Y = bot->GetPositionY();
+    frame.Z = bot->GetPositionZ();
+    frame.Orientation = bot->GetOrientation();
+    frame.Moving = bot->isMoving() || bot->HasUnitState(UNIT_STATE_MOVING);
+    frame.Mounted = bot->IsMounted();
+    frame.InCombat = bot->IsInCombat() || owner->IsInCombat();
+    frame.OnTransport = bot->GetTransport() != nullptr;
+    frame.Indoors = false;
+    uint32 maxHealth = bot->GetMaxHealth();
+    frame.HpPct = maxHealth ? float(bot->GetHealth()) / float(maxHealth) : 0.0f;
+    frame.DistanceToLeader = bot->GetExactDist(owner);
+    frame.LineOfSightToLeader = bot->IsWithinLOSInMap(owner);
+    frame.NearbyHazard = bot->IsFalling() || bot->IsInWater();
+    frame.SafePositionAvailable = owner->IsAlive() && bot->GetMap() == owner->GetMap() && !frame.NearbyHazard;
+
+    float centerX = 0.0f;
+    float centerY = 0.0f;
+    float centerZ = 0.0f;
+    uint32 centerCount = 0;
+    if (Group* group = owner->GetGroup())
+    {
+        for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
+        {
+            Player* member = itr->GetSource();
+            if (!member || member->GetMap() != bot->GetMap())
+                continue;
+            centerX += member->GetPositionX();
+            centerY += member->GetPositionY();
+            centerZ += member->GetPositionZ();
+            ++centerCount;
+        }
+    }
+    if (!centerCount)
+    {
+        centerX = owner->GetPositionX();
+        centerY = owner->GetPositionY();
+        centerZ = owner->GetPositionZ();
+        centerCount = 1;
+    }
+    centerX /= float(centerCount);
+    centerY /= float(centerCount);
+    centerZ /= float(centerCount);
+    frame.DistanceToGroupCenter = bot->GetExactDist(centerX, centerY, centerZ);
+
+    frame.CurrentPathLength = _movementTarget.Active ? bot->GetExactDist(_movementTarget.X, _movementTarget.Y, _movementTarget.Z) : frame.DistanceToLeader;
+    frame.PathAvailable = frame.LineOfSightToLeader || frame.CurrentPathLength < 80.0f;
+
+    if (diff > 0)
+    {
+        float moved = std::sqrt((frame.X - _lastX) * (frame.X - _lastX) + (frame.Y - _lastY) * (frame.Y - _lastY) + (frame.Z - _lastZ) * (frame.Z - _lastZ));
+        bool needsProgress = _movementMode == BotMovementMode::Follow || _movementMode == BotMovementMode::MoveTo || _movementMode == BotMovementMode::ReturnToGroup || _movementMode == BotMovementMode::MoveSafe;
+        if (!_lastProgressMs || moved > 0.25f || !needsProgress)
+        {
+            _lastProgressMs = 0;
+            _stuckScore = std::max(0.0f, _stuckScore - 0.25f);
+        }
+        else
+        {
+            _lastProgressMs += diff;
+            if (_lastProgressMs >= 2000)
+                _stuckScore = std::min(1.0f, _stuckScore + 0.25f);
+        }
+        _lastX = frame.X;
+        _lastY = frame.Y;
+        _lastZ = frame.Z;
+    }
+    frame.LastProgressTimeMs = _lastProgressMs;
+    frame.StuckScore = _stuckScore;
+    return frame;
+}
+
+void BotController::ApplyMovementPolicy(BotActionExecutor& executor, Player* owner, Player* bot, BotMovementFrame const& movementFrame)
+{
+    if (movementFrame.StuckScore >= 1.0f || _movementMode == BotMovementMode::Unstuck)
+    {
+        executor.MoveUnstuck(owner, bot);
+        _movementMode = BotMovementMode::Follow;
+        return;
+    }
+
+    if (_movementMode == BotMovementMode::Follow)
+        executor.MoveFollow(owner, bot);
+    else if (_movementMode == BotMovementMode::Stay)
+        executor.MoveStay(bot);
+    else if (_movementMode == BotMovementMode::Stop)
+        executor.MoveStop(bot);
+    else if (_movementMode == BotMovementMode::MoveTo && _movementTarget.Active)
+        executor.MoveTo(bot, _movementTarget.X, _movementTarget.Y, _movementTarget.Z);
+    else if (_movementMode == BotMovementMode::ReturnToGroup || _movementMode == BotMovementMode::MoveSafe)
+        executor.MoveFollow(owner, bot);
 }
 
 HealerFrame BotController::BuildFrame(Player* owner, Player* bot, BotRecentEvents const& recentEvents) const
@@ -289,4 +411,54 @@ void BotController::RecordFrame(HealerFrame const& frame, HealerDecision const& 
     }
 
     out << "]}\n";
+}
+
+void BotController::RecordMovementFrame(BotMovementFrame const& frame, char const* policyMode, char const* intent, char const* action, bool valid, Player* owner, Player* bot) const
+{
+    std::string path = sConfigMgr->GetStringDefault("PlayerBot.Record.Path", "dataset/raw/healer_frames_playerbot.jsonl");
+    boost::filesystem::path outputPath(path);
+    if (outputPath.has_parent_path())
+        boost::filesystem::create_directories(outputPath.parent_path());
+
+    std::ofstream out(path.c_str(), std::ios::app);
+    if (!out)
+        return;
+
+    std::string experimentId = sConfigMgr->GetStringDefault("PlayerBot.ExperimentId", "");
+    char const* resolvedAction = action && *action ? action : "wait";
+    out << "{\"domain\":\"movement\""
+        << ",\"subdomain\":\"follow\""
+        << ",\"trigger\":\"movement_tick\""
+        << ",\"seq\":" << ++_sequence
+        << ",\"time\":" << GameTime::GetGameTime()
+        << ",\"experiment_id\":\"" << JsonEscape(experimentId)
+        << "\",\"actor\":{\"guid\":" << (bot ? bot->GetGUID().GetCounter() : 0)
+        << ",\"is_bot\":true"
+        << ",\"role\":\"" << ToString(_role) << "\"}"
+        << ",\"task\":{\"task_type\":\"" << JsonEscape(policyMode ? policyMode : "follow")
+        << "\",\"leader_guid\":" << (owner ? owner->GetGUID().GetCounter() : 0) << "}"
+        << ",\"state\":{\"self\":{\"position\":[" << frame.X << "," << frame.Y << "," << frame.Z << "]"
+        << ",\"orientation\":" << frame.Orientation
+        << ",\"moving\":" << (frame.Moving ? "true" : "false")
+        << ",\"mounted\":" << (frame.Mounted ? "true" : "false")
+        << ",\"in_combat\":" << (frame.InCombat ? "true" : "false")
+        << ",\"hp_pct\":" << frame.HpPct
+        << ",\"distance_to_leader\":" << frame.DistanceToLeader
+        << ",\"distance_to_group_center\":" << frame.DistanceToGroupCenter
+        << ",\"line_of_sight_to_leader\":" << (frame.LineOfSightToLeader ? "true" : "false")
+        << ",\"on_transport\":" << (frame.OnTransport ? "true" : "false")
+        << ",\"indoors\":" << (frame.Indoors ? "true" : "false") << "}"
+        << ",\"navigation\":{\"current_path_length\":" << frame.CurrentPathLength
+        << ",\"path_available\":" << (frame.PathAvailable ? "true" : "false")
+        << ",\"stuck_score\":" << frame.StuckScore
+        << ",\"last_progress_time_ms\":" << frame.LastProgressTimeMs
+        << ",\"nearby_hazard\":" << (frame.NearbyHazard ? "true" : "false")
+        << ",\"safe_position_available\":" << (frame.SafePositionAvailable ? "true" : "false") << "}}"
+        << ",\"policy_output\":{\"mode\":\"" << JsonEscape(policyMode ? policyMode : "")
+        << "\",\"intent\":\"" << JsonEscape(intent ? intent : "") << "\"}"
+        << ",\"resolved_action\":{\"type\":\"" << JsonEscape(resolvedAction)
+        << "\",\"valid\":" << (valid ? "true" : "false") << "}"
+        << ",\"outcome\":{\"distance_to_leader_after_2s\":" << frame.DistanceToLeader
+        << ",\"stuck\":" << (frame.StuckScore >= 1.0f ? "true" : "false") << "}"
+        << "}\n";
 }

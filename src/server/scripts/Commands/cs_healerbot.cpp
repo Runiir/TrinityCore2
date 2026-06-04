@@ -9,6 +9,7 @@
 #include "Player.h"
 #include "RBAC.h"
 #include "WorldSession.h"
+#include <cstdlib>
 #include <iomanip>
 #include <sstream>
 #include <string>
@@ -29,6 +30,10 @@ public:
             { "follow", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleFollowCommand, "" },
             { "stay",   rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleStayCommand,   "" },
             { "stop",   rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleStopCommand,   "" },
+            { "move_to", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleMoveToCommand, "" },
+            { "return_to_group", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleReturnToGroupCommand, "" },
+            { "move_safe", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleMoveSafeCommand, "" },
+            { "unstuck", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleUnstuckCommand, "" },
             { "status", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleStatusCommand, "" },
             { "record", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleRecordCommand, "" },
             { "partyfill", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandlePartyFillCommand, "" },
@@ -232,6 +237,51 @@ private:
     static bool HandleStopCommand(ChatHandler* handler, char const* args)
     {
         return SetMovement(handler, BotMovementMode::Stop, args);
+    }
+
+    static bool HandleReturnToGroupCommand(ChatHandler* handler, char const* args)
+    {
+        return SetMovement(handler, BotMovementMode::ReturnToGroup, args);
+    }
+
+    static bool HandleMoveSafeCommand(ChatHandler* handler, char const* args)
+    {
+        return SetMovement(handler, BotMovementMode::MoveSafe, args);
+    }
+
+    static bool HandleUnstuckCommand(ChatHandler* handler, char const* args)
+    {
+        return SetMovement(handler, BotMovementMode::Unstuck, args);
+    }
+
+    static bool HandleMoveToCommand(ChatHandler* handler, char const* args)
+    {
+        CommandArgs parsed = ParseCommandArgs(args);
+        Player* owner = GetOwner(handler, parsed.ownerSelector);
+        if (!owner)
+            return RequireOwner(handler, parsed.ownerSelector);
+
+        if (parsed.positional.size() < 3)
+        {
+            SendResult(handler, false, "movement", "invalid_usage", ObjectGuid::Empty, "", "", "", 0, "", "move_to");
+            handler->SetSentErrorMessage(true);
+            return false;
+        }
+
+        float x = float(std::atof(parsed.positional[0].c_str()));
+        float y = float(std::atof(parsed.positional[1].c_str()));
+        float z = float(std::atof(parsed.positional[2].c_str()));
+        std::string selector = parsed.positional.size() > 3 ? parsed.positional[3] : "all";
+        uint32 changed = sBotMgr->SetMoveTarget(owner, x, y, z, selector);
+        if (!changed)
+        {
+            SendResult(handler, false, "movement", "no_matching_bot", ObjectGuid::Empty, "", "", "", 0, selector, "move_to");
+            handler->SetSentErrorMessage(true);
+            return false;
+        }
+
+        SendResult(handler, true, "movement", nullptr, ObjectGuid::Empty, "", "", "", changed, selector, "move_to");
+        return true;
     }
 
     static bool HandleStatusCommand(ChatHandler* handler, char const* args)

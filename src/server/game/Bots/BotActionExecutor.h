@@ -14,6 +14,10 @@ public:
     BotActionResult Execute(Player* owner, Player* bot, ResolvedBotAction const& action);
     void MoveFollow(Player* owner, Player* bot);
     void MoveStay(Player* bot);
+    void MoveStop(Player* bot);
+    void MoveTo(Player* bot, float x, float y, float z);
+    void Face(Player* bot, Unit* target);
+    void MoveUnstuck(Player* owner, Player* bot);
     void ResetThrottle(ObjectGuid botGuid);
 
 private:

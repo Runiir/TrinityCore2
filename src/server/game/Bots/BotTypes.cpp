@@ -19,6 +19,10 @@ char const* ToString(BotMovementMode mode)
         case BotMovementMode::Follow: return "follow";
         case BotMovementMode::Stay: return "stay";
         case BotMovementMode::Stop: return "stop";
+        case BotMovementMode::MoveTo: return "move_to";
+        case BotMovementMode::ReturnToGroup: return "return_to_group";
+        case BotMovementMode::MoveSafe: return "move_safe";
+        case BotMovementMode::Unstuck: return "unstuck";
         default: return "unknown";
     }
 }

@@ -6,6 +6,7 @@ from pathlib import Path
 from ml.evaluation.evaluate_action_frequency import main as evaluate_main
 from ml.preprocessing.preprocess_frames import main as preprocess_main
 from ml.training.train_action_frequency import main as train_main
+from experiments.run_experiment import load_config, make_adapter, movement_metrics, run_experiment
 
 
 def write_jsonl(path: Path, rows: list[dict]) -> None:
@@ -46,3 +47,21 @@ def test_preprocess_train_evaluate_pipeline(tmp_path, monkeypatch):
     assert loaded_metrics["frame_count"] == 1
     assert loaded_metrics["known_action_rate"] == 1.0
     assert loaded_metrics["unique_actions"] == 1
+
+
+def test_headless_movement_smoke_records_metrics(tmp_path):
+    config = load_config(Path("experiments/configs/headless_movement_smoke_001.json"))
+    adapter = make_adapter(config, force_local=True)
+
+    summary = run_experiment(config, adapter, tmp_path / "runs", tmp_path / "raw")
+
+    assert summary["result"] == "success"
+    metrics_path = tmp_path / summary["paths"]["movement_metrics"]
+    frames_path = tmp_path / summary["paths"]["frames"]
+    metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
+    recomputed = movement_metrics(frames_path)
+
+    assert metrics["movement_frame_count"] >= 6
+    assert metrics["return_to_group_success"] is True
+    assert metrics["movement_command_invalid_rate"] == 0.0
+    assert recomputed == metrics

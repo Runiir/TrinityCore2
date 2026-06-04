@@ -69,6 +69,45 @@ void BotActionExecutor::MoveStay(Player* bot)
     bot->GetMotionMaster()->MoveIdle();
 }
 
+void BotActionExecutor::MoveStop(Player* bot)
+{
+    if (!bot)
+        return;
+
+    bot->StopMoving();
+    bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+    bot->GetMotionMaster()->MoveIdle();
+}
+
+void BotActionExecutor::MoveTo(Player* bot, float x, float y, float z)
+{
+    if (!bot || !bot->IsAlive())
+        return;
+
+    bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+    bot->GetMotionMaster()->MovePoint(0, x, y, z, true);
+}
+
+void BotActionExecutor::Face(Player* bot, Unit* target)
+{
+    if (!bot || !target)
+        return;
+
+    bot->SetFacingToObject(target);
+}
+
+void BotActionExecutor::MoveUnstuck(Player* owner, Player* bot)
+{
+    if (!owner || !bot || !bot->IsAlive())
+        return;
+
+    float angle = bot->GetAngle(owner);
+    float x = bot->GetPositionX() + std::cos(angle) * 2.0f;
+    float y = bot->GetPositionY() + std::sin(angle) * 2.0f;
+    bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+    bot->GetMotionMaster()->MovePoint(0, x, y, bot->GetPositionZ(), true);
+}
+
 void BotActionExecutor::ResetThrottle(ObjectGuid botGuid)
 {
     _failures.erase(botGuid);

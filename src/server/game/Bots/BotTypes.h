@@ -35,7 +35,42 @@ enum class BotMovementMode : uint8
 {
     Follow,
     Stay,
-    Stop
+    Stop,
+    MoveTo,
+    ReturnToGroup,
+    MoveSafe,
+    Unstuck
+};
+
+struct BotMovementTarget
+{
+    float X = 0.0f;
+    float Y = 0.0f;
+    float Z = 0.0f;
+    bool Active = false;
+};
+
+struct BotMovementFrame
+{
+    float X = 0.0f;
+    float Y = 0.0f;
+    float Z = 0.0f;
+    float Orientation = 0.0f;
+    bool Moving = false;
+    bool Mounted = false;
+    bool InCombat = false;
+    float HpPct = 1.0f;
+    float DistanceToLeader = 0.0f;
+    float DistanceToGroupCenter = 0.0f;
+    bool LineOfSightToLeader = false;
+    bool OnTransport = false;
+    bool Indoors = false;
+    float CurrentPathLength = 0.0f;
+    bool PathAvailable = false;
+    float StuckScore = 0.0f;
+    uint32 LastProgressTimeMs = 0;
+    bool NearbyHazard = false;
+    bool SafePositionAvailable = false;
 };
 
 enum class HealerMode : uint8

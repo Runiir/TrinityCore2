@@ -1,0 +1,48 @@
+{
+  "experiment_id": "headless_movement_smoke_001",
+  "domain": "movement",
+  "execution_mode": "headless_ra_soap",
+  "live_client_present": false,
+  "party_template": {
+    "healer": "holy_paladin"
+  },
+  "setup": {
+    "recording": true
+  },
+  "run": {
+    "timeout_sec": 60,
+    "movement_ticks": true,
+    "movement_ticks_per_mode": 2,
+    "movement_modes": [
+      "follow_leader",
+      "stay_position",
+      "move_to_marker",
+      "return_to_group",
+      "move_safe",
+      "unstuck"
+    ],
+    "marker_position": [
+      3.0,
+      0.0,
+      0.0
+    ],
+    "success_conditions": [
+      "bot_spawned",
+      "movement_frames_recorded",
+      "movement_metrics_generated",
+      "return_to_group_success"
+    ],
+    "failure_conditions": [
+      "timeout",
+      "bot_spawn_failed",
+      "movement_command_failed"
+    ]
+  },
+  "cleanup": {
+    "remove_bots": true,
+    "stop_recording": true
+  },
+  "adapter": {
+    "type": "local"
+  }
+}

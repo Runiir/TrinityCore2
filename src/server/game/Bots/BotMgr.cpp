@@ -241,6 +241,21 @@ uint32 BotMgr::SetMovement(Player* owner, BotMovementMode mode, std::string cons
     return changed;
 }
 
+uint32 BotMgr::SetMoveTarget(Player* owner, float x, float y, float z, std::string const& selector)
+{
+    uint32 changed = 0;
+    for (ObjectGuid botGuid : ResolveTargets(owner, selector))
+    {
+        if (BotController* controller = GetController(botGuid))
+        {
+            controller->SetMoveTarget(x, y, z);
+            ++changed;
+        }
+    }
+
+    return changed;
+}
+
 bool BotMgr::SetRecording(Player* owner, bool enabled)
 {
     bool changed = false;

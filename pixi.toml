@@ -14,6 +14,7 @@ dvc-push = "dvc push"
 dvc-pull = "dvc pull"
 test = "pytest"
 experiment-smoke = "python experiments/run_experiment.py experiments/configs/headless_playerbot_smoke_001.json --local"
+movement-smoke = "python experiments/run_experiment.py experiments/configs/headless_movement_smoke_001.json --local"
 setup-dvc-s3 = "python scripts/setup_dvc_s3_remote.py"
 
 [dependencies]
