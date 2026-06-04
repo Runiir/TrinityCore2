@@ -28,5 +28,5 @@
 *.RTF    diff=astextplain
 
 # Ignore sql/* files
-sql/*    linguist-documentation# SCM syntax highlighting & preventing 3-way merges
+sql/*    linguist-documentation
 pixi.lock merge=binary linguist-language=YAML linguist-generated=true -diff
