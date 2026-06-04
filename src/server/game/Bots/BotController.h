@@ -33,12 +33,14 @@ private:
     HealerFrame BuildFrame(Player* owner, Player* bot, BotRecentEvents const& recentEvents) const;
     BotMovementFrame BuildMovementFrame(Player* owner, Player* bot, uint32 diff) const;
     BotCombatState BuildCombatState(Player* owner, Player* bot, BotRecentEvents const& recentEvents) const;
+    BotProfessionFrame BuildProfessionFrame(Player* owner, Player* bot) const;
     BotCombatDecision DecideSoloCombat(BotCombatState const& state) const;
     ResolvedCombatAction ResolveSoloCombat(BotCombatDecision const& decision, BotCombatState const& state) const;
     void ApplyMovementPolicy(BotActionExecutor& executor, Player* owner, Player* bot, BotMovementFrame const& movementFrame);
     void RecordFrame(HealerFrame const& frame, HealerDecision const& decision, ResolvedBotAction const* action, BotActionResult result, Player* owner, Player* bot) const;
     void RecordMovementFrame(BotMovementFrame const& frame, char const* policyMode, char const* intent, char const* action, bool valid, Player* owner, Player* bot) const;
     void RecordCombatFrame(BotCombatState const& frame, BotCombatDecision const& decision, ResolvedCombatAction const& action, BotActionResult result, Player* owner, Player* bot) const;
+    void RecordProfessionFrame(BotProfessionFrame const& frame, Player* owner, Player* bot) const;
 
     ObjectGuid _ownerGuid;
     ObjectGuid _botGuid;

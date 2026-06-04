@@ -9,6 +9,10 @@
 #include "ObjectAccessor.h"
 #include "Player.h"
 #include "Creature.h"
+#include "DataStores/DBCStores.h"
+#include "DataStores/DBCStructure.h"
+#include "Entities/Item/Container/Bag.h"
+#include "Entities/Item/Item.h"
 #include "Transport.h"
 #include "Spell.h"
 #include "SpellAuras.h"
@@ -21,6 +25,7 @@
 #include <cmath>
 #include <fstream>
 #include <iomanip>
+#include <map>
 #include <sstream>
 
 namespace
@@ -102,10 +107,13 @@ void BotController::Update(uint32 diff, BotActionExecutor& executor, Player* own
 
     BotMovementFrame movementFrame = BuildMovementFrame(owner, bot, updateMs);
     ApplyMovementPolicy(executor, owner, bot, movementFrame);
+    bool shouldRecord = _recording || sConfigMgr->GetBoolDefault("PlayerBot.Record.Enable", false);
+    if (shouldRecord)
+        RecordProfessionFrame(BuildProfessionFrame(owner, bot), owner, bot);
 
     if (_movementMode == BotMovementMode::Stop)
     {
-        if (_recording || sConfigMgr->GetBoolDefault("PlayerBot.Record.Enable", false))
+        if (shouldRecord)
             RecordMovementFrame(movementFrame, ToString(_movementMode), "stop", "stop", true, owner, bot);
         return;
     }
@@ -120,7 +128,7 @@ void BotController::Update(uint32 diff, BotActionExecutor& executor, Player* own
         if (combatDecision.Intent == BotCombatIntent::Loot && combatResult == BotActionResult::Ok)
             ClearCombatTarget();
 
-        if (_recording || sConfigMgr->GetBoolDefault("PlayerBot.Record.Enable", false))
+        if (shouldRecord)
         {
             RecordCombatFrame(combatState, combatDecision, combatAction, combatResult, owner, bot);
             RecordMovementFrame(movementFrame, ToString(_movementMode), ToString(combatDecision.Intent), combatAction.DebugName.c_str(), combatResult != BotActionResult::Disabled, owner, bot);
@@ -132,7 +140,7 @@ void BotController::Update(uint32 diff, BotActionExecutor& executor, Player* own
     HealerFrame frame = BuildFrame(owner, bot, recentEvents);
     if (!IsHealerBotRole(_role))
     {
-        if (_recording || sConfigMgr->GetBoolDefault("PlayerBot.Record.Enable", false))
+        if (shouldRecord)
         {
             HealerDecision decision;
             ResolvedBotAction action;
@@ -167,7 +175,7 @@ void BotController::Update(uint32 diff, BotActionExecutor& executor, Player* own
         }
     }
 
-    if (_recording || sConfigMgr->GetBoolDefault("PlayerBot.Record.Enable", false))
+    if (shouldRecord)
     {
         RecordFrame(frame, decision, resolved, result, owner, bot);
         RecordMovementFrame(movementFrame, ToString(_movementMode), ToString(decision.Intent), resolved ? resolved->DebugName.c_str() : "wait", result != BotActionResult::Disabled, owner, bot);
@@ -524,6 +532,62 @@ HealerFrame BotController::BuildFrame(Player* owner, Player* bot, BotRecentEvent
     return frame;
 }
 
+BotProfessionFrame BotController::BuildProfessionFrame(Player* owner, Player* bot) const
+{
+    BotProfessionFrame frame;
+    frame.OwnerGuid = owner ? owner->GetGUID() : ObjectGuid::Empty;
+    frame.BotGuid = bot ? bot->GetGUID() : ObjectGuid::Empty;
+    if (!bot)
+        return frame;
+
+    frame.ClassId = bot->getClass();
+    frame.SpecId = 0;
+    frame.Profession.ProfessionId = "cooking";
+    frame.Profession.SkillId = SKILL_COOKING;
+    frame.Profession.SkillCurrent = bot->HasSkill(SKILL_COOKING) ? bot->GetSkillValue(SKILL_COOKING) : 0;
+    frame.Profession.SkillTarget = bot->HasSkill(SKILL_COOKING) ? bot->GetMaxSkillValue(SKILL_COOKING) : 0;
+    frame.Profession.BagFreeSlots = bot->GetFreeInventorySpace();
+    frame.Inventory.Gold = bot->GetMoney();
+
+    if (std::vector<SkillLineAbilityEntry const*> const* abilities = sDBCManager.GetSkillLineAbilitiesBySkill(SKILL_COOKING))
+    {
+        for (SkillLineAbilityEntry const* ability : *abilities)
+        {
+            if (!ability || !ability->Spell)
+                continue;
+
+            if (bot->HasSpell(ability->Spell))
+                frame.Profession.KnownRecipes.push_back(ability->Spell);
+            else if (bot->HasSkill(SKILL_COOKING) && ability->MinSkillLineRank <= frame.Profession.SkillCurrent)
+                frame.Profession.TrainableRecipes.push_back(ability->Spell);
+        }
+    }
+
+    std::map<uint32, uint32> itemCounts;
+    auto addItem = [&itemCounts](Item const* item)
+    {
+        if (!item)
+            return;
+
+        itemCounts[item->GetEntry()] += item->GetCount();
+    };
+
+    for (uint8 slot = INVENTORY_SLOT_ITEM_START; slot < INVENTORY_SLOT_ITEM_END; ++slot)
+        addItem(bot->GetItemByPos(INVENTORY_SLOT_BAG_0, slot));
+
+    for (uint8 bagSlot = INVENTORY_SLOT_BAG_START; bagSlot < INVENTORY_SLOT_BAG_END; ++bagSlot)
+    {
+        if (Bag const* bag = bot->GetBagByPos(bagSlot))
+            for (uint32 slot = 0; slot < bag->GetBagSize(); ++slot)
+                addItem(bag->GetItemByPos(slot));
+    }
+
+    for (auto const& itemCount : itemCounts)
+        frame.Inventory.Materials.push_back(BotInventoryMaterial{ itemCount.first, itemCount.second });
+
+    return frame;
+}
+
 void BotController::RecordFrame(HealerFrame const& frame, HealerDecision const& decision, ResolvedBotAction const* action, BotActionResult result, Player* owner, Player* bot) const
 {
     std::string path = sConfigMgr->GetStringDefault("PlayerBot.Record.Path", "dataset/raw/healer_frames_playerbot.jsonl");
@@ -591,6 +655,76 @@ void BotController::RecordFrame(HealerFrame const& frame, HealerDecision const& 
     }
 
     out << "]}\n";
+}
+
+void BotController::RecordProfessionFrame(BotProfessionFrame const& frame, Player* owner, Player* bot) const
+{
+    std::string path = sConfigMgr->GetStringDefault("PlayerBot.Record.Path", "dataset/raw/healer_frames_playerbot.jsonl");
+    boost::filesystem::path outputPath(path);
+    if (outputPath.has_parent_path())
+        boost::filesystem::create_directories(outputPath.parent_path());
+
+    std::ofstream out(path.c_str(), std::ios::app);
+    if (!out)
+        return;
+
+    std::string experimentId = sConfigMgr->GetStringDefault("PlayerBot.ExperimentId", "");
+    out << "{\"domain\":\"profession\""
+        << ",\"subdomain\":\"crafting\""
+        << ",\"trigger\":\"profession_tick\""
+        << ",\"seq\":" << ++_sequence
+        << ",\"time\":" << GameTime::GetGameTime()
+        << ",\"experiment_id\":\"" << JsonEscape(experimentId)
+        << "\",\"actor\":{\"guid\":" << frame.BotGuid.GetCounter()
+        << ",\"class_id\":" << uint32(frame.ClassId)
+        << ",\"spec_id\":" << frame.SpecId << "}"
+        << ",\"task\":{\"type\":\"observe_profession_state\""
+        << ",\"profession_id\":\"" << JsonEscape(frame.Profession.ProfessionId)
+        << "\",\"skill_current\":" << frame.Profession.SkillCurrent
+        << ",\"skill_target\":" << frame.Profession.SkillTarget << "}"
+        << ",\"profession_state\":{\"profession_id\":\"" << JsonEscape(frame.Profession.ProfessionId)
+        << "\",\"skill_id\":" << frame.Profession.SkillId
+        << ",\"skill_current\":" << frame.Profession.SkillCurrent
+        << ",\"skill_target\":" << frame.Profession.SkillTarget
+        << ",\"known_recipes\":[";
+
+    for (std::size_t i = 0; i < frame.Profession.KnownRecipes.size(); ++i)
+    {
+        if (i)
+            out << ',';
+        out << frame.Profession.KnownRecipes[i];
+    }
+
+    out << "],\"trainable_recipes\":[";
+    for (std::size_t i = 0; i < frame.Profession.TrainableRecipes.size(); ++i)
+    {
+        if (i)
+            out << ',';
+        out << frame.Profession.TrainableRecipes[i];
+    }
+
+    out << "],\"bag_free_slots\":" << frame.Profession.BagFreeSlots << "}"
+        << ",\"inventory_state\":{\"gold\":" << frame.Inventory.Gold
+        << ",\"materials\":[";
+
+    for (std::size_t i = 0; i < frame.Inventory.Materials.size(); ++i)
+    {
+        BotInventoryMaterial const& material = frame.Inventory.Materials[i];
+        if (i)
+            out << ',';
+        out << "{\"item_id\":" << material.ItemId
+            << ",\"count\":" << material.Count << "}";
+    }
+
+    out << "]}"
+        << ",\"state\":{\"bag_free_slots\":" << frame.Profession.BagFreeSlots
+        << ",\"materials_available\":" << (frame.Inventory.Materials.empty() ? "false" : "true")
+        << ",\"known_recipe_count\":" << frame.Profession.KnownRecipes.size()
+        << ",\"trainable_recipe_count\":" << frame.Profession.TrainableRecipes.size() << "}"
+        << ",\"policy_output\":{\"mode\":\"observe\",\"intent\":\"wait\"}"
+        << ",\"resolved_action\":{\"type\":\"wait\",\"valid\":true}"
+        << ",\"outcome\":{\"skill_delta\":0,\"materials_spent_value\":0,\"time_spent_sec\":0}"
+        << "}\n";
 }
 
 void BotController::RecordCombatFrame(BotCombatState const& frame, BotCombatDecision const& decision, ResolvedCombatAction const& action, BotActionResult result, Player* owner, Player* bot) const

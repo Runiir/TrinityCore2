@@ -128,6 +128,80 @@ struct BotCombatState
     bool InCombat = false;
 };
 
+struct BotInventoryMaterial
+{
+    uint32 ItemId = 0;
+    uint32 Count = 0;
+};
+
+struct BotProfessionState
+{
+    std::string ProfessionId = "cooking";
+    uint32 SkillId = 0;
+    uint16 SkillCurrent = 0;
+    uint16 SkillTarget = 0;
+    std::vector<uint32> KnownRecipes;
+    std::vector<uint32> TrainableRecipes;
+    uint32 BagFreeSlots = 0;
+};
+
+struct BotInventoryState
+{
+    std::vector<BotInventoryMaterial> Materials;
+    uint64 Gold = 0;
+};
+
+struct BotProfessionFrame
+{
+    ObjectGuid OwnerGuid;
+    ObjectGuid BotGuid;
+    uint8 ClassId = 0;
+    uint32 SpecId = 0;
+    BotProfessionState Profession;
+    BotInventoryState Inventory;
+};
+
+struct BotRecipeScore
+{
+    uint32 RecipeSpellId = 0;
+    float ExpectedSkillupValue = 0.0f;
+    float MaterialCost = 0.0f;
+    float TravelCost = 0.0f;
+    float RecipeAcquisitionCost = 0.0f;
+    float Score = 0.0f;
+    bool Known = false;
+    bool MaterialsAvailable = false;
+};
+
+struct BotGearEvaluation
+{
+    uint32 ItemId = 0;
+    uint8 Bag = 0;
+    uint8 Slot = 0;
+    uint8 Quality = 0;
+    uint8 InventoryType = 0;
+    float Score = 0.0f;
+    float EquippedScore = 0.0f;
+    std::string Decision = "keep";
+};
+
+struct BotGatheringNodeFrame
+{
+    uint32 NodeEntry = 0;
+    std::string NodeType;
+    uint32 ZoneId = 0;
+    float X = 0.0f;
+    float Y = 0.0f;
+    float Z = 0.0f;
+    float Distance = 0.0f;
+    bool LineOfSight = false;
+    bool PathAvailable = false;
+    bool BagSpaceAvailable = false;
+    bool Mounted = false;
+    bool InCombat = false;
+    bool EliteNearby = false;
+};
+
 struct BotCombatDecision
 {
     std::string Mode = "single_target";
@@ -256,6 +330,13 @@ enum class BotActionResult : uint8
     CastFailed,
     Throttled,
     NoAction
+};
+
+struct BotEconomyActionResult
+{
+    BotActionResult Result = BotActionResult::NoAction;
+    uint32 ItemCount = 0;
+    uint64 Money = 0;
 };
 
 char const* ToString(BotMovementMode mode);

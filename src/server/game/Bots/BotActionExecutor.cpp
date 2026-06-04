@@ -1,4 +1,6 @@
 #include "Bots/BotActionExecutor.h"
+#include "Entities/Item/Container/Bag.h"
+#include "Entities/Item/Item.h"
 #include "MotionMaster.h"
 #include "ObjectAccessor.h"
 #include "Player.h"
@@ -8,6 +10,8 @@
 #include "Unit.h"
 #include <algorithm>
 #include <cmath>
+#include <utility>
+#include <vector>
 
 namespace
 {
@@ -83,6 +87,106 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
     bot->Attack(target, true);
     RecordSuccess(bot->GetGUID());
     return BotActionResult::Ok;
+}
+
+BotActionResult BotActionExecutor::CraftRecipe(Player* owner, Player* bot, uint32 recipeSpellId, uint32 count)
+{
+    if (!count)
+        return BotActionResult::NoAction;
+
+    for (uint32 i = 0; i < count; ++i)
+    {
+        BotActionResult check = CheckRecipe(owner, bot, recipeSpellId);
+        if (check != BotActionResult::Ok)
+            return check;
+
+        SpellCastResult result = bot->CastSpell(bot, recipeSpellId, false);
+        if (result != SPELL_CAST_OK)
+            return BotActionResult::CastFailed;
+    }
+
+    return BotActionResult::Ok;
+}
+
+BotEconomyActionResult BotActionExecutor::VendorTrash(Player* owner, Player* bot)
+{
+    BotEconomyActionResult result;
+    if (!owner)
+    {
+        result.Result = BotActionResult::NoOwner;
+        return result;
+    }
+    if (!bot || !bot->IsAlive())
+    {
+        result.Result = BotActionResult::NoBot;
+        return result;
+    }
+
+    std::vector<std::pair<uint8, uint8>> slots;
+    auto considerItem = [&slots](Item* item)
+    {
+        if (!item || item->IsNotEmptyBag())
+            return;
+
+        ItemTemplate const* proto = item->GetTemplate();
+        if (!proto || proto->GetQuality() != ITEM_QUALITY_POOR || proto->GetSellPrice() == 0)
+            return;
+
+        slots.push_back(std::make_pair(item->GetBagSlot(), item->GetSlot()));
+    };
+
+    for (uint8 slot = INVENTORY_SLOT_ITEM_START; slot < INVENTORY_SLOT_ITEM_END; ++slot)
+        considerItem(bot->GetItemByPos(INVENTORY_SLOT_BAG_0, slot));
+
+    for (uint8 bagSlot = INVENTORY_SLOT_BAG_START; bagSlot < INVENTORY_SLOT_BAG_END; ++bagSlot)
+    {
+        if (Bag* bag = bot->GetBagByPos(bagSlot))
+            for (uint32 slot = 0; slot < bag->GetBagSize(); ++slot)
+                considerItem(bag->GetItemByPos(slot));
+    }
+
+    for (auto const& slot : slots)
+    {
+        Item* item = bot->GetItemByPos(slot.first, slot.second);
+        if (!item)
+            continue;
+
+        ItemTemplate const* proto = item->GetTemplate();
+        if (!proto)
+            continue;
+
+        uint32 count = item->GetCount();
+        uint64 money = uint64(proto->GetSellPrice()) * count;
+        bot->DestroyItem(slot.first, slot.second, true);
+        bot->ModifyMoney(money);
+        result.ItemCount += count;
+        result.Money += money;
+    }
+
+    result.Result = result.ItemCount ? BotActionResult::Ok : BotActionResult::NoAction;
+    return result;
+}
+
+BotEconomyActionResult BotActionExecutor::Repair(Player* owner, Player* bot)
+{
+    BotEconomyActionResult result;
+    if (!owner)
+    {
+        result.Result = BotActionResult::NoOwner;
+        return result;
+    }
+    if (!bot || !bot->IsAlive())
+    {
+        result.Result = BotActionResult::NoBot;
+        return result;
+    }
+
+    uint64 before = bot->GetMoney();
+    bot->DurabilityRepairAll(true, 0.0f, false);
+    uint64 after = bot->GetMoney();
+    result.Money = before > after ? before - after : 0;
+    result.Result = BotActionResult::Ok;
+    return result;
 }
 
 BotActionResult BotActionExecutor::Pull(Player* bot, Unit* target)
@@ -251,6 +355,37 @@ BotActionResult BotActionExecutor::CheckHostileSpell(Player* owner, Player* bot,
         return BotActionResult::NoMana;
     if (owner && bot->GetMap() != owner->GetMap())
         return BotActionResult::NoOwner;
+    return BotActionResult::Ok;
+}
+
+BotActionResult BotActionExecutor::CheckRecipe(Player* owner, Player* bot, uint32 recipeSpellId) const
+{
+    if (!owner)
+        return BotActionResult::NoOwner;
+    if (!bot || !bot->IsAlive())
+        return BotActionResult::NoBot;
+    if (owner->GetMap() != bot->GetMap())
+        return BotActionResult::NoOwner;
+
+    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(recipeSpellId);
+    if (!spellInfo)
+        return BotActionResult::BadSpell;
+    if (!bot->HasSpell(recipeSpellId))
+        return BotActionResult::BadSpell;
+    if (bot->HasUnitState(UNIT_STATE_CASTING))
+        return BotActionResult::Casting;
+    if (bot->GetSpellHistory()->HasGlobalCooldown(spellInfo))
+        return BotActionResult::GlobalCooldown;
+
+    for (uint8 i = 0; i < MAX_SPELL_REAGENTS; ++i)
+    {
+        if (spellInfo->Reagent[i] <= 0)
+            continue;
+
+        if (bot->GetItemCount(uint32(spellInfo->Reagent[i])) < spellInfo->ReagentCount[i])
+            return BotActionResult::InvalidTarget;
+    }
+
     return BotActionResult::Ok;
 }
 

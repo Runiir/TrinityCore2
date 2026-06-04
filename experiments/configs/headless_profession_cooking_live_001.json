@@ -1,0 +1,21 @@
+{
+  "experiment_id": "headless_profession_cooking_live_001",
+  "execution_mode": "headless_ra_soap",
+  "domain": "profession",
+  "owner_selector": "Dorala",
+  "party_template": {
+    "healer": "holy_paladin"
+  },
+  "adapter": {
+    "type": "soap",
+    "url": "http://127.0.0.1:7878/",
+    "timeout_sec": 10
+  },
+  "profession": {
+    "recipe_id": 818,
+    "craft_count": 1
+  },
+  "duration_seconds": 3,
+  "record_interval_seconds": 1,
+  "tags": ["phase06", "profession", "cooking", "live-smoke"]
+}

@@ -9,7 +9,7 @@ from ml.group_roles.metrics import group_role_metrics
 from ml.group_roles.policies import policy_for_role
 from ml.preprocessing.preprocess_frames import main as preprocess_main
 from ml.training.train_action_frequency import main as train_main
-from experiments.run_experiment import load_config, make_adapter, movement_metrics, quest_metrics, run_experiment, solo_combat_metrics
+from experiments.run_experiment import load_config, make_adapter, movement_metrics, profession_metrics, quest_metrics, run_experiment, solo_combat_metrics
 
 
 def write_jsonl(path: Path, rows: list[dict]) -> None:
@@ -105,6 +105,27 @@ def test_headless_simple_kill_quest_smoke_records_metrics(tmp_path):
     assert metrics["quest_frame_count"] >= 2
     assert metrics["quest_completion_success"] is True
     assert metrics["deaths_per_quest"] == 0
+    assert metrics["invalid_action_rate"] == 0.0
+    assert recomputed == metrics
+
+
+def test_headless_profession_cooking_smoke_records_metrics(tmp_path):
+    config = load_config(Path("experiments/configs/headless_profession_cooking_smoke_001.json"))
+    adapter = make_adapter(config, force_local=True)
+
+    summary = run_experiment(config, adapter, tmp_path / "runs", tmp_path / "raw")
+
+    assert summary["result"] == "success"
+    metrics_path = tmp_path / summary["paths"]["profession_metrics"]
+    frames_path = tmp_path / summary["paths"]["frames"]
+    metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
+    recomputed = profession_metrics(frames_path)
+
+    assert metrics["profession_frame_count"] >= 4
+    assert metrics["craft_attempts"] == 1
+    assert metrics["craft_success_rate"] == 1.0
+    assert metrics["skill_delta"] == 2
+    assert metrics["gear_eval_items"] >= 1
     assert metrics["invalid_action_rate"] == 0.0
     assert recomputed == metrics
 

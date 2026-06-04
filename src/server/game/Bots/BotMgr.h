@@ -33,6 +33,11 @@ public:
     uint32 SetMoveTarget(Player* owner, float x, float y, float z, std::string const& selector = "all");
     uint32 SetCombatTarget(Player* owner, std::string const& targetSelector, std::string const& botSelector = "all");
     uint32 ClearCombatTarget(Player* owner, std::string const& selector = "all");
+    std::vector<BotRecipeScore> ScoreCookingRecipes(Player* owner, std::string const& selector = "all") const;
+    std::map<ObjectGuid, BotActionResult> CraftCookingRecipe(Player* owner, uint32 recipeSpellId, uint32 count, std::string const& selector = "all");
+    std::map<ObjectGuid, BotEconomyActionResult> VendorTrash(Player* owner, std::string const& selector = "all");
+    std::map<ObjectGuid, BotEconomyActionResult> Repair(Player* owner, std::string const& selector = "all");
+    std::map<ObjectGuid, std::vector<BotGearEvaluation>> EvaluateGear(Player* owner, std::string const& selector = "all") const;
     bool SetRecording(Player* owner, bool enabled);
     std::string GetStatus(Player* owner) const;
     char const* GetBotRoleName(ObjectGuid botGuid) const;

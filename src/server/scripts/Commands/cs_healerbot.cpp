@@ -11,8 +11,10 @@
 #include "Quests/QuestDef.h"
 #include "RBAC.h"
 #include "WorldSession.h"
+#include <algorithm>
 #include <cstdlib>
 #include <iomanip>
+#include <map>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -40,6 +42,11 @@ public:
             { "combat_clear", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleCombatClearCommand, "" },
             { "loot", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleLootCommand, "" },
             { "quest", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleQuestCommand, "" },
+            { "profession_score", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleProfessionScoreCommand, "" },
+            { "craft", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleCraftCommand, "" },
+            { "vendor_trash", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleVendorTrashCommand, "" },
+            { "repair", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleRepairCommand, "" },
+            { "gear_eval", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleGearEvalCommand, "" },
             { "status", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleStatusCommand, "" },
             { "record", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleRecordCommand, "" },
             { "partyfill", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandlePartyFillCommand, "" },
@@ -503,6 +510,183 @@ private:
         if (status.find("\"count\":0") != std::string::npos)
             sBotMgr->ReleaseHeadlessOwnerIfIdle(owner);
         return true;
+    }
+
+    static bool HandleProfessionScoreCommand(ChatHandler* handler, char const* args)
+    {
+        CommandArgs parsed = ParseCommandArgs(args);
+        Player* owner = GetOwner(handler, parsed.ownerSelector);
+        if (!owner)
+            return RequireOwner(handler, parsed.ownerSelector);
+
+        std::string selector = parsed.positional.empty() ? "all" : parsed.positional[0];
+        std::vector<BotRecipeScore> scores = sBotMgr->ScoreCookingRecipes(owner, selector);
+
+        std::ostringstream json;
+        json << "{\"ok\":true,\"action\":\"profession_score\",\"profession_id\":\"cooking\",\"selector\":\"" << JsonEscape(selector) << "\",\"recipes\":[";
+        for (std::size_t i = 0; i < scores.size(); ++i)
+        {
+            BotRecipeScore const& score = scores[i];
+            if (i)
+                json << ',';
+            json << "{\"recipe_id\":" << score.RecipeSpellId
+                 << ",\"score\":" << score.Score
+                 << ",\"expected_skillup_value\":" << score.ExpectedSkillupValue
+                 << ",\"material_cost\":" << score.MaterialCost
+                 << ",\"travel_cost\":" << score.TravelCost
+                 << ",\"recipe_acquisition_cost\":" << score.RecipeAcquisitionCost
+                 << ",\"known\":" << (score.Known ? "true" : "false")
+                 << ",\"materials_available\":" << (score.MaterialsAvailable ? "true" : "false") << "}";
+        }
+        json << "],\"failure_reason\":null}";
+        handler->PSendSysMessage("%s", json.str().c_str());
+        return true;
+    }
+
+    static bool HandleCraftCommand(ChatHandler* handler, char const* args)
+    {
+        CommandArgs parsed = ParseCommandArgs(args);
+        Player* owner = GetOwner(handler, parsed.ownerSelector);
+        if (!owner)
+            return RequireOwner(handler, parsed.ownerSelector);
+
+        if (parsed.positional.empty())
+        {
+            SendResult(handler, false, "craft", "invalid_usage");
+            handler->SetSentErrorMessage(true);
+            return false;
+        }
+
+        uint32 recipeSpellId = uint32(std::strtoul(parsed.positional[0].c_str(), nullptr, 10));
+        uint32 count = parsed.positional.size() > 1 ? std::max<uint32>(1, uint32(std::strtoul(parsed.positional[1].c_str(), nullptr, 10))) : 1;
+        std::string selector = parsed.positional.size() > 2 ? parsed.positional[2] : "all";
+        std::map<ObjectGuid, BotActionResult> results = sBotMgr->CraftCookingRecipe(owner, recipeSpellId, count, selector);
+
+        std::ostringstream json;
+        json << "{\"ok\":" << (!results.empty() ? "true" : "false")
+             << ",\"action\":\"craft\",\"recipe_id\":" << recipeSpellId
+             << ",\"count\":" << count
+             << ",\"selector\":\"" << JsonEscape(selector)
+             << "\",\"results\":[";
+        bool first = true;
+        for (auto const& result : results)
+        {
+            if (!first)
+                json << ',';
+            json << "{\"bot_guid\":" << result.first.GetCounter()
+                 << ",\"result\":\"" << ToString(result.second) << "\"}";
+            first = false;
+        }
+        json << "],\"failure_reason\":";
+        if (results.empty())
+            json << "\"no_matching_bot\"";
+        else
+            json << "null";
+        json << "}";
+        handler->PSendSysMessage("%s", json.str().c_str());
+        if (results.empty())
+            handler->SetSentErrorMessage(true);
+        return !results.empty();
+    }
+
+    static bool HandleVendorTrashCommand(ChatHandler* handler, char const* args)
+    {
+        return HandleEconomyActionCommand(handler, args, "vendor_trash");
+    }
+
+    static bool HandleRepairCommand(ChatHandler* handler, char const* args)
+    {
+        return HandleEconomyActionCommand(handler, args, "repair");
+    }
+
+    static bool HandleEconomyActionCommand(ChatHandler* handler, char const* args, char const* action)
+    {
+        CommandArgs parsed = ParseCommandArgs(args);
+        Player* owner = GetOwner(handler, parsed.ownerSelector);
+        if (!owner)
+            return RequireOwner(handler, parsed.ownerSelector);
+
+        std::string selector = parsed.positional.empty() ? "all" : parsed.positional[0];
+        std::map<ObjectGuid, BotEconomyActionResult> results = stricmp(action, "repair") == 0
+            ? sBotMgr->Repair(owner, selector)
+            : sBotMgr->VendorTrash(owner, selector);
+
+        std::ostringstream json;
+        json << "{\"ok\":" << (!results.empty() ? "true" : "false")
+             << ",\"action\":\"" << JsonEscape(action)
+             << "\",\"selector\":\"" << JsonEscape(selector)
+             << "\",\"results\":[";
+        bool first = true;
+        for (auto const& result : results)
+        {
+            if (!first)
+                json << ',';
+            json << "{\"bot_guid\":" << result.first.GetCounter()
+                 << ",\"result\":\"" << ToString(result.second.Result)
+                 << "\",\"item_count\":" << result.second.ItemCount
+                 << ",\"money\":" << result.second.Money << "}";
+            first = false;
+        }
+        json << "],\"failure_reason\":";
+        if (results.empty())
+            json << "\"no_matching_bot\"";
+        else
+            json << "null";
+        json << "}";
+        handler->PSendSysMessage("%s", json.str().c_str());
+        if (results.empty())
+            handler->SetSentErrorMessage(true);
+        return !results.empty();
+    }
+
+    static bool HandleGearEvalCommand(ChatHandler* handler, char const* args)
+    {
+        CommandArgs parsed = ParseCommandArgs(args);
+        Player* owner = GetOwner(handler, parsed.ownerSelector);
+        if (!owner)
+            return RequireOwner(handler, parsed.ownerSelector);
+
+        std::string selector = parsed.positional.empty() ? "all" : parsed.positional[0];
+        std::map<ObjectGuid, std::vector<BotGearEvaluation>> results = sBotMgr->EvaluateGear(owner, selector);
+
+        std::ostringstream json;
+        json << "{\"ok\":" << (!results.empty() ? "true" : "false")
+             << ",\"action\":\"gear_eval\",\"selector\":\"" << JsonEscape(selector)
+             << "\",\"bots\":[";
+        bool firstBot = true;
+        for (auto const& botResult : results)
+        {
+            if (!firstBot)
+                json << ',';
+            json << "{\"bot_guid\":" << botResult.first.GetCounter()
+                 << ",\"items\":[";
+            for (std::size_t i = 0; i < botResult.second.size(); ++i)
+            {
+                BotGearEvaluation const& item = botResult.second[i];
+                if (i)
+                    json << ',';
+                json << "{\"item_id\":" << item.ItemId
+                     << ",\"bag\":" << uint32(item.Bag)
+                     << ",\"slot\":" << uint32(item.Slot)
+                     << ",\"quality\":" << uint32(item.Quality)
+                     << ",\"inventory_type\":" << uint32(item.InventoryType)
+                     << ",\"score\":" << item.Score
+                     << ",\"equipped_score\":" << item.EquippedScore
+                     << ",\"decision\":\"" << JsonEscape(item.Decision) << "\"}";
+            }
+            json << "]}";
+            firstBot = false;
+        }
+        json << "],\"failure_reason\":";
+        if (results.empty())
+            json << "\"no_matching_bot\"";
+        else
+            json << "null";
+        json << "}";
+        handler->PSendSysMessage("%s", json.str().c_str());
+        if (results.empty())
+            handler->SetSentErrorMessage(true);
+        return !results.empty();
     }
 
     static bool HandleRecordCommand(ChatHandler* handler, char const* args)

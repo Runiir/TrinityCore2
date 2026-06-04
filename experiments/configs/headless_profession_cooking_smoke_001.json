@@ -1,0 +1,36 @@
+{
+  "adapter": {
+    "type": "local"
+  },
+  "cleanup": {
+    "remove_bots": true,
+    "stop_recording": true
+  },
+  "controller": "external_script",
+  "domain": "profession",
+  "execution_mode": "headless_ra_soap",
+  "experiment_id": "headless_profession_cooking_smoke_001",
+  "live_client_present": false,
+  "owner_selector": "Dorala",
+  "party_template": {
+    "solo": "holy_paladin"
+  },
+  "profession": {
+    "craft_count": 2,
+    "profession_id": "cooking",
+    "recipe_id": 2538
+  },
+  "run": {
+    "profession_ticks": true,
+    "success_conditions": [
+      "profession_frames_recorded",
+      "crafting_executor_succeeded",
+      "profession_metrics_generated"
+    ],
+    "timeout_sec": 60
+  },
+  "server_build": "wow_4.3.4",
+  "setup": {
+    "recording": true
+  }
+}

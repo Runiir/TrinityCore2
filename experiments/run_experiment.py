@@ -179,6 +179,13 @@ class LocalCommandAdapter(CommandAdapter):
         self.quest_progress = 0
         self.quest_required = 3
         self.quest_objective_center = [6.0, 0.0, 0.0]
+        self.profession_skill = 1
+        self.profession_target = 75
+        self.recipe_id = 2538
+        self.material_item_id = 2672
+        self.material_count = 4
+        self.gold = 10000
+        self.bag_free_slots = 12
 
     def execute(self, command: str) -> CommandResult:
         output: dict[str, Any]
@@ -264,6 +271,49 @@ class LocalCommandAdapter(CommandAdapter):
         elif command.startswith("playerbot quest turn_in"):
             self.quest_turned_in = self.quest_accepted and self.quest_progress >= self.quest_required
             output = {"ok": self.quest_turned_in, "action": "quest_turn_in", "quest_id": self.quest_id, "state": "rewarded" if self.quest_turned_in else "incomplete", "failure_reason": None if self.quest_turned_in else "quest_incomplete"}
+        elif command.startswith("playerbot profession_score"):
+            output = {
+                "ok": self.spawned,
+                "action": "profession_score",
+                "profession_id": "cooking",
+                "selector": "all",
+                "recipes": [{
+                    "recipe_id": self.recipe_id,
+                    "score": 99.0 if self.material_count else 73.0,
+                    "expected_skillup_value": 1.0,
+                    "material_cost": 1.0 if self.material_count else 6.0,
+                    "travel_cost": 0.0,
+                    "recipe_acquisition_cost": 0.0,
+                    "known": True,
+                    "materials_available": self.material_count > 0,
+                }],
+                "failure_reason": None if self.spawned else "no_active_bot",
+            }
+        elif command.startswith("playerbot craft"):
+            parts = command.split()
+            count = int(parts[3]) if len(parts) > 3 else 1
+            crafted = min(count, self.material_count)
+            self.material_count -= crafted
+            self.profession_skill += crafted
+            self.bag_free_slots = max(0, self.bag_free_slots - crafted)
+            output = {
+                "ok": self.spawned and crafted == count,
+                "action": "craft",
+                "recipe_id": self.recipe_id,
+                "count": count,
+                "selector": "all",
+                "results": [{"bot_guid": self.bot_guid, "result": "ok" if crafted == count else "invalid_target"}],
+                "failure_reason": None if crafted == count else "missing_materials",
+            }
+        elif command.startswith("playerbot vendor_trash"):
+            self.gold += 37
+            self.bag_free_slots += 1
+            output = {"ok": self.spawned, "action": "vendor_trash", "selector": "all", "results": [{"bot_guid": self.bot_guid, "result": "ok", "item_count": 1, "money": 37}], "failure_reason": None if self.spawned else "no_active_bot"}
+        elif command.startswith("playerbot repair"):
+            self.gold -= 12
+            output = {"ok": self.spawned, "action": "repair", "selector": "all", "results": [{"bot_guid": self.bot_guid, "result": "ok", "item_count": 0, "money": 12}], "failure_reason": None if self.spawned else "no_active_bot"}
+        elif command.startswith("playerbot gear_eval"):
+            output = {"ok": self.spawned, "action": "gear_eval", "selector": "all", "bots": [{"bot_guid": self.bot_guid, "items": [{"item_id": 117, "bag": 0, "slot": 23, "quality": 1, "inventory_type": 5, "score": 8.5, "equipped_score": 4.0, "decision": "equip"}]}], "failure_reason": None if self.spawned else "no_active_bot"}
         elif command.startswith("playerbot status"):
             output = {"ok": True, "action": "status", "count": 1 if self.spawned else 0, "bots": [{"guid": self.bot_guid, "role": "holy_paladin", "movement": self.movement_state(), "combat": self.combat_state()}] if self.spawned else []}
         elif command.startswith("playerbot remove"):
@@ -736,6 +786,57 @@ def quest_metrics(frames_path: Path) -> dict[str, Any]:
     }
 
 
+def profession_metrics(frames_path: Path) -> dict[str, Any]:
+    profession_frames = 0
+    craft_attempts = 0
+    craft_success = 0
+    skill_delta = 0
+    materials_spent_value = 0.0
+    vendor_trash_money = 0
+    repair_cost = 0
+    gear_eval_items = 0
+    invalid_actions = 0
+
+    with frames_path.open("r", encoding="utf-8") as handle:
+        for line in handle:
+            if not line.strip():
+                continue
+            frame = json.loads(line)
+            if frame.get("domain") != "profession":
+                continue
+
+            profession_frames += 1
+            resolved = frame.get("resolved_action", {})
+            outcome = frame.get("outcome", {})
+            action_type = resolved.get("type")
+            if not bool(resolved.get("valid", True)):
+                invalid_actions += 1
+            if action_type == "craft":
+                craft_attempts += 1
+                if resolved.get("result") in {None, "ok"} and bool(resolved.get("valid", True)):
+                    craft_success += 1
+                skill_delta += int(outcome.get("skill_delta", 0) or 0)
+                materials_spent_value += float(outcome.get("materials_spent_value", 0.0) or 0.0)
+            elif action_type == "vendor_trash":
+                vendor_trash_money += int(outcome.get("money", 0) or 0)
+            elif action_type == "repair":
+                repair_cost += int(outcome.get("money", 0) or 0)
+            elif action_type == "gear_eval":
+                gear_eval_items += int(outcome.get("items_evaluated", 0) or 0)
+
+    return {
+        "profession_frame_count": profession_frames,
+        "craft_attempts": craft_attempts,
+        "craft_success_rate": craft_success / craft_attempts if craft_attempts else 0.0,
+        "skill_delta": skill_delta,
+        "materials_spent_value": round(materials_spent_value, 6),
+        "vendor_trash_money": vendor_trash_money,
+        "repair_cost": repair_cost,
+        "gear_eval_items": gear_eval_items,
+        "invalid_action_rate": invalid_actions / profession_frames if profession_frames else 1.0,
+    }
+
+
 def group_smoke_state(config: dict[str, Any], tick: int) -> dict[str, Any]:
     mechanics = [
         "pull_setup",
@@ -1021,6 +1122,94 @@ def run_experiment(config: dict[str, Any], adapter: CommandAdapter, runs_dir: Pa
                     write_jsonl_row(role_frame_paths["role_frames"], written_frame)
                     write_jsonl_row(role_frame_paths[f"{role}_frames"], written_frame)
                 store.tick(1.0)
+
+        if config.get("domain") == "profession" or config.get("run", {}).get("profession_ticks"):
+            profession = config.get("profession", {})
+            recipe_id = int(profession.get("recipe_id", getattr(adapter, "recipe_id", 2538)))
+            craft_count = int(profession.get("craft_count", 1))
+            score_result = execute(playerbot_command(config, "profession_score"))
+            if not score_result.ok:
+                raise ExperimentError("profession_score_failed")
+            recipes = score_result.parsed.get("recipes", []) if isinstance(score_result.parsed, dict) else []
+            chosen = next((recipe for recipe in recipes if int(recipe.get("recipe_id", 0) or 0) == recipe_id), recipes[0] if recipes else {})
+            materials_before = int(getattr(adapter, "material_count", 0))
+            skill_before = int(getattr(adapter, "profession_skill", 0))
+            craft_result = execute(playerbot_command(config, "craft", str(recipe_id), str(craft_count)))
+            if not craft_result.ok:
+                raise ExperimentError("profession_craft_failed")
+            craft_inner_results = craft_result.parsed.get("results", []) if isinstance(craft_result.parsed, dict) else []
+            craft_inner_ok = all(result.get("result") == "ok" for result in craft_inner_results) if craft_inner_results else craft_result.ok
+            materials_after = int(getattr(adapter, "material_count", materials_before))
+            skill_after = int(getattr(adapter, "profession_skill", skill_before))
+            skill_delta = max(0, skill_after - skill_before)
+            materials_spent = max(0, materials_before - materials_after)
+
+            frame_writer.write(
+                domain="profession",
+                subdomain="crafting",
+                trigger="task_decision",
+                actor={
+                    "guid": metadata["bots"][0].get("guid") if metadata["bots"] else None,
+                    "class_id": metadata["bots"][0].get("class_id") if metadata["bots"] else None,
+                    "spec_id": metadata["bots"][0].get("spec_id") if metadata["bots"] else None,
+                },
+                task={
+                    "type": "craft_for_skillup",
+                    "profession_id": profession.get("profession_id", "cooking"),
+                    "skill_current": skill_before,
+                    "skill_target": int(getattr(adapter, "profession_target", 0)),
+                    "candidate_recipe_id": recipe_id,
+                },
+                state={
+                    "bag_free_slots": int(getattr(adapter, "bag_free_slots", 0)),
+                    "materials_available": materials_before >= craft_count,
+                    "expected_skillup_chance": float(chosen.get("expected_skillup_value", 0.0) or 0.0),
+                    "missing_materials": [] if materials_before >= craft_count else [getattr(adapter, "material_item_id", 0)],
+                    "profession_state": {
+                        "profession_id": profession.get("profession_id", "cooking"),
+                        "skill_current": skill_before,
+                        "skill_target": int(getattr(adapter, "profession_target", 0)),
+                        "known_recipes": [recipe_id],
+                        "trainable_recipes": [],
+                        "bag_free_slots": int(getattr(adapter, "bag_free_slots", 0)),
+                    },
+                    "inventory_state": {
+                        "materials": [{"item_id": int(getattr(adapter, "material_item_id", 0)), "count": materials_after}],
+                        "gold": int(getattr(adapter, "gold", 0)),
+                    },
+                },
+                valid_actions={"task_abstractions": ["choose_next_recipe", "craft_recipe", "craft_until_skill", "buy_vendor_reagent", "vendor_trash", "repair_items", "gear_eval"]},
+                policy_output={"mode": "craft", "intent": "craft_recipe", "recipe_id": recipe_id, "count": craft_count},
+                resolved_action={"type": "craft", "recipe_id": recipe_id, "count": craft_count, "valid": craft_result.ok and craft_inner_ok, "result": "ok" if craft_result.ok and craft_inner_ok else "failed"},
+                outcome={"skill_delta": skill_delta, "materials_spent_value": float(materials_spent), "time_spent_sec": 1.5},
+            )
+
+            vendor_result = execute(playerbot_command(config, "vendor_trash"))
+            repair_result = execute(playerbot_command(config, "repair"))
+            gear_result = execute(playerbot_command(config, "gear_eval"))
+            gear_items = 0
+            if isinstance(gear_result.parsed, dict):
+                for bot_result in gear_result.parsed.get("bots", []):
+                    gear_items += len(bot_result.get("items", []))
+
+            for command_result, action_type in [(vendor_result, "vendor_trash"), (repair_result, "repair"), (gear_result, "gear_eval")]:
+                money = 0
+                item_count = 0
+                if isinstance(command_result.parsed, dict):
+                    for item in command_result.parsed.get("results", []):
+                        money += int(item.get("money", 0) or 0)
+                        item_count += int(item.get("item_count", 0) or 0)
+                frame_writer.write(
+                    domain="profession",
+                    subdomain="economy",
+                    trigger="task_decision",
+                    actor={"guid": metadata["bots"][0].get("guid") if metadata["bots"] else None, "is_bot": bool(metadata["bots"])},
+                    task={"type": action_type, "profession_id": profession.get("profession_id", "cooking")},
+                    state={"bag_free_slots": int(getattr(adapter, "bag_free_slots", 0)), "gold": int(getattr(adapter, "gold", 0))},
+                    policy_output={"mode": "economy", "intent": action_type},
+                    resolved_action={"type": action_type, "valid": command_result.ok, "result": "ok" if command_result.ok else "failed"},
+                    outcome={"item_count": item_count, "money": money, "items_evaluated": gear_items if action_type == "gear_eval" else 0},
+                )
 
         if config.get("domain") == "movement" or config.get("run", {}).get("movement_ticks"):
             movement_modes = config.get("run", {}).get("movement_modes", ["follow", "stay", "return_to_group", "move_safe", "unstuck"])
@@ -1323,6 +1512,11 @@ def run_experiment(config: dict[str, Any], adapter: CommandAdapter, runs_dir: Pa
                 write_json(episode_dir / "quest_metrics.json", q_metrics)
                 summary["quest_metrics"] = q_metrics
                 produced_paths["quest_metrics"] = display_path(episode_dir / "quest_metrics.json")
+            p_metrics = profession_metrics(frames_path)
+            if p_metrics["profession_frame_count"]:
+                write_json(episode_dir / "profession_metrics.json", p_metrics)
+                summary["profession_metrics"] = p_metrics
+                produced_paths["profession_metrics"] = display_path(episode_dir / "profession_metrics.json")
             g_metrics = group_role_metrics(frames_path)
             if g_metrics["group_role_frame_count"]:
                 write_json(episode_dir / "group_role_metrics.json", g_metrics)
