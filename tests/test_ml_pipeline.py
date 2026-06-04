@@ -4,6 +4,9 @@ import json
 from pathlib import Path
 
 from ml.evaluation.evaluate_action_frequency import main as evaluate_main
+from ml.group_roles.coordination import ReservationStore
+from ml.group_roles.metrics import group_role_metrics
+from ml.group_roles.policies import policy_for_role
 from ml.preprocessing.preprocess_frames import main as preprocess_main
 from ml.training.train_action_frequency import main as train_main
 from experiments.run_experiment import load_config, make_adapter, movement_metrics, quest_metrics, run_experiment, solo_combat_metrics
@@ -103,4 +106,69 @@ def test_headless_simple_kill_quest_smoke_records_metrics(tmp_path):
     assert metrics["quest_completion_success"] is True
     assert metrics["deaths_per_quest"] == 0
     assert metrics["invalid_action_rate"] == 0.0
+    assert recomputed == metrics
+
+
+def test_group_role_reservation_store_expires_assignments():
+    store = ReservationStore()
+    store.reserve("interrupt", 50103, target_enemy_slot=0, spell_id=900201, expires_in=1.2)
+
+    assert store.active("interrupt")[0].as_frame_value()["assigned_to_guid"] == 50103
+
+    store.tick(0.7)
+    assert store.active("interrupt")[0].expires_in == 0.5
+
+    store.tick(0.6)
+    assert store.active("interrupt") == []
+
+
+def test_group_role_policies_cover_phase05_modes():
+    assert policy_for_role("tank", {"tick": 0})["mode"] == "pull_setup"
+    assert policy_for_role("healer", {"mechanic_family": "group_aoe"})["mode"] == "prepare_group_aoe"
+    assert policy_for_role("melee_dps", {"mechanic_family": "interrupt"})["mode"] == "interrupt_duty"
+    assert policy_for_role("ranged_dps", {"mechanic_family": "cc_required"})["mode"] == "cc_duty"
+
+
+def test_phase05_mechanic_metadata_contains_required_files_and_families():
+    required_files = [
+        "mechanic_families.json",
+        "spell_mechanics.json",
+        "role_responses.json",
+        "boss_timelines.json",
+        "embedding_vocab.json",
+    ]
+    for filename in required_files:
+        assert (Path("dataset/metadata") / filename).exists()
+
+    families = json.loads(Path("dataset/metadata/mechanic_families.json").read_text(encoding="utf-8"))["mechanic_families"]
+    for family in ["tank_buster", "group_aoe", "dispel", "interrupt", "cc_required"]:
+        assert family in families
+
+
+def test_full_party_trash_pull_smoke_records_role_and_group_metrics(tmp_path):
+    config = load_config(Path("experiments/configs/full_party_trash_pull_001.json"))
+    adapter = make_adapter(config, force_local=True)
+
+    summary = run_experiment(config, adapter, tmp_path / "runs", tmp_path / "raw")
+
+    assert summary["result"] == "success"
+    assert len(json.loads((tmp_path / summary["paths"]["metadata"]).read_text(encoding="utf-8"))["bots"]) == 5
+    frames_path = tmp_path / summary["paths"]["frames"]
+    metrics_path = tmp_path / summary["paths"]["group_role_metrics"]
+    metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
+    recomputed = group_role_metrics(frames_path)
+
+    assert metrics["success"] is True
+    assert metrics["group_role_frame_count"] == 40
+    assert metrics["group_coordination_frame_count"] >= 8
+    assert set(metrics["role_frame_counts"]) == {"tank", "healer", "melee_dps", "ranged_dps"}
+    assert metrics["role_frame_counts"] == {"tank": 8, "healer": 8, "melee_dps": 8, "ranged_dps": 16}
+    assert metrics["missed_interrupts"] == 0
+    assert metrics["missed_dispels"] == 0
+    assert (tmp_path / summary["paths"]["role_frames"]).exists()
+    assert (tmp_path / summary["paths"]["tank_frames"]).exists()
+    assert (tmp_path / summary["paths"]["healer_frames"]).exists()
+    assert (tmp_path / summary["paths"]["melee_dps_frames"]).exists()
+    assert (tmp_path / summary["paths"]["ranged_dps_frames"]).exists()
+    assert (tmp_path / summary["paths"]["group_coordination"]).exists()
     assert recomputed == metrics

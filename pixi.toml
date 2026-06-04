@@ -16,6 +16,7 @@ test = "pytest"
 experiment-smoke = "python experiments/run_experiment.py experiments/configs/headless_playerbot_smoke_001.json --local"
 movement-smoke = "python experiments/run_experiment.py experiments/configs/headless_movement_smoke_001.json --local"
 combat-smoke = "python experiments/run_experiment.py experiments/configs/headless_solo_combat_smoke_001.json --local"
+full-party-smoke = "python experiments/run_experiment.py experiments/configs/full_party_trash_pull_001.json --local"
 setup-dvc-s3 = "python scripts/setup_dvc_s3_remote.py"
 
 [dependencies]

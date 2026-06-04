@@ -1,0 +1,49 @@
+{
+  "adapter": {
+    "type": "local"
+  },
+  "boss_id": 1,
+  "cleanup": {
+    "remove_bots": true,
+    "stop_recording": true
+  },
+  "controller": "external_script",
+  "domain": "group_roles",
+  "dungeon_id": 1,
+  "execution_mode": "headless_ra_soap",
+  "experiment_id": "full_party_trash_pull_001",
+  "live_client_present": false,
+  "map_id": 0,
+  "owner_selector": "Dorala",
+  "party_template": {
+    "tank": "protection_warrior",
+    "healer": "holy_paladin",
+    "dps": [
+      "assassination_rogue",
+      "fire_mage",
+      "marksmanship_hunter"
+    ]
+  },
+  "run": {
+    "failure_conditions": [
+      "tank_dead",
+      "healer_dead",
+      "wipe",
+      "timeout"
+    ],
+    "group_ticks": 8,
+    "success_conditions": [
+      "all_enemies_dead",
+      "party_alive",
+      "role_frames_recorded",
+      "group_coordination_recorded",
+      "metrics_generated"
+    ],
+    "timeout_sec": 180
+  },
+  "server_build": "wow_4.3.4",
+  "setup": {
+    "recording": true
+  },
+  "zone_id": 12
+}

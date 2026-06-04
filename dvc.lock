@@ -11,14 +11,14 @@ stages:
       size: 1069
     - path: experiments/run_experiment.py
       hash: md5
-      md5: 6bafd6260356d83443a19992ba24d2a6
-      size: 56728
+      md5: af7103fb35cd29597349429f042b14fb
+      size: 68737
     outs:
     - path: dataset/raw
       hash: md5
-      md5: 2c57544c9b369974369c46f29e3970e7.dir
-      size: 95067
-      nfiles: 12
+      md5: 1f8aa514766c2fc85c8ab32dabdbd616.dir
+      size: 851725
+      nfiles: 33
     - path: dvclive
       hash: md5
       md5: 4207e77df4b4f6746159120c680e6895.dir
@@ -26,9 +26,9 @@ stages:
       nfiles: 6
     - path: experiments/runs
       hash: md5
-      md5: db8c1c6b36195d37be71264f23076582.dir
-      size: 161907
-      nfiles: 39
+      md5: b50b3eec1a782f6f7cf6d958dedac7a8.dir
+      size: 198313
+      nfiles: 51
   preprocess:
     cmd: python ml/preprocessing/preprocess_frames.py --raw-dir dataset/raw 
       --output dataset/processed/frames.jsonl --manifest 
@@ -36,9 +36,9 @@ stages:
     deps:
     - path: dataset/raw
       hash: md5
-      md5: 2c57544c9b369974369c46f29e3970e7.dir
-      size: 95067
-      nfiles: 12
+      md5: 1f8aa514766c2fc85c8ab32dabdbd616.dir
+      size: 851725
+      nfiles: 33
     - path: ml/preprocessing/preprocess_frames.py
       hash: md5
       md5: d16316ea6c13f99004330f9e3abc8436
@@ -46,20 +46,20 @@ stages:
     outs:
     - path: dataset/processed/frames.jsonl
       hash: md5
-      md5: caeebf1dbab7335759232e6fe4d94916
-      size: 75325
+      md5: f52c8d7e51834dab0eab15d659eaf61a
+      size: 703076
     - path: dataset/processed/manifest.json
       hash: md5
-      md5: f537c18192fc0334907a00a09fb247f2
-      size: 415
+      md5: afafd0de547dfbb6f6149c34196e2351
+      size: 529
   train:
     cmd: python ml/training/train_action_frequency.py --frames 
       dataset/processed/frames.jsonl --model models/action_frequency_model.json
     deps:
     - path: dataset/processed/frames.jsonl
       hash: md5
-      md5: caeebf1dbab7335759232e6fe4d94916
-      size: 75325
+      md5: f52c8d7e51834dab0eab15d659eaf61a
+      size: 703076
     - path: ml/training/train_action_frequency.py
       hash: md5
       md5: bb7c5f90b83165ba24b54d62c691e3db
@@ -67,8 +67,8 @@ stages:
     outs:
     - path: models/action_frequency_model.json
       hash: md5
-      md5: 5f8733ffad0f41694e6b07554ab59be9
-      size: 400
+      md5: 83ccc63dd8f88facd6e63cb04ae093c0
+      size: 402
   evaluate:
     cmd: python ml/evaluation/evaluate_action_frequency.py --frames 
       dataset/processed/frames.jsonl --model models/action_frequency_model.json 
@@ -77,22 +77,22 @@ stages:
     deps:
     - path: dataset/processed/frames.jsonl
       hash: md5
-      md5: caeebf1dbab7335759232e6fe4d94916
-      size: 75325
+      md5: f52c8d7e51834dab0eab15d659eaf61a
+      size: 703076
     - path: ml/evaluation/evaluate_action_frequency.py
       hash: md5
       md5: 6661befc7f329972914519b3841a1343
       size: 1853
     - path: models/action_frequency_model.json
       hash: md5
-      md5: 5f8733ffad0f41694e6b07554ab59be9
-      size: 400
+      md5: 83ccc63dd8f88facd6e63cb04ae093c0
+      size: 402
     outs:
     - path: dataset/evaluations/metrics.json
       hash: md5
-      md5: cfeb45c20c07cd51da28bd152c8d62c1
-      size: 75
+      md5: 017cd662f2daf79f9fa41e2a645d2965
+      size: 76
     - path: dataset/evaluations/report.json
       hash: md5
-      md5: 0ebb171ed396318c5312130ae9b89a03
-      size: 349
+      md5: 40e11dc7c48fe80f9c6e711c708b5442
+      size: 351

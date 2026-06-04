@@ -19,10 +19,18 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
 from dvclive import Live
 
+from ml.group_roles.coordination import ReservationStore
+from ml.group_roles.frames import coordination_frame, role_frame
+from ml.group_roles.metrics import group_role_metrics
+from ml.group_roles.policies import policy_for_role
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+
 DEFAULT_RUNS_DIR = REPO_ROOT / "experiments" / "runs"
 DEFAULT_RAW_DIR = REPO_ROOT / "dataset" / "raw"
 
@@ -36,6 +44,10 @@ EXECUTION_MODES = {
 
 CLASS_SPEC_HINTS = {
     "holy_paladin": {"class_id": 2, "spec_id": 65, "role": "healer"},
+    "protection_warrior": {"class_id": 1, "spec_id": 73, "role": "tank"},
+    "assassination_rogue": {"class_id": 4, "spec_id": 259, "role": "melee_dps"},
+    "fire_mage": {"class_id": 8, "spec_id": 63, "role": "ranged_dps"},
+    "marksmanship_hunter": {"class_id": 3, "spec_id": 254, "role": "ranged_dps"},
     "warrior": {"class_id": 1, "spec_id": 71, "role": "solo"},
     "hunter": {"class_id": 3, "spec_id": 253, "role": "solo"},
     "rogue": {"class_id": 4, "spec_id": 259, "role": "solo"},
@@ -146,6 +158,7 @@ class LocalCommandAdapter(CommandAdapter):
 
     def __init__(self) -> None:
         self.bot_guid = 50101
+        self.next_bot_guid = 50101
         self.leader_guid = 10001
         self.recording = False
         self.spawned = False
@@ -170,16 +183,22 @@ class LocalCommandAdapter(CommandAdapter):
     def execute(self, command: str) -> CommandResult:
         output: dict[str, Any]
         if command.startswith("playerbot spawn"):
+            parts = command.split()
+            class_spec_tag = parts[2] if len(parts) > 2 else "holy_paladin"
+            hint = CLASS_SPEC_HINTS.get(class_spec_tag, CLASS_SPEC_HINTS["holy_paladin"])
+            bot_guid = self.next_bot_guid
+            self.next_bot_guid += 1
+            self.bot_guid = bot_guid
             self.spawned = True
             output = {
                 "ok": True,
                 "action": "spawn",
-                "bot_guid": self.bot_guid,
-                "name": "LocalSmokeBot",
-                "role": "holy_paladin",
-                "class_spec_tag": "holy_paladin",
-                "class_id": 2,
-                "spec_id": 65,
+                "bot_guid": bot_guid,
+                "name": f"Local{class_spec_tag.title().replace('_', '')}",
+                "role": hint["role"],
+                "class_spec_tag": class_spec_tag,
+                "class_id": hint["class_id"],
+                "spec_id": hint["spec_id"],
                 "state": "spawned",
                 "count": 1,
                 "selector": "local",
@@ -474,6 +493,23 @@ def first_party_role(config: dict[str, Any]) -> str:
     return str(next(iter(party_template.values())))
 
 
+def party_members(config: dict[str, Any]) -> list[tuple[str, str]]:
+    party_template = config.get("party_template") or {"healer": "holy_paladin"}
+    if not isinstance(party_template, dict) or not party_template:
+        raise ExperimentError("party_template must contain at least one role mapping")
+    members: list[tuple[str, str]] = []
+    for role, class_spec in party_template.items():
+        if isinstance(class_spec, list):
+            for index, tag in enumerate(class_spec, 1):
+                member_role = "melee_dps" if index == 1 else "ranged_dps"
+                if str(tag) in {"fire_mage", "marksmanship_hunter", "hunter", "mage"}:
+                    member_role = "ranged_dps"
+                members.append((member_role, str(tag)))
+        else:
+            members.append((str(role), str(class_spec)))
+    return members
+
+
 def movement_state_from_status(parsed: dict[str, Any] | list[Any] | None) -> dict[str, Any]:
     if not isinstance(parsed, dict):
         return {}
@@ -700,6 +736,37 @@ def quest_metrics(frames_path: Path) -> dict[str, Any]:
     }
 
 
+def group_smoke_state(config: dict[str, Any], tick: int) -> dict[str, Any]:
+    mechanics = [
+        "pull_setup",
+        "interrupt",
+        "cleave",
+        "dispel",
+        "tank_buster",
+        "group_aoe",
+        "target_switch",
+        "burn_phase",
+    ]
+    mechanic = mechanics[min(tick, len(mechanics) - 1)]
+    return {
+        "tick": tick,
+        "mechanic_family": mechanic,
+        "mob_count": max(1, 3 - tick // 3),
+        "tank_hp_pct": max(0.62, 1.0 - tick * 0.035),
+        "lowest_party_hp_pct": max(0.68, 1.0 - tick * 0.03),
+        "healer_mana_pct": max(0.56, 0.92 - tick * 0.025),
+        "dungeon_id": int(config.get("dungeon_id", 1)),
+        "boss_id": int(config.get("boss_id", 1)),
+        "phase_id": 1 if tick < 6 else 2,
+    }
+
+
+def write_jsonl_row(path: Path, row: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(row, sort_keys=True, separators=(",", ":")) + "\n")
+
+
 def write_initial_metadata(config: dict[str, Any], episode_id: str, episode_dir: Path) -> dict[str, Any]:
     metadata = {
         "episode_id": episode_id,
@@ -768,22 +835,23 @@ def run_experiment(config: dict[str, Any], adapter: CommandAdapter, runs_dir: Pa
         return command_result
 
     try:
-        role = first_party_role(config)
-        spawn = execute(playerbot_command(config, "spawn", role))
-        if not spawn.ok:
-            raise ExperimentError("bot_spawn_failed")
-        if isinstance(spawn.parsed, dict):
-            bot_guid = spawn.parsed.get("bot_guid")
-            class_spec_tag = spawn.parsed.get("class_spec_tag") or role
-            class_spec_hint = CLASS_SPEC_HINTS.get(str(class_spec_tag), {})
-            metadata["bots"].append({
-                "guid": bot_guid,
-                "name": spawn.parsed.get("name"),
-                "role": spawn.parsed.get("role") or role,
-                "class_spec_tag": class_spec_tag,
-                "class_id": spawn.parsed.get("class_id", class_spec_hint.get("class_id")),
-                "spec_id": spawn.parsed.get("spec_id", class_spec_hint.get("spec_id")),
-            })
+        members = party_members(config) if config.get("domain") == "group_roles" else [(first_party_role(config), first_party_role(config))]
+        for requested_role, class_spec in members:
+            spawn = execute(playerbot_command(config, "spawn", class_spec))
+            if not spawn.ok:
+                raise ExperimentError("bot_spawn_failed")
+            if isinstance(spawn.parsed, dict):
+                bot_guid = spawn.parsed.get("bot_guid")
+                class_spec_tag = spawn.parsed.get("class_spec_tag") or class_spec
+                class_spec_hint = CLASS_SPEC_HINTS.get(str(class_spec_tag), {})
+                metadata["bots"].append({
+                    "guid": bot_guid,
+                    "name": spawn.parsed.get("name"),
+                    "role": requested_role if config.get("domain") == "group_roles" else spawn.parsed.get("role") or requested_role,
+                    "class_spec_tag": class_spec_tag,
+                    "class_id": spawn.parsed.get("class_id", class_spec_hint.get("class_id")),
+                    "spec_id": spawn.parsed.get("spec_id", class_spec_hint.get("spec_id")),
+                })
 
         if config.get("setup", {}).get("recording", True):
             recording = execute(playerbot_command(config, "record", "on"))
@@ -807,6 +875,152 @@ def run_experiment(config: dict[str, Any], adapter: CommandAdapter, runs_dir: Pa
             resolved_action={"command": status.command},
             outcome={"recording_file_created": frames_path.exists(), "bot_spawned": bool(metadata["bots"])},
         )
+
+        if config.get("domain") == "group_roles":
+            required_roles = {"tank", "healer", "melee_dps", "ranged_dps"}
+            available_roles = {str(bot.get("role")) for bot in metadata["bots"]}
+            if not required_roles.issubset(available_roles):
+                raise ExperimentError(f"group_party_missing_roles:{sorted(required_roles - available_roles)}")
+
+            role_frame_paths = {
+                "role_frames": raw_episode_dir / f"role_frames_{episode_id}.jsonl",
+                "tank_frames": raw_episode_dir / f"tank_frames_{episode_id}.jsonl",
+                "healer_frames": raw_episode_dir / f"healer_frames_{episode_id}.jsonl",
+                "melee_dps_frames": raw_episode_dir / f"melee_dps_frames_{episode_id}.jsonl",
+                "ranged_dps_frames": raw_episode_dir / f"ranged_dps_frames_{episode_id}.jsonl",
+                "group_coordination": raw_episode_dir / f"group_coordination_{episode_id}.jsonl",
+            }
+            for key, path in role_frame_paths.items():
+                produced_paths[key] = display_path(path)
+
+            store = ReservationStore()
+            ticks = int(config.get("run", {}).get("group_ticks", 8))
+            primary_target_guid = 80001
+            enemy_hp = 1.0
+            for tick in range(ticks):
+                state = group_smoke_state(config, tick)
+                mechanic_family = state["mechanic_family"]
+                if mechanic_family == "interrupt":
+                    interrupter = next(bot for bot in metadata["bots"] if bot["role"] == "melee_dps")
+                    store.reserve("interrupt", int(interrupter["guid"]), expires_in=1.2, target_enemy_slot=0, spell_id=900201, priority=10)
+                elif mechanic_family == "dispel":
+                    healer = next(bot for bot in metadata["bots"] if bot["role"] == "healer")
+                    store.reserve("dispel", int(healer["guid"]), expires_in=2.0, target_guid=50103, spell_id=900202, priority=10)
+                elif mechanic_family == "tank_buster":
+                    healer = next(bot for bot in metadata["bots"] if bot["role"] == "healer")
+                    store.reserve("external_defensive", int(healer["guid"]), expires_in=3.0, target_guid=metadata["bots"][0]["guid"], spell_id=900301, priority=8)
+                elif mechanic_family == "group_aoe":
+                    healer = next(bot for bot in metadata["bots"] if bot["role"] == "healer")
+                    store.reserve("group_cooldown", int(healer["guid"]), expires_in=3.0, spell_id=900302, priority=8)
+
+                coordination_state = store.frame_state()
+                coordination_state.update({
+                    "primary_kill_target": primary_target_guid,
+                    "focus_target": primary_target_guid,
+                    "pull_state": "in_combat" if tick > 0 else "pull_setup",
+                    "stack_assignment": [bot["guid"] for bot in metadata["bots"]] if mechanic_family == "stack" else [],
+                    "spread_assignment": [bot["guid"] for bot in metadata["bots"]] if mechanic_family == "spread" else [],
+                })
+                party_state = {
+                    "dungeon_id": state["dungeon_id"],
+                    "boss_id": state["boss_id"],
+                    "phase_id": state["phase_id"],
+                    "party_size": len(metadata["bots"]),
+                    "tank_hp_pct": state["tank_hp_pct"],
+                    "lowest_party_hp_pct": state["lowest_party_hp_pct"],
+                    "healer_mana_pct": state["healer_mana_pct"],
+                    "alive": True,
+                }
+                enemy_hp = max(0.0, enemy_hp - 0.13)
+                enemy_state = {
+                    "primary_target_guid": primary_target_guid,
+                    "primary_target_entry": 90001 if tick < ticks - 2 else 90003,
+                    "primary_target_hp_pct": enemy_hp,
+                    "mob_count": state["mob_count"],
+                    "active_cast_spell_id": 900201 if mechanic_family == "interrupt" else None,
+                }
+                mechanic = {
+                    "mechanic_family": mechanic_family,
+                    "mechanic_subtype": "smoke_tick",
+                    "spell_id": enemy_state["active_cast_spell_id"] or (900301 if mechanic_family == "tank_buster" else 900302 if mechanic_family == "group_aoe" else None),
+                    "targeting": "party" if mechanic_family == "group_aoe" else "tank",
+                    "damage_profile": "physical" if mechanic_family in {"tank_buster", "cleave"} else "magic",
+                }
+                coord = coordination_frame(
+                    episode_id=episode_id,
+                    tick=tick + 1,
+                    coordination=coordination_state,
+                    party_state=party_state,
+                    outcome={"missed_interrupts": 0, "missed_dispels": 0, "target_priority_error": 0},
+                )
+                written_coord = frame_writer.write(
+                    domain=coord["domain"],
+                    subdomain=coord["subdomain"],
+                    trigger=coord["trigger"],
+                    actor=coord["actor"],
+                    task=coord["task"],
+                    state=coord["state"],
+                    valid_actions=coord["valid_actions"],
+                    policy_output=coord["policy_output"],
+                    resolved_action=coord["resolved_action"],
+                    outcome=coord["outcome"],
+                )
+                write_jsonl_row(role_frame_paths["group_coordination"], written_coord)
+
+                for bot in metadata["bots"]:
+                    role = str(bot["role"])
+                    policy = policy_for_role(role, state)
+                    reservation = next((item for item in coordination_state["reserved_actions"] if item["assigned_to_guid"] == bot["guid"]), None)
+                    if reservation:
+                        policy = {**policy, "reserved_action": reservation, "action_type": reservation["type"]}
+                    outcome = {
+                        "deaths": 0,
+                        "avoidable_damage": 0.0,
+                        "missed_interrupts": 0,
+                        "missed_dispels": 0,
+                        "bad_pull": 0,
+                        "stuck_event": 0,
+                        "target_priority_error": 0,
+                        "loose_mob_count": 0,
+                        "overhealing": 0.0 if role != "healer" else 0.02,
+                    }
+                    if role == "tank" and policy["mode"] in {"group_mobs", "recover_aggro"}:
+                        outcome["taunt_latency_sec"] = 0.4
+                    if role == "healer" and policy["mode"] in {"stabilize", "emergency", "recover_after_damage"}:
+                        outcome["time_to_stabilize_sec"] = 1.5
+                    frame = role_frame(
+                        episode_id=episode_id,
+                        tick=tick + 1,
+                        actor={
+                            "guid": bot.get("guid"),
+                            "is_bot": True,
+                            "role": role,
+                            "class_id": bot.get("class_id"),
+                            "spec_id": bot.get("spec_id"),
+                            "class_spec_tag": bot.get("class_spec_tag"),
+                        },
+                        party_state=party_state,
+                        enemy_state=enemy_state,
+                        mechanic=mechanic,
+                        coordination=coordination_state,
+                        policy_output=policy,
+                        outcome=outcome,
+                    )
+                    written_frame = frame_writer.write(
+                        domain=frame["domain"],
+                        subdomain=frame["subdomain"],
+                        trigger=frame["trigger"],
+                        actor=frame["actor"],
+                        task=frame["task"],
+                        state=frame["state"],
+                        valid_actions=frame["valid_actions"],
+                        policy_output=frame["policy_output"],
+                        resolved_action=frame["resolved_action"],
+                        outcome=frame["outcome"],
+                    )
+                    write_jsonl_row(role_frame_paths["role_frames"], written_frame)
+                    write_jsonl_row(role_frame_paths[f"{role}_frames"], written_frame)
+                store.tick(1.0)
 
         if config.get("domain") == "movement" or config.get("run", {}).get("movement_ticks"):
             movement_modes = config.get("run", {}).get("movement_modes", ["follow", "stay", "return_to_group", "move_safe", "unstuck"])
@@ -1109,6 +1323,11 @@ def run_experiment(config: dict[str, Any], adapter: CommandAdapter, runs_dir: Pa
                 write_json(episode_dir / "quest_metrics.json", q_metrics)
                 summary["quest_metrics"] = q_metrics
                 produced_paths["quest_metrics"] = display_path(episode_dir / "quest_metrics.json")
+            g_metrics = group_role_metrics(frames_path)
+            if g_metrics["group_role_frame_count"]:
+                write_json(episode_dir / "group_role_metrics.json", g_metrics)
+                summary["group_role_metrics"] = g_metrics
+                produced_paths["group_role_metrics"] = display_path(episode_dir / "group_role_metrics.json")
         write_json(episode_dir / "summary.json", summary)
         if live:
             command_count = 0
