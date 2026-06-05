@@ -22,6 +22,7 @@ public:
 
     void Update(uint32 diff);
     Player* Spawn(Player* owner, std::string const& role, std::string const& selector);
+    Player* SpawnWorldBot(std::string const& role, std::string const& selector, uint32 mapId, float x, float y, float z, float o);
     Player* SpawnHolyPaladin(Player* owner, std::string const& selector);
     Player* GetOrLoadHeadlessOwner(std::string const& selector);
     void ReleaseHeadlessOwnerIfIdle(Player* owner);
@@ -29,6 +30,7 @@ public:
     std::vector<Player*> PartyFill(Player* owner, std::string const& partyType, std::string const& role);
     uint32 Remove(Player* owner, std::string const& selector = "all");
     bool Remove(Player* owner, ObjectGuid botGuid);
+    bool RemoveWorldBot(ObjectGuid botGuid);
     uint32 SetMovement(Player* owner, BotMovementMode mode, std::string const& selector = "all");
     uint32 SetMoveTarget(Player* owner, float x, float y, float z, std::string const& selector = "all");
     uint32 SetCombatTarget(Player* owner, std::string const& targetSelector, std::string const& botSelector = "all");
@@ -41,6 +43,7 @@ public:
     bool SetRecording(Player* owner, bool enabled);
     std::string GetStatus(Player* owner) const;
     char const* GetBotRoleName(ObjectGuid botGuid) const;
+    Player* GetLoadedPlayer(ObjectGuid guid) const;
     BotRecentEvents ConsumeRecentEvents(ObjectGuid botGuid);
     void OnOwnerLogout(Player* owner);
     void OnGroupRemoveMember(Group* group, ObjectGuid guid);
@@ -60,8 +63,17 @@ private:
     bool IsOwnedBot(ObjectGuid botGuid) const;
     ObjectGuid GetOwnerGuid(ObjectGuid botGuid) const;
     bool IsTrackedPartyMember(ObjectGuid botGuid, ObjectGuid unitGuid) const;
-    Player* LoadBotFromPool(Player* owner, std::string const& role, std::string const& selector);
-    Player* LoadCharacterAsBotSession(ObjectGuid guid, uint32 accountId, Player* nearPlayer);
+    struct BotSpawnPlacement
+    {
+        uint32 MapId;
+        float X;
+        float Y;
+        float Z;
+        float O;
+    };
+
+    Player* LoadBotFromPool(Player* owner, std::string const& role, std::string const& selector, BotSpawnPlacement const* placement = nullptr);
+    Player* LoadCharacterAsBotSession(ObjectGuid guid, uint32 accountId, Player* nearPlayer, BotSpawnPlacement const* placement = nullptr);
     bool AddToOwnerGroup(Player* owner, Player* bot, BotRole role);
     void CleanupBot(ObjectGuid botGuid, bool logoutPlayer);
     void SetBotCharacterOnline(ObjectGuid botGuid, bool online);
@@ -75,6 +87,7 @@ private:
     std::map<ObjectGuid, std::unique_ptr<WorldSession>> _headlessOwnerSessions;
     std::map<ObjectGuid, BotRecentEvents> _recentEventsByBot;
     std::set<ObjectGuid> _removingBots;
+    std::set<ObjectGuid> _worldBots;
     BotActionExecutor _executor;
 };
 

@@ -3419,6 +3419,64 @@ PlayerBot.UpdateMs = 500
 PlayerBot.Debug = 0
 
 ###################################################################################################
+# BOT WORLD EXPERIMENT SETTINGS
+#
+#    BotWorld.Enable
+#        Description: Enables autonomous server-side world bot experiments driven by ".botexp".
+#        Default:     0
+#
+#    BotWorld.TargetPopulation
+#        Description: Default number of active autonomous bots for ".botexp start".
+#        Default:     10
+#
+#    BotWorld.Map / BotWorld.Zone / BotWorld.CenterX / BotWorld.CenterY / BotWorld.CenterZ / BotWorld.Radius
+#        Description: Initial Phase 1 experiment area. Defaults are an Elwynn Forest/Northshire area.
+#
+#    BotWorld.DecisionTickMs
+#        Description: Autonomous bot decision interval in milliseconds.
+#        Default:     3000
+#
+#    BotExperiment.*
+#        Description: Experiment telemetry controls for autonomous bot events and decisions.
+#
+
+BotWorld.Enable = 0
+BotWorld.TargetPopulation = 10
+BotWorld.MaxPerMap = 50
+BotWorld.TickMs = 1000
+BotWorld.DecisionTickMs = 3000
+BotWorld.Map = 0
+BotWorld.Zone = 12
+BotWorld.CenterX = -9449.0
+BotWorld.CenterY = 64.0
+BotWorld.CenterZ = 56.0
+BotWorld.Radius = 80.0
+BotWorld.MinLevel = 1
+BotWorld.MaxLevel = 85
+BotWorld.AllowCombat = 1
+
+BotExperiment.Enable = 1
+BotExperiment.RecordDecisions = 1
+BotExperiment.RecordPerception = 1
+BotExperiment.SmartSampling = 1
+BotExperiment.NormalDecisionSampleRate = 10
+BotExperiment.AlwaysRecordFailures = 1
+BotExperiment.AlwaysRecordInterventions = 1
+BotExperiment.AlwaysRecordRareStates = 1
+BotExperiment.BrainVersion = "utility_v1"
+
+BotProgression.Enable = 1
+BotProgression.PowerScoreVersion = "role_power_v1"
+BotProgression.AllowQuesting = 0
+BotProgression.AllowDungeons = 0
+BotProgression.AllowRaids = 0
+
+BotSemantic.Enable = 1
+BotSemantic.InferCreatureTags = 1
+BotSemantic.InferSpellTags = 1
+BotSemantic.UpdateOutcomeStats = 0
+
+###################################################################################################
 # AUCTION HOUSE BOT SETTINGS
 #
 #    AuctionHouseBot.Account

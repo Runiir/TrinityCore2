@@ -5,6 +5,7 @@
 #include "ScriptMgr.h"
 #include "Bots/BotMgr.h"
 #include "Bots/BotTypes.h"
+#include "Bots/BotWorldPopulationMgr.h"
 #include "Chat.h"
 #include "ObjectMgr.h"
 #include "Player.h"
@@ -780,6 +781,96 @@ private:
     }
 };
 
+class botexp_commandscript : public CommandScript
+{
+public:
+    botexp_commandscript() : CommandScript("botexp_commandscript") { }
+
+    std::vector<ChatCommand> GetCommands() const override
+    {
+        static std::vector<ChatCommand> botExpCommandTable =
+        {
+            { "start",  rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleStartCommand,  "" },
+            { "stop",   rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleStopCommand,   "" },
+            { "status", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleStatusCommand, "" },
+            { "summary", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleSummaryCommand, "" },
+            { "export", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleExportCommand, "" },
+        };
+
+        static std::vector<ChatCommand> commandTable =
+        {
+            { "botexp", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, nullptr, "", botExpCommandTable },
+        };
+
+        return commandTable;
+    }
+
+private:
+    static std::string FirstArg(char const* args)
+    {
+        if (!args)
+            return "";
+
+        std::string input = args;
+        std::vector<char> buffer(input.begin(), input.end());
+        buffer.push_back('\0');
+        if (char* token = strtok(buffer.data(), " "))
+            return token;
+
+        return "";
+    }
+
+    static bool HandleStartCommand(ChatHandler* handler, char const* args)
+    {
+        std::string name = FirstArg(args);
+        if (name.empty())
+            name = "autonomous_zone_10";
+
+        if (!sBotWorldPopulationMgr->Start(name))
+        {
+            if (handler)
+            {
+                handler->PSendSysMessage("{\"ok\":false,\"action\":\"botexp_start\",\"failure_reason\":\"botworld_or_playerbot_disabled_or_no_pool_character\"}");
+                handler->SetSentErrorMessage(true);
+            }
+            return false;
+        }
+
+        if (handler)
+            handler->PSendSysMessage("%s", sBotWorldPopulationMgr->GetStatusJson().c_str());
+        return true;
+    }
+
+    static bool HandleStopCommand(ChatHandler* handler, char const* /*args*/)
+    {
+        sBotWorldPopulationMgr->Stop();
+        if (handler)
+            handler->PSendSysMessage("{\"ok\":true,\"action\":\"botexp_stop\",\"failure_reason\":null}");
+        return true;
+    }
+
+    static bool HandleStatusCommand(ChatHandler* handler, char const* /*args*/)
+    {
+        if (handler)
+            handler->PSendSysMessage("%s", sBotWorldPopulationMgr->GetStatusJson().c_str());
+        return true;
+    }
+
+    static bool HandleSummaryCommand(ChatHandler* handler, char const* /*args*/)
+    {
+        if (handler)
+            handler->PSendSysMessage("%s", sBotWorldPopulationMgr->GetSummaryJson().c_str());
+        return true;
+    }
+
+    static bool HandleExportCommand(ChatHandler* handler, char const* /*args*/)
+    {
+        if (handler)
+            handler->PSendSysMessage("{\"ok\":true,\"action\":\"botexp_export\",\"storage\":\"character_database_tables\",\"tables\":[\"experiment_bot_runs\",\"experiment_bot_events\",\"experiment_bot_decisions\",\"experiment_bot_activities\"],\"failure_reason\":null}");
+        return true;
+    }
+};
+
 class playerbot_playerscript : public PlayerScript
 {
 public:
@@ -842,6 +933,7 @@ public:
 void AddSC_healerbot_commandscript()
 {
     new playerbot_commandscript();
+    new botexp_commandscript();
     new playerbot_playerscript();
     new playerbot_unitscript();
     new playerbot_groupscript();

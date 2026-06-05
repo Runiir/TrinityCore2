@@ -1,0 +1,724 @@
+#include "Bots/BotWorldPopulationMgr.h"
+#include "Bots/BotActionExecutor.h"
+#include "Bots/BotMgr.h"
+#include "Config.h"
+#include "DatabaseEnv.h"
+#include "GameTime.h"
+#include "Log.h"
+#include "MotionMaster.h"
+#include "ObjectAccessor.h"
+#include "Player.h"
+#include "Random.h"
+#include "SpellHistory.h"
+#include "SpellInfo.h"
+#include "SpellMgr.h"
+#include "Unit.h"
+#include "Creature.h"
+#include <algorithm>
+#include <cmath>
+#include <iomanip>
+#include <sstream>
+
+namespace
+{
+uint64 ReadLastInsertId()
+{
+    if (QueryResult result = CharacterDatabase.Query("SELECT LAST_INSERT_ID()"))
+        return result->Fetch()[0].GetUInt64();
+
+    return 0;
+}
+
+float Distance2d(float ax, float ay, float bx, float by)
+{
+    float dx = ax - bx;
+    float dy = ay - by;
+    return std::sqrt(dx * dx + dy * dy);
+}
+}
+
+BotWorldPopulationMgr* BotWorldPopulationMgr::instance()
+{
+    static BotWorldPopulationMgr instance;
+    return &instance;
+}
+
+bool BotWorldPopulationMgr::Start(std::string const& experimentName, BotWorldExperimentConfig const* overrideConfig)
+{
+    if (_active)
+        Stop();
+
+    if (!sConfigMgr->GetBoolDefault("BotWorld.Enable", false) || !sConfigMgr->GetBoolDefault("PlayerBot.Enable", false))
+        return false;
+
+    _config = overrideConfig ? *overrideConfig : BotWorldExperimentConfig();
+    if (!experimentName.empty())
+        _config.Name = experimentName;
+
+    _config.TargetPopulation = sConfigMgr->GetIntDefault("BotWorld.TargetPopulation", _config.TargetPopulation);
+    _config.MapId = sConfigMgr->GetIntDefault("BotWorld.Map", _config.MapId);
+    _config.ZoneId = sConfigMgr->GetIntDefault("BotWorld.Zone", _config.ZoneId);
+    _config.CenterX = sConfigMgr->GetFloatDefault("BotWorld.CenterX", _config.CenterX);
+    _config.CenterY = sConfigMgr->GetFloatDefault("BotWorld.CenterY", _config.CenterY);
+    _config.CenterZ = sConfigMgr->GetFloatDefault("BotWorld.CenterZ", _config.CenterZ);
+    _config.Radius = sConfigMgr->GetFloatDefault("BotWorld.Radius", _config.Radius);
+    _config.MinLevel = uint8(sConfigMgr->GetIntDefault("BotWorld.MinLevel", _config.MinLevel));
+    _config.MaxLevel = uint8(sConfigMgr->GetIntDefault("BotWorld.MaxLevel", _config.MaxLevel));
+    _config.AllowCombat = sConfigMgr->GetBoolDefault("BotWorld.AllowCombat", _config.AllowCombat);
+    _config.AllowQuesting = false;
+    _config.RecordDecisions = sConfigMgr->GetBoolDefault("BotExperiment.RecordDecisions", _config.RecordDecisions);
+    _config.RecordPerception = sConfigMgr->GetBoolDefault("BotExperiment.RecordPerception", _config.RecordPerception);
+    _config.SmartSampling = sConfigMgr->GetBoolDefault("BotExperiment.SmartSampling", _config.SmartSampling);
+    _config.NormalDecisionSampleRate = std::max<uint32>(1, sConfigMgr->GetIntDefault("BotExperiment.NormalDecisionSampleRate", _config.NormalDecisionSampleRate));
+    _config.BrainVersion = sConfigMgr->GetStringDefault("BotExperiment.BrainVersion", _config.BrainVersion);
+
+    _bots.clear();
+    _failedSpawnGuids.clear();
+    _metrics = BotWorldStatus();
+    _metrics.Active = true;
+    _metrics.Name = _config.Name;
+    _metrics.TargetBots = _config.TargetPopulation;
+    _elapsedMs = 0;
+    _active = true;
+
+    RecordRunStart();
+    EnsurePopulation();
+    return _active;
+}
+
+void BotWorldPopulationMgr::Stop()
+{
+    if (!_active)
+        return;
+
+    for (WorldBotState const& state : _bots)
+    {
+        RecordActivityStop(state);
+        sBotMgr->RemoveWorldBot(state.Guid);
+    }
+
+    RecordRunStop();
+    _bots.clear();
+    _active = false;
+}
+
+void BotWorldPopulationMgr::Update(uint32 diff)
+{
+    if (!_active)
+        return;
+
+    _elapsedMs += diff;
+    EnsurePopulation();
+
+    for (auto itr = _bots.begin(); itr != _bots.end();)
+    {
+        if (!GetBot(*itr))
+        {
+            itr = _bots.erase(itr);
+            continue;
+        }
+
+        UpdateBot(*itr, diff);
+        ++itr;
+    }
+}
+
+void BotWorldPopulationMgr::EnsurePopulation()
+{
+    uint32 attempts = 0;
+    uint32 maxAttempts = std::max<uint32>(1, _config.TargetPopulation * 2);
+    while (_active && _bots.size() < _config.TargetPopulation && attempts < maxAttempts)
+    {
+        ++attempts;
+        uint32 candidateGuid = SelectPoolCandidateGuid();
+        if (!candidateGuid)
+            break;
+
+        float angle = frand(0.0f, 2.0f * float(M_PI));
+        float dist = frand(0.0f, _config.Radius * 0.35f);
+        float x = _config.CenterX + std::cos(angle) * dist;
+        float y = _config.CenterY + std::sin(angle) * dist;
+        Player* bot = sBotMgr->SpawnWorldBot("any", std::to_string(candidateGuid), _config.MapId, x, y, _config.CenterZ, angle);
+        if (!bot)
+        {
+            _failedSpawnGuids.insert(candidateGuid);
+            continue;
+        }
+
+        WorldBotState state;
+        state.Guid = bot->GetGUID();
+        state.DecisionTimer = urand(0, sConfigMgr->GetIntDefault("BotWorld.DecisionTickMs", 3000));
+        state.LastX = bot->GetPositionX();
+        state.LastY = bot->GetPositionY();
+        state.LastZ = bot->GetPositionZ();
+        _bots.push_back(state);
+        _metrics.ActiveBots = uint32(_bots.size());
+
+        std::string raw = BuildRawJson(bot, nullptr);
+        std::string semantic = BuildSemanticJson(bot, nullptr, "idle");
+        RecordActivityStart(_bots.back(), bot);
+        RecordEvent(_bots.back(), bot, "bot_spawned", nullptr, "ok", raw.c_str(), semantic.c_str());
+    }
+}
+
+void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
+{
+    Player* bot = GetBot(state);
+    if (!bot)
+        return;
+
+    if (!bot->IsAlive())
+    {
+        state.DeadTimer += diff;
+        if (state.DeadTimer == diff)
+        {
+            ++_metrics.Deaths;
+            std::string raw = BuildRawJson(bot, nullptr);
+            std::string semantic = BuildSemanticJson(bot, nullptr, "corpse_recovery");
+            RecordEvent(state, bot, "death", nullptr, "dead", raw.c_str(), semantic.c_str(), 0.0f, _metrics.Deaths);
+        }
+
+        if (state.DeadTimer >= 5000)
+        {
+            bot->ResurrectPlayer(0.7f, false);
+            bot->TeleportTo(_config.MapId, _config.CenterX, _config.CenterY, _config.CenterZ, bot->GetOrientation());
+            state.DeadTimer = 0;
+            std::string raw = BuildRawJson(bot, nullptr);
+            std::string semantic = BuildSemanticJson(bot, nullptr, "corpse_recovery");
+            RecordEvent(state, bot, "resurrected", nullptr, "ok", raw.c_str(), semantic.c_str());
+        }
+        return;
+    }
+    state.DeadTimer = 0;
+
+    float moved = Distance2d(bot->GetPositionX(), bot->GetPositionY(), state.LastX, state.LastY);
+    bool moving = bot->isMoving() || bot->HasUnitState(UNIT_STATE_MOVING);
+    if (moving && moved < 0.2f)
+        state.StuckTimer += diff;
+    else
+        state.StuckTimer = 0;
+    state.LastX = bot->GetPositionX();
+    state.LastY = bot->GetPositionY();
+    state.LastZ = bot->GetPositionZ();
+
+    if (state.StuckTimer >= 6000)
+    {
+        ++_metrics.StuckEvents;
+        Position pos = bot->GetFirstCollisionPosition(4.0f, frand(0.0f, 2.0f * float(M_PI)));
+        bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+        bot->GetMotionMaster()->MovePoint(0, pos, true);
+        state.StuckTimer = 0;
+        std::string raw = BuildRawJson(bot, nullptr);
+        std::string semantic = BuildSemanticJson(bot, nullptr, "stuck_recovery");
+        RecordEvent(state, bot, "stuck_detected", nullptr, "repath", raw.c_str(), semantic.c_str(), 1.0f, _metrics.StuckEvents);
+        RecordDecision(state, bot, "stuck_recovery", "unstuck", nullptr, raw.c_str(), semantic.c_str(), true, true);
+        return;
+    }
+
+    if (state.DecisionTimer > diff)
+    {
+        state.DecisionTimer -= diff;
+        return;
+    }
+    state.DecisionTimer = std::max<uint32>(500, sConfigMgr->GetIntDefault("BotWorld.DecisionTickMs", 3000));
+
+    Unit* target = state.TargetGuid.IsEmpty() ? nullptr : ObjectAccessor::GetUnit(*bot, state.TargetGuid);
+    if (!target)
+        target = bot->GetVictim();
+
+    uint32 maxHealth = bot->GetMaxHealth();
+    float hpPct = maxHealth ? float(bot->GetHealth()) / float(maxHealth) : 1.0f;
+    std::string situation = bot->IsInCombat() ? "open_world_combat" : "travel";
+    std::string action = "wander";
+
+    if (hpPct < 0.35f && !bot->IsInCombat())
+    {
+        bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+        bot->GetMotionMaster()->MoveIdle();
+        state.RestTimer += state.DecisionTimer;
+        if (state.RestTimer >= 3000)
+        {
+            bot->SetFullHealth();
+            bot->SetFullPower(bot->GetPowerType());
+            state.RestTimer = 0;
+        }
+        situation = "idle";
+        action = "rest";
+    }
+    else if (target && target->IsAlive())
+    {
+        state.TargetGuid = target->GetGUID();
+        BotActionExecutor executor;
+        executor.Pull(bot, target);
+        uint32 spellId = SelectCombatSpell(bot, target);
+        situation = "open_world_combat";
+        action = spellId ? "cast_combat_spell" : "attack";
+        if (spellId && TryCastCombatSpell(bot, target, spellId))
+        {
+            std::string raw = BuildRawJson(bot, target);
+            std::string semantic = BuildSemanticJson(bot, target, situation.c_str());
+            RecordEvent(state, bot, "spell_cast", target, "ok", raw.c_str(), semantic.c_str(), 0.0f, 0, spellId);
+        }
+        if (!state.WasInCombat)
+        {
+            std::string raw = BuildRawJson(bot, target);
+            std::string semantic = BuildSemanticJson(bot, target, situation.c_str());
+            RecordEvent(state, bot, "combat_started", target, "ok", raw.c_str(), semantic.c_str());
+        }
+        state.WasInCombat = true;
+    }
+    else if (target && !target->IsAlive())
+    {
+        BotActionExecutor executor;
+        BotActionResult result = executor.Loot(bot, target);
+        ++_metrics.Kills;
+        situation = "open_world_combat";
+        action = "loot";
+        std::string raw = BuildRawJson(bot, target);
+        std::string semantic = BuildSemanticJson(bot, target, situation.c_str());
+        RecordEvent(state, bot, "mob_killed", target, "ok", raw.c_str(), semantic.c_str(), 0.0f, _metrics.Kills);
+        RecordEvent(state, bot, "loot_received", target, ToString(result), raw.c_str(), semantic.c_str());
+        state.TargetGuid.Clear();
+        state.WasInCombat = false;
+    }
+    else if (_config.AllowCombat && (target = SelectSafeTarget(bot)))
+    {
+        BotActionExecutor executor;
+        BotActionResult result = executor.Pull(bot, target);
+        state.TargetGuid = target->GetGUID();
+        uint32 spellId = SelectCombatSpell(bot, target);
+        situation = "open_world_combat";
+        action = spellId ? "pull_and_cast" : "pull_safe_mob";
+        std::string raw = BuildRawJson(bot, target);
+        std::string semantic = BuildSemanticJson(bot, target, situation.c_str());
+        RecordEvent(state, bot, "combat_started", target, ToString(result), raw.c_str(), semantic.c_str());
+        if (spellId && TryCastCombatSpell(bot, target, spellId))
+            RecordEvent(state, bot, "spell_cast", target, "ok", raw.c_str(), semantic.c_str(), 0.0f, 0, spellId);
+        state.WasInCombat = true;
+    }
+    else
+    {
+        MoveToWanderPoint(bot, state);
+        state.WasInCombat = false;
+    }
+
+    std::string raw = BuildRawJson(bot, target);
+    std::string semantic = BuildSemanticJson(bot, target, situation.c_str());
+    RecordDecision(state, bot, situation.c_str(), action.c_str(), target, raw.c_str(), semantic.c_str(), false, false);
+}
+
+Player* BotWorldPopulationMgr::GetBot(WorldBotState const& state) const
+{
+    Player* bot = sBotMgr->GetLoadedPlayer(state.Guid);
+    if (!bot || !bot->IsInWorld())
+        return nullptr;
+
+    return bot;
+}
+
+uint32 BotWorldPopulationMgr::SelectPoolCandidateGuid() const
+{
+    std::ostringstream query;
+    query << "SELECT cbp.guid FROM character_bot_pool cbp INNER JOIN characters c ON c.guid = cbp.guid "
+          << "WHERE cbp.enabled = 1 AND cbp.in_use = 0 "
+          << "AND c.level BETWEEN " << uint32(_config.MinLevel) << " AND " << uint32(_config.MaxLevel);
+
+    if (!_failedSpawnGuids.empty())
+    {
+        query << " AND cbp.guid NOT IN (";
+        bool first = true;
+        for (uint32 guid : _failedSpawnGuids)
+        {
+            if (!first)
+                query << ',';
+            query << guid;
+            first = false;
+        }
+        query << ")";
+    }
+
+    query << " ORDER BY cbp.guid LIMIT 1";
+
+    if (QueryResult result = CharacterDatabase.Query(query.str().c_str()))
+        return result->Fetch()[0].GetUInt32();
+
+    return 0;
+}
+
+Unit* BotWorldPopulationMgr::SelectSafeTarget(Player* bot) const
+{
+    if (!bot)
+        return nullptr;
+
+    Unit* target = bot->SelectNearbyTarget(nullptr, 30.0f);
+    if (!target || !target->IsAlive() || !bot->IsValidAttackTarget(target) || !bot->IsWithinLOSInMap(target))
+        return nullptr;
+
+    if (Creature* creature = target->ToCreature())
+        if (creature->isElite())
+            return nullptr;
+
+    int32 levelDelta = int32(target->getLevel()) - int32(bot->getLevel());
+    if (levelDelta > 1)
+        return nullptr;
+
+    if (target->GetExactDist(bot) > 25.0f)
+        return nullptr;
+
+    return target;
+}
+
+uint32 BotWorldPopulationMgr::SelectCombatSpell(Player* bot, Unit* target) const
+{
+    if (!bot || !target || !target->IsAlive())
+        return 0;
+
+    uint8 playerClass = bot->getClass();
+    uint32 candidates[4] = { 0, 0, 0, 0 };
+    switch (playerClass)
+    {
+        case CLASS_MAGE:
+            candidates[0] = 133;      // Fireball
+            candidates[1] = 44614;    // Frostfire Bolt
+            break;
+        case CLASS_PRIEST:
+            candidates[0] = 585;      // Smite
+            break;
+        case CLASS_WARLOCK:
+            candidates[0] = 686;      // Shadow Bolt
+            break;
+        case CLASS_DRUID:
+            candidates[0] = 5176;     // Wrath
+            break;
+        case CLASS_SHAMAN:
+            candidates[0] = 403;      // Lightning Bolt
+            break;
+        case CLASS_PALADIN:
+            candidates[0] = 20271;    // Judgement
+            break;
+        case CLASS_HUNTER:
+            candidates[0] = 75;       // Auto Shot
+            break;
+        case CLASS_DEATH_KNIGHT:
+            candidates[0] = 45477;    // Icy Touch
+            candidates[1] = 45462;    // Plague Strike
+            break;
+        case CLASS_WARRIOR:
+            candidates[0] = 78;       // Heroic Strike
+            break;
+        case CLASS_ROGUE:
+            candidates[0] = 1752;     // Sinister Strike
+            break;
+        default:
+            break;
+    }
+
+    for (uint32 spellId : candidates)
+        if (spellId && bot->HasSpell(spellId))
+            return spellId;
+
+    return 0;
+}
+
+bool BotWorldPopulationMgr::TryCastCombatSpell(Player* bot, Unit* target, uint32 spellId) const
+{
+    if (!bot || !target || !spellId || !target->IsAlive() || !bot->IsValidAttackTarget(target))
+        return false;
+
+    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+    if (!spellInfo || !bot->IsWithinLOSInMap(target))
+        return false;
+
+    float maxRange = std::max(5.0f, spellInfo->GetMaxRange(false));
+    if (!bot->IsWithinDistInMap(target, maxRange))
+        return false;
+
+    if (bot->HasUnitState(UNIT_STATE_CASTING) || bot->GetSpellHistory()->HasGlobalCooldown(spellInfo) || !bot->GetSpellHistory()->IsReady(spellInfo))
+        return false;
+
+    int32 powerCost = spellInfo->CalcPowerCost(bot, spellInfo->GetSchoolMask());
+    if (powerCost > 0 && bot->GetPower(bot->GetPowerType()) < uint32(powerCost))
+        return false;
+
+    return bot->CastSpell(target, spellId, false) == SPELL_CAST_OK;
+}
+
+void BotWorldPopulationMgr::MoveToWanderPoint(Player* bot, WorldBotState& /*state*/)
+{
+    if (!bot)
+        return;
+
+    float fromCenter = Distance2d(bot->GetPositionX(), bot->GetPositionY(), _config.CenterX, _config.CenterY);
+    float angle = fromCenter > _config.Radius ? bot->GetAngle(_config.CenterX, _config.CenterY) : frand(0.0f, 2.0f * float(M_PI));
+    float distance = frand(8.0f, 25.0f);
+    Position pos = bot->GetFirstCollisionPosition(distance, angle);
+    bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+    bot->GetMotionMaster()->MovePoint(0, pos, true);
+}
+
+void BotWorldPopulationMgr::RecordRunStart()
+{
+    std::string escapedName = _config.Name;
+    std::string escapedConfig = BuildConfigJson();
+    std::string escapedBrain = _config.BrainVersion;
+    CharacterDatabase.EscapeString(escapedName);
+    CharacterDatabase.EscapeString(escapedConfig);
+    CharacterDatabase.EscapeString(escapedBrain);
+    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_runs (experiment_name, config_json, brain_version, status, started_at) VALUES ('%s', '%s', '%s', 'running', NOW())",
+        escapedName.c_str(), escapedConfig.c_str(), escapedBrain.c_str());
+    _runId = ReadLastInsertId();
+    _experimentId = _runId;
+    _metrics.ExperimentId = _experimentId;
+    _metrics.RunId = _runId;
+}
+
+void BotWorldPopulationMgr::RecordRunStop()
+{
+    std::string summary = GetSummaryJson();
+    CharacterDatabase.EscapeString(summary);
+    CharacterDatabase.DirectPExecute("UPDATE experiment_bot_runs SET status = 'stopped', ended_at = NOW(), summary_json = '%s' WHERE id = " UI64FMTD, summary.c_str(), _runId);
+}
+
+void BotWorldPopulationMgr::RecordActivityStart(WorldBotState& state, Player* bot)
+{
+    if (!_runId || !bot)
+        return;
+
+    std::string config = BuildConfigJson();
+    std::string brain = _config.BrainVersion;
+    CharacterDatabase.EscapeString(config);
+    CharacterDatabase.EscapeString(brain);
+    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_activities (experiment_id, run_id, bot_guid, brain_version, activity_type, start_power_score, config_json) "
+        "VALUES (" UI64FMTD ", " UI64FMTD ", %u, '%s', 'experiment_exploration', 0, '%s')",
+        _experimentId, _runId, state.Guid.GetCounter(), brain.c_str(), config.c_str());
+    state.ActivityId = ReadLastInsertId();
+}
+
+void BotWorldPopulationMgr::RecordActivityStop(WorldBotState const& state)
+{
+    if (!_runId || !state.ActivityId)
+        return;
+
+    std::string summary = GetSummaryJson();
+    CharacterDatabase.EscapeString(summary);
+    CharacterDatabase.DirectPExecute("UPDATE experiment_bot_activities SET ended_at = NOW(), completed = 1, deaths = %u, summary_json = '%s' WHERE id = " UI64FMTD,
+        _metrics.Deaths, summary.c_str(), state.ActivityId);
+}
+
+void BotWorldPopulationMgr::RecordEvent(WorldBotState const& state, Player* bot, char const* eventType, Unit const* target, char const* result, char const* rawJson, char const* semanticJson, float valueFloat, uint32 valueInt, uint32 spellId)
+{
+    if (!_runId || !bot)
+        return;
+
+    std::string raw = rawJson ? rawJson : "{}";
+    std::string semantic = semanticJson ? semanticJson : "{}";
+    std::string event = eventType ? eventType : "unknown";
+    std::string res = result ? result : "";
+    std::string brain = _config.BrainVersion;
+    CharacterDatabase.EscapeString(raw);
+    CharacterDatabase.EscapeString(semantic);
+    CharacterDatabase.EscapeString(event);
+    CharacterDatabase.EscapeString(res);
+    CharacterDatabase.EscapeString(brain);
+    uint32 targetEntry = 0;
+    uint64 targetGuid = 0;
+    if (target)
+    {
+        targetGuid = target->GetGUID().GetCounter();
+        if (Creature const* creature = target->ToCreature())
+            targetEntry = creature->GetEntry();
+    }
+
+    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_events (experiment_id, run_id, bot_guid, brain_version, map_id, zone_id, area_id, x, y, z, level, event_type, target_guid, target_entry, spell_id, result, value_float, value_int, raw_json, semantic_json) "
+        "VALUES (" UI64FMTD ", " UI64FMTD ", %u, '%s', %u, %u, %u, %f, %f, %f, %u, '%s', " UI64FMTD ", %u, %u, '%s', %f, %u, '%s', '%s')",
+        _experimentId, _runId, state.Guid.GetCounter(), brain.c_str(), bot->GetMapId(), bot->GetZoneId(), bot->GetAreaId(),
+        bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), uint32(bot->getLevel()), event.c_str(), targetGuid, targetEntry, spellId, res.c_str(), valueFloat, valueInt, raw.c_str(), semantic.c_str());
+}
+
+void BotWorldPopulationMgr::RecordDecision(WorldBotState& state, Player* bot, char const* situation, char const* action, Unit const* target, char const* rawJson, char const* semanticJson, bool failure, bool rare)
+{
+    if (!_runId || !_config.RecordDecisions || !bot)
+        return;
+
+    ++state.Sequence;
+    ++_metrics.Decisions;
+    if (failure)
+        ++_metrics.Failures;
+
+    bool sampled = !_config.SmartSampling || failure || rare || (state.Sequence % _config.NormalDecisionSampleRate) == 0;
+    if (!sampled)
+        return;
+
+    std::string raw = rawJson ? rawJson : "{}";
+    std::string semantic = semanticJson ? semanticJson : "{}";
+    std::ostringstream candidates;
+    candidates << "[{\"action\":\"rest\"},{\"action\":\"attack\"},{\"action\":\"loot\"},{\"action\":\"wander\"},{\"action\":\"unstuck\"}]";
+    std::ostringstream chosen;
+    chosen << "{\"action\":\"" << JsonEscape(action ? action : "wait") << "\"";
+    if (target)
+        chosen << ",\"target_guid\":" << target->GetGUID().GetCounter();
+    chosen << "}";
+
+    CharacterDatabase.EscapeString(raw);
+    CharacterDatabase.EscapeString(semantic);
+    std::string candidateJson = candidates.str();
+    std::string chosenJson = chosen.str();
+    std::string brain = _config.BrainVersion;
+    CharacterDatabase.EscapeString(candidateJson);
+    CharacterDatabase.EscapeString(chosenJson);
+    CharacterDatabase.EscapeString(brain);
+    std::string sit = situation ? situation : "idle";
+    CharacterDatabase.EscapeString(sit);
+
+    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_decisions (experiment_id, run_id, bot_guid, brain_version, situation_type, current_activity, current_goal, map_id, zone_id, x, y, z, raw_state_json, semantic_state_json, candidate_actions_json, chosen_action_json, reward, is_failure, is_rare_state) "
+        "VALUES (" UI64FMTD ", " UI64FMTD ", %u, '%s', '%s', 'experiment_exploration', 'survive_and_explore', %u, %u, %f, %f, %f, '%s', '%s', '%s', '%s', %f, %u, %u)",
+        _experimentId, _runId, state.Guid.GetCounter(), brain.c_str(), sit.c_str(), bot->GetMapId(), bot->GetZoneId(),
+        bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), raw.c_str(), semantic.c_str(), candidateJson.c_str(), chosenJson.c_str(),
+        failure ? -1.0f : 0.01f, failure ? 1 : 0, rare ? 1 : 0);
+}
+
+std::string BotWorldPopulationMgr::BuildRawJson(Player* bot, Unit const* target) const
+{
+    std::ostringstream json;
+    json << "{\"bot_guid\":" << (bot ? bot->GetGUID().GetCounter() : 0)
+         << ",\"map_id\":" << (bot ? bot->GetMapId() : 0)
+         << ",\"zone_id\":" << (bot ? bot->GetZoneId() : 0)
+         << ",\"area_id\":" << (bot ? bot->GetAreaId() : 0)
+         << ",\"level\":" << (bot ? uint32(bot->getLevel()) : 0)
+         << ",\"hp_pct\":";
+    if (bot && bot->GetMaxHealth())
+        json << (float(bot->GetHealth()) / float(bot->GetMaxHealth()));
+    else
+        json << 0.0f;
+    json << ",\"in_combat\":" << (bot && bot->IsInCombat() ? "true" : "false")
+         << ",\"moving\":" << (bot && (bot->isMoving() || bot->HasUnitState(UNIT_STATE_MOVING)) ? "true" : "false")
+         << ",\"x\":" << (bot ? bot->GetPositionX() : 0.0f)
+         << ",\"y\":" << (bot ? bot->GetPositionY() : 0.0f)
+         << ",\"z\":" << (bot ? bot->GetPositionZ() : 0.0f)
+         << ",\"target_guid\":" << (target ? target->GetGUID().GetCounter() : 0)
+         << ",\"target_entry\":";
+    if (Creature const* creature = target ? target->ToCreature() : nullptr)
+        json << creature->GetEntry();
+    else
+        json << 0;
+    json << ",\"target_level\":" << (target ? uint32(target->getLevel()) : 0)
+         << ",\"target_alive\":" << (target && target->IsAlive() ? "true" : "false") << "}";
+    return json.str();
+}
+
+std::string BotWorldPopulationMgr::BuildSemanticJson(Player* bot, Unit const* target, char const* situation) const
+{
+    float hpPct = 1.0f;
+    if (bot && bot->GetMaxHealth())
+        hpPct = float(bot->GetHealth()) / float(bot->GetMaxHealth());
+
+    bool elite = false;
+    if (Creature const* creature = target ? target->ToCreature() : nullptr)
+        elite = creature->isElite();
+
+    std::ostringstream json;
+    json << "{\"situation_type\":\"" << JsonEscape(situation ? situation : "idle") << "\""
+         << ",\"role\":\"solo\""
+         << ",\"activity\":\"experiment_exploration\""
+         << ",\"self\":{\"hp_pct\":" << hpPct
+         << ",\"low_health\":" << (hpPct < 0.35f ? "true" : "false")
+         << ",\"dead\":" << (bot && !bot->IsAlive() ? "true" : "false") << "}"
+         << ",\"enemy\":{\"present\":" << (target ? "true" : "false")
+         << ",\"elite\":" << (elite ? "true" : "false")
+         << ",\"safe_open_world_target\":" << (target && !elite && bot && int32(target->getLevel()) <= int32(bot->getLevel()) + 1 ? "true" : "false") << "}"
+         << ",\"objective\":{\"main_goal\":\"survive_and_explore\",\"questing_allowed\":false}}";
+    return json.str();
+}
+
+std::string BotWorldPopulationMgr::BuildConfigJson() const
+{
+    std::ostringstream json;
+    json << "{\"name\":\"" << JsonEscape(_config.Name)
+         << "\",\"type\":\"bot_world_autonomy\""
+         << ",\"population\":" << _config.TargetPopulation
+         << ",\"map\":" << _config.MapId
+         << ",\"zone\":" << _config.ZoneId
+         << ",\"min_level\":" << uint32(_config.MinLevel)
+         << ",\"max_level\":" << uint32(_config.MaxLevel)
+         << ",\"allow_combat\":" << (_config.AllowCombat ? "true" : "false")
+         << ",\"allow_questing\":false"
+         << ",\"record_decisions\":" << (_config.RecordDecisions ? "true" : "false")
+         << ",\"record_perception\":" << (_config.RecordPerception ? "true" : "false")
+         << ",\"smart_sampling\":" << (_config.SmartSampling ? "true" : "false")
+         << ",\"brain_version\":\"" << JsonEscape(_config.BrainVersion) << "\"}";
+    return json.str();
+}
+
+BotWorldStatus BotWorldPopulationMgr::GetStatus() const
+{
+    BotWorldStatus status = _metrics;
+    status.Active = _active;
+    status.ActiveBots = uint32(_bots.size());
+    status.DurationSeconds = _elapsedMs / 1000;
+    return status;
+}
+
+std::string BotWorldPopulationMgr::GetStatusJson() const
+{
+    BotWorldStatus status = GetStatus();
+    std::ostringstream json;
+    json << "{\"ok\":true,\"experiment\":\"" << JsonEscape(status.Name)
+         << "\",\"run\":" << status.RunId
+         << ",\"brain\":\"" << JsonEscape(_config.BrainVersion)
+         << "\",\"active\":" << (status.Active ? "true" : "false")
+         << ",\"bots\":" << status.ActiveBots
+         << ",\"target_bots\":" << status.TargetBots
+         << ",\"duration_seconds\":" << status.DurationSeconds
+         << ",\"kills\":" << status.Kills
+         << ",\"deaths\":" << status.Deaths
+         << ",\"stuck\":" << status.StuckEvents
+         << ",\"decisions\":" << status.Decisions
+         << ",\"failures\":" << status.Failures
+         << ",\"failure_reason\":null}";
+    return json.str();
+}
+
+std::string BotWorldPopulationMgr::GetSummaryJson() const
+{
+    BotWorldStatus status = GetStatus();
+    float hours = status.DurationSeconds ? float(status.DurationSeconds) / 3600.0f : 0.0f;
+    std::ostringstream json;
+    json << "{\"bots\":" << status.ActiveBots
+         << ",\"target_bots\":" << status.TargetBots
+         << ",\"duration_minutes\":" << (float(status.DurationSeconds) / 60.0f)
+         << ",\"total_kills\":" << status.Kills
+         << ",\"total_deaths\":" << status.Deaths
+         << ",\"kills_per_hour\":" << (hours > 0.0f ? float(status.Kills) / hours : 0.0f)
+         << ",\"deaths_per_hour\":" << (hours > 0.0f ? float(status.Deaths) / hours : 0.0f)
+         << ",\"stuck_events\":" << status.StuckEvents
+         << ",\"quests_completed\":0"
+         << ",\"gear_upgrades\":0"
+         << ",\"decisions\":" << status.Decisions
+         << ",\"failures_recorded\":" << status.Failures << "}";
+    return json.str();
+}
+
+std::string BotWorldPopulationMgr::JsonEscape(std::string const& value)
+{
+    std::ostringstream escaped;
+    for (char c : value)
+    {
+        switch (c)
+        {
+            case '\\': escaped << "\\\\"; break;
+            case '"': escaped << "\\\""; break;
+            case '\b': escaped << "\\b"; break;
+            case '\f': escaped << "\\f"; break;
+            case '\n': escaped << "\\n"; break;
+            case '\r': escaped << "\\r"; break;
+            case '\t': escaped << "\\t"; break;
+            default:
+                if (static_cast<unsigned char>(c) < 0x20)
+                    escaped << "\\u" << std::hex << std::setw(4) << std::setfill('0') << uint32(static_cast<unsigned char>(c)) << std::dec;
+                else
+                    escaped << c;
+                break;
+        }
+    }
+    return escaped.str();
+}

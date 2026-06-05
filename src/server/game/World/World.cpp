@@ -29,6 +29,7 @@
 #include "AuctionHouseMgr.h"
 #include "BattlefieldMgr.h"
 #include "Bots/BotMgr.h"
+#include "Bots/BotWorldPopulationMgr.h"
 #include "BattlegroundMgr.h"
 #include "CalendarMgr.h"
 #include "Channel.h"
@@ -2420,6 +2421,7 @@ void World::Update(uint32 diff)
     sWorldUpdateTime.RecordUpdateTime(GameTime::GetGameTimeMS(), diff, GetActiveSessionCount());
 
     sBotMgr->Update(diff);
+    sBotWorldPopulationMgr->Update(diff);
 
     ///- Update the different timers
     for (int i = 0; i < WUPDATE_COUNT; ++i)

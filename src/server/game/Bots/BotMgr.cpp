@@ -141,6 +141,12 @@ void BotMgr::Update(uint32 diff)
     for (auto itr = _controllersByBot.begin(); itr != _controllersByBot.end();)
     {
         ObjectGuid botGuid = itr->first;
+        if (_worldBots.find(botGuid) != _worldBots.end())
+        {
+            ++itr;
+            continue;
+        }
+
         Player* owner = FindLoadedPlayer(itr->second->GetOwnerGuid());
         Player* bot = FindLoadedPlayer(botGuid);
         if (!owner || !bot || owner->GetMap() != bot->GetMap())
@@ -185,6 +191,30 @@ Player* BotMgr::Spawn(Player* owner, std::string const& role, std::string const&
     }
 
     TC_LOG_INFO("server", "PlayerBot spawn complete owner=%s bot=%s name=%s", owner->GetGUID().ToString().c_str(), bot->GetGUID().ToString().c_str(), bot->GetName().c_str());
+    return bot;
+}
+
+Player* BotMgr::SpawnWorldBot(std::string const& role, std::string const& selector, uint32 mapId, float x, float y, float z, float o)
+{
+    if (!sConfigMgr->GetBoolDefault("PlayerBot.Enable", false))
+        return nullptr;
+
+    std::string normalizedRole = NormalizeBotRole(role);
+    if (!IsKnownBotRole(normalizedRole) && !IsMixedBotRoleSelector(normalizedRole))
+        return nullptr;
+
+    BotSpawnPlacement placement = { mapId, x, y, z, o };
+    Player* bot = LoadBotFromPool(nullptr, normalizedRole, selector, &placement);
+    if (!bot)
+        return nullptr;
+
+    ObjectGuid botGuid = bot->GetGUID();
+    bot->CombatStop(true);
+    bot->CastStop();
+    bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+    bot->GetMotionMaster()->MoveIdle();
+    _worldBots.insert(botGuid);
+    TC_LOG_INFO("server", "PlayerBot world spawn complete bot=%s name=%s map=%u position=%f,%f,%f", botGuid.ToString().c_str(), bot->GetName().c_str(), mapId, x, y, z);
     return bot;
 }
 
@@ -325,6 +355,15 @@ uint32 BotMgr::Remove(Player* owner, std::string const& selector)
 bool BotMgr::Remove(Player* owner, ObjectGuid botGuid)
 {
     if (!owner || botGuid.IsEmpty() || GetOwnerGuid(botGuid) != owner->GetGUID() || _removingBots.find(botGuid) != _removingBots.end())
+        return false;
+
+    CleanupBot(botGuid, true);
+    return true;
+}
+
+bool BotMgr::RemoveWorldBot(ObjectGuid botGuid)
+{
+    if (botGuid.IsEmpty() || _worldBots.find(botGuid) == _worldBots.end() || _removingBots.find(botGuid) != _removingBots.end())
         return false;
 
     CleanupBot(botGuid, true);
@@ -611,6 +650,11 @@ char const* BotMgr::GetBotRoleName(ObjectGuid botGuid) const
     return "unknown";
 }
 
+Player* BotMgr::GetLoadedPlayer(ObjectGuid guid) const
+{
+    return FindLoadedPlayer(guid);
+}
+
 BotRecentEvents BotMgr::ConsumeRecentEvents(ObjectGuid botGuid)
 {
     BotRecentEvents events;
@@ -669,6 +713,9 @@ void BotMgr::RemoveAll()
     std::vector<ObjectGuid> botGuids;
     for (auto const& controller : _controllersByBot)
         botGuids.push_back(controller.first);
+    for (ObjectGuid botGuid : _worldBots)
+        if (std::find(botGuids.begin(), botGuids.end(), botGuid) == botGuids.end())
+            botGuids.push_back(botGuid);
 
     for (ObjectGuid botGuid : botGuids)
     {
@@ -848,7 +895,7 @@ bool BotMgr::IsTrackedPartyMember(ObjectGuid botGuid, ObjectGuid unitGuid) const
     return owner->GetGroup()->IsMember(unitGuid);
 }
 
-Player* BotMgr::LoadBotFromPool(Player* owner, std::string const& role, std::string const& selector)
+Player* BotMgr::LoadBotFromPool(Player* owner, std::string const& role, std::string const& selector, BotSpawnPlacement const* placement)
 {
     std::string normalizedRole = NormalizeBotRole(role);
     bool mixedRole = IsMixedBotRoleSelector(normalizedRole);
@@ -884,7 +931,7 @@ Player* BotMgr::LoadBotFromPool(Player* owner, std::string const& role, std::str
     BotRole botRole = ParseBotRole(selectedRole);
     TC_LOG_INFO("server", "PlayerBot load selected bot=%s account=%u role=%s", botGuid.ToString().c_str(), accountId, selectedRole.c_str());
 
-    Player* bot = LoadCharacterAsBotSession(botGuid, accountId, owner);
+    Player* bot = LoadCharacterAsBotSession(botGuid, accountId, owner, placement);
     if (!bot)
         return nullptr;
 
@@ -899,7 +946,7 @@ Player* BotMgr::LoadBotFromPool(Player* owner, std::string const& role, std::str
     return bot;
 }
 
-Player* BotMgr::LoadCharacterAsBotSession(ObjectGuid guid, uint32 accountId, Player* nearPlayer)
+Player* BotMgr::LoadCharacterAsBotSession(ObjectGuid guid, uint32 accountId, Player* nearPlayer, BotSpawnPlacement const* placement)
 {
     uint8 expansion = nearPlayer && nearPlayer->GetSession() ? nearPlayer->GetSession()->GetExpansion() : uint8(sWorld->getIntConfig(CONFIG_EXPANSION));
     LocaleConstant locale = nearPlayer && nearPlayer->GetSession() ? nearPlayer->GetSession()->GetSessionDbcLocale() : LOCALE_enUS;
@@ -923,7 +970,14 @@ Player* BotMgr::LoadCharacterAsBotSession(ObjectGuid guid, uint32 accountId, Pla
     }
     TC_LOG_INFO("server", "PlayerBot load_from_db complete character=%s name=%s", guid.ToString().c_str(), bot->GetName().c_str());
 
-    if (nearPlayer)
+    if (placement)
+    {
+        if (bot->FindMap())
+            bot->ResetMap();
+        bot->SetMap(sMapMgr->CreateMap(placement->MapId, bot));
+        bot->Relocate(placement->X, placement->Y, placement->Z, placement->O);
+    }
+    else if (nearPlayer)
     {
         Position pos = nearPlayer->GetNearPosition(2.5f, float(M_PI) / 2.0f);
         if (bot->FindMap() && bot->FindMap() != nearPlayer->GetMap())
@@ -1033,6 +1087,7 @@ void BotMgr::CleanupBot(ObjectGuid botGuid, bool logoutPlayer)
 
     _controllersByBot.erase(botGuid);
     _botSessions.erase(botGuid);
+    _worldBots.erase(botGuid);
     _recentEventsByBot.erase(botGuid);
     SetBotCharacterOnline(botGuid, false);
     ReleasePoolCharacter(botGuid);
@@ -1051,8 +1106,14 @@ void BotMgr::ReleasePoolCharacter(ObjectGuid botGuid)
 
 void BotMgr::Register(Player* owner, Player* bot, BotRole role, std::unique_ptr<WorldSession> session)
 {
+    _botSessions[bot->GetGUID()] = std::move(session);
+    if (!owner)
+    {
+        _worldBots.insert(bot->GetGUID());
+        return;
+    }
+
     _ownerByBot[bot->GetGUID()] = owner->GetGUID();
     _botsByOwner.emplace(owner->GetGUID(), bot->GetGUID());
-    _botSessions[bot->GetGUID()] = std::move(session);
     _controllersByBot[bot->GetGUID()].reset(new BotController(owner->GetGUID(), bot->GetGUID(), role));
 }
