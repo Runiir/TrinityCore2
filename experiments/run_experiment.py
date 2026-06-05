@@ -31,6 +31,9 @@ from ml.group_roles.coordination import ReservationStore
 from ml.group_roles.frames import coordination_frame, role_frame
 from ml.group_roles.metrics import group_role_metrics
 from ml.group_roles.policies import policy_for_role
+from ml.raid.frames import raid_module_frame
+from ml.raid.metrics import raid_metrics
+from ml.raid.scheduler import RaidAssignmentScheduler
 
 
 DEFAULT_RUNS_DIR = REPO_ROOT / "experiments" / "runs"
@@ -573,8 +576,10 @@ def party_members(config: dict[str, Any]) -> list[tuple[str, str]]:
     for role, class_spec in party_template.items():
         if isinstance(class_spec, list):
             for index, tag in enumerate(class_spec, 1):
-                member_role = "melee_dps" if index == 1 else "ranged_dps"
-                if str(tag) in {"fire_mage", "marksmanship_hunter", "hunter", "mage"}:
+                member_role = str(role)
+                if member_role == "dps":
+                    member_role = "melee_dps" if index == 1 else "ranged_dps"
+                if member_role == "dps" or str(tag) in {"fire_mage", "marksmanship_hunter", "hunter", "mage"}:
                     member_role = "ranged_dps"
                 members.append((member_role, str(tag)))
         else:
@@ -1004,7 +1009,7 @@ def run_experiment(config: dict[str, Any], adapter: CommandAdapter, runs_dir: Pa
         return command_result
 
     try:
-        members = party_members(config) if config.get("domain") in {"group_roles", "dungeon"} else [(first_party_role(config), first_party_role(config))]
+        members = party_members(config) if config.get("domain") in {"group_roles", "dungeon", "raid"} else [(first_party_role(config), first_party_role(config))]
         for requested_role, class_spec in members:
             spawn = execute(playerbot_command(config, "spawn", class_spec))
             if not spawn.ok:
@@ -1016,11 +1021,21 @@ def run_experiment(config: dict[str, Any], adapter: CommandAdapter, runs_dir: Pa
                 metadata["bots"].append({
                     "guid": bot_guid,
                     "name": spawn.parsed.get("name"),
-                "role": requested_role if config.get("domain") in {"group_roles", "dungeon"} else spawn.parsed.get("role") or requested_role,
+                "role": requested_role if config.get("domain") in {"group_roles", "dungeon", "raid"} else spawn.parsed.get("role") or requested_role,
                     "class_spec_tag": class_spec_tag,
                     "class_id": spawn.parsed.get("class_id", class_spec_hint.get("class_id")),
                     "spec_id": spawn.parsed.get("spec_id", class_spec_hint.get("spec_id")),
                 })
+
+        if config.get("domain") == "raid":
+            required_roles = {"tank", "healer", "melee_dps", "ranged_dps"}
+            available_roles = {str(bot.get("role")) for bot in metadata["bots"]}
+            if not required_roles.issubset(available_roles):
+                raise ExperimentError(f"raid_party_missing_roles:{sorted(required_roles - available_roles)}")
+            if len(metadata["bots"]) < 10:
+                raise ExperimentError("raid_party_requires_10_members")
+            for index, bot in enumerate(metadata["bots"]):
+                bot["subgroup"] = 1 if index < 5 else 2
 
         if config.get("setup", {}).get("recording", True):
             recording = execute(playerbot_command(config, "record", "on"))
@@ -1248,7 +1263,94 @@ def run_experiment(config: dict[str, Any], adapter: CommandAdapter, runs_dir: Pa
                             future_labels=labels,
                             outcome={"step_complete": True, "wipe": False, "hard_blocker": None},
                         )
-                        write_jsonl_row(route_frame_path, frame)
+                    write_jsonl_row(route_frame_path, frame)
+
+        if config.get("domain") == "raid":
+            module_path = raw_episode_dir / f"raid_modules_{episode_id}.jsonl"
+            produced_paths["raid_modules"] = display_path(module_path)
+            scheduler = RaidAssignmentScheduler(metadata["bots"])
+            raid_cfg = config.get("raid", {})
+            modules = config.get("modules") or [config.get("module", "tank_swap")]
+            boss_id = int(config.get("boss_id", raid_cfg.get("boss_id", 55294)))
+            raid_size = len(metadata["bots"])
+            tick = 0
+
+            for module in modules:
+                module_name = str(module)
+                repeats = int(config.get("run", {}).get("module_ticks", 2))
+                for repeat in range(repeats):
+                    tick += 1
+                    event_id = f"{config['experiment_id']}_{module_name}_{repeat + 1:02d}"
+                    eta = 4.0 + repeat * 3.0
+                    time_since_pull = round(20.0 + tick * 8.0, 3)
+                    phase_id = 1 if tick < 4 else 2
+                    target_enemy_guid = 900000 + tick
+                    cooldown = "throughput_major" if repeat % 2 == 0 else "damage_reduction_raid"
+
+                    if module_name == "tank_swap":
+                        assignment = scheduler.next_tank(event_id, "tank_swap", eta).as_frame_value()
+                        group_intent = {"mode": "prepare_tank_swap", "next_tank_guid": assignment["assigned_to_guid"]}
+                        outcome = {"raid_survived_mechanic": True, "tank_swap_timing_sec": 0.35, "avoidable_raid_damage": 0.0}
+                    elif module_name in {"raid_wide_aoe", "cooldown_assignment"}:
+                        assignment = scheduler.next_healer_cooldown(event_id, "raid_wide_aoe", eta, cooldown).as_frame_value()
+                        assignment["assigned_healer_guid"] = assignment["assigned_to_guid"]
+                        assignment["assigned_cooldown"] = assignment["cooldown"]
+                        group_intent = {
+                            "mode": "prepare_raid_aoe",
+                            "stack_required": True,
+                            "healer_cooldown_plan": [{"guid": assignment["assigned_to_guid"], "window": [time_since_pull - 1.0, time_since_pull + 8.0]}],
+                        }
+                        outcome = {"raid_survived_mechanic": True, "cooldown_overlap_quality": 0.88, "healer_mana_distribution": 0.74, "avoidable_raid_damage": 0.01}
+                    elif module_name == "interrupt_rotation":
+                        assignment = scheduler.next_interrupt(event_id, "interrupt_rotation", eta, target_enemy_guid).as_frame_value()
+                        group_intent = {"mode": "rotate_interrupts", "interrupt_target_guid": target_enemy_guid}
+                        outcome = {"raid_survived_mechanic": True, "assigned_interrupt_success": True, "avoidable_raid_damage": 0.0}
+                    elif module_name == "stack_spread":
+                        family = "stack" if repeat % 2 == 0 else "spread"
+                        subgroup = 1 if family == "stack" else 2
+                        assignments = scheduler.subgroup_move(event_id, family, eta, subgroup)
+                        assignment = assignments[0].as_frame_value() if assignments else scheduler.next_soak(event_id, family, eta).as_frame_value()
+                        group_intent = {"mode": f"{family}_movement", "subgroup": subgroup, "movement_anchor": [10.0 + subgroup, 4.0, 0.0]}
+                        outcome = {"raid_survived_mechanic": True, "soak_success": True, "avoidable_raid_damage": 0.0}
+                    elif module_name == "add_wave":
+                        assignment = scheduler.add_target(event_id, eta, target_enemy_guid).as_frame_value()
+                        group_intent = {"mode": "target_switch_adds", "primary_add_guid": target_enemy_guid, "burn_required": True}
+                        outcome = {"raid_survived_mechanic": True, "dps_check_quality": 0.91, "phase_transition_correct": True, "avoidable_raid_damage": 0.0}
+                    else:
+                        assignment = scheduler.next_soak(event_id, "assigned_soak", eta).as_frame_value()
+                        group_intent = {"mode": "assigned_soak", "soak_guid": assignment["assigned_to_guid"]}
+                        outcome = {"raid_survived_mechanic": True, "soak_success": True, "avoidable_raid_damage": 0.0}
+
+                    raid_state = {
+                        "boss_id": boss_id,
+                        "phase_id": phase_id,
+                        "time_since_pull": time_since_pull,
+                        "raid_size": raid_size,
+                        "healer_mana_distribution": 0.76,
+                    }
+                    frame = raid_module_frame(
+                        episode_id=episode_id,
+                        tick=tick,
+                        subdomain=module_name,
+                        raid_state=raid_state,
+                        assignment=assignment,
+                        scheduler_state=scheduler.frame_state(),
+                        group_intent=group_intent,
+                        outcome=outcome,
+                    )
+                    written_frame = frame_writer.write(
+                        domain=frame["domain"],
+                        subdomain=frame["subdomain"],
+                        trigger=frame["trigger"],
+                        actor=frame["actor"],
+                        task=frame["task"],
+                        state=frame["state"],
+                        valid_actions=frame["valid_actions"],
+                        policy_output=frame["policy_output"],
+                        resolved_action=frame["resolved_action"],
+                        outcome=frame["outcome"],
+                    )
+                    write_jsonl_row(module_path, written_frame)
 
         if config.get("domain") == "profession" or config.get("run", {}).get("profession_ticks"):
             profession = config.get("profession", {})
@@ -1658,6 +1760,11 @@ def run_experiment(config: dict[str, Any], adapter: CommandAdapter, runs_dir: Pa
                 write_json(episode_dir / "comparison_metrics.json", c_metrics)
                 summary["comparison_metrics"] = c_metrics
                 produced_paths["comparison_metrics"] = display_path(episode_dir / "comparison_metrics.json")
+            r_metrics = raid_metrics(frames_path)
+            if r_metrics["raid_frame_count"]:
+                write_json(episode_dir / "raid_metrics.json", r_metrics)
+                summary["raid_metrics"] = r_metrics
+                produced_paths["raid_metrics"] = display_path(episode_dir / "raid_metrics.json")
         write_json(episode_dir / "summary.json", summary)
         if live:
             command_count = 0

@@ -7,6 +7,8 @@ from ml.evaluation.evaluate_action_frequency import main as evaluate_main
 from ml.group_roles.coordination import ReservationStore
 from ml.group_roles.metrics import group_role_metrics
 from ml.group_roles.policies import policy_for_role
+from ml.raid.metrics import raid_metrics
+from ml.raid.scheduler import RaidAssignmentScheduler
 from ml.preprocessing.preprocess_frames import main as preprocess_main
 from ml.training.train_action_frequency import main as train_main
 from experiments.run_experiment import dungeon_route_metrics, load_config, make_adapter, movement_metrics, profession_metrics, quest_metrics, run_experiment, solo_combat_metrics
@@ -231,3 +233,70 @@ def test_phase07_planners_labels_and_inference_stub():
     assert labels["tank_burst_risk"] == 0.85
     prediction = RolePolicyInferenceAdapter().predict("tank", {"policy_output": {"mode": "hold_threat", "intent": "hold_threat"}})
     assert prediction["adapter"] == "scripted_stub"
+
+
+def test_phase08_raid_metadata_schema_and_scheduler():
+    assert Path("ml/schemas/raid_module.schema.json").exists()
+
+    families = json.loads(Path("dataset/metadata/mechanic_families.json").read_text(encoding="utf-8"))["mechanic_families"]
+    for family in [
+        "tank_swap",
+        "raid_wide_aoe",
+        "stack",
+        "spread",
+        "soak",
+        "assigned_soak",
+        "interrupt_rotation",
+        "dispel_rotation",
+        "healer_cooldown_assignment",
+        "burn_phase",
+        "add_wave",
+        "boss_immunity",
+        "phase_transition",
+        "enrage_timer",
+    ]:
+        assert family in families
+
+    scheduler = RaidAssignmentScheduler([
+        {"guid": 50101, "role": "tank"},
+        {"guid": 50102, "role": "tank"},
+        {"guid": 50103, "role": "healer"},
+        {"guid": 50104, "role": "melee_dps"},
+        {"guid": 50105, "role": "ranged_dps"},
+    ])
+    first = scheduler.next_tank("swap_1", "tank_swap", 3.0)
+    second = scheduler.next_tank("swap_2", "tank_swap", 8.0)
+    interrupt = scheduler.next_interrupt("kick_1", "interrupt_rotation", 2.0, 80001)
+
+    assert first.assigned_to_guid == 50101
+    assert second.assigned_to_guid == 50102
+    assert interrupt.target_enemy_guid == 80001
+    assert len(scheduler.frame_state()["assignments"]) == 3
+
+
+def test_phase08_raid_smoke_configs_record_frames_and_metrics(tmp_path):
+    config_names = [
+        "raid_tank_swap_basic.json",
+        "raid_aoe_cooldown_rotation.json",
+        "raid_interrupt_rotation.json",
+        "raid_stack_spread_basic.json",
+        "raid_add_wave_target_switch.json",
+    ]
+
+    for config_name in config_names:
+        config = load_config(Path("experiments/configs") / config_name)
+        adapter = make_adapter(config, force_local=True)
+
+        summary = run_experiment(config, adapter, tmp_path / "runs", tmp_path / "raw")
+
+        assert summary["result"] == "success"
+        frames_path = tmp_path / summary["paths"]["frames"]
+        metrics_path = tmp_path / summary["paths"]["raid_metrics"]
+        metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
+        recomputed = raid_metrics(frames_path)
+
+        assert summary["paths"]["raid_modules"].endswith(".jsonl")
+        assert metrics["raid_frame_count"] >= int(config["run"]["module_ticks"])
+        assert metrics["mechanic_survival"] == 1.0
+        assert metrics["avoidable_raid_damage"] >= 0.0
+        assert recomputed == metrics

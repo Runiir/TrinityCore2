@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Raid Mechanic Module Frame",
+  "type": "object",
+  "required": ["domain", "subdomain", "episode_id", "raid_state", "assignment", "group_intent", "outcome"],
+  "properties": {
+    "domain": {"const": "raid"},
+    "subdomain": {"type": "string"},
+    "episode_id": {"type": "string"},
+    "raid_state": {
+      "type": "object",
+      "required": ["boss_id", "phase_id", "time_since_pull", "raid_size"],
+      "properties": {
+        "boss_id": {"type": "integer"},
+        "phase_id": {"type": "integer"},
+        "time_since_pull": {"type": "number"},
+        "raid_size": {"type": "integer", "minimum": 10}
+      }
+    },
+    "assignment": {
+      "type": "object",
+      "required": ["mechanic_event_id", "mechanic_family", "eta"],
+      "properties": {
+        "mechanic_event_id": {"type": "string"},
+        "mechanic_family": {"type": "string"},
+        "eta": {"type": "number"},
+        "assigned_to_guid": {"type": "integer"},
+        "assigned_healer_guid": {"type": "integer"},
+        "assigned_cooldown": {"type": "string"}
+      }
+    },
+    "group_intent": {"type": "object"},
+    "outcome": {"type": "object"}
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "adapter": {"type": "local"},
+  "boss_id": 55294,
+  "cleanup": {"remove_bots": true, "stop_recording": true},
+  "controller": "external_script",
+  "domain": "raid",
+  "execution_mode": "headless_ra_soap",
+  "experiment_id": "raid_tank_swap_basic",
+  "live_client_present": false,
+  "module": "tank_swap",
+  "owner_selector": "Dorala",
+  "party_template": {
+    "tank": ["protection_warrior", "protection_warrior"],
+    "healer": ["holy_paladin", "holy_paladin", "holy_paladin"],
+    "dps": ["assassination_rogue", "fire_mage", "marksmanship_hunter", "assassination_rogue", "fire_mage"]
+  },
+  "raid": {"boss_id": 55294, "raid_size": 10},
+  "run": {
+    "module_ticks": 3,
+    "success_conditions": ["raid_module_frames_recorded", "raid_metrics_generated", "tank_swap_timing_recorded"],
+    "timeout_sec": 60
+  },
+  "server_build": "wow_4.3.4",
+  "setup": {"recording": true}
+}
