@@ -11,7 +11,9 @@ from ml.raid.metrics import raid_metrics
 from ml.raid.scheduler import RaidAssignmentScheduler
 from ml.preprocessing.preprocess_frames import main as preprocess_main
 from ml.training.train_action_frequency import main as train_main
-from experiments.run_experiment import dungeon_route_metrics, load_config, make_adapter, movement_metrics, profession_metrics, quest_metrics, run_experiment, solo_combat_metrics
+from experiments.run_experiment import autonomous_metrics, dungeon_route_metrics, load_config, make_adapter, movement_metrics, profession_metrics, quest_metrics, run_experiment, solo_combat_metrics
+from ml.autonomous.selector import observe_state, select_task
+from ml.autonomous.tasks import FAILURE_HANDLERS, load_tasks
 from ml.dungeon.inference import RolePolicyInferenceAdapter
 from ml.dungeon.labels import future_labels
 from ml.dungeon.planners import DPSPlanner, HealerPlanner, TankPlanner
@@ -132,6 +134,37 @@ def test_headless_profession_cooking_smoke_records_metrics(tmp_path):
     assert metrics["skill_delta"] == 2
     assert metrics["gear_eval_items"] >= 1
     assert metrics["invalid_action_rate"] == 0.0
+    assert recomputed == metrics
+
+
+def test_headless_autonomous_loop_smoke_records_frames_and_metrics(tmp_path):
+    config = load_config(Path("experiments/configs/headless_autonomous_loop_smoke_001.json"))
+    adapter = make_adapter(config, force_local=True)
+
+    tasks = load_tasks(config)
+    state = observe_state(config, adapter, completed=set(), failed={})
+    selected, policy = select_task(tasks, state, completed=set(), failed={}, min_bag_slots=2, min_durability_pct=0.5)
+
+    assert selected is not None
+    assert selected.task_type == "repair_and_restock"
+    assert policy["mode"] == "prepare_then_run_task"
+
+    summary = run_experiment(config, adapter, tmp_path / "runs", tmp_path / "raw")
+
+    assert summary["result"] == "success"
+    frames_path = tmp_path / summary["paths"]["frames"]
+    metrics_path = tmp_path / summary["paths"]["autonomous_metrics"]
+    metrics = json.loads(metrics_path.read_text(encoding="utf-8"))
+    recomputed = autonomous_metrics(frames_path)
+
+    assert Path("ml/schemas/autonomous_task.schema.json").exists()
+    assert "gear_broken" in FAILURE_HANDLERS
+    assert metrics["autonomous_frame_count"] >= 4
+    assert metrics["tasks_completed"] >= 4
+    assert set(metrics["domain_tasks_invoked"]) >= {"quest", "profession", "dungeon"}
+    assert metrics["dataset_frames_generated_per_domain"]["autonomous_loop"] >= 4
+    assert metrics["manual_intervention_count"] == 0
+    assert (tmp_path / summary["paths"]["autonomous_frames"]).exists()
     assert recomputed == metrics
 
 

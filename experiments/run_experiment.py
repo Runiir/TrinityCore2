@@ -25,6 +25,11 @@ if str(REPO_ROOT) not in sys.path:
 
 from dvclive import Live
 
+from ml.autonomous.frames import autonomous_frame
+from ml.autonomous.metrics import autonomous_metrics
+from ml.autonomous.progress import LongTermProgressStore
+from ml.autonomous.selector import observe_state, select_task
+from ml.autonomous.tasks import FAILURE_HANDLERS, load_tasks
 from ml.dungeon.labels import future_labels
 from ml.dungeon.planners import planner_for_role
 from ml.group_roles.coordination import ReservationStore
@@ -191,6 +196,7 @@ class LocalCommandAdapter(CommandAdapter):
         self.material_count = 4
         self.gold = 10000
         self.bag_free_slots = 12
+        self.durability_pct = 0.42
 
     def execute(self, command: str) -> CommandResult:
         output: dict[str, Any]
@@ -316,6 +322,7 @@ class LocalCommandAdapter(CommandAdapter):
             output = {"ok": self.spawned, "action": "vendor_trash", "selector": "all", "results": [{"bot_guid": self.bot_guid, "result": "ok", "item_count": 1, "money": 37}], "failure_reason": None if self.spawned else "no_active_bot"}
         elif command.startswith("playerbot repair"):
             self.gold -= 12
+            self.durability_pct = 1.0
             output = {"ok": self.spawned, "action": "repair", "selector": "all", "results": [{"bot_guid": self.bot_guid, "result": "ok", "item_count": 0, "money": 12}], "failure_reason": None if self.spawned else "no_active_bot"}
         elif command.startswith("playerbot gear_eval"):
             output = {"ok": self.spawned, "action": "gear_eval", "selector": "all", "bots": [{"bot_guid": self.bot_guid, "items": [{"item_id": 117, "bag": 0, "slot": 23, "quality": 1, "inventory_type": 5, "score": 8.5, "equipped_score": 4.0, "decision": "equip"}]}], "failure_reason": None if self.spawned else "no_active_bot"}
@@ -1009,7 +1016,13 @@ def run_experiment(config: dict[str, Any], adapter: CommandAdapter, runs_dir: Pa
         return command_result
 
     try:
-        members = party_members(config) if config.get("domain") in {"group_roles", "dungeon", "raid"} else [(first_party_role(config), first_party_role(config))]
+        autonomous_needs_party = False
+        if config.get("domain") == "autonomous_loop":
+            try:
+                autonomous_needs_party = any(task.task_type in {"run_dungeon", "practice_role_scenario", "run_raid_module"} for task in load_tasks(config))
+            except ValueError:
+                autonomous_needs_party = False
+        members = party_members(config) if config.get("domain") in {"group_roles", "dungeon", "raid"} or autonomous_needs_party else [(first_party_role(config), first_party_role(config))]
         for requested_role, class_spec in members:
             spawn = execute(playerbot_command(config, "spawn", class_spec))
             if not spawn.ok:
@@ -1059,6 +1072,173 @@ def run_experiment(config: dict[str, Any], adapter: CommandAdapter, runs_dir: Pa
             resolved_action={"command": status.command},
             outcome={"recording_file_created": frames_path.exists(), "bot_spawned": bool(metadata["bots"])},
         )
+
+        if config.get("domain") == "autonomous_loop":
+            tasks = load_tasks(config)
+            loop_config = config.get("autonomous", {})
+            max_ticks = int(loop_config.get("max_ticks", len(tasks) + 2))
+            min_bag_slots = int(loop_config.get("min_bag_slots", 2))
+            min_durability_pct = float(loop_config.get("min_durability_pct", 0.5))
+            completed: set[str] = set()
+            failed: dict[str, str] = {}
+            progress_store = LongTermProgressStore(model_version=str(loop_config.get("model_version", "scripted_autonomous_v1")))
+            autonomous_path = raw_episode_dir / f"autonomous_loop_{episode_id}.jsonl"
+            produced_paths["autonomous_frames"] = display_path(autonomous_path)
+
+            actor = {
+                "guid": metadata["bots"][0].get("guid") if metadata["bots"] else None,
+                "is_bot": bool(metadata["bots"]),
+                "role": metadata["bots"][0].get("role") if metadata["bots"] else None,
+                "class_id": metadata["bots"][0].get("class_id") if metadata["bots"] else None,
+                "spec_id": metadata["bots"][0].get("spec_id") if metadata["bots"] else None,
+            }
+
+            for _ in range(max_ticks):
+                state = observe_state(config, adapter, completed, failed)
+                task, policy = select_task(
+                    tasks,
+                    state,
+                    completed,
+                    failed,
+                    min_bag_slots=min_bag_slots,
+                    min_durability_pct=min_durability_pct,
+                )
+                if task is None:
+                    frame = autonomous_frame(
+                        actor=actor,
+                        task=None,
+                        state=state,
+                        policy_output=policy,
+                        resolved_action={"type": "idle", "valid": True, "result": "ok"},
+                        outcome={"task_started": False, "task_completed": False, "blocked_reason": None},
+                        progress=progress_store.as_frame_value(),
+                    )
+                    written = frame_writer.write(**frame)
+                    write_jsonl_row(autonomous_path, written)
+                    break
+
+                outcome: dict[str, Any] = {
+                    "task_started": True,
+                    "task_completed": False,
+                    "blocked_reason": None,
+                    "failure_handler": None,
+                    "recovered": False,
+                    "manual_intervention_count": 0,
+                    "resource_waste": 0.0,
+                }
+                resolved: dict[str, Any] = {"type": task.task_type, "valid": True, "result": "ok"}
+                try:
+                    if task.task_type == "repair_and_restock":
+                        vendor_result = execute(playerbot_command(config, "vendor_trash"))
+                        repair_result = execute(playerbot_command(config, "repair"))
+                        outcome.update({
+                            "invoked_domain": "profession",
+                            "task_completed": vendor_result.ok and repair_result.ok,
+                            "recovered": vendor_result.ok and repair_result.ok,
+                            "failure_handler": FAILURE_HANDLERS["gear_broken"],
+                            "resource_waste": 12.0 if repair_result.ok else 0.0,
+                        })
+                        resolved.update({"commands": [vendor_result.command, repair_result.command], "valid": vendor_result.ok and repair_result.ok})
+                    elif task.task_type == "complete_quest_chain":
+                        quest_id = int(task.config.get("quest_id", getattr(adapter, "quest_id", 28808)))
+                        required = int(task.config.get("progress_required", getattr(adapter, "quest_required", 1)))
+                        accept = execute(playerbot_command(config, "quest", "accept", str(quest_id)))
+                        objective = execute(playerbot_command(config, "quest", "objective", str(quest_id)))
+                        quest_state = quest_frame_state(adapter, objective)
+                        objective_attempts = 0
+                        max_objective_attempts = int(task.config.get("max_objective_attempts", required * 8))
+                        while int(quest_state.get("progress_current", 0) or 0) < required and objective_attempts < max_objective_attempts:
+                            objective_attempts += 1
+                            if str(task.config.get("objective_type", "kill")) == "kill":
+                                execute(playerbot_command(config, "combat_target", str(task.config.get("target_selector", "nearest"))))
+                                if isinstance(adapter, LocalCommandAdapter):
+                                    for _ in range(5):
+                                        combat_state = adapter.advance_combat()
+                                        if float(combat_state.get("target_hp", 1.0) or 0.0) <= 0.0:
+                                            execute(playerbot_command(config, "loot", "selected"))
+                                            break
+                            else:
+                                execute(playerbot_command(config, "quest", "interact", str(quest_id)))
+                            objective = execute(playerbot_command(config, "quest", "objective", str(quest_id)))
+                            quest_state = quest_frame_state(adapter, objective)
+                        if int(quest_state.get("progress_current", 0) or 0) < required:
+                            raise ExperimentError("autonomous_quest_objective_not_completed")
+                        turn_in = execute(playerbot_command(config, "quest", "turn_in", str(quest_id)))
+                        outcome.update({
+                            "invoked_domain": "quest",
+                            "task_completed": accept.ok and turn_in.ok,
+                            "quest_id": quest_id,
+                            "progress_current": quest_state.get("progress_current", required),
+                            "progress_required": required,
+                        })
+                        resolved.update({"commands": [accept.command, objective.command, turn_in.command], "valid": accept.ok and turn_in.ok})
+                    elif task.task_type in {"level_profession", "farm_material"}:
+                        recipe_id = int(task.config.get("recipe_id", getattr(adapter, "recipe_id", 2538)))
+                        craft_count = int(task.config.get("craft_count", 1))
+                        skill_before = int(getattr(adapter, "profession_skill", 0))
+                        score = execute(playerbot_command(config, "profession_score"))
+                        craft = execute(playerbot_command(config, "craft", str(recipe_id), str(craft_count)))
+                        skill_after = int(getattr(adapter, "profession_skill", skill_before))
+                        outcome.update({
+                            "invoked_domain": "profession",
+                            "task_completed": score.ok and craft.ok,
+                            "profession_id": task.config.get("profession_id", "cooking"),
+                            "skill_delta": max(0, skill_after - skill_before),
+                        })
+                        resolved.update({"commands": [score.command, craft.command], "valid": score.ok and craft.ok})
+                    elif task.task_type in {"run_dungeon", "practice_role_scenario"}:
+                        route = config.get("route") or {}
+                        route_steps = route.get("steps", [])
+                        completed_steps = 0
+                        for step in route_steps[: int(task.config.get("max_steps", 2))]:
+                            if step.get("type") == "move":
+                                position = step.get("position", [0.0, 0.0, 0.0])
+                                step_result = execute(playerbot_command(config, "move_to", str(position[0]), str(position[1]), str(position[2])))
+                            else:
+                                step_result = execute(playerbot_command(config, "follow"))
+                            completed_steps += int(step_result.ok)
+                        outcome.update({
+                            "invoked_domain": "dungeon",
+                            "task_completed": completed_steps > 0,
+                            "route_id": route.get("route_id", task.config.get("route_id")),
+                            "route_steps_completed": completed_steps,
+                        })
+                        resolved.update({"commands": ["dungeon_route_step"], "valid": completed_steps > 0})
+                    else:
+                        outcome.update({"blocked_reason": "task_type_documented_not_implemented", "failure_handler": "select_next_task"})
+                        resolved.update({"valid": False, "result": "blocked"})
+                except Exception as exc:
+                    outcome.update({"blocked_reason": str(exc), "failure_handler": "select_next_task"})
+                    resolved.update({"valid": False, "result": "failed"})
+
+                if outcome.get("task_completed"):
+                    completed.add(task.task_id)
+                    progress_store.complete(task.task_id, task.task_type, outcome)
+                else:
+                    failed[task.task_id] = str(outcome.get("blocked_reason") or "unknown")
+                    if outcome.get("route_id"):
+                        progress_store.mark_bad_route(str(outcome["route_id"]))
+
+                frame = autonomous_frame(
+                    actor=actor,
+                    task=task,
+                    state=state,
+                    policy_output=policy,
+                    resolved_action=resolved,
+                    outcome=outcome,
+                    progress=progress_store.as_frame_value(),
+                )
+                written = frame_writer.write(**frame)
+                write_jsonl_row(autonomous_path, written)
+
+            required_domain_tasks = int(loop_config.get("min_domain_tasks", 2))
+            invoked = {
+                frame.get("outcome", {}).get("invoked_domain")
+                for frame in (json.loads(line) for line in autonomous_path.read_text(encoding="utf-8").splitlines() if line.strip())
+            }
+            invoked.discard(None)
+            if len(invoked) < required_domain_tasks:
+                raise ExperimentError(f"autonomous_loop_invoked_too_few_domains:{sorted(invoked)}")
 
         if config.get("domain") in {"group_roles", "dungeon"}:
             required_roles = {"tank", "healer", "melee_dps", "ranged_dps"}
@@ -1765,6 +1945,11 @@ def run_experiment(config: dict[str, Any], adapter: CommandAdapter, runs_dir: Pa
                 write_json(episode_dir / "raid_metrics.json", r_metrics)
                 summary["raid_metrics"] = r_metrics
                 produced_paths["raid_metrics"] = display_path(episode_dir / "raid_metrics.json")
+            a_metrics = autonomous_metrics(frames_path)
+            if a_metrics["autonomous_frame_count"]:
+                write_json(episode_dir / "autonomous_metrics.json", a_metrics)
+                summary["autonomous_metrics"] = a_metrics
+                produced_paths["autonomous_metrics"] = display_path(episode_dir / "autonomous_metrics.json")
         write_json(episode_dir / "summary.json", summary)
         if live:
             command_count = 0

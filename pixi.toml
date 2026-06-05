@@ -19,6 +19,7 @@ combat-smoke = "python experiments/run_experiment.py experiments/configs/headles
 full-party-smoke = "python experiments/run_experiment.py experiments/configs/full_party_trash_pull_001.json --local"
 dungeon-segment-smoke = "python experiments/run_experiment.py experiments/configs/dungeon_segment_tot_basic_001.json --local"
 profession-smoke = "python experiments/run_experiment.py experiments/configs/headless_profession_cooking_smoke_001.json --local"
+autonomous-smoke = "python experiments/run_experiment.py experiments/configs/headless_autonomous_loop_smoke_001.json --local"
 setup-dvc-s3 = "python scripts/setup_dvc_s3_remote.py"
 
 [dependencies]

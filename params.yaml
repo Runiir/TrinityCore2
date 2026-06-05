@@ -1,5 +1,5 @@
 capture:
-  config: experiments/configs/dungeon_segment_tot_basic_001.json
+  config: experiments/configs/headless_autonomous_loop_smoke_001.json
   local: true
 preprocess:
   raw_dir: dataset/raw

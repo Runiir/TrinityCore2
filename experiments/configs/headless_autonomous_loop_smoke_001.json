@@ -1,0 +1,72 @@
+{
+  "adapter": {"type": "local"},
+  "cleanup": {"remove_bots": true, "stop_recording": true},
+  "controller": "external_script",
+  "domain": "autonomous_loop",
+  "dungeon_id": 1,
+  "execution_mode": "headless_ra_soap",
+  "experiment_id": "headless_autonomous_loop_smoke_001",
+  "live_client_present": false,
+  "map_id": 0,
+  "owner_selector": "Dorala",
+  "party_template": {
+    "tank": "protection_warrior",
+    "healer": "holy_paladin",
+    "dps": ["assassination_rogue", "fire_mage", "marksmanship_hunter"]
+  },
+  "route_config": "experiments/routes/tot_basic_route_001.json",
+  "autonomous": {
+    "max_ticks": 6,
+    "min_bag_slots": 2,
+    "min_durability_pct": 0.5,
+    "min_domain_tasks": 2,
+    "model_version": "scripted_autonomous_v1",
+    "profession_goals": [{"profession_id": "cooking", "target": 75}],
+    "tasks": [
+      {
+        "task_id": "repair_vendor_then_restock",
+        "type": "repair_and_restock",
+        "priority": 100
+      },
+      {
+        "task_id": "simple_kill_quest_chain",
+        "type": "complete_quest_chain",
+        "priority": 80,
+        "quest_id": 28808,
+        "objective_type": "kill",
+        "target_selector": "nearest",
+        "progress_required": 3
+      },
+      {
+        "task_id": "cooking_skillup",
+        "type": "level_profession",
+        "priority": 60,
+        "profession_id": "cooking",
+        "recipe_id": 2538,
+        "craft_count": 1
+      },
+      {
+        "task_id": "dungeon_route_probe",
+        "type": "run_dungeon",
+        "priority": 40,
+        "route_id": "tot_basic_route_001",
+        "max_steps": 2
+      }
+    ]
+  },
+  "run": {
+    "success_conditions": [
+      "autonomous_task_schema_exists",
+      "task_selector_runs",
+      "preflight_repair_vendor_restock_runs",
+      "two_domain_tasks_invoked",
+      "autonomous_frames_recorded",
+      "failure_handlers_documented",
+      "autonomous_metrics_generated"
+    ],
+    "timeout_sec": 180
+  },
+  "server_build": "wow_4.3.4",
+  "setup": {"recording": true},
+  "zone_id": 12
+}

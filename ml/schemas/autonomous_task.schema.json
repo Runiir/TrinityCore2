@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AutonomousLoopTask",
+  "type": "object",
+  "required": ["task_id", "type"],
+  "properties": {
+    "task_id": {"type": "string", "minLength": 1},
+    "type": {
+      "type": "string",
+      "enum": [
+        "level_character",
+        "complete_quest_chain",
+        "farm_material",
+        "level_profession",
+        "run_dungeon",
+        "practice_role_scenario",
+        "farm_gear",
+        "run_raid_module",
+        "repair_and_restock"
+      ]
+    },
+    "priority": {"type": "integer"},
+    "quest_id": {"type": "integer"},
+    "profession_id": {"type": "string"},
+    "recipe_id": {"type": "integer"},
+    "craft_count": {"type": "integer", "minimum": 1},
+    "route_id": {"type": "string"},
+    "experiment_id": {"type": "string"}
+  },
+  "additionalProperties": true
+}
