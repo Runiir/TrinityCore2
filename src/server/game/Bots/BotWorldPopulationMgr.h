@@ -2,6 +2,7 @@
 #define TRINITY_BOT_WORLD_POPULATION_MGR_H
 
 #include "ObjectGuid.h"
+#include "Bots/BotLongTermProgressionBrain.h"
 #include <map>
 #include <memory>
 #include <set>
@@ -25,6 +26,7 @@ struct BotWorldExperimentConfig
     float Radius = 80.0f;
     bool AllowCombat = true;
     bool AllowQuesting = false;
+    bool EnableProgression = true;
     bool RecordDecisions = true;
     bool RecordPerception = true;
     bool SmartSampling = true;
@@ -42,6 +44,7 @@ struct BotWorldStatus
     uint32 TargetBots = 0;
     uint32 Kills = 0;
     uint32 Deaths = 0;
+    uint32 GearUpgrades = 0;
     uint32 StuckEvents = 0;
     uint32 Decisions = 0;
     uint32 Failures = 0;
@@ -71,6 +74,11 @@ private:
         uint32 RestTimer = 0;
         uint32 Sequence = 0;
         uint64 ActivityId = 0;
+        float ActivityStartPower = 0.0f;
+        uint64 ActivityStartGold = 0;
+        uint32 ActivityStartDeaths = 0;
+        std::string ActivityType = "experiment_exploration";
+        std::string ProgressionStage = "leveling";
         float LastX = 0.0f;
         float LastY = 0.0f;
         float LastZ = 0.0f;
@@ -89,12 +97,14 @@ private:
     void RecordRunStart();
     void RecordRunStop();
     void RecordActivityStart(WorldBotState& state, Player* bot);
-    void RecordActivityStop(WorldBotState const& state);
+    void RecordActivityStop(WorldBotState const& state, Player* bot = nullptr);
+    void RecordGearEvaluation(WorldBotState const& state, Player* bot, BotGearUpgradeEvaluation const& evaluation, char const* rawJson, char const* semanticJson);
     void RecordEvent(WorldBotState const& state, Player* bot, char const* eventType, Unit const* target, char const* result, char const* rawJson, char const* semanticJson, float valueFloat = 0.0f, uint32 valueInt = 0, uint32 spellId = 0);
-    void RecordDecision(WorldBotState& state, Player* bot, char const* situation, char const* action, Unit const* target, char const* rawJson, char const* semanticJson, bool failure, bool rare);
+    void RecordDecision(WorldBotState& state, Player* bot, char const* situation, char const* action, Unit const* target, char const* rawJson, char const* semanticJson, std::vector<BotActivityScore> const& activityScores, BotActivityScore const& chosenActivity, BotRolePowerBreakdown const& power, bool failure, bool rare);
     std::string BuildRawJson(Player* bot, Unit const* target) const;
-    std::string BuildSemanticJson(Player* bot, Unit const* target, char const* situation) const;
+    std::string BuildSemanticJson(Player* bot, Unit const* target, char const* situation, BotRolePowerBreakdown const* power = nullptr, BotProgressionStage stage = BotProgressionStage::Leveling, BotProgressionActivity activity = BotProgressionActivity::ExperimentExploration) const;
     std::string BuildConfigJson() const;
+    std::string BuildActivityCandidatesJson(std::vector<BotActivityScore> const& activityScores) const;
     static std::string JsonEscape(std::string const& value);
 
     bool _active = false;
