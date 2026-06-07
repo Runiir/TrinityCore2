@@ -10,7 +10,9 @@
 #include <vector>
 
 class Player;
+class Quest;
 class Unit;
+class WorldObject;
 
 struct BotWorldExperimentConfig
 {
@@ -25,7 +27,7 @@ struct BotWorldExperimentConfig
     float CenterZ = 56.0f;
     float Radius = 80.0f;
     bool AllowCombat = true;
-    bool AllowQuesting = false;
+    bool AllowQuesting = true;
     bool EnableProgression = true;
     bool RecordDecisions = true;
     bool RecordPerception = true;
@@ -46,6 +48,9 @@ struct BotWorldStatus
     uint32 Deaths = 0;
     uint32 GearUpgrades = 0;
     uint32 StuckEvents = 0;
+    uint32 QuestsAccepted = 0;
+    uint32 QuestsCompleted = 0;
+    uint32 QuestObjectiveProgress = 0;
     uint32 Decisions = 0;
     uint32 Failures = 0;
     uint32 DurationSeconds = 0;
@@ -77,6 +82,11 @@ private:
         float ActivityStartPower = 0.0f;
         uint64 ActivityStartGold = 0;
         uint32 ActivityStartDeaths = 0;
+        uint32 QuestStartTime = 0;
+        uint32 QuestStartDeaths = 0;
+        uint32 LastQuestId = 0;
+        uint32 LastQuestCompletedCount = 0;
+        uint32 LastQuestObjectiveProgress = 0;
         std::string ActivityType = "experiment_exploration";
         std::string ProgressionStage = "leveling";
         float LastX = 0.0f;
@@ -86,11 +96,42 @@ private:
         bool WasInCombat = false;
     };
 
+    struct QuestObjectivePlan
+    {
+        uint32 QuestId = 0;
+        int32 RequiredEntry = 0;
+        uint32 RequiredCount = 0;
+        uint32 CurrentCount = 0;
+        bool IsGameObject = false;
+        bool IsItemObjective = false;
+        uint32 ItemId = 0;
+    };
+
+    struct QuestActionResult
+    {
+        bool Handled = false;
+        bool Failure = false;
+        bool Rare = false;
+        std::string Situation = "questing";
+        std::string Action = "wait";
+        Unit* Target = nullptr;
+        uint32 QuestId = 0;
+        uint32 RewardChoice = 0;
+        uint32 RewardItemId = 0;
+    };
+
     void EnsurePopulation();
     void UpdateBot(WorldBotState& state, uint32 diff);
     Player* GetBot(WorldBotState const& state) const;
     uint32 SelectPoolCandidateGuid() const;
     Unit* SelectSafeTarget(Player* bot) const;
+    Unit* SelectQuestObjectiveTarget(Player* bot, QuestObjectivePlan const& plan) const;
+    WorldObject* SelectQuestGiver(Player* bot, bool completeOnly, uint32* questId) const;
+    WorldObject* SelectQuestGameObject(Player* bot, QuestObjectivePlan const& plan) const;
+    bool FindActiveQuestObjective(Player* bot, QuestObjectivePlan& plan) const;
+    bool HasSimpleSupportedObjective(Quest const* quest) const;
+    uint32 ChooseQuestReward(Player* bot, Quest const* quest, uint32* rewardItemId = nullptr) const;
+    QuestActionResult TryQuesting(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity);
     uint32 SelectCombatSpell(Player* bot, Unit* target) const;
     bool TryCastCombatSpell(Player* bot, Unit* target, uint32 spellId) const;
     void MoveToWanderPoint(Player* bot, WorldBotState& state);
@@ -99,6 +140,9 @@ private:
     void RecordActivityStart(WorldBotState& state, Player* bot);
     void RecordActivityStop(WorldBotState const& state, Player* bot = nullptr);
     void RecordGearEvaluation(WorldBotState const& state, Player* bot, BotGearUpgradeEvaluation const& evaluation, char const* rawJson, char const* semanticJson);
+    void RecordQuestObjectiveProgressForTarget(WorldBotState& state, Player* bot, Unit const* target, char const* rawJson, char const* semanticJson);
+    void RecordQuestEvent(WorldBotState const& state, Player* bot, char const* eventType, uint32 questId, Unit const* target, char const* result, char const* rawJson, char const* semanticJson, uint32 valueInt = 0, uint32 itemId = 0, char const* contextJson = nullptr);
+    void RecordQuestReplay(WorldBotState const& state, Player* bot, char const* replayType, uint32 questId, char const* rawJson, char const* semanticJson, char const* actionJson, char const* failureJson);
     void RecordEvent(WorldBotState const& state, Player* bot, char const* eventType, Unit const* target, char const* result, char const* rawJson, char const* semanticJson, float valueFloat = 0.0f, uint32 valueInt = 0, uint32 spellId = 0);
     void RecordDecision(WorldBotState& state, Player* bot, char const* situation, char const* action, Unit const* target, char const* rawJson, char const* semanticJson, std::vector<BotActivityScore> const& activityScores, BotActivityScore const& chosenActivity, BotRolePowerBreakdown const& power, bool failure, bool rare);
     std::string BuildRawJson(Player* bot, Unit const* target) const;

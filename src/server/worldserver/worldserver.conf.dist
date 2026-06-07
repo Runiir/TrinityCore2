@@ -3467,7 +3467,7 @@ BotExperiment.BrainVersion = "utility_v1"
 
 BotProgression.Enable = 1
 BotProgression.PowerScoreVersion = "role_power_v1"
-BotProgression.AllowQuesting = 0
+BotProgression.AllowQuesting = 1
 BotProgression.AllowDungeons = 0
 BotProgression.AllowRaids = 0
 
