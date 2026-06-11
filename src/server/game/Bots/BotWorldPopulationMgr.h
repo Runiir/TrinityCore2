@@ -30,6 +30,7 @@ struct BotWorldExperimentConfig
     bool AllowQuesting = true;
     bool AllowDungeons = false;
     bool AllowRaids = false;
+    bool TrackHeroicRaidProgression = true;
     bool EnableProgression = true;
     bool RecordDecisions = true;
     bool RecordPerception = true;
@@ -54,6 +55,9 @@ struct BotWorldStatus
     uint32 QuestsAccepted = 0;
     uint32 QuestsCompleted = 0;
     uint32 QuestObjectiveProgress = 0;
+    uint32 RaidBossKills = 0;
+    uint32 HeroicRaidBossKills = 0;
+    uint32 RaidTelemetryEvents = 0;
     uint32 Decisions = 0;
     uint32 Failures = 0;
     uint32 DurationSeconds = 0;
@@ -92,6 +96,10 @@ private:
         uint32 LastQuestId = 0;
         uint32 LastQuestCompletedCount = 0;
         uint32 LastQuestObjectiveProgress = 0;
+        uint32 RaidBossKills = 0;
+        uint32 HeroicRaidBossKills = 0;
+        uint32 RaidAttempts = 0;
+        uint32 RaidWipes = 0;
         std::string ActivityType = "experiment_exploration";
         std::string ProgressionStage = "leveling";
         float LastX = 0.0f;
@@ -199,6 +207,70 @@ private:
         BossMechanicFeatures Features;
     };
 
+    struct RaidRoleAssignment
+    {
+        std::string Role = "dps";
+        uint8 SubGroup = 0;
+        uint32 RaidSize = 0;
+        uint32 TankCount = 0;
+        uint32 HealerCount = 0;
+        uint32 DpsCount = 0;
+        uint32 RoleIndex = 0;
+        ObjectGuid MainTankGuid;
+        ObjectGuid OffTankGuid;
+        ObjectGuid RaidLeaderGuid;
+    };
+
+    struct RaidPositioningAnchors
+    {
+        bool Active = false;
+        std::string AnchorType = "leader";
+        ObjectGuid AnchorGuid;
+        float AnchorX = 0.0f;
+        float AnchorY = 0.0f;
+        float AnchorZ = 0.0f;
+        float StackX = 0.0f;
+        float StackY = 0.0f;
+        float StackZ = 0.0f;
+        float SpreadX = 0.0f;
+        float SpreadY = 0.0f;
+        float SpreadZ = 0.0f;
+        float DistanceToAnchor = 0.0f;
+    };
+
+    struct RaidMechanicAdapter
+    {
+        std::string MechanicFamily = "boss_pressure";
+        std::string AssignmentType = "maintain_role";
+        std::string RecommendedAction = "boss_single_target";
+        ObjectGuid AssignedTargetGuid;
+        float Priority = 0.0f;
+        bool HeroicOnly = false;
+    };
+
+    struct RaidGearTargetPlan
+    {
+        float CurrentItemLevel = 0.0f;
+        float TargetItemLevel = 359.0f;
+        float NeededItemLevel = 0.0f;
+        std::string RecommendedActivity = "raid";
+        bool ReadyForRaid = false;
+        bool ReadyForHeroicRaid = false;
+    };
+
+    struct HeroicRaidProgression
+    {
+        bool TrackingEnabled = false;
+        bool HeroicEligible = false;
+        std::string Stage = "normal_raid";
+        uint32 RaidAttempts = 0;
+        uint32 RaidBossKills = 0;
+        uint32 HeroicRaidBossKills = 0;
+        uint32 Wipes = 0;
+        float RolePowerScore = 0.0f;
+        float TargetItemLevel = 372.0f;
+    };
+
     struct SemanticOutcomeStats
     {
         bool Known = false;
@@ -269,6 +341,17 @@ private:
     Unit* FindBossTarget(Player* bot) const;
     BossMechanicFeatures BuildBossMechanicFeatures(Player* bot, Unit const* boss) const;
     BossMechanicActionResult TryBossMechanics(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity);
+    RaidRoleAssignment BuildRaidRoleAssignment(Player* bot) const;
+    RaidPositioningAnchors BuildRaidPositioningAnchors(Player* bot, Unit const* boss, RaidRoleAssignment const& assignment, BossMechanicFeatures const& features) const;
+    RaidMechanicAdapter BuildRaidMechanicAdapter(Player* bot, Unit const* boss, RaidRoleAssignment const& assignment, BossMechanicFeatures const& features) const;
+    RaidGearTargetPlan BuildRaidGearTargetPlan(Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage) const;
+    HeroicRaidProgression BuildHeroicRaidProgression(WorldBotState const& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage) const;
+    std::string BuildRaidRoleAssignmentJson(RaidRoleAssignment const& assignment) const;
+    std::string BuildRaidPositioningAnchorsJson(RaidPositioningAnchors const& anchors) const;
+    std::string BuildRaidMechanicAdapterJson(RaidMechanicAdapter const& adapter) const;
+    std::string BuildRaidGearTargetPlanJson(RaidGearTargetPlan const& plan) const;
+    std::string BuildHeroicRaidProgressionJson(HeroicRaidProgression const& progression) const;
+    void RecordRaidTelemetry(WorldBotState& state, Player* bot, Unit const* boss, char const* eventType, char const* result, BossMechanicFeatures const& features, RaidRoleAssignment const& assignment, RaidPositioningAnchors const& anchors, RaidMechanicAdapter const& adapter, RaidGearTargetPlan const& gearPlan, HeroicRaidProgression const& progression, char const* rawJson, char const* semanticJson, float valueFloat = 0.0f, uint32 valueInt = 0, uint32 spellId = 0);
     bool IsDungeonTrashContext(Player* bot, Unit const* target) const;
     Player* FindDungeonAnchor(Player* bot) const;
     Unit* FindGroupCombatTarget(Player* bot, Player* anchor) const;

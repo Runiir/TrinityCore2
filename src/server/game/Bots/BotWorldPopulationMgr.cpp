@@ -278,6 +278,7 @@ bool BotWorldPopulationMgr::Start(std::string const& experimentName, BotWorldExp
     _config.AllowQuesting = sConfigMgr->GetBoolDefault("BotProgression.AllowQuesting", sConfigMgr->GetBoolDefault("BotWorld.AllowQuesting", _config.AllowQuesting));
     _config.AllowDungeons = sConfigMgr->GetBoolDefault("BotProgression.AllowDungeons", _config.AllowDungeons);
     _config.AllowRaids = sConfigMgr->GetBoolDefault("BotProgression.AllowRaids", _config.AllowRaids);
+    _config.TrackHeroicRaidProgression = sConfigMgr->GetBoolDefault("BotProgression.TrackHeroicRaidProgression", _config.TrackHeroicRaidProgression);
     _config.RecordDecisions = sConfigMgr->GetBoolDefault("BotExperiment.RecordDecisions", _config.RecordDecisions);
     _config.RecordPerception = sConfigMgr->GetBoolDefault("BotExperiment.RecordPerception", _config.RecordPerception);
     _config.SmartSampling = sConfigMgr->GetBoolDefault("BotExperiment.SmartSampling", _config.SmartSampling);
@@ -373,6 +374,16 @@ void BotWorldPopulationMgr::EnsurePopulation()
         std::string raw = BuildRawJson(bot, nullptr);
         std::string semantic = BuildSemanticJson(bot, nullptr, "idle", &power, stage);
         RecordEvent(_bots.back(), bot, "bot_spawned", nullptr, "ok", raw.c_str(), semantic.c_str());
+        if (_config.AllowRaids && bot->GetMap() && bot->GetMap()->IsRaid())
+        {
+            RaidRoleAssignment assignment = BuildRaidRoleAssignment(bot);
+            BossMechanicFeatures features = BuildBossMechanicFeatures(bot, nullptr);
+            RaidPositioningAnchors anchors = BuildRaidPositioningAnchors(bot, nullptr, assignment, features);
+            RaidMechanicAdapter adapter = BuildRaidMechanicAdapter(bot, nullptr, assignment, features);
+            RaidGearTargetPlan gearPlan = BuildRaidGearTargetPlan(bot, power, stage);
+            HeroicRaidProgression progression = BuildHeroicRaidProgression(_bots.back(), bot, power, stage);
+            RecordRaidTelemetry(_bots.back(), bot, nullptr, "raid_role_assignment", "assigned", features, assignment, anchors, adapter, gearPlan, progression, raw.c_str(), semantic.c_str());
+        }
     }
 }
 
@@ -398,6 +409,18 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
             if (bossDeath)
             {
                 BossMechanicFeatures features = BuildBossMechanicFeatures(bot, lastTarget);
+                if (features.RaidEncounter)
+                {
+                    ++state.RaidWipes;
+                    BotRolePowerBreakdown deathPower = BotLongTermProgressionBrain::CalculateRolePower(bot);
+                    BotProgressionStage deathStage = BotLongTermProgressionBrain::ClassifyStage(bot, deathPower);
+                    RaidRoleAssignment assignment = BuildRaidRoleAssignment(bot);
+                    RaidPositioningAnchors anchors = BuildRaidPositioningAnchors(bot, lastTarget, assignment, features);
+                    RaidMechanicAdapter adapter = BuildRaidMechanicAdapter(bot, lastTarget, assignment, features);
+                    RaidGearTargetPlan gearPlan = BuildRaidGearTargetPlan(bot, deathPower, deathStage);
+                    HeroicRaidProgression progression = BuildHeroicRaidProgression(state, bot, deathPower, deathStage);
+                    RecordRaidTelemetry(state, bot, lastTarget, "raid_wipe", "death", features, assignment, anchors, adapter, gearPlan, progression, raw.c_str(), semantic.c_str(), features.DangerScore, _metrics.Deaths);
+                }
                 RecordBossReplay(state, bot, lastTarget, features, "boss_mechanic_failure", raw.c_str(), semantic.c_str(), "{\"action\":\"survive_boss_mechanic\"}", "{\"reason\":\"bot_died_during_boss\"}");
             }
         }
@@ -545,6 +568,24 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         std::string raw = BuildRawJson(bot, target);
         std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, chosenActivity.Activity);
         RecordEvent(state, bot, (situation == "dungeon_boss" || situation == "raid_boss") ? "boss_killed" : "mob_killed", target, "ok", raw.c_str(), semantic.c_str(), 0.0f, _metrics.Kills);
+        if (situation == "raid_boss")
+        {
+            ++state.RaidBossKills;
+            ++_metrics.RaidBossKills;
+            if (stage == BotProgressionStage::HeroicRaid)
+            {
+                ++state.HeroicRaidBossKills;
+                ++_metrics.HeroicRaidBossKills;
+            }
+
+            BossMechanicFeatures features = BuildBossMechanicFeatures(bot, target);
+            RaidRoleAssignment assignment = BuildRaidRoleAssignment(bot);
+            RaidPositioningAnchors anchors = BuildRaidPositioningAnchors(bot, target, assignment, features);
+            RaidMechanicAdapter adapter = BuildRaidMechanicAdapter(bot, target, assignment, features);
+            RaidGearTargetPlan gearPlan = BuildRaidGearTargetPlan(bot, power, stage);
+            HeroicRaidProgression progression = BuildHeroicRaidProgression(state, bot, power, stage);
+            RecordRaidTelemetry(state, bot, target, "raid_boss_killed", "ok", features, assignment, anchors, adapter, gearPlan, progression, raw.c_str(), semantic.c_str(), power.Total, _metrics.RaidBossKills);
+        }
         RecordEvent(state, bot, "loot_received", target, ToString(result), raw.c_str(), semantic.c_str());
         RecordQuestObjectiveProgressForTarget(state, bot, target, raw.c_str(), semantic.c_str());
         BotGearUpgradeEvaluation gear = BotLongTermProgressionBrain::EvaluateGearUpgrade(bot);
@@ -1313,10 +1354,25 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
     result.Situation = bot->GetMap() && bot->GetMap()->IsRaid() ? "raid_boss" : "dungeon_boss";
     result.Features = BuildBossMechanicFeatures(bot, result.Target);
     state.TargetGuid = result.Target->GetGUID();
+    if (result.Features.RaidEncounter && !state.WasInCombat)
+        ++state.RaidAttempts;
 
     std::string raw = BuildRawJson(bot, result.Target);
     std::string semantic = BuildSemanticJson(bot, result.Target, result.Situation.c_str(), &power, stage, activity);
     char const* role = GetDungeonRole(bot);
+    RaidRoleAssignment raidAssignment;
+    RaidPositioningAnchors raidAnchors;
+    RaidMechanicAdapter raidAdapter;
+    RaidGearTargetPlan raidGearPlan;
+    HeroicRaidProgression heroicProgression;
+    if (result.Features.RaidEncounter)
+    {
+        raidAssignment = BuildRaidRoleAssignment(bot);
+        raidAnchors = BuildRaidPositioningAnchors(bot, result.Target, raidAssignment, result.Features);
+        raidAdapter = BuildRaidMechanicAdapter(bot, result.Target, raidAssignment, result.Features);
+        raidGearPlan = BuildRaidGearTargetPlan(bot, power, stage);
+        heroicProgression = BuildHeroicRaidProgression(state, bot, power, stage);
+    }
 
     if (result.Features.MoveOut && result.Features.DangerScore >= 0.25f)
     {
@@ -1326,6 +1382,8 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
         result.Action = "move_out_ground_danger";
         result.Rare = true;
         RecordEvent(state, bot, "boss_mechanic", result.Target, "move_out", raw.c_str(), semantic.c_str(), result.Features.DangerScore, result.Features.CastSpellId, result.Features.CastSpellId);
+        if (result.Features.RaidEncounter)
+            RecordRaidTelemetry(state, bot, result.Target, "raid_mechanic", "move_out", result.Features, raidAssignment, raidAnchors, raidAdapter, raidGearPlan, heroicProgression, raw.c_str(), semantic.c_str(), result.Features.DangerScore, result.Features.CastSpellId, result.Features.CastSpellId);
         return result;
     }
 
@@ -1338,6 +1396,8 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
         result.Failure = !interrupted;
         result.Rare = true;
         RecordEvent(state, bot, interrupted ? "interrupt_success" : "interrupt_failed", result.Target, interrupted ? "ok" : "failed", raw.c_str(), semantic.c_str(), result.Features.InterruptPriority, result.Features.CastSpellId, interruptSpell);
+        if (result.Features.RaidEncounter)
+            RecordRaidTelemetry(state, bot, result.Target, "raid_interrupt", interrupted ? "ok" : "failed", result.Features, raidAssignment, raidAnchors, raidAdapter, raidGearPlan, heroicProgression, raw.c_str(), semantic.c_str(), result.Features.InterruptPriority, result.Features.CastSpellId, interruptSpell);
         if (!interrupted)
             RecordBossReplay(state, bot, result.Target, result.Features, "boss_mechanic_failure", raw.c_str(), semantic.c_str(), "{\"action\":\"interrupt_must_interrupt\"}", "{\"reason\":\"must_interrupt_failed\"}");
         return result;
@@ -1357,6 +1417,8 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
             result.Failure = pull != BotActionResult::Ok;
             result.Rare = true;
             RecordEvent(state, bot, "boss_adds", add, ToString(pull), raw.c_str(), semantic.c_str(), float(result.Features.AddCount), result.Features.CastSpellId, result.SpellId);
+            if (result.Features.RaidEncounter)
+                RecordRaidTelemetry(state, bot, add, "raid_add_wave", ToString(pull), result.Features, raidAssignment, raidAnchors, raidAdapter, raidGearPlan, heroicProgression, raw.c_str(), semantic.c_str(), float(result.Features.AddCount), result.Features.CastSpellId, result.SpellId);
             if (result.Failure)
                 RecordBossReplay(state, bot, add, result.Features, "boss_mechanic_failure", raw.c_str(), semantic.c_str(), "{\"action\":\"switch_to_adds\"}", "{\"reason\":\"add_switch_failed\"}");
             return result;
@@ -1391,6 +1453,28 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
             result.SpellId = healSpell;
             result.Target = healTarget;
             RecordEvent(state, bot, "boss_heal", result.Target, "ok", raw.c_str(), semantic.c_str(), UnitHealthPct(healTarget), result.Features.CastSpellId, healSpell);
+            if (result.Features.RaidEncounter)
+                RecordRaidTelemetry(state, bot, result.Target, "raid_healer_cooldown", "ok", result.Features, raidAssignment, raidAnchors, raidAdapter, raidGearPlan, heroicProgression, raw.c_str(), semantic.c_str(), UnitHealthPct(healTarget), result.Features.CastSpellId, healSpell);
+            return result;
+        }
+    }
+
+    if (result.Features.RaidEncounter && raidAnchors.Active)
+    {
+        bool shouldReposition = (raidAdapter.AssignmentType == "stack" && bot->GetExactDist2d(raidAnchors.StackX, raidAnchors.StackY) > 4.0f)
+            || (raidAdapter.AssignmentType == "spread" && bot->GetExactDist2d(raidAnchors.SpreadX, raidAnchors.SpreadY) > 4.0f);
+        if (shouldReposition)
+        {
+            Position pos(
+                raidAdapter.AssignmentType == "stack" ? raidAnchors.StackX : raidAnchors.SpreadX,
+                raidAdapter.AssignmentType == "stack" ? raidAnchors.StackY : raidAnchors.SpreadY,
+                raidAdapter.AssignmentType == "stack" ? raidAnchors.StackZ : raidAnchors.SpreadZ,
+                bot->GetOrientation());
+            bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+            bot->GetMotionMaster()->MovePoint(0, pos, true);
+            result.Action = raidAdapter.AssignmentType == "stack" ? "raid_stack_anchor" : "raid_spread_anchor";
+            result.Rare = result.Features.DangerScore >= 0.5f;
+            RecordRaidTelemetry(state, bot, result.Target, "raid_position_anchor", result.Action.c_str(), result.Features, raidAssignment, raidAnchors, raidAdapter, raidGearPlan, heroicProgression, raw.c_str(), semantic.c_str(), raidAnchors.DistanceToAnchor, result.Features.CastSpellId);
             return result;
         }
     }
@@ -1405,12 +1489,250 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
     result.Rare = result.Features.DangerScore >= 0.5f || result.Features.BossCasting || result.Features.AddsActive;
 
     RecordEvent(state, bot, "boss_action", result.Target, ToString(pull), raw.c_str(), semantic.c_str(), result.Features.DangerScore, result.Features.CastSpellId, result.SpellId);
+    if (result.Features.RaidEncounter)
+        RecordRaidTelemetry(state, bot, result.Target, "raid_boss_action", ToString(pull), result.Features, raidAssignment, raidAnchors, raidAdapter, raidGearPlan, heroicProgression, raw.c_str(), semantic.c_str(), result.Features.DangerScore, result.Features.CastSpellId, result.SpellId);
     if (!state.WasInCombat)
         RecordEvent(state, bot, "boss_started", result.Target, result.Situation.c_str(), raw.c_str(), semantic.c_str(), result.Features.DangerScore, result.Features.BossEntry);
     if (result.Failure || (result.Features.DangerScore >= 0.85f && result.Features.BossCasting))
         RecordBossReplay(state, bot, result.Target, result.Features, "boss_mechanic_failure", raw.c_str(), semantic.c_str(), "{\"action\":\"boss_single_target\"}", result.Failure ? "{\"reason\":\"boss_action_failed\"}" : "{\"reason\":\"high_danger_boss_state\"}");
     state.WasInCombat = true;
     return result;
+}
+
+BotWorldPopulationMgr::RaidRoleAssignment BotWorldPopulationMgr::BuildRaidRoleAssignment(Player* bot) const
+{
+    RaidRoleAssignment assignment;
+    if (!bot)
+        return assignment;
+
+    assignment.Role = GetDungeonRole(bot);
+    if (Group* group = bot->GetGroup())
+    {
+        assignment.RaidLeaderGuid = group->GetLeaderGUID();
+        assignment.SubGroup = group->GetMemberGroup(bot->GetGUID());
+        for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
+        {
+            Player* member = itr->GetSource();
+            if (!member || member->GetMap() != bot->GetMap())
+                continue;
+
+            ++assignment.RaidSize;
+            uint8 roles = group->GetLfgRoles(member->GetGUID());
+            std::string role = "dps";
+            if (roles & lfg::PLAYER_ROLE_TANK)
+            {
+                role = "tank";
+                if (assignment.MainTankGuid.IsEmpty())
+                    assignment.MainTankGuid = member->GetGUID();
+                else if (assignment.OffTankGuid.IsEmpty())
+                    assignment.OffTankGuid = member->GetGUID();
+                ++assignment.TankCount;
+            }
+            else if (roles & lfg::PLAYER_ROLE_HEALER)
+            {
+                role = "healer";
+                ++assignment.HealerCount;
+            }
+            else
+                ++assignment.DpsCount;
+
+            if (member == bot)
+            {
+                if (role == "tank")
+                    assignment.RoleIndex = assignment.TankCount;
+                else if (role == "healer")
+                    assignment.RoleIndex = assignment.HealerCount;
+                else
+                    assignment.RoleIndex = assignment.DpsCount;
+                assignment.Role = role;
+            }
+        }
+    }
+
+    if (!assignment.RaidSize)
+    {
+        assignment.RaidSize = 1;
+        assignment.RoleIndex = 1;
+        if (assignment.Role == "tank")
+        {
+            assignment.TankCount = 1;
+            assignment.MainTankGuid = bot->GetGUID();
+        }
+        else if (assignment.Role == "healer")
+            assignment.HealerCount = 1;
+        else
+            assignment.DpsCount = 1;
+    }
+
+    if (assignment.MainTankGuid.IsEmpty() && assignment.Role == "tank")
+        assignment.MainTankGuid = bot->GetGUID();
+
+    return assignment;
+}
+
+BotWorldPopulationMgr::RaidPositioningAnchors BotWorldPopulationMgr::BuildRaidPositioningAnchors(Player* bot, Unit const* boss, RaidRoleAssignment const& assignment, BossMechanicFeatures const& features) const
+{
+    RaidPositioningAnchors anchors;
+    if (!bot)
+        return anchors;
+
+    anchors.Active = bot->GetMap() && bot->GetMap()->IsRaid();
+    Unit const* anchor = boss;
+    anchors.AnchorType = "boss";
+
+    if (assignment.Role == "healer" || assignment.Role == "dps")
+    {
+        if (Group* group = bot->GetGroup())
+        {
+            for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
+            {
+                Player* member = itr->GetSource();
+                if (member && member->GetGUID() == assignment.MainTankGuid && member->IsAlive() && member->GetMap() == bot->GetMap())
+                {
+                    anchor = member;
+                    anchors.AnchorType = "main_tank";
+                    break;
+                }
+            }
+        }
+    }
+
+    if (!anchor && !assignment.RaidLeaderGuid.IsEmpty())
+        if (Player* leader = ObjectAccessor::FindPlayer(assignment.RaidLeaderGuid))
+            if (leader->IsAlive() && leader->GetMap() == bot->GetMap())
+            {
+                anchor = leader;
+                anchors.AnchorType = "raid_leader";
+            }
+
+    if (!anchor)
+    {
+        anchor = bot;
+        anchors.AnchorType = "self";
+    }
+
+    anchors.AnchorGuid = anchor->GetGUID();
+    anchors.AnchorX = anchor->GetPositionX();
+    anchors.AnchorY = anchor->GetPositionY();
+    anchors.AnchorZ = anchor->GetPositionZ();
+    anchors.DistanceToAnchor = bot->GetExactDist(anchor);
+
+    float baseAngle = boss ? boss->GetAngle(bot) : bot->GetOrientation();
+    float stackDistance = assignment.Role == "tank" ? 4.0f : 8.0f;
+    float spreadDistance = 10.0f + float(assignment.RoleIndex % 5) * 2.0f;
+    float spreadAngle = baseAngle + float(assignment.SubGroup + assignment.RoleIndex) * 0.75f;
+
+    anchors.StackX = anchors.AnchorX + std::cos(baseAngle) * stackDistance;
+    anchors.StackY = anchors.AnchorY + std::sin(baseAngle) * stackDistance;
+    anchors.StackZ = anchors.AnchorZ;
+    anchors.SpreadX = anchors.AnchorX + std::cos(spreadAngle) * spreadDistance;
+    anchors.SpreadY = anchors.AnchorY + std::sin(spreadAngle) * spreadDistance;
+    anchors.SpreadZ = anchors.AnchorZ;
+
+    if (features.MoveOut && boss)
+    {
+        Position safe = bot->GetFirstCollisionPosition(8.0f, boss->GetAngle(bot) + float(M_PI));
+        anchors.SpreadX = safe.GetPositionX();
+        anchors.SpreadY = safe.GetPositionY();
+        anchors.SpreadZ = safe.GetPositionZ();
+    }
+
+    return anchors;
+}
+
+BotWorldPopulationMgr::RaidMechanicAdapter BotWorldPopulationMgr::BuildRaidMechanicAdapter(Player* bot, Unit const* /*boss*/, RaidRoleAssignment const& assignment, BossMechanicFeatures const& features) const
+{
+    RaidMechanicAdapter adapter;
+    if (!bot)
+        return adapter;
+
+    adapter.Priority = features.DangerScore;
+    adapter.AssignedTargetGuid = features.BossGuid;
+    adapter.HeroicOnly = BotLongTermProgressionBrain::ClassifyStage(bot, BotLongTermProgressionBrain::CalculateRolePower(bot)) == BotProgressionStage::HeroicRaid;
+
+    if (features.TankSpike)
+    {
+        adapter.MechanicFamily = "tank_swap";
+        adapter.AssignmentType = assignment.Role == "tank" ? "tank_swap" : "maintain_role";
+        adapter.RecommendedAction = assignment.Role == "tank" ? "tank_boss_position" : "avoid_front";
+        adapter.Priority += 0.25f;
+        return adapter;
+    }
+
+    if (features.MustInterrupt)
+    {
+        adapter.MechanicFamily = "interrupt_rotation";
+        adapter.AssignmentType = "interrupt";
+        adapter.RecommendedAction = "interrupt_must_interrupt";
+        adapter.Priority += 0.35f;
+        return adapter;
+    }
+
+    if (features.RaidDamage)
+    {
+        adapter.MechanicFamily = "raid_wide_aoe";
+        adapter.AssignmentType = assignment.Role == "healer" ? "healer_cooldown" : "stack";
+        adapter.RecommendedAction = assignment.Role == "healer" ? "heal_raid_damage" : "raid_stack_anchor";
+        adapter.Priority += 0.20f;
+        return adapter;
+    }
+
+    if (features.MoveOut || features.SpreadPlaceholder)
+    {
+        adapter.MechanicFamily = "spread";
+        adapter.AssignmentType = "spread";
+        adapter.RecommendedAction = "raid_spread_anchor";
+        adapter.Priority += 0.20f;
+        return adapter;
+    }
+
+    if (features.AddsActive)
+    {
+        adapter.MechanicFamily = "add_wave";
+        adapter.AssignmentType = assignment.Role == "healer" ? "maintain_role" : "target_switch";
+        adapter.AssignedTargetGuid = features.PriorityAddGuid;
+        adapter.RecommendedAction = assignment.Role == "healer" ? "heal_boss_damage" : "switch_to_adds";
+        adapter.Priority += 0.15f;
+        return adapter;
+    }
+
+    adapter.RecommendedAction = assignment.Role == "tank" ? "tank_boss_position" : "boss_single_target";
+    return adapter;
+}
+
+BotWorldPopulationMgr::RaidGearTargetPlan BotWorldPopulationMgr::BuildRaidGearTargetPlan(Player* bot, BotRolePowerBreakdown const& /*power*/, BotProgressionStage stage) const
+{
+    RaidGearTargetPlan plan;
+    if (!bot)
+        return plan;
+
+    plan.CurrentItemLevel = bot->GetAverageItemLevel();
+    plan.TargetItemLevel = stage == BotProgressionStage::HeroicRaid ? 372.0f : 359.0f;
+    plan.NeededItemLevel = std::max(0.0f, plan.TargetItemLevel - plan.CurrentItemLevel);
+    plan.ReadyForRaid = plan.CurrentItemLevel >= 346.0f;
+    plan.ReadyForHeroicRaid = plan.CurrentItemLevel >= 372.0f;
+    if (!plan.ReadyForRaid)
+        plan.RecommendedActivity = "heroic_dungeon";
+    else if (!plan.ReadyForHeroicRaid)
+        plan.RecommendedActivity = "raid";
+    else
+        plan.RecommendedActivity = "heroic_raid";
+    return plan;
+}
+
+BotWorldPopulationMgr::HeroicRaidProgression BotWorldPopulationMgr::BuildHeroicRaidProgression(WorldBotState const& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage) const
+{
+    HeroicRaidProgression progression;
+    progression.TrackingEnabled = _config.TrackHeroicRaidProgression;
+    progression.HeroicEligible = stage == BotProgressionStage::HeroicRaid || (bot && bot->GetAverageItemLevel() >= 372.0f);
+    progression.Stage = progression.HeroicEligible ? "heroic_raid" : (stage == BotProgressionStage::RaidReady ? "raid_ready" : "normal_raid");
+    progression.RaidAttempts = state.RaidAttempts;
+    progression.RaidBossKills = state.RaidBossKills;
+    progression.HeroicRaidBossKills = state.HeroicRaidBossKills;
+    progression.Wipes = state.RaidWipes;
+    progression.RolePowerScore = power.Total;
+    progression.TargetItemLevel = progression.HeroicEligible ? 372.0f : 359.0f;
+    return progression;
 }
 
 bool BotWorldPopulationMgr::IsDungeonTrashContext(Player* bot, Unit const* target) const
@@ -1908,6 +2230,74 @@ std::string BotWorldPopulationMgr::BuildBossMechanicsJson(BossMechanicFeatures c
          << ",\"lowest_ally_hp_pct\":" << features.LowestAllyHpPct
          << ",\"healer_mana_pct\":" << features.HealerManaPct << "}"
          << ",\"danger_score\":" << features.DangerScore << "}";
+    return json.str();
+}
+
+std::string BotWorldPopulationMgr::BuildRaidRoleAssignmentJson(RaidRoleAssignment const& assignment) const
+{
+    std::ostringstream json;
+    json << "{\"role\":\"" << JsonEscape(assignment.Role) << "\""
+         << ",\"subgroup\":" << uint32(assignment.SubGroup)
+         << ",\"raid_size\":" << assignment.RaidSize
+         << ",\"tank_count\":" << assignment.TankCount
+         << ",\"healer_count\":" << assignment.HealerCount
+         << ",\"dps_count\":" << assignment.DpsCount
+         << ",\"role_index\":" << assignment.RoleIndex
+         << ",\"main_tank_guid\":" << assignment.MainTankGuid.GetCounter()
+         << ",\"off_tank_guid\":" << assignment.OffTankGuid.GetCounter()
+         << ",\"raid_leader_guid\":" << assignment.RaidLeaderGuid.GetCounter() << "}";
+    return json.str();
+}
+
+std::string BotWorldPopulationMgr::BuildRaidPositioningAnchorsJson(RaidPositioningAnchors const& anchors) const
+{
+    std::ostringstream json;
+    json << "{\"active\":" << (anchors.Active ? "true" : "false")
+         << ",\"anchor_type\":\"" << JsonEscape(anchors.AnchorType) << "\""
+         << ",\"anchor_guid\":" << anchors.AnchorGuid.GetCounter()
+         << ",\"anchor\":{\"x\":" << anchors.AnchorX << ",\"y\":" << anchors.AnchorY << ",\"z\":" << anchors.AnchorZ << "}"
+         << ",\"stack_anchor\":{\"x\":" << anchors.StackX << ",\"y\":" << anchors.StackY << ",\"z\":" << anchors.StackZ << "}"
+         << ",\"spread_anchor\":{\"x\":" << anchors.SpreadX << ",\"y\":" << anchors.SpreadY << ",\"z\":" << anchors.SpreadZ << "}"
+         << ",\"distance_to_anchor\":" << anchors.DistanceToAnchor << "}";
+    return json.str();
+}
+
+std::string BotWorldPopulationMgr::BuildRaidMechanicAdapterJson(RaidMechanicAdapter const& adapter) const
+{
+    std::ostringstream json;
+    json << "{\"mechanic_family\":\"" << JsonEscape(adapter.MechanicFamily) << "\""
+         << ",\"assignment_type\":\"" << JsonEscape(adapter.AssignmentType) << "\""
+         << ",\"recommended_action\":\"" << JsonEscape(adapter.RecommendedAction) << "\""
+         << ",\"assigned_target_guid\":" << adapter.AssignedTargetGuid.GetCounter()
+         << ",\"priority\":" << adapter.Priority
+         << ",\"heroic_only\":" << (adapter.HeroicOnly ? "true" : "false") << "}";
+    return json.str();
+}
+
+std::string BotWorldPopulationMgr::BuildRaidGearTargetPlanJson(RaidGearTargetPlan const& plan) const
+{
+    std::ostringstream json;
+    json << "{\"current_item_level\":" << plan.CurrentItemLevel
+         << ",\"target_item_level\":" << plan.TargetItemLevel
+         << ",\"needed_item_level\":" << plan.NeededItemLevel
+         << ",\"recommended_activity\":\"" << JsonEscape(plan.RecommendedActivity) << "\""
+         << ",\"ready_for_raid\":" << (plan.ReadyForRaid ? "true" : "false")
+         << ",\"ready_for_heroic_raid\":" << (plan.ReadyForHeroicRaid ? "true" : "false") << "}";
+    return json.str();
+}
+
+std::string BotWorldPopulationMgr::BuildHeroicRaidProgressionJson(HeroicRaidProgression const& progression) const
+{
+    std::ostringstream json;
+    json << "{\"tracking_enabled\":" << (progression.TrackingEnabled ? "true" : "false")
+         << ",\"heroic_eligible\":" << (progression.HeroicEligible ? "true" : "false")
+         << ",\"stage\":\"" << JsonEscape(progression.Stage) << "\""
+         << ",\"raid_attempts\":" << progression.RaidAttempts
+         << ",\"raid_boss_kills\":" << progression.RaidBossKills
+         << ",\"heroic_raid_boss_kills\":" << progression.HeroicRaidBossKills
+         << ",\"wipes\":" << progression.Wipes
+         << ",\"role_power_score\":" << progression.RolePowerScore
+         << ",\"target_item_level\":" << progression.TargetItemLevel << "}";
     return json.str();
 }
 
@@ -2409,6 +2799,55 @@ void BotWorldPopulationMgr::RecordGearEvaluation(WorldBotState const& state, Pla
     UpdateSemanticOutcomeStats(bot, "item", evaluation.ItemId, "gear_upgrade", "upgrade_candidate", evaluation.PowerDelta, evaluation.PowerDelta, false, features.c_str());
 }
 
+void BotWorldPopulationMgr::RecordRaidTelemetry(WorldBotState& state, Player* bot, Unit const* boss, char const* eventType, char const* result, BossMechanicFeatures const& features, RaidRoleAssignment const& assignment, RaidPositioningAnchors const& anchors, RaidMechanicAdapter const& adapter, RaidGearTargetPlan const& gearPlan, HeroicRaidProgression const& progression, char const* rawJson, char const* semanticJson, float valueFloat, uint32 valueInt, uint32 spellId)
+{
+    if (!_runId || !bot || !features.RaidEncounter)
+        return;
+
+    ++_metrics.RaidTelemetryEvents;
+
+    std::ostringstream context;
+    context << "{\"raid_role_assignment\":" << BuildRaidRoleAssignmentJson(assignment)
+            << ",\"raid_positioning_anchors\":" << BuildRaidPositioningAnchorsJson(anchors)
+            << ",\"raid_mechanic_adapter\":" << BuildRaidMechanicAdapterJson(adapter)
+            << ",\"raid_boss_mechanics\":" << BuildBossMechanicsJson(features)
+            << ",\"gear_target_plan\":" << BuildRaidGearTargetPlanJson(gearPlan)
+            << ",\"heroic_raid_progression\":" << BuildHeroicRaidProgressionJson(progression) << "}";
+
+    std::string raw = rawJson ? rawJson : "{}";
+    std::string semantic = semanticJson ? semanticJson : "{}";
+    std::string event = eventType ? eventType : "raid_telemetry";
+    std::string eventResult = result ? result : "ok";
+    std::string brain = _config.BrainVersion;
+    std::string contextJson = context.str();
+    CharacterDatabase.EscapeString(raw);
+    CharacterDatabase.EscapeString(semantic);
+    CharacterDatabase.EscapeString(event);
+    CharacterDatabase.EscapeString(eventResult);
+    CharacterDatabase.EscapeString(brain);
+    CharacterDatabase.EscapeString(contextJson);
+
+    uint64 targetGuid = boss ? boss->GetGUID().GetCounter() : features.BossGuid.GetCounter();
+    uint32 targetEntry = features.BossEntry;
+    if (Creature const* creature = boss ? boss->ToCreature() : nullptr)
+        targetEntry = creature->GetEntry();
+
+    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_events (experiment_id, run_id, bot_guid, brain_version, map_id, zone_id, area_id, x, y, z, level, event_type, target_guid, target_entry, spell_id, result, value_float, value_int, raw_json, semantic_json, context_json) "
+        "VALUES (" UI64FMTD ", " UI64FMTD ", %u, '%s', %u, %u, %u, %f, %f, %f, %u, '%s', " UI64FMTD ", %u, %u, '%s', %f, %u, '%s', '%s', '%s')",
+        _experimentId, _runId, state.Guid.GetCounter(), brain.c_str(), bot->GetMapId(), bot->GetZoneId(), bot->GetAreaId(),
+        bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), uint32(bot->getLevel()), event.c_str(), targetGuid,
+        targetEntry, spellId ? spellId : features.CastSpellId, eventResult.c_str(), valueFloat, valueInt, raw.c_str(), semantic.c_str(), contextJson.c_str());
+
+    uint32 mechanicKey = features.MoveOut ? 1 : (features.MustInterrupt ? 2 : (features.AddsActive ? 5 : (features.RaidDamage ? 4 : 11)));
+    std::string mechanicFeatures = BuildEmbeddingFeaturesJson(bot, boss, "mechanic", mechanicKey, adapter.MechanicFamily.c_str());
+    UpdateSemanticOutcomeStats(bot, "mechanic", mechanicKey, event.c_str(), eventResult.c_str(), valueFloat, 0.0f, eventResult == "failed" || eventResult == "death", mechanicFeatures.c_str());
+    if (gearPlan.NeededItemLevel > 0.0f)
+    {
+        std::string gearFeatures = BuildEmbeddingFeaturesJson(bot, nullptr, "item", uint32(gearPlan.TargetItemLevel), "raid_gear_target");
+        UpdateSemanticOutcomeStats(bot, "item", uint32(gearPlan.TargetItemLevel), "raid_gear_target", gearPlan.RecommendedActivity.c_str(), gearPlan.NeededItemLevel, -gearPlan.NeededItemLevel, false, gearFeatures.c_str());
+    }
+}
+
 void BotWorldPopulationMgr::RecordQuestObjectiveProgressForTarget(WorldBotState& state, Player* bot, Unit const* target, char const* rawJson, char const* semanticJson)
 {
     if (!_runId || !bot || !target)
@@ -2873,6 +3312,7 @@ std::string BotWorldPopulationMgr::BuildSemanticJson(Player* bot, Unit const* ta
     std::string situationType = situation ? situation : "idle";
     bool dungeonTrash = bot && bot->GetMap() && bot->GetMap()->IsNonRaidDungeon() && situationType == "dungeon_trash";
     bool bossEncounter = bot && bot->GetMap() && (situationType == "dungeon_boss" || situationType == "raid_boss");
+    bool raidEncounter = bossEncounter && bot && bot->GetMap() && bot->GetMap()->IsRaid();
     bool elite = false;
     uint32 targetEntry = 0;
     if (Creature const* creature = target ? target->ToCreature() : nullptr)
@@ -2959,9 +3399,32 @@ std::string BotWorldPopulationMgr::BuildSemanticJson(Player* bot, Unit const* ta
              << ",\"switch_adds\":" << (features.AddsActive ? std::min(1.0f, float(features.AddCount) / 4.0f) : 0.0f)
              << ",\"heal_raid\":" << (features.RaidDamage ? std::max(0.0f, 1.0f - features.LowestAllyHpPct) : 0.0f)
              << ",\"single_target\":" << (target ? 1.0f : 0.0f) << "}";
+        if (raidEncounter)
+        {
+            RaidRoleAssignment assignment = BuildRaidRoleAssignment(bot);
+            RaidPositioningAnchors anchors = BuildRaidPositioningAnchors(bot, target, assignment, features);
+            RaidMechanicAdapter adapter = BuildRaidMechanicAdapter(bot, target, assignment, features);
+            RaidGearTargetPlan gearPlan = BuildRaidGearTargetPlan(bot, power ? *power : localPower, stage);
+            WorldBotState const* botState = nullptr;
+            for (WorldBotState const& state : _bots)
+                if (bot && state.Guid == bot->GetGUID())
+                {
+                    botState = &state;
+                    break;
+                }
+            WorldBotState emptyState;
+            HeroicRaidProgression progression = BuildHeroicRaidProgression(botState ? *botState : emptyState, bot, power ? *power : localPower, stage);
+            json << ",\"raid_role_assignment\":" << BuildRaidRoleAssignmentJson(assignment)
+                 << ",\"raid_positioning_anchors\":" << BuildRaidPositioningAnchorsJson(anchors)
+                 << ",\"raid_mechanic_adapter\":" << BuildRaidMechanicAdapterJson(adapter)
+                 << ",\"raid_gear_target_plan\":" << BuildRaidGearTargetPlanJson(gearPlan)
+                 << ",\"heroic_raid_progression\":" << BuildHeroicRaidProgressionJson(progression);
+        }
     }
     else
         json << ",\"boss_mechanics\":null,\"boss_action_scores\":null";
+    if (!raidEncounter)
+        json << ",\"raid_role_assignment\":null,\"raid_positioning_anchors\":null,\"raid_mechanic_adapter\":null,\"raid_gear_target_plan\":null,\"heroic_raid_progression\":null";
     json
          << ",\"objective\":{\"main_goal\":\"increase_character_power\",\"questing_allowed\":" << (_config.AllowQuesting ? "true" : "false")
          << ",\"dungeons_allowed\":" << (_config.AllowDungeons ? "true" : "false")
@@ -2984,6 +3447,7 @@ std::string BotWorldPopulationMgr::BuildConfigJson() const
          << ",\"allow_questing\":" << (_config.AllowQuesting ? "true" : "false")
          << ",\"allow_dungeons\":" << (_config.AllowDungeons ? "true" : "false")
          << ",\"allow_raids\":" << (_config.AllowRaids ? "true" : "false")
+         << ",\"track_heroic_raid_progression\":" << (_config.TrackHeroicRaidProgression ? "true" : "false")
          << ",\"record_decisions\":" << (_config.RecordDecisions ? "true" : "false")
          << ",\"record_perception\":" << (_config.RecordPerception ? "true" : "false")
          << ",\"smart_sampling\":" << (_config.SmartSampling ? "true" : "false")
@@ -3044,6 +3508,9 @@ std::string BotWorldPopulationMgr::GetStatusJson() const
          << ",\"quests_accepted\":" << status.QuestsAccepted
          << ",\"quests_completed\":" << status.QuestsCompleted
          << ",\"quest_objective_progress\":" << status.QuestObjectiveProgress
+         << ",\"raid_boss_kills\":" << status.RaidBossKills
+         << ",\"heroic_raid_boss_kills\":" << status.HeroicRaidBossKills
+         << ",\"raid_telemetry_events\":" << status.RaidTelemetryEvents
          << ",\"stuck\":" << status.StuckEvents
          << ",\"decisions\":" << status.Decisions
          << ",\"failures\":" << status.Failures
@@ -3068,6 +3535,9 @@ std::string BotWorldPopulationMgr::GetSummaryJson() const
          << ",\"quests_completed\":" << status.QuestsCompleted
          << ",\"quest_objective_progress\":" << status.QuestObjectiveProgress
          << ",\"gear_upgrades\":" << status.GearUpgrades
+         << ",\"raid_boss_kills\":" << status.RaidBossKills
+         << ",\"heroic_raid_boss_kills\":" << status.HeroicRaidBossKills
+         << ",\"raid_telemetry_events\":" << status.RaidTelemetryEvents
          << ",\"decisions\":" << status.Decisions
          << ",\"failures_recorded\":" << status.Failures << "}";
     return json.str();

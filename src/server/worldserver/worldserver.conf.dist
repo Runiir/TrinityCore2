@@ -3470,6 +3470,7 @@ BotProgression.PowerScoreVersion = "role_power_v1"
 BotProgression.AllowQuesting = 1
 BotProgression.AllowDungeons = 0
 BotProgression.AllowRaids = 0
+BotProgression.TrackHeroicRaidProgression = 1
 
 BotSemantic.Enable = 1
 BotSemantic.InferCreatureTags = 1

@@ -333,3 +333,43 @@ def test_phase08_raid_smoke_configs_record_frames_and_metrics(tmp_path):
         assert metrics["mechanic_survival"] == 1.0
         assert metrics["avoidable_raid_damage"] >= 0.0
         assert recomputed == metrics
+
+
+def test_phase08_server_raid_telemetry_surface():
+    header = Path("src/server/game/Bots/BotWorldPopulationMgr.h").read_text(encoding="utf-8")
+    impl = Path("src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(encoding="utf-8")
+    conf = Path("src/server/worldserver/worldserver.conf.dist").read_text(encoding="utf-8")
+
+    for symbol in [
+        "RaidRoleAssignment",
+        "RaidPositioningAnchors",
+        "RaidMechanicAdapter",
+        "RaidGearTargetPlan",
+        "HeroicRaidProgression",
+        "RecordRaidTelemetry",
+    ]:
+        assert symbol in header
+
+    for event_type in [
+        "raid_role_assignment",
+        "raid_mechanic",
+        "raid_interrupt",
+        "raid_add_wave",
+        "raid_position_anchor",
+        "raid_boss_action",
+        "raid_boss_killed",
+        "raid_wipe",
+    ]:
+        assert event_type in impl
+
+    for semantic_key in [
+        "raid_role_assignment",
+        "raid_positioning_anchors",
+        "raid_mechanic_adapter",
+        "raid_gear_target_plan",
+        "heroic_raid_progression",
+        "gear_target_plan",
+    ]:
+        assert semantic_key in impl
+
+    assert "BotProgression.TrackHeroicRaidProgression = 1" in conf
