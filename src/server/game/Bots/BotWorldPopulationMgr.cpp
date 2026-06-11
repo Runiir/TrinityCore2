@@ -74,6 +74,112 @@ bool SpellLooksDangerous(SpellInfo const* spellInfo)
         || spellInfo->HasEffect(SPELL_EFFECT_POWER_DRAIN)
         || spellInfo->HasEffect(SPELL_EFFECT_HEALTH_LEECH);
 }
+
+bool SpellLooksLikeSummonOrAdds(SpellInfo const* spellInfo)
+{
+    if (!spellInfo)
+        return false;
+
+    return spellInfo->HasEffect(SPELL_EFFECT_SUMMON)
+        || spellInfo->HasEffect(SPELL_EFFECT_SUMMON_PET)
+        || spellInfo->HasEffect(SPELL_EFFECT_SUMMON_OBJECT_SLOT1)
+        || spellInfo->HasEffect(SPELL_EFFECT_SUMMON_OBJECT_SLOT2)
+        || spellInfo->HasEffect(SPELL_EFFECT_SUMMON_OBJECT_SLOT3)
+        || spellInfo->HasEffect(SPELL_EFFECT_SUMMON_OBJECT_SLOT4)
+        || spellInfo->HasEffect(SPELL_EFFECT_SUMMON_CHANGE_ITEM);
+}
+
+bool SpellLooksLikeGroundDanger(SpellInfo const* spellInfo)
+{
+    if (!spellInfo)
+        return false;
+
+    if (spellInfo->HasEffect(SPELL_EFFECT_PERSISTENT_AREA_AURA))
+        return true;
+
+    for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
+    {
+        SpellEffectInfo const& effect = spellInfo->Effects[i];
+        if (!effect.IsEffect())
+            continue;
+
+        if ((effect.IsTargetingArea() || effect.CalcRadius() >= 4.0f)
+            && (SpellLooksDangerous(spellInfo) || effect.ApplyAuraName == SPELL_AURA_PERIODIC_DAMAGE))
+            return true;
+    }
+
+    return false;
+}
+
+bool SpellLooksRaidWide(SpellInfo const* spellInfo)
+{
+    if (!spellInfo)
+        return false;
+
+    if (spellInfo->MaxAffectedTargets >= 4)
+        return true;
+
+    for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
+    {
+        SpellEffectInfo const& effect = spellInfo->Effects[i];
+        if (!effect.IsEffect())
+            continue;
+
+        if ((effect.IsTargetingArea() || effect.CalcRadius() >= 12.0f) && SpellLooksDangerous(spellInfo))
+            return true;
+    }
+
+    return false;
+}
+
+bool SpellLooksTankSpike(SpellInfo const* spellInfo)
+{
+    if (!spellInfo)
+        return false;
+
+    if (spellInfo->HasEffect(SPELL_EFFECT_WEAPON_DAMAGE)
+        || spellInfo->HasEffect(SPELL_EFFECT_WEAPON_DAMAGE_NOSCHOOL)
+        || spellInfo->HasEffect(SPELL_EFFECT_NORMALIZED_WEAPON_DMG)
+        || spellInfo->HasEffect(SPELL_EFFECT_WEAPON_PERCENT_DAMAGE))
+        return true;
+
+    return SpellLooksDangerous(spellInfo) && !SpellLooksRaidWide(spellInfo);
+}
+
+std::string BuildSpellTagJson(SpellInfo const* spellInfo, bool mustInterrupt, bool groundDanger, bool tankSpike, bool raidDamage, bool adds)
+{
+    std::ostringstream tags;
+    tags << "[";
+    bool first = true;
+    auto addTag = [&tags, &first](char const* tag)
+    {
+        if (!first)
+            tags << ",";
+        tags << "\"" << tag << "\"";
+        first = false;
+    };
+
+    if (SpellLooksDangerous(spellInfo))
+        addTag("direct_damage");
+    if (groundDanger)
+    {
+        addTag("ground_effect");
+        addTag("move_out");
+    }
+    if (mustInterrupt)
+        addTag("must_interrupt");
+    if (tankSpike)
+        addTag("tank_spike");
+    if (raidDamage)
+        addTag("raid_damage");
+    if (adds)
+        addTag("add_wave");
+    if (SpellLooksLikeHeal(spellInfo))
+        addTag("boss_heal");
+
+    tags << "]";
+    return tags.str();
+}
 }
 
 BotWorldPopulationMgr* BotWorldPopulationMgr::instance()
@@ -107,6 +213,7 @@ bool BotWorldPopulationMgr::Start(std::string const& experimentName, BotWorldExp
     _config.EnableProgression = sConfigMgr->GetBoolDefault("BotProgression.Enable", _config.EnableProgression);
     _config.AllowQuesting = sConfigMgr->GetBoolDefault("BotProgression.AllowQuesting", sConfigMgr->GetBoolDefault("BotWorld.AllowQuesting", _config.AllowQuesting));
     _config.AllowDungeons = sConfigMgr->GetBoolDefault("BotProgression.AllowDungeons", _config.AllowDungeons);
+    _config.AllowRaids = sConfigMgr->GetBoolDefault("BotProgression.AllowRaids", _config.AllowRaids);
     _config.RecordDecisions = sConfigMgr->GetBoolDefault("BotExperiment.RecordDecisions", _config.RecordDecisions);
     _config.RecordPerception = sConfigMgr->GetBoolDefault("BotExperiment.RecordPerception", _config.RecordPerception);
     _config.SmartSampling = sConfigMgr->GetBoolDefault("BotExperiment.SmartSampling", _config.SmartSampling);
@@ -216,9 +323,18 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         if (state.DeadTimer == diff)
         {
             ++_metrics.Deaths;
-            std::string raw = BuildRawJson(bot, nullptr);
-            std::string semantic = BuildSemanticJson(bot, nullptr, "corpse_recovery");
+            Unit* lastTarget = state.TargetGuid.IsEmpty() ? nullptr : ObjectAccessor::GetUnit(*bot, state.TargetGuid);
+            Creature const* lastCreature = lastTarget ? lastTarget->ToCreature() : nullptr;
+            bool bossDeath = lastCreature && (lastCreature->IsDungeonBoss() || lastCreature->isWorldBoss());
+            char const* deathSituation = bossDeath ? (bot->GetMap() && bot->GetMap()->IsRaid() ? "raid_boss" : "dungeon_boss") : "corpse_recovery";
+            std::string raw = BuildRawJson(bot, lastTarget);
+            std::string semantic = BuildSemanticJson(bot, lastTarget, deathSituation);
             RecordEvent(state, bot, "death", nullptr, "dead", raw.c_str(), semantic.c_str(), 0.0f, _metrics.Deaths);
+            if (bossDeath)
+            {
+                BossMechanicFeatures features = BuildBossMechanicFeatures(bot, lastTarget);
+                RecordBossReplay(state, bot, lastTarget, features, "boss_mechanic_failure", raw.c_str(), semantic.c_str(), "{\"action\":\"survive_boss_mechanic\"}", "{\"reason\":\"bot_died_during_boss\"}");
+            }
         }
 
         if (state.DeadTimer >= 5000)
@@ -283,6 +399,7 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
     std::string situation = bot->IsInCombat() ? "open_world_combat" : "travel";
     std::string action = "wander";
     QuestActionResult questAction;
+    BossMechanicActionResult bossAction;
     DungeonTrashActionResult trashAction;
 
     if (hpPct < 0.35f && !bot->IsInCombat())
@@ -313,6 +430,13 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         situation = questAction.Situation;
         action = questAction.Action;
         target = questAction.Target;
+    }
+    else if (IsBossContext(bot, target)
+        && [&]() { bossAction = TryBossMechanics(state, bot, power, stage, chosenActivity.Activity); return bossAction.Handled; }())
+    {
+        situation = bossAction.Situation;
+        action = bossAction.Action;
+        target = bossAction.Target;
     }
     else if (IsDungeonTrashContext(bot, target)
         && [&]() { trashAction = TryDungeonTrash(state, bot, power, stage, chosenActivity.Activity); return trashAction.Handled; }())
@@ -348,11 +472,14 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         BotActionExecutor executor;
         BotActionResult result = executor.Loot(bot, target);
         ++_metrics.Kills;
-        situation = "open_world_combat";
+        if (Creature const* creature = target->ToCreature())
+            situation = (creature->IsDungeonBoss() || creature->isWorldBoss()) ? (bot->GetMap() && bot->GetMap()->IsRaid() ? "raid_boss" : "dungeon_boss") : "open_world_combat";
+        else
+            situation = "open_world_combat";
         action = "loot";
         std::string raw = BuildRawJson(bot, target);
         std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, chosenActivity.Activity);
-        RecordEvent(state, bot, "mob_killed", target, "ok", raw.c_str(), semantic.c_str(), 0.0f, _metrics.Kills);
+        RecordEvent(state, bot, (situation == "dungeon_boss" || situation == "raid_boss") ? "boss_killed" : "mob_killed", target, "ok", raw.c_str(), semantic.c_str(), 0.0f, _metrics.Kills);
         RecordEvent(state, bot, "loot_received", target, ToString(result), raw.c_str(), semantic.c_str());
         RecordQuestObjectiveProgressForTarget(state, bot, target, raw.c_str(), semantic.c_str());
         BotGearUpgradeEvaluation gear = BotLongTermProgressionBrain::EvaluateGearUpgrade(bot);
@@ -384,8 +511,8 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
     power = BotLongTermProgressionBrain::CalculateRolePower(bot);
     std::string raw = BuildRawJson(bot, target);
     std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, chosenActivity.Activity);
-    bool failure = questAction.Failure || trashAction.Failure;
-    bool rare = questAction.Rare || trashAction.Rare;
+    bool failure = questAction.Failure || trashAction.Failure || bossAction.Failure;
+    bool rare = questAction.Rare || trashAction.Rare || bossAction.Rare;
     RecordDecision(state, bot, situation.c_str(), action.c_str(), target, raw.c_str(), semantic.c_str(), activityScores, chosenActivity, power, failure, rare);
 }
 
@@ -904,6 +1031,323 @@ BotWorldPopulationMgr::QuestActionResult BotWorldPopulationMgr::TryQuesting(Worl
     return result;
 }
 
+bool BotWorldPopulationMgr::IsBossContext(Player* bot, Unit const* target) const
+{
+    if (!bot || !bot->GetMap())
+        return false;
+
+    bool eligibleMap = (_config.AllowDungeons && bot->GetMap()->IsNonRaidDungeon()) || (_config.AllowRaids && bot->GetMap()->IsRaid());
+    if (!eligibleMap)
+        return false;
+
+    if (Creature const* creature = target ? target->ToCreature() : nullptr)
+        if (creature->IsDungeonBoss() || creature->isWorldBoss())
+            return true;
+
+    return bot->IsInCombat() && FindBossTarget(bot) != nullptr;
+}
+
+Unit* BotWorldPopulationMgr::FindBossTarget(Player* bot) const
+{
+    if (!bot || !bot->GetMap())
+        return nullptr;
+
+    auto usableBoss = [bot](Unit* target) -> Unit*
+    {
+        if (!target || !target->IsAlive() || !bot->IsValidAttackTarget(target) || !bot->IsWithinLOSInMap(target))
+            return nullptr;
+
+        Creature* creature = target->ToCreature();
+        if (!creature || (!creature->IsDungeonBoss() && !creature->isWorldBoss()))
+            return nullptr;
+
+        return target;
+    };
+
+    if (Unit* target = usableBoss(bot->GetVictim()))
+        return target;
+
+    if (Group* group = bot->GetGroup())
+    {
+        for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
+        {
+            Player* member = itr->GetSource();
+            if (!member || !member->IsAlive() || member->GetMap() != bot->GetMap())
+                continue;
+
+            if (Unit* target = usableBoss(member->GetVictim()))
+                return target;
+        }
+    }
+
+    std::vector<WorldObject*> objects;
+    Trinity::AllWorldObjectsInRange check(bot, 60.0f);
+    Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(bot, objects, check);
+    Cell::VisitAllObjects(bot, searcher, 60.0f);
+
+    Unit* best = nullptr;
+    float bestDistance = 0.0f;
+    for (WorldObject* object : objects)
+    {
+        Unit* unit = object ? object->ToUnit() : nullptr;
+        Unit* boss = usableBoss(unit);
+        if (!boss)
+            continue;
+
+        float distance = bot->GetExactDist(boss);
+        if (!best || distance < bestDistance)
+        {
+            best = boss;
+            bestDistance = distance;
+        }
+    }
+
+    return best;
+}
+
+BotWorldPopulationMgr::BossMechanicFeatures BotWorldPopulationMgr::BuildBossMechanicFeatures(Player* bot, Unit const* boss) const
+{
+    BossMechanicFeatures features;
+    if (!bot)
+        return features;
+
+    features.RaidEncounter = bot->GetMap() && bot->GetMap()->IsRaid();
+    features.BossPresent = boss != nullptr;
+    if (boss)
+    {
+        features.BossGuid = boss->GetGUID();
+        if (Creature const* creature = boss->ToCreature())
+            features.BossEntry = creature->GetEntry();
+    }
+
+    SpellInfo const* castInfo = nullptr;
+    if (boss)
+    {
+        if (Spell* spell = const_cast<Unit*>(boss)->GetCurrentSpell(CURRENT_GENERIC_SPELL))
+        {
+            castInfo = spell->GetSpellInfo();
+            features.BossCasting = castInfo != nullptr;
+            features.CastSpellId = castInfo ? castInfo->Id : 0;
+            features.CastRemainingMs = spell->GetRemainingCastTime();
+        }
+    }
+
+    features.DangerousCast = SpellLooksDangerous(castInfo) || SpellLooksLikeHeal(castInfo);
+    features.GroundDanger = SpellLooksLikeGroundDanger(castInfo);
+    features.MoveOut = features.GroundDanger;
+    features.RaidDamage = SpellLooksRaidWide(castInfo);
+    features.TankSpike = SpellLooksTankSpike(castInfo);
+    features.AddsActive = SpellLooksLikeSummonOrAdds(castInfo);
+    features.MustInterrupt = castInfo && features.DangerousCast && castInfo->CanBeInterrupted(boss, false);
+    features.InterruptPriority = features.MustInterrupt ? 1.0f : (features.DangerousCast && features.BossCasting ? 0.45f : 0.0f);
+
+    std::vector<WorldObject*> objects;
+    Trinity::AllWorldObjectsInRange check(bot, 45.0f);
+    Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(bot, objects, check);
+    Cell::VisitAllObjects(bot, searcher, 45.0f);
+
+    float bestAddScore = -1.0f;
+    for (WorldObject* object : objects)
+    {
+        Creature* creature = object ? object->ToCreature() : nullptr;
+        if (!creature || !creature->IsAlive() || creature == boss || !bot->IsValidAttackTarget(creature) || !bot->IsWithinLOSInMap(creature))
+            continue;
+        if (creature->IsDungeonBoss() || creature->isWorldBoss())
+            continue;
+
+        ++features.AddCount;
+        features.AddsActive = true;
+        float score = 45.0f - bot->GetExactDist(creature);
+        if (creature->GetVictim() == bot)
+            score += 20.0f;
+        if (creature->isElite())
+            score += 10.0f;
+        if (score > bestAddScore)
+        {
+            bestAddScore = score;
+            features.PriorityAddGuid = creature->GetGUID();
+        }
+    }
+
+    if (Group* group = bot->GetGroup())
+    {
+        float totalHp = 0.0f;
+        uint32 memberCount = 0;
+        float healerManaTotal = 0.0f;
+        uint32 healerCount = 0;
+        float tankHp = 1.0f;
+        bool tankSeen = false;
+        for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
+        {
+            Player* member = itr->GetSource();
+            if (!member || member->GetMap() != bot->GetMap())
+                continue;
+
+            float hp = UnitHealthPct(member);
+            totalHp += hp;
+            features.LowestAllyHpPct = memberCount ? std::min(features.LowestAllyHpPct, hp) : hp;
+            ++memberCount;
+
+            uint8 roles = group->GetLfgRoles(member->GetGUID());
+            if (roles & lfg::PLAYER_ROLE_TANK)
+            {
+                tankHp = hp;
+                tankSeen = true;
+            }
+            if (roles & lfg::PLAYER_ROLE_HEALER)
+            {
+                uint32 maxMana = member->GetMaxPower(POWER_MANA);
+                healerManaTotal += maxMana ? float(member->GetPower(POWER_MANA)) / float(maxMana) : 1.0f;
+                ++healerCount;
+            }
+        }
+
+        if (memberCount)
+            features.PartyAverageHpPct = totalHp / float(memberCount);
+        if (tankSeen)
+            features.TankHpPct = tankHp;
+        if (healerCount)
+            features.HealerManaPct = healerManaTotal / float(healerCount);
+    }
+    else
+    {
+        features.PartyAverageHpPct = UnitHealthPct(bot);
+        features.LowestAllyHpPct = features.PartyAverageHpPct;
+        features.TankHpPct = features.PartyAverageHpPct;
+    }
+
+    if (features.RaidDamage && features.LowestAllyHpPct < 0.55f)
+        features.StackPlaceholder = true;
+    if (features.GroundDanger || features.RaidDamage)
+        features.SpreadPlaceholder = true;
+
+    features.DangerScore = std::min(1.0f,
+        (features.MustInterrupt ? 0.35f : 0.0f)
+        + (features.GroundDanger ? 0.25f : 0.0f)
+        + (features.RaidDamage ? 0.20f : 0.0f)
+        + (features.TankSpike ? 0.15f : 0.0f)
+        + (features.AddsActive ? std::min(0.20f, float(features.AddCount) * 0.05f) : 0.0f)
+        + (features.LowestAllyHpPct < 0.4f ? 0.20f : 0.0f));
+
+    return features;
+}
+
+BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMechanics(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity)
+{
+    BossMechanicActionResult result;
+    if (!IsBossContext(bot, nullptr))
+        return result;
+
+    result.Target = FindBossTarget(bot);
+    if (!result.Target && !state.TargetGuid.IsEmpty())
+        result.Target = ObjectAccessor::GetUnit(*bot, state.TargetGuid);
+    if (!result.Target)
+        return result;
+
+    result.Handled = true;
+    result.Situation = bot->GetMap() && bot->GetMap()->IsRaid() ? "raid_boss" : "dungeon_boss";
+    result.Features = BuildBossMechanicFeatures(bot, result.Target);
+    state.TargetGuid = result.Target->GetGUID();
+
+    std::string raw = BuildRawJson(bot, result.Target);
+    std::string semantic = BuildSemanticJson(bot, result.Target, result.Situation.c_str(), &power, stage, activity);
+    char const* role = GetDungeonRole(bot);
+
+    if (result.Features.MoveOut && result.Features.DangerScore >= 0.25f)
+    {
+        Position pos = bot->GetFirstCollisionPosition(8.0f, result.Target->GetAngle(bot) + float(M_PI));
+        bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+        bot->GetMotionMaster()->MovePoint(0, pos, true);
+        result.Action = "move_out_ground_danger";
+        result.Rare = true;
+        RecordEvent(state, bot, "boss_mechanic", result.Target, "move_out", raw.c_str(), semantic.c_str(), result.Features.DangerScore, result.Features.CastSpellId, result.Features.CastSpellId);
+        return result;
+    }
+
+    uint32 interruptSpell = SelectInterruptSpell(bot);
+    if (result.Features.MustInterrupt && interruptSpell)
+    {
+        bool interrupted = TryCastCombatSpell(bot, result.Target, interruptSpell);
+        result.Action = interrupted ? "interrupt_must_interrupt" : "interrupt_failed";
+        result.SpellId = interruptSpell;
+        result.Failure = !interrupted;
+        result.Rare = true;
+        RecordEvent(state, bot, interrupted ? "interrupt_success" : "interrupt_failed", result.Target, interrupted ? "ok" : "failed", raw.c_str(), semantic.c_str(), result.Features.InterruptPriority, result.Features.CastSpellId, interruptSpell);
+        if (!interrupted)
+            RecordBossReplay(state, bot, result.Target, result.Features, "boss_mechanic_failure", raw.c_str(), semantic.c_str(), "{\"action\":\"interrupt_must_interrupt\"}", "{\"reason\":\"must_interrupt_failed\"}");
+        return result;
+    }
+
+    if (result.Features.AddsActive && !result.Features.PriorityAddGuid.IsEmpty() && std::string(role) != "healer")
+    {
+        if (Unit* add = ObjectAccessor::GetUnit(*bot, result.Features.PriorityAddGuid))
+        {
+            BotActionExecutor executor;
+            BotActionResult pull = executor.Pull(bot, add);
+            uint32 spellId = SelectCombatSpell(bot, add);
+            bool cast = spellId && TryCastCombatSpell(bot, add, spellId);
+            result.Target = add;
+            result.Action = "switch_to_adds";
+            result.SpellId = cast ? spellId : 0;
+            result.Failure = pull != BotActionResult::Ok;
+            result.Rare = true;
+            RecordEvent(state, bot, "boss_adds", add, ToString(pull), raw.c_str(), semantic.c_str(), float(result.Features.AddCount), result.Features.CastSpellId, result.SpellId);
+            if (result.Failure)
+                RecordBossReplay(state, bot, add, result.Features, "boss_mechanic_failure", raw.c_str(), semantic.c_str(), "{\"action\":\"switch_to_adds\"}", "{\"reason\":\"add_switch_failed\"}");
+            return result;
+        }
+    }
+
+    if (std::string(role) == "healer")
+    {
+        Unit* healTarget = bot;
+        if (Group* group = bot->GetGroup())
+        {
+            float lowestHp = 1.0f;
+            for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
+            {
+                Player* member = itr->GetSource();
+                if (!member || !member->IsAlive() || member->GetMap() != bot->GetMap() || !bot->IsWithinLOSInMap(member))
+                    continue;
+
+                float hp = UnitHealthPct(member);
+                if (hp < lowestHp)
+                {
+                    healTarget = member;
+                    lowestHp = hp;
+                }
+            }
+        }
+
+        uint32 healSpell = SelectHealSpell(bot);
+        if (healSpell && UnitHealthPct(healTarget) < (result.Features.RaidDamage ? 0.9f : 0.75f) && TryCastFriendlySpell(bot, healTarget, healSpell))
+        {
+            result.Action = result.Features.RaidDamage ? "heal_raid_damage" : "heal_boss_damage";
+            result.SpellId = healSpell;
+            result.Target = healTarget;
+            RecordEvent(state, bot, "boss_heal", result.Target, "ok", raw.c_str(), semantic.c_str(), UnitHealthPct(healTarget), result.Features.CastSpellId, healSpell);
+            return result;
+        }
+    }
+
+    BotActionExecutor executor;
+    BotActionResult pull = executor.Pull(bot, result.Target);
+    uint32 spellId = SelectCombatSpell(bot, result.Target);
+    bool cast = spellId && TryCastCombatSpell(bot, result.Target, spellId);
+    result.Action = std::string(role) == "tank" ? "tank_boss_position" : "boss_single_target";
+    result.SpellId = cast ? spellId : 0;
+    result.Failure = pull != BotActionResult::Ok;
+    result.Rare = result.Features.DangerScore >= 0.5f || result.Features.BossCasting || result.Features.AddsActive;
+
+    RecordEvent(state, bot, "boss_action", result.Target, ToString(pull), raw.c_str(), semantic.c_str(), result.Features.DangerScore, result.Features.CastSpellId, result.SpellId);
+    if (!state.WasInCombat)
+        RecordEvent(state, bot, "boss_started", result.Target, result.Situation.c_str(), raw.c_str(), semantic.c_str(), result.Features.DangerScore, result.Features.BossEntry);
+    if (result.Failure || (result.Features.DangerScore >= 0.85f && result.Features.BossCasting))
+        RecordBossReplay(state, bot, result.Target, result.Features, "boss_mechanic_failure", raw.c_str(), semantic.c_str(), "{\"action\":\"boss_single_target\"}", result.Failure ? "{\"reason\":\"boss_action_failed\"}" : "{\"reason\":\"high_danger_boss_state\"}");
+    state.WasInCombat = true;
+    return result;
+}
+
 bool BotWorldPopulationMgr::IsDungeonTrashContext(Player* bot, Unit const* target) const
 {
     if (!_config.AllowDungeons || !bot || !bot->GetMap() || !bot->GetMap()->IsNonRaidDungeon())
@@ -1367,6 +1811,41 @@ std::string BotWorldPopulationMgr::BuildDungeonTrashPackJson(DungeonTrashPackFea
     return json.str();
 }
 
+std::string BotWorldPopulationMgr::BuildBossMechanicsJson(BossMechanicFeatures const& features) const
+{
+    SpellInfo const* spellInfo = features.CastSpellId ? sSpellMgr->GetSpellInfo(features.CastSpellId) : nullptr;
+    std::ostringstream json;
+    json << "{\"encounter_type\":\"" << (features.RaidEncounter ? "raid_boss" : "dungeon_boss") << "\""
+         << ",\"boss_present\":" << (features.BossPresent ? "true" : "false")
+         << ",\"boss_guid\":" << features.BossGuid.GetCounter()
+         << ",\"boss_entry\":" << features.BossEntry
+         << ",\"phase\":0"
+         << ",\"boss_casting\":" << (features.BossCasting ? "true" : "false")
+         << ",\"cast_spell_id\":" << features.CastSpellId
+         << ",\"cast_remaining_ms\":" << features.CastRemainingMs
+         << ",\"spell_tags\":" << BuildSpellTagJson(spellInfo, features.MustInterrupt, features.GroundDanger, features.TankSpike, features.RaidDamage, features.AddsActive)
+         << ",\"dangerous_cast\":" << (features.DangerousCast ? "true" : "false")
+         << ",\"requires_interrupt\":" << (features.MustInterrupt ? "true" : "false")
+         << ",\"interrupt_priority\":" << features.InterruptPriority
+         << ",\"ground_danger_near_me\":" << (features.GroundDanger ? features.DangerScore : 0.0f)
+         << ",\"safe_position_available\":true"
+         << ",\"move_out\":" << (features.MoveOut ? "true" : "false")
+         << ",\"tank_spike\":" << (features.TankSpike ? "true" : "false")
+         << ",\"raid_damage\":" << (features.RaidDamage ? "true" : "false")
+         << ",\"adds_active\":" << (features.AddsActive ? "true" : "false")
+         << ",\"add_count\":" << features.AddCount
+         << ",\"priority_add_guid\":" << features.PriorityAddGuid.GetCounter()
+         << ",\"requires_stack\":" << (features.StackPlaceholder ? "true" : "false")
+         << ",\"requires_spread\":" << (features.SpreadPlaceholder ? "true" : "false")
+         << ",\"tank_swap_pressure\":" << (features.TankSpike ? std::max(0.0f, 1.0f - features.TankHpPct) : 0.0f)
+         << ",\"party\":{\"tank_hp_pct\":" << features.TankHpPct
+         << ",\"party_average_hp_pct\":" << features.PartyAverageHpPct
+         << ",\"lowest_ally_hp_pct\":" << features.LowestAllyHpPct
+         << ",\"healer_mana_pct\":" << features.HealerManaPct << "}"
+         << ",\"danger_score\":" << features.DangerScore << "}";
+    return json.str();
+}
+
 uint32 BotWorldPopulationMgr::SelectCombatSpell(Player* bot, Unit* target) const
 {
     if (!bot || !target || !target->IsAlive())
@@ -1682,6 +2161,63 @@ void BotWorldPopulationMgr::RecordQuestReplay(WorldBotState const& state, Player
         bot->GetPositionZ(), bot->GetOrientation(), botJson.c_str(), worldJson.c_str(), raw.c_str(), semantic.c_str(), action.c_str(), failure.c_str());
 }
 
+void BotWorldPopulationMgr::RecordBossReplay(WorldBotState const& state, Player* bot, Unit const* boss, BossMechanicFeatures const& features, char const* replayType, char const* rawJson, char const* semanticJson, char const* actionJson, char const* failureJson)
+{
+    if (!_runId || !bot)
+        return;
+
+    std::ostringstream botSnapshot;
+    botSnapshot << "{\"guid\":" << bot->GetGUID().GetCounter()
+                << ",\"level\":" << uint32(bot->getLevel())
+                << ",\"class_id\":" << uint32(bot->getClass())
+                << ",\"hp\":" << bot->GetHealth()
+                << ",\"max_hp\":" << bot->GetMaxHealth()
+                << ",\"role\":\"" << JsonEscape(GetDungeonRole(bot)) << "\""
+                << ",\"activity\":\"" << JsonEscape(state.ActivityType) << "\"}";
+
+    std::ostringstream worldSnapshot;
+    worldSnapshot << "{\"map_id\":" << bot->GetMapId()
+                  << ",\"zone_id\":" << bot->GetZoneId()
+                  << ",\"area_id\":" << bot->GetAreaId()
+                  << ",\"x\":" << bot->GetPositionX()
+                  << ",\"y\":" << bot->GetPositionY()
+                  << ",\"z\":" << bot->GetPositionZ()
+                  << ",\"o\":" << bot->GetOrientation()
+                  << ",\"boss_guid\":" << (boss ? boss->GetGUID().GetCounter() : features.BossGuid.GetCounter())
+                  << ",\"boss_entry\":" << features.BossEntry
+                  << ",\"boss_spell_id\":" << features.CastSpellId
+                  << ",\"mechanics\":" << BuildBossMechanicsJson(features) << "}";
+
+    std::ostringstream partySnapshot;
+    partySnapshot << "{\"tank_hp_pct\":" << features.TankHpPct
+                  << ",\"party_average_hp_pct\":" << features.PartyAverageHpPct
+                  << ",\"lowest_ally_hp_pct\":" << features.LowestAllyHpPct
+                  << ",\"healer_mana_pct\":" << features.HealerManaPct
+                  << ",\"add_count\":" << features.AddCount << "}";
+
+    std::string type = replayType ? replayType : "boss_mechanic_failure";
+    std::string botJson = botSnapshot.str();
+    std::string worldJson = worldSnapshot.str();
+    std::string partyJson = partySnapshot.str();
+    std::string raw = rawJson ? rawJson : "{}";
+    std::string semantic = semanticJson ? semanticJson : "{}";
+    std::string action = actionJson ? actionJson : "{}";
+    std::string failure = failureJson ? failureJson : "{}";
+    CharacterDatabase.EscapeString(type);
+    CharacterDatabase.EscapeString(botJson);
+    CharacterDatabase.EscapeString(worldJson);
+    CharacterDatabase.EscapeString(partyJson);
+    CharacterDatabase.EscapeString(raw);
+    CharacterDatabase.EscapeString(semantic);
+    CharacterDatabase.EscapeString(action);
+    CharacterDatabase.EscapeString(failure);
+
+    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_replay_records (experiment_id, run_id, bot_guid, replay_type, map_id, zone_id, x, y, z, o, bot_snapshot_json, world_snapshot_json, party_snapshot_json, raw_state_json, semantic_state_json, chosen_action_json, failure_json) "
+        "VALUES (" UI64FMTD ", " UI64FMTD ", %u, '%s', %u, %u, %f, %f, %f, %f, '%s', '%s', '%s', '%s', '%s', '%s', '%s')",
+        _experimentId, _runId, state.Guid.GetCounter(), type.c_str(), bot->GetMapId(), bot->GetZoneId(), bot->GetPositionX(), bot->GetPositionY(),
+        bot->GetPositionZ(), bot->GetOrientation(), botJson.c_str(), worldJson.c_str(), partyJson.c_str(), raw.c_str(), semantic.c_str(), action.c_str(), failure.c_str());
+}
+
 void BotWorldPopulationMgr::RecordEvent(WorldBotState const& state, Player* bot, char const* eventType, Unit const* target, char const* result, char const* rawJson, char const* semanticJson, float valueFloat, uint32 valueInt, uint32 spellId)
 {
     if (!_runId || !bot)
@@ -1815,6 +2351,7 @@ std::string BotWorldPopulationMgr::BuildSemanticJson(Player* bot, Unit const* ta
 
     std::string situationType = situation ? situation : "idle";
     bool dungeonTrash = bot && bot->GetMap() && bot->GetMap()->IsNonRaidDungeon() && situationType == "dungeon_trash";
+    bool bossEncounter = bot && bot->GetMap() && (situationType == "dungeon_boss" || situationType == "raid_boss");
     bool elite = false;
     if (Creature const* creature = target ? target->ToCreature() : nullptr)
         elite = creature->isElite();
@@ -1829,7 +2366,7 @@ std::string BotWorldPopulationMgr::BuildSemanticJson(Player* bot, Unit const* ta
 
     std::ostringstream json;
     json << "{\"situation_type\":\"" << JsonEscape(situationType) << "\""
-         << ",\"role\":\"" << JsonEscape(dungeonTrash ? GetDungeonRole(bot) : "solo") << "\""
+         << ",\"role\":\"" << JsonEscape((dungeonTrash || bossEncounter) ? GetDungeonRole(bot) : "solo") << "\""
          << ",\"activity\":\"" << JsonEscape(BotLongTermProgressionBrain::ToString(activity)) << "\""
          << ",\"progression\":{\"main_goal\":\"increase_character_power\""
          << ",\"stage\":\"" << JsonEscape(BotLongTermProgressionBrain::ToString(stage)) << "\""
@@ -1861,9 +2398,22 @@ std::string BotWorldPopulationMgr::BuildSemanticJson(Player* bot, Unit const* ta
     }
     else
         json << ",\"trash_pack\":null,\"trash_action_scores\":null";
+    if (bossEncounter)
+    {
+        BossMechanicFeatures features = BuildBossMechanicFeatures(bot, target);
+        json << ",\"boss_mechanics\":" << BuildBossMechanicsJson(features)
+             << ",\"boss_action_scores\":{\"move_out\":" << (features.MoveOut ? features.DangerScore : 0.0f)
+             << ",\"interrupt\":" << features.InterruptPriority
+             << ",\"switch_adds\":" << (features.AddsActive ? std::min(1.0f, float(features.AddCount) / 4.0f) : 0.0f)
+             << ",\"heal_raid\":" << (features.RaidDamage ? std::max(0.0f, 1.0f - features.LowestAllyHpPct) : 0.0f)
+             << ",\"single_target\":" << (target ? 1.0f : 0.0f) << "}";
+    }
+    else
+        json << ",\"boss_mechanics\":null,\"boss_action_scores\":null";
     json
          << ",\"objective\":{\"main_goal\":\"increase_character_power\",\"questing_allowed\":" << (_config.AllowQuesting ? "true" : "false")
-         << ",\"dungeons_allowed\":" << (_config.AllowDungeons ? "true" : "false") << "}}";
+         << ",\"dungeons_allowed\":" << (_config.AllowDungeons ? "true" : "false")
+         << ",\"raids_allowed\":" << (_config.AllowRaids ? "true" : "false") << "}}";
     return json.str();
 }
 
@@ -1881,6 +2431,7 @@ std::string BotWorldPopulationMgr::BuildConfigJson() const
          << ",\"progression_enabled\":" << (_config.EnableProgression ? "true" : "false")
          << ",\"allow_questing\":" << (_config.AllowQuesting ? "true" : "false")
          << ",\"allow_dungeons\":" << (_config.AllowDungeons ? "true" : "false")
+         << ",\"allow_raids\":" << (_config.AllowRaids ? "true" : "false")
          << ",\"record_decisions\":" << (_config.RecordDecisions ? "true" : "false")
          << ",\"record_perception\":" << (_config.RecordPerception ? "true" : "false")
          << ",\"smart_sampling\":" << (_config.SmartSampling ? "true" : "false")

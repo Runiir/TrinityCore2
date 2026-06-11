@@ -29,6 +29,7 @@ struct BotWorldExperimentConfig
     bool AllowCombat = true;
     bool AllowQuesting = true;
     bool AllowDungeons = false;
+    bool AllowRaids = false;
     bool EnableProgression = true;
     bool RecordDecisions = true;
     bool RecordPerception = true;
@@ -155,6 +156,46 @@ private:
         DungeonTrashPackFeatures Pack;
     };
 
+    struct BossMechanicFeatures
+    {
+        bool RaidEncounter = false;
+        bool BossPresent = false;
+        bool BossCasting = false;
+        uint32 BossEntry = 0;
+        uint32 CastSpellId = 0;
+        int32 CastRemainingMs = 0;
+        bool DangerousCast = false;
+        bool MustInterrupt = false;
+        bool GroundDanger = false;
+        bool MoveOut = false;
+        bool TankSpike = false;
+        bool RaidDamage = false;
+        bool AddsActive = false;
+        bool StackPlaceholder = false;
+        bool SpreadPlaceholder = false;
+        uint32 AddCount = 0;
+        float TankHpPct = 1.0f;
+        float PartyAverageHpPct = 1.0f;
+        float LowestAllyHpPct = 1.0f;
+        float HealerManaPct = 1.0f;
+        float DangerScore = 0.0f;
+        float InterruptPriority = 0.0f;
+        ObjectGuid BossGuid;
+        ObjectGuid PriorityAddGuid;
+    };
+
+    struct BossMechanicActionResult
+    {
+        bool Handled = false;
+        bool Failure = false;
+        bool Rare = false;
+        std::string Situation = "dungeon_boss";
+        std::string Action = "boss_wait";
+        Unit* Target = nullptr;
+        uint32 SpellId = 0;
+        BossMechanicFeatures Features;
+    };
+
     void EnsurePopulation();
     void UpdateBot(WorldBotState& state, uint32 diff);
     Player* GetBot(WorldBotState const& state) const;
@@ -167,6 +208,10 @@ private:
     bool HasSimpleSupportedObjective(Quest const* quest) const;
     uint32 ChooseQuestReward(Player* bot, Quest const* quest, uint32* rewardItemId = nullptr) const;
     QuestActionResult TryQuesting(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity);
+    bool IsBossContext(Player* bot, Unit const* target) const;
+    Unit* FindBossTarget(Player* bot) const;
+    BossMechanicFeatures BuildBossMechanicFeatures(Player* bot, Unit const* boss) const;
+    BossMechanicActionResult TryBossMechanics(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity);
     bool IsDungeonTrashContext(Player* bot, Unit const* target) const;
     Player* FindDungeonAnchor(Player* bot) const;
     Unit* FindGroupCombatTarget(Player* bot, Player* anchor) const;
@@ -177,6 +222,7 @@ private:
     uint32 SelectHealSpell(Player* bot) const;
     bool TryCastFriendlySpell(Player* bot, Unit* target, uint32 spellId) const;
     std::string BuildDungeonTrashPackJson(DungeonTrashPackFeatures const& pack) const;
+    std::string BuildBossMechanicsJson(BossMechanicFeatures const& features) const;
     uint32 SelectCombatSpell(Player* bot, Unit* target) const;
     bool TryCastCombatSpell(Player* bot, Unit* target, uint32 spellId) const;
     void MoveToWanderPoint(Player* bot, WorldBotState& state);
@@ -188,6 +234,7 @@ private:
     void RecordQuestObjectiveProgressForTarget(WorldBotState& state, Player* bot, Unit const* target, char const* rawJson, char const* semanticJson);
     void RecordQuestEvent(WorldBotState const& state, Player* bot, char const* eventType, uint32 questId, Unit const* target, char const* result, char const* rawJson, char const* semanticJson, uint32 valueInt = 0, uint32 itemId = 0, char const* contextJson = nullptr);
     void RecordQuestReplay(WorldBotState const& state, Player* bot, char const* replayType, uint32 questId, char const* rawJson, char const* semanticJson, char const* actionJson, char const* failureJson);
+    void RecordBossReplay(WorldBotState const& state, Player* bot, Unit const* boss, BossMechanicFeatures const& features, char const* replayType, char const* rawJson, char const* semanticJson, char const* actionJson, char const* failureJson);
     void RecordEvent(WorldBotState const& state, Player* bot, char const* eventType, Unit const* target, char const* result, char const* rawJson, char const* semanticJson, float valueFloat = 0.0f, uint32 valueInt = 0, uint32 spellId = 0);
     void RecordDecision(WorldBotState& state, Player* bot, char const* situation, char const* action, Unit const* target, char const* rawJson, char const* semanticJson, std::vector<BotActivityScore> const& activityScores, BotActivityScore const& chosenActivity, BotRolePowerBreakdown const& power, bool failure, bool rare);
     std::string BuildRawJson(Player* bot, Unit const* target) const;
