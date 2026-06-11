@@ -28,6 +28,7 @@ struct BotWorldExperimentConfig
     float Radius = 80.0f;
     bool AllowCombat = true;
     bool AllowQuesting = true;
+    bool AllowDungeons = false;
     bool EnableProgression = true;
     bool RecordDecisions = true;
     bool RecordPerception = true;
@@ -120,6 +121,40 @@ private:
         uint32 RewardItemId = 0;
     };
 
+    struct DungeonTrashPackFeatures
+    {
+        uint32 PackSize = 0;
+        uint32 EliteCount = 0;
+        uint32 CasterCount = 0;
+        uint32 HealerCount = 0;
+        uint32 ActiveCasts = 0;
+        uint32 DangerousCasts = 0;
+        float InterruptPriority = 0.0f;
+        float AoeValue = 0.0f;
+        float CcValue = 0.0f;
+        float PullRisk = 0.0f;
+        float TankThreat = 0.0f;
+        float PartyAverageHpPct = 1.0f;
+        float LowestAllyHpPct = 1.0f;
+        float HealerManaPct = 1.0f;
+        bool PatrolNearby = false;
+        ObjectGuid PriorityTargetGuid;
+        uint32 PriorityTargetEntry = 0;
+        uint32 PrioritySpellId = 0;
+    };
+
+    struct DungeonTrashActionResult
+    {
+        bool Handled = false;
+        bool Failure = false;
+        bool Rare = false;
+        std::string Situation = "dungeon_trash";
+        std::string Action = "follow_tank";
+        Unit* Target = nullptr;
+        uint32 SpellId = 0;
+        DungeonTrashPackFeatures Pack;
+    };
+
     void EnsurePopulation();
     void UpdateBot(WorldBotState& state, uint32 diff);
     Player* GetBot(WorldBotState const& state) const;
@@ -132,6 +167,16 @@ private:
     bool HasSimpleSupportedObjective(Quest const* quest) const;
     uint32 ChooseQuestReward(Player* bot, Quest const* quest, uint32* rewardItemId = nullptr) const;
     QuestActionResult TryQuesting(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity);
+    bool IsDungeonTrashContext(Player* bot, Unit const* target) const;
+    Player* FindDungeonAnchor(Player* bot) const;
+    Unit* FindGroupCombatTarget(Player* bot, Player* anchor) const;
+    DungeonTrashPackFeatures BuildDungeonTrashPackFeatures(Player* bot, Unit const* focus) const;
+    DungeonTrashActionResult TryDungeonTrash(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity);
+    char const* GetDungeonRole(Player* bot) const;
+    uint32 SelectInterruptSpell(Player* bot) const;
+    uint32 SelectHealSpell(Player* bot) const;
+    bool TryCastFriendlySpell(Player* bot, Unit* target, uint32 spellId) const;
+    std::string BuildDungeonTrashPackJson(DungeonTrashPackFeatures const& pack) const;
     uint32 SelectCombatSpell(Player* bot, Unit* target) const;
     bool TryCastCombatSpell(Player* bot, Unit* target, uint32 spellId) const;
     void MoveToWanderPoint(Player* bot, WorldBotState& state);

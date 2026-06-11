@@ -7,13 +7,18 @@
 #include "GameTime.h"
 #include "GameObject.h"
 #include "GridNotifiersImpl.h"
+#include "Group.h"
+#include "GroupReference.h"
+#include "LFG.h"
 #include "Log.h"
+#include "Map.h"
 #include "MotionMaster.h"
 #include "ObjectAccessor.h"
 #include "ObjectMgr.h"
 #include "Player.h"
 #include "Quests/QuestDef.h"
 #include "Random.h"
+#include "Spell.h"
 #include "SpellHistory.h"
 #include "SpellInfo.h"
 #include "SpellMgr.h"
@@ -39,6 +44,35 @@ float Distance2d(float ax, float ay, float bx, float by)
     float dx = ax - bx;
     float dy = ay - by;
     return std::sqrt(dx * dx + dy * dy);
+}
+
+float UnitHealthPct(Unit const* unit)
+{
+    if (!unit || !unit->GetMaxHealth())
+        return 0.0f;
+
+    return float(unit->GetHealth()) / float(unit->GetMaxHealth());
+}
+
+bool SpellLooksLikeHeal(SpellInfo const* spellInfo)
+{
+    return spellInfo && (spellInfo->HasEffect(SPELL_EFFECT_HEAL)
+        || spellInfo->HasEffect(SPELL_EFFECT_HEAL_PCT)
+        || spellInfo->HasEffect(SPELL_EFFECT_HEAL_MECHANICAL));
+}
+
+bool SpellLooksDangerous(SpellInfo const* spellInfo)
+{
+    if (!spellInfo)
+        return false;
+
+    return spellInfo->HasEffect(SPELL_EFFECT_SCHOOL_DAMAGE)
+        || spellInfo->HasEffect(SPELL_EFFECT_WEAPON_DAMAGE)
+        || spellInfo->HasEffect(SPELL_EFFECT_WEAPON_DAMAGE_NOSCHOOL)
+        || spellInfo->HasEffect(SPELL_EFFECT_NORMALIZED_WEAPON_DMG)
+        || spellInfo->HasEffect(SPELL_EFFECT_WEAPON_PERCENT_DAMAGE)
+        || spellInfo->HasEffect(SPELL_EFFECT_POWER_DRAIN)
+        || spellInfo->HasEffect(SPELL_EFFECT_HEALTH_LEECH);
 }
 }
 
@@ -72,6 +106,7 @@ bool BotWorldPopulationMgr::Start(std::string const& experimentName, BotWorldExp
     _config.AllowCombat = sConfigMgr->GetBoolDefault("BotWorld.AllowCombat", _config.AllowCombat);
     _config.EnableProgression = sConfigMgr->GetBoolDefault("BotProgression.Enable", _config.EnableProgression);
     _config.AllowQuesting = sConfigMgr->GetBoolDefault("BotProgression.AllowQuesting", sConfigMgr->GetBoolDefault("BotWorld.AllowQuesting", _config.AllowQuesting));
+    _config.AllowDungeons = sConfigMgr->GetBoolDefault("BotProgression.AllowDungeons", _config.AllowDungeons);
     _config.RecordDecisions = sConfigMgr->GetBoolDefault("BotExperiment.RecordDecisions", _config.RecordDecisions);
     _config.RecordPerception = sConfigMgr->GetBoolDefault("BotExperiment.RecordPerception", _config.RecordPerception);
     _config.SmartSampling = sConfigMgr->GetBoolDefault("BotExperiment.SmartSampling", _config.SmartSampling);
@@ -248,6 +283,7 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
     std::string situation = bot->IsInCombat() ? "open_world_combat" : "travel";
     std::string action = "wander";
     QuestActionResult questAction;
+    DungeonTrashActionResult trashAction;
 
     if (hpPct < 0.35f && !bot->IsInCombat())
     {
@@ -277,6 +313,13 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         situation = questAction.Situation;
         action = questAction.Action;
         target = questAction.Target;
+    }
+    else if (IsDungeonTrashContext(bot, target)
+        && [&]() { trashAction = TryDungeonTrash(state, bot, power, stage, chosenActivity.Activity); return trashAction.Handled; }())
+    {
+        situation = trashAction.Situation;
+        action = trashAction.Action;
+        target = trashAction.Target;
     }
     else if (target && target->IsAlive())
     {
@@ -341,7 +384,9 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
     power = BotLongTermProgressionBrain::CalculateRolePower(bot);
     std::string raw = BuildRawJson(bot, target);
     std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, chosenActivity.Activity);
-    RecordDecision(state, bot, situation.c_str(), action.c_str(), target, raw.c_str(), semantic.c_str(), activityScores, chosenActivity, power, questAction.Failure, questAction.Rare);
+    bool failure = questAction.Failure || trashAction.Failure;
+    bool rare = questAction.Rare || trashAction.Rare;
+    RecordDecision(state, bot, situation.c_str(), action.c_str(), target, raw.c_str(), semantic.c_str(), activityScores, chosenActivity, power, failure, rare);
 }
 
 Player* BotWorldPopulationMgr::GetBot(WorldBotState const& state) const
@@ -859,6 +904,469 @@ BotWorldPopulationMgr::QuestActionResult BotWorldPopulationMgr::TryQuesting(Worl
     return result;
 }
 
+bool BotWorldPopulationMgr::IsDungeonTrashContext(Player* bot, Unit const* target) const
+{
+    if (!_config.AllowDungeons || !bot || !bot->GetMap() || !bot->GetMap()->IsNonRaidDungeon())
+        return false;
+
+    if (target && target->IsAlive())
+        if (Creature const* creature = target->ToCreature())
+            return !creature->IsDungeonBoss();
+
+    return bot->GetGroup() != nullptr || bot->IsInCombat();
+}
+
+Player* BotWorldPopulationMgr::FindDungeonAnchor(Player* bot) const
+{
+    if (!bot)
+        return nullptr;
+
+    Group* group = bot->GetGroup();
+    if (!group)
+        return nullptr;
+
+    for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
+    {
+        Player* member = itr->GetSource();
+        if (!member || member == bot || !member->IsAlive() || member->GetMap() != bot->GetMap())
+            continue;
+
+        uint8 roles = group->GetLfgRoles(member->GetGUID());
+        if (roles & lfg::PLAYER_ROLE_TANK)
+            return member;
+    }
+
+    ObjectGuid leaderGuid = group->GetLeaderGUID();
+    for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
+    {
+        Player* member = itr->GetSource();
+        if (member && member != bot && member->GetGUID() == leaderGuid && member->IsAlive() && member->GetMap() == bot->GetMap())
+            return member;
+    }
+
+    for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
+    {
+        Player* member = itr->GetSource();
+        if (member && member != bot && member->IsAlive() && member->GetMap() == bot->GetMap())
+            return member;
+    }
+
+    return nullptr;
+}
+
+Unit* BotWorldPopulationMgr::FindGroupCombatTarget(Player* bot, Player* anchor) const
+{
+    if (!bot)
+        return nullptr;
+
+    auto usableTarget = [bot](Unit* target) -> Unit*
+    {
+        if (!target || !target->IsAlive() || !bot->IsValidAttackTarget(target) || !bot->IsWithinLOSInMap(target))
+            return nullptr;
+        if (Creature* creature = target->ToCreature())
+            if (creature->IsDungeonBoss())
+                return nullptr;
+        return target;
+    };
+
+    if (Unit* target = usableTarget(anchor ? anchor->GetVictim() : nullptr))
+        return target;
+
+    if (Group* group = bot->GetGroup())
+    {
+        for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
+        {
+            Player* member = itr->GetSource();
+            if (!member || !member->IsAlive() || member->GetMap() != bot->GetMap())
+                continue;
+
+            if (Unit* target = usableTarget(member->GetVictim()))
+                return target;
+        }
+    }
+
+    return usableTarget(bot->GetVictim());
+}
+
+BotWorldPopulationMgr::DungeonTrashPackFeatures BotWorldPopulationMgr::BuildDungeonTrashPackFeatures(Player* bot, Unit const* focus) const
+{
+    DungeonTrashPackFeatures pack;
+    if (!bot)
+        return pack;
+
+    std::vector<WorldObject*> objects;
+    Trinity::AllWorldObjectsInRange check(bot, 35.0f);
+    Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(bot, objects, check);
+    Cell::VisitAllObjects(bot, searcher, 35.0f);
+
+    float bestScore = -1.0f;
+    for (WorldObject* object : objects)
+    {
+        Creature* creature = object ? object->ToCreature() : nullptr;
+        if (!creature || !creature->IsAlive() || !bot->IsValidAttackTarget(creature) || !bot->IsWithinLOSInMap(creature))
+            continue;
+        if (creature->IsDungeonBoss())
+            continue;
+
+        float distance = bot->GetExactDist(creature);
+        if (distance > 30.0f)
+            pack.PatrolNearby = true;
+        if (distance > 25.0f && creature != focus)
+            continue;
+
+        ++pack.PackSize;
+        if (creature->isElite())
+            ++pack.EliteCount;
+        if (creature->GetMaxPower(POWER_MANA) > 0)
+            ++pack.CasterCount;
+
+        uint32 castSpellId = 0;
+        bool dangerousCast = false;
+        if (Spell* spell = creature->GetCurrentSpell(CURRENT_GENERIC_SPELL))
+        {
+            SpellInfo const* spellInfo = spell->GetSpellInfo();
+            castSpellId = spellInfo ? spellInfo->Id : 0;
+            ++pack.ActiveCasts;
+            if (SpellLooksLikeHeal(spellInfo))
+                ++pack.HealerCount;
+            dangerousCast = SpellLooksDangerous(spellInfo) || SpellLooksLikeHeal(spellInfo);
+            if (dangerousCast)
+                ++pack.DangerousCasts;
+        }
+
+        float score = 100.0f - distance;
+        if (creature == focus)
+            score += 100.0f;
+        if (dangerousCast)
+            score += 80.0f;
+        if (castSpellId)
+            score += 30.0f;
+        if (creature->GetVictim() == bot)
+            score += 20.0f;
+
+        if (score > bestScore)
+        {
+            bestScore = score;
+            pack.PriorityTargetGuid = creature->GetGUID();
+            pack.PriorityTargetEntry = creature->GetEntry();
+            pack.PrioritySpellId = castSpellId;
+        }
+    }
+
+    pack.InterruptPriority = pack.PackSize ? std::min(1.0f, float(pack.DangerousCasts) / float(pack.PackSize) + (pack.HealerCount ? 0.35f : 0.0f)) : 0.0f;
+    pack.AoeValue = std::min(1.0f, float(pack.PackSize) / 5.0f);
+    pack.CcValue = std::min(1.0f, float(pack.CasterCount + pack.HealerCount) / 4.0f);
+    pack.PullRisk = std::min(1.0f, float(pack.PackSize + pack.EliteCount) / 7.0f + (pack.PatrolNearby ? 0.2f : 0.0f));
+
+    if (Group* group = bot->GetGroup())
+    {
+        float totalHp = 0.0f;
+        uint32 memberCount = 0;
+        float healerManaTotal = 0.0f;
+        uint32 healerCount = 0;
+        for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
+        {
+            Player* member = itr->GetSource();
+            if (!member || member->GetMap() != bot->GetMap())
+                continue;
+
+            float hp = UnitHealthPct(member);
+            totalHp += hp;
+            pack.LowestAllyHpPct = memberCount ? std::min(pack.LowestAllyHpPct, hp) : hp;
+            ++memberCount;
+
+            uint8 roles = group->GetLfgRoles(member->GetGUID());
+            if (roles & lfg::PLAYER_ROLE_HEALER)
+            {
+                uint32 maxMana = member->GetMaxPower(POWER_MANA);
+                healerManaTotal += maxMana ? float(member->GetPower(POWER_MANA)) / float(maxMana) : 1.0f;
+                ++healerCount;
+            }
+        }
+
+        if (memberCount)
+            pack.PartyAverageHpPct = totalHp / float(memberCount);
+        if (healerCount)
+            pack.HealerManaPct = healerManaTotal / float(healerCount);
+    }
+    else
+    {
+        pack.PartyAverageHpPct = UnitHealthPct(bot);
+        pack.LowestAllyHpPct = pack.PartyAverageHpPct;
+    }
+
+    Player* anchor = FindDungeonAnchor(bot);
+    Unit* focusMutable = focus ? const_cast<Unit*>(focus) : nullptr;
+    if (anchor && focusMutable && focusMutable->GetVictim() == anchor)
+        pack.TankThreat = 1.0f;
+    else if (focusMutable && focusMutable->GetVictim() == bot && std::string(GetDungeonRole(bot)) == "tank")
+        pack.TankThreat = 1.0f;
+    else if (focusMutable && focusMutable->GetVictim())
+        pack.TankThreat = 0.35f;
+
+    return pack;
+}
+
+BotWorldPopulationMgr::DungeonTrashActionResult BotWorldPopulationMgr::TryDungeonTrash(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity)
+{
+    DungeonTrashActionResult result;
+    if (!_config.AllowDungeons || !bot || !bot->GetMap() || !bot->GetMap()->IsNonRaidDungeon())
+        return result;
+
+    result.Handled = true;
+    Player* anchor = FindDungeonAnchor(bot);
+    char const* role = GetDungeonRole(bot);
+    Unit* groupTarget = FindGroupCombatTarget(bot, anchor);
+    if (!groupTarget && !state.TargetGuid.IsEmpty())
+        groupTarget = ObjectAccessor::GetUnit(*bot, state.TargetGuid);
+
+    result.Pack = BuildDungeonTrashPackFeatures(bot, groupTarget);
+    if (!groupTarget && !result.Pack.PriorityTargetGuid.IsEmpty())
+        groupTarget = ObjectAccessor::GetUnit(*bot, result.Pack.PriorityTargetGuid);
+    result.Target = groupTarget;
+
+    if (anchor && !groupTarget && bot->GetExactDist(anchor) > 7.0f)
+    {
+        BotActionExecutor executor;
+        executor.MoveFollow(anchor, bot);
+        result.Action = "formation_follow";
+        std::string raw = BuildRawJson(bot, nullptr);
+        std::string semantic = BuildSemanticJson(bot, nullptr, result.Situation.c_str(), &power, stage, activity);
+        RecordEvent(state, bot, "move_started", nullptr, "dungeon_formation", raw.c_str(), semantic.c_str(), bot->GetExactDist(anchor), result.Pack.PackSize);
+        return result;
+    }
+
+    if (!groupTarget)
+    {
+        result.Action = "wait_for_pull";
+        return result;
+    }
+
+    state.TargetGuid = groupTarget->GetGUID();
+
+    uint32 interruptSpell = SelectInterruptSpell(bot);
+    if (result.Pack.InterruptPriority >= 0.5f && interruptSpell && TryCastCombatSpell(bot, groupTarget, interruptSpell))
+    {
+        result.Action = "interrupt_priority_cast";
+        result.SpellId = interruptSpell;
+        std::string raw = BuildRawJson(bot, groupTarget);
+        std::string semantic = BuildSemanticJson(bot, groupTarget, result.Situation.c_str(), &power, stage, activity);
+        RecordEvent(state, bot, "interrupt_success", groupTarget, "ok", raw.c_str(), semantic.c_str(), result.Pack.InterruptPriority, result.Pack.PackSize, interruptSpell);
+        return result;
+    }
+
+    if (std::string(role) == "healer")
+    {
+        Unit* healTarget = nullptr;
+        if (Group* group = bot->GetGroup())
+        {
+            float lowestHp = 1.0f;
+            for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
+            {
+                Player* member = itr->GetSource();
+                if (!member || !member->IsAlive() || member->GetMap() != bot->GetMap() || !bot->IsWithinLOSInMap(member))
+                    continue;
+
+                float hp = UnitHealthPct(member);
+                if (!healTarget || hp < lowestHp)
+                {
+                    healTarget = member;
+                    lowestHp = hp;
+                }
+            }
+        }
+        if (!healTarget)
+            healTarget = bot;
+
+        uint32 healSpell = SelectHealSpell(bot);
+        if (healSpell && UnitHealthPct(healTarget) < 0.75f && TryCastFriendlySpell(bot, healTarget, healSpell))
+        {
+            result.Action = "heal_lowest_ally";
+            result.SpellId = healSpell;
+            result.Target = healTarget;
+            std::string raw = BuildRawJson(bot, groupTarget);
+            std::string semantic = BuildSemanticJson(bot, groupTarget, result.Situation.c_str(), &power, stage, activity);
+            RecordEvent(state, bot, "trash_heal", groupTarget, "ok", raw.c_str(), semantic.c_str(), UnitHealthPct(healTarget), result.Pack.PackSize, healSpell);
+            return result;
+        }
+
+        if (anchor && bot->GetExactDist(anchor) > 18.0f)
+        {
+            BotActionExecutor executor;
+            executor.MoveFollow(anchor, bot);
+            result.Action = "healer_follow_tank";
+            return result;
+        }
+    }
+
+    if (std::string(role) != "tank" && anchor && anchor->GetVictim() == nullptr && !bot->IsInCombat())
+    {
+        BotActionExecutor executor;
+        executor.MoveFollow(anchor, bot);
+        result.Action = "avoid_extra_pull";
+        result.Target = nullptr;
+        return result;
+    }
+
+    BotActionExecutor executor;
+    BotActionResult pull = executor.Pull(bot, groupTarget);
+    uint32 spellId = SelectCombatSpell(bot, groupTarget);
+    bool cast = spellId && TryCastCombatSpell(bot, groupTarget, spellId);
+    result.Action = std::string(role) == "tank" ? "tank_establish_threat" : (result.Pack.AoeValue >= 0.6f ? "dps_aoe_pack" : "dps_focus_target");
+    result.SpellId = cast ? spellId : 0;
+    result.Failure = pull != BotActionResult::Ok;
+    result.Rare = result.Pack.DangerousCasts > 0 || result.Pack.PullRisk >= 0.75f;
+
+    std::string raw = BuildRawJson(bot, groupTarget);
+    std::string semantic = BuildSemanticJson(bot, groupTarget, result.Situation.c_str(), &power, stage, activity);
+    RecordEvent(state, bot, "trash_action", groupTarget, ToString(pull), raw.c_str(), semantic.c_str(), result.Pack.PullRisk, result.Pack.PackSize, result.SpellId);
+    if (!state.WasInCombat)
+        RecordEvent(state, bot, "combat_started", groupTarget, "dungeon_trash", raw.c_str(), semantic.c_str(), result.Pack.PullRisk, result.Pack.PackSize);
+    state.WasInCombat = true;
+    return result;
+}
+
+char const* BotWorldPopulationMgr::GetDungeonRole(Player* bot) const
+{
+    if (!bot)
+        return "dps";
+
+    if (Group* group = bot->GetGroup())
+    {
+        uint8 roles = group->GetLfgRoles(bot->GetGUID());
+        if (roles & lfg::PLAYER_ROLE_TANK)
+            return "tank";
+        if (roles & lfg::PLAYER_ROLE_HEALER)
+            return "healer";
+        if (roles & lfg::PLAYER_ROLE_DAMAGE)
+            return "dps";
+    }
+
+    std::string botRole = sBotMgr->GetBotRoleName(bot->GetGUID());
+    if (botRole.find("holy") != std::string::npos || botRole.find("healer") != std::string::npos)
+        return "healer";
+    if (botRole.find("tank") != std::string::npos)
+        return "tank";
+
+    switch (bot->getClass())
+    {
+        case CLASS_WARRIOR:
+        case CLASS_DEATH_KNIGHT:
+            return "tank";
+        case CLASS_PRIEST:
+            return "healer";
+        default:
+            return "dps";
+    }
+}
+
+uint32 BotWorldPopulationMgr::SelectInterruptSpell(Player* bot) const
+{
+    if (!bot)
+        return 0;
+
+    uint32 candidates[4] = { 0, 0, 0, 0 };
+    switch (bot->getClass())
+    {
+        case CLASS_WARRIOR: candidates[0] = 6552; break;       // Pummel
+        case CLASS_ROGUE: candidates[0] = 1766; break;         // Kick
+        case CLASS_MAGE: candidates[0] = 2139; break;          // Counterspell
+        case CLASS_SHAMAN: candidates[0] = 57994; break;       // Wind Shear
+        case CLASS_DEATH_KNIGHT: candidates[0] = 47528; break; // Mind Freeze
+        case CLASS_PALADIN: candidates[0] = 96231; break;      // Rebuke
+        case CLASS_DRUID: candidates[0] = 80965; break;        // Skull Bash
+        default: break;
+    }
+
+    for (uint32 spellId : candidates)
+        if (spellId && bot->HasSpell(spellId))
+            return spellId;
+
+    return 0;
+}
+
+uint32 BotWorldPopulationMgr::SelectHealSpell(Player* bot) const
+{
+    if (!bot)
+        return 0;
+
+    uint32 candidates[4] = { 0, 0, 0, 0 };
+    switch (bot->getClass())
+    {
+        case CLASS_PALADIN:
+            candidates[0] = 635;    // Holy Light
+            candidates[1] = 19750;  // Flash of Light
+            break;
+        case CLASS_PRIEST:
+            candidates[0] = 2061;   // Flash Heal
+            candidates[1] = 2050;   // Heal
+            break;
+        case CLASS_SHAMAN:
+            candidates[0] = 331;    // Healing Wave
+            candidates[1] = 8004;   // Healing Surge
+            break;
+        case CLASS_DRUID:
+            candidates[0] = 8936;   // Regrowth
+            candidates[1] = 5185;   // Healing Touch
+            break;
+        default:
+            break;
+    }
+
+    for (uint32 spellId : candidates)
+        if (spellId && bot->HasSpell(spellId))
+            return spellId;
+
+    return 0;
+}
+
+bool BotWorldPopulationMgr::TryCastFriendlySpell(Player* bot, Unit* target, uint32 spellId) const
+{
+    if (!bot || !target || !spellId || !target->IsAlive() || !bot->IsValidAssistTarget(target))
+        return false;
+
+    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+    if (!spellInfo || !bot->IsWithinLOSInMap(target))
+        return false;
+
+    float maxRange = std::max(5.0f, spellInfo->GetMaxRange(false));
+    if (!bot->IsWithinDistInMap(target, maxRange))
+        return false;
+
+    if (bot->HasUnitState(UNIT_STATE_CASTING) || bot->GetSpellHistory()->HasGlobalCooldown(spellInfo) || !bot->GetSpellHistory()->IsReady(spellInfo))
+        return false;
+
+    int32 powerCost = spellInfo->CalcPowerCost(bot, spellInfo->GetSchoolMask());
+    if (powerCost > 0 && bot->GetPower(bot->GetPowerType()) < uint32(powerCost))
+        return false;
+
+    return bot->CastSpell(target, spellId, false) == SPELL_CAST_OK;
+}
+
+std::string BotWorldPopulationMgr::BuildDungeonTrashPackJson(DungeonTrashPackFeatures const& pack) const
+{
+    std::ostringstream json;
+    json << "{\"pack_size\":" << pack.PackSize
+         << ",\"elite_count\":" << pack.EliteCount
+         << ",\"caster_count\":" << pack.CasterCount
+         << ",\"healer_count\":" << pack.HealerCount
+         << ",\"active_casts\":" << pack.ActiveCasts
+         << ",\"dangerous_casts\":" << pack.DangerousCasts
+         << ",\"interrupt_priority\":" << pack.InterruptPriority
+         << ",\"aoe_value\":" << pack.AoeValue
+         << ",\"cc_value\":" << pack.CcValue
+         << ",\"pull_risk\":" << pack.PullRisk
+         << ",\"patrol_nearby\":" << (pack.PatrolNearby ? "true" : "false")
+         << ",\"tank_threat\":" << pack.TankThreat
+         << ",\"party_average_hp_pct\":" << pack.PartyAverageHpPct
+         << ",\"lowest_ally_hp_pct\":" << pack.LowestAllyHpPct
+         << ",\"healer_mana_pct\":" << pack.HealerManaPct
+         << ",\"priority_target_guid\":" << pack.PriorityTargetGuid.GetCounter()
+         << ",\"priority_target_entry\":" << pack.PriorityTargetEntry
+         << ",\"priority_spell_id\":" << pack.PrioritySpellId << "}";
+    return json.str();
+}
+
 uint32 BotWorldPopulationMgr::SelectCombatSpell(Player* bot, Unit* target) const
 {
     if (!bot || !target || !target->IsAlive())
@@ -1284,7 +1792,18 @@ std::string BotWorldPopulationMgr::BuildRawJson(Player* bot, Unit const* target)
     else
         json << 0;
     json << ",\"target_level\":" << (target ? uint32(target->getLevel()) : 0)
-         << ",\"target_alive\":" << (target && target->IsAlive() ? "true" : "false") << "}";
+         << ",\"target_alive\":" << (target && target->IsAlive() ? "true" : "false")
+         << ",\"target_cast_spell_id\":";
+    if (target)
+    {
+        if (Spell* spell = target->GetCurrentSpell(CURRENT_GENERIC_SPELL))
+            json << (spell->GetSpellInfo() ? spell->GetSpellInfo()->Id : 0);
+        else
+            json << 0;
+    }
+    else
+        json << 0;
+    json << "}";
     return json.str();
 }
 
@@ -1294,6 +1813,8 @@ std::string BotWorldPopulationMgr::BuildSemanticJson(Player* bot, Unit const* ta
     if (bot && bot->GetMaxHealth())
         hpPct = float(bot->GetHealth()) / float(bot->GetMaxHealth());
 
+    std::string situationType = situation ? situation : "idle";
+    bool dungeonTrash = bot && bot->GetMap() && bot->GetMap()->IsNonRaidDungeon() && situationType == "dungeon_trash";
     bool elite = false;
     if (Creature const* creature = target ? target->ToCreature() : nullptr)
         elite = creature->isElite();
@@ -1307,8 +1828,8 @@ std::string BotWorldPopulationMgr::BuildSemanticJson(Player* bot, Unit const* ta
     }
 
     std::ostringstream json;
-    json << "{\"situation_type\":\"" << JsonEscape(situation ? situation : "idle") << "\""
-         << ",\"role\":\"solo\""
+    json << "{\"situation_type\":\"" << JsonEscape(situationType) << "\""
+         << ",\"role\":\"" << JsonEscape(dungeonTrash ? GetDungeonRole(bot) : "solo") << "\""
          << ",\"activity\":\"" << JsonEscape(BotLongTermProgressionBrain::ToString(activity)) << "\""
          << ",\"progression\":{\"main_goal\":\"increase_character_power\""
          << ",\"stage\":\"" << JsonEscape(BotLongTermProgressionBrain::ToString(stage)) << "\""
@@ -1327,8 +1848,22 @@ std::string BotWorldPopulationMgr::BuildSemanticJson(Player* bot, Unit const* ta
          << ",\"dead\":" << (bot && !bot->IsAlive() ? "true" : "false") << "}"
          << ",\"enemy\":{\"present\":" << (target ? "true" : "false")
          << ",\"elite\":" << (elite ? "true" : "false")
-         << ",\"safe_open_world_target\":" << (target && !elite && bot && int32(target->getLevel()) <= int32(bot->getLevel()) + 1 ? "true" : "false") << "}"
-         << ",\"objective\":{\"main_goal\":\"increase_character_power\",\"questing_allowed\":" << (_config.AllowQuesting ? "true" : "false") << "}}";
+         << ",\"safe_open_world_target\":" << (target && !elite && bot && int32(target->getLevel()) <= int32(bot->getLevel()) + 1 ? "true" : "false") << "}";
+    if (dungeonTrash)
+    {
+        DungeonTrashPackFeatures pack = BuildDungeonTrashPackFeatures(bot, target);
+        json << ",\"trash_pack\":" << BuildDungeonTrashPackJson(pack)
+             << ",\"trash_action_scores\":{\"interrupt\":" << pack.InterruptPriority
+             << ",\"cc\":" << pack.CcValue
+             << ",\"aoe\":" << pack.AoeValue
+             << ",\"single_target\":" << (target ? 1.0f : 0.0f)
+             << ",\"avoid_pull\":" << pack.PullRisk << "}";
+    }
+    else
+        json << ",\"trash_pack\":null,\"trash_action_scores\":null";
+    json
+         << ",\"objective\":{\"main_goal\":\"increase_character_power\",\"questing_allowed\":" << (_config.AllowQuesting ? "true" : "false")
+         << ",\"dungeons_allowed\":" << (_config.AllowDungeons ? "true" : "false") << "}}";
     return json.str();
 }
 
@@ -1345,6 +1880,7 @@ std::string BotWorldPopulationMgr::BuildConfigJson() const
          << ",\"allow_combat\":" << (_config.AllowCombat ? "true" : "false")
          << ",\"progression_enabled\":" << (_config.EnableProgression ? "true" : "false")
          << ",\"allow_questing\":" << (_config.AllowQuesting ? "true" : "false")
+         << ",\"allow_dungeons\":" << (_config.AllowDungeons ? "true" : "false")
          << ",\"record_decisions\":" << (_config.RecordDecisions ? "true" : "false")
          << ",\"record_perception\":" << (_config.RecordPerception ? "true" : "false")
          << ",\"smart_sampling\":" << (_config.SmartSampling ? "true" : "false")
