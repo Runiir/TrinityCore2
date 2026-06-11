@@ -26,6 +26,7 @@
 #include "Creature.h"
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <iomanip>
 #include <sstream>
 
@@ -2019,6 +2020,299 @@ void BotWorldPopulationMgr::RecordRunStop()
     std::string summary = GetSummaryJson();
     CharacterDatabase.EscapeString(summary);
     CharacterDatabase.DirectPExecute("UPDATE experiment_bot_runs SET status = 'stopped', ended_at = NOW(), summary_json = '%s' WHERE id = " UI64FMTD, summary.c_str(), _runId);
+}
+
+BotWorldPopulationMgr::ReplayRecord BotWorldPopulationMgr::LoadReplayRecord(uint64 replayId) const
+{
+    ReplayRecord record;
+    if (!replayId)
+        return record;
+
+    QueryResult result = CharacterDatabase.PQuery(
+        "SELECT id, experiment_id, run_id, bot_guid, replay_type, map_id, zone_id, x, y, z, o, "
+        "bot_snapshot_json, world_snapshot_json, COALESCE(party_snapshot_json, ''), raw_state_json, semantic_state_json, "
+        "COALESCE(chosen_action_json, ''), failure_json "
+        "FROM experiment_bot_replay_records WHERE id = " UI64FMTD,
+        replayId);
+    if (!result)
+        return record;
+
+    Field* fields = result->Fetch();
+    record.Loaded = true;
+    record.Id = fields[0].GetUInt64();
+    record.ExperimentId = fields[1].GetUInt64();
+    record.RunId = fields[2].GetUInt64();
+    record.BotGuid = fields[3].GetUInt32();
+    record.ReplayType = fields[4].GetString();
+    record.MapId = fields[5].GetUInt32();
+    record.ZoneId = fields[6].GetUInt32();
+    record.X = fields[7].GetFloat();
+    record.Y = fields[8].GetFloat();
+    record.Z = fields[9].GetFloat();
+    record.O = fields[10].GetFloat();
+    record.BotSnapshotJson = fields[11].GetString();
+    record.WorldSnapshotJson = fields[12].GetString();
+    record.PartySnapshotJson = fields[13].GetString();
+    record.RawStateJson = fields[14].GetString();
+    record.SemanticStateJson = fields[15].GetString();
+    record.ChosenActionJson = fields[16].GetString();
+    record.FailureJson = fields[17].GetString();
+    return record;
+}
+
+BotWorldPopulationMgr::ReplayRecord BotWorldPopulationMgr::LoadReplayRecord(std::string const& replayType, std::string const& selector) const
+{
+    if (!selector.empty() && selector != "latest" && selector.find_first_not_of("0123456789") == std::string::npos)
+        return LoadReplayRecord(uint64(strtoull(selector.c_str(), nullptr, 10)));
+
+    std::string type = replayType.empty() ? "failure" : replayType;
+    std::string where;
+    if (type == "failure")
+        where = "replay_type LIKE '%failure%'";
+    else
+    {
+        CharacterDatabase.EscapeString(type);
+        where = "replay_type = '" + type + "'";
+    }
+
+    std::string query =
+        "SELECT id FROM experiment_bot_replay_records WHERE " + where +
+        " ORDER BY id DESC LIMIT 1";
+    if (QueryResult result = CharacterDatabase.Query(query.c_str()))
+        return LoadReplayRecord(result->Fetch()[0].GetUInt64());
+
+    return ReplayRecord();
+}
+
+void BotWorldPopulationMgr::RecordReplayEvent(WorldBotState const& state, Player* bot, char const* eventType, ReplayRecord const& record, char const* result, char const* contextJson)
+{
+    if (!_runId || !bot)
+        return;
+
+    std::string raw = record.RawStateJson.empty() ? "{}" : record.RawStateJson;
+    std::string semantic = record.SemanticStateJson.empty() ? "{}" : record.SemanticStateJson;
+    std::string event = eventType ? eventType : "replay_event";
+    std::string res = result ? result : "";
+    std::string brain = _config.BrainVersion;
+    std::string context = contextJson ? contextJson : "{}";
+    CharacterDatabase.EscapeString(raw);
+    CharacterDatabase.EscapeString(semantic);
+    CharacterDatabase.EscapeString(event);
+    CharacterDatabase.EscapeString(res);
+    CharacterDatabase.EscapeString(brain);
+    CharacterDatabase.EscapeString(context);
+
+    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_events (experiment_id, run_id, bot_guid, brain_version, map_id, zone_id, area_id, x, y, z, level, event_type, result, value_int, raw_json, semantic_json, context_json) "
+        "VALUES (" UI64FMTD ", " UI64FMTD ", %u, '%s', %u, %u, %u, %f, %f, %f, %u, '%s', '%s', %u, '%s', '%s', '%s')",
+        _experimentId, _runId, state.Guid.GetCounter(), brain.c_str(), bot->GetMapId(), bot->GetZoneId(), bot->GetAreaId(),
+        bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), uint32(bot->getLevel()), event.c_str(), res.c_str(),
+        uint32(record.Id), raw.c_str(), semantic.c_str(), context.c_str());
+}
+
+BotWorldPopulationMgr::ReplayExecutionResult BotWorldPopulationMgr::ExecuteReplayRecord(ReplayRecord const& record, std::string const& brainVersion)
+{
+    ReplayExecutionResult result;
+    result.ReplayId = record.Id;
+    result.ReplayType = record.ReplayType;
+    result.BrainVersion = brainVersion.empty() ? _config.BrainVersion : brainVersion;
+
+    if (!record.Loaded)
+    {
+        result.FailureReason = "replay_record_not_found";
+        return result;
+    }
+
+    if (_active)
+    {
+        result.FailureReason = "botexp_population_active";
+        return result;
+    }
+
+    if (!sConfigMgr->GetBoolDefault("BotWorld.Enable", false) || !sConfigMgr->GetBoolDefault("PlayerBot.Enable", false))
+    {
+        result.FailureReason = "botworld_or_playerbot_disabled";
+        return result;
+    }
+
+    uint64 oldExperimentId = _experimentId;
+    uint64 oldRunId = _runId;
+    uint32 oldElapsedMs = _elapsedMs;
+    BotWorldExperimentConfig oldConfig = _config;
+    BotWorldStatus oldMetrics = _metrics;
+    std::vector<WorldBotState> oldBots = _bots;
+    std::set<uint32> oldFailedSpawnGuids = _failedSpawnGuids;
+
+    _config = BotWorldExperimentConfig();
+    _config.Name = "replay_" + std::to_string(record.Id);
+    _config.TargetPopulation = 1;
+    _config.MapId = record.MapId;
+    _config.ZoneId = record.ZoneId;
+    _config.CenterX = record.X;
+    _config.CenterY = record.Y;
+    _config.CenterZ = record.Z;
+    _config.Radius = 25.0f;
+    _config.AllowCombat = true;
+    _config.AllowQuesting = true;
+    _config.AllowDungeons = record.ReplayType.find("boss") != std::string::npos || record.ReplayType.find("trash") != std::string::npos;
+    _config.AllowRaids = record.ReplayType.find("raid") != std::string::npos || record.ReplayType.find("boss") != std::string::npos;
+    _config.BrainVersion = result.BrainVersion;
+    _bots.clear();
+    _failedSpawnGuids.clear();
+    _metrics = BotWorldStatus();
+    _metrics.Active = false;
+    _metrics.Name = _config.Name;
+    _metrics.TargetBots = 1;
+    _elapsedMs = 0;
+
+    RecordRunStart();
+    result.RunId = _runId;
+
+    Player* bot = nullptr;
+    if (record.BotGuid)
+        bot = sBotMgr->SpawnWorldBot("any", std::to_string(record.BotGuid), record.MapId, record.X, record.Y, record.Z, record.O);
+
+    if (!bot)
+    {
+        uint32 fallbackGuid = SelectPoolCandidateGuid();
+        if (fallbackGuid)
+            bot = sBotMgr->SpawnWorldBot("any", std::to_string(fallbackGuid), record.MapId, record.X, record.Y, record.Z, record.O);
+    }
+
+    if (!bot)
+    {
+        result.FailureReason = "no_available_replay_bot";
+        RecordRunStop();
+        _experimentId = oldExperimentId;
+        _runId = oldRunId;
+        _elapsedMs = oldElapsedMs;
+        _config = oldConfig;
+        _metrics = oldMetrics;
+        _bots = oldBots;
+        _failedSpawnGuids = oldFailedSpawnGuids;
+        return result;
+    }
+
+    bot->CombatStop(true);
+    bot->CastStop();
+    if (!bot->IsAlive())
+        bot->ResurrectPlayer(1.0f, false);
+    bot->TeleportTo(record.MapId, record.X, record.Y, record.Z, record.O);
+    bot->SetFullHealth();
+    bot->SetFullPower(bot->GetPowerType());
+
+    WorldBotState state;
+    state.Guid = bot->GetGUID();
+    state.DecisionTimer = 0;
+    state.LastX = record.X;
+    state.LastY = record.Y;
+    state.LastZ = record.Z;
+    state.ActivityType = "replay";
+    _bots.push_back(state);
+    _metrics.ActiveBots = 1;
+
+    RecordActivityStart(_bots.back(), bot);
+    std::ostringstream startContext;
+    startContext << "{\"replay_id\":" << record.Id
+                 << ",\"source_experiment_id\":" << record.ExperimentId
+                 << ",\"source_run_id\":" << record.RunId
+                 << ",\"source_bot_guid\":" << record.BotGuid
+                 << ",\"replay_type\":\"" << JsonEscape(record.ReplayType) << "\""
+                 << ",\"source_failure\":" << (record.FailureJson.empty() ? "{}" : record.FailureJson)
+                 << ",\"source_action\":" << (record.ChosenActionJson.empty() ? "{}" : record.ChosenActionJson) << "}";
+    RecordReplayEvent(_bots.back(), bot, "replay_started", record, "ok", startContext.str().c_str());
+
+    UpdateBot(_bots.back(), std::max<uint32>(500, sConfigMgr->GetIntDefault("BotWorld.DecisionTickMs", 3000)));
+
+    BotRolePowerBreakdown finalPower = BotLongTermProgressionBrain::CalculateRolePower(bot);
+    result.FinalPower = finalPower.Total;
+    result.Decisions = _metrics.Decisions;
+    result.Failures = _metrics.Failures;
+    result.Deaths = _metrics.Deaths;
+    result.Kills = _metrics.Kills;
+    result.StuckEvents = _metrics.StuckEvents;
+    result.Success = bot->IsAlive() && !_metrics.Failures && !_metrics.Deaths;
+    result.Ok = true;
+    result.FirstAction = record.ChosenActionJson.empty() ? "{}" : record.ChosenActionJson;
+
+    std::ostringstream finishContext;
+    finishContext << "{\"replay_id\":" << record.Id
+                  << ",\"success\":" << (result.Success ? "true" : "false")
+                  << ",\"decisions\":" << result.Decisions
+                  << ",\"failures\":" << result.Failures
+                  << ",\"deaths\":" << result.Deaths
+                  << ",\"kills\":" << result.Kills
+                  << ",\"stuck_events\":" << result.StuckEvents
+                  << ",\"final_power\":" << result.FinalPower << "}";
+    RecordReplayEvent(_bots.back(), bot, "replay_finished", record, result.Success ? "success" : "failure", finishContext.str().c_str());
+
+    RecordActivityStop(_bots.back(), bot);
+    sBotMgr->RemoveWorldBot(bot->GetGUID());
+    _bots.clear();
+    RecordRunStop();
+
+    _experimentId = oldExperimentId;
+    _runId = oldRunId;
+    _elapsedMs = oldElapsedMs;
+    _config = oldConfig;
+    _metrics = oldMetrics;
+    _bots = oldBots;
+    _failedSpawnGuids = oldFailedSpawnGuids;
+    return result;
+}
+
+std::string BotWorldPopulationMgr::BuildReplayResultJson(ReplayExecutionResult const& result) const
+{
+    std::ostringstream json;
+    json << "{\"ok\":" << (result.Ok ? "true" : "false")
+         << ",\"action\":\"botexp_replay\""
+         << ",\"replay_id\":" << result.ReplayId
+         << ",\"run_id\":" << result.RunId
+         << ",\"replay_type\":\"" << JsonEscape(result.ReplayType) << "\""
+         << ",\"brain_version\":\"" << JsonEscape(result.BrainVersion) << "\""
+         << ",\"success\":" << (result.Success ? "true" : "false")
+         << ",\"metrics\":{\"decisions\":" << result.Decisions
+         << ",\"failures\":" << result.Failures
+         << ",\"deaths\":" << result.Deaths
+         << ",\"kills\":" << result.Kills
+         << ",\"stuck_events\":" << result.StuckEvents
+         << ",\"final_power\":" << result.FinalPower << "}"
+         << ",\"failure_reason\":" << (result.FailureReason.empty() ? "null" : ("\"" + JsonEscape(result.FailureReason) + "\""))
+         << "}";
+    return json.str();
+}
+
+std::string BotWorldPopulationMgr::Replay(std::string const& replayType, std::string const& selector, std::string const& brainVersion)
+{
+    ReplayRecord record = LoadReplayRecord(replayType, selector.empty() ? "latest" : selector);
+    std::string version = brainVersion.empty() ? sConfigMgr->GetStringDefault("BotExperiment.BrainVersion", _config.BrainVersion) : brainVersion;
+    return BuildReplayResultJson(ExecuteReplayRecord(record, version));
+}
+
+std::string BotWorldPopulationMgr::CompareBrains(uint64 replayId, std::string const& firstBrainVersion, std::string const& secondBrainVersion)
+{
+    ReplayRecord record = LoadReplayRecord(replayId);
+    ReplayExecutionResult first = ExecuteReplayRecord(record, firstBrainVersion);
+    ReplayExecutionResult second = ExecuteReplayRecord(record, secondBrainVersion);
+    std::ostringstream json;
+    json << "{\"ok\":" << ((first.Ok && second.Ok) ? "true" : "false")
+         << ",\"action\":\"botexp_comparebrain\""
+         << ",\"replay_id\":" << replayId
+         << ",\"first\":" << BuildReplayResultJson(first)
+         << ",\"second\":" << BuildReplayResultJson(second)
+         << ",\"winner\":";
+    if (!first.Ok || !second.Ok || first.Success == second.Success)
+        json << "null";
+    else
+        json << "\"" << JsonEscape(first.Success ? firstBrainVersion : secondBrainVersion) << "\"";
+    json << ",\"failure_reason\":";
+    if (first.Ok && second.Ok)
+        json << "null";
+    else if (!first.FailureReason.empty())
+        json << "\"" << JsonEscape(first.FailureReason) << "\"";
+    else
+        json << "\"" << JsonEscape(second.FailureReason) << "\"";
+    json << "}";
+    return json.str();
 }
 
 void BotWorldPopulationMgr::RecordActivityStart(WorldBotState& state, Player* bot)

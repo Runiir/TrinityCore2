@@ -71,6 +71,8 @@ public:
     std::string GetStatusJson() const;
     std::string GetSummaryJson() const;
     bool IsActive() const { return _active; }
+    std::string Replay(std::string const& replayType, std::string const& selector, std::string const& brainVersion = "");
+    std::string CompareBrains(uint64 replayId, std::string const& firstBrainVersion, std::string const& secondBrainVersion);
 
 private:
     struct WorldBotState
@@ -210,6 +212,47 @@ private:
         float ProgressionValue = 0.0f;
     };
 
+    struct ReplayRecord
+    {
+        bool Loaded = false;
+        uint64 Id = 0;
+        uint64 ExperimentId = 0;
+        uint64 RunId = 0;
+        uint32 BotGuid = 0;
+        std::string ReplayType;
+        uint32 MapId = 0;
+        uint32 ZoneId = 0;
+        float X = 0.0f;
+        float Y = 0.0f;
+        float Z = 0.0f;
+        float O = 0.0f;
+        std::string BotSnapshotJson;
+        std::string WorldSnapshotJson;
+        std::string PartySnapshotJson;
+        std::string RawStateJson;
+        std::string SemanticStateJson;
+        std::string ChosenActionJson;
+        std::string FailureJson;
+    };
+
+    struct ReplayExecutionResult
+    {
+        bool Ok = false;
+        bool Success = false;
+        uint64 ReplayId = 0;
+        uint64 RunId = 0;
+        std::string BrainVersion;
+        std::string FailureReason;
+        uint32 Decisions = 0;
+        uint32 Failures = 0;
+        uint32 Deaths = 0;
+        uint32 Kills = 0;
+        uint32 StuckEvents = 0;
+        float FinalPower = 0.0f;
+        std::string FirstAction;
+        std::string ReplayType;
+    };
+
     void EnsurePopulation();
     void UpdateBot(WorldBotState& state, uint32 diff);
     Player* GetBot(WorldBotState const& state) const;
@@ -242,6 +285,11 @@ private:
     void MoveToWanderPoint(Player* bot, WorldBotState& state);
     void RecordRunStart();
     void RecordRunStop();
+    ReplayRecord LoadReplayRecord(std::string const& replayType, std::string const& selector) const;
+    ReplayRecord LoadReplayRecord(uint64 replayId) const;
+    ReplayExecutionResult ExecuteReplayRecord(ReplayRecord const& record, std::string const& brainVersion);
+    std::string BuildReplayResultJson(ReplayExecutionResult const& result) const;
+    void RecordReplayEvent(WorldBotState const& state, Player* bot, char const* eventType, ReplayRecord const& record, char const* result, char const* contextJson = nullptr);
     void RecordActivityStart(WorldBotState& state, Player* bot);
     void RecordActivityStop(WorldBotState const& state, Player* bot = nullptr);
     void RecordGearEvaluation(WorldBotState const& state, Player* bot, BotGearUpgradeEvaluation const& evaluation, char const* rawJson, char const* semanticJson);

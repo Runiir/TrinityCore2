@@ -795,6 +795,8 @@ public:
             { "status", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleStatusCommand, "" },
             { "summary", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleSummaryCommand, "" },
             { "export", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleExportCommand, "" },
+            { "replay", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleReplayCommand, "" },
+            { "comparebrain", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleCompareBrainCommand, "" },
         };
 
         static std::vector<ChatCommand> commandTable =
@@ -818,6 +820,21 @@ private:
             return token;
 
         return "";
+    }
+
+    static std::vector<std::string> Tokenize(char const* args)
+    {
+        std::vector<std::string> tokens;
+        if (!args)
+            return tokens;
+
+        std::string input = args;
+        std::vector<char> buffer(input.begin(), input.end());
+        buffer.push_back('\0');
+        for (char* token = strtok(buffer.data(), " "); token; token = strtok(nullptr, " "))
+            tokens.push_back(token);
+
+        return tokens;
     }
 
     static bool HandleStartCommand(ChatHandler* handler, char const* args)
@@ -867,6 +884,67 @@ private:
     {
         if (handler)
             handler->PSendSysMessage("{\"ok\":true,\"action\":\"botexp_export\",\"storage\":\"character_database_tables\",\"tables\":[\"experiment_bot_runs\",\"experiment_bot_events\",\"experiment_bot_decisions\",\"experiment_bot_activities\",\"experiment_bot_replay_records\",\"bot_semantic_outcome_stats\"],\"embedding_feature_schema\":\"bot_semantic_phase6_v1\",\"failure_reason\":null}");
+        return true;
+    }
+
+    static bool HandleReplayCommand(ChatHandler* handler, char const* args)
+    {
+        std::vector<std::string> tokens = Tokenize(args);
+        std::string replayType = "failure";
+        std::string selector = "latest";
+        std::string brainVersion;
+        if (!tokens.empty())
+        {
+            if (tokens[0].find_first_not_of("0123456789") == std::string::npos)
+            {
+                selector = tokens[0];
+                brainVersion = tokens.size() > 1 ? tokens[1] : "";
+            }
+            else
+            {
+                replayType = tokens[0];
+                selector = tokens.size() > 1 ? tokens[1] : "latest";
+                brainVersion = tokens.size() > 2 ? tokens[2] : "";
+            }
+        }
+
+        std::string result = sBotWorldPopulationMgr->Replay(replayType, selector, brainVersion);
+        if (handler)
+            handler->PSendSysMessage("%s", result.c_str());
+
+        if (result.find("\"ok\":true") == std::string::npos)
+        {
+            if (handler)
+                handler->SetSentErrorMessage(true);
+            return false;
+        }
+        return true;
+    }
+
+    static bool HandleCompareBrainCommand(ChatHandler* handler, char const* args)
+    {
+        std::vector<std::string> tokens = Tokenize(args);
+        if (tokens.size() < 4 || tokens[0] != "replay" || tokens[1].find_first_not_of("0123456789") != std::string::npos)
+        {
+            if (handler)
+            {
+                handler->PSendSysMessage("{\"ok\":false,\"action\":\"botexp_comparebrain\",\"failure_reason\":\"usage: .botexp comparebrain replay <id> <brain_a> <brain_b>\"}");
+                handler->SetSentErrorMessage(true);
+            }
+            return false;
+        }
+
+        uint64 replayId = uint64(strtoull(tokens[1].c_str(), nullptr, 10));
+        std::string result = sBotWorldPopulationMgr->CompareBrains(replayId, tokens[2], tokens[3]);
+        if (handler)
+            handler->PSendSysMessage("%s", result.c_str());
+
+        if (result.find("\"ok\":true") == std::string::npos)
+        {
+            if (handler)
+                handler->SetSentErrorMessage(true);
+            return false;
+        }
         return true;
     }
 };
