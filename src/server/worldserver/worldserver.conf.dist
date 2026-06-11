@@ -3411,12 +3411,12 @@ PreventRenameCharacterOnCustomization = 0
 #        Default:     0
 #
 
-PlayerBot.Enable = 0
-PlayerBot.Record.Enable = 0
+PlayerBot.Enable = 1
+PlayerBot.Record.Enable = 1
 PlayerBot.Record.Path = "dataset/raw/healer_frames_playerbot.jsonl"
-PlayerBot.ExperimentId = ""
+PlayerBot.ExperimentId = "host_world_local"
 PlayerBot.UpdateMs = 500
-PlayerBot.Debug = 0
+PlayerBot.Debug = 1
 
 ###################################################################################################
 # BOT WORLD EXPERIMENT SETTINGS
@@ -3440,7 +3440,7 @@ PlayerBot.Debug = 0
 #        Description: Experiment telemetry controls for autonomous bot events and decisions.
 #
 
-BotWorld.Enable = 0
+BotWorld.Enable = 1
 BotWorld.TargetPopulation = 10
 BotWorld.MaxPerMap = 50
 BotWorld.TickMs = 1000
