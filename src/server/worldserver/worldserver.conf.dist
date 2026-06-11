@@ -3474,7 +3474,7 @@ BotProgression.AllowRaids = 0
 BotSemantic.Enable = 1
 BotSemantic.InferCreatureTags = 1
 BotSemantic.InferSpellTags = 1
-BotSemantic.UpdateOutcomeStats = 0
+BotSemantic.UpdateOutcomeStats = 1
 
 ###################################################################################################
 # AUCTION HOUSE BOT SETTINGS

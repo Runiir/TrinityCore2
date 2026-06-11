@@ -35,6 +35,7 @@ struct BotWorldExperimentConfig
     bool RecordPerception = true;
     bool SmartSampling = true;
     uint32 NormalDecisionSampleRate = 10;
+    bool UpdateSemanticOutcomeStats = true;
     std::string BrainVersion = "utility_v1";
 };
 
@@ -196,6 +197,19 @@ private:
         BossMechanicFeatures Features;
     };
 
+    struct SemanticOutcomeStats
+    {
+        bool Known = false;
+        uint32 Samples = 0;
+        uint32 Successes = 0;
+        uint32 Failures = 0;
+        uint32 Deaths = 0;
+        float AvgReward = 0.0f;
+        float AvgPowerDelta = 0.0f;
+        float DangerScore = 0.0f;
+        float ProgressionValue = 0.0f;
+    };
+
     void EnsurePopulation();
     void UpdateBot(WorldBotState& state, uint32 diff);
     Player* GetBot(WorldBotState const& state) const;
@@ -237,6 +251,11 @@ private:
     void RecordBossReplay(WorldBotState const& state, Player* bot, Unit const* boss, BossMechanicFeatures const& features, char const* replayType, char const* rawJson, char const* semanticJson, char const* actionJson, char const* failureJson);
     void RecordEvent(WorldBotState const& state, Player* bot, char const* eventType, Unit const* target, char const* result, char const* rawJson, char const* semanticJson, float valueFloat = 0.0f, uint32 valueInt = 0, uint32 spellId = 0);
     void RecordDecision(WorldBotState& state, Player* bot, char const* situation, char const* action, Unit const* target, char const* rawJson, char const* semanticJson, std::vector<BotActivityScore> const& activityScores, BotActivityScore const& chosenActivity, BotRolePowerBreakdown const& power, bool failure, bool rare);
+    void UpdateSemanticOutcomeStats(Player* bot, char const* entityType, uint32 entityKey, char const* eventType, char const* result, float reward, float powerDelta, bool failure, char const* featuresJson);
+    void UpdateSemanticStatsFromEvent(Player* bot, Unit const* target, char const* eventType, char const* result, float valueFloat, uint32 valueInt, uint32 spellId, char const* semanticJson);
+    SemanticOutcomeStats GetSemanticOutcomeStats(char const* entityType, uint32 entityKey) const;
+    std::string BuildOutcomeStatsJson(SemanticOutcomeStats const& stats) const;
+    std::string BuildEmbeddingFeaturesJson(Player const* bot, Unit const* target, char const* entityType, uint32 entityKey, char const* semanticFamily) const;
     std::string BuildRawJson(Player* bot, Unit const* target) const;
     std::string BuildSemanticJson(Player* bot, Unit const* target, char const* situation, BotRolePowerBreakdown const* power = nullptr, BotProgressionStage stage = BotProgressionStage::Leveling, BotProgressionActivity activity = BotProgressionActivity::ExperimentExploration) const;
     std::string BuildConfigJson() const;

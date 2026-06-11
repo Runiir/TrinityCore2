@@ -146,6 +146,69 @@ bool SpellLooksTankSpike(SpellInfo const* spellInfo)
     return SpellLooksDangerous(spellInfo) && !SpellLooksRaidWide(spellInfo);
 }
 
+uint32 SemanticMechanicKey(char const* eventType, char const* result)
+{
+    std::string event = eventType ? eventType : "";
+    std::string res = result ? result : "";
+    if (event == "interrupt_success" || event == "interrupt_failed")
+        return 2;
+    if (event == "boss_mechanic" || res == "move_out")
+        return 1;
+    if (event == "boss_adds")
+        return 5;
+    if (event == "boss_heal")
+        return 4;
+    if (event == "boss_action" || event == "boss_started")
+        return 11;
+    if (event == "trash_action" || event == "trash_heal")
+        return 10;
+    if (event == "death")
+        return 99;
+    return 0;
+}
+
+char const* SemanticMechanicFamily(uint32 key)
+{
+    switch (key)
+    {
+        case 1: return "ground_danger";
+        case 2: return "must_interrupt";
+        case 4: return "raid_damage";
+        case 5: return "adds";
+        case 10: return "trash_pack";
+        case 11: return "boss_pressure";
+        case 99: return "death_failure";
+        default: return "unknown";
+    }
+}
+
+bool EventLooksSuccessful(char const* eventType, char const* result)
+{
+    std::string event = eventType ? eventType : "";
+    std::string res = result ? result : "";
+    return res == "ok"
+        || event == "mob_killed"
+        || event == "boss_killed"
+        || event == "quest_completed"
+        || event == "objective_progress"
+        || event == "gear_upgrade"
+        || event == "gear_evaluated"
+        || event == "interrupt_success";
+}
+
+bool EventLooksFailure(char const* eventType, char const* result)
+{
+    std::string event = eventType ? eventType : "";
+    std::string res = result ? result : "";
+    return event == "death"
+        || event == "stuck_detected"
+        || event == "objective_failed"
+        || event == "interrupt_failed"
+        || res == "failed"
+        || res.find("failed") != std::string::npos
+        || res.find("blocked") != std::string::npos;
+}
+
 std::string BuildSpellTagJson(SpellInfo const* spellInfo, bool mustInterrupt, bool groundDanger, bool tankSpike, bool raidDamage, bool adds)
 {
     std::ostringstream tags;
@@ -218,6 +281,7 @@ bool BotWorldPopulationMgr::Start(std::string const& experimentName, BotWorldExp
     _config.RecordPerception = sConfigMgr->GetBoolDefault("BotExperiment.RecordPerception", _config.RecordPerception);
     _config.SmartSampling = sConfigMgr->GetBoolDefault("BotExperiment.SmartSampling", _config.SmartSampling);
     _config.NormalDecisionSampleRate = std::max<uint32>(1, sConfigMgr->GetIntDefault("BotExperiment.NormalDecisionSampleRate", _config.NormalDecisionSampleRate));
+    _config.UpdateSemanticOutcomeStats = sConfigMgr->GetBoolDefault("BotSemantic.UpdateOutcomeStats", _config.UpdateSemanticOutcomeStats);
     _config.BrainVersion = sConfigMgr->GetStringDefault("BotExperiment.BrainVersion", _config.BrainVersion);
 
     _bots.clear();
@@ -2000,6 +2064,12 @@ void BotWorldPopulationMgr::RecordActivityStop(WorldBotState const& state, Playe
     CharacterDatabase.EscapeString(summary);
     CharacterDatabase.DirectPExecute("UPDATE experiment_bot_activities SET ended_at = NOW(), end_power_score = %f, power_delta = %f, gold_delta = " SI64FMTD ", completed = 1, deaths = %u, summary_json = '%s' WHERE id = " UI64FMTD,
         endPower, powerDelta, goldDelta, deaths, summary.c_str(), state.ActivityId);
+
+    if (bot)
+    {
+        std::string features = BuildEmbeddingFeaturesJson(bot, nullptr, "area", bot->GetAreaId(), state.ActivityType.c_str());
+        UpdateSemanticOutcomeStats(bot, "area", bot->GetAreaId(), "activity_completed", "ok", powerDelta, powerDelta, false, features.c_str());
+    }
 }
 
 void BotWorldPopulationMgr::RecordGearEvaluation(WorldBotState const& state, Player* bot, BotGearUpgradeEvaluation const& evaluation, char const* rawJson, char const* semanticJson)
@@ -2040,6 +2110,9 @@ void BotWorldPopulationMgr::RecordGearEvaluation(WorldBotState const& state, Pla
         _experimentId, _runId, state.Guid.GetCounter(), brain.c_str(), bot->GetMapId(), bot->GetZoneId(), bot->GetAreaId(),
         bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), uint32(bot->getLevel()), event.c_str(), evaluation.ItemId,
         result.c_str(), evaluation.PowerDelta, evaluation.ItemId, raw.c_str(), semantic.c_str(), contextJson.c_str());
+
+    std::string features = BuildEmbeddingFeaturesJson(bot, nullptr, "item", evaluation.ItemId, "gear_upgrade");
+    UpdateSemanticOutcomeStats(bot, "item", evaluation.ItemId, "gear_upgrade", "upgrade_candidate", evaluation.PowerDelta, evaluation.PowerDelta, false, features.c_str());
 }
 
 void BotWorldPopulationMgr::RecordQuestObjectiveProgressForTarget(WorldBotState& state, Player* bot, Unit const* target, char const* rawJson, char const* semanticJson)
@@ -2114,6 +2187,13 @@ void BotWorldPopulationMgr::RecordQuestEvent(WorldBotState const& state, Player*
         _experimentId, _runId, state.Guid.GetCounter(), brain.c_str(), bot->GetMapId(), bot->GetZoneId(), bot->GetAreaId(),
         bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), uint32(bot->getLevel()), event.c_str(), targetGuid, targetEntry,
         questId, itemId, res.c_str(), valueInt, raw.c_str(), semantic.c_str(), context.c_str());
+
+    UpdateSemanticStatsFromEvent(bot, target, eventType, result, 0.0f, valueInt, 0, semanticJson);
+    if (itemId)
+    {
+        std::string features = BuildEmbeddingFeaturesJson(bot, target, "item", itemId, eventType ? eventType : "quest_reward");
+        UpdateSemanticOutcomeStats(bot, "item", itemId, eventType, result, float(valueInt), 0.0f, EventLooksFailure(eventType, result), features.c_str());
+    }
 }
 
 void BotWorldPopulationMgr::RecordQuestReplay(WorldBotState const& state, Player* bot, char const* replayType, uint32 questId, char const* rawJson, char const* semanticJson, char const* actionJson, char const* failureJson)
@@ -2246,6 +2326,8 @@ void BotWorldPopulationMgr::RecordEvent(WorldBotState const& state, Player* bot,
         "VALUES (" UI64FMTD ", " UI64FMTD ", %u, '%s', %u, %u, %u, %f, %f, %f, %u, '%s', " UI64FMTD ", %u, %u, '%s', %f, %u, '%s', '%s')",
         _experimentId, _runId, state.Guid.GetCounter(), brain.c_str(), bot->GetMapId(), bot->GetZoneId(), bot->GetAreaId(),
         bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), uint32(bot->getLevel()), event.c_str(), targetGuid, targetEntry, spellId, res.c_str(), valueFloat, valueInt, raw.c_str(), semantic.c_str());
+
+    UpdateSemanticStatsFromEvent(bot, target, eventType, result, valueFloat, valueInt, spellId, semanticJson);
 }
 
 void BotWorldPopulationMgr::RecordDecision(WorldBotState& state, Player* bot, char const* situation, char const* action, Unit const* target, char const* rawJson, char const* semanticJson, std::vector<BotActivityScore> const& activityScores, BotActivityScore const& chosenActivity, BotRolePowerBreakdown const& power, bool failure, bool rare)
@@ -2301,6 +2383,151 @@ void BotWorldPopulationMgr::RecordDecision(WorldBotState& state, Player* bot, ch
         _experimentId, _runId, state.Guid.GetCounter(), brain.c_str(), sit.c_str(), currentActivity.c_str(), bot->GetMapId(), bot->GetZoneId(),
         bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), raw.c_str(), semantic.c_str(), candidateJson.c_str(), chosenJson.c_str(),
         outcomeJson.c_str(), failure ? -1.0f : chosenActivity.Score, failure ? 1 : 0, rare ? 1 : 0);
+
+    std::string areaFeatures = BuildEmbeddingFeaturesJson(bot, target, "area", bot->GetAreaId(), situation ? situation : "decision");
+    UpdateSemanticOutcomeStats(bot, "area", bot->GetAreaId(), situation, failure ? "failed" : "sampled", failure ? -1.0f : chosenActivity.Score, power.Total - state.ActivityStartPower, failure, areaFeatures.c_str());
+}
+
+void BotWorldPopulationMgr::UpdateSemanticOutcomeStats(Player* bot, char const* entityType, uint32 entityKey, char const* eventType, char const* result, float reward, float powerDelta, bool failure, char const* featuresJson)
+{
+    if (!_runId || !_config.UpdateSemanticOutcomeStats || !bot || !entityType || !entityKey)
+        return;
+
+    bool failed = failure || EventLooksFailure(eventType, result);
+    bool death = eventType && std::string(eventType) == "death";
+    bool success = !failed && EventLooksSuccessful(eventType, result);
+
+    std::string type = entityType;
+    std::string event = eventType ? eventType : "";
+    std::string res = result ? result : "";
+    std::string features = featuresJson ? featuresJson : "{}";
+    std::ostringstream embedding;
+    embedding << "{\"entity_type\":\"" << JsonEscape(type)
+              << "\",\"entity_key\":" << entityKey
+              << ",\"feature_schema\":\"bot_semantic_phase6_v1\""
+              << ",\"features\":" << features << "}";
+    std::string embeddingJson = embedding.str();
+    CharacterDatabase.EscapeString(type);
+    CharacterDatabase.EscapeString(event);
+    CharacterDatabase.EscapeString(res);
+    CharacterDatabase.EscapeString(features);
+    CharacterDatabase.EscapeString(embeddingJson);
+
+    CharacterDatabase.DirectPExecute(
+        "INSERT INTO bot_semantic_outcome_stats "
+        "(entity_type, entity_key, samples, successes, failures, deaths, total_reward, total_power_delta, avg_reward, avg_power_delta, danger_score, progression_value, last_experiment_id, last_run_id, last_event_type, last_result, features_json, embedding_json, updated_at) "
+        "VALUES ('%s', %u, 1, %u, %u, %u, %f, %f, %f, %f, %f, %f, " UI64FMTD ", " UI64FMTD ", '%s', '%s', '%s', '%s', NOW()) "
+        "ON DUPLICATE KEY UPDATE "
+        "danger_score = LEAST(1.0, (failures + VALUES(failures) + ((deaths + VALUES(deaths)) * 2.0)) / GREATEST(1, samples + VALUES(samples))), "
+        "progression_value = GREATEST(0.0, (total_power_delta + VALUES(total_power_delta)) / GREATEST(1, samples + VALUES(samples))) + GREATEST(0.0, (total_reward + VALUES(total_reward)) / GREATEST(1, samples + VALUES(samples))), "
+        "avg_reward = (total_reward + VALUES(total_reward)) / GREATEST(1, samples + VALUES(samples)), "
+        "avg_power_delta = (total_power_delta + VALUES(total_power_delta)) / GREATEST(1, samples + VALUES(samples)), "
+        "samples = samples + VALUES(samples), successes = successes + VALUES(successes), failures = failures + VALUES(failures), deaths = deaths + VALUES(deaths), "
+        "total_reward = total_reward + VALUES(total_reward), total_power_delta = total_power_delta + VALUES(total_power_delta), "
+        "last_experiment_id = VALUES(last_experiment_id), last_run_id = VALUES(last_run_id), last_event_type = VALUES(last_event_type), last_result = VALUES(last_result), "
+        "features_json = VALUES(features_json), embedding_json = VALUES(embedding_json), updated_at = NOW()",
+        type.c_str(), entityKey, success ? 1 : 0, failed ? 1 : 0, death ? 1 : 0, reward, powerDelta, reward, powerDelta,
+        failed ? 1.0f : 0.0f, std::max(0.0f, reward) + std::max(0.0f, powerDelta), _experimentId, _runId, event.c_str(), res.c_str(), features.c_str(), embeddingJson.c_str());
+}
+
+void BotWorldPopulationMgr::UpdateSemanticStatsFromEvent(Player* bot, Unit const* target, char const* eventType, char const* result, float valueFloat, uint32 valueInt, uint32 spellId, char const* /*semanticJson*/)
+{
+    if (!_config.UpdateSemanticOutcomeStats || !bot)
+        return;
+
+    bool failed = EventLooksFailure(eventType, result);
+    std::string areaFeatures = BuildEmbeddingFeaturesJson(bot, target, "area", bot->GetAreaId(), eventType ? eventType : "event");
+    UpdateSemanticOutcomeStats(bot, "area", bot->GetAreaId(), eventType, result, valueFloat, 0.0f, failed, areaFeatures.c_str());
+
+    if (Creature const* creature = target ? target->ToCreature() : nullptr)
+    {
+        std::string mobFeatures = BuildEmbeddingFeaturesJson(bot, target, "mob", creature->GetEntry(), eventType ? eventType : "event");
+        UpdateSemanticOutcomeStats(bot, "mob", creature->GetEntry(), eventType, result, valueFloat, 0.0f, failed, mobFeatures.c_str());
+    }
+
+    if (spellId)
+    {
+        std::string spellFeatures = BuildEmbeddingFeaturesJson(bot, target, "spell", spellId, eventType ? eventType : "spell");
+        UpdateSemanticOutcomeStats(bot, "spell", spellId, eventType, result, valueFloat, 0.0f, failed, spellFeatures.c_str());
+    }
+
+    uint32 mechanicKey = SemanticMechanicKey(eventType, result);
+    if (mechanicKey)
+    {
+        std::string mechanicFeatures = BuildEmbeddingFeaturesJson(bot, target, "mechanic", mechanicKey, SemanticMechanicFamily(mechanicKey));
+        UpdateSemanticOutcomeStats(bot, "mechanic", mechanicKey, eventType, result, valueFloat, 0.0f, failed, mechanicFeatures.c_str());
+    }
+
+    if ((eventType && (std::string(eventType) == "gear_upgrade" || std::string(eventType) == "gear_evaluated")) && valueInt)
+    {
+        std::string itemFeatures = BuildEmbeddingFeaturesJson(bot, target, "item", valueInt, eventType);
+        UpdateSemanticOutcomeStats(bot, "item", valueInt, eventType, result, valueFloat, valueFloat, failed, itemFeatures.c_str());
+    }
+}
+
+BotWorldPopulationMgr::SemanticOutcomeStats BotWorldPopulationMgr::GetSemanticOutcomeStats(char const* entityType, uint32 entityKey) const
+{
+    SemanticOutcomeStats stats;
+    if (!sConfigMgr->GetBoolDefault("BotSemantic.Enable", true) || !entityType || !entityKey)
+        return stats;
+
+    std::string type = entityType;
+    CharacterDatabase.EscapeString(type);
+    if (QueryResult result = CharacterDatabase.PQuery("SELECT samples, successes, failures, deaths, avg_reward, avg_power_delta, danger_score, progression_value FROM bot_semantic_outcome_stats WHERE entity_type = '%s' AND entity_key = %u", type.c_str(), entityKey))
+    {
+        Field* fields = result->Fetch();
+        stats.Known = true;
+        stats.Samples = fields[0].GetUInt32();
+        stats.Successes = fields[1].GetUInt32();
+        stats.Failures = fields[2].GetUInt32();
+        stats.Deaths = fields[3].GetUInt32();
+        stats.AvgReward = fields[4].GetFloat();
+        stats.AvgPowerDelta = fields[5].GetFloat();
+        stats.DangerScore = fields[6].GetFloat();
+        stats.ProgressionValue = fields[7].GetFloat();
+    }
+    return stats;
+}
+
+std::string BotWorldPopulationMgr::BuildOutcomeStatsJson(SemanticOutcomeStats const& stats) const
+{
+    std::ostringstream json;
+    json << "{\"known\":" << (stats.Known ? "true" : "false")
+         << ",\"samples\":" << stats.Samples
+         << ",\"successes\":" << stats.Successes
+         << ",\"failures\":" << stats.Failures
+         << ",\"deaths\":" << stats.Deaths
+         << ",\"avg_reward\":" << stats.AvgReward
+         << ",\"avg_power_delta\":" << stats.AvgPowerDelta
+         << ",\"danger_score\":" << stats.DangerScore
+         << ",\"progression_value\":" << stats.ProgressionValue << "}";
+    return json.str();
+}
+
+std::string BotWorldPopulationMgr::BuildEmbeddingFeaturesJson(Player const* bot, Unit const* target, char const* entityType, uint32 entityKey, char const* semanticFamily) const
+{
+    uint32 targetEntry = 0;
+    bool elite = false;
+    if (Creature const* creature = target ? target->ToCreature() : nullptr)
+    {
+        targetEntry = creature->GetEntry();
+        elite = creature->isElite();
+    }
+
+    std::ostringstream json;
+    json << "{\"entity_type\":\"" << JsonEscape(entityType ? entityType : "unknown")
+         << "\",\"entity_key\":" << entityKey
+         << ",\"semantic_family\":\"" << JsonEscape(semanticFamily ? semanticFamily : "unknown") << "\""
+         << ",\"map_id\":" << (bot ? bot->GetMapId() : 0)
+         << ",\"zone_id\":" << (bot ? bot->GetZoneId() : 0)
+         << ",\"area_id\":" << (bot ? bot->GetAreaId() : 0)
+         << ",\"bot_level\":" << (bot ? uint32(bot->getLevel()) : 0)
+         << ",\"bot_class\":" << (bot ? uint32(bot->getClass()) : 0)
+         << ",\"target_entry\":" << targetEntry
+         << ",\"target_level\":" << (target ? uint32(target->getLevel()) : 0)
+         << ",\"target_elite\":" << (elite ? "true" : "false")
+         << ",\"feature_schema\":\"bot_semantic_phase6_v1\"}";
+    return json.str();
 }
 
 std::string BotWorldPopulationMgr::BuildRawJson(Player* bot, Unit const* target) const
@@ -2353,8 +2580,16 @@ std::string BotWorldPopulationMgr::BuildSemanticJson(Player* bot, Unit const* ta
     bool dungeonTrash = bot && bot->GetMap() && bot->GetMap()->IsNonRaidDungeon() && situationType == "dungeon_trash";
     bool bossEncounter = bot && bot->GetMap() && (situationType == "dungeon_boss" || situationType == "raid_boss");
     bool elite = false;
+    uint32 targetEntry = 0;
     if (Creature const* creature = target ? target->ToCreature() : nullptr)
+    {
         elite = creature->isElite();
+        targetEntry = creature->GetEntry();
+    }
+    uint32 targetCastSpellId = 0;
+    if (target)
+        if (Spell* spell = const_cast<Unit*>(target)->GetCurrentSpell(CURRENT_GENERIC_SPELL))
+            targetCastSpellId = spell->GetSpellInfo() ? spell->GetSpellInfo()->Id : 0;
 
     BotRolePowerBreakdown localPower;
     if (!power && bot)
@@ -2365,9 +2600,27 @@ std::string BotWorldPopulationMgr::BuildSemanticJson(Player* bot, Unit const* ta
     }
 
     std::ostringstream json;
+    SemanticOutcomeStats areaStats = GetSemanticOutcomeStats("area", bot ? bot->GetAreaId() : 0);
+    SemanticOutcomeStats mobStats = GetSemanticOutcomeStats("mob", targetEntry);
+    SemanticOutcomeStats spellStats = GetSemanticOutcomeStats("spell", targetCastSpellId);
+
     json << "{\"situation_type\":\"" << JsonEscape(situationType) << "\""
          << ",\"role\":\"" << JsonEscape((dungeonTrash || bossEncounter) ? GetDungeonRole(bot) : "solo") << "\""
          << ",\"activity\":\"" << JsonEscape(BotLongTermProgressionBrain::ToString(activity)) << "\""
+         << ",\"embedding_features\":{\"schema\":\"bot_semantic_phase6_v1\""
+         << ",\"area\":" << BuildEmbeddingFeaturesJson(bot, target, "area", bot ? bot->GetAreaId() : 0, situationType.c_str())
+         << ",\"mob\":" << BuildEmbeddingFeaturesJson(bot, target, "mob", targetEntry, situationType.c_str())
+         << ",\"spell\":" << BuildEmbeddingFeaturesJson(bot, target, "spell", targetCastSpellId, situationType.c_str()) << "}"
+         << ",\"learned_outcomes\":{\"area\":" << BuildOutcomeStatsJson(areaStats)
+         << ",\"mob\":" << BuildOutcomeStatsJson(mobStats)
+         << ",\"spell\":" << BuildOutcomeStatsJson(spellStats);
+    uint32 learnedMechanicKey = 0;
+    if (bossEncounter)
+        learnedMechanicKey = 11;
+    else if (dungeonTrash)
+        learnedMechanicKey = 10;
+    SemanticOutcomeStats mechanicStats = GetSemanticOutcomeStats("mechanic", learnedMechanicKey);
+    json << ",\"mechanic\":" << BuildOutcomeStatsJson(mechanicStats) << "}"
          << ",\"progression\":{\"main_goal\":\"increase_character_power\""
          << ",\"stage\":\"" << JsonEscape(BotLongTermProgressionBrain::ToString(stage)) << "\""
          << ",\"role_power_score\":" << (power ? power->Total : 0.0f)
@@ -2390,6 +2643,7 @@ std::string BotWorldPopulationMgr::BuildSemanticJson(Player* bot, Unit const* ta
     {
         DungeonTrashPackFeatures pack = BuildDungeonTrashPackFeatures(bot, target);
         json << ",\"trash_pack\":" << BuildDungeonTrashPackJson(pack)
+             << ",\"trash_learned_stats\":" << BuildOutcomeStatsJson(GetSemanticOutcomeStats("mechanic", 10))
              << ",\"trash_action_scores\":{\"interrupt\":" << pack.InterruptPriority
              << ",\"cc\":" << pack.CcValue
              << ",\"aoe\":" << pack.AoeValue
@@ -2401,7 +2655,11 @@ std::string BotWorldPopulationMgr::BuildSemanticJson(Player* bot, Unit const* ta
     if (bossEncounter)
     {
         BossMechanicFeatures features = BuildBossMechanicFeatures(bot, target);
+        uint32 mechanicKey = features.MoveOut ? 1 : (features.MustInterrupt ? 2 : (features.AddsActive ? 5 : (features.RaidDamage ? 4 : 11)));
         json << ",\"boss_mechanics\":" << BuildBossMechanicsJson(features)
+             << ",\"boss_learned_stats\":{\"mechanic\":" << BuildOutcomeStatsJson(GetSemanticOutcomeStats("mechanic", mechanicKey))
+             << ",\"boss\":" << BuildOutcomeStatsJson(GetSemanticOutcomeStats("mob", features.BossEntry))
+             << ",\"cast_spell\":" << BuildOutcomeStatsJson(GetSemanticOutcomeStats("spell", features.CastSpellId)) << "}"
              << ",\"boss_action_scores\":{\"move_out\":" << (features.MoveOut ? features.DangerScore : 0.0f)
              << ",\"interrupt\":" << features.InterruptPriority
              << ",\"switch_adds\":" << (features.AddsActive ? std::min(1.0f, float(features.AddCount) / 4.0f) : 0.0f)
@@ -2435,6 +2693,7 @@ std::string BotWorldPopulationMgr::BuildConfigJson() const
          << ",\"record_decisions\":" << (_config.RecordDecisions ? "true" : "false")
          << ",\"record_perception\":" << (_config.RecordPerception ? "true" : "false")
          << ",\"smart_sampling\":" << (_config.SmartSampling ? "true" : "false")
+         << ",\"update_semantic_outcome_stats\":" << (_config.UpdateSemanticOutcomeStats ? "true" : "false")
          << ",\"brain_version\":\"" << JsonEscape(_config.BrainVersion) << "\"}";
     return json.str();
 }
