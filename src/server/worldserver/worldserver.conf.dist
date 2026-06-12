@@ -3467,6 +3467,10 @@ PlayerBot.Debug = 1
 #    BotExperiment.*
 #        Description: Experiment telemetry controls for autonomous bot events and decisions.
 #
+#    BotTelemetry.*
+#        Description: In-memory rolling telemetry buffer. Frames are sampled in memory and only
+#                     persisted when trigger events open a pre/post event clip.
+#
 
 BotWorld.Enable = 1
 BotWorld.AutoStart = 0
@@ -3499,6 +3503,13 @@ BotExperiment.AlwaysRecordFailures = 1
 BotExperiment.AlwaysRecordInterventions = 1
 BotExperiment.AlwaysRecordRareStates = 1
 BotExperiment.BrainVersion = "utility_v1"
+
+BotTelemetry.Enable = 1
+BotTelemetry.FrameIntervalMs = 1000
+BotTelemetry.PreEventWindowSec = 20
+BotTelemetry.PostEventWindowSec = 10
+BotTelemetry.MaxFramesPerBot = 120
+BotTelemetry.MaxOpenClipsPerBot = 4
 
 BotProgression.Enable = 1
 BotProgression.PowerScoreVersion = "role_power_v1"

@@ -3,6 +3,7 @@
 
 #include "ObjectGuid.h"
 #include "Bots/BotLongTermProgressionBrain.h"
+#include "Bots/BotTelemetryBuffer.h"
 #include <map>
 #include <memory>
 #include <set>
@@ -414,6 +415,9 @@ private:
     void RecordBossReplay(WorldBotState const& state, Player* bot, Unit const* boss, BossMechanicFeatures const& features, char const* replayType, char const* rawJson, char const* semanticJson, char const* actionJson, char const* failureJson);
     void RecordEvent(WorldBotState const& state, Player* bot, char const* eventType, Unit const* target, char const* result, char const* rawJson, char const* semanticJson, float valueFloat = 0.0f, uint32 valueInt = 0, uint32 spellId = 0);
     void RecordDecision(WorldBotState& state, Player* bot, char const* situation, char const* action, Unit const* target, char const* rawJson, char const* semanticJson, std::vector<BotActivityScore> const& activityScores, BotActivityScore const& chosenActivity, BotRolePowerBreakdown const& power, bool failure, bool rare);
+    BotTelemetryFrame BuildTelemetryFrame(Player* bot, Unit const* target, char const* situation, char const* action, char const* rawJson, char const* semanticJson, uint32 questId = 0) const;
+    uint64 MaybeCaptureTelemetryClip(Player* bot, Unit const* target, char const* eventType, char const* result, char const* rawJson, char const* semanticJson, uint32 questId = 0, float valueFloat = 0.0f, uint32 valueInt = 0);
+    bool GetTelemetryTriggerImportance(char const* eventType, char const* result, float& importance) const;
     void UpdateSemanticOutcomeStats(Player* bot, char const* entityType, uint32 entityKey, char const* eventType, char const* result, float reward, float powerDelta, bool failure, char const* featuresJson);
     void UpdateSemanticStatsFromEvent(Player* bot, Unit const* target, char const* eventType, char const* result, float valueFloat, uint32 valueInt, uint32 spellId, char const* semanticJson);
     SemanticOutcomeStats GetSemanticOutcomeStats(char const* entityType, uint32 entityKey) const;
@@ -434,6 +438,7 @@ private:
     std::vector<WorldBotState> _bots;
     std::set<uint32> _failedSpawnGuids;
     BotWorldStatus _metrics;
+    BotTelemetryBuffer _telemetryBuffer;
 };
 
 #define sBotWorldPopulationMgr BotWorldPopulationMgr::instance()

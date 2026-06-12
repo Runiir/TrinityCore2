@@ -25,6 +25,7 @@
 #include "Unit.h"
 #include "Creature.h"
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdlib>
 #include <iomanip>
@@ -258,7 +259,12 @@ bool BotWorldPopulationMgr::Start(std::string const& experimentName, BotWorldExp
     if (_active && _runtimeMode == BotWorldRuntimeMode::AlwaysOnAutonomy)
     {
         if (_runId)
+        {
+            _telemetryBuffer.FlushOpenClips(_experimentId, _runId, _config.BrainVersion);
             RecordRunStop();
+        }
+        else
+            _telemetryBuffer.Clear();
 
         if (overrideConfig)
             LoadConfig(experimentName.empty() ? "autonomy_recording_window" : experimentName, overrideConfig);
@@ -284,6 +290,7 @@ bool BotWorldPopulationMgr::Start(std::string const& experimentName, BotWorldExp
         return false;
 
     LoadConfig(experimentName.empty() ? "autonomous_zone_10" : experimentName, overrideConfig);
+    _telemetryBuffer.Clear();
     _bots.clear();
     _failedSpawnGuids.clear();
     _metrics = BotWorldStatus();
@@ -307,6 +314,7 @@ void BotWorldPopulationMgr::Stop()
 
     if (_runtimeMode == BotWorldRuntimeMode::AlwaysOnAutonomy)
     {
+        _telemetryBuffer.FlushOpenClips(_experimentId, _runId, _config.BrainVersion);
         RecordRunStop();
         _runId = 0;
         _experimentId = 0;
@@ -321,6 +329,7 @@ void BotWorldPopulationMgr::Stop()
         sBotMgr->RemoveWorldBot(state.Guid);
     }
 
+    _telemetryBuffer.FlushOpenClips(_experimentId, _runId, _config.BrainVersion);
     RecordRunStop();
     _runId = 0;
     _experimentId = 0;
@@ -342,6 +351,7 @@ bool BotWorldPopulationMgr::StartAutonomy(BotWorldExperimentConfig const* overri
         return false;
 
     LoadConfig("always_on_autonomy", overrideConfig);
+    _telemetryBuffer.Clear();
     _bots.clear();
     _failedSpawnGuids.clear();
     _metrics = BotWorldStatus();
@@ -370,6 +380,7 @@ void BotWorldPopulationMgr::StopAutonomy()
         sBotMgr->RemoveWorldBot(state.Guid);
     }
 
+    _telemetryBuffer.FlushOpenClips(_experimentId, _runId, _config.BrainVersion);
     RecordRunStop();
     _bots.clear();
     _active = false;
@@ -440,6 +451,15 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
     _config.NearPlayerRadius = sConfigMgr->GetFloatDefault("BotWorld.NearPlayerRadius", _config.NearPlayerRadius);
     _config.RespawnMode = sConfigMgr->GetStringDefault("BotWorld.RespawnMode", _config.RespawnMode);
     _config.TeleportToCenterOnDeath = sConfigMgr->GetBoolDefault("BotWorld.TeleportToCenterOnDeath", _config.TeleportToCenterOnDeath);
+
+    BotTelemetryBufferConfig telemetry;
+    telemetry.Enabled = sConfigMgr->GetBoolDefault("BotTelemetry.Enable", telemetry.Enabled);
+    telemetry.FrameIntervalMs = std::max<uint32>(1, sConfigMgr->GetIntDefault("BotTelemetry.FrameIntervalMs", telemetry.FrameIntervalMs));
+    telemetry.PreEventWindowSec = sConfigMgr->GetIntDefault("BotTelemetry.PreEventWindowSec", telemetry.PreEventWindowSec);
+    telemetry.PostEventWindowSec = sConfigMgr->GetIntDefault("BotTelemetry.PostEventWindowSec", telemetry.PostEventWindowSec);
+    telemetry.MaxFramesPerBot = std::max<uint32>(1, sConfigMgr->GetIntDefault("BotTelemetry.MaxFramesPerBot", telemetry.MaxFramesPerBot));
+    telemetry.MaxOpenClipsPerBot = std::max<uint32>(1, sConfigMgr->GetIntDefault("BotTelemetry.MaxOpenClipsPerBot", telemetry.MaxOpenClipsPerBot));
+    _telemetryBuffer.Configure(telemetry);
 }
 
 void BotWorldPopulationMgr::EnsurePopulation()
@@ -581,6 +601,9 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
     Player* bot = GetBot(state);
     if (!bot)
         return;
+
+    _telemetryBuffer.Observe(bot, bot->IsInCombat() ? "combat" : "ambient", nullptr, nullptr, nullptr);
+    _telemetryBuffer.FlushClosedClips(_experimentId, _runId, _config.BrainVersion, bot->GetGUID());
 
     if (!bot->IsAlive())
     {
@@ -2677,6 +2700,9 @@ void BotWorldPopulationMgr::RecordReplayEvent(WorldBotState const& state, Player
     if (!_runId || !bot)
         return;
 
+    uint64 clipId = _telemetryBuffer.GetActiveClipId(bot->GetGUID());
+    std::string clipSql = clipId ? std::to_string(clipId) : "NULL";
+
     std::string raw = record.RawStateJson.empty() ? "{}" : record.RawStateJson;
     std::string semantic = record.SemanticStateJson.empty() ? "{}" : record.SemanticStateJson;
     std::string event = eventType ? eventType : "replay_event";
@@ -2690,9 +2716,9 @@ void BotWorldPopulationMgr::RecordReplayEvent(WorldBotState const& state, Player
     CharacterDatabase.EscapeString(brain);
     CharacterDatabase.EscapeString(context);
 
-    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_events (experiment_id, run_id, bot_guid, brain_version, map_id, zone_id, area_id, x, y, z, level, event_type, result, value_int, raw_json, semantic_json, context_json) "
-        "VALUES (" UI64FMTD ", " UI64FMTD ", %u, '%s', %u, %u, %u, %f, %f, %f, %u, '%s', '%s', %u, '%s', '%s', '%s')",
-        _experimentId, _runId, state.Guid.GetCounter(), brain.c_str(), bot->GetMapId(), bot->GetZoneId(), bot->GetAreaId(),
+    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_events (experiment_id, run_id, bot_guid, brain_version, clip_id, map_id, zone_id, area_id, x, y, z, level, event_type, result, value_int, raw_json, semantic_json, context_json) "
+        "VALUES (" UI64FMTD ", " UI64FMTD ", %u, '%s', %s, %u, %u, %u, %f, %f, %f, %u, '%s', '%s', %u, '%s', '%s', '%s')",
+        _experimentId, _runId, state.Guid.GetCounter(), brain.c_str(), clipSql.c_str(), bot->GetMapId(), bot->GetZoneId(), bot->GetAreaId(),
         bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), uint32(bot->getLevel()), event.c_str(), res.c_str(),
         uint32(record.Id), raw.c_str(), semantic.c_str(), context.c_str());
 }
@@ -2974,6 +3000,9 @@ void BotWorldPopulationMgr::RecordGearEvaluation(WorldBotState const& state, Pla
 
     RecordEvent(state, bot, "gear_upgrade", nullptr, "evaluated", rawJson, semanticJson, evaluation.PowerDelta, evaluation.ItemId);
 
+    uint64 clipId = _telemetryBuffer.GetActiveClipId(bot->GetGUID());
+    std::string clipSql = clipId ? std::to_string(clipId) : "NULL";
+
     std::string raw = rawJson ? rawJson : "{}";
     std::string semantic = semanticJson ? semanticJson : "{}";
     std::string event = "gear_evaluated";
@@ -2987,9 +3016,9 @@ void BotWorldPopulationMgr::RecordGearEvaluation(WorldBotState const& state, Pla
     CharacterDatabase.EscapeString(brain);
     CharacterDatabase.EscapeString(contextJson);
 
-    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_events (experiment_id, run_id, bot_guid, brain_version, map_id, zone_id, area_id, x, y, z, level, event_type, item_id, result, value_float, value_int, raw_json, semantic_json, context_json) "
-        "VALUES (" UI64FMTD ", " UI64FMTD ", %u, '%s', %u, %u, %u, %f, %f, %f, %u, '%s', %u, '%s', %f, %u, '%s', '%s', '%s')",
-        _experimentId, _runId, state.Guid.GetCounter(), brain.c_str(), bot->GetMapId(), bot->GetZoneId(), bot->GetAreaId(),
+    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_events (experiment_id, run_id, bot_guid, brain_version, clip_id, map_id, zone_id, area_id, x, y, z, level, event_type, item_id, result, value_float, value_int, raw_json, semantic_json, context_json) "
+        "VALUES (" UI64FMTD ", " UI64FMTD ", %u, '%s', %s, %u, %u, %u, %f, %f, %f, %u, '%s', %u, '%s', %f, %u, '%s', '%s', '%s')",
+        _experimentId, _runId, state.Guid.GetCounter(), brain.c_str(), clipSql.c_str(), bot->GetMapId(), bot->GetZoneId(), bot->GetAreaId(),
         bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), uint32(bot->getLevel()), event.c_str(), evaluation.ItemId,
         result.c_str(), evaluation.PowerDelta, evaluation.ItemId, raw.c_str(), semantic.c_str(), contextJson.c_str());
 
@@ -3018,6 +3047,10 @@ void BotWorldPopulationMgr::RecordRaidTelemetry(WorldBotState& state, Player* bo
     std::string eventResult = result ? result : "ok";
     std::string brain = _config.BrainVersion;
     std::string contextJson = context.str();
+    uint64 clipId = MaybeCaptureTelemetryClip(bot, boss, eventType, result, rawJson, semanticJson, 0, valueFloat, valueInt);
+    if (!clipId)
+        clipId = _telemetryBuffer.GetActiveClipId(bot->GetGUID());
+    std::string clipSql = clipId ? std::to_string(clipId) : "NULL";
     CharacterDatabase.EscapeString(raw);
     CharacterDatabase.EscapeString(semantic);
     CharacterDatabase.EscapeString(event);
@@ -3030,9 +3063,9 @@ void BotWorldPopulationMgr::RecordRaidTelemetry(WorldBotState& state, Player* bo
     if (Creature const* creature = boss ? boss->ToCreature() : nullptr)
         targetEntry = creature->GetEntry();
 
-    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_events (experiment_id, run_id, bot_guid, brain_version, map_id, zone_id, area_id, x, y, z, level, event_type, target_guid, target_entry, spell_id, result, value_float, value_int, raw_json, semantic_json, context_json) "
-        "VALUES (" UI64FMTD ", " UI64FMTD ", %u, '%s', %u, %u, %u, %f, %f, %f, %u, '%s', " UI64FMTD ", %u, %u, '%s', %f, %u, '%s', '%s', '%s')",
-        _experimentId, _runId, state.Guid.GetCounter(), brain.c_str(), bot->GetMapId(), bot->GetZoneId(), bot->GetAreaId(),
+    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_events (experiment_id, run_id, bot_guid, brain_version, clip_id, map_id, zone_id, area_id, x, y, z, level, event_type, target_guid, target_entry, spell_id, result, value_float, value_int, raw_json, semantic_json, context_json) "
+        "VALUES (" UI64FMTD ", " UI64FMTD ", %u, '%s', %s, %u, %u, %u, %f, %f, %f, %u, '%s', " UI64FMTD ", %u, %u, '%s', %f, %u, '%s', '%s', '%s')",
+        _experimentId, _runId, state.Guid.GetCounter(), brain.c_str(), clipSql.c_str(), bot->GetMapId(), bot->GetZoneId(), bot->GetAreaId(),
         bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), uint32(bot->getLevel()), event.c_str(), targetGuid,
         targetEntry, spellId ? spellId : features.CastSpellId, eventResult.c_str(), valueFloat, valueInt, raw.c_str(), semantic.c_str(), contextJson.c_str());
 
@@ -3097,6 +3130,10 @@ void BotWorldPopulationMgr::RecordQuestEvent(WorldBotState const& state, Player*
     std::string res = result ? result : "";
     std::string brain = _config.BrainVersion;
     std::string context = contextJson ? contextJson : "{}";
+    uint64 clipId = MaybeCaptureTelemetryClip(bot, target, eventType, result, rawJson, semanticJson, questId, 0.0f, valueInt);
+    if (!clipId)
+        clipId = _telemetryBuffer.GetActiveClipId(bot->GetGUID());
+    std::string clipSql = clipId ? std::to_string(clipId) : "NULL";
     CharacterDatabase.EscapeString(raw);
     CharacterDatabase.EscapeString(semantic);
     CharacterDatabase.EscapeString(event);
@@ -3113,9 +3150,9 @@ void BotWorldPopulationMgr::RecordQuestEvent(WorldBotState const& state, Player*
             targetEntry = creature->GetEntry();
     }
 
-    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_events (experiment_id, run_id, bot_guid, brain_version, map_id, zone_id, area_id, x, y, z, level, event_type, target_guid, target_entry, quest_id, item_id, result, value_int, raw_json, semantic_json, context_json) "
-        "VALUES (" UI64FMTD ", " UI64FMTD ", %u, '%s', %u, %u, %u, %f, %f, %f, %u, '%s', " UI64FMTD ", %u, %u, %u, '%s', %u, '%s', '%s', '%s')",
-        _experimentId, _runId, state.Guid.GetCounter(), brain.c_str(), bot->GetMapId(), bot->GetZoneId(), bot->GetAreaId(),
+    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_events (experiment_id, run_id, bot_guid, brain_version, clip_id, map_id, zone_id, area_id, x, y, z, level, event_type, target_guid, target_entry, quest_id, item_id, result, value_int, raw_json, semantic_json, context_json) "
+        "VALUES (" UI64FMTD ", " UI64FMTD ", %u, '%s', %s, %u, %u, %u, %f, %f, %f, %u, '%s', " UI64FMTD ", %u, %u, %u, '%s', %u, '%s', '%s', '%s')",
+        _experimentId, _runId, state.Guid.GetCounter(), brain.c_str(), clipSql.c_str(), bot->GetMapId(), bot->GetZoneId(), bot->GetAreaId(),
         bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), uint32(bot->getLevel()), event.c_str(), targetGuid, targetEntry,
         questId, itemId, res.c_str(), valueInt, raw.c_str(), semantic.c_str(), context.c_str());
 
@@ -3229,10 +3266,88 @@ void BotWorldPopulationMgr::RecordBossReplay(WorldBotState const& state, Player*
         bot->GetPositionZ(), bot->GetOrientation(), botJson.c_str(), worldJson.c_str(), partyJson.c_str(), raw.c_str(), semantic.c_str(), action.c_str(), failure.c_str());
 }
 
+BotTelemetryFrame BotWorldPopulationMgr::BuildTelemetryFrame(Player* bot, Unit const* target, char const* situation, char const* action, char const* rawJson, char const* semanticJson, uint32 questId) const
+{
+    BotTelemetryFrame frame;
+    if (!bot)
+        return frame;
+
+    frame.timestamp_ms = uint64(std::chrono::duration_cast<std::chrono::milliseconds>(GameTime::GetGameTimeSystemPoint().time_since_epoch()).count());
+    frame.bot_guid = bot->GetGUID();
+    frame.map_id = bot->GetMapId();
+    frame.zone_id = bot->GetZoneId();
+    frame.area_id = bot->GetAreaId();
+    frame.x = bot->GetPositionX();
+    frame.y = bot->GetPositionY();
+    frame.z = bot->GetPositionZ();
+    frame.o = bot->GetOrientation();
+    frame.level = bot->getLevel();
+    frame.hp_pct = bot->GetMaxHealth() ? float(bot->GetHealth()) / float(bot->GetMaxHealth()) : 1.0f;
+    frame.power_pct = bot->GetMaxPower(bot->GetPowerType()) ? float(bot->GetPower(bot->GetPowerType())) / float(bot->GetMaxPower(bot->GetPowerType())) : 1.0f;
+    frame.in_combat = bot->IsInCombat();
+    if (target)
+    {
+        frame.target_guid = target->GetGUID();
+        if (Creature const* creature = target->ToCreature())
+            frame.target_entry = creature->GetEntry();
+    }
+    frame.quest_id = questId;
+    frame.situation_type = situation ? situation : "";
+    frame.action = action ? action : "";
+    frame.raw_json = rawJson ? rawJson : "{}";
+    frame.semantic_json = semanticJson ? semanticJson : "{}";
+    return frame;
+}
+
+uint64 BotWorldPopulationMgr::MaybeCaptureTelemetryClip(Player* bot, Unit const* target, char const* eventType, char const* result, char const* rawJson, char const* semanticJson, uint32 questId, float valueFloat, uint32 valueInt)
+{
+    float importance = 0.0f;
+    if (!_telemetryBuffer.IsEnabled() || !GetTelemetryTriggerImportance(eventType, result, importance))
+        return 0;
+
+    BotTelemetryFrame frame = BuildTelemetryFrame(bot, target, eventType, result, rawJson, semanticJson, questId);
+    if (frame.bot_guid.IsEmpty())
+        return 0;
+
+    std::ostringstream summary;
+    summary << "{\"event_type\":\"" << JsonEscape(eventType ? eventType : "unknown") << "\""
+            << ",\"result\":\"" << JsonEscape(result ? result : "") << "\""
+            << ",\"quest_id\":" << questId
+            << ",\"value_float\":" << valueFloat
+            << ",\"value_int\":" << valueInt << "}";
+
+    return _telemetryBuffer.CaptureEvent(_experimentId, _runId, _config.BrainVersion, frame, eventType ? eventType : "unknown", importance, summary.str());
+}
+
+bool BotWorldPopulationMgr::GetTelemetryTriggerImportance(char const* eventType, char const* result, float& importance) const
+{
+    std::string event = eventType ? eventType : "";
+    if (event == "death")
+        importance = 1.0f;
+    else if (event == "stuck_detected" || event == "objective_failed")
+        importance = 0.9f;
+    else if (event == "quest_completed")
+        importance = 0.8f;
+    else if (event == "combat_started")
+        importance = 0.65f;
+    else
+        return false;
+
+    if (EventLooksFailure(eventType, result))
+        importance = std::max(importance, 0.9f);
+
+    return true;
+}
+
 void BotWorldPopulationMgr::RecordEvent(WorldBotState const& state, Player* bot, char const* eventType, Unit const* target, char const* result, char const* rawJson, char const* semanticJson, float valueFloat, uint32 valueInt, uint32 spellId)
 {
     if (!_runId || !bot)
         return;
+
+    uint64 clipId = MaybeCaptureTelemetryClip(bot, target, eventType, result, rawJson, semanticJson, 0, valueFloat, valueInt);
+    if (!clipId)
+        clipId = _telemetryBuffer.GetActiveClipId(bot->GetGUID());
+    std::string clipSql = clipId ? std::to_string(clipId) : "NULL";
 
     std::string raw = rawJson ? rawJson : "{}";
     std::string semantic = semanticJson ? semanticJson : "{}";
@@ -3253,9 +3368,9 @@ void BotWorldPopulationMgr::RecordEvent(WorldBotState const& state, Player* bot,
             targetEntry = creature->GetEntry();
     }
 
-    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_events (experiment_id, run_id, bot_guid, brain_version, map_id, zone_id, area_id, x, y, z, level, event_type, target_guid, target_entry, spell_id, result, value_float, value_int, raw_json, semantic_json) "
-        "VALUES (" UI64FMTD ", " UI64FMTD ", %u, '%s', %u, %u, %u, %f, %f, %f, %u, '%s', " UI64FMTD ", %u, %u, '%s', %f, %u, '%s', '%s')",
-        _experimentId, _runId, state.Guid.GetCounter(), brain.c_str(), bot->GetMapId(), bot->GetZoneId(), bot->GetAreaId(),
+    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_events (experiment_id, run_id, bot_guid, brain_version, clip_id, map_id, zone_id, area_id, x, y, z, level, event_type, target_guid, target_entry, spell_id, result, value_float, value_int, raw_json, semantic_json) "
+        "VALUES (" UI64FMTD ", " UI64FMTD ", %u, '%s', %s, %u, %u, %u, %f, %f, %f, %u, '%s', " UI64FMTD ", %u, %u, '%s', %f, %u, '%s', '%s')",
+        _experimentId, _runId, state.Guid.GetCounter(), brain.c_str(), clipSql.c_str(), bot->GetMapId(), bot->GetZoneId(), bot->GetAreaId(),
         bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), uint32(bot->getLevel()), event.c_str(), targetGuid, targetEntry, spellId, res.c_str(), valueFloat, valueInt, raw.c_str(), semantic.c_str());
 
     UpdateSemanticStatsFromEvent(bot, target, eventType, result, valueFloat, valueInt, spellId, semanticJson);
@@ -3271,9 +3386,14 @@ void BotWorldPopulationMgr::RecordDecision(WorldBotState& state, Player* bot, ch
     if (failure)
         ++_metrics.Failures;
 
+    _telemetryBuffer.Observe(bot, situation, action, rawJson, semanticJson);
+
     bool sampled = !_config.SmartSampling || failure || rare || (state.Sequence % _config.NormalDecisionSampleRate) == 0;
     if (!sampled)
         return;
+
+    uint64 clipId = _telemetryBuffer.GetActiveClipId(bot->GetGUID());
+    std::string clipSql = clipId ? std::to_string(clipId) : "NULL";
 
     std::string raw = rawJson ? rawJson : "{}";
     std::string semantic = semanticJson ? semanticJson : "{}";
@@ -3309,9 +3429,9 @@ void BotWorldPopulationMgr::RecordDecision(WorldBotState& state, Player* bot, ch
     std::string currentActivity = BotLongTermProgressionBrain::ToString(chosenActivity.Activity);
     CharacterDatabase.EscapeString(currentActivity);
 
-    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_decisions (experiment_id, run_id, bot_guid, brain_version, situation_type, current_activity, current_goal, map_id, zone_id, x, y, z, raw_state_json, semantic_state_json, candidate_actions_json, chosen_action_json, outcome_json, reward, is_failure, is_rare_state) "
-        "VALUES (" UI64FMTD ", " UI64FMTD ", %u, '%s', '%s', '%s', 'increase_character_power', %u, %u, %f, %f, %f, '%s', '%s', '%s', '%s', '%s', %f, %u, %u)",
-        _experimentId, _runId, state.Guid.GetCounter(), brain.c_str(), sit.c_str(), currentActivity.c_str(), bot->GetMapId(), bot->GetZoneId(),
+    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_decisions (experiment_id, run_id, bot_guid, brain_version, clip_id, situation_type, current_activity, current_goal, map_id, zone_id, x, y, z, raw_state_json, semantic_state_json, candidate_actions_json, chosen_action_json, outcome_json, reward, is_failure, is_rare_state) "
+        "VALUES (" UI64FMTD ", " UI64FMTD ", %u, '%s', %s, '%s', '%s', 'increase_character_power', %u, %u, %f, %f, %f, '%s', '%s', '%s', '%s', '%s', %f, %u, %u)",
+        _experimentId, _runId, state.Guid.GetCounter(), brain.c_str(), clipSql.c_str(), sit.c_str(), currentActivity.c_str(), bot->GetMapId(), bot->GetZoneId(),
         bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), raw.c_str(), semantic.c_str(), candidateJson.c_str(), chosenJson.c_str(),
         outcomeJson.c_str(), failure ? -1.0f : chosenActivity.Score, failure ? 1 : 0, rare ? 1 : 0);
 
@@ -3632,6 +3752,7 @@ std::string BotWorldPopulationMgr::BuildSemanticJson(Player* bot, Unit const* ta
 
 std::string BotWorldPopulationMgr::BuildConfigJson() const
 {
+    BotTelemetryBufferConfig const& telemetry = _telemetryBuffer.GetConfig();
     std::ostringstream json;
     json << "{\"name\":\"" << JsonEscape(_config.Name)
          << "\",\"type\":\"bot_world_autonomy\""
@@ -3651,6 +3772,12 @@ std::string BotWorldPopulationMgr::BuildConfigJson() const
          << ",\"record_perception\":" << (_config.RecordPerception ? "true" : "false")
          << ",\"smart_sampling\":" << (_config.SmartSampling ? "true" : "false")
          << ",\"update_semantic_outcome_stats\":" << (_config.UpdateSemanticOutcomeStats ? "true" : "false")
+         << ",\"telemetry_enabled\":" << (telemetry.Enabled ? "true" : "false")
+         << ",\"telemetry_frame_interval_ms\":" << telemetry.FrameIntervalMs
+         << ",\"telemetry_pre_event_window_sec\":" << telemetry.PreEventWindowSec
+         << ",\"telemetry_post_event_window_sec\":" << telemetry.PostEventWindowSec
+         << ",\"telemetry_max_frames_per_bot\":" << telemetry.MaxFramesPerBot
+         << ",\"telemetry_max_open_clips_per_bot\":" << telemetry.MaxOpenClipsPerBot
          << ",\"spawn_mode\":\"" << JsonEscape(_config.SpawnMode) << "\""
          << ",\"allow_configured_center_fallback\":" << (_config.AllowConfiguredCenterFallback ? "true" : "false")
          << ",\"use_saved_position\":" << (_config.UseSavedPosition ? "true" : "false")
