@@ -7,6 +7,7 @@
 #include "Bots/BotTypes.h"
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Chat.h"
+#include "Config.h"
 #include "ObjectMgr.h"
 #include "Player.h"
 #include "Quests/QuestDef.h"
@@ -799,9 +800,19 @@ public:
             { "comparebrain", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleCompareBrainCommand, "" },
         };
 
+        static std::vector<ChatCommand> botAutoCommandTable =
+        {
+            { "start",   rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoStartCommand,   "" },
+            { "stop",    rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoStopCommand,    "" },
+            { "status",  rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleStatusCommand,      "" },
+            { "spawn",   rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoSpawnCommand,   "" },
+            { "despawn", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoDespawnCommand, "" },
+        };
+
         static std::vector<ChatCommand> commandTable =
         {
             { "botexp", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, nullptr, "", botExpCommandTable },
+            { "botauto", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, nullptr, "", botAutoCommandTable },
         };
 
         return commandTable;
@@ -863,6 +874,72 @@ private:
         sBotWorldPopulationMgr->Stop();
         if (handler)
             handler->PSendSysMessage("{\"ok\":true,\"action\":\"botexp_stop\",\"failure_reason\":null}");
+        return true;
+    }
+
+    static bool HandleAutoStartCommand(ChatHandler* handler, char const* /*args*/)
+    {
+        if (!sBotWorldPopulationMgr->StartAutonomy())
+        {
+            if (handler)
+            {
+                handler->PSendSysMessage("{\"ok\":false,\"action\":\"botauto_start\",\"failure_reason\":\"botworld_or_playerbot_disabled_or_no_pool_character\"}");
+                handler->SetSentErrorMessage(true);
+            }
+            return false;
+        }
+
+        if (handler)
+            handler->PSendSysMessage("%s", sBotWorldPopulationMgr->GetStatusJson().c_str());
+        return true;
+    }
+
+    static bool HandleAutoStopCommand(ChatHandler* handler, char const* /*args*/)
+    {
+        sBotWorldPopulationMgr->StopAutonomy();
+        if (handler)
+            handler->PSendSysMessage("{\"ok\":true,\"action\":\"botauto_stop\",\"failure_reason\":null}");
+        return true;
+    }
+
+    static bool HandleAutoSpawnCommand(ChatHandler* handler, char const* args)
+    {
+        std::vector<std::string> tokens = Tokenize(args);
+        uint32 count = 1;
+        if (!tokens.empty() && tokens[0].find_first_not_of("0123456789") == std::string::npos)
+            count = std::max<uint32>(1, uint32(strtoul(tokens[0].c_str(), nullptr, 10)));
+
+        if (!sBotWorldPopulationMgr->SpawnAutonomyBots(count))
+        {
+            if (handler)
+            {
+                handler->PSendSysMessage("{\"ok\":false,\"action\":\"botauto_spawn\",\"failure_reason\":\"autonomy_not_active\"}");
+                handler->SetSentErrorMessage(true);
+            }
+            return false;
+        }
+
+        if (handler)
+            handler->PSendSysMessage("%s", sBotWorldPopulationMgr->GetStatusJson().c_str());
+        return true;
+    }
+
+    static bool HandleAutoDespawnCommand(ChatHandler* handler, char const* args)
+    {
+        std::vector<std::string> tokens = Tokenize(args);
+        if (tokens.empty() || tokens[0] != "all")
+        {
+            if (handler)
+            {
+                handler->PSendSysMessage("{\"ok\":false,\"action\":\"botauto_despawn\",\"failure_reason\":\"usage: .botauto despawn all\"}");
+                handler->SetSentErrorMessage(true);
+            }
+            return false;
+        }
+
+        sBotWorldPopulationMgr->StopAutonomy();
+        if (handler)
+            handler->PSendSysMessage("{\"ok\":true,\"action\":\"botauto_despawn\",\"scope\":\"all\",\"failure_reason\":null}");
         return true;
     }
 
@@ -1000,6 +1077,8 @@ public:
     void OnStartup() override
     {
         sBotMgr->ResetPoolUseState();
+        if (sConfigMgr->GetBoolDefault("BotWorld.AutoStart", false))
+            sBotWorldPopulationMgr->StartAutonomy();
     }
 
     void OnShutdown() override

@@ -218,6 +218,30 @@ Player* BotMgr::SpawnWorldBot(std::string const& role, std::string const& select
     return bot;
 }
 
+Player* BotMgr::SpawnWorldBotAtSavedPosition(std::string const& role, std::string const& selector)
+{
+    if (!sConfigMgr->GetBoolDefault("PlayerBot.Enable", false))
+        return nullptr;
+
+    std::string normalizedRole = NormalizeBotRole(role);
+    if (!IsKnownBotRole(normalizedRole) && !IsMixedBotRoleSelector(normalizedRole))
+        return nullptr;
+
+    Player* bot = LoadBotFromPool(nullptr, normalizedRole, selector, nullptr);
+    if (!bot)
+        return nullptr;
+
+    ObjectGuid botGuid = bot->GetGUID();
+    bot->CombatStop(true);
+    bot->CastStop();
+    bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+    bot->GetMotionMaster()->MoveIdle();
+    _worldBots.insert(botGuid);
+    TC_LOG_INFO("server", "PlayerBot world spawn complete bot=%s name=%s map=%u source=saved_position position=%f,%f,%f",
+        botGuid.ToString().c_str(), bot->GetName().c_str(), bot->GetMapId(), bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ());
+    return bot;
+}
+
 Player* BotMgr::SpawnHolyPaladin(Player* owner, std::string const& selector)
 {
     return Spawn(owner, "holy_paladin", selector);

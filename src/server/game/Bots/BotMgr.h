@@ -23,6 +23,7 @@ public:
     void Update(uint32 diff);
     Player* Spawn(Player* owner, std::string const& role, std::string const& selector);
     Player* SpawnWorldBot(std::string const& role, std::string const& selector, uint32 mapId, float x, float y, float z, float o);
+    Player* SpawnWorldBotAtSavedPosition(std::string const& role, std::string const& selector);
     Player* SpawnHolyPaladin(Player* owner, std::string const& selector);
     Player* GetOrLoadHeadlessOwner(std::string const& selector);
     void ReleaseHeadlessOwnerIfIdle(Player* owner);

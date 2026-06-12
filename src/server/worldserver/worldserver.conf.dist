@@ -3422,15 +3422,43 @@ PlayerBot.Debug = 1
 # BOT WORLD EXPERIMENT SETTINGS
 #
 #    BotWorld.Enable
-#        Description: Enables autonomous server-side world bot experiments driven by ".botexp".
+#        Description: Enables autonomous server-side world bots.
+#        Default:     0
+#
+#    BotWorld.AutoStart
+#        Description: Starts always-on autonomous bots during worldserver startup when PlayerBot.Enable is also enabled.
 #        Default:     0
 #
 #    BotWorld.TargetPopulation
-#        Description: Default number of active autonomous bots for ".botexp start".
+#        Description: Default number of active autonomous bots for ".botauto start" or ".botexp start".
 #        Default:     10
 #
+#    BotWorld.SpawnMode
+#        Description: Bot spawn strategy: saved_or_near_player, saved, near_player, or configured_center.
+#        Default:     "saved_or_near_player"
+#
+#    BotWorld.AllowConfiguredCenterFallback
+#        Description: Allows BotWorld.Map/CenterX/CenterY/CenterZ fallback when saved/local placement is unavailable.
+#        Default:     1
+#
+#    BotWorld.UseSavedPosition
+#        Description: Allows bots to spawn from their saved character world position.
+#        Default:     1
+#
+#    BotWorld.NearPlayerRadius
+#        Description: Distance used when spawning near a live non-bot player.
+#        Default:     20
+#
+#    BotWorld.RespawnMode
+#        Description: Death recovery strategy. corpse_or_safe_local keeps bots near their corpse.
+#        Default:     "corpse_or_safe_local"
+#
+#    BotWorld.TeleportToCenterOnDeath
+#        Description: Restores legacy death recovery that teleports bots to BotWorld.Center*.
+#        Default:     0
+#
 #    BotWorld.Map / BotWorld.Zone / BotWorld.CenterX / BotWorld.CenterY / BotWorld.CenterZ / BotWorld.Radius
-#        Description: Initial Phase 1 experiment area. Defaults are an Elwynn Forest/Northshire area.
+#        Description: Optional configured-center fallback placement.
 #
 #    BotWorld.DecisionTickMs
 #        Description: Autonomous bot decision interval in milliseconds.
@@ -3441,10 +3469,17 @@ PlayerBot.Debug = 1
 #
 
 BotWorld.Enable = 1
+BotWorld.AutoStart = 0
 BotWorld.TargetPopulation = 10
 BotWorld.MaxPerMap = 50
 BotWorld.TickMs = 1000
 BotWorld.DecisionTickMs = 3000
+BotWorld.SpawnMode = "saved_or_near_player"
+BotWorld.AllowConfiguredCenterFallback = 1
+BotWorld.UseSavedPosition = 1
+BotWorld.NearPlayerRadius = 20
+BotWorld.RespawnMode = "corpse_or_safe_local"
+BotWorld.TeleportToCenterOnDeath = 0
 BotWorld.Map = 0
 BotWorld.Zone = 12
 BotWorld.CenterX = -9449.0

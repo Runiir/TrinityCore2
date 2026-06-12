@@ -14,6 +14,12 @@ class Quest;
 class Unit;
 class WorldObject;
 
+enum class BotWorldRuntimeMode
+{
+    ManualExperiment,
+    AlwaysOnAutonomy
+};
+
 struct BotWorldExperimentConfig
 {
     std::string Name = "autonomous_zone_10";
@@ -38,11 +44,18 @@ struct BotWorldExperimentConfig
     uint32 NormalDecisionSampleRate = 10;
     bool UpdateSemanticOutcomeStats = true;
     std::string BrainVersion = "utility_v1";
+    std::string SpawnMode = "saved_or_near_player";
+    bool AllowConfiguredCenterFallback = true;
+    bool UseSavedPosition = true;
+    float NearPlayerRadius = 20.0f;
+    std::string RespawnMode = "corpse_or_safe_local";
+    bool TeleportToCenterOnDeath = false;
 };
 
 struct BotWorldStatus
 {
     bool Active = false;
+    BotWorldRuntimeMode Mode = BotWorldRuntimeMode::ManualExperiment;
     uint64 ExperimentId = 0;
     uint64 RunId = 0;
     std::string Name;
@@ -71,6 +84,9 @@ public:
     void Update(uint32 diff);
     bool Start(std::string const& experimentName, BotWorldExperimentConfig const* overrideConfig = nullptr);
     void Stop();
+    bool StartAutonomy(BotWorldExperimentConfig const* overrideConfig = nullptr);
+    void StopAutonomy();
+    bool SpawnAutonomyBots(uint32 count);
     BotWorldStatus GetStatus() const;
     std::string GetStatusJson() const;
     std::string GetSummaryJson() const;
@@ -325,7 +341,23 @@ private:
         std::string ReplayType;
     };
 
+    struct SpawnPlacement
+    {
+        bool Valid = false;
+        uint32 MapId = 0;
+        float X = 0.0f;
+        float Y = 0.0f;
+        float Z = 0.0f;
+        float O = 0.0f;
+        std::string Source;
+    };
+
+    void LoadConfig(std::string const& name, BotWorldExperimentConfig const* overrideConfig);
     void EnsurePopulation();
+    bool ResolveSpawnPlacement(uint32 candidateGuid, SpawnPlacement& placement) const;
+    bool ResolveSavedSpawnPlacement(uint32 candidateGuid, SpawnPlacement& placement) const;
+    bool ResolveNearPlayerSpawnPlacement(SpawnPlacement& placement) const;
+    bool ResolveConfiguredCenterSpawnPlacement(SpawnPlacement& placement) const;
     void UpdateBot(WorldBotState& state, uint32 diff);
     Player* GetBot(WorldBotState const& state) const;
     uint32 SelectPoolCandidateGuid() const;
@@ -394,6 +426,7 @@ private:
     static std::string JsonEscape(std::string const& value);
 
     bool _active = false;
+    BotWorldRuntimeMode _runtimeMode = BotWorldRuntimeMode::ManualExperiment;
     uint64 _experimentId = 0;
     uint64 _runId = 0;
     uint32 _elapsedMs = 0;

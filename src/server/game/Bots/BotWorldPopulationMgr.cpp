@@ -28,6 +28,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <iomanip>
+#include <shared_mutex>
 #include <sstream>
 
 namespace
@@ -254,46 +255,45 @@ BotWorldPopulationMgr* BotWorldPopulationMgr::instance()
 
 bool BotWorldPopulationMgr::Start(std::string const& experimentName, BotWorldExperimentConfig const* overrideConfig)
 {
+    if (_active && _runtimeMode == BotWorldRuntimeMode::AlwaysOnAutonomy)
+    {
+        if (_runId)
+            RecordRunStop();
+
+        if (overrideConfig)
+            LoadConfig(experimentName.empty() ? "autonomy_recording_window" : experimentName, overrideConfig);
+        else if (!experimentName.empty())
+            _config.Name = experimentName;
+        else
+            _config.Name = "autonomy_recording_window";
+
+        _metrics = BotWorldStatus();
+        _metrics.Active = true;
+        _metrics.Mode = BotWorldRuntimeMode::AlwaysOnAutonomy;
+        _metrics.Name = _config.Name;
+        _metrics.TargetBots = _config.TargetPopulation;
+        _elapsedMs = 0;
+        RecordRunStart();
+        return true;
+    }
+
     if (_active)
         Stop();
 
     if (!sConfigMgr->GetBoolDefault("BotWorld.Enable", false) || !sConfigMgr->GetBoolDefault("PlayerBot.Enable", false))
         return false;
 
-    _config = overrideConfig ? *overrideConfig : BotWorldExperimentConfig();
-    if (!experimentName.empty())
-        _config.Name = experimentName;
-
-    _config.TargetPopulation = sConfigMgr->GetIntDefault("BotWorld.TargetPopulation", _config.TargetPopulation);
-    _config.MapId = sConfigMgr->GetIntDefault("BotWorld.Map", _config.MapId);
-    _config.ZoneId = sConfigMgr->GetIntDefault("BotWorld.Zone", _config.ZoneId);
-    _config.CenterX = sConfigMgr->GetFloatDefault("BotWorld.CenterX", _config.CenterX);
-    _config.CenterY = sConfigMgr->GetFloatDefault("BotWorld.CenterY", _config.CenterY);
-    _config.CenterZ = sConfigMgr->GetFloatDefault("BotWorld.CenterZ", _config.CenterZ);
-    _config.Radius = sConfigMgr->GetFloatDefault("BotWorld.Radius", _config.Radius);
-    _config.MinLevel = uint8(sConfigMgr->GetIntDefault("BotWorld.MinLevel", _config.MinLevel));
-    _config.MaxLevel = uint8(sConfigMgr->GetIntDefault("BotWorld.MaxLevel", _config.MaxLevel));
-    _config.AllowCombat = sConfigMgr->GetBoolDefault("BotWorld.AllowCombat", _config.AllowCombat);
-    _config.EnableProgression = sConfigMgr->GetBoolDefault("BotProgression.Enable", _config.EnableProgression);
-    _config.AllowQuesting = sConfigMgr->GetBoolDefault("BotProgression.AllowQuesting", sConfigMgr->GetBoolDefault("BotWorld.AllowQuesting", _config.AllowQuesting));
-    _config.AllowDungeons = sConfigMgr->GetBoolDefault("BotProgression.AllowDungeons", _config.AllowDungeons);
-    _config.AllowRaids = sConfigMgr->GetBoolDefault("BotProgression.AllowRaids", _config.AllowRaids);
-    _config.TrackHeroicRaidProgression = sConfigMgr->GetBoolDefault("BotProgression.TrackHeroicRaidProgression", _config.TrackHeroicRaidProgression);
-    _config.RecordDecisions = sConfigMgr->GetBoolDefault("BotExperiment.RecordDecisions", _config.RecordDecisions);
-    _config.RecordPerception = sConfigMgr->GetBoolDefault("BotExperiment.RecordPerception", _config.RecordPerception);
-    _config.SmartSampling = sConfigMgr->GetBoolDefault("BotExperiment.SmartSampling", _config.SmartSampling);
-    _config.NormalDecisionSampleRate = std::max<uint32>(1, sConfigMgr->GetIntDefault("BotExperiment.NormalDecisionSampleRate", _config.NormalDecisionSampleRate));
-    _config.UpdateSemanticOutcomeStats = sConfigMgr->GetBoolDefault("BotSemantic.UpdateOutcomeStats", _config.UpdateSemanticOutcomeStats);
-    _config.BrainVersion = sConfigMgr->GetStringDefault("BotExperiment.BrainVersion", _config.BrainVersion);
-
+    LoadConfig(experimentName.empty() ? "autonomous_zone_10" : experimentName, overrideConfig);
     _bots.clear();
     _failedSpawnGuids.clear();
     _metrics = BotWorldStatus();
     _metrics.Active = true;
+    _metrics.Mode = BotWorldRuntimeMode::ManualExperiment;
     _metrics.Name = _config.Name;
     _metrics.TargetBots = _config.TargetPopulation;
     _elapsedMs = 0;
     _active = true;
+    _runtimeMode = BotWorldRuntimeMode::ManualExperiment;
 
     RecordRunStart();
     EnsurePopulation();
@@ -305,6 +305,65 @@ void BotWorldPopulationMgr::Stop()
     if (!_active)
         return;
 
+    if (_runtimeMode == BotWorldRuntimeMode::AlwaysOnAutonomy)
+    {
+        RecordRunStop();
+        _runId = 0;
+        _experimentId = 0;
+        _metrics.RunId = 0;
+        _metrics.ExperimentId = 0;
+        return;
+    }
+
+    for (WorldBotState const& state : _bots)
+    {
+        RecordActivityStop(state, GetBot(state));
+        sBotMgr->RemoveWorldBot(state.Guid);
+    }
+
+    RecordRunStop();
+    _runId = 0;
+    _experimentId = 0;
+    _bots.clear();
+    _active = false;
+}
+
+bool BotWorldPopulationMgr::StartAutonomy(BotWorldExperimentConfig const* overrideConfig)
+{
+    if (_active)
+    {
+        if (_runtimeMode == BotWorldRuntimeMode::AlwaysOnAutonomy)
+            StopAutonomy();
+        else
+            Stop();
+    }
+
+    if (!sConfigMgr->GetBoolDefault("BotWorld.Enable", false) || !sConfigMgr->GetBoolDefault("PlayerBot.Enable", false))
+        return false;
+
+    LoadConfig("always_on_autonomy", overrideConfig);
+    _bots.clear();
+    _failedSpawnGuids.clear();
+    _metrics = BotWorldStatus();
+    _metrics.Active = true;
+    _metrics.Mode = BotWorldRuntimeMode::AlwaysOnAutonomy;
+    _metrics.Name = _config.Name;
+    _metrics.TargetBots = _config.TargetPopulation;
+    _elapsedMs = 0;
+    _runId = 0;
+    _experimentId = 0;
+    _active = true;
+    _runtimeMode = BotWorldRuntimeMode::AlwaysOnAutonomy;
+
+    EnsurePopulation();
+    return _active;
+}
+
+void BotWorldPopulationMgr::StopAutonomy()
+{
+    if (!_active || _runtimeMode != BotWorldRuntimeMode::AlwaysOnAutonomy)
+        return;
+
     for (WorldBotState const& state : _bots)
     {
         RecordActivityStop(state, GetBot(state));
@@ -314,6 +373,19 @@ void BotWorldPopulationMgr::Stop()
     RecordRunStop();
     _bots.clear();
     _active = false;
+    _runId = 0;
+    _experimentId = 0;
+}
+
+bool BotWorldPopulationMgr::SpawnAutonomyBots(uint32 count)
+{
+    if (!_active || _runtimeMode != BotWorldRuntimeMode::AlwaysOnAutonomy || !count)
+        return false;
+
+    _config.TargetPopulation += count;
+    _metrics.TargetBots = _config.TargetPopulation;
+    EnsurePopulation();
+    return true;
 }
 
 void BotWorldPopulationMgr::Update(uint32 diff)
@@ -337,6 +409,39 @@ void BotWorldPopulationMgr::Update(uint32 diff)
     }
 }
 
+void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperimentConfig const* overrideConfig)
+{
+    _config = overrideConfig ? *overrideConfig : BotWorldExperimentConfig();
+    _config.Name = name.empty() ? _config.Name : name;
+    _config.TargetPopulation = sConfigMgr->GetIntDefault("BotWorld.TargetPopulation", _config.TargetPopulation);
+    _config.MapId = sConfigMgr->GetIntDefault("BotWorld.Map", _config.MapId);
+    _config.ZoneId = sConfigMgr->GetIntDefault("BotWorld.Zone", _config.ZoneId);
+    _config.CenterX = sConfigMgr->GetFloatDefault("BotWorld.CenterX", _config.CenterX);
+    _config.CenterY = sConfigMgr->GetFloatDefault("BotWorld.CenterY", _config.CenterY);
+    _config.CenterZ = sConfigMgr->GetFloatDefault("BotWorld.CenterZ", _config.CenterZ);
+    _config.Radius = sConfigMgr->GetFloatDefault("BotWorld.Radius", _config.Radius);
+    _config.MinLevel = uint8(sConfigMgr->GetIntDefault("BotWorld.MinLevel", _config.MinLevel));
+    _config.MaxLevel = uint8(sConfigMgr->GetIntDefault("BotWorld.MaxLevel", _config.MaxLevel));
+    _config.AllowCombat = sConfigMgr->GetBoolDefault("BotWorld.AllowCombat", _config.AllowCombat);
+    _config.EnableProgression = sConfigMgr->GetBoolDefault("BotProgression.Enable", _config.EnableProgression);
+    _config.AllowQuesting = sConfigMgr->GetBoolDefault("BotProgression.AllowQuesting", sConfigMgr->GetBoolDefault("BotWorld.AllowQuesting", _config.AllowQuesting));
+    _config.AllowDungeons = sConfigMgr->GetBoolDefault("BotProgression.AllowDungeons", _config.AllowDungeons);
+    _config.AllowRaids = sConfigMgr->GetBoolDefault("BotProgression.AllowRaids", _config.AllowRaids);
+    _config.TrackHeroicRaidProgression = sConfigMgr->GetBoolDefault("BotProgression.TrackHeroicRaidProgression", _config.TrackHeroicRaidProgression);
+    _config.RecordDecisions = sConfigMgr->GetBoolDefault("BotExperiment.RecordDecisions", _config.RecordDecisions);
+    _config.RecordPerception = sConfigMgr->GetBoolDefault("BotExperiment.RecordPerception", _config.RecordPerception);
+    _config.SmartSampling = sConfigMgr->GetBoolDefault("BotExperiment.SmartSampling", _config.SmartSampling);
+    _config.NormalDecisionSampleRate = std::max<uint32>(1, sConfigMgr->GetIntDefault("BotExperiment.NormalDecisionSampleRate", _config.NormalDecisionSampleRate));
+    _config.UpdateSemanticOutcomeStats = sConfigMgr->GetBoolDefault("BotSemantic.UpdateOutcomeStats", _config.UpdateSemanticOutcomeStats);
+    _config.BrainVersion = sConfigMgr->GetStringDefault("BotExperiment.BrainVersion", _config.BrainVersion);
+    _config.SpawnMode = sConfigMgr->GetStringDefault("BotWorld.SpawnMode", _config.SpawnMode);
+    _config.AllowConfiguredCenterFallback = sConfigMgr->GetBoolDefault("BotWorld.AllowConfiguredCenterFallback", _config.AllowConfiguredCenterFallback);
+    _config.UseSavedPosition = sConfigMgr->GetBoolDefault("BotWorld.UseSavedPosition", _config.UseSavedPosition);
+    _config.NearPlayerRadius = sConfigMgr->GetFloatDefault("BotWorld.NearPlayerRadius", _config.NearPlayerRadius);
+    _config.RespawnMode = sConfigMgr->GetStringDefault("BotWorld.RespawnMode", _config.RespawnMode);
+    _config.TeleportToCenterOnDeath = sConfigMgr->GetBoolDefault("BotWorld.TeleportToCenterOnDeath", _config.TeleportToCenterOnDeath);
+}
+
 void BotWorldPopulationMgr::EnsurePopulation()
 {
     uint32 attempts = 0;
@@ -348,16 +453,25 @@ void BotWorldPopulationMgr::EnsurePopulation()
         if (!candidateGuid)
             break;
 
-        float angle = frand(0.0f, 2.0f * float(M_PI));
-        float dist = frand(0.0f, _config.Radius * 0.35f);
-        float x = _config.CenterX + std::cos(angle) * dist;
-        float y = _config.CenterY + std::sin(angle) * dist;
-        Player* bot = sBotMgr->SpawnWorldBot("any", std::to_string(candidateGuid), _config.MapId, x, y, _config.CenterZ, angle);
+        SpawnPlacement placement;
+        if (!ResolveSpawnPlacement(candidateGuid, placement))
+        {
+            TC_LOG_ERROR("server", "BotWorld spawn skipped bot_guid=%u spawn_mode=%s fallback=%u reason=no_saved_or_local_spawn",
+                candidateGuid, _config.SpawnMode.c_str(), _config.AllowConfiguredCenterFallback ? 1 : 0);
+            _failedSpawnGuids.insert(candidateGuid);
+            continue;
+        }
+
+        Player* bot = placement.Source == "saved"
+            ? sBotMgr->SpawnWorldBotAtSavedPosition("any", std::to_string(candidateGuid))
+            : sBotMgr->SpawnWorldBot("any", std::to_string(candidateGuid), placement.MapId, placement.X, placement.Y, placement.Z, placement.O);
         if (!bot)
         {
             _failedSpawnGuids.insert(candidateGuid);
             continue;
         }
+        TC_LOG_INFO("server", "BotWorld spawn selected bot=%s source=%s map=%u position=%f,%f,%f",
+            bot->GetGUID().ToString().c_str(), placement.Source.c_str(), bot->GetMapId(), bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ());
 
         WorldBotState state;
         state.Guid = bot->GetGUID();
@@ -385,6 +499,81 @@ void BotWorldPopulationMgr::EnsurePopulation()
             RecordRaidTelemetry(_bots.back(), bot, nullptr, "raid_role_assignment", "assigned", features, assignment, anchors, adapter, gearPlan, progression, raw.c_str(), semantic.c_str());
         }
     }
+}
+
+bool BotWorldPopulationMgr::ResolveSpawnPlacement(uint32 candidateGuid, SpawnPlacement& placement) const
+{
+    if ((_config.SpawnMode == "saved_or_near_player" || _config.SpawnMode == "saved") && _config.UseSavedPosition)
+        if (ResolveSavedSpawnPlacement(candidateGuid, placement))
+            return true;
+
+    if (_config.SpawnMode == "saved_or_near_player" || _config.SpawnMode == "near_player")
+        if (ResolveNearPlayerSpawnPlacement(placement))
+            return true;
+
+    if (_config.SpawnMode == "configured_center" || _config.AllowConfiguredCenterFallback)
+        return ResolveConfiguredCenterSpawnPlacement(placement);
+
+    return false;
+}
+
+bool BotWorldPopulationMgr::ResolveSavedSpawnPlacement(uint32 candidateGuid, SpawnPlacement& placement) const
+{
+    if (QueryResult result = CharacterDatabase.PQuery("SELECT map, position_x, position_y, position_z, orientation FROM characters WHERE guid = %u", candidateGuid))
+    {
+        Field* fields = result->Fetch();
+        placement.Valid = true;
+        placement.MapId = fields[0].GetUInt16();
+        placement.X = fields[1].GetFloat();
+        placement.Y = fields[2].GetFloat();
+        placement.Z = fields[3].GetFloat();
+        placement.O = fields[4].GetFloat();
+        placement.Source = "saved";
+        return true;
+    }
+
+    return false;
+}
+
+bool BotWorldPopulationMgr::ResolveNearPlayerSpawnPlacement(SpawnPlacement& placement) const
+{
+    std::shared_lock<std::shared_mutex> lock(*HashMapHolder<Player>::GetLock());
+    HashMapHolder<Player>::MapType const& players = ObjectAccessor::GetPlayers();
+    for (HashMapHolder<Player>::MapType::const_iterator itr = players.begin(); itr != players.end(); ++itr)
+    {
+        Player* player = itr->second;
+        if (!player || !player->IsInWorld() || !player->GetMap())
+            continue;
+
+        if (CharacterDatabase.PQuery("SELECT 1 FROM character_bot_pool WHERE guid = %u LIMIT 1", player->GetGUID().GetCounter()))
+            continue;
+
+        Position pos = player->GetNearPosition(_config.NearPlayerRadius, frand(0.0f, 2.0f * float(M_PI)));
+        placement.Valid = true;
+        placement.MapId = player->GetMapId();
+        placement.X = pos.GetPositionX();
+        placement.Y = pos.GetPositionY();
+        placement.Z = pos.GetPositionZ();
+        placement.O = pos.GetOrientation();
+        placement.Source = "near_player";
+        return true;
+    }
+
+    return false;
+}
+
+bool BotWorldPopulationMgr::ResolveConfiguredCenterSpawnPlacement(SpawnPlacement& placement) const
+{
+    float angle = frand(0.0f, 2.0f * float(M_PI));
+    float dist = frand(0.0f, _config.Radius * 0.35f);
+    placement.Valid = true;
+    placement.MapId = _config.MapId;
+    placement.X = _config.CenterX + std::cos(angle) * dist;
+    placement.Y = _config.CenterY + std::sin(angle) * dist;
+    placement.Z = _config.CenterZ;
+    placement.O = angle;
+    placement.Source = "configured_center";
+    return true;
 }
 
 void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
@@ -428,7 +617,13 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         if (state.DeadTimer >= 5000)
         {
             bot->ResurrectPlayer(0.7f, false);
-            bot->TeleportTo(_config.MapId, _config.CenterX, _config.CenterY, _config.CenterZ, bot->GetOrientation());
+            if (_config.TeleportToCenterOnDeath)
+                bot->TeleportTo(_config.MapId, _config.CenterX, _config.CenterY, _config.CenterZ, bot->GetOrientation());
+            else if (_config.RespawnMode == "corpse_or_safe_local")
+            {
+                Position pos = bot->GetFirstCollisionPosition(4.0f, frand(0.0f, 2.0f * float(M_PI)));
+                bot->NearTeleportTo(pos.GetPositionX(), pos.GetPositionY(), pos.GetPositionZ(), pos.GetOrientation());
+            }
             state.DeadTimer = 0;
             std::string raw = BuildRawJson(bot, nullptr);
             std::string semantic = BuildSemanticJson(bot, nullptr, "corpse_recovery");
@@ -2407,6 +2602,9 @@ void BotWorldPopulationMgr::RecordRunStart()
 
 void BotWorldPopulationMgr::RecordRunStop()
 {
+    if (!_runId)
+        return;
+
     std::string summary = GetSummaryJson();
     CharacterDatabase.EscapeString(summary);
     CharacterDatabase.DirectPExecute("UPDATE experiment_bot_runs SET status = 'stopped', ended_at = NOW(), summary_json = '%s' WHERE id = " UI64FMTD, summary.c_str(), _runId);
@@ -3437,6 +3635,7 @@ std::string BotWorldPopulationMgr::BuildConfigJson() const
     std::ostringstream json;
     json << "{\"name\":\"" << JsonEscape(_config.Name)
          << "\",\"type\":\"bot_world_autonomy\""
+         << ",\"runtime_mode\":\"" << (_runtimeMode == BotWorldRuntimeMode::AlwaysOnAutonomy ? "always_on_autonomy" : "manual_experiment") << "\""
          << ",\"population\":" << _config.TargetPopulation
          << ",\"map\":" << _config.MapId
          << ",\"zone\":" << _config.ZoneId
@@ -3452,6 +3651,12 @@ std::string BotWorldPopulationMgr::BuildConfigJson() const
          << ",\"record_perception\":" << (_config.RecordPerception ? "true" : "false")
          << ",\"smart_sampling\":" << (_config.SmartSampling ? "true" : "false")
          << ",\"update_semantic_outcome_stats\":" << (_config.UpdateSemanticOutcomeStats ? "true" : "false")
+         << ",\"spawn_mode\":\"" << JsonEscape(_config.SpawnMode) << "\""
+         << ",\"allow_configured_center_fallback\":" << (_config.AllowConfiguredCenterFallback ? "true" : "false")
+         << ",\"use_saved_position\":" << (_config.UseSavedPosition ? "true" : "false")
+         << ",\"near_player_radius\":" << _config.NearPlayerRadius
+         << ",\"respawn_mode\":\"" << JsonEscape(_config.RespawnMode) << "\""
+         << ",\"teleport_to_center_on_death\":" << (_config.TeleportToCenterOnDeath ? "true" : "false")
          << ",\"brain_version\":\"" << JsonEscape(_config.BrainVersion) << "\"}";
     return json.str();
 }
@@ -3486,6 +3691,7 @@ BotWorldStatus BotWorldPopulationMgr::GetStatus() const
 {
     BotWorldStatus status = _metrics;
     status.Active = _active;
+    status.Mode = _runtimeMode;
     status.ActiveBots = uint32(_bots.size());
     status.DurationSeconds = _elapsedMs / 1000;
     return status;
@@ -3497,6 +3703,7 @@ std::string BotWorldPopulationMgr::GetStatusJson() const
     std::ostringstream json;
     json << "{\"ok\":true,\"experiment\":\"" << JsonEscape(status.Name)
          << "\",\"run\":" << status.RunId
+         << ",\"mode\":\"" << (status.Mode == BotWorldRuntimeMode::AlwaysOnAutonomy ? "always_on_autonomy" : "manual_experiment") << "\""
          << ",\"brain\":\"" << JsonEscape(_config.BrainVersion)
          << "\",\"active\":" << (status.Active ? "true" : "false")
          << ",\"bots\":" << status.ActiveBots
