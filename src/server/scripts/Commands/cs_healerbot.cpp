@@ -960,7 +960,7 @@ private:
     static bool HandleExportCommand(ChatHandler* handler, char const* /*args*/)
     {
         if (handler)
-            handler->PSendSysMessage("{\"ok\":true,\"action\":\"botexp_export\",\"storage\":\"character_database_tables\",\"tables\":[\"experiment_bot_runs\",\"experiment_bot_events\",\"experiment_bot_decisions\",\"experiment_bot_activities\",\"experiment_bot_replay_records\",\"bot_semantic_outcome_stats\"],\"embedding_feature_schema\":\"bot_semantic_phase6_v1\",\"failure_reason\":null}");
+            handler->PSendSysMessage("{\"ok\":true,\"action\":\"botexp_export\",\"storage\":\"character_database_tables\",\"tables\":[\"experiment_bot_runs\",\"experiment_bot_segments\",\"experiment_bot_events\",\"experiment_bot_decisions\",\"experiment_bot_activities\",\"experiment_bot_replay_records\",\"experiment_bot_telemetry_clips\",\"experiment_bot_telemetry_frames\",\"bot_semantic_outcome_stats\"],\"embedding_feature_schema\":\"bot_semantic_phase6_v1\",\"failure_reason\":null}");
         return true;
     }
 

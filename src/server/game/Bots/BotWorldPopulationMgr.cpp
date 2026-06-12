@@ -291,6 +291,7 @@ bool BotWorldPopulationMgr::Start(std::string const& experimentName, BotWorldExp
 
     LoadConfig(experimentName.empty() ? "autonomous_zone_10" : experimentName, overrideConfig);
     _telemetryBuffer.Clear();
+    _experimentCoordinator.Clear();
     _bots.clear();
     _failedSpawnGuids.clear();
     _metrics = BotWorldStatus();
@@ -316,6 +317,8 @@ void BotWorldPopulationMgr::Stop()
     {
         _telemetryBuffer.FlushOpenClips(_experimentId, _runId, _config.BrainVersion);
         RecordRunStop();
+        _experimentCoordinator.Clear();
+        _experimentCoordinator.Configure(0, _config.BrainVersion);
         _runId = 0;
         _experimentId = 0;
         _metrics.RunId = 0;
@@ -331,6 +334,7 @@ void BotWorldPopulationMgr::Stop()
 
     _telemetryBuffer.FlushOpenClips(_experimentId, _runId, _config.BrainVersion);
     RecordRunStop();
+    _experimentCoordinator.Clear();
     _runId = 0;
     _experimentId = 0;
     _bots.clear();
@@ -352,6 +356,8 @@ bool BotWorldPopulationMgr::StartAutonomy(BotWorldExperimentConfig const* overri
 
     LoadConfig("always_on_autonomy", overrideConfig);
     _telemetryBuffer.Clear();
+    _experimentCoordinator.Clear();
+    _experimentCoordinator.Configure(0, _config.BrainVersion);
     _bots.clear();
     _failedSpawnGuids.clear();
     _metrics = BotWorldStatus();
@@ -382,6 +388,7 @@ void BotWorldPopulationMgr::StopAutonomy()
 
     _telemetryBuffer.FlushOpenClips(_experimentId, _runId, _config.BrainVersion);
     RecordRunStop();
+    _experimentCoordinator.Clear();
     _bots.clear();
     _active = false;
     _runId = 0;
@@ -2627,6 +2634,7 @@ void BotWorldPopulationMgr::RecordRunStart()
     _experimentId = _runId;
     _metrics.ExperimentId = _experimentId;
     _metrics.RunId = _runId;
+    _experimentCoordinator.Configure(_runId, _config.BrainVersion);
 }
 
 void BotWorldPopulationMgr::RecordRunStop()
@@ -3143,7 +3151,12 @@ void BotWorldPopulationMgr::RecordQuestObjectiveProgressForTarget(WorldBotState&
 
 void BotWorldPopulationMgr::RecordQuestEvent(WorldBotState& state, Player* bot, char const* eventType, uint32 questId, Unit const* target, char const* result, char const* rawJson, char const* semanticJson, uint32 valueInt, uint32 itemId, char const* contextJson)
 {
-    if (!_runId || !bot)
+    if (!bot)
+        return;
+
+    RecordExperimentSegmentEvent(bot, eventType, result, questId, target, _telemetryBuffer.GetActiveClipId(bot->GetGUID()), rawJson, semanticJson);
+
+    if (!_runId)
         return;
 
     BotTelemetryPolicyInput policyInput = BuildTelemetryPolicyInput(eventType ? eventType : "quest_event", result ? result : "", "quest", target, 0, questId, itemId, 0.0f, valueInt, EventLooksFailure(eventType, result), eventType && (std::string(eventType) == "quest_completed" || std::string(eventType) == "quest_accepted"));
@@ -3189,6 +3202,37 @@ void BotWorldPopulationMgr::RecordQuestEvent(WorldBotState& state, Player* bot, 
         std::string features = BuildEmbeddingFeaturesJson(bot, target, "item", itemId, eventType ? eventType : "quest_reward");
         UpdateSemanticOutcomeStats(bot, "item", itemId, eventType, result, float(valueInt), 0.0f, EventLooksFailure(eventType, result), features.c_str());
     }
+}
+
+void BotWorldPopulationMgr::RecordExperimentSegmentEvent(Player* bot, char const* eventType, char const* result, uint32 questId, Unit const* target, uint64 clipId, char const* rawJson, char const* semanticJson)
+{
+    if (!bot || !eventType || !*eventType)
+        return;
+
+    uint64 targetGuid = target ? target->GetGUID().GetCounter() : 0;
+    uint32 targetEntry = 0;
+    if (Creature const* creature = target ? target->ToCreature() : nullptr)
+        targetEntry = creature->GetEntry();
+
+    std::ostringstream trigger;
+    trigger << "{\"event_type\":\"" << JsonEscape(eventType)
+            << "\",\"result\":\"" << JsonEscape(result ? result : "")
+            << "\",\"quest_id\":" << questId
+            << ",\"target_guid\":" << targetGuid
+            << ",\"target_entry\":" << targetEntry
+            << ",\"raw\":" << (rawJson && *rawJson ? rawJson : "{}")
+            << ",\"semantic\":" << (semanticJson && *semanticJson ? semanticJson : "{}") << "}";
+
+    std::ostringstream summary;
+    summary << "{\"event_type\":\"" << JsonEscape(eventType)
+            << "\",\"result\":\"" << JsonEscape(result ? result : "")
+            << "\",\"quest_id\":" << questId
+            << ",\"clip_id\":" << clipId
+            << ",\"map_id\":" << bot->GetMapId()
+            << ",\"zone_id\":" << bot->GetZoneId()
+            << ",\"area_id\":" << bot->GetAreaId() << "}";
+
+    _experimentCoordinator.HandleTelemetryEvent(bot, eventType, result, questId, 0, clipId, trigger.str().c_str(), summary.str().c_str());
 }
 
 void BotWorldPopulationMgr::RecordQuestReplay(WorldBotState const& state, Player* bot, char const* replayType, uint32 questId, char const* rawJson, char const* semanticJson, char const* actionJson, char const* failureJson)
@@ -3463,7 +3507,12 @@ uint64 BotWorldPopulationMgr::MaybeCaptureTelemetryClip(Player* bot, Unit const*
 
 void BotWorldPopulationMgr::RecordEvent(WorldBotState& state, Player* bot, char const* eventType, Unit const* target, char const* result, char const* rawJson, char const* semanticJson, float valueFloat, uint32 valueInt, uint32 spellId)
 {
-    if (!_runId || !bot)
+    if (!bot)
+        return;
+
+    RecordExperimentSegmentEvent(bot, eventType, result, 0, target, _telemetryBuffer.GetActiveClipId(bot->GetGUID()), rawJson, semanticJson);
+
+    if (!_runId)
         return;
 
     bool rareCombatStart = eventType && std::string(eventType) == "combat_started" && target && target->getLevel() > bot->getLevel() + 3;
@@ -3986,6 +4035,7 @@ std::string BotWorldPopulationMgr::GetStatusJson() const
          << ",\"raid_boss_kills\":" << status.RaidBossKills
          << ",\"heroic_raid_boss_kills\":" << status.HeroicRaidBossKills
          << ",\"raid_telemetry_events\":" << status.RaidTelemetryEvents
+         << ",\"segment_counts\":" << _experimentCoordinator.GetCountsJson()
          << ",\"stuck\":" << status.StuckEvents
          << ",\"decisions\":" << status.Decisions
          << ",\"failures\":" << status.Failures
@@ -4013,6 +4063,7 @@ std::string BotWorldPopulationMgr::GetSummaryJson() const
          << ",\"raid_boss_kills\":" << status.RaidBossKills
          << ",\"heroic_raid_boss_kills\":" << status.HeroicRaidBossKills
          << ",\"raid_telemetry_events\":" << status.RaidTelemetryEvents
+         << ",\"segment_counts\":" << _experimentCoordinator.GetCountsJson()
          << ",\"decisions\":" << status.Decisions
          << ",\"failures_recorded\":" << status.Failures << "}";
     return json.str();

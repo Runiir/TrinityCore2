@@ -453,3 +453,68 @@ def test_phase12_bot_telemetry_importance_policy_surface():
         assert call_site in mgr_impl
 
     assert "BotTelemetryPolicy.cpp" in cmake
+
+
+def test_phase13_triggered_experiment_segments_surface():
+    header = Path("src/server/game/Bots/BotExperimentCoordinator.h").read_text(encoding="utf-8")
+    impl = Path("src/server/game/Bots/BotExperimentCoordinator.cpp").read_text(encoding="utf-8")
+    mgr_header = Path("src/server/game/Bots/BotWorldPopulationMgr.h").read_text(encoding="utf-8")
+    mgr_impl = Path("src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(encoding="utf-8")
+    commands = Path("src/server/scripts/Commands/cs_healerbot.cpp").read_text(encoding="utf-8")
+    cmake = Path("src/server/game/CMakeLists.txt").read_text(encoding="utf-8")
+    schema = Path("sql/updates/characters/4.3.4/2026_06_12_01_characters_bot_experiment_segments.sql").read_text(encoding="utf-8")
+
+    for symbol in [
+        "BotExperimentDefinition",
+        "BotExperimentTrigger",
+        "BotExperimentSegment",
+        "BotExperimentSegmentStatus",
+        "HandleTelemetryEvent",
+    ]:
+        assert symbol in header
+
+    for experiment in [
+        "autonomous_exploration_v1",
+        "quest_discovery_v1",
+        "quest_execution_v1",
+        "combat_survival_v1",
+        "death_recovery_v1",
+        "stuck_recovery_v1",
+    ]:
+        assert experiment in impl
+
+    for event_type in ["quest_accepted", "quest_completed", "death", "resurrected", "combat_started", "stuck_detected"]:
+        assert event_type in impl
+
+    assert "CREATE TABLE IF NOT EXISTS `experiment_bot_segments`" in schema
+    for column in [
+        "`parent_run_id` bigint unsigned NULL",
+        "`experiment_name` varchar(128) NOT NULL",
+        "`trigger_event_id` bigint unsigned NULL",
+        "`clip_id` bigint unsigned NULL",
+        "`bot_guid` int unsigned NOT NULL",
+        "`brain_version` varchar(64) NULL",
+        "`status` varchar(32) NOT NULL DEFAULT 'running'",
+        "`result` varchar(64) NULL",
+        "`started_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP",
+        "`ended_at` timestamp NULL DEFAULT NULL",
+        "`map_id` int unsigned NULL",
+        "`zone_id` int unsigned NULL",
+        "`area_id` int unsigned NULL",
+        "`x` float NULL",
+        "`y` float NULL",
+        "`z` float NULL",
+        "`trigger_json` text NULL",
+        "`summary_json` text NULL",
+    ]:
+        assert column in schema
+
+    assert "BotExperimentCoordinator _experimentCoordinator" in mgr_header
+    assert "RecordExperimentSegmentEvent" in mgr_header
+    assert "RecordExperimentSegmentEvent(bot, eventType, result, questId" in mgr_impl
+    assert "RecordExperimentSegmentEvent(bot, eventType, result, 0" in mgr_impl
+    assert "segment_counts" in mgr_impl
+    assert "experiment_bot_segments" in commands
+    assert "experiment_bot_telemetry_clips" in commands
+    assert "experiment_bot_telemetry_frames" in commands
+    assert "BotExperimentCoordinator.cpp" in cmake
