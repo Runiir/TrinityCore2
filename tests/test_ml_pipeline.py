@@ -515,6 +515,57 @@ def test_phase13_triggered_experiment_segments_surface():
     assert "RecordExperimentSegmentEvent(bot, eventType, result, 0" in mgr_impl
     assert "segment_counts" in mgr_impl
     assert "experiment_bot_segments" in commands
-    assert "experiment_bot_telemetry_clips" in commands
-    assert "experiment_bot_telemetry_frames" in commands
+    assert "experiment_bot_clips" in commands
+    assert "experiment_bot_clip_frames" in commands
     assert "BotExperimentCoordinator.cpp" in cmake
+
+
+def test_phase14_telemetry_clip_storage_surface():
+    schema = Path("sql/updates/characters/4.3.4/2026_06_12_00_characters_bot_telemetry_clips.sql").read_text(encoding="utf-8")
+    buffer_header = Path("src/server/game/Bots/BotTelemetryBuffer.h").read_text(encoding="utf-8")
+    buffer_impl = Path("src/server/game/Bots/BotTelemetryBuffer.cpp").read_text(encoding="utf-8")
+    commands = Path("src/server/scripts/Commands/cs_healerbot.cpp").read_text(encoding="utf-8")
+
+    assert "CREATE TABLE IF NOT EXISTS `experiment_bot_clips`" in schema
+    for column in [
+        "`experiment_id` bigint unsigned NULL",
+        "`run_id` bigint unsigned NULL",
+        "`segment_id` bigint unsigned NULL",
+        "`bot_guid` int unsigned NOT NULL",
+        "`trigger_event_id` bigint unsigned NULL",
+        "`trigger_type` varchar(64) NOT NULL",
+        "`importance_score` float NOT NULL DEFAULT '0'",
+        "`reason` varchar(128) NOT NULL DEFAULT ''",
+        "`brain_version` varchar(64) NOT NULL DEFAULT ''",
+        "`started_at` datetime NOT NULL",
+        "`ended_at` datetime NULL",
+        "`status` varchar(32) NOT NULL DEFAULT 'open'",
+        "`summary_json` mediumtext NULL",
+        "KEY `idx_bot_id` (`bot_guid`, `id`)",
+        "KEY `idx_trigger_id` (`trigger_type`, `id`)",
+        "KEY `idx_segment_id` (`segment_id`)",
+    ]:
+        assert column in schema
+
+    assert "CREATE TABLE IF NOT EXISTS `experiment_bot_clip_frames`" in schema
+    for column in [
+        "`clip_id` bigint unsigned NOT NULL",
+        "`frame_offset_ms` int NOT NULL",
+        "`target_guid` bigint unsigned NOT NULL DEFAULT '0'",
+        "`quest_id` int unsigned NOT NULL DEFAULT '0'",
+        "`raw_json` mediumtext NULL",
+        "`semantic_json` mediumtext NULL",
+        "KEY `idx_clip_frame` (`clip_id`, `id`)",
+    ]:
+        assert column in schema
+
+    assert "experiment_bot_clips" in commands
+    assert "experiment_bot_clip_frames" in commands
+    assert "experiment_bot_telemetry_clips" not in commands
+    assert "experiment_bot_telemetry_frames" not in commands
+    assert "persisted_pre_frames" in buffer_header
+    assert "persisted_post_frames" in buffer_header
+    assert "decision.reason.c_str()" in Path("src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(encoding="utf-8")
+    assert "INSERT INTO experiment_bot_clips" in buffer_impl
+    assert "INSERT INTO experiment_bot_clip_frames" in buffer_impl
+    assert "InsertFrameRows(clip.clip_id, clip.trigger_time_ms, clip.pre_frames, 0)" in buffer_impl

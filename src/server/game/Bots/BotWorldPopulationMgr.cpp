@@ -3502,7 +3502,7 @@ uint64 BotWorldPopulationMgr::MaybeCaptureTelemetryClip(Player* bot, Unit const*
             << ",\"value_float\":" << input.valueFloat
             << ",\"value_int\":" << input.valueInt << "}";
 
-    return _telemetryBuffer.CaptureEvent(_experimentId, _runId, _config.BrainVersion, frame, input.eventType.empty() ? "unknown" : input.eventType.c_str(), decision.score, summary.str());
+    return _telemetryBuffer.CaptureEvent(_experimentId, _runId, _config.BrainVersion, frame, input.eventType.empty() ? "unknown" : input.eventType.c_str(), decision.score, decision.reason.c_str(), summary.str());
 }
 
 void BotWorldPopulationMgr::RecordEvent(WorldBotState& state, Player* bot, char const* eventType, Unit const* target, char const* result, char const* rawJson, char const* semanticJson, float valueFloat, uint32 valueInt, uint32 spellId)

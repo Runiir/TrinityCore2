@@ -90,7 +90,7 @@ bool BotTelemetryBuffer::Observe(Player* bot, char const* situation, char const*
     return true;
 }
 
-uint64 BotTelemetryBuffer::CaptureEvent(uint64 experimentId, uint64 runId, std::string const& brainVersion, BotTelemetryFrame const& triggerFrame, char const* triggerType, float importanceScore, std::string const& summaryJson)
+uint64 BotTelemetryBuffer::CaptureEvent(uint64 experimentId, uint64 runId, std::string const& brainVersion, BotTelemetryFrame const& triggerFrame, char const* triggerType, float importanceScore, char const* reason, std::string const& summaryJson)
 {
     if (!_config.Enabled || !runId || triggerFrame.bot_guid.IsEmpty())
         return 0;
@@ -109,8 +109,10 @@ uint64 BotTelemetryBuffer::CaptureEvent(uint64 experimentId, uint64 runId, std::
     BotTelemetryClip clip;
     clip.bot_guid = triggerFrame.bot_guid;
     clip.trigger_type = triggerType ? triggerType : "unknown";
+    clip.reason = reason ? reason : "";
     clip.importance_score = importanceScore;
     clip.summary_json = summaryJson.empty() ? "{}" : summaryJson;
+    clip.trigger_time_ms = nowMs;
     clip.start_time_ms = nowMs;
     clip.end_time_ms = nowMs + uint64(_config.PostEventWindowSec) * 1000;
 
@@ -123,10 +125,16 @@ uint64 BotTelemetryBuffer::CaptureEvent(uint64 experimentId, uint64 runId, std::
     clip.post_frames.push_back(trigger);
     if (clip.pre_frames.empty())
         clip.pre_frames.push_back(trigger);
+    clip.start_time_ms = clip.pre_frames.front().timestamp_ms;
 
     clip.clip_id = InsertClipRow(experimentId, runId, brainVersion, clip);
     if (!clip.clip_id)
         return 0;
+
+    InsertFrameRows(clip.clip_id, clip.trigger_time_ms, clip.pre_frames, 0);
+    clip.persisted_pre_frames = uint32(clip.pre_frames.size());
+    InsertFrameRows(clip.clip_id, clip.trigger_time_ms, clip.post_frames, 0);
+    clip.persisted_post_frames = uint32(clip.post_frames.size());
 
     buffer.OpenClips.push_back(clip);
     return clip.clip_id;
@@ -201,38 +209,48 @@ void BotTelemetryBuffer::PersistClosedClip(uint64 experimentId, uint64 runId, st
     if (!clip.clip_id)
         return;
 
-    InsertFrameRows(experimentId, runId, clip.clip_id, clip.pre_frames, "pre");
-    InsertFrameRows(experimentId, runId, clip.clip_id, clip.post_frames, "post");
-    CharacterDatabase.DirectPExecute("UPDATE experiment_bot_telemetry_clips SET status = 'closed', end_time_ms = " UI64FMTD ", pre_frame_count = %u, post_frame_count = %u WHERE id = " UI64FMTD,
-        clip.end_time_ms, uint32(clip.pre_frames.size()), uint32(clip.post_frames.size()), clip.clip_id);
+    InsertFrameRows(clip.clip_id, clip.trigger_time_ms, clip.pre_frames, clip.persisted_pre_frames);
+    clip.persisted_pre_frames = uint32(clip.pre_frames.size());
+    InsertFrameRows(clip.clip_id, clip.trigger_time_ms, clip.post_frames, clip.persisted_post_frames);
+    clip.persisted_post_frames = uint32(clip.post_frames.size());
+    CharacterDatabase.DirectPExecute("UPDATE experiment_bot_clips SET status = 'closed', ended_at = FROM_UNIXTIME(" UI64FMTD " / 1000.0) WHERE id = " UI64FMTD,
+        clip.end_time_ms, clip.clip_id);
 }
 
 uint64 BotTelemetryBuffer::InsertClipRow(uint64 experimentId, uint64 runId, std::string const& brainVersion, BotTelemetryClip const& clip)
 {
     std::string brain = Escape(brainVersion);
     std::string trigger = Escape(clip.trigger_type);
+    std::string reason = Escape(clip.reason);
     std::string summary = Escape(clip.summary_json);
+    BotTelemetryFrame const* anchor = !clip.pre_frames.empty() ? &clip.pre_frames.front() : (!clip.post_frames.empty() ? &clip.post_frames.front() : nullptr);
+    uint32 mapId = anchor ? anchor->map_id : 0;
+    uint32 zoneId = anchor ? anchor->zone_id : 0;
+    uint32 areaId = anchor ? anchor->area_id : 0;
+    float x = anchor ? anchor->x : 0.0f;
+    float y = anchor ? anchor->y : 0.0f;
+    float z = anchor ? anchor->z : 0.0f;
 
-    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_telemetry_clips (experiment_id, run_id, bot_guid, brain_version, trigger_type, importance_score, start_time_ms, end_time_ms, pre_frame_count, post_frame_count, summary_json, status) "
-        "VALUES (" UI64FMTD ", " UI64FMTD ", %u, '%s', '%s', %f, " UI64FMTD ", " UI64FMTD ", %u, %u, '%s', 'open')",
-        experimentId, runId, clip.bot_guid.GetCounter(), brain.c_str(), trigger.c_str(), clip.importance_score, clip.start_time_ms, clip.end_time_ms,
-        uint32(clip.pre_frames.size()), uint32(clip.post_frames.size()), summary.c_str());
+    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_clips (experiment_id, run_id, bot_guid, trigger_type, importance_score, reason, brain_version, map_id, zone_id, area_id, x, y, z, started_at, ended_at, status, summary_json) "
+        "VALUES (" UI64FMTD ", " UI64FMTD ", %u, '%s', %f, '%s', '%s', %u, %u, %u, %f, %f, %f, FROM_UNIXTIME(" UI64FMTD " / 1000.0), NULL, 'open', '%s')",
+        experimentId, runId, clip.bot_guid.GetCounter(), trigger.c_str(), clip.importance_score, reason.c_str(), brain.c_str(),
+        mapId, zoneId, areaId, x, y, z, clip.start_time_ms, summary.c_str());
     return ReadTelemetryLastInsertId();
 }
 
-void BotTelemetryBuffer::InsertFrameRows(uint64 experimentId, uint64 runId, uint64 clipId, std::vector<BotTelemetryFrame> const& frames, char const* framePhase)
+void BotTelemetryBuffer::InsertFrameRows(uint64 clipId, uint64 triggerTimeMs, std::vector<BotTelemetryFrame> const& frames, uint32 startIndex)
 {
-    uint32 index = 0;
-    for (BotTelemetryFrame const& frame : frames)
+    for (uint32 index = startIndex; index < frames.size(); ++index)
     {
+        BotTelemetryFrame const& frame = frames[index];
         std::string situation = Escape(frame.situation_type);
         std::string action = Escape(frame.action);
         std::string raw = Escape(frame.raw_json);
         std::string semantic = Escape(frame.semantic_json);
-        std::string phase = Escape(framePhase ? framePhase : "");
-        CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_telemetry_frames (experiment_id, run_id, clip_id, bot_guid, frame_phase, frame_index, timestamp_ms, map_id, zone_id, area_id, x, y, z, o, level, hp_pct, power_pct, in_combat, target_guid, target_entry, quest_id, situation_type, action, raw_json, semantic_json) "
-            "VALUES (" UI64FMTD ", " UI64FMTD ", " UI64FMTD ", %u, '%s', %u, " UI64FMTD ", %u, %u, %u, %f, %f, %f, %f, %u, %f, %f, %u, " UI64FMTD ", %u, %u, '%s', '%s', '%s', '%s')",
-            experimentId, runId, clipId, frame.bot_guid.GetCounter(), phase.c_str(), index++, frame.timestamp_ms, frame.map_id, frame.zone_id, frame.area_id,
+        int64 offset = int64(frame.timestamp_ms) - int64(triggerTimeMs);
+        CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_clip_frames (clip_id, frame_offset_ms, bot_guid, map_id, zone_id, area_id, x, y, z, o, level, hp_pct, power_pct, in_combat, target_guid, target_entry, quest_id, situation_type, action, raw_json, semantic_json) "
+            "VALUES (" UI64FMTD ", %d, %u, %u, %u, %u, %f, %f, %f, %f, %u, %f, %f, %u, " UI64FMTD ", %u, %u, '%s', '%s', '%s', '%s')",
+            clipId, int32(offset), frame.bot_guid.GetCounter(), frame.map_id, frame.zone_id, frame.area_id,
             frame.x, frame.y, frame.z, frame.o, uint32(frame.level), frame.hp_pct, frame.power_pct, frame.in_combat ? 1 : 0, frame.target_guid.GetCounter(),
             frame.target_entry, frame.quest_id, situation.c_str(), action.c_str(), raw.c_str(), semantic.c_str());
     }

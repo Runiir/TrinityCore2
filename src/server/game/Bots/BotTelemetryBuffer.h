@@ -39,12 +39,16 @@ struct BotTelemetryClip
     uint64 clip_id = 0;
     ObjectGuid bot_guid;
     std::string trigger_type;
+    std::string reason;
     float importance_score = 0.0f;
+    uint64 trigger_time_ms = 0;
     uint64 start_time_ms = 0;
     uint64 end_time_ms = 0;
     std::vector<BotTelemetryFrame> pre_frames;
     std::vector<BotTelemetryFrame> post_frames;
     std::string summary_json;
+    uint32 persisted_pre_frames = 0;
+    uint32 persisted_post_frames = 0;
 };
 
 struct BotTelemetryBufferConfig
@@ -68,7 +72,7 @@ public:
     bool IsEnabled() const { return _config.Enabled; }
     BotTelemetryBufferConfig const& GetConfig() const { return _config; }
     bool Observe(Player* bot, char const* situation = nullptr, char const* action = nullptr, char const* rawJson = nullptr, char const* semanticJson = nullptr, uint32 questId = 0);
-    uint64 CaptureEvent(uint64 experimentId, uint64 runId, std::string const& brainVersion, BotTelemetryFrame const& triggerFrame, char const* triggerType, float importanceScore, std::string const& summaryJson);
+    uint64 CaptureEvent(uint64 experimentId, uint64 runId, std::string const& brainVersion, BotTelemetryFrame const& triggerFrame, char const* triggerType, float importanceScore, char const* reason, std::string const& summaryJson);
     uint64 GetActiveClipId(ObjectGuid botGuid) const;
 
 private:
@@ -84,7 +88,7 @@ private:
     void FinalizeClosedClips(uint64 experimentId, uint64 runId, std::string const& brainVersion, BotBuffer& buffer, uint64 nowMs);
     void PersistClosedClip(uint64 experimentId, uint64 runId, std::string const& brainVersion, BotTelemetryClip& clip);
     static uint64 InsertClipRow(uint64 experimentId, uint64 runId, std::string const& brainVersion, BotTelemetryClip const& clip);
-    static void InsertFrameRows(uint64 experimentId, uint64 runId, uint64 clipId, std::vector<BotTelemetryFrame> const& frames, char const* framePhase);
+    static void InsertFrameRows(uint64 clipId, uint64 triggerTimeMs, std::vector<BotTelemetryFrame> const& frames, uint32 startIndex);
     static std::string Escape(std::string value);
 
     BotTelemetryBufferConfig _config;
