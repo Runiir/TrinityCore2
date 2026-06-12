@@ -373,3 +373,83 @@ def test_phase08_server_raid_telemetry_surface():
         assert semantic_key in impl
 
     assert "BotProgression.TrackHeroicRaidProgression = 1" in conf
+
+
+def test_phase12_bot_telemetry_importance_policy_surface():
+    header = Path("src/server/game/Bots/BotTelemetryPolicy.h").read_text(encoding="utf-8")
+    impl = Path("src/server/game/Bots/BotTelemetryPolicy.cpp").read_text(encoding="utf-8")
+    mgr_header = Path("src/server/game/Bots/BotWorldPopulationMgr.h").read_text(encoding="utf-8")
+    mgr_impl = Path("src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text(encoding="utf-8")
+    conf = Path("src/server/worldserver/worldserver.conf.dist").read_text(encoding="utf-8")
+    cmake = Path("src/server/game/CMakeLists.txt").read_text(encoding="utf-8")
+
+    for symbol in [
+        "enum class BotTelemetryImportance",
+        "BotTelemetryPolicyInput",
+        "BotTelemetryPolicyDecision",
+        "BotTelemetryPolicyConfig",
+        "DecideEvent",
+        "DecideDecision",
+    ]:
+        assert symbol in header
+
+    for importance in ["Drop", "Sample", "Keep", "Clip", "Replay"]:
+        assert importance in header
+
+    for policy_rule in [
+        "death",
+        "resurrected",
+        "stuck_detected",
+        "objective_failed",
+        "quest_completed",
+        "quest_accepted",
+        "boss_killed",
+        "raid_wipe",
+        "interrupt_failed",
+        "loot_received",
+        "gear_upgrade",
+        "level_up",
+        "spell_cast",
+        "move_started",
+        "reward_blocked",
+        "out_of_range_loot",
+    ]:
+        assert policy_rule in impl
+
+    for config_key in [
+        "BotExperiment.AlwaysRecordFailures",
+        "BotExperiment.AlwaysRecordInterventions",
+        "BotExperiment.AlwaysRecordRareStates",
+        "BotExperiment.NormalEventSampleRate",
+        "BotExperiment.NormalDecisionSampleRate",
+        "BotExperiment.MinClipImportance",
+        "BotExperiment.MinReplayImportance",
+    ]:
+        assert config_key in conf
+        assert config_key in mgr_impl
+
+    for config_field in [
+        "AlwaysRecordFailures",
+        "AlwaysRecordInterventions",
+        "AlwaysRecordRareStates",
+        "NormalEventSampleRate",
+        "NormalDecisionSampleRate",
+        "MinClipImportance",
+        "MinReplayImportance",
+    ]:
+        assert config_field in mgr_header
+
+    for call_site in [
+        "RecordEvent(WorldBotState& state",
+        "RecordQuestEvent(WorldBotState& state",
+        "RecordRaidTelemetry",
+        "RecordDecision",
+        "BotTelemetryPolicy::DecideEvent",
+        "BotTelemetryPolicy::DecideDecision",
+        "RecordPolicyReplay",
+        "MaybeCaptureTelemetryClip(bot, target, policyInput, policy",
+        "MaybeCaptureTelemetryClip(bot, boss, policyInput, policy",
+    ]:
+        assert call_site in mgr_impl
+
+    assert "BotTelemetryPolicy.cpp" in cmake

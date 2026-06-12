@@ -3498,10 +3498,13 @@ BotExperiment.Enable = 1
 BotExperiment.RecordDecisions = 1
 BotExperiment.RecordPerception = 1
 BotExperiment.SmartSampling = 1
+BotExperiment.NormalEventSampleRate = 20
 BotExperiment.NormalDecisionSampleRate = 10
 BotExperiment.AlwaysRecordFailures = 1
 BotExperiment.AlwaysRecordInterventions = 1
 BotExperiment.AlwaysRecordRareStates = 1
+BotExperiment.MinClipImportance = 0.75
+BotExperiment.MinReplayImportance = 0.90
 BotExperiment.BrainVersion = "utility_v1"
 
 BotTelemetry.Enable = 1

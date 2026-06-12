@@ -20,6 +20,7 @@ list(APPEND PRIVATE_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotLongTermProgressionBrain.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotMgr.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotTelemetryBuffer.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotTelemetryPolicy.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotTypes.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotWorldPopulationMgr.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/HealerBotPolicy.cpp

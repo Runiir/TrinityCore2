@@ -4,6 +4,7 @@
 #include "ObjectGuid.h"
 #include "Bots/BotLongTermProgressionBrain.h"
 #include "Bots/BotTelemetryBuffer.h"
+#include "Bots/BotTelemetryPolicy.h"
 #include <map>
 #include <memory>
 #include <set>
@@ -42,7 +43,13 @@ struct BotWorldExperimentConfig
     bool RecordDecisions = true;
     bool RecordPerception = true;
     bool SmartSampling = true;
+    bool AlwaysRecordFailures = true;
+    bool AlwaysRecordInterventions = true;
+    bool AlwaysRecordRareStates = true;
+    uint32 NormalEventSampleRate = 20;
     uint32 NormalDecisionSampleRate = 10;
+    float MinClipImportance = 0.75f;
+    float MinReplayImportance = 0.90f;
     bool UpdateSemanticOutcomeStats = true;
     std::string BrainVersion = "utility_v1";
     std::string SpawnMode = "saved_or_near_player";
@@ -117,6 +124,7 @@ private:
         uint32 HeroicRaidBossKills = 0;
         uint32 RaidAttempts = 0;
         uint32 RaidWipes = 0;
+        uint32 EventSequence = 0;
         std::string ActivityType = "experiment_exploration";
         std::string ProgressionStage = "leveling";
         float LastX = 0.0f;
@@ -408,16 +416,18 @@ private:
     void RecordReplayEvent(WorldBotState const& state, Player* bot, char const* eventType, ReplayRecord const& record, char const* result, char const* contextJson = nullptr);
     void RecordActivityStart(WorldBotState& state, Player* bot);
     void RecordActivityStop(WorldBotState const& state, Player* bot = nullptr);
-    void RecordGearEvaluation(WorldBotState const& state, Player* bot, BotGearUpgradeEvaluation const& evaluation, char const* rawJson, char const* semanticJson);
+    void RecordGearEvaluation(WorldBotState& state, Player* bot, BotGearUpgradeEvaluation const& evaluation, char const* rawJson, char const* semanticJson);
     void RecordQuestObjectiveProgressForTarget(WorldBotState& state, Player* bot, Unit const* target, char const* rawJson, char const* semanticJson);
-    void RecordQuestEvent(WorldBotState const& state, Player* bot, char const* eventType, uint32 questId, Unit const* target, char const* result, char const* rawJson, char const* semanticJson, uint32 valueInt = 0, uint32 itemId = 0, char const* contextJson = nullptr);
+    void RecordQuestEvent(WorldBotState& state, Player* bot, char const* eventType, uint32 questId, Unit const* target, char const* result, char const* rawJson, char const* semanticJson, uint32 valueInt = 0, uint32 itemId = 0, char const* contextJson = nullptr);
     void RecordQuestReplay(WorldBotState const& state, Player* bot, char const* replayType, uint32 questId, char const* rawJson, char const* semanticJson, char const* actionJson, char const* failureJson);
     void RecordBossReplay(WorldBotState const& state, Player* bot, Unit const* boss, BossMechanicFeatures const& features, char const* replayType, char const* rawJson, char const* semanticJson, char const* actionJson, char const* failureJson);
-    void RecordEvent(WorldBotState const& state, Player* bot, char const* eventType, Unit const* target, char const* result, char const* rawJson, char const* semanticJson, float valueFloat = 0.0f, uint32 valueInt = 0, uint32 spellId = 0);
+    void RecordEvent(WorldBotState& state, Player* bot, char const* eventType, Unit const* target, char const* result, char const* rawJson, char const* semanticJson, float valueFloat = 0.0f, uint32 valueInt = 0, uint32 spellId = 0);
     void RecordDecision(WorldBotState& state, Player* bot, char const* situation, char const* action, Unit const* target, char const* rawJson, char const* semanticJson, std::vector<BotActivityScore> const& activityScores, BotActivityScore const& chosenActivity, BotRolePowerBreakdown const& power, bool failure, bool rare);
+    BotTelemetryPolicyConfig GetTelemetryPolicyConfig() const;
+    BotTelemetryPolicyInput BuildTelemetryPolicyInput(char const* eventType, char const* result, char const* situation, Unit const* target, uint32 spellId = 0, uint32 questId = 0, uint32 itemId = 0, float valueFloat = 0.0f, uint32 valueInt = 0, bool failure = false, bool rare = false, bool intervention = false) const;
+    void RecordPolicyReplay(WorldBotState const& state, Player* bot, Unit const* target, BotTelemetryPolicyInput const& input, char const* rawJson, char const* semanticJson);
     BotTelemetryFrame BuildTelemetryFrame(Player* bot, Unit const* target, char const* situation, char const* action, char const* rawJson, char const* semanticJson, uint32 questId = 0) const;
-    uint64 MaybeCaptureTelemetryClip(Player* bot, Unit const* target, char const* eventType, char const* result, char const* rawJson, char const* semanticJson, uint32 questId = 0, float valueFloat = 0.0f, uint32 valueInt = 0);
-    bool GetTelemetryTriggerImportance(char const* eventType, char const* result, float& importance) const;
+    uint64 MaybeCaptureTelemetryClip(Player* bot, Unit const* target, BotTelemetryPolicyInput const& input, BotTelemetryPolicyDecision const& decision, char const* rawJson, char const* semanticJson);
     void UpdateSemanticOutcomeStats(Player* bot, char const* entityType, uint32 entityKey, char const* eventType, char const* result, float reward, float powerDelta, bool failure, char const* featuresJson);
     void UpdateSemanticStatsFromEvent(Player* bot, Unit const* target, char const* eventType, char const* result, float valueFloat, uint32 valueInt, uint32 spellId, char const* semanticJson);
     SemanticOutcomeStats GetSemanticOutcomeStats(char const* entityType, uint32 entityKey) const;
