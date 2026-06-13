@@ -3449,13 +3449,22 @@ PlayerBot.Debug = 1
 #        Description: Distance used when spawning near a live non-bot player.
 #        Default:     20
 #
-#    BotWorld.RespawnMode
-#        Description: Death recovery strategy. corpse_or_safe_local keeps bots near their corpse.
-#        Default:     "corpse_or_safe_local"
+#    BotWorld.DeathRecoveryMode
+#        Description: Death recovery strategy. Supported values include safe_local, corpse_recover,
+#                     nearest_graveyard_or_spirit_healer, last_safe_position, and configured_center_fallback.
+#        Default:     "safe_local"
 #
 #    BotWorld.TeleportToCenterOnDeath
-#        Description: Restores legacy death recovery that teleports bots to BotWorld.Center*.
+#        Description: Explicitly enables configured-center fallback for repeated death recovery.
 #        Default:     0
+#
+#    BotWorld.MaxDeathsBeforeFallback
+#        Description: Deaths in the same local area before configured-center fallback may be used.
+#        Default:     3
+#
+#    BotWorld.SafePositionMemorySec
+#        Description: Seconds of recent local safe positions retained per bot for death recovery.
+#        Default:     120
 #
 #    BotWorld.Map / BotWorld.Zone / BotWorld.CenterX / BotWorld.CenterY / BotWorld.CenterZ / BotWorld.Radius
 #        Description: Optional configured-center fallback placement.
@@ -3482,8 +3491,10 @@ BotWorld.SpawnMode = "saved_or_near_player"
 BotWorld.AllowConfiguredCenterFallback = 1
 BotWorld.UseSavedPosition = 1
 BotWorld.NearPlayerRadius = 20
-BotWorld.RespawnMode = "corpse_or_safe_local"
+BotWorld.DeathRecoveryMode = "safe_local"
 BotWorld.TeleportToCenterOnDeath = 0
+BotWorld.MaxDeathsBeforeFallback = 3
+BotWorld.SafePositionMemorySec = 120
 BotWorld.Map = 0
 BotWorld.Zone = 12
 BotWorld.CenterX = -9449.0

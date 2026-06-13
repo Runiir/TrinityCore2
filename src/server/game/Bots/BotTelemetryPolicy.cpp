@@ -16,12 +16,15 @@ bool IsFailureResult(std::string const& result)
 bool IsReplayEvent(std::string const& event, std::string const& result)
 {
     return event == "death"
+        || event == "repeated_death"
+        || event == "death_recovery_failed"
         || event == "stuck_detected"
         || event == "objective_failed"
         || event == "quest_failure"
         || event == "boss_mechanic_failure"
         || event == "raid_wipe"
         || event == "path_failure"
+        || event == "teleport_fallback_used"
         || result == "reward_blocked"
         || result == "out_of_range_loot"
         || result == "object_not_found"
@@ -32,7 +35,11 @@ bool IsReplayEvent(std::string const& event, std::string const& result)
 bool IsKeepEvent(std::string const& event)
 {
     return event == "death"
+        || event == "death_recovery_started"
         || event == "resurrected"
+        || event == "death_recovery_failed"
+        || event == "teleport_fallback_used"
+        || event == "repeated_death"
         || event == "stuck_detected"
         || event == "objective_failed"
         || event == "quest_completed"

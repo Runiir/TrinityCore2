@@ -3,6 +3,7 @@
 #include "Bots/BotMgr.h"
 #include "CellImpl.h"
 #include "Config.h"
+#include "Corpse.h"
 #include "DatabaseEnv.h"
 #include "GameTime.h"
 #include "GameObject.h"
@@ -55,6 +56,26 @@ float UnitHealthPct(Unit const* unit)
         return 0.0f;
 
     return float(unit->GetHealth()) / float(unit->GetMaxHealth());
+}
+
+uint64 NowMs()
+{
+    return uint64(std::chrono::duration_cast<std::chrono::milliseconds>(GameTime::GetGameTimeSystemPoint().time_since_epoch()).count());
+}
+
+std::vector<std::string> SplitRecoveryModes(std::string const& mode)
+{
+    if (mode == "corpse_recover")
+        return { "corpse_recover", "safe_local_resurrect", "nearest_graveyard_or_spirit_healer", "last_safe_position", "configured_center_fallback" };
+    if (mode == "safe_local" || mode == "safe_local_resurrect" || mode == "corpse_or_safe_local")
+        return { "safe_local_resurrect", "last_safe_position", "nearest_graveyard_or_spirit_healer", "corpse_recover", "configured_center_fallback" };
+    if (mode == "nearest_graveyard_or_spirit_healer" || mode == "graveyard")
+        return { "nearest_graveyard_or_spirit_healer", "last_safe_position", "safe_local_resurrect", "configured_center_fallback" };
+    if (mode == "last_safe_position")
+        return { "last_safe_position", "safe_local_resurrect", "nearest_graveyard_or_spirit_healer", "configured_center_fallback" };
+    if (mode == "configured_center_fallback")
+        return { "configured_center_fallback" };
+    return { "safe_local_resurrect", "last_safe_position", "nearest_graveyard_or_spirit_healer", "corpse_recover", "configured_center_fallback" };
 }
 
 bool SpellLooksLikeHeal(SpellInfo const* spellInfo)
@@ -204,9 +225,12 @@ bool EventLooksFailure(char const* eventType, char const* result)
     std::string event = eventType ? eventType : "";
     std::string res = result ? result : "";
     return event == "death"
+        || event == "repeated_death"
         || event == "stuck_detected"
         || event == "objective_failed"
+        || event == "death_recovery_failed"
         || event == "interrupt_failed"
+        || event == "teleport_fallback_used"
         || res == "failed"
         || res.find("failed") != std::string::npos
         || res.find("blocked") != std::string::npos;
@@ -462,8 +486,10 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
     _config.AllowConfiguredCenterFallback = sConfigMgr->GetBoolDefault("BotWorld.AllowConfiguredCenterFallback", _config.AllowConfiguredCenterFallback);
     _config.UseSavedPosition = sConfigMgr->GetBoolDefault("BotWorld.UseSavedPosition", _config.UseSavedPosition);
     _config.NearPlayerRadius = sConfigMgr->GetFloatDefault("BotWorld.NearPlayerRadius", _config.NearPlayerRadius);
-    _config.RespawnMode = sConfigMgr->GetStringDefault("BotWorld.RespawnMode", _config.RespawnMode);
+    _config.DeathRecoveryMode = sConfigMgr->GetStringDefault("BotWorld.DeathRecoveryMode", sConfigMgr->GetStringDefault("BotWorld.RespawnMode", _config.DeathRecoveryMode));
     _config.TeleportToCenterOnDeath = sConfigMgr->GetBoolDefault("BotWorld.TeleportToCenterOnDeath", _config.TeleportToCenterOnDeath);
+    _config.MaxDeathsBeforeFallback = std::max<uint32>(1, sConfigMgr->GetIntDefault("BotWorld.MaxDeathsBeforeFallback", _config.MaxDeathsBeforeFallback));
+    _config.SafePositionMemorySec = std::max<uint32>(10, sConfigMgr->GetIntDefault("BotWorld.SafePositionMemorySec", _config.SafePositionMemorySec));
 
     BotTelemetryBufferConfig telemetry;
     telemetry.Enabled = sConfigMgr->GetBoolDefault("BotTelemetry.Enable", telemetry.Enabled);
@@ -609,6 +635,226 @@ bool BotWorldPopulationMgr::ResolveConfiguredCenterSpawnPlacement(SpawnPlacement
     return true;
 }
 
+void BotWorldPopulationMgr::RememberSafePosition(WorldBotState& state, Player* bot, uint32 diff)
+{
+    if (!bot || !bot->IsAlive() || bot->IsInCombat() || state.StuckTimer)
+        return;
+
+    state.SafePositionTimer += diff;
+    if (state.SafePositionTimer < 5000)
+        return;
+    state.SafePositionTimer = 0;
+
+    uint64 nowMs = NowMs();
+    PruneSafePositions(state, nowMs);
+
+    float hpPct = bot->GetMaxHealth() ? float(bot->GetHealth()) / float(bot->GetMaxHealth()) : 1.0f;
+    WorldBotState::SafePosition position;
+    position.MapId = bot->GetMapId();
+    position.ZoneId = bot->GetZoneId();
+    position.AreaId = bot->GetAreaId();
+    position.X = bot->GetPositionX();
+    position.Y = bot->GetPositionY();
+    position.Z = bot->GetPositionZ();
+    position.O = bot->GetOrientation();
+    position.HpPct = hpPct;
+    position.SeenMs = nowMs;
+    state.SafePositions.push_back(position);
+    if (state.SafePositions.size() > 24)
+        state.SafePositions.erase(state.SafePositions.begin(), state.SafePositions.begin() + (state.SafePositions.size() - 24));
+
+    CharacterDatabase.DirectPExecute(
+        "INSERT INTO bot_memory_safe_positions (bot_guid, map_id, zone_id, area_id, x, y, z, o, hp_pct, last_seen_at) "
+        "VALUES (%u, %u, %u, %u, %f, %f, %f, %f, %f, NOW())",
+        state.Guid.GetCounter(), position.MapId, position.ZoneId, position.AreaId, position.X, position.Y, position.Z, position.O, position.HpPct);
+}
+
+void BotWorldPopulationMgr::PruneSafePositions(WorldBotState& state, uint64 nowMs) const
+{
+    uint64 memoryMs = uint64(_config.SafePositionMemorySec) * 1000;
+    state.SafePositions.erase(std::remove_if(state.SafePositions.begin(), state.SafePositions.end(), [nowMs, memoryMs](WorldBotState::SafePosition const& position)
+    {
+        return position.SeenMs + memoryMs < nowMs;
+    }), state.SafePositions.end());
+}
+
+void BotWorldPopulationMgr::MarkDeathDangerZone(WorldBotState& state, Player* bot, Unit const* target)
+{
+    if (!bot)
+        return;
+
+    uint32 sourceEntry = 0;
+    if (Creature const* creature = target ? target->ToCreature() : nullptr)
+        sourceEntry = creature->GetEntry();
+
+    if (state.LastDeathMapId == bot->GetMapId()
+        && state.LastDeathAreaId == bot->GetAreaId()
+        && Distance2d(state.LastDeathX, state.LastDeathY, bot->GetPositionX(), bot->GetPositionY()) <= 35.0f)
+        ++state.RecentDeathCount;
+    else
+        state.RecentDeathCount = 1;
+
+    state.LastDeathMapId = bot->GetMapId();
+    state.LastDeathAreaId = bot->GetAreaId();
+    state.LastDeathX = bot->GetPositionX();
+    state.LastDeathY = bot->GetPositionY();
+
+    std::ostringstream metadata;
+    metadata << "{\"recent_death_count\":" << state.RecentDeathCount
+             << ",\"target_guid\":" << (target ? target->GetGUID().GetCounter() : 0)
+             << ",\"source_entry\":" << sourceEntry << "}";
+    std::string metadataJson = metadata.str();
+    CharacterDatabase.EscapeString(metadataJson);
+
+    CharacterDatabase.DirectPExecute(
+        "INSERT INTO bot_memory_danger_zones (bot_guid, map_id, zone_id, area_id, x, y, z, radius, danger_type, source_entry, death_count, last_event_at, metadata_json) "
+        "VALUES (%u, %u, %u, %u, %f, %f, %f, 35.0, '%s', %u, %u, NOW(), '%s')",
+        state.Guid.GetCounter(), bot->GetMapId(), bot->GetZoneId(), bot->GetAreaId(), bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(),
+        state.RecentDeathCount >= _config.MaxDeathsBeforeFallback ? "repeated_death" : "death", sourceEntry, state.RecentDeathCount, metadataJson.c_str());
+}
+
+BotWorldPopulationMgr::BotDeathRecoveryPolicy BotWorldPopulationMgr::BuildDeathRecoveryPolicy() const
+{
+    BotDeathRecoveryPolicy policy;
+    policy.Modes = SplitRecoveryModes(_config.DeathRecoveryMode);
+    policy.CenterFallbackEnabled = _config.TeleportToCenterOnDeath;
+    policy.MaxDeathsBeforeFallback = _config.MaxDeathsBeforeFallback;
+    policy.SafePositionMemorySec = _config.SafePositionMemorySec;
+    return policy;
+}
+
+BotWorldPopulationMgr::DeathRecoveryResult BotWorldPopulationMgr::RecoverDeadBot(WorldBotState& state, Player* bot)
+{
+    DeathRecoveryResult recovery;
+    if (!bot || bot->IsAlive())
+        return recovery;
+
+    BotDeathRecoveryPolicy policy = BuildDeathRecoveryPolicy();
+    recovery.RepeatedDeath = state.RecentDeathCount >= policy.MaxDeathsBeforeFallback;
+
+    for (std::string const& mode : policy.Modes)
+    {
+        if (mode == "configured_center_fallback" && (!policy.CenterFallbackEnabled || !recovery.RepeatedDeath))
+            continue;
+
+        std::string result;
+        bool ok = false;
+        if (mode == "corpse_recover")
+            ok = TryCorpseRecovery(bot, result);
+        else if (mode == "safe_local_resurrect")
+            ok = TrySafeLocalResurrect(bot, result);
+        else if (mode == "nearest_graveyard_or_spirit_healer")
+            ok = TryNearestGraveyardResurrect(bot, result);
+        else if (mode == "last_safe_position")
+            ok = TryLastSafePositionResurrect(state, bot, result);
+        else if (mode == "configured_center_fallback")
+            ok = TryConfiguredCenterDeathFallback(bot, result);
+
+        if (!ok)
+            continue;
+
+        recovery.Recovered = true;
+        recovery.UsedFallback = mode == "configured_center_fallback";
+        recovery.Mode = mode;
+        recovery.Result = result.empty() ? "ok" : result;
+        return recovery;
+    }
+
+    recovery.Result = "no_recovery_mode_succeeded";
+    return recovery;
+}
+
+bool BotWorldPopulationMgr::TryCorpseRecovery(Player* bot, std::string& result) const
+{
+    Corpse* corpse = bot ? bot->GetCorpse() : nullptr;
+    if (!bot || !corpse || corpse->GetMapId() != bot->GetMapId())
+    {
+        result = "corpse_unavailable";
+        return false;
+    }
+
+    Position pos = corpse->GetNearPosition(3.0f, frand(0.0f, 2.0f * float(M_PI)));
+    bot->ResurrectPlayer(0.7f, false);
+    bot->NearTeleportTo(pos.GetPositionX(), pos.GetPositionY(), pos.GetPositionZ(), pos.GetOrientation());
+    result = "corpse_recovered";
+    return true;
+}
+
+bool BotWorldPopulationMgr::TrySafeLocalResurrect(Player* bot, std::string& result) const
+{
+    if (!bot)
+    {
+        result = "bot_unavailable";
+        return false;
+    }
+
+    Position pos = bot->GetFirstCollisionPosition(4.0f, frand(0.0f, 2.0f * float(M_PI)));
+    bot->ResurrectPlayer(0.7f, false);
+    bot->NearTeleportTo(pos.GetPositionX(), pos.GetPositionY(), pos.GetPositionZ(), pos.GetOrientation());
+    result = "safe_local_resurrected";
+    return true;
+}
+
+bool BotWorldPopulationMgr::TryNearestGraveyardResurrect(Player* bot, std::string& result) const
+{
+    if (!bot)
+    {
+        result = "bot_unavailable";
+        return false;
+    }
+
+    WorldSafeLocsEntry const* graveyard = sObjectMgr->GetClosestGraveyard(*bot, bot->GetTeam(), bot);
+    if (!graveyard)
+    {
+        result = "graveyard_unavailable";
+        return false;
+    }
+
+    bot->ResurrectPlayer(0.7f, false);
+    bot->TeleportTo(graveyard->Continent, graveyard->Loc.X, graveyard->Loc.Y, graveyard->Loc.Z, bot->GetOrientation());
+    result = "nearest_graveyard_resurrected";
+    return true;
+}
+
+bool BotWorldPopulationMgr::TryLastSafePositionResurrect(WorldBotState& state, Player* bot, std::string& result)
+{
+    if (!bot)
+    {
+        result = "bot_unavailable";
+        return false;
+    }
+
+    PruneSafePositions(state, NowMs());
+    if (state.SafePositions.empty())
+    {
+        result = "safe_position_unavailable";
+        return false;
+    }
+
+    WorldBotState::SafePosition const& position = state.SafePositions.back();
+    bot->ResurrectPlayer(0.7f, false);
+    if (position.MapId == bot->GetMapId())
+        bot->NearTeleportTo(position.X, position.Y, position.Z, position.O);
+    else
+        bot->TeleportTo(position.MapId, position.X, position.Y, position.Z, position.O);
+    result = "last_safe_position_resurrected";
+    return true;
+}
+
+bool BotWorldPopulationMgr::TryConfiguredCenterDeathFallback(Player* bot, std::string& result) const
+{
+    if (!bot)
+    {
+        result = "bot_unavailable";
+        return false;
+    }
+
+    bot->ResurrectPlayer(0.7f, false);
+    bot->TeleportTo(_config.MapId, _config.CenterX, _config.CenterY, _config.CenterZ, bot->GetOrientation());
+    result = "configured_center_fallback";
+    return true;
+}
+
 void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
 {
     Player* bot = GetBot(state);
@@ -630,7 +876,10 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
             char const* deathSituation = bossDeath ? (bot->GetMap() && bot->GetMap()->IsRaid() ? "raid_boss" : "dungeon_boss") : "corpse_recovery";
             std::string raw = BuildRawJson(bot, lastTarget);
             std::string semantic = BuildSemanticJson(bot, lastTarget, deathSituation);
+            MarkDeathDangerZone(state, bot, lastTarget);
             RecordEvent(state, bot, "death", nullptr, "dead", raw.c_str(), semantic.c_str(), 0.0f, _metrics.Deaths);
+            if (state.RecentDeathCount >= _config.MaxDeathsBeforeFallback)
+                RecordEvent(state, bot, "repeated_death", nullptr, "danger_zone", raw.c_str(), semantic.c_str(), float(state.RecentDeathCount), _metrics.Deaths);
             if (bossDeath)
             {
                 BossMechanicFeatures features = BuildBossMechanicFeatures(bot, lastTarget);
@@ -652,22 +901,26 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
 
         if (state.DeadTimer >= 5000)
         {
-            bot->ResurrectPlayer(0.7f, false);
-            if (_config.TeleportToCenterOnDeath)
-                bot->TeleportTo(_config.MapId, _config.CenterX, _config.CenterY, _config.CenterZ, bot->GetOrientation());
-            else if (_config.RespawnMode == "corpse_or_safe_local")
-            {
-                Position pos = bot->GetFirstCollisionPosition(4.0f, frand(0.0f, 2.0f * float(M_PI)));
-                bot->NearTeleportTo(pos.GetPositionX(), pos.GetPositionY(), pos.GetPositionZ(), pos.GetOrientation());
-            }
-            state.DeadTimer = 0;
             std::string raw = BuildRawJson(bot, nullptr);
             std::string semantic = BuildSemanticJson(bot, nullptr, "corpse_recovery");
-            RecordEvent(state, bot, "resurrected", nullptr, "ok", raw.c_str(), semantic.c_str());
+            RecordEvent(state, bot, "death_recovery_started", nullptr, _config.DeathRecoveryMode.c_str(), raw.c_str(), semantic.c_str(), 0.0f, state.RecentDeathCount);
+            DeathRecoveryResult recovery = RecoverDeadBot(state, bot);
+            state.DeadTimer = 0;
+            raw = BuildRawJson(bot, nullptr);
+            semantic = BuildSemanticJson(bot, nullptr, "corpse_recovery");
+            if (recovery.Recovered)
+            {
+                RecordEvent(state, bot, "resurrected", nullptr, recovery.Mode.c_str(), raw.c_str(), semantic.c_str());
+                if (recovery.UsedFallback)
+                    RecordEvent(state, bot, "teleport_fallback_used", nullptr, recovery.Result.c_str(), raw.c_str(), semantic.c_str(), float(state.RecentDeathCount), _metrics.Deaths);
+            }
+            else
+                RecordEvent(state, bot, "death_recovery_failed", nullptr, recovery.Result.c_str(), raw.c_str(), semantic.c_str(), float(state.RecentDeathCount), _metrics.Deaths);
         }
         return;
     }
     state.DeadTimer = 0;
+    RememberSafePosition(state, bot, diff);
 
     BotRolePowerBreakdown power = BotLongTermProgressionBrain::CalculateRolePower(bot);
     BotProgressionStage stage = BotLongTermProgressionBrain::ClassifyStage(bot, power);
@@ -3515,8 +3768,11 @@ void BotWorldPopulationMgr::RecordEvent(WorldBotState& state, Player* bot, char 
     if (!_runId)
         return;
 
-    bool rareCombatStart = eventType && std::string(eventType) == "combat_started" && target && target->getLevel() > bot->getLevel() + 3;
-    BotTelemetryPolicyInput policyInput = BuildTelemetryPolicyInput(eventType ? eventType : "unknown", result ? result : "", nullptr, target, spellId, 0, 0, valueFloat, valueInt, EventLooksFailure(eventType, result), rareCombatStart);
+    std::string eventName = eventType ? eventType : "unknown";
+    bool rareCombatStart = eventName == "combat_started" && target && target->getLevel() > bot->getLevel() + 3;
+    bool recoveryRare = eventName == "repeated_death" || eventName == "death_recovery_failed";
+    bool recoveryIntervention = eventName == "teleport_fallback_used";
+    BotTelemetryPolicyInput policyInput = BuildTelemetryPolicyInput(eventName.c_str(), result ? result : "", nullptr, target, spellId, 0, 0, valueFloat, valueInt, EventLooksFailure(eventType, result), rareCombatStart || recoveryRare, recoveryIntervention);
     BotTelemetryPolicyDecision policy = BotTelemetryPolicy::DecideEvent(policyInput, GetTelemetryPolicyConfig(), ++state.EventSequence);
     if (!policy.writeEvent)
         return;
@@ -3972,8 +4228,10 @@ std::string BotWorldPopulationMgr::BuildConfigJson() const
          << ",\"allow_configured_center_fallback\":" << (_config.AllowConfiguredCenterFallback ? "true" : "false")
          << ",\"use_saved_position\":" << (_config.UseSavedPosition ? "true" : "false")
          << ",\"near_player_radius\":" << _config.NearPlayerRadius
-         << ",\"respawn_mode\":\"" << JsonEscape(_config.RespawnMode) << "\""
+         << ",\"death_recovery_mode\":\"" << JsonEscape(_config.DeathRecoveryMode) << "\""
          << ",\"teleport_to_center_on_death\":" << (_config.TeleportToCenterOnDeath ? "true" : "false")
+         << ",\"max_deaths_before_fallback\":" << _config.MaxDeathsBeforeFallback
+         << ",\"safe_position_memory_sec\":" << _config.SafePositionMemorySec
          << ",\"brain_version\":\"" << JsonEscape(_config.BrainVersion) << "\"}";
     return json.str();
 }

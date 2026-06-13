@@ -57,8 +57,10 @@ struct BotWorldExperimentConfig
     bool AllowConfiguredCenterFallback = true;
     bool UseSavedPosition = true;
     float NearPlayerRadius = 20.0f;
-    std::string RespawnMode = "corpse_or_safe_local";
+    std::string DeathRecoveryMode = "safe_local";
     bool TeleportToCenterOnDeath = false;
+    uint32 MaxDeathsBeforeFallback = 3;
+    uint32 SafePositionMemorySec = 120;
 };
 
 struct BotWorldStatus
@@ -106,10 +108,24 @@ public:
 private:
     struct WorldBotState
     {
+        struct SafePosition
+        {
+            uint32 MapId = 0;
+            uint32 ZoneId = 0;
+            uint32 AreaId = 0;
+            float X = 0.0f;
+            float Y = 0.0f;
+            float Z = 0.0f;
+            float O = 0.0f;
+            float HpPct = 1.0f;
+            uint64 SeenMs = 0;
+        };
+
         ObjectGuid Guid;
         uint32 DecisionTimer = 0;
         uint32 StuckTimer = 0;
         uint32 DeadTimer = 0;
+        uint32 SafePositionTimer = 0;
         uint32 RestTimer = 0;
         uint32 Sequence = 0;
         uint64 ActivityId = 0;
@@ -131,8 +147,14 @@ private:
         float LastX = 0.0f;
         float LastY = 0.0f;
         float LastZ = 0.0f;
+        uint32 LastDeathMapId = 0;
+        uint32 LastDeathAreaId = 0;
+        float LastDeathX = 0.0f;
+        float LastDeathY = 0.0f;
+        uint32 RecentDeathCount = 0;
         ObjectGuid TargetGuid;
         bool WasInCombat = false;
+        std::vector<SafePosition> SafePositions;
     };
 
     struct QuestObjectivePlan
@@ -362,6 +384,23 @@ private:
         std::string Source;
     };
 
+    struct BotDeathRecoveryPolicy
+    {
+        std::vector<std::string> Modes;
+        bool CenterFallbackEnabled = false;
+        uint32 MaxDeathsBeforeFallback = 3;
+        uint32 SafePositionMemorySec = 120;
+    };
+
+    struct DeathRecoveryResult
+    {
+        bool Recovered = false;
+        bool UsedFallback = false;
+        bool RepeatedDeath = false;
+        std::string Mode;
+        std::string Result = "failed";
+    };
+
     void LoadConfig(std::string const& name, BotWorldExperimentConfig const* overrideConfig);
     void EnsurePopulation();
     bool ResolveSpawnPlacement(uint32 candidateGuid, SpawnPlacement& placement) const;
@@ -369,6 +408,16 @@ private:
     bool ResolveNearPlayerSpawnPlacement(SpawnPlacement& placement) const;
     bool ResolveConfiguredCenterSpawnPlacement(SpawnPlacement& placement) const;
     void UpdateBot(WorldBotState& state, uint32 diff);
+    void RememberSafePosition(WorldBotState& state, Player* bot, uint32 diff);
+    void PruneSafePositions(WorldBotState& state, uint64 nowMs) const;
+    void MarkDeathDangerZone(WorldBotState& state, Player* bot, Unit const* target);
+    BotDeathRecoveryPolicy BuildDeathRecoveryPolicy() const;
+    DeathRecoveryResult RecoverDeadBot(WorldBotState& state, Player* bot);
+    bool TryCorpseRecovery(Player* bot, std::string& result) const;
+    bool TrySafeLocalResurrect(Player* bot, std::string& result) const;
+    bool TryNearestGraveyardResurrect(Player* bot, std::string& result) const;
+    bool TryLastSafePositionResurrect(WorldBotState& state, Player* bot, std::string& result);
+    bool TryConfiguredCenterDeathFallback(Player* bot, std::string& result) const;
     Player* GetBot(WorldBotState const& state) const;
     uint32 SelectPoolCandidateGuid() const;
     Unit* SelectSafeTarget(Player* bot) const;

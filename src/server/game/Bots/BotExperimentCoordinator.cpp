@@ -24,7 +24,7 @@ BotExperimentCoordinator::BotExperimentCoordinator()
         { "quest_discovery_v1", { { "quest_seen" } }, { "quest_accepted" }, { "quest_rejected", "quest_unusable", "timeout" } },
         { "quest_execution_v1", { { "quest_accepted" } }, { "quest_completed" }, { "objective_failed", "timeout" } },
         { "combat_survival_v1", { { "combat_started" } }, { "mob_killed", "boss_killed" }, { "death", "flee", "stuck" } },
-        { "death_recovery_v1", { { "death" } }, { "resurrected", "safe_after_30s" }, { "repeated_death", "teleport_fallback_required" } },
+        { "death_recovery_v1", { { "death" } }, { "resurrected", "safe_after_30s" }, { "repeated_death", "death_recovery_failed", "teleport_fallback_required", "teleport_fallback_used" } },
         { "stuck_recovery_v1", { { "stuck_detected" } }, { "movement_resumed" }, { "stuck_repeated", "teleport_fallback_required" } },
     };
 }
