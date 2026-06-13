@@ -678,6 +678,91 @@ void BotWorldPopulationMgr::PruneSafePositions(WorldBotState& state, uint64 nowM
     }), state.SafePositions.end());
 }
 
+void BotWorldPopulationMgr::RememberVisiblePois(WorldBotState& state, Player* bot, uint32 diff)
+{
+    if (!bot || !bot->IsAlive())
+        return;
+
+    state.PoiScanTimer += diff;
+    if (state.PoiScanTimer < 5000)
+        return;
+    state.PoiScanTimer = 0;
+
+    std::vector<WorldObject*> objects;
+    Trinity::AllWorldObjectsInRange check(bot, 80.0f);
+    Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(bot, objects, check);
+    Cell::VisitAllObjects(bot, searcher, 80.0f);
+
+    for (WorldObject* object : objects)
+    {
+        if (!object || !bot->IsInPhase(object))
+            continue;
+
+        if (Creature* creature = object->ToCreature())
+        {
+            if (!creature->IsAlive() || !bot->IsWithinLOSInMap(creature))
+                continue;
+
+            uint32 questId = 0;
+            if (creature->IsQuestGiver())
+            {
+                QuestRelationResult starters = sObjectMgr->GetCreatureQuestRelations(creature->GetEntry());
+                QuestRelationResult enders = sObjectMgr->GetCreatureQuestInvolvedRelations(creature->GetEntry());
+                if (starters.begin() != starters.end())
+                    questId = *starters.begin();
+                else if (enders.begin() != enders.end())
+                    questId = *enders.begin();
+                RememberPoi(state, bot, creature, "quest_giver", questId, 120.0f - bot->GetExactDist(creature));
+            }
+            if (creature->IsVendor())
+                RememberPoi(state, bot, creature, "vendor", 0, 80.0f - bot->GetExactDist(creature));
+            if (creature->IsTrainer())
+                RememberPoi(state, bot, creature, "trainer", 0, 75.0f - bot->GetExactDist(creature));
+            if (creature->IsInnkeeper())
+                RememberPoi(state, bot, creature, "innkeeper", 0, 60.0f - bot->GetExactDist(creature));
+            if (creature->IsTaxi())
+                RememberPoi(state, bot, creature, "flight_master", 0, 70.0f - bot->GetExactDist(creature));
+        }
+        else if (GameObject* go = object->ToGameObject())
+        {
+            uint32 questId = 0;
+            QuestRelationResult starters = sObjectMgr->GetGOQuestRelations(go->GetEntry());
+            QuestRelationResult enders = sObjectMgr->GetGOQuestInvolvedRelations(go->GetEntry());
+            if (starters.begin() != starters.end())
+                questId = *starters.begin();
+            else if (enders.begin() != enders.end())
+                questId = *enders.begin();
+
+            if (questId || sObjectMgr->GetGameObjectQuestItemList(go->GetEntry()))
+                RememberPoi(state, bot, go, "objective_object", questId, 90.0f - bot->GetExactDist(go));
+        }
+    }
+}
+
+void BotWorldPopulationMgr::RememberPoi(WorldBotState& state, Player* bot, WorldObject* object, char const* poiType, uint32 questId, float score) const
+{
+    if (!bot || !object || !poiType)
+        return;
+
+    uint32 entry = 0;
+    if (Creature* creature = object->ToCreature())
+        entry = creature->GetEntry();
+    else if (GameObject* go = object->ToGameObject())
+        entry = go->GetEntry();
+
+    std::ostringstream metadata;
+    metadata << "{\"source\":\"visible_scan\",\"object_type\":\"" << (object->GetTypeId() == TYPEID_GAMEOBJECT ? "gameobject" : "creature") << "\"}";
+    std::string metadataJson = metadata.str();
+    CharacterDatabase.EscapeString(metadataJson);
+
+    CharacterDatabase.DirectPExecute(
+        "INSERT INTO bot_memory_pois (bot_guid, map_id, zone_id, area_id, x, y, z, poi_type, entity_guid, entity_entry, quest_id, score, discovered_at, last_seen_at, metadata_json) "
+        "VALUES (%u, %u, %u, %u, %f, %f, %f, '%s', %u, %u, %u, %f, NOW(), NOW(), '%s') "
+        "ON DUPLICATE KEY UPDATE map_id = VALUES(map_id), zone_id = VALUES(zone_id), area_id = VALUES(area_id), x = VALUES(x), y = VALUES(y), z = VALUES(z), score = GREATEST(score, VALUES(score)), last_seen_at = NOW(), metadata_json = VALUES(metadata_json)",
+        state.Guid.GetCounter(), bot->GetMapId(), bot->GetZoneId(), bot->GetAreaId(), object->GetPositionX(), object->GetPositionY(), object->GetPositionZ(),
+        poiType, object->GetGUID().GetCounter(), entry, questId, score, metadataJson.c_str());
+}
+
 void BotWorldPopulationMgr::MarkDeathDangerZone(WorldBotState& state, Player* bot, Unit const* target)
 {
     if (!bot)
@@ -707,10 +792,134 @@ void BotWorldPopulationMgr::MarkDeathDangerZone(WorldBotState& state, Player* bo
     CharacterDatabase.EscapeString(metadataJson);
 
     CharacterDatabase.DirectPExecute(
-        "INSERT INTO bot_memory_danger_zones (bot_guid, map_id, zone_id, area_id, x, y, z, radius, danger_type, source_entry, death_count, last_event_at, metadata_json) "
-        "VALUES (%u, %u, %u, %u, %f, %f, %f, 35.0, '%s', %u, %u, NOW(), '%s')",
+        "INSERT INTO bot_memory_danger_zones (bot_guid, map_id, zone_id, area_id, x, y, z, radius, danger_type, source_entry, death_count, failure_count, last_event_at, metadata_json) "
+        "VALUES (%u, %u, %u, %u, %f, %f, %f, 35.0, '%s', %u, %u, %u, NOW(), '%s')",
         state.Guid.GetCounter(), bot->GetMapId(), bot->GetZoneId(), bot->GetAreaId(), bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(),
-        state.RecentDeathCount >= _config.MaxDeathsBeforeFallback ? "repeated_death" : "death", sourceEntry, state.RecentDeathCount, metadataJson.c_str());
+        state.RecentDeathCount >= _config.MaxDeathsBeforeFallback ? "repeated_death" : "death", sourceEntry, state.RecentDeathCount, state.RecentDeathCount, metadataJson.c_str());
+}
+
+void BotWorldPopulationMgr::MarkStuckFailure(WorldBotState& state, Player* bot)
+{
+    if (!bot)
+        return;
+
+    float fromX = state.ActivePathValid ? state.ActivePathFromX : state.LastX;
+    float fromY = state.ActivePathValid ? state.ActivePathFromY : state.LastY;
+    float fromZ = state.ActivePathValid ? state.ActivePathFromZ : state.LastZ;
+    float toX = state.ActivePathValid ? state.ActivePathToX : bot->GetPositionX();
+    float toY = state.ActivePathValid ? state.ActivePathToY : bot->GetPositionY();
+    float toZ = state.ActivePathValid ? state.ActivePathToZ : bot->GetPositionZ();
+
+    std::ostringstream metadata;
+    metadata << "{\"stuck_timer_ms\":" << state.StuckTimer << "}";
+    std::string metadataJson = metadata.str();
+    CharacterDatabase.EscapeString(metadataJson);
+
+    CharacterDatabase.DirectPExecute(
+        "INSERT INTO bot_memory_failed_paths (bot_guid, map_id, from_x, from_y, from_z, to_x, to_y, to_z, failure_type, failure_count, last_failed_at, metadata_json) "
+        "VALUES (%u, %u, %f, %f, %f, %f, %f, %f, 'stuck', 1, NOW(), '%s')",
+        state.Guid.GetCounter(), bot->GetMapId(), fromX, fromY, fromZ, toX, toY, toZ, metadataJson.c_str());
+
+    CharacterDatabase.DirectPExecute(
+        "INSERT INTO bot_memory_danger_zones (bot_guid, map_id, zone_id, area_id, x, y, z, radius, danger_type, stuck_count, failure_count, last_event_at, metadata_json) "
+        "VALUES (%u, %u, %u, %u, %f, %f, %f, 20.0, 'stuck', 1, 1, NOW(), '%s')",
+        state.Guid.GetCounter(), bot->GetMapId(), bot->GetZoneId(), bot->GetAreaId(), bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), metadataJson.c_str());
+}
+
+float BotWorldPopulationMgr::GetLocalDangerScore(uint32 botGuid, uint32 mapId, float x, float y, float z) const
+{
+    QueryResult result = CharacterDatabase.PQuery(
+        "SELECT COALESCE(SUM(death_count * 2 + stuck_count + failure_count), 0) "
+        "FROM bot_memory_danger_zones "
+        "WHERE bot_guid = %u AND map_id = %u "
+        "AND POW(x - %f, 2) + POW(y - %f, 2) + POW(z - %f, 2) <= POW(radius, 2)",
+        botGuid, mapId, x, y, z);
+    return result ? result->Fetch()[0].GetFloat() : 0.0f;
+}
+
+bool BotWorldPopulationMgr::IsFailedPathRecently(uint32 botGuid, uint32 mapId, float fromX, float fromY, float toX, float toY) const
+{
+    QueryResult result = CharacterDatabase.PQuery(
+        "SELECT failure_count FROM bot_memory_failed_paths "
+        "WHERE bot_guid = %u AND map_id = %u AND last_failed_at >= DATE_SUB(NOW(), INTERVAL 10 MINUTE) "
+        "AND POW(from_x - %f, 2) + POW(from_y - %f, 2) <= POW(12.0, 2) "
+        "AND POW(to_x - %f, 2) + POW(to_y - %f, 2) <= POW(12.0, 2) "
+        "ORDER BY last_failed_at DESC LIMIT 1",
+        botGuid, mapId, fromX, fromY, toX, toY);
+    return bool(result);
+}
+
+bool BotWorldPopulationMgr::FindMemoryPoiTarget(Player* bot, float& x, float& y, float& z, uint64& poiId) const
+{
+    if (!bot)
+        return false;
+
+    QueryResult result = CharacterDatabase.PQuery(
+        "SELECT id, x, y, z, (score - visit_count * 15 - failure_count * 25) AS adjusted_score "
+        "FROM bot_memory_pois "
+        "WHERE bot_guid = %u AND map_id = %u AND zone_id = %u "
+        "ORDER BY adjusted_score DESC, visit_count ASC, last_seen_at DESC LIMIT 8",
+        bot->GetGUID().GetCounter(), bot->GetMapId(), bot->GetZoneId());
+    if (!result)
+        return false;
+
+    do
+    {
+        Field* fields = result->Fetch();
+        uint64 candidateId = fields[0].GetUInt64();
+        float candidateX = fields[1].GetFloat();
+        float candidateY = fields[2].GetFloat();
+        float candidateZ = fields[3].GetFloat();
+        if (GetLocalDangerScore(bot->GetGUID().GetCounter(), bot->GetMapId(), candidateX, candidateY, candidateZ) >= 3.0f)
+            continue;
+        if (IsFailedPathRecently(bot->GetGUID().GetCounter(), bot->GetMapId(), bot->GetPositionX(), bot->GetPositionY(), candidateX, candidateY))
+            continue;
+
+        poiId = candidateId;
+        x = candidateX;
+        y = candidateY;
+        z = candidateZ;
+        return true;
+    } while (result->NextRow());
+
+    return false;
+}
+
+void BotWorldPopulationMgr::MarkPoiVisited(uint64 poiId) const
+{
+    if (!poiId)
+        return;
+
+    CharacterDatabase.DirectPExecute("UPDATE bot_memory_pois SET visit_count = visit_count + 1, last_seen_at = NOW() WHERE id = " UI64FMTD, poiId);
+}
+
+void BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, float x, float y, float z)
+{
+    if (!bot)
+        return;
+
+    if (IsFailedPathRecently(bot->GetGUID().GetCounter(), bot->GetMapId(), bot->GetPositionX(), bot->GetPositionY(), x, y))
+    {
+        float angle = bot->GetAngle(x, y) + frand(-0.75f, 0.75f);
+        Position alternate = bot->GetFirstCollisionPosition(6.0f, angle);
+        if (!IsFailedPathRecently(bot->GetGUID().GetCounter(), bot->GetMapId(), bot->GetPositionX(), bot->GetPositionY(), alternate.GetPositionX(), alternate.GetPositionY()))
+        {
+            x = alternate.GetPositionX();
+            y = alternate.GetPositionY();
+            z = alternate.GetPositionZ();
+        }
+    }
+
+    state.ActivePathFromX = bot->GetPositionX();
+    state.ActivePathFromY = bot->GetPositionY();
+    state.ActivePathFromZ = bot->GetPositionZ();
+    state.ActivePathToX = x;
+    state.ActivePathToY = y;
+    state.ActivePathToZ = z;
+    state.ActivePathValid = true;
+
+    bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+    bot->GetMotionMaster()->MovePoint(0, x, y, z, true);
 }
 
 BotWorldPopulationMgr::BotDeathRecoveryPolicy BotWorldPopulationMgr::BuildDeathRecoveryPolicy() const
@@ -827,8 +1036,30 @@ bool BotWorldPopulationMgr::TryLastSafePositionResurrect(WorldBotState& state, P
     PruneSafePositions(state, NowMs());
     if (state.SafePositions.empty())
     {
-        result = "safe_position_unavailable";
-        return false;
+        QueryResult stored = CharacterDatabase.PQuery(
+            "SELECT map_id, x, y, z, o FROM bot_memory_safe_positions "
+            "WHERE bot_guid = %u AND last_seen_at >= DATE_SUB(NOW(), INTERVAL %u SECOND) "
+            "ORDER BY last_seen_at DESC LIMIT 1",
+            state.Guid.GetCounter(), _config.SafePositionMemorySec);
+        if (!stored)
+        {
+            result = "safe_position_unavailable";
+            return false;
+        }
+
+        Field* fields = stored->Fetch();
+        uint32 mapId = fields[0].GetUInt32();
+        float x = fields[1].GetFloat();
+        float y = fields[2].GetFloat();
+        float z = fields[3].GetFloat();
+        float o = fields[4].GetFloat();
+        bot->ResurrectPlayer(0.7f, false);
+        if (mapId == bot->GetMapId())
+            bot->NearTeleportTo(x, y, z, o);
+        else
+            bot->TeleportTo(mapId, x, y, z, o);
+        result = "stored_safe_position_resurrected";
+        return true;
     }
 
     WorldBotState::SafePosition const& position = state.SafePositions.back();
@@ -921,6 +1152,7 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
     }
     state.DeadTimer = 0;
     RememberSafePosition(state, bot, diff);
+    RememberVisiblePois(state, bot, diff);
 
     BotRolePowerBreakdown power = BotLongTermProgressionBrain::CalculateRolePower(bot);
     BotProgressionStage stage = BotLongTermProgressionBrain::ClassifyStage(bot, power);
@@ -944,9 +1176,9 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
     if (state.StuckTimer >= 6000)
     {
         ++_metrics.StuckEvents;
+        MarkStuckFailure(state, bot);
         Position pos = bot->GetFirstCollisionPosition(4.0f, frand(0.0f, 2.0f * float(M_PI)));
-        bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
-        bot->GetMotionMaster()->MovePoint(0, pos, true);
+        MoveBotToPoint(state, bot, pos.GetPositionX(), pos.GetPositionY(), pos.GetPositionZ());
         state.StuckTimer = 0;
         std::string raw = BuildRawJson(bot, nullptr);
         std::string semantic = BuildSemanticJson(bot, nullptr, "stuck_recovery", &power, stage, chosenActivity.Activity);
@@ -1472,8 +1704,7 @@ BotWorldPopulationMgr::QuestActionResult BotWorldPopulationMgr::TryQuesting(Worl
 
         if (!bot->IsWithinDistInMap(turnIn, INTERACTION_DISTANCE))
         {
-            bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
-            bot->GetMotionMaster()->MovePoint(0, turnIn->GetPositionX(), turnIn->GetPositionY(), turnIn->GetPositionZ(), true);
+            MoveBotToPoint(state, bot, turnIn->GetPositionX(), turnIn->GetPositionY(), turnIn->GetPositionZ());
             return result;
         }
 
@@ -1541,8 +1772,7 @@ BotWorldPopulationMgr::QuestActionResult BotWorldPopulationMgr::TryQuesting(Worl
 
             if (!bot->IsWithinDistInMap(questObject, INTERACTION_DISTANCE))
             {
-                bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
-                bot->GetMotionMaster()->MovePoint(0, questObject->GetPositionX(), questObject->GetPositionY(), questObject->GetPositionZ(), true);
+                MoveBotToPoint(state, bot, questObject->GetPositionX(), questObject->GetPositionY(), questObject->GetPositionZ());
                 return result;
             }
 
@@ -1600,8 +1830,7 @@ BotWorldPopulationMgr::QuestActionResult BotWorldPopulationMgr::TryQuesting(Worl
         result.QuestId = questId;
         if (!bot->IsWithinDistInMap(giver, INTERACTION_DISTANCE))
         {
-            bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
-            bot->GetMotionMaster()->MovePoint(0, giver->GetPositionX(), giver->GetPositionY(), giver->GetPositionZ(), true);
+            MoveBotToPoint(state, bot, giver->GetPositionX(), giver->GetPositionY(), giver->GetPositionZ());
             return result;
         }
 
@@ -1861,8 +2090,7 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
     if (result.Features.MoveOut && result.Features.DangerScore >= 0.25f)
     {
         Position pos = bot->GetFirstCollisionPosition(8.0f, result.Target->GetAngle(bot) + float(M_PI));
-        bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
-        bot->GetMotionMaster()->MovePoint(0, pos, true);
+        MoveBotToPoint(state, bot, pos.GetPositionX(), pos.GetPositionY(), pos.GetPositionZ());
         result.Action = "move_out_ground_danger";
         result.Rare = true;
         RecordEvent(state, bot, "boss_mechanic", result.Target, "move_out", raw.c_str(), semantic.c_str(), result.Features.DangerScore, result.Features.CastSpellId, result.Features.CastSpellId);
@@ -1954,8 +2182,7 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
                 raidAdapter.AssignmentType == "stack" ? raidAnchors.StackY : raidAnchors.SpreadY,
                 raidAdapter.AssignmentType == "stack" ? raidAnchors.StackZ : raidAnchors.SpreadZ,
                 bot->GetOrientation());
-            bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
-            bot->GetMotionMaster()->MovePoint(0, pos, true);
+            MoveBotToPoint(state, bot, pos.GetPositionX(), pos.GetPositionY(), pos.GetPositionZ());
             result.Action = raidAdapter.AssignmentType == "stack" ? "raid_stack_anchor" : "raid_spread_anchor";
             result.Rare = result.Features.DangerScore >= 0.5f;
             RecordRaidTelemetry(state, bot, result.Target, "raid_position_anchor", result.Action.c_str(), result.Features, raidAssignment, raidAnchors, raidAdapter, raidGearPlan, heroicProgression, raw.c_str(), semantic.c_str(), raidAnchors.DistanceToAnchor, result.Features.CastSpellId);
@@ -2860,17 +3087,41 @@ bool BotWorldPopulationMgr::TryCastCombatSpell(Player* bot, Unit* target, uint32
     return bot->CastSpell(target, spellId, false) == SPELL_CAST_OK;
 }
 
-void BotWorldPopulationMgr::MoveToWanderPoint(Player* bot, WorldBotState& /*state*/)
+void BotWorldPopulationMgr::MoveToWanderPoint(Player* bot, WorldBotState& state)
 {
     if (!bot)
         return;
 
+    uint64 poiId = 0;
+    float poiX = 0.0f;
+    float poiY = 0.0f;
+    float poiZ = 0.0f;
+    if (FindMemoryPoiTarget(bot, poiX, poiY, poiZ, poiId))
+    {
+        if (bot->GetExactDist2d(poiX, poiY) <= INTERACTION_DISTANCE)
+            MarkPoiVisited(poiId);
+        else
+            MoveBotToPoint(state, bot, poiX, poiY, poiZ);
+        return;
+    }
+
     float fromCenter = Distance2d(bot->GetPositionX(), bot->GetPositionY(), _config.CenterX, _config.CenterY);
-    float angle = fromCenter > _config.Radius ? bot->GetAngle(_config.CenterX, _config.CenterY) : frand(0.0f, 2.0f * float(M_PI));
-    float distance = frand(8.0f, 25.0f);
-    Position pos = bot->GetFirstCollisionPosition(distance, angle);
-    bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
-    bot->GetMotionMaster()->MovePoint(0, pos, true);
+    for (uint8 attempt = 0; attempt < 8; ++attempt)
+    {
+        float angle = fromCenter > _config.Radius ? bot->GetAngle(_config.CenterX, _config.CenterY) : frand(0.0f, 2.0f * float(M_PI));
+        float distance = frand(8.0f, 25.0f);
+        Position pos = bot->GetFirstCollisionPosition(distance, angle);
+        if (GetLocalDangerScore(bot->GetGUID().GetCounter(), bot->GetMapId(), pos.GetPositionX(), pos.GetPositionY(), pos.GetPositionZ()) >= 3.0f)
+            continue;
+        if (IsFailedPathRecently(bot->GetGUID().GetCounter(), bot->GetMapId(), bot->GetPositionX(), bot->GetPositionY(), pos.GetPositionX(), pos.GetPositionY()))
+            continue;
+
+        MoveBotToPoint(state, bot, pos.GetPositionX(), pos.GetPositionY(), pos.GetPositionZ());
+        return;
+    }
+
+    Position fallback = bot->GetFirstCollisionPosition(4.0f, bot->GetAngle(_config.CenterX, _config.CenterY));
+    MoveBotToPoint(state, bot, fallback.GetPositionX(), fallback.GetPositionY(), fallback.GetPositionZ());
 }
 
 void BotWorldPopulationMgr::RecordRunStart()

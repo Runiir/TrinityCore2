@@ -126,6 +126,7 @@ private:
         uint32 StuckTimer = 0;
         uint32 DeadTimer = 0;
         uint32 SafePositionTimer = 0;
+        uint32 PoiScanTimer = 0;
         uint32 RestTimer = 0;
         uint32 Sequence = 0;
         uint64 ActivityId = 0;
@@ -147,6 +148,13 @@ private:
         float LastX = 0.0f;
         float LastY = 0.0f;
         float LastZ = 0.0f;
+        float ActivePathFromX = 0.0f;
+        float ActivePathFromY = 0.0f;
+        float ActivePathFromZ = 0.0f;
+        float ActivePathToX = 0.0f;
+        float ActivePathToY = 0.0f;
+        float ActivePathToZ = 0.0f;
+        bool ActivePathValid = false;
         uint32 LastDeathMapId = 0;
         uint32 LastDeathAreaId = 0;
         float LastDeathX = 0.0f;
@@ -410,7 +418,15 @@ private:
     void UpdateBot(WorldBotState& state, uint32 diff);
     void RememberSafePosition(WorldBotState& state, Player* bot, uint32 diff);
     void PruneSafePositions(WorldBotState& state, uint64 nowMs) const;
+    void RememberVisiblePois(WorldBotState& state, Player* bot, uint32 diff);
+    void RememberPoi(WorldBotState& state, Player* bot, WorldObject* object, char const* poiType, uint32 questId, float score) const;
     void MarkDeathDangerZone(WorldBotState& state, Player* bot, Unit const* target);
+    void MarkStuckFailure(WorldBotState& state, Player* bot);
+    float GetLocalDangerScore(uint32 botGuid, uint32 mapId, float x, float y, float z) const;
+    bool IsFailedPathRecently(uint32 botGuid, uint32 mapId, float fromX, float fromY, float toX, float toY) const;
+    bool FindMemoryPoiTarget(Player* bot, float& x, float& y, float& z, uint64& poiId) const;
+    void MarkPoiVisited(uint64 poiId) const;
+    void MoveBotToPoint(WorldBotState& state, Player* bot, float x, float y, float z);
     BotDeathRecoveryPolicy BuildDeathRecoveryPolicy() const;
     DeathRecoveryResult RecoverDeadBot(WorldBotState& state, Player* bot);
     bool TryCorpseRecovery(Player* bot, std::string& result) const;
