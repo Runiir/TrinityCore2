@@ -1,6 +1,7 @@
 #ifndef TRINITY_BOT_LONG_TERM_PROGRESSION_BRAIN_H
 #define TRINITY_BOT_LONG_TERM_PROGRESSION_BRAIN_H
 
+#include "Bots/BotExperienceLearningPolicy.h"
 #include "Define.h"
 #include <string>
 #include <vector>
@@ -62,6 +63,13 @@ struct BotActivityScore
     float ExpectedWipeRisk = 0.0f;
     float ExpectedTimeCost = 0.0f;
     float ExpectedStuckRisk = 0.0f;
+    float LearnedScore = 0.0f;
+    float LearnedPenalty = 0.0f;
+    float LearnedConfidence = 0.0f;
+    uint32 LearnedSampleCount = 0;
+    float LearnedDangerScore = 0.0f;
+    float LearnedProgressionValue = 0.0f;
+    std::string LearnedReason = "disabled";
     float Score = 0.0f;
 };
 
@@ -84,7 +92,7 @@ class BotLongTermProgressionBrain
 public:
     static BotRolePowerBreakdown CalculateRolePower(Player const* bot);
     static BotProgressionStage ClassifyStage(Player const* bot, BotRolePowerBreakdown const& power);
-    static std::vector<BotActivityScore> ScoreActivities(Player const* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, bool allowQuesting, bool allowCombat);
+    static std::vector<BotActivityScore> ScoreActivities(Player const* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, bool allowQuesting, bool allowCombat, BotExperienceLearningConfig const* learning = nullptr);
     static BotActivityScore ChooseActivity(std::vector<BotActivityScore> const& activities);
     static BotGearUpgradeEvaluation EvaluateGearUpgrade(Player* bot);
 

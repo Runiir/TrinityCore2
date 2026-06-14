@@ -490,6 +490,14 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
     _config.TeleportToCenterOnDeath = sConfigMgr->GetBoolDefault("BotWorld.TeleportToCenterOnDeath", _config.TeleportToCenterOnDeath);
     _config.MaxDeathsBeforeFallback = std::max<uint32>(1, sConfigMgr->GetIntDefault("BotWorld.MaxDeathsBeforeFallback", _config.MaxDeathsBeforeFallback));
     _config.SafePositionMemorySec = std::max<uint32>(10, sConfigMgr->GetIntDefault("BotWorld.SafePositionMemorySec", _config.SafePositionMemorySec));
+    _config.Learning.Enabled = sConfigMgr->GetBoolDefault("BotLearning.Enable", _config.Learning.Enabled);
+    _config.Learning.MinSamplesForStrongBias = std::max<uint32>(1, sConfigMgr->GetIntDefault("BotLearning.MinSamplesForStrongBias", _config.Learning.MinSamplesForStrongBias));
+    _config.Learning.DangerPenaltyWeight = std::max(0.0f, sConfigMgr->GetFloatDefault("BotLearning.DangerPenaltyWeight", _config.Learning.DangerPenaltyWeight));
+    _config.Learning.ProgressionRewardWeight = std::max(0.0f, sConfigMgr->GetFloatDefault("BotLearning.ProgressionRewardWeight", _config.Learning.ProgressionRewardWeight));
+    _config.Learning.RecentFailurePenaltyWeight = std::max(0.0f, sConfigMgr->GetFloatDefault("BotLearning.RecentFailurePenaltyWeight", _config.Learning.RecentFailurePenaltyWeight));
+    _config.Learning.ExplorationNoveltyWeight = std::max(0.0f, sConfigMgr->GetFloatDefault("BotLearning.ExplorationNoveltyWeight", _config.Learning.ExplorationNoveltyWeight));
+    _config.Learning.AllowGlobalMemoryFallback = sConfigMgr->GetBoolDefault("BotLearning.AllowGlobalMemoryFallback", _config.Learning.AllowGlobalMemoryFallback);
+    _learningConfig = _config.Learning;
 
     BotTelemetryBufferConfig telemetry;
     telemetry.Enabled = sConfigMgr->GetBoolDefault("BotTelemetry.Enable", telemetry.Enabled);
@@ -855,14 +863,20 @@ bool BotWorldPopulationMgr::FindMemoryPoiTarget(Player* bot, float& x, float& y,
         return false;
 
     QueryResult result = CharacterDatabase.PQuery(
-        "SELECT id, x, y, z, (score - visit_count * 15 - failure_count * 25) AS adjusted_score "
+        "SELECT id, x, y, z, score, visit_count, success_count, failure_count "
         "FROM bot_memory_pois "
         "WHERE bot_guid = %u AND map_id = %u AND zone_id = %u "
-        "ORDER BY adjusted_score DESC, visit_count ASC, last_seen_at DESC LIMIT 8",
+        "ORDER BY last_seen_at DESC LIMIT 16",
         bot->GetGUID().GetCounter(), bot->GetMapId(), bot->GetZoneId());
     if (!result)
         return false;
 
+    bool found = false;
+    float bestScore = -100000.0f;
+    uint64 bestId = 0;
+    float bestX = 0.0f;
+    float bestY = 0.0f;
+    float bestZ = 0.0f;
     do
     {
         Field* fields = result->Fetch();
@@ -870,19 +884,35 @@ bool BotWorldPopulationMgr::FindMemoryPoiTarget(Player* bot, float& x, float& y,
         float candidateX = fields[1].GetFloat();
         float candidateY = fields[2].GetFloat();
         float candidateZ = fields[3].GetFloat();
-        if (GetLocalDangerScore(bot->GetGUID().GetCounter(), bot->GetMapId(), candidateX, candidateY, candidateZ) >= 3.0f)
-            continue;
-        if (IsFailedPathRecently(bot->GetGUID().GetCounter(), bot->GetMapId(), bot->GetPositionX(), bot->GetPositionY(), candidateX, candidateY))
+        float staticScore = fields[4].GetFloat();
+        uint32 visitCount = fields[5].GetUInt32();
+        uint32 successCount = fields[6].GetUInt32();
+        uint32 failureCount = fields[7].GetUInt32();
+        BotLearnedScore poiScore = BotExperienceLearningPolicy::ScorePoi(bot, candidateId, candidateX, candidateY, candidateZ, staticScore, visitCount, successCount, failureCount, _learningConfig);
+        BotLearnedScore pathScore = BotExperienceLearningPolicy::ScorePath(bot, bot->GetPositionX(), bot->GetPositionY(), candidateX, candidateY, _learningConfig);
+        if (poiScore.DangerScore >= 3.0f || pathScore.Penalty >= _learningConfig.RecentFailurePenaltyWeight)
             continue;
 
-        poiId = candidateId;
-        x = candidateX;
-        y = candidateY;
-        z = candidateZ;
-        return true;
+        float adjustedScore = staticScore - float(visitCount) * 15.0f - float(failureCount) * 25.0f + poiScore.Score + pathScore.Score;
+        if (!found || adjustedScore > bestScore)
+        {
+            found = true;
+            bestScore = adjustedScore;
+            bestId = candidateId;
+            bestX = candidateX;
+            bestY = candidateY;
+            bestZ = candidateZ;
+        }
     } while (result->NextRow());
 
-    return false;
+    if (!found)
+        return false;
+
+    poiId = bestId;
+    x = bestX;
+    y = bestY;
+    z = bestZ;
+    return true;
 }
 
 void BotWorldPopulationMgr::MarkPoiVisited(uint64 poiId) const
@@ -898,11 +928,15 @@ void BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, fl
     if (!bot)
         return;
 
-    if (IsFailedPathRecently(bot->GetGUID().GetCounter(), bot->GetMapId(), bot->GetPositionX(), bot->GetPositionY(), x, y))
+    BotLearnedScore pathScore = BotExperienceLearningPolicy::ScorePath(bot, bot->GetPositionX(), bot->GetPositionY(), x, y, _learningConfig);
+    if (IsFailedPathRecently(bot->GetGUID().GetCounter(), bot->GetMapId(), bot->GetPositionX(), bot->GetPositionY(), x, y)
+        || pathScore.Penalty >= _learningConfig.RecentFailurePenaltyWeight)
     {
         float angle = bot->GetAngle(x, y) + frand(-0.75f, 0.75f);
         Position alternate = bot->GetFirstCollisionPosition(6.0f, angle);
-        if (!IsFailedPathRecently(bot->GetGUID().GetCounter(), bot->GetMapId(), bot->GetPositionX(), bot->GetPositionY(), alternate.GetPositionX(), alternate.GetPositionY()))
+        BotLearnedScore alternatePathScore = BotExperienceLearningPolicy::ScorePath(bot, bot->GetPositionX(), bot->GetPositionY(), alternate.GetPositionX(), alternate.GetPositionY(), _learningConfig);
+        if (!IsFailedPathRecently(bot->GetGUID().GetCounter(), bot->GetMapId(), bot->GetPositionX(), bot->GetPositionY(), alternate.GetPositionX(), alternate.GetPositionY())
+            && alternatePathScore.Penalty < pathScore.Penalty)
         {
             x = alternate.GetPositionX();
             y = alternate.GetPositionY();
@@ -940,9 +974,49 @@ BotWorldPopulationMgr::DeathRecoveryResult BotWorldPopulationMgr::RecoverDeadBot
 
     BotDeathRecoveryPolicy policy = BuildDeathRecoveryPolicy();
     recovery.RepeatedDeath = state.RecentDeathCount >= policy.MaxDeathsBeforeFallback;
-
+    struct ScoredMode
+    {
+        std::string Mode;
+        float Score = 0.0f;
+    };
+    std::vector<ScoredMode> scoredModes;
     for (std::string const& mode : policy.Modes)
     {
+        float x = bot->GetPositionX();
+        float y = bot->GetPositionY();
+        float z = bot->GetPositionZ();
+        if (mode == "last_safe_position" && !state.SafePositions.empty())
+        {
+            WorldBotState::SafePosition const& safe = state.SafePositions.back();
+            x = safe.X;
+            y = safe.Y;
+            z = safe.Z;
+        }
+        else if (mode == "configured_center_fallback")
+        {
+            x = _config.CenterX;
+            y = _config.CenterY;
+            z = _config.CenterZ;
+        }
+
+        BotLearnedScore learned = BotExperienceLearningPolicy::ScoreRecoveryMode(bot, mode.c_str(), x, y, z, state.RecentDeathCount, _learningConfig);
+        float staticScore = mode == "last_safe_position" ? 20.0f
+            : mode == "safe_local_resurrect" ? 10.0f
+            : mode == "nearest_graveyard_or_spirit_healer" ? 8.0f
+            : mode == "corpse_recover" ? 6.0f
+            : 0.0f;
+        scoredModes.push_back({ mode, staticScore + learned.Score });
+    }
+    std::sort(scoredModes.begin(), scoredModes.end(), [](ScoredMode const& left, ScoredMode const& right)
+    {
+        if (left.Score == right.Score)
+            return left.Mode < right.Mode;
+        return left.Score > right.Score;
+    });
+
+    for (ScoredMode const& scored : scoredModes)
+    {
+        std::string const& mode = scored.Mode;
         if (mode == "configured_center_fallback" && (!policy.CenterFallbackEnabled || !recovery.RepeatedDeath))
             continue;
 
@@ -1157,7 +1231,7 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
     BotRolePowerBreakdown power = BotLongTermProgressionBrain::CalculateRolePower(bot);
     BotProgressionStage stage = BotLongTermProgressionBrain::ClassifyStage(bot, power);
     std::vector<BotActivityScore> activityScores = _config.EnableProgression
-        ? BotLongTermProgressionBrain::ScoreActivities(bot, power, stage, _config.AllowQuesting, _config.AllowCombat)
+        ? BotLongTermProgressionBrain::ScoreActivities(bot, power, stage, _config.AllowQuesting, _config.AllowCombat, &_learningConfig)
         : std::vector<BotActivityScore>(1, BotActivityScore());
     BotActivityScore chosenActivity = BotLongTermProgressionBrain::ChooseActivity(activityScores);
     state.ActivityType = BotLongTermProgressionBrain::ToString(chosenActivity.Activity);
@@ -1381,22 +1455,41 @@ Unit* BotWorldPopulationMgr::SelectSafeTarget(Player* bot) const
     if (!bot)
         return nullptr;
 
-    Unit* target = bot->SelectNearbyTarget(nullptr, 30.0f);
-    if (!target || !target->IsAlive() || !bot->IsValidAttackTarget(target) || !bot->IsWithinLOSInMap(target))
-        return nullptr;
+    std::vector<WorldObject*> objects;
+    Trinity::AllWorldObjectsInRange check(bot, 30.0f);
+    Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(bot, objects, check);
+    Cell::VisitAllObjects(bot, searcher, 30.0f);
 
-    if (Creature* creature = target->ToCreature())
-        if (creature->isElite())
-            return nullptr;
+    Unit* best = nullptr;
+    float bestScore = -100000.0f;
+    for (WorldObject* object : objects)
+    {
+        Unit* target = object ? object->ToUnit() : nullptr;
+        if (!target || !target->IsAlive() || !bot->IsValidAttackTarget(target) || !bot->IsWithinLOSInMap(target))
+            continue;
 
-    int32 levelDelta = int32(target->getLevel()) - int32(bot->getLevel());
-    if (levelDelta > 1)
-        return nullptr;
+        if (Creature* creature = target->ToCreature())
+            if (creature->isElite())
+                continue;
 
-    if (target->GetExactDist(bot) > 25.0f)
-        return nullptr;
+        int32 levelDelta = int32(target->getLevel()) - int32(bot->getLevel());
+        if (levelDelta > 1)
+            continue;
 
-    return target;
+        float dist = target->GetExactDist(bot);
+        if (dist > 25.0f)
+            continue;
+
+        BotLearnedScore learned = BotExperienceLearningPolicy::ScoreMob(bot, target, _learningConfig);
+        float score = 100.0f - dist - std::max<int32>(0, levelDelta) * 20.0f + learned.Score;
+        if (!best || score > bestScore)
+        {
+            best = target;
+            bestScore = score;
+        }
+    }
+
+    return best;
 }
 
 Unit* BotWorldPopulationMgr::SelectQuestObjectiveTarget(Player* bot, QuestObjectivePlan const& plan) const
@@ -1412,7 +1505,7 @@ Unit* BotWorldPopulationMgr::SelectQuestObjectiveTarget(Player* bot, QuestObject
         Cell::VisitAllObjects(bot, searcher, 70.0f);
 
         Creature* best = nullptr;
-        float bestDist = 0.0f;
+        float bestDist = -100000.0f;
         for (WorldObject* object : objects)
         {
             Creature* creature = object ? object->ToCreature() : nullptr;
@@ -1428,11 +1521,13 @@ Unit* BotWorldPopulationMgr::SelectQuestObjectiveTarget(Player* bot, QuestObject
             if (int32(creature->getLevel()) - int32(bot->getLevel()) > 1)
                 continue;
 
+            BotLearnedScore learned = BotExperienceLearningPolicy::ScoreMob(bot, creature, _learningConfig);
             float dist = bot->GetExactDist(creature);
-            if (!best || dist < bestDist)
+            float score = 100.0f - dist + learned.Score;
+            if (!best || score > bestDist)
             {
                 best = creature;
-                bestDist = dist;
+                bestDist = score;
             }
         }
 
@@ -1446,7 +1541,7 @@ Unit* BotWorldPopulationMgr::SelectQuestObjectiveTarget(Player* bot, QuestObject
     std::vector<Creature*> creatures;
     bot->GetCreatureListWithEntryInGrid(creatures, uint32(plan.RequiredEntry), 60.0f);
     Creature* best = nullptr;
-    float bestDist = 0.0f;
+    float bestDist = -100000.0f;
     for (Creature* creature : creatures)
     {
         if (!creature || !creature->IsAlive() || !bot->IsValidAttackTarget(creature) || !bot->IsWithinLOSInMap(creature))
@@ -1456,11 +1551,13 @@ Unit* BotWorldPopulationMgr::SelectQuestObjectiveTarget(Player* bot, QuestObject
         if (int32(creature->getLevel()) - int32(bot->getLevel()) > 1)
             continue;
 
+        BotLearnedScore learned = BotExperienceLearningPolicy::ScoreMob(bot, creature, _learningConfig);
         float dist = bot->GetExactDist(creature);
-        if (!best || dist < bestDist)
+        float score = 100.0f - dist + learned.Score;
+        if (!best || score > bestDist)
         {
             best = creature;
-            bestDist = dist;
+            bestDist = score;
         }
     }
 
@@ -1517,7 +1614,9 @@ WorldObject* BotWorldPopulationMgr::SelectQuestGiver(Player* bot, bool completeO
             }
 
             float dist = bot->GetExactDist(object);
-            float score = (completeOnly ? 1000.0f : 100.0f) - dist;
+            BotLearnedScore learned = BotExperienceLearningPolicy::ScoreQuest(bot, candidateQuestId, _learningConfig);
+            float areaDanger = BotExperienceLearningPolicy::ScoreArea(bot, object->GetAreaId(), _learningConfig).Score;
+            float score = (completeOnly ? 1000.0f : 100.0f) - dist + learned.Score + areaDanger;
             if (!best || score > bestScore)
             {
                 best = object;
@@ -1596,6 +1695,8 @@ bool BotWorldPopulationMgr::FindActiveQuestObjective(Player* bot, QuestObjective
     if (!bot)
         return false;
 
+    bool found = false;
+    float bestScore = -100000.0f;
     for (auto const& questStatus : bot->getQuestStatusMap())
     {
         if (questStatus.second.Status != QUEST_STATUS_INCOMPLETE)
@@ -1612,12 +1713,20 @@ bool BotWorldPopulationMgr::FindActiveQuestObjective(Player* bot, QuestObjective
             if (!required || !requiredCount || questStatus.second.CreatureOrGOCount[i] >= requiredCount)
                 continue;
 
-            plan.QuestId = quest->GetQuestId();
-            plan.RequiredEntry = required;
-            plan.RequiredCount = requiredCount;
-            plan.CurrentCount = questStatus.second.CreatureOrGOCount[i];
-            plan.IsGameObject = required < 0;
-            return true;
+            BotLearnedScore learned = BotExperienceLearningPolicy::ScoreQuest(bot, quest->GetQuestId(), _learningConfig);
+            float progress = requiredCount ? float(questStatus.second.CreatureOrGOCount[i]) / float(requiredCount) : 0.0f;
+            float score = 25.0f + progress * 10.0f + learned.Score;
+            if (!found || score > bestScore)
+            {
+                plan = QuestObjectivePlan();
+                plan.QuestId = quest->GetQuestId();
+                plan.RequiredEntry = required;
+                plan.RequiredCount = requiredCount;
+                plan.CurrentCount = questStatus.second.CreatureOrGOCount[i];
+                plan.IsGameObject = required < 0;
+                found = true;
+                bestScore = score;
+            }
         }
 
         for (uint8 i = 0; i < QUEST_ITEM_OBJECTIVES_COUNT; ++i)
@@ -1627,16 +1736,24 @@ bool BotWorldPopulationMgr::FindActiveQuestObjective(Player* bot, QuestObjective
             if (!requiredItem || !requiredCount || questStatus.second.ItemCount[i] >= requiredCount)
                 continue;
 
-            plan.QuestId = quest->GetQuestId();
-            plan.RequiredCount = requiredCount;
-            plan.CurrentCount = questStatus.second.ItemCount[i];
-            plan.IsItemObjective = true;
-            plan.ItemId = requiredItem;
-            return true;
+            BotLearnedScore learned = BotExperienceLearningPolicy::ScoreQuest(bot, quest->GetQuestId(), _learningConfig);
+            float progress = requiredCount ? float(questStatus.second.ItemCount[i]) / float(requiredCount) : 0.0f;
+            float score = 20.0f + progress * 10.0f + learned.Score;
+            if (!found || score > bestScore)
+            {
+                plan = QuestObjectivePlan();
+                plan.QuestId = quest->GetQuestId();
+                plan.RequiredCount = requiredCount;
+                plan.CurrentCount = questStatus.second.ItemCount[i];
+                plan.IsItemObjective = true;
+                plan.ItemId = requiredItem;
+                found = true;
+                bestScore = score;
+            }
         }
     }
 
-    return false;
+    return found;
 }
 
 bool BotWorldPopulationMgr::HasSimpleSupportedObjective(Quest const* quest) const
@@ -3455,7 +3572,7 @@ void BotWorldPopulationMgr::RecordActivityStart(WorldBotState& state, Player* bo
     BotRolePowerBreakdown power = BotLongTermProgressionBrain::CalculateRolePower(bot);
     BotProgressionStage stage = BotLongTermProgressionBrain::ClassifyStage(bot, power);
     std::vector<BotActivityScore> activityScores = _config.EnableProgression
-        ? BotLongTermProgressionBrain::ScoreActivities(bot, power, stage, _config.AllowQuesting, _config.AllowCombat)
+        ? BotLongTermProgressionBrain::ScoreActivities(bot, power, stage, _config.AllowQuesting, _config.AllowCombat, &_learningConfig)
         : std::vector<BotActivityScore>(1, BotActivityScore());
     BotActivityScore chosenActivity = BotLongTermProgressionBrain::ChooseActivity(activityScores);
     state.ActivityStartPower = power.Total;
@@ -3495,6 +3612,8 @@ void BotWorldPopulationMgr::RecordActivityStop(WorldBotState const& state, Playe
     {
         std::string features = BuildEmbeddingFeaturesJson(bot, nullptr, "area", bot->GetAreaId(), state.ActivityType.c_str());
         UpdateSemanticOutcomeStats(bot, "area", bot->GetAreaId(), "activity_completed", "ok", powerDelta, powerDelta, false, features.c_str());
+        std::string activityFeatures = BuildEmbeddingFeaturesJson(bot, nullptr, "activity", BotExperienceLearningPolicy::StableKey(state.ActivityType), state.ActivityType.c_str());
+        UpdateSemanticOutcomeStats(bot, "activity", BotExperienceLearningPolicy::StableKey(state.ActivityType), "activity_completed", "ok", powerDelta, powerDelta, deaths > 0, activityFeatures.c_str());
     }
 }
 
@@ -3701,6 +3820,11 @@ void BotWorldPopulationMgr::RecordQuestEvent(WorldBotState& state, Player* bot, 
         questId, itemId, res.c_str(), valueInt, raw.c_str(), semantic.c_str(), context.c_str());
 
     UpdateSemanticStatsFromEvent(bot, target, eventType, result, 0.0f, valueInt, 0, semanticJson);
+    if (questId)
+    {
+        std::string features = BuildEmbeddingFeaturesJson(bot, target, "quest", questId, eventType ? eventType : "quest_event");
+        UpdateSemanticOutcomeStats(bot, "quest", questId, eventType, result, float(valueInt), 0.0f, EventLooksFailure(eventType, result), features.c_str());
+    }
     if (itemId)
     {
         std::string features = BuildEmbeddingFeaturesJson(bot, target, "item", itemId, eventType ? eventType : "quest_reward");
@@ -4058,6 +4182,12 @@ void BotWorldPopulationMgr::RecordEvent(WorldBotState& state, Player* bot, char 
         bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), uint32(bot->getLevel()), event.c_str(), targetGuid, targetEntry, spellId, res.c_str(), valueFloat, valueInt, raw.c_str(), semantic.c_str());
 
     UpdateSemanticStatsFromEvent(bot, target, eventType, result, valueFloat, valueInt, spellId, semanticJson);
+    if (eventName == "resurrected" || eventName == "death_recovery_failed" || eventName == "teleport_fallback_used")
+    {
+        std::string mode = result && *result ? result : _config.DeathRecoveryMode;
+        std::string features = BuildEmbeddingFeaturesJson(bot, target, "recovery", BotExperienceLearningPolicy::StableKey(mode), mode.c_str());
+        UpdateSemanticOutcomeStats(bot, "recovery", BotExperienceLearningPolicy::StableKey(mode), eventType, result, valueFloat, 0.0f, EventLooksFailure(eventType, result), features.c_str());
+    }
     if (policy.writeReplay)
         RecordPolicyReplay(state, bot, target, policyInput, rawJson, semanticJson);
 }
@@ -4094,13 +4224,27 @@ void BotWorldPopulationMgr::RecordDecision(WorldBotState& state, Player* bot, ch
         chosen << ",\"target_guid\":" << target->GetGUID().GetCounter();
     chosen << ",\"activity\":\"" << JsonEscape(BotLongTermProgressionBrain::ToString(chosenActivity.Activity)) << "\""
            << ",\"activity_score\":" << chosenActivity.Score
-           << ",\"expected_power_gain\":" << chosenActivity.ExpectedPowerGain;
+           << ",\"expected_power_gain\":" << chosenActivity.ExpectedPowerGain
+           << ",\"learned_score\":" << chosenActivity.LearnedScore
+           << ",\"learned_penalty\":" << chosenActivity.LearnedPenalty
+           << ",\"learned_reason\":\"" << JsonEscape(chosenActivity.LearnedReason) << "\""
+           << ",\"sample_count\":" << chosenActivity.LearnedSampleCount
+           << ",\"danger_score\":" << chosenActivity.LearnedDangerScore
+           << ",\"progression_value\":" << chosenActivity.LearnedProgressionValue
+           << ",\"confidence\":" << chosenActivity.LearnedConfidence;
     chosen << "}";
     std::ostringstream outcome;
     outcome << "{\"main_goal\":\"increase_character_power\""
             << ",\"current_stage\":\"" << JsonEscape(state.ProgressionStage) << "\""
             << ",\"chosen_activity\":\"" << JsonEscape(BotLongTermProgressionBrain::ToString(chosenActivity.Activity)) << "\""
             << ",\"expected_value\":" << chosenActivity.Score
+            << ",\"learned_score\":" << chosenActivity.LearnedScore
+            << ",\"learned_penalty\":" << chosenActivity.LearnedPenalty
+            << ",\"learned_reason\":\"" << JsonEscape(chosenActivity.LearnedReason) << "\""
+            << ",\"sample_count\":" << chosenActivity.LearnedSampleCount
+            << ",\"danger_score\":" << chosenActivity.LearnedDangerScore
+            << ",\"progression_value\":" << chosenActivity.LearnedProgressionValue
+            << ",\"confidence\":" << chosenActivity.LearnedConfidence
             << ",\"role_power_score\":" << power.Total
             << ",\"power_delta\":" << (power.Total - state.ActivityStartPower)
             << "}";
@@ -4345,6 +4489,9 @@ std::string BotWorldPopulationMgr::BuildSemanticJson(Player* bot, Unit const* ta
     SemanticOutcomeStats areaStats = GetSemanticOutcomeStats("area", bot ? bot->GetAreaId() : 0);
     SemanticOutcomeStats mobStats = GetSemanticOutcomeStats("mob", targetEntry);
     SemanticOutcomeStats spellStats = GetSemanticOutcomeStats("spell", targetCastSpellId);
+    BotLearnedScore activityLearned = bot ? BotExperienceLearningPolicy::ScoreActivity(bot, activity, _learningConfig) : BotLearnedScore();
+    BotLearnedScore areaLearned = bot ? BotExperienceLearningPolicy::ScoreArea(bot, bot->GetAreaId(), _learningConfig) : BotLearnedScore();
+    BotLearnedScore mobLearned = (bot && target) ? BotExperienceLearningPolicy::ScoreMob(bot, target, _learningConfig) : BotLearnedScore();
 
     json << "{\"situation_type\":\"" << JsonEscape(situationType) << "\""
          << ",\"role\":\"" << JsonEscape((dungeonTrash || bossEncounter) ? GetDungeonRole(bot) : "solo") << "\""
@@ -4363,6 +4510,9 @@ std::string BotWorldPopulationMgr::BuildSemanticJson(Player* bot, Unit const* ta
         learnedMechanicKey = 10;
     SemanticOutcomeStats mechanicStats = GetSemanticOutcomeStats("mechanic", learnedMechanicKey);
     json << ",\"mechanic\":" << BuildOutcomeStatsJson(mechanicStats) << "}"
+         << ",\"learned_policy\":{\"activity\":" << BotExperienceLearningPolicy::ToJson(activityLearned)
+         << ",\"area\":" << BotExperienceLearningPolicy::ToJson(areaLearned)
+         << ",\"mob\":" << BotExperienceLearningPolicy::ToJson(mobLearned) << "}"
          << ",\"progression\":{\"main_goal\":\"increase_character_power\""
          << ",\"stage\":\"" << JsonEscape(BotLongTermProgressionBrain::ToString(stage)) << "\""
          << ",\"role_power_score\":" << (power ? power->Total : 0.0f)
@@ -4483,6 +4633,13 @@ std::string BotWorldPopulationMgr::BuildConfigJson() const
          << ",\"teleport_to_center_on_death\":" << (_config.TeleportToCenterOnDeath ? "true" : "false")
          << ",\"max_deaths_before_fallback\":" << _config.MaxDeathsBeforeFallback
          << ",\"safe_position_memory_sec\":" << _config.SafePositionMemorySec
+         << ",\"bot_learning\":{\"enable\":" << (_learningConfig.Enabled ? "true" : "false")
+         << ",\"min_samples_for_strong_bias\":" << _learningConfig.MinSamplesForStrongBias
+         << ",\"danger_penalty_weight\":" << _learningConfig.DangerPenaltyWeight
+         << ",\"progression_reward_weight\":" << _learningConfig.ProgressionRewardWeight
+         << ",\"recent_failure_penalty_weight\":" << _learningConfig.RecentFailurePenaltyWeight
+         << ",\"exploration_novelty_weight\":" << _learningConfig.ExplorationNoveltyWeight
+         << ",\"allow_global_memory_fallback\":" << (_learningConfig.AllowGlobalMemoryFallback ? "true" : "false") << "}"
          << ",\"brain_version\":\"" << JsonEscape(_config.BrainVersion) << "\"}";
     return json.str();
 }
@@ -4507,6 +4664,13 @@ std::string BotWorldPopulationMgr::BuildActivityCandidatesJson(std::vector<BotAc
              << ",\"expected_wipe_risk\":" << score.ExpectedWipeRisk
              << ",\"expected_time_cost\":" << score.ExpectedTimeCost
              << ",\"expected_stuck_risk\":" << score.ExpectedStuckRisk
+             << ",\"learned_score\":" << score.LearnedScore
+             << ",\"learned_penalty\":" << score.LearnedPenalty
+             << ",\"learned_reason\":\"" << JsonEscape(score.LearnedReason) << "\""
+             << ",\"sample_count\":" << score.LearnedSampleCount
+             << ",\"danger_score\":" << score.LearnedDangerScore
+             << ",\"progression_value\":" << score.LearnedProgressionValue
+             << ",\"confidence\":" << score.LearnedConfidence
              << ",\"score\":" << score.Score << "}";
     }
     json << "]";
@@ -4573,6 +4737,13 @@ std::string BotWorldPopulationMgr::GetSummaryJson() const
          << ",\"heroic_raid_boss_kills\":" << status.HeroicRaidBossKills
          << ",\"raid_telemetry_events\":" << status.RaidTelemetryEvents
          << ",\"segment_counts\":" << _experimentCoordinator.GetCountsJson()
+         << ",\"bot_learning\":{\"enable\":" << (_learningConfig.Enabled ? "true" : "false")
+         << ",\"min_samples_for_strong_bias\":" << _learningConfig.MinSamplesForStrongBias
+         << ",\"danger_penalty_weight\":" << _learningConfig.DangerPenaltyWeight
+         << ",\"progression_reward_weight\":" << _learningConfig.ProgressionRewardWeight
+         << ",\"recent_failure_penalty_weight\":" << _learningConfig.RecentFailurePenaltyWeight
+         << ",\"exploration_novelty_weight\":" << _learningConfig.ExplorationNoveltyWeight
+         << ",\"allow_global_memory_fallback\":" << (_learningConfig.AllowGlobalMemoryFallback ? "true" : "false") << "}"
          << ",\"decisions\":" << status.Decisions
          << ",\"failures_recorded\":" << status.Failures << "}";
     return json.str();

@@ -18,6 +18,7 @@ list(APPEND PRIVATE_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotActionExecutor.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotController.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotExperimentCoordinator.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotExperienceLearningPolicy.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotLongTermProgressionBrain.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotMgr.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/Bots/BotTelemetryBuffer.cpp

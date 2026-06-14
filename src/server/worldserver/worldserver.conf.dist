@@ -3525,6 +3525,22 @@ BotTelemetry.PostEventWindowSec = 10
 BotTelemetry.MaxFramesPerBot = 120
 BotTelemetry.MaxOpenClipsPerBot = 4
 
+#
+#    BotLearning.*
+#        Description: Active experience-learning bias for autonomous bots. The
+#                     policy reads semantic outcome stats, local POI/danger/path
+#                     memory, and experiment decision/clip/replay/segment records
+#                     to bias future activity, quest, combat, exploration, path,
+#                     and recovery choices.
+#
+BotLearning.Enable = 1
+BotLearning.MinSamplesForStrongBias = 5
+BotLearning.DangerPenaltyWeight = 18.0
+BotLearning.ProgressionRewardWeight = 12.0
+BotLearning.RecentFailurePenaltyWeight = 10.0
+BotLearning.ExplorationNoveltyWeight = 4.0
+BotLearning.AllowGlobalMemoryFallback = 1
+
 BotProgression.Enable = 1
 BotProgression.PowerScoreVersion = "role_power_v1"
 BotProgression.AllowQuesting = 1

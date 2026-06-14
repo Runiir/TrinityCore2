@@ -104,7 +104,7 @@ uint8 RepresentativeEquipSlot(uint8 inventoryType)
     }
 }
 
-void AddActivity(std::vector<BotActivityScore>& activities, BotProgressionActivity activity, float power, float xp, float gold, float unlock, float dataset, float deathRisk, float wipeRisk, float timeCost, float stuckRisk)
+void AddActivity(std::vector<BotActivityScore>& activities, Player const* bot, BotExperienceLearningConfig const* learning, BotProgressionActivity activity, float power, float xp, float gold, float unlock, float dataset, float deathRisk, float wipeRisk, float timeCost, float stuckRisk)
 {
     BotActivityScore score;
     score.Activity = activity;
@@ -117,7 +117,18 @@ void AddActivity(std::vector<BotActivityScore>& activities, BotProgressionActivi
     score.ExpectedWipeRisk = wipeRisk;
     score.ExpectedTimeCost = timeCost;
     score.ExpectedStuckRisk = stuckRisk;
-    score.Score = power + xp + gold + unlock + dataset - deathRisk - wipeRisk - timeCost - stuckRisk;
+    if (learning && learning->Enabled)
+    {
+        BotLearnedScore learned = BotExperienceLearningPolicy::ScoreActivity(bot, activity, *learning);
+        score.LearnedScore = learned.Score;
+        score.LearnedPenalty = learned.Penalty;
+        score.LearnedConfidence = learned.Confidence;
+        score.LearnedSampleCount = learned.SampleCount;
+        score.LearnedDangerScore = learned.DangerScore;
+        score.LearnedProgressionValue = learned.ProgressionValue;
+        score.LearnedReason = learned.Reason;
+    }
+    score.Score = power + xp + gold + unlock + dataset - deathRisk - wipeRisk - timeCost - stuckRisk + score.LearnedScore;
     activities.push_back(score);
 }
 }
@@ -188,7 +199,7 @@ BotProgressionStage BotLongTermProgressionBrain::ClassifyStage(Player const* bot
     return BotProgressionStage::HeroicRaid;
 }
 
-std::vector<BotActivityScore> BotLongTermProgressionBrain::ScoreActivities(Player const* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, bool allowQuesting, bool allowCombat)
+std::vector<BotActivityScore> BotLongTermProgressionBrain::ScoreActivities(Player const* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, bool allowQuesting, bool allowCombat, BotExperienceLearningConfig const* learning)
 {
     std::vector<BotActivityScore> activities;
     if (!bot)
@@ -199,30 +210,30 @@ std::vector<BotActivityScore> BotLongTermProgressionBrain::ScoreActivities(Playe
     float gearDeficit = std::max<float>(0.0f, float(bot->getLevel()) * 5.0f - bot->GetAverageItemLevel());
 
     if (lowBagPenalty > 0.0f || trainValue > 0.0f)
-        AddActivity(activities, BotProgressionActivity::VendorRepairTrain, lowBagPenalty + trainValue, 0.0f, 2.0f, trainValue, 0.1f, 0.1f, 0.0f, 1.5f, 0.5f);
+        AddActivity(activities, bot, learning, BotProgressionActivity::VendorRepairTrain, lowBagPenalty + trainValue, 0.0f, 2.0f, trainValue, 0.1f, 0.1f, 0.0f, 1.5f, 0.5f);
 
     if (stage == BotProgressionStage::Leveling)
     {
         if (allowQuesting)
-            AddActivity(activities, BotProgressionActivity::Questing, 6.0f, 18.0f, 2.0f, 4.0f, 2.0f, 2.0f, 0.0f, 4.0f, 2.0f);
+            AddActivity(activities, bot, learning, BotProgressionActivity::Questing, 6.0f, 18.0f, 2.0f, 4.0f, 2.0f, 2.0f, 0.0f, 4.0f, 2.0f);
         if (allowCombat)
-            AddActivity(activities, BotProgressionActivity::Grinding, 4.0f + gearDeficit * 0.05f, 10.0f, 1.5f, 0.5f, 1.0f, 1.5f, 0.0f, 2.5f, 1.0f);
-        AddActivity(activities, BotProgressionActivity::ProfessionFarm, 2.0f, 0.5f, 2.0f, 1.0f, 0.5f, 0.5f, 0.0f, 3.0f, 1.0f);
+            AddActivity(activities, bot, learning, BotProgressionActivity::Grinding, 4.0f + gearDeficit * 0.05f, 10.0f, 1.5f, 0.5f, 1.0f, 1.5f, 0.0f, 2.5f, 1.0f);
+        AddActivity(activities, bot, learning, BotProgressionActivity::ProfessionFarm, 2.0f, 0.5f, 2.0f, 1.0f, 0.5f, 0.5f, 0.0f, 3.0f, 1.0f);
     }
     else if (stage == BotProgressionStage::FreshMax)
     {
-        AddActivity(activities, BotProgressionActivity::NormalDungeon, 20.0f, 0.0f, 4.0f, 10.0f, 2.0f, 5.0f, 3.0f, 8.0f, 1.0f);
-        AddActivity(activities, BotProgressionActivity::ReputationDaily, 10.0f, 0.0f, 3.0f, 8.0f, 1.0f, 2.0f, 0.0f, 5.0f, 1.5f);
-        AddActivity(activities, BotProgressionActivity::GoldFarm, 3.0f, 0.0f, 8.0f, 1.0f, 0.5f, 1.0f, 0.0f, 4.0f, 1.0f);
+        AddActivity(activities, bot, learning, BotProgressionActivity::NormalDungeon, 20.0f, 0.0f, 4.0f, 10.0f, 2.0f, 5.0f, 3.0f, 8.0f, 1.0f);
+        AddActivity(activities, bot, learning, BotProgressionActivity::ReputationDaily, 10.0f, 0.0f, 3.0f, 8.0f, 1.0f, 2.0f, 0.0f, 5.0f, 1.5f);
+        AddActivity(activities, bot, learning, BotProgressionActivity::GoldFarm, 3.0f, 0.0f, 8.0f, 1.0f, 0.5f, 1.0f, 0.0f, 4.0f, 1.0f);
     }
     else if (stage == BotProgressionStage::DungeonGearing)
-        AddActivity(activities, BotProgressionActivity::HeroicDungeon, 24.0f, 0.0f, 5.0f, 12.0f, 2.0f, 7.0f, 4.0f, 9.0f, 1.0f);
+        AddActivity(activities, bot, learning, BotProgressionActivity::HeroicDungeon, 24.0f, 0.0f, 5.0f, 12.0f, 2.0f, 7.0f, 4.0f, 9.0f, 1.0f);
     else if (stage == BotProgressionStage::HeroicGearing)
-        AddActivity(activities, BotProgressionActivity::Raid, 30.0f, 0.0f, 6.0f, 18.0f, 3.0f, 10.0f, 7.0f, 12.0f, 1.5f);
+        AddActivity(activities, bot, learning, BotProgressionActivity::Raid, 30.0f, 0.0f, 6.0f, 18.0f, 3.0f, 10.0f, 7.0f, 12.0f, 1.5f);
     else
-        AddActivity(activities, BotProgressionActivity::HeroicRaid, 35.0f, 0.0f, 8.0f, 22.0f, 4.0f, 14.0f, 10.0f, 15.0f, 2.0f);
+        AddActivity(activities, bot, learning, BotProgressionActivity::HeroicRaid, 35.0f, 0.0f, 8.0f, 22.0f, 4.0f, 14.0f, 10.0f, 15.0f, 2.0f);
 
-    AddActivity(activities, BotProgressionActivity::ExperimentExploration, 1.0f + power.Total * 0.001f, 0.5f, 0.5f, 0.0f, 3.0f, 0.5f, 0.0f, 1.0f, 0.5f);
+    AddActivity(activities, bot, learning, BotProgressionActivity::ExperimentExploration, 1.0f + power.Total * 0.001f, 0.5f, 0.5f, 0.0f, 3.0f, 0.5f, 0.0f, 1.0f, 0.5f);
     return activities;
 }
 

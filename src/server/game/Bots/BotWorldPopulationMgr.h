@@ -61,6 +61,7 @@ struct BotWorldExperimentConfig
     bool TeleportToCenterOnDeath = false;
     uint32 MaxDeathsBeforeFallback = 3;
     uint32 SafePositionMemorySec = 120;
+    BotExperienceLearningConfig Learning;
 };
 
 struct BotWorldStatus
@@ -512,6 +513,7 @@ private:
     uint64 _runId = 0;
     uint32 _elapsedMs = 0;
     BotWorldExperimentConfig _config;
+    BotExperienceLearningConfig _learningConfig;
     std::vector<WorldBotState> _bots;
     std::set<uint32> _failedSpawnGuids;
     BotWorldStatus _metrics;
