@@ -3429,6 +3429,18 @@ PlayerBot.Debug = 1
 #        Description: Starts always-on autonomous bots during worldserver startup when PlayerBot.Enable is also enabled.
 #        Default:     0
 #
+#    BotWorld.AutoStartRecording
+#        Description: Starts and rotates experiment_bot_runs recording windows while always-on autonomy is active.
+#        Default:     0
+#
+#    BotWorld.AutoRecordingWindowMinutes
+#        Description: Recording window length before the active autonomous run is stopped and a new run is started.
+#        Default:     30
+#
+#    BotWorld.AutoRecordingNamePrefix
+#        Description: Prefix used for automatically rotated always-on autonomy run names.
+#        Default:     "autonomy_window"
+#
 #    BotWorld.TargetPopulation
 #        Description: Default number of active autonomous bots for ".botauto start" or ".botexp start".
 #        Default:     10
@@ -3480,9 +3492,19 @@ PlayerBot.Debug = 1
 #        Description: In-memory rolling telemetry buffer. Frames are sampled in memory and only
 #                     persisted when trigger events open a pre/post event clip.
 #
+#    BotPolicyModel.*
+#        Description: Offline-trained policy model deployment controls. Mode may be shadow,
+#                     assist, or control. Shadow records scores without control; assist blends
+#                     scores into activity selection only when the registered model is accepted
+#                     and passes the evaluation guard. Control mode is disabled by default and
+#                     fail-closed to shadow until a stricter control implementation is added.
+#
 
 BotWorld.Enable = 1
 BotWorld.AutoStart = 0
+BotWorld.AutoStartRecording = 0
+BotWorld.AutoRecordingWindowMinutes = 30
+BotWorld.AutoRecordingNamePrefix = "autonomy_window"
 BotWorld.TargetPopulation = 10
 BotWorld.MaxPerMap = 50
 BotWorld.TickMs = 1000
@@ -3524,6 +3546,17 @@ BotTelemetry.PreEventWindowSec = 20
 BotTelemetry.PostEventWindowSec = 10
 BotTelemetry.MaxFramesPerBot = 120
 BotTelemetry.MaxOpenClipsPerBot = 4
+
+BotPolicyModel.Enable = 0
+BotPolicyModel.Mode = "shadow"
+BotPolicyModel.Version = ""
+BotPolicyModel.ScoreWeight = 1.0
+BotPolicyModel.FailClosed = 1
+BotPolicyModel.MaxDecisionLatencyMs = 10
+BotPolicyModel.MinEvalRows = 100
+BotPolicyModel.MaxDeathRate = 0.0
+BotPolicyModel.MaxStuckRate = 0.0
+BotPolicyModel.MaxFailureRate = 0.0
 
 #
 #    BotLearning.*

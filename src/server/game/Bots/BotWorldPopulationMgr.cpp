@@ -29,7 +29,9 @@
 #include <chrono>
 #include <cmath>
 #include <cstdlib>
+#include <fstream>
 #include <iomanip>
+#include <regex>
 #include <shared_mutex>
 #include <sstream>
 
@@ -61,6 +63,87 @@ float UnitHealthPct(Unit const* unit)
 uint64 NowMs()
 {
     return uint64(std::chrono::duration_cast<std::chrono::milliseconds>(GameTime::GetGameTimeSystemPoint().time_since_epoch()).count());
+}
+
+std::string ReadSmallTextFile(std::string const& path, size_t maxBytes = 4 * 1024 * 1024)
+{
+    if (path.empty())
+        return "";
+
+    std::ifstream input(path.c_str(), std::ios::in | std::ios::binary);
+    if (!input)
+        return "";
+
+    std::ostringstream data;
+    data << input.rdbuf();
+    std::string value = data.str();
+    if (value.size() > maxBytes)
+        return "";
+    return value;
+}
+
+std::string ExtractJsonStringField(std::string const& json, std::string const& key)
+{
+    std::regex pattern("\"" + key + "\"\\s*:\\s*\"([^\"]*)\"");
+    std::smatch match;
+    if (std::regex_search(json, match, pattern) && match.size() > 1)
+        return match[1].str();
+    return "";
+}
+
+std::string ExtractJsonObjectField(std::string const& json, std::string const& key)
+{
+    std::string needle = "\"" + key + "\"";
+    size_t keyPos = json.find(needle);
+    if (keyPos == std::string::npos)
+        return "";
+    size_t colon = json.find(':', keyPos + needle.size());
+    if (colon == std::string::npos)
+        return "";
+    size_t start = json.find('{', colon);
+    if (start == std::string::npos)
+        return "";
+
+    uint32 depth = 0;
+    bool inString = false;
+    bool escaped = false;
+    for (size_t i = start; i < json.size(); ++i)
+    {
+        char c = json[i];
+        if (inString)
+        {
+            if (escaped)
+                escaped = false;
+            else if (c == '\\')
+                escaped = true;
+            else if (c == '"')
+                inString = false;
+            continue;
+        }
+
+        if (c == '"')
+            inString = true;
+        else if (c == '{')
+            ++depth;
+        else if (c == '}')
+        {
+            if (!depth)
+                return "";
+            --depth;
+            if (!depth)
+                return json.substr(start, i - start + 1);
+        }
+    }
+    return "";
+}
+
+std::map<std::string, float> ExtractJsonNumberMap(std::string const& objectJson)
+{
+    std::map<std::string, float> values;
+    std::regex pattern("\"([^\"]+)\"\\s*:\\s*(-?[0-9]+(?:\\.[0-9]+)?(?:[eE][+-]?[0-9]+)?)");
+    for (std::sregex_iterator itr(objectJson.begin(), objectJson.end(), pattern), end; itr != end; ++itr)
+        values[(*itr)[1].str()] = float(std::atof((*itr)[2].str().c_str()));
+    return values;
 }
 
 std::vector<std::string> SplitRecoveryModes(std::string const& mode)
@@ -303,6 +386,7 @@ bool BotWorldPopulationMgr::Start(std::string const& experimentName, BotWorldExp
         _metrics.Name = _config.Name;
         _metrics.TargetBots = _config.TargetPopulation;
         _elapsedMs = 0;
+        _recordingWindowElapsedMs = 0;
         RecordRunStart();
         return true;
     }
@@ -324,6 +408,7 @@ bool BotWorldPopulationMgr::Start(std::string const& experimentName, BotWorldExp
     _metrics.Name = _config.Name;
     _metrics.TargetBots = _config.TargetPopulation;
     _elapsedMs = 0;
+    _recordingWindowElapsedMs = 0;
     _active = true;
     _runtimeMode = BotWorldRuntimeMode::ManualExperiment;
 
@@ -390,11 +475,14 @@ bool BotWorldPopulationMgr::StartAutonomy(BotWorldExperimentConfig const* overri
     _metrics.Name = _config.Name;
     _metrics.TargetBots = _config.TargetPopulation;
     _elapsedMs = 0;
+    _recordingWindowElapsedMs = 0;
+    _recordingWindowIndex = 0;
     _runId = 0;
     _experimentId = 0;
     _active = true;
     _runtimeMode = BotWorldRuntimeMode::AlwaysOnAutonomy;
 
+    MaybeStartAutoRecordingWindow();
     EnsurePopulation();
     return _active;
 }
@@ -436,6 +524,7 @@ void BotWorldPopulationMgr::Update(uint32 diff)
         return;
 
     _elapsedMs += diff;
+    RotateAutoRecordingWindowIfNeeded(diff);
     EnsurePopulation();
 
     for (auto itr = _bots.begin(); itr != _bots.end();)
@@ -490,6 +579,9 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
     _config.TeleportToCenterOnDeath = sConfigMgr->GetBoolDefault("BotWorld.TeleportToCenterOnDeath", _config.TeleportToCenterOnDeath);
     _config.MaxDeathsBeforeFallback = std::max<uint32>(1, sConfigMgr->GetIntDefault("BotWorld.MaxDeathsBeforeFallback", _config.MaxDeathsBeforeFallback));
     _config.SafePositionMemorySec = std::max<uint32>(10, sConfigMgr->GetIntDefault("BotWorld.SafePositionMemorySec", _config.SafePositionMemorySec));
+    _config.AutoStartRecording = sConfigMgr->GetBoolDefault("BotWorld.AutoStartRecording", _config.AutoStartRecording);
+    _config.AutoRecordingWindowMinutes = std::max<uint32>(1, sConfigMgr->GetIntDefault("BotWorld.AutoRecordingWindowMinutes", _config.AutoRecordingWindowMinutes));
+    _config.AutoRecordingNamePrefix = sConfigMgr->GetStringDefault("BotWorld.AutoRecordingNamePrefix", _config.AutoRecordingNamePrefix);
     _config.Learning.Enabled = sConfigMgr->GetBoolDefault("BotLearning.Enable", _config.Learning.Enabled);
     _config.Learning.MinSamplesForStrongBias = std::max<uint32>(1, sConfigMgr->GetIntDefault("BotLearning.MinSamplesForStrongBias", _config.Learning.MinSamplesForStrongBias));
     _config.Learning.DangerPenaltyWeight = std::max(0.0f, sConfigMgr->GetFloatDefault("BotLearning.DangerPenaltyWeight", _config.Learning.DangerPenaltyWeight));
@@ -499,6 +591,20 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
     _config.Learning.AllowGlobalMemoryFallback = sConfigMgr->GetBoolDefault("BotLearning.AllowGlobalMemoryFallback", _config.Learning.AllowGlobalMemoryFallback);
     _learningConfig = _config.Learning;
 
+    _policyModelConfig.Enabled = sConfigMgr->GetBoolDefault("BotPolicyModel.Enable", _policyModelConfig.Enabled);
+    _policyModelConfig.Mode = sConfigMgr->GetStringDefault("BotPolicyModel.Mode", _policyModelConfig.Mode);
+    _policyModelConfig.Version = sConfigMgr->GetStringDefault("BotPolicyModel.Version", _policyModelConfig.Version);
+    _policyModelConfig.ScoreWeight = std::max(0.0f, sConfigMgr->GetFloatDefault("BotPolicyModel.ScoreWeight", _policyModelConfig.ScoreWeight));
+    _policyModelConfig.FailClosed = sConfigMgr->GetBoolDefault("BotPolicyModel.FailClosed", _policyModelConfig.FailClosed);
+    _policyModelConfig.MaxDecisionLatencyMs = std::max<uint32>(1, sConfigMgr->GetIntDefault("BotPolicyModel.MaxDecisionLatencyMs", _policyModelConfig.MaxDecisionLatencyMs));
+    _policyModelConfig.MinEvalRows = std::max<uint32>(1, sConfigMgr->GetIntDefault("BotPolicyModel.MinEvalRows", _policyModelConfig.MinEvalRows));
+    _policyModelConfig.MaxDeathRate = std::max(0.0f, sConfigMgr->GetFloatDefault("BotPolicyModel.MaxDeathRate", _policyModelConfig.MaxDeathRate));
+    _policyModelConfig.MaxStuckRate = std::max(0.0f, sConfigMgr->GetFloatDefault("BotPolicyModel.MaxStuckRate", _policyModelConfig.MaxStuckRate));
+    _policyModelConfig.MaxFailureRate = std::max(0.0f, sConfigMgr->GetFloatDefault("BotPolicyModel.MaxFailureRate", _policyModelConfig.MaxFailureRate));
+    if (_policyModelConfig.Mode != "shadow" && _policyModelConfig.Mode != "assist" && _policyModelConfig.Mode != "control")
+        _policyModelConfig.Mode = "shadow";
+    ValidatePolicyModelDeployment();
+
     BotTelemetryBufferConfig telemetry;
     telemetry.Enabled = sConfigMgr->GetBoolDefault("BotTelemetry.Enable", telemetry.Enabled);
     telemetry.FrameIntervalMs = std::max<uint32>(1, sConfigMgr->GetIntDefault("BotTelemetry.FrameIntervalMs", telemetry.FrameIntervalMs));
@@ -507,6 +613,175 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
     telemetry.MaxFramesPerBot = std::max<uint32>(1, sConfigMgr->GetIntDefault("BotTelemetry.MaxFramesPerBot", telemetry.MaxFramesPerBot));
     telemetry.MaxOpenClipsPerBot = std::max<uint32>(1, sConfigMgr->GetIntDefault("BotTelemetry.MaxOpenClipsPerBot", telemetry.MaxOpenClipsPerBot));
     _telemetryBuffer.Configure(telemetry);
+}
+
+void BotWorldPopulationMgr::MaybeStartAutoRecordingWindow()
+{
+    if (!_active || _runtimeMode != BotWorldRuntimeMode::AlwaysOnAutonomy || !_config.AutoStartRecording || _runId)
+        return;
+
+    _config.Name = BuildAutoRecordingWindowName();
+    _metrics.Name = _config.Name;
+    _metrics.TargetBots = _config.TargetPopulation;
+    _recordingWindowElapsedMs = 0;
+    RecordRunStart();
+}
+
+void BotWorldPopulationMgr::RotateAutoRecordingWindowIfNeeded(uint32 diff)
+{
+    if (!_active || _runtimeMode != BotWorldRuntimeMode::AlwaysOnAutonomy || !_config.AutoStartRecording)
+        return;
+
+    if (!_runId)
+    {
+        MaybeStartAutoRecordingWindow();
+        return;
+    }
+
+    _recordingWindowElapsedMs += diff;
+    uint32 windowMs = _config.AutoRecordingWindowMinutes * 60 * 1000;
+    if (_recordingWindowElapsedMs < windowMs)
+        return;
+
+    _telemetryBuffer.FlushOpenClips(_experimentId, _runId, _config.BrainVersion);
+    RecordRunStop();
+    ++_recordingWindowIndex;
+    _config.Name = BuildAutoRecordingWindowName();
+    _metrics = BotWorldStatus();
+    _metrics.Active = true;
+    _metrics.Mode = BotWorldRuntimeMode::AlwaysOnAutonomy;
+    _metrics.Name = _config.Name;
+    _metrics.TargetBots = _config.TargetPopulation;
+    _metrics.ActiveBots = uint32(_bots.size());
+    _elapsedMs = 0;
+    _recordingWindowElapsedMs = 0;
+    RecordRunStart();
+}
+
+std::string BotWorldPopulationMgr::BuildAutoRecordingWindowName() const
+{
+    std::ostringstream name;
+    name << (_config.AutoRecordingNamePrefix.empty() ? "autonomy_window" : _config.AutoRecordingNamePrefix)
+         << "_" << _recordingWindowIndex;
+    return name.str();
+}
+
+void BotWorldPopulationMgr::ValidatePolicyModelDeployment()
+{
+    _policyModelConfig.AssistAllowed = false;
+    _policyModelConfig.DeploymentReason = "disabled";
+    _policyModelConfig.ArtifactLoaded = false;
+    _policyModelConfig.ArtifactPath.clear();
+    _policyModelConfig.ModelType.clear();
+    _policyModelConfig.ModelMeans.clear();
+    _policyModelConfig.ModelWeights.clear();
+    if (!_policyModelConfig.Enabled)
+        return;
+
+    if (_policyModelConfig.Version.empty())
+    {
+        _policyModelConfig.DeploymentReason = "missing_model_version";
+        if (_policyModelConfig.FailClosed)
+            _policyModelConfig.Mode = "shadow";
+        return;
+    }
+
+    std::string version = _policyModelConfig.Version;
+    CharacterDatabase.EscapeString(version);
+    QueryResult result = CharacterDatabase.PQuery(
+        "SELECT accepted, artifact_path, model_type, "
+        "COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(metrics_json, '$.eval_rows')) AS UNSIGNED), 0), "
+        "COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(metrics_json, '$.death_rate')) AS DECIMAL(10,6)), 1), "
+        "COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(metrics_json, '$.stuck_rate')) AS DECIMAL(10,6)), 1), "
+        "COALESCE(CAST(JSON_UNQUOTE(JSON_EXTRACT(metrics_json, '$.failure_rate')) AS DECIMAL(10,6)), 1) "
+        "FROM bot_policy_models WHERE model_version = '%s' ORDER BY created_at DESC LIMIT 1",
+        version.c_str());
+
+    if (!result)
+    {
+        _policyModelConfig.DeploymentReason = "model_not_registered";
+        if (_policyModelConfig.FailClosed)
+            _policyModelConfig.Mode = "shadow";
+        return;
+    }
+
+    Field* fields = result->Fetch();
+    bool accepted = fields[0].GetUInt8() != 0;
+    _policyModelConfig.ArtifactPath = fields[1].GetString();
+    _policyModelConfig.ModelType = fields[2].GetString();
+    uint32 evalRows = fields[3].GetUInt32();
+    float deathRate = fields[4].GetFloat();
+    float stuckRate = fields[5].GetFloat();
+    float failureRate = fields[6].GetFloat();
+
+    if (!LoadPolicyModelArtifact(_policyModelConfig.ArtifactPath))
+        _policyModelConfig.DeploymentReason = "artifact_load_failed";
+    else if (_policyModelConfig.Mode == "shadow")
+    {
+        _policyModelConfig.DeploymentReason = "shadow_mode";
+        return;
+    }
+    else if (_policyModelConfig.Mode == "control")
+        _policyModelConfig.DeploymentReason = "control_mode_disabled";
+    else if (!accepted)
+        _policyModelConfig.DeploymentReason = "model_not_accepted";
+    else if (evalRows < _policyModelConfig.MinEvalRows)
+        _policyModelConfig.DeploymentReason = "insufficient_eval_rows";
+    else if (deathRate > _policyModelConfig.MaxDeathRate)
+        _policyModelConfig.DeploymentReason = "death_rate_regression";
+    else if (stuckRate > _policyModelConfig.MaxStuckRate)
+        _policyModelConfig.DeploymentReason = "stuck_rate_regression";
+    else if (failureRate > _policyModelConfig.MaxFailureRate)
+        _policyModelConfig.DeploymentReason = "failure_rate_regression";
+    else
+    {
+        _policyModelConfig.AssistAllowed = true;
+        _policyModelConfig.DeploymentReason = "assist_allowed";
+        return;
+    }
+
+    if (_policyModelConfig.FailClosed)
+        _policyModelConfig.Mode = "shadow";
+}
+
+bool BotWorldPopulationMgr::LoadPolicyModelArtifact(std::string const& artifactPath)
+{
+    std::string json = ReadSmallTextFile(artifactPath);
+    if (json.empty())
+        return false;
+
+    std::string version = ExtractJsonStringField(json, "model_version");
+    if (!version.empty() && version != _policyModelConfig.Version)
+        return false;
+
+    std::string schema = ExtractJsonStringField(json, "feature_schema_version");
+    if (!schema.empty())
+        _policyModelConfig.FeatureSchemaVersion = schema;
+
+    std::string meansObject = ExtractJsonObjectField(json, "means");
+    std::string weightsObject = ExtractJsonObjectField(json, "weights");
+    if (meansObject.empty() || weightsObject.empty())
+        return false;
+
+    std::map<std::string, float> means = ExtractJsonNumberMap(meansObject);
+    if (means.empty())
+        return false;
+
+    std::map<std::string, std::map<std::string, float>> weights;
+    for (char const* label : { "action_success", "expected_reward", "death_risk", "stuck_risk", "quest_completion_likelihood" })
+    {
+        std::string labelObject = ExtractJsonObjectField(weightsObject, label);
+        if (!labelObject.empty())
+            weights[label] = ExtractJsonNumberMap(labelObject);
+    }
+
+    if (weights.empty())
+        return false;
+
+    _policyModelConfig.ModelMeans = std::move(means);
+    _policyModelConfig.ModelWeights = std::move(weights);
+    _policyModelConfig.ArtifactLoaded = true;
+    return true;
 }
 
 void BotWorldPopulationMgr::EnsurePopulation()
@@ -1233,6 +1508,7 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
     std::vector<BotActivityScore> activityScores = _config.EnableProgression
         ? BotLongTermProgressionBrain::ScoreActivities(bot, power, stage, _config.AllowQuesting, _config.AllowCombat, &_learningConfig)
         : std::vector<BotActivityScore>(1, BotActivityScore());
+    ApplyPolicyModelScores(activityScores, bot, power, stage);
     BotActivityScore chosenActivity = BotLongTermProgressionBrain::ChooseActivity(activityScores);
     state.ActivityType = BotLongTermProgressionBrain::ToString(chosenActivity.Activity);
     state.ProgressionStage = BotLongTermProgressionBrain::ToString(stage);
@@ -3574,6 +3850,7 @@ void BotWorldPopulationMgr::RecordActivityStart(WorldBotState& state, Player* bo
     std::vector<BotActivityScore> activityScores = _config.EnableProgression
         ? BotLongTermProgressionBrain::ScoreActivities(bot, power, stage, _config.AllowQuesting, _config.AllowCombat, &_learningConfig)
         : std::vector<BotActivityScore>(1, BotActivityScore());
+    ApplyPolicyModelScores(activityScores, bot, power, stage);
     BotActivityScore chosenActivity = BotLongTermProgressionBrain::ChooseActivity(activityScores);
     state.ActivityStartPower = power.Total;
     state.ActivityStartGold = bot->GetMoney();
@@ -4078,6 +4355,79 @@ void BotWorldPopulationMgr::RecordPolicyReplay(WorldBotState const& state, Playe
         bot->GetPositionZ(), bot->GetOrientation(), botJson.c_str(), worldJson.c_str(), raw.c_str(), semantic.c_str(), actionJson.c_str(), failureJson.c_str());
 }
 
+uint64 BotWorldPopulationMgr::RecordDecisionReplay(WorldBotState const& state, Player* bot, Unit const* target, char const* situation, char const* action, char const* rawJson, char const* semanticJson, char const* candidateJson, BotActivityScore const& chosenActivity, bool failure)
+{
+    if (!_runId || !bot)
+        return 0;
+
+    uint32 targetEntry = 0;
+    uint64 targetGuid = 0;
+    if (target)
+    {
+        targetGuid = target->GetGUID().GetCounter();
+        if (Creature const* creature = target->ToCreature())
+            targetEntry = creature->GetEntry();
+    }
+
+    std::ostringstream botSnapshot;
+    botSnapshot << "{\"guid\":" << bot->GetGUID().GetCounter()
+                << ",\"level\":" << uint32(bot->getLevel())
+                << ",\"class_id\":" << uint32(bot->getClass())
+                << ",\"hp\":" << bot->GetHealth()
+                << ",\"max_hp\":" << bot->GetMaxHealth()
+                << ",\"activity\":\"" << JsonEscape(state.ActivityType) << "\""
+                << ",\"progression_stage\":\"" << JsonEscape(state.ProgressionStage) << "\"}";
+
+    std::ostringstream worldSnapshot;
+    worldSnapshot << "{\"map_id\":" << bot->GetMapId()
+                  << ",\"zone_id\":" << bot->GetZoneId()
+                  << ",\"area_id\":" << bot->GetAreaId()
+                  << ",\"x\":" << bot->GetPositionX()
+                  << ",\"y\":" << bot->GetPositionY()
+                  << ",\"z\":" << bot->GetPositionZ()
+                  << ",\"o\":" << bot->GetOrientation()
+                  << ",\"target_guid\":" << targetGuid
+                  << ",\"target_entry\":" << targetEntry << "}";
+
+    std::ostringstream actionSnapshot;
+    actionSnapshot << "{\"action\":\"" << JsonEscape(action ? action : "wait") << "\""
+                   << ",\"situation\":\"" << JsonEscape(situation ? situation : "idle") << "\""
+                   << ",\"chosen_activity\":\"" << JsonEscape(BotLongTermProgressionBrain::ToString(chosenActivity.Activity)) << "\""
+                   << ",\"model_version\":\"" << JsonEscape(_policyModelConfig.Version) << "\""
+                   << ",\"feature_schema_version\":\"" << JsonEscape(_policyModelConfig.FeatureSchemaVersion) << "\""
+                   << ",\"candidates\":" << (candidateJson && *candidateJson ? candidateJson : "[]") << "}";
+
+    std::ostringstream failureSnapshot;
+    failureSnapshot << "{\"failure\":" << (failure ? "true" : "false")
+                    << ",\"activity_score\":" << chosenActivity.Score
+                    << ",\"learned_score\":" << chosenActivity.LearnedScore
+                    << ",\"learned_penalty\":" << chosenActivity.LearnedPenalty
+                    << ",\"danger_score\":" << chosenActivity.LearnedDangerScore
+                    << ",\"progression_value\":" << chosenActivity.LearnedProgressionValue
+                    << ",\"confidence\":" << chosenActivity.LearnedConfidence << "}";
+
+    std::string type = "policy_model_prediction";
+    std::string botJson = botSnapshot.str();
+    std::string worldJson = worldSnapshot.str();
+    std::string raw = rawJson ? rawJson : "{}";
+    std::string semantic = semanticJson ? semanticJson : "{}";
+    std::string actionJson = actionSnapshot.str();
+    std::string failureJson = failureSnapshot.str();
+    CharacterDatabase.EscapeString(type);
+    CharacterDatabase.EscapeString(botJson);
+    CharacterDatabase.EscapeString(worldJson);
+    CharacterDatabase.EscapeString(raw);
+    CharacterDatabase.EscapeString(semantic);
+    CharacterDatabase.EscapeString(actionJson);
+    CharacterDatabase.EscapeString(failureJson);
+
+    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_replay_records (experiment_id, run_id, bot_guid, replay_type, map_id, zone_id, x, y, z, o, bot_snapshot_json, world_snapshot_json, raw_state_json, semantic_state_json, chosen_action_json, failure_json) "
+        "VALUES (" UI64FMTD ", " UI64FMTD ", %u, '%s', %u, %u, %f, %f, %f, %f, '%s', '%s', '%s', '%s', '%s', '%s')",
+        _experimentId, _runId, state.Guid.GetCounter(), type.c_str(), bot->GetMapId(), bot->GetZoneId(), bot->GetPositionX(), bot->GetPositionY(),
+        bot->GetPositionZ(), bot->GetOrientation(), botJson.c_str(), worldJson.c_str(), raw.c_str(), semantic.c_str(), actionJson.c_str(), failureJson.c_str());
+    return ReadLastInsertId();
+}
+
 BotTelemetryFrame BotWorldPopulationMgr::BuildTelemetryFrame(Player* bot, Unit const* target, char const* situation, char const* action, char const* rawJson, char const* semanticJson, uint32 questId) const
 {
     BotTelemetryFrame frame;
@@ -4218,6 +4568,10 @@ void BotWorldPopulationMgr::RecordDecision(WorldBotState& state, Player* bot, ch
     std::string raw = rawJson ? rawJson : "{}";
     std::string semantic = semanticJson ? semanticJson : "{}";
     std::string candidateJson = BuildActivityCandidatesJson(activityScores);
+    uint64 replayId = _policyModelConfig.Enabled && !_policyModelConfig.Version.empty()
+        ? RecordDecisionReplay(state, bot, target, situation, action, rawJson, semanticJson, candidateJson.c_str(), chosenActivity, failure)
+        : 0;
+    PolicyModelTrace modelTrace = BuildPolicyModelTrace(activityScores, chosenActivity, bot, clipId, replayId);
     std::ostringstream chosen;
     chosen << "{\"action\":\"" << JsonEscape(action ? action : "wait") << "\"";
     if (target)
@@ -4232,6 +4586,8 @@ void BotWorldPopulationMgr::RecordDecision(WorldBotState& state, Player* bot, ch
            << ",\"danger_score\":" << chosenActivity.LearnedDangerScore
            << ",\"progression_value\":" << chosenActivity.LearnedProgressionValue
            << ",\"confidence\":" << chosenActivity.LearnedConfidence;
+    if (_policyModelConfig.Enabled && !_policyModelConfig.Version.empty())
+        chosen << ",\"policy_model\":" << modelTrace.Json;
     chosen << "}";
     std::ostringstream outcome;
     outcome << "{\"main_goal\":\"increase_character_power\""
@@ -4246,8 +4602,10 @@ void BotWorldPopulationMgr::RecordDecision(WorldBotState& state, Player* bot, ch
             << ",\"progression_value\":" << chosenActivity.LearnedProgressionValue
             << ",\"confidence\":" << chosenActivity.LearnedConfidence
             << ",\"role_power_score\":" << power.Total
-            << ",\"power_delta\":" << (power.Total - state.ActivityStartPower)
-            << "}";
+            << ",\"power_delta\":" << (power.Total - state.ActivityStartPower);
+    if (_policyModelConfig.Enabled && !_policyModelConfig.Version.empty())
+        outcome << ",\"policy_model\":" << modelTrace.Json;
+    outcome << "}";
 
     CharacterDatabase.EscapeString(raw);
     CharacterDatabase.EscapeString(semantic);
@@ -4258,16 +4616,26 @@ void BotWorldPopulationMgr::RecordDecision(WorldBotState& state, Player* bot, ch
     CharacterDatabase.EscapeString(chosenJson);
     CharacterDatabase.EscapeString(outcomeJson);
     CharacterDatabase.EscapeString(brain);
+    std::string modelVersion = _policyModelConfig.Enabled && !_policyModelConfig.Version.empty() ? _policyModelConfig.Version : "";
+    std::string featureSchemaVersion = modelTrace.Enabled ? _policyModelConfig.FeatureSchemaVersion : "";
+    CharacterDatabase.EscapeString(modelVersion);
+    CharacterDatabase.EscapeString(featureSchemaVersion);
     std::string sit = situation ? situation : "idle";
     CharacterDatabase.EscapeString(sit);
     std::string currentActivity = BotLongTermProgressionBrain::ToString(chosenActivity.Activity);
     CharacterDatabase.EscapeString(currentActivity);
+    std::string modelVersionSql = modelVersion.empty() ? "NULL" : ("'" + modelVersion + "'");
+    std::string featureSchemaSql = featureSchemaVersion.empty() ? "NULL" : ("'" + featureSchemaVersion + "'");
+    std::string modelScoreSql = modelTrace.Enabled ? std::to_string(modelTrace.ModelScore) : "NULL";
+    std::string modelRankSql = modelTrace.Enabled ? std::to_string(modelTrace.ModelRank) : "NULL";
+    std::string modelFeaturesHashSql = modelTrace.Enabled ? std::to_string(modelTrace.FeaturesHash) : "NULL";
+    std::string replaySql = replayId ? std::to_string(replayId) : "NULL";
 
-    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_decisions (experiment_id, run_id, bot_guid, brain_version, clip_id, situation_type, current_activity, current_goal, map_id, zone_id, x, y, z, raw_state_json, semantic_state_json, candidate_actions_json, chosen_action_json, outcome_json, reward, is_failure, is_rare_state) "
-        "VALUES (" UI64FMTD ", " UI64FMTD ", %u, '%s', %s, '%s', '%s', 'increase_character_power', %u, %u, %f, %f, %f, '%s', '%s', '%s', '%s', '%s', %f, %u, %u)",
-        _experimentId, _runId, state.Guid.GetCounter(), brain.c_str(), clipSql.c_str(), sit.c_str(), currentActivity.c_str(), bot->GetMapId(), bot->GetZoneId(),
-        bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), raw.c_str(), semantic.c_str(), candidateJson.c_str(), chosenJson.c_str(),
-        outcomeJson.c_str(), failure ? -1.0f : chosenActivity.Score, failure ? 1 : 0, rare ? 1 : 0);
+    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_decisions (experiment_id, run_id, bot_guid, brain_version, model_version, feature_schema_version, model_score, model_rank, model_features_hash, clip_id, situation_type, current_activity, current_goal, map_id, zone_id, area_id, x, y, z, raw_state_json, semantic_state_json, candidate_actions_json, chosen_action_json, outcome_json, reward, is_failure, is_rare_state, replay_key) "
+        "VALUES (" UI64FMTD ", " UI64FMTD ", %u, '%s', %s, %s, %s, %s, %s, %s, '%s', '%s', 'increase_character_power', %u, %u, %u, %f, %f, %f, '%s', '%s', '%s', '%s', '%s', %f, %u, %u, %s)",
+        _experimentId, _runId, state.Guid.GetCounter(), brain.c_str(), modelVersionSql.c_str(), featureSchemaSql.c_str(), modelScoreSql.c_str(), modelRankSql.c_str(), modelFeaturesHashSql.c_str(), clipSql.c_str(), sit.c_str(), currentActivity.c_str(), bot->GetMapId(), bot->GetZoneId(),
+        bot->GetAreaId(), bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), raw.c_str(), semantic.c_str(), candidateJson.c_str(), chosenJson.c_str(),
+        outcomeJson.c_str(), failure ? -1.0f : chosenActivity.Score, failure ? 1 : 0, rare ? 1 : 0, replaySql.c_str());
 
     std::string areaFeatures = BuildEmbeddingFeaturesJson(bot, target, "area", bot->GetAreaId(), situation ? situation : "decision");
     UpdateSemanticOutcomeStats(bot, "area", bot->GetAreaId(), situation, failure ? "failed" : "sampled", failure ? -1.0f : chosenActivity.Score, power.Total - state.ActivityStartPower, failure, areaFeatures.c_str());
@@ -4633,6 +5001,9 @@ std::string BotWorldPopulationMgr::BuildConfigJson() const
          << ",\"teleport_to_center_on_death\":" << (_config.TeleportToCenterOnDeath ? "true" : "false")
          << ",\"max_deaths_before_fallback\":" << _config.MaxDeathsBeforeFallback
          << ",\"safe_position_memory_sec\":" << _config.SafePositionMemorySec
+         << ",\"auto_start_recording\":" << (_config.AutoStartRecording ? "true" : "false")
+         << ",\"auto_recording_window_minutes\":" << _config.AutoRecordingWindowMinutes
+         << ",\"auto_recording_name_prefix\":\"" << JsonEscape(_config.AutoRecordingNamePrefix) << "\""
          << ",\"bot_learning\":{\"enable\":" << (_learningConfig.Enabled ? "true" : "false")
          << ",\"min_samples_for_strong_bias\":" << _learningConfig.MinSamplesForStrongBias
          << ",\"danger_penalty_weight\":" << _learningConfig.DangerPenaltyWeight
@@ -4640,6 +5011,22 @@ std::string BotWorldPopulationMgr::BuildConfigJson() const
          << ",\"recent_failure_penalty_weight\":" << _learningConfig.RecentFailurePenaltyWeight
          << ",\"exploration_novelty_weight\":" << _learningConfig.ExplorationNoveltyWeight
          << ",\"allow_global_memory_fallback\":" << (_learningConfig.AllowGlobalMemoryFallback ? "true" : "false") << "}"
+         << ",\"bot_policy_model\":{\"enable\":" << (_policyModelConfig.Enabled ? "true" : "false")
+         << ",\"mode\":\"" << JsonEscape(_policyModelConfig.Mode) << "\""
+         << ",\"version\":\"" << JsonEscape(_policyModelConfig.Version) << "\""
+         << ",\"score_weight\":" << _policyModelConfig.ScoreWeight
+         << ",\"fail_closed\":" << (_policyModelConfig.FailClosed ? "true" : "false")
+         << ",\"max_decision_latency_ms\":" << _policyModelConfig.MaxDecisionLatencyMs
+         << ",\"min_eval_rows\":" << _policyModelConfig.MinEvalRows
+         << ",\"max_death_rate\":" << _policyModelConfig.MaxDeathRate
+         << ",\"max_stuck_rate\":" << _policyModelConfig.MaxStuckRate
+         << ",\"max_failure_rate\":" << _policyModelConfig.MaxFailureRate
+         << ",\"assist_allowed\":" << (_policyModelConfig.AssistAllowed ? "true" : "false")
+         << ",\"deployment_reason\":\"" << JsonEscape(_policyModelConfig.DeploymentReason) << "\""
+         << ",\"artifact_loaded\":" << (_policyModelConfig.ArtifactLoaded ? "true" : "false")
+         << ",\"artifact_path\":\"" << JsonEscape(_policyModelConfig.ArtifactPath) << "\""
+         << ",\"model_type\":\"" << JsonEscape(_policyModelConfig.ModelType) << "\""
+         << ",\"feature_schema_version\":\"" << JsonEscape(_policyModelConfig.FeatureSchemaVersion) << "\"}"
          << ",\"brain_version\":\"" << JsonEscape(_config.BrainVersion) << "\"}";
     return json.str();
 }
@@ -4675,6 +5062,217 @@ std::string BotWorldPopulationMgr::BuildActivityCandidatesJson(std::vector<BotAc
     }
     json << "]";
     return json.str();
+}
+
+void BotWorldPopulationMgr::ApplyPolicyModelScores(std::vector<BotActivityScore>& activityScores, Player const* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage) const
+{
+    if (!_policyModelConfig.Enabled || _policyModelConfig.Version.empty())
+        return;
+
+    auto started = std::chrono::steady_clock::now();
+    std::vector<float> modelScores;
+    modelScores.reserve(activityScores.size());
+    for (BotActivityScore const& score : activityScores)
+        modelScores.push_back(ScorePolicyModelCandidate(score, bot, power, stage));
+
+    uint32 latencyMs = uint32(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - started).count());
+    bool assist = _policyModelConfig.Mode == "assist" && _policyModelConfig.AssistAllowed;
+    if (!assist || latencyMs > _policyModelConfig.MaxDecisionLatencyMs)
+        return;
+
+    for (size_t i = 0; i < activityScores.size() && i < modelScores.size(); ++i)
+        activityScores[i].Score += _policyModelConfig.ScoreWeight * modelScores[i];
+}
+
+std::map<std::string, float> BotWorldPopulationMgr::BuildPolicyModelFeatureMap(BotActivityScore const& score, Player const* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage) const
+{
+    std::map<std::string, float> features;
+    features["learned_score"] = score.LearnedScore;
+    features["learned_penalty"] = score.LearnedPenalty;
+    features["danger_score"] = score.LearnedDangerScore;
+    features["progression_value"] = score.LearnedProgressionValue;
+    features["confidence"] = score.LearnedConfidence;
+    features["utility_score"] = score.Score;
+    features["candidate_count"] = 1.0f;
+    features["map_id"] = bot ? float(bot->GetMapId()) : 0.0f;
+    features["zone_id"] = bot ? float(bot->GetZoneId()) : 0.0f;
+    features["bot_guid"] = bot ? float(bot->GetGUID().GetCounter()) : 0.0f;
+    features["bot_level_norm"] = bot ? std::min<float>(1.0f, float(bot->getLevel()) / 85.0f) : 0.0f;
+    features["role_power_norm"] = std::min<float>(1.0f, power.Total / 500.0f);
+    features["progression_stage"] = float(uint8(stage));
+    features["expected_power_gain"] = score.ExpectedPowerGain;
+    features["expected_xp_gain"] = score.ExpectedXpGain;
+    features["expected_gold_gain"] = score.ExpectedGoldGain;
+    features["expected_unlock_value"] = score.ExpectedUnlockValue;
+    features["expected_dataset_value"] = score.ExpectedDatasetValue;
+    features["expected_death_risk"] = score.ExpectedDeathRisk;
+    features["expected_wipe_risk"] = score.ExpectedWipeRisk;
+    features["expected_stuck_risk"] = score.ExpectedStuckRisk;
+    features["expected_time_cost"] = score.ExpectedTimeCost;
+    features["json_chosen_learned_score"] = score.LearnedScore;
+    features["json_chosen_learned_penalty"] = score.LearnedPenalty;
+    features["json_chosen_danger_score"] = score.LearnedDangerScore;
+    features["json_chosen_progression_value"] = score.LearnedProgressionValue;
+    features["json_chosen_confidence"] = score.LearnedConfidence;
+    features["json_chosen_activity_score"] = score.Score;
+    features["json_chosen_expected_power_gain"] = score.ExpectedPowerGain;
+    features["json_outcome_expected_value"] = score.Score;
+    return features;
+}
+
+float BotWorldPopulationMgr::PredictPolicyModelLabel(char const* label, std::map<std::string, float> const& features) const
+{
+    if (!label)
+        return 0.0f;
+
+    std::string key = label;
+    float value = 0.0f;
+    auto meanItr = _policyModelConfig.ModelMeans.find(key);
+    if (meanItr != _policyModelConfig.ModelMeans.end())
+        value = meanItr->second;
+
+    auto weightItr = _policyModelConfig.ModelWeights.find(key);
+    if (weightItr != _policyModelConfig.ModelWeights.end())
+    {
+        for (auto const& weight : weightItr->second)
+        {
+            auto featureItr = features.find(weight.first);
+            if (featureItr != features.end())
+                value += featureItr->second * weight.second;
+        }
+    }
+
+    if (key != "expected_reward")
+        value = std::max<float>(0.0f, std::min<float>(1.0f, value));
+    return value;
+}
+
+float BotWorldPopulationMgr::ScorePolicyModelCandidate(BotActivityScore const& score, Player const* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage) const
+{
+    if (!_policyModelConfig.Enabled || _policyModelConfig.Version.empty())
+        return 0.0f;
+
+    std::map<std::string, float> features = BuildPolicyModelFeatureMap(score, bot, power, stage);
+    if (_policyModelConfig.ArtifactLoaded)
+    {
+        float actionSuccess = PredictPolicyModelLabel("action_success", features);
+        float expectedReward = PredictPolicyModelLabel("expected_reward", features);
+        float deathRisk = PredictPolicyModelLabel("death_risk", features);
+        float stuckRisk = PredictPolicyModelLabel("stuck_risk", features);
+        float questCompletion = PredictPolicyModelLabel("quest_completion_likelihood", features);
+        return expectedReward + actionSuccess + questCompletion - deathRisk - stuckRisk;
+    }
+
+    float levelFactor = bot ? std::min<float>(1.0f, float(bot->getLevel()) / 85.0f) : 0.0f;
+    float powerFactor = std::min<float>(1.0f, power.Total / 500.0f);
+    float reward = score.ExpectedPowerGain + score.ExpectedXpGain + score.ExpectedGoldGain + score.ExpectedUnlockValue + score.ExpectedDatasetValue;
+    float risk = score.ExpectedDeathRisk + score.ExpectedWipeRisk + score.ExpectedStuckRisk + score.LearnedDangerScore;
+    return reward + score.LearnedScore + score.LearnedProgressionValue + levelFactor + powerFactor - risk - score.LearnedPenalty;
+}
+
+BotWorldPopulationMgr::PolicyModelTrace BotWorldPopulationMgr::BuildPolicyModelTrace(std::vector<BotActivityScore> const& activityScores, BotActivityScore const& chosenActivity, Player const* bot, uint64 clipId, uint64 replayId) const
+{
+    PolicyModelTrace result;
+    if (!_policyModelConfig.Enabled || _policyModelConfig.Version.empty())
+        return result;
+    result.Enabled = true;
+
+    struct CandidateTrace
+    {
+        std::string Activity;
+        float ModelScore = 0.0f;
+        float UtilityScore = 0.0f;
+    };
+
+    BotRolePowerBreakdown power = BotLongTermProgressionBrain::CalculateRolePower(bot);
+    BotProgressionStage stage = BotLongTermProgressionBrain::ClassifyStage(bot, power);
+    std::vector<CandidateTrace> ranked;
+    ranked.reserve(activityScores.size());
+    uint32 chosenRank = 0;
+    float chosenModelScore = 0.0f;
+    std::string chosenName = BotLongTermProgressionBrain::ToString(chosenActivity.Activity);
+    for (BotActivityScore const& score : activityScores)
+    {
+        CandidateTrace trace;
+        trace.Activity = BotLongTermProgressionBrain::ToString(score.Activity);
+        trace.ModelScore = ScorePolicyModelCandidate(score, bot, power, stage);
+        trace.UtilityScore = score.Score;
+        ranked.push_back(trace);
+        if (trace.Activity == chosenName)
+            chosenModelScore = trace.ModelScore;
+    }
+
+    std::sort(ranked.begin(), ranked.end(), [](CandidateTrace const& left, CandidateTrace const& right)
+    {
+        return left.ModelScore > right.ModelScore;
+    });
+
+    for (uint32 i = 0; i < ranked.size(); ++i)
+    {
+        if (ranked[i].Activity == chosenName)
+        {
+            chosenRank = i + 1;
+            break;
+        }
+    }
+
+    std::ostringstream features;
+    features << "bot_guid=" << (bot ? bot->GetGUID().GetCounter() : 0)
+             << "|run_id=" << _runId
+             << "|experiment_id=" << _experimentId
+             << "|level=" << (bot ? uint32(bot->getLevel()) : 0)
+             << "|activity=" << chosenName
+             << "|clip_id=" << clipId
+             << "|replay_id=" << replayId
+             << "|model=" << _policyModelConfig.Version;
+    uint32 featuresHash = FeatureSchemaHash(features.str());
+
+    std::ostringstream json;
+    json << "{\"enabled\":true"
+         << ",\"mode\":\"" << JsonEscape(_policyModelConfig.Mode) << "\""
+         << ",\"assist_allowed\":" << (_policyModelConfig.AssistAllowed ? "true" : "false")
+         << ",\"deployment_reason\":\"" << JsonEscape(_policyModelConfig.DeploymentReason) << "\""
+         << ",\"artifact_loaded\":" << (_policyModelConfig.ArtifactLoaded ? "true" : "false")
+         << ",\"model_type\":\"" << JsonEscape(_policyModelConfig.ModelType) << "\""
+         << ",\"model_version\":\"" << JsonEscape(_policyModelConfig.Version) << "\""
+         << ",\"feature_schema_version\":\"" << JsonEscape(_policyModelConfig.FeatureSchemaVersion) << "\""
+         << ",\"model_score\":" << chosenModelScore
+         << ",\"model_rank\":" << chosenRank
+         << ",\"model_reason\":\"" << JsonEscape(_policyModelConfig.Mode == "assist" && _policyModelConfig.AssistAllowed ? "assist_score_blend" : "shadow_score_only") << "\""
+         << ",\"model_features_hash\":" << featuresHash
+         << ",\"trace\":{\"run_id\":" << _runId
+         << ",\"experiment_id\":" << _experimentId
+         << ",\"decision_id\":null"
+         << ",\"clip_id\":" << clipId
+         << ",\"replay_id\":" << replayId
+         << ",\"bot_guid\":" << (bot ? bot->GetGUID().GetCounter() : 0)
+         << ",\"brain_version\":\"" << JsonEscape(_config.BrainVersion) << "\""
+         << ",\"model_version\":\"" << JsonEscape(_policyModelConfig.Version) << "\""
+         << ",\"feature_schema_version\":\"" << JsonEscape(_policyModelConfig.FeatureSchemaVersion) << "\"}"
+         << ",\"top_alternatives\":[";
+    for (uint32 i = 0; i < ranked.size() && i < 3; ++i)
+    {
+        if (i)
+            json << ",";
+        json << "{\"activity\":\"" << JsonEscape(ranked[i].Activity) << "\",\"model_score\":" << ranked[i].ModelScore << ",\"utility_score\":" << ranked[i].UtilityScore << "}";
+    }
+    json << "]}";
+    result.ModelScore = chosenModelScore;
+    result.ModelRank = chosenRank;
+    result.FeaturesHash = featuresHash;
+    result.Json = json.str();
+    return result;
+}
+
+uint32 BotWorldPopulationMgr::FeatureSchemaHash(std::string const& value)
+{
+    uint32 hash = 2166136261u;
+    for (char c : value)
+    {
+        hash ^= uint8(c);
+        hash *= 16777619u;
+    }
+    return hash;
 }
 
 BotWorldStatus BotWorldPopulationMgr::GetStatus() const

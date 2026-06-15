@@ -58,7 +58,7 @@ enum ChasePositionCheckOptions : uint8
 
 inline void DoMovementInform(Unit* owner, Unit const* target)
 {
-    if (owner->IsCreature())
+    if (!owner->IsCreature())
         return;
 
     if (CreatureAI* AI = owner->ToCreature()->AI())

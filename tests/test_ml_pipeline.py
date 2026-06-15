@@ -9,6 +9,8 @@ from ml.group_roles.metrics import group_role_metrics
 from ml.group_roles.policies import policy_for_role
 from ml.raid.metrics import raid_metrics
 from ml.raid.scheduler import RaidAssignmentScheduler
+from tools.bot_ml.common import EXPORT_TABLES, numeric_features
+from tools.bot_ml.build_decision_dataset import build_row, build_rows, index_semantic_stats
 from ml.preprocessing.preprocess_frames import main as preprocess_main
 from ml.training.train_action_frequency import main as train_main
 from experiments.run_experiment import autonomous_metrics, dungeon_route_metrics, load_config, make_adapter, movement_metrics, profession_metrics, quest_metrics, run_experiment, solo_combat_metrics
@@ -57,6 +59,145 @@ def test_preprocess_train_evaluate_pipeline(tmp_path, monkeypatch):
     assert loaded_metrics["frame_count"] == 1
     assert loaded_metrics["known_action_rate"] == 1.0
     assert loaded_metrics["unique_actions"] == 1
+
+
+def test_bot_ml_export_table_contract_covers_learning_loop_tables():
+    assert EXPORT_TABLES == [
+        "experiment_bot_runs",
+        "experiment_bot_segments",
+        "experiment_bot_events",
+        "experiment_bot_decisions",
+        "experiment_bot_activities",
+        "experiment_bot_replay_records",
+        "experiment_bot_clips",
+        "experiment_bot_clip_frames",
+        "bot_semantic_outcome_stats",
+        "bot_memory_pois",
+        "bot_memory_danger_zones",
+        "bot_memory_failed_paths",
+        "bot_memory_safe_positions",
+        "bot_policy_models",
+        "bot_policy_evaluations",
+    ]
+
+
+def test_bot_ml_decision_builder_adds_semantic_outcome_stat_features():
+    stats = index_semantic_stats([
+        {"entity_type": "area", "entity_key": 44, "samples": 10, "failures": 1, "deaths": 0, "avg_reward": 1.5, "danger_score": 0.2, "progression_value": 0.8},
+        {"entity_type": "mob", "entity_key": 123, "samples": 5, "failures": 2, "deaths": 1, "avg_reward": -0.5, "danger_score": 0.7, "progression_value": 0.1},
+        {"entity_type": "spell", "entity_key": 987, "samples": 3, "failures": 1, "deaths": 1, "avg_reward": -1.0, "danger_score": 0.9, "progression_value": 0.0},
+        {"entity_type": "mechanic", "entity_key": 11, "samples": 8, "failures": 3, "deaths": 2, "avg_reward": -0.8, "danger_score": 0.6, "progression_value": 0.2},
+    ])
+    row = build_row(
+        {
+            "id": 1,
+            "run_id": 7,
+            "bot_guid": 99,
+            "brain_version": "utility_v1",
+            "situation_type": "raid_boss",
+            "raw_state_json": json.dumps({"area_id": 44, "target_entry": 123, "target_cast_spell_id": 987}),
+            "semantic_state_json": "{}",
+            "candidate_actions_json": "[]",
+            "chosen_action_json": json.dumps({"activity_score": 1.0}),
+            "outcome_json": "{}",
+        },
+        {},
+        stats,
+    )
+
+    assert row["stat_area_samples"] == 10
+    assert row["stat_mob_deaths"] == 1
+    assert row["stat_spell_danger_score"] == 0.9
+    assert row["stat_mechanic_failures"] == 3
+    assert row["features_hash"]
+
+
+def test_bot_ml_decision_builder_emits_candidate_rows_with_observed_chosen_label():
+    rows = build_rows(
+        {
+            "id": 1,
+            "run_id": 7,
+            "bot_guid": 99,
+            "brain_version": "utility_v1",
+            "candidate_actions_json": json.dumps([
+                {"activity": "quest", "score": 1.5, "learned_score": 0.2, "confidence": 0.8},
+                {"activity": "grind", "score": 0.5, "learned_score": 0.1, "confidence": 0.4},
+            ]),
+            "chosen_action_json": json.dumps({"activity": "quest", "activity_score": 1.5}),
+            "raw_state_json": "{}",
+            "semantic_state_json": "{}",
+            "outcome_json": "{}",
+            "reward": 1.0,
+            "is_failure": 0,
+        },
+        {},
+        {},
+    )
+
+    assert len(rows) == 2
+    assert [row["candidate_activity"] for row in rows] == ["quest", "grind"]
+    assert [row["label_observed"] for row in rows] == [1, 0]
+    assert rows[0]["expected_reward"] == 1.0
+    assert rows[1]["expected_reward"] == 0.0
+    assert rows[0]["trace"]["candidate_activity"] == "quest"
+
+
+def test_bot_ml_numeric_features_exclude_observed_outcome_leakage():
+    features = numeric_features({
+        "reward_observed": 10.0,
+        "expected_reward": 10.0,
+        "action_success": 1.0,
+        "death_risk": 0.0,
+        "stuck_risk": 0.0,
+        "quest_completion_likelihood": 1.0,
+        "label_observed": 1,
+        "is_chosen": 1,
+        "utility_score": 1.5,
+    })
+
+    assert "reward_observed" not in features
+    assert "expected_reward" not in features
+    assert "action_success" not in features
+    assert "label_observed" not in features
+    assert "is_chosen" not in features
+    assert features["utility_score"] == 1.5
+
+
+def test_bot_ml_workflow_has_pixi_tasks_and_documented_dvc_steps():
+    pixi = Path("pixi.toml").read_text(encoding="utf-8")
+    readme = Path("tools/bot_ml/README.md").read_text(encoding="utf-8")
+    register_script = Path("tools/bot_ml/register_policy_model.py").read_text(encoding="utf-8")
+    evaluate_script = Path("tools/bot_ml/evaluate_policy_model.py").read_text(encoding="utf-8")
+
+    for task in [
+        "bot-ml-export",
+        "bot-ml-build-decisions",
+        "bot-ml-validate",
+        "bot-ml-train",
+        "bot-ml-evaluate",
+        "bot-ml-explain",
+        "bot-ml-compare",
+        "bot-ml-register",
+    ]:
+        assert f"{task} =" in pixi
+        assert f"pixi run {task}" in readme
+
+    for required in [
+        "BotWorld.AutoStart = 1",
+        "BotWorld.AutoStartRecording = 1",
+        "run-id train/eval split",
+        "candidate-level",
+        "pixi run dvc status",
+        "pixi run dvc push",
+        "DVC-managed",
+        "Shadow deployment",
+        "Assist deployment",
+    ]:
+        assert required in readme
+
+    assert "--sql-output\", \"--output-sql\"" in register_script
+    assert '"accepted": bool(payload["accepted"])' in register_script
+    assert 'live.log_metric("accepted", int(accepted))' in evaluate_script
 
 
 def test_headless_movement_smoke_records_metrics(tmp_path):

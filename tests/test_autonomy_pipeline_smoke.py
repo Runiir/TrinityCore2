@@ -12,6 +12,7 @@ BOT_POLICY = ROOT / "src/server/game/Bots/BotTelemetryPolicy.cpp"
 BOT_BUFFER = ROOT / "src/server/game/Bots/BotTelemetryBuffer.cpp"
 BOT_SEGMENTS = ROOT / "src/server/game/Bots/BotExperimentCoordinator.cpp"
 WORLDSERVER_CONF = ROOT / "src/server/worldserver/worldserver.conf.dist"
+CHASE_MOVEMENT = ROOT / "src/server/game/Movement/MovementGenerators/ChaseMovementGenerator.cpp"
 
 
 def read(path: Path) -> str:
@@ -171,6 +172,7 @@ def test_export_smoke_lists_old_and_new_bot_experiment_tables():
     assert payload["action"] == "botexp_export"
     assert payload["storage"] == "character_database_tables"
     assert payload["embedding_feature_schema"] == "bot_semantic_phase6_v1"
+    assert payload["policy_feature_schema"] == "bot_policy_features_v1"
     assert payload["failure_reason"] is None
     assert payload["tables"] == [
         "experiment_bot_runs",
@@ -182,4 +184,106 @@ def test_export_smoke_lists_old_and_new_bot_experiment_tables():
         "experiment_bot_clips",
         "experiment_bot_clip_frames",
         "bot_semantic_outcome_stats",
+        "bot_memory_pois",
+        "bot_memory_danger_zones",
+        "bot_memory_failed_paths",
+        "bot_memory_safe_positions",
+        "bot_policy_models",
+        "bot_policy_evaluations",
     ]
+
+
+def test_policy_model_shadow_assist_uses_registered_artifact_and_safe_gate():
+    mgr_header = read(ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h")
+    mgr = read(BOT_MGR)
+    conf = read(WORLDSERVER_CONF)
+    schema = read(ROOT / "sql/updates/characters/4.3.4/2026_06_14_00_characters_bot_policy_models.sql")
+    area_schema = read(ROOT / "sql/updates/characters/4.3.4/2026_06_14_01_characters_bot_decision_area_id.sql")
+    validate = function_body(mgr, "void BotWorldPopulationMgr::ValidatePolicyModelDeployment")
+    load_artifact = function_body(mgr, "bool BotWorldPopulationMgr::LoadPolicyModelArtifact")
+    apply_scores = function_body(mgr, "void BotWorldPopulationMgr::ApplyPolicyModelScores")
+    score = function_body(mgr, "float BotWorldPopulationMgr::ScorePolicyModelCandidate")
+    trace = function_body(mgr, "BotWorldPopulationMgr::PolicyModelTrace BotWorldPopulationMgr::BuildPolicyModelTrace")
+    record = function_body(mgr, "void BotWorldPopulationMgr::RecordDecision")
+
+    for symbol in [
+        "ArtifactPath",
+        "ArtifactLoaded",
+        "ModelMeans",
+        "ModelWeights",
+        "LoadPolicyModelArtifact",
+        "PredictPolicyModelLabel",
+        "BuildPolicyModelFeatureMap",
+        "RecordDecisionReplay",
+    ]:
+        assert symbol in mgr_header
+
+    assert "accepted, artifact_path, model_type" in validate
+    assert "LoadPolicyModelArtifact(_policyModelConfig.ArtifactPath)" in validate
+    assert "_policyModelConfig.Mode == \"shadow\"" in validate
+    assert "_policyModelConfig.Mode == \"control\"" in validate
+    assert "control_mode_disabled" in validate
+    assert "_policyModelConfig.AssistAllowed = true;" in validate
+    assert "artifact_load_failed" in validate
+
+    assert "ReadSmallTextFile(artifactPath)" in load_artifact
+    assert "ExtractJsonObjectField(json, \"means\")" in load_artifact
+    assert "ExtractJsonObjectField(json, \"weights\")" in load_artifact
+    assert "_policyModelConfig.ArtifactLoaded = true;" in load_artifact
+
+    assert "MaxDecisionLatencyMs" in apply_scores
+    assert "latencyMs > _policyModelConfig.MaxDecisionLatencyMs" in apply_scores
+    assert "PredictPolicyModelLabel(\"expected_reward\", features)" in score
+    assert "PredictPolicyModelLabel(\"death_risk\", features)" in score
+    assert "artifact_loaded" in trace
+    assert "model_type" in trace
+    assert '\\"run_id\\"' in trace
+    assert '\\"experiment_id\\"' in trace
+    assert '\\"decision_id\\":null' in trace
+    assert '\\"replay_id\\":' in trace
+    assert '\\"feature_schema_version\\"' in trace
+
+    for column in [
+        "`model_version` varchar(128) NULL",
+        "`feature_schema_version` varchar(64) NULL",
+        "`model_score` float NULL",
+        "`model_rank` int unsigned NULL",
+        "`model_features_hash` int unsigned NULL",
+    ]:
+        assert column in schema
+    assert "ADD COLUMN `area_id` int unsigned NULL" in area_schema
+    assert "idx_experiment_bot_decisions_area" in area_schema
+
+    assert "RecordDecisionReplay(state, bot, target" in record
+    assert "replay_key" in record
+    assert "zone_id, area_id, x, y, z" in record
+    assert "bot->GetAreaId()" in record
+    assert "model_version, feature_schema_version, model_score, model_rank, model_features_hash" in record
+    for key in [
+        "BotPolicyModel.MinEvalRows = 100",
+        "BotPolicyModel.MaxDeathRate = 0.0",
+        "BotPolicyModel.MaxStuckRate = 0.0",
+        "BotPolicyModel.MaxFailureRate = 0.0",
+    ]:
+        assert key in conf
+    assert "Mode may be shadow," in conf
+    assert "assist, or control" in conf
+
+
+def test_host_world_makefile_can_generate_always_on_recording_config():
+    makefile = read(ROOT / "Makefile")
+
+    assert "BOTWORLD_AUTOSTART ?= 0" in makefile
+    assert "BOTWORLD_AUTOSTART_RECORDING ?= 0" in makefile
+    assert "BOTWORLD_RECORDING_WINDOW_MINUTES ?= 30" in makefile
+    assert "BotWorld.AutoStart = $(BOTWORLD_AUTOSTART)" in makefile
+    assert "BotWorld.AutoStartRecording = $(BOTWORLD_AUTOSTART_RECORDING)" in makefile
+    assert "BotWorld.AutoRecordingWindowMinutes = $(BOTWORLD_RECORDING_WINDOW_MINUTES)" in makefile
+
+
+def test_player_bot_chase_movement_inform_does_not_deref_non_creature_owner():
+    chase = read(CHASE_MOVEMENT)
+    inform = function_body(chase, "inline void DoMovementInform")
+
+    assert "if (!owner->IsCreature())" in inform
+    assert_ordered(inform, "if (!owner->IsCreature())", "return;", "owner->ToCreature()->AI()")

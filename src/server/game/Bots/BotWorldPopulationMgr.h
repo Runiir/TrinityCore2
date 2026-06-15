@@ -61,7 +61,32 @@ struct BotWorldExperimentConfig
     bool TeleportToCenterOnDeath = false;
     uint32 MaxDeathsBeforeFallback = 3;
     uint32 SafePositionMemorySec = 120;
+    bool AutoStartRecording = false;
+    uint32 AutoRecordingWindowMinutes = 30;
+    std::string AutoRecordingNamePrefix = "autonomy_window";
     BotExperienceLearningConfig Learning;
+};
+
+struct BotPolicyModelConfig
+{
+    bool Enabled = false;
+    std::string Mode = "shadow";
+    std::string Version;
+    float ScoreWeight = 1.0f;
+    bool FailClosed = true;
+    uint32 MaxDecisionLatencyMs = 10;
+    uint32 MinEvalRows = 100;
+    float MaxDeathRate = 0.0f;
+    float MaxStuckRate = 0.0f;
+    float MaxFailureRate = 0.0f;
+    bool AssistAllowed = false;
+    std::string DeploymentReason = "disabled";
+    std::string ArtifactPath;
+    std::string ModelType;
+    std::string FeatureSchemaVersion = "bot_policy_features_v1";
+    bool ArtifactLoaded = false;
+    std::map<std::string, float> ModelMeans;
+    std::map<std::string, std::map<std::string, float>> ModelWeights;
 };
 
 struct BotWorldStatus
@@ -410,7 +435,21 @@ private:
         std::string Result = "failed";
     };
 
+    struct PolicyModelTrace
+    {
+        bool Enabled = false;
+        float ModelScore = 0.0f;
+        uint32 ModelRank = 0;
+        uint32 FeaturesHash = 0;
+        std::string Json = "{}";
+    };
+
     void LoadConfig(std::string const& name, BotWorldExperimentConfig const* overrideConfig);
+    void MaybeStartAutoRecordingWindow();
+    void RotateAutoRecordingWindowIfNeeded(uint32 diff);
+    std::string BuildAutoRecordingWindowName() const;
+    void ValidatePolicyModelDeployment();
+    bool LoadPolicyModelArtifact(std::string const& artifactPath);
     void EnsurePopulation();
     bool ResolveSpawnPlacement(uint32 candidateGuid, SpawnPlacement& placement) const;
     bool ResolveSavedSpawnPlacement(uint32 candidateGuid, SpawnPlacement& placement) const;
@@ -489,6 +528,7 @@ private:
     void RecordExperimentSegmentEvent(Player* bot, char const* eventType, char const* result, uint32 questId, Unit const* target, uint64 clipId, char const* rawJson, char const* semanticJson);
     void RecordQuestReplay(WorldBotState const& state, Player* bot, char const* replayType, uint32 questId, char const* rawJson, char const* semanticJson, char const* actionJson, char const* failureJson);
     void RecordBossReplay(WorldBotState const& state, Player* bot, Unit const* boss, BossMechanicFeatures const& features, char const* replayType, char const* rawJson, char const* semanticJson, char const* actionJson, char const* failureJson);
+    uint64 RecordDecisionReplay(WorldBotState const& state, Player* bot, Unit const* target, char const* situation, char const* action, char const* rawJson, char const* semanticJson, char const* candidateJson, BotActivityScore const& chosenActivity, bool failure);
     void RecordEvent(WorldBotState& state, Player* bot, char const* eventType, Unit const* target, char const* result, char const* rawJson, char const* semanticJson, float valueFloat = 0.0f, uint32 valueInt = 0, uint32 spellId = 0);
     void RecordDecision(WorldBotState& state, Player* bot, char const* situation, char const* action, Unit const* target, char const* rawJson, char const* semanticJson, std::vector<BotActivityScore> const& activityScores, BotActivityScore const& chosenActivity, BotRolePowerBreakdown const& power, bool failure, bool rare);
     BotTelemetryPolicyConfig GetTelemetryPolicyConfig() const;
@@ -505,6 +545,12 @@ private:
     std::string BuildSemanticJson(Player* bot, Unit const* target, char const* situation, BotRolePowerBreakdown const* power = nullptr, BotProgressionStage stage = BotProgressionStage::Leveling, BotProgressionActivity activity = BotProgressionActivity::ExperimentExploration) const;
     std::string BuildConfigJson() const;
     std::string BuildActivityCandidatesJson(std::vector<BotActivityScore> const& activityScores) const;
+    void ApplyPolicyModelScores(std::vector<BotActivityScore>& activityScores, Player const* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage) const;
+    PolicyModelTrace BuildPolicyModelTrace(std::vector<BotActivityScore> const& activityScores, BotActivityScore const& chosenActivity, Player const* bot, uint64 clipId, uint64 replayId) const;
+    float ScorePolicyModelCandidate(BotActivityScore const& score, Player const* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage) const;
+    std::map<std::string, float> BuildPolicyModelFeatureMap(BotActivityScore const& score, Player const* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage) const;
+    float PredictPolicyModelLabel(char const* label, std::map<std::string, float> const& features) const;
+    static uint32 FeatureSchemaHash(std::string const& value);
     static std::string JsonEscape(std::string const& value);
 
     bool _active = false;
@@ -512,8 +558,11 @@ private:
     uint64 _experimentId = 0;
     uint64 _runId = 0;
     uint32 _elapsedMs = 0;
+    uint32 _recordingWindowElapsedMs = 0;
+    uint32 _recordingWindowIndex = 0;
     BotWorldExperimentConfig _config;
     BotExperienceLearningConfig _learningConfig;
+    BotPolicyModelConfig _policyModelConfig;
     std::vector<WorldBotState> _bots;
     std::set<uint32> _failedSpawnGuids;
     BotWorldStatus _metrics;
