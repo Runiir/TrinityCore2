@@ -53,10 +53,11 @@ struct BotWorldExperimentConfig
     float MinReplayImportance = 0.90f;
     bool UpdateSemanticOutcomeStats = true;
     std::string BrainVersion = "utility_v1";
-    std::string SpawnMode = "saved_or_near_player";
-    bool AllowConfiguredCenterFallback = true;
+    std::string SpawnMode = "resume_or_race_start";
+    bool AllowConfiguredCenterFallback = false;
     bool UseSavedPosition = true;
     float NearPlayerRadius = 20.0f;
+    std::string TrainingDummyEntries;
     std::string DeathRecoveryMode = "safe_local";
     bool TeleportToCenterOnDeath = false;
     uint32 MaxDeathsBeforeFallback = 3;
@@ -152,9 +153,20 @@ public:
     BotWorldStatus GetStatus() const;
     std::string GetStatusJson() const;
     std::string GetSummaryJson() const;
+    std::string GetBotDebugJson(std::string const& selector) const;
     bool IsActive() const { return _active; }
     std::string Replay(std::string const& replayType, std::string const& selector, std::string const& brainVersion = "");
     std::string CompareBrains(uint64 replayId, std::string const& firstBrainVersion, std::string const& secondBrainVersion);
+
+    enum class QuestObjectiveType
+    {
+        Kill,
+        CollectItem,
+        InteractGameObject,
+        CastSpellOnTarget,
+        UseAbilityOnDummy,
+        UseItemOnTarget
+    };
 
 private:
     struct WorldBotState
@@ -189,6 +201,23 @@ private:
         uint32 LastQuestId = 0;
         uint32 LastQuestCompletedCount = 0;
         uint32 LastQuestObjectiveProgress = 0;
+        std::string SpawnSource = "unknown";
+        bool RaceStartFallbackUsed = false;
+        uint32 SpawnMapId = 0;
+        float SpawnX = 0.0f;
+        float SpawnY = 0.0f;
+        float SpawnZ = 0.0f;
+        float SpawnO = 0.0f;
+        std::string CurrentQuestState = "idle";
+        std::string CurrentObjectiveType = "none";
+        bool CurrentTargetIsTrainingDummy = false;
+        bool CurrentDummyAllowedByQuest = false;
+        uint32 RequiredSpellId = 0;
+        uint32 RequiredItemId = 0;
+        uint32 RequiredTargetEntry = 0;
+        uint32 LastQuestProgressBefore = 0;
+        uint32 LastQuestProgressAfter = 0;
+        std::string LastRejectedTargetReason;
         uint32 RaidBossKills = 0;
         uint32 HeroicRaidBossKills = 0;
         uint32 RaidAttempts = 0;
@@ -214,6 +243,9 @@ private:
         ObjectGuid TargetGuid;
         bool WasInCombat = false;
         std::vector<SafePosition> SafePositions;
+        std::map<uint64, uint64> DummyTargetCooldownUntilMs;
+        std::map<std::string, uint64> AbilityObjectiveCooldownUntilMs;
+        std::map<std::string, uint32> AbilityObjectiveNoProgressCasts;
     };
 
     struct QuestObjectivePlan
@@ -225,6 +257,10 @@ private:
         bool IsGameObject = false;
         bool IsItemObjective = false;
         uint32 ItemId = 0;
+        QuestObjectiveType ObjectiveType = QuestObjectiveType::Kill;
+        uint32 RequiredSpellId = 0;
+        uint32 ObjectiveIndex = 0;
+        bool RequiresTrainingDummy = false;
     };
 
     struct QuestActionResult
@@ -441,6 +477,7 @@ private:
         float Z = 0.0f;
         float O = 0.0f;
         std::string Source;
+        bool RaceStartFallbackUsed = false;
     };
 
     struct BotDeathRecoveryPolicy
@@ -478,8 +515,13 @@ private:
     void EnsurePopulation();
     bool ResolveSpawnPlacement(uint32 candidateGuid, SpawnPlacement& placement) const;
     bool ResolveSavedSpawnPlacement(uint32 candidateGuid, SpawnPlacement& placement) const;
+    bool ResolveRaceStartSpawnPlacement(uint32 candidateGuid, SpawnPlacement& placement) const;
     bool ResolveNearPlayerSpawnPlacement(SpawnPlacement& placement) const;
     bool ResolveConfiguredCenterSpawnPlacement(SpawnPlacement& placement) const;
+    bool IsValidBotResumePosition(uint32 botGuid, uint32 mapId, float x, float y, float z) const;
+    bool IsConfiguredCenterPosition(uint32 mapId, float x, float y, float z) const;
+    void PersistBotPosition(Player* bot) const;
+    void RecordSpawnResolved(WorldBotState& state, Player* bot, SpawnPlacement const& placement, char const* result);
     void UpdateBot(WorldBotState& state, uint32 diff);
     void RememberSafePosition(WorldBotState& state, Player* bot, uint32 diff);
     void PruneSafePositions(WorldBotState& state, uint64 nowMs) const;
@@ -503,9 +545,17 @@ private:
     uint32 SelectPoolCandidateGuid() const;
     Unit* SelectSafeTarget(Player* bot) const;
     Unit* SelectQuestObjectiveTarget(Player* bot, QuestObjectivePlan const& plan) const;
+    Unit* SelectQuestAbilityObjectiveTarget(Player* bot, QuestObjectivePlan const& plan, WorldBotState const& state) const;
     WorldObject* SelectQuestGiver(Player* bot, bool completeOnly, uint32* questId) const;
     WorldObject* SelectQuestGameObject(Player* bot, QuestObjectivePlan const& plan) const;
     bool FindActiveQuestObjective(Player* bot, QuestObjectivePlan& plan) const;
+    bool IsTrainingDummy(Unit const* unit) const;
+    bool IsTrainingDummyAllowedForQuest(QuestObjectivePlan const& plan, Unit const* target) const;
+    bool IsDummyEntryConfigured(uint32 entry, bool* explicitAllow = nullptr) const;
+    bool QuestTextSuggestsAbilityObjective(Quest const* quest) const;
+    uint32 SelectQuestAbilitySpell(Player* bot, Quest const* quest, QuestObjectivePlan const& plan) const;
+    uint32 QuestObjectiveProgress(Player* bot, QuestObjectivePlan const& plan) const;
+    bool StopDisallowedDummyCombat(WorldBotState& state, Player* bot, Unit* target);
     bool HasSimpleSupportedObjective(Quest const* quest) const;
     uint32 ChooseQuestReward(Player* bot, Quest const* quest, uint32* rewardItemId = nullptr) const;
     QuestActionResult TryQuesting(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity);

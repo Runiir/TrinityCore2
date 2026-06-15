@@ -52,8 +52,9 @@ def test_server_start_autonomy_enabled_by_default_contract():
     assert re.search(r"^BotWorld\.AutoStartRecording\s*=\s*1$", conf, re.MULTILINE)
     assert re.search(r"^BotWorld\.AutoRecordingWindowMinutes\s*=\s*15$", conf, re.MULTILINE)
     assert re.search(r"^BotWorld\.TargetPopulation\s*=\s*5$", conf, re.MULTILINE)
-    assert re.search(r'^BotWorld\.SpawnMode\s*=\s*"saved_or_near_player"$', conf, re.MULTILINE)
+    assert re.search(r'^BotWorld\.SpawnMode\s*=\s*"resume_or_race_start"$', conf, re.MULTILINE)
     assert re.search(r"^BotWorld\.AllowConfiguredCenterFallback\s*=\s*0$", conf, re.MULTILINE)
+    assert re.search(r"^BotWorld\.UseSavedPosition\s*=\s*1$", conf, re.MULTILINE)
     assert re.search(r"^BotProgression\.AllowQuesting\s*=\s*1$", conf, re.MULTILINE)
     assert re.search(r"^BotProgression\.AllowDungeons\s*=\s*0$", conf, re.MULTILINE)
     assert re.search(r"^BotProgression\.AllowRaids\s*=\s*0$", conf, re.MULTILINE)
@@ -86,11 +87,14 @@ def test_server_start_autonomy_enabled_spawns_from_pool_without_center_requireme
     assert_ordered(
         resolve_placement,
         "ResolveSavedSpawnPlacement(candidateGuid, placement)",
+        "ResolveRaceStartSpawnPlacement(candidateGuid, placement)",
         "ResolveNearPlayerSpawnPlacement(placement)",
         "ResolveConfiguredCenterSpawnPlacement(placement)",
     )
     assert "_config.UseSavedPosition" in resolve_placement
     assert "_config.AllowConfiguredCenterFallback" in resolve_placement
+    assert "resume_or_race_start" in resolve_placement
+    assert "race_start_only" in resolve_placement
 
 
 def test_telemetry_policy_smoke_samples_normal_wander_and_keeps_critical_events():
@@ -111,6 +115,50 @@ def test_telemetry_policy_smoke_samples_normal_wander_and_keeps_critical_events(
     assert "failure && config.alwaysRecordFailures" in policy
     assert "input.intervention && config.alwaysRecordInterventions" in policy
     assert "input.rare && config.alwaysRecordRareStates" in policy
+
+
+def test_bot_spawn_lifecycle_dummy_and_ability_objective_surface():
+    mgr_header = read(ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h")
+    mgr = read(BOT_MGR)
+    commands = read(BOT_COMMANDS)
+    conf = read(WORLDSERVER_CONF)
+
+    for symbol in [
+        "ResolveRaceStartSpawnPlacement",
+        "IsValidBotResumePosition",
+        "PersistBotPosition",
+        "RecordSpawnResolved",
+        "IsTrainingDummy",
+        "SelectQuestAbilityObjectiveTarget",
+        "StopDisallowedDummyCombat",
+        "GetBotDebugJson",
+    ]:
+        assert symbol in mgr_header
+
+    resolve = function_body(mgr, "bool BotWorldPopulationMgr::ResolveSpawnPlacement")
+    assert "resume_or_race_start" in resolve
+    assert "resume_only" in resolve
+    assert "race_start_only" in resolve
+    assert "saved_or_near_player" in resolve
+
+    assert "spawn_resolved" in function_body(mgr, "void BotWorldPopulationMgr::RecordSpawnResolved")
+    assert "spawn_resume_invalid" in function_body(mgr, "bool BotWorldPopulationMgr::ResolveSavedSpawnPlacement")
+    assert "race_start" in function_body(mgr, "bool BotWorldPopulationMgr::ResolveRaceStartSpawnPlacement")
+    assert "dummy_target_rejected" in function_body(mgr, "bool BotWorldPopulationMgr::StopDisallowedDummyCombat")
+
+    questing = function_body(mgr, "BotWorldPopulationMgr::QuestActionResult BotWorldPopulationMgr::TryQuesting")
+    assert "UseAbilityOnDummy" in questing
+    assert "LastQuestProgressBefore" in questing
+    assert "LastQuestProgressAfter" in questing
+    assert "ability_objective_failed" in questing
+    assert "blacklist_target_spell_pair" in questing
+
+    select_safe = function_body(mgr, "Unit* BotWorldPopulationMgr::SelectSafeTarget")
+    assert "IsTrainingDummy(target)" in select_safe
+
+    assert '{ "debug",   rbac::RBAC_PERM_COMMAND_HEALERBOT' in commands
+    assert "GetBotDebugJson" in commands
+    assert "BotWorld.TrainingDummyEntries = \"\"" in conf
 
 
 def test_clip_capture_smoke_persists_clip_row_with_pre_and_post_frames():
@@ -291,10 +339,14 @@ def test_host_world_makefile_can_generate_always_on_recording_config():
     assert "BOTWORLD_RECORDING_WINDOW_MINUTES ?= 15" in makefile
     assert "BOTWORLD_TARGET_POPULATION ?= 5" in makefile
     assert "BOTWORLD_ALLOW_CONFIGURED_CENTER_FALLBACK ?= 0" in makefile
+    assert "BOTWORLD_USE_SAVED_POSITION ?= 1" in makefile
+    assert "host-world-botexp-real" in makefile
+    assert "host-world-botexp-watch" in makefile
     assert "BotWorld.AutoStart = $(BOTWORLD_AUTOSTART)" in makefile
     assert "BotWorld.AutoStartRecording = $(BOTWORLD_AUTOSTART_RECORDING)" in makefile
     assert "BotWorld.AutoRecordingWindowMinutes = $(BOTWORLD_RECORDING_WINDOW_MINUTES)" in makefile
     assert "s|^BotWorld\\.SpawnMode\\s*=.*$$|BotWorld.SpawnMode = \"$(BOTWORLD_SPAWN_MODE)\"|gm" in makefile
+    assert "BotWorld.UseSavedPosition = $(BOTWORLD_USE_SAVED_POSITION)" in makefile
 
 
 def test_player_bot_chase_movement_inform_does_not_deref_non_creature_owner():

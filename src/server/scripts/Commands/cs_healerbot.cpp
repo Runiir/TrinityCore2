@@ -805,6 +805,7 @@ public:
             { "start",   rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoStartCommand,   "" },
             { "stop",    rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoStopCommand,    "" },
             { "status",  rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleStatusCommand,      "" },
+            { "debug",   rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoDebugCommand,   "" },
             { "spawn",   rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoSpawnCommand,   "" },
             { "despawn", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoDespawnCommand, "" },
         };
@@ -940,6 +941,15 @@ private:
         sBotWorldPopulationMgr->StopAutonomy();
         if (handler)
             handler->PSendSysMessage("{\"ok\":true,\"action\":\"botauto_despawn\",\"scope\":\"all\",\"failure_reason\":null}");
+        return true;
+    }
+
+    static bool HandleAutoDebugCommand(ChatHandler* handler, char const* args)
+    {
+        std::vector<std::string> tokens = Tokenize(args);
+        std::string selector = tokens.empty() ? "" : tokens[0];
+        if (handler)
+            handler->PSendSysMessage("%s", sBotWorldPopulationMgr->GetBotDebugJson(selector).c_str());
         return true;
     }
 

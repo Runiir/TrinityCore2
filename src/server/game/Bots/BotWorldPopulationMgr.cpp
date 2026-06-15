@@ -13,6 +13,7 @@
 #include "LFG.h"
 #include "Log.h"
 #include "Map.h"
+#include "MapManager.h"
 #include "MotionMaster.h"
 #include "ObjectAccessor.h"
 #include "ObjectMgr.h"
@@ -28,9 +29,11 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <cctype>
 #include <cstdlib>
 #include <fstream>
 #include <iomanip>
+#include <limits>
 #include <regex>
 #include <shared_mutex>
 #include <sstream>
@@ -58,6 +61,33 @@ float UnitHealthPct(Unit const* unit)
         return 0.0f;
 
     return float(unit->GetHealth()) / float(unit->GetMaxHealth());
+}
+
+std::string LowerCopy(std::string value)
+{
+    std::transform(value.begin(), value.end(), value.begin(), [](unsigned char c) { return char(std::tolower(c)); });
+    return value;
+}
+
+bool ContainsInsensitive(std::string const& text, char const* needle)
+{
+    if (!needle || !*needle)
+        return false;
+    return LowerCopy(text).find(LowerCopy(needle)) != std::string::npos;
+}
+
+char const* ToString(BotWorldPopulationMgr::QuestObjectiveType type)
+{
+    switch (type)
+    {
+        case BotWorldPopulationMgr::QuestObjectiveType::Kill: return "kill";
+        case BotWorldPopulationMgr::QuestObjectiveType::CollectItem: return "collect_item";
+        case BotWorldPopulationMgr::QuestObjectiveType::InteractGameObject: return "interact_gameobject";
+        case BotWorldPopulationMgr::QuestObjectiveType::CastSpellOnTarget: return "cast_spell_on_target";
+        case BotWorldPopulationMgr::QuestObjectiveType::UseAbilityOnDummy: return "use_ability_on_dummy";
+        case BotWorldPopulationMgr::QuestObjectiveType::UseItemOnTarget: return "use_item_on_target";
+        default: return "unknown";
+    }
 }
 
 uint64 NowMs()
@@ -638,6 +668,8 @@ void BotWorldPopulationMgr::Stop()
 
     if (_runtimeMode == BotWorldRuntimeMode::AlwaysOnAutonomy)
     {
+        for (WorldBotState const& state : _bots)
+            PersistBotPosition(GetBot(state));
         _telemetryBuffer.FlushOpenClips(_experimentId, _runId, _config.BrainVersion);
         RecordRunStop();
         _experimentCoordinator.Clear();
@@ -651,7 +683,9 @@ void BotWorldPopulationMgr::Stop()
 
     for (WorldBotState const& state : _bots)
     {
-        RecordActivityStop(state, GetBot(state));
+        Player* bot = GetBot(state);
+        PersistBotPosition(bot);
+        RecordActivityStop(state, bot);
         sBotMgr->RemoveWorldBot(state.Guid);
     }
 
@@ -708,7 +742,9 @@ void BotWorldPopulationMgr::StopAutonomy()
 
     for (WorldBotState const& state : _bots)
     {
-        RecordActivityStop(state, GetBot(state));
+        Player* bot = GetBot(state);
+        PersistBotPosition(bot);
+        RecordActivityStop(state, bot);
         sBotMgr->RemoveWorldBot(state.Guid);
     }
 
@@ -789,6 +825,7 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
     _config.AllowConfiguredCenterFallback = sConfigMgr->GetBoolDefault("BotWorld.AllowConfiguredCenterFallback", _config.AllowConfiguredCenterFallback);
     _config.UseSavedPosition = sConfigMgr->GetBoolDefault("BotWorld.UseSavedPosition", _config.UseSavedPosition);
     _config.NearPlayerRadius = sConfigMgr->GetFloatDefault("BotWorld.NearPlayerRadius", _config.NearPlayerRadius);
+    _config.TrainingDummyEntries = sConfigMgr->GetStringDefault("BotWorld.TrainingDummyEntries", _config.TrainingDummyEntries);
     _config.DeathRecoveryMode = sConfigMgr->GetStringDefault("BotWorld.DeathRecoveryMode", sConfigMgr->GetStringDefault("BotWorld.RespawnMode", _config.DeathRecoveryMode));
     _config.TeleportToCenterOnDeath = sConfigMgr->GetBoolDefault("BotWorld.TeleportToCenterOnDeath", _config.TeleportToCenterOnDeath);
     _config.MaxDeathsBeforeFallback = std::max<uint32>(1, sConfigMgr->GetIntDefault("BotWorld.MaxDeathsBeforeFallback", _config.MaxDeathsBeforeFallback));
@@ -976,9 +1013,15 @@ bool BotWorldPopulationMgr::LoadPolicyModelArtifact(std::string const& artifactP
     std::string artifactFormat = ExtractJsonStringField(json, "artifact_format");
     std::map<std::string, BotPolicyModelConfig::Ensemble> treeEnsembles = ParsePortableTreeEnsembles(json);
     std::string fallbackObject = ExtractJsonObjectField(json, "fallback");
-    std::string modelJson = fallbackObject.empty() ? json : fallbackObject;
-    std::string meansObject = ExtractJsonObjectField(modelJson, "means");
-    std::string weightsObject = ExtractJsonObjectField(modelJson, "weights");
+    std::string meansObject = ExtractJsonObjectField(json, "means");
+    std::string weightsObject = ExtractJsonObjectField(json, "weights");
+    if (!fallbackObject.empty())
+    {
+        if (meansObject.empty())
+            meansObject = ExtractJsonObjectField(fallbackObject, "means");
+        if (weightsObject.empty())
+            weightsObject = ExtractJsonObjectField(fallbackObject, "weights");
+    }
     if (treeEnsembles.empty() && (meansObject.empty() || weightsObject.empty()))
         return false;
 
@@ -1026,7 +1069,7 @@ void BotWorldPopulationMgr::EnsurePopulation()
             continue;
         }
 
-        Player* bot = placement.Source == "saved"
+        Player* bot = placement.Source == "saved_position"
             ? sBotMgr->SpawnWorldBotAtSavedPosition("any", std::to_string(candidateGuid))
             : sBotMgr->SpawnWorldBot("any", std::to_string(candidateGuid), placement.MapId, placement.X, placement.Y, placement.Z, placement.O);
         if (!bot)
@@ -1043,6 +1086,13 @@ void BotWorldPopulationMgr::EnsurePopulation()
         state.LastX = bot->GetPositionX();
         state.LastY = bot->GetPositionY();
         state.LastZ = bot->GetPositionZ();
+        state.SpawnSource = placement.Source;
+        state.RaceStartFallbackUsed = placement.RaceStartFallbackUsed;
+        state.SpawnMapId = bot->GetMapId();
+        state.SpawnX = bot->GetPositionX();
+        state.SpawnY = bot->GetPositionY();
+        state.SpawnZ = bot->GetPositionZ();
+        state.SpawnO = bot->GetOrientation();
         _bots.push_back(state);
         _metrics.ActiveBots = uint32(_bots.size());
 
@@ -1051,6 +1101,7 @@ void BotWorldPopulationMgr::EnsurePopulation()
         BotProgressionStage stage = BotLongTermProgressionBrain::ClassifyStage(bot, power);
         std::string raw = BuildRawJson(bot, nullptr);
         std::string semantic = BuildSemanticJson(bot, nullptr, "idle", &power, stage);
+        RecordSpawnResolved(_bots.back(), bot, placement, placement.Source.c_str());
         RecordEvent(_bots.back(), bot, "bot_spawned", nullptr, "ok", raw.c_str(), semantic.c_str());
         if (_config.AllowRaids && bot->GetMap() && bot->GetMap()->IsRaid())
         {
@@ -1067,15 +1118,30 @@ void BotWorldPopulationMgr::EnsurePopulation()
 
 bool BotWorldPopulationMgr::ResolveSpawnPlacement(uint32 candidateGuid, SpawnPlacement& placement) const
 {
-    if ((_config.SpawnMode == "saved_or_near_player" || _config.SpawnMode == "saved") && _config.UseSavedPosition)
+    std::string mode = _config.SpawnMode.empty() ? "resume_or_race_start" : _config.SpawnMode;
+    bool allowResume = _config.UseSavedPosition && (mode == "resume_or_race_start" || mode == "resume_only" || mode == "saved_or_near_player");
+    if (allowResume)
+    {
         if (ResolveSavedSpawnPlacement(candidateGuid, placement))
             return true;
 
-    if (_config.SpawnMode == "saved_or_near_player" || _config.SpawnMode == "near_player")
+        if (mode == "resume_only")
+            return false;
+    }
+
+    if (mode == "resume_or_race_start" || mode == "race_start_only")
+    {
+        if (ResolveRaceStartSpawnPlacement(candidateGuid, placement))
+            return true;
+        if (mode == "race_start_only")
+            return false;
+    }
+
+    if (mode == "saved_or_near_player" || mode == "near_player")
         if (ResolveNearPlayerSpawnPlacement(placement))
             return true;
 
-    if (_config.SpawnMode == "configured_center" || _config.AllowConfiguredCenterFallback)
+    if (mode == "configured_center" || _config.AllowConfiguredCenterFallback)
         return ResolveConfiguredCenterSpawnPlacement(placement);
 
     return false;
@@ -1086,17 +1152,59 @@ bool BotWorldPopulationMgr::ResolveSavedSpawnPlacement(uint32 candidateGuid, Spa
     if (QueryResult result = CharacterDatabase.PQuery("SELECT map, position_x, position_y, position_z, orientation FROM characters WHERE guid = %u", candidateGuid))
     {
         Field* fields = result->Fetch();
+        uint32 mapId = fields[0].GetUInt16();
+        float x = fields[1].GetFloat();
+        float y = fields[2].GetFloat();
+        float z = fields[3].GetFloat();
+        if (!IsValidBotResumePosition(candidateGuid, mapId, x, y, z))
+        {
+            if (_runId)
+            {
+                std::string brain = _config.BrainVersion;
+                CharacterDatabase.EscapeString(brain);
+                CharacterDatabase.DirectPExecute(
+                    "INSERT INTO experiment_bot_events (experiment_id, run_id, bot_guid, brain_version, map_id, x, y, z, event_type, result, raw_json, semantic_json, context_json) "
+                    "VALUES (" UI64FMTD ", " UI64FMTD ", %u, '%s', %u, %f, %f, %f, 'spawn_resume_invalid', 'invalid_saved_position', '{}', '{}', '{\"source\":\"saved_position\"}')",
+                    _experimentId, _runId, candidateGuid, brain.c_str(), mapId, x, y, z);
+            }
+            return false;
+        }
+
         placement.Valid = true;
-        placement.MapId = fields[0].GetUInt16();
-        placement.X = fields[1].GetFloat();
-        placement.Y = fields[2].GetFloat();
-        placement.Z = fields[3].GetFloat();
+        placement.MapId = mapId;
+        placement.X = x;
+        placement.Y = y;
+        placement.Z = z;
         placement.O = fields[4].GetFloat();
-        placement.Source = "saved";
+        placement.Source = "saved_position";
         return true;
     }
 
     return false;
+}
+
+bool BotWorldPopulationMgr::ResolveRaceStartSpawnPlacement(uint32 candidateGuid, SpawnPlacement& placement) const
+{
+    QueryResult result = CharacterDatabase.PQuery("SELECT race, class FROM characters WHERE guid = %u", candidateGuid);
+    if (!result)
+        return false;
+
+    Field* fields = result->Fetch();
+    uint8 race = fields[0].GetUInt8();
+    uint8 playerClass = fields[1].GetUInt8();
+    PlayerInfo const* info = sObjectMgr->GetPlayerInfo(race, playerClass);
+    if (!info || !MapManager::IsValidMapCoord(info->mapId, info->positionX, info->positionY, info->positionZ, 0.0f))
+        return false;
+
+    placement.Valid = true;
+    placement.MapId = info->mapId;
+    placement.X = info->positionX;
+    placement.Y = info->positionY;
+    placement.Z = info->positionZ;
+    placement.O = 0.0f;
+    placement.Source = "race_start";
+    placement.RaceStartFallbackUsed = true;
+    return true;
 }
 
 bool BotWorldPopulationMgr::ResolveNearPlayerSpawnPlacement(SpawnPlacement& placement) const
@@ -1138,6 +1246,71 @@ bool BotWorldPopulationMgr::ResolveConfiguredCenterSpawnPlacement(SpawnPlacement
     placement.O = angle;
     placement.Source = "configured_center";
     return true;
+}
+
+bool BotWorldPopulationMgr::IsConfiguredCenterPosition(uint32 mapId, float x, float y, float z) const
+{
+    if (mapId != _config.MapId)
+        return false;
+    return Distance2d(x, y, _config.CenterX, _config.CenterY) <= std::max(1.0f, _config.Radius * 0.35f)
+        && std::fabs(z - _config.CenterZ) <= 10.0f;
+}
+
+bool BotWorldPopulationMgr::IsValidBotResumePosition(uint32 botGuid, uint32 mapId, float x, float y, float z) const
+{
+    if (!botGuid)
+        return false;
+    if (std::fabs(x) < 0.001f && std::fabs(y) < 0.001f && std::fabs(z) < 0.001f)
+        return false;
+    if (!MapManager::IsValidMapCoord(mapId, x, y, z, 0.0f))
+        return false;
+    if (IsConfiguredCenterPosition(mapId, x, y, z) && _config.SpawnMode != "configured_center" && !_config.AllowConfiguredCenterFallback)
+        return false;
+    return true;
+}
+
+void BotWorldPopulationMgr::PersistBotPosition(Player* bot) const
+{
+    if (!bot || !bot->IsInWorld() || !MapManager::IsValidMapCoord(bot->GetMapId(), bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), bot->GetOrientation()))
+        return;
+
+    CharacterDatabase.DirectPExecute(
+        "UPDATE characters SET position_x = %f, position_y = %f, position_z = %f, orientation = %f, map = %u, zone = %u WHERE guid = %u",
+        bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), bot->GetOrientation(), bot->GetMapId(), bot->GetZoneId(), bot->GetGUID().GetCounter());
+}
+
+void BotWorldPopulationMgr::RecordSpawnResolved(WorldBotState& state, Player* bot, SpawnPlacement const& placement, char const* result)
+{
+    if (!_runId || !bot)
+        return;
+
+    std::ostringstream context;
+    context << "{\"source\":\"" << JsonEscape(placement.Source) << "\""
+            << ",\"map\":" << bot->GetMapId()
+            << ",\"x\":" << bot->GetPositionX()
+            << ",\"y\":" << bot->GetPositionY()
+            << ",\"z\":" << bot->GetPositionZ()
+            << ",\"o\":" << bot->GetOrientation()
+            << ",\"race\":" << uint32(bot->getRace())
+            << ",\"class\":" << uint32(bot->getClass())
+            << ",\"level\":" << uint32(bot->getLevel())
+            << ",\"race_start_fallback_used\":" << (placement.RaceStartFallbackUsed ? "true" : "false") << "}";
+    std::string raw = BuildRawJson(bot, nullptr);
+    std::string semantic = BuildSemanticJson(bot, nullptr, "spawn_resolved");
+    std::string brain = _config.BrainVersion;
+    std::string eventResult = result ? result : placement.Source;
+    std::string contextJson = context.str();
+    CharacterDatabase.EscapeString(raw);
+    CharacterDatabase.EscapeString(semantic);
+    CharacterDatabase.EscapeString(brain);
+    CharacterDatabase.EscapeString(eventResult);
+    CharacterDatabase.EscapeString(contextJson);
+
+    CharacterDatabase.DirectPExecute(
+        "INSERT INTO experiment_bot_events (experiment_id, run_id, bot_guid, brain_version, map_id, zone_id, area_id, x, y, z, level, event_type, result, value_int, raw_json, semantic_json, context_json) "
+        "VALUES (" UI64FMTD ", " UI64FMTD ", %u, '%s', %u, %u, %u, %f, %f, %f, %u, 'spawn_resolved', '%s', %u, '%s', '%s', '%s')",
+        _experimentId, _runId, state.Guid.GetCounter(), brain.c_str(), bot->GetMapId(), bot->GetZoneId(), bot->GetAreaId(),
+        bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), uint32(bot->getLevel()), eventResult.c_str(), uint32(bot->getLevel()), raw.c_str(), semantic.c_str(), contextJson.c_str());
 }
 
 void BotWorldPopulationMgr::RememberSafePosition(WorldBotState& state, Player* bot, uint32 diff)
@@ -1712,6 +1885,7 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
             semantic = BuildSemanticJson(bot, nullptr, "corpse_recovery");
             if (recovery.Recovered)
             {
+                PersistBotPosition(bot);
                 RecordEvent(state, bot, "resurrected", nullptr, recovery.Mode.c_str(), raw.c_str(), semantic.c_str());
                 if (recovery.UsedFallback)
                     RecordEvent(state, bot, "teleport_fallback_used", nullptr, recovery.Result.c_str(), raw.c_str(), semantic.c_str(), float(state.RecentDeathCount), _metrics.Deaths);
@@ -1769,6 +1943,8 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
     Unit* target = state.TargetGuid.IsEmpty() ? nullptr : ObjectAccessor::GetUnit(*bot, state.TargetGuid);
     if (!target)
         target = bot->GetVictim();
+    if (target && StopDisallowedDummyCombat(state, bot, target))
+        target = nullptr;
 
     uint32 maxHealth = bot->GetMaxHealth();
     float hpPct = maxHealth ? float(bot->GetHealth()) / float(maxHealth) : 1.0f;
@@ -1777,6 +1953,8 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
     QuestActionResult questAction;
     BossMechanicActionResult bossAction;
     DungeonTrashActionResult trashAction;
+    QuestObjectivePlan activePlanForPriority;
+    bool hasActiveQuestObjective = FindActiveQuestObjective(bot, activePlanForPriority);
 
     if (hpPct < 0.35f && !bot->IsInCombat())
     {
@@ -1800,7 +1978,7 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         action = "vendor_repair_train";
     }
     else if (_config.AllowQuesting
-        && (chosenActivity.Activity == BotProgressionActivity::Questing || [&]() { QuestObjectivePlan activePlan; return FindActiveQuestObjective(bot, activePlan); }())
+        && (chosenActivity.Activity == BotProgressionActivity::Questing || hasActiveQuestObjective)
         && [&]() { questAction = TryQuesting(state, bot, power, stage, chosenActivity.Activity); return questAction.Handled; }())
     {
         situation = questAction.Situation;
@@ -1881,7 +2059,7 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         state.TargetGuid.Clear();
         state.WasInCombat = false;
     }
-    else if (_config.AllowCombat && (target = SelectSafeTarget(bot)))
+    else if (_config.AllowCombat && !hasActiveQuestObjective && (target = SelectSafeTarget(bot)))
     {
         BotActionExecutor executor;
         BotActionResult result = executor.Pull(bot, target);
@@ -1965,6 +2143,8 @@ Unit* BotWorldPopulationMgr::SelectSafeTarget(Player* bot) const
         Unit* target = object ? object->ToUnit() : nullptr;
         if (!target || !target->IsAlive() || !bot->IsValidAttackTarget(target) || !bot->IsWithinLOSInMap(target))
             continue;
+        if (IsTrainingDummy(target))
+            continue;
 
         if (Creature* creature = target->ToCreature())
             if (creature->isElite())
@@ -1990,6 +2170,143 @@ Unit* BotWorldPopulationMgr::SelectSafeTarget(Player* bot) const
     return best;
 }
 
+bool BotWorldPopulationMgr::IsDummyEntryConfigured(uint32 entry, bool* explicitAllow) const
+{
+    if (explicitAllow)
+        *explicitAllow = false;
+    if (!entry || _config.TrainingDummyEntries.empty())
+        return false;
+
+    std::stringstream entries(_config.TrainingDummyEntries);
+    std::string token;
+    while (std::getline(entries, token, ','))
+    {
+        token.erase(std::remove_if(token.begin(), token.end(), [](unsigned char c) { return std::isspace(c); }), token.end());
+        if (token.empty())
+            continue;
+        bool deny = token[0] == '!' || token[0] == '-';
+        if (deny)
+            token.erase(token.begin());
+        if (token.empty() || token.find_first_not_of("0123456789") != std::string::npos)
+            continue;
+        if (uint32(strtoul(token.c_str(), nullptr, 10)) != entry)
+            continue;
+        if (explicitAllow)
+            *explicitAllow = !deny;
+        return true;
+    }
+
+    return false;
+}
+
+bool BotWorldPopulationMgr::IsTrainingDummy(Unit const* unit) const
+{
+    Creature const* creature = unit ? unit->ToCreature() : nullptr;
+    if (!creature)
+        return false;
+
+    bool explicitAllow = false;
+    if (IsDummyEntryConfigured(creature->GetEntry(), &explicitAllow))
+        return explicitAllow;
+
+    CreatureTemplate const* tmpl = creature->GetCreatureTemplate();
+    if (!tmpl)
+        return false;
+
+    if ((tmpl->unit_flags & (UNIT_FLAG_PACIFIED | UNIT_FLAG_IMMUNE_TO_NPC)) || (tmpl->unit_flags2 & UNIT_FLAG2_CANNOT_TURN))
+        if (ContainsInsensitive(tmpl->Name, "training dummy"))
+            return true;
+
+    return ContainsInsensitive(tmpl->Name, "training dummy");
+}
+
+bool BotWorldPopulationMgr::IsTrainingDummyAllowedForQuest(QuestObjectivePlan const& plan, Unit const* target) const
+{
+    if (!target || !IsTrainingDummy(target))
+        return false;
+    Creature const* creature = target->ToCreature();
+    if (!creature)
+        return false;
+    if (plan.RequiredEntry > 0 && uint32(plan.RequiredEntry) == creature->GetEntry())
+        return true;
+    return plan.ObjectiveType == QuestObjectiveType::UseAbilityOnDummy || plan.RequiresTrainingDummy;
+}
+
+bool BotWorldPopulationMgr::QuestTextSuggestsAbilityObjective(Quest const* quest) const
+{
+    if (!quest)
+        return false;
+
+    std::string text = quest->GetTitle() + " " + quest->GetObjectives() + " " + quest->GetDetails();
+    for (uint8 i = 0; i < QUEST_OBJECTIVES_COUNT; ++i)
+        text += " " + quest->ObjectiveText[i];
+
+    bool mentionsDummy = ContainsInsensitive(text, "training dummy") || ContainsInsensitive(text, "dummy");
+    bool mentionsAction = ContainsInsensitive(text, "cast") || ContainsInsensitive(text, "use ") || ContainsInsensitive(text, "practice")
+        || ContainsInsensitive(text, "ability") || ContainsInsensitive(text, "spell") || ContainsInsensitive(text, "sinister strike")
+        || ContainsInsensitive(text, "steady shot") || ContainsInsensitive(text, "fireball") || ContainsInsensitive(text, "smite");
+    return mentionsDummy && mentionsAction;
+}
+
+uint32 BotWorldPopulationMgr::SelectQuestAbilitySpell(Player* bot, Quest const* quest, QuestObjectivePlan const& plan) const
+{
+    if (!bot)
+        return 0;
+    if (plan.RequiredSpellId && bot->HasSpell(plan.RequiredSpellId))
+        return plan.RequiredSpellId;
+
+    std::string text;
+    if (quest)
+        text = LowerCopy(quest->GetTitle() + " " + quest->GetObjectives() + " " + quest->GetDetails());
+
+    struct Candidate { uint32 SpellId; char const* Name; };
+    Candidate named[] =
+    {
+        { 1752, "sinister strike" },
+        { 56641, "steady shot" },
+        { 133, "fireball" },
+        { 585, "smite" },
+        { 5176, "wrath" },
+        { 403, "lightning bolt" },
+        { 78, "heroic strike" }
+    };
+    for (Candidate const& candidate : named)
+        if ((!text.empty() && text.find(candidate.Name) != std::string::npos) && bot->HasSpell(candidate.SpellId))
+            return candidate.SpellId;
+
+    uint32 candidates[4] = { 0, 0, 0, 0 };
+    switch (bot->getClass())
+    {
+        case CLASS_MAGE: candidates[0] = 133; break;
+        case CLASS_PRIEST: candidates[0] = 585; break;
+        case CLASS_WARLOCK: candidates[0] = 686; break;
+        case CLASS_DRUID: candidates[0] = 5176; break;
+        case CLASS_SHAMAN: candidates[0] = 403; break;
+        case CLASS_PALADIN: candidates[0] = 20271; break;
+        case CLASS_HUNTER: candidates[0] = 75; break;
+        case CLASS_DEATH_KNIGHT: candidates[0] = 45477; candidates[1] = 45462; break;
+        case CLASS_WARRIOR: candidates[0] = 78; break;
+        case CLASS_ROGUE: candidates[0] = 1752; break;
+        default: break;
+    }
+    for (uint32 spellId : candidates)
+        if (spellId && bot->HasSpell(spellId))
+            return spellId;
+    return 0;
+}
+
+uint32 BotWorldPopulationMgr::QuestObjectiveProgress(Player* bot, QuestObjectivePlan const& plan) const
+{
+    if (!bot)
+        return 0;
+    auto itr = bot->getQuestStatusMap().find(plan.QuestId);
+    if (itr == bot->getQuestStatusMap().end())
+        return 0;
+    if (plan.IsItemObjective)
+        return plan.ObjectiveIndex < QUEST_ITEM_OBJECTIVES_COUNT ? itr->second.ItemCount[plan.ObjectiveIndex] : 0;
+    return plan.ObjectiveIndex < QUEST_OBJECTIVES_COUNT ? itr->second.CreatureOrGOCount[plan.ObjectiveIndex] : 0;
+}
+
 Unit* BotWorldPopulationMgr::SelectQuestObjectiveTarget(Player* bot, QuestObjectivePlan const& plan) const
 {
     if (!bot || plan.IsGameObject)
@@ -2008,6 +2325,8 @@ Unit* BotWorldPopulationMgr::SelectQuestObjectiveTarget(Player* bot, QuestObject
         {
             Creature* creature = object ? object->ToCreature() : nullptr;
             if (!creature || !creature->IsAlive() || !bot->IsValidAttackTarget(creature) || !bot->IsWithinLOSInMap(creature))
+                continue;
+            if (IsTrainingDummy(creature) && !IsTrainingDummyAllowedForQuest(plan, creature))
                 continue;
 
             std::vector<uint32> const* questItems = sObjectMgr->GetCreatureQuestItemList(creature->GetEntry());
@@ -2044,6 +2363,8 @@ Unit* BotWorldPopulationMgr::SelectQuestObjectiveTarget(Player* bot, QuestObject
     {
         if (!creature || !creature->IsAlive() || !bot->IsValidAttackTarget(creature) || !bot->IsWithinLOSInMap(creature))
             continue;
+        if (IsTrainingDummy(creature) && !IsTrainingDummyAllowedForQuest(plan, creature))
+            continue;
         if (creature->isElite())
             continue;
         if (int32(creature->getLevel()) - int32(bot->getLevel()) > 1)
@@ -2060,6 +2381,79 @@ Unit* BotWorldPopulationMgr::SelectQuestObjectiveTarget(Player* bot, QuestObject
     }
 
     return best;
+}
+
+Unit* BotWorldPopulationMgr::SelectQuestAbilityObjectiveTarget(Player* bot, QuestObjectivePlan const& plan, WorldBotState const& state) const
+{
+    if (!bot)
+        return nullptr;
+
+    std::vector<WorldObject*> objects;
+    Trinity::AllWorldObjectsInRange check(bot, 70.0f);
+    Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(bot, objects, check);
+    Cell::VisitAllObjects(bot, searcher, 70.0f);
+
+    uint64 now = NowMs();
+    Unit* best = nullptr;
+    float bestDist = 0.0f;
+    for (WorldObject* object : objects)
+    {
+        Unit* target = object ? object->ToUnit() : nullptr;
+        Creature const* creature = target ? target->ToCreature() : nullptr;
+        if (!target || !creature || !target->IsAlive() || !bot->IsValidAttackTarget(target) || !bot->IsWithinLOSInMap(target))
+            continue;
+        if (plan.RequiredEntry > 0 && creature->GetEntry() != uint32(plan.RequiredEntry))
+            continue;
+        if (plan.RequiresTrainingDummy && !IsTrainingDummy(target))
+            continue;
+        if (IsTrainingDummy(target) && !IsTrainingDummyAllowedForQuest(plan, target))
+            continue;
+        auto cooldown = state.DummyTargetCooldownUntilMs.find(target->GetGUID().GetCounter());
+        if (cooldown != state.DummyTargetCooldownUntilMs.end() && cooldown->second > now)
+            continue;
+
+        float dist = bot->GetExactDist(target);
+        if (!best || dist < bestDist)
+        {
+            best = target;
+            bestDist = dist;
+        }
+    }
+
+    return best;
+}
+
+bool BotWorldPopulationMgr::StopDisallowedDummyCombat(WorldBotState& state, Player* bot, Unit* target)
+{
+    if (!bot || !target || !IsTrainingDummy(target))
+        return false;
+
+    QuestObjectivePlan plan;
+    bool allowed = FindActiveQuestObjective(bot, plan) && IsTrainingDummyAllowedForQuest(plan, target)
+        && (plan.ObjectiveType == QuestObjectiveType::UseAbilityOnDummy || plan.ObjectiveType == QuestObjectiveType::CastSpellOnTarget);
+    if (allowed)
+        return false;
+
+    bot->AttackStop();
+    bot->CombatStop(true);
+    bot->ClearUnitState(UNIT_STATE_CHASE);
+    bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+    bot->GetMotionMaster()->MoveIdle();
+    state.TargetGuid.Clear();
+    state.WasInCombat = false;
+    state.DummyTargetCooldownUntilMs[target->GetGUID().GetCounter()] = NowMs() + 30000;
+    state.LastRejectedTargetReason = "training_dummy_without_ability_objective";
+    state.CurrentTargetIsTrainingDummy = true;
+    state.CurrentDummyAllowedByQuest = false;
+
+    std::string raw = BuildRawJson(bot, target);
+    std::string semantic = BuildSemanticJson(bot, target, "dummy_target_rejected");
+    RecordEvent(state, bot, "dummy_target_rejected", target, "not_active_ability_objective", raw.c_str(), semantic.c_str());
+    BotRolePowerBreakdown power = BotLongTermProgressionBrain::CalculateRolePower(bot);
+    std::vector<BotActivityScore> activities = BotLongTermProgressionBrain::ScoreActivities(bot, power, BotLongTermProgressionBrain::ClassifyStage(bot, power), _config.AllowQuesting, _config.AllowCombat, &_learningConfig);
+    BotActivityScore chosen = BotLongTermProgressionBrain::ChooseActivity(activities);
+    RecordDecision(state, bot, "dummy_target_rejected", "return_to_quest_state_machine", target, raw.c_str(), semantic.c_str(), activities, chosen, power, true, true);
+    return true;
 }
 
 WorldObject* BotWorldPopulationMgr::SelectQuestGiver(Player* bot, bool completeOnly, uint32* questId) const
@@ -2222,6 +2616,24 @@ bool BotWorldPopulationMgr::FindActiveQuestObjective(Player* bot, QuestObjective
                 plan.RequiredCount = requiredCount;
                 plan.CurrentCount = questStatus.second.CreatureOrGOCount[i];
                 plan.IsGameObject = required < 0;
+                plan.ObjectiveIndex = i;
+                if (plan.IsGameObject)
+                    plan.ObjectiveType = QuestObjectiveType::InteractGameObject;
+                else
+                {
+                    CreatureTemplate const* tmpl = required > 0 ? sObjectMgr->GetCreatureTemplate(uint32(required)) : nullptr;
+                    bool configuredDummy = false;
+                    bool configuredDummyAllowed = false;
+                    if (tmpl)
+                        configuredDummy = IsDummyEntryConfigured(tmpl->Entry, &configuredDummyAllowed);
+                    bool dummyRequired = tmpl && (ContainsInsensitive(tmpl->Name, "training dummy") || (configuredDummy && configuredDummyAllowed));
+                    if (dummyRequired && QuestTextSuggestsAbilityObjective(quest))
+                    {
+                        plan.ObjectiveType = QuestObjectiveType::UseAbilityOnDummy;
+                        plan.RequiresTrainingDummy = true;
+                        plan.RequiredSpellId = SelectQuestAbilitySpell(bot, quest, plan);
+                    }
+                }
                 found = true;
                 bestScore = score;
             }
@@ -2245,6 +2657,8 @@ bool BotWorldPopulationMgr::FindActiveQuestObjective(Player* bot, QuestObjective
                 plan.CurrentCount = questStatus.second.ItemCount[i];
                 plan.IsItemObjective = true;
                 plan.ItemId = requiredItem;
+                plan.ObjectiveIndex = i;
+                plan.ObjectiveType = QuestTextSuggestsAbilityObjective(quest) ? QuestObjectiveType::UseItemOnTarget : QuestObjectiveType::CollectItem;
                 found = true;
                 bestScore = score;
             }
@@ -2370,6 +2784,86 @@ BotWorldPopulationMgr::QuestActionResult BotWorldPopulationMgr::TryQuesting(Worl
         result.Handled = true;
         result.Situation = "quest_objective";
         result.QuestId = plan.QuestId;
+        state.CurrentQuestState = "active_objective";
+        state.CurrentObjectiveType = ToString(plan.ObjectiveType);
+        state.RequiredSpellId = plan.RequiredSpellId;
+        state.RequiredItemId = plan.ItemId;
+        state.RequiredTargetEntry = plan.RequiredEntry > 0 ? uint32(plan.RequiredEntry) : 0;
+
+        if (plan.ObjectiveType == QuestObjectiveType::UseAbilityOnDummy || plan.ObjectiveType == QuestObjectiveType::CastSpellOnTarget)
+        {
+            result.Situation = "quest_ability_objective";
+            result.Action = plan.ObjectiveType == QuestObjectiveType::UseAbilityOnDummy ? "use_ability_on_dummy" : "cast_spell_on_target";
+            Unit* abilityTarget = SelectQuestAbilityObjectiveTarget(bot, plan, state);
+            result.Target = abilityTarget;
+            state.CurrentTargetIsTrainingDummy = IsTrainingDummy(abilityTarget);
+            state.CurrentDummyAllowedByQuest = IsTrainingDummyAllowedForQuest(plan, abilityTarget);
+            state.LastQuestProgressBefore = QuestObjectiveProgress(bot, plan);
+
+            if (!abilityTarget)
+            {
+                MoveToWanderPoint(bot, state);
+                result.Action = "search_ability_target";
+                return result;
+            }
+
+            uint32 spellId = plan.RequiredSpellId ? plan.RequiredSpellId : SelectQuestAbilitySpell(bot, sObjectMgr->GetQuestTemplate(plan.QuestId), plan);
+            state.RequiredSpellId = spellId;
+            if (!spellId)
+            {
+                result.Failure = true;
+                state.LastRejectedTargetReason = "ability_spell_unavailable";
+                std::string raw = BuildRawJson(bot, abilityTarget);
+                std::string semantic = BuildSemanticJson(bot, abilityTarget, "quest_ability_objective_failed", &power, stage, activity);
+                RecordQuestEvent(state, bot, "ability_objective_failed", plan.QuestId, abilityTarget, "spell_unavailable", raw.c_str(), semantic.c_str(), state.LastQuestProgressBefore);
+                return result;
+            }
+
+            SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+            float maxRange = spellInfo ? std::max(5.0f, spellInfo->GetMaxRange(false)) : 5.0f;
+            if (!bot->IsWithinDistInMap(abilityTarget, maxRange))
+            {
+                MoveBotToPoint(state, bot, abilityTarget->GetPositionX(), abilityTarget->GetPositionY(), abilityTarget->GetPositionZ());
+                return result;
+            }
+
+            bot->SetFacingToObject(abilityTarget);
+            bool cast = TryCastCombatSpell(bot, abilityTarget, spellId);
+            uint32 before = state.LastQuestProgressBefore;
+            uint32 after = QuestObjectiveProgress(bot, plan);
+            state.LastQuestProgressAfter = after;
+
+            std::ostringstream key;
+            key << plan.QuestId << ":" << spellId << ":" << abilityTarget->GetGUID().GetCounter();
+            std::string raw = BuildRawJson(bot, abilityTarget);
+            std::string semantic = BuildSemanticJson(bot, abilityTarget, "quest_ability_objective", &power, stage, activity);
+            if (cast)
+                RecordEvent(state, bot, "spell_cast", abilityTarget, "quest_ability_objective", raw.c_str(), semantic.c_str(), 0.0f, before, spellId);
+
+            if (after > before || bot->CanCompleteQuest(plan.QuestId))
+            {
+                state.AbilityObjectiveNoProgressCasts[key.str()] = 0;
+                ++_metrics.QuestObjectiveProgress;
+                state.LastQuestObjectiveProgress = _metrics.QuestObjectiveProgress;
+                RecordQuestEvent(state, bot, "objective_progress", plan.QuestId, abilityTarget, ToString(plan.ObjectiveType), raw.c_str(), semantic.c_str(), after, 0);
+                if (bot->CanCompleteQuest(plan.QuestId))
+                    bot->CompleteQuest(plan.QuestId);
+            }
+            else if (cast)
+            {
+                uint32 noProgress = ++state.AbilityObjectiveNoProgressCasts[key.str()];
+                if (noProgress >= 3)
+                {
+                    state.AbilityObjectiveCooldownUntilMs[key.str()] = NowMs() + 120000;
+                    state.DummyTargetCooldownUntilMs[abilityTarget->GetGUID().GetCounter()] = NowMs() + 120000;
+                    state.LastRejectedTargetReason = "ability_objective_no_progress";
+                    result.Failure = true;
+                    RecordQuestEvent(state, bot, "ability_objective_failed", plan.QuestId, abilityTarget, "no_progress_after_casts", raw.c_str(), semantic.c_str(), noProgress, 0);
+                    RecordDecision(state, bot, "quest_ability_objective", "blacklist_target_spell_pair", abilityTarget, raw.c_str(), semantic.c_str(), std::vector<BotActivityScore>(), BotActivityScore(), power, true, true);
+                }
+            }
+            return result;
+        }
 
         WorldObject* questObject = SelectQuestGameObject(bot, plan);
         if (plan.IsGameObject || questObject)
@@ -4239,6 +4733,9 @@ void BotWorldPopulationMgr::RecordQuestObjectiveProgressForTarget(WorldBotState&
     Creature const* creature = target->ToCreature();
     if (!creature)
         return;
+    QuestObjectivePlan activePlan;
+    if (IsTrainingDummy(target) && (!FindActiveQuestObjective(bot, activePlan) || !IsTrainingDummyAllowedForQuest(activePlan, target)))
+        return;
 
     uint32 entry = creature->GetEntry();
     for (auto const& questStatus : bot->getQuestStatusMap())
@@ -5571,6 +6068,77 @@ std::string BotWorldPopulationMgr::GetSummaryJson() const
          << ",\"allow_global_memory_fallback\":" << (_learningConfig.AllowGlobalMemoryFallback ? "true" : "false") << "}"
          << ",\"decisions\":" << status.Decisions
          << ",\"failures_recorded\":" << status.Failures << "}";
+    return json.str();
+}
+
+std::string BotWorldPopulationMgr::GetBotDebugJson(std::string const& selector) const
+{
+    WorldBotState const* selected = nullptr;
+    if (!selector.empty() && selector != "all")
+    {
+        for (WorldBotState const& state : _bots)
+        {
+            Player* bot = GetBot(state);
+            if (!bot)
+                continue;
+            if (selector == std::to_string(state.Guid.GetCounter()) || selector == bot->GetName())
+            {
+                selected = &state;
+                break;
+            }
+        }
+    }
+    if (!selected && !_bots.empty())
+        selected = &_bots.front();
+
+    if (!selected)
+        return "{\"ok\":false,\"action\":\"botauto_debug\",\"failure_reason\":\"no_active_bot\"}";
+
+    Player* bot = GetBot(*selected);
+    if (!bot)
+        return "{\"ok\":false,\"action\":\"botauto_debug\",\"failure_reason\":\"bot_not_loaded\"}";
+
+    uint32 savedMap = 0;
+    float savedX = 0.0f;
+    float savedY = 0.0f;
+    float savedZ = 0.0f;
+    float savedO = 0.0f;
+    if (QueryResult result = CharacterDatabase.PQuery("SELECT map, position_x, position_y, position_z, orientation FROM characters WHERE guid = %u", selected->Guid.GetCounter()))
+    {
+        Field* fields = result->Fetch();
+        savedMap = fields[0].GetUInt16();
+        savedX = fields[1].GetFloat();
+        savedY = fields[2].GetFloat();
+        savedZ = fields[3].GetFloat();
+        savedO = fields[4].GetFloat();
+    }
+
+    Unit* target = selected->TargetGuid.IsEmpty() ? bot->GetVictim() : ObjectAccessor::GetUnit(*bot, selected->TargetGuid);
+    bool targetDummy = IsTrainingDummy(target);
+    QuestObjectivePlan plan;
+    bool hasPlan = FindActiveQuestObjective(bot, plan);
+    bool dummyAllowed = hasPlan && IsTrainingDummyAllowedForQuest(plan, target);
+
+    std::ostringstream json;
+    json << "{\"ok\":true,\"action\":\"botauto_debug\""
+         << ",\"bot_guid\":" << selected->Guid.GetCounter()
+         << ",\"bot_name\":\"" << JsonEscape(bot->GetName()) << "\""
+         << ",\"spawn_source\":\"" << JsonEscape(selected->SpawnSource) << "\""
+         << ",\"saved_position\":{\"map\":" << savedMap << ",\"x\":" << savedX << ",\"y\":" << savedY << ",\"z\":" << savedZ << ",\"o\":" << savedO << "}"
+         << ",\"race_start_fallback_used\":" << (selected->RaceStartFallbackUsed ? "true" : "false")
+         << ",\"current_quest_state\":\"" << JsonEscape(selected->CurrentQuestState) << "\""
+         << ",\"objective_type\":\"" << JsonEscape(hasPlan ? ToString(plan.ObjectiveType) : selected->CurrentObjectiveType.c_str()) << "\""
+         << ",\"target_guid\":" << (target ? target->GetGUID().GetCounter() : 0)
+         << ",\"target_entry\":" << (target && target->ToCreature() ? target->ToCreature()->GetEntry() : 0)
+         << ",\"target_training_dummy\":" << (targetDummy ? "true" : "false")
+         << ",\"dummy_allowed_by_active_quest\":" << (dummyAllowed ? "true" : "false")
+         << ",\"required_spell\":" << (hasPlan ? plan.RequiredSpellId : selected->RequiredSpellId)
+         << ",\"required_item\":" << (hasPlan ? plan.ItemId : selected->RequiredItemId)
+         << ",\"required_target\":" << (hasPlan && plan.RequiredEntry > 0 ? uint32(plan.RequiredEntry) : selected->RequiredTargetEntry)
+         << ",\"last_quest_progress_before\":" << selected->LastQuestProgressBefore
+         << ",\"last_quest_progress_after\":" << selected->LastQuestProgressAfter
+         << ",\"last_rejected_target_reason\":\"" << JsonEscape(selected->LastRejectedTargetReason) << "\""
+         << "}";
     return json.str();
 }
 
