@@ -806,6 +806,8 @@ public:
             { "stop",    rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoStopCommand,    "" },
             { "status",  rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleStatusCommand,      "" },
             { "debug",   rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoDebugCommand,   "" },
+            { "diagnose", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoDiagnoseCommand, "" },
+            { "trace",   rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoTraceCommand,   "" },
             { "spawn",   rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoSpawnCommand,   "" },
             { "despawn", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoDespawnCommand, "" },
         };
@@ -950,6 +952,33 @@ private:
         std::string selector = tokens.empty() ? "" : tokens[0];
         if (handler)
             handler->PSendSysMessage("%s", sBotWorldPopulationMgr->GetBotDebugJson(selector).c_str());
+        return true;
+    }
+
+    static bool HandleAutoDiagnoseCommand(ChatHandler* handler, char const* args)
+    {
+        std::vector<std::string> tokens = Tokenize(args);
+        std::string selector = tokens.empty() ? "all" : tokens[0];
+        if (handler)
+            handler->PSendSysMessage("%s", sBotWorldPopulationMgr->GetBotDiagnosisJson(selector).c_str());
+        return true;
+    }
+
+    static bool HandleAutoTraceCommand(ChatHandler* handler, char const* args)
+    {
+        std::vector<std::string> tokens = Tokenize(args);
+        std::string selector = tokens.empty() ? "" : tokens[0];
+        uint32 limit = 20;
+        if (tokens.size() > 1 && tokens[1].find_first_not_of("0123456789") == std::string::npos)
+            limit = std::max<uint32>(1, uint32(strtoul(tokens[1].c_str(), nullptr, 10)));
+        else if (tokens.size() == 1 && tokens[0].find_first_not_of("0123456789") == std::string::npos)
+        {
+            limit = std::max<uint32>(1, uint32(strtoul(tokens[0].c_str(), nullptr, 10)));
+            selector.clear();
+        }
+
+        if (handler)
+            handler->PSendSysMessage("%s", sBotWorldPopulationMgr->GetBotTraceJson(selector, limit).c_str());
         return true;
     }
 

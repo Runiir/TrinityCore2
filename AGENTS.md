@@ -2,3 +2,5 @@ Use pixi for python related stuff.
 Use DVC/DVCLive for experiment tracking.
 Commit experiment code/configs to git, and checkpoint generated data/artifacts with DVC.
 After future experiments, run dvc status and dvc push to keep the remote in sync.
+
+Bot diagnostics: Codex agents can run `make host-world` or `make host-world-botexp-small` to start an attached host `worldserver` with console stdin, then paste commands at the `TC>` prompt. For scripted checks, pipe commands into the binary, e.g. `printf 'botauto diagnose all\nbotauto trace all 20\nserver exit\n' | timeout 90s build/src/server/worldserver/worldserver --config trinity-worldserver-test.conf`. During live autonomy runs, use `.botauto diagnose [selector|all]` for machine-readable bot state and diagnosis, then `.botauto trace [selector] [limit]` to inspect recent repeated decisions/events. `.botauto debug [selector]` remains backward compatible and includes a compact `diagnosis` object.

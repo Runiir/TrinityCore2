@@ -6,6 +6,7 @@
 #include "Bots/BotLongTermProgressionBrain.h"
 #include "Bots/BotTelemetryBuffer.h"
 #include "Bots/BotTelemetryPolicy.h"
+#include <deque>
 #include <map>
 #include <memory>
 #include <set>
@@ -157,6 +158,8 @@ public:
     std::string GetStatusJson() const;
     std::string GetSummaryJson() const;
     std::string GetBotDebugJson(std::string const& selector) const;
+    std::string GetBotDiagnosisJson(std::string const& selector) const;
+    std::string GetBotTraceJson(std::string const& selector, uint32 limit) const;
     bool IsActive() const { return _active; }
     std::string Replay(std::string const& replayType, std::string const& selector, std::string const& brainVersion = "");
     std::string CompareBrains(uint64 replayId, std::string const& firstBrainVersion, std::string const& secondBrainVersion);
@@ -169,6 +172,13 @@ public:
         CastSpellOnTarget,
         UseAbilityOnDummy,
         UseItemOnTarget
+    };
+
+    enum class QuestClassification
+    {
+        ObjectiveQuest,
+        ChainQuest,
+        UnsupportedQuest
     };
 
 private:
@@ -251,6 +261,38 @@ private:
         std::map<std::string, uint32> AbilityObjectiveNoProgressCasts;
         ObjectGuid LastKilledTargetGuid;
         ObjectGuid LastLootTargetGuid;
+        uint64 LastDecisionTickMs = 0;
+        uint64 LastMovementProgressMs = 0;
+        uint64 LastPathChangeMs = 0;
+        bool IsMoving = false;
+        float DistanceMovedSinceLastDecision = 0.0f;
+        float LastDecisionDistanceMoved = 0.0f;
+        std::string LastDecisionSituation = "unknown";
+        std::string LastDecisionAction = "wait";
+        std::string LastDecisionActivity = "experiment_exploration";
+        std::string LastDecisionResult = "ok";
+        std::string LastDecisionReason;
+        std::string LastDecisionHandler = "none";
+        uint32 LastDecisionQuestId = 0;
+        ObjectGuid LastDecisionTargetGuid;
+
+        struct DecisionTraceEntry
+        {
+            uint64 TimestampMs = 0;
+            uint32 Sequence = 0;
+            std::string Situation = "unknown";
+            std::string Action = "wait";
+            uint32 QuestId = 0;
+            uint64 TargetGuid = 0;
+            uint32 DestinationMapId = 0;
+            float DestinationX = 0.0f;
+            float DestinationY = 0.0f;
+            float DestinationZ = 0.0f;
+            std::string Result = "ok";
+            std::string ReasonCode;
+        };
+        std::deque<DecisionTraceEntry> DecisionTrace;
+
         uint32 LootAttemptCount = 0;
         uint64 LootStartedMs = 0;
         uint64 LootCompletedMs = 0;
@@ -272,6 +314,22 @@ private:
         float ObjectiveSearchZ = 0.0f;
         std::string LastObjectiveNotFoundReason;
         std::string LastGrindingAllowedReason;
+        uint32 QuestSearchRadiusIndex = 0;
+        uint32 ActiveQuestClusterId = 0;
+        std::string LastNoQuestReason;
+        std::string LastQuestBucketReason;
+        std::string LastQuestClassification;
+
+        struct RouteDestination
+        {
+            bool Valid = false;
+            uint32 MapId = 0;
+            float X = 0.0f;
+            float Y = 0.0f;
+            float Z = 0.0f;
+            uint32 QuestId = 0;
+            std::string Reason;
+        } QuestSearchDestination, QuestRouteDestination;
 
         struct BotQuestWorkState
         {
@@ -325,6 +383,51 @@ private:
         uint32 QuestId = 0;
         uint32 RewardChoice = 0;
         uint32 RewardItemId = 0;
+    };
+
+    struct BotDiagnosis
+    {
+        std::string DiagnosisCode = "waiting_decision_tick";
+        std::string Severity = "info";
+        float Confidence = 0.5f;
+        std::string Intent = "increase_character_power";
+        std::string CurrentAction = "wait";
+        std::string Blocker;
+        std::string NextExpectedAction = "wait_for_next_decision_tick";
+        std::string SuggestedInvestigation = "inspect_trace_for_repeated_state";
+    };
+
+    struct QuestRoutePoint
+    {
+        bool Valid = false;
+        uint32 MapId = 0;
+        uint32 ZoneId = 0;
+        uint32 QuestId = 0;
+        uint32 ObjectiveIndex = 0;
+        float X = 0.0f;
+        float Y = 0.0f;
+        float Z = 0.0f;
+        float Score = 0.0f;
+        std::string Source;
+    };
+
+    struct QuestObjectiveBucket
+    {
+        uint32 BucketId = 0;
+        uint32 MapId = 0;
+        float CenterX = 0.0f;
+        float CenterY = 0.0f;
+        float CenterZ = 0.0f;
+        float Score = 0.0f;
+        std::vector<QuestObjectivePlan> Objectives;
+        std::string Reason;
+    };
+
+    struct QuestPortfolioPlan
+    {
+        uint32 ActiveQuestCount = 0;
+        std::vector<QuestObjectiveBucket> Buckets;
+        std::vector<QuestObjectivePlan> UnresolvedObjectives;
     };
 
     struct DungeonTrashPackFeatures
@@ -602,6 +705,12 @@ private:
     bool FindActiveQuestObjective(Player* bot, QuestObjectivePlan& plan) const;
     bool FindQuestObjective(Player* bot, uint32 questId, QuestObjectivePlan& plan) const;
     bool GetQuestObjectivePlan(Player* bot, uint32 questId, uint32 objectiveIndex, QuestObjectiveType type, QuestObjectivePlan& plan) const;
+    QuestClassification ClassifyQuestForBot(Player* bot, Quest const* quest) const;
+    QuestPortfolioPlan BuildQuestPortfolioPlan(Player* bot, WorldBotState const& state) const;
+    bool FindQuestPickupDestination(Player* bot, WorldBotState const& state, QuestRoutePoint& point) const;
+    bool FindQuestTurnInDestination(Player* bot, uint32 questId, QuestRoutePoint& point) const;
+    bool ResolveObjectiveRoutePoint(Player* bot, QuestObjectivePlan const& plan, QuestRoutePoint& point) const;
+    bool SelectQuestObjectiveBucket(Player* bot, QuestPortfolioPlan const& plan, QuestObjectiveBucket& bucket) const;
     void SetQuestWorkPhase(WorldBotState& state, char const* phase);
     void SetQuestWorkFromPlan(WorldBotState& state, QuestObjectivePlan const& plan);
     void ResetQuestWork(WorldBotState& state);
@@ -668,6 +777,11 @@ private:
     uint64 RecordDecisionReplay(WorldBotState const& state, Player* bot, Unit const* target, char const* situation, char const* action, char const* rawJson, char const* semanticJson, char const* candidateJson, BotActivityScore const& chosenActivity, bool failure);
     void RecordEvent(WorldBotState& state, Player* bot, char const* eventType, Unit const* target, char const* result, char const* rawJson, char const* semanticJson, float valueFloat = 0.0f, uint32 valueInt = 0, uint32 spellId = 0);
     void RecordDecision(WorldBotState& state, Player* bot, char const* situation, char const* action, Unit const* target, char const* rawJson, char const* semanticJson, std::vector<BotActivityScore> const& activityScores, BotActivityScore const& chosenActivity, BotRolePowerBreakdown const& power, bool failure, bool rare);
+    void RecordDecisionTrace(WorldBotState& state, char const* situation, char const* action, Unit const* target, uint32 questId, char const* result, char const* reasonCode);
+    BotDiagnosis BuildBotDiagnosis(WorldBotState const& state, Player const* bot) const;
+    std::string BuildBotDiagnosisObjectJson(WorldBotState const& state, Player const* bot) const;
+    std::string BuildBotDecisionSnapshotJson(WorldBotState const& state, Player const* bot) const;
+    std::string BuildBotTraceEntriesJson(WorldBotState const& state, uint32 limit) const;
     BotTelemetryPolicyConfig GetTelemetryPolicyConfig() const;
     BotTelemetryPolicyInput BuildTelemetryPolicyInput(char const* eventType, char const* result, char const* situation, Unit const* target, uint32 spellId = 0, uint32 questId = 0, uint32 itemId = 0, float valueFloat = 0.0f, uint32 valueInt = 0, bool failure = false, bool rare = false, bool intervention = false) const;
     void RecordPolicyReplay(WorldBotState const& state, Player* bot, Unit const* target, BotTelemetryPolicyInput const& input, char const* rawJson, char const* semanticJson);

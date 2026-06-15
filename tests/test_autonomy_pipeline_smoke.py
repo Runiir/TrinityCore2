@@ -161,6 +161,177 @@ def test_bot_spawn_lifecycle_dummy_and_ability_objective_surface():
     assert "BotWorld.TrainingDummyEntries = \"\"" in conf
 
 
+def test_quest_first_portfolio_routing_surface():
+    mgr_header = read(ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h")
+    mgr = read(BOT_MGR)
+    classify = function_body(mgr, "BotWorldPopulationMgr::QuestClassification BotWorldPopulationMgr::ClassifyQuestForBot")
+    pickup_search = function_body(mgr, "bool BotWorldPopulationMgr::FindQuestPickupDestination")
+    portfolio = function_body(mgr, "BotWorldPopulationMgr::QuestPortfolioPlan BotWorldPopulationMgr::BuildQuestPortfolioPlan")
+    questing = function_body(mgr, "BotWorldPopulationMgr::QuestActionResult BotWorldPopulationMgr::TryQuesting")
+    debug = function_body(mgr, "std::string BotWorldPopulationMgr::GetBotDebugJson")
+
+    for symbol in [
+        "QuestClassification",
+        "QuestRoutePoint",
+        "QuestObjectiveBucket",
+        "QuestPortfolioPlan",
+        "QuestSearchRadiusIndex",
+        "QuestSearchDestination",
+        "ActiveQuestClusterId",
+        "QuestRouteDestination",
+        "LastNoQuestReason",
+        "LastQuestBucketReason",
+    ]:
+        assert symbol in mgr_header
+
+    assert "HasSimpleSupportedObjective(quest)" in classify
+    assert "GetNextQuestInChain()" in classify
+    assert "GetNextQuestId()" in classify
+    assert "GetBreadcrumbForQuestId()" in classify
+    assert "creature_questender" in classify
+    assert "gameobject_questender" in classify
+
+    assert "{ 100.0f, 250.0f, 500.0f, 900.0f, 1500.0f }" in pickup_search
+    assert "creature_queststarter" in pickup_search
+    assert "gameobject_queststarter" in pickup_search
+    assert "ClassifyQuestForBot(bot, quest)" in pickup_search
+
+    assert "constexpr float ClusterRadius = 180.0f;" in portfolio
+    assert "ResolveObjectiveRoutePoint(bot, objective, route)" in portfolio
+    assert "bucket->Objectives.push_back(objective)" in portfolio
+
+    for event_type in [
+        "quest_hub_sweep",
+        "quest_pickup_search",
+        "quest_bucket_selected",
+        "objective_area_selected",
+        "chain_step_accepted",
+        "chain_step_turnin",
+    ]:
+        assert event_type in questing
+
+    assert_ordered(
+        questing,
+        "SelectQuestGiver(bot, true, &questId, &state)",
+        "FindQuestTurnInDestination(bot, questStatus.first, turnInRoute)",
+        "quest_hub_sweep",
+        "BuildQuestPortfolioPlan(bot, state)",
+        "FindQuestPickupDestination(bot, state, pickup)",
+    )
+    assert "leave_unsupported_quest_giver" in questing
+    assert 'state.LastObjectiveNotFoundReason != "chain_step_accepted"' in questing
+
+    for field in [
+        "active_quest_count",
+        "quest_bucket_id",
+        "quest_bucket_objective_count",
+        "quest_bucket_center",
+        "quest_search_radius",
+        "quest_search_destination",
+        "last_no_quest_reason",
+        "last_quest_classification",
+        "last_bucket_selection_reason",
+    ]:
+        assert field in debug
+
+
+def test_botauto_diagnosis_and_trace_surface():
+    mgr_header = read(ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h")
+    mgr = read(BOT_MGR)
+    commands = read(BOT_COMMANDS)
+    diagnose = function_body(mgr, "std::string BotWorldPopulationMgr::GetBotDiagnosisJson")
+    trace = function_body(mgr, "std::string BotWorldPopulationMgr::GetBotTraceJson")
+    build_diagnosis = function_body(mgr, "BotWorldPopulationMgr::BotDiagnosis BotWorldPopulationMgr::BuildBotDiagnosis")
+    diagnosis_json = function_body(mgr, "std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson")
+    snapshot_json = function_body(mgr, "std::string BotWorldPopulationMgr::BuildBotDecisionSnapshotJson")
+    trace_entries = function_body(mgr, "std::string BotWorldPopulationMgr::BuildBotTraceEntriesJson")
+    record_decision = function_body(mgr, "void BotWorldPopulationMgr::RecordDecision")
+    record_trace = function_body(mgr, "void BotWorldPopulationMgr::RecordDecisionTrace")
+    debug = function_body(mgr, "std::string BotWorldPopulationMgr::GetBotDebugJson")
+
+    assert '{ "diagnose", rbac::RBAC_PERM_COMMAND_HEALERBOT' in commands
+    assert '{ "trace",   rbac::RBAC_PERM_COMMAND_HEALERBOT' in commands
+    assert "GetBotDiagnosisJson" in commands
+    assert "GetBotTraceJson" in commands
+
+    for symbol in [
+        "LastDecisionTickMs",
+        "LastDecisionSituation",
+        "LastDecisionAction",
+        "LastDecisionActivity",
+        "LastDecisionTargetGuid",
+        "LastDecisionHandler",
+        "DistanceMovedSinceLastDecision",
+        "LastMovementProgressMs",
+        "LastPathChangeMs",
+        "DecisionTraceEntry",
+        "BotDiagnosis",
+    ]:
+        assert symbol in mgr_header
+
+    assert "diagnosis_schema_version" in diagnose
+    assert "BuildBotDecisionSnapshotJson(state, bot)" in diagnose
+    assert "BuildBotDiagnosisObjectJson(state, bot)" in diagnose
+    assert "trace_schema_version" in trace
+    assert "BuildBotTraceEntriesJson(*selected, limit)" in trace
+
+    for code in [
+        "moving_but_not_progressing",
+        "quest_pickup_unreachable",
+        "no_supported_objective",
+        "stuck_repath_loop",
+        "waiting_decision_tick",
+        "target_rejected",
+        "dead_recovery",
+        "idle_no_candidate",
+    ]:
+        assert code in build_diagnosis
+
+    for field in [
+        "diagnosis_code",
+        "severity",
+        "confidence",
+        "intent",
+        "current_action",
+        "blocker",
+        "evidence",
+        "next_expected_action",
+        "suggested_investigation",
+    ]:
+        assert field in diagnosis_json
+
+    for section in [
+        "identity",
+        "runtime",
+        "movement",
+        "quest",
+        "target",
+        "routing",
+        "decision",
+        "recent_failures",
+    ]:
+        assert section in snapshot_json
+
+    for field in [
+        "timestamp_ms",
+        "sequence",
+        "situation",
+        "action",
+        "quest_id",
+        "target_id",
+        "destination",
+        "result",
+        "reason_code",
+    ]:
+        assert field in trace_entries
+
+    assert "RecordDecisionTrace(state" in record_decision
+    assert "state.DecisionTrace.push_back(entry)" in record_trace
+    assert "state.DecisionTrace.size() > 64" in record_trace
+    assert "debug_schema_version" in debug
+    assert "diagnosis" in debug
+
+
 def test_clip_capture_smoke_persists_clip_row_with_pre_and_post_frames():
     buffer = read(BOT_BUFFER)
     capture = function_body(buffer, "uint64 BotTelemetryBuffer::CaptureEvent")

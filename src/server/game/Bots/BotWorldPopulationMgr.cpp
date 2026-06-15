@@ -90,6 +90,17 @@ char const* ToString(BotWorldPopulationMgr::QuestObjectiveType type)
     }
 }
 
+char const* ToString(BotWorldPopulationMgr::QuestClassification classification)
+{
+    switch (classification)
+    {
+        case BotWorldPopulationMgr::QuestClassification::ObjectiveQuest: return "objective";
+        case BotWorldPopulationMgr::QuestClassification::ChainQuest: return "chain";
+        case BotWorldPopulationMgr::QuestClassification::UnsupportedQuest: return "unsupported";
+        default: return "unknown";
+    }
+}
+
 uint64 NowMs()
 {
     return uint64(std::chrono::duration_cast<std::chrono::milliseconds>(GameTime::GetGameTimeSystemPoint().time_since_epoch()).count());
@@ -1624,6 +1635,7 @@ void BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, fl
     state.ActivePathToY = y;
     state.ActivePathToZ = z;
     state.ActivePathValid = true;
+    state.LastPathChangeMs = NowMs();
 
     bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
     bot->GetMotionMaster()->MovePoint(0, x, y, z, true);
@@ -1914,6 +1926,10 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
 
     float moved = Distance2d(bot->GetPositionX(), bot->GetPositionY(), state.LastX, state.LastY);
     bool moving = bot->isMoving() || bot->HasUnitState(UNIT_STATE_MOVING);
+    state.IsMoving = moving;
+    state.DistanceMovedSinceLastDecision += moved;
+    if (moved >= 0.2f)
+        state.LastMovementProgressMs = NowMs();
     if (moving && moved < 0.2f)
         state.StuckTimer += diff;
     else
@@ -1932,6 +1948,7 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         std::string raw = BuildRawJson(bot, nullptr);
         std::string semantic = BuildSemanticJson(bot, nullptr, "stuck_recovery", &power, stage, chosenActivity.Activity);
         RecordEvent(state, bot, "stuck_detected", nullptr, "repath", raw.c_str(), semantic.c_str(), 1.0f, _metrics.StuckEvents);
+        state.LastDecisionHandler = "stuck_recovery";
         RecordDecision(state, bot, "stuck_recovery", "unstuck", nullptr, raw.c_str(), semantic.c_str(), activityScores, chosenActivity, power, true, true);
         return;
     }
@@ -1953,6 +1970,8 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
     float hpPct = maxHealth ? float(bot->GetHealth()) / float(maxHealth) : 1.0f;
     std::string situation = bot->IsInCombat() ? "open_world_combat" : "travel";
     std::string action = "wander";
+    state.LastDecisionHandler = "none";
+    state.LastDecisionQuestId = 0;
     QuestActionResult questAction;
     BossMechanicActionResult bossAction;
     DungeonTrashActionResult trashAction;
@@ -1975,6 +1994,7 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         }
         situation = "idle";
         action = "rest";
+        state.LastDecisionHandler = "rest";
     }
     else if (chosenActivity.Activity == BotProgressionActivity::VendorRepairTrain)
     {
@@ -1982,6 +2002,7 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         bot->GetMotionMaster()->MoveIdle();
         situation = "vendor_repair_train";
         action = "vendor_repair_train";
+        state.LastDecisionHandler = "vendor_repair_train";
     }
     else if (_config.AllowQuesting
         && (chosenActivity.Activity == BotProgressionActivity::Questing || hasActiveQuestObjective || _config.QuestFirst || state.NewlyAcceptedQuestId || hasNearbyQuestGiver)
@@ -1990,6 +2011,8 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         situation = questAction.Situation;
         action = questAction.Action;
         target = questAction.Target;
+        state.LastDecisionHandler = "questing";
+        state.LastDecisionQuestId = questAction.QuestId;
     }
     else if (IsBossContext(bot, target)
         && [&]() { bossAction = TryBossMechanics(state, bot, power, stage, chosenActivity.Activity); return bossAction.Handled; }())
@@ -1997,6 +2020,7 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         situation = bossAction.Situation;
         action = bossAction.Action;
         target = bossAction.Target;
+        state.LastDecisionHandler = "boss_mechanics";
     }
     else if (IsDungeonTrashContext(bot, target)
         && [&]() { trashAction = TryDungeonTrash(state, bot, power, stage, chosenActivity.Activity); return trashAction.Handled; }())
@@ -2004,6 +2028,7 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         situation = trashAction.Situation;
         action = trashAction.Action;
         target = trashAction.Target;
+        state.LastDecisionHandler = "dungeon_trash";
     }
     else if (target && target->IsAlive())
     {
@@ -2020,6 +2045,7 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
             target = nullptr;
             situation = "target_rejected";
             action = "clear_non_progression_target";
+            state.LastDecisionHandler = "target_filter";
         }
         else
         {
@@ -2042,6 +2068,7 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
             RecordEvent(state, bot, "combat_started", target, "ok", raw.c_str(), semantic.c_str());
         }
         state.WasInCombat = true;
+        state.LastDecisionHandler = "combat";
         }
     }
     else if (target && !target->IsAlive())
@@ -2056,15 +2083,18 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         {
             MoveBotToPoint(state, bot, target->GetPositionX(), target->GetPositionY(), target->GetPositionZ());
             action = "move_to_loot";
+            state.LastDecisionHandler = "loot";
             SetQuestWorkPhase(state, "move_to_loot");
         }
         else if (state.NextLootAttemptMs > NowMs())
         {
             action = "loot_cooldown";
+            state.LastDecisionHandler = "loot";
         }
         else
         {
             action = "loot_target";
+            state.LastDecisionHandler = "loot";
             SetQuestWorkPhase(state, "loot_target");
             if (state.LastKilledTargetGuid != target->GetGUID())
             {
@@ -2175,11 +2205,13 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         if (spellId && TryCastCombatSpell(bot, target, spellId))
             RecordEvent(state, bot, "spell_cast", target, "ok", raw.c_str(), semantic.c_str(), 0.0f, 0, spellId);
         state.WasInCombat = true;
+        state.LastDecisionHandler = "grinding";
     }
     else
     {
         MoveToWanderPoint(bot, state);
         state.WasInCombat = false;
+        state.LastDecisionHandler = "wander";
     }
 
     power = BotLongTermProgressionBrain::CalculateRolePower(bot);
@@ -2853,7 +2885,7 @@ WorldObject* BotWorldPopulationMgr::SelectQuestGiver(Player* bot, bool completeO
             }
             else
             {
-                if (!bot->CanTakeQuest(quest, false) || !bot->CanAddQuest(quest, false) || !HasSimpleSupportedObjective(quest))
+                if (!bot->CanTakeQuest(quest, false) || !bot->CanAddQuest(quest, false) || ClassifyQuestForBot(bot, quest) == QuestClassification::UnsupportedQuest)
                     continue;
             }
 
@@ -3039,6 +3071,495 @@ bool BotWorldPopulationMgr::HasSimpleSupportedObjective(Quest const* quest) cons
     return false;
 }
 
+BotWorldPopulationMgr::QuestClassification BotWorldPopulationMgr::ClassifyQuestForBot(Player* bot, Quest const* quest) const
+{
+    if (!quest)
+        return QuestClassification::UnsupportedQuest;
+
+    if (HasSimpleSupportedObjective(quest))
+        return QuestClassification::ObjectiveQuest;
+
+    if (quest->GetNextQuestInChain() || quest->GetNextQuestId() || quest->GetBreadcrumbForQuestId())
+        return QuestClassification::ChainQuest;
+
+    if (quest->IsTurnIn())
+        return QuestClassification::ChainQuest;
+
+    QueryResult ender = WorldDatabase.PQuery(
+        "SELECT 1 FROM creature_questender WHERE quest = %u UNION SELECT 1 FROM gameobject_questender WHERE quest = %u LIMIT 1",
+        quest->GetQuestId(), quest->GetQuestId());
+    if (ender)
+        return QuestClassification::ChainQuest;
+
+    if (bot && bot->CanCompleteQuest(quest->GetQuestId()))
+        return QuestClassification::ChainQuest;
+
+    return QuestClassification::UnsupportedQuest;
+}
+
+bool BotWorldPopulationMgr::ResolveObjectiveRoutePoint(Player* bot, QuestObjectivePlan const& plan, QuestRoutePoint& point) const
+{
+    point = QuestRoutePoint();
+    if (!bot || !plan.QuestId)
+        return false;
+
+    point.QuestId = plan.QuestId;
+    point.ObjectiveIndex = plan.ObjectiveIndex;
+
+    if (Unit* target = (plan.ObjectiveType == QuestObjectiveType::UseAbilityOnDummy || plan.ObjectiveType == QuestObjectiveType::CastSpellOnTarget)
+        ? SelectQuestAbilityObjectiveTarget(bot, plan, WorldBotState())
+        : SelectQuestObjectiveTarget(bot, plan))
+    {
+        point.Valid = true;
+        point.MapId = target->GetMapId();
+        point.ZoneId = target->GetZoneId();
+        point.X = target->GetPositionX();
+        point.Y = target->GetPositionY();
+        point.Z = target->GetPositionZ();
+        point.Source = "visible_target";
+        return true;
+    }
+
+    if (WorldObject* object = SelectQuestGameObject(bot, plan))
+    {
+        point.Valid = true;
+        point.MapId = object->GetMapId();
+        point.ZoneId = object->GetZoneId();
+        point.X = object->GetPositionX();
+        point.Y = object->GetPositionY();
+        point.Z = object->GetPositionZ();
+        point.Source = "visible_object";
+        return true;
+    }
+
+    if (QuestPOIData const* poi = sObjectMgr->GetQuestPOIData(plan.QuestId))
+    {
+        QuestPOIBlobData const* bestBlob = nullptr;
+        for (QuestPOIBlobData const& blob : poi->Blobs)
+        {
+            if (blob.Points.empty())
+                continue;
+            if (blob.ObjectiveIndex >= 0 && uint32(blob.ObjectiveIndex) != plan.ObjectiveIndex)
+                continue;
+            if (!bestBlob || blob.Priority > bestBlob->Priority)
+                bestBlob = &blob;
+        }
+
+        if (bestBlob)
+        {
+            float x = 0.0f;
+            float y = 0.0f;
+            for (QuestPOIBlobPoint const& p : bestBlob->Points)
+            {
+                x += float(p.X);
+                y += float(p.Y);
+            }
+            x /= float(bestBlob->Points.size());
+            y /= float(bestBlob->Points.size());
+
+            point.Valid = true;
+            point.MapId = bestBlob->MapID >= 0 ? uint32(bestBlob->MapID) : bot->GetMapId();
+            point.ZoneId = bot->GetZoneId();
+            point.X = x;
+            point.Y = y;
+            point.Z = bot->GetPositionZ();
+            point.Source = "quest_poi";
+            return true;
+        }
+    }
+
+    if (plan.RequiredEntry > 0)
+    {
+        CreatureData const* best = nullptr;
+        float bestDist = 0.0f;
+        for (auto const& pair : sObjectMgr->GetAllCreatureData())
+        {
+            CreatureData const& data = pair.second;
+            if (data.id != uint32(plan.RequiredEntry) || data.mapId != bot->GetMapId())
+                continue;
+            float dist = Distance2d(bot->GetPositionX(), bot->GetPositionY(), data.spawnPoint.GetPositionX(), data.spawnPoint.GetPositionY());
+            if (!best || dist < bestDist)
+            {
+                best = &data;
+                bestDist = dist;
+            }
+        }
+        if (best)
+        {
+            point.Valid = true;
+            point.MapId = best->mapId;
+            point.ZoneId = bot->GetZoneId();
+            point.X = best->spawnPoint.GetPositionX();
+            point.Y = best->spawnPoint.GetPositionY();
+            point.Z = best->spawnPoint.GetPositionZ();
+            point.Source = "creature_spawn";
+            return true;
+        }
+    }
+    else if (plan.RequiredEntry < 0)
+    {
+        GameObjectData const* best = nullptr;
+        float bestDist = 0.0f;
+        uint32 entry = uint32(-plan.RequiredEntry);
+        for (auto const& pair : sObjectMgr->GetAllGameObjectData())
+        {
+            GameObjectData const& data = pair.second;
+            if (data.id != entry || data.mapId != bot->GetMapId())
+                continue;
+            float dist = Distance2d(bot->GetPositionX(), bot->GetPositionY(), data.spawnPoint.GetPositionX(), data.spawnPoint.GetPositionY());
+            if (!best || dist < bestDist)
+            {
+                best = &data;
+                bestDist = dist;
+            }
+        }
+        if (best)
+        {
+            point.Valid = true;
+            point.MapId = best->mapId;
+            point.ZoneId = bot->GetZoneId();
+            point.X = best->spawnPoint.GetPositionX();
+            point.Y = best->spawnPoint.GetPositionY();
+            point.Z = best->spawnPoint.GetPositionZ();
+            point.Source = "gameobject_spawn";
+            return true;
+        }
+    }
+
+    if (plan.ItemId)
+    {
+        CreatureData const* bestCreature = nullptr;
+        GameObjectData const* bestGo = nullptr;
+        float bestDist = 0.0f;
+        for (auto const& pair : sObjectMgr->GetAllCreatureData())
+        {
+            CreatureData const& data = pair.second;
+            if (data.mapId != bot->GetMapId())
+                continue;
+            std::vector<uint32> const* questItems = sObjectMgr->GetCreatureQuestItemList(data.id);
+            if (!questItems || std::find(questItems->begin(), questItems->end(), plan.ItemId) == questItems->end())
+                continue;
+            float dist = Distance2d(bot->GetPositionX(), bot->GetPositionY(), data.spawnPoint.GetPositionX(), data.spawnPoint.GetPositionY());
+            if (!bestCreature || dist < bestDist)
+            {
+                bestCreature = &data;
+                bestGo = nullptr;
+                bestDist = dist;
+            }
+        }
+        for (auto const& pair : sObjectMgr->GetAllGameObjectData())
+        {
+            GameObjectData const& data = pair.second;
+            if (data.mapId != bot->GetMapId())
+                continue;
+            std::vector<uint32> const* questItems = sObjectMgr->GetGameObjectQuestItemList(data.id);
+            if (!questItems || std::find(questItems->begin(), questItems->end(), plan.ItemId) == questItems->end())
+                continue;
+            float dist = Distance2d(bot->GetPositionX(), bot->GetPositionY(), data.spawnPoint.GetPositionX(), data.spawnPoint.GetPositionY());
+            if (!bestCreature && (!bestGo || dist < bestDist))
+            {
+                bestGo = &data;
+                bestDist = dist;
+            }
+        }
+        if (bestCreature || bestGo)
+        {
+            point.Valid = true;
+            point.MapId = bestCreature ? bestCreature->mapId : bestGo->mapId;
+            point.ZoneId = bot->GetZoneId();
+            point.X = bestCreature ? bestCreature->spawnPoint.GetPositionX() : bestGo->spawnPoint.GetPositionX();
+            point.Y = bestCreature ? bestCreature->spawnPoint.GetPositionY() : bestGo->spawnPoint.GetPositionY();
+            point.Z = bestCreature ? bestCreature->spawnPoint.GetPositionZ() : bestGo->spawnPoint.GetPositionZ();
+            point.Source = bestCreature ? "creature_item_spawn" : "gameobject_item_spawn";
+            return true;
+        }
+    }
+
+    QueryResult memory = CharacterDatabase.PQuery(
+        "SELECT x, y, z FROM bot_memory_pois WHERE bot_guid = %u AND map_id = %u AND (quest_id = %u OR quest_id = 0) "
+        "AND poi_type IN ('objective_target','objective_object') ORDER BY quest_id DESC, last_seen_at DESC, score DESC LIMIT 1",
+        bot->GetGUID().GetCounter(), bot->GetMapId(), plan.QuestId);
+    if (memory)
+    {
+        Field* fields = memory->Fetch();
+        point.Valid = true;
+        point.MapId = bot->GetMapId();
+        point.ZoneId = bot->GetZoneId();
+        point.X = fields[0].GetFloat();
+        point.Y = fields[1].GetFloat();
+        point.Z = fields[2].GetFloat();
+        point.Source = "remembered_poi";
+        return true;
+    }
+
+    return false;
+}
+
+BotWorldPopulationMgr::QuestPortfolioPlan BotWorldPopulationMgr::BuildQuestPortfolioPlan(Player* bot, WorldBotState const& /*state*/) const
+{
+    QuestPortfolioPlan plan;
+    if (!bot)
+        return plan;
+
+    constexpr float ClusterRadius = 180.0f;
+    uint32 nextBucketId = 1;
+    for (auto const& questStatus : bot->getQuestStatusMap())
+    {
+        if (questStatus.second.Status != QUEST_STATUS_INCOMPLETE)
+            continue;
+
+        ++plan.ActiveQuestCount;
+        Quest const* quest = sObjectMgr->GetQuestTemplate(questStatus.first);
+        if (!quest || ClassifyQuestForBot(bot, quest) == QuestClassification::UnsupportedQuest)
+            continue;
+
+        for (uint8 i = 0; i < QUEST_OBJECTIVES_COUNT; ++i)
+        {
+            if (!quest->RequiredNpcOrGo[i] || !quest->RequiredNpcOrGoCount[i] || questStatus.second.CreatureOrGOCount[i] >= quest->RequiredNpcOrGoCount[i])
+                continue;
+            QuestObjectivePlan objective;
+            if (!GetQuestObjectivePlan(bot, quest->GetQuestId(), i, quest->RequiredNpcOrGo[i] < 0 ? QuestObjectiveType::InteractGameObject : QuestObjectiveType::Kill, objective))
+                continue;
+
+            QuestRoutePoint route;
+            if (!ResolveObjectiveRoutePoint(bot, objective, route))
+            {
+                plan.UnresolvedObjectives.push_back(objective);
+                continue;
+            }
+
+            QuestObjectiveBucket* bucket = nullptr;
+            for (QuestObjectiveBucket& candidate : plan.Buckets)
+            {
+                if (candidate.MapId == route.MapId && Distance2d(candidate.CenterX, candidate.CenterY, route.X, route.Y) <= ClusterRadius)
+                {
+                    bucket = &candidate;
+                    break;
+                }
+            }
+            if (!bucket)
+            {
+                plan.Buckets.push_back(QuestObjectiveBucket());
+                bucket = &plan.Buckets.back();
+                bucket->BucketId = nextBucketId++;
+                bucket->MapId = route.MapId;
+                bucket->CenterX = route.X;
+                bucket->CenterY = route.Y;
+                bucket->CenterZ = route.Z;
+            }
+            bucket->Objectives.push_back(objective);
+            float n = float(bucket->Objectives.size());
+            bucket->CenterX = ((bucket->CenterX * (n - 1.0f)) + route.X) / n;
+            bucket->CenterY = ((bucket->CenterY * (n - 1.0f)) + route.Y) / n;
+            bucket->CenterZ = ((bucket->CenterZ * (n - 1.0f)) + route.Z) / n;
+        }
+
+        for (uint8 i = 0; i < QUEST_ITEM_OBJECTIVES_COUNT; ++i)
+        {
+            if (!quest->RequiredItemId[i] || !quest->RequiredItemCount[i] || questStatus.second.ItemCount[i] >= quest->RequiredItemCount[i])
+                continue;
+            QuestObjectivePlan objective;
+            if (!GetQuestObjectivePlan(bot, quest->GetQuestId(), i, QuestObjectiveType::CollectItem, objective))
+                continue;
+
+            QuestRoutePoint route;
+            if (!ResolveObjectiveRoutePoint(bot, objective, route))
+            {
+                plan.UnresolvedObjectives.push_back(objective);
+                continue;
+            }
+
+            QuestObjectiveBucket* bucket = nullptr;
+            for (QuestObjectiveBucket& candidate : plan.Buckets)
+            {
+                if (candidate.MapId == route.MapId && Distance2d(candidate.CenterX, candidate.CenterY, route.X, route.Y) <= ClusterRadius)
+                {
+                    bucket = &candidate;
+                    break;
+                }
+            }
+            if (!bucket)
+            {
+                plan.Buckets.push_back(QuestObjectiveBucket());
+                bucket = &plan.Buckets.back();
+                bucket->BucketId = nextBucketId++;
+                bucket->MapId = route.MapId;
+                bucket->CenterX = route.X;
+                bucket->CenterY = route.Y;
+                bucket->CenterZ = route.Z;
+            }
+            bucket->Objectives.push_back(objective);
+        }
+    }
+
+    for (QuestObjectiveBucket& bucket : plan.Buckets)
+    {
+        float distancePenalty = bucket.MapId == bot->GetMapId() ? Distance2d(bot->GetPositionX(), bot->GetPositionY(), bucket.CenterX, bucket.CenterY) * 0.02f : 10000.0f;
+        float progressValue = 0.0f;
+        for (QuestObjectivePlan const& objective : bucket.Objectives)
+            progressValue += objective.RequiredCount ? float(objective.CurrentCount) / float(objective.RequiredCount) : 0.0f;
+        bucket.Score = float(bucket.Objectives.size()) * 100.0f + progressValue * 25.0f - distancePenalty;
+        std::ostringstream reason;
+        reason << "objectives=" << bucket.Objectives.size() << ",distance_penalty=" << distancePenalty << ",progress=" << progressValue;
+        bucket.Reason = reason.str();
+    }
+
+    return plan;
+}
+
+bool BotWorldPopulationMgr::SelectQuestObjectiveBucket(Player* /*bot*/, QuestPortfolioPlan const& plan, QuestObjectiveBucket& bucket) const
+{
+    QuestObjectiveBucket const* best = nullptr;
+    for (QuestObjectiveBucket const& candidate : plan.Buckets)
+        if (!best || candidate.Score > best->Score)
+            best = &candidate;
+    if (!best)
+        return false;
+    bucket = *best;
+    return true;
+}
+
+bool BotWorldPopulationMgr::FindQuestTurnInDestination(Player* bot, uint32 questId, QuestRoutePoint& point) const
+{
+    point = QuestRoutePoint();
+    if (!bot || !questId)
+        return false;
+
+    QuestRoutePoint best;
+    auto considerCreature = [&](uint32 entry)
+    {
+        for (auto const& pair : sObjectMgr->GetAllCreatureData())
+        {
+            CreatureData const& data = pair.second;
+            if (data.id != entry || data.mapId != bot->GetMapId())
+                continue;
+            float dist = Distance2d(bot->GetPositionX(), bot->GetPositionY(), data.spawnPoint.GetPositionX(), data.spawnPoint.GetPositionY());
+            if (!best.Valid || dist < best.Score)
+            {
+                best.Valid = true;
+                best.MapId = data.mapId;
+                best.ZoneId = bot->GetZoneId();
+                best.QuestId = questId;
+                best.X = data.spawnPoint.GetPositionX();
+                best.Y = data.spawnPoint.GetPositionY();
+                best.Z = data.spawnPoint.GetPositionZ();
+                best.Score = dist;
+                best.Source = "creature_questender";
+            }
+        }
+    };
+    auto considerGameObject = [&](uint32 entry)
+    {
+        for (auto const& pair : sObjectMgr->GetAllGameObjectData())
+        {
+            GameObjectData const& data = pair.second;
+            if (data.id != entry || data.mapId != bot->GetMapId())
+                continue;
+            float dist = Distance2d(bot->GetPositionX(), bot->GetPositionY(), data.spawnPoint.GetPositionX(), data.spawnPoint.GetPositionY());
+            if (!best.Valid || dist < best.Score)
+            {
+                best.Valid = true;
+                best.MapId = data.mapId;
+                best.ZoneId = bot->GetZoneId();
+                best.QuestId = questId;
+                best.X = data.spawnPoint.GetPositionX();
+                best.Y = data.spawnPoint.GetPositionY();
+                best.Z = data.spawnPoint.GetPositionZ();
+                best.Score = dist;
+                best.Source = "gameobject_questender";
+            }
+        }
+    };
+
+    for (uint32 entry : sObjectMgr->GetCreatureQuestInvolvedRelationsReverse(questId))
+        considerCreature(entry);
+    for (uint32 entry : sObjectMgr->GetGOQuestInvolvedRelationsReverse(questId))
+        considerGameObject(entry);
+
+    if (!best.Valid)
+        return false;
+    point = best;
+    return true;
+}
+
+bool BotWorldPopulationMgr::FindQuestPickupDestination(Player* bot, WorldBotState const& state, QuestRoutePoint& point) const
+{
+    point = QuestRoutePoint();
+    if (!bot)
+        return false;
+
+    static float constexpr Radii[] = { 100.0f, 250.0f, 500.0f, 900.0f, 1500.0f };
+    uint32 radiusIndex = std::min<uint32>(state.QuestSearchRadiusIndex, uint32(std::size(Radii) - 1));
+    float radius = Radii[radiusIndex];
+    QuestRoutePoint best;
+
+    auto consider = [&](uint32 questId, uint32 mapId, uint32 zoneId, float x, float y, float z, char const* source)
+    {
+        if (mapId != bot->GetMapId())
+            return;
+        float dist = Distance2d(bot->GetPositionX(), bot->GetPositionY(), x, y);
+        if (dist > radius && (radiusIndex + 1 < std::size(Radii) || zoneId != bot->GetZoneId()))
+            return;
+        Quest const* quest = sObjectMgr->GetQuestTemplate(questId);
+        if (!quest || !bot->CanTakeQuest(quest, false) || !bot->CanAddQuest(quest, false))
+            return;
+        QuestClassification classification = ClassifyQuestForBot(bot, quest);
+        if (classification == QuestClassification::UnsupportedQuest)
+            return;
+        if (state.QuestCooldownUntilMs.find(questId) != state.QuestCooldownUntilMs.end() && state.QuestCooldownUntilMs.find(questId)->second > NowMs())
+            return;
+
+        float score = dist - (classification == QuestClassification::ChainQuest ? 25.0f : 50.0f);
+        if (!best.Valid || score < best.Score)
+        {
+            best.Valid = true;
+            best.MapId = mapId;
+            best.ZoneId = zoneId;
+            best.QuestId = questId;
+            best.X = x;
+            best.Y = y;
+            best.Z = z;
+            best.Score = score;
+            best.Source = source;
+        }
+    };
+
+    QueryResult creatures = WorldDatabase.PQuery(
+        "SELECT qs.quest, c.map, c.zoneId, c.position_x, c.position_y, c.position_z "
+        "FROM creature_queststarter qs JOIN creature c ON c.id = qs.id "
+        "WHERE c.map = %u AND ((POW(c.position_x - %f, 2) + POW(c.position_y - %f, 2)) <= POW(%f, 2) OR c.zoneId = %u) "
+        "LIMIT 200",
+        bot->GetMapId(), bot->GetPositionX(), bot->GetPositionY(), radius, bot->GetZoneId());
+    if (creatures)
+    {
+        do
+        {
+            Field* f = creatures->Fetch();
+            consider(f[0].GetUInt32(), f[1].GetUInt32(), f[2].GetUInt32(), f[3].GetFloat(), f[4].GetFloat(), f[5].GetFloat(), "creature_queststarter");
+        } while (creatures->NextRow());
+    }
+
+    QueryResult gameObjects = WorldDatabase.PQuery(
+        "SELECT qs.quest, g.map, g.zoneId, g.position_x, g.position_y, g.position_z "
+        "FROM gameobject_queststarter qs JOIN gameobject g ON g.id = qs.id "
+        "WHERE g.map = %u AND ((POW(g.position_x - %f, 2) + POW(g.position_y - %f, 2)) <= POW(%f, 2) OR g.zoneId = %u) "
+        "LIMIT 200",
+        bot->GetMapId(), bot->GetPositionX(), bot->GetPositionY(), radius, bot->GetZoneId());
+    if (gameObjects)
+    {
+        do
+        {
+            Field* f = gameObjects->Fetch();
+            consider(f[0].GetUInt32(), f[1].GetUInt32(), f[2].GetUInt32(), f[3].GetFloat(), f[4].GetFloat(), f[5].GetFloat(), "gameobject_queststarter");
+        } while (gameObjects->NextRow());
+    }
+
+    if (!best.Valid)
+        return false;
+    point = best;
+    return true;
+}
+
 bool BotWorldPopulationMgr::HasNearbySupportedQuestGiver(Player* bot, WorldBotState const& state) const
 {
     uint32 questId = 0;
@@ -3218,7 +3739,7 @@ BotWorldPopulationMgr::QuestActionResult BotWorldPopulationMgr::TryQuesting(Worl
     }
 
     uint32 questId = 0;
-    WorldObject* turnIn = !hasActiveObjective ? SelectQuestGiver(bot, true, &questId, &state) : nullptr;
+    WorldObject* turnIn = SelectQuestGiver(bot, true, &questId, &state);
     if (turnIn)
     {
         Quest const* quest = sObjectMgr->GetQuestTemplate(questId);
@@ -3273,9 +3794,176 @@ BotWorldPopulationMgr::QuestActionResult BotWorldPopulationMgr::TryQuesting(Worl
         std::string semantic = BuildSemanticJson(bot, nullptr, "quest_completed", &powerAfter, stage, activity);
         RecordQuestEvent(state, bot, "reward_chosen", questId, nullptr, "ok", raw.c_str(), semantic.c_str(), rewardChoice, rewardItemId, context.str().c_str());
         RecordQuestEvent(state, bot, "quest_completed", questId, nullptr, "ok", raw.c_str(), semantic.c_str(), elapsed, rewardItemId, context.str().c_str());
+        RecordQuestEvent(state, bot, "chain_step_turnin", questId, nullptr, "ok", raw.c_str(), semantic.c_str(), elapsed, rewardItemId, context.str().c_str());
         result.Action = "complete_quest";
         ResetQuestWork(state);
+        state.QuestSearchRadiusIndex = 0;
         return result;
+    }
+
+    for (auto const& questStatus : bot->getQuestStatusMap())
+    {
+        if (questStatus.second.Status != QUEST_STATUS_COMPLETE)
+            continue;
+        Quest const* completedQuest = sObjectMgr->GetQuestTemplate(questStatus.first);
+        if (!completedQuest || !bot->CanRewardQuest(completedQuest, false))
+            continue;
+        QuestRoutePoint turnInRoute;
+        if (!FindQuestTurnInDestination(bot, questStatus.first, turnInRoute))
+            continue;
+
+        result.Handled = true;
+        result.Situation = "quest_turn_in";
+        result.Action = "travel_to_quest_turnin";
+        result.QuestId = questStatus.first;
+        state.QuestRouteDestination.Valid = true;
+        state.QuestRouteDestination.MapId = turnInRoute.MapId;
+        state.QuestRouteDestination.X = turnInRoute.X;
+        state.QuestRouteDestination.Y = turnInRoute.Y;
+        state.QuestRouteDestination.Z = turnInRoute.Z;
+        state.QuestRouteDestination.QuestId = turnInRoute.QuestId;
+        state.QuestRouteDestination.Reason = turnInRoute.Source;
+        MoveBotToPoint(state, bot, turnInRoute.X, turnInRoute.Y, turnInRoute.Z);
+        RecordQuestEvent(state, bot, "chain_step_turnin", questStatus.first, nullptr, "travel_to_turnin", BuildRawJson(bot, nullptr).c_str(), BuildSemanticJson(bot, nullptr, "quest_turn_in", &power, stage, activity).c_str());
+        return result;
+    }
+
+    std::vector<WorldObject*> hubObjects;
+    Trinity::AllWorldObjectsInRange hubCheck(bot, 80.0f);
+    Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> hubSearcher(bot, hubObjects, hubCheck);
+    Cell::VisitAllObjects(bot, hubSearcher, 80.0f);
+
+    uint32 acceptedCount = 0;
+    uint32 lastAcceptedQuestId = 0;
+    for (WorldObject* object : hubObjects)
+    {
+        if (!object || (object->GetTypeId() != TYPEID_UNIT && object->GetTypeId() != TYPEID_GAMEOBJECT))
+            continue;
+
+        QuestRelationResult relations;
+        if (Creature* creature = object->ToCreature())
+        {
+            if (!creature->IsAlive())
+                continue;
+            relations = sObjectMgr->GetCreatureQuestRelations(creature->GetEntry());
+        }
+        else if (GameObject* go = object->ToGameObject())
+            relations = sObjectMgr->GetGOQuestRelations(go->GetEntry());
+        else
+            continue;
+
+        for (uint32 candidateQuestId : relations)
+        {
+            Quest const* quest = sObjectMgr->GetQuestTemplate(candidateQuestId);
+            if (!quest)
+                continue;
+            if (!bot->CanTakeQuest(quest, false) || !bot->CanAddQuest(quest, false))
+                continue;
+            auto questCooldown = state.QuestCooldownUntilMs.find(candidateQuestId);
+            if (questCooldown != state.QuestCooldownUntilMs.end() && questCooldown->second > NowMs())
+                continue;
+
+            QuestClassification classification = ClassifyQuestForBot(bot, quest);
+            state.LastQuestClassification = ToString(classification);
+            if (classification == QuestClassification::UnsupportedQuest)
+                continue;
+
+            if (!bot->IsWithinDistInMap(object, INTERACTION_DISTANCE))
+            {
+                if (!acceptedCount)
+                {
+                    result.Handled = true;
+                    result.Situation = "quest_pickup";
+                    result.Action = "move_to_quest_hub";
+                    result.QuestId = candidateQuestId;
+                    MoveBotToPoint(state, bot, object->GetPositionX(), object->GetPositionY(), object->GetPositionZ());
+                }
+                continue;
+            }
+
+            bot->AddQuestAndCheckCompletion(quest, object);
+            QuestStatus status = bot->GetQuestStatus(candidateQuestId);
+            auto questItr = bot->getQuestStatusMap().find(candidateQuestId);
+            bool accepted = questItr != bot->getQuestStatusMap().end() && (status == QUEST_STATUS_INCOMPLETE || status == QUEST_STATUS_COMPLETE);
+            std::string raw = BuildRawJson(bot, nullptr);
+            std::string semantic = BuildSemanticJson(bot, nullptr, "quest_hub_sweep", &power, stage, activity);
+            RecordQuestEvent(state, bot, "quest_seen", candidateQuestId, nullptr, ToString(classification), raw.c_str(), semantic.c_str());
+            if (!accepted)
+            {
+                state.QuestCooldownUntilMs[candidateQuestId] = NowMs() + 60000;
+                RecordQuestEvent(state, bot, "quest_accept_failed", candidateQuestId, nullptr, "quest_log_entry_missing", raw.c_str(), semantic.c_str());
+                continue;
+            }
+
+            ++acceptedCount;
+            lastAcceptedQuestId = candidateQuestId;
+            ++_metrics.QuestsAccepted;
+            state.LastQuestId = candidateQuestId;
+            state.NewlyAcceptedQuestId = candidateQuestId;
+            state.RecentlyAcceptedQuestUntilMs = NowMs() + 30000;
+            state.QuestStartTime = _elapsedMs / 1000;
+            state.QuestStartDeaths = _metrics.Deaths;
+            state.QuestSearchRadiusIndex = 0;
+            state.LastObjectiveNotFoundReason = classification == QuestClassification::ChainQuest ? "chain_step_accepted" : "";
+            RecordQuestEvent(state, bot, "quest_accepted", candidateQuestId, nullptr, "ok", raw.c_str(), semantic.c_str(), _metrics.QuestsAccepted);
+            if (classification == QuestClassification::ChainQuest)
+                RecordQuestEvent(state, bot, "chain_step_accepted", candidateQuestId, nullptr, "ok", raw.c_str(), semantic.c_str(), _metrics.QuestsAccepted);
+            QuestObjectivePlan acceptedObjective;
+            if (FindQuestObjective(bot, candidateQuestId, acceptedObjective))
+            {
+                SetQuestWorkFromPlan(state, acceptedObjective);
+                state.QuestWork.SelectedGiverGuid = object->GetGUID();
+                SetQuestWorkPhase(state, "choose_objective");
+                RecordQuestEvent(state, bot, "quest_work_started", candidateQuestId, nullptr, ToString(acceptedObjective.ObjectiveType), raw.c_str(), semantic.c_str(), acceptedObjective.CurrentCount, acceptedObjective.ItemId);
+            }
+        }
+    }
+
+    if (acceptedCount)
+    {
+        result.Handled = true;
+        result.Situation = "quest_hub_sweep";
+        result.Action = "accept_hub_quests";
+        result.QuestId = lastAcceptedQuestId;
+        std::ostringstream context;
+        context << "{\"accepted_count\":" << acceptedCount << "}";
+        RecordQuestEvent(state, bot, "quest_hub_sweep", lastAcceptedQuestId, nullptr, "accepted", BuildRawJson(bot, nullptr).c_str(), BuildSemanticJson(bot, nullptr, "quest_hub_sweep", &power, stage, activity).c_str(), acceptedCount, 0, context.str().c_str());
+        return result;
+    }
+    if (result.Handled)
+        return result;
+
+    QuestPortfolioPlan portfolio = BuildQuestPortfolioPlan(bot, state);
+    QuestObjectiveBucket bucket;
+    if (SelectQuestObjectiveBucket(bot, portfolio, bucket) && !bucket.Objectives.empty())
+    {
+        state.ActiveQuestClusterId = bucket.BucketId;
+        state.LastQuestBucketReason = bucket.Reason;
+        state.QuestRouteDestination.Valid = true;
+        state.QuestRouteDestination.MapId = bucket.MapId;
+        state.QuestRouteDestination.X = bucket.CenterX;
+        state.QuestRouteDestination.Y = bucket.CenterY;
+        state.QuestRouteDestination.Z = bucket.CenterZ;
+        state.QuestRouteDestination.QuestId = bucket.Objectives.front().QuestId;
+        state.QuestRouteDestination.Reason = "objective_bucket";
+        state.QuestSearchRadiusIndex = 0;
+        if (!hasCommittedPlan && !hasAcceptedPlan)
+        {
+            discoveredPlan = bucket.Objectives.front();
+            hasActiveObjective = true;
+        }
+        std::ostringstream context;
+        context << "{\"bucket_id\":" << bucket.BucketId
+                << ",\"objective_count\":" << bucket.Objectives.size()
+                << ",\"center\":{\"map\":" << bucket.MapId << ",\"x\":" << bucket.CenterX << ",\"y\":" << bucket.CenterY << ",\"z\":" << bucket.CenterZ << "}"
+                << ",\"reason\":\"" << JsonEscape(bucket.Reason) << "\"}";
+        RecordQuestEvent(state, bot, "quest_bucket_selected", bucket.Objectives.front().QuestId, nullptr, "ok", BuildRawJson(bot, nullptr).c_str(), BuildSemanticJson(bot, nullptr, "quest_bucket_selected", &power, stage, activity).c_str(), uint32(bucket.Objectives.size()), 0, context.str().c_str());
+        RecordQuestEvent(state, bot, "objective_area_selected", bucket.Objectives.front().QuestId, nullptr, "ok", BuildRawJson(bot, nullptr).c_str(), BuildSemanticJson(bot, nullptr, "objective_area_selected", &power, stage, activity).c_str(), bucket.BucketId, 0, context.str().c_str());
+    }
+    else
+    {
+        state.ActiveQuestClusterId = 0;
+        state.LastQuestBucketReason = portfolio.ActiveQuestCount ? "active_quests_unresolved" : "no_active_quests";
     }
 
     QuestObjectivePlan plan = discoveredPlan;
@@ -3419,7 +4107,7 @@ BotWorldPopulationMgr::QuestActionResult BotWorldPopulationMgr::TryQuesting(Worl
         return result;
     }
 
-    if (!hasActiveObjective && (state.RecentlyAcceptedQuestUntilMs > NowMs() || state.ObjectiveSearchUntilMs > NowMs()))
+    if (!hasActiveObjective && state.LastObjectiveNotFoundReason != "chain_step_accepted" && (state.RecentlyAcceptedQuestUntilMs > NowMs() || state.ObjectiveSearchUntilMs > NowMs()))
     {
         result.Handled = true;
         result.Situation = "quest_objective_search";
@@ -3489,6 +4177,8 @@ BotWorldPopulationMgr::QuestActionResult BotWorldPopulationMgr::TryQuesting(Worl
         result.Action = "accept_quest";
 
         QuestObjectivePlan acceptedObjective;
+        QuestClassification acceptedClassification = ClassifyQuestForBot(bot, quest);
+        state.LastQuestClassification = ToString(acceptedClassification);
         if (FindQuestObjective(bot, questId, acceptedObjective))
         {
             SetQuestWorkFromPlan(state, acceptedObjective);
@@ -3498,6 +4188,13 @@ BotWorldPopulationMgr::QuestActionResult BotWorldPopulationMgr::TryQuesting(Worl
             RecordQuestEvent(state, bot, "quest_work_started", questId, nullptr, ToString(acceptedObjective.ObjectiveType), raw.c_str(), semantic.c_str(), acceptedObjective.CurrentCount, acceptedObjective.ItemId);
             MoveToObjectiveSearchPoint(state, bot, &acceptedObjective, giver);
             result.Action = "choose_objective";
+        }
+        else if (acceptedClassification == QuestClassification::ChainQuest)
+        {
+            state.LastObjectiveNotFoundReason = "chain_step_accepted";
+            state.QuestWork.FailedReason.clear();
+            RecordQuestEvent(state, bot, "chain_step_accepted", questId, nullptr, "ok", raw.c_str(), semantic.c_str());
+            result.Action = "accept_chain_step";
         }
         else
         {
@@ -3509,6 +4206,39 @@ BotWorldPopulationMgr::QuestActionResult BotWorldPopulationMgr::TryQuesting(Worl
             result.Action = "leave_unsupported_quest_giver";
         }
         return result;
+    }
+
+    if (!hasActiveObjective)
+    {
+        QuestRoutePoint pickup;
+        if (FindQuestPickupDestination(bot, state, pickup))
+        {
+            result.Handled = true;
+            result.Situation = "quest_pickup_search";
+            result.Action = "travel_to_quest_hub";
+            result.QuestId = pickup.QuestId;
+            state.QuestSearchDestination.Valid = true;
+            state.QuestSearchDestination.MapId = pickup.MapId;
+            state.QuestSearchDestination.X = pickup.X;
+            state.QuestSearchDestination.Y = pickup.Y;
+            state.QuestSearchDestination.Z = pickup.Z;
+            state.QuestSearchDestination.QuestId = pickup.QuestId;
+            state.QuestSearchDestination.Reason = pickup.Source;
+            state.LastNoQuestReason = "traveling_to_pickup_search_candidate";
+            MoveBotToPoint(state, bot, pickup.X, pickup.Y, pickup.Z);
+            std::ostringstream context;
+            context << "{\"radius_index\":" << state.QuestSearchRadiusIndex
+                    << ",\"quest_id\":" << pickup.QuestId
+                    << ",\"destination\":{\"map\":" << pickup.MapId << ",\"x\":" << pickup.X << ",\"y\":" << pickup.Y << ",\"z\":" << pickup.Z << "}"
+                    << ",\"source\":\"" << JsonEscape(pickup.Source) << "\"}";
+            RecordQuestEvent(state, bot, "quest_pickup_search", pickup.QuestId, nullptr, "travel", BuildRawJson(bot, nullptr).c_str(), BuildSemanticJson(bot, nullptr, "quest_pickup_search", &power, stage, activity).c_str(), state.QuestSearchRadiusIndex, 0, context.str().c_str());
+            return result;
+        }
+
+        static uint32 constexpr MaxQuestSearchRadiusIndex = 4;
+        if (state.QuestSearchRadiusIndex < MaxQuestSearchRadiusIndex)
+            ++state.QuestSearchRadiusIndex;
+        state.LastNoQuestReason = "no_pickup_search_candidate";
     }
 
     return result;
@@ -5862,6 +6592,7 @@ void BotWorldPopulationMgr::RecordEvent(WorldBotState& state, Player* bot, char 
     if (!bot)
         return;
 
+    RecordDecisionTrace(state, eventType ? eventType : "event", eventType ? eventType : "event", target, 0, result ? result : "ok", EventLooksFailure(eventType, result) ? "event_failure" : "");
     RecordExperimentSegmentEvent(bot, eventType, result, 0, target, _telemetryBuffer.GetActiveClipId(bot->GetGUID()), rawJson, semanticJson);
 
     if (!_runId)
@@ -5918,10 +6649,27 @@ void BotWorldPopulationMgr::RecordEvent(WorldBotState& state, Player* bot, char 
 
 void BotWorldPopulationMgr::RecordDecision(WorldBotState& state, Player* bot, char const* situation, char const* action, Unit const* target, char const* rawJson, char const* semanticJson, std::vector<BotActivityScore> const& activityScores, BotActivityScore const& chosenActivity, BotRolePowerBreakdown const& power, bool failure, bool rare)
 {
-    if (!_runId || !_config.RecordDecisions || !bot)
+    if (!bot)
         return;
 
     ++state.Sequence;
+    uint64 nowMs = NowMs();
+    state.LastDecisionTickMs = nowMs;
+    state.LastDecisionSituation = situation ? situation : "idle";
+    state.LastDecisionAction = action ? action : "wait";
+    state.LastDecisionActivity = BotLongTermProgressionBrain::ToString(chosenActivity.Activity);
+    state.LastDecisionResult = failure ? "failed" : "ok";
+    state.LastDecisionReason = failure ? "decision_failure" : "";
+    state.LastDecisionTargetGuid = target ? target->GetGUID() : ObjectGuid::Empty;
+    if (!state.LastDecisionQuestId)
+        state.LastDecisionQuestId = state.QuestWork.ActiveQuestId ? state.QuestWork.ActiveQuestId : state.NewlyAcceptedQuestId;
+    state.LastDecisionDistanceMoved = state.DistanceMovedSinceLastDecision;
+    state.DistanceMovedSinceLastDecision = 0.0f;
+    RecordDecisionTrace(state, situation, action, target, state.LastDecisionQuestId, failure ? "failed" : "ok", failure ? "decision_failure" : "");
+
+    if (!_runId || !_config.RecordDecisions)
+        return;
+
     ++_metrics.Decisions;
     if (failure)
         ++_metrics.Failures;
@@ -6737,6 +7485,257 @@ uint32 BotWorldPopulationMgr::FeatureSchemaHash(std::string const& value)
     return hash;
 }
 
+void BotWorldPopulationMgr::RecordDecisionTrace(WorldBotState& state, char const* situation, char const* action, Unit const* target, uint32 questId, char const* result, char const* reasonCode)
+{
+    WorldBotState::DecisionTraceEntry entry;
+    entry.TimestampMs = NowMs();
+    entry.Sequence = state.Sequence;
+    entry.Situation = situation ? situation : "unknown";
+    entry.Action = action ? action : "wait";
+    entry.QuestId = questId;
+    entry.TargetGuid = target ? target->GetGUID().GetCounter() : 0;
+    if (state.QuestRouteDestination.Valid)
+    {
+        entry.DestinationMapId = state.QuestRouteDestination.MapId;
+        entry.DestinationX = state.QuestRouteDestination.X;
+        entry.DestinationY = state.QuestRouteDestination.Y;
+        entry.DestinationZ = state.QuestRouteDestination.Z;
+    }
+    else if (state.QuestSearchDestination.Valid)
+    {
+        entry.DestinationMapId = state.QuestSearchDestination.MapId;
+        entry.DestinationX = state.QuestSearchDestination.X;
+        entry.DestinationY = state.QuestSearchDestination.Y;
+        entry.DestinationZ = state.QuestSearchDestination.Z;
+    }
+    else if (state.ActivePathValid)
+    {
+        entry.DestinationX = state.ActivePathToX;
+        entry.DestinationY = state.ActivePathToY;
+        entry.DestinationZ = state.ActivePathToZ;
+    }
+    entry.Result = result ? result : "ok";
+    entry.ReasonCode = reasonCode ? reasonCode : "";
+    state.DecisionTrace.push_back(entry);
+    while (state.DecisionTrace.size() > 64)
+        state.DecisionTrace.pop_front();
+}
+
+BotWorldPopulationMgr::BotDiagnosis BotWorldPopulationMgr::BuildBotDiagnosis(WorldBotState const& state, Player const* bot) const
+{
+    BotDiagnosis diagnosis;
+    diagnosis.CurrentAction = state.LastDecisionAction;
+
+    uint64 nowMs = NowMs();
+    uint64 sinceProgressMs = state.LastMovementProgressMs ? nowMs - state.LastMovementProgressMs : 0;
+    uint64 sinceDecisionMs = state.LastDecisionTickMs ? nowMs - state.LastDecisionTickMs : 0;
+    uint64 sincePathChangeMs = state.LastPathChangeMs ? nowMs - state.LastPathChangeMs : 0;
+    bool questBlocked = !state.QuestWork.FailedReason.empty() || !state.LastObjectiveNotFoundReason.empty();
+    bool pickupBlocked = state.LastNoQuestReason == "no_pickup_search_candidate";
+
+    if (!bot)
+    {
+        diagnosis.DiagnosisCode = "bot_not_loaded";
+        diagnosis.Severity = "error";
+        diagnosis.Confidence = 1.0f;
+        diagnosis.Blocker = "selected_bot_is_not_loaded";
+        diagnosis.NextExpectedAction = "load_or_respawn_bot";
+        diagnosis.SuggestedInvestigation = "inspect_bot_pool_and_spawn_state";
+    }
+    else if (!bot->IsAlive() || state.DeadTimer > 0)
+    {
+        diagnosis.DiagnosisCode = "dead_recovery";
+        diagnosis.Severity = "warning";
+        diagnosis.Confidence = 0.95f;
+        diagnosis.Blocker = "bot_is_dead_or_recovering";
+        diagnosis.NextExpectedAction = "death_recovery_tick";
+        diagnosis.SuggestedInvestigation = "inspect_recent_death_and_recovery_trace";
+    }
+    else if (bot->IsInCombat())
+    {
+        diagnosis.DiagnosisCode = "normal_combat";
+        diagnosis.Severity = "info";
+        diagnosis.Confidence = 0.8f;
+        diagnosis.Blocker = "";
+        diagnosis.NextExpectedAction = "continue_combat_rotation";
+        diagnosis.SuggestedInvestigation = "inspect_target_if_combat_repeats_without_kill";
+    }
+    else if (state.StuckTimer >= 3000 || (state.LastDecisionAction == "unstuck" && sinceDecisionMs < 10000))
+    {
+        diagnosis.DiagnosisCode = "stuck_repath_loop";
+        diagnosis.Severity = "warning";
+        diagnosis.Confidence = 0.9f;
+        diagnosis.Blocker = "movement_stuck_or_recent_unstuck";
+        diagnosis.NextExpectedAction = "repath_to_nearby_collision_position";
+        diagnosis.SuggestedInvestigation = "inspect_routing_destination_and_failed_path_memory";
+    }
+    else if (state.ActivePathValid && state.IsMoving && sincePathChangeMs > 5000 && sinceProgressMs > 5000)
+    {
+        diagnosis.DiagnosisCode = "moving_but_not_progressing";
+        diagnosis.Severity = "warning";
+        diagnosis.Confidence = 0.85f;
+        diagnosis.Blocker = "active_movement_has_no_recent_position_progress";
+        diagnosis.NextExpectedAction = "stuck_detection_or_repath";
+        diagnosis.SuggestedInvestigation = "compare_trace_entries_for_repeated_destination";
+    }
+    else if (questBlocked && state.QuestWork.ActiveQuestId)
+    {
+        diagnosis.DiagnosisCode = "no_supported_objective";
+        diagnosis.Severity = "warning";
+        diagnosis.Confidence = 0.75f;
+        diagnosis.Blocker = state.QuestWork.FailedReason.empty() ? state.LastObjectiveNotFoundReason : state.QuestWork.FailedReason;
+        diagnosis.NextExpectedAction = "select_supported_objective_or_search_pickup";
+        diagnosis.SuggestedInvestigation = "inspect_quest_work_and_objective_plan";
+    }
+    else if (pickupBlocked)
+    {
+        diagnosis.DiagnosisCode = state.QuestSearchDestination.Valid ? "quest_pickup_unreachable" : "idle_no_candidate";
+        diagnosis.Severity = "warning";
+        diagnosis.Confidence = 0.7f;
+        diagnosis.Blocker = state.LastNoQuestReason;
+        diagnosis.NextExpectedAction = "expand_quest_search_radius_or_wander";
+        diagnosis.SuggestedInvestigation = "inspect_nearby_quest_givers_and_quest_cooldowns";
+    }
+    else if (!state.LastRejectedTargetReason.empty() && state.LastDecisionSituation == "target_rejected")
+    {
+        diagnosis.DiagnosisCode = "target_rejected";
+        diagnosis.Severity = "info";
+        diagnosis.Confidence = 0.8f;
+        diagnosis.Blocker = state.LastRejectedTargetReason;
+        diagnosis.NextExpectedAction = "clear_target_and_choose_progression_action";
+        diagnosis.SuggestedInvestigation = "inspect_target_relevance_rules";
+    }
+    else if (state.DecisionTimer > 0)
+    {
+        diagnosis.DiagnosisCode = "waiting_decision_tick";
+        diagnosis.Severity = "info";
+        diagnosis.Confidence = 0.65f;
+        diagnosis.Blocker = "";
+        diagnosis.NextExpectedAction = "decision_tick";
+        diagnosis.SuggestedInvestigation = "inspect_trace_only_if_state_repeats";
+    }
+    else
+    {
+        diagnosis.DiagnosisCode = "normal_work";
+        diagnosis.Severity = "info";
+        diagnosis.Confidence = 0.6f;
+        diagnosis.Blocker = "";
+        diagnosis.NextExpectedAction = "continue_current_action";
+        diagnosis.SuggestedInvestigation = "inspect_trace_for_long_running_repetition";
+    }
+
+    return diagnosis;
+}
+
+std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson(WorldBotState const& state, Player const* bot) const
+{
+    BotDiagnosis diagnosis = BuildBotDiagnosis(state, bot);
+    uint64 nowMs = NowMs();
+    uint64 sinceDecisionMs = state.LastDecisionTickMs ? nowMs - state.LastDecisionTickMs : 0;
+    uint64 sinceProgressMs = state.LastMovementProgressMs ? nowMs - state.LastMovementProgressMs : 0;
+    uint64 sincePathChangeMs = state.LastPathChangeMs ? nowMs - state.LastPathChangeMs : 0;
+
+    std::ostringstream json;
+    json << "{\"diagnosis_code\":\"" << JsonEscape(diagnosis.DiagnosisCode) << "\""
+         << ",\"severity\":\"" << JsonEscape(diagnosis.Severity) << "\""
+         << ",\"confidence\":" << diagnosis.Confidence
+         << ",\"intent\":\"" << JsonEscape(diagnosis.Intent) << "\""
+         << ",\"current_action\":\"" << JsonEscape(diagnosis.CurrentAction) << "\""
+         << ",\"blocker\":\"" << JsonEscape(diagnosis.Blocker) << "\""
+         << ",\"evidence\":["
+         << "{\"name\":\"alive\",\"value\":" << (bot && bot->IsAlive() ? "true" : "false") << "},"
+         << "{\"name\":\"in_combat\",\"value\":" << (bot && bot->IsInCombat() ? "true" : "false") << "},"
+         << "{\"name\":\"is_moving\",\"value\":" << (state.IsMoving ? "true" : "false") << "},"
+         << "{\"name\":\"stuck_timer_ms\",\"value\":" << state.StuckTimer << "},"
+         << "{\"name\":\"distance_moved_since_last_decision\",\"value\":" << state.LastDecisionDistanceMoved << "},"
+         << "{\"name\":\"time_since_last_decision_ms\",\"value\":" << sinceDecisionMs << "},"
+         << "{\"name\":\"time_since_last_progress_ms\",\"value\":" << sinceProgressMs << "},"
+         << "{\"name\":\"time_since_last_path_change_ms\",\"value\":" << sincePathChangeMs << "},"
+         << "{\"name\":\"quest_phase\",\"value\":\"" << JsonEscape(state.QuestWork.Phase) << "\"},"
+         << "{\"name\":\"quest_failure_reason\",\"value\":\"" << JsonEscape(state.QuestWork.FailedReason) << "\"},"
+         << "{\"name\":\"last_no_quest_reason\",\"value\":\"" << JsonEscape(state.LastNoQuestReason) << "\"}"
+         << "]"
+         << ",\"next_expected_action\":\"" << JsonEscape(diagnosis.NextExpectedAction) << "\""
+         << ",\"suggested_investigation\":\"" << JsonEscape(diagnosis.SuggestedInvestigation) << "\"}";
+    return json.str();
+}
+
+std::string BotWorldPopulationMgr::BuildBotDecisionSnapshotJson(WorldBotState const& state, Player const* bot) const
+{
+    uint64 nowMs = NowMs();
+    std::ostringstream json;
+    json << "{\"identity\":{\"bot_guid\":" << state.Guid.GetCounter()
+         << ",\"bot_name\":\"" << JsonEscape(bot ? bot->GetName() : "") << "\"}"
+         << ",\"runtime\":{\"active\":" << (_active ? "true" : "false")
+         << ",\"mode\":\"" << (_runtimeMode == BotWorldRuntimeMode::AlwaysOnAutonomy ? "always_on_autonomy" : "manual_experiment") << "\""
+         << ",\"decision_timer_ms\":" << state.DecisionTimer
+         << ",\"last_decision_tick_ms\":" << state.LastDecisionTickMs
+         << ",\"time_since_last_decision_ms\":" << (state.LastDecisionTickMs ? nowMs - state.LastDecisionTickMs : 0) << "}"
+         << ",\"movement\":{\"is_moving\":" << (state.IsMoving ? "true" : "false")
+         << ",\"stuck_timer_ms\":" << state.StuckTimer
+         << ",\"distance_moved_since_last_decision\":" << state.LastDecisionDistanceMoved
+         << ",\"time_since_last_progress_ms\":" << (state.LastMovementProgressMs ? nowMs - state.LastMovementProgressMs : 0)
+         << ",\"time_since_last_path_change_ms\":" << (state.LastPathChangeMs ? nowMs - state.LastPathChangeMs : 0) << "}"
+         << ",\"quest\":{\"state\":\"" << JsonEscape(state.CurrentQuestState) << "\""
+         << ",\"phase\":\"" << JsonEscape(state.QuestWork.Phase) << "\""
+         << ",\"active_quest_id\":" << state.QuestWork.ActiveQuestId
+         << ",\"newly_accepted_quest_id\":" << state.NewlyAcceptedQuestId
+         << ",\"objective_index\":" << state.QuestWork.ObjectiveIndex
+         << ",\"objective_type\":\"" << JsonEscape(state.QuestWork.ObjectiveType) << "\""
+         << ",\"progress_before\":" << state.QuestWork.ProgressBefore
+         << ",\"progress_after\":" << state.QuestWork.ProgressAfter << "}"
+         << ",\"target\":{\"target_guid\":" << state.LastDecisionTargetGuid.GetCounter()
+         << ",\"last_rejected_target_reason\":\"" << JsonEscape(state.LastRejectedTargetReason) << "\"}"
+         << ",\"routing\":{\"active_path_valid\":" << (state.ActivePathValid ? "true" : "false")
+         << ",\"from\":{\"x\":" << state.ActivePathFromX << ",\"y\":" << state.ActivePathFromY << ",\"z\":" << state.ActivePathFromZ << "}"
+         << ",\"to\":{\"x\":" << state.ActivePathToX << ",\"y\":" << state.ActivePathToY << ",\"z\":" << state.ActivePathToZ << "}"
+         << ",\"quest_search_destination\":{\"valid\":" << (state.QuestSearchDestination.Valid ? "true" : "false")
+         << ",\"map\":" << state.QuestSearchDestination.MapId << ",\"x\":" << state.QuestSearchDestination.X << ",\"y\":" << state.QuestSearchDestination.Y << ",\"z\":" << state.QuestSearchDestination.Z
+         << ",\"quest_id\":" << state.QuestSearchDestination.QuestId << ",\"reason\":\"" << JsonEscape(state.QuestSearchDestination.Reason) << "\"}"
+         << ",\"quest_route_destination\":{\"valid\":" << (state.QuestRouteDestination.Valid ? "true" : "false")
+         << ",\"map\":" << state.QuestRouteDestination.MapId << ",\"x\":" << state.QuestRouteDestination.X << ",\"y\":" << state.QuestRouteDestination.Y << ",\"z\":" << state.QuestRouteDestination.Z
+         << ",\"quest_id\":" << state.QuestRouteDestination.QuestId << ",\"reason\":\"" << JsonEscape(state.QuestRouteDestination.Reason) << "\"}}"
+         << ",\"decision\":{\"situation\":\"" << JsonEscape(state.LastDecisionSituation) << "\""
+         << ",\"action\":\"" << JsonEscape(state.LastDecisionAction) << "\""
+         << ",\"selected_activity\":\"" << JsonEscape(state.LastDecisionActivity) << "\""
+         << ",\"last_handler\":\"" << JsonEscape(state.LastDecisionHandler) << "\""
+         << ",\"result\":\"" << JsonEscape(state.LastDecisionResult) << "\""
+         << ",\"reason\":\"" << JsonEscape(state.LastDecisionReason) << "\""
+         << ",\"quest_id\":" << state.LastDecisionQuestId << "}"
+         << ",\"recent_failures\":{\"quest_failure_reason\":\"" << JsonEscape(state.QuestWork.FailedReason) << "\""
+         << ",\"last_objective_not_found_reason\":\"" << JsonEscape(state.LastObjectiveNotFoundReason) << "\""
+         << ",\"last_no_progress_reason\":\"" << JsonEscape(state.LastNoProgressReason) << "\""
+         << ",\"last_no_quest_reason\":\"" << JsonEscape(state.LastNoQuestReason) << "\"}}";
+    return json.str();
+}
+
+std::string BotWorldPopulationMgr::BuildBotTraceEntriesJson(WorldBotState const& state, uint32 limit) const
+{
+    if (!limit)
+        limit = 20;
+    limit = std::min<uint32>(limit, 64);
+
+    std::ostringstream json;
+    json << "[";
+    uint32 emitted = 0;
+    for (auto itr = state.DecisionTrace.rbegin(); itr != state.DecisionTrace.rend() && emitted < limit; ++itr, ++emitted)
+    {
+        if (emitted)
+            json << ",";
+        json << "{\"timestamp_ms\":" << itr->TimestampMs
+             << ",\"sequence\":" << itr->Sequence
+             << ",\"situation\":\"" << JsonEscape(itr->Situation) << "\""
+             << ",\"action\":\"" << JsonEscape(itr->Action) << "\""
+             << ",\"quest_id\":" << itr->QuestId
+             << ",\"target_id\":" << itr->TargetGuid
+             << ",\"destination\":{\"map\":" << itr->DestinationMapId << ",\"x\":" << itr->DestinationX << ",\"y\":" << itr->DestinationY << ",\"z\":" << itr->DestinationZ << "}"
+             << ",\"result\":\"" << JsonEscape(itr->Result) << "\""
+             << ",\"reason_code\":\"" << JsonEscape(itr->ReasonCode) << "\"}";
+    }
+    json << "]";
+    return json.str();
+}
+
 BotWorldStatus BotWorldPopulationMgr::GetStatus() const
 {
     BotWorldStatus status = _metrics;
@@ -6809,6 +7808,70 @@ std::string BotWorldPopulationMgr::GetSummaryJson() const
     return json.str();
 }
 
+std::string BotWorldPopulationMgr::GetBotDiagnosisJson(std::string const& selector) const
+{
+    std::ostringstream json;
+    json << "{\"ok\":true,\"action\":\"botauto_diagnose\",\"diagnosis_schema_version\":1,\"bots\":[";
+    bool emitted = false;
+    for (WorldBotState const& state : _bots)
+    {
+        Player* bot = GetBot(state);
+        if (!selector.empty() && selector != "all")
+        {
+            if (!bot)
+                continue;
+            if (selector != std::to_string(state.Guid.GetCounter()) && selector != bot->GetName())
+                continue;
+        }
+
+        if (emitted)
+            json << ",";
+        emitted = true;
+        json << "{\"identity\":{\"bot_guid\":" << state.Guid.GetCounter()
+             << ",\"bot_name\":\"" << JsonEscape(bot ? bot->GetName() : "") << "\"}"
+             << ",\"snapshot\":" << BuildBotDecisionSnapshotJson(state, bot)
+             << ",\"diagnosis\":" << BuildBotDiagnosisObjectJson(state, bot) << "}";
+
+        if (!selector.empty() && selector != "all")
+            break;
+    }
+
+    json << "]";
+    if (!emitted)
+        json << ",\"failure_reason\":\"no_matching_bot\"";
+    else
+        json << ",\"failure_reason\":null";
+    json << "}";
+    return json.str();
+}
+
+std::string BotWorldPopulationMgr::GetBotTraceJson(std::string const& selector, uint32 limit) const
+{
+    WorldBotState const* selected = nullptr;
+    for (WorldBotState const& state : _bots)
+    {
+        Player* bot = GetBot(state);
+        if (selector.empty() || selector == "all" || selector == std::to_string(state.Guid.GetCounter()) || (bot && selector == bot->GetName()))
+        {
+            selected = &state;
+            break;
+        }
+    }
+
+    if (!selected)
+        return "{\"ok\":false,\"action\":\"botauto_trace\",\"trace_schema_version\":1,\"failure_reason\":\"no_matching_bot\"}";
+
+    Player* bot = GetBot(*selected);
+    std::ostringstream json;
+    json << "{\"ok\":true,\"action\":\"botauto_trace\",\"trace_schema_version\":1"
+         << ",\"bot_guid\":" << selected->Guid.GetCounter()
+         << ",\"bot_name\":\"" << JsonEscape(bot ? bot->GetName() : "") << "\""
+         << ",\"limit\":" << (limit ? std::min<uint32>(limit, 64) : 20)
+         << ",\"entries\":" << BuildBotTraceEntriesJson(*selected, limit)
+         << ",\"failure_reason\":null}";
+    return json.str();
+}
+
 std::string BotWorldPopulationMgr::GetBotDebugJson(std::string const& selector) const
 {
     WorldBotState const* selected = nullptr;
@@ -6855,6 +7918,9 @@ std::string BotWorldPopulationMgr::GetBotDebugJson(std::string const& selector) 
     bool targetDummy = IsTrainingDummy(target);
     QuestObjectivePlan plan;
     bool hasPlan = FindActiveQuestObjective(bot, plan);
+    QuestPortfolioPlan portfolio = BuildQuestPortfolioPlan(bot, *selected);
+    QuestObjectiveBucket debugBucket;
+    bool hasDebugBucket = SelectQuestObjectiveBucket(bot, portfolio, debugBucket);
     bool dummyAllowed = hasPlan && IsTrainingDummyAllowedForQuest(plan, target);
     char const* progressionReject = nullptr;
     bool targetProgressionRelevant = target && IsProgressionCombatTarget(bot, target, &progressionReject);
@@ -6868,6 +7934,7 @@ std::string BotWorldPopulationMgr::GetBotDebugJson(std::string const& selector) 
 
     std::ostringstream json;
     json << "{\"ok\":true,\"action\":\"botauto_debug\""
+         << ",\"debug_schema_version\":1"
          << ",\"bot_guid\":" << selected->Guid.GetCounter()
          << ",\"bot_name\":\"" << JsonEscape(bot->GetName()) << "\""
          << ",\"spawn_source\":\"" << JsonEscape(selected->SpawnSource) << "\""
@@ -6913,10 +7980,29 @@ std::string BotWorldPopulationMgr::GetBotDebugJson(std::string const& selector) 
          << ",\"last_no_progress_reason\":\"" << JsonEscape(selected->LastNoProgressReason) << "\""
          << ",\"last_objective_not_found_reason\":\"" << JsonEscape(selected->LastObjectiveNotFoundReason) << "\""
          << ",\"last_grinding_allowed_reason\":\"" << JsonEscape(selected->LastGrindingAllowedReason) << "\""
+         << ",\"active_quest_count\":" << portfolio.ActiveQuestCount
+         << ",\"quest_bucket_id\":" << (hasDebugBucket ? debugBucket.BucketId : selected->ActiveQuestClusterId)
+         << ",\"quest_bucket_objective_count\":" << (hasDebugBucket ? uint32(debugBucket.Objectives.size()) : 0)
+         << ",\"quest_bucket_center\":{\"map\":" << (hasDebugBucket ? debugBucket.MapId : selected->QuestRouteDestination.MapId)
+         << ",\"x\":" << (hasDebugBucket ? debugBucket.CenterX : selected->QuestRouteDestination.X)
+         << ",\"y\":" << (hasDebugBucket ? debugBucket.CenterY : selected->QuestRouteDestination.Y)
+         << ",\"z\":" << (hasDebugBucket ? debugBucket.CenterZ : selected->QuestRouteDestination.Z) << "}"
+         << ",\"quest_search_radius\":" << selected->QuestSearchRadiusIndex
+         << ",\"quest_search_destination\":{\"valid\":" << (selected->QuestSearchDestination.Valid ? "true" : "false")
+         << ",\"map\":" << selected->QuestSearchDestination.MapId
+         << ",\"x\":" << selected->QuestSearchDestination.X
+         << ",\"y\":" << selected->QuestSearchDestination.Y
+         << ",\"z\":" << selected->QuestSearchDestination.Z
+         << ",\"quest_id\":" << selected->QuestSearchDestination.QuestId
+         << ",\"reason\":\"" << JsonEscape(selected->QuestSearchDestination.Reason) << "\"}"
+         << ",\"last_no_quest_reason\":\"" << JsonEscape(selected->LastNoQuestReason) << "\""
+         << ",\"last_quest_classification\":\"" << JsonEscape(selected->LastQuestClassification) << "\""
+         << ",\"last_bucket_selection_reason\":\"" << JsonEscape(hasDebugBucket ? debugBucket.Reason : selected->LastQuestBucketReason) << "\""
          << ",\"current_quest_supported\":" << (hasPlan ? "true" : "false")
          << ",\"cooldown_until_ms\":" << selected->QuestWork.CooldownUntilMs
          << ",\"failure_reason\":\"" << JsonEscape(selected->QuestWork.FailedReason) << "\""
          << ",\"last_rejected_target_reason\":\"" << JsonEscape(selected->LastRejectedTargetReason) << "\""
+         << ",\"diagnosis\":" << BuildBotDiagnosisObjectJson(*selected, bot)
          << "}";
     return json.str();
 }
