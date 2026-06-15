@@ -804,6 +804,9 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
     _config.MinLevel = uint8(sConfigMgr->GetIntDefault("BotWorld.MinLevel", _config.MinLevel));
     _config.MaxLevel = uint8(sConfigMgr->GetIntDefault("BotWorld.MaxLevel", _config.MaxLevel));
     _config.AllowCombat = sConfigMgr->GetBoolDefault("BotWorld.AllowCombat", _config.AllowCombat);
+    _config.AllowGrinding = sConfigMgr->GetBoolDefault("BotWorld.AllowGrinding", _config.AllowGrinding);
+    _config.QuestFirst = sConfigMgr->GetBoolDefault("BotWorld.QuestFirst", _config.QuestFirst);
+    _config.GrindOnlyWhenNoQuestAvailable = sConfigMgr->GetBoolDefault("BotWorld.GrindOnlyWhenNoQuestAvailable", _config.GrindOnlyWhenNoQuestAvailable);
     _config.EnableProgression = sConfigMgr->GetBoolDefault("BotProgression.Enable", _config.EnableProgression);
     _config.AllowQuesting = sConfigMgr->GetBoolDefault("BotProgression.AllowQuesting", sConfigMgr->GetBoolDefault("BotWorld.AllowQuesting", _config.AllowQuesting));
     _config.AllowDungeons = sConfigMgr->GetBoolDefault("BotProgression.AllowDungeons", _config.AllowDungeons);
@@ -1954,7 +1957,10 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
     BossMechanicActionResult bossAction;
     DungeonTrashActionResult trashAction;
     QuestObjectivePlan activePlanForPriority;
-    bool hasActiveQuestObjective = FindActiveQuestObjective(bot, activePlanForPriority);
+    bool hasActiveQuestObjective = (state.QuestWork.ActiveQuestId && FindQuestObjective(bot, state.QuestWork.ActiveQuestId, activePlanForPriority))
+        || (state.NewlyAcceptedQuestId && FindQuestObjective(bot, state.NewlyAcceptedQuestId, activePlanForPriority))
+        || FindActiveQuestObjective(bot, activePlanForPriority);
+    bool hasNearbyQuestGiver = _config.AllowQuesting && HasNearbySupportedQuestGiver(bot, state);
 
     if (hpPct < 0.35f && !bot->IsInCombat())
     {
@@ -1978,7 +1984,7 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         action = "vendor_repair_train";
     }
     else if (_config.AllowQuesting
-        && (chosenActivity.Activity == BotProgressionActivity::Questing || hasActiveQuestObjective)
+        && (chosenActivity.Activity == BotProgressionActivity::Questing || hasActiveQuestObjective || _config.QuestFirst || state.NewlyAcceptedQuestId || hasNearbyQuestGiver)
         && [&]() { questAction = TryQuesting(state, bot, power, stage, chosenActivity.Activity); return questAction.Handled; }())
     {
         situation = questAction.Situation;
@@ -2001,6 +2007,22 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
     }
     else if (target && target->IsAlive())
     {
+        char const* rejectReason = nullptr;
+        if (!bot->IsInCombat() && !IsQuestRelevantTarget(bot, target) && !IsProgressionCombatTarget(bot, target, &rejectReason))
+        {
+            state.LastRejectedTargetReason = rejectReason ? rejectReason : "not_progression_relevant";
+            std::string raw = BuildRawJson(bot, target);
+            std::string semantic = BuildSemanticJson(bot, target, "target_rejected", &power, stage, chosenActivity.Activity);
+            RecordEvent(state, bot, "target_rejected", target, state.LastRejectedTargetReason.c_str(), raw.c_str(), semantic.c_str());
+            bot->AttackStop();
+            bot->CombatStop(true);
+            state.TargetGuid.Clear();
+            target = nullptr;
+            situation = "target_rejected";
+            action = "clear_non_progression_target";
+        }
+        else
+        {
         state.TargetGuid = target->GetGUID();
         BotActionExecutor executor;
         executor.Pull(bot, target);
@@ -2020,6 +2042,7 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
             RecordEvent(state, bot, "combat_started", target, "ok", raw.c_str(), semantic.c_str());
         }
         state.WasInCombat = true;
+        }
     }
     else if (target && !target->IsAlive())
     {
@@ -2138,7 +2161,7 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
             }
         }
     }
-    else if (_config.AllowCombat && !hasActiveQuestObjective && (target = SelectSafeTarget(bot)))
+    else if (IsGenericGrindingAllowed(state, bot, chosenActivity.Activity, hasActiveQuestObjective) && (target = SelectSafeTarget(state, bot)))
     {
         BotActionExecutor executor;
         BotActionResult result = executor.Pull(bot, target);
@@ -2205,7 +2228,91 @@ uint32 BotWorldPopulationMgr::SelectPoolCandidateGuid() const
     return 0;
 }
 
-Unit* BotWorldPopulationMgr::SelectSafeTarget(Player* bot) const
+bool BotWorldPopulationMgr::IsQuestRelevantTarget(Player* bot, Unit* target) const
+{
+    Creature const* creature = target ? target->ToCreature() : nullptr;
+    if (!bot || !creature)
+        return false;
+
+    uint32 entry = creature->GetEntry();
+    for (auto const& questStatus : bot->getQuestStatusMap())
+    {
+        if (questStatus.second.Status != QUEST_STATUS_INCOMPLETE)
+            continue;
+
+        Quest const* quest = sObjectMgr->GetQuestTemplate(questStatus.first);
+        if (!quest)
+            continue;
+
+        for (uint8 i = 0; i < QUEST_OBJECTIVES_COUNT; ++i)
+            if (quest->RequiredNpcOrGo[i] > 0 && uint32(quest->RequiredNpcOrGo[i]) == entry && questStatus.second.CreatureOrGOCount[i] < quest->RequiredNpcOrGoCount[i])
+                return true;
+
+        for (uint8 i = 0; i < QUEST_ITEM_OBJECTIVES_COUNT; ++i)
+        {
+            uint32 itemId = quest->RequiredItemId[i];
+            if (!itemId || questStatus.second.ItemCount[i] >= quest->RequiredItemCount[i])
+                continue;
+            std::vector<uint32> const* questItems = sObjectMgr->GetCreatureQuestItemList(entry);
+            if (questItems && std::find(questItems->begin(), questItems->end(), itemId) != questItems->end())
+                return true;
+        }
+    }
+
+    return false;
+}
+
+bool BotWorldPopulationMgr::IsProgressionCombatTarget(Player* bot, Unit* target, char const** rejectReason) const
+{
+    auto reject = [rejectReason](char const* reason) -> bool
+    {
+        if (rejectReason)
+            *rejectReason = reason;
+        return false;
+    };
+
+    if (!bot || !target || !target->IsAlive() || !bot->IsValidAttackTarget(target) || !bot->IsWithinLOSInMap(target))
+        return reject("not_progression_relevant");
+    if (!bot->IsWithinDistInMap(target, 30.0f))
+        return reject("not_progression_relevant");
+
+    Creature const* creature = target->ToCreature();
+    if (!creature)
+        return reject("ambient");
+    CreatureTemplate const* tmpl = creature->GetCreatureTemplate();
+    bool questRelevant = IsQuestRelevantTarget(bot, target);
+
+    if (creature->IsCritter() || (tmpl && tmpl->type == CREATURE_TYPE_CRITTER))
+        return reject("critter");
+    if (creature->IsPet() || creature->IsTotem() || creature->IsSummon() || creature->IsGuardian() || !creature->GetOwnerGUID().IsEmpty())
+        return reject("pet_or_totem");
+    if (IsTrainingDummy(target) && !questRelevant)
+        return reject("dummy_without_quest");
+    if (creature->IsSpiritService() || creature->IsServiceProvider() || (tmpl && (tmpl->unit_flags & (UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_PACIFIED | UNIT_FLAG_IMMUNE_TO_PC))))
+        return reject("ambient");
+    if (!questRelevant && creature->HasFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_TAPPED) && !creature->HasFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_TAPPED_BY_PLAYER))
+        return reject("no_loot");
+    if (creature->isElite() && !(bot->GetMap() && (bot->GetMap()->IsDungeon() || bot->GetMap()->IsRaid())) && !bot->GetGroup())
+        return reject("not_progression_relevant");
+
+    bool givesXp = bot->isHonorOrXPTarget(target);
+    bool hasLoot = tmpl && (tmpl->lootid || tmpl->pickpocketLootId || tmpl->SkinLootId || tmpl->mingold || tmpl->maxgold);
+    if (!questRelevant && !givesXp)
+        return reject("no_xp");
+
+    if (!questRelevant && !hasLoot)
+        return reject("no_loot");
+
+    if (!questRelevant && !givesXp && !hasLoot)
+        return reject("not_progression_relevant");
+
+    if (!questRelevant && creature->GetReactionTo(bot) >= REP_NEUTRAL)
+        return reject("not_progression_relevant");
+
+    return true;
+}
+
+Unit* BotWorldPopulationMgr::SelectSafeTarget(WorldBotState& state, Player* bot)
 {
     if (!bot)
         return nullptr;
@@ -2220,10 +2327,26 @@ Unit* BotWorldPopulationMgr::SelectSafeTarget(Player* bot) const
     for (WorldObject* object : objects)
     {
         Unit* target = object ? object->ToUnit() : nullptr;
-        if (!target || !target->IsAlive() || !bot->IsValidAttackTarget(target) || !bot->IsWithinLOSInMap(target))
+        if (target && IsTrainingDummy(target) && !IsQuestRelevantTarget(bot, target))
+        {
+            state.LastRejectedTargetReason = "dummy_without_quest";
+            std::string raw = BuildRawJson(bot, target);
+            std::string semantic = BuildSemanticJson(bot, target, "target_rejected");
+            RecordEvent(state, bot, "target_rejected", target, "dummy_without_quest", raw.c_str(), semantic.c_str());
             continue;
-        if (IsTrainingDummy(target))
+        }
+        char const* rejectReason = nullptr;
+        if (!IsProgressionCombatTarget(bot, target, &rejectReason))
+        {
+            if (target && rejectReason)
+            {
+                state.LastRejectedTargetReason = rejectReason;
+                std::string raw = BuildRawJson(bot, target);
+                std::string semantic = BuildSemanticJson(bot, target, "target_rejected");
+                RecordEvent(state, bot, "target_rejected", target, rejectReason, raw.c_str(), semantic.c_str());
+            }
             continue;
+        }
 
         if (Creature* creature = target->ToCreature())
             if (creature->isElite())
@@ -2392,7 +2515,7 @@ bool BotWorldPopulationMgr::GetQuestObjectivePlan(Player* bot, uint32 questId, u
         return false;
 
     QuestObjectivePlan active;
-    if (!FindActiveQuestObjective(bot, active))
+    if (!FindQuestObjective(bot, questId, active))
         return false;
     if (active.QuestId != questId || active.ObjectiveIndex != objectiveIndex || active.ObjectiveType != type)
         return false;
@@ -2445,6 +2568,9 @@ void BotWorldPopulationMgr::SetQuestWorkFromPlan(WorldBotState& state, QuestObje
 void BotWorldPopulationMgr::ResetQuestWork(WorldBotState& state)
 {
     state.QuestWork = WorldBotState::BotQuestWorkState();
+    state.NewlyAcceptedQuestId = 0;
+    state.RecentlyAcceptedQuestUntilMs = 0;
+    state.ObjectiveSearchUntilMs = 0;
     state.CurrentQuestState = "idle";
     state.CurrentObjectiveType = "none";
     state.RequiredSpellId = 0;
@@ -2672,7 +2798,7 @@ bool BotWorldPopulationMgr::StopDisallowedDummyCombat(WorldBotState& state, Play
     return true;
 }
 
-WorldObject* BotWorldPopulationMgr::SelectQuestGiver(Player* bot, bool completeOnly, uint32* questId) const
+WorldObject* BotWorldPopulationMgr::SelectQuestGiver(Player* bot, bool completeOnly, uint32* questId, WorldBotState const* state) const
 {
     if (questId)
         *questId = 0;
@@ -2709,6 +2835,16 @@ WorldObject* BotWorldPopulationMgr::SelectQuestGiver(Player* bot, bool completeO
             Quest const* quest = sObjectMgr->GetQuestTemplate(candidateQuestId);
             if (!quest)
                 continue;
+
+            if (!completeOnly && state)
+            {
+                auto giverCooldown = state->QuestGiverCooldownUntilMs.find(object->GetGUID().GetCounter());
+                if (giverCooldown != state->QuestGiverCooldownUntilMs.end() && giverCooldown->second > NowMs())
+                    continue;
+                auto questCooldown = state->QuestCooldownUntilMs.find(candidateQuestId);
+                if (questCooldown != state->QuestCooldownUntilMs.end() && questCooldown->second > NowMs())
+                    continue;
+            }
 
             if (completeOnly)
             {
@@ -2903,6 +3039,104 @@ bool BotWorldPopulationMgr::HasSimpleSupportedObjective(Quest const* quest) cons
     return false;
 }
 
+bool BotWorldPopulationMgr::HasNearbySupportedQuestGiver(Player* bot, WorldBotState const& state) const
+{
+    uint32 questId = 0;
+    return SelectQuestGiver(bot, false, &questId, &state) != nullptr;
+}
+
+bool BotWorldPopulationMgr::IsGenericGrindingAllowed(WorldBotState& state, Player* bot, BotProgressionActivity activity, bool hasActiveQuestObjective)
+{
+    state.LastGrindingAllowedReason.clear();
+    if (!_config.AllowCombat)
+    {
+        state.LastGrindingAllowedReason = "combat_disabled";
+        return false;
+    }
+    if (!_config.AllowGrinding)
+    {
+        state.LastGrindingAllowedReason = "grinding_disabled";
+        return false;
+    }
+    if (hasActiveQuestObjective || state.QuestWork.ActiveQuestId)
+    {
+        state.LastGrindingAllowedReason = "active_quest_objective";
+        return false;
+    }
+    if (state.RecentlyAcceptedQuestUntilMs > NowMs())
+    {
+        state.LastGrindingAllowedReason = "recently_accepted_quest";
+        return false;
+    }
+    if (!state.QuestWork.SelectedTargetGuid.IsEmpty() || !state.QuestWork.SelectedObjectGuid.IsEmpty() || state.ObjectiveSearchUntilMs > NowMs())
+    {
+        state.LastGrindingAllowedReason = "known_objective_target";
+        return false;
+    }
+    if (_config.GrindOnlyWhenNoQuestAvailable && HasNearbySupportedQuestGiver(bot, state))
+    {
+        state.LastGrindingAllowedReason = "nearby_supported_quest";
+        return false;
+    }
+    if (activity != BotProgressionActivity::Grinding && activity != BotProgressionActivity::ExperimentExploration)
+    {
+        state.LastGrindingAllowedReason = "activity_not_grinding";
+        return false;
+    }
+
+    state.LastGrindingAllowedReason = activity == BotProgressionActivity::Grinding ? "explicit_grinding" : "experiment_exploration_combat_allowed";
+    return true;
+}
+
+void BotWorldPopulationMgr::MoveToObjectiveSearchPoint(WorldBotState& state, Player* bot, QuestObjectivePlan const* plan, WorldObject const* avoidObject)
+{
+    if (!bot)
+        return;
+
+    uint64 now = NowMs();
+    if (state.ObjectiveSearchUntilMs > now && Distance2d(bot->GetPositionX(), bot->GetPositionY(), state.ObjectiveSearchX, state.ObjectiveSearchY) > 3.0f)
+    {
+        MoveBotToPoint(state, bot, state.ObjectiveSearchX, state.ObjectiveSearchY, state.ObjectiveSearchZ);
+        return;
+    }
+
+    if (plan && plan->QuestId)
+    {
+        QueryResult result = CharacterDatabase.PQuery(
+            "SELECT x, y, z FROM bot_memory_pois "
+            "WHERE bot_guid = %u AND map_id = %u AND zone_id = %u AND poi_type = 'objective_object' "
+            "AND (quest_id = %u OR quest_id = 0) "
+            "ORDER BY last_seen_at DESC, score DESC LIMIT 1",
+            bot->GetGUID().GetCounter(), bot->GetMapId(), bot->GetZoneId(), plan->QuestId);
+        if (result)
+        {
+            Field* fields = result->Fetch();
+            state.ObjectiveSearchX = fields[0].GetFloat();
+            state.ObjectiveSearchY = fields[1].GetFloat();
+            state.ObjectiveSearchZ = fields[2].GetFloat();
+            state.ObjectiveSearchUntilMs = now + urand(6000, 10000);
+            MoveBotToPoint(state, bot, state.ObjectiveSearchX, state.ObjectiveSearchY, state.ObjectiveSearchZ);
+            return;
+        }
+    }
+
+    float baseAngle = avoidObject ? avoidObject->GetAngle(bot) : bot->GetOrientation();
+    if (avoidObject && bot->IsWithinDistInMap(avoidObject, INTERACTION_DISTANCE + 3.0f))
+        baseAngle = avoidObject->GetAngle(bot);
+    else if (plan && plan->RequiredEntry)
+        baseAngle += frand(-0.8f, 0.8f);
+    else
+        baseAngle = frand(0.0f, 2.0f * float(M_PI));
+
+    float distance = avoidObject ? frand(12.0f, 22.0f) : frand(10.0f, 26.0f);
+    Position pos = bot->GetFirstCollisionPosition(distance, baseAngle);
+    state.ObjectiveSearchX = pos.GetPositionX();
+    state.ObjectiveSearchY = pos.GetPositionY();
+    state.ObjectiveSearchZ = pos.GetPositionZ();
+    state.ObjectiveSearchUntilMs = now + urand(6000, 10000);
+    MoveBotToPoint(state, bot, state.ObjectiveSearchX, state.ObjectiveSearchY, state.ObjectiveSearchZ);
+}
+
 uint32 BotWorldPopulationMgr::ChooseQuestReward(Player* bot, Quest const* quest, uint32* rewardItemId) const
 {
     if (rewardItemId)
@@ -2937,15 +3171,15 @@ BotWorldPopulationMgr::QuestActionResult BotWorldPopulationMgr::TryQuesting(Worl
 
     QuestObjectivePlan committedPlan;
     bool hasCommittedPlan = state.QuestWork.ActiveQuestId
-        && GetQuestObjectivePlan(bot, state.QuestWork.ActiveQuestId, state.QuestWork.ObjectiveIndex, state.QuestWork.ObjectiveType == "use_ability_on_dummy" ? QuestObjectiveType::UseAbilityOnDummy :
-            (state.QuestWork.ObjectiveType == "cast_spell_on_target" ? QuestObjectiveType::CastSpellOnTarget :
-            (state.QuestWork.ObjectiveType == "interact_gameobject" ? QuestObjectiveType::InteractGameObject :
-            (state.QuestWork.ObjectiveType == "collect_item" ? QuestObjectiveType::CollectItem :
-            (state.QuestWork.ObjectiveType == "use_item_on_target" ? QuestObjectiveType::UseItemOnTarget : QuestObjectiveType::Kill)))), committedPlan);
+        && FindQuestObjective(bot, state.QuestWork.ActiveQuestId, committedPlan);
+    QuestObjectivePlan acceptedPlan;
+    bool hasAcceptedPlan = !hasCommittedPlan && state.NewlyAcceptedQuestId && FindQuestObjective(bot, state.NewlyAcceptedQuestId, acceptedPlan);
     QuestObjectivePlan discoveredPlan;
-    bool hasActiveObjective = hasCommittedPlan || FindActiveQuestObjective(bot, discoveredPlan);
+    bool hasActiveObjective = hasCommittedPlan || hasAcceptedPlan || FindActiveQuestObjective(bot, discoveredPlan);
     if (hasCommittedPlan)
         discoveredPlan = committedPlan;
+    else if (hasAcceptedPlan)
+        discoveredPlan = acceptedPlan;
     if (state.QuestWork.CooldownUntilMs > NowMs())
         hasActiveObjective = false;
 
@@ -2984,7 +3218,7 @@ BotWorldPopulationMgr::QuestActionResult BotWorldPopulationMgr::TryQuesting(Worl
     }
 
     uint32 questId = 0;
-    WorldObject* turnIn = !hasActiveObjective ? SelectQuestGiver(bot, true, &questId) : nullptr;
+    WorldObject* turnIn = !hasActiveObjective ? SelectQuestGiver(bot, true, &questId, &state) : nullptr;
     if (turnIn)
     {
         Quest const* quest = sObjectMgr->GetQuestTemplate(questId);
@@ -3067,7 +3301,7 @@ BotWorldPopulationMgr::QuestActionResult BotWorldPopulationMgr::TryQuesting(Worl
 
             if (!abilityTarget)
             {
-                MoveToWanderPoint(bot, state);
+                MoveToObjectiveSearchPoint(state, bot, &plan);
                 result.Action = "search_ability_target";
                 SetQuestWorkPhase(state, "search_objective");
                 RecordQuestEvent(state, bot, "objective_search", plan.QuestId, nullptr, "ability_target_not_found", BuildRawJson(bot, nullptr).c_str(), BuildSemanticJson(bot, nullptr, "quest_objective_search", &power, stage, activity).c_str(), plan.CurrentCount, plan.ItemId);
@@ -3157,7 +3391,7 @@ BotWorldPopulationMgr::QuestActionResult BotWorldPopulationMgr::TryQuesting(Worl
         result.Action = plan.IsItemObjective ? "collect_quest_item" : "kill_quest_mob";
         if (!objectiveTarget)
         {
-            MoveToWanderPoint(bot, state);
+            MoveToObjectiveSearchPoint(state, bot, &plan);
             result.Action = plan.IsItemObjective ? "search_collect_mob" : "search_quest_mob";
             SetQuestWorkPhase(state, plan.IsItemObjective ? "search_collect_mob" : "search_objective");
             std::string raw = BuildRawJson(bot, nullptr);
@@ -3185,7 +3419,24 @@ BotWorldPopulationMgr::QuestActionResult BotWorldPopulationMgr::TryQuesting(Worl
         return result;
     }
 
-    WorldObject* giver = !hasActiveObjective ? SelectQuestGiver(bot, false, &questId) : nullptr;
+    if (!hasActiveObjective && (state.RecentlyAcceptedQuestUntilMs > NowMs() || state.ObjectiveSearchUntilMs > NowMs()))
+    {
+        result.Handled = true;
+        result.Situation = "quest_objective_search";
+        result.Action = state.LastObjectiveNotFoundReason == "unsupported_after_accept" ? "leave_unsupported_quest_giver" : "search_objective";
+        result.QuestId = state.NewlyAcceptedQuestId;
+        SetQuestWorkPhase(state, "search_objective");
+        MoveToObjectiveSearchPoint(state, bot, nullptr);
+
+        std::string raw = BuildRawJson(bot, nullptr);
+        std::string semantic = BuildSemanticJson(bot, nullptr, "quest_objective_search", &power, stage, activity);
+        RecordQuestEvent(state, bot, "objective_search", state.NewlyAcceptedQuestId, nullptr,
+            state.LastObjectiveNotFoundReason.empty() ? "recently_accepted_waiting_for_objective" : state.LastObjectiveNotFoundReason.c_str(),
+            raw.c_str(), semantic.c_str());
+        return result;
+    }
+
+    WorldObject* giver = !hasActiveObjective ? SelectQuestGiver(bot, false, &questId, &state) : nullptr;
     if (giver)
     {
         Quest const* quest = sObjectMgr->GetQuestTemplate(questId);
@@ -3202,16 +3453,61 @@ BotWorldPopulationMgr::QuestActionResult BotWorldPopulationMgr::TryQuesting(Worl
             return result;
         }
 
+        std::ostringstream attemptKey;
+        attemptKey << giver->GetGUID().GetCounter() << ":" << questId;
+        ++state.QuestPickupAttemptCount[attemptKey.str()];
+
         bot->AddQuestAndCheckCompletion(quest, giver);
-        ++_metrics.QuestsAccepted;
-        state.LastQuestId = questId;
-        state.QuestStartTime = _elapsedMs / 1000;
-        state.QuestStartDeaths = _metrics.Deaths;
         std::string raw = BuildRawJson(bot, nullptr);
         std::string semantic = BuildSemanticJson(bot, nullptr, "quest_accepted", &power, stage, activity);
         RecordQuestEvent(state, bot, "quest_seen", questId, nullptr, "ok", raw.c_str(), semantic.c_str());
+
+        QuestStatus status = bot->GetQuestStatus(questId);
+        auto questItr = bot->getQuestStatusMap().find(questId);
+        bool accepted = questItr != bot->getQuestStatusMap().end() && (status == QUEST_STATUS_INCOMPLETE || status == QUEST_STATUS_COMPLETE);
+        uint64 cooldownMs = NowMs() + urand(15000, 30000);
+        state.QuestGiverCooldownUntilMs[giver->GetGUID().GetCounter()] = cooldownMs;
+        if (!accepted)
+        {
+            state.QuestCooldownUntilMs[questId] = NowMs() + 60000;
+            state.LastObjectiveNotFoundReason = "quest_log_entry_missing";
+            state.QuestWork.FailedReason = "quest_accept_failed";
+            result.Failure = true;
+            RecordQuestEvent(state, bot, "quest_accept_failed", questId, nullptr, "quest_log_entry_missing", raw.c_str(), semantic.c_str());
+            MoveToObjectiveSearchPoint(state, bot, nullptr, giver);
+            result.Action = "leave_quest_giver";
+            return result;
+        }
+
+        ++_metrics.QuestsAccepted;
+        state.LastQuestId = questId;
+        state.NewlyAcceptedQuestId = questId;
+        state.RecentlyAcceptedQuestUntilMs = NowMs() + 30000;
+        state.QuestStartTime = _elapsedMs / 1000;
+        state.QuestStartDeaths = _metrics.Deaths;
         RecordQuestEvent(state, bot, "quest_accepted", questId, nullptr, "ok", raw.c_str(), semantic.c_str(), _metrics.QuestsAccepted);
         result.Action = "accept_quest";
+
+        QuestObjectivePlan acceptedObjective;
+        if (FindQuestObjective(bot, questId, acceptedObjective))
+        {
+            SetQuestWorkFromPlan(state, acceptedObjective);
+            state.QuestWork.SelectedGiverGuid = giver->GetGUID();
+            SetQuestWorkPhase(state, "choose_objective");
+            state.LastObjectiveNotFoundReason.clear();
+            RecordQuestEvent(state, bot, "quest_work_started", questId, nullptr, ToString(acceptedObjective.ObjectiveType), raw.c_str(), semantic.c_str(), acceptedObjective.CurrentCount, acceptedObjective.ItemId);
+            MoveToObjectiveSearchPoint(state, bot, &acceptedObjective, giver);
+            result.Action = "choose_objective";
+        }
+        else
+        {
+            state.QuestCooldownUntilMs[questId] = NowMs() + 120000;
+            state.LastObjectiveNotFoundReason = "unsupported_after_accept";
+            state.QuestWork.FailedReason = "unsupported_after_accept";
+            RecordQuestEvent(state, bot, "quest_unsupported_after_accept", questId, nullptr, "no_supported_objective", raw.c_str(), semantic.c_str());
+            MoveToObjectiveSearchPoint(state, bot, nullptr, giver);
+            result.Action = "leave_unsupported_quest_giver";
+        }
         return result;
     }
 
@@ -3797,6 +4093,74 @@ BotWorldPopulationMgr::RaidGearTargetPlan BotWorldPopulationMgr::BuildRaidGearTa
     else
         plan.RecommendedActivity = "heroic_raid";
     return plan;
+}
+
+bool BotWorldPopulationMgr::FindQuestObjective(Player* bot, uint32 questId, QuestObjectivePlan& plan) const
+{
+    if (!bot || !questId)
+        return false;
+
+    auto questStatus = bot->getQuestStatusMap().find(questId);
+    if (questStatus == bot->getQuestStatusMap().end() || questStatus->second.Status != QUEST_STATUS_INCOMPLETE)
+        return false;
+
+    Quest const* quest = sObjectMgr->GetQuestTemplate(questId);
+    if (!quest || !HasSimpleSupportedObjective(quest))
+        return false;
+
+    for (uint8 i = 0; i < QUEST_OBJECTIVES_COUNT; ++i)
+    {
+        int32 required = quest->RequiredNpcOrGo[i];
+        uint32 requiredCount = quest->RequiredNpcOrGoCount[i];
+        if (!required || !requiredCount || questStatus->second.CreatureOrGOCount[i] >= requiredCount)
+            continue;
+
+        plan = QuestObjectivePlan();
+        plan.QuestId = quest->GetQuestId();
+        plan.RequiredEntry = required;
+        plan.RequiredCount = requiredCount;
+        plan.CurrentCount = questStatus->second.CreatureOrGOCount[i];
+        plan.IsGameObject = required < 0;
+        plan.ObjectiveIndex = i;
+        if (plan.IsGameObject)
+            plan.ObjectiveType = QuestObjectiveType::InteractGameObject;
+        else
+        {
+            CreatureTemplate const* tmpl = sObjectMgr->GetCreatureTemplate(uint32(required));
+            bool configuredDummy = false;
+            bool configuredDummyAllowed = false;
+            if (tmpl)
+                configuredDummy = IsDummyEntryConfigured(tmpl->Entry, &configuredDummyAllowed);
+            bool dummyRequired = tmpl && (ContainsInsensitive(tmpl->Name, "training dummy") || (configuredDummy && configuredDummyAllowed));
+            if (dummyRequired && QuestTextSuggestsAbilityObjective(quest))
+            {
+                plan.ObjectiveType = QuestObjectiveType::UseAbilityOnDummy;
+                plan.RequiresTrainingDummy = true;
+                plan.RequiredSpellId = SelectQuestAbilitySpell(bot, quest, plan);
+            }
+        }
+        return true;
+    }
+
+    for (uint8 i = 0; i < QUEST_ITEM_OBJECTIVES_COUNT; ++i)
+    {
+        uint32 requiredItem = quest->RequiredItemId[i];
+        uint32 requiredCount = quest->RequiredItemCount[i];
+        if (!requiredItem || !requiredCount || questStatus->second.ItemCount[i] >= requiredCount)
+            continue;
+
+        plan = QuestObjectivePlan();
+        plan.QuestId = quest->GetQuestId();
+        plan.RequiredCount = requiredCount;
+        plan.CurrentCount = questStatus->second.ItemCount[i];
+        plan.IsItemObjective = true;
+        plan.ItemId = requiredItem;
+        plan.ObjectiveIndex = i;
+        plan.ObjectiveType = QuestTextSuggestsAbilityObjective(quest) ? QuestObjectiveType::UseItemOnTarget : QuestObjectiveType::CollectItem;
+        return true;
+    }
+
+    return false;
 }
 
 BotWorldPopulationMgr::HeroicRaidProgression BotWorldPopulationMgr::BuildHeroicRaidProgression(WorldBotState const& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage) const
@@ -6061,6 +6425,9 @@ std::string BotWorldPopulationMgr::BuildConfigJson() const
          << ",\"min_level\":" << uint32(_config.MinLevel)
          << ",\"max_level\":" << uint32(_config.MaxLevel)
          << ",\"allow_combat\":" << (_config.AllowCombat ? "true" : "false")
+         << ",\"allow_grinding\":" << (_config.AllowGrinding ? "true" : "false")
+         << ",\"quest_first\":" << (_config.QuestFirst ? "true" : "false")
+         << ",\"grind_only_when_no_quest_available\":" << (_config.GrindOnlyWhenNoQuestAvailable ? "true" : "false")
          << ",\"progression_enabled\":" << (_config.EnableProgression ? "true" : "false")
          << ",\"allow_questing\":" << (_config.AllowQuesting ? "true" : "false")
          << ",\"allow_dungeons\":" << (_config.AllowDungeons ? "true" : "false")
@@ -6489,6 +6856,8 @@ std::string BotWorldPopulationMgr::GetBotDebugJson(std::string const& selector) 
     QuestObjectivePlan plan;
     bool hasPlan = FindActiveQuestObjective(bot, plan);
     bool dummyAllowed = hasPlan && IsTrainingDummyAllowedForQuest(plan, target);
+    char const* progressionReject = nullptr;
+    bool targetProgressionRelevant = target && IsProgressionCombatTarget(bot, target, &progressionReject);
     bool targetMatchesObjective = false;
     std::string targetName;
     if (Creature const* creature = target ? target->ToCreature() : nullptr)
@@ -6506,8 +6875,13 @@ std::string BotWorldPopulationMgr::GetBotDebugJson(std::string const& selector) 
          << ",\"race_start_fallback_used\":" << (selected->RaceStartFallbackUsed ? "true" : "false")
          << ",\"saved_or_race_start_status\":\"" << JsonEscape(selected->RaceStartFallbackUsed ? "race_start" : selected->SpawnSource) << "\""
          << ",\"current_quest_state\":\"" << JsonEscape(selected->CurrentQuestState) << "\""
+         << ",\"chosen_activity\":\"" << JsonEscape(selected->ActivityType) << "\""
+         << ",\"allow_grinding\":" << (_config.AllowGrinding ? "true" : "false")
+         << ",\"quest_first\":" << (_config.QuestFirst ? "true" : "false")
+         << ",\"grind_only_when_no_quest_available\":" << (_config.GrindOnlyWhenNoQuestAvailable ? "true" : "false")
          << ",\"quest_phase\":\"" << JsonEscape(selected->QuestWork.Phase) << "\""
          << ",\"active_quest_id\":" << selected->QuestWork.ActiveQuestId
+         << ",\"newly_accepted_quest_id\":" << selected->NewlyAcceptedQuestId
          << ",\"objective_index\":" << selected->QuestWork.ObjectiveIndex
          << ",\"objective_type\":\"" << JsonEscape(selected->QuestWork.ObjectiveType != "none" ? selected->QuestWork.ObjectiveType : (hasPlan ? ToString(plan.ObjectiveType) : selected->CurrentObjectiveType.c_str())) << "\""
          << ",\"required_count\":" << selected->QuestWork.RequiredCount
@@ -6515,10 +6889,13 @@ std::string BotWorldPopulationMgr::GetBotDebugJson(std::string const& selector) 
          << ",\"selected_target_guid\":" << selected->QuestWork.SelectedTargetGuid.GetCounter()
          << ",\"selected_object_guid\":" << selected->QuestWork.SelectedObjectGuid.GetCounter()
          << ",\"selected_giver_guid\":" << selected->QuestWork.SelectedGiverGuid.GetCounter()
+         << ",\"selected_giver_cooldown_until_ms\":" << (selected->QuestWork.SelectedGiverGuid.IsEmpty() || selected->QuestGiverCooldownUntilMs.find(selected->QuestWork.SelectedGiverGuid.GetCounter()) == selected->QuestGiverCooldownUntilMs.end() ? 0 : selected->QuestGiverCooldownUntilMs.find(selected->QuestWork.SelectedGiverGuid.GetCounter())->second)
          << ",\"target_guid\":" << (target ? target->GetGUID().GetCounter() : 0)
          << ",\"target_entry\":" << (target && target->ToCreature() ? target->ToCreature()->GetEntry() : 0)
          << ",\"target_name\":\"" << JsonEscape(targetName) << "\""
          << ",\"target_matches_objective\":" << (targetMatchesObjective ? "true" : "false")
+         << ",\"target_progression_relevant\":" << (targetProgressionRelevant ? "true" : "false")
+         << ",\"target_progression_reject_reason\":\"" << JsonEscape(progressionReject ? progressionReject : "") << "\""
          << ",\"target_training_dummy\":" << (targetDummy ? "true" : "false")
          << ",\"dummy_allowed_by_active_quest\":" << (dummyAllowed ? "true" : "false")
          << ",\"required_spell\":" << (selected->QuestWork.RequiredSpell ? selected->QuestWork.RequiredSpell : (hasPlan ? plan.RequiredSpellId : selected->RequiredSpellId))
@@ -6534,6 +6911,9 @@ std::string BotWorldPopulationMgr::GetBotDebugJson(std::string const& selector) 
          << ",\"quest_work_progress_before\":" << selected->QuestWork.ProgressBefore
          << ",\"quest_work_progress_after\":" << selected->QuestWork.ProgressAfter
          << ",\"last_no_progress_reason\":\"" << JsonEscape(selected->LastNoProgressReason) << "\""
+         << ",\"last_objective_not_found_reason\":\"" << JsonEscape(selected->LastObjectiveNotFoundReason) << "\""
+         << ",\"last_grinding_allowed_reason\":\"" << JsonEscape(selected->LastGrindingAllowedReason) << "\""
+         << ",\"current_quest_supported\":" << (hasPlan ? "true" : "false")
          << ",\"cooldown_until_ms\":" << selected->QuestWork.CooldownUntilMs
          << ",\"failure_reason\":\"" << JsonEscape(selected->QuestWork.FailedReason) << "\""
          << ",\"last_rejected_target_reason\":\"" << JsonEscape(selected->LastRejectedTargetReason) << "\""

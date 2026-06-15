@@ -3544,6 +3544,9 @@ BotWorld.Radius = 80.0
 BotWorld.MinLevel = 1
 BotWorld.MaxLevel = 85
 BotWorld.AllowCombat = 1
+BotWorld.AllowGrinding = 1
+BotWorld.QuestFirst = 0
+BotWorld.GrindOnlyWhenNoQuestAvailable = 0
 
 BotExperiment.Enable = 1
 BotExperiment.RecordDecisions = 1

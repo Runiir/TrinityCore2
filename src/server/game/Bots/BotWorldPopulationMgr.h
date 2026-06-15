@@ -36,6 +36,9 @@ struct BotWorldExperimentConfig
     float CenterZ = 56.0f;
     float Radius = 80.0f;
     bool AllowCombat = true;
+    bool AllowGrinding = true;
+    bool QuestFirst = false;
+    bool GrindOnlyWhenNoQuestAvailable = false;
     bool AllowQuesting = true;
     bool AllowDungeons = false;
     bool AllowRaids = false;
@@ -258,6 +261,17 @@ private:
         uint64 NextLootAttemptMs = 0;
         std::string LastNoProgressReason;
         std::map<std::string, uint64> NoProgressCooldownUntilMs;
+        std::map<uint64, uint64> QuestGiverCooldownUntilMs;
+        std::map<uint32, uint64> QuestCooldownUntilMs;
+        std::map<std::string, uint32> QuestPickupAttemptCount;
+        uint32 NewlyAcceptedQuestId = 0;
+        uint64 RecentlyAcceptedQuestUntilMs = 0;
+        uint64 ObjectiveSearchUntilMs = 0;
+        float ObjectiveSearchX = 0.0f;
+        float ObjectiveSearchY = 0.0f;
+        float ObjectiveSearchZ = 0.0f;
+        std::string LastObjectiveNotFoundReason;
+        std::string LastGrindingAllowedReason;
 
         struct BotQuestWorkState
         {
@@ -580,16 +594,22 @@ private:
     bool TryConfiguredCenterDeathFallback(Player* bot, std::string& result) const;
     Player* GetBot(WorldBotState const& state) const;
     uint32 SelectPoolCandidateGuid() const;
-    Unit* SelectSafeTarget(Player* bot) const;
+    Unit* SelectSafeTarget(WorldBotState& state, Player* bot);
     Unit* SelectQuestObjectiveTarget(Player* bot, QuestObjectivePlan const& plan) const;
     Unit* SelectQuestAbilityObjectiveTarget(Player* bot, QuestObjectivePlan const& plan, WorldBotState const& state) const;
-    WorldObject* SelectQuestGiver(Player* bot, bool completeOnly, uint32* questId) const;
+    WorldObject* SelectQuestGiver(Player* bot, bool completeOnly, uint32* questId, WorldBotState const* state = nullptr) const;
     WorldObject* SelectQuestGameObject(Player* bot, QuestObjectivePlan const& plan) const;
     bool FindActiveQuestObjective(Player* bot, QuestObjectivePlan& plan) const;
+    bool FindQuestObjective(Player* bot, uint32 questId, QuestObjectivePlan& plan) const;
     bool GetQuestObjectivePlan(Player* bot, uint32 questId, uint32 objectiveIndex, QuestObjectiveType type, QuestObjectivePlan& plan) const;
     void SetQuestWorkPhase(WorldBotState& state, char const* phase);
     void SetQuestWorkFromPlan(WorldBotState& state, QuestObjectivePlan const& plan);
     void ResetQuestWork(WorldBotState& state);
+    bool IsProgressionCombatTarget(Player* bot, Unit* target, char const** rejectReason = nullptr) const;
+    bool IsQuestRelevantTarget(Player* bot, Unit* target) const;
+    bool HasNearbySupportedQuestGiver(Player* bot, WorldBotState const& state) const;
+    bool IsGenericGrindingAllowed(WorldBotState& state, Player* bot, BotProgressionActivity activity, bool hasActiveQuestObjective);
+    void MoveToObjectiveSearchPoint(WorldBotState& state, Player* bot, QuestObjectivePlan const* plan, WorldObject const* avoidObject = nullptr);
     bool VerifyQuestObjectiveProgress(WorldBotState& state, Player* bot, QuestObjectivePlan const& plan, Unit const* target, uint32 before, char const* reason, char const* rawJson, char const* semanticJson);
     bool IsTrainingDummy(Unit const* unit) const;
     bool IsTrainingDummyAllowedForQuest(QuestObjectivePlan const& plan, Unit const* target) const;
