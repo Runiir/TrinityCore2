@@ -1,4 +1,5 @@
 #include "Bots/BotController.h"
+#include "Bots/BotDatasetEvent.h"
 #include "Bots/BotMgr.h"
 #include "Config.h"
 #include "GameTime.h"
@@ -22,6 +23,7 @@
 #include "Unit.h"
 #include <algorithm>
 #include <boost/filesystem.hpp>
+#include <chrono>
 #include <cmath>
 #include <fstream>
 #include <iomanip>
@@ -54,6 +56,23 @@ std::string JsonEscape(std::string const& value)
     }
 
     return escaped.str();
+}
+
+uint64 PlayerBotNowMs()
+{
+    return uint64(std::chrono::duration_cast<std::chrono::milliseconds>(GameTime::GetGameTimeSystemPoint().time_since_epoch()).count());
+}
+
+uint64 PlayerBotRunId()
+{
+    int32 runId = sConfigMgr->GetIntDefault("PlayerBot.RunId", 1);
+    return runId > 0 ? uint64(runId) : 0;
+}
+
+std::string PlayerBotExperimentId()
+{
+    std::string experimentId = sConfigMgr->GetStringDefault("PlayerBot.ExperimentId", "playerbot");
+    return experimentId.empty() ? "playerbot" : experimentId;
 }
 }
 
@@ -599,62 +618,51 @@ void BotController::RecordFrame(HealerFrame const& frame, HealerDecision const& 
     if (!out)
         return;
 
-    Group* recordGroup = owner ? owner->GetGroup() : nullptr;
-    std::string experimentId = sConfigMgr->GetStringDefault("PlayerBot.ExperimentId", "");
+    uint64 seq = ++_sequence;
+    std::ostringstream observation;
+    observation << "{\"owner_guid\":" << frame.OwnerGuid.GetCounter()
+                << ",\"map_id\":" << frame.MapId
+                << ",\"instance_id\":" << (bot ? bot->GetInstanceId() : 0)
+                << ",\"bot_hp_pct\":" << frame.BotHealthPct
+                << ",\"bot_mana_pct\":" << frame.BotManaPct
+                << ",\"bot_cast_spell_id\":" << frame.BotCastSpellId
+                << ",\"bot_channel_spell_id\":" << frame.BotChannelSpellId
+                << ",\"bot_aura_count\":" << frame.BotAuraCount
+                << ",\"bot_debuff_count\":" << frame.BotDebuffCount
+                << ",\"recent_damage_taken\":" << frame.RecentDamageTaken
+                << ",\"recent_healing_done\":" << frame.RecentHealingDone
+                << ",\"recent_healing_received\":" << frame.RecentHealingReceived
+                << ",\"party_size\":" << frame.Party.size() << "}";
 
-    out << "{\"seq\":" << ++_sequence
-        << ",\"time\":" << GameTime::GetGameTime()
-        << ",\"experiment_id\":\"" << JsonEscape(experimentId)
-        << "\",\"party_guid\":\"" << (recordGroup ? recordGroup->GetGUID().ToString() : "")
-        << "\",\"owner\":\"" << frame.OwnerGuid.ToString()
-        << "\",\"owner_name\":\"" << JsonEscape(owner ? owner->GetName() : "")
-        << "\",\"bot\":\"" << frame.BotGuid.ToString()
-        << "\",\"bot_name\":\"" << JsonEscape(bot ? bot->GetName() : "")
-        << "\",\"role\":\"" << ToString(_role)
-        << "\",\"map\":" << frame.MapId
-        << ",\"instance\":" << (bot ? bot->GetInstanceId() : 0)
-        << ",\"bot_hp\":" << frame.BotHealthPct
-        << ",\"bot_mana\":" << frame.BotManaPct
-        << ",\"bot_cast\":" << frame.BotCastSpellId
-        << ",\"bot_channel\":" << frame.BotChannelSpellId
-        << ",\"bot_auras\":" << frame.BotAuraCount
-        << ",\"bot_debuffs\":" << frame.BotDebuffCount
-        << ",\"recent_damage_taken\":" << frame.RecentDamageTaken
-        << ",\"recent_healing_done\":" << frame.RecentHealingDone
-        << ",\"recent_healing_received\":" << frame.RecentHealingReceived
-        << ",\"mode\":\"" << ToString(decision.Mode)
-        << "\",\"intent\":\"" << ToString(decision.Intent)
-        << "\",\"target\":\"" << decision.TargetGuid.ToString()
-        << "\",\"result\":\"" << ToString(result)
-        << "\",\"spell\":" << (action ? action->SpellId : 0)
-        << ",\"action\":\"" << JsonEscape(action ? action->DebugName : "")
-        << "\""
-        << ",\"party\":[";
+    std::ostringstream chosen;
+    chosen << "{\"mode\":\"" << JsonEscape(ToString(decision.Mode))
+           << "\",\"intent\":\"" << JsonEscape(ToString(decision.Intent))
+           << "\",\"target_guid\":" << decision.TargetGuid.GetCounter()
+           << ",\"spell_id\":" << (action ? action->SpellId : 0)
+           << ",\"action\":\"" << JsonEscape(action ? action->DebugName : "wait") << "\"}";
 
-    for (std::size_t i = 0; i < frame.Party.size(); ++i)
-    {
-        HealerUnitFrame const& unit = frame.Party[i];
-        if (i)
-            out << ',';
-        out << "{\"guid\":\"" << unit.Guid.ToString()
-            << "\",\"name\":\"" << JsonEscape(unit.Name)
-            << "\",\"role\":" << uint32(unit.Role)
-            << ",\"subgroup\":" << uint32(unit.Subgroup)
-            << ",\"hp\":" << uint32(unit.HealthPct)
-            << ",\"dist\":" << unit.Distance
-            << ",\"cast\":" << unit.CastSpellId
-            << ",\"channel\":" << unit.ChannelSpellId
-            << ",\"auras\":" << unit.AuraCount
-            << ",\"debuffs\":" << unit.DebuffCount
-            << ",\"recent_damage\":" << unit.RecentDamageTaken
-            << ",\"recent_heal\":" << unit.RecentHealingReceived
-            << ",\"alive\":" << (unit.Alive ? "true" : "false")
-            << ",\"los\":" << (unit.LineOfSight ? "true" : "false")
-            << ",\"owner\":" << (unit.IsOwner ? "true" : "false")
-            << "}";
-    }
-
-    out << "]}\n";
+    BotDatasetEvent dataset;
+    dataset.run_id = PlayerBotRunId();
+    dataset.experiment_id = PlayerBotExperimentId();
+    dataset.episode_id = dataset.run_id;
+    dataset.bot_guid = frame.BotGuid;
+    dataset.bot_role = ToString(_role);
+    dataset.bot_level = bot ? uint32(bot->getLevel()) : 0;
+    dataset.policy_source = BotPolicySource::Rule;
+    dataset.policy_version = "playerbot_rule_v1";
+    dataset.timestamp_ms = PlayerBotNowMs();
+    dataset.tick_id = seq;
+    dataset.domain = "party_healing";
+    dataset.situation = ToString(decision.Intent);
+    dataset.observation_json = observation.str();
+    dataset.semantic_json = "{\"role\":\"" + std::string(ToString(_role)) + "\"}";
+    dataset.valid_action_mask_json = "{\"healer_actions\":true}";
+    dataset.chosen_action_json = chosen.str();
+    dataset.action_result = ToString(result);
+    dataset.outcome_json = "{\"result\":\"" + std::string(ToString(result)) + "\"}";
+    dataset.quality_flags_json = "{\"source\":\"playerbot_jsonl\"}";
+    if (dataset.Validate())
+        out << dataset.ToJson() << "\n";
 }
 
 void BotController::RecordProfessionFrame(BotProfessionFrame const& frame, Player* owner, Player* bot) const
@@ -668,63 +676,43 @@ void BotController::RecordProfessionFrame(BotProfessionFrame const& frame, Playe
     if (!out)
         return;
 
-    std::string experimentId = sConfigMgr->GetStringDefault("PlayerBot.ExperimentId", "");
-    out << "{\"domain\":\"profession\""
-        << ",\"subdomain\":\"crafting\""
-        << ",\"trigger\":\"profession_tick\""
-        << ",\"seq\":" << ++_sequence
-        << ",\"time\":" << GameTime::GetGameTime()
-        << ",\"experiment_id\":\"" << JsonEscape(experimentId)
-        << "\",\"actor\":{\"guid\":" << frame.BotGuid.GetCounter()
-        << ",\"class_id\":" << uint32(frame.ClassId)
-        << ",\"spec_id\":" << frame.SpecId << "}"
-        << ",\"task\":{\"type\":\"observe_profession_state\""
-        << ",\"profession_id\":\"" << JsonEscape(frame.Profession.ProfessionId)
-        << "\",\"skill_current\":" << frame.Profession.SkillCurrent
-        << ",\"skill_target\":" << frame.Profession.SkillTarget << "}"
-        << ",\"profession_state\":{\"profession_id\":\"" << JsonEscape(frame.Profession.ProfessionId)
-        << "\",\"skill_id\":" << frame.Profession.SkillId
-        << ",\"skill_current\":" << frame.Profession.SkillCurrent
-        << ",\"skill_target\":" << frame.Profession.SkillTarget
-        << ",\"known_recipes\":[";
+    uint64 seq = ++_sequence;
+    std::ostringstream observation;
+    observation << "{\"owner_guid\":" << frame.OwnerGuid.GetCounter()
+                << ",\"class_id\":" << uint32(frame.ClassId)
+                << ",\"spec_id\":" << frame.SpecId
+                << ",\"profession_id\":\"" << JsonEscape(frame.Profession.ProfessionId)
+                << "\",\"skill_id\":" << frame.Profession.SkillId
+                << ",\"skill_current\":" << frame.Profession.SkillCurrent
+                << ",\"skill_target\":" << frame.Profession.SkillTarget
+                << ",\"known_recipe_count\":" << frame.Profession.KnownRecipes.size()
+                << ",\"trainable_recipe_count\":" << frame.Profession.TrainableRecipes.size()
+                << ",\"bag_free_slots\":" << frame.Profession.BagFreeSlots
+                << ",\"gold\":" << frame.Inventory.Gold
+                << ",\"material_count\":" << frame.Inventory.Materials.size() << "}";
 
-    for (std::size_t i = 0; i < frame.Profession.KnownRecipes.size(); ++i)
-    {
-        if (i)
-            out << ',';
-        out << frame.Profession.KnownRecipes[i];
-    }
-
-    out << "],\"trainable_recipes\":[";
-    for (std::size_t i = 0; i < frame.Profession.TrainableRecipes.size(); ++i)
-    {
-        if (i)
-            out << ',';
-        out << frame.Profession.TrainableRecipes[i];
-    }
-
-    out << "],\"bag_free_slots\":" << frame.Profession.BagFreeSlots << "}"
-        << ",\"inventory_state\":{\"gold\":" << frame.Inventory.Gold
-        << ",\"materials\":[";
-
-    for (std::size_t i = 0; i < frame.Inventory.Materials.size(); ++i)
-    {
-        BotInventoryMaterial const& material = frame.Inventory.Materials[i];
-        if (i)
-            out << ',';
-        out << "{\"item_id\":" << material.ItemId
-            << ",\"count\":" << material.Count << "}";
-    }
-
-    out << "]}"
-        << ",\"state\":{\"bag_free_slots\":" << frame.Profession.BagFreeSlots
-        << ",\"materials_available\":" << (frame.Inventory.Materials.empty() ? "false" : "true")
-        << ",\"known_recipe_count\":" << frame.Profession.KnownRecipes.size()
-        << ",\"trainable_recipe_count\":" << frame.Profession.TrainableRecipes.size() << "}"
-        << ",\"policy_output\":{\"mode\":\"observe\",\"intent\":\"wait\"}"
-        << ",\"resolved_action\":{\"type\":\"wait\",\"valid\":true}"
-        << ",\"outcome\":{\"skill_delta\":0,\"materials_spent_value\":0,\"time_spent_sec\":0}"
-        << "}\n";
+    BotDatasetEvent dataset;
+    dataset.run_id = PlayerBotRunId();
+    dataset.experiment_id = PlayerBotExperimentId();
+    dataset.episode_id = dataset.run_id;
+    dataset.bot_guid = frame.BotGuid;
+    dataset.bot_role = ToString(_role);
+    dataset.bot_level = bot ? uint32(bot->getLevel()) : 0;
+    dataset.policy_source = BotPolicySource::Rule;
+    dataset.policy_version = "playerbot_rule_v1";
+    dataset.timestamp_ms = PlayerBotNowMs();
+    dataset.tick_id = seq;
+    dataset.domain = "profession";
+    dataset.situation = "profession_tick";
+    dataset.observation_json = observation.str();
+    dataset.semantic_json = "{\"profession_id\":\"" + JsonEscape(frame.Profession.ProfessionId) + "\"}";
+    dataset.valid_action_mask_json = "{\"wait\":true}";
+    dataset.chosen_action_json = "{\"type\":\"wait\",\"valid\":true}";
+    dataset.action_result = "observed";
+    dataset.outcome_json = "{\"skill_delta\":0,\"materials_spent_value\":0,\"time_spent_sec\":0}";
+    dataset.quality_flags_json = "{\"source\":\"playerbot_jsonl\"}";
+    if (dataset.Validate())
+        out << dataset.ToJson() << "\n";
 }
 
 void BotController::RecordCombatFrame(BotCombatState const& frame, BotCombatDecision const& decision, ResolvedCombatAction const& action, BotActionResult result, Player* owner, Player* bot) const
@@ -738,53 +726,54 @@ void BotController::RecordCombatFrame(BotCombatState const& frame, BotCombatDeci
     if (!out)
         return;
 
-    std::string experimentId = sConfigMgr->GetStringDefault("PlayerBot.ExperimentId", "");
-    out << "{\"domain\":\"combat\""
-        << ",\"subdomain\":\"solo_combat\""
-        << ",\"trigger\":\"gcd_ready\""
-        << ",\"seq\":" << ++_sequence
-        << ",\"time\":" << GameTime::GetGameTime()
-        << ",\"experiment_id\":\"" << JsonEscape(experimentId)
-        << "\",\"actor\":{\"guid\":" << (bot ? bot->GetGUID().GetCounter() : 0)
-        << ",\"class_id\":" << uint32(frame.ClassId)
-        << ",\"spec_id\":" << frame.SpecId
-        << ",\"role\":\"solo\""
-        << ",\"class_spec_tag\":\"" << ToString(_role)
-        << "\",\"archetype\":\"" << ToString(GetSoloCombatArchetype(_role)) << "\"}"
-        << ",\"state\":{\"self\":{\"hp_pct\":" << frame.SelfHpPct
-        << ",\"primary_power_pct\":" << frame.SelfPowerPct
-        << ",\"class_id\":" << uint32(frame.ClassId)
-        << ",\"spec_id\":" << frame.SpecId
-        << ",\"moving\":" << (frame.Moving ? "true" : "false")
-        << ",\"casting\":" << (frame.Casting ? "true" : "false")
-        << ",\"gcd_ready\":" << (frame.GcdReady ? "true" : "false")
-        << ",\"active_aura_count\":" << frame.ActiveAuraCount << "}"
-        << ",\"target\":{\"guid\":" << frame.TargetGuid.GetCounter()
-        << ",\"entry_id\":" << frame.TargetEntry
-        << ",\"hp_pct\":" << frame.TargetHpPct
-        << ",\"distance\":" << frame.TargetDistance
-        << ",\"casting_spell_id\":" << frame.TargetCastingSpellId
-        << ",\"cast_remaining\":" << frame.TargetCastRemaining
-        << ",\"interruptible\":" << (frame.TargetInterruptible ? "true" : "false")
-        << ",\"dead\":" << (frame.TargetDead ? "true" : "false")
-        << ",\"lootable\":" << (frame.TargetLootable ? "true" : "false") << "}"
-        << ",\"environment\":{\"nearby_hostile_count\":" << frame.NearbyHostileCount
-        << ",\"elite_nearby\":" << (frame.EliteNearby ? "true" : "false")
-        << ",\"extra_pull_risk\":" << frame.ExtraPullRisk
-        << ",\"safe_position_available\":" << (frame.SafePositionAvailable ? "true" : "false") << "}}"
-        << ",\"valid_actions\":{\"intents\":[\"pull_target\",\"maintain_rotation\",\"interrupt\",\"use_defensive\",\"heal_self\",\"move_to_range\",\"loot\",\"recover\",\"wait\"]}"
-        << ",\"policy_output\":{\"mode\":\"" << JsonEscape(decision.Mode)
-        << "\",\"intent\":\"" << ToString(decision.Intent) << "\"}"
-        << ",\"resolved_action\":{\"type\":\"" << JsonEscape(action.Type)
-        << "\",\"spell_id\":" << action.SpellId
-        << ",\"target_guid\":" << action.TargetGuid.GetCounter()
-        << ",\"valid\":" << (action.Valid ? "true" : "false")
-        << ",\"result\":\"" << ToString(result) << "\"}"
-        << ",\"outcome\":{\"target_hp_delta_3s\":0"
-        << ",\"self_hp_delta_3s\":0"
-        << ",\"target_dead_10s\":" << (frame.TargetDead ? "true" : "false")
-        << ",\"loot_success\":" << (decision.Intent == BotCombatIntent::Loot && result == BotActionResult::Ok ? "true" : "false") << "}"
-        << "}\n";
+    uint64 seq = ++_sequence;
+    std::ostringstream observation;
+    observation << "{\"self\":{\"hp_pct\":" << frame.SelfHpPct
+                << ",\"power_pct\":" << frame.SelfPowerPct
+                << ",\"class_id\":" << uint32(frame.ClassId)
+                << ",\"spec_id\":" << frame.SpecId
+                << ",\"moving\":" << (frame.Moving ? "true" : "false")
+                << ",\"casting\":" << (frame.Casting ? "true" : "false")
+                << ",\"gcd_ready\":" << (frame.GcdReady ? "true" : "false") << "}"
+                << ",\"target\":{\"guid\":" << frame.TargetGuid.GetCounter()
+                << ",\"entry_id\":" << frame.TargetEntry
+                << ",\"hp_pct\":" << frame.TargetHpPct
+                << ",\"distance\":" << frame.TargetDistance
+                << ",\"interruptible\":" << (frame.TargetInterruptible ? "true" : "false")
+                << ",\"dead\":" << (frame.TargetDead ? "true" : "false")
+                << ",\"lootable\":" << (frame.TargetLootable ? "true" : "false") << "}"
+                << ",\"environment\":{\"nearby_hostile_count\":" << frame.NearbyHostileCount
+                << ",\"elite_nearby\":" << (frame.EliteNearby ? "true" : "false")
+                << ",\"extra_pull_risk\":" << frame.ExtraPullRisk << "}}";
+    std::ostringstream chosen;
+    chosen << "{\"type\":\"" << JsonEscape(action.Type)
+           << "\",\"spell_id\":" << action.SpellId
+           << ",\"target_guid\":" << action.TargetGuid.GetCounter()
+           << ",\"intent\":\"" << ToString(decision.Intent)
+           << "\",\"valid\":" << (action.Valid ? "true" : "false") << "}";
+
+    BotDatasetEvent dataset;
+    dataset.run_id = PlayerBotRunId();
+    dataset.experiment_id = PlayerBotExperimentId();
+    dataset.episode_id = dataset.run_id;
+    dataset.bot_guid = bot ? bot->GetGUID() : _botGuid;
+    dataset.bot_role = ToString(_role);
+    dataset.bot_level = bot ? uint32(bot->getLevel()) : 0;
+    dataset.policy_source = BotPolicySource::Rule;
+    dataset.policy_version = "playerbot_rule_v1";
+    dataset.timestamp_ms = PlayerBotNowMs();
+    dataset.tick_id = seq;
+    dataset.domain = "combat";
+    dataset.situation = ToString(decision.Intent);
+    dataset.observation_json = observation.str();
+    dataset.semantic_json = "{\"archetype\":\"" + std::string(ToString(GetSoloCombatArchetype(_role))) + "\"}";
+    dataset.valid_action_mask_json = "{\"intents\":[\"pull_target\",\"maintain_rotation\",\"interrupt\",\"use_defensive\",\"heal_self\",\"move_to_range\",\"loot\",\"recover\",\"wait\"]}";
+    dataset.chosen_action_json = chosen.str();
+    dataset.action_result = ToString(result);
+    dataset.outcome_json = "{\"target_dead_10s\":" + std::string(frame.TargetDead ? "true" : "false") + ",\"loot_success\":" + std::string(decision.Intent == BotCombatIntent::Loot && result == BotActionResult::Ok ? "true" : "false") + "}";
+    dataset.quality_flags_json = "{\"source\":\"playerbot_jsonl\"}";
+    if (dataset.Validate())
+        out << dataset.ToJson() << "\n";
 }
 
 void BotController::RecordMovementFrame(BotMovementFrame const& frame, char const* policyMode, char const* intent, char const* action, bool valid, Player* owner, Player* bot) const
@@ -798,41 +787,43 @@ void BotController::RecordMovementFrame(BotMovementFrame const& frame, char cons
     if (!out)
         return;
 
-    std::string experimentId = sConfigMgr->GetStringDefault("PlayerBot.ExperimentId", "");
     char const* resolvedAction = action && *action ? action : "wait";
-    out << "{\"domain\":\"movement\""
-        << ",\"subdomain\":\"follow\""
-        << ",\"trigger\":\"movement_tick\""
-        << ",\"seq\":" << ++_sequence
-        << ",\"time\":" << GameTime::GetGameTime()
-        << ",\"experiment_id\":\"" << JsonEscape(experimentId)
-        << "\",\"actor\":{\"guid\":" << (bot ? bot->GetGUID().GetCounter() : 0)
-        << ",\"is_bot\":true"
-        << ",\"role\":\"" << ToString(_role) << "\"}"
-        << ",\"task\":{\"task_type\":\"" << JsonEscape(policyMode ? policyMode : "follow")
-        << "\",\"leader_guid\":" << (owner ? owner->GetGUID().GetCounter() : 0) << "}"
-        << ",\"state\":{\"self\":{\"position\":[" << frame.X << "," << frame.Y << "," << frame.Z << "]"
-        << ",\"orientation\":" << frame.Orientation
-        << ",\"moving\":" << (frame.Moving ? "true" : "false")
-        << ",\"mounted\":" << (frame.Mounted ? "true" : "false")
-        << ",\"in_combat\":" << (frame.InCombat ? "true" : "false")
-        << ",\"hp_pct\":" << frame.HpPct
-        << ",\"distance_to_leader\":" << frame.DistanceToLeader
-        << ",\"distance_to_group_center\":" << frame.DistanceToGroupCenter
-        << ",\"line_of_sight_to_leader\":" << (frame.LineOfSightToLeader ? "true" : "false")
-        << ",\"on_transport\":" << (frame.OnTransport ? "true" : "false")
-        << ",\"indoors\":" << (frame.Indoors ? "true" : "false") << "}"
-        << ",\"navigation\":{\"current_path_length\":" << frame.CurrentPathLength
-        << ",\"path_available\":" << (frame.PathAvailable ? "true" : "false")
-        << ",\"stuck_score\":" << frame.StuckScore
-        << ",\"last_progress_time_ms\":" << frame.LastProgressTimeMs
-        << ",\"nearby_hazard\":" << (frame.NearbyHazard ? "true" : "false")
-        << ",\"safe_position_available\":" << (frame.SafePositionAvailable ? "true" : "false") << "}}"
-        << ",\"policy_output\":{\"mode\":\"" << JsonEscape(policyMode ? policyMode : "")
-        << "\",\"intent\":\"" << JsonEscape(intent ? intent : "") << "\"}"
-        << ",\"resolved_action\":{\"type\":\"" << JsonEscape(resolvedAction)
-        << "\",\"valid\":" << (valid ? "true" : "false") << "}"
-        << ",\"outcome\":{\"distance_to_leader_after_2s\":" << frame.DistanceToLeader
-        << ",\"stuck\":" << (frame.StuckScore >= 1.0f ? "true" : "false") << "}"
-        << "}\n";
+    uint64 seq = ++_sequence;
+    std::ostringstream observation;
+    observation << "{\"self\":{\"position\":[" << frame.X << "," << frame.Y << "," << frame.Z << "]"
+                << ",\"orientation\":" << frame.Orientation
+                << ",\"moving\":" << (frame.Moving ? "true" : "false")
+                << ",\"mounted\":" << (frame.Mounted ? "true" : "false")
+                << ",\"in_combat\":" << (frame.InCombat ? "true" : "false")
+                << ",\"hp_pct\":" << frame.HpPct
+                << ",\"distance_to_leader\":" << frame.DistanceToLeader
+                << ",\"distance_to_group_center\":" << frame.DistanceToGroupCenter
+                << ",\"line_of_sight_to_leader\":" << (frame.LineOfSightToLeader ? "true" : "false") << "}"
+                << ",\"navigation\":{\"current_path_length\":" << frame.CurrentPathLength
+                << ",\"path_available\":" << (frame.PathAvailable ? "true" : "false")
+                << ",\"stuck_score\":" << frame.StuckScore
+                << ",\"last_progress_time_ms\":" << frame.LastProgressTimeMs << "}}";
+
+    BotDatasetEvent dataset;
+    dataset.run_id = PlayerBotRunId();
+    dataset.experiment_id = PlayerBotExperimentId();
+    dataset.episode_id = dataset.run_id;
+    dataset.bot_guid = bot ? bot->GetGUID() : _botGuid;
+    dataset.bot_role = ToString(_role);
+    dataset.bot_level = bot ? uint32(bot->getLevel()) : 0;
+    dataset.policy_source = BotPolicySource::Rule;
+    dataset.policy_version = "playerbot_rule_v1";
+    dataset.timestamp_ms = PlayerBotNowMs();
+    dataset.tick_id = seq;
+    dataset.domain = "movement";
+    dataset.situation = intent && *intent ? intent : "movement_tick";
+    dataset.observation_json = observation.str();
+    dataset.semantic_json = "{\"policy_mode\":\"" + JsonEscape(policyMode ? policyMode : "follow") + "\"}";
+    dataset.valid_action_mask_json = "{\"movement_actions\":true}";
+    dataset.chosen_action_json = "{\"type\":\"" + JsonEscape(resolvedAction) + "\",\"valid\":" + std::string(valid ? "true" : "false") + "}";
+    dataset.action_result = valid ? "ok" : "invalid";
+    dataset.outcome_json = "{\"distance_to_leader_after_2s\":" + std::to_string(frame.DistanceToLeader) + ",\"stuck\":" + std::string(frame.StuckScore >= 1.0f ? "true" : "false") + "}";
+    dataset.quality_flags_json = "{\"source\":\"playerbot_jsonl\"}";
+    if (dataset.Validate())
+        out << dataset.ToJson() << "\n";
 }

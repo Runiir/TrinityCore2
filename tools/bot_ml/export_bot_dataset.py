@@ -48,6 +48,24 @@ def export_table(conn, table: str, run_ids: list[int] | None) -> list[dict]:
         return list(cursor.fetchall())
 
 
+def canonical_dataset_events(rows_by_table: dict[str, list[dict]]) -> list[dict]:
+    events: list[dict] = []
+    for table, rows in rows_by_table.items():
+        for row in rows:
+            payload = row.get("canonical_event_json")
+            if not payload:
+                continue
+            try:
+                event = json.loads(payload) if isinstance(payload, str) else payload
+            except Exception:
+                continue
+            if isinstance(event, dict):
+                event.setdefault("source_table", table)
+                event.setdefault("source_id", row.get("id"))
+                events.append(event)
+    return events
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Export autonomous bot DB tables to JSONL and optional Parquet.")
     parser.add_argument("--database-url", help="mysql://user:pass@host:3306/characters")
@@ -59,9 +77,11 @@ def main() -> int:
 
     conn = connect(args.database_url)
     manifest = {"tables": {}, "run_ids": args.run_ids or []}
+    rows_by_table: dict[str, list[dict]] = {}
     try:
         for table in EXPORT_TABLES:
             rows = export_table(conn, table, args.run_ids)
+            rows_by_table[table] = rows
             jsonl = table_path(args.output_dir, table)
             count = write_jsonl(jsonl, rows)
             parquet = args.output_dir / f"{table}.parquet"
@@ -72,6 +92,16 @@ def main() -> int:
             }
     finally:
         conn.close()
+    canonical_rows = canonical_dataset_events(rows_by_table)
+    canonical_jsonl = args.output_dir / "bot_dataset_events.jsonl"
+    canonical_count = write_jsonl(canonical_jsonl, canonical_rows)
+    canonical_parquet = args.output_dir / "bot_dataset_events.parquet"
+    manifest["canonical_dataset"] = {
+        "jsonl": str(canonical_jsonl),
+        "parquet": str(canonical_parquet) if write_parquet_if_available(canonical_parquet, canonical_rows) else None,
+        "rows": canonical_count,
+        "schema_version": "bot_dataset_event_v1",
+    }
     write_json(args.output_dir / "manifest.json", manifest)
     print(json.dumps(manifest, indent=2, sort_keys=True))
     return 0

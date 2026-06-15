@@ -1,4 +1,5 @@
 #include "Bots/BotTelemetryBuffer.h"
+#include "Bots/BotDatasetEvent.h"
 #include "Creature.h"
 #include "DatabaseEnv.h"
 #include "GameTime.h"
@@ -10,7 +11,7 @@
 
 namespace
 {
-uint64 NowMs()
+uint64 BotTelemetryNowMs()
 {
     return uint64(std::chrono::duration_cast<std::chrono::milliseconds>(GameTime::GetGameTimeSystemPoint().time_since_epoch()).count());
 }
@@ -68,7 +69,7 @@ void BotTelemetryBuffer::FlushClosedClips(uint64 experimentId, uint64 runId, std
     if (itr == _buffers.end())
         return;
 
-    FinalizeClosedClips(experimentId, runId, brainVersion, itr->second, NowMs());
+    FinalizeClosedClips(experimentId, runId, brainVersion, itr->second, BotTelemetryNowMs());
 }
 
 bool BotTelemetryBuffer::Observe(Player* bot, char const* situation, char const* action, char const* rawJson, char const* semanticJson, uint32 questId)
@@ -96,7 +97,7 @@ uint64 BotTelemetryBuffer::CaptureEvent(uint64 experimentId, uint64 runId, std::
         return 0;
 
     BotBuffer& buffer = _buffers[triggerFrame.bot_guid];
-    uint64 nowMs = triggerFrame.timestamp_ms ? triggerFrame.timestamp_ms : NowMs();
+    uint64 nowMs = triggerFrame.timestamp_ms ? triggerFrame.timestamp_ms : BotTelemetryNowMs();
     FinalizeClosedClips(experimentId, runId, brainVersion, buffer, nowMs);
 
     if (buffer.OpenClips.size() >= _config.MaxOpenClipsPerBot)
@@ -131,9 +132,9 @@ uint64 BotTelemetryBuffer::CaptureEvent(uint64 experimentId, uint64 runId, std::
     if (!clip.clip_id)
         return 0;
 
-    InsertFrameRows(clip.clip_id, clip.trigger_time_ms, clip.pre_frames, 0);
+    InsertFrameRows(experimentId, runId, brainVersion, clip.clip_id, clip.trigger_time_ms, clip.pre_frames, 0);
     clip.persisted_pre_frames = uint32(clip.pre_frames.size());
-    InsertFrameRows(clip.clip_id, clip.trigger_time_ms, clip.post_frames, 0);
+    InsertFrameRows(experimentId, runId, brainVersion, clip.clip_id, clip.trigger_time_ms, clip.post_frames, 0);
     clip.persisted_post_frames = uint32(clip.post_frames.size());
 
     buffer.OpenClips.push_back(clip);
@@ -152,7 +153,7 @@ uint64 BotTelemetryBuffer::GetActiveClipId(ObjectGuid botGuid) const
 BotTelemetryFrame BotTelemetryBuffer::BuildFrame(Player* bot, char const* situation, char const* action, char const* rawJson, char const* semanticJson, uint32 questId) const
 {
     BotTelemetryFrame frame;
-    frame.timestamp_ms = NowMs();
+    frame.timestamp_ms = BotTelemetryNowMs();
     frame.bot_guid = bot->GetGUID();
     frame.map_id = bot->GetMapId();
     frame.zone_id = bot->GetZoneId();
@@ -209,9 +210,9 @@ void BotTelemetryBuffer::PersistClosedClip(uint64 experimentId, uint64 runId, st
     if (!clip.clip_id)
         return;
 
-    InsertFrameRows(clip.clip_id, clip.trigger_time_ms, clip.pre_frames, clip.persisted_pre_frames);
+    InsertFrameRows(experimentId, runId, brainVersion, clip.clip_id, clip.trigger_time_ms, clip.pre_frames, clip.persisted_pre_frames);
     clip.persisted_pre_frames = uint32(clip.pre_frames.size());
-    InsertFrameRows(clip.clip_id, clip.trigger_time_ms, clip.post_frames, clip.persisted_post_frames);
+    InsertFrameRows(experimentId, runId, brainVersion, clip.clip_id, clip.trigger_time_ms, clip.post_frames, clip.persisted_post_frames);
     clip.persisted_post_frames = uint32(clip.post_frames.size());
     CharacterDatabase.DirectPExecute("UPDATE experiment_bot_clips SET status = 'closed', ended_at = FROM_UNIXTIME(" UI64FMTD " / 1000.0) WHERE id = " UI64FMTD,
         clip.end_time_ms, clip.clip_id);
@@ -230,15 +231,38 @@ uint64 BotTelemetryBuffer::InsertClipRow(uint64 experimentId, uint64 runId, std:
     float x = anchor ? anchor->x : 0.0f;
     float y = anchor ? anchor->y : 0.0f;
     float z = anchor ? anchor->z : 0.0f;
+    BotDatasetEvent dataset;
+    dataset.run_id = runId;
+    dataset.experiment_id = std::to_string(experimentId);
+    dataset.episode_id = runId;
+    dataset.bot_guid = clip.bot_guid;
+    dataset.bot_role = "generic";
+    dataset.bot_level = anchor ? uint32(anchor->level) : 0;
+    dataset.policy_source = BotPolicySource::Heuristic;
+    dataset.policy_version = brainVersion;
+    dataset.timestamp_ms = clip.trigger_time_ms;
+    dataset.tick_id = clip.clip_id;
+    dataset.domain = "telemetry_clip";
+    dataset.situation = clip.trigger_type;
+    dataset.observation_json = "{\"map_id\":" + std::to_string(mapId) + ",\"zone_id\":" + std::to_string(zoneId) + ",\"area_id\":" + std::to_string(areaId) + ",\"summary\":" + (clip.summary_json.empty() ? "{}" : clip.summary_json) + "}";
+    dataset.semantic_json = clip.summary_json.empty() ? "{}" : clip.summary_json;
+    dataset.valid_action_mask_json = "{\"clip\":true}";
+    dataset.chosen_action_json = "{\"trigger_clip\":true}";
+    dataset.action_result = clip.reason;
+    dataset.outcome_json = "{\"importance_score\":" + std::to_string(clip.importance_score) + "}";
+    dataset.quality_flags_json = "{\"source\":\"experiment_bot_clips\"}";
+    std::string canonical = dataset.Validate() ? dataset.ToJson() : "";
+    canonical = Escape(canonical);
 
-    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_clips (experiment_id, run_id, bot_guid, trigger_type, importance_score, reason, brain_version, map_id, zone_id, area_id, x, y, z, started_at, ended_at, status, summary_json) "
-        "VALUES (" UI64FMTD ", " UI64FMTD ", %u, '%s', %f, '%s', '%s', %u, %u, %u, %f, %f, %f, FROM_UNIXTIME(" UI64FMTD " / 1000.0), NULL, 'open', '%s')",
+    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_clips (schema_version, feature_schema_version, experiment_id, run_id, bot_guid, trigger_type, importance_score, reason, brain_version, map_id, zone_id, area_id, x, y, z, started_at, ended_at, status, summary_json, canonical_event_json) "
+        "VALUES ('%s', '%s', " UI64FMTD ", " UI64FMTD ", %u, '%s', %f, '%s', '%s', %u, %u, %u, %f, %f, %f, FROM_UNIXTIME(" UI64FMTD " / 1000.0), NULL, 'open', '%s', '%s')",
+        BotDatasetEvent::SchemaVersion, BotDatasetEvent::DefaultFeatureSchemaVersion,
         experimentId, runId, clip.bot_guid.GetCounter(), trigger.c_str(), clip.importance_score, reason.c_str(), brain.c_str(),
-        mapId, zoneId, areaId, x, y, z, clip.start_time_ms, summary.c_str());
+        mapId, zoneId, areaId, x, y, z, clip.start_time_ms, summary.c_str(), canonical.c_str());
     return ReadTelemetryLastInsertId();
 }
 
-void BotTelemetryBuffer::InsertFrameRows(uint64 clipId, uint64 triggerTimeMs, std::vector<BotTelemetryFrame> const& frames, uint32 startIndex)
+void BotTelemetryBuffer::InsertFrameRows(uint64 experimentId, uint64 runId, std::string const& brainVersion, uint64 clipId, uint64 triggerTimeMs, std::vector<BotTelemetryFrame> const& frames, uint32 startIndex)
 {
     for (uint32 index = startIndex; index < frames.size(); ++index)
     {
@@ -248,11 +272,37 @@ void BotTelemetryBuffer::InsertFrameRows(uint64 clipId, uint64 triggerTimeMs, st
         std::string raw = Escape(frame.raw_json);
         std::string semantic = Escape(frame.semantic_json);
         int64 offset = int64(frame.timestamp_ms) - int64(triggerTimeMs);
-        CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_clip_frames (clip_id, frame_offset_ms, bot_guid, map_id, zone_id, area_id, x, y, z, o, level, hp_pct, power_pct, in_combat, target_guid, target_entry, quest_id, situation_type, action, raw_json, semantic_json) "
-            "VALUES (" UI64FMTD ", %d, %u, %u, %u, %u, %f, %f, %f, %f, %u, %f, %f, %u, " UI64FMTD ", %u, %u, '%s', '%s', '%s', '%s')",
+        BotDatasetEvent dataset;
+        dataset.run_id = runId;
+        dataset.experiment_id = std::to_string(experimentId);
+        dataset.episode_id = runId;
+        dataset.bot_guid = frame.bot_guid;
+        dataset.bot_role = "generic";
+        dataset.bot_level = uint32(frame.level);
+        dataset.policy_source = BotPolicySource::Heuristic;
+        dataset.policy_version = brainVersion;
+        dataset.timestamp_ms = frame.timestamp_ms;
+        dataset.tick_id = uint64(index);
+        dataset.domain = "telemetry_clip_frame";
+        dataset.situation = frame.situation_type.empty() ? "frame" : frame.situation_type;
+        dataset.observation_json = frame.raw_json.empty() || frame.raw_json == "{}"
+            ? "{\"map_id\":" + std::to_string(frame.map_id) + ",\"zone_id\":" + std::to_string(frame.zone_id) + ",\"area_id\":" + std::to_string(frame.area_id) + ",\"hp_pct\":" + std::to_string(frame.hp_pct) + ",\"power_pct\":" + std::to_string(frame.power_pct) + "}"
+            : frame.raw_json;
+        dataset.semantic_json = frame.semantic_json.empty() ? "{}" : frame.semantic_json;
+        dataset.valid_action_mask_json = "{\"frame\":true}";
+        dataset.chosen_action_json = "{\"action\":\"frame_sample\"}";
+        if (!frame.action.empty())
+            dataset.chosen_action_json = "{\"action\":\"sampled_action\"}";
+        dataset.action_result = frame.action.empty() ? "sampled" : frame.action;
+        dataset.outcome_json = "{\"frame_offset_ms\":" + std::to_string(offset) + ",\"clip_id\":" + std::to_string(clipId) + "}";
+        dataset.quality_flags_json = "{\"source\":\"experiment_bot_clip_frames\"}";
+        std::string canonical = dataset.Validate() ? Escape(dataset.ToJson()) : "";
+        CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_clip_frames (schema_version, feature_schema_version, clip_id, frame_offset_ms, bot_guid, map_id, zone_id, area_id, x, y, z, o, level, hp_pct, power_pct, in_combat, target_guid, target_entry, quest_id, situation_type, action, raw_json, semantic_json, canonical_event_json) "
+            "VALUES ('%s', '%s', " UI64FMTD ", %d, %u, %u, %u, %u, %f, %f, %f, %f, %u, %f, %f, %u, " UI64FMTD ", %u, %u, '%s', '%s', '%s', '%s', '%s')",
+            BotDatasetEvent::SchemaVersion, BotDatasetEvent::DefaultFeatureSchemaVersion,
             clipId, int32(offset), frame.bot_guid.GetCounter(), frame.map_id, frame.zone_id, frame.area_id,
             frame.x, frame.y, frame.z, frame.o, uint32(frame.level), frame.hp_pct, frame.power_pct, frame.in_combat ? 1 : 0, frame.target_guid.GetCounter(),
-            frame.target_entry, frame.quest_id, situation.c_str(), action.c_str(), raw.c_str(), semantic.c_str());
+            frame.target_entry, frame.quest_id, situation.c_str(), action.c_str(), raw.c_str(), semantic.c_str(), canonical.c_str());
     }
 }
 

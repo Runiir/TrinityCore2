@@ -1,5 +1,6 @@
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotActionExecutor.h"
+#include "Bots/BotDatasetEvent.h"
 #include "Bots/BotMgr.h"
 #include "CellImpl.h"
 #include "Config.h"
@@ -74,6 +75,25 @@ bool ContainsInsensitive(std::string const& text, char const* needle)
     if (!needle || !*needle)
         return false;
     return LowerCopy(text).find(LowerCopy(needle)) != std::string::npos;
+}
+
+BotPolicySource WorldPolicySource(BotPolicyModelConfig const& config, bool decision)
+{
+    if (config.Enabled && !config.Version.empty())
+    {
+        if (config.Mode == "assist")
+            return BotPolicySource::AssistModel;
+        if (config.Mode == "control")
+            return BotPolicySource::ControlModel;
+        return BotPolicySource::ShadowModel;
+    }
+
+    return decision ? BotPolicySource::Exploration : BotPolicySource::Heuristic;
+}
+
+std::string WorldPolicyVersion(BotPolicyModelConfig const& config, std::string const& brainVersion)
+{
+    return config.Enabled && !config.Version.empty() ? config.Version : brainVersion;
 }
 
 char const* ToString(BotWorldPopulationMgr::QuestObjectiveType type)
@@ -1175,11 +1195,31 @@ bool BotWorldPopulationMgr::ResolveSavedSpawnPlacement(uint32 candidateGuid, Spa
             if (_runId)
             {
                 std::string brain = _config.BrainVersion;
+                BotDatasetEvent dataset;
+                dataset.run_id = _runId;
+                dataset.experiment_id = std::to_string(_experimentId);
+                dataset.episode_id = _runId;
+                dataset.bot_guid = ObjectGuid(HighGuid::Player, candidateGuid);
+                dataset.bot_role = "generic";
+                dataset.policy_source = BotPolicySource::Heuristic;
+                dataset.policy_version = _config.BrainVersion;
+                dataset.timestamp_ms = NowMs();
+                dataset.domain = "spawn";
+                dataset.situation = "spawn_resume_invalid";
+                dataset.observation_json = "{\"map_id\":" + std::to_string(mapId) + ",\"x\":" + std::to_string(x) + ",\"y\":" + std::to_string(y) + ",\"z\":" + std::to_string(z) + "}";
+                dataset.valid_action_mask_json = "{\"spawn\":true}";
+                dataset.chosen_action_json = "{\"event_type\":\"spawn_resume_invalid\"}";
+                dataset.action_result = "invalid_saved_position";
+                dataset.outcome_json = "{\"source\":\"saved_position\"}";
+                dataset.quality_flags_json = "{\"source\":\"experiment_bot_events\"}";
+                std::string canonical = dataset.Validate() ? dataset.ToJson() : "";
                 CharacterDatabase.EscapeString(brain);
+                CharacterDatabase.EscapeString(canonical);
                 CharacterDatabase.DirectPExecute(
-                    "INSERT INTO experiment_bot_events (experiment_id, run_id, bot_guid, brain_version, map_id, x, y, z, event_type, result, raw_json, semantic_json, context_json) "
-                    "VALUES (" UI64FMTD ", " UI64FMTD ", %u, '%s', %u, %f, %f, %f, 'spawn_resume_invalid', 'invalid_saved_position', '{}', '{}', '{\"source\":\"saved_position\"}')",
-                    _experimentId, _runId, candidateGuid, brain.c_str(), mapId, x, y, z);
+                    "INSERT INTO experiment_bot_events (schema_version, feature_schema_version, experiment_id, run_id, bot_guid, brain_version, map_id, x, y, z, event_type, result, raw_json, semantic_json, context_json, canonical_event_json) "
+                    "VALUES ('%s', '%s', " UI64FMTD ", " UI64FMTD ", %u, '%s', %u, %f, %f, %f, 'spawn_resume_invalid', 'invalid_saved_position', '{}', '{}', '{\"source\":\"saved_position\"}', '%s')",
+                    BotDatasetEvent::SchemaVersion, BotDatasetEvent::DefaultFeatureSchemaVersion,
+                    _experimentId, _runId, candidateGuid, brain.c_str(), mapId, x, y, z, canonical.c_str());
             }
             return false;
         }
@@ -1314,17 +1354,40 @@ void BotWorldPopulationMgr::RecordSpawnResolved(WorldBotState& state, Player* bo
     std::string brain = _config.BrainVersion;
     std::string eventResult = result ? result : placement.Source;
     std::string contextJson = context.str();
+    BotDatasetEvent dataset;
+    dataset.run_id = _runId;
+    dataset.experiment_id = std::to_string(_experimentId);
+    dataset.episode_id = _runId;
+    dataset.bot_guid = bot->GetGUID();
+    dataset.bot_role = GetDungeonRole(bot);
+    dataset.bot_level = uint32(bot->getLevel());
+    dataset.policy_source = BotPolicySource::Heuristic;
+    dataset.policy_version = _config.BrainVersion;
+    dataset.timestamp_ms = NowMs();
+    dataset.tick_id = state.EventSequence;
+    dataset.domain = "spawn";
+    dataset.situation = "spawn_resolved";
+    dataset.observation_json = raw;
+    dataset.semantic_json = semantic;
+    dataset.valid_action_mask_json = "{\"spawn\":true}";
+    dataset.chosen_action_json = "{\"event_type\":\"spawn_resolved\"}";
+    dataset.action_result = eventResult;
+    dataset.outcome_json = contextJson;
+    dataset.quality_flags_json = "{\"source\":\"experiment_bot_events\"}";
+    std::string canonical = dataset.Validate() ? dataset.ToJson() : "";
     CharacterDatabase.EscapeString(raw);
     CharacterDatabase.EscapeString(semantic);
     CharacterDatabase.EscapeString(brain);
     CharacterDatabase.EscapeString(eventResult);
     CharacterDatabase.EscapeString(contextJson);
+    CharacterDatabase.EscapeString(canonical);
 
     CharacterDatabase.DirectPExecute(
-        "INSERT INTO experiment_bot_events (experiment_id, run_id, bot_guid, brain_version, map_id, zone_id, area_id, x, y, z, level, event_type, result, value_int, raw_json, semantic_json, context_json) "
-        "VALUES (" UI64FMTD ", " UI64FMTD ", %u, '%s', %u, %u, %u, %f, %f, %f, %u, 'spawn_resolved', '%s', %u, '%s', '%s', '%s')",
+        "INSERT INTO experiment_bot_events (schema_version, feature_schema_version, experiment_id, run_id, bot_guid, brain_version, map_id, zone_id, area_id, x, y, z, level, event_type, result, value_int, raw_json, semantic_json, context_json, canonical_event_json) "
+        "VALUES ('%s', '%s', " UI64FMTD ", " UI64FMTD ", %u, '%s', %u, %u, %u, %f, %f, %f, %u, 'spawn_resolved', '%s', %u, '%s', '%s', '%s', '%s')",
+        BotDatasetEvent::SchemaVersion, BotDatasetEvent::DefaultFeatureSchemaVersion,
         _experimentId, _runId, state.Guid.GetCounter(), brain.c_str(), bot->GetMapId(), bot->GetZoneId(), bot->GetAreaId(),
-        bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), uint32(bot->getLevel()), eventResult.c_str(), uint32(bot->getLevel()), raw.c_str(), semantic.c_str(), contextJson.c_str());
+        bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), uint32(bot->getLevel()), eventResult.c_str(), uint32(bot->getLevel()), raw.c_str(), semantic.c_str(), contextJson.c_str(), canonical.c_str());
 }
 
 void BotWorldPopulationMgr::RememberSafePosition(WorldBotState& state, Player* bot, uint32 diff)
@@ -5689,18 +5752,41 @@ void BotWorldPopulationMgr::RecordReplayEvent(WorldBotState const& state, Player
     std::string res = result ? result : "";
     std::string brain = _config.BrainVersion;
     std::string context = contextJson ? contextJson : "{}";
+    BotDatasetEvent dataset;
+    dataset.run_id = _runId;
+    dataset.experiment_id = std::to_string(_experimentId);
+    dataset.episode_id = _runId;
+    dataset.bot_guid = bot->GetGUID();
+    dataset.bot_role = GetDungeonRole(bot);
+    dataset.bot_level = uint32(bot->getLevel());
+    dataset.policy_source = WorldPolicySource(_policyModelConfig, false);
+    dataset.policy_version = WorldPolicyVersion(_policyModelConfig, _config.BrainVersion);
+    dataset.timestamp_ms = NowMs();
+    dataset.tick_id = state.EventSequence;
+    dataset.domain = "replay_event";
+    dataset.situation = event;
+    dataset.observation_json = raw;
+    dataset.semantic_json = semantic;
+    dataset.valid_action_mask_json = "{\"event\":true}";
+    dataset.chosen_action_json = "{\"event_type\":\"" + JsonEscape(event) + "\",\"replay_id\":" + std::to_string(record.Id) + "}";
+    dataset.action_result = res.empty() ? "ok" : res;
+    dataset.outcome_json = "{\"result\":\"" + JsonEscape(dataset.action_result) + "\",\"replay_id\":" + std::to_string(record.Id) + "}";
+    dataset.quality_flags_json = "{\"source\":\"experiment_bot_events\",\"replay_event\":true}";
+    std::string canonical = dataset.Validate() ? dataset.ToJson() : "";
     CharacterDatabase.EscapeString(raw);
     CharacterDatabase.EscapeString(semantic);
     CharacterDatabase.EscapeString(event);
     CharacterDatabase.EscapeString(res);
     CharacterDatabase.EscapeString(brain);
     CharacterDatabase.EscapeString(context);
+    CharacterDatabase.EscapeString(canonical);
 
-    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_events (experiment_id, run_id, bot_guid, brain_version, clip_id, map_id, zone_id, area_id, x, y, z, level, event_type, result, value_int, raw_json, semantic_json, context_json) "
-        "VALUES (" UI64FMTD ", " UI64FMTD ", %u, '%s', %s, %u, %u, %u, %f, %f, %f, %u, '%s', '%s', %u, '%s', '%s', '%s')",
+    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_events (schema_version, feature_schema_version, experiment_id, run_id, bot_guid, brain_version, clip_id, map_id, zone_id, area_id, x, y, z, level, event_type, result, value_int, raw_json, semantic_json, context_json, canonical_event_json) "
+        "VALUES ('%s', '%s', " UI64FMTD ", " UI64FMTD ", %u, '%s', %s, %u, %u, %u, %f, %f, %f, %u, '%s', '%s', %u, '%s', '%s', '%s', '%s')",
+        BotDatasetEvent::SchemaVersion, BotDatasetEvent::DefaultFeatureSchemaVersion,
         _experimentId, _runId, state.Guid.GetCounter(), brain.c_str(), clipSql.c_str(), bot->GetMapId(), bot->GetZoneId(), bot->GetAreaId(),
         bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), uint32(bot->getLevel()), event.c_str(), res.c_str(),
-        uint32(record.Id), raw.c_str(), semantic.c_str(), context.c_str());
+        uint32(record.Id), raw.c_str(), semantic.c_str(), context.c_str(), canonical.c_str());
 }
 
 BotWorldPopulationMgr::ReplayExecutionResult BotWorldPopulationMgr::ExecuteReplayRecord(ReplayRecord const& record, std::string const& brainVersion)
@@ -6001,18 +6087,41 @@ void BotWorldPopulationMgr::RecordGearEvaluation(WorldBotState& state, Player* b
     std::string result = "upgrade_candidate";
     std::string brain = _config.BrainVersion;
     std::string contextJson = context.str();
+    BotDatasetEvent dataset;
+    dataset.run_id = _runId;
+    dataset.experiment_id = std::to_string(_experimentId);
+    dataset.episode_id = _runId;
+    dataset.bot_guid = bot->GetGUID();
+    dataset.bot_role = GetDungeonRole(bot);
+    dataset.bot_level = uint32(bot->getLevel());
+    dataset.policy_source = WorldPolicySource(_policyModelConfig, false);
+    dataset.policy_version = WorldPolicyVersion(_policyModelConfig, _config.BrainVersion);
+    dataset.timestamp_ms = NowMs();
+    dataset.tick_id = state.EventSequence;
+    dataset.domain = "gear";
+    dataset.situation = event;
+    dataset.observation_json = raw;
+    dataset.semantic_json = semantic;
+    dataset.valid_action_mask_json = "{\"gear\":true}";
+    dataset.chosen_action_json = "{\"event_type\":\"gear_evaluated\",\"item_id\":" + std::to_string(evaluation.ItemId) + "}";
+    dataset.action_result = result;
+    dataset.outcome_json = contextJson;
+    dataset.quality_flags_json = "{\"source\":\"experiment_bot_events\"}";
+    std::string canonical = dataset.Validate() ? dataset.ToJson() : "";
     CharacterDatabase.EscapeString(raw);
     CharacterDatabase.EscapeString(semantic);
     CharacterDatabase.EscapeString(event);
     CharacterDatabase.EscapeString(result);
     CharacterDatabase.EscapeString(brain);
     CharacterDatabase.EscapeString(contextJson);
+    CharacterDatabase.EscapeString(canonical);
 
-    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_events (experiment_id, run_id, bot_guid, brain_version, clip_id, map_id, zone_id, area_id, x, y, z, level, event_type, item_id, result, value_float, value_int, raw_json, semantic_json, context_json) "
-        "VALUES (" UI64FMTD ", " UI64FMTD ", %u, '%s', %s, %u, %u, %u, %f, %f, %f, %u, '%s', %u, '%s', %f, %u, '%s', '%s', '%s')",
+    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_events (schema_version, feature_schema_version, experiment_id, run_id, bot_guid, brain_version, clip_id, map_id, zone_id, area_id, x, y, z, level, event_type, item_id, result, value_float, value_int, raw_json, semantic_json, context_json, canonical_event_json) "
+        "VALUES ('%s', '%s', " UI64FMTD ", " UI64FMTD ", %u, '%s', %s, %u, %u, %u, %f, %f, %f, %u, '%s', %u, '%s', %f, %u, '%s', '%s', '%s', '%s')",
+        BotDatasetEvent::SchemaVersion, BotDatasetEvent::DefaultFeatureSchemaVersion,
         _experimentId, _runId, state.Guid.GetCounter(), brain.c_str(), clipSql.c_str(), bot->GetMapId(), bot->GetZoneId(), bot->GetAreaId(),
         bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), uint32(bot->getLevel()), event.c_str(), evaluation.ItemId,
-        result.c_str(), evaluation.PowerDelta, evaluation.ItemId, raw.c_str(), semantic.c_str(), contextJson.c_str());
+        result.c_str(), evaluation.PowerDelta, evaluation.ItemId, raw.c_str(), semantic.c_str(), contextJson.c_str(), canonical.c_str());
 
     std::string features = BuildEmbeddingFeaturesJson(bot, nullptr, "item", evaluation.ItemId, "gear_upgrade");
     UpdateSemanticOutcomeStats(bot, "item", evaluation.ItemId, "gear_upgrade", "upgrade_candidate", evaluation.PowerDelta, evaluation.PowerDelta, false, features.c_str());
@@ -6048,23 +6157,46 @@ void BotWorldPopulationMgr::RecordRaidTelemetry(WorldBotState& state, Player* bo
     if (!clipId)
         clipId = _telemetryBuffer.GetActiveClipId(bot->GetGUID());
     std::string clipSql = clipId ? std::to_string(clipId) : "NULL";
+    BotDatasetEvent dataset;
+    dataset.run_id = _runId;
+    dataset.experiment_id = std::to_string(_experimentId);
+    dataset.episode_id = _runId;
+    dataset.bot_guid = bot->GetGUID();
+    dataset.bot_role = GetDungeonRole(bot);
+    dataset.bot_level = uint32(bot->getLevel());
+    dataset.policy_source = WorldPolicySource(_policyModelConfig, false);
+    dataset.policy_version = WorldPolicyVersion(_policyModelConfig, _config.BrainVersion);
+    dataset.timestamp_ms = NowMs();
+    dataset.tick_id = state.EventSequence;
+    dataset.domain = "raid_telemetry";
+    dataset.situation = event;
+    dataset.observation_json = raw;
+    dataset.semantic_json = semantic;
+    dataset.valid_action_mask_json = "{\"raid_telemetry\":true}";
+    dataset.chosen_action_json = "{\"event_type\":\"" + JsonEscape(event) + "\",\"spell_id\":" + std::to_string(spellId ? spellId : features.CastSpellId) + "}";
+    dataset.action_result = eventResult;
+    dataset.outcome_json = contextJson;
+    dataset.quality_flags_json = "{\"source\":\"experiment_bot_events\",\"raid\":true}";
+    std::string canonical = dataset.Validate() ? dataset.ToJson() : "";
     CharacterDatabase.EscapeString(raw);
     CharacterDatabase.EscapeString(semantic);
     CharacterDatabase.EscapeString(event);
     CharacterDatabase.EscapeString(eventResult);
     CharacterDatabase.EscapeString(brain);
     CharacterDatabase.EscapeString(contextJson);
+    CharacterDatabase.EscapeString(canonical);
 
     uint64 targetGuid = boss ? boss->GetGUID().GetCounter() : features.BossGuid.GetCounter();
     uint32 targetEntry = features.BossEntry;
     if (Creature const* creature = boss ? boss->ToCreature() : nullptr)
         targetEntry = creature->GetEntry();
 
-    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_events (experiment_id, run_id, bot_guid, brain_version, clip_id, map_id, zone_id, area_id, x, y, z, level, event_type, target_guid, target_entry, spell_id, result, value_float, value_int, raw_json, semantic_json, context_json) "
-        "VALUES (" UI64FMTD ", " UI64FMTD ", %u, '%s', %s, %u, %u, %u, %f, %f, %f, %u, '%s', " UI64FMTD ", %u, %u, '%s', %f, %u, '%s', '%s', '%s')",
+    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_events (schema_version, feature_schema_version, experiment_id, run_id, bot_guid, brain_version, clip_id, map_id, zone_id, area_id, x, y, z, level, event_type, target_guid, target_entry, spell_id, result, value_float, value_int, raw_json, semantic_json, context_json, canonical_event_json) "
+        "VALUES ('%s', '%s', " UI64FMTD ", " UI64FMTD ", %u, '%s', %s, %u, %u, %u, %f, %f, %f, %u, '%s', " UI64FMTD ", %u, %u, '%s', %f, %u, '%s', '%s', '%s', '%s')",
+        BotDatasetEvent::SchemaVersion, BotDatasetEvent::DefaultFeatureSchemaVersion,
         _experimentId, _runId, state.Guid.GetCounter(), brain.c_str(), clipSql.c_str(), bot->GetMapId(), bot->GetZoneId(), bot->GetAreaId(),
         bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), uint32(bot->getLevel()), event.c_str(), targetGuid,
-        targetEntry, spellId ? spellId : features.CastSpellId, eventResult.c_str(), valueFloat, valueInt, raw.c_str(), semantic.c_str(), contextJson.c_str());
+        targetEntry, spellId ? spellId : features.CastSpellId, eventResult.c_str(), valueFloat, valueInt, raw.c_str(), semantic.c_str(), contextJson.c_str(), canonical.c_str());
 
     uint32 mechanicKey = features.MoveOut ? 1 : (features.MustInterrupt ? 2 : (features.AddsActive ? 5 : (features.RaidDamage ? 4 : 11)));
     std::string mechanicFeatures = BuildEmbeddingFeaturesJson(bot, boss, "mechanic", mechanicKey, adapter.MechanicFamily.c_str());
@@ -6158,12 +6290,34 @@ void BotWorldPopulationMgr::RecordQuestEvent(WorldBotState& state, Player* bot, 
     if (!clipId)
         clipId = _telemetryBuffer.GetActiveClipId(bot->GetGUID());
     std::string clipSql = clipId ? std::to_string(clipId) : "NULL";
+    BotDatasetEvent dataset;
+    dataset.run_id = _runId;
+    dataset.experiment_id = std::to_string(_experimentId);
+    dataset.episode_id = _runId;
+    dataset.bot_guid = bot->GetGUID();
+    dataset.bot_role = GetDungeonRole(bot);
+    dataset.bot_level = uint32(bot->getLevel());
+    dataset.policy_source = WorldPolicySource(_policyModelConfig, false);
+    dataset.policy_version = WorldPolicyVersion(_policyModelConfig, _config.BrainVersion);
+    dataset.timestamp_ms = NowMs();
+    dataset.tick_id = state.EventSequence;
+    dataset.domain = "quest_event";
+    dataset.situation = event;
+    dataset.observation_json = raw;
+    dataset.semantic_json = semantic;
+    dataset.valid_action_mask_json = "{\"event\":true}";
+    dataset.chosen_action_json = "{\"event_type\":\"" + JsonEscape(event) + "\",\"quest_id\":" + std::to_string(questId) + "}";
+    dataset.action_result = res.empty() ? "ok" : res;
+    dataset.outcome_json = "{\"result\":\"" + JsonEscape(dataset.action_result) + "\",\"quest_id\":" + std::to_string(questId) + ",\"item_id\":" + std::to_string(itemId) + ",\"value_int\":" + std::to_string(valueInt) + "}";
+    dataset.quality_flags_json = "{\"source\":\"experiment_bot_events\",\"quest_event\":true}";
+    std::string canonical = dataset.Validate() ? dataset.ToJson() : "";
     CharacterDatabase.EscapeString(raw);
     CharacterDatabase.EscapeString(semantic);
     CharacterDatabase.EscapeString(event);
     CharacterDatabase.EscapeString(res);
     CharacterDatabase.EscapeString(brain);
     CharacterDatabase.EscapeString(context);
+    CharacterDatabase.EscapeString(canonical);
 
     uint32 targetEntry = 0;
     uint64 targetGuid = 0;
@@ -6174,11 +6328,12 @@ void BotWorldPopulationMgr::RecordQuestEvent(WorldBotState& state, Player* bot, 
             targetEntry = creature->GetEntry();
     }
 
-    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_events (experiment_id, run_id, bot_guid, brain_version, clip_id, map_id, zone_id, area_id, x, y, z, level, event_type, target_guid, target_entry, quest_id, item_id, result, value_int, raw_json, semantic_json, context_json) "
-        "VALUES (" UI64FMTD ", " UI64FMTD ", %u, '%s', %s, %u, %u, %u, %f, %f, %f, %u, '%s', " UI64FMTD ", %u, %u, %u, '%s', %u, '%s', '%s', '%s')",
+    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_events (schema_version, feature_schema_version, experiment_id, run_id, bot_guid, brain_version, clip_id, map_id, zone_id, area_id, x, y, z, level, event_type, target_guid, target_entry, quest_id, item_id, result, value_int, raw_json, semantic_json, context_json, canonical_event_json) "
+        "VALUES ('%s', '%s', " UI64FMTD ", " UI64FMTD ", %u, '%s', %s, %u, %u, %u, %f, %f, %f, %u, '%s', " UI64FMTD ", %u, %u, %u, '%s', %u, '%s', '%s', '%s', '%s')",
+        BotDatasetEvent::SchemaVersion, BotDatasetEvent::DefaultFeatureSchemaVersion,
         _experimentId, _runId, state.Guid.GetCounter(), brain.c_str(), clipSql.c_str(), bot->GetMapId(), bot->GetZoneId(), bot->GetAreaId(),
         bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), uint32(bot->getLevel()), event.c_str(), targetGuid, targetEntry,
-        questId, itemId, res.c_str(), valueInt, raw.c_str(), semantic.c_str(), context.c_str());
+        questId, itemId, res.c_str(), valueInt, raw.c_str(), semantic.c_str(), context.c_str(), canonical.c_str());
 
     UpdateSemanticStatsFromEvent(bot, target, eventType, result, 0.0f, valueInt, 0, semanticJson);
     if (questId)
@@ -6260,6 +6415,28 @@ void BotWorldPopulationMgr::RecordQuestReplay(WorldBotState const& state, Player
     std::string semantic = semanticJson ? semanticJson : "{}";
     std::string action = actionJson ? actionJson : "{}";
     std::string failure = failureJson ? failureJson : "{}";
+    std::string observation = "{\"bot\":" + botJson + ",\"world\":" + worldJson + ",\"raw\":" + raw + "}";
+    BotDatasetEvent dataset;
+    dataset.run_id = _runId;
+    dataset.experiment_id = std::to_string(_experimentId);
+    dataset.episode_id = _runId;
+    dataset.bot_guid = bot->GetGUID();
+    dataset.bot_role = GetDungeonRole(bot);
+    dataset.bot_level = uint32(bot->getLevel());
+    dataset.policy_source = WorldPolicySource(_policyModelConfig, false);
+    dataset.policy_version = WorldPolicyVersion(_policyModelConfig, _config.BrainVersion);
+    dataset.timestamp_ms = NowMs();
+    dataset.tick_id = state.Sequence;
+    dataset.domain = "replay";
+    dataset.situation = type;
+    dataset.observation_json = observation;
+    dataset.semantic_json = semantic;
+    dataset.valid_action_mask_json = "{\"replay\":true}";
+    dataset.chosen_action_json = action;
+    dataset.action_result = "failed";
+    dataset.outcome_json = failure;
+    dataset.quality_flags_json = "{\"source\":\"experiment_bot_replay_records\"}";
+    std::string canonical = dataset.Validate() ? dataset.ToJson() : "";
     CharacterDatabase.EscapeString(type);
     CharacterDatabase.EscapeString(botJson);
     CharacterDatabase.EscapeString(worldJson);
@@ -6267,11 +6444,13 @@ void BotWorldPopulationMgr::RecordQuestReplay(WorldBotState const& state, Player
     CharacterDatabase.EscapeString(semantic);
     CharacterDatabase.EscapeString(action);
     CharacterDatabase.EscapeString(failure);
+    CharacterDatabase.EscapeString(canonical);
 
-    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_replay_records (experiment_id, run_id, bot_guid, replay_type, map_id, zone_id, x, y, z, o, bot_snapshot_json, world_snapshot_json, raw_state_json, semantic_state_json, chosen_action_json, failure_json) "
-        "VALUES (" UI64FMTD ", " UI64FMTD ", %u, '%s', %u, %u, %f, %f, %f, %f, '%s', '%s', '%s', '%s', '%s', '%s')",
+    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_replay_records (schema_version, feature_schema_version, experiment_id, run_id, bot_guid, replay_type, map_id, zone_id, x, y, z, o, bot_snapshot_json, world_snapshot_json, raw_state_json, semantic_state_json, chosen_action_json, failure_json, canonical_event_json) "
+        "VALUES ('%s', '%s', " UI64FMTD ", " UI64FMTD ", %u, '%s', %u, %u, %f, %f, %f, %f, '%s', '%s', '%s', '%s', '%s', '%s', '%s')",
+        BotDatasetEvent::SchemaVersion, BotDatasetEvent::DefaultFeatureSchemaVersion,
         _experimentId, _runId, state.Guid.GetCounter(), type.c_str(), bot->GetMapId(), bot->GetZoneId(), bot->GetPositionX(), bot->GetPositionY(),
-        bot->GetPositionZ(), bot->GetOrientation(), botJson.c_str(), worldJson.c_str(), raw.c_str(), semantic.c_str(), action.c_str(), failure.c_str());
+        bot->GetPositionZ(), bot->GetOrientation(), botJson.c_str(), worldJson.c_str(), raw.c_str(), semantic.c_str(), action.c_str(), failure.c_str(), canonical.c_str());
 }
 
 void BotWorldPopulationMgr::RecordBossReplay(WorldBotState const& state, Player* bot, Unit const* boss, BossMechanicFeatures const& features, char const* replayType, char const* rawJson, char const* semanticJson, char const* actionJson, char const* failureJson)
@@ -6321,6 +6500,28 @@ void BotWorldPopulationMgr::RecordBossReplay(WorldBotState const& state, Player*
     std::string semantic = semanticJson ? semanticJson : "{}";
     std::string action = actionJson ? actionJson : "{}";
     std::string failure = failureJson ? failureJson : "{}";
+    std::string observation = "{\"bot\":" + botJson + ",\"world\":" + worldJson + ",\"party\":" + partyJson + ",\"raw\":" + raw + "}";
+    BotDatasetEvent dataset;
+    dataset.run_id = _runId;
+    dataset.experiment_id = std::to_string(_experimentId);
+    dataset.episode_id = _runId;
+    dataset.bot_guid = bot->GetGUID();
+    dataset.bot_role = GetDungeonRole(bot);
+    dataset.bot_level = uint32(bot->getLevel());
+    dataset.policy_source = WorldPolicySource(_policyModelConfig, false);
+    dataset.policy_version = WorldPolicyVersion(_policyModelConfig, _config.BrainVersion);
+    dataset.timestamp_ms = NowMs();
+    dataset.tick_id = state.Sequence;
+    dataset.domain = "replay";
+    dataset.situation = type;
+    dataset.observation_json = observation;
+    dataset.semantic_json = semantic;
+    dataset.valid_action_mask_json = "{\"replay\":true}";
+    dataset.chosen_action_json = action;
+    dataset.action_result = "failed";
+    dataset.outcome_json = failure;
+    dataset.quality_flags_json = "{\"source\":\"experiment_bot_replay_records\",\"boss_replay\":true}";
+    std::string canonical = dataset.Validate() ? dataset.ToJson() : "";
     CharacterDatabase.EscapeString(type);
     CharacterDatabase.EscapeString(botJson);
     CharacterDatabase.EscapeString(worldJson);
@@ -6329,11 +6530,13 @@ void BotWorldPopulationMgr::RecordBossReplay(WorldBotState const& state, Player*
     CharacterDatabase.EscapeString(semantic);
     CharacterDatabase.EscapeString(action);
     CharacterDatabase.EscapeString(failure);
+    CharacterDatabase.EscapeString(canonical);
 
-    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_replay_records (experiment_id, run_id, bot_guid, replay_type, map_id, zone_id, x, y, z, o, bot_snapshot_json, world_snapshot_json, party_snapshot_json, raw_state_json, semantic_state_json, chosen_action_json, failure_json) "
-        "VALUES (" UI64FMTD ", " UI64FMTD ", %u, '%s', %u, %u, %f, %f, %f, %f, '%s', '%s', '%s', '%s', '%s', '%s', '%s')",
+    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_replay_records (schema_version, feature_schema_version, experiment_id, run_id, bot_guid, replay_type, map_id, zone_id, x, y, z, o, bot_snapshot_json, world_snapshot_json, party_snapshot_json, raw_state_json, semantic_state_json, chosen_action_json, failure_json, canonical_event_json) "
+        "VALUES ('%s', '%s', " UI64FMTD ", " UI64FMTD ", %u, '%s', %u, %u, %f, %f, %f, %f, '%s', '%s', '%s', '%s', '%s', '%s', '%s', '%s')",
+        BotDatasetEvent::SchemaVersion, BotDatasetEvent::DefaultFeatureSchemaVersion,
         _experimentId, _runId, state.Guid.GetCounter(), type.c_str(), bot->GetMapId(), bot->GetZoneId(), bot->GetPositionX(), bot->GetPositionY(),
-        bot->GetPositionZ(), bot->GetOrientation(), botJson.c_str(), worldJson.c_str(), partyJson.c_str(), raw.c_str(), semantic.c_str(), action.c_str(), failure.c_str());
+        bot->GetPositionZ(), bot->GetOrientation(), botJson.c_str(), worldJson.c_str(), partyJson.c_str(), raw.c_str(), semantic.c_str(), action.c_str(), failure.c_str(), canonical.c_str());
 }
 
 BotTelemetryPolicyConfig BotWorldPopulationMgr::GetTelemetryPolicyConfig() const
@@ -6425,6 +6628,28 @@ void BotWorldPopulationMgr::RecordPolicyReplay(WorldBotState const& state, Playe
     std::string semantic = semanticJson ? semanticJson : "{}";
     std::string actionJson = action.str();
     std::string failureJson = failure.str();
+    std::string observation = "{\"bot\":" + botJson + ",\"world\":" + worldJson + ",\"raw\":" + raw + "}";
+    BotDatasetEvent dataset;
+    dataset.run_id = _runId;
+    dataset.experiment_id = std::to_string(_experimentId);
+    dataset.episode_id = _runId;
+    dataset.bot_guid = bot->GetGUID();
+    dataset.bot_role = GetDungeonRole(bot);
+    dataset.bot_level = uint32(bot->getLevel());
+    dataset.policy_source = WorldPolicySource(_policyModelConfig, false);
+    dataset.policy_version = WorldPolicyVersion(_policyModelConfig, _config.BrainVersion);
+    dataset.timestamp_ms = NowMs();
+    dataset.tick_id = state.Sequence;
+    dataset.domain = "replay";
+    dataset.situation = type;
+    dataset.observation_json = observation;
+    dataset.semantic_json = semantic;
+    dataset.valid_action_mask_json = "{\"replay\":true}";
+    dataset.chosen_action_json = actionJson;
+    dataset.action_result = input.result.empty() ? "failed" : input.result;
+    dataset.outcome_json = failureJson;
+    dataset.quality_flags_json = "{\"source\":\"experiment_bot_replay_records\",\"policy_replay\":true}";
+    std::string canonical = dataset.Validate() ? dataset.ToJson() : "";
     CharacterDatabase.EscapeString(type);
     CharacterDatabase.EscapeString(botJson);
     CharacterDatabase.EscapeString(worldJson);
@@ -6432,11 +6657,13 @@ void BotWorldPopulationMgr::RecordPolicyReplay(WorldBotState const& state, Playe
     CharacterDatabase.EscapeString(semantic);
     CharacterDatabase.EscapeString(actionJson);
     CharacterDatabase.EscapeString(failureJson);
+    CharacterDatabase.EscapeString(canonical);
 
-    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_replay_records (experiment_id, run_id, bot_guid, replay_type, map_id, zone_id, x, y, z, o, bot_snapshot_json, world_snapshot_json, raw_state_json, semantic_state_json, chosen_action_json, failure_json) "
-        "VALUES (" UI64FMTD ", " UI64FMTD ", %u, '%s', %u, %u, %f, %f, %f, %f, '%s', '%s', '%s', '%s', '%s', '%s')",
+    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_replay_records (schema_version, feature_schema_version, experiment_id, run_id, bot_guid, replay_type, map_id, zone_id, x, y, z, o, bot_snapshot_json, world_snapshot_json, raw_state_json, semantic_state_json, chosen_action_json, failure_json, canonical_event_json) "
+        "VALUES ('%s', '%s', " UI64FMTD ", " UI64FMTD ", %u, '%s', %u, %u, %f, %f, %f, %f, '%s', '%s', '%s', '%s', '%s', '%s', '%s')",
+        BotDatasetEvent::SchemaVersion, BotDatasetEvent::DefaultFeatureSchemaVersion,
         _experimentId, _runId, state.Guid.GetCounter(), type.c_str(), bot->GetMapId(), bot->GetZoneId(), bot->GetPositionX(), bot->GetPositionY(),
-        bot->GetPositionZ(), bot->GetOrientation(), botJson.c_str(), worldJson.c_str(), raw.c_str(), semantic.c_str(), actionJson.c_str(), failureJson.c_str());
+        bot->GetPositionZ(), bot->GetOrientation(), botJson.c_str(), worldJson.c_str(), raw.c_str(), semantic.c_str(), actionJson.c_str(), failureJson.c_str(), canonical.c_str());
 }
 
 uint64 BotWorldPopulationMgr::RecordDecisionReplay(WorldBotState const& state, Player* bot, Unit const* target, char const* situation, char const* action, char const* rawJson, char const* semanticJson, char const* candidateJson, BotActivityScore const& chosenActivity, bool failure)
@@ -6517,6 +6744,29 @@ uint64 BotWorldPopulationMgr::RecordDecisionReplay(WorldBotState const& state, P
     std::string semantic = semanticJson ? semanticJson : "{}";
     std::string actionJson = actionSnapshot.str();
     std::string failureJson = failureSnapshot.str();
+    std::string observation = "{\"bot\":" + botJson + ",\"world\":" + worldJson + ",\"raw\":" + raw + "}";
+    BotDatasetEvent dataset;
+    dataset.feature_schema_version = _policyModelConfig.FeatureSchemaVersion.empty() ? BotDatasetEvent::DefaultFeatureSchemaVersion : _policyModelConfig.FeatureSchemaVersion;
+    dataset.run_id = _runId;
+    dataset.experiment_id = std::to_string(_experimentId);
+    dataset.episode_id = _runId;
+    dataset.bot_guid = bot->GetGUID();
+    dataset.bot_role = GetDungeonRole(bot);
+    dataset.bot_level = uint32(bot->getLevel());
+    dataset.policy_source = WorldPolicySource(_policyModelConfig, true);
+    dataset.policy_version = WorldPolicyVersion(_policyModelConfig, _config.BrainVersion);
+    dataset.timestamp_ms = NowMs();
+    dataset.tick_id = state.Sequence;
+    dataset.domain = "replay";
+    dataset.situation = type;
+    dataset.observation_json = observation;
+    dataset.semantic_json = semantic;
+    dataset.valid_action_mask_json = candidateJson && *candidateJson ? candidateJson : "[]";
+    dataset.chosen_action_json = actionJson;
+    dataset.action_result = failure ? "failed" : "ok";
+    dataset.outcome_json = failureJson;
+    dataset.quality_flags_json = "{\"source\":\"experiment_bot_replay_records\",\"decision_replay\":true}";
+    std::string canonical = dataset.Validate() ? dataset.ToJson() : "";
     CharacterDatabase.EscapeString(type);
     CharacterDatabase.EscapeString(botJson);
     CharacterDatabase.EscapeString(worldJson);
@@ -6524,11 +6774,13 @@ uint64 BotWorldPopulationMgr::RecordDecisionReplay(WorldBotState const& state, P
     CharacterDatabase.EscapeString(semantic);
     CharacterDatabase.EscapeString(actionJson);
     CharacterDatabase.EscapeString(failureJson);
+    CharacterDatabase.EscapeString(canonical);
 
-    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_replay_records (experiment_id, run_id, bot_guid, replay_type, map_id, zone_id, x, y, z, o, bot_snapshot_json, world_snapshot_json, raw_state_json, semantic_state_json, chosen_action_json, failure_json) "
-        "VALUES (" UI64FMTD ", " UI64FMTD ", %u, '%s', %u, %u, %f, %f, %f, %f, '%s', '%s', '%s', '%s', '%s', '%s')",
+    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_replay_records (schema_version, feature_schema_version, experiment_id, run_id, bot_guid, replay_type, map_id, zone_id, x, y, z, o, bot_snapshot_json, world_snapshot_json, raw_state_json, semantic_state_json, chosen_action_json, failure_json, canonical_event_json) "
+        "VALUES ('%s', '%s', " UI64FMTD ", " UI64FMTD ", %u, '%s', %u, %u, %f, %f, %f, %f, '%s', '%s', '%s', '%s', '%s', '%s', '%s')",
+        BotDatasetEvent::SchemaVersion, dataset.feature_schema_version.c_str(),
         _experimentId, _runId, state.Guid.GetCounter(), type.c_str(), bot->GetMapId(), bot->GetZoneId(), bot->GetPositionX(), bot->GetPositionY(),
-        bot->GetPositionZ(), bot->GetOrientation(), botJson.c_str(), worldJson.c_str(), raw.c_str(), semantic.c_str(), actionJson.c_str(), failureJson.c_str());
+        bot->GetPositionZ(), bot->GetOrientation(), botJson.c_str(), worldJson.c_str(), raw.c_str(), semantic.c_str(), actionJson.c_str(), failureJson.c_str(), canonical.c_str());
     return ReadLastInsertId();
 }
 
@@ -6617,11 +6869,38 @@ void BotWorldPopulationMgr::RecordEvent(WorldBotState& state, Player* bot, char 
     std::string event = eventType ? eventType : "unknown";
     std::string res = result ? result : "";
     std::string brain = _config.BrainVersion;
+    BotDatasetEvent dataset;
+    dataset.run_id = _runId;
+    dataset.experiment_id = std::to_string(_experimentId);
+    dataset.episode_id = _runId;
+    dataset.bot_guid = bot->GetGUID();
+    dataset.bot_role = GetDungeonRole(bot);
+    dataset.bot_level = uint32(bot->getLevel());
+    dataset.policy_source = WorldPolicySource(_policyModelConfig, false);
+    dataset.policy_version = WorldPolicyVersion(_policyModelConfig, _config.BrainVersion);
+    dataset.timestamp_ms = NowMs();
+    dataset.tick_id = state.EventSequence;
+    dataset.domain = "world_event";
+    dataset.situation = event;
+    dataset.observation_json = raw;
+    dataset.semantic_json = semantic;
+    dataset.valid_action_mask_json = "{\"event\":true}";
+    dataset.chosen_action_json = "{\"event_type\":\"" + JsonEscape(event) + "\"}";
+    dataset.action_result = res.empty() ? "ok" : res;
+    std::ostringstream eventOutcome;
+    eventOutcome << "{\"result\":\"" << JsonEscape(dataset.action_result)
+                 << "\",\"value_float\":" << valueFloat
+                 << ",\"value_int\":" << valueInt
+                 << ",\"spell_id\":" << spellId << "}";
+    dataset.outcome_json = eventOutcome.str();
+    dataset.quality_flags_json = "{\"source\":\"experiment_bot_events\"}";
+    std::string canonical = dataset.Validate() ? dataset.ToJson() : "";
     CharacterDatabase.EscapeString(raw);
     CharacterDatabase.EscapeString(semantic);
     CharacterDatabase.EscapeString(event);
     CharacterDatabase.EscapeString(res);
     CharacterDatabase.EscapeString(brain);
+    CharacterDatabase.EscapeString(canonical);
     uint32 targetEntry = 0;
     uint64 targetGuid = 0;
     if (target)
@@ -6631,10 +6910,11 @@ void BotWorldPopulationMgr::RecordEvent(WorldBotState& state, Player* bot, char 
             targetEntry = creature->GetEntry();
     }
 
-    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_events (experiment_id, run_id, bot_guid, brain_version, clip_id, map_id, zone_id, area_id, x, y, z, level, event_type, target_guid, target_entry, spell_id, result, value_float, value_int, raw_json, semantic_json) "
-        "VALUES (" UI64FMTD ", " UI64FMTD ", %u, '%s', %s, %u, %u, %u, %f, %f, %f, %u, '%s', " UI64FMTD ", %u, %u, '%s', %f, %u, '%s', '%s')",
+    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_events (schema_version, feature_schema_version, experiment_id, run_id, bot_guid, brain_version, clip_id, map_id, zone_id, area_id, x, y, z, level, event_type, target_guid, target_entry, spell_id, result, value_float, value_int, raw_json, semantic_json, canonical_event_json) "
+        "VALUES ('%s', '%s', " UI64FMTD ", " UI64FMTD ", %u, '%s', %s, %u, %u, %u, %f, %f, %f, %u, '%s', " UI64FMTD ", %u, %u, '%s', %f, %u, '%s', '%s', '%s')",
+        BotDatasetEvent::SchemaVersion, BotDatasetEvent::DefaultFeatureSchemaVersion,
         _experimentId, _runId, state.Guid.GetCounter(), brain.c_str(), clipSql.c_str(), bot->GetMapId(), bot->GetZoneId(), bot->GetAreaId(),
-        bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), uint32(bot->getLevel()), event.c_str(), targetGuid, targetEntry, spellId, res.c_str(), valueFloat, valueInt, raw.c_str(), semantic.c_str());
+        bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), uint32(bot->getLevel()), event.c_str(), targetGuid, targetEntry, spellId, res.c_str(), valueFloat, valueInt, raw.c_str(), semantic.c_str(), canonical.c_str());
 
     UpdateSemanticStatsFromEvent(bot, target, eventType, result, valueFloat, valueInt, spellId, semanticJson);
     if (eventName == "resurrected" || eventName == "death_recovery_failed" || eventName == "teleport_fallback_used")
@@ -6750,12 +7030,35 @@ void BotWorldPopulationMgr::RecordDecision(WorldBotState& state, Player* bot, ch
     std::string chosenJson = chosen.str();
     std::string outcomeJson = outcome.str();
     std::string brain = _config.BrainVersion;
+    BotDatasetEvent dataset;
+    dataset.feature_schema_version = _policyModelConfig.FeatureSchemaVersion.empty() ? BotDatasetEvent::DefaultFeatureSchemaVersion : _policyModelConfig.FeatureSchemaVersion;
+    dataset.run_id = _runId;
+    dataset.experiment_id = std::to_string(_experimentId);
+    dataset.episode_id = _runId;
+    dataset.bot_guid = bot->GetGUID();
+    dataset.bot_role = GetDungeonRole(bot);
+    dataset.bot_level = uint32(bot->getLevel());
+    dataset.policy_source = WorldPolicySource(_policyModelConfig, true);
+    dataset.policy_version = WorldPolicyVersion(_policyModelConfig, _config.BrainVersion);
+    dataset.timestamp_ms = nowMs;
+    dataset.tick_id = state.Sequence;
+    dataset.domain = "world_decision";
+    dataset.situation = situation ? situation : "idle";
+    dataset.observation_json = raw;
+    dataset.semantic_json = semantic;
+    dataset.valid_action_mask_json = candidateJson;
+    dataset.chosen_action_json = chosenJson;
+    dataset.action_result = failure ? "failed" : "ok";
+    dataset.outcome_json = outcomeJson;
+    dataset.quality_flags_json = "{\"source\":\"experiment_bot_decisions\",\"failure\":" + std::string(failure ? "true" : "false") + ",\"rare\":" + std::string(rare ? "true" : "false") + "}";
+    std::string canonical = dataset.Validate() ? dataset.ToJson() : "";
     CharacterDatabase.EscapeString(candidateJson);
     CharacterDatabase.EscapeString(chosenJson);
     CharacterDatabase.EscapeString(outcomeJson);
     CharacterDatabase.EscapeString(brain);
+    CharacterDatabase.EscapeString(canonical);
     std::string modelVersion = _policyModelConfig.Enabled && !_policyModelConfig.Version.empty() ? _policyModelConfig.Version : "";
-    std::string featureSchemaVersion = modelTrace.Enabled ? _policyModelConfig.FeatureSchemaVersion : "";
+    std::string featureSchemaVersion = _policyModelConfig.FeatureSchemaVersion.empty() ? BotDatasetEvent::DefaultFeatureSchemaVersion : _policyModelConfig.FeatureSchemaVersion;
     CharacterDatabase.EscapeString(modelVersion);
     CharacterDatabase.EscapeString(featureSchemaVersion);
     std::string sit = situation ? situation : "idle";
@@ -6763,17 +7066,18 @@ void BotWorldPopulationMgr::RecordDecision(WorldBotState& state, Player* bot, ch
     std::string currentActivity = BotLongTermProgressionBrain::ToString(chosenActivity.Activity);
     CharacterDatabase.EscapeString(currentActivity);
     std::string modelVersionSql = modelVersion.empty() ? "NULL" : ("'" + modelVersion + "'");
-    std::string featureSchemaSql = featureSchemaVersion.empty() ? "NULL" : ("'" + featureSchemaVersion + "'");
+    std::string featureSchemaSql = "'" + featureSchemaVersion + "'";
     std::string modelScoreSql = modelTrace.Enabled ? std::to_string(modelTrace.ModelScore) : "NULL";
     std::string modelRankSql = modelTrace.Enabled ? std::to_string(modelTrace.ModelRank) : "NULL";
     std::string modelFeaturesHashSql = modelTrace.Enabled ? std::to_string(modelTrace.FeaturesHash) : "NULL";
     std::string replaySql = replayId ? std::to_string(replayId) : "NULL";
 
-    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_decisions (experiment_id, run_id, bot_guid, brain_version, model_version, feature_schema_version, model_score, model_rank, model_features_hash, clip_id, situation_type, current_activity, current_goal, map_id, zone_id, area_id, x, y, z, raw_state_json, semantic_state_json, candidate_actions_json, chosen_action_json, outcome_json, reward, is_failure, is_rare_state, replay_key) "
-        "VALUES (" UI64FMTD ", " UI64FMTD ", %u, '%s', %s, %s, %s, %s, %s, %s, '%s', '%s', 'increase_character_power', %u, %u, %u, %f, %f, %f, '%s', '%s', '%s', '%s', '%s', %f, %u, %u, %s)",
+    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_decisions (schema_version, experiment_id, run_id, bot_guid, brain_version, model_version, feature_schema_version, model_score, model_rank, model_features_hash, clip_id, situation_type, current_activity, current_goal, map_id, zone_id, area_id, x, y, z, raw_state_json, semantic_state_json, candidate_actions_json, chosen_action_json, outcome_json, canonical_event_json, reward, is_failure, is_rare_state, replay_key) "
+        "VALUES ('%s', " UI64FMTD ", " UI64FMTD ", %u, '%s', %s, %s, %s, %s, %s, %s, '%s', '%s', 'increase_character_power', %u, %u, %u, %f, %f, %f, '%s', '%s', '%s', '%s', '%s', '%s', %f, %u, %u, %s)",
+        BotDatasetEvent::SchemaVersion,
         _experimentId, _runId, state.Guid.GetCounter(), brain.c_str(), modelVersionSql.c_str(), featureSchemaSql.c_str(), modelScoreSql.c_str(), modelRankSql.c_str(), modelFeaturesHashSql.c_str(), clipSql.c_str(), sit.c_str(), currentActivity.c_str(), bot->GetMapId(), bot->GetZoneId(),
         bot->GetAreaId(), bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), raw.c_str(), semantic.c_str(), candidateJson.c_str(), chosenJson.c_str(),
-        outcomeJson.c_str(), failure ? -1.0f : chosenActivity.Score, failure ? 1 : 0, rare ? 1 : 0, replaySql.c_str());
+        outcomeJson.c_str(), canonical.c_str(), failure ? -1.0f : chosenActivity.Score, failure ? 1 : 0, rare ? 1 : 0, replaySql.c_str());
 
     std::string areaFeatures = BuildEmbeddingFeaturesJson(bot, target, "area", bot->GetAreaId(), situation ? situation : "decision");
     UpdateSemanticOutcomeStats(bot, "area", bot->GetAreaId(), situation, failure ? "failed" : "sampled", failure ? -1.0f : chosenActivity.Score, power.Total - state.ActivityStartPower, failure, areaFeatures.c_str());

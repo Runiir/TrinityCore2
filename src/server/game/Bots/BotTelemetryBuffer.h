@@ -88,7 +88,7 @@ private:
     void FinalizeClosedClips(uint64 experimentId, uint64 runId, std::string const& brainVersion, BotBuffer& buffer, uint64 nowMs);
     void PersistClosedClip(uint64 experimentId, uint64 runId, std::string const& brainVersion, BotTelemetryClip& clip);
     static uint64 InsertClipRow(uint64 experimentId, uint64 runId, std::string const& brainVersion, BotTelemetryClip const& clip);
-    static void InsertFrameRows(uint64 clipId, uint64 triggerTimeMs, std::vector<BotTelemetryFrame> const& frames, uint32 startIndex);
+    static void InsertFrameRows(uint64 experimentId, uint64 runId, std::string const& brainVersion, uint64 clipId, uint64 triggerTimeMs, std::vector<BotTelemetryFrame> const& frames, uint32 startIndex);
     static std::string Escape(std::string value);
 
     BotTelemetryBufferConfig _config;
