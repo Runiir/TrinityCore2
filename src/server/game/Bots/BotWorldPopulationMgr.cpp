@@ -137,6 +137,115 @@ std::string ExtractJsonObjectField(std::string const& json, std::string const& k
     return "";
 }
 
+std::string ExtractJsonArrayField(std::string const& json, std::string const& key)
+{
+    std::string needle = "\"" + key + "\"";
+    size_t keyPos = json.find(needle);
+    if (keyPos == std::string::npos)
+        return "";
+    size_t colon = json.find(':', keyPos + needle.size());
+    if (colon == std::string::npos)
+        return "";
+    size_t start = json.find('[', colon);
+    if (start == std::string::npos)
+        return "";
+
+    uint32 depth = 0;
+    bool inString = false;
+    bool escaped = false;
+    for (size_t i = start; i < json.size(); ++i)
+    {
+        char c = json[i];
+        if (inString)
+        {
+            if (escaped)
+                escaped = false;
+            else if (c == '\\')
+                escaped = true;
+            else if (c == '"')
+                inString = false;
+            continue;
+        }
+
+        if (c == '"')
+            inString = true;
+        else if (c == '[')
+            ++depth;
+        else if (c == ']')
+        {
+            if (!depth)
+                return "";
+            --depth;
+            if (!depth)
+                return json.substr(start, i - start + 1);
+        }
+    }
+    return "";
+}
+
+std::vector<std::string> ExtractJsonObjectArrayItems(std::string const& arrayJson)
+{
+    std::vector<std::string> items;
+    uint32 depth = 0;
+    bool inString = false;
+    bool escaped = false;
+    size_t start = std::string::npos;
+    for (size_t i = 0; i < arrayJson.size(); ++i)
+    {
+        char c = arrayJson[i];
+        if (inString)
+        {
+            if (escaped)
+                escaped = false;
+            else if (c == '\\')
+                escaped = true;
+            else if (c == '"')
+                inString = false;
+            continue;
+        }
+
+        if (c == '"')
+            inString = true;
+        else if (c == '{')
+        {
+            if (!depth)
+                start = i;
+            ++depth;
+        }
+        else if (c == '}')
+        {
+            if (depth)
+            {
+                --depth;
+                if (!depth && start != std::string::npos)
+                    items.push_back(arrayJson.substr(start, i - start + 1));
+            }
+        }
+    }
+    return items;
+}
+
+bool ExtractJsonNumberField(std::string const& json, std::string const& key, float& value)
+{
+    std::regex pattern("\"" + key + "\"\\s*:\\s*(-?[0-9]+(?:\\.[0-9]+)?(?:[eE][+-]?[0-9]+)?)");
+    std::smatch match;
+    if (std::regex_search(json, match, pattern) && match.size() > 1)
+    {
+        value = float(std::atof(match[1].str().c_str()));
+        return true;
+    }
+    return false;
+}
+
+bool ExtractJsonIntField(std::string const& json, std::string const& key, int& value)
+{
+    float number = 0.0f;
+    if (!ExtractJsonNumberField(json, key, number))
+        return false;
+    value = int(number);
+    return true;
+}
+
 std::map<std::string, float> ExtractJsonNumberMap(std::string const& objectJson)
 {
     std::map<std::string, float> values;
@@ -144,6 +253,111 @@ std::map<std::string, float> ExtractJsonNumberMap(std::string const& objectJson)
     for (std::sregex_iterator itr(objectJson.begin(), objectJson.end(), pattern), end; itr != end; ++itr)
         values[(*itr)[1].str()] = float(std::atof((*itr)[2].str().c_str()));
     return values;
+}
+
+bool ParsePortableTree(std::string const& treeJson, BotPolicyModelConfig::Tree& tree)
+{
+    std::string nodesArray = ExtractJsonArrayField(treeJson, "nodes");
+    if (nodesArray.empty())
+        return false;
+
+    for (std::string const& nodeJson : ExtractJsonObjectArrayItems(nodesArray))
+    {
+        BotPolicyModelConfig::TreeNode node;
+        int id = 0;
+        if (!ExtractJsonIntField(nodeJson, "id", id))
+            return false;
+
+        float leaf = 0.0f;
+        if (ExtractJsonNumberField(nodeJson, "leaf", leaf))
+        {
+            node.Leaf = true;
+            node.Value = leaf;
+        }
+        else
+        {
+            node.Feature = ExtractJsonStringField(nodeJson, "feature");
+            if (node.Feature.empty())
+                return false;
+            ExtractJsonNumberField(nodeJson, "threshold", node.Threshold);
+            ExtractJsonIntField(nodeJson, "yes", node.Yes);
+            ExtractJsonIntField(nodeJson, "no", node.No);
+            ExtractJsonIntField(nodeJson, "missing", node.Missing);
+        }
+
+        tree.NodeIndex[id] = tree.Nodes.size();
+        tree.Nodes.push_back(std::move(node));
+    }
+
+    return !tree.Nodes.empty();
+}
+
+std::map<std::string, BotPolicyModelConfig::Ensemble> ParsePortableTreeEnsembles(std::string const& json)
+{
+    std::map<std::string, BotPolicyModelConfig::Ensemble> ensembles;
+    std::string all = ExtractJsonObjectField(json, "tree_ensembles");
+    if (all.empty())
+        return ensembles;
+
+    for (char const* label : { "action_success", "expected_reward", "death_risk", "stuck_risk", "quest_completion_likelihood" })
+    {
+        std::string labelObject = ExtractJsonObjectField(all, label);
+        if (labelObject.empty())
+            continue;
+
+        BotPolicyModelConfig::Ensemble ensemble;
+        ensemble.Objective = ExtractJsonStringField(labelObject, "objective");
+        ExtractJsonNumberField(labelObject, "base_score", ensemble.BaseScore);
+        std::string treesArray = ExtractJsonArrayField(labelObject, "trees");
+        for (std::string const& treeJson : ExtractJsonObjectArrayItems(treesArray))
+        {
+            BotPolicyModelConfig::Tree tree;
+            if (ParsePortableTree(treeJson, tree))
+                ensemble.Trees.push_back(std::move(tree));
+        }
+
+        if (!ensemble.Trees.empty())
+            ensembles[label] = std::move(ensemble);
+    }
+
+    return ensembles;
+}
+
+float Sigmoid(float value)
+{
+    if (value >= 0.0f)
+    {
+        float z = std::exp(-value);
+        return 1.0f / (1.0f + z);
+    }
+
+    float z = std::exp(value);
+    return z / (1.0f + z);
+}
+
+float EvalPortableTree(BotPolicyModelConfig::Tree const& tree, std::map<std::string, float> const& features)
+{
+    int nodeId = 0;
+    for (uint32 depth = 0; depth < 1024; ++depth)
+    {
+        auto indexItr = tree.NodeIndex.find(nodeId);
+        if (indexItr == tree.NodeIndex.end() || indexItr->second >= tree.Nodes.size())
+            return 0.0f;
+
+        BotPolicyModelConfig::TreeNode const& node = tree.Nodes[indexItr->second];
+        if (node.Leaf)
+            return node.Value;
+
+        auto featureItr = features.find(node.Feature);
+        if (featureItr == features.end())
+            nodeId = node.Missing;
+        else if (featureItr->second < node.Threshold)
+            nodeId = node.Yes;
+        else
+            nodeId = node.No;
+    }
+
+    return 0.0f;
 }
 
 std::vector<std::string> SplitRecoveryModes(std::string const& mode)
@@ -675,6 +889,7 @@ void BotWorldPopulationMgr::ValidatePolicyModelDeployment()
     _policyModelConfig.ModelType.clear();
     _policyModelConfig.ModelMeans.clear();
     _policyModelConfig.ModelWeights.clear();
+    _policyModelConfig.ModelTreeEnsembles.clear();
     if (!_policyModelConfig.Enabled)
         return;
 
@@ -758,13 +973,17 @@ bool BotWorldPopulationMgr::LoadPolicyModelArtifact(std::string const& artifactP
     if (!schema.empty())
         _policyModelConfig.FeatureSchemaVersion = schema;
 
-    std::string meansObject = ExtractJsonObjectField(json, "means");
-    std::string weightsObject = ExtractJsonObjectField(json, "weights");
-    if (meansObject.empty() || weightsObject.empty())
+    std::string artifactFormat = ExtractJsonStringField(json, "artifact_format");
+    std::map<std::string, BotPolicyModelConfig::Ensemble> treeEnsembles = ParsePortableTreeEnsembles(json);
+    std::string fallbackObject = ExtractJsonObjectField(json, "fallback");
+    std::string modelJson = fallbackObject.empty() ? json : fallbackObject;
+    std::string meansObject = ExtractJsonObjectField(modelJson, "means");
+    std::string weightsObject = ExtractJsonObjectField(modelJson, "weights");
+    if (treeEnsembles.empty() && (meansObject.empty() || weightsObject.empty()))
         return false;
 
     std::map<std::string, float> means = ExtractJsonNumberMap(meansObject);
-    if (means.empty())
+    if (treeEnsembles.empty() && means.empty())
         return false;
 
     std::map<std::string, std::map<std::string, float>> weights;
@@ -775,11 +994,14 @@ bool BotWorldPopulationMgr::LoadPolicyModelArtifact(std::string const& artifactP
             weights[label] = ExtractJsonNumberMap(labelObject);
     }
 
-    if (weights.empty())
+    if (treeEnsembles.empty() && weights.empty())
         return false;
 
     _policyModelConfig.ModelMeans = std::move(means);
     _policyModelConfig.ModelWeights = std::move(weights);
+    _policyModelConfig.ModelTreeEnsembles = std::move(treeEnsembles);
+    if (!artifactFormat.empty())
+        _policyModelConfig.ModelType = artifactFormat;
     _policyModelConfig.ArtifactLoaded = true;
     return true;
 }
@@ -5126,6 +5348,18 @@ float BotWorldPopulationMgr::PredictPolicyModelLabel(char const* label, std::map
         return 0.0f;
 
     std::string key = label;
+    auto ensembleItr = _policyModelConfig.ModelTreeEnsembles.find(key);
+    if (ensembleItr != _policyModelConfig.ModelTreeEnsembles.end())
+    {
+        BotPolicyModelConfig::Ensemble const& ensemble = ensembleItr->second;
+        float value = ensemble.BaseScore;
+        for (BotPolicyModelConfig::Tree const& tree : ensemble.Trees)
+            value += EvalPortableTree(tree, features);
+        if (ensemble.Objective == "binary:logistic")
+            value = Sigmoid(value);
+        return value;
+    }
+
     float value = 0.0f;
     auto meanItr = _policyModelConfig.ModelMeans.find(key);
     if (meanItr != _policyModelConfig.ModelMeans.end())
@@ -5151,23 +5385,16 @@ float BotWorldPopulationMgr::ScorePolicyModelCandidate(BotActivityScore const& s
 {
     if (!_policyModelConfig.Enabled || _policyModelConfig.Version.empty())
         return 0.0f;
+    if (!_policyModelConfig.ArtifactLoaded)
+        return 0.0f;
 
     std::map<std::string, float> features = BuildPolicyModelFeatureMap(score, bot, power, stage);
-    if (_policyModelConfig.ArtifactLoaded)
-    {
-        float actionSuccess = PredictPolicyModelLabel("action_success", features);
-        float expectedReward = PredictPolicyModelLabel("expected_reward", features);
-        float deathRisk = PredictPolicyModelLabel("death_risk", features);
-        float stuckRisk = PredictPolicyModelLabel("stuck_risk", features);
-        float questCompletion = PredictPolicyModelLabel("quest_completion_likelihood", features);
-        return expectedReward + actionSuccess + questCompletion - deathRisk - stuckRisk;
-    }
-
-    float levelFactor = bot ? std::min<float>(1.0f, float(bot->getLevel()) / 85.0f) : 0.0f;
-    float powerFactor = std::min<float>(1.0f, power.Total / 500.0f);
-    float reward = score.ExpectedPowerGain + score.ExpectedXpGain + score.ExpectedGoldGain + score.ExpectedUnlockValue + score.ExpectedDatasetValue;
-    float risk = score.ExpectedDeathRisk + score.ExpectedWipeRisk + score.ExpectedStuckRisk + score.LearnedDangerScore;
-    return reward + score.LearnedScore + score.LearnedProgressionValue + levelFactor + powerFactor - risk - score.LearnedPenalty;
+    float actionSuccess = PredictPolicyModelLabel("action_success", features);
+    float expectedReward = PredictPolicyModelLabel("expected_reward", features);
+    float deathRisk = PredictPolicyModelLabel("death_risk", features);
+    float stuckRisk = PredictPolicyModelLabel("stuck_risk", features);
+    float questCompletion = PredictPolicyModelLabel("quest_completion_likelihood", features);
+    return expectedReward + actionSuccess + questCompletion - deathRisk - stuckRisk;
 }
 
 BotWorldPopulationMgr::PolicyModelTrace BotWorldPopulationMgr::BuildPolicyModelTrace(std::vector<BotActivityScore> const& activityScores, BotActivityScore const& chosenActivity, Player const* bot, uint64 clipId, uint64 replayId) const

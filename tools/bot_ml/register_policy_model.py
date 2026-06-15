@@ -29,18 +29,19 @@ def main() -> int:
     payload = {
         "model_version": model.get("model_version", ""),
         "model_type": model.get("model_type", ""),
+        "backend": model.get("backend", ""),
         "git_commit": model.get("git_commit") or git_commit(),
         "dataset_path": model.get("dataset_path", ""),
         "artifact_path": str(args.model),
-        "feature_schema_json": json.dumps({"version": FEATURE_SCHEMA_VERSION, "features": model.get("features", [])}, sort_keys=True),
-        "label_schema_json": json.dumps({"labels": LABELS}, sort_keys=True),
+        "feature_schema_json": json.dumps({"version": model.get("feature_schema_version", FEATURE_SCHEMA_VERSION), "features": model.get("features", [])}, sort_keys=True),
+        "label_schema_json": json.dumps(model.get("labels") or {"labels": LABELS}, sort_keys=True),
         "train_run_ids": json.dumps(model.get("train_run_ids", [])),
         "eval_run_ids": json.dumps(model.get("eval_run_ids", [])),
         "metrics_json": json.dumps(metrics, sort_keys=True),
         "diagnostics_json": json.dumps(diagnostics, sort_keys=True),
         "accepted": 1 if args.accepted and (args.force or metrics.get("accepted") is True) else 0,
     }
-    cols = ["model_version", "model_type", "git_commit", "dataset_path", "artifact_path", "feature_schema_json", "label_schema_json", "train_run_ids", "eval_run_ids", "metrics_json", "diagnostics_json", "accepted"]
+    cols = ["model_version", "model_type", "backend", "git_commit", "dataset_path", "artifact_path", "feature_schema_json", "label_schema_json", "train_run_ids", "eval_run_ids", "metrics_json", "diagnostics_json", "accepted"]
     values = ", ".join(str(payload[col]) if col == "accepted" else sql_quote(payload[col]) for col in cols)
     assignments = ", ".join(f"{col}=VALUES({col})" for col in cols[1:])
     sql = (

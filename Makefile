@@ -9,13 +9,28 @@ AUTH_TEST_CONF ?= trinity-authserver-test.conf
 WORLD_TEST_CONF ?= trinity-worldserver-test.conf
 BOTWORLD_AUTOSTART ?= 0
 BOTWORLD_AUTOSTART_RECORDING ?= 0
+BOTWORLD_ENABLE ?= 0
 BOTWORLD_RECORDING_WINDOW_MINUTES ?= 30
+BOTWORLD_TARGET_POPULATION ?= 10
+BOTWORLD_SPAWN_MODE ?= saved_or_near_player
+BOTWORLD_ALLOW_CONFIGURED_CENTER_FALLBACK ?= 0
 BOTPOLICYMODEL_ENABLE ?= 0
 BOTPOLICYMODEL_MODE ?= shadow
-BOTPOLICYMODEL_VERSION ?=
+MODEL_VERSION ?=
+BOTPOLICYMODEL_VERSION ?= $(MODEL_VERSION)
 BOTPOLICYMODEL_SCORE_WEIGHT ?= 1.0
+BOTPOLICYMODEL_FAIL_CLOSED ?= 1
+CHARACTER_DB_URL ?= mysql://trinity:trinity@127.0.0.1:3306/characters
+BOT_DATASET_DIR ?= dataset/bot_ml
+BOT_MODEL_DIR ?= models/bot_policy
+BOT_EVAL_DIR ?= evaluations/bot_policy
+OUTCOME_WINDOW_SEC ?= 180
+DEATH_WINDOW_SEC ?= 180
+STUCK_WINDOW_SEC ?= 180
+QUEST_WINDOW_SEC ?= 600
+REWARD_WINDOW_SEC ?= 300
 
-.PHONY: help build binaries runtime-image local-configure local-build local-install db up down logs shell auth world test-configs host-auth host-world clean-db clean-images data-dir require-client extract-maps extract-vmaps assemble-vmaps extract-mmaps extract-assets
+.PHONY: help build binaries runtime-image local-configure local-build local-install db up down logs shell auth world test-configs host-auth host-world host-world-botexp host-world-botexp-small host-world-botexp-shadow bot-ml-export bot-ml-build-dataset bot-ml-train bot-ml-evaluate bot-ml-register bot-ml-full clean-db clean-images data-dir require-client extract-maps extract-vmaps assemble-vmaps extract-mmaps extract-assets
 
 help:
 	@printf '%s\n' \
@@ -37,8 +52,10 @@ help:
 		'  make test-configs Create local host-run test configs' \
 		'  make host-auth    Run host-built authserver with trinity-authserver-test.conf' \
 		'  make host-world   Run host-built worldserver with trinity-worldserver-test.conf' \
-		'                    Use BOTWORLD_AUTOSTART=1 BOTWORLD_AUTOSTART_RECORDING=1 for always-on recording' \
-		'                    Use BOTPOLICYMODEL_ENABLE=1 BOTPOLICYMODEL_MODE=shadow BOTPOLICYMODEL_VERSION=... to shadow a registered model' \
+		'  make host-world-botexp-small  Run 5 always-on bots with 15-minute recording windows' \
+		'  make host-world-botexp        Run 10 always-on bots with 30-minute recording windows' \
+		'  make host-world-botexp-shadow MODEL_VERSION=policy_xxx  Run shadow policy tracing' \
+		'  make bot-ml-full MODEL_VERSION=policy_xxx  Export, label, validate, train, evaluate, register' \
 		'  make logs         Follow all service logs' \
 		'  make shell        Open a shell in the server image' \
 		'  make down         Stop containers' \
@@ -100,7 +117,8 @@ test-configs:
 	perl -0pi -e 's|LoginDatabaseInfo\s*=\s*"127\.0\.0\.1;3306;trinity;trinity;auth"|LoginDatabaseInfo = "172.20.0.2;3306;trinity;trinity;auth"|g' "$(AUTH_TEST_CONF)"
 	perl -0pi -e 's|DataDir\s*=\s*"."|DataDir = "$(DATA_DIR)"|g; s|LoginDatabaseInfo\s*=\s*"127\.0\.0\.1;3306;trinity;trinity;auth"|LoginDatabaseInfo = "172.20.0.2;3306;trinity;trinity;auth"|g; s|WorldDatabaseInfo\s*=\s*"127\.0\.0\.1;3306;trinity;trinity;world"|WorldDatabaseInfo = "172.20.0.2;3306;trinity;trinity;world"|g; s|CharacterDatabaseInfo\s*=\s*"127\.0\.0\.1;3306;trinity;trinity;characters"|CharacterDatabaseInfo = "172.20.0.2;3306;trinity;trinity;characters"|g; s|HotfixDatabaseInfo\s*=\s*"127\.0\.0\.1;3306;trinity;trinity;hotfixes"|HotfixDatabaseInfo = "172.20.0.2;3306;trinity;trinity;hotfixes"|g; s|PlayerBot\.Enable\s*=\s*0|PlayerBot.Enable = 1|g; s|Ra\.Enable\s*=\s*0|Ra.Enable = 1|g; s|SOAP\.Enabled\s*=\s*0|SOAP.Enabled = 1|g' "$(WORLD_TEST_CONF)"
 	perl -0pi -e 's|BotWorld\.AutoStart\s*=\s*\d+|BotWorld.AutoStart = $(BOTWORLD_AUTOSTART)|g; s|BotWorld\.AutoStartRecording\s*=\s*\d+|BotWorld.AutoStartRecording = $(BOTWORLD_AUTOSTART_RECORDING)|g; s|BotWorld\.AutoRecordingWindowMinutes\s*=\s*\d+|BotWorld.AutoRecordingWindowMinutes = $(BOTWORLD_RECORDING_WINDOW_MINUTES)|g' "$(WORLD_TEST_CONF)"
-	perl -0pi -e 's|BotPolicyModel\.Enable\s*=\s*\d+|BotPolicyModel.Enable = $(BOTPOLICYMODEL_ENABLE)|g; s|BotPolicyModel\.Mode\s*=\s*\w+|BotPolicyModel.Mode = $(BOTPOLICYMODEL_MODE)|g; s|BotPolicyModel\.Version\s*=\s*.*|BotPolicyModel.Version = $(BOTPOLICYMODEL_VERSION)|g; s|BotPolicyModel\.ScoreWeight\s*=\s*[0-9.]+|BotPolicyModel.ScoreWeight = $(BOTPOLICYMODEL_SCORE_WEIGHT)|g' "$(WORLD_TEST_CONF)"
+	perl -0pi -e 's|BotWorld\.Enable\s*=\s*\d+|BotWorld.Enable = $(BOTWORLD_ENABLE)|g; s|BotWorld\.TargetPopulation\s*=\s*\d+|BotWorld.TargetPopulation = $(BOTWORLD_TARGET_POPULATION)|g; s|BotWorld\.SpawnMode\s*=\s*"?[^"\\n]+"?|BotWorld.SpawnMode = "$(BOTWORLD_SPAWN_MODE)"|g; s|BotWorld\.AllowConfiguredCenterFallback\s*=\s*\d+|BotWorld.AllowConfiguredCenterFallback = $(BOTWORLD_ALLOW_CONFIGURED_CENTER_FALLBACK)|g; s|BotProgression\.AllowQuesting\s*=\s*\d+|BotProgression.AllowQuesting = 1|g; s|BotProgression\.AllowDungeons\s*=\s*\d+|BotProgression.AllowDungeons = 0|g; s|BotProgression\.AllowRaids\s*=\s*\d+|BotProgression.AllowRaids = 0|g; s|BotLearning\.Enable\s*=\s*\d+|BotLearning.Enable = 1|g' "$(WORLD_TEST_CONF)"
+	perl -0pi -e 's|BotPolicyModel\.Enable\s*=\s*\d+|BotPolicyModel.Enable = $(BOTPOLICYMODEL_ENABLE)|g; s|BotPolicyModel\.Mode\s*=\s*"?[^"\\n]+"?|BotPolicyModel.Mode = "$(BOTPOLICYMODEL_MODE)"|g; s|BotPolicyModel\.Version\s*=\s*.*|BotPolicyModel.Version = "$(BOTPOLICYMODEL_VERSION)"|g; s|BotPolicyModel\.ScoreWeight\s*=\s*[0-9.]+|BotPolicyModel.ScoreWeight = $(BOTPOLICYMODEL_SCORE_WEIGHT)|g; s|BotPolicyModel\.FailClosed\s*=\s*\d+|BotPolicyModel.FailClosed = $(BOTPOLICYMODEL_FAIL_CLOSED)|g' "$(WORLD_TEST_CONF)"
 
 host-auth: local-configure db test-configs
 	cmake --build $(BUILD_DIR) --target authserver -j"$(JOBS)"
@@ -109,6 +127,36 @@ host-auth: local-configure db test-configs
 host-world: local-configure db test-configs
 	cmake --build $(BUILD_DIR) --target worldserver -j"$(JOBS)"
 	ulimit -c unlimited && $(BUILD_DIR)/src/server/worldserver/worldserver --config "$(WORLD_TEST_CONF)"
+
+host-world-botexp-small:
+	$(MAKE) host-world BOTWORLD_ENABLE=1 BOTWORLD_AUTOSTART=1 BOTWORLD_AUTOSTART_RECORDING=1 BOTWORLD_RECORDING_WINDOW_MINUTES=15 BOTWORLD_TARGET_POPULATION=5 BOTWORLD_SPAWN_MODE=saved_or_near_player BOTWORLD_ALLOW_CONFIGURED_CENTER_FALLBACK=0 BOTPOLICYMODEL_ENABLE=0
+
+host-world-botexp:
+	$(MAKE) host-world BOTWORLD_ENABLE=1 BOTWORLD_AUTOSTART=1 BOTWORLD_AUTOSTART_RECORDING=1 BOTWORLD_RECORDING_WINDOW_MINUTES=$(BOTWORLD_RECORDING_WINDOW_MINUTES) BOTWORLD_TARGET_POPULATION=$(BOTWORLD_TARGET_POPULATION) BOTWORLD_SPAWN_MODE=saved_or_near_player BOTWORLD_ALLOW_CONFIGURED_CENTER_FALLBACK=0 BOTPOLICYMODEL_ENABLE=0
+
+host-world-botexp-shadow:
+	$(MAKE) host-world BOTWORLD_ENABLE=1 BOTWORLD_AUTOSTART=1 BOTWORLD_AUTOSTART_RECORDING=1 BOTWORLD_RECORDING_WINDOW_MINUTES=$(BOTWORLD_RECORDING_WINDOW_MINUTES) BOTWORLD_TARGET_POPULATION=$(BOTWORLD_TARGET_POPULATION) BOTWORLD_SPAWN_MODE=saved_or_near_player BOTWORLD_ALLOW_CONFIGURED_CENTER_FALLBACK=0 BOTPOLICYMODEL_ENABLE=1 BOTPOLICYMODEL_MODE=shadow BOTPOLICYMODEL_VERSION=$(MODEL_VERSION) BOTPOLICYMODEL_FAIL_CLOSED=1
+
+bot-ml-export:
+	pixi run python -m tools.bot_ml.export_bot_dataset --database-url "$(CHARACTER_DB_URL)" --output-dir "$(BOT_DATASET_DIR)/raw"
+
+bot-ml-build-dataset:
+	pixi run python -m tools.bot_ml.build_decision_dataset --input-dir "$(BOT_DATASET_DIR)/raw" --output "$(BOT_DATASET_DIR)/decision_dataset.jsonl" --manifest "$(BOT_DATASET_DIR)/decision_dataset_manifest.json" --outcome-window-sec "$(OUTCOME_WINDOW_SEC)" --death-window-sec "$(DEATH_WINDOW_SEC)" --stuck-window-sec "$(STUCK_WINDOW_SEC)" --quest-window-sec "$(QUEST_WINDOW_SEC)" --reward-window-sec "$(REWARD_WINDOW_SEC)"
+
+bot-ml-train:
+	pixi run python -m tools.bot_ml.train_policy_model --dataset "$(BOT_DATASET_DIR)/decision_dataset.jsonl" --model-dir "$(BOT_MODEL_DIR)" --model-version "$(MODEL_VERSION)" --backend xgboost
+
+bot-ml-evaluate:
+	pixi run python -m tools.bot_ml.evaluate_policy_model --dataset "$(BOT_DATASET_DIR)/decision_dataset.jsonl" --model "$(BOT_MODEL_DIR)/$(MODEL_VERSION)/model.json" --metrics "$(BOT_EVAL_DIR)/$(MODEL_VERSION)_metrics.json" --diagnostics "$(BOT_EVAL_DIR)/$(MODEL_VERSION)_diagnostics.json"
+
+bot-ml-register:
+	pixi run python -m tools.bot_ml.register_policy_model --model "$(BOT_MODEL_DIR)/$(MODEL_VERSION)/model.json" --metrics "$(BOT_EVAL_DIR)/$(MODEL_VERSION)_metrics.json" --diagnostics "$(BOT_EVAL_DIR)/$(MODEL_VERSION)_diagnostics.json" --sql-output "$(BOT_MODEL_DIR)/$(MODEL_VERSION)/register_model.sql"
+
+bot-ml-full: bot-ml-export bot-ml-build-dataset
+	pixi run python -m tools.bot_ml.validate_data_quality --dataset "$(BOT_DATASET_DIR)/decision_dataset.jsonl" --report "$(BOT_DATASET_DIR)/data_quality.json"
+	$(MAKE) bot-ml-train MODEL_VERSION=$(MODEL_VERSION) BOT_DATASET_DIR=$(BOT_DATASET_DIR) BOT_MODEL_DIR=$(BOT_MODEL_DIR)
+	$(MAKE) bot-ml-evaluate MODEL_VERSION=$(MODEL_VERSION) BOT_DATASET_DIR=$(BOT_DATASET_DIR) BOT_MODEL_DIR=$(BOT_MODEL_DIR) BOT_EVAL_DIR=$(BOT_EVAL_DIR)
+	$(MAKE) bot-ml-register MODEL_VERSION=$(MODEL_VERSION) BOT_MODEL_DIR=$(BOT_MODEL_DIR) BOT_EVAL_DIR=$(BOT_EVAL_DIR)
 
 up: build
 	$(COMPOSE) up

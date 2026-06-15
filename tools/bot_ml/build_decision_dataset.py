@@ -1,32 +1,43 @@
 from __future__ import annotations
 
 import argparse
-from collections import defaultdict
+import json
+from bisect import bisect_right
+from collections import Counter, defaultdict
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 try:
-    from .common import FEATURE_SCHEMA_VERSION, flatten_json, load_json, read_jsonl, split_by_run_ids, stable_hash, table_path, write_json, write_jsonl, write_parquet_if_available
+    from .common import FEATURE_SCHEMA_VERSION, LABELS, flatten_json, load_json, read_jsonl, split_by_run_ids, stable_hash, table_path, write_json, write_jsonl, write_parquet_if_available
 except ImportError:
-    from common import FEATURE_SCHEMA_VERSION, flatten_json, load_json, read_jsonl, split_by_run_ids, stable_hash, table_path, write_json, write_jsonl, write_parquet_if_available
+    from common import FEATURE_SCHEMA_VERSION, LABELS, flatten_json, load_json, read_jsonl, split_by_run_ids, stable_hash, table_path, write_json, write_jsonl, write_parquet_if_available
 
 
-def future_outcomes(events: list[dict[str, Any]]) -> dict[tuple[int, int], dict[str, float]]:
-    by_bot: dict[tuple[int, int], list[dict[str, Any]]] = defaultdict(list)
-    for event in events:
-        by_bot[(int(event.get("run_id") or 0), int(event.get("bot_guid") or 0))].append(event)
-    labels: dict[tuple[int, int], dict[str, float]] = {}
-    for key, rows in by_bot.items():
-        rows.sort(key=lambda row: str(row.get("ts", "")))
-        death_count = sum(1 for row in rows if row.get("event_type") == "death")
-        stuck_count = sum(1 for row in rows if row.get("event_type") == "stuck_detected")
-        quest_done = sum(1 for row in rows if row.get("event_type") == "quest_completed")
-        labels[key] = {
-            "future_deaths": float(death_count),
-            "future_stucks": float(stuck_count),
-            "future_quest_completions": float(quest_done),
-        }
-    return labels
+POSITIVE_EVENTS = {"quest_completed", "objective_progress", "mob_killed", "boss_killed", "loot_received", "gear_upgrade", "level_up"}
+NEGATIVE_EVENTS = {"death", "repeated_death", "stuck_detected", "unstuck", "objective_failed", "quest_abandoned", "timeout", "failed_path", "path_failed", "bad_loot", "death_recovery_failed", "interrupt_failed"}
+DEATH_EVENTS = {"death", "repeated_death", "death_recovery_failed"}
+STUCK_EVENTS = {"stuck_detected", "path_failed", "failed_path", "unstuck", "death_recovery_failed"}
+QUEST_EVENTS = {"quest_completed"}
+
+
+def parse_ts(value: Any) -> float:
+    if value is None or value == "":
+        return 0.0
+    if isinstance(value, (int, float)):
+        return float(value)
+    text = str(value).strip()
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
+    for fmt in (None, "%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S"):
+        try:
+            dt = datetime.fromisoformat(text) if fmt is None else datetime.strptime(text, fmt)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt.timestamp()
+        except ValueError:
+            continue
+    return 0.0
 
 
 def index_semantic_stats(rows: list[dict[str, Any]]) -> dict[tuple[str, int], dict[str, Any]]:
@@ -36,6 +47,19 @@ def index_semantic_stats(rows: list[dict[str, Any]]) -> dict[tuple[str, int], di
         entity_key = int(row.get("entity_key") or 0)
         if entity_type and entity_key:
             indexed[(entity_type, entity_key)] = row
+    return indexed
+
+
+def index_future_events(events: list[dict[str, Any]]) -> dict[tuple[int, int], tuple[list[float], list[dict[str, Any]]]]:
+    grouped: dict[tuple[int, int], list[dict[str, Any]]] = defaultdict(list)
+    for event in events:
+        row = dict(event)
+        row["_ts_epoch"] = parse_ts(event.get("ts"))
+        grouped[(int(event.get("run_id") or 0), int(event.get("bot_guid") or 0))].append(row)
+    indexed = {}
+    for key, rows in grouped.items():
+        rows.sort(key=lambda item: (item.get("_ts_epoch", 0.0), int(item.get("id") or 0)))
+        indexed[key] = ([float(row.get("_ts_epoch") or 0.0) for row in rows], rows)
     return indexed
 
 
@@ -52,17 +76,7 @@ def nested_int(payload: Any, path: tuple[str, ...], default: int = 0) -> int:
 
 
 def add_semantic_stat_features(row: dict[str, Any], prefix: str, stats: dict[str, Any] | None) -> None:
-    numeric = [
-        "samples",
-        "successes",
-        "failures",
-        "deaths",
-        "avg_reward",
-        "avg_power_delta",
-        "danger_score",
-        "progression_value",
-    ]
-    for key in numeric:
+    for key in ["samples", "successes", "failures", "deaths", "avg_reward", "avg_power_delta", "danger_score", "progression_value"]:
         row[f"stat_{prefix}_{key}"] = float((stats or {}).get(key) or 0.0)
     if stats:
         derived: dict[str, float] = {}
@@ -93,15 +107,106 @@ def candidate_rows(candidates: Any, chosen: dict[str, Any]) -> list[dict[str, An
     return [chosen]
 
 
-def build_rows(decision: dict[str, Any], outcomes: dict[tuple[int, int], dict[str, float]], semantic_stats: dict[tuple[str, int], dict[str, Any]] | None = None) -> list[dict[str, Any]]:
+def window_events(indexed: dict[tuple[int, int], tuple[list[float], list[dict[str, Any]]]], run_id: int, bot_guid: int, ts: float, window_sec: int) -> list[dict[str, Any]]:
+    stamps, rows = indexed.get((run_id, bot_guid), ([], []))
+    start = bisect_right(stamps, ts)
+    end = bisect_right(stamps, ts + window_sec)
+    return rows[start:end]
+
+
+def event_reward(event: dict[str, Any]) -> float:
+    event_type = str(event.get("event_type") or "")
+    value = float(event.get("value_float") or 0.0)
+    reward = 0.0
+    if event_type == "quest_completed":
+        reward += 8.0
+    elif event_type == "objective_progress":
+        reward += 3.0
+    elif event_type in {"mob_killed", "boss_killed"}:
+        reward += 1.5
+    elif event_type == "loot_received":
+        reward += 0.5
+    elif event_type == "gear_upgrade":
+        reward += 2.0 + max(0.0, value)
+    elif event_type == "level_up":
+        reward += 6.0
+    if value > 0:
+        reward += min(5.0, value * 0.25)
+    if event_type == "death":
+        reward -= 8.0
+    elif event_type == "repeated_death":
+        reward -= 12.0
+    elif event_type in STUCK_EVENTS:
+        reward -= 4.0
+    elif event_type in {"timeout", "objective_failed", "quest_abandoned", "interrupt_failed"}:
+        reward -= 5.0
+    if event_type in {"path_failed", "failed_path"}:
+        reward -= 2.0
+    if value < 0:
+        reward += value
+    return reward
+
+
+def label_decision(decision: dict[str, Any], indexed_events: dict[tuple[int, int], tuple[list[float], list[dict[str, Any]]]], windows: dict[str, int]) -> dict[str, Any]:
+    run_id = int(decision.get("run_id") or 0)
+    bot_guid = int(decision.get("bot_guid") or 0)
+    ts = parse_ts(decision.get("ts"))
+    outcome_events = window_events(indexed_events, run_id, bot_guid, ts, windows["outcome"])
+    reward_events = window_events(indexed_events, run_id, bot_guid, ts, windows["reward"])
+    death_events = window_events(indexed_events, run_id, bot_guid, ts, windows["death"])
+    stuck_events = window_events(indexed_events, run_id, bot_guid, ts, windows["stuck"])
+    quest_events = window_events(indexed_events, run_id, bot_guid, ts, windows["quest"])
+    used_events = {int(event.get("id") or 0) for event in (outcome_events + reward_events + death_events + stuck_events + quest_events) if event.get("id") is not None}
+
+    first_positive: dict[str, Any] | None = None
+    first_negative: dict[str, Any] | None = None
+    for event in outcome_events:
+        event_type = str(event.get("event_type") or "")
+        value = float(event.get("value_float") or 0.0)
+        positive = event_type in POSITIVE_EVENTS or value > 0
+        negative = event_type in NEGATIVE_EVENTS or value < 0 or str(event.get("result") or "").lower() in {"failed", "timeout", "bad_loot"}
+        if positive and first_positive is None:
+            first_positive = event
+        if negative and first_negative is None:
+            first_negative = event
+        if first_positive is not None and first_negative is not None:
+            break
+
+    if first_positive and (not first_negative or float(first_positive["_ts_epoch"]) <= float(first_negative["_ts_epoch"])):
+        action_success = 1.0
+        reason = f"positive_progress:{first_positive.get('event_type')}"
+        time_to_outcome = float(first_positive["_ts_epoch"]) - ts
+    elif first_negative:
+        action_success = 0.0
+        reason = f"negative_outcome:{first_negative.get('event_type')}"
+        time_to_outcome = float(first_negative["_ts_epoch"]) - ts
+    else:
+        action_success = 0.0
+        reason = "no_future_outcome"
+        time_to_outcome = None
+
+    expected_reward = sum(event_reward(event) for event in reward_events)
+    return {
+        "action_success": action_success,
+        "expected_reward": expected_reward,
+        "death_risk": 1.0 if any(str(event.get("event_type") or "") in DEATH_EVENTS for event in death_events) else 0.0,
+        "stuck_risk": 1.0 if any(str(event.get("event_type") or "") in STUCK_EVENTS for event in stuck_events) else 0.0,
+        "quest_completion_likelihood": 1.0 if any(str(event.get("event_type") or "") in QUEST_EVENTS for event in quest_events) else 0.0,
+        "event_ids_used_for_label": sorted(used_events),
+        "label_window_json": json.dumps(windows, sort_keys=True),
+        "label_reason": reason,
+        "time_to_outcome_sec": time_to_outcome,
+        "no_future_events": not used_events,
+        "ambiguous_label": bool(first_positive and first_negative and abs(float(first_positive["_ts_epoch"]) - float(first_negative["_ts_epoch"])) <= 5.0),
+    }
+
+
+def build_rows(decision: dict[str, Any], labels: dict[str, Any], semantic_stats: dict[tuple[str, int], dict[str, Any]] | None = None) -> list[dict[str, Any]]:
     raw = load_json(decision.get("raw_state_json"), {})
     semantic = load_json(decision.get("semantic_state_json"), {})
     candidates = load_json(decision.get("candidate_actions_json"), [])
     chosen = load_json(decision.get("chosen_action_json"), {})
     outcome = load_json(decision.get("outcome_json"), {})
-    run_id = int(decision.get("run_id") or 0)
-    bot_guid = int(decision.get("bot_guid") or 0)
-    future = outcomes.get((run_id, bot_guid), {})
     features: dict[str, float] = {}
     flatten_json("raw", raw, features)
     flatten_json("semantic", semantic, features)
@@ -109,14 +214,20 @@ def build_rows(decision: dict[str, Any], outcomes: dict[tuple[int, int], dict[st
     flatten_json("outcome", outcome, features)
     chosen_activity = activity_name(chosen) or str(decision.get("current_activity") or "")
     base: dict[str, Any] = {
-        "run_id": run_id,
+        "run_id": int(decision.get("run_id") or 0),
         "decision_id": int(decision.get("id") or 0),
+        "event_ids_used_for_label": labels["event_ids_used_for_label"],
         "clip_id": int(decision.get("clip_id") or 0),
         "replay_id": int(decision.get("replay_key") or 0),
-        "bot_guid": bot_guid,
+        "bot_guid": int(decision.get("bot_guid") or 0),
         "brain_version": decision.get("brain_version") or "",
         "model_version": chosen.get("policy_model", {}).get("model_version", decision.get("model_version") or ""),
         "feature_schema_version": FEATURE_SCHEMA_VERSION,
+        "label_window_json": labels["label_window_json"],
+        "label_reason": labels["label_reason"],
+        "time_to_outcome_sec": labels["time_to_outcome_sec"],
+        "no_future_events": 1 if labels["no_future_events"] else 0,
+        "ambiguous_label": 1 if labels["ambiguous_label"] else 0,
         "runtime_feature_schema_version": decision.get("feature_schema_version") or chosen.get("policy_model", {}).get("feature_schema_version", ""),
         "runtime_model_score": float(decision.get("model_score") or chosen.get("policy_model", {}).get("model_score", 0.0) or 0.0),
         "runtime_model_rank": int(decision.get("model_rank") or chosen.get("policy_model", {}).get("model_rank", 0) or 0),
@@ -138,8 +249,7 @@ def build_rows(decision: dict[str, Any], outcomes: dict[tuple[int, int], dict[st
     add_semantic_stat_features(base, "mechanic", stats.get(("mechanic", infer_mechanic_key(decision, raw, semantic))))
 
     rows: list[dict[str, Any]] = []
-    candidates_list = candidate_rows(candidates, chosen)
-    for index, candidate in enumerate(candidates_list):
+    for index, candidate in enumerate(candidate_rows(candidates, chosen)):
         row = dict(base)
         candidate_activity = activity_name(candidate)
         is_chosen = candidate_activity == chosen_activity or (not candidate_activity and index == 0)
@@ -159,34 +269,47 @@ def build_rows(decision: dict[str, Any], outcomes: dict[tuple[int, int], dict[st
                 "progression_value": float(candidate.get("progression_value", chosen.get("progression_value", 0.0)) or 0.0),
                 "confidence": float(candidate.get("confidence", chosen.get("confidence", 0.0)) or 0.0),
                 "utility_score": float(candidate.get("score", candidate.get("activity_score", chosen.get("activity_score", outcome.get("expected_value", 0.0)))) or 0.0),
-                "action_success": 0.0 if is_chosen and int(decision.get("is_failure") or 0) else (1.0 if is_chosen else 0.0),
-                "expected_reward": float(decision.get("reward") or 0.0) if is_chosen else 0.0,
-                "death_risk": 1.0 if is_chosen and future.get("future_deaths", 0.0) > 0 else 0.0,
-                "stuck_risk": 1.0 if is_chosen and future.get("future_stucks", 0.0) > 0 else 0.0,
-                "quest_completion_likelihood": 1.0 if is_chosen and future.get("future_quest_completions", 0.0) > 0 else 0.0,
             }
         )
+        for label in LABELS:
+            row[label] = float(labels[label]) if is_chosen else 0.0
         row["features_hash"] = stable_hash({key: row[key] for key in sorted(row) if key.startswith(("json_", "stat_", "learned_", "danger_", "progression_", "confidence", "utility_", "candidate_"))})
-        row["trace"] = {
-            "run_id": row["run_id"],
-            "decision_id": row["decision_id"],
-            "clip_id": row["clip_id"],
-            "replay_id": row["replay_id"],
-            "bot_guid": row["bot_guid"],
-            "brain_version": row["brain_version"],
-            "model_version": row["model_version"],
-            "feature_schema_version": row["feature_schema_version"],
-            "candidate_index": row["candidate_index"],
-            "candidate_activity": row["candidate_activity"],
-            "is_chosen": bool(row["is_chosen"]),
-        }
+        row["trace"] = {key: row.get(key) for key in ["run_id", "decision_id", "event_ids_used_for_label", "clip_id", "replay_id", "bot_guid", "brain_version", "model_version", "feature_schema_version", "candidate_index", "candidate_activity", "is_chosen"]}
         rows.append(row)
     return rows
 
 
-def build_row(decision: dict[str, Any], outcomes: dict[tuple[int, int], dict[str, float]], semantic_stats: dict[tuple[str, int], dict[str, Any]] | None = None) -> dict[str, Any]:
-    rows = build_rows(decision, outcomes, semantic_stats)
-    return next((row for row in rows if row.get("is_chosen")), rows[0])
+def label_diagnostics(rows: list[dict[str, Any]], decisions: list[dict[str, Any]], train_ids: set[int], eval_ids: set[int]) -> dict[str, Any]:
+    observed = [row for row in rows if row.get("label_observed")]
+    positives = {label: sum(float(row.get(label, 0.0)) > 0.5 for row in observed) for label in LABELS if label != "expected_reward"}
+    time_values = [float(row["time_to_outcome_sec"]) for row in observed if row.get("time_to_outcome_sec") is not None]
+    run_counts = Counter(int(row.get("run_id") or 0) for row in observed)
+    return {
+        "label_rates": {
+            label: {
+                "positive_rate": positives.get(label, 0) / max(1, len(observed)),
+                "negative_rate": 1.0 - positives.get(label, 0) / max(1, len(observed)),
+            }
+            for label in LABELS
+            if label != "expected_reward"
+        },
+        "expected_reward_mean": sum(float(row.get("expected_reward", 0.0)) for row in observed) / max(1, len(observed)),
+        "rows_with_no_future_events": sum(1 for row in observed if row.get("no_future_events")),
+        "average_time_to_outcome": sum(time_values) / max(1, len(time_values)),
+        "ambiguous_labels": sum(1 for row in observed if row.get("ambiguous_label")),
+        "run_level_split_info": {
+            "train_run_ids": sorted(train_ids),
+            "eval_run_ids": sorted(eval_ids),
+            "observed_rows_by_run": dict(run_counts),
+        },
+        "leakage_checks": {
+            "run_split_overlap": sorted(set(train_ids) & set(eval_ids)),
+            "eval_decisions": sum(1 for row in observed if row.get("run_id") in eval_ids),
+            "train_decisions": sum(1 for row in observed if row.get("run_id") in train_ids),
+            "candidate_rows_have_observed_labels_only_for_chosen": all((row.get("label_observed") == row.get("is_chosen")) for row in rows),
+        },
+        "decision_rows": len(decisions),
+    }
 
 
 def main() -> int:
@@ -195,17 +318,24 @@ def main() -> int:
     parser.add_argument("--output", type=Path, default=Path("dataset/bot_ml/decision_dataset.jsonl"))
     parser.add_argument("--manifest", type=Path, default=Path("dataset/bot_ml/decision_dataset_manifest.json"))
     parser.add_argument("--eval-fraction", type=float, default=0.2)
+    parser.add_argument("--outcome-window-sec", type=int, default=180)
+    parser.add_argument("--death-window-sec", type=int, default=180)
+    parser.add_argument("--stuck-window-sec", type=int, default=180)
+    parser.add_argument("--quest-window-sec", type=int, default=600)
+    parser.add_argument("--reward-window-sec", type=int, default=300)
     args = parser.parse_args()
+    windows = {"outcome": args.outcome_window_sec, "death": args.death_window_sec, "stuck": args.stuck_window_sec, "quest": args.quest_window_sec, "reward": args.reward_window_sec}
     decisions = read_jsonl(table_path(args.input_dir, "experiment_bot_decisions"))
     events = read_jsonl(table_path(args.input_dir, "experiment_bot_events"))
     semantic_stats = index_semantic_stats(read_jsonl(table_path(args.input_dir, "bot_semantic_outcome_stats")))
-    outcomes = future_outcomes(events)
-    rows = [row for decision in decisions for row in build_rows(decision, outcomes, semantic_stats)]
+    indexed_events = index_future_events(events)
+    rows = [row for decision in decisions for row in build_rows(decision, label_decision(decision, indexed_events, windows), semantic_stats)]
     train_ids, eval_ids = split_by_run_ids(rows, args.eval_fraction)
     for row in rows:
         row["split"] = "eval" if row["run_id"] in eval_ids else "train"
     count = write_jsonl(args.output, rows)
     parquet = args.output.with_suffix(".parquet")
+    diagnostics = label_diagnostics(rows, decisions, train_ids, eval_ids)
     manifest = {
         "rows": count,
         "decision_rows": len(decisions),
@@ -214,9 +344,11 @@ def main() -> int:
         "jsonl": str(args.output),
         "parquet": str(parquet) if write_parquet_if_available(parquet, rows) else None,
         "feature_schema_version": FEATURE_SCHEMA_VERSION,
+        "label_window_sec": windows,
         "train_run_ids": sorted(train_ids),
         "eval_run_ids": sorted(eval_ids),
         "semantic_stats_rows": len(semantic_stats),
+        "label_diagnostics": diagnostics,
     }
     write_json(args.manifest, manifest)
     return 0

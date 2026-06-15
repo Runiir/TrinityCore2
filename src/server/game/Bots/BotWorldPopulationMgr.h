@@ -69,6 +69,30 @@ struct BotWorldExperimentConfig
 
 struct BotPolicyModelConfig
 {
+    struct TreeNode
+    {
+        bool Leaf = false;
+        std::string Feature;
+        float Threshold = 0.0f;
+        int Yes = 0;
+        int No = 0;
+        int Missing = 0;
+        float Value = 0.0f;
+    };
+
+    struct Tree
+    {
+        std::vector<TreeNode> Nodes;
+        std::map<int, size_t> NodeIndex;
+    };
+
+    struct Ensemble
+    {
+        std::string Objective;
+        float BaseScore = 0.0f;
+        std::vector<Tree> Trees;
+    };
+
     bool Enabled = false;
     std::string Mode = "shadow";
     std::string Version;
@@ -87,6 +111,7 @@ struct BotPolicyModelConfig
     bool ArtifactLoaded = false;
     std::map<std::string, float> ModelMeans;
     std::map<std::string, std::map<std::string, float>> ModelWeights;
+    std::map<std::string, Ensemble> ModelTreeEnsembles;
 };
 
 struct BotWorldStatus
