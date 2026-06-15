@@ -4,6 +4,7 @@
 #include "Bots/BotTypes.h"
 #include "ObjectGuid.h"
 #include <map>
+#include <string>
 
 class Player;
 class Unit;
@@ -11,6 +12,15 @@ class Unit;
 class BotActionExecutor
 {
 public:
+    struct LootResult
+    {
+        BotActionResult Result = BotActionResult::NoAction;
+        uint32 ItemsCount = 0;
+        uint64 Money = 0;
+        bool LootStateCleared = false;
+        std::string Reason = "no_action";
+    };
+
     BotActionResult Execute(Player* owner, Player* bot, ResolvedBotAction const& action);
     BotActionResult ExecuteCombat(Player* owner, Player* bot, ResolvedCombatAction const& action);
     BotActionResult CraftRecipe(Player* owner, Player* bot, uint32 recipeSpellId, uint32 count);
@@ -18,6 +28,7 @@ public:
     BotEconomyActionResult Repair(Player* owner, Player* bot);
     BotActionResult Pull(Player* bot, Unit* target);
     BotActionResult Loot(Player* bot, Unit* target);
+    LootResult AutoLoot(Player* bot, Unit* target);
     void MoveFollow(Player* owner, Player* bot);
     void MoveStay(Player* bot);
     void MoveStop(Player* bot);

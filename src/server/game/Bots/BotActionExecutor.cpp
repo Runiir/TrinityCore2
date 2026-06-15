@@ -4,10 +4,13 @@
 #include "MotionMaster.h"
 #include "ObjectAccessor.h"
 #include "Player.h"
+#include "Server/WorldSession.h"
 #include "SpellHistory.h"
 #include "SpellInfo.h"
 #include "SpellMgr.h"
 #include "Unit.h"
+#include "Creature.h"
+#include "Loot/Loot.h"
 #include <algorithm>
 #include <cmath>
 #include <utility>
@@ -211,17 +214,121 @@ BotActionResult BotActionExecutor::Pull(Player* bot, Unit* target)
 
 BotActionResult BotActionExecutor::Loot(Player* bot, Unit* target)
 {
-    if (!bot || !bot->IsAlive())
-        return BotActionResult::NoBot;
-    if (!target)
-        return BotActionResult::InvalidTarget;
-    if (target->IsAlive())
-        return BotActionResult::InvalidTarget;
-    if (!bot->IsWithinDistInMap(target, INTERACTION_DISTANCE))
-        return BotActionResult::OutOfRange;
+    return AutoLoot(bot, target).Result;
+}
 
-    bot->SendLoot(target->GetGUID(), LOOT_CORPSE);
-    return BotActionResult::Ok;
+BotActionExecutor::LootResult BotActionExecutor::AutoLoot(Player* bot, Unit* target)
+{
+    LootResult result;
+    if (!bot || !bot->IsAlive())
+    {
+        result.Result = BotActionResult::NoBot;
+        result.Reason = "bot_unavailable";
+        return result;
+    }
+    if (!target)
+    {
+        result.Result = BotActionResult::InvalidTarget;
+        result.Reason = "target_unavailable";
+        return result;
+    }
+    if (target->IsAlive())
+    {
+        result.Result = BotActionResult::InvalidTarget;
+        result.Reason = "target_alive";
+        return result;
+    }
+    if (!bot->IsWithinDistInMap(target, INTERACTION_DISTANCE))
+    {
+        result.Result = BotActionResult::OutOfRange;
+        result.Reason = "corpse_out_of_range";
+        return result;
+    }
+
+    Creature* creature = target->ToCreature();
+    if (!creature)
+    {
+        result.Result = BotActionResult::InvalidTarget;
+        result.Reason = "target_not_creature";
+        return result;
+    }
+
+    ::Loot* loot = &creature->loot;
+    if (!creature->HasFlag(UNIT_DYNAMIC_FLAGS, UNIT_DYNFLAG_LOOTABLE) && loot->isLooted())
+    {
+        result.Result = BotActionResult::NoAction;
+        result.Reason = "already_looted";
+        return result;
+    }
+
+    bot->SendLoot(creature->GetGUID(), LOOT_CORPSE);
+    if (bot->GetLootGUID() != creature->GetGUID())
+    {
+        result.Result = BotActionResult::InvalidTarget;
+        result.Reason = "loot_permission_denied";
+        bot->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_LOOTING);
+        result.LootStateCleared = bot->GetLootGUID().IsEmpty() && !bot->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_LOOTING);
+        return result;
+    }
+
+    uint8 beforeUnlooted = loot->unlootedCount;
+    uint32 beforeGold = loot->gold;
+    if (loot->gold)
+    {
+        loot->NotifyMoneyRemoved();
+        bot->ModifyMoney(loot->gold);
+        bot->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_LOOT_MONEY, loot->gold);
+        result.Money = loot->gold;
+        loot->gold = 0;
+    }
+
+    bool storedAny = true;
+    while (storedAny)
+    {
+        storedAny = false;
+        uint32 maxSlot = loot->GetMaxSlotInLootFor(bot);
+        for (uint32 slot = 0; slot < maxSlot; ++slot)
+        {
+            LootItem* item = loot->LootItemInSlot(slot, bot);
+            if (!item)
+                continue;
+
+            uint8 unlootedBeforeSlot = loot->unlootedCount;
+            uint8 count = item->count;
+            bot->StoreLootItem(creature->GetGUID(), uint8(slot), loot);
+            if (loot->unlootedCount < unlootedBeforeSlot)
+            {
+                result.ItemsCount += count;
+                storedAny = true;
+            }
+        }
+    }
+
+    if (WorldSession* session = bot->GetSession())
+        session->DoLootRelease(creature->GetGUID());
+    else
+    {
+        bot->SetLootGUID(ObjectGuid::Empty);
+        bot->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_LOOTING);
+    }
+
+    result.LootStateCleared = bot->GetLootGUID().IsEmpty() && !bot->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_LOOTING);
+    if (result.ItemsCount || result.Money)
+    {
+        result.Result = BotActionResult::Ok;
+        result.Reason = "looted";
+    }
+    else if (!beforeUnlooted && !beforeGold)
+    {
+        result.Result = BotActionResult::NoAction;
+        result.Reason = "empty";
+    }
+    else
+    {
+        result.Result = BotActionResult::NoAction;
+        result.Reason = "no_transfer";
+    }
+    return result;
 }
 
 void BotActionExecutor::MoveFollow(Player* owner, Player* bot)

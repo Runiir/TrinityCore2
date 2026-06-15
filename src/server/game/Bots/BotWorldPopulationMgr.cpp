@@ -2024,40 +2024,119 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
     else if (target && !target->IsAlive())
     {
         BotActionExecutor executor;
-        BotActionResult result = executor.Loot(bot, target);
-        ++_metrics.Kills;
         if (Creature const* creature = target->ToCreature())
             situation = (creature->IsDungeonBoss() || creature->isWorldBoss()) ? (bot->GetMap() && bot->GetMap()->IsRaid() ? "raid_boss" : "dungeon_boss") : "open_world_combat";
         else
             situation = "open_world_combat";
-        action = "loot";
-        std::string raw = BuildRawJson(bot, target);
-        std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, chosenActivity.Activity);
-        RecordEvent(state, bot, (situation == "dungeon_boss" || situation == "raid_boss") ? "boss_killed" : "mob_killed", target, "ok", raw.c_str(), semantic.c_str(), 0.0f, _metrics.Kills);
-        if (situation == "raid_boss")
+
+        if (!bot->IsWithinDistInMap(target, INTERACTION_DISTANCE))
         {
-            ++state.RaidBossKills;
-            ++_metrics.RaidBossKills;
-            if (stage == BotProgressionStage::HeroicRaid)
+            MoveBotToPoint(state, bot, target->GetPositionX(), target->GetPositionY(), target->GetPositionZ());
+            action = "move_to_loot";
+            SetQuestWorkPhase(state, "move_to_loot");
+        }
+        else if (state.NextLootAttemptMs > NowMs())
+        {
+            action = "loot_cooldown";
+        }
+        else
+        {
+            action = "loot_target";
+            SetQuestWorkPhase(state, "loot_target");
+            if (state.LastKilledTargetGuid != target->GetGUID())
             {
-                ++state.HeroicRaidBossKills;
-                ++_metrics.HeroicRaidBossKills;
+                ++_metrics.Kills;
+                state.LastKilledTargetGuid = target->GetGUID();
             }
 
-            BossMechanicFeatures features = BuildBossMechanicFeatures(bot, target);
-            RaidRoleAssignment assignment = BuildRaidRoleAssignment(bot);
-            RaidPositioningAnchors anchors = BuildRaidPositioningAnchors(bot, target, assignment, features);
-            RaidMechanicAdapter adapter = BuildRaidMechanicAdapter(bot, target, assignment, features);
-            RaidGearTargetPlan gearPlan = BuildRaidGearTargetPlan(bot, power, stage);
-            HeroicRaidProgression progression = BuildHeroicRaidProgression(state, bot, power, stage);
-            RecordRaidTelemetry(state, bot, target, "raid_boss_killed", "ok", features, assignment, anchors, adapter, gearPlan, progression, raw.c_str(), semantic.c_str(), power.Total, _metrics.RaidBossKills);
+            ++state.LootAttemptCount;
+            state.LootStartedMs = NowMs();
+            BotActionExecutor::LootResult loot = executor.AutoLoot(bot, target);
+            state.LootCompletedMs = NowMs();
+            state.LastLootTargetGuid = target->GetGUID();
+            state.LastLootResult = loot.Reason.empty() ? ToString(loot.Result) : loot.Reason;
+            state.LastLootItemsCount = loot.ItemsCount;
+            state.LastLootMoney = loot.Money;
+            state.LastLootStateCleared = loot.LootStateCleared;
+            state.NextLootAttemptMs = NowMs() + (loot.Result == BotActionResult::OutOfRange ? 0 : 2500);
+
+            QuestObjectivePlan lootPlan;
+            bool hadLootPlan = FindActiveQuestObjective(bot, lootPlan);
+            if (!hadLootPlan && state.QuestWork.ActiveQuestId)
+                hadLootPlan = GetQuestObjectivePlan(bot, state.QuestWork.ActiveQuestId, state.QuestWork.ObjectiveIndex,
+                    state.QuestWork.ObjectiveType == "collect_item" ? QuestObjectiveType::CollectItem :
+                    (state.QuestWork.ObjectiveType == "use_item_on_target" ? QuestObjectiveType::UseItemOnTarget :
+                    (state.QuestWork.ObjectiveType == "use_ability_on_dummy" ? QuestObjectiveType::UseAbilityOnDummy :
+                    (state.QuestWork.ObjectiveType == "cast_spell_on_target" ? QuestObjectiveType::CastSpellOnTarget :
+                    (state.QuestWork.ObjectiveType == "interact_gameobject" ? QuestObjectiveType::InteractGameObject : QuestObjectiveType::Kill)))), lootPlan);
+            if (!hadLootPlan && state.QuestWork.ActiveQuestId)
+            {
+                lootPlan.QuestId = state.QuestWork.ActiveQuestId;
+                lootPlan.ObjectiveIndex = state.QuestWork.ObjectiveIndex;
+                lootPlan.RequiredEntry = state.QuestWork.RequiredEntry;
+                lootPlan.ItemId = state.QuestWork.RequiredItem;
+                lootPlan.RequiredSpellId = state.QuestWork.RequiredSpell;
+                lootPlan.RequiredCount = state.QuestWork.RequiredCount;
+                lootPlan.CurrentCount = state.QuestWork.CurrentCount;
+                lootPlan.IsItemObjective = state.QuestWork.ObjectiveType == "collect_item" || state.QuestWork.ObjectiveType == "use_item_on_target";
+                lootPlan.IsGameObject = state.QuestWork.ObjectiveType == "interact_gameobject";
+                lootPlan.ObjectiveType = state.QuestWork.ObjectiveType == "collect_item" ? QuestObjectiveType::CollectItem :
+                    (state.QuestWork.ObjectiveType == "use_item_on_target" ? QuestObjectiveType::UseItemOnTarget :
+                    (state.QuestWork.ObjectiveType == "use_ability_on_dummy" ? QuestObjectiveType::UseAbilityOnDummy :
+                    (state.QuestWork.ObjectiveType == "cast_spell_on_target" ? QuestObjectiveType::CastSpellOnTarget :
+                    (state.QuestWork.ObjectiveType == "interact_gameobject" ? QuestObjectiveType::InteractGameObject : QuestObjectiveType::Kill))));
+                hadLootPlan = true;
+            }
+            uint32 progressBefore = state.QuestWork.ProgressBefore ? state.QuestWork.ProgressBefore : state.LastQuestProgressBefore;
+            if (!progressBefore && hadLootPlan)
+                progressBefore = QuestObjectiveProgress(bot, lootPlan);
+
+            std::string raw = BuildRawJson(bot, target);
+            std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, chosenActivity.Activity);
+            RecordEvent(state, bot, (situation == "dungeon_boss" || situation == "raid_boss") ? "boss_killed" : "mob_killed", target, "ok", raw.c_str(), semantic.c_str(), 0.0f, _metrics.Kills);
+            if (situation == "raid_boss")
+            {
+                ++state.RaidBossKills;
+                ++_metrics.RaidBossKills;
+                if (stage == BotProgressionStage::HeroicRaid)
+                {
+                    ++state.HeroicRaidBossKills;
+                    ++_metrics.HeroicRaidBossKills;
+                }
+
+                BossMechanicFeatures features = BuildBossMechanicFeatures(bot, target);
+                RaidRoleAssignment assignment = BuildRaidRoleAssignment(bot);
+                RaidPositioningAnchors anchors = BuildRaidPositioningAnchors(bot, target, assignment, features);
+                RaidMechanicAdapter adapter = BuildRaidMechanicAdapter(bot, target, assignment, features);
+                RaidGearTargetPlan gearPlan = BuildRaidGearTargetPlan(bot, power, stage);
+                HeroicRaidProgression progression = BuildHeroicRaidProgression(state, bot, power, stage);
+                RecordRaidTelemetry(state, bot, target, "raid_boss_killed", "ok", features, assignment, anchors, adapter, gearPlan, progression, raw.c_str(), semantic.c_str(), power.Total, _metrics.RaidBossKills);
+            }
+
+            if (loot.Result == BotActionResult::Ok && (loot.ItemsCount || loot.Money))
+                RecordEvent(state, bot, "loot_received", target, loot.Reason.c_str(), raw.c_str(), semantic.c_str(), float(loot.Money), loot.ItemsCount);
+            else if (loot.Result == BotActionResult::NoAction)
+                RecordEvent(state, bot, "loot_empty", target, loot.Reason.c_str(), raw.c_str(), semantic.c_str(), 0.0f, 0);
+            else
+            {
+                RecordEvent(state, bot, "loot_failed", target, loot.Reason.c_str(), raw.c_str(), semantic.c_str(), 0.0f, uint32(loot.Result));
+                if (state.LootAttemptCount < 3)
+                    return;
+            }
+
+            if (hadLootPlan)
+                VerifyQuestObjectiveProgress(state, bot, lootPlan, target, progressBefore, "kill_or_loot_verified", raw.c_str(), semantic.c_str());
+
+            BotGearUpgradeEvaluation gear = BotLongTermProgressionBrain::EvaluateGearUpgrade(bot);
+            RecordGearEvaluation(state, bot, gear, raw.c_str(), semantic.c_str());
+            if (loot.Result == BotActionResult::Ok || loot.Result == BotActionResult::NoAction || state.LootAttemptCount >= 3)
+            {
+                state.TargetGuid.Clear();
+                state.WasInCombat = false;
+                state.LootAttemptCount = 0;
+                SetQuestWorkPhase(state, "verify_progress");
+            }
         }
-        RecordEvent(state, bot, "loot_received", target, ToString(result), raw.c_str(), semantic.c_str());
-        RecordQuestObjectiveProgressForTarget(state, bot, target, raw.c_str(), semantic.c_str());
-        BotGearUpgradeEvaluation gear = BotLongTermProgressionBrain::EvaluateGearUpgrade(bot);
-        RecordGearEvaluation(state, bot, gear, raw.c_str(), semantic.c_str());
-        state.TargetGuid.Clear();
-        state.WasInCombat = false;
     }
     else if (_config.AllowCombat && !hasActiveQuestObjective && (target = SelectSafeTarget(bot)))
     {
@@ -2307,6 +2386,124 @@ uint32 BotWorldPopulationMgr::QuestObjectiveProgress(Player* bot, QuestObjective
     return plan.ObjectiveIndex < QUEST_OBJECTIVES_COUNT ? itr->second.CreatureOrGOCount[plan.ObjectiveIndex] : 0;
 }
 
+bool BotWorldPopulationMgr::GetQuestObjectivePlan(Player* bot, uint32 questId, uint32 objectiveIndex, QuestObjectiveType type, QuestObjectivePlan& plan) const
+{
+    if (!bot || !questId)
+        return false;
+
+    QuestObjectivePlan active;
+    if (!FindActiveQuestObjective(bot, active))
+        return false;
+    if (active.QuestId != questId || active.ObjectiveIndex != objectiveIndex || active.ObjectiveType != type)
+        return false;
+
+    plan = active;
+    return true;
+}
+
+void BotWorldPopulationMgr::SetQuestWorkPhase(WorldBotState& state, char const* phase)
+{
+    std::string next = phase ? phase : "idle";
+    if (state.QuestWork.Phase != next)
+    {
+        state.QuestWork.Phase = next;
+        state.QuestWork.PhaseStartedMs = NowMs();
+    }
+    state.CurrentQuestState = state.QuestWork.Phase;
+}
+
+void BotWorldPopulationMgr::SetQuestWorkFromPlan(WorldBotState& state, QuestObjectivePlan const& plan)
+{
+    bool changed = state.QuestWork.ActiveQuestId != plan.QuestId
+        || state.QuestWork.ObjectiveIndex != plan.ObjectiveIndex
+        || state.QuestWork.ObjectiveType != ToString(plan.ObjectiveType);
+    if (changed)
+    {
+        state.QuestWork.SelectedTargetGuid.Clear();
+        state.QuestWork.SelectedObjectGuid.Clear();
+        state.QuestWork.RetryCount = 0;
+        state.QuestWork.VerifiedCasts = 0;
+        state.QuestWork.VerifyAfterMs = 0;
+        state.QuestWork.FailedReason.clear();
+        state.QuestWork.PhaseStartedMs = NowMs();
+    }
+
+    state.QuestWork.ActiveQuestId = plan.QuestId;
+    state.QuestWork.ObjectiveIndex = plan.ObjectiveIndex;
+    state.QuestWork.ObjectiveType = ToString(plan.ObjectiveType);
+    state.QuestWork.RequiredEntry = plan.RequiredEntry;
+    state.QuestWork.RequiredItem = plan.ItemId;
+    state.QuestWork.RequiredSpell = plan.RequiredSpellId;
+    state.QuestWork.RequiredCount = plan.RequiredCount;
+    state.QuestWork.CurrentCount = plan.CurrentCount;
+    state.CurrentObjectiveType = state.QuestWork.ObjectiveType;
+    state.RequiredSpellId = plan.RequiredSpellId;
+    state.RequiredItemId = plan.ItemId;
+    state.RequiredTargetEntry = plan.RequiredEntry > 0 ? uint32(plan.RequiredEntry) : 0;
+}
+
+void BotWorldPopulationMgr::ResetQuestWork(WorldBotState& state)
+{
+    state.QuestWork = WorldBotState::BotQuestWorkState();
+    state.CurrentQuestState = "idle";
+    state.CurrentObjectiveType = "none";
+    state.RequiredSpellId = 0;
+    state.RequiredItemId = 0;
+    state.RequiredTargetEntry = 0;
+}
+
+bool BotWorldPopulationMgr::VerifyQuestObjectiveProgress(WorldBotState& state, Player* bot, QuestObjectivePlan const& plan, Unit const* target, uint32 before, char const* reason, char const* rawJson, char const* semanticJson)
+{
+    uint32 after = QuestObjectiveProgress(bot, plan);
+    bool completed = bot && bot->CanCompleteQuest(plan.QuestId);
+    state.LastQuestProgressBefore = before;
+    state.LastQuestProgressAfter = after;
+    state.QuestWork.ProgressBefore = before;
+    state.QuestWork.ProgressAfter = after;
+    state.QuestWork.CurrentCount = after;
+
+    if (after > before || completed)
+    {
+        ++_metrics.QuestObjectiveProgress;
+        state.LastQuestObjectiveProgress = _metrics.QuestObjectiveProgress;
+        state.QuestWork.LastProgressMs = NowMs();
+        state.QuestWork.RetryCount = 0;
+        state.QuestWork.VerifiedCasts = 0;
+        state.LastNoProgressReason.clear();
+        RecordQuestEvent(state, bot, "objective_progress", plan.QuestId, target, reason ? reason : ToString(plan.ObjectiveType), rawJson, semanticJson, after, plan.ItemId);
+        if (completed)
+            bot->CompleteQuest(plan.QuestId);
+        return true;
+    }
+
+    ++state.QuestWork.RetryCount;
+    state.LastNoProgressReason = reason ? reason : "no_counter_change";
+    std::ostringstream cooldownKey;
+    cooldownKey << plan.QuestId << ":" << plan.ObjectiveIndex << ":" << ToString(plan.ObjectiveType) << ":";
+    if (target)
+        cooldownKey << target->GetGUID().GetCounter();
+    else
+        cooldownKey << 0;
+    state.NoProgressCooldownUntilMs[cooldownKey.str()] = NowMs() + 45000;
+
+    uint32 targetEntry = 0;
+    if (Creature const* creature = target ? target->ToCreature() : nullptr)
+        targetEntry = creature->GetEntry();
+    std::ostringstream context;
+    context << "{\"quest_id\":" << plan.QuestId
+            << ",\"objective_index\":" << plan.ObjectiveIndex
+            << ",\"objective_type\":\"" << JsonEscape(ToString(plan.ObjectiveType)) << "\""
+            << ",\"required_entry\":" << (plan.RequiredEntry > 0 ? uint32(plan.RequiredEntry) : 0)
+            << ",\"required_item\":" << plan.ItemId
+            << ",\"target_entry\":" << targetEntry
+            << ",\"target_guid\":" << (target ? target->GetGUID().GetCounter() : 0)
+            << ",\"progress_before\":" << before
+            << ",\"progress_after\":" << after
+            << ",\"reason\":\"" << JsonEscape(state.LastNoProgressReason) << "\"}";
+    RecordQuestEvent(state, bot, "objective_no_progress", plan.QuestId, target, state.LastNoProgressReason.c_str(), rawJson, semanticJson, after, plan.ItemId, context.str().c_str());
+    return false;
+}
+
 Unit* BotWorldPopulationMgr::SelectQuestObjectiveTarget(Player* bot, QuestObjectivePlan const& plan) const
 {
     if (!bot || plan.IsGameObject)
@@ -2353,7 +2550,7 @@ Unit* BotWorldPopulationMgr::SelectQuestObjectiveTarget(Player* bot, QuestObject
     }
 
     if (!plan.RequiredEntry)
-        return SelectSafeTarget(bot);
+        return nullptr;
 
     std::vector<Creature*> creatures;
     bot->GetCreatureListWithEntryInGrid(creatures, uint32(plan.RequiredEntry), 60.0f);
@@ -2364,6 +2561,20 @@ Unit* BotWorldPopulationMgr::SelectQuestObjectiveTarget(Player* bot, QuestObject
         if (!creature || !creature->IsAlive() || !bot->IsValidAttackTarget(creature) || !bot->IsWithinLOSInMap(creature))
             continue;
         if (IsTrainingDummy(creature) && !IsTrainingDummyAllowedForQuest(plan, creature))
+            continue;
+        std::ostringstream cooldownKey;
+        cooldownKey << plan.QuestId << ":" << plan.ObjectiveIndex << ":" << ToString(plan.ObjectiveType) << ":" << creature->GetGUID().GetCounter();
+        auto cooldown = [&]() -> uint64
+        {
+            for (WorldBotState const& state : _bots)
+                if (state.Guid == bot->GetGUID())
+                {
+                    auto itr = state.NoProgressCooldownUntilMs.find(cooldownKey.str());
+                    return itr != state.NoProgressCooldownUntilMs.end() ? itr->second : 0;
+                }
+            return 0;
+        }();
+        if (cooldown > NowMs())
             continue;
         if (creature->isElite())
             continue;
@@ -2410,6 +2621,11 @@ Unit* BotWorldPopulationMgr::SelectQuestAbilityObjectiveTarget(Player* bot, Ques
             continue;
         auto cooldown = state.DummyTargetCooldownUntilMs.find(target->GetGUID().GetCounter());
         if (cooldown != state.DummyTargetCooldownUntilMs.end() && cooldown->second > now)
+            continue;
+        std::ostringstream abilityKey;
+        abilityKey << plan.QuestId << ":" << plan.RequiredSpellId << ":" << target->GetGUID().GetCounter();
+        auto abilityCooldown = state.AbilityObjectiveCooldownUntilMs.find(abilityKey.str());
+        if (abilityCooldown != state.AbilityObjectiveCooldownUntilMs.end() && abilityCooldown->second > now)
             continue;
 
         float dist = bot->GetExactDist(target);
@@ -2719,8 +2935,57 @@ BotWorldPopulationMgr::QuestActionResult BotWorldPopulationMgr::TryQuesting(Worl
     if (!bot || bot->IsInCombat())
         return result;
 
+    QuestObjectivePlan committedPlan;
+    bool hasCommittedPlan = state.QuestWork.ActiveQuestId
+        && GetQuestObjectivePlan(bot, state.QuestWork.ActiveQuestId, state.QuestWork.ObjectiveIndex, state.QuestWork.ObjectiveType == "use_ability_on_dummy" ? QuestObjectiveType::UseAbilityOnDummy :
+            (state.QuestWork.ObjectiveType == "cast_spell_on_target" ? QuestObjectiveType::CastSpellOnTarget :
+            (state.QuestWork.ObjectiveType == "interact_gameobject" ? QuestObjectiveType::InteractGameObject :
+            (state.QuestWork.ObjectiveType == "collect_item" ? QuestObjectiveType::CollectItem :
+            (state.QuestWork.ObjectiveType == "use_item_on_target" ? QuestObjectiveType::UseItemOnTarget : QuestObjectiveType::Kill)))), committedPlan);
+    QuestObjectivePlan discoveredPlan;
+    bool hasActiveObjective = hasCommittedPlan || FindActiveQuestObjective(bot, discoveredPlan);
+    if (hasCommittedPlan)
+        discoveredPlan = committedPlan;
+    if (state.QuestWork.CooldownUntilMs > NowMs())
+        hasActiveObjective = false;
+
+    if (state.QuestWork.Phase == "verify_progress" && hasCommittedPlan)
+    {
+        result.Handled = true;
+        result.Situation = "quest_verify_progress";
+        result.Action = "verify_progress";
+        result.QuestId = committedPlan.QuestId;
+        Unit* verifyTarget = state.QuestWork.SelectedTargetGuid.IsEmpty() ? nullptr : ObjectAccessor::GetUnit(*bot, state.QuestWork.SelectedTargetGuid);
+        result.Target = verifyTarget;
+        if (state.QuestWork.VerifyAfterMs && NowMs() < state.QuestWork.VerifyAfterMs)
+            return result;
+
+        std::string raw = BuildRawJson(bot, verifyTarget);
+        std::string semantic = BuildSemanticJson(bot, verifyTarget, "quest_verify_progress", &power, stage, activity);
+        bool progressed = VerifyQuestObjectiveProgress(state, bot, committedPlan, verifyTarget, state.QuestWork.ProgressBefore, "delayed_ability_verify", raw.c_str(), semantic.c_str());
+        if (!progressed)
+        {
+            ++state.QuestWork.VerifiedCasts;
+            if (state.QuestWork.VerifiedCasts >= 3 && verifyTarget)
+            {
+                std::ostringstream key;
+                key << committedPlan.QuestId << ":" << state.QuestWork.RequiredSpell << ":" << verifyTarget->GetGUID().GetCounter();
+                state.AbilityObjectiveCooldownUntilMs[key.str()] = NowMs() + 120000;
+                state.DummyTargetCooldownUntilMs[verifyTarget->GetGUID().GetCounter()] = NowMs() + 120000;
+                state.LastRejectedTargetReason = "ability_objective_no_progress_after_delay";
+                result.Failure = true;
+                RecordDecision(state, bot, "quest_ability_objective", "blacklist_target_spell_pair", verifyTarget, raw.c_str(), semantic.c_str(), std::vector<BotActivityScore>(), BotActivityScore(), power, true, true);
+            }
+            SetQuestWorkPhase(state, "search_objective");
+        }
+        else
+            SetQuestWorkPhase(state, bot->CanCompleteQuest(committedPlan.QuestId) ? "move_to_turnin" : "choose_objective");
+        return result;
+    }
+
     uint32 questId = 0;
-    if (WorldObject* turnIn = SelectQuestGiver(bot, true, &questId))
+    WorldObject* turnIn = !hasActiveObjective ? SelectQuestGiver(bot, true, &questId) : nullptr;
+    if (turnIn)
     {
         Quest const* quest = sObjectMgr->GetQuestTemplate(questId);
         if (!quest)
@@ -2775,25 +3040,25 @@ BotWorldPopulationMgr::QuestActionResult BotWorldPopulationMgr::TryQuesting(Worl
         RecordQuestEvent(state, bot, "reward_chosen", questId, nullptr, "ok", raw.c_str(), semantic.c_str(), rewardChoice, rewardItemId, context.str().c_str());
         RecordQuestEvent(state, bot, "quest_completed", questId, nullptr, "ok", raw.c_str(), semantic.c_str(), elapsed, rewardItemId, context.str().c_str());
         result.Action = "complete_quest";
+        ResetQuestWork(state);
         return result;
     }
 
-    QuestObjectivePlan plan;
-    if (FindActiveQuestObjective(bot, plan))
+    QuestObjectivePlan plan = discoveredPlan;
+    if (hasActiveObjective)
     {
         result.Handled = true;
         result.Situation = "quest_objective";
         result.QuestId = plan.QuestId;
-        state.CurrentQuestState = "active_objective";
-        state.CurrentObjectiveType = ToString(plan.ObjectiveType);
-        state.RequiredSpellId = plan.RequiredSpellId;
-        state.RequiredItemId = plan.ItemId;
-        state.RequiredTargetEntry = plan.RequiredEntry > 0 ? uint32(plan.RequiredEntry) : 0;
+        SetQuestWorkFromPlan(state, plan);
+        if (state.QuestWork.Phase == "idle" || state.QuestWork.Phase == "choose_quest")
+            SetQuestWorkPhase(state, "choose_objective");
 
         if (plan.ObjectiveType == QuestObjectiveType::UseAbilityOnDummy || plan.ObjectiveType == QuestObjectiveType::CastSpellOnTarget)
         {
             result.Situation = "quest_ability_objective";
             result.Action = plan.ObjectiveType == QuestObjectiveType::UseAbilityOnDummy ? "use_ability_on_dummy" : "cast_spell_on_target";
+            SetQuestWorkPhase(state, "cast_spell_on_target");
             Unit* abilityTarget = SelectQuestAbilityObjectiveTarget(bot, plan, state);
             result.Target = abilityTarget;
             state.CurrentTargetIsTrainingDummy = IsTrainingDummy(abilityTarget);
@@ -2804,8 +3069,11 @@ BotWorldPopulationMgr::QuestActionResult BotWorldPopulationMgr::TryQuesting(Worl
             {
                 MoveToWanderPoint(bot, state);
                 result.Action = "search_ability_target";
+                SetQuestWorkPhase(state, "search_objective");
+                RecordQuestEvent(state, bot, "objective_search", plan.QuestId, nullptr, "ability_target_not_found", BuildRawJson(bot, nullptr).c_str(), BuildSemanticJson(bot, nullptr, "quest_objective_search", &power, stage, activity).c_str(), plan.CurrentCount, plan.ItemId);
                 return result;
             }
+            state.QuestWork.SelectedTargetGuid = abilityTarget->GetGUID();
 
             uint32 spellId = plan.RequiredSpellId ? plan.RequiredSpellId : SelectQuestAbilitySpell(bot, sObjectMgr->GetQuestTemplate(plan.QuestId), plan);
             state.RequiredSpellId = spellId;
@@ -2824,43 +3092,26 @@ BotWorldPopulationMgr::QuestActionResult BotWorldPopulationMgr::TryQuesting(Worl
             if (!bot->IsWithinDistInMap(abilityTarget, maxRange))
             {
                 MoveBotToPoint(state, bot, abilityTarget->GetPositionX(), abilityTarget->GetPositionY(), abilityTarget->GetPositionZ());
+                SetQuestWorkPhase(state, "move_to_target");
                 return result;
             }
 
             bot->SetFacingToObject(abilityTarget);
             bool cast = TryCastCombatSpell(bot, abilityTarget, spellId);
             uint32 before = state.LastQuestProgressBefore;
-            uint32 after = QuestObjectiveProgress(bot, plan);
-            state.LastQuestProgressAfter = after;
 
             std::ostringstream key;
             key << plan.QuestId << ":" << spellId << ":" << abilityTarget->GetGUID().GetCounter();
             std::string raw = BuildRawJson(bot, abilityTarget);
             std::string semantic = BuildSemanticJson(bot, abilityTarget, "quest_ability_objective", &power, stage, activity);
             if (cast)
+            {
                 RecordEvent(state, bot, "spell_cast", abilityTarget, "quest_ability_objective", raw.c_str(), semantic.c_str(), 0.0f, before, spellId);
-
-            if (after > before || bot->CanCompleteQuest(plan.QuestId))
-            {
-                state.AbilityObjectiveNoProgressCasts[key.str()] = 0;
-                ++_metrics.QuestObjectiveProgress;
-                state.LastQuestObjectiveProgress = _metrics.QuestObjectiveProgress;
-                RecordQuestEvent(state, bot, "objective_progress", plan.QuestId, abilityTarget, ToString(plan.ObjectiveType), raw.c_str(), semantic.c_str(), after, 0);
-                if (bot->CanCompleteQuest(plan.QuestId))
-                    bot->CompleteQuest(plan.QuestId);
-            }
-            else if (cast)
-            {
-                uint32 noProgress = ++state.AbilityObjectiveNoProgressCasts[key.str()];
-                if (noProgress >= 3)
-                {
-                    state.AbilityObjectiveCooldownUntilMs[key.str()] = NowMs() + 120000;
-                    state.DummyTargetCooldownUntilMs[abilityTarget->GetGUID().GetCounter()] = NowMs() + 120000;
-                    state.LastRejectedTargetReason = "ability_objective_no_progress";
-                    result.Failure = true;
-                    RecordQuestEvent(state, bot, "ability_objective_failed", plan.QuestId, abilityTarget, "no_progress_after_casts", raw.c_str(), semantic.c_str(), noProgress, 0);
-                    RecordDecision(state, bot, "quest_ability_objective", "blacklist_target_spell_pair", abilityTarget, raw.c_str(), semantic.c_str(), std::vector<BotActivityScore>(), BotActivityScore(), power, true, true);
-                }
+                state.QuestWork.ProgressBefore = before;
+                state.LastQuestProgressAfter = QuestObjectiveProgress(bot, plan);
+                state.QuestWork.RequiredSpell = spellId;
+                state.QuestWork.VerifyAfterMs = NowMs() + urand(500, 1500);
+                SetQuestWorkPhase(state, "verify_progress");
             }
             return result;
         }
@@ -2869,6 +3120,7 @@ BotWorldPopulationMgr::QuestActionResult BotWorldPopulationMgr::TryQuesting(Worl
         if (plan.IsGameObject || questObject)
         {
             result.Action = plan.IsItemObjective ? "loot_quest_object" : "use_quest_object";
+            SetQuestWorkPhase(state, plan.IsItemObjective ? "use_gameobject" : "use_gameobject");
             if (!questObject)
             {
                 result.Failure = true;
@@ -2882,22 +3134,21 @@ BotWorldPopulationMgr::QuestActionResult BotWorldPopulationMgr::TryQuesting(Worl
             if (!bot->IsWithinDistInMap(questObject, INTERACTION_DISTANCE))
             {
                 MoveBotToPoint(state, bot, questObject->GetPositionX(), questObject->GetPositionY(), questObject->GetPositionZ());
+                SetQuestWorkPhase(state, "move_to_target");
                 return result;
             }
 
+            uint32 before = QuestObjectiveProgress(bot, plan);
+            state.QuestWork.SelectedObjectGuid = questObject->GetGUID();
             if (GameObject* go = questObject->ToGameObject())
             {
                 go->Use(bot);
                 if (plan.IsItemObjective)
                     bot->SendLoot(go->GetGUID(), LOOT_CORPSE);
             }
-            if (bot->CanCompleteQuest(plan.QuestId))
-                bot->CompleteQuest(plan.QuestId);
-            ++_metrics.QuestObjectiveProgress;
-            state.LastQuestObjectiveProgress = _metrics.QuestObjectiveProgress;
             std::string raw = BuildRawJson(bot, nullptr);
             std::string semantic = BuildSemanticJson(bot, nullptr, "quest_objective", &power, stage, activity);
-            RecordQuestEvent(state, bot, "objective_progress", plan.QuestId, nullptr, plan.IsItemObjective ? "loot_object" : "use_object", raw.c_str(), semantic.c_str(), plan.CurrentCount + 1, plan.ItemId);
+            VerifyQuestObjectiveProgress(state, bot, plan, nullptr, before, plan.IsItemObjective ? "loot_object" : "use_object", raw.c_str(), semantic.c_str());
             return result;
         }
 
@@ -2908,9 +3159,16 @@ BotWorldPopulationMgr::QuestActionResult BotWorldPopulationMgr::TryQuesting(Worl
         {
             MoveToWanderPoint(bot, state);
             result.Action = plan.IsItemObjective ? "search_collect_mob" : "search_quest_mob";
+            SetQuestWorkPhase(state, plan.IsItemObjective ? "search_collect_mob" : "search_objective");
+            std::string raw = BuildRawJson(bot, nullptr);
+            std::string semantic = BuildSemanticJson(bot, nullptr, "quest_objective_search", &power, stage, activity);
+            RecordQuestEvent(state, bot, plan.RequiredEntry || plan.ItemId ? "objective_search" : "objective_unresolved", plan.QuestId, nullptr, plan.RequiredEntry || plan.ItemId ? "target_not_found" : "metadata_incomplete", raw.c_str(), semantic.c_str(), plan.CurrentCount, plan.ItemId);
             return result;
         }
 
+        state.QuestWork.SelectedTargetGuid = objectiveTarget->GetGUID();
+        state.LastQuestProgressBefore = QuestObjectiveProgress(bot, plan);
+        SetQuestWorkPhase(state, "kill_objective_mob");
         BotActionExecutor executor;
         BotActionResult pull = executor.Pull(bot, objectiveTarget);
         uint32 spellId = SelectCombatSpell(bot, objectiveTarget);
@@ -2927,7 +3185,8 @@ BotWorldPopulationMgr::QuestActionResult BotWorldPopulationMgr::TryQuesting(Worl
         return result;
     }
 
-    if (WorldObject* giver = SelectQuestGiver(bot, false, &questId))
+    WorldObject* giver = !hasActiveObjective ? SelectQuestGiver(bot, false, &questId) : nullptr;
+    if (giver)
     {
         Quest const* quest = sObjectMgr->GetQuestTemplate(questId);
         if (!quest)
@@ -4752,18 +5011,30 @@ void BotWorldPopulationMgr::RecordQuestObjectiveProgressForTarget(WorldBotState&
             if (quest->RequiredNpcOrGo[i] != int32(entry) || !quest->RequiredNpcOrGoCount[i])
                 continue;
 
-            ++_metrics.QuestObjectiveProgress;
-            state.LastQuestObjectiveProgress = _metrics.QuestObjectiveProgress;
             uint32 current = questStatus.second.CreatureOrGOCount[i];
+            uint32 before = state.LastQuestProgressBefore;
+            bool completed = bot->CanCompleteQuest(quest->GetQuestId());
             std::ostringstream context;
             context << "{\"required_entry\":" << entry
                     << ",\"required_count\":" << quest->RequiredNpcOrGoCount[i]
                     << ",\"current_count\":" << current
+                    << ",\"progress_before\":" << before
+                    << ",\"progress_after\":" << current
                     << ",\"objective_index\":" << uint32(i) << "}";
-            RecordQuestEvent(state, bot, "objective_progress", quest->GetQuestId(), target, "kill", rawJson, semanticJson, current, 0, context.str().c_str());
+            if (current > before || completed)
+            {
+                ++_metrics.QuestObjectiveProgress;
+                state.LastQuestObjectiveProgress = _metrics.QuestObjectiveProgress;
+                RecordQuestEvent(state, bot, "objective_progress", quest->GetQuestId(), target, "kill_verified", rawJson, semanticJson, current, 0, context.str().c_str());
 
-            if (bot->CanCompleteQuest(quest->GetQuestId()))
-                bot->CompleteQuest(quest->GetQuestId());
+                if (completed)
+                    bot->CompleteQuest(quest->GetQuestId());
+            }
+            else
+            {
+                state.LastNoProgressReason = "counter_unchanged";
+                RecordQuestEvent(state, bot, "objective_no_progress", quest->GetQuestId(), target, "counter_unchanged", rawJson, semanticJson, current, 0, context.str().c_str());
+            }
         }
     }
 }
@@ -5106,7 +5377,15 @@ uint64 BotWorldPopulationMgr::RecordDecisionReplay(WorldBotState const& state, P
                   << ",\"z\":" << bot->GetPositionZ()
                   << ",\"o\":" << bot->GetOrientation()
                   << ",\"target_guid\":" << targetGuid
-                  << ",\"target_entry\":" << targetEntry << "}";
+                  << ",\"target_entry\":" << targetEntry
+                  << ",\"quest_phase\":\"" << JsonEscape(state.QuestWork.Phase) << "\""
+                  << ",\"active_quest_id\":" << state.QuestWork.ActiveQuestId
+                  << ",\"objective_index\":" << state.QuestWork.ObjectiveIndex
+                  << ",\"objective_type\":\"" << JsonEscape(state.QuestWork.ObjectiveType) << "\""
+                  << ",\"required_entry\":" << (state.QuestWork.RequiredEntry > 0 ? uint32(state.QuestWork.RequiredEntry) : 0)
+                  << ",\"required_item\":" << state.QuestWork.RequiredItem
+                  << ",\"required_spell\":" << state.QuestWork.RequiredSpell
+                  << ",\"target_matches_objective\":" << (targetEntry && (state.QuestWork.RequiredEntry <= 0 || uint32(state.QuestWork.RequiredEntry) == targetEntry) ? "true" : "false") << "}";
 
     std::ostringstream actionSnapshot;
     actionSnapshot << "{\"action\":\"" << JsonEscape(action ? action : "wait") << "\""
@@ -5114,6 +5393,9 @@ uint64 BotWorldPopulationMgr::RecordDecisionReplay(WorldBotState const& state, P
                    << ",\"chosen_activity\":\"" << JsonEscape(BotLongTermProgressionBrain::ToString(chosenActivity.Activity)) << "\""
                    << ",\"model_version\":\"" << JsonEscape(_policyModelConfig.Version) << "\""
                    << ",\"feature_schema_version\":\"" << JsonEscape(_policyModelConfig.FeatureSchemaVersion) << "\""
+                   << ",\"quest_phase\":\"" << JsonEscape(state.QuestWork.Phase) << "\""
+                   << ",\"active_quest_id\":" << state.QuestWork.ActiveQuestId
+                   << ",\"objective_index\":" << state.QuestWork.ObjectiveIndex
                    << ",\"candidates\":" << (candidateJson && *candidateJson ? candidateJson : "[]") << "}";
 
     std::ostringstream failureSnapshot;
@@ -5123,7 +5405,16 @@ uint64 BotWorldPopulationMgr::RecordDecisionReplay(WorldBotState const& state, P
                     << ",\"learned_penalty\":" << chosenActivity.LearnedPenalty
                     << ",\"danger_score\":" << chosenActivity.LearnedDangerScore
                     << ",\"progression_value\":" << chosenActivity.LearnedProgressionValue
-                    << ",\"confidence\":" << chosenActivity.LearnedConfidence << "}";
+                    << ",\"confidence\":" << chosenActivity.LearnedConfidence
+                    << ",\"progress_before\":" << state.QuestWork.ProgressBefore
+                    << ",\"progress_after\":" << state.QuestWork.ProgressAfter
+                    << ",\"loot_result\":\"" << JsonEscape(state.LastLootResult) << "\""
+                    << ",\"loot_items_count\":" << state.LastLootItemsCount
+                    << ",\"loot_money\":" << state.LastLootMoney
+                    << ",\"loot_state_cleared\":" << (state.LastLootStateCleared ? "true" : "false")
+                    << ",\"no_progress_reason\":\"" << JsonEscape(state.LastNoProgressReason) << "\""
+                    << ",\"cooldown_reason\":\"" << JsonEscape(state.QuestWork.FailedReason) << "\""
+                    << ",\"dummy_allowed_by_quest\":" << (state.CurrentDummyAllowedByQuest ? "true" : "false") << "}";
 
     std::string type = "policy_model_prediction";
     std::string botJson = botSnapshot.str();
@@ -5304,7 +5595,14 @@ void BotWorldPopulationMgr::RecordDecision(WorldBotState& state, Player* bot, ch
            << ",\"sample_count\":" << chosenActivity.LearnedSampleCount
            << ",\"danger_score\":" << chosenActivity.LearnedDangerScore
            << ",\"progression_value\":" << chosenActivity.LearnedProgressionValue
-           << ",\"confidence\":" << chosenActivity.LearnedConfidence;
+           << ",\"confidence\":" << chosenActivity.LearnedConfidence
+           << ",\"quest_phase\":\"" << JsonEscape(state.QuestWork.Phase) << "\""
+           << ",\"active_quest_id\":" << state.QuestWork.ActiveQuestId
+           << ",\"objective_index\":" << state.QuestWork.ObjectiveIndex
+           << ",\"objective_type\":\"" << JsonEscape(state.QuestWork.ObjectiveType) << "\""
+           << ",\"required_entry\":" << (state.QuestWork.RequiredEntry > 0 ? uint32(state.QuestWork.RequiredEntry) : 0)
+           << ",\"required_item\":" << state.QuestWork.RequiredItem
+           << ",\"required_spell\":" << state.QuestWork.RequiredSpell;
     if (_policyModelConfig.Enabled && !_policyModelConfig.Version.empty())
         chosen << ",\"policy_model\":" << modelTrace.Json;
     chosen << "}";
@@ -5321,7 +5619,16 @@ void BotWorldPopulationMgr::RecordDecision(WorldBotState& state, Player* bot, ch
             << ",\"progression_value\":" << chosenActivity.LearnedProgressionValue
             << ",\"confidence\":" << chosenActivity.LearnedConfidence
             << ",\"role_power_score\":" << power.Total
-            << ",\"power_delta\":" << (power.Total - state.ActivityStartPower);
+            << ",\"power_delta\":" << (power.Total - state.ActivityStartPower)
+            << ",\"progress_before\":" << state.QuestWork.ProgressBefore
+            << ",\"progress_after\":" << state.QuestWork.ProgressAfter
+            << ",\"loot_result\":\"" << JsonEscape(state.LastLootResult) << "\""
+            << ",\"loot_items_count\":" << state.LastLootItemsCount
+            << ",\"loot_money\":" << state.LastLootMoney
+            << ",\"loot_state_cleared\":" << (state.LastLootStateCleared ? "true" : "false")
+            << ",\"no_progress_reason\":\"" << JsonEscape(state.LastNoProgressReason) << "\""
+            << ",\"cooldown_reason\":\"" << JsonEscape(state.QuestWork.FailedReason) << "\""
+            << ",\"dummy_allowed_by_quest\":" << (state.CurrentDummyAllowedByQuest ? "true" : "false");
     if (_policyModelConfig.Enabled && !_policyModelConfig.Version.empty())
         outcome << ",\"policy_model\":" << modelTrace.Json;
     outcome << "}";
@@ -5504,6 +5811,14 @@ std::string BotWorldPopulationMgr::BuildEmbeddingFeaturesJson(Player const* bot,
 
 std::string BotWorldPopulationMgr::BuildRawJson(Player* bot, Unit const* target) const
 {
+    WorldBotState const* state = nullptr;
+    for (WorldBotState const& candidate : _bots)
+        if (bot && candidate.Guid == bot->GetGUID())
+        {
+            state = &candidate;
+            break;
+        }
+
     std::ostringstream json;
     json << "{\"bot_guid\":" << (bot ? bot->GetGUID().GetCounter() : 0)
          << ",\"map_id\":" << (bot ? bot->GetMapId() : 0)
@@ -5538,7 +5853,37 @@ std::string BotWorldPopulationMgr::BuildRawJson(Player* bot, Unit const* target)
     }
     else
         json << 0;
-    json << "}";
+    uint32 targetEntry = 0;
+    if (Creature const* creature = target ? target->ToCreature() : nullptr)
+        targetEntry = creature->GetEntry();
+    bool targetMatchesObjective = state && targetEntry && (state->QuestWork.RequiredEntry <= 0 || uint32(state->QuestWork.RequiredEntry) == targetEntry);
+    bool dummyAllowed = false;
+    if (state && target)
+    {
+        QuestObjectivePlan plan;
+        dummyAllowed = GetQuestObjectivePlan(bot, state->QuestWork.ActiveQuestId, state->QuestWork.ObjectiveIndex,
+            state->QuestWork.ObjectiveType == "use_ability_on_dummy" ? QuestObjectiveType::UseAbilityOnDummy :
+            (state->QuestWork.ObjectiveType == "cast_spell_on_target" ? QuestObjectiveType::CastSpellOnTarget : QuestObjectiveType::Kill), plan)
+            && IsTrainingDummyAllowedForQuest(plan, target);
+    }
+    json << ",\"quest_phase\":\"" << JsonEscape(state ? state->QuestWork.Phase : "idle") << "\""
+         << ",\"active_quest_id\":" << (state ? state->QuestWork.ActiveQuestId : 0)
+         << ",\"objective_index\":" << (state ? state->QuestWork.ObjectiveIndex : 0)
+         << ",\"objective_type\":\"" << JsonEscape(state ? state->QuestWork.ObjectiveType : "none") << "\""
+         << ",\"required_entry\":" << (state && state->QuestWork.RequiredEntry > 0 ? uint32(state->QuestWork.RequiredEntry) : 0)
+         << ",\"required_item\":" << (state ? state->QuestWork.RequiredItem : 0)
+         << ",\"required_spell\":" << (state ? state->QuestWork.RequiredSpell : 0)
+         << ",\"target_matches_objective\":" << (targetMatchesObjective ? "true" : "false")
+         << ",\"progress_before\":" << (state ? state->QuestWork.ProgressBefore : 0)
+         << ",\"progress_after\":" << (state ? state->QuestWork.ProgressAfter : 0)
+         << ",\"loot_result\":\"" << JsonEscape(state ? state->LastLootResult : "none") << "\""
+         << ",\"loot_items_count\":" << (state ? state->LastLootItemsCount : 0)
+         << ",\"loot_money\":" << (state ? state->LastLootMoney : 0)
+         << ",\"loot_state_cleared\":" << (state && state->LastLootStateCleared ? "true" : "false")
+         << ",\"no_progress_reason\":\"" << JsonEscape(state ? state->LastNoProgressReason : "") << "\""
+         << ",\"cooldown_reason\":\"" << JsonEscape(state ? state->QuestWork.FailedReason : "") << "\""
+         << ",\"dummy_allowed_by_quest\":" << (dummyAllowed ? "true" : "false")
+         << "}";
     return json.str();
 }
 
@@ -5579,6 +5924,14 @@ std::string BotWorldPopulationMgr::BuildSemanticJson(Player* bot, Unit const* ta
     BotLearnedScore activityLearned = bot ? BotExperienceLearningPolicy::ScoreActivity(bot, activity, _learningConfig) : BotLearnedScore();
     BotLearnedScore areaLearned = bot ? BotExperienceLearningPolicy::ScoreArea(bot, bot->GetAreaId(), _learningConfig) : BotLearnedScore();
     BotLearnedScore mobLearned = (bot && target) ? BotExperienceLearningPolicy::ScoreMob(bot, target, _learningConfig) : BotLearnedScore();
+    WorldBotState const* workState = nullptr;
+    for (WorldBotState const& state : _bots)
+        if (bot && state.Guid == bot->GetGUID())
+        {
+            workState = &state;
+            break;
+        }
+    bool targetMatchesObjective = workState && targetEntry && (workState->QuestWork.RequiredEntry <= 0 || uint32(workState->QuestWork.RequiredEntry) == targetEntry);
 
     json << "{\"situation_type\":\"" << JsonEscape(situationType) << "\""
          << ",\"role\":\"" << JsonEscape((dungeonTrash || bossEncounter) ? GetDungeonRole(bot) : "solo") << "\""
@@ -5618,6 +5971,24 @@ std::string BotWorldPopulationMgr::BuildSemanticJson(Player* bot, Unit const* ta
          << ",\"enemy\":{\"present\":" << (target ? "true" : "false")
          << ",\"elite\":" << (elite ? "true" : "false")
          << ",\"safe_open_world_target\":" << (target && !elite && bot && int32(target->getLevel()) <= int32(bot->getLevel()) + 1 ? "true" : "false") << "}";
+    json << ",\"quest_work\":{\"quest_phase\":\"" << JsonEscape(workState ? workState->QuestWork.Phase : "idle") << "\""
+         << ",\"active_quest_id\":" << (workState ? workState->QuestWork.ActiveQuestId : 0)
+         << ",\"objective_index\":" << (workState ? workState->QuestWork.ObjectiveIndex : 0)
+         << ",\"objective_type\":\"" << JsonEscape(workState ? workState->QuestWork.ObjectiveType : "none") << "\""
+         << ",\"required_entry\":" << (workState && workState->QuestWork.RequiredEntry > 0 ? uint32(workState->QuestWork.RequiredEntry) : 0)
+         << ",\"required_item\":" << (workState ? workState->QuestWork.RequiredItem : 0)
+         << ",\"required_spell\":" << (workState ? workState->QuestWork.RequiredSpell : 0)
+         << ",\"target_entry\":" << targetEntry
+         << ",\"target_matches_objective\":" << (targetMatchesObjective ? "true" : "false")
+         << ",\"progress_before\":" << (workState ? workState->QuestWork.ProgressBefore : 0)
+         << ",\"progress_after\":" << (workState ? workState->QuestWork.ProgressAfter : 0)
+         << ",\"loot_result\":\"" << JsonEscape(workState ? workState->LastLootResult : "none") << "\""
+         << ",\"loot_items_count\":" << (workState ? workState->LastLootItemsCount : 0)
+         << ",\"loot_money\":" << (workState ? workState->LastLootMoney : 0)
+         << ",\"loot_state_cleared\":" << (workState && workState->LastLootStateCleared ? "true" : "false")
+         << ",\"no_progress_reason\":\"" << JsonEscape(workState ? workState->LastNoProgressReason : "") << "\""
+         << ",\"cooldown_reason\":\"" << JsonEscape(workState ? workState->QuestWork.FailedReason : "") << "\""
+         << ",\"dummy_allowed_by_quest\":" << (workState && workState->CurrentDummyAllowedByQuest ? "true" : "false") << "}";
     if (dungeonTrash)
     {
         DungeonTrashPackFeatures pack = BuildDungeonTrashPackFeatures(bot, target);
@@ -6118,6 +6489,13 @@ std::string BotWorldPopulationMgr::GetBotDebugJson(std::string const& selector) 
     QuestObjectivePlan plan;
     bool hasPlan = FindActiveQuestObjective(bot, plan);
     bool dummyAllowed = hasPlan && IsTrainingDummyAllowedForQuest(plan, target);
+    bool targetMatchesObjective = false;
+    std::string targetName;
+    if (Creature const* creature = target ? target->ToCreature() : nullptr)
+    {
+        targetMatchesObjective = selected->QuestWork.RequiredEntry <= 0 || uint32(selected->QuestWork.RequiredEntry) == creature->GetEntry();
+        targetName = creature->GetName();
+    }
 
     std::ostringstream json;
     json << "{\"ok\":true,\"action\":\"botauto_debug\""
@@ -6126,17 +6504,38 @@ std::string BotWorldPopulationMgr::GetBotDebugJson(std::string const& selector) 
          << ",\"spawn_source\":\"" << JsonEscape(selected->SpawnSource) << "\""
          << ",\"saved_position\":{\"map\":" << savedMap << ",\"x\":" << savedX << ",\"y\":" << savedY << ",\"z\":" << savedZ << ",\"o\":" << savedO << "}"
          << ",\"race_start_fallback_used\":" << (selected->RaceStartFallbackUsed ? "true" : "false")
+         << ",\"saved_or_race_start_status\":\"" << JsonEscape(selected->RaceStartFallbackUsed ? "race_start" : selected->SpawnSource) << "\""
          << ",\"current_quest_state\":\"" << JsonEscape(selected->CurrentQuestState) << "\""
-         << ",\"objective_type\":\"" << JsonEscape(hasPlan ? ToString(plan.ObjectiveType) : selected->CurrentObjectiveType.c_str()) << "\""
+         << ",\"quest_phase\":\"" << JsonEscape(selected->QuestWork.Phase) << "\""
+         << ",\"active_quest_id\":" << selected->QuestWork.ActiveQuestId
+         << ",\"objective_index\":" << selected->QuestWork.ObjectiveIndex
+         << ",\"objective_type\":\"" << JsonEscape(selected->QuestWork.ObjectiveType != "none" ? selected->QuestWork.ObjectiveType : (hasPlan ? ToString(plan.ObjectiveType) : selected->CurrentObjectiveType.c_str())) << "\""
+         << ",\"required_count\":" << selected->QuestWork.RequiredCount
+         << ",\"current_count\":" << selected->QuestWork.CurrentCount
+         << ",\"selected_target_guid\":" << selected->QuestWork.SelectedTargetGuid.GetCounter()
+         << ",\"selected_object_guid\":" << selected->QuestWork.SelectedObjectGuid.GetCounter()
+         << ",\"selected_giver_guid\":" << selected->QuestWork.SelectedGiverGuid.GetCounter()
          << ",\"target_guid\":" << (target ? target->GetGUID().GetCounter() : 0)
          << ",\"target_entry\":" << (target && target->ToCreature() ? target->ToCreature()->GetEntry() : 0)
+         << ",\"target_name\":\"" << JsonEscape(targetName) << "\""
+         << ",\"target_matches_objective\":" << (targetMatchesObjective ? "true" : "false")
          << ",\"target_training_dummy\":" << (targetDummy ? "true" : "false")
          << ",\"dummy_allowed_by_active_quest\":" << (dummyAllowed ? "true" : "false")
-         << ",\"required_spell\":" << (hasPlan ? plan.RequiredSpellId : selected->RequiredSpellId)
-         << ",\"required_item\":" << (hasPlan ? plan.ItemId : selected->RequiredItemId)
-         << ",\"required_target\":" << (hasPlan && plan.RequiredEntry > 0 ? uint32(plan.RequiredEntry) : selected->RequiredTargetEntry)
+         << ",\"required_spell\":" << (selected->QuestWork.RequiredSpell ? selected->QuestWork.RequiredSpell : (hasPlan ? plan.RequiredSpellId : selected->RequiredSpellId))
+         << ",\"required_item\":" << (selected->QuestWork.RequiredItem ? selected->QuestWork.RequiredItem : (hasPlan ? plan.ItemId : selected->RequiredItemId))
+         << ",\"required_target\":" << (selected->QuestWork.RequiredEntry > 0 ? uint32(selected->QuestWork.RequiredEntry) : (hasPlan && plan.RequiredEntry > 0 ? uint32(plan.RequiredEntry) : selected->RequiredTargetEntry))
+         << ",\"loot_attempt_count\":" << selected->LootAttemptCount
+         << ",\"last_loot_result\":\"" << JsonEscape(selected->LastLootResult) << "\""
+         << ",\"last_loot_items_count\":" << selected->LastLootItemsCount
+         << ",\"last_loot_money\":" << selected->LastLootMoney
+         << ",\"last_loot_state_cleared\":" << (selected->LastLootStateCleared ? "true" : "false")
          << ",\"last_quest_progress_before\":" << selected->LastQuestProgressBefore
          << ",\"last_quest_progress_after\":" << selected->LastQuestProgressAfter
+         << ",\"quest_work_progress_before\":" << selected->QuestWork.ProgressBefore
+         << ",\"quest_work_progress_after\":" << selected->QuestWork.ProgressAfter
+         << ",\"last_no_progress_reason\":\"" << JsonEscape(selected->LastNoProgressReason) << "\""
+         << ",\"cooldown_until_ms\":" << selected->QuestWork.CooldownUntilMs
+         << ",\"failure_reason\":\"" << JsonEscape(selected->QuestWork.FailedReason) << "\""
          << ",\"last_rejected_target_reason\":\"" << JsonEscape(selected->LastRejectedTargetReason) << "\""
          << "}";
     return json.str();

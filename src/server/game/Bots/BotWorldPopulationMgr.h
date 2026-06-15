@@ -246,6 +246,43 @@ private:
         std::map<uint64, uint64> DummyTargetCooldownUntilMs;
         std::map<std::string, uint64> AbilityObjectiveCooldownUntilMs;
         std::map<std::string, uint32> AbilityObjectiveNoProgressCasts;
+        ObjectGuid LastKilledTargetGuid;
+        ObjectGuid LastLootTargetGuid;
+        uint32 LootAttemptCount = 0;
+        uint64 LootStartedMs = 0;
+        uint64 LootCompletedMs = 0;
+        std::string LastLootResult = "none";
+        uint32 LastLootItemsCount = 0;
+        uint64 LastLootMoney = 0;
+        bool LastLootStateCleared = false;
+        uint64 NextLootAttemptMs = 0;
+        std::string LastNoProgressReason;
+        std::map<std::string, uint64> NoProgressCooldownUntilMs;
+
+        struct BotQuestWorkState
+        {
+            uint32 ActiveQuestId = 0;
+            uint32 ObjectiveIndex = 0;
+            std::string ObjectiveType = "none";
+            int32 RequiredEntry = 0;
+            uint32 RequiredItem = 0;
+            uint32 RequiredSpell = 0;
+            uint32 RequiredCount = 0;
+            uint32 CurrentCount = 0;
+            ObjectGuid SelectedTargetGuid;
+            ObjectGuid SelectedObjectGuid;
+            ObjectGuid SelectedGiverGuid;
+            std::string Phase = "idle";
+            uint64 PhaseStartedMs = 0;
+            uint64 LastProgressMs = 0;
+            uint32 RetryCount = 0;
+            std::string FailedReason;
+            uint64 CooldownUntilMs = 0;
+            uint32 ProgressBefore = 0;
+            uint32 ProgressAfter = 0;
+            uint32 VerifiedCasts = 0;
+            uint64 VerifyAfterMs = 0;
+        } QuestWork;
     };
 
     struct QuestObjectivePlan
@@ -549,6 +586,11 @@ private:
     WorldObject* SelectQuestGiver(Player* bot, bool completeOnly, uint32* questId) const;
     WorldObject* SelectQuestGameObject(Player* bot, QuestObjectivePlan const& plan) const;
     bool FindActiveQuestObjective(Player* bot, QuestObjectivePlan& plan) const;
+    bool GetQuestObjectivePlan(Player* bot, uint32 questId, uint32 objectiveIndex, QuestObjectiveType type, QuestObjectivePlan& plan) const;
+    void SetQuestWorkPhase(WorldBotState& state, char const* phase);
+    void SetQuestWorkFromPlan(WorldBotState& state, QuestObjectivePlan const& plan);
+    void ResetQuestWork(WorldBotState& state);
+    bool VerifyQuestObjectiveProgress(WorldBotState& state, Player* bot, QuestObjectivePlan const& plan, Unit const* target, uint32 before, char const* reason, char const* rawJson, char const* semanticJson);
     bool IsTrainingDummy(Unit const* unit) const;
     bool IsTrainingDummyAllowedForQuest(QuestObjectivePlan const& plan, Unit const* target) const;
     bool IsDummyEntryConfigured(uint32 entry, bool* explicitAllow = nullptr) const;
