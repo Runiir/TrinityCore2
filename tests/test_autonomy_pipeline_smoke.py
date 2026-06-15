@@ -41,12 +41,24 @@ def assert_ordered(text: str, *needles: str) -> None:
         cursor = found
 
 
-def test_server_start_autonomy_disabled_contract():
+def test_server_start_autonomy_enabled_by_default_contract():
     conf = read(WORLDSERVER_CONF)
     commands = read(BOT_COMMANDS)
     startup = function_body(commands, "void OnStartup() override")
 
-    assert re.search(r"^BotWorld\.AutoStart\s*=\s*0$", conf, re.MULTILINE)
+    assert re.search(r"^PlayerBot\.Enable\s*=\s*1$", conf, re.MULTILINE)
+    assert re.search(r"^BotWorld\.Enable\s*=\s*1$", conf, re.MULTILINE)
+    assert re.search(r"^BotWorld\.AutoStart\s*=\s*1$", conf, re.MULTILINE)
+    assert re.search(r"^BotWorld\.AutoStartRecording\s*=\s*1$", conf, re.MULTILINE)
+    assert re.search(r"^BotWorld\.AutoRecordingWindowMinutes\s*=\s*15$", conf, re.MULTILINE)
+    assert re.search(r"^BotWorld\.TargetPopulation\s*=\s*5$", conf, re.MULTILINE)
+    assert re.search(r'^BotWorld\.SpawnMode\s*=\s*"saved_or_near_player"$', conf, re.MULTILINE)
+    assert re.search(r"^BotWorld\.AllowConfiguredCenterFallback\s*=\s*0$", conf, re.MULTILINE)
+    assert re.search(r"^BotProgression\.AllowQuesting\s*=\s*1$", conf, re.MULTILINE)
+    assert re.search(r"^BotProgression\.AllowDungeons\s*=\s*0$", conf, re.MULTILINE)
+    assert re.search(r"^BotProgression\.AllowRaids\s*=\s*0$", conf, re.MULTILINE)
+    assert re.search(r"^BotLearning\.Enable\s*=\s*1$", conf, re.MULTILINE)
+    assert re.search(r"^BotPolicyModel\.Enable\s*=\s*0$", conf, re.MULTILINE)
     assert "sBotMgr->ResetPoolUseState();" in startup
     assert 'sConfigMgr->GetBoolDefault("BotWorld.AutoStart", false)' in startup
     assert "sBotWorldPopulationMgr->StartAutonomy();" in startup
@@ -273,12 +285,16 @@ def test_policy_model_shadow_assist_uses_registered_artifact_and_safe_gate():
 def test_host_world_makefile_can_generate_always_on_recording_config():
     makefile = read(ROOT / "Makefile")
 
-    assert "BOTWORLD_AUTOSTART ?= 0" in makefile
-    assert "BOTWORLD_AUTOSTART_RECORDING ?= 0" in makefile
-    assert "BOTWORLD_RECORDING_WINDOW_MINUTES ?= 30" in makefile
+    assert "BOTWORLD_ENABLE ?= 1" in makefile
+    assert "BOTWORLD_AUTOSTART ?= 1" in makefile
+    assert "BOTWORLD_AUTOSTART_RECORDING ?= 1" in makefile
+    assert "BOTWORLD_RECORDING_WINDOW_MINUTES ?= 15" in makefile
+    assert "BOTWORLD_TARGET_POPULATION ?= 5" in makefile
+    assert "BOTWORLD_ALLOW_CONFIGURED_CENTER_FALLBACK ?= 0" in makefile
     assert "BotWorld.AutoStart = $(BOTWORLD_AUTOSTART)" in makefile
     assert "BotWorld.AutoStartRecording = $(BOTWORLD_AUTOSTART_RECORDING)" in makefile
     assert "BotWorld.AutoRecordingWindowMinutes = $(BOTWORLD_RECORDING_WINDOW_MINUTES)" in makefile
+    assert "s|^BotWorld\\.SpawnMode\\s*=.*$$|BotWorld.SpawnMode = \"$(BOTWORLD_SPAWN_MODE)\"|gm" in makefile
 
 
 def test_player_bot_chase_movement_inform_does_not_deref_non_creature_owner():

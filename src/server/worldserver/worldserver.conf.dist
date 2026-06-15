@@ -3387,7 +3387,7 @@ PreventRenameCharacterOnCustomization = 0
 #
 #    PlayerBot.Enable
 #        Description: Enables the local player-backed bot subsystem.
-#        Default:     0
+#        Default:     1
 #
 #    PlayerBot.Record.Enable
 #        Description: Writes JSONL healer decision frames even when per-bot recording was not
@@ -3423,19 +3423,19 @@ PlayerBot.Debug = 1
 #
 #    BotWorld.Enable
 #        Description: Enables autonomous server-side world bots.
-#        Default:     0
+#        Default:     1
 #
 #    BotWorld.AutoStart
 #        Description: Starts always-on autonomous bots during worldserver startup when PlayerBot.Enable is also enabled.
-#        Default:     0
+#        Default:     1
 #
 #    BotWorld.AutoStartRecording
 #        Description: Starts and rotates experiment_bot_runs recording windows while always-on autonomy is active.
-#        Default:     0
+#        Default:     1
 #
 #    BotWorld.AutoRecordingWindowMinutes
 #        Description: Recording window length before the active autonomous run is stopped and a new run is started.
-#        Default:     30
+#        Default:     15
 #
 #    BotWorld.AutoRecordingNamePrefix
 #        Description: Prefix used for automatically rotated always-on autonomy run names.
@@ -3443,7 +3443,7 @@ PlayerBot.Debug = 1
 #
 #    BotWorld.TargetPopulation
 #        Description: Default number of active autonomous bots for ".botauto start" or ".botexp start".
-#        Default:     10
+#        Default:     5
 #
 #    BotWorld.SpawnMode
 #        Description: Bot spawn strategy: saved_or_near_player, saved, near_player, or configured_center.
@@ -3451,7 +3451,7 @@ PlayerBot.Debug = 1
 #
 #    BotWorld.AllowConfiguredCenterFallback
 #        Description: Allows BotWorld.Map/CenterX/CenterY/CenterZ fallback when saved/local placement is unavailable.
-#        Default:     1
+#        Default:     0
 #
 #    BotWorld.UseSavedPosition
 #        Description: Allows bots to spawn from their saved character world position.
@@ -3501,16 +3501,16 @@ PlayerBot.Debug = 1
 #
 
 BotWorld.Enable = 1
-BotWorld.AutoStart = 0
-BotWorld.AutoStartRecording = 0
-BotWorld.AutoRecordingWindowMinutes = 30
+BotWorld.AutoStart = 1
+BotWorld.AutoStartRecording = 1
+BotWorld.AutoRecordingWindowMinutes = 15
 BotWorld.AutoRecordingNamePrefix = "autonomy_window"
-BotWorld.TargetPopulation = 10
+BotWorld.TargetPopulation = 5
 BotWorld.MaxPerMap = 50
 BotWorld.TickMs = 1000
 BotWorld.DecisionTickMs = 3000
 BotWorld.SpawnMode = "saved_or_near_player"
-BotWorld.AllowConfiguredCenterFallback = 1
+BotWorld.AllowConfiguredCenterFallback = 0
 BotWorld.UseSavedPosition = 1
 BotWorld.NearPlayerRadius = 20
 BotWorld.DeathRecoveryMode = "safe_local"

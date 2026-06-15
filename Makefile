@@ -7,11 +7,11 @@ DATA_DIR ?= $(CURDIR)/data
 JOBS ?= $(shell nproc)
 AUTH_TEST_CONF ?= trinity-authserver-test.conf
 WORLD_TEST_CONF ?= trinity-worldserver-test.conf
-BOTWORLD_AUTOSTART ?= 0
-BOTWORLD_AUTOSTART_RECORDING ?= 0
-BOTWORLD_ENABLE ?= 0
-BOTWORLD_RECORDING_WINDOW_MINUTES ?= 30
-BOTWORLD_TARGET_POPULATION ?= 10
+BOTWORLD_AUTOSTART ?= 1
+BOTWORLD_AUTOSTART_RECORDING ?= 1
+BOTWORLD_ENABLE ?= 1
+BOTWORLD_RECORDING_WINDOW_MINUTES ?= 15
+BOTWORLD_TARGET_POPULATION ?= 5
 BOTWORLD_SPAWN_MODE ?= saved_or_near_player
 BOTWORLD_ALLOW_CONFIGURED_CENTER_FALLBACK ?= 0
 BOTPOLICYMODEL_ENABLE ?= 0
@@ -51,9 +51,9 @@ help:
 		'  make world        Run worldserver attached with console stdin' \
 		'  make test-configs Create local host-run test configs' \
 		'  make host-auth    Run host-built authserver with trinity-authserver-test.conf' \
-		'  make host-world   Run host-built worldserver with trinity-worldserver-test.conf' \
+		'  make host-world   Run host-built worldserver with always-on BotWorld test config' \
 		'  make host-world-botexp-small  Run 5 always-on bots with 15-minute recording windows' \
-		'  make host-world-botexp        Run 10 always-on bots with 30-minute recording windows' \
+		'  make host-world-botexp        Run always-on bots with configured recording windows' \
 		'  make host-world-botexp-shadow MODEL_VERSION=policy_xxx  Run shadow policy tracing' \
 		'  make bot-ml-full MODEL_VERSION=policy_xxx  Export, label, validate, train, evaluate, register' \
 		'  make logs         Follow all service logs' \
@@ -115,10 +115,10 @@ test-configs:
 	cp src/server/authserver/authserver.conf.dist "$(AUTH_TEST_CONF)"
 	cp src/server/worldserver/worldserver.conf.dist "$(WORLD_TEST_CONF)"
 	perl -0pi -e 's|LoginDatabaseInfo\s*=\s*"127\.0\.0\.1;3306;trinity;trinity;auth"|LoginDatabaseInfo = "172.20.0.2;3306;trinity;trinity;auth"|g' "$(AUTH_TEST_CONF)"
-	perl -0pi -e 's|DataDir\s*=\s*"."|DataDir = "$(DATA_DIR)"|g; s|LoginDatabaseInfo\s*=\s*"127\.0\.0\.1;3306;trinity;trinity;auth"|LoginDatabaseInfo = "172.20.0.2;3306;trinity;trinity;auth"|g; s|WorldDatabaseInfo\s*=\s*"127\.0\.0\.1;3306;trinity;trinity;world"|WorldDatabaseInfo = "172.20.0.2;3306;trinity;trinity;world"|g; s|CharacterDatabaseInfo\s*=\s*"127\.0\.0\.1;3306;trinity;trinity;characters"|CharacterDatabaseInfo = "172.20.0.2;3306;trinity;trinity;characters"|g; s|HotfixDatabaseInfo\s*=\s*"127\.0\.0\.1;3306;trinity;trinity;hotfixes"|HotfixDatabaseInfo = "172.20.0.2;3306;trinity;trinity;hotfixes"|g; s|PlayerBot\.Enable\s*=\s*0|PlayerBot.Enable = 1|g; s|Ra\.Enable\s*=\s*0|Ra.Enable = 1|g; s|SOAP\.Enabled\s*=\s*0|SOAP.Enabled = 1|g' "$(WORLD_TEST_CONF)"
-	perl -0pi -e 's|BotWorld\.AutoStart\s*=\s*\d+|BotWorld.AutoStart = $(BOTWORLD_AUTOSTART)|g; s|BotWorld\.AutoStartRecording\s*=\s*\d+|BotWorld.AutoStartRecording = $(BOTWORLD_AUTOSTART_RECORDING)|g; s|BotWorld\.AutoRecordingWindowMinutes\s*=\s*\d+|BotWorld.AutoRecordingWindowMinutes = $(BOTWORLD_RECORDING_WINDOW_MINUTES)|g' "$(WORLD_TEST_CONF)"
-	perl -0pi -e 's|BotWorld\.Enable\s*=\s*\d+|BotWorld.Enable = $(BOTWORLD_ENABLE)|g; s|BotWorld\.TargetPopulation\s*=\s*\d+|BotWorld.TargetPopulation = $(BOTWORLD_TARGET_POPULATION)|g; s|BotWorld\.SpawnMode\s*=\s*"?[^"\\n]+"?|BotWorld.SpawnMode = "$(BOTWORLD_SPAWN_MODE)"|g; s|BotWorld\.AllowConfiguredCenterFallback\s*=\s*\d+|BotWorld.AllowConfiguredCenterFallback = $(BOTWORLD_ALLOW_CONFIGURED_CENTER_FALLBACK)|g; s|BotProgression\.AllowQuesting\s*=\s*\d+|BotProgression.AllowQuesting = 1|g; s|BotProgression\.AllowDungeons\s*=\s*\d+|BotProgression.AllowDungeons = 0|g; s|BotProgression\.AllowRaids\s*=\s*\d+|BotProgression.AllowRaids = 0|g; s|BotLearning\.Enable\s*=\s*\d+|BotLearning.Enable = 1|g' "$(WORLD_TEST_CONF)"
-	perl -0pi -e 's|BotPolicyModel\.Enable\s*=\s*\d+|BotPolicyModel.Enable = $(BOTPOLICYMODEL_ENABLE)|g; s|BotPolicyModel\.Mode\s*=\s*"?[^"\\n]+"?|BotPolicyModel.Mode = "$(BOTPOLICYMODEL_MODE)"|g; s|BotPolicyModel\.Version\s*=\s*.*|BotPolicyModel.Version = "$(BOTPOLICYMODEL_VERSION)"|g; s|BotPolicyModel\.ScoreWeight\s*=\s*[0-9.]+|BotPolicyModel.ScoreWeight = $(BOTPOLICYMODEL_SCORE_WEIGHT)|g; s|BotPolicyModel\.FailClosed\s*=\s*\d+|BotPolicyModel.FailClosed = $(BOTPOLICYMODEL_FAIL_CLOSED)|g' "$(WORLD_TEST_CONF)"
+	perl -0pi -e 's|^DataDir\s*=.*$$|DataDir = "$(DATA_DIR)"|gm; s|^LoginDatabaseInfo\s*=\s*"127\.0\.0\.1;3306;trinity;trinity;auth"$$|LoginDatabaseInfo = "172.20.0.2;3306;trinity;trinity;auth"|gm; s|^WorldDatabaseInfo\s*=\s*"127\.0\.0\.1;3306;trinity;trinity;world"$$|WorldDatabaseInfo = "172.20.0.2;3306;trinity;trinity;world"|gm; s|^CharacterDatabaseInfo\s*=\s*"127\.0\.0\.1;3306;trinity;trinity;characters"$$|CharacterDatabaseInfo = "172.20.0.2;3306;trinity;trinity;characters"|gm; s|^HotfixDatabaseInfo\s*=\s*"127\.0\.0\.1;3306;trinity;trinity;hotfixes"$$|HotfixDatabaseInfo = "172.20.0.2;3306;trinity;trinity;hotfixes"|gm; s|^PlayerBot\.Enable\s*=.*$$|PlayerBot.Enable = 1|gm; s|^Ra\.Enable\s*=.*$$|Ra.Enable = 1|gm; s|^SOAP\.Enabled\s*=.*$$|SOAP.Enabled = 1|gm' "$(WORLD_TEST_CONF)"
+	perl -0pi -e 's|^BotWorld\.AutoStart\s*=.*$$|BotWorld.AutoStart = $(BOTWORLD_AUTOSTART)|gm; s|^BotWorld\.AutoStartRecording\s*=.*$$|BotWorld.AutoStartRecording = $(BOTWORLD_AUTOSTART_RECORDING)|gm; s|^BotWorld\.AutoRecordingWindowMinutes\s*=.*$$|BotWorld.AutoRecordingWindowMinutes = $(BOTWORLD_RECORDING_WINDOW_MINUTES)|gm' "$(WORLD_TEST_CONF)"
+	perl -0pi -e 's|^BotWorld\.Enable\s*=.*$$|BotWorld.Enable = $(BOTWORLD_ENABLE)|gm; s|^BotWorld\.TargetPopulation\s*=.*$$|BotWorld.TargetPopulation = $(BOTWORLD_TARGET_POPULATION)|gm; s|^BotWorld\.SpawnMode\s*=.*$$|BotWorld.SpawnMode = "$(BOTWORLD_SPAWN_MODE)"|gm; s|^BotWorld\.AllowConfiguredCenterFallback\s*=.*$$|BotWorld.AllowConfiguredCenterFallback = $(BOTWORLD_ALLOW_CONFIGURED_CENTER_FALLBACK)|gm; s|^BotProgression\.AllowQuesting\s*=.*$$|BotProgression.AllowQuesting = 1|gm; s|^BotProgression\.AllowDungeons\s*=.*$$|BotProgression.AllowDungeons = 0|gm; s|^BotProgression\.AllowRaids\s*=.*$$|BotProgression.AllowRaids = 0|gm; s|^BotLearning\.Enable\s*=.*$$|BotLearning.Enable = 1|gm' "$(WORLD_TEST_CONF)"
+	perl -0pi -e 's|^BotPolicyModel\.Enable\s*=.*$$|BotPolicyModel.Enable = $(BOTPOLICYMODEL_ENABLE)|gm; s|^BotPolicyModel\.Mode\s*=.*$$|BotPolicyModel.Mode = "$(BOTPOLICYMODEL_MODE)"|gm; s|^BotPolicyModel\.Version\s*=.*$$|BotPolicyModel.Version = "$(BOTPOLICYMODEL_VERSION)"|gm; s|^BotPolicyModel\.ScoreWeight\s*=.*$$|BotPolicyModel.ScoreWeight = $(BOTPOLICYMODEL_SCORE_WEIGHT)|gm; s|^BotPolicyModel\.FailClosed\s*=.*$$|BotPolicyModel.FailClosed = $(BOTPOLICYMODEL_FAIL_CLOSED)|gm' "$(WORLD_TEST_CONF)"
 
 host-auth: local-configure db test-configs
 	cmake --build $(BUILD_DIR) --target authserver -j"$(JOBS)"
