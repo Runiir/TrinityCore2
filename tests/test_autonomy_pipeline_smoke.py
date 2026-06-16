@@ -304,6 +304,15 @@ def test_quest_first_portfolio_routing_surface():
     assert "TryValidationRouteObjective(state, bot, power, stage, chosenActivity.Activity, situation, action, target)" in update_bot
     assert "validation_route_prerequisite" in mgr
     assert "off_route_target" in mgr
+    assert "routeEngageRange" in mgr
+    assert "approach_target" in mgr
+    assert "tryRouteGroupHeal" in mgr
+    assert "validation_route_group_heal" in mgr
+    assert "requires_ally_target" in mgr
+    assert "threat_already_established" in mgr
+    assert "routeGroupFocusTarget" in mgr
+    assert "SELECT role FROM character_bot_pool WHERE guid" in mgr
+    assert 'poolRole.find("tank")' in mgr
     assert "if (routeProximity > 120.0f)" in mgr
     assert 'eventName.rfind("validation_route", 0) == 0' in mgr
     assert "state.LastDecisionHandler = \"smart_loot\";" in update_bot

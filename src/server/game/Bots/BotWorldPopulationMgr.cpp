@@ -4932,7 +4932,152 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     state.QuestRouteDestination.QuestId = 0;
     state.QuestRouteDestination.Reason = "validation_route";
 
+    auto routeEngageRange = [this](Player* engageBot, Unit* engageTarget, uint32 spellId) -> float
+    {
+        if (SpellInfo const* spellInfo = spellId ? sSpellMgr->GetSpellInfo(spellId) : nullptr)
+            return std::max(5.0f, spellInfo->GetMaxRange(false));
+
+        std::string role = GetDungeonRole(engageBot);
+        BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(engageBot, role.c_str());
+        for (BotActionProfileSpell const& spell : profile.Spells)
+        {
+            if (!spell.SpellId || !engageBot->HasSpell(spell.SpellId))
+                continue;
+
+            SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spell.SpellId);
+            if (!spellInfo)
+                continue;
+
+            if (engageTarget && (spell.DamageWeight > 0.0f || spell.ThreatWeight > 0.0f || spell.ProgressionWeight > 0.0f))
+                return std::max(5.0f, spellInfo->GetMaxRange(false));
+        }
+
+        return 5.0f;
+    };
+    auto tryRouteGroupHeal = [this, &state, &power, &stage, &activity, &situation, &action](Player* healer, Unit* combatTarget) -> bool
+    {
+        if (!healer || std::string(GetDungeonRole(healer)) != "healer")
+            return false;
+
+        Unit* healTarget = healer;
+        float lowestHealthPct = UnitHealthPct(healer);
+        if (Group* group = healer->GetGroup())
+        {
+            for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
+            {
+                Player* member = itr->GetSource();
+                if (!member || !member->IsAlive() || member->GetMap() != healer->GetMap())
+                    continue;
+
+                float memberHealthPct = UnitHealthPct(member);
+                if (memberHealthPct < lowestHealthPct)
+                {
+                    lowestHealthPct = memberHealthPct;
+                    healTarget = member;
+                }
+            }
+        }
+
+        if (!healTarget || lowestHealthPct > 0.88f)
+            return false;
+
+        BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(healer, "healer");
+        BotActionProfileSpell const* bestHeal = nullptr;
+        for (BotActionProfileSpell const& spell : profile.Spells)
+        {
+            if (!spell.SpellId || !healer->HasSpell(spell.SpellId) || spell.HealingWeight <= 0.0f)
+                continue;
+
+            if (spell.Category != BotCombatActionCategory::HealFast
+                && spell.Category != BotCombatActionCategory::HealEfficient
+                && spell.Category != BotCombatActionCategory::HealAoe)
+                continue;
+
+            SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spell.SpellId);
+            if (!spellInfo)
+                continue;
+
+            int32 powerCost = spellInfo->CalcPowerCost(healer, spellInfo->GetSchoolMask());
+            if (powerCost > 0 && healer->GetPower(healer->GetPowerType()) < uint32(powerCost))
+                continue;
+
+            if (healer->HasUnitState(UNIT_STATE_CASTING) || healer->GetSpellHistory()->HasGlobalCooldown(spellInfo) || !healer->GetSpellHistory()->IsReady(spellInfo))
+                continue;
+
+            if (!bestHeal)
+            {
+                bestHeal = &spell;
+                continue;
+            }
+
+            bool currentFast = spell.Category == BotCombatActionCategory::HealFast;
+            bool bestFast = bestHeal->Category == BotCombatActionCategory::HealFast;
+            if ((lowestHealthPct < 0.55f && currentFast && !bestFast) || spell.HealingWeight > bestHeal->HealingWeight)
+                bestHeal = &spell;
+        }
+
+        if (!bestHeal)
+            return false;
+
+        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(bestHeal->SpellId);
+        float healRange = std::max(5.0f, spellInfo ? spellInfo->GetMaxRange(false) : 5.0f);
+        std::string raw = BuildRawJson(healer, combatTarget);
+        std::string semantic = BuildSemanticJson(healer, combatTarget, "validation_route_group_heal", &power, stage, activity);
+        if (!healer->IsWithinDistInMap(healTarget, std::max(5.0f, healRange - 1.0f)) || !healer->IsWithinLOSInMap(healTarget))
+        {
+            MoveBotToPoint(state, healer, healTarget->GetPositionX(), healTarget->GetPositionY(), healTarget->GetPositionZ());
+            RecordEvent(state, healer, "validation_route_group_heal", healTarget, "approach_ally", raw.c_str(), semantic.c_str(), lowestHealthPct, bestHeal->SpellId);
+            situation = "validation_route_group_heal";
+            action = "move_to_validation_route_heal_target";
+            return true;
+        }
+
+        bool cast = healer->CastSpell(healTarget, bestHeal->SpellId, false) == SPELL_CAST_OK;
+        RecordEvent(state, healer, "validation_route_group_heal", healTarget, cast ? "ok" : "cast_failed", raw.c_str(), semantic.c_str(), lowestHealthPct, bestHeal->SpellId);
+        situation = "validation_route_group_heal";
+        action = cast ? "validation_route_group_heal" : "validation_route_group_heal_failed";
+        return cast;
+    };
+    auto routeUsableCombatTarget = [this, bot](Unit* candidate) -> Unit*
+    {
+        if (!candidate || !candidate->IsAlive() || !bot->IsValidAttackTarget(candidate) || !bot->IsWithinLOSInMap(candidate))
+            return nullptr;
+
+        Creature const* creature = candidate->ToCreature();
+        if (!creature)
+            return nullptr;
+
+        bool routeBossTarget = _config.ValidationRouteTargetEntry && creature->GetEntry() == _config.ValidationRouteTargetEntry;
+        if (routeBossTarget)
+            return candidate;
+
+        if (creature->IsDungeonBoss() || creature->isWorldBoss())
+            return nullptr;
+
+        float routeProximity = candidate->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ);
+        return routeProximity <= 120.0f ? candidate : nullptr;
+    };
+    auto routeGroupFocusTarget = [this, bot, &routeUsableCombatTarget]() -> Unit*
+    {
+        if (std::string(GetDungeonRole(bot)) == "tank")
+            return nullptr;
+
+        Player* anchor = FindDungeonAnchor(bot);
+        if (!anchor || anchor == bot)
+            return nullptr;
+
+        if (Unit* focus = routeUsableCombatTarget(anchor->GetVictim()))
+            return focus;
+
+        return nullptr;
+    };
+
     float routeDistance = bot->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ);
+    if (Unit* focusTarget = routeGroupFocusTarget())
+    {
+        target = focusTarget;
+        state.TargetGuid = target->GetGUID();
+    }
     if (bot->IsInCombat() && target && target->IsAlive() && bot->IsValidAttackTarget(target))
     {
         Creature const* creature = target->ToCreature();
@@ -4953,9 +5098,24 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     {
         Creature const* creature = target->ToCreature();
         bool routeBossTarget = creature && _config.ValidationRouteTargetEntry && creature->GetEntry() == _config.ValidationRouteTargetEntry;
+        if (tryRouteGroupHeal(bot, target))
+            return true;
+
         BotActionExecutor executor;
-        BotActionResult pull = executor.Pull(bot, target);
         uint32 spellId = SelectCombatSpell(bot, target);
+        float engageRange = routeEngageRange(bot, target, spellId);
+        if (!bot->IsWithinDistInMap(target, std::max(5.0f, engageRange - 1.0f)) || !bot->IsWithinLOSInMap(target))
+        {
+            MoveBotToPoint(state, bot, target->GetPositionX(), target->GetPositionY(), target->GetPositionZ());
+            action = routeBossTarget ? "move_to_validation_route_target" : "move_to_validation_route_prerequisite";
+            situation = routeBossTarget ? situation : "validation_route_prerequisite";
+            std::string raw = BuildRawJson(bot, target);
+            std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, activity);
+            RecordEvent(state, bot, routeBossTarget ? "validation_route_target_search" : "validation_route_prerequisite", target, "approach_target", raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry);
+            return true;
+        }
+
+        BotActionResult pull = executor.Pull(bot, target);
         bool cast = spellId && TryCastCombatSpell(bot, target, spellId);
         action = routeBossTarget
             ? (_config.ValidationRouteKind == "boss" ? (std::string(GetDungeonRole(bot)) == "tank" ? "validation_route_tank_boss" : "validation_route_boss_action") : "validation_route_trash_action")
@@ -5048,6 +5208,12 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         Creature* prerequisiteTarget = nullptr;
         float prerequisiteScore = -100000.0f;
         float prerequisiteDistance = 0.0f;
+        if (Unit* focusTarget = routeGroupFocusTarget())
+        {
+            prerequisiteTarget = focusTarget->ToCreature();
+            prerequisiteScore = 100000.0f;
+            prerequisiteDistance = bot->GetExactDist(focusTarget);
+        }
         std::vector<WorldObject*> objects;
         Trinity::AllWorldObjectsInRange check(bot, 320.0f);
         Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(bot, objects, check);
@@ -5089,9 +5255,13 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (prerequisiteTarget)
         {
             target = prerequisiteTarget;
+            prerequisiteDistance = bot->GetExactDist(target);
             state.TargetGuid = target->GetGUID();
             std::string raw = BuildRawJson(bot, target);
             std::string semantic = BuildSemanticJson(bot, target, "validation_route_prerequisite", &power, stage, activity);
+            if (tryRouteGroupHeal(bot, target))
+                return true;
+
             if (prerequisiteDistance > 35.0f || !bot->IsWithinLOSInMap(target))
             {
                 MoveBotToPoint(state, bot, target->GetPositionX(), target->GetPositionY(), target->GetPositionZ());
@@ -5102,8 +5272,18 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             }
 
             BotActionExecutor executor;
-            BotActionResult pull = executor.Pull(bot, target);
             uint32 spellId = SelectCombatSpell(bot, target);
+            float engageRange = routeEngageRange(bot, target, spellId);
+            if (!bot->IsWithinDistInMap(target, std::max(5.0f, engageRange - 1.0f)) || !bot->IsWithinLOSInMap(target))
+            {
+                MoveBotToPoint(state, bot, target->GetPositionX(), target->GetPositionY(), target->GetPositionZ());
+                RecordEvent(state, bot, "validation_route_prerequisite", target, "approach_target", raw.c_str(), semantic.c_str(), prerequisiteDistance, _config.ValidationRouteTargetEntry);
+                situation = "validation_route_prerequisite";
+                action = "move_to_validation_route_prerequisite";
+                return true;
+            }
+
+            BotActionResult pull = executor.Pull(bot, target);
             bool cast = spellId && TryCastCombatSpell(bot, target, spellId);
             RecordEvent(state, bot, "validation_route_prerequisite", target, ToString(pull), raw.c_str(), semantic.c_str(), prerequisiteDistance, _config.ValidationRouteTargetEntry, cast ? spellId : 0);
             situation = "validation_route_prerequisite";
@@ -5307,13 +5487,13 @@ BotWorldPopulationMgr::BossMechanicFeatures BotWorldPopulationMgr::BuildBossMech
             features.LowestAllyHpPct = memberCount ? std::min(features.LowestAllyHpPct, hp) : hp;
             ++memberCount;
 
-            uint8 roles = group->GetLfgRoles(member->GetGUID());
-            if (roles & lfg::PLAYER_ROLE_TANK)
+            std::string memberRole = GetDungeonRole(member);
+            if (memberRole == "tank")
             {
                 tankHp = hp;
                 tankSeen = true;
             }
-            if (roles & lfg::PLAYER_ROLE_HEALER)
+            if (memberRole == "healer")
             {
                 uint32 maxMana = member->GetMaxPower(POWER_MANA);
                 healerManaTotal += maxMana ? float(member->GetPower(POWER_MANA)) / float(maxMana) : 1.0f;
@@ -5528,20 +5708,17 @@ BotWorldPopulationMgr::RaidRoleAssignment BotWorldPopulationMgr::BuildRaidRoleAs
                 continue;
 
             ++assignment.RaidSize;
-            uint8 roles = group->GetLfgRoles(member->GetGUID());
-            std::string role = "dps";
-            if (roles & lfg::PLAYER_ROLE_TANK)
+            std::string role = GetDungeonRole(member);
+            if (role == "tank")
             {
-                role = "tank";
                 if (assignment.MainTankGuid.IsEmpty())
                     assignment.MainTankGuid = member->GetGUID();
                 else if (assignment.OffTankGuid.IsEmpty())
                     assignment.OffTankGuid = member->GetGUID();
                 ++assignment.TankCount;
             }
-            else if (roles & lfg::PLAYER_ROLE_HEALER)
+            else if (role == "healer")
             {
-                role = "healer";
                 ++assignment.HealerCount;
             }
             else
@@ -5841,8 +6018,7 @@ Player* BotWorldPopulationMgr::FindDungeonAnchor(Player* bot) const
         if (!member || member == bot || !member->IsAlive() || member->GetMap() != bot->GetMap())
             continue;
 
-        uint8 roles = group->GetLfgRoles(member->GetGUID());
-        if (roles & lfg::PLAYER_ROLE_TANK)
+        if (std::string(GetDungeonRole(member)) == "tank")
             return member;
     }
 
@@ -5985,8 +6161,7 @@ BotWorldPopulationMgr::DungeonTrashPackFeatures BotWorldPopulationMgr::BuildDung
             pack.LowestAllyHpPct = memberCount ? std::min(pack.LowestAllyHpPct, hp) : hp;
             ++memberCount;
 
-            uint8 roles = group->GetLfgRoles(member->GetGUID());
-            if (roles & lfg::PLAYER_ROLE_HEALER)
+            if (std::string(GetDungeonRole(member)) == "healer")
             {
                 uint32 maxMana = member->GetMaxPower(POWER_MANA);
                 healerManaTotal += maxMana ? float(member->GetPower(POWER_MANA)) / float(maxMana) : 1.0f;
@@ -6157,6 +6332,18 @@ char const* BotWorldPopulationMgr::GetDungeonRole(Player* bot) const
         return "healer";
     if (botRole.find("tank") != std::string::npos)
         return "tank";
+
+    if (QueryResult result = CharacterDatabase.PQuery("SELECT role FROM character_bot_pool WHERE guid = %u LIMIT 1", bot->GetGUID().GetCounter()))
+    {
+        std::string poolRole = result->Fetch()[0].GetString();
+        std::transform(poolRole.begin(), poolRole.end(), poolRole.begin(), [](unsigned char c) { return std::tolower(c); });
+        if (poolRole.find("healer") != std::string::npos || poolRole.find("heal") != std::string::npos || poolRole.find("holy") != std::string::npos)
+            return "healer";
+        if (poolRole.find("tank") != std::string::npos || poolRole.find("prot") != std::string::npos || poolRole.find("blood") != std::string::npos)
+            return "tank";
+        if (poolRole.find("dps") != std::string::npos || poolRole.find("damage") != std::string::npos)
+            return "dps";
+    }
 
     switch (bot->getClass())
     {
@@ -6404,6 +6591,19 @@ uint32 BotWorldPopulationMgr::SelectCombatSpell(Player* bot, Unit* target) const
     BotActionCandidate* best = nullptr;
     for (BotActionCandidate& candidate : candidates)
     {
+        if (candidate.Category == BotCombatActionCategory::HealFast
+            || candidate.Category == BotCombatActionCategory::HealEfficient
+            || candidate.Category == BotCombatActionCategory::HealAoe)
+        {
+            candidate.RejectReason = "requires_ally_target";
+            continue;
+        }
+        if (candidate.Category == BotCombatActionCategory::Taunt && target->GetVictim() == bot)
+        {
+            candidate.RejectReason = "threat_already_established";
+            continue;
+        }
+
         if (!candidate.RejectReason.empty())
             continue;
 

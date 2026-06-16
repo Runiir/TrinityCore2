@@ -1824,6 +1824,10 @@ def test_validation_provisioning_generates_reproducible_sql_and_readiness(tmp_pa
     assert "INSERT INTO `characters`.`characters`" in sql
     assert "INSERT INTO `characters`.`character_bot_pool`" in sql
     assert "INSERT INTO `characters`.`character_skills`" in sql
+    assert "DELETE FROM `characters`.`character_spell`" in sql
+    assert "INSERT INTO `characters`.`character_spell`" in sql
+    assert "SELECT c.`guid`, 2061, 1, 0 FROM `characters`.`characters` c WHERE c.`name` = 'ScValHeal'" in sql
+    assert "SELECT c.`guid`, 2050, 1, 0 FROM `characters`.`characters` c WHERE c.`name` = 'ScValHeal'" in sql
     assert "INSERT INTO `characters`.`character_glyphs`" in sql
     assert "DELETE FROM `characters`.`item_instance` WHERE `guid` >= 9700000" in sql
     assert manifest["schema"] == "bot_validation_provisioning_manifest_v1"
