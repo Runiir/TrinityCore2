@@ -204,6 +204,7 @@ def label_decision(decision: dict[str, Any], indexed_events: dict[tuple[int, int
 def default_labels(decision: dict[str, Any], labels: dict[str, Any] | None = None) -> dict[str, Any]:
     merged = dict(labels or {})
     reward = float(decision.get("reward") or decision.get("reward_observed") or 0.0)
+    has_decision_outcome = bool(reward) or bool(int(decision.get("is_failure") or 0))
     defaults = {
         "action_success": 1.0 if reward > 0.0 and not int(decision.get("is_failure") or 0) else 0.0,
         "expected_reward": reward,
@@ -214,7 +215,7 @@ def default_labels(decision: dict[str, Any], labels: dict[str, Any] | None = Non
         "label_window_json": "{}",
         "label_reason": "provided_labels" if labels else "decision_reward_fallback",
         "time_to_outcome_sec": None,
-        "no_future_events": True,
+        "no_future_events": not has_decision_outcome,
         "ambiguous_label": False,
     }
     for key, value in defaults.items():
@@ -222,6 +223,47 @@ def default_labels(decision: dict[str, Any], labels: dict[str, Any] | None = Non
     for label in LABELS:
         merged.setdefault(label, defaults.get(label, 0.0))
     return merged
+
+
+def teacher_filter_labels(labels: dict[str, Any], is_chosen: bool) -> dict[str, Any]:
+    if not is_chosen:
+        return {
+            "imitate_teacher": 0,
+            "imitation_weight": 0.0,
+            "teacher_action_quality": "candidate_unobserved",
+            "failure_label": "",
+        }
+    death_risk = float(labels.get("death_risk") or 0.0) > 0.0
+    stuck_risk = float(labels.get("stuck_risk") or 0.0) > 0.0
+    action_success = float(labels.get("action_success") or 0.0) > 0.5
+    no_future_events = bool(labels.get("no_future_events"))
+    ambiguous = bool(labels.get("ambiguous_label"))
+    label_reason = str(labels.get("label_reason") or "")
+    if death_risk:
+        quality = "unsafe_teacher_action"
+        failure_label = "death_outcome"
+    elif stuck_risk:
+        quality = "unsafe_teacher_action"
+        failure_label = "stuck_or_path_failure"
+    elif ambiguous:
+        quality = "ambiguous_teacher_action"
+        failure_label = "ambiguous_outcome"
+    elif no_future_events:
+        quality = "unverified_teacher_action"
+        failure_label = "no_future_outcome"
+    elif not action_success:
+        quality = "failed_teacher_action"
+        failure_label = label_reason or "negative_outcome"
+    else:
+        quality = "verified_teacher_action"
+        failure_label = ""
+    imitate = quality == "verified_teacher_action"
+    return {
+        "imitate_teacher": 1 if imitate else 0,
+        "imitation_weight": 1.0 if imitate else 0.0,
+        "teacher_action_quality": quality,
+        "failure_label": failure_label,
+    }
 
 
 def build_row(decision: dict[str, Any], labels: dict[str, Any] | None = None, semantic_stats: dict[tuple[str, int], dict[str, Any]] | None = None) -> dict[str, Any]:
@@ -300,6 +342,7 @@ def build_rows(decision: dict[str, Any], labels: dict[str, Any] | None = None, s
                 "utility_score": float(candidate.get("score", candidate.get("activity_score", chosen.get("activity_score", outcome.get("expected_value", 0.0)))) or 0.0),
             }
         )
+        row.update(teacher_filter_labels(labels, is_chosen))
         for label in LABELS:
             row[label] = float(labels[label]) if is_chosen else 0.0
         row["features_hash"] = stable_hash({key: row[key] for key in sorted(row) if key.startswith(("json_", "stat_", "learned_", "danger_", "progression_", "confidence", "utility_", "candidate_"))})
@@ -310,6 +353,8 @@ def build_rows(decision: dict[str, Any], labels: dict[str, Any] | None = None, s
 
 def label_diagnostics(rows: list[dict[str, Any]], decisions: list[dict[str, Any]], train_ids: set[int], eval_ids: set[int]) -> dict[str, Any]:
     observed = [row for row in rows if row.get("label_observed")]
+    imitable = [row for row in observed if int(row.get("imitate_teacher") or 0)]
+    filtered = [row for row in observed if not int(row.get("imitate_teacher") or 0)]
     positives = {label: sum(float(row.get(label, 0.0)) > 0.5 for row in observed) for label in LABELS if label != "expected_reward"}
     time_values = [float(row["time_to_outcome_sec"]) for row in observed if row.get("time_to_outcome_sec") is not None]
     run_counts = Counter(int(row.get("run_id") or 0) for row in observed)
@@ -326,6 +371,10 @@ def label_diagnostics(rows: list[dict[str, Any]], decisions: list[dict[str, Any]
         "rows_with_no_future_events": sum(1 for row in observed if row.get("no_future_events")),
         "average_time_to_outcome": sum(time_values) / max(1, len(time_values)),
         "ambiguous_labels": sum(1 for row in observed if row.get("ambiguous_label")),
+        "imitable_teacher_rows": len(imitable),
+        "filtered_teacher_rows": len(filtered),
+        "teacher_action_quality": dict(Counter(str(row.get("teacher_action_quality") or "") for row in observed)),
+        "failure_labels": dict(Counter(str(row.get("failure_label") or "") for row in filtered if row.get("failure_label"))),
         "run_level_split_info": {
             "train_run_ids": sorted(train_ids),
             "eval_run_ids": sorted(eval_ids),

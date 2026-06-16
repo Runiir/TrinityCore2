@@ -1,6 +1,7 @@
 stages:
   world_knowledge:
-    cmd: python -m tools.bot_ml.extract_world_knowledge --output-dir dataset/world_knowledge
+    cmd: python -m tools.bot_ml.extract_world_knowledge --output-dir
+      dataset/world_knowledge
     deps:
     - tools/bot_ml/extract_world_knowledge.py
     - tools/bot_ml/common.py
@@ -8,7 +9,8 @@ stages:
     - dataset/world_knowledge:
         persist: true
   world_planner:
-    cmd: python -m tools.bot_ml.build_world_planner_manifests --world-dir dataset/world_knowledge --output-dir dataset/world_planner
+    cmd: python -m tools.bot_ml.build_world_planner_manifests --world-dir
+      dataset/world_knowledge --output-dir dataset/world_planner
     deps:
     - tools/bot_ml/build_world_planner_manifests.py
     - tools/bot_ml/common.py
@@ -17,7 +19,10 @@ stages:
     - dataset/world_planner:
         persist: true
   world_planner_validate:
-    cmd: python -m tools.bot_ml.validate_world_planner --planner-dir dataset/world_planner --validation-scenario-dir dataset/validation_scenarios --report dataset/world_validation/planner_report.json
+    cmd: python -m tools.bot_ml.validate_world_planner --planner-dir
+      dataset/world_planner --validation-scenario-dir
+      dataset/validation_scenarios --report
+      dataset/world_validation/planner_report.json
     deps:
     - tools/bot_ml/validate_world_planner.py
     - tools/bot_ml/common.py
@@ -27,7 +32,9 @@ stages:
     - dataset/world_validation/planner_report.json:
         cache: false
   validation_gear:
-    cmd: python -m tools.bot_ml.build_validation_gear_profiles --config experiments/configs/validation_provisioning_cata_001.json --output-dir dataset/validation_gear_profiles
+    cmd: python -m tools.bot_ml.build_validation_gear_profiles --config
+      experiments/configs/validation_provisioning_cata_001.json --output-dir
+      dataset/validation_gear_profiles
     deps:
     - tools/bot_ml/build_validation_gear_profiles.py
     - tools/bot_ml/build_validation_provisioning.py
@@ -41,7 +48,10 @@ stages:
     - dataset/validation_gear_profiles:
         persist: true
   validation_provisioning:
-    cmd: python -m tools.bot_ml.build_validation_provisioning --config experiments/configs/validation_provisioning_cata_001.json --gear-profiles dataset/validation_gear_profiles/profiles.json --output-dir dataset/validation_provisioning
+    cmd: python -m tools.bot_ml.build_validation_provisioning --config
+      experiments/configs/validation_provisioning_cata_001.json --gear-profiles
+      dataset/validation_gear_profiles/profiles.json --output-dir
+      dataset/validation_provisioning
     deps:
     - tools/bot_ml/build_validation_provisioning.py
     - experiments/configs/validation_provisioning_cata_001.json
@@ -50,7 +60,11 @@ stages:
     - dataset/validation_provisioning:
         persist: true
   validation_provisioning_verify:
-    cmd: python -m tools.bot_ml.validate_validation_provisioning --config experiments/configs/validation_provisioning_cata_001.json --gear-profiles dataset/validation_gear_profiles/profiles.json --provisioning-report dataset/validation_provisioning/report.json --output dataset/validation_provisioning_verification/report.json
+    cmd: python -m tools.bot_ml.validate_validation_provisioning --config
+      experiments/configs/validation_provisioning_cata_001.json --gear-profiles
+      dataset/validation_gear_profiles/profiles.json --provisioning-report
+      dataset/validation_provisioning/report.json --output
+      dataset/validation_provisioning_verification/report.json
     deps:
     - tools/bot_ml/validate_validation_provisioning.py
     - tools/bot_ml/build_validation_gear_profiles.py
@@ -67,7 +81,12 @@ stages:
     - dataset/validation_provisioning_verification/report.json:
         cache: false
   validation_scenarios:
-    cmd: python -m tools.bot_ml.build_validation_scenario_manifests --config experiments/configs/validation_scenarios_cata_001.json --provisioning-report dataset/validation_provisioning/report.json --provisioning-verification dataset/validation_provisioning_verification/report.json --output-dir dataset/validation_scenarios
+    cmd: python -m tools.bot_ml.build_validation_scenario_manifests --config
+      experiments/configs/validation_scenarios_cata_001.json
+      --provisioning-report dataset/validation_provisioning/report.json
+      --provisioning-verification
+      dataset/validation_provisioning_verification/report.json --output-dir
+      dataset/validation_scenarios
     deps:
     - tools/bot_ml/build_validation_scenario_manifests.py
     - tools/bot_ml/common.py
@@ -78,7 +97,10 @@ stages:
     - dataset/validation_scenarios:
         persist: true
   live_scenario_reports:
-    cmd: python -m tools.bot_ml.build_live_scenario_reports --live-report dataset/live_validation_scenario_reports/report.json --validation-scenario-dir dataset/validation_scenarios --output-dir dataset/live_validation_scenario_reports_built
+    cmd: python -m tools.bot_ml.build_live_scenario_reports --live-report
+      dataset/live_validation_scenario_reports/report.json
+      --validation-scenario-dir dataset/validation_scenarios --output-dir
+      dataset/live_validation_scenario_reports_built
     deps:
     - tools/bot_ml/build_live_scenario_reports.py
     - tools/bot_ml/run_live_bot_validation.py
@@ -89,7 +111,11 @@ stages:
     - dataset/live_validation_scenario_reports_built:
         persist: true
   validation_run_plan:
-    cmd: python -m tools.bot_ml.build_validation_run_plan --validation-scenario-dir dataset/validation_scenarios --output-dir dataset/validation_run_plan --live-output-root dataset/live_validation_scenarios --scenario-report-root dataset/live_validation_scenario_reports_built
+    cmd: python -m tools.bot_ml.build_validation_run_plan
+      --validation-scenario-dir dataset/validation_scenarios --output-dir
+      dataset/validation_run_plan --live-output-root
+      dataset/live_validation_scenarios --scenario-report-root
+      dataset/live_validation_scenario_reports_built
     deps:
     - tools/bot_ml/build_validation_run_plan.py
     - tools/bot_ml/common.py
@@ -98,7 +124,10 @@ stages:
     - dataset/validation_run_plan:
         persist: true
   live_validation_combined:
-    cmd: python -m tools.bot_ml.run_live_bot_validation --input-log artifacts/live_validation_quest_mob_assist_150s/worldserver_output.log --scenario-report-dir dataset/live_validation_scenario_reports_built --output-dir dataset/live_validation_combined
+    cmd: python -m tools.bot_ml.run_live_bot_validation --input-log
+      artifacts/live_validation_quest_mob_assist_150s/worldserver_output.log
+      --scenario-report-dir dataset/live_validation_scenario_reports_built
+      --output-dir dataset/live_validation_combined
     deps:
     - tools/bot_ml/run_live_bot_validation.py
     - artifacts/live_validation_quest_mob_assist_150s/worldserver_output.log
@@ -107,8 +136,8 @@ stages:
     - dataset/live_validation_combined:
         persist: true
   capture:
-    cmd: python experiments/run_experiment.py ${capture.config} --raw-dir 
-      dataset/raw --runs-dir experiments/runs --live-dir ${tracking.live_dir} 
+    cmd: python experiments/run_experiment.py ${capture.config} --raw-dir
+      dataset/raw --runs-dir experiments/runs --live-dir ${tracking.live_dir}
       --local
     deps:
     - experiments/run_experiment.py
@@ -121,8 +150,8 @@ stages:
     - ${tracking.live_dir}:
         persist: true
   preprocess:
-    cmd: python ml/preprocessing/preprocess_frames.py --raw-dir 
-      ${preprocess.raw_dir} --output ${preprocess.output} --manifest 
+    cmd: python ml/preprocessing/preprocess_frames.py --raw-dir
+      ${preprocess.raw_dir} --output ${preprocess.output} --manifest
       ${preprocess.manifest}
     deps:
     - ml/preprocessing/preprocess_frames.py
@@ -131,7 +160,7 @@ stages:
     - ${preprocess.output}
     - ${preprocess.manifest}
   train:
-    cmd: python ml/training/train_action_frequency.py --frames 
+    cmd: python ml/training/train_action_frequency.py --frames
       ${train.processed_frames} --model ${train.model}
     deps:
     - ml/training/train_action_frequency.py
@@ -139,8 +168,8 @@ stages:
     outs:
     - ${train.model}
   evaluate:
-    cmd: python ml/evaluation/evaluate_action_frequency.py --frames 
-      ${evaluate.processed_frames} --model ${evaluate.model} --metrics 
+    cmd: python ml/evaluation/evaluate_action_frequency.py --frames
+      ${evaluate.processed_frames} --model ${evaluate.model} --metrics
       ${evaluate.metrics} --report ${evaluate.report}
     deps:
     - ml/evaluation/evaluate_action_frequency.py
@@ -159,8 +188,8 @@ plots:
     x: step
 artifacts:
   run_summary:
-    path: experiments/runs/run_000023/summary.json
+    path: experiments/runs/run_000028/summary.json
     type: json
   run_metadata:
-    path: experiments/runs/run_000023/metadata.json
+    path: experiments/runs/run_000028/metadata.json
     type: json

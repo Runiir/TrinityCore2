@@ -53,6 +53,49 @@ def normalize_frame(frame: dict[str, Any]) -> dict[str, Any]:
             },
             "outcome": {"result": frame.get("result")},
         }
+    if frame.get("event_type") or frame.get("session_id"):
+        event_type = str(frame.get("event_type") or Path(str(frame.get("source_path") or "autonomy_sidecar")).stem)
+        chosen = frame.get("chosen") if isinstance(frame.get("chosen"), dict) else {}
+        return {
+            "episode_id": frame.get("episode_id") or frame.get("session_id") or Path(str(frame.get("source_path") or "unknown")).parent.name,
+            "frame_id": frame.get("frame_id") or frame.get("tick") or frame.get("source_line") or 0,
+            "domain": frame.get("domain") or chosen.get("domain") or "autonomy_sidecar",
+            "subdomain": frame.get("subdomain") or event_type,
+            "trigger": event_type,
+            "execution_mode": frame.get("execution_mode"),
+            "live_client_present": bool(frame.get("live_client_present", False)),
+            "actor": {
+                "guid": frame.get("bot_guid"),
+                "is_bot": frame.get("bot_guid") is not None,
+                "role": (frame.get("persona") or {}).get("role") if isinstance(frame.get("persona"), dict) else None,
+                "class_id": None,
+                "spec_id": None,
+            },
+            "task": {
+                "intent": frame.get("intent") or chosen.get("intent"),
+                "domain": frame.get("domain") or chosen.get("domain"),
+                "intention_id": frame.get("intention_id"),
+                "candidate_id": frame.get("chosen_candidate") or chosen.get("candidate_id"),
+            },
+            "state": {
+                "context_summary": frame.get("context_summary"),
+                "group_context": frame.get("group_context"),
+                "memory": frame.get("memory"),
+                "persona": frame.get("persona"),
+                "raw_event": frame,
+            },
+            "resolved_action": {
+                "chosen": chosen,
+                "candidate_id": frame.get("chosen_candidate") or chosen.get("candidate_id"),
+                "result": frame.get("result"),
+                "valid": frame.get("result") not in {"failed", "error"},
+            },
+            "outcome": {
+                "result": frame.get("result"),
+                "event_type": event_type,
+                "metrics": {key: value for key, value in frame.items() if key not in {"source_path", "source_line"}},
+            },
+        }
     required = ["episode_id", "frame_id", "domain", "trigger"]
     missing = [field for field in required if field not in frame]
     if missing:

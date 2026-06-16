@@ -121,7 +121,7 @@ def flatten_json(prefix: str, value: Any, out: dict[str, float], limit: int = 80
 def numeric_features(row: dict[str, Any]) -> dict[str, float]:
     features: dict[str, float] = {}
     for key, value in row.items():
-        if key in LABELS or key in {"split", "trace", "label_observed", "is_chosen", "reward_observed"}:
+        if key in LABELS or key in {"split", "trace", "label_observed", "is_chosen", "reward_observed", "imitate_teacher", "imitation_weight"}:
             continue
         if isinstance(value, bool):
             features[key] = 1.0 if value else 0.0

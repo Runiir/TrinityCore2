@@ -16,19 +16,19 @@ stages:
     outs:
     - path: dataset/raw
       hash: md5
-      md5: 50a2860768712939499aab57c7354be0.dir
-      size: 1659313
-      nfiles: 58
+      md5: 12b663b8a1006e191ec58538d015aecd.dir
+      size: 1984354
+      nfiles: 96
     - path: dvclive
       hash: md5
-      md5: 3274589853c8c38c6ffa7cc16735ca3e.dir
-      size: 328
-      nfiles: 6
+      md5: 058372bd532a10866eba94f33b761802.dir
+      size: 866
+      nfiles: 17
     - path: experiments/runs
       hash: md5
-      md5: 752f0a84f8e13d5449b73480af16c586.dir
-      size: 523539
-      nfiles: 90
+      md5: 3c95d2923dbdf1cae560b107c2ecbaac.dir
+      size: 2247108
+      nfiles: 116
   preprocess:
     cmd: python ml/preprocessing/preprocess_frames.py --raw-dir dataset/raw
       --output dataset/processed/frames.jsonl --manifest
@@ -36,30 +36,30 @@ stages:
     deps:
     - path: dataset/raw
       hash: md5
-      md5: 50a2860768712939499aab57c7354be0.dir
-      size: 1659313
-      nfiles: 58
+      md5: 12b663b8a1006e191ec58538d015aecd.dir
+      size: 1984354
+      nfiles: 96
     - path: ml/preprocessing/preprocess_frames.py
       hash: md5
-      md5: d16316ea6c13f99004330f9e3abc8436
-      size: 4216
+      md5: 593766b4c9d391cba71923c55e52974c
+      size: 6575
     outs:
     - path: dataset/processed/frames.jsonl
       hash: md5
-      md5: 3145e240b7af63e7b7e961912c756210
-      size: 1302711
+      md5: 584f62087c0fa114efef0f388e49b682
+      size: 1817133
     - path: dataset/processed/manifest.json
       hash: md5
-      md5: 41b7d8575e092ee4f16b84f8b71e1034
-      size: 756
+      md5: c035f06857b7105ccb3af4cda99ba7df
+      size: 1127
   train:
     cmd: python ml/training/train_action_frequency.py --frames
       dataset/processed/frames.jsonl --model models/action_frequency_model.json
     deps:
     - path: dataset/processed/frames.jsonl
       hash: md5
-      md5: 3145e240b7af63e7b7e961912c756210
-      size: 1302711
+      md5: 584f62087c0fa114efef0f388e49b682
+      size: 1817133
     - path: ml/training/train_action_frequency.py
       hash: md5
       md5: bb7c5f90b83165ba24b54d62c691e3db
@@ -67,7 +67,7 @@ stages:
     outs:
     - path: models/action_frequency_model.json
       hash: md5
-      md5: c6acf526c0cd60ede38070c19c5693dd
+      md5: 3f23171db669185934a28da7cc4aaa69
       size: 405
   evaluate:
     cmd: python ml/evaluation/evaluate_action_frequency.py --frames
@@ -77,33 +77,33 @@ stages:
     deps:
     - path: dataset/processed/frames.jsonl
       hash: md5
-      md5: 3145e240b7af63e7b7e961912c756210
-      size: 1302711
+      md5: 584f62087c0fa114efef0f388e49b682
+      size: 1817133
     - path: ml/evaluation/evaluate_action_frequency.py
       hash: md5
       md5: 6661befc7f329972914519b3841a1343
       size: 1853
     - path: models/action_frequency_model.json
       hash: md5
-      md5: c6acf526c0cd60ede38070c19c5693dd
+      md5: 3f23171db669185934a28da7cc4aaa69
       size: 405
     outs:
     - path: dataset/evaluations/metrics.json
       hash: md5
-      md5: 94fd6825bdcc7e18d2b74acea7a27b86
-      size: 76
+      md5: 294d87df9901f12700492824fbf1e5b3
+      size: 77
     - path: dataset/evaluations/report.json
       hash: md5
-      md5: a05bd5e046a3faedf12014aeeaa04f71
-      size: 352
+      md5: 73fa757aebba89e9b9661a051adc5fef
+      size: 354
   world_knowledge:
     cmd: python -m tools.bot_ml.extract_world_knowledge --output-dir
       dataset/world_knowledge
     deps:
     - path: tools/bot_ml/common.py
       hash: md5
-      md5: 476b615368f0126adf17fababbc05929
-      size: 5208
+      md5: a02540ee4893ec8d0dd37fe816c39aa7
+      size: 5247
     - path: tools/bot_ml/extract_world_knowledge.py
       hash: md5
       md5: 12ac2d7deb4e40aa5492414058d260b7
@@ -111,7 +111,7 @@ stages:
     outs:
     - path: dataset/world_knowledge
       hash: md5
-      md5: 8ac5aa997e5651cbb5d606be77c3069b.dir
+      md5: 5a2b03d9ede9a5d6d8f65d8023cb3fed.dir
       size: 1134831298
       nfiles: 9
   world_planner:
@@ -120,7 +120,7 @@ stages:
     deps:
     - path: dataset/world_knowledge
       hash: md5
-      md5: 8ac5aa997e5651cbb5d606be77c3069b.dir
+      md5: 5a2b03d9ede9a5d6d8f65d8023cb3fed.dir
       size: 1134831298
       nfiles: 9
     - path: tools/bot_ml/build_world_planner_manifests.py
@@ -129,8 +129,8 @@ stages:
       size: 14318
     - path: tools/bot_ml/common.py
       hash: md5
-      md5: 476b615368f0126adf17fababbc05929
-      size: 5208
+      md5: a02540ee4893ec8d0dd37fe816c39aa7
+      size: 5247
     outs:
     - path: dataset/world_planner
       hash: md5
@@ -155,8 +155,8 @@ stages:
       nfiles: 10
     - path: tools/bot_ml/common.py
       hash: md5
-      md5: 476b615368f0126adf17fababbc05929
-      size: 5208
+      md5: a02540ee4893ec8d0dd37fe816c39aa7
+      size: 5247
     - path: tools/bot_ml/validate_world_planner.py
       hash: md5
       md5: 8e03c07fbf5ac0304043a449d50808c5
@@ -317,8 +317,8 @@ stages:
       size: 9281
     - path: tools/bot_ml/common.py
       hash: md5
-      md5: 476b615368f0126adf17fababbc05929
-      size: 5208
+      md5: a02540ee4893ec8d0dd37fe816c39aa7
+      size: 5247
     outs:
     - path: dataset/validation_scenarios
       hash: md5
@@ -346,8 +346,8 @@ stages:
       size: 14868
     - path: tools/bot_ml/common.py
       hash: md5
-      md5: 476b615368f0126adf17fababbc05929
-      size: 5208
+      md5: a02540ee4893ec8d0dd37fe816c39aa7
+      size: 5247
     - path: tools/bot_ml/run_live_bot_validation.py
       hash: md5
       md5: 83023007ffa25676db9d6177fc24d812
@@ -376,8 +376,8 @@ stages:
       size: 10754
     - path: tools/bot_ml/common.py
       hash: md5
-      md5: 476b615368f0126adf17fababbc05929
-      size: 5208
+      md5: a02540ee4893ec8d0dd37fe816c39aa7
+      size: 5247
     outs:
     - path: dataset/validation_run_plan
       hash: md5

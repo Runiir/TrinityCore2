@@ -226,6 +226,48 @@ def test_preprocess_train_evaluate_pipeline(tmp_path, monkeypatch):
     assert loaded_metrics["unique_actions"] == 1
 
 
+def test_preprocess_normalizes_autonomy_sidecar_events(tmp_path, monkeypatch):
+    raw_dir = tmp_path / "raw"
+    processed = tmp_path / "processed" / "frames.jsonl"
+    manifest = tmp_path / "processed" / "manifest.json"
+    write_jsonl(
+        raw_dir / "run_000001" / "autonomy_decisions_auto_smoke_000001.jsonl",
+        [
+            {
+                "session_id": "auto_smoke_000001",
+                "event_type": "autonomy_decision",
+                "bot_guid": 50101,
+                "execution_mode": "headless_ra_soap",
+                "live_client_present": False,
+                "persona": {"role": "tank"},
+                "context_summary": {"map": 0},
+                "group_context": {"members": 1},
+                "candidates": [{"candidate_id": "quest_28808_kill", "domain": "questing", "intent": "complete_nearby_quest_objective", "score": 1.7}],
+                "chosen": {"candidate_id": "quest_28808_kill", "domain": "questing", "intent": "complete_nearby_quest_objective"},
+                "score_components": {"quest": 0.78},
+                "t": 1.5,
+            }
+        ],
+    )
+    write_jsonl(
+        raw_dir / "run_000001" / "progression_events_auto_smoke_000001.jsonl",
+        [{"session_id": "auto_smoke_000001", "event_type": "autonomy_progress", "bot_guid": 50101, "domain": "questing", "result": "failed", "tick": 3}],
+    )
+
+    monkeypatch.setattr("sys.argv", ["preprocess", "--raw-dir", str(raw_dir), "--output", str(processed), "--manifest", str(manifest)])
+    assert preprocess_main() == 0
+    rows = [json.loads(line) for line in processed.read_text(encoding="utf-8").splitlines()]
+    loaded_manifest = json.loads(manifest.read_text(encoding="utf-8"))
+
+    assert loaded_manifest["frame_count"] == 2
+    assert rows[0]["episode_id"] == "auto_smoke_000001"
+    assert rows[0]["domain"] == "questing"
+    assert rows[0]["trigger"] == "autonomy_decision"
+    assert rows[0]["actor"]["guid"] == 50101
+    assert rows[0]["resolved_action"]["candidate_id"] == "quest_28808_kill"
+    assert rows[1]["outcome"]["result"] == "failed"
+
+
 def test_bot_ml_export_table_contract_covers_learning_loop_tables():
     assert EXPORT_TABLES == [
         "experiment_bot_runs",
@@ -310,7 +352,69 @@ def test_bot_ml_decision_builder_emits_candidate_rows_with_observed_chosen_label
     assert [row["label_observed"] for row in rows] == [1, 0]
     assert rows[0]["expected_reward"] == 1.0
     assert rows[1]["expected_reward"] == 0.0
+    assert rows[0]["imitate_teacher"] == 1
+    assert rows[0]["imitation_weight"] == 1.0
+    assert rows[0]["teacher_action_quality"] == "verified_teacher_action"
+    assert rows[0]["failure_label"] == ""
+    assert rows[1]["imitate_teacher"] == 0
+    assert rows[1]["teacher_action_quality"] == "candidate_unobserved"
     assert rows[0]["trace"]["candidate_activity"] == "quest"
+
+
+def test_bot_ml_decision_builder_filters_bad_teacher_behavior_from_imitation():
+    death_rows = build_rows(
+        {
+            "id": 1,
+            "run_id": 7,
+            "bot_guid": 99,
+            "brain_version": "utility_v1",
+            "candidate_actions_json": json.dumps([{"activity": "pull_boss", "score": 1.0}]),
+            "chosen_action_json": json.dumps({"activity": "pull_boss", "activity_score": 1.0}),
+            "raw_state_json": "{}",
+            "semantic_state_json": "{}",
+            "outcome_json": "{}",
+        },
+        {
+            "action_success": 0.0,
+            "expected_reward": -8.0,
+            "death_risk": 1.0,
+            "stuck_risk": 0.0,
+            "quest_completion_likelihood": 0.0,
+            "event_ids_used_for_label": [10],
+            "label_window_json": "{}",
+            "label_reason": "negative_outcome:death",
+            "time_to_outcome_sec": 3.0,
+            "no_future_events": False,
+            "ambiguous_label": False,
+        },
+        {},
+    )
+    unresolved_rows = build_rows(
+        {
+            "id": 2,
+            "run_id": 7,
+            "bot_guid": 99,
+            "brain_version": "utility_v1",
+            "candidate_actions_json": json.dumps([{"activity": "wait", "score": 0.1}]),
+            "chosen_action_json": json.dumps({"activity": "wait", "activity_score": 0.1}),
+            "raw_state_json": "{}",
+            "semantic_state_json": "{}",
+            "outcome_json": "{}",
+        },
+        {},
+        {},
+    )
+
+    assert death_rows[0]["label_observed"] == 1
+    assert death_rows[0]["death_risk"] == 1.0
+    assert death_rows[0]["imitate_teacher"] == 0
+    assert death_rows[0]["imitation_weight"] == 0.0
+    assert death_rows[0]["teacher_action_quality"] == "unsafe_teacher_action"
+    assert death_rows[0]["failure_label"] == "death_outcome"
+    assert unresolved_rows[0]["label_observed"] == 1
+    assert unresolved_rows[0]["imitate_teacher"] == 0
+    assert unresolved_rows[0]["teacher_action_quality"] == "unverified_teacher_action"
+    assert unresolved_rows[0]["failure_label"] == "no_future_outcome"
 
 
 def test_bot_ml_numeric_features_exclude_observed_outcome_leakage():
@@ -323,6 +427,8 @@ def test_bot_ml_numeric_features_exclude_observed_outcome_leakage():
         "quest_completion_likelihood": 1.0,
         "label_observed": 1,
         "is_chosen": 1,
+        "imitate_teacher": 1,
+        "imitation_weight": 1.0,
         "utility_score": 1.5,
     })
 
@@ -331,6 +437,8 @@ def test_bot_ml_numeric_features_exclude_observed_outcome_leakage():
     assert "action_success" not in features
     assert "label_observed" not in features
     assert "is_chosen" not in features
+    assert "imitate_teacher" not in features
+    assert "imitation_weight" not in features
     assert features["utility_score"] == 1.5
 
 
