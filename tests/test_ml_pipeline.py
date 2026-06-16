@@ -23,6 +23,7 @@ from tools.bot_ml.extract_world_knowledge import (
 from tools.bot_ml.build_world_planner_manifests import build_planner_manifests
 from tools.bot_ml.validate_world_planner import STAGED_GATES, validate_manifest_coverage
 from tools.bot_ml.build_validation_scenario_manifests import build_manifests as build_validation_scenario_manifests
+from tools.bot_ml.build_live_scenario_reports import build_reports as build_live_scenario_reports
 from tools.bot_ml.run_live_bot_validation import build_bot_pool_reset_sql, command_script, live_validation_report, load_scenario_reports, main as live_validation_main, parse_json_objects, parse_soap_result, run_worldserver, split_sql_statements, trinity_config_bool
 from tools.bot_ml.build_validation_gear_profiles import build_gem_catalog, build_profiles, build_report, fetch_items, load_gem_properties, load_spell_item_enchantments
 from tools.bot_ml.build_validation_provisioning import apply_gear_profiles, build_account_insert_sql, main as provisioning_main, scenario_report, srp6_registration_data
@@ -347,6 +348,7 @@ def test_bot_ml_workflow_has_pixi_tasks_and_documented_dvc_steps():
         "bot-validation-provisioning",
         "bot-validation-provisioning-verify",
         "bot-validation-scenarios",
+        "bot-live-scenario-reports",
         "bot-live-validate",
         "bot-ml-export",
         "bot-ml-build-decisions",
@@ -368,6 +370,7 @@ def test_bot_ml_workflow_has_pixi_tasks_and_documented_dvc_steps():
         "validation_provisioning",
         "validation_provisioning_verify",
         "validation_scenarios",
+        "live_scenario_reports",
         "validation_gear",
         "complete_equipment_slots",
         "full Stonecore and Blackwing Descent gates failing",
@@ -399,6 +402,8 @@ def test_bot_ml_workflow_has_pixi_tasks_and_documented_dvc_steps():
         "dataset/validation_provisioning_verification/report.json",
         "validation_scenarios:",
         "dataset/validation_scenarios",
+        "live_scenario_reports:",
+        "dataset/live_validation_scenario_reports_built",
     ]:
         assert stage in dvc
 
@@ -779,6 +784,48 @@ TC> {"duration_minutes":3,"decisions":4,"total_kills":0,"quests_completed":0}
     assert gates["full_blackwing_descent_clear"]["passed"] is False
     assert gates["full_blackwing_descent_clear"]["missing"] == ["blackwing_descent_full_clear_evidence"]
     assert sorted(report["scenario_reports"]) == ["blackwing_descent_10n", "stonecore_5n"]
+
+
+def test_live_scenario_report_builder_derives_per_scenario_artifacts(tmp_path):
+    scenario_dir = tmp_path / "validation_scenarios"
+    write_jsonl(
+        scenario_dir / "validation_scenarios.jsonl",
+        [
+            {"scenario_id": "stonecore_5n", "instance": "The Stonecore", "map_id": 725, "difficulty": "normal_5man", "provisioning_ready": True, "boss_count": 4},
+            {"scenario_id": "blackwing_descent_10n", "instance": "Blackwing Descent", "map_id": 669, "difficulty": "normal_10man", "provisioning_ready": True, "boss_count": 6},
+        ],
+    )
+    write_jsonl(
+        scenario_dir / "validation_routes.jsonl",
+        [
+            {"scenario_id": "stonecore_5n", "kind": "boss"},
+            {"scenario_id": "stonecore_5n", "kind": "boss"},
+            {"scenario_id": "stonecore_5n", "kind": "boss"},
+            {"scenario_id": "stonecore_5n", "kind": "boss"},
+            {"scenario_id": "blackwing_descent_10n", "kind": "boss"},
+        ],
+    )
+    live_report = {
+        "trace_entries": 4,
+        "trace": {"entries": [{"action": "boss_killed"}, {"action": "boss_killed"}, {"action": "boss_killed"}, {"action": "boss_killed"}, {"action": "raid_boss_killed"}]},
+        "summary": {"raid_boss_kills": 1},
+        "evidence": {"failures": 0},
+        "stages": [
+            {"stage": "normal_dungeon_trash", "passed": True},
+            {"stage": "dungeon_boss", "passed": True},
+            {"stage": "full_stonecore_clear", "passed": True},
+            {"stage": "raid_boss", "passed": True},
+        ],
+    }
+
+    reports = build_live_scenario_reports(live_report, scenario_dir)
+
+    assert reports["stonecore_5n"]["prepared_group"] is True
+    assert reports["stonecore_5n"]["boss_kills"] == 4
+    assert reports["stonecore_5n"]["clear_complete"] is True
+    assert reports["blackwing_descent_10n"]["raid_boss_kills"] == 1
+    assert reports["blackwing_descent_10n"]["boss_stage_passed"] is True
+    assert reports["blackwing_descent_10n"]["clear_complete"] is False
 
 
 def test_live_bot_validation_soap_script_does_not_exit_server():
