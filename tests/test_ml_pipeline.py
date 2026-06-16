@@ -722,6 +722,43 @@ def test_validation_run_plan_preserves_instance_positions_and_tags():
     assert "pixi" in stonecore["live_validate_shell"]
 
 
+def test_validation_run_plan_segments_boss_routes_for_aggregate_reports():
+    scenarios = [
+        {"scenario_id": "blackwing_descent_10n", "instance": "Blackwing Descent", "map_id": 669, "difficulty": "normal_10man", "required_roles": {"tank": 2, "healer": 3, "dps": 5}},
+    ]
+    routes_by_scenario = {
+        "blackwing_descent_10n": [
+            {"scenario_id": "blackwing_descent_10n", "route_node_id": "bwd_trash_entry", "step": 1, "kind": "trash", "label": "entry trash"},
+            {"scenario_id": "blackwing_descent_10n", "route_node_id": "bwd_magmaw", "step": 2, "kind": "boss", "label": "Magmaw", "mechanic_profile": "magmaw"},
+            {"scenario_id": "blackwing_descent_10n", "route_node_id": "bwd_omnotron", "step": 3, "kind": "boss", "label": "Omnotron Defense System", "mechanic_profile": "omnotron"},
+            {"scenario_id": "blackwing_descent_10n", "route_node_id": "bwd_maloriak", "step": 5, "kind": "boss", "label": "Maloriak", "mechanic_profile": "maloriak"},
+            {"scenario_id": "blackwing_descent_10n", "route_node_id": "bwd_atramedes", "step": 6, "kind": "boss", "label": "Atramedes", "mechanic_profile": "atramedes"},
+            {"scenario_id": "blackwing_descent_10n", "route_node_id": "bwd_chimaeron", "step": 7, "kind": "boss", "label": "Chimaeron", "mechanic_profile": "chimaeron"},
+            {"scenario_id": "blackwing_descent_10n", "route_node_id": "bwd_nefarian", "step": 8, "kind": "boss", "label": "Nefarian", "mechanic_profile": "nefarian"},
+        ],
+    }
+
+    plan = build_validation_run_plan(
+        scenarios,
+        Path("dataset/live_validation_scenarios"),
+        Path("dataset/live_validation_scenario_reports_built"),
+        Path("dataset/validation_scenarios"),
+        300,
+        900,
+        routes_by_scenario,
+    )
+    bwd = plan["scenarios"][0]
+
+    assert bwd["segment_count"] == 6
+    assert [segment["label"] for segment in bwd["segments"]][0] == "Magmaw"
+    assert bwd["segments"][-1]["segment_id"] == "08_nefarian"
+    assert bwd["scenario_report_command"].count("--live-report") == 6
+    assert "dataset/live_validation_scenarios/blackwing_descent_10n/02_magmaw/report.json" in bwd["scenario_report_command"]
+    for segment in bwd["segments"]:
+        assert "--keep-bot-pool-position" in segment["live_validate_command"]
+        assert "blackwing_descent_10n" in segment["live_validate_command"]
+
+
 def test_live_bot_validation_command_script_and_output_parser():
     script = command_script(selector="all", trace_limit=20, start=True, stop=True)
 
