@@ -1600,6 +1600,27 @@ TC> {"duration_minutes":1,"decisions":0,"total_kills":0,"quests_completed":0}
 
 
 def test_live_bot_validation_dry_run_writes_command_file(tmp_path, monkeypatch):
+    scenario_dir = tmp_path / "validation_scenarios"
+    scenario_dir.mkdir()
+    (scenario_dir / "validation_routes.jsonl").write_text(
+        json.dumps(
+            {
+                "scenario_id": "blackwing_descent_10n",
+                "route_node_id": "bwd_magmaw",
+                "label": "Magmaw",
+                "kind": "boss",
+                "mechanic_profile": "magmaw",
+                "map_id": 669,
+                "x": -302.467,
+                "y": -31.7101,
+                "z": 210.8483,
+                "o": 4.118977,
+                "source_entry": 41570,
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
     monkeypatch.setattr(
         "sys.argv",
         [
@@ -1623,6 +1644,8 @@ def test_live_bot_validation_dry_run_writes_command_file(tmp_path, monkeypatch):
             "2",
             "--validation-mechanic-profile",
             "magmaw",
+            "--validation-scenario-dir",
+            str(scenario_dir),
             "--output-dir",
             str(tmp_path),
         ],
@@ -1650,8 +1673,15 @@ def test_live_bot_validation_dry_run_writes_command_file(tmp_path, monkeypatch):
     assert report["config_autostart"] is True
     assert report["start_command"] is False
     assert report["pool_tag_filter"] == "blackwing_descent_10n"
+    assert report["validation_route"]["route_node_id"] == "bwd_magmaw"
+    assert report["validation_route"]["source_entry"] == 41570
     assert report["config"].endswith("worldserver.validation.conf")
-    assert 'BotWorld.PoolTagFilter = "blackwing_descent_10n"' in (tmp_path / "worldserver.validation.conf").read_text(encoding="utf-8")
+    generated_config = (tmp_path / "worldserver.validation.conf").read_text(encoding="utf-8")
+    assert 'BotWorld.PoolTagFilter = "blackwing_descent_10n"' in generated_config
+    assert "BotWorld.ValidationRoute.Enable = 1" in generated_config
+    assert 'BotWorld.ValidationRoute.NodeId = "bwd_magmaw"' in generated_config
+    assert "BotWorld.ValidationRoute.TargetEntry = 41570" in generated_config
+    assert "BotProgression.AllowDungeons = 1" in generated_config
 
 
 def test_live_bot_validation_force_start_overrides_config_autostart(tmp_path, monkeypatch):

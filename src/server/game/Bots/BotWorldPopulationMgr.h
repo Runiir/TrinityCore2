@@ -60,6 +60,18 @@ struct BotWorldExperimentConfig
     std::string BrainVersion = "utility_v1";
     std::string SpawnMode = "resume_or_race_start";
     std::string PoolTagFilter;
+    bool ValidationRouteEnable = false;
+    std::string ValidationRouteScenarioId;
+    std::string ValidationRouteNodeId;
+    std::string ValidationRouteLabel;
+    std::string ValidationRouteKind;
+    std::string ValidationRouteMechanicProfile;
+    uint32 ValidationRouteMapId = 0;
+    float ValidationRouteX = 0.0f;
+    float ValidationRouteY = 0.0f;
+    float ValidationRouteZ = 0.0f;
+    float ValidationRouteO = 0.0f;
+    uint32 ValidationRouteTargetEntry = 0;
     bool AllowConfiguredCenterFallback = false;
     bool UseSavedPosition = true;
     float NearPlayerRadius = 20.0f;
@@ -754,6 +766,7 @@ private:
     bool HasSimpleSupportedObjective(Quest const* quest) const;
     uint32 ChooseQuestReward(Player* bot, Quest const* quest, uint32* rewardItemId = nullptr) const;
     QuestActionResult TryQuesting(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity);
+    bool TryValidationRouteObjective(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, std::string& situation, std::string& action, Unit*& target);
     bool IsBossContext(Player* bot, Unit const* target) const;
     Unit* FindBossTarget(Player* bot) const;
     BossMechanicFeatures BuildBossMechanicFeatures(Player* bot, Unit const* boss) const;

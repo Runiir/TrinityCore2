@@ -929,6 +929,18 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
     _config.BrainVersion = sConfigMgr->GetStringDefault("BotExperiment.BrainVersion", _config.BrainVersion);
     _config.SpawnMode = sConfigMgr->GetStringDefault("BotWorld.SpawnMode", _config.SpawnMode);
     _config.PoolTagFilter = sConfigMgr->GetStringDefault("BotWorld.PoolTagFilter", _config.PoolTagFilter);
+    _config.ValidationRouteEnable = sConfigMgr->GetBoolDefault("BotWorld.ValidationRoute.Enable", _config.ValidationRouteEnable);
+    _config.ValidationRouteScenarioId = sConfigMgr->GetStringDefault("BotWorld.ValidationRoute.ScenarioId", _config.ValidationRouteScenarioId);
+    _config.ValidationRouteNodeId = sConfigMgr->GetStringDefault("BotWorld.ValidationRoute.NodeId", _config.ValidationRouteNodeId);
+    _config.ValidationRouteLabel = sConfigMgr->GetStringDefault("BotWorld.ValidationRoute.Label", _config.ValidationRouteLabel);
+    _config.ValidationRouteKind = sConfigMgr->GetStringDefault("BotWorld.ValidationRoute.Kind", _config.ValidationRouteKind);
+    _config.ValidationRouteMechanicProfile = sConfigMgr->GetStringDefault("BotWorld.ValidationRoute.MechanicProfile", _config.ValidationRouteMechanicProfile);
+    _config.ValidationRouteMapId = sConfigMgr->GetIntDefault("BotWorld.ValidationRoute.Map", _config.ValidationRouteMapId);
+    _config.ValidationRouteX = sConfigMgr->GetFloatDefault("BotWorld.ValidationRoute.X", _config.ValidationRouteX);
+    _config.ValidationRouteY = sConfigMgr->GetFloatDefault("BotWorld.ValidationRoute.Y", _config.ValidationRouteY);
+    _config.ValidationRouteZ = sConfigMgr->GetFloatDefault("BotWorld.ValidationRoute.Z", _config.ValidationRouteZ);
+    _config.ValidationRouteO = sConfigMgr->GetFloatDefault("BotWorld.ValidationRoute.O", _config.ValidationRouteO);
+    _config.ValidationRouteTargetEntry = sConfigMgr->GetIntDefault("BotWorld.ValidationRoute.TargetEntry", _config.ValidationRouteTargetEntry);
     _config.AllowConfiguredCenterFallback = sConfigMgr->GetBoolDefault("BotWorld.AllowConfiguredCenterFallback", _config.AllowConfiguredCenterFallback);
     _config.UseSavedPosition = sConfigMgr->GetBoolDefault("BotWorld.UseSavedPosition", _config.UseSavedPosition);
     _config.NearPlayerRadius = sConfigMgr->GetFloatDefault("BotWorld.NearPlayerRadius", _config.NearPlayerRadius);
@@ -2179,6 +2191,10 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         action = "rest";
         state.LastDecisionHandler = "rest";
     }
+    else if (TryValidationRouteObjective(state, bot, power, stage, chosenActivity.Activity, situation, action, target))
+    {
+        state.LastDecisionHandler = "validation_route";
+    }
     else if (canInterleaveHubProfession && TryProfessionMemoryAction(state, bot, power, stage, chosenActivity.Activity, situation, action))
     {
         target = nullptr;
@@ -2416,8 +2432,9 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
     power = BotLongTermProgressionBrain::CalculateRolePower(bot);
     std::string raw = BuildRawJson(bot, target);
     std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, chosenActivity.Activity);
-    bool failure = questAction.Failure || trashAction.Failure || bossAction.Failure;
-    bool rare = questAction.Rare || trashAction.Rare || bossAction.Rare;
+    bool validationRouteFailure = action == "validation_route_target_blocked" || action == "validation_route_wrong_map";
+    bool failure = questAction.Failure || trashAction.Failure || bossAction.Failure || validationRouteFailure;
+    bool rare = questAction.Rare || trashAction.Rare || bossAction.Rare || validationRouteFailure;
     RecordDecision(state, bot, situation.c_str(), action.c_str(), target, raw.c_str(), semantic.c_str(), activityScores, chosenActivity, power, failure, rare);
 }
 
@@ -4886,6 +4903,147 @@ BotWorldPopulationMgr::QuestActionResult BotWorldPopulationMgr::TryQuesting(Worl
     }
 
     return result;
+}
+
+bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, std::string& situation, std::string& action, Unit*& target)
+{
+    if (!_config.ValidationRouteEnable || !bot)
+        return false;
+
+    situation = _config.ValidationRouteKind == "boss"
+        ? (bot->GetMap() && bot->GetMap()->IsRaid() ? "raid_boss" : "dungeon_boss")
+        : "validation_route";
+    action = "validation_route";
+
+    if (_config.ValidationRouteMapId && bot->GetMapId() != _config.ValidationRouteMapId)
+    {
+        std::string raw = BuildRawJson(bot, nullptr);
+        std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_wrong_map", &power, stage, activity);
+        RecordEvent(state, bot, "validation_route_failed", nullptr, "wrong_map", raw.c_str(), semantic.c_str(), float(_config.ValidationRouteMapId), bot->GetMapId());
+        action = "validation_route_wrong_map";
+        return true;
+    }
+
+    state.QuestRouteDestination.Valid = true;
+    state.QuestRouteDestination.MapId = _config.ValidationRouteMapId ? _config.ValidationRouteMapId : bot->GetMapId();
+    state.QuestRouteDestination.X = _config.ValidationRouteX;
+    state.QuestRouteDestination.Y = _config.ValidationRouteY;
+    state.QuestRouteDestination.Z = _config.ValidationRouteZ;
+    state.QuestRouteDestination.QuestId = 0;
+    state.QuestRouteDestination.Reason = "validation_route";
+
+    float routeDistance = bot->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ);
+    if (routeDistance > 18.0f)
+    {
+        MoveBotToPoint(state, bot, _config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ);
+        std::string raw = BuildRawJson(bot, nullptr);
+        std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route", &power, stage, activity);
+        RecordEvent(state, bot, "validation_route_move", nullptr, _config.ValidationRouteLabel.c_str(), raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry);
+        action = "move_to_validation_route";
+        return true;
+    }
+
+    Unit* routeTarget = nullptr;
+    Unit* seenRouteTarget = nullptr;
+    std::string targetSearchResult = "target_not_found";
+    float seenRouteTargetDistance = 0.0f;
+    if (_config.ValidationRouteTargetEntry)
+    {
+        std::vector<WorldObject*> objects;
+        Trinity::AllWorldObjectsInRange check(bot, 140.0f);
+        Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(bot, objects, check);
+        Cell::VisitAllObjects(bot, searcher, 140.0f);
+
+        float bestDistance = 0.0f;
+        float bestSeenDistance = 0.0f;
+        for (WorldObject* object : objects)
+        {
+            Unit* unit = object ? object->ToUnit() : nullptr;
+            Creature* creature = unit ? unit->ToCreature() : nullptr;
+            if (!creature || creature->GetEntry() != _config.ValidationRouteTargetEntry)
+                continue;
+
+            float distance = bot->GetExactDist(creature);
+            if (!seenRouteTarget || distance < bestSeenDistance)
+            {
+                seenRouteTarget = creature;
+                bestSeenDistance = distance;
+                seenRouteTargetDistance = distance;
+            }
+
+            if (!creature->IsAlive())
+            {
+                targetSearchResult = "target_seen_dead";
+                continue;
+            }
+
+            if (!bot->IsWithinLOSInMap(creature))
+            {
+                targetSearchResult = "target_seen_no_los";
+                continue;
+            }
+
+            if (!bot->IsValidAttackTarget(creature))
+            {
+                targetSearchResult = "target_seen_not_attackable";
+                continue;
+            }
+
+            if (!routeTarget || distance < bestDistance)
+            {
+                routeTarget = creature;
+                bestDistance = distance;
+                targetSearchResult = "target_ready";
+            }
+        }
+    }
+    if (!routeTarget && seenRouteTarget && seenRouteTargetDistance > 8.0f)
+    {
+        MoveBotToPoint(state, bot, seenRouteTarget->GetPositionX(), seenRouteTarget->GetPositionY(), seenRouteTarget->GetPositionZ());
+        std::string raw = BuildRawJson(bot, seenRouteTarget);
+        std::string semantic = BuildSemanticJson(bot, seenRouteTarget, "validation_route_target_approach", &power, stage, activity);
+        RecordEvent(state, bot, "validation_route_target_search", seenRouteTarget, targetSearchResult.c_str(), raw.c_str(), semantic.c_str(), seenRouteTargetDistance, _config.ValidationRouteTargetEntry);
+        action = "move_to_validation_route_target";
+        return true;
+    }
+    if (!routeTarget && seenRouteTarget)
+    {
+        state.LastNoProgressReason = targetSearchResult;
+        std::string raw = BuildRawJson(bot, seenRouteTarget);
+        std::string semantic = BuildSemanticJson(bot, seenRouteTarget, "validation_route_blocked", &power, stage, activity);
+        RecordEvent(state, bot, "validation_route_failed", seenRouteTarget, targetSearchResult.c_str(), raw.c_str(), semantic.c_str(), seenRouteTargetDistance, _config.ValidationRouteTargetEntry);
+        action = "validation_route_target_blocked";
+        return true;
+    }
+    if (!routeTarget && _config.ValidationRouteKind == "boss")
+        routeTarget = FindBossTarget(bot);
+
+    if (!routeTarget)
+    {
+        std::string raw = BuildRawJson(bot, nullptr);
+        std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_target_search", &power, stage, activity);
+        RecordEvent(state, bot, "validation_route_target_search", nullptr, targetSearchResult.c_str(), raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry);
+        action = "search_validation_route_target";
+        return true;
+    }
+
+    target = routeTarget;
+    state.TargetGuid = target->GetGUID();
+    BotActionExecutor executor;
+    BotActionResult pull = executor.Pull(bot, target);
+    uint32 spellId = SelectCombatSpell(bot, target);
+    bool cast = spellId && TryCastCombatSpell(bot, target, spellId);
+    action = _config.ValidationRouteKind == "boss"
+        ? (std::string(GetDungeonRole(bot)) == "tank" ? "validation_route_tank_boss" : "validation_route_boss_action")
+        : "validation_route_trash_action";
+    state.WasInCombat = true;
+
+    std::string raw = BuildRawJson(bot, target);
+    std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, activity);
+    RecordEvent(state, bot, _config.ValidationRouteKind == "boss" ? "boss_action" : "trash_action", target, ToString(pull), raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry, cast ? spellId : 0);
+    if (_config.ValidationRouteKind == "boss")
+        RecordEvent(state, bot, "boss_started", target, _config.ValidationRouteMechanicProfile.c_str(), raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry, cast ? spellId : 0);
+    return true;
 }
 
 bool BotWorldPopulationMgr::IsBossContext(Player* bot, Unit const* target) const
@@ -8520,6 +8678,18 @@ std::string BotWorldPopulationMgr::BuildConfigJson() const
          << ",\"min_replay_importance\":" << _config.MinReplayImportance
          << ",\"update_semantic_outcome_stats\":" << (_config.UpdateSemanticOutcomeStats ? "true" : "false")
          << ",\"pool_tag_filter\":\"" << JsonEscape(_config.PoolTagFilter) << "\""
+         << ",\"validation_route\":{\"enabled\":" << (_config.ValidationRouteEnable ? "true" : "false")
+         << ",\"scenario_id\":\"" << JsonEscape(_config.ValidationRouteScenarioId) << "\""
+         << ",\"node_id\":\"" << JsonEscape(_config.ValidationRouteNodeId) << "\""
+         << ",\"label\":\"" << JsonEscape(_config.ValidationRouteLabel) << "\""
+         << ",\"kind\":\"" << JsonEscape(_config.ValidationRouteKind) << "\""
+         << ",\"mechanic_profile\":\"" << JsonEscape(_config.ValidationRouteMechanicProfile) << "\""
+         << ",\"map\":" << _config.ValidationRouteMapId
+         << ",\"x\":" << _config.ValidationRouteX
+         << ",\"y\":" << _config.ValidationRouteY
+         << ",\"z\":" << _config.ValidationRouteZ
+         << ",\"o\":" << _config.ValidationRouteO
+         << ",\"target_entry\":" << _config.ValidationRouteTargetEntry << "}"
          << ",\"telemetry_enabled\":" << (telemetry.Enabled ? "true" : "false")
          << ",\"telemetry_frame_interval_ms\":" << telemetry.FrameIntervalMs
          << ",\"telemetry_pre_event_window_sec\":" << telemetry.PreEventWindowSec

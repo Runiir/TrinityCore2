@@ -3450,6 +3450,11 @@ PlayerBot.Debug = 1
 #                     Validation runs use this to isolate prepared scenario rosters.
 #        Default:     ""
 #
+#    BotWorld.ValidationRoute.*
+#        Description: Optional manifest-derived route objective for live validation segments.
+#                     When enabled, BotWorld prioritizes this route over incidental questing.
+#        Default:     disabled, zero coordinates, no target entry
+#
 #    BotWorld.SpawnMode
 #        Description: Bot spawn strategy: resume_or_race_start, resume_only, race_start_only,
 #                     near_player, configured_center, or saved_or_near_player for legacy/debug compatibility.
@@ -3530,6 +3535,18 @@ BotWorld.AutoRecordingWindowMinutes = 15
 BotWorld.AutoRecordingNamePrefix = "autonomy_window"
 BotWorld.TargetPopulation = 5
 BotWorld.PoolTagFilter = ""
+BotWorld.ValidationRoute.Enable = 0
+BotWorld.ValidationRoute.ScenarioId = ""
+BotWorld.ValidationRoute.NodeId = ""
+BotWorld.ValidationRoute.Label = ""
+BotWorld.ValidationRoute.Kind = ""
+BotWorld.ValidationRoute.MechanicProfile = ""
+BotWorld.ValidationRoute.Map = 0
+BotWorld.ValidationRoute.X = 0.0
+BotWorld.ValidationRoute.Y = 0.0
+BotWorld.ValidationRoute.Z = 0.0
+BotWorld.ValidationRoute.O = 0.0
+BotWorld.ValidationRoute.TargetEntry = 0
 BotWorld.MaxPerMap = 50
 BotWorld.TickMs = 1000
 BotWorld.DecisionTickMs = 3000
