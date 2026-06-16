@@ -94,6 +94,14 @@ def command_errors(output: str) -> list[dict[str, str]]:
     return errors
 
 
+def should_observe_before_command(command_text: str) -> bool:
+    return (
+        command_text.startswith(".botauto diagnose")
+        or command_text.startswith(".botauto trace")
+        or command_text == ".botexp summary"
+    )
+
+
 def count_trace_entries(trace: dict[str, Any]) -> int:
     entries = trace.get("entries")
     if isinstance(entries, list):
@@ -157,6 +165,7 @@ def live_evidence(status: dict[str, Any], diagnosis: dict[str, Any], trace: dict
         for entry in entries
         if str(entry.get("action") or "").startswith("complete_quest")
     )
+    hub_acceptance_actions = sum(1 for entry in entries if str(entry.get("action") or "") == "accept_hub_quests")
     action_names.update(
         str(nested_get(row, ["snapshot", "decision", "action"], ""))
         for row in diagnoses
@@ -180,6 +189,7 @@ def live_evidence(status: dict[str, Any], diagnosis: dict[str, Any], trace: dict
         "quest_objective_progress": quest_progress,
         "quests_accepted": quests_accepted,
         "quests_completed": quests_completed,
+        "hub_acceptance_actions": hub_acceptance_actions,
         "kills": kills,
         "gear_upgrades": gear_upgrades,
         "action_names": sorted(action_names),
@@ -220,10 +230,12 @@ def live_validation_report(output: str, stages: list[str] | None = None, returnc
                 missing.append("active_decision_or_movement_evidence")
             if stage in {"kill_quest", "normal_dungeon_trash", "dungeon_boss"} and evidence["kills"] <= 0:
                 missing.append("kill_evidence")
-            if stage in {"collect_quest", "quest_hub_batching"} and evidence["quest_objective_progress"] <= 0 and evidence["quests_completed"] <= 0:
+            if stage == "collect_quest" and evidence["quest_objective_progress"] <= 0 and evidence["quests_completed"] <= 0:
                 missing.append("quest_progress_evidence")
             if stage == "quest_hub_batching" and evidence["quests_accepted"] <= 0:
                 missing.append("quest_acceptance_evidence")
+            if stage == "quest_hub_batching" and evidence["hub_acceptance_actions"] <= 0:
+                missing.append("accept_hub_quests_action_evidence")
             if stage in {"trainer_visit", "vendor_repair"} and not evidence["vendor_or_trainer_action"]:
                 missing.append("vendor_or_trainer_action_evidence")
             if stage == "profession_recipe_acquisition" and not evidence["profession_action"]:
@@ -267,6 +279,8 @@ def run_worldserver(binary: Path, config: Path, timeout_sec: int, script: str, o
     command = [str(binary), "--config", str(config)]
     if observe_sec > 0:
         deadline = time.monotonic() + timeout_sec
+        explicit_start = any(line.strip() == ".botauto start" for line in script.splitlines())
+        observed_autostart = False
         process = subprocess.Popen(
             command,
             stdin=subprocess.PIPE,
@@ -277,9 +291,13 @@ def run_worldserver(binary: Path, config: Path, timeout_sec: int, script: str, o
         assert process.stdin is not None
         try:
             for raw_command in script.splitlines():
+                command_text = raw_command.strip()
+                if not explicit_start and not observed_autostart and should_observe_before_command(command_text):
+                    time.sleep(observe_sec)
+                    observed_autostart = True
                 process.stdin.write(raw_command + "\n")
                 process.stdin.flush()
-                if raw_command.strip() == ".botauto start":
+                if command_text == ".botauto start":
                     time.sleep(observe_sec)
             process.stdin.close()
             process.stdin = None
@@ -327,10 +345,16 @@ def run_soap_commands(soap_url: str, username: str, password: str, script: str, 
     auth = base64.b64encode(f"{username}:{password}".encode("utf-8")).decode("ascii")
     command = ["SOAP", soap_url]
     deadline = time.monotonic() + timeout_sec
+    explicit_start = any(line.strip() == ".botauto start" for line in script.splitlines())
+    observed_autostart = False
     for raw_command in script.splitlines():
         command_text = raw_command.strip()
         if not command_text:
             continue
+        if observe_sec > 0 and not explicit_start and not observed_autostart and should_observe_before_command(command_text):
+            output_parts.append(f"$ sleep {observe_sec}")
+            time.sleep(observe_sec)
+            observed_autostart = True
         remaining_float = deadline - time.monotonic()
         if remaining_float <= 0:
             return "\n".join(output_parts), 124, True, command

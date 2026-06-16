@@ -637,7 +637,7 @@ def test_live_bot_validation_command_script_and_output_parser():
     output = """
 TC> {"active_bots":2,"target_bots":2,"action":"botauto_status","decisions":3,"kills":1,"quests_accepted":2,"quest_objective_progress":1}
 TC> {"diagnosis_schema_version":"bot_diagnosis_v1","diagnoses":[{"bot_guid":1},{"bot_guid":2}]}
-TC> {"trace_schema_version":"bot_trace_v1","entries":[{"action":"move"},{"action":"quest"}]}
+TC> {"trace_schema_version":"bot_trace_v1","entries":[{"action":"move"},{"action":"accept_hub_quests"},{"action":"quest"}]}
 TC> {"summary_schema_version":"bot_summary_v1","duration_minutes":1,"quests_completed":0,"raid_boss_kills":0}
 $ .botauto diagnose all
 There is no such subcommand
@@ -650,9 +650,10 @@ There is no such subcommand
     assert report["active_bots"] == 2
     assert report["target_bots"] == 2
     assert report["diagnosis_count"] == 2
-    assert report["trace_entries"] == 2
+    assert report["trace_entries"] == 3
     assert report["evidence"]["decisions"] == 3
     assert report["evidence"]["active_decision_evidence"] is True
+    assert report["evidence"]["hub_acceptance_actions"] == 1
     assert report["summary"]["quests_completed"] == 0
     assert report["command_errors"] == [{"command": ".botauto diagnose all", "error": "no_such_subcommand"}]
     assert gates["movement_smoke"]["passed"] is True
@@ -711,6 +712,40 @@ def test_live_bot_validation_process_mode_observes_after_start(tmp_path, monkeyp
     assert "CMD server exit" in output
 
 
+def test_live_bot_validation_process_mode_observes_before_diagnose_without_start(tmp_path, monkeypatch):
+    fake_worldserver = tmp_path / "fake_worldserver.py"
+    fake_worldserver.write_text(
+        "#!/usr/bin/env python3\n"
+        "import sys\n"
+        "print('ARGS ' + ' '.join(sys.argv[1:]))\n"
+        "for line in sys.stdin:\n"
+        "    print('CMD ' + line.strip())\n",
+        encoding="utf-8",
+    )
+    fake_worldserver.chmod(0o755)
+    config = tmp_path / "worldserver.conf"
+    config.write_text("", encoding="utf-8")
+    sleeps = []
+    monkeypatch.setattr("tools.bot_ml.run_live_bot_validation.time.sleep", lambda seconds: sleeps.append(seconds))
+
+    output, returncode, timed_out, command = run_worldserver(
+        fake_worldserver,
+        config,
+        5,
+        command_script(selector="all", trace_limit=5, start=False, stop=False),
+        observe_sec=23,
+    )
+
+    assert returncode == 0
+    assert timed_out is False
+    assert command == [str(fake_worldserver), "--config", str(config)]
+    assert sleeps == [23]
+    assert "CMD .botauto start" not in output
+    assert "CMD .botauto status" in output
+    assert "CMD .botauto diagnose all" in output
+    assert "CMD server exit" in output
+
+
 def test_live_bot_validation_requires_activity_evidence_for_smoke_gates():
     output = """
 TC> {"active_bots":5,"target_bots":5,"decisions":0,"quests_accepted":0,"quest_objective_progress":0}
@@ -732,15 +767,16 @@ def test_live_bot_validation_counts_multi_bot_trace_entries():
     output = """
 TC> {"active_bots":2,"target_bots":2,"decisions":0,"quests_accepted":0,"quest_objective_progress":0}
 TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"snapshot":{"decision":{"action":"travel_to_quest_hub"},"movement":{"is_moving":true,"distance_moved_since_last_decision":4.5}}},{"identity":{"bot_guid":2},"snapshot":{"decision":{"action":"use_quest_object"},"movement":{"is_moving":false,"distance_moved_since_last_decision":0}}}]}
-TC> {"trace_schema_version":1,"selector":"all","bots":[{"bot_guid":1,"entries":[{"action":"bot_spawned","situation":"bot_spawned"},{"action":"travel_to_quest_hub","situation":"quest_pickup_search"},{"action":"accept_quest_db_fallback","situation":"quest_pickup_search"},{"action":"complete_quest_db_fallback","situation":"quest_turn_in"}]},{"bot_guid":2,"entries":[{"action":"use_quest_object","situation":"quest_objective","result":"failed"}]}]}
+TC> {"trace_schema_version":1,"selector":"all","bots":[{"bot_guid":1,"entries":[{"action":"bot_spawned","situation":"bot_spawned"},{"action":"travel_to_quest_hub","situation":"quest_pickup_search"},{"action":"accept_hub_quests","situation":"quest_hub_sweep"},{"action":"accept_quest_db_fallback","situation":"quest_pickup_search"},{"action":"complete_quest_db_fallback","situation":"quest_turn_in"}]},{"bot_guid":2,"entries":[{"action":"use_quest_object","situation":"quest_objective","result":"failed"}]}]}
 TC> {"duration_minutes":1,"decisions":0,"total_kills":0,"quests_completed":0}
 """
     report = live_validation_report(output)
     gates = {stage["stage"]: stage for stage in report["stages"]}
 
-    assert report["trace_entries"] == 5
-    assert report["evidence"]["non_spawn_trace_entries"] == 4
-    assert report["evidence"]["quests_accepted"] == 1
+    assert report["trace_entries"] == 6
+    assert report["evidence"]["non_spawn_trace_entries"] == 5
+    assert report["evidence"]["quests_accepted"] == 2
+    assert report["evidence"]["hub_acceptance_actions"] == 1
     assert report["evidence"]["quests_completed"] == 1
     assert report["evidence"]["active_decision_evidence"] is True
     assert "accept_quest_db_fallback" in report["evidence"]["action_names"]

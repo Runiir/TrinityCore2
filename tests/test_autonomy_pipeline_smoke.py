@@ -251,6 +251,14 @@ def test_quest_first_portfolio_routing_surface():
 
     assert "TrySmartGearDecision(state, bot, power, stage, chosenActivity.Activity, situation, action)" in update_bot
     assert "state.LastDecisionHandler = \"smart_loot\";" in update_bot
+    assert_ordered(
+        update_bot,
+        "bool hasNearbyQuestGiver = _config.AllowQuesting && HasNearbySupportedQuestGiver(bot, state);",
+        "&& (chosenActivity.Activity == BotProgressionActivity::Questing || hasActiveQuestObjective || _config.QuestFirst || state.NewlyAcceptedQuestId || hasNearbyQuestGiver)",
+        "TryQuesting(state, bot, power, stage, chosenActivity.Activity)",
+        "TrySmartGearDecision(state, bot, power, stage, chosenActivity.Activity, situation, action)",
+        "TryProfessionMemoryAction(state, bot, power, stage, chosenActivity.Activity, situation, action)",
+    )
     assert "BotGearUpgradeEvaluation evaluation = BotLongTermProgressionBrain::EvaluateGearUpgrade(bot);" in mgr
     assert "lootDecision = evaluation.Upgrade ? \"need_upgrade\" : (evaluation.CanEquip || hasValue ? \"greed_value\" : \"pass_invalid\")" in mgr
     assert "bot->EquipItem(equipDest, item, true);" in mgr
@@ -692,6 +700,8 @@ def test_host_world_makefile_can_generate_always_on_recording_config():
     assert "BotWorld.AutoRecordingWindowMinutes = $(BOTWORLD_RECORDING_WINDOW_MINUTES)" in makefile
     assert "s|^BotWorld\\.SpawnMode\\s*=.*$$|BotWorld.SpawnMode = \"$(BOTWORLD_SPAWN_MODE)\"|gm" in makefile
     assert "BotWorld.UseSavedPosition = $(BOTWORLD_USE_SAVED_POSITION)" in makefile
+    assert "BotWorld.RespawnMode = \"safe_local\"" in makefile
+    assert "BotWorld.AllowQuesting = 1" in makefile
 
 
 def test_player_bot_chase_movement_inform_does_not_deref_non_creature_owner():

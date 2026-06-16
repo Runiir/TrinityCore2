@@ -1,0 +1,6 @@
+outs:
+- md5: 9debbcc730d8dacc6e0a4bb00fb4e08c.dir
+  size: 158329
+  nfiles: 3
+  hash: md5
+  path: live_validation_quest_priority

@@ -2103,6 +2103,16 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         action = "rest";
         state.LastDecisionHandler = "rest";
     }
+    else if (_config.AllowQuesting
+        && (chosenActivity.Activity == BotProgressionActivity::Questing || hasActiveQuestObjective || _config.QuestFirst || state.NewlyAcceptedQuestId || hasNearbyQuestGiver)
+        && [&]() { questAction = TryQuesting(state, bot, power, stage, chosenActivity.Activity); return questAction.Handled; }())
+    {
+        situation = questAction.Situation;
+        action = questAction.Action;
+        target = questAction.Target;
+        state.LastDecisionHandler = "questing";
+        state.LastDecisionQuestId = questAction.QuestId;
+    }
     else if (!bot->IsInCombat() && TrySmartGearDecision(state, bot, power, stage, chosenActivity.Activity, situation, action))
     {
         target = nullptr;
@@ -2120,16 +2130,6 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         situation = "vendor_repair_train";
         action = "vendor_repair_train";
         state.LastDecisionHandler = "vendor_repair_train";
-    }
-    else if (_config.AllowQuesting
-        && (chosenActivity.Activity == BotProgressionActivity::Questing || hasActiveQuestObjective || _config.QuestFirst || state.NewlyAcceptedQuestId || hasNearbyQuestGiver)
-        && [&]() { questAction = TryQuesting(state, bot, power, stage, chosenActivity.Activity); return questAction.Handled; }())
-    {
-        situation = questAction.Situation;
-        action = questAction.Action;
-        target = questAction.Target;
-        state.LastDecisionHandler = "questing";
-        state.LastDecisionQuestId = questAction.QuestId;
     }
     else if (IsBossContext(bot, target)
         && [&]() { bossAction = TryBossMechanics(state, bot, power, stage, chosenActivity.Activity); return bossAction.Handled; }())
