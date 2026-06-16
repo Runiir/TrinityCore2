@@ -1,0 +1,6 @@
+outs:
+- md5: e4fc970875d0aa1a41ad94d11fbc4abd.dir
+  size: 252199
+  nfiles: 3
+  hash: md5
+  path: live_validation_collect_progress

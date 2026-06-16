@@ -315,6 +315,9 @@ def test_quest_first_portfolio_routing_surface():
         "SelectQuestGiver(bot, true, &questId, &state)",
         "FindQuestTurnInDestination(bot, questStatus.first, turnInRoute)",
         "quest_hub_sweep",
+        "FindQuestObjective(bot, lastAcceptedQuestId, acceptedObjective)",
+        "ResolveObjectiveRoutePoint(bot, acceptedObjective, route)",
+        "MoveBotToPoint(state, bot, route.X, route.Y, route.Z);",
         "BuildQuestPortfolioPlan(bot, state)",
         "FindQuestPickupDestination(bot, state, pickup)",
     )

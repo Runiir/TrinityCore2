@@ -4264,6 +4264,25 @@ BotWorldPopulationMgr::QuestActionResult BotWorldPopulationMgr::TryQuesting(Worl
         result.Situation = "quest_hub_sweep";
         result.Action = "accept_hub_quests";
         result.QuestId = lastAcceptedQuestId;
+        QuestObjectivePlan acceptedObjective;
+        if (FindQuestObjective(bot, lastAcceptedQuestId, acceptedObjective))
+        {
+            QuestRoutePoint route;
+            if (ResolveObjectiveRoutePoint(bot, acceptedObjective, route) && route.Valid && route.MapId == bot->GetMapId())
+            {
+                state.QuestRouteDestination.Valid = true;
+                state.QuestRouteDestination.MapId = route.MapId;
+                state.QuestRouteDestination.X = route.X;
+                state.QuestRouteDestination.Y = route.Y;
+                state.QuestRouteDestination.Z = route.Z;
+                state.QuestRouteDestination.QuestId = route.QuestId;
+                state.QuestRouteDestination.Reason = route.Source;
+                MoveBotToPoint(state, bot, route.X, route.Y, route.Z);
+                SetQuestWorkPhase(state, acceptedObjective.IsItemObjective ? "search_collect_mob" : "search_objective");
+            }
+            else
+                MoveToObjectiveSearchPoint(state, bot, &acceptedObjective);
+        }
         std::ostringstream context;
         context << "{\"accepted_count\":" << acceptedCount << "}";
         RecordQuestEvent(state, bot, "quest_hub_sweep", lastAcceptedQuestId, nullptr, "accepted", BuildRawJson(bot, nullptr).c_str(), BuildSemanticJson(bot, nullptr, "quest_hub_sweep", &power, stage, activity).c_str(), acceptedCount, 0, context.str().c_str());
