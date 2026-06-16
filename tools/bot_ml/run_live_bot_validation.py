@@ -250,7 +250,7 @@ def command_script(selector: str = "all", trace_limit: int = 20, start: bool = T
     if stop:
         commands.append(".botauto stop")
     if exit_server:
-        commands.append("server shutdown 0")
+        commands.append("server shutdown force 0")
     return "\n".join(commands) + "\n"
 
 
@@ -295,7 +295,8 @@ def command_errors(output: str) -> list[dict[str, str]]:
 
 def should_observe_before_command(command_text: str) -> bool:
     return (
-        command_text.startswith(".botauto diagnose")
+        command_text == ".botauto status"
+        or command_text.startswith(".botauto diagnose")
         or command_text.startswith(".botauto trace")
         or command_text == ".botexp summary"
     )
@@ -499,9 +500,13 @@ def run_worldserver(binary: Path, config: Path, timeout_sec: int, script: str, o
                 if command_text == ".botauto start":
                     time.sleep(observe_sec)
                 elif command_text.startswith("server shutdown") or command_text == "server exit":
-                    time.sleep(2)
-            process.stdin.close()
-            process.stdin = None
+                    shutdown_deadline = min(deadline, time.monotonic() + 10)
+                    while process.poll() is None and time.monotonic() < shutdown_deadline:
+                        time.sleep(0.25)
+                    break
+            if process.stdin and not process.stdin.closed:
+                process.stdin.close()
+                process.stdin = None
             remaining = max(1, int(deadline - time.monotonic()))
             output, _ = process.communicate(timeout=remaining)
             returncode = process.returncode if process.returncode is not None else 0

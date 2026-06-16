@@ -487,6 +487,7 @@ private:
 
     static bool ShutdownServer(ChatHandler* handler, char const* args, uint32 shutdownMask, int32 defaultExitCode)
     {
+        TC_LOG_INFO("server", "Server shutdown command received args=%s mask=%u default_exit=%d", args ? args : "", shutdownMask, defaultExitCode);
         if (!*args)
             return false;
 
@@ -546,7 +547,9 @@ private:
             handler->PSendSysMessage(LANG_SHUTDOWN_DELAYED, delay);
         }
 
+        TC_LOG_INFO("server", "Server shutdown command scheduling delay=%d mask=%u exit=%d reason=%s", delay, shutdownMask, exitCode, reason);
         sWorld->ShutdownServ(delay, shutdownMask, static_cast<uint8>(exitCode), std::string(reason));
+        TC_LOG_INFO("server", "Server shutdown command scheduled");
 
         return true;
     }

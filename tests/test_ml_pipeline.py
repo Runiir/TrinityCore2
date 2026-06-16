@@ -631,7 +631,7 @@ def test_live_bot_validation_command_script_and_output_parser():
         ".botauto trace all 20",
         ".botexp summary",
         ".botauto stop",
-        "server shutdown 0",
+        "server shutdown force 0",
     ]
 
     output = """
@@ -706,10 +706,11 @@ def test_live_bot_validation_process_mode_observes_after_start(tmp_path, monkeyp
     assert returncode == 0
     assert timed_out is False
     assert command == [str(fake_worldserver), "--config", str(config)]
-    assert sleeps == [17, 2]
+    assert sleeps[0] == 17
+    assert 0.25 in sleeps
     assert "CMD .botauto start" in output
     assert "CMD .botauto diagnose all" in output
-    assert "CMD server shutdown 0" in output
+    assert "CMD server shutdown force 0" in output
 
 
 def test_live_bot_validation_process_mode_observes_before_diagnose_without_start(tmp_path, monkeypatch):
@@ -739,11 +740,12 @@ def test_live_bot_validation_process_mode_observes_before_diagnose_without_start
     assert returncode == 0
     assert timed_out is False
     assert command == [str(fake_worldserver), "--config", str(config)]
-    assert sleeps == [23, 2]
+    assert sleeps[0] == 23
+    assert 0.25 in sleeps
     assert "CMD .botauto start" not in output
     assert "CMD .botauto status" in output
     assert "CMD .botauto diagnose all" in output
-    assert "CMD server shutdown 0" in output
+    assert "CMD server shutdown force 0" in output
 
 
 def test_live_bot_validation_requires_activity_evidence_for_smoke_gates():
@@ -810,7 +812,7 @@ def test_live_bot_validation_dry_run_writes_command_file(tmp_path, monkeypatch):
     assert ".botauto diagnose all" in commands
     assert ".botauto trace all 7" in commands
     assert ".botauto start" not in commands
-    assert "server shutdown 0" in commands
+    assert "server shutdown force 0" in commands
     assert report["dry_run"] is True
     assert report["command_script"] == commands
     assert report["config_autostart"] is True

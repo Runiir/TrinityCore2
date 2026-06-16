@@ -8,6 +8,7 @@
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Chat.h"
 #include "Config.h"
+#include "Log.h"
 #include "ObjectMgr.h"
 #include "Player.h"
 #include "Quests/QuestDef.h"
@@ -1122,15 +1123,19 @@ public:
 
     void OnShutdownInitiate(ShutdownExitCode /*code*/, ShutdownMask /*mask*/) override
     {
-        sBotWorldPopulationMgr->StopAutonomy();
-        sBotMgr->RemoveAll();
-        sBotMgr->ResetPoolUseState();
+        TC_LOG_INFO("server", "PlayerBot shutdown initiate begin");
+        TC_LOG_INFO("server", "PlayerBot shutdown initiate deferred to final shutdown");
     }
 
     void OnShutdown() override
     {
+        TC_LOG_INFO("server", "PlayerBot shutdown final begin");
         sBotWorldPopulationMgr->Shutdown();
+        TC_LOG_INFO("server", "PlayerBot shutdown final autonomy stopped");
+        sBotMgr->RemoveAll();
+        TC_LOG_INFO("server", "PlayerBot shutdown final bots removed");
         sBotMgr->ResetPoolUseState();
+        TC_LOG_INFO("server", "PlayerBot shutdown final complete");
     }
 };
 

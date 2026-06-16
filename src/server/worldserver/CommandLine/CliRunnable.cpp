@@ -26,7 +26,6 @@
 
 #include "CliRunnable.h"
 #include "Log.h"
-#include "ScriptMgr.h"
 #include "Util.h"
 
 #if TRINITY_PLATFORM != TRINITY_PLATFORM_WINDOWS
@@ -195,7 +194,6 @@ void CliThread()
         }
         else if (feof(stdin))
         {
-            sScriptMgr->OnShutdownInitiate(ShutdownExitCode(SHUTDOWN_EXIT_CODE), ShutdownMask(0));
             World::StopNow(SHUTDOWN_EXIT_CODE);
         }
     }

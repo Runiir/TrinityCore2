@@ -33,6 +33,7 @@
 #include "GitRevision.h"
 #include "InstanceSaveMgr.h"
 #include "IoContext.h"
+#include "Log.h"
 #include "MapManager.h"
 #include "Metric.h"
 #include "MySQLThreading.h"
@@ -64,6 +65,7 @@
 #include <boost/filesystem/operations.hpp>
 #include <boost/program_options.hpp>
 #include <csignal>
+#include <cstdlib>
 #include <iostream>
 
 #ifdef _WIN32 // ugly as hell
@@ -395,18 +397,26 @@ extern int main(int argc, char** argv)
     WorldUpdateLoop();
 
     // Shutdown starts here
+    TC_LOG_INFO("server.worldserver", "World shutdown phase begin");
     ioContext->stop();
+    TC_LOG_INFO("server.worldserver", "World shutdown phase io stopped");
 
     threadPool.reset();
+    TC_LOG_INFO("server.worldserver", "World shutdown phase thread pool stopped");
 
     sLog->SetSynchronous();
+    TC_LOG_INFO("server.worldserver", "World shutdown phase scripts begin");
 
     sScriptMgr->OnShutdown();
+    TC_LOG_INFO("server.worldserver", "World shutdown phase scripts complete");
 
     // set server offline
     LoginDatabase.DirectPExecute("UPDATE realmlist SET flag = flag | %u WHERE id = '%d'", REALM_FLAG_OFFLINE, realm.Id.Realm);
 
     TC_LOG_INFO("server.worldserver", "Halting process...");
+
+    if (sConfigMgr->GetBoolDefault("BotWorld.FastExitAfterShutdown", false))
+        std::_Exit(World::GetExitCode());
 
     // 0 - normal shutdown
     // 1 - shutdown at error

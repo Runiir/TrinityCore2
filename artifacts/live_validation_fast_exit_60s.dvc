@@ -1,0 +1,6 @@
+outs:
+- md5: a8e18f77439e858542af6ca397dca8ab.dir
+  size: 147099
+  nfiles: 4
+  hash: md5
+  path: live_validation_fast_exit_60s

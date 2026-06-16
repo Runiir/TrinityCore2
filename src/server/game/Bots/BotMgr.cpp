@@ -734,6 +734,9 @@ void BotMgr::OnGroupDisband(Group* group)
 
 void BotMgr::RemoveAll()
 {
+    TC_LOG_INFO("server", "PlayerBot remove all begin controllers=%zu world_bots=%zu sessions=%zu headless_owners=%zu",
+        _controllersByBot.size(), _worldBots.size(), _botSessions.size(), _headlessOwnerSessions.size());
+
     std::vector<ObjectGuid> botGuids;
     for (auto const& controller : _controllersByBot)
         botGuids.push_back(controller.first);
@@ -755,6 +758,9 @@ void BotMgr::RemoveAll()
             ReleaseHeadlessOwnerIfIdle(owner);
         else
             _headlessOwnerSessions.erase(_headlessOwnerSessions.begin());
+
+    TC_LOG_INFO("server", "PlayerBot remove all complete controllers=%zu world_bots=%zu sessions=%zu headless_owners=%zu",
+        _controllersByBot.size(), _worldBots.size(), _botSessions.size(), _headlessOwnerSessions.size());
 }
 
 void BotMgr::ResetPoolUseState()
@@ -1082,6 +1088,7 @@ void BotMgr::CleanupBot(ObjectGuid botGuid, bool logoutPlayer)
     if (botGuid.IsEmpty() || _removingBots.find(botGuid) != _removingBots.end())
         return;
 
+    TC_LOG_INFO("server", "PlayerBot cleanup begin bot=%s logout=%u", botGuid.ToString().c_str(), logoutPlayer ? 1 : 0);
     _removingBots.insert(botGuid);
     if (logoutPlayer)
     {
@@ -1116,6 +1123,7 @@ void BotMgr::CleanupBot(ObjectGuid botGuid, bool logoutPlayer)
     SetBotCharacterOnline(botGuid, false);
     ReleasePoolCharacter(botGuid);
     _removingBots.erase(botGuid);
+    TC_LOG_INFO("server", "PlayerBot cleanup complete bot=%s sessions=%zu world_bots=%zu", botGuid.ToString().c_str(), _botSessions.size(), _worldBots.size());
 }
 
 void BotMgr::SetBotCharacterOnline(ObjectGuid botGuid, bool online)

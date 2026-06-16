@@ -3518,6 +3518,7 @@ PlayerBot.Debug = 1
 #
 
 BotWorld.Enable = 1
+BotWorld.FastExitAfterShutdown = 1
 BotWorld.AutoStart = 1
 BotWorld.AutoStartRecording = 1
 BotWorld.AutoRecordingWindowMinutes = 15
