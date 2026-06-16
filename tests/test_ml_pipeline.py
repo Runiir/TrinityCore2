@@ -25,6 +25,7 @@ from tools.bot_ml.validate_world_planner import STAGED_GATES, validate_manifest_
 from tools.bot_ml.build_validation_scenario_manifests import build_manifests as build_validation_scenario_manifests
 from tools.bot_ml.build_live_scenario_reports import build_reports as build_live_scenario_reports, build_reports_from_live_reports
 from tools.bot_ml.build_validation_run_plan import build_plan as build_validation_run_plan
+from tools.bot_ml.build_validation_run_status import build_status as build_validation_run_status
 from tools.bot_ml.run_live_bot_validation import build_bot_pool_reset_sql, command_script, live_validation_report, load_scenario_reports, main as live_validation_main, parse_json_objects, parse_soap_result, run_worldserver, split_sql_statements, trinity_config_bool
 from tools.bot_ml.build_validation_gear_profiles import build_gem_catalog, build_profiles, build_report, fetch_items, load_gem_properties, load_spell_item_enchantments
 from tools.bot_ml.build_validation_provisioning import apply_gear_profiles, build_account_insert_sql, main as provisioning_main, scenario_report, srp6_registration_data
@@ -458,6 +459,7 @@ def test_bot_ml_workflow_has_pixi_tasks_and_documented_dvc_steps():
         "bot-validation-provisioning-verify",
         "bot-validation-scenarios",
         "bot-validation-run-plan",
+        "bot-validation-run-status",
         "bot-live-scenario-reports",
         "bot-live-validate",
         "bot-ml-export",
@@ -482,6 +484,7 @@ def test_bot_ml_workflow_has_pixi_tasks_and_documented_dvc_steps():
         "validation_scenarios",
         "live_scenario_reports",
         "validation_run_plan",
+        "validation_run_status",
         "live_validation_combined",
         "validation_gear",
         "complete_equipment_slots",
@@ -518,6 +521,8 @@ def test_bot_ml_workflow_has_pixi_tasks_and_documented_dvc_steps():
         "dataset/live_validation_scenario_reports_built",
         "validation_run_plan:",
         "dataset/validation_run_plan",
+        "validation_run_status:",
+        "dataset/validation_run_status",
         "live_validation_combined:",
         "dataset/live_validation_combined",
     ]:
@@ -940,6 +945,60 @@ def test_validation_run_plan_marks_segments_without_coordinates_non_executable(t
     assert bwd["scenario_report_command"].count("--live-report") == 1
     assert "dataset/live_validation_scenarios/blackwing_descent_10n/report.json" in bwd["scenario_report_command"]
     assert "Skipping non-executable validation segment 02_magmaw" in shell
+
+
+def test_validation_run_status_reports_missing_segments_and_next_commands(tmp_path):
+    live_root = tmp_path / "live_validation_scenarios"
+    report_root = tmp_path / "scenario_reports"
+    plan = {
+        "scenarios": [
+            {
+                "scenario_id": "blackwing_descent_10n",
+                "instance": "Blackwing Descent",
+                "scenario_report_shell": "pixi run bot-live-scenario-reports --scenario-id blackwing_descent_10n",
+                "segments": [
+                    {
+                        "segment_id": "02_magmaw",
+                        "route_node_id": "bwd_magmaw",
+                        "label": "Magmaw",
+                        "mechanic_profile": "magmaw",
+                        "executable": True,
+                        "live_output_dir": str(live_root / "blackwing_descent_10n" / "02_magmaw"),
+                        "live_validate_command": ["pixi", "run", "bot-live-validate", "--validation-segment-id", "02_magmaw"],
+                        "live_validate_shell": "pixi run bot-live-validate --validation-segment-id 02_magmaw",
+                    },
+                    {
+                        "segment_id": "03_omnotron",
+                        "route_node_id": "bwd_omnotron",
+                        "label": "Omnotron",
+                        "mechanic_profile": "omnotron",
+                        "executable": True,
+                        "live_output_dir": str(live_root / "blackwing_descent_10n" / "03_omnotron"),
+                        "live_validate_command": ["pixi", "run", "bot-live-validate", "--validation-segment-id", "03_omnotron"],
+                        "live_validate_shell": "pixi run bot-live-validate --validation-segment-id 03_omnotron",
+                    },
+                ],
+            }
+        ]
+    }
+    present_report = live_root / "blackwing_descent_10n" / "02_magmaw" / "report.json"
+    present_report.parent.mkdir(parents=True)
+    present_report.write_text(json.dumps({"validation_context": {"segment_id": "02_magmaw"}}), encoding="utf-8")
+    report_root.mkdir()
+    (report_root / "blackwing_descent_10n.json").write_text(
+        json.dumps({"scenario_id": "blackwing_descent_10n", "clear_complete": False, "complete_segment_coverage": False}),
+        encoding="utf-8",
+    )
+
+    status = build_validation_run_status(plan, report_root)
+    bwd = status["scenarios"][0]
+
+    assert status["all_ready"] is False
+    assert bwd["present_segments"] == ["02_magmaw"]
+    assert bwd["missing_segments"] == ["03_omnotron"]
+    assert bwd["blockers"] == ["missing_segment_live_reports", "incomplete_segment_coverage", "scenario_clear_not_complete"]
+    assert bwd["next_commands"][0] == "pixi run bot-live-validate --validation-segment-id 03_omnotron"
+    assert bwd["next_commands"][-1].startswith("pixi run bot-live-scenario-reports")
 
 
 def test_live_bot_validation_command_script_and_output_parser():

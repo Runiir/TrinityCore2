@@ -125,6 +125,19 @@ stages:
     outs:
     - dataset/validation_run_plan:
         persist: true
+  validation_run_status:
+    cmd: python -m tools.bot_ml.build_validation_run_status --run-plan
+      dataset/validation_run_plan/manifest.json --scenario-report-root
+      dataset/live_validation_scenario_reports_built --output-dir
+      dataset/validation_run_status
+    deps:
+    - tools/bot_ml/build_validation_run_status.py
+    - tools/bot_ml/common.py
+    - dataset/validation_run_plan/manifest.json
+    - dataset/live_validation_scenario_reports_built
+    outs:
+    - dataset/validation_run_status:
+        persist: true
   live_validation_combined:
     cmd: python -m tools.bot_ml.run_live_bot_validation --input-log
       artifacts/live_validation_quest_mob_assist_150s/worldserver_output.log

@@ -29,10 +29,11 @@ pixi run bot-live-validate --transport soap --soap-user BOTVALIDATOR --soap-pass
 pixi run bot-live-validate --scenario-report-dir dataset/live_validation_scenarios --output-dir dataset/live_validation
 pixi run bot-live-scenario-reports --live-report dataset/live_validation/report.json --validation-scenario-dir dataset/validation_scenarios --output-dir dataset/live_validation_scenarios
 pixi run bot-validation-run-plan --validation-scenario-dir dataset/validation_scenarios --output-dir dataset/validation_run_plan
+pixi run bot-validation-run-status --run-plan dataset/validation_run_plan/manifest.json --scenario-report-root dataset/live_validation_scenario_reports_built --output-dir dataset/validation_run_status
 make bot-live-validate LIVE_VALIDATION_DIR=dataset/live_validation
 ```
 
-The harness writes `commands.txt`, `worldserver_output.log` when executed, and `report.json` with parsed `.botauto status`, `.botauto diagnose all`, `.botauto trace all 20`, and `.botexp summary` evidence. Process mode starts `worldserver` and appends `server exit`; SOAP mode talks to an already-running server and does not stop it. `--observe-sec` sleeps after `.botauto start` before collecting diagnostics so staged gates are based on real decisions, trace entries, quest progress, kills, loot, or profession evidence rather than spawn-only output. `bot-live-scenario-reports` derives JSON artifacts such as `stonecore_5n.json` and `blackwing_descent_10n.json` from live reports plus validation scenario manifests; pass `--live-report` multiple times to aggregate segmented dungeon/raid boss progress into one scenario report. `--scenario-report-dir` feeds those artifacts back into live validation as prepared-group, trash, boss, and full-clear evidence for dungeon/raid gates. Generated live-validation outputs are DVC artifacts, not Git files.
+The harness writes `commands.txt`, `worldserver_output.log` when executed, and `report.json` with parsed `.botauto status`, `.botauto diagnose all`, `.botauto trace all 20`, and `.botexp summary` evidence. Process mode starts `worldserver` and appends `server exit`; SOAP mode talks to an already-running server and does not stop it. `--observe-sec` sleeps after `.botauto start` before collecting diagnostics so staged gates are based on real decisions, trace entries, quest progress, kills, loot, or profession evidence rather than spawn-only output. `bot-live-scenario-reports` derives JSON artifacts such as `stonecore_5n.json` and `blackwing_descent_10n.json` from live reports plus validation scenario manifests; pass `--live-report` multiple times to aggregate segmented dungeon/raid boss progress into one scenario report. `bot-validation-run-status` compares the run plan, expected segment reports, and built scenario reports, then writes missing segments and the exact next commands required to produce them. `--scenario-report-dir` feeds those artifacts back into live validation as prepared-group, trash, boss, and full-clear evidence for dungeon/raid gates. Generated live-validation outputs are DVC artifacts, not Git files.
 
 ## Offline Loop
 
@@ -67,6 +68,7 @@ pixi run dvc repro validation_provisioning_verify
 pixi run dvc repro validation_scenarios
 pixi run dvc repro live_scenario_reports
 pixi run dvc repro validation_run_plan
+pixi run dvc repro validation_run_status
 pixi run dvc repro live_validation_combined
 ```
 
