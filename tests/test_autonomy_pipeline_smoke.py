@@ -329,7 +329,10 @@ def test_quest_first_portfolio_routing_surface():
     assert "RecordEvent(state, bot, \"profession_recipe_source\"" in mgr
     assert "bot->GetMotionMaster()->MovePoint(0, x, y, z, true);" in mgr
     assert "state.PreferMaterialMemoryAction = true;" in mgr
+    assert "state.NextProfessionDecisionMs = NowMs() + 3000;" in mgr
     assert "situation = \"profession_recipe_acquisition\";" in mgr
+    assert "action = \"plan_trainer_recipe_source\";" in mgr
+    assert "action = \"plan_vendor_recipe_source\";" in mgr
     assert "action = \"plan_profession_recipe_source\";" in mgr
     assert "SELECT source_type, source_entry, item_id, observed_count, map_id, x, y, z FROM bot_memory_material_sources" in mgr
     assert "source\\\":\\\"world_item_source_index" in mgr

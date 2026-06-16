@@ -1,0 +1,6 @@
+outs:
+- md5: 3b7f011f26a13db51d5095f989d7e7db.dir
+  size: 181975
+  nfiles: 4
+  hash: md5
+  path: live_validation_material_followup_110s

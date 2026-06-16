@@ -6822,8 +6822,14 @@ bool BotWorldPopulationMgr::TryProfessionMemoryAction(WorldBotState& state, Play
         }
         RecordEvent(state, bot, "profession_recipe_source", nullptr, result.c_str(), raw.c_str(), semantic.c_str(), 0.0f, recipeSpellId ? recipeSpellId : (itemId ? itemId : sourceEntry));
         state.PreferMaterialMemoryAction = true;
+        state.NextProfessionDecisionMs = NowMs() + 3000;
         situation = "profession_recipe_acquisition";
-        action = "plan_profession_recipe_source";
+        if (result.find("trainer") != std::string::npos)
+            action = "plan_trainer_recipe_source";
+        else if (result.find("vendor") != std::string::npos)
+            action = "plan_vendor_recipe_source";
+        else
+            action = "plan_profession_recipe_source";
         return true;
     };
 
@@ -6839,13 +6845,13 @@ bool BotWorldPopulationMgr::TryProfessionMemoryAction(WorldBotState& state, Play
                 "SELECT source_type, source_entry, item_id, observed_count, map_id, x, y, z FROM ("
                 "SELECT 'creature_loot' AS source_type, clt.Entry AS source_entry, clt.Item AS item_id, 1 AS observed_count, c.map AS map_id, c.position_x AS x, c.position_y AS y, c.position_z AS z "
                 "FROM creature_loot_template clt INNER JOIN creature c ON c.id = clt.Entry "
-                "WHERE clt.Item > 0 AND clt.QuestRequired = 0 AND c.map = %u AND c.zoneId = %u "
+                "WHERE clt.Item > 0 AND clt.QuestRequired = 0 AND c.map = %u "
                 "UNION ALL "
                 "SELECT 'gameobject_loot' AS source_type, glt.Entry AS source_entry, glt.Item AS item_id, 1 AS observed_count, g.map AS map_id, g.position_x AS x, g.position_y AS y, g.position_z AS z "
                 "FROM gameobject_loot_template glt INNER JOIN gameobject g ON g.id = glt.Entry "
-                "WHERE glt.Item > 0 AND glt.QuestRequired = 0 AND g.map = %u AND g.zoneId = %u) material_candidates "
+                "WHERE glt.Item > 0 AND glt.QuestRequired = 0 AND g.map = %u) material_candidates "
                 "ORDER BY ((x - %f) * (x - %f) + (y - %f) * (y - %f)) LIMIT 1",
-                bot->GetMapId(), bot->GetZoneId(), bot->GetMapId(), bot->GetZoneId(),
+                bot->GetMapId(), bot->GetMapId(),
                 bot->GetPositionX(), bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionY());
         }
         if (!material)
