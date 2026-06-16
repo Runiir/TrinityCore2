@@ -1124,7 +1124,10 @@ def test_live_scenario_report_builder_aggregates_segmented_raid_progress(tmp_pat
     )
     write_jsonl(
         scenario_dir / "validation_routes.jsonl",
-        [{"scenario_id": "blackwing_descent_10n", "kind": "boss"} for _ in range(6)],
+        [
+            {"scenario_id": "blackwing_descent_10n", "kind": "boss", "step": index + 1, "label": f"Boss {index}", "route_node_id": f"bwd_boss_{index}"}
+            for index in range(6)
+        ],
     )
     live_reports = []
     for index in range(6):
@@ -1155,6 +1158,9 @@ def test_live_scenario_report_builder_aggregates_segmented_raid_progress(tmp_pat
     assert bwd["raid_boss_kills"] == 6
     assert bwd["expected_bosses"] == 6
     assert bwd["clear_complete"] is True
+    assert bwd["expected_segments"] == [f"{index + 1:02d}_boss_{index}" for index in range(6)]
+    assert bwd["missing_segments"] == []
+    assert bwd["complete_segment_coverage"] is True
     assert len(bwd["source_live_reports"]) == 6
     assert len(bwd["source_segments"]) == 6
     assert bwd["source_segments"][0] == "01_boss_0"
@@ -1165,6 +1171,50 @@ def test_live_scenario_report_builder_aggregates_segmented_raid_progress(tmp_pat
     assert bwd["scenario_evidence_modes"] == ["route_segment_context"]
     assert bwd["teacher_label_quality"] == "strong"
     assert bwd["ml_training_label"] == "candidate_teacher_label"
+
+
+def test_live_scenario_report_builder_rejects_duplicate_segment_as_full_clear(tmp_path):
+    scenario_dir = tmp_path / "validation_scenarios"
+    write_jsonl(
+        scenario_dir / "validation_scenarios.jsonl",
+        [{"scenario_id": "blackwing_descent_10n", "instance": "Blackwing Descent", "map_id": 669, "difficulty": "normal_10man", "provisioning_ready": True, "boss_count": 6}],
+    )
+    write_jsonl(
+        scenario_dir / "validation_routes.jsonl",
+        [
+            {"scenario_id": "blackwing_descent_10n", "kind": "boss", "step": index + 1, "label": f"Boss {index}", "route_node_id": f"bwd_boss_{index}"}
+            for index in range(6)
+        ],
+    )
+    live_reports = [
+        {
+            "source_live_report": f"duplicate_magmaw_{index}.json",
+            "validation_context": {
+                "scenario_id": "blackwing_descent_10n",
+                "segment_id": "01_boss_0",
+                "route_node_id": "bwd_boss_0",
+                "route_label": "Boss 0",
+                "route_kind": "boss",
+                "route_step": 1,
+                "mechanic_profile": "boss_0",
+            },
+            "trace_entries": 1,
+            "trace": {"entries": [{"action": "raid_boss_killed", "situation": "raid_boss"}]},
+            "summary": {"raid_boss_kills": 1},
+            "evidence": {"failures": 0},
+            "stages": [{"stage": "raid_boss", "passed": True}],
+        }
+        for index in range(6)
+    ]
+
+    bwd = build_reports_from_live_reports(live_reports, scenario_dir)["blackwing_descent_10n"]
+
+    assert bwd["raid_boss_kills"] == 6
+    assert bwd["source_segments"] == ["01_boss_0"]
+    assert bwd["missing_segments"] == [f"{index + 1:02d}_boss_{index}" for index in range(1, 6)]
+    assert bwd["complete_segment_coverage"] is False
+    assert bwd["clear_complete"] is False
+    assert bwd["teacher_label_quality"] == "medium"
 
 
 def test_live_bot_validation_soap_script_does_not_exit_server():

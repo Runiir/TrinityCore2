@@ -29,6 +29,8 @@ def load_routes(path: Path) -> dict[str, list[dict[str, Any]]]:
     grouped: dict[str, list[dict[str, Any]]] = {}
     for row in read_jsonl(path / "validation_routes.jsonl"):
         grouped.setdefault(str(row.get("scenario_id") or ""), []).append(row)
+    for rows in grouped.values():
+        rows.sort(key=lambda row: int(row.get("step") or 0))
     return grouped
 
 
@@ -63,6 +65,24 @@ def unique_strings(*values: Any) -> list[str]:
     return rows
 
 
+def segment_output_name(route: dict[str, Any]) -> str:
+    step = int(route.get("step") or 0)
+    label = str(route.get("label") or route.get("route_node_id") or "segment")
+    slug = "".join(ch.lower() if ch.isalnum() else "_" for ch in label).strip("_")
+    while "__" in slug:
+        slug = slug.replace("__", "_")
+    return f"{step:02d}_{slug or 'segment'}"
+
+
+def expected_segment_ids(routes: list[dict[str, Any]]) -> list[str]:
+    return [segment_output_name(route) for route in routes if route.get("kind") == "boss"]
+
+
+def missing_segments(expected_segments: list[str], source_segments: list[str]) -> list[str]:
+    present = set(source_segments)
+    return [segment for segment in expected_segments if segment not in present]
+
+
 def scenario_evidence_mode(validation_context: dict[str, Any], existing: dict[str, Any]) -> str:
     if validation_context.get("segment_id") or validation_context.get("route_node_id"):
         return "route_segment_context"
@@ -79,10 +99,10 @@ def teacher_label_quality(mode: str) -> str:
     return "weak"
 
 
-def merged_teacher_label_quality(modes: list[str], source_segments: list[str], expected_bosses: int) -> str:
+def merged_teacher_label_quality(modes: list[str], complete_segment_coverage: bool) -> str:
     if "generic_live_trace_inference" in modes:
         return "weak"
-    if "route_segment_context" in modes and expected_bosses > 0 and len(source_segments) >= expected_bosses:
+    if "route_segment_context" in modes and complete_segment_coverage:
         return "strong"
     if "route_segment_context" in modes or "attached_scenario_report" in modes:
         return "medium"
@@ -108,6 +128,7 @@ def infer_report(report: dict[str, Any], scenario: dict[str, Any], routes: list[
     observed_boss_kills = sum(1 for action in actions if action == boss_action)
     observed_boss_kills = max(observed_boss_kills, int(summary.get("raid_boss_kills") or 0) if raid else 0)
     expected_bosses = int(scenario.get("boss_count") or sum(1 for route in routes if route.get("kind") == "boss"))
+    expected_segments = expected_segment_ids(routes)
     trash_actions = sum(1 for action in actions if action in {"trash_action", "trash_heal", "material_farming_source"} or "trash" in action)
     trash_pulls = max(int(existing.get("trash_pulls") or 0), trash_actions)
 
@@ -115,7 +136,11 @@ def infer_report(report: dict[str, Any], scenario: dict[str, Any], routes: list[
     boss_stage = "raid_boss" if raid else "dungeon_boss"
     trash_stage = "raid_trash" if raid else "normal_dungeon_trash"
     boss_kills = max(int(existing.get("raid_boss_kills" if raid else "boss_kills") or 0), observed_boss_kills)
-    clear_complete = bool(existing.get("clear_complete")) or stage_passed(report, full_clear_stage) or (expected_bosses > 0 and boss_kills >= expected_bosses and int(evidence.get("failures") or 0) == 0)
+    source_segments = unique_strings(route_segment_id)
+    missing_segment_rows = missing_segments(expected_segments, source_segments)
+    complete_segment_coverage = bool(expected_segments) and not missing_segment_rows
+    segment_clear_ready = evidence_mode != "route_segment_context" or not expected_segments or complete_segment_coverage
+    clear_complete = bool(existing.get("clear_complete")) or stage_passed(report, full_clear_stage) or (segment_clear_ready and expected_bosses > 0 and boss_kills >= expected_bosses and int(evidence.get("failures") or 0) == 0)
 
     source_live_report = str(report.get("source_live_report") or "")
     segment_results = []
@@ -151,7 +176,10 @@ def infer_report(report: dict[str, Any], scenario: dict[str, Any], routes: list[
         "clear_complete": clear_complete,
         "source_live_report": source_live_report,
         "source_live_reports": [source_live_report] if source_live_report else [],
-        "source_segments": unique_strings(route_segment_id),
+        "expected_segments": expected_segments,
+        "source_segments": source_segments,
+        "missing_segments": missing_segment_rows,
+        "complete_segment_coverage": complete_segment_coverage,
         "source_route_nodes": unique_strings(route_node_id),
         "source_route_labels": unique_strings(route_label),
         "source_mechanic_profiles": unique_strings(mechanic_profile),
@@ -184,12 +212,21 @@ def merge_report_rows(left: dict[str, Any], right: dict[str, Any]) -> dict[str, 
             if extra and extra not in source_reports:
                 source_reports.append(str(extra))
     source_segments = unique_strings(left.get("source_segments") or [], right.get("source_segments") or [])
+    expected_segments = unique_strings(left.get("expected_segments") or [], right.get("expected_segments") or [])
+    missing_segment_rows = missing_segments(expected_segments, source_segments)
+    complete_segment_coverage = bool(expected_segments) and not missing_segment_rows
     source_route_nodes = unique_strings(left.get("source_route_nodes") or [], right.get("source_route_nodes") or [])
     source_route_labels = unique_strings(left.get("source_route_labels") or [], right.get("source_route_labels") or [])
     source_mechanic_profiles = unique_strings(left.get("source_mechanic_profiles") or [], right.get("source_mechanic_profiles") or [])
     segment_results = list(left.get("segment_results") or []) + list(right.get("segment_results") or [])
     evidence_modes = unique_strings(left.get("scenario_evidence_modes") or left.get("scenario_evidence_mode") or [], right.get("scenario_evidence_modes") or right.get("scenario_evidence_mode") or [])
-    label_quality = merged_teacher_label_quality(evidence_modes, source_segments, expected_bosses)
+    label_quality = merged_teacher_label_quality(evidence_modes, complete_segment_coverage)
+    segmented_evidence = "route_segment_context" in evidence_modes and bool(expected_segments)
+    clear_complete = bool(left.get("clear_complete") or right.get("clear_complete"))
+    if segmented_evidence:
+        clear_complete = complete_segment_coverage and max(boss_kills, raid_boss_kills) >= expected_bosses
+    else:
+        clear_complete = clear_complete or (expected_bosses > 0 and max(boss_kills, raid_boss_kills) >= expected_bosses)
     merged.update(
         {
             "prepared_group": bool(left.get("prepared_group") or right.get("prepared_group")),
@@ -199,10 +236,13 @@ def merge_report_rows(left: dict[str, Any], right: dict[str, Any]) -> dict[str, 
             "raid_boss_kills": raid_boss_kills,
             "expected_bosses": expected_bosses,
             "boss_stage_passed": bool(left.get("boss_stage_passed") or right.get("boss_stage_passed") or boss_kills > 0 or raid_boss_kills > 0),
-            "clear_complete": bool(left.get("clear_complete") or right.get("clear_complete") or (expected_bosses > 0 and max(boss_kills, raid_boss_kills) >= expected_bosses)),
+            "clear_complete": clear_complete,
             "source_live_report": source_reports[0] if source_reports else "",
             "source_live_reports": source_reports,
+            "expected_segments": expected_segments,
             "source_segments": source_segments,
+            "missing_segments": missing_segment_rows,
+            "complete_segment_coverage": complete_segment_coverage,
             "source_route_nodes": source_route_nodes,
             "source_route_labels": source_route_labels,
             "source_mechanic_profiles": source_mechanic_profiles,
