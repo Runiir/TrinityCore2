@@ -23,7 +23,7 @@ from tools.bot_ml.extract_world_knowledge import (
 from tools.bot_ml.build_world_planner_manifests import build_planner_manifests
 from tools.bot_ml.validate_world_planner import STAGED_GATES, validate_manifest_coverage
 from tools.bot_ml.build_validation_scenario_manifests import build_manifests as build_validation_scenario_manifests
-from tools.bot_ml.run_live_bot_validation import build_bot_pool_reset_sql, command_script, live_validation_report, main as live_validation_main, parse_json_objects, parse_soap_result, run_worldserver, split_sql_statements, trinity_config_bool
+from tools.bot_ml.run_live_bot_validation import build_bot_pool_reset_sql, command_script, live_validation_report, load_scenario_reports, main as live_validation_main, parse_json_objects, parse_soap_result, run_worldserver, split_sql_statements, trinity_config_bool
 from tools.bot_ml.build_validation_gear_profiles import build_gem_catalog, build_profiles, build_report, fetch_items, load_gem_properties, load_spell_item_enchantments
 from tools.bot_ml.build_validation_provisioning import apply_gear_profiles, build_account_insert_sql, main as provisioning_main, scenario_report, srp6_registration_data
 from tools.bot_ml.validate_validation_provisioning import build_report as provisioning_verify_report
@@ -748,6 +748,37 @@ TC> {"duration_minutes":1,"decisions":2,"total_kills":0,"quests_completed":0}
     assert report["evidence"]["teacher_assisted_kills"] == 1
     assert report["evidence"]["kill_evidence"] == 1
     assert gates["kill_quest"]["passed"] is True
+
+
+def test_live_bot_validation_uses_scenario_reports_for_dungeon_and_raid_gates(tmp_path):
+    output = """
+TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":4,"kills":0,"quests_accepted":0,"quest_objective_progress":0}
+TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"snapshot":{"decision":{"action":"dungeon_boss"},"movement":{"is_moving":true,"distance_moved_since_last_decision":8}}}]}
+TC> {"trace_schema_version":1,"entries":[{"action":"boss_killed","situation":"dungeon_boss"},{"action":"raid_boss_killed","situation":"raid_boss"}]}
+TC> {"duration_minutes":3,"decisions":4,"total_kills":0,"quests_completed":0}
+"""
+    scenario_dir = tmp_path / "scenario_reports"
+    scenario_dir.mkdir()
+    (scenario_dir / "stonecore_5n.json").write_text(
+        json.dumps({"scenario_id": "stonecore_5n", "prepared_group": True, "trash_pulls": 4, "boss_kills": 4, "clear_complete": True}),
+        encoding="utf-8",
+    )
+    (scenario_dir / "blackwing_descent_10n.json").write_text(
+        json.dumps({"scenario_id": "blackwing_descent_10n", "prepared_group": True, "trash_pulls": 2, "raid_boss_kills": 1, "clear_complete": False}),
+        encoding="utf-8",
+    )
+
+    report = live_validation_report(output, scenario_reports=load_scenario_reports(scenario_dir))
+    gates = {stage["stage"]: stage for stage in report["stages"]}
+
+    assert gates["normal_dungeon_trash"]["passed"] is True
+    assert gates["dungeon_boss"]["passed"] is True
+    assert gates["full_stonecore_clear"]["passed"] is True
+    assert gates["raid_trash"]["passed"] is True
+    assert gates["raid_boss"]["passed"] is True
+    assert gates["full_blackwing_descent_clear"]["passed"] is False
+    assert gates["full_blackwing_descent_clear"]["missing"] == ["blackwing_descent_full_clear_evidence"]
+    assert sorted(report["scenario_reports"]) == ["blackwing_descent_10n", "stonecore_5n"]
 
 
 def test_live_bot_validation_soap_script_does_not_exit_server():

@@ -331,6 +331,24 @@ def diagnosis_rows(diagnosis: dict[str, Any]) -> list[dict[str, Any]]:
     return [row for row in rows if isinstance(row, dict)]
 
 
+def load_scenario_reports(path: Path | None) -> dict[str, dict[str, Any]]:
+    if not path or not path.exists():
+        return {}
+    files = [path] if path.is_file() else sorted(path.glob("*.json"))
+    reports: dict[str, dict[str, Any]] = {}
+    for report_path in files:
+        try:
+            payload = json.loads(report_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(payload, dict):
+            continue
+        scenario_id = str(payload.get("scenario_id") or payload.get("id") or report_path.stem)
+        if scenario_id:
+            reports[scenario_id] = payload
+    return reports
+
+
 def nested_get(row: dict[str, Any], path: list[str], default: Any = None) -> Any:
     value: Any = row
     for key in path:
@@ -338,6 +356,88 @@ def nested_get(row: dict[str, Any], path: list[str], default: Any = None) -> Any
             return default
         value = value.get(key)
     return default if value is None else value
+
+
+def scenario_bool(report: dict[str, Any], *keys: str) -> bool:
+    return any(bool(report.get(key)) for key in keys)
+
+
+def scenario_int(report: dict[str, Any], *keys: str) -> int:
+    values = []
+    for key in keys:
+        try:
+            values.append(int(report.get(key) or 0))
+        except (TypeError, ValueError):
+            values.append(0)
+    return max(values or [0])
+
+
+def scenario_group_ready(report: dict[str, Any]) -> bool:
+    return scenario_bool(report, "prepared_group", "group_ready", "provisioning_ready")
+
+
+def scenario_trash_ready(report: dict[str, Any]) -> bool:
+    return scenario_bool(report, "trash_cleared", "trash_passed") or scenario_int(report, "trash_pulls", "trash_kills", "trash_packs_cleared") > 0
+
+
+def scenario_boss_kills(report: dict[str, Any]) -> int:
+    return scenario_int(report, "boss_kills", "raid_boss_kills", "bosses_killed")
+
+
+def scenario_clear_complete(report: dict[str, Any]) -> bool:
+    return scenario_bool(report, "clear_complete", "all_passed", "scenario_passed")
+
+
+def scenario_missing(report: dict[str, Any], missing_name: str) -> list[str]:
+    return [] if report else [missing_name]
+
+
+def scenario_stage_missing(stage: str, scenario_reports: dict[str, dict[str, Any]]) -> list[str]:
+    stonecore = scenario_reports.get("stonecore_5n") or {}
+    bwd = scenario_reports.get("blackwing_descent_10n") or {}
+    if stage == "normal_dungeon_trash":
+        missing = scenario_missing(stonecore, "stonecore_live_clear_report")
+        if stonecore and not scenario_group_ready(stonecore):
+            missing.append("prepared_5man_group")
+        if stonecore and not scenario_trash_ready(stonecore):
+            missing.append("dungeon_trash_evidence")
+        return missing
+    if stage == "dungeon_boss":
+        missing = scenario_missing(stonecore, "stonecore_live_clear_report")
+        if stonecore and not scenario_group_ready(stonecore):
+            missing.append("prepared_5man_group")
+        if stonecore and scenario_boss_kills(stonecore) <= 0:
+            missing.append("dungeon_boss_kill_evidence")
+        return missing
+    if stage == "full_stonecore_clear":
+        missing = scenario_missing(stonecore, "stonecore_live_clear_report")
+        if stonecore and not scenario_group_ready(stonecore):
+            missing.append("prepared_5man_group")
+        if stonecore and not scenario_clear_complete(stonecore):
+            missing.append("stonecore_full_clear_evidence")
+        return missing
+    if stage == "raid_trash":
+        missing = scenario_missing(bwd, "blackwing_descent_live_clear_report")
+        if bwd and not scenario_group_ready(bwd):
+            missing.append("prepared_10man_raid")
+        if bwd and not scenario_trash_ready(bwd):
+            missing.append("raid_trash_evidence")
+        return missing
+    if stage == "raid_boss":
+        missing = scenario_missing(bwd, "blackwing_descent_live_boss_report")
+        if bwd and not scenario_group_ready(bwd):
+            missing.append("prepared_10man_raid")
+        if bwd and scenario_boss_kills(bwd) <= 0:
+            missing.append("raid_boss_kill_evidence")
+        return missing
+    if stage == "full_blackwing_descent_clear":
+        missing = scenario_missing(bwd, "blackwing_descent_live_clear_report")
+        if bwd and not scenario_group_ready(bwd):
+            missing.append("prepared_10man_raid")
+        if bwd and not scenario_clear_complete(bwd):
+            missing.append("blackwing_descent_full_clear_evidence")
+        return missing
+    return []
 
 
 def live_evidence(status: dict[str, Any], diagnosis: dict[str, Any], trace: dict[str, Any], summary: dict[str, Any]) -> dict[str, Any]:
@@ -410,7 +510,7 @@ def live_evidence(status: dict[str, Any], diagnosis: dict[str, Any], trace: dict
     }
 
 
-def live_validation_report(output: str, stages: list[str] | None = None, returncode: int = 0, timed_out: bool = False, command: list[str] | None = None) -> dict[str, Any]:
+def live_validation_report(output: str, stages: list[str] | None = None, returncode: int = 0, timed_out: bool = False, command: list[str] | None = None, scenario_reports: dict[str, dict[str, Any]] | None = None) -> dict[str, Any]:
     payloads = parse_json_objects(output)
     classified = classify_payloads(payloads)
     errors = command_errors(output)
@@ -424,6 +524,7 @@ def live_validation_report(output: str, stages: list[str] | None = None, returnc
     trace_entries = count_trace_entries(trace)
     diagnosis_count = len(diagnosis_rows(diagnosis))
     evidence = live_evidence(status, diagnosis, trace, summary)
+    scenario_reports = scenario_reports or {}
 
     stage_rows = []
     for stage in stages or DEFAULT_STAGES:
@@ -455,10 +556,8 @@ def live_validation_report(output: str, stages: list[str] | None = None, returnc
                 missing.append("material_farming_action_evidence")
             if stage == "smart_loot" and evidence["gear_upgrades"] <= 0 and not evidence["loot_action"]:
                 missing.append("loot_or_gear_upgrade_evidence")
-        elif stage in {"normal_dungeon_trash", "dungeon_boss", "full_stonecore_clear"}:
-            missing.extend(["prepared_5man_group", "stonecore_live_clear_report"])
-        elif stage in {"raid_trash", "raid_boss", "full_blackwing_descent_clear"}:
-            missing.extend(["prepared_10man_raid", "blackwing_descent_live_clear_report"])
+        elif stage in {"normal_dungeon_trash", "dungeon_boss", "full_stonecore_clear", "raid_trash", "raid_boss", "full_blackwing_descent_clear"}:
+            missing.extend(scenario_stage_missing(stage, scenario_reports))
         stage_rows.append({"stage": stage, "passed": not missing, "missing": missing})
 
     passed = sum(1 for row in stage_rows if row["passed"])
@@ -476,6 +575,7 @@ def live_validation_report(output: str, stages: list[str] | None = None, returnc
         "diagnosis": diagnosis,
         "trace": trace,
         "summary": summary,
+        "scenario_reports": scenario_reports,
         "command_errors": errors,
         "evidence": evidence,
         "stages": stage_rows,
@@ -632,6 +732,7 @@ def main() -> int:
     parser.add_argument("--apply-validation-provisioning", action="store_true", help="Apply deterministic Stonecore/BWD validation account and character SQL before running diagnostics.")
     parser.add_argument("--validation-provisioning-config", type=Path, default=Path("experiments/configs/validation_provisioning_cata_001.json"))
     parser.add_argument("--gear-profiles", type=Path, default=Path("dataset/validation_gear_profiles/profiles.json"))
+    parser.add_argument("--scenario-report-dir", type=Path, help="Optional directory or JSON file containing scenario live reports such as stonecore_5n.json and blackwing_descent_10n.json.")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--input-log", type=Path)
     args = parser.parse_args()
@@ -643,6 +744,7 @@ def main() -> int:
     (args.output_dir / "commands.txt").write_text(script, encoding="utf-8")
     bot_pool_tags = args.bot_pool_tag or ["test_account"]
     preparation: dict[str, Any] = {}
+    scenario_reports = load_scenario_reports(args.scenario_report_dir)
     if args.reset_bot_pool:
         preparation["bot_pool_reset"] = prepare_bot_pool_reset(
             args.output_dir,
@@ -676,6 +778,7 @@ def main() -> int:
             "config_autostart": config_autostart,
             "start_command": send_start_command,
             "preparation": preparation,
+            "scenario_reports": scenario_reports,
             "instructions": "Run make host-world-botexp-small for attached diagnostics or execute this script without --dry-run when the worldserver binary and config are ready.",
         }
         write_json(args.output_dir / "report.json", report)
@@ -696,7 +799,7 @@ def main() -> int:
             output, returncode, timed_out, command = run_worldserver(args.worldserver, args.config, args.timeout_sec, script, args.observe_sec)
 
     (args.output_dir / "worldserver_output.log").write_text(output, encoding="utf-8")
-    report = live_validation_report(output, returncode=returncode, timed_out=timed_out, command=command)
+    report = live_validation_report(output, returncode=returncode, timed_out=timed_out, command=command, scenario_reports=scenario_reports)
     report["generated_at_unix"] = int(time.time())
     report["config_autostart"] = config_autostart
     report["start_command"] = send_start_command
