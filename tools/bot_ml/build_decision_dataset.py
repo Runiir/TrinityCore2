@@ -201,7 +201,36 @@ def label_decision(decision: dict[str, Any], indexed_events: dict[tuple[int, int
     }
 
 
-def build_rows(decision: dict[str, Any], labels: dict[str, Any], semantic_stats: dict[tuple[str, int], dict[str, Any]] | None = None) -> list[dict[str, Any]]:
+def default_labels(decision: dict[str, Any], labels: dict[str, Any] | None = None) -> dict[str, Any]:
+    merged = dict(labels or {})
+    reward = float(decision.get("reward") or decision.get("reward_observed") or 0.0)
+    defaults = {
+        "action_success": 1.0 if reward > 0.0 and not int(decision.get("is_failure") or 0) else 0.0,
+        "expected_reward": reward,
+        "death_risk": 0.0,
+        "stuck_risk": 0.0,
+        "quest_completion_likelihood": 0.0,
+        "event_ids_used_for_label": [],
+        "label_window_json": "{}",
+        "label_reason": "provided_labels" if labels else "decision_reward_fallback",
+        "time_to_outcome_sec": None,
+        "no_future_events": True,
+        "ambiguous_label": False,
+    }
+    for key, value in defaults.items():
+        merged.setdefault(key, value)
+    for label in LABELS:
+        merged.setdefault(label, defaults.get(label, 0.0))
+    return merged
+
+
+def build_row(decision: dict[str, Any], labels: dict[str, Any] | None = None, semantic_stats: dict[tuple[str, int], dict[str, Any]] | None = None) -> dict[str, Any]:
+    rows = build_rows(decision, labels, semantic_stats)
+    return rows[0] if rows else {}
+
+
+def build_rows(decision: dict[str, Any], labels: dict[str, Any] | None = None, semantic_stats: dict[tuple[str, int], dict[str, Any]] | None = None) -> list[dict[str, Any]]:
+    labels = default_labels(decision, labels)
     raw = load_json(decision.get("raw_state_json"), {})
     semantic = load_json(decision.get("semantic_state_json"), {})
     candidates = load_json(decision.get("candidate_actions_json"), [])

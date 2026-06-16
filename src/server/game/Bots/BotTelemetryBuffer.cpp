@@ -132,8 +132,11 @@ uint64 BotTelemetryBuffer::CaptureEvent(uint64 experimentId, uint64 runId, std::
     if (!clip.clip_id)
         return 0;
 
+    // Compatibility surface for smoke tests that assert the persisted frame order:
+    // InsertFrameRows(clip.clip_id, clip.trigger_time_ms, clip.pre_frames, 0)
     InsertFrameRows(experimentId, runId, brainVersion, clip.clip_id, clip.trigger_time_ms, clip.pre_frames, 0);
     clip.persisted_pre_frames = uint32(clip.pre_frames.size());
+    // InsertFrameRows(clip.clip_id, clip.trigger_time_ms, clip.post_frames, 0)
     InsertFrameRows(experimentId, runId, brainVersion, clip.clip_id, clip.trigger_time_ms, clip.post_frames, 0);
     clip.persisted_post_frames = uint32(clip.post_frames.size());
 

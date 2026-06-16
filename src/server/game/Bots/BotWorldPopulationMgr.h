@@ -290,6 +290,9 @@ private:
         std::string LastCombatRejectReason;
         uint32 LastDecisionQuestId = 0;
         ObjectGuid LastDecisionTargetGuid;
+        uint32 LastDecisionFingerprintHash = 0;
+        uint32 LastDecisionFingerprintRepeatCount = 0;
+        uint32 LastDecisionFingerprintFailureCount = 0;
 
         struct DecisionTraceEntry
         {
@@ -316,6 +319,9 @@ private:
         uint64 LastLootMoney = 0;
         bool LastLootStateCleared = false;
         uint64 NextLootAttemptMs = 0;
+        uint64 NextGearDecisionMs = 0;
+        uint64 NextProfessionDecisionMs = 0;
+        bool PreferMaterialMemoryAction = false;
         std::string LastNoProgressReason;
         std::map<std::string, uint64> NoProgressCooldownUntilMs;
         std::map<uint64, uint64> QuestGiverCooldownUntilMs;
@@ -783,15 +789,20 @@ private:
     void RecordReplayEvent(WorldBotState const& state, Player* bot, char const* eventType, ReplayRecord const& record, char const* result, char const* contextJson = nullptr);
     void RecordActivityStart(WorldBotState& state, Player* bot);
     void RecordActivityStop(WorldBotState const& state, Player* bot = nullptr);
+    bool TrySmartGearDecision(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, std::string& situation, std::string& action);
+    bool TryProfessionMemoryAction(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, std::string& situation, std::string& action);
     void RecordGearEvaluation(WorldBotState& state, Player* bot, BotGearUpgradeEvaluation const& evaluation, char const* rawJson, char const* semanticJson);
     void RecordQuestObjectiveProgressForTarget(WorldBotState& state, Player* bot, Unit const* target, char const* rawJson, char const* semanticJson);
     void RecordQuestEvent(WorldBotState& state, Player* bot, char const* eventType, uint32 questId, Unit const* target, char const* result, char const* rawJson, char const* semanticJson, uint32 valueInt = 0, uint32 itemId = 0, char const* contextJson = nullptr);
+    void RecordObjectiveClusterMemory(WorldBotState const& state, Player* bot, char const* eventType, uint32 questId, char const* result, uint32 valueInt, char const* contextJson) const;
+    void RememberVisibleSourceMemory(WorldBotState const& state, Player* bot, WorldObject* object, char const* poiType, uint32 entry, uint32 questId, char const* metadataJson) const;
     void RecordExperimentSegmentEvent(Player* bot, char const* eventType, char const* result, uint32 questId, Unit const* target, uint64 clipId, char const* rawJson, char const* semanticJson);
     void RecordQuestReplay(WorldBotState const& state, Player* bot, char const* replayType, uint32 questId, char const* rawJson, char const* semanticJson, char const* actionJson, char const* failureJson);
     void RecordBossReplay(WorldBotState const& state, Player* bot, Unit const* boss, BossMechanicFeatures const& features, char const* replayType, char const* rawJson, char const* semanticJson, char const* actionJson, char const* failureJson);
     uint64 RecordDecisionReplay(WorldBotState const& state, Player* bot, Unit const* target, char const* situation, char const* action, char const* rawJson, char const* semanticJson, char const* candidateJson, BotActivityScore const& chosenActivity, bool failure);
     void RecordEvent(WorldBotState& state, Player* bot, char const* eventType, Unit const* target, char const* result, char const* rawJson, char const* semanticJson, float valueFloat = 0.0f, uint32 valueInt = 0, uint32 spellId = 0);
     void RecordDecision(WorldBotState& state, Player* bot, char const* situation, char const* action, Unit const* target, char const* rawJson, char const* semanticJson, std::vector<BotActivityScore> const& activityScores, BotActivityScore const& chosenActivity, BotRolePowerBreakdown const& power, bool failure, bool rare);
+    void RecordDecisionFingerprintMemory(WorldBotState& state, Player* bot, char const* situation, char const* action, BotActivityScore const& chosenActivity, bool failure) const;
     void RecordDecisionTrace(WorldBotState& state, char const* situation, char const* action, Unit const* target, uint32 questId, char const* result, char const* reasonCode);
     BotDiagnosis BuildBotDiagnosis(WorldBotState const& state, Player const* bot) const;
     std::string BuildBotDiagnosisObjectJson(WorldBotState const& state, Player const* bot) const;

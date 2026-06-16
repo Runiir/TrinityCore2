@@ -1,8 +1,8 @@
 schema: '2.0'
 stages:
   capture:
-    cmd: python experiments/run_experiment.py 
-      experiments/configs/headless_autonomous_loop_smoke_001.json --raw-dir 
+    cmd: python experiments/run_experiment.py
+      experiments/configs/headless_autonomous_loop_smoke_001.json --raw-dir
       dataset/raw --runs-dir experiments/runs --live-dir dvclive --local
     deps:
     - path: experiments/configs/headless_autonomous_loop_smoke_001.json
@@ -30,8 +30,8 @@ stages:
       size: 523539
       nfiles: 90
   preprocess:
-    cmd: python ml/preprocessing/preprocess_frames.py --raw-dir dataset/raw 
-      --output dataset/processed/frames.jsonl --manifest 
+    cmd: python ml/preprocessing/preprocess_frames.py --raw-dir dataset/raw
+      --output dataset/processed/frames.jsonl --manifest
       dataset/processed/manifest.json
     deps:
     - path: dataset/raw
@@ -53,7 +53,7 @@ stages:
       md5: 41b7d8575e092ee4f16b84f8b71e1034
       size: 756
   train:
-    cmd: python ml/training/train_action_frequency.py --frames 
+    cmd: python ml/training/train_action_frequency.py --frames
       dataset/processed/frames.jsonl --model models/action_frequency_model.json
     deps:
     - path: dataset/processed/frames.jsonl
@@ -70,9 +70,9 @@ stages:
       md5: c6acf526c0cd60ede38070c19c5693dd
       size: 405
   evaluate:
-    cmd: python ml/evaluation/evaluate_action_frequency.py --frames 
-      dataset/processed/frames.jsonl --model models/action_frequency_model.json 
-      --metrics dataset/evaluations/metrics.json --report 
+    cmd: python ml/evaluation/evaluate_action_frequency.py --frames
+      dataset/processed/frames.jsonl --model models/action_frequency_model.json
+      --metrics dataset/evaluations/metrics.json --report
       dataset/evaluations/report.json
     deps:
     - path: dataset/processed/frames.jsonl
@@ -96,3 +96,192 @@ stages:
       hash: md5
       md5: a05bd5e046a3faedf12014aeeaa04f71
       size: 352
+  world_knowledge:
+    cmd: python -m tools.bot_ml.extract_world_knowledge --output-dir
+      dataset/world_knowledge
+    deps:
+    - path: tools/bot_ml/common.py
+      hash: md5
+      md5: 476b615368f0126adf17fababbc05929
+      size: 5208
+    - path: tools/bot_ml/extract_world_knowledge.py
+      hash: md5
+      md5: c37a124fe1cb7465d4a7aaf2ecced622
+      size: 17704
+    outs:
+    - path: dataset/world_knowledge
+      hash: md5
+      md5: b8f1c1698f147d49e12d97ad5ac5537b.dir
+      size: 128605645
+      nfiles: 7
+  world_planner:
+    cmd: python -m tools.bot_ml.build_world_planner_manifests --world-dir
+      dataset/world_knowledge --output-dir dataset/world_planner
+    deps:
+    - path: dataset/world_knowledge
+      hash: md5
+      md5: b8f1c1698f147d49e12d97ad5ac5537b.dir
+      size: 128605645
+      nfiles: 7
+    - path: tools/bot_ml/build_world_planner_manifests.py
+      hash: md5
+      md5: e117eaf2a455e17a99ea53f78a2e1e1b
+      size: 10680
+    - path: tools/bot_ml/common.py
+      hash: md5
+      md5: 476b615368f0126adf17fababbc05929
+      size: 5208
+    outs:
+    - path: dataset/world_planner
+      hash: md5
+      md5: 54887c497ed9a8b84a2751fb5f69d044.dir
+      size: 100352883
+      nfiles: 7
+  world_planner_validate:
+    cmd: python -m tools.bot_ml.validate_world_planner --planner-dir
+      dataset/world_planner --report
+      dataset/world_validation/planner_report.json
+    deps:
+    - path: dataset/world_planner
+      hash: md5
+      md5: 54887c497ed9a8b84a2751fb5f69d044.dir
+      size: 100352883
+      nfiles: 7
+    - path: tools/bot_ml/common.py
+      hash: md5
+      md5: 476b615368f0126adf17fababbc05929
+      size: 5208
+    - path: tools/bot_ml/validate_world_planner.py
+      hash: md5
+      md5: 2ccfe93f7efdc74984bf59b0520a6dc5
+      size: 6945
+    outs:
+    - path: dataset/world_validation/planner_report.json
+      hash: md5
+      md5: 43579525d39abf055b258ff11e21daa0
+      size: 12794
+  validation_provisioning:
+    cmd: python -m tools.bot_ml.build_validation_provisioning --config
+      experiments/configs/validation_provisioning_cata_001.json --gear-profiles
+      dataset/validation_gear_profiles/profiles.json --output-dir
+      dataset/validation_provisioning
+    deps:
+    - path: dataset/validation_gear_profiles
+      hash: md5
+      md5: f85466048d08b085c762a18289305af4.dir
+      size: 163765
+      nfiles: 3
+    - path: experiments/configs/validation_provisioning_cata_001.json
+      hash: md5
+      md5: b4badcede6ea8f36fb3a2a2cc7f1ec8c
+      size: 3727
+    - path: tools/bot_ml/build_validation_provisioning.py
+      hash: md5
+      md5: b95f3e914771d0d3ecd038f7fba7e62a
+      size: 16198
+    outs:
+    - path: dataset/validation_provisioning
+      hash: md5
+      md5: 8849be37519ff29c93881693b9041f43.dir
+      size: 232129
+      nfiles: 5
+  validation_gear:
+    cmd: python -m tools.bot_ml.build_validation_gear_profiles --config
+      experiments/configs/validation_provisioning_cata_001.json --output-dir
+      dataset/validation_gear_profiles
+    deps:
+    - path: data/dbc/enUS/GemProperties.dbc
+      hash: md5
+      md5: edfb518041fec829681d8a1bf2d7219f
+      size: 21693
+    - path: data/dbc/enUS/Item-sparse.db2
+      hash: md5
+      md5: 61c97067db73be61379002ef18993c5d
+      size: 30858357
+    - path: data/dbc/enUS/Item.db2
+      hash: md5
+      md5: 4d1b788fcac7adfbb6bdbf3ece9689a5
+      size: 2072849
+    - path: data/dbc/enUS/SpellItemEnchantment.dbc
+      hash: md5
+      md5: 3b721c083b10f3b73c0614bd0ae266ff
+      size: 337263
+    - path: experiments/configs/validation_provisioning_cata_001.json
+      hash: md5
+      md5: b4badcede6ea8f36fb3a2a2cc7f1ec8c
+      size: 3727
+    - path: tools/bot_ml/build_validation_gear_profiles.py
+      hash: md5
+      md5: 9b1ce628da3fcc638c6a34ab5029a0d3
+      size: 25022
+    - path: tools/bot_ml/build_validation_provisioning.py
+      hash: md5
+      md5: b95f3e914771d0d3ecd038f7fba7e62a
+      size: 16198
+    - path: tools/bot_ml/extract_world_knowledge.py
+      hash: md5
+      md5: c37a124fe1cb7465d4a7aaf2ecced622
+      size: 17704
+    outs:
+    - path: dataset/validation_gear_profiles
+      hash: md5
+      md5: f85466048d08b085c762a18289305af4.dir
+      size: 163765
+      nfiles: 3
+  validation_provisioning_verify:
+    cmd: python -m tools.bot_ml.validate_validation_provisioning --config
+      experiments/configs/validation_provisioning_cata_001.json --gear-profiles
+      dataset/validation_gear_profiles/profiles.json --provisioning-report
+      dataset/validation_provisioning/report.json --output
+      dataset/validation_provisioning_verification/report.json
+    deps:
+    - path: data/dbc/enUS/GemProperties.dbc
+      hash: md5
+      md5: edfb518041fec829681d8a1bf2d7219f
+      size: 21693
+    - path: data/dbc/enUS/Item-sparse.db2
+      hash: md5
+      md5: 61c97067db73be61379002ef18993c5d
+      size: 30858357
+    - path: data/dbc/enUS/Item.db2
+      hash: md5
+      md5: 4d1b788fcac7adfbb6bdbf3ece9689a5
+      size: 2072849
+    - path: data/dbc/enUS/SpellItemEnchantment.dbc
+      hash: md5
+      md5: 3b721c083b10f3b73c0614bd0ae266ff
+      size: 337263
+    - path: dataset/validation_gear_profiles
+      hash: md5
+      md5: f85466048d08b085c762a18289305af4.dir
+      size: 163765
+      nfiles: 3
+    - path: dataset/validation_provisioning/report.json
+      hash: md5
+      md5: 599df7134fe452195c13dc813f34948f
+      size: 2170
+    - path: experiments/configs/validation_provisioning_cata_001.json
+      hash: md5
+      md5: b4badcede6ea8f36fb3a2a2cc7f1ec8c
+      size: 3727
+    - path: tools/bot_ml/build_validation_gear_profiles.py
+      hash: md5
+      md5: 9b1ce628da3fcc638c6a34ab5029a0d3
+      size: 25022
+    - path: tools/bot_ml/build_validation_provisioning.py
+      hash: md5
+      md5: b95f3e914771d0d3ecd038f7fba7e62a
+      size: 16198
+    - path: tools/bot_ml/extract_world_knowledge.py
+      hash: md5
+      md5: c37a124fe1cb7465d4a7aaf2ecced622
+      size: 17704
+    - path: tools/bot_ml/validate_validation_provisioning.py
+      hash: md5
+      md5: 26e6c29b57e142a61bd9518c4c8cb8d3
+      size: 13524
+    outs:
+    - path: dataset/validation_provisioning_verification/report.json
+      hash: md5
+      md5: 5f69417b0789aebe56fb2c704dfceb7d
+      size: 511

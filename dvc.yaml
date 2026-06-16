@@ -1,4 +1,70 @@
 stages:
+  world_knowledge:
+    cmd: python -m tools.bot_ml.extract_world_knowledge --output-dir dataset/world_knowledge
+    deps:
+    - tools/bot_ml/extract_world_knowledge.py
+    - tools/bot_ml/common.py
+    outs:
+    - dataset/world_knowledge:
+        persist: true
+  world_planner:
+    cmd: python -m tools.bot_ml.build_world_planner_manifests --world-dir dataset/world_knowledge --output-dir dataset/world_planner
+    deps:
+    - tools/bot_ml/build_world_planner_manifests.py
+    - tools/bot_ml/common.py
+    - dataset/world_knowledge
+    outs:
+    - dataset/world_planner:
+        persist: true
+  world_planner_validate:
+    cmd: python -m tools.bot_ml.validate_world_planner --planner-dir dataset/world_planner --report dataset/world_validation/planner_report.json
+    deps:
+    - tools/bot_ml/validate_world_planner.py
+    - tools/bot_ml/common.py
+    - dataset/world_planner
+    metrics:
+    - dataset/world_validation/planner_report.json:
+        cache: false
+  validation_gear:
+    cmd: python -m tools.bot_ml.build_validation_gear_profiles --config experiments/configs/validation_provisioning_cata_001.json --output-dir dataset/validation_gear_profiles
+    deps:
+    - tools/bot_ml/build_validation_gear_profiles.py
+    - tools/bot_ml/build_validation_provisioning.py
+    - tools/bot_ml/extract_world_knowledge.py
+    - experiments/configs/validation_provisioning_cata_001.json
+    - data/dbc/enUS/Item.db2
+    - data/dbc/enUS/Item-sparse.db2
+    - data/dbc/enUS/SpellItemEnchantment.dbc
+    - data/dbc/enUS/GemProperties.dbc
+    outs:
+    - dataset/validation_gear_profiles:
+        persist: true
+  validation_provisioning:
+    cmd: python -m tools.bot_ml.build_validation_provisioning --config experiments/configs/validation_provisioning_cata_001.json --gear-profiles dataset/validation_gear_profiles/profiles.json --output-dir dataset/validation_provisioning
+    deps:
+    - tools/bot_ml/build_validation_provisioning.py
+    - experiments/configs/validation_provisioning_cata_001.json
+    - dataset/validation_gear_profiles
+    outs:
+    - dataset/validation_provisioning:
+        persist: true
+  validation_provisioning_verify:
+    cmd: python -m tools.bot_ml.validate_validation_provisioning --config experiments/configs/validation_provisioning_cata_001.json --gear-profiles dataset/validation_gear_profiles/profiles.json --provisioning-report dataset/validation_provisioning/report.json --output dataset/validation_provisioning_verification/report.json
+    deps:
+    - tools/bot_ml/validate_validation_provisioning.py
+    - tools/bot_ml/build_validation_gear_profiles.py
+    - tools/bot_ml/build_validation_provisioning.py
+    - tools/bot_ml/extract_world_knowledge.py
+    - experiments/configs/validation_provisioning_cata_001.json
+    - dataset/validation_gear_profiles
+    - dataset/validation_provisioning/report.json
+    - data/dbc/enUS/Item.db2
+    - data/dbc/enUS/Item-sparse.db2
+    - data/dbc/enUS/SpellItemEnchantment.dbc
+    - data/dbc/enUS/GemProperties.dbc
+    metrics:
+    - dataset/validation_provisioning_verification/report.json:
+        cache: false
   capture:
     cmd: python experiments/run_experiment.py ${capture.config} --raw-dir 
       dataset/raw --runs-dir experiments/runs --live-dir ${tracking.live_dir} 

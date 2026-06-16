@@ -999,7 +999,7 @@ private:
     static bool HandleExportCommand(ChatHandler* handler, char const* /*args*/)
     {
         if (handler)
-            handler->PSendSysMessage("{\"ok\":true,\"action\":\"botexp_export\",\"storage\":\"character_database_tables\",\"tables\":[\"experiment_bot_runs\",\"experiment_bot_segments\",\"experiment_bot_events\",\"experiment_bot_decisions\",\"experiment_bot_activities\",\"experiment_bot_replay_records\",\"experiment_bot_clips\",\"experiment_bot_clip_frames\",\"bot_semantic_outcome_stats\",\"bot_memory_pois\",\"bot_memory_danger_zones\",\"bot_memory_failed_paths\",\"bot_memory_safe_positions\",\"bot_policy_models\",\"bot_policy_evaluations\"],\"embedding_feature_schema\":\"bot_semantic_phase6_v1\",\"policy_feature_schema\":\"bot_policy_features_v1\",\"failure_reason\":null}");
+            handler->PSendSysMessage("{\"ok\":true,\"action\":\"botexp_export\",\"storage\":\"character_database_tables\",\"tables\":[\"experiment_bot_runs\",\"experiment_bot_segments\",\"experiment_bot_events\",\"experiment_bot_decisions\",\"experiment_bot_activities\",\"experiment_bot_replay_records\",\"experiment_bot_clips\",\"experiment_bot_clip_frames\",\"bot_semantic_outcome_stats\",\"bot_memory_pois\",\"bot_memory_danger_zones\",\"bot_memory_failed_paths\",\"bot_memory_safe_positions\",\"bot_memory_objective_clusters\",\"bot_memory_recipe_sources\",\"bot_memory_material_sources\",\"bot_memory_daily_cooldowns\",\"bot_memory_transport_usage\",\"bot_memory_decision_fingerprints\",\"bot_policy_models\",\"bot_policy_evaluations\"],\"embedding_feature_schema\":\"bot_semantic_phase6_v1\",\"policy_feature_schema\":\"bot_policy_features_v1\",\"failure_reason\":null}");
         return true;
     }
 

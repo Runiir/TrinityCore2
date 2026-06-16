@@ -168,7 +168,11 @@ def test_quest_first_portfolio_routing_surface():
     pickup_search = function_body(mgr, "bool BotWorldPopulationMgr::FindQuestPickupDestination")
     portfolio = function_body(mgr, "BotWorldPopulationMgr::QuestPortfolioPlan BotWorldPopulationMgr::BuildQuestPortfolioPlan")
     questing = function_body(mgr, "BotWorldPopulationMgr::QuestActionResult BotWorldPopulationMgr::TryQuesting")
+    supported = function_body(mgr, "bool BotWorldPopulationMgr::HasSimpleSupportedObjective")
+    select_objective = function_body(mgr, "Unit* BotWorldPopulationMgr::SelectQuestObjectiveTarget")
+    route_objective = function_body(mgr, "bool BotWorldPopulationMgr::ResolveObjectiveRoutePoint")
     debug = function_body(mgr, "std::string BotWorldPopulationMgr::GetBotDebugJson")
+    update_bot = function_body(mgr, "void BotWorldPopulationMgr::UpdateBot")
 
     for symbol in [
         "QuestClassification",
@@ -190,6 +194,17 @@ def test_quest_first_portfolio_routing_surface():
     assert "GetBreadcrumbForQuestId()" in classify
     assert "creature_questender" in classify
     assert "gameobject_questender" in classify
+    assert "quest->IsSeasonal()" in supported
+    assert "QUEST_SPECIAL_FLAGS_KILL" in supported
+    assert "UNIT_FLAG_NON_ATTACKABLE" in supported
+    assert "ContainsInsensitive(tmpl->Name, \"DND\")" in supported
+
+    assert "creature_loot_template" in select_objective
+    assert "creature_loot_template" in route_objective
+    assert "gameobject_loot_template" in route_objective
+    assert "creature_loot_spawn" in route_objective
+    assert "gameobject_loot_spawn" in route_objective
+    assert_ordered(route_objective, "creature_loot_spawn", "quest_poi")
 
     assert "{ 100.0f, 250.0f, 500.0f, 900.0f, 1500.0f }" in pickup_search
     assert "creature_queststarter" in pickup_search
@@ -207,8 +222,85 @@ def test_quest_first_portfolio_routing_surface():
         "objective_area_selected",
         "chain_step_accepted",
         "chain_step_turnin",
+        "complete_quest_db_fallback",
+        "target_not_visible_travel_to_spawn",
     ]:
         assert event_type in questing
+
+    assert_ordered(
+        questing,
+        "bot->CanCompleteQuest(state.QuestWork.ActiveQuestId)",
+        "completed_counter_reconciled",
+        "_metrics.Kills += delta;",
+        "RecordEvent(state, bot, \"mob_killed\", completedTarget, \"quest_counter_reconciled\"",
+        "SetQuestWorkPhase(state, \"move_to_turnin\");",
+    )
+
+    assert_ordered(
+        questing,
+        "ObjectAccessor::GetUnit(*bot, state.QuestWork.SelectedTargetGuid)",
+        "selectedMatchesPlan",
+        "if (!objectiveTarget)",
+        "objectiveTarget = SelectQuestObjectiveTarget(bot, plan);",
+        "state.QuestWork.SelectedTargetGuid = objectiveTarget->GetGUID();",
+        "state.TargetGuid = objectiveTarget->GetGUID();",
+        "BotClassSpecActionProfileStore::Build(bot, role.c_str())",
+        "result.Action = \"move_to_quest_mob\";",
+        "BotActionResult pull = executor.Pull(bot, objectiveTarget);",
+    )
+
+    assert "TrySmartGearDecision(state, bot, power, stage, chosenActivity.Activity, situation, action)" in update_bot
+    assert "state.LastDecisionHandler = \"smart_loot\";" in update_bot
+    assert "BotGearUpgradeEvaluation evaluation = BotLongTermProgressionBrain::EvaluateGearUpgrade(bot);" in mgr
+    assert "lootDecision = evaluation.Upgrade ? \"need_upgrade\" : (evaluation.CanEquip || hasValue ? \"greed_value\" : \"pass_invalid\")" in mgr
+    assert "bot->EquipItem(equipDest, item, true);" in mgr
+    assert "RecordEvent(state, bot, \"smart_loot_decision\"" in mgr
+    assert "RecordGearEvaluation(state, bot, evaluation" in mgr
+    assert "std::string(eventType) == \"smart_loot_decision\"" in mgr
+    assert "EvaluateGearTemplate(Player const* bot, ItemTemplate const* proto" in read(ROOT / "src/server/game/Bots/BotLongTermProgressionBrain.h")
+    assert "BotLongTermProgressionBrain::EvaluateGearTemplate" in read(ROOT / "src/server/game/Bots/BotLongTermProgressionBrain.cpp")
+    assert "FROM creature_loot_template clt INNER JOIN creature c ON c.id = clt.Entry" in mgr
+    assert "FROM gameobject_loot_template glt INNER JOIN gameobject g ON g.id = glt.Entry" in mgr
+    assert "smart_loot_candidates" in mgr
+    assert "BotLongTermProgressionBrain::EvaluateGearTemplate(bot, proto)" in mgr
+    assert "valid_action_mask" in mgr
+    assert "RecordDecisionReplay(state, bot, nullptr, \"smart_loot_roll_policy\", lootDecision" in mgr
+    assert "TryProfessionMemoryAction(state, bot, power, stage, chosenActivity.Activity, situation, action)" in update_bot
+    assert "state.LastDecisionHandler = \"profession_memory\";" in update_bot
+    assert "NextProfessionDecisionMs" in mgr_header
+    assert "PreferMaterialMemoryAction" in mgr_header
+    assert "SELECT source_type, source_entry, recipe_spell_id, item_id FROM bot_memory_recipe_sources" in mgr
+    assert "RecordEvent(state, bot, \"profession_recipe_source\"" in mgr
+    assert "state.PreferMaterialMemoryAction = true;" in mgr
+    assert "situation = \"profession_recipe_acquisition\";" in mgr
+    assert "action = \"plan_profession_recipe_source\";" in mgr
+    assert "SELECT source_type, source_entry, item_id, observed_count, map_id, x, y, z FROM bot_memory_material_sources" in mgr
+    assert "source\\\":\\\"world_item_source_index" in mgr
+    assert "FROM creature_loot_template clt INNER JOIN creature c ON c.id = clt.Entry" in mgr
+    assert "FROM gameobject_loot_template glt INNER JOIN gameobject g ON g.id = glt.Entry" in mgr
+    assert "ORDER BY ((x - %f) * (x - %f) + (y - %f) * (y - %f)) LIMIT 1" in mgr
+    assert "INSERT INTO bot_memory_material_sources" in mgr
+    assert "bot->GetMotionMaster()->MovePoint(0, x, y, z, true);" in mgr
+    assert "RecordEvent(state, bot, \"material_farming_source\"" in mgr
+    assert "state.PreferMaterialMemoryAction = false;" in mgr
+    assert "situation = \"material_farming\";" in mgr
+    assert "action = \"plan_material_farming_source\";" in mgr
+    assert_ordered(
+        mgr,
+        "if (state.PreferMaterialMemoryAction)",
+        "if (emitMaterialSource())",
+        "return emitRecipeSource();",
+        "if (emitRecipeSource())",
+        "if (emitMaterialSource())",
+    )
+
+    assert_ordered(
+        questing,
+        "SelectQuestGiver(bot, true, &questId, &state)",
+        "turnin_counter_reconciled",
+        "RecordEvent(state, bot, \"mob_killed\", nullptr, \"turnin_counter_reconciled\"",
+        "bot->RewardQuest(quest, rewardChoice, turnIn, true);",
+    )
 
     assert_ordered(
         questing,
@@ -239,6 +331,7 @@ def test_botauto_diagnosis_and_trace_surface():
     mgr_header = read(ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h")
     mgr = read(BOT_MGR)
     commands = read(BOT_COMMANDS)
+    update_bot = function_body(mgr, "void BotWorldPopulationMgr::UpdateBot")
     diagnose = function_body(mgr, "std::string BotWorldPopulationMgr::GetBotDiagnosisJson")
     trace = function_body(mgr, "std::string BotWorldPopulationMgr::GetBotTraceJson")
     build_diagnosis = function_body(mgr, "BotWorldPopulationMgr::BotDiagnosis BotWorldPopulationMgr::BuildBotDiagnosis")
@@ -253,6 +346,16 @@ def test_botauto_diagnosis_and_trace_surface():
     assert '{ "trace",   rbac::RBAC_PERM_COMMAND_HEALERBOT' in commands
     assert "GetBotDiagnosisJson" in commands
     assert "GetBotTraceJson" in commands
+    assert "combatOrCasting" in update_bot
+    assert "bot->IsInCombat() || bot->HasUnitState(UNIT_STATE_CASTING)" in update_bot
+    assert "bot->GetVictim() && bot->GetVictim()->IsAlive()" in update_bot
+    assert_ordered(
+        update_bot,
+        "Unit* target = state.TargetGuid.IsEmpty()",
+        "bool combatOrCasting",
+        "if (!combatOrCasting && moving && moved < 0.2f)",
+        "if (state.StuckTimer >= 6000)",
+    )
 
     for symbol in [
         "LastDecisionTickMs",
@@ -273,7 +376,9 @@ def test_botauto_diagnosis_and_trace_surface():
     assert "BuildBotDecisionSnapshotJson(state, bot)" in diagnose
     assert "BuildBotDiagnosisObjectJson(state, bot)" in diagnose
     assert "trace_schema_version" in trace
-    assert "BuildBotTraceEntriesJson(*selected, limit)" in trace
+    assert '\\"bots\\":[' in trace
+    assert "BuildBotTraceEntriesJson(state, normalizedLimit)" in trace
+    assert "BuildBotTraceEntriesJson(*selected, normalizedLimit)" in trace
 
     for code in [
         "moving_but_not_progressing",
@@ -295,6 +400,12 @@ def test_botauto_diagnosis_and_trace_surface():
         "current_action",
         "blocker",
         "evidence",
+        "active_quest_cluster_id",
+        "quest_cooldown_count",
+        "no_progress_cooldown_count",
+        "decision_fingerprint_hash",
+        "decision_fingerprint_repeat_count",
+        "decision_fingerprint_failure_count",
         "next_expected_action",
         "suggested_investigation",
     ]:
@@ -309,6 +420,11 @@ def test_botauto_diagnosis_and_trace_surface():
         "routing",
         "decision",
         "recent_failures",
+        "fingerprint_hash",
+        "fingerprint_repeat_count",
+        "fingerprint_failure_count",
+        "quest_cooldown_count",
+        "no_progress_cooldown_count",
     ]:
         assert section in snapshot_json
 
@@ -419,9 +535,65 @@ def test_export_smoke_lists_old_and_new_bot_experiment_tables():
         "bot_memory_danger_zones",
         "bot_memory_failed_paths",
         "bot_memory_safe_positions",
+        "bot_memory_objective_clusters",
+        "bot_memory_recipe_sources",
+        "bot_memory_material_sources",
+        "bot_memory_daily_cooldowns",
+        "bot_memory_transport_usage",
+        "bot_memory_decision_fingerprints",
         "bot_policy_models",
         "bot_policy_evaluations",
     ]
+
+
+def test_extended_bot_memory_schema_and_decision_fingerprint_surface():
+    schema = read(ROOT / "sql/updates/characters/4.3.4/2026_06_16_00_characters_bot_extended_memory.sql")
+    mgr_header = read(ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h")
+    mgr = read(BOT_MGR)
+    record_decision = function_body(mgr, "void BotWorldPopulationMgr::RecordDecision")
+    fingerprint = function_body(mgr, "void BotWorldPopulationMgr::RecordDecisionFingerprintMemory")
+    record_quest = function_body(mgr, "void BotWorldPopulationMgr::RecordQuestEvent")
+    objective_cluster = function_body(mgr, "void BotWorldPopulationMgr::RecordObjectiveClusterMemory")
+    remember_poi = function_body(mgr, "void BotWorldPopulationMgr::RememberPoi")
+    visible_source = function_body(mgr, "void BotWorldPopulationMgr::RememberVisibleSourceMemory")
+    diagnosis_json = function_body(mgr, "std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson")
+
+    for table in [
+        "bot_memory_objective_clusters",
+        "bot_memory_recipe_sources",
+        "bot_memory_material_sources",
+        "bot_memory_daily_cooldowns",
+        "bot_memory_transport_usage",
+        "bot_memory_decision_fingerprints",
+    ]:
+        assert f"CREATE TABLE IF NOT EXISTS `{table}`" in schema
+
+    for column in [
+        "`cluster_id` int unsigned NOT NULL",
+        "`recipe_spell_id` int unsigned NOT NULL",
+        "`item_id` int unsigned NOT NULL",
+        "`available_at` datetime NOT NULL",
+        "`transport_type` varchar(64) NOT NULL",
+        "`fingerprint_hash` int unsigned NOT NULL",
+        "UNIQUE KEY `uniq_bot_fingerprint` (`bot_guid`, `fingerprint_hash`)",
+    ]:
+        assert column in schema
+
+    assert "RecordDecisionFingerprintMemory" in mgr_header
+    assert "RecordDecisionFingerprintMemory(state, bot, situation, action, chosenActivity, failure);" in record_decision
+    assert "INSERT INTO bot_memory_decision_fingerprints" in fingerprint
+    assert "ON DUPLICATE KEY UPDATE repeat_count = repeat_count + 1" in fingerprint
+    assert "FeatureSchemaHash(fingerprint.str())" in fingerprint
+    assert "LastDecisionFingerprintRepeatCount" in mgr_header
+    assert "SELECT repeat_count, failure_count FROM bot_memory_decision_fingerprints" in fingerprint
+    assert "fingerprint_source" in fingerprint
+    assert "RecordObjectiveClusterMemory(state, bot, eventType, questId, result, valueInt, contextJson);" in record_quest
+    assert "INSERT INTO bot_memory_objective_clusters" in objective_cluster
+    assert "DATE_ADD(NOW(), INTERVAL 2 MINUTE)" in objective_cluster
+    assert "RememberVisibleSourceMemory(state, bot, object, poiType, entry, questId, metadataJson.c_str());" in remember_poi
+    assert "INSERT INTO bot_memory_recipe_sources" in visible_source
+    assert "INSERT INTO bot_memory_material_sources" in visible_source
+    assert "decision_fingerprint_repeat_count" in diagnosis_json
 
 
 def test_policy_model_shadow_assist_uses_registered_artifact_and_safe_gate():
@@ -513,6 +685,8 @@ def test_host_world_makefile_can_generate_always_on_recording_config():
     assert "BOTWORLD_USE_SAVED_POSITION ?= 1" in makefile
     assert "host-world-botexp-real" in makefile
     assert "host-world-botexp-watch" in makefile
+    assert "bot-live-validate" in makefile
+    assert "tools.bot_ml.run_live_bot_validation" in makefile
     assert "BotWorld.AutoStart = $(BOTWORLD_AUTOSTART)" in makefile
     assert "BotWorld.AutoStartRecording = $(BOTWORLD_AUTOSTART_RECORDING)" in makefile
     assert "BotWorld.AutoRecordingWindowMinutes = $(BOTWORLD_RECORDING_WINDOW_MINUTES)" in makefile

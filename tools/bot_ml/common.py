@@ -24,6 +24,12 @@ EXPORT_TABLES = [
     "bot_memory_danger_zones",
     "bot_memory_failed_paths",
     "bot_memory_safe_positions",
+    "bot_memory_objective_clusters",
+    "bot_memory_recipe_sources",
+    "bot_memory_material_sources",
+    "bot_memory_daily_cooldowns",
+    "bot_memory_transport_usage",
+    "bot_memory_decision_fingerprints",
     "bot_policy_models",
     "bot_policy_evaluations",
 ]

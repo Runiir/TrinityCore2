@@ -1,0 +1,6 @@
+outs:
+- md5: 182c758a495a93171bbb11f8df3eb59d.dir
+  size: 136331
+  nfiles: 3
+  hash: md5
+  path: live_validation_profession_memory

@@ -11,6 +11,23 @@ from ml.raid.metrics import raid_metrics
 from ml.raid.scheduler import RaidAssignmentScheduler
 from tools.bot_ml.common import EXPORT_TABLES, numeric_features
 from tools.bot_ml.build_decision_dataset import build_row, build_rows, index_semantic_stats
+from tools.bot_ml.extract_world_knowledge import (
+    build_quest_objectives,
+    build_rewards,
+    database_url_from_worldserver_conf,
+    extract_world_knowledge,
+    main as world_knowledge_main,
+    parse_trinity_database_info,
+    sanitize_database_url,
+)
+from tools.bot_ml.build_world_planner_manifests import build_planner_manifests
+from tools.bot_ml.validate_world_planner import STAGED_GATES, validate_manifest_coverage
+from tools.bot_ml.run_live_bot_validation import command_script, live_validation_report, main as live_validation_main, parse_json_objects, parse_soap_result, run_worldserver
+from tools.bot_ml.build_validation_gear_profiles import build_gem_catalog, build_profiles, build_report, fetch_items, load_gem_properties, load_spell_item_enchantments
+from tools.bot_ml.build_validation_provisioning import apply_gear_profiles, build_account_insert_sql, main as provisioning_main, scenario_report, srp6_registration_data
+from tools.bot_ml.validate_validation_provisioning import build_report as provisioning_verify_report
+from tools.bot_ml.validate_validation_provisioning import main as provisioning_verify_main
+from tools.bot_ml.validate_validation_provisioning import validate_database as validate_provisioning_database
 from ml.preprocessing.preprocess_frames import main as preprocess_main
 from ml.training.train_action_frequency import main as train_main
 from experiments.run_experiment import autonomous_metrics, dungeon_route_metrics, load_config, make_adapter, movement_metrics, profession_metrics, quest_metrics, run_experiment, solo_combat_metrics
@@ -26,6 +43,151 @@ def write_jsonl(path: Path, rows: list[dict]) -> None:
     with path.open("w", encoding="utf-8") as handle:
         for row in rows:
             handle.write(json.dumps(row) + "\n")
+
+
+class FakeCursor:
+    def __init__(self, conn):
+        self.conn = conn
+        self.rows = []
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        return False
+
+    def execute(self, sql, params=None):
+        self.rows = self.conn.query(sql, params)
+
+    def fetchall(self):
+        return self.rows
+
+    def fetchone(self):
+        return self.rows[0] if self.rows else None
+
+
+class FakeWorldDb:
+    def __init__(self):
+        self.closed = False
+        self.tables = {
+            "quest_template_addon",
+            "areatrigger_teleport",
+            "transports",
+            "graveyard_zone",
+            "taxi_level_data",
+        }
+
+    def cursor(self):
+        return FakeCursor(self)
+
+    def close(self):
+        self.closed = True
+
+    def query(self, sql, params=None):
+        if sql.startswith("SHOW TABLES LIKE"):
+            return [{"table": params[0]}] if params and params[0] in self.tables else []
+        if "FROM creature c LEFT JOIN creature_template" in sql:
+            return [
+                {"guid": 10, "entry": 100, "map_id": 0, "zone_id": 12, "area_id": 40, "x": 1.0, "y": 2.0, "z": 3.0, "o": 0.1, "name": "Questgiver", "subname": "", "npcflag": 2, "type": 7, "rank": 0, "faction": 35},
+                {"guid": 11, "entry": 200, "map_id": 0, "zone_id": 12, "area_id": 41, "x": 4.0, "y": 5.0, "z": 6.0, "o": 0.2, "name": "Wolf", "subname": "", "npcflag": 0, "type": 1, "rank": 0, "faction": 14},
+                {"guid": 12, "entry": 300, "map_id": 0, "zone_id": 12, "area_id": 40, "x": 7.0, "y": 8.0, "z": 9.0, "o": 0.3, "name": "Trainer", "subname": "", "npcflag": 48, "type": 7, "rank": 0, "faction": 35},
+            ]
+        if "FROM gameobject g LEFT JOIN gameobject_template" in sql:
+            return [
+                {"guid": 20, "entry": 400, "map_id": 0, "zone_id": 12, "area_id": 42, "x": 10.0, "y": 11.0, "z": 12.0, "o": 0.4, "name": "Quest Chest", "type": 3}
+            ]
+        if sql == "SELECT * FROM quest_template":
+            return [
+                {
+                    "ID": 9001,
+                    "LogTitle": "Wolves and Chests",
+                    "QuestLevel": 5,
+                    "MinLevel": 4,
+                    "QuestSortID": 12,
+                    "SuggestedGroupNum": 0,
+                    "RequiredFactionId1": 72,
+                    "RequiredFactionValue1": 3000,
+                    "RequiredFactionId2": 0,
+                    "RequiredFactionValue2": 0,
+                    "RewardNextQuest": 9002,
+                    "POIContinent": 0,
+                    "POIx": 4.0,
+                    "POIy": 5.0,
+                    "POIPriority": 1,
+                    "RequiredNpcOrGo1": 200,
+                    "RequiredNpcOrGoCount1": 6,
+                    "RequiredNpcOrGo2": -400,
+                    "RequiredNpcOrGoCount2": 1,
+                    "RequiredNpcOrGo3": 0,
+                    "RequiredNpcOrGoCount3": 0,
+                    "RequiredNpcOrGo4": 0,
+                    "RequiredNpcOrGoCount4": 0,
+                    "RequiredItemId1": 700,
+                    "RequiredItemCount1": 3,
+                    "RequiredItemId2": 0,
+                    "RequiredItemCount2": 0,
+                    "RequiredItemId3": 0,
+                    "RequiredItemCount3": 0,
+                    "RequiredItemId4": 0,
+                    "RequiredItemCount4": 0,
+                    "RequiredItemId5": 0,
+                    "RequiredItemCount5": 0,
+                    "RequiredItemId6": 0,
+                    "RequiredItemCount6": 0,
+                    "RequiredSpell": 12345,
+                    "ObjectiveText1": "Kill wolves",
+                    "ObjectiveText2": "Open chest",
+                    "ObjectiveText3": "",
+                    "ObjectiveText4": "",
+                    "RewardItem1": 800,
+                    "RewardAmount1": 1,
+                    "RewardItem2": 0,
+                    "RewardAmount2": 0,
+                    "RewardItem3": 0,
+                    "RewardAmount3": 0,
+                    "RewardItem4": 0,
+                    "RewardAmount4": 0,
+                    "RewardChoiceItemID1": 801,
+                    "RewardChoiceItemQuantity1": 1,
+                    "RewardChoiceItemID2": 0,
+                    "RewardChoiceItemQuantity2": 0,
+                    "RewardChoiceItemID3": 0,
+                    "RewardChoiceItemQuantity3": 0,
+                    "RewardChoiceItemID4": 0,
+                    "RewardChoiceItemQuantity4": 0,
+                    "RewardChoiceItemID5": 0,
+                    "RewardChoiceItemQuantity5": 0,
+                    "RewardChoiceItemID6": 0,
+                    "RewardChoiceItemQuantity6": 0,
+                }
+            ]
+        if sql == "SELECT * FROM quest_template_addon":
+            return [{"ID": 9001, "PrevQuestID": 9000, "NextQuestID": 9002, "BreadcrumbForQuestId": 0}]
+        if "FROM creature_queststarter" in sql:
+            return [{"entry": 100, "quest": 9001}]
+        if "FROM creature_questender" in sql:
+            return [{"entry": 100, "quest": 9001}]
+        if "FROM gameobject_queststarter" in sql or "FROM gameobject_questender" in sql:
+            return []
+        if "FROM npc_vendor" in sql:
+            return [{"entry": 300, "item": 700, "maxcount": 0, "incrtime": 0, "ExtendedCost": 0, "type": 1, "PlayerConditionID": 0}]
+        if "FROM trainer t LEFT JOIN trainer_spell" in sql:
+            return [{"trainer_id": 500, "trainer_type": 2, "spell_id": 600, "money_cost": 100, "req_skill_line": 185, "req_skill_rank": 1, "req_ability1": 0, "req_level": 5}]
+        if "FROM creature_trainer" in sql:
+            return [{"entry": 300, "trainer_id": 500, "menu_id": 1, "option_id": 1}]
+        if "FROM creature_loot_template" in sql:
+            return [{"source_entry": 200, "item_id": 700, "reference": 0, "chance": 75.0, "quest_required": 1, "min_count": 1, "max_count": 1}]
+        if "FROM gameobject_loot_template" in sql:
+            return [{"source_entry": 400, "item_id": 701, "reference": 0, "chance": 100.0, "quest_required": 1, "min_count": 1, "max_count": 1}]
+        if sql == "SELECT * FROM areatrigger_teleport":
+            return [{"ID": 1, "Name": "Portal", "target_map": 1, "target_position_x": 2.0, "target_position_y": 3.0, "target_position_z": 4.0, "target_orientation": 0.5}]
+        if sql == "SELECT * FROM transports":
+            return [{"guid": 1, "entry": 2, "name": "Boat"}]
+        if sql == "SELECT * FROM graveyard_zone":
+            return [{"ID": 1, "GhostZone": 12, "Faction": 0, "Comment": "Elwynn"}]
+        if sql == "SELECT * FROM taxi_level_data":
+            return [{"ID": 1, "Level": 1}]
+        raise AssertionError(sql)
 
 
 def test_preprocess_train_evaluate_pipeline(tmp_path, monkeypatch):
@@ -76,6 +238,12 @@ def test_bot_ml_export_table_contract_covers_learning_loop_tables():
         "bot_memory_danger_zones",
         "bot_memory_failed_paths",
         "bot_memory_safe_positions",
+        "bot_memory_objective_clusters",
+        "bot_memory_recipe_sources",
+        "bot_memory_material_sources",
+        "bot_memory_daily_cooldowns",
+        "bot_memory_transport_usage",
+        "bot_memory_decision_fingerprints",
         "bot_policy_models",
         "bot_policy_evaluations",
     ]
@@ -165,11 +333,19 @@ def test_bot_ml_numeric_features_exclude_observed_outcome_leakage():
 
 def test_bot_ml_workflow_has_pixi_tasks_and_documented_dvc_steps():
     pixi = Path("pixi.toml").read_text(encoding="utf-8")
+    dvc = Path("dvc.yaml").read_text(encoding="utf-8")
     readme = Path("tools/bot_ml/README.md").read_text(encoding="utf-8")
     register_script = Path("tools/bot_ml/register_policy_model.py").read_text(encoding="utf-8")
     evaluate_script = Path("tools/bot_ml/evaluate_policy_model.py").read_text(encoding="utf-8")
 
     for task in [
+        "bot-world-knowledge",
+        "bot-world-planner",
+        "bot-world-validate",
+            "bot-validation-gear",
+            "bot-validation-provisioning",
+            "bot-validation-provisioning-verify",
+            "bot-live-validate",
         "bot-ml-export",
         "bot-ml-build-decisions",
         "bot-ml-validate",
@@ -185,6 +361,13 @@ def test_bot_ml_workflow_has_pixi_tasks_and_documented_dvc_steps():
     for required in [
         "BotWorld.AutoStart = 1",
         "BotWorld.AutoStartRecording = 1",
+        "WorldDatabaseInfo",
+        "world_planner_validate",
+        "validation_provisioning",
+        "validation_provisioning_verify",
+        "validation_gear",
+        "complete_equipment_slots",
+        "full Stonecore and Blackwing Descent gates failing",
         "run-id train/eval split",
         "candidate-level",
         "pixi run dvc status",
@@ -198,6 +381,679 @@ def test_bot_ml_workflow_has_pixi_tasks_and_documented_dvc_steps():
     assert "--sql-output\", \"--output-sql\"" in register_script
     assert '"accepted": bool(payload["accepted"])' in register_script
     assert 'live.log_metric("accepted", int(accepted))' in evaluate_script
+    for stage in [
+        "world_knowledge:",
+        "world_planner:",
+        "world_planner_validate:",
+        "dataset/world_knowledge",
+        "dataset/world_planner",
+        "dataset/world_validation/planner_report.json",
+        "validation_gear:",
+        "dataset/validation_gear_profiles",
+        "validation_provisioning:",
+        "dataset/validation_provisioning",
+        "validation_provisioning_verify:",
+        "dataset/validation_provisioning_verification/report.json",
+    ]:
+        assert stage in dvc
+
+
+def test_world_knowledge_can_read_database_url_from_worldserver_conf(tmp_path):
+    conf = tmp_path / "worldserver.conf"
+    conf.write_text(
+        '\nWorldDatabaseInfo = "172.20.0.2;3306;trinity;secret;world"\n',
+        encoding="utf-8",
+    )
+
+    info = parse_trinity_database_info('"127.0.0.1;3306;user;pass;world"')
+    url = database_url_from_worldserver_conf(conf)
+    sanitized = sanitize_database_url(url)
+
+    assert info == {"host": "127.0.0.1", "port": 3306, "user": "user", "password": "pass", "database": "world"}
+    assert url == "mysql://trinity:secret@172.20.0.2:3306/world"
+    assert sanitized == {"scheme": "mysql", "host": "172.20.0.2", "port": 3306, "database": "world", "user": "trinity"}
+
+
+def test_world_knowledge_cli_writes_sanitized_source_database(tmp_path, monkeypatch):
+    fake_db = FakeWorldDb()
+    conf = tmp_path / "worldserver.conf"
+    output_dir = tmp_path / "world_knowledge"
+    conf.write_text('WorldDatabaseInfo = "db.example;3306;trinity;secret;world"\n', encoding="utf-8")
+    monkeypatch.setattr("tools.bot_ml.extract_world_knowledge.connect_mysql", lambda _url: fake_db)
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "bot-world-knowledge",
+            "--worldserver-conf",
+            str(conf),
+            "--output-dir",
+            str(output_dir),
+        ],
+    )
+
+    assert world_knowledge_main() == 0
+    manifest = json.loads((output_dir / "manifest.json").read_text(encoding="utf-8"))
+
+    assert manifest["source_database"] == {
+        "scheme": "mysql",
+        "host": "db.example",
+        "port": 3306,
+        "database": "world",
+        "user": "trinity",
+    }
+    assert "secret" not in json.dumps(manifest)
+
+
+def test_world_knowledge_objective_and_reward_parsing_contract():
+    quest = {
+        "RequiredNpcOrGo1": 123,
+        "RequiredNpcOrGoCount1": 4,
+        "ObjectiveText1": "Kill wolves",
+        "RequiredNpcOrGo2": -456,
+        "RequiredNpcOrGoCount2": 1,
+        "ObjectiveText2": "Open crate",
+        "RequiredNpcOrGo3": 0,
+        "RequiredNpcOrGoCount3": 0,
+        "ObjectiveText3": "",
+        "RequiredNpcOrGo4": 0,
+        "RequiredNpcOrGoCount4": 0,
+        "ObjectiveText4": "",
+        "RequiredItemId1": 700,
+        "RequiredItemCount1": 2,
+        "RequiredSpell": 900,
+        "RewardItem1": 800,
+        "RewardAmount1": 1,
+        "RewardChoiceItemID1": 801,
+        "RewardChoiceItemQuantity1": 1,
+    }
+
+    for slot in range(2, 7):
+        quest.setdefault(f"RequiredItemId{slot}", 0)
+        quest.setdefault(f"RequiredItemCount{slot}", 0)
+        quest.setdefault(f"RewardChoiceItemID{slot}", 0)
+        quest.setdefault(f"RewardChoiceItemQuantity{slot}", 0)
+    for slot in range(2, 5):
+        quest.setdefault(f"RewardItem{slot}", 0)
+        quest.setdefault(f"RewardAmount{slot}", 0)
+
+    objectives = build_quest_objectives(quest)
+    rewards = build_rewards(quest)
+
+    assert objectives == [
+        {"slot": 1, "type": "creature", "entry": 123, "required_count": 4, "text": "Kill wolves"},
+        {"slot": 2, "type": "gameobject", "entry": 456, "required_count": 1, "text": "Open crate"},
+        {"slot": 1, "type": "item", "item_id": 700, "required_count": 2},
+        {"slot": 0, "type": "spell", "spell_id": 900},
+    ]
+    assert rewards == [
+        {"slot": 1, "mode": "fixed", "item_id": 800, "quantity": 1},
+        {"slot": 1, "mode": "choice", "item_id": 801, "quantity": 1},
+    ]
+
+
+def test_world_knowledge_extractor_emits_planner_manifests(monkeypatch):
+    fake_db = FakeWorldDb()
+    monkeypatch.setattr("tools.bot_ml.extract_world_knowledge.connect_mysql", lambda _url: fake_db)
+
+    manifests = extract_world_knowledge("mysql://example/world")
+
+    assert fake_db.closed is True
+    assert set(manifests) == {"quests", "quest_objectives", "npc_services", "item_sources", "travel", "zones"}
+    quest = manifests["quests"][0]
+    assert quest["quest_id"] == 9001
+    assert quest["prev_quest_id"] == 9000
+    assert quest["next_quest_id"] == 9002
+    assert quest["required_factions"] == [{"faction_id": 72, "value": 3000}, {"faction_id": 0, "value": 0}]
+    assert quest["givers"][0]["entry"] == 100
+    assert quest["givers"][0]["spawns"][0]["area_id"] == 40
+    assert quest["turnins"][0]["entry"] == 100
+    assert quest["support_class"] == "supported_simple"
+
+    objectives = manifests["quest_objectives"]
+    assert {objective["type"] for objective in objectives} == {"creature", "gameobject", "item", "spell"}
+    assert next(objective for objective in objectives if objective["type"] == "creature")["spawns"][0]["x"] == 4.0
+    assert next(objective for objective in objectives if objective["type"] == "gameobject")["spawns"][0]["x"] == 10.0
+
+    service = manifests["npc_services"][0]
+    assert service["entry"] == 300
+    assert service["service_types"] == ["trainer", "vendor"]
+    assert service["vendor_items"][0]["item"] == 700
+    assert service["trainer_spells"][0]["spell_id"] == 600
+
+    item_sources = manifests["item_sources"]
+    assert {"creature_loot", "gameobject_loot", "vendor"} <= {source["source_type"] for source in item_sources}
+    assert any(source["item_id"] == 700 and source["source_type"] == "creature_loot" for source in item_sources)
+    assert any(source["item_id"] == 700 and source["source_type"] == "vendor" for source in item_sources)
+
+    assert {"areatrigger_teleport", "transport", "graveyard", "taxi_level"} <= {entry["type"] for entry in manifests["travel"]}
+    assert manifests["zones"] == [{"map_id": 0, "zone_id": 12, "creature_spawns": 3, "gameobject_spawns": 1, "areas": [40, 41, 42]}]
+
+
+def test_world_planner_builder_derives_hubs_clusters_services_and_travel(tmp_path, monkeypatch):
+    fake_db = FakeWorldDb()
+    monkeypatch.setattr("tools.bot_ml.extract_world_knowledge.connect_mysql", lambda _url: fake_db)
+    world = extract_world_knowledge("mysql://example/world")
+    world_dir = tmp_path / "world"
+    for name, rows in world.items():
+        write_jsonl(world_dir / f"{name}.jsonl", rows)
+
+    planner = build_planner_manifests(world_dir)
+
+    assert set(planner) == {"quest_hubs", "quest_chains", "objective_clusters", "service_index", "item_source_index", "travel_edges"}
+    assert planner["quest_hubs"] == [
+        {
+            "hub_id": planner["quest_hubs"][0]["hub_id"],
+            "giver_type": "creature",
+            "giver_entry": 100,
+            "map_id": 0,
+            "zone_id": 12,
+            "area_id": 40,
+            "x": 1.0,
+            "y": 2.0,
+            "z": 3.0,
+            "quests": [9001],
+        }
+    ]
+    assert planner["quest_chains"] == [
+        {
+            "quest_id": 9001,
+            "prev_quest_id": 9000,
+            "next_quest_id": 9002,
+            "breadcrumb_for_quest_id": 0,
+            "prev_known": False,
+            "next_known": False,
+            "breadcrumb_known": False,
+        }
+    ]
+    assert len(planner["objective_clusters"]) == 1
+    cluster = planner["objective_clusters"][0]
+    assert cluster["quests"] == [9001]
+    assert cluster["objective_count"] == 4
+    assert {objective["type"] for objective in cluster["objectives"]} == {"creature", "gameobject", "item", "spell"}
+
+    service = planner["service_index"][0]
+    assert service["entry"] == 300
+    assert service["service_types"] == ["trainer", "vendor"]
+    assert service["vendor_items"] == [700]
+    assert service["trainer_spells"] == [600]
+
+    item_source = next(row for row in planner["item_source_index"] if row["item_id"] == 700)
+    assert item_source["source_count"] == 2
+    assert item_source["source_types"] == ["creature_loot", "vendor"]
+
+    assert {"portal_or_instance_entrance", "transport", "graveyard", "taxi_level"} <= {edge["edge_type"] for edge in planner["travel_edges"]}
+
+
+def test_world_planner_validation_report_marks_covered_and_missing_gates(tmp_path, monkeypatch):
+    fake_db = FakeWorldDb()
+    monkeypatch.setattr("tools.bot_ml.extract_world_knowledge.connect_mysql", lambda _url: fake_db)
+    world = extract_world_knowledge("mysql://example/world")
+    world_dir = tmp_path / "world"
+    for name, rows in world.items():
+        write_jsonl(world_dir / f"{name}.jsonl", rows)
+
+    report = validate_manifest_coverage(build_planner_manifests(world_dir))
+    gates = {gate["gate"]: gate for gate in report["gates"]}
+
+    assert [gate["gate"] for gate in report["gates"]] == STAGED_GATES
+    for gate in [
+        "movement_smoke",
+        "kill_quest",
+        "collect_quest",
+        "quest_hub_batching",
+        "trainer_visit",
+        "vendor_repair",
+        "profession_recipe_acquisition",
+        "material_farming",
+        "smart_loot",
+        "normal_dungeon_trash",
+        "dungeon_boss",
+        "raid_trash",
+    ]:
+        assert gates[gate]["passed"], gate
+
+    assert gates["full_stonecore_clear"]["passed"] is False
+    assert gates["raid_boss"]["passed"] is False
+    assert gates["full_blackwing_descent_clear"]["passed"] is False
+    assert "prepared_5man_provisioning" in gates["full_stonecore_clear"]["missing"]
+    assert "blackwing_descent_boss_mechanic_manifest" in gates["raid_boss"]["missing"]
+    assert report["all_passed"] is False
+    assert report["runtime_ml_control"] == "disabled_until_shadow_assist_replay_validation_passes"
+
+
+def test_live_bot_validation_command_script_and_output_parser():
+    script = command_script(selector="all", trace_limit=20, start=True, stop=True)
+
+    assert script.splitlines() == [
+        ".botauto start",
+        ".botauto status",
+        ".botauto diagnose all",
+        ".botauto trace all 20",
+        ".botexp summary",
+        ".botauto stop",
+        "server exit",
+    ]
+
+    output = """
+TC> {"active_bots":2,"target_bots":2,"action":"botauto_status","decisions":3,"kills":1,"quests_accepted":2,"quest_objective_progress":1}
+TC> {"diagnosis_schema_version":"bot_diagnosis_v1","diagnoses":[{"bot_guid":1},{"bot_guid":2}]}
+TC> {"trace_schema_version":"bot_trace_v1","entries":[{"action":"move"},{"action":"quest"}]}
+TC> {"summary_schema_version":"bot_summary_v1","duration_minutes":1,"quests_completed":0,"raid_boss_kills":0}
+$ .botauto diagnose all
+There is no such subcommand
+"""
+    payloads = parse_json_objects(output)
+    report = live_validation_report(output, returncode=0, timed_out=False, command=["worldserver"])
+    gates = {stage["stage"]: stage for stage in report["stages"]}
+
+    assert len(payloads) == 4
+    assert report["active_bots"] == 2
+    assert report["target_bots"] == 2
+    assert report["diagnosis_count"] == 2
+    assert report["trace_entries"] == 2
+    assert report["evidence"]["decisions"] == 3
+    assert report["evidence"]["active_decision_evidence"] is True
+    assert report["summary"]["quests_completed"] == 0
+    assert report["command_errors"] == [{"command": ".botauto diagnose all", "error": "no_such_subcommand"}]
+    assert gates["movement_smoke"]["passed"] is True
+    assert gates["kill_quest"]["passed"] is True
+    assert gates["collect_quest"]["passed"] is True
+    assert gates["quest_hub_batching"]["passed"] is True
+    assert gates["full_stonecore_clear"]["passed"] is False
+    assert "stonecore_live_clear_report" in gates["full_stonecore_clear"]["missing"]
+    assert report["runtime_ml_control"] == "disabled_until_live_validation_passes"
+
+
+def test_live_bot_validation_soap_script_does_not_exit_server():
+    script = command_script(selector="all", trace_limit=5, start=False, stop=False, exit_server=False)
+    payload = "<SOAP-ENV:Envelope><SOAP-ENV:Body><ns1:executeCommandResponse><result>TC&gt; {&quot;active_bots&quot;:1}</result></ns1:executeCommandResponse></SOAP-ENV:Body></SOAP-ENV:Envelope>"
+
+    assert script.splitlines() == [
+        ".botauto status",
+        ".botauto diagnose all",
+        ".botauto trace all 5",
+        ".botexp summary",
+    ]
+    assert "server exit" not in script
+    assert parse_json_objects(parse_soap_result(payload)) == [{"active_bots": 1}]
+
+
+def test_live_bot_validation_process_mode_observes_after_start(tmp_path, monkeypatch):
+    fake_worldserver = tmp_path / "fake_worldserver.py"
+    fake_worldserver.write_text(
+        "#!/usr/bin/env python3\n"
+        "import sys\n"
+        "print('ARGS ' + ' '.join(sys.argv[1:]))\n"
+        "for line in sys.stdin:\n"
+        "    print('CMD ' + line.strip())\n",
+        encoding="utf-8",
+    )
+    fake_worldserver.chmod(0o755)
+    config = tmp_path / "worldserver.conf"
+    config.write_text("", encoding="utf-8")
+    sleeps = []
+    monkeypatch.setattr("tools.bot_ml.run_live_bot_validation.time.sleep", lambda seconds: sleeps.append(seconds))
+
+    output, returncode, timed_out, command = run_worldserver(
+        fake_worldserver,
+        config,
+        5,
+        command_script(selector="all", trace_limit=5, start=True, stop=False),
+        observe_sec=17,
+    )
+
+    assert returncode == 0
+    assert timed_out is False
+    assert command == [str(fake_worldserver), "--config", str(config)]
+    assert sleeps == [17]
+    assert "CMD .botauto start" in output
+    assert "CMD .botauto diagnose all" in output
+    assert "CMD server exit" in output
+
+
+def test_live_bot_validation_requires_activity_evidence_for_smoke_gates():
+    output = """
+TC> {"active_bots":5,"target_bots":5,"decisions":0,"quests_accepted":0,"quest_objective_progress":0}
+TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"snapshot":{"decision":{"action":"wait"},"movement":{"is_moving":false,"distance_moved_since_last_decision":0}}}]}
+TC> {"trace_schema_version":1,"entries":[{"action":"bot_spawned","situation":"bot_spawned"}]}
+TC> {"duration_minutes":0,"decisions":0,"total_kills":0,"quests_completed":0}
+"""
+    report = live_validation_report(output)
+    gates = {stage["stage"]: stage for stage in report["stages"]}
+
+    assert report["evidence"]["active_decision_evidence"] is False
+    assert gates["movement_smoke"]["passed"] is False
+    assert "active_decision_or_movement_evidence" in gates["movement_smoke"]["missing"]
+    assert "kill_evidence" in gates["kill_quest"]["missing"]
+    assert "quest_progress_evidence" in gates["collect_quest"]["missing"]
+
+
+def test_live_bot_validation_counts_multi_bot_trace_entries():
+    output = """
+TC> {"active_bots":2,"target_bots":2,"decisions":0,"quests_accepted":0,"quest_objective_progress":0}
+TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"snapshot":{"decision":{"action":"travel_to_quest_hub"},"movement":{"is_moving":true,"distance_moved_since_last_decision":4.5}}},{"identity":{"bot_guid":2},"snapshot":{"decision":{"action":"use_quest_object"},"movement":{"is_moving":false,"distance_moved_since_last_decision":0}}}]}
+TC> {"trace_schema_version":1,"selector":"all","bots":[{"bot_guid":1,"entries":[{"action":"bot_spawned","situation":"bot_spawned"},{"action":"travel_to_quest_hub","situation":"quest_pickup_search"},{"action":"accept_quest_db_fallback","situation":"quest_pickup_search"},{"action":"complete_quest_db_fallback","situation":"quest_turn_in"}]},{"bot_guid":2,"entries":[{"action":"use_quest_object","situation":"quest_objective","result":"failed"}]}]}
+TC> {"duration_minutes":1,"decisions":0,"total_kills":0,"quests_completed":0}
+"""
+    report = live_validation_report(output)
+    gates = {stage["stage"]: stage for stage in report["stages"]}
+
+    assert report["trace_entries"] == 5
+    assert report["evidence"]["non_spawn_trace_entries"] == 4
+    assert report["evidence"]["quests_accepted"] == 1
+    assert report["evidence"]["quests_completed"] == 1
+    assert report["evidence"]["active_decision_evidence"] is True
+    assert "accept_quest_db_fallback" in report["evidence"]["action_names"]
+    assert "complete_quest_db_fallback" in report["evidence"]["action_names"]
+    assert "travel_to_quest_hub" in report["evidence"]["action_names"]
+    assert "use_quest_object" in report["evidence"]["action_names"]
+    assert gates["movement_smoke"]["passed"] is True
+    assert gates["collect_quest"]["passed"] is True
+    assert gates["quest_hub_batching"]["passed"] is True
+
+
+def test_live_bot_validation_dry_run_writes_command_file(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "bot-live-validate",
+            "--dry-run",
+            "--selector",
+            "all",
+            "--trace-limit",
+            "7",
+            "--output-dir",
+            str(tmp_path),
+        ],
+    )
+
+    assert live_validation_main() == 0
+    commands = (tmp_path / "commands.txt").read_text(encoding="utf-8")
+    report = json.loads((tmp_path / "report.json").read_text(encoding="utf-8"))
+
+    assert ".botauto diagnose all" in commands
+    assert ".botauto trace all 7" in commands
+    assert "server exit" in commands
+    assert report["dry_run"] is True
+    assert report["command_script"] == commands
+
+
+def test_live_bot_validation_soap_dry_run_writes_non_exit_command_file(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "bot-live-validate",
+            "--dry-run",
+            "--transport",
+            "soap",
+            "--no-start",
+            "--output-dir",
+            str(tmp_path),
+        ],
+    )
+
+    assert live_validation_main() == 0
+    commands = (tmp_path / "commands.txt").read_text(encoding="utf-8")
+    report = json.loads((tmp_path / "report.json").read_text(encoding="utf-8"))
+
+    assert "server exit" not in commands
+    assert ".botauto start" not in commands
+    assert report["transport"] == "soap"
+
+
+def test_validation_provisioning_generates_reproducible_sql_and_readiness(tmp_path, monkeypatch):
+    config_path = Path("experiments/configs/validation_provisioning_cata_001.json")
+    config = json.loads(config_path.read_text(encoding="utf-8"))
+    report = scenario_report(config)
+
+    assert report["all_ready"] is False
+    scenarios = {scenario["scenario_id"]: scenario for scenario in report["scenarios"]}
+    assert scenarios["stonecore_5n"]["role_counts"] == {"tank": 1, "healer": 1, "dps": 3}
+    assert scenarios["blackwing_descent_10n"]["role_counts"] == {"tank": 2, "healer": 3, "dps": 5}
+    assert scenarios["stonecore_5n"]["start_position"]["map_id"] == 725
+    assert scenarios["blackwing_descent_10n"]["start_position"]["map_id"] == 669
+    assert "complete_equipment_slots" in scenarios["stonecore_5n"]["missing"]
+
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "bot-validation-provisioning",
+            "--config",
+            str(config_path),
+            "--gear-profiles",
+            str(tmp_path / "missing_profiles.json"),
+            "--output-dir",
+            str(tmp_path),
+        ],
+    )
+    assert provisioning_main() == 0
+
+    commands = (tmp_path / "account_commands.txt").read_text(encoding="utf-8")
+    account_sql = (tmp_path / "provision_accounts.sql").read_text(encoding="utf-8")
+    sql = (tmp_path / "provision_characters.sql").read_text(encoding="utf-8")
+    manifest = json.loads((tmp_path / "manifest.json").read_text(encoding="utf-8"))
+    generated_report = json.loads((tmp_path / "report.json").read_text(encoding="utf-8"))
+
+    assert "account create SCVALTANK validation" in commands
+    assert "account create BWDVALTKA validation" in commands
+    assert "INSERT INTO `auth`.`account`" in account_sql
+    assert "`salt`, `verifier`" in account_sql
+    assert "ON DUPLICATE KEY UPDATE `expansion`" in account_sql
+    assert "INSERT INTO `characters`.`characters`" in sql
+    assert "INSERT INTO `characters`.`character_bot_pool`" in sql
+    assert "INSERT INTO `characters`.`character_skills`" in sql
+    assert "INSERT INTO `characters`.`character_glyphs`" in sql
+    assert "DELETE FROM `characters`.`item_instance` WHERE `guid` >= 9700000" in sql
+    assert manifest["schema"] == "bot_validation_provisioning_manifest_v1"
+    assert manifest["bot_count"] == 15
+    assert generated_report == report
+
+
+def test_validation_provisioning_generates_trinity_srp6_account_sql():
+    config = {
+        "account_password": "validation",
+        "scenarios": [{"bots": [{"account": "ScValTank"}]}],
+    }
+    salt, verifier = srp6_registration_data("SCVALTANK", "validation")
+    sql = build_account_insert_sql(config)
+
+    assert len(salt) == 32
+    assert len(verifier) == 32
+    assert salt.hex() in sql
+    assert verifier.hex() in sql
+    assert "SCVALTANK" in sql
+    assert "`salt` = VALUES" not in sql
+    assert "`verifier` = VALUES" not in sql
+
+
+def test_validation_gear_profiles_can_complete_slots_from_item_rows():
+    config = {
+        "scenarios": [
+            {
+                "id": "stonecore_5n",
+                "start_position": {"map_id": 725, "x": 0, "y": 0, "z": 0},
+                "bots": [
+                    {"name": "Tank", "role": "tank", "class_spec": "protection_paladin", "class": 2},
+                ],
+            }
+        ]
+    }
+    inv_by_slot = {
+        0: 1,
+        1: 2,
+        2: 3,
+        4: 5,
+        5: 6,
+        6: 7,
+        7: 8,
+        8: 9,
+        9: 10,
+        10: 11,
+        11: 11,
+        12: 12,
+        13: 12,
+        14: 16,
+        15: 21,
+        16: 14,
+    }
+    items = []
+    for offset, (slot, inventory_type) in enumerate(inv_by_slot.items(), start=1):
+        items.append(
+            {
+                "ID": 100000 + offset,
+                "Display": f"Validation Item {slot}",
+                "ClassID": 4 if inventory_type not in {21, 14} else 2,
+                "SubclassID": 4,
+                "InventoryType": inventory_type,
+                "Quality": 4,
+                "ItemLevel": 359 + offset,
+                "RequiredLevel": 85,
+                "AllowableClass": -1,
+                "ItemStatType1": 7,
+                "ItemStatValue1": 100,
+                "ItemStatType2": 4,
+                "ItemStatValue2": 80,
+            }
+        )
+
+    profiles = build_profiles(config, items)
+    report = build_report(profiles, {"database": "hotfixes"})
+    profile = profiles["protection_paladin"]
+
+    assert profile["complete_equipment_slots"] is True
+    assert profile["missing_slots"] == []
+    assert {item["slot"] for item in profile["equipment"]} == set(inv_by_slot)
+    assert report["all_equipment_slots_complete"] is True
+    assert report["all_enchanted"] is False
+
+
+def test_validation_gear_profiles_complete_from_local_db2_files():
+    config = json.loads(Path("experiments/configs/validation_provisioning_cata_001.json").read_text(encoding="utf-8"))
+    items = fetch_items("mysql://trinity:trinity@172.20.0.2:3306/hotfixes", Path("data/dbc/enUS"), min_item_level=1, max_required_level=85)
+    enchantments = load_spell_item_enchantments(Path("data/dbc/enUS"))
+    gems = build_gem_catalog(items, load_gem_properties(Path("data/dbc/enUS")), {int(enchantment["id"]): enchantment for enchantment in enchantments})
+    profiles = build_profiles(config, items, enchantments, gems)
+    report = build_report(profiles, {"database": "hotfixes"})
+
+    assert report["profile_count"] == 13
+    assert report["all_equipment_slots_complete"] is True
+    assert report["all_gemmed"] is True
+    assert report["all_enchanted"] is True
+    assert report["source_counts"]["enchanted_items"] >= 13 * 16
+    assert report["source_counts"]["gemmed_items"] == report["source_counts"]["socketed_items"]
+    assert report["enchant_applicability_verified_by_server"] is False
+    assert report["source_counts"]["client_db2_items"] >= 13 * 16
+    assert all(not profile["missing_slots"] for profile in profiles.values())
+    assert all(item["enchantments"].split()[0] == str(item["enchant_id"]) for profile in profiles.values() for item in profile["equipment"])
+    assert all(len(item["enchantments"].split()) == 45 for profile in profiles.values() for item in profile["equipment"])
+
+
+def test_validation_provisioning_applies_gear_profiles_to_bots():
+    config = {
+        "max_level": 85,
+        "default_skills": [{"id": 185}],
+        "default_consumables": [{"item_id": 58085, "slot": 40}],
+        "scenarios": [
+            {
+                "id": "stonecore_5n",
+                "start_position": {"map_id": 725, "x": 0, "y": 0, "z": 0},
+                "bots": [
+                    {"account": "A", "name": "Tank", "role": "tank", "class_spec": "protection_paladin", "race": 1, "class": 2, "level": 85, "glyphs": [1, 2, 3]},
+                ],
+            }
+        ],
+    }
+    profiles = {
+        "protection_paladin": {
+            "equipment": [{"slot": slot, "item_id": 1000 + slot, "enchant_id": 0, "gem_item_ids": []} for slot in [0, 1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]]
+        }
+    }
+
+    equipped = apply_gear_profiles(config, profiles)
+    report = scenario_report(equipped)
+
+    assert equipped["scenarios"][0]["bots"][0]["gear_profile"] == "protection_paladin"
+    assert len(equipped["scenarios"][0]["bots"][0]["equipment"]) == 16
+    assert report["scenarios"][0]["gear_missing_slots"]["Tank"] == []
+    assert "complete_equipment_slots" not in report["scenarios"][0]["missing"]
+    assert "enchants" in report["scenarios"][0]["missing"]
+
+
+def test_validation_provisioning_verifier_accepts_generated_payloads(tmp_path, monkeypatch):
+    output = tmp_path / "verification" / "report.json"
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "bot-validation-provisioning-verify",
+            "--config",
+            "experiments/configs/validation_provisioning_cata_001.json",
+            "--gear-profiles",
+            "dataset/validation_gear_profiles/profiles.json",
+            "--provisioning-report",
+            "dataset/validation_provisioning/report.json",
+            "--output",
+            str(output),
+        ],
+    )
+
+    assert provisioning_verify_main() == 0
+    report = json.loads(output.read_text(encoding="utf-8"))
+
+    assert report["schema"] == "bot_validation_provisioning_verifier_report_v1"
+    assert report["all_passed"] is True
+    assert report["payload_valid"] is True
+    assert report["failure_count"] == 0
+    assert report["payload_evidence"]["enchantment_count"] > 0
+    assert report["payload_evidence"]["gem_property_count"] > 0
+
+
+def test_validation_provisioning_database_preflight_reports_missing_accounts(tmp_path, monkeypatch):
+    conf = tmp_path / "worldserver.conf"
+    conf.write_text(
+        '\nLoginDatabaseInfo = "db.example;3306;trinity;secret;auth"\n'
+        'CharacterDatabaseInfo = "db.example;3306;trinity;secret;characters"\n',
+        encoding="utf-8",
+    )
+    config = {
+        "scenarios": [
+            {
+                "id": "stonecore_5n",
+                "bots": [
+                    {"account": "SCVALTANK", "name": "ScValTank"},
+                ],
+            }
+        ]
+    }
+
+    def fake_columns(_url, table):
+        for tables in [
+            {
+                "account": {"id", "username"},
+            },
+            {
+                "characters": {"guid", "account", "name", "slot", "race", "class", "gender", "level", "xp", "money", "position_x", "position_y", "position_z", "map", "orientation", "taximask", "online", "cinematic", "totaltime", "leveltime", "logout_time", "health", "power1", "talentGroupsCount", "activeTalentGroup", "equipmentCache"},
+                "item_instance": {"guid", "itemEntry", "owner_guid", "creatorGuid", "giftCreatorGuid", "count", "duration", "charges", "flags", "enchantments", "randomPropertyType", "randomPropertyId", "durability", "creationTime", "text"},
+                "character_inventory": {"guid", "bag", "slot", "item"},
+                "character_bot_pool": {"guid", "role", "class_spec", "enabled", "in_use", "experiment_tags", "notes"},
+                "character_glyphs": {"guid", "talentGroup", "glyph1", "glyph2", "glyph3", "glyph4", "glyph5", "glyph6", "glyph7", "glyph8", "glyph9"},
+                "character_skills": {"guid", "skill", "value", "max"},
+            },
+        ]:
+            if table in tables:
+                return tables[table]
+        return set()
+
+    monkeypatch.setattr("tools.bot_ml.validate_validation_provisioning.fetch_columns", fake_columns)
+    monkeypatch.setattr("tools.bot_ml.validate_validation_provisioning.fetch_existing_values", lambda _url, _table, _column, _values: set())
+
+    failures, evidence = validate_provisioning_database(config, conf)
+    report = provisioning_verify_report(config, {"all_ready": True}, [], {"enchantment_count": 1, "gem_property_count": 1}, failures, evidence)
+
+    assert report["all_passed"] is False
+    assert report["database_valid"] is False
+    assert failures == [{"check": "validation_accounts", "missing_accounts": ["SCVALTANK"], "recovery": "apply generated provision_accounts.sql or run account_commands.txt in the worldserver console"}]
+    assert evidence["expected_accounts"] == 1
+    assert evidence["existing_accounts"] == 0
 
 
 def test_headless_movement_smoke_records_metrics(tmp_path):

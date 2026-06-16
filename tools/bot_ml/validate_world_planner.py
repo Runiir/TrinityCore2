@@ -1,0 +1,136 @@
+from __future__ import annotations
+
+import argparse
+from pathlib import Path
+from typing import Any
+
+try:
+    from .common import read_jsonl, write_json
+except ImportError:
+    from common import read_jsonl, write_json
+
+
+STAGED_GATES = [
+    "movement_smoke",
+    "kill_quest",
+    "collect_quest",
+    "quest_hub_batching",
+    "trainer_visit",
+    "vendor_repair",
+    "profession_recipe_acquisition",
+    "material_farming",
+    "smart_loot",
+    "normal_dungeon_trash",
+    "dungeon_boss",
+    "full_stonecore_clear",
+    "raid_trash",
+    "raid_boss",
+    "full_blackwing_descent_clear",
+]
+
+
+def load_manifest_dir(path: Path) -> dict[str, list[dict[str, Any]]]:
+    names = [
+        "quest_hubs",
+        "quest_chains",
+        "objective_clusters",
+        "service_index",
+        "item_source_index",
+        "travel_edges",
+    ]
+    return {name: read_jsonl(path / f"{name}.jsonl") for name in names}
+
+
+def has_service(services: list[dict[str, Any]], service_type: str) -> bool:
+    return any(service_type in (row.get("service_types") or []) for row in services)
+
+
+def has_objective_type(clusters: list[dict[str, Any]], objective_type: str) -> bool:
+    return any(any(objective.get("type") == objective_type for objective in cluster.get("objectives") or []) for cluster in clusters)
+
+
+def has_item_source_type(item_sources: list[dict[str, Any]], source_type: str) -> bool:
+    return any(source_type in (row.get("source_types") or []) for row in item_sources)
+
+
+def has_travel_edge(edges: list[dict[str, Any]], edge_type: str) -> bool:
+    return any(edge.get("edge_type") == edge_type for edge in edges)
+
+
+def gate_result(name: str, ok: bool, evidence: dict[str, Any], missing: list[str] | None = None) -> dict[str, Any]:
+    return {
+        "gate": name,
+        "passed": bool(ok),
+        "missing": missing or [],
+        "evidence": evidence,
+    }
+
+
+def validate_manifest_coverage(manifests: dict[str, list[dict[str, Any]]]) -> dict[str, Any]:
+    hubs = manifests["quest_hubs"]
+    chains = manifests["quest_chains"]
+    clusters = manifests["objective_clusters"]
+    services = manifests["service_index"]
+    item_sources = manifests["item_source_index"]
+    travel_edges = manifests["travel_edges"]
+
+    evidence = {
+        "quest_hubs": len(hubs),
+        "quest_chains": len(chains),
+        "objective_clusters": len(clusters),
+        "service_index": len(services),
+        "item_source_index": len(item_sources),
+        "travel_edges": len(travel_edges),
+        "objective_types": sorted({objective.get("type") for cluster in clusters for objective in (cluster.get("objectives") or []) if objective.get("type")}),
+        "service_types": sorted({service_type for row in services for service_type in (row.get("service_types") or [])}),
+        "item_source_types": sorted({source_type for row in item_sources for source_type in (row.get("source_types") or [])}),
+        "travel_edge_types": sorted({edge.get("edge_type") for edge in travel_edges if edge.get("edge_type")}),
+    }
+
+    gates = [
+        gate_result("movement_smoke", bool(clusters or hubs or travel_edges), evidence, [] if clusters or hubs or travel_edges else ["objective_clusters_or_hubs_or_travel_edges"]),
+        gate_result("kill_quest", has_objective_type(clusters, "creature"), evidence, [] if has_objective_type(clusters, "creature") else ["creature_objective_cluster"]),
+        gate_result("collect_quest", has_objective_type(clusters, "item") and has_item_source_type(item_sources, "creature_loot"), evidence, [] if has_objective_type(clusters, "item") and has_item_source_type(item_sources, "creature_loot") else ["item_objective_cluster", "creature_loot_item_source"]),
+        gate_result("quest_hub_batching", any(len(row.get("quests") or []) >= 1 for row in hubs), evidence, [] if hubs else ["quest_hubs"]),
+        gate_result("trainer_visit", has_service(services, "trainer"), evidence, [] if has_service(services, "trainer") else ["trainer_service"]),
+        gate_result("vendor_repair", has_service(services, "vendor"), evidence, [] if has_service(services, "vendor") else ["vendor_service"]),
+        gate_result("profession_recipe_acquisition", has_service(services, "trainer") or has_service(services, "vendor"), evidence, [] if has_service(services, "trainer") or has_service(services, "vendor") else ["trainer_or_vendor_recipe_source"]),
+        gate_result("material_farming", bool(item_sources) and (has_item_source_type(item_sources, "creature_loot") or has_item_source_type(item_sources, "gameobject_loot")), evidence, [] if item_sources else ["loot_or_gather_item_sources"]),
+        gate_result("smart_loot", bool(item_sources), evidence, [] if item_sources else ["item_source_index"]),
+        gate_result("normal_dungeon_trash", has_travel_edge(travel_edges, "portal_or_instance_entrance"), evidence, [] if has_travel_edge(travel_edges, "portal_or_instance_entrance") else ["instance_entrance_travel_edge"]),
+        gate_result("dungeon_boss", has_travel_edge(travel_edges, "portal_or_instance_entrance"), evidence, [] if has_travel_edge(travel_edges, "portal_or_instance_entrance") else ["instance_entrance_travel_edge"]),
+        gate_result("full_stonecore_clear", False, evidence, ["stonecore_route_manifest", "prepared_5man_provisioning", "live_clear_report"]),
+        gate_result("raid_trash", has_travel_edge(travel_edges, "portal_or_instance_entrance"), evidence, [] if has_travel_edge(travel_edges, "portal_or_instance_entrance") else ["raid_instance_entrance_travel_edge"]),
+        gate_result("raid_boss", False, evidence, ["blackwing_descent_boss_mechanic_manifest", "prepared_10man_provisioning", "live_boss_report"]),
+        gate_result("full_blackwing_descent_clear", False, evidence, ["blackwing_descent_route_manifest", "prepared_10man_provisioning", "live_clear_report"]),
+    ]
+
+    passed = sum(1 for gate in gates if gate["passed"])
+    return {
+        "schema": "bot_world_planner_validation_v1",
+        "passed": passed,
+        "failed": len(gates) - passed,
+        "total": len(gates),
+        "all_passed": passed == len(gates),
+        "gates": gates,
+        "evidence": evidence,
+        "runtime_ml_control": "disabled_until_shadow_assist_replay_validation_passes",
+    }
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Validate autonomous world/planner manifests against staged bot gates.")
+    parser.add_argument("--planner-dir", type=Path, default=Path("dataset/world_planner"))
+    parser.add_argument("--report", type=Path, default=Path("dataset/world_planner/validation_report.json"))
+    parser.add_argument("--fail-on-missing", action="store_true")
+    args = parser.parse_args()
+
+    report = validate_manifest_coverage(load_manifest_dir(args.planner_dir))
+    write_json(args.report, report)
+    if args.fail_on_missing and not report["all_passed"]:
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

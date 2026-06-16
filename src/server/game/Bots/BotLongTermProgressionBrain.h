@@ -95,6 +95,7 @@ public:
     static std::vector<BotActivityScore> ScoreActivities(Player const* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, bool allowQuesting, bool allowCombat, BotExperienceLearningConfig const* learning = nullptr);
     static BotActivityScore ChooseActivity(std::vector<BotActivityScore> const& activities);
     static BotGearUpgradeEvaluation EvaluateGearUpgrade(Player* bot);
+    static BotGearUpgradeEvaluation EvaluateGearTemplate(Player const* bot, ItemTemplate const* proto, float equippedScoreOverride = -1.0f);
 
     static float ScoreItemForRole(Player const* bot, ItemTemplate const* proto);
     static char const* ToString(BotProgressionStage stage);

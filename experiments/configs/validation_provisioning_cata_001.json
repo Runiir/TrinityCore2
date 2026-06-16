@@ -1,0 +1,48 @@
+{
+  "schema": "bot_validation_provisioning_config_v1",
+  "max_level": 85,
+  "account_password": "validation",
+  "default_money": 10000000,
+  "item_guid_base": 9700000,
+  "default_skills": [
+    { "id": 185, "value": 525, "max": 525 },
+    { "id": 129, "value": 525, "max": 525 },
+    { "id": 762, "value": 300, "max": 300 }
+  ],
+  "default_consumables": [
+    { "item_id": 58085, "slot": 40, "count": 20 },
+    { "item_id": 58086, "slot": 41, "count": 20 },
+    { "item_id": 58257, "slot": 42, "count": 20 }
+  ],
+  "scenarios": [
+    {
+      "id": "stonecore_5n",
+      "description": "Prepared 5-man group parked inside Stonecore entrance target for end-to-end dungeon validation.",
+      "start_position": { "map_id": 725, "x": 851.052, "y": 986.474, "z": 317.266, "o": 0.0 },
+      "bots": [
+        { "account": "SCVALTANK", "name": "ScValTank", "role": "tank", "class_spec": "protection_paladin", "race": 1, "class": 2, "level": 85, "glyphs": [45745, 41106, 41092] },
+        { "account": "SCVALHEAL", "name": "ScValHeal", "role": "healer", "class_spec": "holy_priest", "race": 1, "class": 5, "level": 85, "glyphs": [42400, 42403, 42408] },
+        { "account": "SCVALDPSA", "name": "ScValDpsA", "role": "dps", "class_spec": "fire_mage", "race": 1, "class": 8, "level": 85, "glyphs": [42739, 42743, 42753] },
+        { "account": "SCVALDPSB", "name": "ScValDpsB", "role": "dps", "class_spec": "marksmanship_hunter", "race": 1, "class": 3, "level": 85, "glyphs": [42909, 42902, 42915] },
+        { "account": "SCVALDPSC", "name": "ScValDpsC", "role": "dps", "class_spec": "enhancement_shaman", "race": 11, "class": 7, "level": 85, "glyphs": [41518, 41539, 41540] }
+      ]
+    },
+    {
+      "id": "blackwing_descent_10n",
+      "description": "Prepared 10-player raid parked inside Blackwing Descent entrance target for raid validation.",
+      "start_position": { "map_id": 669, "x": -345.872, "y": -224.344, "z": 193.127, "o": 0.0 },
+      "bots": [
+        { "account": "BWDVALTKA", "name": "BwdTankA", "role": "tank", "class_spec": "protection_warrior", "race": 1, "class": 1, "level": 85, "glyphs": [43425, 43412, 43414] },
+        { "account": "BWDVALTKB", "name": "BwdTankB", "role": "tank", "class_spec": "blood_death_knight", "race": 1, "class": 6, "level": 85, "glyphs": [43533, 43547, 43549] },
+        { "account": "BWDVALHLA", "name": "BwdHealA", "role": "healer", "class_spec": "restoration_druid", "race": 4, "class": 11, "level": 85, "glyphs": [45623, 40906, 40913] },
+        { "account": "BWDVALHLB", "name": "BwdHealB", "role": "healer", "class_spec": "holy_paladin", "race": 1, "class": 2, "level": 85, "glyphs": [45741, 41099, 41105] },
+        { "account": "BWDVALHLC", "name": "BwdHealC", "role": "healer", "class_spec": "discipline_priest", "race": 1, "class": 5, "level": 85, "glyphs": [42409, 42400, 42403] },
+        { "account": "BWDVALDPA", "name": "BwdDpsA", "role": "dps", "class_spec": "fire_mage", "race": 1, "class": 8, "level": 85, "glyphs": [42739, 42743, 42753] },
+        { "account": "BWDVALDPB", "name": "BwdDpsB", "role": "dps", "class_spec": "assassination_rogue", "race": 1, "class": 4, "level": 85, "glyphs": [42954, 42957, 42969] },
+        { "account": "BWDVALDPC", "name": "BwdDpsC", "role": "dps", "class_spec": "affliction_warlock", "race": 1, "class": 9, "level": 85, "glyphs": [42456, 42454, 42464] },
+        { "account": "BWDVALDPD", "name": "BwdDpsD", "role": "dps", "class_spec": "marksmanship_hunter", "race": 1, "class": 3, "level": 85, "glyphs": [42909, 42902, 42915] },
+        { "account": "BWDVALDPE", "name": "BwdDpsE", "role": "dps", "class_spec": "elemental_shaman", "race": 11, "class": 7, "level": 85, "glyphs": [41524, 41547, 41552] }
+      ]
+    }
+  ]
+}

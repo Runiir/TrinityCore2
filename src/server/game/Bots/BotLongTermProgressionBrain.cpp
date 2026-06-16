@@ -301,6 +301,40 @@ BotGearUpgradeEvaluation BotLongTermProgressionBrain::EvaluateGearUpgrade(Player
     return best;
 }
 
+BotGearUpgradeEvaluation BotLongTermProgressionBrain::EvaluateGearTemplate(Player const* bot, ItemTemplate const* proto, float equippedScoreOverride)
+{
+    BotGearUpgradeEvaluation evaluation;
+    if (!bot || !IsGear(proto))
+        return evaluation;
+
+    uint8 representativeSlot = RepresentativeEquipSlot(proto->GetInventoryType());
+    if (representativeSlot >= EQUIPMENT_SLOT_END)
+        return evaluation;
+
+    int32 allowableClass = proto->GetAllowableClass();
+    int32 allowableRace = proto->GetAllowableRace();
+    bool classAllowed = allowableClass == -1 || allowableClass == 0 || (allowableClass & (1 << (bot->getClass() - 1)));
+    bool raceAllowed = allowableRace == -1 || allowableRace == 0 || (allowableRace & (1 << (bot->getRace() - 1)));
+    bool levelAllowed = proto->GetRequiredLevel() <= bot->getLevel();
+    if (!classAllowed || !raceAllowed || !levelAllowed)
+        return evaluation;
+
+    float equippedScore = equippedScoreOverride >= 0.0f ? equippedScoreOverride : 0.0f;
+    if (equippedScoreOverride < 0.0f)
+        if (Item* equipped = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, representativeSlot))
+            equippedScore = ScoreItemForRole(bot, equipped->GetTemplate());
+
+    evaluation.ItemId = proto->GetId();
+    evaluation.InventoryType = proto->GetInventoryType();
+    evaluation.Quality = proto->GetQuality();
+    evaluation.CandidateScore = ScoreItemForRole(bot, proto);
+    evaluation.EquippedScore = equippedScore;
+    evaluation.PowerDelta = evaluation.CandidateScore - evaluation.EquippedScore;
+    evaluation.CanEquip = true;
+    evaluation.Upgrade = evaluation.PowerDelta > 0.5f;
+    return evaluation;
+}
+
 float BotLongTermProgressionBrain::ScoreItemForRole(Player const* bot, ItemTemplate const* proto)
 {
     if (!bot || !IsGear(proto))

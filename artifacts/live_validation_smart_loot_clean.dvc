@@ -1,0 +1,6 @@
+outs:
+- md5: bc3fc98ea53d6f76c40bd90dc6e0a4e7.dir
+  size: 139115
+  nfiles: 3
+  hash: md5
+  path: live_validation_smart_loot_clean

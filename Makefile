@@ -25,6 +25,7 @@ BOTPOLICYMODEL_VERSION ?= $(MODEL_VERSION)
 BOTPOLICYMODEL_SCORE_WEIGHT ?= 1.0
 BOTPOLICYMODEL_FAIL_CLOSED ?= 1
 CHARACTER_DB_URL ?= mysql://trinity:trinity@127.0.0.1:3306/characters
+LIVE_VALIDATION_DIR ?= dataset/live_validation
 BOT_DATASET_DIR ?= dataset/bot_ml
 BOT_MODEL_DIR ?= models/bot_policy
 BOT_EVAL_DIR ?= evaluations/bot_policy
@@ -34,7 +35,7 @@ STUCK_WINDOW_SEC ?= 180
 QUEST_WINDOW_SEC ?= 600
 REWARD_WINDOW_SEC ?= 300
 
-.PHONY: help build binaries runtime-image local-configure local-build local-install db up down logs shell auth world test-configs host-auth host-world host-world-botexp host-world-botexp-real host-world-botexp-watch host-world-botexp-small host-world-botexp-shadow bot-ml-export bot-ml-build-dataset bot-ml-train bot-ml-evaluate bot-ml-register bot-ml-full clean-db clean-images data-dir require-client extract-maps extract-vmaps assemble-vmaps extract-mmaps extract-assets
+.PHONY: help build binaries runtime-image local-configure local-build local-install db up down logs shell auth world test-configs host-auth host-world host-world-botexp host-world-botexp-real host-world-botexp-watch host-world-botexp-small host-world-botexp-shadow bot-live-validate bot-ml-export bot-ml-build-dataset bot-ml-train bot-ml-evaluate bot-ml-register bot-ml-full clean-db clean-images data-dir require-client extract-maps extract-vmaps assemble-vmaps extract-mmaps extract-assets
 
 help:
 	@printf '%s\n' \
@@ -61,6 +62,7 @@ help:
 		'  make host-world-botexp-real   Run real autonomy from saved/race start positions' \
 		'  make host-world-botexp-watch  Run watch/debug mode spawning near the GM' \
 		'  make host-world-botexp-shadow MODEL_VERSION=policy_xxx  Run shadow policy tracing' \
+		'  make bot-live-validate        Pipe .botauto diagnose/trace into worldserver and write a report' \
 		'  make bot-ml-full MODEL_VERSION=policy_xxx  Export, label, validate, train, evaluate, register' \
 		'  make logs         Follow all service logs' \
 		'  make shell        Open a shell in the server image' \
@@ -148,6 +150,10 @@ host-world-botexp-watch:
 
 host-world-botexp-shadow:
 	$(MAKE) host-world BOTWORLD_ENABLE=1 BOTWORLD_AUTOSTART=1 BOTWORLD_AUTOSTART_RECORDING=1 BOTWORLD_RECORDING_WINDOW_MINUTES=$(BOTWORLD_RECORDING_WINDOW_MINUTES) BOTWORLD_TARGET_POPULATION=$(BOTWORLD_TARGET_POPULATION) BOTWORLD_SPAWN_MODE=resume_or_race_start BOTWORLD_ALLOW_CONFIGURED_CENTER_FALLBACK=0 BOTWORLD_USE_SAVED_POSITION=1 BOTPOLICYMODEL_ENABLE=1 BOTPOLICYMODEL_MODE=shadow BOTPOLICYMODEL_VERSION=$(MODEL_VERSION) BOTPOLICYMODEL_FAIL_CLOSED=1
+
+bot-live-validate: local-configure db test-configs
+	cmake --build $(BUILD_DIR) --target worldserver -j"$(JOBS)"
+	pixi run python -m tools.bot_ml.run_live_bot_validation --worldserver "$(BUILD_DIR)/src/server/worldserver/worldserver" --config "$(WORLD_TEST_CONF)" --output-dir "$(LIVE_VALIDATION_DIR)"
 
 bot-ml-export:
 	pixi run python -m tools.bot_ml.export_bot_dataset --database-url "$(CHARACTER_DB_URL)" --output-dir "$(BOT_DATASET_DIR)/raw"

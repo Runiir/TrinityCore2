@@ -1,0 +1,6 @@
+outs:
+- md5: df35361d7fc47a25303485ec5e66e4f3.dir
+  size: 189316
+  nfiles: 3
+  hash: md5
+  path: live_validation_material_memory

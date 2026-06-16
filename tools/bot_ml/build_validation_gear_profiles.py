@@ -1,0 +1,551 @@
+from __future__ import annotations
+
+import argparse
+import struct
+from collections import defaultdict
+from pathlib import Path
+from typing import Any
+
+try:
+    from .common import stable_hash, write_json
+    from .extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
+    from .build_validation_provisioning import REQUIRED_EQUIPMENT_SLOTS, load_config
+except ImportError:
+    from common import stable_hash, write_json
+    from extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
+    from build_validation_provisioning import REQUIRED_EQUIPMENT_SLOTS, load_config
+
+
+STAT_NAMES = {
+    3: "agility",
+    4: "strength",
+    5: "intellect",
+    6: "spirit",
+    7: "stamina",
+    13: "dodge",
+    14: "parry",
+    15: "block",
+    31: "hit",
+    32: "crit",
+    36: "haste",
+    37: "expertise",
+    38: "attack_power",
+    45: "spell_power",
+    49: "mastery",
+}
+
+ARMOR_SUBCLASS_BY_CLASS = {
+    1: 4,   # warrior plate
+    2: 4,   # paladin plate
+    3: 3,   # hunter mail
+    4: 2,   # rogue leather
+    5: 1,   # priest cloth
+    6: 4,   # death knight plate
+    7: 3,   # shaman mail
+    8: 1,   # mage cloth
+    9: 1,   # warlock cloth
+    11: 2,  # druid leather
+}
+
+INVENTORY_TO_EQUIPMENT_SLOTS = {
+    1: [0],      # head
+    2: [1],      # neck
+    3: [2],      # shoulder
+    5: [4],      # chest
+    6: [5],      # waist
+    7: [6],      # legs
+    8: [7],      # feet
+    9: [8],      # wrists
+    10: [9],     # hands
+    11: [10, 11],
+    12: [12, 13],
+    14: [16],    # shield
+    16: [14],    # cloak
+    17: [15],    # two-handed weapon
+    20: [4],     # robe
+    21: [15],    # main hand
+    22: [16],    # off hand weapon
+    23: [16],    # holdable
+    26: [17],    # ranged/right
+    28: [17],    # relic
+}
+
+WEAPON_INVENTORY_TYPES = {13, 14, 17, 21, 22, 23, 25, 26, 28}
+GENERAL_ARMOR_INVENTORY_TYPES = {2, 11, 12, 16}
+ARMOR_INVENTORY_TYPES = {1, 3, 5, 6, 7, 8, 9, 10, 20}
+
+STAT_WEIGHTS_BY_ROLE = {
+    "tank": {"stamina": 2.0, "dodge": 1.3, "parry": 1.3, "mastery": 1.1, "strength": 1.0, "block": 0.8, "expertise": 0.7, "hit": 0.5, "crit": 0.2, "haste": 0.2},
+    "healer": {"intellect": 2.0, "spirit": 1.4, "spell_power": 1.1, "haste": 0.9, "mastery": 0.8, "crit": 0.5, "stamina": 0.2},
+    "dps_strength": {"strength": 2.0, "attack_power": 1.0, "hit": 1.0, "expertise": 0.9, "mastery": 0.8, "crit": 0.7, "haste": 0.6, "stamina": 0.1},
+    "dps_agility": {"agility": 2.0, "attack_power": 0.9, "hit": 1.0, "expertise": 0.8, "mastery": 0.8, "crit": 0.7, "haste": 0.6, "stamina": 0.1},
+    "dps_intellect": {"intellect": 2.0, "spell_power": 1.2, "hit": 1.0, "haste": 0.9, "mastery": 0.8, "crit": 0.7, "spirit": 0.2, "stamina": 0.1},
+}
+
+ITEM_FMT = "niiiiiii"
+ITEM_SPARSE_FMT = "niiiffiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiifiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiisssssiiiiiiiiiiiiiiiiiiiiiifiiifii"
+SPELL_ITEM_ENCHANTMENT_FMT = "nxiiiiiixxxiiisiiiiiiix"
+GEM_PROPERTIES_FMT = "nixxii"
+ITEM_ENCHANTMENT_TYPE_STAT = 5
+MAX_ENCHANTMENT_SLOT = 15
+MAX_ENCHANTMENT_OFFSET = 3
+SOCKET_ENCHANTMENT_FIELD_OFFSETS = [6, 9, 12]
+
+
+def read_c_string(data: bytes, offset: int) -> str:
+    if offset <= 0 or offset >= len(data):
+        return ""
+    end = data.find(b"\0", offset)
+    if end == -1:
+        end = len(data)
+    return data[offset:end].decode("utf-8", errors="replace")
+
+
+def load_wdb2(path: Path, fmt: str) -> list[dict[str, Any]]:
+    blob = path.read_bytes()
+    if len(blob) < 48 or blob[:4] != b"WDB2":
+        raise ValueError(f"{path} is not a WDB2 file")
+    record_count, field_count, record_size, string_size, _table_hash, build, _unk1 = struct.unpack_from("<7I", blob, 4)
+    offset = 32
+    min_index = max_index = 0
+    if build > 12880:
+        min_index, max_index, _locale, _unk5 = struct.unpack_from("<4i", blob, offset)
+        offset += 16
+    if max_index:
+        span = max_index - min_index + 1
+        offset += span * 4 + span * 2
+    if field_count != len(fmt):
+        raise ValueError(f"{path} field count {field_count} does not match format length {len(fmt)}")
+    records_blob = blob[offset:offset + (record_count * record_size)]
+    string_blob = blob[offset + (record_count * record_size):offset + (record_count * record_size) + string_size]
+    rows = []
+    for row_index in range(record_count):
+        row_offset = row_index * record_size
+        values = []
+        field_offset = 0
+        for field_type in fmt:
+            if field_type == "f":
+                values.append(struct.unpack_from("<f", records_blob, row_offset + field_offset)[0])
+            elif field_type == "s":
+                values.append(read_c_string(string_blob, struct.unpack_from("<I", records_blob, row_offset + field_offset)[0]))
+            else:
+                raw = struct.unpack_from("<I", records_blob, row_offset + field_offset)[0]
+                if field_type == "i" and raw >= 0x80000000:
+                    raw -= 0x100000000
+                values.append(raw)
+            field_offset += 4
+        rows.append({"values": values})
+    return rows
+
+
+def load_wdbc(path: Path, fmt: str) -> list[dict[str, Any]]:
+    blob = path.read_bytes()
+    if len(blob) < 20 or blob[:4] != b"WDBC":
+        raise ValueError(f"{path} is not a WDBC file")
+    record_count, field_count, record_size, string_size = struct.unpack_from("<4I", blob, 4)
+    if field_count != len(fmt):
+        raise ValueError(f"{path} field count {field_count} does not match format length {len(fmt)}")
+    records_offset = 20
+    records_blob = blob[records_offset:records_offset + (record_count * record_size)]
+    string_blob = blob[records_offset + (record_count * record_size):records_offset + (record_count * record_size) + string_size]
+    rows = []
+    for row_index in range(record_count):
+        row_offset = row_index * record_size
+        values = []
+        field_offset = 0
+        for field_type in fmt:
+            if field_type == "f":
+                values.append(struct.unpack_from("<f", records_blob, row_offset + field_offset)[0])
+            elif field_type == "s":
+                values.append(read_c_string(string_blob, struct.unpack_from("<I", records_blob, row_offset + field_offset)[0]))
+            else:
+                raw = struct.unpack_from("<I", records_blob, row_offset + field_offset)[0]
+                if field_type == "i" and raw >= 0x80000000:
+                    raw -= 0x100000000
+                values.append(raw)
+            field_offset += 4
+        rows.append({"values": values})
+    return rows
+
+
+def load_db2_item_rows(dbc_dir: Path) -> list[dict[str, Any]]:
+    item_rows = load_wdb2(dbc_dir / "Item.db2", ITEM_FMT)
+    sparse_rows = load_wdb2(dbc_dir / "Item-sparse.db2", ITEM_SPARSE_FMT)
+    item_by_id = {
+        int(row["values"][0]): {
+            "ID": int(row["values"][0]),
+            "ClassID": int(row["values"][1]),
+            "SubclassID": int(row["values"][2]),
+            "InventoryType": int(row["values"][6]),
+        }
+        for row in item_rows
+    }
+    merged = []
+    for row in sparse_rows:
+        values = row["values"]
+        item_id = int(values[0])
+        base = item_by_id.get(item_id)
+        if not base:
+            continue
+        merged_row: dict[str, Any] = {
+            **base,
+            "Display": values[99] if values[99] not in {-1, ""} else values[96],
+            "Quality": int(values[1]),
+            "ItemLevel": int(values[12]),
+            "RequiredLevel": int(values[13]),
+            "AllowableClass": int(values[10]),
+            "InventoryType": int(base.get("InventoryType") or values[9] or 0),
+            "SocketColor1": int(values[118]),
+            "SocketColor2": int(values[119]),
+            "SocketColor3": int(values[120]),
+            "GemProperties": int(values[125]),
+            "source": "client_db2",
+        }
+        for index in range(1, 11):
+            merged_row[f"ItemStatType{index}"] = int(values[23 + index])
+            merged_row[f"ItemStatValue{index}"] = int(values[33 + index])
+        merged.append(merged_row)
+    return merged
+
+
+def load_spell_item_enchantments(dbc_dir: Path, max_level: int = 85) -> list[dict[str, Any]]:
+    path = dbc_dir / "SpellItemEnchantment.dbc"
+    if not path.exists():
+        return []
+    enchantments = []
+    for row in load_wdbc(path, SPELL_ITEM_ENCHANTMENT_FMT):
+        values = row["values"]
+        effects = [int(value) for value in values[2:5]]
+        effect_points = [int(value) for value in values[5:8]]
+        effect_args = [int(value) for value in values[11:14]]
+        if not any(effect == ITEM_ENCHANTMENT_TYPE_STAT for effect in effects):
+            continue
+        stats: dict[str, int] = {}
+        for effect, points, arg in zip(effects, effect_points, effect_args):
+            stat_name = STAT_NAMES.get(arg)
+            if effect == ITEM_ENCHANTMENT_TYPE_STAT and stat_name and points > 0:
+                stats[stat_name] = stats.get(stat_name, 0) + points
+        if not stats:
+            continue
+        total_points = sum(stats.values())
+        min_level = int(values[21])
+        required_skill = int(values[19])
+        if min_level > max_level or total_points > 250:
+            continue
+        enchantments.append(
+            {
+                "id": int(values[0]),
+                "name": values[14],
+                "stats": stats,
+                "min_level": min_level,
+                "required_skill_id": required_skill,
+                "required_skill_rank": int(values[20]),
+                "selection_source": "spell_item_enchantment_dbc_stat_score",
+            }
+        )
+    return enchantments
+
+
+def load_gem_properties(dbc_dir: Path) -> dict[int, dict[str, int]]:
+    path = dbc_dir / "GemProperties.dbc"
+    if not path.exists():
+        return {}
+    properties = {}
+    for row in load_wdbc(path, GEM_PROPERTIES_FMT):
+        values = row["values"]
+        properties[int(values[0])] = {
+            "enchant_id": int(values[1]),
+            "color": int(values[4]),
+            "min_item_level": int(values[5]),
+        }
+    return properties
+
+
+def role_archetype(bot: dict[str, Any]) -> str:
+    role = str(bot.get("role", "dps"))
+    class_id = int(bot.get("class", 0))
+    spec = str(bot.get("class_spec", ""))
+    if role in {"tank", "healer"}:
+        return role
+    if class_id in {1, 2, 6}:
+        return "dps_strength"
+    if class_id in {3, 4} or (class_id == 11 and "feral" in spec):
+        return "dps_agility"
+    if class_id == 7 and "enhancement" in spec:
+        return "dps_agility"
+    return "dps_intellect"
+
+
+def stat_map(item: dict[str, Any]) -> dict[str, int]:
+    stats: dict[str, int] = {}
+    for index in range(1, 11):
+        stat_type = int(item.get(f"ItemStatType{index}") or 0)
+        stat_value = int(item.get(f"ItemStatValue{index}") or 0)
+        name = STAT_NAMES.get(stat_type)
+        if name and stat_value:
+            stats[name] = stats.get(name, 0) + stat_value
+    return stats
+
+
+def class_allowed(item: dict[str, Any], class_id: int) -> bool:
+    mask = int(item.get("AllowableClass") or -1)
+    return mask in {-1, 0} or bool(mask & (1 << (class_id - 1)))
+
+
+def armor_allowed(item: dict[str, Any], class_id: int) -> bool:
+    inventory_type = int(item.get("InventoryType") or 0)
+    subclass = int(item.get("SubclassID") or 0)
+    class_id_item = int(item.get("ClassID") or 0)
+    if class_id_item == 2:
+        return inventory_type in WEAPON_INVENTORY_TYPES
+    if inventory_type in GENERAL_ARMOR_INVENTORY_TYPES:
+        return True
+    if inventory_type in ARMOR_INVENTORY_TYPES:
+        return subclass == ARMOR_SUBCLASS_BY_CLASS.get(class_id, subclass)
+    return inventory_type in INVENTORY_TO_EQUIPMENT_SLOTS
+
+
+def item_score(item: dict[str, Any], weights: dict[str, float]) -> float:
+    stats = stat_map(item)
+    return float(item.get("ItemLevel") or 0) * 10.0 + sum(float(value) * weights.get(name, 0.0) for name, value in stats.items())
+
+
+def enchant_score(enchantment: dict[str, Any], weights: dict[str, float]) -> float:
+    stats = enchantment.get("stats", {})
+    return sum(float(value) * weights.get(name, 0.0) for name, value in stats.items())
+
+
+def enchantments_string(enchant_id: int, gem_enchant_ids: list[int] | None = None) -> str:
+    fields = [0] * (MAX_ENCHANTMENT_SLOT * MAX_ENCHANTMENT_OFFSET)
+    fields[0] = int(enchant_id)
+    for field_offset, gem_enchant_id in zip(SOCKET_ENCHANTMENT_FIELD_OFFSETS, gem_enchant_ids or []):
+        fields[field_offset] = int(gem_enchant_id)
+    return " ".join(str(value) for value in fields)
+
+
+def select_enchantment(enchantments: list[dict[str, Any]], weights: dict[str, float]) -> dict[str, Any] | None:
+    ranked = sorted(
+        ((enchant_score(enchantment, weights), int(enchantment["id"]), enchantment) for enchantment in enchantments),
+        key=lambda row: (row[0], row[1]),
+        reverse=True,
+    )
+    return next((enchantment for score, _id, enchantment in ranked if score > 0.0), None)
+
+
+def build_gem_catalog(items: list[dict[str, Any]], gem_properties: dict[int, dict[str, int]], enchantments_by_id: dict[int, dict[str, Any]]) -> list[dict[str, Any]]:
+    gems = []
+    for item in items:
+        gem_property_id = int(item.get("GemProperties") or 0)
+        gem_property = gem_properties.get(gem_property_id)
+        if not gem_property:
+            continue
+        enchantment = enchantments_by_id.get(int(gem_property["enchant_id"]))
+        if not enchantment:
+            continue
+        gems.append(
+            {
+                "item_id": int(item["ID"]),
+                "name": item.get("Display") or "",
+                "quality": int(item.get("Quality") or 0),
+                "item_level": int(item.get("ItemLevel") or 0),
+                "required_level": int(item.get("RequiredLevel") or 0),
+                "gem_property_id": gem_property_id,
+                "enchant_id": int(gem_property["enchant_id"]),
+                "color": int(gem_property["color"]),
+                "stats": enchantment.get("stats", {}),
+            }
+        )
+    return gems
+
+
+def select_gem(socket_color: int, gems: list[dict[str, Any]], weights: dict[str, float]) -> dict[str, Any] | None:
+    compatible = [gem for gem in gems if int(gem.get("color") or 0) & int(socket_color)]
+    ranked = sorted(
+        ((sum(float(value) * weights.get(name, 0.0) for name, value in gem.get("stats", {}).items()), int(gem["item_level"]), int(gem["item_id"]), gem) for gem in compatible),
+        key=lambda row: (row[0], row[1], row[2]),
+        reverse=True,
+    )
+    return next((gem for score, _level, _id, gem in ranked if score > 0.0), None)
+
+
+def fetch_hotfix_items(hotfix_url: str, min_item_level: int, max_required_level: int) -> list[dict[str, Any]]:
+    conn = connect_mysql(hotfix_url)
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                "SELECT i.ID, s.Display, i.ClassID, i.SubclassID, COALESCE(NULLIF(i.InventoryType, 0), s.InventoryType) AS InventoryType, "
+                "s.Quality, s.ItemLevel, s.RequiredLevel, s.AllowableClass, s.SocketColor1, s.SocketColor2, s.SocketColor3, "
+                + ", ".join(f"s.ItemStatType{i}, s.ItemStatValue{i}" for i in range(1, 11))
+                + " FROM item i JOIN item_sparse s ON s.ID = i.ID "
+                "WHERE i.ClassID IN (2, 4) AND s.Quality >= 3 AND s.RequiredLevel <= %s AND s.ItemLevel >= %s",
+                (max_required_level, min_item_level),
+            )
+            rows = list(cursor.fetchall())
+            for row in rows:
+                row["source"] = "hotfix_db"
+            return rows
+    finally:
+        conn.close()
+
+
+def fetch_items(hotfix_url: str, dbc_dir: Path | None, min_item_level: int, max_required_level: int) -> list[dict[str, Any]]:
+    by_id: dict[int, dict[str, Any]] = {}
+    if dbc_dir and (dbc_dir / "Item.db2").exists() and (dbc_dir / "Item-sparse.db2").exists():
+        for row in load_db2_item_rows(dbc_dir):
+            if int(row.get("ItemLevel") or 0) >= min_item_level and int(row.get("RequiredLevel") or 0) <= max_required_level:
+                by_id[int(row["ID"])] = row
+    for row in fetch_hotfix_items(hotfix_url, min_item_level, max_required_level):
+        by_id[int(row["ID"])] = row
+    return list(by_id.values())
+
+
+def choose_loadout(
+    bot: dict[str, Any],
+    items: list[dict[str, Any]],
+    enchantments: list[dict[str, Any]] | None = None,
+    gems: list[dict[str, Any]] | None = None,
+) -> list[dict[str, Any]]:
+    class_id = int(bot["class"])
+    weights = STAT_WEIGHTS_BY_ROLE[role_archetype(bot)]
+    selected_enchantment = select_enchantment(enchantments or [], weights)
+    candidates_by_slot: dict[int, list[tuple[float, dict[str, Any]]]] = defaultdict(list)
+    for item in items:
+        if not class_allowed(item, class_id) or not armor_allowed(item, class_id):
+            continue
+        inventory_type = int(item.get("InventoryType") or 0)
+        for slot in INVENTORY_TO_EQUIPMENT_SLOTS.get(inventory_type, []):
+            if slot in REQUIRED_EQUIPMENT_SLOTS:
+                candidates_by_slot[slot].append((item_score(item, weights), item))
+
+    used: set[int] = set()
+    loadout = []
+    for slot in REQUIRED_EQUIPMENT_SLOTS:
+        ranked = sorted(candidates_by_slot.get(slot, []), key=lambda pair: (pair[0], int(pair[1].get("ItemLevel") or 0), int(pair[1].get("ID") or 0)), reverse=True)
+        selected = next((item for _score, item in ranked if int(item["ID"]) not in used), None)
+        if not selected:
+            continue
+        used.add(int(selected["ID"]))
+        sockets = [int(selected.get(f"SocketColor{i}") or 0) for i in range(1, 4)]
+        enchant_id = int(selected_enchantment["id"]) if selected_enchantment else 0
+        socket_colors = [socket for socket in sockets if socket]
+        selected_gems = [select_gem(socket, gems or [], weights) for socket in socket_colors]
+        gem_item_ids = [int(gem["item_id"]) for gem in selected_gems if gem]
+        gem_enchant_ids = [int(gem["enchant_id"]) for gem in selected_gems if gem]
+        loadout.append(
+            {
+                "slot": slot,
+                "item_id": int(selected["ID"]),
+                "name": selected.get("Display") or "",
+                "item_level": int(selected.get("ItemLevel") or 0),
+                "inventory_type": int(selected.get("InventoryType") or 0),
+                "source": selected.get("source") or "unknown",
+                "stats": stat_map(selected),
+                "socket_colors": socket_colors,
+                "gem_item_ids": gem_item_ids,
+                "gem_enchant_ids": gem_enchant_ids,
+                "enchant_id": enchant_id,
+                "enchant_name": selected_enchantment.get("name", "") if selected_enchantment else "",
+                "enchant_stats": selected_enchantment.get("stats", {}) if selected_enchantment else {},
+                "enchantments": enchantments_string(enchant_id, gem_enchant_ids) if enchant_id or gem_enchant_ids else "",
+                "enchant_selection_source": selected_enchantment.get("selection_source", "") if selected_enchantment else "",
+                "selection_score": round(item_score(selected, weights), 3),
+            }
+        )
+    return loadout
+
+
+def build_profiles(
+    config: dict[str, Any],
+    items: list[dict[str, Any]],
+    enchantments: list[dict[str, Any]] | None = None,
+    gems: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    profiles: dict[str, Any] = {}
+    for scenario in config["scenarios"]:
+        for bot in scenario["bots"]:
+            key = str(bot.get("class_spec") or bot["name"])
+            profiles.setdefault(
+                key,
+                {
+                    "class_id": int(bot["class"]),
+                    "role": bot["role"],
+                    "archetype": role_archetype(bot),
+                    "equipment": choose_loadout(bot, items, enchantments, gems),
+                    "enchant_selection_mode": "dbc_stat_score_unverified_slot_applicability" if enchantments else "none",
+                    "gem_selection_mode": "gem_properties_dbc_socket_color_score" if gems else "none",
+                },
+            )
+    for profile in profiles.values():
+        covered = {int(item["slot"]) for item in profile["equipment"]}
+        profile["missing_slots"] = sorted(set(REQUIRED_EQUIPMENT_SLOTS) - covered)
+        profile["complete_equipment_slots"] = not profile["missing_slots"]
+        profile["gemmed"] = all(not item.get("socket_colors") or item.get("gem_item_ids") for item in profile["equipment"])
+        profile["enchanted"] = all(int(item.get("enchant_id") or 0) for item in profile["equipment"])
+    return profiles
+
+
+def build_report(profiles: dict[str, Any], source_database: dict[str, Any]) -> dict[str, Any]:
+    complete = sum(1 for profile in profiles.values() if profile["complete_equipment_slots"])
+    return {
+        "schema": "bot_validation_gear_profiles_report_v1",
+        "profile_count": len(profiles),
+        "complete_equipment_profiles": complete,
+        "all_equipment_slots_complete": complete == len(profiles),
+        "all_gemmed": all(profile["gemmed"] for profile in profiles.values()),
+        "all_enchanted": all(profile["enchanted"] for profile in profiles.values()),
+        "enchant_selection_modes": sorted({profile.get("enchant_selection_mode", "none") for profile in profiles.values()}),
+        "gem_selection_modes": sorted({profile.get("gem_selection_mode", "none") for profile in profiles.values()}),
+        "enchant_applicability_verified_by_server": False,
+        "source_counts": {
+            "client_db2_items": sum(1 for profile in profiles.values() for item in profile["equipment"] if item.get("source") == "client_db2"),
+            "hotfix_db_items": sum(1 for profile in profiles.values() for item in profile["equipment"] if item.get("source") == "hotfix_db"),
+            "enchanted_items": sum(1 for profile in profiles.values() for item in profile["equipment"] if int(item.get("enchant_id") or 0)),
+            "socketed_items": sum(1 for profile in profiles.values() for item in profile["equipment"] if item.get("socket_colors")),
+            "gemmed_items": sum(1 for profile in profiles.values() for item in profile["equipment"] if item.get("socket_colors") and item.get("gem_item_ids")),
+        },
+        "source_database": source_database,
+        "runtime_ml_control": "disabled_teacher_policy_validation_only",
+    }
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Build validation gear profiles from Cataclysm hotfix item data.")
+    parser.add_argument("--config", type=Path, default=Path("experiments/configs/validation_provisioning_cata_001.json"))
+    parser.add_argument("--worldserver-conf", type=Path, default=Path("trinity-worldserver-test.conf"))
+    parser.add_argument("--hotfix-database-url", help="MySQL URL for the hotfix database. Defaults to HotfixDatabaseInfo from --worldserver-conf.")
+    parser.add_argument("--dbc-dir", type=Path, default=Path("data/dbc/enUS"), help="Directory containing Item.db2 and Item-sparse.db2.")
+    parser.add_argument("--output-dir", type=Path, default=Path("dataset/validation_gear_profiles"))
+    parser.add_argument("--min-item-level", type=int, default=1)
+    parser.add_argument("--max-required-level", type=int, default=85)
+    args = parser.parse_args()
+
+    config = load_config(args.config)
+    hotfix_url = args.hotfix_database_url or database_url_from_worldserver_conf(args.worldserver_conf, "HotfixDatabaseInfo")
+    items = fetch_items(hotfix_url, args.dbc_dir, args.min_item_level, args.max_required_level)
+    enchantments = load_spell_item_enchantments(args.dbc_dir, args.max_required_level) if args.dbc_dir else []
+    enchantments_by_id = {int(enchantment["id"]): enchantment for enchantment in enchantments}
+    gems = build_gem_catalog(items, load_gem_properties(args.dbc_dir), enchantments_by_id) if args.dbc_dir else []
+    profiles = build_profiles(config, items, enchantments, gems)
+    source_database = sanitize_database_url(hotfix_url)
+    report = build_report(profiles, source_database)
+    args.output_dir.mkdir(parents=True, exist_ok=True)
+    write_json(args.output_dir / "profiles.json", {"schema": "bot_validation_gear_profiles_v1", "profiles": profiles, "source_database": source_database, "dbc_dir": str(args.dbc_dir)})
+    write_json(args.output_dir / "report.json", report)
+    write_json(
+        args.output_dir / "manifest.json",
+        {
+            "schema": "bot_validation_gear_profiles_manifest_v1",
+            "config_hash": stable_hash(config),
+            "profile_hash": stable_hash(profiles),
+            "profile_count": len(profiles),
+            "enchantment_count": len(enchantments),
+            "gem_count": len(gems),
+            "outputs": {"profiles": "profiles.json", "report": "report.json"},
+            "runtime_ml_control": "disabled_teacher_policy_validation_only",
+        },
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

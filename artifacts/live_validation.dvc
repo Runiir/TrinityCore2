@@ -1,0 +1,6 @@
+outs:
+- md5: 177cd8888dffc6cb9ffea2520294eec5.dir
+  size: 123783
+  nfiles: 3
+  hash: md5
+  path: live_validation
