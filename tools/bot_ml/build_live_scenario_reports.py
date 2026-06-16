@@ -52,6 +52,17 @@ def stage_passed(report: dict[str, Any], stage: str) -> bool:
     return False
 
 
+def unique_strings(*values: Any) -> list[str]:
+    rows: list[str] = []
+    for value in values:
+        candidates = value if isinstance(value, list) else [value]
+        for candidate in candidates:
+            text = str(candidate or "")
+            if text and text not in rows:
+                rows.append(text)
+    return rows
+
+
 def infer_report(report: dict[str, Any], scenario: dict[str, Any], routes: list[dict[str, Any]], existing: dict[str, Any]) -> dict[str, Any]:
     scenario_id = str(scenario.get("scenario_id") or "")
     difficulty = str(scenario.get("difficulty") or "")
@@ -59,6 +70,13 @@ def infer_report(report: dict[str, Any], scenario: dict[str, Any], routes: list[
     actions = action_names(report)
     summary = report.get("summary") if isinstance(report.get("summary"), dict) else {}
     evidence = report.get("evidence") if isinstance(report.get("evidence"), dict) else {}
+    validation_context = report.get("validation_context") if isinstance(report.get("validation_context"), dict) else {}
+    route_segment_id = str(validation_context.get("segment_id") or "")
+    route_node_id = str(validation_context.get("route_node_id") or "")
+    route_label = str(validation_context.get("route_label") or "")
+    route_kind = str(validation_context.get("route_kind") or "")
+    route_step = int(validation_context.get("route_step") or 0)
+    mechanic_profile = str(validation_context.get("mechanic_profile") or "")
     boss_action = "raid_boss_killed" if raid else "boss_killed"
     observed_boss_kills = sum(1 for action in actions if action == boss_action)
     observed_boss_kills = max(observed_boss_kills, int(summary.get("raid_boss_kills") or 0) if raid else 0)
@@ -73,6 +91,23 @@ def infer_report(report: dict[str, Any], scenario: dict[str, Any], routes: list[
     clear_complete = bool(existing.get("clear_complete")) or stage_passed(report, full_clear_stage) or (expected_bosses > 0 and boss_kills >= expected_bosses and int(evidence.get("failures") or 0) == 0)
 
     source_live_report = str(report.get("source_live_report") or "")
+    segment_results = []
+    if route_segment_id or route_node_id:
+        segment_results.append(
+            {
+                "segment_id": route_segment_id,
+                "route_node_id": route_node_id,
+                "route_label": route_label,
+                "route_kind": route_kind,
+                "route_step": route_step,
+                "mechanic_profile": mechanic_profile,
+                "boss_kills": boss_kills,
+                "raid_boss_kills": boss_kills if raid else 0,
+                "trash_pulls": trash_pulls,
+                "clear_complete": clear_complete,
+                "source_live_report": source_live_report,
+            }
+        )
     row = {
         "schema": "bot_live_scenario_report_v1",
         "scenario_id": scenario_id,
@@ -89,6 +124,11 @@ def infer_report(report: dict[str, Any], scenario: dict[str, Any], routes: list[
         "clear_complete": clear_complete,
         "source_live_report": source_live_report,
         "source_live_reports": [source_live_report] if source_live_report else [],
+        "source_segments": unique_strings(route_segment_id),
+        "source_route_nodes": unique_strings(route_node_id),
+        "source_route_labels": unique_strings(route_label),
+        "source_mechanic_profiles": unique_strings(mechanic_profile),
+        "segment_results": segment_results,
         "source_trace_entries": int(report.get("trace_entries") or 0),
         "runtime_ml_control": "disabled_until_live_clear_validation_passes",
     }
@@ -111,6 +151,11 @@ def merge_report_rows(left: dict[str, Any], right: dict[str, Any]) -> dict[str, 
         for extra in row.get("source_live_reports") or []:
             if extra and extra not in source_reports:
                 source_reports.append(str(extra))
+    source_segments = unique_strings(left.get("source_segments") or [], right.get("source_segments") or [])
+    source_route_nodes = unique_strings(left.get("source_route_nodes") or [], right.get("source_route_nodes") or [])
+    source_route_labels = unique_strings(left.get("source_route_labels") or [], right.get("source_route_labels") or [])
+    source_mechanic_profiles = unique_strings(left.get("source_mechanic_profiles") or [], right.get("source_mechanic_profiles") or [])
+    segment_results = list(left.get("segment_results") or []) + list(right.get("segment_results") or [])
     merged.update(
         {
             "prepared_group": bool(left.get("prepared_group") or right.get("prepared_group")),
@@ -123,6 +168,11 @@ def merge_report_rows(left: dict[str, Any], right: dict[str, Any]) -> dict[str, 
             "clear_complete": bool(left.get("clear_complete") or right.get("clear_complete") or (expected_bosses > 0 and max(boss_kills, raid_boss_kills) >= expected_bosses)),
             "source_live_report": source_reports[0] if source_reports else "",
             "source_live_reports": source_reports,
+            "source_segments": source_segments,
+            "source_route_nodes": source_route_nodes,
+            "source_route_labels": source_route_labels,
+            "source_mechanic_profiles": source_mechanic_profiles,
+            "segment_results": segment_results,
             "source_trace_entries": int(left.get("source_trace_entries") or 0) + int(right.get("source_trace_entries") or 0),
         }
     )
@@ -141,6 +191,10 @@ def build_reports_from_live_reports(live_reports: list[dict[str, Any]], scenario
             continue
         merged: dict[str, Any] = {}
         for live_report in live_reports:
+            validation_context = live_report.get("validation_context") if isinstance(live_report.get("validation_context"), dict) else {}
+            context_scenario_id = str(validation_context.get("scenario_id") or "")
+            if context_scenario_id and context_scenario_id != scenario_id:
+                continue
             inferred = infer_report(live_report, scenario, routes.get(scenario_id, []), existing_scenario_report(live_report, scenario_id))
             merged = merge_report_rows(merged, inferred)
         reports[scenario_id] = merged

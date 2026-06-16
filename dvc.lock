@@ -342,21 +342,21 @@ stages:
       nfiles: 5
     - path: tools/bot_ml/build_live_scenario_reports.py
       hash: md5
-      md5: d92611ae859d87bb3bb23bc73d2ec066
-      size: 9693
+      md5: 1d435b99ff86778b0788c9235b56fe99
+      size: 12708
     - path: tools/bot_ml/common.py
       hash: md5
       md5: 476b615368f0126adf17fababbc05929
       size: 5208
     - path: tools/bot_ml/run_live_bot_validation.py
       hash: md5
-      md5: 3816c4f2baea5f1cb93d528ceb77de4b
-      size: 37857
+      md5: 83023007ffa25676db9d6177fc24d812
+      size: 39589
     outs:
     - path: dataset/live_validation_scenario_reports_built
       hash: md5
-      md5: 136b4fa711a4f68dc610e50bdd0fe8e2.dir
-      size: 1793
+      md5: c8dc52abcdf6065a3db6387ce8047c53.dir
+      size: 2075
       nfiles: 3
   validation_run_plan:
     cmd: python -m tools.bot_ml.build_validation_run_plan
@@ -372,8 +372,8 @@ stages:
       nfiles: 5
     - path: tools/bot_ml/build_validation_run_plan.py
       hash: md5
-      md5: 766c56fbfca92a2dddf3df83ade08e62
-      size: 10078
+      md5: 89ae73e33ae4576afb4b014b180715bd
+      size: 10754
     - path: tools/bot_ml/common.py
       hash: md5
       md5: 476b615368f0126adf17fababbc05929
@@ -381,8 +381,8 @@ stages:
     outs:
     - path: dataset/validation_run_plan
       hash: md5
-      md5: 101ee35f0c96059080510a7643454a39.dir
-      size: 24695
+      md5: 0bbc041b6d9c58655b46c119bff1441e.dir
+      size: 35599
       nfiles: 2
   live_validation_combined:
     cmd: python -m tools.bot_ml.run_live_bot_validation --input-log
@@ -397,16 +397,16 @@ stages:
       size: 102801
     - path: dataset/live_validation_scenario_reports_built
       hash: md5
-      md5: 136b4fa711a4f68dc610e50bdd0fe8e2.dir
-      size: 1793
+      md5: c8dc52abcdf6065a3db6387ce8047c53.dir
+      size: 2075
       nfiles: 3
     - path: tools/bot_ml/run_live_bot_validation.py
       hash: md5
-      md5: 3816c4f2baea5f1cb93d528ceb77de4b
-      size: 37857
+      md5: 83023007ffa25676db9d6177fc24d812
+      size: 39589
     outs:
     - path: dataset/live_validation_combined
       hash: md5
-      md5: 520dcdb2249fb4058291e49da49f5b3d.dir
-      size: 208485
+      md5: 910a84677e16c02cbb19c5833e22a18c.dir
+      size: 208835
       nfiles: 3

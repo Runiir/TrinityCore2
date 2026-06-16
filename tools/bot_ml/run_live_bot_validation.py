@@ -350,6 +350,19 @@ def load_scenario_reports(path: Path | None) -> dict[str, dict[str, Any]]:
     return reports
 
 
+def validation_context_from_args(args: argparse.Namespace) -> dict[str, Any]:
+    context: dict[str, Any] = {
+        "scenario_id": args.validation_scenario_id or "",
+        "segment_id": args.validation_segment_id or "",
+        "route_node_id": args.validation_route_node_id or "",
+        "route_label": args.validation_route_label or "",
+        "route_kind": args.validation_route_kind or "",
+        "route_step": int(args.validation_route_step or 0),
+        "mechanic_profile": args.validation_mechanic_profile or "",
+    }
+    return {key: value for key, value in context.items() if value not in {"", 0}}
+
+
 def nested_get(row: dict[str, Any], path: list[str], default: Any = None) -> Any:
     value: Any = row
     for key in path:
@@ -734,6 +747,13 @@ def main() -> int:
     parser.add_argument("--validation-provisioning-config", type=Path, default=Path("experiments/configs/validation_provisioning_cata_001.json"))
     parser.add_argument("--gear-profiles", type=Path, default=Path("dataset/validation_gear_profiles/profiles.json"))
     parser.add_argument("--scenario-report-dir", type=Path, help="Optional directory or JSON file containing scenario live reports such as stonecore_5n.json and blackwing_descent_10n.json.")
+    parser.add_argument("--validation-scenario-id", default="", help="Scenario ID this live validation run is measuring.")
+    parser.add_argument("--validation-segment-id", default="", help="Boss/route segment ID this live validation run is measuring.")
+    parser.add_argument("--validation-route-node-id", default="", help="Route node ID this live validation run is measuring.")
+    parser.add_argument("--validation-route-label", default="", help="Human-readable route label this live validation run is measuring.")
+    parser.add_argument("--validation-route-kind", default="", help="Route node kind this live validation run is measuring, such as boss or trash.")
+    parser.add_argument("--validation-route-step", type=int, default=0, help="Route step number this live validation run is measuring.")
+    parser.add_argument("--validation-mechanic-profile", default="", help="Mechanic profile associated with this live validation segment.")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--input-log", type=Path)
     args = parser.parse_args()
@@ -746,6 +766,7 @@ def main() -> int:
     bot_pool_tags = args.bot_pool_tag or ["test_account"]
     preparation: dict[str, Any] = {}
     scenario_reports = load_scenario_reports(args.scenario_report_dir)
+    validation_context = validation_context_from_args(args)
     if args.reset_bot_pool:
         preparation["bot_pool_reset"] = prepare_bot_pool_reset(
             args.output_dir,
@@ -780,6 +801,7 @@ def main() -> int:
             "start_command": send_start_command,
             "preparation": preparation,
             "scenario_reports": scenario_reports,
+            "validation_context": validation_context,
             "instructions": "Run make host-world-botexp-small for attached diagnostics or execute this script without --dry-run when the worldserver binary and config are ready.",
         }
         write_json(args.output_dir / "report.json", report)
@@ -805,6 +827,7 @@ def main() -> int:
     report["config_autostart"] = config_autostart
     report["start_command"] = send_start_command
     report["preparation"] = preparation
+    report["validation_context"] = validation_context
     write_json(args.output_dir / "report.json", report)
     print(json.dumps(report, indent=2, sort_keys=True))
     return 0 if returncode == 0 and not timed_out else 1

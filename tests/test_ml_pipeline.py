@@ -758,6 +758,15 @@ def test_validation_run_plan_segments_boss_routes_for_aggregate_reports():
     assert bwd["segments"][-1]["segment_id"] == "08_nefarian"
     assert bwd["scenario_report_command"].count("--live-report") == 6
     assert "dataset/live_validation_scenarios/blackwing_descent_10n/02_magmaw/report.json" in bwd["scenario_report_command"]
+    first_command = bwd["segments"][0]["live_validate_command"]
+    assert "--validation-scenario-id" in first_command
+    assert first_command[first_command.index("--validation-scenario-id") + 1] == "blackwing_descent_10n"
+    assert first_command[first_command.index("--validation-segment-id") + 1] == "02_magmaw"
+    assert first_command[first_command.index("--validation-route-node-id") + 1] == "bwd_magmaw"
+    assert first_command[first_command.index("--validation-route-label") + 1] == "Magmaw"
+    assert first_command[first_command.index("--validation-route-kind") + 1] == "boss"
+    assert first_command[first_command.index("--validation-route-step") + 1] == "2"
+    assert first_command[first_command.index("--validation-mechanic-profile") + 1] == "magmaw"
     for segment in bwd["segments"]:
         assert "--keep-bot-pool-position" in segment["live_validate_command"]
         assert "blackwing_descent_10n" in segment["live_validate_command"]
@@ -950,6 +959,15 @@ def test_live_scenario_report_builder_aggregates_segmented_raid_progress(tmp_pat
         live_reports.append(
             {
                 "source_live_report": f"run_{index}.json",
+                "validation_context": {
+                    "scenario_id": "blackwing_descent_10n",
+                    "segment_id": f"{index + 1:02d}_boss_{index}",
+                    "route_node_id": f"bwd_boss_{index}",
+                    "route_label": f"Boss {index}",
+                    "route_kind": "boss",
+                    "route_step": index + 1,
+                    "mechanic_profile": f"boss_{index}",
+                },
                 "trace_entries": 1,
                 "trace": {"entries": [{"action": "raid_boss_killed", "situation": "raid_boss"}]},
                 "summary": {"raid_boss_kills": 1},
@@ -966,6 +984,11 @@ def test_live_scenario_report_builder_aggregates_segmented_raid_progress(tmp_pat
     assert bwd["expected_bosses"] == 6
     assert bwd["clear_complete"] is True
     assert len(bwd["source_live_reports"]) == 6
+    assert len(bwd["source_segments"]) == 6
+    assert bwd["source_segments"][0] == "01_boss_0"
+    assert "Boss 5" in bwd["source_route_labels"]
+    assert len(bwd["segment_results"]) == 6
+    assert bwd["segment_results"][0]["route_node_id"] == "bwd_boss_0"
 
 
 def test_live_bot_validation_soap_script_does_not_exit_server():
@@ -1103,6 +1126,20 @@ def test_live_bot_validation_dry_run_writes_command_file(tmp_path, monkeypatch):
             "all",
             "--trace-limit",
             "7",
+            "--validation-scenario-id",
+            "blackwing_descent_10n",
+            "--validation-segment-id",
+            "02_magmaw",
+            "--validation-route-node-id",
+            "bwd_magmaw",
+            "--validation-route-label",
+            "Magmaw",
+            "--validation-route-kind",
+            "boss",
+            "--validation-route-step",
+            "2",
+            "--validation-mechanic-profile",
+            "magmaw",
             "--output-dir",
             str(tmp_path),
         ],
@@ -1118,6 +1155,15 @@ def test_live_bot_validation_dry_run_writes_command_file(tmp_path, monkeypatch):
     assert "server shutdown force 0" in commands
     assert report["dry_run"] is True
     assert report["command_script"] == commands
+    assert report["validation_context"] == {
+        "scenario_id": "blackwing_descent_10n",
+        "segment_id": "02_magmaw",
+        "route_node_id": "bwd_magmaw",
+        "route_label": "Magmaw",
+        "route_kind": "boss",
+        "route_step": 2,
+        "mechanic_profile": "magmaw",
+    }
     assert report["config_autostart"] is True
     assert report["start_command"] is False
 
