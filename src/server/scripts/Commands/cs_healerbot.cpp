@@ -1120,10 +1120,17 @@ public:
             sBotWorldPopulationMgr->StartAutonomy();
     }
 
-    void OnShutdown() override
+    void OnShutdownInitiate(ShutdownExitCode /*code*/, ShutdownMask /*mask*/) override
     {
         sBotWorldPopulationMgr->StopAutonomy();
         sBotMgr->RemoveAll();
+        sBotMgr->ResetPoolUseState();
+    }
+
+    void OnShutdown() override
+    {
+        sBotWorldPopulationMgr->Shutdown();
+        sBotMgr->ResetPoolUseState();
     }
 };
 

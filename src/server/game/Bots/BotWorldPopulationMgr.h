@@ -154,6 +154,7 @@ public:
     void Stop();
     bool StartAutonomy(BotWorldExperimentConfig const* overrideConfig = nullptr);
     void StopAutonomy();
+    void Shutdown();
     bool SpawnAutonomyBots(uint32 count);
     BotWorldStatus GetStatus() const;
     std::string GetStatusJson() const;

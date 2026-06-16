@@ -1,0 +1,6 @@
+outs:
+- md5: 15ed12c47430805b5d9ada32c703170e.dir
+  size: 5997
+  nfiles: 3
+  hash: md5
+  path: live_validation_autostart_graceful_dryrun

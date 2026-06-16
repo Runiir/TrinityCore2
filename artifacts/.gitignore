@@ -8,3 +8,5 @@
 /live_validation_collect_reconcile
 /live_validation_reset_dryrun
 /live_validation_reset_smoke
+/live_validation_autostart_graceful_dryrun
+/live_validation_autostart_graceful_shutdown

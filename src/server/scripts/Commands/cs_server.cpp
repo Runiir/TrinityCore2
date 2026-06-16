@@ -396,6 +396,7 @@ public:
     static bool HandleServerExitCommand(ChatHandler* handler, char const* /*args*/)
     {
         handler->SendSysMessage(LANG_COMMAND_EXIT);
+        sScriptMgr->OnShutdownInitiate(ShutdownExitCode(SHUTDOWN_EXIT_CODE), ShutdownMask(0));
         World::StopNow(SHUTDOWN_EXIT_CODE);
         return true;
     }

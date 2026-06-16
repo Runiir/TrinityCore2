@@ -1,0 +1,6 @@
+outs:
+- md5: 86afa494ac215e338afb6accec2f10ea.dir
+  size: 146769
+  nfiles: 4
+  hash: md5
+  path: live_validation_autostart_graceful_shutdown

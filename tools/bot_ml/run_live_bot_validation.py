@@ -11,6 +11,7 @@ import urllib.request
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
+import re
 
 try:
     from .build_validation_provisioning import apply_gear_profiles, build_account_insert_sql, build_character_insert_sql, load_config, load_gear_profiles
@@ -60,6 +61,21 @@ def sql_quote(value: str) -> str:
 
 def database_name(database_url: str) -> str:
     return (urlparse(database_url).path or "/").lstrip("/")
+
+
+def trinity_config_bool(path: Path, key: str, default: bool = False) -> bool:
+    if not path.exists():
+        return default
+    pattern = re.compile(rf"^\s*{re.escape(key)}\s*=\s*(?P<value>[^\s#]+)", re.MULTILINE)
+    match = pattern.search(path.read_text(encoding="utf-8"))
+    if not match:
+        return default
+    value = match.group("value").strip().strip('"').lower()
+    if value in {"1", "true", "yes", "on"}:
+        return True
+    if value in {"0", "false", "no", "off"}:
+        return False
+    return default
 
 
 def split_sql_statements(sql: str) -> list[str]:
@@ -234,7 +250,7 @@ def command_script(selector: str = "all", trace_limit: int = 20, start: bool = T
     if stop:
         commands.append(".botauto stop")
     if exit_server:
-        commands.append("server exit")
+        commands.append("server shutdown 0")
     return "\n".join(commands) + "\n"
 
 
@@ -482,6 +498,8 @@ def run_worldserver(binary: Path, config: Path, timeout_sec: int, script: str, o
                 process.stdin.flush()
                 if command_text == ".botauto start":
                     time.sleep(observe_sec)
+                elif command_text.startswith("server shutdown") or command_text == "server exit":
+                    time.sleep(2)
             process.stdin.close()
             process.stdin = None
             remaining = max(1, int(deadline - time.monotonic()))
@@ -583,6 +601,7 @@ def main() -> int:
     parser.add_argument("--selector", default="all")
     parser.add_argument("--trace-limit", type=int, default=20)
     parser.add_argument("--no-start", action="store_true")
+    parser.add_argument("--force-start-command", action="store_true", help="Send .botauto start even when BotWorld.AutoStart is enabled in the selected worldserver config.")
     parser.add_argument("--stop", action="store_true")
     parser.add_argument("--transport", choices=["process", "soap"], default="process")
     parser.add_argument("--soap-url", default="http://127.0.0.1:7878/")
@@ -601,7 +620,9 @@ def main() -> int:
     parser.add_argument("--input-log", type=Path)
     args = parser.parse_args()
 
-    script = command_script(selector=args.selector, trace_limit=args.trace_limit, start=not args.no_start, stop=args.stop, exit_server=args.transport == "process")
+    config_autostart = trinity_config_bool(args.config, "BotWorld.AutoStart", False)
+    send_start_command = not args.no_start and (args.force_start_command or not config_autostart)
+    script = command_script(selector=args.selector, trace_limit=args.trace_limit, start=send_start_command, stop=args.stop, exit_server=args.transport == "process")
     args.output_dir.mkdir(parents=True, exist_ok=True)
     (args.output_dir / "commands.txt").write_text(script, encoding="utf-8")
     bot_pool_tags = args.bot_pool_tag or ["test_account"]
@@ -636,6 +657,8 @@ def main() -> int:
             "soap_url": args.soap_url if args.transport == "soap" else "",
             "timeout_sec": args.timeout_sec,
             "observe_sec": args.observe_sec,
+            "config_autostart": config_autostart,
+            "start_command": send_start_command,
             "preparation": preparation,
             "instructions": "Run make host-world-botexp-small for attached diagnostics or execute this script without --dry-run when the worldserver binary and config are ready.",
         }
@@ -659,6 +682,8 @@ def main() -> int:
     (args.output_dir / "worldserver_output.log").write_text(output, encoding="utf-8")
     report = live_validation_report(output, returncode=returncode, timed_out=timed_out, command=command)
     report["generated_at_unix"] = int(time.time())
+    report["config_autostart"] = config_autostart
+    report["start_command"] = send_start_command
     report["preparation"] = preparation
     write_json(args.output_dir / "report.json", report)
     print(json.dumps(report, indent=2, sort_keys=True))

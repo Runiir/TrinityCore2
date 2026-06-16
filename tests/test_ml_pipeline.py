@@ -22,7 +22,7 @@ from tools.bot_ml.extract_world_knowledge import (
 )
 from tools.bot_ml.build_world_planner_manifests import build_planner_manifests
 from tools.bot_ml.validate_world_planner import STAGED_GATES, validate_manifest_coverage
-from tools.bot_ml.run_live_bot_validation import build_bot_pool_reset_sql, command_script, live_validation_report, main as live_validation_main, parse_json_objects, parse_soap_result, run_worldserver, split_sql_statements
+from tools.bot_ml.run_live_bot_validation import build_bot_pool_reset_sql, command_script, live_validation_report, main as live_validation_main, parse_json_objects, parse_soap_result, run_worldserver, split_sql_statements, trinity_config_bool
 from tools.bot_ml.build_validation_gear_profiles import build_gem_catalog, build_profiles, build_report, fetch_items, load_gem_properties, load_spell_item_enchantments
 from tools.bot_ml.build_validation_provisioning import apply_gear_profiles, build_account_insert_sql, main as provisioning_main, scenario_report, srp6_registration_data
 from tools.bot_ml.validate_validation_provisioning import build_report as provisioning_verify_report
@@ -631,7 +631,7 @@ def test_live_bot_validation_command_script_and_output_parser():
         ".botauto trace all 20",
         ".botexp summary",
         ".botauto stop",
-        "server exit",
+        "server shutdown 0",
     ]
 
     output = """
@@ -675,7 +675,7 @@ def test_live_bot_validation_soap_script_does_not_exit_server():
         ".botauto trace all 5",
         ".botexp summary",
     ]
-    assert "server exit" not in script
+    assert "server shutdown" not in script
     assert parse_json_objects(parse_soap_result(payload)) == [{"active_bots": 1}]
 
 
@@ -706,10 +706,10 @@ def test_live_bot_validation_process_mode_observes_after_start(tmp_path, monkeyp
     assert returncode == 0
     assert timed_out is False
     assert command == [str(fake_worldserver), "--config", str(config)]
-    assert sleeps == [17]
+    assert sleeps == [17, 2]
     assert "CMD .botauto start" in output
     assert "CMD .botauto diagnose all" in output
-    assert "CMD server exit" in output
+    assert "CMD server shutdown 0" in output
 
 
 def test_live_bot_validation_process_mode_observes_before_diagnose_without_start(tmp_path, monkeypatch):
@@ -739,11 +739,11 @@ def test_live_bot_validation_process_mode_observes_before_diagnose_without_start
     assert returncode == 0
     assert timed_out is False
     assert command == [str(fake_worldserver), "--config", str(config)]
-    assert sleeps == [23]
+    assert sleeps == [23, 2]
     assert "CMD .botauto start" not in output
     assert "CMD .botauto status" in output
     assert "CMD .botauto diagnose all" in output
-    assert "CMD server exit" in output
+    assert "CMD server shutdown 0" in output
 
 
 def test_live_bot_validation_requires_activity_evidence_for_smoke_gates():
@@ -809,9 +809,42 @@ def test_live_bot_validation_dry_run_writes_command_file(tmp_path, monkeypatch):
 
     assert ".botauto diagnose all" in commands
     assert ".botauto trace all 7" in commands
-    assert "server exit" in commands
+    assert ".botauto start" not in commands
+    assert "server shutdown 0" in commands
     assert report["dry_run"] is True
     assert report["command_script"] == commands
+    assert report["config_autostart"] is True
+    assert report["start_command"] is False
+
+
+def test_live_bot_validation_force_start_overrides_config_autostart(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "bot-live-validate",
+            "--dry-run",
+            "--force-start-command",
+            "--output-dir",
+            str(tmp_path),
+        ],
+    )
+
+    assert live_validation_main() == 0
+    commands = (tmp_path / "commands.txt").read_text(encoding="utf-8")
+    report = json.loads((tmp_path / "report.json").read_text(encoding="utf-8"))
+
+    assert ".botauto start" in commands
+    assert report["config_autostart"] is True
+    assert report["start_command"] is True
+
+
+def test_live_bot_validation_reads_trinity_bool_config(tmp_path):
+    conf = tmp_path / "worldserver.conf"
+    conf.write_text('BotWorld.AutoStart = 1\nBotWorld.Enable = "false"\n', encoding="utf-8")
+
+    assert trinity_config_bool(conf, "BotWorld.AutoStart") is True
+    assert trinity_config_bool(conf, "BotWorld.Enable", True) is False
+    assert trinity_config_bool(conf, "Missing.Flag", True) is True
 
 
 def test_live_bot_validation_bot_pool_reset_sql_is_scoped_to_tags():
@@ -878,7 +911,7 @@ def test_live_bot_validation_soap_dry_run_writes_non_exit_command_file(tmp_path,
     commands = (tmp_path / "commands.txt").read_text(encoding="utf-8")
     report = json.loads((tmp_path / "report.json").read_text(encoding="utf-8"))
 
-    assert "server exit" not in commands
+    assert "server shutdown" not in commands
     assert ".botauto start" not in commands
     assert report["transport"] == "soap"
 

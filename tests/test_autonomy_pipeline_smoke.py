@@ -7,6 +7,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 BOT_COMMANDS = ROOT / "src/server/scripts/Commands/cs_healerbot.cpp"
+SERVER_COMMANDS = ROOT / "src/server/scripts/Commands/cs_server.cpp"
+CLI_RUNNABLE = ROOT / "src/server/worldserver/CommandLine/CliRunnable.cpp"
 BOT_MGR = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp"
 BOT_POLICY = ROOT / "src/server/game/Bots/BotTelemetryPolicy.cpp"
 BOT_BUFFER = ROOT / "src/server/game/Bots/BotTelemetryBuffer.cpp"
@@ -44,7 +46,12 @@ def assert_ordered(text: str, *needles: str) -> None:
 def test_server_start_autonomy_enabled_by_default_contract():
     conf = read(WORLDSERVER_CONF)
     commands = read(BOT_COMMANDS)
+    server_commands = read(SERVER_COMMANDS)
+    cli_runnable = read(CLI_RUNNABLE)
     startup = function_body(commands, "void OnStartup() override")
+    shutdown_initiate = function_body(commands, "void OnShutdownInitiate(ShutdownExitCode /*code*/, ShutdownMask /*mask*/) override")
+    shutdown = function_body(commands, "void OnShutdown() override")
+    server_exit = function_body(server_commands, "static bool HandleServerExitCommand")
 
     assert re.search(r"^PlayerBot\.Enable\s*=\s*1$", conf, re.MULTILINE)
     assert re.search(r"^BotWorld\.Enable\s*=\s*1$", conf, re.MULTILINE)
@@ -65,19 +72,43 @@ def test_server_start_autonomy_enabled_by_default_contract():
     assert "sBotWorldPopulationMgr->StartAutonomy();" in startup
     assert "EnsurePopulation" not in startup
     assert "SpawnAutonomyBots" not in startup
+    assert "sBotWorldPopulationMgr->StopAutonomy();" in shutdown_initiate
+    assert "sBotMgr->RemoveAll();" in shutdown_initiate
+    assert "sBotMgr->ResetPoolUseState();" in shutdown_initiate
+    assert "sBotWorldPopulationMgr->Shutdown();" in shutdown
+    assert "sBotWorldPopulationMgr->StopAutonomy();" not in shutdown
+    assert "sBotMgr->RemoveAll();" not in shutdown
+    assert_ordered(
+        server_exit,
+        "sScriptMgr->OnShutdownInitiate(ShutdownExitCode(SHUTDOWN_EXIT_CODE), ShutdownMask(0));",
+        "World::StopNow(SHUTDOWN_EXIT_CODE);",
+    )
+    assert_ordered(
+        cli_runnable,
+        "else if (feof(stdin))",
+        "sScriptMgr->OnShutdownInitiate(ShutdownExitCode(SHUTDOWN_EXIT_CODE), ShutdownMask(0));",
+        "World::StopNow(SHUTDOWN_EXIT_CODE);",
+    )
 
 
 def test_server_start_autonomy_enabled_spawns_from_pool_without_center_requirement():
     mgr = read(BOT_MGR)
     start_autonomy = function_body(mgr, "bool BotWorldPopulationMgr::StartAutonomy")
+    shutdown = function_body(mgr, "void BotWorldPopulationMgr::Shutdown")
     ensure_population = function_body(mgr, "void BotWorldPopulationMgr::EnsurePopulation")
     resolve_placement = function_body(mgr, "bool BotWorldPopulationMgr::ResolveSpawnPlacement")
 
     assert 'LoadConfig("always_on_autonomy", overrideConfig);' in start_autonomy
+    assert "if (_runtimeMode == BotWorldRuntimeMode::AlwaysOnAutonomy && !overrideConfig)" in start_autonomy
+    assert "return true;" in start_autonomy
     assert "_runtimeMode = BotWorldRuntimeMode::AlwaysOnAutonomy;" in start_autonomy
     assert "_runId = 0;" in start_autonomy
     assert "_experimentId = 0;" in start_autonomy
     assert_ordered(start_autonomy, "_active = true;", "EnsurePopulation();", "return _active;")
+    assert "RecordRunStop();" in shutdown
+    assert "UPDATE character_bot_pool SET in_use = 0 WHERE guid" in shutdown
+    assert "RemoveWorldBot" not in shutdown
+    assert "PersistBotPosition" not in shutdown
 
     assert "uint32 candidateGuid = SelectPoolCandidateGuid();" in ensure_population
     assert 'sBotMgr->SpawnWorldBotAtSavedPosition("any", std::to_string(candidateGuid))' in ensure_population

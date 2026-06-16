@@ -739,6 +739,9 @@ bool BotWorldPopulationMgr::StartAutonomy(BotWorldExperimentConfig const* overri
 {
     if (_active)
     {
+        if (_runtimeMode == BotWorldRuntimeMode::AlwaysOnAutonomy && !overrideConfig)
+            return true;
+
         if (_runtimeMode == BotWorldRuntimeMode::AlwaysOnAutonomy)
             StopAutonomy();
         else
@@ -792,6 +795,31 @@ void BotWorldPopulationMgr::StopAutonomy()
     _active = false;
     _runId = 0;
     _experimentId = 0;
+}
+
+void BotWorldPopulationMgr::Shutdown()
+{
+    if (!_active)
+        return;
+
+    for (WorldBotState const& state : _bots)
+    {
+        if (!state.Guid.IsEmpty())
+        {
+            CharacterDatabase.DirectPExecute("UPDATE characters SET online = 0 WHERE guid = %u", state.Guid.GetCounter());
+            CharacterDatabase.DirectPExecute("UPDATE character_bot_pool SET in_use = 0 WHERE guid = %u", state.Guid.GetCounter());
+        }
+    }
+
+    _telemetryBuffer.FlushOpenClips(_experimentId, _runId, _config.BrainVersion);
+    RecordRunStop();
+    _experimentCoordinator.Clear();
+    _bots.clear();
+    _active = false;
+    _runId = 0;
+    _experimentId = 0;
+    _metrics.Active = false;
+    _metrics.ActiveBots = 0;
 }
 
 bool BotWorldPopulationMgr::SpawnAutonomyBots(uint32 count)
