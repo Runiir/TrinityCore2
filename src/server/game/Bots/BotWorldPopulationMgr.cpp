@@ -704,6 +704,7 @@ bool BotWorldPopulationMgr::Start(std::string const& experimentName, BotWorldExp
     _experimentCoordinator.Clear();
     _bots.clear();
     _failedSpawnGuids.clear();
+    _lastPopulationFailureReason.clear();
     _metrics = BotWorldStatus();
     _metrics.Active = true;
     _metrics.Mode = BotWorldRuntimeMode::ManualExperiment;
@@ -778,6 +779,7 @@ bool BotWorldPopulationMgr::StartAutonomy(BotWorldExperimentConfig const* overri
     _experimentCoordinator.Configure(0, _config.BrainVersion);
     _bots.clear();
     _failedSpawnGuids.clear();
+    _lastPopulationFailureReason.clear();
     _metrics = BotWorldStatus();
     _metrics.Active = true;
     _metrics.Mode = BotWorldRuntimeMode::AlwaysOnAutonomy;
@@ -862,12 +864,27 @@ void BotWorldPopulationMgr::Update(uint32 diff)
     _elapsedMs += diff;
     RotateAutoRecordingWindowIfNeeded(diff);
     EnsurePopulation();
+    uint64 nowMs = NowMs();
 
     for (auto itr = _bots.begin(); itr != _bots.end();)
     {
         if (!GetBot(*itr))
         {
+            if (itr->SpawnedMs && nowMs - itr->SpawnedMs < 10000)
+            {
+                ++itr;
+                continue;
+            }
+
+            ObjectGuid prunedGuid = itr->Guid;
+            _lastPopulationFailureReason = "spawned_bot_not_loaded";
+            TC_LOG_ERROR("server", "BotWorld active bot pruned bot=%s reason=spawned_bot_not_loaded spawn_source=%s age_ms=%llu",
+                prunedGuid.ToString().c_str(), itr->SpawnSource.c_str(), static_cast<unsigned long long>(itr->SpawnedMs ? nowMs - itr->SpawnedMs : 0));
+            sBotMgr->RemoveWorldBot(prunedGuid);
+            CharacterDatabase.DirectPExecute("UPDATE character_bot_pool SET in_use = 0 WHERE guid = %u", prunedGuid.GetCounter());
+            _failedSpawnGuids.insert(prunedGuid.GetCounter());
             itr = _bots.erase(itr);
+            _metrics.ActiveBots = uint32(_bots.size());
             continue;
         }
 
@@ -1148,13 +1165,17 @@ void BotWorldPopulationMgr::EnsurePopulation()
         ++attempts;
         uint32 candidateGuid = SelectPoolCandidateGuid();
         if (!candidateGuid)
+        {
+            _lastPopulationFailureReason = _config.PoolTagFilter.empty() ? "no_available_pool_candidate" : "no_available_pool_candidate_for_tag";
             break;
+        }
 
         SpawnPlacement placement;
         if (!ResolveSpawnPlacement(candidateGuid, placement))
         {
             TC_LOG_ERROR("server", "BotWorld spawn skipped bot_guid=%u spawn_mode=%s fallback=%u reason=no_saved_or_local_spawn",
                 candidateGuid, _config.SpawnMode.c_str(), _config.AllowConfiguredCenterFallback ? 1 : 0);
+            _lastPopulationFailureReason = "no_saved_or_local_spawn";
             _failedSpawnGuids.insert(candidateGuid);
             continue;
         }
@@ -1164,6 +1185,7 @@ void BotWorldPopulationMgr::EnsurePopulation()
             : sBotMgr->SpawnWorldBot("any", std::to_string(candidateGuid), placement.MapId, placement.X, placement.Y, placement.Z, placement.O);
         if (!bot)
         {
+            _lastPopulationFailureReason = "spawn_world_bot_failed";
             _failedSpawnGuids.insert(candidateGuid);
             continue;
         }
@@ -1176,6 +1198,7 @@ void BotWorldPopulationMgr::EnsurePopulation()
         state.LastX = bot->GetPositionX();
         state.LastY = bot->GetPositionY();
         state.LastZ = bot->GetPositionZ();
+        state.SpawnedMs = NowMs();
         state.SpawnSource = placement.Source;
         state.RaceStartFallbackUsed = placement.RaceStartFallbackUsed;
         state.SpawnMapId = bot->GetMapId();
@@ -9231,7 +9254,7 @@ std::string BotWorldPopulationMgr::GetBotDiagnosisJson(std::string const& select
 
     json << "]";
     if (!emitted)
-        json << ",\"failure_reason\":\"no_matching_bot\"";
+        json << ",\"failure_reason\":\"" << JsonEscape(_lastPopulationFailureReason.empty() ? "no_matching_bot" : _lastPopulationFailureReason) << "\"";
     else
         json << ",\"failure_reason\":null";
     json << "}";
@@ -9264,7 +9287,7 @@ std::string BotWorldPopulationMgr::GetBotTraceJson(std::string const& selector, 
 
         json << "]";
         if (!emitted)
-            json << ",\"failure_reason\":\"no_active_bot\"";
+            json << ",\"failure_reason\":\"" << JsonEscape(_lastPopulationFailureReason.empty() ? "no_active_bot" : _lastPopulationFailureReason) << "\"";
         else
             json << ",\"failure_reason\":null";
         json << "}";

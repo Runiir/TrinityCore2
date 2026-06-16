@@ -91,6 +91,7 @@ def test_server_start_autonomy_enabled_spawns_from_pool_without_center_requireme
     mgr = read(BOT_MGR)
     start_autonomy = function_body(mgr, "bool BotWorldPopulationMgr::StartAutonomy")
     shutdown = function_body(mgr, "void BotWorldPopulationMgr::Shutdown")
+    update = function_body(mgr, "void BotWorldPopulationMgr::Update")
     ensure_population = function_body(mgr, "void BotWorldPopulationMgr::EnsurePopulation")
     select_candidate = function_body(mgr, "uint32 BotWorldPopulationMgr::SelectPoolCandidateGuid() const")
     resolve_placement = function_body(mgr, "bool BotWorldPopulationMgr::ResolveSpawnPlacement")
@@ -106,6 +107,8 @@ def test_server_start_autonomy_enabled_spawns_from_pool_without_center_requireme
     assert "UPDATE character_bot_pool SET in_use = 0 WHERE guid" in shutdown
     assert "RemoveWorldBot" not in shutdown
     assert "PersistBotPosition" not in shutdown
+    assert "spawned_bot_not_loaded" in update
+    assert "UPDATE character_bot_pool SET in_use = 0 WHERE guid" in update
 
     assert "uint32 candidateGuid = SelectPoolCandidateGuid();" in ensure_population
     assert 'sBotMgr->SpawnWorldBotAtSavedPosition("any", std::to_string(candidateGuid))' in ensure_population

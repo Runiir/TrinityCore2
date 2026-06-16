@@ -217,6 +217,7 @@ private:
         uint32 LastQuestId = 0;
         uint32 LastQuestCompletedCount = 0;
         uint32 LastQuestObjectiveProgress = 0;
+        uint64 SpawnedMs = 0;
         std::string SpawnSource = "unknown";
         bool RaceStartFallbackUsed = false;
         uint32 SpawnMapId = 0;
@@ -845,6 +846,7 @@ private:
     BotPolicyModelConfig _policyModelConfig;
     std::vector<WorldBotState> _bots;
     std::set<uint32> _failedSpawnGuids;
+    std::string _lastPopulationFailureReason;
     BotWorldStatus _metrics;
     BotTelemetryBuffer _telemetryBuffer;
     BotExperimentCoordinator _experimentCoordinator;
