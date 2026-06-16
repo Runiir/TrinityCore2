@@ -76,6 +76,10 @@ def has_route(routes: list[dict[str, Any]], scenario_id: str, kind: str | None =
     return any(row.get("scenario_id") == scenario_id and (kind is None or row.get("kind") == kind) for row in routes)
 
 
+def has_invalid_route_coordinates(routes: list[dict[str, Any]], scenario_id: str) -> bool:
+    return any(row.get("scenario_id") == scenario_id and row.get("coordinates_valid") is False for row in routes)
+
+
 def has_mechanics(mechanics: list[dict[str, Any]], scenario_id: str) -> bool:
     return any(row.get("scenario_id") == scenario_id and bool(row.get("valid", True)) and row.get("families") for row in mechanics)
 
@@ -94,6 +98,8 @@ def missing_validation_inputs(
     missing: list[str] = []
     if not has_route(routes, scenario_id):
         missing.append(route_name)
+    elif has_invalid_route_coordinates(routes, scenario_id):
+        missing.append(f"{route_name}_coordinates")
     if not scenario_ready(scenarios, scenario_id):
         missing.append(provision_name)
     if mechanics_name and not has_mechanics(mechanics, scenario_id):

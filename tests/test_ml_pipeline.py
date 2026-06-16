@@ -636,9 +636,9 @@ def test_world_planner_validation_report_marks_covered_and_missing_gates(tmp_pat
         ],
         "validation_routes": [
             {"scenario_id": "stonecore_5n", "kind": "trash"},
-            {"scenario_id": "stonecore_5n", "kind": "boss"},
+            {"scenario_id": "stonecore_5n", "kind": "boss", "coordinates_valid": False},
             {"scenario_id": "blackwing_descent_10n", "kind": "trash"},
-            {"scenario_id": "blackwing_descent_10n", "kind": "boss"},
+            {"scenario_id": "blackwing_descent_10n", "kind": "boss", "coordinates_valid": False},
         ],
         "validation_mechanics": [
             {"scenario_id": "stonecore_5n", "families": ["ground_danger"], "valid": True},
@@ -668,9 +668,9 @@ def test_world_planner_validation_report_marks_covered_and_missing_gates(tmp_pat
     assert gates["full_stonecore_clear"]["passed"] is False
     assert gates["raid_boss"]["passed"] is False
     assert gates["full_blackwing_descent_clear"]["passed"] is False
-    assert gates["full_stonecore_clear"]["missing"] == ["stonecore_live_clear_report"]
-    assert gates["raid_boss"]["missing"] == ["blackwing_descent_live_boss_report"]
-    assert gates["full_blackwing_descent_clear"]["missing"] == ["blackwing_descent_live_clear_report"]
+    assert gates["full_stonecore_clear"]["missing"] == ["stonecore_route_manifest_coordinates", "stonecore_live_clear_report"]
+    assert gates["raid_boss"]["missing"] == ["blackwing_descent_route_manifest_coordinates", "blackwing_descent_live_boss_report"]
+    assert gates["full_blackwing_descent_clear"]["missing"] == ["blackwing_descent_route_manifest_coordinates", "blackwing_descent_live_clear_report"]
     assert report["all_passed"] is False
     assert report["runtime_ml_control"] == "disabled_until_shadow_assist_replay_validation_passes"
 
@@ -693,11 +693,15 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
 
     assert scenarios["stonecore_5n"]["provisioning_ready"] is True
     assert scenarios["blackwing_descent_10n"]["provisioning_ready"] is True
+    assert scenarios["stonecore_5n"]["route_coordinates_ready"] is False
+    assert scenarios["blackwing_descent_10n"]["route_coordinates_ready"] is False
     assert scenarios["stonecore_5n"]["boss_count"] == 4
     assert scenarios["blackwing_descent_10n"]["boss_count"] == 6
     assert any(row["scenario_id"] == "stonecore_5n" and row["kind"] == "trash" for row in routes)
+    assert any(row["scenario_id"] == "blackwing_descent_10n" and row["kind"] == "boss" and row["coordinates_valid"] is False for row in routes)
     assert any(row["scenario_id"] == "blackwing_descent_10n" and "raid_aoe" in row["families"] for row in mechanics)
     assert manifests["report"]["ready_scenarios"] == 2
+    assert any(row["scenario_id"] == "blackwing_descent_10n" and row["reason"] == "missing_xyz" for row in manifests["report"]["invalid_route_steps"])
     assert manifests["report"]["invalid_mechanic_profiles"] == []
 
 
@@ -757,6 +761,42 @@ def test_validation_run_plan_segments_boss_routes_for_aggregate_reports():
     for segment in bwd["segments"]:
         assert "--keep-bot-pool-position" in segment["live_validate_command"]
         assert "blackwing_descent_10n" in segment["live_validate_command"]
+
+
+def test_validation_run_plan_marks_segments_without_coordinates_non_executable(tmp_path):
+    scenarios = [
+        {"scenario_id": "blackwing_descent_10n", "instance": "Blackwing Descent", "map_id": 669, "difficulty": "normal_10man", "required_roles": {"tank": 2, "healer": 3, "dps": 5}},
+    ]
+    routes_by_scenario = {
+        "blackwing_descent_10n": [
+            {"scenario_id": "blackwing_descent_10n", "route_node_id": "bwd_magmaw", "step": 2, "kind": "boss", "label": "Magmaw", "coordinates_valid": False, "coordinate_missing_reason": "missing_xyz"},
+        ],
+    }
+
+    plan = build_validation_run_plan(
+        scenarios,
+        Path("dataset/live_validation_scenarios"),
+        Path("dataset/live_validation_scenario_reports_built"),
+        Path("dataset/validation_scenarios"),
+        300,
+        900,
+        routes_by_scenario,
+    )
+    script = tmp_path / "run.sh"
+    from tools.bot_ml.build_validation_run_plan import write_shell_script
+
+    write_shell_script(script, plan)
+    shell = script.read_text(encoding="utf-8")
+    bwd = plan["scenarios"][0]
+
+    assert bwd["segment_count"] == 1
+    assert bwd["executable_segment_count"] == 0
+    assert bwd["invalid_segment_count"] == 1
+    assert bwd["segments"][0]["executable"] is False
+    assert bwd["segments"][0]["skip_reason"] == "missing_route_coordinates"
+    assert bwd["scenario_report_command"].count("--live-report") == 1
+    assert "dataset/live_validation_scenarios/blackwing_descent_10n/report.json" in bwd["scenario_report_command"]
+    assert "Skipping non-executable validation segment 02_magmaw" in shell
 
 
 def test_live_bot_validation_command_script_and_output_parser():

@@ -59,6 +59,17 @@ def provisioning_ready(row: dict[str, Any] | None, expected_roles: dict[str, int
     return not missing, sorted(set(missing))
 
 
+def route_coordinate_status(step: dict[str, Any]) -> tuple[bool, str]:
+    if not all(key in step for key in ("x", "y", "z")):
+        return False, "missing_xyz"
+    x = float(step.get("x") or 0.0)
+    y = float(step.get("y") or 0.0)
+    z = float(step.get("z") or 0.0)
+    if abs(x) < 0.001 and abs(y) < 0.001 and abs(z) < 0.001:
+        return False, "zero_xyz"
+    return True, ""
+
+
 def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any], provisioning_verify_report: dict[str, Any]) -> dict[str, list[dict[str, Any]] | dict[str, Any]]:
     provisioned = scenario_by_id(provisioning_report)
     verification_ready = bool(provisioning_verify_report.get("all_passed"))
@@ -75,6 +86,18 @@ def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any],
         ready, missing = provisioning_ready(provisioned.get(provision_id), required_roles)
         if not verification_ready:
             missing.append("provisioning_verifier_ready")
+        invalid_route_steps = [
+            {
+                "step": int(step.get("step") or 0),
+                "kind": step.get("kind") or "unknown",
+                "label": step.get("label") or "",
+                "reason": route_coordinate_status(step)[1],
+            }
+            for step in route_steps
+            if not route_coordinate_status(step)[0]
+        ]
+        if invalid_route_steps:
+            missing.append("route_coordinates")
 
         scenario_row = {
             "scenario_id": scenario_id,
@@ -89,11 +112,14 @@ def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any],
             "boss_count": sum(1 for step in route_steps if step.get("kind") == "boss"),
             "trash_cluster_count": sum(1 for step in route_steps if step.get("kind") == "trash"),
             "mechanic_profile_count": len(profiles),
+            "route_coordinates_ready": not invalid_route_steps,
+            "invalid_route_steps": invalid_route_steps,
         }
         scenario_row["scenario_hash"] = stable_hash(scenario_row)[:16]
         scenarios.append(scenario_row)
 
         for step in route_steps:
+            coordinates_valid, coordinate_missing_reason = route_coordinate_status(step)
             route = {
                 "scenario_id": scenario_id,
                 "map_id": int(scenario.get("map_id") or 0),
@@ -104,6 +130,8 @@ def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any],
                 "x": float(step.get("x") or 0.0),
                 "y": float(step.get("y") or 0.0),
                 "z": float(step.get("z") or 0.0),
+                "coordinates_valid": coordinates_valid,
+                "coordinate_missing_reason": coordinate_missing_reason,
             }
             route["route_node_id"] = stable_hash(route)[:16]
             routes.append(route)
@@ -133,6 +161,14 @@ def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any],
         "mechanic_profiles": len(mechanics),
         "ready_scenarios": sum(1 for row in scenarios if row["provisioning_ready"]),
         "invalid_mechanic_profiles": [row for row in mechanics if not row["valid"]],
+        "invalid_route_steps": [
+            {
+                "scenario_id": scenario["scenario_id"],
+                **invalid_step,
+            }
+            for scenario in scenarios
+            for invalid_step in scenario["invalid_route_steps"]
+        ],
         "runtime_ml_control": "disabled_until_live_clear_validation_passes",
     }
     return {

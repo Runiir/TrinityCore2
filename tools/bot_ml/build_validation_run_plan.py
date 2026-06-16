@@ -69,10 +69,16 @@ def live_validate_command(scenario: dict[str, Any], output_root: Path, observe_s
     ]
 
 
+def route_coordinates_valid(route: dict[str, Any]) -> bool:
+    if "coordinates_valid" in route:
+        return bool(route.get("coordinates_valid"))
+    return True
+
+
 def scenario_report_command(scenario: dict[str, Any], output_root: Path, report_root: Path, validation_scenario_dir: Path, routes: list[dict[str, Any]] | None = None) -> list[str]:
     scenario_id = str(scenario.get("scenario_id") or "")
     live_reports: list[str]
-    boss_routes = [row for row in routes or [] if row.get("kind") == "boss"]
+    boss_routes = [row for row in routes or [] if row.get("kind") == "boss" and route_coordinates_valid(row)]
     if boss_routes:
         live_reports = [
             str(output_root / scenario_output_name(scenario_id) / segment_output_name(route) / "report.json")
@@ -126,6 +132,7 @@ def build_plan(
         segments = []
         for route in boss_routes:
             segment_command = live_validate_command(scenario, output_root, observe_sec, timeout_sec, route)
+            executable = route_coordinates_valid(route)
             segments.append(
                 {
                     "segment_id": segment_output_name(route),
@@ -134,6 +141,13 @@ def build_plan(
                     "kind": route.get("kind") or "",
                     "label": route.get("label") or "",
                     "mechanic_profile": route.get("mechanic_profile") or "",
+                    "x": float(route.get("x") or 0.0),
+                    "y": float(route.get("y") or 0.0),
+                    "z": float(route.get("z") or 0.0),
+                    "coordinates_valid": executable,
+                    "coordinate_missing_reason": route.get("coordinate_missing_reason") or "",
+                    "executable": executable,
+                    "skip_reason": "" if executable else "missing_route_coordinates",
                     "live_output_dir": str(output_root / scenario_output_name(scenario_id) / segment_output_name(route)),
                     "live_validate_command": segment_command,
                     "live_validate_shell": render_command(segment_command),
@@ -151,6 +165,8 @@ def build_plan(
                 "preserve_start_position": True,
                 "bot_pool_tag": scenario_id,
                 "segment_count": len(segments),
+                "executable_segment_count": sum(1 for segment in segments if segment["executable"]),
+                "invalid_segment_count": sum(1 for segment in segments if not segment["executable"]),
                 "segments": segments,
                 "live_validate_command": live_command,
                 "scenario_report_command": report_command,
@@ -183,6 +199,14 @@ def write_shell_script(path: Path, plan: dict[str, Any]) -> None:
         )
         if scenario.get("segments"):
             for segment in scenario.get("segments") or []:
+                if not segment.get("executable", True):
+                    lines.extend(
+                        [
+                            f"# segment {segment['segment_id']} - {segment.get('label', '')}",
+                            f"printf '%s\\n' {shell_quote('Skipping non-executable validation segment ' + segment['segment_id'] + ': ' + segment.get('skip_reason', ''))}",
+                        ]
+                    )
+                    continue
                 lines.extend(
                     [
                         f"# segment {segment['segment_id']} - {segment.get('label', '')}",
