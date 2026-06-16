@@ -36,6 +36,8 @@ def load_manifest_dir(path: Path) -> dict[str, list[dict[str, Any]]]:
         "objective_clusters",
         "service_index",
         "item_source_index",
+        "recipe_source_index",
+        "material_source_index",
         "travel_edges",
     ]
     return {name: read_jsonl(path / f"{name}.jsonl") for name in names}
@@ -72,6 +74,8 @@ def validate_manifest_coverage(manifests: dict[str, list[dict[str, Any]]]) -> di
     clusters = manifests["objective_clusters"]
     services = manifests["service_index"]
     item_sources = manifests["item_source_index"]
+    recipe_sources = manifests["recipe_source_index"]
+    material_sources = manifests["material_source_index"]
     travel_edges = manifests["travel_edges"]
 
     evidence = {
@@ -80,10 +84,14 @@ def validate_manifest_coverage(manifests: dict[str, list[dict[str, Any]]]) -> di
         "objective_clusters": len(clusters),
         "service_index": len(services),
         "item_source_index": len(item_sources),
+        "recipe_source_index": len(recipe_sources),
+        "material_source_index": len(material_sources),
         "travel_edges": len(travel_edges),
         "objective_types": sorted({objective.get("type") for cluster in clusters for objective in (cluster.get("objectives") or []) if objective.get("type")}),
         "service_types": sorted({service_type for row in services for service_type in (row.get("service_types") or [])}),
         "item_source_types": sorted({source_type for row in item_sources for source_type in (row.get("source_types") or [])}),
+        "recipe_source_types": sorted({source_type for row in recipe_sources for source_type in (row.get("source_types") or [])}),
+        "material_source_types": sorted({source_type for row in material_sources for source_type in (row.get("source_types") or [])}),
         "travel_edge_types": sorted({edge.get("edge_type") for edge in travel_edges if edge.get("edge_type")}),
     }
 
@@ -94,8 +102,8 @@ def validate_manifest_coverage(manifests: dict[str, list[dict[str, Any]]]) -> di
         gate_result("quest_hub_batching", any(len(row.get("quests") or []) >= 1 for row in hubs), evidence, [] if hubs else ["quest_hubs"]),
         gate_result("trainer_visit", has_service(services, "trainer"), evidence, [] if has_service(services, "trainer") else ["trainer_service"]),
         gate_result("vendor_repair", has_service(services, "vendor"), evidence, [] if has_service(services, "vendor") else ["vendor_service"]),
-        gate_result("profession_recipe_acquisition", has_service(services, "trainer") or has_service(services, "vendor"), evidence, [] if has_service(services, "trainer") or has_service(services, "vendor") else ["trainer_or_vendor_recipe_source"]),
-        gate_result("material_farming", bool(item_sources) and (has_item_source_type(item_sources, "creature_loot") or has_item_source_type(item_sources, "gameobject_loot")), evidence, [] if item_sources else ["loot_or_gather_item_sources"]),
+        gate_result("profession_recipe_acquisition", bool(recipe_sources), evidence, [] if recipe_sources else ["recipe_source_index"]),
+        gate_result("material_farming", bool(material_sources) and (has_item_source_type(material_sources, "creature_loot") or has_item_source_type(material_sources, "gameobject_loot")), evidence, [] if material_sources else ["material_source_index"]),
         gate_result("smart_loot", bool(item_sources), evidence, [] if item_sources else ["item_source_index"]),
         gate_result("normal_dungeon_trash", has_travel_edge(travel_edges, "portal_or_instance_entrance"), evidence, [] if has_travel_edge(travel_edges, "portal_or_instance_entrance") else ["instance_entrance_travel_edge"]),
         gate_result("dungeon_boss", has_travel_edge(travel_edges, "portal_or_instance_entrance"), evidence, [] if has_travel_edge(travel_edges, "portal_or_instance_entrance") else ["instance_entrance_travel_edge"]),

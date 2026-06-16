@@ -146,6 +146,23 @@ def index_spawns(rows: list[dict[str, Any]], entry_key: str) -> dict[int, list[d
     return indexed
 
 
+def creature_spawn_meta(rows: list[dict[str, Any]]) -> dict[int, dict[str, Any]]:
+    meta: dict[int, dict[str, Any]] = {}
+    for row in rows:
+        entry = int(row.get("entry") or 0)
+        if not entry or entry in meta:
+            continue
+        meta[entry] = {
+            "name": row.get("name") or "",
+            "subname": row.get("subname") or "",
+            "npcflag": int(row.get("npcflag") or 0),
+            "creature_type": int(row.get("type") or 0),
+            "rank": int(row.get("rank") or 0),
+            "faction": int(row.get("faction") or 0),
+        }
+    return meta
+
+
 def extract_world_knowledge(database_url: str) -> dict[str, list[dict[str, Any]]]:
     conn = connect_mysql(database_url)
     try:
@@ -165,6 +182,7 @@ def extract_world_knowledge(database_url: str) -> dict[str, list[dict[str, Any]]
         )
         creature_by_entry = index_spawns(creature_spawns, "entry")
         gameobject_by_entry = index_spawns(gameobject_spawns, "entry")
+        creature_meta_by_entry = creature_spawn_meta(creature_spawns)
 
         quest_rows = fetch_all(conn, "SELECT * FROM quest_template")
         addon_by_quest = {
@@ -250,9 +268,14 @@ def extract_world_knowledge(database_url: str) -> dict[str, list[dict[str, Any]]
         service_entries = set(vendors_by_entry) | set(trainer_ids_by_entry)
         for entry in sorted(service_entries):
             spells = [spell for trainer_id in trainer_ids_by_entry.get(entry, []) for spell in trainer_by_id.get(trainer_id, [])]
+            meta = creature_meta_by_entry.get(entry, {})
             npc_services.append(
                 {
                     "entry": entry,
+                    "name": meta.get("name", ""),
+                    "subname": meta.get("subname", ""),
+                    "npcflag": meta.get("npcflag", 0),
+                    "faction": meta.get("faction", 0),
                     "spawns": creature_by_entry.get(entry, [])[:64],
                     "vendor_items": vendors_by_entry.get(entry, []),
                     "trainer_ids": trainer_ids_by_entry.get(entry, []),
@@ -266,6 +289,88 @@ def extract_world_knowledge(database_url: str) -> dict[str, list[dict[str, Any]]
         item_sources = [{"source_type": "creature_loot", **row} for row in creature_loot] + [{"source_type": "gameobject_loot", **row} for row in gameobject_loot]
         for row in vendor_items:
             item_sources.append({"source_type": "vendor", "source_entry": int(row["entry"]), "item_id": int(row["item"]), "max_count": int(row.get("maxcount") or 0), "player_condition_id": int(row.get("PlayerConditionID") or 0)})
+
+        material_sources = []
+        for row in creature_loot:
+            source_entry = int(row.get("source_entry") or 0)
+            material_sources.append(
+                {
+                    "source_type": "creature_loot",
+                    "source_entry": source_entry,
+                    "item_id": int(row.get("item_id") or 0),
+                    "chance": float(row.get("chance") or 0.0),
+                    "quest_required": int(row.get("quest_required") or 0),
+                    "min_count": int(row.get("min_count") or 0),
+                    "max_count": int(row.get("max_count") or 0),
+                    "spawns": creature_by_entry.get(source_entry, [])[:64],
+                }
+            )
+        for row in gameobject_loot:
+            source_entry = int(row.get("source_entry") or 0)
+            material_sources.append(
+                {
+                    "source_type": "gameobject_loot",
+                    "source_entry": source_entry,
+                    "item_id": int(row.get("item_id") or 0),
+                    "chance": float(row.get("chance") or 0.0),
+                    "quest_required": int(row.get("quest_required") or 0),
+                    "min_count": int(row.get("min_count") or 0),
+                    "max_count": int(row.get("max_count") or 0),
+                    "spawns": gameobject_by_entry.get(source_entry, [])[:64],
+                }
+            )
+        for row in vendor_items:
+            source_entry = int(row["entry"])
+            material_sources.append(
+                {
+                    "source_type": "vendor",
+                    "source_entry": source_entry,
+                    "item_id": int(row["item"]),
+                    "max_count": int(row.get("maxcount") or 0),
+                    "player_condition_id": int(row.get("PlayerConditionID") or 0),
+                    "spawns": creature_by_entry.get(source_entry, [])[:64],
+                }
+            )
+
+        recipe_sources = []
+        for service in npc_services:
+            for spell in service.get("trainer_spells") or []:
+                spell_id = int(spell.get("spell_id") or 0)
+                if not spell_id:
+                    continue
+                recipe_sources.append(
+                    {
+                        "source_type": "trainer",
+                        "source_entry": int(service["entry"]),
+                        "trainer_ids": service.get("trainer_ids") or [],
+                        "recipe_spell_id": spell_id,
+                        "item_id": 0,
+                        "profession_skill_id": int(spell.get("req_skill_line") or 0),
+                        "req_skill_rank": int(spell.get("req_skill_rank") or 0),
+                        "req_level": int(spell.get("req_level") or 0),
+                        "money_cost": int(spell.get("money_cost") or 0),
+                        "faction": int(service.get("faction") or 0),
+                        "spawns": service.get("spawns") or [],
+                    }
+                )
+            for item in service.get("vendor_items") or []:
+                item_id = int(item.get("item") or 0)
+                if not item_id:
+                    continue
+                recipe_sources.append(
+                    {
+                        "source_type": "vendor_item",
+                        "source_entry": int(service["entry"]),
+                        "recipe_spell_id": 0,
+                        "item_id": item_id,
+                        "profession_skill_id": 0,
+                        "max_count": int(item.get("maxcount") or 0),
+                        "player_condition_id": int(item.get("PlayerConditionID") or 0),
+                        "faction": int(service.get("faction") or 0),
+                        "spawns": service.get("spawns") or [],
+                        "source_note": "candidate_recipe_or_material_vendor_item",
+                    }
+                )
 
         travel = []
         if table_exists(conn, "areatrigger_teleport"):
@@ -293,6 +398,8 @@ def extract_world_knowledge(database_url: str) -> dict[str, list[dict[str, Any]]
             "quest_objectives": quest_objectives,
             "npc_services": npc_services,
             "item_sources": item_sources,
+            "recipe_sources": recipe_sources,
+            "material_sources": material_sources,
             "travel": travel,
             "zones": sorted(zones, key=lambda row: (row["map_id"], row["zone_id"])),
         }
@@ -327,6 +434,8 @@ def main() -> int:
                 "quests": "quest hubs, chains, objectives, rewards, faction gates, POI hints",
                 "npc_services": "vendors, class/profession trainers, repair/restock candidates when item/NPC flags are available",
                 "item_sources": "loot, vendors, gatherable gameobjects through loot/source manifests",
+                "recipe_sources": "trainer spells and vendor recipe/material candidates with profession requirements and spawns",
+                "material_sources": "farmable or buyable item sources with source spawns for profession and gearing plans",
                 "travel": "teleports, transports, taxi/graveyard source tables when available",
                 "zones": "map-zone-area spawn coverage for route and discovery priors",
             },

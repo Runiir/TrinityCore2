@@ -170,6 +170,75 @@ def build_item_source_index(item_sources: list[dict[str, Any]]) -> list[dict[str
     return sorted(grouped.values(), key=lambda row: row["item_id"])
 
 
+def build_recipe_source_index(recipe_sources: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    grouped: dict[str, dict[str, Any]] = {}
+    for source in recipe_sources:
+        recipe_spell_id = int(source.get("recipe_spell_id") or 0)
+        item_id = int(source.get("item_id") or 0)
+        key = f"spell:{recipe_spell_id}" if recipe_spell_id else f"item:{item_id}"
+        if key in {"spell:0", "item:0"}:
+            continue
+        row = grouped.setdefault(
+            key,
+            {
+                "recipe_key": key,
+                "recipe_spell_id": recipe_spell_id,
+                "item_id": item_id,
+                "profession_skill_ids": [],
+                "source_types": [],
+                "sources": [],
+            },
+        )
+        profession_skill_id = int(source.get("profession_skill_id") or 0)
+        if profession_skill_id and profession_skill_id not in row["profession_skill_ids"]:
+            row["profession_skill_ids"].append(profession_skill_id)
+        source_type = source.get("source_type") or "unknown"
+        if source_type not in row["source_types"]:
+            row["source_types"].append(source_type)
+        row["sources"].append(source)
+    for row in grouped.values():
+        row["profession_skill_ids"] = sorted(row["profession_skill_ids"])
+        row["source_types"] = sorted(row["source_types"])
+        row["source_count"] = len(row["sources"])
+    return sorted(grouped.values(), key=lambda row: (row["recipe_spell_id"] == 0, row["recipe_spell_id"], row["item_id"]))
+
+
+def build_material_source_index(material_sources: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    grouped: dict[int, dict[str, Any]] = {}
+    for source in material_sources:
+        item_id = int(source.get("item_id") or 0)
+        if not item_id:
+            continue
+        spawn = first_spawn(source)
+        row = grouped.setdefault(item_id, {"item_id": item_id, "source_types": [], "sources": [], "nearest_source": None})
+        source_type = source.get("source_type") or "unknown"
+        if source_type not in row["source_types"]:
+            row["source_types"].append(source_type)
+        compact = {
+            "source_type": source_type,
+            "source_entry": int(source.get("source_entry") or 0),
+            "chance": float(source.get("chance") or 0.0),
+            "quest_required": int(source.get("quest_required") or 0),
+            "map_id": int((spawn or {}).get("map_id") or 0),
+            "zone_id": int((spawn or {}).get("zone_id") or 0),
+            "area_id": int((spawn or {}).get("area_id") or 0),
+            "x": float((spawn or {}).get("x") or 0.0),
+            "y": float((spawn or {}).get("y") or 0.0),
+            "z": float((spawn or {}).get("z") or 0.0),
+        }
+        row["sources"].append(compact)
+        if row["nearest_source"] is None or (compact["map_id"], compact["zone_id"], compact["source_entry"]) < (
+            int(row["nearest_source"].get("map_id") or 0),
+            int(row["nearest_source"].get("zone_id") or 0),
+            int(row["nearest_source"].get("source_entry") or 0),
+        ):
+            row["nearest_source"] = compact
+    for row in grouped.values():
+        row["source_types"] = sorted(row["source_types"])
+        row["source_count"] = len(row["sources"])
+    return sorted(grouped.values(), key=lambda row: row["item_id"])
+
+
 def build_travel_edges(travel: list[dict[str, Any]]) -> list[dict[str, Any]]:
     rows = []
     for entry in travel:
@@ -197,6 +266,8 @@ def build_planner_manifests(world_dir: Path) -> dict[str, list[dict[str, Any]]]:
     objectives = read_jsonl(world_dir / "quest_objectives.jsonl")
     services = read_jsonl(world_dir / "npc_services.jsonl")
     item_sources = read_jsonl(world_dir / "item_sources.jsonl")
+    recipe_sources = read_jsonl(world_dir / "recipe_sources.jsonl")
+    material_sources = read_jsonl(world_dir / "material_sources.jsonl")
     travel = read_jsonl(world_dir / "travel.jsonl")
     return {
         "quest_hubs": build_quest_hubs(quests),
@@ -204,6 +275,8 @@ def build_planner_manifests(world_dir: Path) -> dict[str, list[dict[str, Any]]]:
         "objective_clusters": build_objective_clusters(quests, objectives),
         "service_index": build_service_index(services),
         "item_source_index": build_item_source_index(item_sources),
+        "recipe_source_index": build_recipe_source_index(recipe_sources),
+        "material_source_index": build_material_source_index(material_sources),
         "travel_edges": build_travel_edges(travel),
     }
 

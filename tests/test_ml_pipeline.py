@@ -498,7 +498,7 @@ def test_world_knowledge_extractor_emits_planner_manifests(monkeypatch):
     manifests = extract_world_knowledge("mysql://example/world")
 
     assert fake_db.closed is True
-    assert set(manifests) == {"quests", "quest_objectives", "npc_services", "item_sources", "travel", "zones"}
+    assert set(manifests) == {"quests", "quest_objectives", "npc_services", "item_sources", "recipe_sources", "material_sources", "travel", "zones"}
     quest = manifests["quests"][0]
     assert quest["quest_id"] == 9001
     assert quest["prev_quest_id"] == 9000
@@ -525,6 +525,15 @@ def test_world_knowledge_extractor_emits_planner_manifests(monkeypatch):
     assert any(source["item_id"] == 700 and source["source_type"] == "creature_loot" for source in item_sources)
     assert any(source["item_id"] == 700 and source["source_type"] == "vendor" for source in item_sources)
 
+    recipe_sources = manifests["recipe_sources"]
+    assert {"trainer", "vendor_item"} <= {source["source_type"] for source in recipe_sources}
+    assert any(source["recipe_spell_id"] == 600 and source["profession_skill_id"] == 185 for source in recipe_sources)
+    assert any(source["item_id"] == 700 and source["source_entry"] == 300 for source in recipe_sources)
+
+    material_sources = manifests["material_sources"]
+    assert {"creature_loot", "gameobject_loot", "vendor"} <= {source["source_type"] for source in material_sources}
+    assert next(source for source in material_sources if source["source_type"] == "creature_loot")["spawns"][0]["x"] == 4.0
+
     assert {"areatrigger_teleport", "transport", "graveyard", "taxi_level"} <= {entry["type"] for entry in manifests["travel"]}
     assert manifests["zones"] == [{"map_id": 0, "zone_id": 12, "creature_spawns": 3, "gameobject_spawns": 1, "areas": [40, 41, 42]}]
 
@@ -539,7 +548,7 @@ def test_world_planner_builder_derives_hubs_clusters_services_and_travel(tmp_pat
 
     planner = build_planner_manifests(world_dir)
 
-    assert set(planner) == {"quest_hubs", "quest_chains", "objective_clusters", "service_index", "item_source_index", "travel_edges"}
+    assert set(planner) == {"quest_hubs", "quest_chains", "objective_clusters", "service_index", "item_source_index", "recipe_source_index", "material_source_index", "travel_edges"}
     assert planner["quest_hubs"] == [
         {
             "hub_id": planner["quest_hubs"][0]["hub_id"],
@@ -580,6 +589,16 @@ def test_world_planner_builder_derives_hubs_clusters_services_and_travel(tmp_pat
     item_source = next(row for row in planner["item_source_index"] if row["item_id"] == 700)
     assert item_source["source_count"] == 2
     assert item_source["source_types"] == ["creature_loot", "vendor"]
+
+    recipe_source = next(row for row in planner["recipe_source_index"] if row["recipe_spell_id"] == 600)
+    assert recipe_source["source_count"] == 1
+    assert recipe_source["profession_skill_ids"] == [185]
+    assert recipe_source["source_types"] == ["trainer"]
+
+    material_source = next(row for row in planner["material_source_index"] if row["item_id"] == 700)
+    assert material_source["source_count"] == 2
+    assert material_source["source_types"] == ["creature_loot", "vendor"]
+    assert material_source["nearest_source"]["source_entry"] == 200
 
     assert {"portal_or_instance_entrance", "transport", "graveyard", "taxi_level"} <= {edge["edge_type"] for edge in planner["travel_edges"]}
 
