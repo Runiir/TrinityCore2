@@ -693,15 +693,15 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
 
     assert scenarios["stonecore_5n"]["provisioning_ready"] is True
     assert scenarios["blackwing_descent_10n"]["provisioning_ready"] is True
-    assert scenarios["stonecore_5n"]["route_coordinates_ready"] is False
-    assert scenarios["blackwing_descent_10n"]["route_coordinates_ready"] is False
+    assert scenarios["stonecore_5n"]["route_coordinates_ready"] is True
+    assert scenarios["blackwing_descent_10n"]["route_coordinates_ready"] is True
     assert scenarios["stonecore_5n"]["boss_count"] == 4
     assert scenarios["blackwing_descent_10n"]["boss_count"] == 6
     assert any(row["scenario_id"] == "stonecore_5n" and row["kind"] == "trash" for row in routes)
-    assert any(row["scenario_id"] == "blackwing_descent_10n" and row["kind"] == "boss" and row["coordinates_valid"] is False for row in routes)
+    assert any(row["scenario_id"] == "blackwing_descent_10n" and row["kind"] == "boss" and row["coordinates_valid"] is True and row["source_entry"] == 41570 for row in routes)
     assert any(row["scenario_id"] == "blackwing_descent_10n" and "raid_aoe" in row["families"] for row in mechanics)
     assert manifests["report"]["ready_scenarios"] == 2
-    assert any(row["scenario_id"] == "blackwing_descent_10n" and row["reason"] == "missing_xyz" for row in manifests["report"]["invalid_route_steps"])
+    assert manifests["report"]["invalid_route_steps"] == []
     assert manifests["report"]["invalid_mechanic_profiles"] == []
 
 

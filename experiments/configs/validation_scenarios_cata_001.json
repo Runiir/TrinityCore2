@@ -10,13 +10,13 @@
       "required_roles": { "tank": 1, "healer": 1, "dps": 3 },
       "route": [
         { "step": 1, "kind": "trash", "label": "entrance packs", "x": 851.052, "y": 986.474, "z": 317.266 },
-        { "step": 2, "kind": "boss", "label": "Corborus", "mechanic_profile": "burrow_adds_ground_danger" },
-        { "step": 3, "kind": "trash", "label": "crystalspawn corridor" },
-        { "step": 4, "kind": "boss", "label": "Slabhide", "mechanic_profile": "ground_danger_line_of_sight" },
-        { "step": 5, "kind": "trash", "label": "stonecore sentry gauntlet" },
-        { "step": 6, "kind": "boss", "label": "Ozruk", "mechanic_profile": "tank_buster_reflect_movement" },
-        { "step": 7, "kind": "trash", "label": "twilight flayer packs" },
-        { "step": 8, "kind": "boss", "label": "High Priestess Azil", "mechanic_profile": "adds_ground_danger_interrupts" }
+        { "step": 2, "kind": "boss", "label": "Corborus", "mechanic_profile": "burrow_adds_ground_danger", "x": 1150.34, "y": 947.063, "z": 283.8904, "o": 4.694936, "source_entry": 43438, "source_guid": "@CGUID+57", "source_table": "creature", "source_sql": "sql/old/4.3.4/TDB04_to_TDB05_updates/world/026_stonecore.sql" },
+        { "step": 3, "kind": "trash", "label": "crystalspawn corridor", "x": 1191.1, "y": 1154.01, "z": 270.7593, "o": 4.694936, "source_entry": 43214, "source_guid": "@CGUID+134", "source_table": "creature", "source_sql": "sql/old/4.3.4/TDB04_to_TDB05_updates/world/026_stonecore.sql" },
+        { "step": 4, "kind": "boss", "label": "Slabhide", "mechanic_profile": "ground_danger_line_of_sight", "x": 1191.1, "y": 1154.01, "z": 270.7593, "o": 4.694936, "source_entry": 43214, "source_guid": "@CGUID+134", "source_table": "creature", "source_sql": "sql/old/4.3.4/TDB04_to_TDB05_updates/world/026_stonecore.sql" },
+        { "step": 5, "kind": "trash", "label": "stonecore sentry gauntlet", "x": 1282.7, "y": 1229.77, "z": 247.1553, "o": 3.822271, "source_entry": 43214, "source_guid": "@CGUID+213", "source_table": "creature", "source_sql": "sql/old/4.3.4/TDB04_to_TDB05_updates/world/026_stonecore.sql" },
+        { "step": 6, "kind": "boss", "label": "Ozruk", "mechanic_profile": "tank_buster_reflect_movement", "x": 1507.859, "y": 1073.26, "z": 217.3286, "o": 0.1047198, "source_entry": 42188, "source_guid": "@CGUID+103", "source_table": "creature", "source_sql": "sql/old/4.3.4/TDB04_to_TDB05_updates/world/026_stonecore.sql" },
+        { "step": 7, "kind": "trash", "label": "twilight flayer packs", "x": 1337.3, "y": 964.894, "z": 214.2383, "o": 1.745329, "source_entry": 42333, "source_guid": "@CGUID+58", "source_table": "creature", "source_sql": "sql/old/4.3.4/TDB04_to_TDB05_updates/world/026_stonecore.sql" },
+        { "step": 8, "kind": "boss", "label": "High Priestess Azil", "mechanic_profile": "adds_ground_danger_interrupts", "x": 1337.3, "y": 964.894, "z": 214.2383, "o": 1.745329, "source_entry": 42333, "source_guid": "@CGUID+58", "source_table": "creature", "source_sql": "sql/old/4.3.4/TDB04_to_TDB05_updates/world/026_stonecore.sql" }
       ],
       "mechanic_profiles": {
         "burrow_adds_ground_danger": ["adds", "ground_danger", "target_switch"],
@@ -34,13 +34,13 @@
       "required_roles": { "tank": 2, "healer": 3, "dps": 5 },
       "route": [
         { "step": 1, "kind": "trash", "label": "entry trash", "x": -345.872, "y": -224.344, "z": 193.127 },
-        { "step": 2, "kind": "boss", "label": "Magmaw", "mechanic_profile": "tank_swap_adds_raid_aoe" },
-        { "step": 3, "kind": "boss", "label": "Omnotron Defense System", "mechanic_profile": "target_switch_interrupt_spread" },
-        { "step": 4, "kind": "trash", "label": "laboratory trash" },
-        { "step": 5, "kind": "boss", "label": "Maloriak", "mechanic_profile": "interrupt_required_adds_phase" },
-        { "step": 6, "kind": "boss", "label": "Atramedes", "mechanic_profile": "movement_check_ground_danger" },
-        { "step": 7, "kind": "boss", "label": "Chimaeron", "mechanic_profile": "raid_aoe_healer_assignment" },
-        { "step": 8, "kind": "boss", "label": "Nefarian", "mechanic_profile": "tank_swap_adds_raid_aoe" }
+        { "step": 2, "kind": "boss", "label": "Magmaw", "mechanic_profile": "tank_swap_adds_raid_aoe", "x": -302.467, "y": -31.7101, "z": 210.8483, "o": 4.118977, "source_entry": 41570, "source_guid": "@CGUID+8", "source_table": "creature", "source_sql": "sql/old/4.3.4/world/10_2016_03_12/2015_10_02_00_world.sql" },
+        { "step": 3, "kind": "boss", "label": "Omnotron Defense System", "mechanic_profile": "target_switch_interrupt_spread", "x": -324.807, "y": -418.783, "z": 227.6403, "o": 1.466077, "source_entry": 42186, "source_guid": "@CGUID+4", "source_table": "creature", "source_sql": "sql/old/4.3.4/world/10_2016_03_12/2015_10_02_00_world.sql" },
+        { "step": 4, "kind": "trash", "label": "laboratory trash", "x": -105.7541, "y": -485.3891, "z": 72.9709, "o": 3.141593, "source_entry": 203306, "source_guid": "@OGUID+11", "source_table": "gameobject", "source_sql": "sql/old/4.3.4/world/10_2016_03_12/2015_10_02_00_world.sql" },
+        { "step": 5, "kind": "boss", "label": "Maloriak", "mechanic_profile": "interrupt_required_adds_phase", "x": -105.7865, "y": -462.5781, "z": 73.53668, "o": 1.815142, "source_entry": 41378, "source_guid": "@CGUID+69", "source_table": "creature", "source_sql": "sql/old/4.3.4/world/10_2016_03_12/2015_10_02_00_world.sql" },
+        { "step": 6, "kind": "boss", "label": "Atramedes", "mechanic_profile": "movement_check_ground_danger", "x": 135.3142, "y": -225.3542, "z": 75.53674, "o": 0.0, "source_entry": 49801, "source_guid": "@CGUID+63", "source_table": "creature", "source_sql": "sql/old/4.3.4/world/10_2016_03_12/2015_10_02_00_world.sql" },
+        { "step": 7, "kind": "boss", "label": "Chimaeron", "mechanic_profile": "raid_aoe_healer_assignment", "x": -104.738, "y": 20.592, "z": 72.14094, "o": 4.694936, "source_entry": 43296, "source_guid": "@CGUID+70", "source_table": "creature", "source_sql": "sql/old/4.3.4/world/10_2016_03_12/2015_10_02_00_world.sql" },
+        { "step": 8, "kind": "boss", "label": "Nefarian", "mechanic_profile": "tank_swap_adds_raid_aoe", "x": -61.62673568725586, "y": -224.70138549804688, "z": 201.37677001953125, "o": 3.2288591861724854, "source_entry": 48964, "source_guid": "@CGUID+0", "source_table": "creature", "source_sql": "sql/old/4.3.4/world/20051_2020_09_22/2020_07_10_00_world.sql" }
       ],
       "mechanic_profiles": {
         "tank_swap_adds_raid_aoe": ["tank_buster", "adds", "raid_aoe"],
