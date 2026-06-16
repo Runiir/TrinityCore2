@@ -116,6 +116,27 @@ char const* ToString(BotWorldPopulationMgr::QuestObjectiveType type)
     }
 }
 
+bool IsSimpleOpenWorldQuestMobAssistTarget(Player const* bot, BotWorldPopulationMgr::QuestObjectiveType objectiveType, bool isItemObjective, int32 requiredEntry, Unit const* target)
+{
+    bool questMobObjective = objectiveType == BotWorldPopulationMgr::QuestObjectiveType::Kill
+        || objectiveType == BotWorldPopulationMgr::QuestObjectiveType::CollectItem
+        || isItemObjective;
+    if (!bot || !target || !questMobObjective)
+        return false;
+
+    Creature const* creature = target->ToCreature();
+    if (!creature || creature->isElite() || creature->IsDungeonBoss() || creature->isWorldBoss())
+        return false;
+
+    if (bot->GetMap() && (bot->GetMap()->IsDungeon() || bot->GetMap()->IsRaid()))
+        return false;
+
+    if (requiredEntry > 0 && creature->GetEntry() != uint32(requiredEntry))
+        return false;
+
+    return creature->getLevel() <= bot->getLevel() + 1;
+}
+
 char const* ToString(BotWorldPopulationMgr::QuestClassification classification)
 {
     switch (classification)
@@ -4625,6 +4646,16 @@ BotWorldPopulationMgr::QuestActionResult BotWorldPopulationMgr::TryQuesting(Worl
         BotActionResult pull = executor.Pull(bot, objectiveTarget);
         if (spellId)
             TryCastCombatSpell(bot, objectiveTarget, spellId);
+        if (pull == BotActionResult::Ok
+            && sConfigMgr->GetBoolDefault("BotWorld.TeacherQuestKillAssist", true)
+            && IsSimpleOpenWorldQuestMobAssistTarget(bot, plan.ObjectiveType, plan.IsItemObjective, plan.RequiredEntry, objectiveTarget)
+            && objectiveTarget->IsAlive())
+        {
+            std::string raw = BuildRawJson(bot, objectiveTarget);
+            std::string semantic = BuildSemanticJson(bot, objectiveTarget, "teacher_quest_mob_assist", &power, stage, activity);
+            RecordEvent(state, bot, "teacher_kill_assist", objectiveTarget, "simple_open_world_quest_mob_target", raw.c_str(), semantic.c_str(), UnitHealthPct(objectiveTarget), objectiveTarget->GetEntry());
+            Unit::DealDamage(bot, objectiveTarget, objectiveTarget->GetHealth(), 0, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, nullptr, false);
+        }
         if (pull != BotActionResult::Ok)
         {
             result.Failure = true;

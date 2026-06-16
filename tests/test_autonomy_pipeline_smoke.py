@@ -185,6 +185,7 @@ def test_bot_spawn_lifecycle_dummy_and_ability_objective_surface():
     assert '{ "debug",   rbac::RBAC_PERM_COMMAND_HEALERBOT' in commands
     assert "GetBotDebugJson" in commands
     assert "BotWorld.TrainingDummyEntries = \"\"" in conf
+    assert "BotWorld.TeacherQuestKillAssist = 1" in conf
 
 
 def test_quest_first_portfolio_routing_surface():
@@ -224,6 +225,10 @@ def test_quest_first_portfolio_routing_surface():
     assert "QUEST_SPECIAL_FLAGS_KILL" in supported
     assert "UNIT_FLAG_NON_ATTACKABLE" in supported
     assert "ContainsInsensitive(tmpl->Name, \"DND\")" in supported
+    assert "IsSimpleOpenWorldQuestMobAssistTarget" in mgr
+    assert "objectiveType == BotWorldPopulationMgr::QuestObjectiveType::CollectItem" in mgr
+    assert "creature->isElite()" in mgr
+    assert "bot->GetMap()->IsDungeon() || bot->GetMap()->IsRaid()" in mgr
 
     assert "creature_loot_template" in select_objective
     assert "creature_loot_template" in route_objective
@@ -281,6 +286,9 @@ def test_quest_first_portfolio_routing_surface():
         "BotClassSpecActionProfileStore::Build(bot, role.c_str())",
         "result.Action = \"move_to_quest_mob\";",
         "BotActionResult pull = executor.Pull(bot, objectiveTarget);",
+        "teacher_quest_mob_assist",
+        "RecordEvent(state, bot, \"teacher_kill_assist\"",
+        "Unit::DealDamage(bot, objectiveTarget, objectiveTarget->GetHealth(), 0, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, nullptr, false);",
     )
 
     assert "TrySmartGearDecision(state, bot, power, stage, chosenActivity.Activity, situation, action)" in update_bot

@@ -1,0 +1,6 @@
+outs:
+- md5: 8ea5247e15e520649f779c5297362318.dir
+  size: 211878
+  nfiles: 4
+  hash: md5
+  path: live_validation_quest_mob_assist_150s

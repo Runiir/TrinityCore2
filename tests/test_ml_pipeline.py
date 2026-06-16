@@ -673,6 +673,8 @@ There is no such subcommand
     assert report["evidence"]["decisions"] == 3
     assert report["evidence"]["active_decision_evidence"] is True
     assert report["evidence"]["hub_acceptance_actions"] == 1
+    assert report["evidence"]["teacher_assisted_kills"] == 0
+    assert report["evidence"]["kill_evidence"] == 1
     assert report["summary"]["quests_completed"] == 0
     assert report["command_errors"] == [{"command": ".botauto diagnose all", "error": "no_such_subcommand"}]
     assert gates["movement_smoke"]["passed"] is True
@@ -682,6 +684,22 @@ There is no such subcommand
     assert gates["full_stonecore_clear"]["passed"] is False
     assert "stonecore_live_clear_report" in gates["full_stonecore_clear"]["missing"]
     assert report["runtime_ml_control"] == "disabled_until_live_validation_passes"
+
+
+def test_live_bot_validation_counts_labeled_teacher_assist_as_kill_quest_evidence():
+    output = """
+TC> {"active_bots":1,"target_bots":1,"action":"botauto_status","decisions":2,"kills":0,"quests_accepted":1,"quest_objective_progress":1}
+TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"snapshot":{"decision":{"action":"collect_quest_item"},"movement":{"is_moving":false,"distance_moved_since_last_decision":3}}}]}
+TC> {"trace_schema_version":1,"entries":[{"action":"teacher_kill_assist","situation":"teacher_kill_assist","result":"simple_open_world_quest_mob_target"},{"action":"collect_quest_item","situation":"quest_objective","result":"ok"}]}
+TC> {"duration_minutes":1,"decisions":2,"total_kills":0,"quests_completed":0}
+"""
+    report = live_validation_report(output)
+    gates = {stage["stage"]: stage for stage in report["stages"]}
+
+    assert report["evidence"]["kills"] == 0
+    assert report["evidence"]["teacher_assisted_kills"] == 1
+    assert report["evidence"]["kill_evidence"] == 1
+    assert gates["kill_quest"]["passed"] is True
 
 
 def test_live_bot_validation_soap_script_does_not_exit_server():

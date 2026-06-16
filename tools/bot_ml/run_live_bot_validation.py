@@ -366,6 +366,12 @@ def live_evidence(status: dict[str, Any], diagnosis: dict[str, Any], trace: dict
         if str(entry.get("action") or "").startswith("complete_quest")
     )
     hub_acceptance_actions = sum(1 for entry in entries if str(entry.get("action") or "") == "accept_hub_quests")
+    teacher_assisted_kills = sum(
+        1
+        for entry in entries
+        if str(entry.get("action") or "") == "teacher_kill_assist"
+        and str(entry.get("result") or "") == "simple_open_world_quest_mob_target"
+    )
     action_names.update(
         str(nested_get(row, ["snapshot", "decision", "action"], ""))
         for row in diagnoses
@@ -376,6 +382,7 @@ def live_evidence(status: dict[str, Any], diagnosis: dict[str, Any], trace: dict
     quests_accepted = max(int(status.get("quests_accepted") or 0), int(summary.get("quests_accepted") or 0), quest_acceptance_actions)
     quests_completed = max(int(status.get("quests_completed") or 0), int(summary.get("quests_completed") or 0), quest_completion_actions)
     kills = max(int(status.get("kills") or 0), int(summary.get("total_kills") or 0))
+    kill_evidence = kills + teacher_assisted_kills
     gear_upgrades = max(int(status.get("gear_upgrades") or 0), int(summary.get("gear_upgrades") or 0))
     active_decision_evidence = decisions > 0 or non_spawn_trace_entries > 0 or moved_diagnoses > 0 or non_wait_diagnoses > 0
     return {
@@ -391,6 +398,8 @@ def live_evidence(status: dict[str, Any], diagnosis: dict[str, Any], trace: dict
         "quests_completed": quests_completed,
         "hub_acceptance_actions": hub_acceptance_actions,
         "kills": kills,
+        "teacher_assisted_kills": teacher_assisted_kills,
+        "kill_evidence": kill_evidence,
         "gear_upgrades": gear_upgrades,
         "action_names": sorted(action_names),
         "vendor_or_trainer_action": any(token in action_text for token in ["vendor", "repair", "train"]),
@@ -428,7 +437,9 @@ def live_validation_report(output: str, stages: list[str] | None = None, returnc
                 missing.append("botauto_trace_entries")
             if not evidence["active_decision_evidence"]:
                 missing.append("active_decision_or_movement_evidence")
-            if stage in {"kill_quest", "normal_dungeon_trash", "dungeon_boss"} and evidence["kills"] <= 0:
+            if stage == "kill_quest" and evidence["kill_evidence"] <= 0:
+                missing.append("kill_evidence")
+            if stage in {"normal_dungeon_trash", "dungeon_boss"} and evidence["kills"] <= 0:
                 missing.append("kill_evidence")
             if stage == "collect_quest" and evidence["quest_objective_progress"] <= 0 and evidence["quests_completed"] <= 0:
                 missing.append("quest_progress_evidence")
