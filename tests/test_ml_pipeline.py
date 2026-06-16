@@ -939,9 +939,47 @@ def test_live_scenario_report_builder_derives_per_scenario_artifacts(tmp_path):
     assert reports["stonecore_5n"]["prepared_group"] is True
     assert reports["stonecore_5n"]["boss_kills"] == 4
     assert reports["stonecore_5n"]["clear_complete"] is True
+    assert reports["stonecore_5n"]["scenario_evidence_mode"] == "generic_live_trace_inference"
+    assert reports["stonecore_5n"]["teacher_label_quality"] == "weak"
+    assert reports["stonecore_5n"]["ml_training_label"] == "weak_inferred_label"
     assert reports["blackwing_descent_10n"]["raid_boss_kills"] == 1
     assert reports["blackwing_descent_10n"]["boss_stage_passed"] is True
     assert reports["blackwing_descent_10n"]["clear_complete"] is False
+
+
+def test_live_scenario_report_builder_labels_attached_scenario_reports_medium_quality(tmp_path):
+    scenario_dir = tmp_path / "validation_scenarios"
+    write_jsonl(
+        scenario_dir / "validation_scenarios.jsonl",
+        [{"scenario_id": "stonecore_5n", "instance": "The Stonecore", "map_id": 725, "difficulty": "normal_5man", "provisioning_ready": True, "boss_count": 4}],
+    )
+    write_jsonl(
+        scenario_dir / "validation_routes.jsonl",
+        [{"scenario_id": "stonecore_5n", "kind": "boss"} for _ in range(4)],
+    )
+    live_report = {
+        "trace_entries": 2,
+        "trace": {"entries": [{"action": "boss_killed", "situation": "dungeon_boss"}]},
+        "scenario_reports": {
+            "stonecore_5n": {
+                "scenario_id": "stonecore_5n",
+                "prepared_group": True,
+                "trash_pulls": 4,
+                "boss_kills": 4,
+                "clear_complete": True,
+            }
+        },
+    }
+
+    reports = build_live_scenario_reports(live_report, scenario_dir)
+    stonecore = reports["stonecore_5n"]
+
+    assert stonecore["clear_complete"] is True
+    assert stonecore["source_scenario_report_attached"] is True
+    assert stonecore["scenario_evidence_mode"] == "attached_scenario_report"
+    assert stonecore["scenario_evidence_modes"] == ["attached_scenario_report"]
+    assert stonecore["teacher_label_quality"] == "medium"
+    assert stonecore["ml_training_label"] == "candidate_teacher_label"
 
 
 def test_live_scenario_report_builder_aggregates_segmented_raid_progress(tmp_path):
@@ -989,6 +1027,10 @@ def test_live_scenario_report_builder_aggregates_segmented_raid_progress(tmp_pat
     assert "Boss 5" in bwd["source_route_labels"]
     assert len(bwd["segment_results"]) == 6
     assert bwd["segment_results"][0]["route_node_id"] == "bwd_boss_0"
+    assert bwd["scenario_evidence_mode"] == "route_segment_context"
+    assert bwd["scenario_evidence_modes"] == ["route_segment_context"]
+    assert bwd["teacher_label_quality"] == "strong"
+    assert bwd["ml_training_label"] == "candidate_teacher_label"
 
 
 def test_live_bot_validation_soap_script_does_not_exit_server():

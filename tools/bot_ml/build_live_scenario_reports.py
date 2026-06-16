@@ -63,6 +63,32 @@ def unique_strings(*values: Any) -> list[str]:
     return rows
 
 
+def scenario_evidence_mode(validation_context: dict[str, Any], existing: dict[str, Any]) -> str:
+    if validation_context.get("segment_id") or validation_context.get("route_node_id"):
+        return "route_segment_context"
+    if existing:
+        return "attached_scenario_report"
+    return "generic_live_trace_inference"
+
+
+def teacher_label_quality(mode: str) -> str:
+    if mode == "route_segment_context":
+        return "strong"
+    if mode == "attached_scenario_report":
+        return "medium"
+    return "weak"
+
+
+def merged_teacher_label_quality(modes: list[str], source_segments: list[str], expected_bosses: int) -> str:
+    if "generic_live_trace_inference" in modes:
+        return "weak"
+    if "route_segment_context" in modes and expected_bosses > 0 and len(source_segments) >= expected_bosses:
+        return "strong"
+    if "route_segment_context" in modes or "attached_scenario_report" in modes:
+        return "medium"
+    return "weak"
+
+
 def infer_report(report: dict[str, Any], scenario: dict[str, Any], routes: list[dict[str, Any]], existing: dict[str, Any]) -> dict[str, Any]:
     scenario_id = str(scenario.get("scenario_id") or "")
     difficulty = str(scenario.get("difficulty") or "")
@@ -77,6 +103,7 @@ def infer_report(report: dict[str, Any], scenario: dict[str, Any], routes: list[
     route_kind = str(validation_context.get("route_kind") or "")
     route_step = int(validation_context.get("route_step") or 0)
     mechanic_profile = str(validation_context.get("mechanic_profile") or "")
+    evidence_mode = scenario_evidence_mode(validation_context, existing)
     boss_action = "raid_boss_killed" if raid else "boss_killed"
     observed_boss_kills = sum(1 for action in actions if action == boss_action)
     observed_boss_kills = max(observed_boss_kills, int(summary.get("raid_boss_kills") or 0) if raid else 0)
@@ -129,6 +156,11 @@ def infer_report(report: dict[str, Any], scenario: dict[str, Any], routes: list[
         "source_route_labels": unique_strings(route_label),
         "source_mechanic_profiles": unique_strings(mechanic_profile),
         "segment_results": segment_results,
+        "source_scenario_report_attached": bool(existing),
+        "scenario_evidence_mode": evidence_mode,
+        "scenario_evidence_modes": [evidence_mode],
+        "teacher_label_quality": teacher_label_quality(evidence_mode),
+        "ml_training_label": "candidate_teacher_label" if evidence_mode != "generic_live_trace_inference" else "weak_inferred_label",
         "source_trace_entries": int(report.get("trace_entries") or 0),
         "runtime_ml_control": "disabled_until_live_clear_validation_passes",
     }
@@ -156,6 +188,8 @@ def merge_report_rows(left: dict[str, Any], right: dict[str, Any]) -> dict[str, 
     source_route_labels = unique_strings(left.get("source_route_labels") or [], right.get("source_route_labels") or [])
     source_mechanic_profiles = unique_strings(left.get("source_mechanic_profiles") or [], right.get("source_mechanic_profiles") or [])
     segment_results = list(left.get("segment_results") or []) + list(right.get("segment_results") or [])
+    evidence_modes = unique_strings(left.get("scenario_evidence_modes") or left.get("scenario_evidence_mode") or [], right.get("scenario_evidence_modes") or right.get("scenario_evidence_mode") or [])
+    label_quality = merged_teacher_label_quality(evidence_modes, source_segments, expected_bosses)
     merged.update(
         {
             "prepared_group": bool(left.get("prepared_group") or right.get("prepared_group")),
@@ -173,6 +207,11 @@ def merge_report_rows(left: dict[str, Any], right: dict[str, Any]) -> dict[str, 
             "source_route_labels": source_route_labels,
             "source_mechanic_profiles": source_mechanic_profiles,
             "segment_results": segment_results,
+            "source_scenario_report_attached": bool(left.get("source_scenario_report_attached") or right.get("source_scenario_report_attached")),
+            "scenario_evidence_mode": evidence_modes[0] if evidence_modes else "",
+            "scenario_evidence_modes": evidence_modes,
+            "teacher_label_quality": label_quality,
+            "ml_training_label": "candidate_teacher_label" if label_quality in {"strong", "medium"} else "weak_inferred_label",
             "source_trace_entries": int(left.get("source_trace_entries") or 0) + int(right.get("source_trace_entries") or 0),
         }
     )
