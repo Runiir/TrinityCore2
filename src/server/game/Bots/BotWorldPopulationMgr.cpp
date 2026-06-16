@@ -2123,7 +2123,7 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         target = nullptr;
         state.LastDecisionHandler = "profession_memory";
     }
-    else if (chosenActivity.Activity == BotProgressionActivity::VendorRepairTrain)
+    else if (!bot->IsInCombat() && chosenActivity.Activity == BotProgressionActivity::VendorRepairTrain)
     {
         bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
         bot->GetMotionMaster()->MoveIdle();
@@ -4461,6 +4461,7 @@ BotWorldPopulationMgr::QuestActionResult BotWorldPopulationMgr::TryQuesting(Worl
         Unit* objectiveTarget = nullptr;
         if (!state.QuestWork.SelectedTargetGuid.IsEmpty())
         {
+            ObjectGuid selectedTargetGuid = state.QuestWork.SelectedTargetGuid;
             Unit* selectedTarget = ObjectAccessor::GetUnit(*bot, state.QuestWork.SelectedTargetGuid);
             Creature const* selectedCreature = selectedTarget ? selectedTarget->ToCreature() : nullptr;
             bool selectedMatchesPlan = selectedTarget && selectedTarget->IsAlive() && bot->IsValidAttackTarget(selectedTarget) && bot->IsWithinLOSInMap(selectedTarget);
@@ -4478,7 +4479,36 @@ BotWorldPopulationMgr::QuestActionResult BotWorldPopulationMgr::TryQuesting(Worl
             if (selectedMatchesPlan)
                 objectiveTarget = selectedTarget;
             else
+            {
+                if (state.WasInCombat || state.QuestWork.Phase == "kill_objective_mob" || state.QuestWork.Phase == "move_to_target")
+                {
+                    uint32 before = state.QuestWork.ProgressBefore ? state.QuestWork.ProgressBefore : state.LastQuestProgressBefore;
+                    std::string raw = BuildRawJson(bot, selectedTarget);
+                    std::string semantic = BuildSemanticJson(bot, selectedTarget, "quest_objective_target_lost", &power, stage, activity);
+                    bool progressed = VerifyQuestObjectiveProgress(state, bot, plan, selectedTarget, before, "engaged_target_lost", raw.c_str(), semantic.c_str());
+                    if (!progressed)
+                    {
+                        std::ostringstream lostKey;
+                        lostKey << plan.QuestId << ":" << plan.ObjectiveIndex << ":" << ToString(plan.ObjectiveType) << ":" << selectedTargetGuid.GetCounter();
+                        state.NoProgressCooldownUntilMs[lostKey.str()] = NowMs() + 45000;
+                        state.LastNoProgressReason = "engaged_target_lost";
+
+                        std::ostringstream context;
+                        context << "{\"quest_id\":" << plan.QuestId
+                                << ",\"objective_index\":" << plan.ObjectiveIndex
+                                << ",\"objective_type\":\"" << JsonEscape(ToString(plan.ObjectiveType)) << "\""
+                                << ",\"selected_target_guid\":" << selectedTargetGuid.GetCounter()
+                                << ",\"target_available\":" << (selectedTarget ? "true" : "false")
+                                << ",\"was_in_combat\":" << (state.WasInCombat ? "true" : "false")
+                                << ",\"phase\":\"" << JsonEscape(state.QuestWork.Phase) << "\"}";
+                        RecordQuestEvent(state, bot, "objective_target_lost", plan.QuestId, selectedTarget, "engaged_target_lost", raw.c_str(), semantic.c_str(), state.QuestWork.ProgressAfter, plan.ItemId, context.str().c_str());
+                    }
+                    state.TargetGuid.Clear();
+                    state.WasInCombat = false;
+                    SetQuestWorkPhase(state, "search_objective");
+                }
                 state.QuestWork.SelectedTargetGuid.Clear();
+            }
         }
 
         if (!objectiveTarget)

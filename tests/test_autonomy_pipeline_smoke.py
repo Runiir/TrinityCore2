@@ -240,6 +240,8 @@ def test_quest_first_portfolio_routing_surface():
         questing,
         "ObjectAccessor::GetUnit(*bot, state.QuestWork.SelectedTargetGuid)",
         "selectedMatchesPlan",
+        "VerifyQuestObjectiveProgress(state, bot, plan, selectedTarget, before, \"engaged_target_lost\"",
+        "RecordQuestEvent(state, bot, \"objective_target_lost\"",
         "if (!objectiveTarget)",
         "objectiveTarget = SelectQuestObjectiveTarget(bot, plan);",
         "state.QuestWork.SelectedTargetGuid = objectiveTarget->GetGUID();",
@@ -258,6 +260,7 @@ def test_quest_first_portfolio_routing_surface():
         "TryQuesting(state, bot, power, stage, chosenActivity.Activity)",
         "TrySmartGearDecision(state, bot, power, stage, chosenActivity.Activity, situation, action)",
         "TryProfessionMemoryAction(state, bot, power, stage, chosenActivity.Activity, situation, action)",
+        "else if (!bot->IsInCombat() && chosenActivity.Activity == BotProgressionActivity::VendorRepairTrain)",
     )
     assert "BotGearUpgradeEvaluation evaluation = BotLongTermProgressionBrain::EvaluateGearUpgrade(bot);" in mgr
     assert "lootDecision = evaluation.Upgrade ? \"need_upgrade\" : (evaluation.CanEquip || hasValue ? \"greed_value\" : \"pass_invalid\")" in mgr
