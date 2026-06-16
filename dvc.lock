@@ -1,8 +1,8 @@
 schema: '2.0'
 stages:
   capture:
-    cmd: python experiments/run_experiment.py 
-      experiments/configs/headless_autonomous_loop_smoke_001.json --raw-dir 
+    cmd: python experiments/run_experiment.py
+      experiments/configs/headless_autonomous_loop_smoke_001.json --raw-dir
       dataset/raw --runs-dir experiments/runs --live-dir dvclive --local
     deps:
     - path: experiments/configs/headless_autonomous_loop_smoke_001.json
@@ -30,8 +30,8 @@ stages:
       size: 523539
       nfiles: 90
   preprocess:
-    cmd: python ml/preprocessing/preprocess_frames.py --raw-dir dataset/raw 
-      --output dataset/processed/frames.jsonl --manifest 
+    cmd: python ml/preprocessing/preprocess_frames.py --raw-dir dataset/raw
+      --output dataset/processed/frames.jsonl --manifest
       dataset/processed/manifest.json
     deps:
     - path: dataset/raw
@@ -53,7 +53,7 @@ stages:
       md5: 41b7d8575e092ee4f16b84f8b71e1034
       size: 756
   train:
-    cmd: python ml/training/train_action_frequency.py --frames 
+    cmd: python ml/training/train_action_frequency.py --frames
       dataset/processed/frames.jsonl --model models/action_frequency_model.json
     deps:
     - path: dataset/processed/frames.jsonl
@@ -70,9 +70,9 @@ stages:
       md5: c6acf526c0cd60ede38070c19c5693dd
       size: 405
   evaluate:
-    cmd: python ml/evaluation/evaluate_action_frequency.py --frames 
-      dataset/processed/frames.jsonl --model models/action_frequency_model.json 
-      --metrics dataset/evaluations/metrics.json --report 
+    cmd: python ml/evaluation/evaluate_action_frequency.py --frames
+      dataset/processed/frames.jsonl --model models/action_frequency_model.json
+      --metrics dataset/evaluations/metrics.json --report
       dataset/evaluations/report.json
     deps:
     - path: dataset/processed/frames.jsonl
@@ -97,7 +97,7 @@ stages:
       md5: a05bd5e046a3faedf12014aeeaa04f71
       size: 352
   world_knowledge:
-    cmd: python -m tools.bot_ml.extract_world_knowledge --output-dir 
+    cmd: python -m tools.bot_ml.extract_world_knowledge --output-dir
       dataset/world_knowledge
     deps:
     - path: tools/bot_ml/common.py
@@ -115,7 +115,7 @@ stages:
       size: 1134831298
       nfiles: 9
   world_planner:
-    cmd: python -m tools.bot_ml.build_world_planner_manifests --world-dir 
+    cmd: python -m tools.bot_ml.build_world_planner_manifests --world-dir
       dataset/world_knowledge --output-dir dataset/world_planner
     deps:
     - path: dataset/world_knowledge
@@ -138,10 +138,16 @@ stages:
       size: 261212666
       nfiles: 10
   world_planner_validate:
-    cmd: python -m tools.bot_ml.validate_world_planner --planner-dir 
-      dataset/world_planner --report 
+    cmd: python -m tools.bot_ml.validate_world_planner --planner-dir
+      dataset/world_planner --validation-scenario-dir
+      dataset/validation_scenarios --report
       dataset/world_validation/planner_report.json
     deps:
+    - path: dataset/validation_scenarios
+      hash: md5
+      md5: 94d3d006b7bb4da2ba2c8dcfcbb4ceb3.dir
+      size: 8573
+      nfiles: 5
     - path: dataset/world_planner
       hash: md5
       md5: e855c107a834a20f7b31c2b8efb0b6c2.dir
@@ -153,17 +159,17 @@ stages:
       size: 5208
     - path: tools/bot_ml/validate_world_planner.py
       hash: md5
-      md5: d9a2d4a91792ac5544224958921eabab
-      size: 7393
+      md5: 77a69a44a4eea65fc123810a86750c99
+      size: 10949
     outs:
     - path: dataset/world_validation/planner_report.json
       hash: md5
-      md5: 6e1b225ec350112ee02e397ee52ba23d
-      size: 17358
+      md5: 9e6cef3c458ce47b66789de98007bd02
+      size: 24168
   validation_provisioning:
-    cmd: python -m tools.bot_ml.build_validation_provisioning --config 
-      experiments/configs/validation_provisioning_cata_001.json --gear-profiles 
-      dataset/validation_gear_profiles/profiles.json --output-dir 
+    cmd: python -m tools.bot_ml.build_validation_provisioning --config
+      experiments/configs/validation_provisioning_cata_001.json --gear-profiles
+      dataset/validation_gear_profiles/profiles.json --output-dir
       dataset/validation_provisioning
     deps:
     - path: dataset/validation_gear_profiles
@@ -186,8 +192,8 @@ stages:
       size: 232129
       nfiles: 5
   validation_gear:
-    cmd: python -m tools.bot_ml.build_validation_gear_profiles --config 
-      experiments/configs/validation_provisioning_cata_001.json --output-dir 
+    cmd: python -m tools.bot_ml.build_validation_gear_profiles --config
+      experiments/configs/validation_provisioning_cata_001.json --output-dir
       dataset/validation_gear_profiles
     deps:
     - path: data/dbc/enUS/GemProperties.dbc
@@ -229,10 +235,10 @@ stages:
       size: 163765
       nfiles: 3
   validation_provisioning_verify:
-    cmd: python -m tools.bot_ml.validate_validation_provisioning --config 
-      experiments/configs/validation_provisioning_cata_001.json --gear-profiles 
-      dataset/validation_gear_profiles/profiles.json --provisioning-report 
-      dataset/validation_provisioning/report.json --output 
+    cmd: python -m tools.bot_ml.validate_validation_provisioning --config
+      experiments/configs/validation_provisioning_cata_001.json --gear-profiles
+      dataset/validation_gear_profiles/profiles.json --provisioning-report
+      dataset/validation_provisioning/report.json --output
       dataset/validation_provisioning_verification/report.json
     deps:
     - path: data/dbc/enUS/GemProperties.dbc
@@ -285,3 +291,37 @@ stages:
       hash: md5
       md5: 5f69417b0789aebe56fb2c704dfceb7d
       size: 511
+  validation_scenarios:
+    cmd: python -m tools.bot_ml.build_validation_scenario_manifests --config
+      experiments/configs/validation_scenarios_cata_001.json
+      --provisioning-report dataset/validation_provisioning/report.json
+      --provisioning-verification
+      dataset/validation_provisioning_verification/report.json --output-dir
+      dataset/validation_scenarios
+    deps:
+    - path: dataset/validation_provisioning/report.json
+      hash: md5
+      md5: 599df7134fe452195c13dc813f34948f
+      size: 2170
+    - path: dataset/validation_provisioning_verification/report.json
+      hash: md5
+      md5: 5f69417b0789aebe56fb2c704dfceb7d
+      size: 511
+    - path: experiments/configs/validation_scenarios_cata_001.json
+      hash: md5
+      md5: 87907d3f1a70e3bd3c1381b00ee21261
+      size: 3084
+    - path: tools/bot_ml/build_validation_scenario_manifests.py
+      hash: md5
+      md5: b81efe232a14fdc2987f9994151064bd
+      size: 7504
+    - path: tools/bot_ml/common.py
+      hash: md5
+      md5: 476b615368f0126adf17fababbc05929
+      size: 5208
+    outs:
+    - path: dataset/validation_scenarios
+      hash: md5
+      md5: 94d3d006b7bb4da2ba2c8dcfcbb4ceb3.dir
+      size: 8573
+      nfiles: 5

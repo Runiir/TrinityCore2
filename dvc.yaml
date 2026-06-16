@@ -17,11 +17,12 @@ stages:
     - dataset/world_planner:
         persist: true
   world_planner_validate:
-    cmd: python -m tools.bot_ml.validate_world_planner --planner-dir dataset/world_planner --report dataset/world_validation/planner_report.json
+    cmd: python -m tools.bot_ml.validate_world_planner --planner-dir dataset/world_planner --validation-scenario-dir dataset/validation_scenarios --report dataset/world_validation/planner_report.json
     deps:
     - tools/bot_ml/validate_world_planner.py
     - tools/bot_ml/common.py
     - dataset/world_planner
+    - dataset/validation_scenarios
     metrics:
     - dataset/world_validation/planner_report.json:
         cache: false
@@ -65,6 +66,17 @@ stages:
     metrics:
     - dataset/validation_provisioning_verification/report.json:
         cache: false
+  validation_scenarios:
+    cmd: python -m tools.bot_ml.build_validation_scenario_manifests --config experiments/configs/validation_scenarios_cata_001.json --provisioning-report dataset/validation_provisioning/report.json --provisioning-verification dataset/validation_provisioning_verification/report.json --output-dir dataset/validation_scenarios
+    deps:
+    - tools/bot_ml/build_validation_scenario_manifests.py
+    - tools/bot_ml/common.py
+    - experiments/configs/validation_scenarios_cata_001.json
+    - dataset/validation_provisioning/report.json
+    - dataset/validation_provisioning_verification/report.json
+    outs:
+    - dataset/validation_scenarios:
+        persist: true
   capture:
     cmd: python experiments/run_experiment.py ${capture.config} --raw-dir 
       dataset/raw --runs-dir experiments/runs --live-dir ${tracking.live_dir} 

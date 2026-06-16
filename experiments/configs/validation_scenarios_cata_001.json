@@ -1,0 +1,54 @@
+{
+  "schema": "bot_validation_scenario_config_v1",
+  "scenarios": [
+    {
+      "id": "stonecore_5n",
+      "instance": "The Stonecore",
+      "map_id": 725,
+      "difficulty": "normal_5man",
+      "provisioning_scenario_id": "stonecore_5n",
+      "required_roles": { "tank": 1, "healer": 1, "dps": 3 },
+      "route": [
+        { "step": 1, "kind": "trash", "label": "entrance packs", "x": 851.052, "y": 986.474, "z": 317.266 },
+        { "step": 2, "kind": "boss", "label": "Corborus", "mechanic_profile": "burrow_adds_ground_danger" },
+        { "step": 3, "kind": "trash", "label": "crystalspawn corridor" },
+        { "step": 4, "kind": "boss", "label": "Slabhide", "mechanic_profile": "ground_danger_line_of_sight" },
+        { "step": 5, "kind": "trash", "label": "stonecore sentry gauntlet" },
+        { "step": 6, "kind": "boss", "label": "Ozruk", "mechanic_profile": "tank_buster_reflect_movement" },
+        { "step": 7, "kind": "trash", "label": "twilight flayer packs" },
+        { "step": 8, "kind": "boss", "label": "High Priestess Azil", "mechanic_profile": "adds_ground_danger_interrupts" }
+      ],
+      "mechanic_profiles": {
+        "burrow_adds_ground_danger": ["adds", "ground_danger", "target_switch"],
+        "ground_danger_line_of_sight": ["ground_danger", "movement_check"],
+        "tank_buster_reflect_movement": ["tank_buster", "movement_check"],
+        "adds_ground_danger_interrupts": ["adds", "ground_danger", "interrupt_required"]
+      }
+    },
+    {
+      "id": "blackwing_descent_10n",
+      "instance": "Blackwing Descent",
+      "map_id": 669,
+      "difficulty": "normal_10man",
+      "provisioning_scenario_id": "blackwing_descent_10n",
+      "required_roles": { "tank": 2, "healer": 3, "dps": 5 },
+      "route": [
+        { "step": 1, "kind": "trash", "label": "entry trash", "x": -345.872, "y": -224.344, "z": 193.127 },
+        { "step": 2, "kind": "boss", "label": "Magmaw", "mechanic_profile": "tank_swap_adds_raid_aoe" },
+        { "step": 3, "kind": "boss", "label": "Omnotron Defense System", "mechanic_profile": "target_switch_interrupt_spread" },
+        { "step": 4, "kind": "trash", "label": "laboratory trash" },
+        { "step": 5, "kind": "boss", "label": "Maloriak", "mechanic_profile": "interrupt_required_adds_phase" },
+        { "step": 6, "kind": "boss", "label": "Atramedes", "mechanic_profile": "movement_check_ground_danger" },
+        { "step": 7, "kind": "boss", "label": "Chimaeron", "mechanic_profile": "raid_aoe_healer_assignment" },
+        { "step": 8, "kind": "boss", "label": "Nefarian", "mechanic_profile": "tank_swap_adds_raid_aoe" }
+      ],
+      "mechanic_profiles": {
+        "tank_swap_adds_raid_aoe": ["tank_buster", "adds", "raid_aoe"],
+        "target_switch_interrupt_spread": ["target_switch", "interrupt_required", "spread"],
+        "interrupt_required_adds_phase": ["interrupt_required", "adds", "boss_phase"],
+        "movement_check_ground_danger": ["movement_check", "ground_danger"],
+        "raid_aoe_healer_assignment": ["raid_aoe", "dispel_required", "wipe_risk"]
+      }
+    }
+  ]
+}

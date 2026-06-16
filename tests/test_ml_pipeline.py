@@ -22,6 +22,7 @@ from tools.bot_ml.extract_world_knowledge import (
 )
 from tools.bot_ml.build_world_planner_manifests import build_planner_manifests
 from tools.bot_ml.validate_world_planner import STAGED_GATES, validate_manifest_coverage
+from tools.bot_ml.build_validation_scenario_manifests import build_manifests as build_validation_scenario_manifests
 from tools.bot_ml.run_live_bot_validation import build_bot_pool_reset_sql, command_script, live_validation_report, main as live_validation_main, parse_json_objects, parse_soap_result, run_worldserver, split_sql_statements, trinity_config_bool
 from tools.bot_ml.build_validation_gear_profiles import build_gem_catalog, build_profiles, build_report, fetch_items, load_gem_properties, load_spell_item_enchantments
 from tools.bot_ml.build_validation_provisioning import apply_gear_profiles, build_account_insert_sql, main as provisioning_main, scenario_report, srp6_registration_data
@@ -342,10 +343,11 @@ def test_bot_ml_workflow_has_pixi_tasks_and_documented_dvc_steps():
         "bot-world-knowledge",
         "bot-world-planner",
         "bot-world-validate",
-            "bot-validation-gear",
-            "bot-validation-provisioning",
-            "bot-validation-provisioning-verify",
-            "bot-live-validate",
+        "bot-validation-gear",
+        "bot-validation-provisioning",
+        "bot-validation-provisioning-verify",
+        "bot-validation-scenarios",
+        "bot-live-validate",
         "bot-ml-export",
         "bot-ml-build-decisions",
         "bot-ml-validate",
@@ -365,6 +367,7 @@ def test_bot_ml_workflow_has_pixi_tasks_and_documented_dvc_steps():
         "world_planner_validate",
         "validation_provisioning",
         "validation_provisioning_verify",
+        "validation_scenarios",
         "validation_gear",
         "complete_equipment_slots",
         "full Stonecore and Blackwing Descent gates failing",
@@ -394,6 +397,8 @@ def test_bot_ml_workflow_has_pixi_tasks_and_documented_dvc_steps():
         "dataset/validation_provisioning",
         "validation_provisioning_verify:",
         "dataset/validation_provisioning_verification/report.json",
+        "validation_scenarios:",
+        "dataset/validation_scenarios",
     ]:
         assert stage in dvc
 
@@ -611,7 +616,23 @@ def test_world_planner_validation_report_marks_covered_and_missing_gates(tmp_pat
     for name, rows in world.items():
         write_jsonl(world_dir / f"{name}.jsonl", rows)
 
-    report = validate_manifest_coverage(build_planner_manifests(world_dir))
+    validation_manifests = {
+        "validation_scenarios": [
+            {"scenario_id": "stonecore_5n", "provisioning_ready": True},
+            {"scenario_id": "blackwing_descent_10n", "provisioning_ready": True},
+        ],
+        "validation_routes": [
+            {"scenario_id": "stonecore_5n", "kind": "trash"},
+            {"scenario_id": "stonecore_5n", "kind": "boss"},
+            {"scenario_id": "blackwing_descent_10n", "kind": "trash"},
+            {"scenario_id": "blackwing_descent_10n", "kind": "boss"},
+        ],
+        "validation_mechanics": [
+            {"scenario_id": "stonecore_5n", "families": ["ground_danger"], "valid": True},
+            {"scenario_id": "blackwing_descent_10n", "families": ["raid_aoe"], "valid": True},
+        ],
+    }
+    report = validate_manifest_coverage(build_planner_manifests(world_dir), validation_manifests)
     gates = {gate["gate"]: gate for gate in report["gates"]}
 
     assert [gate["gate"] for gate in report["gates"]] == STAGED_GATES
@@ -634,10 +655,37 @@ def test_world_planner_validation_report_marks_covered_and_missing_gates(tmp_pat
     assert gates["full_stonecore_clear"]["passed"] is False
     assert gates["raid_boss"]["passed"] is False
     assert gates["full_blackwing_descent_clear"]["passed"] is False
-    assert "prepared_5man_provisioning" in gates["full_stonecore_clear"]["missing"]
-    assert "blackwing_descent_boss_mechanic_manifest" in gates["raid_boss"]["missing"]
+    assert gates["full_stonecore_clear"]["missing"] == ["stonecore_live_clear_report"]
+    assert gates["raid_boss"]["missing"] == ["blackwing_descent_live_boss_report"]
+    assert gates["full_blackwing_descent_clear"]["missing"] == ["blackwing_descent_live_clear_report"]
     assert report["all_passed"] is False
     assert report["runtime_ml_control"] == "disabled_until_shadow_assist_replay_validation_passes"
+
+
+def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
+    config = json.loads(Path("experiments/configs/validation_scenarios_cata_001.json").read_text(encoding="utf-8"))
+    provisioning_report = {
+        "all_ready": True,
+        "scenarios": [
+            {"scenario_id": "stonecore_5n", "ready": True, "missing": [], "role_counts": {"tank": 1, "healer": 1, "dps": 3}},
+            {"scenario_id": "blackwing_descent_10n", "ready": True, "missing": [], "role_counts": {"tank": 2, "healer": 3, "dps": 5}},
+        ],
+    }
+    verification_report = {"all_passed": True}
+
+    manifests = build_validation_scenario_manifests(config, provisioning_report, verification_report)
+    scenarios = {row["scenario_id"]: row for row in manifests["validation_scenarios"]}
+    routes = manifests["validation_routes"]
+    mechanics = manifests["validation_mechanics"]
+
+    assert scenarios["stonecore_5n"]["provisioning_ready"] is True
+    assert scenarios["blackwing_descent_10n"]["provisioning_ready"] is True
+    assert scenarios["stonecore_5n"]["boss_count"] == 4
+    assert scenarios["blackwing_descent_10n"]["boss_count"] == 6
+    assert any(row["scenario_id"] == "stonecore_5n" and row["kind"] == "trash" for row in routes)
+    assert any(row["scenario_id"] == "blackwing_descent_10n" and "raid_aoe" in row["families"] for row in mechanics)
+    assert manifests["report"]["ready_scenarios"] == 2
+    assert manifests["report"]["invalid_mechanic_profiles"] == []
 
 
 def test_live_bot_validation_command_script_and_output_parser():
