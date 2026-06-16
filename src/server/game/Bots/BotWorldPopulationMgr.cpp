@@ -1,7 +1,10 @@
 #include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotActionExecutor.h"
+#include "Bots/BotClassSpecActionProfile.h"
 #include "Bots/BotDatasetEvent.h"
+#include "Bots/BotEncounterMechanicCatalog.h"
 #include "Bots/BotMgr.h"
+#include "Bots/BotProgressionGoalPolicy.h"
 #include "CellImpl.h"
 #include "Config.h"
 #include "Corpse.h"
@@ -5414,6 +5417,12 @@ std::string BotWorldPopulationMgr::BuildDungeonTrashPackJson(DungeonTrashPackFea
 {
     std::ostringstream json;
     json << "{\"pack_size\":" << pack.PackSize
+         << ",\"mechanic_families\":[\"trash_pack\""
+         << (pack.CasterCount ? ",\"caster_pack\"" : "")
+         << (pack.HealerCount ? ",\"healer_mob\"" : "")
+         << (pack.PatrolNearby ? ",\"patrol_risk\"" : "")
+         << (pack.InterruptPriority > 0.0f ? ",\"interrupt_required\"" : "")
+         << (pack.AoeValue > 0.5f ? ",\"cleave_risk\"" : "") << "]"
          << ",\"elite_count\":" << pack.EliteCount
          << ",\"caster_count\":" << pack.CasterCount
          << ",\"healer_count\":" << pack.HealerCount
@@ -5437,8 +5446,12 @@ std::string BotWorldPopulationMgr::BuildDungeonTrashPackJson(DungeonTrashPackFea
 std::string BotWorldPopulationMgr::BuildBossMechanicsJson(BossMechanicFeatures const& features) const
 {
     SpellInfo const* spellInfo = features.CastSpellId ? sSpellMgr->GetSpellInfo(features.CastSpellId) : nullptr;
+    BotEncounterMechanicEmbedding mechanic = BotEncounterMechanicCatalog::Classify(nullptr, nullptr, spellInfo, features.DangerScore, features.MustInterrupt, features.GroundDanger, features.TankSpike, features.RaidDamage, features.AddsActive);
+    mechanic.SourceEntry = features.BossEntry;
     std::ostringstream json;
     json << "{\"encounter_type\":\"" << (features.RaidEncounter ? "raid_boss" : "dungeon_boss") << "\""
+         << ",\"mechanic_embedding\":" << mechanic.ToJson()
+         << ",\"mechanic_family\":\"" << JsonEscape(BotEncounterMechanicCatalog::ToString(mechanic.Family)) << "\""
          << ",\"boss_present\":" << (features.BossPresent ? "true" : "false")
          << ",\"boss_guid\":" << features.BossGuid.GetCounter()
          << ",\"boss_entry\":" << features.BossEntry
@@ -5542,51 +5555,56 @@ uint32 BotWorldPopulationMgr::SelectCombatSpell(Player* bot, Unit* target) const
     if (!bot || !target || !target->IsAlive())
         return 0;
 
-    uint8 playerClass = bot->getClass();
-    uint32 candidates[4] = { 0, 0, 0, 0 };
-    switch (playerClass)
+    std::string role = GetDungeonRole(bot);
+    BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(bot, role.c_str());
+    RoleSaturationState saturation = BuildRoleSaturationState(bot, target, role.c_str());
+    std::string roleGoal = BotProgressionGoalPolicy::RoleGoal(role);
+    std::vector<BotActionCandidate> candidates = BotClassSpecActionProfileStore::BuildCandidates(bot, target, profile);
+
+    BotActionCandidate* best = nullptr;
+    for (BotActionCandidate& candidate : candidates)
     {
-        case CLASS_MAGE:
-            candidates[0] = 133;      // Fireball
-            candidates[1] = 44614;    // Frostfire Bolt
-            break;
-        case CLASS_PRIEST:
-            candidates[0] = 585;      // Smite
-            break;
-        case CLASS_WARLOCK:
-            candidates[0] = 686;      // Shadow Bolt
-            break;
-        case CLASS_DRUID:
-            candidates[0] = 5176;     // Wrath
-            break;
-        case CLASS_SHAMAN:
-            candidates[0] = 403;      // Lightning Bolt
-            break;
-        case CLASS_PALADIN:
-            candidates[0] = 20271;    // Judgement
-            break;
-        case CLASS_HUNTER:
-            candidates[0] = 75;       // Auto Shot
-            break;
-        case CLASS_DEATH_KNIGHT:
-            candidates[0] = 45477;    // Icy Touch
-            candidates[1] = 45462;    // Plague Strike
-            break;
-        case CLASS_WARRIOR:
-            candidates[0] = 78;       // Heroic Strike
-            break;
-        case CLASS_ROGUE:
-            candidates[0] = 1752;     // Sinister Strike
-            break;
-        default:
-            break;
+        if (!candidate.RejectReason.empty())
+            continue;
+
+        float roleScore = candidate.Score;
+        switch (saturation.RecommendedBalanceMode)
+        {
+            case BotRoleBalanceMode::PureSurvival:
+            case BotRoleBalanceMode::Recovery:
+                roleScore += candidate.Profile.SurvivalWeight * 1.5f + candidate.Profile.MitigationWeight + candidate.Profile.HealingWeight;
+                roleScore -= candidate.Profile.DamageWeight * 0.25f;
+                break;
+            case BotRoleBalanceMode::BalancedRoleDps:
+                roleScore += candidate.Profile.DamageWeight * 0.55f + candidate.Profile.HealingWeight * 0.25f + candidate.Profile.ThreatWeight * 0.25f;
+                break;
+            case BotRoleBalanceMode::DpsPush:
+                roleScore += candidate.Profile.DamageWeight + candidate.Profile.ProgressionWeight * 0.35f;
+                break;
+            case BotRoleBalanceMode::RoleFirst:
+            default:
+                if (role == "healer")
+                    roleScore += candidate.Profile.HealingWeight + candidate.Profile.SurvivalWeight * 0.45f;
+                else if (role == "tank")
+                    roleScore += candidate.Profile.ThreatWeight + candidate.Profile.MitigationWeight + candidate.Profile.SurvivalWeight * 0.45f;
+                else
+                    roleScore += candidate.Profile.DamageWeight + (candidate.Category == BotCombatActionCategory::Interrupt ? 0.6f : 0.0f);
+                break;
+        }
+
+        candidate.Score = roleScore;
+        candidate.Reason = saturation.SaturationReason;
+        if (!best || candidate.Score > best->Score)
+            best = &candidate;
     }
 
-    for (uint32 spellId : candidates)
-        if (spellId && bot->HasSpell(spellId))
-            return spellId;
+    uint32 botKey = bot->GetGUID().GetCounter();
+    _lastSaturationByBot[botKey] = saturation;
+    _lastCombatMaskByBot[botKey] = BotClassSpecActionProfileStore::CandidateMaskJson(candidates, profile, roleGoal.c_str(), saturation.ToJson().c_str());
+    _lastChosenCombatByBot[botKey] = BotClassSpecActionProfileStore::ChosenActionJson(best, profile, roleGoal.c_str(), BotRoleSaturationPolicy::ToString(saturation.RecommendedBalanceMode), saturation.ExperimentConfidence);
+    _lastActionCategoryByBot[botKey] = best ? BotCombatActionCatalog::ToString(best->Category) : "wait";
 
-    return 0;
+    return best ? best->SpellId : 0;
 }
 
 bool BotWorldPopulationMgr::TryCastCombatSpell(Player* bot, Unit* target, uint32 spellId) const
@@ -6945,6 +6963,25 @@ void BotWorldPopulationMgr::RecordDecision(WorldBotState& state, Player* bot, ch
         state.LastDecisionQuestId = state.QuestWork.ActiveQuestId ? state.QuestWork.ActiveQuestId : state.NewlyAcceptedQuestId;
     state.LastDecisionDistanceMoved = state.DistanceMovedSinceLastDecision;
     state.DistanceMovedSinceLastDecision = 0.0f;
+    std::string role = GetDungeonRole(bot);
+    BotClassSpecActionProfile decisionProfile = BotClassSpecActionProfileStore::Build(bot, role.c_str());
+    RoleSaturationState decisionSaturation = BuildRoleSaturationState(bot, target, role.c_str());
+    auto saturationItr = _lastSaturationByBot.find(bot->GetGUID().GetCounter());
+    if (saturationItr != _lastSaturationByBot.end())
+        decisionSaturation = saturationItr->second;
+    state.LastClassSpecProfile = decisionProfile.EmbeddingJson();
+    state.LastRoleGoal = BotProgressionGoalPolicy::RoleGoal(role);
+    state.LastRoleSaturationStateJson = decisionSaturation.ToJson();
+    state.LastRecommendedBalanceMode = BotRoleSaturationPolicy::ToString(decisionSaturation.RecommendedBalanceMode);
+    state.LastSaturationReason = decisionSaturation.SaturationReason;
+    state.LastProgressionReason = BotProgressionGoalPolicy::ProgressionReason(bot, BotLongTermProgressionBrain::ToString(chosenActivity.Activity), situation);
+    state.LastProfessionGoal = BotProgressionGoalPolicy::ProfessionGoalJson(bot, role, BotLongTermProgressionBrain::ToString(chosenActivity.Activity));
+    auto categoryItr = _lastActionCategoryByBot.find(bot->GetGUID().GetCounter());
+    state.LastActionCategory = categoryItr != _lastActionCategoryByBot.end() ? categoryItr->second : (action && std::string(action).find("loot") != std::string::npos ? "loot" : (action && std::string(action).find("quest") != std::string::npos ? "quest_interact" : "wait"));
+    auto maskItr = _lastCombatMaskByBot.find(bot->GetGUID().GetCounter());
+    state.LastValidActionMaskJson = maskItr != _lastCombatMaskByBot.end() ? maskItr->second : "{}";
+    auto chosenItr = _lastChosenCombatByBot.find(bot->GetGUID().GetCounter());
+    state.LastChosenActionJson = chosenItr != _lastChosenCombatByBot.end() ? chosenItr->second : "{}";
     RecordDecisionTrace(state, situation, action, target, state.LastDecisionQuestId, failure ? "failed" : "ok", failure ? "decision_failure" : "");
 
     if (!_runId || !_config.RecordDecisions)
@@ -6969,13 +7006,38 @@ void BotWorldPopulationMgr::RecordDecision(WorldBotState& state, Player* bot, ch
 
     std::string raw = rawJson ? rawJson : "{}";
     std::string semantic = semanticJson ? semanticJson : "{}";
-    std::string candidateJson = BuildActivityCandidatesJson(activityScores);
+    std::string activityCandidateJson = BuildActivityCandidatesJson(activityScores);
+    std::string combatMaskJson = state.LastValidActionMaskJson.empty() || state.LastValidActionMaskJson == "{}"
+        ? BotClassSpecActionProfileStore::CandidateMaskJson(std::vector<BotActionCandidate>(), decisionProfile, state.LastRoleGoal.c_str(), state.LastRoleSaturationStateJson.c_str())
+        : state.LastValidActionMaskJson;
+    std::ostringstream candidateJsonOut;
+    candidateJsonOut << "{\"schema\":\"bot_decision_mask_v2\""
+                     << ",\"activity_candidates\":" << activityCandidateJson
+                     << ",\"combat_action_mask\":" << combatMaskJson
+                     << ",\"class_spec_profile\":" << state.LastClassSpecProfile
+                     << ",\"role_goal\":\"" << JsonEscape(state.LastRoleGoal) << "\""
+                     << ",\"role_saturation_state_json\":" << state.LastRoleSaturationStateJson
+                     << ",\"recommended_balance_mode\":\"" << JsonEscape(state.LastRecommendedBalanceMode) << "\""
+                     << ",\"saturation_reason\":\"" << JsonEscape(state.LastSaturationReason) << "\""
+                     << ",\"progression_reason\":" << state.LastProgressionReason
+                     << ",\"profession_goal\":" << state.LastProfessionGoal << "}";
+    std::string candidateJson = candidateJsonOut.str();
     uint64 replayId = _policyModelConfig.Enabled && !_policyModelConfig.Version.empty()
         ? RecordDecisionReplay(state, bot, target, situation, action, rawJson, semanticJson, candidateJson.c_str(), chosenActivity, failure)
         : 0;
     PolicyModelTrace modelTrace = BuildPolicyModelTrace(activityScores, chosenActivity, bot, clipId, replayId);
     std::ostringstream chosen;
-    chosen << "{\"action\":\"" << JsonEscape(action ? action : "wait") << "\"";
+    std::string structuredChosen = state.LastChosenActionJson.empty() || state.LastChosenActionJson == "{}"
+        ? BotClassSpecActionProfileStore::ChosenActionJson(nullptr, decisionProfile, state.LastRoleGoal.c_str(), state.LastRecommendedBalanceMode.c_str(), decisionSaturation.ExperimentConfidence)
+        : state.LastChosenActionJson;
+    chosen << "{\"action\":\"" << JsonEscape(action ? action : "wait") << "\""
+           << ",\"structured_action\":" << structuredChosen
+           << ",\"action_category\":\"" << JsonEscape(state.LastActionCategory.empty() ? "wait" : state.LastActionCategory) << "\""
+           << ",\"class_spec_profile\":" << state.LastClassSpecProfile
+           << ",\"role_goal\":\"" << JsonEscape(state.LastRoleGoal) << "\""
+           << ",\"role_saturation_state_json\":" << state.LastRoleSaturationStateJson
+           << ",\"recommended_balance_mode\":\"" << JsonEscape(state.LastRecommendedBalanceMode) << "\""
+           << ",\"saturation_reason\":\"" << JsonEscape(state.LastSaturationReason) << "\"";
     if (target)
         chosen << ",\"target_guid\":" << target->GetGUID().GetCounter();
     chosen << ",\"activity\":\"" << JsonEscape(BotLongTermProgressionBrain::ToString(chosenActivity.Activity)) << "\""
@@ -6994,7 +7056,10 @@ void BotWorldPopulationMgr::RecordDecision(WorldBotState& state, Player* bot, ch
            << ",\"objective_type\":\"" << JsonEscape(state.QuestWork.ObjectiveType) << "\""
            << ",\"required_entry\":" << (state.QuestWork.RequiredEntry > 0 ? uint32(state.QuestWork.RequiredEntry) : 0)
            << ",\"required_item\":" << state.QuestWork.RequiredItem
-           << ",\"required_spell\":" << state.QuestWork.RequiredSpell;
+           << ",\"required_spell\":" << state.QuestWork.RequiredSpell
+           << ",\"progression_reason\":" << state.LastProgressionReason
+           << ",\"profession_goal\":" << state.LastProfessionGoal
+           << ",\"next_expected_action\":\"" << JsonEscape(state.LastNextExpectedAction) << "\"";
     if (_policyModelConfig.Enabled && !_policyModelConfig.Version.empty())
         chosen << ",\"policy_model\":" << modelTrace.Json;
     chosen << "}";
@@ -7020,7 +7085,17 @@ void BotWorldPopulationMgr::RecordDecision(WorldBotState& state, Player* bot, ch
             << ",\"loot_state_cleared\":" << (state.LastLootStateCleared ? "true" : "false")
             << ",\"no_progress_reason\":\"" << JsonEscape(state.LastNoProgressReason) << "\""
             << ",\"cooldown_reason\":\"" << JsonEscape(state.QuestWork.FailedReason) << "\""
-            << ",\"dummy_allowed_by_quest\":" << (state.CurrentDummyAllowedByQuest ? "true" : "false");
+            << ",\"dummy_allowed_by_quest\":" << (state.CurrentDummyAllowedByQuest ? "true" : "false")
+            << ",\"objective_state\":\"increase_character_power\""
+            << ",\"zone_quest_portfolio\":" << BotProgressionGoalPolicy::QuestPortfolioSummaryJson(state.QuestWork.ActiveQuestId ? 1 : 0, state.ActiveQuestClusterId, state.QuestWork.Phase.c_str(), state.LastNoQuestReason.c_str())
+            << ",\"role_goal\":\"" << JsonEscape(state.LastRoleGoal) << "\""
+            << ",\"role_saturation_state_json\":" << state.LastRoleSaturationStateJson
+            << ",\"recommended_balance_mode\":\"" << JsonEscape(state.LastRecommendedBalanceMode) << "\""
+            << ",\"saturation_reason\":\"" << JsonEscape(state.LastSaturationReason) << "\""
+            << ",\"progression_reason\":" << state.LastProgressionReason
+            << ",\"profession_goal\":" << state.LastProfessionGoal
+            << ",\"reject_reason\":\"" << JsonEscape(state.LastCombatRejectReason) << "\""
+            << ",\"next_expected_action\":\"" << JsonEscape(state.LastNextExpectedAction) << "\"";
     if (_policyModelConfig.Enabled && !_policyModelConfig.Version.empty())
         outcome << ",\"policy_model\":" << modelTrace.Json;
     outcome << "}";
@@ -7038,7 +7113,7 @@ void BotWorldPopulationMgr::RecordDecision(WorldBotState& state, Player* bot, ch
     dataset.bot_guid = bot->GetGUID();
     dataset.bot_role = GetDungeonRole(bot);
     dataset.bot_level = uint32(bot->getLevel());
-    dataset.policy_source = WorldPolicySource(_policyModelConfig, true);
+    dataset.policy_source = _policyModelConfig.Enabled && !_policyModelConfig.Version.empty() ? WorldPolicySource(_policyModelConfig, true) : BotPolicySource::Heuristic;
     dataset.policy_version = WorldPolicyVersion(_policyModelConfig, _config.BrainVersion);
     dataset.timestamp_ms = nowMs;
     dataset.tick_id = state.Sequence;
@@ -7050,7 +7125,7 @@ void BotWorldPopulationMgr::RecordDecision(WorldBotState& state, Player* bot, ch
     dataset.chosen_action_json = chosenJson;
     dataset.action_result = failure ? "failed" : "ok";
     dataset.outcome_json = outcomeJson;
-    dataset.quality_flags_json = "{\"source\":\"experiment_bot_decisions\",\"failure\":" + std::string(failure ? "true" : "false") + ",\"rare\":" + std::string(rare ? "true" : "false") + "}";
+    dataset.quality_flags_json = "{\"source\":\"experiment_bot_decisions\",\"failure\":" + std::string(failure ? "true" : "false") + ",\"rare\":" + std::string(rare ? "true" : "false") + ",\"class_spec_profile\":" + decisionProfile.QualityFlagsJson() + "}";
     std::string canonical = dataset.Validate() ? dataset.ToJson() : "";
     CharacterDatabase.EscapeString(candidateJson);
     CharacterDatabase.EscapeString(chosenJson);
@@ -7210,6 +7285,9 @@ std::string BotWorldPopulationMgr::BuildEmbeddingFeaturesJson(Player const* bot,
     }
 
     std::ostringstream json;
+    std::string role = bot ? GetDungeonRole(const_cast<Player*>(bot)) : "dps";
+    BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(bot, role.c_str());
+    RoleSaturationState saturation = BuildRoleSaturationState(bot, target, role.c_str());
     json << "{\"entity_type\":\"" << JsonEscape(entityType ? entityType : "unknown")
          << "\",\"entity_key\":" << entityKey
          << ",\"semantic_family\":\"" << JsonEscape(semanticFamily ? semanticFamily : "unknown") << "\""
@@ -7221,6 +7299,12 @@ std::string BotWorldPopulationMgr::BuildEmbeddingFeaturesJson(Player const* bot,
          << ",\"target_entry\":" << targetEntry
          << ",\"target_level\":" << (target ? uint32(target->getLevel()) : 0)
          << ",\"target_elite\":" << (elite ? "true" : "false")
+         << ",\"class_spec_profile\":" << profile.EmbeddingJson()
+         << ",\"role_goal\":\"" << JsonEscape(BotProgressionGoalPolicy::RoleGoal(role)) << "\""
+         << ",\"role_saturation_state_json\":" << saturation.ToJson()
+         << ",\"recommended_balance_mode\":\"" << JsonEscape(BotRoleSaturationPolicy::ToString(saturation.RecommendedBalanceMode)) << "\""
+         << ",\"saturation_reason\":\"" << JsonEscape(saturation.SaturationReason) << "\""
+         << ",\"profession_goal\":" << BotProgressionGoalPolicy::ProfessionGoalJson(bot, role, semanticFamily)
          << ",\"feature_schema\":\"bot_semantic_phase6_v1\"}";
     return json.str();
 }
@@ -7457,11 +7541,44 @@ std::string BotWorldPopulationMgr::BuildSemanticJson(Player* bot, Unit const* ta
         json << ",\"boss_mechanics\":null,\"boss_action_scores\":null";
     if (!raidEncounter)
         json << ",\"raid_role_assignment\":null,\"raid_positioning_anchors\":null,\"raid_mechanic_adapter\":null,\"raid_gear_target_plan\":null,\"heroic_raid_progression\":null";
+    std::string role = (dungeonTrash || bossEncounter) ? GetDungeonRole(bot) : "dps";
+    BotClassSpecActionProfile semanticProfile = BotClassSpecActionProfileStore::Build(bot, role.c_str());
+    RoleSaturationState semanticSaturation = BuildRoleSaturationState(bot, target, role.c_str());
     json
+         << ",\"objective_state\":\"increase_character_power\""
+         << ",\"zone_quest_portfolio\":" << BotProgressionGoalPolicy::QuestPortfolioSummaryJson(workState && workState->QuestWork.ActiveQuestId ? 1 : 0, workState ? workState->ActiveQuestClusterId : 0, workState ? workState->QuestWork.Phase.c_str() : "idle", workState ? workState->LastNoQuestReason.c_str() : "")
+         << ",\"action_category\":\"" << JsonEscape(workState ? workState->LastActionCategory : "wait") << "\""
+         << ",\"class_spec_profile\":" << semanticProfile.EmbeddingJson()
+         << ",\"role_goal\":\"" << JsonEscape(BotProgressionGoalPolicy::RoleGoal(role)) << "\""
+         << ",\"role_saturation_state_json\":" << semanticSaturation.ToJson()
+         << ",\"recommended_balance_mode\":\"" << JsonEscape(BotRoleSaturationPolicy::ToString(semanticSaturation.RecommendedBalanceMode)) << "\""
+         << ",\"saturation_reason\":\"" << JsonEscape(semanticSaturation.SaturationReason) << "\""
+         << ",\"profession_goal\":" << BotProgressionGoalPolicy::ProfessionGoalJson(bot, role, BotLongTermProgressionBrain::ToString(activity))
+         << ",\"progression_reason\":" << BotProgressionGoalPolicy::ProgressionReason(bot, BotLongTermProgressionBrain::ToString(activity), situationType.c_str())
          << ",\"objective\":{\"main_goal\":\"increase_character_power\",\"questing_allowed\":" << (_config.AllowQuesting ? "true" : "false")
          << ",\"dungeons_allowed\":" << (_config.AllowDungeons ? "true" : "false")
          << ",\"raids_allowed\":" << (_config.AllowRaids ? "true" : "false") << "}}";
     return json.str();
+}
+
+RoleSaturationState BotWorldPopulationMgr::BuildRoleSaturationState(Player const* bot, Unit const* target, char const* role, float encounterDanger, float interruptPressure, bool tankBuster, bool adds, bool noValidActions) const
+{
+    uint32 areaKey = bot ? bot->GetAreaId() : 0;
+    SemanticOutcomeStats areaStats = GetSemanticOutcomeStats("area", areaKey);
+    uint32 targetEntry = 0;
+    if (Creature const* creature = target ? target->ToCreature() : nullptr)
+        targetEntry = creature->GetEntry();
+    SemanticOutcomeStats mobStats = GetSemanticOutcomeStats("mob", targetEntry);
+
+    float learnedReward = areaStats.Known ? areaStats.AvgReward : 0.0f;
+    if (mobStats.Known)
+        learnedReward = (learnedReward + mobStats.AvgReward) * 0.5f;
+    float learnedDanger = std::max(areaStats.DangerScore, mobStats.DangerScore);
+    uint32 samples = areaStats.Samples + mobStats.Samples;
+    float learnedConfidence = samples ? std::min(1.0f, float(samples) / 25.0f) : 0.0f;
+
+    BotRoleSaturationInputs inputs = BotRoleSaturationPolicy::BuildInputs(bot, target, role ? role : "dps", encounterDanger, interruptPressure, tankBuster, adds, learnedReward, learnedDanger, learnedConfidence, noValidActions);
+    return BotRoleSaturationPolicy::Evaluate(inputs);
 }
 
 std::string BotWorldPopulationMgr::BuildConfigJson() const
@@ -7957,6 +8074,10 @@ std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson(WorldBotState con
          << "{\"name\":\"time_since_last_path_change_ms\",\"value\":" << sincePathChangeMs << "},"
          << "{\"name\":\"quest_phase\",\"value\":\"" << JsonEscape(state.QuestWork.Phase) << "\"},"
          << "{\"name\":\"quest_failure_reason\",\"value\":\"" << JsonEscape(state.QuestWork.FailedReason) << "\"},"
+         << "{\"name\":\"action_category\",\"value\":\"" << JsonEscape(state.LastActionCategory) << "\"},"
+         << "{\"name\":\"role_goal\",\"value\":\"" << JsonEscape(state.LastRoleGoal) << "\"},"
+         << "{\"name\":\"recommended_balance_mode\",\"value\":\"" << JsonEscape(state.LastRecommendedBalanceMode) << "\"},"
+         << "{\"name\":\"saturation_reason\",\"value\":\"" << JsonEscape(state.LastSaturationReason) << "\"},"
          << "{\"name\":\"last_no_quest_reason\",\"value\":\"" << JsonEscape(state.LastNoQuestReason) << "\"}"
          << "]"
          << ",\"next_expected_action\":\"" << JsonEscape(diagnosis.NextExpectedAction) << "\""
@@ -7990,6 +8111,17 @@ std::string BotWorldPopulationMgr::BuildBotDecisionSnapshotJson(WorldBotState co
          << ",\"progress_after\":" << state.QuestWork.ProgressAfter << "}"
          << ",\"target\":{\"target_guid\":" << state.LastDecisionTargetGuid.GetCounter()
          << ",\"last_rejected_target_reason\":\"" << JsonEscape(state.LastRejectedTargetReason) << "\"}"
+         << ",\"policy\":{\"action_category\":\"" << JsonEscape(state.LastActionCategory) << "\""
+         << ",\"class_spec_profile\":" << (state.LastClassSpecProfile.empty() ? "{}" : state.LastClassSpecProfile)
+         << ",\"role_goal\":\"" << JsonEscape(state.LastRoleGoal) << "\""
+         << ",\"role_saturation_state_json\":" << (state.LastRoleSaturationStateJson.empty() ? "{}" : state.LastRoleSaturationStateJson)
+         << ",\"recommended_balance_mode\":\"" << JsonEscape(state.LastRecommendedBalanceMode) << "\""
+         << ",\"saturation_reason\":\"" << JsonEscape(state.LastSaturationReason) << "\""
+         << ",\"progression_reason\":" << (state.LastProgressionReason.empty() ? "{}" : state.LastProgressionReason)
+         << ",\"profession_goal\":" << (state.LastProfessionGoal.empty() ? "{}" : state.LastProfessionGoal)
+         << ",\"valid_action_mask_json\":" << (state.LastValidActionMaskJson.empty() ? "{}" : state.LastValidActionMaskJson)
+         << ",\"chosen_action_json\":" << (state.LastChosenActionJson.empty() ? "{}" : state.LastChosenActionJson)
+         << ",\"next_expected_action\":\"" << JsonEscape(state.LastNextExpectedAction) << "\"}"
          << ",\"routing\":{\"active_path_valid\":" << (state.ActivePathValid ? "true" : "false")
          << ",\"from\":{\"x\":" << state.ActivePathFromX << ",\"y\":" << state.ActivePathFromY << ",\"z\":" << state.ActivePathFromZ << "}"
          << ",\"to\":{\"x\":" << state.ActivePathToX << ",\"y\":" << state.ActivePathToY << ",\"z\":" << state.ActivePathToZ << "}"
@@ -8034,7 +8166,14 @@ std::string BotWorldPopulationMgr::BuildBotTraceEntriesJson(WorldBotState const&
              << ",\"target_id\":" << itr->TargetGuid
              << ",\"destination\":{\"map\":" << itr->DestinationMapId << ",\"x\":" << itr->DestinationX << ",\"y\":" << itr->DestinationY << ",\"z\":" << itr->DestinationZ << "}"
              << ",\"result\":\"" << JsonEscape(itr->Result) << "\""
-             << ",\"reason_code\":\"" << JsonEscape(itr->ReasonCode) << "\"}";
+             << ",\"reason_code\":\"" << JsonEscape(itr->ReasonCode) << "\""
+             << ",\"action_category\":\"" << JsonEscape(state.LastActionCategory) << "\""
+             << ",\"role_goal\":\"" << JsonEscape(state.LastRoleGoal) << "\""
+             << ",\"recommended_balance_mode\":\"" << JsonEscape(state.LastRecommendedBalanceMode) << "\""
+             << ",\"saturation_reason\":\"" << JsonEscape(state.LastSaturationReason) << "\""
+             << ",\"mechanic_family\":\"" << JsonEscape(state.LastMechanicFamily) << "\""
+             << ",\"encounter_role_responsibility\":\"" << JsonEscape(state.LastEncounterRoleResponsibility) << "\""
+             << ",\"next_expected_action\":\"" << JsonEscape(state.LastNextExpectedAction) << "\"}";
     }
     json << "]";
     return json.str();

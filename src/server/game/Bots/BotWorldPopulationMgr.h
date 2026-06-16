@@ -4,6 +4,7 @@
 #include "ObjectGuid.h"
 #include "Bots/BotExperimentCoordinator.h"
 #include "Bots/BotLongTermProgressionBrain.h"
+#include "Bots/BotRoleSaturationPolicy.h"
 #include "Bots/BotTelemetryBuffer.h"
 #include "Bots/BotTelemetryPolicy.h"
 #include <deque>
@@ -273,6 +274,20 @@ private:
         std::string LastDecisionResult = "ok";
         std::string LastDecisionReason;
         std::string LastDecisionHandler = "none";
+        std::string LastActionCategory = "wait";
+        std::string LastClassSpecProfile = "{}";
+        std::string LastRoleGoal = "increase_character_power";
+        std::string LastRoleSaturationStateJson = "{}";
+        std::string LastRecommendedBalanceMode = "role_first";
+        std::string LastSaturationReason = "role_first";
+        std::string LastProgressionReason = "{}";
+        std::string LastProfessionGoal = "{}";
+        std::string LastMechanicFamily = "none";
+        std::string LastEncounterRoleResponsibility = "maintain_role";
+        std::string LastValidActionMaskJson = "{}";
+        std::string LastChosenActionJson = "{}";
+        std::string LastNextExpectedAction = "wait_for_next_decision_tick";
+        std::string LastCombatRejectReason;
         uint32 LastDecisionQuestId = 0;
         ObjectGuid LastDecisionTargetGuid;
 
@@ -794,6 +809,7 @@ private:
     std::string BuildEmbeddingFeaturesJson(Player const* bot, Unit const* target, char const* entityType, uint32 entityKey, char const* semanticFamily) const;
     std::string BuildRawJson(Player* bot, Unit const* target) const;
     std::string BuildSemanticJson(Player* bot, Unit const* target, char const* situation, BotRolePowerBreakdown const* power = nullptr, BotProgressionStage stage = BotProgressionStage::Leveling, BotProgressionActivity activity = BotProgressionActivity::ExperimentExploration) const;
+    RoleSaturationState BuildRoleSaturationState(Player const* bot, Unit const* target, char const* role, float encounterDanger = 0.0f, float interruptPressure = 0.0f, bool tankBuster = false, bool adds = false, bool noValidActions = false) const;
     std::string BuildConfigJson() const;
     std::string BuildActivityCandidatesJson(std::vector<BotActivityScore> const& activityScores) const;
     void ApplyPolicyModelScores(std::vector<BotActivityScore>& activityScores, Player const* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage) const;
@@ -819,6 +835,10 @@ private:
     BotWorldStatus _metrics;
     BotTelemetryBuffer _telemetryBuffer;
     BotExperimentCoordinator _experimentCoordinator;
+    mutable std::map<uint32, std::string> _lastCombatMaskByBot;
+    mutable std::map<uint32, std::string> _lastChosenCombatByBot;
+    mutable std::map<uint32, std::string> _lastActionCategoryByBot;
+    mutable std::map<uint32, RoleSaturationState> _lastSaturationByBot;
 };
 
 #define sBotWorldPopulationMgr BotWorldPopulationMgr::instance()
