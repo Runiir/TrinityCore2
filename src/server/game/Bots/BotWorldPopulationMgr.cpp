@@ -4933,6 +4933,43 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     state.QuestRouteDestination.Reason = "validation_route";
 
     float routeDistance = bot->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ);
+    if (bot->IsInCombat() && target && target->IsAlive() && bot->IsValidAttackTarget(target))
+    {
+        Creature const* creature = target->ToCreature();
+        bool routeBossTarget = creature && _config.ValidationRouteTargetEntry && creature->GetEntry() == _config.ValidationRouteTargetEntry;
+        float targetRouteDistance = target->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ);
+        if (!routeBossTarget && creature && targetRouteDistance > 120.0f)
+        {
+            std::string raw = BuildRawJson(bot, target);
+            std::string semantic = BuildSemanticJson(bot, target, "validation_route_prerequisite_rejected", &power, stage, activity);
+            RecordEvent(state, bot, "validation_route_prerequisite_rejected", target, "off_route_target", raw.c_str(), semantic.c_str(), targetRouteDistance, _config.ValidationRouteTargetEntry);
+            bot->AttackStop();
+            bot->CombatStop(true);
+            state.TargetGuid.Clear();
+            target = nullptr;
+        }
+    }
+    if (bot->IsInCombat() && target && target->IsAlive() && bot->IsValidAttackTarget(target))
+    {
+        Creature const* creature = target->ToCreature();
+        bool routeBossTarget = creature && _config.ValidationRouteTargetEntry && creature->GetEntry() == _config.ValidationRouteTargetEntry;
+        BotActionExecutor executor;
+        BotActionResult pull = executor.Pull(bot, target);
+        uint32 spellId = SelectCombatSpell(bot, target);
+        bool cast = spellId && TryCastCombatSpell(bot, target, spellId);
+        action = routeBossTarget
+            ? (_config.ValidationRouteKind == "boss" ? (std::string(GetDungeonRole(bot)) == "tank" ? "validation_route_tank_boss" : "validation_route_boss_action") : "validation_route_trash_action")
+            : "validation_route_prerequisite_action";
+        situation = routeBossTarget ? situation : "validation_route_prerequisite";
+        std::string raw = BuildRawJson(bot, target);
+        std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, activity);
+        RecordEvent(state, bot, routeBossTarget ? (_config.ValidationRouteKind == "boss" ? "boss_action" : "trash_action") : "validation_route_prerequisite", target, ToString(pull), raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry, cast ? spellId : 0);
+        if (routeBossTarget && _config.ValidationRouteKind == "boss")
+            RecordEvent(state, bot, "boss_started", target, _config.ValidationRouteMechanicProfile.c_str(), raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry, cast ? spellId : 0);
+        state.WasInCombat = true;
+        return true;
+    }
+
     if (routeDistance > 18.0f)
     {
         MoveBotToPoint(state, bot, _config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ);
@@ -5008,6 +5045,73 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     }
     if (!routeTarget && seenRouteTarget)
     {
+        Creature* prerequisiteTarget = nullptr;
+        float prerequisiteScore = -100000.0f;
+        float prerequisiteDistance = 0.0f;
+        std::vector<WorldObject*> objects;
+        Trinity::AllWorldObjectsInRange check(bot, 320.0f);
+        Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(bot, objects, check);
+        Cell::VisitAllObjects(bot, searcher, 320.0f);
+        for (WorldObject* object : objects)
+        {
+            Creature* creature = object ? object->ToCreature() : nullptr;
+            if (!creature || creature == seenRouteTarget || !creature->IsAlive() || !bot->IsValidAttackTarget(creature))
+                continue;
+            if (creature->IsDungeonBoss() || creature->isWorldBoss())
+                continue;
+            if (creature->IsCritter() || creature->IsPet() || creature->IsTotem() || creature->IsSummon() || creature->IsGuardian() || !creature->GetOwnerGUID().IsEmpty())
+                continue;
+
+            float distance = bot->GetExactDist(creature);
+            float routeProximity = creature->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ);
+            std::string scriptName = creature->GetScriptName();
+            if (routeProximity > 120.0f)
+                continue;
+
+            float score = 320.0f - distance;
+            if (!scriptName.empty())
+                score += 700.0f;
+            if (creature->isElite())
+                score += 35.0f;
+            if (scriptName.empty() && routeProximity < 120.0f)
+                score += 60.0f;
+            if (creature->GetVictim() == bot)
+                score += 80.0f;
+
+            if (score > prerequisiteScore)
+            {
+                prerequisiteTarget = creature;
+                prerequisiteScore = score;
+                prerequisiteDistance = distance;
+            }
+        }
+
+        if (prerequisiteTarget)
+        {
+            target = prerequisiteTarget;
+            state.TargetGuid = target->GetGUID();
+            std::string raw = BuildRawJson(bot, target);
+            std::string semantic = BuildSemanticJson(bot, target, "validation_route_prerequisite", &power, stage, activity);
+            if (prerequisiteDistance > 35.0f || !bot->IsWithinLOSInMap(target))
+            {
+                MoveBotToPoint(state, bot, target->GetPositionX(), target->GetPositionY(), target->GetPositionZ());
+                RecordEvent(state, bot, "validation_route_prerequisite", target, "move_to_blocker", raw.c_str(), semantic.c_str(), prerequisiteDistance, _config.ValidationRouteTargetEntry);
+                situation = "validation_route_prerequisite";
+                action = "move_to_validation_route_prerequisite";
+                return true;
+            }
+
+            BotActionExecutor executor;
+            BotActionResult pull = executor.Pull(bot, target);
+            uint32 spellId = SelectCombatSpell(bot, target);
+            bool cast = spellId && TryCastCombatSpell(bot, target, spellId);
+            RecordEvent(state, bot, "validation_route_prerequisite", target, ToString(pull), raw.c_str(), semantic.c_str(), prerequisiteDistance, _config.ValidationRouteTargetEntry, cast ? spellId : 0);
+            situation = "validation_route_prerequisite";
+            action = "validation_route_prerequisite_action";
+            state.WasInCombat = true;
+            return true;
+        }
+
         state.LastNoProgressReason = targetSearchResult;
         std::string raw = BuildRawJson(bot, seenRouteTarget);
         std::string semantic = BuildSemanticJson(bot, seenRouteTarget, "validation_route_blocked", &power, stage, activity);
@@ -7927,7 +8031,8 @@ void BotWorldPopulationMgr::RecordEvent(WorldBotState& state, Player* bot, char 
         || eventName == "objective_no_progress"
         || eventName == "objective_target_lost"
         || eventName == "quest_accepted"
-        || eventName == "quest_completed";
+        || eventName == "quest_completed"
+        || eventName.rfind("validation_route", 0) == 0;
     if (!policy.writeEvent && !forceTeacherEvent)
         return;
 

@@ -302,7 +302,17 @@ def test_quest_first_portfolio_routing_surface():
 
     assert "TrySmartGearDecision(state, bot, power, stage, chosenActivity.Activity, situation, action)" in update_bot
     assert "TryValidationRouteObjective(state, bot, power, stage, chosenActivity.Activity, situation, action, target)" in update_bot
+    assert "validation_route_prerequisite" in mgr
+    assert "off_route_target" in mgr
+    assert "if (routeProximity > 120.0f)" in mgr
+    assert 'eventName.rfind("validation_route", 0) == 0' in mgr
     assert "state.LastDecisionHandler = \"smart_loot\";" in update_bot
+    assert_ordered(
+        mgr,
+        "if (!routeTarget && seenRouteTarget)",
+        "RecordEvent(state, bot, \"validation_route_prerequisite\"",
+        "action = \"validation_route_target_blocked\";",
+    )
     assert_ordered(
         update_bot,
         "bool hasNearbyQuestGiver = _config.AllowQuesting && HasNearbySupportedQuestGiver(bot, state);",
