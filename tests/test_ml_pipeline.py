@@ -955,11 +955,13 @@ def test_validation_run_status_reports_missing_segments_and_next_commands(tmp_pa
             {
                 "scenario_id": "blackwing_descent_10n",
                 "instance": "Blackwing Descent",
+                "difficulty": "normal_10man",
                 "scenario_report_shell": "pixi run bot-live-scenario-reports --scenario-id blackwing_descent_10n",
                 "segments": [
                     {
                         "segment_id": "02_magmaw",
                         "route_node_id": "bwd_magmaw",
+                        "kind": "boss",
                         "label": "Magmaw",
                         "mechanic_profile": "magmaw",
                         "executable": True,
@@ -970,6 +972,7 @@ def test_validation_run_status_reports_missing_segments_and_next_commands(tmp_pa
                     {
                         "segment_id": "03_omnotron",
                         "route_node_id": "bwd_omnotron",
+                        "kind": "boss",
                         "label": "Omnotron",
                         "mechanic_profile": "omnotron",
                         "executable": True,
@@ -983,7 +986,25 @@ def test_validation_run_status_reports_missing_segments_and_next_commands(tmp_pa
     }
     present_report = live_root / "blackwing_descent_10n" / "02_magmaw" / "report.json"
     present_report.parent.mkdir(parents=True)
-    present_report.write_text(json.dumps({"validation_context": {"segment_id": "02_magmaw"}}), encoding="utf-8")
+    present_report.write_text(
+        json.dumps(
+            {
+                "schema": "bot_live_validation_report_v1",
+                "returncode": 0,
+                "timed_out": False,
+                "validation_context": {
+                    "scenario_id": "blackwing_descent_10n",
+                    "segment_id": "02_magmaw",
+                    "route_node_id": "bwd_magmaw",
+                    "route_kind": "boss",
+                    "mechanic_profile": "magmaw",
+                },
+                "trace": {"entries": [{"action": "raid_boss_killed"}]},
+                "summary": {"raid_boss_kills": 1},
+            }
+        ),
+        encoding="utf-8",
+    )
     report_root.mkdir()
     (report_root / "blackwing_descent_10n.json").write_text(
         json.dumps({"scenario_id": "blackwing_descent_10n", "clear_complete": False, "complete_segment_coverage": False}),
@@ -995,10 +1016,77 @@ def test_validation_run_status_reports_missing_segments_and_next_commands(tmp_pa
 
     assert status["all_ready"] is False
     assert bwd["present_segments"] == ["02_magmaw"]
+    assert bwd["existing_segments"] == ["02_magmaw"]
     assert bwd["missing_segments"] == ["03_omnotron"]
+    assert bwd["invalid_segments"] == []
     assert bwd["blockers"] == ["missing_segment_live_reports", "incomplete_segment_coverage", "scenario_clear_not_complete"]
     assert bwd["next_commands"][0] == "pixi run bot-live-validate --validation-segment-id 03_omnotron"
     assert bwd["next_commands"][-1].startswith("pixi run bot-live-scenario-reports")
+
+
+def test_validation_run_status_reruns_invalid_existing_segment_reports(tmp_path):
+    live_root = tmp_path / "live_validation_scenarios"
+    report_root = tmp_path / "scenario_reports"
+    plan = {
+        "scenarios": [
+            {
+                "scenario_id": "stonecore_5n",
+                "instance": "The Stonecore",
+                "difficulty": "normal_5man",
+                "scenario_report_shell": "pixi run bot-live-scenario-reports --scenario-id stonecore_5n",
+                "segments": [
+                    {
+                        "segment_id": "02_corborus",
+                        "route_node_id": "stonecore_corborus",
+                        "kind": "boss",
+                        "label": "Corborus",
+                        "mechanic_profile": "corborus",
+                        "executable": True,
+                        "live_output_dir": str(live_root / "stonecore_5n" / "02_corborus"),
+                        "live_validate_shell": "pixi run bot-live-validate --validation-segment-id 02_corborus",
+                    }
+                ],
+            }
+        ]
+    }
+    bad_report = live_root / "stonecore_5n" / "02_corborus" / "report.json"
+    bad_report.parent.mkdir(parents=True)
+    bad_report.write_text(
+        json.dumps(
+            {
+                "schema": "bot_live_validation_report_v1",
+                "returncode": 0,
+                "timed_out": False,
+                "validation_context": {
+                    "scenario_id": "stonecore_5n",
+                    "segment_id": "wrong_segment",
+                    "route_node_id": "stonecore_corborus",
+                    "route_kind": "boss",
+                    "mechanic_profile": "corborus",
+                },
+                "trace": {"entries": [{"action": "move"}]},
+            }
+        ),
+        encoding="utf-8",
+    )
+    report_root.mkdir()
+    (report_root / "stonecore_5n.json").write_text(
+        json.dumps({"scenario_id": "stonecore_5n", "clear_complete": False, "complete_segment_coverage": False}),
+        encoding="utf-8",
+    )
+
+    status = build_validation_run_status(plan, report_root)
+    stonecore = status["scenarios"][0]
+    report_row = stonecore["segment_reports"][0]
+
+    assert stonecore["present_segments"] == []
+    assert stonecore["existing_segments"] == ["02_corborus"]
+    assert stonecore["missing_segments"] == []
+    assert stonecore["invalid_segments"] == ["02_corborus"]
+    assert "invalid_segment_live_reports" in stonecore["blockers"]
+    assert "segment_id_mismatch" in report_row["invalid_reasons"]
+    assert "missing_boss_kill_evidence" in report_row["invalid_reasons"]
+    assert stonecore["next_commands"][0] == "pixi run bot-live-validate --validation-segment-id 02_corborus"
 
 
 def test_live_bot_validation_command_script_and_output_parser():

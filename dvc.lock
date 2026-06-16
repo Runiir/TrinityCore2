@@ -1,8 +1,8 @@
 schema: '2.0'
 stages:
   capture:
-    cmd: python experiments/run_experiment.py
-      experiments/configs/headless_autonomous_loop_smoke_001.json --raw-dir
+    cmd: python experiments/run_experiment.py 
+      experiments/configs/headless_autonomous_loop_smoke_001.json --raw-dir 
       dataset/raw --runs-dir experiments/runs --live-dir dvclive --local
     deps:
     - path: experiments/configs/headless_autonomous_loop_smoke_001.json
@@ -30,8 +30,8 @@ stages:
       size: 2247108
       nfiles: 116
   preprocess:
-    cmd: python ml/preprocessing/preprocess_frames.py --raw-dir dataset/raw
-      --output dataset/processed/frames.jsonl --manifest
+    cmd: python ml/preprocessing/preprocess_frames.py --raw-dir dataset/raw 
+      --output dataset/processed/frames.jsonl --manifest 
       dataset/processed/manifest.json
     deps:
     - path: dataset/raw
@@ -53,7 +53,7 @@ stages:
       md5: c035f06857b7105ccb3af4cda99ba7df
       size: 1127
   train:
-    cmd: python ml/training/train_action_frequency.py --frames
+    cmd: python ml/training/train_action_frequency.py --frames 
       dataset/processed/frames.jsonl --model models/action_frequency_model.json
     deps:
     - path: dataset/processed/frames.jsonl
@@ -70,9 +70,9 @@ stages:
       md5: 3f23171db669185934a28da7cc4aaa69
       size: 405
   evaluate:
-    cmd: python ml/evaluation/evaluate_action_frequency.py --frames
-      dataset/processed/frames.jsonl --model models/action_frequency_model.json
-      --metrics dataset/evaluations/metrics.json --report
+    cmd: python ml/evaluation/evaluate_action_frequency.py --frames 
+      dataset/processed/frames.jsonl --model models/action_frequency_model.json 
+      --metrics dataset/evaluations/metrics.json --report 
       dataset/evaluations/report.json
     deps:
     - path: dataset/processed/frames.jsonl
@@ -97,7 +97,7 @@ stages:
       md5: 73fa757aebba89e9b9661a051adc5fef
       size: 354
   world_knowledge:
-    cmd: python -m tools.bot_ml.extract_world_knowledge --output-dir
+    cmd: python -m tools.bot_ml.extract_world_knowledge --output-dir 
       dataset/world_knowledge
     deps:
     - path: tools/bot_ml/common.py
@@ -115,7 +115,7 @@ stages:
       size: 1134831298
       nfiles: 9
   world_planner:
-    cmd: python -m tools.bot_ml.build_world_planner_manifests --world-dir
+    cmd: python -m tools.bot_ml.build_world_planner_manifests --world-dir 
       dataset/world_knowledge --output-dir dataset/world_planner
     deps:
     - path: dataset/world_knowledge
@@ -138,10 +138,10 @@ stages:
       size: 261212666
       nfiles: 10
   world_planner_validate:
-    cmd: python -m tools.bot_ml.validate_world_planner --planner-dir
-      dataset/world_planner --validation-scenario-dir
-      dataset/validation_scenarios --live-scenario-report-dir
-      dataset/live_validation_scenario_reports_built --report
+    cmd: python -m tools.bot_ml.validate_world_planner --planner-dir 
+      dataset/world_planner --validation-scenario-dir 
+      dataset/validation_scenarios --live-scenario-report-dir 
+      dataset/live_validation_scenario_reports_built --report 
       dataset/world_validation/planner_report.json
     deps:
     - path: dataset/live_validation_scenario_reports_built
@@ -173,9 +173,9 @@ stages:
       md5: efae0a44c901a062bccc5f1cf933618c
       size: 27781
   validation_provisioning:
-    cmd: python -m tools.bot_ml.build_validation_provisioning --config
-      experiments/configs/validation_provisioning_cata_001.json --gear-profiles
-      dataset/validation_gear_profiles/profiles.json --output-dir
+    cmd: python -m tools.bot_ml.build_validation_provisioning --config 
+      experiments/configs/validation_provisioning_cata_001.json --gear-profiles 
+      dataset/validation_gear_profiles/profiles.json --output-dir 
       dataset/validation_provisioning
     deps:
     - path: dataset/validation_gear_profiles
@@ -198,8 +198,8 @@ stages:
       size: 232129
       nfiles: 5
   validation_gear:
-    cmd: python -m tools.bot_ml.build_validation_gear_profiles --config
-      experiments/configs/validation_provisioning_cata_001.json --output-dir
+    cmd: python -m tools.bot_ml.build_validation_gear_profiles --config 
+      experiments/configs/validation_provisioning_cata_001.json --output-dir 
       dataset/validation_gear_profiles
     deps:
     - path: data/dbc/enUS/GemProperties.dbc
@@ -241,10 +241,10 @@ stages:
       size: 163765
       nfiles: 3
   validation_provisioning_verify:
-    cmd: python -m tools.bot_ml.validate_validation_provisioning --config
-      experiments/configs/validation_provisioning_cata_001.json --gear-profiles
-      dataset/validation_gear_profiles/profiles.json --provisioning-report
-      dataset/validation_provisioning/report.json --output
+    cmd: python -m tools.bot_ml.validate_validation_provisioning --config 
+      experiments/configs/validation_provisioning_cata_001.json --gear-profiles 
+      dataset/validation_gear_profiles/profiles.json --provisioning-report 
+      dataset/validation_provisioning/report.json --output 
       dataset/validation_provisioning_verification/report.json
     deps:
     - path: data/dbc/enUS/GemProperties.dbc
@@ -298,11 +298,11 @@ stages:
       md5: 5f69417b0789aebe56fb2c704dfceb7d
       size: 511
   validation_scenarios:
-    cmd: python -m tools.bot_ml.build_validation_scenario_manifests --config
-      experiments/configs/validation_scenarios_cata_001.json
-      --provisioning-report dataset/validation_provisioning/report.json
-      --provisioning-verification
-      dataset/validation_provisioning_verification/report.json --output-dir
+    cmd: python -m tools.bot_ml.build_validation_scenario_manifests --config 
+      experiments/configs/validation_scenarios_cata_001.json 
+      --provisioning-report dataset/validation_provisioning/report.json 
+      --provisioning-verification 
+      dataset/validation_provisioning_verification/report.json --output-dir 
       dataset/validation_scenarios
     deps:
     - path: dataset/validation_provisioning/report.json
@@ -332,9 +332,9 @@ stages:
       size: 12479
       nfiles: 5
   live_scenario_reports:
-    cmd: python -m tools.bot_ml.build_live_scenario_reports --live-report
-      dataset/live_validation_scenario_reports/report.json
-      --validation-scenario-dir dataset/validation_scenarios --output-dir
+    cmd: python -m tools.bot_ml.build_live_scenario_reports --live-report 
+      dataset/live_validation_scenario_reports/report.json 
+      --validation-scenario-dir dataset/validation_scenarios --output-dir 
       dataset/live_validation_scenario_reports_built
     deps:
     - path: dataset/live_validation_scenario_reports/report.json
@@ -365,10 +365,10 @@ stages:
       size: 3197
       nfiles: 3
   validation_run_plan:
-    cmd: python -m tools.bot_ml.build_validation_run_plan
-      --validation-scenario-dir dataset/validation_scenarios --output-dir
-      dataset/validation_run_plan --live-output-root
-      dataset/live_validation_scenarios --scenario-report-root
+    cmd: python -m tools.bot_ml.build_validation_run_plan 
+      --validation-scenario-dir dataset/validation_scenarios --output-dir 
+      dataset/validation_run_plan --live-output-root 
+      dataset/live_validation_scenarios --scenario-report-root 
       dataset/live_validation_scenario_reports_built
     deps:
     - path: dataset/validation_scenarios
@@ -391,12 +391,12 @@ stages:
       size: 35599
       nfiles: 2
   live_validation_combined:
-    cmd: python -m tools.bot_ml.run_live_bot_validation --input-log
-      artifacts/live_validation_quest_mob_assist_150s/worldserver_output.log
-      --scenario-report-dir dataset/live_validation_scenario_reports_built
+    cmd: python -m tools.bot_ml.run_live_bot_validation --input-log 
+      artifacts/live_validation_quest_mob_assist_150s/worldserver_output.log 
+      --scenario-report-dir dataset/live_validation_scenario_reports_built 
       --output-dir dataset/live_validation_combined
     deps:
-    - path:
+    - path: 
         artifacts/live_validation_quest_mob_assist_150s/worldserver_output.log
       hash: md5
       md5: 6ad5bc0e9bf15eb4ef439fcaeba2c454
@@ -417,9 +417,9 @@ stages:
       size: 210133
       nfiles: 3
   validation_run_status:
-    cmd: python -m tools.bot_ml.build_validation_run_status --run-plan
-      dataset/validation_run_plan/manifest.json --scenario-report-root
-      dataset/live_validation_scenario_reports_built --output-dir
+    cmd: python -m tools.bot_ml.build_validation_run_status --run-plan 
+      dataset/validation_run_plan/manifest.json --scenario-report-root 
+      dataset/live_validation_scenario_reports_built --output-dir 
       dataset/validation_run_status
     deps:
     - path: dataset/live_validation_scenario_reports_built
@@ -433,8 +433,8 @@ stages:
       size: 27877
     - path: tools/bot_ml/build_validation_run_status.py
       hash: md5
-      md5: 8b755e13845696b2346a4a27641d9cb4
-      size: 5661
+      md5: a679ec8b797752a81dbda2689e1ab659
+      size: 11257
     - path: tools/bot_ml/common.py
       hash: md5
       md5: a02540ee4893ec8d0dd37fe816c39aa7
@@ -442,6 +442,6 @@ stages:
     outs:
     - path: dataset/validation_run_status
       hash: md5
-      md5: 6240760a9e0505084e59e97b608b70dd.dir
-      size: 36305
+      md5: 973d8340c54a13fe75018fd579018910.dir
+      size: 38697
       nfiles: 1
