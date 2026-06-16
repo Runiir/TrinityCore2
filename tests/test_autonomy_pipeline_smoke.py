@@ -288,6 +288,8 @@ def test_quest_first_portfolio_routing_surface():
     assert_ordered(
         update_bot,
         "bool hasNearbyQuestGiver = _config.AllowQuesting && HasNearbySupportedQuestGiver(bot, state);",
+        "bool canInterleaveHubProfession = !bot->IsInCombat()",
+        "else if (canInterleaveHubProfession && TryProfessionMemoryAction(state, bot, power, stage, chosenActivity.Activity, situation, action))",
         "&& !(target && !target->IsAlive())",
         "&& (chosenActivity.Activity == BotProgressionActivity::Questing || hasActiveQuestObjective || _config.QuestFirst || state.NewlyAcceptedQuestId || hasNearbyQuestGiver)",
         "TryQuesting(state, bot, power, stage, chosenActivity.Activity)",
@@ -318,8 +320,14 @@ def test_quest_first_portfolio_routing_surface():
     assert "state.LastDecisionHandler = \"profession_memory\";" in update_bot
     assert "NextProfessionDecisionMs" in mgr_header
     assert "PreferMaterialMemoryAction" in mgr_header
-    assert "SELECT source_type, source_entry, recipe_spell_id, item_id FROM bot_memory_recipe_sources" in mgr
+    assert "SELECT source_type, source_entry, recipe_spell_id, item_id, map_id, zone_id, area_id, x, y, z FROM bot_memory_recipe_sources" in mgr
+    assert "source\\\":\\\"world_recipe_source_index" in mgr
+    assert "FROM creature_trainer ct INNER JOIN trainer_spell ts ON ts.TrainerId = ct.TrainerId INNER JOIN creature c ON c.id = ct.CreatureId" in mgr
+    assert "FROM npc_vendor nv INNER JOIN creature c ON c.id = nv.entry" in mgr
+    assert "recipe_candidates" in mgr
+    assert "INSERT INTO bot_memory_recipe_sources" in mgr
     assert "RecordEvent(state, bot, \"profession_recipe_source\"" in mgr
+    assert "bot->GetMotionMaster()->MovePoint(0, x, y, z, true);" in mgr
     assert "state.PreferMaterialMemoryAction = true;" in mgr
     assert "situation = \"profession_recipe_acquisition\";" in mgr
     assert "action = \"plan_profession_recipe_source\";" in mgr

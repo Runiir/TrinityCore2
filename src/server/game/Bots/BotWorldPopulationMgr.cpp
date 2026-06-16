@@ -2115,6 +2115,9 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         || (state.NewlyAcceptedQuestId && FindQuestObjective(bot, state.NewlyAcceptedQuestId, activePlanForPriority))
         || FindActiveQuestObjective(bot, activePlanForPriority);
     bool hasNearbyQuestGiver = _config.AllowQuesting && HasNearbySupportedQuestGiver(bot, state);
+    bool canInterleaveHubProfession = !bot->IsInCombat()
+        && !hasActiveQuestObjective
+        && state.Sequence >= 2;
 
     if (hpPct < 0.35f && !bot->IsInCombat())
     {
@@ -2130,6 +2133,11 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         situation = "idle";
         action = "rest";
         state.LastDecisionHandler = "rest";
+    }
+    else if (canInterleaveHubProfession && TryProfessionMemoryAction(state, bot, power, stage, chosenActivity.Activity, situation, action))
+    {
+        target = nullptr;
+        state.LastDecisionHandler = "profession_memory";
     }
     else if (_config.AllowQuesting
         && !(target && !target->IsAlive())
@@ -6766,9 +6774,24 @@ bool BotWorldPopulationMgr::TryProfessionMemoryAction(WorldBotState& state, Play
     auto emitRecipeSource = [&]() -> bool
     {
         QueryResult recipe = CharacterDatabase.PQuery(
-        "SELECT source_type, source_entry, recipe_spell_id, item_id FROM bot_memory_recipe_sources "
+        "SELECT source_type, source_entry, recipe_spell_id, item_id, map_id, zone_id, area_id, x, y, z FROM bot_memory_recipe_sources "
         "WHERE bot_guid = %u ORDER BY last_seen_at DESC LIMIT 1",
         state.Guid.GetCounter());
+        if (!recipe)
+        {
+            recipe = WorldDatabase.PQuery(
+                "SELECT source_type, source_entry, recipe_spell_id, item_id, map_id, zone_id, area_id, x, y, z FROM ("
+                "SELECT 'trainer' AS source_type, ct.CreatureId AS source_entry, ts.SpellId AS recipe_spell_id, 0 AS item_id, c.map AS map_id, c.zoneId AS zone_id, c.areaId AS area_id, c.position_x AS x, c.position_y AS y, c.position_z AS z "
+                "FROM creature_trainer ct INNER JOIN trainer_spell ts ON ts.TrainerId = ct.TrainerId INNER JOIN creature c ON c.id = ct.CreatureId "
+                "WHERE ts.SpellId > 0 AND c.map = %u "
+                "UNION ALL "
+                "SELECT 'vendor_item' AS source_type, nv.entry AS source_entry, 0 AS recipe_spell_id, nv.item AS item_id, c.map AS map_id, c.zoneId AS zone_id, c.areaId AS area_id, c.position_x AS x, c.position_y AS y, c.position_z AS z "
+                "FROM npc_vendor nv INNER JOIN creature c ON c.id = nv.entry "
+                "WHERE nv.item > 0 AND c.map = %u) recipe_candidates "
+                "ORDER BY ((x - %f) * (x - %f) + (y - %f) * (y - %f)) LIMIT 1",
+                bot->GetMapId(), bot->GetMapId(),
+                bot->GetPositionX(), bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionY());
+        }
         if (!recipe)
             return false;
 
@@ -6777,7 +6800,26 @@ bool BotWorldPopulationMgr::TryProfessionMemoryAction(WorldBotState& state, Play
         uint32 sourceEntry = fields[1].GetUInt32();
         uint32 recipeSpellId = fields[2].GetUInt32();
         uint32 itemId = fields[3].GetUInt32();
+        uint32 mapId = fields[4].GetUInt32();
+        uint32 zoneId = fields[5].GetUInt32();
+        uint32 areaId = fields[6].GetUInt32();
+        float x = fields[7].GetFloat();
+        float y = fields[8].GetFloat();
+        float z = fields[9].GetFloat();
         std::string result = sourceType.empty() ? "known_recipe_source" : sourceType;
+        std::string escapedResult = result;
+        CharacterDatabase.EscapeString(escapedResult);
+        CharacterDatabase.DirectPExecute(
+            "INSERT INTO bot_memory_recipe_sources "
+            "(bot_guid, profession_skill_id, recipe_spell_id, source_type, source_entry, item_id, map_id, zone_id, area_id, x, y, z, reputation_required, discovered_at, last_seen_at, success_count, failure_count, metadata_json) "
+            "VALUES (%u, 0, %u, '%s', %u, %u, %u, %u, %u, %f, %f, %f, 0, NOW(), NOW(), 0, 0, '{\"source\":\"world_recipe_source_index\"}') "
+            "ON DUPLICATE KEY UPDATE map_id = VALUES(map_id), zone_id = VALUES(zone_id), area_id = VALUES(area_id), x = VALUES(x), y = VALUES(y), z = VALUES(z), last_seen_at = NOW(), metadata_json = VALUES(metadata_json)",
+            state.Guid.GetCounter(), recipeSpellId, escapedResult.c_str(), sourceEntry, itemId, mapId, zoneId, areaId, x, y, z);
+        if (mapId == bot->GetMapId() && Distance2d(bot->GetPositionX(), bot->GetPositionY(), x, y) > 8.0f)
+        {
+            bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+            bot->GetMotionMaster()->MovePoint(0, x, y, z, true);
+        }
         RecordEvent(state, bot, "profession_recipe_source", nullptr, result.c_str(), raw.c_str(), semantic.c_str(), 0.0f, recipeSpellId ? recipeSpellId : (itemId ? itemId : sourceEntry));
         state.PreferMaterialMemoryAction = true;
         situation = "profession_recipe_acquisition";

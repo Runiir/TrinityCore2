@@ -11,3 +11,4 @@
 /live_validation_autostart_graceful_dryrun
 /live_validation_autostart_graceful_shutdown
 /live_validation_fast_exit_60s
+/live_validation_recipe_guard_90s

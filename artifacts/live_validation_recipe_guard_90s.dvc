@@ -1,0 +1,6 @@
+outs:
+- md5: 6cdb4f7e3180d8f171f502971fb757cb.dir
+  size: 168535
+  nfiles: 4
+  hash: md5
+  path: live_validation_recipe_guard_90s
