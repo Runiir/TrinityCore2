@@ -334,7 +334,8 @@ def diagnosis_rows(diagnosis: dict[str, Any]) -> list[dict[str, Any]]:
 def load_scenario_reports(path: Path | None) -> dict[str, dict[str, Any]]:
     if not path or not path.exists():
         return {}
-    files = [path] if path.is_file() else sorted(path.glob("*.json"))
+    single_file = path.is_file()
+    files = [path] if single_file else sorted(path.glob("*.json"))
     reports: dict[str, dict[str, Any]] = {}
     for report_path in files:
         try:
@@ -343,7 +344,7 @@ def load_scenario_reports(path: Path | None) -> dict[str, dict[str, Any]]:
             continue
         if not isinstance(payload, dict):
             continue
-        scenario_id = str(payload.get("scenario_id") or payload.get("id") or report_path.stem)
+        scenario_id = str(payload.get("scenario_id") or payload.get("id") or (report_path.stem if single_file else ""))
         if scenario_id:
             reports[scenario_id] = payload
     return reports

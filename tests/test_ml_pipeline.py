@@ -374,6 +374,7 @@ def test_bot_ml_workflow_has_pixi_tasks_and_documented_dvc_steps():
         "validation_scenarios",
         "live_scenario_reports",
         "validation_run_plan",
+        "live_validation_combined",
         "validation_gear",
         "complete_equipment_slots",
         "full Stonecore and Blackwing Descent gates failing",
@@ -409,6 +410,8 @@ def test_bot_ml_workflow_has_pixi_tasks_and_documented_dvc_steps():
         "dataset/live_validation_scenario_reports_built",
         "validation_run_plan:",
         "dataset/validation_run_plan",
+        "live_validation_combined:",
+        "dataset/live_validation_combined",
     ]:
         assert stage in dvc
 
@@ -798,6 +801,7 @@ TC> {"duration_minutes":3,"decisions":4,"total_kills":0,"quests_completed":0}
         json.dumps({"scenario_id": "blackwing_descent_10n", "prepared_group": True, "trash_pulls": 2, "raid_boss_kills": 1, "clear_complete": False}),
         encoding="utf-8",
     )
+    (scenario_dir / "manifest.json").write_text(json.dumps({"schema": "not_a_scenario_report"}), encoding="utf-8")
 
     report = live_validation_report(output, scenario_reports=load_scenario_reports(scenario_dir))
     gates = {stage["stage"]: stage for stage in report["stages"]}
