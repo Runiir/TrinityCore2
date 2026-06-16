@@ -23,7 +23,7 @@ from tools.bot_ml.extract_world_knowledge import (
 from tools.bot_ml.build_world_planner_manifests import build_planner_manifests
 from tools.bot_ml.validate_world_planner import STAGED_GATES, validate_manifest_coverage
 from tools.bot_ml.build_validation_scenario_manifests import build_manifests as build_validation_scenario_manifests
-from tools.bot_ml.build_live_scenario_reports import build_reports as build_live_scenario_reports, build_reports_from_live_reports
+from tools.bot_ml.build_live_scenario_reports import build_reports as build_live_scenario_reports, build_reports_from_live_reports, main as live_scenario_reports_main
 from tools.bot_ml.build_validation_run_plan import build_plan as build_validation_run_plan
 from tools.bot_ml.build_validation_run_status import build_status as build_validation_run_status
 from tools.bot_ml.run_live_bot_validation import build_bot_pool_reset_sql, command_script, live_validation_report, load_scenario_reports, main as live_validation_main, parse_json_objects, parse_soap_result, run_worldserver, split_sql_statements, trinity_config_bool
@@ -1362,6 +1362,46 @@ def test_live_scenario_report_builder_rejects_duplicate_segment_as_full_clear(tm
     assert bwd["complete_segment_coverage"] is False
     assert bwd["clear_complete"] is False
     assert bwd["teacher_label_quality"] == "medium"
+
+
+def test_live_scenario_report_cli_skips_missing_inputs_and_removes_stale_report(tmp_path, monkeypatch):
+    scenario_dir = tmp_path / "validation_scenarios"
+    output_dir = tmp_path / "scenario_reports"
+    write_jsonl(
+        scenario_dir / "validation_scenarios.jsonl",
+        [{"scenario_id": "blackwing_descent_10n", "instance": "Blackwing Descent", "map_id": 669, "difficulty": "normal_10man", "provisioning_ready": True, "boss_count": 6}],
+    )
+    write_jsonl(
+        scenario_dir / "validation_routes.jsonl",
+        [{"scenario_id": "blackwing_descent_10n", "kind": "boss", "step": 2, "label": "Magmaw", "route_node_id": "bwd_magmaw"}],
+    )
+    output_dir.mkdir()
+    stale_report = output_dir / "blackwing_descent_10n.json"
+    stale_report.write_text(json.dumps({"scenario_id": "blackwing_descent_10n", "clear_complete": True}), encoding="utf-8")
+    missing_report = tmp_path / "live_validation_scenarios" / "blackwing_descent_10n" / "02_magmaw" / "report.json"
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "bot-live-scenario-reports",
+            "--live-report",
+            str(missing_report),
+            "--validation-scenario-dir",
+            str(scenario_dir),
+            "--scenario-id",
+            "blackwing_descent_10n",
+            "--output-dir",
+            str(output_dir),
+        ],
+    )
+
+    assert live_scenario_reports_main() == 0
+    manifest = json.loads((output_dir / "manifest.json").read_text(encoding="utf-8"))
+
+    assert stale_report.exists() is False
+    assert manifest["scenario_count"] == 0
+    assert manifest["source_live_reports"] == []
+    assert manifest["invalid_live_report_count"] == 1
+    assert manifest["invalid_live_reports"][0]["invalid_reason"] == "missing_live_report"
 
 
 def test_live_bot_validation_soap_script_does_not_exit_server():

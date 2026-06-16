@@ -20,6 +20,41 @@ def load_json(path: Path) -> dict[str, Any]:
     return payload if isinstance(payload, dict) else {}
 
 
+def load_live_report(path: Path) -> tuple[dict[str, Any] | None, dict[str, Any]]:
+    row: dict[str, Any] = {
+        "path": str(path),
+        "exists": path.exists(),
+        "report_valid": False,
+        "invalid_reason": "",
+        "scenario_id": "",
+        "segment_id": "",
+    }
+    if not path.exists():
+        row["invalid_reason"] = "missing_live_report"
+        return None, row
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        row["invalid_reason"] = "invalid_json"
+        return None, row
+    if not isinstance(payload, dict):
+        row["invalid_reason"] = "live_report_not_object"
+        return None, row
+    if str(payload.get("schema") or "") != "bot_live_validation_report_v1":
+        row["invalid_reason"] = "unexpected_live_report_schema"
+        return None, row
+    validation_context = payload.get("validation_context") if isinstance(payload.get("validation_context"), dict) else {}
+    row.update(
+        {
+            "report_valid": True,
+            "scenario_id": str(validation_context.get("scenario_id") or ""),
+            "segment_id": str(validation_context.get("segment_id") or ""),
+        }
+    )
+    payload["source_live_report"] = str(path)
+    return payload, row
+
+
 def load_scenarios(path: Path) -> dict[str, dict[str, Any]]:
     rows = read_jsonl(path / "validation_scenarios.jsonl")
     return {str(row.get("scenario_id") or ""): row for row in rows if row.get("scenario_id")}
@@ -269,14 +304,17 @@ def build_reports_from_live_reports(live_reports: list[dict[str, Any]], scenario
         if not scenario:
             continue
         merged: dict[str, Any] = {}
+        used_live_report = False
         for live_report in live_reports:
             validation_context = live_report.get("validation_context") if isinstance(live_report.get("validation_context"), dict) else {}
             context_scenario_id = str(validation_context.get("scenario_id") or "")
             if context_scenario_id and context_scenario_id != scenario_id:
                 continue
+            used_live_report = True
             inferred = infer_report(live_report, scenario, routes.get(scenario_id, []), existing_scenario_report(live_report, scenario_id))
             merged = merge_report_rows(merged, inferred)
-        reports[scenario_id] = merged
+        if used_live_report:
+            reports[scenario_id] = merged
     return reports
 
 
@@ -294,17 +332,28 @@ def main() -> int:
 
     live_report_paths = args.live_report or [Path("dataset/live_validation/report.json")]
     live_reports = []
+    input_reports = []
     for path in live_report_paths:
-        live_report = load_json(path)
-        live_report["source_live_report"] = str(path)
-        live_reports.append(live_report)
+        live_report, input_row = load_live_report(path)
+        input_reports.append(input_row)
+        if live_report:
+            live_reports.append(live_report)
     reports = build_reports_from_live_reports(live_reports, args.validation_scenario_dir, args.scenario_id or None)
     args.output_dir.mkdir(parents=True, exist_ok=True)
+    selected_scenarios = args.scenario_id or sorted(load_scenarios(args.validation_scenario_dir))
+    for scenario_id in selected_scenarios:
+        stale_report = args.output_dir / f"{scenario_id}.json"
+        if scenario_id not in reports and stale_report.exists():
+            stale_report.unlink()
     for scenario_id, report in reports.items():
         write_json(args.output_dir / f"{scenario_id}.json", report)
     summary = {
         "schema": "bot_live_scenario_reports_manifest_v1",
-        "source_live_reports": [str(path) for path in live_report_paths],
+        "requested_live_reports": [str(path) for path in live_report_paths],
+        "source_live_reports": [row["path"] for row in input_reports if row["report_valid"]],
+        "invalid_live_reports": [row for row in input_reports if not row["report_valid"]],
+        "valid_live_report_count": sum(1 for row in input_reports if row["report_valid"]),
+        "invalid_live_report_count": sum(1 for row in input_reports if not row["report_valid"]),
         "validation_scenario_dir": str(args.validation_scenario_dir),
         "scenario_count": len(reports),
         "scenarios": sorted(reports),
