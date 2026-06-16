@@ -77,11 +77,10 @@ def has_boss_kill_evidence(report: dict[str, Any], scenario: dict[str, Any]) -> 
     if stage_passed(report, stage):
         return True
     summary = report.get("summary") if isinstance(report.get("summary"), dict) else {}
-    evidence = report.get("evidence") if isinstance(report.get("evidence"), dict) else {}
     actions = set(trace_actions(report))
     if is_raid_scenario(scenario):
         return int_field(summary, "raid_boss_kills", "boss_kills", "bosses_killed") > 0 or "raid_boss_killed" in actions
-    return int_field(summary, "boss_kills", "dungeon_boss_kills", "bosses_killed") > 0 or "boss_killed" in actions or int_field(evidence, "kills") > 0
+    return int_field(summary, "boss_kills", "dungeon_boss_kills", "bosses_killed") > 0 or "boss_killed" in actions
 
 
 def validate_segment_report(report: dict[str, Any], segment: dict[str, Any], scenario: dict[str, Any], load_error: str = "") -> dict[str, Any]:

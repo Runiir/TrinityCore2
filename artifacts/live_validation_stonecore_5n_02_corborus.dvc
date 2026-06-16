@@ -1,0 +1,6 @@
+outs:
+- md5: 98b233a52f1a71b98b14f52c20bc4519.dir
+  size: 497416
+  nfiles: 6
+  hash: md5
+  path: live_validation_stonecore_5n_02_corborus

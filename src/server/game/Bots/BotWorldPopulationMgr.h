@@ -59,6 +59,7 @@ struct BotWorldExperimentConfig
     bool UpdateSemanticOutcomeStats = true;
     std::string BrainVersion = "utility_v1";
     std::string SpawnMode = "resume_or_race_start";
+    std::string PoolTagFilter;
     bool AllowConfiguredCenterFallback = false;
     bool UseSavedPosition = true;
     float NearPlayerRadius = 20.0f;

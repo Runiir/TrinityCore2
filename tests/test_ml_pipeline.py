@@ -1089,6 +1089,72 @@ def test_validation_run_status_reruns_invalid_existing_segment_reports(tmp_path)
     assert stonecore["next_commands"][0] == "pixi run bot-live-validate --validation-segment-id 02_corborus"
 
 
+def test_validation_run_status_rejects_open_world_kills_as_dungeon_boss_evidence(tmp_path):
+    live_root = tmp_path / "live_validation_scenarios"
+    report_root = tmp_path / "scenario_reports"
+    plan = {
+        "scenarios": [
+            {
+                "scenario_id": "stonecore_5n",
+                "instance": "The Stonecore",
+                "difficulty": "normal_5man",
+                "scenario_report_shell": "pixi run bot-live-scenario-reports --scenario-id stonecore_5n",
+                "segments": [
+                    {
+                        "segment_id": "02_corborus",
+                        "route_node_id": "stonecore_corborus",
+                        "kind": "boss",
+                        "label": "Corborus",
+                        "mechanic_profile": "corborus",
+                        "executable": True,
+                        "live_output_dir": str(live_root / "stonecore_5n" / "02_corborus"),
+                        "live_validate_shell": "pixi run bot-live-validate --validation-segment-id 02_corborus",
+                    }
+                ],
+            }
+        ]
+    }
+    report = live_root / "stonecore_5n" / "02_corborus" / "report.json"
+    report.parent.mkdir(parents=True)
+    report.write_text(
+        json.dumps(
+            {
+                "schema": "bot_live_validation_report_v1",
+                "returncode": 0,
+                "timed_out": False,
+                "validation_context": {
+                    "scenario_id": "stonecore_5n",
+                    "segment_id": "02_corborus",
+                    "route_node_id": "stonecore_corborus",
+                    "route_kind": "boss",
+                    "mechanic_profile": "corborus",
+                },
+                "trace": {"entries": [{"action": "mob_killed", "situation": "open_world_combat"}]},
+                "summary": {"total_kills": 3},
+                "evidence": {"kills": 3, "kill_evidence": 3},
+                "stages": [{"stage": "dungeon_boss", "passed": False, "missing": ["stonecore_live_clear_report"]}],
+            }
+        ),
+        encoding="utf-8",
+    )
+    report_root.mkdir()
+    (report_root / "stonecore_5n.json").write_text(
+        json.dumps({"scenario_id": "stonecore_5n", "clear_complete": False, "complete_segment_coverage": False}),
+        encoding="utf-8",
+    )
+
+    status = build_validation_run_status(plan, report_root)
+    stonecore = status["scenarios"][0]
+    report_row = stonecore["segment_reports"][0]
+
+    assert stonecore["present_segments"] == []
+    assert stonecore["existing_segments"] == ["02_corborus"]
+    assert stonecore["invalid_segments"] == ["02_corborus"]
+    assert report_row["boss_evidence_ready"] is False
+    assert "missing_boss_kill_evidence" in report_row["invalid_reasons"]
+    assert stonecore["next_commands"][0] == "pixi run bot-live-validate --validation-segment-id 02_corborus"
+
+
 def test_live_bot_validation_command_script_and_output_parser():
     script = command_script(selector="all", trace_limit=20, start=True, stop=True)
 
@@ -1583,6 +1649,9 @@ def test_live_bot_validation_dry_run_writes_command_file(tmp_path, monkeypatch):
     }
     assert report["config_autostart"] is True
     assert report["start_command"] is False
+    assert report["pool_tag_filter"] == "blackwing_descent_10n"
+    assert report["config"].endswith("worldserver.validation.conf")
+    assert 'BotWorld.PoolTagFilter = "blackwing_descent_10n"' in (tmp_path / "worldserver.validation.conf").read_text(encoding="utf-8")
 
 
 def test_live_bot_validation_force_start_overrides_config_autostart(tmp_path, monkeypatch):

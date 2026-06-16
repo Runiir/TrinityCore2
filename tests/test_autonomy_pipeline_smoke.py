@@ -58,6 +58,7 @@ def test_server_start_autonomy_enabled_by_default_contract():
     assert re.search(r"^BotWorld\.AutoStartRecording\s*=\s*1$", conf, re.MULTILINE)
     assert re.search(r"^BotWorld\.AutoRecordingWindowMinutes\s*=\s*15$", conf, re.MULTILINE)
     assert re.search(r"^BotWorld\.TargetPopulation\s*=\s*5$", conf, re.MULTILINE)
+    assert re.search(r'^BotWorld\.PoolTagFilter\s*=\s*""$', conf, re.MULTILINE)
     assert re.search(r'^BotWorld\.SpawnMode\s*=\s*"resume_or_race_start"$', conf, re.MULTILINE)
     assert re.search(r"^BotWorld\.AllowConfiguredCenterFallback\s*=\s*0$", conf, re.MULTILINE)
     assert re.search(r"^BotWorld\.UseSavedPosition\s*=\s*1$", conf, re.MULTILINE)
@@ -91,6 +92,7 @@ def test_server_start_autonomy_enabled_spawns_from_pool_without_center_requireme
     start_autonomy = function_body(mgr, "bool BotWorldPopulationMgr::StartAutonomy")
     shutdown = function_body(mgr, "void BotWorldPopulationMgr::Shutdown")
     ensure_population = function_body(mgr, "void BotWorldPopulationMgr::EnsurePopulation")
+    select_candidate = function_body(mgr, "uint32 BotWorldPopulationMgr::SelectPoolCandidateGuid() const")
     resolve_placement = function_body(mgr, "bool BotWorldPopulationMgr::ResolveSpawnPlacement")
 
     assert 'LoadConfig("always_on_autonomy", overrideConfig);' in start_autonomy
@@ -109,6 +111,8 @@ def test_server_start_autonomy_enabled_spawns_from_pool_without_center_requireme
     assert 'sBotMgr->SpawnWorldBotAtSavedPosition("any", std::to_string(candidateGuid))' in ensure_population
     assert 'sBotMgr->SpawnWorldBot("any", std::to_string(candidateGuid)' in ensure_population
     assert 'RecordEvent(_bots.back(), bot, "bot_spawned"' in ensure_population
+    assert "_config.PoolTagFilter" in select_candidate
+    assert "cbp.experiment_tags LIKE" in select_candidate
 
     assert_ordered(
         resolve_placement,

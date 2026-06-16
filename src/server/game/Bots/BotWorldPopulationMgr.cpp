@@ -911,6 +911,7 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
     _config.UpdateSemanticOutcomeStats = sConfigMgr->GetBoolDefault("BotSemantic.UpdateOutcomeStats", _config.UpdateSemanticOutcomeStats);
     _config.BrainVersion = sConfigMgr->GetStringDefault("BotExperiment.BrainVersion", _config.BrainVersion);
     _config.SpawnMode = sConfigMgr->GetStringDefault("BotWorld.SpawnMode", _config.SpawnMode);
+    _config.PoolTagFilter = sConfigMgr->GetStringDefault("BotWorld.PoolTagFilter", _config.PoolTagFilter);
     _config.AllowConfiguredCenterFallback = sConfigMgr->GetBoolDefault("BotWorld.AllowConfiguredCenterFallback", _config.AllowConfiguredCenterFallback);
     _config.UseSavedPosition = sConfigMgr->GetBoolDefault("BotWorld.UseSavedPosition", _config.UseSavedPosition);
     _config.NearPlayerRadius = sConfigMgr->GetFloatDefault("BotWorld.NearPlayerRadius", _config.NearPlayerRadius);
@@ -2412,6 +2413,12 @@ uint32 BotWorldPopulationMgr::SelectPoolCandidateGuid() const
     query << "SELECT cbp.guid FROM character_bot_pool cbp INNER JOIN characters c ON c.guid = cbp.guid "
           << "WHERE cbp.enabled = 1 AND cbp.in_use = 0 "
           << "AND c.level BETWEEN " << uint32(_config.MinLevel) << " AND " << uint32(_config.MaxLevel);
+    if (!_config.PoolTagFilter.empty())
+    {
+        std::string escapedTag = _config.PoolTagFilter;
+        CharacterDatabase.EscapeString(escapedTag);
+        query << " AND cbp.experiment_tags LIKE '%" << escapedTag << "%'";
+    }
 
     if (!_failedSpawnGuids.empty())
     {
@@ -8489,6 +8496,7 @@ std::string BotWorldPopulationMgr::BuildConfigJson() const
          << ",\"min_clip_importance\":" << _config.MinClipImportance
          << ",\"min_replay_importance\":" << _config.MinReplayImportance
          << ",\"update_semantic_outcome_stats\":" << (_config.UpdateSemanticOutcomeStats ? "true" : "false")
+         << ",\"pool_tag_filter\":\"" << JsonEscape(_config.PoolTagFilter) << "\""
          << ",\"telemetry_enabled\":" << (telemetry.Enabled ? "true" : "false")
          << ",\"telemetry_frame_interval_ms\":" << telemetry.FrameIntervalMs
          << ",\"telemetry_pre_event_window_sec\":" << telemetry.PreEventWindowSec

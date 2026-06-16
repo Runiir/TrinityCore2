@@ -3445,6 +3445,11 @@ PlayerBot.Debug = 1
 #        Description: Default number of active autonomous bots for ".botauto start" or ".botexp start".
 #        Default:     5
 #
+#    BotWorld.PoolTagFilter
+#        Description: Optional substring filter for character_bot_pool.experiment_tags.
+#                     Validation runs use this to isolate prepared scenario rosters.
+#        Default:     ""
+#
 #    BotWorld.SpawnMode
 #        Description: Bot spawn strategy: resume_or_race_start, resume_only, race_start_only,
 #                     near_player, configured_center, or saved_or_near_player for legacy/debug compatibility.
@@ -3524,6 +3529,7 @@ BotWorld.AutoStartRecording = 1
 BotWorld.AutoRecordingWindowMinutes = 15
 BotWorld.AutoRecordingNamePrefix = "autonomy_window"
 BotWorld.TargetPopulation = 5
+BotWorld.PoolTagFilter = ""
 BotWorld.MaxPerMap = 50
 BotWorld.TickMs = 1000
 BotWorld.DecisionTickMs = 3000
