@@ -120,7 +120,7 @@ void AddActivity(std::vector<BotActivityScore>& activities, Player const* bot, B
     if (learning && learning->Enabled)
     {
         BotLearnedScore learned = BotExperienceLearningPolicy::ScoreActivity(bot, activity, *learning);
-        score.LearnedScore = learned.Score;
+        score.LearnedScore = std::max(-30.0f, std::min(30.0f, learned.Score));
         score.LearnedPenalty = learned.Penalty;
         score.LearnedConfidence = learned.Confidence;
         score.LearnedSampleCount = learned.SampleCount;

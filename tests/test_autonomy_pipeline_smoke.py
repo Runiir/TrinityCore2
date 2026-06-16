@@ -235,6 +235,12 @@ def test_quest_first_portfolio_routing_surface():
         "RecordEvent(state, bot, \"mob_killed\", completedTarget, \"quest_counter_reconciled\"",
         "SetQuestWorkPhase(state, \"move_to_turnin\");",
     )
+    assert_ordered(
+        update_bot,
+        "uint32 progressBefore = state.LastQuestProgressBefore ? state.LastQuestProgressBefore : state.QuestWork.ProgressBefore;",
+        "BotActionExecutor::LootResult loot = executor.AutoLoot(bot, target);",
+        "VerifyQuestObjectiveProgress(state, bot, lootPlan, target, progressBefore, \"kill_or_loot_verified\"",
+    )
 
     assert_ordered(
         questing,
@@ -256,6 +262,7 @@ def test_quest_first_portfolio_routing_surface():
     assert_ordered(
         update_bot,
         "bool hasNearbyQuestGiver = _config.AllowQuesting && HasNearbySupportedQuestGiver(bot, state);",
+        "&& !(target && !target->IsAlive())",
         "&& (chosenActivity.Activity == BotProgressionActivity::Questing || hasActiveQuestObjective || _config.QuestFirst || state.NewlyAcceptedQuestId || hasNearbyQuestGiver)",
         "TryQuesting(state, bot, power, stage, chosenActivity.Activity)",
         "TrySmartGearDecision(state, bot, power, stage, chosenActivity.Activity, situation, action)",
@@ -269,7 +276,12 @@ def test_quest_first_portfolio_routing_surface():
     assert "RecordGearEvaluation(state, bot, evaluation" in mgr
     assert "std::string(eventType) == \"smart_loot_decision\"" in mgr
     assert "EvaluateGearTemplate(Player const* bot, ItemTemplate const* proto" in read(ROOT / "src/server/game/Bots/BotLongTermProgressionBrain.h")
-    assert "BotLongTermProgressionBrain::EvaluateGearTemplate" in read(ROOT / "src/server/game/Bots/BotLongTermProgressionBrain.cpp")
+    progression = read(ROOT / "src/server/game/Bots/BotLongTermProgressionBrain.cpp")
+    learning_policy = read(ROOT / "src/server/game/Bots/BotExperienceLearningPolicy.cpp")
+    assert "BotLongTermProgressionBrain::EvaluateGearTemplate" in progression
+    assert "score.LearnedScore = std::max(-30.0f, std::min(30.0f, learned.Score));" in progression
+    assert "float avgReward = Clamp(stats.AvgReward, -25.0f, 25.0f);" in learning_policy
+    assert "reward = Clamp(reward, -50.0f, 50.0f);" in learning_policy
     assert "FROM creature_loot_template clt INNER JOIN creature c ON c.id = clt.Entry" in mgr
     assert "FROM gameobject_loot_template glt INNER JOIN gameobject g ON g.id = glt.Entry" in mgr
     assert "smart_loot_candidates" in mgr
@@ -353,6 +365,8 @@ def test_botauto_diagnosis_and_trace_surface():
     snapshot_json = function_body(mgr, "std::string BotWorldPopulationMgr::BuildBotDecisionSnapshotJson")
     trace_entries = function_body(mgr, "std::string BotWorldPopulationMgr::BuildBotTraceEntriesJson")
     record_decision = function_body(mgr, "void BotWorldPopulationMgr::RecordDecision")
+    record_event = function_body(mgr, "void BotWorldPopulationMgr::RecordEvent")
+    update_outcome_stats = function_body(mgr, "void BotWorldPopulationMgr::UpdateSemanticOutcomeStats")
     record_trace = function_body(mgr, "void BotWorldPopulationMgr::RecordDecisionTrace")
     debug = function_body(mgr, "std::string BotWorldPopulationMgr::GetBotDebugJson")
 
@@ -456,6 +470,11 @@ def test_botauto_diagnosis_and_trace_surface():
         assert field in trace_entries
 
     assert "RecordDecisionTrace(state" in record_decision
+    assert "bool forceTeacherEvent = eventName == \"combat_started\"" in record_event
+    assert "eventName == \"objective_target_lost\"" in record_event
+    assert "if (!policy.writeEvent && !forceTeacherEvent)" in record_event
+    assert "reward = clampMetric(reward, -25.0f, 25.0f);" in update_outcome_stats
+    assert "powerDelta = clampMetric(powerDelta, -25.0f, 25.0f);" in update_outcome_stats
     assert "state.DecisionTrace.push_back(entry)" in record_trace
     assert "state.DecisionTrace.size() > 64" in record_trace
     assert "debug_schema_version" in debug

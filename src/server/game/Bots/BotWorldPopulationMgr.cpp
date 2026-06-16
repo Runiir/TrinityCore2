@@ -2104,6 +2104,7 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         state.LastDecisionHandler = "rest";
     }
     else if (_config.AllowQuesting
+        && !(target && !target->IsAlive())
         && (chosenActivity.Activity == BotProgressionActivity::Questing || hasActiveQuestObjective || _config.QuestFirst || state.NewlyAcceptedQuestId || hasNearbyQuestGiver)
         && [&]() { questAction = TryQuesting(state, bot, power, stage, chosenActivity.Activity); return questAction.Handled; }())
     {
@@ -2221,6 +2222,7 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
 
             ++state.LootAttemptCount;
             state.LootStartedMs = NowMs();
+            uint32 progressBefore = state.LastQuestProgressBefore ? state.LastQuestProgressBefore : state.QuestWork.ProgressBefore;
             BotActionExecutor::LootResult loot = executor.AutoLoot(bot, target);
             state.LootCompletedMs = NowMs();
             state.LastLootTargetGuid = target->GetGUID();
@@ -2257,7 +2259,6 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
                     (state.QuestWork.ObjectiveType == "interact_gameobject" ? QuestObjectiveType::InteractGameObject : QuestObjectiveType::Kill))));
                 hadLootPlan = true;
             }
-            uint32 progressBefore = state.QuestWork.ProgressBefore ? state.QuestWork.ProgressBefore : state.LastQuestProgressBefore;
             if (!progressBefore && hadLootPlan)
                 progressBefore = QuestObjectiveProgress(bot, lootPlan);
 
@@ -7620,7 +7621,19 @@ void BotWorldPopulationMgr::RecordEvent(WorldBotState& state, Player* bot, char 
     bool recoveryIntervention = eventName == "teleport_fallback_used";
     BotTelemetryPolicyInput policyInput = BuildTelemetryPolicyInput(eventName.c_str(), result ? result : "", nullptr, target, spellId, 0, 0, valueFloat, valueInt, EventLooksFailure(eventType, result), rareCombatStart || recoveryRare, recoveryIntervention);
     BotTelemetryPolicyDecision policy = BotTelemetryPolicy::DecideEvent(policyInput, GetTelemetryPolicyConfig(), ++state.EventSequence);
-    if (!policy.writeEvent)
+    bool forceTeacherEvent = eventName == "combat_started"
+        || eventName == "spell_cast"
+        || eventName == "mob_killed"
+        || eventName == "boss_killed"
+        || eventName == "loot_target"
+        || eventName == "loot_received"
+        || eventName == "loot_failed"
+        || eventName == "objective_progress"
+        || eventName == "objective_no_progress"
+        || eventName == "objective_target_lost"
+        || eventName == "quest_accepted"
+        || eventName == "quest_completed";
+    if (!policy.writeEvent && !forceTeacherEvent)
         return;
 
     uint64 clipId = MaybeCaptureTelemetryClip(bot, target, policyInput, policy, rawJson, semanticJson);
@@ -7909,6 +7922,15 @@ void BotWorldPopulationMgr::UpdateSemanticOutcomeStats(Player* bot, char const* 
 {
     if (!_runId || !_config.UpdateSemanticOutcomeStats || !bot || !entityType || !entityKey)
         return;
+
+    auto clampMetric = [](float value, float low, float high)
+    {
+        if (!std::isfinite(value))
+            return 0.0f;
+        return std::max(low, std::min(high, value));
+    };
+    reward = clampMetric(reward, -25.0f, 25.0f);
+    powerDelta = clampMetric(powerDelta, -25.0f, 25.0f);
 
     bool failed = failure || EventLooksFailure(eventType, result);
     bool death = eventType && std::string(eventType) == "death";

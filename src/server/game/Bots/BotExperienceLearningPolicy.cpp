@@ -57,6 +57,8 @@ std::string PolicyJsonEscape(std::string const& value)
 
 float Clamp(float value, float low, float high)
 {
+    if (!std::isfinite(value))
+        return 0.0f;
     return std::max(low, std::min(high, value));
 }
 
@@ -103,21 +105,27 @@ void ApplyOutcome(BotLearnedScore& learned, OutcomeStats const& stats, BotExperi
     float successRate = stats.Samples ? float(stats.Successes) / float(stats.Samples) : 0.0f;
     float failureRate = stats.Samples ? float(stats.Failures) / float(stats.Samples) : 0.0f;
     float deathRate = stats.Samples ? float(stats.Deaths) / float(stats.Samples) : 0.0f;
-    float reward = stats.ProgressionValue * config.ProgressionRewardWeight
-        + stats.AvgReward * 0.5f
-        + stats.AvgPowerDelta * 0.5f
+    float progressionValue = Clamp(stats.ProgressionValue, 0.0f, 25.0f);
+    float avgReward = Clamp(stats.AvgReward, -25.0f, 25.0f);
+    float avgPowerDelta = Clamp(stats.AvgPowerDelta, -25.0f, 25.0f);
+    float dangerScore = Clamp(stats.DangerScore, 0.0f, 1.0f);
+    float reward = progressionValue * config.ProgressionRewardWeight
+        + avgReward * 0.5f
+        + avgPowerDelta * 0.5f
         + successRate * 6.0f;
-    float penalty = stats.DangerScore * config.DangerPenaltyWeight
+    reward = Clamp(reward, -50.0f, 50.0f);
+    float penalty = dangerScore * config.DangerPenaltyWeight
         + failureRate * config.RecentFailurePenaltyWeight
         + deathRate * config.DangerPenaltyWeight * 1.5f
         + float(stats.Deaths) * 0.75f;
+    penalty = Clamp(penalty, 0.0f, 50.0f);
 
     learned.Score += (reward - penalty) * confidence;
     learned.Penalty += penalty * confidence;
     learned.Confidence = std::max(learned.Confidence, confidence);
     learned.SampleCount += stats.Samples;
-    learned.DangerScore = std::max(learned.DangerScore, stats.DangerScore);
-    learned.ProgressionValue = std::max(learned.ProgressionValue, stats.ProgressionValue);
+    learned.DangerScore = std::max(learned.DangerScore, dangerScore);
+    learned.ProgressionValue = std::max(learned.ProgressionValue, progressionValue);
     learned.Reason = reason;
 }
 

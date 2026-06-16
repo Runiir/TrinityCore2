@@ -1,0 +1,6 @@
+outs:
+- md5: a7fb8d21b3dbb2a2e4444209dc4468d2.dir
+  size: 340575
+  nfiles: 3
+  hash: md5
+  path: live_validation_collect_reconcile
