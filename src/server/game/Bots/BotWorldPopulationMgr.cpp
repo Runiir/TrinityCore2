@@ -5040,7 +5040,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     };
     auto routeUsableCombatTarget = [this, bot](Unit* candidate) -> Unit*
     {
-        if (!candidate || !candidate->IsAlive() || !bot->IsValidAttackTarget(candidate))
+        if (!candidate || !candidate->IsAlive())
             return nullptr;
 
         Creature const* creature = candidate->ToCreature();
@@ -5069,21 +5069,16 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 return focus;
         }
 
-        Group* group = bot->GetGroup();
-        if (!group)
-            return nullptr;
-
         Unit* bestFocus = nullptr;
         float bestScore = -1.0f;
-        for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
+        auto considerFocus = [&](Player* member, Unit* focus)
         {
-            Player* member = itr->GetSource();
             if (!member || member == bot || !member->IsAlive() || member->GetMap() != bot->GetMap())
-                continue;
+                return;
 
-            Unit* focus = routeUsableCombatTarget(member->GetVictim());
+            focus = routeUsableCombatTarget(focus);
             if (!focus)
-                continue;
+                return;
 
             float score = 1.0f;
             if (std::string(GetDungeonRole(member)) == "tank")
@@ -5091,20 +5086,51 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             if (anchor && member == anchor)
                 score += 3.0f;
 
-            for (GroupReference* voteItr = group->GetFirstMember(); voteItr != nullptr; voteItr = voteItr->next())
+            auto countVote = [&](Player* voter)
             {
-                Player* voter = voteItr->GetSource();
                 if (!voter || !voter->IsAlive() || voter->GetMap() != bot->GetMap())
-                    continue;
+                    return;
 
                 if (voter->GetVictim() == focus)
                     score += 1.0f;
+            };
+            if (Group* group = bot->GetGroup())
+                for (GroupReference* voteItr = group->GetFirstMember(); voteItr != nullptr; voteItr = voteItr->next())
+                    countVote(voteItr->GetSource());
+            else
+            {
+                for (WorldBotState const& cohortState : _bots)
+                {
+                    countVote(GetBot(cohortState));
+                    if (cohortState.TargetGuid == focus->GetGUID())
+                        score += 1.0f;
+                }
             }
 
             if (!bestFocus || score > bestScore || (score == bestScore && bot->GetExactDist(focus) < bot->GetExactDist(bestFocus)))
             {
                 bestFocus = focus;
                 bestScore = score;
+            }
+        };
+        auto considerMember = [&](Player* member)
+        {
+            considerFocus(member, member ? member->GetVictim() : nullptr);
+        };
+
+        if (Group* group = bot->GetGroup())
+        {
+            for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
+                considerMember(itr->GetSource());
+        }
+        else
+        {
+            for (WorldBotState const& cohortState : _bots)
+            {
+                Player* member = GetBot(cohortState);
+                considerMember(member);
+                if (member && !cohortState.TargetGuid.IsEmpty())
+                    considerFocus(member, ObjectAccessor::GetUnit(*bot, cohortState.TargetGuid));
             }
         }
 
@@ -5119,6 +5145,32 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     {
         target = focusTarget;
         state.TargetGuid = target->GetGUID();
+        if (tryRouteGroupHeal(bot, target))
+            return true;
+
+        BotActionExecutor executor;
+        uint32 spellId = SelectCombatSpell(bot, target);
+        float engageRange = routeEngageRange(bot, target, spellId);
+        if (!bot->IsValidAttackTarget(target) || !bot->IsWithinDistInMap(target, std::max(5.0f, engageRange - 1.0f)) || !bot->IsWithinLOSInMap(target))
+        {
+            MoveBotToPoint(state, bot, target->GetPositionX(), target->GetPositionY(), target->GetPositionZ());
+            action = "move_to_validation_route_assist_target";
+            situation = "validation_route_prerequisite";
+            std::string raw = BuildRawJson(bot, target);
+            std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, activity);
+            RecordEvent(state, bot, "validation_route_prerequisite", target, "assist_focus", raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry);
+            return true;
+        }
+
+        BotActionResult pull = executor.Pull(bot, target);
+        bool cast = spellId && TryCastCombatSpell(bot, target, spellId);
+        action = "validation_route_prerequisite_assist";
+        situation = "validation_route_prerequisite";
+        std::string raw = BuildRawJson(bot, target);
+        std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, activity);
+        RecordEvent(state, bot, "validation_route_prerequisite", target, ToString(pull), raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry, cast ? spellId : 0);
+        state.WasInCombat = true;
+        return true;
     }
     if (bot->IsInCombat() && target && target->IsAlive() && bot->IsValidAttackTarget(target))
     {
@@ -6052,7 +6104,26 @@ Player* BotWorldPopulationMgr::FindDungeonAnchor(Player* bot) const
 
     Group* group = bot->GetGroup();
     if (!group)
+    {
+        for (WorldBotState const& state : _bots)
+        {
+            Player* member = GetBot(state);
+            if (!member || member == bot || !member->IsAlive() || member->GetMap() != bot->GetMap())
+                continue;
+
+            if (std::string(GetDungeonRole(member)) == "tank")
+                return member;
+        }
+
+        for (WorldBotState const& state : _bots)
+        {
+            Player* member = GetBot(state);
+            if (member && member != bot && member->IsAlive() && member->GetMap() == bot->GetMap())
+                return member;
+        }
+
         return nullptr;
+    }
 
     for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
     {

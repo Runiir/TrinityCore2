@@ -314,6 +314,11 @@ def test_quest_first_portfolio_routing_surface():
     assert "bestFocus" in mgr
     assert "voter->GetVictim() == focus" in mgr
     assert 'std::string(GetDungeonRole(member)) == "tank"' in mgr
+    assert "move_to_validation_route_assist_target" in mgr
+    assert "validation_route_prerequisite_assist" in mgr
+    assert "assist_focus" in mgr
+    assert "for (WorldBotState const& cohortState : _bots)" in mgr
+    assert "for (WorldBotState const& state : _bots)" in function_body(mgr, "Player* BotWorldPopulationMgr::FindDungeonAnchor")
     assert "SELECT role FROM character_bot_pool WHERE guid" in mgr
     assert 'poolRole.find("tank")' in mgr
     assert "if (routeProximity > 120.0f)" in mgr
