@@ -4977,6 +4977,22 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 }
             }
         }
+        else
+        {
+            for (WorldBotState const& cohortState : _bots)
+            {
+                Player* member = GetBot(cohortState);
+                if (!member || !member->IsAlive() || member->GetMap() != healer->GetMap())
+                    continue;
+
+                float memberHealthPct = UnitHealthPct(member);
+                if (memberHealthPct < lowestHealthPct)
+                {
+                    lowestHealthPct = memberHealthPct;
+                    healTarget = member;
+                }
+            }
+        }
 
         if (!healTarget || lowestHealthPct > 0.88f)
             return false;
@@ -5063,6 +5079,18 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return nullptr;
 
         Player* anchor = FindDungeonAnchor(bot);
+        for (WorldBotState const& cohortState : _bots)
+        {
+            Player* member = GetBot(cohortState);
+            if (!member || member == bot || !member->IsAlive() || member->GetMap() != bot->GetMap())
+                continue;
+            if (std::string(GetDungeonRole(member)) != "tank" || cohortState.TargetGuid.IsEmpty())
+                continue;
+
+            if (Unit* focus = routeUsableCombatTarget(ObjectAccessor::GetUnit(*bot, cohortState.TargetGuid)))
+                return focus;
+        }
+
         if (anchor && anchor != bot)
         {
             if (Unit* focus = routeUsableCombatTarget(anchor->GetVictim()))
@@ -5139,8 +5167,61 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
         return nullptr;
     };
+    auto routeTankFocusGuid = [this, bot]() -> ObjectGuid
+    {
+        for (WorldBotState const& cohortState : _bots)
+        {
+            Player* member = GetBot(cohortState);
+            if (!member || member == bot || !member->IsAlive() || member->GetMap() != bot->GetMap())
+                continue;
+            if (std::string(GetDungeonRole(member)) == "tank" && !cohortState.TargetGuid.IsEmpty())
+                return cohortState.TargetGuid;
+        }
+
+        if (Player* anchor = FindDungeonAnchor(bot))
+            if (Unit* victim = anchor->GetVictim())
+                return victim->GetGUID();
+
+        return ObjectGuid::Empty;
+    };
 
     float routeDistance = bot->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ);
+    if (std::string(GetDungeonRole(bot)) != "tank")
+    {
+        ObjectGuid tankFocusGuid = routeTankFocusGuid();
+        Unit* currentVictim = bot->GetVictim();
+        if (currentVictim && currentVictim->IsAlive() && !tankFocusGuid.IsEmpty() && currentVictim->GetGUID() != tankFocusGuid)
+        {
+            std::string raw = BuildRawJson(bot, currentVictim);
+            std::string semantic = BuildSemanticJson(bot, currentVictim, "validation_route_regroup", &power, stage, activity);
+            RecordEvent(state, bot, "validation_route_prerequisite_rejected", currentVictim, "regroup_tank_focus_mismatch", raw.c_str(), semantic.c_str(), bot->GetExactDist(currentVictim), _config.ValidationRouteTargetEntry);
+            bot->AttackStop();
+            bot->CombatStop(true);
+            state.TargetGuid.Clear();
+            target = nullptr;
+
+            if (Player* anchor = FindDungeonAnchor(bot))
+            {
+                if (anchor != bot && anchor->IsAlive() && anchor->GetMap() == bot->GetMap() && bot->GetExactDist(anchor) > 8.0f)
+                {
+                    MoveBotToPoint(state, bot, anchor->GetPositionX(), anchor->GetPositionY(), anchor->GetPositionZ());
+                    RecordEvent(state, bot, "validation_route_regroup", anchor, "follow_anchor_tank_focus_mismatch", raw.c_str(), semantic.c_str(), bot->GetExactDist(anchor), _config.ValidationRouteTargetEntry);
+                    situation = "validation_route_regroup";
+                    action = "move_to_validation_route_anchor";
+                    return true;
+                }
+
+                RecordEvent(state, bot, "validation_route_regroup", anchor, "hold_anchor_tank_focus_mismatch", raw.c_str(), semantic.c_str(), anchor == bot ? 0.0f : bot->GetExactDist(anchor), _config.ValidationRouteTargetEntry);
+                situation = "validation_route_regroup";
+                action = "validation_route_hold_anchor";
+                return true;
+            }
+
+            situation = "validation_route_regroup";
+            action = "validation_route_hold_anchor";
+            return true;
+        }
+    }
     if (Unit* focusTarget = routeGroupFocusTarget())
     {
         target = focusTarget;
@@ -5171,6 +5252,43 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         RecordEvent(state, bot, "validation_route_prerequisite", target, ToString(pull), raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry, cast ? spellId : 0);
         state.WasInCombat = true;
         return true;
+    }
+    if (std::string(GetDungeonRole(bot)) != "tank")
+    {
+        if (Player* anchor = FindDungeonAnchor(bot))
+        {
+            if (anchor != bot && anchor->IsAlive() && anchor->GetMap() == bot->GetMap())
+            {
+                if (target && target->IsAlive() && bot->IsValidAttackTarget(target))
+                {
+                    std::string raw = BuildRawJson(bot, target);
+                    std::string semantic = BuildSemanticJson(bot, target, "validation_route_regroup", &power, stage, activity);
+                    RecordEvent(state, bot, "validation_route_prerequisite_rejected", target, "regroup_anchor_no_focus", raw.c_str(), semantic.c_str(), bot->GetExactDist(anchor), _config.ValidationRouteTargetEntry);
+                    bot->AttackStop();
+                    bot->CombatStop(true);
+                    state.TargetGuid.Clear();
+                    target = nullptr;
+                }
+
+                if (bot->GetExactDist(anchor) > 8.0f)
+                {
+                    MoveBotToPoint(state, bot, anchor->GetPositionX(), anchor->GetPositionY(), anchor->GetPositionZ());
+                    std::string raw = BuildRawJson(bot, nullptr);
+                    std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_regroup", &power, stage, activity);
+                    RecordEvent(state, bot, "validation_route_regroup", anchor, "follow_anchor_no_focus", raw.c_str(), semantic.c_str(), bot->GetExactDist(anchor), _config.ValidationRouteTargetEntry);
+                    situation = "validation_route_regroup";
+                    action = "move_to_validation_route_anchor";
+                    return true;
+                }
+
+                std::string raw = BuildRawJson(bot, nullptr);
+                std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_regroup", &power, stage, activity);
+                RecordEvent(state, bot, "validation_route_regroup", anchor, "hold_anchor_no_focus", raw.c_str(), semantic.c_str(), bot->GetExactDist(anchor), _config.ValidationRouteTargetEntry);
+                situation = "validation_route_regroup";
+                action = "validation_route_hold_anchor";
+                return true;
+            }
+        }
     }
     if (bot->IsInCombat() && target && target->IsAlive() && bot->IsValidAttackTarget(target))
     {
@@ -5307,6 +5425,27 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             prerequisiteTarget = focusTarget->ToCreature();
             prerequisiteScore = 100000.0f;
             prerequisiteDistance = bot->GetExactDist(focusTarget);
+        }
+        if (!prerequisiteTarget && std::string(GetDungeonRole(bot)) != "tank")
+        {
+            if (Player* anchor = FindDungeonAnchor(bot))
+            {
+                std::string raw = BuildRawJson(bot, nullptr);
+                std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_regroup", &power, stage, activity);
+                if (anchor != bot && anchor->IsAlive() && anchor->GetMap() == bot->GetMap() && bot->GetExactDist(anchor) > 8.0f)
+                {
+                    MoveBotToPoint(state, bot, anchor->GetPositionX(), anchor->GetPositionY(), anchor->GetPositionZ());
+                    RecordEvent(state, bot, "validation_route_regroup", anchor, "follow_anchor_before_prerequisite", raw.c_str(), semantic.c_str(), bot->GetExactDist(anchor), _config.ValidationRouteTargetEntry);
+                    situation = "validation_route_regroup";
+                    action = "move_to_validation_route_anchor";
+                    return true;
+                }
+
+                RecordEvent(state, bot, "validation_route_regroup", anchor, "hold_anchor_before_prerequisite", raw.c_str(), semantic.c_str(), anchor == bot ? 0.0f : bot->GetExactDist(anchor), _config.ValidationRouteTargetEntry);
+                situation = "validation_route_regroup";
+                action = "validation_route_hold_anchor";
+                return true;
+            }
         }
         std::vector<WorldObject*> objects;
         Trinity::AllWorldObjectsInRange check(bot, 320.0f);
@@ -6102,8 +6241,7 @@ Player* BotWorldPopulationMgr::FindDungeonAnchor(Player* bot) const
     if (!bot)
         return nullptr;
 
-    Group* group = bot->GetGroup();
-    if (!group)
+    auto findCohortAnchor = [this, bot]() -> Player*
     {
         for (WorldBotState const& state : _bots)
         {
@@ -6123,7 +6261,11 @@ Player* BotWorldPopulationMgr::FindDungeonAnchor(Player* bot) const
         }
 
         return nullptr;
-    }
+    };
+
+    Group* group = bot->GetGroup();
+    if (!group)
+        return findCohortAnchor();
 
     for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
     {
@@ -6150,7 +6292,7 @@ Player* BotWorldPopulationMgr::FindDungeonAnchor(Player* bot) const
             return member;
     }
 
-    return nullptr;
+    return findCohortAnchor();
 }
 
 Unit* BotWorldPopulationMgr::FindGroupCombatTarget(Player* bot, Player* anchor) const
@@ -6715,6 +6857,30 @@ uint32 BotWorldPopulationMgr::SelectCombatSpell(Player* bot, Unit* target) const
         {
             candidate.RejectReason = "threat_already_established";
             continue;
+        }
+        if (candidate.Category == BotCombatActionCategory::Taunt)
+        {
+            if (Player* victimPlayer = target->GetVictim() ? target->GetVictim()->ToPlayer() : nullptr)
+            {
+                if (victimPlayer->GetMap() == bot->GetMap() && std::string(GetDungeonRole(victimPlayer)) == "tank")
+                {
+                    bool validationCohortVictim = false;
+                    for (WorldBotState const& cohortState : _bots)
+                    {
+                        Player* member = GetBot(cohortState);
+                        if (member && member == victimPlayer)
+                        {
+                            validationCohortVictim = true;
+                            break;
+                        }
+                    }
+                    if (validationCohortVictim)
+                    {
+                        candidate.RejectReason = "cohort_threat_established";
+                        continue;
+                    }
+                }
+            }
         }
 
         if (!candidate.RejectReason.empty())

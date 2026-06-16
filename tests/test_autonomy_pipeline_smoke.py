@@ -318,7 +318,22 @@ def test_quest_first_portfolio_routing_surface():
     assert "validation_route_prerequisite_assist" in mgr
     assert "assist_focus" in mgr
     assert "for (WorldBotState const& cohortState : _bots)" in mgr
+    assert "findCohortAnchor" in function_body(mgr, "Player* BotWorldPopulationMgr::FindDungeonAnchor")
     assert "for (WorldBotState const& state : _bots)" in function_body(mgr, "Player* BotWorldPopulationMgr::FindDungeonAnchor")
+    assert "std::string(GetDungeonRole(member)) != \"tank\"" in mgr
+    assert "cohort_threat_established" in mgr
+    assert "validation_route_regroup" in mgr
+    assert "regroup_anchor_no_focus" in mgr
+    assert "move_to_validation_route_anchor" in mgr
+    assert "hold_anchor_no_focus" in mgr
+    assert "validation_route_hold_anchor" in mgr
+    assert "follow_anchor_before_prerequisite" in mgr
+    assert "hold_anchor_before_prerequisite" in mgr
+    assert "routeTankFocusGuid" in mgr
+    assert "regroup_tank_focus_mismatch" in mgr
+    assert "follow_anchor_tank_focus_mismatch" in mgr
+    assert "hold_anchor_tank_focus_mismatch" in mgr
+    assert "Player* member = GetBot(cohortState)" in function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteObjective")
     assert "SELECT role FROM character_bot_pool WHERE guid" in mgr
     assert 'poolRole.find("tank")' in mgr
     assert "if (routeProximity > 120.0f)" in mgr
