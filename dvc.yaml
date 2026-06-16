@@ -21,13 +21,15 @@ stages:
   world_planner_validate:
     cmd: python -m tools.bot_ml.validate_world_planner --planner-dir
       dataset/world_planner --validation-scenario-dir
-      dataset/validation_scenarios --report
+      dataset/validation_scenarios --live-scenario-report-dir
+      dataset/live_validation_scenario_reports_built --report
       dataset/world_validation/planner_report.json
     deps:
     - tools/bot_ml/validate_world_planner.py
     - tools/bot_ml/common.py
     - dataset/world_planner
     - dataset/validation_scenarios
+    - dataset/live_validation_scenario_reports_built
     metrics:
     - dataset/world_validation/planner_report.json:
         cache: false

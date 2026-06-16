@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 from typing import Any
 
@@ -50,6 +51,26 @@ def load_validation_scenario_dir(path: Path) -> dict[str, list[dict[str, Any]]]:
         "validation_mechanics",
     ]
     return {name: read_jsonl(path / f"{name}.jsonl") for name in names}
+
+
+def load_live_scenario_reports(path: Path | None) -> dict[str, dict[str, Any]]:
+    if not path or not path.exists():
+        return {}
+    files = [path] if path.is_file() else sorted(path.glob("*.json"))
+    reports: dict[str, dict[str, Any]] = {}
+    for report_path in files:
+        if report_path.name == "manifest.json":
+            continue
+        try:
+            payload = json.loads(report_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if not isinstance(payload, dict):
+            continue
+        scenario_id = str(payload.get("scenario_id") or report_path.stem)
+        if scenario_id:
+            reports[scenario_id] = payload
+    return reports
 
 
 def has_service(services: list[dict[str, Any]], service_type: str) -> bool:
@@ -108,6 +129,41 @@ def missing_validation_inputs(
     return missing
 
 
+def scenario_report_bool(report: dict[str, Any], *keys: str) -> bool:
+    return any(bool(report.get(key)) for key in keys)
+
+
+def scenario_report_int(report: dict[str, Any], *keys: str) -> int:
+    values: list[int] = []
+    for key in keys:
+        try:
+            values.append(int(report.get(key) or 0))
+        except (TypeError, ValueError):
+            values.append(0)
+    return max(values or [0])
+
+
+def live_report_ready(report: dict[str, Any], requirement: str) -> bool:
+    if not report:
+        return False
+    if not scenario_report_bool(report, "prepared_group", "group_ready", "provisioning_ready"):
+        return False
+    if requirement == "clear":
+        return scenario_report_bool(report, "clear_complete", "all_passed", "scenario_passed")
+    if requirement == "boss":
+        return scenario_report_int(report, "boss_kills", "raid_boss_kills", "bosses_killed") > 0
+    if requirement == "trash":
+        return scenario_report_bool(report, "trash_cleared", "trash_passed") or scenario_report_int(report, "trash_pulls", "trash_kills", "trash_packs_cleared") > 0
+    return False
+
+
+def live_missing(static_missing: list[str], report: dict[str, Any], live_name: str, requirement: str) -> list[str]:
+    missing = [item for item in static_missing if item != live_name]
+    if not live_report_ready(report, requirement):
+        missing.append(live_name)
+    return missing
+
+
 def gate_result(name: str, ok: bool, evidence: dict[str, Any], missing: list[str] | None = None) -> dict[str, Any]:
     return {
         "gate": name,
@@ -117,7 +173,11 @@ def gate_result(name: str, ok: bool, evidence: dict[str, Any], missing: list[str
     }
 
 
-def validate_manifest_coverage(manifests: dict[str, list[dict[str, Any]]], validation_manifests: dict[str, list[dict[str, Any]]] | None = None) -> dict[str, Any]:
+def validate_manifest_coverage(
+    manifests: dict[str, list[dict[str, Any]]],
+    validation_manifests: dict[str, list[dict[str, Any]]] | None = None,
+    live_reports: dict[str, dict[str, Any]] | None = None,
+) -> dict[str, Any]:
     hubs = manifests["quest_hubs"]
     chains = manifests["quest_chains"]
     clusters = manifests["objective_clusters"]
@@ -130,6 +190,9 @@ def validate_manifest_coverage(manifests: dict[str, list[dict[str, Any]]], valid
     validation_scenarios = validation_manifests.get("validation_scenarios") or []
     validation_routes = validation_manifests.get("validation_routes") or []
     validation_mechanics = validation_manifests.get("validation_mechanics") or []
+    live_reports = live_reports or {}
+    stonecore_live = live_reports.get("stonecore_5n") or {}
+    bwd_live = live_reports.get("blackwing_descent_10n") or {}
 
     evidence = {
         "quest_hubs": len(hubs),
@@ -146,6 +209,8 @@ def validate_manifest_coverage(manifests: dict[str, list[dict[str, Any]]], valid
         "validation_scenario_ids": sorted({row.get("scenario_id") for row in validation_scenarios if row.get("scenario_id")}),
         "validation_route_scenario_ids": sorted({row.get("scenario_id") for row in validation_routes if row.get("scenario_id")}),
         "validation_mechanic_scenario_ids": sorted({row.get("scenario_id") for row in validation_mechanics if row.get("scenario_id")}),
+        "live_scenario_ids": sorted(live_reports),
+        "live_scenario_label_quality": {scenario_id: report.get("teacher_label_quality", "") for scenario_id, report in sorted(live_reports.items())},
         "objective_types": sorted({objective.get("type") for cluster in clusters for objective in (cluster.get("objectives") or []) if objective.get("type")}),
         "service_types": sorted({service_type for row in services for service_type in (row.get("service_types") or [])}),
         "item_source_types": sorted({source_type for row in item_sources for source_type in (row.get("source_types") or [])}),
@@ -182,6 +247,9 @@ def validate_manifest_coverage(manifests: dict[str, list[dict[str, Any]]], valid
         mechanics_name="blackwing_descent_boss_mechanic_manifest",
         live_name="blackwing_descent_live_clear_report",
     )
+    stonecore_live_missing = live_missing(stonecore_missing, stonecore_live, "stonecore_live_clear_report", "clear")
+    bwd_boss_live_missing = live_missing(bwd_boss_missing, bwd_live, "blackwing_descent_live_boss_report", "boss")
+    bwd_clear_live_missing = live_missing(bwd_clear_missing, bwd_live, "blackwing_descent_live_clear_report", "clear")
 
     gates = [
         gate_result("movement_smoke", bool(clusters or hubs or travel_edges), evidence, [] if clusters or hubs or travel_edges else ["objective_clusters_or_hubs_or_travel_edges"]),
@@ -195,10 +263,10 @@ def validate_manifest_coverage(manifests: dict[str, list[dict[str, Any]]], valid
         gate_result("smart_loot", bool(item_sources), evidence, [] if item_sources else ["item_source_index"]),
         gate_result("normal_dungeon_trash", has_travel_edge(travel_edges, "portal_or_instance_entrance"), evidence, [] if has_travel_edge(travel_edges, "portal_or_instance_entrance") else ["instance_entrance_travel_edge"]),
         gate_result("dungeon_boss", has_travel_edge(travel_edges, "portal_or_instance_entrance"), evidence, [] if has_travel_edge(travel_edges, "portal_or_instance_entrance") else ["instance_entrance_travel_edge"]),
-        gate_result("full_stonecore_clear", False, evidence, stonecore_missing),
+        gate_result("full_stonecore_clear", not stonecore_live_missing, evidence, stonecore_live_missing),
         gate_result("raid_trash", has_travel_edge(travel_edges, "portal_or_instance_entrance"), evidence, [] if has_travel_edge(travel_edges, "portal_or_instance_entrance") else ["raid_instance_entrance_travel_edge"]),
-        gate_result("raid_boss", False, evidence, bwd_boss_missing),
-        gate_result("full_blackwing_descent_clear", False, evidence, bwd_clear_missing),
+        gate_result("raid_boss", not bwd_boss_live_missing, evidence, bwd_boss_live_missing),
+        gate_result("full_blackwing_descent_clear", not bwd_clear_live_missing, evidence, bwd_clear_live_missing),
     ]
 
     passed = sum(1 for gate in gates if gate["passed"])
@@ -218,11 +286,16 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Validate autonomous world/planner manifests against staged bot gates.")
     parser.add_argument("--planner-dir", type=Path, default=Path("dataset/world_planner"))
     parser.add_argument("--validation-scenario-dir", type=Path, default=Path("dataset/validation_scenarios"))
+    parser.add_argument("--live-scenario-report-dir", type=Path, default=Path("dataset/live_validation_scenario_reports_built"))
     parser.add_argument("--report", type=Path, default=Path("dataset/world_planner/validation_report.json"))
     parser.add_argument("--fail-on-missing", action="store_true")
     args = parser.parse_args()
 
-    report = validate_manifest_coverage(load_manifest_dir(args.planner_dir), load_validation_scenario_dir(args.validation_scenario_dir))
+    report = validate_manifest_coverage(
+        load_manifest_dir(args.planner_dir),
+        load_validation_scenario_dir(args.validation_scenario_dir),
+        load_live_scenario_reports(args.live_scenario_report_dir),
+    )
     write_json(args.report, report)
     if args.fail_on_missing and not report["all_passed"]:
         return 1

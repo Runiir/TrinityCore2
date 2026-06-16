@@ -782,6 +782,32 @@ def test_world_planner_validation_report_marks_covered_and_missing_gates(tmp_pat
     assert report["all_passed"] is False
     assert report["runtime_ml_control"] == "disabled_until_shadow_assist_replay_validation_passes"
 
+    live_ready_manifests = {
+        **validation_manifests,
+        "validation_routes": [
+            {"scenario_id": "stonecore_5n", "kind": "trash", "coordinates_valid": True},
+            {"scenario_id": "stonecore_5n", "kind": "boss", "coordinates_valid": True},
+            {"scenario_id": "blackwing_descent_10n", "kind": "trash", "coordinates_valid": True},
+            {"scenario_id": "blackwing_descent_10n", "kind": "boss", "coordinates_valid": True},
+        ],
+    }
+    live_report = validate_manifest_coverage(
+        build_planner_manifests(world_dir),
+        live_ready_manifests,
+        {
+            "stonecore_5n": {"scenario_id": "stonecore_5n", "prepared_group": True, "boss_kills": 4, "clear_complete": True, "teacher_label_quality": "medium"},
+            "blackwing_descent_10n": {"scenario_id": "blackwing_descent_10n", "prepared_group": True, "raid_boss_kills": 1, "clear_complete": False, "teacher_label_quality": "medium"},
+        },
+    )
+    live_gates = {gate["gate"]: gate for gate in live_report["gates"]}
+
+    assert live_gates["full_stonecore_clear"]["passed"] is True
+    assert live_gates["raid_boss"]["passed"] is True
+    assert live_gates["full_blackwing_descent_clear"]["passed"] is False
+    assert live_gates["full_blackwing_descent_clear"]["missing"] == ["blackwing_descent_live_clear_report"]
+    assert live_report["evidence"]["live_scenario_ids"] == ["blackwing_descent_10n", "stonecore_5n"]
+    assert live_report["evidence"]["live_scenario_label_quality"]["stonecore_5n"] == "medium"
+
 
 def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     config = json.loads(Path("experiments/configs/validation_scenarios_cata_001.json").read_text(encoding="utf-8"))

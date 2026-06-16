@@ -140,9 +140,15 @@ stages:
   world_planner_validate:
     cmd: python -m tools.bot_ml.validate_world_planner --planner-dir
       dataset/world_planner --validation-scenario-dir
-      dataset/validation_scenarios --report
+      dataset/validation_scenarios --live-scenario-report-dir
+      dataset/live_validation_scenario_reports_built --report
       dataset/world_validation/planner_report.json
     deps:
+    - path: dataset/live_validation_scenario_reports_built
+      hash: md5
+      md5: 83e796cb494bb4530be04f0ea87f5cdc.dir
+      size: 2581
+      nfiles: 3
     - path: dataset/validation_scenarios
       hash: md5
       md5: 6e38ab415d3b13b48a2b23843dbe8818.dir
@@ -159,13 +165,13 @@ stages:
       size: 5247
     - path: tools/bot_ml/validate_world_planner.py
       hash: md5
-      md5: 8e03c07fbf5ac0304043a449d50808c5
-      size: 11269
+      md5: 7552e458c0c1ea9a5cf21adc89149025
+      size: 14489
     outs:
     - path: dataset/world_validation/planner_report.json
       hash: md5
-      md5: 9e6cef3c458ce47b66789de98007bd02
-      size: 24168
+      md5: efae0a44c901a062bccc5f1cf933618c
+      size: 27781
   validation_provisioning:
     cmd: python -m tools.bot_ml.build_validation_provisioning --config
       experiments/configs/validation_provisioning_cata_001.json --gear-profiles
