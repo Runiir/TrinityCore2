@@ -23,7 +23,7 @@ from tools.bot_ml.extract_world_knowledge import (
 from tools.bot_ml.build_world_planner_manifests import build_planner_manifests
 from tools.bot_ml.validate_world_planner import STAGED_GATES, validate_manifest_coverage
 from tools.bot_ml.build_validation_scenario_manifests import build_manifests as build_validation_scenario_manifests
-from tools.bot_ml.build_live_scenario_reports import build_reports as build_live_scenario_reports
+from tools.bot_ml.build_live_scenario_reports import build_reports as build_live_scenario_reports, build_reports_from_live_reports
 from tools.bot_ml.run_live_bot_validation import build_bot_pool_reset_sql, command_script, live_validation_report, load_scenario_reports, main as live_validation_main, parse_json_objects, parse_soap_result, run_worldserver, split_sql_statements, trinity_config_bool
 from tools.bot_ml.build_validation_gear_profiles import build_gem_catalog, build_profiles, build_report, fetch_items, load_gem_properties, load_spell_item_enchantments
 from tools.bot_ml.build_validation_provisioning import apply_gear_profiles, build_account_insert_sql, main as provisioning_main, scenario_report, srp6_registration_data
@@ -826,6 +826,39 @@ def test_live_scenario_report_builder_derives_per_scenario_artifacts(tmp_path):
     assert reports["blackwing_descent_10n"]["raid_boss_kills"] == 1
     assert reports["blackwing_descent_10n"]["boss_stage_passed"] is True
     assert reports["blackwing_descent_10n"]["clear_complete"] is False
+
+
+def test_live_scenario_report_builder_aggregates_segmented_raid_progress(tmp_path):
+    scenario_dir = tmp_path / "validation_scenarios"
+    write_jsonl(
+        scenario_dir / "validation_scenarios.jsonl",
+        [{"scenario_id": "blackwing_descent_10n", "instance": "Blackwing Descent", "map_id": 669, "difficulty": "normal_10man", "provisioning_ready": True, "boss_count": 6}],
+    )
+    write_jsonl(
+        scenario_dir / "validation_routes.jsonl",
+        [{"scenario_id": "blackwing_descent_10n", "kind": "boss"} for _ in range(6)],
+    )
+    live_reports = []
+    for index in range(6):
+        live_reports.append(
+            {
+                "source_live_report": f"run_{index}.json",
+                "trace_entries": 1,
+                "trace": {"entries": [{"action": "raid_boss_killed", "situation": "raid_boss"}]},
+                "summary": {"raid_boss_kills": 1},
+                "evidence": {"failures": 0},
+                "stages": [{"stage": "raid_boss", "passed": True}],
+            }
+        )
+
+    reports = build_reports_from_live_reports(live_reports, scenario_dir)
+    bwd = reports["blackwing_descent_10n"]
+
+    assert bwd["prepared_group"] is True
+    assert bwd["raid_boss_kills"] == 6
+    assert bwd["expected_bosses"] == 6
+    assert bwd["clear_complete"] is True
+    assert len(bwd["source_live_reports"]) == 6
 
 
 def test_live_bot_validation_soap_script_does_not_exit_server():

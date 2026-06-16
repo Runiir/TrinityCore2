@@ -72,6 +72,7 @@ def infer_report(report: dict[str, Any], scenario: dict[str, Any], routes: list[
     boss_kills = max(int(existing.get("raid_boss_kills" if raid else "boss_kills") or 0), observed_boss_kills)
     clear_complete = bool(existing.get("clear_complete")) or stage_passed(report, full_clear_stage) or (expected_bosses > 0 and boss_kills >= expected_bosses and int(evidence.get("failures") or 0) == 0)
 
+    source_live_report = str(report.get("source_live_report") or "")
     row = {
         "schema": "bot_live_scenario_report_v1",
         "scenario_id": scenario_id,
@@ -86,7 +87,8 @@ def infer_report(report: dict[str, Any], scenario: dict[str, Any], routes: list[
         "expected_bosses": expected_bosses,
         "boss_stage_passed": bool(existing.get("boss_stage_passed")) or stage_passed(report, boss_stage) or boss_kills > 0,
         "clear_complete": clear_complete,
-        "source_live_report": str(report.get("source_live_report") or ""),
+        "source_live_report": source_live_report,
+        "source_live_reports": [source_live_report] if source_live_report else [],
         "source_trace_entries": int(report.get("trace_entries") or 0),
         "runtime_ml_control": "disabled_until_live_clear_validation_passes",
     }
@@ -94,7 +96,41 @@ def infer_report(report: dict[str, Any], scenario: dict[str, Any], routes: list[
     return row
 
 
-def build_reports(live_report: dict[str, Any], scenario_dir: Path, scenario_ids: list[str] | None = None) -> dict[str, dict[str, Any]]:
+def merge_report_rows(left: dict[str, Any], right: dict[str, Any]) -> dict[str, Any]:
+    if not left:
+        return dict(right)
+    merged = dict(left)
+    expected_bosses = max(int(left.get("expected_bosses") or 0), int(right.get("expected_bosses") or 0))
+    boss_kills = min(expected_bosses or 999, int(left.get("boss_kills") or 0) + int(right.get("boss_kills") or 0))
+    raid_boss_kills = min(expected_bosses or 999, int(left.get("raid_boss_kills") or 0) + int(right.get("raid_boss_kills") or 0))
+    source_reports = []
+    for row in [left, right]:
+        source = row.get("source_live_report")
+        if source and source not in source_reports:
+            source_reports.append(str(source))
+        for extra in row.get("source_live_reports") or []:
+            if extra and extra not in source_reports:
+                source_reports.append(str(extra))
+    merged.update(
+        {
+            "prepared_group": bool(left.get("prepared_group") or right.get("prepared_group")),
+            "trash_pulls": int(left.get("trash_pulls") or 0) + int(right.get("trash_pulls") or 0),
+            "trash_cleared": bool(left.get("trash_cleared") or right.get("trash_cleared")),
+            "boss_kills": boss_kills,
+            "raid_boss_kills": raid_boss_kills,
+            "expected_bosses": expected_bosses,
+            "boss_stage_passed": bool(left.get("boss_stage_passed") or right.get("boss_stage_passed") or boss_kills > 0 or raid_boss_kills > 0),
+            "clear_complete": bool(left.get("clear_complete") or right.get("clear_complete") or (expected_bosses > 0 and max(boss_kills, raid_boss_kills) >= expected_bosses)),
+            "source_live_report": source_reports[0] if source_reports else "",
+            "source_live_reports": source_reports,
+            "source_trace_entries": int(left.get("source_trace_entries") or 0) + int(right.get("source_trace_entries") or 0),
+        }
+    )
+    merged["report_hash"] = stable_hash(merged)[:16]
+    return merged
+
+
+def build_reports_from_live_reports(live_reports: list[dict[str, Any]], scenario_dir: Path, scenario_ids: list[str] | None = None) -> dict[str, dict[str, Any]]:
     scenarios = load_scenarios(scenario_dir)
     routes = load_routes(scenario_dir)
     selected = scenario_ids or sorted(scenarios)
@@ -103,27 +139,39 @@ def build_reports(live_report: dict[str, Any], scenario_dir: Path, scenario_ids:
         scenario = scenarios.get(scenario_id)
         if not scenario:
             continue
-        reports[scenario_id] = infer_report(live_report, scenario, routes.get(scenario_id, []), existing_scenario_report(live_report, scenario_id))
+        merged: dict[str, Any] = {}
+        for live_report in live_reports:
+            inferred = infer_report(live_report, scenario, routes.get(scenario_id, []), existing_scenario_report(live_report, scenario_id))
+            merged = merge_report_rows(merged, inferred)
+        reports[scenario_id] = merged
     return reports
+
+
+def build_reports(live_report: dict[str, Any], scenario_dir: Path, scenario_ids: list[str] | None = None) -> dict[str, dict[str, Any]]:
+    return build_reports_from_live_reports([live_report], scenario_dir, scenario_ids)
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Build per-scenario Stonecore/BWD live reports from bot-live-validate output.")
-    parser.add_argument("--live-report", type=Path, default=Path("dataset/live_validation/report.json"))
+    parser.add_argument("--live-report", type=Path, action="append", default=[], help="Input bot-live-validate report. May be passed multiple times to aggregate segmented scenario progress.")
     parser.add_argument("--validation-scenario-dir", type=Path, default=Path("dataset/validation_scenarios"))
     parser.add_argument("--output-dir", type=Path, default=Path("dataset/live_validation_scenario_reports_built"))
     parser.add_argument("--scenario-id", action="append", default=[])
     args = parser.parse_args()
 
-    live_report = load_json(args.live_report)
-    live_report["source_live_report"] = str(args.live_report)
-    reports = build_reports(live_report, args.validation_scenario_dir, args.scenario_id or None)
+    live_report_paths = args.live_report or [Path("dataset/live_validation/report.json")]
+    live_reports = []
+    for path in live_report_paths:
+        live_report = load_json(path)
+        live_report["source_live_report"] = str(path)
+        live_reports.append(live_report)
+    reports = build_reports_from_live_reports(live_reports, args.validation_scenario_dir, args.scenario_id or None)
     args.output_dir.mkdir(parents=True, exist_ok=True)
     for scenario_id, report in reports.items():
         write_json(args.output_dir / f"{scenario_id}.json", report)
     summary = {
         "schema": "bot_live_scenario_reports_manifest_v1",
-        "source_live_report": str(args.live_report),
+        "source_live_reports": [str(path) for path in live_report_paths],
         "validation_scenario_dir": str(args.validation_scenario_dir),
         "scenario_count": len(reports),
         "scenarios": sorted(reports),
