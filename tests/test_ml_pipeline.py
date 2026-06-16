@@ -1384,8 +1384,10 @@ def test_live_bot_validation_process_mode_observes_after_start(tmp_path, monkeyp
         "#!/usr/bin/env python3\n"
         "import sys\n"
         "print('ARGS ' + ' '.join(sys.argv[1:]))\n"
+        "print('TC> ', flush=True)\n"
         "for line in sys.stdin:\n"
-        "    print('CMD ' + line.strip())\n",
+        "    print('CMD ' + line.strip())\n"
+        "    print('TC> ', flush=True)\n",
         encoding="utf-8",
     )
     fake_worldserver.chmod(0o755)
@@ -1406,7 +1408,7 @@ def test_live_bot_validation_process_mode_observes_after_start(tmp_path, monkeyp
     assert timed_out is False
     assert command == [str(fake_worldserver), "--config", str(config)]
     assert sleeps[0] == 17
-    assert 0.25 in sleeps
+    assert "TC>" in output
     assert "CMD .botauto start" in output
     assert "CMD .botauto diagnose all" in output
     assert "CMD server shutdown force 0" in output
@@ -1418,8 +1420,10 @@ def test_live_bot_validation_process_mode_observes_before_diagnose_without_start
         "#!/usr/bin/env python3\n"
         "import sys\n"
         "print('ARGS ' + ' '.join(sys.argv[1:]))\n"
+        "print('TC> ', flush=True)\n"
         "for line in sys.stdin:\n"
-        "    print('CMD ' + line.strip())\n",
+        "    print('CMD ' + line.strip())\n"
+        "    print('TC> ', flush=True)\n",
         encoding="utf-8",
     )
     fake_worldserver.chmod(0o755)
@@ -1440,7 +1444,7 @@ def test_live_bot_validation_process_mode_observes_before_diagnose_without_start
     assert timed_out is False
     assert command == [str(fake_worldserver), "--config", str(config)]
     assert sleeps[0] == 23
-    assert 0.25 in sleeps
+    assert "TC>" in output
     assert "CMD .botauto start" not in output
     assert "CMD .botauto status" in output
     assert "CMD .botauto diagnose all" in output

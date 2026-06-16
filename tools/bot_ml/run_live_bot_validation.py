@@ -4,6 +4,7 @@ import argparse
 import base64
 import html
 import json
+import select
 import subprocess
 import time
 import urllib.error
@@ -600,12 +601,33 @@ def live_validation_report(output: str, stages: list[str] | None = None, returnc
     }
 
 
+def read_until_console_prompt(process: subprocess.Popen[str], deadline: float) -> str:
+    if process.stdout is None:
+        return ""
+    output: list[str] = []
+    window = ""
+    while process.poll() is None and time.monotonic() < deadline:
+        remaining = max(0.0, deadline - time.monotonic())
+        ready, _, _ = select.select([process.stdout], [], [], min(1.0, remaining))
+        if not ready:
+            continue
+        char = process.stdout.read(1)
+        if not char:
+            break
+        output.append(char)
+        window = (window + char)[-8:]
+        if "TC>" in window:
+            break
+    return "".join(output)
+
+
 def run_worldserver(binary: Path, config: Path, timeout_sec: int, script: str, observe_sec: int = 0) -> tuple[str, int, bool, list[str]]:
     command = [str(binary), "--config", str(config)]
     if observe_sec > 0:
         deadline = time.monotonic() + timeout_sec
         explicit_start = any(line.strip() == ".botauto start" for line in script.splitlines())
         observed_autostart = False
+        output_prefix = ""
         process = subprocess.Popen(
             command,
             stdin=subprocess.PIPE,
@@ -615,6 +637,7 @@ def run_worldserver(binary: Path, config: Path, timeout_sec: int, script: str, o
         )
         assert process.stdin is not None
         try:
+            output_prefix += read_until_console_prompt(process, deadline)
             for raw_command in script.splitlines():
                 command_text = raw_command.strip()
                 if not explicit_start and not observed_autostart and should_observe_before_command(command_text):
@@ -623,6 +646,7 @@ def run_worldserver(binary: Path, config: Path, timeout_sec: int, script: str, o
                 process.stdin.write(raw_command + "\n")
                 process.stdin.flush()
                 if command_text == ".botauto start":
+                    output_prefix += read_until_console_prompt(process, deadline)
                     time.sleep(observe_sec)
                 elif command_text.startswith("server shutdown") or command_text == "server exit":
                     shutdown_deadline = min(deadline, time.monotonic() + 10)
@@ -635,13 +659,13 @@ def run_worldserver(binary: Path, config: Path, timeout_sec: int, script: str, o
             remaining = max(1, int(deadline - time.monotonic()))
             output, _ = process.communicate(timeout=remaining)
             returncode = process.returncode if process.returncode is not None else 0
-            return output, returncode, False, command
+            return output_prefix + output, returncode, False, command
         except (BrokenPipeError, subprocess.TimeoutExpired) as exc:
             process.kill()
             output = (exc.stdout or "") if isinstance(exc, subprocess.TimeoutExpired) else ""
             if not output and process.stdout:
                 output = process.stdout.read()
-            return output, 124, True, command
+            return output_prefix + output, 124, True, command
 
     try:
         completed = subprocess.run(command, input=script, text=True, capture_output=True, timeout=timeout_sec, check=False)
