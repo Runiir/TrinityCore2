@@ -5040,7 +5040,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     };
     auto routeUsableCombatTarget = [this, bot](Unit* candidate) -> Unit*
     {
-        if (!candidate || !candidate->IsAlive() || !bot->IsValidAttackTarget(candidate) || !bot->IsWithinLOSInMap(candidate))
+        if (!candidate || !candidate->IsAlive() || !bot->IsValidAttackTarget(candidate))
             return nullptr;
 
         Creature const* creature = candidate->ToCreature();
@@ -5063,11 +5063,53 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return nullptr;
 
         Player* anchor = FindDungeonAnchor(bot);
-        if (!anchor || anchor == bot)
+        if (anchor && anchor != bot)
+        {
+            if (Unit* focus = routeUsableCombatTarget(anchor->GetVictim()))
+                return focus;
+        }
+
+        Group* group = bot->GetGroup();
+        if (!group)
             return nullptr;
 
-        if (Unit* focus = routeUsableCombatTarget(anchor->GetVictim()))
-            return focus;
+        Unit* bestFocus = nullptr;
+        float bestScore = -1.0f;
+        for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
+        {
+            Player* member = itr->GetSource();
+            if (!member || member == bot || !member->IsAlive() || member->GetMap() != bot->GetMap())
+                continue;
+
+            Unit* focus = routeUsableCombatTarget(member->GetVictim());
+            if (!focus)
+                continue;
+
+            float score = 1.0f;
+            if (std::string(GetDungeonRole(member)) == "tank")
+                score += 5.0f;
+            if (anchor && member == anchor)
+                score += 3.0f;
+
+            for (GroupReference* voteItr = group->GetFirstMember(); voteItr != nullptr; voteItr = voteItr->next())
+            {
+                Player* voter = voteItr->GetSource();
+                if (!voter || !voter->IsAlive() || voter->GetMap() != bot->GetMap())
+                    continue;
+
+                if (voter->GetVictim() == focus)
+                    score += 1.0f;
+            }
+
+            if (!bestFocus || score > bestScore || (score == bestScore && bot->GetExactDist(focus) < bot->GetExactDist(bestFocus)))
+            {
+                bestFocus = focus;
+                bestScore = score;
+            }
+        }
+
+        if (bestFocus)
+            return bestFocus;
 
         return nullptr;
     };

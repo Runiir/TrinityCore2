@@ -311,6 +311,9 @@ def test_quest_first_portfolio_routing_surface():
     assert "requires_ally_target" in mgr
     assert "threat_already_established" in mgr
     assert "routeGroupFocusTarget" in mgr
+    assert "bestFocus" in mgr
+    assert "voter->GetVictim() == focus" in mgr
+    assert 'std::string(GetDungeonRole(member)) == "tank"' in mgr
     assert "SELECT role FROM character_bot_pool WHERE guid" in mgr
     assert 'poolRole.find("tank")' in mgr
     assert "if (routeProximity > 120.0f)" in mgr

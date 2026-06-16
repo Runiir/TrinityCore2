@@ -47,6 +47,22 @@ ARMOR_SUBCLASS_BY_CLASS = {
     11: 2,  # druid leather
 }
 
+WEAPON_SUBCLASSES_BY_CLASS = {
+    1: {0, 1, 4, 5, 6, 7, 8, 13},
+    2: {0, 1, 4, 5, 6, 7, 8},
+    3: {0, 1, 2, 3, 6, 7, 8, 10, 18},
+    4: {0, 4, 7, 13, 15, 16},
+    5: {10, 15, 19},
+    6: {0, 1, 4, 5, 6, 7, 8},
+    7: {0, 1, 4, 5, 10, 13, 15},
+    8: {7, 10, 15, 19},
+    9: {7, 10, 15, 19},
+    11: {4, 5, 10, 13, 15},
+}
+
+SHIELD_CLASSES = {1, 2, 7}
+OFFHAND_WEAPON_CLASSES = {1, 4, 6, 7}
+
 INVENTORY_TO_EQUIPMENT_SLOTS = {
     1: [0],      # head
     2: [1],      # neck
@@ -296,8 +312,12 @@ def armor_allowed(item: dict[str, Any], class_id: int) -> bool:
     inventory_type = int(item.get("InventoryType") or 0)
     subclass = int(item.get("SubclassID") or 0)
     class_id_item = int(item.get("ClassID") or 0)
+    if inventory_type == 22:
+        return class_id in OFFHAND_WEAPON_CLASSES and subclass in WEAPON_SUBCLASSES_BY_CLASS.get(class_id, set())
     if class_id_item == 2:
-        return inventory_type in WEAPON_INVENTORY_TYPES
+        return inventory_type in WEAPON_INVENTORY_TYPES and subclass in WEAPON_SUBCLASSES_BY_CLASS.get(class_id, set())
+    if inventory_type == 14:
+        return class_id in SHIELD_CLASSES
     if inventory_type in GENERAL_ARMOR_INVENTORY_TYPES:
         return True
     if inventory_type in ARMOR_INVENTORY_TYPES:
@@ -414,6 +434,8 @@ def choose_loadout(
             continue
         inventory_type = int(item.get("InventoryType") or 0)
         for slot in INVENTORY_TO_EQUIPMENT_SLOTS.get(inventory_type, []):
+            if slot == 15 and inventory_type == 17:
+                continue
             if slot in REQUIRED_EQUIPMENT_SLOTS:
                 candidates_by_slot[slot].append((item_score(item, weights), item))
 
@@ -438,6 +460,7 @@ def choose_loadout(
                 "name": selected.get("Display") or "",
                 "item_level": int(selected.get("ItemLevel") or 0),
                 "inventory_type": int(selected.get("InventoryType") or 0),
+                "subclass": int(selected.get("SubclassID") or 0),
                 "source": selected.get("source") or "unknown",
                 "stats": stat_map(selected),
                 "socket_colors": socket_colors,

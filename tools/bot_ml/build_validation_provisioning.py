@@ -32,6 +32,21 @@ ACTION_PROFILE_SPELLS_BY_CLASS = {
     11: [5176, 8921, 8936, 5185, 80965],
 }
 
+PROFICIENCY_SPELLS_BY_CLASS = {
+    # Armor/weapon proficiencies needed for deterministic DB-created validation characters.
+    # Without these, the server mails equipped items away during character load.
+    1: [750, 9077, 9078, 9116, 196, 197, 198, 199, 200, 201, 202, 264, 266, 5011, 674, 15590],
+    2: [750, 9077, 9078, 9116, 196, 197, 198, 199, 200, 201, 202],
+    3: [8737, 9077, 9078, 196, 197, 200, 201, 202, 227, 264, 266, 5011],
+    4: [9077, 9078, 1180, 196, 198, 201, 2567, 674, 15590],
+    5: [9078, 1180, 227, 5009],
+    6: [750, 9077, 9078, 196, 197, 198, 199, 200, 201, 202, 674],
+    7: [8737, 9077, 9078, 9116, 1180, 196, 197, 198, 199, 227, 15590],
+    8: [9078, 1180, 201, 227, 5009],
+    9: [9078, 1180, 201, 227, 5009],
+    11: [9077, 9078, 1180, 198, 199, 227, 15590],
+}
+
 
 def sql_quote(value: str) -> str:
     return "'" + value.replace("\\", "\\\\").replace("'", "''") + "'"
@@ -118,7 +133,8 @@ def bot_guid_expression(name: str) -> str:
 def bot_spell_ids(bot: dict[str, Any]) -> list[int]:
     configured = [int(spell) for spell in bot.get("spells", [])]
     profile_spells = ACTION_PROFILE_SPELLS_BY_CLASS.get(int(bot.get("class", 0)), [])
-    return sorted({spell for spell in configured + profile_spells if spell > 0})
+    proficiency_spells = PROFICIENCY_SPELLS_BY_CLASS.get(int(bot.get("class", 0)), [])
+    return sorted({spell for spell in configured + profile_spells + proficiency_spells if spell > 0})
 
 
 def build_character_insert_sql(config: dict[str, Any]) -> str:

@@ -27,7 +27,7 @@ from tools.bot_ml.build_live_scenario_reports import build_reports as build_live
 from tools.bot_ml.build_validation_run_plan import build_plan as build_validation_run_plan
 from tools.bot_ml.build_validation_run_status import build_status as build_validation_run_status
 from tools.bot_ml.run_live_bot_validation import build_bot_pool_reset_sql, command_script, live_validation_report, load_scenario_reports, main as live_validation_main, parse_json_objects, parse_soap_result, run_worldserver, split_sql_statements, trinity_config_bool
-from tools.bot_ml.build_validation_gear_profiles import build_gem_catalog, build_profiles, build_report, fetch_items, load_gem_properties, load_spell_item_enchantments
+from tools.bot_ml.build_validation_gear_profiles import SHIELD_CLASSES, build_gem_catalog, build_profiles, build_report, fetch_items, load_gem_properties, load_spell_item_enchantments
 from tools.bot_ml.build_validation_provisioning import apply_gear_profiles, build_account_insert_sql, main as provisioning_main, scenario_report, srp6_registration_data
 from tools.bot_ml.validate_validation_provisioning import build_report as provisioning_verify_report
 from tools.bot_ml.validate_validation_provisioning import main as provisioning_verify_main
@@ -1828,6 +1828,8 @@ def test_validation_provisioning_generates_reproducible_sql_and_readiness(tmp_pa
     assert "INSERT INTO `characters`.`character_spell`" in sql
     assert "SELECT c.`guid`, 2061, 1, 0 FROM `characters`.`characters` c WHERE c.`name` = 'ScValHeal'" in sql
     assert "SELECT c.`guid`, 2050, 1, 0 FROM `characters`.`characters` c WHERE c.`name` = 'ScValHeal'" in sql
+    assert "SELECT c.`guid`, 750, 1, 0 FROM `characters`.`characters` c WHERE c.`name` = 'ScValTank'" in sql
+    assert "SELECT c.`guid`, 9116, 1, 0 FROM `characters`.`characters` c WHERE c.`name` = 'ScValTank'" in sql
     assert "INSERT INTO `characters`.`character_glyphs`" in sql
     assert "DELETE FROM `characters`.`item_instance` WHERE `guid` >= 9700000" in sql
     assert manifest["schema"] == "bot_validation_provisioning_manifest_v1"
@@ -1901,6 +1903,21 @@ def test_validation_gear_profiles_can_complete_slots_from_item_rows():
                 "ItemStatValue2": 80,
             }
         )
+    items.append(
+        {
+            "ID": 199999,
+            "Display": "Rejected Two Hand",
+            "ClassID": 2,
+            "SubclassID": 5,
+            "InventoryType": 17,
+            "Quality": 4,
+            "ItemLevel": 500,
+            "RequiredLevel": 85,
+            "AllowableClass": -1,
+            "ItemStatType1": 7,
+            "ItemStatValue1": 500,
+        }
+    )
 
     profiles = build_profiles(config, items)
     report = build_report(profiles, {"database": "hotfixes"})
@@ -1909,6 +1926,7 @@ def test_validation_gear_profiles_can_complete_slots_from_item_rows():
     assert profile["complete_equipment_slots"] is True
     assert profile["missing_slots"] == []
     assert {item["slot"] for item in profile["equipment"]} == set(inv_by_slot)
+    assert next(item for item in profile["equipment"] if item["slot"] == 15)["inventory_type"] == 21
     assert report["all_equipment_slots_complete"] is True
     assert report["all_enchanted"] is False
 
@@ -1930,6 +1948,18 @@ def test_validation_gear_profiles_complete_from_local_db2_files():
     assert report["enchant_applicability_verified_by_server"] is False
     assert report["source_counts"]["client_db2_items"] >= 13 * 16
     assert all(not profile["missing_slots"] for profile in profiles.values())
+    assert all(next(item for item in profile["equipment"] if item["slot"] == 15)["inventory_type"] != 17 for profile in profiles.values())
+    assert all(
+        next(item for item in profile["equipment"] if item["slot"] == 16)["inventory_type"] != 14
+        for profile in profiles.values()
+        if profile["class_id"] not in SHIELD_CLASSES
+    )
+    shaman_mainhands = [
+        next(item for item in profile["equipment"] if item["slot"] == 15)
+        for name, profile in profiles.items()
+        if "shaman" in name
+    ]
+    assert all(item["subclass"] in {0, 1, 4, 5, 10, 13, 15} for item in shaman_mainhands)
     assert all(item["enchantments"].split()[0] == str(item["enchant_id"]) for profile in profiles.values() for item in profile["equipment"])
     assert all(len(item["enchantments"].split()) == 45 for profile in profiles.values() for item in profile["equipment"])
 
