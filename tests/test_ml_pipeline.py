@@ -24,6 +24,7 @@ from tools.bot_ml.build_world_planner_manifests import build_planner_manifests
 from tools.bot_ml.validate_world_planner import STAGED_GATES, validate_manifest_coverage
 from tools.bot_ml.build_validation_scenario_manifests import build_manifests as build_validation_scenario_manifests
 from tools.bot_ml.build_live_scenario_reports import build_reports as build_live_scenario_reports, build_reports_from_live_reports
+from tools.bot_ml.build_validation_run_plan import build_plan as build_validation_run_plan
 from tools.bot_ml.run_live_bot_validation import build_bot_pool_reset_sql, command_script, live_validation_report, load_scenario_reports, main as live_validation_main, parse_json_objects, parse_soap_result, run_worldserver, split_sql_statements, trinity_config_bool
 from tools.bot_ml.build_validation_gear_profiles import build_gem_catalog, build_profiles, build_report, fetch_items, load_gem_properties, load_spell_item_enchantments
 from tools.bot_ml.build_validation_provisioning import apply_gear_profiles, build_account_insert_sql, main as provisioning_main, scenario_report, srp6_registration_data
@@ -348,6 +349,7 @@ def test_bot_ml_workflow_has_pixi_tasks_and_documented_dvc_steps():
         "bot-validation-provisioning",
         "bot-validation-provisioning-verify",
         "bot-validation-scenarios",
+        "bot-validation-run-plan",
         "bot-live-scenario-reports",
         "bot-live-validate",
         "bot-ml-export",
@@ -371,6 +373,7 @@ def test_bot_ml_workflow_has_pixi_tasks_and_documented_dvc_steps():
         "validation_provisioning_verify",
         "validation_scenarios",
         "live_scenario_reports",
+        "validation_run_plan",
         "validation_gear",
         "complete_equipment_slots",
         "full Stonecore and Blackwing Descent gates failing",
@@ -404,6 +407,8 @@ def test_bot_ml_workflow_has_pixi_tasks_and_documented_dvc_steps():
         "dataset/validation_scenarios",
         "live_scenario_reports:",
         "dataset/live_validation_scenario_reports_built",
+        "validation_run_plan:",
+        "dataset/validation_run_plan",
     ]:
         assert stage in dvc
 
@@ -691,6 +696,27 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert any(row["scenario_id"] == "blackwing_descent_10n" and "raid_aoe" in row["families"] for row in mechanics)
     assert manifests["report"]["ready_scenarios"] == 2
     assert manifests["report"]["invalid_mechanic_profiles"] == []
+
+
+def test_validation_run_plan_preserves_instance_positions_and_tags():
+    scenarios = [
+        {"scenario_id": "stonecore_5n", "instance": "The Stonecore", "map_id": 725, "difficulty": "normal_5man", "required_roles": {"tank": 1, "healer": 1, "dps": 3}},
+        {"scenario_id": "blackwing_descent_10n", "instance": "Blackwing Descent", "map_id": 669, "difficulty": "normal_10man", "required_roles": {"tank": 2, "healer": 3, "dps": 5}},
+    ]
+
+    plan = build_validation_run_plan(scenarios, Path("dataset/live_validation_scenarios"), Path("dataset/live_validation_scenario_reports_built"), Path("dataset/validation_scenarios"), 300, 900)
+    rows = {row["scenario_id"]: row for row in plan["scenarios"]}
+    stonecore = rows["stonecore_5n"]
+    bwd = rows["blackwing_descent_10n"]
+
+    assert plan["schema"] == "bot_validation_run_plan_v1"
+    assert stonecore["preserve_start_position"] is True
+    assert "--keep-bot-pool-position" in stonecore["live_validate_command"]
+    assert "--bot-pool-tag" in stonecore["live_validate_command"]
+    assert "stonecore_5n" in stonecore["live_validate_command"]
+    assert "blackwing_descent_10n" in bwd["live_validate_command"]
+    assert bwd["scenario_report_command"].count("--scenario-id") == 1
+    assert "pixi" in stonecore["live_validate_shell"]
 
 
 def test_live_bot_validation_command_script_and_output_parser():

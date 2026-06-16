@@ -88,6 +88,15 @@ stages:
     outs:
     - dataset/live_validation_scenario_reports_built:
         persist: true
+  validation_run_plan:
+    cmd: python -m tools.bot_ml.build_validation_run_plan --validation-scenario-dir dataset/validation_scenarios --output-dir dataset/validation_run_plan --live-output-root dataset/live_validation_scenarios --scenario-report-root dataset/live_validation_scenario_reports_built
+    deps:
+    - tools/bot_ml/build_validation_run_plan.py
+    - tools/bot_ml/common.py
+    - dataset/validation_scenarios
+    outs:
+    - dataset/validation_run_plan:
+        persist: true
   capture:
     cmd: python experiments/run_experiment.py ${capture.config} --raw-dir 
       dataset/raw --runs-dir experiments/runs --live-dir ${tracking.live_dir} 
