@@ -1,0 +1,6 @@
+outs:
+- md5: cabf474c5a98a531686281131e7649df.dir
+  size: 135398
+  nfiles: 4
+  hash: md5
+  path: live_validation_reset_smoke

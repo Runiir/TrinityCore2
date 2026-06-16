@@ -6,3 +6,5 @@
 /live_validation_collect_progress
 /live_validation_target_loss_guardrail
 /live_validation_collect_reconcile
+/live_validation_reset_dryrun
+/live_validation_reset_smoke

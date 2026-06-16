@@ -1,0 +1,6 @@
+outs:
+- md5: bb51d6bffeda0916c9261b7c1863a7b0.dir
+  size: 235179
+  nfiles: 5
+  hash: md5
+  path: live_validation_reset_dryrun

@@ -22,7 +22,7 @@ from tools.bot_ml.extract_world_knowledge import (
 )
 from tools.bot_ml.build_world_planner_manifests import build_planner_manifests
 from tools.bot_ml.validate_world_planner import STAGED_GATES, validate_manifest_coverage
-from tools.bot_ml.run_live_bot_validation import command_script, live_validation_report, main as live_validation_main, parse_json_objects, parse_soap_result, run_worldserver
+from tools.bot_ml.run_live_bot_validation import build_bot_pool_reset_sql, command_script, live_validation_report, main as live_validation_main, parse_json_objects, parse_soap_result, run_worldserver, split_sql_statements
 from tools.bot_ml.build_validation_gear_profiles import build_gem_catalog, build_profiles, build_report, fetch_items, load_gem_properties, load_spell_item_enchantments
 from tools.bot_ml.build_validation_provisioning import apply_gear_profiles, build_account_insert_sql, main as provisioning_main, scenario_report, srp6_registration_data
 from tools.bot_ml.validate_validation_provisioning import build_report as provisioning_verify_report
@@ -812,6 +812,52 @@ def test_live_bot_validation_dry_run_writes_command_file(tmp_path, monkeypatch):
     assert "server exit" in commands
     assert report["dry_run"] is True
     assert report["command_script"] == commands
+
+
+def test_live_bot_validation_bot_pool_reset_sql_is_scoped_to_tags():
+    sql = build_bot_pool_reset_sql(["test_account"], world_database="world")
+    statements = split_sql_statements(sql)
+
+    assert "p.`experiment_tags` LIKE '%test_account%'" in sql
+    assert "JOIN `world`.`playercreateinfo`" in sql
+    assert "DELETE FROM `characters`.`character_queststatus`" in sql
+    assert "DELETE FROM `characters`.`bot_memory_failed_paths`" in sql
+    assert "bot_semantic_outcome_stats" not in sql
+    assert statements[0].startswith("UPDATE `characters`.`character_bot_pool`")
+    assert len(statements) >= 10
+
+
+def test_live_bot_validation_dry_run_writes_reset_and_provisioning_artifacts(tmp_path, monkeypatch):
+    monkeypatch.setattr("tools.bot_ml.run_live_bot_validation.database_url_from_worldserver_conf", lambda _path, key="WorldDatabaseInfo": f"mysql://trinity:secret@db.example:3306/{'auth' if key == 'LoginDatabaseInfo' else 'characters' if key == 'CharacterDatabaseInfo' else 'world'}")
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "bot-live-validate",
+            "--dry-run",
+            "--reset-bot-pool",
+            "--bot-pool-tag",
+            "test_account",
+            "--apply-validation-provisioning",
+            "--gear-profiles",
+            str(tmp_path / "missing_profiles.json"),
+            "--output-dir",
+            str(tmp_path),
+        ],
+    )
+
+    assert live_validation_main() == 0
+    report = json.loads((tmp_path / "report.json").read_text(encoding="utf-8"))
+    reset_sql = (tmp_path / "bot_pool_reset" / "reset_bot_pool.sql").read_text(encoding="utf-8")
+    account_sql = (tmp_path / "validation_provisioning_apply" / "provision_accounts.sql").read_text(encoding="utf-8")
+    character_sql = (tmp_path / "validation_provisioning_apply" / "provision_characters.sql").read_text(encoding="utf-8")
+
+    assert report["dry_run"] is True
+    assert report["preparation"]["bot_pool_reset"]["applied"] is False
+    assert report["preparation"]["bot_pool_reset"]["tags"] == ["test_account"]
+    assert report["preparation"]["validation_provisioning"]["applied"] is False
+    assert "UPDATE `characters`.`character_bot_pool`" in reset_sql
+    assert "INSERT INTO `auth`.`account`" in account_sql
+    assert "INSERT INTO `characters`.`characters`" in character_sql
 
 
 def test_live_bot_validation_soap_dry_run_writes_non_exit_command_file(tmp_path, monkeypatch):
