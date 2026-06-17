@@ -47,6 +47,7 @@ __pycache__/
 /dataset/live_validation_scenarios/stonecore_5n/*
 !/dataset/live_validation_scenarios/stonecore_5n/01_entrance_packs.dvc
 !/dataset/live_validation_scenarios/stonecore_5n/03_crystalspawn_corridor.dvc
+!/dataset/live_validation_scenarios/stonecore_5n/05_stonecore_sentry_gauntlet.dvc
 /experiments/runs
 /dvclive
 /models
