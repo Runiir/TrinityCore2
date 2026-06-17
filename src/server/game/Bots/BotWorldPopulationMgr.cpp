@@ -2090,6 +2090,10 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
             semantic = BuildSemanticJson(bot, nullptr, "corpse_recovery");
             if (recovery.Recovered)
             {
+                bot->AttackStop();
+                bot->CombatStop(true);
+                state.TargetGuid.Clear();
+                state.QuestWork.SelectedTargetGuid.Clear();
                 PersistBotPosition(bot);
                 RecordEvent(state, bot, "resurrected", nullptr, recovery.Mode.c_str(), raw.c_str(), semantic.c_str());
                 if (recovery.UsedFallback)
@@ -5184,8 +5188,148 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
         return ObjectGuid::Empty;
     };
+    auto findLastKnownFocusTarget = [this, bot, &routeUsableCombatTarget]() -> Unit*
+    {
+        if (_validationRouteFocusGuid.IsEmpty()
+            || !_validationRouteFocusEntry
+            || _validationRouteFocusMapId != bot->GetMapId()
+            || !_validationRouteFocusSeenMs
+            || NowMs() - _validationRouteFocusSeenMs > 20000)
+            return nullptr;
+
+        std::vector<WorldObject*> objects;
+        Trinity::AllWorldObjectsInRange check(bot, 160.0f);
+        Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(bot, objects, check);
+        Cell::VisitAllObjects(bot, searcher, 160.0f);
+
+        Unit* best = nullptr;
+        float bestDistance = 0.0f;
+        for (WorldObject* object : objects)
+        {
+            Creature* creature = object ? object->ToCreature() : nullptr;
+            if (!creature || creature->GetEntry() != _validationRouteFocusEntry)
+                continue;
+
+            Unit* candidate = routeUsableCombatTarget(creature);
+            if (!candidate || !bot->IsValidAttackTarget(candidate))
+                continue;
+
+            if (candidate->GetGUID() == _validationRouteFocusGuid)
+                return candidate;
+
+            float distance = candidate->GetExactDist(_validationRouteFocusX, _validationRouteFocusY, _validationRouteFocusZ);
+            if (!best || distance < bestDistance)
+            {
+                best = candidate;
+                bestDistance = distance;
+            }
+        }
+
+        return best;
+    };
 
     float routeDistance = bot->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ);
+    if (std::string(GetDungeonRole(bot)) == "tank")
+    {
+        if (Unit* tankTarget = routeUsableCombatTarget(target))
+        {
+            _validationRouteFocusGuid = tankTarget->GetGUID();
+            if (Creature const* creature = tankTarget->ToCreature())
+                _validationRouteFocusEntry = creature->GetEntry();
+            _validationRouteFocusMapId = tankTarget->GetMapId();
+            _validationRouteFocusX = tankTarget->GetPositionX();
+            _validationRouteFocusY = tankTarget->GetPositionY();
+            _validationRouteFocusZ = tankTarget->GetPositionZ();
+            _validationRouteFocusSeenMs = NowMs();
+        }
+    }
+    if (std::string(GetDungeonRole(bot)) != "tank")
+    {
+        ObjectGuid tankFocusGuid = routeTankFocusGuid();
+        Unit* tankFocusTarget = tankFocusGuid.IsEmpty() ? nullptr : routeUsableCombatTarget(ObjectAccessor::GetUnit(*bot, tankFocusGuid));
+        if (!tankFocusTarget)
+            tankFocusTarget = findLastKnownFocusTarget();
+        if (tankFocusTarget)
+        {
+            Unit* staleTarget = target && target != tankFocusTarget ? target : nullptr;
+            Unit* staleVictim = bot->GetVictim() && bot->GetVictim() != tankFocusTarget ? bot->GetVictim() : nullptr;
+            if (staleTarget || staleVictim)
+            {
+                Unit* rejected = staleVictim ? staleVictim : staleTarget;
+                std::string raw = BuildRawJson(bot, rejected);
+                std::string semantic = BuildSemanticJson(bot, rejected, "validation_route_regroup", &power, stage, activity);
+                RecordEvent(state, bot, "validation_route_prerequisite_rejected", rejected, "force_tank_focus", raw.c_str(), semantic.c_str(), rejected ? bot->GetExactDist(rejected) : 0.0f, _config.ValidationRouteTargetEntry);
+                bot->AttackStop();
+                bot->CombatStop(true);
+            }
+
+            target = tankFocusTarget;
+            state.TargetGuid = target->GetGUID();
+            if (tryRouteGroupHeal(bot, target))
+                return true;
+
+            BotActionExecutor executor;
+            uint32 spellId = SelectCombatSpell(bot, target);
+            float engageRange = routeEngageRange(bot, target, spellId);
+            if (!bot->IsValidAttackTarget(target) || !bot->IsWithinDistInMap(target, std::max(5.0f, engageRange - 1.0f)) || !bot->IsWithinLOSInMap(target))
+            {
+                MoveBotToPoint(state, bot, target->GetPositionX(), target->GetPositionY(), target->GetPositionZ());
+                action = "move_to_validation_route_assist_target";
+                situation = "validation_route_prerequisite";
+                std::string raw = BuildRawJson(bot, target);
+                std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, activity);
+                RecordEvent(state, bot, "validation_route_prerequisite", target, "force_tank_focus", raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry);
+                return true;
+            }
+
+            BotActionResult pull = executor.Pull(bot, target);
+            bool cast = spellId && TryCastCombatSpell(bot, target, spellId);
+            action = "validation_route_prerequisite_assist";
+            situation = "validation_route_prerequisite";
+            std::string raw = BuildRawJson(bot, target);
+            std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, activity);
+            RecordEvent(state, bot, "validation_route_prerequisite", target, ToString(pull), raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry, cast ? spellId : 0);
+            state.WasInCombat = true;
+            return true;
+        }
+
+        if (!_validationRouteFocusGuid.IsEmpty()
+            && _validationRouteFocusMapId == bot->GetMapId()
+            && _validationRouteFocusSeenMs
+            && NowMs() - _validationRouteFocusSeenMs <= 20000)
+        {
+            Unit* staleTarget = target && target->GetGUID() != _validationRouteFocusGuid ? target : nullptr;
+            Unit* staleVictim = bot->GetVictim() && bot->GetVictim()->GetGUID() != _validationRouteFocusGuid ? bot->GetVictim() : nullptr;
+            if (staleTarget || staleVictim)
+            {
+                Unit* rejected = staleVictim ? staleVictim : staleTarget;
+                std::string raw = BuildRawJson(bot, rejected);
+                std::string semantic = BuildSemanticJson(bot, rejected, "validation_route_regroup", &power, stage, activity);
+                RecordEvent(state, bot, "validation_route_prerequisite_rejected", rejected, "force_last_known_tank_focus", raw.c_str(), semantic.c_str(), rejected ? bot->GetExactDist(rejected) : 0.0f, _config.ValidationRouteTargetEntry);
+                bot->AttackStop();
+                bot->CombatStop(true);
+                state.TargetGuid.Clear();
+                target = nullptr;
+            }
+
+            float focusDistance = bot->GetExactDist(_validationRouteFocusX, _validationRouteFocusY, _validationRouteFocusZ);
+            std::string raw = BuildRawJson(bot, nullptr);
+            std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_regroup", &power, stage, activity);
+            if (focusDistance > 10.0f)
+            {
+                MoveBotToPoint(state, bot, _validationRouteFocusX, _validationRouteFocusY, _validationRouteFocusZ);
+                RecordEvent(state, bot, "validation_route_regroup", nullptr, "follow_last_known_tank_focus", raw.c_str(), semantic.c_str(), focusDistance, _config.ValidationRouteTargetEntry);
+                situation = "validation_route_regroup";
+                action = "move_to_validation_route_focus";
+                return true;
+            }
+
+            RecordEvent(state, bot, "validation_route_regroup", nullptr, "hold_last_known_tank_focus", raw.c_str(), semantic.c_str(), focusDistance, _config.ValidationRouteTargetEntry);
+            situation = "validation_route_regroup";
+            action = "validation_route_hold_focus";
+            return true;
+        }
+    }
     if (std::string(GetDungeonRole(bot)) != "tank")
     {
         ObjectGuid tankFocusGuid = routeTankFocusGuid();

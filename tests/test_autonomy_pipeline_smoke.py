@@ -221,6 +221,9 @@ def test_quest_first_portfolio_routing_surface():
         "QuestRouteDestination",
         "LastNoQuestReason",
         "LastQuestBucketReason",
+        "_validationRouteFocusGuid",
+        "_validationRouteFocusEntry",
+        "_validationRouteFocusSeenMs",
     ]:
         assert symbol in mgr_header
 
@@ -330,6 +333,14 @@ def test_quest_first_portfolio_routing_surface():
     assert "follow_anchor_before_prerequisite" in mgr
     assert "hold_anchor_before_prerequisite" in mgr
     assert "routeTankFocusGuid" in mgr
+    assert "force_tank_focus" in mgr
+    assert "force_last_known_tank_focus" in mgr
+    assert "findLastKnownFocusTarget" in mgr
+    assert "creature->GetEntry() != _validationRouteFocusEntry" in mgr
+    assert "follow_last_known_tank_focus" in mgr
+    assert "hold_last_known_tank_focus" in mgr
+    assert "validation_route_hold_focus" in mgr
+    assert "state.QuestWork.SelectedTargetGuid.Clear();" in mgr
     assert "regroup_tank_focus_mismatch" in mgr
     assert "follow_anchor_tank_focus_mismatch" in mgr
     assert "hold_anchor_tank_focus_mismatch" in mgr

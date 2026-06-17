@@ -863,6 +863,13 @@ private:
     BotWorldStatus _metrics;
     BotTelemetryBuffer _telemetryBuffer;
     BotExperimentCoordinator _experimentCoordinator;
+    ObjectGuid _validationRouteFocusGuid;
+    uint32 _validationRouteFocusEntry = 0;
+    uint32 _validationRouteFocusMapId = 0;
+    float _validationRouteFocusX = 0.0f;
+    float _validationRouteFocusY = 0.0f;
+    float _validationRouteFocusZ = 0.0f;
+    uint64 _validationRouteFocusSeenMs = 0;
     mutable std::map<uint32, std::string> _lastCombatMaskByBot;
     mutable std::map<uint32, std::string> _lastChosenCombatByBot;
     mutable std::map<uint32, std::string> _lastActionCategoryByBot;
