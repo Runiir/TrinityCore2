@@ -334,6 +334,10 @@ def test_quest_first_portfolio_routing_surface():
     assert "hold_anchor_before_prerequisite" in mgr
     assert "routeTankFocusGuid" in mgr
     assert "routeTankFocusTarget" in mgr
+    assert "rememberValidationRouteFocus" in mgr
+    assert "routeUsableCombatTarget(member->GetVictim())" in mgr
+    assert "if (Unit* victim = routeUsableCombatTarget(member->GetVictim()))" in mgr
+    assert "ObjectAccessor::GetUnit(*member, cohortState.TargetGuid)" in mgr
     assert "member->GetVictim()" in mgr
     assert "force_tank_focus" in mgr
     assert "force_last_known_tank_focus" in mgr

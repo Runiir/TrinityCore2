@@ -5171,24 +5171,43 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
         return nullptr;
     };
-    auto routeTankFocusGuid = [this, bot]() -> ObjectGuid
+    auto routeTankFocusGuid = [this, bot, &routeUsableCombatTarget]() -> ObjectGuid
     {
         for (WorldBotState const& cohortState : _bots)
         {
             Player* member = GetBot(cohortState);
             if (!member || member == bot || !member->IsAlive() || member->GetMap() != bot->GetMap())
                 continue;
-            if (std::string(GetDungeonRole(member)) == "tank" && !cohortState.TargetGuid.IsEmpty())
+            if (std::string(GetDungeonRole(member)) != "tank")
+                continue;
+
+            if (Unit* victim = routeUsableCombatTarget(member->GetVictim()))
+                return victim->GetGUID();
+            if (!cohortState.TargetGuid.IsEmpty())
                 return cohortState.TargetGuid;
         }
 
         if (Player* anchor = FindDungeonAnchor(bot))
-            if (Unit* victim = anchor->GetVictim())
+            if (Unit* victim = routeUsableCombatTarget(anchor->GetVictim()))
                 return victim->GetGUID();
 
         return ObjectGuid::Empty;
     };
-    auto routeTankFocusTarget = [this, bot, &routeUsableCombatTarget](ObjectGuid expectedGuid) -> Unit*
+    auto rememberValidationRouteFocus = [this](Unit* focus)
+    {
+        if (!focus)
+            return;
+
+        _validationRouteFocusGuid = focus->GetGUID();
+        if (Creature const* creature = focus->ToCreature())
+            _validationRouteFocusEntry = creature->GetEntry();
+        _validationRouteFocusMapId = focus->GetMapId();
+        _validationRouteFocusX = focus->GetPositionX();
+        _validationRouteFocusY = focus->GetPositionY();
+        _validationRouteFocusZ = focus->GetPositionZ();
+        _validationRouteFocusSeenMs = NowMs();
+    };
+    auto routeTankFocusTarget = [this, bot, &routeUsableCombatTarget, &rememberValidationRouteFocus](ObjectGuid expectedGuid) -> Unit*
     {
         auto usableExpected = [&](Unit* focus) -> Unit*
         {
@@ -5208,16 +5227,25 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             if (std::string(GetDungeonRole(member)) != "tank")
                 continue;
 
-            if (Unit* focus = usableExpected(member->GetVictim()))
+            if (Unit* focus = routeUsableCombatTarget(member->GetVictim()))
+            {
+                rememberValidationRouteFocus(focus);
                 return focus;
+            }
             if (!cohortState.TargetGuid.IsEmpty())
-                if (Unit* focus = usableExpected(ObjectAccessor::GetUnit(*bot, cohortState.TargetGuid)))
+                if (Unit* focus = usableExpected(ObjectAccessor::GetUnit(*member, cohortState.TargetGuid)))
+                {
+                    rememberValidationRouteFocus(focus);
                     return focus;
+                }
         }
 
         if (Player* anchor = FindDungeonAnchor(bot))
-            if (Unit* focus = usableExpected(anchor->GetVictim()))
+            if (Unit* focus = routeUsableCombatTarget(anchor->GetVictim()))
+            {
+                rememberValidationRouteFocus(focus);
                 return focus;
+            }
 
         return nullptr;
     };
@@ -5263,16 +5291,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     if (std::string(GetDungeonRole(bot)) == "tank")
     {
         if (Unit* tankTarget = routeUsableCombatTarget(target))
-        {
-            _validationRouteFocusGuid = tankTarget->GetGUID();
-            if (Creature const* creature = tankTarget->ToCreature())
-                _validationRouteFocusEntry = creature->GetEntry();
-            _validationRouteFocusMapId = tankTarget->GetMapId();
-            _validationRouteFocusX = tankTarget->GetPositionX();
-            _validationRouteFocusY = tankTarget->GetPositionY();
-            _validationRouteFocusZ = tankTarget->GetPositionZ();
-            _validationRouteFocusSeenMs = NowMs();
-        }
+            rememberValidationRouteFocus(tankTarget);
     }
     if (std::string(GetDungeonRole(bot)) != "tank")
     {
