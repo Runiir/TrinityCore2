@@ -9,6 +9,7 @@ import subprocess
 import time
 import urllib.error
 import urllib.request
+from collections import Counter
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -531,6 +532,8 @@ def live_evidence(status: dict[str, Any], diagnosis: dict[str, Any], trace: dict
         for entry in entries
         if entry.get("action") or entry.get("situation")
     }
+    action_counts = Counter(str(entry.get("action") or entry.get("situation") or "") for entry in entries if entry.get("action") or entry.get("situation"))
+    result_counts = Counter(str(entry.get("result") or "") for entry in entries if entry.get("result"))
     quest_acceptance_actions = sum(
         1
         for entry in entries
@@ -558,9 +561,17 @@ def live_evidence(status: dict[str, Any], diagnosis: dict[str, Any], trace: dict
     quests_accepted = max(int(status.get("quests_accepted") or 0), int(summary.get("quests_accepted") or 0), quest_acceptance_actions)
     quests_completed = max(int(status.get("quests_completed") or 0), int(summary.get("quests_completed") or 0), quest_completion_actions)
     kills = max(int(status.get("kills") or 0), int(summary.get("total_kills") or 0))
+    boss_kill_evidence = max(
+        int(summary.get("boss_kills") or 0),
+        int(summary.get("raid_boss_kills") or 0),
+        action_counts.get("boss_killed", 0),
+        action_counts.get("raid_boss_killed", 0),
+    )
     kill_evidence = kills + teacher_assisted_kills
     gear_upgrades = max(int(status.get("gear_upgrades") or 0), int(summary.get("gear_upgrades") or 0))
     active_decision_evidence = decisions > 0 or non_spawn_trace_entries > 0 or moved_diagnoses > 0 or non_wait_diagnoses > 0
+    validation_route_actions = sum(count for action, count in action_counts.items() if action.startswith("validation_route") or action.startswith("move_to_validation_route"))
+    boss_engagement_actions = sum(action_counts.get(action, 0) for action in ["boss_started", "boss_action", "validation_route_tank_boss", "validation_route_group_heal"])
     return {
         "decisions": decisions,
         "failures": failures,
@@ -576,14 +587,85 @@ def live_evidence(status: dict[str, Any], diagnosis: dict[str, Any], trace: dict
         "kills": kills,
         "teacher_assisted_kills": teacher_assisted_kills,
         "kill_evidence": kill_evidence,
+        "boss_kill_evidence": boss_kill_evidence,
         "gear_upgrades": gear_upgrades,
         "action_names": sorted(action_names),
+        "action_counts": dict(sorted(action_counts.items())),
+        "result_counts": dict(sorted(result_counts.items())),
+        "validation_route_actions": validation_route_actions,
+        "boss_engagement_actions": boss_engagement_actions,
+        "validation_route_prerequisite_repeats": action_counts.get("validation_route_prerequisite", 0),
+        "validation_route_activation_attempts": action_counts.get("validation_route_activation", 0),
+        "validation_route_no_visible_target_activations": result_counts.get("activation_applied_no_visible_target", 0),
+        "validation_route_force_tank_focus_repeats": result_counts.get("force_tank_focus", 0),
         "vendor_or_trainer_action": any(token in action_text for token in ["vendor", "repair", "train"]),
         "profession_action": any(token in action_text for token in ["profession", "recipe", "craft"]),
         "material_farming_action": any(token in action_text for token in ["material", "farm", "gather", "herb", "mine", "skin"]),
         "loot_action": any(token in action_text for token in ["loot", "roll", "gear_upgrade"]),
         "active_decision_evidence": active_decision_evidence,
     }
+
+
+def validation_failure_labels(
+    returncode: int,
+    timed_out: bool,
+    active_bots: int,
+    target_bots: int,
+    trace_count: int,
+    diagnosis_count: int,
+    errors: list[dict[str, str]],
+    evidence: dict[str, Any],
+) -> list[str]:
+    labels: list[str] = []
+    if timed_out:
+        labels.append("worldserver_timeout")
+    if returncode != 0:
+        labels.append("worldserver_nonzero_return")
+    if errors:
+        labels.append("bot_command_error")
+    if target_bots > 0 and active_bots < target_bots:
+        labels.append("bot_pool_underfilled")
+    if active_bots > 0 and diagnosis_count <= 0:
+        labels.append("missing_diagnosis")
+    if active_bots > 0 and trace_count <= 0:
+        labels.append("missing_trace")
+
+    boss_kills = int(evidence.get("boss_kill_evidence") or 0)
+    route_actions = int(evidence.get("validation_route_actions") or 0)
+    boss_engagement = int(evidence.get("boss_engagement_actions") or 0)
+    activation_attempts = int(evidence.get("validation_route_activation_attempts") or 0)
+    prerequisite_repeats = int(evidence.get("validation_route_prerequisite_repeats") or 0)
+    no_visible_activations = int(evidence.get("validation_route_no_visible_target_activations") or 0)
+    force_tank_focus = int(evidence.get("validation_route_force_tank_focus_repeats") or 0)
+
+    if route_actions > 0 and boss_kills <= 0:
+        if boss_engagement > 0:
+            labels.append("boss_attempt_no_kill")
+        elif activation_attempts > 0:
+            labels.append("validation_route_activation_no_engagement")
+        else:
+            labels.append("validation_route_no_engagement")
+    if route_actions > 0 and boss_kills <= 0 and prerequisite_repeats >= 4:
+        labels.append("validation_route_prerequisite_loop")
+    if route_actions > 0 and boss_kills <= 0 and no_visible_activations >= 2 and boss_engagement <= 0:
+        labels.append("validation_route_activation_target_absent")
+    if route_actions > 0 and boss_kills <= 0 and force_tank_focus >= 4 and boss_engagement <= 0:
+        labels.append("validation_route_assist_focus_loop")
+    if (
+        active_bots > 0
+        and int(evidence.get("decisions") or 0) > 0
+        and int(evidence.get("kill_evidence") or 0) <= 0
+        and int(evidence.get("quest_objective_progress") or 0) <= 0
+        and int(evidence.get("quests_accepted") or 0) <= 0
+        and int(evidence.get("gear_upgrades") or 0) <= 0
+    ):
+        labels.append("no_progress_observed")
+
+    unique: list[str] = []
+    for label in labels:
+        if label not in unique:
+            unique.append(label)
+    return unique
 
 
 def live_validation_report(output: str, stages: list[str] | None = None, returncode: int = 0, timed_out: bool = False, command: list[str] | None = None, scenario_reports: dict[str, dict[str, Any]] | None = None) -> dict[str, Any]:
@@ -600,6 +682,7 @@ def live_validation_report(output: str, stages: list[str] | None = None, returnc
     trace_entries = count_trace_entries(trace)
     diagnosis_count = len(diagnosis_rows(diagnosis))
     evidence = live_evidence(status, diagnosis, trace, summary)
+    failure_labels = validation_failure_labels(returncode, timed_out, active_bots, target_bots, trace_entries, diagnosis_count, errors, evidence)
     scenario_reports = scenario_reports or {}
 
     stage_rows = []
@@ -654,6 +737,8 @@ def live_validation_report(output: str, stages: list[str] | None = None, returnc
         "scenario_reports": scenario_reports,
         "command_errors": errors,
         "evidence": evidence,
+        "failure_labels": failure_labels,
+        "failure_reason": failure_labels[0] if failure_labels else None,
         "stages": stage_rows,
         "passed": passed,
         "failed": len(stage_rows) - passed,

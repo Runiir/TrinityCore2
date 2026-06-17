@@ -152,6 +152,8 @@ def infer_report(report: dict[str, Any], scenario: dict[str, Any], routes: list[
     summary = report.get("summary") if isinstance(report.get("summary"), dict) else {}
     evidence = report.get("evidence") if isinstance(report.get("evidence"), dict) else {}
     validation_context = report.get("validation_context") if isinstance(report.get("validation_context"), dict) else {}
+    failure_labels = unique_strings(report.get("failure_labels") or [])
+    failure_reason = str(report.get("failure_reason") or (failure_labels[0] if failure_labels else ""))
     route_segment_id = str(validation_context.get("segment_id") or "")
     route_node_id = str(validation_context.get("route_node_id") or "")
     route_label = str(validation_context.get("route_label") or "")
@@ -192,6 +194,8 @@ def infer_report(report: dict[str, Any], scenario: dict[str, Any], routes: list[
                 "raid_boss_kills": boss_kills if raid else 0,
                 "trash_pulls": trash_pulls,
                 "clear_complete": clear_complete,
+                "failure_labels": failure_labels,
+                "failure_reason": failure_reason,
                 "source_live_report": source_live_report,
             }
         )
@@ -223,7 +227,9 @@ def infer_report(report: dict[str, Any], scenario: dict[str, Any], routes: list[
         "scenario_evidence_mode": evidence_mode,
         "scenario_evidence_modes": [evidence_mode],
         "teacher_label_quality": teacher_label_quality(evidence_mode),
-        "ml_training_label": "candidate_teacher_label" if evidence_mode != "generic_live_trace_inference" else "weak_inferred_label",
+        "failure_labels": failure_labels,
+        "failure_reason": failure_reason,
+        "ml_training_label": "failed_teacher_attempt" if failure_labels else ("candidate_teacher_label" if evidence_mode != "generic_live_trace_inference" else "weak_inferred_label"),
         "source_trace_entries": int(report.get("trace_entries") or 0),
         "runtime_ml_control": "disabled_until_live_clear_validation_passes",
     }
@@ -255,6 +261,8 @@ def merge_report_rows(left: dict[str, Any], right: dict[str, Any]) -> dict[str, 
     source_mechanic_profiles = unique_strings(left.get("source_mechanic_profiles") or [], right.get("source_mechanic_profiles") or [])
     segment_results = list(left.get("segment_results") or []) + list(right.get("segment_results") or [])
     evidence_modes = unique_strings(left.get("scenario_evidence_modes") or left.get("scenario_evidence_mode") or [], right.get("scenario_evidence_modes") or right.get("scenario_evidence_mode") or [])
+    failure_labels = unique_strings(left.get("failure_labels") or [], right.get("failure_labels") or [])
+    failure_reason = str(left.get("failure_reason") or right.get("failure_reason") or (failure_labels[0] if failure_labels else ""))
     label_quality = merged_teacher_label_quality(evidence_modes, complete_segment_coverage)
     segmented_evidence = "route_segment_context" in evidence_modes and bool(expected_segments)
     clear_complete = bool(left.get("clear_complete") or right.get("clear_complete"))
@@ -286,7 +294,9 @@ def merge_report_rows(left: dict[str, Any], right: dict[str, Any]) -> dict[str, 
             "scenario_evidence_mode": evidence_modes[0] if evidence_modes else "",
             "scenario_evidence_modes": evidence_modes,
             "teacher_label_quality": label_quality,
-            "ml_training_label": "candidate_teacher_label" if label_quality in {"strong", "medium"} else "weak_inferred_label",
+            "failure_labels": failure_labels,
+            "failure_reason": failure_reason,
+            "ml_training_label": "failed_teacher_attempt" if failure_labels else ("candidate_teacher_label" if label_quality in {"strong", "medium"} else "weak_inferred_label"),
             "source_trace_entries": int(left.get("source_trace_entries") or 0) + int(right.get("source_trace_entries") or 0),
         }
     )

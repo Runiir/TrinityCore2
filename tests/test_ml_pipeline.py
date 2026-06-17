@@ -1242,6 +1242,8 @@ There is no such subcommand
     assert report["evidence"]["kill_evidence"] == 1
     assert report["summary"]["quests_completed"] == 0
     assert report["command_errors"] == [{"command": ".botauto diagnose all", "error": "no_such_subcommand"}]
+    assert report["failure_labels"] == ["bot_command_error"]
+    assert report["failure_reason"] == "bot_command_error"
     assert gates["movement_smoke"]["passed"] is True
     assert gates["kill_quest"]["passed"] is True
     assert gates["collect_quest"]["passed"] is True
@@ -1265,6 +1267,26 @@ TC> {"duration_minutes":1,"decisions":2,"total_kills":0,"quests_completed":0}
     assert report["evidence"]["teacher_assisted_kills"] == 1
     assert report["evidence"]["kill_evidence"] == 1
     assert gates["kill_quest"]["passed"] is True
+
+
+def test_live_bot_validation_labels_failed_validation_route_boss_attempt():
+    output = """
+TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":35,"kills":0,"quests_accepted":0,"quest_objective_progress":0}
+TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"snapshot":{"decision":{"action":"validation_route_tank_boss"},"movement":{"is_moving":false,"distance_moved_since_last_decision":0}}}]}
+TC> {"trace_schema_version":1,"selector":"all","bots":[{"bot_guid":1,"entries":[{"action":"validation_route_activation","situation":"validation_route_activation","result":"target_not_found"},{"action":"validation_route_target_search","situation":"validation_route_target_search","result":"activation_applied_no_visible_target"},{"action":"boss_started","situation":"raid_boss","result":"ok"},{"action":"boss_action","situation":"raid_boss","result":"ok"},{"action":"validation_route_tank_boss","situation":"raid_boss","result":"ok"}]},{"bot_guid":2,"entries":[{"action":"validation_route_prerequisite","situation":"validation_route_prerequisite","result":"force_tank_focus"},{"action":"move_to_validation_route_assist_target","situation":"validation_route_prerequisite","result":"ok"},{"action":"validation_route_prerequisite","situation":"validation_route_prerequisite","result":"force_tank_focus"},{"action":"validation_route_prerequisite","situation":"validation_route_prerequisite","result":"force_tank_focus"},{"action":"validation_route_prerequisite","situation":"validation_route_prerequisite","result":"force_tank_focus"}]}]}
+TC> {"duration_minutes":1.3,"decisions":35,"total_kills":0,"quests_completed":0,"raid_boss_kills":0}
+"""
+    report = live_validation_report(output)
+
+    assert report["evidence"]["boss_kill_evidence"] == 0
+    assert report["evidence"]["boss_engagement_actions"] == 3
+    assert report["evidence"]["validation_route_prerequisite_repeats"] == 4
+    assert report["failure_reason"] == "boss_attempt_no_kill"
+    assert report["failure_labels"] == [
+        "boss_attempt_no_kill",
+        "validation_route_prerequisite_loop",
+        "no_progress_observed",
+    ]
 
 
 def test_live_bot_validation_uses_scenario_reports_for_dungeon_and_raid_gates(tmp_path):
@@ -1377,6 +1399,45 @@ def test_live_scenario_report_builder_labels_attached_scenario_reports_medium_qu
     assert stonecore["scenario_evidence_modes"] == ["attached_scenario_report"]
     assert stonecore["teacher_label_quality"] == "medium"
     assert stonecore["ml_training_label"] == "candidate_teacher_label"
+
+
+def test_live_scenario_report_builder_propagates_failed_teacher_labels(tmp_path):
+    scenario_dir = tmp_path / "validation_scenarios"
+    write_jsonl(
+        scenario_dir / "validation_scenarios.jsonl",
+        [{"scenario_id": "blackwing_descent_10n", "instance": "Blackwing Descent", "map_id": 669, "difficulty": "normal_10man", "provisioning_ready": True, "boss_count": 6}],
+    )
+    write_jsonl(
+        scenario_dir / "validation_routes.jsonl",
+        [{"scenario_id": "blackwing_descent_10n", "kind": "boss", "step": 8, "label": "Nefarian", "route_node_id": "bwd_nefarian"}],
+    )
+    live_report = {
+        "source_live_report": "nefarian_failed.json",
+        "validation_context": {
+            "scenario_id": "blackwing_descent_10n",
+            "segment_id": "08_nefarian",
+            "route_node_id": "bwd_nefarian",
+            "route_label": "Nefarian",
+            "route_kind": "boss",
+            "route_step": 8,
+            "mechanic_profile": "tank_swap_adds_raid_aoe",
+        },
+        "trace_entries": 8,
+        "trace": {"entries": [{"action": "boss_started"}, {"action": "boss_action"}, {"action": "validation_route_tank_boss"}]},
+        "summary": {"raid_boss_kills": 0},
+        "evidence": {"failures": 0},
+        "failure_labels": ["boss_attempt_no_kill", "no_progress_observed"],
+        "failure_reason": "boss_attempt_no_kill",
+        "stages": [{"stage": "raid_boss", "passed": False}],
+    }
+
+    bwd = build_live_scenario_reports(live_report, scenario_dir)["blackwing_descent_10n"]
+
+    assert bwd["boss_stage_passed"] is False
+    assert bwd["failure_labels"] == ["boss_attempt_no_kill", "no_progress_observed"]
+    assert bwd["failure_reason"] == "boss_attempt_no_kill"
+    assert bwd["ml_training_label"] == "failed_teacher_attempt"
+    assert bwd["segment_results"][0]["failure_labels"] == ["boss_attempt_no_kill", "no_progress_observed"]
 
 
 def test_live_scenario_report_builder_aggregates_segmented_raid_progress(tmp_path):
