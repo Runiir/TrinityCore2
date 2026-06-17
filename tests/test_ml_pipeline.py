@@ -33,6 +33,7 @@ from tools.bot_ml.build_validation_provisioning import apply_gear_profiles, buil
 from tools.bot_ml.validate_validation_provisioning import build_report as provisioning_verify_report
 from tools.bot_ml.validate_validation_provisioning import main as provisioning_verify_main
 from tools.bot_ml.validate_validation_provisioning import validate_database as validate_provisioning_database
+from tools.bot_ml.validate_data_quality import validate_rows as validate_data_quality_rows
 from ml.preprocessing.preprocess_frames import main as preprocess_main
 from ml.training.train_action_frequency import main as train_main
 from experiments.run_experiment import autonomous_metrics, dungeon_route_metrics, load_config, make_adapter, movement_metrics, profession_metrics, quest_metrics, run_experiment, solo_combat_metrics
@@ -417,6 +418,119 @@ def test_bot_ml_decision_builder_filters_bad_teacher_behavior_from_imitation():
     assert unresolved_rows[0]["imitate_teacher"] == 0
     assert unresolved_rows[0]["teacher_action_quality"] == "unverified_teacher_action"
     assert unresolved_rows[0]["failure_label"] == "no_future_outcome"
+
+
+def test_bot_ml_data_quality_enforces_traceability_and_teacher_contracts():
+    success_rows = build_rows(
+        {
+            "id": 1,
+            "run_id": 7,
+            "bot_guid": 99,
+            "brain_version": "utility_v1",
+            "candidate_actions_json": json.dumps([
+                {"activity": "quest", "score": 1.5},
+                {"activity": "grind", "score": 0.5},
+            ]),
+            "chosen_action_json": json.dumps({"activity": "quest", "activity_score": 1.5}),
+            "raw_state_json": "{}",
+            "semantic_state_json": "{}",
+            "outcome_json": "{}",
+        },
+        {
+            "action_success": 1.0,
+            "expected_reward": 8.0,
+            "death_risk": 0.0,
+            "stuck_risk": 0.0,
+            "quest_completion_likelihood": 1.0,
+            "event_ids_used_for_label": [10],
+            "label_window_json": json.dumps({"outcome": 180, "reward": 300}),
+            "label_reason": "positive_progress:quest_completed",
+            "time_to_outcome_sec": 12.0,
+            "no_future_events": False,
+            "ambiguous_label": False,
+        },
+        {},
+    )
+    failed_rows = build_rows(
+        {
+            "id": 2,
+            "run_id": 8,
+            "bot_guid": 99,
+            "brain_version": "utility_v1",
+            "candidate_actions_json": json.dumps([{"activity": "wait", "score": 0.1}]),
+            "chosen_action_json": json.dumps({"activity": "wait", "activity_score": 0.1}),
+            "raw_state_json": "{}",
+            "semantic_state_json": "{}",
+            "outcome_json": "{}",
+        },
+        {},
+        {},
+    )
+    for row in success_rows:
+        row["split"] = "train"
+    for row in failed_rows:
+        row["split"] = "eval"
+
+    report = validate_data_quality_rows(success_rows + failed_rows)
+
+    assert report["ok"] is True
+    assert report["decision_count"] == 2
+    assert report["chosen_rows"] == 2
+    assert report["imitable_teacher_rows"] == 1
+    assert report["filtered_teacher_rows"] == 1
+    assert report["failure_labels"] == {"no_future_outcome": 1}
+    assert all(value == 0 for value in report["contract_errors"].values())
+
+
+def test_bot_ml_data_quality_rejects_broken_candidate_and_filter_contracts():
+    rows = build_rows(
+        {
+            "id": 1,
+            "run_id": 7,
+            "bot_guid": 99,
+            "brain_version": "utility_v1",
+            "candidate_actions_json": json.dumps([
+                {"activity": "quest", "score": 1.5},
+                {"activity": "grind", "score": 0.5},
+            ]),
+            "chosen_action_json": json.dumps({"activity": "quest", "activity_score": 1.5}),
+            "raw_state_json": "{}",
+            "semantic_state_json": "{}",
+            "outcome_json": "{}",
+        },
+        {
+            "action_success": 1.0,
+            "expected_reward": 8.0,
+            "death_risk": 0.0,
+            "stuck_risk": 0.0,
+            "quest_completion_likelihood": 1.0,
+            "event_ids_used_for_label": [10],
+            "label_window_json": "{}",
+            "label_reason": "positive_progress:quest_completed",
+            "time_to_outcome_sec": 12.0,
+            "no_future_events": False,
+            "ambiguous_label": False,
+        },
+        {},
+    )
+    for row in rows:
+        row["split"] = "train"
+    rows[0]["trace"] = {}
+    rows[0]["candidate_count"] = 3
+    rows[0]["teacher_action_quality"] = "unsafe_teacher_action"
+    rows[0]["imitate_teacher"] = 0
+    rows[0]["imitation_weight"] = 0.0
+    rows[0]["failure_label"] = ""
+    rows[1]["action_success"] = 1.0
+
+    report = validate_data_quality_rows(rows)
+
+    assert report["ok"] is False
+    assert report["traceability_contract"]["missing_trace_fields"] == 1
+    assert report["decision_contract"]["candidate_count_mismatch"] == 1
+    assert report["decision_contract"]["unchosen_rows_with_nonzero_labels"] == 1
+    assert report["teacher_filter_contract"]["filtered_chosen_rows_without_failure_label"] == 1
+    assert report["leakage_contract"]["missing_eval_split"] is True
 
 
 def test_bot_ml_numeric_features_exclude_observed_outcome_leakage():
