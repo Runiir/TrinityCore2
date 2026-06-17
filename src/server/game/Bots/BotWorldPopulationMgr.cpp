@@ -958,6 +958,8 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
     _config.ValidationRouteActivationSummonY = sConfigMgr->GetFloatDefault("BotWorld.ValidationRoute.ActivationSummonY", _config.ValidationRouteActivationSummonY);
     _config.ValidationRouteActivationSummonZ = sConfigMgr->GetFloatDefault("BotWorld.ValidationRoute.ActivationSummonZ", _config.ValidationRouteActivationSummonZ);
     _config.ValidationRouteActivationSummonO = sConfigMgr->GetFloatDefault("BotWorld.ValidationRoute.ActivationSummonO", _config.ValidationRouteActivationSummonO);
+    _validationRouteActivationApplied = false;
+    _validationRouteActivationAttempts = 0;
     _config.AllowConfiguredCenterFallback = sConfigMgr->GetBoolDefault("BotWorld.AllowConfiguredCenterFallback", _config.AllowConfiguredCenterFallback);
     _config.UseSavedPosition = sConfigMgr->GetBoolDefault("BotWorld.UseSavedPosition", _config.UseSavedPosition);
     _config.NearPlayerRadius = sConfigMgr->GetFloatDefault("BotWorld.NearPlayerRadius", _config.NearPlayerRadius);
@@ -5270,8 +5272,15 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     };
     auto tryValidationRouteActivation = [this, &state, bot, &power, stage, activity](Unit* seenTarget, char const* reason) -> bool
     {
-        if ((!_config.ValidationRouteActivationDataId && !_config.ValidationRouteActivationSummonEntry) || state.ValidationRouteActivationApplied || !bot)
+        if ((!_config.ValidationRouteActivationDataId && !_config.ValidationRouteActivationSummonEntry) || !bot)
             return false;
+
+        if (_validationRouteActivationApplied)
+        {
+            state.ValidationRouteActivationApplied = true;
+            state.ValidationRouteActivationAttempts = _validationRouteActivationAttempts;
+            return false;
+        }
 
         InstanceMap* instanceMap = bot->GetMap() ? bot->GetMap()->ToInstanceMap() : nullptr;
         InstanceScript* instance = instanceMap ? instanceMap->GetInstanceScript() : nullptr;
@@ -5289,8 +5298,10 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 activationTarget = summon;
         }
 
+        _validationRouteActivationApplied = true;
+        ++_validationRouteActivationAttempts;
         state.ValidationRouteActivationApplied = true;
-        ++state.ValidationRouteActivationAttempts;
+        state.ValidationRouteActivationAttempts = _validationRouteActivationAttempts;
 
         std::string raw = BuildRawJson(bot, activationTarget);
         std::string semantic = BuildSemanticJson(bot, activationTarget, "validation_route_activation", &power, stage, activity);
@@ -5928,9 +5939,20 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     state.ValidationRouteUnresolvedFocusHoldCount = 0;
     state.TargetGuid = target->GetGUID();
     rememberValidationRouteFocus(target);
+    uint32 spellId = SelectCombatSpell(bot, target);
+    float engageRange = routeEngageRange(bot, target, spellId);
+    if (!bot->IsWithinDistInMap(target, std::max(5.0f, engageRange - 1.0f)) || !bot->IsWithinLOSInMap(target))
+    {
+        MoveBotToPoint(state, bot, target->GetPositionX(), target->GetPositionY(), target->GetPositionZ());
+        action = "move_to_validation_route_target";
+        std::string raw = BuildRawJson(bot, target);
+        std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, activity);
+        RecordEvent(state, bot, "validation_route_target_search", target, "approach_target", raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry);
+        return true;
+    }
+
     BotActionExecutor executor;
     BotActionResult pull = executor.Pull(bot, target);
-    uint32 spellId = SelectCombatSpell(bot, target);
     bool cast = spellId && TryCastCombatSpell(bot, target, spellId);
     action = _config.ValidationRouteKind == "boss"
         ? (std::string(GetDungeonRole(bot)) == "tank" ? "validation_route_tank_boss" : "validation_route_boss_action")

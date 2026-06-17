@@ -364,6 +364,12 @@ def test_quest_first_portfolio_routing_surface():
     assert "validation_route_prerequisite_no_progress" in mgr
     assert "validation_route_activation" in mgr
     assert "ValidationRouteActivationApplied" in mgr_header
+    assert "_validationRouteActivationApplied" in mgr_header
+    assert "_validationRouteActivationAttempts" in mgr_header
+    assert "_validationRouteActivationApplied = false;" in mgr
+    assert "if (_validationRouteActivationApplied)" in mgr
+    assert "state.ValidationRouteActivationAttempts = _validationRouteActivationAttempts;" in mgr
+    assert "_validationRouteActivationApplied = true;" in mgr
     assert "BotWorld.ValidationRoute.ActivationDataId" in mgr
     assert "BotWorld.ValidationRoute.ActivationSummonEntry" in mgr
     assert "activation_applied_no_visible_target" in mgr
@@ -379,6 +385,15 @@ def test_quest_first_portfolio_routing_surface():
     assert "SELECT role FROM character_bot_pool WHERE guid" in mgr
     assert 'poolRole.find("tank")' in mgr
     assert "if (routeProximity > 120.0f)" in mgr
+    assert_ordered(
+        function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteObjective"),
+        "target = routeTarget;",
+        "float engageRange = routeEngageRange(bot, target, spellId);",
+        "action = \"move_to_validation_route_target\";",
+        "RecordEvent(state, bot, \"validation_route_target_search\", target, \"approach_target\"",
+        "BotActionResult pull = executor.Pull(bot, target);",
+        "RecordEvent(state, bot, _config.ValidationRouteKind == \"boss\" ? \"boss_action\"",
+    )
     assert 'eventName.rfind("validation_route", 0) == 0' in mgr
     assert "state.LastDecisionHandler = \"smart_loot\";" in update_bot
     assert_ordered(

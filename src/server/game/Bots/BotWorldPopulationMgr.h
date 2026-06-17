@@ -884,6 +884,8 @@ private:
     float _validationRouteFocusY = 0.0f;
     float _validationRouteFocusZ = 0.0f;
     uint64 _validationRouteFocusSeenMs = 0;
+    bool _validationRouteActivationApplied = false;
+    uint32 _validationRouteActivationAttempts = 0;
     mutable std::map<uint32, std::string> _lastCombatMaskByBot;
     mutable std::map<uint32, std::string> _lastChosenCombatByBot;
     mutable std::map<uint32, std::string> _lastActionCategoryByBot;
