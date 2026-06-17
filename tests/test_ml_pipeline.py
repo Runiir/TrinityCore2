@@ -1649,6 +1649,38 @@ TC> {"duration_minutes":1.3,"decisions":35,"total_kills":0,"quests_completed":0,
     ]
 
 
+def test_live_bot_validation_counts_trash_route_action_as_progress_not_boss_failure():
+    output = """
+TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":12,"kills":0,"quests_accepted":0,"quest_objective_progress":0}
+TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"snapshot":{"decision":{"action":"validation_route_trash_action"},"movement":{"is_moving":false,"distance_moved_since_last_decision":0}}}]}
+TC> {"trace_schema_version":1,"selector":"all","bots":[{"bot_guid":1,"entries":[{"action":"validation_route_target_search","situation":"validation_route","result":"approach_target"},{"action":"trash_action","situation":"normal_dungeon_trash","result":"ok"},{"action":"validation_route_trash_action","situation":"normal_dungeon_trash","result":"ok"}]}]}
+TC> {"duration_minutes":1.0,"decisions":12,"total_kills":0,"quests_completed":0}
+"""
+    report = live_validation_report(output)
+
+    assert report["evidence"]["trash_action_evidence"] == 2
+    assert report["evidence"]["trash_pulls"] == 2
+    assert report["evidence"]["trash_route_actions"] == 2
+    assert "boss_attempt_no_kill" not in report["failure_labels"]
+    assert "no_progress_observed" not in report["failure_labels"]
+    assert report["failure_labels"] == []
+
+
+def test_live_bot_validation_labels_route_search_without_trash_engagement():
+    output = """
+TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":12,"kills":0,"quests_accepted":0,"quest_objective_progress":0}
+TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"snapshot":{"decision":{"action":"search_validation_route_target"},"movement":{"is_moving":false,"distance_moved_since_last_decision":0}}}]}
+TC> {"trace_schema_version":1,"selector":"all","bots":[{"bot_guid":1,"entries":[{"action":"validation_route_target_search","situation":"validation_route","result":"target_not_found"}]}]}
+TC> {"duration_minutes":1.0,"decisions":12,"total_kills":0,"quests_completed":0}
+"""
+    report = live_validation_report(output)
+
+    assert report["evidence"]["trash_action_evidence"] == 0
+    assert report["evidence"]["trash_route_actions"] == 0
+    assert report["failure_reason"] == "validation_route_no_engagement"
+    assert "no_progress_observed" in report["failure_labels"]
+
+
 def test_live_bot_validation_uses_scenario_reports_for_dungeon_and_raid_gates(tmp_path):
     output = """
 TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":4,"kills":0,"quests_accepted":0,"quest_objective_progress":0}

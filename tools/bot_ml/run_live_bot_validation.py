@@ -626,11 +626,23 @@ def live_evidence(status: dict[str, Any], diagnosis: dict[str, Any], trace: dict
         action_counts.get("boss_killed", 0),
         action_counts.get("raid_boss_killed", 0),
     )
+    trash_action_evidence = sum(
+        count
+        for action, count in action_counts.items()
+        if action in {"trash_action", "trash_heal", "validation_route_trash_action", "dungeon_trash_cleared", "raid_trash_cleared"}
+    )
+    trash_pulls = max(
+        int(summary.get("trash_pulls") or 0),
+        int(summary.get("trash_kills") or 0),
+        int(summary.get("trash_packs_cleared") or 0),
+        trash_action_evidence,
+    )
     kill_evidence = kills + teacher_assisted_kills
     gear_upgrades = max(int(status.get("gear_upgrades") or 0), int(summary.get("gear_upgrades") or 0))
     active_decision_evidence = decisions > 0 or non_spawn_trace_entries > 0 or moved_diagnoses > 0 or non_wait_diagnoses > 0
     validation_route_actions = sum(count for action, count in action_counts.items() if action.startswith("validation_route") or action.startswith("move_to_validation_route"))
     boss_engagement_actions = sum(action_counts.get(action, 0) for action in ["boss_started", "boss_action", "validation_route_tank_boss", "validation_route_group_heal"])
+    trash_route_actions = action_counts.get("trash_action", 0) + action_counts.get("validation_route_trash_action", 0)
     return {
         "decisions": decisions,
         "failures": failures,
@@ -647,12 +659,15 @@ def live_evidence(status: dict[str, Any], diagnosis: dict[str, Any], trace: dict
         "teacher_assisted_kills": teacher_assisted_kills,
         "kill_evidence": kill_evidence,
         "boss_kill_evidence": boss_kill_evidence,
+        "trash_action_evidence": trash_action_evidence,
+        "trash_pulls": trash_pulls,
         "gear_upgrades": gear_upgrades,
         "action_names": sorted(action_names),
         "action_counts": dict(sorted(action_counts.items())),
         "result_counts": dict(sorted(result_counts.items())),
         "validation_route_actions": validation_route_actions,
         "boss_engagement_actions": boss_engagement_actions,
+        "trash_route_actions": trash_route_actions,
         "validation_route_prerequisite_repeats": action_counts.get("validation_route_prerequisite", 0),
         "validation_route_activation_attempts": action_counts.get("validation_route_activation", 0),
         "validation_route_no_visible_target_activations": result_counts.get("activation_applied_no_visible_target", 0),
@@ -690,30 +705,35 @@ def validation_failure_labels(
         labels.append("missing_trace")
 
     boss_kills = int(evidence.get("boss_kill_evidence") or 0)
+    trash_evidence = int(evidence.get("trash_action_evidence") or 0) + int(evidence.get("trash_pulls") or 0)
     route_actions = int(evidence.get("validation_route_actions") or 0)
     boss_engagement = int(evidence.get("boss_engagement_actions") or 0)
+    trash_route_actions = int(evidence.get("trash_route_actions") or 0)
     activation_attempts = int(evidence.get("validation_route_activation_attempts") or 0)
     prerequisite_repeats = int(evidence.get("validation_route_prerequisite_repeats") or 0)
     no_visible_activations = int(evidence.get("validation_route_no_visible_target_activations") or 0)
     force_tank_focus = int(evidence.get("validation_route_force_tank_focus_repeats") or 0)
 
-    if route_actions > 0 and boss_kills <= 0:
+    if route_actions > 0 and boss_kills <= 0 and trash_route_actions <= 0:
         if boss_engagement > 0:
             labels.append("boss_attempt_no_kill")
         elif activation_attempts > 0:
             labels.append("validation_route_activation_no_engagement")
         else:
             labels.append("validation_route_no_engagement")
-    if route_actions > 0 and boss_kills <= 0 and prerequisite_repeats >= 4:
+    if route_actions > 0 and trash_route_actions > 0 and trash_evidence <= 0:
+        labels.append("trash_route_no_engagement")
+    if route_actions > 0 and boss_kills <= 0 and trash_route_actions <= 0 and prerequisite_repeats >= 4:
         labels.append("validation_route_prerequisite_loop")
-    if route_actions > 0 and boss_kills <= 0 and no_visible_activations >= 2 and boss_engagement <= 0:
+    if route_actions > 0 and boss_kills <= 0 and trash_route_actions <= 0 and no_visible_activations >= 2 and boss_engagement <= 0:
         labels.append("validation_route_activation_target_absent")
-    if route_actions > 0 and boss_kills <= 0 and force_tank_focus >= 4 and boss_engagement <= 0:
+    if route_actions > 0 and boss_kills <= 0 and trash_route_actions <= 0 and force_tank_focus >= 4 and boss_engagement <= 0:
         labels.append("validation_route_assist_focus_loop")
     if (
         active_bots > 0
         and int(evidence.get("decisions") or 0) > 0
         and int(evidence.get("kill_evidence") or 0) <= 0
+        and trash_evidence <= 0
         and int(evidence.get("quest_objective_progress") or 0) <= 0
         and int(evidence.get("quests_accepted") or 0) <= 0
         and int(evidence.get("gear_upgrades") or 0) <= 0
