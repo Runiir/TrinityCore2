@@ -116,6 +116,9 @@ def write_validation_config(base_config: Path, output_dir: Path, pool_tag: str =
     if pool_tag:
         text = upsert_trinity_config(text, "BotWorld.PoolTagFilter", f'"{pool_tag.replace(chr(34), "")}"')
     if route:
+        expected_bot_count = int(route.get("expected_bot_count") or 0)
+        if expected_bot_count > 0:
+            text = upsert_trinity_config(text, "BotWorld.TargetPopulation", str(expected_bot_count))
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.Enable", "1")
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.ScenarioId", f'"{str(route.get("scenario_id") or "").replace(chr(34), "")}"')
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.NodeId", f'"{str(route.get("route_node_id") or "").replace(chr(34), "")}"')

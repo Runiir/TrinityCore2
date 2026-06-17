@@ -84,6 +84,8 @@ def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any],
         route_steps = scenario.get("route") or []
         profiles = scenario.get("mechanic_profiles") or {}
         ready, missing = provisioning_ready(provisioned.get(provision_id), required_roles)
+        provisioned_roles = {str(k): int(v) for k, v in ((provisioned.get(provision_id) or {}).get("role_counts") or {}).items()}
+        expected_bot_count = sum(provisioned_roles.values()) or sum(required_roles.values())
         if not verification_ready:
             missing.append("provisioning_verifier_ready")
         invalid_route_steps = [
@@ -106,6 +108,7 @@ def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any],
             "difficulty": scenario.get("difficulty") or "",
             "provisioning_scenario_id": provision_id,
             "required_roles": required_roles,
+            "expected_bot_count": expected_bot_count,
             "provisioning_ready": bool(ready and verification_ready),
             "missing": sorted(set(missing)),
             "route_step_count": len(route_steps),
@@ -139,6 +142,7 @@ def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any],
                 "coordinate_missing_reason": coordinate_missing_reason,
             }
             route["route_node_id"] = stable_hash(route)[:16]
+            route["expected_bot_count"] = expected_bot_count
             route["activation_data_id"] = int(step.get("activation_data_id") or 0)
             route["activation_data_value"] = int(step.get("activation_data_value") or 0)
             route["activation_summon_entry"] = int(step.get("activation_summon_entry") or 0)

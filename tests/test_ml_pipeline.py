@@ -834,6 +834,8 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert scenarios["blackwing_descent_10n"]["provisioning_ready"] is True
     assert scenarios["stonecore_5n"]["route_coordinates_ready"] is True
     assert scenarios["blackwing_descent_10n"]["route_coordinates_ready"] is True
+    assert scenarios["stonecore_5n"]["expected_bot_count"] == 5
+    assert scenarios["blackwing_descent_10n"]["expected_bot_count"] == 10
     assert scenarios["stonecore_5n"]["boss_count"] == 4
     assert scenarios["blackwing_descent_10n"]["boss_count"] == 6
     assert any(row["scenario_id"] == "stonecore_5n" and row["kind"] == "trash" for row in routes)
@@ -844,6 +846,8 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert 48964 not in bwd_boss_entries
     atramedes = next(row for row in routes if row["scenario_id"] == "blackwing_descent_10n" and row["label"] == "Atramedes")
     nefarian = next(row for row in routes if row["scenario_id"] == "blackwing_descent_10n" and row["label"] == "Nefarian")
+    assert atramedes["expected_bot_count"] == 10
+    assert nefarian["expected_bot_count"] == 10
     assert atramedes["activation_data_id"] == 10
     assert nefarian["activation_data_id"] == 35
     assert nefarian["activation_summon_entry"] == 41376
@@ -1727,6 +1731,7 @@ def test_live_bot_validation_dry_run_writes_command_file(tmp_path, monkeypatch):
                 "z": 210.8483,
                 "o": 4.118977,
                 "source_entry": 41570,
+                "expected_bot_count": 10,
             }
         )
         + "\n",
@@ -1790,6 +1795,7 @@ def test_live_bot_validation_dry_run_writes_command_file(tmp_path, monkeypatch):
     generated_config = (tmp_path / "worldserver.validation.conf").read_text(encoding="utf-8")
     assert 'BotWorld.PoolTagFilter = "blackwing_descent_10n"' in generated_config
     assert "BotWorld.ValidationRoute.Enable = 1" in generated_config
+    assert "BotWorld.TargetPopulation = 10" in generated_config
     assert 'BotWorld.ValidationRoute.NodeId = "bwd_magmaw"' in generated_config
     assert "BotWorld.ValidationRoute.TargetEntry = 41570" in generated_config
     assert "BotProgression.AllowDungeons = 1" in generated_config
