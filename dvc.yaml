@@ -122,6 +122,8 @@ stages:
       --live-report
       dataset/live_validation_scenarios/blackwing_descent_10n/03_omnotron_defense_system/report.json
       --live-report
+      dataset/live_validation_scenarios/blackwing_descent_10n/04_laboratory_trash/report.json
+      --live-report
       dataset/live_validation_scenarios/blackwing_descent_10n/05_maloriak/report.json
       --live-report
       dataset/live_validation_scenarios/blackwing_descent_10n/06_atramedes/report.json
@@ -146,6 +148,7 @@ stages:
     - dataset/live_validation_scenarios/blackwing_descent_10n/01_entry_trash/report.json
     - dataset/live_validation_scenarios/blackwing_descent_10n/02_magmaw/report.json
     - dataset/live_validation_scenarios/blackwing_descent_10n/03_omnotron_defense_system/report.json
+    - dataset/live_validation_scenarios/blackwing_descent_10n/04_laboratory_trash/report.json
     - dataset/live_validation_scenarios/blackwing_descent_10n/05_maloriak/report.json
     - dataset/live_validation_scenarios/blackwing_descent_10n/06_atramedes/report.json
     - dataset/live_validation_scenarios/blackwing_descent_10n/07_chimaeron/report.json

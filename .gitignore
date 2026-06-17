@@ -52,6 +52,7 @@ __pycache__/
 !/dataset/live_validation_scenarios/blackwing_descent_10n/
 /dataset/live_validation_scenarios/blackwing_descent_10n/*
 !/dataset/live_validation_scenarios/blackwing_descent_10n/01_entry_trash.dvc
+!/dataset/live_validation_scenarios/blackwing_descent_10n/04_laboratory_trash.dvc
 /experiments/runs
 /dvclive
 /models

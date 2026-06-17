@@ -1666,6 +1666,21 @@ TC> {"duration_minutes":1.0,"decisions":12,"total_kills":0,"quests_completed":0}
     assert report["failure_labels"] == []
 
 
+def test_live_bot_validation_labels_stuck_heavy_trash_route_as_failure():
+    output = """
+TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":30,"kills":0,"quests_accepted":0,"quest_objective_progress":0,"stuck":12}
+TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"snapshot":{"decision":{"action":"validation_route_trash_action"},"movement":{"is_moving":false,"distance_moved_since_last_decision":0}}}]}
+TC> {"trace_schema_version":1,"selector":"all","bots":[{"bot_guid":1,"entries":[{"action":"trash_action","situation":"normal_dungeon_trash","result":"ok"},{"action":"validation_route_trash_action","situation":"normal_dungeon_trash","result":"ok"},{"action":"stuck_detected","situation":"stuck_detected","result":"repath"},{"action":"unstuck","situation":"stuck_recovery","result":"failed"},{"action":"stuck_detected","situation":"stuck_detected","result":"repath"},{"action":"unstuck","situation":"stuck_recovery","result":"failed"},{"action":"stuck_detected","situation":"stuck_detected","result":"repath"},{"action":"unstuck","situation":"stuck_recovery","result":"failed"}]}]}
+TC> {"duration_minutes":5.0,"decisions":30,"total_kills":0,"quests_completed":0,"stuck_events":12}
+"""
+    report = live_validation_report(output)
+
+    assert report["evidence"]["trash_action_evidence"] == 2
+    assert report["evidence"]["stuck_events"] >= 12
+    assert report["evidence"]["unstuck_failures"] == 3
+    assert "validation_route_stuck_loop" in report["failure_labels"]
+
+
 def test_live_bot_validation_labels_route_search_without_trash_engagement():
     output = """
 TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":12,"kills":0,"quests_accepted":0,"quest_objective_progress":0}
