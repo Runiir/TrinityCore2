@@ -1857,6 +1857,48 @@ def test_live_scenario_report_builder_aggregates_segmented_raid_progress(tmp_pat
     assert bwd["ml_training_label"] == "candidate_teacher_label"
 
 
+def test_live_scenario_report_builder_requires_trash_segment_coverage_for_full_clear(tmp_path):
+    scenario_dir = tmp_path / "validation_scenarios"
+    write_jsonl(
+        scenario_dir / "validation_scenarios.jsonl",
+        [{"scenario_id": "stonecore_5n", "instance": "The Stonecore", "map_id": 725, "difficulty": "normal_5man", "provisioning_ready": True, "boss_count": 1}],
+    )
+    write_jsonl(
+        scenario_dir / "validation_routes.jsonl",
+        [
+            {"scenario_id": "stonecore_5n", "kind": "trash", "step": 1, "label": "entrance packs", "route_node_id": "stonecore_trash_0"},
+            {"scenario_id": "stonecore_5n", "kind": "boss", "step": 2, "label": "Corborus", "route_node_id": "stonecore_boss_0"},
+        ],
+    )
+    boss_report = {
+        "source_live_report": "corborus.json",
+        "validation_context": {
+            "scenario_id": "stonecore_5n",
+            "segment_id": "02_corborus",
+            "route_node_id": "stonecore_boss_0",
+            "route_label": "Corborus",
+            "route_kind": "boss",
+            "route_step": 2,
+            "mechanic_profile": "burrow_adds_ground_danger",
+        },
+        "trace_entries": 1,
+        "trace": {"entries": [{"action": "boss_killed", "situation": "dungeon_boss"}]},
+        "summary": {"boss_kills": 1},
+        "evidence": {"failures": 0, "boss_kill_evidence": 1},
+        "stages": [{"stage": "dungeon_boss", "passed": True}],
+    }
+
+    stonecore = build_reports_from_live_reports([boss_report], scenario_dir)["stonecore_5n"]
+
+    assert stonecore["boss_kills"] == 1
+    assert stonecore["expected_segments"] == ["01_entrance_packs", "02_corborus"]
+    assert stonecore["source_segments"] == ["02_corborus"]
+    assert stonecore["missing_segments"] == ["01_entrance_packs"]
+    assert stonecore["complete_segment_coverage"] is False
+    assert stonecore["clear_complete"] is False
+    assert stonecore["teacher_label_quality"] == "medium"
+
+
 def test_live_scenario_report_builder_rejects_duplicate_segment_as_full_clear(tmp_path):
     scenario_dir = tmp_path / "validation_scenarios"
     write_jsonl(

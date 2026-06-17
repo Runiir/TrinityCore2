@@ -110,7 +110,7 @@ def segment_output_name(route: dict[str, Any]) -> str:
 
 
 def expected_segment_ids(routes: list[dict[str, Any]]) -> list[str]:
-    return [segment_output_name(route) for route in routes if route.get("kind") == "boss"]
+    return [segment_output_name(route) for route in routes if route.get("kind") in {"trash", "boss"}]
 
 
 def missing_segments(expected_segments: list[str], source_segments: list[str]) -> list[str]:
@@ -167,7 +167,7 @@ def infer_report(report: dict[str, Any], scenario: dict[str, Any], routes: list[
     expected_bosses = int(scenario.get("boss_count") or sum(1 for route in routes if route.get("kind") == "boss"))
     expected_segments = expected_segment_ids(routes)
     trash_actions = sum(1 for action in actions if action in {"trash_action", "trash_heal", "material_farming_source"} or "trash" in action)
-    trash_pulls = max(int(existing.get("trash_pulls") or 0), trash_actions)
+    trash_pulls = max(int(existing.get("trash_pulls") or 0), trash_actions, int(summary.get("trash_pulls") or 0), int(evidence.get("trash_pulls") or 0))
 
     full_clear_stage = "full_blackwing_descent_clear" if raid else "full_stonecore_clear"
     boss_stage = "raid_boss" if raid else "dungeon_boss"
@@ -177,7 +177,10 @@ def infer_report(report: dict[str, Any], scenario: dict[str, Any], routes: list[
     missing_segment_rows = missing_segments(expected_segments, source_segments)
     complete_segment_coverage = bool(expected_segments) and not missing_segment_rows
     segment_clear_ready = evidence_mode != "route_segment_context" or not expected_segments or complete_segment_coverage
+    segmented_evidence = evidence_mode == "route_segment_context" and bool(expected_segments)
     clear_complete = bool(existing.get("clear_complete")) or stage_passed(report, full_clear_stage) or (segment_clear_ready and expected_bosses > 0 and boss_kills >= expected_bosses and int(evidence.get("failures") or 0) == 0)
+    if segmented_evidence:
+        clear_complete = segment_clear_ready and expected_bosses > 0 and boss_kills >= expected_bosses and int(evidence.get("failures") or 0) == 0
 
     source_live_report = str(report.get("source_live_report") or "")
     segment_results = []
@@ -226,10 +229,10 @@ def infer_report(report: dict[str, Any], scenario: dict[str, Any], routes: list[
         "source_scenario_report_attached": bool(existing),
         "scenario_evidence_mode": evidence_mode,
         "scenario_evidence_modes": [evidence_mode],
-        "teacher_label_quality": teacher_label_quality(evidence_mode),
+        "teacher_label_quality": merged_teacher_label_quality([evidence_mode], complete_segment_coverage),
         "failure_labels": failure_labels,
         "failure_reason": failure_reason,
-        "ml_training_label": "failed_teacher_attempt" if failure_labels else ("candidate_teacher_label" if evidence_mode != "generic_live_trace_inference" else "weak_inferred_label"),
+        "ml_training_label": "failed_teacher_attempt" if failure_labels else ("candidate_teacher_label" if merged_teacher_label_quality([evidence_mode], complete_segment_coverage) in {"strong", "medium"} else "weak_inferred_label"),
         "source_trace_entries": int(report.get("trace_entries") or 0),
         "runtime_ml_control": "disabled_until_live_clear_validation_passes",
     }
