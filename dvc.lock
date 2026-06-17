@@ -146,13 +146,13 @@ stages:
     deps:
     - path: dataset/live_validation_scenario_reports_built
       hash: md5
-      md5: 6609a5f2b613a1c48ccef8b0cd2dd576.dir
-      size: 14707
+      md5: f4751e8bbdf8fe713882a1724a9486ef.dir
+      size: 15537
       nfiles: 3
     - path: dataset/validation_scenarios
       hash: md5
-      md5: 6234ca9607a41e05c0917758064d82f1.dir
-      size: 21466
+      md5: fcfd2c5bb889bd156a70d48f5776a106.dir
+      size: 21417
       nfiles: 5
     - path: dataset/world_planner
       hash: md5
@@ -170,8 +170,8 @@ stages:
     outs:
     - path: dataset/world_validation/planner_report.json
       hash: md5
-      md5: 7fe6765afe41391de5e2c6ddc0562a45
-      size: 27827
+      md5: 45ba326b4a36af5bbab6e43ad8ea21b3
+      size: 27781
   validation_provisioning:
     cmd: python -m tools.bot_ml.build_validation_provisioning --config
       experiments/configs/validation_provisioning_cata_001.json --gear-profiles
@@ -315,8 +315,8 @@ stages:
       size: 511
     - path: experiments/configs/validation_scenarios_cata_001.json
       hash: md5
-      md5: caf29ee5c0d204e549792dd6261c0471
-      size: 6646
+      md5: 5d44286203cb0701de789eab2559469c
+      size: 6597
     - path: tools/bot_ml/build_validation_scenario_manifests.py
       hash: md5
       md5: 0e7d03ab98f770d60b91da9ef1a6ae1b
@@ -328,8 +328,8 @@ stages:
     outs:
     - path: dataset/validation_scenarios
       hash: md5
-      md5: 6234ca9607a41e05c0917758064d82f1.dir
-      size: 21466
+      md5: fcfd2c5bb889bd156a70d48f5776a106.dir
+      size: 21417
       nfiles: 5
   live_scenario_reports:
     cmd: python -m tools.bot_ml.build_live_scenario_reports --live-report
@@ -344,6 +344,8 @@ stages:
       dataset/live_validation_scenarios/stonecore_5n/05_stonecore_sentry_gauntlet/report.json
       --live-report
       dataset/live_validation_scenarios/stonecore_5n/06_ozruk/report.json
+      --live-report
+      dataset/live_validation_scenarios/stonecore_5n/07_twilight_flayer_packs/report.json
       --live-report
       dataset/live_validation_scenarios/stonecore_5n/08_high_priestess_azil/report.json
       --live-report
@@ -421,14 +423,19 @@ stages:
       md5: dd372c3de5913aef193057f420129489
       size: 179869
     - path:
+        dataset/live_validation_scenarios/stonecore_5n/07_twilight_flayer_packs/report.json
+      hash: md5
+      md5: bb230bf83e2fa28105b62077bb41616e
+      size: 179783
+    - path:
         dataset/live_validation_scenarios/stonecore_5n/08_high_priestess_azil/report.json
       hash: md5
       md5: 472993a7d0776b60529758d8954221d3
       size: 180658
     - path: dataset/validation_scenarios
       hash: md5
-      md5: 6234ca9607a41e05c0917758064d82f1.dir
-      size: 21466
+      md5: fcfd2c5bb889bd156a70d48f5776a106.dir
+      size: 21417
       nfiles: 5
     - path: tools/bot_ml/build_live_scenario_reports.py
       hash: md5
@@ -445,8 +452,8 @@ stages:
     outs:
     - path: dataset/live_validation_scenario_reports_built
       hash: md5
-      md5: 6609a5f2b613a1c48ccef8b0cd2dd576.dir
-      size: 14707
+      md5: f4751e8bbdf8fe713882a1724a9486ef.dir
+      size: 15537
       nfiles: 3
   validation_run_plan:
     cmd: python -m tools.bot_ml.build_validation_run_plan
@@ -457,8 +464,8 @@ stages:
     deps:
     - path: dataset/validation_scenarios
       hash: md5
-      md5: 6234ca9607a41e05c0917758064d82f1.dir
-      size: 21466
+      md5: fcfd2c5bb889bd156a70d48f5776a106.dir
+      size: 21417
       nfiles: 5
     - path: tools/bot_ml/build_validation_run_plan.py
       hash: md5
@@ -471,7 +478,7 @@ stages:
     outs:
     - path: dataset/validation_run_plan
       hash: md5
-      md5: 1af813c77098232badf24523b7a5a6e6.dir
+      md5: 9ef0f12a17a5d368290cbda10376091a.dir
       size: 54121
       nfiles: 2
   live_validation_combined:
@@ -487,8 +494,8 @@ stages:
       size: 102801
     - path: dataset/live_validation_scenario_reports_built
       hash: md5
-      md5: 6609a5f2b613a1c48ccef8b0cd2dd576.dir
-      size: 14707
+      md5: f4751e8bbdf8fe713882a1724a9486ef.dir
+      size: 15537
       nfiles: 3
     - path: tools/bot_ml/run_live_bot_validation.py
       hash: md5
@@ -497,8 +504,8 @@ stages:
     outs:
     - path: dataset/live_validation_combined
       hash: md5
-      md5: e9a8b2b81702678bdea63f3e9c1215fd.dir
-      size: 221685
+      md5: 3d57ed5a945f9c519269869cfd6d839c.dir
+      size: 222354
       nfiles: 3
   validation_run_status:
     cmd: python -m tools.bot_ml.build_validation_run_status --run-plan
@@ -508,12 +515,12 @@ stages:
     deps:
     - path: dataset/live_validation_scenario_reports_built
       hash: md5
-      md5: 6609a5f2b613a1c48ccef8b0cd2dd576.dir
-      size: 14707
+      md5: f4751e8bbdf8fe713882a1724a9486ef.dir
+      size: 15537
       nfiles: 3
     - path: dataset/validation_run_plan/manifest.json
       hash: md5
-      md5: 7e28bb4fc12be046637d508be6789268
+      md5: 3cc0c68a8a017eea36940bc26b3a9b87
       size: 42043
     - path: tools/bot_ml/build_validation_run_status.py
       hash: md5
@@ -526,6 +533,6 @@ stages:
     outs:
     - path: dataset/validation_run_status
       hash: md5
-      md5: d2ac9340b0d0eca01a60cb9001d6a7ef.dir
-      size: 46200
+      md5: ec933ae9cd5074891ea3b7b716ddf20d.dir
+      size: 42945
       nfiles: 1
