@@ -295,6 +295,12 @@ private:
         bool ValidationRouteActivationApplied = false;
         uint32 ValidationRouteActivationAttempts = 0;
         uint32 ValidationRouteTargetSearchMissCount = 0;
+        bool ValidationRouteAnchorOverrideValid = false;
+        uint64 ValidationRouteAnchorOverrideUntilMs = 0;
+        float ValidationRouteAnchorOverrideX = 0.0f;
+        float ValidationRouteAnchorOverrideY = 0.0f;
+        float ValidationRouteAnchorOverrideZ = 0.0f;
+        std::string ValidationRouteAnchorOverrideReason;
         std::vector<SafePosition> SafePositions;
         std::map<uint64, uint64> DummyTargetCooldownUntilMs;
         std::map<std::string, uint64> AbilityObjectiveCooldownUntilMs;

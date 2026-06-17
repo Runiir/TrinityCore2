@@ -5181,14 +5181,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         return true;
     }
 
-    state.QuestRouteDestination.Valid = true;
-    state.QuestRouteDestination.MapId = _config.ValidationRouteMapId ? _config.ValidationRouteMapId : bot->GetMapId();
-    state.QuestRouteDestination.X = _config.ValidationRouteX;
-    state.QuestRouteDestination.Y = _config.ValidationRouteY;
-    state.QuestRouteDestination.Z = _config.ValidationRouteZ;
-    state.QuestRouteDestination.QuestId = 0;
-    state.QuestRouteDestination.Reason = "validation_route";
-
     auto routeEngageRange = [this](Player* engageBot, Unit* engageTarget, uint32 spellId) -> float
     {
         if (SpellInfo const* spellInfo = spellId ? sSpellMgr->GetSpellInfo(spellId) : nullptr)
@@ -5869,7 +5861,86 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         return true;
     };
 
-    float routeDistance = bot->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ);
+    uint32 routeAnchorMapId = _config.ValidationRouteMapId ? _config.ValidationRouteMapId : bot->GetMapId();
+    float routeAnchorX = _config.ValidationRouteX;
+    float routeAnchorY = _config.ValidationRouteY;
+    float routeAnchorZ = _config.ValidationRouteZ;
+    std::string routeAnchorReason = "validation_route";
+    uint64 routeNowMs = NowMs();
+    if (state.ValidationRouteAnchorOverrideValid && state.ValidationRouteAnchorOverrideUntilMs <= routeNowMs)
+    {
+        state.ValidationRouteAnchorOverrideValid = false;
+        state.ValidationRouteAnchorOverrideReason.clear();
+    }
+    float routeAnchorDanger = GetLocalDangerScore(state.Guid.GetCounter(), routeAnchorMapId, routeAnchorX, routeAnchorY, routeAnchorZ);
+    bool repeatedDeathNearRoute = state.LastDeathMapId == routeAnchorMapId
+        && Distance2d(state.LastDeathX, state.LastDeathY, _config.ValidationRouteX, _config.ValidationRouteY) <= 70.0f
+        && state.RecentDeathCount >= 2;
+    if (state.ValidationRouteAnchorOverrideValid)
+    {
+        routeAnchorX = state.ValidationRouteAnchorOverrideX;
+        routeAnchorY = state.ValidationRouteAnchorOverrideY;
+        routeAnchorZ = state.ValidationRouteAnchorOverrideZ;
+        routeAnchorReason = state.ValidationRouteAnchorOverrideReason.empty() ? "validation_route_safe_memory_override" : state.ValidationRouteAnchorOverrideReason;
+    }
+    else if (routeAnchorDanger >= 3.0f || repeatedDeathNearRoute)
+    {
+        PruneSafePositions(state, routeNowMs);
+
+        WorldBotState::SafePosition const* bestSafe = nullptr;
+        float bestSafeScore = std::numeric_limits<float>::max();
+        for (WorldBotState::SafePosition const& safe : state.SafePositions)
+        {
+            if (safe.MapId != routeAnchorMapId || safe.HpPct < 0.35f)
+                continue;
+
+            float safeRouteDistance = Distance2d(safe.X, safe.Y, _config.ValidationRouteX, _config.ValidationRouteY);
+            if (safeRouteDistance > 260.0f)
+                continue;
+
+            float safeDanger = GetLocalDangerScore(state.Guid.GetCounter(), routeAnchorMapId, safe.X, safe.Y, safe.Z);
+            if (safeDanger >= routeAnchorDanger && safeDanger >= 3.0f)
+                continue;
+
+            float botDistance = bot->GetExactDist(safe.X, safe.Y, safe.Z);
+            float score = safeDanger * 100.0f + safeRouteDistance * 0.20f + botDistance * 0.02f - safe.HpPct * 10.0f;
+            if (safeRouteDistance > 135.0f)
+                score += 80.0f;
+            if (!bestSafe || score < bestSafeScore)
+            {
+                bestSafe = &safe;
+                bestSafeScore = score;
+            }
+        }
+
+        if (bestSafe)
+        {
+            routeAnchorX = bestSafe->X;
+            routeAnchorY = bestSafe->Y;
+            routeAnchorZ = bestSafe->Z;
+            routeAnchorReason = repeatedDeathNearRoute ? "validation_route_safe_memory_after_death_loop" : "validation_route_safe_memory_after_danger";
+            state.ValidationRouteAnchorOverrideValid = true;
+            state.ValidationRouteAnchorOverrideUntilMs = routeNowMs + 120000;
+            state.ValidationRouteAnchorOverrideX = routeAnchorX;
+            state.ValidationRouteAnchorOverrideY = routeAnchorY;
+            state.ValidationRouteAnchorOverrideZ = routeAnchorZ;
+            state.ValidationRouteAnchorOverrideReason = routeAnchorReason;
+
+            std::string raw = BuildRawJson(bot, nullptr);
+            std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_recovery", &power, stage, activity);
+            RecordEvent(state, bot, "validation_route_recovery", nullptr, routeAnchorReason.c_str(), raw.c_str(), semantic.c_str(), routeAnchorDanger, _config.ValidationRouteTargetEntry);
+        }
+    }
+
+    state.QuestRouteDestination.Valid = true;
+    state.QuestRouteDestination.MapId = routeAnchorMapId;
+    state.QuestRouteDestination.X = routeAnchorX;
+    state.QuestRouteDestination.Y = routeAnchorY;
+    state.QuestRouteDestination.Z = routeAnchorZ;
+    state.QuestRouteDestination.QuestId = 0;
+    state.QuestRouteDestination.Reason = routeAnchorReason;
+
+    float routeDistance = bot->GetExactDist(routeAnchorX, routeAnchorY, routeAnchorZ);
     if (std::string(GetDungeonRole(bot)) == "tank")
     {
         if (Unit* tankTarget = routeUsableCombatTarget(target))
@@ -6222,10 +6293,10 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         || _config.ValidationRouteOpenerSummonEntry) ? 40.0f : 18.0f;
     if (routeDistance > routeArrivalRadius)
     {
-        MoveBotToPoint(state, bot, _config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ);
+        MoveBotToPoint(state, bot, routeAnchorX, routeAnchorY, routeAnchorZ);
         std::string raw = BuildRawJson(bot, nullptr);
         std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route", &power, stage, activity);
-        RecordEvent(state, bot, "validation_route_move", nullptr, _config.ValidationRouteLabel.c_str(), raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry);
+        RecordEvent(state, bot, "validation_route_move", nullptr, routeAnchorReason == "validation_route" ? _config.ValidationRouteLabel.c_str() : routeAnchorReason.c_str(), raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry);
         action = "move_to_validation_route";
         return true;
     }
