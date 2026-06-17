@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 from ml.evaluation.evaluate_action_frequency import main as evaluate_main
@@ -1678,6 +1679,38 @@ def test_live_bot_validation_process_mode_observes_before_diagnose_without_start
     assert "CMD .botauto status" in output
     assert "CMD .botauto diagnose all" in output
     assert "CMD server shutdown force 0" in output
+
+
+def test_live_bot_validation_boss_routes_default_to_long_observation_window(tmp_path, monkeypatch, capsys):
+    output_dir = tmp_path / "live_validation"
+    config = tmp_path / "worldserver.conf"
+    config.write_text("", encoding="utf-8")
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "run_live_bot_validation.py",
+            "--dry-run",
+            "--config",
+            str(config),
+            "--output-dir",
+            str(output_dir),
+            "--validation-route-kind",
+            "boss",
+            "--validation-scenario-id",
+            "stonecore_5n",
+            "--validation-segment-id",
+            "02_corborus",
+        ],
+    )
+
+    assert live_validation_main() == 0
+    capsys.readouterr()
+    report = json.loads((output_dir / "report.json").read_text(encoding="utf-8"))
+
+    assert report["timeout_sec"] == 900
+    assert report["observe_sec"] == 300
+    assert report["validation_context"]["route_kind"] == "boss"
 
 
 def test_live_bot_validation_requires_activity_evidence_for_smoke_gates():

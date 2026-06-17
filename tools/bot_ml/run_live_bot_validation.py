@@ -25,6 +25,11 @@ except ImportError:
     from extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
 
 
+DEFAULT_LIVE_VALIDATION_TIMEOUT_SEC = 90
+DEFAULT_BOSS_ROUTE_OBSERVE_SEC = 300
+DEFAULT_BOSS_ROUTE_TIMEOUT_SEC = 900
+
+
 DEFAULT_STAGES = [
     "movement_smoke",
     "kill_quest",
@@ -951,7 +956,7 @@ def main() -> int:
     parser.add_argument("--worldserver", type=Path, default=Path("build/src/server/worldserver/worldserver"))
     parser.add_argument("--config", type=Path, default=Path("trinity-worldserver-test.conf"))
     parser.add_argument("--output-dir", type=Path, default=Path("dataset/live_validation"))
-    parser.add_argument("--timeout-sec", type=int, default=90)
+    parser.add_argument("--timeout-sec", type=int, default=None, help="Overall command timeout. Defaults to 90 seconds for smoke checks and 900 seconds for boss-route validations.")
     parser.add_argument("--selector", default="all")
     parser.add_argument("--trace-limit", type=int, default=20)
     parser.add_argument("--no-start", action="store_true")
@@ -961,7 +966,7 @@ def main() -> int:
     parser.add_argument("--soap-url", default="http://127.0.0.1:7878/")
     parser.add_argument("--soap-user")
     parser.add_argument("--soap-password")
-    parser.add_argument("--observe-sec", type=int, default=0, help="Sleep after .botauto start before collecting diagnostics.")
+    parser.add_argument("--observe-sec", type=int, default=None, help="Sleep after .botauto start before collecting diagnostics. Defaults to 0 seconds for smoke checks and 300 seconds for boss-route validations.")
     parser.add_argument("--reset-bot-pool", action="store_true", help="Before validation, reset volatile state for enabled bot-pool rows matching --bot-pool-tag.")
     parser.add_argument("--bot-pool-tag", action="append", default=[], help="Experiment tag substring for --reset-bot-pool. Defaults to test_account when omitted.")
     parser.add_argument("--keep-bot-pool-position", action="store_true", help="Do not move reset bot-pool characters back to race/class start positions.")
@@ -982,6 +987,13 @@ def main() -> int:
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--input-log", type=Path)
     args = parser.parse_args()
+
+    if str(args.validation_route_kind or "").lower() == "boss":
+        args.timeout_sec = args.timeout_sec if args.timeout_sec is not None else DEFAULT_BOSS_ROUTE_TIMEOUT_SEC
+        args.observe_sec = args.observe_sec if args.observe_sec is not None else DEFAULT_BOSS_ROUTE_OBSERVE_SEC
+    else:
+        args.timeout_sec = args.timeout_sec if args.timeout_sec is not None else DEFAULT_LIVE_VALIDATION_TIMEOUT_SEC
+        args.observe_sec = args.observe_sec if args.observe_sec is not None else 0
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
     bot_pool_tags = args.bot_pool_tag or ["test_account"]

@@ -1,6 +1,6 @@
 # Bot Autonomy Audit
 
-Current date: 2026-06-16
+Current date: 2026-06-17
 
 ## Implemented
 
@@ -17,7 +17,7 @@ Current date: 2026-06-16
 ## Scaffold Or Partial
 
 - Quest autonomy supports nearby quest givers, accepting multiple hub quests, simple kill/collect/gameobject/spell objectives, turn-ins, basic chain detection, POI/objective routing, and geographic objective buckets. It is not yet a full world router.
-- Dungeon and raid logic exposes role assignment, mechanic telemetry, route labels, and generic mechanic responses, but full Stonecore and full Blackwing Descent clears are not implemented end to end.
+- Dungeon and raid logic exposes role assignment, mechanic telemetry, route labels, generic mechanic responses, and long-window segmented boss-route validation for Stonecore and Blackwing Descent. Full uninterrupted entrance-to-final-boss clears are still not proven end to end.
 - Profession logic is mostly policy/telemetry and cooking smoke coverage. Full profession recipe/material/trainer/vendor/drop/discovery/daily-cooldown planning is missing.
 - Combat action profiles are in C++ static tables, not external manifests/embeddings loaded from data. They cover core action categories but not complete 4.3.4 rotations, glyphs, gems, enchants, consumables, BiS manifests, or class/spec-specific encounter responses.
 - Smart loot has gear upgrade scoring and telemetry concepts, but group roll integration and full class/spec gear profiles are incomplete.
@@ -70,12 +70,12 @@ Current date: 2026-06-16
 - Applied generated `dataset/validation_provisioning/provision_accounts.sql` and `provision_characters.sql` to the configured local auth/characters DB. `pixi run bot-validation-provisioning-verify --check-db --require-applied` now passes with 15/15 validation accounts and 15/15 validation characters present.
 - A first SOAP live-validation attempt against the already-running worldserver proved SOAP access and parsed `.botauto status`, but showed that process was stale and lacked `.botauto diagnose`/`.botauto trace`.
 - Stopped the stale worldserver through SOAP, reran live validation against the current binary, then added stricter live gate evidence so spawn-only traces and idle diagnoses no longer pass smoke gates.
-- Ran an observed SOAP validation window with `--observe-sec 45` and checkpointed the parsed report with DVC at `artifacts/live_validation.dvc`.
+- Ran an observed SOAP validation window with `--observe-sec 45` and checkpointed the parsed report with DVC at `artifacts/live_validation.dvc`. This short window is a smoke diagnostic only; boss-route validation must use the generated run-plan budget or equivalent `--observe-sec 300 --timeout-sec 900`.
 - The current observed live report shows 5 active autonomy bots, 5 machine-readable diagnoses, 7 trace entries, non-spawn actions `vendor_repair_train`, `travel_to_quest_hub`, and `use_quest_object`, plus no live command errors. The stricter staged report passes 3/15 gates (`movement_smoke`, `trainer_visit`, `vendor_repair`). It still fails kill, quest progress, quest hub batching, profession recipe, material farming, smart loot, Stonecore, and Blackwing Descent gates because those outcomes are not yet proven by live telemetry.
 - `pixi run dvc status`: only pre-existing `capture`/`preprocess` drift remains for `dataset/raw`, `experiments/runs`, and `dvclive`.
 - `pixi run dvc push`: attempted after artifact generation, but failed because the configured endpoint `http://192.168.111.161:9000/artifacts/trinity-cata` was unreachable.
-- The offline validator is expected to fail full Stonecore and Blackwing Descent gates until route/mechanic manifests and live clear reports are implemented.
-- The live validation harness is available and now produces a partial live autonomy report, but not a passing end-to-end dungeon/raid validation report.
+- Long-window segmented boss-route validation now has DVC-managed strong teacher evidence for all Stonecore and Blackwing Descent boss segments, and the built scenario reports pass both scenario-level boss/full-clear gates. This proves scripted boss-route coverage, not yet a natural uninterrupted clear from entrance to completion.
+- The live validation harness is available and now produces partial live autonomy reports plus prepared dungeon/raid boss-route reports, but broader questing, profession, loot, and natural full-clear autonomy still need stronger live evidence.
 
 ## Next Implementation Order
 
