@@ -189,7 +189,7 @@ public:
     std::string GetStatusJson() const;
     std::string GetSummaryJson() const;
     std::string GetBotDebugJson(std::string const& selector) const;
-    std::string GetBotDiagnosisJson(std::string const& selector) const;
+    std::string GetBotDiagnosisJson(std::string const& selector);
     std::string GetBotTraceJson(std::string const& selector, uint32 limit) const;
     bool IsActive() const { return _active; }
     std::string Replay(std::string const& replayType, std::string const& selector, std::string const& brainVersion = "");
@@ -737,6 +737,7 @@ private:
     void PersistBotPosition(Player* bot) const;
     void RecordSpawnResolved(WorldBotState& state, Player* bot, SpawnPlacement const& placement, char const* result);
     void UpdateBot(WorldBotState& state, uint32 diff);
+    bool TryReattachValidationBot(WorldBotState& state, Player* bot, char const* context);
     void RememberSafePosition(WorldBotState& state, Player* bot, uint32 diff);
     void PruneSafePositions(WorldBotState& state, uint64 nowMs) const;
     void RememberVisiblePois(WorldBotState& state, Player* bot, uint32 diff);
@@ -830,6 +831,7 @@ private:
     void RecordReplayEvent(WorldBotState const& state, Player* bot, char const* eventType, ReplayRecord const& record, char const* result, char const* contextJson = nullptr);
     void RecordActivityStart(WorldBotState& state, Player* bot);
     void RecordActivityStop(WorldBotState const& state, Player* bot = nullptr);
+    void EnsureValidationCohortGroup();
     bool TrySmartGearDecision(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, std::string& situation, std::string& action);
     bool TryProfessionMemoryAction(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, std::string& situation, std::string& action);
     void RecordGearEvaluation(WorldBotState& state, Player* bot, BotGearUpgradeEvaluation const& evaluation, char const* rawJson, char const* semanticJson);

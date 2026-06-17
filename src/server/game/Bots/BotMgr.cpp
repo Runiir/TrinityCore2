@@ -218,6 +218,34 @@ Player* BotMgr::SpawnWorldBot(std::string const& role, std::string const& select
     return bot;
 }
 
+Player* BotMgr::SpawnWorldBotInGroup(Player* groupAnchor, std::string const& role, std::string const& selector, uint32 mapId, float x, float y, float z, float o)
+{
+    if (!groupAnchor || !groupAnchor->GetGroup())
+        return SpawnWorldBot(role, selector, mapId, x, y, z, o);
+
+    if (!sConfigMgr->GetBoolDefault("PlayerBot.Enable", false))
+        return nullptr;
+
+    std::string normalizedRole = NormalizeBotRole(role);
+    if (!IsKnownBotRole(normalizedRole) && !IsMixedBotRoleSelector(normalizedRole))
+        return nullptr;
+
+    BotSpawnPlacement placement = { mapId, x, y, z, o };
+    Player* bot = LoadBotFromPool(nullptr, normalizedRole, selector, &placement, groupAnchor);
+    if (!bot)
+        return nullptr;
+
+    ObjectGuid botGuid = bot->GetGUID();
+    bot->CombatStop(true);
+    bot->CastStop();
+    bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+    bot->GetMotionMaster()->MoveIdle();
+    _worldBots.insert(botGuid);
+    TC_LOG_INFO("server", "PlayerBot world grouped spawn complete bot=%s name=%s leader=%s map=%u instance=%u position=%f,%f,%f",
+        botGuid.ToString().c_str(), bot->GetName().c_str(), groupAnchor->GetGUID().ToString().c_str(), bot->GetMapId(), bot->GetInstanceId(), x, y, z);
+    return bot;
+}
+
 Player* BotMgr::SpawnWorldBotAtSavedPosition(std::string const& role, std::string const& selector)
 {
     if (!sConfigMgr->GetBoolDefault("PlayerBot.Enable", false))
@@ -925,7 +953,7 @@ bool BotMgr::IsTrackedPartyMember(ObjectGuid botGuid, ObjectGuid unitGuid) const
     return owner->GetGroup()->IsMember(unitGuid);
 }
 
-Player* BotMgr::LoadBotFromPool(Player* owner, std::string const& role, std::string const& selector, BotSpawnPlacement const* placement)
+Player* BotMgr::LoadBotFromPool(Player* owner, std::string const& role, std::string const& selector, BotSpawnPlacement const* placement, Player* groupAnchor)
 {
     std::string normalizedRole = NormalizeBotRole(role);
     bool mixedRole = IsMixedBotRoleSelector(normalizedRole);
@@ -961,7 +989,7 @@ Player* BotMgr::LoadBotFromPool(Player* owner, std::string const& role, std::str
     BotRole botRole = ParseBotRole(selectedRole);
     TC_LOG_INFO("server", "PlayerBot load selected bot=%s account=%u role=%s", botGuid.ToString().c_str(), accountId, selectedRole.c_str());
 
-    Player* bot = LoadCharacterAsBotSession(botGuid, accountId, owner, placement);
+    Player* bot = LoadCharacterAsBotSession(botGuid, accountId, owner, placement, groupAnchor);
     if (!bot)
         return nullptr;
 
@@ -976,7 +1004,7 @@ Player* BotMgr::LoadBotFromPool(Player* owner, std::string const& role, std::str
     return bot;
 }
 
-Player* BotMgr::LoadCharacterAsBotSession(ObjectGuid guid, uint32 accountId, Player* nearPlayer, BotSpawnPlacement const* placement)
+Player* BotMgr::LoadCharacterAsBotSession(ObjectGuid guid, uint32 accountId, Player* nearPlayer, BotSpawnPlacement const* placement, Player* groupAnchor)
 {
     uint8 expansion = nearPlayer && nearPlayer->GetSession() ? nearPlayer->GetSession()->GetExpansion() : uint8(sWorld->getIntConfig(CONFIG_EXPANSION));
     LocaleConstant locale = nearPlayer && nearPlayer->GetSession() ? nearPlayer->GetSession()->GetSessionDbcLocale() : LOCALE_enUS;
@@ -1000,6 +1028,23 @@ Player* BotMgr::LoadCharacterAsBotSession(ObjectGuid guid, uint32 accountId, Pla
     }
     TC_LOG_INFO("server", "PlayerBot load_from_db complete character=%s name=%s", guid.ToString().c_str(), bot->GetName().c_str());
 
+    bot->GetMotionMaster()->Initialize();
+    bot->SetFullHealth();
+    bot->SetFullPower(POWER_MANA);
+    session->SetPlayer(bot);
+
+    Group* prejoinedGroup = groupAnchor ? groupAnchor->GetGroup() : nullptr;
+    if (prejoinedGroup && !bot->GetGroup())
+    {
+        if (!prejoinedGroup->AddMember(bot))
+        {
+            TC_LOG_ERROR("server", "PlayerBot load failed character=%s stage=prejoin_group group=%s", guid.ToString().c_str(), prejoinedGroup->GetGUID().ToString().c_str());
+            session->SetPlayer(nullptr);
+            delete bot;
+            return nullptr;
+        }
+    }
+
     if (placement)
     {
         if (bot->FindMap())
@@ -1019,14 +1064,11 @@ Player* BotMgr::LoadCharacterAsBotSession(ObjectGuid guid, uint32 accountId, Pla
     else if (!bot->FindMap())
         bot->SetMap(sMapMgr->CreateMap(bot->GetMapId(), bot));
 
-    bot->GetMotionMaster()->Initialize();
-    bot->SetFullHealth();
-    bot->SetFullPower(POWER_MANA);
-    session->SetPlayer(bot);
-
     if (!bot->GetMap() || !bot->GetMap()->AddPlayerToMap(bot))
     {
         TC_LOG_ERROR("server", "PlayerBot load failed character=%s stage=add_player_to_map map=%u", guid.ToString().c_str(), bot->GetMapId());
+        if (prejoinedGroup && bot->GetGroup() == prejoinedGroup)
+            prejoinedGroup->RemoveMember(bot->GetGUID());
         session->SetPlayer(nullptr);
         delete bot;
         return nullptr;

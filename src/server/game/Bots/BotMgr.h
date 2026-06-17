@@ -23,6 +23,7 @@ public:
     void Update(uint32 diff);
     Player* Spawn(Player* owner, std::string const& role, std::string const& selector);
     Player* SpawnWorldBot(std::string const& role, std::string const& selector, uint32 mapId, float x, float y, float z, float o);
+    Player* SpawnWorldBotInGroup(Player* groupAnchor, std::string const& role, std::string const& selector, uint32 mapId, float x, float y, float z, float o);
     Player* SpawnWorldBotAtSavedPosition(std::string const& role, std::string const& selector);
     Player* SpawnHolyPaladin(Player* owner, std::string const& selector);
     Player* GetOrLoadHeadlessOwner(std::string const& selector);
@@ -73,8 +74,8 @@ private:
         float O;
     };
 
-    Player* LoadBotFromPool(Player* owner, std::string const& role, std::string const& selector, BotSpawnPlacement const* placement = nullptr);
-    Player* LoadCharacterAsBotSession(ObjectGuid guid, uint32 accountId, Player* nearPlayer, BotSpawnPlacement const* placement = nullptr);
+    Player* LoadBotFromPool(Player* owner, std::string const& role, std::string const& selector, BotSpawnPlacement const* placement = nullptr, Player* groupAnchor = nullptr);
+    Player* LoadCharacterAsBotSession(ObjectGuid guid, uint32 accountId, Player* nearPlayer, BotSpawnPlacement const* placement = nullptr, Player* groupAnchor = nullptr);
     bool AddToOwnerGroup(Player* owner, Player* bot, BotRole role);
     void CleanupBot(ObjectGuid botGuid, bool logoutPlayer);
     void SetBotCharacterOnline(ObjectGuid botGuid, bool online);

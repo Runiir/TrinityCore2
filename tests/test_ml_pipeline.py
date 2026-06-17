@@ -27,7 +27,7 @@ from tools.bot_ml.build_validation_scenario_manifests import build_manifests as 
 from tools.bot_ml.build_live_scenario_reports import build_reports as build_live_scenario_reports, build_reports_from_live_reports, main as live_scenario_reports_main
 from tools.bot_ml.build_validation_run_plan import build_plan as build_validation_run_plan
 from tools.bot_ml.build_validation_run_status import build_status as build_validation_run_status
-from tools.bot_ml.run_live_bot_validation import build_bot_pool_reset_sql, command_script, live_validation_report, load_scenario_reports, main as live_validation_main, parse_json_objects, parse_soap_result, run_worldserver, split_sql_statements, trinity_config_bool
+from tools.bot_ml.run_live_bot_validation import build_bot_pool_reset_sql, command_script, live_validation_report, load_scenario_reports, main as live_validation_main, parse_json_objects, parse_soap_result, run_worldserver, split_sql_statements, trinity_config_bool, upsert_trinity_config
 from tools.bot_ml.build_validation_gear_profiles import SHIELD_CLASSES, build_gem_catalog, build_profiles, build_report, fetch_items, load_gem_properties, load_spell_item_enchantments
 from tools.bot_ml.build_validation_provisioning import apply_gear_profiles, build_account_insert_sql, main as provisioning_main, scenario_report, srp6_registration_data
 from tools.bot_ml.validate_validation_provisioning import build_report as provisioning_verify_report
@@ -1579,6 +1579,7 @@ def test_live_bot_validation_command_script_and_output_parser():
     ]
 
     output = """
+TC> {"active_bots":0,"target_bots":2,"action":"botauto_status","decisions":0,"kills":0,"quests_accepted":0,"quest_objective_progress":0}
 TC> {"active_bots":2,"target_bots":2,"action":"botauto_status","decisions":3,"kills":1,"quests_accepted":2,"quest_objective_progress":1}
 TC> {"diagnosis_schema_version":"bot_diagnosis_v1","diagnoses":[{"bot_guid":1},{"bot_guid":2}]}
 TC> {"trace_schema_version":"bot_trace_v1","entries":[{"action":"move"},{"action":"accept_hub_quests"},{"action":"quest"}]}
@@ -1590,7 +1591,7 @@ There is no such subcommand
     report = live_validation_report(output, returncode=0, timed_out=False, command=["worldserver"])
     gates = {stage["stage"]: stage for stage in report["stages"]}
 
-    assert len(payloads) == 4
+    assert len(payloads) == 5
     assert report["active_bots"] == 2
     assert report["target_bots"] == 2
     assert report["diagnosis_count"] == 2
@@ -2180,6 +2181,19 @@ TC> {"duration_minutes":0,"decisions":0,"total_kills":0,"quests_completed":0}
     assert "quest_progress_evidence" in gates["collect_quest"]["missing"]
 
 
+def test_live_bot_validation_labels_route_death_loop():
+    output = """
+TC> {"active_bots":10,"target_bots":10,"decisions":20,"deaths":12}
+TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"diagnosis":{"diagnosis_code":"dead_recovery","severity":"warning"},"snapshot":{"decision":{"action":"validation_route_hold_anchor"},"movement":{"is_moving":false,"distance_moved_since_last_decision":0}}}]}
+TC> {"trace_schema_version":1,"entries":[{"action":"validation_route_regroup"},{"action":"death"},{"action":"repeated_death"},{"action":"repeated_death"},{"action":"repeated_death"}]}
+TC> {"duration_minutes":5,"decisions":20,"total_kills":0,"total_deaths":12}
+"""
+    report = live_validation_report(output)
+
+    assert "validation_route_death_loop" in report["failure_labels"]
+    assert report["evidence"]["action_counts"]["repeated_death"] == 3
+
+
 def test_live_bot_validation_counts_multi_bot_trace_entries():
     output = """
 TC> {"active_bots":2,"target_bots":2,"decisions":0,"quests_accepted":0,"quest_objective_progress":0}
@@ -2297,6 +2311,16 @@ def test_live_bot_validation_dry_run_writes_command_file(tmp_path, monkeypatch):
     assert "BotProgression.AllowDungeons = 1" in generated_config
 
 
+def test_upsert_trinity_config_normalizes_literal_newline_fragments():
+    text = 'BotWorld.DeathRecoveryMode = "safe_local"\\nBotWorld.RespawnMode = "safe_local"\n'
+
+    generated = upsert_trinity_config(text, "BotWorld.ValidationRoute.Enable", "1")
+
+    assert "\\n" not in generated
+    assert 'BotWorld.DeathRecoveryMode = "safe_local"\nBotWorld.RespawnMode = "safe_local"' in generated
+    assert "BotWorld.ValidationRoute.Enable = 1" in generated
+
+
 def test_live_bot_validation_force_start_overrides_config_autostart(tmp_path, monkeypatch):
     monkeypatch.setattr(
         "sys.argv",
@@ -2333,6 +2357,10 @@ def test_live_bot_validation_bot_pool_reset_sql_is_scoped_to_tags():
 
     assert "p.`experiment_tags` LIKE '%test_account%'" in sql
     assert "JOIN `world`.`playercreateinfo`" in sql
+    assert "DELETE FROM `characters`.`character_instance`" in sql
+    assert "DELETE gi FROM `characters`.`group_instance`" in sql
+    assert "DELETE gm FROM `characters`.`group_member`" in sql
+    assert "DELETE g FROM `characters`.`groups`" in sql
     assert "DELETE FROM `characters`.`character_queststatus`" in sql
     assert "DELETE FROM `characters`.`bot_memory_failed_paths`" in sql
     assert "bot_semantic_outcome_stats" not in sql

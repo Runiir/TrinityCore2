@@ -104,6 +104,7 @@ def load_validation_route(scenario_dir: Path, context: dict[str, Any]) -> dict[s
 
 
 def upsert_trinity_config(text: str, key: str, value: str) -> str:
+    text = text.replace("\\n", "\n")
     line = f"{key} = {value}"
     pattern = re.compile(rf"^(?P<prefix>\s*{re.escape(key)}\s*=\s*).*$", re.MULTILINE)
     if pattern.search(text):
@@ -217,6 +218,16 @@ def build_bot_pool_reset_sql(tags: list[str] | None = None, world_database: str 
         "-- Resets only enabled bot-pool rows matching the configured experiment_tags predicate.",
         "UPDATE `characters`.`character_bot_pool` p SET p.`in_use` = 0 WHERE p.`enabled` = 1 AND " + predicate + ";",
         "UPDATE `characters`.`characters` c JOIN `characters`.`character_bot_pool` p ON p.`guid` = c.`guid` SET c.`online` = 0 WHERE p.`enabled` = 1 AND " + predicate + ";",
+        f"DELETE FROM `characters`.`character_instance` WHERE `guid` IN ({guid_select});",
+        "DELETE gi FROM `characters`.`group_instance` gi "
+        "JOIN `characters`.`groups` g ON g.`guid` = gi.`guid` "
+        f"WHERE g.`leaderGuid` IN ({guid_select}) "
+        f"OR g.`guid` IN (SELECT gm.`guid` FROM `characters`.`group_member` gm WHERE gm.`memberGuid` IN ({guid_select}));",
+        "DELETE gm FROM `characters`.`group_member` gm "
+        f"WHERE gm.`memberGuid` IN ({guid_select}) "
+        f"OR gm.`guid` IN (SELECT g.`guid` FROM `characters`.`groups` g WHERE g.`leaderGuid` IN ({guid_select}));",
+        "DELETE g FROM `characters`.`groups` g "
+        f"WHERE g.`leaderGuid` IN ({guid_select});",
     ]
     if reset_positions:
         lines.append(
@@ -397,10 +408,10 @@ def parse_json_objects(output: str) -> list[dict[str, Any]]:
 
 
 def classify_payloads(payloads: list[dict[str, Any]]) -> dict[str, Any]:
-    status = next((row for row in payloads if row.get("action") in {"botexp_status", "botauto_status"} or {"active", "active_bots", "target_bots"} & set(row)), {})
-    diagnosis = next((row for row in payloads if row.get("diagnosis_schema_version") or row.get("diagnoses") or row.get("diagnosis")), {})
-    trace = next((row for row in payloads if row.get("trace_schema_version") or row.get("entries")), {})
-    summary = next((row for row in payloads if row.get("summary_schema_version") or "duration_minutes" in row or "total_kills" in row or "bot_learning" in row), {})
+    status = next((row for row in reversed(payloads) if row.get("action") in {"botexp_status", "botauto_status"} or {"active", "active_bots", "target_bots"} & set(row)), {})
+    diagnosis = next((row for row in reversed(payloads) if row.get("diagnosis_schema_version") or row.get("diagnoses") or row.get("diagnosis")), {})
+    trace = next((row for row in reversed(payloads) if row.get("trace_schema_version") or row.get("entries")), {})
+    summary = next((row for row in reversed(payloads) if row.get("summary_schema_version") or "duration_minutes" in row or "total_kills" in row or "bot_learning" in row), {})
     return {"status": status, "diagnosis": diagnosis, "trace": trace, "summary": summary}
 
 
@@ -794,6 +805,9 @@ def validation_failure_labels(
     stuck_events = int(evidence.get("stuck_events") or 0)
     unstuck_failures = int(evidence.get("unstuck_failures") or 0)
     repath_events = int(evidence.get("repath_events") or 0)
+    action_counts = evidence.get("action_counts") if isinstance(evidence.get("action_counts"), dict) else {}
+    repeated_deaths = int(action_counts.get("repeated_death") or 0)
+    deaths = max(int(evidence.get("deaths") or 0), int(action_counts.get("death") or 0))
     bot_not_loaded_diagnoses = int(evidence.get("bot_not_loaded_diagnoses") or 0)
     error_diagnoses = int(evidence.get("error_diagnoses") or 0)
 
@@ -819,6 +833,8 @@ def validation_failure_labels(
         labels.append("validation_route_assist_focus_loop")
     if route_actions > 0 and (stuck_events >= max(8, active_bots) or unstuck_failures >= 3 or repath_events >= max(8, active_bots)):
         labels.append("validation_route_stuck_loop")
+    if route_actions > 0 and (repeated_deaths >= 3 or deaths >= max(8, active_bots)):
+        labels.append("validation_route_death_loop")
     if (
         active_bots > 0
         and int(evidence.get("decisions") or 0) > 0
