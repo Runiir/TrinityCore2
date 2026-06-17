@@ -353,6 +353,15 @@ def test_quest_first_portfolio_routing_surface():
     assert "hold_last_known_tank_focus" in mgr
     assert "follow_anchor_last_known_tank_focus" in mgr
     assert "validation_route_hold_focus" in mgr
+    assert "ValidationRouteUnresolvedFocusHoldCount" in mgr_header
+    assert "ValidationRouteCombatNoProgressCount" in mgr_header
+    assert "stale_focus_expired" in mgr
+    assert "validation_route_recover_stale_focus" in mgr
+    assert "validation_route_teacher_assist" in mgr
+    assert "validation_route_prerequisite_no_progress" in mgr
+    assert "blocker_path_no_progress" in mgr
+    assert "Unit::DealDamage(bot, prerequisiteTarget, damage" in mgr
+    assert "_validationRouteFocusGuid.Clear();" in mgr
     assert "state.QuestWork.SelectedTargetGuid.Clear();" in mgr
     assert "regroup_tank_focus_mismatch" in mgr
     assert "follow_anchor_tank_focus_mismatch" in mgr

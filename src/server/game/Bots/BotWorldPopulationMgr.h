@@ -271,6 +271,10 @@ private:
         uint32 RecentDeathCount = 0;
         ObjectGuid TargetGuid;
         bool WasInCombat = false;
+        uint32 ValidationRouteUnresolvedFocusHoldCount = 0;
+        ObjectGuid ValidationRouteCombatProgressTargetGuid;
+        float ValidationRouteCombatBestHealthPct = 1.0f;
+        uint32 ValidationRouteCombatNoProgressCount = 0;
         std::vector<SafePosition> SafePositions;
         std::map<uint64, uint64> DummyTargetCooldownUntilMs;
         std::map<std::string, uint64> AbilityObjectiveCooldownUntilMs;

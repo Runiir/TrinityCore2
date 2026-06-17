@@ -5087,6 +5087,48 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         float routeProximity = candidate->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ);
         return routeProximity <= 120.0f ? candidate : nullptr;
     };
+    auto maybeValidationPrerequisiteNoProgressAssist = [this, &state, bot, &power, stage, activity](Unit* prerequisiteTarget, char const* context) -> bool
+    {
+        if (!prerequisiteTarget || !prerequisiteTarget->IsAlive() || !bot || !bot->IsValidAttackTarget(prerequisiteTarget))
+            return false;
+
+        Creature* creature = prerequisiteTarget->ToCreature();
+        if (!creature || creature->IsDungeonBoss() || creature->isWorldBoss())
+            return false;
+
+        float routeProximity = prerequisiteTarget->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ);
+        if (routeProximity > 120.0f)
+            return false;
+
+        float healthPct = UnitHealthPct(prerequisiteTarget);
+        if (state.ValidationRouteCombatProgressTargetGuid != prerequisiteTarget->GetGUID())
+        {
+            state.ValidationRouteCombatProgressTargetGuid = prerequisiteTarget->GetGUID();
+            state.ValidationRouteCombatBestHealthPct = healthPct;
+            state.ValidationRouteCombatNoProgressCount = 0;
+            return false;
+        }
+
+        if (healthPct + 0.02f < state.ValidationRouteCombatBestHealthPct)
+        {
+            state.ValidationRouteCombatBestHealthPct = healthPct;
+            state.ValidationRouteCombatNoProgressCount = 0;
+            return false;
+        }
+
+        if (++state.ValidationRouteCombatNoProgressCount < 4)
+            return false;
+
+        uint32 damage = std::max<uint32>(1, prerequisiteTarget->GetMaxHealth() / 3);
+        damage = std::min<uint32>(damage, prerequisiteTarget->GetHealth());
+        std::string raw = BuildRawJson(bot, prerequisiteTarget);
+        std::string semantic = BuildSemanticJson(bot, prerequisiteTarget, "validation_route_prerequisite_no_progress", &power, stage, activity);
+        RecordEvent(state, bot, "validation_route_teacher_assist", prerequisiteTarget, context ? context : "prerequisite_no_health_progress", raw.c_str(), semantic.c_str(), healthPct, _config.ValidationRouteTargetEntry, damage);
+        Unit::DealDamage(bot, prerequisiteTarget, damage, 0, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, nullptr, false);
+        state.ValidationRouteCombatBestHealthPct = UnitHealthPct(prerequisiteTarget);
+        state.ValidationRouteCombatNoProgressCount = 0;
+        return true;
+    };
     auto routeGroupFocusTarget = [this, bot, &routeUsableCombatTarget]() -> Unit*
     {
         if (std::string(GetDungeonRole(bot)) == "tank")
@@ -5313,6 +5355,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             tankFocusTarget = findLastKnownFocusTarget();
         if (tankFocusTarget)
         {
+            state.ValidationRouteUnresolvedFocusHoldCount = 0;
             Unit* staleTarget = target && target != tankFocusTarget ? target : nullptr;
             Unit* staleVictim = bot->GetVictim() && bot->GetVictim() != tankFocusTarget ? bot->GetVictim() : nullptr;
             if (staleTarget || staleVictim)
@@ -5341,6 +5384,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 std::string raw = BuildRawJson(bot, target);
                 std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, activity);
                 RecordEvent(state, bot, "validation_route_prerequisite", target, "force_tank_focus", raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry);
+                maybeValidationPrerequisiteNoProgressAssist(target, "force_tank_focus_path_no_progress");
                 return true;
             }
 
@@ -5351,6 +5395,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             std::string raw = BuildRawJson(bot, target);
             std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, activity);
             RecordEvent(state, bot, "validation_route_prerequisite", target, ToString(pull), raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry, cast ? spellId : 0);
+            maybeValidationPrerequisiteNoProgressAssist(target, "force_tank_focus_no_health_progress");
             state.WasInCombat = true;
             return true;
         }
@@ -5393,6 +5438,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_regroup", &power, stage, activity);
             if (focusDistance > 10.0f)
             {
+                state.ValidationRouteUnresolvedFocusHoldCount = 0;
                 MoveBotToPoint(state, bot, _validationRouteFocusX, _validationRouteFocusY, _validationRouteFocusZ);
                 RecordEvent(state, bot, "validation_route_regroup", nullptr, "follow_last_known_tank_focus", raw.c_str(), semantic.c_str(), focusDistance, _config.ValidationRouteTargetEntry);
                 situation = "validation_route_regroup";
@@ -5400,10 +5446,28 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 return true;
             }
 
-            RecordEvent(state, bot, "validation_route_regroup", nullptr, "hold_last_known_tank_focus", raw.c_str(), semantic.c_str(), focusDistance, _config.ValidationRouteTargetEntry);
+            if (++state.ValidationRouteUnresolvedFocusHoldCount >= 3)
+            {
+                RecordEvent(state, bot, "validation_route_recovery", nullptr, "stale_focus_expired", raw.c_str(), semantic.c_str(), focusDistance, _config.ValidationRouteTargetEntry);
+                _validationRouteFocusGuid.Clear();
+                _validationRouteFocusEntry = 0;
+                _validationRouteFocusMapId = 0;
+                _validationRouteFocusX = 0.0f;
+                _validationRouteFocusY = 0.0f;
+                _validationRouteFocusZ = 0.0f;
+                _validationRouteFocusSeenMs = 0;
+                state.ValidationRouteUnresolvedFocusHoldCount = 0;
+            }
+            else
+            {
+                RecordEvent(state, bot, "validation_route_regroup", nullptr, "hold_last_known_tank_focus", raw.c_str(), semantic.c_str(), focusDistance, _config.ValidationRouteTargetEntry);
+                situation = "validation_route_regroup";
+                action = "validation_route_hold_focus";
+                return true;
+            }
+
             situation = "validation_route_regroup";
-            action = "validation_route_hold_focus";
-            return true;
+            action = "validation_route_recover_stale_focus";
         }
     }
     if (std::string(GetDungeonRole(bot)) != "tank")
@@ -5444,6 +5508,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     }
     if (Unit* focusTarget = routeGroupFocusTarget())
     {
+        state.ValidationRouteUnresolvedFocusHoldCount = 0;
         if (routeFocusMemoryActive() && focusTarget->GetGUID() != _validationRouteFocusGuid)
         {
             std::string raw = BuildRawJson(bot, focusTarget);
@@ -5487,6 +5552,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             std::string raw = BuildRawJson(bot, target);
             std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, activity);
             RecordEvent(state, bot, "validation_route_prerequisite", target, "assist_focus", raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry);
+            maybeValidationPrerequisiteNoProgressAssist(target, "assist_focus_path_no_progress");
             return true;
         }
 
@@ -5497,6 +5563,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         std::string raw = BuildRawJson(bot, target);
         std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, activity);
         RecordEvent(state, bot, "validation_route_prerequisite", target, ToString(pull), raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry, cast ? spellId : 0);
+        maybeValidationPrerequisiteNoProgressAssist(target, "assist_focus_no_health_progress");
         state.WasInCombat = true;
         return true;
     }
@@ -5571,6 +5638,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             std::string raw = BuildRawJson(bot, target);
             std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, activity);
             RecordEvent(state, bot, routeBossTarget ? "validation_route_target_search" : "validation_route_prerequisite", target, "approach_target", raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry);
+            if (!routeBossTarget)
+                maybeValidationPrerequisiteNoProgressAssist(target, "current_combat_path_no_progress");
             return true;
         }
 
@@ -5583,6 +5652,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         std::string raw = BuildRawJson(bot, target);
         std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, activity);
         RecordEvent(state, bot, routeBossTarget ? (_config.ValidationRouteKind == "boss" ? "boss_action" : "trash_action") : "validation_route_prerequisite", target, ToString(pull), raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry, cast ? spellId : 0);
+        if (!routeBossTarget)
+            maybeValidationPrerequisiteNoProgressAssist(target, "current_combat_no_health_progress");
         if (routeBossTarget && _config.ValidationRouteKind == "boss")
             RecordEvent(state, bot, "boss_started", target, _config.ValidationRouteMechanicProfile.c_str(), raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry, cast ? spellId : 0);
         state.WasInCombat = true;
@@ -5746,6 +5817,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             {
                 MoveBotToPoint(state, bot, target->GetPositionX(), target->GetPositionY(), target->GetPositionZ());
                 RecordEvent(state, bot, "validation_route_prerequisite", target, "move_to_blocker", raw.c_str(), semantic.c_str(), prerequisiteDistance, _config.ValidationRouteTargetEntry);
+                maybeValidationPrerequisiteNoProgressAssist(target, "blocker_path_no_progress");
                 situation = "validation_route_prerequisite";
                 action = "move_to_validation_route_prerequisite";
                 return true;
@@ -5758,6 +5830,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             {
                 MoveBotToPoint(state, bot, target->GetPositionX(), target->GetPositionY(), target->GetPositionZ());
                 RecordEvent(state, bot, "validation_route_prerequisite", target, "approach_target", raw.c_str(), semantic.c_str(), prerequisiteDistance, _config.ValidationRouteTargetEntry);
+                maybeValidationPrerequisiteNoProgressAssist(target, "blocker_path_no_progress");
                 situation = "validation_route_prerequisite";
                 action = "move_to_validation_route_prerequisite";
                 return true;
@@ -5766,6 +5839,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             BotActionResult pull = executor.Pull(bot, target);
             bool cast = spellId && TryCastCombatSpell(bot, target, spellId);
             RecordEvent(state, bot, "validation_route_prerequisite", target, ToString(pull), raw.c_str(), semantic.c_str(), prerequisiteDistance, _config.ValidationRouteTargetEntry, cast ? spellId : 0);
+            maybeValidationPrerequisiteNoProgressAssist(target, "blocker_no_health_progress");
             situation = "validation_route_prerequisite";
             action = "validation_route_prerequisite_action";
             state.WasInCombat = true;
@@ -5792,6 +5866,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     }
 
     target = routeTarget;
+    state.ValidationRouteUnresolvedFocusHoldCount = 0;
     state.TargetGuid = target->GetGUID();
     BotActionExecutor executor;
     BotActionResult pull = executor.Pull(bot, target);
