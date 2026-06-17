@@ -273,6 +273,8 @@ def merge_report_rows(left: dict[str, Any], right: dict[str, Any]) -> dict[str, 
         clear_complete = complete_segment_coverage and max(boss_kills, raid_boss_kills) >= expected_bosses
     else:
         clear_complete = clear_complete or (expected_bosses > 0 and max(boss_kills, raid_boss_kills) >= expected_bosses)
+    if failure_labels or failure_reason:
+        clear_complete = False
     merged.update(
         {
             "prepared_group": bool(left.get("prepared_group") or right.get("prepared_group")),

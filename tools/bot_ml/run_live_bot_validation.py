@@ -626,6 +626,16 @@ def live_evidence(status: dict[str, Any], diagnosis: dict[str, Any], trace: dict
     duration_minutes = float(summary.get("duration_minutes") or 0.0)
     moved_diagnoses = sum(1 for row in diagnoses if bool(nested_get(row, ["snapshot", "movement", "is_moving"], False)) or float(nested_get(row, ["snapshot", "movement", "distance_moved_since_last_decision"], 0) or 0) > 0.0)
     non_wait_diagnoses = sum(1 for row in diagnoses if str(nested_get(row, ["snapshot", "decision", "action"], "wait")) not in {"", "wait"})
+    diagnosis_codes = Counter(
+        str(nested_get(row, ["diagnosis", "diagnosis_code"], nested_get(row, ["diagnosis_code"], "")))
+        for row in diagnoses
+        if nested_get(row, ["diagnosis", "diagnosis_code"], nested_get(row, ["diagnosis_code"], ""))
+    )
+    diagnosis_severities = Counter(
+        str(nested_get(row, ["diagnosis", "severity"], nested_get(row, ["severity"], "")))
+        for row in diagnoses
+        if nested_get(row, ["diagnosis", "severity"], nested_get(row, ["severity"], ""))
+    )
     action_names = {
         str(entry.get("action") or entry.get("situation") or "")
         for entry in entries
@@ -711,6 +721,10 @@ def live_evidence(status: dict[str, Any], diagnosis: dict[str, Any], trace: dict
         "duration_minutes": duration_minutes,
         "moved_diagnoses": moved_diagnoses,
         "non_wait_diagnoses": non_wait_diagnoses,
+        "diagnosis_codes": dict(sorted(diagnosis_codes.items())),
+        "diagnosis_severities": dict(sorted(diagnosis_severities.items())),
+        "bot_not_loaded_diagnoses": diagnosis_codes.get("bot_not_loaded", 0),
+        "error_diagnoses": diagnosis_severities.get("error", 0),
         "non_spawn_trace_entries": non_spawn_trace_entries,
         "quest_objective_progress": quest_progress,
         "quests_accepted": quests_accepted,
@@ -780,6 +794,13 @@ def validation_failure_labels(
     stuck_events = int(evidence.get("stuck_events") or 0)
     unstuck_failures = int(evidence.get("unstuck_failures") or 0)
     repath_events = int(evidence.get("repath_events") or 0)
+    bot_not_loaded_diagnoses = int(evidence.get("bot_not_loaded_diagnoses") or 0)
+    error_diagnoses = int(evidence.get("error_diagnoses") or 0)
+
+    if bot_not_loaded_diagnoses > 0:
+        labels.append("bot_lifecycle_not_loaded")
+    elif error_diagnoses > 0:
+        labels.append("bot_diagnosis_error")
 
     if route_actions > 0 and boss_kills <= 0 and trash_route_actions <= 0:
         if boss_engagement > 0:

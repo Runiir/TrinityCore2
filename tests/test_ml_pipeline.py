@@ -1681,6 +1681,20 @@ TC> {"duration_minutes":5.0,"decisions":30,"total_kills":0,"quests_completed":0,
     assert "validation_route_stuck_loop" in report["failure_labels"]
 
 
+def test_live_bot_validation_labels_bot_not_loaded_diagnosis_as_lifecycle_failure():
+    output = """
+TC> {"active_bots":2,"target_bots":2,"action":"botauto_status","decisions":20,"kills":0,"quests_accepted":0,"quest_objective_progress":0}
+TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1,"bot_name":""},"diagnosis":{"diagnosis_code":"bot_not_loaded","severity":"error"},"snapshot":{"decision":{"action":"validation_route_trash_action"},"movement":{"is_moving":false,"distance_moved_since_last_decision":0}}},{"identity":{"bot_guid":2,"bot_name":""},"diagnosis":{"diagnosis_code":"bot_not_loaded","severity":"error"},"snapshot":{"decision":{"action":"validation_route_trash_action"},"movement":{"is_moving":false,"distance_moved_since_last_decision":0}}}]}
+TC> {"trace_schema_version":1,"selector":"all","bots":[{"bot_guid":1,"entries":[{"action":"trash_action","situation":"normal_dungeon_trash","result":"ok"},{"action":"validation_route_trash_action","situation":"normal_dungeon_trash","result":"ok"}]}]}
+TC> {"duration_minutes":5.0,"decisions":20,"total_kills":0,"quests_completed":0}
+"""
+    report = live_validation_report(output)
+
+    assert report["evidence"]["diagnosis_codes"] == {"bot_not_loaded": 2}
+    assert report["evidence"]["bot_not_loaded_diagnoses"] == 2
+    assert "bot_lifecycle_not_loaded" in report["failure_labels"]
+
+
 def test_live_bot_validation_labels_route_search_without_trash_engagement():
     output = """
 TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":12,"kills":0,"quests_accepted":0,"quest_objective_progress":0}

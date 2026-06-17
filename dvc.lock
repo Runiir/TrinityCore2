@@ -146,8 +146,8 @@ stages:
     deps:
     - path: dataset/live_validation_scenario_reports_built
       hash: md5
-      md5: 2a130e25fa871b832b15b8b5e08b5326.dir
-      size: 17174
+      md5: c684ab5fea86c3bb948d9caf6afb120f.dir
+      size: 17365
       nfiles: 3
     - path: dataset/validation_scenarios
       hash: md5
@@ -170,8 +170,8 @@ stages:
     outs:
     - path: dataset/world_validation/planner_report.json
       hash: md5
-      md5: f6328f07939210f8a82c4d4b71853ea4
-      size: 27726
+      md5: abe2dd6779b7f6a9375e15af2bb1ff17
+      size: 27781
   validation_provisioning:
     cmd: python -m tools.bot_ml.build_validation_provisioning --config 
       experiments/configs/validation_provisioning_cata_001.json --gear-profiles 
@@ -370,8 +370,8 @@ stages:
     - path: 
         dataset/live_validation_scenarios/blackwing_descent_10n/01_entry_trash/report.json
       hash: md5
-      md5: 877630abf9531bf5340bf47e7a723cad
-      size: 346382
+      md5: da5990228843fb441559e9732ce8b60a
+      size: 344582
     - path: 
         dataset/live_validation_scenarios/blackwing_descent_10n/02_magmaw/report.json
       hash: md5
@@ -385,8 +385,8 @@ stages:
     - path: 
         dataset/live_validation_scenarios/blackwing_descent_10n/04_laboratory_trash/report.json
       hash: md5
-      md5: bdbc39251b0e84d7fefd1745c19d9b48
-      size: 346037
+      md5: 83d56ce15b2754b8763e68e2c1b8804a
+      size: 344140
     - path: 
         dataset/live_validation_scenarios/blackwing_descent_10n/05_maloriak/report.json
       hash: md5
@@ -453,21 +453,21 @@ stages:
       nfiles: 5
     - path: tools/bot_ml/build_live_scenario_reports.py
       hash: md5
-      md5: cf40f6de3c5f8236685dafca9dbea4e3
-      size: 20316
+      md5: fd9392f7189485680d1773b32ac1617e
+      size: 20388
     - path: tools/bot_ml/common.py
       hash: md5
       md5: a02540ee4893ec8d0dd37fe816c39aa7
       size: 5247
     - path: tools/bot_ml/run_live_bot_validation.py
       hash: md5
-      md5: 303d5628ccdc0b485e00eff2cad8382f
-      size: 60823
+      md5: decc34eede310c7efe32df9ca1096dc7
+      size: 61938
     outs:
     - path: dataset/live_validation_scenario_reports_built
       hash: md5
-      md5: 2a130e25fa871b832b15b8b5e08b5326.dir
-      size: 17174
+      md5: c684ab5fea86c3bb948d9caf6afb120f.dir
+      size: 17365
       nfiles: 3
   validation_run_plan:
     cmd: python -m tools.bot_ml.build_validation_run_plan 
@@ -508,18 +508,18 @@ stages:
       size: 102801
     - path: dataset/live_validation_scenario_reports_built
       hash: md5
-      md5: 2a130e25fa871b832b15b8b5e08b5326.dir
-      size: 17174
+      md5: c684ab5fea86c3bb948d9caf6afb120f.dir
+      size: 17365
       nfiles: 3
     - path: tools/bot_ml/run_live_bot_validation.py
       hash: md5
-      md5: 303d5628ccdc0b485e00eff2cad8382f
-      size: 60823
+      md5: decc34eede310c7efe32df9ca1096dc7
+      size: 61938
     outs:
     - path: dataset/live_validation_combined
       hash: md5
-      md5: 3167a74c8fc963f967692ac7179a818a.dir
-      size: 223741
+      md5: 832b7681dd47aa442b4f5372ff3caaaf.dir
+      size: 224246
       nfiles: 3
   validation_run_status:
     cmd: python -m tools.bot_ml.build_validation_run_status --run-plan 
@@ -529,8 +529,8 @@ stages:
     deps:
     - path: dataset/live_validation_scenario_reports_built
       hash: md5
-      md5: 2a130e25fa871b832b15b8b5e08b5326.dir
-      size: 17174
+      md5: c684ab5fea86c3bb948d9caf6afb120f.dir
+      size: 17365
       nfiles: 3
     - path: dataset/validation_run_plan/manifest.json
       hash: md5
@@ -538,8 +538,8 @@ stages:
       size: 42043
     - path: tools/bot_ml/build_validation_run_status.py
       hash: md5
-      md5: 1bfe1f400aa9dc2f5b640053b683eead
-      size: 15832
+      md5: 89d3f275eac08d4c2d82ed048a42f327
+      size: 16143
     - path: tools/bot_ml/common.py
       hash: md5
       md5: a02540ee4893ec8d0dd37fe816c39aa7
@@ -547,6 +547,6 @@ stages:
     outs:
     - path: dataset/validation_run_status
       hash: md5
-      md5: c4df320d8a97735c293fc2a77af89f23.dir
-      size: 38385
+      md5: 75fc53472765a9b9d0d5ac59275ad9a1.dir
+      size: 42984
       nfiles: 1

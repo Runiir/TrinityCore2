@@ -176,6 +176,10 @@ def validate_segment_report(report: dict[str, Any], segment: dict[str, Any], sce
         reasons.append("live_validation_timed_out")
     if int_field(report, "returncode") != 0:
         reasons.append("live_validation_returncode_nonzero")
+    failure_labels = report.get("failure_labels") if isinstance(report.get("failure_labels"), list) else []
+    failure_reason = str(report.get("failure_reason") or "")
+    if failure_labels or failure_reason:
+        reasons.append("live_validation_has_failures")
 
     context = report.get("validation_context") if isinstance(report.get("validation_context"), dict) else {}
     expected_context = {
@@ -205,7 +209,7 @@ def validate_segment_report(report: dict[str, Any], segment: dict[str, Any], sce
         if not trash_ready:
             reasons.append("missing_trash_evidence")
 
-    report_valid = not load_error and schema == "bot_live_validation_report_v1" and not bool(report.get("timed_out")) and int_field(report, "returncode") == 0
+    report_valid = not load_error and schema == "bot_live_validation_report_v1" and not bool(report.get("timed_out")) and int_field(report, "returncode") == 0 and not failure_labels and not failure_reason
     return {
         "report_valid": report_valid,
         "validation_context_matches": context_matches,
