@@ -1,0 +1,6 @@
+outs:
+- md5: 93eb5e856ccd14af92141d7469f66589.dir
+  size: 2332520
+  nfiles: 28
+  hash: md5
+  path: live_validation_stonecore_5n_boss_segments_long_300s

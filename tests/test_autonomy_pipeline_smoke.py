@@ -384,7 +384,9 @@ def test_quest_first_portfolio_routing_surface():
     assert "boss_route_slow_progress_teacher_assist" in mgr
     assert "recordValidationRouteBossKill" in mgr
     assert "boss_route_script_target_blocked_teacher_assist" in mgr
+    assert "boss_route_target_seen_dead_teacher_assist" in mgr
     assert "boss_route_activation_no_visible_target_teacher_assist" in mgr
+    assert "validation_route_script_target_dead" in mgr
     assert "target_seen_not_attackable" in mgr
     assert "boss_killed" in mgr
     assert "raid_boss_killed" in mgr

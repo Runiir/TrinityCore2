@@ -6124,6 +6124,18 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         action = "validation_route_teacher_assist";
         return true;
     }
+    if (!routeTarget
+        && seenRouteTarget
+        && _config.ValidationRouteKind == "boss"
+        && targetSearchResult == "target_seen_dead")
+    {
+        std::string raw = BuildRawJson(bot, seenRouteTarget);
+        std::string semantic = BuildSemanticJson(bot, seenRouteTarget, "validation_route_script_target_dead", &power, stage, activity);
+        RecordEvent(state, bot, "validation_route_target_search", seenRouteTarget, targetSearchResult.c_str(), raw.c_str(), semantic.c_str(), seenRouteTargetDistance, _config.ValidationRouteTargetEntry);
+        recordValidationRouteBossKill(seenRouteTarget, "boss_route_target_seen_dead_teacher_assist");
+        action = "validation_route_teacher_assist";
+        return true;
+    }
     if (!routeTarget && seenRouteTarget && seenRouteTargetDistance > 8.0f)
     {
         tryValidationRouteActivation(seenRouteTarget, targetSearchResult.c_str());
