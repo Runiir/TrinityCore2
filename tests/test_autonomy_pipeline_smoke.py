@@ -338,6 +338,9 @@ def test_quest_first_portfolio_routing_surface():
     assert "routeUsableCombatTarget(member->GetVictim())" in mgr
     assert "if (Unit* victim = routeUsableCombatTarget(member->GetVictim()))" in mgr
     assert "ObjectAccessor::GetUnit(*member, cohortState.TargetGuid)" in mgr
+    assert "Player* loadedBot = GetLoadedBot(*itr)" in mgr
+    assert "loaded_bot_not_in_world" in mgr
+    assert "return bot && bot->IsInWorld() ? bot : nullptr;" in function_body(mgr, "Player* BotWorldPopulationMgr::GetBot")
     assert "member->GetVictim()" in mgr
     assert "force_tank_focus" in mgr
     assert "force_last_known_tank_focus" in mgr

@@ -731,6 +731,7 @@ private:
     bool TryNearestGraveyardResurrect(Player* bot, std::string& result) const;
     bool TryLastSafePositionResurrect(WorldBotState& state, Player* bot, std::string& result);
     bool TryConfiguredCenterDeathFallback(Player* bot, std::string& result) const;
+    Player* GetLoadedBot(WorldBotState const& state) const;
     Player* GetBot(WorldBotState const& state) const;
     uint32 SelectPoolCandidateGuid() const;
     Unit* SelectSafeTarget(WorldBotState& state, Player* bot);

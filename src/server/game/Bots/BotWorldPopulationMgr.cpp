@@ -868,7 +868,8 @@ void BotWorldPopulationMgr::Update(uint32 diff)
 
     for (auto itr = _bots.begin(); itr != _bots.end();)
     {
-        if (!GetBot(*itr))
+        Player* loadedBot = GetLoadedBot(*itr);
+        if (!loadedBot)
         {
             if (itr->SpawnedMs && nowMs - itr->SpawnedMs < 10000)
             {
@@ -885,6 +886,13 @@ void BotWorldPopulationMgr::Update(uint32 diff)
             _failedSpawnGuids.insert(prunedGuid.GetCounter());
             itr = _bots.erase(itr);
             _metrics.ActiveBots = uint32(_bots.size());
+            continue;
+        }
+
+        if (!loadedBot->IsInWorld())
+        {
+            _lastPopulationFailureReason = "loaded_bot_not_in_world";
+            ++itr;
             continue;
         }
 
@@ -2442,13 +2450,15 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
     RecordDecision(state, bot, situation.c_str(), action.c_str(), target, raw.c_str(), semantic.c_str(), activityScores, chosenActivity, power, failure, rare);
 }
 
+Player* BotWorldPopulationMgr::GetLoadedBot(WorldBotState const& state) const
+{
+    return sBotMgr->GetLoadedPlayer(state.Guid);
+}
+
 Player* BotWorldPopulationMgr::GetBot(WorldBotState const& state) const
 {
-    Player* bot = sBotMgr->GetLoadedPlayer(state.Guid);
-    if (!bot || !bot->IsInWorld())
-        return nullptr;
-
-    return bot;
+    Player* bot = GetLoadedBot(state);
+    return bot && bot->IsInWorld() ? bot : nullptr;
 }
 
 uint32 BotWorldPopulationMgr::SelectPoolCandidateGuid() const
