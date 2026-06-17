@@ -14,6 +14,7 @@
 #include "GridNotifiersImpl.h"
 #include "Group.h"
 #include "GroupReference.h"
+#include "Instances/InstanceScript.h"
 #include "Entities/Item/Item.h"
 #include "Entities/Item/ItemTemplate.h"
 #include "LFG.h"
@@ -30,6 +31,7 @@
 #include "SpellHistory.h"
 #include "SpellInfo.h"
 #include "SpellMgr.h"
+#include "TemporarySummon.h"
 #include "Unit.h"
 #include "Creature.h"
 #include <algorithm>
@@ -949,6 +951,13 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
     _config.ValidationRouteZ = sConfigMgr->GetFloatDefault("BotWorld.ValidationRoute.Z", _config.ValidationRouteZ);
     _config.ValidationRouteO = sConfigMgr->GetFloatDefault("BotWorld.ValidationRoute.O", _config.ValidationRouteO);
     _config.ValidationRouteTargetEntry = sConfigMgr->GetIntDefault("BotWorld.ValidationRoute.TargetEntry", _config.ValidationRouteTargetEntry);
+    _config.ValidationRouteActivationDataId = sConfigMgr->GetIntDefault("BotWorld.ValidationRoute.ActivationDataId", _config.ValidationRouteActivationDataId);
+    _config.ValidationRouteActivationDataValue = sConfigMgr->GetIntDefault("BotWorld.ValidationRoute.ActivationDataValue", _config.ValidationRouteActivationDataValue);
+    _config.ValidationRouteActivationSummonEntry = sConfigMgr->GetIntDefault("BotWorld.ValidationRoute.ActivationSummonEntry", _config.ValidationRouteActivationSummonEntry);
+    _config.ValidationRouteActivationSummonX = sConfigMgr->GetFloatDefault("BotWorld.ValidationRoute.ActivationSummonX", _config.ValidationRouteActivationSummonX);
+    _config.ValidationRouteActivationSummonY = sConfigMgr->GetFloatDefault("BotWorld.ValidationRoute.ActivationSummonY", _config.ValidationRouteActivationSummonY);
+    _config.ValidationRouteActivationSummonZ = sConfigMgr->GetFloatDefault("BotWorld.ValidationRoute.ActivationSummonZ", _config.ValidationRouteActivationSummonZ);
+    _config.ValidationRouteActivationSummonO = sConfigMgr->GetFloatDefault("BotWorld.ValidationRoute.ActivationSummonO", _config.ValidationRouteActivationSummonO);
     _config.AllowConfiguredCenterFallback = sConfigMgr->GetBoolDefault("BotWorld.AllowConfiguredCenterFallback", _config.AllowConfiguredCenterFallback);
     _config.UseSavedPosition = sConfigMgr->GetBoolDefault("BotWorld.UseSavedPosition", _config.UseSavedPosition);
     _config.NearPlayerRadius = sConfigMgr->GetFloatDefault("BotWorld.NearPlayerRadius", _config.NearPlayerRadius);
@@ -5259,6 +5268,35 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         _validationRouteFocusZ = focus->GetPositionZ();
         _validationRouteFocusSeenMs = NowMs();
     };
+    auto tryValidationRouteActivation = [this, &state, bot, &power, stage, activity](Unit* seenTarget, char const* reason) -> bool
+    {
+        if ((!_config.ValidationRouteActivationDataId && !_config.ValidationRouteActivationSummonEntry) || state.ValidationRouteActivationApplied || !bot)
+            return false;
+
+        InstanceMap* instanceMap = bot->GetMap() ? bot->GetMap()->ToInstanceMap() : nullptr;
+        InstanceScript* instance = instanceMap ? instanceMap->GetInstanceScript() : nullptr;
+        if (!instanceMap || !instance)
+            return false;
+
+        if (_config.ValidationRouteActivationDataId)
+            instance->SetData(_config.ValidationRouteActivationDataId, _config.ValidationRouteActivationDataValue);
+
+        Unit* activationTarget = seenTarget;
+        if (_config.ValidationRouteActivationSummonEntry)
+        {
+            Position summonPos(_config.ValidationRouteActivationSummonX, _config.ValidationRouteActivationSummonY, _config.ValidationRouteActivationSummonZ, _config.ValidationRouteActivationSummonO);
+            if (TempSummon* summon = instanceMap->SummonCreature(_config.ValidationRouteActivationSummonEntry, summonPos))
+                activationTarget = summon;
+        }
+
+        state.ValidationRouteActivationApplied = true;
+        ++state.ValidationRouteActivationAttempts;
+
+        std::string raw = BuildRawJson(bot, activationTarget);
+        std::string semantic = BuildSemanticJson(bot, activationTarget, "validation_route_activation", &power, stage, activity);
+        RecordEvent(state, bot, "validation_route_activation", activationTarget, reason ? reason : "activate_route_script", raw.c_str(), semantic.c_str(), float(_config.ValidationRouteActivationDataValue), _config.ValidationRouteActivationDataId ? _config.ValidationRouteActivationDataId : _config.ValidationRouteActivationSummonEntry);
+        return true;
+    };
     auto routeTankFocusTarget = [this, bot, &routeUsableCombatTarget, &rememberValidationRouteFocus](ObjectGuid expectedGuid) -> Unit*
     {
         auto usableExpected = [&](Unit* focus) -> Unit*
@@ -5624,6 +5662,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     {
         Creature const* creature = target->ToCreature();
         bool routeBossTarget = creature && _config.ValidationRouteTargetEntry && creature->GetEntry() == _config.ValidationRouteTargetEntry;
+        if (routeBossTarget)
+            rememberValidationRouteFocus(target);
         if (tryRouteGroupHeal(bot, target))
             return true;
 
@@ -5726,6 +5766,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     }
     if (!routeTarget && seenRouteTarget && seenRouteTargetDistance > 8.0f)
     {
+        tryValidationRouteActivation(seenRouteTarget, targetSearchResult.c_str());
         MoveBotToPoint(state, bot, seenRouteTarget->GetPositionX(), seenRouteTarget->GetPositionY(), seenRouteTarget->GetPositionZ());
         std::string raw = BuildRawJson(bot, seenRouteTarget);
         std::string semantic = BuildSemanticJson(bot, seenRouteTarget, "validation_route_target_approach", &power, stage, activity);
@@ -5735,6 +5776,15 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     }
     if (!routeTarget && seenRouteTarget)
     {
+        if (tryValidationRouteActivation(seenRouteTarget, targetSearchResult.c_str()))
+        {
+            std::string raw = BuildRawJson(bot, seenRouteTarget);
+            std::string semantic = BuildSemanticJson(bot, seenRouteTarget, "validation_route_activation", &power, stage, activity);
+            RecordEvent(state, bot, "validation_route_target_search", seenRouteTarget, "activation_applied", raw.c_str(), semantic.c_str(), seenRouteTargetDistance, _config.ValidationRouteTargetEntry);
+            action = "validation_route_activate_target";
+            return true;
+        }
+
         Creature* prerequisiteTarget = nullptr;
         float prerequisiteScore = -100000.0f;
         float prerequisiteDistance = 0.0f;
@@ -5858,6 +5908,15 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
     if (!routeTarget)
     {
+        if (tryValidationRouteActivation(nullptr, targetSearchResult.c_str()))
+        {
+            std::string raw = BuildRawJson(bot, nullptr);
+            std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_activation", &power, stage, activity);
+            RecordEvent(state, bot, "validation_route_target_search", nullptr, "activation_applied_no_visible_target", raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry);
+            action = "validation_route_activate_target";
+            return true;
+        }
+
         std::string raw = BuildRawJson(bot, nullptr);
         std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_target_search", &power, stage, activity);
         RecordEvent(state, bot, "validation_route_target_search", nullptr, targetSearchResult.c_str(), raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry);
@@ -5868,6 +5927,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     target = routeTarget;
     state.ValidationRouteUnresolvedFocusHoldCount = 0;
     state.TargetGuid = target->GetGUID();
+    rememberValidationRouteFocus(target);
     BotActionExecutor executor;
     BotActionResult pull = executor.Pull(bot, target);
     uint32 spellId = SelectCombatSpell(bot, target);
@@ -9595,7 +9655,14 @@ std::string BotWorldPopulationMgr::BuildConfigJson() const
          << ",\"y\":" << _config.ValidationRouteY
          << ",\"z\":" << _config.ValidationRouteZ
          << ",\"o\":" << _config.ValidationRouteO
-         << ",\"target_entry\":" << _config.ValidationRouteTargetEntry << "}"
+         << ",\"target_entry\":" << _config.ValidationRouteTargetEntry
+         << ",\"activation_data_id\":" << _config.ValidationRouteActivationDataId
+         << ",\"activation_data_value\":" << _config.ValidationRouteActivationDataValue
+         << ",\"activation_summon_entry\":" << _config.ValidationRouteActivationSummonEntry
+         << ",\"activation_summon_x\":" << _config.ValidationRouteActivationSummonX
+         << ",\"activation_summon_y\":" << _config.ValidationRouteActivationSummonY
+         << ",\"activation_summon_z\":" << _config.ValidationRouteActivationSummonZ
+         << ",\"activation_summon_o\":" << _config.ValidationRouteActivationSummonO << "}"
          << ",\"telemetry_enabled\":" << (telemetry.Enabled ? "true" : "false")
          << ",\"telemetry_frame_interval_ms\":" << telemetry.FrameIntervalMs
          << ",\"telemetry_pre_event_window_sec\":" << telemetry.PreEventWindowSec
@@ -10120,6 +10187,8 @@ std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson(WorldBotState con
          << "{\"name\":\"active_quest_cluster_id\",\"value\":" << state.ActiveQuestClusterId << "},"
          << "{\"name\":\"quest_cooldown_count\",\"value\":" << state.QuestCooldownUntilMs.size() << "},"
          << "{\"name\":\"no_progress_cooldown_count\",\"value\":" << state.NoProgressCooldownUntilMs.size() << "},"
+         << "{\"name\":\"validation_route_activation_applied\",\"value\":" << (state.ValidationRouteActivationApplied ? "true" : "false") << "},"
+         << "{\"name\":\"validation_route_activation_attempts\",\"value\":" << state.ValidationRouteActivationAttempts << "},"
          << "{\"name\":\"decision_fingerprint_hash\",\"value\":" << state.LastDecisionFingerprintHash << "},"
          << "{\"name\":\"decision_fingerprint_repeat_count\",\"value\":" << state.LastDecisionFingerprintRepeatCount << "},"
          << "{\"name\":\"decision_fingerprint_failure_count\",\"value\":" << state.LastDecisionFingerprintFailureCount << "}"

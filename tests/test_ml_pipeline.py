@@ -838,10 +838,60 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert scenarios["blackwing_descent_10n"]["boss_count"] == 6
     assert any(row["scenario_id"] == "stonecore_5n" and row["kind"] == "trash" for row in routes)
     assert any(row["scenario_id"] == "blackwing_descent_10n" and row["kind"] == "boss" and row["coordinates_valid"] is True and row["source_entry"] == 41570 for row in routes)
+    bwd_boss_entries = {row["source_entry"] for row in routes if row["scenario_id"] == "blackwing_descent_10n" and row["kind"] == "boss"}
+    assert {41570, 42186, 41378, 41442, 43296, 41376}.issubset(bwd_boss_entries)
+    assert 49801 not in bwd_boss_entries
+    assert 48964 not in bwd_boss_entries
+    atramedes = next(row for row in routes if row["scenario_id"] == "blackwing_descent_10n" and row["label"] == "Atramedes")
+    nefarian = next(row for row in routes if row["scenario_id"] == "blackwing_descent_10n" and row["label"] == "Nefarian")
+    assert atramedes["activation_data_id"] == 10
+    assert nefarian["activation_data_id"] == 35
+    assert nefarian["activation_summon_entry"] == 41376
     assert any(row["scenario_id"] == "blackwing_descent_10n" and "raid_aoe" in row["families"] for row in mechanics)
     assert manifests["report"]["ready_scenarios"] == 2
     assert manifests["report"]["invalid_route_steps"] == []
     assert manifests["report"]["invalid_mechanic_profiles"] == []
+
+
+def test_validation_route_bosses_are_scripted_encounter_targets():
+    config = json.loads(Path("experiments/configs/validation_scenarios_cata_001.json").read_text(encoding="utf-8"))
+    manifests = build_validation_scenario_manifests(
+        config,
+        {
+            "all_ready": True,
+            "scenarios": [
+                {"scenario_id": "stonecore_5n", "ready": True, "missing": [], "role_counts": {"tank": 1, "healer": 1, "dps": 3}},
+                {"scenario_id": "blackwing_descent_10n", "ready": True, "missing": [], "role_counts": {"tank": 2, "healer": 3, "dps": 5}},
+            ],
+        },
+        {"all_passed": True},
+    )
+    routes = {
+        (row["scenario_id"], row["label"]): row
+        for row in manifests["validation_routes"]
+        if row["kind"] == "boss"
+    }
+
+    scripted_bosses = {
+        ("stonecore_5n", "Corborus"): (43438, "src/server/scripts/Maelstrom/maelstrom_script_loader.cpp", "AddSC_boss_corborus", "src/server/scripts/Maelstrom/Stonecore/boss_corborus.cpp", "boss_corborus"),
+        ("stonecore_5n", "Slabhide"): (43214, "src/server/scripts/Maelstrom/maelstrom_script_loader.cpp", "AddSC_boss_slabhide", "src/server/scripts/Maelstrom/Stonecore/boss_slabhide.cpp", "boss_slabhide"),
+        ("stonecore_5n", "Ozruk"): (42188, "src/server/scripts/Maelstrom/maelstrom_script_loader.cpp", "AddSC_boss_ozruk", "src/server/scripts/Maelstrom/Stonecore/boss_ozruk.cpp", "boss_ozruk"),
+        ("stonecore_5n", "High Priestess Azil"): (42333, "src/server/scripts/Maelstrom/maelstrom_script_loader.cpp", "AddSC_boss_high_priestess_azil", "src/server/scripts/Maelstrom/Stonecore/boss_high_priestess_azil.cpp", "boss_high_priestess_azil"),
+        ("blackwing_descent_10n", "Magmaw"): (41570, "src/server/scripts/EasternKingdoms/eastern_kingdoms_script_loader.cpp", "AddSC_boss_magmaw", "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_magmaw.cpp", "boss_magmaw"),
+        ("blackwing_descent_10n", "Omnotron Defense System"): (42186, "src/server/scripts/EasternKingdoms/eastern_kingdoms_script_loader.cpp", "AddSC_boss_omnotron_defense_system", "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_omnotron_defense_system.cpp", "boss_omnotron_defense_system"),
+        ("blackwing_descent_10n", "Maloriak"): (41378, "src/server/scripts/EasternKingdoms/eastern_kingdoms_script_loader.cpp", "AddSC_boss_maloriak", "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_maloriak.cpp", "boss_maloriak"),
+        ("blackwing_descent_10n", "Atramedes"): (41442, "src/server/scripts/EasternKingdoms/eastern_kingdoms_script_loader.cpp", "AddSC_boss_atramedes", "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_atramedes.cpp", "boss_atramedes"),
+        ("blackwing_descent_10n", "Chimaeron"): (43296, "src/server/scripts/EasternKingdoms/eastern_kingdoms_script_loader.cpp", "AddSC_boss_chimaeron", "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_chimaeron.cpp", "boss_chimaeron"),
+        ("blackwing_descent_10n", "Nefarian"): (41376, "src/server/scripts/EasternKingdoms/eastern_kingdoms_script_loader.cpp", "AddSC_boss_nefarians_end", "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_nefarians_end.cpp", "boss_nefarians_end"),
+    }
+
+    assert set(scripted_bosses).issubset(routes)
+    for key, (entry, loader_path, addsc, script_path, script_symbol) in scripted_bosses.items():
+        assert routes[key]["source_entry"] == entry
+        assert addsc in Path(loader_path).read_text(encoding="utf-8")
+        script = Path(script_path).read_text(encoding="utf-8")
+        assert script_symbol in script
+        assert "BossAI" in script
 
 
 def test_validation_run_plan_preserves_instance_positions_and_tags():

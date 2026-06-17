@@ -139,6 +139,13 @@ def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any],
                 "coordinate_missing_reason": coordinate_missing_reason,
             }
             route["route_node_id"] = stable_hash(route)[:16]
+            route["activation_data_id"] = int(step.get("activation_data_id") or 0)
+            route["activation_data_value"] = int(step.get("activation_data_value") or 0)
+            route["activation_summon_entry"] = int(step.get("activation_summon_entry") or 0)
+            route["activation_summon_x"] = float(step.get("activation_summon_x") or 0.0)
+            route["activation_summon_y"] = float(step.get("activation_summon_y") or 0.0)
+            route["activation_summon_z"] = float(step.get("activation_summon_z") or 0.0)
+            route["activation_summon_o"] = float(step.get("activation_summon_o") or 0.0)
             routes.append(route)
 
         for profile, families in profiles.items():

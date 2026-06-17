@@ -61,6 +61,9 @@ def test_server_start_autonomy_enabled_by_default_contract():
     assert re.search(r'^BotWorld\.PoolTagFilter\s*=\s*""$', conf, re.MULTILINE)
     assert re.search(r"^BotWorld\.ValidationRoute\.Enable\s*=\s*0$", conf, re.MULTILINE)
     assert re.search(r"^BotWorld\.ValidationRoute\.TargetEntry\s*=\s*0$", conf, re.MULTILINE)
+    assert re.search(r"^BotWorld\.ValidationRoute\.ActivationDataId\s*=\s*0$", conf, re.MULTILINE)
+    assert re.search(r"^BotWorld\.ValidationRoute\.ActivationDataValue\s*=\s*0$", conf, re.MULTILINE)
+    assert re.search(r"^BotWorld\.ValidationRoute\.ActivationSummonEntry\s*=\s*0$", conf, re.MULTILINE)
     assert re.search(r'^BotWorld\.SpawnMode\s*=\s*"resume_or_race_start"$', conf, re.MULTILINE)
     assert re.search(r"^BotWorld\.AllowConfiguredCenterFallback\s*=\s*0$", conf, re.MULTILINE)
     assert re.search(r"^BotWorld\.UseSavedPosition\s*=\s*1$", conf, re.MULTILINE)
@@ -359,6 +362,12 @@ def test_quest_first_portfolio_routing_surface():
     assert "validation_route_recover_stale_focus" in mgr
     assert "validation_route_teacher_assist" in mgr
     assert "validation_route_prerequisite_no_progress" in mgr
+    assert "validation_route_activation" in mgr
+    assert "ValidationRouteActivationApplied" in mgr_header
+    assert "BotWorld.ValidationRoute.ActivationDataId" in mgr
+    assert "BotWorld.ValidationRoute.ActivationSummonEntry" in mgr
+    assert "activation_applied_no_visible_target" in mgr
+    assert "InstanceScript* instance" in mgr
     assert "blocker_path_no_progress" in mgr
     assert "Unit::DealDamage(bot, prerequisiteTarget, damage" in mgr
     assert "_validationRouteFocusGuid.Clear();" in mgr

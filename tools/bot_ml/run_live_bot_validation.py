@@ -127,6 +127,13 @@ def write_validation_config(base_config: Path, output_dir: Path, pool_tag: str =
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.Z", str(float(route.get("z") or 0.0)))
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.O", str(float(route.get("o") or 0.0)))
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.TargetEntry", str(int(route.get("source_entry") or 0)))
+        text = upsert_trinity_config(text, "BotWorld.ValidationRoute.ActivationDataId", str(int(route.get("activation_data_id") or 0)))
+        text = upsert_trinity_config(text, "BotWorld.ValidationRoute.ActivationDataValue", str(int(route.get("activation_data_value") or 0)))
+        text = upsert_trinity_config(text, "BotWorld.ValidationRoute.ActivationSummonEntry", str(int(route.get("activation_summon_entry") or 0)))
+        text = upsert_trinity_config(text, "BotWorld.ValidationRoute.ActivationSummonX", str(float(route.get("activation_summon_x") or 0.0)))
+        text = upsert_trinity_config(text, "BotWorld.ValidationRoute.ActivationSummonY", str(float(route.get("activation_summon_y") or 0.0)))
+        text = upsert_trinity_config(text, "BotWorld.ValidationRoute.ActivationSummonZ", str(float(route.get("activation_summon_z") or 0.0)))
+        text = upsert_trinity_config(text, "BotWorld.ValidationRoute.ActivationSummonO", str(float(route.get("activation_summon_o") or 0.0)))
         if str(route.get("kind") or "") in {"boss", "trash"}:
             text = upsert_trinity_config(text, "BotProgression.AllowDungeons", "1")
     generated.write_text(text, encoding="utf-8")

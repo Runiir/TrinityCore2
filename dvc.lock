@@ -111,7 +111,7 @@ stages:
     outs:
     - path: dataset/world_knowledge
       hash: md5
-      md5: 5a2b03d9ede9a5d6d8f65d8023cb3fed.dir
+      md5: 7edc9624dd3b8ac40a56c2496d6f7c63.dir
       size: 1134831298
       nfiles: 9
   world_planner:
@@ -120,7 +120,7 @@ stages:
     deps:
     - path: dataset/world_knowledge
       hash: md5
-      md5: 5a2b03d9ede9a5d6d8f65d8023cb3fed.dir
+      md5: 7edc9624dd3b8ac40a56c2496d6f7c63.dir
       size: 1134831298
       nfiles: 9
     - path: tools/bot_ml/build_world_planner_manifests.py
@@ -151,8 +151,8 @@ stages:
       nfiles: 3
     - path: dataset/validation_scenarios
       hash: md5
-      md5: 6e38ab415d3b13b48a2b23843dbe8818.dir
-      size: 12479
+      md5: f70a2abc8e1da0cbaf8b35d756f7d0cc.dir
+      size: 15692
       nfiles: 5
     - path: dataset/world_planner
       hash: md5
@@ -315,12 +315,12 @@ stages:
       size: 511
     - path: experiments/configs/validation_scenarios_cata_001.json
       hash: md5
-      md5: 28713aa0631133b4892dd4524f9ae592
-      size: 6129
+      md5: e6965404f280bcf62a2f2ede40179cce
+      size: 6523
     - path: tools/bot_ml/build_validation_scenario_manifests.py
       hash: md5
-      md5: 04c03166f2a05617352abbd1c408fd21
-      size: 9281
+      md5: 79805562cbd2730c9dfd45a72269dbfa
+      size: 9902
     - path: tools/bot_ml/common.py
       hash: md5
       md5: a02540ee4893ec8d0dd37fe816c39aa7
@@ -328,8 +328,8 @@ stages:
     outs:
     - path: dataset/validation_scenarios
       hash: md5
-      md5: 6e38ab415d3b13b48a2b23843dbe8818.dir
-      size: 12479
+      md5: f70a2abc8e1da0cbaf8b35d756f7d0cc.dir
+      size: 15692
       nfiles: 5
   live_scenario_reports:
     cmd: python -m tools.bot_ml.build_live_scenario_reports --live-report 
@@ -343,8 +343,8 @@ stages:
       size: 4320
     - path: dataset/validation_scenarios
       hash: md5
-      md5: 6e38ab415d3b13b48a2b23843dbe8818.dir
-      size: 12479
+      md5: f70a2abc8e1da0cbaf8b35d756f7d0cc.dir
+      size: 15692
       nfiles: 5
     - path: tools/bot_ml/build_live_scenario_reports.py
       hash: md5
@@ -356,8 +356,8 @@ stages:
       size: 5247
     - path: tools/bot_ml/run_live_bot_validation.py
       hash: md5
-      md5: f0ebd5903c7e140b8e0b958c24be2632
-      size: 44753
+      md5: 12af31aa564f1d4cee99c9cc8c4ff9ec
+      size: 45745
     outs:
     - path: dataset/live_validation_scenario_reports_built
       hash: md5
@@ -373,8 +373,8 @@ stages:
     deps:
     - path: dataset/validation_scenarios
       hash: md5
-      md5: 6e38ab415d3b13b48a2b23843dbe8818.dir
-      size: 12479
+      md5: f70a2abc8e1da0cbaf8b35d756f7d0cc.dir
+      size: 15692
       nfiles: 5
     - path: tools/bot_ml/build_validation_run_plan.py
       hash: md5
@@ -387,8 +387,8 @@ stages:
     outs:
     - path: dataset/validation_run_plan
       hash: md5
-      md5: 0bbc041b6d9c58655b46c119bff1441e.dir
-      size: 35599
+      md5: d109e90075301451e36d011237a41a6c.dir
+      size: 35571
       nfiles: 2
   live_validation_combined:
     cmd: python -m tools.bot_ml.run_live_bot_validation --input-log 
@@ -408,12 +408,12 @@ stages:
       nfiles: 3
     - path: tools/bot_ml/run_live_bot_validation.py
       hash: md5
-      md5: f0ebd5903c7e140b8e0b958c24be2632
-      size: 44753
+      md5: 12af31aa564f1d4cee99c9cc8c4ff9ec
+      size: 45745
     outs:
     - path: dataset/live_validation_combined
       hash: md5
-      md5: 02d3b9cd096cd0634071bd6909a56529.dir
+      md5: afc63117f17c0fc6b8e2843b1f2c056f.dir
       size: 210291
       nfiles: 3
   validation_run_status:
@@ -429,8 +429,8 @@ stages:
       nfiles: 3
     - path: dataset/validation_run_plan/manifest.json
       hash: md5
-      md5: a8acdde29dc56022d713f635d7be0bca
-      size: 27877
+      md5: b010fc870d04f933265dd317e4114040
+      size: 27849
     - path: tools/bot_ml/build_validation_run_status.py
       hash: md5
       md5: 907c9f6a0ae8d5fd405a55bcc4165894
@@ -442,6 +442,6 @@ stages:
     outs:
     - path: dataset/validation_run_status
       hash: md5
-      md5: d94e8f120143dce101035ddeaa5df236.dir
-      size: 38781
+      md5: dacea8711510443aead8ba1f276e6f7f.dir
+      size: 38865
       nfiles: 1

@@ -72,6 +72,13 @@ struct BotWorldExperimentConfig
     float ValidationRouteZ = 0.0f;
     float ValidationRouteO = 0.0f;
     uint32 ValidationRouteTargetEntry = 0;
+    uint32 ValidationRouteActivationDataId = 0;
+    uint32 ValidationRouteActivationDataValue = 0;
+    uint32 ValidationRouteActivationSummonEntry = 0;
+    float ValidationRouteActivationSummonX = 0.0f;
+    float ValidationRouteActivationSummonY = 0.0f;
+    float ValidationRouteActivationSummonZ = 0.0f;
+    float ValidationRouteActivationSummonO = 0.0f;
     bool AllowConfiguredCenterFallback = false;
     bool UseSavedPosition = true;
     float NearPlayerRadius = 20.0f;
@@ -275,6 +282,8 @@ private:
         ObjectGuid ValidationRouteCombatProgressTargetGuid;
         float ValidationRouteCombatBestHealthPct = 1.0f;
         uint32 ValidationRouteCombatNoProgressCount = 0;
+        bool ValidationRouteActivationApplied = false;
+        uint32 ValidationRouteActivationAttempts = 0;
         std::vector<SafePosition> SafePositions;
         std::map<uint64, uint64> DummyTargetCooldownUntilMs;
         std::map<std::string, uint64> AbilityObjectiveCooldownUntilMs;
