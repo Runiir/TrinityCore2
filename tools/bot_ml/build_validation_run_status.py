@@ -72,6 +72,10 @@ def expected_boss_stage(scenario: dict[str, Any]) -> str:
     return "raid_boss" if is_raid_scenario(scenario) else "dungeon_boss"
 
 
+def expected_trash_stage(scenario: dict[str, Any]) -> str:
+    return "raid_trash" if is_raid_scenario(scenario) else "normal_dungeon_trash"
+
+
 def has_boss_kill_evidence(report: dict[str, Any], scenario: dict[str, Any]) -> bool:
     stage = expected_boss_stage(scenario)
     if stage_passed(report, stage):
@@ -84,6 +88,19 @@ def has_boss_kill_evidence(report: dict[str, Any], scenario: dict[str, Any]) -> 
     if is_raid_scenario(scenario):
         return int_field(summary, "raid_boss_kills", "boss_kills", "bosses_killed") > 0 or "raid_boss_killed" in actions
     return int_field(summary, "boss_kills", "dungeon_boss_kills", "bosses_killed") > 0 or "boss_killed" in actions
+
+
+def has_trash_evidence(report: dict[str, Any], scenario: dict[str, Any]) -> bool:
+    if stage_passed(report, expected_trash_stage(scenario)):
+        return True
+    summary = report.get("summary") if isinstance(report.get("summary"), dict) else {}
+    evidence = report.get("evidence") if isinstance(report.get("evidence"), dict) else {}
+    actions = set(trace_actions(report))
+    return (
+        int_field(summary, "trash_pulls", "trash_kills", "trash_packs_cleared") > 0
+        or int_field(evidence, "trash_pulls", "trash_kills", "trash_packs_cleared", "trash_action_evidence") > 0
+        or bool(actions & {"trash_action", "trash_killed", "dungeon_trash_cleared", "raid_trash_cleared"})
+    )
 
 
 def scenario_segment_result(scenario_report: dict[str, Any], segment: dict[str, Any]) -> dict[str, Any]:
@@ -123,12 +140,18 @@ def validate_scenario_segment_result(row: dict[str, Any], segment: dict[str, Any
         boss_ready = int_field(row, "boss_kills", "raid_boss_kills", "bosses_killed") > 0
         if not boss_ready:
             reasons.append("missing_boss_kill_evidence")
+    trash_ready = True
+    if str(segment.get("kind") or "") == "trash":
+        trash_ready = int_field(row, "trash_pulls", "trash_kills", "trash_packs_cleared") > 0 or bool(row.get("trash_cleared"))
+        if not trash_ready:
+            reasons.append("missing_trash_evidence")
     context_matches = not any(reason.endswith("_mismatch") for reason in reasons)
     return {
         "report_valid": True,
         "validation_context_matches": context_matches,
         "boss_evidence_ready": boss_ready,
-        "segment_ready": context_matches and boss_ready and not failure_labels and not failure_reason,
+        "trash_evidence_ready": trash_ready,
+        "segment_ready": context_matches and boss_ready and trash_ready and not failure_labels and not failure_reason,
         "invalid_reasons": reasons,
     }
 
@@ -176,13 +199,19 @@ def validate_segment_report(report: dict[str, Any], segment: dict[str, Any], sce
         boss_ready = has_boss_kill_evidence(report, scenario)
         if not boss_ready:
             reasons.append("missing_boss_kill_evidence")
+    trash_ready = True
+    if str(segment.get("kind") or "") == "trash":
+        trash_ready = has_trash_evidence(report, scenario)
+        if not trash_ready:
+            reasons.append("missing_trash_evidence")
 
     report_valid = not load_error and schema == "bot_live_validation_report_v1" and not bool(report.get("timed_out")) and int_field(report, "returncode") == 0
     return {
         "report_valid": report_valid,
         "validation_context_matches": context_matches,
         "boss_evidence_ready": boss_ready,
-        "segment_ready": report_valid and context_matches and boss_ready,
+        "trash_evidence_ready": trash_ready,
+        "segment_ready": report_valid and context_matches and boss_ready and trash_ready,
         "invalid_reasons": reasons,
     }
 
@@ -224,6 +253,7 @@ def build_status(plan: dict[str, Any], report_root: Path) -> dict[str, Any]:
                 "report_valid": validation["report_valid"],
                 "validation_context_matches": validation["validation_context_matches"],
                 "boss_evidence_ready": validation["boss_evidence_ready"],
+                "trash_evidence_ready": validation.get("trash_evidence_ready", True),
                 "segment_ready": validation["segment_ready"],
                 "invalid_reasons": validation["invalid_reasons"],
                 "evidence_source": evidence_source,
@@ -244,7 +274,7 @@ def build_status(plan: dict[str, Any], report_root: Path) -> dict[str, Any]:
         clear_complete = bool(scenario_report.get("clear_complete"))
         segment_coverage_ready = bool(segments) and not missing_segments and not invalid_segments
         scenario_report_ready = scenario_report_file.exists()
-        full_clear_ready = clear_complete and (complete_segment_coverage or not segments)
+        full_clear_ready = clear_complete and segment_coverage_ready and (complete_segment_coverage or not segments)
 
         next_commands = [
             row["live_validate_shell"]

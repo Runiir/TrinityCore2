@@ -96,11 +96,11 @@ def route_coordinates_valid(route: dict[str, Any]) -> bool:
 def scenario_report_command(scenario: dict[str, Any], output_root: Path, report_root: Path, validation_scenario_dir: Path, routes: list[dict[str, Any]] | None = None) -> list[str]:
     scenario_id = str(scenario.get("scenario_id") or "")
     live_reports: list[str]
-    boss_routes = [row for row in routes or [] if row.get("kind") == "boss" and route_coordinates_valid(row)]
-    if boss_routes:
+    executable_routes = [row for row in routes or [] if route_coordinates_valid(row)]
+    if executable_routes:
         live_reports = [
             str(output_root / scenario_output_name(scenario_id) / segment_output_name(route) / "report.json")
-            for route in boss_routes
+            for route in executable_routes
         ]
     else:
         live_reports = [str(output_root / scenario_output_name(scenario_id) / "report.json")]
@@ -144,11 +144,11 @@ def build_plan(
         if not scenario_id:
             continue
         routes = (routes_by_scenario or {}).get(scenario_id, [])
-        boss_routes = [route for route in routes if route.get("kind") == "boss"]
+        route_segments = [route for route in routes if route.get("kind") in {"trash", "boss"}]
         live_command = live_validate_command(scenario, output_root, observe_sec, timeout_sec)
-        report_command = scenario_report_command(scenario, output_root, report_root, validation_scenario_dir, boss_routes)
+        report_command = scenario_report_command(scenario, output_root, report_root, validation_scenario_dir, route_segments)
         segments = []
-        for route in boss_routes:
+        for route in route_segments:
             segment_command = live_validate_command(scenario, output_root, observe_sec, timeout_sec, route)
             executable = route_coordinates_valid(route)
             segments.append(

@@ -1085,12 +1085,13 @@ def test_validation_run_plan_segments_boss_routes_for_aggregate_reports():
     )
     bwd = plan["scenarios"][0]
 
-    assert bwd["segment_count"] == 6
-    assert [segment["label"] for segment in bwd["segments"]][0] == "Magmaw"
+    assert bwd["segment_count"] == 7
+    assert [segment["label"] for segment in bwd["segments"]][0] == "entry trash"
     assert bwd["segments"][-1]["segment_id"] == "08_nefarian"
-    assert bwd["scenario_report_command"].count("--live-report") == 6
+    assert bwd["scenario_report_command"].count("--live-report") == 7
+    assert "dataset/live_validation_scenarios/blackwing_descent_10n/01_entry_trash/report.json" in bwd["scenario_report_command"]
     assert "dataset/live_validation_scenarios/blackwing_descent_10n/02_magmaw/report.json" in bwd["scenario_report_command"]
-    first_command = bwd["segments"][0]["live_validate_command"]
+    first_command = bwd["segments"][1]["live_validate_command"]
     assert "--validation-scenario-id" in first_command
     assert first_command[first_command.index("--validation-scenario-id") + 1] == "blackwing_descent_10n"
     assert first_command[first_command.index("--validation-segment-id") + 1] == "02_magmaw"
@@ -1102,6 +1103,7 @@ def test_validation_run_plan_segments_boss_routes_for_aggregate_reports():
     for segment in bwd["segments"]:
         assert "--keep-bot-pool-position" in segment["live_validate_command"]
         assert "blackwing_descent_10n" in segment["live_validate_command"]
+    assert bwd["segments"][0]["kind"] == "trash"
 
 
 def test_validation_run_plan_marks_segments_without_coordinates_non_executable(tmp_path):
@@ -1151,6 +1153,17 @@ def test_validation_run_status_reports_missing_segments_and_next_commands(tmp_pa
                 "difficulty": "normal_10man",
                 "scenario_report_shell": "pixi run bot-live-scenario-reports --scenario-id blackwing_descent_10n",
                 "segments": [
+                    {
+                        "segment_id": "01_entry_trash",
+                        "route_node_id": "bwd_entry_trash",
+                        "kind": "trash",
+                        "label": "entry trash",
+                        "mechanic_profile": "",
+                        "executable": True,
+                        "live_output_dir": str(live_root / "blackwing_descent_10n" / "01_entry_trash"),
+                        "live_validate_command": ["pixi", "run", "bot-live-validate", "--validation-segment-id", "01_entry_trash"],
+                        "live_validate_shell": "pixi run bot-live-validate --validation-segment-id 01_entry_trash",
+                    },
                     {
                         "segment_id": "02_magmaw",
                         "route_node_id": "bwd_magmaw",
@@ -1210,10 +1223,11 @@ def test_validation_run_status_reports_missing_segments_and_next_commands(tmp_pa
     assert status["all_ready"] is False
     assert bwd["present_segments"] == ["02_magmaw"]
     assert bwd["existing_segments"] == ["02_magmaw"]
-    assert bwd["missing_segments"] == ["03_omnotron"]
+    assert bwd["missing_segments"] == ["01_entry_trash", "03_omnotron"]
     assert bwd["invalid_segments"] == []
     assert bwd["blockers"] == ["missing_segment_live_reports", "incomplete_segment_coverage", "scenario_clear_not_complete"]
-    assert bwd["next_commands"][0] == "pixi run bot-live-validate --validation-segment-id 03_omnotron"
+    assert bwd["next_commands"][0] == "pixi run bot-live-validate --validation-segment-id 01_entry_trash"
+    assert bwd["next_commands"][1] == "pixi run bot-live-validate --validation-segment-id 03_omnotron"
     assert bwd["next_commands"][-1].startswith("pixi run bot-live-scenario-reports")
 
 
@@ -1340,6 +1354,67 @@ def test_validation_run_status_accepts_boss_kill_evidence_counter(tmp_path):
     assert stonecore["invalid_segments"] == []
     assert report_row["boss_evidence_ready"] is True
     assert report_row["evidence_source"] == "segment_report"
+
+
+def test_validation_run_status_accepts_trash_segment_evidence(tmp_path):
+    live_root = tmp_path / "live_validation_scenarios"
+    report_root = tmp_path / "scenario_reports"
+    plan = {
+        "scenarios": [
+            {
+                "scenario_id": "stonecore_5n",
+                "instance": "The Stonecore",
+                "difficulty": "normal_5man",
+                "segments": [
+                    {
+                        "segment_id": "01_entrance_packs",
+                        "route_node_id": "stonecore_entrance_trash",
+                        "kind": "trash",
+                        "label": "entrance packs",
+                        "mechanic_profile": "",
+                        "executable": True,
+                        "live_output_dir": str(live_root / "stonecore_5n" / "01_entrance_packs"),
+                        "live_validate_shell": "pixi run bot-live-validate --validation-segment-id 01_entrance_packs",
+                    }
+                ],
+            }
+        ]
+    }
+    report = live_root / "stonecore_5n" / "01_entrance_packs" / "report.json"
+    report.parent.mkdir(parents=True)
+    report.write_text(
+        json.dumps(
+            {
+                "schema": "bot_live_validation_report_v1",
+                "returncode": 0,
+                "timed_out": False,
+                "validation_context": {
+                    "scenario_id": "stonecore_5n",
+                    "segment_id": "01_entrance_packs",
+                    "route_node_id": "stonecore_entrance_trash",
+                    "route_kind": "trash",
+                    "mechanic_profile": "",
+                },
+                "summary": {"trash_pulls": 2},
+                "trace": {"entries": [{"action": "trash_action", "situation": "normal_dungeon_trash"}]},
+            }
+        ),
+        encoding="utf-8",
+    )
+    report_root.mkdir()
+    (report_root / "stonecore_5n.json").write_text(
+        json.dumps({"scenario_id": "stonecore_5n", "clear_complete": True, "complete_segment_coverage": True}),
+        encoding="utf-8",
+    )
+
+    status = build_validation_run_status(plan, report_root)
+    stonecore = status["scenarios"][0]
+    report_row = stonecore["segment_reports"][0]
+
+    assert status["all_ready"] is True
+    assert stonecore["present_segments"] == ["01_entrance_packs"]
+    assert report_row["trash_evidence_ready"] is True
+    assert report_row["segment_ready"] is True
 
 
 def test_validation_run_status_accepts_scenario_segment_result_for_noncanonical_report(tmp_path):
