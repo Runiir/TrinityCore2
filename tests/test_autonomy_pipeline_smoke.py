@@ -360,6 +360,9 @@ def test_quest_first_portfolio_routing_surface():
     assert "ValidationRouteCombatNoProgressCount" in mgr_header
     assert "stale_focus_expired" in mgr
     assert "validation_route_recover_stale_focus" in mgr
+    assert "teleport_unreachable_last_known_tank_focus" in mgr
+    assert "validation_route_recover_unreachable_focus" in mgr
+    assert "bot->TeleportTo(bot->GetMapId(), _validationRouteFocusX" in mgr
     assert "validation_route_teacher_assist" in mgr
     assert "validation_route_prerequisite_no_progress" in mgr
     assert "validation_route_activation" in mgr
@@ -370,6 +373,23 @@ def test_quest_first_portfolio_routing_surface():
     assert "if (_validationRouteActivationApplied)" in mgr
     assert "state.ValidationRouteActivationAttempts = _validationRouteActivationAttempts;" in mgr
     assert "_validationRouteActivationApplied = true;" in mgr
+    assert "ValidationRouteOpenerTargetEntry" in mgr_header
+    assert "ValidationRouteOpenerSummonEntry" in mgr_header
+    assert "ValidationRouteActivationSpawnGroupId" in mgr_header
+    assert "ValidationRouteActivationActionEntry" in mgr_header
+    assert "ValidationRouteActivationActionId" in mgr_header
+    assert "BotWorld.ValidationRoute.OpenerTargetEntry" in mgr
+    assert "BotWorld.ValidationRoute.OpenerSummonEntry" in mgr
+    assert "BotWorld.ValidationRoute.ActivationSpawnGroupId" in mgr
+    assert "BotWorld.ValidationRoute.ActivationActionEntry" in mgr
+    assert "BotWorld.ValidationRoute.ActivationActionId" in mgr
+    assert "isValidationRouteScriptTarget" in mgr
+    assert "candidateOpener && !currentOpener" in mgr
+    assert "SpawnGroupSpawn(_config.ValidationRouteActivationSpawnGroupId" in mgr
+    assert "creature->AI()->DoAction(_config.ValidationRouteActivationActionId)" in mgr
+    assert "bot->SummonCreature(_config.ValidationRouteOpenerSummonEntry" in mgr
+    assert "float routeArrivalRadius =" in mgr
+    assert "_config.ValidationRouteActivationSpawnGroupId" in mgr
     assert "BotWorld.ValidationRoute.ActivationDataId" in mgr
     assert "BotWorld.ValidationRoute.ActivationSummonEntry" in mgr
     assert "activation_applied_no_visible_target" in mgr
@@ -381,6 +401,8 @@ def test_quest_first_portfolio_routing_surface():
     assert "regroup_tank_focus_mismatch" in mgr
     assert "follow_anchor_tank_focus_mismatch" in mgr
     assert "hold_anchor_tank_focus_mismatch" in mgr
+    assert "nearestMatchingEntry" in mgr
+    assert "return nearestMatchingEntry;" in mgr
     assert "Player* member = GetBot(cohortState)" in function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteObjective")
     assert "SELECT role FROM character_bot_pool WHERE guid" in mgr
     assert 'poolRole.find("tank")' in mgr

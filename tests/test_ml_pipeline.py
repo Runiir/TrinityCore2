@@ -850,7 +850,15 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert nefarian["expected_bot_count"] == 10
     assert atramedes["activation_data_id"] == 10
     assert nefarian["activation_data_id"] == 35
+    assert nefarian["activation_spawn_group_id"] == 0
+    assert nefarian["activation_action_entry"] == 0
+    assert nefarian["activation_action_id"] == 0
     assert nefarian["activation_summon_entry"] == 41376
+    assert nefarian["activation_summon_z"] == 40.48163
+    assert nefarian["opener_target_entry"] == 41270
+    assert nefarian["opener_summon_entry"] == 0
+    assert nefarian["bot_start_map_id"] == 669
+    assert nefarian["bot_start_z"] == 6.57143
     assert any(row["scenario_id"] == "blackwing_descent_10n" and "raid_aoe" in row["families"] for row in mechanics)
     assert manifests["report"]["ready_scenarios"] == 2
     assert manifests["report"]["invalid_route_steps"] == []
@@ -1798,6 +1806,11 @@ def test_live_bot_validation_dry_run_writes_command_file(tmp_path, monkeypatch):
     assert "BotWorld.TargetPopulation = 10" in generated_config
     assert 'BotWorld.ValidationRoute.NodeId = "bwd_magmaw"' in generated_config
     assert "BotWorld.ValidationRoute.TargetEntry = 41570" in generated_config
+    assert "BotWorld.ValidationRoute.OpenerTargetEntry = 0" in generated_config
+    assert "BotWorld.ValidationRoute.ActivationSpawnGroupId = 0" in generated_config
+    assert "BotWorld.ValidationRoute.ActivationActionEntry = 0" in generated_config
+    assert "BotWorld.ValidationRoute.ActivationActionId = 0" in generated_config
+    assert "BotWorld.ValidationRoute.OpenerSummonEntry = 0" in generated_config
     assert "BotProgression.AllowDungeons = 1" in generated_config
 
 

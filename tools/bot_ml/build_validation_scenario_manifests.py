@@ -143,13 +143,28 @@ def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any],
             }
             route["route_node_id"] = stable_hash(route)[:16]
             route["expected_bot_count"] = expected_bot_count
+            bot_start = step.get("bot_start") or {}
+            route["bot_start_map_id"] = int(bot_start.get("map_id") or step.get("bot_start_map_id") or 0)
+            route["bot_start_x"] = float(bot_start.get("x") or step.get("bot_start_x") or 0.0)
+            route["bot_start_y"] = float(bot_start.get("y") or step.get("bot_start_y") or 0.0)
+            route["bot_start_z"] = float(bot_start.get("z") or step.get("bot_start_z") or 0.0)
+            route["bot_start_o"] = float(bot_start.get("o") or step.get("bot_start_o") or 0.0)
+            route["opener_target_entry"] = int(step.get("opener_target_entry") or 0)
             route["activation_data_id"] = int(step.get("activation_data_id") or 0)
             route["activation_data_value"] = int(step.get("activation_data_value") or 0)
+            route["activation_spawn_group_id"] = int(step.get("activation_spawn_group_id") or 0)
+            route["activation_action_entry"] = int(step.get("activation_action_entry") or 0)
+            route["activation_action_id"] = int(step.get("activation_action_id") or 0)
             route["activation_summon_entry"] = int(step.get("activation_summon_entry") or 0)
             route["activation_summon_x"] = float(step.get("activation_summon_x") or 0.0)
             route["activation_summon_y"] = float(step.get("activation_summon_y") or 0.0)
             route["activation_summon_z"] = float(step.get("activation_summon_z") or 0.0)
             route["activation_summon_o"] = float(step.get("activation_summon_o") or 0.0)
+            route["opener_summon_entry"] = int(step.get("opener_summon_entry") or 0)
+            route["opener_summon_x"] = float(step.get("opener_summon_x") or 0.0)
+            route["opener_summon_y"] = float(step.get("opener_summon_y") or 0.0)
+            route["opener_summon_z"] = float(step.get("opener_summon_z") or 0.0)
+            route["opener_summon_o"] = float(step.get("opener_summon_o") or 0.0)
             routes.append(route)
 
         for profile, families in profiles.items():
