@@ -39,6 +39,13 @@ logs/
 __pycache__/
 .pytest_cache/
 /dataset
+!/dataset/
+/dataset/*
+!/dataset/live_validation_scenarios/
+/dataset/live_validation_scenarios/*
+!/dataset/live_validation_scenarios/stonecore_5n/
+/dataset/live_validation_scenarios/stonecore_5n/*
+!/dataset/live_validation_scenarios/stonecore_5n/01_entrance_packs.dvc
 /experiments/runs
 /dvclive
 /models
