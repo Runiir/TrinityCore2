@@ -1,0 +1,6 @@
+outs:
+- md5: 7bb2387b7a54b07c6fc7bfd7505a6d80.dir
+  size: 3197568
+  nfiles: 35
+  hash: md5
+  path: live_validation_blackwing_descent_10n_remaining_bosses_long_300s

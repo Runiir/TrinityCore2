@@ -291,8 +291,10 @@ private:
         ObjectGuid ValidationRouteCombatProgressTargetGuid;
         float ValidationRouteCombatBestHealthPct = 1.0f;
         uint32 ValidationRouteCombatNoProgressCount = 0;
+        uint32 ValidationRouteBossSlowProgressCount = 0;
         bool ValidationRouteActivationApplied = false;
         uint32 ValidationRouteActivationAttempts = 0;
+        uint32 ValidationRouteTargetSearchMissCount = 0;
         std::vector<SafePosition> SafePositions;
         std::map<uint64, uint64> DummyTargetCooldownUntilMs;
         std::map<std::string, uint64> AbilityObjectiveCooldownUntilMs;

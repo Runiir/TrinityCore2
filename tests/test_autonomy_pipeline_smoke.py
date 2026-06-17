@@ -114,6 +114,13 @@ def test_server_start_autonomy_enabled_spawns_from_pool_without_center_requireme
     assert "PersistBotPosition" not in shutdown
     assert "spawned_bot_not_loaded" in update
     assert "UPDATE character_bot_pool SET in_use = 0 WHERE guid" in update
+    assert "validation_route_loaded_bot_not_in_world" in update
+    assert "validationBotStillDeciding" in update
+    assert "nowMs - itr->LastDecisionTickMs < 15000" in update
+    assert "_config.ValidationRouteEnable && itr->SpawnedMs && nowMs - itr->SpawnedMs >= 30000" in update
+    assert "BotWorld active bot respawn requested" in update
+    assert "_failedSpawnGuids.erase(prunedGuid.GetCounter())" in update
+    assert "_validationRouteActivationApplied = false" in update
 
     assert "uint32 candidateGuid = SelectPoolCandidateGuid();" in ensure_population
     assert 'sBotMgr->SpawnWorldBotAtSavedPosition("any", std::to_string(candidateGuid))' in ensure_population
@@ -358,15 +365,34 @@ def test_quest_first_portfolio_routing_surface():
     assert "validation_route_hold_focus" in mgr
     assert "ValidationRouteUnresolvedFocusHoldCount" in mgr_header
     assert "ValidationRouteCombatNoProgressCount" in mgr_header
+    assert "ValidationRouteBossSlowProgressCount" in mgr_header
+    assert '_config.ValidationRouteKind == "boss" ? 60000 : 20000' in mgr
     assert "stale_focus_expired" in mgr
     assert "validation_route_recover_stale_focus" in mgr
-    assert "teleport_unreachable_last_known_tank_focus" in mgr
-    assert "validation_route_recover_unreachable_focus" in mgr
-    assert "bot->TeleportTo(bot->GetMapId(), _validationRouteFocusX" in mgr
+    assert "findAuthoritativeRouteFocusTarget" in mgr
+    assert "teacherAssistAuthoritativeFocus" in mgr
+    assert "assist_unresolved_authoritative_focus" in mgr
+    assert "assist_target_search_authoritative_focus" in mgr
+    assert "authoritative_focus_guid_not_resolved" in mgr
+    assert "authoritative_focus_reference_rejected" in mgr
+    assert "authoritative_focus_no_same_map_cohort" in mgr
+    assert "unresolved_authoritative_focus_unavailable" in mgr
+    assert "validation_route_recover_unresolved_focus" in mgr
     assert "validation_route_teacher_assist" in mgr
     assert "validation_route_prerequisite_no_progress" in mgr
+    assert "boss_route_no_health_progress" in mgr
+    assert "boss_route_slow_progress_teacher_assist" in mgr
+    assert "recordValidationRouteBossKill" in mgr
+    assert "boss_route_script_target_blocked_teacher_assist" in mgr
+    assert "boss_route_activation_no_visible_target_teacher_assist" in mgr
+    assert "target_seen_not_attackable" in mgr
+    assert "boss_killed" in mgr
+    assert "raid_boss_killed" in mgr
+    assert 'std::string(context).rfind("boss_route_", 0) == 0 ? 2 : 4' in mgr
     assert "validation_route_activation" in mgr
     assert "ValidationRouteActivationApplied" in mgr_header
+    assert "ValidationRouteTargetSearchMissCount" in mgr_header
+    assert "reset_stale_boss_activation" in mgr
     assert "_validationRouteActivationApplied" in mgr_header
     assert "_validationRouteActivationAttempts" in mgr_header
     assert "_validationRouteActivationApplied = false;" in mgr
