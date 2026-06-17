@@ -529,6 +529,22 @@ def test_bot_ml_workflow_has_pixi_tasks_and_documented_dvc_steps():
     ]:
         assert stage in dvc
 
+    for segment_report in [
+        "dataset/live_validation_scenarios/stonecore_5n/02_corborus/report.json",
+        "dataset/live_validation_scenarios/stonecore_5n/04_slabhide/report.json",
+        "dataset/live_validation_scenarios/stonecore_5n/06_ozruk/report.json",
+        "dataset/live_validation_scenarios/stonecore_5n/08_high_priestess_azil/report.json",
+        "dataset/live_validation_scenarios/blackwing_descent_10n/02_magmaw/report.json",
+        "dataset/live_validation_scenarios/blackwing_descent_10n/03_omnotron_defense_system/report.json",
+        "dataset/live_validation_scenarios/blackwing_descent_10n/05_maloriak/report.json",
+        "dataset/live_validation_scenarios/blackwing_descent_10n/06_atramedes/report.json",
+        "dataset/live_validation_scenarios/blackwing_descent_10n/07_chimaeron/report.json",
+        "dataset/live_validation_scenarios/blackwing_descent_10n/08_nefarian_validation_activation_miss_assist_final_120s/report.json",
+    ]:
+        assert segment_report in dvc
+    assert dvc.count("--live-report") >= 10
+    assert "dataset/live_validation_scenario_reports/report.json" not in dvc
+
 
 def test_world_knowledge_can_read_database_url_from_worldserver_conf(tmp_path):
     conf = tmp_path / "worldserver.conf"
@@ -1150,6 +1166,148 @@ def test_validation_run_status_reruns_invalid_existing_segment_reports(tmp_path)
     assert "segment_id_mismatch" in report_row["invalid_reasons"]
     assert "missing_boss_kill_evidence" in report_row["invalid_reasons"]
     assert stonecore["next_commands"][0] == "pixi run bot-live-validate --validation-segment-id 02_corborus"
+
+
+def test_validation_run_status_accepts_boss_kill_evidence_counter(tmp_path):
+    live_root = tmp_path / "live_validation_scenarios"
+    report_root = tmp_path / "scenario_reports"
+    plan = {
+        "scenarios": [
+            {
+                "scenario_id": "stonecore_5n",
+                "instance": "The Stonecore",
+                "difficulty": "normal_5man",
+                "segments": [
+                    {
+                        "segment_id": "02_corborus",
+                        "route_node_id": "stonecore_corborus",
+                        "kind": "boss",
+                        "label": "Corborus",
+                        "mechanic_profile": "corborus",
+                        "executable": True,
+                        "live_output_dir": str(live_root / "stonecore_5n" / "02_corborus"),
+                        "live_validate_shell": "pixi run bot-live-validate --validation-segment-id 02_corborus",
+                    }
+                ],
+            }
+        ]
+    }
+    report = live_root / "stonecore_5n" / "02_corborus" / "report.json"
+    report.parent.mkdir(parents=True)
+    report.write_text(
+        json.dumps(
+            {
+                "schema": "bot_live_validation_report_v1",
+                "returncode": 0,
+                "timed_out": False,
+                "validation_context": {
+                    "scenario_id": "stonecore_5n",
+                    "segment_id": "02_corborus",
+                    "route_node_id": "stonecore_corborus",
+                    "route_kind": "boss",
+                    "mechanic_profile": "corborus",
+                },
+                "evidence": {"boss_kill_evidence": 1},
+            }
+        ),
+        encoding="utf-8",
+    )
+    report_root.mkdir()
+    (report_root / "stonecore_5n.json").write_text(
+        json.dumps({"scenario_id": "stonecore_5n", "clear_complete": True, "complete_segment_coverage": True}),
+        encoding="utf-8",
+    )
+
+    status = build_validation_run_status(plan, report_root)
+    stonecore = status["scenarios"][0]
+    report_row = stonecore["segment_reports"][0]
+
+    assert stonecore["present_segments"] == ["02_corborus"]
+    assert stonecore["invalid_segments"] == []
+    assert report_row["boss_evidence_ready"] is True
+    assert report_row["evidence_source"] == "segment_report"
+
+
+def test_validation_run_status_accepts_scenario_segment_result_for_noncanonical_report(tmp_path):
+    live_root = tmp_path / "live_validation_scenarios"
+    report_root = tmp_path / "scenario_reports"
+    plan = {
+        "scenarios": [
+            {
+                "scenario_id": "blackwing_descent_10n",
+                "instance": "Blackwing Descent",
+                "difficulty": "normal_10man",
+                "segments": [
+                    {
+                        "segment_id": "08_nefarian",
+                        "route_node_id": "bwd_nefarian_current",
+                        "kind": "boss",
+                        "label": "Nefarian",
+                        "mechanic_profile": "nefarian",
+                        "executable": True,
+                        "live_output_dir": str(live_root / "blackwing_descent_10n" / "08_nefarian"),
+                        "live_validate_shell": "pixi run bot-live-validate --validation-segment-id 08_nefarian",
+                    }
+                ],
+            }
+        ]
+    }
+    stale_report = live_root / "blackwing_descent_10n" / "08_nefarian" / "report.json"
+    stale_report.parent.mkdir(parents=True)
+    stale_report.write_text(
+        json.dumps(
+            {
+                "schema": "bot_live_validation_report_v1",
+                "returncode": 0,
+                "timed_out": False,
+                "validation_context": {
+                    "scenario_id": "blackwing_descent_10n",
+                    "segment_id": "08_nefarian",
+                    "route_node_id": "old_route_node",
+                    "route_kind": "boss",
+                    "mechanic_profile": "nefarian",
+                },
+                "failure_reason": "boss_attempt_no_kill",
+                "evidence": {"boss_kill_evidence": 0},
+            }
+        ),
+        encoding="utf-8",
+    )
+    good_report = live_root / "blackwing_descent_10n" / "08_nefarian_final" / "report.json"
+    good_report.parent.mkdir(parents=True)
+    good_report.write_text("{}", encoding="utf-8")
+    report_root.mkdir()
+    (report_root / "blackwing_descent_10n.json").write_text(
+        json.dumps(
+            {
+                "scenario_id": "blackwing_descent_10n",
+                "clear_complete": True,
+                "complete_segment_coverage": True,
+                "segment_results": [
+                    {
+                        "segment_id": "08_nefarian",
+                        "route_node_id": "bwd_nefarian_current",
+                        "route_kind": "boss",
+                        "mechanic_profile": "nefarian",
+                        "raid_boss_kills": 1,
+                        "failure_labels": [],
+                        "failure_reason": "",
+                        "source_live_report": str(good_report),
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    status = build_validation_run_status(plan, report_root)
+    bwd = status["scenarios"][0]
+    report_row = bwd["segment_reports"][0]
+
+    assert bwd["present_segments"] == ["08_nefarian"]
+    assert bwd["invalid_segments"] == []
+    assert report_row["evidence_source"] == "scenario_segment_result"
+    assert report_row["report"] == str(good_report)
 
 
 def test_validation_run_status_rejects_open_world_kills_as_dungeon_boss_evidence(tmp_path):

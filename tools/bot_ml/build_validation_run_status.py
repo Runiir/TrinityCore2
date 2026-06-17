@@ -77,10 +77,60 @@ def has_boss_kill_evidence(report: dict[str, Any], scenario: dict[str, Any]) -> 
     if stage_passed(report, stage):
         return True
     summary = report.get("summary") if isinstance(report.get("summary"), dict) else {}
+    evidence = report.get("evidence") if isinstance(report.get("evidence"), dict) else {}
     actions = set(trace_actions(report))
+    if int_field(evidence, "boss_kill_evidence") > 0:
+        return True
     if is_raid_scenario(scenario):
         return int_field(summary, "raid_boss_kills", "boss_kills", "bosses_killed") > 0 or "raid_boss_killed" in actions
     return int_field(summary, "boss_kills", "dungeon_boss_kills", "bosses_killed") > 0 or "boss_killed" in actions
+
+
+def scenario_segment_result(scenario_report: dict[str, Any], segment: dict[str, Any]) -> dict[str, Any]:
+    expected_segment_id = str(segment.get("segment_id") or "")
+    expected_route_node_id = str(segment.get("route_node_id") or "")
+    for row in scenario_report.get("segment_results") or []:
+        if not isinstance(row, dict):
+            continue
+        if expected_segment_id and str(row.get("segment_id") or "") != expected_segment_id:
+            continue
+        if expected_route_node_id and str(row.get("route_node_id") or "") != expected_route_node_id:
+            continue
+        return row
+    return {}
+
+
+def validate_scenario_segment_result(row: dict[str, Any], segment: dict[str, Any], scenario: dict[str, Any]) -> dict[str, Any]:
+    reasons = []
+    if not row:
+        return {
+            "report_valid": False,
+            "validation_context_matches": False,
+            "boss_evidence_ready": False,
+            "segment_ready": False,
+            "invalid_reasons": ["missing_scenario_segment_result"],
+        }
+    if str(row.get("route_kind") or "") != str(segment.get("kind") or ""):
+        reasons.append("route_kind_mismatch")
+    if str(row.get("mechanic_profile") or "") != str(segment.get("mechanic_profile") or ""):
+        reasons.append("mechanic_profile_mismatch")
+    failure_labels = row.get("failure_labels") if isinstance(row.get("failure_labels"), list) else []
+    failure_reason = str(row.get("failure_reason") or "")
+    if failure_labels or failure_reason:
+        reasons.append("scenario_segment_has_failures")
+    boss_ready = True
+    if str(segment.get("kind") or "") == "boss":
+        boss_ready = int_field(row, "boss_kills", "raid_boss_kills", "bosses_killed") > 0
+        if not boss_ready:
+            reasons.append("missing_boss_kill_evidence")
+    context_matches = not any(reason.endswith("_mismatch") for reason in reasons)
+    return {
+        "report_valid": True,
+        "validation_context_matches": context_matches,
+        "boss_evidence_ready": boss_ready,
+        "segment_ready": context_matches and boss_ready and not failure_labels and not failure_reason,
+        "invalid_reasons": reasons,
+    }
 
 
 def validate_segment_report(report: dict[str, Any], segment: dict[str, Any], scenario: dict[str, Any], load_error: str = "") -> dict[str, Any]:
@@ -142,6 +192,8 @@ def build_status(plan: dict[str, Any], report_root: Path) -> dict[str, Any]:
     for scenario in plan.get("scenarios") or []:
         scenario_id = str(scenario.get("scenario_id") or "")
         segments = [segment for segment in scenario.get("segments") or [] if segment.get("executable", True)]
+        scenario_report_file = scenario_report_path(report_root, scenario_id)
+        scenario_report = load_json(scenario_report_file)
         present_segments = []
         existing_segments = []
         missing_segments = []
@@ -151,18 +203,30 @@ def build_status(plan: dict[str, Any], report_root: Path) -> dict[str, Any]:
             report_path = segment_report_path(segment)
             report, load_error = load_report(report_path)
             validation = validate_segment_report(report, segment, scenario, load_error)
+            evidence_source = "segment_report"
+            scenario_segment = {}
+            if not validation["segment_ready"]:
+                scenario_segment = scenario_segment_result(scenario_report, segment)
+                scenario_validation = validate_scenario_segment_result(scenario_segment, segment, scenario)
+                if scenario_validation["segment_ready"]:
+                    validation = scenario_validation
+                    evidence_source = "scenario_segment_result"
+                    source_live_report = str(scenario_segment.get("source_live_report") or "")
+                    if source_live_report:
+                        report_path = Path(source_live_report)
             row = {
                 "segment_id": segment.get("segment_id") or "",
                 "route_node_id": segment.get("route_node_id") or "",
                 "label": segment.get("label") or "",
                 "mechanic_profile": segment.get("mechanic_profile") or "",
                 "report": str(report_path),
-                "report_exists": report_path.exists(),
+                "report_exists": report_path.exists() or bool(scenario_segment),
                 "report_valid": validation["report_valid"],
                 "validation_context_matches": validation["validation_context_matches"],
                 "boss_evidence_ready": validation["boss_evidence_ready"],
                 "segment_ready": validation["segment_ready"],
                 "invalid_reasons": validation["invalid_reasons"],
+                "evidence_source": evidence_source,
                 "live_validate_command": segment.get("live_validate_command") or [],
                 "live_validate_shell": segment.get("live_validate_shell") or "",
             }
@@ -176,8 +240,6 @@ def build_status(plan: dict[str, Any], report_root: Path) -> dict[str, Any]:
             else:
                 missing_segments.append(row["segment_id"])
 
-        scenario_report_file = scenario_report_path(report_root, scenario_id)
-        scenario_report = load_json(scenario_report_file)
         complete_segment_coverage = bool(scenario_report.get("complete_segment_coverage"))
         clear_complete = bool(scenario_report.get("clear_complete"))
         segment_coverage_ready = bool(segments) and not missing_segments and not invalid_segments
