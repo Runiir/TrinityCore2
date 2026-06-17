@@ -907,6 +907,48 @@ void BotWorldPopulationMgr::Update(uint32 diff)
         if (!loadedBot->IsInWorld())
         {
             _lastPopulationFailureReason = "loaded_bot_not_in_world";
+            if (_config.ValidationRouteEnable)
+            {
+                Map* botMap = loadedBot->GetMap();
+                uint32 mapId = botMap ? botMap->GetId() : (itr->SpawnMapId ? itr->SpawnMapId : loadedBot->GetMapId());
+                bool const validPosition = MapManager::IsValidMapCoord(mapId, loadedBot->GetPositionX(), loadedBot->GetPositionY(), loadedBot->GetPositionZ(), loadedBot->GetOrientation());
+                if (!validPosition && itr->SpawnMapId)
+                {
+                    mapId = itr->SpawnMapId;
+                    loadedBot->Relocate(itr->SpawnX, itr->SpawnY, itr->SpawnZ, itr->SpawnO);
+                }
+
+                if (!botMap && mapId)
+                {
+                    botMap = sMapMgr->CreateMap(mapId, loadedBot);
+                    loadedBot->SetMap(botMap);
+                }
+
+                bool reattached = false;
+                if (botMap && MapManager::IsValidMapCoord(botMap->GetId(), loadedBot->GetPositionX(), loadedBot->GetPositionY(), loadedBot->GetPositionZ(), loadedBot->GetOrientation()))
+                {
+                    if (loadedBot->IsInGrid())
+                    {
+                        loadedBot->AddToWorld();
+                        reattached = loadedBot->IsInWorld();
+                    }
+                    else
+                        reattached = botMap->AddPlayerToMap(loadedBot);
+                }
+
+                TC_LOG_DEBUG("server", "BotWorld validation reattach bot=%s result=%u map=%u instance=%u in_grid=%u in_world=%u pos=%.3f,%.3f,%.3f",
+                    loadedBot->GetGUID().ToString().c_str(), reattached ? 1 : 0, botMap ? botMap->GetId() : mapId,
+                    botMap ? botMap->GetInstanceId() : 0, loadedBot->IsInGrid() ? 1 : 0, loadedBot->IsInWorld() ? 1 : 0,
+                    loadedBot->GetPositionX(), loadedBot->GetPositionY(), loadedBot->GetPositionZ());
+
+                if (reattached && loadedBot->IsInWorld())
+                {
+                    UpdateBot(*itr, diff);
+                    ++itr;
+                    continue;
+                }
+            }
+
             bool validationBotStillDeciding = _config.ValidationRouteEnable
                 && itr->LastDecisionTickMs
                 && nowMs >= itr->LastDecisionTickMs

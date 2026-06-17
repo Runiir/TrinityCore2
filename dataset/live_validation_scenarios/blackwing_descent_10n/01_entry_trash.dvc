@@ -1,0 +1,6 @@
+outs:
+- md5: 21356de7b508a4f9385ff697ffe4abab.dir
+  size: 1066887
+  nfiles: 7
+  hash: md5
+  path: 01_entry_trash

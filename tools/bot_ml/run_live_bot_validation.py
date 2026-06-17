@@ -4,6 +4,7 @@ import argparse
 import base64
 import html
 import json
+import os
 import select
 import subprocess
 import time
@@ -378,20 +379,20 @@ def command_script(selector: str = "all", trace_limit: int = 20, start: bool = T
 
 def parse_json_objects(output: str) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
-    for line in output.splitlines():
-        text = line.strip()
-        if not text:
-            continue
-        start = text.find("{")
-        end = text.rfind("}")
-        if start == -1 or end == -1 or end <= start:
-            continue
+    decoder = json.JSONDecoder()
+    index = 0
+    while index < len(output):
+        start = output.find("{", index)
+        if start == -1:
+            break
         try:
-            payload = json.loads(text[start : end + 1])
+            payload, end = decoder.raw_decode(output[start:])
         except json.JSONDecodeError:
+            index = start + 1
             continue
         if isinstance(payload, dict):
             rows.append(payload)
+        index = start + max(end, 1)
     return rows
 
 
@@ -422,6 +423,45 @@ def should_observe_before_command(command_text: str) -> bool:
         or command_text.startswith(".botauto trace")
         or command_text == ".botexp summary"
     )
+
+
+def bot_status_ready(output: str) -> bool:
+    return bot_status_state(output) is True
+
+
+def bot_status_state(output: str) -> bool | None:
+    payloads = parse_json_objects(output)
+    for row in reversed(payloads):
+        if not isinstance(row, dict):
+            continue
+        if row.get("action") not in {"botexp_status", "botauto_status"} and not ({"active", "active_bots", "target_bots", "bots"} & set(row)):
+            continue
+        active_bots = int(row.get("active_bots") or row.get("bots") or row.get("activeBots") or 0)
+        target_bots = int(row.get("target_bots") or row.get("targetBots") or 0)
+        if active_bots > 0 and (target_bots <= 0 or active_bots >= target_bots):
+            return True
+        return False
+    return None
+
+
+def wait_for_bot_status_ready(process: subprocess.Popen[str], deadline: float, max_wait_sec: int = 180) -> str:
+    if process.stdin is None:
+        return ""
+    output = []
+    ready_deadline = min(deadline, time.monotonic() + max_wait_sec)
+    while process.poll() is None and time.monotonic() < ready_deadline:
+        process.stdin.write(".botauto status\n")
+        process.stdin.flush()
+        chunk = read_until_console_prompt(process, ready_deadline, expected_command_output_marker(".botauto status"))
+        output.append("$ .botauto status\n")
+        output.append(chunk)
+        status_state = bot_status_state(chunk)
+        if status_state is True:
+            break
+        if status_state is None:
+            break
+        time.sleep(2.0)
+    return "".join(output)
 
 
 def count_trace_entries(trace: dict[str, Any]) -> int:
@@ -615,6 +655,13 @@ def live_evidence(status: dict[str, Any], diagnosis: dict[str, Any], trace: dict
         for row in diagnoses
         if nested_get(row, ["snapshot", "decision", "action"], "")
     )
+    diagnosis_action_counts = Counter()
+    if not entries:
+        diagnosis_action_counts = Counter(
+            str(nested_get(row, ["snapshot", "decision", "action"], ""))
+            for row in diagnoses
+            if nested_get(row, ["snapshot", "decision", "action"], "")
+        )
     action_text = " ".join(sorted(action_names)).lower()
     quest_progress = max(int(status.get("quest_objective_progress") or 0), int(summary.get("quest_objective_progress") or 0))
     quests_accepted = max(int(status.get("quests_accepted") or 0), int(summary.get("quests_accepted") or 0), quest_acceptance_actions)
@@ -631,6 +678,11 @@ def live_evidence(status: dict[str, Any], diagnosis: dict[str, Any], trace: dict
         for action, count in action_counts.items()
         if action in {"trash_action", "trash_heal", "validation_route_trash_action", "dungeon_trash_cleared", "raid_trash_cleared"}
     )
+    trash_action_evidence += sum(
+        count
+        for action, count in diagnosis_action_counts.items()
+        if action in {"trash_action", "trash_heal", "validation_route_trash_action", "dungeon_trash_cleared", "raid_trash_cleared"}
+    )
     trash_pulls = max(
         int(summary.get("trash_pulls") or 0),
         int(summary.get("trash_kills") or 0),
@@ -641,8 +693,14 @@ def live_evidence(status: dict[str, Any], diagnosis: dict[str, Any], trace: dict
     gear_upgrades = max(int(status.get("gear_upgrades") or 0), int(summary.get("gear_upgrades") or 0))
     active_decision_evidence = decisions > 0 or non_spawn_trace_entries > 0 or moved_diagnoses > 0 or non_wait_diagnoses > 0
     validation_route_actions = sum(count for action, count in action_counts.items() if action.startswith("validation_route") or action.startswith("move_to_validation_route"))
-    boss_engagement_actions = sum(action_counts.get(action, 0) for action in ["boss_started", "boss_action", "validation_route_tank_boss", "validation_route_group_heal"])
-    trash_route_actions = action_counts.get("trash_action", 0) + action_counts.get("validation_route_trash_action", 0)
+    validation_route_actions += sum(count for action, count in diagnosis_action_counts.items() if action.startswith("validation_route") or action.startswith("move_to_validation_route"))
+    boss_engagement_actions = sum(action_counts.get(action, 0) + diagnosis_action_counts.get(action, 0) for action in ["boss_started", "boss_action", "validation_route_tank_boss", "validation_route_group_heal"])
+    trash_route_actions = (
+        action_counts.get("trash_action", 0)
+        + action_counts.get("validation_route_trash_action", 0)
+        + diagnosis_action_counts.get("trash_action", 0)
+        + diagnosis_action_counts.get("validation_route_trash_action", 0)
+    )
     return {
         "decisions": decisions,
         "failures": failures,
@@ -701,7 +759,7 @@ def validation_failure_labels(
         labels.append("bot_pool_underfilled")
     if active_bots > 0 and diagnosis_count <= 0:
         labels.append("missing_diagnosis")
-    if active_bots > 0 and trace_count <= 0:
+    if active_bots > 0 and trace_count <= 0 and not evidence.get("active_decision_evidence"):
         labels.append("missing_trace")
 
     boss_kills = int(evidence.get("boss_kill_evidence") or 0)
@@ -826,24 +884,41 @@ def live_validation_report(output: str, stages: list[str] | None = None, returnc
     }
 
 
-def read_until_console_prompt(process: subprocess.Popen[str], deadline: float) -> str:
+def read_until_console_prompt(process: subprocess.Popen[str], deadline: float, required_text: str = "") -> str:
     if process.stdout is None:
         return ""
     output: list[str] = []
-    window = ""
+    fd = process.stdout.fileno()
     while process.poll() is None and time.monotonic() < deadline:
         remaining = max(0.0, deadline - time.monotonic())
-        ready, _, _ = select.select([process.stdout], [], [], min(1.0, remaining))
+        ready, _, _ = select.select([fd], [], [], min(1.0, remaining))
         if not ready:
             continue
-        char = process.stdout.read(1)
-        if not char:
+        chunk = os.read(fd, 4096)
+        if not chunk:
             break
-        output.append(char)
-        window = (window + char)[-8:]
-        if "TC>" in window:
+        text = chunk.decode(errors="replace")
+        output.append(text)
+        joined = "".join(output)
+        if required_text and required_text in joined:
+            break
+        if required_text and "CMD " in joined and "TC>" in joined:
+            break
+        if not required_text and ("TC>" in text or "TC>" in joined[-16:]):
             break
     return "".join(output)
+
+
+def expected_command_output_marker(command_text: str) -> str:
+    if command_text == ".botauto status":
+        return '"target_bots"'
+    if command_text.startswith(".botauto diagnose"):
+        return '"diagnosis_schema_version"'
+    if command_text.startswith(".botauto trace"):
+        return '"trace_schema_version"'
+    if command_text == ".botexp summary":
+        return '"duration_minutes"'
+    return ""
 
 
 def run_worldserver(binary: Path, config: Path, timeout_sec: int, script: str, observe_sec: int = 0) -> tuple[str, int, bool, list[str]]:
@@ -863,27 +938,43 @@ def run_worldserver(binary: Path, config: Path, timeout_sec: int, script: str, o
         assert process.stdin is not None
         try:
             output_prefix += read_until_console_prompt(process, deadline)
+            waited_for_ready = False
             for raw_command in script.splitlines():
                 command_text = raw_command.strip()
                 if not explicit_start and not observed_autostart and should_observe_before_command(command_text):
+                    if not waited_for_ready:
+                        output_prefix += wait_for_bot_status_ready(process, deadline)
+                        waited_for_ready = True
                     time.sleep(observe_sec)
                     observed_autostart = True
                 process.stdin.write(raw_command + "\n")
                 process.stdin.flush()
                 if command_text == ".botauto start":
                     output_prefix += read_until_console_prompt(process, deadline)
+                    if not waited_for_ready:
+                        output_prefix += wait_for_bot_status_ready(process, deadline)
+                        waited_for_ready = True
                     time.sleep(observe_sec)
                 elif command_text.startswith("server shutdown") or command_text == "server exit":
+                    if process.stdin and not process.stdin.closed:
+                        process.stdin.close()
+                        process.stdin = None
                     shutdown_deadline = min(deadline, time.monotonic() + 10)
                     while process.poll() is None and time.monotonic() < shutdown_deadline:
                         time.sleep(0.25)
+                    killed_after_shutdown = False
+                    if process.poll() is None:
+                        process.kill()
+                        killed_after_shutdown = True
                     break
+                elif command_text:
+                    output_prefix += read_until_console_prompt(process, deadline, expected_command_output_marker(command_text))
             if process.stdin and not process.stdin.closed:
                 process.stdin.close()
                 process.stdin = None
             remaining = max(1, int(deadline - time.monotonic()))
             output, _ = process.communicate(timeout=remaining)
-            returncode = process.returncode if process.returncode is not None else 0
+            returncode = 0 if locals().get("killed_after_shutdown", False) else (process.returncode if process.returncode is not None else 0)
             return output_prefix + output, returncode, False, command
         except (BrokenPipeError, subprocess.TimeoutExpired) as exc:
             process.kill()
