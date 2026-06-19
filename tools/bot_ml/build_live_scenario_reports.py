@@ -69,6 +69,19 @@ def load_routes(path: Path) -> dict[str, list[dict[str, Any]]]:
     return grouped
 
 
+def route_by_node(routes: list[dict[str, Any]], route_node_id: str, route_step: int, route_label: str) -> dict[str, Any]:
+    for route in routes:
+        if route_node_id and str(route.get("route_node_id") or "") == route_node_id:
+            return route
+    for route in routes:
+        if route_step and int(route.get("step") or 0) == route_step:
+            return route
+    for route in routes:
+        if route_label and str(route.get("label") or "") == route_label:
+            return route
+    return {}
+
+
 def existing_scenario_report(report: dict[str, Any], scenario_id: str) -> dict[str, Any]:
     scenarios = report.get("scenario_reports") or {}
     if isinstance(scenarios, dict) and isinstance(scenarios.get(scenario_id), dict):
@@ -98,6 +111,42 @@ def unique_strings(*values: Any) -> list[str]:
             if text and text not in rows:
                 rows.append(text)
     return rows
+
+
+def evidence_counts(report: dict[str, Any]) -> dict[str, int]:
+    evidence = report.get("evidence") if isinstance(report.get("evidence"), dict) else {}
+    counts = evidence.get("validation_evidence_counts") if isinstance(evidence.get("validation_evidence_counts"), dict) else {}
+    rows = {str(key): int(value or 0) for key, value in counts.items()}
+    legacy = {
+        "role_assignments": "role_assignment_evidence",
+        "party_formation": "group_formation_evidence",
+        "raid_formation": "group_formation_evidence",
+        "pulls": "trash_pulls",
+        "target_priority": "target_priority_evidence",
+        "interrupts": "interrupt_evidence",
+        "healer_assignments": "healer_assignment_evidence",
+        "tank_positioning": "tank_positioning_evidence",
+        "regrouping": "regrouping_evidence",
+        "recovery": "recovery_evidence",
+        "instance_reset": "instance_reset_evidence",
+    }
+    for evidence_name, field in legacy.items():
+        try:
+            rows[evidence_name] = max(rows.get(evidence_name, 0), int(evidence.get(field) or 0))
+        except (TypeError, ValueError):
+            rows[evidence_name] = rows.get(evidence_name, 0)
+    return rows
+
+
+def missing_evidence(required_evidence: list[str], counts: dict[str, int]) -> list[str]:
+    return [name for name in required_evidence if int(counts.get(name) or 0) <= 0]
+
+
+def sum_evidence_counts(left: dict[str, int], right: dict[str, int]) -> dict[str, int]:
+    rows = dict(left)
+    for key, value in right.items():
+        rows[str(key)] = int(rows.get(str(key), 0)) + int(value or 0)
+    return dict(sorted(rows.items()))
 
 
 def segment_output_name(route: dict[str, Any]) -> str:
@@ -160,14 +209,21 @@ def infer_report(report: dict[str, Any], scenario: dict[str, Any], routes: list[
     route_kind = str(validation_context.get("route_kind") or "")
     route_step = int(validation_context.get("route_step") or 0)
     mechanic_profile = str(validation_context.get("mechanic_profile") or "")
+    route = route_by_node(routes, route_node_id, route_step, route_label)
+    segment_required_evidence = [str(row) for row in (route.get("required_evidence") or [])]
+    observed_evidence = evidence_counts(report)
+    segment_missing_evidence = missing_evidence(segment_required_evidence, observed_evidence)
     evidence_mode = scenario_evidence_mode(validation_context, existing)
     boss_action = "raid_boss_killed" if raid else "boss_killed"
     observed_boss_kills = sum(1 for action in actions if action == boss_action)
-    observed_boss_kills = max(observed_boss_kills, int(summary.get("raid_boss_kills") or 0) if raid else 0)
+    observed_boss_kills = max(observed_boss_kills, int(summary.get("raid_boss_kills") or 0) if raid else int(summary.get("boss_kills") or 0))
     expected_bosses = int(scenario.get("boss_count") or sum(1 for route in routes if route.get("kind") == "boss"))
     expected_segments = expected_segment_ids(routes)
     trash_actions = sum(1 for action in actions if action in {"trash_action", "trash_heal", "material_farming_source"} or "trash" in action)
     trash_pulls = max(int(existing.get("trash_pulls") or 0), trash_actions, int(summary.get("trash_pulls") or 0), int(evidence.get("trash_pulls") or 0))
+    expected_evidence = unique_strings(scenario.get("required_evidence") or [], *[route.get("required_evidence") or [] for route in routes])
+    missing_scenario_evidence = missing_evidence(expected_evidence, observed_evidence)
+    evidence_complete = not missing_scenario_evidence
 
     full_clear_stage = "full_blackwing_descent_clear" if raid else "full_stonecore_clear"
     boss_stage = "raid_boss" if raid else "dungeon_boss"
@@ -181,6 +237,8 @@ def infer_report(report: dict[str, Any], scenario: dict[str, Any], routes: list[
     clear_complete = bool(existing.get("clear_complete")) or stage_passed(report, full_clear_stage) or (segment_clear_ready and expected_bosses > 0 and boss_kills >= expected_bosses and int(evidence.get("failures") or 0) == 0)
     if segmented_evidence:
         clear_complete = segment_clear_ready and expected_bosses > 0 and boss_kills >= expected_bosses and int(evidence.get("failures") or 0) == 0
+    if not evidence_complete:
+        clear_complete = False
 
     source_live_report = str(report.get("source_live_report") or "")
     segment_results = []
@@ -199,9 +257,16 @@ def infer_report(report: dict[str, Any], scenario: dict[str, Any], routes: list[
                 "clear_complete": clear_complete,
                 "failure_labels": failure_labels,
                 "failure_reason": failure_reason,
+                "required_evidence": segment_required_evidence,
+                "evidence_counts": observed_evidence,
+                "missing_evidence": segment_missing_evidence,
+                "evidence_complete": not segment_missing_evidence,
                 "source_live_report": source_live_report,
             }
         )
+    label_quality = merged_teacher_label_quality([evidence_mode], complete_segment_coverage)
+    if not evidence_complete:
+        label_quality = "weak"
     row = {
         "schema": "bot_live_scenario_report_v1",
         "scenario_id": scenario_id,
@@ -225,14 +290,18 @@ def infer_report(report: dict[str, Any], scenario: dict[str, Any], routes: list[
         "source_route_nodes": unique_strings(route_node_id),
         "source_route_labels": unique_strings(route_label),
         "source_mechanic_profiles": unique_strings(mechanic_profile),
+        "required_evidence": expected_evidence,
+        "evidence_counts": observed_evidence,
+        "missing_evidence": missing_scenario_evidence,
+        "evidence_complete": evidence_complete,
         "segment_results": segment_results,
         "source_scenario_report_attached": bool(existing),
         "scenario_evidence_mode": evidence_mode,
         "scenario_evidence_modes": [evidence_mode],
-        "teacher_label_quality": merged_teacher_label_quality([evidence_mode], complete_segment_coverage),
+        "teacher_label_quality": label_quality,
         "failure_labels": failure_labels,
         "failure_reason": failure_reason,
-        "ml_training_label": "failed_teacher_attempt" if failure_labels else ("candidate_teacher_label" if merged_teacher_label_quality([evidence_mode], complete_segment_coverage) in {"strong", "medium"} else "weak_inferred_label"),
+        "ml_training_label": "failed_teacher_attempt" if failure_labels else ("candidate_teacher_label" if label_quality in {"strong", "medium"} else "weak_inferred_label"),
         "source_trace_entries": int(report.get("trace_entries") or 0),
         "runtime_ml_control": "disabled_until_live_clear_validation_passes",
     }
@@ -262,17 +331,28 @@ def merge_report_rows(left: dict[str, Any], right: dict[str, Any]) -> dict[str, 
     source_route_nodes = unique_strings(left.get("source_route_nodes") or [], right.get("source_route_nodes") or [])
     source_route_labels = unique_strings(left.get("source_route_labels") or [], right.get("source_route_labels") or [])
     source_mechanic_profiles = unique_strings(left.get("source_mechanic_profiles") or [], right.get("source_mechanic_profiles") or [])
+    required_evidence = unique_strings(left.get("required_evidence") or [], right.get("required_evidence") or [])
+    evidence_count_rows = sum_evidence_counts(
+        {str(key): int(value or 0) for key, value in (left.get("evidence_counts") or {}).items()},
+        {str(key): int(value or 0) for key, value in (right.get("evidence_counts") or {}).items()},
+    )
+    missing_evidence_rows = missing_evidence(required_evidence, evidence_count_rows)
+    evidence_complete = not missing_evidence_rows
     segment_results = list(left.get("segment_results") or []) + list(right.get("segment_results") or [])
     evidence_modes = unique_strings(left.get("scenario_evidence_modes") or left.get("scenario_evidence_mode") or [], right.get("scenario_evidence_modes") or right.get("scenario_evidence_mode") or [])
     failure_labels = unique_strings(left.get("failure_labels") or [], right.get("failure_labels") or [])
     failure_reason = str(left.get("failure_reason") or right.get("failure_reason") or (failure_labels[0] if failure_labels else ""))
     label_quality = merged_teacher_label_quality(evidence_modes, complete_segment_coverage)
+    if not evidence_complete:
+        label_quality = "weak"
     segmented_evidence = "route_segment_context" in evidence_modes and bool(expected_segments)
     clear_complete = bool(left.get("clear_complete") or right.get("clear_complete"))
     if segmented_evidence:
         clear_complete = complete_segment_coverage and max(boss_kills, raid_boss_kills) >= expected_bosses
     else:
         clear_complete = clear_complete or (expected_bosses > 0 and max(boss_kills, raid_boss_kills) >= expected_bosses)
+    if not evidence_complete:
+        clear_complete = False
     if failure_labels or failure_reason:
         clear_complete = False
     merged.update(
@@ -294,6 +374,10 @@ def merge_report_rows(left: dict[str, Any], right: dict[str, Any]) -> dict[str, 
             "source_route_nodes": source_route_nodes,
             "source_route_labels": source_route_labels,
             "source_mechanic_profiles": source_mechanic_profiles,
+            "required_evidence": required_evidence,
+            "evidence_counts": evidence_count_rows,
+            "missing_evidence": missing_evidence_rows,
+            "evidence_complete": evidence_complete,
             "segment_results": segment_results,
             "source_scenario_report_attached": bool(left.get("source_scenario_report_attached") or right.get("source_scenario_report_attached")),
             "scenario_evidence_mode": evidence_modes[0] if evidence_modes else "",

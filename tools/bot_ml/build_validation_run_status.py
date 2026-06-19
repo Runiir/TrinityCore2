@@ -61,6 +61,36 @@ def int_field(row: dict[str, Any], *keys: str) -> int:
     return max(values or [0])
 
 
+def evidence_counts(report: dict[str, Any]) -> dict[str, int]:
+    evidence = report.get("evidence") if isinstance(report.get("evidence"), dict) else {}
+    if isinstance(report.get("evidence_counts"), dict):
+        return {str(key): int(value or 0) for key, value in report["evidence_counts"].items()}
+    counts = evidence.get("validation_evidence_counts") if isinstance(evidence.get("validation_evidence_counts"), dict) else {}
+    rows = {str(key): int(value or 0) for key, value in counts.items()}
+    aliases = {
+        "role_assignments": "role_assignment_evidence",
+        "party_formation": "group_formation_evidence",
+        "raid_formation": "group_formation_evidence",
+        "pulls": "trash_pulls",
+        "target_priority": "target_priority_evidence",
+        "interrupts": "interrupt_evidence",
+        "healer_assignments": "healer_assignment_evidence",
+        "tank_positioning": "tank_positioning_evidence",
+        "regrouping": "regrouping_evidence",
+        "recovery": "recovery_evidence",
+        "instance_reset": "instance_reset_evidence",
+    }
+    for name, field in aliases.items():
+        rows[name] = max(rows.get(name, 0), int(evidence.get(field) or 0))
+    return rows
+
+
+def missing_required_evidence(segment: dict[str, Any], report: dict[str, Any]) -> list[str]:
+    required = [str(row) for row in (segment.get("required_evidence") or [])]
+    counts = evidence_counts(report)
+    return [name for name in required if int(counts.get(name) or 0) <= 0]
+
+
 def is_raid_scenario(scenario: dict[str, Any]) -> bool:
     scenario_id = str(scenario.get("scenario_id") or "").lower()
     difficulty = str(scenario.get("difficulty") or "").lower()
@@ -145,13 +175,18 @@ def validate_scenario_segment_result(row: dict[str, Any], segment: dict[str, Any
         trash_ready = int_field(row, "trash_pulls", "trash_kills", "trash_packs_cleared") > 0 or bool(row.get("trash_cleared"))
         if not trash_ready:
             reasons.append("missing_trash_evidence")
+    missing_evidence = missing_required_evidence(segment, row)
+    reasons.extend(f"missing_{name}_evidence" for name in missing_evidence)
     context_matches = not any(reason.endswith("_mismatch") for reason in reasons)
     return {
         "report_valid": True,
         "validation_context_matches": context_matches,
         "boss_evidence_ready": boss_ready,
         "trash_evidence_ready": trash_ready,
-        "segment_ready": context_matches and boss_ready and trash_ready and not failure_labels and not failure_reason,
+        "missing_evidence": missing_evidence,
+        "evidence_counts": evidence_counts(row),
+        "evidence_complete": not missing_evidence,
+        "segment_ready": context_matches and boss_ready and trash_ready and not missing_evidence and not failure_labels and not failure_reason,
         "invalid_reasons": reasons,
     }
 
@@ -161,10 +196,15 @@ def validate_segment_report(report: dict[str, Any], segment: dict[str, Any], sce
     if load_error:
         reasons.append(load_error)
     if not report:
+        missing_evidence = [str(row) for row in (segment.get("required_evidence") or [])]
         return {
             "report_valid": False,
             "validation_context_matches": False,
             "boss_evidence_ready": False,
+            "trash_evidence_ready": False,
+            "missing_evidence": missing_evidence,
+            "evidence_counts": {},
+            "evidence_complete": not missing_evidence,
             "segment_ready": False,
             "invalid_reasons": reasons or ["empty_report"],
         }
@@ -208,6 +248,8 @@ def validate_segment_report(report: dict[str, Any], segment: dict[str, Any], sce
         trash_ready = has_trash_evidence(report, scenario)
         if not trash_ready:
             reasons.append("missing_trash_evidence")
+    missing_evidence = missing_required_evidence(segment, report)
+    reasons.extend(f"missing_{name}_evidence" for name in missing_evidence)
 
     report_valid = not load_error and schema == "bot_live_validation_report_v1" and not bool(report.get("timed_out")) and int_field(report, "returncode") == 0 and not failure_labels and not failure_reason
     return {
@@ -215,7 +257,10 @@ def validate_segment_report(report: dict[str, Any], segment: dict[str, Any], sce
         "validation_context_matches": context_matches,
         "boss_evidence_ready": boss_ready,
         "trash_evidence_ready": trash_ready,
-        "segment_ready": report_valid and context_matches and boss_ready and trash_ready,
+        "missing_evidence": missing_evidence,
+        "evidence_counts": evidence_counts(report),
+        "evidence_complete": not missing_evidence,
+        "segment_ready": report_valid and context_matches and boss_ready and trash_ready and not missing_evidence,
         "invalid_reasons": reasons,
     }
 
@@ -258,6 +303,10 @@ def build_status(plan: dict[str, Any], report_root: Path) -> dict[str, Any]:
                 "validation_context_matches": validation["validation_context_matches"],
                 "boss_evidence_ready": validation["boss_evidence_ready"],
                 "trash_evidence_ready": validation.get("trash_evidence_ready", True),
+                "required_evidence": segment.get("required_evidence") or [],
+                "evidence_counts": validation.get("evidence_counts") or {},
+                "missing_evidence": validation.get("missing_evidence") or [],
+                "evidence_complete": validation.get("evidence_complete", True),
                 "segment_ready": validation["segment_ready"],
                 "invalid_reasons": validation["invalid_reasons"],
                 "evidence_source": evidence_source,
@@ -293,6 +342,8 @@ def build_status(plan: dict[str, Any], report_root: Path) -> dict[str, Any]:
             blockers.append("missing_segment_live_reports")
         if invalid_segments:
             blockers.append("invalid_segment_live_reports")
+        if any(row.get("missing_evidence") for row in segment_reports):
+            blockers.append("missing_segment_required_evidence")
         if not scenario_report_ready:
             blockers.append("missing_scenario_report")
         elif not complete_segment_coverage and segments:
