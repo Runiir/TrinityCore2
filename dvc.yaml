@@ -40,8 +40,10 @@ stages:
     deps:
     - tools/bot_ml/build_validation_gear_profiles.py
     - tools/bot_ml/build_validation_provisioning.py
+    - tools/bot_ml/validation_profile_manifests.py
     - tools/bot_ml/extract_world_knowledge.py
     - experiments/configs/validation_provisioning_cata_001.json
+    - experiments/configs/cata_434_combat_loot_profiles.json
     - data/dbc/enUS/Item.db2
     - data/dbc/enUS/Item-sparse.db2
     - data/dbc/enUS/SpellItemEnchantment.dbc
@@ -56,7 +58,9 @@ stages:
       dataset/validation_provisioning
     deps:
     - tools/bot_ml/build_validation_provisioning.py
+    - tools/bot_ml/validation_profile_manifests.py
     - experiments/configs/validation_provisioning_cata_001.json
+    - experiments/configs/cata_434_action_profiles.json
     - dataset/validation_gear_profiles
     outs:
     - dataset/validation_provisioning:
@@ -71,8 +75,11 @@ stages:
     - tools/bot_ml/validate_validation_provisioning.py
     - tools/bot_ml/build_validation_gear_profiles.py
     - tools/bot_ml/build_validation_provisioning.py
+    - tools/bot_ml/validation_profile_manifests.py
     - tools/bot_ml/extract_world_knowledge.py
     - experiments/configs/validation_provisioning_cata_001.json
+    - experiments/configs/cata_434_action_profiles.json
+    - experiments/configs/cata_434_combat_loot_profiles.json
     - dataset/validation_gear_profiles
     - dataset/validation_provisioning/report.json
     - data/dbc/enUS/Item.db2

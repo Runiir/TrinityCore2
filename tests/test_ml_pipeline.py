@@ -29,10 +29,11 @@ from tools.bot_ml.build_validation_run_plan import build_plan as build_validatio
 from tools.bot_ml.build_validation_run_status import build_status as build_validation_run_status
 from tools.bot_ml.run_live_bot_validation import build_bot_pool_reset_sql, command_script, live_validation_report, load_scenario_reports, main as live_validation_main, parse_json_objects, parse_soap_result, run_worldserver, split_sql_statements, trinity_config_bool, upsert_trinity_config
 from tools.bot_ml.build_validation_gear_profiles import SHIELD_CLASSES, build_gem_catalog, build_profiles, build_report, fetch_items, load_gem_properties, load_spell_item_enchantments
-from tools.bot_ml.build_validation_provisioning import apply_gear_profiles, build_account_insert_sql, main as provisioning_main, scenario_report, srp6_registration_data
+from tools.bot_ml.build_validation_provisioning import apply_gear_profiles, bot_spell_ids, build_account_insert_sql, main as provisioning_main, scenario_report, srp6_registration_data
 from tools.bot_ml.validate_validation_provisioning import build_report as provisioning_verify_report
 from tools.bot_ml.validate_validation_provisioning import main as provisioning_verify_main
 from tools.bot_ml.validate_validation_provisioning import validate_database as validate_provisioning_database
+from tools.bot_ml.validation_profile_manifests import load_action_profile_manifest, load_combat_loot_profile_manifest
 from tools.bot_ml.validate_data_quality import validate_rows as validate_data_quality_rows
 from ml.preprocessing.preprocess_frames import main as preprocess_main
 from ml.training.train_action_frequency import main as train_main
@@ -2478,6 +2479,19 @@ def test_validation_provisioning_generates_reproducible_sql_and_readiness(tmp_pa
     assert generated_report == report
 
 
+def test_cata_action_profile_manifest_drives_validation_spells():
+    manifest = load_action_profile_manifest(Path("experiments/configs/cata_434_action_profiles.json"))
+    priest = {"class": 5, "spells": [12345]}
+    paladin = {"class": 2, "spells": []}
+
+    assert manifest["schema"] == "bot_cata_434_action_profiles_v1"
+    assert 2061 in bot_spell_ids(priest, manifest)
+    assert 2050 in bot_spell_ids(priest, manifest)
+    assert 750 in bot_spell_ids(paladin, manifest)
+    assert 9116 in bot_spell_ids(paladin, manifest)
+    assert 12345 in bot_spell_ids(priest, manifest)
+
+
 def test_validation_provisioning_generates_trinity_srp6_account_sql():
     config = {
         "account_password": "validation",
@@ -2570,6 +2584,19 @@ def test_validation_gear_profiles_can_complete_slots_from_item_rows():
     assert next(item for item in profile["equipment"] if item["slot"] == 15)["inventory_type"] == 21
     assert report["all_equipment_slots_complete"] is True
     assert report["all_enchanted"] is False
+    assert profile["stat_weight_manifest"]["schema"] == "bot_cata_434_combat_loot_profiles_v1"
+    assert profile["stat_weights"]["stamina"] == 2.0
+    assert len(profile["bis_source_report"]) == len(profile["equipment"])
+    assert report["smart_loot_validation_surface"]["selected_equipment_count"] == len(profile["equipment"])
+
+
+def test_combat_loot_profile_manifest_externalizes_stat_weights_and_reporting():
+    manifest = load_combat_loot_profile_manifest(Path("experiments/configs/cata_434_combat_loot_profiles.json"))
+
+    assert manifest["schema"] == "bot_cata_434_combat_loot_profiles_v1"
+    assert manifest["class_spec_archetypes"]["fire_mage"] == "dps_intellect"
+    assert manifest["stat_weights_by_archetype"]["dps_intellect"]["spell_power"] == 1.2
+    assert "stat_weights" in manifest["loot_validation"]["smart_loot_upgrade_surface"]
 
 
 def test_validation_gear_profiles_complete_from_local_db2_files():
@@ -2587,6 +2614,10 @@ def test_validation_gear_profiles_complete_from_local_db2_files():
     assert report["source_counts"]["enchanted_items"] >= 13 * 16
     assert report["source_counts"]["gemmed_items"] == report["source_counts"]["socketed_items"]
     assert report["enchant_applicability_verified_by_server"] is False
+    assert report["profile_manifest"]["schema"] == "bot_cata_434_combat_loot_profiles_v1"
+    assert report["smart_loot_validation_surface"]["ready_for_upgrade_scoring"] is True
+    assert report["smart_loot_validation_surface"]["selected_equipment_count"] >= 13 * 16
+    assert "dps_intellect" in report["stat_weight_archetypes"]
     assert report["source_counts"]["client_db2_items"] >= 13 * 16
     assert all(not profile["missing_slots"] for profile in profiles.values())
     assert all(next(item for item in profile["equipment"] if item["slot"] == 15)["inventory_type"] != 17 for profile in profiles.values())
