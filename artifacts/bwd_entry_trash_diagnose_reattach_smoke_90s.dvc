@@ -1,0 +1,6 @@
+outs:
+- md5: e67f6b67a38d7173443339dfef07bd90.dir
+  size: 981040
+  nfiles: 7
+  hash: md5
+  path: bwd_entry_trash_diagnose_reattach_smoke_90s

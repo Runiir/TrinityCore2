@@ -1,0 +1,6 @@
+outs:
+- md5: cf164b298efb0b0566a43ccba6e0a1c6.dir
+  size: 1069334
+  nfiles: 7
+  hash: md5
+  path: bwd_magmaw_long_300s

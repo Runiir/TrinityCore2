@@ -1,0 +1,6 @@
+outs:
+- md5: 3f5fcf4e3fe22c66f09d1ca45130a673.dir
+  size: 978515
+  nfiles: 7
+  hash: md5
+  path: bwd_entry_trash_config_fixed_smoke_90s
