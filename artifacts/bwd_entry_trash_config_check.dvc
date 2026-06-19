@@ -1,0 +1,6 @@
+outs:
+- md5: 170f60f7a481388756fab2be44674fb7.dir
+  size: 156882
+  nfiles: 3
+  hash: md5
+  path: bwd_entry_trash_config_check
