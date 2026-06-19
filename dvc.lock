@@ -146,8 +146,8 @@ stages:
     deps:
     - path: dataset/live_validation_scenario_reports_built
       hash: md5
-      md5: d5f6fc04ed4c3683d4fdb2256883bc97.dir
-      size: 28590
+      md5: ae0177b10a4210f5cb3c452f0f7910cc.dir
+      size: 29780
       nfiles: 3
     - path: dataset/validation_scenarios
       hash: md5
@@ -165,8 +165,8 @@ stages:
       size: 5304
     - path: tools/bot_ml/validate_world_planner.py
       hash: md5
-      md5: 8ca69f006e59013657132363a53b1c08
-      size: 21902
+      md5: 7648f47914bad84b2d65b2851de0f7fc
+      size: 22457
     outs:
     - path: dataset/world_validation/planner_report.json
       hash: md5
@@ -481,21 +481,21 @@ stages:
       nfiles: 5
     - path: tools/bot_ml/build_live_scenario_reports.py
       hash: md5
-      md5: c03be7a1b2d6a950c12f500be2efa9f8
-      size: 24537
+      md5: 52a49c9a3897f3ae9caab2fe0ecb7947
+      size: 27810
     - path: tools/bot_ml/common.py
       hash: md5
       md5: 8b4aaef751f98fac4ad24680793a813d
       size: 5304
     - path: tools/bot_ml/run_live_bot_validation.py
       hash: md5
-      md5: 4db55a044156c7f8acf380d089f6cf7a
-      size: 70325
+      md5: df7ba778a9cc7d90520ef5729d5293ce
+      size: 70776
     outs:
     - path: dataset/live_validation_scenario_reports_built
       hash: md5
-      md5: d5f6fc04ed4c3683d4fdb2256883bc97.dir
-      size: 28590
+      md5: ae0177b10a4210f5cb3c452f0f7910cc.dir
+      size: 29780
       nfiles: 3
   validation_run_plan:
     cmd: python -m tools.bot_ml.build_validation_run_plan 
@@ -511,8 +511,8 @@ stages:
       nfiles: 5
     - path: tools/bot_ml/build_validation_run_plan.py
       hash: md5
-      md5: 3c571cbb6c35cfc2bb2fb2150e6f01fa
-      size: 11214
+      md5: c763f097cef1fe18768221d7814be8aa
+      size: 11395
     - path: tools/bot_ml/common.py
       hash: md5
       md5: 8b4aaef751f98fac4ad24680793a813d
@@ -520,8 +520,8 @@ stages:
     outs:
     - path: dataset/validation_run_plan
       hash: md5
-      md5: 7406cd8b66054985e486c4b9db3b5347.dir
-      size: 80364
+      md5: 0cd2d437c2019dc946f631ea2afea854.dir
+      size: 81728
       nfiles: 2
   live_validation_combined:
     cmd: python -m tools.bot_ml.run_live_bot_validation --input-log 
@@ -536,18 +536,18 @@ stages:
       size: 102801
     - path: dataset/live_validation_scenario_reports_built
       hash: md5
-      md5: d5f6fc04ed4c3683d4fdb2256883bc97.dir
-      size: 28590
+      md5: ae0177b10a4210f5cb3c452f0f7910cc.dir
+      size: 29780
       nfiles: 3
     - path: tools/bot_ml/run_live_bot_validation.py
       hash: md5
-      md5: 4db55a044156c7f8acf380d089f6cf7a
-      size: 70325
+      md5: df7ba778a9cc7d90520ef5729d5293ce
+      size: 70776
     outs:
     - path: dataset/live_validation_combined
       hash: md5
-      md5: 6af5fc2be927c78b4607086b31f7fb0e.dir
-      size: 238765
+      md5: ae773dd3f7374859e9389211f6120d70.dir
+      size: 240095
       nfiles: 3
   validation_run_status:
     cmd: python -m tools.bot_ml.build_validation_run_status --run-plan 
@@ -557,17 +557,17 @@ stages:
     deps:
     - path: dataset/live_validation_scenario_reports_built
       hash: md5
-      md5: d5f6fc04ed4c3683d4fdb2256883bc97.dir
-      size: 28590
+      md5: ae0177b10a4210f5cb3c452f0f7910cc.dir
+      size: 29780
       nfiles: 3
     - path: dataset/validation_run_plan/manifest.json
       hash: md5
-      md5: b04927a39a104da1dd7b5524fd57eb7e
-      size: 68286
+      md5: 9a8e18cd6d862af73f647d8816df5b28
+      size: 68870
     - path: tools/bot_ml/build_validation_run_status.py
       hash: md5
-      md5: bb7b6f1419db89a6fed34973684f3f12
-      size: 18985
+      md5: 564b622d73bae5aafe508692419ceaa4
+      size: 19679
     - path: tools/bot_ml/common.py
       hash: md5
       md5: 8b4aaef751f98fac4ad24680793a813d
@@ -575,8 +575,8 @@ stages:
     outs:
     - path: dataset/validation_run_status
       hash: md5
-      md5: 7ca7c6742f6a99d489b848403753f9af.dir
-      size: 75841
+      md5: bfa67b2c6971beed465dc1201f8b1065.dir
+      size: 76167
       nfiles: 1
   quest_profession_report:
     cmd: python -m tools.bot_ml.build_quest_profession_reports --planner-dir 
@@ -598,16 +598,16 @@ stages:
       size: 5304
     - path: tools/bot_ml/validate_world_planner.py
       hash: md5
-      md5: 8ca69f006e59013657132363a53b1c08
-      size: 21902
+      md5: 7648f47914bad84b2d65b2851de0f7fc
+      size: 22457
     outs:
     - path: dataset/quest_profession_reports/report.json
       hash: md5
       md5: e0db06ffa89694769d82d3aaae025709
       size: 26329
   bot_ml_build_decisions:
-    cmd: python -m tools.bot_ml.build_decision_dataset --input-dir
-      dataset/bot_ml/raw --output dataset/bot_ml/decision_dataset.jsonl
+    cmd: python -m tools.bot_ml.build_decision_dataset --input-dir 
+      dataset/bot_ml/raw --output dataset/bot_ml/decision_dataset.jsonl 
       --manifest dataset/bot_ml/decision_dataset_manifest.json
     deps:
     - path: dataset/bot_ml/raw
@@ -633,9 +633,9 @@ stages:
       md5: cf1b47e2d156b168b8ffeeafd2b83d10
       size: 1911
   bot_ml_train:
-    cmd: python -m tools.bot_ml.train_policy_model --dataset
-      dataset/bot_ml/decision_dataset.jsonl --model
-      models/bot_policy/policy_model.json --model-dir
+    cmd: python -m tools.bot_ml.train_policy_model --dataset 
+      dataset/bot_ml/decision_dataset.jsonl --model 
+      models/bot_policy/policy_model.json --model-dir 
       models/bot_policy/artifacts --live-dir artifacts/bot_policy_dvclive/train
     deps:
     - path: dataset/bot_ml/decision_dataset.jsonl
@@ -670,11 +670,11 @@ stages:
       md5: 5e4b9bc037de53b26c455702b047b02f
       size: 97595
   bot_ml_evaluate:
-    cmd: python -m tools.bot_ml.evaluate_policy_model --dataset
-      dataset/bot_ml/decision_dataset.jsonl --model
-      models/bot_policy/policy_model.json --metrics
-      evaluations/bot_policy/metrics.json --diagnostics
-      evaluations/bot_policy/diagnostics.json --live-dir
+    cmd: python -m tools.bot_ml.evaluate_policy_model --dataset 
+      dataset/bot_ml/decision_dataset.jsonl --model 
+      models/bot_policy/policy_model.json --metrics 
+      evaluations/bot_policy/metrics.json --diagnostics 
+      evaluations/bot_policy/diagnostics.json --live-dir 
       artifacts/bot_policy_dvclive/eval
     deps:
     - path: dataset/bot_ml/decision_dataset.jsonl
@@ -712,10 +712,10 @@ stages:
       md5: 1340cfa0836f18c972aafe08d4cbee0e
       size: 1521
   bot_ml_register:
-    cmd: python -m tools.bot_ml.register_policy_model --model
-      models/bot_policy/policy_model.json --metrics
-      evaluations/bot_policy/metrics.json --diagnostics
-      evaluations/bot_policy/diagnostics.json --sql-output
+    cmd: python -m tools.bot_ml.register_policy_model --model 
+      models/bot_policy/policy_model.json --metrics 
+      evaluations/bot_policy/metrics.json --diagnostics 
+      evaluations/bot_policy/diagnostics.json --sql-output 
       models/bot_policy/register_model.sql
     deps:
     - path: evaluations/bot_policy/diagnostics.json
@@ -748,8 +748,8 @@ stages:
       md5: 5d6d53254a68e2662e24e75d2dd7e83c
       size: 13886
   bot_ml_validate:
-    cmd: python -m tools.bot_ml.validate_data_quality --dataset
-      dataset/bot_ml/decision_dataset.jsonl --report
+    cmd: python -m tools.bot_ml.validate_data_quality --dataset 
+      dataset/bot_ml/decision_dataset.jsonl --report 
       dataset/bot_ml/data_quality.json
     deps:
     - path: dataset/bot_ml/decision_dataset.jsonl

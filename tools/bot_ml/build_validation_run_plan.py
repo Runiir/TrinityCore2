@@ -49,25 +49,28 @@ def segment_output_name(route: dict[str, Any]) -> str:
 def live_validate_command(scenario: dict[str, Any], output_root: Path, observe_sec: int, timeout_sec: int, route: dict[str, Any] | None = None) -> list[str]:
     scenario_id = str(scenario.get("scenario_id") or "")
     output_dir = output_root / scenario_output_name(scenario_id)
-    segment_args: list[str] = []
+    context_args: list[str] = [
+        "--validation-scenario-id",
+        scenario_id,
+    ]
     if route:
         output_dir = output_dir / segment_output_name(route)
-        segment_args = [
-            "--validation-scenario-id",
-            scenario_id,
-            "--validation-segment-id",
-            segment_output_name(route),
-            "--validation-route-node-id",
-            str(route.get("route_node_id") or ""),
-            "--validation-route-label",
-            str(route.get("label") or ""),
-            "--validation-route-kind",
-            str(route.get("kind") or ""),
-            "--validation-route-step",
-            str(int(route.get("step") or 0)),
-            "--validation-mechanic-profile",
-            str(route.get("mechanic_profile") or ""),
-        ]
+        context_args.extend(
+            [
+                "--validation-segment-id",
+                segment_output_name(route),
+                "--validation-route-node-id",
+                str(route.get("route_node_id") or ""),
+                "--validation-route-label",
+                str(route.get("label") or ""),
+                "--validation-route-kind",
+                str(route.get("kind") or ""),
+                "--validation-route-step",
+                str(int(route.get("step") or 0)),
+                "--validation-mechanic-profile",
+                str(route.get("mechanic_profile") or ""),
+            ]
+        )
     return [
         "pixi",
         "run",
@@ -81,7 +84,7 @@ def live_validate_command(scenario: dict[str, Any], output_root: Path, observe_s
         str(observe_sec),
         "--timeout-sec",
         str(timeout_sec),
-        *segment_args,
+        *context_args,
         "--output-dir",
         str(output_dir),
     ]
@@ -97,13 +100,14 @@ def scenario_report_command(scenario: dict[str, Any], output_root: Path, report_
     scenario_id = str(scenario.get("scenario_id") or "")
     live_reports: list[str]
     executable_routes = [row for row in routes or [] if route_coordinates_valid(row)]
+    full_report = str(output_root / scenario_output_name(scenario_id) / "report.json")
     if executable_routes:
-        live_reports = [
+        live_reports = [full_report] + [
             str(output_root / scenario_output_name(scenario_id) / segment_output_name(route) / "report.json")
             for route in executable_routes
         ]
     else:
-        live_reports = [str(output_root / scenario_output_name(scenario_id) / "report.json")]
+        live_reports = [full_report]
 
     command = [
         "pixi",
@@ -222,6 +226,7 @@ def write_shell_script(path: Path, plan: dict[str, Any]) -> None:
             ]
         )
         if scenario.get("segments"):
+            lines.append(scenario["live_validate_shell"])
             for segment in scenario.get("segments") or []:
                 if not segment.get("executable", True):
                     lines.extend(

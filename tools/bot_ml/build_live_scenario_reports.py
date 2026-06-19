@@ -183,6 +183,47 @@ def teacher_label_quality(mode: str) -> str:
     return "weak"
 
 
+def attached_full_clear_valid(existing: dict[str, Any]) -> bool:
+    if not bool(existing.get("clear_complete")):
+        return False
+    if not bool(existing.get("completion_claim_valid")):
+        return False
+    mode = str(existing.get("completion_evidence_mode") or existing.get("scenario_evidence_mode") or "")
+    modes = {str(row) for row in (existing.get("scenario_evidence_modes") or [])}
+    if mode == "route_segment_context" or "route_segment_context" in modes:
+        return False
+    if existing.get("source_segments"):
+        return False
+    return mode in {"uninterrupted_live_clear", "attached_uninterrupted_live_clear"}
+
+
+def completion_blockers(
+    *,
+    clear_complete: bool,
+    segmented_evidence: bool,
+    expected_bosses: int,
+    boss_kills: int,
+    evidence_complete: bool,
+    failure_labels: list[str],
+    failure_reason: str,
+    full_clear_signal: bool,
+) -> list[str]:
+    if clear_complete:
+        return []
+    blockers: list[str] = []
+    if segmented_evidence:
+        blockers.append("segment_evidence_debug_only")
+    if not full_clear_signal:
+        blockers.append("missing_uninterrupted_full_clear_report")
+    if expected_bosses > 0 and boss_kills < expected_bosses:
+        blockers.append("missing_required_boss_kills")
+    if not evidence_complete:
+        blockers.append("missing_required_evidence")
+    if failure_labels or failure_reason:
+        blockers.append("failure_labels_present")
+    return blockers
+
+
 def merged_teacher_label_quality(modes: list[str], complete_segment_coverage: bool) -> str:
     if "generic_live_trace_inference" in modes:
         return "weak"
@@ -232,13 +273,31 @@ def infer_report(report: dict[str, Any], scenario: dict[str, Any], routes: list[
     source_segments = unique_strings(route_segment_id)
     missing_segment_rows = missing_segments(expected_segments, source_segments)
     complete_segment_coverage = bool(expected_segments) and not missing_segment_rows
-    segment_clear_ready = evidence_mode != "route_segment_context" or not expected_segments or complete_segment_coverage
     segmented_evidence = evidence_mode == "route_segment_context" and bool(expected_segments)
-    clear_complete = bool(existing.get("clear_complete")) or stage_passed(report, full_clear_stage) or (segment_clear_ready and expected_bosses > 0 and boss_kills >= expected_bosses and int(evidence.get("failures") or 0) == 0)
-    if segmented_evidence:
-        clear_complete = segment_clear_ready and expected_bosses > 0 and boss_kills >= expected_bosses and int(evidence.get("failures") or 0) == 0
-    if not evidence_complete:
-        clear_complete = False
+    full_clear_signal = stage_passed(report, full_clear_stage) or bool(report.get("clear_complete"))
+    natural_full_clear = (
+        not segmented_evidence
+        and full_clear_signal
+        and expected_bosses > 0
+        and boss_kills >= expected_bosses
+        and int(evidence.get("failures") or 0) == 0
+        and evidence_complete
+        and not failure_labels
+        and not failure_reason
+    )
+    attached_full_clear = attached_full_clear_valid(existing)
+    clear_complete = natural_full_clear or attached_full_clear
+    completion_evidence_mode = "uninterrupted_live_clear" if natural_full_clear else ("attached_uninterrupted_live_clear" if attached_full_clear else ("segment_debug_only" if segmented_evidence else "incomplete_or_smoke_only"))
+    blockers = completion_blockers(
+        clear_complete=clear_complete,
+        segmented_evidence=segmented_evidence,
+        expected_bosses=expected_bosses,
+        boss_kills=boss_kills,
+        evidence_complete=evidence_complete,
+        failure_labels=failure_labels,
+        failure_reason=failure_reason,
+        full_clear_signal=full_clear_signal or attached_full_clear,
+    )
 
     source_live_report = str(report.get("source_live_report") or "")
     segment_results = []
@@ -254,7 +313,8 @@ def infer_report(report: dict[str, Any], scenario: dict[str, Any], routes: list[
                 "boss_kills": boss_kills,
                 "raid_boss_kills": boss_kills if raid else 0,
                 "trash_pulls": trash_pulls,
-                "clear_complete": clear_complete,
+                "clear_complete": False,
+                "segment_complete": not segment_missing_evidence and not failure_labels and not failure_reason,
                 "failure_labels": failure_labels,
                 "failure_reason": failure_reason,
                 "required_evidence": segment_required_evidence,
@@ -295,6 +355,11 @@ def infer_report(report: dict[str, Any], scenario: dict[str, Any], routes: list[
         "missing_evidence": missing_scenario_evidence,
         "evidence_complete": evidence_complete,
         "segment_results": segment_results,
+        "natural_full_clear_evidence": natural_full_clear,
+        "attached_full_clear_evidence": attached_full_clear,
+        "completion_evidence_mode": completion_evidence_mode,
+        "completion_claim_valid": clear_complete,
+        "clear_complete_blockers": blockers,
         "source_scenario_report_attached": bool(existing),
         "scenario_evidence_mode": evidence_mode,
         "scenario_evidence_modes": [evidence_mode],
@@ -346,15 +411,22 @@ def merge_report_rows(left: dict[str, Any], right: dict[str, Any]) -> dict[str, 
     if not evidence_complete:
         label_quality = "weak"
     segmented_evidence = "route_segment_context" in evidence_modes and bool(expected_segments)
-    clear_complete = bool(left.get("clear_complete") or right.get("clear_complete"))
-    if segmented_evidence:
-        clear_complete = complete_segment_coverage and max(boss_kills, raid_boss_kills) >= expected_bosses
-    else:
-        clear_complete = clear_complete or (expected_bosses > 0 and max(boss_kills, raid_boss_kills) >= expected_bosses)
-    if not evidence_complete:
-        clear_complete = False
+    natural_full_clear = bool(left.get("natural_full_clear_evidence") or right.get("natural_full_clear_evidence"))
+    attached_full_clear = bool(left.get("attached_full_clear_evidence") or right.get("attached_full_clear_evidence"))
+    clear_complete = (natural_full_clear or attached_full_clear) and evidence_complete
     if failure_labels or failure_reason:
         clear_complete = False
+    completion_evidence_mode = "uninterrupted_live_clear" if natural_full_clear else ("attached_uninterrupted_live_clear" if attached_full_clear else ("segment_debug_only" if segmented_evidence else "incomplete_or_smoke_only"))
+    blockers = completion_blockers(
+        clear_complete=clear_complete,
+        segmented_evidence=segmented_evidence,
+        expected_bosses=expected_bosses,
+        boss_kills=max(boss_kills, raid_boss_kills),
+        evidence_complete=evidence_complete,
+        failure_labels=failure_labels,
+        failure_reason=failure_reason,
+        full_clear_signal=natural_full_clear or attached_full_clear,
+    )
     merged.update(
         {
             "prepared_group": bool(left.get("prepared_group") or right.get("prepared_group")),
@@ -379,6 +451,11 @@ def merge_report_rows(left: dict[str, Any], right: dict[str, Any]) -> dict[str, 
             "missing_evidence": missing_evidence_rows,
             "evidence_complete": evidence_complete,
             "segment_results": segment_results,
+            "natural_full_clear_evidence": natural_full_clear,
+            "attached_full_clear_evidence": attached_full_clear,
+            "completion_evidence_mode": completion_evidence_mode,
+            "completion_claim_valid": clear_complete,
+            "clear_complete_blockers": blockers,
             "source_scenario_report_attached": bool(left.get("source_scenario_report_attached") or right.get("source_scenario_report_attached")),
             "scenario_evidence_mode": evidence_modes[0] if evidence_modes else "",
             "scenario_evidence_modes": evidence_modes,

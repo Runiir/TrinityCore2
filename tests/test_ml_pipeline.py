@@ -1176,7 +1176,15 @@ def test_world_planner_validation_report_marks_covered_and_missing_gates(tmp_pat
         planner_manifests,
         live_ready_manifests,
         {
-            "stonecore_5n": {"scenario_id": "stonecore_5n", "prepared_group": True, "boss_kills": 4, "clear_complete": True, "teacher_label_quality": "medium"},
+            "stonecore_5n": {
+                "scenario_id": "stonecore_5n",
+                "prepared_group": True,
+                "boss_kills": 4,
+                "clear_complete": True,
+                "completion_claim_valid": True,
+                "completion_evidence_mode": "uninterrupted_live_clear",
+                "teacher_label_quality": "medium",
+            },
             "blackwing_descent_10n": {"scenario_id": "blackwing_descent_10n", "prepared_group": True, "raid_boss_kills": 1, "clear_complete": False, "teacher_label_quality": "medium"},
         },
     )
@@ -1358,6 +1366,7 @@ def test_validation_run_plan_preserves_instance_positions_and_tags():
     assert stonecore["preserve_start_position"] is True
     assert "--keep-bot-pool-position" in stonecore["live_validate_command"]
     assert "--bot-pool-tag" in stonecore["live_validate_command"]
+    assert "--validation-scenario-id" in stonecore["live_validate_command"]
     assert "stonecore_5n" in stonecore["live_validate_command"]
     assert "blackwing_descent_10n" in bwd["live_validate_command"]
     assert bwd["scenario_report_command"].count("--scenario-id") == 1
@@ -1394,7 +1403,8 @@ def test_validation_run_plan_segments_boss_routes_for_aggregate_reports():
     assert bwd["segment_count"] == 7
     assert [segment["label"] for segment in bwd["segments"]][0] == "entry trash"
     assert bwd["segments"][-1]["segment_id"] == "08_nefarian"
-    assert bwd["scenario_report_command"].count("--live-report") == 7
+    assert bwd["scenario_report_command"].count("--live-report") == 8
+    assert "dataset/live_validation_scenarios/blackwing_descent_10n/report.json" in bwd["scenario_report_command"]
     assert "dataset/live_validation_scenarios/blackwing_descent_10n/01_entry_trash/report.json" in bwd["scenario_report_command"]
     assert "dataset/live_validation_scenarios/blackwing_descent_10n/02_magmaw/report.json" in bwd["scenario_report_command"]
     first_command = bwd["segments"][1]["live_validate_command"]
@@ -1694,7 +1704,15 @@ def test_validation_run_status_accepts_boss_kill_evidence_counter(tmp_path):
     )
     report_root.mkdir()
     (report_root / "stonecore_5n.json").write_text(
-        json.dumps({"scenario_id": "stonecore_5n", "clear_complete": True, "complete_segment_coverage": True}),
+        json.dumps(
+            {
+                "scenario_id": "stonecore_5n",
+                "clear_complete": True,
+                "completion_claim_valid": True,
+                "completion_evidence_mode": "uninterrupted_live_clear",
+                "complete_segment_coverage": True,
+            }
+        ),
         encoding="utf-8",
     )
 
@@ -1755,7 +1773,15 @@ def test_validation_run_status_accepts_trash_segment_evidence(tmp_path):
     )
     report_root.mkdir()
     (report_root / "stonecore_5n.json").write_text(
-        json.dumps({"scenario_id": "stonecore_5n", "clear_complete": True, "complete_segment_coverage": True}),
+        json.dumps(
+            {
+                "scenario_id": "stonecore_5n",
+                "clear_complete": True,
+                "completion_claim_valid": True,
+                "completion_evidence_mode": "uninterrupted_live_clear",
+                "complete_segment_coverage": True,
+            }
+        ),
         encoding="utf-8",
     )
 
@@ -1818,7 +1844,15 @@ def test_validation_run_status_blocks_missing_required_mechanic_evidence(tmp_pat
     )
     report_root.mkdir()
     (report_root / "stonecore_5n.json").write_text(
-        json.dumps({"scenario_id": "stonecore_5n", "clear_complete": True, "complete_segment_coverage": True}),
+        json.dumps(
+            {
+                "scenario_id": "stonecore_5n",
+                "clear_complete": True,
+                "completion_claim_valid": True,
+                "completion_evidence_mode": "uninterrupted_live_clear",
+                "complete_segment_coverage": True,
+            }
+        ),
         encoding="utf-8",
     )
 
@@ -1887,6 +1921,8 @@ def test_validation_run_status_accepts_scenario_segment_result_for_noncanonical_
             {
                 "scenario_id": "blackwing_descent_10n",
                 "clear_complete": True,
+                "completion_claim_valid": True,
+                "completion_evidence_mode": "uninterrupted_live_clear",
                 "complete_segment_coverage": True,
                 "segment_results": [
                     {
@@ -2158,7 +2194,17 @@ TC> {"duration_minutes":3,"decisions":4,"total_kills":0,"quests_completed":0}
     scenario_dir = tmp_path / "scenario_reports"
     scenario_dir.mkdir()
     (scenario_dir / "stonecore_5n.json").write_text(
-        json.dumps({"scenario_id": "stonecore_5n", "prepared_group": True, "trash_pulls": 4, "boss_kills": 4, "clear_complete": True}),
+        json.dumps(
+            {
+                "scenario_id": "stonecore_5n",
+                "prepared_group": True,
+                "trash_pulls": 4,
+                "boss_kills": 4,
+                "clear_complete": True,
+                "completion_claim_valid": True,
+                "completion_evidence_mode": "uninterrupted_live_clear",
+            }
+        ),
         encoding="utf-8",
     )
     (scenario_dir / "blackwing_descent_10n.json").write_text(
@@ -2245,6 +2291,8 @@ def test_live_scenario_report_builder_labels_attached_scenario_reports_medium_qu
                 "trash_pulls": 4,
                 "boss_kills": 4,
                 "clear_complete": True,
+                "completion_claim_valid": True,
+                "completion_evidence_mode": "uninterrupted_live_clear",
             }
         },
     }
@@ -2253,6 +2301,7 @@ def test_live_scenario_report_builder_labels_attached_scenario_reports_medium_qu
     stonecore = reports["stonecore_5n"]
 
     assert stonecore["clear_complete"] is True
+    assert stonecore["completion_evidence_mode"] == "attached_uninterrupted_live_clear"
     assert stonecore["source_scenario_report_attached"] is True
     assert stonecore["scenario_evidence_mode"] == "attached_scenario_report"
     assert stonecore["scenario_evidence_modes"] == ["attached_scenario_report"]
@@ -2380,10 +2429,11 @@ def test_live_scenario_report_builder_counts_stonecore_summary_boss_kills(tmp_pa
     stonecore = build_live_scenario_reports(live_report, scenario_dir)["stonecore_5n"]
 
     assert stonecore["boss_kills"] == 4
-    assert stonecore["clear_complete"] is True
+    assert stonecore["clear_complete"] is False
+    assert stonecore["clear_complete_blockers"] == ["missing_uninterrupted_full_clear_report"]
 
 
-def test_live_scenario_report_builder_aggregates_segmented_raid_progress(tmp_path):
+def test_live_scenario_report_builder_aggregates_segmented_raid_progress_without_full_clear(tmp_path):
     scenario_dir = tmp_path / "validation_scenarios"
     write_jsonl(
         scenario_dir / "validation_scenarios.jsonl",
@@ -2424,7 +2474,9 @@ def test_live_scenario_report_builder_aggregates_segmented_raid_progress(tmp_pat
     assert bwd["prepared_group"] is True
     assert bwd["raid_boss_kills"] == 6
     assert bwd["expected_bosses"] == 6
-    assert bwd["clear_complete"] is True
+    assert bwd["clear_complete"] is False
+    assert bwd["completion_evidence_mode"] == "segment_debug_only"
+    assert bwd["clear_complete_blockers"] == ["segment_evidence_debug_only", "missing_uninterrupted_full_clear_report"]
     assert bwd["expected_segments"] == [f"{index + 1:02d}_boss_{index}" for index in range(6)]
     assert bwd["missing_segments"] == []
     assert bwd["complete_segment_coverage"] is True

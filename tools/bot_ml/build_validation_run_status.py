@@ -133,6 +133,20 @@ def has_trash_evidence(report: dict[str, Any], scenario: dict[str, Any]) -> bool
     )
 
 
+def has_valid_full_clear_claim(report: dict[str, Any]) -> bool:
+    if not bool(report.get("clear_complete")):
+        return False
+    if not bool(report.get("completion_claim_valid")):
+        return False
+    mode = str(report.get("completion_evidence_mode") or report.get("scenario_evidence_mode") or "")
+    modes = {str(row) for row in (report.get("scenario_evidence_modes") or [])}
+    if mode == "route_segment_context" or "route_segment_context" in modes:
+        return False
+    if report.get("source_segments"):
+        return False
+    return True
+
+
 def scenario_segment_result(scenario_report: dict[str, Any], segment: dict[str, Any]) -> dict[str, Any]:
     expected_segment_id = str(segment.get("segment_id") or "")
     expected_route_node_id = str(segment.get("route_node_id") or "")
@@ -324,7 +338,7 @@ def build_status(plan: dict[str, Any], report_root: Path) -> dict[str, Any]:
                 missing_segments.append(row["segment_id"])
 
         complete_segment_coverage = bool(scenario_report.get("complete_segment_coverage"))
-        clear_complete = bool(scenario_report.get("clear_complete"))
+        clear_complete = has_valid_full_clear_claim(scenario_report)
         segment_coverage_ready = bool(segments) and not missing_segments and not invalid_segments
         scenario_report_ready = scenario_report_file.exists()
         full_clear_ready = clear_complete and segment_coverage_ready and (complete_segment_coverage or not segments)
@@ -350,6 +364,8 @@ def build_status(plan: dict[str, Any], report_root: Path) -> dict[str, Any]:
             blockers.append("incomplete_segment_coverage")
         if scenario_report_ready and not clear_complete:
             blockers.append("scenario_clear_not_complete")
+            if bool(scenario_report.get("clear_complete")):
+                blockers.append("invalid_full_clear_completion_claim")
 
         scenarios.append(
             {

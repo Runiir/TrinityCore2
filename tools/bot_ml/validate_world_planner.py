@@ -202,6 +202,20 @@ def scenario_report_bool(report: dict[str, Any], *keys: str) -> bool:
     return any(bool(report.get(key)) for key in keys)
 
 
+def valid_full_clear_claim(report: dict[str, Any]) -> bool:
+    if not scenario_report_bool(report, "clear_complete", "all_passed", "scenario_passed"):
+        return False
+    if not bool(report.get("completion_claim_valid")):
+        return False
+    mode = str(report.get("completion_evidence_mode") or report.get("scenario_evidence_mode") or "")
+    modes = {str(row) for row in (report.get("scenario_evidence_modes") or [])}
+    if mode == "route_segment_context" or "route_segment_context" in modes:
+        return False
+    if report.get("source_segments"):
+        return False
+    return True
+
+
 def scenario_report_int(report: dict[str, Any], *keys: str) -> int:
     values: list[int] = []
     for key in keys:
@@ -218,7 +232,7 @@ def live_report_ready(report: dict[str, Any], requirement: str) -> bool:
     if not scenario_report_bool(report, "prepared_group", "group_ready", "provisioning_ready"):
         return False
     if requirement == "clear":
-        return scenario_report_bool(report, "clear_complete", "all_passed", "scenario_passed")
+        return valid_full_clear_claim(report)
     if requirement == "boss":
         return scenario_report_int(report, "boss_kills", "raid_boss_kills", "bosses_killed") > 0
     if requirement == "trash":

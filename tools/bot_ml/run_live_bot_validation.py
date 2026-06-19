@@ -594,7 +594,17 @@ def scenario_boss_kills(report: dict[str, Any]) -> int:
 
 
 def scenario_clear_complete(report: dict[str, Any]) -> bool:
-    return scenario_bool(report, "clear_complete", "all_passed", "scenario_passed")
+    if not scenario_bool(report, "clear_complete", "all_passed", "scenario_passed"):
+        return False
+    if not bool(report.get("completion_claim_valid")):
+        return False
+    mode = str(report.get("completion_evidence_mode") or report.get("scenario_evidence_mode") or "")
+    modes = {str(row) for row in (report.get("scenario_evidence_modes") or [])}
+    if mode == "route_segment_context" or "route_segment_context" in modes:
+        return False
+    if report.get("source_segments"):
+        return False
+    return True
 
 
 def scenario_missing(report: dict[str, Any], missing_name: str) -> list[str]:
