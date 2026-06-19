@@ -1,6 +1,6 @@
 outs:
-- md5: c256b305a55b92e1b749169c3b507707.dir
-  size: 4232
-  nfiles: 1
+- md5: 31606de0189d74be85c6c1e7c6d0d5fe.dir
+  size: 5771
+  nfiles: 3
   hash: md5
   path: bot_policy
