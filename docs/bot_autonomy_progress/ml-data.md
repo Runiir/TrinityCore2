@@ -27,3 +27,7 @@ Blockers:
 
 - Real `bot-ml-export` requires a live characters DB URL.
 - Full validation tests require generated configs/artifacts and local DBC/hotfix data that are absent or unreachable in this lane.
+
+Post-commit note:
+
+- Implementation committed as `28ade05756` with source/config/docs/tests only. Generated synthetic dataset, model, DVCLive, and register artifacts were left as local DVC/ignored outputs and were not committed to Git.
