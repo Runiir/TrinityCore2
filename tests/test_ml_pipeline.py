@@ -967,6 +967,17 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert scenarios["blackwing_descent_10n"]["route_coordinates_ready"] is True
     assert scenarios["stonecore_5n"]["expected_bot_count"] == 5
     assert scenarios["blackwing_descent_10n"]["expected_bot_count"] == 10
+    assert scenarios["stonecore_5n"]["group_kind"] == "party"
+    assert scenarios["blackwing_descent_10n"]["group_kind"] == "raid"
+    assert "role_assignments" in scenarios["stonecore_5n"]["required_evidence"]
+    assert "party_formation" in scenarios["stonecore_5n"]["required_evidence"]
+    assert "raid_formation" in scenarios["blackwing_descent_10n"]["required_evidence"]
+    assert scenarios["blackwing_descent_10n"]["role_assignment"]["assignments"][0] == {
+        "role": "tank",
+        "required": 2,
+        "provisioned": 2,
+        "evidence_actions": ["role_assignment", "validation_role_assignment", "tank_assigned", "healer_assigned"],
+    }
     assert scenarios["stonecore_5n"]["boss_count"] == 4
     assert scenarios["blackwing_descent_10n"]["boss_count"] == 6
     assert any(row["scenario_id"] == "stonecore_5n" and row["kind"] == "trash" for row in routes)
@@ -990,8 +1001,18 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert nefarian["opener_summon_entry"] == 0
     assert nefarian["bot_start_map_id"] == 669
     assert nefarian["bot_start_z"] == 6.57143
+    assert "pulls" in nefarian["required_evidence"]
+    assert "target_priority" in nefarian["required_evidence"]
+    assert "tank_positioning" in nefarian["required_evidence"]
+    assert nefarian["pull_contract"]["required"] is True
+    assert nefarian["target_priority"]["required"] is True
+    assert nefarian["healer_assignments"]["required"] is True
+    assert nefarian["tank_positioning"]["required"] is True
     assert any(row["scenario_id"] == "blackwing_descent_10n" and "raid_aoe" in row["families"] for row in mechanics)
+    chimaeron_mechanics = next(row for row in mechanics if row["scenario_id"] == "blackwing_descent_10n" and row["mechanic_profile"] == "raid_aoe_healer_assignment")
+    assert {"healer_assignments", "recovery", "instance_reset"}.issubset(set(chimaeron_mechanics["required_evidence"]))
     assert manifests["report"]["ready_scenarios"] == 2
+    assert "interrupts" in manifests["report"]["evidence_surfaces"]
     assert manifests["report"]["invalid_route_steps"] == []
     assert manifests["report"]["invalid_mechanic_profiles"] == []
 
@@ -1104,6 +1125,52 @@ def test_validation_run_plan_segments_boss_routes_for_aggregate_reports():
         assert "--keep-bot-pool-position" in segment["live_validate_command"]
         assert "blackwing_descent_10n" in segment["live_validate_command"]
     assert bwd["segments"][0]["kind"] == "trash"
+
+
+def test_validation_run_plan_preserves_required_evidence_contracts():
+    scenarios = [
+        {
+            "scenario_id": "stonecore_5n",
+            "instance": "The Stonecore",
+            "map_id": 725,
+            "difficulty": "normal_5man",
+            "required_roles": {"tank": 1, "healer": 1, "dps": 3},
+            "group_kind": "party",
+            "required_evidence": ["role_assignments", "party_formation"],
+            "role_assignment": {"required_roles": {"tank": 1, "healer": 1, "dps": 3}},
+        },
+    ]
+    routes_by_scenario = {
+        "stonecore_5n": [
+            {
+                "scenario_id": "stonecore_5n",
+                "route_node_id": "stonecore_azil",
+                "step": 8,
+                "kind": "boss",
+                "label": "High Priestess Azil",
+                "mechanic_profile": "adds_ground_danger_interrupts",
+                "required_evidence": ["pulls", "target_priority", "interrupts", "tank_positioning"],
+                "evidence_contract": [{"evidence": "interrupts", "required": True}],
+            }
+        ],
+    }
+
+    plan = build_validation_run_plan(
+        scenarios,
+        Path("dataset/live_validation_scenarios"),
+        Path("dataset/live_validation_scenario_reports_built"),
+        Path("dataset/validation_scenarios"),
+        300,
+        900,
+        routes_by_scenario,
+    )
+    stonecore = plan["scenarios"][0]
+    segment = stonecore["segments"][0]
+
+    assert stonecore["group_kind"] == "party"
+    assert stonecore["required_evidence"] == ["role_assignments", "party_formation"]
+    assert segment["required_evidence"] == ["pulls", "target_priority", "interrupts", "tank_positioning"]
+    assert segment["evidence_contract"] == [{"evidence": "interrupts", "required": True}]
 
 
 def test_validation_run_plan_marks_segments_without_coordinates_non_executable(tmp_path):
@@ -1417,6 +1484,70 @@ def test_validation_run_status_accepts_trash_segment_evidence(tmp_path):
     assert report_row["segment_ready"] is True
 
 
+def test_validation_run_status_blocks_missing_required_mechanic_evidence(tmp_path):
+    live_root = tmp_path / "live_validation_scenarios"
+    report_root = tmp_path / "scenario_reports"
+    plan = {
+        "scenarios": [
+            {
+                "scenario_id": "stonecore_5n",
+                "instance": "The Stonecore",
+                "difficulty": "normal_5man",
+                "segments": [
+                    {
+                        "segment_id": "08_high_priestess_azil",
+                        "route_node_id": "stonecore_azil",
+                        "kind": "boss",
+                        "label": "High Priestess Azil",
+                        "mechanic_profile": "adds_ground_danger_interrupts",
+                        "required_evidence": ["pulls", "target_priority", "interrupts"],
+                        "executable": True,
+                        "live_output_dir": str(live_root / "stonecore_5n" / "08_high_priestess_azil"),
+                        "live_validate_shell": "pixi run bot-live-validate --validation-segment-id 08_high_priestess_azil",
+                    }
+                ],
+            }
+        ]
+    }
+    report = live_root / "stonecore_5n" / "08_high_priestess_azil" / "report.json"
+    report.parent.mkdir(parents=True)
+    report.write_text(
+        json.dumps(
+            {
+                "schema": "bot_live_validation_report_v1",
+                "returncode": 0,
+                "timed_out": False,
+                "validation_context": {
+                    "scenario_id": "stonecore_5n",
+                    "segment_id": "08_high_priestess_azil",
+                    "route_node_id": "stonecore_azil",
+                    "route_kind": "boss",
+                    "mechanic_profile": "adds_ground_danger_interrupts",
+                },
+                "summary": {"boss_kills": 1},
+                "trace": {"entries": [{"action": "boss_killed", "situation": "dungeon_boss"}, {"action": "boss_started"}]},
+                "evidence": {"boss_kill_evidence": 1, "validation_evidence_counts": {"pulls": 1}},
+            }
+        ),
+        encoding="utf-8",
+    )
+    report_root.mkdir()
+    (report_root / "stonecore_5n.json").write_text(
+        json.dumps({"scenario_id": "stonecore_5n", "clear_complete": True, "complete_segment_coverage": True}),
+        encoding="utf-8",
+    )
+
+    status = build_validation_run_status(plan, report_root)
+    stonecore = status["scenarios"][0]
+    report_row = stonecore["segment_reports"][0]
+
+    assert status["all_ready"] is False
+    assert report_row["missing_evidence"] == ["target_priority", "interrupts"]
+    assert "missing_target_priority_evidence" in report_row["invalid_reasons"]
+    assert "missing_segment_required_evidence" in stonecore["blockers"]
+    assert stonecore["next_commands"] == ["pixi run bot-live-validate --validation-segment-id 08_high_priestess_azil"]
+
+
 def test_validation_run_status_accepts_scenario_segment_result_for_noncanonical_report(tmp_path):
     live_root = tmp_path / "live_validation_scenarios"
     report_root = tmp_path / "scenario_reports"
@@ -1711,6 +1842,27 @@ TC> {"duration_minutes":1.0,"decisions":12,"total_kills":0,"quests_completed":0}
     assert "no_progress_observed" in report["failure_labels"]
 
 
+def test_live_bot_validation_counts_group_mechanic_evidence():
+    output = """
+TC> {"active_bots":10,"target_bots":10,"action":"botauto_status","decisions":40}
+TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"snapshot":{"decision":{"action":"validation_role_assignment"},"movement":{"is_moving":true,"distance_moved_since_last_decision":2}}},{"identity":{"bot_guid":2},"snapshot":{"decision":{"action":"validation_route_tank_boss","result":"force_tank_focus"},"movement":{"is_moving":false,"distance_moved_since_last_decision":0}}}]}
+TC> {"trace_schema_version":1,"entries":[{"action":"raid_formed"},{"action":"boss_started"},{"action":"target_switch"},{"action":"assigned_interrupt_success"},{"action":"validation_route_group_heal"},{"action":"validation_route_regroup"},{"action":"reset_stale_boss_activation"}]}
+TC> {"duration_minutes":5,"decisions":40,"raid_boss_kills":1,"interrupt_success":1}
+"""
+    report = live_validation_report(output)
+    evidence = report["evidence"]
+
+    assert evidence["validation_evidence_counts"]["raid_formation"] == 1
+    assert evidence["validation_evidence_counts"]["role_assignments"] == 1
+    assert evidence["validation_evidence_counts"]["pulls"] >= 1
+    assert evidence["validation_evidence_counts"]["target_priority"] == 1
+    assert evidence["validation_evidence_counts"]["interrupts"] == 1
+    assert evidence["validation_evidence_counts"]["healer_assignments"] == 1
+    assert evidence["validation_evidence_counts"]["tank_positioning"] >= 1
+    assert evidence["validation_evidence_counts"]["regrouping"] == 1
+    assert evidence["validation_evidence_counts"]["instance_reset"] == 1
+
+
 def test_live_bot_validation_uses_scenario_reports_for_dungeon_and_raid_gates(tmp_path):
     output = """
 TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":4,"kills":0,"quests_accepted":0,"quest_objective_progress":0}
@@ -1860,6 +2012,63 @@ def test_live_scenario_report_builder_propagates_failed_teacher_labels(tmp_path)
     assert bwd["failure_reason"] == "boss_attempt_no_kill"
     assert bwd["ml_training_label"] == "failed_teacher_attempt"
     assert bwd["segment_results"][0]["failure_labels"] == ["boss_attempt_no_kill", "no_progress_observed"]
+
+
+def test_live_scenario_report_builder_propagates_required_evidence(tmp_path):
+    scenario_dir = tmp_path / "validation_scenarios"
+    write_jsonl(
+        scenario_dir / "validation_scenarios.jsonl",
+        [
+            {
+                "scenario_id": "stonecore_5n",
+                "instance": "The Stonecore",
+                "map_id": 725,
+                "difficulty": "normal_5man",
+                "provisioning_ready": True,
+                "boss_count": 1,
+                "required_evidence": ["role_assignments", "party_formation"],
+            }
+        ],
+    )
+    write_jsonl(
+        scenario_dir / "validation_routes.jsonl",
+        [
+            {
+                "scenario_id": "stonecore_5n",
+                "kind": "boss",
+                "step": 8,
+                "label": "High Priestess Azil",
+                "route_node_id": "stonecore_azil",
+                "required_evidence": ["pulls", "target_priority", "interrupts"],
+            }
+        ],
+    )
+    live_report = {
+        "source_live_report": "azil.json",
+        "validation_context": {
+            "scenario_id": "stonecore_5n",
+            "segment_id": "08_high_priestess_azil",
+            "route_node_id": "stonecore_azil",
+            "route_label": "High Priestess Azil",
+            "route_kind": "boss",
+            "route_step": 8,
+            "mechanic_profile": "adds_ground_danger_interrupts",
+        },
+        "trace_entries": 4,
+        "trace": {"entries": [{"action": "boss_killed", "situation": "dungeon_boss"}, {"action": "boss_started"}, {"action": "target_switch"}]},
+        "summary": {"boss_kills": 1},
+        "evidence": {"failures": 0, "boss_kill_evidence": 1, "validation_evidence_counts": {"pulls": 1, "target_priority": 1}},
+        "stages": [{"stage": "dungeon_boss", "passed": True}],
+    }
+
+    stonecore = build_live_scenario_reports(live_report, scenario_dir)["stonecore_5n"]
+    segment = stonecore["segment_results"][0]
+
+    assert segment["required_evidence"] == ["pulls", "target_priority", "interrupts"]
+    assert segment["missing_evidence"] == ["interrupts"]
+    assert segment["evidence_complete"] is False
+    assert stonecore["required_evidence"] == ["role_assignments", "party_formation", "pulls", "target_priority", "interrupts"]
+    assert stonecore["missing_evidence"] == ["role_assignments", "party_formation", "interrupts"]
 
 
 def test_live_scenario_report_builder_aggregates_segmented_raid_progress(tmp_path):

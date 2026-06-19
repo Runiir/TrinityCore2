@@ -32,6 +32,95 @@ MECHANIC_FAMILIES = {
     "wipe_risk",
 }
 
+MECHANIC_EVIDENCE_REQUIREMENTS = {
+    "trash_pack": ["pulls"],
+    "caster_pack": ["pulls", "interrupts"],
+    "healer_mob": ["target_priority", "interrupts"],
+    "patrol_risk": ["pulls", "regrouping"],
+    "cleave_risk": ["tank_positioning", "healer_assignments"],
+    "interrupt_required": ["interrupts"],
+    "dispel_required": ["healer_assignments"],
+    "tank_buster": ["tank_positioning", "healer_assignments"],
+    "raid_aoe": ["healer_assignments", "regrouping"],
+    "ground_danger": ["tank_positioning", "regrouping"],
+    "stack": ["regrouping", "healer_assignments"],
+    "spread": ["regrouping"],
+    "adds": ["target_priority", "pulls"],
+    "target_switch": ["target_priority"],
+    "enrage": ["target_priority", "interrupts"],
+    "movement_check": ["tank_positioning", "regrouping"],
+    "boss_phase": ["target_priority", "pulls"],
+    "wipe_risk": ["recovery", "instance_reset"],
+}
+
+EVIDENCE_ACTIONS = {
+    "party_formation": ["party_formed", "raid_formed", "validation_group_formed"],
+    "raid_formation": ["raid_formed", "validation_group_formed"],
+    "role_assignments": ["role_assignment", "validation_role_assignment", "tank_assigned", "healer_assigned"],
+    "pulls": ["trash_action", "validation_route_trash_action", "boss_started", "boss_action", "validation_route_pull"],
+    "target_priority": ["target_priority", "target_switch", "validation_target_priority", "assist_target_search_authoritative_focus"],
+    "interrupts": ["interrupt", "interrupt_success", "assigned_interrupt_success", "validation_interrupt"],
+    "healer_assignments": ["healer_assignment", "validation_route_group_heal", "trash_heal", "external_defensive"],
+    "tank_positioning": ["validation_route_tank_boss", "tank_positioning", "force_tank_focus", "move_to_validation_route_assist_target"],
+    "regrouping": ["validation_route_regroup", "regroup", "validation_route_hold_anchor"],
+    "recovery": ["stuck_detected", "unstuck", "death", "dead_recovery", "validation_route_recovery"],
+    "instance_reset": ["instance_reset", "reset_stale_boss_activation", "bot_pool_reset"],
+}
+
+
+def group_kind(required_roles: dict[str, int], difficulty: str) -> str:
+    return "raid" if sum(required_roles.values()) >= 10 or "raid" in difficulty or "10" in difficulty else "party"
+
+
+def role_assignment_contract(required_roles: dict[str, int], provisioned_roles: dict[str, int]) -> dict[str, Any]:
+    assignments = []
+    for role in ["tank", "healer", "dps"]:
+        expected = int(required_roles.get(role) or 0)
+        assignments.append(
+            {
+                "role": role,
+                "required": expected,
+                "provisioned": int(provisioned_roles.get(role) or 0),
+                "evidence_actions": EVIDENCE_ACTIONS["role_assignments"],
+            }
+        )
+    return {
+        "required_roles": required_roles,
+        "provisioned_roles": provisioned_roles,
+        "assignments": assignments,
+        "evidence_actions": EVIDENCE_ACTIONS["role_assignments"],
+    }
+
+
+def mechanic_required_evidence(families: list[str]) -> list[str]:
+    required: list[str] = []
+    for family in families:
+        for evidence_name in MECHANIC_EVIDENCE_REQUIREMENTS.get(family, []):
+            if evidence_name not in required:
+                required.append(evidence_name)
+    return required
+
+
+def route_required_evidence(kind: str, families: list[str]) -> list[str]:
+    required = ["pulls"] if kind in {"trash", "boss"} else []
+    if kind == "boss":
+        required.extend(["tank_positioning", "healer_assignments"])
+    for evidence_name in mechanic_required_evidence(families):
+        if evidence_name not in required:
+            required.append(evidence_name)
+    return required
+
+
+def evidence_contract(required_evidence: list[str]) -> list[dict[str, Any]]:
+    return [
+        {
+            "evidence": evidence_name,
+            "actions": EVIDENCE_ACTIONS.get(evidence_name, []),
+            "required": True,
+        }
+        for evidence_name in required_evidence
+    ]
+
 
 def load_json(path: Path, default: dict[str, Any] | None = None) -> dict[str, Any]:
     if not path.exists():
@@ -86,6 +175,11 @@ def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any],
         ready, missing = provisioning_ready(provisioned.get(provision_id), required_roles)
         provisioned_roles = {str(k): int(v) for k, v in ((provisioned.get(provision_id) or {}).get("role_counts") or {}).items()}
         expected_bot_count = sum(provisioned_roles.values()) or sum(required_roles.values())
+        difficulty = str(scenario.get("difficulty") or "")
+        scenario_group_kind = group_kind(required_roles, difficulty)
+        scenario_required_evidence = ["role_assignments", "party_formation" if scenario_group_kind == "party" else "raid_formation"]
+        if any(step.get("kind") in {"trash", "boss"} for step in route_steps):
+            scenario_required_evidence.extend(["pulls", "regrouping", "recovery", "instance_reset"])
         if not verification_ready:
             missing.append("provisioning_verifier_ready")
         invalid_route_steps = [
@@ -106,8 +200,10 @@ def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any],
             "instance": scenario.get("instance") or "",
             "map_id": int(scenario.get("map_id") or 0),
             "difficulty": scenario.get("difficulty") or "",
+            "group_kind": scenario_group_kind,
             "provisioning_scenario_id": provision_id,
             "required_roles": required_roles,
+            "role_assignment": role_assignment_contract(required_roles, provisioned_roles),
             "expected_bot_count": expected_bot_count,
             "provisioning_ready": bool(ready and verification_ready),
             "missing": sorted(set(missing)),
@@ -117,12 +213,16 @@ def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any],
             "mechanic_profile_count": len(profiles),
             "route_coordinates_ready": not invalid_route_steps,
             "invalid_route_steps": invalid_route_steps,
+            "required_evidence": scenario_required_evidence,
+            "evidence_contract": evidence_contract(scenario_required_evidence),
         }
         scenario_row["scenario_hash"] = stable_hash(scenario_row)[:16]
         scenarios.append(scenario_row)
 
         for step in route_steps:
             coordinates_valid, coordinate_missing_reason = route_coordinate_status(step)
+            family_rows = [str(family) for family in profiles.get(step.get("mechanic_profile") or "", [])]
+            route_evidence = route_required_evidence(str(step.get("kind") or ""), family_rows)
             route = {
                 "scenario_id": scenario_id,
                 "map_id": int(scenario.get("map_id") or 0),
@@ -140,6 +240,44 @@ def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any],
                 "source_sql": step.get("source_sql") or "",
                 "coordinates_valid": coordinates_valid,
                 "coordinate_missing_reason": coordinate_missing_reason,
+                "mechanic_families": family_rows,
+                "required_evidence": route_evidence,
+                "evidence_contract": evidence_contract(route_evidence),
+                "pull_contract": {
+                    "required": str(step.get("kind") or "") in {"trash", "boss"},
+                    "kind": step.get("kind") or "unknown",
+                    "actions": EVIDENCE_ACTIONS["pulls"],
+                },
+                "target_priority": {
+                    "required": "target_priority" in route_evidence,
+                    "source_entry": int(step.get("source_entry") or 0),
+                    "opener_target_entry": int(step.get("opener_target_entry") or 0),
+                    "actions": EVIDENCE_ACTIONS["target_priority"],
+                },
+                "interrupt_assignments": {
+                    "required": "interrupts" in route_evidence,
+                    "actions": EVIDENCE_ACTIONS["interrupts"],
+                },
+                "healer_assignments": {
+                    "required": "healer_assignments" in route_evidence,
+                    "actions": EVIDENCE_ACTIONS["healer_assignments"],
+                },
+                "tank_positioning": {
+                    "required": "tank_positioning" in route_evidence,
+                    "actions": EVIDENCE_ACTIONS["tank_positioning"],
+                },
+                "regrouping": {
+                    "required": "regrouping" in route_evidence,
+                    "actions": EVIDENCE_ACTIONS["regrouping"],
+                },
+                "recovery": {
+                    "required": "recovery" in route_evidence,
+                    "actions": EVIDENCE_ACTIONS["recovery"],
+                },
+                "instance_reset": {
+                    "required": "instance_reset" in route_evidence,
+                    "actions": EVIDENCE_ACTIONS["instance_reset"],
+                },
             }
             route["route_node_id"] = stable_hash(route)[:16]
             route["expected_bot_count"] = expected_bot_count
@@ -170,11 +308,14 @@ def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any],
         for profile, families in profiles.items():
             family_rows = [str(family) for family in families]
             unknown = sorted(set(family_rows) - MECHANIC_FAMILIES)
+            required_evidence = mechanic_required_evidence(family_rows)
             mechanic = {
                 "scenario_id": scenario_id,
                 "mechanic_profile": str(profile),
                 "families": family_rows,
                 "unknown_families": unknown,
+                "required_evidence": required_evidence,
+                "evidence_contract": evidence_contract(required_evidence),
                 "role_responses": {
                     "tank": "survive_position_interrupt_or_swap",
                     "healer": "heal_dispel_or_external",
@@ -201,6 +342,7 @@ def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any],
             for invalid_step in scenario["invalid_route_steps"]
         ],
         "runtime_ml_control": "disabled_until_live_clear_validation_passes",
+        "evidence_surfaces": sorted(EVIDENCE_ACTIONS),
     }
     return {
         "validation_scenarios": sorted(scenarios, key=lambda row: row["scenario_id"]),
