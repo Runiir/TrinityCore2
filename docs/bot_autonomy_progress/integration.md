@@ -7,6 +7,8 @@ Current date: 2026-06-19
 - Commit `0feb46ff36` merged `master` artifact pointers into `bot-autonomy/integration`.
 - Commit `6cc510aed9` resolved the `evaluations/bot_policy` and `artifacts/bot_policy_dvclive` ownership overlap by making those output directories DVC-owned instead of git-tracked internally.
 - `pixi run pytest tests/test_autonomy_pipeline_smoke.py tests/test_ml_pipeline.py`: passed, 105 passed, 1 `dvclive`/`pynvml` warning.
+- `pixi run bot-lane-configs --dry-run`: passed for lanes 0-6 with the planned `+100` port allocation.
+- `cmake --build build --target worldserver -j2`: passed.
 - `pixi run dvc status`: passed, data and pipelines are up to date.
 - `pixi run dvc push`: passed, everything is up to date.
 - No worldserver process was started in this pass; no live instance ports were allocated.
