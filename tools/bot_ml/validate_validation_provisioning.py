@@ -9,6 +9,7 @@ try:
     from .build_validation_gear_profiles import (
         SOCKET_ENCHANTMENT_FIELD_OFFSETS,
         build_gem_catalog,
+        build_profiles,
         fetch_items,
         load_gem_properties,
         load_spell_item_enchantments,
@@ -20,6 +21,7 @@ except ImportError:
     from build_validation_gear_profiles import (
         SOCKET_ENCHANTMENT_FIELD_OFFSETS,
         build_gem_catalog,
+        build_profiles,
         fetch_items,
         load_gem_properties,
         load_spell_item_enchantments,
@@ -225,6 +227,16 @@ def validate_database(config: dict[str, Any], worldserver_conf: Path, require_ap
     return failures, evidence
 
 
+def load_or_build_gear_profiles(path: Path, config: dict[str, Any], dbc_dir: Path, hotfix_url: str | None) -> dict[str, Any]:
+    profiles = load_gear_profiles(path)
+    if profiles:
+        return profiles
+    items = fetch_items(hotfix_url or "", dbc_dir, min_item_level=1, max_required_level=85)
+    enchantments = load_spell_item_enchantments(dbc_dir)
+    gems = build_gem_catalog(items, load_gem_properties(dbc_dir), {int(enchantment["id"]): enchantment for enchantment in enchantments})
+    return build_profiles(config, items, enchantments, gems)
+
+
 def build_report(
     config: dict[str, Any],
     provisioning_report: dict[str, Any],
@@ -261,9 +273,10 @@ def main() -> int:
     parser.add_argument("--require-applied", action="store_true", help="Fail if validation characters are not already present in the characters DB.")
     args = parser.parse_args()
 
-    config = apply_gear_profiles(load_config(args.config), load_gear_profiles(args.gear_profiles))
-    provisioning_report = load_json(args.provisioning_report) or scenario_report(config)
+    base_config = load_config(args.config)
     hotfix_url = database_url_from_worldserver_conf(args.worldserver_conf, "HotfixDatabaseInfo") if args.worldserver_conf.exists() else None
+    config = apply_gear_profiles(base_config, load_or_build_gear_profiles(args.gear_profiles, base_config, args.dbc_dir, hotfix_url))
+    provisioning_report = load_json(args.provisioning_report) or scenario_report(config)
     payload_failures, payload_evidence = validate_payloads(config, args.dbc_dir, hotfix_url)
     db_failures: list[dict[str, Any]] = []
     db_evidence: dict[str, Any] = {}
