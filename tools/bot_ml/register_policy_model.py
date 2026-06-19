@@ -40,6 +40,9 @@ def main() -> int:
         "metrics_json": json.dumps(metrics, sort_keys=True),
         "diagnostics_json": json.dumps(diagnostics, sort_keys=True),
         "accepted": 1 if args.accepted and (args.force or metrics.get("accepted") is True) else 0,
+        "control_eligible": False,
+        "deployment_mode": "shadow_or_assist_only",
+        "runtime_ml_control": "disabled_until_shadow_assist_replay_validation_beats_teacher",
     }
     cols = ["model_version", "model_type", "backend", "git_commit", "dataset_path", "artifact_path", "feature_schema_json", "label_schema_json", "train_run_ids", "eval_run_ids", "metrics_json", "diagnostics_json", "accepted"]
     values = ", ".join(str(payload[col]) if col == "accepted" else sql_quote(payload[col]) for col in cols)
@@ -52,7 +55,8 @@ def main() -> int:
     args.sql_output.parent.mkdir(parents=True, exist_ok=True)
     args.sql_output.write_text(sql, encoding="utf-8")
     write_json(args.sql_output.with_suffix(".json"), payload)
-    print(json.dumps({"sql_output": str(args.sql_output), "accepted": bool(payload["accepted"])}, indent=2))
+    output = {"sql_output": str(args.sql_output), "accepted": bool(payload["accepted"]), "control_eligible": False}
+    print(json.dumps(output, indent=2))
     return 0
 
 

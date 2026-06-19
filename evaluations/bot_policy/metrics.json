@@ -1,0 +1,68 @@
+{
+  "acceptance_reasons": [
+    "insufficient_eval_rows",
+    "stuck_rate_above_limit",
+    "failure_rate_above_limit"
+  ],
+  "acceptance_thresholds": {
+    "max_death_rate": 0.0,
+    "max_failure_rate": 0.0,
+    "max_stuck_rate": 0.0,
+    "min_eval_rows": 100
+  },
+  "accepted": false,
+  "backend": "xgboost",
+  "binary": {
+    "action_success": {
+      "accuracy": 0.0,
+      "auc": null,
+      "f1": 0.0,
+      "positive_rate": 0.0,
+      "precision": 0.0,
+      "recall": 0.0
+    },
+    "death_risk": {
+      "accuracy": 1.0,
+      "auc": null,
+      "f1": 0.0,
+      "positive_rate": 0.0,
+      "precision": 0.0,
+      "recall": 0.0
+    },
+    "quest_completion_likelihood": {
+      "accuracy": 0.0,
+      "auc": null,
+      "f1": 0.0,
+      "positive_rate": 0.0,
+      "precision": 0.0,
+      "recall": 0.0
+    },
+    "stuck_risk": {
+      "accuracy": 0.0,
+      "auc": null,
+      "f1": 0.0,
+      "positive_rate": 1.0,
+      "precision": 0.0,
+      "recall": 0.0
+    }
+  },
+  "candidate_eval_rows": 2,
+  "control_eligible": false,
+  "death_rate": 0.0,
+  "eval_rows": 1,
+  "expected_reward": {
+    "mae": 13.25,
+    "rmse": 13.25
+  },
+  "failure_rate": 1.0,
+  "model_version": "policy_98405869503e",
+  "observed_eval_rows": 1,
+  "ranking": {
+    "bad_action_rate": 0.0,
+    "model_changed_activity_rate": 0.0,
+    "top_1_candidate_ranking_accuracy": 1.0,
+    "top_3_candidate_ranking_accuracy": 1.0
+  },
+  "runtime_ml_control": "disabled_until_shadow_assist_replay_validation_beats_teacher",
+  "stuck_rate": 1.0
+}

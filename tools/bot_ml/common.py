@@ -43,6 +43,7 @@ LABELS = [
 ]
 
 FEATURE_SCHEMA_VERSION = "bot_policy_features_v1"
+DATASET_CONTRACT_VERSION = "teacher_policy_candidate_v1"
 
 
 def load_json(value: Any, default: Any) -> Any:

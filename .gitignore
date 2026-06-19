@@ -41,6 +41,10 @@ __pycache__/
 /dataset
 !/dataset/
 /dataset/*
+!/dataset/bot_ml/
+/dataset/bot_ml/*
+!/dataset/bot_ml/raw.dvc
+!/dataset/bot_ml/data_quality.json
 !/dataset/live_validation_scenarios/
 /dataset/live_validation_scenarios/*
 !/dataset/live_validation_scenarios/stonecore_5n/

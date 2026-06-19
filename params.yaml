@@ -15,3 +15,15 @@ evaluate:
   report: dataset/evaluations/report.json
 tracking:
   live_dir: dvclive
+bot_ml:
+  raw_dir: dataset/bot_ml/raw
+  decision_dataset: dataset/bot_ml/decision_dataset.jsonl
+  decision_manifest: dataset/bot_ml/decision_dataset_manifest.json
+  data_quality_report: dataset/bot_ml/data_quality.json
+  model: models/bot_policy/policy_model.json
+  model_dir: models/bot_policy/artifacts
+  metrics: evaluations/bot_policy/metrics.json
+  diagnostics: evaluations/bot_policy/diagnostics.json
+  register_sql: models/bot_policy/register_model.sql
+  live_train_dir: artifacts/bot_policy_dvclive/train
+  live_eval_dir: artifacts/bot_policy_dvclive/eval

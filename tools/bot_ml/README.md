@@ -85,12 +85,14 @@ pixi run bot-ml-export --database-url mysql://trinity:trinity@127.0.0.1:3306/cha
 
 The export includes experiment events/decisions/replays/clips, semantic outcome stats, policy registry tables, and bot memory tables for POIs, danger zones, failed paths, safe positions, objective clusters, recipe/material sources, daily cooldowns, transport usage, and repeated decision fingerprints.
 
-Build the model-ready candidate-level decision dataset with run-id train/eval split. The builder emits one row per candidate action, marks the chosen row with observed labels, and joins exported semantic outcome stats into explicit area, mob, spell, and mechanic feature columns:
+Build the model-ready candidate-level teacher-policy dataset with run-id train/eval split. The builder emits one row per candidate action under the `teacher_policy_candidate_v1` contract: candidates, per-candidate masks, chosen actions, outcome-window labels, rewards, domains, trace IDs, and failure labels are explicit columns. Chosen rows receive observed outcome labels; unchosen rows keep labels at zero for ranking without leaking outcomes. Exported semantic outcome stats become area, mob, spell, and mechanic feature columns, and exported decision fingerprint memory filters repeated teacher loops out of imitation labels.
 
 ```bash
 pixi run bot-ml-build-decisions --input-dir dataset/bot_ml/raw --output dataset/bot_ml/decision_dataset.jsonl
 pixi run bot-ml-validate --dataset dataset/bot_ml/decision_dataset.jsonl
 ```
+
+The teacher filter sets `imitate_teacher=0` for deaths, stuck/path failures, ambiguous labels, missing future evidence, failed outcomes, `repeated_decision_loop`, and `repeated_failed_decision_loop`. These rows remain in the dataset as negative outcome evidence, but they are not valid behavior-cloning targets. Runtime ML control remains disabled until shadow, assist, and replay validation evidence beats the heuristic teacher; offline acceptance only permits shadow/assist registration metadata and does not enable autonomous control.
 
 Train, evaluate, explain, compare, and register:
 
@@ -102,7 +104,18 @@ pixi run bot-ml-compare --raw-dir dataset/bot_ml/raw --decision-dataset dataset/
 pixi run bot-ml-register --model models/bot_policy/policy_model.json --accepted
 ```
 
-Apply the generated `register_model.sql` to the characters database. Shadow deployment loads the registered model artifact and records `model_score`, `model_rank`, `model_reason`, `model_features_hash`, top alternatives, and trace IDs for run/experiment/decision/clip/replay joins. Assist deployment only blends scores when the model is accepted and passes the configured evaluation guard. `control` is a recognized mode string but currently fails closed to shadow with `control_mode_disabled`.
+Apply the generated `register_model.sql` to the characters database. Shadow deployment loads the registered model artifact and records `model_score`, `model_rank`, `model_reason`, `model_features_hash`, top alternatives, and trace IDs for run/experiment/decision/clip/replay joins. Assist deployment only blends scores when the model is accepted and passes the configured evaluation guard. `control` is a recognized mode string but currently fails closed to shadow with `control_mode_disabled`; registered payload sidecars include `control_eligible=false`.
+
+The same ML flow is available as DVC stages after `bot-ml-export` has produced `dataset/bot_ml/raw`:
+
+```bash
+pixi run dvc repro bot_ml_build_decisions
+pixi run dvc repro bot_ml_validate
+pixi run dvc repro bot_ml_train
+pixi run dvc repro bot_ml_evaluate
+pixi run dvc repro bot_ml_register
+pixi run dvc status
+```
 
 ## Artifact Tracking
 
