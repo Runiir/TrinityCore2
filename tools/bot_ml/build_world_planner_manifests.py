@@ -146,8 +146,102 @@ def build_service_index(services: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "z": float((spawn or {}).get("z") or 0.0),
                 "vendor_item_count": len(service.get("vendor_items") or []),
                 "trainer_spell_count": len(service.get("trainer_spells") or []),
+                "can_repair": "repair" in (service.get("service_types") or []),
+                "faction": int(service.get("faction") or 0),
                 "vendor_items": [int(row.get("item") or row.get("item_id") or 0) for row in service.get("vendor_items") or []],
                 "trainer_spells": [int(row.get("spell_id") or 0) for row in service.get("trainer_spells") or []],
+            }
+        )
+    return sorted(rows, key=lambda row: (row["map_id"], row["zone_id"], row["entry"]))
+
+
+def build_npc_index(npcs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    rows = []
+    for npc in npcs:
+        spawn = first_spawn(npc)
+        rows.append(
+            {
+                "entry": int(npc.get("entry") or 0),
+                "name": npc.get("name") or "",
+                "service_types": npc.get("service_types") or [],
+                "creature_type": int(npc.get("creature_type") or 0),
+                "rank": int(npc.get("rank") or 0),
+                "faction": int(npc.get("faction") or 0),
+                "spawn_count": len(npc.get("spawns") or []),
+                "map_id": int((spawn or {}).get("map_id") or 0),
+                "zone_id": int((spawn or {}).get("zone_id") or 0),
+                "area_id": int((spawn or {}).get("area_id") or 0),
+                "x": float((spawn or {}).get("x") or 0.0),
+                "y": float((spawn or {}).get("y") or 0.0),
+                "z": float((spawn or {}).get("z") or 0.0),
+            }
+        )
+    return sorted(rows, key=lambda row: (row["map_id"], row["zone_id"], row["entry"]))
+
+
+def build_mob_index(mobs: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    rows = []
+    for mob in mobs:
+        spawn = first_spawn(mob)
+        rows.append(
+            {
+                "entry": int(mob.get("entry") or 0),
+                "name": mob.get("name") or "",
+                "creature_type": int(mob.get("creature_type") or 0),
+                "rank": int(mob.get("rank") or 0),
+                "faction": int(mob.get("faction") or 0),
+                "spawn_count": len(mob.get("spawns") or []),
+                "map_id": int((spawn or {}).get("map_id") or 0),
+                "zone_id": int((spawn or {}).get("zone_id") or 0),
+                "area_id": int((spawn or {}).get("area_id") or 0),
+                "x": float((spawn or {}).get("x") or 0.0),
+                "y": float((spawn or {}).get("y") or 0.0),
+                "z": float((spawn or {}).get("z") or 0.0),
+            }
+        )
+    return sorted(rows, key=lambda row: (row["map_id"], row["zone_id"], row["entry"]))
+
+
+def build_trainer_index(trainers: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    rows = []
+    for trainer in trainers:
+        spawn = first_spawn(trainer)
+        spells = trainer.get("trainer_spells") or []
+        rows.append(
+            {
+                "entry": int(trainer.get("entry") or 0),
+                "trainer_ids": sorted({int(trainer_id or 0) for trainer_id in trainer.get("trainer_ids") or [] if int(trainer_id or 0)}),
+                "trainer_spells": sorted({int(row.get("spell_id") or 0) for row in spells if int(row.get("spell_id") or 0)}),
+                "profession_skill_ids": sorted({int(row.get("req_skill_line") or 0) for row in spells if int(row.get("req_skill_line") or 0)}),
+                "min_req_level": min([int(row.get("req_level") or 0) for row in spells if int(row.get("req_level") or 0)] or [0]),
+                "map_id": int((spawn or {}).get("map_id") or 0),
+                "zone_id": int((spawn or {}).get("zone_id") or 0),
+                "area_id": int((spawn or {}).get("area_id") or 0),
+                "x": float((spawn or {}).get("x") or 0.0),
+                "y": float((spawn or {}).get("y") or 0.0),
+                "z": float((spawn or {}).get("z") or 0.0),
+            }
+        )
+    return sorted(rows, key=lambda row: (row["map_id"], row["zone_id"], row["entry"]))
+
+
+def build_vendor_index(vendors: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    rows = []
+    for vendor in vendors:
+        spawn = first_spawn(vendor)
+        items = [int(row.get("item") or row.get("item_id") or 0) for row in vendor.get("vendor_items") or []]
+        rows.append(
+            {
+                "entry": int(vendor.get("entry") or 0),
+                "item_count": len([item for item in items if item]),
+                "vendor_items": sorted({item for item in items if item}),
+                "faction": int(vendor.get("faction") or 0),
+                "map_id": int((spawn or {}).get("map_id") or 0),
+                "zone_id": int((spawn or {}).get("zone_id") or 0),
+                "area_id": int((spawn or {}).get("area_id") or 0),
+                "x": float((spawn or {}).get("x") or 0.0),
+                "y": float((spawn or {}).get("y") or 0.0),
+                "z": float((spawn or {}).get("z") or 0.0),
             }
         )
     return sorted(rows, key=lambda row: (row["map_id"], row["zone_id"], row["entry"]))
@@ -239,6 +333,38 @@ def build_material_source_index(material_sources: list[dict[str, Any]]) -> list[
     return sorted(grouped.values(), key=lambda row: row["item_id"])
 
 
+def build_gathering_node_index(gathering_nodes: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    grouped: dict[int, dict[str, Any]] = {}
+    for node in gathering_nodes:
+        entry = int(node.get("entry") or 0)
+        if not entry:
+            continue
+        spawn = first_spawn(node)
+        row = grouped.setdefault(
+            entry,
+            {
+                "entry": entry,
+                "name": node.get("name") or "",
+                "gameobject_type": int(node.get("gameobject_type") or 0),
+                "loot_item_ids": [],
+                "node_count": 0,
+                "map_id": int((spawn or {}).get("map_id") or 0),
+                "zone_id": int((spawn or {}).get("zone_id") or 0),
+                "area_id": int((spawn or {}).get("area_id") or 0),
+                "x": float((spawn or {}).get("x") or 0.0),
+                "y": float((spawn or {}).get("y") or 0.0),
+                "z": float((spawn or {}).get("z") or 0.0),
+            },
+        )
+        item_id = int(node.get("loot_item_id") or 0)
+        if item_id and item_id not in row["loot_item_ids"]:
+            row["loot_item_ids"].append(item_id)
+        row["node_count"] += len(node.get("spawns") or [])
+    for row in grouped.values():
+        row["loot_item_ids"] = sorted(row["loot_item_ids"])
+    return sorted(grouped.values(), key=lambda row: (row["map_id"], row["zone_id"], row["entry"]))
+
+
 def build_travel_edges(travel: list[dict[str, Any]]) -> list[dict[str, Any]]:
     rows = []
     for entry in travel:
@@ -261,23 +387,135 @@ def build_travel_edges(travel: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return rows
 
 
+def build_graveyard_index(graveyards: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    rows = []
+    for graveyard in graveyards:
+        rows.append(
+            {
+                "id": int(graveyard.get("ID") or graveyard.get("id") or 0),
+                "ghost_zone": int(graveyard.get("GhostZone") or graveyard.get("ghost_zone") or 0),
+                "faction": int(graveyard.get("Faction") or graveyard.get("faction") or 0),
+                "comment": graveyard.get("Comment") or graveyard.get("comment") or "",
+                "raw": graveyard,
+            }
+        )
+    return sorted(rows, key=lambda row: (row["ghost_zone"], row["id"], row["faction"]))
+
+
+def build_instance_entrance_index(instance_entrances: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    rows = []
+    for entrance in instance_entrances:
+        dest = entrance.get("destination") or {}
+        rows.append(
+            {
+                "entrance_id": int(entrance.get("id") or entrance.get("ID") or 0),
+                "name": entrance.get("name") or entrance.get("Name") or "",
+                "to_map_id": int(dest.get("map_id") or 0),
+                "to_x": float(dest.get("x") or 0.0),
+                "to_y": float(dest.get("y") or 0.0),
+                "to_z": float(dest.get("z") or 0.0),
+            }
+        )
+    return sorted(rows, key=lambda row: (row["to_map_id"], row["entrance_id"]))
+
+
+def build_repair_point_index(repair_points: list[dict[str, Any]], services: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    source = repair_points or [service for service in services if "repair" in (service.get("service_types") or [])]
+    rows = []
+    for repair in source:
+        spawn = first_spawn(repair)
+        rows.append(
+            {
+                "entry": int(repair.get("entry") or 0),
+                "name": repair.get("name") or "",
+                "faction": int(repair.get("faction") or 0),
+                "map_id": int((spawn or {}).get("map_id") or 0),
+                "zone_id": int((spawn or {}).get("zone_id") or 0),
+                "area_id": int((spawn or {}).get("area_id") or 0),
+                "x": float((spawn or {}).get("x") or 0.0),
+                "y": float((spawn or {}).get("y") or 0.0),
+                "z": float((spawn or {}).get("z") or 0.0),
+            }
+        )
+    return sorted(rows, key=lambda row: (row["map_id"], row["zone_id"], row["entry"]))
+
+
+def build_faction_restriction_index(restrictions: list[dict[str, Any]], quests: list[dict[str, Any]], services: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    rows = list(restrictions)
+    if not rows:
+        for quest in quests:
+            for required in quest.get("required_factions") or []:
+                if int(required.get("faction_id") or 0):
+                    rows.append({"source_type": "quest", "source_id": int(quest.get("quest_id") or 0), **required})
+        for service in services:
+            if int(service.get("faction") or 0):
+                rows.append({"source_type": "npc_service", "source_id": int(service.get("entry") or 0), "faction_id": int(service.get("faction") or 0), "value": 0})
+    normalized = [
+        {
+            "source_type": row.get("source_type") or "unknown",
+            "source_id": int(row.get("source_id") or 0),
+            "faction_id": int(row.get("faction_id") or 0),
+            "value": int(row.get("value") or 0),
+        }
+        for row in rows
+        if int(row.get("faction_id") or 0)
+    ]
+    return sorted(normalized, key=lambda row: (row["source_type"], row["source_id"], row["faction_id"], row["value"]))
+
+
+def build_map_zone_index(zones: list[dict[str, Any]], map_zone_relationships: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    source = map_zone_relationships or zones
+    rows = [
+        {
+            "map_id": int(row.get("map_id") or 0),
+            "zone_id": int(row.get("zone_id") or 0),
+            "areas": sorted({int(area or 0) for area in row.get("areas") or []}),
+            "creature_spawns": int(row.get("creature_spawns") or 0),
+            "gameobject_spawns": int(row.get("gameobject_spawns") or 0),
+        }
+        for row in source
+    ]
+    return sorted(rows, key=lambda row: (row["map_id"], row["zone_id"]))
+
+
 def build_planner_manifests(world_dir: Path) -> dict[str, list[dict[str, Any]]]:
     quests = read_jsonl(world_dir / "quests.jsonl")
     objectives = read_jsonl(world_dir / "quest_objectives.jsonl")
+    npcs = read_jsonl(world_dir / "npcs.jsonl")
+    mobs = read_jsonl(world_dir / "mobs.jsonl")
     services = read_jsonl(world_dir / "npc_services.jsonl")
+    trainers = read_jsonl(world_dir / "trainers.jsonl")
+    vendors = read_jsonl(world_dir / "vendors.jsonl")
     item_sources = read_jsonl(world_dir / "item_sources.jsonl")
     recipe_sources = read_jsonl(world_dir / "recipe_sources.jsonl")
     material_sources = read_jsonl(world_dir / "material_sources.jsonl")
+    gathering_nodes = read_jsonl(world_dir / "gathering_nodes.jsonl")
     travel = read_jsonl(world_dir / "travel.jsonl")
+    graveyards = read_jsonl(world_dir / "graveyards.jsonl")
+    instance_entrances = read_jsonl(world_dir / "instance_entrances.jsonl")
+    repair_points = read_jsonl(world_dir / "repair_points.jsonl")
+    faction_restrictions = read_jsonl(world_dir / "faction_restrictions.jsonl")
+    map_zone_relationships = read_jsonl(world_dir / "map_zone_relationships.jsonl")
+    zones = read_jsonl(world_dir / "zones.jsonl")
     return {
         "quest_hubs": build_quest_hubs(quests),
         "quest_chains": build_quest_chains(quests),
         "objective_clusters": build_objective_clusters(quests, objectives),
+        "npc_index": build_npc_index(npcs),
+        "mob_index": build_mob_index(mobs),
         "service_index": build_service_index(services),
+        "trainer_index": build_trainer_index(trainers or [service for service in services if "trainer" in (service.get("service_types") or [])]),
+        "vendor_index": build_vendor_index(vendors or [service for service in services if "vendor" in (service.get("service_types") or [])]),
         "item_source_index": build_item_source_index(item_sources),
         "recipe_source_index": build_recipe_source_index(recipe_sources),
         "material_source_index": build_material_source_index(material_sources),
+        "gathering_node_index": build_gathering_node_index(gathering_nodes),
         "travel_edges": build_travel_edges(travel),
+        "graveyard_index": build_graveyard_index(graveyards),
+        "instance_entrance_index": build_instance_entrance_index(instance_entrances),
+        "repair_point_index": build_repair_point_index(repair_points, services),
+        "faction_restriction_index": build_faction_restriction_index(faction_restrictions, quests, services),
+        "map_zone_index": build_map_zone_index(zones, map_zone_relationships),
     }
 
 
