@@ -2,7 +2,7 @@
 
 ## 2026-06-19
 
-- Commit: pending in this worktree; final response records the created commit hash.
+- Commit: `b0652a649d` (`Extend world planner manifests`).
 - Branch: `bot-autonomy/lane-world-planner`.
 - Changed files:
   - `tools/bot_ml/extract_world_knowledge.py`
