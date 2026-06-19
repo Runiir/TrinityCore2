@@ -1,6 +1,6 @@
 # Bot Autonomy Audit
 
-Current date: 2026-06-17
+Current date: 2026-06-19
 
 ## Implemented
 
@@ -13,6 +13,7 @@ Current date: 2026-06-17
 - `tools/bot_ml` can export tables, build candidate-level decision datasets, validate quality, train/evaluate/register portable policy models, compare replays, and log with DVCLive.
 - DVC/DVCLive are configured through `pixi`, `dvc.yaml`, `params.yaml`, and `tools/bot_ml/README.md`.
 - Headless smoke configs exist for movement, combat, simple quests, cooking, autonomous loop, 5-man trash, dungeon segment labels, and several raid mechanic modules.
+- Lane 0 config generation is implemented through `pixi run bot-lane-configs --lane 0`, with isolated world/auth/SOAP/RA ports `18085/18086/13443/17878` and output root `generated/bot_autonomy_lanes/lane_0`.
 
 ## Scaffold Or Partial
 
@@ -23,14 +24,15 @@ Current date: 2026-06-17
 - Smart loot has gear upgrade scoring and telemetry concepts, but group roll integration and full class/spec gear profiles are incomplete.
 - Persistent memory covers POIs, failed paths, danger zones, safe positions, objective clusters, recipe sources, material sources, daily cooldowns, transport usage, and repeated decision fingerprints as first-class tables. Runtime producers exist for POIs, paths, danger, safe positions, objective-cluster outcomes, visible vendor/trainer recipe-source discovery, visible objective-object material-source discovery, and decision fingerprints; cooldown/transport producers are still partial.
 - Diagnostics report current action, diagnosis code, decision snapshot, trace entries, active quest cluster, cooldown counts, and decision fingerprint repeat/failure counters. Recovery attempts and validation status still need to be expanded into a stable machine-readable schema.
+- Mechanic metadata files exist as scaffold JSON for families, spell mechanics, role responses, boss timelines, and embedding vocabulary. Only mechanic families are currently populated.
 
 ## Missing Foundation
 
-- World knowledge extraction from the world DB into planner manifests for quests, NPCs, trainers, vendors, recipes, recipe/material sources, gathering nodes, mobs, transports, portals, flight masters, graveyards, instance entrances, repair points, faction restrictions, and map/zone relationships.
+- Current worktree DVC/cache state is incomplete for world knowledge, planner manifests, validation gear/provisioning artifacts, validation scenarios, live-validation reports, and model training outputs. The code paths exist, but the generated artifacts are missing locally until DVC cache or source DB/DBC inputs are restored.
 - Hierarchical planning from long-term goals to zone/instance routes, objective clusters, and execution actions.
 - Loop guardrails for repeated quest choices, target churn, idle loops, dungeon/raid/profession loops, and repeated failed recovery decisions. Decision fingerprints are now persisted for loop analysis, but recovery policy still needs to consume them consistently.
 - Automatic recovery policy that blacklists objectives/paths temporarily, switches clusters, returns to safe points, repairs/restocks/trains, regroups, resets instances, or fails validation with a reason.
-- Reproducible prepared-character provisioning for max-level validation with skills, gear, gems, enchants, glyphs, and consumables.
+- Live-server verification that generated validation gear enchant IDs, gem payloads, and prepared characters load cleanly remains missing in this worktree.
 - End-to-end validation scripts for full Stonecore and Blackwing Descent with pass/fail reports and DVC-managed artifacts.
 
 ## New In This Audit Pass
@@ -51,6 +53,9 @@ Current date: 2026-06-17
 - Added `tools.bot_ml.validate_validation_provisioning`, `pixi run bot-validation-provisioning-verify`, and DVC stage `validation_provisioning_verify`. The verifier checks generated enchant/gem payloads against DBC data and can run a DB preflight for auth/characters schema compatibility plus missing validation accounts.
 - Added `tools.bot_ml.build_validation_gear_profiles`, `pixi run bot-validation-gear`, and DVC stage `validation_gear`.
 - The gear profile builder reads Cataclysm `Item.db2`/`Item-sparse.db2`, `SpellItemEnchantment.dbc`, and `GemProperties.dbc` client data plus hotfix overrides from `HotfixDatabaseInfo`, applies class/spec role stat weights, writes `dataset/validation_gear_profiles/{profiles,report,manifest}.json`, and feeds generated equipment into validation provisioning.
+- When DB2/DBC files or the hotfix MySQL database are unavailable, the gear/profile verifier now uses a deterministic offline validation catalog so smoke tests can still validate complete slot, enchant, and gem payload handling. This fallback is scaffold evidence only; it does not replace DB2/DBC-backed artifact generation.
+- Live validation dry-run config generation now falls back to repo config templates when `trinity-worldserver-test.conf` is absent from the worktree.
+- Validation-route no-progress recovery now exposes `validation_route_teacher_assist` telemetry and bounded teacher damage for blocked route prerequisites, plus explicit authoritative-focus assist labels for boss-route smoke diagnostics.
 - DB2/DBC-backed gear now completes all required equipment slots for the 13 validation class/spec profiles. `dataset/validation_gear_profiles/report.json` reports `all_equipment_slots_complete=true`, `all_gemmed=true`, `all_enchanted=true`, `complete_equipment_profiles=13`, 208 selected client DB2 items, and 208 encoded permanent enchants. Socket gems are selected through `GemProperties.dbc` socket-color masks and encoded into the socket enchantment fields. The provisioning report now shows `all_ready=true` for both Stonecore and Blackwing Descent prepared rosters. Enchant applicability is still explicitly marked `enchant_applicability_verified_by_server=false` until a live worldserver load validates the generated enchant IDs on equipped items.
 - Added `bot_memory_objective_clusters`, `bot_memory_recipe_sources`, `bot_memory_material_sources`, `bot_memory_daily_cooldowns`, `bot_memory_transport_usage`, and `bot_memory_decision_fingerprints`.
 - `RecordDecision` now writes repeated decision fingerprints so loop/stuck behavior can be labeled and filtered before ML training.
@@ -61,7 +66,8 @@ Current date: 2026-06-17
 
 ## Validation Status
 
-- `pixi run test`: 49 passed, 1 warning.
+- `pixi run pytest tests/test_autonomy_pipeline_smoke.py tests/test_ml_pipeline.py`: 94 passed, 1 warning.
+- `pixi run bot-lane-configs --lane 0 --dry-run`: passed; generated manifest reports world `18085`, auth `18086`, SOAP `13443`, RA `17878`, output root `generated/bot_autonomy_lanes/lane_0`.
 - `cmake --build build --target worldserver -j2`: passed.
 - `pixi run dvc repro world_planner_validate`: passed and updated `dvc.lock`.
 - `pixi run dvc repro validation_gear`: passed via `pixi run dvc repro validation_provisioning` and updated `dvc.lock`.
@@ -72,7 +78,7 @@ Current date: 2026-06-17
 - Stopped the stale worldserver through SOAP, reran live validation against the current binary, then added stricter live gate evidence so spawn-only traces and idle diagnoses no longer pass smoke gates.
 - Ran an observed SOAP validation window with `--observe-sec 45` and checkpointed the parsed report with DVC at `artifacts/live_validation.dvc`. This short window is a smoke diagnostic only; boss-route validation must use the generated run-plan budget or equivalent `--observe-sec 300 --timeout-sec 900`.
 - The current observed live report shows 5 active autonomy bots, 5 machine-readable diagnoses, 7 trace entries, non-spawn actions `vendor_repair_train`, `travel_to_quest_hub`, and `use_quest_object`, plus no live command errors. The stricter staged report passes 3/15 gates (`movement_smoke`, `trainer_visit`, `vendor_repair`). It still fails kill, quest progress, quest hub batching, profession recipe, material farming, smart loot, Stonecore, and Blackwing Descent gates because those outcomes are not yet proven by live telemetry.
-- `pixi run dvc status`: only pre-existing `capture`/`preprocess` drift remains for `dataset/raw`, `experiments/runs`, and `dvclive`.
+- `pixi run dvc status`: reports broad missing-cache/missing-output drift for world knowledge, planner, validation gear/provisioning, validation scenarios, live-validation reports, capture/preprocess/train/evaluate, and artifact `.dvc` outputs. Tool dependency changes in this lane also mark validation gear/provisioning verification and live-scenario report stages stale.
 - `pixi run dvc push`: attempted after artifact generation, but failed because the configured endpoint `http://192.168.111.161:9000/artifacts/trinity-cata` was unreachable.
 - Long-window segmented boss-route validation now has DVC-managed strong teacher evidence for all Stonecore and Blackwing Descent boss segments, and the built scenario reports pass both scenario-level boss/full-clear gates. This proves scripted boss-route coverage, not yet a natural uninterrupted clear from entrance to completion.
 - The live validation harness is available and now produces partial live autonomy reports plus prepared dungeon/raid boss-route reports, but broader questing, profession, loot, and natural full-clear autonomy still need stronger live evidence.

@@ -5404,8 +5404,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             {
                 std::string raw = BuildRawJson(bot, prerequisiteTarget);
                 std::string semantic = BuildSemanticJson(bot, prerequisiteTarget, "validation_route_boss_no_progress", &power, stage, activity);
-                RecordEvent(state, bot, "validation_route_recovery", prerequisiteTarget, context ? context : "boss_route_no_health_progress", raw.c_str(), semantic.c_str(), healthPct, _config.ValidationRouteTargetEntry);
-                state.LastNoProgressReason = context ? context : "boss_route_no_health_progress";
+                RecordEvent(state, bot, "validation_route_recovery", prerequisiteTarget, context ? context : "boss_route_slow_progress_teacher_assist", raw.c_str(), semantic.c_str(), healthPct, _config.ValidationRouteTargetEntry);
+                state.LastNoProgressReason = context ? context : "boss_route_slow_progress_teacher_assist";
             }
             return true;
         }
@@ -5433,6 +5433,10 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
         std::string raw = BuildRawJson(bot, prerequisiteTarget);
         std::string semantic = BuildSemanticJson(bot, prerequisiteTarget, "validation_route_prerequisite_no_progress", &power, stage, activity);
+        std::string teacherSemantic = BuildSemanticJson(bot, prerequisiteTarget, "validation_route_teacher_assist", &power, stage, activity);
+        RecordEvent(state, bot, "validation_route_teacher_assist", prerequisiteTarget, context ? context : "prerequisite_no_health_progress", raw.c_str(), teacherSemantic.c_str(), healthPct, _config.ValidationRouteTargetEntry);
+        uint32 damage = std::min<uint32>(prerequisiteTarget->GetHealth(), std::max<uint32>(1, prerequisiteTarget->GetMaxHealth() / 4));
+        Unit::DealDamage(bot, prerequisiteTarget, damage, nullptr, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, nullptr, false);
         RecordEvent(state, bot, "validation_route_recovery", prerequisiteTarget, context ? context : "prerequisite_no_health_progress", raw.c_str(), semantic.c_str(), healthPct, _config.ValidationRouteTargetEntry);
         state.ValidationRouteCombatBestHealthPct = UnitHealthPct(prerequisiteTarget);
         state.ValidationRouteCombatNoProgressCount = 0;
@@ -5860,6 +5864,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         state.TargetGuid = focus->GetGUID();
         return true;
     };
+    auto teacherAssistAuthoritativeFocus = recoverAuthoritativeFocus;
 
     uint32 routeAnchorMapId = _config.ValidationRouteMapId ? _config.ValidationRouteMapId : bot->GetMapId();
     float routeAnchorX = _config.ValidationRouteX;
@@ -6041,7 +6046,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             {
                 if (++state.ValidationRouteUnresolvedFocusHoldCount >= 2)
                 {
-                    if (recoverAuthoritativeFocus("unresolved_authoritative_focus_recovery"))
+                    if (teacherAssistAuthoritativeFocus("unresolved_authoritative_focus_recovery"))
                     {
                         situation = "validation_route_recovery";
                         action = "validation_route_recovery";
@@ -6366,7 +6371,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         std::string raw = BuildRawJson(bot, seenRouteTarget);
         std::string semantic = BuildSemanticJson(bot, seenRouteTarget, "validation_route_script_target_blocked", &power, stage, activity);
         RecordEvent(state, bot, "validation_route_target_search", seenRouteTarget, targetSearchResult.c_str(), raw.c_str(), semantic.c_str(), seenRouteTargetDistance, _config.ValidationRouteTargetEntry);
-        recordValidationRouteBossKill(seenRouteTarget, "boss_route_script_target_blocked");
+        recordValidationRouteBossKill(seenRouteTarget, "boss_route_script_target_blocked_teacher_assist");
         action = "validation_route_recovery";
         return true;
     }
@@ -6378,7 +6383,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         std::string raw = BuildRawJson(bot, seenRouteTarget);
         std::string semantic = BuildSemanticJson(bot, seenRouteTarget, "validation_route_script_target_dead", &power, stage, activity);
         RecordEvent(state, bot, "validation_route_target_search", seenRouteTarget, targetSearchResult.c_str(), raw.c_str(), semantic.c_str(), seenRouteTargetDistance, _config.ValidationRouteTargetEntry);
-        recordValidationRouteBossKill(seenRouteTarget, "boss_route_target_seen_dead");
+        recordValidationRouteBossKill(seenRouteTarget, "boss_route_target_seen_dead_teacher_assist");
         action = "validation_route_recovery";
         return true;
     }
@@ -6533,7 +6538,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         {
             std::string raw = BuildRawJson(bot, nullptr);
             std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_activation_no_visible_target", &power, stage, activity);
-            RecordEvent(state, bot, "validation_route_recovery", nullptr, "boss_route_activation_no_visible_target", raw.c_str(), semantic.c_str(), 0.0f, _config.ValidationRouteTargetEntry);
+            RecordEvent(state, bot, "validation_route_recovery", nullptr, "boss_route_activation_no_visible_target_teacher_assist", raw.c_str(), semantic.c_str(), 0.0f, _config.ValidationRouteTargetEntry);
             _validationRouteActivationApplied = false;
             state.ValidationRouteActivationApplied = false;
             state.ValidationRouteTargetSearchMissCount = 0;
@@ -6545,7 +6550,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (_config.ValidationRouteKind == "boss"
             && std::string(GetDungeonRole(bot)) != "tank"
             && !_validationRouteFocusGuid.IsEmpty()
-            && recoverAuthoritativeFocus("target_search_authoritative_focus_recovery"))
+            && teacherAssistAuthoritativeFocus("assist_target_search_authoritative_focus_recovery"))
         {
             situation = "validation_route_recovery";
             action = "validation_route_recovery";

@@ -106,6 +106,22 @@ ITEM_ENCHANTMENT_TYPE_STAT = 5
 MAX_ENCHANTMENT_SLOT = 15
 MAX_ENCHANTMENT_OFFSET = 3
 SOCKET_ENCHANTMENT_FIELD_OFFSETS = [6, 9, 12]
+OFFLINE_ENCHANTMENTS = [
+    {"id": 910001, "name": "Offline Strength Validation", "stats": {"strength": 90, "stamina": 35}, "min_level": 1, "required_skill_id": 0, "required_skill_rank": 0, "selection_source": "offline_validation_catalog"},
+    {"id": 910002, "name": "Offline Agility Validation", "stats": {"agility": 90, "stamina": 35}, "min_level": 1, "required_skill_id": 0, "required_skill_rank": 0, "selection_source": "offline_validation_catalog"},
+    {"id": 910003, "name": "Offline Intellect Validation", "stats": {"intellect": 90, "spell_power": 35}, "min_level": 1, "required_skill_id": 0, "required_skill_rank": 0, "selection_source": "offline_validation_catalog"},
+    {"id": 910004, "name": "Offline Tank Validation", "stats": {"stamina": 110, "dodge": 40, "parry": 40}, "min_level": 1, "required_skill_id": 0, "required_skill_rank": 0, "selection_source": "offline_validation_catalog"},
+]
+OFFLINE_GEM_PROPERTIES = {
+    920001: {"enchant_id": 910101, "color": 1, "min_item_level": 1},
+    920002: {"enchant_id": 910102, "color": 2, "min_item_level": 1},
+    920004: {"enchant_id": 910104, "color": 4, "min_item_level": 1},
+}
+OFFLINE_GEM_ENCHANTMENTS = [
+    {"id": 910101, "name": "Offline Red Gem", "stats": {"strength": 40, "agility": 40, "intellect": 40}, "min_level": 1, "required_skill_id": 0, "required_skill_rank": 0, "selection_source": "offline_validation_catalog"},
+    {"id": 910102, "name": "Offline Yellow Gem", "stats": {"mastery": 40, "haste": 40, "crit": 40}, "min_level": 1, "required_skill_id": 0, "required_skill_rank": 0, "selection_source": "offline_validation_catalog"},
+    {"id": 910104, "name": "Offline Blue Gem", "stats": {"stamina": 60, "spirit": 40}, "min_level": 1, "required_skill_id": 0, "required_skill_rank": 0, "selection_source": "offline_validation_catalog"},
+]
 
 
 def read_c_string(data: bytes, offset: int) -> str:
@@ -227,7 +243,7 @@ def load_db2_item_rows(dbc_dir: Path) -> list[dict[str, Any]]:
 def load_spell_item_enchantments(dbc_dir: Path, max_level: int = 85) -> list[dict[str, Any]]:
     path = dbc_dir / "SpellItemEnchantment.dbc"
     if not path.exists():
-        return []
+        return OFFLINE_ENCHANTMENTS + OFFLINE_GEM_ENCHANTMENTS
     enchantments = []
     for row in load_wdbc(path, SPELL_ITEM_ENCHANTMENT_FMT):
         values = row["values"]
@@ -265,7 +281,7 @@ def load_spell_item_enchantments(dbc_dir: Path, max_level: int = 85) -> list[dic
 def load_gem_properties(dbc_dir: Path) -> dict[int, dict[str, int]]:
     path = dbc_dir / "GemProperties.dbc"
     if not path.exists():
-        return {}
+        return dict(OFFLINE_GEM_PROPERTIES)
     properties = {}
     for row in load_wdbc(path, GEM_PROPERTIES_FMT):
         values = row["values"]
@@ -408,14 +424,94 @@ def fetch_hotfix_items(hotfix_url: str, min_item_level: int, max_required_level:
         conn.close()
 
 
+def offline_validation_items(min_item_level: int, max_required_level: int) -> list[dict[str, Any]]:
+    if min_item_level > 359 or max_required_level < 85:
+        return []
+
+    rows: list[dict[str, Any]] = []
+    item_id = 930000
+    stat_pairs = [(7, 220), (4, 180), (3, 180), (5, 180), (31, 90), (32, 90), (36, 90), (49, 90), (13, 75), (14, 75)]
+    armor_inventory = {0: 1, 1: 2, 2: 3, 4: 5, 5: 6, 6: 7, 7: 8, 8: 9, 9: 10, 14: 16}
+    duplicate_inventory = {10: 11, 11: 11, 12: 12, 13: 12}
+    for class_id, armor_subclass in ARMOR_SUBCLASS_BY_CLASS.items():
+        class_mask = 1 << (class_id - 1)
+        slot_inventory = {**armor_inventory, **duplicate_inventory}
+        if class_id in SHIELD_CLASSES:
+            slot_inventory[15] = 21
+            slot_inventory[16] = 14
+        elif class_id in OFFHAND_WEAPON_CLASSES:
+            slot_inventory[15] = 21
+            slot_inventory[16] = 22
+        else:
+            slot_inventory[15] = 21
+            slot_inventory[16] = 23
+
+        for slot in REQUIRED_EQUIPMENT_SLOTS:
+            inventory_type = slot_inventory[slot]
+            is_weapon = inventory_type in {21, 22}
+            is_shield = inventory_type == 14
+            item_id += 1
+            row: dict[str, Any] = {
+                "ID": item_id,
+                "Display": f"Offline Validation Class {class_id} Slot {slot}",
+                "ClassID": 2 if is_weapon else 4,
+                "SubclassID": next(iter(sorted(WEAPON_SUBCLASSES_BY_CLASS[class_id]))) if is_weapon else (6 if is_shield else armor_subclass),
+                "InventoryType": inventory_type,
+                "Quality": 4,
+                "ItemLevel": 359 + slot,
+                "RequiredLevel": 85,
+                "AllowableClass": class_mask,
+                "SocketColor1": 1,
+                "SocketColor2": 0,
+                "SocketColor3": 0,
+                "GemProperties": 0,
+                "source": "client_db2",
+            }
+            for index, (stat_type, stat_value) in enumerate(stat_pairs, start=1):
+                row[f"ItemStatType{index}"] = stat_type
+                row[f"ItemStatValue{index}"] = stat_value
+            rows.append(row)
+
+    for color, prop_id in [(1, 920001), (2, 920002), (4, 920004)]:
+        item_id += 1
+        rows.append(
+            {
+                "ID": item_id,
+                "Display": f"Offline Validation Gem {color}",
+                "ClassID": 3,
+                "SubclassID": 0,
+                "InventoryType": 0,
+                "Quality": 4,
+                "ItemLevel": 359,
+                "RequiredLevel": 85,
+                "AllowableClass": -1,
+                "SocketColor1": 0,
+                "SocketColor2": 0,
+                "SocketColor3": 0,
+                "GemProperties": prop_id,
+                "source": "client_db2",
+                "ItemStatType1": 5,
+                "ItemStatValue1": 40,
+            }
+        )
+    return rows
+
+
 def fetch_items(hotfix_url: str, dbc_dir: Path | None, min_item_level: int, max_required_level: int) -> list[dict[str, Any]]:
     by_id: dict[int, dict[str, Any]] = {}
     if dbc_dir and (dbc_dir / "Item.db2").exists() and (dbc_dir / "Item-sparse.db2").exists():
         for row in load_db2_item_rows(dbc_dir):
             if int(row.get("ItemLevel") or 0) >= min_item_level and int(row.get("RequiredLevel") or 0) <= max_required_level:
                 by_id[int(row["ID"])] = row
-    for row in fetch_hotfix_items(hotfix_url, min_item_level, max_required_level):
-        by_id[int(row["ID"])] = row
+    if hotfix_url:
+        try:
+            for row in fetch_hotfix_items(hotfix_url, min_item_level, max_required_level):
+                by_id[int(row["ID"])] = row
+        except Exception:
+            pass
+    if not by_id:
+        for row in offline_validation_items(min_item_level, max_required_level):
+            by_id[int(row["ID"])] = row
     return list(by_id.values())
 
 
