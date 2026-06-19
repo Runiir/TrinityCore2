@@ -414,8 +414,13 @@ def fetch_items(hotfix_url: str, dbc_dir: Path | None, min_item_level: int, max_
         for row in load_db2_item_rows(dbc_dir):
             if int(row.get("ItemLevel") or 0) >= min_item_level and int(row.get("RequiredLevel") or 0) <= max_required_level:
                 by_id[int(row["ID"])] = row
-    for row in fetch_hotfix_items(hotfix_url, min_item_level, max_required_level):
-        by_id[int(row["ID"])] = row
+    if hotfix_url:
+        try:
+            for row in fetch_hotfix_items(hotfix_url, min_item_level, max_required_level):
+                by_id[int(row["ID"])] = row
+        except Exception:
+            if not by_id:
+                raise
     return list(by_id.values())
 
 

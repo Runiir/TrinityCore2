@@ -23,6 +23,7 @@ bot-validation-provisioning-verify = "python -m tools.bot_ml.validate_validation
 bot-validation-scenarios = "python -m tools.bot_ml.build_validation_scenario_manifests"
 bot-validation-run-plan = "python -m tools.bot_ml.build_validation_run_plan"
 bot-validation-run-status = "python -m tools.bot_ml.build_validation_run_status"
+bot-lane-configs = "python -m tools.bot_ml.generate_lane_configs"
 bot-live-scenario-reports = "python -m tools.bot_ml.build_live_scenario_reports"
 bot-live-validate = "python -m tools.bot_ml.run_live_bot_validation"
 bot-ml-build-decisions = "python -m tools.bot_ml.build_decision_dataset"
