@@ -125,8 +125,8 @@ stages:
       nfiles: 19
     - path: tools/bot_ml/build_world_planner_manifests.py
       hash: md5
-      md5: 2092a8a3ef1a6691004be09a13dd2039
-      size: 26092
+      md5: 1a7743b71c00d2964b19d0e90ffa1198
+      size: 40187
     - path: tools/bot_ml/common.py
       hash: md5
       md5: a02540ee4893ec8d0dd37fe816c39aa7
@@ -134,9 +134,9 @@ stages:
     outs:
     - path: dataset/world_planner
       hash: md5
-      md5: 1b25b91ee26e7e33bff810c006dfdd2c.dir
-      size: 20610
-      nfiles: 20
+      md5: 047b77d56aede3343a90be6e615b8564.dir
+      size: 21859
+      nfiles: 27
   world_planner_validate:
     cmd: python -m tools.bot_ml.validate_world_planner --planner-dir 
       dataset/world_planner --validation-scenario-dir 
@@ -156,22 +156,22 @@ stages:
       nfiles: 5
     - path: dataset/world_planner
       hash: md5
-      md5: 1b25b91ee26e7e33bff810c006dfdd2c.dir
-      size: 20610
-      nfiles: 20
+      md5: 047b77d56aede3343a90be6e615b8564.dir
+      size: 21859
+      nfiles: 27
     - path: tools/bot_ml/common.py
       hash: md5
       md5: a02540ee4893ec8d0dd37fe816c39aa7
       size: 5247
     - path: tools/bot_ml/validate_world_planner.py
       hash: md5
-      md5: 976fcedd36323945f6981f74091468f2
-      size: 18486
+      md5: 8ca69f006e59013657132363a53b1c08
+      size: 21902
     outs:
     - path: dataset/world_validation/planner_report.json
       hash: md5
-      md5: 71f75350cefcb3d713b165125a2e2b63
-      size: 31919
+      md5: 0c41f904302e33b17b5b6b480fc584a4
+      size: 53102
   validation_provisioning:
     cmd: python -m tools.bot_ml.build_validation_provisioning --config 
       experiments/configs/validation_provisioning_cata_001.json --gear-profiles 
@@ -550,3 +550,30 @@ stages:
       md5: 75fc53472765a9b9d0d5ac59275ad9a1.dir
       size: 42984
       nfiles: 1
+  quest_profession_report:
+    cmd: python -m tools.bot_ml.build_quest_profession_reports --planner-dir 
+      dataset/world_planner --report 
+      dataset/quest_profession_reports/report.json
+    deps:
+    - path: dataset/world_planner
+      hash: md5
+      md5: 047b77d56aede3343a90be6e615b8564.dir
+      size: 21859
+      nfiles: 27
+    - path: tools/bot_ml/build_quest_profession_reports.py
+      hash: md5
+      md5: 8ab6e57be0134217a01c09d16db6c691
+      size: 2225
+    - path: tools/bot_ml/common.py
+      hash: md5
+      md5: a02540ee4893ec8d0dd37fe816c39aa7
+      size: 5247
+    - path: tools/bot_ml/validate_world_planner.py
+      hash: md5
+      md5: 8ca69f006e59013657132363a53b1c08
+      size: 21902
+    outs:
+    - path: dataset/quest_profession_reports/report.json
+      hash: md5
+      md5: e0db06ffa89694769d82d3aaae025709
+      size: 26329
