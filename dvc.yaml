@@ -195,6 +195,76 @@ stages:
     outs:
     - dataset/live_validation_combined:
         persist: true
+  bot_ml_build_decisions:
+    # Materializes dataset/bot_ml/decision_dataset.jsonl from dataset/bot_ml/raw.
+    cmd: python -m tools.bot_ml.build_decision_dataset --input-dir
+      ${bot_ml.raw_dir} --output ${bot_ml.decision_dataset} --manifest
+      ${bot_ml.decision_manifest}
+    deps:
+    - tools/bot_ml/build_decision_dataset.py
+    - tools/bot_ml/common.py
+    - ${bot_ml.raw_dir}
+    outs:
+    - ${bot_ml.decision_dataset}
+    - ${bot_ml.decision_manifest}
+  bot_ml_validate:
+    # Writes dataset/bot_ml/data_quality.json quality metrics.
+    cmd: python -m tools.bot_ml.validate_data_quality --dataset
+      ${bot_ml.decision_dataset} --report ${bot_ml.data_quality_report}
+    deps:
+    - tools/bot_ml/validate_data_quality.py
+    - tools/bot_ml/common.py
+    - ${bot_ml.decision_dataset}
+    metrics:
+    - ${bot_ml.data_quality_report}:
+        cache: false
+  bot_ml_train:
+    cmd: python -m tools.bot_ml.train_policy_model --dataset
+      ${bot_ml.decision_dataset} --model ${bot_ml.model} --model-dir
+      ${bot_ml.model_dir} --live-dir ${bot_ml.live_train_dir}
+    deps:
+    - tools/bot_ml/train_policy_model.py
+    - tools/bot_ml/model_artifacts.py
+    - tools/bot_ml/common.py
+    - ${bot_ml.decision_dataset}
+    outs:
+    - ${bot_ml.model}
+    - ${bot_ml.model_dir}:
+        persist: true
+    - ${bot_ml.live_train_dir}:
+        persist: true
+  bot_ml_evaluate:
+    # Writes evaluations/bot_policy/metrics.json and diagnostics.
+    cmd: python -m tools.bot_ml.evaluate_policy_model --dataset
+      ${bot_ml.decision_dataset} --model ${bot_ml.model} --metrics
+      ${bot_ml.metrics} --diagnostics ${bot_ml.diagnostics} --live-dir
+      ${bot_ml.live_eval_dir}
+    deps:
+    - tools/bot_ml/evaluate_policy_model.py
+    - tools/bot_ml/model_artifacts.py
+    - tools/bot_ml/common.py
+    - ${bot_ml.decision_dataset}
+    - ${bot_ml.model}
+    metrics:
+    - ${bot_ml.metrics}:
+        cache: false
+    outs:
+    - ${bot_ml.diagnostics}
+    - ${bot_ml.live_eval_dir}:
+        persist: true
+  bot_ml_register:
+    cmd: python -m tools.bot_ml.register_policy_model --model
+      ${bot_ml.model} --metrics ${bot_ml.metrics} --diagnostics
+      ${bot_ml.diagnostics} --sql-output ${bot_ml.register_sql}
+    deps:
+    - tools/bot_ml/register_policy_model.py
+    - tools/bot_ml/common.py
+    - ${bot_ml.model}
+    - ${bot_ml.metrics}
+    - ${bot_ml.diagnostics}
+    outs:
+    - ${bot_ml.register_sql}
+    - models/bot_policy/register_model.json
   capture:
     cmd: python experiments/run_experiment.py ${capture.config} --raw-dir
       dataset/raw --runs-dir experiments/runs --live-dir ${tracking.live_dir}

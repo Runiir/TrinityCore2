@@ -181,6 +181,8 @@ def main() -> int:
         acceptance_reasons.append("failure_rate_above_limit")
     accepted = bool(args.accept) and not acceptance_reasons
 
+    control_eligible = False
+    runtime_ml_control = "disabled_until_shadow_assist_replay_validation_beats_teacher"
     metrics = {
         "model_version": model.get("model_version", ""),
         "backend": model.get("backend", ""),
@@ -188,6 +190,8 @@ def main() -> int:
         "candidate_eval_rows": len(rows),
         "observed_eval_rows": len(metric_rows),
         "accepted": accepted,
+        "control_eligible": control_eligible,
+        "runtime_ml_control": runtime_ml_control,
         "acceptance_reasons": acceptance_reasons,
         "binary": binary,
         "expected_reward": reward,
@@ -209,6 +213,8 @@ def main() -> int:
         "quest_completion_calibration": calibration(metric_rows, observed_preds, "quest_completion_likelihood"),
         "grouped": grouped_diagnostics(metric_rows),
         "ranked_traces": ranking["ranked_traces"],
+        "runtime_ml_control": runtime_ml_control,
+        "control_eligible": control_eligible,
         "predictions": [{"trace": row.get("trace", {}), "prediction": preds[id(row)]} for row in rows[:500]],
     }
     write_json(args.metrics, metrics)

@@ -10,8 +10,8 @@ from ml.group_roles.metrics import group_role_metrics
 from ml.group_roles.policies import policy_for_role
 from ml.raid.metrics import raid_metrics
 from ml.raid.scheduler import RaidAssignmentScheduler
-from tools.bot_ml.common import EXPORT_TABLES, numeric_features
-from tools.bot_ml.build_decision_dataset import build_row, build_rows, index_semantic_stats
+from tools.bot_ml.common import DATASET_CONTRACT_VERSION, EXPORT_TABLES, numeric_features
+from tools.bot_ml.build_decision_dataset import build_row, build_rows, index_decision_fingerprints, index_semantic_stats
 from tools.bot_ml.extract_world_knowledge import (
     build_quest_objectives,
     build_rewards,
@@ -358,10 +358,15 @@ def test_bot_ml_decision_builder_emits_candidate_rows_with_observed_chosen_label
     assert rows[0]["imitate_teacher"] == 1
     assert rows[0]["imitation_weight"] == 1.0
     assert rows[0]["teacher_action_quality"] == "verified_teacher_action"
+    assert rows[0]["dataset_contract_version"] == DATASET_CONTRACT_VERSION
+    assert rows[0]["candidate_mask"] == {"allowed": True, "reason": ""}
+    assert rows[0]["candidate_allowed"] == 1
+    assert rows[0]["candidate_domain"] == "unknown"
     assert rows[0]["failure_label"] == ""
     assert rows[1]["imitate_teacher"] == 0
     assert rows[1]["teacher_action_quality"] == "candidate_unobserved"
     assert rows[0]["trace"]["candidate_activity"] == "quest"
+    assert rows[0]["trace"]["dataset_contract_version"] == DATASET_CONTRACT_VERSION
 
 
 def test_bot_ml_decision_builder_filters_bad_teacher_behavior_from_imitation():
@@ -418,6 +423,54 @@ def test_bot_ml_decision_builder_filters_bad_teacher_behavior_from_imitation():
     assert unresolved_rows[0]["imitate_teacher"] == 0
     assert unresolved_rows[0]["teacher_action_quality"] == "unverified_teacher_action"
     assert unresolved_rows[0]["failure_label"] == "no_future_outcome"
+
+
+def test_bot_ml_decision_builder_filters_repeated_decision_loops_from_imitation():
+    fingerprints = index_decision_fingerprints([
+        {"bot_guid": 99, "fingerprint_hash": 123456, "repeat_count": 4, "failure_count": 1}
+    ])
+    rows = build_rows(
+        {
+            "id": 1,
+            "run_id": 7,
+            "bot_guid": 99,
+            "brain_version": "utility_v1",
+            "candidate_actions_json": json.dumps([
+                {"activity": "route_retry", "score": 0.2, "domain": "movement", "mask": {"allowed": True, "reason": ""}},
+                {"activity": "wait", "score": 0.1, "domain": "movement", "mask": {"allowed": True, "reason": ""}},
+            ]),
+            "chosen_action_json": json.dumps({"activity": "route_retry", "activity_score": 0.2, "domain": "movement"}),
+            "raw_state_json": json.dumps({"decision_fingerprint_hash": 123456}),
+            "semantic_state_json": "{}",
+            "outcome_json": "{}",
+        },
+        {
+            "action_success": 1.0,
+            "expected_reward": 1.0,
+            "death_risk": 0.0,
+            "stuck_risk": 0.0,
+            "quest_completion_likelihood": 0.0,
+            "event_ids_used_for_label": [10],
+            "label_window_json": "{}",
+            "label_reason": "positive_progress:objective_progress",
+            "time_to_outcome_sec": 4.0,
+            "no_future_events": False,
+            "ambiguous_label": False,
+        },
+        {},
+        fingerprints,
+    )
+
+    assert rows[0]["label_observed"] == 1
+    assert rows[0]["decision_fingerprint_hash"] == 123456
+    assert rows[0]["decision_fingerprint_repeat_count"] == 4
+    assert rows[0]["decision_fingerprint_failure_count"] == 1
+    assert rows[0]["action_success"] == 0.0
+    assert rows[0]["stuck_risk"] == 1.0
+    assert rows[0]["imitate_teacher"] == 0
+    assert rows[0]["teacher_action_quality"] == "looping_teacher_action"
+    assert rows[0]["failure_label"] == "repeated_failed_decision_loop"
+    assert rows[1]["teacher_action_quality"] == "candidate_unobserved"
 
 
 def test_bot_ml_data_quality_enforces_traceability_and_teacher_contracts():
@@ -479,6 +532,7 @@ def test_bot_ml_data_quality_enforces_traceability_and_teacher_contracts():
     assert report["imitable_teacher_rows"] == 1
     assert report["filtered_teacher_rows"] == 1
     assert report["failure_labels"] == {"no_future_outcome": 1}
+    assert report["dataset_contract_version"] == DATASET_CONTRACT_VERSION
     assert all(value == 0 for value in report["contract_errors"].values())
 
 
@@ -606,6 +660,9 @@ def test_bot_ml_workflow_has_pixi_tasks_and_documented_dvc_steps():
         "full Stonecore and Blackwing Descent gates failing",
         "run-id train/eval split",
         "candidate-level",
+        "teacher_policy_candidate_v1",
+        "repeated_decision_loop",
+        "control_eligible=false",
         "pixi run dvc status",
         "pixi run dvc push",
         "DVC-managed",
@@ -639,6 +696,14 @@ def test_bot_ml_workflow_has_pixi_tasks_and_documented_dvc_steps():
         "validation_run_status:",
         "dataset/validation_run_status",
         "live_validation_combined:",
+        "bot_ml_build_decisions:",
+        "bot_ml_validate:",
+        "bot_ml_train:",
+        "bot_ml_evaluate:",
+        "bot_ml_register:",
+        "dataset/bot_ml/decision_dataset.jsonl",
+        "dataset/bot_ml/data_quality.json",
+        "evaluations/bot_policy/metrics.json",
         "dataset/live_validation_combined",
     ]:
         assert stage in dvc

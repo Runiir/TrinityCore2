@@ -7,9 +7,9 @@ from pathlib import Path
 from typing import Any
 
 try:
-    from .common import LABELS, read_jsonl, write_json
+    from .common import DATASET_CONTRACT_VERSION, LABELS, read_jsonl, write_json
 except ImportError:
-    from common import LABELS, read_jsonl, write_json
+    from common import DATASET_CONTRACT_VERSION, LABELS, read_jsonl, write_json
 
 
 TRACEABILITY_FIELDS = [
@@ -30,10 +30,15 @@ REQUIRED_FIELDS = {
     "bot_guid",
     "brain_version",
     "feature_schema_version",
+    "dataset_contract_version",
+    "decision_domain",
     "candidate_index",
     "candidate_count",
+    "candidate_domain",
     "candidate_activity",
     "candidate_action_hash",
+    "candidate_mask",
+    "candidate_allowed",
     "features_hash",
     "split",
     "is_chosen",
@@ -55,6 +60,7 @@ ALLOWED_TEACHER_QUALITIES = {
     "ambiguous_teacher_action",
     "unverified_teacher_action",
     "failed_teacher_action",
+    "looping_teacher_action",
 }
 
 
@@ -75,6 +81,10 @@ def parse_json_object(value: Any) -> bool:
         except json.JSONDecodeError:
             return False
     return False
+
+
+def is_mapping(value: Any) -> bool:
+    return isinstance(value, dict)
 
 
 def is_event_id_list(value: Any) -> bool:
@@ -113,6 +123,7 @@ def validate_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "decisions_without_exactly_one_observed_label": 0,
         "candidate_count_mismatch": 0,
         "unchosen_rows_with_nonzero_labels": 0,
+        "chosen_candidate_masked_off": 0,
     }
     for decision_rows in grouped.values():
         if sum(int(row.get("is_chosen") or 0) for row in decision_rows) != 1:
@@ -124,6 +135,8 @@ def validate_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
             decision_errors["candidate_count_mismatch"] += 1
         for row in decision_rows:
             if int(row.get("is_chosen") or 0):
+                if not int(row.get("candidate_allowed") or 0):
+                    decision_errors["chosen_candidate_masked_off"] += 1
                 continue
             if any(float(row.get(label) or 0.0) != 0.0 for label in LABELS):
                 decision_errors["unchosen_rows_with_nonzero_labels"] += 1
@@ -131,8 +144,11 @@ def validate_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
 
     traceability_errors = {
         "missing_trace_fields": 0,
+        "wrong_dataset_contract_version": 0,
         "invalid_event_ids": 0,
         "invalid_label_window_json": 0,
+        "invalid_candidate_mask": 0,
+        "missing_domain": 0,
         "empty_features_hash": 0,
         "empty_candidate_hash": 0,
     }
@@ -140,10 +156,16 @@ def validate_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
         trace = row.get("trace") if isinstance(row.get("trace"), dict) else {}
         if any(field not in trace for field in TRACEABILITY_FIELDS):
             traceability_errors["missing_trace_fields"] += 1
+        if row.get("dataset_contract_version") != DATASET_CONTRACT_VERSION:
+            traceability_errors["wrong_dataset_contract_version"] += 1
         if not is_event_id_list(row.get("event_ids_used_for_label")):
             traceability_errors["invalid_event_ids"] += 1
         if not parse_json_object(row.get("label_window_json")):
             traceability_errors["invalid_label_window_json"] += 1
+        if not is_mapping(row.get("candidate_mask")):
+            traceability_errors["invalid_candidate_mask"] += 1
+        if not str(row.get("decision_domain") or row.get("candidate_domain") or ""):
+            traceability_errors["missing_domain"] += 1
         if not nonempty(row.get("features_hash")):
             traceability_errors["empty_features_hash"] += 1
         if not nonempty(row.get("candidate_action_hash")):
@@ -153,6 +175,7 @@ def validate_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "imitable_rows_not_verified": 0,
         "verified_rows_not_imitable": 0,
         "filtered_chosen_rows_without_failure_label": 0,
+        "loop_filtered_rows_still_imitable": 0,
         "unobserved_rows_marked_imitable": 0,
         "invalid_teacher_quality": 0,
     }
@@ -168,6 +191,8 @@ def validate_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
             teacher_contract_errors["unobserved_rows_marked_imitable"] += 1
         if int(row.get("label_observed") or 0) and not int(row.get("imitate_teacher") or 0) and quality != "candidate_unobserved" and not str(row.get("failure_label") or ""):
             teacher_contract_errors["filtered_chosen_rows_without_failure_label"] += 1
+        if str(row.get("failure_label") or "") in {"repeated_decision_loop", "repeated_failed_decision_loop"} and int(row.get("imitate_teacher") or 0):
+            teacher_contract_errors["loop_filtered_rows_still_imitable"] += 1
 
     leakage_errors = {
         "train_eval_run_overlap": train_eval_run_overlap,
@@ -185,6 +210,7 @@ def validate_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
     report = {
         "rows": len(rows),
         "candidate_rows": len(rows),
+        "dataset_contract_version": DATASET_CONTRACT_VERSION,
         "decision_count": len(grouped),
         "observed_label_rows": len(observed_rows),
         "chosen_rows": len(chosen_rows),
@@ -192,6 +218,7 @@ def validate_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "filtered_teacher_rows": len(filtered_rows),
         "teacher_action_quality": dict(Counter(str(row.get("teacher_action_quality") or "") for row in observed_rows)),
         "failure_labels": dict(Counter(str(row.get("failure_label") or "") for row in filtered_rows if row.get("failure_label"))),
+        "loop_filtered_teacher_rows": sum(1 for row in filtered_rows if str(row.get("failure_label") or "") in {"repeated_decision_loop", "repeated_failed_decision_loop"}),
         "run_count": len({row.get("run_id") for row in rows}),
         "missing": missing,
         "decision_contract": decision_errors,

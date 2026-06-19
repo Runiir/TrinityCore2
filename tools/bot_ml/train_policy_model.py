@@ -9,10 +9,10 @@ from typing import Any
 from dvclive import Live
 
 try:
-    from .common import FEATURE_SCHEMA_VERSION, LABELS, git_commit, numeric_features, read_jsonl, split_by_run_ids, stable_hash, write_json
+    from .common import DATASET_CONTRACT_VERSION, FEATURE_SCHEMA_VERSION, LABELS, git_commit, numeric_features, read_jsonl, split_by_run_ids, stable_hash, write_json
     from .model_artifacts import BINARY_LABELS, feature_vector
 except ImportError:
-    from common import FEATURE_SCHEMA_VERSION, LABELS, git_commit, numeric_features, read_jsonl, split_by_run_ids, stable_hash, write_json
+    from common import DATASET_CONTRACT_VERSION, FEATURE_SCHEMA_VERSION, LABELS, git_commit, numeric_features, read_jsonl, split_by_run_ids, stable_hash, write_json
     from model_artifacts import BINARY_LABELS, feature_vector
 
 
@@ -109,6 +109,7 @@ def compact_fallback_payload(model_version: str, backend: str, features: list[st
         "model_type": "supervised_xgboost_policy" if backend == "xgboost" else "supervised_linear_baseline",
         "backend": backend,
         "feature_schema_version": FEATURE_SCHEMA_VERSION,
+        "dataset_contract_version": DATASET_CONTRACT_VERSION,
         "features": features,
         "labels": label_schema(),
         "tree_ensembles": portable_trees,
@@ -234,6 +235,8 @@ def main() -> int:
             "dataset_path": str(args.dataset),
             "train_run_ids": sorted(train_ids),
             "eval_run_ids": sorted(eval_ids),
+            "runtime_ml_control": "disabled_until_shadow_assist_replay_validation_beats_teacher",
+            "control_eligible": False,
         }
     )
     portable_path = args.model or (model_root / "model.json")
@@ -249,6 +252,7 @@ def main() -> int:
         "git_commit": git_commit(),
         "dataset_path": str(args.dataset),
         "feature_schema_version": FEATURE_SCHEMA_VERSION,
+        "dataset_contract_version": DATASET_CONTRACT_VERSION,
         "label_schema": label_schema(),
         "train_run_ids": sorted(train_ids),
         "eval_run_ids": sorted(eval_ids),
@@ -260,8 +264,12 @@ def main() -> int:
         "backend": backend,
         "dataset_rows": len(rows),
         "observed_label_rows": len(observed_rows),
+        "imitable_teacher_rows": sum(1 for row in observed_rows if int(row.get("imitate_teacher") or 0)),
+        "filtered_teacher_rows": sum(1 for row in observed_rows if not int(row.get("imitate_teacher") or 0)),
         "train_run_ids": sorted(train_ids),
         "eval_run_ids": sorted(eval_ids),
+        "runtime_ml_control": "disabled_until_shadow_assist_replay_validation_beats_teacher",
+        "control_eligible": False,
         "label_means": {label: sum(float(row.get(label, 0.0)) for row in observed_rows) / max(1, len(observed_rows)) for label in LABELS},
     }
     write_json(model_root / "model_manifest.json", manifest)
