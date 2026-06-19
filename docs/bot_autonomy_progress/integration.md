@@ -27,5 +27,5 @@ Current date: 2026-06-19
 - `combat-loot` commit `b3c5a3a0d6`: blocked by reviewer due failing smoke test on its branch, merge regression against the hotfix DB fallback, cwd-fragile manifest loading, and DVC lock drift.
 - `group-validation` commit `5642c74362`: blocked by reviewer due stale/missing DVC artifacts and evidence-incomplete runs still being eligible for clear/training labels.
 - `foundation` commits `6bf8300752`, `8fbee85646`: partially integrated manually; fake offline gear/enchant catalog intentionally not merged.
-- `world-planner` commits `b0652a649d`, `539323fa89`: pending reviewer result; DVC reproduction in lane was blocked by missing config/cache/credentials.
-- `ml-data` commits `28ade05756`, `6071062c81`: pending reviewer result; real export remains blocked by missing DB URL.
+- `world-planner` commits `b0652a649d`, `539323fa89`: blocked by reviewer due stale DVC world-planner outputs/lock, incomplete-manifest fallback being marked successful, and `vendor_repair` passing without actual repair coverage.
+- `ml-data` commits `28ade05756`, `6071062c81`: blocked by reviewer due fallback candidate count mismatch, duplicate-activity chosen-label ambiguity, and new ML DVC stages lacking lock/checkpointed outputs.
