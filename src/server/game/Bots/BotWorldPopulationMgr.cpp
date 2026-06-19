@@ -2335,8 +2335,12 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
             std::string raw = BuildRawJson(bot, nullptr);
             std::string semantic = BuildSemanticJson(bot, nullptr, "corpse_recovery");
             RecordEvent(state, bot, "death_recovery_started", nullptr, _config.DeathRecoveryMode.c_str(), raw.c_str(), semantic.c_str(), 0.0f, state.RecentDeathCount);
+            ++state.RecoveryAttemptCount;
             DeathRecoveryResult recovery = RecoverDeadBot(state, bot);
             state.DeadTimer = 0;
+            state.LastRecoveryMode = recovery.Mode.empty() ? _config.DeathRecoveryMode : recovery.Mode;
+            state.LastRecoveryResult = recovery.Result;
+            state.LastRecoveryMs = NowMs();
             raw = BuildRawJson(bot, nullptr);
             semantic = BuildSemanticJson(bot, nullptr, "corpse_recovery");
             if (recovery.Recovered)
@@ -2345,6 +2349,10 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
                 bot->CombatStop(true);
                 state.TargetGuid.Clear();
                 state.QuestWork.SelectedTargetGuid.Clear();
+                state.ConsecutiveSameDecisionCount = 0;
+                state.IdleDecisionRepeatCount = 0;
+                state.TargetChurnCount = 0;
+                state.LoopRecoveryCooldownUntilMs = NowMs() + 10000;
                 PersistBotPosition(bot);
                 RecordEvent(state, bot, "resurrected", nullptr, recovery.Mode.c_str(), raw.c_str(), semantic.c_str());
                 if (recovery.UsedFallback)
@@ -2684,12 +2692,41 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         state.LastDecisionHandler = "wander";
     }
 
+    uint64 nowMs = NowMs();
+    bool loopRecoveryAvailable = nowMs >= state.LoopRecoveryCooldownUntilMs && !bot->IsInCombat();
+    bool repeatedDecisionLoop = state.LastDecisionFingerprintRepeatCount >= 5 && state.ConsecutiveSameDecisionCount >= 3;
+    bool idleLoop = state.IdleDecisionRepeatCount >= 4 && state.LastDecisionDistanceMoved < 1.0f;
+    bool targetChurnLoop = state.TargetChurnCount >= 4;
+    if (loopRecoveryAvailable && (repeatedDecisionLoop || idleLoop || targetChurnLoop))
+    {
+        char const* reason = repeatedDecisionLoop ? "repeated_decision_loop" : (idleLoop ? "idle_loop" : "target_churn_loop");
+        state.LastLoopGuardrailAction = "guardrail_repath";
+        state.LastLoopGuardrailReason = reason;
+        state.LastLoopGuardrailMs = nowMs;
+        state.LoopRecoveryCooldownUntilMs = nowMs + 15000;
+        ++state.LoopGuardrailCount;
+        state.TargetGuid.Clear();
+        state.QuestWork.SelectedTargetGuid.Clear();
+        bot->AttackStop();
+        bot->CombatStop(true);
+        Position pos = bot->GetFirstCollisionPosition(6.0f, frand(0.0f, 2.0f * float(M_PI)));
+        MoveBotToPoint(state, bot, pos.GetPositionX(), pos.GetPositionY(), pos.GetPositionZ());
+        situation = "runtime_recovery";
+        action = "guardrail_repath";
+        target = nullptr;
+        state.LastDecisionHandler = "runtime_recovery";
+        std::string guardRaw = BuildRawJson(bot, nullptr);
+        std::string guardSemantic = BuildSemanticJson(bot, nullptr, situation.c_str(), &power, stage, chosenActivity.Activity);
+        RecordEvent(state, bot, "loop_guardrail_triggered", nullptr, reason, guardRaw.c_str(), guardSemantic.c_str(), float(state.LoopGuardrailCount), state.LastDecisionFingerprintRepeatCount);
+    }
+
     power = BotLongTermProgressionBrain::CalculateRolePower(bot);
     std::string raw = BuildRawJson(bot, target);
     std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, chosenActivity.Activity);
     bool validationRouteFailure = action == "validation_route_target_blocked" || action == "validation_route_wrong_map";
+    bool runtimeRecovery = action == "guardrail_repath";
     bool failure = questAction.Failure || trashAction.Failure || bossAction.Failure || validationRouteFailure;
-    bool rare = questAction.Rare || trashAction.Rare || bossAction.Rare || validationRouteFailure;
+    bool rare = questAction.Rare || trashAction.Rare || bossAction.Rare || validationRouteFailure || runtimeRecovery;
     RecordDecision(state, bot, situation.c_str(), action.c_str(), target, raw.c_str(), semantic.c_str(), activityScores, chosenActivity, power, failure, rare);
 }
 
@@ -9458,6 +9495,14 @@ uint64 BotWorldPopulationMgr::RecordDecisionReplay(WorldBotState const& state, P
                     << ",\"loot_state_cleared\":" << (state.LastLootStateCleared ? "true" : "false")
                     << ",\"no_progress_reason\":\"" << JsonEscape(state.LastNoProgressReason) << "\""
                     << ",\"cooldown_reason\":\"" << JsonEscape(state.QuestWork.FailedReason) << "\""
+                    << ",\"consecutive_same_decision_count\":" << state.ConsecutiveSameDecisionCount
+                    << ",\"idle_decision_repeat_count\":" << state.IdleDecisionRepeatCount
+                    << ",\"target_churn_count\":" << state.TargetChurnCount
+                    << ",\"loop_guardrail_count\":" << state.LoopGuardrailCount
+                    << ",\"last_loop_guardrail_action\":\"" << JsonEscape(state.LastLoopGuardrailAction) << "\""
+                    << ",\"last_loop_guardrail_reason\":\"" << JsonEscape(state.LastLoopGuardrailReason) << "\""
+                    << ",\"last_recovery_mode\":\"" << JsonEscape(state.LastRecoveryMode) << "\""
+                    << ",\"last_recovery_result\":\"" << JsonEscape(state.LastRecoveryResult) << "\""
                     << ",\"dummy_allowed_by_quest\":" << (state.CurrentDummyAllowedByQuest ? "true" : "false") << "}";
 
     std::string type = "policy_model_prediction";
@@ -9672,13 +9717,31 @@ void BotWorldPopulationMgr::RecordDecision(WorldBotState& state, Player* bot, ch
 
     ++state.Sequence;
     uint64 nowMs = NowMs();
+    std::string previousSituation = state.LastDecisionSituation;
+    std::string previousAction = state.LastDecisionAction;
+    ObjectGuid previousTargetGuid = state.LastDecisionTargetGuid;
+    ObjectGuid currentTargetGuid = target ? target->GetGUID() : ObjectGuid::Empty;
+    bool sameDecision = previousSituation == (situation ? situation : "idle") && previousAction == (action ? action : "wait");
+    state.ConsecutiveSameDecisionCount = sameDecision ? state.ConsecutiveSameDecisionCount + 1 : 1;
+    bool idleDecision = (!action || std::string(action) == "wait" || std::string(action) == "wander" || std::string(action) == "rest")
+        && (!situation || std::string(situation) == "idle" || std::string(situation) == "travel");
+    state.IdleDecisionRepeatCount = idleDecision ? state.IdleDecisionRepeatCount + 1 : 0;
+    if (state.TargetChurnWindowStartMs == 0 || nowMs - state.TargetChurnWindowStartMs > 30000)
+    {
+        state.TargetChurnWindowStartMs = nowMs;
+        state.TargetChurnCount = 0;
+    }
+    if (!previousTargetGuid.IsEmpty() && !currentTargetGuid.IsEmpty() && previousTargetGuid != currentTargetGuid)
+        ++state.TargetChurnCount;
+    else if (currentTargetGuid.IsEmpty() && nowMs - state.TargetChurnWindowStartMs > 5000)
+        state.TargetChurnCount = 0;
     state.LastDecisionTickMs = nowMs;
     state.LastDecisionSituation = situation ? situation : "idle";
     state.LastDecisionAction = action ? action : "wait";
     state.LastDecisionActivity = BotLongTermProgressionBrain::ToString(chosenActivity.Activity);
     state.LastDecisionResult = failure ? "failed" : "ok";
     state.LastDecisionReason = failure ? "decision_failure" : "";
-    state.LastDecisionTargetGuid = target ? target->GetGUID() : ObjectGuid::Empty;
+    state.LastDecisionTargetGuid = currentTargetGuid;
     if (!state.LastDecisionQuestId)
         state.LastDecisionQuestId = state.QuestWork.ActiveQuestId ? state.QuestWork.ActiveQuestId : state.NewlyAcceptedQuestId;
     state.LastDecisionDistanceMoved = state.DistanceMovedSinceLastDecision;
@@ -9702,8 +9765,8 @@ void BotWorldPopulationMgr::RecordDecision(WorldBotState& state, Player* bot, ch
     state.LastValidActionMaskJson = maskItr != _lastCombatMaskByBot.end() ? maskItr->second : "{}";
     auto chosenItr = _lastChosenCombatByBot.find(bot->GetGUID().GetCounter());
     state.LastChosenActionJson = chosenItr != _lastChosenCombatByBot.end() ? chosenItr->second : "{}";
-    RecordDecisionTrace(state, situation, action, target, state.LastDecisionQuestId, failure ? "failed" : "ok", failure ? "decision_failure" : "");
     RecordDecisionFingerprintMemory(state, bot, situation, action, chosenActivity, failure);
+    RecordDecisionTrace(state, situation, action, target, state.LastDecisionQuestId, failure ? "failed" : "ok", failure ? "decision_failure" : "");
 
     if (!_runId || !_config.RecordDecisions)
         return;
@@ -10698,6 +10761,14 @@ void BotWorldPopulationMgr::RecordDecisionFingerprintMemory(WorldBotState& state
              << "\",\"recommended_balance_mode\":\"" << JsonEscape(state.LastRecommendedBalanceMode)
              << "\",\"repeat_count\":" << state.LastDecisionFingerprintRepeatCount
              << ",\"failure_count\":" << state.LastDecisionFingerprintFailureCount
+             << ",\"consecutive_same_decision_count\":" << state.ConsecutiveSameDecisionCount
+             << ",\"idle_decision_repeat_count\":" << state.IdleDecisionRepeatCount
+             << ",\"target_churn_count\":" << state.TargetChurnCount
+             << ",\"loop_guardrail_count\":" << state.LoopGuardrailCount
+             << ",\"last_loop_guardrail_action\":\"" << JsonEscape(state.LastLoopGuardrailAction)
+             << "\",\"last_loop_guardrail_reason\":\"" << JsonEscape(state.LastLoopGuardrailReason)
+             << "\",\"last_recovery_mode\":\"" << JsonEscape(state.LastRecoveryMode)
+             << "\",\"last_recovery_result\":\"" << JsonEscape(state.LastRecoveryResult) << "\""
              << ",\"fingerprint_source\":\"decision_context_v1\"}";
 
     std::string escapedSituation = situationText;
@@ -10751,6 +10822,16 @@ void BotWorldPopulationMgr::RecordDecisionTrace(WorldBotState& state, char const
     }
     entry.Result = result ? result : "ok";
     entry.ReasonCode = reasonCode ? reasonCode : "";
+    entry.FingerprintHash = state.LastDecisionFingerprintHash;
+    entry.FingerprintRepeatCount = state.LastDecisionFingerprintRepeatCount;
+    entry.FingerprintFailureCount = state.LastDecisionFingerprintFailureCount;
+    entry.ConsecutiveSameDecisionCount = state.ConsecutiveSameDecisionCount;
+    entry.IdleDecisionRepeatCount = state.IdleDecisionRepeatCount;
+    entry.TargetChurnCount = state.TargetChurnCount;
+    entry.LoopGuardrailAction = state.LastLoopGuardrailAction;
+    entry.LoopGuardrailReason = state.LastLoopGuardrailReason;
+    entry.RecoveryMode = state.LastRecoveryMode;
+    entry.RecoveryResult = state.LastRecoveryResult;
     state.DecisionTrace.push_back(entry);
     while (state.DecisionTrace.size() > 64)
         state.DecisionTrace.pop_front();
@@ -10821,6 +10902,33 @@ BotWorldPopulationMgr::BotDiagnosis BotWorldPopulationMgr::BuildBotDiagnosis(Wor
         diagnosis.Blocker = "active_movement_has_no_recent_position_progress";
         diagnosis.NextExpectedAction = "stuck_detection_or_repath";
         diagnosis.SuggestedInvestigation = "compare_trace_entries_for_repeated_destination";
+    }
+    else if (state.LastDecisionFingerprintRepeatCount >= 5 && state.ConsecutiveSameDecisionCount >= 3)
+    {
+        diagnosis.DiagnosisCode = "repeated_decision_loop";
+        diagnosis.Severity = "warning";
+        diagnosis.Confidence = 0.88f;
+        diagnosis.Blocker = "same_decision_fingerprint_repeating";
+        diagnosis.NextExpectedAction = nowMs >= state.LoopRecoveryCooldownUntilMs ? "guardrail_repath" : "wait_for_guardrail_cooldown";
+        diagnosis.SuggestedInvestigation = "inspect_decision_fingerprint_memory_and_trace";
+    }
+    else if (state.IdleDecisionRepeatCount >= 4 && state.LastDecisionDistanceMoved < 1.0f)
+    {
+        diagnosis.DiagnosisCode = "idle_loop_guardrail";
+        diagnosis.Severity = "warning";
+        diagnosis.Confidence = 0.82f;
+        diagnosis.Blocker = "idle_or_wander_repeating_without_progress";
+        diagnosis.NextExpectedAction = nowMs >= state.LoopRecoveryCooldownUntilMs ? "guardrail_repath" : "wait_for_guardrail_cooldown";
+        diagnosis.SuggestedInvestigation = "inspect_idle_trace_and_nearby_objective_memory";
+    }
+    else if (state.TargetChurnCount >= 4)
+    {
+        diagnosis.DiagnosisCode = "target_churn_loop";
+        diagnosis.Severity = "warning";
+        diagnosis.Confidence = 0.84f;
+        diagnosis.Blocker = "target_selection_changed_repeatedly";
+        diagnosis.NextExpectedAction = nowMs >= state.LoopRecoveryCooldownUntilMs ? "clear_target_and_repath" : "wait_for_guardrail_cooldown";
+        diagnosis.SuggestedInvestigation = "inspect_target_relevance_and_recent_rejections";
     }
     else if (questBlocked && state.QuestWork.ActiveQuestId)
     {
@@ -10914,7 +11022,17 @@ std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson(WorldBotState con
          << "{\"name\":\"validation_route_activation_attempts\",\"value\":" << state.ValidationRouteActivationAttempts << "},"
          << "{\"name\":\"decision_fingerprint_hash\",\"value\":" << state.LastDecisionFingerprintHash << "},"
          << "{\"name\":\"decision_fingerprint_repeat_count\",\"value\":" << state.LastDecisionFingerprintRepeatCount << "},"
-         << "{\"name\":\"decision_fingerprint_failure_count\",\"value\":" << state.LastDecisionFingerprintFailureCount << "}"
+         << "{\"name\":\"decision_fingerprint_failure_count\",\"value\":" << state.LastDecisionFingerprintFailureCount << "},"
+         << "{\"name\":\"consecutive_same_decision_count\",\"value\":" << state.ConsecutiveSameDecisionCount << "},"
+         << "{\"name\":\"idle_decision_repeat_count\",\"value\":" << state.IdleDecisionRepeatCount << "},"
+         << "{\"name\":\"target_churn_count\",\"value\":" << state.TargetChurnCount << "},"
+         << "{\"name\":\"loop_guardrail_count\",\"value\":" << state.LoopGuardrailCount << "},"
+         << "{\"name\":\"last_loop_guardrail_action\",\"value\":\"" << JsonEscape(state.LastLoopGuardrailAction) << "\"},"
+         << "{\"name\":\"last_loop_guardrail_reason\",\"value\":\"" << JsonEscape(state.LastLoopGuardrailReason) << "\"},"
+         << "{\"name\":\"loop_recovery_cooldown_until_ms\",\"value\":" << state.LoopRecoveryCooldownUntilMs << "},"
+         << "{\"name\":\"recovery_attempt_count\",\"value\":" << state.RecoveryAttemptCount << "},"
+         << "{\"name\":\"last_recovery_mode\",\"value\":\"" << JsonEscape(state.LastRecoveryMode) << "\"},"
+         << "{\"name\":\"last_recovery_result\",\"value\":\"" << JsonEscape(state.LastRecoveryResult) << "\"}"
          << "]"
          << ",\"next_expected_action\":\"" << JsonEscape(diagnosis.NextExpectedAction) << "\""
          << ",\"suggested_investigation\":\"" << JsonEscape(diagnosis.SuggestedInvestigation) << "\"}";
@@ -10931,7 +11049,8 @@ std::string BotWorldPopulationMgr::BuildBotDecisionSnapshotJson(WorldBotState co
          << ",\"mode\":\"" << (_runtimeMode == BotWorldRuntimeMode::AlwaysOnAutonomy ? "always_on_autonomy" : "manual_experiment") << "\""
          << ",\"decision_timer_ms\":" << state.DecisionTimer
          << ",\"last_decision_tick_ms\":" << state.LastDecisionTickMs
-         << ",\"time_since_last_decision_ms\":" << (state.LastDecisionTickMs ? nowMs - state.LastDecisionTickMs : 0) << "}"
+         << ",\"time_since_last_decision_ms\":" << (state.LastDecisionTickMs ? nowMs - state.LastDecisionTickMs : 0)
+         << ",\"loop_recovery_cooldown_until_ms\":" << state.LoopRecoveryCooldownUntilMs << "}"
          << ",\"movement\":{\"is_moving\":" << (state.IsMoving ? "true" : "false")
          << ",\"stuck_timer_ms\":" << state.StuckTimer
          << ",\"distance_moved_since_last_decision\":" << state.LastDecisionDistanceMoved
@@ -10976,7 +11095,18 @@ std::string BotWorldPopulationMgr::BuildBotDecisionSnapshotJson(WorldBotState co
          << ",\"quest_id\":" << state.LastDecisionQuestId
          << ",\"fingerprint_hash\":" << state.LastDecisionFingerprintHash
          << ",\"fingerprint_repeat_count\":" << state.LastDecisionFingerprintRepeatCount
-         << ",\"fingerprint_failure_count\":" << state.LastDecisionFingerprintFailureCount << "}"
+         << ",\"fingerprint_failure_count\":" << state.LastDecisionFingerprintFailureCount
+         << ",\"consecutive_same_decision_count\":" << state.ConsecutiveSameDecisionCount
+         << ",\"idle_decision_repeat_count\":" << state.IdleDecisionRepeatCount
+         << ",\"target_churn_count\":" << state.TargetChurnCount << "}"
+         << ",\"recovery\":{\"loop_guardrail_count\":" << state.LoopGuardrailCount
+         << ",\"last_loop_guardrail_ms\":" << state.LastLoopGuardrailMs
+         << ",\"last_loop_guardrail_action\":\"" << JsonEscape(state.LastLoopGuardrailAction) << "\""
+         << ",\"last_loop_guardrail_reason\":\"" << JsonEscape(state.LastLoopGuardrailReason) << "\""
+         << ",\"recovery_attempt_count\":" << state.RecoveryAttemptCount
+         << ",\"last_recovery_ms\":" << state.LastRecoveryMs
+         << ",\"last_recovery_mode\":\"" << JsonEscape(state.LastRecoveryMode) << "\""
+         << ",\"last_recovery_result\":\"" << JsonEscape(state.LastRecoveryResult) << "\"}"
          << ",\"recent_failures\":{\"quest_failure_reason\":\"" << JsonEscape(state.QuestWork.FailedReason) << "\""
          << ",\"last_objective_not_found_reason\":\"" << JsonEscape(state.LastObjectiveNotFoundReason) << "\""
          << ",\"last_no_progress_reason\":\"" << JsonEscape(state.LastNoProgressReason) << "\""
@@ -11008,6 +11138,16 @@ std::string BotWorldPopulationMgr::BuildBotTraceEntriesJson(WorldBotState const&
              << ",\"destination\":{\"map\":" << itr->DestinationMapId << ",\"x\":" << itr->DestinationX << ",\"y\":" << itr->DestinationY << ",\"z\":" << itr->DestinationZ << "}"
              << ",\"result\":\"" << JsonEscape(itr->Result) << "\""
              << ",\"reason_code\":\"" << JsonEscape(itr->ReasonCode) << "\""
+             << ",\"fingerprint_hash\":" << itr->FingerprintHash
+             << ",\"fingerprint_repeat_count\":" << itr->FingerprintRepeatCount
+             << ",\"fingerprint_failure_count\":" << itr->FingerprintFailureCount
+             << ",\"consecutive_same_decision_count\":" << itr->ConsecutiveSameDecisionCount
+             << ",\"idle_decision_repeat_count\":" << itr->IdleDecisionRepeatCount
+             << ",\"target_churn_count\":" << itr->TargetChurnCount
+             << ",\"loop_guardrail_action\":\"" << JsonEscape(itr->LoopGuardrailAction) << "\""
+             << ",\"loop_guardrail_reason\":\"" << JsonEscape(itr->LoopGuardrailReason) << "\""
+             << ",\"recovery_mode\":\"" << JsonEscape(itr->RecoveryMode) << "\""
+             << ",\"recovery_result\":\"" << JsonEscape(itr->RecoveryResult) << "\""
              << ",\"action_category\":\"" << JsonEscape(state.LastActionCategory) << "\""
              << ",\"role_goal\":\"" << JsonEscape(state.LastRoleGoal) << "\""
              << ",\"recommended_balance_mode\":\"" << JsonEscape(state.LastRecommendedBalanceMode) << "\""
@@ -11307,6 +11447,15 @@ std::string BotWorldPopulationMgr::GetBotDebugJson(std::string const& selector) 
          << ",\"decision_fingerprint_hash\":" << selected->LastDecisionFingerprintHash
          << ",\"decision_fingerprint_repeat_count\":" << selected->LastDecisionFingerprintRepeatCount
          << ",\"decision_fingerprint_failure_count\":" << selected->LastDecisionFingerprintFailureCount
+         << ",\"consecutive_same_decision_count\":" << selected->ConsecutiveSameDecisionCount
+         << ",\"idle_decision_repeat_count\":" << selected->IdleDecisionRepeatCount
+         << ",\"target_churn_count\":" << selected->TargetChurnCount
+         << ",\"loop_guardrail_count\":" << selected->LoopGuardrailCount
+         << ",\"last_loop_guardrail_action\":\"" << JsonEscape(selected->LastLoopGuardrailAction) << "\""
+         << ",\"last_loop_guardrail_reason\":\"" << JsonEscape(selected->LastLoopGuardrailReason) << "\""
+         << ",\"recovery_attempt_count\":" << selected->RecoveryAttemptCount
+         << ",\"last_recovery_mode\":\"" << JsonEscape(selected->LastRecoveryMode) << "\""
+         << ",\"last_recovery_result\":\"" << JsonEscape(selected->LastRecoveryResult) << "\""
          << ",\"last_no_progress_reason\":\"" << JsonEscape(selected->LastNoProgressReason) << "\""
          << ",\"last_objective_not_found_reason\":\"" << JsonEscape(selected->LastObjectiveNotFoundReason) << "\""
          << ",\"last_grinding_allowed_reason\":\"" << JsonEscape(selected->LastGrindingAllowedReason) << "\""

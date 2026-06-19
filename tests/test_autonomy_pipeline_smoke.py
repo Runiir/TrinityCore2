@@ -573,6 +573,7 @@ def test_botauto_diagnosis_and_trace_surface():
     record_event = function_body(mgr, "void BotWorldPopulationMgr::RecordEvent")
     update_outcome_stats = function_body(mgr, "void BotWorldPopulationMgr::UpdateSemanticOutcomeStats")
     record_trace = function_body(mgr, "void BotWorldPopulationMgr::RecordDecisionTrace")
+    fingerprint = function_body(mgr, "void BotWorldPopulationMgr::RecordDecisionFingerprintMemory")
     debug = function_body(mgr, "std::string BotWorldPopulationMgr::GetBotDebugJson")
 
     assert '{ "diagnose", rbac::RBAC_PERM_COMMAND_HEALERBOT' in commands
@@ -600,6 +601,12 @@ def test_botauto_diagnosis_and_trace_surface():
         "DistanceMovedSinceLastDecision",
         "LastMovementProgressMs",
         "LastPathChangeMs",
+        "ConsecutiveSameDecisionCount",
+        "IdleDecisionRepeatCount",
+        "TargetChurnCount",
+        "LoopRecoveryCooldownUntilMs",
+        "LastLoopGuardrailAction",
+        "LastRecoveryMode",
         "DecisionTraceEntry",
         "BotDiagnosis",
     ]:
@@ -622,6 +629,9 @@ def test_botauto_diagnosis_and_trace_surface():
         "target_rejected",
         "dead_recovery",
         "idle_no_candidate",
+        "repeated_decision_loop",
+        "idle_loop_guardrail",
+        "target_churn_loop",
     ]:
         assert code in build_diagnosis
 
@@ -639,6 +649,12 @@ def test_botauto_diagnosis_and_trace_surface():
         "decision_fingerprint_hash",
         "decision_fingerprint_repeat_count",
         "decision_fingerprint_failure_count",
+        "consecutive_same_decision_count",
+        "idle_decision_repeat_count",
+        "target_churn_count",
+        "loop_guardrail_count",
+        "last_loop_guardrail_action",
+        "last_recovery_mode",
         "next_expected_action",
         "suggested_investigation",
     ]:
@@ -656,6 +672,9 @@ def test_botauto_diagnosis_and_trace_surface():
         "fingerprint_hash",
         "fingerprint_repeat_count",
         "fingerprint_failure_count",
+        "recovery",
+        "loop_guardrail_count",
+        "last_loop_guardrail_reason",
         "quest_cooldown_count",
         "no_progress_cooldown_count",
     ]:
@@ -671,10 +690,30 @@ def test_botauto_diagnosis_and_trace_surface():
         "destination",
         "result",
         "reason_code",
+        "fingerprint_repeat_count",
+        "consecutive_same_decision_count",
+        "idle_decision_repeat_count",
+        "target_churn_count",
+        "loop_guardrail_action",
+        "recovery_mode",
     ]:
         assert field in trace_entries
 
     assert "RecordDecisionTrace(state" in record_decision
+    assert "loop_guardrail_triggered" in update_bot
+    assert "state.LoopRecoveryCooldownUntilMs = nowMs + 15000;" in update_bot
+    assert "RecordDecisionFingerprintMemory(state, bot, situation, action, chosenActivity, failure);" in record_decision
+    assert_ordered(
+        fingerprint,
+        "last_recovery_result",
+        'JsonEscape(state.LastRecoveryResult) << "\\""',
+        "fingerprint_source",
+    )
+    assert_ordered(
+        record_decision,
+        "RecordDecisionFingerprintMemory(state, bot, situation, action, chosenActivity, failure);",
+        "RecordDecisionTrace(state, situation, action, target, state.LastDecisionQuestId",
+    )
     assert "bool forceTeacherEvent = eventName == \"combat_started\"" in record_event
     assert "eventName == \"objective_target_lost\"" in record_event
     assert "if (!policy.writeEvent && !forceTeacherEvent)" in record_event

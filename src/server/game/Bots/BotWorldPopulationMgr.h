@@ -338,6 +338,19 @@ private:
         uint32 LastDecisionFingerprintHash = 0;
         uint32 LastDecisionFingerprintRepeatCount = 0;
         uint32 LastDecisionFingerprintFailureCount = 0;
+        uint32 ConsecutiveSameDecisionCount = 0;
+        uint32 IdleDecisionRepeatCount = 0;
+        uint32 TargetChurnCount = 0;
+        uint64 TargetChurnWindowStartMs = 0;
+        uint64 LoopRecoveryCooldownUntilMs = 0;
+        uint32 LoopGuardrailCount = 0;
+        uint64 LastLoopGuardrailMs = 0;
+        std::string LastLoopGuardrailAction;
+        std::string LastLoopGuardrailReason;
+        std::string LastRecoveryMode;
+        std::string LastRecoveryResult;
+        uint64 LastRecoveryMs = 0;
+        uint32 RecoveryAttemptCount = 0;
 
         struct DecisionTraceEntry
         {
@@ -353,6 +366,16 @@ private:
             float DestinationZ = 0.0f;
             std::string Result = "ok";
             std::string ReasonCode;
+            uint32 FingerprintHash = 0;
+            uint32 FingerprintRepeatCount = 0;
+            uint32 FingerprintFailureCount = 0;
+            uint32 ConsecutiveSameDecisionCount = 0;
+            uint32 IdleDecisionRepeatCount = 0;
+            uint32 TargetChurnCount = 0;
+            std::string LoopGuardrailAction;
+            std::string LoopGuardrailReason;
+            std::string RecoveryMode;
+            std::string RecoveryResult;
         };
         std::deque<DecisionTraceEntry> DecisionTrace;
 
