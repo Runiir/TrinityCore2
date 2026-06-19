@@ -17,6 +17,7 @@ from tools.bot_ml.extract_world_knowledge import (
     build_rewards,
     database_url_from_worldserver_conf,
     extract_world_knowledge,
+    load_existing_world_manifests,
     main as world_knowledge_main,
     parse_trinity_database_info,
     sanitize_database_url,
@@ -97,6 +98,7 @@ class FakeWorldDb:
                 {"guid": 10, "entry": 100, "map_id": 0, "zone_id": 12, "area_id": 40, "x": 1.0, "y": 2.0, "z": 3.0, "o": 0.1, "name": "Questgiver", "subname": "", "npcflag": 2, "type": 7, "rank": 0, "faction": 35},
                 {"guid": 11, "entry": 200, "map_id": 0, "zone_id": 12, "area_id": 41, "x": 4.0, "y": 5.0, "z": 6.0, "o": 0.2, "name": "Wolf", "subname": "", "npcflag": 0, "type": 1, "rank": 0, "faction": 14},
                 {"guid": 12, "entry": 300, "map_id": 0, "zone_id": 12, "area_id": 40, "x": 7.0, "y": 8.0, "z": 9.0, "o": 0.3, "name": "Trainer", "subname": "", "npcflag": 48, "type": 7, "rank": 0, "faction": 35},
+                {"guid": 13, "entry": 301, "map_id": 0, "zone_id": 12, "area_id": 40, "x": 8.0, "y": 9.0, "z": 10.0, "o": 0.4, "name": "Repairer", "subname": "", "npcflag": 4096, "type": 7, "rank": 0, "faction": 35},
             ]
         if "FROM gameobject g LEFT JOIN gameobject_template" in sql:
             return [
@@ -760,7 +762,26 @@ def test_world_knowledge_extractor_emits_planner_manifests(monkeypatch):
     manifests = extract_world_knowledge("mysql://example/world")
 
     assert fake_db.closed is True
-    assert set(manifests) == {"quests", "quest_objectives", "npc_services", "item_sources", "recipe_sources", "material_sources", "travel", "zones"}
+    assert set(manifests) == {
+        "quests",
+        "quest_objectives",
+        "npcs",
+        "mobs",
+        "npc_services",
+        "trainers",
+        "vendors",
+        "item_sources",
+        "recipe_sources",
+        "material_sources",
+        "gathering_nodes",
+        "travel",
+        "graveyards",
+        "instance_entrances",
+        "repair_points",
+        "faction_restrictions",
+        "map_zone_relationships",
+        "zones",
+    }
     quest = manifests["quests"][0]
     assert quest["quest_id"] == 9001
     assert quest["prev_quest_id"] == 9000
@@ -781,6 +802,11 @@ def test_world_knowledge_extractor_emits_planner_manifests(monkeypatch):
     assert service["service_types"] == ["trainer", "vendor"]
     assert service["vendor_items"][0]["item"] == 700
     assert service["trainer_spells"][0]["spell_id"] == 600
+    assert manifests["npcs"][0]["service_types"] == ["questgiver"]
+    assert manifests["mobs"][0]["entry"] == 200
+    assert manifests["trainers"][0]["entry"] == 300
+    assert manifests["vendors"][0]["entry"] == 300
+    assert manifests["repair_points"][0]["entry"] == 301
 
     item_sources = manifests["item_sources"]
     assert {"creature_loot", "gameobject_loot", "vendor"} <= {source["source_type"] for source in item_sources}
@@ -795,9 +821,14 @@ def test_world_knowledge_extractor_emits_planner_manifests(monkeypatch):
     material_sources = manifests["material_sources"]
     assert {"creature_loot", "gameobject_loot", "vendor"} <= {source["source_type"] for source in material_sources}
     assert next(source for source in material_sources if source["source_type"] == "creature_loot")["spawns"][0]["x"] == 4.0
+    assert manifests["gathering_nodes"][0]["entry"] == 400
 
     assert {"areatrigger_teleport", "transport", "graveyard", "taxi_level"} <= {entry["type"] for entry in manifests["travel"]}
-    assert manifests["zones"] == [{"map_id": 0, "zone_id": 12, "creature_spawns": 3, "gameobject_spawns": 1, "areas": [40, 41, 42]}]
+    assert manifests["graveyards"][0]["GhostZone"] == 12
+    assert manifests["instance_entrances"][0]["id"] == 1
+    assert any(row["source_type"] == "quest" and row["faction_id"] == 72 for row in manifests["faction_restrictions"])
+    assert manifests["map_zone_relationships"] == [{"map_id": 0, "zone_id": 12, "creature_spawns": 4, "gameobject_spawns": 1, "areas": [40, 41, 42]}]
+    assert manifests["zones"] == [{"map_id": 0, "zone_id": 12, "creature_spawns": 4, "gameobject_spawns": 1, "areas": [40, 41, 42]}]
 
 
 def test_world_planner_builder_derives_hubs_clusters_services_and_travel(tmp_path, monkeypatch):
@@ -810,7 +841,26 @@ def test_world_planner_builder_derives_hubs_clusters_services_and_travel(tmp_pat
 
     planner = build_planner_manifests(world_dir)
 
-    assert set(planner) == {"quest_hubs", "quest_chains", "objective_clusters", "service_index", "item_source_index", "recipe_source_index", "material_source_index", "travel_edges"}
+    assert set(planner) == {
+        "quest_hubs",
+        "quest_chains",
+        "objective_clusters",
+        "npc_index",
+        "mob_index",
+        "service_index",
+        "trainer_index",
+        "vendor_index",
+        "item_source_index",
+        "recipe_source_index",
+        "material_source_index",
+        "gathering_node_index",
+        "travel_edges",
+        "graveyard_index",
+        "instance_entrance_index",
+        "repair_point_index",
+        "faction_restriction_index",
+        "map_zone_index",
+    }
     assert planner["quest_hubs"] == [
         {
             "hub_id": planner["quest_hubs"][0]["hub_id"],
@@ -847,6 +897,11 @@ def test_world_planner_builder_derives_hubs_clusters_services_and_travel(tmp_pat
     assert service["service_types"] == ["trainer", "vendor"]
     assert service["vendor_items"] == [700]
     assert service["trainer_spells"] == [600]
+    assert planner["npc_index"][0]["entry"] == 100
+    assert planner["mob_index"][0]["entry"] == 200
+    assert planner["trainer_index"][0]["entry"] == 300
+    assert planner["vendor_index"][0]["entry"] == 300
+    assert planner["repair_point_index"][0]["entry"] == 301
 
     item_source = next(row for row in planner["item_source_index"] if row["item_id"] == 700)
     assert item_source["source_count"] == 2
@@ -861,6 +916,11 @@ def test_world_planner_builder_derives_hubs_clusters_services_and_travel(tmp_pat
     assert material_source["source_count"] == 2
     assert material_source["source_types"] == ["creature_loot", "vendor"]
     assert material_source["nearest_source"]["source_entry"] == 200
+    assert planner["gathering_node_index"][0]["entry"] == 400
+    assert planner["graveyard_index"][0]["ghost_zone"] == 12
+    assert planner["instance_entrance_index"][0]["entrance_id"] == 1
+    assert any(row["source_type"] == "quest" and row["faction_id"] == 72 for row in planner["faction_restriction_index"])
+    assert planner["map_zone_index"][0]["areas"] == [40, 41, 42]
 
     assert {"portal_or_instance_entrance", "transport", "graveyard", "taxi_level"} <= {edge["edge_type"] for edge in planner["travel_edges"]}
 
@@ -889,7 +949,8 @@ def test_world_planner_validation_report_marks_covered_and_missing_gates(tmp_pat
             {"scenario_id": "blackwing_descent_10n", "families": ["raid_aoe"], "valid": True},
         ],
     }
-    report = validate_manifest_coverage(build_planner_manifests(world_dir), validation_manifests)
+    planner_manifests = build_planner_manifests(world_dir)
+    report = validate_manifest_coverage(planner_manifests, validation_manifests)
     gates = {gate["gate"]: gate for gate in report["gates"]}
 
     assert [gate["gate"] for gate in report["gates"]] == STAGED_GATES
@@ -918,6 +979,17 @@ def test_world_planner_validation_report_marks_covered_and_missing_gates(tmp_pat
     assert report["all_passed"] is False
     assert report["runtime_ml_control"] == "disabled_until_shadow_assist_replay_validation_passes"
 
+    vendor_only_manifests = {name: [dict(row) for row in rows] for name, rows in planner_manifests.items()}
+    vendor_only_manifests["repair_point_index"] = []
+    vendor_only_manifests["service_index"] = [
+        {**row, "service_types": [service for service in row.get("service_types", []) if service != "repair"]}
+        for row in vendor_only_manifests["service_index"]
+    ]
+    vendor_only_report = validate_manifest_coverage(vendor_only_manifests, validation_manifests)
+    vendor_only_gates = {gate["gate"]: gate for gate in vendor_only_report["gates"]}
+    assert vendor_only_gates["vendor_repair"]["passed"] is False
+    assert vendor_only_gates["vendor_repair"]["missing"] == ["repair_service"]
+
     live_ready_manifests = {
         **validation_manifests,
         "validation_routes": [
@@ -928,7 +1000,7 @@ def test_world_planner_validation_report_marks_covered_and_missing_gates(tmp_pat
         ],
     }
     live_report = validate_manifest_coverage(
-        build_planner_manifests(world_dir),
+        planner_manifests,
         live_ready_manifests,
         {
             "stonecore_5n": {"scenario_id": "stonecore_5n", "prepared_group": True, "boss_kills": 4, "clear_complete": True, "teacher_label_quality": "medium"},
@@ -943,6 +1015,12 @@ def test_world_planner_validation_report_marks_covered_and_missing_gates(tmp_pat
     assert live_gates["full_blackwing_descent_clear"]["missing"] == ["blackwing_descent_live_clear_report"]
     assert live_report["evidence"]["live_scenario_ids"] == ["blackwing_descent_10n", "stonecore_5n"]
     assert live_report["evidence"]["live_scenario_label_quality"]["stonecore_5n"] == "medium"
+
+
+def test_world_knowledge_existing_manifest_fallback_requires_complete_schema(tmp_path):
+    write_jsonl(tmp_path / "quests.jsonl", [{"quest_id": 1}])
+
+    assert load_existing_world_manifests(tmp_path) is None
 
 
 def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
