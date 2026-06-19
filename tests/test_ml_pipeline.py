@@ -4,6 +4,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 from ml.evaluation.evaluate_action_frequency import main as evaluate_main
 from ml.group_roles.coordination import ReservationStore
 from ml.group_roles.metrics import group_role_metrics
@@ -13,6 +15,8 @@ from ml.raid.scheduler import RaidAssignmentScheduler
 from tools.bot_ml.common import DATASET_CONTRACT_VERSION, EXPORT_TABLES, numeric_features
 from tools.bot_ml.build_decision_dataset import build_row, build_rows, index_decision_fingerprints, index_semantic_stats
 from tools.bot_ml.extract_world_knowledge import (
+    REQUIRED_NONEMPTY_WORLD_MANIFESTS,
+    WORLD_MANIFEST_NAMES,
     build_quest_objectives,
     build_rewards,
     database_url_from_worldserver_conf,
@@ -22,9 +26,9 @@ from tools.bot_ml.extract_world_knowledge import (
     parse_trinity_database_info,
     sanitize_database_url,
 )
-from tools.bot_ml.build_world_planner_manifests import build_planner_manifests
+from tools.bot_ml.build_world_planner_manifests import build_planner_manifests, main as world_planner_main
 from tools.bot_ml.build_quest_profession_reports import build_report as build_quest_profession_report
-from tools.bot_ml.validate_world_planner import STAGED_GATES, validate_manifest_coverage
+from tools.bot_ml.validate_world_planner import STAGED_GATES, main as world_planner_validate_main, validate_manifest_coverage
 from tools.bot_ml.build_validation_scenario_manifests import build_manifests as build_validation_scenario_manifests
 from tools.bot_ml.build_live_scenario_reports import build_reports as build_live_scenario_reports, build_reports_from_live_reports, main as live_scenario_reports_main
 from tools.bot_ml.build_validation_run_plan import build_plan as build_validation_run_plan
@@ -1202,6 +1206,157 @@ def test_world_knowledge_existing_manifest_fallback_requires_complete_schema(tmp
     write_jsonl(tmp_path / "quests.jsonl", [{"quest_id": 1}])
 
     assert load_existing_world_manifests(tmp_path) is None
+
+
+def test_world_knowledge_cli_rejects_empty_offline_fallback(tmp_path, monkeypatch):
+    conf = tmp_path / "worldserver.conf"
+    output_dir = tmp_path / "world_knowledge"
+    conf.write_text('WorldDatabaseInfo = "db.example;3306;trinity;secret;world"\n', encoding="utf-8")
+    for name in WORLD_MANIFEST_NAMES:
+        write_jsonl(output_dir / f"{name}.jsonl", [])
+    monkeypatch.setattr("tools.bot_ml.extract_world_knowledge.connect_mysql", lambda _url: (_ for _ in ()).throw(RuntimeError("db offline")))
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "bot-world-knowledge",
+            "--worldserver-conf",
+            str(conf),
+            "--output-dir",
+            str(output_dir),
+            "--allow-offline-reuse",
+        ],
+    )
+
+    with pytest.raises(SystemExit, match="offline world knowledge fallback produced empty required DB-backed manifests"):
+        world_knowledge_main()
+
+
+def test_world_knowledge_cli_rejects_db_failure_without_explicit_offline_fallback(tmp_path, monkeypatch):
+    conf = tmp_path / "worldserver.conf"
+    output_dir = tmp_path / "world_knowledge"
+    conf.write_text('WorldDatabaseInfo = "db.example;3306;trinity;secret;world"\n', encoding="utf-8")
+    monkeypatch.setattr("tools.bot_ml.extract_world_knowledge.connect_mysql", lambda _url: (_ for _ in ()).throw(RuntimeError("db offline")))
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "bot-world-knowledge",
+            "--worldserver-conf",
+            str(conf),
+            "--output-dir",
+            str(output_dir),
+        ],
+    )
+
+    with pytest.raises(SystemExit, match="world knowledge extraction failed and offline fallback is disabled"):
+        world_knowledge_main()
+    assert not (output_dir / "manifest.json").exists()
+
+
+def test_world_knowledge_cli_allows_explicit_nonempty_offline_fallback(tmp_path, monkeypatch):
+    conf = tmp_path / "worldserver.conf"
+    output_dir = tmp_path / "world_knowledge"
+    conf.write_text('WorldDatabaseInfo = "db.example;3306;trinity;secret;world"\n', encoding="utf-8")
+    for name in WORLD_MANIFEST_NAMES:
+        rows = [{"source": name}] if name in REQUIRED_NONEMPTY_WORLD_MANIFESTS else []
+        write_jsonl(output_dir / f"{name}.jsonl", rows)
+    monkeypatch.setattr("tools.bot_ml.extract_world_knowledge.connect_mysql", lambda _url: (_ for _ in ()).throw(RuntimeError("db offline")))
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "bot-world-knowledge",
+            "--worldserver-conf",
+            str(conf),
+            "--output-dir",
+            str(output_dir),
+            "--allow-offline-reuse",
+        ],
+    )
+
+    assert world_knowledge_main() == 0
+    manifest = json.loads((output_dir / "manifest.json").read_text(encoding="utf-8"))
+
+    assert manifest["extraction_status"]["mode"] == "existing_generated_files"
+    assert manifest["extraction_status"]["ok"] is True
+    assert manifest["files"]["quests"]["rows"] == 1
+
+
+def test_world_planner_cli_rejects_empty_db_backed_inputs(tmp_path, monkeypatch):
+    world_dir = tmp_path / "world_knowledge"
+    planner_dir = tmp_path / "world_planner"
+    for name in WORLD_MANIFEST_NAMES:
+        write_jsonl(world_dir / f"{name}.jsonl", [])
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "bot-world-planner",
+            "--world-dir",
+            str(world_dir),
+            "--output-dir",
+            str(planner_dir),
+        ],
+    )
+
+    with pytest.raises(SystemExit, match="world input .* has empty required DB-backed manifests"):
+        world_planner_main()
+
+
+def test_world_planner_validation_cli_rejects_empty_planner_inputs(tmp_path, monkeypatch):
+    planner_dir = tmp_path / "world_planner"
+    validation_dir = tmp_path / "validation_scenarios"
+    report = tmp_path / "planner_report.json"
+    planner = {
+        name: []
+        for name in [
+            "quest_hubs",
+            "quest_chains",
+            "quest_batches",
+            "unsupported_quest_fallbacks",
+            "quest_route_edges",
+            "objective_clusters",
+            "npc_index",
+            "mob_index",
+            "service_index",
+            "service_visit_plans",
+            "trainer_index",
+            "vendor_index",
+            "item_source_index",
+            "recipe_source_index",
+            "recipe_acquisition_plans",
+            "material_source_index",
+            "material_plans",
+            "crafting_surfaces",
+            "gathering_node_index",
+            "travel_edges",
+            "graveyard_index",
+            "instance_entrance_index",
+            "repair_point_index",
+            "faction_restriction_index",
+            "map_zone_index",
+        ]
+    }
+    for name, rows in planner.items():
+        write_jsonl(planner_dir / f"{name}.jsonl", rows)
+    for name in ["validation_scenarios", "validation_routes", "validation_mechanics"]:
+        write_jsonl(validation_dir / f"{name}.jsonl", [])
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "bot-world-planner-validate",
+            "--planner-dir",
+            str(planner_dir),
+            "--validation-scenario-dir",
+            str(validation_dir),
+            "--report",
+            str(report),
+        ],
+    )
+
+    assert world_planner_validate_main() == 1
+    payload = json.loads(report.read_text(encoding="utf-8"))
+    assert payload["all_passed"] is False
+    assert payload["input_contract"]["ok"] is False
+    assert "quest_hubs" in payload["input_contract"]["empty_required_db_backed_planner_manifests"]
+    assert payload["dataset_inputs"]["planner"]["files"]["quest_hubs"]["rows"] == 0
 
 
 def test_quest_profession_report_builds_without_live_server(tmp_path, monkeypatch):

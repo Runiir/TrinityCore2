@@ -8,8 +8,43 @@ from typing import Any
 
 try:
     from .common import read_jsonl, stable_hash, write_json, write_jsonl
+    from .extract_world_knowledge import REQUIRED_NONEMPTY_WORLD_MANIFESTS
 except ImportError:
     from common import read_jsonl, stable_hash, write_json, write_jsonl
+    from extract_world_knowledge import REQUIRED_NONEMPTY_WORLD_MANIFESTS
+
+
+REQUIRED_NONEMPTY_PLANNER_MANIFESTS = [
+    "quest_hubs",
+    "quest_chains",
+    "quest_batches",
+    "quest_route_edges",
+    "objective_clusters",
+    "npc_index",
+    "mob_index",
+    "service_index",
+    "service_visit_plans",
+    "trainer_index",
+    "vendor_index",
+    "item_source_index",
+    "recipe_source_index",
+    "recipe_acquisition_plans",
+    "material_source_index",
+    "material_plans",
+    "crafting_surfaces",
+    "gathering_node_index",
+    "travel_edges",
+    "graveyard_index",
+    "instance_entrance_index",
+    "repair_point_index",
+    "map_zone_index",
+]
+
+
+def require_nonempty_rows(rows_by_name: dict[str, list[dict[str, Any]]], required: list[str], *, context: str) -> None:
+    empty = [name for name in required if len(rows_by_name.get(name) or []) <= 0]
+    if empty:
+        raise SystemExit(f"{context} has empty required DB-backed manifests: {', '.join(empty)}")
 
 
 def first_spawn(entity: dict[str, Any]) -> dict[str, Any] | None:
@@ -734,24 +769,45 @@ def build_map_zone_index(zones: list[dict[str, Any]], map_zone_relationships: li
 
 
 def build_planner_manifests(world_dir: Path) -> dict[str, list[dict[str, Any]]]:
-    quests = read_jsonl(world_dir / "quests.jsonl")
-    objectives = read_jsonl(world_dir / "quest_objectives.jsonl")
-    npcs = read_jsonl(world_dir / "npcs.jsonl")
-    mobs = read_jsonl(world_dir / "mobs.jsonl")
-    services = read_jsonl(world_dir / "npc_services.jsonl")
-    trainers = read_jsonl(world_dir / "trainers.jsonl")
-    vendors = read_jsonl(world_dir / "vendors.jsonl")
-    item_sources = read_jsonl(world_dir / "item_sources.jsonl")
-    recipe_sources = read_jsonl(world_dir / "recipe_sources.jsonl")
-    material_sources = read_jsonl(world_dir / "material_sources.jsonl")
-    gathering_nodes = read_jsonl(world_dir / "gathering_nodes.jsonl")
-    travel = read_jsonl(world_dir / "travel.jsonl")
-    graveyards = read_jsonl(world_dir / "graveyards.jsonl")
-    instance_entrances = read_jsonl(world_dir / "instance_entrances.jsonl")
-    repair_points = read_jsonl(world_dir / "repair_points.jsonl")
-    faction_restrictions = read_jsonl(world_dir / "faction_restrictions.jsonl")
-    map_zone_relationships = read_jsonl(world_dir / "map_zone_relationships.jsonl")
-    zones = read_jsonl(world_dir / "zones.jsonl")
+    world_rows = {
+        "quests": read_jsonl(world_dir / "quests.jsonl"),
+        "quest_objectives": read_jsonl(world_dir / "quest_objectives.jsonl"),
+        "npcs": read_jsonl(world_dir / "npcs.jsonl"),
+        "mobs": read_jsonl(world_dir / "mobs.jsonl"),
+        "npc_services": read_jsonl(world_dir / "npc_services.jsonl"),
+        "trainers": read_jsonl(world_dir / "trainers.jsonl"),
+        "vendors": read_jsonl(world_dir / "vendors.jsonl"),
+        "item_sources": read_jsonl(world_dir / "item_sources.jsonl"),
+        "recipe_sources": read_jsonl(world_dir / "recipe_sources.jsonl"),
+        "material_sources": read_jsonl(world_dir / "material_sources.jsonl"),
+        "gathering_nodes": read_jsonl(world_dir / "gathering_nodes.jsonl"),
+        "travel": read_jsonl(world_dir / "travel.jsonl"),
+        "graveyards": read_jsonl(world_dir / "graveyards.jsonl"),
+        "instance_entrances": read_jsonl(world_dir / "instance_entrances.jsonl"),
+        "repair_points": read_jsonl(world_dir / "repair_points.jsonl"),
+        "faction_restrictions": read_jsonl(world_dir / "faction_restrictions.jsonl"),
+        "map_zone_relationships": read_jsonl(world_dir / "map_zone_relationships.jsonl"),
+        "zones": read_jsonl(world_dir / "zones.jsonl"),
+    }
+    require_nonempty_rows(world_rows, REQUIRED_NONEMPTY_WORLD_MANIFESTS, context=f"world input {world_dir}")
+    quests = world_rows["quests"]
+    objectives = world_rows["quest_objectives"]
+    npcs = world_rows["npcs"]
+    mobs = world_rows["mobs"]
+    services = world_rows["npc_services"]
+    trainers = world_rows["trainers"]
+    vendors = world_rows["vendors"]
+    item_sources = world_rows["item_sources"]
+    recipe_sources = world_rows["recipe_sources"]
+    material_sources = world_rows["material_sources"]
+    gathering_nodes = world_rows["gathering_nodes"]
+    travel = world_rows["travel"]
+    graveyards = world_rows["graveyards"]
+    instance_entrances = world_rows["instance_entrances"]
+    repair_points = world_rows["repair_points"]
+    faction_restrictions = world_rows["faction_restrictions"]
+    map_zone_relationships = world_rows["map_zone_relationships"]
+    zones = world_rows["zones"]
     quest_hubs = build_quest_hubs(quests)
     objective_clusters = build_objective_clusters(quests, objectives)
     recipe_plans = build_recipe_acquisition_plans(recipe_sources)
@@ -792,6 +848,7 @@ def main() -> int:
     args = parser.parse_args()
 
     manifests = build_planner_manifests(args.world_dir)
+    require_nonempty_rows(manifests, REQUIRED_NONEMPTY_PLANNER_MANIFESTS, context="planner output")
     counts: dict[str, int] = {}
     hashes: dict[str, str] = {}
     for name, rows in manifests.items():

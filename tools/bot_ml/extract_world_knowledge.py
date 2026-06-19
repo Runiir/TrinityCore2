@@ -37,6 +37,25 @@ WORLD_MANIFEST_NAMES = [
     "map_zone_relationships",
     "zones",
 ]
+REQUIRED_NONEMPTY_WORLD_MANIFESTS = [
+    "quests",
+    "quest_objectives",
+    "npcs",
+    "mobs",
+    "npc_services",
+    "trainers",
+    "vendors",
+    "item_sources",
+    "recipe_sources",
+    "material_sources",
+    "gathering_nodes",
+    "travel",
+    "graveyards",
+    "instance_entrances",
+    "repair_points",
+    "map_zone_relationships",
+    "zones",
+]
 
 
 def connect_mysql(database_url: str):
@@ -103,6 +122,20 @@ def load_existing_world_manifests(output_dir: Path) -> dict[str, list[dict[str, 
     if missing:
         return None
     return {name: read_jsonl(output_dir / f"{name}.jsonl") for name in WORLD_MANIFEST_NAMES}
+
+
+def manifest_row_counts(manifests: dict[str, list[dict[str, Any]]], names: list[str]) -> dict[str, int]:
+    return {name: len(manifests.get(name) or []) for name in names}
+
+
+def empty_required_world_manifests(manifests: dict[str, list[dict[str, Any]]]) -> list[str]:
+    return [name for name, rows in manifest_row_counts(manifests, REQUIRED_NONEMPTY_WORLD_MANIFESTS).items() if rows <= 0]
+
+
+def require_nonempty_world_manifests(manifests: dict[str, list[dict[str, Any]]], *, context: str) -> None:
+    empty = empty_required_world_manifests(manifests)
+    if empty:
+        raise SystemExit(f"{context} produced empty required DB-backed manifests: {', '.join(empty)}")
 
 
 def fetch_all(conn, sql: str) -> list[dict[str, Any]]:
@@ -558,19 +591,26 @@ def main() -> int:
     parser.add_argument("--database-url", help="MySQL URL for the world database, e.g. mysql://trinity:trinity@127.0.0.1:3306/world")
     parser.add_argument("--worldserver-conf", type=Path, default=Path("trinity-worldserver-test.conf"), help="Worldserver config to read WorldDatabaseInfo from when --database-url is omitted.")
     parser.add_argument("--output-dir", type=Path, default=Path("dataset/world_knowledge"))
+    parser.add_argument("--allow-offline-reuse", "--allow-offline-existing", action="store_true", help="When the DB is unavailable, reuse a complete previously generated nonempty manifest set instead of failing.")
     args = parser.parse_args()
 
     extraction_status = {"mode": "database", "ok": True, "reason": ""}
     try:
         database_url = args.database_url or database_url_from_worldserver_conf(args.worldserver_conf)
         manifests = extract_world_knowledge(database_url)
+        require_nonempty_world_manifests(manifests, context="world knowledge extraction")
         source_database: dict[str, Any] = sanitize_database_url(database_url)
     except Exception as exc:
+        if not args.allow_offline_reuse:
+            raise SystemExit(f"world knowledge extraction failed and offline fallback is disabled: {type(exc).__name__}: {exc}") from exc
         existing = load_existing_world_manifests(args.output_dir)
-        manifests = existing if existing is not None else empty_world_manifests()
+        if existing is None:
+            raise SystemExit(f"world knowledge extraction failed and no complete existing manifest set is available: {type(exc).__name__}: {exc}") from exc
+        require_nonempty_world_manifests(existing, context="offline world knowledge fallback")
+        manifests = existing
         extraction_status = {
-            "mode": "existing_generated_files" if existing is not None else "empty_db_unavailable",
-            "ok": existing is not None,
+            "mode": "existing_generated_files",
+            "ok": True,
             "reason": f"{type(exc).__name__}: {exc}",
         }
         source_database = {"available": False, "reason": extraction_status["reason"]}

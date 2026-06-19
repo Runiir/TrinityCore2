@@ -106,13 +106,13 @@ stages:
       size: 5304
     - path: tools/bot_ml/extract_world_knowledge.py
       hash: md5
-      md5: 409b5e4b21ab231edaa2901d03b9e1a2
-      size: 30200
+      md5: 9f9d6ddb0fcae27397951db8b02c3d68
+      size: 31879
     outs:
     - path: dataset/world_knowledge
       hash: md5
-      md5: b1c866cfe100b405552d8e52acf172a8.dir
-      size: 5019
+      md5: 9febcadfce62172963960aa99e8b9033.dir
+      size: 1203658848
       nfiles: 19
   world_planner:
     cmd: python -m tools.bot_ml.build_world_planner_manifests --world-dir 
@@ -120,13 +120,13 @@ stages:
     deps:
     - path: dataset/world_knowledge
       hash: md5
-      md5: b1c866cfe100b405552d8e52acf172a8.dir
-      size: 5019
+      md5: 9febcadfce62172963960aa99e8b9033.dir
+      size: 1203658848
       nfiles: 19
     - path: tools/bot_ml/build_world_planner_manifests.py
       hash: md5
-      md5: 1a7743b71c00d2964b19d0e90ffa1198
-      size: 40187
+      md5: 3e6435f3ad9db17c1e257c918c2f03d6
+      size: 42393
     - path: tools/bot_ml/common.py
       hash: md5
       md5: 8b4aaef751f98fac4ad24680793a813d
@@ -134,8 +134,8 @@ stages:
     outs:
     - path: dataset/world_planner
       hash: md5
-      md5: 047b77d56aede3343a90be6e615b8564.dir
-      size: 21859
+      md5: be9a1697893947184d2c6b09699612f3.dir
+      size: 314432118
       nfiles: 27
   world_planner_validate:
     cmd: python -m tools.bot_ml.validate_world_planner --planner-dir 
@@ -156,8 +156,8 @@ stages:
       nfiles: 5
     - path: dataset/world_planner
       hash: md5
-      md5: 047b77d56aede3343a90be6e615b8564.dir
-      size: 21859
+      md5: be9a1697893947184d2c6b09699612f3.dir
+      size: 314432118
       nfiles: 27
     - path: tools/bot_ml/common.py
       hash: md5
@@ -165,13 +165,13 @@ stages:
       size: 5304
     - path: tools/bot_ml/validate_world_planner.py
       hash: md5
-      md5: 7648f47914bad84b2d65b2851de0f7fc
-      size: 22457
+      md5: 8b5fd4712e8fcd2bff4995c8eed02684
+      size: 23258
     outs:
     - path: dataset/world_validation/planner_report.json
       hash: md5
-      md5: 8abbe29c8067897305a7c36a648428c5
-      size: 53056
+      md5: 1721c295f5d7966cbae4c28259f7ad19
+      size: 194961
   validation_provisioning:
     cmd: python -m tools.bot_ml.build_validation_provisioning --config 
       experiments/configs/validation_provisioning_cata_001.json --gear-profiles 
@@ -244,8 +244,8 @@ stages:
       size: 19202
     - path: tools/bot_ml/extract_world_knowledge.py
       hash: md5
-      md5: 409b5e4b21ab231edaa2901d03b9e1a2
-      size: 30200
+      md5: 9f9d6ddb0fcae27397951db8b02c3d68
+      size: 31879
     - path: tools/bot_ml/validation_profile_manifests.py
       hash: md5
       md5: ed53197b8c93ca32a4b77989e8f29cb5
@@ -310,8 +310,8 @@ stages:
       size: 19202
     - path: tools/bot_ml/extract_world_knowledge.py
       hash: md5
-      md5: 409b5e4b21ab231edaa2901d03b9e1a2
-      size: 30200
+      md5: 9f9d6ddb0fcae27397951db8b02c3d68
+      size: 31879
     - path: tools/bot_ml/validate_validation_provisioning.py
       hash: md5
       md5: 5bbba7a61e4e06b2d0b91ff809d863bd
@@ -585,8 +585,8 @@ stages:
     deps:
     - path: dataset/world_planner
       hash: md5
-      md5: 047b77d56aede3343a90be6e615b8564.dir
-      size: 21859
+      md5: be9a1697893947184d2c6b09699612f3.dir
+      size: 314432118
       nfiles: 27
     - path: tools/bot_ml/build_quest_profession_reports.py
       hash: md5
@@ -598,13 +598,13 @@ stages:
       size: 5304
     - path: tools/bot_ml/validate_world_planner.py
       hash: md5
-      md5: 7648f47914bad84b2d65b2851de0f7fc
-      size: 22457
+      md5: 8b5fd4712e8fcd2bff4995c8eed02684
+      size: 23258
     outs:
     - path: dataset/quest_profession_reports/report.json
       hash: md5
-      md5: e0db06ffa89694769d82d3aaae025709
-      size: 26329
+      md5: e539b6422a5bf827927929fd8063cf13
+      size: 123462
   bot_ml_build_decisions:
     cmd: python -m tools.bot_ml.build_decision_dataset --input-dir 
       dataset/bot_ml/raw --output dataset/bot_ml/decision_dataset.jsonl 

@@ -7,8 +7,10 @@ from typing import Any
 
 try:
     from .common import read_jsonl, stable_hash, write_json
+    from .build_world_planner_manifests import REQUIRED_NONEMPTY_PLANNER_MANIFESTS
 except ImportError:
     from common import read_jsonl, stable_hash, write_json
+    from build_world_planner_manifests import REQUIRED_NONEMPTY_PLANNER_MANIFESTS
 
 
 STAGED_GATES = [
@@ -95,6 +97,10 @@ def load_live_scenario_reports(path: Path | None) -> dict[str, dict[str, Any]]:
         if scenario_id:
             reports[scenario_id] = payload
     return reports
+
+
+def empty_required_planner_manifests(manifests: dict[str, list[dict[str, Any]]]) -> list[str]:
+    return [name for name in REQUIRED_NONEMPTY_PLANNER_MANIFESTS if not manifests.get(name)]
 
 
 def manifest_file_evidence(root: Path, names: list[str]) -> dict[str, Any]:
@@ -293,6 +299,7 @@ def validate_manifest_coverage(
     live_reports = live_reports or {}
     stonecore_live = live_reports.get("stonecore_5n") or {}
     bwd_live = live_reports.get("blackwing_descent_10n") or {}
+    empty_required_manifests = empty_required_planner_manifests(manifests)
 
     evidence = {
         "quest_hubs": len(hubs),
@@ -410,12 +417,18 @@ def validate_manifest_coverage(
     ]
 
     passed = sum(1 for gate in gates if gate["passed"])
+    input_contract = {
+        "required_db_backed_planner_manifests": list(REQUIRED_NONEMPTY_PLANNER_MANIFESTS),
+        "empty_required_db_backed_planner_manifests": empty_required_manifests,
+        "ok": not empty_required_manifests,
+    }
     return {
         "schema": "bot_world_planner_validation_v1",
         "passed": passed,
         "failed": len(gates) - passed,
         "total": len(gates),
-        "all_passed": passed == len(gates),
+        "all_passed": passed == len(gates) and input_contract["ok"],
+        "input_contract": input_contract,
         "gates": gates,
         "evidence": evidence,
         "runtime_ml_control": "disabled_until_shadow_assist_replay_validation_passes",
@@ -441,6 +454,8 @@ def main() -> int:
         "live_scenario_report_files": sorted(str(path) for path in args.live_scenario_report_dir.glob("*.json")) if args.live_scenario_report_dir.exists() else [],
     }
     write_json(args.report, report)
+    if not report["input_contract"]["ok"]:
+        return 1
     if args.fail_on_missing and not report["all_passed"]:
         return 1
     return 0
