@@ -10,10 +10,12 @@ try:
     from .common import stable_hash, write_json
     from .extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
     from .build_validation_provisioning import REQUIRED_EQUIPMENT_SLOTS, load_config
+    from .validation_profile_manifests import DEFAULT_COMBAT_LOOT_PROFILE_MANIFEST, load_combat_loot_profile_manifest
 except ImportError:
     from common import stable_hash, write_json
     from extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
     from build_validation_provisioning import REQUIRED_EQUIPMENT_SLOTS, load_config
+    from validation_profile_manifests import DEFAULT_COMBAT_LOOT_PROFILE_MANIFEST, load_combat_loot_profile_manifest
 
 
 STAT_NAMES = {
@@ -90,13 +92,8 @@ WEAPON_INVENTORY_TYPES = {13, 14, 17, 21, 22, 23, 25, 26, 28}
 GENERAL_ARMOR_INVENTORY_TYPES = {2, 11, 12, 16}
 ARMOR_INVENTORY_TYPES = {1, 3, 5, 6, 7, 8, 9, 10, 20}
 
-STAT_WEIGHTS_BY_ROLE = {
-    "tank": {"stamina": 2.0, "dodge": 1.3, "parry": 1.3, "mastery": 1.1, "strength": 1.0, "block": 0.8, "expertise": 0.7, "hit": 0.5, "crit": 0.2, "haste": 0.2},
-    "healer": {"intellect": 2.0, "spirit": 1.4, "spell_power": 1.1, "haste": 0.9, "mastery": 0.8, "crit": 0.5, "stamina": 0.2},
-    "dps_strength": {"strength": 2.0, "attack_power": 1.0, "hit": 1.0, "expertise": 0.9, "mastery": 0.8, "crit": 0.7, "haste": 0.6, "stamina": 0.1},
-    "dps_agility": {"agility": 2.0, "attack_power": 0.9, "hit": 1.0, "expertise": 0.8, "mastery": 0.8, "crit": 0.7, "haste": 0.6, "stamina": 0.1},
-    "dps_intellect": {"intellect": 2.0, "spell_power": 1.2, "hit": 1.0, "haste": 0.9, "mastery": 0.8, "crit": 0.7, "spirit": 0.2, "stamina": 0.1},
-}
+DEFAULT_COMBAT_LOOT_PROFILES = load_combat_loot_profile_manifest(DEFAULT_COMBAT_LOOT_PROFILE_MANIFEST)
+STAT_WEIGHTS_BY_ROLE = DEFAULT_COMBAT_LOOT_PROFILES["stat_weights_by_archetype"]
 
 ITEM_FMT = "niiiiiii"
 ITEM_SPARSE_FMT = "niiiffiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiifiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiisssssiiiiiiiiiiiiiiiiiiiiiifiiifii"
@@ -277,10 +274,14 @@ def load_gem_properties(dbc_dir: Path) -> dict[int, dict[str, int]]:
     return properties
 
 
-def role_archetype(bot: dict[str, Any]) -> str:
+def role_archetype(bot: dict[str, Any], profile_manifest: dict[str, Any] | None = None) -> str:
+    manifest = profile_manifest or DEFAULT_COMBAT_LOOT_PROFILES
+    spec = str(bot.get("class_spec", ""))
+    configured = manifest.get("class_spec_archetypes", {}).get(spec)
+    if configured:
+        return configured
     role = str(bot.get("role", "dps"))
     class_id = int(bot.get("class", 0))
-    spec = str(bot.get("class_spec", ""))
     if role in {"tank", "healer"}:
         return role
     if class_id in {1, 2, 6}:
@@ -290,6 +291,12 @@ def role_archetype(bot: dict[str, Any]) -> str:
     if class_id == 7 and "enhancement" in spec:
         return "dps_agility"
     return "dps_intellect"
+
+
+def stat_weights_for_bot(bot: dict[str, Any], profile_manifest: dict[str, Any] | None = None) -> dict[str, float]:
+    manifest = profile_manifest or DEFAULT_COMBAT_LOOT_PROFILES
+    archetype = role_archetype(bot, manifest)
+    return manifest["stat_weights_by_archetype"].get(archetype, {})
 
 
 def stat_map(item: dict[str, Any]) -> dict[str, int]:
@@ -429,9 +436,11 @@ def choose_loadout(
     items: list[dict[str, Any]],
     enchantments: list[dict[str, Any]] | None = None,
     gems: list[dict[str, Any]] | None = None,
+    profile_manifest: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     class_id = int(bot["class"])
-    weights = STAT_WEIGHTS_BY_ROLE[role_archetype(bot)]
+    profile_manifest = profile_manifest or DEFAULT_COMBAT_LOOT_PROFILES
+    weights = stat_weights_for_bot(bot, profile_manifest)
     selected_enchantment = select_enchantment(enchantments or [], weights)
     candidates_by_slot: dict[int, list[tuple[float, dict[str, Any]]]] = defaultdict(list)
     for item in items:
@@ -477,6 +486,8 @@ def choose_loadout(
                 "enchantments": enchantments_string(enchant_id, gem_enchant_ids) if enchant_id or gem_enchant_ids else "",
                 "enchant_selection_source": selected_enchantment.get("selection_source", "") if selected_enchantment else "",
                 "selection_score": round(item_score(selected, weights), 3),
+                "stat_weight_archetype": role_archetype(bot, profile_manifest),
+                "stat_weight_manifest_hash": profile_manifest["hash"],
             }
         )
     return loadout
@@ -487,7 +498,9 @@ def build_profiles(
     items: list[dict[str, Any]],
     enchantments: list[dict[str, Any]] | None = None,
     gems: list[dict[str, Any]] | None = None,
+    profile_manifest: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    profile_manifest = profile_manifest or DEFAULT_COMBAT_LOOT_PROFILES
     profiles: dict[str, Any] = {}
     for scenario in config["scenarios"]:
         for bot in scenario["bots"]:
@@ -497,8 +510,14 @@ def build_profiles(
                 {
                     "class_id": int(bot["class"]),
                     "role": bot["role"],
-                    "archetype": role_archetype(bot),
-                    "equipment": choose_loadout(bot, items, enchantments, gems),
+                    "archetype": role_archetype(bot, profile_manifest),
+                    "stat_weights": stat_weights_for_bot(bot, profile_manifest),
+                    "stat_weight_manifest": {
+                        "path": profile_manifest["path"],
+                        "schema": profile_manifest["schema"],
+                        "hash": profile_manifest["hash"],
+                    },
+                    "equipment": choose_loadout(bot, items, enchantments, gems, profile_manifest),
                     "enchant_selection_mode": "dbc_stat_score_unverified_slot_applicability" if enchantments else "none",
                     "gem_selection_mode": "gem_properties_dbc_socket_color_score" if gems else "none",
                 },
@@ -509,11 +528,34 @@ def build_profiles(
         profile["complete_equipment_slots"] = not profile["missing_slots"]
         profile["gemmed"] = all(not item.get("socket_colors") or item.get("gem_item_ids") for item in profile["equipment"])
         profile["enchanted"] = all(int(item.get("enchant_id") or 0) for item in profile["equipment"])
+        profile["average_item_level"] = round(sum(int(item.get("item_level") or 0) for item in profile["equipment"]) / max(len(profile["equipment"]), 1), 2)
+        source_counts: dict[str, int] = {}
+        for item in profile["equipment"]:
+            source = str(item.get("source") or "unknown")
+            source_counts[source] = source_counts.get(source, 0) + 1
+        profile["equipment_source_counts"] = source_counts
+        profile["bis_source_report"] = [
+            {
+                "slot": int(item["slot"]),
+                "item_id": int(item["item_id"]),
+                "name": item.get("name", ""),
+                "item_level": int(item.get("item_level") or 0),
+                "source": item.get("source", "unknown"),
+                "selection_score": item.get("selection_score", 0.0),
+            }
+            for item in profile["equipment"]
+        ]
     return profiles
 
 
-def build_report(profiles: dict[str, Any], source_database: dict[str, Any]) -> dict[str, Any]:
+def build_report(profiles: dict[str, Any], source_database: dict[str, Any], profile_manifest: dict[str, Any] | None = None) -> dict[str, Any]:
+    profile_manifest = profile_manifest or DEFAULT_COMBAT_LOOT_PROFILES
     complete = sum(1 for profile in profiles.values() if profile["complete_equipment_slots"])
+    selected_items = [item for profile in profiles.values() for item in profile["equipment"]]
+    source_counts: dict[str, int] = {}
+    for item in selected_items:
+        source = str(item.get("source") or "unknown")
+        source_counts[source] = source_counts.get(source, 0) + 1
     return {
         "schema": "bot_validation_gear_profiles_report_v1",
         "profile_count": len(profiles),
@@ -524,6 +566,20 @@ def build_report(profiles: dict[str, Any], source_database: dict[str, Any]) -> d
         "enchant_selection_modes": sorted({profile.get("enchant_selection_mode", "none") for profile in profiles.values()}),
         "gem_selection_modes": sorted({profile.get("gem_selection_mode", "none") for profile in profiles.values()}),
         "enchant_applicability_verified_by_server": False,
+        "profile_manifest": {
+            "path": profile_manifest["path"],
+            "schema": profile_manifest["schema"],
+            "hash": profile_manifest["hash"],
+        },
+        "stat_weight_archetypes": sorted({profile.get("archetype", "") for profile in profiles.values()}),
+        "smart_loot_validation_surface": {
+            "ready_for_upgrade_scoring": complete == len(profiles) and all(profile["enchanted"] for profile in profiles.values()),
+            "stat_weights_manifest_hash": profile_manifest["hash"],
+            "selected_equipment_count": len(selected_items),
+            "equipment_source_counts": source_counts,
+            "average_profile_item_level": round(sum(float(profile.get("average_item_level") or 0.0) for profile in profiles.values()) / max(len(profiles), 1), 2),
+            "loot_validation_manifest": profile_manifest.get("loot_validation", {}),
+        },
         "source_counts": {
             "client_db2_items": sum(1 for profile in profiles.values() for item in profile["equipment"] if item.get("source") == "client_db2"),
             "hotfix_db_items": sum(1 for profile in profiles.values() for item in profile["equipment"] if item.get("source") == "hotfix_db"),
@@ -545,19 +601,34 @@ def main() -> int:
     parser.add_argument("--output-dir", type=Path, default=Path("dataset/validation_gear_profiles"))
     parser.add_argument("--min-item-level", type=int, default=1)
     parser.add_argument("--max-required-level", type=int, default=85)
+    parser.add_argument("--profile-manifest", type=Path, default=DEFAULT_COMBAT_LOOT_PROFILE_MANIFEST)
     args = parser.parse_args()
 
     config = load_config(args.config)
+    profile_manifest = load_combat_loot_profile_manifest(args.profile_manifest)
     hotfix_url = args.hotfix_database_url or database_url_from_worldserver_conf(args.worldserver_conf, "HotfixDatabaseInfo")
     items = fetch_items(hotfix_url, args.dbc_dir, args.min_item_level, args.max_required_level)
     enchantments = load_spell_item_enchantments(args.dbc_dir, args.max_required_level) if args.dbc_dir else []
     enchantments_by_id = {int(enchantment["id"]): enchantment for enchantment in enchantments}
     gems = build_gem_catalog(items, load_gem_properties(args.dbc_dir), enchantments_by_id) if args.dbc_dir else []
-    profiles = build_profiles(config, items, enchantments, gems)
+    profiles = build_profiles(config, items, enchantments, gems, profile_manifest)
     source_database = sanitize_database_url(hotfix_url)
-    report = build_report(profiles, source_database)
+    report = build_report(profiles, source_database, profile_manifest)
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    write_json(args.output_dir / "profiles.json", {"schema": "bot_validation_gear_profiles_v1", "profiles": profiles, "source_database": source_database, "dbc_dir": str(args.dbc_dir)})
+    write_json(
+        args.output_dir / "profiles.json",
+        {
+            "schema": "bot_validation_gear_profiles_v1",
+            "profiles": profiles,
+            "source_database": source_database,
+            "dbc_dir": str(args.dbc_dir),
+            "profile_manifest": {
+                "path": profile_manifest["path"],
+                "schema": profile_manifest["schema"],
+                "hash": profile_manifest["hash"],
+            },
+        },
+    )
     write_json(args.output_dir / "report.json", report)
     write_json(
         args.output_dir / "manifest.json",
@@ -568,6 +639,8 @@ def main() -> int:
             "profile_count": len(profiles),
             "enchantment_count": len(enchantments),
             "gem_count": len(gems),
+            "profile_manifest_hash": profile_manifest["hash"],
+            "profile_manifest_path": profile_manifest["path"],
             "outputs": {"profiles": "profiles.json", "report": "report.json"},
             "runtime_ml_control": "disabled_teacher_policy_validation_only",
         },
