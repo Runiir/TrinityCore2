@@ -22,6 +22,7 @@ from tools.bot_ml.extract_world_knowledge import (
     sanitize_database_url,
 )
 from tools.bot_ml.build_world_planner_manifests import build_planner_manifests
+from tools.bot_ml.build_quest_profession_reports import build_report as build_quest_profession_report
 from tools.bot_ml.validate_world_planner import STAGED_GATES, validate_manifest_coverage
 from tools.bot_ml.build_validation_scenario_manifests import build_manifests as build_validation_scenario_manifests
 from tools.bot_ml.build_live_scenario_reports import build_reports as build_live_scenario_reports, build_reports_from_live_reports, main as live_scenario_reports_main
@@ -569,6 +570,7 @@ def test_bot_ml_workflow_has_pixi_tasks_and_documented_dvc_steps():
         "bot-world-knowledge",
         "bot-world-planner",
         "bot-world-validate",
+        "bot-quest-profession-report",
         "bot-validation-gear",
         "bot-validation-provisioning",
         "bot-validation-provisioning-verify",
@@ -810,7 +812,23 @@ def test_world_planner_builder_derives_hubs_clusters_services_and_travel(tmp_pat
 
     planner = build_planner_manifests(world_dir)
 
-    assert set(planner) == {"quest_hubs", "quest_chains", "objective_clusters", "service_index", "item_source_index", "recipe_source_index", "material_source_index", "travel_edges"}
+    assert set(planner) == {
+        "quest_hubs",
+        "quest_chains",
+        "quest_batches",
+        "unsupported_quest_fallbacks",
+        "quest_route_edges",
+        "objective_clusters",
+        "service_index",
+        "service_visit_plans",
+        "item_source_index",
+        "recipe_source_index",
+        "recipe_acquisition_plans",
+        "material_source_index",
+        "material_plans",
+        "crafting_surfaces",
+        "travel_edges",
+    }
     assert planner["quest_hubs"] == [
         {
             "hub_id": planner["quest_hubs"][0]["hub_id"],
@@ -836,6 +854,13 @@ def test_world_planner_builder_derives_hubs_clusters_services_and_travel(tmp_pat
             "breadcrumb_known": False,
         }
     ]
+    assert planner["quest_batches"][0]["quest_ids"] == [9001]
+    assert planner["quest_batches"][0]["objective_cluster_count"] == 1
+    assert planner["quest_batches"][0]["route_policy"] == "batch_pickup_then_cluster_sweep_then_turnin"
+    assert planner["unsupported_quest_fallbacks"] == []
+    assert planner["quest_route_edges"][0]["quest_id"] == 9001
+    assert planner["quest_route_edges"][0]["from_kind"] == "quest_hub"
+    assert planner["quest_route_edges"][0]["to_kind"] == "objective_cluster"
     assert len(planner["objective_clusters"]) == 1
     cluster = planner["objective_clusters"][0]
     assert cluster["quests"] == [9001]
@@ -847,6 +872,9 @@ def test_world_planner_builder_derives_hubs_clusters_services_and_travel(tmp_pat
     assert service["service_types"] == ["trainer", "vendor"]
     assert service["vendor_items"] == [700]
     assert service["trainer_spells"] == [600]
+    visit = planner["service_visit_plans"][0]
+    assert visit["visit_kinds"] == ["profession_trainer", "trainer", "vendor"]
+    assert visit["profession_skill_ids"] == [185]
 
     item_source = next(row for row in planner["item_source_index"] if row["item_id"] == 700)
     assert item_source["source_count"] == 2
@@ -856,11 +884,18 @@ def test_world_planner_builder_derives_hubs_clusters_services_and_travel(tmp_pat
     assert recipe_source["source_count"] == 1
     assert recipe_source["profession_skill_ids"] == [185]
     assert recipe_source["source_types"] == ["trainer"]
+    recipe_plan = next(row for row in planner["recipe_acquisition_plans"] if row["recipe_spell_id"] == 600)
+    assert recipe_plan["acquisition_policy"] == "train_or_buy_recipe_before_crafting"
+    assert recipe_plan["acquisition_steps"][0]["source_entry"] == 300
 
     material_source = next(row for row in planner["material_source_index"] if row["item_id"] == 700)
     assert material_source["source_count"] == 2
     assert material_source["source_types"] == ["creature_loot", "vendor"]
     assert material_source["nearest_source"]["source_entry"] == 200
+    material_plan = next(row for row in planner["material_plans"] if row["material_item_id"] == 700)
+    assert material_plan["planning_strategy"] == "buy_then_farm_shortfall"
+    crafting_surface = next(row for row in planner["crafting_surfaces"] if row["profession_skill_id"] == 185)
+    assert crafting_surface["recipe_count"] == 1
 
     assert {"portal_or_instance_entrance", "transport", "graveyard", "taxi_level"} <= {edge["edge_type"] for edge in planner["travel_edges"]}
 
@@ -898,10 +933,17 @@ def test_world_planner_validation_report_marks_covered_and_missing_gates(tmp_pat
         "kill_quest",
         "collect_quest",
         "quest_hub_batching",
+        "quest_chain_routing",
+        "unsupported_quest_fallback",
+        "cross_zone_routing",
         "trainer_visit",
         "vendor_repair",
+        "class_skill_visit",
         "profession_recipe_acquisition",
+        "all_profession_recipe_acquisition",
         "material_farming",
+        "material_planning",
+        "crafting_surface",
         "smart_loot",
         "normal_dungeon_trash",
         "dungeon_boss",
@@ -943,6 +985,28 @@ def test_world_planner_validation_report_marks_covered_and_missing_gates(tmp_pat
     assert live_gates["full_blackwing_descent_clear"]["missing"] == ["blackwing_descent_live_clear_report"]
     assert live_report["evidence"]["live_scenario_ids"] == ["blackwing_descent_10n", "stonecore_5n"]
     assert live_report["evidence"]["live_scenario_label_quality"]["stonecore_5n"] == "medium"
+
+
+def test_quest_profession_report_builds_without_live_server(tmp_path, monkeypatch):
+    fake_db = FakeWorldDb()
+    monkeypatch.setattr("tools.bot_ml.extract_world_knowledge.connect_mysql", lambda _url: fake_db)
+    world = extract_world_knowledge("mysql://example/world")
+    world_dir = tmp_path / "world"
+    planner_dir = tmp_path / "planner"
+    for name, rows in world.items():
+        write_jsonl(world_dir / f"{name}.jsonl", rows)
+    for name, rows in build_planner_manifests(world_dir).items():
+        write_jsonl(planner_dir / f"{name}.jsonl", rows)
+
+    report = build_quest_profession_report(planner_dir)
+    stages = {stage["gate"]: stage for stage in report["stages"]}
+
+    assert report["schema"] == "bot_quest_profession_report_v1"
+    assert report["all_passed"] is True
+    assert stages["quest_hub_batching"]["passed"] is True
+    assert stages["all_profession_recipe_acquisition"]["passed"] is True
+    assert stages["material_planning"]["passed"] is True
+    assert stages["crafting_surface"]["passed"] is True
 
 
 def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():

@@ -16,10 +16,17 @@ STAGED_GATES = [
     "kill_quest",
     "collect_quest",
     "quest_hub_batching",
+    "quest_chain_routing",
+    "unsupported_quest_fallback",
+    "cross_zone_routing",
     "trainer_visit",
     "vendor_repair",
+    "class_skill_visit",
     "profession_recipe_acquisition",
+    "all_profession_recipe_acquisition",
     "material_farming",
+    "material_planning",
+    "crafting_surface",
     "smart_loot",
     "normal_dungeon_trash",
     "dungeon_boss",
@@ -34,11 +41,18 @@ def load_manifest_dir(path: Path) -> dict[str, list[dict[str, Any]]]:
     names = [
         "quest_hubs",
         "quest_chains",
+        "quest_batches",
+        "unsupported_quest_fallbacks",
+        "quest_route_edges",
         "objective_clusters",
         "service_index",
+        "service_visit_plans",
         "item_source_index",
         "recipe_source_index",
+        "recipe_acquisition_plans",
         "material_source_index",
+        "material_plans",
+        "crafting_surfaces",
         "travel_edges",
     ]
     return {name: read_jsonl(path / f"{name}.jsonl") for name in names}
@@ -87,6 +101,10 @@ def has_item_source_type(item_sources: list[dict[str, Any]], source_type: str) -
 
 def has_travel_edge(edges: list[dict[str, Any]], edge_type: str) -> bool:
     return any(edge.get("edge_type") == edge_type for edge in edges)
+
+
+def has_visit_kind(visits: list[dict[str, Any]], visit_kind: str) -> bool:
+    return any(visit_kind in (row.get("visit_kinds") or []) for row in visits)
 
 
 def scenario_ready(scenarios: list[dict[str, Any]], scenario_id: str) -> bool:
@@ -180,11 +198,18 @@ def validate_manifest_coverage(
 ) -> dict[str, Any]:
     hubs = manifests["quest_hubs"]
     chains = manifests["quest_chains"]
+    batches = manifests.get("quest_batches") or []
+    fallbacks = manifests.get("unsupported_quest_fallbacks") or []
+    route_edges = manifests.get("quest_route_edges") or []
     clusters = manifests["objective_clusters"]
     services = manifests["service_index"]
+    service_visits = manifests.get("service_visit_plans") or []
     item_sources = manifests["item_source_index"]
     recipe_sources = manifests["recipe_source_index"]
+    recipe_plans = manifests.get("recipe_acquisition_plans") or []
     material_sources = manifests["material_source_index"]
+    material_plans = manifests.get("material_plans") or []
+    crafting_surfaces = manifests.get("crafting_surfaces") or []
     travel_edges = manifests["travel_edges"]
     validation_manifests = validation_manifests or {}
     validation_scenarios = validation_manifests.get("validation_scenarios") or []
@@ -197,11 +222,18 @@ def validate_manifest_coverage(
     evidence = {
         "quest_hubs": len(hubs),
         "quest_chains": len(chains),
+        "quest_batches": len(batches),
+        "unsupported_quest_fallbacks": len(fallbacks),
+        "quest_route_edges": len(route_edges),
         "objective_clusters": len(clusters),
         "service_index": len(services),
+        "service_visit_plans": len(service_visits),
         "item_source_index": len(item_sources),
         "recipe_source_index": len(recipe_sources),
+        "recipe_acquisition_plans": len(recipe_plans),
         "material_source_index": len(material_sources),
+        "material_plans": len(material_plans),
+        "crafting_surfaces": len(crafting_surfaces),
         "travel_edges": len(travel_edges),
         "validation_scenarios": len(validation_scenarios),
         "validation_routes": len(validation_routes),
@@ -217,6 +249,9 @@ def validate_manifest_coverage(
         "recipe_source_types": sorted({source_type for row in recipe_sources for source_type in (row.get("source_types") or [])}),
         "material_source_types": sorted({source_type for row in material_sources for source_type in (row.get("source_types") or [])}),
         "travel_edge_types": sorted({edge.get("edge_type") for edge in travel_edges if edge.get("edge_type")}),
+        "service_visit_kinds": sorted({visit_kind for row in service_visits for visit_kind in (row.get("visit_kinds") or [])}),
+        "recipe_plan_source_types": sorted({source_type for row in recipe_plans for source_type in (row.get("source_types") or [])}),
+        "material_plan_strategies": sorted({row.get("planning_strategy") for row in material_plans if row.get("planning_strategy")}),
     }
     stonecore_missing = missing_validation_inputs(
         "stonecore_5n",
@@ -255,11 +290,18 @@ def validate_manifest_coverage(
         gate_result("movement_smoke", bool(clusters or hubs or travel_edges), evidence, [] if clusters or hubs or travel_edges else ["objective_clusters_or_hubs_or_travel_edges"]),
         gate_result("kill_quest", has_objective_type(clusters, "creature"), evidence, [] if has_objective_type(clusters, "creature") else ["creature_objective_cluster"]),
         gate_result("collect_quest", has_objective_type(clusters, "item") and has_item_source_type(item_sources, "creature_loot"), evidence, [] if has_objective_type(clusters, "item") and has_item_source_type(item_sources, "creature_loot") else ["item_objective_cluster", "creature_loot_item_source"]),
-        gate_result("quest_hub_batching", any(len(row.get("quests") or []) >= 1 for row in hubs), evidence, [] if hubs else ["quest_hubs"]),
+        gate_result("quest_hub_batching", any(len(row.get("quest_ids") or row.get("quests") or []) >= 1 for row in batches or hubs), evidence, [] if batches else ["quest_batches"]),
+        gate_result("quest_chain_routing", bool(chains), evidence, [] if chains else ["quest_chains"]),
+        gate_result("unsupported_quest_fallback", bool(fallbacks) or all((row.get("support_class_counts") or {}).get("supported_simple", 0) == int(row.get("quest_count") or 0) for row in batches), evidence, [] if batches else ["quest_batches"]),
+        gate_result("cross_zone_routing", bool(route_edges), evidence, [] if route_edges else ["quest_route_edges"]),
         gate_result("trainer_visit", has_service(services, "trainer"), evidence, [] if has_service(services, "trainer") else ["trainer_service"]),
         gate_result("vendor_repair", has_service(services, "vendor"), evidence, [] if has_service(services, "vendor") else ["vendor_service"]),
+        gate_result("class_skill_visit", has_visit_kind(service_visits, "class_skill_trainer") or has_visit_kind(service_visits, "profession_trainer") or has_service(services, "trainer"), evidence, [] if service_visits else ["service_visit_plans"]),
         gate_result("profession_recipe_acquisition", bool(recipe_sources), evidence, [] if recipe_sources else ["recipe_source_index"]),
+        gate_result("all_profession_recipe_acquisition", bool(recipe_plans), evidence, [] if recipe_plans else ["recipe_acquisition_plans"]),
         gate_result("material_farming", bool(material_sources) and (has_item_source_type(material_sources, "creature_loot") or has_item_source_type(material_sources, "gameobject_loot")), evidence, [] if material_sources else ["material_source_index"]),
+        gate_result("material_planning", bool(material_plans), evidence, [] if material_plans else ["material_plans"]),
+        gate_result("crafting_surface", bool(crafting_surfaces), evidence, [] if crafting_surfaces else ["crafting_surfaces"]),
         gate_result("smart_loot", bool(item_sources), evidence, [] if item_sources else ["item_source_index"]),
         gate_result("normal_dungeon_trash", has_travel_edge(travel_edges, "portal_or_instance_entrance"), evidence, [] if has_travel_edge(travel_edges, "portal_or_instance_entrance") else ["instance_entrance_travel_edge"]),
         gate_result("dungeon_boss", has_travel_edge(travel_edges, "portal_or_instance_entrance"), evidence, [] if has_travel_edge(travel_edges, "portal_or_instance_entrance") else ["instance_entrance_travel_edge"]),

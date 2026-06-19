@@ -33,6 +33,18 @@ stages:
     metrics:
     - dataset/world_validation/planner_report.json:
         cache: false
+  quest_profession_report:
+    cmd: python -m tools.bot_ml.build_quest_profession_reports --planner-dir
+      dataset/world_planner --report
+      dataset/quest_profession_reports/report.json
+    deps:
+    - tools/bot_ml/build_quest_profession_reports.py
+    - tools/bot_ml/validate_world_planner.py
+    - tools/bot_ml/common.py
+    - dataset/world_planner
+    metrics:
+    - dataset/quest_profession_reports/report.json:
+        cache: false
   validation_gear:
     cmd: python -m tools.bot_ml.build_validation_gear_profiles --config
       experiments/configs/validation_provisioning_cata_001.json --output-dir

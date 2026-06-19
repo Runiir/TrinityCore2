@@ -86,6 +86,13 @@ def build_quest_chains(quests: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return sorted(rows, key=lambda row: row["quest_id"])
 
 
+def quest_support_class(quest: dict[str, Any], objectives: list[dict[str, Any]]) -> str:
+    support_class = str(quest.get("support_class") or "")
+    if support_class:
+        return support_class
+    return "supported_simple" if objectives else "chain_or_scripted"
+
+
 def build_objective_clusters(quests: list[dict[str, Any]], objectives: list[dict[str, Any]], radius: float = 120.0) -> list[dict[str, Any]]:
     quest_by_id = {int(quest.get("quest_id") or 0): quest for quest in quests}
     clusters: list[dict[str, Any]] = []
@@ -130,6 +137,118 @@ def build_objective_clusters(quests: list[dict[str, Any]], objectives: list[dict
     return sorted(clusters, key=lambda row: (row["map_id"], row["zone_id"], row["area_id"], row["x"], row["y"]))
 
 
+def build_quest_batches(quests: list[dict[str, Any]], hubs: list[dict[str, Any]], clusters: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    quest_by_id = {int(quest.get("quest_id") or 0): quest for quest in quests}
+    cluster_by_quest: dict[int, list[dict[str, Any]]] = defaultdict(list)
+    for cluster in clusters:
+        for quest_id in cluster.get("quests") or []:
+            cluster_by_quest[int(quest_id)].append(cluster)
+
+    batches: list[dict[str, Any]] = []
+    for hub in hubs:
+        quest_ids = sorted(int(quest_id) for quest_id in hub.get("quests") or [])
+        support_counts: dict[str, int] = defaultdict(int)
+        cluster_ids: list[str] = []
+        zones = {(int(hub.get("map_id") or 0), int(hub.get("zone_id") or 0))}
+        unsupported: list[int] = []
+        for quest_id in quest_ids:
+            quest = quest_by_id.get(quest_id, {})
+            support = quest_support_class(quest, quest.get("objectives") or [])
+            support_counts[support] += 1
+            if support != "supported_simple":
+                unsupported.append(quest_id)
+            for cluster in cluster_by_quest.get(quest_id, []):
+                cluster_id = str(cluster.get("cluster_id") or "")
+                if cluster_id and cluster_id not in cluster_ids:
+                    cluster_ids.append(cluster_id)
+                zones.add((int(cluster.get("map_id") or 0), int(cluster.get("zone_id") or 0)))
+        batches.append(
+            {
+                "batch_id": stable_hash({"kind": "quest_batch", "hub_id": hub.get("hub_id"), "quests": quest_ids})[:16],
+                "hub_id": hub.get("hub_id"),
+                "giver_entry": int(hub.get("giver_entry") or 0),
+                "map_id": int(hub.get("map_id") or 0),
+                "zone_id": int(hub.get("zone_id") or 0),
+                "area_id": int(hub.get("area_id") or 0),
+                "x": float(hub.get("x") or 0.0),
+                "y": float(hub.get("y") or 0.0),
+                "quest_ids": quest_ids,
+                "quest_count": len(quest_ids),
+                "objective_cluster_ids": sorted(cluster_ids),
+                "objective_cluster_count": len(cluster_ids),
+                "support_class_counts": dict(sorted(support_counts.items())),
+                "unsupported_quest_ids": unsupported,
+                "cross_zone": len(zones) > 1,
+                "route_policy": "batch_pickup_then_cluster_sweep_then_turnin",
+                "fallback_policy": "skip_or_teacher_assist_unsupported",
+            }
+        )
+    return sorted(batches, key=lambda row: (row["map_id"], row["zone_id"], row["giver_entry"], row["batch_id"]))
+
+
+def build_unsupported_quest_fallbacks(quests: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for quest in quests:
+        objectives = quest.get("objectives") or []
+        support = quest_support_class(quest, objectives)
+        unsupported_objectives = [objective for objective in objectives if str(objective.get("type") or "") not in {"creature", "gameobject", "item", "spell"}]
+        if support == "supported_simple" and not unsupported_objectives:
+            continue
+        quest_id = int(quest.get("quest_id") or 0)
+        rows.append(
+            {
+                "quest_id": quest_id,
+                "title": quest.get("title") or "",
+                "support_class": support,
+                "objective_types": sorted({str(objective.get("type") or "unknown") for objective in objectives}),
+                "unsupported_objective_types": sorted({str(objective.get("type") or "unknown") for objective in unsupported_objectives}),
+                "fallback_actions": ["do_not_block_batch", "prefer_known_chain_or_breadcrumb", "teacher_assist_or_skip"],
+                "reason": "unsupported_objective_or_scripted_chain",
+            }
+        )
+    return sorted(rows, key=lambda row: row["quest_id"])
+
+
+def build_quest_route_edges(hubs: list[dict[str, Any]], clusters: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    cluster_by_quest: dict[int, list[dict[str, Any]]] = defaultdict(list)
+    for cluster in clusters:
+        for quest_id in cluster.get("quests") or []:
+            cluster_by_quest[int(quest_id)].append(cluster)
+
+    rows: list[dict[str, Any]] = []
+    seen: set[tuple[str, str, str]] = set()
+    for hub in hubs:
+        for quest_id in hub.get("quests") or []:
+            for cluster in cluster_by_quest.get(int(quest_id), []):
+                key = (str(hub.get("hub_id") or ""), str(cluster.get("cluster_id") or ""), str(quest_id))
+                if key in seen:
+                    continue
+                seen.add(key)
+                rows.append(
+                    {
+                        "edge_id": stable_hash({"kind": "quest_route_edge", "key": key})[:16],
+                        "quest_id": int(quest_id),
+                        "from_kind": "quest_hub",
+                        "from_id": hub.get("hub_id"),
+                        "from_map_id": int(hub.get("map_id") or 0),
+                        "from_zone_id": int(hub.get("zone_id") or 0),
+                        "from_x": float(hub.get("x") or 0.0),
+                        "from_y": float(hub.get("y") or 0.0),
+                        "to_kind": "objective_cluster",
+                        "to_id": cluster.get("cluster_id"),
+                        "to_map_id": int(cluster.get("map_id") or 0),
+                        "to_zone_id": int(cluster.get("zone_id") or 0),
+                        "to_x": float(cluster.get("x") or 0.0),
+                        "to_y": float(cluster.get("y") or 0.0),
+                        "distance": round(distance2d(hub, cluster), 3),
+                        "cross_zone": int(hub.get("zone_id") or 0) != int(cluster.get("zone_id") or 0),
+                        "cross_map": int(hub.get("map_id") or 0) != int(cluster.get("map_id") or 0),
+                        "requires_travel_edge": int(hub.get("map_id") or 0) != int(cluster.get("map_id") or 0),
+                    }
+                )
+    return sorted(rows, key=lambda row: (row["from_map_id"], row["from_zone_id"], row["quest_id"], row["to_id"]))
+
+
 def build_service_index(services: list[dict[str, Any]]) -> list[dict[str, Any]]:
     rows = []
     for service in services:
@@ -148,6 +267,49 @@ def build_service_index(services: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "trainer_spell_count": len(service.get("trainer_spells") or []),
                 "vendor_items": [int(row.get("item") or row.get("item_id") or 0) for row in service.get("vendor_items") or []],
                 "trainer_spells": [int(row.get("spell_id") or 0) for row in service.get("trainer_spells") or []],
+            }
+        )
+    return sorted(rows, key=lambda row: (row["map_id"], row["zone_id"], row["entry"]))
+
+
+def trainer_visit_kinds(service: dict[str, Any]) -> list[str]:
+    kinds: set[str] = set()
+    if "trainer" in (service.get("service_types") or []):
+        for spell in service.get("trainer_spells") or []:
+            if int(spell.get("req_skill_line") or 0):
+                kinds.add("profession_trainer")
+            else:
+                kinds.add("class_skill_trainer")
+        if not kinds:
+            kinds.add("trainer")
+    return sorted(kinds)
+
+
+def build_service_visit_plans(services: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for service in services:
+        spawn = first_spawn(service) or {}
+        visit_kinds = sorted(set(service.get("service_types") or []) | set(trainer_visit_kinds(service)))
+        if not visit_kinds:
+            continue
+        rows.append(
+            {
+                "visit_id": stable_hash({"kind": "service_visit", "entry": int(service.get("entry") or 0), "kinds": visit_kinds})[:16],
+                "entry": int(service.get("entry") or 0),
+                "name": service.get("name") or "",
+                "visit_kinds": visit_kinds,
+                "service_types": service.get("service_types") or [],
+                "map_id": int(spawn.get("map_id") or 0),
+                "zone_id": int(spawn.get("zone_id") or 0),
+                "area_id": int(spawn.get("area_id") or 0),
+                "x": float(spawn.get("x") or 0.0),
+                "y": float(spawn.get("y") or 0.0),
+                "z": float(spawn.get("z") or 0.0),
+                "trainer_spell_count": len(service.get("trainer_spells") or []),
+                "profession_skill_ids": sorted({int(spell.get("req_skill_line") or 0) for spell in service.get("trainer_spells") or [] if int(spell.get("req_skill_line") or 0)}),
+                "class_skill_spell_ids": sorted({int(spell.get("spell_id") or 0) for spell in service.get("trainer_spells") or [] if not int(spell.get("req_skill_line") or 0)}),
+                "vendor_item_count": len(service.get("vendor_items") or []),
+                "supports_repair_or_restock": "vendor" in (service.get("service_types") or []),
             }
         )
     return sorted(rows, key=lambda row: (row["map_id"], row["zone_id"], row["entry"]))
@@ -203,6 +365,40 @@ def build_recipe_source_index(recipe_sources: list[dict[str, Any]]) -> list[dict
     return sorted(grouped.values(), key=lambda row: (row["recipe_spell_id"] == 0, row["recipe_spell_id"], row["item_id"]))
 
 
+def build_recipe_acquisition_plans(recipe_sources: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    index = build_recipe_source_index(recipe_sources)
+    rows: list[dict[str, Any]] = []
+    for recipe in index:
+        acquisition_steps = []
+        for source in recipe.get("sources") or []:
+            spawn = first_spawn(source) or {}
+            acquisition_steps.append(
+                {
+                    "source_type": source.get("source_type") or "unknown",
+                    "source_entry": int(source.get("source_entry") or 0),
+                    "map_id": int(spawn.get("map_id") or 0),
+                    "zone_id": int(spawn.get("zone_id") or 0),
+                    "x": float(spawn.get("x") or 0.0),
+                    "y": float(spawn.get("y") or 0.0),
+                    "money_cost": int(source.get("money_cost") or 0),
+                    "req_skill_rank": int(source.get("req_skill_rank") or 0),
+                }
+            )
+        rows.append(
+            {
+                "recipe_key": recipe["recipe_key"],
+                "recipe_spell_id": recipe["recipe_spell_id"],
+                "item_id": recipe["item_id"],
+                "profession_skill_ids": recipe["profession_skill_ids"],
+                "source_types": recipe["source_types"],
+                "source_count": recipe["source_count"],
+                "acquisition_steps": sorted(acquisition_steps, key=lambda row: (row["source_type"], row["map_id"], row["zone_id"], row["source_entry"])),
+                "acquisition_policy": "train_or_buy_recipe_before_crafting",
+            }
+        )
+    return rows
+
+
 def build_material_source_index(material_sources: list[dict[str, Any]]) -> list[dict[str, Any]]:
     grouped: dict[int, dict[str, Any]] = {}
     for source in material_sources:
@@ -239,6 +435,65 @@ def build_material_source_index(material_sources: list[dict[str, Any]]) -> list[
     return sorted(grouped.values(), key=lambda row: row["item_id"])
 
 
+def build_material_plans(material_sources: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for material in build_material_source_index(material_sources):
+        source_types = material.get("source_types") or []
+        farmable = [source for source in material.get("sources") or [] if source.get("source_type") in {"creature_loot", "gameobject_loot"}]
+        buyable = [source for source in material.get("sources") or [] if source.get("source_type") == "vendor"]
+        if farmable and buyable:
+            strategy = "buy_then_farm_shortfall"
+        elif buyable:
+            strategy = "buy_from_vendor"
+        elif farmable:
+            strategy = "farm_nearest_source"
+        else:
+            strategy = "unknown_source"
+        rows.append(
+            {
+                "material_item_id": int(material.get("item_id") or 0),
+                "source_types": source_types,
+                "source_count": int(material.get("source_count") or 0),
+                "nearest_source": material.get("nearest_source"),
+                "farmable_source_count": len(farmable),
+                "vendor_source_count": len(buyable),
+                "planning_strategy": strategy,
+            }
+        )
+    return rows
+
+
+def build_crafting_surfaces(recipe_plans: list[dict[str, Any]], material_plans: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    materials = [int(row.get("material_item_id") or 0) for row in material_plans]
+    by_profession: dict[int, dict[str, Any]] = {}
+    unclassified = by_profession.setdefault(0, {"profession_skill_id": 0, "recipe_keys": [], "recipe_spell_ids": [], "recipe_item_ids": [], "material_item_ids": materials})
+    for recipe in recipe_plans:
+        profession_ids = recipe.get("profession_skill_ids") or [0]
+        for profession_id in profession_ids:
+            row = by_profession.setdefault(
+                int(profession_id),
+                {"profession_skill_id": int(profession_id), "recipe_keys": [], "recipe_spell_ids": [], "recipe_item_ids": [], "material_item_ids": materials},
+            )
+            row["recipe_keys"].append(recipe.get("recipe_key"))
+            if int(recipe.get("recipe_spell_id") or 0):
+                row["recipe_spell_ids"].append(int(recipe.get("recipe_spell_id") or 0))
+            if int(recipe.get("item_id") or 0):
+                row["recipe_item_ids"].append(int(recipe.get("item_id") or 0))
+    if not unclassified["recipe_keys"]:
+        by_profession.pop(0, None)
+    rows = []
+    for row in by_profession.values():
+        row["recipe_keys"] = sorted({key for key in row["recipe_keys"] if key})
+        row["recipe_spell_ids"] = sorted(set(row["recipe_spell_ids"]))
+        row["recipe_item_ids"] = sorted(set(row["recipe_item_ids"]))
+        row["material_item_ids"] = sorted(set(row["material_item_ids"]))
+        row["recipe_count"] = len(row["recipe_keys"])
+        row["material_count"] = len(row["material_item_ids"])
+        row["crafting_policy"] = "acquire_recipe_plan_materials_then_craft"
+        rows.append(row)
+    return sorted(rows, key=lambda row: row["profession_skill_id"])
+
+
 def build_travel_edges(travel: list[dict[str, Any]]) -> list[dict[str, Any]]:
     rows = []
     for entry in travel:
@@ -269,14 +524,25 @@ def build_planner_manifests(world_dir: Path) -> dict[str, list[dict[str, Any]]]:
     recipe_sources = read_jsonl(world_dir / "recipe_sources.jsonl")
     material_sources = read_jsonl(world_dir / "material_sources.jsonl")
     travel = read_jsonl(world_dir / "travel.jsonl")
+    quest_hubs = build_quest_hubs(quests)
+    objective_clusters = build_objective_clusters(quests, objectives)
+    recipe_plans = build_recipe_acquisition_plans(recipe_sources)
+    material_plans = build_material_plans(material_sources)
     return {
-        "quest_hubs": build_quest_hubs(quests),
+        "quest_hubs": quest_hubs,
         "quest_chains": build_quest_chains(quests),
-        "objective_clusters": build_objective_clusters(quests, objectives),
+        "quest_batches": build_quest_batches(quests, quest_hubs, objective_clusters),
+        "unsupported_quest_fallbacks": build_unsupported_quest_fallbacks(quests),
+        "quest_route_edges": build_quest_route_edges(quest_hubs, objective_clusters),
+        "objective_clusters": objective_clusters,
         "service_index": build_service_index(services),
+        "service_visit_plans": build_service_visit_plans(services),
         "item_source_index": build_item_source_index(item_sources),
         "recipe_source_index": build_recipe_source_index(recipe_sources),
+        "recipe_acquisition_plans": recipe_plans,
         "material_source_index": build_material_source_index(material_sources),
+        "material_plans": material_plans,
+        "crafting_surfaces": build_crafting_surfaces(recipe_plans, material_plans),
         "travel_edges": build_travel_edges(travel),
     }
 
