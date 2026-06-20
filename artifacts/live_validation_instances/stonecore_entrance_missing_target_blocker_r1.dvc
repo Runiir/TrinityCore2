@@ -1,0 +1,6 @@
+outs:
+- md5: ed12280f085288f072c33aee5ea6180d.dir
+  size: 1438929
+  nfiles: 13
+  hash: md5
+  path: stonecore_entrance_missing_target_blocker_r1
