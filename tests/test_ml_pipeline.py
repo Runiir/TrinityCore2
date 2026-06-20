@@ -3186,6 +3186,28 @@ def test_bot_autonomy_daemon_pause_sleep_resume_transition(tmp_path, monkeypatch
     assert sleep_until_resume(state, stop_path, state_path) is True
 
 
+def test_orchestrator_daemon_stop_during_rate_limit_sleep_marks_stopped(tmp_path, monkeypatch):
+    state = initial_state()
+    state_path = tmp_path / "daemon_state.json"
+    stop_path = tmp_path / "daemon.stop"
+    stop_path.write_text("stop", encoding="utf-8")
+    handle_rate_limit(
+        state,
+        {
+            "agent_role": "orchestrator",
+            "thread_id": "thread-456",
+            "resume_at_unix": 200,
+        },
+        state_path,
+    )
+    monkeypatch.setattr("tools.bot_ml.orchestrator_daemon.now_unix", lambda: 100)
+
+    assert sleep_until_resume(state, stop_path, state_path) is False
+    saved = json.loads(state_path.read_text(encoding="utf-8"))
+    assert saved["status"] == "stopped"
+    assert saved["phase"] == "stop_requested"
+
+
 def test_bot_autonomy_daemon_resumes_paused_role_thread(tmp_path, monkeypatch):
     checklist = {
         "deliverables": [

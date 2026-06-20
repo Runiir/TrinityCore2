@@ -739,7 +739,7 @@ def sleep_until_resume(state: dict[str, Any], stop_path: Path, state_path: Path 
     resume_at = int(rate_limit.get("resume_at_unix") or 0)
     while resume_at > now_unix():
         if stop_path.exists():
-            state.update({"status": "stopping", "phase": "stop_requested"})
+            state.update({"status": "stopped", "phase": "stop_requested"})
             save_state(state, state_path)
             return False
         time.sleep(min(30, max(1, resume_at - now_unix())))
