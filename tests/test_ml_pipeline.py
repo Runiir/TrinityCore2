@@ -4341,6 +4341,94 @@ def test_live_bot_validation_completion_watchdog_writes_heartbeats(tmp_path):
     assert report["completion_reason"] == "repeated_decision_watchdog"
 
 
+def test_live_bot_validation_main_preserves_watchdog_report(tmp_path, monkeypatch, capsys):
+    fake_worldserver = tmp_path / "fake_worldserver.py"
+    fake_worldserver.write_text(
+        "#!/usr/bin/env python3\n"
+        "import sys\n"
+        "print('TC> ', flush=True)\n"
+        "for line in sys.stdin:\n"
+        "    cmd = line.strip()\n"
+        "    print('CMD ' + cmd)\n"
+        "    if cmd == '.botauto status':\n"
+        "        print('{\"active_bots\":1,\"target_bots\":1,\"decisions\":1}')\n"
+        "    elif cmd.startswith('.botauto diagnose'):\n"
+        "        print('{\"diagnosis_schema_version\":1,\"bots\":[{\"identity\":{\"bot_guid\":1},\"snapshot\":{\"decision\":{\"action\":\"validation_route_hold_anchor\"},\"movement\":{\"is_moving\":false,\"distance_moved_since_last_decision\":0}}}]}')\n"
+        "    elif cmd.startswith('.botauto trace'):\n"
+        "        print('{\"trace_schema_version\":1,\"entries\":[{\"action\":\"validation_route_regroup\"},{\"action\":\"validation_route_prerequisite\"}]}')\n"
+        "    elif cmd == '.botexp summary':\n"
+        "        print('{\"duration_minutes\":1,\"decisions\":1}')\n"
+        "    elif cmd.startswith('server shutdown'):\n"
+        "        break\n"
+        "    print('TC> ', flush=True)\n",
+        encoding="utf-8",
+    )
+    fake_worldserver.chmod(0o755)
+    config = tmp_path / "worldserver.conf"
+    config.write_text("BotWorld.AutoStart = 1\n", encoding="utf-8")
+    scenario_dir = tmp_path / "validation_scenarios"
+    scenario_dir.mkdir()
+    (scenario_dir / "validation_routes.jsonl").write_text(
+        json.dumps(
+            {
+                "scenario_id": "stonecore_5n",
+                "route_node_id": "stonecore_entry",
+                "label": "entrance packs",
+                "kind": "trash",
+                "map_id": 725,
+                "x": 903.255,
+                "y": 985.352,
+                "z": 317.198,
+                "source_entry": 42696,
+                "expected_bot_count": 1,
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    output_dir = tmp_path / "live"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "bot-live-validate",
+            "--worldserver",
+            str(fake_worldserver),
+            "--config",
+            str(config),
+            "--duration-policy",
+            "completion-watchdog",
+            "--heartbeat-sec",
+            "1",
+            "--no-progress-window-sec",
+            "1",
+            "--timeout-sec",
+            "5",
+            "--validation-scenario-dir",
+            str(scenario_dir),
+            "--validation-scenario-id",
+            "stonecore_5n",
+            "--validation-route-node-id",
+            "stonecore_entry",
+            "--validation-route-kind",
+            "trash",
+            "--output-dir",
+            str(output_dir),
+        ],
+    )
+
+    assert live_validation_main() == 0
+    capsys.readouterr()
+    report = json.loads((output_dir / "report.json").read_text(encoding="utf-8"))
+
+    assert report["heartbeat_index"] >= 1
+    assert report["evidence"]["validation_route_actions"] > 0
+    assert report["config"].endswith("worldserver.validation.conf")
+    assert report["base_config"] == str(config)
+    assert report["validation_context"]["route_node_id"] == "stonecore_entry"
+    assert report["validation_route"]["source_entry"] == 42696
+
+
 def test_lane_config_generates_per_lane_db_clones(tmp_path):
     world_template = tmp_path / "worldserver.conf"
     auth_template = tmp_path / "authserver.conf"

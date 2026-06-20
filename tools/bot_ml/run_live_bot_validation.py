@@ -1720,6 +1720,7 @@ def main() -> int:
         print(json.dumps(report, indent=2, sort_keys=True))
         return 0
 
+    watchdog_report: dict[str, Any] | None = None
     if args.input_log:
         output = args.input_log.read_text(encoding="utf-8")
         returncode = 0
@@ -1745,23 +1746,35 @@ def main() -> int:
                 max_repeated_decisions=args.max_repeated_decision_count,
                 max_death_loops=args.max_death_loop_count,
             )
+            existing_report = args.output_dir / "report.json"
+            if existing_report.exists():
+                try:
+                    watchdog_report = json.loads(existing_report.read_text(encoding="utf-8"))
+                except json.JSONDecodeError:
+                    watchdog_report = None
         else:
             output, returncode, timed_out, command = run_worldserver(args.worldserver, effective_config, args.timeout_sec, script, args.observe_sec)
 
     (args.output_dir / "worldserver_output.log").write_text(output, encoding="utf-8")
-    report = live_validation_report(
-        output,
-        returncode=returncode,
-        timed_out=timed_out,
-        command=command,
-        scenario_reports=scenario_reports,
-        validation_context=validation_context,
-        duration_policy=args.duration_policy,
-        heartbeat_sec=args.heartbeat_sec,
-        no_progress_window_sec=args.no_progress_window_sec,
-        max_repeated_decisions=args.max_repeated_decision_count,
-        max_death_loops=args.max_death_loop_count,
-    )
+    if watchdog_report:
+        report = watchdog_report
+        report["returncode"] = returncode
+        report["timed_out"] = timed_out
+        report["command"] = command
+    else:
+        report = live_validation_report(
+            output,
+            returncode=returncode,
+            timed_out=timed_out,
+            command=command,
+            scenario_reports=scenario_reports,
+            validation_context=validation_context,
+            duration_policy=args.duration_policy,
+            heartbeat_sec=args.heartbeat_sec,
+            no_progress_window_sec=args.no_progress_window_sec,
+            max_repeated_decisions=args.max_repeated_decision_count,
+            max_death_loops=args.max_death_loop_count,
+        )
     report["generated_at_unix"] = int(time.time())
     report["config_autostart"] = config_autostart
     report["config"] = str(effective_config)
