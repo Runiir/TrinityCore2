@@ -6734,6 +6734,15 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
                 std::string raw = BuildRawJson(bot, nullptr);
                 std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_regroup", &power, stage, activity);
+                if (_config.ValidationRouteKind == "boss" && routeDistance > 12.0f)
+                {
+                    MoveBotToPoint(state, bot, routeAnchorX, routeAnchorY, routeAnchorZ);
+                    RecordEvent(state, bot, "validation_route_regroup", anchor, "advance_to_boss_route_no_focus", raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry);
+                    situation = "validation_route_regroup";
+                    action = "move_to_validation_route";
+                    return true;
+                }
+
                 RecordEvent(state, bot, "validation_route_regroup", anchor, "hold_anchor_no_focus", raw.c_str(), semantic.c_str(), bot->GetExactDist(anchor), _config.ValidationRouteTargetEntry);
                 situation = "validation_route_regroup";
                 action = "validation_route_hold_anchor";
@@ -6799,11 +6808,22 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         return true;
     }
 
-    float routeArrivalRadius = (_config.ValidationRouteActivationDataId
+    bool hasValidationRouteActivation = _config.ValidationRouteActivationDataId
         || _config.ValidationRouteActivationSpawnGroupId
         || _config.ValidationRouteActivationActionEntry
         || _config.ValidationRouteActivationSummonEntry
-        || _config.ValidationRouteOpenerSummonEntry) ? 40.0f : 18.0f;
+        || _config.ValidationRouteOpenerSummonEntry;
+    if (_config.ValidationRouteKind == "boss"
+        && hasValidationRouteActivation
+        && !_validationRouteActivationApplied
+        && routeDistance <= 220.0f
+        && tryValidationRouteActivation(nullptr, "boss_route_early_activation"))
+    {
+        action = "validation_route_activate_target";
+        return true;
+    }
+
+    float routeArrivalRadius = hasValidationRouteActivation ? 40.0f : 18.0f;
     if (routeDistance > routeArrivalRadius)
     {
         MoveBotToPoint(state, bot, routeAnchorX, routeAnchorY, routeAnchorZ);

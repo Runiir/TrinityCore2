@@ -36,7 +36,7 @@ from tools.bot_ml.build_validation_scenario_manifests import build_manifests as 
 from tools.bot_ml.build_live_scenario_reports import build_reports as build_live_scenario_reports, build_reports_from_live_reports, main as live_scenario_reports_main
 from tools.bot_ml.build_validation_run_plan import build_plan as build_validation_run_plan
 from tools.bot_ml.build_validation_run_status import build_status as build_validation_run_status
-from tools.bot_ml.run_live_bot_validation import build_bot_pool_reset_sql, command_script, live_validation_report, load_scenario_reports, main as live_validation_main, parse_json_objects, parse_soap_result, route_segment_complete, run_worldserver, run_worldserver_completion_watchdog, split_sql_statements, trinity_config_bool, upsert_trinity_config
+from tools.bot_ml.run_live_bot_validation import build_bot_pool_reset_sql, command_script, live_validation_report, load_scenario_reports, main as live_validation_main, parse_json_objects, parse_soap_result, route_segment_complete, run_worldserver, run_worldserver_completion_watchdog, split_sql_statements, trinity_config_bool, upsert_trinity_config, watchdog_state
 from tools.bot_ml.orchestrator_daemon import codex_command, detect_rate_limit, handle_rate_limit, initial_state, run_one_cycle, sleep_until_resume
 from tools.bot_ml.generate_lane_configs import write_lane_config
 from tools.bot_ml.promote_live_validation_artifact import promote
@@ -4601,6 +4601,54 @@ def test_route_segment_complete_accepts_terminal_trash_evidence():
     }
 
     assert route_segment_complete(report, route) is True
+
+
+def test_watchdog_state_does_not_call_route_actions_zero_progress():
+    state = watchdog_state(
+        {
+            "decisions": 85,
+            "moved_diagnoses": 1,
+            "validation_route_actions": 16,
+            "action_counts": {"validation_route_regroup": 9, "validation_route_hold_anchor": 7},
+        },
+        ["validation_route_no_engagement", "no_progress_observed"],
+        no_progress_window_sec=60,
+    )
+
+    assert state["progress_total"] == 16
+    assert state["no_progress"] is False
+
+
+def test_live_bot_validation_keeps_route_progress_incomplete_until_watchdog_expires():
+    output = """
+TC> {"active_bots":5,"target_bots":5,"decisions":25}
+TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"snapshot":{"decision":{"action":"move_to_validation_route"},"movement":{"is_moving":true,"distance_moved_since_last_decision":91}}}]}
+TC> {"trace_schema_version":1,"entries":[{"action":"move_to_validation_route","result":"ok"},{"action":"validation_route_regroup","result":"advance_to_boss_route_no_focus"}]}
+TC> {"duration_minutes":1,"decisions":25}
+"""
+    report = live_validation_report(output, validation_context={"route_kind": "boss"})
+
+    assert "validation_route_no_engagement" in report["failure_labels"]
+    assert report["watchdog_state"]["progress_total"] > 0
+    assert report["watchdog_state"]["no_progress"] is False
+    assert report["completion_reason"] == "incomplete_evidence"
+
+
+def test_watchdog_state_treats_boss_engagement_without_kill_as_no_progress():
+    state = watchdog_state(
+        {
+            "decisions": 60,
+            "moved_diagnoses": 1,
+            "validation_route_actions": 12,
+            "boss_engagement_actions": 8,
+            "action_counts": {"boss_action": 4, "boss_started": 4},
+        },
+        ["boss_attempt_no_kill", "no_progress_observed"],
+        no_progress_window_sec=60,
+    )
+
+    assert state["progress_total"] == 12
+    assert state["no_progress"] is True
 
 
 def test_live_bot_validation_route_sequence_dry_run_writes_ordered_child_commands(tmp_path, monkeypatch, capsys):

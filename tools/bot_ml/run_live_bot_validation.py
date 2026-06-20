@@ -803,6 +803,25 @@ def live_evidence(
         for row in diagnoses
         if nested_get(row, ["snapshot", "decision", "result"], "")
     )
+    def max_diagnosis_evidence(name: str) -> int:
+        values: list[int] = []
+        for row in diagnoses:
+            evidence_rows = nested_get(row, ["diagnosis", "evidence"], [])
+            if not isinstance(evidence_rows, list):
+                continue
+            for item in evidence_rows:
+                if not isinstance(item, dict) or str(item.get("name") or "") != name:
+                    continue
+                value = item.get("value")
+                if isinstance(value, bool):
+                    values.append(1 if value else 0)
+                    continue
+                try:
+                    values.append(int(value or 0))
+                except (TypeError, ValueError):
+                    pass
+        return max(values, default=0)
+
     action_text = " ".join(sorted(action_names)).lower()
     quest_progress = max(int(status.get("quest_objective_progress") or 0), int(summary.get("quest_objective_progress") or 0))
     quests_accepted = max(int(status.get("quests_accepted") or 0), int(summary.get("quests_accepted") or 0), quest_acceptance_actions)
@@ -956,7 +975,10 @@ def live_evidence(
         "boss_engagement_actions": boss_engagement_actions,
         "trash_route_actions": trash_route_actions,
         "validation_route_prerequisite_repeats": action_counts.get("validation_route_prerequisite", 0),
-        "validation_route_activation_attempts": action_counts.get("validation_route_activation", 0),
+        "validation_route_activation_attempts": max(
+            action_counts.get("validation_route_activation", 0),
+            max_diagnosis_evidence("validation_route_activation_attempts"),
+        ),
         "validation_route_no_visible_target_activations": result_counts.get("activation_applied_no_visible_target", 0),
         "validation_route_force_tank_focus_repeats": result_counts.get("force_tank_focus", 0),
         "vendor_or_trainer_action": any(token in action_text for token in ["vendor", "repair", "train"]),
@@ -1067,6 +1089,7 @@ def progress_counters_from_evidence(evidence: dict[str, Any]) -> dict[str, int]:
     action_counts = evidence.get("action_counts") if isinstance(evidence.get("action_counts"), dict) else {}
     return {
         "decisions": int(evidence.get("decisions") or 0),
+        "moved_diagnoses": int(evidence.get("moved_diagnoses") or 0),
         "non_spawn_trace_entries": int(evidence.get("non_spawn_trace_entries") or 0),
         "quest_objective_progress": int(evidence.get("quest_objective_progress") or 0),
         "quests_accepted": int(evidence.get("quests_accepted") or 0),
@@ -1074,6 +1097,7 @@ def progress_counters_from_evidence(evidence: dict[str, Any]) -> dict[str, int]:
         "kills": int(evidence.get("kills") or 0),
         "teacher_assisted_kills": int(evidence.get("teacher_assisted_kills") or 0),
         "boss_kill_evidence": int(evidence.get("boss_kill_evidence") or 0),
+        "boss_engagement_actions": int(evidence.get("boss_engagement_actions") or 0),
         "trash_pulls": int(evidence.get("trash_pulls") or 0),
         "gear_upgrades": int(evidence.get("gear_upgrades") or 0),
         "validation_route_actions": int(evidence.get("validation_route_actions") or 0),
@@ -1104,7 +1128,12 @@ def watchdog_state(
         + counters["gear_upgrades"]
         + counters["validation_route_actions"]
     )
-    no_progress = "no_progress_observed" in failure_labels or (counters["decisions"] > 0 and progress_total <= 0)
+    route_motion_progress = (
+        counters["validation_route_actions"] > 0
+        and counters["moved_diagnoses"] > 0
+        and counters["boss_engagement_actions"] <= 0
+    )
+    no_progress = not route_motion_progress and ("no_progress_observed" in failure_labels or (counters["decisions"] > 0 and progress_total <= 0))
     repeated_loop = counters["repeated_decisions"] >= max_repeated_decisions
     death_loop = counters["death_loop_events"] >= max_death_loops
     return {
@@ -1119,6 +1148,21 @@ def watchdog_state(
         "death_loop": death_loop,
         "progress_counters": counters,
     }
+
+
+def terminal_failure_labels(failure_labels: list[str], state: dict[str, Any]) -> list[str]:
+    progress_total = int(state.get("progress_total") or 0)
+    if progress_total <= 0:
+        return failure_labels
+
+    nonterminal = {
+        "boss_attempt_no_kill",
+        "no_progress_observed",
+        "trash_route_no_engagement",
+        "validation_route_activation_no_engagement",
+        "validation_route_no_engagement",
+    }
+    return [label for label in failure_labels if label not in nonterminal]
 
 
 def completion_reason(
@@ -1141,7 +1185,7 @@ def completion_reason(
         return "repeated_decision_watchdog"
     if state.get("no_progress"):
         return "no_progress_watchdog"
-    if failure_labels:
+    if terminal_failure_labels(failure_labels, state):
         return "machine_failure_predicate"
     return "incomplete_evidence"
 

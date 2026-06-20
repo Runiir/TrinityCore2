@@ -404,6 +404,10 @@ def test_quest_first_portfolio_routing_surface():
     assert "raid_boss_killed" in mgr
     assert 'std::string(context).rfind("boss_route_", 0) == 0 ? 2 : 4' in mgr
     assert "validation_route_activation" in mgr
+    assert "boss_route_early_activation" in mgr
+    assert "advance_to_boss_route_no_focus" in mgr
+    assert "hasValidationRouteActivation" in mgr
+    assert "routeDistance <= 220.0f" in mgr
     assert "ValidationRouteActivationApplied" in mgr_header
     assert "ValidationRouteTargetSearchMissCount" in mgr_header
     assert "reset_stale_boss_activation" in mgr
