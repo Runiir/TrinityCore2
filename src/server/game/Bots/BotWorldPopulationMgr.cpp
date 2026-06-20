@@ -5447,7 +5447,37 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         return (_config.ValidationRouteTargetEntry && creature->GetEntry() == _config.ValidationRouteTargetEntry)
             || (_config.ValidationRouteOpenerTargetEntry && creature->GetEntry() == _config.ValidationRouteOpenerTargetEntry);
     };
-    auto recordValidationRouteBossKill = [this, &state, bot, &power, stage, activity](Unit* killedTarget, char const* assistResult) -> bool
+    auto clearValidationRouteKilledFocus = [this, &state](ObjectGuid killedGuid)
+    {
+        if (killedGuid.IsEmpty())
+            return;
+
+        if (_validationRouteFocusGuid == killedGuid)
+        {
+            _validationRouteFocusGuid.Clear();
+            _validationRouteFocusEntry = 0;
+            _validationRouteFocusMapId = 0;
+            _validationRouteFocusX = 0.0f;
+            _validationRouteFocusY = 0.0f;
+            _validationRouteFocusZ = 0.0f;
+            _validationRouteFocusSeenMs = 0;
+        }
+
+        for (WorldBotState& cohortState : _bots)
+        {
+            if (cohortState.TargetGuid == killedGuid)
+                cohortState.TargetGuid.Clear();
+            if (cohortState.ValidationRouteCombatProgressTargetGuid == killedGuid)
+                cohortState.ValidationRouteCombatProgressTargetGuid.Clear();
+            if (cohortState.ValidationRoutePackProgressTargetGuid == killedGuid)
+                cohortState.ValidationRoutePackProgressTargetGuid.Clear();
+            if (cohortState.LastDecisionTargetGuid == killedGuid)
+                cohortState.LastDecisionTargetGuid.Clear();
+        }
+
+        state.ValidationRouteUnresolvedFocusHoldCount = 0;
+    };
+    auto recordValidationRouteBossKill = [this, &state, bot, &power, stage, activity, &clearValidationRouteKilledFocus](Unit* killedTarget, char const* assistResult) -> bool
     {
         if (!killedTarget)
             return false;
@@ -5465,6 +5495,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             ++_metrics.Kills;
             state.LastKilledTargetGuid = killedTarget->GetGUID();
         }
+
+        clearValidationRouteKilledFocus(killedTarget->GetGUID());
 
         RecordEvent(state, bot, "boss_killed", killedTarget, "ok", raw.c_str(), semantic.c_str(), 0.0f, _metrics.Kills);
         if (bot->GetMap() && bot->GetMap()->IsRaid())
@@ -5506,7 +5538,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         float routeProximity = candidate->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ);
         return routeProximity <= 120.0f ? candidate : nullptr;
     };
-    auto maybeValidationPrerequisiteNoProgressAssist = [this, &state, bot, &power, stage, activity, &isValidationRouteScriptTarget, &recordValidationRouteBossKill](Unit* prerequisiteTarget, char const* context) -> bool
+    auto maybeValidationPrerequisiteNoProgressAssist = [this, &state, bot, &power, stage, activity, &isValidationRouteScriptTarget, &recordValidationRouteBossKill, &clearValidationRouteKilledFocus](Unit* prerequisiteTarget, char const* context) -> bool
     {
         if (!prerequisiteTarget || !prerequisiteTarget->IsAlive() || !bot || !bot->IsValidAttackTarget(prerequisiteTarget))
             return false;
@@ -5564,6 +5596,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     ++_metrics.Kills;
                     state.LastKilledTargetGuid = prerequisiteTarget->GetGUID();
                 }
+                clearValidationRouteKilledFocus(prerequisiteTarget->GetGUID());
                 std::string raw = BuildRawJson(bot, prerequisiteTarget);
                 std::string semantic = BuildSemanticJson(bot, prerequisiteTarget, "validation_route_prerequisite_no_progress", &power, stage, activity);
                 RecordEvent(state, bot, "mob_killed", prerequisiteTarget, "validation_route_recovery", raw.c_str(), semantic.c_str(), 0.0f, _metrics.Kills);
@@ -5689,6 +5722,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (std::string(GetDungeonRole(bot)) == "tank")
             return nullptr;
 
+        auto activeCohortFocus = [](Player* member, Unit* focus) -> bool
+        {
+            return member && focus && (member->IsInCombat() || focus->IsInCombat() || focus->GetVictim());
+        };
+
         Player* anchor = FindDungeonAnchor(bot);
         for (WorldBotState const& cohortState : _bots)
         {
@@ -5699,7 +5737,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 continue;
 
             if (Unit* focus = routeUsableCombatTarget(ObjectAccessor::GetUnit(*bot, cohortState.TargetGuid)))
+            {
+                if (!activeCohortFocus(member, focus))
+                    continue;
                 return focus;
+            }
         }
 
         if (anchor && anchor != bot)
@@ -5769,7 +5811,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 Player* member = GetBot(cohortState);
                 considerMember(member);
                 if (member && !cohortState.TargetGuid.IsEmpty())
-                    considerFocus(member, ObjectAccessor::GetUnit(*bot, cohortState.TargetGuid));
+                {
+                    Unit* stateFocus = ObjectAccessor::GetUnit(*bot, cohortState.TargetGuid);
+                    if (activeCohortFocus(member, stateFocus))
+                        considerFocus(member, stateFocus);
+                }
             }
         }
 
@@ -5780,6 +5826,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     };
     auto routeTankFocusGuid = [this, bot, &routeUsableCombatTarget]() -> ObjectGuid
     {
+        auto activeCohortFocus = [](Player* member, Unit* focus) -> bool
+        {
+            return member && focus && (member->IsInCombat() || focus->IsInCombat() || focus->GetVictim());
+        };
+
         for (WorldBotState const& cohortState : _bots)
         {
             Player* member = GetBot(cohortState);
@@ -5791,7 +5842,12 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             if (Unit* victim = routeUsableCombatTarget(member->GetVictim()))
                 return victim->GetGUID();
             if (!cohortState.TargetGuid.IsEmpty())
-                return cohortState.TargetGuid;
+                if (Unit* focus = routeUsableCombatTarget(ObjectAccessor::GetUnit(*member, cohortState.TargetGuid)))
+                {
+                    if (!activeCohortFocus(member, focus))
+                        continue;
+                    return focus->GetGUID();
+                }
         }
 
         if (Player* anchor = FindDungeonAnchor(bot))
@@ -5907,6 +5963,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     };
     auto routeTankFocusTarget = [this, bot, &routeUsableCombatTarget, &rememberValidationRouteFocus](ObjectGuid expectedGuid) -> Unit*
     {
+        auto activeCohortFocus = [](Player* member, Unit* focus) -> bool
+        {
+            return member && focus && (member->IsInCombat() || focus->IsInCombat() || focus->GetVictim());
+        };
+
         auto usableExpected = [&](Unit* focus) -> Unit*
         {
             focus = routeUsableCombatTarget(focus);
@@ -5933,6 +5994,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             if (!cohortState.TargetGuid.IsEmpty())
                 if (Unit* focus = usableExpected(ObjectAccessor::GetUnit(*member, cohortState.TargetGuid)))
                 {
+                    if (!activeCohortFocus(member, focus))
+                        continue;
                     rememberValidationRouteFocus(focus);
                     return focus;
                 }
@@ -5997,6 +6060,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     std::string authoritativeFocusFailure = "authoritative_focus_not_checked";
     auto findAuthoritativeRouteFocusTarget = [this, bot, &routeUsableCombatTarget, &authoritativeFocusFailure]() -> Unit*
     {
+        auto activeCohortFocus = [](Player* member, Unit* focus) -> bool
+        {
+            return member && focus && (member->IsInCombat() || focus->IsInCombat() || focus->GetVictim());
+        };
+
         auto usableFocus = [&](Unit* focus) -> Unit*
         {
             focus = routeUsableCombatTarget(focus);
@@ -6044,9 +6112,14 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 if (Unit* resolved = ObjectAccessor::GetUnit(*member, cohortState.TargetGuid))
                 {
                     sawResolvedStateTarget = true;
-                    if (Unit* focus = usableFocus(resolved))
-                        return focus;
-                    sawRejectedReference = true;
+                    bool activeStateTarget = activeCohortFocus(member, resolved);
+                    if (activeStateTarget)
+                        if (Unit* focus = usableFocus(resolved))
+                            return focus;
+                    if (!activeStateTarget)
+                        authoritativeFocusFailure = "authoritative_focus_state_target_inactive";
+                    else
+                        sawRejectedReference = true;
                 }
             }
             if (!_validationRouteFocusGuid.IsEmpty())

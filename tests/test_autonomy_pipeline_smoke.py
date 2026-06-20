@@ -345,9 +345,16 @@ def test_quest_first_portfolio_routing_surface():
     assert "routeTankFocusGuid" in mgr
     assert "routeTankFocusTarget" in mgr
     assert "rememberValidationRouteFocus" in mgr
+    assert "clearValidationRouteKilledFocus" in mgr
+    assert "cohortState.ValidationRouteCombatProgressTargetGuid.Clear();" in mgr
+    assert "cohortState.ValidationRoutePackProgressTargetGuid.Clear();" in mgr
+    assert "clearValidationRouteKilledFocus(prerequisiteTarget->GetGUID());" in mgr
+    assert "activeCohortFocus" in mgr
+    assert "member->IsInCombat() || focus->IsInCombat() || focus->GetVictim()" in mgr
+    assert "authoritative_focus_state_target_inactive" in mgr
     assert "routeUsableCombatTarget(member->GetVictim())" in mgr
     assert "if (Unit* victim = routeUsableCombatTarget(member->GetVictim()))" in mgr
-    assert "ObjectAccessor::GetUnit(*member, cohortState.TargetGuid)" in mgr
+    assert "routeUsableCombatTarget(ObjectAccessor::GetUnit(*member, cohortState.TargetGuid))" in mgr
     assert "Player* loadedBot = GetLoadedBot(*itr)" in mgr
     assert "loaded_bot_not_in_world" in mgr
     assert "return bot && bot->IsInWorld() ? bot : nullptr;" in function_body(mgr, "Player* BotWorldPopulationMgr::GetBot")
