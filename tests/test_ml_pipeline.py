@@ -13,7 +13,7 @@ from ml.group_roles.policies import policy_for_role
 from ml.raid.metrics import raid_metrics
 from ml.raid.scheduler import RaidAssignmentScheduler
 from tools.bot_ml.common import DATASET_CONTRACT_VERSION, EXPORT_TABLES, numeric_features
-from tools.bot_ml import bot_autonomy_daemon as daemon
+from tools.bot_ml import orchestrator_daemon as daemon
 from tools.bot_ml.build_decision_dataset import build_row, build_rows, index_decision_fingerprints, index_semantic_stats
 from tools.bot_ml.extract_world_knowledge import (
     REQUIRED_NONEMPTY_WORLD_MANIFESTS,
@@ -35,7 +35,7 @@ from tools.bot_ml.build_live_scenario_reports import build_reports as build_live
 from tools.bot_ml.build_validation_run_plan import build_plan as build_validation_run_plan
 from tools.bot_ml.build_validation_run_status import build_status as build_validation_run_status
 from tools.bot_ml.run_live_bot_validation import build_bot_pool_reset_sql, command_script, live_validation_report, load_scenario_reports, main as live_validation_main, parse_json_objects, parse_soap_result, run_worldserver, run_worldserver_completion_watchdog, split_sql_statements, trinity_config_bool, upsert_trinity_config
-from tools.bot_ml.bot_autonomy_daemon import codex_command, detect_rate_limit, handle_rate_limit, initial_state, run_one_cycle, sleep_until_resume
+from tools.bot_ml.orchestrator_daemon import codex_command, detect_rate_limit, handle_rate_limit, initial_state, run_one_cycle, sleep_until_resume
 from tools.bot_ml.generate_lane_configs import write_lane_config
 from tools.bot_ml.promote_live_validation_artifact import promote
 from tools.bot_ml.build_validation_gear_profiles import SHIELD_CLASSES, build_gem_catalog, build_profiles, build_report, fetch_items, load_gem_properties, load_spell_item_enchantments
@@ -3011,6 +3011,7 @@ def test_bot_autonomy_daemon_rate_limit_fallback_and_resume_command(tmp_path):
     assert fallback["resume_at_unix"] == 3610
     assert command[:4] == ["codex", "exec", "resume", "--json"]
     assert command[6:8] == ["-c", 'model_reasoning_effort="medium"']
+    assert command[8:10] == ["-C", str(tmp_path)]
     assert "thread-123" in command
     assert stdin_text == "continue"
 
@@ -3030,7 +3031,7 @@ def test_bot_autonomy_daemon_pause_sleep_resume_transition(tmp_path, monkeypatch
         },
         state_path,
     )
-    monkeypatch.setattr("tools.bot_ml.bot_autonomy_daemon.now_unix", lambda: 101)
+    monkeypatch.setattr("tools.bot_ml.orchestrator_daemon.now_unix", lambda: 101)
 
     assert state["status"] == "paused_rate_limit"
     assert sleep_until_resume(state, stop_path, state_path) is True
@@ -3069,8 +3070,8 @@ def test_bot_autonomy_daemon_resumes_paused_role_thread(tmp_path, monkeypatch):
             "last_message_path": last_message,
         }
 
-    monkeypatch.setattr("tools.bot_ml.bot_autonomy_daemon.load_checklist", lambda path=None: checklist)
-    monkeypatch.setattr("tools.bot_ml.bot_autonomy_daemon.run_codex_role", fake_run_codex_role)
+    monkeypatch.setattr("tools.bot_ml.orchestrator_daemon.load_checklist", lambda path=None: checklist)
+    monkeypatch.setattr("tools.bot_ml.orchestrator_daemon.run_codex_role", fake_run_codex_role)
 
     result = run_one_cycle(
         state,
@@ -3107,6 +3108,164 @@ def test_bot_autonomy_daemon_prompt_file_precedence(tmp_path):
     assert daemon.effective_prompt_file(config, command_cli_args) == cli_prompt
 
 
+def test_orchestrator_daemon_named_instance_paths_and_checklist_copy(tmp_path, monkeypatch):
+    monkeypatch.setattr(daemon, "ORCHESTRATOR_INSTANCES_DIR", tmp_path / "instances")
+    monkeypatch.setattr(daemon, "ORCHESTRATOR_WORKTREES_DIR", tmp_path / "worktrees")
+    checklist_source = tmp_path / "source_checklist.json"
+    checklist_source.write_text(json.dumps({"deliverables": [{"deliverable": "stonecore"}]}), encoding="utf-8")
+
+    args = daemon.build_parser().parse_args(["--instance", "Stone Core", "--checklist", str(checklist_source), "status"])
+    daemon.apply_instance_paths(args)
+
+    assert args.instance_id == "stone-core"
+    assert args.instance_dir == tmp_path / "instances" / "stone-core"
+    assert args.state == args.instance_dir / "daemon_state.json"
+    assert args.lock == args.instance_dir / "daemon.lock"
+    assert args.pid == args.instance_dir / "daemon.pid"
+    assert args.stop_file == args.instance_dir / "daemon.stop"
+    assert args.log == args.instance_dir / "daemon.log"
+    assert args.runs_dir == args.instance_dir / "runs"
+    assert args.checklist == args.instance_dir / "master_checklist.json"
+    assert args.worktree_path == tmp_path / "worktrees" / "stone-core"
+    assert json.loads(args.checklist.read_text(encoding="utf-8"))["deliverables"][0]["deliverable"] == "stonecore"
+
+    checklist_source.write_text(json.dumps({"deliverables": [{"deliverable": "overwritten"}]}), encoding="utf-8")
+    second_args = daemon.build_parser().parse_args(["--instance", "Stone Core", "--checklist", str(checklist_source), "status"])
+    daemon.apply_instance_paths(second_args)
+
+    assert json.loads(second_args.checklist.read_text(encoding="utf-8"))["deliverables"][0]["deliverable"] == "stonecore"
+
+
+def test_orchestrator_daemon_legacy_paths_are_preserved():
+    args = daemon.build_parser().parse_args(["status"])
+    daemon.apply_instance_paths(args)
+
+    assert args.instance_id == daemon.LEGACY_INSTANCE_ID
+    assert args.state == daemon.DEFAULT_STATE_PATH
+    assert args.lock == daemon.DEFAULT_LOCK_PATH
+    assert args.pid == daemon.DEFAULT_PID_PATH
+    assert args.stop_file == daemon.DEFAULT_STOP_PATH
+    assert args.log == daemon.DEFAULT_LOG_PATH
+    assert args.runs_dir == daemon.DEFAULT_RUNS_DIR
+
+
+def test_orchestrator_daemon_two_instances_are_isolated(tmp_path, monkeypatch):
+    monkeypatch.setattr(daemon, "ORCHESTRATOR_INSTANCES_DIR", tmp_path / "instances")
+    monkeypatch.setattr(daemon, "ORCHESTRATOR_WORKTREES_DIR", tmp_path / "worktrees")
+
+    first = daemon.build_parser().parse_args(["--instance", "stonecore", "status"])
+    second = daemon.build_parser().parse_args(["--instance", "bwd", "status"])
+    daemon.apply_instance_paths(first)
+    daemon.apply_instance_paths(second)
+
+    assert first.state != second.state
+    assert first.lock != second.lock
+    assert first.pid != second.pid
+    assert first.stop_file != second.stop_file
+    assert first.log != second.log
+    assert first.runs_dir != second.runs_dir
+    assert first.checklist != second.checklist
+    assert first.worktree_path != second.worktree_path
+    assert daemon.instance_branch(first.instance_id) == "orchestrator/stonecore"
+    assert daemon.instance_branch(second.instance_id) == "orchestrator/bwd"
+
+
+def test_orchestrator_daemon_start_uses_new_module_and_compat_pixi_alias(tmp_path, monkeypatch):
+    monkeypatch.setattr(daemon, "ORCHESTRATOR_INSTANCES_DIR", tmp_path / "instances")
+    monkeypatch.setattr(daemon, "ORCHESTRATOR_WORKTREES_DIR", tmp_path / "worktrees")
+    captured = {}
+
+    class FakeProcess:
+        pid = 12345
+
+    def fake_popen(command, **kwargs):
+        captured["command"] = command
+        captured["kwargs"] = kwargs
+        return FakeProcess()
+
+    monkeypatch.setattr(daemon.subprocess, "Popen", fake_popen)
+    args = daemon.build_parser().parse_args(["--instance", "stonecore", "start"])
+    daemon.apply_instance_paths(args)
+
+    assert daemon.start_daemon(args) == 0
+    assert captured["command"][:3] == [sys.executable, "-m", "tools.bot_ml.orchestrator_daemon"]
+    assert captured["command"][3:5] == ["--instance", "stonecore"]
+    assert (args.pid).read_text(encoding="utf-8") == "12345"
+    pixi_tasks = Path("pixi.toml").read_text(encoding="utf-8")
+    assert 'orchestrator-daemon = "python -m tools.bot_ml.orchestrator_daemon"' in pixi_tasks
+    assert 'bot-autonomy-daemon = "python -m tools.bot_ml.orchestrator_daemon"' in pixi_tasks
+
+
+def test_orchestrator_daemon_named_run_uses_instance_worktree(tmp_path, monkeypatch):
+    monkeypatch.setattr(daemon, "ORCHESTRATOR_INSTANCES_DIR", tmp_path / "instances")
+    monkeypatch.setattr(daemon, "ORCHESTRATOR_WORKTREES_DIR", tmp_path / "worktrees")
+    config_path = tmp_path / "daemon_config.json"
+    worktree = tmp_path / "worktrees" / "stonecore"
+    calls = []
+
+    def fake_ensure_instance_worktree(repo, instance_id):
+        assert repo == daemon.REPO_ROOT
+        assert instance_id == "stonecore"
+        worktree.mkdir(parents=True)
+        return worktree
+
+    def fake_run_one_cycle(state, config, state_path):
+        calls.append((state, config, state_path))
+        return {"done": True, "status": "complete"}
+
+    monkeypatch.setattr(daemon, "ensure_instance_worktree", fake_ensure_instance_worktree)
+    monkeypatch.setattr(daemon, "run_one_cycle", fake_run_one_cycle)
+    args = daemon.build_parser().parse_args(["--instance", "stonecore", "--config", str(config_path), "run", "--once"])
+    daemon.apply_instance_paths(args)
+
+    assert daemon.run_daemon(args) == 0
+    assert calls[0][1]["repo"] == str(worktree)
+    assert calls[0][1]["runs_dir"] == str(tmp_path / "instances" / "stonecore" / "runs")
+    state = json.loads(args.state.read_text(encoding="utf-8"))
+    assert state["schema"] == "orchestrator_daemon_state_v1"
+    assert state["instance_id"] == "stonecore"
+    assert state["worktree_path"] == str(worktree)
+
+
+def test_orchestrator_daemon_instances_payload_summarizes_known_instances(tmp_path, monkeypatch):
+    monkeypatch.setattr(daemon, "AUTO_BOTS_DIR", tmp_path / "legacy")
+    monkeypatch.setattr(daemon, "ORCHESTRATOR_INSTANCES_DIR", tmp_path / "instances")
+    monkeypatch.setattr(daemon, "ORCHESTRATOR_WORKTREES_DIR", tmp_path / "worktrees")
+    legacy_state = tmp_path / "legacy" / "daemon_state.json"
+    named_state = tmp_path / "instances" / "stonecore" / "daemon_state.json"
+    legacy_state.parent.mkdir(parents=True)
+    named_state.parent.mkdir(parents=True)
+    legacy_state.write_text(json.dumps({"status": "running", "cycle_id": 3, "prompt_file": "legacy.md"}), encoding="utf-8")
+    named_state.write_text(
+        json.dumps(
+            {
+                "status": "complete",
+                "cycle_id": 7,
+                "prompt_file": "stonecore.md",
+                "latest_orchestrator_result": {"status": "complete"},
+            }
+        ),
+        encoding="utf-8",
+    )
+    (tmp_path / "instances" / "stonecore" / "daemon.lock").write_text("123", encoding="utf-8")
+
+    payload = daemon.instances_payload(daemon.build_parser().parse_args(["instances"]))
+
+    assert payload["schema"] == "orchestrator_daemon_instances_v1"
+    rows = {row["instance_id"]: row for row in payload["instances"]}
+    assert rows["legacy"]["status"] == "running"
+    assert rows["legacy"]["cycle_id"] == 3
+    assert rows["stonecore"]["status"] == "complete"
+    assert rows["stonecore"]["lock_exists"] is True
+    assert rows["stonecore"]["worktree_path"] == str(tmp_path / "worktrees" / "stonecore")
+
+
+def test_bot_autonomy_daemon_compat_import_uses_orchestrator_daemon():
+    from tools.bot_ml import bot_autonomy_daemon as compat_daemon
+
+    assert compat_daemon.codex_command is daemon.codex_command
+
+
 def test_bot_autonomy_daemon_copies_prompt_snapshot_and_prompts_orchestrator(tmp_path, monkeypatch):
     prompt_file = tmp_path / "goal.md"
     prompt_file.write_text("Original user goal: validate Stonecore.", encoding="utf-8")
@@ -3129,8 +3288,8 @@ def test_bot_autonomy_daemon_copies_prompt_snapshot_and_prompts_orchestrator(tmp
             "last_message_path": last_message,
         }
 
-    monkeypatch.setattr("tools.bot_ml.bot_autonomy_daemon.load_checklist", lambda path=None: {"deliverables": []})
-    monkeypatch.setattr("tools.bot_ml.bot_autonomy_daemon.run_codex_role", fake_run_codex_role)
+    monkeypatch.setattr("tools.bot_ml.orchestrator_daemon.load_checklist", lambda path=None: {"deliverables": []})
+    monkeypatch.setattr("tools.bot_ml.orchestrator_daemon.run_codex_role", fake_run_codex_role)
 
     result = run_one_cycle(
         state,
@@ -3153,6 +3312,10 @@ def test_bot_autonomy_daemon_copies_prompt_snapshot_and_prompts_orchestrator(tmp
     assert "Original user goal: validate Stonecore." in calls[0]["prompt"]
     assert "Previous run artifacts" in calls[0]["prompt"]
     assert "Checklist summary" in calls[0]["prompt"]
+    assert "Worktree cleanup requirement" in calls[0]["prompt"]
+    assert "Commit useful finished changes" in calls[0]["prompt"]
+    assert "Discard only changes you made in this pass" in calls[0]["prompt"]
+    assert "Starting git status snapshot" in calls[0]["prompt"]
 
 
 def test_bot_autonomy_daemon_complete_result_marks_goal_complete(tmp_path, monkeypatch):
@@ -3173,8 +3336,8 @@ def test_bot_autonomy_daemon_complete_result_marks_goal_complete(tmp_path, monke
             "last_message_path": last_message,
         }
 
-    monkeypatch.setattr("tools.bot_ml.bot_autonomy_daemon.load_checklist", lambda path=None: {"deliverables": []})
-    monkeypatch.setattr("tools.bot_ml.bot_autonomy_daemon.run_codex_role", fake_run_codex_role)
+    monkeypatch.setattr("tools.bot_ml.orchestrator_daemon.load_checklist", lambda path=None: {"deliverables": []})
+    monkeypatch.setattr("tools.bot_ml.orchestrator_daemon.run_codex_role", fake_run_codex_role)
 
     result = run_one_cycle(
         state,
@@ -3215,9 +3378,9 @@ def test_bot_autonomy_daemon_continue_does_not_run_deprecated_validation(tmp_pat
     def fail_validation(*args, **kwargs):
         raise AssertionError("daemon must not run validation commands")
 
-    monkeypatch.setattr("tools.bot_ml.bot_autonomy_daemon.load_checklist", lambda path=None: {"deliverables": []})
-    monkeypatch.setattr("tools.bot_ml.bot_autonomy_daemon.run_codex_role", fake_run_codex_role)
-    monkeypatch.setattr("tools.bot_ml.bot_autonomy_daemon.run_validation_cycle", fail_validation)
+    monkeypatch.setattr("tools.bot_ml.orchestrator_daemon.load_checklist", lambda path=None: {"deliverables": []})
+    monkeypatch.setattr("tools.bot_ml.orchestrator_daemon.run_codex_role", fake_run_codex_role)
+    monkeypatch.setattr("tools.bot_ml.orchestrator_daemon.run_validation_cycle", fail_validation)
 
     result = run_one_cycle(
         state,
@@ -3250,8 +3413,8 @@ def test_bot_autonomy_daemon_non_rate_orchestrator_failure_is_recorded(tmp_path,
             "last_message_path": tmp_path / "orchestrator.last_message.md",
         }
 
-    monkeypatch.setattr("tools.bot_ml.bot_autonomy_daemon.load_checklist", lambda path=None: {"deliverables": []})
-    monkeypatch.setattr("tools.bot_ml.bot_autonomy_daemon.run_codex_role", fake_run_codex_role)
+    monkeypatch.setattr("tools.bot_ml.orchestrator_daemon.load_checklist", lambda path=None: {"deliverables": []})
+    monkeypatch.setattr("tools.bot_ml.orchestrator_daemon.run_codex_role", fake_run_codex_role)
 
     result = run_one_cycle(
         state,
