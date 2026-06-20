@@ -1891,6 +1891,69 @@ def test_validation_run_status_accepts_boss_kill_evidence_counter(tmp_path):
     assert report_row["evidence_source"] == "segment_report"
 
 
+def test_validation_run_status_accepts_live_segment_with_route_node_drift(tmp_path):
+    live_root = tmp_path / "live_validation_scenarios"
+    report_root = tmp_path / "scenario_reports"
+    plan = {
+        "scenarios": [
+            {
+                "scenario_id": "stonecore_5n",
+                "instance": "The Stonecore",
+                "difficulty": "normal_5man",
+                "scenario_report_shell": "pixi run bot-live-scenario-reports --scenario-id stonecore_5n",
+                "segments": [
+                    {
+                        "segment_id": "02_corborus",
+                        "route_node_id": "current_corborus_route",
+                        "kind": "boss",
+                        "label": "Corborus",
+                        "mechanic_profile": "corborus",
+                        "executable": True,
+                        "live_output_dir": str(live_root / "stonecore_5n" / "02_corborus"),
+                        "live_validate_shell": "pixi run bot-live-validate --validation-segment-id 02_corborus",
+                    }
+                ],
+            }
+        ]
+    }
+    report = live_root / "stonecore_5n" / "02_corborus" / "report.json"
+    report.parent.mkdir(parents=True)
+    report.write_text(
+        json.dumps(
+            {
+                "schema": "bot_live_validation_report_v1",
+                "returncode": 0,
+                "timed_out": False,
+                "validation_context": {
+                    "scenario_id": "stonecore_5n",
+                    "segment_id": "02_corborus",
+                    "route_node_id": "old_corborus_route",
+                    "route_kind": "boss",
+                    "mechanic_profile": "corborus",
+                },
+                "summary": {"boss_kills": 1},
+            }
+        ),
+        encoding="utf-8",
+    )
+    report_root.mkdir()
+    (report_root / "stonecore_5n.json").write_text(
+        json.dumps({"scenario_id": "stonecore_5n", "clear_complete": False, "complete_segment_coverage": True}),
+        encoding="utf-8",
+    )
+
+    status = build_validation_run_status(plan, report_root)
+    stonecore = status["scenarios"][0]
+    report_row = stonecore["segment_reports"][0]
+
+    assert stonecore["present_segments"] == ["02_corborus"]
+    assert stonecore["invalid_segments"] == []
+    assert report_row["validation_context_matches"] is True
+    assert report_row["warnings"] == ["route_node_id_drift"]
+    assert report_row["invalid_reasons"] == []
+    assert stonecore["next_commands"] == ["pixi run bot-live-scenario-reports --scenario-id stonecore_5n"]
+
+
 def test_validation_run_status_accepts_trash_segment_evidence(tmp_path):
     live_root = tmp_path / "live_validation_scenarios"
     report_root = tmp_path / "scenario_reports"
@@ -2114,6 +2177,91 @@ def test_validation_run_status_accepts_scenario_segment_result_for_noncanonical_
     assert bwd["invalid_segments"] == []
     assert report_row["evidence_source"] == "scenario_segment_result"
     assert report_row["report"] == str(good_report)
+
+
+def test_validation_run_status_accepts_scenario_segment_result_with_route_node_drift(tmp_path):
+    live_root = tmp_path / "live_validation_scenarios"
+    report_root = tmp_path / "scenario_reports"
+    plan = {
+        "scenarios": [
+            {
+                "scenario_id": "blackwing_descent_10n",
+                "instance": "Blackwing Descent",
+                "difficulty": "normal_10man",
+                "scenario_report_shell": "pixi run bot-live-scenario-reports --scenario-id blackwing_descent_10n",
+                "segments": [
+                    {
+                        "segment_id": "02_magmaw",
+                        "route_node_id": "current_magmaw_route",
+                        "kind": "boss",
+                        "label": "Magmaw",
+                        "mechanic_profile": "tank_swap_adds_raid_aoe",
+                        "required_evidence": ["pulls"],
+                        "executable": True,
+                        "live_output_dir": str(live_root / "blackwing_descent_10n" / "02_magmaw"),
+                        "live_validate_shell": "pixi run bot-live-validate --validation-segment-id 02_magmaw",
+                    }
+                ],
+            }
+        ]
+    }
+    stale_report = live_root / "blackwing_descent_10n" / "02_magmaw" / "report.json"
+    stale_report.parent.mkdir(parents=True)
+    stale_report.write_text(
+        json.dumps(
+            {
+                "schema": "bot_live_validation_report_v1",
+                "returncode": 0,
+                "timed_out": False,
+                "validation_context": {
+                    "scenario_id": "blackwing_descent_10n",
+                    "segment_id": "02_magmaw",
+                    "route_node_id": "old_magmaw_route",
+                    "route_kind": "boss",
+                    "mechanic_profile": "tank_swap_adds_raid_aoe",
+                },
+                "failure_reason": "missing_required_evidence",
+            }
+        ),
+        encoding="utf-8",
+    )
+    report_root.mkdir()
+    (report_root / "blackwing_descent_10n.json").write_text(
+        json.dumps(
+            {
+                "scenario_id": "blackwing_descent_10n",
+                "clear_complete": False,
+                "complete_segment_coverage": True,
+                "segment_results": [
+                    {
+                        "segment_id": "02_magmaw",
+                        "route_node_id": "old_magmaw_route",
+                        "route_label": "Magmaw",
+                        "route_kind": "boss",
+                        "mechanic_profile": "tank_swap_adds_raid_aoe",
+                        "raid_boss_kills": 1,
+                        "failure_labels": [],
+                        "failure_reason": "",
+                        "required_evidence": ["pulls"],
+                        "evidence_counts": {"pulls": 1},
+                        "source_live_report": str(stale_report),
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    status = build_validation_run_status(plan, report_root)
+    bwd = status["scenarios"][0]
+    report_row = bwd["segment_reports"][0]
+
+    assert bwd["present_segments"] == ["02_magmaw"]
+    assert bwd["invalid_segments"] == []
+    assert report_row["evidence_source"] == "scenario_segment_result"
+    assert report_row["warnings"] == ["route_node_id_drift"]
+    assert report_row["invalid_reasons"] == []
+    assert bwd["next_commands"] == ["pixi run bot-live-scenario-reports --scenario-id blackwing_descent_10n"]
 
 
 def test_validation_run_status_rejects_open_world_kills_as_dungeon_boss_evidence(tmp_path):

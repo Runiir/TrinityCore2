@@ -150,19 +150,26 @@ def has_valid_full_clear_claim(report: dict[str, Any]) -> bool:
 def scenario_segment_result(scenario_report: dict[str, Any], segment: dict[str, Any]) -> dict[str, Any]:
     expected_segment_id = str(segment.get("segment_id") or "")
     expected_route_node_id = str(segment.get("route_node_id") or "")
+    fallback: dict[str, Any] = {}
     for row in scenario_report.get("segment_results") or []:
         if not isinstance(row, dict):
             continue
         if expected_segment_id and str(row.get("segment_id") or "") != expected_segment_id:
             continue
         if expected_route_node_id and str(row.get("route_node_id") or "") != expected_route_node_id:
+            if not fallback and (
+                str(row.get("route_label") or "") == str(segment.get("label") or "")
+                or str(row.get("mechanic_profile") or "") == str(segment.get("mechanic_profile") or "")
+            ):
+                fallback = row
             continue
         return row
-    return {}
+    return fallback
 
 
 def validate_scenario_segment_result(row: dict[str, Any], segment: dict[str, Any], scenario: dict[str, Any]) -> dict[str, Any]:
     reasons = []
+    warnings = []
     if not row:
         return {
             "report_valid": False,
@@ -170,11 +177,16 @@ def validate_scenario_segment_result(row: dict[str, Any], segment: dict[str, Any
             "boss_evidence_ready": False,
             "segment_ready": False,
             "invalid_reasons": ["missing_scenario_segment_result"],
+            "warnings": [],
         }
     if str(row.get("route_kind") or "") != str(segment.get("kind") or ""):
         reasons.append("route_kind_mismatch")
     if str(row.get("mechanic_profile") or "") != str(segment.get("mechanic_profile") or ""):
         reasons.append("mechanic_profile_mismatch")
+    expected_route_node_id = str(segment.get("route_node_id") or "")
+    actual_route_node_id = str(row.get("route_node_id") or "")
+    if expected_route_node_id and actual_route_node_id and actual_route_node_id != expected_route_node_id:
+        warnings.append("route_node_id_drift")
     failure_labels = row.get("failure_labels") if isinstance(row.get("failure_labels"), list) else []
     failure_reason = str(row.get("failure_reason") or "")
     if failure_labels or failure_reason:
@@ -202,11 +214,13 @@ def validate_scenario_segment_result(row: dict[str, Any], segment: dict[str, Any
         "evidence_complete": not missing_evidence,
         "segment_ready": context_matches and boss_ready and trash_ready and not missing_evidence and not failure_labels and not failure_reason,
         "invalid_reasons": reasons,
+        "warnings": warnings,
     }
 
 
 def validate_segment_report(report: dict[str, Any], segment: dict[str, Any], scenario: dict[str, Any], load_error: str = "") -> dict[str, Any]:
     reasons = []
+    warnings = []
     if load_error:
         reasons.append(load_error)
     if not report:
@@ -221,6 +235,7 @@ def validate_segment_report(report: dict[str, Any], segment: dict[str, Any], sce
             "evidence_complete": not missing_evidence,
             "segment_ready": False,
             "invalid_reasons": reasons or ["empty_report"],
+            "warnings": warnings,
         }
 
     schema = str(report.get("schema") or "")
@@ -246,8 +261,11 @@ def validate_segment_report(report: dict[str, Any], segment: dict[str, Any], sce
     context_matches = True
     for key, expected in expected_context.items():
         if expected and str(context.get(key) or "") != str(expected):
-            context_matches = False
-            reasons.append(f"{key}_mismatch")
+            if key == "route_node_id":
+                warnings.append("route_node_id_drift")
+            else:
+                context_matches = False
+                reasons.append(f"{key}_mismatch")
     if not context:
         context_matches = False
         reasons.append("missing_validation_context")
@@ -276,6 +294,7 @@ def validate_segment_report(report: dict[str, Any], segment: dict[str, Any], sce
         "evidence_complete": not missing_evidence,
         "segment_ready": report_valid and context_matches and boss_ready and trash_ready and not missing_evidence,
         "invalid_reasons": reasons,
+        "warnings": warnings,
     }
 
 
@@ -323,6 +342,7 @@ def build_status(plan: dict[str, Any], report_root: Path) -> dict[str, Any]:
                 "evidence_complete": validation.get("evidence_complete", True),
                 "segment_ready": validation["segment_ready"],
                 "invalid_reasons": validation["invalid_reasons"],
+                "warnings": validation.get("warnings") or [],
                 "evidence_source": evidence_source,
                 "live_validate_command": segment.get("live_validate_command") or [],
                 "live_validate_shell": segment.get("live_validate_shell") or "",

@@ -489,8 +489,8 @@ stages:
       size: 5304
     - path: tools/bot_ml/run_live_bot_validation.py
       hash: md5
-      md5: f95c75578a09ebc679aa908f8adf1779
-      size: 87857
+      md5: 52fbbca4ce63566a786707b33fa5bf8e
+      size: 87979
     outs:
     - path: dataset/live_validation_scenario_reports_built
       hash: md5
@@ -566,8 +566,8 @@ stages:
       size: 75261
     - path: tools/bot_ml/build_validation_run_status.py
       hash: md5
-      md5: 564b622d73bae5aafe508692419ceaa4
-      size: 19679
+      md5: af41da7af304599102044181234e817b
+      size: 20614
     - path: tools/bot_ml/common.py
       hash: md5
       md5: 8b4aaef751f98fac4ad24680793a813d
@@ -575,8 +575,8 @@ stages:
     outs:
     - path: dataset/validation_run_status
       hash: md5
-      md5: 1a3c6f7140f28749091bc9f112c71b76.dir
-      size: 85095
+      md5: 6adfae29a03a15edc8570b1245f0021c.dir
+      size: 79987
       nfiles: 1
   quest_profession_report:
     cmd: python -m tools.bot_ml.build_quest_profession_reports --planner-dir 
