@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import datetime as dt
 import json
 import os
@@ -39,10 +40,37 @@ RATE_LIMIT_RE = re.compile(
 THREAD_KEYS = ("thread_id", "session_id", "conversation_id", "id")
 LEGACY_INSTANCE_ID = "legacy"
 
+DEFAULT_WORKER_MODEL_TIERS: dict[str, dict[str, str]] = {
+    "simple": {"model": "gpt-5.3-codex-spark", "reasoning_effort": "low"},
+    "medium": {"model": "gpt-5.5", "reasoning_effort": "medium"},
+    "large": {"model": "gpt-5.5", "reasoning_effort": "high"},
+}
+
+TASK_COMPLEXITY_ALIASES = {
+    "simple": "simple",
+    "small": "simple",
+    "trivial": "simple",
+    "quick": "simple",
+    "scoped": "simple",
+    "low": "simple",
+    "medium": "medium",
+    "moderate": "medium",
+    "normal": "medium",
+    "standard": "medium",
+    "default": "medium",
+    "large": "large",
+    "complex": "large",
+    "hard": "large",
+    "broad": "large",
+    "high": "large",
+    "deep": "large",
+}
+
 
 DEFAULT_CONFIG: dict[str, Any] = {
     "orchestrator_model": "gpt-5.5",
     "worker_model": "gpt-5.5",
+    "worker_model_tiers": copy.deepcopy(DEFAULT_WORKER_MODEL_TIERS),
     "reviewer_model": "gpt-5.5",
     "orchestrator_reasoning_effort": "high",
     "worker_reasoning_effort": "medium",
@@ -76,11 +104,11 @@ def read_json(path: Path, default: Any) -> Any:
 def load_config(path: Path = DEFAULT_CONFIG_PATH) -> dict[str, Any]:
     if not path.exists():
         write_json(path, DEFAULT_CONFIG)
-        return dict(DEFAULT_CONFIG)
+        return copy.deepcopy(DEFAULT_CONFIG)
     payload = read_json(path, {})
     if not isinstance(payload, dict):
         payload = {}
-    config = dict(DEFAULT_CONFIG)
+    config = copy.deepcopy(DEFAULT_CONFIG)
     config.update(payload)
     return config
 
@@ -256,6 +284,7 @@ def initial_state() -> dict[str, Any]:
         "prompt_snapshot_path": "",
         "cycle_start_git_status": "",
         "cycle_start_git_status_path": "",
+        "merge_back": {},
         "goal_complete": False,
         "updated_at_unix": now_unix(),
     }
@@ -443,6 +472,45 @@ def role_reasoning_effort(role: str, config: dict[str, Any]) -> str:
     return str(DEFAULT_CONFIG.get(f"{role}_reasoning_effort") or "")
 
 
+def normalize_task_complexity(value: Any, default: str = "medium") -> str:
+    normalized_default = TASK_COMPLEXITY_ALIASES.get(str(default or "medium").strip().lower(), "medium")
+    text = str(value or "").strip().lower()
+    return TASK_COMPLEXITY_ALIASES.get(text, normalized_default)
+
+
+def worker_model_fallback(config: dict[str, Any]) -> dict[str, str]:
+    return {
+        "model": str(config.get("worker_model") or DEFAULT_CONFIG["worker_model"]),
+        "reasoning_effort": str(config.get("worker_reasoning_effort") or DEFAULT_CONFIG["worker_reasoning_effort"]),
+    }
+
+
+def select_worker_model_tier(config: dict[str, Any], complexity: Any) -> dict[str, str]:
+    normalized = normalize_task_complexity(complexity)
+    fallback = worker_model_fallback(config)
+    tiers = config.get("worker_model_tiers")
+    if not isinstance(tiers, dict):
+        return {"complexity": normalized, "source": "fallback", **fallback}
+    tier = tiers.get(normalized)
+    if not isinstance(tier, dict):
+        return {"complexity": normalized, "source": "fallback", **fallback}
+    model = str(tier.get("model") or "").strip()
+    reasoning_effort = str(tier.get("reasoning_effort") or tier.get("reasoning") or "").strip()
+    if not model or not reasoning_effort:
+        return {"complexity": normalized, "source": "fallback", **fallback}
+    return {"complexity": normalized, "source": "worker_model_tiers", "model": model, "reasoning_effort": reasoning_effort}
+
+
+def worker_model_tier_table(config: dict[str, Any]) -> list[dict[str, str]]:
+    return [select_worker_model_tier(config, complexity) for complexity in ("simple", "medium", "large")]
+
+
+def render_worker_codex_command_template(config: dict[str, Any], repo: Path = REPO_ROOT, complexity: Any = "medium") -> str:
+    tier = select_worker_model_tier(config, complexity)
+    reasoning_args = f' -c model_reasoning_effort="{tier["reasoning_effort"]}"' if tier["reasoning_effort"] else ""
+    return f'codex exec --json -m {tier["model"]}{reasoning_args} --sandbox {config.get("sandbox", DEFAULT_CONFIG["sandbox"])} -C {repo} -o <last_message_path> -'
+
+
 def codex_command(
     *,
     role: str,
@@ -611,7 +679,20 @@ def previous_run_artifacts(state: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def orchestrator_prompt(checklist: dict[str, Any], state: dict[str, Any], user_prompt: str = "") -> str:
+def orchestrator_prompt(
+    checklist: dict[str, Any],
+    state: dict[str, Any],
+    user_prompt: str = "",
+    config: dict[str, Any] | None = None,
+) -> str:
+    prompt_config = copy.deepcopy(DEFAULT_CONFIG)
+    if config:
+        prompt_config.update(config)
+    worker_tiers = worker_model_tier_table(prompt_config)
+    worker_repo = resolve_path(prompt_config.get("repo"), REPO_ROOT) or REPO_ROOT
+    worker_commands = {
+        row["complexity"]: render_worker_codex_command_template(prompt_config, worker_repo, row["complexity"]) for row in worker_tiers
+    }
     return (
         "You are the prompt-driven bot autonomy orchestrator for this TrinityCore repo. "
         "Run one durable orchestration pass toward the user's original goal.\n\n"
@@ -627,6 +708,15 @@ def orchestrator_prompt(checklist: dict[str, Any], state: dict[str, Any], user_p
         "- Commit useful finished changes with a focused message, including progress/checklist updates and useful experiment configs/code.\n"
         "- Discard only changes you made in this pass that are wrong or failed; do not discard pre-existing user changes from the starting status snapshot unless the user explicitly asked you to.\n"
         "- This requirement applies whether the pass succeeds, fails, or needs follow-up; leave the worktree clean except for protected pre-existing changes.\n\n"
+        "Worker model routing requirement:\n"
+        "- Before creating or resuming a worker Codex session, assign the worker task complexity as simple, medium, or large.\n"
+        "- Use simple for near-instant scoped edits, inspections, or test updates with limited blast radius.\n"
+        "- Use medium for normal implementation tasks that require several files, local tests, or moderate debugging.\n"
+        "- Use large for broad, ambiguous, high-risk, or long-running investigations and changes.\n"
+        "- Launch worker sessions with the selected tier's model and reasoning effort; the daemon will not launch workers for you.\n"
+        "- When a worker tier affects the work, record the chosen complexity, model, and reasoning effort in progress summaries.\n\n"
+        f"Worker model tier table:\n{json.dumps(worker_tiers, indent=2, sort_keys=True)}\n\n"
+        f"Worker Codex command templates:\n{json.dumps(worker_commands, indent=2, sort_keys=True)}\n\n"
         "At the end of this pass, return a final JSON object and no other trailing text. "
         "The JSON contract is: status (continue, complete, or needs_followup), summary, "
         "progress_artifacts (array of paths), and optional next_prompt.\n\n"
@@ -685,6 +775,11 @@ def run_shell(command: str, cwd: Path, timeout_sec: int | None = None) -> dict[s
     return {"command": command, "returncode": completed.returncode, "stdout": completed.stdout, "stderr": completed.stderr}
 
 
+def run_command(command: list[str], cwd: Path, timeout_sec: int | None = None) -> dict[str, Any]:
+    completed = subprocess.run(command, cwd=cwd, text=True, capture_output=True, timeout=timeout_sec, check=False)
+    return {"command": command, "returncode": completed.returncode, "stdout": completed.stdout, "stderr": completed.stderr}
+
+
 def git_status_porcelain(repo: Path) -> str:
     completed = subprocess.run(
         ["git", "status", "--short"],
@@ -696,6 +791,314 @@ def git_status_porcelain(repo: Path) -> str:
     if completed.returncode != 0:
         return f"<git status failed: {completed.stderr.strip()}>"
     return completed.stdout.strip()
+
+
+def git_current_branch(repo: Path) -> str:
+    result = run_command(["git", "branch", "--show-current"], repo)
+    return result["stdout"].strip() if result["returncode"] == 0 else ""
+
+
+def git_rev_parse(repo: Path, ref: str = "HEAD") -> str:
+    result = run_command(["git", "rev-parse", "--verify", ref], repo)
+    return result["stdout"].strip() if result["returncode"] == 0 else ""
+
+
+def git_commit_count(repo: Path, revision_range: str) -> int:
+    result = run_command(["git", "rev-list", "--count", revision_range], repo)
+    if result["returncode"] != 0:
+        return -1
+    try:
+        return int(result["stdout"].strip() or "0")
+    except ValueError:
+        return -1
+
+
+def git_conflict_files(repo: Path) -> list[str]:
+    result = run_command(["git", "diff", "--name-only", "--diff-filter=U"], repo)
+    if result["returncode"] != 0:
+        return []
+    return [line for line in result["stdout"].splitlines() if line.strip()]
+
+
+def git_unstaged_or_untracked(repo: Path) -> str:
+    unstaged = run_command(["git", "diff", "--name-only"], repo)
+    untracked = run_command(["git", "ls-files", "--others", "--exclude-standard"], repo)
+    rows: list[str] = []
+    if unstaged["returncode"] == 0:
+        rows.extend(line for line in unstaged["stdout"].splitlines() if line.strip())
+    if untracked["returncode"] == 0:
+        rows.extend(line for line in untracked["stdout"].splitlines() if line.strip())
+    return "\n".join(rows)
+
+
+def git_merge_in_progress(repo: Path) -> bool:
+    result = run_command(["git", "rev-parse", "--git-path", "MERGE_HEAD"], repo)
+    if result["returncode"] != 0:
+        return False
+    return (repo / result["stdout"].strip()).exists()
+
+
+def git_abort_merge(repo: Path) -> dict[str, Any]:
+    if not git_merge_in_progress(repo):
+        return {"command": ["git", "merge", "--abort"], "returncode": 0, "stdout": "", "stderr": ""}
+    return run_command(["git", "merge", "--abort"], repo)
+
+
+def merge_back_report_path(args: argparse.Namespace) -> Path:
+    return Path(getattr(args, "instance_dir", AUTO_BOTS_DIR)) / "merge_back_failure.json"
+
+
+def save_merge_back_state(state: dict[str, Any], state_path: Path, report: dict[str, Any], args: argparse.Namespace | None = None) -> None:
+    state["merge_back"] = report
+    save_state(state, state_path)
+    if args is not None and report.get("status") == "failed":
+        failure_path = merge_back_report_path(args)
+        report["failure_report_path"] = str(failure_path)
+        write_json(failure_path, report)
+        state["merge_back"] = report
+        save_state(state, state_path)
+
+
+def run_merge_back_verification(repo: Path, config: dict[str, Any]) -> dict[str, Any]:
+    timeout_sec = int(config["emergency_timeout_sec"])
+    steps = [
+        run_shell(str(config.get("test_command") or "pixi run pytest -q"), repo, None),
+        run_shell(str(config.get("dvc_status_command") or "pixi run dvc status"), repo, timeout_sec),
+    ]
+    return {
+        "schema": "orchestrator_merge_back_verification_v1",
+        "ok": all(step["returncode"] == 0 for step in steps),
+        "steps": steps,
+    }
+
+
+def merge_back_preflight_prompt(status: str, target_branch: str, instance_branch_name: str) -> str:
+    return (
+        "The main workspace is dirty before an orchestrator instance can be merged back.\n\n"
+        f"Target branch: {target_branch}\n"
+        f"Instance branch waiting to merge: {instance_branch_name}\n\n"
+        "Inspect the current uncommitted main-workspace changes. Commit coherent useful work with a focused message. "
+        "If the changes cannot be safely classified, do not discard them; leave a concise explanation in your final response. "
+        "The required final state for success is `git status --short` clean in the main workspace.\n\n"
+        f"Starting status:\n{status or '<clean>'}\n"
+    )
+
+
+def merge_back_conflict_prompt(conflict_files: list[str], target_branch: str, instance_branch_name: str) -> str:
+    return (
+        "Resolve the orchestrator merge-back conflicts in the main workspace.\n\n"
+        f"Target branch: {target_branch}\n"
+        f"Instance branch: {instance_branch_name}\n"
+        f"Conflict files:\n{json.dumps(conflict_files, indent=2)}\n\n"
+        "Resolve conflicts without discarding either side's useful work. Stage the resolved files, but do not commit the merge; "
+        "the daemon will run verification and create the merge commit. If the conflicts cannot be resolved safely, stop and explain why."
+    )
+
+
+def run_merge_back_codex_pass(
+    *,
+    role: str,
+    prompt: str,
+    repo: Path,
+    config: dict[str, Any],
+    state: dict[str, Any],
+    state_path: Path,
+) -> dict[str, Any]:
+    return run_codex_role(
+        role=role,
+        prompt=prompt,
+        model=str(config["orchestrator_model"]),
+        repo=repo,
+        sandbox=str(config["sandbox"]),
+        cycle_id=max(1, int(state.get("cycle_id") or 0) + 1),
+        state=state,
+        config=config,
+        state_path=state_path,
+    )
+
+
+def finalize_named_instance_merge_back(args: argparse.Namespace, config: dict[str, Any]) -> dict[str, Any] | None:
+    if not getattr(args, "instance", None):
+        return None
+    state = load_state(args.state)
+    if state.get("status") not in {"stopped", "complete"}:
+        return None
+    existing = state.get("merge_back") if isinstance(state.get("merge_back"), dict) else {}
+    if existing.get("status") in {"merged", "skipped", "failed"}:
+        return existing
+
+    instance_id = str(getattr(args, "instance_id", ""))
+    instance_branch_name = instance_branch(instance_id)
+    worktree = Path(getattr(args, "worktree_path", "") or state.get("worktree_path", "")).resolve()
+    report: dict[str, Any] = {
+        "schema": "orchestrator_merge_back_v1",
+        "status": "running",
+        "target_repo": str(REPO_ROOT),
+        "target_branch": "",
+        "instance_id": instance_id,
+        "instance_branch": instance_branch_name,
+        "instance_worktree": str(worktree),
+        "merge_commit": "",
+        "preflight_commit": "",
+        "verification": {},
+        "conflict_files": [],
+        "failure_reason": "",
+        "started_at_unix": now_unix(),
+    }
+    save_merge_back_state(state, args.state, report)
+
+    try:
+        instance_status = git_status_porcelain(worktree)
+        if instance_status:
+            report.update({"status": "failed", "failure_reason": "instance_worktree_dirty", "instance_git_status": instance_status})
+            save_merge_back_state(state, args.state, report, args)
+            return report
+
+        target_branch = git_current_branch(REPO_ROOT)
+        report["target_branch"] = target_branch
+        if not target_branch:
+            report.update({"status": "failed", "failure_reason": "target_branch_detached_or_unknown"})
+            save_merge_back_state(state, args.state, report, args)
+            return report
+        if not git_branch_exists(REPO_ROOT, instance_branch_name):
+            report.update({"status": "failed", "failure_reason": "instance_branch_missing"})
+            save_merge_back_state(state, args.state, report, args)
+            return report
+
+        unique_commits = git_commit_count(REPO_ROOT, f"{target_branch}..{instance_branch_name}")
+        report["unique_commit_count"] = unique_commits
+        if unique_commits < 0:
+            report.update({"status": "failed", "failure_reason": "unique_commit_count_failed"})
+            save_merge_back_state(state, args.state, report, args)
+            return report
+        if unique_commits == 0:
+            report.update({"status": "skipped", "failure_reason": "", "reason": "instance_branch_already_reachable"})
+            save_merge_back_state(state, args.state, report)
+            return report
+
+        main_status = git_status_porcelain(REPO_ROOT)
+        if main_status:
+            before_head = git_rev_parse(REPO_ROOT)
+            preflight = run_merge_back_codex_pass(
+                role="merge_back_preflight",
+                prompt=merge_back_preflight_prompt(main_status, target_branch, instance_branch_name),
+                repo=REPO_ROOT,
+                config=config,
+                state=state,
+                state_path=args.state,
+            )
+            report["preflight"] = {
+                "returncode": preflight.get("returncode"),
+                "jsonl_path": str(preflight.get("jsonl_path", "")),
+                "stderr_path": str(preflight.get("stderr_path", "")),
+                "last_message_path": str(preflight.get("last_message_path", "")),
+            }
+            after_head = git_rev_parse(REPO_ROOT)
+            if after_head and after_head != before_head:
+                report["preflight_commit"] = after_head
+            main_status = git_status_porcelain(REPO_ROOT)
+            if preflight.get("returncode") != 0 or main_status:
+                report.update({"status": "failed", "failure_reason": "main_workspace_dirty_after_preflight", "main_git_status": main_status})
+                save_merge_back_state(state, args.state, report, args)
+                return report
+
+        merge = run_command(["git", "merge", "--no-ff", "--no-commit", instance_branch_name], REPO_ROOT)
+        report["merge_command"] = merge
+        if merge["returncode"] != 0:
+            conflicts = git_conflict_files(REPO_ROOT)
+            report["conflict_files"] = conflicts
+            if not conflicts:
+                git_abort_merge(REPO_ROOT)
+                report.update({"status": "failed", "failure_reason": "merge_failed_without_conflicts"})
+                save_merge_back_state(state, args.state, report, args)
+                return report
+            resolver = run_merge_back_codex_pass(
+                role="merge_back_conflict_resolver",
+                prompt=merge_back_conflict_prompt(conflicts, target_branch, instance_branch_name),
+                repo=REPO_ROOT,
+                config=config,
+                state=state,
+                state_path=args.state,
+            )
+            report["resolver"] = {
+                "returncode": resolver.get("returncode"),
+                "jsonl_path": str(resolver.get("jsonl_path", "")),
+                "stderr_path": str(resolver.get("stderr_path", "")),
+                "last_message_path": str(resolver.get("last_message_path", "")),
+            }
+            unresolved = git_conflict_files(REPO_ROOT)
+            if resolver.get("returncode") != 0 or unresolved:
+                abort = git_abort_merge(REPO_ROOT)
+                report.update(
+                    {
+                        "status": "failed",
+                        "failure_reason": "conflict_resolver_failed",
+                        "unresolved_conflict_files": unresolved,
+                        "abort": abort,
+                    }
+                )
+                save_merge_back_state(state, args.state, report, args)
+                return report
+
+            unstaged_or_untracked = git_unstaged_or_untracked(REPO_ROOT)
+            if unstaged_or_untracked:
+                abort = git_abort_merge(REPO_ROOT)
+                report.update(
+                    {
+                        "status": "failed",
+                        "failure_reason": "conflict_resolver_left_unstaged_or_untracked_changes",
+                        "unstaged_or_untracked": unstaged_or_untracked,
+                        "abort": abort,
+                    }
+                )
+                save_merge_back_state(state, args.state, report, args)
+                return report
+
+        verification = run_merge_back_verification(REPO_ROOT, config)
+        report["verification"] = verification
+        if not verification["ok"]:
+            abort = git_abort_merge(REPO_ROOT)
+            report.update({"status": "failed", "failure_reason": "verification_failed", "abort": abort})
+            save_merge_back_state(state, args.state, report, args)
+            return report
+
+        if git_merge_in_progress(REPO_ROOT):
+            unstaged_or_untracked = git_unstaged_or_untracked(REPO_ROOT)
+            if unstaged_or_untracked:
+                abort = git_abort_merge(REPO_ROOT)
+                report.update(
+                    {
+                        "status": "failed",
+                        "failure_reason": "verification_left_unstaged_or_untracked_changes",
+                        "unstaged_or_untracked": unstaged_or_untracked,
+                        "abort": abort,
+                    }
+                )
+                save_merge_back_state(state, args.state, report, args)
+                return report
+            commit = run_command(["git", "commit", "-m", f"Merge orchestrator instance {instance_id}"], REPO_ROOT)
+            report["commit_command"] = commit
+            if commit["returncode"] != 0:
+                abort = git_abort_merge(REPO_ROOT)
+                report.update({"status": "failed", "failure_reason": "merge_commit_failed", "abort": abort})
+                save_merge_back_state(state, args.state, report, args)
+                return report
+
+        final_status = git_status_porcelain(REPO_ROOT)
+        if final_status:
+            report.update({"status": "failed", "failure_reason": "main_workspace_dirty_after_merge", "main_git_status": final_status})
+            save_merge_back_state(state, args.state, report, args)
+            return report
+
+        report.update({"status": "merged", "merge_commit": git_rev_parse(REPO_ROOT), "completed_at_unix": now_unix()})
+        save_merge_back_state(state, args.state, report)
+        return report
+    except Exception as exc:  # pragma: no cover - defensive state reporting for daemon cleanup
+        if git_merge_in_progress(REPO_ROOT):
+            report["abort"] = git_abort_merge(REPO_ROOT)
+        report.update({"status": "failed", "failure_reason": "merge_back_exception", "exception": repr(exc)})
+        save_merge_back_state(state, args.state, report, args)
+        return report
 
 
 def next_lane_id(state: dict[str, Any], action: dict[str, Any]) -> str:
@@ -888,7 +1291,7 @@ def run_one_cycle(state: dict[str, Any], config: dict[str, Any], state_path: Pat
 
     orchestrator = run_codex_role(
         role="orchestrator",
-        prompt=orchestrator_prompt(checklist, state, user_prompt),
+        prompt=orchestrator_prompt(checklist, state, user_prompt, config),
         model=str(config["orchestrator_model"]),
         repo=repo,
         sandbox=str(config["sandbox"]),
@@ -992,19 +1395,23 @@ def run_daemon(args: argparse.Namespace) -> int:
     update_state_instance_metadata(state, args, config)
     save_state(state, args.state)
     acquire_lock(args.lock, args.pid)
+    clean_exit = False
     try:
         while True:
             state = load_state(args.state)
             update_state_instance_metadata(state, args, config)
             if state.get("status") == "paused_rate_limit":
                 if not sleep_until_resume(state, args.stop_file, args.state):
+                    clean_exit = True
                     return 0
             if args.stop_file.exists():
                 state.update({"status": "stopped", "phase": "stop_requested"})
                 save_state(state, args.state)
+                clean_exit = True
                 return 0
             result = run_one_cycle(state, config, args.state)
             if result.get("done"):
+                clean_exit = True
                 return 0
             if result.get("rate_limit"):
                 continue
@@ -1014,10 +1421,15 @@ def run_daemon(args: argparse.Namespace) -> int:
                 state.update({"status": "running", "phase": error})
                 save_state(state, args.state)
             if args.once or (args.max_cycles and int(state.get("cycle_id") or 0) >= args.max_cycles):
+                clean_exit = True
                 return 0
             time.sleep(max(1, int(config["heartbeat_sec"])))
     finally:
-        release_lock(args.lock, args.pid)
+        try:
+            if clean_exit and getattr(args, "instance", None):
+                finalize_named_instance_merge_back(args, config)
+        finally:
+            release_lock(args.lock, args.pid)
 
 
 def start_daemon(args: argparse.Namespace) -> int:
@@ -1071,6 +1483,7 @@ def status_payload(args: argparse.Namespace) -> dict[str, Any]:
     update_state_instance_metadata(state, args, {"runs_dir": str(getattr(args, "runs_dir", DEFAULT_RUNS_DIR))})
     checklist = load_checklist(args.checklist)
     rate_limit = state.get("rate_limit") if isinstance(state.get("rate_limit"), dict) else {}
+    merge_back = state.get("merge_back") if isinstance(state.get("merge_back"), dict) else {}
     return {
         "schema": "orchestrator_daemon_status_v1",
         "instance_id": str(getattr(args, "instance_id", LEGACY_INSTANCE_ID)),
@@ -1079,6 +1492,7 @@ def status_payload(args: argparse.Namespace) -> dict[str, Any]:
         "lock_exists": args.lock.exists(),
         "pid": args.pid.read_text(encoding="utf-8").strip() if args.pid.exists() else "",
         "rate_limit_sleep_remaining_sec": max(0, int(rate_limit.get("resume_at_unix") or 0) - now_unix()),
+        "merge_back": merge_back,
         "stop_requested": args.stop_file.exists(),
     }
 
@@ -1101,6 +1515,7 @@ def instance_status_row(instance_id: str, root: Path, worktree_path: Path | str 
         "prompt_file": state.get("prompt_file", ""),
         "cycle_id": state.get("cycle_id", 0),
         "latest_orchestrator_result": state.get("latest_orchestrator_result", {}),
+        "merge_back": state.get("merge_back", {}) if isinstance(state.get("merge_back"), dict) else {},
         "log_path": str(log_path),
         "checklist_path": str(checklist_path),
         "worktree_path": str(worktree_path or state.get("worktree_path", "")),

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -3114,6 +3115,81 @@ def test_bot_autonomy_daemon_default_models_and_reasoning_effort():
     assert daemon.DEFAULT_CONFIG["orchestrator_reasoning_effort"] == "high"
     assert daemon.DEFAULT_CONFIG["worker_reasoning_effort"] == "medium"
     assert daemon.DEFAULT_CONFIG["reviewer_reasoning_effort"] == "high"
+    assert daemon.DEFAULT_CONFIG["worker_model_tiers"] == {
+        "simple": {"model": "gpt-5.3-codex-spark", "reasoning_effort": "low"},
+        "medium": {"model": "gpt-5.5", "reasoning_effort": "medium"},
+        "large": {"model": "gpt-5.5", "reasoning_effort": "high"},
+    }
+
+
+def test_orchestrator_daemon_normalizes_worker_task_complexity_aliases():
+    assert daemon.normalize_task_complexity("quick") == "simple"
+    assert daemon.normalize_task_complexity("standard") == "medium"
+    assert daemon.normalize_task_complexity("complex") == "large"
+    assert daemon.normalize_task_complexity("unknown") == "medium"
+    assert daemon.normalize_task_complexity(None, default="large") == "large"
+
+
+def test_orchestrator_daemon_selects_simple_worker_model_tier():
+    tier = daemon.select_worker_model_tier(daemon.DEFAULT_CONFIG, "simple")
+
+    assert tier == {
+        "complexity": "simple",
+        "source": "worker_model_tiers",
+        "model": "gpt-5.3-codex-spark",
+        "reasoning_effort": "low",
+    }
+
+
+def test_orchestrator_daemon_selects_large_worker_model_tier():
+    tier = daemon.select_worker_model_tier(daemon.DEFAULT_CONFIG, "large")
+
+    assert tier == {
+        "complexity": "large",
+        "source": "worker_model_tiers",
+        "model": "gpt-5.5",
+        "reasoning_effort": "high",
+    }
+
+
+def test_orchestrator_daemon_missing_worker_model_tier_falls_back_to_legacy_keys():
+    config = dict(daemon.DEFAULT_CONFIG)
+    config["worker_model"] = "legacy-worker"
+    config["worker_reasoning_effort"] = "legacy-effort"
+    config["worker_model_tiers"] = {"simple": {"model": "spark", "reasoning_effort": "low"}}
+
+    tier = daemon.select_worker_model_tier(config, "large")
+
+    assert tier == {
+        "complexity": "large",
+        "source": "fallback",
+        "model": "legacy-worker",
+        "reasoning_effort": "legacy-effort",
+    }
+
+
+def test_orchestrator_daemon_invalid_worker_model_tier_falls_back_to_legacy_keys():
+    config = dict(daemon.DEFAULT_CONFIG)
+    config["worker_model"] = "legacy-worker"
+    config["worker_reasoning_effort"] = "legacy-effort"
+    config["worker_model_tiers"] = {"medium": {"model": "", "reasoning_effort": ""}}
+
+    tier = daemon.select_worker_model_tier(config, "unknown")
+
+    assert tier == {
+        "complexity": "medium",
+        "source": "fallback",
+        "model": "legacy-worker",
+        "reasoning_effort": "legacy-effort",
+    }
+
+
+def test_orchestrator_daemon_worker_command_template_uses_selected_tier(tmp_path):
+    command = daemon.render_worker_codex_command_template(daemon.DEFAULT_CONFIG, tmp_path, "simple")
+
+    assert "codex exec --json -m gpt-5.3-codex-spark" in command
+    assert 'model_reasoning_effort="low"' in command
+    assert f"-C {tmp_path}" in command
 
 
 def test_bot_autonomy_daemon_codex_command_includes_reasoning_effort(tmp_path):
@@ -3398,6 +3474,266 @@ def test_orchestrator_daemon_named_run_uses_instance_worktree(tmp_path, monkeypa
     assert state["worktree_path"] == str(worktree)
 
 
+def init_merge_back_repo(tmp_path: Path) -> Path:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    subprocess.run(["git", "init", "-b", "main"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=repo, check=True)
+    subprocess.run(["git", "config", "user.name", "Test User"], cwd=repo, check=True)
+    (repo / "base.txt").write_text("base\n", encoding="utf-8")
+    subprocess.run(["git", "add", "base.txt"], cwd=repo, check=True)
+    subprocess.run(["git", "commit", "-m", "initial"], cwd=repo, check=True, capture_output=True)
+    return repo
+
+
+def merge_back_args(tmp_path: Path, repo: Path, worktree: Path, instance_id: str = "stone") -> object:
+    instance_root = tmp_path / "instances" / instance_id
+    instance_root.mkdir(parents=True, exist_ok=True)
+    state_path = instance_root / "daemon_state.json"
+    state_path.write_text(
+        json.dumps(
+            {
+                "schema": "orchestrator_daemon_state_v1",
+                "status": "complete",
+                "instance_id": instance_id,
+                "instance_dir": str(instance_root),
+                "worktree_path": str(worktree),
+            }
+        ),
+        encoding="utf-8",
+    )
+    args = daemon.build_parser().parse_args(
+        [
+            "--instance",
+            instance_id,
+            "--state",
+            str(state_path),
+            "--checklist",
+            str(instance_root / "master_checklist.json"),
+            "status",
+        ]
+    )
+    args.instance_id = instance_id
+    args.instance_dir = instance_root
+    args.state = state_path
+    args.lock = instance_root / "daemon.lock"
+    args.pid = instance_root / "daemon.pid"
+    args.stop_file = instance_root / "daemon.stop"
+    args.log = instance_root / "daemon.log"
+    args.runs_dir = instance_root / "runs"
+    args.worktree_path = worktree
+    return args
+
+
+def merge_back_config(tmp_path: Path, repo: Path) -> dict[str, object]:
+    config = dict(daemon.DEFAULT_CONFIG)
+    config["repo"] = str(repo)
+    config["runs_dir"] = str(tmp_path / "runs")
+    return config
+
+
+def add_instance_worktree(repo: Path, tmp_path: Path, instance_id: str = "stone") -> Path:
+    branch = daemon.instance_branch(instance_id)
+    subprocess.run(["git", "branch", branch], cwd=repo, check=True)
+    worktree = tmp_path / "worktrees" / instance_id
+    subprocess.run(["git", "worktree", "add", str(worktree), branch], cwd=repo, check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=worktree, check=True)
+    subprocess.run(["git", "config", "user.name", "Test User"], cwd=worktree, check=True)
+    return worktree
+
+
+def commit_file(repo: Path, relative: str, text: str, message: str) -> None:
+    path = repo / relative
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+    subprocess.run(["git", "add", relative], cwd=repo, check=True)
+    subprocess.run(["git", "commit", "-m", message], cwd=repo, check=True, capture_output=True)
+
+
+def ok_merge_verification(repo: Path, config: dict[str, object]) -> dict[str, object]:
+    return {"schema": "orchestrator_merge_back_verification_v1", "ok": True, "steps": []}
+
+
+def test_orchestrator_daemon_legacy_run_does_not_attempt_merge_back(tmp_path, monkeypatch):
+    config_path = tmp_path / "daemon_config.json"
+    state_path = tmp_path / "daemon_state.json"
+    lock_path = tmp_path / "daemon.lock"
+    pid_path = tmp_path / "daemon.pid"
+    stop_path = tmp_path / "daemon.stop"
+
+    def fake_run_one_cycle(state, config, state_path_arg):
+        state.update({"status": "complete", "phase": "complete"})
+        daemon.save_state(state, state_path_arg)
+        return {"done": True, "status": "complete"}
+
+    def fail_finalize(args, config):
+        raise AssertionError("legacy runs must not attempt merge-back")
+
+    monkeypatch.setattr(daemon, "run_one_cycle", fake_run_one_cycle)
+    monkeypatch.setattr(daemon, "finalize_named_instance_merge_back", fail_finalize)
+    args = daemon.build_parser().parse_args(
+        [
+            "--config",
+            str(config_path),
+            "--state",
+            str(state_path),
+            "--lock",
+            str(lock_path),
+            "--pid",
+            str(pid_path),
+            "--stop-file",
+            str(stop_path),
+            "run",
+            "--once",
+        ]
+    )
+    daemon.apply_instance_paths(args)
+
+    assert daemon.run_daemon(args) == 0
+    assert not lock_path.exists()
+
+
+def test_orchestrator_daemon_named_clean_stop_triggers_merge_back(tmp_path, monkeypatch):
+    config_path = tmp_path / "daemon_config.json"
+    called = []
+
+    def fake_run_one_cycle(state, config, state_path):
+        state.update({"status": "complete", "phase": "complete"})
+        daemon.save_state(state, state_path)
+        return {"done": True, "status": "complete"}
+
+    def fake_finalize(args, config):
+        called.append((args.instance_id, config["repo"]))
+        return {"status": "skipped"}
+
+    monkeypatch.setattr(daemon, "ORCHESTRATOR_INSTANCES_DIR", tmp_path / "instances")
+    monkeypatch.setattr(daemon, "ORCHESTRATOR_WORKTREES_DIR", tmp_path / "worktrees")
+    monkeypatch.setattr(daemon, "ensure_instance_worktree", lambda repo, instance_id: tmp_path / "worktrees" / instance_id)
+    monkeypatch.setattr(daemon, "run_one_cycle", fake_run_one_cycle)
+    monkeypatch.setattr(daemon, "finalize_named_instance_merge_back", fake_finalize)
+    args = daemon.build_parser().parse_args(["--instance", "stone", "--config", str(config_path), "run", "--once"])
+    daemon.apply_instance_paths(args)
+
+    assert daemon.run_daemon(args) == 0
+    assert called == [("stone", str(tmp_path / "worktrees" / "stone"))]
+
+
+def test_orchestrator_daemon_dirty_instance_worktree_blocks_merge_back(tmp_path, monkeypatch):
+    repo = init_merge_back_repo(tmp_path)
+    worktree = add_instance_worktree(repo, tmp_path)
+    (worktree / "dirty.txt").write_text("uncommitted\n", encoding="utf-8")
+    args = merge_back_args(tmp_path, repo, worktree)
+    monkeypatch.setattr(daemon, "REPO_ROOT", repo)
+
+    report = daemon.finalize_named_instance_merge_back(args, merge_back_config(tmp_path, repo))
+
+    assert report["status"] == "failed"
+    assert report["failure_reason"] == "instance_worktree_dirty"
+
+
+def test_orchestrator_daemon_empty_instance_branch_skips_merge_back(tmp_path, monkeypatch):
+    repo = init_merge_back_repo(tmp_path)
+    worktree = add_instance_worktree(repo, tmp_path)
+    args = merge_back_args(tmp_path, repo, worktree)
+    monkeypatch.setattr(daemon, "REPO_ROOT", repo)
+
+    report = daemon.finalize_named_instance_merge_back(args, merge_back_config(tmp_path, repo))
+
+    assert report["status"] == "skipped"
+    assert report["reason"] == "instance_branch_already_reachable"
+
+
+def test_orchestrator_daemon_clean_merge_back_records_no_ff_commit(tmp_path, monkeypatch):
+    repo = init_merge_back_repo(tmp_path)
+    worktree = add_instance_worktree(repo, tmp_path)
+    commit_file(worktree, "instance.txt", "instance\n", "instance change")
+    args = merge_back_args(tmp_path, repo, worktree)
+    monkeypatch.setattr(daemon, "REPO_ROOT", repo)
+    monkeypatch.setattr(daemon, "run_merge_back_verification", ok_merge_verification)
+
+    report = daemon.finalize_named_instance_merge_back(args, merge_back_config(tmp_path, repo))
+
+    assert report["status"] == "merged"
+    assert report["merge_commit"]
+    subject = subprocess.run(["git", "log", "-1", "--format=%s"], cwd=repo, text=True, capture_output=True, check=True).stdout.strip()
+    assert subject == "Merge orchestrator instance stone"
+    parents = subprocess.run(["git", "rev-list", "--parents", "-n", "1", "HEAD"], cwd=repo, text=True, capture_output=True, check=True).stdout.split()
+    assert len(parents) == 3
+    assert (repo / "instance.txt").read_text(encoding="utf-8") == "instance\n"
+
+
+def test_orchestrator_daemon_dirty_main_invokes_codex_preflight_before_merge(tmp_path, monkeypatch):
+    repo = init_merge_back_repo(tmp_path)
+    worktree = add_instance_worktree(repo, tmp_path)
+    commit_file(worktree, "instance.txt", "instance\n", "instance change")
+    (repo / "main.txt").write_text("main dirty\n", encoding="utf-8")
+    args = merge_back_args(tmp_path, repo, worktree)
+    calls = []
+
+    def fake_codex_pass(**kwargs):
+        calls.append(kwargs["role"])
+        subprocess.run(["git", "add", "main.txt"], cwd=repo, check=True)
+        subprocess.run(["git", "commit", "-m", "preflight main changes"], cwd=repo, check=True, capture_output=True)
+        return {"returncode": 0, "jsonl_path": "", "stderr_path": "", "last_message_path": ""}
+
+    monkeypatch.setattr(daemon, "REPO_ROOT", repo)
+    monkeypatch.setattr(daemon, "run_merge_back_codex_pass", fake_codex_pass)
+    monkeypatch.setattr(daemon, "run_merge_back_verification", ok_merge_verification)
+
+    report = daemon.finalize_named_instance_merge_back(args, merge_back_config(tmp_path, repo))
+
+    assert calls == ["merge_back_preflight"]
+    assert report["status"] == "merged"
+    assert report["preflight_commit"]
+
+
+def test_orchestrator_daemon_merge_conflict_invokes_codex_resolver(tmp_path, monkeypatch):
+    repo = init_merge_back_repo(tmp_path)
+    worktree = add_instance_worktree(repo, tmp_path)
+    commit_file(worktree, "base.txt", "base from instance\n", "instance edit")
+    commit_file(repo, "base.txt", "base from main\n", "main edit")
+    args = merge_back_args(tmp_path, repo, worktree)
+    calls = []
+
+    def fake_codex_pass(**kwargs):
+        calls.append(kwargs["role"])
+        (repo / "base.txt").write_text("base from main\nbase from instance\n", encoding="utf-8")
+        subprocess.run(["git", "add", "base.txt"], cwd=repo, check=True)
+        return {"returncode": 0, "jsonl_path": "", "stderr_path": "", "last_message_path": ""}
+
+    monkeypatch.setattr(daemon, "REPO_ROOT", repo)
+    monkeypatch.setattr(daemon, "run_merge_back_codex_pass", fake_codex_pass)
+    monkeypatch.setattr(daemon, "run_merge_back_verification", ok_merge_verification)
+
+    report = daemon.finalize_named_instance_merge_back(args, merge_back_config(tmp_path, repo))
+
+    assert calls == ["merge_back_conflict_resolver"]
+    assert report["status"] == "merged"
+    assert report["conflict_files"] == ["base.txt"]
+    assert (repo / "base.txt").read_text(encoding="utf-8") == "base from main\nbase from instance\n"
+
+
+def test_orchestrator_daemon_resolver_failure_aborts_merge_and_leaves_main_clean(tmp_path, monkeypatch):
+    repo = init_merge_back_repo(tmp_path)
+    worktree = add_instance_worktree(repo, tmp_path)
+    commit_file(worktree, "base.txt", "base from instance\n", "instance edit")
+    commit_file(repo, "base.txt", "base from main\n", "main edit")
+    args = merge_back_args(tmp_path, repo, worktree)
+
+    def fake_codex_pass(**kwargs):
+        return {"returncode": 1, "jsonl_path": "", "stderr_path": "", "last_message_path": ""}
+
+    monkeypatch.setattr(daemon, "REPO_ROOT", repo)
+    monkeypatch.setattr(daemon, "run_merge_back_codex_pass", fake_codex_pass)
+
+    report = daemon.finalize_named_instance_merge_back(args, merge_back_config(tmp_path, repo))
+
+    assert report["status"] == "failed"
+    assert report["failure_reason"] == "conflict_resolver_failed"
+    assert daemon.git_status_porcelain(repo) == ""
+    assert (repo / "base.txt").read_text(encoding="utf-8") == "base from main\n"
+
+
 def test_orchestrator_daemon_instances_payload_summarizes_known_instances(tmp_path, monkeypatch):
     monkeypatch.setattr(daemon, "AUTO_BOTS_DIR", tmp_path / "legacy")
     monkeypatch.setattr(daemon, "ORCHESTRATOR_INSTANCES_DIR", tmp_path / "instances")
@@ -3414,6 +3750,7 @@ def test_orchestrator_daemon_instances_payload_summarizes_known_instances(tmp_pa
                 "cycle_id": 7,
                 "prompt_file": "stonecore.md",
                 "latest_orchestrator_result": {"status": "complete"},
+                "merge_back": {"status": "merged", "merge_commit": "abc123"},
             }
         ),
         encoding="utf-8",
@@ -3429,6 +3766,20 @@ def test_orchestrator_daemon_instances_payload_summarizes_known_instances(tmp_pa
     assert rows["stonecore"]["status"] == "complete"
     assert rows["stonecore"]["lock_exists"] is True
     assert rows["stonecore"]["worktree_path"] == str(tmp_path / "worktrees" / "stonecore")
+    assert rows["stonecore"]["merge_back"]["status"] == "merged"
+
+
+def test_orchestrator_daemon_status_payload_exposes_merge_back(tmp_path, monkeypatch):
+    monkeypatch.setattr(daemon, "ORCHESTRATOR_INSTANCES_DIR", tmp_path / "instances")
+    monkeypatch.setattr(daemon, "ORCHESTRATOR_WORKTREES_DIR", tmp_path / "worktrees")
+    args = daemon.build_parser().parse_args(["--instance", "stone", "status"])
+    daemon.apply_instance_paths(args)
+    args.state.parent.mkdir(parents=True, exist_ok=True)
+    args.state.write_text(json.dumps({"status": "complete", "merge_back": {"status": "merged"}}), encoding="utf-8")
+
+    payload = daemon.status_payload(args)
+
+    assert payload["merge_back"]["status"] == "merged"
 
 
 def test_bot_autonomy_daemon_compat_import_uses_orchestrator_daemon():
@@ -3487,6 +3838,13 @@ def test_bot_autonomy_daemon_copies_prompt_snapshot_and_prompts_orchestrator(tmp
     assert "Commit useful finished changes" in calls[0]["prompt"]
     assert "Discard only changes you made in this pass" in calls[0]["prompt"]
     assert "Starting git status snapshot" in calls[0]["prompt"]
+    assert "Worker model routing requirement" in calls[0]["prompt"]
+    assert "assign the worker task complexity as simple, medium, or large" in calls[0]["prompt"]
+    assert "Worker model tier table" in calls[0]["prompt"]
+    assert "gpt-5.3-codex-spark" in calls[0]["prompt"]
+    assert "gpt-5.5" in calls[0]["prompt"]
+    assert "model_reasoning_effort" in calls[0]["prompt"]
+    assert "record the chosen complexity, model, and reasoning effort" in calls[0]["prompt"]
 
 
 def test_bot_autonomy_daemon_complete_result_marks_goal_complete(tmp_path, monkeypatch):
