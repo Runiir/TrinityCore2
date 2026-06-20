@@ -418,6 +418,10 @@ def test_quest_first_portfolio_routing_surface():
     assert "ValidationRouteActivationSpawnGroupId" in mgr_header
     assert "ValidationRouteActivationActionEntry" in mgr_header
     assert "ValidationRouteActivationActionId" in mgr_header
+    assert "route_loop_exhausted_after_progress" in mgr
+    assert "markValidationRouteTerminalAfterProgress" in mgr
+    assert "RecordEvent(state, bot, \"dungeon_trash_cleared\"" in mgr
+    assert "RecordDecision(state, bot, \"normal_dungeon_trash\", \"validation_route_complete\"" in mgr
     assert "BotWorld.ValidationRoute.OpenerTargetEntry" in mgr
     assert "BotWorld.ValidationRoute.OpenerSummonEntry" in mgr
     assert "BotWorld.ValidationRoute.ActivationSpawnGroupId" in mgr
@@ -641,6 +645,9 @@ def test_botauto_diagnosis_and_trace_surface():
         "target_rejected",
         "dead_recovery",
         "idle_no_candidate",
+        "validation_route_terminal",
+        "advance_validation_route_segment",
+        "inspect_dungeon_trash_cleared_evidence",
         "repeated_decision_loop",
         "idle_loop_guardrail",
         "target_churn_loop",
