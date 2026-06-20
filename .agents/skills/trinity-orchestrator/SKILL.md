@@ -1,3 +1,8 @@
+---
+name: trinity-orchestrator
+description: Repo-scoped orchestration workflow for TrinityCore bot autonomy and experiment work, including worker task complexity routing and model tier selection.
+---
+
 # Trinity Orchestrator
 
 Use this skill when acting as the prompt-driven orchestrator for bot autonomy or experiment work in this TrinityCore repository.

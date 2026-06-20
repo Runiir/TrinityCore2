@@ -1679,6 +1679,7 @@ def test_validation_run_status_reports_missing_segments_and_next_commands(tmp_pa
                 "scenario_id": "blackwing_descent_10n",
                 "instance": "Blackwing Descent",
                 "difficulty": "normal_10man",
+                "live_validate_shell": "pixi run bot-live-validate --validation-scenario-id blackwing_descent_10n",
                 "scenario_report_shell": "pixi run bot-live-scenario-reports --scenario-id blackwing_descent_10n",
                 "segments": [
                     {
@@ -1756,7 +1757,14 @@ def test_validation_run_status_reports_missing_segments_and_next_commands(tmp_pa
     assert bwd["blockers"] == ["missing_segment_live_reports", "incomplete_segment_coverage", "scenario_clear_not_complete"]
     assert bwd["next_commands"][0] == "pixi run bot-live-validate --validation-segment-id 01_entry_trash"
     assert bwd["next_commands"][1] == "pixi run bot-live-validate --validation-segment-id 03_omnotron"
+    assert bwd["next_commands"][2] == "pixi run bot-live-validate --validation-scenario-id blackwing_descent_10n"
     assert bwd["next_commands"][-1].startswith("pixi run bot-live-scenario-reports")
+    assert bwd["validation_next_commands"]["segment_reruns"] == [
+        "pixi run bot-live-validate --validation-segment-id 01_entry_trash",
+        "pixi run bot-live-validate --validation-segment-id 03_omnotron",
+    ]
+    assert bwd["validation_next_commands"]["uninterrupted_full_clear"] == "pixi run bot-live-validate --validation-scenario-id blackwing_descent_10n"
+    assert bwd["validation_next_commands"]["scenario_report_rebuild"].startswith("pixi run bot-live-scenario-reports")
 
 
 def test_validation_run_status_reruns_invalid_existing_segment_reports(tmp_path):
@@ -1768,6 +1776,7 @@ def test_validation_run_status_reruns_invalid_existing_segment_reports(tmp_path)
                 "scenario_id": "stonecore_5n",
                 "instance": "The Stonecore",
                 "difficulty": "normal_5man",
+                "live_validate_shell": "pixi run bot-live-validate --validation-scenario-id stonecore_5n",
                 "scenario_report_shell": "pixi run bot-live-scenario-reports --scenario-id stonecore_5n",
                 "segments": [
                     {
@@ -1822,6 +1831,8 @@ def test_validation_run_status_reruns_invalid_existing_segment_reports(tmp_path)
     assert "segment_id_mismatch" in report_row["invalid_reasons"]
     assert "missing_boss_kill_evidence" in report_row["invalid_reasons"]
     assert stonecore["next_commands"][0] == "pixi run bot-live-validate --validation-segment-id 02_corborus"
+    assert stonecore["next_commands"][1] == "pixi run bot-live-validate --validation-scenario-id stonecore_5n"
+    assert stonecore["validation_next_commands"]["uninterrupted_full_clear"] == "pixi run bot-live-validate --validation-scenario-id stonecore_5n"
 
 
 def test_validation_run_status_accepts_boss_kill_evidence_counter(tmp_path):

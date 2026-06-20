@@ -363,13 +363,22 @@ def build_status(plan: dict[str, Any], report_root: Path) -> dict[str, Any]:
         scenario_report_ready = scenario_report_file.exists()
         full_clear_ready = clear_complete and segment_coverage_ready and (complete_segment_coverage or not segments)
 
-        next_commands = [
+        segment_rerun_commands = [
             row["live_validate_shell"]
             for row in segment_reports
             if not row["segment_ready"] and row["live_validate_shell"]
         ]
+        full_clear_command = ""
+        if not clear_complete and scenario.get("live_validate_shell"):
+            full_clear_command = str(scenario["live_validate_shell"])
+        scenario_report_command = ""
         if (not scenario_report_ready or not full_clear_ready) and scenario.get("scenario_report_shell"):
-            next_commands.append(str(scenario["scenario_report_shell"]))
+            scenario_report_command = str(scenario["scenario_report_shell"])
+
+        next_commands = list(segment_rerun_commands)
+        for command in [full_clear_command, scenario_report_command]:
+            if command and command not in next_commands:
+                next_commands.append(command)
 
         blockers = []
         if missing_segments:
@@ -384,6 +393,10 @@ def build_status(plan: dict[str, Any], report_root: Path) -> dict[str, Any]:
             blockers.append("incomplete_segment_coverage")
         if scenario_report_ready and not clear_complete:
             blockers.append("scenario_clear_not_complete")
+            for blocker in scenario_report.get("clear_complete_blockers") or []:
+                blocker_text = str(blocker or "")
+                if blocker_text and blocker_text not in blockers:
+                    blockers.append(blocker_text)
             if bool(scenario_report.get("clear_complete")):
                 blockers.append("invalid_full_clear_completion_claim")
 
@@ -404,6 +417,12 @@ def build_status(plan: dict[str, Any], report_root: Path) -> dict[str, Any]:
                 "scenario_report_complete_segment_coverage": complete_segment_coverage,
                 "full_clear_ready": full_clear_ready,
                 "blockers": blockers,
+                "validation_next_commands": {
+                    "segment_reruns": segment_rerun_commands,
+                    "uninterrupted_full_clear": full_clear_command,
+                    "scenario_report_rebuild": scenario_report_command,
+                    "ordered": next_commands,
+                },
                 "next_commands": next_commands,
             }
         )
