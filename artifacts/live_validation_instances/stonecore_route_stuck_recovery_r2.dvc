@@ -1,0 +1,6 @@
+outs:
+- md5: 079e3dd21c3dc106bd64e45578b1ee97.dir
+  size: 1240447
+  nfiles: 13
+  hash: md5
+  path: stonecore_route_stuck_recovery_r2

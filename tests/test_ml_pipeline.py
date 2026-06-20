@@ -2481,6 +2481,21 @@ TC> {"duration_minutes":5.0,"decisions":30,"total_kills":0,"quests_completed":0,
     assert "validation_route_stuck_loop" in report["failure_labels"]
 
 
+def test_live_bot_validation_keeps_recovered_route_stuck_as_progress():
+    output = """
+TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":40,"kills":1,"quests_accepted":0,"quest_objective_progress":0,"stuck":13}
+TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"snapshot":{"decision":{"action":"move_to_validation_route_assist_target"},"movement":{"is_moving":false,"distance_moved_since_last_decision":33.9},"recovery":{"last_recovery_mode":"validation_route_stuck_repath","last_recovery_result":"repath_issued"}}}]}
+TC> {"trace_schema_version":1,"selector":"all","bots":[{"bot_guid":1,"entries":[{"action":"trash_action","situation":"normal_dungeon_trash","result":"ok"},{"action":"validation_route_trash_action","situation":"normal_dungeon_trash","result":"ok"},{"action":"mob_killed","situation":"normal_dungeon_trash","result":"ok"},{"action":"stuck_detected","situation":"stuck_detected","result":"validation_route_stuck_safe_memory"},{"action":"validation_route_recovery","situation":"validation_route_recovery","result":"validation_route_stuck_safe_memory"},{"action":"trash_action","situation":"normal_dungeon_trash","result":"ok"},{"action":"validation_route_trash_action","situation":"normal_dungeon_trash","result":"ok"}]}]}
+TC> {"duration_minutes":5.0,"decisions":40,"total_kills":1,"quests_completed":0,"stuck_events":13}
+"""
+    report = live_validation_report(output)
+
+    assert report["evidence"]["kill_evidence"] == 1
+    assert report["evidence"]["unstuck_failures"] == 0
+    assert report["evidence"]["validation_route_actions"] > 0
+    assert "validation_route_stuck_loop" not in report["failure_labels"]
+
+
 def test_live_bot_validation_labels_bot_not_loaded_diagnosis_as_lifecycle_failure():
     output = """
 TC> {"active_bots":2,"target_bots":2,"action":"botauto_status","decisions":20,"kills":0,"quests_accepted":0,"quest_objective_progress":0}
@@ -3473,6 +3488,51 @@ def test_bot_autonomy_daemon_starts_fresh_orchestrator_after_rate_limit_pause(tm
     assert calls[0]["model"] == "gpt-5"
     assert state["rate_limit"] == {}
     assert state["previous_rate_limit"]["thread_id"] == "thread-123"
+
+
+def test_orchestrator_daemon_new_cycle_moves_stale_latest_result_to_previous(tmp_path, monkeypatch):
+    state = initial_state()
+    state.update(
+        {
+            "cycle_id": 8,
+            "latest_orchestrator_result": {
+                "status": "failure",
+                "error": "orchestrator_resume_failed",
+                "returncode": 2,
+            },
+        }
+    )
+    last_message = tmp_path / "last.md"
+
+    def fake_run_codex_role(**_kwargs):
+        last_message.write_text(json.dumps({"status": "continue", "summary": "fresh", "progress_artifacts": []}), encoding="utf-8")
+        return {
+            "rate_limit": None,
+            "returncode": 0,
+            "thread_id": "fresh-thread",
+            "jsonl_path": tmp_path / "orchestrator.jsonl",
+            "stderr_path": tmp_path / "orchestrator.stderr",
+            "last_message_path": last_message,
+        }
+
+    monkeypatch.setattr("tools.bot_ml.orchestrator_daemon.load_checklist", lambda path=None: {"deliverables": []})
+    monkeypatch.setattr("tools.bot_ml.orchestrator_daemon.run_codex_role", fake_run_codex_role)
+
+    result = run_one_cycle(
+        state,
+        {
+            "repo": str(tmp_path),
+            "orchestrator_model": "gpt-5",
+            "sandbox": "danger-full-access",
+            "runs_dir": str(tmp_path / "runs"),
+        },
+        tmp_path / "state.json",
+    )
+
+    assert result == {"done": False, "status": "continue"}
+    assert state["cycle_id"] == 9
+    assert state["previous_orchestrator_result"]["error"] == "orchestrator_resume_failed"
+    assert state["latest_orchestrator_result"]["summary"] == "fresh"
 
 
 def test_bot_autonomy_daemon_prompt_file_precedence(tmp_path):

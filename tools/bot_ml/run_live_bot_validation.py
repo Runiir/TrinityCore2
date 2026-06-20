@@ -926,10 +926,17 @@ def validation_failure_labels(
     unstuck_failures = int(evidence.get("unstuck_failures") or 0)
     repath_events = int(evidence.get("repath_events") or 0)
     action_counts = evidence.get("action_counts") if isinstance(evidence.get("action_counts"), dict) else {}
+    result_counts = evidence.get("result_counts") if isinstance(evidence.get("result_counts"), dict) else {}
     repeated_deaths = int(action_counts.get("repeated_death") or 0)
     deaths = max(int(evidence.get("deaths") or 0), int(action_counts.get("death") or 0))
     bot_not_loaded_diagnoses = int(evidence.get("bot_not_loaded_diagnoses") or 0)
     error_diagnoses = int(evidence.get("error_diagnoses") or 0)
+    recovered_route_stuck = (
+        action_counts.get("validation_route_recovery", 0) > 0
+        and result_counts.get("validation_route_stuck_safe_memory", 0) > 0
+        and unstuck_failures <= 0
+        and (int(evidence.get("kill_evidence") or 0) > 0 or trash_route_actions > 0 or boss_engagement > 0)
+    )
 
     if bot_not_loaded_diagnoses > 0:
         labels.append("bot_lifecycle_not_loaded")
@@ -951,7 +958,11 @@ def validation_failure_labels(
         labels.append("validation_route_activation_target_absent")
     if route_actions > 0 and boss_kills <= 0 and trash_route_actions <= 0 and force_tank_focus >= 4 and boss_engagement <= 0:
         labels.append("validation_route_assist_focus_loop")
-    if route_actions > 0 and (stuck_events >= max(8, active_bots) or unstuck_failures >= 3 or repath_events >= max(8, active_bots)):
+    if route_actions > 0 and (
+        unstuck_failures >= 3
+        or repath_events >= max(8, active_bots)
+        or (stuck_events >= max(8, active_bots) and not recovered_route_stuck)
+    ):
         labels.append("validation_route_stuck_loop")
     if route_actions > 0 and (repeated_deaths >= 3 or deaths >= max(8, active_bots)):
         labels.append("validation_route_death_loop")

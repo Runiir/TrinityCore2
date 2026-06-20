@@ -280,6 +280,7 @@ def initial_state() -> dict[str, Any]:
         "latest_activity_path": "",
         "active_process": {},
         "latest_orchestrator_result": {},
+        "previous_orchestrator_result": {},
         "last_completed_cycle_id": 0,
         "consecutive_orchestrator_failures": 0,
         "rate_limit": {},
@@ -1185,12 +1186,14 @@ def extract_json_object(text: str) -> dict[str, Any]:
 
 
 def previous_run_artifacts(state: dict[str, Any]) -> dict[str, Any]:
+    latest_result = state.get("latest_orchestrator_result") if isinstance(state.get("latest_orchestrator_result"), dict) else {}
+    previous_result = state.get("previous_orchestrator_result") if isinstance(state.get("previous_orchestrator_result"), dict) else {}
     return {
         "latest_jsonl_path": state.get("latest_jsonl_path", ""),
         "latest_stderr_path": state.get("latest_stderr_path", ""),
         "latest_last_message_path": state.get("latest_last_message_path", ""),
         "latest_activity_path": state.get("latest_activity_path", ""),
-        "latest_orchestrator_result": state.get("latest_orchestrator_result", {}),
+        "latest_orchestrator_result": latest_result or previous_result,
         "latest_report": state.get("latest_report", ""),
         "last_completed_cycle_id": state.get("last_completed_cycle_id", 0),
         "consecutive_orchestrator_failures": state.get("consecutive_orchestrator_failures", 0),
@@ -1696,6 +1699,7 @@ def run_one_cycle(state: dict[str, Any], config: dict[str, Any], state_path: Pat
 
     was_paused_rate_limit = state.get("status") == "paused_rate_limit"
     existing_rate_limit = state.get("rate_limit") if isinstance(state.get("rate_limit"), dict) else {}
+    previous_orchestrator_result = state.get("latest_orchestrator_result") if isinstance(state.get("latest_orchestrator_result"), dict) else {}
     cycle_id = int(state.get("cycle_id") or 0) + 1
     run_dir = run_dir_for_cycle(config, cycle_id)
     run_dir.mkdir(parents=True, exist_ok=True)
@@ -1710,6 +1714,8 @@ def run_one_cycle(state: dict[str, Any], config: dict[str, Any], state_path: Pat
             "goal_complete": False,
             "cycle_start_git_status": start_git_status,
             "cycle_start_git_status_path": str(start_git_status_path),
+            "latest_orchestrator_result": {},
+            "previous_orchestrator_result": previous_orchestrator_result,
         }
     )
     save_state(state, state_path)

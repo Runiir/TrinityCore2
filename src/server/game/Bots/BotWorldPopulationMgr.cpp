@@ -2400,6 +2400,105 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
     {
         ++_metrics.StuckEvents;
         MarkStuckFailure(state, bot);
+        if (_config.ValidationRouteEnable)
+        {
+            uint64 nowMs = NowMs();
+            ++state.RecoveryAttemptCount;
+            state.LastRecoveryMs = nowMs;
+            state.LastRecoveryMode = "validation_route_stuck_repath";
+            state.LastRecoveryResult = "fallback_unavailable";
+
+            bool recovered = false;
+            float recoveryX = bot->GetPositionX();
+            float recoveryY = bot->GetPositionY();
+            float recoveryZ = bot->GetPositionZ();
+            std::string recoveryReason = "validation_route_stuck_repath";
+            Unit* recoveryTarget = nullptr;
+
+            PruneSafePositions(state, nowMs);
+            WorldBotState::SafePosition const* bestSafe = nullptr;
+            float bestSafeScore = std::numeric_limits<float>::max();
+            for (WorldBotState::SafePosition const& safe : state.SafePositions)
+            {
+                if (safe.MapId != bot->GetMapId() || safe.HpPct < 0.35f)
+                    continue;
+
+                float botDistance = bot->GetExactDist(safe.X, safe.Y, safe.Z);
+                if (botDistance < 5.0f)
+                    continue;
+
+                float routeDistance = _config.ValidationRouteMapId == safe.MapId
+                    ? Distance2d(safe.X, safe.Y, _config.ValidationRouteX, _config.ValidationRouteY)
+                    : 500.0f;
+                if (_config.ValidationRouteMapId == safe.MapId && routeDistance > 260.0f)
+                    continue;
+
+                float safeDanger = GetLocalDangerScore(state.Guid.GetCounter(), safe.MapId, safe.X, safe.Y, safe.Z);
+                if (safeDanger >= 3.0f)
+                    continue;
+
+                float score = botDistance + routeDistance * 0.15f + safeDanger * 100.0f - safe.HpPct * 10.0f;
+                if (!bestSafe || score < bestSafeScore)
+                {
+                    bestSafe = &safe;
+                    bestSafeScore = score;
+                }
+            }
+
+            if (bestSafe)
+            {
+                recoveryX = bestSafe->X;
+                recoveryY = bestSafe->Y;
+                recoveryZ = bestSafe->Z;
+                recoveryReason = "validation_route_stuck_safe_memory";
+                state.ValidationRouteAnchorOverrideValid = true;
+                state.ValidationRouteAnchorOverrideUntilMs = nowMs + 45000;
+                state.ValidationRouteAnchorOverrideX = recoveryX;
+                state.ValidationRouteAnchorOverrideY = recoveryY;
+                state.ValidationRouteAnchorOverrideZ = recoveryZ;
+                state.ValidationRouteAnchorOverrideReason = recoveryReason;
+                recovered = true;
+            }
+            else if (Player* anchor = FindDungeonAnchor(bot))
+            {
+                if (anchor != bot && anchor->IsAlive() && anchor->GetMap() == bot->GetMap() && bot->GetExactDist(anchor) > 5.0f)
+                {
+                    recoveryX = anchor->GetPositionX();
+                    recoveryY = anchor->GetPositionY();
+                    recoveryZ = anchor->GetPositionZ();
+                    recoveryReason = "validation_route_stuck_follow_anchor";
+                    recoveryTarget = anchor;
+                    recovered = true;
+                }
+            }
+
+            if (!recovered && _config.ValidationRouteMapId == bot->GetMapId())
+            {
+                float routeDistance = bot->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ);
+                if (routeDistance > 8.0f)
+                {
+                    recoveryX = _config.ValidationRouteX;
+                    recoveryY = _config.ValidationRouteY;
+                    recoveryZ = _config.ValidationRouteZ;
+                    recoveryReason = "validation_route_stuck_route_anchor";
+                    recovered = true;
+                }
+            }
+
+            if (recovered)
+            {
+                MoveBotToPoint(state, bot, recoveryX, recoveryY, recoveryZ);
+                state.StuckTimer = 0;
+                state.LastDecisionHandler = "validation_route_recovery";
+                state.LastRecoveryResult = "repath_issued";
+                std::string raw = BuildRawJson(bot, recoveryTarget);
+                std::string semantic = BuildSemanticJson(bot, recoveryTarget, "validation_route_recovery", &power, stage, chosenActivity.Activity);
+                RecordEvent(state, bot, "stuck_detected", recoveryTarget, recoveryReason.c_str(), raw.c_str(), semantic.c_str(), 1.0f, _metrics.StuckEvents);
+                RecordEvent(state, bot, "validation_route_recovery", recoveryTarget, recoveryReason.c_str(), raw.c_str(), semantic.c_str(), bot->GetExactDist(recoveryX, recoveryY, recoveryZ), _config.ValidationRouteTargetEntry);
+                RecordDecision(state, bot, "validation_route_recovery", "validation_route_recovery", recoveryTarget, raw.c_str(), semantic.c_str(), activityScores, chosenActivity, power, true, false);
+                return;
+            }
+        }
         Position pos = bot->GetFirstCollisionPosition(4.0f, frand(0.0f, 2.0f * float(M_PI)));
         MoveBotToPoint(state, bot, pos.GetPositionX(), pos.GetPositionY(), pos.GetPositionZ());
         state.StuckTimer = 0;
