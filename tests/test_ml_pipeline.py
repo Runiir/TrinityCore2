@@ -2283,6 +2283,21 @@ TC> {"duration_minutes":1.0,"decisions":12,"total_kills":0,"quests_completed":0}
     assert report["failure_labels"] == []
 
 
+def test_live_bot_validation_counts_trace_mob_killed_as_kill_evidence():
+    output = """
+TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":12,"kills":0,"quests_accepted":0,"quest_objective_progress":0}
+TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"snapshot":{"decision":{"action":"validation_route_trash_action"},"movement":{"is_moving":false,"distance_moved_since_last_decision":0}}}]}
+TC> {"trace_schema_version":1,"selector":"all","bots":[{"bot_guid":1,"entries":[{"action":"trash_action","situation":"normal_dungeon_trash","result":"ok"},{"action":"mob_killed","situation":"normal_dungeon_trash","result":"validation_route_recovery"}]}]}
+TC> {"duration_minutes":1.0,"decisions":12,"total_kills":0,"quests_completed":0}
+"""
+    report = live_validation_report(output)
+    gates = {stage["stage"]: stage for stage in report["stages"]}
+
+    assert report["evidence"]["kills"] == 1
+    assert report["evidence"]["kill_evidence"] == 1
+    assert gates["kill_quest"]["passed"] is True
+
+
 def test_live_bot_validation_labels_stuck_heavy_trash_route_as_failure():
     output = """
 TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":30,"kills":0,"quests_accepted":0,"quest_objective_progress":0,"stuck":12}

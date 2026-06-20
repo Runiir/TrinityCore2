@@ -732,7 +732,12 @@ def live_evidence(status: dict[str, Any], diagnosis: dict[str, Any], trace: dict
     quest_progress = max(int(status.get("quest_objective_progress") or 0), int(summary.get("quest_objective_progress") or 0))
     quests_accepted = max(int(status.get("quests_accepted") or 0), int(summary.get("quests_accepted") or 0), quest_acceptance_actions)
     quests_completed = max(int(status.get("quests_completed") or 0), int(summary.get("quests_completed") or 0), quest_completion_actions)
-    kills = max(int(status.get("kills") or 0), int(summary.get("total_kills") or 0))
+    kills = max(
+        int(status.get("kills") or 0),
+        int(summary.get("total_kills") or 0),
+        action_counts.get("mob_killed", 0),
+        action_counts.get("dungeon_trash_cleared", 0),
+    )
     boss_kill_evidence = max(
         int(summary.get("boss_kills") or 0),
         int(summary.get("raid_boss_kills") or 0),

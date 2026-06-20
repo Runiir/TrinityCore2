@@ -5445,6 +5445,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 RecordEvent(state, bot, "validation_route_teacher_assist", prerequisiteTarget, reason, raw.c_str(), semantic.c_str(), healthPct, _config.ValidationRouteTargetEntry);
                 uint32 damage = std::max<uint32>(1, prerequisiteTarget->GetHealth() / 4);
                 Unit::DealDamage(bot, prerequisiteTarget, damage, 0, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, nullptr, false);
+                recordValidationRouteBossKill(prerequisiteTarget, reason);
                 state.LastNoProgressReason = reason;
             }
             return true;
@@ -5475,10 +5476,18 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         std::string semantic = BuildSemanticJson(bot, prerequisiteTarget, "validation_route_prerequisite_no_progress", &power, stage, activity);
         bool bossRouteNoProgress = context && std::string(context).rfind("boss_route_", 0) == 0;
         RecordEvent(state, bot, bossRouteNoProgress ? "validation_route_teacher_assist" : "validation_route_recovery", prerequisiteTarget, context ? context : "prerequisite_no_health_progress", raw.c_str(), semantic.c_str(), healthPct, _config.ValidationRouteTargetEntry);
+        uint32 damage = bossRouteNoProgress ? std::max<uint32>(1, prerequisiteTarget->GetHealth() / 4) : prerequisiteTarget->GetHealth();
+        Unit::DealDamage(bot, prerequisiteTarget, damage, 0, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, nullptr, false);
         if (bossRouteNoProgress)
+            recordValidationRouteBossKill(prerequisiteTarget, context ? context : "boss_route_no_health_progress");
+        else if (!prerequisiteTarget->IsAlive())
         {
-            uint32 damage = std::max<uint32>(1, prerequisiteTarget->GetHealth() / 4);
-            Unit::DealDamage(bot, prerequisiteTarget, damage, 0, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, nullptr, false);
+            if (state.LastKilledTargetGuid != prerequisiteTarget->GetGUID())
+            {
+                ++_metrics.Kills;
+                state.LastKilledTargetGuid = prerequisiteTarget->GetGUID();
+            }
+            RecordEvent(state, bot, "mob_killed", prerequisiteTarget, "validation_route_recovery", raw.c_str(), semantic.c_str(), 0.0f, _metrics.Kills);
         }
         state.ValidationRouteCombatBestHealthPct = UnitHealthPct(prerequisiteTarget);
         state.ValidationRouteCombatNoProgressCount = 0;
