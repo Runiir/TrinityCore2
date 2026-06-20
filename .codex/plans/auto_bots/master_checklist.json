@@ -1,6 +1,6 @@
 {
   "all_passed": false,
-  "checklist_hash": "71cedcefba3f0f52073e46fa9606bd74e15185c1cd036b7f2c9561728e37e76f",
+  "checklist_hash": "3526b5d9aa9aedaffc39fa3833ad3aa2d70e151e5dfa5a493fcdcde720c395c0",
   "deliverables": [
     {
       "deliverable": "movement_smoke",
@@ -86,7 +86,7 @@
     {
       "deliverable": "normal_dungeon_trash",
       "evidence_artifact": "dataset/live_validation_scenario_reports_built/stonecore_5n.json",
-      "failure_label": "invalid_segment_live_reports,missing_segment_required_evidence,scenario_clear_not_complete",
+      "failure_label": "invalid_segment_live_reports,missing_segment_required_evidence,scenario_clear_not_complete,segment_evidence_debug_only,missing_uninterrupted_full_clear_report,missing_required_evidence",
       "followup_lane": "",
       "lane": "stonecore_5n",
       "reviewer": "",
@@ -95,7 +95,7 @@
     {
       "deliverable": "dungeon_boss",
       "evidence_artifact": "dataset/live_validation_scenario_reports_built/stonecore_5n.json",
-      "failure_label": "invalid_segment_live_reports,missing_segment_required_evidence,scenario_clear_not_complete",
+      "failure_label": "invalid_segment_live_reports,missing_segment_required_evidence,scenario_clear_not_complete,segment_evidence_debug_only,missing_uninterrupted_full_clear_report,missing_required_evidence",
       "followup_lane": "",
       "lane": "stonecore_5n",
       "reviewer": "",
@@ -113,7 +113,7 @@
     {
       "deliverable": "raid_trash",
       "evidence_artifact": "dataset/live_validation_scenario_reports_built/blackwing_descent_10n.json",
-      "failure_label": "invalid_segment_live_reports,missing_segment_required_evidence,scenario_clear_not_complete",
+      "failure_label": "invalid_segment_live_reports,missing_segment_required_evidence,scenario_clear_not_complete,segment_evidence_debug_only,missing_uninterrupted_full_clear_report,missing_required_evidence,failure_labels_present",
       "followup_lane": "",
       "lane": "blackwing_descent_10n",
       "reviewer": "",
@@ -122,7 +122,7 @@
     {
       "deliverable": "raid_boss",
       "evidence_artifact": "dataset/live_validation_scenario_reports_built/blackwing_descent_10n.json",
-      "failure_label": "invalid_segment_live_reports,missing_segment_required_evidence,scenario_clear_not_complete",
+      "failure_label": "invalid_segment_live_reports,missing_segment_required_evidence,scenario_clear_not_complete,segment_evidence_debug_only,missing_uninterrupted_full_clear_report,missing_required_evidence,failure_labels_present",
       "followup_lane": "",
       "lane": "blackwing_descent_10n",
       "reviewer": "",
