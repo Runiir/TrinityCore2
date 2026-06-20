@@ -5473,6 +5473,10 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 cohortState.ValidationRoutePackProgressTargetGuid.Clear();
             if (cohortState.LastDecisionTargetGuid == killedGuid)
                 cohortState.LastDecisionTargetGuid.Clear();
+            cohortState.ValidationRouteAnchorOverrideValid = false;
+            cohortState.ValidationRouteAnchorOverrideUntilMs = 0;
+            cohortState.ValidationRouteAnchorOverrideReason.clear();
+            cohortState.RecentDeathCount = 0;
         }
 
         state.ValidationRouteUnresolvedFocusHoldCount = 0;
@@ -6208,6 +6212,15 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         state.ValidationRouteAnchorOverrideValid = false;
         state.ValidationRouteAnchorOverrideReason.clear();
     }
+    bool routeHasActiveCombatIntent = routeUsableCombatTarget(target)
+        || routeUsableCombatTarget(bot->GetVictim())
+        || !routeTankFocusGuid().IsEmpty();
+    if (state.ValidationRouteAnchorOverrideValid && routeHasActiveCombatIntent)
+    {
+        state.ValidationRouteAnchorOverrideValid = false;
+        state.ValidationRouteAnchorOverrideUntilMs = 0;
+        state.ValidationRouteAnchorOverrideReason.clear();
+    }
     float routeAnchorDanger = GetLocalDangerScore(state.Guid.GetCounter(), routeAnchorMapId, routeAnchorX, routeAnchorY, routeAnchorZ);
     bool repeatedDeathNearRoute = state.LastDeathMapId == routeAnchorMapId
         && Distance2d(state.LastDeathX, state.LastDeathY, _config.ValidationRouteX, _config.ValidationRouteY) <= 70.0f
@@ -6219,7 +6232,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         routeAnchorZ = state.ValidationRouteAnchorOverrideZ;
         routeAnchorReason = state.ValidationRouteAnchorOverrideReason.empty() ? "validation_route_safe_memory_override" : state.ValidationRouteAnchorOverrideReason;
     }
-    else if (routeAnchorDanger >= 3.0f || repeatedDeathNearRoute)
+    else if (!routeHasActiveCombatIntent && (routeAnchorDanger >= 3.0f || repeatedDeathNearRoute))
     {
         PruneSafePositions(state, routeNowMs);
 

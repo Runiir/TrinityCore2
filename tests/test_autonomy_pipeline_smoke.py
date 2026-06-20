@@ -348,6 +348,8 @@ def test_quest_first_portfolio_routing_surface():
     assert "clearValidationRouteKilledFocus" in mgr
     assert "cohortState.ValidationRouteCombatProgressTargetGuid.Clear();" in mgr
     assert "cohortState.ValidationRoutePackProgressTargetGuid.Clear();" in mgr
+    assert "cohortState.ValidationRouteAnchorOverrideValid = false;" in mgr
+    assert "cohortState.RecentDeathCount = 0;" in mgr
     assert "clearValidationRouteKilledFocus(prerequisiteTarget->GetGUID());" in mgr
     assert "activeCohortFocus" in mgr
     assert "member->IsInCombat() || focus->IsInCombat() || focus->GetVictim()" in mgr
@@ -373,6 +375,9 @@ def test_quest_first_portfolio_routing_surface():
     assert "ValidationRouteUnresolvedFocusHoldCount" in mgr_header
     assert "ValidationRouteCombatNoProgressCount" in mgr_header
     assert "ValidationRouteBossSlowProgressCount" in mgr_header
+    assert "routeHasActiveCombatIntent" in mgr
+    assert "state.ValidationRouteAnchorOverrideValid && routeHasActiveCombatIntent" in mgr
+    assert "else if (!routeHasActiveCombatIntent && (routeAnchorDanger >= 3.0f || repeatedDeathNearRoute))" in mgr
     assert '_config.ValidationRouteKind == "boss" ? 60000 : 20000' in mgr
     assert "stale_focus_expired" in mgr
     assert "validation_route_recover_stale_focus" in mgr
