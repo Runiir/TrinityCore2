@@ -1,0 +1,6 @@
+outs:
+- md5: 4bffb5ea7c99228057e16e4d46fa4684.dir
+  size: 1047328
+  nfiles: 11
+  hash: md5
+  path: stonecore_route_pack_no_progress_r3

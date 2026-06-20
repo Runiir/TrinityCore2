@@ -747,7 +747,7 @@ def live_evidence(status: dict[str, Any], diagnosis: dict[str, Any], trace: dict
     trash_action_evidence = sum(
         count
         for action, count in action_counts.items()
-        if action in {"trash_action", "trash_heal", "validation_route_trash_action", "dungeon_trash_cleared", "raid_trash_cleared"}
+        if action in {"trash_action", "trash_heal", "validation_route_trash_action", "dungeon_trash_cleared", "raid_trash_cleared", "mob_killed"}
     )
     trash_action_evidence += sum(
         count
@@ -914,6 +914,7 @@ def validation_failure_labels(
         labels.append("missing_trace")
 
     boss_kills = int(evidence.get("boss_kill_evidence") or 0)
+    kill_evidence = int(evidence.get("kill_evidence") or 0)
     trash_evidence = int(evidence.get("trash_action_evidence") or 0) + int(evidence.get("trash_pulls") or 0)
     route_actions = int(evidence.get("validation_route_actions") or 0)
     boss_engagement = int(evidence.get("boss_engagement_actions") or 0)
@@ -943,7 +944,7 @@ def validation_failure_labels(
     elif error_diagnoses > 0:
         labels.append("bot_diagnosis_error")
 
-    if route_actions > 0 and boss_kills <= 0 and trash_route_actions <= 0:
+    if route_actions > 0 and boss_kills <= 0 and trash_route_actions <= 0 and kill_evidence <= 0:
         if boss_engagement > 0:
             labels.append("boss_attempt_no_kill")
         elif activation_attempts > 0:
@@ -952,11 +953,11 @@ def validation_failure_labels(
             labels.append("validation_route_no_engagement")
     if route_actions > 0 and trash_route_actions > 0 and trash_evidence <= 0:
         labels.append("trash_route_no_engagement")
-    if route_actions > 0 and boss_kills <= 0 and trash_route_actions <= 0 and prerequisite_repeats >= 4:
+    if route_actions > 0 and boss_kills <= 0 and trash_route_actions <= 0 and kill_evidence <= 0 and prerequisite_repeats >= 4:
         labels.append("validation_route_prerequisite_loop")
-    if route_actions > 0 and boss_kills <= 0 and trash_route_actions <= 0 and no_visible_activations >= 2 and boss_engagement <= 0:
+    if route_actions > 0 and boss_kills <= 0 and trash_route_actions <= 0 and kill_evidence <= 0 and no_visible_activations >= 2 and boss_engagement <= 0:
         labels.append("validation_route_activation_target_absent")
-    if route_actions > 0 and boss_kills <= 0 and trash_route_actions <= 0 and force_tank_focus >= 4 and boss_engagement <= 0:
+    if route_actions > 0 and boss_kills <= 0 and trash_route_actions <= 0 and kill_evidence <= 0 and force_tank_focus >= 4 and boss_engagement <= 0:
         labels.append("validation_route_assist_focus_loop")
     if route_actions > 0 and (
         unstuck_failures >= 3

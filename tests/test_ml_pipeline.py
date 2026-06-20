@@ -2466,6 +2466,23 @@ TC> {"duration_minutes":1.0,"decisions":12,"total_kills":0,"quests_completed":0}
     assert gates["kill_quest"]["passed"] is True
 
 
+def test_live_bot_validation_counts_route_mob_killed_as_trash_engagement():
+    output = """
+TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":84,"kills":0,"quests_accepted":0,"quest_objective_progress":0}
+TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"snapshot":{"decision":{"action":"validation_route_prerequisite_assist"},"movement":{"is_moving":false,"distance_moved_since_last_decision":0}}}]}
+TC> {"trace_schema_version":1,"selector":"all","bots":[{"bot_guid":1,"entries":[{"action":"validation_route_prerequisite","situation":"validation_route_prerequisite","result":"force_tank_focus"},{"action":"validation_route_recovery","situation":"validation_route_recovery","result":"force_tank_focus_no_health_progress"},{"action":"mob_killed","situation":"mob_killed","result":"validation_route_recovery"},{"action":"validation_route_prerequisite_assist","situation":"validation_route_prerequisite","result":"ok"},{"action":"validation_route_prerequisite","situation":"validation_route_prerequisite","result":"force_tank_focus"},{"action":"move_to_validation_route_assist_target","situation":"validation_route_prerequisite","result":"ok"}]}]}
+TC> {"duration_minutes":3.4,"decisions":84,"total_kills":0,"quests_completed":0}
+"""
+    report = live_validation_report(output)
+
+    assert report["evidence"]["kills"] == 1
+    assert report["evidence"]["trash_pulls"] == 1
+    assert report["evidence"]["validation_evidence_ready"]["pulls"] is True
+    assert "validation_route_no_engagement" not in report["failure_labels"]
+    assert "validation_route_prerequisite_loop" not in report["failure_labels"]
+    assert "validation_route_assist_focus_loop" not in report["failure_labels"]
+
+
 def test_live_bot_validation_labels_stuck_heavy_trash_route_as_failure():
     output = """
 TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":30,"kills":0,"quests_accepted":0,"quest_objective_progress":0,"stuck":12}

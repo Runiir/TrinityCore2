@@ -292,6 +292,9 @@ private:
         float ValidationRouteCombatBestHealthPct = 1.0f;
         uint32 ValidationRouteCombatNoProgressCount = 0;
         uint32 ValidationRouteBossSlowProgressCount = 0;
+        ObjectGuid ValidationRoutePackProgressTargetGuid;
+        float ValidationRoutePackBestHealthPct = 1.0f;
+        uint32 ValidationRoutePackNoProgressCount = 0;
         bool ValidationRouteActivationApplied = false;
         uint32 ValidationRouteActivationAttempts = 0;
         uint32 ValidationRouteTargetSearchMissCount = 0;

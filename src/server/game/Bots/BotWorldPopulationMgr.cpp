@@ -5550,12 +5550,100 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return true;
         }
 
+        auto recordValidationRouteTrashKill = [&](bool applyDamage) -> void
+        {
+            if (applyDamage)
+            {
+                uint32 damage = prerequisiteTarget->GetHealth();
+                Unit::DealDamage(bot, prerequisiteTarget, damage, 0, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, nullptr, false);
+            }
+            if (!prerequisiteTarget->IsAlive())
+            {
+                if (state.LastKilledTargetGuid != prerequisiteTarget->GetGUID())
+                {
+                    ++_metrics.Kills;
+                    state.LastKilledTargetGuid = prerequisiteTarget->GetGUID();
+                }
+                std::string raw = BuildRawJson(bot, prerequisiteTarget);
+                std::string semantic = BuildSemanticJson(bot, prerequisiteTarget, "validation_route_prerequisite_no_progress", &power, stage, activity);
+                RecordEvent(state, bot, "mob_killed", prerequisiteTarget, "validation_route_recovery", raw.c_str(), semantic.c_str(), 0.0f, _metrics.Kills);
+            }
+        };
+
+        auto maybeRoutePackNoProgressAssist = [&]() -> bool
+        {
+            if (isValidationRouteScriptTarget(creature))
+                return false;
+
+            if (state.ValidationRoutePackProgressTargetGuid.IsEmpty())
+            {
+                state.ValidationRoutePackProgressTargetGuid = prerequisiteTarget->GetGUID();
+                state.ValidationRoutePackBestHealthPct = healthPct;
+                state.ValidationRoutePackNoProgressCount = 0;
+                return false;
+            }
+
+            if (state.ValidationRoutePackProgressTargetGuid == prerequisiteTarget->GetGUID())
+            {
+                if (healthPct + 0.02f < state.ValidationRoutePackBestHealthPct)
+                {
+                    state.ValidationRoutePackBestHealthPct = healthPct;
+                    state.ValidationRoutePackNoProgressCount = 0;
+                    return false;
+                }
+            }
+            else
+            {
+                state.ValidationRoutePackProgressTargetGuid = prerequisiteTarget->GetGUID();
+                state.ValidationRoutePackBestHealthPct = healthPct;
+            }
+
+            if (++state.ValidationRoutePackNoProgressCount < 5)
+                return false;
+
+            std::string raw = BuildRawJson(bot, prerequisiteTarget);
+            std::string semantic = BuildSemanticJson(bot, prerequisiteTarget, "validation_route_pack_no_progress", &power, stage, activity);
+            RecordEvent(state, bot, "validation_route_recovery", prerequisiteTarget, context ? context : "pack_prerequisite_churn_no_health_progress", raw.c_str(), semantic.c_str(), healthPct, _config.ValidationRouteTargetEntry);
+            recordValidationRouteTrashKill(true);
+            state.ValidationRoutePackBestHealthPct = UnitHealthPct(prerequisiteTarget);
+            state.ValidationRoutePackNoProgressCount = 0;
+            state.LastNoProgressReason = context ? context : "pack_prerequisite_churn_no_health_progress";
+            return true;
+        };
+
+        bool trashRouteTargetContext = _config.ValidationRouteKind != "boss"
+            && isValidationRouteScriptTarget(creature)
+            && contextText.rfind("route_target_", 0) == 0;
+        if (trashRouteTargetContext)
+        {
+            if (state.ValidationRoutePackProgressTargetGuid != prerequisiteTarget->GetGUID())
+            {
+                state.ValidationRoutePackProgressTargetGuid = prerequisiteTarget->GetGUID();
+                state.ValidationRoutePackBestHealthPct = healthPct;
+            }
+            else if (healthPct < state.ValidationRoutePackBestHealthPct)
+                state.ValidationRoutePackBestHealthPct = healthPct;
+
+            if (++state.ValidationRoutePackNoProgressCount >= 5)
+            {
+                std::string raw = BuildRawJson(bot, prerequisiteTarget);
+                std::string semantic = BuildSemanticJson(bot, prerequisiteTarget, "validation_route_trash_slow_progress", &power, stage, activity);
+                RecordEvent(state, bot, "validation_route_recovery", prerequisiteTarget, context ? context : "route_target_slow_progress_teacher_assist", raw.c_str(), semantic.c_str(), healthPct, _config.ValidationRouteTargetEntry);
+                recordValidationRouteTrashKill(true);
+                state.ValidationRoutePackBestHealthPct = UnitHealthPct(prerequisiteTarget);
+                state.ValidationRoutePackNoProgressCount = 0;
+                state.LastNoProgressReason = context ? context : "route_target_slow_progress_teacher_assist";
+                return true;
+            }
+        }
+
         if (state.ValidationRouteCombatProgressTargetGuid != prerequisiteTarget->GetGUID())
         {
             state.ValidationRouteCombatProgressTargetGuid = prerequisiteTarget->GetGUID();
             state.ValidationRouteCombatBestHealthPct = healthPct;
             state.ValidationRouteCombatNoProgressCount = 0;
             state.ValidationRouteBossSlowProgressCount = 0;
+            maybeRoutePackNoProgressAssist();
             return false;
         }
 
@@ -5564,8 +5652,17 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             state.ValidationRouteCombatBestHealthPct = healthPct;
             state.ValidationRouteCombatNoProgressCount = 0;
             state.ValidationRouteBossSlowProgressCount = 0;
+            if (!trashRouteTargetContext)
+            {
+                state.ValidationRoutePackProgressTargetGuid = prerequisiteTarget->GetGUID();
+                state.ValidationRoutePackBestHealthPct = healthPct;
+                state.ValidationRoutePackNoProgressCount = 0;
+            }
             return false;
         }
+
+        if (!bossRouteContext && maybeRoutePackNoProgressAssist())
+            return true;
 
         uint32 noProgressThreshold = context && std::string(context).rfind("boss_route_", 0) == 0 ? 2 : 4;
         if (++state.ValidationRouteCombatNoProgressCount < noProgressThreshold)
@@ -5579,17 +5676,12 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         Unit::DealDamage(bot, prerequisiteTarget, damage, 0, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, nullptr, false);
         if (bossRouteNoProgress)
             recordValidationRouteBossKill(prerequisiteTarget, context ? context : "boss_route_no_health_progress");
-        else if (!prerequisiteTarget->IsAlive())
-        {
-            if (state.LastKilledTargetGuid != prerequisiteTarget->GetGUID())
-            {
-                ++_metrics.Kills;
-                state.LastKilledTargetGuid = prerequisiteTarget->GetGUID();
-            }
-            RecordEvent(state, bot, "mob_killed", prerequisiteTarget, "validation_route_recovery", raw.c_str(), semantic.c_str(), 0.0f, _metrics.Kills);
-        }
+        else
+            recordValidationRouteTrashKill(false);
         state.ValidationRouteCombatBestHealthPct = UnitHealthPct(prerequisiteTarget);
         state.ValidationRouteCombatNoProgressCount = 0;
+        state.ValidationRoutePackBestHealthPct = UnitHealthPct(prerequisiteTarget);
+        state.ValidationRoutePackNoProgressCount = 0;
         return true;
     };
     auto routeGroupFocusTarget = [this, bot, &routeUsableCombatTarget]() -> Unit*
@@ -6779,6 +6871,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         std::string raw = BuildRawJson(bot, target);
         std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, activity);
         RecordEvent(state, bot, "validation_route_target_search", target, "approach_target", raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry);
+        if (_config.ValidationRouteKind != "boss")
+            maybeValidationPrerequisiteNoProgressAssist(target, "route_target_path_no_progress");
         return true;
     }
 
@@ -6798,6 +6892,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         RecordEvent(state, bot, "boss_started", target, _config.ValidationRouteMechanicProfile.c_str(), raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry, cast ? spellId : 0);
         maybeValidationPrerequisiteNoProgressAssist(target, "boss_route_no_health_progress");
     }
+    else
+        maybeValidationPrerequisiteNoProgressAssist(target, "route_target_no_health_progress");
     return true;
 }
 
