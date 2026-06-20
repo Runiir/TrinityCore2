@@ -7,6 +7,7 @@ import json
 import os
 import select
 import subprocess
+import sys
 import time
 import urllib.error
 import urllib.request
@@ -120,6 +121,74 @@ def load_validation_route(scenario_dir: Path, context: dict[str, Any]) -> dict[s
         if str(row.get("scenario_id") or "") == scenario_id and str(row.get("route_node_id") or "") == route_node_id:
             return row
     return {}
+
+
+def load_validation_routes_for_scenario(scenario_dir: Path, scenario_id: str) -> list[dict[str, Any]]:
+    route_path = scenario_dir / "validation_routes.jsonl"
+    if not scenario_id or not route_path.exists():
+        return []
+    rows: list[dict[str, Any]] = []
+    for line in route_path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        if str(row.get("scenario_id") or "") == scenario_id and str(row.get("kind") or "") in {"trash", "boss"} and bool(row.get("coordinates_valid", True)):
+            rows.append(row)
+    rows.sort(key=lambda row: int(row.get("step") or 0))
+    return rows
+
+
+def route_segment_output_name(route: dict[str, Any]) -> str:
+    step = int(route.get("step") or 0)
+    label = str(route.get("label") or route.get("route_node_id") or "segment")
+    slug = "".join(ch.lower() if ch.isalnum() else "_" for ch in label).strip("_")
+    while "__" in slug:
+        slug = slug.replace("__", "_")
+    return f"{step:02d}_{slug or 'segment'}"
+
+
+def route_validation_context(scenario_id: str, route: dict[str, Any], *, include_segment: bool = True) -> dict[str, Any]:
+    context: dict[str, Any] = {
+        "scenario_id": scenario_id,
+        "route_node_id": str(route.get("route_node_id") or ""),
+        "route_label": str(route.get("label") or ""),
+        "route_kind": str(route.get("kind") or ""),
+        "route_step": int(route.get("step") or 0),
+        "mechanic_profile": str(route.get("mechanic_profile") or ""),
+    }
+    if include_segment:
+        context["segment_id"] = route_segment_output_name(route)
+    return {key: value for key, value in context.items() if value not in {"", 0}}
+
+
+def route_segment_complete(report: dict[str, Any], route: dict[str, Any] | None) -> bool:
+    if not route or report.get("failure_labels"):
+        return False
+    evidence = report.get("evidence") if isinstance(report.get("evidence"), dict) else {}
+    counters = report.get("progress_counters") if isinstance(report.get("progress_counters"), dict) else {}
+    counts = evidence.get("validation_evidence_counts") if isinstance(evidence.get("validation_evidence_counts"), dict) else {}
+    required = [str(row) for row in (route.get("required_evidence") or []) if row]
+    if any(int(counts.get(name) or 0) <= 0 for name in required):
+        return False
+    route_actions = int(evidence.get("validation_route_actions") or counters.get("validation_route_actions") or 0)
+    if route_actions <= 0:
+        return False
+    kind = str(route.get("kind") or "")
+    if kind == "boss":
+        return int(evidence.get("boss_kill_evidence") or counters.get("boss_kill_evidence") or 0) > 0
+    if kind == "trash":
+        trash_pulls = int(evidence.get("trash_pulls") or counters.get("trash_pulls") or 0)
+        kills = int(evidence.get("kills") or counters.get("kills") or 0)
+        return trash_pulls > 0 or kills > 0
+    return bool(required)
+
+
+def shell_quote(value: str) -> str:
+    return "'" + value.replace("'", "'\"'\"'") + "'"
+
+
+def render_command(command: list[str]) -> str:
+    return " ".join(shell_quote(part) for part in command)
 
 
 def upsert_trinity_config(text: str, key: str, value: str) -> str:
@@ -1425,6 +1494,7 @@ def run_worldserver_completion_watchdog(
     no_progress_window_sec: int = DEFAULT_NO_PROGRESS_WINDOW_SEC,
     max_repeated_decisions: int = DEFAULT_MAX_REPEATED_DECISIONS,
     max_death_loops: int = DEFAULT_MAX_DEATH_LOOPS,
+    validation_route: dict[str, Any] | None = None,
 ) -> tuple[str, int, bool, list[str]]:
     command = [str(binary), "--config", str(config)]
     deadline = time.monotonic() + timeout_sec
@@ -1507,10 +1577,20 @@ def run_worldserver_completion_watchdog(
                 max_death_loops,
             )
             progress_total = int(report.get("watchdog_state", {}).get("progress_total") or 0)
-            if progress_total != last_progress_total:
+            if progress_total > last_progress_total:
                 last_progress_total = progress_total
                 last_progress_at = time.monotonic()
             no_progress_expired = time.monotonic() - last_progress_at >= no_progress_window_sec
+            if route_segment_complete(report, validation_route):
+                report["completion_reason"] = "route_segment_complete"
+                report["route_segment_complete"] = True
+                report["acceptable_final_evidence"] = False
+                rejections = list(report.get("final_evidence_rejections") or [])
+                if "segment_or_route_context_is_debug_only" not in rejections:
+                    rejections.append("segment_or_route_context_is_debug_only")
+                report["final_evidence_rejections"] = rejections
+                write_json(output_dir / "report.json", report)
+                break
             if report["acceptable_final_evidence"]:
                 break
             if report["completion_reason"] in {"repeated_decision_watchdog", "death_loop_watchdog", "machine_failure_predicate"}:
@@ -1618,6 +1698,207 @@ def run_soap_commands(soap_url: str, username: str, password: str, script: str, 
     return "\n".join(output_parts), 0, False, command
 
 
+def route_sequence_child_command(args: argparse.Namespace, route: dict[str, Any], output_dir: Path, *, first_route: bool) -> list[str]:
+    scenario_id = str(args.validation_scenario_id or "")
+    context = route_validation_context(scenario_id, route, include_segment=True)
+    command = [
+        sys.executable,
+        "-m",
+        "tools.bot_ml.run_live_bot_validation",
+        "--worldserver",
+        str(args.worldserver),
+        "--config",
+        str(args.config),
+        "--output-dir",
+        str(output_dir),
+        "--duration-policy",
+        args.duration_policy,
+        "--timeout-sec",
+        str(args.timeout_sec),
+        "--heartbeat-sec",
+        str(args.heartbeat_sec),
+        "--no-progress-window-sec",
+        str(args.no_progress_window_sec),
+        "--max-repeated-decision-count",
+        str(args.max_repeated_decision_count),
+        "--max-death-loop-count",
+        str(args.max_death_loop_count),
+        "--selector",
+        args.selector,
+        "--trace-limit",
+        str(args.trace_limit),
+        "--transport",
+        args.transport,
+        "--observe-sec",
+        str(args.observe_sec),
+        "--validation-scenario-dir",
+        str(args.validation_scenario_dir),
+        "--validation-scenario-id",
+        scenario_id,
+        "--validation-segment-id",
+        str(context.get("segment_id") or ""),
+        "--validation-route-node-id",
+        str(context.get("route_node_id") or ""),
+        "--validation-route-label",
+        str(context.get("route_label") or ""),
+        "--validation-route-kind",
+        str(context.get("route_kind") or ""),
+        "--validation-route-step",
+        str(context.get("route_step") or 0),
+        "--validation-mechanic-profile",
+        str(context.get("mechanic_profile") or ""),
+    ]
+    if args.no_start:
+        command.append("--no-start")
+    if args.force_start_command:
+        command.append("--force-start-command")
+    if args.stop:
+        command.append("--stop")
+    if args.soap_user:
+        command.extend(["--soap-user", args.soap_user])
+    if args.soap_password:
+        command.extend(["--soap-password", args.soap_password])
+    if args.soap_url:
+        command.extend(["--soap-url", args.soap_url])
+    if args.scenario_report_dir:
+        command.extend(["--scenario-report-dir", str(args.scenario_report_dir)])
+    if first_route and args.apply_validation_provisioning:
+        command.extend(
+            [
+                "--apply-validation-provisioning",
+                "--validation-provisioning-config",
+                str(args.validation_provisioning_config),
+                "--gear-profiles",
+                str(args.gear_profiles),
+            ]
+        )
+    if first_route and args.reset_bot_pool:
+        command.append("--reset-bot-pool")
+    for tag in args.bot_pool_tag:
+        command.extend(["--bot-pool-tag", tag])
+    if args.keep_bot_pool_position:
+        command.append("--keep-bot-pool-position")
+    if args.keep_bot_pool_quests:
+        command.append("--keep-bot-pool-quests")
+    if args.keep_bot_pool_memory:
+        command.append("--keep-bot-pool-memory")
+    return command
+
+
+def route_sequence_report(
+    args: argparse.Namespace,
+    routes: list[dict[str, Any]],
+    commands: list[list[str]],
+    segment_reports: list[dict[str, Any]],
+    failed_command: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    failure_labels: list[str] = []
+    if not routes:
+        failure_labels.append("no_executable_validation_routes")
+    for report in segment_reports:
+        for label in report.get("failure_labels") or []:
+            if label not in failure_labels:
+                failure_labels.append(str(label))
+    if failed_command and "route_sequence_child_failed" not in failure_labels:
+        failure_labels.append("route_sequence_child_failed")
+    complete_segments = []
+    for report in segment_reports:
+        validation_context = report.get("validation_context") if isinstance(report.get("validation_context"), dict) else {}
+        if route_segment_complete(report, report.get("validation_route") if isinstance(report.get("validation_route"), dict) else None):
+            complete_segments.append(str(validation_context.get("segment_id") or ""))
+    expected_segments = [route_segment_output_name(route) for route in routes]
+    missing_segments = [segment for segment in expected_segments if segment not in complete_segments]
+    return {
+        "schema": "bot_live_validation_report_v1",
+        "generated_at_unix": int(time.time()),
+        "duration_policy": args.duration_policy,
+        "validation_context": {"scenario_id": args.validation_scenario_id},
+        "route_sequence": {
+            "schema": "bot_live_validation_route_sequence_v1",
+            "scenario_id": args.validation_scenario_id,
+            "route_count": len(routes),
+            "expected_segments": expected_segments,
+            "complete_segments": complete_segments,
+            "missing_segments": missing_segments,
+            "commands": commands,
+            "segment_reports": [str(args.output_dir / route_segment_output_name(route) / "report.json") for route in routes],
+            "failed_command": failed_command or {},
+        },
+        "command": commands,
+        "returncode": int(failed_command.get("returncode", 0)) if failed_command else 0,
+        "timed_out": False,
+        "json_payloads": 0,
+        "active_bots": 0,
+        "target_bots": 0,
+        "diagnosis_count": 0,
+        "trace_entries": sum(int(report.get("trace_entries") or 0) for report in segment_reports),
+        "scenario_reports": {},
+        "command_errors": [],
+        "evidence": {
+            "validation_route_actions": sum(int(report.get("evidence", {}).get("validation_route_actions") or 0) for report in segment_reports),
+            "validation_evidence_counts": {},
+        },
+        "progress_counters": {
+            "validation_route_actions": sum(int(report.get("progress_counters", {}).get("validation_route_actions") or 0) for report in segment_reports),
+            "kills": sum(int(report.get("progress_counters", {}).get("kills") or 0) for report in segment_reports),
+            "boss_kill_evidence": sum(int(report.get("progress_counters", {}).get("boss_kill_evidence") or 0) for report in segment_reports),
+            "trash_pulls": sum(int(report.get("progress_counters", {}).get("trash_pulls") or 0) for report in segment_reports),
+        },
+        "watchdog_state": {"policy": "route-sequence", "progress_total": len(complete_segments)},
+        "completion_reason": "route_sequence_complete" if not failure_labels and not missing_segments else "route_sequence_incomplete",
+        "acceptable_final_evidence": False,
+        "final_evidence_rejections": ["route_sequence_context_is_not_uninterrupted_full_clear"],
+        "failure_labels": failure_labels,
+        "failure_reason": failure_labels[0] if failure_labels else None,
+        "stages": [],
+        "passed": len(complete_segments),
+        "failed": len(missing_segments),
+        "all_passed": not failure_labels and not missing_segments,
+        "runtime_ml_control": "disabled_until_live_validation_passes",
+    }
+
+
+def run_route_sequence(args: argparse.Namespace, routes: list[dict[str, Any]]) -> int:
+    commands: list[list[str]] = []
+    segment_reports: list[dict[str, Any]] = []
+    failed_command: dict[str, Any] | None = None
+    for index, route in enumerate(routes):
+        segment_dir = args.output_dir / route_segment_output_name(route)
+        command = route_sequence_child_command(args, route, segment_dir, first_route=index == 0)
+        commands.append(command)
+        completed = subprocess.run(command, text=True, capture_output=True, check=False)
+        (segment_dir / "sequence_child_stdout.log").write_text(completed.stdout, encoding="utf-8")
+        (segment_dir / "sequence_child_stderr.log").write_text(completed.stderr, encoding="utf-8")
+        report_path = segment_dir / "report.json"
+        report = json.loads(report_path.read_text(encoding="utf-8")) if report_path.exists() else {}
+        if report:
+            segment_reports.append(report)
+        append_jsonl(
+            args.output_dir / "route_sequence_events.jsonl",
+            {
+                "segment_id": route_segment_output_name(route),
+                "route_node_id": route.get("route_node_id") or "",
+                "returncode": completed.returncode,
+                "report": str(report_path),
+                "completion_reason": report.get("completion_reason") if report else "",
+                "failure_labels": report.get("failure_labels") if report else ["missing_segment_report"],
+            },
+        )
+        if completed.returncode != 0 or not report or not route_segment_complete(report, route):
+            failed_command = {
+                "segment_id": route_segment_output_name(route),
+                "route_node_id": route.get("route_node_id") or "",
+                "returncode": completed.returncode,
+                "report": str(report_path),
+            }
+            break
+    report = route_sequence_report(args, routes, commands, segment_reports, failed_command)
+    write_json(args.output_dir / "report.json", report)
+    (args.output_dir / "commands.txt").write_text("\n".join(render_command(command) for command in commands) + "\n", encoding="utf-8")
+    print(json.dumps(report, indent=2, sort_keys=True))
+    return 0 if report["all_passed"] else 1
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run or prepare live BotWorld validation diagnostics.")
     parser.add_argument("--worldserver", type=Path, default=Path("build/src/server/worldserver/worldserver"))
@@ -1656,6 +1937,7 @@ def main() -> int:
     parser.add_argument("--validation-route-step", type=int, default=0, help="Route step number this live validation run is measuring.")
     parser.add_argument("--validation-mechanic-profile", default="", help="Mechanic profile associated with this live validation segment.")
     parser.add_argument("--validation-scenario-dir", type=Path, default=Path("dataset/validation_scenarios"), help="Directory containing validation_routes.jsonl for route-directed live validation.")
+    parser.add_argument("--validation-route-sequence", action="store_true", help="For a scenario-level run, execute executable route nodes in manifest order and write an aggregate sequence report.")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--input-log", type=Path)
     args = parser.parse_args()
@@ -1672,6 +1954,37 @@ def main() -> int:
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
     bot_pool_tags = args.bot_pool_tag or ["test_account"]
+
+    if args.validation_route_sequence:
+        if not args.validation_scenario_id:
+            raise SystemExit("--validation-route-sequence requires --validation-scenario-id")
+        if args.input_log:
+            raise SystemExit("--validation-route-sequence cannot be combined with --input-log")
+        sequence_routes = load_validation_routes_for_scenario(args.validation_scenario_dir, args.validation_scenario_id)
+        commands = [
+            route_sequence_child_command(args, route, args.output_dir / route_segment_output_name(route), first_route=index == 0)
+            for index, route in enumerate(sequence_routes)
+        ]
+        if args.dry_run:
+            report = {
+                "schema": "bot_live_validation_report_v1",
+                "dry_run": True,
+                "validation_context": {"scenario_id": args.validation_scenario_id},
+                "route_sequence": {
+                    "schema": "bot_live_validation_route_sequence_v1",
+                    "scenario_id": args.validation_scenario_id,
+                    "route_count": len(sequence_routes),
+                    "expected_segments": [route_segment_output_name(route) for route in sequence_routes],
+                    "commands": commands,
+                },
+                "runtime_ml_control": "disabled_until_live_validation_passes",
+            }
+            write_json(args.output_dir / "report.json", report)
+            (args.output_dir / "commands.txt").write_text("\n".join(render_command(command) for command in commands) + "\n", encoding="utf-8")
+            print(json.dumps(report, indent=2, sort_keys=True))
+            return 0
+        return run_route_sequence(args, sequence_routes)
+
     validation_context = validation_context_from_args(args)
     validation_route = load_validation_route(args.validation_scenario_dir, validation_context)
     pool_tag_filter = str(validation_context.get("scenario_id") or (bot_pool_tags[0] if bot_pool_tags else ""))
@@ -1766,6 +2079,7 @@ def main() -> int:
                 no_progress_window_sec=args.no_progress_window_sec,
                 max_repeated_decisions=args.max_repeated_decision_count,
                 max_death_loops=args.max_death_loop_count,
+                validation_route=validation_route,
             )
             existing_report = args.output_dir / "report.json"
             if existing_report.exists():
@@ -1807,7 +2121,8 @@ def main() -> int:
     report["validation_context"] = validation_context
     write_json(args.output_dir / "report.json", report)
     print(json.dumps(report, indent=2, sort_keys=True))
-    return 0 if returncode == 0 and not timed_out else 1
+    segment_success = route_segment_complete(report, validation_route)
+    return 0 if (returncode == 0 and not timed_out) or segment_success else 1
 
 
 if __name__ == "__main__":

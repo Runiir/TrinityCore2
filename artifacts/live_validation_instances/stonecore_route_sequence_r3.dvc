@@ -1,0 +1,6 @@
+outs:
+- md5: b73d2e27da2dd3fe1ade0a0d4405d101.dir
+  size: 1427576
+  nfiles: 24
+  hash: md5
+  path: stonecore_route_sequence_r3

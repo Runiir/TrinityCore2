@@ -36,7 +36,7 @@ from tools.bot_ml.build_validation_scenario_manifests import build_manifests as 
 from tools.bot_ml.build_live_scenario_reports import build_reports as build_live_scenario_reports, build_reports_from_live_reports, main as live_scenario_reports_main
 from tools.bot_ml.build_validation_run_plan import build_plan as build_validation_run_plan
 from tools.bot_ml.build_validation_run_status import build_status as build_validation_run_status
-from tools.bot_ml.run_live_bot_validation import build_bot_pool_reset_sql, command_script, live_validation_report, load_scenario_reports, main as live_validation_main, parse_json_objects, parse_soap_result, run_worldserver, run_worldserver_completion_watchdog, split_sql_statements, trinity_config_bool, upsert_trinity_config
+from tools.bot_ml.run_live_bot_validation import build_bot_pool_reset_sql, command_script, live_validation_report, load_scenario_reports, main as live_validation_main, parse_json_objects, parse_soap_result, route_segment_complete, run_worldserver, run_worldserver_completion_watchdog, split_sql_statements, trinity_config_bool, upsert_trinity_config
 from tools.bot_ml.orchestrator_daemon import codex_command, detect_rate_limit, handle_rate_limit, initial_state, run_one_cycle, sleep_until_resume
 from tools.bot_ml.generate_lane_configs import write_lane_config
 from tools.bot_ml.promote_live_validation_artifact import promote
@@ -1574,10 +1574,9 @@ def test_validation_run_plan_segments_boss_routes_for_aggregate_reports():
     assert "dataset/live_validation_scenarios/blackwing_descent_10n/01_entry_trash/report.json" in bwd["scenario_report_command"]
     assert "dataset/live_validation_scenarios/blackwing_descent_10n/02_magmaw/report.json" in bwd["scenario_report_command"]
     full_command = bwd["live_validate_command"]
-    assert "--validation-route-node-id" in full_command
-    assert full_command[full_command.index("--validation-route-node-id") + 1] == "bwd_trash_entry"
-    assert "--validation-route-kind" in full_command
-    assert full_command[full_command.index("--validation-route-kind") + 1] == "trash"
+    assert "--validation-route-sequence" in full_command
+    assert "--validation-route-node-id" not in full_command
+    assert "--validation-route-kind" not in full_command
     assert "--validation-segment-id" not in full_command
     assert full_command[full_command.index("--output-dir") + 1] == "dataset/live_validation_scenarios/blackwing_descent_10n"
     first_command = bwd["segments"][1]["live_validate_command"]
@@ -4587,6 +4586,82 @@ def test_live_bot_validation_main_preserves_watchdog_report(tmp_path, monkeypatc
     assert report["base_config"] == str(config)
     assert report["validation_context"]["route_node_id"] == "stonecore_entry"
     assert report["validation_route"]["source_entry"] == 42696
+
+
+def test_route_segment_complete_accepts_terminal_trash_evidence():
+    route = {"kind": "trash", "required_evidence": ["pulls"]}
+    report = {
+        "failure_labels": [],
+        "evidence": {
+            "validation_route_actions": 4,
+            "trash_pulls": 1,
+            "validation_evidence_counts": {"pulls": 1},
+        },
+        "progress_counters": {"validation_route_actions": 4, "trash_pulls": 1, "kills": 1},
+    }
+
+    assert route_segment_complete(report, route) is True
+
+
+def test_live_bot_validation_route_sequence_dry_run_writes_ordered_child_commands(tmp_path, monkeypatch, capsys):
+    scenario_dir = tmp_path / "validation_scenarios"
+    scenario_dir.mkdir()
+    write_jsonl(
+        scenario_dir / "validation_routes.jsonl",
+        [
+            {
+                "scenario_id": "stonecore_5n",
+                "route_node_id": "stonecore_entry",
+                "step": 1,
+                "kind": "trash",
+                "label": "entrance packs",
+                "coordinates_valid": True,
+            },
+            {
+                "scenario_id": "stonecore_5n",
+                "route_node_id": "stonecore_corborus",
+                "step": 2,
+                "kind": "boss",
+                "label": "Corborus",
+                "mechanic_profile": "burrow_adds_ground_danger",
+                "coordinates_valid": True,
+            },
+            {
+                "scenario_id": "stonecore_5n",
+                "route_node_id": "stonecore_missing",
+                "step": 3,
+                "kind": "boss",
+                "label": "missing",
+                "coordinates_valid": False,
+            },
+        ],
+    )
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "bot-live-validate",
+            "--dry-run",
+            "--validation-route-sequence",
+            "--validation-scenario-id",
+            "stonecore_5n",
+            "--validation-scenario-dir",
+            str(scenario_dir),
+            "--output-dir",
+            str(tmp_path / "live"),
+        ],
+    )
+
+    assert live_validation_main() == 0
+    capsys.readouterr()
+    report = json.loads((tmp_path / "live" / "report.json").read_text(encoding="utf-8"))
+    commands = (tmp_path / "live" / "commands.txt").read_text(encoding="utf-8")
+
+    assert report["route_sequence"]["route_count"] == 2
+    assert report["route_sequence"]["expected_segments"] == ["01_entrance_packs", "02_corborus"]
+    assert "--validation-segment-id' '01_entrance_packs" in commands
+    assert "--validation-route-node-id' 'stonecore_corborus" in commands
+    assert "stonecore_missing" not in commands
 
 
 def test_lane_config_generates_per_lane_db_clones(tmp_path):

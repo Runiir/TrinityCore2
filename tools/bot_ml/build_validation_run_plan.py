@@ -53,6 +53,7 @@ def live_validate_command(
     timeout_sec: int | None = None,
     route: dict[str, Any] | None = None,
     segment_output: bool = True,
+    route_sequence: bool = False,
     duration_policy: str = "completion-watchdog",
     heartbeat_sec: int = 30,
     no_progress_window_sec: int = 180,
@@ -110,6 +111,8 @@ def live_validate_command(
         "--output-dir",
         str(output_dir),
     ]
+    if route_sequence:
+        command.append("--validation-route-sequence")
     if duration_policy == "fixed-window":
         if observe_sec is not None:
             command.extend(["--observe-sec", str(observe_sec)])
@@ -183,14 +186,14 @@ def build_plan(
         routes = (routes_by_scenario or {}).get(scenario_id, [])
         route_segments = [route for route in routes if route.get("kind") in {"trash", "boss"}]
         executable_route_segments = [route for route in route_segments if route_coordinates_valid(route)]
-        full_clear_entry_route = executable_route_segments[0] if executable_route_segments else None
         live_command = live_validate_command(
             scenario,
             output_root,
             observe_sec,
             timeout_sec,
-            full_clear_entry_route,
+            None,
             segment_output=False,
+            route_sequence=bool(executable_route_segments),
             duration_policy=duration_policy,
             heartbeat_sec=heartbeat_sec,
             no_progress_window_sec=no_progress_window_sec,
