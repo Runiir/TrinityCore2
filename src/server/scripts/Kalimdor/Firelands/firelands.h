@@ -53,6 +53,8 @@ enum FLDataTypes
     DATA_DREADFLAME_CONTROLLER,
     DATA_CENARIUS,
     DATA_MAGMA_KNOCKBACK,
+    DATA_RIPLIMB,
+    DATA_RAGEFACE,
 };
 
 enum FLCreatureIds
@@ -65,6 +67,12 @@ enum FLCreatureIds
     BOSS_BALEROC                            = 53494,
     BOSS_MAJORDOMO_STAGHELM                 = 52571,
     BOSS_RAGNAROS                           = 52409,
+
+    // Shannox
+    NPC_RIPLIMB                             = 53694,
+    NPC_RAGEFACE                            = 53695,
+    NPC_CRYSTAL_PRISON_TRAP                 = 53713,
+    NPC_IMMOLATION_TRAP                     = 53724,
 
     //Lord Rhyolith
     NPC_MOVEMENT_CONTROLLER_LORD_RHYOLITH   = 52659,

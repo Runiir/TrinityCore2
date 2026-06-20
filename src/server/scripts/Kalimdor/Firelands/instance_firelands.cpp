@@ -36,6 +36,8 @@ ObjectData const creatureData[] =
     { BOSS_BALEROC,                             DATA_BALEROC                            },
     { BOSS_MAJORDOMO_STAGHELM,                  DATA_MAJORDOMO_STAGHELM                 },
     { BOSS_RAGNAROS,                            DATA_RAGNAROS                           },
+    { NPC_RIPLIMB,                              DATA_RIPLIMB                            },
+    { NPC_RAGEFACE,                             DATA_RAGEFACE                           },
     { NPC_MOVEMENT_CONTROLLER_LORD_RHYOLITH,    DATA_LORD_RHYOLITH_MOVEMENT_CONTROLLER  },
     { NPC_LEFT_FOOT,                            DATA_LEFT_FOOT                          },
     { NPC_RIGHT_FOOT,                           DATA_RIGHT_FOOT                         },

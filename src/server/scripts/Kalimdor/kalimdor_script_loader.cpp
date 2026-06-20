@@ -128,6 +128,7 @@ void AddSC_boss_conclave_of_wind();
 void AddSC_boss_alakir();
 void AddSC_instance_firelands();             //Firelands
 void AddSC_firelands();
+void AddSC_boss_shannox();
 void AddSC_boss_alysrazor();
 void AddSC_boss_baleroc();
 void AddSC_boss_lord_rhyolith();
@@ -268,6 +269,7 @@ void AddKalimdorScripts()
     AddSC_boss_alakir();
     AddSC_instance_firelands();             //Firelands
     AddSC_firelands();
+    AddSC_boss_shannox();
     AddSC_boss_alysrazor();
     AddSC_boss_baleroc();
     AddSC_boss_lord_rhyolith();
