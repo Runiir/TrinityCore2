@@ -2943,6 +2943,33 @@ def test_bot_autonomy_daemon_detects_rate_limit_retry_after():
     assert rate_limit["signature"] == "rate_limit_or_quota"
 
 
+def test_bot_autonomy_daemon_default_models_and_reasoning_effort():
+    assert daemon.DEFAULT_CONFIG["orchestrator_model"] == "gpt-5.5"
+    assert daemon.DEFAULT_CONFIG["worker_model"] == "gpt-5.5"
+    assert daemon.DEFAULT_CONFIG["reviewer_model"] == "gpt-5.5"
+    assert daemon.DEFAULT_CONFIG["orchestrator_reasoning_effort"] == "high"
+    assert daemon.DEFAULT_CONFIG["worker_reasoning_effort"] == "medium"
+    assert daemon.DEFAULT_CONFIG["reviewer_reasoning_effort"] == "high"
+
+
+def test_bot_autonomy_daemon_codex_command_includes_reasoning_effort(tmp_path):
+    command, stdin_text = codex_command(
+        role="orchestrator",
+        prompt="run pass",
+        model="gpt-5.5",
+        reasoning_effort="high",
+        repo=tmp_path,
+        sandbox="danger-full-access",
+        jsonl_path=tmp_path / "orchestrator.jsonl",
+        last_message_path=tmp_path / "last.md",
+    )
+
+    assert command[:5] == ["codex", "exec", "--json", "-m", "gpt-5.5"]
+    assert command[5:7] == ["-c", 'model_reasoning_effort="high"']
+    assert "--sandbox" in command
+    assert stdin_text == "run pass"
+
+
 def test_bot_autonomy_daemon_rate_limit_fallback_and_resume_command(tmp_path):
     fallback = detect_rate_limit(
         events=[],
@@ -2956,7 +2983,8 @@ def test_bot_autonomy_daemon_rate_limit_fallback_and_resume_command(tmp_path):
     command, stdin_text = codex_command(
         role="worker",
         prompt="continue",
-        model="gpt-5",
+        model="gpt-5.5",
+        reasoning_effort="medium",
         repo=tmp_path,
         sandbox="danger-full-access",
         jsonl_path=tmp_path / "worker.jsonl",
@@ -2967,6 +2995,7 @@ def test_bot_autonomy_daemon_rate_limit_fallback_and_resume_command(tmp_path):
     assert fallback is not None
     assert fallback["resume_at_unix"] == 3610
     assert command[:4] == ["codex", "exec", "resume", "--json"]
+    assert command[6:8] == ["-c", 'model_reasoning_effort="medium"']
     assert "thread-123" in command
     assert stdin_text == "continue"
 

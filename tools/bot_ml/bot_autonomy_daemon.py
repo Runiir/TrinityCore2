@@ -36,9 +36,12 @@ THREAD_KEYS = ("thread_id", "session_id", "conversation_id", "id")
 
 
 DEFAULT_CONFIG: dict[str, Any] = {
-    "orchestrator_model": "gpt-5",
-    "worker_model": "gpt-5",
-    "reviewer_model": "gpt-5",
+    "orchestrator_model": "gpt-5.5",
+    "worker_model": "gpt-5.5",
+    "reviewer_model": "gpt-5.5",
+    "orchestrator_reasoning_effort": "high",
+    "worker_reasoning_effort": "medium",
+    "reviewer_reasoning_effort": "high",
     "sandbox": "danger-full-access",
     "max_parallel_workers": 1,
     "heartbeat_sec": 30,
@@ -325,6 +328,13 @@ def detect_rate_limit(
     }
 
 
+def role_reasoning_effort(role: str, config: dict[str, Any]) -> str:
+    value = config.get(f"{role}_reasoning_effort")
+    if value:
+        return str(value)
+    return str(DEFAULT_CONFIG.get(f"{role}_reasoning_effort") or "")
+
+
 def codex_command(
     *,
     role: str,
@@ -334,8 +344,10 @@ def codex_command(
     sandbox: str,
     jsonl_path: Path,
     last_message_path: Path,
+    reasoning_effort: str = "",
     thread_id: str = "",
 ) -> tuple[list[str], str | None]:
+    reasoning_args = ["-c", f'model_reasoning_effort="{reasoning_effort}"'] if reasoning_effort else []
     if thread_id:
         command = [
             "codex",
@@ -344,6 +356,7 @@ def codex_command(
             "--json",
             "-m",
             model,
+            *reasoning_args,
             "-o",
             str(last_message_path),
             thread_id,
@@ -356,6 +369,7 @@ def codex_command(
         "--json",
         "-m",
         model,
+        *reasoning_args,
         "--sandbox",
         sandbox,
         "-C",
@@ -389,6 +403,7 @@ def run_codex_role(
         role=role,
         prompt=prompt,
         model=model,
+        reasoning_effort=role_reasoning_effort(role, config),
         repo=repo,
         sandbox=sandbox,
         jsonl_path=jsonl_path,
