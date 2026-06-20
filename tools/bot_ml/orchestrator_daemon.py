@@ -32,6 +32,10 @@ DEFAULT_LOCK_PATH = AUTO_BOTS_DIR / "daemon.lock"
 DEFAULT_PID_PATH = AUTO_BOTS_DIR / "daemon.pid"
 DEFAULT_STOP_PATH = AUTO_BOTS_DIR / "daemon.stop"
 DEFAULT_LOG_PATH = AUTO_BOTS_DIR / "daemon.log"
+ACTIVITY_SCHEMA = "codex_agent_activity_v1"
+AGENT_REGISTRY_SCHEMA = "orchestrator_agent_registry_v1"
+ACTIVITY_RECENT_LIMIT = 10
+ACTIVITY_TEXT_LIMIT = 500
 
 RATE_LIMIT_RE = re.compile(
     r"(rate[\s_-]*limit|too many requests|quota|429|retry-after|retry after|reset in|rate_limit_exceeded)",
@@ -273,6 +277,7 @@ def initial_state() -> dict[str, Any]:
         "latest_jsonl_path": "",
         "latest_stderr_path": "",
         "latest_last_message_path": "",
+        "latest_activity_path": "",
         "active_process": {},
         "latest_orchestrator_result": {},
         "last_completed_cycle_id": 0,
@@ -378,6 +383,299 @@ def read_jsonl_events(path: Path) -> list[dict[str, Any]]:
         if isinstance(payload, dict):
             rows.append(payload)
     return rows
+
+
+def truncate_text(value: Any, limit: int = ACTIVITY_TEXT_LIMIT) -> str:
+    text = str(value or "")
+    if len(text) <= limit:
+        return text
+    return text[: max(0, limit - 3)] + "..."
+
+
+def tail_lines(text: str, line_count: int) -> str:
+    if line_count <= 0:
+        return ""
+    return "\n".join(text.splitlines()[-line_count:])
+
+
+def file_tail_lines(path: Path, line_count: int) -> str:
+    if line_count <= 0 or not path.exists() or not path.is_file():
+        return ""
+    try:
+        return tail_lines(path.read_text(encoding="utf-8", errors="replace"), line_count)
+    except OSError:
+        return ""
+
+
+def event_timestamp_unix(event: dict[str, Any]) -> int | None:
+    for key in ("created_at_unix", "timestamp_unix", "time_unix", "ts_unix"):
+        value = event.get(key)
+        if isinstance(value, (int, float)):
+            return int(value)
+    for key in ("created_at", "timestamp", "time", "ts"):
+        value = event.get(key)
+        if isinstance(value, (int, float)):
+            return int(value)
+        if not isinstance(value, str) or not value.strip():
+            continue
+        text = value.strip()
+        if text.isdigit():
+            return int(text)
+        normalized = text.replace(" ", "T")
+        if normalized.endswith("Z"):
+            normalized = normalized[:-1] + "+00:00"
+        try:
+            parsed = dt.datetime.fromisoformat(normalized)
+        except ValueError:
+            continue
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=dt.datetime.now().astimezone().tzinfo)
+        return int(parsed.timestamp())
+    return None
+
+
+def event_item(event: dict[str, Any]) -> dict[str, Any]:
+    item = event.get("item")
+    return item if isinstance(item, dict) else event
+
+
+def item_id(event: dict[str, Any], index: int) -> str:
+    item = event_item(event)
+    for key in ("id", "item_id", "call_id"):
+        value = item.get(key) or event.get(key)
+        if isinstance(value, str) and value:
+            return value
+    return f"event_{index}"
+
+
+def item_type(event: dict[str, Any]) -> str:
+    item = event_item(event)
+    for key in ("type", "item_type", "kind"):
+        value = item.get(key)
+        if isinstance(value, str) and value:
+            return value
+    return str(event.get("type") or "")
+
+
+def item_status(event: dict[str, Any]) -> str:
+    item = event_item(event)
+    value = item.get("status") or event.get("status")
+    return str(value or "")
+
+
+def command_from_item(item: dict[str, Any]) -> str:
+    command = item.get("command") or item.get("cmd") or item.get("argv")
+    if isinstance(command, list):
+        return " ".join(str(part) for part in command)
+    return str(command or "")
+
+
+def output_tail_from_item(item: dict[str, Any], line_count: int = 8) -> str:
+    for key in ("aggregated_output", "output", "stdout", "stderr"):
+        value = item.get(key)
+        if isinstance(value, str) and value:
+            return truncate_text(tail_lines(value, line_count), 1200)
+    return ""
+
+
+def exit_code_from_item(item: dict[str, Any]) -> int | None:
+    value = item.get("exit_code")
+    if value is None:
+        value = item.get("returncode")
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str) and re.fullmatch(r"-?\d+", value.strip()):
+        return int(value)
+    return None
+
+
+def activity_record_from_event(event: dict[str, Any], index: int) -> dict[str, Any]:
+    item = event_item(event)
+    event_type = str(event.get("type") or "")
+    record = {
+        "id": item_id(event, index),
+        "event_index": index,
+        "event_type": event_type,
+        "type": item_type(event),
+        "status": item_status(event),
+        "started_at_unix": event_timestamp_unix(event),
+    }
+    if record["type"] == "command_execution" or command_from_item(item):
+        record.update(
+            {
+                "type": "command_execution",
+                "command": command_from_item(item),
+                "exit_code": exit_code_from_item(item),
+                "output_tail": output_tail_from_item(item),
+            }
+        )
+    elif record["type"] == "agent_message":
+        record["text"] = truncate_text(item.get("text") or item.get("message") or event.get("message"))
+    elif record["type"] in {"file_change", "file_edit", "file_operation"}:
+        record["path"] = str(item.get("path") or item.get("file") or item.get("filename") or "")
+    elif record["type"] in {"web_search", "web_search_call", "search_query"}:
+        record["query"] = truncate_text(item.get("query") or item.get("q") or item.get("search_query"))
+    return record
+
+
+def activity_summary_from_events(
+    events: list[dict[str, Any]],
+    *,
+    role: str = "",
+    jsonl_path: Path | None = None,
+    stderr_path: Path | None = None,
+    last_message_path: Path | None = None,
+    generated_at_unix: int | None = None,
+    previous_activity: dict[str, Any] | None = None,
+    no_progress_window_sec: int | None = None,
+) -> dict[str, Any]:
+    generated_at_unix = generated_at_unix or now_unix()
+    active_by_id: dict[str, dict[str, Any]] = {}
+    recent_commands: list[dict[str, Any]] = []
+    recent_failures: list[dict[str, Any]] = []
+    file_events: list[dict[str, Any]] = []
+    web_searches: list[dict[str, Any]] = []
+    latest_message = ""
+    last_completed_command: dict[str, Any] = {}
+    last_failed_command: dict[str, Any] = {}
+    token_usage: dict[str, Any] = {}
+    thread_id = extract_thread_id(events)
+    last_event_at = 0
+    last_event_index = -1
+
+    previous_active = previous_activity.get("active_item") if isinstance(previous_activity, dict) else {}
+    previous_active_items = previous_activity.get("active_items") if isinstance(previous_activity, dict) else []
+    previous_started_at: dict[str, int] = {}
+    if isinstance(previous_active, dict) and previous_active.get("id"):
+        previous_started_at[str(previous_active["id"])] = int(previous_active.get("started_at_unix") or 0)
+    if isinstance(previous_active_items, list):
+        for row in previous_active_items:
+            if isinstance(row, dict) and row.get("id"):
+                previous_started_at[str(row["id"])] = int(row.get("started_at_unix") or 0)
+
+    for index, event in enumerate(events):
+        event_type = str(event.get("type") or "")
+        event_time = event_timestamp_unix(event) or 0
+        last_event_at = max(last_event_at, event_time)
+        last_event_index = index
+        item = event_item(event)
+        record = activity_record_from_event(event, index)
+        status = str(record.get("status") or "")
+        record_type = str(record.get("type") or "")
+
+        if event_type.endswith("started") or status == "in_progress":
+            started_at = int(record.get("started_at_unix") or 0) or previous_started_at.get(str(record["id"])) or generated_at_unix
+            record["started_at_unix"] = started_at
+            active_by_id[str(record["id"])] = record
+            continue
+
+        if record_type == "agent_message":
+            text = str(record.get("text") or item.get("text") or "")
+            if text:
+                latest_message = truncate_text(text)
+
+        if record_type == "command_execution":
+            prior = active_by_id.pop(str(record["id"]), {})
+            started_at = int(prior.get("started_at_unix") or 0) or int(record.get("started_at_unix") or 0)
+            if started_at:
+                record["started_at_unix"] = started_at
+                record["duration_sec"] = max(0, generated_at_unix - started_at) if not event_time else max(0, event_time - started_at)
+            if not record.get("command"):
+                record["command"] = str(prior.get("command") or "")
+            exit_code = record.get("exit_code")
+            if exit_code is None:
+                exit_code = prior.get("exit_code")
+                record["exit_code"] = exit_code
+            if not record.get("status"):
+                record["status"] = "failed" if exit_code not in {None, 0} else "completed"
+            compact = {key: value for key, value in record.items() if key in {"id", "command", "status", "exit_code", "duration_sec", "output_tail", "event_index"}}
+            recent_commands.append(compact)
+            last_completed_command = compact
+            if record.get("status") == "failed" or (isinstance(exit_code, int) and exit_code != 0):
+                recent_failures.append(compact)
+                last_failed_command = compact
+        elif record_type in {"file_change", "file_edit", "file_operation"}:
+            file_events.append({key: value for key, value in record.items() if key in {"id", "type", "path", "status", "event_index"}})
+        elif record_type in {"web_search", "web_search_call", "search_query"}:
+            web_searches.append({key: value for key, value in record.items() if key in {"id", "type", "query", "status", "event_index"}})
+
+        usage = event.get("usage") or item.get("usage")
+        if isinstance(usage, dict):
+            token_usage = usage
+
+    active_items = list(active_by_id.values())
+    for record in active_items:
+        started_at = int(record.get("started_at_unix") or 0)
+        if started_at:
+            record["duration_sec"] = max(0, generated_at_unix - started_at)
+    active_commands = [row for row in active_items if row.get("type") == "command_execution"]
+    active_item = active_commands[-1] if active_commands else (active_items[-1] if active_items else {})
+    last_event_age_sec = max(0, generated_at_unix - last_event_at) if last_event_at else None
+    if last_event_age_sec is None and jsonl_path and jsonl_path.exists():
+        last_event_age_sec = max(0, generated_at_unix - int(jsonl_path.stat().st_mtime))
+    no_progress_window_sec = max(1, int(no_progress_window_sec or DEFAULT_CONFIG["no_progress_window_sec"]))
+    stuck_suspected = bool(active_item) and last_event_age_sec is not None and last_event_age_sec >= no_progress_window_sec
+    return {
+        "schema": ACTIVITY_SCHEMA,
+        "role": role,
+        "thread_id": thread_id,
+        "generated_at_unix": generated_at_unix,
+        "jsonl_path": str(jsonl_path or ""),
+        "stderr_path": str(stderr_path or ""),
+        "last_message_path": str(last_message_path or ""),
+        "event_count": len(events),
+        "last_event_index": last_event_index,
+        "last_event_age_sec": last_event_age_sec,
+        "latest_message": latest_message,
+        "active_item": active_item,
+        "active_items": active_items,
+        "recent_commands": recent_commands[-ACTIVITY_RECENT_LIMIT:],
+        "last_completed_command": last_completed_command,
+        "last_failed_command": last_failed_command,
+        "recent_failures": recent_failures[-ACTIVITY_RECENT_LIMIT:],
+        "recent_file_events": file_events[-ACTIVITY_RECENT_LIMIT:],
+        "recent_web_searches": web_searches[-ACTIVITY_RECENT_LIMIT:],
+        "token_usage": token_usage,
+        "stuck_suspected": stuck_suspected,
+    }
+
+
+def write_activity_snapshot(
+    *,
+    role: str,
+    jsonl_path: Path,
+    stderr_path: Path,
+    last_message_path: Path,
+    activity_path: Path,
+    no_progress_window_sec: int | None = None,
+) -> dict[str, Any]:
+    previous = read_json(activity_path, {}) if activity_path.exists() else {}
+    activity = activity_summary_from_events(
+        read_jsonl_events(jsonl_path),
+        role=role,
+        jsonl_path=jsonl_path,
+        stderr_path=stderr_path,
+        last_message_path=last_message_path,
+        generated_at_unix=now_unix(),
+        previous_activity=previous if isinstance(previous, dict) else {},
+        no_progress_window_sec=no_progress_window_sec,
+    )
+    write_json(activity_path, activity)
+    return activity
+
+
+def compact_activity(activity: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "latest_message": activity.get("latest_message", ""),
+        "active_item": activity.get("active_item", {}),
+        "recent_commands": activity.get("recent_commands", []),
+        "last_completed_command": activity.get("last_completed_command", {}),
+        "last_failed_command": activity.get("last_failed_command", {}),
+        "last_event_age_sec": activity.get("last_event_age_sec"),
+        "stuck_suspected": bool(activity.get("stuck_suspected")),
+    }
 
 
 def path_debug(path: str | Path, *, include_tail: bool = False, tail_bytes: int = 4000) -> dict[str, Any]:
@@ -645,7 +943,11 @@ def worker_model_tier_table(config: dict[str, Any]) -> list[dict[str, str]]:
 def render_worker_codex_command_template(config: dict[str, Any], repo: Path = REPO_ROOT, complexity: Any = "medium") -> str:
     tier = select_worker_model_tier(config, complexity)
     reasoning_args = f' -c model_reasoning_effort="{tier["reasoning_effort"]}"' if tier["reasoning_effort"] else ""
-    return f'codex exec --json -m {tier["model"]}{reasoning_args} --sandbox {config.get("sandbox", DEFAULT_CONFIG["sandbox"])} -C {repo} -o <last_message_path> -'
+    return (
+        f'codex exec --json -m {tier["model"]}{reasoning_args} '
+        f'--sandbox {config.get("sandbox", DEFAULT_CONFIG["sandbox"])} -C {repo} '
+        "-o <last_message_path> - > <jsonl_path> 2> <stderr_path>"
+    )
 
 
 def codex_command(
@@ -714,6 +1016,7 @@ def run_codex_role(
     jsonl_path = run_dir / f"{role}.jsonl"
     stderr_path = run_dir / f"{role}.stderr"
     last_message_path = run_dir / f"{role}.last_message.md"
+    activity_path = run_dir / "activity.json" if role == "orchestrator" else run_dir / f"{role}.activity.json"
     jsonl_path.write_text("", encoding="utf-8")
     stderr_path.write_text("", encoding="utf-8")
     command, stdin_text = codex_command(
@@ -737,10 +1040,19 @@ def run_codex_role(
             "latest_jsonl_path": str(jsonl_path),
             "latest_stderr_path": str(stderr_path),
             "latest_last_message_path": str(last_message_path),
+            "latest_activity_path": str(activity_path),
             "active_process": {},
         }
     )
     save_state(state, state_path)
+    write_activity_snapshot(
+        role=role,
+        jsonl_path=jsonl_path,
+        stderr_path=stderr_path,
+        last_message_path=last_message_path,
+        activity_path=activity_path,
+        no_progress_window_sec=int(config.get("no_progress_window_sec") or DEFAULT_CONFIG["no_progress_window_sec"]),
+    )
     started_at = now_unix()
     heartbeat_sec = max(1, int(config.get("heartbeat_sec") or DEFAULT_CONFIG["heartbeat_sec"]))
     no_progress_window_sec = max(1, int(config.get("no_progress_window_sec") or DEFAULT_CONFIG["no_progress_window_sec"]))
@@ -768,6 +1080,14 @@ def run_codex_role(
                     jsonl = path_debug(jsonl_path)
                     stderr = path_debug(stderr_path)
                     last_message = path_debug(last_message_path)
+                    activity = write_activity_snapshot(
+                        role=role,
+                        jsonl_path=jsonl_path,
+                        stderr_path=stderr_path,
+                        last_message_path=last_message_path,
+                        activity_path=activity_path,
+                        no_progress_window_sec=no_progress_window_sec,
+                    )
                     newest_output_at = max(
                         int(row.get("modified_at_unix") or 0)
                         for row in (jsonl, stderr, last_message)
@@ -787,7 +1107,8 @@ def run_codex_role(
                         "last_message_bytes": int(last_message.get("size_bytes") or 0),
                         "output_age_sec": output_age_sec,
                         "no_progress_window_sec": no_progress_window_sec,
-                        "stuck_suspected": output_age_sec >= no_progress_window_sec,
+                        "stuck_suspected": bool(activity.get("stuck_suspected")) or output_age_sec >= no_progress_window_sec,
+                        "activity_path": str(activity_path),
                     }
                     state["active_process"] = active_process
                     save_state(state, state_path)
@@ -801,6 +1122,14 @@ def run_codex_role(
     stdout_text = jsonl_path.read_text(encoding="utf-8", errors="replace")
     stderr_text = stderr_path.read_text(encoding="utf-8", errors="replace")
     events = read_jsonl_events(jsonl_path)
+    write_activity_snapshot(
+        role=role,
+        jsonl_path=jsonl_path,
+        stderr_path=stderr_path,
+        last_message_path=last_message_path,
+        activity_path=activity_path,
+        no_progress_window_sec=no_progress_window_sec,
+    )
     discovered_thread_id = extract_thread_id(events) or thread_id
     rate_limit = detect_rate_limit(
         events=events,
@@ -832,6 +1161,7 @@ def run_codex_role(
         "jsonl_path": jsonl_path,
         "stderr_path": stderr_path,
         "last_message_path": last_message_path,
+        "activity_path": activity_path,
         "events": events,
         "thread_id": discovered_thread_id,
         "rate_limit": rate_limit,
@@ -861,6 +1191,7 @@ def previous_run_artifacts(state: dict[str, Any]) -> dict[str, Any]:
         "latest_jsonl_path": state.get("latest_jsonl_path", ""),
         "latest_stderr_path": state.get("latest_stderr_path", ""),
         "latest_last_message_path": state.get("latest_last_message_path", ""),
+        "latest_activity_path": state.get("latest_activity_path", ""),
         "latest_orchestrator_result": state.get("latest_orchestrator_result", {}),
         "latest_report": state.get("latest_report", ""),
         "last_completed_cycle_id": state.get("last_completed_cycle_id", 0),
@@ -882,6 +1213,8 @@ def orchestrator_prompt(
     worker_commands = {
         row["complexity"]: render_worker_codex_command_template(prompt_config, worker_repo, row["complexity"]) for row in worker_tiers
     }
+    active_run_dir = run_dir_for_cycle(prompt_config, int(state.get("cycle_id") or 0)) if state.get("cycle_id") else runs_dir(prompt_config)
+    agent_registry_path = active_run_dir / "agent_registry.json"
     return (
         "You are the prompt-driven bot autonomy orchestrator for this TrinityCore repo. "
         "Run one durable orchestration pass toward the user's original goal.\n\n"
@@ -904,6 +1237,11 @@ def orchestrator_prompt(
         "- Use large for broad, ambiguous, high-risk, or long-running investigations and changes.\n"
         "- Launch worker sessions with the selected tier's model and reasoning effort; the daemon will not launch workers for you.\n"
         "- When a worker tier affects the work, record the chosen complexity, model, and reasoning effort in progress summaries.\n\n"
+        "Worker/reviewer visibility requirement:\n"
+        f"- Put worker and reviewer artifacts under the current run directory: {active_run_dir}\n"
+        "- For each launched or resumed worker/reviewer, use JSONL, stderr, and last-message paths in that run directory.\n"
+        f"- Write or update {agent_registry_path} whenever launching or resuming a worker/reviewer.\n"
+        f"- Use registry schema {AGENT_REGISTRY_SCHEMA} with an agents array; each entry should include id, role, status, complexity, model, reasoning_effort, jsonl_path, stderr_path, last_message_path, prompt_path, and started_at_unix when known.\n\n"
         f"Worker model tier table:\n{json.dumps(worker_tiers, indent=2, sort_keys=True)}\n\n"
         f"Worker Codex command templates:\n{json.dumps(worker_commands, indent=2, sort_keys=True)}\n\n"
         "At the end of this pass, return a final JSON object and no other trailing text. "
@@ -1667,6 +2005,212 @@ def start_daemon(args: argparse.Namespace) -> int:
     return 0
 
 
+def load_activity_for_artifacts(
+    *,
+    role: str,
+    jsonl_path: Path | None,
+    stderr_path: Path | None = None,
+    last_message_path: Path | None = None,
+    activity_path: Path | None = None,
+    no_progress_window_sec: int | None = None,
+    raw_tail: int = 0,
+) -> dict[str, Any]:
+    activity: dict[str, Any] = {}
+    if activity_path and activity_path.exists():
+        payload = read_json(activity_path, {})
+        if isinstance(payload, dict):
+            activity = payload
+    if not activity and jsonl_path:
+        activity = activity_summary_from_events(
+            read_jsonl_events(jsonl_path),
+            role=role,
+            jsonl_path=jsonl_path,
+            stderr_path=stderr_path,
+            last_message_path=last_message_path,
+            generated_at_unix=now_unix(),
+            no_progress_window_sec=no_progress_window_sec,
+        )
+    if not activity:
+        activity = activity_summary_from_events([], role=role, generated_at_unix=now_unix(), no_progress_window_sec=no_progress_window_sec)
+    if raw_tail:
+        if jsonl_path:
+            activity["raw_jsonl_tail"] = file_tail_lines(jsonl_path, raw_tail)
+        if stderr_path:
+            activity["stderr_tail"] = file_tail_lines(stderr_path, raw_tail)
+    return activity
+
+
+def resolve_run_relative_path(value: Any, run_dir: Path) -> Path | None:
+    text = str(value or "").strip()
+    if not text:
+        return None
+    path = Path(text).expanduser()
+    return path if path.is_absolute() else (run_dir / path).resolve()
+
+
+def agent_registry_entries(run_dir: Path) -> list[dict[str, Any]]:
+    registry_path = run_dir / "agent_registry.json"
+    payload = read_json(registry_path, {}) if registry_path.exists() else {}
+    if not isinstance(payload, dict):
+        return []
+    rows = payload.get("agents")
+    if isinstance(rows, dict):
+        candidates = list(rows.values())
+    elif isinstance(rows, list):
+        candidates = rows
+    else:
+        candidates = payload.get("entries") if isinstance(payload.get("entries"), list) else []
+    return [row for row in candidates if isinstance(row, dict)]
+
+
+def latest_activity_summary(args: argparse.Namespace, state: dict[str, Any], *, raw_tail: int = 0, agent_filter: str = "") -> dict[str, Any]:
+    config = load_config(args.config)
+    no_progress_window_sec = int(config.get("no_progress_window_sec") or DEFAULT_CONFIG["no_progress_window_sec"])
+    jsonl_path = resolve_path(state.get("latest_jsonl_path"))
+    stderr_path = resolve_path(state.get("latest_stderr_path"))
+    last_message_path = resolve_path(state.get("latest_last_message_path"))
+    activity_path = resolve_path(state.get("latest_activity_path"))
+    if activity_path is None and jsonl_path is not None:
+        activity_path = jsonl_path.parent / "activity.json"
+    primary_role = str(state.get("active_agent_role") or "orchestrator")
+    primary = load_activity_for_artifacts(
+        role=primary_role,
+        jsonl_path=jsonl_path,
+        stderr_path=stderr_path,
+        last_message_path=last_message_path,
+        activity_path=activity_path,
+        no_progress_window_sec=no_progress_window_sec,
+        raw_tail=raw_tail,
+    )
+    primary["id"] = primary.get("id") or primary_role
+
+    agents: list[dict[str, Any]] = []
+    run_dir = jsonl_path.parent if jsonl_path else None
+    if run_dir and run_dir.exists():
+        for entry in agent_registry_entries(run_dir):
+            role = str(entry.get("role") or entry.get("id") or "worker")
+            agent_id = str(entry.get("id") or role)
+            if agent_filter and agent_filter not in {role, agent_id}:
+                continue
+            agent_jsonl = resolve_run_relative_path(entry.get("jsonl_path"), run_dir)
+            agent_stderr = resolve_run_relative_path(entry.get("stderr_path"), run_dir)
+            agent_last_message = resolve_run_relative_path(entry.get("last_message_path"), run_dir)
+            agent_activity = resolve_run_relative_path(entry.get("activity_path"), run_dir)
+            snapshot = load_activity_for_artifacts(
+                role=role,
+                jsonl_path=agent_jsonl,
+                stderr_path=agent_stderr,
+                last_message_path=agent_last_message,
+                activity_path=agent_activity,
+                no_progress_window_sec=no_progress_window_sec,
+                raw_tail=raw_tail,
+            )
+            snapshot.update(
+                {
+                    "id": agent_id,
+                    "registry_status": entry.get("status", ""),
+                    "complexity": entry.get("complexity", ""),
+                    "model": entry.get("model", ""),
+                    "reasoning_effort": entry.get("reasoning_effort", ""),
+                }
+            )
+            agents.append(snapshot)
+
+    if agent_filter and agent_filter not in {str(primary.get("role") or ""), str(primary.get("id") or "")}:
+        selected_primary: dict[str, Any] = {}
+    else:
+        selected_primary = primary
+    base = compact_activity(selected_primary) if selected_primary else {
+        "latest_message": "",
+        "active_item": {},
+        "recent_commands": [],
+        "last_completed_command": {},
+        "last_failed_command": {},
+        "last_event_age_sec": None,
+        "stuck_suspected": False,
+    }
+    base.update(
+        {
+            "schema": "orchestrator_daemon_activity_summary_v1",
+            "primary": selected_primary,
+            "agents": agents,
+        }
+    )
+    return base
+
+
+def render_activity_line(activity: dict[str, Any]) -> list[str]:
+    role = str(activity.get("role") or activity.get("id") or "agent")
+    agent_id = str(activity.get("id") or "")
+    label = f"{role}:{agent_id}" if agent_id and agent_id != role else role
+    status = str(activity.get("registry_status") or "")
+    active = activity.get("active_item") if isinstance(activity.get("active_item"), dict) else {}
+    lines = [f"[{label}] events={activity.get('event_count', 0)} age={activity.get('last_event_age_sec')}s stuck={bool(activity.get('stuck_suspected'))}"]
+    if status:
+        lines[0] += f" status={status}"
+    if activity.get("latest_message"):
+        lines.append(f"  latest: {truncate_text(activity.get('latest_message'), 220)}")
+    if active:
+        if active.get("type") == "command_execution":
+            lines.append(f"  active command ({active.get('duration_sec', 0)}s): {truncate_text(active.get('command'), 220)}")
+        else:
+            lines.append(f"  active item: {active.get('type')} {active.get('id', '')}")
+    completed = activity.get("last_completed_command") if isinstance(activity.get("last_completed_command"), dict) else {}
+    failed = activity.get("last_failed_command") if isinstance(activity.get("last_failed_command"), dict) else {}
+    if completed:
+        lines.append(f"  last command: rc={completed.get('exit_code')} {truncate_text(completed.get('command'), 220)}")
+    if failed:
+        lines.append(f"  last failure: rc={failed.get('exit_code')} {truncate_text(failed.get('command'), 220)}")
+    if activity.get("raw_jsonl_tail"):
+        lines.append("  raw jsonl tail:")
+        lines.extend(f"    {line}" for line in str(activity["raw_jsonl_tail"]).splitlines())
+    if activity.get("stderr_tail"):
+        lines.append("  stderr tail:")
+        lines.extend(f"    {line}" for line in str(activity["stderr_tail"]).splitlines())
+    return lines
+
+
+def render_watch_payload(payload: dict[str, Any]) -> str:
+    state = payload.get("state") if isinstance(payload.get("state"), dict) else {}
+    lines = [
+        f"daemon status={state.get('status', '')} phase={state.get('phase', '')} cycle={state.get('cycle_id', 0)}",
+        f"artifacts: {state.get('latest_jsonl_path', '')}",
+    ]
+    primary = payload.get("primary") if isinstance(payload.get("primary"), dict) else {}
+    if primary:
+        lines.extend(render_activity_line(primary))
+    agents = payload.get("agents") if isinstance(payload.get("agents"), list) else []
+    for agent in agents:
+        if isinstance(agent, dict):
+            lines.extend(render_activity_line(agent))
+    return "\n".join(lines)
+
+
+def watch_payload(args: argparse.Namespace) -> dict[str, Any]:
+    state = load_state(args.state)
+    update_state_instance_metadata(state, args, {"runs_dir": str(getattr(args, "runs_dir", DEFAULT_RUNS_DIR))})
+    activity = latest_activity_summary(args, state, raw_tail=max(0, int(getattr(args, "raw_tail", 0) or 0)), agent_filter=str(getattr(args, "agent", "") or ""))
+    return {
+        "schema": "orchestrator_daemon_watch_v1",
+        "generated_at_unix": now_unix(),
+        "instance_id": str(getattr(args, "instance_id", LEGACY_INSTANCE_ID)),
+        "state": state,
+        **activity,
+    }
+
+
+def watch_daemon(args: argparse.Namespace) -> int:
+    interval = max(1.0, float(getattr(args, "interval", 2.0) or 2.0))
+    while True:
+        payload = watch_payload(args)
+        print(render_watch_payload(payload), flush=True)
+        if getattr(args, "once", False):
+            return 0
+        if not args.lock.exists() and not args.pid.exists():
+            return 0
+        time.sleep(interval)
+
+
 def status_payload(args: argparse.Namespace) -> dict[str, Any]:
     state = load_state(args.state)
     update_state_instance_metadata(state, args, {"runs_dir": str(getattr(args, "runs_dir", DEFAULT_RUNS_DIR))})
@@ -1692,6 +2236,7 @@ def status_payload(args: argparse.Namespace) -> dict[str, Any]:
         "output_bytes": diagnostics["output_bytes"],
         "suspicions": diagnostics["suspicions"],
     }
+    payload["activity"] = latest_activity_summary(args, state)
     return payload
 
 
@@ -1708,6 +2253,7 @@ def debug_payload(args: argparse.Namespace) -> dict[str, Any]:
         "pid": args.pid.read_text(encoding="utf-8").strip() if args.pid.exists() else "",
         "stop_requested": args.stop_file.exists(),
         "diagnostics": daemon_diagnostics(args, state, include_tails=True),
+        "activity": latest_activity_summary(args, state, raw_tail=20),
     }
 
 
@@ -1800,6 +2346,11 @@ def build_parser() -> argparse.ArgumentParser:
     start_parser.add_argument("--prompt-file", type=Path, default=None, dest="command_prompt_file")
     subparsers.add_parser("status", help="Print daemon status as JSON.")
     subparsers.add_parser("debug", help="Print daemon process, artifact, and stuck diagnostics as JSON.")
+    watch_parser = subparsers.add_parser("watch", help="Print a summarized live activity view.")
+    watch_parser.add_argument("--once", action="store_true", help="Print one activity snapshot and exit.")
+    watch_parser.add_argument("--raw-tail", type=int, default=0, help="Include the last N raw JSONL/stderr lines.")
+    watch_parser.add_argument("--agent", default="", help="Filter to an agent role or registry id.")
+    watch_parser.add_argument("--interval", type=float, default=2.0, help="Refresh interval in seconds.")
     subparsers.add_parser("stop", help="Request graceful stop after the current atomic step.")
     subparsers.add_parser("instances", help="List legacy and named daemon instances.")
     doctor_parser = subparsers.add_parser("doctor", help="Validate local prerequisites.")
@@ -1821,6 +2372,8 @@ def main() -> int:
     if args.command == "debug":
         print(json.dumps(debug_payload(args), indent=2, sort_keys=True))
         return 0
+    if args.command == "watch":
+        return watch_daemon(args)
     if args.command == "stop":
         return stop_daemon(args)
     if args.command == "instances":

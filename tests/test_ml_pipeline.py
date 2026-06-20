@@ -3208,6 +3208,57 @@ def test_orchestrator_daemon_worker_command_template_uses_selected_tier(tmp_path
     assert "codex exec --json -m gpt-5.3-codex-spark" in command
     assert 'model_reasoning_effort="low"' in command
     assert f"-C {tmp_path}" in command
+    assert "> <jsonl_path> 2> <stderr_path>" in command
+
+
+def test_orchestrator_daemon_activity_parser_summarizes_codex_jsonl_events(tmp_path):
+    events = [
+        {"type": "session", "thread_id": "thread-visible"},
+        {"type": "item.completed", "item": {"id": "m1", "type": "agent_message", "text": "I am checking the daemon."}},
+        {
+            "type": "item.started",
+            "created_at_unix": 100,
+            "item": {"id": "cmd1", "type": "command_execution", "command": "pixi run pytest -q", "status": "in_progress"},
+        },
+        {
+            "type": "item.completed",
+            "created_at_unix": 106,
+            "item": {
+                "id": "cmd1",
+                "type": "command_execution",
+                "command": "pixi run pytest -q",
+                "status": "completed",
+                "exit_code": 0,
+                "aggregated_output": "line 1\nline 2\n",
+            },
+        },
+        {"type": "item.completed", "item": {"id": "f1", "type": "file_change", "path": "tools/bot_ml/orchestrator_daemon.py"}},
+        {"type": "item.completed", "item": {"id": "w1", "type": "web_search", "query": "codex exec json"}},
+        {
+            "type": "item.completed",
+            "item": {
+                "id": "cmd2",
+                "type": "command_execution",
+                "command": "false",
+                "status": "failed",
+                "exit_code": 1,
+                "aggregated_output": "failed\n",
+            },
+        },
+        {"type": "turn.completed", "usage": {"input_tokens": 10, "output_tokens": 5}},
+    ]
+
+    activity = daemon.activity_summary_from_events(events, role="orchestrator", generated_at_unix=110)
+
+    assert activity["schema"] == daemon.ACTIVITY_SCHEMA
+    assert activity["thread_id"] == "thread-visible"
+    assert activity["latest_message"] == "I am checking the daemon."
+    assert activity["last_completed_command"]["command"] == "false"
+    assert activity["last_failed_command"]["exit_code"] == 1
+    assert activity["recent_commands"][0]["duration_sec"] == 6
+    assert activity["recent_file_events"][0]["path"] == "tools/bot_ml/orchestrator_daemon.py"
+    assert activity["recent_web_searches"][0]["query"] == "codex exec json"
+    assert activity["token_usage"] == {"input_tokens": 10, "output_tokens": 5}
 
 
 def test_bot_autonomy_daemon_codex_command_includes_reasoning_effort(tmp_path):
@@ -3889,9 +3940,174 @@ def test_orchestrator_daemon_run_codex_role_streams_artifacts_and_heartbeats(tmp
     assert result["thread_id"] == "thread-streamed"
     assert result["jsonl_path"].read_text(encoding="utf-8").strip()
     assert result["stderr_path"].read_text(encoding="utf-8") == "diagnostic stderr\n"
+    assert result["activity_path"].name == "activity.json"
+    activity = json.loads(result["activity_path"].read_text(encoding="utf-8"))
+    assert activity["latest_message"] == ""
+    assert activity["thread_id"] == "thread-streamed"
     assert saved["active_process"]["status"] == "exited"
     assert saved["active_process"]["stdout_bytes"] > 0
     assert saved["active_process"]["stderr_bytes"] > 0
+    assert saved["latest_activity_path"] == str(result["activity_path"])
+
+
+def test_orchestrator_daemon_run_codex_role_writes_live_activity_snapshot(tmp_path, monkeypatch):
+    state = initial_state()
+    state_path = tmp_path / "daemon_state.json"
+
+    def fake_codex_command(**_kwargs):
+        script = (
+            "import json, sys; "
+            "sys.stdin.read(); "
+            "print(json.dumps({'type': 'item.completed', 'item': {'id': 'm1', 'type': 'agent_message', 'text': 'live message'}}), flush=True); "
+            "print(json.dumps({'type': 'item.started', 'item': {'id': 'cmd1', 'type': 'command_execution', 'command': 'pixi run pytest -q', 'status': 'in_progress'}}), flush=True); "
+            "print(json.dumps({'type': 'item.completed', 'item': {'id': 'cmd1', 'type': 'command_execution', 'command': 'pixi run pytest -q', 'status': 'completed', 'exit_code': 0, 'aggregated_output': 'ok\\\\n'}}), flush=True)"
+        )
+        return [sys.executable, "-c", script], "prompt"
+
+    monkeypatch.setattr("tools.bot_ml.orchestrator_daemon.codex_command", fake_codex_command)
+
+    result = daemon.run_codex_role(
+        role="orchestrator",
+        prompt="prompt",
+        model="gpt-test",
+        repo=tmp_path,
+        sandbox="danger-full-access",
+        cycle_id=1,
+        state=state,
+        config={"runs_dir": str(tmp_path / "runs"), "heartbeat_sec": 1, "no_progress_window_sec": 30},
+        state_path=state_path,
+    )
+
+    activity = json.loads(result["activity_path"].read_text(encoding="utf-8"))
+    assert activity["latest_message"] == "live message"
+    assert activity["last_completed_command"]["command"] == "pixi run pytest -q"
+    assert activity["last_completed_command"]["exit_code"] == 0
+
+
+def test_orchestrator_daemon_watch_once_reads_activity_and_agent_registry(tmp_path, capsys):
+    run_dir = tmp_path / "runs" / "000001"
+    run_dir.mkdir(parents=True)
+    orchestrator_jsonl = run_dir / "orchestrator.jsonl"
+    orchestrator_jsonl.write_text(
+        json.dumps({"type": "item.completed", "item": {"id": "m1", "type": "agent_message", "text": "orchestrator visible"}}) + "\n",
+        encoding="utf-8",
+    )
+    worker_jsonl = run_dir / "worker-1.jsonl"
+    worker_jsonl.write_text(
+        json.dumps(
+            {
+                "type": "item.completed",
+                "item": {
+                    "id": "cmd1",
+                    "type": "command_execution",
+                    "command": "pixi run pytest -q",
+                    "status": "failed",
+                    "exit_code": 1,
+                    "aggregated_output": "boom\n",
+                },
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    (run_dir / "agent_registry.json").write_text(
+        json.dumps(
+            {
+                "schema": daemon.AGENT_REGISTRY_SCHEMA,
+                "agents": [
+                    {
+                        "id": "worker-1",
+                        "role": "worker",
+                        "status": "failed",
+                        "jsonl_path": "worker-1.jsonl",
+                        "stderr_path": "worker-1.stderr",
+                        "last_message_path": "worker-1.last_message.md",
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    state_path = tmp_path / "daemon_state.json"
+    config_path = tmp_path / "daemon_config.json"
+    checklist_path = tmp_path / "master_checklist.json"
+    config_path.write_text(json.dumps({"no_progress_window_sec": 30}), encoding="utf-8")
+    checklist_path.write_text(json.dumps({"deliverables": []}), encoding="utf-8")
+    state = initial_state()
+    state.update({"status": "running", "phase": "codex_orchestrator", "cycle_id": 1, "latest_jsonl_path": str(orchestrator_jsonl)})
+    state_path.write_text(json.dumps(state), encoding="utf-8")
+    args = daemon.build_parser().parse_args(
+        [
+            "--config",
+            str(config_path),
+            "--state",
+            str(state_path),
+            "--checklist",
+            str(checklist_path),
+            "--lock",
+            str(tmp_path / "daemon.lock"),
+            "--pid",
+            str(tmp_path / "daemon.pid"),
+            "--stop-file",
+            str(tmp_path / "daemon.stop"),
+            "--log",
+            str(tmp_path / "daemon.log"),
+            "watch",
+            "--once",
+            "--raw-tail",
+            "1",
+        ]
+    )
+
+    assert daemon.watch_daemon(args) == 0
+    output = capsys.readouterr().out
+    assert "orchestrator visible" in output
+    assert "worker-1" in output
+    assert "last failure: rc=1 pixi run pytest -q" in output
+
+
+def test_orchestrator_daemon_status_and_debug_include_activity(tmp_path):
+    run_dir = tmp_path / "runs" / "000001"
+    run_dir.mkdir(parents=True)
+    jsonl_path = run_dir / "orchestrator.jsonl"
+    jsonl_path.write_text(
+        json.dumps({"type": "item.completed", "item": {"id": "m1", "type": "agent_message", "text": "status activity"}}) + "\n",
+        encoding="utf-8",
+    )
+    state_path = tmp_path / "daemon_state.json"
+    config_path = tmp_path / "daemon_config.json"
+    checklist_path = tmp_path / "master_checklist.json"
+    config_path.write_text(json.dumps({"no_progress_window_sec": 30}), encoding="utf-8")
+    checklist_path.write_text(json.dumps({"deliverables": []}), encoding="utf-8")
+    state = initial_state()
+    state.update({"latest_jsonl_path": str(jsonl_path), "latest_activity_path": str(run_dir / "activity.json")})
+    state_path.write_text(json.dumps(state), encoding="utf-8")
+    args = daemon.build_parser().parse_args(
+        [
+            "--config",
+            str(config_path),
+            "--state",
+            str(state_path),
+            "--checklist",
+            str(checklist_path),
+            "--lock",
+            str(tmp_path / "daemon.lock"),
+            "--pid",
+            str(tmp_path / "daemon.pid"),
+            "--stop-file",
+            str(tmp_path / "daemon.stop"),
+            "--log",
+            str(tmp_path / "daemon.log"),
+            "status",
+        ]
+    )
+
+    status = daemon.status_payload(args)
+    debug = daemon.debug_payload(args)
+
+    assert status["activity"]["latest_message"] == "status activity"
+    assert "last_event_age_sec" in status["activity"]
+    assert debug["activity"]["latest_message"] == "status activity"
 
 
 def test_bot_autonomy_daemon_compat_import_uses_orchestrator_daemon():
