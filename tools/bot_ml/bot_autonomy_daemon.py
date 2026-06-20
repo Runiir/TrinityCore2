@@ -46,11 +46,9 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "emergency_timeout_sec": 900,
     "rate_limit_default_sleep_sec": 3600,
     "rate_limit_max_sleep_sec": 86400,
+    "prompt_file": "",
     "repo": str(REPO_ROOT),
     "test_command": "pixi run pytest -q",
-    "validation_plan_command": "pixi run bot-validation-run-plan --duration-policy completion-watchdog --observe-sec 300 --timeout-sec 900",
-    "validation_command": "bash dataset/validation_run_plan/run_validation_scenarios.sh",
-    "scenario_report_command": "pixi run bot-live-scenario-reports",
     "dvc_status_command": "pixi run dvc status",
     "dvc_push_command": "pixi run dvc push",
 }
@@ -79,6 +77,67 @@ def load_config(path: Path = DEFAULT_CONFIG_PATH) -> dict[str, Any]:
     return config
 
 
+def resolve_path(value: str | Path | None, base: Path = REPO_ROOT) -> Path | None:
+    if value is None:
+        return None
+    text = str(value).strip()
+    if not text:
+        return None
+    path = Path(text).expanduser()
+    return path if path.is_absolute() else (base / path).resolve()
+
+
+def cli_prompt_file(args: argparse.Namespace) -> Path | None:
+    command_prompt = getattr(args, "command_prompt_file", None)
+    if command_prompt:
+        return resolve_path(command_prompt)
+    return resolve_path(getattr(args, "prompt_file", None))
+
+
+def effective_prompt_file(config: dict[str, Any], args: argparse.Namespace | None = None) -> Path | None:
+    if args is not None:
+        path = cli_prompt_file(args)
+        if path is not None:
+            return path
+    return resolve_path(config.get("prompt_file"))
+
+
+def read_prompt_text(prompt_file: Path | None) -> str:
+    if prompt_file is None:
+        return ""
+    return prompt_file.read_text(encoding="utf-8")
+
+
+def runs_dir(config: dict[str, Any]) -> Path:
+    return Path(str(config.get("runs_dir") or DEFAULT_RUNS_DIR))
+
+
+def run_dir_for_cycle(config: dict[str, Any], cycle_id: int) -> Path:
+    return runs_dir(config) / f"{cycle_id:06d}"
+
+
+def prepare_prompt_snapshot(
+    *,
+    config: dict[str, Any],
+    state: dict[str, Any],
+    cycle_id: int,
+) -> tuple[str, Path]:
+    prompt_file = resolve_path(config.get("prompt_file"))
+    prompt_text = read_prompt_text(prompt_file)
+    run_dir = run_dir_for_cycle(config, cycle_id)
+    run_dir.mkdir(parents=True, exist_ok=True)
+    snapshot_path = run_dir / "orchestrator_prompt.md"
+    snapshot_path.write_text(prompt_text, encoding="utf-8")
+    state.update(
+        {
+            "prompt_file": str(prompt_file or ""),
+            "prompt_hash": stable_hash(prompt_text),
+            "prompt_snapshot_path": str(snapshot_path),
+        }
+    )
+    return prompt_text, snapshot_path
+
+
 def initial_state() -> dict[str, Any]:
     return {
         "schema": "bot_autonomy_daemon_state_v1",
@@ -91,9 +150,15 @@ def initial_state() -> dict[str, Any]:
         "latest_jsonl_path": "",
         "latest_stderr_path": "",
         "latest_last_message_path": "",
+        "latest_orchestrator_result": {},
+        "last_completed_cycle_id": 0,
+        "consecutive_orchestrator_failures": 0,
         "rate_limit": {},
         "lane_id": "",
         "latest_report": "",
+        "prompt_file": "",
+        "prompt_hash": "",
+        "prompt_snapshot_path": "",
         "goal_complete": False,
         "updated_at_unix": now_unix(),
     }
@@ -315,7 +380,7 @@ def run_codex_role(
     thread_id: str = "",
     state_path: Path = DEFAULT_STATE_PATH,
 ) -> dict[str, Any]:
-    run_dir = DEFAULT_RUNS_DIR / f"{cycle_id:06d}"
+    run_dir = run_dir_for_cycle(config, cycle_id)
     run_dir.mkdir(parents=True, exist_ok=True)
     jsonl_path = run_dir / f"{role}.jsonl"
     stderr_path = run_dir / f"{role}.stderr"
@@ -370,6 +435,9 @@ def run_codex_role(
                 "thread_id": discovered_thread_id,
                 "command": command,
                 "prompt": prompt,
+                "prompt_file": state.get("prompt_file", ""),
+                "prompt_hash": state.get("prompt_hash", ""),
+                "prompt_snapshot_path": state.get("prompt_snapshot_path", ""),
                 "jsonl_path": str(jsonl_path),
                 "stderr_path": str(stderr_path),
                 "last_message_path": str(last_message_path),
@@ -406,16 +474,60 @@ def extract_json_object(text: str) -> dict[str, Any]:
     return {}
 
 
-def orchestrator_prompt(checklist: dict[str, Any], state: dict[str, Any]) -> str:
+def previous_run_artifacts(state: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "latest_jsonl_path": state.get("latest_jsonl_path", ""),
+        "latest_stderr_path": state.get("latest_stderr_path", ""),
+        "latest_last_message_path": state.get("latest_last_message_path", ""),
+        "latest_orchestrator_result": state.get("latest_orchestrator_result", {}),
+        "latest_report": state.get("latest_report", ""),
+        "last_completed_cycle_id": state.get("last_completed_cycle_id", 0),
+        "consecutive_orchestrator_failures": state.get("consecutive_orchestrator_failures", 0),
+    }
+
+
+def orchestrator_prompt(checklist: dict[str, Any], state: dict[str, Any], user_prompt: str = "") -> str:
     return (
-        "You are the bot autonomy orchestrator for this TrinityCore repo. "
-        "Choose the next single atomic action needed to get every deliverable in "
-        ".codex/plans/auto_bots/master_checklist.json to status accepted with promoted final evidence.\n\n"
-        "Return only a JSON object with fields: action, lane_id, deliverable, reason. "
-        "Valid actions: fix_blocker, run_validation, stop_complete.\n\n"
+        "You are the prompt-driven bot autonomy orchestrator for this TrinityCore repo. "
+        "Run one durable orchestration pass toward the user's original goal.\n\n"
+        "Responsibilities for this pass:\n"
+        "- Read and follow the user prompt snapshot shown below.\n"
+        "- Inspect the current repo, checklist, daemon state, and prior run artifacts.\n"
+        "- Create or resume worker/reviewer Codex sessions as needed; the daemon will not launch them for you.\n"
+        "- Run validation yourself with the repo tools when validation is needed.\n"
+        "- Commit experiment code/configs to git, checkpoint generated data/artifacts with DVC, run dvc status, and push DVC artifacts when appropriate.\n"
+        "- Update progress/checklist files with evidence paths.\n\n"
+        "At the end of this pass, return a final JSON object and no other trailing text. "
+        "The JSON contract is: status (continue, complete, or needs_followup), summary, "
+        "progress_artifacts (array of paths), and optional next_prompt.\n\n"
+        f"User prompt snapshot path: {state.get('prompt_snapshot_path', '')}\n\n"
+        f"User prompt:\n{user_prompt}\n\n"
         f"Checklist summary:\n{json.dumps(checklist_summary(checklist), indent=2, sort_keys=True)}\n\n"
+        f"Previous run artifacts:\n{json.dumps(previous_run_artifacts(state), indent=2, sort_keys=True)}\n\n"
         f"Current daemon state:\n{json.dumps(state, indent=2, sort_keys=True)}\n"
     )
+
+
+def normalize_orchestrator_result(payload: dict[str, Any]) -> dict[str, Any]:
+    status = str(payload.get("status") or "").strip().lower()
+    if status not in {"continue", "complete", "needs_followup"}:
+        return {}
+    artifacts = payload.get("progress_artifacts")
+    if not isinstance(artifacts, list):
+        artifacts = []
+    normalized = {
+        "status": status,
+        "summary": str(payload.get("summary") or ""),
+        "progress_artifacts": [str(path) for path in artifacts if isinstance(path, (str, Path))],
+    }
+    if payload.get("next_prompt") is not None:
+        normalized["next_prompt"] = str(payload.get("next_prompt") or "")
+    return normalized
+
+
+def read_orchestrator_result(last_message_path: Path) -> dict[str, Any]:
+    text = last_message_path.read_text(encoding="utf-8", errors="replace") if last_message_path.exists() else ""
+    return normalize_orchestrator_result(extract_json_object(text))
 
 
 def worker_prompt(action: dict[str, Any], checklist: dict[str, Any]) -> str:
@@ -506,11 +618,7 @@ def run_validation_cycle(repo: Path, config: dict[str, Any]) -> dict[str, Any]:
 
 def run_one_cycle(state: dict[str, Any], config: dict[str, Any], state_path: Path = DEFAULT_STATE_PATH) -> dict[str, Any]:
     repo = Path(config["repo"]).resolve()
-    checklist = load_checklist()
-    if checklist_complete(checklist):
-        state.update({"status": "complete", "phase": "complete", "goal_complete": True})
-        save_state(state, state_path)
-        return {"done": True, "reason": "checklist_complete"}
+    checklist = load_checklist(resolve_path(config.get("checklist_path")) or DEFAULT_CHECKLIST_PATH)
 
     was_paused_rate_limit = state.get("status") == "paused_rate_limit"
     existing_rate_limit = state.get("rate_limit") if isinstance(state.get("rate_limit"), dict) else {}
@@ -519,15 +627,18 @@ def run_one_cycle(state: dict[str, Any], config: dict[str, Any], state_path: Pat
     save_state(state, state_path)
 
     if was_paused_rate_limit:
-        role = str(existing_rate_limit.get("agent_role") or "orchestrator")
+        role = "orchestrator"
+        state.update(
+            {
+                "prompt_file": existing_rate_limit.get("prompt_file", state.get("prompt_file", "")),
+                "prompt_hash": existing_rate_limit.get("prompt_hash", state.get("prompt_hash", "")),
+                "prompt_snapshot_path": existing_rate_limit.get("prompt_snapshot_path", state.get("prompt_snapshot_path", "")),
+            }
+        )
         model = str(config["orchestrator_model"])
-        if role == "worker":
-            model = str(config["worker_model"])
-        elif role == "reviewer":
-            model = str(config["reviewer_model"])
         resumed = run_codex_role(
             role=role,
-            prompt=str(existing_rate_limit.get("prompt") or "Resume after the rate-limit reset and finish the interrupted atomic step."),
+            prompt=str(existing_rate_limit.get("prompt") or "Resume after the rate-limit reset and finish the interrupted orchestrator pass."),
             model=model,
             repo=repo,
             sandbox=str(config["sandbox"]),
@@ -541,14 +652,84 @@ def run_one_cycle(state: dict[str, Any], config: dict[str, Any], state_path: Pat
             handle_rate_limit(state, resumed["rate_limit"], state_path)
             return {"done": False, "rate_limit": True}
         if resumed["returncode"] != 0:
-            return {"done": False, "error": f"{role}_resume_failed", "returncode": resumed["returncode"]}
-        state.update({"status": "running", "phase": f"{role}_resumed", "rate_limit": {}, "thread_id": resumed.get("thread_id", "")})
+            result = {
+                "status": "failure",
+                "error": "orchestrator_resume_failed",
+                "returncode": resumed["returncode"],
+                "thread_id": resumed.get("thread_id", ""),
+                "jsonl_path": str(resumed["jsonl_path"]),
+                "stderr_path": str(resumed["stderr_path"]),
+                "last_message_path": str(resumed["last_message_path"]),
+            }
+            state.update(
+                {
+                    "status": "running",
+                    "phase": "orchestrator_resume_failed",
+                    "latest_orchestrator_result": result,
+                    "consecutive_orchestrator_failures": int(state.get("consecutive_orchestrator_failures") or 0) + 1,
+                    "rate_limit": {},
+                    "thread_id": resumed.get("thread_id", ""),
+                }
+            )
+            save_state(state, state_path)
+            return {"done": False, "error": "orchestrator_resume_failed", "returncode": resumed["returncode"]}
+        result = read_orchestrator_result(resumed["last_message_path"])
+        if not result:
+            result = {
+                "status": "failure",
+                "error": "orchestrator_result_contract_invalid",
+                "returncode": resumed["returncode"],
+                "thread_id": resumed.get("thread_id", ""),
+                "jsonl_path": str(resumed["jsonl_path"]),
+                "stderr_path": str(resumed["stderr_path"]),
+                "last_message_path": str(resumed["last_message_path"]),
+            }
+            state.update(
+                {
+                    "status": "running",
+                    "phase": "orchestrator_result_contract_invalid",
+                    "latest_orchestrator_result": result,
+                    "consecutive_orchestrator_failures": int(state.get("consecutive_orchestrator_failures") or 0) + 1,
+                    "rate_limit": {},
+                    "thread_id": resumed.get("thread_id", ""),
+                }
+            )
+            save_state(state, state_path)
+            return {"done": False, "error": "orchestrator_result_contract_invalid"}
+        state.update(
+            {
+                "status": "complete" if result["status"] == "complete" else "running",
+                "phase": "complete" if result["status"] == "complete" else "orchestrator_pass_complete",
+                "goal_complete": result["status"] == "complete",
+                "latest_orchestrator_result": result,
+                "last_completed_cycle_id": cycle_id,
+                "consecutive_orchestrator_failures": 0,
+                "rate_limit": {},
+                "thread_id": resumed.get("thread_id", ""),
+            }
+        )
         save_state(state, state_path)
-        return {"done": False, "resumed": role}
+        return {"done": result["status"] == "complete", "status": result["status"], "resumed": role}
+
+    try:
+        user_prompt, _snapshot_path = prepare_prompt_snapshot(config=config, state=state, cycle_id=cycle_id)
+    except OSError as exc:
+        result = {"status": "failure", "error": "prompt_file_unreadable", "detail": str(exc)}
+        state.update(
+            {
+                "status": "running",
+                "phase": "prompt_file_unreadable",
+                "latest_orchestrator_result": result,
+                "consecutive_orchestrator_failures": int(state.get("consecutive_orchestrator_failures") or 0) + 1,
+            }
+        )
+        save_state(state, state_path)
+        return {"done": False, "error": "prompt_file_unreadable"}
+    save_state(state, state_path)
 
     orchestrator = run_codex_role(
         role="orchestrator",
-        prompt=orchestrator_prompt(checklist, state),
+        prompt=orchestrator_prompt(checklist, state, user_prompt),
         model=str(config["orchestrator_model"]),
         repo=repo,
         sandbox=str(config["sandbox"]),
@@ -561,74 +742,64 @@ def run_one_cycle(state: dict[str, Any], config: dict[str, Any], state_path: Pat
         handle_rate_limit(state, orchestrator["rate_limit"], state_path)
         return {"done": False, "rate_limit": True}
     if orchestrator["returncode"] != 0:
+        result = {
+            "status": "failure",
+            "error": "orchestrator_failed",
+            "returncode": orchestrator["returncode"],
+            "thread_id": orchestrator.get("thread_id", ""),
+            "jsonl_path": str(orchestrator["jsonl_path"]),
+            "stderr_path": str(orchestrator["stderr_path"]),
+            "last_message_path": str(orchestrator["last_message_path"]),
+        }
+        state.update(
+            {
+                "status": "running",
+                "phase": "orchestrator_failed",
+                "latest_orchestrator_result": result,
+                "consecutive_orchestrator_failures": int(state.get("consecutive_orchestrator_failures") or 0) + 1,
+                "thread_id": orchestrator.get("thread_id", ""),
+            }
+        )
+        save_state(state, state_path)
         return {"done": False, "error": "orchestrator_failed", "returncode": orchestrator["returncode"]}
 
-    action = extract_json_object(orchestrator["last_message_path"].read_text(encoding="utf-8", errors="replace") if orchestrator["last_message_path"].exists() else "")
-    if action.get("action") == "stop_complete" or checklist_complete(load_checklist()):
-        state.update({"status": "complete", "phase": "complete", "goal_complete": True})
+    result = read_orchestrator_result(orchestrator["last_message_path"])
+    if not result:
+        result = {
+            "status": "failure",
+            "error": "orchestrator_result_contract_invalid",
+            "returncode": orchestrator["returncode"],
+            "thread_id": orchestrator.get("thread_id", ""),
+            "jsonl_path": str(orchestrator["jsonl_path"]),
+            "stderr_path": str(orchestrator["stderr_path"]),
+            "last_message_path": str(orchestrator["last_message_path"]),
+        }
+        state.update(
+            {
+                "status": "running",
+                "phase": "orchestrator_result_contract_invalid",
+                "latest_orchestrator_result": result,
+                "consecutive_orchestrator_failures": int(state.get("consecutive_orchestrator_failures") or 0) + 1,
+                "thread_id": orchestrator.get("thread_id", ""),
+            }
+        )
         save_state(state, state_path)
-        return {"done": True, "reason": "orchestrator_stop_complete"}
+        return {"done": False, "error": "orchestrator_result_contract_invalid"}
 
-    lane_id = next_lane_id(state, action)
-    state.update({"lane_id": lane_id})
+    state.update(
+        {
+            "status": "complete" if result["status"] == "complete" else "running",
+            "phase": "complete" if result["status"] == "complete" else "orchestrator_pass_complete",
+            "goal_complete": result["status"] == "complete",
+            "latest_orchestrator_result": result,
+            "last_completed_cycle_id": cycle_id,
+            "consecutive_orchestrator_failures": 0,
+            "rate_limit": {},
+            "thread_id": orchestrator.get("thread_id", ""),
+        }
+    )
     save_state(state, state_path)
-
-    if action.get("action") == "fix_blocker":
-        worktree = create_worker_worktree(repo, lane_id)
-        worker = run_codex_role(
-            role="worker",
-            prompt=worker_prompt(action, checklist),
-            model=str(config["worker_model"]),
-            repo=worktree,
-            sandbox=str(config["sandbox"]),
-            cycle_id=cycle_id,
-            state=state,
-            config=config,
-            state_path=state_path,
-        )
-        if worker["rate_limit"]:
-            handle_rate_limit(state, worker["rate_limit"], state_path)
-            return {"done": False, "rate_limit": True}
-        if worker["returncode"] != 0:
-            return {"done": False, "error": "worker_failed", "returncode": worker["returncode"]}
-        tests = run_shell(str(config["test_command"]), worktree, None)
-        run_dir = DEFAULT_RUNS_DIR / f"{cycle_id:06d}"
-        write_json(run_dir / "tests.json", tests)
-        if tests["returncode"] != 0:
-            state.update({"latest_report": str(run_dir / "tests.json"), "phase": "tests_failed"})
-            save_state(state, state_path)
-            return {"done": False, "error": "tests_failed", "returncode": tests["returncode"]}
-        reviewer = run_codex_role(
-            role="reviewer",
-            prompt=reviewer_prompt(action),
-            model=str(config["reviewer_model"]),
-            repo=worktree,
-            sandbox=str(config["sandbox"]),
-            cycle_id=cycle_id,
-            state=state,
-            config=config,
-            state_path=state_path,
-        )
-        if reviewer["rate_limit"]:
-            handle_rate_limit(state, reviewer["rate_limit"], state_path)
-            return {"done": False, "rate_limit": True}
-        if reviewer["returncode"] != 0 or not reviewer_accepted(reviewer["last_message_path"]):
-            return {"done": False, "error": "reviewer_rejected", "returncode": reviewer["returncode"]}
-        branch = f"bot-autonomy/{lane_id}"
-        merge = subprocess.run(["git", "merge", "--no-ff", "--no-edit", branch], cwd=repo, text=True, capture_output=True, check=False)
-        write_json(DEFAULT_RUNS_DIR / f"{cycle_id:06d}" / "merge.json", {"returncode": merge.returncode, "stdout": merge.stdout, "stderr": merge.stderr})
-        if merge.returncode != 0:
-            return {"done": False, "error": "merge_failed", "returncode": merge.returncode}
-
-    if action.get("action") in {"run_validation", "fix_blocker"}:
-        validation = run_validation_cycle(repo, config)
-        report_path = DEFAULT_RUNS_DIR / f"{cycle_id:06d}" / "validation.json"
-        write_json(report_path, validation)
-        state.update({"latest_report": str(report_path), "phase": "validation_complete" if validation["accepted"] else "validation_failed"})
-        save_state(state, state_path)
-        return {"done": False, "validation": validation["accepted"]}
-
-    return {"done": False, "error": "unknown_action", "action": action}
+    return {"done": result["status"] == "complete", "status": result["status"]}
 
 
 def acquire_lock(lock_path: Path, pid_path: Path) -> None:
@@ -649,17 +820,14 @@ def release_lock(lock_path: Path, pid_path: Path) -> None:
 
 def run_daemon(args: argparse.Namespace) -> int:
     config = load_config(args.config)
+    prompt_file = effective_prompt_file(config, args)
+    config["prompt_file"] = str(prompt_file or "")
+    config["checklist_path"] = str(args.checklist)
     state = load_state(args.state)
     acquire_lock(args.lock, args.pid)
-    failures: dict[str, int] = {}
     try:
         while True:
             state = load_state(args.state)
-            checklist = load_checklist(args.checklist)
-            if checklist_complete(checklist):
-                state.update({"status": "complete", "phase": "complete", "goal_complete": True})
-                save_state(state, args.state)
-                return 0
             if state.get("status") == "paused_rate_limit":
                 if not sleep_until_resume(state, args.stop_file, args.state):
                     return 0
@@ -674,11 +842,9 @@ def run_daemon(args: argparse.Namespace) -> int:
                 continue
             error = str(result.get("error") or "")
             if error:
-                failures[error] = failures.get(error, 0) + 1
-                state.update({"status": "blocked" if failures[error] >= 3 else "running", "phase": error})
+                state = load_state(args.state)
+                state.update({"status": "running", "phase": error})
                 save_state(state, args.state)
-                if failures[error] >= 3:
-                    return 2
             if args.once or (args.max_cycles and int(state.get("cycle_id") or 0) >= args.max_cycles):
                 return 0
             time.sleep(max(1, int(config["heartbeat_sec"])))
@@ -690,26 +856,30 @@ def start_daemon(args: argparse.Namespace) -> int:
     if args.lock.exists():
         raise SystemExit(f"daemon already appears to be running: {args.lock}")
     args.log.parent.mkdir(parents=True, exist_ok=True)
+    command = [
+        sys.executable,
+        "-m",
+        "tools.bot_ml.bot_autonomy_daemon",
+        "--config",
+        str(args.config),
+        "--state",
+        str(args.state),
+        "--checklist",
+        str(args.checklist),
+        "--lock",
+        str(args.lock),
+        "--pid",
+        str(args.pid),
+        "--stop-file",
+        str(args.stop_file),
+    ]
+    prompt_file = cli_prompt_file(args)
+    if prompt_file is not None:
+        command.extend(["--prompt-file", str(prompt_file)])
+    command.append("run")
     with args.log.open("ab") as log:
         process = subprocess.Popen(
-            [
-                sys.executable,
-                "-m",
-                "tools.bot_ml.bot_autonomy_daemon",
-                "--config",
-                str(args.config),
-                "--state",
-                str(args.state),
-                "--checklist",
-                str(args.checklist),
-                "--lock",
-                str(args.lock),
-                "--pid",
-                str(args.pid),
-                "--stop-file",
-                str(args.stop_file),
-                "run",
-            ],
+            command,
             cwd=REPO_ROOT,
             stdout=log,
             stderr=subprocess.STDOUT,
@@ -744,15 +914,21 @@ def stop_daemon(args: argparse.Namespace) -> int:
 
 def doctor(args: argparse.Namespace) -> int:
     config = load_config(args.config)
+    prompt_file = effective_prompt_file(config, args)
     checks: list[dict[str, Any]] = []
     for name, command in [
         ("codex", "codex --version"),
-        ("dvc_status", str(config["dvc_status_command"])),
+        ("dvc", "pixi run dvc --version"),
     ]:
         result = run_shell(command, REPO_ROOT, int(config["emergency_timeout_sec"]))
         checks.append({"name": name, "ok": result["returncode"] == 0, "returncode": result["returncode"], "stderr_tail": result["stderr"][-1000:]})
     worldserver = REPO_ROOT / "build" / "src" / "server" / "worldserver" / "worldserver"
     checks.append({"name": "worldserver_binary", "ok": worldserver.exists(), "path": str(worldserver)})
+    if prompt_file is None:
+        checks.append({"name": "prompt_file", "ok": True, "configured": False, "path": ""})
+    else:
+        readable = prompt_file.exists() and prompt_file.is_file() and os.access(prompt_file, os.R_OK)
+        checks.append({"name": "prompt_file", "ok": readable, "configured": True, "path": str(prompt_file)})
     checks.append({"name": "daemon_lock", "ok": not args.lock.exists(), "path": str(args.lock), "locked": args.lock.exists()})
     payload = {
         "schema": "bot_autonomy_daemon_doctor_v1",
@@ -773,14 +949,18 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--pid", type=Path, default=DEFAULT_PID_PATH)
     parser.add_argument("--stop-file", type=Path, default=DEFAULT_STOP_PATH)
     parser.add_argument("--log", type=Path, default=DEFAULT_LOG_PATH)
+    parser.add_argument("--prompt-file", type=Path, default=None)
     subparsers = parser.add_subparsers(dest="command", required=True)
     run_parser = subparsers.add_parser("run", help="Run the daemon in the foreground.")
+    run_parser.add_argument("--prompt-file", type=Path, default=None, dest="command_prompt_file")
     run_parser.add_argument("--once", action="store_true", help="Run at most one daemon cycle.")
     run_parser.add_argument("--max-cycles", type=int, default=0)
-    subparsers.add_parser("start", help="Start the daemon in the background.")
+    start_parser = subparsers.add_parser("start", help="Start the daemon in the background.")
+    start_parser.add_argument("--prompt-file", type=Path, default=None, dest="command_prompt_file")
     subparsers.add_parser("status", help="Print daemon status as JSON.")
     subparsers.add_parser("stop", help="Request graceful stop after the current atomic step.")
-    subparsers.add_parser("doctor", help="Validate local prerequisites.")
+    doctor_parser = subparsers.add_parser("doctor", help="Validate local prerequisites.")
+    doctor_parser.add_argument("--prompt-file", type=Path, default=None, dest="command_prompt_file")
     return parser
 
 

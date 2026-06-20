@@ -13,6 +13,7 @@ from ml.group_roles.policies import policy_for_role
 from ml.raid.metrics import raid_metrics
 from ml.raid.scheduler import RaidAssignmentScheduler
 from tools.bot_ml.common import DATASET_CONTRACT_VERSION, EXPORT_TABLES, numeric_features
+from tools.bot_ml import bot_autonomy_daemon as daemon
 from tools.bot_ml.build_decision_dataset import build_row, build_rows, index_decision_fingerprints, index_semantic_stats
 from tools.bot_ml.extract_world_knowledge import (
     REQUIRED_NONEMPTY_WORLD_MANIFESTS,
@@ -3003,20 +3004,25 @@ def test_bot_autonomy_daemon_resumes_paused_role_thread(tmp_path, monkeypatch):
             "status": "paused_rate_limit",
             "cycle_id": 4,
             "rate_limit": {
-                "agent_role": "worker",
+                "agent_role": "orchestrator",
                 "thread_id": "thread-123",
-                "prompt": "continue worker",
+                "prompt": "continue orchestrator",
             },
         }
     )
     calls = []
+    last_message = tmp_path / "last.md"
 
     def fake_run_codex_role(**kwargs):
         calls.append(kwargs)
+        last_message.write_text(json.dumps({"status": "continue", "summary": "resumed", "progress_artifacts": []}), encoding="utf-8")
         return {
             "rate_limit": None,
             "returncode": 0,
             "thread_id": kwargs["thread_id"],
+            "jsonl_path": tmp_path / "orchestrator.jsonl",
+            "stderr_path": tmp_path / "orchestrator.stderr",
+            "last_message_path": last_message,
         }
 
     monkeypatch.setattr("tools.bot_ml.bot_autonomy_daemon.load_checklist", lambda path=None: checklist)
@@ -3030,14 +3036,195 @@ def test_bot_autonomy_daemon_resumes_paused_role_thread(tmp_path, monkeypatch):
             "worker_model": "gpt-5-worker",
             "reviewer_model": "gpt-5-reviewer",
             "sandbox": "danger-full-access",
+            "runs_dir": str(tmp_path / "runs"),
         },
         tmp_path / "state.json",
     )
 
-    assert result == {"done": False, "resumed": "worker"}
-    assert calls[0]["role"] == "worker"
+    assert result == {"done": False, "status": "continue", "resumed": "orchestrator"}
+    assert calls[0]["role"] == "orchestrator"
     assert calls[0]["thread_id"] == "thread-123"
-    assert calls[0]["model"] == "gpt-5-worker"
+    assert calls[0]["model"] == "gpt-5"
+
+
+def test_bot_autonomy_daemon_prompt_file_precedence(tmp_path):
+    config_prompt = tmp_path / "config_prompt.md"
+    cli_prompt = tmp_path / "cli_prompt.md"
+    config_prompt.write_text("config prompt", encoding="utf-8")
+    cli_prompt.write_text("cli prompt", encoding="utf-8")
+
+    config = {"prompt_file": str(config_prompt)}
+    config_args = daemon.build_parser().parse_args(["run", "--once"])
+    global_cli_args = daemon.build_parser().parse_args(["--prompt-file", str(cli_prompt), "run", "--once"])
+    command_cli_args = daemon.build_parser().parse_args(["run", "--prompt-file", str(cli_prompt), "--once"])
+
+    assert daemon.effective_prompt_file(config, config_args) == config_prompt
+    assert daemon.effective_prompt_file(config, global_cli_args) == cli_prompt
+    assert daemon.effective_prompt_file(config, command_cli_args) == cli_prompt
+
+
+def test_bot_autonomy_daemon_copies_prompt_snapshot_and_prompts_orchestrator(tmp_path, monkeypatch):
+    prompt_file = tmp_path / "goal.md"
+    prompt_file.write_text("Original user goal: validate Stonecore.", encoding="utf-8")
+    state = initial_state()
+    calls = []
+    last_message = tmp_path / "orchestrator.last_message.md"
+
+    def fake_run_codex_role(**kwargs):
+        calls.append(kwargs)
+        last_message.write_text(
+            json.dumps({"status": "continue", "summary": "made progress", "progress_artifacts": ["progress.json"]}),
+            encoding="utf-8",
+        )
+        return {
+            "rate_limit": None,
+            "returncode": 0,
+            "thread_id": "thread-1",
+            "jsonl_path": tmp_path / "orchestrator.jsonl",
+            "stderr_path": tmp_path / "orchestrator.stderr",
+            "last_message_path": last_message,
+        }
+
+    monkeypatch.setattr("tools.bot_ml.bot_autonomy_daemon.load_checklist", lambda path=None: {"deliverables": []})
+    monkeypatch.setattr("tools.bot_ml.bot_autonomy_daemon.run_codex_role", fake_run_codex_role)
+
+    result = run_one_cycle(
+        state,
+        {
+            "repo": str(tmp_path),
+            "orchestrator_model": "gpt-5",
+            "sandbox": "danger-full-access",
+            "prompt_file": str(prompt_file),
+            "runs_dir": str(tmp_path / "runs"),
+        },
+        tmp_path / "state.json",
+    )
+
+    snapshot = tmp_path / "runs" / "000001" / "orchestrator_prompt.md"
+    assert result == {"done": False, "status": "continue"}
+    assert snapshot.read_text(encoding="utf-8") == "Original user goal: validate Stonecore."
+    assert state["prompt_file"] == str(prompt_file)
+    assert state["prompt_snapshot_path"] == str(snapshot)
+    assert state["prompt_hash"]
+    assert "Original user goal: validate Stonecore." in calls[0]["prompt"]
+    assert "Previous run artifacts" in calls[0]["prompt"]
+    assert "Checklist summary" in calls[0]["prompt"]
+
+
+def test_bot_autonomy_daemon_complete_result_marks_goal_complete(tmp_path, monkeypatch):
+    state = initial_state()
+    last_message = tmp_path / "orchestrator.last_message.md"
+
+    def fake_run_codex_role(**kwargs):
+        last_message.write_text(
+            json.dumps({"status": "complete", "summary": "done", "progress_artifacts": ["final.json"]}),
+            encoding="utf-8",
+        )
+        return {
+            "rate_limit": None,
+            "returncode": 0,
+            "thread_id": "thread-complete",
+            "jsonl_path": tmp_path / "orchestrator.jsonl",
+            "stderr_path": tmp_path / "orchestrator.stderr",
+            "last_message_path": last_message,
+        }
+
+    monkeypatch.setattr("tools.bot_ml.bot_autonomy_daemon.load_checklist", lambda path=None: {"deliverables": []})
+    monkeypatch.setattr("tools.bot_ml.bot_autonomy_daemon.run_codex_role", fake_run_codex_role)
+
+    result = run_one_cycle(
+        state,
+        {
+            "repo": str(tmp_path),
+            "orchestrator_model": "gpt-5",
+            "sandbox": "danger-full-access",
+            "runs_dir": str(tmp_path / "runs"),
+        },
+        tmp_path / "state.json",
+    )
+
+    assert result == {"done": True, "status": "complete"}
+    assert state["status"] == "complete"
+    assert state["goal_complete"] is True
+    assert state["latest_orchestrator_result"]["status"] == "complete"
+    assert state["last_completed_cycle_id"] == 1
+
+
+def test_bot_autonomy_daemon_continue_does_not_run_deprecated_validation(tmp_path, monkeypatch):
+    state = initial_state()
+    last_message = tmp_path / "orchestrator.last_message.md"
+
+    def fake_run_codex_role(**kwargs):
+        last_message.write_text(
+            json.dumps({"status": "continue", "summary": "workers handled it", "progress_artifacts": ["worker.marker"]}),
+            encoding="utf-8",
+        )
+        return {
+            "rate_limit": None,
+            "returncode": 0,
+            "thread_id": "thread-continue",
+            "jsonl_path": tmp_path / "orchestrator.jsonl",
+            "stderr_path": tmp_path / "orchestrator.stderr",
+            "last_message_path": last_message,
+        }
+
+    def fail_validation(*args, **kwargs):
+        raise AssertionError("daemon must not run validation commands")
+
+    monkeypatch.setattr("tools.bot_ml.bot_autonomy_daemon.load_checklist", lambda path=None: {"deliverables": []})
+    monkeypatch.setattr("tools.bot_ml.bot_autonomy_daemon.run_codex_role", fake_run_codex_role)
+    monkeypatch.setattr("tools.bot_ml.bot_autonomy_daemon.run_validation_cycle", fail_validation)
+
+    result = run_one_cycle(
+        state,
+        {
+            "repo": str(tmp_path),
+            "orchestrator_model": "gpt-5",
+            "sandbox": "danger-full-access",
+            "runs_dir": str(tmp_path / "runs"),
+            "validation_command": "false",
+            "validation_plan_command": "false",
+            "scenario_report_command": "false",
+        },
+        tmp_path / "state.json",
+    )
+
+    assert result == {"done": False, "status": "continue"}
+    assert state["latest_orchestrator_result"]["progress_artifacts"] == ["worker.marker"]
+
+
+def test_bot_autonomy_daemon_non_rate_orchestrator_failure_is_recorded(tmp_path, monkeypatch):
+    state = initial_state()
+
+    def fake_run_codex_role(**kwargs):
+        return {
+            "rate_limit": None,
+            "returncode": 2,
+            "thread_id": "thread-failed",
+            "jsonl_path": tmp_path / "orchestrator.jsonl",
+            "stderr_path": tmp_path / "orchestrator.stderr",
+            "last_message_path": tmp_path / "orchestrator.last_message.md",
+        }
+
+    monkeypatch.setattr("tools.bot_ml.bot_autonomy_daemon.load_checklist", lambda path=None: {"deliverables": []})
+    monkeypatch.setattr("tools.bot_ml.bot_autonomy_daemon.run_codex_role", fake_run_codex_role)
+
+    result = run_one_cycle(
+        state,
+        {
+            "repo": str(tmp_path),
+            "orchestrator_model": "gpt-5",
+            "sandbox": "danger-full-access",
+            "runs_dir": str(tmp_path / "runs"),
+        },
+        tmp_path / "state.json",
+    )
+
+    assert result == {"done": False, "error": "orchestrator_failed", "returncode": 2}
+    assert state["status"] == "running"
+    assert state["phase"] == "orchestrator_failed"
+    assert state["latest_orchestrator_result"]["returncode"] == 2
+    assert state["consecutive_orchestrator_failures"] == 1
 
 
 def test_live_bot_validation_completion_watchdog_writes_heartbeats(tmp_path):
