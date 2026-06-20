@@ -1,0 +1,149 @@
+{
+  "all_passed": false,
+  "checklist_hash": "71cedcefba3f0f52073e46fa9606bd74e15185c1cd036b7f2c9561728e37e76f",
+  "deliverables": [
+    {
+      "deliverable": "movement_smoke",
+      "evidence_artifact": "artifacts/live_validation_quest_mob_assist_150s/report.json",
+      "failure_label": "",
+      "followup_lane": "",
+      "lane": "live_validation_quest_mob_assist_150s",
+      "reviewer": "",
+      "status": "accepted"
+    },
+    {
+      "deliverable": "kill_quest",
+      "evidence_artifact": "artifacts/live_validation_quest_mob_assist_150s/report.json",
+      "failure_label": "",
+      "followup_lane": "",
+      "lane": "live_validation_quest_mob_assist_150s",
+      "reviewer": "",
+      "status": "accepted"
+    },
+    {
+      "deliverable": "collect_quest",
+      "evidence_artifact": "artifacts/live_validation_quest_mob_assist_150s/report.json",
+      "failure_label": "",
+      "followup_lane": "",
+      "lane": "live_validation_quest_mob_assist_150s",
+      "reviewer": "",
+      "status": "accepted"
+    },
+    {
+      "deliverable": "quest_hub_batching",
+      "evidence_artifact": "artifacts/live_validation_quest_mob_assist_150s/report.json",
+      "failure_label": "",
+      "followup_lane": "",
+      "lane": "live_validation_quest_mob_assist_150s",
+      "reviewer": "",
+      "status": "accepted"
+    },
+    {
+      "deliverable": "trainer_visit",
+      "evidence_artifact": "artifacts/live_validation_quest_mob_assist_150s/report.json",
+      "failure_label": "",
+      "followup_lane": "",
+      "lane": "live_validation_quest_mob_assist_150s",
+      "reviewer": "",
+      "status": "accepted"
+    },
+    {
+      "deliverable": "vendor_repair",
+      "evidence_artifact": "artifacts/live_validation_quest_mob_assist_150s/report.json",
+      "failure_label": "",
+      "followup_lane": "",
+      "lane": "live_validation_quest_mob_assist_150s",
+      "reviewer": "",
+      "status": "accepted"
+    },
+    {
+      "deliverable": "profession_recipe_acquisition",
+      "evidence_artifact": "artifacts/live_validation_quest_mob_assist_150s/report.json",
+      "failure_label": "",
+      "followup_lane": "",
+      "lane": "live_validation_quest_mob_assist_150s",
+      "reviewer": "",
+      "status": "accepted"
+    },
+    {
+      "deliverable": "material_farming",
+      "evidence_artifact": "artifacts/live_validation_quest_mob_assist_150s/report.json",
+      "failure_label": "",
+      "followup_lane": "",
+      "lane": "live_validation_quest_mob_assist_150s",
+      "reviewer": "",
+      "status": "accepted"
+    },
+    {
+      "deliverable": "smart_loot",
+      "evidence_artifact": "artifacts/live_validation_quest_mob_assist_150s/report.json",
+      "failure_label": "",
+      "followup_lane": "",
+      "lane": "live_validation_quest_mob_assist_150s",
+      "reviewer": "",
+      "status": "accepted"
+    },
+    {
+      "deliverable": "normal_dungeon_trash",
+      "evidence_artifact": "dataset/live_validation_scenario_reports_built/stonecore_5n.json",
+      "failure_label": "invalid_segment_live_reports,missing_segment_required_evidence,scenario_clear_not_complete",
+      "followup_lane": "",
+      "lane": "stonecore_5n",
+      "reviewer": "",
+      "status": "review"
+    },
+    {
+      "deliverable": "dungeon_boss",
+      "evidence_artifact": "dataset/live_validation_scenario_reports_built/stonecore_5n.json",
+      "failure_label": "invalid_segment_live_reports,missing_segment_required_evidence,scenario_clear_not_complete",
+      "followup_lane": "",
+      "lane": "stonecore_5n",
+      "reviewer": "",
+      "status": "review"
+    },
+    {
+      "deliverable": "full_stonecore_clear",
+      "evidence_artifact": "dataset/live_validation_scenario_reports_built/stonecore_5n.json",
+      "failure_label": "segment_evidence_debug_only,missing_uninterrupted_full_clear_report,missing_required_evidence",
+      "followup_lane": "stonecore_5n_uninterrupted_full_clear",
+      "lane": "stonecore_5n",
+      "reviewer": "",
+      "status": "needs_followup"
+    },
+    {
+      "deliverable": "raid_trash",
+      "evidence_artifact": "dataset/live_validation_scenario_reports_built/blackwing_descent_10n.json",
+      "failure_label": "invalid_segment_live_reports,missing_segment_required_evidence,scenario_clear_not_complete",
+      "followup_lane": "",
+      "lane": "blackwing_descent_10n",
+      "reviewer": "",
+      "status": "review"
+    },
+    {
+      "deliverable": "raid_boss",
+      "evidence_artifact": "dataset/live_validation_scenario_reports_built/blackwing_descent_10n.json",
+      "failure_label": "invalid_segment_live_reports,missing_segment_required_evidence,scenario_clear_not_complete",
+      "followup_lane": "",
+      "lane": "blackwing_descent_10n",
+      "reviewer": "",
+      "status": "review"
+    },
+    {
+      "deliverable": "full_blackwing_descent_clear",
+      "evidence_artifact": "dataset/live_validation_scenario_reports_built/blackwing_descent_10n.json",
+      "failure_label": "segment_evidence_debug_only,missing_uninterrupted_full_clear_report,missing_required_evidence,failure_labels_present",
+      "followup_lane": "blackwing_descent_10n_uninterrupted_full_clear",
+      "lane": "blackwing_descent_10n",
+      "reviewer": "",
+      "status": "needs_followup"
+    }
+  ],
+  "schema": "bot_autonomy_master_checklist_v1",
+  "statuses": [
+    "accepted",
+    "needs_followup",
+    "pending",
+    "review",
+    "running"
+  ]
+}

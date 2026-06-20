@@ -14,6 +14,7 @@ from ml.raid.metrics import raid_metrics
 from ml.raid.scheduler import RaidAssignmentScheduler
 from tools.bot_ml.common import DATASET_CONTRACT_VERSION, EXPORT_TABLES, numeric_features
 from tools.bot_ml import orchestrator_daemon as daemon
+from tools.bot_ml.build_autonomy_master_checklist import refresh_checklist_from_evidence
 from tools.bot_ml.build_decision_dataset import build_row, build_rows, index_decision_fingerprints, index_semantic_stats
 from tools.bot_ml.extract_world_knowledge import (
     REQUIRED_NONEMPTY_WORLD_MANIFESTS,
@@ -3536,6 +3537,79 @@ def test_live_artifact_promotion_requires_accepted_evidence(tmp_path):
 
     assert accepted["accepted"] is True
     assert json.loads(canonical.read_text(encoding="utf-8"))["all_passed"] is True
+
+
+def test_autonomy_checklist_refreshes_from_stage_and_scenario_evidence(tmp_path):
+    lower_report = tmp_path / "artifacts" / "live_validation_quest_mob_assist_150s" / "report.json"
+    lower_report.parent.mkdir(parents=True)
+    lower_report.write_text(
+        json.dumps(
+            {
+                "schema": "bot_live_validation_report_v1",
+                "stages": [
+                    {"stage": "movement_smoke", "passed": True, "missing": []},
+                    {"stage": "kill_quest", "passed": True, "missing": []},
+                    {"stage": "collect_quest", "passed": True, "missing": []},
+                    {"stage": "quest_hub_batching", "passed": True, "missing": []},
+                    {"stage": "trainer_visit", "passed": True, "missing": []},
+                    {"stage": "vendor_repair", "passed": True, "missing": []},
+                    {"stage": "profession_recipe_acquisition", "passed": True, "missing": []},
+                    {"stage": "material_farming", "passed": True, "missing": []},
+                    {"stage": "smart_loot", "passed": True, "missing": []},
+                    {"stage": "full_stonecore_clear", "passed": False, "missing": ["stonecore_live_clear_report"]},
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    scenario_root = tmp_path / "scenario_reports"
+    scenario_root.mkdir()
+    (scenario_root / "stonecore_5n.json").write_text(
+        json.dumps(
+            {
+                "scenario_id": "stonecore_5n",
+                "difficulty": "normal_5man",
+                "trash_cleared": True,
+                "trash_pulls": 8,
+                "boss_kills": 4,
+                "clear_complete": False,
+                "clear_complete_blockers": ["segment_evidence_debug_only", "missing_uninterrupted_full_clear_report"],
+            }
+        ),
+        encoding="utf-8",
+    )
+    status_path = tmp_path / "validation_run_status" / "manifest.json"
+    status_path.parent.mkdir()
+    status_path.write_text(
+        json.dumps(
+            {
+                "scenarios": [
+                    {
+                        "scenario_id": "stonecore_5n",
+                        "full_clear_ready": False,
+                        "blockers": ["invalid_segment_live_reports", "scenario_clear_not_complete"],
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    checklist = refresh_checklist_from_evidence(
+        evidence_reports=[lower_report],
+        validation_status=status_path,
+        scenario_report_root=scenario_root,
+    )
+    rows = {row["deliverable"]: row for row in checklist["deliverables"]}
+
+    assert rows["movement_smoke"]["status"] == "accepted"
+    assert rows["smart_loot"]["status"] == "accepted"
+    assert rows["normal_dungeon_trash"]["status"] == "review"
+    assert rows["normal_dungeon_trash"]["evidence_artifact"] == str(scenario_root / "stonecore_5n.json")
+    assert rows["dungeon_boss"]["status"] == "review"
+    assert rows["full_stonecore_clear"]["status"] == "needs_followup"
+    assert rows["full_stonecore_clear"]["failure_label"] == "segment_evidence_debug_only,missing_uninterrupted_full_clear_report"
+    assert checklist["all_passed"] is False
 
 
 def test_live_bot_validation_requires_activity_evidence_for_smoke_gates():
