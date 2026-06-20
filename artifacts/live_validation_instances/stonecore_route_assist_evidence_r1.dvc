@@ -1,0 +1,6 @@
+outs:
+- md5: 05753682cd4b667c265abf9181a4befd.dir
+  size: 989114
+  nfiles: 11
+  hash: md5
+  path: stonecore_route_assist_evidence_r1

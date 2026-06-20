@@ -6028,6 +6028,13 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             tankFocusTarget = findLastKnownFocusTarget();
         if (tankFocusTarget)
         {
+            Creature* tankFocusCreature = tankFocusTarget->ToCreature();
+            bool tankFocusIsRouteTarget = isValidationRouteScriptTarget(tankFocusCreature);
+            bool tankFocusIsBossRoute = tankFocusIsRouteTarget && _config.ValidationRouteKind == "boss";
+            char const* tankFocusSituation = tankFocusIsRouteTarget
+                ? (tankFocusIsBossRoute ? (bot->GetMap() && bot->GetMap()->IsRaid() ? "raid_boss" : "dungeon_boss") : "normal_dungeon_trash")
+                : "validation_route_prerequisite";
+
             state.ValidationRouteUnresolvedFocusHoldCount = 0;
             Unit* staleTarget = target && target != tankFocusTarget ? target : nullptr;
             Unit* staleVictim = bot->GetVictim() && bot->GetVictim() != tankFocusTarget ? bot->GetVictim() : nullptr;
@@ -6053,22 +6060,28 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             {
                 MoveBotToPoint(state, bot, target->GetPositionX(), target->GetPositionY(), target->GetPositionZ());
                 action = "move_to_validation_route_assist_target";
-                situation = "validation_route_prerequisite";
+                situation = tankFocusSituation;
                 std::string raw = BuildRawJson(bot, target);
                 std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, activity);
-                RecordEvent(state, bot, "validation_route_prerequisite", target, "force_tank_focus", raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry);
-                maybeValidationPrerequisiteNoProgressAssist(target, "force_tank_focus_path_no_progress");
+                RecordEvent(state, bot, tankFocusIsRouteTarget ? "validation_route_target_search" : "validation_route_prerequisite", target,
+                    tankFocusIsRouteTarget ? "assist_tank_focus" : "force_tank_focus", raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry);
+                maybeValidationPrerequisiteNoProgressAssist(target, tankFocusIsRouteTarget ? "route_target_path_no_progress" : "force_tank_focus_path_no_progress");
                 return true;
             }
 
             BotActionResult pull = executor.Pull(bot, target);
             bool cast = spellId && TryCastCombatSpell(bot, target, spellId);
-            action = "validation_route_prerequisite_assist";
-            situation = "validation_route_prerequisite";
+            action = tankFocusIsRouteTarget
+                ? (tankFocusIsBossRoute ? "validation_route_boss_action" : "validation_route_trash_action")
+                : "validation_route_prerequisite_assist";
+            situation = tankFocusSituation;
             std::string raw = BuildRawJson(bot, target);
             std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, activity);
-            RecordEvent(state, bot, "validation_route_prerequisite", target, ToString(pull), raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry, cast ? spellId : 0);
-            maybeValidationPrerequisiteNoProgressAssist(target, "force_tank_focus_no_health_progress");
+            RecordEvent(state, bot, tankFocusIsRouteTarget ? (tankFocusIsBossRoute ? "boss_action" : "trash_action") : "validation_route_prerequisite",
+                target, ToString(pull), raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry, cast ? spellId : 0);
+            if (tankFocusIsBossRoute)
+                RecordEvent(state, bot, "boss_started", target, _config.ValidationRouteMechanicProfile.c_str(), raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry, cast ? spellId : 0);
+            maybeValidationPrerequisiteNoProgressAssist(target, tankFocusIsRouteTarget ? "route_target_no_health_progress" : "force_tank_focus_no_health_progress");
             state.WasInCombat = true;
             return true;
         }
