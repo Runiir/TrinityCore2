@@ -52,6 +52,7 @@ def live_validate_command(
     observe_sec: int | None = None,
     timeout_sec: int | None = None,
     route: dict[str, Any] | None = None,
+    segment_output: bool = True,
     duration_policy: str = "completion-watchdog",
     heartbeat_sec: int = 30,
     no_progress_window_sec: int = 180,
@@ -65,11 +66,10 @@ def live_validate_command(
         scenario_id,
     ]
     if route:
-        output_dir = output_dir / segment_output_name(route)
+        if segment_output:
+            output_dir = output_dir / segment_output_name(route)
         context_args.extend(
             [
-                "--validation-segment-id",
-                segment_output_name(route),
                 "--validation-route-node-id",
                 str(route.get("route_node_id") or ""),
                 "--validation-route-label",
@@ -82,6 +82,11 @@ def live_validate_command(
                 str(route.get("mechanic_profile") or ""),
             ]
         )
+        if segment_output:
+            context_args[2:2] = [
+                "--validation-segment-id",
+                segment_output_name(route),
+            ]
     command = [
         "pixi",
         "run",
@@ -177,11 +182,15 @@ def build_plan(
             continue
         routes = (routes_by_scenario or {}).get(scenario_id, [])
         route_segments = [route for route in routes if route.get("kind") in {"trash", "boss"}]
+        executable_route_segments = [route for route in route_segments if route_coordinates_valid(route)]
+        full_clear_entry_route = executable_route_segments[0] if executable_route_segments else None
         live_command = live_validate_command(
             scenario,
             output_root,
             observe_sec,
             timeout_sec,
+            full_clear_entry_route,
+            segment_output=False,
             duration_policy=duration_policy,
             heartbeat_sec=heartbeat_sec,
             no_progress_window_sec=no_progress_window_sec,

@@ -1573,6 +1573,13 @@ def test_validation_run_plan_segments_boss_routes_for_aggregate_reports():
     assert "dataset/live_validation_scenarios/blackwing_descent_10n/report.json" in bwd["scenario_report_command"]
     assert "dataset/live_validation_scenarios/blackwing_descent_10n/01_entry_trash/report.json" in bwd["scenario_report_command"]
     assert "dataset/live_validation_scenarios/blackwing_descent_10n/02_magmaw/report.json" in bwd["scenario_report_command"]
+    full_command = bwd["live_validate_command"]
+    assert "--validation-route-node-id" in full_command
+    assert full_command[full_command.index("--validation-route-node-id") + 1] == "bwd_trash_entry"
+    assert "--validation-route-kind" in full_command
+    assert full_command[full_command.index("--validation-route-kind") + 1] == "trash"
+    assert "--validation-segment-id" not in full_command
+    assert full_command[full_command.index("--output-dir") + 1] == "dataset/live_validation_scenarios/blackwing_descent_10n"
     first_command = bwd["segments"][1]["live_validate_command"]
     assert "--validation-scenario-id" in first_command
     assert first_command[first_command.index("--validation-scenario-id") + 1] == "blackwing_descent_10n"
@@ -3791,6 +3798,100 @@ def test_orchestrator_daemon_status_payload_exposes_merge_back(tmp_path, monkeyp
     payload = daemon.status_payload(args)
 
     assert payload["merge_back"]["status"] == "merged"
+
+
+def test_orchestrator_daemon_diagnostics_flags_stale_codex_child_without_output(tmp_path, monkeypatch):
+    config_path = tmp_path / "daemon_config.json"
+    state_path = tmp_path / "daemon_state.json"
+    checklist_path = tmp_path / "master_checklist.json"
+    lock_path = tmp_path / "daemon.lock"
+    pid_path = tmp_path / "daemon.pid"
+    stop_path = tmp_path / "daemon.stop"
+    log_path = tmp_path / "daemon.log"
+    config_path.write_text(json.dumps({"heartbeat_sec": 10, "no_progress_window_sec": 30}), encoding="utf-8")
+    checklist_path.write_text(json.dumps({"deliverables": []}), encoding="utf-8")
+    lock_path.write_text("10", encoding="utf-8")
+    pid_path.write_text("10", encoding="utf-8")
+    state = initial_state()
+    state.update(
+        {
+            "status": "running",
+            "phase": "codex_orchestrator",
+            "updated_at_unix": 1000,
+            "latest_jsonl_path": str(tmp_path / "missing.jsonl"),
+            "latest_stderr_path": str(tmp_path / "missing.stderr"),
+            "latest_last_message_path": str(tmp_path / "missing.last_message.md"),
+        }
+    )
+    state_path.write_text(json.dumps(state), encoding="utf-8")
+    args = daemon.build_parser().parse_args(
+        [
+            "--config",
+            str(config_path),
+            "--state",
+            str(state_path),
+            "--checklist",
+            str(checklist_path),
+            "--lock",
+            str(lock_path),
+            "--pid",
+            str(pid_path),
+            "--stop-file",
+            str(stop_path),
+            "--log",
+            str(log_path),
+            "debug",
+        ]
+    )
+    monkeypatch.setattr("tools.bot_ml.orchestrator_daemon.now_unix", lambda: 1100)
+    table = {
+        10: {"pid": 10, "ppid": 1, "state": "S", "elapsed_sec": 100, "command": "python -m tools.bot_ml.orchestrator_daemon run"},
+        11: {"pid": 11, "ppid": 10, "state": "S", "elapsed_sec": 45, "command": "node codex exec --json -m gpt-5.5"},
+    }
+
+    diagnostics = daemon.daemon_diagnostics(args, state, table=table)
+
+    assert diagnostics["healthy"] is False
+    assert "daemon_state_not_heartbeating_while_codex_active" in diagnostics["suspicions"]
+    assert "active_codex_no_output_over_no_progress_window" in diagnostics["suspicions"]
+    assert diagnostics["active_codex_processes"][0]["pid"] == 11
+
+
+def test_orchestrator_daemon_run_codex_role_streams_artifacts_and_heartbeats(tmp_path, monkeypatch):
+    state = initial_state()
+    state_path = tmp_path / "daemon_state.json"
+
+    def fake_codex_command(**_kwargs):
+        script = (
+            "import json, sys; "
+            "sys.stdin.read(); "
+            "print(json.dumps({'type': 'session', 'thread_id': 'thread-streamed'})); "
+            "sys.stderr.write('diagnostic stderr\\n')"
+        )
+        return [sys.executable, "-c", script], "prompt"
+
+    monkeypatch.setattr("tools.bot_ml.orchestrator_daemon.codex_command", fake_codex_command)
+
+    result = daemon.run_codex_role(
+        role="orchestrator",
+        prompt="prompt",
+        model="gpt-test",
+        repo=tmp_path,
+        sandbox="danger-full-access",
+        cycle_id=1,
+        state=state,
+        config={"runs_dir": str(tmp_path / "runs"), "heartbeat_sec": 1, "no_progress_window_sec": 30},
+        state_path=state_path,
+    )
+
+    saved = json.loads(state_path.read_text(encoding="utf-8"))
+    assert result["returncode"] == 0
+    assert result["thread_id"] == "thread-streamed"
+    assert result["jsonl_path"].read_text(encoding="utf-8").strip()
+    assert result["stderr_path"].read_text(encoding="utf-8") == "diagnostic stderr\n"
+    assert saved["active_process"]["status"] == "exited"
+    assert saved["active_process"]["stdout_bytes"] > 0
+    assert saved["active_process"]["stderr_bytes"] > 0
 
 
 def test_bot_autonomy_daemon_compat_import_uses_orchestrator_daemon():

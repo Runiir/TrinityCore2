@@ -273,6 +273,7 @@ def initial_state() -> dict[str, Any]:
         "latest_jsonl_path": "",
         "latest_stderr_path": "",
         "latest_last_message_path": "",
+        "active_process": {},
         "latest_orchestrator_result": {},
         "last_completed_cycle_id": 0,
         "consecutive_orchestrator_failures": 0,
@@ -377,6 +378,142 @@ def read_jsonl_events(path: Path) -> list[dict[str, Any]]:
         if isinstance(payload, dict):
             rows.append(payload)
     return rows
+
+
+def path_debug(path: str | Path, *, include_tail: bool = False, tail_bytes: int = 4000) -> dict[str, Any]:
+    resolved = Path(path) if path else Path("")
+    payload: dict[str, Any] = {
+        "path": str(path or ""),
+        "exists": bool(path) and resolved.exists(),
+    }
+    if not payload["exists"]:
+        return payload
+    stat = resolved.stat()
+    payload.update(
+        {
+            "size_bytes": stat.st_size,
+            "modified_at_unix": int(stat.st_mtime),
+            "modified_age_sec": max(0, now_unix() - int(stat.st_mtime)),
+        }
+    )
+    if include_tail and resolved.is_file() and stat.st_size:
+        with resolved.open("rb") as handle:
+            handle.seek(max(0, stat.st_size - tail_bytes))
+            payload["tail"] = handle.read(tail_bytes).decode("utf-8", errors="replace")
+    return payload
+
+
+def proc_table() -> dict[int, dict[str, Any]]:
+    proc_root = Path("/proc")
+    if not proc_root.exists():
+        return {}
+    ticks_per_second = os.sysconf("SC_CLK_TCK")
+    try:
+        uptime_seconds = float((proc_root / "uptime").read_text(encoding="utf-8").split()[0])
+    except (OSError, ValueError, IndexError):
+        uptime_seconds = 0.0
+    rows: dict[int, dict[str, Any]] = {}
+    for entry in proc_root.iterdir():
+        if not entry.name.isdigit():
+            continue
+        pid = int(entry.name)
+        try:
+            stat_text = (entry / "stat").read_text(encoding="utf-8", errors="replace")
+            right = stat_text.rsplit(")", 1)[1].strip().split()
+            state = right[0]
+            ppid = int(right[1])
+            start_ticks = int(right[19])
+            raw_cmdline = (entry / "cmdline").read_bytes().replace(b"\0", b" ").strip()
+            command = raw_cmdline.decode("utf-8", errors="replace")
+            if not command:
+                command = stat_text.split("(", 1)[1].rsplit(")", 1)[0]
+        except (OSError, ValueError, IndexError):
+            continue
+        elapsed_sec = max(0, int(uptime_seconds - (start_ticks / ticks_per_second))) if uptime_seconds else 0
+        rows[pid] = {"pid": pid, "ppid": ppid, "state": state, "elapsed_sec": elapsed_sec, "command": command}
+    return rows
+
+
+def descendant_processes(root_pid: int, table: dict[int, dict[str, Any]] | None = None) -> list[dict[str, Any]]:
+    if root_pid <= 0:
+        return []
+    rows = table or proc_table()
+    children_by_parent: dict[int, list[dict[str, Any]]] = {}
+    for row in rows.values():
+        children_by_parent.setdefault(int(row["ppid"]), []).append(row)
+    descendants: list[dict[str, Any]] = []
+    pending = list(children_by_parent.get(root_pid, []))
+    while pending:
+        child = pending.pop(0)
+        descendants.append(child)
+        pending.extend(children_by_parent.get(int(child["pid"]), []))
+    return descendants
+
+
+def daemon_diagnostics(
+    args: argparse.Namespace,
+    state: dict[str, Any],
+    *,
+    include_tails: bool = False,
+    table: dict[int, dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    config = load_config(args.config)
+    heartbeat_sec = max(1, int(config.get("heartbeat_sec") or DEFAULT_CONFIG["heartbeat_sec"]))
+    no_progress_window_sec = max(1, int(config.get("no_progress_window_sec") or DEFAULT_CONFIG["no_progress_window_sec"]))
+    pid_text = args.pid.read_text(encoding="utf-8").strip() if args.pid.exists() else ""
+    try:
+        daemon_pid = int(pid_text)
+    except ValueError:
+        daemon_pid = 0
+    processes = table or proc_table()
+    daemon_process = processes.get(daemon_pid, {})
+    descendants = descendant_processes(daemon_pid, processes)
+    codex_children = [row for row in descendants if "codex exec" in str(row.get("command") or "")]
+    artifact_paths = {
+        "jsonl": state.get("latest_jsonl_path", ""),
+        "stderr": state.get("latest_stderr_path", ""),
+        "last_message": state.get("latest_last_message_path", ""),
+        "prompt_snapshot": state.get("prompt_snapshot_path", ""),
+        "cycle_start_git_status": state.get("cycle_start_git_status_path", ""),
+    }
+    artifacts = {name: path_debug(path, include_tail=include_tails and name in {"stderr", "last_message"}) for name, path in artifact_paths.items()}
+    output_artifacts = [artifacts["jsonl"], artifacts["stderr"], artifacts["last_message"]]
+    output_bytes = sum(int(row.get("size_bytes") or 0) for row in output_artifacts)
+    newest_output_at = max((int(row.get("modified_at_unix") or 0) for row in output_artifacts if row.get("exists")), default=0)
+    active_process = state.get("active_process") if isinstance(state.get("active_process"), dict) else {}
+    state_age_sec = max(0, now_unix() - int(state.get("updated_at_unix") or 0))
+    max_codex_elapsed_sec = max((int(row.get("elapsed_sec") or 0) for row in codex_children), default=0)
+    suspicions: list[str] = []
+    if args.lock.exists() and not daemon_pid:
+        suspicions.append("lock_exists_without_pid")
+    if daemon_pid and not daemon_process:
+        suspicions.append("pid_file_process_missing")
+    if state.get("status") == "running" and str(state.get("phase") or "").startswith("codex_") and not codex_children:
+        suspicions.append("codex_phase_without_active_codex_child")
+    if state.get("status") == "running" and codex_children and state_age_sec > heartbeat_sec * 2:
+        suspicions.append("daemon_state_not_heartbeating_while_codex_active")
+    if codex_children and output_bytes == 0 and max_codex_elapsed_sec >= no_progress_window_sec:
+        suspicions.append("active_codex_no_output_over_no_progress_window")
+    latest_result = state.get("latest_orchestrator_result") if isinstance(state.get("latest_orchestrator_result"), dict) else {}
+    if latest_result.get("status") == "failure":
+        suspicions.append(f"latest_orchestrator_failure:{latest_result.get('error') or 'unknown'}")
+    return {
+        "schema": "orchestrator_daemon_diagnostics_v1",
+        "generated_at_unix": now_unix(),
+        "state_age_sec": state_age_sec,
+        "heartbeat_sec": heartbeat_sec,
+        "no_progress_window_sec": no_progress_window_sec,
+        "daemon_pid": daemon_pid,
+        "daemon_process": daemon_process,
+        "descendant_processes": descendants,
+        "active_codex_processes": codex_children,
+        "active_process": active_process,
+        "artifacts": artifacts,
+        "newest_output_at_unix": newest_output_at,
+        "output_bytes": output_bytes,
+        "suspicions": suspicions,
+        "healthy": bool(daemon_process) and not suspicions,
+    }
 
 
 def event_text(event: dict[str, Any]) -> str:
@@ -577,6 +714,8 @@ def run_codex_role(
     jsonl_path = run_dir / f"{role}.jsonl"
     stderr_path = run_dir / f"{role}.stderr"
     last_message_path = run_dir / f"{role}.last_message.md"
+    jsonl_path.write_text("", encoding="utf-8")
+    stderr_path.write_text("", encoding="utf-8")
     command, stdin_text = codex_command(
         role=role,
         prompt=prompt,
@@ -598,28 +737,78 @@ def run_codex_role(
             "latest_jsonl_path": str(jsonl_path),
             "latest_stderr_path": str(stderr_path),
             "latest_last_message_path": str(last_message_path),
+            "active_process": {},
         }
     )
     save_state(state, state_path)
-    completed = subprocess.run(
-        command,
-        input=stdin_text,
-        text=True,
-        capture_output=True,
-        cwd=repo,
-        check=False,
-    )
-    jsonl_path.write_text(completed.stdout, encoding="utf-8")
-    stderr_path.write_text(completed.stderr, encoding="utf-8")
+    started_at = now_unix()
+    heartbeat_sec = max(1, int(config.get("heartbeat_sec") or DEFAULT_CONFIG["heartbeat_sec"]))
+    no_progress_window_sec = max(1, int(config.get("no_progress_window_sec") or DEFAULT_CONFIG["no_progress_window_sec"]))
+    with jsonl_path.open("w", encoding="utf-8") as stdout_handle, stderr_path.open("w", encoding="utf-8") as stderr_handle:
+        process = subprocess.Popen(
+            command,
+            stdin=subprocess.PIPE,
+            stdout=stdout_handle,
+            stderr=stderr_handle,
+            text=True,
+            cwd=repo,
+        )
+        try:
+            if process.stdin is not None:
+                process.stdin.write(stdin_text or "")
+                process.stdin.close()
+            last_heartbeat_monotonic = 0.0
+            while True:
+                returncode = process.poll()
+                now_monotonic = time.monotonic()
+                should_heartbeat = returncode is not None or now_monotonic - last_heartbeat_monotonic >= heartbeat_sec
+                if should_heartbeat:
+                    stdout_handle.flush()
+                    stderr_handle.flush()
+                    jsonl = path_debug(jsonl_path)
+                    stderr = path_debug(stderr_path)
+                    last_message = path_debug(last_message_path)
+                    newest_output_at = max(
+                        int(row.get("modified_at_unix") or 0)
+                        for row in (jsonl, stderr, last_message)
+                        if row.get("exists")
+                    )
+                    output_age_sec = max(0, now_unix() - newest_output_at) if newest_output_at else max(0, now_unix() - started_at)
+                    active_process = {
+                        "pid": process.pid,
+                        "role": role,
+                        "status": "exited" if returncode is not None else "running",
+                        "started_at_unix": started_at,
+                        "running_sec": max(0, now_unix() - started_at),
+                        "last_heartbeat_at_unix": now_unix(),
+                        "returncode": returncode,
+                        "stdout_bytes": int(jsonl.get("size_bytes") or 0),
+                        "stderr_bytes": int(stderr.get("size_bytes") or 0),
+                        "last_message_bytes": int(last_message.get("size_bytes") or 0),
+                        "output_age_sec": output_age_sec,
+                        "no_progress_window_sec": no_progress_window_sec,
+                        "stuck_suspected": output_age_sec >= no_progress_window_sec,
+                    }
+                    state["active_process"] = active_process
+                    save_state(state, state_path)
+                    last_heartbeat_monotonic = now_monotonic
+                if returncode is not None:
+                    break
+                time.sleep(min(5, heartbeat_sec))
+        finally:
+            if process.poll() is None:
+                process.wait()
+    stdout_text = jsonl_path.read_text(encoding="utf-8", errors="replace")
+    stderr_text = stderr_path.read_text(encoding="utf-8", errors="replace")
     events = read_jsonl_events(jsonl_path)
     discovered_thread_id = extract_thread_id(events) or thread_id
     rate_limit = detect_rate_limit(
         events=events,
-        stdout_text=completed.stdout,
-        stderr_text=completed.stderr,
-        returncode=completed.returncode,
-        default_sleep_sec=int(config["rate_limit_default_sleep_sec"]),
-        max_sleep_sec=int(config["rate_limit_max_sleep_sec"]),
+        stdout_text=stdout_text,
+        stderr_text=stderr_text,
+        returncode=process.returncode,
+        default_sleep_sec=int(config.get("rate_limit_default_sleep_sec") or DEFAULT_CONFIG["rate_limit_default_sleep_sec"]),
+        max_sleep_sec=int(config.get("rate_limit_max_sleep_sec") or DEFAULT_CONFIG["rate_limit_max_sleep_sec"]),
     )
     if rate_limit:
         rate_limit.update(
@@ -639,7 +828,7 @@ def run_codex_role(
     return {
         "role": role,
         "command": command,
-        "returncode": completed.returncode,
+        "returncode": process.returncode,
         "jsonl_path": jsonl_path,
         "stderr_path": stderr_path,
         "last_message_path": last_message_path,
@@ -1484,7 +1673,7 @@ def status_payload(args: argparse.Namespace) -> dict[str, Any]:
     checklist = load_checklist(args.checklist)
     rate_limit = state.get("rate_limit") if isinstance(state.get("rate_limit"), dict) else {}
     merge_back = state.get("merge_back") if isinstance(state.get("merge_back"), dict) else {}
-    return {
+    payload = {
         "schema": "orchestrator_daemon_status_v1",
         "instance_id": str(getattr(args, "instance_id", LEGACY_INSTANCE_ID)),
         "state": state,
@@ -1494,6 +1683,31 @@ def status_payload(args: argparse.Namespace) -> dict[str, Any]:
         "rate_limit_sleep_remaining_sec": max(0, int(rate_limit.get("resume_at_unix") or 0) - now_unix()),
         "merge_back": merge_back,
         "stop_requested": args.stop_file.exists(),
+    }
+    diagnostics = daemon_diagnostics(args, state, include_tails=False)
+    payload["diagnostics"] = {
+        "healthy": diagnostics["healthy"],
+        "state_age_sec": diagnostics["state_age_sec"],
+        "active_codex_process_count": len(diagnostics["active_codex_processes"]),
+        "output_bytes": diagnostics["output_bytes"],
+        "suspicions": diagnostics["suspicions"],
+    }
+    return payload
+
+
+def debug_payload(args: argparse.Namespace) -> dict[str, Any]:
+    state = load_state(args.state)
+    update_state_instance_metadata(state, args, {"runs_dir": str(getattr(args, "runs_dir", DEFAULT_RUNS_DIR))})
+    checklist = load_checklist(args.checklist)
+    return {
+        "schema": "orchestrator_daemon_debug_v1",
+        "instance_id": str(getattr(args, "instance_id", LEGACY_INSTANCE_ID)),
+        "state": state,
+        "checklist": checklist_summary(checklist),
+        "lock_exists": args.lock.exists(),
+        "pid": args.pid.read_text(encoding="utf-8").strip() if args.pid.exists() else "",
+        "stop_requested": args.stop_file.exists(),
+        "diagnostics": daemon_diagnostics(args, state, include_tails=True),
     }
 
 
@@ -1585,6 +1799,7 @@ def build_parser() -> argparse.ArgumentParser:
     start_parser = subparsers.add_parser("start", help="Start the daemon in the background.")
     start_parser.add_argument("--prompt-file", type=Path, default=None, dest="command_prompt_file")
     subparsers.add_parser("status", help="Print daemon status as JSON.")
+    subparsers.add_parser("debug", help="Print daemon process, artifact, and stuck diagnostics as JSON.")
     subparsers.add_parser("stop", help="Request graceful stop after the current atomic step.")
     subparsers.add_parser("instances", help="List legacy and named daemon instances.")
     doctor_parser = subparsers.add_parser("doctor", help="Validate local prerequisites.")
@@ -1602,6 +1817,9 @@ def main() -> int:
         return start_daemon(args)
     if args.command == "status":
         print(json.dumps(status_payload(args), indent=2, sort_keys=True))
+        return 0
+    if args.command == "debug":
+        print(json.dumps(debug_payload(args), indent=2, sort_keys=True))
         return 0
     if args.command == "stop":
         return stop_daemon(args)

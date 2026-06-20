@@ -1,0 +1,6 @@
+outs:
+- md5: 002aa9322ed83022813d688906335812.dir
+  size: 674416
+  nfiles: 10
+  hash: md5
+  path: stonecore_full_clear_route_entry_r1
