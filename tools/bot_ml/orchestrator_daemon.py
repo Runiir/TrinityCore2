@@ -876,12 +876,12 @@ def detect_rate_limit(
     event_matches = [
         event
         for event in events
-        if str(event.get("type") or "") in {"error", "turn.failed"} or RATE_LIMIT_RE.search(event_text(event))
+        if str(event.get("type") or "") in {"error", "turn.failed"} and RATE_LIMIT_RE.search(event_text(event))
     ]
-    combined = "\n".join([stdout_text, stderr_text] + [event_text(event) for event in event_matches])
-    if not event_matches and not RATE_LIMIT_RE.search(combined):
+    combined = "\n".join([stderr_text] + [event_text(event) for event in event_matches])
+    if not event_matches and not RATE_LIMIT_RE.search(stderr_text):
         return None
-    if returncode == 0 and not RATE_LIMIT_RE.search(combined):
+    if returncode == 0 and not event_matches and not RATE_LIMIT_RE.search(stderr_text):
         return None
     reset_unix = parse_absolute_reset_unix(combined, current_time)
     if reset_unix is None:
@@ -972,8 +972,6 @@ def codex_command(
             "-m",
             model,
             *reasoning_args,
-            "-C",
-            str(repo),
             "-o",
             str(last_message_path),
             thread_id,
@@ -1224,10 +1222,11 @@ def orchestrator_prompt(
         "- Create or resume worker/reviewer Codex sessions as needed; the daemon will not launch them for you.\n"
         "- Run validation yourself with the repo tools when validation is needed.\n"
         "- Commit experiment code/configs to git, checkpoint generated data/artifacts with DVC, run dvc status, and push DVC artifacts when appropriate.\n"
-        "- Update progress/checklist files with evidence paths.\n\n"
+        "- Update progress/checklist/status files with evidence paths, validation outcomes, blockers, and the exact next handoff prompt for the next fresh agent.\n\n"
         "Worktree cleanup requirement:\n"
         "- Before returning, inspect git status in the active worktree.\n"
-        "- Commit useful finished changes with a focused message, including progress/checklist updates and useful experiment configs/code.\n"
+        "- Commit useful finished changes with a focused message, including progress/checklist/status updates and useful experiment configs/code.\n"
+        "- Checkpoint generated data/artifacts with DVC, run dvc status, and run dvc push when artifacts were produced.\n"
         "- Discard only changes you made in this pass that are wrong or failed; do not discard pre-existing user changes from the starting status snapshot unless the user explicitly asked you to.\n"
         "- This requirement applies whether the pass succeeds, fails, or needs follow-up; leave the worktree clean except for protected pre-existing changes.\n\n"
         "Worker model routing requirement:\n"
@@ -1669,7 +1668,7 @@ def sleep_until_resume(state: dict[str, Any], stop_path: Path, state_path: Path 
     resume_at = int(rate_limit.get("resume_at_unix") or 0)
     while resume_at > now_unix():
         if stop_path.exists():
-            state.update({"status": "stopped", "phase": "stop_requested"})
+            state.update({"status": "stopped", "phase": "stop_requested", "rate_limit": {}})
             save_state(state, state_path)
             return False
         time.sleep(min(30, max(1, resume_at - now_unix())))
@@ -1716,89 +1715,19 @@ def run_one_cycle(state: dict[str, Any], config: dict[str, Any], state_path: Pat
     save_state(state, state_path)
 
     if was_paused_rate_limit:
-        role = "orchestrator"
         state.update(
             {
-                "prompt_file": existing_rate_limit.get("prompt_file", state.get("prompt_file", "")),
-                "prompt_hash": existing_rate_limit.get("prompt_hash", state.get("prompt_hash", "")),
-                "prompt_snapshot_path": existing_rate_limit.get("prompt_snapshot_path", state.get("prompt_snapshot_path", "")),
-            }
-        )
-        model = str(config["orchestrator_model"])
-        resumed = run_codex_role(
-            role=role,
-            prompt=str(existing_rate_limit.get("prompt") or "Resume after the rate-limit reset and finish the interrupted orchestrator pass."),
-            model=model,
-            repo=repo,
-            sandbox=str(config["sandbox"]),
-            cycle_id=cycle_id,
-            state=state,
-            config=config,
-            thread_id=str(existing_rate_limit.get("thread_id") or ""),
-            state_path=state_path,
-        )
-        if resumed["rate_limit"]:
-            handle_rate_limit(state, resumed["rate_limit"], state_path)
-            return {"done": False, "rate_limit": True}
-        if resumed["returncode"] != 0:
-            result = {
-                "status": "failure",
-                "error": "orchestrator_resume_failed",
-                "returncode": resumed["returncode"],
-                "thread_id": resumed.get("thread_id", ""),
-                "jsonl_path": str(resumed["jsonl_path"]),
-                "stderr_path": str(resumed["stderr_path"]),
-                "last_message_path": str(resumed["last_message_path"]),
-            }
-            state.update(
-                {
-                    "status": "running",
-                    "phase": "orchestrator_resume_failed",
-                    "latest_orchestrator_result": result,
-                    "consecutive_orchestrator_failures": int(state.get("consecutive_orchestrator_failures") or 0) + 1,
-                    "rate_limit": {},
-                    "thread_id": resumed.get("thread_id", ""),
-                }
-            )
-            save_state(state, state_path)
-            return {"done": False, "error": "orchestrator_resume_failed", "returncode": resumed["returncode"]}
-        result = read_orchestrator_result(resumed["last_message_path"])
-        if not result:
-            result = {
-                "status": "failure",
-                "error": "orchestrator_result_contract_invalid",
-                "returncode": resumed["returncode"],
-                "thread_id": resumed.get("thread_id", ""),
-                "jsonl_path": str(resumed["jsonl_path"]),
-                "stderr_path": str(resumed["stderr_path"]),
-                "last_message_path": str(resumed["last_message_path"]),
-            }
-            state.update(
-                {
-                    "status": "running",
-                    "phase": "orchestrator_result_contract_invalid",
-                    "latest_orchestrator_result": result,
-                    "consecutive_orchestrator_failures": int(state.get("consecutive_orchestrator_failures") or 0) + 1,
-                    "rate_limit": {},
-                    "thread_id": resumed.get("thread_id", ""),
-                }
-            )
-            save_state(state, state_path)
-            return {"done": False, "error": "orchestrator_result_contract_invalid"}
-        state.update(
-            {
-                "status": "complete" if result["status"] == "complete" else "running",
-                "phase": "complete" if result["status"] == "complete" else "orchestrator_pass_complete",
-                "goal_complete": result["status"] == "complete",
-                "latest_orchestrator_result": result,
-                "last_completed_cycle_id": cycle_id,
-                "consecutive_orchestrator_failures": 0,
                 "rate_limit": {},
-                "thread_id": resumed.get("thread_id", ""),
+                "thread_id": "",
+                "rate_limit_recovered_at_unix": now_unix(),
+                "previous_rate_limit": {
+                    key: existing_rate_limit.get(key)
+                    for key in ("agent_role", "thread_id", "jsonl_path", "stderr_path", "last_message_path", "resume_at_unix", "signature")
+                    if existing_rate_limit.get(key) is not None
+                },
             }
         )
         save_state(state, state_path)
-        return {"done": result["status"] == "complete", "status": result["status"], "resumed": role}
 
     try:
         user_prompt, _snapshot_path = prepare_prompt_snapshot(config=config, state=state, cycle_id=cycle_id)
@@ -1932,7 +1861,7 @@ def run_daemon(args: argparse.Namespace) -> int:
                     clean_exit = True
                     return 0
             if args.stop_file.exists():
-                state.update({"status": "stopped", "phase": "stop_requested"})
+                state.update({"status": "stopped", "phase": "stop_requested", "rate_limit": {}})
                 save_state(state, args.state)
                 clean_exit = True
                 return 0
@@ -2216,6 +2145,7 @@ def status_payload(args: argparse.Namespace) -> dict[str, Any]:
     update_state_instance_metadata(state, args, {"runs_dir": str(getattr(args, "runs_dir", DEFAULT_RUNS_DIR))})
     checklist = load_checklist(args.checklist)
     rate_limit = state.get("rate_limit") if isinstance(state.get("rate_limit"), dict) else {}
+    paused_rate_limit = state.get("status") == "paused_rate_limit"
     merge_back = state.get("merge_back") if isinstance(state.get("merge_back"), dict) else {}
     payload = {
         "schema": "orchestrator_daemon_status_v1",
@@ -2224,7 +2154,7 @@ def status_payload(args: argparse.Namespace) -> dict[str, Any]:
         "checklist": checklist_summary(checklist),
         "lock_exists": args.lock.exists(),
         "pid": args.pid.read_text(encoding="utf-8").strip() if args.pid.exists() else "",
-        "rate_limit_sleep_remaining_sec": max(0, int(rate_limit.get("resume_at_unix") or 0) - now_unix()),
+        "rate_limit_sleep_remaining_sec": max(0, int(rate_limit.get("resume_at_unix") or 0) - now_unix()) if paused_rate_limit else 0,
         "merge_back": merge_back,
         "stop_requested": args.stop_file.exists(),
     }

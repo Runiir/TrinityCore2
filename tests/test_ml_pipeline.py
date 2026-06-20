@@ -3279,7 +3279,7 @@ def test_bot_autonomy_daemon_codex_command_includes_reasoning_effort(tmp_path):
     assert stdin_text == "run pass"
 
 
-def test_bot_autonomy_daemon_rate_limit_fallback_and_resume_command(tmp_path):
+def test_bot_autonomy_daemon_rate_limit_fallback_and_resume_command_omits_cd(tmp_path):
     fallback = detect_rate_limit(
         events=[],
         stdout_text="",
@@ -3305,9 +3305,31 @@ def test_bot_autonomy_daemon_rate_limit_fallback_and_resume_command(tmp_path):
     assert fallback["resume_at_unix"] == 3610
     assert command[:4] == ["codex", "exec", "resume", "--json"]
     assert command[6:8] == ["-c", 'model_reasoning_effort="medium"']
-    assert command[8:10] == ["-C", str(tmp_path)]
+    assert "-C" not in command
     assert "thread-123" in command
     assert stdin_text == "continue"
+
+
+def test_bot_autonomy_daemon_rate_limit_detector_ignores_state_dumps_with_rate_limit_text():
+    rate_limit = detect_rate_limit(
+        events=[
+            {
+                "type": "item.completed",
+                "item": {
+                    "type": "command_execution",
+                    "aggregated_output": json.dumps({"status": "paused_rate_limit", "rate_limit": {"signature": "rate_limit_or_quota"}}),
+                },
+            }
+        ],
+        stdout_text='{"type":"item.completed","item":{"aggregated_output":"rate_limit"}}',
+        stderr_text="",
+        returncode=0,
+        default_sleep_sec=3600,
+        max_sleep_sec=86400,
+        current_time=10,
+    )
+
+    assert rate_limit is None
 
 
 def test_bot_autonomy_daemon_pause_sleep_resume_transition(tmp_path, monkeypatch):
@@ -3351,9 +3373,52 @@ def test_orchestrator_daemon_stop_during_rate_limit_sleep_marks_stopped(tmp_path
     saved = json.loads(state_path.read_text(encoding="utf-8"))
     assert saved["status"] == "stopped"
     assert saved["phase"] == "stop_requested"
+    assert saved["rate_limit"] == {}
 
 
-def test_bot_autonomy_daemon_resumes_paused_role_thread(tmp_path, monkeypatch):
+def test_orchestrator_daemon_status_does_not_report_rate_limit_sleep_when_stopped(tmp_path, monkeypatch):
+    config_path = tmp_path / "daemon_config.json"
+    state_path = tmp_path / "daemon_state.json"
+    checklist_path = tmp_path / "master_checklist.json"
+    config_path.write_text(json.dumps({}), encoding="utf-8")
+    checklist_path.write_text(json.dumps({"deliverables": []}), encoding="utf-8")
+    state = initial_state()
+    state.update(
+        {
+            "status": "stopped",
+            "phase": "stop_requested",
+            "rate_limit": {"resume_at_unix": 200},
+        }
+    )
+    state_path.write_text(json.dumps(state), encoding="utf-8")
+    args = daemon.build_parser().parse_args(
+        [
+            "--config",
+            str(config_path),
+            "--state",
+            str(state_path),
+            "--checklist",
+            str(checklist_path),
+            "--lock",
+            str(tmp_path / "daemon.lock"),
+            "--pid",
+            str(tmp_path / "daemon.pid"),
+            "--stop-file",
+            str(tmp_path / "daemon.stop"),
+            "--log",
+            str(tmp_path / "daemon.log"),
+            "status",
+        ]
+    )
+    monkeypatch.setattr("tools.bot_ml.orchestrator_daemon.now_unix", lambda: 100)
+
+    payload = daemon.status_payload(args)
+
+    assert payload["state"]["status"] == "stopped"
+    assert payload["rate_limit_sleep_remaining_sec"] == 0
+
+
+def test_bot_autonomy_daemon_starts_fresh_orchestrator_after_rate_limit_pause(tmp_path, monkeypatch):
     checklist = {
         "deliverables": [
             {"deliverable": "movement_smoke", "status": "needs_followup", "evidence_artifact": ""},
@@ -3380,7 +3445,7 @@ def test_bot_autonomy_daemon_resumes_paused_role_thread(tmp_path, monkeypatch):
         return {
             "rate_limit": None,
             "returncode": 0,
-            "thread_id": kwargs["thread_id"],
+            "thread_id": "new-thread",
             "jsonl_path": tmp_path / "orchestrator.jsonl",
             "stderr_path": tmp_path / "orchestrator.stderr",
             "last_message_path": last_message,
@@ -3402,10 +3467,12 @@ def test_bot_autonomy_daemon_resumes_paused_role_thread(tmp_path, monkeypatch):
         tmp_path / "state.json",
     )
 
-    assert result == {"done": False, "status": "continue", "resumed": "orchestrator"}
+    assert result == {"done": False, "status": "continue"}
     assert calls[0]["role"] == "orchestrator"
-    assert calls[0]["thread_id"] == "thread-123"
+    assert calls[0].get("thread_id", "") == ""
     assert calls[0]["model"] == "gpt-5"
+    assert state["rate_limit"] == {}
+    assert state["previous_rate_limit"]["thread_id"] == "thread-123"
 
 
 def test_bot_autonomy_daemon_prompt_file_precedence(tmp_path):
