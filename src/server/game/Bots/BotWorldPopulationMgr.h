@@ -298,6 +298,9 @@ private:
         bool ValidationRouteActivationApplied = false;
         uint32 ValidationRouteActivationAttempts = 0;
         uint32 ValidationRouteTargetSearchMissCount = 0;
+        bool ValidationRouteTerminalState = false;
+        uint64 ValidationRouteTerminalAtMs = 0;
+        std::string ValidationRouteTerminalReason;
         bool ValidationRouteAnchorOverrideValid = false;
         uint64 ValidationRouteAnchorOverrideUntilMs = 0;
         float ValidationRouteAnchorOverrideX = 0.0f;

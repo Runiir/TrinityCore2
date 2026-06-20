@@ -1,0 +1,6 @@
+outs:
+- md5: dd16905fba9da65afc834eb566393d81.dir
+  size: 731556
+  nfiles: 12
+  hash: md5
+  path: stonecore_entrance_anchor_terminal_r1

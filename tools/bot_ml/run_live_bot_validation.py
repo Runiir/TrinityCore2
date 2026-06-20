@@ -663,7 +663,13 @@ def scenario_stage_missing(stage: str, scenario_reports: dict[str, dict[str, Any
     return []
 
 
-def live_evidence(status: dict[str, Any], diagnosis: dict[str, Any], trace: dict[str, Any], summary: dict[str, Any]) -> dict[str, Any]:
+def live_evidence(
+    status: dict[str, Any],
+    diagnosis: dict[str, Any],
+    trace: dict[str, Any],
+    summary: dict[str, Any],
+    validation_context: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     entries = trace_entries(trace)
     diagnoses = diagnosis_rows(diagnosis)
     non_spawn_trace_entries = sum(1 for entry in entries if str(entry.get("action") or entry.get("situation") or "") != "bot_spawned")
@@ -754,11 +760,22 @@ def live_evidence(status: dict[str, Any], diagnosis: dict[str, Any], trace: dict
         for action, count in legacy_diagnosis_action_counts.items()
         if action in {"trash_action", "trash_heal", "validation_route_trash_action", "dungeon_trash_cleared", "raid_trash_cleared"}
     )
+    validation_route_actions = sum(count for action, count in action_counts.items() if action.startswith("validation_route") or action.startswith("move_to_validation_route"))
+    validation_route_actions += sum(count for action, count in legacy_diagnosis_action_counts.items() if action.startswith("validation_route") or action.startswith("move_to_validation_route"))
+    trash_route_actions = (
+        action_counts.get("trash_action", 0)
+        + action_counts.get("validation_route_trash_action", 0)
+        + legacy_diagnosis_action_counts.get("trash_action", 0)
+        + legacy_diagnosis_action_counts.get("validation_route_trash_action", 0)
+    )
+    context = validation_context or {}
+    route_kill_trash_evidence = kills if str(context.get("route_kind") or "").lower() == "trash" and validation_route_actions > 0 else 0
     trash_pulls = max(
         int(summary.get("trash_pulls") or 0),
         int(summary.get("trash_kills") or 0),
         int(summary.get("trash_packs_cleared") or 0),
         trash_action_evidence,
+        route_kill_trash_evidence,
     )
     kill_evidence = kills + teacher_assisted_kills
     gear_upgrades = max(int(status.get("gear_upgrades") or 0), int(summary.get("gear_upgrades") or 0))
@@ -810,15 +827,7 @@ def live_evidence(status: dict[str, Any], diagnosis: dict[str, Any], trace: dict
         diagnosis_action_counts.get("instance_reset", 0) + diagnosis_action_counts.get("reset_stale_boss_activation", 0) + diagnosis_action_counts.get("bot_pool_reset", 0),
     )
     active_decision_evidence = decisions > 0 or non_spawn_trace_entries > 0 or moved_diagnoses > 0 or non_wait_diagnoses > 0
-    validation_route_actions = sum(count for action, count in action_counts.items() if action.startswith("validation_route") or action.startswith("move_to_validation_route"))
-    validation_route_actions += sum(count for action, count in legacy_diagnosis_action_counts.items() if action.startswith("validation_route") or action.startswith("move_to_validation_route"))
     boss_engagement_actions = sum(action_counts.get(action, 0) + legacy_diagnosis_action_counts.get(action, 0) for action in ["boss_started", "boss_action", "validation_route_tank_boss", "validation_route_group_heal"])
-    trash_route_actions = (
-        action_counts.get("trash_action", 0)
-        + action_counts.get("validation_route_trash_action", 0)
-        + legacy_diagnosis_action_counts.get("trash_action", 0)
-        + legacy_diagnosis_action_counts.get("validation_route_trash_action", 0)
-    )
     action_evidence_counts = {
         "party_formation": group_formation_evidence,
         "raid_formation": group_formation_evidence,
@@ -1125,7 +1134,7 @@ def live_validation_report(
     target_bots = int(status.get("target_bots") or status.get("targetBots") or 0)
     trace_entries = count_trace_entries(trace)
     diagnosis_count = len(diagnosis_rows(diagnosis))
-    evidence = live_evidence(status, diagnosis, trace, summary)
+    evidence = live_evidence(status, diagnosis, trace, summary, validation_context)
     failure_labels = validation_failure_labels(returncode, timed_out, active_bots, target_bots, trace_entries, diagnosis_count, errors, evidence)
     scenario_reports = scenario_reports or {}
 

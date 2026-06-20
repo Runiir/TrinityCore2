@@ -2414,6 +2414,10 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
             float recoveryZ = bot->GetPositionZ();
             std::string recoveryReason = "validation_route_stuck_repath";
             Unit* recoveryTarget = nullptr;
+            float routeAnchorDistance = _config.ValidationRouteMapId == bot->GetMapId()
+                ? bot->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ)
+                : std::numeric_limits<float>::max();
+            bool nearValidationRouteAnchor = routeAnchorDistance <= 24.0f;
 
             PruneSafePositions(state, nowMs);
             WorldBotState::SafePosition const* bestSafe = nullptr;
@@ -2457,6 +2461,33 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
                 state.ValidationRouteAnchorOverrideY = recoveryY;
                 state.ValidationRouteAnchorOverrideZ = recoveryZ;
                 state.ValidationRouteAnchorOverrideReason = recoveryReason;
+                recovered = true;
+            }
+            else if (nearValidationRouteAnchor)
+            {
+                _validationRouteFocusGuid.Clear();
+                _validationRouteFocusEntry = 0;
+                _validationRouteFocusMapId = 0;
+                _validationRouteFocusX = 0.0f;
+                _validationRouteFocusY = 0.0f;
+                _validationRouteFocusZ = 0.0f;
+                _validationRouteFocusSeenMs = 0;
+                for (WorldBotState& cohortState : _bots)
+                {
+                    cohortState.TargetGuid.Clear();
+                    cohortState.ValidationRouteCombatProgressTargetGuid.Clear();
+                    cohortState.ValidationRoutePackProgressTargetGuid.Clear();
+                    cohortState.ValidationRouteCombatNoProgressCount = 0;
+                    cohortState.ValidationRoutePackNoProgressCount = 0;
+                    cohortState.ValidationRouteUnresolvedFocusHoldCount = 0;
+                    cohortState.ValidationRouteAnchorOverrideValid = false;
+                    cohortState.ValidationRouteAnchorOverrideUntilMs = 0;
+                    cohortState.ValidationRouteAnchorOverrideReason.clear();
+                }
+                bot->AttackStop();
+                bot->CombatStop(true);
+                recoveryReason = "validation_route_stuck_anchor_focus_reset";
+                state.LastNoProgressReason = recoveryReason;
                 recovered = true;
             }
             else if (Player* anchor = FindDungeonAnchor(bot))
@@ -5476,6 +5507,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             cohortState.ValidationRouteAnchorOverrideValid = false;
             cohortState.ValidationRouteAnchorOverrideUntilMs = 0;
             cohortState.ValidationRouteAnchorOverrideReason.clear();
+            cohortState.ValidationRouteTerminalState = false;
+            cohortState.ValidationRouteTerminalAtMs = 0;
+            cohortState.ValidationRouteTerminalReason.clear();
             cohortState.RecentDeathCount = 0;
         }
 
@@ -6290,6 +6324,23 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     state.QuestRouteDestination.Reason = routeAnchorReason;
 
     float routeDistance = bot->GetExactDist(routeAnchorX, routeAnchorY, routeAnchorZ);
+    if (state.ValidationRouteTerminalState && _config.ValidationRouteKind != "boss")
+    {
+        bot->AttackStop();
+        bot->CombatStop(true);
+        state.TargetGuid.Clear();
+        state.WasInCombat = false;
+        state.LoopRecoveryCooldownUntilMs = NowMs() + 60000;
+        situation = "normal_dungeon_trash";
+        action = "validation_route_complete";
+        if (!state.ValidationRouteTerminalAtMs || NowMs() - state.ValidationRouteTerminalAtMs <= 5000)
+        {
+            std::string raw = BuildRawJson(bot, nullptr);
+            std::string semantic = BuildSemanticJson(bot, nullptr, situation.c_str(), &power, stage, activity);
+            RecordEvent(state, bot, "validation_route_recovery", nullptr, state.ValidationRouteTerminalReason.empty() ? "route_terminal_hold" : state.ValidationRouteTerminalReason.c_str(), raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry);
+        }
+        return true;
+    }
     if (std::string(GetDungeonRole(bot)) == "tank")
     {
         if (Unit* tankTarget = routeUsableCombatTarget(target))
@@ -6896,6 +6947,89 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         action = "validation_route_target_blocked";
         return true;
     }
+    if (!routeTarget && _config.ValidationRouteKind != "boss" && routeDistance <= routeArrivalRadius && std::string(GetDungeonRole(bot)) == "tank")
+    {
+        Unit* anchorTarget = nullptr;
+        float bestAnchorTargetScore = std::numeric_limits<float>::max();
+        std::vector<WorldObject*> objects;
+        Trinity::AllWorldObjectsInRange check(bot, 180.0f);
+        Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(bot, objects, check);
+        Cell::VisitAllObjects(bot, searcher, 180.0f);
+        for (WorldObject* object : objects)
+        {
+            Creature* creature = object ? object->ToCreature() : nullptr;
+            if (!creature || !creature->IsAlive() || !bot->IsValidAttackTarget(creature))
+                continue;
+            if (creature->IsDungeonBoss() || creature->isWorldBoss())
+                continue;
+            if (creature->IsCritter() || creature->IsPet() || creature->IsTotem() || creature->IsSummon() || creature->IsGuardian() || !creature->GetOwnerGUID().IsEmpty())
+                continue;
+            if (!bot->IsWithinLOSInMap(creature))
+                continue;
+
+            float anchorProximity = creature->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ);
+            if (anchorProximity > 120.0f)
+                continue;
+
+            float botDistance = bot->GetExactDist(creature);
+            float score = anchorProximity + botDistance * 0.35f;
+            if (creature->GetVictim() == bot)
+                score -= 25.0f;
+            if (creature->isElite())
+                score -= 10.0f;
+            if (isValidationRouteScriptTarget(creature))
+                score -= 100.0f;
+
+            if (!anchorTarget || score < bestAnchorTargetScore)
+            {
+                anchorTarget = creature;
+                bestAnchorTargetScore = score;
+            }
+        }
+
+        if (anchorTarget)
+        {
+            routeTarget = anchorTarget;
+            targetSearchResult = isValidationRouteScriptTarget(anchorTarget->ToCreature()) ? "target_ready" : "anchor_reacquired_reachable_target";
+            state.ValidationRouteTargetSearchMissCount = 0;
+        }
+        else if (_metrics.Kills > 0 && ++state.ValidationRouteTargetSearchMissCount >= 2)
+        {
+            _validationRouteFocusGuid.Clear();
+            _validationRouteFocusEntry = 0;
+            _validationRouteFocusMapId = 0;
+            _validationRouteFocusX = 0.0f;
+            _validationRouteFocusY = 0.0f;
+            _validationRouteFocusZ = 0.0f;
+            _validationRouteFocusSeenMs = 0;
+            for (WorldBotState& cohortState : _bots)
+            {
+                cohortState.TargetGuid.Clear();
+                cohortState.ValidationRouteCombatProgressTargetGuid.Clear();
+                cohortState.ValidationRoutePackProgressTargetGuid.Clear();
+                cohortState.ValidationRouteCombatNoProgressCount = 0;
+                cohortState.ValidationRoutePackNoProgressCount = 0;
+                cohortState.ValidationRouteUnresolvedFocusHoldCount = 0;
+                cohortState.ValidationRouteTerminalState = true;
+                cohortState.ValidationRouteTerminalAtMs = NowMs();
+                cohortState.ValidationRouteTerminalReason = "route_exhausted_after_progress";
+                cohortState.LoopRecoveryCooldownUntilMs = NowMs() + 60000;
+            }
+
+            bot->AttackStop();
+            bot->CombatStop(true);
+            target = nullptr;
+            state.LastNoProgressReason = "route_exhausted_after_progress";
+            situation = "normal_dungeon_trash";
+            action = "validation_route_exhausted";
+            std::string raw = BuildRawJson(bot, nullptr);
+            std::string semantic = BuildSemanticJson(bot, nullptr, situation.c_str(), &power, stage, activity);
+            RecordEvent(state, bot, "dungeon_trash_cleared", nullptr, "route_exhausted_after_progress", raw.c_str(), semantic.c_str(), float(_metrics.Kills), _config.ValidationRouteTargetEntry);
+            RecordEvent(state, bot, "validation_route_recovery", nullptr, "route_exhausted_after_progress", raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry);
+            return true;
+        }
+    }
+
     if (!routeTarget && _config.ValidationRouteKind == "boss")
         routeTarget = FindBossTarget(bot);
 

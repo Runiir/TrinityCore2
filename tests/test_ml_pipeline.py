@@ -2483,6 +2483,22 @@ TC> {"duration_minutes":3.4,"decisions":84,"total_kills":0,"quests_completed":0}
     assert "validation_route_assist_focus_loop" not in report["failure_labels"]
 
 
+def test_live_bot_validation_counts_route_summary_kills_as_trash_engagement_when_trace_rolls_off():
+    output = """
+TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":143,"kills":4,"quests_accepted":0,"quest_objective_progress":0}
+TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"snapshot":{"decision":{"action":"move_to_validation_route_anchor"},"movement":{"is_moving":false,"distance_moved_since_last_decision":0}}}]}
+TC> {"trace_schema_version":1,"selector":"all","bots":[{"bot_guid":1,"entries":[{"action":"validation_route_regroup","situation":"validation_route_regroup","result":"follow_anchor_no_focus"},{"action":"validation_route_recovery","situation":"validation_route_recovery","result":"validation_route_stuck_safe_memory"},{"action":"move_to_validation_route_anchor","situation":"validation_route_regroup","result":"ok"}]}]}
+TC> {"duration_minutes":6.0,"decisions":143,"total_kills":4,"quests_completed":0}
+"""
+    report = live_validation_report(output, validation_context={"route_kind": "trash"})
+
+    assert report["evidence"]["kills"] == 4
+    assert report["evidence"]["trash_pulls"] == 4
+    assert report["evidence"]["validation_evidence_ready"]["pulls"] is True
+    assert "validation_route_no_engagement" not in report["failure_labels"]
+    assert "no_progress_observed" not in report["failure_labels"]
+
+
 def test_live_bot_validation_labels_stuck_heavy_trash_route_as_failure():
     output = """
 TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":30,"kills":0,"quests_accepted":0,"quest_objective_progress":0,"stuck":12}
