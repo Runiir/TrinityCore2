@@ -1,0 +1,6 @@
+outs:
+- md5: 9814a2359866f65cb0ac6a47a9522f10.dir
+  size: 767830
+  nfiles: 10
+  hash: md5
+  path: stonecore_full_clear_r2

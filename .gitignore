@@ -60,6 +60,7 @@ __pycache__/
 /experiments/runs
 /dvclive
 /models
+generated/bot_autonomy_lanes/*/run/*.pid
 # pixi environments
 .pixi/*
 !.pixi/config.toml

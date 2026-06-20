@@ -29,6 +29,10 @@ except ImportError:
 DEFAULT_LIVE_VALIDATION_TIMEOUT_SEC = 90
 DEFAULT_BOSS_ROUTE_OBSERVE_SEC = 300
 DEFAULT_BOSS_ROUTE_TIMEOUT_SEC = 900
+DEFAULT_COMPLETION_HEARTBEAT_SEC = 30
+DEFAULT_NO_PROGRESS_WINDOW_SEC = 180
+DEFAULT_MAX_REPEATED_DECISIONS = 20
+DEFAULT_MAX_DEATH_LOOPS = 3
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -964,7 +968,134 @@ def validation_failure_labels(
     return unique
 
 
-def live_validation_report(output: str, stages: list[str] | None = None, returncode: int = 0, timed_out: bool = False, command: list[str] | None = None, scenario_reports: dict[str, dict[str, Any]] | None = None) -> dict[str, Any]:
+def progress_counters_from_evidence(evidence: dict[str, Any]) -> dict[str, int]:
+    action_counts = evidence.get("action_counts") if isinstance(evidence.get("action_counts"), dict) else {}
+    return {
+        "decisions": int(evidence.get("decisions") or 0),
+        "non_spawn_trace_entries": int(evidence.get("non_spawn_trace_entries") or 0),
+        "quest_objective_progress": int(evidence.get("quest_objective_progress") or 0),
+        "quests_accepted": int(evidence.get("quests_accepted") or 0),
+        "quests_completed": int(evidence.get("quests_completed") or 0),
+        "kills": int(evidence.get("kills") or 0),
+        "teacher_assisted_kills": int(evidence.get("teacher_assisted_kills") or 0),
+        "boss_kill_evidence": int(evidence.get("boss_kill_evidence") or 0),
+        "trash_pulls": int(evidence.get("trash_pulls") or 0),
+        "gear_upgrades": int(evidence.get("gear_upgrades") or 0),
+        "validation_route_actions": int(evidence.get("validation_route_actions") or 0),
+        "repeated_decisions": int(action_counts.get("repeated_decision") or action_counts.get("decision_repeated") or 0),
+        "death_loop_events": int(action_counts.get("repeated_death") or 0) + int(action_counts.get("death_loop") or 0),
+        "stuck_events": int(evidence.get("stuck_events") or 0),
+        "repath_events": int(evidence.get("repath_events") or 0),
+    }
+
+
+def watchdog_state(
+    evidence: dict[str, Any],
+    failure_labels: list[str],
+    *,
+    heartbeat_sec: int = DEFAULT_COMPLETION_HEARTBEAT_SEC,
+    no_progress_window_sec: int = DEFAULT_NO_PROGRESS_WINDOW_SEC,
+    max_repeated_decisions: int = DEFAULT_MAX_REPEATED_DECISIONS,
+    max_death_loops: int = DEFAULT_MAX_DEATH_LOOPS,
+) -> dict[str, Any]:
+    counters = progress_counters_from_evidence(evidence)
+    progress_total = (
+        counters["quest_objective_progress"]
+        + counters["quests_accepted"]
+        + counters["quests_completed"]
+        + counters["kills"]
+        + counters["boss_kill_evidence"]
+        + counters["trash_pulls"]
+        + counters["gear_upgrades"]
+        + counters["validation_route_actions"]
+    )
+    no_progress = "no_progress_observed" in failure_labels or (counters["decisions"] > 0 and progress_total <= 0)
+    repeated_loop = counters["repeated_decisions"] >= max_repeated_decisions
+    death_loop = counters["death_loop_events"] >= max_death_loops
+    return {
+        "policy": "completion-watchdog",
+        "heartbeat_sec": heartbeat_sec,
+        "no_progress_window_sec": no_progress_window_sec,
+        "max_repeated_decisions": max_repeated_decisions,
+        "max_death_loops": max_death_loops,
+        "progress_total": progress_total,
+        "no_progress": no_progress,
+        "repeated_decision_loop": repeated_loop,
+        "death_loop": death_loop,
+        "progress_counters": counters,
+    }
+
+
+def completion_reason(
+    *,
+    all_passed: bool,
+    returncode: int,
+    timed_out: bool,
+    failure_labels: list[str],
+    state: dict[str, Any],
+) -> str:
+    if timed_out:
+        return "emergency_wall_clock_timeout"
+    if returncode != 0:
+        return "worldserver_exited_nonzero"
+    if all_passed and not failure_labels:
+        return "success_predicates_passed"
+    if state.get("death_loop"):
+        return "death_loop_watchdog"
+    if state.get("repeated_decision_loop"):
+        return "repeated_decision_watchdog"
+    if state.get("no_progress"):
+        return "no_progress_watchdog"
+    if failure_labels:
+        return "machine_failure_predicate"
+    return "incomplete_evidence"
+
+
+def final_evidence_rejections(
+    *,
+    all_passed: bool,
+    returncode: int,
+    timed_out: bool,
+    failure_labels: list[str],
+    evidence: dict[str, Any],
+    validation_context: dict[str, Any] | None = None,
+    completion: str = "",
+) -> list[str]:
+    context = validation_context or {}
+    rejections: list[str] = []
+    if not all_passed:
+        rejections.append("not_all_stages_passed")
+    if timed_out:
+        rejections.append("timeout_is_not_final_evidence")
+    if returncode != 0:
+        rejections.append("nonzero_return_is_not_final_evidence")
+    if failure_labels:
+        rejections.append("failure_labels_present")
+    if context.get("segment_id") or context.get("route_node_id"):
+        rejections.append("segment_or_route_context_is_debug_only")
+    if completion in {"emergency_wall_clock_timeout", "no_progress_watchdog", "repeated_decision_watchdog", "death_loop_watchdog"}:
+        rejections.append("watchdog_failure_is_not_final_evidence")
+    teacher_kills = int(evidence.get("teacher_assisted_kills") or 0)
+    real_kills = int(evidence.get("kills") or 0) + int(evidence.get("boss_kill_evidence") or 0)
+    if teacher_kills > 0 and real_kills <= 0:
+        rejections.append("teacher_assisted_only_evidence")
+    return list(dict.fromkeys(rejections))
+
+
+def live_validation_report(
+    output: str,
+    stages: list[str] | None = None,
+    returncode: int = 0,
+    timed_out: bool = False,
+    command: list[str] | None = None,
+    scenario_reports: dict[str, dict[str, Any]] | None = None,
+    validation_context: dict[str, Any] | None = None,
+    duration_policy: str = "completion-watchdog",
+    heartbeat_sec: int = DEFAULT_COMPLETION_HEARTBEAT_SEC,
+    no_progress_window_sec: int = DEFAULT_NO_PROGRESS_WINDOW_SEC,
+    max_repeated_decisions: int = DEFAULT_MAX_REPEATED_DECISIONS,
+    max_death_loops: int = DEFAULT_MAX_DEATH_LOOPS,
+) -> dict[str, Any]:
     payloads = parse_json_objects(output)
     classified = classify_payloads(payloads)
     errors = command_errors(output)
@@ -1016,9 +1147,35 @@ def live_validation_report(output: str, stages: list[str] | None = None, returnc
         stage_rows.append({"stage": stage, "passed": not missing, "missing": missing})
 
     passed = sum(1 for row in stage_rows if row["passed"])
+    all_passed = passed == len(stage_rows)
+    state = watchdog_state(
+        evidence,
+        failure_labels,
+        heartbeat_sec=heartbeat_sec,
+        no_progress_window_sec=no_progress_window_sec,
+        max_repeated_decisions=max_repeated_decisions,
+        max_death_loops=max_death_loops,
+    )
+    reason = completion_reason(
+        all_passed=all_passed,
+        returncode=returncode,
+        timed_out=timed_out,
+        failure_labels=failure_labels,
+        state=state,
+    )
+    rejections = final_evidence_rejections(
+        all_passed=all_passed,
+        returncode=returncode,
+        timed_out=timed_out,
+        failure_labels=failure_labels,
+        evidence=evidence,
+        validation_context=validation_context,
+        completion=reason,
+    )
     return {
         "schema": "bot_live_validation_report_v1",
         "command": command or [],
+        "duration_policy": duration_policy,
         "returncode": returncode,
         "timed_out": timed_out,
         "json_payloads": len(payloads),
@@ -1033,12 +1190,17 @@ def live_validation_report(output: str, stages: list[str] | None = None, returnc
         "scenario_reports": scenario_reports,
         "command_errors": errors,
         "evidence": evidence,
+        "progress_counters": state["progress_counters"],
+        "watchdog_state": state,
+        "completion_reason": reason,
+        "acceptable_final_evidence": not rejections,
+        "final_evidence_rejections": rejections,
         "failure_labels": failure_labels,
         "failure_reason": failure_labels[0] if failure_labels else None,
         "stages": stage_rows,
         "passed": passed,
         "failed": len(stage_rows) - passed,
-        "all_passed": passed == len(stage_rows),
+        "all_passed": all_passed,
         "runtime_ml_control": "disabled_until_live_validation_passes",
     }
 
@@ -1150,6 +1312,215 @@ def run_worldserver(binary: Path, config: Path, timeout_sec: int, script: str, o
         return output, 124, True, command
 
 
+def append_jsonl(path: Path, payload: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(payload, sort_keys=True, default=str) + "\n")
+
+
+def heartbeat_commands_from_script(script: str) -> tuple[list[str], list[str]]:
+    startup: list[str] = []
+    heartbeat: list[str] = []
+    for raw_command in script.splitlines():
+        command_text = raw_command.strip()
+        if not command_text:
+            continue
+        if command_text == ".botauto start":
+            startup.append(command_text)
+        elif command_text.startswith("server shutdown") or command_text == "server exit":
+            continue
+        else:
+            heartbeat.append(command_text)
+    return startup, heartbeat
+
+
+def rolling_heartbeat_report(
+    output_dir: Path,
+    heartbeat_index: int,
+    output: str,
+    returncode: int,
+    timed_out: bool,
+    command: list[str],
+    scenario_reports: dict[str, dict[str, Any]],
+    validation_context: dict[str, Any],
+    duration_policy: str,
+    heartbeat_sec: int,
+    no_progress_window_sec: int,
+    max_repeated_decisions: int,
+    max_death_loops: int,
+    completion_reason_override: str = "",
+) -> dict[str, Any]:
+    report = live_validation_report(
+        output,
+        returncode=returncode,
+        timed_out=timed_out,
+        command=command,
+        scenario_reports=scenario_reports,
+        validation_context=validation_context,
+        duration_policy=duration_policy,
+        heartbeat_sec=heartbeat_sec,
+        no_progress_window_sec=no_progress_window_sec,
+        max_repeated_decisions=max_repeated_decisions,
+        max_death_loops=max_death_loops,
+    )
+    if completion_reason_override:
+        report["completion_reason"] = completion_reason_override
+    report["heartbeat_index"] = heartbeat_index
+    report["heartbeat_generated_at_unix"] = int(time.time())
+    heartbeat_path = output_dir / "heartbeats" / f"{heartbeat_index:06d}.json"
+    write_json(heartbeat_path, report)
+    append_jsonl(
+        output_dir / "heartbeat_events.jsonl",
+        {
+            "heartbeat_index": heartbeat_index,
+            "generated_at_unix": report["heartbeat_generated_at_unix"],
+            "completion_reason": report["completion_reason"],
+            "acceptable_final_evidence": report["acceptable_final_evidence"],
+            "all_passed": report["all_passed"],
+            "failure_labels": report["failure_labels"],
+            "progress_counters": report["progress_counters"],
+            "report": str(heartbeat_path),
+        },
+    )
+    write_json(output_dir / "report.json", report)
+    return report
+
+
+def run_worldserver_completion_watchdog(
+    binary: Path,
+    config: Path,
+    timeout_sec: int,
+    script: str,
+    output_dir: Path,
+    scenario_reports: dict[str, dict[str, Any]],
+    validation_context: dict[str, Any],
+    duration_policy: str = "completion-watchdog",
+    heartbeat_sec: int = DEFAULT_COMPLETION_HEARTBEAT_SEC,
+    no_progress_window_sec: int = DEFAULT_NO_PROGRESS_WINDOW_SEC,
+    max_repeated_decisions: int = DEFAULT_MAX_REPEATED_DECISIONS,
+    max_death_loops: int = DEFAULT_MAX_DEATH_LOOPS,
+) -> tuple[str, int, bool, list[str]]:
+    command = [str(binary), "--config", str(config)]
+    deadline = time.monotonic() + timeout_sec
+    startup_commands, heartbeat_commands = heartbeat_commands_from_script(script)
+    output_parts: list[str] = []
+    heartbeat_index = 0
+    last_progress_total = -1
+    last_progress_at = time.monotonic()
+    process = subprocess.Popen(
+        command,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+    )
+    assert process.stdin is not None
+
+    def joined_output() -> str:
+        return "".join(output_parts)
+
+    def send_command(command_text: str) -> None:
+        assert process.stdin is not None
+        process.stdin.write(command_text + "\n")
+        process.stdin.flush()
+        output_parts.append(f"$ {command_text}\n")
+        output_parts.append(read_until_console_prompt(process, deadline, expected_command_output_marker(command_text)))
+
+    try:
+        output_parts.append(read_until_console_prompt(process, deadline))
+        for command_text in startup_commands:
+            if process.poll() is not None:
+                break
+            send_command(command_text)
+            output_parts.append(wait_for_bot_status_ready(process, deadline))
+
+        while time.monotonic() < deadline:
+            if process.poll() is not None:
+                heartbeat_index += 1
+                rolling_heartbeat_report(
+                    output_dir,
+                    heartbeat_index,
+                    joined_output(),
+                    process.returncode if process.returncode is not None else 0,
+                    False,
+                    command,
+                    scenario_reports,
+                    validation_context,
+                    duration_policy,
+                    heartbeat_sec,
+                    no_progress_window_sec,
+                    max_repeated_decisions,
+                    max_death_loops,
+                    completion_reason_override="worldserver_process_exit",
+                )
+                return joined_output(), process.returncode if process.returncode is not None else 0, False, command
+
+            sleep_until = min(deadline, time.monotonic() + max(1, heartbeat_sec))
+            while process.poll() is None and time.monotonic() < sleep_until:
+                time.sleep(min(1.0, sleep_until - time.monotonic()))
+
+            heartbeat_index += 1
+            if process.poll() is None:
+                for command_text in heartbeat_commands:
+                    if process.poll() is not None or time.monotonic() >= deadline:
+                        break
+                    send_command(command_text)
+            report = rolling_heartbeat_report(
+                output_dir,
+                heartbeat_index,
+                joined_output(),
+                process.returncode if process.returncode is not None else 0,
+                time.monotonic() >= deadline,
+                command,
+                scenario_reports,
+                validation_context,
+                duration_policy,
+                heartbeat_sec,
+                no_progress_window_sec,
+                max_repeated_decisions,
+                max_death_loops,
+            )
+            progress_total = int(report.get("watchdog_state", {}).get("progress_total") or 0)
+            if progress_total != last_progress_total:
+                last_progress_total = progress_total
+                last_progress_at = time.monotonic()
+            no_progress_expired = time.monotonic() - last_progress_at >= no_progress_window_sec
+            if report["acceptable_final_evidence"]:
+                break
+            if report["completion_reason"] in {"repeated_decision_watchdog", "death_loop_watchdog", "machine_failure_predicate"}:
+                break
+            if report["watchdog_state"].get("no_progress") and no_progress_expired:
+                report["completion_reason"] = "no_progress_watchdog"
+                write_json(output_dir / "report.json", report)
+                break
+        timed_out = time.monotonic() >= deadline
+        if process.poll() is None and process.stdin and not process.stdin.closed:
+            try:
+                send_command("server shutdown force 0")
+            except BrokenPipeError:
+                pass
+        if process.stdin and not process.stdin.closed:
+            process.stdin.close()
+            process.stdin = None
+        shutdown_deadline = min(time.monotonic() + 10, deadline + 10)
+        while process.poll() is None and time.monotonic() < shutdown_deadline:
+            time.sleep(0.25)
+        if process.poll() is None:
+            process.kill()
+            timed_out = True
+        if process.stdout:
+            output_parts.append(process.stdout.read())
+        returncode = process.returncode if process.returncode is not None else (124 if timed_out else 0)
+        return joined_output(), returncode, timed_out, command
+    except (BrokenPipeError, subprocess.TimeoutExpired) as exc:
+        process.kill()
+        output = (exc.stdout or "") if isinstance(exc, subprocess.TimeoutExpired) else ""
+        if not output and process.stdout:
+            output = process.stdout.read()
+        output_parts.append(output)
+        return joined_output(), 124, True, command
+
+
 def soap_envelope(command: str) -> bytes:
     escaped = html.escape(command, quote=True)
     return (
@@ -1226,7 +1597,12 @@ def main() -> int:
     parser.add_argument("--worldserver", type=Path, default=Path("build/src/server/worldserver/worldserver"))
     parser.add_argument("--config", type=Path, default=Path("trinity-worldserver-test.conf"))
     parser.add_argument("--output-dir", type=Path, default=Path("dataset/live_validation"))
-    parser.add_argument("--timeout-sec", type=int, default=None, help="Overall command timeout. Defaults to 90 seconds for smoke checks and 900 seconds for boss-route validations.")
+    parser.add_argument("--duration-policy", choices=["completion-watchdog", "fixed-window"], default="completion-watchdog")
+    parser.add_argument("--timeout-sec", type=int, default=None, help="Emergency wall-clock cap. Defaults to 90 seconds for fixed smoke checks and 900 seconds for boss-route or watchdog validations.")
+    parser.add_argument("--heartbeat-sec", type=int, default=DEFAULT_COMPLETION_HEARTBEAT_SEC)
+    parser.add_argument("--no-progress-window-sec", type=int, default=DEFAULT_NO_PROGRESS_WINDOW_SEC)
+    parser.add_argument("--max-repeated-decision-count", type=int, default=DEFAULT_MAX_REPEATED_DECISIONS)
+    parser.add_argument("--max-death-loop-count", type=int, default=DEFAULT_MAX_DEATH_LOOPS)
     parser.add_argument("--selector", default="all")
     parser.add_argument("--trace-limit", type=int, default=20)
     parser.add_argument("--no-start", action="store_true")
@@ -1258,7 +1634,10 @@ def main() -> int:
     parser.add_argument("--input-log", type=Path)
     args = parser.parse_args()
 
-    if str(args.validation_route_kind or "").lower() == "boss":
+    if args.duration_policy == "completion-watchdog":
+        args.timeout_sec = args.timeout_sec if args.timeout_sec is not None else DEFAULT_BOSS_ROUTE_TIMEOUT_SEC
+        args.observe_sec = args.observe_sec if args.observe_sec is not None else args.heartbeat_sec
+    elif str(args.validation_route_kind or "").lower() == "boss":
         args.timeout_sec = args.timeout_sec if args.timeout_sec is not None else DEFAULT_BOSS_ROUTE_TIMEOUT_SEC
         args.observe_sec = args.observe_sec if args.observe_sec is not None else DEFAULT_BOSS_ROUTE_OBSERVE_SEC
     else:
@@ -1318,8 +1697,13 @@ def main() -> int:
             "validation_route": validation_route,
             "transport": args.transport,
             "soap_url": args.soap_url if args.transport == "soap" else "",
+            "duration_policy": args.duration_policy,
             "timeout_sec": args.timeout_sec,
             "observe_sec": args.observe_sec,
+            "heartbeat_sec": args.heartbeat_sec,
+            "no_progress_window_sec": args.no_progress_window_sec,
+            "max_repeated_decision_count": args.max_repeated_decision_count,
+            "max_death_loop_count": args.max_death_loop_count,
             "config_autostart": config_autostart,
             "start_command": send_start_command,
             "preparation": preparation,
@@ -1341,11 +1725,38 @@ def main() -> int:
             if not args.soap_user or not args.soap_password:
                 raise SystemExit("--soap-user and --soap-password are required with --transport soap")
             output, returncode, timed_out, command = run_soap_commands(args.soap_url, args.soap_user, args.soap_password, script, args.timeout_sec, args.observe_sec)
+        elif args.duration_policy == "completion-watchdog":
+            output, returncode, timed_out, command = run_worldserver_completion_watchdog(
+                args.worldserver,
+                effective_config,
+                args.timeout_sec,
+                script,
+                args.output_dir,
+                scenario_reports,
+                validation_context,
+                duration_policy=args.duration_policy,
+                heartbeat_sec=args.heartbeat_sec,
+                no_progress_window_sec=args.no_progress_window_sec,
+                max_repeated_decisions=args.max_repeated_decision_count,
+                max_death_loops=args.max_death_loop_count,
+            )
         else:
             output, returncode, timed_out, command = run_worldserver(args.worldserver, effective_config, args.timeout_sec, script, args.observe_sec)
 
     (args.output_dir / "worldserver_output.log").write_text(output, encoding="utf-8")
-    report = live_validation_report(output, returncode=returncode, timed_out=timed_out, command=command, scenario_reports=scenario_reports)
+    report = live_validation_report(
+        output,
+        returncode=returncode,
+        timed_out=timed_out,
+        command=command,
+        scenario_reports=scenario_reports,
+        validation_context=validation_context,
+        duration_policy=args.duration_policy,
+        heartbeat_sec=args.heartbeat_sec,
+        no_progress_window_sec=args.no_progress_window_sec,
+        max_repeated_decisions=args.max_repeated_decision_count,
+        max_death_loops=args.max_death_loop_count,
+    )
     report["generated_at_unix"] = int(time.time())
     report["config_autostart"] = config_autostart
     report["config"] = str(effective_config)

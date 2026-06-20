@@ -46,7 +46,18 @@ def segment_output_name(route: dict[str, Any]) -> str:
     return f"{step:02d}_{slug or 'segment'}"
 
 
-def live_validate_command(scenario: dict[str, Any], output_root: Path, observe_sec: int, timeout_sec: int, route: dict[str, Any] | None = None) -> list[str]:
+def live_validate_command(
+    scenario: dict[str, Any],
+    output_root: Path,
+    observe_sec: int | None = None,
+    timeout_sec: int | None = None,
+    route: dict[str, Any] | None = None,
+    duration_policy: str = "completion-watchdog",
+    heartbeat_sec: int = 30,
+    no_progress_window_sec: int = 180,
+    max_repeated_decisions: int = 20,
+    max_death_loops: int = 3,
+) -> list[str]:
     scenario_id = str(scenario.get("scenario_id") or "")
     output_dir = output_root / scenario_output_name(scenario_id)
     context_args: list[str] = [
@@ -71,23 +82,35 @@ def live_validate_command(scenario: dict[str, Any], output_root: Path, observe_s
                 str(route.get("mechanic_profile") or ""),
             ]
         )
-    return [
+    command = [
         "pixi",
         "run",
         "bot-live-validate",
+        "--duration-policy",
+        duration_policy,
         "--apply-validation-provisioning",
         "--reset-bot-pool",
         "--bot-pool-tag",
         scenario_id,
         "--keep-bot-pool-position",
-        "--observe-sec",
-        str(observe_sec),
-        "--timeout-sec",
-        str(timeout_sec),
+        "--heartbeat-sec",
+        str(heartbeat_sec),
+        "--no-progress-window-sec",
+        str(no_progress_window_sec),
+        "--max-repeated-decision-count",
+        str(max_repeated_decisions),
+        "--max-death-loop-count",
+        str(max_death_loops),
         *context_args,
         "--output-dir",
         str(output_dir),
     ]
+    if duration_policy == "fixed-window":
+        if observe_sec is not None:
+            command.extend(["--observe-sec", str(observe_sec)])
+        if timeout_sec is not None:
+            command.extend(["--timeout-sec", str(timeout_sec)])
+    return command
 
 
 def route_coordinates_valid(route: dict[str, Any]) -> bool:
@@ -141,6 +164,11 @@ def build_plan(
     observe_sec: int,
     timeout_sec: int,
     routes_by_scenario: dict[str, list[dict[str, Any]]] | None = None,
+    duration_policy: str = "completion-watchdog",
+    heartbeat_sec: int = 30,
+    no_progress_window_sec: int = 180,
+    max_repeated_decisions: int = 20,
+    max_death_loops: int = 3,
 ) -> dict[str, Any]:
     rows = []
     for scenario in sorted(scenarios, key=lambda row: str(row.get("scenario_id") or "")):
@@ -149,11 +177,32 @@ def build_plan(
             continue
         routes = (routes_by_scenario or {}).get(scenario_id, [])
         route_segments = [route for route in routes if route.get("kind") in {"trash", "boss"}]
-        live_command = live_validate_command(scenario, output_root, observe_sec, timeout_sec)
+        live_command = live_validate_command(
+            scenario,
+            output_root,
+            observe_sec,
+            timeout_sec,
+            duration_policy=duration_policy,
+            heartbeat_sec=heartbeat_sec,
+            no_progress_window_sec=no_progress_window_sec,
+            max_repeated_decisions=max_repeated_decisions,
+            max_death_loops=max_death_loops,
+        )
         report_command = scenario_report_command(scenario, output_root, report_root, validation_scenario_dir, route_segments)
         segments = []
         for route in route_segments:
-            segment_command = live_validate_command(scenario, output_root, observe_sec, timeout_sec, route)
+            segment_command = live_validate_command(
+                scenario,
+                output_root,
+                observe_sec,
+                timeout_sec,
+                route,
+                duration_policy=duration_policy,
+                heartbeat_sec=heartbeat_sec,
+                no_progress_window_sec=no_progress_window_sec,
+                max_repeated_decisions=max_repeated_decisions,
+                max_death_loops=max_death_loops,
+            )
             executable = route_coordinates_valid(route)
             segments.append(
                 {
@@ -192,6 +241,16 @@ def build_plan(
                 "scenario_report_dir": str(report_root),
                 "preserve_start_position": True,
                 "bot_pool_tag": scenario_id,
+                "lane_name": f"{scenario_output_name(scenario_id)}_full_clear",
+                "duration_policy": duration_policy,
+                "watchdog": {
+                    "heartbeat_sec": heartbeat_sec,
+                    "no_progress_window_sec": no_progress_window_sec,
+                    "max_repeated_decisions": max_repeated_decisions,
+                    "max_death_loops": max_death_loops,
+                    "emergency_timeout_sec": timeout_sec,
+                    "fixed_observe_sec": observe_sec if duration_policy == "fixed-window" else None,
+                },
                 "segment_count": len(segments),
                 "executable_segment_count": sum(1 for segment in segments if segment["executable"]),
                 "invalid_segment_count": sum(1 for segment in segments if not segment["executable"]),
@@ -204,6 +263,7 @@ def build_plan(
         )
     return {
         "schema": "bot_validation_run_plan_v1",
+        "duration_policy": duration_policy,
         "scenario_count": len(rows),
         "scenarios": rows,
         "runtime_ml_control": "disabled_until_live_clear_validation_passes",
@@ -258,6 +318,11 @@ def main() -> int:
     parser.add_argument("--scenario-report-root", type=Path, default=Path("dataset/live_validation_scenario_reports_built"))
     parser.add_argument("--observe-sec", type=int, default=300)
     parser.add_argument("--timeout-sec", type=int, default=900)
+    parser.add_argument("--duration-policy", choices=["completion-watchdog", "fixed-window"], default="completion-watchdog")
+    parser.add_argument("--heartbeat-sec", type=int, default=30)
+    parser.add_argument("--no-progress-window-sec", type=int, default=180)
+    parser.add_argument("--max-repeated-decision-count", type=int, default=20)
+    parser.add_argument("--max-death-loop-count", type=int, default=3)
     args = parser.parse_args()
 
     plan = build_plan(
@@ -268,6 +333,11 @@ def main() -> int:
         args.observe_sec,
         args.timeout_sec,
         load_routes(args.validation_scenario_dir),
+        duration_policy=args.duration_policy,
+        heartbeat_sec=args.heartbeat_sec,
+        no_progress_window_sec=args.no_progress_window_sec,
+        max_repeated_decisions=args.max_repeated_decision_count,
+        max_death_loops=args.max_death_loop_count,
     )
     args.output_dir.mkdir(parents=True, exist_ok=True)
     write_json(args.output_dir / "manifest.json", plan)

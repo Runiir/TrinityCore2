@@ -33,7 +33,10 @@ from tools.bot_ml.build_validation_scenario_manifests import build_manifests as 
 from tools.bot_ml.build_live_scenario_reports import build_reports as build_live_scenario_reports, build_reports_from_live_reports, main as live_scenario_reports_main
 from tools.bot_ml.build_validation_run_plan import build_plan as build_validation_run_plan
 from tools.bot_ml.build_validation_run_status import build_status as build_validation_run_status
-from tools.bot_ml.run_live_bot_validation import build_bot_pool_reset_sql, command_script, live_validation_report, load_scenario_reports, main as live_validation_main, parse_json_objects, parse_soap_result, run_worldserver, split_sql_statements, trinity_config_bool, upsert_trinity_config
+from tools.bot_ml.run_live_bot_validation import build_bot_pool_reset_sql, command_script, live_validation_report, load_scenario_reports, main as live_validation_main, parse_json_objects, parse_soap_result, run_worldserver, run_worldserver_completion_watchdog, split_sql_statements, trinity_config_bool, upsert_trinity_config
+from tools.bot_ml.bot_autonomy_daemon import codex_command, detect_rate_limit, handle_rate_limit, initial_state, run_one_cycle, sleep_until_resume
+from tools.bot_ml.generate_lane_configs import write_lane_config
+from tools.bot_ml.promote_live_validation_artifact import promote
 from tools.bot_ml.build_validation_gear_profiles import SHIELD_CLASSES, build_gem_catalog, build_profiles, build_report, fetch_items, load_gem_properties, load_spell_item_enchantments
 from tools.bot_ml.build_validation_provisioning import apply_gear_profiles, bot_spell_ids, build_account_insert_sql, main as provisioning_main, scenario_report, srp6_registration_data
 from tools.bot_ml.validate_validation_provisioning import build_report as provisioning_verify_report
@@ -1526,6 +1529,11 @@ def test_validation_run_plan_preserves_instance_positions_and_tags():
     assert "blackwing_descent_10n" in bwd["live_validate_command"]
     assert bwd["scenario_report_command"].count("--scenario-id") == 1
     assert "pixi" in stonecore["live_validate_shell"]
+    assert plan["duration_policy"] == "completion-watchdog"
+    assert "--duration-policy" in stonecore["live_validate_command"]
+    assert "completion-watchdog" in stonecore["live_validate_command"]
+    assert "--observe-sec" not in stonecore["live_validate_command"]
+    assert "--timeout-sec" not in stonecore["live_validate_command"]
 
 
 def test_validation_run_plan_segments_boss_routes_for_aggregate_reports():
@@ -2888,8 +2896,252 @@ def test_live_bot_validation_boss_routes_default_to_long_observation_window(tmp_
     report = json.loads((output_dir / "report.json").read_text(encoding="utf-8"))
 
     assert report["timeout_sec"] == 900
-    assert report["observe_sec"] == 300
+    assert report["duration_policy"] == "completion-watchdog"
+    assert report["observe_sec"] == 30
+    assert report["heartbeat_sec"] == 30
     assert report["validation_context"]["route_kind"] == "boss"
+
+
+def test_live_bot_validation_rejects_timeout_segment_and_teacher_only_final_evidence():
+    output = """
+TC> {"active_bots":5,"target_bots":5,"decisions":5}
+TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"snapshot":{"decision":{"action":"teacher_quest_mob_assist"},"movement":{"is_moving":true,"distance_moved_since_last_decision":3}}}]}
+TC> {"trace_schema_version":1,"entries":[{"action":"teacher_kill_assist","result":"simple_open_world_quest_mob_target"},{"action":"accept_hub_quests"}]}
+TC> {"duration_minutes":2,"decisions":5}
+"""
+    report = live_validation_report(
+        output,
+        stages=["movement_smoke"],
+        timed_out=True,
+        validation_context={"scenario_id": "stonecore_5n", "segment_id": "02_corborus"},
+    )
+
+    assert report["all_passed"] is True
+    assert report["acceptable_final_evidence"] is False
+    assert "timeout_is_not_final_evidence" in report["final_evidence_rejections"]
+    assert "segment_or_route_context_is_debug_only" in report["final_evidence_rejections"]
+    assert "teacher_assisted_only_evidence" in report["final_evidence_rejections"]
+    assert report["completion_reason"] == "emergency_wall_clock_timeout"
+    assert report["watchdog_state"]["progress_counters"]["teacher_assisted_kills"] == 1
+
+
+def test_bot_autonomy_daemon_detects_rate_limit_retry_after():
+    rate_limit = detect_rate_limit(
+        events=[{"type": "turn.failed", "error": {"message": "429 rate limit retry-after: 120 seconds"}}],
+        stdout_text="",
+        stderr_text="",
+        returncode=1,
+        default_sleep_sec=3600,
+        max_sleep_sec=86400,
+        current_time=1_700_000_000,
+    )
+
+    assert rate_limit is not None
+    assert rate_limit["resume_at_unix"] == 1_700_000_120
+    assert rate_limit["sleep_sec"] == 120
+    assert rate_limit["signature"] == "rate_limit_or_quota"
+
+
+def test_bot_autonomy_daemon_rate_limit_fallback_and_resume_command(tmp_path):
+    fallback = detect_rate_limit(
+        events=[],
+        stdout_text="",
+        stderr_text="quota exceeded; try again later",
+        returncode=1,
+        default_sleep_sec=3600,
+        max_sleep_sec=7200,
+        current_time=10,
+    )
+    command, stdin_text = codex_command(
+        role="worker",
+        prompt="continue",
+        model="gpt-5",
+        repo=tmp_path,
+        sandbox="danger-full-access",
+        jsonl_path=tmp_path / "worker.jsonl",
+        last_message_path=tmp_path / "last.md",
+        thread_id="thread-123",
+    )
+
+    assert fallback is not None
+    assert fallback["resume_at_unix"] == 3610
+    assert command[:4] == ["codex", "exec", "resume", "--json"]
+    assert "thread-123" in command
+    assert stdin_text == "continue"
+
+
+def test_bot_autonomy_daemon_pause_sleep_resume_transition(tmp_path, monkeypatch):
+    state = initial_state()
+    state_path = tmp_path / "daemon_state.json"
+    stop_path = tmp_path / "daemon.stop"
+    handle_rate_limit(
+        state,
+        {
+            "agent_role": "reviewer",
+            "thread_id": "thread-123",
+            "resume_at_unix": 100,
+            "jsonl_path": "reviewer.jsonl",
+            "stderr_path": "reviewer.stderr",
+        },
+        state_path,
+    )
+    monkeypatch.setattr("tools.bot_ml.bot_autonomy_daemon.now_unix", lambda: 101)
+
+    assert state["status"] == "paused_rate_limit"
+    assert sleep_until_resume(state, stop_path, state_path) is True
+
+
+def test_bot_autonomy_daemon_resumes_paused_role_thread(tmp_path, monkeypatch):
+    checklist = {
+        "deliverables": [
+            {"deliverable": "movement_smoke", "status": "needs_followup", "evidence_artifact": ""},
+        ]
+    }
+    state = initial_state()
+    state.update(
+        {
+            "status": "paused_rate_limit",
+            "cycle_id": 4,
+            "rate_limit": {
+                "agent_role": "worker",
+                "thread_id": "thread-123",
+                "prompt": "continue worker",
+            },
+        }
+    )
+    calls = []
+
+    def fake_run_codex_role(**kwargs):
+        calls.append(kwargs)
+        return {
+            "rate_limit": None,
+            "returncode": 0,
+            "thread_id": kwargs["thread_id"],
+        }
+
+    monkeypatch.setattr("tools.bot_ml.bot_autonomy_daemon.load_checklist", lambda path=None: checklist)
+    monkeypatch.setattr("tools.bot_ml.bot_autonomy_daemon.run_codex_role", fake_run_codex_role)
+
+    result = run_one_cycle(
+        state,
+        {
+            "repo": str(tmp_path),
+            "orchestrator_model": "gpt-5",
+            "worker_model": "gpt-5-worker",
+            "reviewer_model": "gpt-5-reviewer",
+            "sandbox": "danger-full-access",
+        },
+        tmp_path / "state.json",
+    )
+
+    assert result == {"done": False, "resumed": "worker"}
+    assert calls[0]["role"] == "worker"
+    assert calls[0]["thread_id"] == "thread-123"
+    assert calls[0]["model"] == "gpt-5-worker"
+
+
+def test_live_bot_validation_completion_watchdog_writes_heartbeats(tmp_path):
+    fake_worldserver = tmp_path / "fake_worldserver.py"
+    fake_worldserver.write_text(
+        "#!/usr/bin/env python3\n"
+        "import sys\n"
+        "print('TC> ', flush=True)\n"
+        "for line in sys.stdin:\n"
+        "    cmd = line.strip()\n"
+        "    print('CMD ' + cmd)\n"
+        "    if cmd == '.botauto status':\n"
+        "        print('{\"active_bots\":1,\"target_bots\":1,\"decisions\":1}')\n"
+        "    elif cmd.startswith('.botauto diagnose'):\n"
+        "        print('{\"diagnosis_schema_version\":1,\"bots\":[{\"identity\":{\"bot_guid\":1},\"snapshot\":{\"decision\":{\"action\":\"wait\"},\"movement\":{\"is_moving\":false,\"distance_moved_since_last_decision\":0}}}]}')\n"
+        "    elif cmd.startswith('.botauto trace'):\n"
+        "        print('{\"trace_schema_version\":1,\"entries\":[{\"action\":\"repeated_decision\"},{\"action\":\"repeated_decision\"}]}')\n"
+        "    elif cmd == '.botexp summary':\n"
+        "        print('{\"duration_minutes\":1,\"decisions\":1}')\n"
+        "    elif cmd.startswith('server shutdown'):\n"
+        "        break\n"
+        "    print('TC> ', flush=True)\n",
+        encoding="utf-8",
+    )
+    fake_worldserver.chmod(0o755)
+    config = tmp_path / "worldserver.conf"
+    config.write_text("", encoding="utf-8")
+
+    output, returncode, timed_out, command = run_worldserver_completion_watchdog(
+        fake_worldserver,
+        config,
+        5,
+        command_script(selector="all", trace_limit=5, start=False, stop=False),
+        tmp_path / "validation",
+        {},
+        {},
+        heartbeat_sec=1,
+        no_progress_window_sec=1,
+        max_repeated_decisions=2,
+    )
+    report = json.loads((tmp_path / "validation" / "report.json").read_text(encoding="utf-8"))
+
+    assert returncode == 0
+    assert timed_out is False
+    assert command == [str(fake_worldserver), "--config", str(config)]
+    assert "CMD .botauto status" in output
+    assert (tmp_path / "validation" / "heartbeat_events.jsonl").exists()
+    assert list((tmp_path / "validation" / "heartbeats").glob("*.json"))
+    assert report["duration_policy"] == "completion-watchdog"
+    assert report["completion_reason"] == "repeated_decision_watchdog"
+
+
+def test_lane_config_generates_per_lane_db_clones(tmp_path):
+    world_template = tmp_path / "worldserver.conf"
+    auth_template = tmp_path / "authserver.conf"
+    world_template.write_text(
+        'LoginDatabaseInfo = "127.0.0.1;3306;trinity;trinity;auth"\n'
+        'WorldDatabaseInfo = "127.0.0.1;3306;trinity;trinity;world"\n'
+        'CharacterDatabaseInfo = "127.0.0.1;3306;trinity;trinity;characters"\n'
+        'HotfixDatabaseInfo = "127.0.0.1;3306;trinity;trinity;hotfixes"\n',
+        encoding="utf-8",
+    )
+    auth_template.write_text("", encoding="utf-8")
+
+    manifest = write_lane_config(
+        0,
+        tmp_path / "lanes",
+        world_template,
+        auth_template,
+        dry_run=False,
+        name_override="stonecore full clear r1",
+        db_isolation="per-lane-clone",
+    )
+    config = Path(manifest["configs"]["worldserver"]).read_text(encoding="utf-8")
+
+    assert manifest["lane_name"] == "stonecore_full_clear_r1"
+    assert manifest["databases"]["auth"]["database"] == "auth_lane_stonecore_full_clear_r1"
+    assert manifest["databases"]["characters"]["database"] == "characters_lane_stonecore_full_clear_r1"
+    assert manifest["databases"]["world"]["database"] == "world_lane_stonecore_full_clear_r1"
+    assert manifest["databases"]["hotfixes"]["database"] == "hotfixes_lane_stonecore_full_clear_r1"
+    assert 'LoginDatabaseInfo = "127.0.0.1;3306;trinity;trinity;auth_lane_stonecore_full_clear_r1"' in config
+    assert 'BotWorld.PoolTagFilter = "bot_autonomy_stonecore_full_clear_r1"' in config
+    assert manifest["cleanup_command"]
+
+
+def test_live_artifact_promotion_requires_accepted_evidence(tmp_path):
+    source = tmp_path / "lane" / "report.json"
+    canonical = tmp_path / "canonical" / "report.json"
+    manifest = tmp_path / "promotion.json"
+    source.parent.mkdir(parents=True)
+    source.write_text(json.dumps({"all_passed": False, "acceptable_final_evidence": False}), encoding="utf-8")
+
+    with pytest.raises(SystemExit):
+        promote(source, canonical, manifest)
+
+    failed_manifest = json.loads(manifest.read_text(encoding="utf-8"))
+    assert failed_manifest["accepted"] is False
+    assert not canonical.exists()
+
+    source.write_text(json.dumps({"all_passed": True, "acceptable_final_evidence": True}), encoding="utf-8")
+    accepted = promote(source, canonical, manifest)
+
+    assert accepted["accepted"] is True
+    assert json.loads(canonical.read_text(encoding="utf-8"))["all_passed"] is True
 
 
 def test_live_bot_validation_requires_activity_evidence_for_smoke_gates():

@@ -1,0 +1,47 @@
+{
+  "cleanup_command": "mysql -e \"DROP DATABASE IF EXISTS `auth_lane_stonecore_full_clear_r1`;\" && mysql -e \"DROP DATABASE IF EXISTS `characters_lane_stonecore_full_clear_r1`;\" && mysql -e \"DROP DATABASE IF EXISTS `world_lane_stonecore_full_clear_r1`;\" && mysql -e \"DROP DATABASE IF EXISTS `hotfixes_lane_stonecore_full_clear_r1`;\"",
+  "clone_commands": [
+    "mysql -e \"CREATE DATABASE IF NOT EXISTS `auth_lane_stonecore_full_clear_r1`;\"",
+    "mysqldump `auth` | mysql `auth_lane_stonecore_full_clear_r1`",
+    "mysql -e \"CREATE DATABASE IF NOT EXISTS `characters_lane_stonecore_full_clear_r1`;\"",
+    "mysqldump `characters` | mysql `characters_lane_stonecore_full_clear_r1`",
+    "mysql -e \"CREATE DATABASE IF NOT EXISTS `world_lane_stonecore_full_clear_r1`;\"",
+    "mysqldump `world` | mysql `world_lane_stonecore_full_clear_r1`",
+    "mysql -e \"CREATE DATABASE IF NOT EXISTS `hotfixes_lane_stonecore_full_clear_r1`;\"",
+    "mysqldump `hotfixes` | mysql `hotfixes_lane_stonecore_full_clear_r1`"
+  ],
+  "isolation": "per-lane-clone",
+  "reset_commands": [
+    "mysql `auth_lane_stonecore_full_clear_r1` < sql/updates/auth/4.3.4/*.sql",
+    "mysql `characters_lane_stonecore_full_clear_r1` < sql/updates/characters/4.3.4/*.sql",
+    "mysql `world_lane_stonecore_full_clear_r1` < sql/updates/world/4.3.4/*.sql",
+    "mysql `hotfixes_lane_stonecore_full_clear_r1` < sql/updates/hotfixes/4.3.4/*.sql"
+  ],
+  "schemas": {
+    "auth": {
+      "config_value": "\"172.20.0.2;3306;trinity;trinity;auth_lane_stonecore_full_clear_r1\"",
+      "database": "auth_lane_stonecore_full_clear_r1",
+      "source": "172.20.0.2;3306;trinity;trinity;auth",
+      "source_database": "auth"
+    },
+    "characters": {
+      "config_value": "\"172.20.0.2;3306;trinity;trinity;characters_lane_stonecore_full_clear_r1\"",
+      "database": "characters_lane_stonecore_full_clear_r1",
+      "source": "172.20.0.2;3306;trinity;trinity;characters",
+      "source_database": "characters"
+    },
+    "hotfixes": {
+      "config_value": "\"172.20.0.2;3306;trinity;trinity;hotfixes_lane_stonecore_full_clear_r1\"",
+      "database": "hotfixes_lane_stonecore_full_clear_r1",
+      "source": "172.20.0.2;3306;trinity;trinity;hotfixes",
+      "source_database": "hotfixes"
+    },
+    "world": {
+      "config_value": "\"172.20.0.2;3306;trinity;trinity;world_lane_stonecore_full_clear_r1\"",
+      "database": "world_lane_stonecore_full_clear_r1",
+      "source": "172.20.0.2;3306;trinity;trinity;world",
+      "source_database": "world"
+    }
+  },
+  "suffix": "lane_stonecore_full_clear_r1"
+}

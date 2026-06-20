@@ -1,0 +1,65 @@
+{
+  "artifact_root": "/home/runiir/Games/trinity-cata/artifacts/live_validation_instances/stonecore_full_clear_r2",
+  "cleanup_command": "mysql -e \"DROP DATABASE IF EXISTS `auth_lane_stonecore_full_clear_r2`;\" && mysql -e \"DROP DATABASE IF EXISTS `characters_lane_stonecore_full_clear_r2`;\" && mysql -e \"DROP DATABASE IF EXISTS `world_lane_stonecore_full_clear_r2`;\" && mysql -e \"DROP DATABASE IF EXISTS `hotfixes_lane_stonecore_full_clear_r2`;\"",
+  "configs": {
+    "authserver": "/home/runiir/Games/trinity-cata/generated/bot_autonomy_lanes/stonecore_full_clear_r2/config/trinity-authserver-lane.conf",
+    "worldserver": "/home/runiir/Games/trinity-cata/generated/bot_autonomy_lanes/stonecore_full_clear_r2/config/trinity-worldserver-lane.conf"
+  },
+  "databases": {
+    "auth": {
+      "config_value": "\"172.20.0.2;3306;trinity;trinity;auth_lane_stonecore_full_clear_r2\"",
+      "database": "auth_lane_stonecore_full_clear_r2",
+      "source": "172.20.0.2;3306;trinity;trinity;auth",
+      "source_database": "auth"
+    },
+    "characters": {
+      "config_value": "\"172.20.0.2;3306;trinity;trinity;characters_lane_stonecore_full_clear_r2\"",
+      "database": "characters_lane_stonecore_full_clear_r2",
+      "source": "172.20.0.2;3306;trinity;trinity;characters",
+      "source_database": "characters"
+    },
+    "hotfixes": {
+      "config_value": "\"172.20.0.2;3306;trinity;trinity;hotfixes_lane_stonecore_full_clear_r2\"",
+      "database": "hotfixes_lane_stonecore_full_clear_r2",
+      "source": "172.20.0.2;3306;trinity;trinity;hotfixes",
+      "source_database": "hotfixes"
+    },
+    "world": {
+      "config_value": "\"172.20.0.2;3306;trinity;trinity;world_lane_stonecore_full_clear_r2\"",
+      "database": "world_lane_stonecore_full_clear_r2",
+      "source": "172.20.0.2;3306;trinity;trinity;world",
+      "source_database": "world"
+    }
+  },
+  "dataset_root": "/home/runiir/Games/trinity-cata/dataset/live_validation_instances/stonecore_full_clear_r2",
+  "db_clone_commands": [
+    "mysql -e \"CREATE DATABASE IF NOT EXISTS `auth_lane_stonecore_full_clear_r2`;\"",
+    "mysqldump `auth` | mysql `auth_lane_stonecore_full_clear_r2`",
+    "mysql -e \"CREATE DATABASE IF NOT EXISTS `characters_lane_stonecore_full_clear_r2`;\"",
+    "mysqldump `characters` | mysql `characters_lane_stonecore_full_clear_r2`",
+    "mysql -e \"CREATE DATABASE IF NOT EXISTS `world_lane_stonecore_full_clear_r2`;\"",
+    "mysqldump `world` | mysql `world_lane_stonecore_full_clear_r2`",
+    "mysql -e \"CREATE DATABASE IF NOT EXISTS `hotfixes_lane_stonecore_full_clear_r2`;\"",
+    "mysqldump `hotfixes` | mysql `hotfixes_lane_stonecore_full_clear_r2`"
+  ],
+  "db_isolation": "per-lane-clone",
+  "db_reset_commands": [
+    "mysql `auth_lane_stonecore_full_clear_r2` < sql/updates/auth/4.3.4/*.sql",
+    "mysql `characters_lane_stonecore_full_clear_r2` < sql/updates/characters/4.3.4/*.sql",
+    "mysql `world_lane_stonecore_full_clear_r2` < sql/updates/world/4.3.4/*.sql",
+    "mysql `hotfixes_lane_stonecore_full_clear_r2` < sql/updates/hotfixes/4.3.4/*.sql"
+  ],
+  "db_suffix": "lane_stonecore_full_clear_r2",
+  "lane": 1,
+  "lane_name": "stonecore_full_clear_r2",
+  "output_root": "/home/runiir/Games/trinity-cata/generated/bot_autonomy_lanes/stonecore_full_clear_r2",
+  "pool_tag_filter": "bot_autonomy_stonecore_full_clear_r2",
+  "ports": {
+    "instance": 18186,
+    "ra": 13543,
+    "soap": 17978,
+    "worldserver": 18185
+  },
+  "runtime_ml_control": "disabled_teacher_policy_validation_only",
+  "schema": "bot_autonomy_lane_config_v1"
+}
