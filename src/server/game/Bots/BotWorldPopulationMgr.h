@@ -199,6 +199,10 @@ public:
     void StopAutonomy();
     void Shutdown();
     bool SpawnAutonomyBots(uint32 count);
+    std::string GetRuntimeProfilesJson();
+    std::string SelectRuntimeProfile(std::string const& name);
+    std::string ClearRuntimeProfile();
+    std::string ReloadRuntimeProfiles();
     BotWorldStatus GetStatus() const;
     std::string GetStatusJson() const;
     std::string GetSummaryJson() const;
@@ -227,6 +231,45 @@ public:
     };
 
 private:
+    struct BotWorldExperimentProfile
+    {
+        std::string Name;
+        std::string Description;
+        BotWorldExperimentConfig Config;
+        bool HasTargetPopulation = false;
+        bool HasMapId = false;
+        bool HasZoneId = false;
+        bool HasCenter = false;
+        bool HasRadius = false;
+        bool HasAllowCombat = false;
+        bool HasAllowGrinding = false;
+        bool HasAllowQuesting = false;
+        bool HasAllowDungeons = false;
+        bool HasAllowRaids = false;
+        bool HasTrackHeroicRaidProgression = false;
+        bool HasEnableProgression = false;
+        bool HasRecordDecisions = false;
+        bool HasRecordPerception = false;
+        bool HasSmartSampling = false;
+        bool HasPoolTagFilter = false;
+        bool HasSpawnMode = false;
+        bool HasAllowConfiguredCenterFallback = false;
+        bool HasUseSavedPosition = false;
+        bool HasNearPlayerRadius = false;
+        bool HasDeathRecoveryMode = false;
+        bool HasAutoStartRecording = false;
+        bool HasAutoRecordingWindowMinutes = false;
+        bool HasAutoRecordingNamePrefix = false;
+        bool HasValidationRouteEnable = false;
+        bool HasValidationRouteManifestPath = false;
+        bool HasValidationRouteAdvanceMode = false;
+        bool HasValidationRouteScenarioId = false;
+        bool HasValidationRouteNodeId = false;
+        bool HasValidationRouteLabel = false;
+        bool HasValidationRouteKind = false;
+        bool HasValidationRouteMechanicProfile = false;
+    };
+
     struct ValidationRouteManifestNode
     {
         std::string ScenarioId;
@@ -806,6 +849,11 @@ private:
     };
 
     void LoadConfig(std::string const& name, BotWorldExperimentConfig const* overrideConfig);
+    void ApplyRuntimeConfigOverride(BotWorldExperimentConfig const& overrideConfig);
+    void ApplyRuntimeProfile(BotWorldExperimentProfile const& profile);
+    bool EnsureRuntimeProfilesLoaded();
+    bool LoadRuntimeProfiles(std::string* failureReason = nullptr);
+    std::string RuntimeProfilesJson(char const* action) const;
     void MaybeStartAutoRecordingWindow();
     void RotateAutoRecordingWindowIfNeeded(uint32 diff);
     std::string BuildAutoRecordingWindowName() const;
@@ -972,6 +1020,13 @@ private:
     uint32 _recordingWindowElapsedMs = 0;
     uint32 _recordingWindowIndex = 0;
     BotWorldExperimentConfig _config;
+    std::string _profileManifestPath;
+    std::map<std::string, BotWorldExperimentProfile> _runtimeProfiles;
+    std::vector<std::string> _runtimeProfileOrder;
+    std::string _selectedProfileName;
+    std::string _profileManifestLoadError;
+    bool _runtimeProfilesLoaded = false;
+    bool _runtimeProfileDirty = false;
     BotExperienceLearningConfig _learningConfig;
     BotPolicyModelConfig _policyModelConfig;
     std::vector<WorldBotState> _bots;

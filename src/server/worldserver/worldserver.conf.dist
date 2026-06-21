@@ -3427,7 +3427,12 @@ PlayerBot.Debug = 1
 #
 #    BotWorld.AutoStart
 #        Description: Starts always-on autonomous bots during worldserver startup when PlayerBot.Enable is also enabled.
-#        Default:     1
+#                     Leave disabled for manual runtime profile control through ".botauto profile" and ".botauto start".
+#        Default:     0
+#
+#    BotWorld.ProfileManifest
+#        Description: JSON manifest containing named runtime bot experiment profiles for ".botauto profile".
+#        Default:     "dataset/bot_runtime_profiles/profiles.json"
 #
 #    BotWorld.AutoStartRecording
 #        Description: Starts and rotates experiment_bot_runs recording windows while always-on autonomy is active.
@@ -3529,7 +3534,8 @@ PlayerBot.Debug = 1
 
 BotWorld.Enable = 1
 BotWorld.FastExitAfterShutdown = 1
-BotWorld.AutoStart = 1
+BotWorld.AutoStart = 0
+BotWorld.ProfileManifest = "dataset/bot_runtime_profiles/profiles.json"
 BotWorld.AutoStartRecording = 1
 BotWorld.AutoRecordingWindowMinutes = 15
 BotWorld.AutoRecordingNamePrefix = "autonomy_window"

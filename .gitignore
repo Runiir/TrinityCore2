@@ -41,6 +41,9 @@ __pycache__/
 /dataset
 !/dataset/
 /dataset/*
+!/dataset/bot_runtime_profiles/
+/dataset/bot_runtime_profiles/*
+!/dataset/bot_runtime_profiles/profiles.json
 !/dataset/bot_ml/
 /dataset/bot_ml/*
 !/dataset/bot_ml/raw.dvc

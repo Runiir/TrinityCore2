@@ -368,6 +368,57 @@ std::vector<uint32> ExtractJsonUIntArrayField(std::string const& json, std::stri
     return ParseUIntList(ExtractJsonArrayField(json, key));
 }
 
+bool JsonHasField(std::string const& json, std::string const& key)
+{
+    std::regex pattern("\"" + key + "\"\\s*:");
+    return std::regex_search(json, pattern);
+}
+
+bool ExtractJsonBoolField(std::string const& json, std::string const& key, bool& value)
+{
+    std::regex pattern("\"" + key + "\"\\s*:\\s*(true|false)");
+    std::smatch match;
+    if (std::regex_search(json, match, pattern) && match.size() > 1)
+    {
+        value = match[1].str() == "true";
+        return true;
+    }
+    return false;
+}
+
+bool JsonFieldIsString(std::string const& json, std::string const& key)
+{
+    std::regex pattern("\"" + key + "\"\\s*:\\s*\"");
+    return std::regex_search(json, pattern);
+}
+
+bool JsonFieldIsNumber(std::string const& json, std::string const& key)
+{
+    std::regex pattern("\"" + key + "\"\\s*:\\s*-?[0-9]+(?:\\.[0-9]+)?(?:[eE][+-]?[0-9]+)?");
+    return std::regex_search(json, pattern);
+}
+
+bool JsonFieldIsBool(std::string const& json, std::string const& key)
+{
+    std::regex pattern("\"" + key + "\"\\s*:\\s*(true|false)");
+    return std::regex_search(json, pattern);
+}
+
+std::vector<std::string> ExtractJsonLineObjects(std::string const& text)
+{
+    std::vector<std::string> items;
+    std::istringstream input(text);
+    std::string line;
+    while (std::getline(input, line))
+    {
+        size_t first = line.find_first_not_of(" \t\r\n");
+        if (first == std::string::npos || line[first] != '{')
+            continue;
+        items.push_back(line.substr(first));
+    }
+    return items;
+}
+
 std::map<std::string, float> ExtractJsonNumberMap(std::string const& objectJson)
 {
     std::map<std::string, float> values;
@@ -795,7 +846,7 @@ bool BotWorldPopulationMgr::StartAutonomy(BotWorldExperimentConfig const* overri
 {
     if (_active)
     {
-        if (_runtimeMode == BotWorldRuntimeMode::AlwaysOnAutonomy && !overrideConfig)
+        if (_runtimeMode == BotWorldRuntimeMode::AlwaysOnAutonomy && !overrideConfig && !_runtimeProfileDirty)
             return true;
 
         if (_runtimeMode == BotWorldRuntimeMode::AlwaysOnAutonomy)
@@ -826,6 +877,7 @@ bool BotWorldPopulationMgr::StartAutonomy(BotWorldExperimentConfig const* overri
     _experimentId = 0;
     _active = true;
     _runtimeMode = BotWorldRuntimeMode::AlwaysOnAutonomy;
+    _runtimeProfileDirty = false;
 
     MaybeStartAutoRecordingWindow();
     EnsurePopulation();
@@ -888,6 +940,271 @@ bool BotWorldPopulationMgr::SpawnAutonomyBots(uint32 count)
     _metrics.TargetBots = _config.TargetPopulation;
     EnsurePopulation();
     return true;
+}
+
+std::string BotWorldPopulationMgr::RuntimeProfilesJson(char const* action) const
+{
+    std::ostringstream json;
+    json << "{\"ok\":" << (_profileManifestLoadError.empty() ? "true" : "false")
+         << ",\"action\":\"" << (action && *action ? action : "botauto_profiles") << "\""
+         << ",\"manifest_path\":\"" << JsonEscape(_profileManifestPath) << "\""
+         << ",\"active_profile\":" << (_selectedProfileName.empty() ? "null" : ("\"" + JsonEscape(_selectedProfileName) + "\""))
+         << ",\"profile_count\":" << _runtimeProfiles.size()
+         << ",\"loaded\":" << (_runtimeProfilesLoaded ? "true" : "false")
+         << ",\"failure_reason\":" << (_profileManifestLoadError.empty() ? "null" : ("\"" + JsonEscape(_profileManifestLoadError) + "\""))
+         << ",\"profiles\":[";
+    bool first = true;
+    for (std::string const& name : _runtimeProfileOrder)
+    {
+        auto itr = _runtimeProfiles.find(name);
+        if (itr == _runtimeProfiles.end())
+            continue;
+        if (!first)
+            json << ",";
+        first = false;
+        BotWorldExperimentProfile const& profile = itr->second;
+        json << "{\"name\":\"" << JsonEscape(profile.Name) << "\""
+             << ",\"description\":\"" << JsonEscape(profile.Description) << "\""
+             << ",\"target_population\":" << (profile.HasTargetPopulation ? profile.Config.TargetPopulation : 0)
+             << ",\"pool_tag_filter\":\"" << JsonEscape(profile.HasPoolTagFilter ? profile.Config.PoolTagFilter : "") << "\""
+             << ",\"spawn_mode\":\"" << JsonEscape(profile.HasSpawnMode ? profile.Config.SpawnMode : "") << "\""
+             << ",\"validation_route_manifest_path\":\"" << JsonEscape(profile.HasValidationRouteManifestPath ? profile.Config.ValidationRouteManifestPath : "") << "\""
+             << ",\"validation_route_scenario_id\":\"" << JsonEscape(profile.HasValidationRouteScenarioId ? profile.Config.ValidationRouteScenarioId : "") << "\"}";
+    }
+    json << "]}";
+    return json.str();
+}
+
+bool BotWorldPopulationMgr::EnsureRuntimeProfilesLoaded()
+{
+    if (_runtimeProfilesLoaded)
+        return _profileManifestLoadError.empty();
+    return LoadRuntimeProfiles(nullptr);
+}
+
+bool BotWorldPopulationMgr::LoadRuntimeProfiles(std::string* failureReason)
+{
+    _profileManifestPath = sConfigMgr->GetStringDefault("BotWorld.ProfileManifest", _profileManifestPath.empty() ? "dataset/bot_runtime_profiles/profiles.json" : _profileManifestPath);
+    _runtimeProfiles.clear();
+    _runtimeProfileOrder.clear();
+    _profileManifestLoadError.clear();
+    _runtimeProfilesLoaded = true;
+
+    if (_profileManifestPath.empty())
+        return true;
+
+    std::string manifestJson = ReadSmallTextFile(_profileManifestPath);
+    if (manifestJson.empty())
+    {
+        _profileManifestLoadError = "profile_manifest_unreadable";
+        if (failureReason)
+            *failureReason = _profileManifestLoadError;
+        return false;
+    }
+
+    std::string profilesJson = ExtractJsonArrayField(manifestJson, "profiles");
+    if (profilesJson.empty())
+    {
+        _profileManifestLoadError = "profile_manifest_profiles_missing";
+        if (failureReason)
+            *failureReason = _profileManifestLoadError;
+        return false;
+    }
+
+    auto fail = [this, failureReason](std::string const& reason) -> bool
+    {
+        _runtimeProfiles.clear();
+        _runtimeProfileOrder.clear();
+        _profileManifestLoadError = reason;
+        if (failureReason)
+            *failureReason = reason;
+        return false;
+    };
+
+    auto readString = [&fail](std::string const& objectJson, char const* key, std::string& value, bool& present) -> bool
+    {
+        present = JsonHasField(objectJson, key);
+        if (!present)
+            return true;
+        if (!JsonFieldIsString(objectJson, key))
+            return fail(std::string("profile_bad_type_") + key);
+        value = ExtractJsonStringField(objectJson, key);
+        return true;
+    };
+    auto readBool = [&fail](std::string const& objectJson, char const* key, bool& value, bool& present) -> bool
+    {
+        present = JsonHasField(objectJson, key);
+        if (!present)
+            return true;
+        if (!JsonFieldIsBool(objectJson, key) || !ExtractJsonBoolField(objectJson, key, value))
+            return fail(std::string("profile_bad_type_") + key);
+        return true;
+    };
+    auto readUInt = [&fail](std::string const& objectJson, char const* key, uint32& value, bool& present) -> bool
+    {
+        present = JsonHasField(objectJson, key);
+        if (!present)
+            return true;
+        if (!JsonFieldIsNumber(objectJson, key))
+            return fail(std::string("profile_bad_type_") + key);
+        int parsed = 0;
+        if (!ExtractJsonIntField(objectJson, key, parsed) || parsed < 0)
+            return fail(std::string("profile_bad_type_") + key);
+        value = uint32(parsed);
+        return true;
+    };
+    auto readFloat = [&fail](std::string const& objectJson, char const* key, float& value, bool& present) -> bool
+    {
+        present = JsonHasField(objectJson, key);
+        if (!present)
+            return true;
+        if (!JsonFieldIsNumber(objectJson, key) || !ExtractJsonNumberField(objectJson, key, value))
+            return fail(std::string("profile_bad_type_") + key);
+        return true;
+    };
+
+    for (std::string const& profileJson : ExtractJsonObjectArrayItems(profilesJson))
+    {
+        BotWorldExperimentProfile profile;
+        profile.Config = BotWorldExperimentConfig();
+        bool present = false;
+        if (!readString(profileJson, "name", profile.Name, present))
+            return false;
+        if (!present || profile.Name.empty())
+            return fail("profile_missing_name");
+        if (_runtimeProfiles.find(profile.Name) != _runtimeProfiles.end())
+            return fail("profile_duplicate_name");
+
+        if (!readString(profileJson, "description", profile.Description, present)) return false;
+        uint32 uintValue = 0;
+        float floatValue = 0.0f;
+        bool boolValue = false;
+        std::string stringValue;
+
+        if (!readUInt(profileJson, "target_population", uintValue, profile.HasTargetPopulation)) return false;
+        if (profile.HasTargetPopulation) profile.Config.TargetPopulation = std::max<uint32>(1, uintValue);
+        if (!readUInt(profileJson, "map", uintValue, profile.HasMapId)) return false;
+        if (profile.HasMapId) profile.Config.MapId = uintValue;
+        if (!readUInt(profileJson, "zone", uintValue, profile.HasZoneId)) return false;
+        if (profile.HasZoneId) profile.Config.ZoneId = uintValue;
+        bool hasX = false, hasY = false, hasZ = false;
+        if (!readFloat(profileJson, "center_x", profile.Config.CenterX, hasX)) return false;
+        if (!readFloat(profileJson, "center_y", profile.Config.CenterY, hasY)) return false;
+        if (!readFloat(profileJson, "center_z", profile.Config.CenterZ, hasZ)) return false;
+        profile.HasCenter = hasX || hasY || hasZ;
+        if (!readFloat(profileJson, "radius", floatValue, profile.HasRadius)) return false;
+        if (profile.HasRadius) profile.Config.Radius = std::max(1.0f, floatValue);
+        if (!readBool(profileJson, "allow_combat", boolValue, profile.HasAllowCombat)) return false;
+        if (profile.HasAllowCombat) profile.Config.AllowCombat = boolValue;
+        if (!readBool(profileJson, "allow_grinding", boolValue, profile.HasAllowGrinding)) return false;
+        if (profile.HasAllowGrinding) profile.Config.AllowGrinding = boolValue;
+        if (!readBool(profileJson, "allow_questing", boolValue, profile.HasAllowQuesting)) return false;
+        if (profile.HasAllowQuesting) profile.Config.AllowQuesting = boolValue;
+        if (!readBool(profileJson, "allow_dungeons", boolValue, profile.HasAllowDungeons)) return false;
+        if (profile.HasAllowDungeons) profile.Config.AllowDungeons = boolValue;
+        if (!readBool(profileJson, "allow_raids", boolValue, profile.HasAllowRaids)) return false;
+        if (profile.HasAllowRaids) profile.Config.AllowRaids = boolValue;
+        if (!readBool(profileJson, "track_heroic_raid_progression", boolValue, profile.HasTrackHeroicRaidProgression)) return false;
+        if (profile.HasTrackHeroicRaidProgression) profile.Config.TrackHeroicRaidProgression = boolValue;
+        if (!readBool(profileJson, "enable_progression", boolValue, profile.HasEnableProgression)) return false;
+        if (profile.HasEnableProgression) profile.Config.EnableProgression = boolValue;
+        if (!readBool(profileJson, "record_decisions", boolValue, profile.HasRecordDecisions)) return false;
+        if (profile.HasRecordDecisions) profile.Config.RecordDecisions = boolValue;
+        if (!readBool(profileJson, "record_perception", boolValue, profile.HasRecordPerception)) return false;
+        if (profile.HasRecordPerception) profile.Config.RecordPerception = boolValue;
+        if (!readBool(profileJson, "smart_sampling", boolValue, profile.HasSmartSampling)) return false;
+        if (profile.HasSmartSampling) profile.Config.SmartSampling = boolValue;
+        if (!readString(profileJson, "pool_tag_filter", stringValue, profile.HasPoolTagFilter)) return false;
+        if (profile.HasPoolTagFilter) profile.Config.PoolTagFilter = stringValue;
+        if (!readString(profileJson, "spawn_mode", stringValue, profile.HasSpawnMode)) return false;
+        if (profile.HasSpawnMode) profile.Config.SpawnMode = stringValue;
+        if (!readBool(profileJson, "allow_configured_center_fallback", boolValue, profile.HasAllowConfiguredCenterFallback)) return false;
+        if (profile.HasAllowConfiguredCenterFallback) profile.Config.AllowConfiguredCenterFallback = boolValue;
+        if (!readBool(profileJson, "use_saved_position", boolValue, profile.HasUseSavedPosition)) return false;
+        if (profile.HasUseSavedPosition) profile.Config.UseSavedPosition = boolValue;
+        if (!readFloat(profileJson, "near_player_radius", floatValue, profile.HasNearPlayerRadius)) return false;
+        if (profile.HasNearPlayerRadius) profile.Config.NearPlayerRadius = std::max(1.0f, floatValue);
+        if (!readString(profileJson, "death_recovery_mode", stringValue, profile.HasDeathRecoveryMode)) return false;
+        if (profile.HasDeathRecoveryMode) profile.Config.DeathRecoveryMode = stringValue;
+        if (!readBool(profileJson, "auto_start_recording", boolValue, profile.HasAutoStartRecording)) return false;
+        if (profile.HasAutoStartRecording) profile.Config.AutoStartRecording = boolValue;
+        if (!readUInt(profileJson, "auto_recording_window_minutes", uintValue, profile.HasAutoRecordingWindowMinutes)) return false;
+        if (profile.HasAutoRecordingWindowMinutes) profile.Config.AutoRecordingWindowMinutes = std::max<uint32>(1, uintValue);
+        if (!readString(profileJson, "auto_recording_name_prefix", stringValue, profile.HasAutoRecordingNamePrefix)) return false;
+        if (profile.HasAutoRecordingNamePrefix) profile.Config.AutoRecordingNamePrefix = stringValue;
+
+        std::string routeJson = ExtractJsonObjectField(profileJson, "validation_route");
+        std::string const& routeSource = routeJson.empty() ? profileJson : routeJson;
+        if (!readBool(routeSource, "enable", boolValue, profile.HasValidationRouteEnable)) return false;
+        if (profile.HasValidationRouteEnable) profile.Config.ValidationRouteEnable = boolValue;
+        if (!readString(routeSource, "manifest_path", stringValue, profile.HasValidationRouteManifestPath)) return false;
+        if (profile.HasValidationRouteManifestPath) profile.Config.ValidationRouteManifestPath = stringValue;
+        if (!readString(routeSource, "advance_mode", stringValue, profile.HasValidationRouteAdvanceMode)) return false;
+        if (profile.HasValidationRouteAdvanceMode) profile.Config.ValidationRouteAdvanceMode = stringValue;
+        if (!readString(routeSource, "scenario_id", stringValue, profile.HasValidationRouteScenarioId)) return false;
+        if (profile.HasValidationRouteScenarioId) profile.Config.ValidationRouteScenarioId = stringValue;
+        if (!readString(routeSource, "node_id", stringValue, profile.HasValidationRouteNodeId)) return false;
+        if (profile.HasValidationRouteNodeId) profile.Config.ValidationRouteNodeId = stringValue;
+        if (!readString(routeSource, "label", stringValue, profile.HasValidationRouteLabel)) return false;
+        if (profile.HasValidationRouteLabel) profile.Config.ValidationRouteLabel = stringValue;
+        if (!readString(routeSource, "kind", stringValue, profile.HasValidationRouteKind)) return false;
+        if (profile.HasValidationRouteKind) profile.Config.ValidationRouteKind = stringValue;
+        if (!readString(routeSource, "mechanic_profile", stringValue, profile.HasValidationRouteMechanicProfile)) return false;
+        if (profile.HasValidationRouteMechanicProfile) profile.Config.ValidationRouteMechanicProfile = stringValue;
+
+        _runtimeProfileOrder.push_back(profile.Name);
+        _runtimeProfiles[profile.Name] = profile;
+    }
+
+    if (_runtimeProfiles.empty())
+        return fail("profile_manifest_profiles_empty");
+
+    if (!_selectedProfileName.empty() && _runtimeProfiles.find(_selectedProfileName) == _runtimeProfiles.end())
+    {
+        _selectedProfileName.clear();
+        _runtimeProfileDirty = true;
+    }
+    return true;
+}
+
+std::string BotWorldPopulationMgr::GetRuntimeProfilesJson()
+{
+    EnsureRuntimeProfilesLoaded();
+    return RuntimeProfilesJson("botauto_profiles");
+}
+
+std::string BotWorldPopulationMgr::SelectRuntimeProfile(std::string const& name)
+{
+    EnsureRuntimeProfilesLoaded();
+    if (name.empty())
+        return "{\"ok\":false,\"action\":\"botauto_profile\",\"failure_reason\":\"usage: .botauto profile <name>|clear|reload\"}";
+    auto itr = _runtimeProfiles.find(name);
+    if (itr == _runtimeProfiles.end())
+        return "{\"ok\":false,\"action\":\"botauto_profile\",\"failure_reason\":\"unknown_profile\",\"profile\":\"" + JsonEscape(name) + "\"}";
+
+    _selectedProfileName = name;
+    _runtimeProfileDirty = true;
+    std::ostringstream json;
+    json << "{\"ok\":true,\"action\":\"botauto_profile\",\"active_profile\":\"" << JsonEscape(_selectedProfileName)
+         << "\",\"profile_count\":" << _runtimeProfiles.size()
+         << ",\"failure_reason\":null}";
+    return json.str();
+}
+
+std::string BotWorldPopulationMgr::ClearRuntimeProfile()
+{
+    _selectedProfileName.clear();
+    _runtimeProfileDirty = true;
+    ResetValidationRouteRuntimeState("runtime_profile_clear");
+    return "{\"ok\":true,\"action\":\"botauto_profile_clear\",\"active_profile\":null,\"failure_reason\":null}";
+}
+
+std::string BotWorldPopulationMgr::ReloadRuntimeProfiles()
+{
+    std::string failure;
+    bool ok = LoadRuntimeProfiles(&failure);
+    _runtimeProfileDirty = true;
+    return RuntimeProfilesJson(ok ? "botauto_profile_reload" : "botauto_profile_reload");
 }
 
 void BotWorldPopulationMgr::Update(uint32 diff)
@@ -977,10 +1294,71 @@ void BotWorldPopulationMgr::Update(uint32 diff)
     MaybeAdvanceValidationRouteManifest();
 }
 
+void BotWorldPopulationMgr::ApplyRuntimeConfigOverride(BotWorldExperimentConfig const& overrideConfig)
+{
+    _config = overrideConfig;
+}
+
+void BotWorldPopulationMgr::ApplyRuntimeProfile(BotWorldExperimentProfile const& profile)
+{
+    _config.Name = profile.Name.empty() ? _config.Name : profile.Name;
+    if (profile.HasTargetPopulation) _config.TargetPopulation = profile.Config.TargetPopulation;
+    if (profile.HasMapId) _config.MapId = profile.Config.MapId;
+    if (profile.HasZoneId) _config.ZoneId = profile.Config.ZoneId;
+    if (profile.HasCenter)
+    {
+        _config.CenterX = profile.Config.CenterX;
+        _config.CenterY = profile.Config.CenterY;
+        _config.CenterZ = profile.Config.CenterZ;
+    }
+    if (profile.HasRadius) _config.Radius = profile.Config.Radius;
+    if (profile.HasAllowCombat) _config.AllowCombat = profile.Config.AllowCombat;
+    if (profile.HasAllowGrinding) _config.AllowGrinding = profile.Config.AllowGrinding;
+    if (profile.HasAllowQuesting) _config.AllowQuesting = profile.Config.AllowQuesting;
+    if (profile.HasAllowDungeons) _config.AllowDungeons = profile.Config.AllowDungeons;
+    if (profile.HasAllowRaids) _config.AllowRaids = profile.Config.AllowRaids;
+    if (profile.HasTrackHeroicRaidProgression) _config.TrackHeroicRaidProgression = profile.Config.TrackHeroicRaidProgression;
+    if (profile.HasEnableProgression) _config.EnableProgression = profile.Config.EnableProgression;
+    if (profile.HasRecordDecisions) _config.RecordDecisions = profile.Config.RecordDecisions;
+    if (profile.HasRecordPerception) _config.RecordPerception = profile.Config.RecordPerception;
+    if (profile.HasSmartSampling) _config.SmartSampling = profile.Config.SmartSampling;
+    if (profile.HasPoolTagFilter) _config.PoolTagFilter = profile.Config.PoolTagFilter;
+    if (profile.HasSpawnMode) _config.SpawnMode = profile.Config.SpawnMode;
+    if (profile.HasAllowConfiguredCenterFallback) _config.AllowConfiguredCenterFallback = profile.Config.AllowConfiguredCenterFallback;
+    if (profile.HasUseSavedPosition) _config.UseSavedPosition = profile.Config.UseSavedPosition;
+    if (profile.HasNearPlayerRadius) _config.NearPlayerRadius = profile.Config.NearPlayerRadius;
+    if (profile.HasDeathRecoveryMode) _config.DeathRecoveryMode = profile.Config.DeathRecoveryMode;
+    if (profile.HasAutoStartRecording) _config.AutoStartRecording = profile.Config.AutoStartRecording;
+    if (profile.HasAutoRecordingWindowMinutes) _config.AutoRecordingWindowMinutes = profile.Config.AutoRecordingWindowMinutes;
+    if (profile.HasAutoRecordingNamePrefix) _config.AutoRecordingNamePrefix = profile.Config.AutoRecordingNamePrefix;
+    if (profile.HasValidationRouteEnable) _config.ValidationRouteEnable = profile.Config.ValidationRouteEnable;
+    if (profile.HasValidationRouteManifestPath) _config.ValidationRouteManifestPath = profile.Config.ValidationRouteManifestPath;
+    if (profile.HasValidationRouteAdvanceMode) _config.ValidationRouteAdvanceMode = profile.Config.ValidationRouteAdvanceMode;
+    if (profile.HasValidationRouteScenarioId) _config.ValidationRouteScenarioId = profile.Config.ValidationRouteScenarioId;
+    if (profile.HasValidationRouteNodeId) _config.ValidationRouteNodeId = profile.Config.ValidationRouteNodeId;
+    if (profile.HasValidationRouteLabel) _config.ValidationRouteLabel = profile.Config.ValidationRouteLabel;
+    if (profile.HasValidationRouteKind) _config.ValidationRouteKind = profile.Config.ValidationRouteKind;
+    if (profile.HasValidationRouteMechanicProfile) _config.ValidationRouteMechanicProfile = profile.Config.ValidationRouteMechanicProfile;
+
+    if (profile.HasValidationRouteEnable && !profile.Config.ValidationRouteEnable)
+    {
+        _config.ValidationRouteManifestPath.clear();
+        _config.ValidationRouteAdvanceMode = "disabled";
+        _config.ValidationRouteScenarioId.clear();
+        _config.ValidationRouteNodeId.clear();
+        _config.ValidationRouteLabel.clear();
+        _config.ValidationRouteKind.clear();
+        _config.ValidationRouteMechanicProfile.clear();
+    }
+    else if (profile.HasValidationRouteManifestPath && !profile.Config.ValidationRouteManifestPath.empty())
+        _config.ValidationRouteEnable = true;
+}
+
 void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperimentConfig const* overrideConfig)
 {
-    _config = overrideConfig ? *overrideConfig : BotWorldExperimentConfig();
+    _config = BotWorldExperimentConfig();
     _config.Name = name.empty() ? _config.Name : name;
+    _profileManifestPath = sConfigMgr->GetStringDefault("BotWorld.ProfileManifest", _profileManifestPath.empty() ? "dataset/bot_runtime_profiles/profiles.json" : _profileManifestPath);
     _config.TargetPopulation = sConfigMgr->GetIntDefault("BotWorld.TargetPopulation", _config.TargetPopulation);
     _config.MapId = sConfigMgr->GetIntDefault("BotWorld.Map", _config.MapId);
     _config.ZoneId = sConfigMgr->GetIntDefault("BotWorld.Zone", _config.ZoneId);
@@ -1044,16 +1422,6 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
     _config.ValidationRouteOpenerSummonY = sConfigMgr->GetFloatDefault("BotWorld.ValidationRoute.OpenerSummonY", _config.ValidationRouteOpenerSummonY);
     _config.ValidationRouteOpenerSummonZ = sConfigMgr->GetFloatDefault("BotWorld.ValidationRoute.OpenerSummonZ", _config.ValidationRouteOpenerSummonZ);
     _config.ValidationRouteOpenerSummonO = sConfigMgr->GetFloatDefault("BotWorld.ValidationRoute.OpenerSummonO", _config.ValidationRouteOpenerSummonO);
-    _validationRouteActivationApplied = false;
-    _validationRouteActivationAttempts = 0;
-    _validationRouteManifest.clear();
-    _validationRouteManifestIndex = 0;
-    _validationRouteManifestAdvancePending = false;
-    _validationRouteManifestComplete = false;
-    _validationRouteManifestAdvanceReason.clear();
-    _validationRouteManifestLoadError.clear();
-    _validationRouteProgressBaselineKills = _metrics.Kills;
-    LoadValidationRouteManifest();
     _config.AllowConfiguredCenterFallback = sConfigMgr->GetBoolDefault("BotWorld.AllowConfiguredCenterFallback", _config.AllowConfiguredCenterFallback);
     _config.UseSavedPosition = sConfigMgr->GetBoolDefault("BotWorld.UseSavedPosition", _config.UseSavedPosition);
     _config.NearPlayerRadius = sConfigMgr->GetFloatDefault("BotWorld.NearPlayerRadius", _config.NearPlayerRadius);
@@ -1072,7 +1440,6 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
     _config.Learning.RecentFailurePenaltyWeight = std::max(0.0f, sConfigMgr->GetFloatDefault("BotLearning.RecentFailurePenaltyWeight", _config.Learning.RecentFailurePenaltyWeight));
     _config.Learning.ExplorationNoveltyWeight = std::max(0.0f, sConfigMgr->GetFloatDefault("BotLearning.ExplorationNoveltyWeight", _config.Learning.ExplorationNoveltyWeight));
     _config.Learning.AllowGlobalMemoryFallback = sConfigMgr->GetBoolDefault("BotLearning.AllowGlobalMemoryFallback", _config.Learning.AllowGlobalMemoryFallback);
-    _learningConfig = _config.Learning;
 
     _policyModelConfig.Enabled = sConfigMgr->GetBoolDefault("BotPolicyModel.Enable", _policyModelConfig.Enabled);
     _policyModelConfig.Mode = sConfigMgr->GetStringDefault("BotPolicyModel.Mode", _policyModelConfig.Mode);
@@ -1087,6 +1454,30 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
     if (_policyModelConfig.Mode != "shadow" && _policyModelConfig.Mode != "assist" && _policyModelConfig.Mode != "control")
         _policyModelConfig.Mode = "shadow";
     ValidatePolicyModelDeployment();
+
+    if (overrideConfig)
+        ApplyRuntimeConfigOverride(*overrideConfig);
+    else if (!_selectedProfileName.empty())
+    {
+        EnsureRuntimeProfilesLoaded();
+        auto profileItr = _runtimeProfiles.find(_selectedProfileName);
+        if (profileItr != _runtimeProfiles.end())
+            ApplyRuntimeProfile(profileItr->second);
+        else
+            _selectedProfileName.clear();
+    }
+
+    _learningConfig = _config.Learning;
+    _validationRouteActivationApplied = false;
+    _validationRouteActivationAttempts = 0;
+    _validationRouteManifest.clear();
+    _validationRouteManifestIndex = 0;
+    _validationRouteManifestAdvancePending = false;
+    _validationRouteManifestComplete = false;
+    _validationRouteManifestAdvanceReason.clear();
+    _validationRouteManifestLoadError.clear();
+    _validationRouteProgressBaselineKills = _metrics.Kills;
+    LoadValidationRouteManifest();
 
     BotTelemetryBufferConfig telemetry;
     telemetry.Enabled = sConfigMgr->GetBoolDefault("BotTelemetry.Enable", telemetry.Enabled);
@@ -1111,7 +1502,10 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
     }
 
     std::string routesJson = ExtractJsonArrayField(manifestJson, "routes");
-    if (routesJson.empty())
+    std::vector<std::string> routeObjects = routesJson.empty()
+        ? ExtractJsonLineObjects(manifestJson)
+        : ExtractJsonObjectArrayItems(routesJson);
+    if (routeObjects.empty())
     {
         _validationRouteManifestLoadError = "manifest_routes_missing";
         return;
@@ -1130,10 +1524,12 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
         return value;
     };
 
-    for (std::string const& routeJson : ExtractJsonObjectArrayItems(routesJson))
+    for (std::string const& routeJson : routeObjects)
     {
         ValidationRouteManifestNode node;
         node.ScenarioId = ExtractJsonStringField(routeJson, "scenario_id");
+        if (!_config.ValidationRouteScenarioId.empty() && node.ScenarioId != _config.ValidationRouteScenarioId)
+            continue;
         node.NodeId = ExtractJsonStringField(routeJson, "route_node_id");
         node.Label = ExtractJsonStringField(routeJson, "label");
         node.Kind = ExtractJsonStringField(routeJson, "kind");
@@ -11621,6 +12017,9 @@ std::string BotWorldPopulationMgr::BuildConfigJson() const
     json << "{\"name\":\"" << JsonEscape(_config.Name)
          << "\",\"type\":\"bot_world_autonomy\""
          << ",\"runtime_mode\":\"" << (_runtimeMode == BotWorldRuntimeMode::AlwaysOnAutonomy ? "always_on_autonomy" : "manual_experiment") << "\""
+         << ",\"active_profile\":" << (_selectedProfileName.empty() ? "null" : ("\"" + JsonEscape(_selectedProfileName) + "\""))
+         << ",\"profile_manifest_path\":\"" << JsonEscape(_profileManifestPath) << "\""
+         << ",\"loaded_profile_count\":" << _runtimeProfiles.size()
          << ",\"population\":" << _config.TargetPopulation
          << ",\"map\":" << _config.MapId
          << ",\"zone\":" << _config.ZoneId
@@ -12475,6 +12874,10 @@ std::string BotWorldPopulationMgr::GetStatusJson() const
     json << "{\"ok\":true,\"experiment\":\"" << JsonEscape(status.Name)
          << "\",\"run\":" << status.RunId
          << ",\"mode\":\"" << (status.Mode == BotWorldRuntimeMode::AlwaysOnAutonomy ? "always_on_autonomy" : "manual_experiment") << "\""
+         << ",\"active_profile\":" << (_selectedProfileName.empty() ? "null" : ("\"" + JsonEscape(_selectedProfileName) + "\""))
+         << ",\"loaded_profile_count\":" << _runtimeProfiles.size()
+         << ",\"profile_manifest_path\":\"" << JsonEscape(_profileManifestPath) << "\""
+         << ",\"profile_manifest_load_error\":\"" << JsonEscape(_profileManifestLoadError) << "\""
          << ",\"brain\":\"" << JsonEscape(_config.BrainVersion)
          << "\",\"active\":" << (status.Active ? "true" : "false")
          << ",\"bots\":" << status.ActiveBots
@@ -12501,6 +12904,17 @@ std::string BotWorldPopulationMgr::GetStatusJson() const
          << ",\"recovery_events\":" << status.RecoveryEvents
          << ",\"instance_resets\":" << status.InstanceResets
          << ",\"segment_counts\":" << _experimentCoordinator.GetCountsJson()
+         << ",\"validation_route\":{\"enabled\":" << (_config.ValidationRouteEnable ? "true" : "false")
+         << ",\"manifest_path\":\"" << JsonEscape(_config.ValidationRouteManifestPath) << "\""
+         << ",\"advance_mode\":\"" << JsonEscape(_config.ValidationRouteAdvanceMode) << "\""
+         << ",\"manifest_index\":" << _validationRouteManifestIndex
+         << ",\"manifest_count\":" << _validationRouteManifest.size()
+         << ",\"manifest_complete\":" << (_validationRouteManifestComplete ? "true" : "false")
+         << ",\"manifest_load_error\":\"" << JsonEscape(_validationRouteManifestLoadError) << "\""
+         << ",\"scenario_id\":\"" << JsonEscape(_config.ValidationRouteScenarioId) << "\""
+         << ",\"node_id\":\"" << JsonEscape(_config.ValidationRouteNodeId) << "\""
+         << ",\"label\":\"" << JsonEscape(_config.ValidationRouteLabel) << "\""
+         << ",\"kind\":\"" << JsonEscape(_config.ValidationRouteKind) << "\"}"
          << ",\"stuck\":" << status.StuckEvents
          << ",\"decisions\":" << status.Decisions
          << ",\"failures\":" << status.Failures

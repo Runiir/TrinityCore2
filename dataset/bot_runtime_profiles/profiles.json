@@ -1,0 +1,81 @@
+{
+  "schema": "bot_world_runtime_profiles_v1",
+  "profiles": [
+    {
+      "name": "free_roam_small",
+      "description": "Five autonomous bots using normal free-roam progression without a validation route.",
+      "target_population": 5,
+      "pool_tag_filter": "",
+      "spawn_mode": "resume_or_race_start",
+      "allow_configured_center_fallback": false,
+      "use_saved_position": true,
+      "allow_questing": true,
+      "allow_dungeons": false,
+      "allow_raids": false,
+      "enable_progression": true,
+      "auto_start_recording": false,
+      "validation_route": {
+        "enable": false
+      }
+    },
+    {
+      "name": "stonecore_5n",
+      "description": "Five prepared validation bots running the Stonecore normal route manifest.",
+      "target_population": 5,
+      "pool_tag_filter": "stonecore_5n",
+      "spawn_mode": "resume_or_race_start",
+      "allow_configured_center_fallback": false,
+      "use_saved_position": true,
+      "allow_questing": false,
+      "allow_dungeons": true,
+      "allow_raids": false,
+      "enable_progression": true,
+      "auto_start_recording": false,
+      "validation_route": {
+        "enable": true,
+        "manifest_path": "dataset/validation_scenarios/validation_routes.jsonl",
+        "advance_mode": "terminal",
+        "scenario_id": "stonecore_5n"
+      }
+    },
+    {
+      "name": "blackwing_descent_10n",
+      "description": "Ten prepared validation bots running the Blackwing Descent normal route manifest.",
+      "target_population": 10,
+      "pool_tag_filter": "blackwing_descent_10n",
+      "spawn_mode": "resume_or_race_start",
+      "allow_configured_center_fallback": false,
+      "use_saved_position": true,
+      "allow_questing": false,
+      "allow_dungeons": true,
+      "allow_raids": true,
+      "track_heroic_raid_progression": false,
+      "enable_progression": true,
+      "auto_start_recording": false,
+      "validation_route": {
+        "enable": true,
+        "manifest_path": "dataset/validation_scenarios/validation_routes.jsonl",
+        "advance_mode": "terminal",
+        "scenario_id": "blackwing_descent_10n"
+      }
+    },
+    {
+      "name": "watch_near_player",
+      "description": "Debug profile that spawns a small bot cohort near the controlling player.",
+      "target_population": 5,
+      "pool_tag_filter": "",
+      "spawn_mode": "near_player",
+      "allow_configured_center_fallback": false,
+      "use_saved_position": false,
+      "near_player_radius": 20,
+      "allow_questing": true,
+      "allow_dungeons": false,
+      "allow_raids": false,
+      "enable_progression": true,
+      "auto_start_recording": false,
+      "validation_route": {
+        "enable": false
+      }
+    }
+  ]
+}

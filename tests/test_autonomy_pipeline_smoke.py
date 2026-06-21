@@ -55,7 +55,8 @@ def test_server_start_autonomy_enabled_by_default_contract():
     assert re.search(r"^PlayerBot\.Enable\s*=\s*1$", conf, re.MULTILINE)
     assert re.search(r"^BotWorld\.Enable\s*=\s*1$", conf, re.MULTILINE)
     assert re.search(r"^BotWorld\.FastExitAfterShutdown\s*=\s*1$", conf, re.MULTILINE)
-    assert re.search(r"^BotWorld\.AutoStart\s*=\s*1$", conf, re.MULTILINE)
+    assert re.search(r"^BotWorld\.AutoStart\s*=\s*0$", conf, re.MULTILINE)
+    assert re.search(r'^BotWorld\.ProfileManifest\s*=\s*"dataset/bot_runtime_profiles/profiles\.json"$', conf, re.MULTILINE)
     assert re.search(r"^BotWorld\.AutoStartRecording\s*=\s*1$", conf, re.MULTILINE)
     assert re.search(r"^BotWorld\.AutoRecordingWindowMinutes\s*=\s*15$", conf, re.MULTILINE)
     assert re.search(r"^BotWorld\.TargetPopulation\s*=\s*5$", conf, re.MULTILINE)
@@ -106,7 +107,7 @@ def test_server_start_autonomy_enabled_spawns_from_pool_without_center_requireme
     resolve_placement = function_body(mgr, "bool BotWorldPopulationMgr::ResolveSpawnPlacement")
 
     assert 'LoadConfig("always_on_autonomy", overrideConfig);' in start_autonomy
-    assert "if (_runtimeMode == BotWorldRuntimeMode::AlwaysOnAutonomy && !overrideConfig)" in start_autonomy
+    assert "if (_runtimeMode == BotWorldRuntimeMode::AlwaysOnAutonomy && !overrideConfig && !_runtimeProfileDirty)" in start_autonomy
     assert "return true;" in start_autonomy
     assert "_runtimeMode = BotWorldRuntimeMode::AlwaysOnAutonomy;" in start_autonomy
     assert "_runId = 0;" in start_autonomy
@@ -812,6 +813,55 @@ def test_botauto_diagnosis_and_trace_surface():
     assert "diagnosis" in debug
 
 
+def test_botauto_runtime_profiles_surface():
+    manifest_path = ROOT / "dataset/bot_runtime_profiles/profiles.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    profile_names = {profile["name"] for profile in manifest["profiles"]}
+    assert manifest["schema"] == "bot_world_runtime_profiles_v1"
+    assert {"free_roam_small", "stonecore_5n", "blackwing_descent_10n", "watch_near_player"} <= profile_names
+    for profile in manifest["profiles"]:
+        assert isinstance(profile["name"], str) and profile["name"]
+        assert isinstance(profile["target_population"], int)
+    assert next(profile for profile in manifest["profiles"] if profile["name"] == "stonecore_5n")["validation_route"] == {
+        "enable": True,
+        "manifest_path": "dataset/validation_scenarios/validation_routes.jsonl",
+        "advance_mode": "terminal",
+        "scenario_id": "stonecore_5n",
+    }
+
+    conf = read(WORLDSERVER_CONF)
+    mgr = read(BOT_MGR)
+    mgr_header = read(BOT_MGR_HEADER)
+    commands = read(BOT_COMMANDS)
+
+    assert 'BotWorld.ProfileManifest = "dataset/bot_runtime_profiles/profiles.json"' in conf
+    assert re.search(r"^BotWorld\.AutoStart\s*=\s*0$", conf, re.MULTILINE)
+    assert "BotWorldExperimentProfile" in mgr_header
+    assert "SelectRuntimeProfile" in mgr_header
+    assert "ReloadRuntimeProfiles" in mgr_header
+    assert '{ "profiles", rbac::RBAC_PERM_COMMAND_HEALERBOT' in commands
+    assert '{ "profile", rbac::RBAC_PERM_COMMAND_HEALERBOT' in commands
+    assert "HandleAutoProfilesCommand" in commands
+    assert "HandleAutoProfileCommand" in commands
+    assert "SelectRuntimeProfile(profileName)" in commands
+    assert "JsonFieldIsBool" in mgr
+    assert "profile_missing_name" in mgr
+    assert "profile_bad_type_" in mgr
+    assert "ExtractJsonLineObjects(manifestJson)" in mgr
+    assert "node.ScenarioId != _config.ValidationRouteScenarioId" in mgr
+    assert_ordered(
+        function_body(mgr, "void BotWorldPopulationMgr::LoadConfig"),
+        'sConfigMgr->GetStringDefault("BotWorld.ProfileManifest"',
+        'sConfigMgr->GetIntDefault("BotWorld.TargetPopulation"',
+        "ApplyRuntimeProfile(profileItr->second)",
+        "LoadValidationRouteManifest();",
+    )
+    status = function_body(mgr, "std::string BotWorldPopulationMgr::GetStatusJson")
+    assert '\\"active_profile\\"' in status
+    assert '\\"loaded_profile_count\\"' in status
+    assert '\\"validation_route\\"' in status
+
+
 def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_next_tick():
     mgr = read(BOT_MGR)
     mgr_header = read(BOT_MGR_HEADER)
@@ -1102,7 +1152,7 @@ def test_host_world_makefile_can_generate_always_on_recording_config():
     makefile = read(ROOT / "Makefile")
 
     assert "BOTWORLD_ENABLE ?= 1" in makefile
-    assert "BOTWORLD_AUTOSTART ?= 1" in makefile
+    assert "BOTWORLD_AUTOSTART ?= 0" in makefile
     assert "BOTWORLD_AUTOSTART_RECORDING ?= 1" in makefile
     assert "BOTWORLD_RECORDING_WINDOW_MINUTES ?= 15" in makefile
     assert "BOTWORLD_TARGET_POPULATION ?= 5" in makefile

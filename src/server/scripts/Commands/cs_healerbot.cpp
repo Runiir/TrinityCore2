@@ -806,6 +806,8 @@ public:
             { "start",   rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoStartCommand,   "" },
             { "stop",    rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoStopCommand,    "" },
             { "status",  rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleStatusCommand,      "" },
+            { "profiles", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoProfilesCommand, "" },
+            { "profile", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoProfileCommand,  "" },
             { "debug",   rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoDebugCommand,   "" },
             { "diagnose", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoDiagnoseCommand, "" },
             { "trace",   rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoTraceCommand,   "" },
@@ -881,8 +883,23 @@ private:
         return true;
     }
 
-    static bool HandleAutoStartCommand(ChatHandler* handler, char const* /*args*/)
+    static bool HandleAutoStartCommand(ChatHandler* handler, char const* args)
     {
+        std::string profileName = FirstArg(args);
+        if (!profileName.empty())
+        {
+            std::string selectResult = sBotWorldPopulationMgr->SelectRuntimeProfile(profileName);
+            if (selectResult.find("\"ok\":true") == std::string::npos)
+            {
+                if (handler)
+                {
+                    handler->PSendSysMessage("%s", selectResult.c_str());
+                    handler->SetSentErrorMessage(true);
+                }
+                return false;
+            }
+        }
+
         if (!sBotWorldPopulationMgr->StartAutonomy())
         {
             if (handler)
@@ -896,6 +913,35 @@ private:
         if (handler)
             handler->PSendSysMessage("%s", sBotWorldPopulationMgr->GetStatusJson().c_str());
         return true;
+    }
+
+    static bool HandleAutoProfilesCommand(ChatHandler* handler, char const* /*args*/)
+    {
+        if (handler)
+            handler->PSendSysMessage("%s", sBotWorldPopulationMgr->GetRuntimeProfilesJson().c_str());
+        return true;
+    }
+
+    static bool HandleAutoProfileCommand(ChatHandler* handler, char const* args)
+    {
+        std::vector<std::string> tokens = Tokenize(args);
+        std::string result;
+        if (tokens.empty())
+            result = "{\"ok\":false,\"action\":\"botauto_profile\",\"failure_reason\":\"usage: .botauto profile <name>|clear|reload\"}";
+        else if (tokens[0] == "clear")
+            result = sBotWorldPopulationMgr->ClearRuntimeProfile();
+        else if (tokens[0] == "reload")
+            result = sBotWorldPopulationMgr->ReloadRuntimeProfiles();
+        else
+            result = sBotWorldPopulationMgr->SelectRuntimeProfile(tokens[0]);
+
+        if (handler)
+        {
+            handler->PSendSysMessage("%s", result.c_str());
+            if (result.find("\"ok\":true") == std::string::npos)
+                handler->SetSentErrorMessage(true);
+        }
+        return result.find("\"ok\":true") != std::string::npos;
     }
 
     static bool HandleAutoStopCommand(ChatHandler* handler, char const* /*args*/)
