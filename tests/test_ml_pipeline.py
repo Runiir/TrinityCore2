@@ -5542,12 +5542,19 @@ def test_cata_action_profile_manifest_drives_validation_spells(tmp_path, monkeyp
     manifest = load_action_profile_manifest()
     priest = {"class": 5, "spells": [12345]}
     paladin = {"class": 2, "spells": []}
+    hunter = {"class": 3, "spells": []}
+    shaman = {"class": 7, "spells": []}
+    mage = {"class": 8, "spells": []}
 
     assert manifest["schema"] == "bot_cata_434_action_profiles_v1"
     assert 2061 in bot_spell_ids(priest, manifest)
     assert 2050 in bot_spell_ids(priest, manifest)
     assert 750 in bot_spell_ids(paladin, manifest)
     assert 9116 in bot_spell_ids(paladin, manifest)
+    assert {53595, 31935, 26573, 53600}.issubset(set(bot_spell_ids(paladin, manifest)))
+    assert {56641, 2643}.issubset(set(bot_spell_ids(hunter, manifest)))
+    assert {8042, 17364, 60103, 421}.issubset(set(bot_spell_ids(shaman, manifest)))
+    assert {2120, 1449}.issubset(set(bot_spell_ids(mage, manifest)))
     assert 12345 in bot_spell_ids(priest, manifest)
 
 

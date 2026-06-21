@@ -125,6 +125,10 @@ std::string NormalizeBotRole(std::string const& role)
         return "death_knight";
     if (normalized == "paladin")
         return "holy_paladin";
+    if (normalized == "heal")
+        return "healer";
+    if (normalized == "damage")
+        return "dps";
     return normalized;
 }
 
@@ -141,6 +145,8 @@ BotRole ParseBotRole(std::string const& role)
     if (normalized == "mage") return BotRole::Mage;
     if (normalized == "warlock") return BotRole::Warlock;
     if (normalized == "druid") return BotRole::Druid;
+    if (normalized == "healer") return BotRole::HolyPaladinHealer;
+    if (normalized == "tank") return BotRole::Warrior;
     return BotRole::Generic;
 }
 
@@ -178,7 +184,10 @@ bool IsKnownBotRole(std::string const& role)
         || normalized == "shaman"
         || normalized == "mage"
         || normalized == "warlock"
-        || normalized == "druid";
+        || normalized == "druid"
+        || normalized == "tank"
+        || normalized == "healer"
+        || normalized == "dps";
 }
 
 bool IsMixedBotRoleSelector(std::string const& role)

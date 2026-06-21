@@ -105,13 +105,15 @@ BotClassSpecActionProfile BotClassSpecActionProfileStore::Build(Player const* bo
             profile.ProfileSource = "cata_434_static_mage";
             Add(profile, 133, BotCombatActionCategory::Builder, "filler,cast", 0.70f, 0, 0, 0, 0, 5);
             Add(profile, 44614, BotCombatActionCategory::Builder, "filler,cast", 0.75f, 0, 0, 0, 0, 5);
-            Add(profile, 11366, BotCombatActionCategory::Spender, "nuke,fire", 1.00f, 0, 0, 0, 0, 3);
+            Add(profile, 11366, BotCombatActionCategory::Spender, "nuke,fire,proc_or_opener", 0.72f, 0, 0, 0, 0, 6);
             Add(profile, 2136, BotCombatActionCategory::Spender, "instant,fire", 0.85f, 0, 0, 0, 0, 3);
+            Add(profile, 2120, BotCombatActionCategory::Aoe, "aoe,fire", 0.90f, 0, 0, 0, 0, 2);
+            Add(profile, 1449, BotCombatActionCategory::Aoe, "aoe,arcane", 0.80f, 0, 0, 0, 0, 3);
             Add(profile, 2139, BotCombatActionCategory::Interrupt, "interrupt", 0.15f, 0, 0, 0, 0.2f, 1);
             Add(profile, 45438, BotCombatActionCategory::Defensive, "immunity", 0, 0, 0, 0, 1.0f, 1);
             break;
         case CLASS_PRIEST:
-            profile.SpecTag = profile.Role == "healer" || HasAny(bot, {2061, 2050, 596}) ? "holy_disc_generic" : "shadow_or_generic";
+            profile.SpecTag = profile.Role == "healer" ? "holy_disc_generic" : "shadow_or_generic";
             profile.RangeBand = "ranged";
             profile.MissingProfile = false;
             profile.ProfileSource = "cata_434_static_priest";
@@ -134,7 +136,7 @@ BotClassSpecActionProfile BotClassSpecActionProfileStore::Build(Player const* bo
             Add(profile, 17962, BotCombatActionCategory::Spender, "instant,fire", 0.90f, 0, 0, 0, 0, 3);
             break;
         case CLASS_DRUID:
-            profile.SpecTag = profile.Role == "healer" || HasAny(bot, {8936, 5185, 774}) ? "restoration_or_balance_generic" : "feral_or_balance_generic";
+            profile.SpecTag = profile.Role == "healer" ? "restoration_or_balance_generic" : "feral_or_balance_generic";
             profile.RangeBand = HasAny(bot, {5176, 8921}) ? "ranged" : "melee";
             profile.MissingProfile = false;
             profile.ProfileSource = "cata_434_static_druid";
@@ -145,12 +147,16 @@ BotClassSpecActionProfile BotClassSpecActionProfileStore::Build(Player const* bo
             Add(profile, 80965, BotCombatActionCategory::Interrupt, "interrupt", 0.2f, 0, 0, 0, 0.2f, 1);
             break;
         case CLASS_SHAMAN:
-            profile.SpecTag = profile.Role == "healer" || HasAny(bot, {331, 8004, 1064}) ? "restoration_or_elemental_generic" : "enhancement_or_elemental_generic";
+            profile.SpecTag = profile.Role == "healer" ? "restoration_or_elemental_generic" : "enhancement_or_elemental_generic";
             profile.RangeBand = "ranged";
             profile.MissingProfile = false;
             profile.ProfileSource = "cata_434_static_shaman";
             Add(profile, 403, BotCombatActionCategory::Builder, "filler,nature", 0.70f, 0, 0, 0, 0, 5);
             Add(profile, 8050, BotCombatActionCategory::Dot, "dot,fire", 0.70f, 0, 0, 0, 0, 4);
+            Add(profile, 8042, BotCombatActionCategory::Spender, "shock,nature", 0.82f, 0, 0, 0, 0, 3);
+            Add(profile, 17364, BotCombatActionCategory::Builder, "melee,enhancement", 0.88f, 0, 0, 0, 0, 3);
+            Add(profile, 60103, BotCombatActionCategory::Spender, "melee,fire,enhancement", 0.84f, 0, 0, 0, 0, 3);
+            Add(profile, 421, BotCombatActionCategory::Cleave, "cleave,nature", 0.88f, 0, 0, 0, 0, 2);
             Add(profile, 331, BotCombatActionCategory::HealEfficient, "heal", 0, 0.75f, 0, 0, 0.6f, 2);
             Add(profile, 8004, BotCombatActionCategory::HealFast, "triage,heal", 0, 1.0f, 0, 0, 0.8f, 1);
             Add(profile, 57994, BotCombatActionCategory::Interrupt, "interrupt", 0.15f, 0, 0, 0, 0.2f, 1);
@@ -161,6 +167,10 @@ BotClassSpecActionProfile BotClassSpecActionProfileStore::Build(Player const* bo
             profile.ProfileSource = "cata_434_static_paladin";
             Add(profile, 20271, BotCombatActionCategory::Builder, "judgement", 0.65f, 0, 0.3f, 0, 0, 4);
             Add(profile, 35395, BotCombatActionCategory::Builder, "crusader", 0.75f, 0, 0.5f, 0, 0, 4);
+            Add(profile, 53595, BotCombatActionCategory::Cleave, "aoe,holy_power,threat", 0.78f, 0, 0.9f, 0, 0, 2);
+            Add(profile, 31935, BotCombatActionCategory::ThreatBuild, "ranged,shield,threat", 0.86f, 0, 1.0f, 0, 0, 2);
+            Add(profile, 26573, BotCombatActionCategory::Aoe, "aoe,threat", 0.72f, 0, 1.1f, 0, 0, 2);
+            Add(profile, 53600, BotCombatActionCategory::Spender, "holy_power,threat", 0.82f, 0, 0.95f, 0, 0, 3);
             Add(profile, 635, BotCombatActionCategory::HealEfficient, "heal", 0, 0.75f, 0, 0, 0.6f, 2);
             Add(profile, 19750, BotCombatActionCategory::HealFast, "triage,heal", 0, 1.0f, 0, 0, 0.8f, 1);
             Add(profile, 62124, BotCombatActionCategory::Taunt, "taunt", 0, 0, 1.0f, 0, 0.3f, 1);
@@ -175,6 +185,8 @@ BotClassSpecActionProfile BotClassSpecActionProfileStore::Build(Player const* bo
             Add(profile, 75, BotCombatActionCategory::AutoAttack, "ranged,auto", 0.45f, 0, 0, 0, 0, 7);
             Add(profile, 1978, BotCombatActionCategory::Dot, "dot,sting", 0.70f, 0, 0, 0, 0, 4);
             Add(profile, 3044, BotCombatActionCategory::Spender, "focus,instant", 0.85f, 0, 0, 0, 0, 3);
+            Add(profile, 56641, BotCombatActionCategory::Builder, "focus,ranged", 0.74f, 0, 0, 0, 0, 4);
+            Add(profile, 2643, BotCombatActionCategory::Aoe, "focus,aoe,ranged", 0.86f, 0, 0, 0, 0, 2);
             break;
         case CLASS_DEATH_KNIGHT:
             profile.SpecTag = profile.Role == "tank" ? "blood" : "frost_unholy_generic";

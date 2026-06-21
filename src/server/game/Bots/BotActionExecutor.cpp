@@ -61,6 +61,8 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
         return BotActionResult::NoOwner;
     if (!bot || !bot->IsAlive())
         return BotActionResult::NoBot;
+    if (!action.Valid)
+        return BotActionResult::NoAction;
 
     Unit* target = action.TargetGuid.IsEmpty() ? nullptr : ObjectAccessor::GetUnit(*bot, action.TargetGuid);
     if (action.Type == "pull" || action.Type == "move_to_range")
@@ -87,7 +89,8 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
         return BotActionResult::CastFailed;
     }
 
-    bot->Attack(target, true);
+    if (target && target != bot && bot->IsValidAttackTarget(target))
+        bot->Attack(target, true);
     RecordSuccess(bot->GetGUID());
     return BotActionResult::Ok;
 }
@@ -427,7 +430,7 @@ BotActionResult BotActionExecutor::CheckSpell(Player* owner, Player* bot, Unit* 
         return BotActionResult::Cooldown;
 
     int32 powerCost = spellInfo->CalcPowerCost(bot, spellInfo->GetSchoolMask());
-    if (powerCost > 0 && bot->GetPower(POWER_MANA) < uint32(powerCost))
+    if (powerCost > 0 && bot->GetPower(bot->GetPowerType()) < uint32(powerCost))
         return BotActionResult::NoMana;
 
     if (owner && bot->GetMap() != owner->GetMap())
@@ -445,7 +448,7 @@ BotActionResult BotActionExecutor::CheckHostileSpell(Player* owner, Player* bot,
         return BotActionResult::InvalidTarget;
     if (!target->IsAlive())
         return BotActionResult::DeadTarget;
-    if (!bot->IsValidAttackTarget(target, spellInfo))
+    if (target != bot && !bot->IsValidAttackTarget(target, spellInfo))
         return BotActionResult::InvalidTarget;
     if (!bot->IsWithinLOSInMap(target))
         return BotActionResult::NoLineOfSight;
@@ -458,7 +461,7 @@ BotActionResult BotActionExecutor::CheckHostileSpell(Player* owner, Player* bot,
     if (!bot->GetSpellHistory()->IsReady(spellInfo))
         return BotActionResult::Cooldown;
     int32 powerCost = spellInfo->CalcPowerCost(bot, spellInfo->GetSchoolMask());
-    if (powerCost > 0 && bot->GetPower(POWER_MANA) < uint32(powerCost))
+    if (powerCost > 0 && bot->GetPower(bot->GetPowerType()) < uint32(powerCost))
         return BotActionResult::NoMana;
     if (owner && bot->GetMap() != owner->GetMap())
         return BotActionResult::NoOwner;

@@ -1,4 +1,5 @@
 #include "Bots/BotController.h"
+#include "Bots/BotClassSpecActionProfile.h"
 #include "Bots/BotDatasetEvent.h"
 #include "Bots/BotMgr.h"
 #include "Config.h"
@@ -29,6 +30,7 @@
 #include <iomanip>
 #include <map>
 #include <sstream>
+#include <utility>
 
 namespace
 {
@@ -74,10 +76,37 @@ std::string PlayerBotExperimentId()
     std::string experimentId = sConfigMgr->GetStringDefault("PlayerBot.ExperimentId", "playerbot");
     return experimentId.empty() ? "playerbot" : experimentId;
 }
+
+BotCombatArchetype CombatArchetypeForClass(uint8 classId, std::string const& runtimeRole)
+{
+    if (runtimeRole == "tank")
+        return BotCombatArchetype::TankLikeMelee;
+    if (runtimeRole == "healer")
+        return BotCombatArchetype::HealerSolo;
+
+    switch (classId)
+    {
+        case CLASS_HUNTER:
+            return BotCombatArchetype::RangedPhysical;
+        case CLASS_MAGE:
+        case CLASS_PRIEST:
+        case CLASS_SHAMAN:
+            return BotCombatArchetype::RangedCaster;
+        case CLASS_WARLOCK:
+            return BotCombatArchetype::PetClass;
+        default:
+            return BotCombatArchetype::MeleeDps;
+    }
+}
 }
 
 BotController::BotController(ObjectGuid ownerGuid, ObjectGuid botGuid, BotRole role)
-    : _ownerGuid(ownerGuid), _botGuid(botGuid), _role(role), _policy(new RuleHealerBotPolicy())
+    : _ownerGuid(ownerGuid), _botGuid(botGuid), _role(role), _runtimeRole(NormalizeBotRole(ToString(role))), _policy(new RuleHealerBotPolicy())
+{
+}
+
+BotController::BotController(ObjectGuid ownerGuid, ObjectGuid botGuid, BotRole role, std::string runtimeRole, std::string classSpec)
+    : _ownerGuid(ownerGuid), _botGuid(botGuid), _role(role), _runtimeRole(NormalizeBotRole(runtimeRole.empty() ? ToString(role) : runtimeRole)), _classSpec(std::move(classSpec)), _policy(new RuleHealerBotPolicy())
 {
 }
 
@@ -139,10 +168,14 @@ void BotController::Update(uint32 diff, BotActionExecutor& executor, Player* own
 
     BotRecentEvents recentEvents = sBotMgr->ConsumeRecentEvents(_botGuid);
     BotCombatState combatState = BuildCombatState(owner, bot, recentEvents);
+    if (_runtimeRole == "healer" && TryResolveHealerAction(executor, owner, bot, recentEvents, shouldRecord, movementFrame))
+        return;
+
     if (!_combatTargetGuid.IsEmpty() || combatState.InCombat || combatState.TargetLootable)
     {
         BotCombatDecision combatDecision = DecideSoloCombat(combatState);
-        ResolvedCombatAction combatAction = ResolveSoloCombat(combatDecision, combatState);
+        Unit* target = combatState.TargetGuid.IsEmpty() ? nullptr : ObjectAccessor::GetUnit(*bot, combatState.TargetGuid);
+        ResolvedCombatAction combatAction = ResolveProfileCombat(combatDecision, combatState, bot, target);
         BotActionResult combatResult = executor.ExecuteCombat(owner, bot, combatAction);
         if (combatDecision.Intent == BotCombatIntent::Loot && combatResult == BotActionResult::Ok)
             ClearCombatTarget();
@@ -157,7 +190,7 @@ void BotController::Update(uint32 diff, BotActionExecutor& executor, Player* own
     }
 
     HealerFrame frame = BuildFrame(owner, bot, recentEvents);
-    if (!IsHealerBotRole(_role))
+    if (_runtimeRole != "healer")
     {
         if (shouldRecord)
         {
@@ -211,8 +244,9 @@ std::string BotController::GetStatus(Player const* owner, Player const* bot) con
     ss << "{\"bot_guid\":" << _botGuid.GetCounter()
        << ",\"name\":\"" << JsonEscape(bot ? bot->GetName() : "offline")
        << "\",\"role\":\"" << ToString(_role)
-       << "\",\"class_spec_tag\":\"" << ToString(_role)
-       << "\",\"combat_archetype\":\"" << ToString(GetSoloCombatArchetype(_role))
+       << "\",\"runtime_role\":\"" << JsonEscape(_runtimeRole)
+       << "\",\"class_spec_tag\":\"" << JsonEscape(_classSpec.empty() ? ToString(_role) : _classSpec)
+       << "\",\"combat_archetype\":\"" << ToString(bot ? CombatArchetypeForClass(bot->getClass(), _runtimeRole) : GetSoloCombatArchetype(_role))
        << "\",\"state\":\"" << (bot && bot->IsInWorld() ? "online" : "offline")
        << "\",\"owner_guid\":" << _ownerGuid.GetCounter()
        << ",\"owner_name\":\"" << JsonEscape(owner ? owner->GetName() : "offline")
@@ -226,7 +260,7 @@ std::string BotController::GetStatus(Player const* owner, Player const* bot) con
        << ",\"nearby_hazard\":" << (movement.NearbyHazard ? "true" : "false")
        << ",\"safe_position_available\":" << (movement.SafePositionAvailable ? "true" : "false") << "}"
        << ",\"combat\":{\"target_guid\":" << (_combatTargetGuid.IsEmpty() ? 0 : _combatTargetGuid.GetCounter())
-       << ",\"archetype\":\"" << ToString(GetSoloCombatArchetype(_role)) << "\"}"
+       << ",\"archetype\":\"" << ToString(bot ? CombatArchetypeForClass(bot->getClass(), _runtimeRole) : GetSoloCombatArchetype(_role)) << "\"}"
        << "}";
     return ss.str();
 }
@@ -387,13 +421,13 @@ BotCombatDecision BotController::DecideSoloCombat(BotCombatState const& state) c
         decision.Intent = BotCombatIntent::Loot;
     else if (state.TargetDead)
         decision.Intent = BotCombatIntent::Recover;
-    else if (state.SelfHpPct < 0.35f && GetSoloCombatArchetype(_role) == BotCombatArchetype::HealerSolo)
+    else if (state.SelfHpPct < 0.35f && _runtimeRole == "healer")
         decision.Intent = BotCombatIntent::HealSelf;
     else if (state.SelfHpPct < 0.30f)
         decision.Intent = BotCombatIntent::UseDefensive;
     else if (state.TargetCastingSpellId && state.TargetInterruptible)
         decision.Intent = BotCombatIntent::Interrupt;
-    else if (state.TargetDistance > 5.0f && GetSoloCombatArchetype(_role) != BotCombatArchetype::RangedCaster && GetSoloCombatArchetype(_role) != BotCombatArchetype::RangedPhysical)
+    else if (state.TargetDistance > 5.0f && CombatArchetypeForClass(state.ClassId, _runtimeRole) != BotCombatArchetype::RangedCaster && CombatArchetypeForClass(state.ClassId, _runtimeRole) != BotCombatArchetype::RangedPhysical)
         decision.Intent = BotCombatIntent::MoveToRange;
     else if (!state.InCombat)
         decision.Intent = BotCombatIntent::PullTarget;
@@ -452,6 +486,165 @@ ResolvedCombatAction BotController::ResolveSoloCombat(BotCombatDecision const& d
     if (state.TargetGuid.IsEmpty() && action.TargetGuid != _botGuid)
         action.Valid = false;
     return action;
+}
+
+BotActionCandidate const* BotController::SelectProfileCombatAction(Player* bot, Unit* target, BotCombatState const& state, BotClassSpecActionProfile const& profile, std::vector<BotActionCandidate>& candidates) const
+{
+    BotActionCandidate* best = nullptr;
+    for (BotActionCandidate& candidate : candidates)
+    {
+        if (candidate.Category == BotCombatActionCategory::HealFast
+            || candidate.Category == BotCombatActionCategory::HealEfficient
+            || candidate.Category == BotCombatActionCategory::HealAoe
+            || candidate.Category == BotCombatActionCategory::DispelCleanse
+            || candidate.Category == BotCombatActionCategory::ExternalDefensive)
+        {
+            candidate.RejectReason = "requires_ally_target";
+            continue;
+        }
+
+        if (candidate.Category == BotCombatActionCategory::Taunt && target && target->GetVictim() == bot)
+        {
+            candidate.RejectReason = "threat_already_established";
+            continue;
+        }
+
+        if (!candidate.RejectReason.empty())
+            continue;
+
+        float roleScore = candidate.Score;
+        if (_runtimeRole == "tank")
+        {
+            roleScore += candidate.Profile.ThreatWeight * 2.0f + candidate.Profile.MitigationWeight + candidate.Profile.SurvivalWeight * 0.5f;
+            if (state.NearbyHostileCount >= 2 && (candidate.Category == BotCombatActionCategory::Aoe || candidate.Category == BotCombatActionCategory::Cleave || candidate.Category == BotCombatActionCategory::ThreatBuild))
+                roleScore += 1.25f;
+            if (target && target->GetVictim() && target->GetVictim() != bot && candidate.Category == BotCombatActionCategory::Taunt)
+                roleScore += 2.0f;
+        }
+        else if (_runtimeRole == "healer")
+            roleScore += candidate.Profile.DamageWeight * 0.65f;
+        else
+        {
+            roleScore += candidate.Profile.DamageWeight;
+            if (state.NearbyHostileCount >= 2 && (candidate.Category == BotCombatActionCategory::Aoe || candidate.Category == BotCombatActionCategory::Cleave))
+                roleScore += 0.8f;
+            if (candidate.Category == BotCombatActionCategory::Interrupt)
+                roleScore += state.TargetInterruptible ? 2.0f : -0.4f;
+        }
+
+        candidate.Score = roleScore;
+        candidate.Reason = "runtime_profile_role";
+        if (!best || candidate.Score > best->Score)
+            best = &candidate;
+    }
+
+    return best;
+}
+
+ResolvedCombatAction BotController::ResolveProfileCombat(BotCombatDecision const& decision, BotCombatState const& state, Player* bot, Unit* target) const
+{
+    ResolvedCombatAction action;
+    action.TargetGuid = decision.TargetGuid;
+    action.DebugName = ToString(decision.Intent);
+
+    if (decision.Intent == BotCombatIntent::Loot)
+    {
+        action.Type = "loot";
+        return action;
+    }
+    if (decision.Intent == BotCombatIntent::Recover || decision.Intent == BotCombatIntent::Wait)
+    {
+        action.Type = "wait";
+        action.Valid = false;
+        return action;
+    }
+    if (!bot || !target || !target->IsAlive())
+    {
+        action.Type = "wait";
+        action.Valid = false;
+        action.DebugName = "no_valid_target";
+        return action;
+    }
+
+    BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(bot, _runtimeRole.c_str());
+    std::vector<BotActionCandidate> candidates = BotClassSpecActionProfileStore::BuildCandidates(bot, target, profile);
+    BotActionCandidate const* best = SelectProfileCombatAction(bot, target, state, profile, candidates);
+    if (!best || !best->SpellId)
+    {
+        action.Type = "wait";
+        action.Valid = false;
+        action.DebugName = "no_valid_profile_action";
+        return action;
+    }
+
+    action.Type = "cast";
+    action.SpellId = best->SpellId;
+    action.TargetGuid = target->GetGUID();
+    if ((best->Category == BotCombatActionCategory::Aoe || best->Category == BotCombatActionCategory::Cleave) && best->SpellId)
+        if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(best->SpellId))
+            if (spellInfo->GetMaxRange(false) <= 5.0f)
+                action.TargetGuid = bot->GetGUID();
+    action.DebugName = BotCombatActionCatalog::ToString(best->Category);
+    return action;
+}
+
+bool BotController::TryResolveHealerAction(BotActionExecutor& executor, Player* owner, Player* bot, BotRecentEvents const& recentEvents, bool shouldRecord, BotMovementFrame const& movementFrame)
+{
+    HealerFrame frame = BuildFrame(owner, bot, recentEvents);
+    HealerDecision decision = _policy->Decide(frame);
+    if (decision.Intent == HealerIntent::Wait || decision.TargetGuid.IsEmpty())
+        return false;
+
+    Unit* target = ObjectAccessor::GetUnit(*bot, decision.TargetGuid);
+    BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(bot, "healer");
+    ResolvedBotAction action;
+    action.Intent = decision.Intent;
+    action.TargetGuid = decision.TargetGuid;
+    action.DebugName = "no_valid_healer_action";
+
+    auto acceptsIntent = [&decision](BotCombatActionCategory category)
+    {
+        switch (decision.Intent)
+        {
+            case HealerIntent::AoeHeal:
+                return category == BotCombatActionCategory::HealAoe || category == BotCombatActionCategory::HealFast || category == BotCombatActionCategory::HealEfficient;
+            case HealerIntent::FastSingleHeal:
+            case HealerIntent::InstantSingleHeal:
+            case HealerIntent::BigSingleHeal:
+            case HealerIntent::ExternalDefensive:
+                return category == BotCombatActionCategory::HealFast || category == BotCombatActionCategory::ExternalDefensive || category == BotCombatActionCategory::HealEfficient;
+            case HealerIntent::EfficientSingleHeal:
+                return category == BotCombatActionCategory::HealEfficient || category == BotCombatActionCategory::HealFast;
+            case HealerIntent::Dispel:
+                return category == BotCombatActionCategory::DispelCleanse;
+            default:
+                return false;
+        }
+    };
+
+    BotActionProfileSpell const* best = nullptr;
+    for (BotActionProfileSpell const& spell : profile.Spells)
+    {
+        if (!spell.SpellId || !acceptsIntent(spell.Category))
+            continue;
+        if (!best || spell.HealingWeight + spell.SurvivalWeight > best->HealingWeight + best->SurvivalWeight)
+            best = &spell;
+    }
+
+    if (best)
+    {
+        action.SpellId = best->SpellId;
+        action.DebugName = BotCombatActionCatalog::ToString(best->Category);
+    }
+
+    BotActionResult result = best ? executor.Execute(owner, bot, action) : BotActionResult::NoAction;
+    if (shouldRecord)
+    {
+        RecordFrame(frame, decision, &action, result, owner, bot);
+        RecordMovementFrame(movementFrame, ToString(_movementMode), ToString(decision.Intent), action.DebugName.c_str(), result != BotActionResult::Disabled, owner, bot);
+    }
+
+    return result == BotActionResult::Ok || (target && best);
 }
 
 void BotController::ApplyMovementPolicy(BotActionExecutor& executor, Player* owner, Player* bot, BotMovementFrame const& movementFrame)
@@ -766,7 +959,7 @@ void BotController::RecordCombatFrame(BotCombatState const& frame, BotCombatDeci
     dataset.domain = "combat";
     dataset.situation = ToString(decision.Intent);
     dataset.observation_json = observation.str();
-    dataset.semantic_json = "{\"archetype\":\"" + std::string(ToString(GetSoloCombatArchetype(_role))) + "\"}";
+    dataset.semantic_json = "{\"runtime_role\":\"" + JsonEscape(_runtimeRole) + "\",\"class_spec\":\"" + JsonEscape(_classSpec) + "\",\"archetype\":\"" + std::string(ToString(CombatArchetypeForClass(frame.ClassId, _runtimeRole))) + "\"}";
     dataset.valid_action_mask_json = "{\"intents\":[\"pull_target\",\"maintain_rotation\",\"interrupt\",\"use_defensive\",\"heal_self\",\"move_to_range\",\"loot\",\"recover\",\"wait\"]}";
     dataset.chosen_action_json = chosen.str();
     dataset.action_result = ToString(result);

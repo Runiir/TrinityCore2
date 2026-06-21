@@ -9,6 +9,11 @@ ROOT = Path(__file__).resolve().parents[1]
 BOT_COMMANDS = ROOT / "src/server/scripts/Commands/cs_healerbot.cpp"
 SERVER_COMMANDS = ROOT / "src/server/scripts/Commands/cs_server.cpp"
 BOT_MGR = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp"
+PLAYER_BOT_MGR = ROOT / "src/server/game/Bots/BotMgr.cpp"
+PLAYER_BOT_CONTROLLER = ROOT / "src/server/game/Bots/BotController.cpp"
+PLAYER_BOT_TYPES = ROOT / "src/server/game/Bots/BotTypes.cpp"
+PLAYER_BOT_ACTION_PROFILE = ROOT / "src/server/game/Bots/BotClassSpecActionProfile.cpp"
+PLAYER_BOT_EXECUTOR = ROOT / "src/server/game/Bots/BotActionExecutor.cpp"
 BOT_MGR_HEADER = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h"
 BOT_POLICY = ROOT / "src/server/game/Bots/BotTelemetryPolicy.cpp"
 BOT_BUFFER = ROOT / "src/server/game/Bots/BotTelemetryBuffer.cpp"
@@ -95,6 +100,55 @@ def test_server_start_autonomy_enabled_by_default_contract():
         "sScriptMgr->OnShutdownInitiate(ShutdownExitCode(SHUTDOWN_EXIT_CODE), ShutdownMask(0));",
         "World::StopNow(SHUTDOWN_EXIT_CODE);",
     )
+
+
+def test_playerbot_runtime_roles_drive_universal_profile_combat():
+    bot_mgr = read(PLAYER_BOT_MGR)
+    controller = read(PLAYER_BOT_CONTROLLER)
+    role_types = read(PLAYER_BOT_TYPES)
+    profiles = read(PLAYER_BOT_ACTION_PROFILE)
+    executor = read(PLAYER_BOT_EXECUTOR)
+
+    assert "SELECT cbp.guid, c.account, cbp.role, cbp.class_spec" in bot_mgr
+    assert "std::string selectedClassSpec = fields[3].GetString();" in bot_mgr
+    assert "Register(owner, bot, botRole, selectedRole, selectedClassSpec" in bot_mgr
+    assert "NormalizeBotRole(runtimeRole.empty() ? ToString(role) : runtimeRole)" in controller
+    assert "normalized == \"tank\"" in role_types
+    assert "normalized == \"healer\"" in role_types
+    assert "normalized == \"dps\"" in role_types
+
+    update = function_body(controller, "void BotController::Update")
+    assert_ordered(
+        update,
+        "BotCombatState combatState = BuildCombatState(owner, bot, recentEvents);",
+        "_runtimeRole == \"healer\" && TryResolveHealerAction",
+        "ResolveProfileCombat(combatDecision, combatState, bot, target)",
+    )
+
+    decide = function_body(controller, "BotCombatDecision BotController::DecideSoloCombat")
+    assert "CombatArchetypeForClass(state.ClassId, _runtimeRole)" in decide
+    assert "GetSoloCombatArchetype(_role) != BotCombatArchetype::RangedCaster" not in decide
+
+    select_profile = function_body(controller, "BotActionCandidate const* BotController::SelectProfileCombatAction")
+    assert "_runtimeRole == \"tank\"" in select_profile
+    assert "state.NearbyHostileCount >= 2" in select_profile
+    assert "candidate.Category == BotCombatActionCategory::Taunt && target && target->GetVictim() == bot" in select_profile
+    assert "requires_ally_target" in select_profile
+
+    healer = function_body(controller, "bool BotController::TryResolveHealerAction")
+    assert "BotClassSpecActionProfileStore::Build(bot, \"healer\")" in healer
+    assert "BotCombatActionCategory::HealFast" in healer
+    assert "HolyPaladinResolver" not in healer
+
+    assert "profile.SpecTag = profile.Role == \"healer\" ? \"restoration_or_elemental_generic\" : \"enhancement_or_elemental_generic\";" in profiles
+    assert "profile.SpecTag = profile.Role == \"healer\" ? \"holy_disc_generic\" : \"shadow_or_generic\";" in profiles
+    assert "proc_or_opener" in profiles
+    for spell_id in ["53595", "31935", "26573", "53600", "56641", "2643", "8042", "17364", "60103", "421", "2120", "1449"]:
+        assert spell_id in profiles
+
+    assert "if (!action.Valid)" in executor
+    assert "bot->GetPower(bot->GetPowerType())" in executor
+    assert "target != bot && !bot->IsValidAttackTarget(target, spellInfo)" in executor
 
 
 def test_server_start_autonomy_enabled_spawns_from_pool_without_center_requirement():

@@ -2,6 +2,7 @@
 #define TRINITY_BOT_CONTROLLER_H
 
 #include "Bots/BotActionExecutor.h"
+#include "Bots/BotClassSpecActionProfile.h"
 #include "Bots/HealerBotPolicy.h"
 #include "Bots/HolyPaladinResolver.h"
 #include "ObjectGuid.h"
@@ -14,11 +15,14 @@ class BotController
 {
 public:
     BotController(ObjectGuid ownerGuid, ObjectGuid botGuid, BotRole role);
+    BotController(ObjectGuid ownerGuid, ObjectGuid botGuid, BotRole role, std::string runtimeRole, std::string classSpec);
 
     ObjectGuid GetOwnerGuid() const { return _ownerGuid; }
     ObjectGuid GetBotGuid() const { return _botGuid; }
     BotMovementMode GetMovementMode() const { return _movementMode; }
     BotRole GetRole() const { return _role; }
+    std::string const& GetRuntimeRole() const { return _runtimeRole; }
+    std::string const& GetClassSpec() const { return _classSpec; }
     bool IsRecording() const { return _recording; }
 
     void SetMovementMode(BotMovementMode mode);
@@ -36,6 +40,9 @@ private:
     BotProfessionFrame BuildProfessionFrame(Player* owner, Player* bot) const;
     BotCombatDecision DecideSoloCombat(BotCombatState const& state) const;
     ResolvedCombatAction ResolveSoloCombat(BotCombatDecision const& decision, BotCombatState const& state) const;
+    BotActionCandidate const* SelectProfileCombatAction(Player* bot, Unit* target, BotCombatState const& state, BotClassSpecActionProfile const& profile, std::vector<BotActionCandidate>& candidates) const;
+    ResolvedCombatAction ResolveProfileCombat(BotCombatDecision const& decision, BotCombatState const& state, Player* bot, Unit* target) const;
+    bool TryResolveHealerAction(BotActionExecutor& executor, Player* owner, Player* bot, BotRecentEvents const& recentEvents, bool shouldRecord, BotMovementFrame const& movementFrame);
     void ApplyMovementPolicy(BotActionExecutor& executor, Player* owner, Player* bot, BotMovementFrame const& movementFrame);
     void RecordFrame(HealerFrame const& frame, HealerDecision const& decision, ResolvedBotAction const* action, BotActionResult result, Player* owner, Player* bot) const;
     void RecordMovementFrame(BotMovementFrame const& frame, char const* policyMode, char const* intent, char const* action, bool valid, Player* owner, Player* bot) const;
@@ -45,6 +52,8 @@ private:
     ObjectGuid _ownerGuid;
     ObjectGuid _botGuid;
     BotRole _role;
+    std::string _runtimeRole;
+    std::string _classSpec;
     BotMovementMode _movementMode = BotMovementMode::Follow;
     BotMovementTarget _movementTarget;
     ObjectGuid _combatTargetGuid;

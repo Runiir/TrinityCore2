@@ -76,11 +76,11 @@ private:
 
     Player* LoadBotFromPool(Player* owner, std::string const& role, std::string const& selector, BotSpawnPlacement const* placement = nullptr, Player* groupAnchor = nullptr);
     Player* LoadCharacterAsBotSession(ObjectGuid guid, uint32 accountId, Player* nearPlayer, BotSpawnPlacement const* placement = nullptr, Player* groupAnchor = nullptr);
-    bool AddToOwnerGroup(Player* owner, Player* bot, BotRole role);
+    bool AddToOwnerGroup(Player* owner, Player* bot, std::string const& runtimeRole, BotRole role);
     void CleanupBot(ObjectGuid botGuid, bool logoutPlayer);
     void SetBotCharacterOnline(ObjectGuid botGuid, bool online);
     void ReleasePoolCharacter(ObjectGuid botGuid);
-    void Register(Player* owner, Player* bot, BotRole role, std::unique_ptr<WorldSession> session);
+    void Register(Player* owner, Player* bot, BotRole role, std::string const& runtimeRole, std::string const& classSpec, std::unique_ptr<WorldSession> session);
 
     std::map<ObjectGuid, std::unique_ptr<BotController>> _controllersByBot;
     std::map<ObjectGuid, ObjectGuid> _ownerByBot;

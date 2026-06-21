@@ -183,7 +183,8 @@ Player* BotMgr::Spawn(Player* owner, std::string const& role, std::string const&
 
     BotController const* controller = GetController(bot->GetGUID());
     BotRole botRole = controller ? controller->GetRole() : ParseBotRole(normalizedRole);
-    if (!AddToOwnerGroup(owner, bot, botRole))
+    std::string runtimeRole = controller ? controller->GetRuntimeRole() : normalizedRole;
+    if (!AddToOwnerGroup(owner, bot, runtimeRole, botRole))
     {
         TC_LOG_ERROR("server", "PlayerBot spawn failed owner=%s bot=%s stage=add_to_group", owner->GetGUID().ToString().c_str(), bot->GetGUID().ToString().c_str());
         Remove(owner, bot->GetGUID());
@@ -365,7 +366,7 @@ BotActionResult BotMgr::AddExistingHolyPaladin(Player* owner, Player* bot)
     if (bot->GetMap() != owner->GetMap())
         return BotActionResult::NoBot;
 
-    if (!AddToOwnerGroup(owner, bot, BotRole::HolyPaladinHealer))
+    if (!AddToOwnerGroup(owner, bot, "healer", BotRole::HolyPaladinHealer))
         return BotActionResult::InvalidTarget;
 
     return BotActionResult::Ok;
@@ -974,7 +975,7 @@ Player* BotMgr::LoadBotFromPool(Player* owner, std::string const& role, std::str
     }
 
     std::string roleClause = mixedRole ? "" : " AND cbp.role = '" + escapedRole + "'";
-    std::string query = "SELECT cbp.guid, c.account, cbp.role FROM character_bot_pool cbp INNER JOIN characters c ON c.guid = cbp.guid WHERE cbp.enabled = 1 AND cbp.in_use = 0" + roleClause + selectorClause + " ORDER BY cbp.guid LIMIT 1";
+    std::string query = "SELECT cbp.guid, c.account, cbp.role, cbp.class_spec FROM character_bot_pool cbp INNER JOIN characters c ON c.guid = cbp.guid WHERE cbp.enabled = 1 AND cbp.in_use = 0" + roleClause + selectorClause + " ORDER BY cbp.guid LIMIT 1";
     QueryResult result = CharacterDatabase.Query(query.c_str());
     if (!result)
     {
@@ -986,8 +987,9 @@ Player* BotMgr::LoadBotFromPool(Player* owner, std::string const& role, std::str
     ObjectGuid botGuid(HighGuid::Player, fields[0].GetUInt32());
     uint32 accountId = fields[1].GetUInt32();
     std::string selectedRole = fields[2].GetString();
+    std::string selectedClassSpec = fields[3].GetString();
     BotRole botRole = ParseBotRole(selectedRole);
-    TC_LOG_INFO("server", "PlayerBot load selected bot=%s account=%u role=%s", botGuid.ToString().c_str(), accountId, selectedRole.c_str());
+    TC_LOG_INFO("server", "PlayerBot load selected bot=%s account=%u role=%s class_spec=%s", botGuid.ToString().c_str(), accountId, selectedRole.c_str(), selectedClassSpec.c_str());
 
     Player* bot = LoadCharacterAsBotSession(botGuid, accountId, owner, placement, groupAnchor);
     if (!bot)
@@ -1000,7 +1002,7 @@ Player* BotMgr::LoadBotFromPool(Player* owner, std::string const& role, std::str
 
     std::unique_ptr<WorldSession> session = std::move(sessionItr->second);
     _botSessions.erase(sessionItr);
-    Register(owner, bot, botRole, std::move(session));
+    Register(owner, bot, botRole, selectedRole, selectedClassSpec, std::move(session));
     return bot;
 }
 
@@ -1082,7 +1084,7 @@ Player* BotMgr::LoadCharacterAsBotSession(ObjectGuid guid, uint32 accountId, Pla
     return bot;
 }
 
-bool BotMgr::AddToOwnerGroup(Player* owner, Player* bot, BotRole role)
+bool BotMgr::AddToOwnerGroup(Player* owner, Player* bot, std::string const& runtimeRole, BotRole role)
 {
     TC_LOG_INFO("server", "PlayerBot group add begin owner=%s bot=%s", owner->GetGUID().ToString().c_str(), bot->GetGUID().ToString().c_str());
     Group* group = owner->GetGroup();
@@ -1106,7 +1108,14 @@ bool BotMgr::AddToOwnerGroup(Player* owner, Player* bot, BotRole role)
         return false;
     }
 
-    switch (GetBotRoleCategory(role))
+    std::string normalizedRole = NormalizeBotRole(runtimeRole);
+    if (normalizedRole == "tank")
+        group->SetLfgRoles(bot->GetGUID(), lfg::PLAYER_ROLE_TANK);
+    else if (normalizedRole == "healer" || normalizedRole == "heal")
+        group->SetLfgRoles(bot->GetGUID(), lfg::PLAYER_ROLE_HEALER);
+    else if (normalizedRole == "dps" || normalizedRole == "damage")
+        group->SetLfgRoles(bot->GetGUID(), lfg::PLAYER_ROLE_DAMAGE);
+    else switch (GetBotRoleCategory(role))
     {
         case BotRoleCategory::Tank:
             group->SetLfgRoles(bot->GetGUID(), lfg::PLAYER_ROLE_TANK);
@@ -1178,7 +1187,7 @@ void BotMgr::ReleasePoolCharacter(ObjectGuid botGuid)
     CharacterDatabase.DirectPExecute("UPDATE character_bot_pool SET in_use = 0 WHERE guid = %u", botGuid.GetCounter());
 }
 
-void BotMgr::Register(Player* owner, Player* bot, BotRole role, std::unique_ptr<WorldSession> session)
+void BotMgr::Register(Player* owner, Player* bot, BotRole role, std::string const& runtimeRole, std::string const& classSpec, std::unique_ptr<WorldSession> session)
 {
     _botSessions[bot->GetGUID()] = std::move(session);
     if (!owner)
@@ -1189,5 +1198,5 @@ void BotMgr::Register(Player* owner, Player* bot, BotRole role, std::unique_ptr<
 
     _ownerByBot[bot->GetGUID()] = owner->GetGUID();
     _botsByOwner.emplace(owner->GetGUID(), bot->GetGUID());
-    _controllersByBot[bot->GetGUID()].reset(new BotController(owner->GetGUID(), bot->GetGUID(), role));
+    _controllersByBot[bot->GetGUID()].reset(new BotController(owner->GetGUID(), bot->GetGUID(), role, runtimeRole, classSpec));
 }
