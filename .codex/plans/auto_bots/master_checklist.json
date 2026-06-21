@@ -112,8 +112,8 @@
     },
     {
       "deliverable": "raid_trash",
-      "evidence_artifact": "dataset/live_validation_scenario_reports_built/blackwing_descent_10n.json",
-      "failure_label": "invalid_segment_live_reports,missing_segment_required_evidence,scenario_clear_not_complete,segment_evidence_debug_only,missing_uninterrupted_full_clear_report,missing_required_evidence,failure_labels_present",
+      "evidence_artifact": "artifacts/live_validation_instances/blackwing_descent_uninterrupted_full_clear_r1/report.json",
+      "failure_label": "validation_route_death_loop,scenario_clear_not_complete,missing_required_evidence,failure_labels_present",
       "followup_lane": "",
       "lane": "blackwing_descent_10n",
       "reviewer": "",
@@ -121,8 +121,8 @@
     },
     {
       "deliverable": "raid_boss",
-      "evidence_artifact": "dataset/live_validation_scenario_reports_built/blackwing_descent_10n.json",
-      "failure_label": "invalid_segment_live_reports,missing_segment_required_evidence,scenario_clear_not_complete,segment_evidence_debug_only,missing_uninterrupted_full_clear_report,missing_required_evidence,failure_labels_present",
+      "evidence_artifact": "artifacts/live_validation_instances/blackwing_descent_uninterrupted_full_clear_r1/report.json",
+      "failure_label": "validation_route_death_loop,scenario_clear_not_complete,missing_required_evidence,failure_labels_present",
       "followup_lane": "",
       "lane": "blackwing_descent_10n",
       "reviewer": "",
@@ -130,8 +130,8 @@
     },
     {
       "deliverable": "full_blackwing_descent_clear",
-      "evidence_artifact": "dataset/live_validation_scenario_reports_built/blackwing_descent_10n.json",
-      "failure_label": "segment_evidence_debug_only,missing_uninterrupted_full_clear_report,missing_required_evidence,failure_labels_present",
+      "evidence_artifact": "artifacts/live_validation_instances/blackwing_descent_uninterrupted_full_clear_r1/report.json",
+      "failure_label": "validation_route_death_loop,scenario_clear_not_complete,missing_required_evidence,failure_labels_present",
       "followup_lane": "blackwing_descent_10n_uninterrupted_full_clear",
       "lane": "blackwing_descent_10n",
       "reviewer": "",

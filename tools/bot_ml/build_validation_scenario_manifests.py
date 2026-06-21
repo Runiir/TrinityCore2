@@ -56,14 +56,14 @@ MECHANIC_EVIDENCE_REQUIREMENTS = {
 EVIDENCE_ACTIONS = {
     "party_formation": ["party_formed", "raid_formed", "validation_group_formed"],
     "raid_formation": ["raid_formed", "validation_group_formed"],
-    "role_assignments": ["role_assignment", "validation_role_assignment", "tank_assigned", "healer_assigned"],
+    "role_assignments": ["role_assignment", "validation_role_assignment", "tank_assigned", "healer_assigned", "raid_role_assignment"],
     "pulls": ["trash_action", "validation_route_trash_action", "boss_started", "boss_action", "validation_route_pull"],
-    "target_priority": ["target_priority", "target_switch", "validation_target_priority", "assist_target_search_authoritative_focus"],
-    "interrupts": ["interrupt", "interrupt_success", "assigned_interrupt_success", "validation_interrupt"],
-    "healer_assignments": ["healer_assignment", "validation_route_group_heal", "trash_heal", "external_defensive"],
-    "tank_positioning": ["validation_route_tank_boss", "tank_positioning", "force_tank_focus", "move_to_validation_route_assist_target"],
-    "regrouping": ["validation_route_regroup", "regroup", "validation_route_hold_anchor"],
-    "recovery": ["stuck_detected", "unstuck", "death", "dead_recovery", "validation_route_recovery"],
+    "target_priority": ["target_priority", "target_switch", "validation_target_priority", "assist_target_search_authoritative_focus", "raid_add_wave", "raid_boss_action"],
+    "interrupts": ["interrupt", "interrupt_success", "assigned_interrupt_success", "validation_interrupt", "raid_interrupt"],
+    "healer_assignments": ["healer_assignment", "validation_route_group_heal", "trash_heal", "external_defensive", "raid_healer_cooldown"],
+    "tank_positioning": ["validation_route_tank_boss", "tank_positioning", "force_tank_focus", "move_to_validation_route_assist_target", "raid_position_anchor", "raid_boss_action"],
+    "regrouping": ["validation_route_regroup", "regroup", "validation_route_hold_anchor", "move_to_validation_route_focus", "raid_position_anchor"],
+    "recovery": ["stuck_detected", "unstuck", "death", "dead_recovery", "validation_route_recovery", "raid_wipe"],
     "instance_reset": ["instance_reset", "reset_stale_boss_activation", "bot_pool_reset"],
 }
 

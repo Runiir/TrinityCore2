@@ -170,6 +170,17 @@ struct BotWorldStatus
     uint32 RaidBossKills = 0;
     uint32 HeroicRaidBossKills = 0;
     uint32 RaidTelemetryEvents = 0;
+    uint32 RoleAssignments = 0;
+    uint32 GroupFormations = 0;
+    uint32 RaidFormations = 0;
+    uint32 TargetPriorityDecisions = 0;
+    uint32 InterruptSuccess = 0;
+    uint32 AssignedInterruptSuccess = 0;
+    uint32 HealerAssignments = 0;
+    uint32 TankPositioning = 0;
+    uint32 Regroups = 0;
+    uint32 RecoveryEvents = 0;
+    uint32 InstanceResets = 0;
     uint32 Decisions = 0;
     uint32 Failures = 0;
     uint32 DurationSeconds = 0;
@@ -335,6 +346,9 @@ private:
         bool ValidationRouteTerminalState = false;
         uint64 ValidationRouteTerminalAtMs = 0;
         std::string ValidationRouteTerminalReason;
+        bool ValidationGroupFormationRecorded = false;
+        bool ValidationRaidFormationRecorded = false;
+        bool ValidationRoleAssignmentRecorded = false;
         bool ValidationRouteAnchorOverrideValid = false;
         uint64 ValidationRouteAnchorOverrideUntilMs = 0;
         float ValidationRouteAnchorOverrideX = 0.0f;

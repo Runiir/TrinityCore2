@@ -71,14 +71,14 @@ BOT_MEMORY_TABLES = [
 VALIDATION_EVIDENCE_ACTIONS = {
     "party_formation": {"party_formed", "raid_formed", "validation_group_formed"},
     "raid_formation": {"raid_formed", "validation_group_formed"},
-    "role_assignments": {"role_assignment", "validation_role_assignment", "tank_assigned", "healer_assigned"},
+    "role_assignments": {"role_assignment", "validation_role_assignment", "tank_assigned", "healer_assigned", "raid_role_assignment"},
     "pulls": {"trash_action", "validation_route_trash_action", "boss_started", "boss_action", "validation_route_pull"},
-    "target_priority": {"target_priority", "target_switch", "validation_target_priority", "assist_target_search_authoritative_focus"},
-    "interrupts": {"interrupt", "interrupt_success", "assigned_interrupt_success", "validation_interrupt"},
-    "healer_assignments": {"healer_assignment", "validation_route_group_heal", "trash_heal", "external_defensive"},
-    "tank_positioning": {"validation_route_tank_boss", "tank_positioning", "force_tank_focus", "move_to_validation_route_assist_target"},
-    "regrouping": {"validation_route_regroup", "regroup", "validation_route_hold_anchor"},
-    "recovery": {"stuck_detected", "unstuck", "death", "dead_recovery", "validation_route_recovery"},
+    "target_priority": {"target_priority", "target_switch", "validation_target_priority", "assist_target_search_authoritative_focus", "raid_add_wave", "raid_boss_action"},
+    "interrupts": {"interrupt", "interrupt_success", "assigned_interrupt_success", "validation_interrupt", "raid_interrupt"},
+    "healer_assignments": {"healer_assignment", "validation_route_group_heal", "trash_heal", "external_defensive", "raid_healer_cooldown"},
+    "tank_positioning": {"validation_route_tank_boss", "tank_positioning", "force_tank_focus", "move_to_validation_route_assist_target", "raid_position_anchor", "raid_boss_action"},
+    "regrouping": {"validation_route_regroup", "regroup", "validation_route_hold_anchor", "move_to_validation_route_focus", "raid_position_anchor"},
+    "recovery": {"stuck_detected", "unstuck", "death", "dead_recovery", "validation_route_recovery", "raid_wipe"},
     "instance_reset": {"instance_reset", "reset_stale_boss_activation", "bot_pool_reset"},
 }
 
@@ -958,29 +958,30 @@ def live_evidence(
     gear_upgrades = max(int(status.get("gear_upgrades") or 0), int(summary.get("gear_upgrades") or 0))
     role_assignment_evidence = max(
         int(summary.get("role_assignments") or 0),
-        action_counts.get("role_assignment", 0) + action_counts.get("validation_role_assignment", 0),
-        diagnosis_action_counts.get("role_assignment", 0) + diagnosis_action_counts.get("validation_role_assignment", 0),
+        action_counts.get("role_assignment", 0) + action_counts.get("validation_role_assignment", 0) + action_counts.get("raid_role_assignment", 0),
+        diagnosis_action_counts.get("role_assignment", 0) + diagnosis_action_counts.get("validation_role_assignment", 0) + diagnosis_action_counts.get("raid_role_assignment", 0),
     )
     group_formation_evidence = max(
         int(summary.get("group_formations") or 0),
+        int(summary.get("raid_formations") or 0),
         action_counts.get("party_formed", 0) + action_counts.get("raid_formed", 0) + action_counts.get("validation_group_formed", 0),
         diagnosis_action_counts.get("party_formed", 0) + diagnosis_action_counts.get("raid_formed", 0) + diagnosis_action_counts.get("validation_group_formed", 0),
     )
     target_priority_evidence = max(
         int(summary.get("target_priority_decisions") or 0),
-        action_counts.get("target_priority", 0) + action_counts.get("target_switch", 0) + action_counts.get("validation_target_priority", 0),
-        diagnosis_action_counts.get("target_priority", 0) + diagnosis_action_counts.get("target_switch", 0) + diagnosis_action_counts.get("validation_target_priority", 0),
+        action_counts.get("target_priority", 0) + action_counts.get("target_switch", 0) + action_counts.get("validation_target_priority", 0) + action_counts.get("raid_add_wave", 0) + action_counts.get("raid_boss_action", 0),
+        diagnosis_action_counts.get("target_priority", 0) + diagnosis_action_counts.get("target_switch", 0) + diagnosis_action_counts.get("validation_target_priority", 0) + diagnosis_action_counts.get("raid_add_wave", 0) + diagnosis_action_counts.get("raid_boss_action", 0),
     )
     interrupt_evidence = max(
         int(summary.get("interrupt_success") or 0),
         int(summary.get("assigned_interrupt_success") or 0),
-        action_counts.get("interrupt", 0) + action_counts.get("interrupt_success", 0) + action_counts.get("assigned_interrupt_success", 0) + action_counts.get("validation_interrupt", 0),
-        diagnosis_action_counts.get("interrupt", 0) + diagnosis_action_counts.get("interrupt_success", 0) + diagnosis_action_counts.get("assigned_interrupt_success", 0) + diagnosis_action_counts.get("validation_interrupt", 0),
+        action_counts.get("interrupt", 0) + action_counts.get("interrupt_success", 0) + action_counts.get("assigned_interrupt_success", 0) + action_counts.get("validation_interrupt", 0) + action_counts.get("raid_interrupt", 0),
+        diagnosis_action_counts.get("interrupt", 0) + diagnosis_action_counts.get("interrupt_success", 0) + diagnosis_action_counts.get("assigned_interrupt_success", 0) + diagnosis_action_counts.get("validation_interrupt", 0) + diagnosis_action_counts.get("raid_interrupt", 0),
     )
     healer_assignment_evidence = max(
         int(summary.get("healer_assignments") or 0),
-        action_counts.get("healer_assignment", 0) + action_counts.get("validation_route_group_heal", 0) + action_counts.get("trash_heal", 0) + action_counts.get("external_defensive", 0),
-        diagnosis_action_counts.get("healer_assignment", 0) + diagnosis_action_counts.get("validation_route_group_heal", 0) + diagnosis_action_counts.get("trash_heal", 0) + diagnosis_action_counts.get("external_defensive", 0),
+        action_counts.get("healer_assignment", 0) + action_counts.get("validation_route_group_heal", 0) + action_counts.get("trash_heal", 0) + action_counts.get("external_defensive", 0) + action_counts.get("raid_healer_cooldown", 0),
+        diagnosis_action_counts.get("healer_assignment", 0) + diagnosis_action_counts.get("validation_route_group_heal", 0) + diagnosis_action_counts.get("trash_heal", 0) + diagnosis_action_counts.get("external_defensive", 0) + diagnosis_action_counts.get("raid_healer_cooldown", 0),
     )
     if str(context.get("route_kind") or "").lower() == "boss":
         healer_assignment_evidence = max(
@@ -992,23 +993,27 @@ def live_evidence(
         int(summary.get("tank_positioning") or 0),
         action_counts.get("validation_route_tank_boss", 0)
         + action_counts.get("move_to_validation_route_assist_target", 0)
+        + action_counts.get("raid_position_anchor", 0)
+        + action_counts.get("raid_boss_action", 0)
         + result_counts.get("force_tank_focus", 0)
         + result_counts.get("assist_tank_focus", 0),
         diagnosis_action_counts.get("validation_route_tank_boss", 0)
         + diagnosis_action_counts.get("move_to_validation_route_assist_target", 0)
+        + diagnosis_action_counts.get("raid_position_anchor", 0)
+        + diagnosis_action_counts.get("raid_boss_action", 0)
         + diagnosis_result_counts.get("force_tank_focus", 0)
         + diagnosis_result_counts.get("assist_tank_focus", 0),
     )
     regrouping_evidence = max(
         int(summary.get("regroups") or 0),
-        action_counts.get("validation_route_regroup", 0) + action_counts.get("regroup", 0) + action_counts.get("validation_route_hold_anchor", 0),
-        diagnosis_action_counts.get("validation_route_regroup", 0) + diagnosis_action_counts.get("regroup", 0) + diagnosis_action_counts.get("validation_route_hold_anchor", 0),
+        action_counts.get("validation_route_regroup", 0) + action_counts.get("regroup", 0) + action_counts.get("validation_route_hold_anchor", 0) + action_counts.get("move_to_validation_route_focus", 0) + action_counts.get("raid_position_anchor", 0),
+        diagnosis_action_counts.get("validation_route_regroup", 0) + diagnosis_action_counts.get("regroup", 0) + diagnosis_action_counts.get("validation_route_hold_anchor", 0) + diagnosis_action_counts.get("move_to_validation_route_focus", 0) + diagnosis_action_counts.get("raid_position_anchor", 0),
     )
     recovery_evidence = max(
         int(summary.get("recovery_events") or 0),
         stuck_events + unstuck_failures + repath_events,
-        action_counts.get("validation_route_recovery", 0) + action_counts.get("death", 0) + action_counts.get("dead_recovery", 0),
-        diagnosis_action_counts.get("validation_route_recovery", 0) + diagnosis_action_counts.get("death", 0) + diagnosis_action_counts.get("dead_recovery", 0),
+        action_counts.get("validation_route_recovery", 0) + action_counts.get("death", 0) + action_counts.get("dead_recovery", 0) + action_counts.get("raid_wipe", 0),
+        diagnosis_action_counts.get("validation_route_recovery", 0) + diagnosis_action_counts.get("death", 0) + diagnosis_action_counts.get("dead_recovery", 0) + diagnosis_action_counts.get("raid_wipe", 0),
     )
     instance_reset_evidence = max(
         int(summary.get("instance_resets") or 0),

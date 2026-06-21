@@ -1431,7 +1431,7 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
         "role": "tank",
         "required": 2,
         "provisioned": 2,
-        "evidence_actions": ["role_assignment", "validation_role_assignment", "tank_assigned", "healer_assigned"],
+        "evidence_actions": ["role_assignment", "validation_role_assignment", "tank_assigned", "healer_assigned", "raid_role_assignment"],
     }
     assert scenarios["stonecore_5n"]["boss_count"] == 4
     assert scenarios["blackwing_descent_10n"]["boss_count"] == 6
@@ -2623,6 +2623,27 @@ TC> {"duration_minutes":5,"decisions":40,"raid_boss_kills":1,"interrupt_success"
     assert evidence["validation_evidence_counts"]["tank_positioning"] >= 1
     assert evidence["validation_evidence_counts"]["regrouping"] == 1
     assert evidence["validation_evidence_counts"]["instance_reset"] == 1
+
+
+def test_live_bot_validation_counts_summary_only_raid_evidence_after_trace_rolloff():
+    output = """
+TC> {"active_bots":10,"target_bots":10,"action":"botauto_status","decisions":420}
+TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"snapshot":{"decision":{"action":"validation_route_complete"},"movement":{"is_moving":false,"distance_moved_since_last_decision":0}}}]}
+TC> {"trace_schema_version":1,"entries":[{"action":"validation_route_complete","situation":"validation_route_manifest","result":"all_routes_complete"}]}
+TC> {"duration_minutes":12,"decisions":420,"raid_boss_kills":6,"role_assignments":10,"group_formations":10,"raid_formations":10,"target_priority_decisions":18,"interrupt_success":3,"assigned_interrupt_success":3,"healer_assignments":11,"tank_positioning":20,"regroups":14,"recovery_events":1,"instance_resets":1}
+"""
+    report = live_validation_report(output)
+    counts = report["evidence"]["validation_evidence_counts"]
+
+    assert counts["raid_formation"] == 10
+    assert counts["role_assignments"] == 10
+    assert counts["target_priority"] == 18
+    assert counts["interrupts"] == 3
+    assert counts["healer_assignments"] == 11
+    assert counts["tank_positioning"] == 20
+    assert counts["regrouping"] == 14
+    assert counts["recovery"] == 1
+    assert counts["instance_reset"] == 1
 
 
 def test_live_bot_validation_accepts_raw_manifest_complete_when_trace_json_is_interleaved():
@@ -5993,6 +6014,19 @@ def test_phase08_server_raid_telemetry_surface():
         "raid_wipe",
     ]:
         assert event_type in impl
+
+    for counter_name in [
+        "role_assignments",
+        "group_formations",
+        "raid_formations",
+        "target_priority_decisions",
+        "healer_assignments",
+        "tank_positioning",
+        "regroups",
+        "recovery_events",
+        "instance_resets",
+    ]:
+        assert counter_name in impl
 
     for semantic_key in [
         "raid_role_assignment",

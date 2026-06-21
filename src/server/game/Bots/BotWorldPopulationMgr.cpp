@@ -1747,6 +1747,52 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
                 bot->GetGUID().ToString().c_str(), leader->GetGUID().ToString().c_str(), leaderMapId, leaderInstanceId);
         }
     }
+
+    for (Player* bot : members)
+    {
+        if (!bot || bot->GetGroup() != group)
+            continue;
+
+        WorldBotState* memberState = nullptr;
+        for (WorldBotState& state : _bots)
+        {
+            if (state.Guid == bot->GetGUID())
+            {
+                memberState = &state;
+                break;
+            }
+        }
+        if (!memberState)
+            continue;
+
+        std::string role = GetDungeonRole(bot);
+        if (role == "tank")
+            group->SetLfgRoles(bot->GetGUID(), lfg::PLAYER_ROLE_TANK);
+        else if (role == "healer")
+            group->SetLfgRoles(bot->GetGUID(), lfg::PLAYER_ROLE_HEALER);
+        else
+            group->SetLfgRoles(bot->GetGUID(), lfg::PLAYER_ROLE_DAMAGE);
+
+        BotRolePowerBreakdown power = BotLongTermProgressionBrain::CalculateRolePower(bot);
+        BotProgressionStage stage = BotLongTermProgressionBrain::ClassifyStage(bot, power);
+        std::string raw = BuildRawJson(bot, nullptr);
+        std::string semantic = BuildSemanticJson(bot, nullptr, raidValidation ? "raid_formation" : "party_formation", &power, stage);
+        if (!memberState->ValidationGroupFormationRecorded)
+        {
+            RecordEvent(*memberState, bot, "validation_group_formed", nullptr, raidValidation ? "raid" : "party", raw.c_str(), semantic.c_str(), float(members.size()), group->GetGUID().GetCounter());
+            memberState->ValidationGroupFormationRecorded = true;
+        }
+        if (raidValidation && !memberState->ValidationRaidFormationRecorded)
+        {
+            RecordEvent(*memberState, bot, "raid_formed", nullptr, "ok", raw.c_str(), semantic.c_str(), float(members.size()), group->GetGUID().GetCounter());
+            memberState->ValidationRaidFormationRecorded = true;
+        }
+        if (!memberState->ValidationRoleAssignmentRecorded)
+        {
+            RecordEvent(*memberState, bot, "validation_role_assignment", nullptr, role.c_str(), raw.c_str(), semantic.c_str(), float(members.size()), group->GetLfgRoles(bot->GetGUID()));
+            memberState->ValidationRoleAssignmentRecorded = true;
+        }
+    }
 }
 
 bool BotWorldPopulationMgr::ResolveSpawnPlacement(uint32 candidateGuid, SpawnPlacement& placement) const
@@ -9797,6 +9843,24 @@ void BotWorldPopulationMgr::RecordRaidTelemetry(WorldBotState& state, Player* bo
         return;
 
     ++_metrics.RaidTelemetryEvents;
+    std::string observedEvent = eventType ? eventType : "raid_telemetry";
+    if (observedEvent == "raid_role_assignment")
+        ++_metrics.RoleAssignments;
+    if (observedEvent == "raid_interrupt")
+    {
+        ++_metrics.InterruptSuccess;
+        ++_metrics.AssignedInterruptSuccess;
+    }
+    if (observedEvent == "raid_add_wave" || observedEvent == "raid_boss_action")
+        ++_metrics.TargetPriorityDecisions;
+    if (observedEvent == "raid_healer_cooldown")
+        ++_metrics.HealerAssignments;
+    if (observedEvent == "raid_position_anchor" || observedEvent == "raid_boss_action")
+        ++_metrics.TankPositioning;
+    if (observedEvent == "raid_position_anchor")
+        ++_metrics.Regroups;
+    if (observedEvent == "raid_wipe")
+        ++_metrics.RecoveryEvents;
     bool failure = EventLooksFailure(eventType, result) || (eventType && std::string(eventType) == "raid_wipe");
     BotTelemetryPolicyInput policyInput = BuildTelemetryPolicyInput(eventType ? eventType : "raid_telemetry", result ? result : "ok", features.RaidEncounter ? "raid_boss" : "dungeon_boss", boss, spellId ? spellId : features.CastSpellId, 0, 0, valueFloat, valueInt, failure, true);
     BotTelemetryPolicyDecision policy = BotTelemetryPolicy::DecideEvent(policyInput, GetTelemetryPolicyConfig(), ++state.EventSequence);
@@ -10582,13 +10646,38 @@ void BotWorldPopulationMgr::RecordEvent(WorldBotState& state, Player* bot, char 
     if (!bot)
         return;
 
+    std::string observedEvent = eventType ? eventType : "unknown";
+    std::string observedResult = result ? result : "";
+    if (observedEvent == "validation_role_assignment" || observedEvent == "role_assignment" || observedEvent == "tank_assigned" || observedEvent == "healer_assigned" || observedEvent == "raid_role_assignment")
+        ++_metrics.RoleAssignments;
+    if (observedEvent == "party_formed" || observedEvent == "raid_formed" || observedEvent == "validation_group_formed")
+        ++_metrics.GroupFormations;
+    if (observedEvent == "raid_formed")
+        ++_metrics.RaidFormations;
+    if (observedEvent == "target_priority" || observedEvent == "target_switch" || observedEvent == "validation_target_priority" || observedEvent == "assist_target_search_authoritative_focus" || observedEvent == "raid_add_wave")
+        ++_metrics.TargetPriorityDecisions;
+    if (observedEvent == "interrupt_success" || observedEvent == "assigned_interrupt_success" || observedEvent == "validation_interrupt" || observedEvent == "raid_interrupt")
+        ++_metrics.InterruptSuccess;
+    if (observedEvent == "assigned_interrupt_success" || observedEvent == "validation_interrupt" || observedEvent == "raid_interrupt")
+        ++_metrics.AssignedInterruptSuccess;
+    if (observedEvent == "healer_assignment" || observedEvent == "validation_route_group_heal" || observedEvent == "trash_heal" || observedEvent == "external_defensive" || observedEvent == "raid_healer_cooldown")
+        ++_metrics.HealerAssignments;
+    if (observedEvent == "validation_route_tank_boss" || observedEvent == "tank_positioning" || observedEvent == "move_to_validation_route_assist_target" || observedEvent == "raid_position_anchor" || observedResult == "force_tank_focus" || observedResult == "assist_tank_focus")
+        ++_metrics.TankPositioning;
+    if (observedEvent == "validation_route_regroup" || observedEvent == "regroup" || observedEvent == "validation_route_hold_anchor" || observedEvent == "move_to_validation_route_focus" || observedEvent == "raid_position_anchor")
+        ++_metrics.Regroups;
+    if (observedEvent == "stuck_detected" || observedEvent == "unstuck" || observedEvent == "death" || observedEvent == "dead_recovery" || observedEvent == "validation_route_recovery" || observedEvent == "raid_wipe")
+        ++_metrics.RecoveryEvents;
+    if (observedEvent == "instance_reset" || observedEvent == "reset_stale_boss_activation" || observedEvent == "bot_pool_reset")
+        ++_metrics.InstanceResets;
+
     RecordDecisionTrace(state, eventType ? eventType : "event", eventType ? eventType : "event", target, 0, result ? result : "ok", EventLooksFailure(eventType, result) ? "event_failure" : "");
     RecordExperimentSegmentEvent(bot, eventType, result, 0, target, _telemetryBuffer.GetActiveClipId(bot->GetGUID()), rawJson, semanticJson);
 
     if (!_runId)
         return;
 
-    std::string eventName = eventType ? eventType : "unknown";
+    std::string eventName = observedEvent;
     bool rareCombatStart = eventName == "combat_started" && target && target->getLevel() > bot->getLevel() + 3;
     bool recoveryRare = eventName == "repeated_death" || eventName == "death_recovery_failed";
     bool recoveryIntervention = eventName == "teleport_fallback_used";
@@ -12212,6 +12301,17 @@ std::string BotWorldPopulationMgr::GetStatusJson() const
          << ",\"raid_boss_kills\":" << status.RaidBossKills
          << ",\"heroic_raid_boss_kills\":" << status.HeroicRaidBossKills
          << ",\"raid_telemetry_events\":" << status.RaidTelemetryEvents
+         << ",\"role_assignments\":" << status.RoleAssignments
+         << ",\"group_formations\":" << status.GroupFormations
+         << ",\"raid_formations\":" << status.RaidFormations
+         << ",\"target_priority_decisions\":" << status.TargetPriorityDecisions
+         << ",\"interrupt_success\":" << status.InterruptSuccess
+         << ",\"assigned_interrupt_success\":" << status.AssignedInterruptSuccess
+         << ",\"healer_assignments\":" << status.HealerAssignments
+         << ",\"tank_positioning\":" << status.TankPositioning
+         << ",\"regroups\":" << status.Regroups
+         << ",\"recovery_events\":" << status.RecoveryEvents
+         << ",\"instance_resets\":" << status.InstanceResets
          << ",\"segment_counts\":" << _experimentCoordinator.GetCountsJson()
          << ",\"stuck\":" << status.StuckEvents
          << ",\"decisions\":" << status.Decisions
@@ -12240,6 +12340,17 @@ std::string BotWorldPopulationMgr::GetSummaryJson() const
          << ",\"raid_boss_kills\":" << status.RaidBossKills
          << ",\"heroic_raid_boss_kills\":" << status.HeroicRaidBossKills
          << ",\"raid_telemetry_events\":" << status.RaidTelemetryEvents
+         << ",\"role_assignments\":" << status.RoleAssignments
+         << ",\"group_formations\":" << status.GroupFormations
+         << ",\"raid_formations\":" << status.RaidFormations
+         << ",\"target_priority_decisions\":" << status.TargetPriorityDecisions
+         << ",\"interrupt_success\":" << status.InterruptSuccess
+         << ",\"assigned_interrupt_success\":" << status.AssignedInterruptSuccess
+         << ",\"healer_assignments\":" << status.HealerAssignments
+         << ",\"tank_positioning\":" << status.TankPositioning
+         << ",\"regroups\":" << status.Regroups
+         << ",\"recovery_events\":" << status.RecoveryEvents
+         << ",\"instance_resets\":" << status.InstanceResets
          << ",\"segment_counts\":" << _experimentCoordinator.GetCountsJson()
          << ",\"bot_learning\":{\"enable\":" << (_learningConfig.Enabled ? "true" : "false")
          << ",\"min_samples_for_strong_bias\":" << _learningConfig.MinSamplesForStrongBias
