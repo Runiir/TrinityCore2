@@ -203,6 +203,7 @@ public:
     std::string SelectRuntimeProfile(std::string const& name);
     std::string ClearRuntimeProfile();
     std::string ReloadRuntimeProfiles();
+    std::string PrepareValidationProfile(std::string const& name);
     BotWorldStatus GetStatus() const;
     std::string GetStatusJson() const;
     std::string GetSummaryJson() const;
@@ -391,6 +392,14 @@ private:
         bool ValidationRouteTerminalState = false;
         uint64 ValidationRouteTerminalAtMs = 0;
         std::string ValidationRouteTerminalReason;
+        bool ValidationCohortLocked = false;
+        bool ValidationCohortViolation = false;
+        std::string ValidationCohortViolationReason;
+        ObjectGuid ValidationCohortLeaderGuid;
+        ObjectGuid ValidationCohortGroupGuid;
+        uint32 ValidationCohortMapId = 0;
+        uint32 ValidationCohortInstanceId = 0;
+        uint32 ValidationCohortPhaseMask = 0;
         bool ValidationGroupFormationRecorded = false;
         bool ValidationRaidFormationRecorded = false;
         bool ValidationRoleAssignmentRecorded = false;
@@ -851,6 +860,7 @@ private:
     void LoadConfig(std::string const& name, BotWorldExperimentConfig const* overrideConfig);
     void ApplyRuntimeConfigOverride(BotWorldExperimentConfig const& overrideConfig);
     void ApplyRuntimeProfile(BotWorldExperimentProfile const& profile);
+    bool SelectConfiguredRuntimeProfile();
     bool EnsureRuntimeProfilesLoaded();
     bool LoadRuntimeProfiles(std::string* failureReason = nullptr);
     std::string RuntimeProfilesJson(char const* action) const;
@@ -970,6 +980,12 @@ private:
     void RecordActivityStart(WorldBotState& state, Player* bot);
     void RecordActivityStop(WorldBotState const& state, Player* bot = nullptr);
     void EnsureValidationCohortGroup();
+    bool IsValidationProfileName(std::string const& name) const;
+    bool PrepareCurrentValidationProfile(char const* reason);
+    bool ApplyValidationProvisioningSql(char const* reason);
+    bool ResetValidationBotPool(char const* reason);
+    bool IsValidationCohortMemberInOriginalInstance(WorldBotState const& state, Player const* bot) const;
+    void MarkValidationCohortViolation(WorldBotState& state, Player const* bot, char const* reason);
     bool TrySmartGearDecision(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, std::string& situation, std::string& action);
     bool TryProfessionMemoryAction(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, std::string& situation, std::string& action);
     void RecordGearEvaluation(WorldBotState& state, Player* bot, BotGearUpgradeEvaluation const& evaluation, char const* rawJson, char const* semanticJson);

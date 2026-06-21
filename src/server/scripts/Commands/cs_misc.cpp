@@ -426,17 +426,35 @@ public:
                     }
                 }
 
-                // if the player or the player's group is bound to another instance
-                // the player will not be bound to another one
-                InstancePlayerBind* bind = _player->GetBoundInstance(target->GetMapId(), target->GetDifficulty(map->IsRaid()));
+                Difficulty targetDifficulty = target->GetDifficulty(map->IsRaid());
+                InstanceSave* targetSave = sInstanceSaveMgr->GetInstanceSave(target->GetInstanceId());
+                if (!targetSave)
+                {
+                    handler->PSendSysMessage("Cannot appear: target instance save is not loaded.");
+                    handler->SetSentErrorMessage(true);
+                    return false;
+                }
+
+                InstancePlayerBind* bind = _player->GetBoundInstance(target->GetMapId(), targetDifficulty);
+                if (bind && bind->save != targetSave)
+                {
+                    if (bind->perm)
+                    {
+                        handler->PSendSysMessage("Cannot appear: you are permanently bound to another instance of this map.");
+                        handler->SetSentErrorMessage(true);
+                        return false;
+                    }
+
+                    _player->UnbindInstance(target->GetMapId(), targetDifficulty);
+                    bind = nullptr;
+                }
+
                 if (!bind)
                 {
                     Group* group = _player->GetGroup();
-                    // if no bind exists, create a solo bind
-                    InstanceGroupBind* gBind = group ? group->GetBoundInstance(target) : nullptr;                // if no bind exists, create a solo bind
+                    InstanceGroupBind* gBind = group ? group->GetBoundInstance(target) : nullptr;
                     if (!gBind)
-                        if (InstanceSave* save = sInstanceSaveMgr->GetInstanceSave(target->GetInstanceId()))
-                            _player->BindToInstance(save, !save->CanReset());
+                        _player->BindToInstance(targetSave, !targetSave->CanReset());
                 }
 
                 if (map->IsRaid())

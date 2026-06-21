@@ -186,6 +186,110 @@ std::string ReadSmallTextFile(std::string const& path, size_t maxBytes = 4 * 102
     return value;
 }
 
+std::vector<std::string> SplitSqlStatements(std::string const& sql)
+{
+    std::vector<std::string> statements;
+    std::string current;
+    bool inString = false;
+    bool escaped = false;
+    bool inLineComment = false;
+    bool inBlockComment = false;
+    for (size_t i = 0; i < sql.size(); ++i)
+    {
+        char c = sql[i];
+        char next = i + 1 < sql.size() ? sql[i + 1] : '\0';
+
+        if (inLineComment)
+        {
+            if (c == '\n' || c == '\r')
+            {
+                inLineComment = false;
+                current.push_back('\n');
+            }
+            continue;
+        }
+
+        if (inBlockComment)
+        {
+            if (c == '*' && next == '/')
+            {
+                inBlockComment = false;
+                ++i;
+                current.push_back(' ');
+            }
+            continue;
+        }
+
+        if (inString)
+        {
+            current.push_back(c);
+            if (escaped)
+                escaped = false;
+            else if (c == '\\')
+                escaped = true;
+            else if (c == '\'')
+                inString = false;
+            continue;
+        }
+
+        if ((c == '-' && next == '-') || c == '#')
+        {
+            inLineComment = true;
+            if (c == '-')
+                ++i;
+            continue;
+        }
+
+        if (c == '/' && next == '*')
+        {
+            inBlockComment = true;
+            ++i;
+            continue;
+        }
+
+        if (c == '\'')
+        {
+            inString = true;
+            current.push_back(c);
+            continue;
+        }
+
+        if (c == ';')
+        {
+            if (current.find_first_not_of(" \t\r\n") != std::string::npos)
+                statements.push_back(current);
+            current.clear();
+            continue;
+        }
+
+        current.push_back(c);
+    }
+    if (current.find_first_not_of(" \t\r\n") != std::string::npos)
+        statements.push_back(current);
+    return statements;
+}
+
+template<class ConnectionType>
+bool ExecuteSqlFile(DatabaseWorkerPool<ConnectionType>& database, std::string const& path, char const* label)
+{
+    std::string sql = ReadSmallTextFile(path, 64 * 1024 * 1024);
+    if (sql.empty())
+    {
+        TC_LOG_ERROR("server", "BotWorld validation prepare failed label=%s path=%s reason=sql_file_unreadable", label ? label : "", path.c_str());
+        return false;
+    }
+
+    uint32 count = 0;
+    for (std::string const& statement : SplitSqlStatements(sql))
+    {
+        database.DirectExecute(statement.c_str());
+        ++count;
+    }
+
+    TC_LOG_INFO("server", "BotWorld validation prepare applied label=%s path=%s statements=%u", label ? label : "", path.c_str(), count);
+    return true;
+}
+
 std::string ExtractJsonStringField(std::string const& json, std::string const& key)
 {
     std::regex pattern("\"" + key + "\"\\s*:\\s*\"([^\"]*)\"");
@@ -785,6 +889,8 @@ bool BotWorldPopulationMgr::Start(std::string const& experimentName, BotWorldExp
         return false;
 
     LoadConfig(experimentName.empty() ? "autonomous_zone_10" : experimentName, overrideConfig);
+    if (!overrideConfig && _config.ValidationRouteEnable && IsValidationProfileName(_config.Name) && !PrepareCurrentValidationProfile("manual_start"))
+        return false;
     _telemetryBuffer.Clear();
     _experimentCoordinator.Clear();
     _bots.clear();
@@ -859,6 +965,8 @@ bool BotWorldPopulationMgr::StartAutonomy(BotWorldExperimentConfig const* overri
         return false;
 
     LoadConfig("always_on_autonomy", overrideConfig);
+    if (!overrideConfig && _config.ValidationRouteEnable && IsValidationProfileName(_config.Name) && !PrepareCurrentValidationProfile("autonomy_start"))
+        return false;
     _telemetryBuffer.Clear();
     _experimentCoordinator.Clear();
     _experimentCoordinator.Configure(0, _config.BrainVersion);
@@ -939,6 +1047,87 @@ bool BotWorldPopulationMgr::SpawnAutonomyBots(uint32 count)
     _config.TargetPopulation += count;
     _metrics.TargetBots = _config.TargetPopulation;
     EnsurePopulation();
+    return true;
+}
+
+bool BotWorldPopulationMgr::IsValidationProfileName(std::string const& name) const
+{
+    return name == "stonecore_5n" || name == "blackwing_descent_10n";
+}
+
+std::string BotWorldPopulationMgr::PrepareValidationProfile(std::string const& name)
+{
+    if (!sConfigMgr->GetBoolDefault("BotWorld.Enable", false) || !sConfigMgr->GetBoolDefault("PlayerBot.Enable", false))
+        return "{\"ok\":false,\"action\":\"botauto_prepare\",\"failure_reason\":\"botworld_or_playerbot_disabled\"}";
+
+    std::string profileName = name.empty() ? _selectedProfileName : name;
+    if (profileName.empty())
+        return "{\"ok\":false,\"action\":\"botauto_prepare\",\"failure_reason\":\"profile_required\"}";
+    if (!IsValidationProfileName(profileName))
+        return "{\"ok\":false,\"action\":\"botauto_prepare\",\"failure_reason\":\"not_validation_profile\"}";
+
+    std::string selectResult = SelectRuntimeProfile(profileName);
+    if (selectResult.find("\"ok\":true") == std::string::npos)
+        return selectResult;
+
+    LoadConfig(profileName, nullptr);
+    bool ok = _config.ValidationRouteEnable && IsValidationProfileName(_config.Name) && PrepareCurrentValidationProfile("manual_prepare");
+    std::ostringstream json;
+    json << "{\"ok\":" << (ok ? "true" : "false")
+         << ",\"action\":\"botauto_prepare\""
+         << ",\"profile\":\"" << JsonEscape(profileName) << "\""
+         << ",\"pool_tag_filter\":\"" << JsonEscape(_config.PoolTagFilter) << "\""
+         << ",\"failure_reason\":" << (ok ? "null" : ("\"" + JsonEscape(_lastPopulationFailureReason.empty() ? "validation_prepare_failed" : _lastPopulationFailureReason) + "\"")) << "}";
+    return json.str();
+}
+
+bool BotWorldPopulationMgr::PrepareCurrentValidationProfile(char const* reason)
+{
+    if (!_config.ValidationRouteEnable || _config.PoolTagFilter.empty())
+    {
+        _lastPopulationFailureReason = "validation_profile_required";
+        return false;
+    }
+
+    if (!ApplyValidationProvisioningSql(reason))
+        return false;
+
+    return ResetValidationBotPool(reason);
+}
+
+bool BotWorldPopulationMgr::ApplyValidationProvisioningSql(char const* reason)
+{
+    std::string accountPath = sConfigMgr->GetStringDefault("BotWorld.ValidationProvisionAccountsSql", "dataset/validation_provisioning/provision_accounts.sql");
+    std::string characterPath = sConfigMgr->GetStringDefault("BotWorld.ValidationProvisionCharactersSql", "dataset/validation_provisioning/provision_characters.sql");
+    TC_LOG_INFO("server", "BotWorld validation prepare provisioning begin profile=%s tag=%s reason=%s", _config.Name.c_str(), _config.PoolTagFilter.c_str(), reason ? reason : "");
+    if (!ExecuteSqlFile(LoginDatabase, accountPath, "validation_accounts"))
+    {
+        _lastPopulationFailureReason = "validation_account_provisioning_failed";
+        return false;
+    }
+    if (!ExecuteSqlFile(CharacterDatabase, characterPath, "validation_characters"))
+    {
+        _lastPopulationFailureReason = "validation_character_provisioning_failed";
+        return false;
+    }
+    return true;
+}
+
+bool BotWorldPopulationMgr::ResetValidationBotPool(char const* reason)
+{
+    std::string tag = _config.PoolTagFilter;
+    CharacterDatabase.EscapeString(tag);
+    std::string predicate = "p.`enabled` = 1 AND p.`experiment_tags` LIKE '%" + tag + "%'";
+    std::string guidSelect = "SELECT p.`guid` FROM `character_bot_pool` p WHERE " + predicate;
+
+    CharacterDatabase.DirectExecute(("UPDATE `character_bot_pool` p SET p.`in_use` = 0 WHERE " + predicate).c_str());
+    CharacterDatabase.DirectExecute(("UPDATE `characters` c JOIN `character_bot_pool` p ON p.`guid` = c.`guid` SET c.`online` = 0 WHERE " + predicate).c_str());
+    CharacterDatabase.DirectExecute(("DELETE FROM `character_instance` WHERE `guid` IN (" + guidSelect + ")").c_str());
+    CharacterDatabase.DirectExecute(("DELETE gi FROM `group_instance` gi JOIN `groups` g ON g.`guid` = gi.`guid` WHERE g.`leaderGuid` IN (" + guidSelect + ") OR g.`guid` IN (SELECT gm.`guid` FROM `group_member` gm WHERE gm.`memberGuid` IN (" + guidSelect + "))").c_str());
+    CharacterDatabase.DirectExecute(("DELETE gm FROM `group_member` gm WHERE gm.`memberGuid` IN (" + guidSelect + ") OR gm.`guid` IN (SELECT g.`guid` FROM `groups` g WHERE g.`leaderGuid` IN (" + guidSelect + "))").c_str());
+    CharacterDatabase.DirectExecute(("DELETE g FROM `groups` g WHERE g.`leaderGuid` IN (" + guidSelect + ")").c_str());
+
+    TC_LOG_INFO("server", "BotWorld validation prepare reset profile=%s tag=%s reason=%s", _config.Name.c_str(), _config.PoolTagFilter.c_str(), reason ? reason : "");
     return true;
 }
 
@@ -1207,6 +1396,25 @@ std::string BotWorldPopulationMgr::ReloadRuntimeProfiles()
     return RuntimeProfilesJson(ok ? "botauto_profile_reload" : "botauto_profile_reload");
 }
 
+bool BotWorldPopulationMgr::SelectConfiguredRuntimeProfile()
+{
+    std::string configuredProfile = sConfigMgr->GetStringDefault("BotWorld.RuntimeProfile", "");
+    if (configuredProfile.empty())
+        return true;
+
+    EnsureRuntimeProfilesLoaded();
+    auto profileItr = _runtimeProfiles.find(configuredProfile);
+    if (profileItr == _runtimeProfiles.end())
+    {
+        TC_LOG_ERROR("server", "BotWorld configured runtime profile missing profile=%s manifest=%s failure_reason=%s",
+            configuredProfile.c_str(), _profileManifestPath.c_str(), _profileManifestLoadError.empty() ? "unknown_profile" : _profileManifestLoadError.c_str());
+        return false;
+    }
+
+    _selectedProfileName = configuredProfile;
+    return true;
+}
+
 void BotWorldPopulationMgr::Update(uint32 diff)
 {
     if (!_active)
@@ -1454,6 +1662,12 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
     if (_policyModelConfig.Mode != "shadow" && _policyModelConfig.Mode != "assist" && _policyModelConfig.Mode != "control")
         _policyModelConfig.Mode = "shadow";
     ValidatePolicyModelDeployment();
+
+    if (!overrideConfig && !SelectConfiguredRuntimeProfile())
+    {
+        _config.TargetPopulation = 0;
+        return;
+    }
 
     if (overrideConfig)
         ApplyRuntimeConfigOverride(*overrideConfig);
@@ -1748,47 +1962,39 @@ bool BotWorldPopulationMgr::TryReattachValidationBot(WorldBotState& state, Playe
     if (!_config.ValidationRouteEnable || !bot)
         return false;
 
-    Map* botMap = bot->GetMap();
-    uint32 mapId = botMap ? botMap->GetId() : (state.SpawnMapId ? state.SpawnMapId : bot->GetMapId());
-    bool validPosition = MapManager::IsValidMapCoord(mapId, bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), bot->GetOrientation());
-    if (!validPosition && state.SpawnMapId)
+    MarkValidationCohortViolation(state, bot, "validation_artificial_reattach_blocked");
+    TC_LOG_ERROR("server", "BotWorld validation artificial reattach blocked bot=%s context=%s", bot->GetGUID().ToString().c_str(), context ? context : "");
+    return false;
+}
+
+bool BotWorldPopulationMgr::IsValidationCohortMemberInOriginalInstance(WorldBotState const& state, Player const* bot) const
+{
+    if (!_config.ValidationRouteEnable || !state.ValidationCohortLocked || !bot)
+        return true;
+
+    return bot->IsInWorld()
+        && bot->GetMapId() == state.ValidationCohortMapId
+        && bot->GetInstanceId() == state.ValidationCohortInstanceId;
+}
+
+void BotWorldPopulationMgr::MarkValidationCohortViolation(WorldBotState& state, Player const* bot, char const* reason)
+{
+    if (!_config.ValidationRouteEnable || state.ValidationCohortViolation)
+        return;
+
+    state.ValidationCohortViolation = true;
+    state.ValidationCohortViolationReason = reason && *reason ? reason : "validation_cohort_instance_violation";
+    state.ValidationRouteTerminalState = true;
+    state.ValidationRouteTerminalAtMs = NowMs();
+    state.ValidationRouteTerminalReason = "validation_cohort_instance_violation";
+    state.LastDecisionResult = "validation_cohort_instance_violation";
+    state.LastDecisionReason = state.ValidationCohortViolationReason;
+    if (bot)
     {
-        mapId = state.SpawnMapId;
-        bot->Relocate(state.SpawnX, state.SpawnY, state.SpawnZ, state.SpawnO);
-        validPosition = MapManager::IsValidMapCoord(mapId, bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), bot->GetOrientation());
+        TC_LOG_ERROR("server", "BotWorld validation_cohort_instance_violation bot=%s map=%u instance=%u expected_map=%u expected_instance=%u reason=%s",
+            bot->GetGUID().ToString().c_str(), bot->GetMapId(), bot->GetInstanceId(),
+            state.ValidationCohortMapId, state.ValidationCohortInstanceId, state.ValidationCohortViolationReason.c_str());
     }
-
-    if (!botMap && mapId)
-    {
-        botMap = sMapMgr->CreateMap(mapId, bot);
-        bot->SetMap(botMap);
-    }
-
-    bool reattached = false;
-    if (botMap && validPosition)
-    {
-        if (bot->IsInGrid())
-        {
-            bot->AddToWorld();
-            reattached = bot->IsInWorld();
-        }
-        else
-            reattached = botMap->AddPlayerToMap(bot);
-    }
-
-    bool const visibleLog = !reattached || (context && std::string(context) == "diagnose");
-    if (visibleLog)
-        TC_LOG_INFO("server", "BotWorld validation reattach bot=%s context=%s result=%u map=%u instance=%u in_grid=%u in_world=%u valid_position=%u pos=%.3f,%.3f,%.3f",
-            bot->GetGUID().ToString().c_str(), context ? context : "", reattached ? 1 : 0, botMap ? botMap->GetId() : mapId,
-            botMap ? botMap->GetInstanceId() : 0, bot->IsInGrid() ? 1 : 0, bot->IsInWorld() ? 1 : 0, validPosition ? 1 : 0,
-            bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ());
-    else
-        TC_LOG_DEBUG("server", "BotWorld validation reattach bot=%s context=%s result=%u map=%u instance=%u in_grid=%u in_world=%u valid_position=%u pos=%.3f,%.3f,%.3f",
-            bot->GetGUID().ToString().c_str(), context ? context : "", reattached ? 1 : 0, botMap ? botMap->GetId() : mapId,
-            botMap ? botMap->GetInstanceId() : 0, bot->IsInGrid() ? 1 : 0, bot->IsInWorld() ? 1 : 0, validPosition ? 1 : 0,
-            bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ());
-
-    return reattached && bot->IsInWorld();
 }
 
 void BotWorldPopulationMgr::MaybeStartAutoRecordingWindow()
@@ -2122,10 +2328,6 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
 
     uint32 const leaderMapId = leader->GetMapId();
     uint32 const leaderInstanceId = leader->GetInstanceId();
-    float const leaderX = leader->GetPositionX();
-    float const leaderY = leader->GetPositionY();
-    float const leaderZ = leader->GetPositionZ();
-    float const leaderO = leader->GetOrientation();
 
     for (Player* bot : members)
     {
@@ -2160,10 +2362,10 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
 
         if (bot->GetMapId() != leaderMapId || bot->GetInstanceId() != leaderInstanceId)
         {
-            float const offset = float((bot->GetGUID().GetCounter() % 5) + 1);
-            bot->TeleportTo(leaderMapId, leaderX + offset, leaderY + offset, leaderZ, leaderO, TELE_TO_NONE, leaderInstanceId);
-            TC_LOG_INFO("server", "BotWorld validation cohort teleported bot=%s leader=%s map=%u instance=%u",
-                bot->GetGUID().ToString().c_str(), leader->GetGUID().ToString().c_str(), leaderMapId, leaderInstanceId);
+            for (WorldBotState& state : _bots)
+                if (state.Guid == bot->GetGUID())
+                    MarkValidationCohortViolation(state, bot, "validation_cohort_spawned_outside_leader_instance");
+            continue;
         }
     }
 
@@ -2183,6 +2385,13 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
         }
         if (!memberState)
             continue;
+
+        memberState->ValidationCohortLocked = true;
+        memberState->ValidationCohortLeaderGuid = leader->GetGUID();
+        memberState->ValidationCohortGroupGuid = group->GetGUID();
+        memberState->ValidationCohortMapId = leaderMapId;
+        memberState->ValidationCohortInstanceId = leaderInstanceId;
+        memberState->ValidationCohortPhaseMask = 0;
 
         std::string role = GetDungeonRole(bot);
         if (role == "tank")
@@ -2867,6 +3076,8 @@ BotWorldPopulationMgr::DeathRecoveryResult BotWorldPopulationMgr::RecoverDeadBot
         std::string const& mode = scored.Mode;
         if (mode == "configured_center_fallback" && (!policy.CenterFallbackEnabled || !recovery.RepeatedDeath))
             continue;
+        if (_config.ValidationRouteEnable && (mode == "configured_center_fallback" || mode == "nearest_graveyard_or_spirit_healer"))
+            continue;
 
         std::string result;
         bool ok = false;
@@ -2928,6 +3139,12 @@ bool BotWorldPopulationMgr::TrySafeLocalResurrect(Player* bot, std::string& resu
 
 bool BotWorldPopulationMgr::TryNearestGraveyardResurrect(Player* bot, std::string& result) const
 {
+    if (_config.ValidationRouteEnable)
+    {
+        result = "validation_artificial_graveyard_teleport_blocked";
+        return false;
+    }
+
     if (!bot)
     {
         result = "bot_unavailable";
@@ -2975,6 +3192,11 @@ bool BotWorldPopulationMgr::TryLastSafePositionResurrect(WorldBotState& state, P
         float y = fields[2].GetFloat();
         float z = fields[3].GetFloat();
         float o = fields[4].GetFloat();
+        if (_config.ValidationRouteEnable && mapId != bot->GetMapId())
+        {
+            result = "validation_cross_map_safe_position_blocked";
+            return false;
+        }
         bot->ResurrectPlayer(0.7f, false);
         if (mapId == bot->GetMapId())
             bot->NearTeleportTo(x, y, z, o);
@@ -2985,6 +3207,11 @@ bool BotWorldPopulationMgr::TryLastSafePositionResurrect(WorldBotState& state, P
     }
 
     WorldBotState::SafePosition const& position = state.SafePositions.back();
+    if (_config.ValidationRouteEnable && position.MapId != bot->GetMapId())
+    {
+        result = "validation_cross_map_safe_position_blocked";
+        return false;
+    }
     bot->ResurrectPlayer(0.7f, false);
     if (position.MapId == bot->GetMapId())
         bot->NearTeleportTo(position.X, position.Y, position.Z, position.O);
@@ -2996,6 +3223,12 @@ bool BotWorldPopulationMgr::TryLastSafePositionResurrect(WorldBotState& state, P
 
 bool BotWorldPopulationMgr::TryConfiguredCenterDeathFallback(Player* bot, std::string& result) const
 {
+    if (_config.ValidationRouteEnable)
+    {
+        result = "validation_configured_center_teleport_blocked";
+        return false;
+    }
+
     if (!bot)
     {
         result = "bot_unavailable";
@@ -3013,6 +3246,17 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
     Player* bot = GetBot(state);
     if (!bot)
         return;
+
+    if (_config.ValidationRouteEnable)
+    {
+        if (state.ValidationCohortViolation)
+            return;
+        if (!IsValidationCohortMemberInOriginalInstance(state, bot))
+        {
+            MarkValidationCohortViolation(state, bot, "validation_cohort_instance_mismatch");
+            return;
+        }
+    }
 
     _telemetryBuffer.Observe(bot, bot->IsInCombat() ? "combat" : "ambient", nullptr, nullptr, nullptr);
     _telemetryBuffer.FlushClosedClips(_experimentId, _runId, _config.BrainVersion, bot->GetGUID());
@@ -12501,7 +12745,16 @@ BotWorldPopulationMgr::BotDiagnosis BotWorldPopulationMgr::BuildBotDiagnosis(Wor
     bool questBlocked = !state.QuestWork.FailedReason.empty() || !state.LastObjectiveNotFoundReason.empty();
     bool pickupBlocked = state.LastNoQuestReason == "no_pickup_search_candidate";
 
-    if (!bot)
+    if (state.ValidationCohortViolation)
+    {
+        diagnosis.DiagnosisCode = "validation_cohort_instance_violation";
+        diagnosis.Severity = "error";
+        diagnosis.Confidence = 1.0f;
+        diagnosis.Blocker = state.ValidationCohortViolationReason.empty() ? "bot_left_original_validation_instance" : state.ValidationCohortViolationReason;
+        diagnosis.NextExpectedAction = "stop_validation_decisions_for_bot";
+        diagnosis.SuggestedInvestigation = "inspect_validation_cohort_fields_and_spawn_source";
+    }
+    else if (!bot)
     {
         diagnosis.DiagnosisCode = "bot_not_loaded";
         diagnosis.Severity = "error";
@@ -12744,6 +12997,7 @@ std::string BotWorldPopulationMgr::BuildBotDecisionSnapshotJson(WorldBotState co
          << ",\"bot_name\":\"" << JsonEscape(bot ? bot->GetName() : "") << "\"}"
          << ",\"runtime\":{\"active\":" << (_active ? "true" : "false")
          << ",\"mode\":\"" << (_runtimeMode == BotWorldRuntimeMode::AlwaysOnAutonomy ? "always_on_autonomy" : "manual_experiment") << "\""
+         << ",\"spawn_source\":\"" << JsonEscape(state.SpawnSource) << "\""
          << ",\"decision_timer_ms\":" << state.DecisionTimer
          << ",\"last_decision_tick_ms\":" << state.LastDecisionTickMs
          << ",\"time_since_last_decision_ms\":" << (state.LastDecisionTickMs ? nowMs - state.LastDecisionTickMs : 0)
@@ -12753,6 +13007,17 @@ std::string BotWorldPopulationMgr::BuildBotDecisionSnapshotJson(WorldBotState co
          << ",\"distance_moved_since_last_decision\":" << state.LastDecisionDistanceMoved
          << ",\"time_since_last_progress_ms\":" << (state.LastMovementProgressMs ? nowMs - state.LastMovementProgressMs : 0)
          << ",\"time_since_last_path_change_ms\":" << (state.LastPathChangeMs ? nowMs - state.LastPathChangeMs : 0) << "}"
+         << ",\"validation_cohort\":{\"locked\":" << (state.ValidationCohortLocked ? "true" : "false")
+         << ",\"leader_guid\":" << state.ValidationCohortLeaderGuid.GetCounter()
+         << ",\"group_guid\":" << state.ValidationCohortGroupGuid.GetCounter()
+         << ",\"map_id\":" << state.ValidationCohortMapId
+         << ",\"instance_id\":" << state.ValidationCohortInstanceId
+         << ",\"phase_mask\":" << state.ValidationCohortPhaseMask
+         << ",\"current_map_id\":" << (bot ? bot->GetMapId() : 0)
+         << ",\"current_instance_id\":" << (bot ? bot->GetInstanceId() : 0)
+         << ",\"matches_cohort\":" << (IsValidationCohortMemberInOriginalInstance(state, bot) ? "true" : "false")
+         << ",\"violation\":" << (state.ValidationCohortViolation ? "true" : "false")
+         << ",\"violation_reason\":\"" << JsonEscape(state.ValidationCohortViolationReason) << "\"}"
          << ",\"quest\":{\"state\":\"" << JsonEscape(state.CurrentQuestState) << "\""
          << ",\"phase\":\"" << JsonEscape(state.QuestWork.Phase) << "\""
          << ",\"active_quest_id\":" << state.QuestWork.ActiveQuestId

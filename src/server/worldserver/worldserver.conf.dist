@@ -3434,6 +3434,17 @@ PlayerBot.Debug = 1
 #        Description: JSON manifest containing named runtime bot experiment profiles for ".botauto profile".
 #        Default:     "dataset/bot_runtime_profiles/profiles.json"
 #
+#    BotWorld.RuntimeProfile
+#        Description: Named runtime profile selected when BotWorld config is loaded. Used by autostart and
+#                     equivalent to ".botauto start <profile>" for validation hosts.
+#        Default:     ""
+#
+#    BotWorld.ValidationProvisionAccountsSql
+#    BotWorld.ValidationProvisionCharactersSql
+#        Description: Generated validation provisioning SQL applied before named validation profiles start.
+#        Default:     "dataset/validation_provisioning/provision_accounts.sql"
+#                     "dataset/validation_provisioning/provision_characters.sql"
+#
 #    BotWorld.AutoStartRecording
 #        Description: Starts and rotates experiment_bot_runs recording windows while always-on autonomy is active.
 #        Default:     1
@@ -3536,6 +3547,9 @@ BotWorld.Enable = 1
 BotWorld.FastExitAfterShutdown = 1
 BotWorld.AutoStart = 0
 BotWorld.ProfileManifest = "dataset/bot_runtime_profiles/profiles.json"
+BotWorld.RuntimeProfile = ""
+BotWorld.ValidationProvisionAccountsSql = "dataset/validation_provisioning/provision_accounts.sql"
+BotWorld.ValidationProvisionCharactersSql = "dataset/validation_provisioning/provision_characters.sql"
 BotWorld.AutoStartRecording = 1
 BotWorld.AutoRecordingWindowMinutes = 15
 BotWorld.AutoRecordingNamePrefix = "autonomy_window"

@@ -804,6 +804,7 @@ public:
         static std::vector<ChatCommand> botAutoCommandTable =
         {
             { "start",   rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoStartCommand,   "" },
+            { "prepare", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoPrepareCommand, "" },
             { "stop",    rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoStopCommand,    "" },
             { "status",  rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleStatusCommand,      "" },
             { "profiles", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoProfilesCommand, "" },
@@ -913,6 +914,19 @@ private:
         if (handler)
             handler->PSendSysMessage("%s", sBotWorldPopulationMgr->GetStatusJson().c_str());
         return true;
+    }
+
+    static bool HandleAutoPrepareCommand(ChatHandler* handler, char const* args)
+    {
+        std::string profileName = FirstArg(args);
+        std::string result = sBotWorldPopulationMgr->PrepareValidationProfile(profileName);
+        if (handler)
+        {
+            handler->PSendSysMessage("%s", result.c_str());
+            if (result.find("\"ok\":true") == std::string::npos)
+                handler->SetSentErrorMessage(true);
+        }
+        return result.find("\"ok\":true") != std::string::npos;
     }
 
     static bool HandleAutoProfilesCommand(ChatHandler* handler, char const* /*args*/)
@@ -1164,7 +1178,20 @@ public:
     {
         sBotMgr->ResetPoolUseState();
         if (sConfigMgr->GetBoolDefault("BotWorld.AutoStart", false))
+        {
+            std::string configuredProfile = sConfigMgr->GetStringDefault("BotWorld.RuntimeProfile", "");
+            if (!configuredProfile.empty())
+            {
+                std::string selectResult = sBotWorldPopulationMgr->SelectRuntimeProfile(configuredProfile);
+                if (selectResult.find("\"ok\":true") == std::string::npos)
+                {
+                    TC_LOG_ERROR("server", "BotWorld autostart skipped configured_profile=%s result=%s",
+                        configuredProfile.c_str(), selectResult.c_str());
+                    return;
+                }
+            }
             sBotWorldPopulationMgr->StartAutonomy();
+        }
     }
 
     void OnShutdownInitiate(ShutdownExitCode /*code*/, ShutdownMask /*mask*/) override

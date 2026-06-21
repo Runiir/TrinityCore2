@@ -9,12 +9,12 @@ from typing import Any
 try:
     from .common import stable_hash, write_json
     from .extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
-    from .build_validation_provisioning import REQUIRED_EQUIPMENT_SLOTS, load_config
+    from .build_validation_provisioning import REQUIRED_EQUIPMENT_SLOTS, load_config, required_equipment_slots_for
     from .validation_profile_manifests import DEFAULT_COMBAT_LOOT_PROFILE_MANIFEST, load_combat_loot_profile_manifest
 except ImportError:
     from common import stable_hash, write_json
     from extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
-    from build_validation_provisioning import REQUIRED_EQUIPMENT_SLOTS, load_config
+    from build_validation_provisioning import REQUIRED_EQUIPMENT_SLOTS, load_config, required_equipment_slots_for
     from validation_profile_manifests import DEFAULT_COMBAT_LOOT_PROFILE_MANIFEST, load_combat_loot_profile_manifest
 
 
@@ -50,7 +50,7 @@ ARMOR_SUBCLASS_BY_CLASS = {
 }
 
 WEAPON_SUBCLASSES_BY_CLASS = {
-    1: {0, 1, 4, 5, 6, 7, 8, 13},
+    1: {0, 1, 2, 3, 4, 5, 6, 7, 8, 13, 16, 18},
     2: {0, 1, 4, 5, 6, 7, 8},
     3: {0, 1, 2, 3, 6, 7, 8, 10, 18},
     4: {0, 4, 7, 13, 15, 16},
@@ -64,6 +64,7 @@ WEAPON_SUBCLASSES_BY_CLASS = {
 
 SHIELD_CLASSES = {1, 2, 7}
 OFFHAND_WEAPON_CLASSES = {1, 4, 6, 7}
+DUAL_WIELD_CLASS_SPECS = {"assassination_rogue", "enhancement_shaman", "frost_death_knight"}
 
 INVENTORY_TO_EQUIPMENT_SLOTS = {
     1: [0],      # head
@@ -78,22 +79,42 @@ INVENTORY_TO_EQUIPMENT_SLOTS = {
     11: [10, 11],
     12: [12, 13],
     14: [16],    # shield
+    15: [17],    # bow
     16: [14],    # cloak
+    13: [15, 16], # one-handed weapon
     17: [15],    # two-handed weapon
     20: [4],     # robe
     21: [15],    # main hand
     22: [16],    # off hand weapon
     23: [16],    # holdable
+    25: [17],    # thrown
     26: [17],    # ranged/right
     28: [17],    # relic
 }
 
-WEAPON_INVENTORY_TYPES = {13, 14, 17, 21, 22, 23, 25, 26, 28}
+WEAPON_INVENTORY_TYPES = {13, 14, 15, 17, 21, 22, 23, 25, 26, 28}
 GENERAL_ARMOR_INVENTORY_TYPES = {2, 11, 12, 16}
 ARMOR_INVENTORY_TYPES = {1, 3, 5, 6, 7, 8, 9, 10, 20}
 
 DEFAULT_COMBAT_LOOT_PROFILES = load_combat_loot_profile_manifest(DEFAULT_COMBAT_LOOT_PROFILE_MANIFEST)
 STAT_WEIGHTS_BY_ROLE = DEFAULT_COMBAT_LOOT_PROFILES["stat_weights_by_archetype"]
+MAX_PLAYER_ACCESSIBLE_CATA_ITEM_LEVEL = 416
+
+CURATED_BIS_NAMES_BY_SPEC = {
+    "fire_mage": ["Lightning Rod"],
+    "affliction_warlock": ["Lightning Rod"],
+    "elemental_shaman": ["Vagaries of Time", "Ledger of Revolting Rituals"],
+    "assassination_rogue": ["Blade of the Unmaker", "Electrowing Dagger"],
+    "protection_paladin": ["Souldrinker", "Blackhorn's Mighty Bulwark"],
+    "holy_priest": ["Lightning Rod", "Ledger of Revolting Rituals"],
+    "marksmanship_hunter": ["Kiril, Fury of Beasts", "Vishanka, Jaws of the Earth"],
+    "enhancement_shaman": ["No'Kaled, the Elements of Death", "Morningstar of Heroic Will"],
+    "protection_warrior": ["Souldrinker", "Blackhorn's Mighty Bulwark"],
+    "blood_death_knight": ["Gurthalak, Voice of the Deeps"],
+    "restoration_druid": ["Lightning Rod"],
+    "holy_paladin": ["Maw of the Dragonlord", "Ledger of Revolting Rituals"],
+    "discipline_priest": ["Lightning Rod", "Ledger of Revolting Rituals"],
+}
 
 ITEM_FMT = "niiiiiii"
 ITEM_SPARSE_FMT = "niiiffiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiifiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiisssssiiiiiiiiiiiiiiiiiiiiiifiiifii"
@@ -310,6 +331,53 @@ def stat_map(item: dict[str, Any]) -> dict[str, int]:
     return stats
 
 
+def normalize_item_name(value: str) -> str:
+    return " ".join(value.lower().replace("'", "").split())
+
+
+def item_player_accessible(item: dict[str, Any]) -> bool:
+    name = normalize_item_name(str(item.get("Display") or ""))
+    if any(token in name for token in ("test", "debug", "deprecated", "gm ", "zzold")):
+        return False
+    return 1 <= int(item.get("ItemLevel") or 0) <= MAX_PLAYER_ACCESSIBLE_CATA_ITEM_LEVEL and int(item.get("RequiredLevel") or 0) <= 85
+
+
+def curated_items_by_slot(bot: dict[str, Any], items: list[dict[str, Any]]) -> tuple[dict[int, dict[str, Any]], list[str], list[dict[str, Any]]]:
+    wanted_names = CURATED_BIS_NAMES_BY_SPEC.get(str(bot.get("class_spec") or ""), [])
+    if not wanted_names:
+        return {}, [], []
+    by_name: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for item in items:
+        by_name[normalize_item_name(str(item.get("Display") or ""))].append(item)
+
+    resolved: dict[int, dict[str, Any]] = {}
+    missing: list[str] = []
+    rejected: list[dict[str, Any]] = []
+    class_id = int(bot["class"])
+    for wanted in wanted_names:
+        candidates = [
+            item for item in by_name.get(normalize_item_name(wanted), [])
+            if class_allowed(item, class_id) and armor_allowed(item, class_id)
+        ]
+        candidates.sort(key=lambda item: (int(item.get("ItemLevel") or 0), int(item.get("ID") or 0)), reverse=True)
+        selected = None
+        for item in candidates:
+            if item_player_accessible(item):
+                selected = item
+                break
+            rejected.append({"name": wanted, "item_id": int(item.get("ID") or 0), "item_level": int(item.get("ItemLevel") or 0), "reason": "not_player_accessible"})
+        if not selected:
+            missing.append(wanted)
+            continue
+        for slot in INVENTORY_TO_EQUIPMENT_SLOTS.get(int(selected.get("InventoryType") or 0), []):
+            if not weapon_slot_allowed(bot, selected, slot):
+                continue
+            if slot in REQUIRED_EQUIPMENT_SLOTS and slot not in resolved:
+                resolved[slot] = selected
+                break
+    return resolved, missing, rejected
+
+
 def class_allowed(item: dict[str, Any], class_id: int) -> bool:
     mask = int(item.get("AllowableClass") or -1)
     return mask in {-1, 0} or bool(mask & (1 << (class_id - 1)))
@@ -330,6 +398,26 @@ def armor_allowed(item: dict[str, Any], class_id: int) -> bool:
     if inventory_type in ARMOR_INVENTORY_TYPES:
         return subclass == ARMOR_SUBCLASS_BY_CLASS.get(class_id, subclass)
     return inventory_type in INVENTORY_TO_EQUIPMENT_SLOTS
+
+
+def weapon_slot_allowed(bot: dict[str, Any], item: dict[str, Any], slot: int) -> bool:
+    inventory_type = int(item.get("InventoryType") or 0)
+    item_class = int(item.get("ClassID") or 0)
+    subclass = int(item.get("SubclassID") or 0)
+    class_id = int(bot.get("class") or 0)
+    class_spec = str(bot.get("class_spec") or "")
+    if slot == 16 and inventory_type == 13:
+        return class_spec in DUAL_WIELD_CLASS_SPECS
+    if slot == 17:
+        if class_id == 3:
+            return item_class == 2 and inventory_type in {15, 26} and subclass in {2, 3, 18}
+        if class_id in {1, 4}:
+            return item_class == 2 and inventory_type in {15, 25, 26} and subclass in {2, 3, 16, 18}
+        if class_id in {5, 8, 9}:
+            return item_class == 2 and inventory_type == 26 and subclass == 19
+        if class_id in {2, 6, 7, 11}:
+            return item_class == 4 and inventory_type == 28
+    return True
 
 
 def item_score(item: dict[str, Any], weights: dict[str, float]) -> float:
@@ -442,13 +530,17 @@ def choose_loadout(
     profile_manifest = profile_manifest or DEFAULT_COMBAT_LOOT_PROFILES
     weights = stat_weights_for_bot(bot, profile_manifest)
     selected_enchantment = select_enchantment(enchantments or [], weights)
+    curated_slots, missing_curated, rejected_curated = curated_items_by_slot(bot, items)
+    curated_item_ids = {int(item["ID"]) for item in curated_slots.values()}
     candidates_by_slot: dict[int, list[tuple[float, dict[str, Any]]]] = defaultdict(list)
     for item in items:
+        if not item_player_accessible(item):
+            continue
         if not class_allowed(item, class_id) or not armor_allowed(item, class_id):
             continue
         inventory_type = int(item.get("InventoryType") or 0)
         for slot in INVENTORY_TO_EQUIPMENT_SLOTS.get(inventory_type, []):
-            if slot == 15 and inventory_type == 17:
+            if not weapon_slot_allowed(bot, item, slot):
                 continue
             if slot in REQUIRED_EQUIPMENT_SLOTS:
                 candidates_by_slot[slot].append((item_score(item, weights), item))
@@ -456,8 +548,14 @@ def choose_loadout(
     used: set[int] = set()
     loadout = []
     for slot in REQUIRED_EQUIPMENT_SLOTS:
-        ranked = sorted(candidates_by_slot.get(slot, []), key=lambda pair: (pair[0], int(pair[1].get("ItemLevel") or 0), int(pair[1].get("ID") or 0)), reverse=True)
-        selected = next((item for _score, item in ranked if int(item["ID"]) not in used), None)
+        if slot == 16 and any(int(item.get("slot", -1)) == 15 and int(item.get("inventory_type", 0)) == 17 for item in loadout):
+            continue
+        selected = curated_slots.get(slot)
+        if selected and int(selected["ID"]) in used:
+            selected = None
+        if not selected:
+            ranked = sorted(candidates_by_slot.get(slot, []), key=lambda pair: (pair[0], int(pair[1].get("ItemLevel") or 0), int(pair[1].get("ID") or 0)), reverse=True)
+            selected = next((item for _score, item in ranked if int(item["ID"]) not in used), None)
         if not selected:
             continue
         used.add(int(selected["ID"]))
@@ -476,6 +574,8 @@ def choose_loadout(
                 "inventory_type": int(selected.get("InventoryType") or 0),
                 "subclass": int(selected.get("SubclassID") or 0),
                 "source": selected.get("source") or "unknown",
+                "source_label": "curated_tauri_veins_434_player_accessible" if int(selected["ID"]) in curated_item_ids else selected.get("source") or "unknown",
+                "player_accessible": item_player_accessible(selected),
                 "stats": stat_map(selected),
                 "socket_colors": socket_colors,
                 "gem_item_ids": gem_item_ids,
@@ -488,6 +588,8 @@ def choose_loadout(
                 "selection_score": round(item_score(selected, weights), 3),
                 "stat_weight_archetype": role_archetype(bot, profile_manifest),
                 "stat_weight_manifest_hash": profile_manifest["hash"],
+                "curated_missing_source_items": missing_curated,
+                "rejected_high_ilvl_candidates": rejected_curated,
             }
         )
     return loadout
@@ -524,7 +626,7 @@ def build_profiles(
             )
     for profile in profiles.values():
         covered = {int(item["slot"]) for item in profile["equipment"]}
-        profile["missing_slots"] = sorted(set(REQUIRED_EQUIPMENT_SLOTS) - covered)
+        profile["missing_slots"] = sorted(set(required_equipment_slots_for(profile["equipment"])) - covered)
         profile["complete_equipment_slots"] = not profile["missing_slots"]
         profile["gemmed"] = all(not item.get("socket_colors") or item.get("gem_item_ids") for item in profile["equipment"])
         profile["enchanted"] = all(int(item.get("enchant_id") or 0) for item in profile["equipment"])
@@ -541,10 +643,16 @@ def build_profiles(
                 "name": item.get("name", ""),
                 "item_level": int(item.get("item_level") or 0),
                 "source": item.get("source", "unknown"),
+                "source_label": item.get("source_label", item.get("source", "unknown")),
+                "player_accessible": bool(item.get("player_accessible", False)),
                 "selection_score": item.get("selection_score", 0.0),
             }
             for item in profile["equipment"]
         ]
+        profile["selected_item_ids"] = [int(item["item_id"]) for item in profile["equipment"]]
+        profile["all_selected_items_player_accessible"] = all(bool(item.get("player_accessible", False)) for item in profile["equipment"])
+        profile["curated_missing_source_items"] = sorted({name for item in profile["equipment"] for name in item.get("curated_missing_source_items", [])})
+        profile["rejected_high_ilvl_candidates"] = [row for item in profile["equipment"] for row in item.get("rejected_high_ilvl_candidates", [])]
     return profiles
 
 
@@ -563,6 +671,10 @@ def build_report(profiles: dict[str, Any], source_database: dict[str, Any], prof
         "all_equipment_slots_complete": complete == len(profiles),
         "all_gemmed": all(profile["gemmed"] for profile in profiles.values()),
         "all_enchanted": all(profile["enchanted"] for profile in profiles.values()),
+        "all_selected_items_player_accessible": all(profile.get("all_selected_items_player_accessible", False) for profile in profiles.values()),
+        "selected_item_ids": sorted({int(item["item_id"]) for item in selected_items}),
+        "missing_source_failures": {name: profile.get("curated_missing_source_items", []) for name, profile in profiles.items() if profile.get("curated_missing_source_items")},
+        "rejected_high_ilvl_candidates": [row for profile in profiles.values() for row in profile.get("rejected_high_ilvl_candidates", [])],
         "enchant_selection_modes": sorted({profile.get("enchant_selection_mode", "none") for profile in profiles.values()}),
         "gem_selection_modes": sorted({profile.get("gem_selection_mode", "none") for profile in profiles.values()}),
         "enchant_applicability_verified_by_server": False,
@@ -581,7 +693,7 @@ def build_report(profiles: dict[str, Any], source_database: dict[str, Any], prof
             "loot_validation_manifest": profile_manifest.get("loot_validation", {}),
         },
         "source_counts": {
-            "client_db2_items": sum(1 for profile in profiles.values() for item in profile["equipment"] if item.get("source") == "client_db2"),
+            "client_db2_items": sum(1 for profile in profiles.values() for item in profile["equipment"] if item.get("source") in {"client_db2", "hotfix_db"}),
             "hotfix_db_items": sum(1 for profile in profiles.values() for item in profile["equipment"] if item.get("source") == "hotfix_db"),
             "enchanted_items": sum(1 for profile in profiles.values() for item in profile["equipment"] if int(item.get("enchant_id") or 0)),
             "socketed_items": sum(1 for profile in profiles.values() for item in profile["equipment"] if item.get("socket_colors")),

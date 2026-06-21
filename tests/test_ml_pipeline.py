@@ -5512,10 +5512,10 @@ def test_validation_provisioning_generates_reproducible_sql_and_readiness(tmp_pa
     assert "INSERT INTO `characters`.`character_skills`" in sql
     assert "DELETE FROM `characters`.`character_spell`" in sql
     assert "INSERT INTO `characters`.`character_spell`" in sql
-    assert "SELECT c.`guid`, 2061, 1, 0 FROM `characters`.`characters` c WHERE c.`name` = 'ScValHeal'" in sql
-    assert "SELECT c.`guid`, 2050, 1, 0 FROM `characters`.`characters` c WHERE c.`name` = 'ScValHeal'" in sql
-    assert "SELECT c.`guid`, 750, 1, 0 FROM `characters`.`characters` c WHERE c.`name` = 'ScValTank'" in sql
-    assert "SELECT c.`guid`, 9116, 1, 0 FROM `characters`.`characters` c WHERE c.`name` = 'ScValTank'" in sql
+    assert "SELECT c.`guid`, 2061, 1, 0 FROM `characters`.`characters` c WHERE c.`name` = 'Scvalheal'" in sql
+    assert "SELECT c.`guid`, 2050, 1, 0 FROM `characters`.`characters` c WHERE c.`name` = 'Scvalheal'" in sql
+    assert "SELECT c.`guid`, 750, 1, 0 FROM `characters`.`characters` c WHERE c.`name` = 'Scvaltank'" in sql
+    assert "SELECT c.`guid`, 9116, 1, 0 FROM `characters`.`characters` c WHERE c.`name` = 'Scvaltank'" in sql
     assert "INSERT INTO `characters`.`character_glyphs`" in sql
     assert "DELETE FROM `characters`.`item_instance` WHERE `guid` >= 9700000" in sql
     assert manifest["schema"] == "bot_validation_provisioning_manifest_v1"
@@ -5554,6 +5554,38 @@ def test_validation_provisioning_generates_trinity_srp6_account_sql():
     assert "`verifier` = VALUES" not in sql
 
 
+def test_validation_provisioning_rejects_mixed_case_player_names(tmp_path, monkeypatch):
+    config_path = tmp_path / "bad_names.json"
+    config_path.write_text(
+        json.dumps(
+            {
+                "schema": "bot_validation_provisioning_config_v1",
+                "scenarios": [
+                    {
+                        "id": "stonecore_5n",
+                        "start_position": {"map_id": 725, "x": 0, "y": 0, "z": 0},
+                        "bots": [{"account": "SCVALDPSB", "name": "ScValDpsB", "role": "dps", "class": 3}],
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "bot-validation-provisioning",
+            "--config",
+            str(config_path),
+            "--output-dir",
+            str(tmp_path / "out"),
+        ],
+    )
+
+    with pytest.raises(ValueError, match="Scvaldpsb"):
+        provisioning_main()
+
+
 def test_validation_gear_profiles_can_complete_slots_from_item_rows():
     config = {
         "scenarios": [
@@ -5580,9 +5612,10 @@ def test_validation_gear_profiles_can_complete_slots_from_item_rows():
         11: 11,
         12: 12,
         13: 12,
-        14: 16,
-        15: 21,
-        16: 14,
+            14: 16,
+            15: 21,
+            16: 14,
+            17: 28,
     }
     items = []
     for offset, (slot, inventory_type) in enumerate(inv_by_slot.items(), start=1):
@@ -5666,11 +5699,14 @@ def test_validation_gear_profiles_complete_from_local_db2_files():
     assert "dps_intellect" in report["stat_weight_archetypes"]
     assert report["source_counts"]["client_db2_items"] >= 13 * 16
     assert all(not profile["missing_slots"] for profile in profiles.values())
-    assert all(next(item for item in profile["equipment"] if item["slot"] == 15)["inventory_type"] != 17 for profile in profiles.values())
+    assert next(item for item in profiles["blood_death_knight"]["equipment"] if item["slot"] == 15)["name"] == "Gurthalak, Voice of the Deeps"
+    assert next(item for item in profiles["marksmanship_hunter"]["equipment"] if item["slot"] == 15)["name"] == "Kiril, Fury of Beasts"
+    assert next(item for item in profiles["marksmanship_hunter"]["equipment"] if item["slot"] == 17)["name"] == "Vishanka, Jaws of the Earth"
+    assert 16 not in {item["slot"] for item in profiles["blood_death_knight"]["equipment"]}
     assert all(
         next(item for item in profile["equipment"] if item["slot"] == 16)["inventory_type"] != 14
         for profile in profiles.values()
-        if profile["class_id"] not in SHIELD_CLASSES
+        if profile["class_id"] not in SHIELD_CLASSES and 16 in {item["slot"] for item in profile["equipment"]}
     )
     shaman_mainhands = [
         next(item for item in profile["equipment"] if item["slot"] == 15)
@@ -5699,7 +5735,7 @@ def test_validation_provisioning_applies_gear_profiles_to_bots():
     }
     profiles = {
         "protection_paladin": {
-            "equipment": [{"slot": slot, "item_id": 1000 + slot, "enchant_id": 0, "gem_item_ids": []} for slot in [0, 1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]]
+            "equipment": [{"slot": slot, "item_id": 1000 + slot, "enchant_id": 0, "gem_item_ids": []} for slot in [0, 1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]]
         }
     }
 
@@ -5707,7 +5743,7 @@ def test_validation_provisioning_applies_gear_profiles_to_bots():
     report = scenario_report(equipped)
 
     assert equipped["scenarios"][0]["bots"][0]["gear_profile"] == "protection_paladin"
-    assert len(equipped["scenarios"][0]["bots"][0]["equipment"]) == 16
+    assert len(equipped["scenarios"][0]["bots"][0]["equipment"]) == 17
     assert report["scenarios"][0]["gear_missing_slots"]["Tank"] == []
     assert "complete_equipment_slots" not in report["scenarios"][0]["missing"]
     assert "enchants" in report["scenarios"][0]["missing"]
@@ -5753,7 +5789,7 @@ def test_validation_provisioning_database_preflight_reports_missing_accounts(tmp
             {
                 "id": "stonecore_5n",
                 "bots": [
-                    {"account": "SCVALTANK", "name": "ScValTank"},
+                    {"account": "SCVALTANK", "name": "Scvaltank"},
                 ],
             }
         ]

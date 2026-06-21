@@ -10,6 +10,7 @@ WORLD_TEST_CONF ?= trinity-worldserver-test.conf
 BOTWORLD_AUTOSTART ?= 0
 BOTWORLD_AUTOSTART_RECORDING ?= 1
 BOTWORLD_ENABLE ?= 1
+BOTWORLD_RUNTIME_PROFILE ?=
 BOTWORLD_RECORDING_WINDOW_MINUTES ?= 15
 BOTWORLD_TARGET_POPULATION ?= 5
 BOTWORLD_SPAWN_MODE ?= resume_or_race_start
@@ -35,7 +36,7 @@ STUCK_WINDOW_SEC ?= 180
 QUEST_WINDOW_SEC ?= 600
 REWARD_WINDOW_SEC ?= 300
 
-.PHONY: help build binaries runtime-image local-configure local-build local-install db up down logs shell auth world test-configs host-auth host-world host-world-botexp host-world-botexp-real host-world-botexp-watch host-world-botexp-small host-world-botexp-shadow bot-live-validate bot-ml-export bot-ml-build-dataset bot-ml-train bot-ml-evaluate bot-ml-register bot-ml-full clean-db clean-images data-dir require-client extract-maps extract-vmaps assemble-vmaps extract-mmaps extract-assets
+.PHONY: help build binaries runtime-image local-configure local-build local-install db up down logs shell auth world test-configs host-auth host-world host-world-stonecore-5n host-world-blackwing-descent-10n host-world-botexp host-world-botexp-real host-world-botexp-watch host-world-botexp-small host-world-botexp-shadow bot-live-validate bot-ml-export bot-ml-build-dataset bot-ml-train bot-ml-evaluate bot-ml-register bot-ml-full clean-db clean-images data-dir require-client extract-maps extract-vmaps assemble-vmaps extract-mmaps extract-assets
 
 help:
 	@printf '%s\n' \
@@ -57,6 +58,8 @@ help:
 		'  make test-configs Create local host-run test configs' \
 		'  make host-auth    Run host-built authserver with trinity-authserver-test.conf' \
 		'  make host-world   Run host-built worldserver with always-on BotWorld test config' \
+		'  make host-world-stonecore-5n  Run Stonecore 5N validation runtime profile' \
+		'  make host-world-blackwing-descent-10n  Run Blackwing Descent 10N validation runtime profile' \
 		'  make host-world-botexp-small  Run 5 always-on bots with 15-minute recording windows' \
 		'  make host-world-botexp        Run always-on bots with configured recording windows' \
 		'  make host-world-botexp-real   Run real autonomy from saved/race start positions' \
@@ -124,7 +127,7 @@ test-configs:
 	cp src/server/worldserver/worldserver.conf.dist "$(WORLD_TEST_CONF)"
 	perl -0pi -e 's|LoginDatabaseInfo\s*=\s*"127\.0\.0\.1;3306;trinity;trinity;auth"|LoginDatabaseInfo = "172.20.0.2;3306;trinity;trinity;auth"|g' "$(AUTH_TEST_CONF)"
 	perl -0pi -e 's|^DataDir\s*=.*$$|DataDir = "$(DATA_DIR)"|gm; s|^LoginDatabaseInfo\s*=\s*"127\.0\.0\.1;3306;trinity;trinity;auth"$$|LoginDatabaseInfo = "172.20.0.2;3306;trinity;trinity;auth"|gm; s|^WorldDatabaseInfo\s*=\s*"127\.0\.0\.1;3306;trinity;trinity;world"$$|WorldDatabaseInfo = "172.20.0.2;3306;trinity;trinity;world"|gm; s|^CharacterDatabaseInfo\s*=\s*"127\.0\.0\.1;3306;trinity;trinity;characters"$$|CharacterDatabaseInfo = "172.20.0.2;3306;trinity;trinity;characters"|gm; s|^HotfixDatabaseInfo\s*=\s*"127\.0\.0\.1;3306;trinity;trinity;hotfixes"$$|HotfixDatabaseInfo = "172.20.0.2;3306;trinity;trinity;hotfixes"|gm; s|^PlayerBot\.Enable\s*=.*$$|PlayerBot.Enable = 1|gm; s|^Ra\.Enable\s*=.*$$|Ra.Enable = 1|gm; s|^SOAP\.Enabled\s*=.*$$|SOAP.Enabled = 1|gm' "$(WORLD_TEST_CONF)"
-	perl -0pi -e 's|^BotWorld\.AutoStart\s*=.*$$|BotWorld.AutoStart = $(BOTWORLD_AUTOSTART)|gm; s|^BotWorld\.AutoStartRecording\s*=.*$$|BotWorld.AutoStartRecording = $(BOTWORLD_AUTOSTART_RECORDING)|gm; s|^BotWorld\.AutoRecordingWindowMinutes\s*=.*$$|BotWorld.AutoRecordingWindowMinutes = $(BOTWORLD_RECORDING_WINDOW_MINUTES)|gm' "$(WORLD_TEST_CONF)"
+	perl -0pi -e 's|^BotWorld\.AutoStart\s*=.*$$|BotWorld.AutoStart = $(BOTWORLD_AUTOSTART)|gm; s|^BotWorld\.RuntimeProfile\s*=.*$$|BotWorld.RuntimeProfile = "$(BOTWORLD_RUNTIME_PROFILE)"|gm; s|^BotWorld\.AutoStartRecording\s*=.*$$|BotWorld.AutoStartRecording = $(BOTWORLD_AUTOSTART_RECORDING)|gm; s|^BotWorld\.AutoRecordingWindowMinutes\s*=.*$$|BotWorld.AutoRecordingWindowMinutes = $(BOTWORLD_RECORDING_WINDOW_MINUTES)|gm' "$(WORLD_TEST_CONF)"
 	perl -0pi -e 's|^BotWorld\.Enable\s*=.*$$|BotWorld.Enable = $(BOTWORLD_ENABLE)|gm; s|^BotWorld\.TargetPopulation\s*=.*$$|BotWorld.TargetPopulation = $(BOTWORLD_TARGET_POPULATION)|gm; s|^BotWorld\.SpawnMode\s*=.*$$|BotWorld.SpawnMode = "$(BOTWORLD_SPAWN_MODE)"|gm; s|^BotWorld\.AllowConfiguredCenterFallback\s*=.*$$|BotWorld.AllowConfiguredCenterFallback = $(BOTWORLD_ALLOW_CONFIGURED_CENTER_FALLBACK)|gm; s|^BotWorld\.UseSavedPosition\s*=.*$$|BotWorld.UseSavedPosition = $(BOTWORLD_USE_SAVED_POSITION)|gm; s|^BotWorld\.AllowGrinding\s*=.*$$|BotWorld.AllowGrinding = $(BOTWORLD_ALLOW_GRINDING)|gm; s|^BotWorld\.QuestFirst\s*=.*$$|BotWorld.QuestFirst = $(BOTWORLD_QUEST_FIRST)|gm; s|^BotWorld\.GrindOnlyWhenNoQuestAvailable\s*=.*$$|BotWorld.GrindOnlyWhenNoQuestAvailable = $(BOTWORLD_GRIND_ONLY_WHEN_NO_QUEST_AVAILABLE)|gm; s|^BotWorld\.DeathRecoveryMode\s*=.*$$|BotWorld.DeathRecoveryMode = "safe_local"\nBotWorld.RespawnMode = "safe_local"|gm; s|^BotProgression\.AllowQuesting\s*=.*$$|BotProgression.AllowQuesting = 1\nBotWorld.AllowQuesting = 1|gm; s|^BotProgression\.AllowDungeons\s*=.*$$|BotProgression.AllowDungeons = 0|gm; s|^BotProgression\.AllowRaids\s*=.*$$|BotProgression.AllowRaids = 0|gm; s|^BotLearning\.Enable\s*=.*$$|BotLearning.Enable = 1|gm' "$(WORLD_TEST_CONF)"
 	perl -0pi -e 's|^BotPolicyModel\.Enable\s*=.*$$|BotPolicyModel.Enable = $(BOTPOLICYMODEL_ENABLE)|gm; s|^BotPolicyModel\.Mode\s*=.*$$|BotPolicyModel.Mode = "$(BOTPOLICYMODEL_MODE)"|gm; s|^BotPolicyModel\.Version\s*=.*$$|BotPolicyModel.Version = "$(BOTPOLICYMODEL_VERSION)"|gm; s|^BotPolicyModel\.ScoreWeight\s*=.*$$|BotPolicyModel.ScoreWeight = $(BOTPOLICYMODEL_SCORE_WEIGHT)|gm; s|^BotPolicyModel\.FailClosed\s*=.*$$|BotPolicyModel.FailClosed = $(BOTPOLICYMODEL_FAIL_CLOSED)|gm' "$(WORLD_TEST_CONF)"
 
@@ -136,6 +139,12 @@ host-world: local-configure db test-configs
 	cmake --build $(BUILD_DIR) --target worldserver -j"$(JOBS)"
 	ulimit -c unlimited && $(BUILD_DIR)/src/server/worldserver/worldserver --config "$(WORLD_TEST_CONF)"
 
+host-world-stonecore-5n:
+	$(MAKE) host-world BOTWORLD_ENABLE=1 BOTWORLD_AUTOSTART=1 BOTWORLD_RUNTIME_PROFILE=stonecore_5n BOTPOLICYMODEL_ENABLE=0
+
+host-world-blackwing-descent-10n:
+	$(MAKE) host-world BOTWORLD_ENABLE=1 BOTWORLD_AUTOSTART=1 BOTWORLD_RUNTIME_PROFILE=blackwing_descent_10n BOTPOLICYMODEL_ENABLE=0
+
 host-world-botexp-small:
 	$(MAKE) host-world BOTWORLD_ENABLE=1 BOTWORLD_AUTOSTART=1 BOTWORLD_AUTOSTART_RECORDING=1 BOTWORLD_RECORDING_WINDOW_MINUTES=15 BOTWORLD_TARGET_POPULATION=5 BOTWORLD_SPAWN_MODE=resume_or_race_start BOTWORLD_ALLOW_CONFIGURED_CENTER_FALLBACK=0 BOTWORLD_USE_SAVED_POSITION=1 BOTWORLD_QUEST_FIRST=1 BOTWORLD_ALLOW_GRINDING=0 BOTWORLD_GRIND_ONLY_WHEN_NO_QUEST_AVAILABLE=1 BOTPOLICYMODEL_ENABLE=0
 
@@ -146,7 +155,7 @@ host-world-botexp-real:
 	$(MAKE) host-world BOTWORLD_ENABLE=1 BOTWORLD_AUTOSTART=1 BOTWORLD_AUTOSTART_RECORDING=1 BOTWORLD_RECORDING_WINDOW_MINUTES=$(BOTWORLD_RECORDING_WINDOW_MINUTES) BOTWORLD_TARGET_POPULATION=$(BOTWORLD_TARGET_POPULATION) BOTWORLD_SPAWN_MODE=resume_or_race_start BOTWORLD_ALLOW_CONFIGURED_CENTER_FALLBACK=0 BOTWORLD_USE_SAVED_POSITION=1 BOTPOLICYMODEL_ENABLE=0
 
 host-world-botexp-watch:
-	$(MAKE) host-world BOTWORLD_ENABLE=1 BOTWORLD_AUTOSTART=1 BOTWORLD_AUTOSTART_RECORDING=1 BOTWORLD_RECORDING_WINDOW_MINUTES=$(BOTWORLD_RECORDING_WINDOW_MINUTES) BOTWORLD_TARGET_POPULATION=$(BOTWORLD_TARGET_POPULATION) BOTWORLD_SPAWN_MODE=near_player BOTWORLD_ALLOW_CONFIGURED_CENTER_FALLBACK=0 BOTWORLD_USE_SAVED_POSITION=0 BOTPOLICYMODEL_ENABLE=0
+	$(MAKE) host-world BOTWORLD_ENABLE=1 BOTWORLD_AUTOSTART=1 BOTWORLD_RUNTIME_PROFILE=watch_near_player BOTWORLD_AUTOSTART_RECORDING=1 BOTWORLD_RECORDING_WINDOW_MINUTES=$(BOTWORLD_RECORDING_WINDOW_MINUTES) BOTWORLD_TARGET_POPULATION=$(BOTWORLD_TARGET_POPULATION) BOTWORLD_SPAWN_MODE=near_player BOTWORLD_ALLOW_CONFIGURED_CENTER_FALLBACK=0 BOTWORLD_USE_SAVED_POSITION=0 BOTPOLICYMODEL_ENABLE=0
 
 host-world-botexp-shadow:
 	$(MAKE) host-world BOTWORLD_ENABLE=1 BOTWORLD_AUTOSTART=1 BOTWORLD_AUTOSTART_RECORDING=1 BOTWORLD_RECORDING_WINDOW_MINUTES=$(BOTWORLD_RECORDING_WINDOW_MINUTES) BOTWORLD_TARGET_POPULATION=$(BOTWORLD_TARGET_POPULATION) BOTWORLD_SPAWN_MODE=resume_or_race_start BOTWORLD_ALLOW_CONFIGURED_CENTER_FALLBACK=0 BOTWORLD_USE_SAVED_POSITION=1 BOTPOLICYMODEL_ENABLE=1 BOTPOLICYMODEL_MODE=shadow BOTPOLICYMODEL_VERSION=$(MODEL_VERSION) BOTPOLICYMODEL_FAIL_CLOSED=1

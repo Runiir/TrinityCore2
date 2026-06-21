@@ -14,7 +14,7 @@ try:
         load_gem_properties,
         load_spell_item_enchantments,
     )
-    from .build_validation_provisioning import REQUIRED_EQUIPMENT_SLOTS, apply_gear_profiles, load_config, load_gear_profiles, scenario_report
+    from .build_validation_provisioning import REQUIRED_EQUIPMENT_SLOTS, apply_gear_profiles, load_config, load_gear_profiles, required_equipment_slots_for, scenario_report
     from .common import stable_hash, write_json
     from .extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
 except ImportError:
@@ -26,7 +26,7 @@ except ImportError:
         load_gem_properties,
         load_spell_item_enchantments,
     )
-    from build_validation_provisioning import REQUIRED_EQUIPMENT_SLOTS, apply_gear_profiles, load_config, load_gear_profiles, scenario_report
+    from build_validation_provisioning import REQUIRED_EQUIPMENT_SLOTS, apply_gear_profiles, load_config, load_gear_profiles, required_equipment_slots_for, scenario_report
     from common import stable_hash, write_json
     from extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
 
@@ -131,7 +131,7 @@ def validate_payloads(config: dict[str, Any], dbc_dir: Path, hotfix_url: str | N
         for bot in scenario.get("bots", []):
             equipment = bot.get("equipment", [])
             covered = {int(item.get("slot", -1)) for item in equipment}
-            missing_slots = sorted(set(REQUIRED_EQUIPMENT_SLOTS) - covered)
+            missing_slots = sorted(set(required_equipment_slots_for(equipment)) - covered)
             if missing_slots:
                 failures.append({"check": "equipment_slots", "bot": bot.get("name"), "missing_slots": missing_slots})
             for item in equipment:
