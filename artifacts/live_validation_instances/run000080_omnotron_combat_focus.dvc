@@ -1,0 +1,6 @@
+outs:
+- md5: 3125021832067e78ebd796b9618502c1.dir
+  size: 1302699
+  nfiles: 9
+  hash: md5
+  path: run000080_omnotron_combat_focus

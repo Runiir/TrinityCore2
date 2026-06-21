@@ -5887,12 +5887,42 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return true;
         return std::find(_config.ValidationRouteAlternateTargetEntries.begin(), _config.ValidationRouteAlternateTargetEntries.end(), entry) != _config.ValidationRouteAlternateTargetEntries.end();
     };
+    auto isValidationRouteAlternateTargetEntry = [this](uint32 entry) -> bool
+    {
+        if (!entry)
+            return false;
+        return std::find(_config.ValidationRouteAlternateTargetEntries.begin(), _config.ValidationRouteAlternateTargetEntries.end(), entry) != _config.ValidationRouteAlternateTargetEntries.end();
+    };
+    auto isValidationRouteCombatEntry = [this, &isValidationRouteAlternateTargetEntry](uint32 entry) -> bool
+    {
+        if (!entry)
+            return false;
+        if (isValidationRouteAlternateTargetEntry(entry))
+            return true;
+        if (_config.ValidationRouteOpenerTargetEntry && entry == _config.ValidationRouteOpenerTargetEntry)
+            return true;
+        if (_config.ValidationRouteTargetEntry && entry == _config.ValidationRouteTargetEntry)
+        {
+            bool targetIsActivationController = _config.ValidationRouteActivationActionEntry
+                && entry == _config.ValidationRouteActivationActionEntry
+                && !_config.ValidationRouteAlternateTargetEntries.empty();
+            return !targetIsActivationController;
+        }
+        return false;
+    };
     auto isValidationRouteScriptTarget = [&isValidationRouteEntry](Creature const* creature) -> bool
     {
         if (!creature)
             return false;
 
         return isValidationRouteEntry(creature->GetEntry());
+    };
+    auto isValidationRouteCombatTarget = [&isValidationRouteCombatEntry](Creature const* creature) -> bool
+    {
+        if (!creature)
+            return false;
+
+        return isValidationRouteCombatEntry(creature->GetEntry());
     };
     auto clearValidationRouteKilledFocus = [this, &state](ObjectGuid killedGuid)
     {
@@ -5931,7 +5961,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
         state.ValidationRouteUnresolvedFocusHoldCount = 0;
     };
-    auto recordValidationRouteBossKill = [this, &state, bot, &power, stage, activity, &clearValidationRouteKilledFocus, &isValidationRouteScriptTarget](Unit* killedTarget, char const* assistResult) -> bool
+    auto recordValidationRouteBossKill = [this, &state, bot, &power, stage, activity, &clearValidationRouteKilledFocus, &isValidationRouteCombatTarget](Unit* killedTarget, char const* assistResult) -> bool
     {
         if (!killedTarget)
             return false;
@@ -5941,8 +5971,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (killedTarget->IsAlive())
         {
             Creature* creature = killedTarget->ToCreature();
-            bool routeScriptTarget = isValidationRouteScriptTarget(creature);
-            if (_config.ValidationRouteKind == "boss" && routeScriptTarget)
+            bool routeCombatTarget = isValidationRouteCombatTarget(creature);
+            if (_config.ValidationRouteKind == "boss" && routeCombatTarget)
             {
                 Unit::Kill(bot, killedTarget);
                 if (killedTarget->IsAlive())
@@ -6005,16 +6035,16 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         MaybeAdvanceValidationRouteManifest();
         return true;
     };
-    auto routeUsableCombatTarget = [this, bot, &isValidationRouteScriptTarget](Unit* candidate) -> Unit*
+    auto routeUsableCombatTarget = [this, bot, &isValidationRouteCombatTarget](Unit* candidate) -> Unit*
     {
-        if (!candidate || !candidate->IsAlive())
+        if (!candidate || !candidate->IsAlive() || !bot || !bot->IsValidAttackTarget(candidate))
             return nullptr;
 
         Creature const* creature = candidate->ToCreature();
         if (!creature)
             return nullptr;
 
-        if (isValidationRouteScriptTarget(creature))
+        if (isValidationRouteCombatTarget(creature))
             return candidate;
 
         if (creature->IsDungeonBoss() || creature->isWorldBoss())
@@ -6381,6 +6411,27 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         _validationRouteFocusY = focus->GetPositionY();
         _validationRouteFocusZ = focus->GetPositionZ();
         _validationRouteFocusSeenMs = NowMs();
+    };
+    auto makeExistingValidationRouteCombatReady = [this, bot, &rememberValidationRouteFocus, &isValidationRouteCombatTarget](Creature* creature) -> Unit*
+    {
+        if (!_validationRouteActivationApplied || _config.ValidationRouteKind != "boss" || !bot || !bot->IsAlive() || !creature || !creature->IsAlive())
+            return nullptr;
+        if (!isValidationRouteCombatTarget(creature))
+            return nullptr;
+
+        creature->SetFaction(FACTION_MONSTER);
+        creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE | UNIT_FLAG_IMMUNE_TO_PC | UNIT_FLAG_IMMUNE_TO_NPC);
+        creature->SetReactState(REACT_AGGRESSIVE);
+        creature->SetInCombatWith(bot);
+        bot->SetInCombatWith(creature);
+        if (creature->AI())
+            creature->AI()->AttackStart(bot);
+
+        if (!bot->IsValidAttackTarget(creature))
+            return nullptr;
+
+        rememberValidationRouteFocus(creature);
+        return creature;
     };
     auto tryValidationRouteActivation = [this, &state, bot, &power, stage, activity, &isValidationRouteScriptTarget, &rememberValidationRouteFocus](Unit* seenTarget, char const* reason) -> bool
     {
@@ -7437,6 +7488,13 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 seenRouteTargetDistance = distance;
             }
 
+            if (!isValidationRouteCombatTarget(creature))
+            {
+                if (targetSearchResult == "target_not_found")
+                    targetSearchResult = "target_seen_activation_target";
+                continue;
+            }
+
             if (!creature->IsAlive())
             {
                 targetSearchResult = "target_seen_dead";
@@ -7451,6 +7509,14 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
             if (!bot->IsValidAttackTarget(creature))
             {
+                if (Unit* readied = makeExistingValidationRouteCombatReady(creature))
+                {
+                    routeTarget = readied;
+                    bestDistance = distance;
+                    targetSearchResult = "target_ready_after_activation";
+                    continue;
+                }
+
                 targetSearchResult = "target_seen_not_attackable";
                 continue;
             }
@@ -7474,7 +7540,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         std::string raw = BuildRawJson(bot, seenRouteTarget);
         std::string semantic = BuildSemanticJson(bot, seenRouteTarget, "validation_route_script_target_blocked", &power, stage, activity);
         RecordEvent(state, bot, "validation_route_target_search", seenRouteTarget, targetSearchResult.c_str(), raw.c_str(), semantic.c_str(), seenRouteTargetDistance, _config.ValidationRouteTargetEntry);
-        recordValidationRouteBossKill(seenRouteTarget, "boss_route_script_target_blocked_teacher_assist");
+        state.LastNoProgressReason = targetSearchResult;
         action = "validation_route_recovery";
         return true;
     }
@@ -7486,7 +7552,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         std::string raw = BuildRawJson(bot, seenRouteTarget);
         std::string semantic = BuildSemanticJson(bot, seenRouteTarget, "validation_route_script_target_dead", &power, stage, activity);
         RecordEvent(state, bot, "validation_route_target_search", seenRouteTarget, targetSearchResult.c_str(), raw.c_str(), semantic.c_str(), seenRouteTargetDistance, _config.ValidationRouteTargetEntry);
-        recordValidationRouteBossKill(seenRouteTarget, "boss_route_target_seen_dead_teacher_assist");
+        clearValidationRouteKilledFocus(seenRouteTarget->GetGUID());
+        state.LastNoProgressReason = targetSearchResult;
         action = "validation_route_recovery";
         return true;
     }
