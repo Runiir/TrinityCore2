@@ -394,6 +394,7 @@ def test_quest_first_portfolio_routing_surface():
     assert "validation_route_prerequisite_no_progress" in mgr
     assert "boss_route_no_health_progress" in mgr
     assert "boss_route_slow_progress_teacher_assist" in mgr
+    assert 'contextText.rfind("route_target_", 0) == 0' in mgr
     assert "recordValidationRouteBossKill" in mgr
     assert "boss_route_script_target_blocked_teacher_assist" in mgr
     assert "boss_route_target_seen_dead_teacher_assist" in mgr
@@ -402,9 +403,10 @@ def test_quest_first_portfolio_routing_surface():
     assert "target_seen_not_attackable" in mgr
     assert "boss_killed" in mgr
     assert "raid_boss_killed" in mgr
-    assert 'std::string(context).rfind("boss_route_", 0) == 0 ? 2 : 4' in mgr
+    assert "uint32 noProgressThreshold = bossRouteNoProgress ? 2 : 4" in mgr
     assert "validation_route_activation" in mgr
     assert "boss_route_early_activation" in mgr
+    assert "boss_route_no_focus_activation" in mgr
     assert "advance_to_boss_route_no_focus" in mgr
     assert "hasValidationRouteActivation" in mgr
     assert "routeDistance <= 220.0f" in mgr

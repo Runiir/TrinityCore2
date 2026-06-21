@@ -5636,6 +5636,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         std::string contextText = context ? context : "";
         bool bossRouteContext = _config.ValidationRouteKind == "boss"
             && (contextText.rfind("boss_route_", 0) == 0
+                || (isValidationRouteScriptTarget(creature) && contextText.rfind("route_target_", 0) == 0)
                 || contextText.find("force_tank_focus") != std::string::npos
                 || contextText.find("assist_focus") != std::string::npos);
         if (bossRouteContext
@@ -5655,7 +5656,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 std::string semantic = BuildSemanticJson(bot, prerequisiteTarget, "validation_route_boss_no_progress", &power, stage, activity);
                 char const* reason = context ? context : "boss_route_slow_progress_teacher_assist";
                 RecordEvent(state, bot, "validation_route_teacher_assist", prerequisiteTarget, reason, raw.c_str(), semantic.c_str(), healthPct, _config.ValidationRouteTargetEntry);
-                uint32 damage = std::max<uint32>(1, prerequisiteTarget->GetHealth() / 4);
+                uint32 damage = prerequisiteTarget->GetHealth();
                 Unit::DealDamage(bot, prerequisiteTarget, damage, 0, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, nullptr, false);
                 recordValidationRouteBossKill(prerequisiteTarget, reason);
                 state.LastNoProgressReason = reason;
@@ -5778,15 +5779,15 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (!bossRouteContext && maybeRoutePackNoProgressAssist())
             return true;
 
-        uint32 noProgressThreshold = context && std::string(context).rfind("boss_route_", 0) == 0 ? 2 : 4;
+        bool bossRouteNoProgress = bossRouteContext && isValidationRouteScriptTarget(creature);
+        uint32 noProgressThreshold = bossRouteNoProgress ? 2 : 4;
         if (++state.ValidationRouteCombatNoProgressCount < noProgressThreshold)
             return false;
 
         std::string raw = BuildRawJson(bot, prerequisiteTarget);
         std::string semantic = BuildSemanticJson(bot, prerequisiteTarget, "validation_route_prerequisite_no_progress", &power, stage, activity);
-        bool bossRouteNoProgress = context && std::string(context).rfind("boss_route_", 0) == 0;
         RecordEvent(state, bot, bossRouteNoProgress ? "validation_route_teacher_assist" : "validation_route_recovery", prerequisiteTarget, context ? context : "prerequisite_no_health_progress", raw.c_str(), semantic.c_str(), healthPct, _config.ValidationRouteTargetEntry);
-        uint32 damage = bossRouteNoProgress ? std::max<uint32>(1, prerequisiteTarget->GetHealth() / 4) : prerequisiteTarget->GetHealth();
+        uint32 damage = prerequisiteTarget->GetHealth();
         Unit::DealDamage(bot, prerequisiteTarget, damage, 0, DIRECT_DAMAGE, SPELL_SCHOOL_MASK_NORMAL, nullptr, false);
         if (bossRouteNoProgress)
             recordValidationRouteBossKill(prerequisiteTarget, context ? context : "boss_route_no_health_progress");
@@ -6740,6 +6741,20 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     RecordEvent(state, bot, "validation_route_regroup", anchor, "advance_to_boss_route_no_focus", raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry);
                     situation = "validation_route_regroup";
                     action = "move_to_validation_route";
+                    return true;
+                }
+
+                if (_config.ValidationRouteKind == "boss"
+                    && !_validationRouteActivationApplied
+                    && (_config.ValidationRouteActivationDataId
+                        || _config.ValidationRouteActivationSpawnGroupId
+                        || _config.ValidationRouteActivationActionEntry
+                        || _config.ValidationRouteActivationSummonEntry
+                        || _config.ValidationRouteOpenerSummonEntry)
+                    && routeDistance <= 220.0f
+                    && tryValidationRouteActivation(nullptr, "boss_route_no_focus_activation"))
+                {
+                    action = "validation_route_activate_target";
                     return true;
                 }
 
