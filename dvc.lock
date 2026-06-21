@@ -146,8 +146,8 @@ stages:
     deps:
     - path: dataset/live_validation_scenario_reports_built
       hash: md5
-      md5: b21e2251b5efa9ca0f010ba6e9812705.dir
-      size: 30014
+      md5: c6203a6bf9361d89b7435f44c78c6a4e.dir
+      size: 30120
       nfiles: 3
     - path: dataset/validation_scenarios
       hash: md5
@@ -489,21 +489,21 @@ stages:
       nfiles: 5
     - path: tools/bot_ml/build_live_scenario_reports.py
       hash: md5
-      md5: 52a49c9a3897f3ae9caab2fe0ecb7947
-      size: 27810
+      md5: daabe99a5e1a244ee50203c79424430a
+      size: 28754
     - path: tools/bot_ml/common.py
       hash: md5
       md5: 8b4aaef751f98fac4ad24680793a813d
       size: 5304
     - path: tools/bot_ml/run_live_bot_validation.py
       hash: md5
-      md5: e6f6b0e9f65c98416a46de883848d644
-      size: 110218
+      md5: 8d470f559e386f50ef5ffbc426e64c30
+      size: 112643
     outs:
     - path: dataset/live_validation_scenario_reports_built
       hash: md5
-      md5: b21e2251b5efa9ca0f010ba6e9812705.dir
-      size: 30014
+      md5: c6203a6bf9361d89b7435f44c78c6a4e.dir
+      size: 30120
       nfiles: 3
   validation_run_plan:
     cmd: python -m tools.bot_ml.build_validation_run_plan 
@@ -544,18 +544,18 @@ stages:
       size: 102801
     - path: dataset/live_validation_scenario_reports_built
       hash: md5
-      md5: b21e2251b5efa9ca0f010ba6e9812705.dir
-      size: 30014
+      md5: c6203a6bf9361d89b7435f44c78c6a4e.dir
+      size: 30120
       nfiles: 3
     - path: tools/bot_ml/run_live_bot_validation.py
       hash: md5
-      md5: e6f6b0e9f65c98416a46de883848d644
-      size: 110218
+      md5: 8d470f559e386f50ef5ffbc426e64c30
+      size: 112643
     outs:
     - path: dataset/live_validation_combined
       hash: md5
-      md5: d675d9f06173aeba42fb5cf3ee158b33.dir
-      size: 238458
+      md5: 116e8962f0963d3ceb1e76de78fab6f8.dir
+      size: 238647
       nfiles: 3
   validation_run_status:
     cmd: python -m tools.bot_ml.build_validation_run_status --run-plan 
@@ -565,8 +565,8 @@ stages:
     deps:
     - path: dataset/live_validation_scenario_reports_built
       hash: md5
-      md5: b21e2251b5efa9ca0f010ba6e9812705.dir
-      size: 30014
+      md5: c6203a6bf9361d89b7435f44c78c6a4e.dir
+      size: 30120
       nfiles: 3
     - path: dataset/validation_run_plan/manifest.json
       hash: md5

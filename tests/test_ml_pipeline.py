@@ -2873,6 +2873,56 @@ def test_live_scenario_report_builder_counts_stonecore_summary_boss_kills(tmp_pa
     assert stonecore["clear_complete_blockers"] == ["missing_uninterrupted_full_clear_report"]
 
 
+def test_live_scenario_report_builder_accepts_manifest_backed_uninterrupted_clear(tmp_path):
+    scenario_dir = tmp_path / "validation_scenarios"
+    write_jsonl(
+        scenario_dir / "validation_scenarios.jsonl",
+        [
+            {
+                "scenario_id": "stonecore_5n",
+                "instance": "The Stonecore",
+                "map_id": 725,
+                "difficulty": "normal_5man",
+                "provisioning_ready": True,
+                "boss_count": 1,
+                "required_evidence": ["party_formation", "pulls"],
+            }
+        ],
+    )
+    write_jsonl(
+        scenario_dir / "validation_routes.jsonl",
+        [
+            {"scenario_id": "stonecore_5n", "kind": "trash", "step": 1, "label": "entrance packs", "route_node_id": "stonecore_trash"},
+            {"scenario_id": "stonecore_5n", "kind": "boss", "step": 2, "label": "Corborus", "route_node_id": "stonecore_corborus"},
+        ],
+    )
+    live_report = {
+        "source_live_report": "stonecore_uninterrupted.json",
+        "validation_context": {"scenario_id": "stonecore_5n"},
+        "validation_route_manifest": {"schema": "bot_live_validation_route_manifest_v1", "scenario_id": "stonecore_5n", "route_count": 2},
+        "trace_entries": 6,
+        "trace": {"entries": [{"action": "trash_action"}, {"action": "boss_started"}, {"action": "boss_killed"}]},
+        "summary": {"boss_kills": 1, "trash_pulls": 1},
+        "evidence": {
+            "failures": 0,
+            "boss_kill_evidence": 1,
+            "trash_pulls": 1,
+            "validation_evidence_counts": {"party_formation": 1, "pulls": 2},
+        },
+        "failure_labels": [],
+        "failure_reason": None,
+    }
+
+    stonecore = build_live_scenario_reports(live_report, scenario_dir)["stonecore_5n"]
+
+    assert stonecore["clear_complete"] is True
+    assert stonecore["completion_evidence_mode"] == "uninterrupted_live_clear"
+    assert stonecore["completion_claim_valid"] is True
+    assert stonecore["observed_uninterrupted_full_clear_signal"] is True
+    assert stonecore["source_segments"] == []
+    assert stonecore["scenario_evidence_mode"] == "generic_live_trace_inference"
+
+
 def test_live_scenario_report_builder_aggregates_segmented_raid_progress_without_full_clear(tmp_path):
     scenario_dir = tmp_path / "validation_scenarios"
     write_jsonl(
@@ -4794,6 +4844,78 @@ def test_live_bot_validation_route_sequence_dry_run_writes_ordered_child_command
     assert "--validation-segment-id' '01_entrance_packs" in commands
     assert "--validation-route-node-id' 'stonecore_corborus" in commands
     assert "stonecore_missing" not in commands
+
+
+def test_live_bot_validation_route_manifest_dry_run_writes_scenario_scoped_config(tmp_path, monkeypatch, capsys):
+    scenario_dir = tmp_path / "validation_scenarios"
+    scenario_dir.mkdir()
+    write_jsonl(
+        scenario_dir / "validation_routes.jsonl",
+        [
+            {
+                "scenario_id": "stonecore_5n",
+                "route_node_id": "stonecore_entry",
+                "step": 1,
+                "kind": "trash",
+                "label": "entrance packs",
+                "map_id": 725,
+                "x": 903.255,
+                "y": 985.352,
+                "z": 317.198,
+                "source_entry": 42696,
+                "coordinates_valid": True,
+                "expected_bot_count": 5,
+            },
+            {
+                "scenario_id": "stonecore_5n",
+                "route_node_id": "stonecore_corborus",
+                "step": 2,
+                "kind": "boss",
+                "label": "Corborus",
+                "map_id": 725,
+                "x": 1120.0,
+                "y": 882.0,
+                "z": 300.0,
+                "source_entry": 43438,
+                "coordinates_valid": True,
+            },
+        ],
+    )
+    base_config = tmp_path / "worldserver.conf"
+    base_config.write_text("BotWorld.AutoStart = 1\n", encoding="utf-8")
+    output_dir = tmp_path / "live"
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "bot-live-validate",
+            "--dry-run",
+            "--config",
+            str(base_config),
+            "--validation-route-manifest",
+            "--validation-scenario-id",
+            "stonecore_5n",
+            "--validation-scenario-dir",
+            str(scenario_dir),
+            "--output-dir",
+            str(output_dir),
+        ],
+    )
+
+    assert live_validation_main() == 0
+    capsys.readouterr()
+    report = json.loads((output_dir / "report.json").read_text(encoding="utf-8"))
+    generated_config = (output_dir / "worldserver.validation.conf").read_text(encoding="utf-8")
+
+    assert report["validation_context"] == {"scenario_id": "stonecore_5n"}
+    assert report["validation_route"]["route_node_id"] == "stonecore_entry"
+    assert report["validation_route_manifest"]["route_count"] == 2
+    assert report["validation_route_manifest"]["expected_segments"] == ["01_entrance_packs", "02_corborus"]
+    assert Path(report["validation_route_manifest_path"]).name == "validation_route_manifest.json"
+    assert "BotWorld.ValidationRoute.ManifestPath" in generated_config
+    assert 'BotWorld.ValidationRoute.AdvanceMode = "terminal"' in generated_config
+    assert 'BotWorld.ValidationRoute.NodeId = "stonecore_entry"' in generated_config
+    assert "BotWorld.TargetPopulation = 5" in generated_config
 
 
 def test_lane_config_generates_per_lane_db_clones(tmp_path):

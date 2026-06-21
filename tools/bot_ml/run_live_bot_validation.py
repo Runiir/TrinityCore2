@@ -138,6 +138,25 @@ def load_validation_routes_for_scenario(scenario_dir: Path, scenario_id: str) ->
     return rows
 
 
+def validation_route_manifest_payload(scenario_id: str, routes: list[dict[str, Any]]) -> dict[str, Any]:
+    return {
+        "schema": "bot_live_validation_route_manifest_v1",
+        "scenario_id": scenario_id,
+        "route_count": len(routes),
+        "expected_segments": [route_segment_output_name(route) for route in routes],
+        "advance_mode": "terminal",
+        "routes": routes,
+    }
+
+
+def write_validation_route_manifest(output_dir: Path, scenario_id: str, routes: list[dict[str, Any]]) -> tuple[Path, dict[str, Any]]:
+    payload = validation_route_manifest_payload(scenario_id, routes)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    manifest_path = output_dir / "validation_route_manifest.json"
+    write_json(manifest_path, payload)
+    return manifest_path, payload
+
+
 def route_segment_output_name(route: dict[str, Any]) -> str:
     step = int(route.get("step") or 0)
     label = str(route.get("label") or route.get("route_node_id") or "segment")
@@ -200,9 +219,15 @@ def upsert_trinity_config(text: str, key: str, value: str) -> str:
     return text.rstrip() + "\n" + line + "\n"
 
 
-def write_validation_config(base_config: Path, output_dir: Path, pool_tag: str = "", validation_route: dict[str, Any] | None = None) -> Path:
+def write_validation_config(
+    base_config: Path,
+    output_dir: Path,
+    pool_tag: str = "",
+    validation_route: dict[str, Any] | None = None,
+    validation_route_manifest_path: Path | None = None,
+) -> Path:
     route = validation_route or {}
-    if not pool_tag and not route:
+    if not pool_tag and not route and not validation_route_manifest_path:
         return base_config
     output_dir.mkdir(parents=True, exist_ok=True)
     generated = output_dir / "worldserver.validation.conf"
@@ -217,6 +242,9 @@ def write_validation_config(base_config: Path, output_dir: Path, pool_tag: str =
     text = upsert_trinity_config(text, "BotWorld.AutoStart", "1")
     if pool_tag:
         text = upsert_trinity_config(text, "BotWorld.PoolTagFilter", f'"{pool_tag.replace(chr(34), "")}"')
+    if validation_route_manifest_path:
+        text = upsert_trinity_config(text, "BotWorld.ValidationRoute.ManifestPath", f'"{str(validation_route_manifest_path).replace(chr(34), "")}"')
+        text = upsert_trinity_config(text, "BotWorld.ValidationRoute.AdvanceMode", '"terminal"')
     if route:
         expected_bot_count = int(route.get("expected_bot_count") or 0)
         if expected_bot_count > 0:
@@ -2062,6 +2090,7 @@ def main() -> int:
     parser.add_argument("--validation-route-step", type=int, default=0, help="Route step number this live validation run is measuring.")
     parser.add_argument("--validation-mechanic-profile", default="", help="Mechanic profile associated with this live validation segment.")
     parser.add_argument("--validation-scenario-dir", type=Path, default=Path("dataset/validation_scenarios"), help="Directory containing validation_routes.jsonl for route-directed live validation.")
+    parser.add_argument("--validation-route-manifest", action="store_true", help="For a scenario-level uninterrupted run, write the ordered route manifest and configure the first route without segment context.")
     parser.add_argument("--validation-route-sequence", action="store_true", help="For a scenario-level run, execute executable route nodes in manifest order and write an aggregate sequence report.")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--input-log", type=Path)
@@ -2112,10 +2141,19 @@ def main() -> int:
 
     validation_context = validation_context_from_args(args)
     validation_route = load_validation_route(args.validation_scenario_dir, validation_context)
+    validation_route_manifest: dict[str, Any] = {}
+    validation_route_manifest_path: Path | None = None
+    if args.validation_route_manifest:
+        if not args.validation_scenario_id:
+            raise SystemExit("--validation-route-manifest requires --validation-scenario-id")
+        manifest_routes = load_validation_routes_for_scenario(args.validation_scenario_dir, args.validation_scenario_id)
+        validation_route_manifest_path, validation_route_manifest = write_validation_route_manifest(args.output_dir, args.validation_scenario_id, manifest_routes)
+        if not validation_route and manifest_routes:
+            validation_route = manifest_routes[0]
     pool_tag_filter = str(validation_context.get("scenario_id") or (bot_pool_tags[0] if bot_pool_tags else ""))
     effective_config = args.config
     if args.transport == "process" and not args.input_log:
-        effective_config = write_validation_config(args.config, args.output_dir, pool_tag_filter, validation_route)
+        effective_config = write_validation_config(args.config, args.output_dir, pool_tag_filter, validation_route, validation_route_manifest_path)
     config_autostart = trinity_config_bool(effective_config, "BotWorld.AutoStart", False)
     send_start_command = not args.no_start and (args.force_start_command or not config_autostart)
     script = command_script(selector=args.selector, trace_limit=args.trace_limit, start=send_start_command, stop=args.stop, exit_server=args.transport == "process")
@@ -2159,6 +2197,8 @@ def main() -> int:
             "base_config": str(args.config),
             "pool_tag_filter": pool_tag_filter,
             "validation_route": validation_route,
+            "validation_route_manifest": validation_route_manifest,
+            "validation_route_manifest_path": str(validation_route_manifest_path or ""),
             "transport": args.transport,
             "soap_url": args.soap_url if args.transport == "soap" else "",
             "duration_policy": args.duration_policy,
@@ -2241,6 +2281,8 @@ def main() -> int:
     report["base_config"] = str(args.config)
     report["pool_tag_filter"] = pool_tag_filter
     report["validation_route"] = validation_route
+    report["validation_route_manifest"] = validation_route_manifest
+    report["validation_route_manifest_path"] = str(validation_route_manifest_path or "")
     report["start_command"] = send_start_command
     report["preparation"] = preparation
     report["validation_context"] = validation_context

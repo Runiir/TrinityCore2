@@ -274,7 +274,19 @@ def infer_report(report: dict[str, Any], scenario: dict[str, Any], routes: list[
     missing_segment_rows = missing_segments(expected_segments, source_segments)
     complete_segment_coverage = bool(expected_segments) and not missing_segment_rows
     segmented_evidence = evidence_mode == "route_segment_context" and bool(expected_segments)
-    full_clear_signal = stage_passed(report, full_clear_stage) or bool(report.get("clear_complete"))
+    explicit_full_clear_signal = stage_passed(report, full_clear_stage) or bool(report.get("clear_complete"))
+    route_manifest = report.get("validation_route_manifest") if isinstance(report.get("validation_route_manifest"), dict) else {}
+    route_manifest_scenario_id = str(route_manifest.get("scenario_id") or "")
+    observed_uninterrupted_full_clear_signal = (
+        route_manifest_scenario_id == scenario_id
+        and not segmented_evidence
+        and not route_node_id
+        and expected_bosses > 0
+        and boss_kills >= expected_bosses
+        and evidence_complete
+        and (trash_pulls > 0 or not any(route.get("kind") == "trash" for route in routes))
+    )
+    full_clear_signal = explicit_full_clear_signal or observed_uninterrupted_full_clear_signal
     natural_full_clear = (
         not segmented_evidence
         and full_clear_signal
@@ -356,6 +368,7 @@ def infer_report(report: dict[str, Any], scenario: dict[str, Any], routes: list[
         "evidence_complete": evidence_complete,
         "segment_results": segment_results,
         "natural_full_clear_evidence": natural_full_clear,
+        "observed_uninterrupted_full_clear_signal": observed_uninterrupted_full_clear_signal,
         "attached_full_clear_evidence": attached_full_clear,
         "completion_evidence_mode": completion_evidence_mode,
         "completion_claim_valid": clear_complete,
@@ -452,6 +465,7 @@ def merge_report_rows(left: dict[str, Any], right: dict[str, Any]) -> dict[str, 
             "evidence_complete": evidence_complete,
             "segment_results": segment_results,
             "natural_full_clear_evidence": natural_full_clear,
+            "observed_uninterrupted_full_clear_signal": bool(left.get("observed_uninterrupted_full_clear_signal") or right.get("observed_uninterrupted_full_clear_signal")),
             "attached_full_clear_evidence": attached_full_clear,
             "completion_evidence_mode": completion_evidence_mode,
             "completion_claim_valid": clear_complete,

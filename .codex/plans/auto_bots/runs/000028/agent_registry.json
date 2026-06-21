@@ -1,0 +1,19 @@
+{
+  "schema": "orchestrator_agent_registry_v1",
+  "agents": [
+    {
+      "id": "worker_uninterrupted_route_runtime",
+      "role": "worker",
+      "status": "completed",
+      "complexity": "large",
+      "model": "gpt-5.5",
+      "reasoning_effort": "high",
+      "jsonl_path": "/home/runiir/Games/trinity-cata/.codex/plans/auto_bots/runs/000028/worker_uninterrupted_route_runtime.jsonl",
+      "stderr_path": "/home/runiir/Games/trinity-cata/.codex/plans/auto_bots/runs/000028/worker_uninterrupted_route_runtime.stderr",
+      "last_message_path": "/home/runiir/Games/trinity-cata/.codex/plans/auto_bots/runs/000028/worker_uninterrupted_route_runtime.last_message.md",
+      "prompt_path": "/home/runiir/Games/trinity-cata/.codex/plans/auto_bots/runs/000028/worker_uninterrupted_route_runtime_prompt.md",
+      "started_at_unix": 1782013185,
+      "completed_at_unix": 1782013674
+    }
+  ]
+}
