@@ -819,6 +819,14 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         "MaybeAdvanceValidationRouteManifest();",
         "return true;",
     )
+    assert_ordered(
+        route_objective,
+        'bool routeTargetKill = isValidationRouteScriptTarget(creature);',
+        '_validationRouteManifestAdvanceReason = "trash_route_target_killed";',
+        'RecordEvent(state, bot, "dungeon_trash_cleared", nullptr, "trash_route_target_killed"',
+        "MaybeAdvanceValidationRouteManifest();",
+    )
+    assert "uint32 routeTargetNoProgressThreshold = bot->GetMap() && bot->GetMap()->IsRaid() ? 2 : 5;" in route_objective
     assert "bool _validationRouteManifestComplete = false;" in mgr_header
     assert_ordered(
         advance_manifest,

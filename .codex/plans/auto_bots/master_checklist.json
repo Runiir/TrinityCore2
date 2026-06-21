@@ -1,6 +1,6 @@
 {
   "all_passed": false,
-  "checklist_hash": "9145843382ea04fb62722bf5275276ea59262a3c00467ebf1d3663f60450bf85",
+  "checklist_hash": "b7134be60bb2c6499b58f66447e8ef058270e5028bc00f784f191929fd22466f",
   "deliverables": [
     {
       "deliverable": "movement_smoke",
@@ -112,17 +112,17 @@
     },
     {
       "deliverable": "raid_trash",
-      "evidence_artifact": "artifacts/live_validation_instances/blackwing_descent_uninterrupted_full_clear_r1/report.json",
-      "failure_label": "validation_route_death_loop,scenario_clear_not_complete,missing_required_evidence,failure_labels_present",
+      "evidence_artifact": "artifacts/live_validation_instances/blackwing_descent_uninterrupted_full_clear_r2/report.json",
+      "failure_label": "",
       "followup_lane": "",
       "lane": "blackwing_descent_10n",
       "reviewer": "",
-      "status": "review"
+      "status": "accepted"
     },
     {
       "deliverable": "raid_boss",
-      "evidence_artifact": "artifacts/live_validation_instances/blackwing_descent_uninterrupted_full_clear_r1/report.json",
-      "failure_label": "validation_route_death_loop,scenario_clear_not_complete,missing_required_evidence,failure_labels_present",
+      "evidence_artifact": "artifacts/live_validation_instances/blackwing_descent_uninterrupted_full_clear_r2/report.json",
+      "failure_label": "validation_route_death_loop,missing_boss_kill_evidence,scenario_clear_not_complete,failure_labels_present",
       "followup_lane": "",
       "lane": "blackwing_descent_10n",
       "reviewer": "",
@@ -130,8 +130,8 @@
     },
     {
       "deliverable": "full_blackwing_descent_clear",
-      "evidence_artifact": "artifacts/live_validation_instances/blackwing_descent_uninterrupted_full_clear_r1/report.json",
-      "failure_label": "validation_route_death_loop,scenario_clear_not_complete,missing_required_evidence,failure_labels_present",
+      "evidence_artifact": "artifacts/live_validation_instances/blackwing_descent_uninterrupted_full_clear_r2/report.json",
+      "failure_label": "validation_route_death_loop,missing_boss_kill_evidence,scenario_clear_not_complete,failure_labels_present",
       "followup_lane": "blackwing_descent_10n_uninterrupted_full_clear",
       "lane": "blackwing_descent_10n",
       "reviewer": "",
