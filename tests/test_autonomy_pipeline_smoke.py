@@ -15,6 +15,7 @@ PLAYER_BOT_TYPES = ROOT / "src/server/game/Bots/BotTypes.cpp"
 PLAYER_BOT_ACTION_PROFILE = ROOT / "src/server/game/Bots/BotClassSpecActionProfile.cpp"
 PLAYER_BOT_EXECUTOR = ROOT / "src/server/game/Bots/BotActionExecutor.cpp"
 BOT_MGR_HEADER = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h"
+STONECORE_ROTATION_SQL = ROOT / "sql/custom/world/2026_06_21_00_bot_rotation_profiles.sql"
 BOT_POLICY = ROOT / "src/server/game/Bots/BotTelemetryPolicy.cpp"
 BOT_BUFFER = ROOT / "src/server/game/Bots/BotTelemetryBuffer.cpp"
 BOT_SEGMENTS = ROOT / "src/server/game/Bots/BotExperimentCoordinator.cpp"
@@ -149,6 +150,93 @@ def test_playerbot_runtime_roles_drive_universal_profile_combat():
     assert "if (!action.Valid)" in executor
     assert "bot->GetPower(bot->GetPowerType())" in executor
     assert "target != bot && !bot->IsValidAttackTarget(target, spellInfo)" in executor
+
+
+def test_validation_blockers_require_matching_resolution_and_trace_episode_fields():
+    mgr = read(BOT_MGR)
+    header = read(BOT_MGR_HEADER)
+    blocked = function_body(mgr, "void BotWorldPopulationMgr::MarkBotBlocked")
+    unstuck = function_body(mgr, "bool BotWorldPopulationMgr::TryResolveBotBlocker")
+    execute_profile = function_body(mgr, "BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction")
+    trace = function_body(mgr, "void BotWorldPopulationMgr::RecordDecisionTrace")
+    diagnose = function_body(mgr, "std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson")
+
+    for symbol in [
+        "BlockedEpisodeId",
+        "BlockedFirstReason",
+        "BlockedResolution",
+        "BlockedResolvedBy",
+        "BlockedResolvedMs",
+    ]:
+        assert symbol in header
+
+    assert "++state.BlockedEpisodeId" in blocked
+    assert "Blocked: \" + state.BlockedFirstReason" in blocked
+    assert "reason == resolver" in unstuck
+    assert "hunter_pet_missing" in unstuck
+    assert "movement_progress" in unstuck
+    assert "TryResolveBotBlocker(*state, bot, \"profile_action_valid\")" in execute_profile
+    assert "MarkBotUnstuck(*state, bot, action.DebugName.c_str())" not in execute_profile
+    assert "entry.BlockedEpisodeId = state.BlockedEpisodeId" in trace
+    assert "blocked_first_reason" in diagnose
+    assert "blocked_resolution" in diagnose
+
+
+def test_validation_route_readiness_buffs_party_and_hunter_pet_without_fallbacks():
+    mgr = read(BOT_MGR)
+    readiness = function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteReadiness")
+    route_objective = function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    trash = function_body(mgr, "BotWorldPopulationMgr::DungeonTrashActionResult BotWorldPopulationMgr::TryDungeonTrash")
+
+    for spell_id in ["25780", "31801", "465", "20217", "54428", "13165", "883", "982", "1130", "34477"]:
+        assert spell_id in readiness
+
+    for buff_key in [
+        "battle_shout_ready",
+        "commanding_shout_ready",
+        "power_word_fortitude_ready",
+        "shadow_protection_ready",
+        "horn_of_winter_ready",
+        "arcane_brilliance_ready",
+        "dark_intent_ready",
+        "mark_of_the_wild_ready",
+    ]:
+        assert buff_key in readiness
+
+    assert "if (!bot || bot->IsInCombat())" in readiness
+    assert "_config.ValidationRouteEnable || !bot" not in readiness
+    assert "ActiveBuffRequirement" in readiness
+    assert "blessing_of_kings_ready" in readiness
+    assert "std::string(requirement.PartyWide ? \"missing_party_buff:\" : \"missing_self_buff:\") + requirement.Key" in readiness
+    assert "hunter_pet_missing" in readiness
+    assert "hunter_pet_dead" in readiness
+    assert "validation_route_readiness_misdirection" in readiness
+    assert "for (GroupReference* itr = group->GetFirstMember()" in readiness
+    assert "member->HasAura(auraId)" in readiness
+    assert "validation_route_readiness_party_buff" in readiness
+    assert "TryValidationRouteReadiness(state, bot, target" in route_objective
+    assert "TryValidationRouteReadiness(state, bot, groupTarget" in trash
+    assert "AttackStop" not in readiness
+    assert "CombatStop" not in readiness
+
+
+def test_stonecore_rotation_sql_declares_buffs_hunter_builder_and_aoe_gate():
+    sql = read(STONECORE_ROTATION_SQL)
+
+    for token in [
+        "25780, 'buff', 'righteous_fury",
+        "31801, 'buff', 'seal_of_truth",
+        "465, 'buff', 'devotion_aura",
+        "20217, 'buff', 'blessing_of_kings",
+        "13165, 'buff', 'aspect_of_the_hawk",
+        "883, 'buff', 'call_pet",
+        "34477, 'buff', 'misdirection",
+        "56641, 'builder', 'steady_shot,focus_builder",
+    ]:
+        assert token in sql
+
+    assert "77767, 'builder'" not in sql
+    assert "2120, 'aoe', 'flamestrike,aoe', 0.90, 0, 3, 4" in sql
 
 
 def test_server_start_autonomy_enabled_spawns_from_pool_without_center_requirement():

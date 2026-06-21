@@ -74,6 +74,13 @@ INSERT INTO `bot_rotation_profile` (`class_id`, `spec_tag`, `role`, `resource_ty
 (3, 'marksmanship', 'dps', 'focus', 'ranged', 'ranged', 'ranged', 12, 35, 1, 'stonecore_5n_cata_guide_seed', 'initial focused coverage for stonecore_5n; insert more rows for other specs'),
 (7, 'enhancement', 'dps', 'mana_maelstrom', 'melee', 'melee', 'melee', 0, 5, 1, 'stonecore_5n_cata_guide_seed', 'initial focused coverage for stonecore_5n; insert more rows for other specs');
 
+INSERT INTO `bot_rotation_action` (`profile_id`, `sort_order`, `spell_id`, `category`, `mechanic_tags`, `survival_weight`, `priority_bucket`, `min_enemies`, `target_selector`, `movement_directive`, `auto_attack_mode`, `maintain_aura_id`, `refresh_aura_below_ms`) VALUES
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=2 AND `spec_tag`='protection' AND `role`='tank'), 1, 25780, 'buff', 'righteous_fury,self,threat,prepull_required', 1.00, 0, 1, 'self', 'melee', 'melee', 25780, 300000),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=2 AND `spec_tag`='protection' AND `role`='tank'), 2, 31801, 'buff', 'seal_of_truth,self,threat,prepull_required', 0.95, 0, 1, 'self', 'melee', 'melee', 31801, 300000),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=2 AND `spec_tag`='protection' AND `role`='tank'), 3, 465, 'buff', 'devotion_aura,self,prepull_required', 0.85, 0, 1, 'self', 'melee', 'melee', 465, 300000),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=2 AND `spec_tag`='protection' AND `role`='tank'), 4, 20217, 'buff', 'blessing_of_kings,party,prepull_required', 0.85, 0, 1, 'party', 'melee', 'melee', 20217, 300000),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=2 AND `spec_tag`='protection' AND `role`='tank'), 5, 54428, 'buff', 'divine_plea,self,prepull_holy_power', 0.70, 0, 1, 'self', 'melee', 'melee', 54428, 0);
+
 INSERT INTO `bot_rotation_action` (`profile_id`, `sort_order`, `spell_id`, `category`, `mechanic_tags`, `damage_weight`, `healing_weight`, `threat_weight`, `mitigation_weight`, `survival_weight`, `priority_bucket`, `min_enemies`, `max_enemies`, `max_target_health_pct`, `max_self_health_pct`, `required_self_aura`, `forbidden_target_aura`, `requires_interruptible_target`, `requires_target_not_victim`, `requires_melee_range`) VALUES
 ((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=2 AND `spec_tag`='protection' AND `role`='tank'), 10, 62124, 'taunt', 'hand_of_reckoning,taunt', 0, 0, 1.00, 0, 0.30, 1, 1, 0, 1, 1, 0, 0, 0, 1, 0),
 ((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=2 AND `spec_tag`='protection' AND `role`='tank'), 20, 96231, 'interrupt', 'rebuke,interrupt', 0.15, 0, 0, 0, 0.20, 1, 1, 0, 1, 1, 0, 0, 1, 0, 0),
@@ -105,6 +112,11 @@ INSERT INTO `bot_rotation_action` (`profile_id`, `sort_order`, `spell_id`, `cate
 ((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=8 AND `spec_tag`='fire' AND `role`='dps'), 60, 2136, 'spender', 'fire_blast,instant', 0.70, 0, 5, 1, 0, 0, 0, 'enemy', 'ranged', 'none', 12, 35, 1, 0);
 
 INSERT INTO `bot_rotation_action` (`profile_id`, `sort_order`, `spell_id`, `category`, `mechanic_tags`, `damage_weight`, `priority_bucket`, `min_enemies`, `max_target_health_pct`, `forbidden_target_aura`, `target_selector`, `movement_directive`, `auto_attack_mode`, `min_range`, `max_range`, `requires_ranged_range`) VALUES
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=3 AND `spec_tag`='marksmanship' AND `role`='dps'), 1, 13165, 'buff', 'aspect_of_the_hawk,self,prepull_required', 0.20, 0, 1, 1, 0, 'self', 'ranged', 'ranged', 12, 35, 0),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=3 AND `spec_tag`='marksmanship' AND `role`='dps'), 2, 883, 'buff', 'call_pet,self,prepull_required', 0.20, 0, 1, 1, 0, 'self', 'ranged', 'ranged', 12, 35, 0),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=3 AND `spec_tag`='marksmanship' AND `role`='dps'), 3, 982, 'buff', 'revive_pet,self,prepull_required', 0.20, 0, 1, 1, 0, 'self', 'ranged', 'ranged', 12, 35, 0),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=3 AND `spec_tag`='marksmanship' AND `role`='dps'), 4, 34477, 'buff', 'misdirection,tank,prepull_threat', 0.25, 0, 1, 1, 0, 'tank', 'ranged', 'ranged', 12, 35, 0),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=3 AND `spec_tag`='marksmanship' AND `role`='dps'), 5, 1130, 'debuff', 'hunters_mark,target,prepull', 0.35, 0, 1, 1, 1130, 'enemy', 'ranged', 'ranged', 12, 35, 1),
 ((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=3 AND `spec_tag`='marksmanship' AND `role`='dps'), 10, 1978, 'dot', 'serpent_sting,dot', 0.88, 1, 1, 1, 1978, 'enemy', 'ranged', 'ranged', 12, 35, 1),
 ((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=3 AND `spec_tag`='marksmanship' AND `role`='dps'), 20, 53209, 'spender', 'chimera_shot,focus,sting_refresh', 1.00, 1, 1, 1, 0, 'enemy', 'ranged', 'ranged', 12, 35, 1),
 ((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=3 AND `spec_tag`='marksmanship' AND `role`='dps'), 30, 53351, 'execute', 'kill_shot,execute', 1.00, 1, 1, 0.20, 0, 'enemy', 'ranged', 'ranged', 12, 35, 1),

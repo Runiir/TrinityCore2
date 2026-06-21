@@ -26,6 +26,7 @@
 #include "ObjectAccessor.h"
 #include "ObjectMgr.h"
 #include "PathGenerator.h"
+#include "Pet.h"
 #include "Player.h"
 #include "Quests/QuestDef.h"
 #include "Random.h"
@@ -3099,17 +3100,25 @@ void BotWorldPopulationMgr::MarkBotBlocked(WorldBotState& state, Player* bot, ch
     if (!state.Blocked)
     {
         state.Blocked = true;
+        ++state.BlockedEpisodeId;
+        state.BlockedFirstReason = blockedReason;
         state.BlockedReason = blockedReason;
+        state.BlockedResolution = blockedReason;
+        state.BlockedResolvedBy.clear();
         state.BlockedStartMs = NowMs();
+        state.BlockedResolvedMs = 0;
         state.BlockedMessageEmitted = false;
         state.UnstuckMessageEmitted = false;
     }
     else
+    {
         state.BlockedReason = blockedReason;
+        state.BlockedResolution = blockedReason;
+    }
 
     if (bot && !state.BlockedMessageEmitted)
     {
-        bot->Say("Blocked: " + blockedReason, LANG_UNIVERSAL);
+        bot->Say("Blocked: " + state.BlockedFirstReason, LANG_UNIVERSAL);
         state.BlockedMessageEmitted = true;
     }
 }
@@ -3123,11 +3132,42 @@ void BotWorldPopulationMgr::MarkBotUnstuck(WorldBotState& state, Player* bot, ch
     if (bot && !state.UnstuckMessageEmitted)
         bot->Say("Unstuck: " + unstuckReason, LANG_UNIVERSAL);
 
+    state.BlockedResolvedBy = unstuckReason;
+    state.BlockedResolvedMs = NowMs();
     state.Blocked = false;
     state.BlockedReason.clear();
+    state.BlockedResolution.clear();
     state.BlockedStartMs = 0;
     state.BlockedMessageEmitted = false;
     state.UnstuckMessageEmitted = true;
+}
+
+bool BotWorldPopulationMgr::TryResolveBotBlocker(WorldBotState& state, Player* bot, char const* resolvedBy) const
+{
+    if (!state.Blocked)
+        return false;
+
+    std::string reason = state.BlockedResolution.empty() ? state.BlockedReason : state.BlockedResolution;
+    std::string resolver = resolvedBy && *resolvedBy ? resolvedBy : "";
+    bool resolved = false;
+    if (reason == resolver)
+        resolved = true;
+    else if ((reason == "stuck_no_fallback" || reason == "validation_route_stuck_no_fallback") && resolver == "movement_progress")
+        resolved = true;
+    else if (reason.rfind("missing_self_buff:", 0) == 0 && resolver == reason.substr(std::string("missing_self_buff:").size()))
+        resolved = true;
+    else if (reason.rfind("missing_party_buff:", 0) == 0 && resolver == reason.substr(std::string("missing_party_buff:").size()))
+        resolved = true;
+    else if (reason == "hunter_pet_missing" && resolver == "hunter_pet_ready")
+        resolved = true;
+    else if (reason == "hunter_pet_dead" && resolver == "hunter_pet_ready")
+        resolved = true;
+    else if (reason == "no_valid_profile_action" && resolver == "profile_action_valid")
+        resolved = true;
+
+    if (resolved)
+        MarkBotUnstuck(state, bot, resolver.c_str());
+    return resolved;
 }
 
 BotWorldPopulationMgr::BotDeathRecoveryPolicy BotWorldPopulationMgr::BuildDeathRecoveryPolicy() const
@@ -3472,7 +3512,7 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
     if (moved >= 0.2f || combatOrCasting)
         state.LastMovementProgressMs = NowMs();
     if (moved >= 0.2f)
-        MarkBotUnstuck(state, bot, "movement_progress");
+        TryResolveBotBlocker(state, bot, "movement_progress");
     if (!combatOrCasting && moving && moved < 0.2f)
         state.StuckTimer += diff;
     else
@@ -7844,6 +7884,16 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         }
         return true;
     }
+    {
+        DungeonTrashActionResult readinessResult;
+        if (TryValidationRouteReadiness(state, bot, target, power, stage, activity, readinessResult))
+        {
+            situation = "validation_route_readiness";
+            action = readinessResult.Action.empty() ? "validation_route_readiness_audit" : readinessResult.Action;
+            target = readinessResult.Target;
+            return true;
+        }
+    }
     if (tryValidationRouteMovementCheck(target))
         return true;
     if (_config.ValidationRouteKind != "boss"
@@ -9666,6 +9716,9 @@ BotWorldPopulationMgr::DungeonTrashActionResult BotWorldPopulationMgr::TryDungeo
         return result;
     }
 
+    if (TryValidationRouteReadiness(state, bot, groupTarget, power, stage, activity, result))
+        return result;
+
     state.TargetGuid = groupTarget->GetGUID();
 
     uint32 interruptSpell = SelectInterruptSpell(bot);
@@ -9876,6 +9929,189 @@ bool BotWorldPopulationMgr::TryCastFriendlySpell(Player* bot, Unit* target, uint
         return false;
 
     return bot->CastSpell(target, spellId, false) == SPELL_CAST_OK;
+}
+
+bool BotWorldPopulationMgr::TryValidationRouteReadiness(WorldBotState& state, Player* bot, Unit* pullTarget, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, DungeonTrashActionResult& result)
+{
+    if (!bot || bot->IsInCombat())
+        return false;
+
+    struct ActiveBuffRequirement
+    {
+        uint8 ClassId;
+        char const* Role;
+        uint32 SpellId;
+        uint32 AuraId;
+        char const* Key;
+        bool PartyWide;
+    };
+
+    static ActiveBuffRequirement const requirements[] =
+    {
+        { CLASS_WARRIOR, nullptr, 6673, 6673, "battle_shout_ready", true },
+        { CLASS_WARRIOR, nullptr, 469, 469, "commanding_shout_ready", true },
+        { CLASS_PALADIN, "tank", 25780, 25780, "righteous_fury_ready", false },
+        { CLASS_PALADIN, "tank", 31801, 31801, "seal_of_truth_ready", false },
+        { CLASS_PALADIN, "tank", 465, 465, "devotion_aura_ready", false },
+        { CLASS_PALADIN, nullptr, 20217, 20217, "blessing_of_kings_ready", true },
+        { CLASS_PALADIN, nullptr, 19740, 19740, "blessing_of_might_ready", true },
+        { CLASS_HUNTER, nullptr, 13165, 13165, "aspect_of_the_hawk_ready", false },
+        { CLASS_PRIEST, nullptr, 79104, 79104, "power_word_fortitude_ready", true },
+        { CLASS_PRIEST, nullptr, 79106, 79106, "shadow_protection_ready", true },
+        { CLASS_DEATH_KNIGHT, nullptr, 57330, 57330, "horn_of_winter_ready", true },
+        { CLASS_SHAMAN, nullptr, 8075, 8075, "strength_of_earth_totem_ready", false },
+        { CLASS_SHAMAN, nullptr, 3738, 3738, "wrath_of_air_totem_ready", false },
+        { CLASS_SHAMAN, nullptr, 8227, 8227, "flametongue_totem_ready", false },
+        { CLASS_MAGE, nullptr, 79057, 79057, "arcane_brilliance_ready", true },
+        { CLASS_WARLOCK, nullptr, 85767, 85767, "dark_intent_ready", true },
+        { CLASS_DRUID, nullptr, 79060, 79060, "mark_of_the_wild_ready", true },
+    };
+
+    auto castSelf = [&](uint32 spellId, char const* readyReason, char const* blockedReason) -> bool
+    {
+        if (bot->HasAura(spellId))
+        {
+            TryResolveBotBlocker(state, bot, readyReason);
+            return false;
+        }
+        if (!bot->HasSpell(spellId))
+        {
+            MarkBotBlocked(state, bot, blockedReason);
+            return true;
+        }
+        if (TryCastFriendlySpell(bot, bot, spellId))
+        {
+            result.Action = "validation_route_readiness_buff";
+            result.SpellId = spellId;
+            result.Target = bot;
+            std::string raw = BuildRawJson(bot, pullTarget);
+            std::string semantic = BuildSemanticJson(bot, pullTarget, "validation_route_readiness", &power, stage, activity);
+            RecordEvent(state, bot, "validation_route_readiness", bot, readyReason, raw.c_str(), semantic.c_str(), 0.0f, 0, spellId);
+            return true;
+        }
+        MarkBotBlocked(state, bot, blockedReason);
+        return true;
+    };
+
+    auto castParty = [&](uint32 spellId, uint32 auraId, char const* readyReason, char const* blockedReason) -> bool
+    {
+        if (!bot->HasSpell(spellId))
+        {
+            MarkBotBlocked(state, bot, blockedReason);
+            return true;
+        }
+
+        if (Group* group = bot->GetGroup())
+        {
+            for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
+            {
+                Player* member = itr->GetSource();
+                if (!member || !member->IsAlive() || member->GetMap() != bot->GetMap() || member->HasAura(auraId))
+                    continue;
+                if (TryCastFriendlySpell(bot, member, spellId))
+                {
+                    result.Action = "validation_route_readiness_party_buff";
+                    result.SpellId = spellId;
+                    result.Target = member;
+                    std::string raw = BuildRawJson(bot, pullTarget);
+                    std::string semantic = BuildSemanticJson(bot, pullTarget, "validation_route_readiness", &power, stage, activity);
+                    RecordEvent(state, bot, "validation_route_readiness", member, readyReason, raw.c_str(), semantic.c_str(), bot->GetExactDist(member), 0, spellId);
+                    return true;
+                }
+                MarkBotBlocked(state, bot, blockedReason);
+                return true;
+            }
+        }
+        else if (!bot->HasAura(auraId))
+            return castSelf(spellId, readyReason, blockedReason);
+
+        TryResolveBotBlocker(state, bot, readyReason);
+        return false;
+    };
+
+    std::string role = GetDungeonRole(bot);
+    for (ActiveBuffRequirement const& requirement : requirements)
+    {
+        if (requirement.ClassId != bot->getClass())
+            continue;
+        if (requirement.Role && role != requirement.Role)
+            continue;
+        if (!bot->HasSpell(requirement.SpellId))
+            continue;
+
+        std::string missing = std::string(requirement.PartyWide ? "missing_party_buff:" : "missing_self_buff:") + requirement.Key;
+        if (requirement.PartyWide)
+        {
+            if (castParty(requirement.SpellId, requirement.AuraId, requirement.Key, missing.c_str()))
+                return true;
+        }
+        else
+        {
+            if (castSelf(requirement.SpellId, requirement.Key, missing.c_str()))
+                return true;
+        }
+    }
+
+    switch (bot->getClass())
+    {
+        case CLASS_PALADIN:
+            if (role == "tank" && pullTarget && bot->HasSpell(54428) && !bot->HasAura(54428))
+                if (TryCastFriendlySpell(bot, bot, 54428))
+                {
+                    result.Action = "validation_route_readiness_divine_plea";
+                    result.SpellId = 54428;
+                    result.Target = bot;
+                    return true;
+                }
+            break;
+        case CLASS_HUNTER:
+            if (!bot->GetPet())
+            {
+                if (bot->HasSpell(883) && TryCastFriendlySpell(bot, bot, 883))
+                {
+                    result.Action = "validation_route_readiness_call_pet";
+                    result.SpellId = 883;
+                    result.Target = bot;
+                    return true;
+                }
+                MarkBotBlocked(state, bot, "hunter_pet_missing");
+                return true;
+            }
+            if (!bot->GetPet()->IsAlive())
+            {
+                if (bot->HasSpell(982) && TryCastFriendlySpell(bot, bot, 982))
+                {
+                    result.Action = "validation_route_readiness_revive_pet";
+                    result.SpellId = 982;
+                    result.Target = bot;
+                    return true;
+                }
+                MarkBotBlocked(state, bot, "hunter_pet_dead");
+                return true;
+            }
+            TryResolveBotBlocker(state, bot, "hunter_pet_ready");
+            if (Player* tank = FindDungeonAnchor(bot))
+                if (tank != bot && bot->HasSpell(34477) && !bot->HasAura(34477) && TryCastFriendlySpell(bot, tank, 34477))
+                {
+                    result.Action = "validation_route_readiness_misdirection";
+                    result.SpellId = 34477;
+                    result.Target = tank;
+                    return true;
+                }
+            if (pullTarget && bot->HasSpell(1130) && !pullTarget->HasAura(1130) && bot->IsValidAttackTarget(pullTarget))
+                if (TryCastCombatSpell(bot, pullTarget, 1130))
+                {
+                    result.Action = "validation_route_readiness_hunters_mark";
+                    result.SpellId = 1130;
+                    result.Target = pullTarget;
+                    return true;
+                }
+            break;
+        default:
+            break;
+    }
+
+    return false;
 }
 
 std::string BotWorldPopulationMgr::BuildDungeonTrashPackJson(DungeonTrashPackFeatures const& pack) const
@@ -10299,10 +10535,13 @@ BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState*
         return BotActionResult::NoAction;
     }
 
+    if (state)
+        TryResolveBotBlocker(*state, bot, "profile_action_valid");
+
     BotActionExecutor executor;
     BotActionResult result = executor.ExecuteCombat(bot, bot, action);
     if (state && result == BotActionResult::Ok)
-        MarkBotUnstuck(*state, bot, action.DebugName.c_str());
+        TryResolveBotBlocker(*state, bot, action.DebugName.c_str());
     else if (state && result != BotActionResult::Casting && result != BotActionResult::GlobalCooldown)
     {
         if (state->Blocked && result == BotActionResult::CastFailed)
@@ -13179,6 +13418,11 @@ void BotWorldPopulationMgr::RecordDecisionTrace(WorldBotState& state, char const
     entry.LoopGuardrailReason = state.LastLoopGuardrailReason;
     entry.RecoveryMode = state.LastRecoveryMode;
     entry.RecoveryResult = state.LastRecoveryResult;
+    entry.BlockedEpisodeId = state.BlockedEpisodeId;
+    entry.BlockedFirstReason = state.BlockedFirstReason;
+    entry.BlockedCurrentReason = state.BlockedReason;
+    entry.BlockedResolution = state.BlockedResolution;
+    entry.BlockedResolvedBy = state.BlockedResolvedBy;
     state.DecisionTrace.push_back(entry);
     while (state.DecisionTrace.size() > 64)
         state.DecisionTrace.pop_front();
@@ -13231,6 +13475,15 @@ BotWorldPopulationMgr::BotDiagnosis BotWorldPopulationMgr::BuildBotDiagnosis(Wor
         diagnosis.Blocker = "bot_is_dead_or_recovering";
         diagnosis.NextExpectedAction = "death_recovery_tick";
         diagnosis.SuggestedInvestigation = "inspect_recent_death_and_recovery_trace";
+    }
+    else if (state.Blocked)
+    {
+        diagnosis.DiagnosisCode = "blocked_no_fallback";
+        diagnosis.Severity = "error";
+        diagnosis.Confidence = 1.0f;
+        diagnosis.Blocker = state.BlockedReason.empty() ? state.BlockedFirstReason : state.BlockedReason;
+        diagnosis.NextExpectedAction = state.BlockedResolution.empty() ? "wait_for_configured_resolution" : state.BlockedResolution;
+        diagnosis.SuggestedInvestigation = "inspect_blocked_episode_trace_and_required_resolution";
     }
     else if (_config.ValidationRouteEnable && state.ValidationRouteTerminalState && state.ValidationRouteTerminalReason.rfind("route_destination_", 0) == 0)
     {
@@ -13442,7 +13695,13 @@ std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson(WorldBotState con
          << "{\"name\":\"loop_recovery_cooldown_until_ms\",\"value\":" << state.LoopRecoveryCooldownUntilMs << "},"
          << "{\"name\":\"recovery_attempt_count\",\"value\":" << state.RecoveryAttemptCount << "},"
          << "{\"name\":\"last_recovery_mode\",\"value\":\"" << JsonEscape(state.LastRecoveryMode) << "\"},"
-         << "{\"name\":\"last_recovery_result\",\"value\":\"" << JsonEscape(state.LastRecoveryResult) << "\"}"
+         << "{\"name\":\"last_recovery_result\",\"value\":\"" << JsonEscape(state.LastRecoveryResult) << "\"},"
+         << "{\"name\":\"blocked\",\"value\":" << (state.Blocked ? "true" : "false") << "},"
+         << "{\"name\":\"blocked_episode_id\",\"value\":" << state.BlockedEpisodeId << "},"
+         << "{\"name\":\"blocked_first_reason\",\"value\":\"" << JsonEscape(state.BlockedFirstReason) << "\"},"
+         << "{\"name\":\"blocked_current_reason\",\"value\":\"" << JsonEscape(state.BlockedReason) << "\"},"
+         << "{\"name\":\"blocked_resolution\",\"value\":\"" << JsonEscape(state.BlockedResolution) << "\"},"
+         << "{\"name\":\"blocked_resolved_by\",\"value\":\"" << JsonEscape(state.BlockedResolvedBy) << "\"}"
          << "]"
          << ",\"next_expected_action\":\"" << JsonEscape(diagnosis.NextExpectedAction) << "\""
          << ",\"suggested_investigation\":\"" << JsonEscape(diagnosis.SuggestedInvestigation) << "\"}";
@@ -13528,7 +13787,13 @@ std::string BotWorldPopulationMgr::BuildBotDecisionSnapshotJson(WorldBotState co
          << ",\"recovery_attempt_count\":" << state.RecoveryAttemptCount
          << ",\"last_recovery_ms\":" << state.LastRecoveryMs
          << ",\"last_recovery_mode\":\"" << JsonEscape(state.LastRecoveryMode) << "\""
-         << ",\"last_recovery_result\":\"" << JsonEscape(state.LastRecoveryResult) << "\"}"
+         << ",\"last_recovery_result\":\"" << JsonEscape(state.LastRecoveryResult) << "\""
+         << ",\"blocked\":" << (state.Blocked ? "true" : "false")
+         << ",\"blocked_episode_id\":" << state.BlockedEpisodeId
+         << ",\"blocked_first_reason\":\"" << JsonEscape(state.BlockedFirstReason) << "\""
+         << ",\"blocked_current_reason\":\"" << JsonEscape(state.BlockedReason) << "\""
+         << ",\"blocked_resolution\":\"" << JsonEscape(state.BlockedResolution) << "\""
+         << ",\"blocked_resolved_by\":\"" << JsonEscape(state.BlockedResolvedBy) << "\"}"
          << ",\"recent_failures\":{\"quest_failure_reason\":\"" << JsonEscape(state.QuestWork.FailedReason) << "\""
          << ",\"last_objective_not_found_reason\":\"" << JsonEscape(state.LastObjectiveNotFoundReason) << "\""
          << ",\"last_no_progress_reason\":\"" << JsonEscape(state.LastNoProgressReason) << "\""
@@ -13570,6 +13835,11 @@ std::string BotWorldPopulationMgr::BuildBotTraceEntriesJson(WorldBotState const&
              << ",\"loop_guardrail_reason\":\"" << JsonEscape(itr->LoopGuardrailReason) << "\""
              << ",\"recovery_mode\":\"" << JsonEscape(itr->RecoveryMode) << "\""
              << ",\"recovery_result\":\"" << JsonEscape(itr->RecoveryResult) << "\""
+             << ",\"blocked_episode_id\":" << itr->BlockedEpisodeId
+             << ",\"blocked_first_reason\":\"" << JsonEscape(itr->BlockedFirstReason) << "\""
+             << ",\"blocked_current_reason\":\"" << JsonEscape(itr->BlockedCurrentReason) << "\""
+             << ",\"blocked_resolution\":\"" << JsonEscape(itr->BlockedResolution) << "\""
+             << ",\"blocked_resolved_by\":\"" << JsonEscape(itr->BlockedResolvedBy) << "\""
              << ",\"action_category\":\"" << JsonEscape(state.LastActionCategory) << "\""
              << ",\"role_goal\":\"" << JsonEscape(state.LastRoleGoal) << "\""
              << ",\"recommended_balance_mode\":\"" << JsonEscape(state.LastRecommendedBalanceMode) << "\""

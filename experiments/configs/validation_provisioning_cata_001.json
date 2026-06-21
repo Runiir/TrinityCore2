@@ -4,6 +4,7 @@
   "account_password": "validation",
   "default_money": 10000000,
   "item_guid_base": 9700000,
+  "pet_guid_base": 8700000,
   "default_skills": [
     { "id": 185, "value": 525, "max": 525 },
     { "id": 129, "value": 525, "max": 525 },
@@ -23,7 +24,7 @@
         { "account": "SCVALTANK", "name": "Scvaltank", "legacy_names": ["ScValTank"], "role": "tank", "class_spec": "protection_paladin", "race": 1, "class": 2, "level": 85, "glyphs": [45745, 41106, 41092] },
         { "account": "SCVALHEAL", "name": "Scvalheal", "legacy_names": ["ScValHeal"], "role": "healer", "class_spec": "holy_priest", "race": 1, "class": 5, "level": 85, "glyphs": [42400, 42403, 42408] },
         { "account": "SCVALDPSA", "name": "Scvaldpsa", "legacy_names": ["ScValDpsA"], "role": "dps", "class_spec": "fire_mage", "race": 1, "class": 8, "level": 85, "glyphs": [42739, 42743, 42753] },
-        { "account": "SCVALDPSB", "name": "Scvaldpsb", "legacy_names": ["ScValDpsB"], "role": "dps", "class_spec": "marksmanship_hunter", "race": 1, "class": 3, "level": 85, "glyphs": [42909, 42902, 42915] },
+        { "account": "SCVALDPSB", "name": "Scvaldpsb", "legacy_names": ["ScValDpsB"], "role": "dps", "class_spec": "marksmanship_hunter", "race": 1, "class": 3, "level": 85, "glyphs": [42909, 42902, 42915], "pet": { "id_offset": 1, "entry": 8959, "modelid": 0, "name": "Scvalwolf", "level": 85, "slot": 0, "active": 1, "spells": [2649, 17253] } },
         { "account": "SCVALDPSC", "name": "Scvaldpsc", "legacy_names": ["ScValDpsC"], "role": "dps", "class_spec": "enhancement_shaman", "race": 11, "class": 7, "level": 85, "glyphs": [41518, 41539, 41540] }
       ]
     },
@@ -40,7 +41,7 @@
         { "account": "BWDVALDPA", "name": "Bwddpsa", "legacy_names": ["BwdDpsA"], "role": "dps", "class_spec": "fire_mage", "race": 1, "class": 8, "level": 85, "glyphs": [42739, 42743, 42753] },
         { "account": "BWDVALDPB", "name": "Bwddpsb", "legacy_names": ["BwdDpsB"], "role": "dps", "class_spec": "assassination_rogue", "race": 1, "class": 4, "level": 85, "glyphs": [42954, 42957, 42969] },
         { "account": "BWDVALDPC", "name": "Bwddpsc", "legacy_names": ["BwdDpsC"], "role": "dps", "class_spec": "affliction_warlock", "race": 1, "class": 9, "level": 85, "glyphs": [42456, 42454, 42464] },
-        { "account": "BWDVALDPD", "name": "Bwddpsd", "legacy_names": ["BwdDpsD"], "role": "dps", "class_spec": "marksmanship_hunter", "race": 1, "class": 3, "level": 85, "glyphs": [42909, 42902, 42915] },
+        { "account": "BWDVALDPD", "name": "Bwddpsd", "legacy_names": ["BwdDpsD"], "role": "dps", "class_spec": "marksmanship_hunter", "race": 1, "class": 3, "level": 85, "glyphs": [42909, 42902, 42915], "pet": { "id_offset": 2, "entry": 8959, "modelid": 0, "name": "Bwdwolf", "level": 85, "slot": 0, "active": 1, "spells": [2649, 17253] } },
         { "account": "BWDVALDPE", "name": "Bwddpse", "legacy_names": ["BwdDpsE"], "role": "dps", "class_spec": "elemental_shaman", "race": 11, "class": 7, "level": 85, "glyphs": [41524, 41547, 41552] }
       ]
     }

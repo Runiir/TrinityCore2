@@ -291,9 +291,12 @@ def build_character_insert_sql(config: dict[str, Any], action_profiles: dict[str
     lines.append("DELETE FROM `characters`.`character_glyphs` WHERE `guid` IN (SELECT `guid` FROM `characters`.`characters` WHERE `name` IN (" + ", ".join(sql_quote(name) for name in cleanup_character_names(config)) + "));")
     lines.append("DELETE FROM `characters`.`character_skills` WHERE `guid` IN (SELECT `guid` FROM `characters`.`characters` WHERE `name` IN (" + ", ".join(sql_quote(name) for name in cleanup_character_names(config)) + "));")
     lines.append("DELETE FROM `characters`.`character_spell` WHERE `guid` IN (SELECT `guid` FROM `characters`.`characters` WHERE `name` IN (" + ", ".join(sql_quote(name) for name in cleanup_character_names(config)) + "));")
+    lines.append("DELETE ps FROM `characters`.`pet_spell` ps JOIN `characters`.`character_pet` cp ON cp.`id` = ps.`guid` WHERE cp.`owner` IN (SELECT `guid` FROM `characters`.`characters` WHERE `name` IN (" + ", ".join(sql_quote(name) for name in cleanup_character_names(config)) + "));")
+    lines.append("DELETE FROM `characters`.`character_pet` WHERE `owner` IN (SELECT `guid` FROM `characters`.`characters` WHERE `name` IN (" + ", ".join(sql_quote(name) for name in cleanup_character_names(config)) + "));")
     lines.append("DELETE FROM `characters`.`characters` WHERE `name` IN (" + ", ".join(sql_quote(name) for name in cleanup_character_names(config)) + ");")
 
     item_guid = item_guid_base
+    pet_guid_base = int(config.get("pet_guid_base", 8700000))
     for scenario in config["scenarios"]:
         start = scenario["start_position"]
         tag = scenario["id"]
@@ -327,6 +330,24 @@ def build_character_insert_sql(config: dict[str, Any], action_profiles: dict[str
                     f"SELECT c.`guid`, {spell_id}, 1, 0 FROM `characters`.`characters` c WHERE c.`name` = {sql_quote(name)} "
                     "ON DUPLICATE KEY UPDATE `active` = VALUES(`active`), `disabled` = VALUES(`disabled`);"
                 )
+            pet = bot.get("pet")
+            if pet:
+                pet_id = pet_guid_base + int(pet.get("id_offset", slot + 1))
+                pet_name = str(pet.get("name") or f"{name}pet")
+                pet_level = int(pet.get("level", bot.get("level", 85)))
+                lines.append(
+                    "INSERT INTO `characters`.`character_pet` "
+                    "(`id`, `entry`, `owner`, `modelid`, `CreatedBySpell`, `PetType`, `level`, `exp`, `Reactstate`, `name`, `renamed`, `active`, `slot`, `curhealth`, `curmana`, `savetime`, `abdata`) "
+                    f"SELECT {pet_id}, {int(pet['entry'])}, c.`guid`, {int(pet.get('modelid', 0))}, 0, 1, {pet_level}, 0, {int(pet.get('react_state', 1))}, {sql_quote(pet_name)}, 1, {int(pet.get('active', 1))}, {int(pet.get('slot', 0))}, {int(pet.get('health', 100000))}, {int(pet.get('mana', 0))}, UNIX_TIMESTAMP(), '' "
+                    f"FROM `characters`.`characters` c WHERE c.`name` = {sql_quote(name)} "
+                    "ON DUPLICATE KEY UPDATE `entry` = VALUES(`entry`), `owner` = VALUES(`owner`), `modelid` = VALUES(`modelid`), `PetType` = VALUES(`PetType`), `level` = VALUES(`level`), `Reactstate` = VALUES(`Reactstate`), `name` = VALUES(`name`), `active` = VALUES(`active`), `slot` = VALUES(`slot`), `curhealth` = VALUES(`curhealth`), `curmana` = VALUES(`curmana`), `savetime` = VALUES(`savetime`);"
+                )
+                for pet_spell in pet.get("spells", []):
+                    lines.append(
+                        "INSERT INTO `characters`.`pet_spell` (`guid`, `spell`, `active`) "
+                        f"VALUES ({pet_id}, {int(pet_spell)}, 1) "
+                        "ON DUPLICATE KEY UPDATE `active` = VALUES(`active`);"
+                    )
             glyphs = normalized_glyphs(bot)
             if glyphs:
                 glyph_values = glyphs + [0] * (9 - len(glyphs))

@@ -466,8 +466,13 @@ private:
         uint64 LastRecoveryMs = 0;
         uint32 RecoveryAttemptCount = 0;
         bool Blocked = false;
+        uint32 BlockedEpisodeId = 0;
+        std::string BlockedFirstReason;
         std::string BlockedReason;
+        std::string BlockedResolution;
+        std::string BlockedResolvedBy;
         uint64 BlockedStartMs = 0;
+        uint64 BlockedResolvedMs = 0;
         bool BlockedMessageEmitted = false;
         bool UnstuckMessageEmitted = false;
 
@@ -495,6 +500,11 @@ private:
             std::string LoopGuardrailReason;
             std::string RecoveryMode;
             std::string RecoveryResult;
+            uint32 BlockedEpisodeId = 0;
+            std::string BlockedFirstReason;
+            std::string BlockedCurrentReason;
+            std::string BlockedResolution;
+            std::string BlockedResolvedBy;
         };
         std::deque<DecisionTraceEntry> DecisionTrace;
 
@@ -967,6 +977,7 @@ private:
     Unit* FindGroupCombatTarget(Player* bot, Player* anchor) const;
     DungeonTrashPackFeatures BuildDungeonTrashPackFeatures(Player* bot, Unit const* focus) const;
     DungeonTrashActionResult TryDungeonTrash(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity);
+    bool TryValidationRouteReadiness(WorldBotState& state, Player* bot, Unit* pullTarget, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, DungeonTrashActionResult& result);
     char const* GetDungeonRole(Player* bot) const;
     uint32 SelectInterruptSpell(Player* bot) const;
     uint32 SelectHealSpell(Player* bot) const;
@@ -981,6 +992,7 @@ private:
     bool TryCastCombatSpell(Player* bot, Unit* target, uint32 spellId) const;
     void MarkBotBlocked(WorldBotState& state, Player* bot, char const* reason) const;
     void MarkBotUnstuck(WorldBotState& state, Player* bot, char const* reason) const;
+    bool TryResolveBotBlocker(WorldBotState& state, Player* bot, char const* resolvedBy) const;
     void MoveToWanderPoint(Player* bot, WorldBotState& state);
     void RecordRunStart();
     void RecordRunStop();

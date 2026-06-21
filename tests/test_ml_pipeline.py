@@ -5545,6 +5545,10 @@ def test_cata_action_profile_manifest_drives_validation_spells(tmp_path, monkeyp
     hunter = {"class": 3, "spells": []}
     shaman = {"class": 7, "spells": []}
     mage = {"class": 8, "spells": []}
+    warrior = {"class": 1, "spells": []}
+    death_knight = {"class": 6, "spells": []}
+    warlock = {"class": 9, "spells": []}
+    druid = {"class": 11, "spells": []}
 
     assert manifest["schema"] == "bot_cata_434_action_profiles_v1"
     assert 2061 in bot_spell_ids(priest, manifest)
@@ -5552,7 +5556,15 @@ def test_cata_action_profile_manifest_drives_validation_spells(tmp_path, monkeyp
     assert 750 in bot_spell_ids(paladin, manifest)
     assert 9116 in bot_spell_ids(paladin, manifest)
     assert {53595, 31935, 26573, 53600}.issubset(set(bot_spell_ids(paladin, manifest)))
-    assert {56641, 2643}.issubset(set(bot_spell_ids(hunter, manifest)))
+    assert {6673, 469}.issubset(set(bot_spell_ids(warrior, manifest)))
+    assert {25780, 31801, 465, 20217, 19740, 54428}.issubset(set(bot_spell_ids(paladin, manifest)))
+    assert {56641, 2643, 77767, 883, 982, 1130, 13165, 34477}.issubset(set(bot_spell_ids(hunter, manifest)))
+    assert {79104, 79106}.issubset(set(bot_spell_ids(priest, manifest)))
+    assert 57330 in bot_spell_ids(death_knight, manifest)
+    assert {8075, 3738, 8227}.issubset(set(bot_spell_ids(shaman, manifest)))
+    assert 79057 in bot_spell_ids(mage, manifest)
+    assert 85767 in bot_spell_ids(warlock, manifest)
+    assert 79060 in bot_spell_ids(druid, manifest)
     assert {8042, 17364, 60103, 421}.issubset(set(bot_spell_ids(shaman, manifest)))
     assert {2120, 1449}.issubset(set(bot_spell_ids(mage, manifest)))
     assert 12345 in bot_spell_ids(priest, manifest)
@@ -5791,6 +5803,41 @@ def test_validation_provisioning_writes_equipment_cache_and_filters_glyphs():
     assert cache.split()[34] == "6000"
     assert cache in sql
     assert " 0, -3," not in sql
+
+
+def test_validation_provisioning_writes_configured_hunter_pet():
+    config = {
+        "pet_guid_base": 8700000,
+        "scenarios": [
+            {
+                "id": "stonecore_5n",
+                "start_position": {"map_id": 725, "x": 1, "y": 2, "z": 3},
+                "bots": [
+                    {
+                        "account": "A",
+                        "name": "Hunter",
+                        "role": "dps",
+                        "class_spec": "marksmanship_hunter",
+                        "race": 1,
+                        "class": 3,
+                        "level": 85,
+                        "glyphs": [1, 2, 3],
+                        "pet": {"id_offset": 7, "entry": 8959, "modelid": 0, "name": "Testwolf", "level": 85, "slot": 0, "active": 1, "spells": [2649, 17253]},
+                    }
+                ],
+            }
+        ],
+    }
+
+    sql = build_character_insert_sql(config)
+
+    assert "DELETE ps FROM `characters`.`pet_spell`" in sql
+    assert "DELETE FROM `characters`.`character_pet`" in sql
+    assert "INSERT INTO `characters`.`character_pet`" in sql
+    assert "SELECT 8700007, 8959, c.`guid`, 0, 0, 1, 85" in sql
+    assert "'Testwolf'" in sql
+    assert "VALUES (8700007, 2649, 1)" in sql
+    assert "VALUES (8700007, 17253, 1)" in sql
 
 
 def test_validation_provisioning_maps_glyph_items_to_glyph_properties():
