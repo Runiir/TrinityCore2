@@ -60,6 +60,8 @@ def test_server_start_autonomy_enabled_by_default_contract():
     assert re.search(r"^BotWorld\.TargetPopulation\s*=\s*5$", conf, re.MULTILINE)
     assert re.search(r'^BotWorld\.PoolTagFilter\s*=\s*""$', conf, re.MULTILINE)
     assert re.search(r"^BotWorld\.ValidationRoute\.Enable\s*=\s*0$", conf, re.MULTILINE)
+    assert re.search(r'^BotWorld\.ValidationRoute\.ManifestPath\s*=\s*""$', conf, re.MULTILINE)
+    assert re.search(r'^BotWorld\.ValidationRoute\.AdvanceMode\s*=\s*"disabled"$', conf, re.MULTILINE)
     assert re.search(r"^BotWorld\.ValidationRoute\.TargetEntry\s*=\s*0$", conf, re.MULTILINE)
     assert re.search(r"^BotWorld\.ValidationRoute\.ActivationDataId\s*=\s*0$", conf, re.MULTILINE)
     assert re.search(r"^BotWorld\.ValidationRoute\.ActivationDataValue\s*=\s*0$", conf, re.MULTILINE)
@@ -687,6 +689,13 @@ def test_botauto_diagnosis_and_trace_surface():
         "active_quest_cluster_id",
         "quest_cooldown_count",
         "no_progress_cooldown_count",
+        "validation_route_manifest_index",
+        "validation_route_manifest_count",
+        "validation_route_advance_mode",
+        "validation_route_advance_pending",
+        "validation_route_advance_reason",
+        "validation_route_manifest_load_error",
+        "validation_route_progress_baseline_kills",
         "validation_route_config_kind",
         "validation_route_config_target_entry",
         "validation_route_config_activation_data_id",

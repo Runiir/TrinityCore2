@@ -955,6 +955,8 @@ void BotWorldPopulationMgr::Update(uint32 diff)
         UpdateBot(*itr, diff);
         ++itr;
     }
+
+    MaybeAdvanceValidationRouteManifest();
 }
 
 void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperimentConfig const* overrideConfig)
@@ -994,6 +996,8 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
     _config.SpawnMode = sConfigMgr->GetStringDefault("BotWorld.SpawnMode", _config.SpawnMode);
     _config.PoolTagFilter = sConfigMgr->GetStringDefault("BotWorld.PoolTagFilter", _config.PoolTagFilter);
     _config.ValidationRouteEnable = sConfigMgr->GetBoolDefault("BotWorld.ValidationRoute.Enable", _config.ValidationRouteEnable);
+    _config.ValidationRouteManifestPath = sConfigMgr->GetStringDefault("BotWorld.ValidationRoute.ManifestPath", _config.ValidationRouteManifestPath);
+    _config.ValidationRouteAdvanceMode = sConfigMgr->GetStringDefault("BotWorld.ValidationRoute.AdvanceMode", _config.ValidationRouteAdvanceMode);
     _config.ValidationRouteScenarioId = sConfigMgr->GetStringDefault("BotWorld.ValidationRoute.ScenarioId", _config.ValidationRouteScenarioId);
     _config.ValidationRouteNodeId = sConfigMgr->GetStringDefault("BotWorld.ValidationRoute.NodeId", _config.ValidationRouteNodeId);
     _config.ValidationRouteLabel = sConfigMgr->GetStringDefault("BotWorld.ValidationRoute.Label", _config.ValidationRouteLabel);
@@ -1023,6 +1027,13 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
     _config.ValidationRouteOpenerSummonO = sConfigMgr->GetFloatDefault("BotWorld.ValidationRoute.OpenerSummonO", _config.ValidationRouteOpenerSummonO);
     _validationRouteActivationApplied = false;
     _validationRouteActivationAttempts = 0;
+    _validationRouteManifest.clear();
+    _validationRouteManifestIndex = 0;
+    _validationRouteManifestAdvancePending = false;
+    _validationRouteManifestAdvanceReason.clear();
+    _validationRouteManifestLoadError.clear();
+    _validationRouteProgressBaselineKills = _metrics.Kills;
+    LoadValidationRouteManifest();
     _config.AllowConfiguredCenterFallback = sConfigMgr->GetBoolDefault("BotWorld.AllowConfiguredCenterFallback", _config.AllowConfiguredCenterFallback);
     _config.UseSavedPosition = sConfigMgr->GetBoolDefault("BotWorld.UseSavedPosition", _config.UseSavedPosition);
     _config.NearPlayerRadius = sConfigMgr->GetFloatDefault("BotWorld.NearPlayerRadius", _config.NearPlayerRadius);
@@ -1065,6 +1076,231 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
     telemetry.MaxFramesPerBot = std::max<uint32>(1, sConfigMgr->GetIntDefault("BotTelemetry.MaxFramesPerBot", telemetry.MaxFramesPerBot));
     telemetry.MaxOpenClipsPerBot = std::max<uint32>(1, sConfigMgr->GetIntDefault("BotTelemetry.MaxOpenClipsPerBot", telemetry.MaxOpenClipsPerBot));
     _telemetryBuffer.Configure(telemetry);
+}
+
+void BotWorldPopulationMgr::LoadValidationRouteManifest()
+{
+    if (_config.ValidationRouteManifestPath.empty())
+        return;
+
+    std::string manifestJson = ReadSmallTextFile(_config.ValidationRouteManifestPath);
+    if (manifestJson.empty())
+    {
+        _validationRouteManifestLoadError = "manifest_unreadable";
+        return;
+    }
+
+    std::string routesJson = ExtractJsonArrayField(manifestJson, "routes");
+    if (routesJson.empty())
+    {
+        _validationRouteManifestLoadError = "manifest_routes_missing";
+        return;
+    }
+
+    auto readInt = [](std::string const& objectJson, char const* key) -> int
+    {
+        int value = 0;
+        ExtractJsonIntField(objectJson, key, value);
+        return value;
+    };
+    auto readFloat = [](std::string const& objectJson, char const* key) -> float
+    {
+        float value = 0.0f;
+        ExtractJsonNumberField(objectJson, key, value);
+        return value;
+    };
+
+    for (std::string const& routeJson : ExtractJsonObjectArrayItems(routesJson))
+    {
+        ValidationRouteManifestNode node;
+        node.ScenarioId = ExtractJsonStringField(routeJson, "scenario_id");
+        node.NodeId = ExtractJsonStringField(routeJson, "route_node_id");
+        node.Label = ExtractJsonStringField(routeJson, "label");
+        node.Kind = ExtractJsonStringField(routeJson, "kind");
+        node.MechanicProfile = ExtractJsonStringField(routeJson, "mechanic_profile");
+        node.MapId = uint32(std::max(0, readInt(routeJson, "map_id")));
+        node.X = readFloat(routeJson, "x");
+        node.Y = readFloat(routeJson, "y");
+        node.Z = readFloat(routeJson, "z");
+        node.O = readFloat(routeJson, "o");
+        node.TargetEntry = uint32(std::max(0, readInt(routeJson, "source_entry")));
+        node.OpenerTargetEntry = uint32(std::max(0, readInt(routeJson, "opener_target_entry")));
+        node.ActivationDataId = uint32(std::max(0, readInt(routeJson, "activation_data_id")));
+        node.ActivationDataValue = uint32(std::max(0, readInt(routeJson, "activation_data_value")));
+        node.ActivationSpawnGroupId = uint32(std::max(0, readInt(routeJson, "activation_spawn_group_id")));
+        node.ActivationActionEntry = uint32(std::max(0, readInt(routeJson, "activation_action_entry")));
+        node.ActivationActionId = readInt(routeJson, "activation_action_id");
+        node.ActivationSummonEntry = uint32(std::max(0, readInt(routeJson, "activation_summon_entry")));
+        node.ActivationSummonX = readFloat(routeJson, "activation_summon_x");
+        node.ActivationSummonY = readFloat(routeJson, "activation_summon_y");
+        node.ActivationSummonZ = readFloat(routeJson, "activation_summon_z");
+        node.ActivationSummonO = readFloat(routeJson, "activation_summon_o");
+        node.OpenerSummonEntry = uint32(std::max(0, readInt(routeJson, "opener_summon_entry")));
+        node.OpenerSummonX = readFloat(routeJson, "opener_summon_x");
+        node.OpenerSummonY = readFloat(routeJson, "opener_summon_y");
+        node.OpenerSummonZ = readFloat(routeJson, "opener_summon_z");
+        node.OpenerSummonO = readFloat(routeJson, "opener_summon_o");
+        node.ExpectedBotCount = uint32(std::max(0, readInt(routeJson, "expected_bot_count")));
+        if (!node.NodeId.empty() && !node.Kind.empty())
+            _validationRouteManifest.push_back(node);
+    }
+
+    if (_validationRouteManifest.empty())
+    {
+        _validationRouteManifestLoadError = "manifest_routes_empty";
+        return;
+    }
+
+    ApplyValidationRouteManifestNode(0, "manifest_load");
+}
+
+bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode(size_t index, char const* reason)
+{
+    if (index >= _validationRouteManifest.size())
+        return false;
+
+    ValidationRouteManifestNode const& node = _validationRouteManifest[index];
+    _validationRouteManifestIndex = index;
+    _config.ValidationRouteEnable = true;
+    _config.ValidationRouteScenarioId = node.ScenarioId;
+    _config.ValidationRouteNodeId = node.NodeId;
+    _config.ValidationRouteLabel = node.Label;
+    _config.ValidationRouteKind = node.Kind;
+    _config.ValidationRouteMechanicProfile = node.MechanicProfile;
+    _config.ValidationRouteMapId = node.MapId;
+    _config.ValidationRouteX = node.X;
+    _config.ValidationRouteY = node.Y;
+    _config.ValidationRouteZ = node.Z;
+    _config.ValidationRouteO = node.O;
+    _config.ValidationRouteTargetEntry = node.TargetEntry;
+    _config.ValidationRouteOpenerTargetEntry = node.OpenerTargetEntry;
+    _config.ValidationRouteActivationDataId = node.ActivationDataId;
+    _config.ValidationRouteActivationDataValue = node.ActivationDataValue;
+    _config.ValidationRouteActivationSpawnGroupId = node.ActivationSpawnGroupId;
+    _config.ValidationRouteActivationActionEntry = node.ActivationActionEntry;
+    _config.ValidationRouteActivationActionId = node.ActivationActionId;
+    _config.ValidationRouteActivationSummonEntry = node.ActivationSummonEntry;
+    _config.ValidationRouteActivationSummonX = node.ActivationSummonX;
+    _config.ValidationRouteActivationSummonY = node.ActivationSummonY;
+    _config.ValidationRouteActivationSummonZ = node.ActivationSummonZ;
+    _config.ValidationRouteActivationSummonO = node.ActivationSummonO;
+    _config.ValidationRouteOpenerSummonEntry = node.OpenerSummonEntry;
+    _config.ValidationRouteOpenerSummonX = node.OpenerSummonX;
+    _config.ValidationRouteOpenerSummonY = node.OpenerSummonY;
+    _config.ValidationRouteOpenerSummonZ = node.OpenerSummonZ;
+    _config.ValidationRouteOpenerSummonO = node.OpenerSummonO;
+    if (node.ExpectedBotCount)
+        _config.TargetPopulation = node.ExpectedBotCount;
+
+    ResetValidationRouteRuntimeState(reason ? reason : "manifest_route_apply");
+    _validationRouteProgressBaselineKills = _metrics.Kills;
+    return true;
+}
+
+void BotWorldPopulationMgr::ResetValidationRouteRuntimeState(char const* reason)
+{
+    _validationRouteFocusGuid.Clear();
+    _validationRouteFocusEntry = 0;
+    _validationRouteFocusMapId = 0;
+    _validationRouteFocusX = 0.0f;
+    _validationRouteFocusY = 0.0f;
+    _validationRouteFocusZ = 0.0f;
+    _validationRouteFocusSeenMs = 0;
+    _validationRouteActivationApplied = false;
+    _validationRouteActivationAttempts = 0;
+    _validationRouteManifestAdvancePending = false;
+    _validationRouteManifestAdvanceReason.clear();
+
+    uint64 nowMs = NowMs();
+    for (WorldBotState& state : _bots)
+    {
+        state.TargetGuid.Clear();
+        state.ValidationRouteCombatProgressTargetGuid.Clear();
+        state.ValidationRouteCombatBestHealthPct = 1.0f;
+        state.ValidationRouteCombatNoProgressCount = 0;
+        state.ValidationRouteBossSlowProgressCount = 0;
+        state.ValidationRoutePackProgressTargetGuid.Clear();
+        state.ValidationRoutePackBestHealthPct = 1.0f;
+        state.ValidationRoutePackNoProgressCount = 0;
+        state.ValidationRouteActivationApplied = false;
+        state.ValidationRouteActivationAttempts = 0;
+        state.ValidationRouteTargetSearchMissCount = 0;
+        state.ValidationRouteTerminalState = false;
+        state.ValidationRouteTerminalAtMs = 0;
+        state.ValidationRouteTerminalReason.clear();
+        state.ValidationRouteAnchorOverrideValid = false;
+        state.ValidationRouteAnchorOverrideUntilMs = 0;
+        state.ValidationRouteAnchorOverrideReason.clear();
+        state.ValidationRouteUnresolvedFocusHoldCount = 0;
+        state.ConsecutiveSameDecisionCount = 0;
+        state.IdleDecisionRepeatCount = 0;
+        state.LastDecisionFingerprintRepeatCount = 0;
+        state.LastDecisionFingerprintFailureCount = 0;
+        state.LastLoopGuardrailReason.clear();
+        state.LastNoProgressReason = reason ? reason : "validation_route_reset";
+        state.LoopRecoveryCooldownUntilMs = nowMs + 3000;
+    }
+}
+
+bool BotWorldPopulationMgr::ValidationRouteHasProgressSinceApply() const
+{
+    return _metrics.Kills > _validationRouteProgressBaselineKills;
+}
+
+bool BotWorldPopulationMgr::MaybeAdvanceValidationRouteManifest()
+{
+    if (_validationRouteManifest.empty() || _config.ValidationRouteAdvanceMode != "terminal")
+        return false;
+
+    bool terminal = _validationRouteManifestAdvancePending;
+    std::string terminalReason = _validationRouteManifestAdvanceReason;
+    for (WorldBotState const& state : _bots)
+    {
+        if (state.ValidationRouteTerminalState || state.LastDecisionAction == "validation_route_complete")
+        {
+            terminal = true;
+            terminalReason = state.ValidationRouteTerminalReason;
+            break;
+        }
+    }
+
+    if (!terminal)
+        return false;
+
+    size_t nextIndex = _validationRouteManifestIndex + 1;
+    Player* reporter = nullptr;
+    WorldBotState* reporterState = nullptr;
+    for (WorldBotState& state : _bots)
+    {
+        reporter = GetLoadedBot(state);
+        if (reporter)
+        {
+            reporterState = &state;
+            break;
+        }
+    }
+
+    if (nextIndex >= _validationRouteManifest.size())
+    {
+        if (reporterState && reporter)
+        {
+            std::string raw = BuildRawJson(reporter, nullptr);
+            std::string semantic = BuildSemanticJson(reporter, nullptr, "validation_route_manifest", nullptr);
+            RecordEvent(*reporterState, reporter, "validation_route_manifest_complete", nullptr, terminalReason.empty() ? "all_routes_complete" : terminalReason.c_str(), raw.c_str(), semantic.c_str(), float(_validationRouteManifestIndex + 1), uint32(_validationRouteManifest.size()));
+        }
+        _validationRouteManifestAdvancePending = false;
+        _validationRouteManifestAdvanceReason.clear();
+        return false;
+    }
+
+    if (reporterState && reporter)
+    {
+        std::string raw = BuildRawJson(reporter, nullptr);
+        std::string semantic = BuildSemanticJson(reporter, nullptr, "validation_route_manifest", nullptr);
+        RecordEvent(*reporterState, reporter, "validation_route_segment_advance", nullptr, "advance_validation_route_segment", raw.c_str(), semantic.c_str(), float(nextIndex), uint32(_validationRouteManifest.size()));
+    }
+
+    return ApplyValidationRouteManifestNode(nextIndex, terminalReason.empty() ? "validation_route_terminal" : terminalReason.c_str());
 }
 
 bool BotWorldPopulationMgr::TryReattachValidationBot(WorldBotState& state, Player* bot, char const* context)
@@ -2420,7 +2656,7 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
             bool nearValidationRouteAnchor = routeAnchorDistance <= 24.0f;
 
             if (_config.ValidationRouteKind != "boss"
-                && _metrics.Kills > 0
+                && ValidationRouteHasProgressSinceApply()
                 && nearValidationRouteAnchor
                 && (state.LastDecisionFingerprintRepeatCount >= 6 || state.LastLoopGuardrailReason == "repeated_decision_loop"))
             {
@@ -5601,6 +5837,18 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         clearValidationRouteKilledFocus(killedTarget->GetGUID());
 
         RecordEvent(state, bot, "boss_killed", killedTarget, "ok", raw.c_str(), semantic.c_str(), 0.0f, _metrics.Kills);
+        if (!_validationRouteManifest.empty() && _config.ValidationRouteAdvanceMode == "terminal" && _config.ValidationRouteKind == "boss")
+        {
+            _validationRouteManifestAdvancePending = true;
+            _validationRouteManifestAdvanceReason = "boss_killed";
+            uint64 nowMs = NowMs();
+            for (WorldBotState& cohortState : _bots)
+            {
+                cohortState.ValidationRouteTerminalState = true;
+                cohortState.ValidationRouteTerminalAtMs = nowMs;
+                cohortState.ValidationRouteTerminalReason = "boss_killed";
+            }
+        }
         if (bot->GetMap() && bot->GetMap()->IsRaid())
         {
             ++state.RaidBossKills;
@@ -6543,7 +6791,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         return true;
     }
     if (_config.ValidationRouteKind != "boss"
-        && _metrics.Kills > 0
+        && ValidationRouteHasProgressSinceApply()
         && routeDistance <= 40.0f
         && (state.LastDecisionFingerprintRepeatCount >= 6 || state.LastLoopGuardrailReason == "repeated_decision_loop"))
     {
@@ -7256,7 +7504,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             targetSearchResult = isValidationRouteScriptTarget(anchorTarget->ToCreature()) ? "target_ready" : "anchor_reacquired_reachable_target";
             state.ValidationRouteTargetSearchMissCount = 0;
         }
-        else if (_metrics.Kills > 0 && ++state.ValidationRouteTargetSearchMissCount >= 2)
+        else if (ValidationRouteHasProgressSinceApply() && ++state.ValidationRouteTargetSearchMissCount >= 2)
         {
             markValidationRouteTerminalAfterProgress("route_exhausted_after_progress");
             return true;
@@ -10410,6 +10658,14 @@ void BotWorldPopulationMgr::RecordDecision(WorldBotState& state, Player* bot, ch
     state.LastDecisionTickMs = nowMs;
     state.LastDecisionSituation = situation ? situation : "idle";
     state.LastDecisionAction = action ? action : "wait";
+    if (_config.ValidationRouteEnable
+        && !_validationRouteManifest.empty()
+        && _config.ValidationRouteAdvanceMode == "terminal"
+        && state.LastDecisionAction == "validation_route_complete")
+    {
+        _validationRouteManifestAdvancePending = true;
+        _validationRouteManifestAdvanceReason = state.ValidationRouteTerminalReason.empty() ? "validation_route_complete" : state.ValidationRouteTerminalReason;
+    }
     state.LastDecisionActivity = BotLongTermProgressionBrain::ToString(chosenActivity.Activity);
     state.LastDecisionResult = failure ? "failed" : "ok";
     state.LastDecisionReason = failure ? "decision_failure" : "";
@@ -11080,6 +11336,11 @@ std::string BotWorldPopulationMgr::BuildConfigJson() const
          << ",\"update_semantic_outcome_stats\":" << (_config.UpdateSemanticOutcomeStats ? "true" : "false")
          << ",\"pool_tag_filter\":\"" << JsonEscape(_config.PoolTagFilter) << "\""
          << ",\"validation_route\":{\"enabled\":" << (_config.ValidationRouteEnable ? "true" : "false")
+         << ",\"manifest_path\":\"" << JsonEscape(_config.ValidationRouteManifestPath) << "\""
+         << ",\"advance_mode\":\"" << JsonEscape(_config.ValidationRouteAdvanceMode) << "\""
+         << ",\"manifest_index\":" << _validationRouteManifestIndex
+         << ",\"manifest_count\":" << _validationRouteManifest.size()
+         << ",\"manifest_load_error\":\"" << JsonEscape(_validationRouteManifestLoadError) << "\""
          << ",\"scenario_id\":\"" << JsonEscape(_config.ValidationRouteScenarioId) << "\""
          << ",\"node_id\":\"" << JsonEscape(_config.ValidationRouteNodeId) << "\""
          << ",\"label\":\"" << JsonEscape(_config.ValidationRouteLabel) << "\""
@@ -11708,6 +11969,13 @@ std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson(WorldBotState con
          << "{\"name\":\"active_quest_cluster_id\",\"value\":" << state.ActiveQuestClusterId << "},"
          << "{\"name\":\"quest_cooldown_count\",\"value\":" << state.QuestCooldownUntilMs.size() << "},"
          << "{\"name\":\"no_progress_cooldown_count\",\"value\":" << state.NoProgressCooldownUntilMs.size() << "},"
+         << "{\"name\":\"validation_route_manifest_index\",\"value\":" << _validationRouteManifestIndex << "},"
+         << "{\"name\":\"validation_route_manifest_count\",\"value\":" << _validationRouteManifest.size() << "},"
+         << "{\"name\":\"validation_route_advance_mode\",\"value\":\"" << JsonEscape(_config.ValidationRouteAdvanceMode) << "\"},"
+         << "{\"name\":\"validation_route_advance_pending\",\"value\":" << (_validationRouteManifestAdvancePending ? "true" : "false") << "},"
+         << "{\"name\":\"validation_route_advance_reason\",\"value\":\"" << JsonEscape(_validationRouteManifestAdvanceReason) << "\"},"
+         << "{\"name\":\"validation_route_manifest_load_error\",\"value\":\"" << JsonEscape(_validationRouteManifestLoadError) << "\"},"
+         << "{\"name\":\"validation_route_progress_baseline_kills\",\"value\":" << _validationRouteProgressBaselineKills << "},"
          << "{\"name\":\"validation_route_activation_applied\",\"value\":" << (state.ValidationRouteActivationApplied ? "true" : "false") << "},"
          << "{\"name\":\"validation_route_activation_attempts\",\"value\":" << state.ValidationRouteActivationAttempts << "},"
          << "{\"name\":\"validation_route_config_kind\",\"value\":\"" << JsonEscape(_config.ValidationRouteKind) << "\"},"
@@ -11984,6 +12252,11 @@ std::string BotWorldPopulationMgr::GetBotTraceJson(std::string const& selector, 
         json << "{\"ok\":true,\"action\":\"botauto_trace\",\"trace_schema_version\":1"
              << ",\"selector\":\"" << JsonEscape(selector.empty() ? "all" : selector) << "\""
              << ",\"limit\":" << normalizedLimit
+             << ",\"validation_route\":{\"manifest_index\":" << _validationRouteManifestIndex
+             << ",\"manifest_count\":" << _validationRouteManifest.size()
+             << ",\"node_id\":\"" << JsonEscape(_config.ValidationRouteNodeId) << "\""
+             << ",\"label\":\"" << JsonEscape(_config.ValidationRouteLabel) << "\""
+             << ",\"kind\":\"" << JsonEscape(_config.ValidationRouteKind) << "\"}"
              << ",\"bots\":[";
 
         bool emitted = false;
@@ -12027,6 +12300,11 @@ std::string BotWorldPopulationMgr::GetBotTraceJson(std::string const& selector, 
          << ",\"bot_guid\":" << selected->Guid.GetCounter()
          << ",\"bot_name\":\"" << JsonEscape(bot ? bot->GetName() : "") << "\""
          << ",\"limit\":" << normalizedLimit
+         << ",\"validation_route\":{\"manifest_index\":" << _validationRouteManifestIndex
+         << ",\"manifest_count\":" << _validationRouteManifest.size()
+         << ",\"node_id\":\"" << JsonEscape(_config.ValidationRouteNodeId) << "\""
+         << ",\"label\":\"" << JsonEscape(_config.ValidationRouteLabel) << "\""
+         << ",\"kind\":\"" << JsonEscape(_config.ValidationRouteKind) << "\"}"
          << ",\"entries\":" << BuildBotTraceEntriesJson(*selected, normalizedLimit)
          << ",\"failure_reason\":null}";
     return json.str();

@@ -61,6 +61,8 @@ struct BotWorldExperimentConfig
     std::string SpawnMode = "resume_or_race_start";
     std::string PoolTagFilter;
     bool ValidationRouteEnable = false;
+    std::string ValidationRouteManifestPath;
+    std::string ValidationRouteAdvanceMode = "disabled";
     std::string ValidationRouteScenarioId;
     std::string ValidationRouteNodeId;
     std::string ValidationRouteLabel;
@@ -213,6 +215,38 @@ public:
     };
 
 private:
+    struct ValidationRouteManifestNode
+    {
+        std::string ScenarioId;
+        std::string NodeId;
+        std::string Label;
+        std::string Kind;
+        std::string MechanicProfile;
+        uint32 MapId = 0;
+        float X = 0.0f;
+        float Y = 0.0f;
+        float Z = 0.0f;
+        float O = 0.0f;
+        uint32 TargetEntry = 0;
+        uint32 OpenerTargetEntry = 0;
+        uint32 ActivationDataId = 0;
+        uint32 ActivationDataValue = 0;
+        uint32 ActivationSpawnGroupId = 0;
+        uint32 ActivationActionEntry = 0;
+        int32 ActivationActionId = 0;
+        uint32 ActivationSummonEntry = 0;
+        float ActivationSummonX = 0.0f;
+        float ActivationSummonY = 0.0f;
+        float ActivationSummonZ = 0.0f;
+        float ActivationSummonO = 0.0f;
+        uint32 OpenerSummonEntry = 0;
+        float OpenerSummonX = 0.0f;
+        float OpenerSummonY = 0.0f;
+        float OpenerSummonZ = 0.0f;
+        float OpenerSummonO = 0.0f;
+        uint32 ExpectedBotCount = 0;
+    };
+
     struct WorldBotState
     {
         struct SafePosition
@@ -859,6 +893,11 @@ private:
     void MoveToWanderPoint(Player* bot, WorldBotState& state);
     void RecordRunStart();
     void RecordRunStop();
+    void LoadValidationRouteManifest();
+    bool ApplyValidationRouteManifestNode(size_t index, char const* reason);
+    bool MaybeAdvanceValidationRouteManifest();
+    void ResetValidationRouteRuntimeState(char const* reason);
+    bool ValidationRouteHasProgressSinceApply() const;
     ReplayRecord LoadReplayRecord(std::string const& replayType, std::string const& selector) const;
     ReplayRecord LoadReplayRecord(uint64 replayId) const;
     ReplayExecutionResult ExecuteReplayRecord(ReplayRecord const& record, std::string const& brainVersion);
@@ -934,6 +973,12 @@ private:
     uint64 _validationRouteFocusSeenMs = 0;
     bool _validationRouteActivationApplied = false;
     uint32 _validationRouteActivationAttempts = 0;
+    std::vector<ValidationRouteManifestNode> _validationRouteManifest;
+    size_t _validationRouteManifestIndex = 0;
+    uint32 _validationRouteProgressBaselineKills = 0;
+    bool _validationRouteManifestAdvancePending = false;
+    std::string _validationRouteManifestAdvanceReason;
+    std::string _validationRouteManifestLoadError;
     mutable std::map<uint32, std::string> _lastCombatMaskByBot;
     mutable std::map<uint32, std::string> _lastChosenCombatByBot;
     mutable std::map<uint32, std::string> _lastActionCategoryByBot;

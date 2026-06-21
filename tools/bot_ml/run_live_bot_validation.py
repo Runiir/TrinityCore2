@@ -1647,6 +1647,7 @@ def run_worldserver_completion_watchdog(
     max_repeated_decisions: int = DEFAULT_MAX_REPEATED_DECISIONS,
     max_death_loops: int = DEFAULT_MAX_DEATH_LOOPS,
     validation_route: dict[str, Any] | None = None,
+    validation_route_manifest: dict[str, Any] | None = None,
 ) -> tuple[str, int, bool, list[str]]:
     command = [str(binary), "--config", str(config)]
     deadline = time.monotonic() + timeout_sec
@@ -1734,7 +1735,7 @@ def run_worldserver_completion_watchdog(
                 last_progress_total = progress_total
                 last_progress_at = time.monotonic()
             no_progress_expired = time.monotonic() - last_progress_at >= no_progress_window_sec
-            if route_segment_complete(report, validation_route):
+            if not validation_route_manifest and route_segment_complete(report, validation_route):
                 report["completion_reason"] = "route_segment_complete"
                 report["route_segment_complete"] = True
                 report["acceptable_final_evidence"] = False
@@ -2245,6 +2246,7 @@ def main() -> int:
                 max_repeated_decisions=args.max_repeated_decision_count,
                 max_death_loops=args.max_death_loop_count,
                 validation_route=validation_route,
+                validation_route_manifest=validation_route_manifest,
             )
             existing_report = args.output_dir / "report.json"
             if existing_report.exists():
