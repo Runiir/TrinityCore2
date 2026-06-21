@@ -281,6 +281,13 @@ def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any],
             }
             route["route_node_id"] = stable_hash(route)[:16]
             route["expected_bot_count"] = expected_bot_count
+            alternate_target_entries = []
+            for entry in step.get("alternate_target_entries") or []:
+                entry_id = int(entry or 0)
+                if entry_id > 0 and entry_id not in alternate_target_entries:
+                    alternate_target_entries.append(entry_id)
+            route["alternate_target_entries"] = alternate_target_entries
+            route["target_priority"]["alternate_target_entries"] = alternate_target_entries
             bot_start = step.get("bot_start") or {}
             route["bot_start_map_id"] = int(bot_start.get("map_id") or step.get("bot_start_map_id") or 0)
             route["bot_start_x"] = float(bot_start.get("x") or step.get("bot_start_x") or 0.0)

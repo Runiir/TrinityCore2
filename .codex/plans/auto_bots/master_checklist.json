@@ -130,8 +130,8 @@
     },
     {
       "deliverable": "full_blackwing_descent_clear",
-      "evidence_artifact": "artifacts/live_validation_instances/blackwing_descent_uninterrupted_full_clear_r2/report.json",
-      "failure_label": "validation_route_death_loop,missing_boss_kill_evidence,scenario_clear_not_complete,failure_labels_present",
+      "evidence_artifact": "artifacts/live_validation_instances/blackwing_descent_uninterrupted_full_clear_r4/report.json",
+      "failure_label": "validation_route_death_loop,route_sequence_child_failed,scenario_clear_not_complete",
       "followup_lane": "blackwing_descent_10n_uninterrupted_full_clear",
       "lane": "blackwing_descent_10n",
       "reviewer": "",

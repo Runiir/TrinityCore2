@@ -350,6 +350,24 @@ bool ExtractJsonIntField(std::string const& json, std::string const& key, int& v
     return true;
 }
 
+std::vector<uint32> ParseUIntList(std::string const& text)
+{
+    std::vector<uint32> values;
+    std::regex pattern("([0-9]+)");
+    for (std::sregex_iterator itr(text.begin(), text.end(), pattern), end; itr != end; ++itr)
+    {
+        uint32 value = uint32(std::strtoul((*itr)[1].str().c_str(), nullptr, 10));
+        if (value && std::find(values.begin(), values.end(), value) == values.end())
+            values.push_back(value);
+    }
+    return values;
+}
+
+std::vector<uint32> ExtractJsonUIntArrayField(std::string const& json, std::string const& key)
+{
+    return ParseUIntList(ExtractJsonArrayField(json, key));
+}
+
 std::map<std::string, float> ExtractJsonNumberMap(std::string const& objectJson)
 {
     std::map<std::string, float> values;
@@ -1010,6 +1028,7 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
     _config.ValidationRouteO = sConfigMgr->GetFloatDefault("BotWorld.ValidationRoute.O", _config.ValidationRouteO);
     _config.ValidationRouteTargetEntry = sConfigMgr->GetIntDefault("BotWorld.ValidationRoute.TargetEntry", _config.ValidationRouteTargetEntry);
     _config.ValidationRouteOpenerTargetEntry = sConfigMgr->GetIntDefault("BotWorld.ValidationRoute.OpenerTargetEntry", _config.ValidationRouteOpenerTargetEntry);
+    _config.ValidationRouteAlternateTargetEntries = ParseUIntList(sConfigMgr->GetStringDefault("BotWorld.ValidationRoute.AlternateTargetEntries", ""));
     _config.ValidationRouteActivationDataId = sConfigMgr->GetIntDefault("BotWorld.ValidationRoute.ActivationDataId", _config.ValidationRouteActivationDataId);
     _config.ValidationRouteActivationDataValue = sConfigMgr->GetIntDefault("BotWorld.ValidationRoute.ActivationDataValue", _config.ValidationRouteActivationDataValue);
     _config.ValidationRouteActivationSpawnGroupId = sConfigMgr->GetIntDefault("BotWorld.ValidationRoute.ActivationSpawnGroupId", _config.ValidationRouteActivationSpawnGroupId);
@@ -1126,6 +1145,7 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
         node.O = readFloat(routeJson, "o");
         node.TargetEntry = uint32(std::max(0, readInt(routeJson, "source_entry")));
         node.OpenerTargetEntry = uint32(std::max(0, readInt(routeJson, "opener_target_entry")));
+        node.AlternateTargetEntries = ExtractJsonUIntArrayField(routeJson, "alternate_target_entries");
         node.ActivationDataId = uint32(std::max(0, readInt(routeJson, "activation_data_id")));
         node.ActivationDataValue = uint32(std::max(0, readInt(routeJson, "activation_data_value")));
         node.ActivationSpawnGroupId = uint32(std::max(0, readInt(routeJson, "activation_spawn_group_id")));
@@ -1175,6 +1195,7 @@ bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode(size_t index, char 
     _config.ValidationRouteO = node.O;
     _config.ValidationRouteTargetEntry = node.TargetEntry;
     _config.ValidationRouteOpenerTargetEntry = node.OpenerTargetEntry;
+    _config.ValidationRouteAlternateTargetEntries = node.AlternateTargetEntries;
     _config.ValidationRouteActivationDataId = node.ActivationDataId;
     _config.ValidationRouteActivationDataValue = node.ActivationDataValue;
     _config.ValidationRouteActivationSpawnGroupId = node.ActivationSpawnGroupId;
@@ -5857,13 +5878,21 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         action = cast ? "validation_route_group_heal" : "validation_route_group_heal_failed";
         return cast;
     };
-    auto isValidationRouteScriptTarget = [this](Creature const* creature) -> bool
+    auto isValidationRouteEntry = [this](uint32 entry) -> bool
+    {
+        if (!entry)
+            return false;
+        if ((_config.ValidationRouteTargetEntry && entry == _config.ValidationRouteTargetEntry)
+            || (_config.ValidationRouteOpenerTargetEntry && entry == _config.ValidationRouteOpenerTargetEntry))
+            return true;
+        return std::find(_config.ValidationRouteAlternateTargetEntries.begin(), _config.ValidationRouteAlternateTargetEntries.end(), entry) != _config.ValidationRouteAlternateTargetEntries.end();
+    };
+    auto isValidationRouteScriptTarget = [&isValidationRouteEntry](Creature const* creature) -> bool
     {
         if (!creature)
             return false;
 
-        return (_config.ValidationRouteTargetEntry && creature->GetEntry() == _config.ValidationRouteTargetEntry)
-            || (_config.ValidationRouteOpenerTargetEntry && creature->GetEntry() == _config.ValidationRouteOpenerTargetEntry);
+        return isValidationRouteEntry(creature->GetEntry());
     };
     auto clearValidationRouteKilledFocus = [this, &state](ObjectGuid killedGuid)
     {
@@ -5902,7 +5931,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
         state.ValidationRouteUnresolvedFocusHoldCount = 0;
     };
-    auto recordValidationRouteBossKill = [this, &state, bot, &power, stage, activity, &clearValidationRouteKilledFocus](Unit* killedTarget, char const* assistResult) -> bool
+    auto recordValidationRouteBossKill = [this, &state, bot, &power, stage, activity, &clearValidationRouteKilledFocus, &isValidationRouteScriptTarget](Unit* killedTarget, char const* assistResult) -> bool
     {
         if (!killedTarget)
             return false;
@@ -5912,9 +5941,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (killedTarget->IsAlive())
         {
             Creature* creature = killedTarget->ToCreature();
-            bool routeScriptTarget = creature
-                && ((_config.ValidationRouteTargetEntry && creature->GetEntry() == _config.ValidationRouteTargetEntry)
-                    || (_config.ValidationRouteOpenerTargetEntry && creature->GetEntry() == _config.ValidationRouteOpenerTargetEntry));
+            bool routeScriptTarget = isValidationRouteScriptTarget(creature);
             if (_config.ValidationRouteKind == "boss" && routeScriptTarget)
             {
                 Unit::Kill(bot, killedTarget);
@@ -6472,11 +6499,13 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         ++_validationRouteActivationAttempts;
         state.ValidationRouteActivationApplied = true;
         state.ValidationRouteActivationAttempts = _validationRouteActivationAttempts;
-        if (_config.ValidationRouteKind == "boss" && activationTarget)
+        if (_config.ValidationRouteKind == "boss" && activationTarget && activationTarget->IsAlive() && bot->IsValidAttackTarget(activationTarget))
         {
             rememberValidationRouteFocus(activationTarget);
             state.TargetGuid = activationTarget->GetGUID();
         }
+        else if (_config.ValidationRouteKind == "boss")
+            state.TargetGuid.Clear();
 
         std::string raw = BuildRawJson(bot, activationTarget);
         std::string semantic = BuildSemanticJson(bot, activationTarget, "validation_route_activation", &power, stage, activity);
@@ -6587,7 +6616,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         return nearestMatchingEntry;
     };
     std::string authoritativeFocusFailure = "authoritative_focus_not_checked";
-    auto findAuthoritativeRouteFocusTarget = [this, bot, &routeUsableCombatTarget, &authoritativeFocusFailure]() -> Unit*
+    auto findAuthoritativeRouteFocusTarget = [this, bot, &routeUsableCombatTarget, &isValidationRouteScriptTarget, &authoritativeFocusFailure]() -> Unit*
     {
         auto activeCohortFocus = [](Player* member, Unit* focus) -> bool
         {
@@ -6610,7 +6639,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             if (_validationRouteActivationApplied && _config.ValidationRouteKind == "boss" && _config.ValidationRouteTargetEntry)
             {
                 if (Creature const* creature = focus->ToCreature())
-                    if (creature->GetEntry() == _config.ValidationRouteTargetEntry)
+                    if (isValidationRouteScriptTarget(creature))
                         return focus;
             }
             return nullptr;
@@ -11539,6 +11568,14 @@ std::string BotWorldPopulationMgr::BuildConfigJson() const
          << ",\"o\":" << _config.ValidationRouteO
          << ",\"target_entry\":" << _config.ValidationRouteTargetEntry
          << ",\"opener_target_entry\":" << _config.ValidationRouteOpenerTargetEntry
+         << ",\"alternate_target_entries\":[";
+    for (size_t index = 0; index < _config.ValidationRouteAlternateTargetEntries.size(); ++index)
+    {
+        if (index)
+            json << ",";
+        json << _config.ValidationRouteAlternateTargetEntries[index];
+    }
+    json << "]"
          << ",\"activation_data_id\":" << _config.ValidationRouteActivationDataId
          << ",\"activation_data_value\":" << _config.ValidationRouteActivationDataValue
          << ",\"activation_spawn_group_id\":" << _config.ValidationRouteActivationSpawnGroupId
@@ -12166,6 +12203,14 @@ std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson(WorldBotState con
          << "{\"name\":\"validation_route_activation_attempts\",\"value\":" << state.ValidationRouteActivationAttempts << "},"
          << "{\"name\":\"validation_route_config_kind\",\"value\":\"" << JsonEscape(_config.ValidationRouteKind) << "\"},"
          << "{\"name\":\"validation_route_config_target_entry\",\"value\":" << _config.ValidationRouteTargetEntry << "},"
+         << "{\"name\":\"validation_route_config_alternate_target_entries\",\"value\":\"";
+    for (size_t index = 0; index < _config.ValidationRouteAlternateTargetEntries.size(); ++index)
+    {
+        if (index)
+            json << ",";
+        json << _config.ValidationRouteAlternateTargetEntries[index];
+    }
+    json << "\"},"
          << "{\"name\":\"validation_route_config_activation_data_id\",\"value\":" << _config.ValidationRouteActivationDataId << "},"
          << "{\"name\":\"validation_route_config_activation_spawn_group_id\",\"value\":" << _config.ValidationRouteActivationSpawnGroupId << "},"
          << "{\"name\":\"validation_route_config_activation_action_entry\",\"value\":" << _config.ValidationRouteActivationActionEntry << "},"

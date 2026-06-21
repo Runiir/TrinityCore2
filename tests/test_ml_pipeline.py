@@ -37,7 +37,7 @@ from tools.bot_ml.build_validation_scenario_manifests import build_manifests as 
 from tools.bot_ml.build_live_scenario_reports import build_reports as build_live_scenario_reports, build_reports_from_live_reports, main as live_scenario_reports_main
 from tools.bot_ml.build_validation_run_plan import build_plan as build_validation_run_plan
 from tools.bot_ml.build_validation_run_status import build_status as build_validation_run_status
-from tools.bot_ml.run_live_bot_validation import bounded_console_deadline, build_bot_pool_reset_sql, command_script, live_validation_report, load_scenario_reports, load_validation_route, main as live_validation_main, parse_json_objects, parse_soap_result, route_segment_complete, run_worldserver, run_worldserver_completion_watchdog, split_sql_statements, trinity_config_bool, upsert_trinity_config, watchdog_state
+from tools.bot_ml.run_live_bot_validation import bounded_console_deadline, build_bot_pool_reset_sql, command_script, live_validation_report, load_scenario_reports, load_validation_route, main as live_validation_main, parse_json_objects, parse_soap_result, route_segment_complete, run_worldserver, run_worldserver_completion_watchdog, split_sql_statements, trinity_config_bool, upsert_trinity_config, watchdog_state, write_validation_config
 from tools.bot_ml.orchestrator_daemon import codex_command, detect_rate_limit, handle_rate_limit, initial_state, run_one_cycle, sleep_until_resume
 from tools.bot_ml.generate_lane_configs import write_lane_config
 from tools.bot_ml.promote_live_validation_artifact import promote
@@ -1438,13 +1438,20 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert any(row["scenario_id"] == "stonecore_5n" and row["kind"] == "trash" for row in routes)
     assert any(row["scenario_id"] == "blackwing_descent_10n" and row["kind"] == "boss" and row["coordinates_valid"] is True and row["source_entry"] == 41570 for row in routes)
     bwd_boss_entries = {row["source_entry"] for row in routes if row["scenario_id"] == "blackwing_descent_10n" and row["kind"] == "boss"}
-    assert {41570, 42186, 41378, 41442, 43296, 41376}.issubset(bwd_boss_entries)
+    assert {41570, 42166, 41378, 41442, 43296, 41376}.issubset(bwd_boss_entries)
     assert 49801 not in bwd_boss_entries
     assert 48964 not in bwd_boss_entries
     atramedes = next(row for row in routes if row["scenario_id"] == "blackwing_descent_10n" and row["label"] == "Atramedes")
+    omnotron = next(row for row in routes if row["scenario_id"] == "blackwing_descent_10n" and row["label"] == "Omnotron Defense System")
     slabhide = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "Slabhide")
     nefarian = next(row for row in routes if row["scenario_id"] == "blackwing_descent_10n" and row["label"] == "Nefarian")
     assert atramedes["expected_bot_count"] == 10
+    assert omnotron["source_entry"] == 42166
+    assert omnotron["alternate_target_entries"] == [42166, 42178, 42179, 42180]
+    assert omnotron["activation_action_entry"] == 42186
+    assert omnotron["activation_action_id"] == 1
+    assert omnotron["target_priority"]["alternate_target_entries"] == [42166, 42178, 42179, 42180]
+    assert "interrupts" in omnotron["required_evidence"]
     assert slabhide["x"] == 1292.352
     assert slabhide["activation_data_id"] == 10
     assert slabhide["activation_data_value"] == 2
@@ -4971,6 +4978,34 @@ def test_live_bot_validation_route_sequence_dry_run_writes_ordered_child_command
     assert "--validation-segment-id' '01_entrance_packs" in commands
     assert "--validation-route-node-id' 'stonecore_corborus" in commands
     assert "stonecore_missing" not in commands
+
+
+def test_live_bot_validation_config_writes_alternate_route_targets(tmp_path):
+    base_config = tmp_path / "worldserver.conf"
+    base_config.write_text("BotWorld.AutoStart = 0\n", encoding="utf-8")
+    generated = write_validation_config(
+        base_config,
+        tmp_path / "live",
+        validation_route={
+            "scenario_id": "blackwing_descent_10n",
+            "route_node_id": "bwd_omnotron",
+            "kind": "boss",
+            "label": "Omnotron Defense System",
+            "mechanic_profile": "target_switch_interrupt_spread",
+            "map_id": 669,
+            "x": -324.807,
+            "y": -418.783,
+            "z": 227.6403,
+            "source_entry": 42186,
+            "alternate_target_entries": [42166, 42178, 42179, 42180, 42166, 0],
+            "expected_bot_count": 10,
+        },
+    )
+
+    config_text = generated.read_text(encoding="utf-8")
+    assert "BotWorld.ValidationRoute.TargetEntry = 42186" in config_text
+    assert 'BotWorld.ValidationRoute.AlternateTargetEntries = "42166,42178,42179,42180"' in config_text
+    assert "BotProgression.AllowDungeons = 1" in config_text
 
 
 def test_live_bot_validation_route_manifest_dry_run_writes_scenario_scoped_config(tmp_path, monkeypatch, capsys):

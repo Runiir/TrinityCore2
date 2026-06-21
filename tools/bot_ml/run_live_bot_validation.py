@@ -251,6 +251,15 @@ def upsert_trinity_config(text: str, key: str, value: str) -> str:
     return text.rstrip() + "\n" + line + "\n"
 
 
+def route_alternate_target_entries(route: dict[str, Any]) -> list[int]:
+    entries: list[int] = []
+    for entry in route.get("alternate_target_entries") or []:
+        entry_id = int(entry or 0)
+        if entry_id > 0 and entry_id not in entries:
+            entries.append(entry_id)
+    return entries
+
+
 def write_validation_config(
     base_config: Path,
     output_dir: Path,
@@ -294,6 +303,7 @@ def write_validation_config(
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.O", str(float(route.get("o") or 0.0)))
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.TargetEntry", str(int(route.get("source_entry") or 0)))
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.OpenerTargetEntry", str(int(route.get("opener_target_entry") or 0)))
+        text = upsert_trinity_config(text, "BotWorld.ValidationRoute.AlternateTargetEntries", f'"{",".join(str(entry) for entry in route_alternate_target_entries(route))}"')
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.ActivationDataId", str(int(route.get("activation_data_id") or 0)))
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.ActivationDataValue", str(int(route.get("activation_data_value") or 0)))
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.ActivationSpawnGroupId", str(int(route.get("activation_spawn_group_id") or 0)))

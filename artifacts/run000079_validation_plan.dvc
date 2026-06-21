@@ -1,0 +1,6 @@
+outs:
+- md5: 27f7487de8f6dc9a6f82d42a81c4584e.dir
+  size: 93829
+  nfiles: 2
+  hash: md5
+  path: run000079_validation_plan

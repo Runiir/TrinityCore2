@@ -64,6 +64,7 @@ def test_server_start_autonomy_enabled_by_default_contract():
     assert re.search(r'^BotWorld\.ValidationRoute\.ManifestPath\s*=\s*""$', conf, re.MULTILINE)
     assert re.search(r'^BotWorld\.ValidationRoute\.AdvanceMode\s*=\s*"disabled"$', conf, re.MULTILINE)
     assert re.search(r"^BotWorld\.ValidationRoute\.TargetEntry\s*=\s*0$", conf, re.MULTILINE)
+    assert re.search(r'^BotWorld\.ValidationRoute\.AlternateTargetEntries\s*=\s*""$', conf, re.MULTILINE)
     assert re.search(r"^BotWorld\.ValidationRoute\.ActivationDataId\s*=\s*0$", conf, re.MULTILINE)
     assert re.search(r"^BotWorld\.ValidationRoute\.ActivationDataValue\s*=\s*0$", conf, re.MULTILINE)
     assert re.search(r"^BotWorld\.ValidationRoute\.ActivationSummonEntry\s*=\s*0$", conf, re.MULTILINE)
@@ -237,6 +238,7 @@ def test_quest_first_portfolio_routing_surface():
         "_validationRouteFocusGuid",
         "_validationRouteFocusEntry",
         "_validationRouteFocusSeenMs",
+        "ValidationRouteAlternateTargetEntries",
     ]:
         assert symbol in mgr_header
 
@@ -254,6 +256,10 @@ def test_quest_first_portfolio_routing_surface():
     assert "objectiveType == BotWorldPopulationMgr::QuestObjectiveType::CollectItem" in mgr
     assert "creature->isElite()" in mgr
     assert "bot->GetMap()->IsDungeon() || bot->GetMap()->IsRaid()" in mgr
+    validation_route_objective = function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    assert "auto isValidationRouteEntry" in validation_route_objective
+    assert "_config.ValidationRouteAlternateTargetEntries.begin()" in validation_route_objective
+    assert "isValidationRouteScriptTarget(creature)" in validation_route_objective
 
     assert "creature_loot_template" in select_objective
     assert "creature_loot_template" in route_objective
@@ -424,9 +430,10 @@ def test_quest_first_portfolio_routing_surface():
     assert "if (_validationRouteActivationApplied)" in mgr
     assert "state.ValidationRouteActivationAttempts = _validationRouteActivationAttempts;" in mgr
     assert "_validationRouteActivationApplied = true;" in mgr
+    assert "activationTarget->IsAlive() && bot->IsValidAttackTarget(activationTarget)" in mgr
     assert "rememberValidationRouteFocus(activationTarget);" in mgr
     assert "state.TargetGuid = activationTarget->GetGUID();" in mgr
-    assert "creature->GetEntry() == _config.ValidationRouteTargetEntry" in mgr
+    assert "isValidationRouteScriptTarget(creature)" in mgr
     assert "validation_route_stuck_follow_focus" in mgr
     assert "ValidationRouteOpenerTargetEntry" in mgr_header
     assert "ValidationRouteOpenerSummonEntry" in mgr_header

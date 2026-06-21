@@ -1,0 +1,6 @@
+outs:
+- md5: f3d1b7e4e2ed5fad1e7844b315a57d9c.dir
+  size: 10847376
+  nfiles: 17
+  hash: md5
+  path: run000079_omnotron_alt_targets

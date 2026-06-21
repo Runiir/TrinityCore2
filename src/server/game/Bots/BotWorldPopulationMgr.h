@@ -75,6 +75,7 @@ struct BotWorldExperimentConfig
     float ValidationRouteO = 0.0f;
     uint32 ValidationRouteTargetEntry = 0;
     uint32 ValidationRouteOpenerTargetEntry = 0;
+    std::vector<uint32> ValidationRouteAlternateTargetEntries;
     uint32 ValidationRouteActivationDataId = 0;
     uint32 ValidationRouteActivationDataValue = 0;
     uint32 ValidationRouteActivationSpawnGroupId = 0;
@@ -240,6 +241,7 @@ private:
         float O = 0.0f;
         uint32 TargetEntry = 0;
         uint32 OpenerTargetEntry = 0;
+        std::vector<uint32> AlternateTargetEntries;
         uint32 ActivationDataId = 0;
         uint32 ActivationDataValue = 0;
         uint32 ActivationSpawnGroupId = 0;

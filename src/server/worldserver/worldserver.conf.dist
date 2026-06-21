@@ -3549,6 +3549,7 @@ BotWorld.ValidationRoute.Y = 0.0
 BotWorld.ValidationRoute.Z = 0.0
 BotWorld.ValidationRoute.O = 0.0
 BotWorld.ValidationRoute.TargetEntry = 0
+BotWorld.ValidationRoute.AlternateTargetEntries = ""
 BotWorld.ValidationRoute.ActivationDataId = 0
 BotWorld.ValidationRoute.ActivationDataValue = 0
 BotWorld.ValidationRoute.ActivationSummonEntry = 0

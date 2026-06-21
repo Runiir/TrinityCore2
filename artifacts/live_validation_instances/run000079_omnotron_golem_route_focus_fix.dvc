@@ -1,0 +1,6 @@
+outs:
+- md5: e5984167a9a06405eef7d1db177b6db1.dir
+  size: 674572
+  nfiles: 8
+  hash: md5
+  path: run000079_omnotron_golem_route_focus_fix
