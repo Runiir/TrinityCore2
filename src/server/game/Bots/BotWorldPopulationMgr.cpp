@@ -6036,12 +6036,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 activationTarget = summon;
         }
         if (!activationTarget
-            && routeTargetActivationFallback
-            && !_config.ValidationRouteActivationDataId
-            && !_config.ValidationRouteActivationSpawnGroupId
-            && !_config.ValidationRouteActivationActionEntry
-            && !_config.ValidationRouteActivationSummonEntry
-            && !_config.ValidationRouteOpenerSummonEntry)
+            && routeTargetActivationFallback)
         {
             Position targetPos(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ, _config.ValidationRouteO);
             activationTarget = bot->SummonCreature(_config.ValidationRouteTargetEntry, targetPos, TEMPSUMMON_MANUAL_DESPAWN);
@@ -6765,16 +6760,22 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 std::string raw = BuildRawJson(bot, nullptr);
                 std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_regroup", &power, stage, activity);
                 if (_config.ValidationRouteKind == "boss"
-                    && hasValidationRouteActivation
-                    && !_validationRouteActivationApplied)
+                    && hasValidationRouteActivation)
                 {
-                    if (tryValidationRouteActivation(nullptr, "boss_route_no_focus_activation"))
+                    if (!_validationRouteActivationApplied && tryValidationRouteActivation(nullptr, "boss_route_no_focus_activation"))
                     {
                         action = "validation_route_activate_target";
                         return true;
                     }
 
-                    RecordEvent(state, bot, "validation_route_recovery", nullptr, "boss_route_no_focus_activation_unavailable", raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry);
+                    if (_validationRouteActivationApplied)
+                    {
+                        state.ValidationRouteActivationApplied = true;
+                        state.ValidationRouteActivationAttempts = _validationRouteActivationAttempts;
+                        RecordEvent(state, bot, "validation_route_recovery", nullptr, "boss_route_no_focus_activation_already_applied", raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry);
+                    }
+                    else
+                        RecordEvent(state, bot, "validation_route_recovery", nullptr, "boss_route_no_focus_activation_unavailable", raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry);
                 }
 
                 if (_config.ValidationRouteKind == "boss" && routeDistance > 12.0f)
@@ -11548,6 +11549,15 @@ std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson(WorldBotState con
     uint64 sinceDecisionMs = state.LastDecisionTickMs ? nowMs - state.LastDecisionTickMs : 0;
     uint64 sinceProgressMs = state.LastMovementProgressMs ? nowMs - state.LastMovementProgressMs : 0;
     uint64 sincePathChangeMs = state.LastPathChangeMs ? nowMs - state.LastPathChangeMs : 0;
+    bool hasValidationRouteActivation = _config.ValidationRouteActivationDataId
+        || _config.ValidationRouteActivationSpawnGroupId
+        || _config.ValidationRouteActivationActionEntry
+        || _config.ValidationRouteActivationSummonEntry
+        || _config.ValidationRouteOpenerSummonEntry
+        || (_config.ValidationRouteKind == "boss" && _config.ValidationRouteTargetEntry);
+    float validationRouteDistance = -1.0f;
+    if (bot && (!_config.ValidationRouteMapId || bot->GetMapId() == _config.ValidationRouteMapId))
+        validationRouteDistance = bot->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ);
 
     std::ostringstream json;
     json << "{\"diagnosis_code\":\"" << JsonEscape(diagnosis.DiagnosisCode) << "\""
@@ -11582,6 +11592,18 @@ std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson(WorldBotState con
          << "{\"name\":\"no_progress_cooldown_count\",\"value\":" << state.NoProgressCooldownUntilMs.size() << "},"
          << "{\"name\":\"validation_route_activation_applied\",\"value\":" << (state.ValidationRouteActivationApplied ? "true" : "false") << "},"
          << "{\"name\":\"validation_route_activation_attempts\",\"value\":" << state.ValidationRouteActivationAttempts << "},"
+         << "{\"name\":\"validation_route_config_kind\",\"value\":\"" << JsonEscape(_config.ValidationRouteKind) << "\"},"
+         << "{\"name\":\"validation_route_config_target_entry\",\"value\":" << _config.ValidationRouteTargetEntry << "},"
+         << "{\"name\":\"validation_route_config_activation_data_id\",\"value\":" << _config.ValidationRouteActivationDataId << "},"
+         << "{\"name\":\"validation_route_config_activation_spawn_group_id\",\"value\":" << _config.ValidationRouteActivationSpawnGroupId << "},"
+         << "{\"name\":\"validation_route_config_activation_action_entry\",\"value\":" << _config.ValidationRouteActivationActionEntry << "},"
+         << "{\"name\":\"validation_route_config_activation_action_id\",\"value\":" << _config.ValidationRouteActivationActionId << "},"
+         << "{\"name\":\"validation_route_config_activation_summon_entry\",\"value\":" << _config.ValidationRouteActivationSummonEntry << "},"
+         << "{\"name\":\"validation_route_config_opener_summon_entry\",\"value\":" << _config.ValidationRouteOpenerSummonEntry << "},"
+         << "{\"name\":\"validation_route_has_activation\",\"value\":" << (hasValidationRouteActivation ? "true" : "false") << "},"
+         << "{\"name\":\"validation_route_manager_activation_applied\",\"value\":" << (_validationRouteActivationApplied ? "true" : "false") << "},"
+         << "{\"name\":\"validation_route_manager_activation_attempts\",\"value\":" << _validationRouteActivationAttempts << "},"
+         << "{\"name\":\"validation_route_distance\",\"value\":" << validationRouteDistance << "},"
          << "{\"name\":\"decision_fingerprint_hash\",\"value\":" << state.LastDecisionFingerprintHash << "},"
          << "{\"name\":\"decision_fingerprint_repeat_count\",\"value\":" << state.LastDecisionFingerprintRepeatCount << "},"
          << "{\"name\":\"decision_fingerprint_failure_count\",\"value\":" << state.LastDecisionFingerprintFailureCount << "},"

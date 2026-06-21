@@ -1,0 +1,6 @@
+outs:
+- md5: 6b8dfaa1b83a302dd7ba9cedf48ce1db.dir
+  size: 686344
+  nfiles: 11
+  hash: md5
+  path: stonecore_corborus_route_target_assist_r10

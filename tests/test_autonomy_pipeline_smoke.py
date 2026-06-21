@@ -407,6 +407,7 @@ def test_quest_first_portfolio_routing_surface():
     assert "validation_route_activation" in mgr
     assert "boss_route_early_activation" in mgr
     assert "boss_route_no_focus_activation" in mgr
+    assert "boss_route_no_focus_activation_already_applied" in mgr
     assert "boss_route_no_focus_activation_unavailable" in mgr
     assert "advance_to_boss_route_no_focus" in mgr
     assert "hasValidationRouteActivation" in mgr
@@ -442,6 +443,7 @@ def test_quest_first_portfolio_routing_surface():
     assert "bot->SummonCreature(_config.ValidationRouteTargetEntry, targetPos" in mgr
     assert "routeTargetActivationFallback" in mgr
     assert "&& !routeTargetActivationFallback" in mgr
+    assert "if (!activationTarget\n            && routeTargetActivationFallback)" in mgr
     assert "float routeArrivalRadius =" in mgr
     assert "_config.ValidationRouteActivationSpawnGroupId" in mgr
     assert "BotWorld.ValidationRoute.ActivationDataId" in mgr
@@ -681,6 +683,18 @@ def test_botauto_diagnosis_and_trace_surface():
         "active_quest_cluster_id",
         "quest_cooldown_count",
         "no_progress_cooldown_count",
+        "validation_route_config_kind",
+        "validation_route_config_target_entry",
+        "validation_route_config_activation_data_id",
+        "validation_route_config_activation_spawn_group_id",
+        "validation_route_config_activation_action_entry",
+        "validation_route_config_activation_action_id",
+        "validation_route_config_activation_summon_entry",
+        "validation_route_config_opener_summon_entry",
+        "validation_route_has_activation",
+        "validation_route_manager_activation_applied",
+        "validation_route_manager_activation_attempts",
+        "validation_route_distance",
         "decision_fingerprint_hash",
         "decision_fingerprint_repeat_count",
         "decision_fingerprint_failure_count",

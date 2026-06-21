@@ -1,0 +1,18 @@
+{
+  "schema": "orchestrator_agent_registry_v1",
+  "agents": [
+    {
+      "id": "worker_inspect_corborus_activation",
+      "role": "worker",
+      "status": "completed",
+      "complexity": "medium",
+      "model": "gpt-5.5",
+      "reasoning_effort": "medium",
+      "jsonl_path": "/home/runiir/Games/trinity-cata/.codex/plans/auto_bots/runs/000021/worker_inspect_corborus_activation.jsonl",
+      "stderr_path": "/home/runiir/Games/trinity-cata/.codex/plans/auto_bots/runs/000021/worker_inspect_corborus_activation.stderr",
+      "last_message_path": "/home/runiir/Games/trinity-cata/.codex/plans/auto_bots/runs/000021/worker_inspect_corborus_activation.last_message.md",
+      "prompt_path": "/home/runiir/Games/trinity-cata/.codex/plans/auto_bots/runs/000021/worker_inspect_corborus_activation.prompt.md",
+      "started_at_unix": 1782002285
+    }
+  ]
+}
