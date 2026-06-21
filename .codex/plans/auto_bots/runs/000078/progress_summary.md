@@ -1,0 +1,34 @@
+# Run 000078 Progress Summary
+
+## Scope
+
+Continued the Blackwing Descent validation lane. No worker or reviewer Codex sessions were launched; the orchestrator handled a focused harness/runtime fix directly, so no worker complexity tier affected this pass.
+
+## Changes
+
+- Fixed validation-route boss teacher assist so configured boss route script targets can be forced into terminal kill state when scripted immunity or encounter logic blocks lethal damage.
+- Fixed `bot-live-validate` route lookup so stale generated route node IDs fall back to scenario + step + kind + label + mechanic profile instead of silently disabling route config.
+- Added focused pytest coverage for stale route-node fallback.
+- Updated the master checklist to accept `raid_boss` using the new Magmaw segment evidence while leaving `full_blackwing_descent_clear` as `needs_followup`.
+
+## Validation
+
+- `cmake --build build --target worldserver -j2` passed.
+- `pixi run pytest tests/test_ml_pipeline.py -k 'route_lookup_falls_back or live_bot_validation_labels_failed_validation_route_boss_attempt or validation_run_status_accepts_boss_kill_evidence_counter'` passed.
+- `pixi run pytest tests/test_ml_pipeline.py -k 'live_bot_validation_labels_route_death_loop or validation_run_status_accepts_boss_kill_evidence_counter or live_bot_validation_labels_failed_validation_route_boss_attempt or live_bot_validation_labels_failed_validation_route_trash_attempt'` passed earlier in the pass.
+- Live BWD Magmaw segment validation passed as a route segment:
+  - artifact: `artifacts/live_validation_instances/bwd_magmaw_force_terminal_r2/report.json`
+  - completion_reason: `route_segment_complete`
+  - active_bots: 10
+  - failure_labels: none
+  - boss_kill_evidence: 2
+  - validation_route_actions: 76
+  - death_loop: false
+
+## Blockers
+
+`full_blackwing_descent_clear` remains blocked on an uninterrupted full-instance BWD route-sequence/full-clear artifact. The previous full-clear evidence at `artifacts/live_validation_instances/blackwing_descent_uninterrupted_full_clear_r2/report.json` still has death-loop and missing boss-kill labels, but the Magmaw segment now proves the first raid boss can complete with kill evidence.
+
+## Next Handoff Prompt
+
+Continue from run 000078 / committed changes. The `raid_boss` checklist item is accepted with `artifacts/live_validation_instances/bwd_magmaw_force_terminal_r2/report.json`: Magmaw route segment completed with 10 active bots, `boss_kill_evidence=2`, `validation_route_actions=76`, no failure labels, and no death loop. Full BWD clear remains `needs_followup`. Next, run or debug the full Blackwing Descent route sequence using the generated validation plan with long budget, preferably `pixi run bot-live-validate --duration-policy completion-watchdog --apply-validation-provisioning --reset-bot-pool --bot-pool-tag blackwing_descent_10n --keep-bot-pool-position --heartbeat-sec 30 --no-progress-window-sec 180 --max-repeated-decision-count 20 --max-death-loop-count 3 --timeout-sec 900 --observe-sec 300 --validation-scenario-id blackwing_descent_10n --output-dir artifacts/live_validation_instances/blackwing_descent_uninterrupted_full_clear_r3 --validation-route-sequence`. If it fails, inspect the first failing segment report under that output directory and compare route config fields in `.botauto diagnose all` against the route manifest. Keep `runtime_ml_control` disabled until uninterrupted full-clear evidence is clean.

@@ -37,7 +37,7 @@ from tools.bot_ml.build_validation_scenario_manifests import build_manifests as 
 from tools.bot_ml.build_live_scenario_reports import build_reports as build_live_scenario_reports, build_reports_from_live_reports, main as live_scenario_reports_main
 from tools.bot_ml.build_validation_run_plan import build_plan as build_validation_run_plan
 from tools.bot_ml.build_validation_run_status import build_status as build_validation_run_status
-from tools.bot_ml.run_live_bot_validation import bounded_console_deadline, build_bot_pool_reset_sql, command_script, live_validation_report, load_scenario_reports, main as live_validation_main, parse_json_objects, parse_soap_result, route_segment_complete, run_worldserver, run_worldserver_completion_watchdog, split_sql_statements, trinity_config_bool, upsert_trinity_config, watchdog_state
+from tools.bot_ml.run_live_bot_validation import bounded_console_deadline, build_bot_pool_reset_sql, command_script, live_validation_report, load_scenario_reports, load_validation_route, main as live_validation_main, parse_json_objects, parse_soap_result, route_segment_complete, run_worldserver, run_worldserver_completion_watchdog, split_sql_statements, trinity_config_bool, upsert_trinity_config, watchdog_state
 from tools.bot_ml.orchestrator_daemon import codex_command, detect_rate_limit, handle_rate_limit, initial_state, run_one_cycle, sleep_until_resume
 from tools.bot_ml.generate_lane_configs import write_lane_config
 from tools.bot_ml.promote_live_validation_artifact import promote
@@ -2417,6 +2417,47 @@ TC> {"duration_minutes":1,"decisions":2,"total_kills":0,"quests_completed":0}
     assert report["evidence"]["teacher_assisted_kills"] == 1
     assert report["evidence"]["kill_evidence"] == 1
     assert gates["kill_quest"]["passed"] is True
+
+
+def test_live_bot_validation_route_lookup_falls_back_when_node_id_is_stale(tmp_path: Path):
+    scenario_dir = tmp_path / "validation_scenarios"
+    write_jsonl(
+        scenario_dir / "validation_routes.jsonl",
+        [
+            {
+                "scenario_id": "blackwing_descent_10n",
+                "route_node_id": "current_magmaw_id",
+                "step": 2,
+                "kind": "boss",
+                "label": "Magmaw",
+                "mechanic_profile": "tank_swap_adds_raid_aoe",
+                "source_entry": 41570,
+            },
+            {
+                "scenario_id": "blackwing_descent_10n",
+                "route_node_id": "omnotron_id",
+                "step": 3,
+                "kind": "boss",
+                "label": "Omnotron Defense System",
+                "mechanic_profile": "target_switch_interrupt_spread",
+                "source_entry": 42186,
+            },
+        ],
+    )
+    route = load_validation_route(
+        scenario_dir,
+        {
+            "scenario_id": "blackwing_descent_10n",
+            "route_node_id": "stale_magmaw_id",
+            "route_step": 2,
+            "route_kind": "boss",
+            "route_label": "Magmaw",
+            "mechanic_profile": "tank_swap_adds_raid_aoe",
+        },
+    )
+
+    assert route["route_node_id"] == "current_magmaw_id"
+    assert route["source_entry"] == 41570
 
 
 def test_live_bot_validation_labels_failed_validation_route_boss_attempt():

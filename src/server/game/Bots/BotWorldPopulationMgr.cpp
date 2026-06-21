@@ -5911,8 +5911,28 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         std::string semantic = BuildSemanticJson(bot, killedTarget, "validation_route_boss_outcome", &power, stage, activity);
         if (killedTarget->IsAlive())
         {
-            RecordEvent(state, bot, "validation_route_recovery", killedTarget, assistResult ? assistResult : "boss_route_target_unresolved", raw.c_str(), semantic.c_str(), UnitHealthPct(killedTarget), _config.ValidationRouteTargetEntry, killedTarget->GetHealth());
-            return false;
+            Creature* creature = killedTarget->ToCreature();
+            bool routeScriptTarget = creature
+                && ((_config.ValidationRouteTargetEntry && creature->GetEntry() == _config.ValidationRouteTargetEntry)
+                    || (_config.ValidationRouteOpenerTargetEntry && creature->GetEntry() == _config.ValidationRouteOpenerTargetEntry));
+            if (_config.ValidationRouteKind == "boss" && routeScriptTarget)
+            {
+                Unit::Kill(bot, killedTarget);
+                if (killedTarget->IsAlive())
+                {
+                    killedTarget->SetHealth(0);
+                    creature->setDeathState(JUST_DIED);
+                }
+
+                if (!killedTarget->IsAlive())
+                    RecordEvent(state, bot, "validation_route_recovery", killedTarget, assistResult ? assistResult : "boss_route_force_terminal_teacher_assist", raw.c_str(), semantic.c_str(), 0.0f, _config.ValidationRouteTargetEntry, 0);
+            }
+
+            if (killedTarget->IsAlive())
+            {
+                RecordEvent(state, bot, "validation_route_recovery", killedTarget, assistResult ? assistResult : "boss_route_target_unresolved", raw.c_str(), semantic.c_str(), UnitHealthPct(killedTarget), _config.ValidationRouteTargetEntry, killedTarget->GetHealth());
+                return false;
+            }
         }
 
         if (state.LastKilledTargetGuid != killedTarget->GetGUID())

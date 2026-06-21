@@ -1,0 +1,28 @@
+{
+  "schema": "orchestrator_run_status_v1",
+  "run_id": "000078",
+  "updated_at_unix": 1782026720,
+  "status": "continue",
+  "checklist": {
+    "accepted": 14,
+    "needs_followup": 1,
+    "review": 0,
+    "all_complete": false,
+    "updated_path": ".codex/plans/auto_bots/master_checklist.json"
+  },
+  "workers": {
+    "launched": 0,
+    "resumed": 0,
+    "registry_path": ".codex/plans/auto_bots/runs/000078/agent_registry.json"
+  },
+  "validation": {
+    "worldserver_build_passed": true,
+    "focused_pytest_passed": true,
+    "live_magmaw_segment_report": "artifacts/live_validation_instances/bwd_magmaw_force_terminal_r2/report.json",
+    "live_magmaw_completion_reason": "route_segment_complete",
+    "live_magmaw_boss_kill_evidence": 2,
+    "live_magmaw_validation_route_actions": 76,
+    "live_magmaw_failure_labels": []
+  },
+  "next_prompt_path": ".codex/plans/auto_bots/runs/000078/next_prompt.md"
+}

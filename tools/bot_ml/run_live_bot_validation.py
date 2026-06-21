@@ -109,18 +109,50 @@ def trinity_config_bool(path: Path, key: str, default: bool = False) -> bool:
 def load_validation_route(scenario_dir: Path, context: dict[str, Any]) -> dict[str, Any]:
     scenario_id = str(context.get("scenario_id") or "")
     route_node_id = str(context.get("route_node_id") or "")
-    if not scenario_id or not route_node_id:
+    if not scenario_id:
         return {}
     route_path = scenario_dir / "validation_routes.jsonl"
     if not route_path.exists():
         return {}
+    rows: list[dict[str, Any]] = []
     for line in route_path.read_text(encoding="utf-8").splitlines():
         if not line.strip():
             continue
         row = json.loads(line)
-        if str(row.get("scenario_id") or "") == scenario_id and str(row.get("route_node_id") or "") == route_node_id:
+        if str(row.get("scenario_id") or "") != scenario_id:
+            continue
+        if route_node_id and str(row.get("route_node_id") or "") == route_node_id:
             return row
-    return {}
+        rows.append(row)
+
+    route_step = int(context.get("route_step") or 0)
+    route_kind = str(context.get("route_kind") or "")
+    route_label = str(context.get("route_label") or "")
+    mechanic_profile = str(context.get("mechanic_profile") or "")
+    if not (route_step or route_kind or route_label):
+        return {}
+
+    def fallback_score(row: dict[str, Any]) -> int:
+        score = 0
+        if route_step and int(row.get("step") or 0) == route_step:
+            score += 8
+        if route_kind and str(row.get("kind") or "") == route_kind:
+            score += 4
+        if route_label and str(row.get("label") or "") == route_label:
+            score += 2
+        if mechanic_profile and str(row.get("mechanic_profile") or "") == mechanic_profile:
+            score += 1
+        return score
+
+    candidates: list[tuple[int, dict[str, Any]]] = []
+    for row in rows:
+        score = fallback_score(row)
+        if score >= 12:
+            candidates.append((score, row))
+    if not candidates:
+        return {}
+    candidates.sort(key=lambda scored: (-scored[0], int(scored[1].get("step") or 0), str(scored[1].get("route_node_id") or "")))
+    return candidates[0][1]
 
 
 def load_validation_routes_for_scenario(scenario_dir: Path, scenario_id: str) -> list[dict[str, Any]]:

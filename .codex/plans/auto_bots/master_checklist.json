@@ -1,6 +1,6 @@
 {
   "all_passed": false,
-  "checklist_hash": "b7134be60bb2c6499b58f66447e8ef058270e5028bc00f784f191929fd22466f",
+  "checklist_hash": "bab9b46cc8a7c6f5e9a49a9b32f53fc2586e907827e9dc60d233ffb43d496740",
   "deliverables": [
     {
       "deliverable": "movement_smoke",
@@ -121,12 +121,12 @@
     },
     {
       "deliverable": "raid_boss",
-      "evidence_artifact": "artifacts/live_validation_instances/blackwing_descent_uninterrupted_full_clear_r2/report.json",
-      "failure_label": "validation_route_death_loop,missing_boss_kill_evidence,scenario_clear_not_complete,failure_labels_present",
+      "evidence_artifact": "artifacts/live_validation_instances/bwd_magmaw_force_terminal_r2/report.json",
+      "failure_label": "",
       "followup_lane": "",
-      "lane": "blackwing_descent_10n",
+      "lane": "blackwing_descent_10n_magmaw_segment",
       "reviewer": "",
-      "status": "review"
+      "status": "accepted"
     },
     {
       "deliverable": "full_blackwing_descent_clear",
