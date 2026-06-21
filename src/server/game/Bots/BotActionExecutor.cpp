@@ -22,6 +22,26 @@ float GetNominalRange(HealerIntent intent)
 {
     return intent == HealerIntent::ExternalDefensive ? 30.0f : 40.0f;
 }
+
+bool HasEnoughPowerForSpell(Player const* bot, SpellInfo const* spellInfo)
+{
+    if (!bot || !spellInfo)
+        return false;
+
+    int32 powerCost = spellInfo->CalcPowerCost(bot, spellInfo->GetSchoolMask());
+    if (powerCost <= 0)
+        return true;
+    if (spellInfo->PowerType >= MAX_POWERS)
+        return true;
+    if (spellInfo->PowerType == POWER_HEALTH)
+        return int64(bot->GetHealth()) > powerCost;
+    return bot->GetPower(Powers(spellInfo->PowerType)) >= uint32(powerCost);
+}
+
+bool IsSchedulingResult(BotActionResult result)
+{
+    return result == BotActionResult::Casting || result == BotActionResult::GlobalCooldown;
+}
 }
 
 BotActionResult BotActionExecutor::Execute(Player* owner, Player* bot, ResolvedBotAction const& action)
@@ -37,7 +57,8 @@ BotActionResult BotActionExecutor::Execute(Player* owner, Player* bot, ResolvedB
     BotActionResult check = CheckSpell(owner, bot, target, action.SpellId);
     if (check != BotActionResult::Ok)
     {
-        RecordFailure(bot->GetGUID(), action.SpellId, action.TargetGuid);
+        if (!IsSchedulingResult(check))
+            RecordFailure(bot->GetGUID(), action.SpellId, action.TargetGuid);
         return check;
     }
 
@@ -66,16 +87,28 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
 
     Unit* target = action.TargetGuid.IsEmpty() ? nullptr : ObjectAccessor::GetUnit(*bot, action.TargetGuid);
     if (action.Type == "pull" || action.Type == "move_to_range")
-        return Pull(bot, target);
+    {
+        if (action.MovementDirective == "melee")
+            return Pull(bot, target);
+        if (!target)
+            return BotActionResult::InvalidTarget;
+        Face(bot, target);
+        return BotActionResult::Ok;
+    }
     if (action.Type == "loot")
         return Loot(bot, target);
     if (!action.SpellId)
         return BotActionResult::NoAction;
 
+    if (!target || !target->IsAlive() || !bot->IsValidAttackTarget(target))
+        return BotActionResult::InvalidTarget;
+    Face(bot, target);
+
     BotActionResult check = CheckHostileSpell(owner, bot, target, action.SpellId);
     if (check != BotActionResult::Ok)
     {
-        RecordFailure(bot->GetGUID(), action.SpellId, action.TargetGuid);
+        if (!IsSchedulingResult(check))
+            RecordFailure(bot->GetGUID(), action.SpellId, action.TargetGuid);
         return check;
     }
 
@@ -89,7 +122,7 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
         return BotActionResult::CastFailed;
     }
 
-    if (target && target != bot && bot->IsValidAttackTarget(target))
+    if (target && target != bot && bot->IsValidAttackTarget(target) && action.AutoAttackMode == "melee")
         bot->Attack(target, true);
     RecordSuccess(bot->GetGUID());
     return BotActionResult::Ok;
@@ -336,14 +369,20 @@ BotActionExecutor::LootResult BotActionExecutor::AutoLoot(Player* bot, Unit* tar
 
 void BotActionExecutor::MoveFollow(Player* owner, Player* bot)
 {
+    MoveFollow(owner, bot, 3.5f);
+}
+
+void BotActionExecutor::MoveFollow(Player* owner, Player* bot, float followDistance)
+{
     if (!owner || !bot || !bot->IsAlive())
         return;
 
-    if (bot->GetMotionMaster()->GetCurrentMovementGeneratorType() == FOLLOW_MOTION_TYPE && bot->IsWithinDistInMap(owner, 8.0f))
+    followDistance = std::max(1.5f, followDistance);
+    if (bot->GetMotionMaster()->GetCurrentMovementGeneratorType() == FOLLOW_MOTION_TYPE && bot->IsWithinDistInMap(owner, followDistance + 4.0f))
         return;
 
     bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
-    bot->GetMotionMaster()->MoveFollow(owner, 3.5f, float(M_PI) / 2.0f);
+    bot->GetMotionMaster()->MoveFollow(owner, followDistance, float(M_PI) / 2.0f);
 }
 
 void BotActionExecutor::MoveStay(Player* bot)
@@ -429,8 +468,7 @@ BotActionResult BotActionExecutor::CheckSpell(Player* owner, Player* bot, Unit* 
     if (!bot->GetSpellHistory()->IsReady(spellInfo))
         return BotActionResult::Cooldown;
 
-    int32 powerCost = spellInfo->CalcPowerCost(bot, spellInfo->GetSchoolMask());
-    if (powerCost > 0 && bot->GetPower(bot->GetPowerType()) < uint32(powerCost))
+    if (!HasEnoughPowerForSpell(bot, spellInfo))
         return BotActionResult::NoMana;
 
     if (owner && bot->GetMap() != owner->GetMap())
@@ -460,8 +498,7 @@ BotActionResult BotActionExecutor::CheckHostileSpell(Player* owner, Player* bot,
         return BotActionResult::GlobalCooldown;
     if (!bot->GetSpellHistory()->IsReady(spellInfo))
         return BotActionResult::Cooldown;
-    int32 powerCost = spellInfo->CalcPowerCost(bot, spellInfo->GetSchoolMask());
-    if (powerCost > 0 && bot->GetPower(bot->GetPowerType()) < uint32(powerCost))
+    if (!HasEnoughPowerForSpell(bot, spellInfo))
         return BotActionResult::NoMana;
     if (owner && bot->GetMap() != owner->GetMap())
         return BotActionResult::NoOwner;

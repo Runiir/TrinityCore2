@@ -214,8 +214,12 @@ struct ResolvedCombatAction
     std::string Type = "wait";
     uint32 SpellId = 0;
     ObjectGuid TargetGuid;
-    bool Valid = true;
+    bool Valid = false;
     std::string DebugName;
+    std::string MovementDirective;
+    std::string AutoAttackMode;
+    float MinRange = 0.0f;
+    float MaxRange = 0.0f;
 };
 
 enum class HealerMode : uint8

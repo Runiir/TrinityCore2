@@ -1,1 +1,2 @@
 *.sql
+!2026_06_21_00_bot_rotation_profiles.sql

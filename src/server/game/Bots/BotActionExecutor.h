@@ -30,6 +30,7 @@ public:
     BotActionResult Loot(Player* bot, Unit* target);
     LootResult AutoLoot(Player* bot, Unit* target);
     void MoveFollow(Player* owner, Player* bot);
+    void MoveFollow(Player* owner, Player* bot, float followDistance);
     void MoveStay(Player* bot);
     void MoveStop(Player* bot);
     void MoveTo(Player* bot, float x, float y, float z);

@@ -1614,23 +1614,14 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
     _config.ValidationRouteZ = sConfigMgr->GetFloatDefault("BotWorld.ValidationRoute.Z", _config.ValidationRouteZ);
     _config.ValidationRouteO = sConfigMgr->GetFloatDefault("BotWorld.ValidationRoute.O", _config.ValidationRouteO);
     _config.ValidationRouteTargetEntry = sConfigMgr->GetIntDefault("BotWorld.ValidationRoute.TargetEntry", _config.ValidationRouteTargetEntry);
-    _config.ValidationRouteOpenerTargetEntry = sConfigMgr->GetIntDefault("BotWorld.ValidationRoute.OpenerTargetEntry", _config.ValidationRouteOpenerTargetEntry);
     _config.ValidationRouteAlternateTargetEntries = ParseUIntList(sConfigMgr->GetStringDefault("BotWorld.ValidationRoute.AlternateTargetEntries", ""));
     _config.ValidationRouteActivationDataId = sConfigMgr->GetIntDefault("BotWorld.ValidationRoute.ActivationDataId", _config.ValidationRouteActivationDataId);
     _config.ValidationRouteActivationDataValue = sConfigMgr->GetIntDefault("BotWorld.ValidationRoute.ActivationDataValue", _config.ValidationRouteActivationDataValue);
-    _config.ValidationRouteActivationSpawnGroupId = sConfigMgr->GetIntDefault("BotWorld.ValidationRoute.ActivationSpawnGroupId", _config.ValidationRouteActivationSpawnGroupId);
-    _config.ValidationRouteActivationActionEntry = sConfigMgr->GetIntDefault("BotWorld.ValidationRoute.ActivationActionEntry", _config.ValidationRouteActivationActionEntry);
-    _config.ValidationRouteActivationActionId = sConfigMgr->GetIntDefault("BotWorld.ValidationRoute.ActivationActionId", _config.ValidationRouteActivationActionId);
     _config.ValidationRouteActivationSummonEntry = sConfigMgr->GetIntDefault("BotWorld.ValidationRoute.ActivationSummonEntry", _config.ValidationRouteActivationSummonEntry);
     _config.ValidationRouteActivationSummonX = sConfigMgr->GetFloatDefault("BotWorld.ValidationRoute.ActivationSummonX", _config.ValidationRouteActivationSummonX);
     _config.ValidationRouteActivationSummonY = sConfigMgr->GetFloatDefault("BotWorld.ValidationRoute.ActivationSummonY", _config.ValidationRouteActivationSummonY);
     _config.ValidationRouteActivationSummonZ = sConfigMgr->GetFloatDefault("BotWorld.ValidationRoute.ActivationSummonZ", _config.ValidationRouteActivationSummonZ);
     _config.ValidationRouteActivationSummonO = sConfigMgr->GetFloatDefault("BotWorld.ValidationRoute.ActivationSummonO", _config.ValidationRouteActivationSummonO);
-    _config.ValidationRouteOpenerSummonEntry = sConfigMgr->GetIntDefault("BotWorld.ValidationRoute.OpenerSummonEntry", _config.ValidationRouteOpenerSummonEntry);
-    _config.ValidationRouteOpenerSummonX = sConfigMgr->GetFloatDefault("BotWorld.ValidationRoute.OpenerSummonX", _config.ValidationRouteOpenerSummonX);
-    _config.ValidationRouteOpenerSummonY = sConfigMgr->GetFloatDefault("BotWorld.ValidationRoute.OpenerSummonY", _config.ValidationRouteOpenerSummonY);
-    _config.ValidationRouteOpenerSummonZ = sConfigMgr->GetFloatDefault("BotWorld.ValidationRoute.OpenerSummonZ", _config.ValidationRouteOpenerSummonZ);
-    _config.ValidationRouteOpenerSummonO = sConfigMgr->GetFloatDefault("BotWorld.ValidationRoute.OpenerSummonO", _config.ValidationRouteOpenerSummonO);
     _config.AllowConfiguredCenterFallback = sConfigMgr->GetBoolDefault("BotWorld.AllowConfiguredCenterFallback", _config.AllowConfiguredCenterFallback);
     _config.UseSavedPosition = sConfigMgr->GetBoolDefault("BotWorld.UseSavedPosition", _config.UseSavedPosition);
     _config.NearPlayerRadius = sConfigMgr->GetFloatDefault("BotWorld.NearPlayerRadius", _config.NearPlayerRadius);
@@ -3066,6 +3057,79 @@ bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, fl
     return true;
 }
 
+bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* bot, Unit* reference, ResolvedCombatAction const* action)
+{
+    if (!bot || !reference)
+        return false;
+
+    std::string role = GetDungeonRole(bot);
+    BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(bot, role.c_str());
+    std::string directive = action && !action->MovementDirective.empty() ? action->MovementDirective : profile.MovementDirective;
+    float minRange = action && action->MinRange > 0.0f ? action->MinRange : profile.MinRange;
+    float maxRange = action && action->MaxRange > 0.0f ? action->MaxRange : profile.MaxRange;
+
+    if (profile.MissingProfile || directive.empty())
+        return false;
+
+    if (directive == "melee" || (minRange <= 0.0f && maxRange <= 5.0f))
+        return MoveBotToPoint(state, bot, reference->GetPositionX(), reference->GetPositionY(), reference->GetPositionZ());
+
+    float desiredRange = minRange > 0.0f ? minRange : std::max(12.0f, std::min(maxRange - 2.0f, 25.0f));
+    if (maxRange > 0.0f)
+        desiredRange = std::min(desiredRange, std::max(5.0f, maxRange - 2.0f));
+    desiredRange = std::max(5.0f, desiredRange);
+
+    float distance = bot->GetExactDist(reference);
+    if (distance >= desiredRange - 1.0f
+        && (maxRange <= 0.0f || distance <= maxRange - 1.0f)
+        && bot->IsWithinLOSInMap(reference))
+        return false;
+
+    float angle = reference->GetAngle(bot);
+    Position rangedPosition = reference->GetFirstCollisionPosition(desiredRange, angle);
+    return MoveBotToPoint(state, bot, rangedPosition.GetPositionX(), rangedPosition.GetPositionY(), rangedPosition.GetPositionZ());
+}
+
+void BotWorldPopulationMgr::MarkBotBlocked(WorldBotState& state, Player* bot, char const* reason) const
+{
+    std::string blockedReason = reason && *reason ? reason : "blocked";
+    state.LastNoProgressReason = blockedReason;
+    state.LastRecoveryMode = "blocked_no_fallback";
+    state.LastRecoveryResult = blockedReason;
+    if (!state.Blocked)
+    {
+        state.Blocked = true;
+        state.BlockedReason = blockedReason;
+        state.BlockedStartMs = NowMs();
+        state.BlockedMessageEmitted = false;
+        state.UnstuckMessageEmitted = false;
+    }
+    else
+        state.BlockedReason = blockedReason;
+
+    if (bot && !state.BlockedMessageEmitted)
+    {
+        bot->Say("Blocked: " + blockedReason, LANG_UNIVERSAL);
+        state.BlockedMessageEmitted = true;
+    }
+}
+
+void BotWorldPopulationMgr::MarkBotUnstuck(WorldBotState& state, Player* bot, char const* reason) const
+{
+    if (!state.Blocked)
+        return;
+
+    std::string unstuckReason = reason && *reason ? reason : state.BlockedReason;
+    if (bot && !state.UnstuckMessageEmitted)
+        bot->Say("Unstuck: " + unstuckReason, LANG_UNIVERSAL);
+
+    state.Blocked = false;
+    state.BlockedReason.clear();
+    state.BlockedStartMs = 0;
+    state.BlockedMessageEmitted = false;
+    state.UnstuckMessageEmitted = true;
+}
+
 BotWorldPopulationMgr::BotDeathRecoveryPolicy BotWorldPopulationMgr::BuildDeathRecoveryPolicy() const
 {
     BotDeathRecoveryPolicy policy;
@@ -3407,6 +3471,8 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
     state.DistanceMovedSinceLastDecision += moved;
     if (moved >= 0.2f || combatOrCasting)
         state.LastMovementProgressMs = NowMs();
+    if (moved >= 0.2f)
+        MarkBotUnstuck(state, bot, "movement_progress");
     if (!combatOrCasting && moving && moved < 0.2f)
         state.StuckTimer += diff;
     else
@@ -3435,20 +3501,23 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
             state.LastDecisionHandler = "validation_route";
             state.LastRecoveryResult = "fallback_disabled";
             state.LastNoProgressReason = recoveryReason;
+            MarkBotBlocked(state, bot, recoveryReason.c_str());
             std::string raw = BuildRawJson(bot, target);
             std::string semantic = BuildSemanticJson(bot, target, "validation_route_recovery", &power, stage, chosenActivity.Activity);
             RecordEvent(state, bot, "stuck_detected", target, recoveryReason.c_str(), raw.c_str(), semantic.c_str(), routeAnchorDistance, _config.ValidationRouteTargetEntry);
             RecordDecision(state, bot, "validation_route_recovery", "validation_route_stuck", target, raw.c_str(), semantic.c_str(), activityScores, chosenActivity, power, true, false);
             return;
         }
-        Position pos = bot->GetFirstCollisionPosition(4.0f, frand(0.0f, 2.0f * float(M_PI)));
-        MoveBotToPoint(state, bot, pos.GetPositionX(), pos.GetPositionY(), pos.GetPositionZ());
         state.StuckTimer = 0;
         std::string raw = BuildRawJson(bot, nullptr);
-        std::string semantic = BuildSemanticJson(bot, nullptr, "stuck_recovery", &power, stage, chosenActivity.Activity);
-        RecordEvent(state, bot, "stuck_detected", nullptr, "repath", raw.c_str(), semantic.c_str(), 1.0f, _metrics.StuckEvents);
-        state.LastDecisionHandler = "stuck_recovery";
-        RecordDecision(state, bot, "stuck_recovery", "unstuck", nullptr, raw.c_str(), semantic.c_str(), activityScores, chosenActivity, power, true, true);
+        std::string semantic = BuildSemanticJson(bot, nullptr, "stuck_blocked", &power, stage, chosenActivity.Activity);
+        state.LastRecoveryMode = "stuck_no_fallback";
+        state.LastRecoveryResult = "fallback_disabled";
+        state.LastNoProgressReason = "stuck_no_fallback";
+        MarkBotBlocked(state, bot, "stuck_no_fallback");
+        RecordEvent(state, bot, "stuck_detected", nullptr, "stuck_no_fallback", raw.c_str(), semantic.c_str(), 1.0f, _metrics.StuckEvents);
+        state.LastDecisionHandler = "stuck_blocked";
+        RecordDecision(state, bot, "stuck_blocked", "stuck_no_fallback", nullptr, raw.c_str(), semantic.c_str(), activityScores, chosenActivity, power, true, false);
         return;
     }
 
@@ -3569,12 +3638,12 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         else
         {
         state.TargetGuid = target->GetGUID();
-        BotActionExecutor executor;
-        executor.Pull(bot, target);
-        uint32 spellId = SelectCombatSpell(bot, target);
+        ResolvedCombatAction profileAction;
+        BotActionResult result = ExecuteProfileCombatAction(&state, bot, target, &profileAction);
+        uint32 spellId = profileAction.SpellId;
         situation = "open_world_combat";
         action = spellId ? "cast_combat_spell" : "attack";
-        if (spellId && TryCastCombatSpell(bot, target, spellId))
+        if (result == BotActionResult::Ok && spellId)
         {
             std::string raw = BuildRawJson(bot, target);
             std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, chosenActivity.Activity);
@@ -3712,16 +3781,16 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
     }
     else if (IsGenericGrindingAllowed(state, bot, chosenActivity.Activity, hasActiveQuestObjective) && (target = SelectSafeTarget(state, bot)))
     {
-        BotActionExecutor executor;
-        BotActionResult result = executor.Pull(bot, target);
         state.TargetGuid = target->GetGUID();
-        uint32 spellId = SelectCombatSpell(bot, target);
+        ResolvedCombatAction profileAction;
+        BotActionResult result = ExecuteProfileCombatAction(&state, bot, target, &profileAction);
+        uint32 spellId = profileAction.SpellId;
         situation = "open_world_combat";
-        action = spellId ? "pull_and_cast" : "pull_safe_mob";
+        action = spellId ? "profile_combat_action" : "attack";
         std::string raw = BuildRawJson(bot, target);
         std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, chosenActivity.Activity);
         RecordEvent(state, bot, "combat_started", target, ToString(result), raw.c_str(), semantic.c_str());
-        if (spellId && TryCastCombatSpell(bot, target, spellId))
+        if (result == BotActionResult::Ok && spellId)
             RecordEvent(state, bot, "spell_cast", target, "ok", raw.c_str(), semantic.c_str(), 0.0f, 0, spellId);
         state.WasInCombat = true;
         state.LastDecisionHandler = "grinding";
@@ -3734,7 +3803,7 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
     }
 
     uint64 nowMs = NowMs();
-    bool loopRecoveryAvailable = nowMs >= state.LoopRecoveryCooldownUntilMs && !bot->IsInCombat();
+    bool loopRecoveryAvailable = nowMs >= state.LoopRecoveryCooldownUntilMs && !bot->IsInCombat() && !_config.ValidationRouteEnable;
     bool repeatedDecisionLoop = state.LastDecisionFingerprintRepeatCount >= 5 && state.ConsecutiveSameDecisionCount >= 3;
     bool idleLoop = state.IdleDecisionRepeatCount >= 4 && state.LastDecisionDistanceMoved < 1.0f;
     bool targetChurnLoop = state.TargetChurnCount >= 4;
@@ -6400,7 +6469,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         std::string semantic = BuildSemanticJson(healer, combatTarget, "validation_route_group_heal", &power, stage, activity);
         if (!healer->IsWithinDistInMap(healTarget, std::max(5.0f, healRange - 1.0f)) || !healer->IsWithinLOSInMap(healTarget))
         {
-            MoveBotToPoint(state, healer, healTarget->GetPositionX(), healTarget->GetPositionY(), healTarget->GetPositionZ());
+            MoveBotToProfileRange(state, healer, healTarget);
             RecordEvent(state, healer, "validation_route_group_heal", healTarget, "approach_ally", raw.c_str(), semantic.c_str(), lowestHealthPct, bestHeal->SpellId);
             situation = "validation_route_group_heal";
             action = "move_to_validation_route_heal_target";
@@ -7658,6 +7727,64 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         state.WasInCombat = true;
         return true;
     };
+    auto tryValidationRouteMovementCheck = [this, &state, bot, &power, stage, activity, &situation, &action](Unit* preferredTarget) -> bool
+    {
+        if ((_config.ValidationRouteMechanicProfile.find("movement_check") == std::string::npos
+                && _config.ValidationRouteMechanicProfile.find("ground_danger") == std::string::npos)
+            || !bot
+            || !bot->IsAlive()
+            || bot->IsFalling())
+            return false;
+
+        Unit* caster = nullptr;
+        SpellInfo const* castSpell = nullptr;
+        auto inspectCaster = [&](Unit* candidate) -> bool
+        {
+            if (!candidate || !candidate->IsAlive() || !bot->IsValidAttackTarget(candidate) || !bot->IsWithinDistInMap(candidate, 35.0f))
+                return false;
+
+            if (Spell* spell = candidate->GetCurrentSpell(CURRENT_GENERIC_SPELL))
+                castSpell = spell->GetSpellInfo();
+            if (!castSpell)
+                if (Spell* spell = candidate->GetCurrentSpell(CURRENT_CHANNELED_SPELL))
+                    castSpell = spell->GetSpellInfo();
+            if (!castSpell || !castSpell->CalcCastTime(candidate->getLevel()))
+            {
+                castSpell = nullptr;
+                return false;
+            }
+
+            caster = candidate;
+            return true;
+        };
+
+        inspectCaster(preferredTarget);
+        if (!caster)
+        {
+            std::vector<WorldObject*> objects;
+            Trinity::AllWorldObjectsInRange check(bot, 35.0f);
+            Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(bot, objects, check);
+            Cell::VisitAllObjects(bot, searcher, 35.0f);
+            for (WorldObject* object : objects)
+                if (inspectCaster(object ? object->ToUnit() : nullptr))
+                    break;
+        }
+
+        if (!caster || !castSpell)
+            return false;
+
+        float angle = caster->GetAngle(bot);
+        Position dodge = bot->GetFirstCollisionPosition(2.0f, angle);
+        bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+        bot->GetMotionMaster()->MoveJump(dodge, 8.0f, 7.0f);
+
+        std::string raw = BuildRawJson(bot, caster);
+        std::string semantic = BuildSemanticJson(bot, caster, "validation_route_mechanic", &power, stage, activity);
+        RecordEvent(state, bot, "validation_route_mechanic", caster, "movement_check_jump", raw.c_str(), semantic.c_str(), bot->GetExactDist(caster), _config.ValidationRouteTargetEntry, castSpell->Id);
+        situation = "validation_route_mechanic";
+        action = "movement_check_jump";
+        return true;
+    };
     auto markValidationRouteTerminalAfterProgress = [&](char const* reason) -> void
     {
         _validationRouteFocusGuid.Clear();
@@ -7717,6 +7844,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         }
         return true;
     }
+    if (tryValidationRouteMovementCheck(target))
+        return true;
     if (_config.ValidationRouteKind != "boss"
         && std::string(GetDungeonRole(bot)) == "tank")
         if (Unit* threatTarget = findTrashClusterThreatTarget())
@@ -7767,17 +7896,26 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             if (tankFocusIsBossRoute && tryValidationRouteInterrupt(target, "assist_tank_focus_interrupt"))
                 return true;
 
-            BotActionExecutor executor;
-            uint32 spellId = SelectCombatSpell(bot, target);
-            float engageRange = routeEngageRange(bot, target, spellId);
+            ResolvedCombatAction profileAction = ResolveProfileCombatAction(bot, target);
+            uint32 spellId = profileAction.SpellId;
+            float engageRange = profileAction.MaxRange > 0.0f ? profileAction.MaxRange : routeEngageRange(bot, target, spellId);
             {
                 std::string raw = BuildRawJson(bot, target);
                 std::string semantic = BuildSemanticJson(bot, target, tankFocusSituation, &power, stage, activity);
                 RecordEvent(state, bot, "validation_target_priority", target, tankFocusIsRouteTarget ? "assist_tank_focus" : "force_tank_focus", raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry, spellId);
             }
+            float targetDistance = bot->GetExactDist(target);
+            if (profileAction.MinRange > 0.0f && targetDistance < profileAction.MinRange)
+            {
+                Position away = bot->GetFirstCollisionPosition(profileAction.MinRange - targetDistance + 2.0f, target->GetAngle(bot));
+                MoveBotToPoint(state, bot, away.GetPositionX(), away.GetPositionY(), away.GetPositionZ());
+                action = "move_to_profile_min_range";
+                situation = tankFocusSituation;
+                return true;
+            }
             if (!bot->IsValidAttackTarget(target) || !bot->IsWithinDistInMap(target, std::max(5.0f, engageRange - 1.0f)) || !bot->IsWithinLOSInMap(target))
             {
-                MoveBotToPoint(state, bot, target->GetPositionX(), target->GetPositionY(), target->GetPositionZ());
+                MoveBotToProfileRange(state, bot, target, &profileAction);
                 action = "move_to_validation_route_assist_target";
                 situation = tankFocusSituation;
                 std::string raw = BuildRawJson(bot, target);
@@ -7788,8 +7926,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 return true;
             }
 
-            BotActionResult pull = executor.Pull(bot, target);
-            bool cast = spellId && TryCastCombatSpell(bot, target, spellId);
+            BotActionResult result = ExecuteProfileCombatAction(&state, bot, target, &profileAction);
             action = tankFocusIsRouteTarget
                 ? (tankFocusIsBossRoute ? "validation_route_boss_action" : "validation_route_trash_action")
                 : "validation_route_prerequisite_assist";
@@ -7797,9 +7934,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             std::string raw = BuildRawJson(bot, target);
             std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, activity);
             RecordEvent(state, bot, tankFocusIsRouteTarget ? (tankFocusIsBossRoute ? "boss_action" : "trash_action") : "validation_route_prerequisite",
-                target, ToString(pull), raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry, cast ? spellId : 0);
+                target, ToString(result), raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry, result == BotActionResult::Ok ? spellId : 0);
             if (tankFocusIsBossRoute)
-                RecordEvent(state, bot, "boss_started", target, _config.ValidationRouteMechanicProfile.c_str(), raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry, cast ? spellId : 0);
+                RecordEvent(state, bot, "boss_started", target, _config.ValidationRouteMechanicProfile.c_str(), raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry, result == BotActionResult::Ok ? spellId : 0);
             maybeValidationPrerequisiteNoProgressAssist(target, tankFocusIsRouteTarget ? "route_target_no_health_progress" : "force_tank_focus_no_health_progress");
             state.WasInCombat = true;
             return true;
@@ -7830,7 +7967,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 {
                     std::string raw = BuildRawJson(bot, nullptr);
                     std::string semantic = BuildSemanticJson(bot, anchor, "validation_route_regroup", &power, stage, activity);
-                    MoveBotToPoint(state, bot, anchor->GetPositionX(), anchor->GetPositionY(), anchor->GetPositionZ());
+                    MoveBotToProfileRange(state, bot, anchor);
                     RecordEvent(state, bot, "validation_route_regroup", anchor, "follow_anchor_last_known_tank_focus", raw.c_str(), semantic.c_str(), bot->GetExactDist(anchor), _config.ValidationRouteTargetEntry);
                     situation = "validation_route_regroup";
                     action = "move_to_validation_route_anchor";
@@ -7916,7 +8053,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             {
                 if (anchor != bot && anchor->IsAlive() && anchor->GetMap() == bot->GetMap() && bot->GetExactDist(anchor) > 8.0f)
                 {
-                    MoveBotToPoint(state, bot, anchor->GetPositionX(), anchor->GetPositionY(), anchor->GetPositionZ());
+                    MoveBotToProfileRange(state, bot, anchor);
                     RecordEvent(state, bot, "validation_route_regroup", anchor, "follow_anchor_tank_focus_mismatch", raw.c_str(), semantic.c_str(), bot->GetExactDist(anchor), _config.ValidationRouteTargetEntry);
                     situation = "validation_route_regroup";
                     action = "move_to_validation_route_anchor";
@@ -7963,7 +8100,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             {
                 if (anchor != bot && anchor->IsAlive() && anchor->GetMap() == bot->GetMap() && bot->GetExactDist(anchor) > 8.0f)
                 {
-                    MoveBotToPoint(state, bot, anchor->GetPositionX(), anchor->GetPositionY(), anchor->GetPositionZ());
+                    MoveBotToProfileRange(state, bot, anchor);
                     RecordEvent(state, bot, "validation_route_regroup", anchor, "follow_anchor_non_authoritative_focus", raw.c_str(), semantic.c_str(), bot->GetExactDist(anchor), _config.ValidationRouteTargetEntry);
                     situation = "validation_route_regroup";
                     action = "move_to_validation_route_anchor";
@@ -7981,17 +8118,26 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (tryRouteGroupHeal(bot, target))
             return true;
 
-        BotActionExecutor executor;
-        uint32 spellId = SelectCombatSpell(bot, target);
-        float engageRange = routeEngageRange(bot, target, spellId);
+        ResolvedCombatAction profileAction = ResolveProfileCombatAction(bot, target);
+        uint32 spellId = profileAction.SpellId;
+        float engageRange = profileAction.MaxRange > 0.0f ? profileAction.MaxRange : routeEngageRange(bot, target, spellId);
         {
             std::string raw = BuildRawJson(bot, target);
             std::string semantic = BuildSemanticJson(bot, target, "validation_route_prerequisite", &power, stage, activity);
             RecordEvent(state, bot, "validation_target_priority", target, "assist_focus", raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry, spellId);
         }
+        float targetDistance = bot->GetExactDist(target);
+        if (profileAction.MinRange > 0.0f && targetDistance < profileAction.MinRange)
+        {
+            Position away = bot->GetFirstCollisionPosition(profileAction.MinRange - targetDistance + 2.0f, target->GetAngle(bot));
+            MoveBotToPoint(state, bot, away.GetPositionX(), away.GetPositionY(), away.GetPositionZ());
+            action = "move_to_profile_min_range";
+            situation = "validation_route_prerequisite";
+            return true;
+        }
         if (!bot->IsValidAttackTarget(target) || !bot->IsWithinDistInMap(target, std::max(5.0f, engageRange - 1.0f)) || !bot->IsWithinLOSInMap(target))
         {
-            MoveBotToPoint(state, bot, target->GetPositionX(), target->GetPositionY(), target->GetPositionZ());
+            MoveBotToProfileRange(state, bot, target, &profileAction);
             action = "move_to_validation_route_assist_target";
             situation = "validation_route_prerequisite";
             std::string raw = BuildRawJson(bot, target);
@@ -8001,13 +8147,12 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return true;
         }
 
-        BotActionResult pull = executor.Pull(bot, target);
-        bool cast = spellId && TryCastCombatSpell(bot, target, spellId);
+        BotActionResult result = ExecuteProfileCombatAction(&state, bot, target, &profileAction);
         action = "validation_route_prerequisite_assist";
         situation = "validation_route_prerequisite";
         std::string raw = BuildRawJson(bot, target);
         std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, activity);
-        RecordEvent(state, bot, "validation_route_prerequisite", target, ToString(pull), raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry, cast ? spellId : 0);
+        RecordEvent(state, bot, "validation_route_prerequisite", target, ToString(result), raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry, result == BotActionResult::Ok ? spellId : 0);
         maybeValidationPrerequisiteNoProgressAssist(target, "assist_focus_no_health_progress");
         state.WasInCombat = true;
         return true;
@@ -8032,7 +8177,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 if (bot->GetExactDist(anchor) > 8.0f
                     && !(_config.ValidationRouteKind == "boss" && _validationRouteActivationApplied))
                 {
-                    MoveBotToPoint(state, bot, anchor->GetPositionX(), anchor->GetPositionY(), anchor->GetPositionZ());
+                    MoveBotToProfileRange(state, bot, anchor);
                     std::string raw = BuildRawJson(bot, nullptr);
                     std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_regroup", &power, stage, activity);
                     RecordEvent(state, bot, "validation_route_regroup", anchor, "follow_anchor_no_focus", raw.c_str(), semantic.c_str(), bot->GetExactDist(anchor), _config.ValidationRouteTargetEntry);
@@ -8123,18 +8268,27 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (routeBossTarget && _config.ValidationRouteKind == "boss" && tryValidationRouteInterrupt(target, "route_boss_focus_interrupt"))
             return true;
 
-        BotActionExecutor executor;
-        uint32 spellId = SelectCombatSpell(bot, target);
-        float engageRange = routeEngageRange(bot, target, spellId);
+        ResolvedCombatAction profileAction = ResolveProfileCombatAction(bot, target);
+        uint32 spellId = profileAction.SpellId;
+        float engageRange = profileAction.MaxRange > 0.0f ? profileAction.MaxRange : routeEngageRange(bot, target, spellId);
         if (routeBossTarget)
         {
             std::string raw = BuildRawJson(bot, target);
             std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, activity);
             RecordEvent(state, bot, "validation_target_priority", target, _config.ValidationRouteKind == "boss" ? "route_boss_focus" : "route_trash_focus", raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry, spellId);
         }
+        float targetDistance = bot->GetExactDist(target);
+        if (profileAction.MinRange > 0.0f && targetDistance < profileAction.MinRange)
+        {
+            Position away = bot->GetFirstCollisionPosition(profileAction.MinRange - targetDistance + 2.0f, target->GetAngle(bot));
+            MoveBotToPoint(state, bot, away.GetPositionX(), away.GetPositionY(), away.GetPositionZ());
+            action = "move_to_profile_min_range";
+            situation = routeBossTarget ? situation : "validation_route_prerequisite";
+            return true;
+        }
         if (!bot->IsWithinDistInMap(target, std::max(5.0f, engageRange - 1.0f)) || !bot->IsWithinLOSInMap(target))
         {
-            MoveBotToPoint(state, bot, target->GetPositionX(), target->GetPositionY(), target->GetPositionZ());
+            MoveBotToProfileRange(state, bot, target, &profileAction);
             action = routeBossTarget ? "move_to_validation_route_target" : "move_to_validation_route_prerequisite";
             situation = routeBossTarget ? situation : "validation_route_prerequisite";
             std::string raw = BuildRawJson(bot, target);
@@ -8145,20 +8299,19 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return true;
         }
 
-        BotActionResult pull = executor.Pull(bot, target);
-        bool cast = spellId && TryCastCombatSpell(bot, target, spellId);
+        BotActionResult result = ExecuteProfileCombatAction(&state, bot, target, &profileAction);
         action = routeBossTarget
             ? (_config.ValidationRouteKind == "boss" ? (std::string(GetDungeonRole(bot)) == "tank" ? "validation_route_tank_boss" : "validation_route_boss_action") : "validation_route_trash_action")
             : "validation_route_prerequisite_action";
         situation = routeBossTarget ? situation : "validation_route_prerequisite";
         std::string raw = BuildRawJson(bot, target);
         std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, activity);
-        RecordEvent(state, bot, routeBossTarget ? (_config.ValidationRouteKind == "boss" ? "boss_action" : "trash_action") : "validation_route_prerequisite", target, ToString(pull), raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry, cast ? spellId : 0);
+        RecordEvent(state, bot, routeBossTarget ? (_config.ValidationRouteKind == "boss" ? "boss_action" : "trash_action") : "validation_route_prerequisite", target, ToString(result), raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry, result == BotActionResult::Ok ? spellId : 0);
         if (!routeBossTarget)
             maybeValidationPrerequisiteNoProgressAssist(target, "current_combat_no_health_progress");
         if (routeBossTarget && _config.ValidationRouteKind == "boss")
         {
-            RecordEvent(state, bot, "boss_started", target, _config.ValidationRouteMechanicProfile.c_str(), raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry, cast ? spellId : 0);
+            RecordEvent(state, bot, "boss_started", target, _config.ValidationRouteMechanicProfile.c_str(), raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry, result == BotActionResult::Ok ? spellId : 0);
             maybeValidationPrerequisiteNoProgressAssist(target, "boss_route_no_health_progress");
         }
         state.WasInCombat = true;
@@ -8287,7 +8440,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     if (!routeTarget && seenRouteTarget && seenRouteTargetDistance > 8.0f)
     {
         tryValidationRouteActivation(seenRouteTarget, targetSearchResult.c_str());
-        MoveBotToPoint(state, bot, seenRouteTarget->GetPositionX(), seenRouteTarget->GetPositionY(), seenRouteTarget->GetPositionZ());
+        MoveBotToProfileRange(state, bot, seenRouteTarget);
         std::string raw = BuildRawJson(bot, seenRouteTarget);
         std::string semantic = BuildSemanticJson(bot, seenRouteTarget, "validation_route_target_approach", &power, stage, activity);
         RecordEvent(state, bot, "validation_route_target_search", seenRouteTarget, targetSearchResult.c_str(), raw.c_str(), semantic.c_str(), seenRouteTargetDistance, _config.ValidationRouteTargetEntry);
@@ -8322,7 +8475,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_regroup", &power, stage, activity);
                 if (anchor != bot && anchor->IsAlive() && anchor->GetMap() == bot->GetMap() && bot->GetExactDist(anchor) > 8.0f)
                 {
-                    MoveBotToPoint(state, bot, anchor->GetPositionX(), anchor->GetPositionY(), anchor->GetPositionZ());
+                    MoveBotToProfileRange(state, bot, anchor);
                     RecordEvent(state, bot, "validation_route_regroup", anchor, "follow_anchor_before_prerequisite", raw.c_str(), semantic.c_str(), bot->GetExactDist(anchor), _config.ValidationRouteTargetEntry);
                     situation = "validation_route_regroup";
                     action = "move_to_validation_route_anchor";
@@ -8387,7 +8540,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
             if (prerequisiteDistance > 35.0f || !bot->IsWithinLOSInMap(target))
             {
-                MoveBotToPoint(state, bot, target->GetPositionX(), target->GetPositionY(), target->GetPositionZ());
+                MoveBotToProfileRange(state, bot, target);
                 RecordEvent(state, bot, "validation_route_prerequisite", target, "move_to_blocker", raw.c_str(), semantic.c_str(), prerequisiteDistance, _config.ValidationRouteTargetEntry);
                 maybeValidationPrerequisiteNoProgressAssist(target, "blocker_path_no_progress");
                 situation = "validation_route_prerequisite";
@@ -8395,12 +8548,21 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 return true;
             }
 
-            BotActionExecutor executor;
-            uint32 spellId = SelectCombatSpell(bot, target);
-            float engageRange = routeEngageRange(bot, target, spellId);
+            ResolvedCombatAction profileAction = ResolveProfileCombatAction(bot, target);
+            uint32 spellId = profileAction.SpellId;
+            float engageRange = profileAction.MaxRange > 0.0f ? profileAction.MaxRange : routeEngageRange(bot, target, spellId);
+            float targetDistance = bot->GetExactDist(target);
+            if (profileAction.MinRange > 0.0f && targetDistance < profileAction.MinRange)
+            {
+                Position away = bot->GetFirstCollisionPosition(profileAction.MinRange - targetDistance + 2.0f, target->GetAngle(bot));
+                MoveBotToPoint(state, bot, away.GetPositionX(), away.GetPositionY(), away.GetPositionZ());
+                action = "move_to_profile_min_range";
+                situation = "validation_route_prerequisite";
+                return true;
+            }
             if (!bot->IsWithinDistInMap(target, std::max(5.0f, engageRange - 1.0f)) || !bot->IsWithinLOSInMap(target))
             {
-                MoveBotToPoint(state, bot, target->GetPositionX(), target->GetPositionY(), target->GetPositionZ());
+                MoveBotToProfileRange(state, bot, target, &profileAction);
                 RecordEvent(state, bot, "validation_route_prerequisite", target, "approach_target", raw.c_str(), semantic.c_str(), prerequisiteDistance, _config.ValidationRouteTargetEntry);
                 maybeValidationPrerequisiteNoProgressAssist(target, "blocker_path_no_progress");
                 situation = "validation_route_prerequisite";
@@ -8408,9 +8570,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 return true;
             }
 
-            BotActionResult pull = executor.Pull(bot, target);
-            bool cast = spellId && TryCastCombatSpell(bot, target, spellId);
-            RecordEvent(state, bot, "validation_route_prerequisite", target, ToString(pull), raw.c_str(), semantic.c_str(), prerequisiteDistance, _config.ValidationRouteTargetEntry, cast ? spellId : 0);
+            BotActionResult result = ExecuteProfileCombatAction(&state, bot, target, &profileAction);
+            RecordEvent(state, bot, "validation_route_prerequisite", target, ToString(result), raw.c_str(), semantic.c_str(), prerequisiteDistance, _config.ValidationRouteTargetEntry, result == BotActionResult::Ok ? spellId : 0);
             maybeValidationPrerequisiteNoProgressAssist(target, "blocker_no_health_progress");
             situation = "validation_route_prerequisite";
             action = "validation_route_prerequisite_action";
@@ -8546,11 +8707,20 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     rememberValidationRouteFocus(target);
     if (_config.ValidationRouteKind == "boss" && tryValidationRouteInterrupt(target, "route_target_interrupt"))
         return true;
-    uint32 spellId = SelectCombatSpell(bot, target);
-    float engageRange = routeEngageRange(bot, target, spellId);
+    ResolvedCombatAction profileAction = ResolveProfileCombatAction(bot, target);
+    uint32 spellId = profileAction.SpellId;
+    float engageRange = profileAction.MaxRange > 0.0f ? profileAction.MaxRange : routeEngageRange(bot, target, spellId);
+    float targetDistance = bot->GetExactDist(target);
+    if (profileAction.MinRange > 0.0f && targetDistance < profileAction.MinRange)
+    {
+        Position away = bot->GetFirstCollisionPosition(profileAction.MinRange - targetDistance + 2.0f, target->GetAngle(bot));
+        MoveBotToPoint(state, bot, away.GetPositionX(), away.GetPositionY(), away.GetPositionZ());
+        action = "move_to_profile_min_range";
+        return true;
+    }
     if (!bot->IsWithinDistInMap(target, std::max(5.0f, engageRange - 1.0f)) || !bot->IsWithinLOSInMap(target))
     {
-        MoveBotToPoint(state, bot, target->GetPositionX(), target->GetPositionY(), target->GetPositionZ());
+        MoveBotToProfileRange(state, bot, target, &profileAction);
         action = "move_to_validation_route_target";
         std::string raw = BuildRawJson(bot, target);
         std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, activity);
@@ -8560,9 +8730,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         return true;
     }
 
-    BotActionExecutor executor;
-    BotActionResult pull = executor.Pull(bot, target);
-    bool cast = spellId && TryCastCombatSpell(bot, target, spellId);
+    BotActionResult result = ExecuteProfileCombatAction(&state, bot, target, &profileAction);
     action = _config.ValidationRouteKind == "boss"
         ? (std::string(GetDungeonRole(bot)) == "tank" ? "validation_route_tank_boss" : "validation_route_boss_action")
         : "validation_route_trash_action";
@@ -8570,10 +8738,10 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
     std::string raw = BuildRawJson(bot, target);
     std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, activity);
-    RecordEvent(state, bot, _config.ValidationRouteKind == "boss" ? "boss_action" : "trash_action", target, ToString(pull), raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry, cast ? spellId : 0);
+    RecordEvent(state, bot, _config.ValidationRouteKind == "boss" ? "boss_action" : "trash_action", target, ToString(result), raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry, result == BotActionResult::Ok ? spellId : 0);
     if (_config.ValidationRouteKind == "boss")
     {
-        RecordEvent(state, bot, "boss_started", target, _config.ValidationRouteMechanicProfile.c_str(), raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry, cast ? spellId : 0);
+        RecordEvent(state, bot, "boss_started", target, _config.ValidationRouteMechanicProfile.c_str(), raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry, result == BotActionResult::Ok ? spellId : 0);
         maybeValidationPrerequisiteNoProgressAssist(target, "boss_route_no_health_progress");
     }
     else
@@ -8850,18 +9018,17 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
     {
         if (Unit* add = ObjectAccessor::GetUnit(*bot, result.Features.PriorityAddGuid))
         {
-            BotActionExecutor executor;
-            BotActionResult pull = executor.Pull(bot, add);
-            uint32 spellId = SelectCombatSpell(bot, add);
-            bool cast = spellId && TryCastCombatSpell(bot, add, spellId);
+            ResolvedCombatAction profileAction;
+            BotActionResult actionResult = ExecuteProfileCombatAction(&state, bot, add, &profileAction);
+            uint32 spellId = profileAction.SpellId;
             result.Target = add;
             result.Action = "switch_to_adds";
-            result.SpellId = cast ? spellId : 0;
-            result.Failure = pull != BotActionResult::Ok;
+            result.SpellId = actionResult == BotActionResult::Ok ? spellId : 0;
+            result.Failure = actionResult != BotActionResult::Ok;
             result.Rare = true;
-            RecordEvent(state, bot, "boss_adds", add, ToString(pull), raw.c_str(), semantic.c_str(), float(result.Features.AddCount), result.Features.CastSpellId, result.SpellId);
+            RecordEvent(state, bot, "boss_adds", add, ToString(actionResult), raw.c_str(), semantic.c_str(), float(result.Features.AddCount), result.Features.CastSpellId, result.SpellId);
             if (result.Features.RaidEncounter)
-                RecordRaidTelemetry(state, bot, add, "raid_add_wave", ToString(pull), result.Features, raidAssignment, raidAnchors, raidAdapter, raidGearPlan, heroicProgression, raw.c_str(), semantic.c_str(), float(result.Features.AddCount), result.Features.CastSpellId, result.SpellId);
+                RecordRaidTelemetry(state, bot, add, "raid_add_wave", ToString(actionResult), result.Features, raidAssignment, raidAnchors, raidAdapter, raidGearPlan, heroicProgression, raw.c_str(), semantic.c_str(), float(result.Features.AddCount), result.Features.CastSpellId, result.SpellId);
             if (result.Failure)
                 RecordBossReplay(state, bot, add, result.Features, "boss_mechanic_failure", raw.c_str(), semantic.c_str(), "{\"action\":\"switch_to_adds\"}", "{\"reason\":\"add_switch_failed\"}");
             return result;
@@ -8921,18 +9088,17 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
         }
     }
 
-    BotActionExecutor executor;
-    BotActionResult pull = executor.Pull(bot, result.Target);
-    uint32 spellId = SelectCombatSpell(bot, result.Target);
-    bool cast = spellId && TryCastCombatSpell(bot, result.Target, spellId);
+    ResolvedCombatAction profileAction;
+    BotActionResult actionResult = ExecuteProfileCombatAction(&state, bot, result.Target, &profileAction);
+    uint32 spellId = profileAction.SpellId;
     result.Action = std::string(role) == "tank" ? "tank_boss_position" : "boss_single_target";
-    result.SpellId = cast ? spellId : 0;
-    result.Failure = pull != BotActionResult::Ok;
+    result.SpellId = actionResult == BotActionResult::Ok ? spellId : 0;
+    result.Failure = actionResult != BotActionResult::Ok;
     result.Rare = result.Features.DangerScore >= 0.5f || result.Features.BossCasting || result.Features.AddsActive;
 
-    RecordEvent(state, bot, "boss_action", result.Target, ToString(pull), raw.c_str(), semantic.c_str(), result.Features.DangerScore, result.Features.CastSpellId, result.SpellId);
+    RecordEvent(state, bot, "boss_action", result.Target, ToString(actionResult), raw.c_str(), semantic.c_str(), result.Features.DangerScore, result.Features.CastSpellId, result.SpellId);
     if (result.Features.RaidEncounter)
-        RecordRaidTelemetry(state, bot, result.Target, "raid_boss_action", ToString(pull), result.Features, raidAssignment, raidAnchors, raidAdapter, raidGearPlan, heroicProgression, raw.c_str(), semantic.c_str(), result.Features.DangerScore, result.Features.CastSpellId, result.SpellId);
+        RecordRaidTelemetry(state, bot, result.Target, "raid_boss_action", ToString(actionResult), result.Features, raidAssignment, raidAnchors, raidAdapter, raidGearPlan, heroicProgression, raw.c_str(), semantic.c_str(), result.Features.DangerScore, result.Features.CastSpellId, result.SpellId);
     if (!state.WasInCombat)
         RecordEvent(state, bot, "boss_started", result.Target, result.Situation.c_str(), raw.c_str(), semantic.c_str(), result.Features.DangerScore, result.Features.BossEntry);
     if (result.Failure || (result.Features.DangerScore >= 0.85f && result.Features.BossCasting))
@@ -9566,18 +9732,17 @@ BotWorldPopulationMgr::DungeonTrashActionResult BotWorldPopulationMgr::TryDungeo
         return result;
     }
 
-    BotActionExecutor executor;
-    BotActionResult pull = executor.Pull(bot, groupTarget);
-    uint32 spellId = SelectCombatSpell(bot, groupTarget);
-    bool cast = spellId && TryCastCombatSpell(bot, groupTarget, spellId);
+    ResolvedCombatAction profileAction;
+    BotActionResult actionResult = ExecuteProfileCombatAction(&state, bot, groupTarget, &profileAction);
+    uint32 spellId = profileAction.SpellId;
     result.Action = std::string(role) == "tank" ? "tank_establish_threat" : (result.Pack.AoeValue >= 0.6f ? "dps_aoe_pack" : "dps_focus_target");
-    result.SpellId = cast ? spellId : 0;
-    result.Failure = pull != BotActionResult::Ok;
+    result.SpellId = actionResult == BotActionResult::Ok ? spellId : 0;
+    result.Failure = actionResult != BotActionResult::Ok;
     result.Rare = result.Pack.DangerousCasts > 0 || result.Pack.PullRisk >= 0.75f;
 
     std::string raw = BuildRawJson(bot, groupTarget);
     std::string semantic = BuildSemanticJson(bot, groupTarget, result.Situation.c_str(), &power, stage, activity);
-    RecordEvent(state, bot, "trash_action", groupTarget, ToString(pull), raw.c_str(), semantic.c_str(), result.Pack.PullRisk, result.Pack.PackSize, result.SpellId);
+    RecordEvent(state, bot, "trash_action", groupTarget, ToString(actionResult), raw.c_str(), semantic.c_str(), result.Pack.PullRisk, result.Pack.PackSize, result.SpellId);
     if (!state.WasInCombat)
         RecordEvent(state, bot, "combat_started", groupTarget, "dungeon_trash", raw.c_str(), semantic.c_str(), result.Pack.PullRisk, result.Pack.PackSize);
     state.WasInCombat = true;
@@ -9857,13 +10022,37 @@ uint32 BotWorldPopulationMgr::SelectCombatSpell(Player* bot, Unit* target) const
 
     std::string role = GetDungeonRole(bot);
     BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(bot, role.c_str());
+
     RoleSaturationState saturation = BuildRoleSaturationState(bot, target, role.c_str());
     std::string roleGoal = BotProgressionGoalPolicy::RoleGoal(role);
     std::vector<BotActionCandidate> candidates = BotClassSpecActionProfileStore::BuildCandidates(bot, target, profile);
+    uint32 nearbyEnemyCount = 1;
+    {
+        std::vector<WorldObject*> objects;
+        Trinity::AllWorldObjectsInRange check(bot, 10.0f);
+        Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(bot, objects, check);
+        Cell::VisitAllObjects(bot, searcher, 10.0f);
+        for (WorldObject* object : objects)
+        {
+            Unit* unit = object ? object->ToUnit() : nullptr;
+            if (unit && unit != target && unit->IsAlive() && bot->IsValidAttackTarget(unit))
+                ++nearbyEnemyCount;
+        }
+    }
 
     BotActionCandidate* best = nullptr;
     for (BotActionCandidate& candidate : candidates)
     {
+        if (candidate.Profile.MinEnemies > nearbyEnemyCount)
+        {
+            candidate.RejectReason = "min_enemies_not_met";
+            continue;
+        }
+        if (candidate.Profile.MaxEnemies && candidate.Profile.MaxEnemies < nearbyEnemyCount)
+        {
+            candidate.RejectReason = "max_enemies_exceeded";
+            continue;
+        }
         if (candidate.Category == BotCombatActionCategory::HealFast
             || candidate.Category == BotCombatActionCategory::HealEfficient
             || candidate.Category == BotCombatActionCategory::HealAoe)
@@ -9952,6 +10141,186 @@ uint32 BotWorldPopulationMgr::SelectCombatSpell(Player* bot, Unit* target) const
     return best ? best->SpellId : 0;
 }
 
+ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* bot, Unit* target) const
+{
+    ResolvedCombatAction action;
+    action.Valid = false;
+    action.Type = "wait";
+    action.DebugName = "no_valid_profile_action";
+    if (!bot || !target || !target->IsAlive())
+        return action;
+
+    std::string role = GetDungeonRole(bot);
+    BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(bot, role.c_str());
+    action.MovementDirective = profile.MovementDirective;
+    action.AutoAttackMode = profile.AutoAttackMode;
+    action.MinRange = profile.MinRange;
+    action.MaxRange = profile.MaxRange;
+
+    RoleSaturationState saturation = BuildRoleSaturationState(bot, target, role.c_str());
+    std::string roleGoal = BotProgressionGoalPolicy::RoleGoal(role);
+    std::vector<BotActionCandidate> candidates = BotClassSpecActionProfileStore::BuildCandidates(bot, target, profile);
+
+    BotActionCandidate* best = nullptr;
+    for (BotActionCandidate& candidate : candidates)
+    {
+        if (candidate.Category == BotCombatActionCategory::HealFast
+            || candidate.Category == BotCombatActionCategory::HealEfficient
+            || candidate.Category == BotCombatActionCategory::HealAoe
+            || candidate.Category == BotCombatActionCategory::DispelCleanse
+            || candidate.Category == BotCombatActionCategory::ExternalDefensive)
+        {
+            candidate.RejectReason = "requires_ally_target";
+            continue;
+        }
+        if (candidate.Category == BotCombatActionCategory::Taunt && target->GetVictim() == bot)
+        {
+            candidate.RejectReason = "threat_already_established";
+            continue;
+        }
+        if (candidate.Profile.RequiresTargetNotVictim && target->GetVictim() == bot)
+        {
+            candidate.RejectReason = "target_already_on_bot";
+            continue;
+        }
+        if (candidate.Profile.RequiresTargetVictim && target->GetVictim() != bot)
+        {
+            candidate.RejectReason = "target_not_on_bot";
+            continue;
+        }
+        if (candidate.Profile.RequiredSelfAura && !bot->HasAura(candidate.Profile.RequiredSelfAura))
+        {
+            candidate.RejectReason = "missing_self_aura";
+            continue;
+        }
+        if (candidate.Profile.ForbiddenSelfAura && bot->HasAura(candidate.Profile.ForbiddenSelfAura))
+        {
+            candidate.RejectReason = "forbidden_self_aura";
+            continue;
+        }
+        if (candidate.Profile.RequiredTargetAura && !target->HasAura(candidate.Profile.RequiredTargetAura))
+        {
+            candidate.RejectReason = "missing_target_aura";
+            continue;
+        }
+        if (candidate.Profile.ForbiddenTargetAura && target->HasAura(candidate.Profile.ForbiddenTargetAura))
+        {
+            candidate.RejectReason = "forbidden_target_aura";
+            continue;
+        }
+        float distance = bot->GetExactDist(target);
+        float minRange = candidate.Profile.MinRange > 0.0f ? candidate.Profile.MinRange : profile.MinRange;
+        float maxRange = candidate.Profile.MaxRange > 0.0f ? candidate.Profile.MaxRange : profile.MaxRange;
+        if (candidate.Profile.RequiresMeleeRange && distance > 5.0f)
+        {
+            candidate.RejectReason = "melee_range_required";
+            continue;
+        }
+        if (candidate.Profile.RequiresRangedRange && distance < 5.0f)
+        {
+            candidate.RejectReason = "ranged_range_required";
+            continue;
+        }
+        if (minRange > 0.0f && distance < minRange)
+        {
+            candidate.RejectReason = "min_range_required";
+            continue;
+        }
+        if (maxRange > 0.0f && distance > maxRange)
+        {
+            candidate.RejectReason = "max_range_exceeded";
+            continue;
+        }
+        if (!candidate.RejectReason.empty())
+            continue;
+
+        float roleScore = candidate.Score;
+        switch (saturation.RecommendedBalanceMode)
+        {
+            case BotRoleBalanceMode::PureSurvival:
+            case BotRoleBalanceMode::Recovery:
+                roleScore += candidate.Profile.SurvivalWeight * 1.5f + candidate.Profile.MitigationWeight + candidate.Profile.HealingWeight;
+                roleScore -= candidate.Profile.DamageWeight * 0.25f;
+                break;
+            case BotRoleBalanceMode::BalancedRoleDps:
+                roleScore += candidate.Profile.DamageWeight * 0.55f + candidate.Profile.HealingWeight * 0.25f + candidate.Profile.ThreatWeight * 0.25f;
+                break;
+            case BotRoleBalanceMode::DpsPush:
+                roleScore += candidate.Profile.DamageWeight + candidate.Profile.ProgressionWeight * 0.35f;
+                break;
+            case BotRoleBalanceMode::RoleFirst:
+            default:
+                if (role == "tank")
+                    roleScore += candidate.Profile.ThreatWeight + candidate.Profile.MitigationWeight + candidate.Profile.SurvivalWeight * 0.45f;
+                else
+                    roleScore += candidate.Profile.DamageWeight + (candidate.Category == BotCombatActionCategory::Interrupt ? 0.6f : 0.0f);
+                break;
+        }
+
+        candidate.Score = roleScore;
+        candidate.Reason = saturation.SaturationReason;
+        if (!best || candidate.Score > best->Score)
+            best = &candidate;
+    }
+
+    uint32 botKey = bot->GetGUID().GetCounter();
+    _lastSaturationByBot[botKey] = saturation;
+    _lastCombatMaskByBot[botKey] = BotClassSpecActionProfileStore::CandidateMaskJson(candidates, profile, roleGoal.c_str(), saturation.ToJson().c_str());
+    _lastChosenCombatByBot[botKey] = BotClassSpecActionProfileStore::ChosenActionJson(best, profile, roleGoal.c_str(), BotRoleSaturationPolicy::ToString(saturation.RecommendedBalanceMode), saturation.ExperimentConfidence);
+    _lastActionCategoryByBot[botKey] = best ? BotCombatActionCatalog::ToString(best->Category) : "wait";
+
+    if (!best || !best->SpellId)
+    {
+        action.DebugName = profile.MissingProfile ? profile.ProfileSource : "no_valid_profile_action";
+        return action;
+    }
+
+    action.Valid = true;
+    action.Type = "cast";
+    action.SpellId = best->SpellId;
+    action.TargetGuid = target->GetGUID();
+    action.DebugName = BotCombatActionCatalog::ToString(best->Category);
+    action.MovementDirective = best->Profile.MovementDirective.empty() ? profile.MovementDirective : best->Profile.MovementDirective;
+    action.AutoAttackMode = best->Profile.AutoAttackMode.empty() ? profile.AutoAttackMode : best->Profile.AutoAttackMode;
+    action.MinRange = best->Profile.MinRange > 0.0f ? best->Profile.MinRange : profile.MinRange;
+    action.MaxRange = best->Profile.MaxRange > 0.0f ? best->Profile.MaxRange : profile.MaxRange;
+    return action;
+}
+
+BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState* state, Player* bot, Unit* target, ResolvedCombatAction* actionOut) const
+{
+    ResolvedCombatAction action = ResolveProfileCombatAction(bot, target);
+    if (actionOut)
+        *actionOut = action;
+    if (!action.Valid)
+    {
+        if (state)
+            MarkBotBlocked(*state, bot, action.DebugName.c_str());
+        return BotActionResult::NoAction;
+    }
+
+    BotActionExecutor executor;
+    BotActionResult result = executor.ExecuteCombat(bot, bot, action);
+    if (state && result == BotActionResult::Ok)
+        MarkBotUnstuck(*state, bot, action.DebugName.c_str());
+    else if (state && result != BotActionResult::Casting && result != BotActionResult::GlobalCooldown)
+    {
+        if (state->Blocked && result == BotActionResult::CastFailed)
+        {
+            state->LastNoProgressReason = ToString(result);
+            state->LastRecoveryResult = state->LastNoProgressReason;
+            return result;
+        }
+        MarkBotBlocked(*state, bot, ToString(result));
+    }
+    return result;
+}
+
+BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(Player* bot, Unit* target, ResolvedCombatAction* actionOut) const
+{
+    return ExecuteProfileCombatAction(nullptr, bot, target, actionOut);
+}
+
 bool BotWorldPopulationMgr::TryCastCombatSpell(Player* bot, Unit* target, uint32 spellId) const
 {
     if (!bot || !target || !spellId || !target->IsAlive() || !bot->IsValidAttackTarget(target))
@@ -9965,6 +10334,7 @@ bool BotWorldPopulationMgr::TryCastCombatSpell(Player* bot, Unit* target, uint32
     if (!bot->IsWithinDistInMap(target, maxRange))
         return false;
 
+    bot->SetFacingToObject(target);
     if (bot->HasUnitState(UNIT_STATE_CASTING) || bot->GetSpellHistory()->HasGlobalCooldown(spellInfo) || !bot->GetSpellHistory()->IsReady(spellInfo))
         return false;
 

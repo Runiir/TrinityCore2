@@ -13,6 +13,7 @@
 #include "Creature.h"
 #include "DataStores/DBCStores.h"
 #include "DataStores/DBCStructure.h"
+#include "DungeonFinding/LFG.h"
 #include "Entities/Item/Container/Bag.h"
 #include "Entities/Item/Item.h"
 #include "Transport.h"
@@ -34,6 +35,28 @@
 
 namespace
 {
+bool RotationHasEnoughPower(Player const* bot, SpellInfo const* spellInfo)
+{
+    if (!bot || !spellInfo)
+        return false;
+
+    int32 cost = spellInfo->CalcPowerCost(bot, spellInfo->GetSchoolMask());
+    if (cost <= 0)
+        return true;
+    if (spellInfo->PowerType >= MAX_POWERS)
+        return true;
+    if (spellInfo->PowerType == POWER_HEALTH)
+        return int64(bot->GetHealth()) > cost;
+    return bot->GetPower(Powers(spellInfo->PowerType)) >= uint32(cost);
+}
+
+uint32 RotationWeight(float score)
+{
+    if (score <= 0.0f)
+        return 1;
+    return std::max<uint32>(1, uint32(score * 100.0f));
+}
+
 std::string JsonEscape(std::string const& value)
 {
     std::ostringstream escaped;
@@ -97,6 +120,82 @@ BotCombatArchetype CombatArchetypeForClass(uint8 classId, std::string const& run
         default:
             return BotCombatArchetype::MeleeDps;
     }
+}
+
+bool IsHealingCategory(BotCombatActionCategory category)
+{
+    return category == BotCombatActionCategory::HealFast
+        || category == BotCombatActionCategory::HealEfficient
+        || category == BotCombatActionCategory::HealAoe
+        || category == BotCombatActionCategory::DispelCleanse
+        || category == BotCombatActionCategory::ExternalDefensive;
+}
+
+float ProfileFollowDistance(BotClassSpecActionProfile const& profile)
+{
+    if (profile.MinRange > 0.0f)
+        return profile.MinRange;
+    if (profile.MovementDirective == "ranged")
+        return 24.0f;
+    if (profile.MovementDirective == "healer_support")
+        return 18.0f;
+    return 3.5f;
+}
+
+uint32 CastTimeMs(Player const* bot, SpellInfo const* spellInfo)
+{
+    if (!bot || !spellInfo)
+        return 0;
+    return uint32(std::max<int32>(0, spellInfo->CalcCastTime(bot->getLevel())));
+}
+
+bool MeetsCastDirectives(Player const* bot, BotActionProfileSpell const& spell, SpellInfo const* spellInfo)
+{
+    if (!spellInfo)
+        return false;
+    uint32 castTime = CastTimeMs(bot, spellInfo);
+    if (spell.RequiresInstantCast && castTime > 0)
+        return false;
+    if (spell.MaxCastTimeMs && castTime > spell.MaxCastTimeMs)
+        return false;
+    return true;
+}
+
+HealerUnitFrame const* SelectHealerUnit(HealerFrame const& frame, std::string const& selector)
+{
+    HealerUnitFrame const* selected = nullptr;
+    for (HealerUnitFrame const& unit : frame.Party)
+    {
+        if (!unit.Alive || !unit.Friendly || !unit.LineOfSight)
+            continue;
+
+        if (selector == "self")
+        {
+            if (unit.Guid == frame.BotGuid)
+                return &unit;
+            continue;
+        }
+
+        if (selector == "owner")
+        {
+            if (unit.Guid == frame.OwnerGuid)
+                return &unit;
+            continue;
+        }
+
+        if (selector == "tank")
+        {
+            if (!(unit.Role & lfg::PLAYER_ROLE_TANK))
+                continue;
+            if (!selected || unit.HealthPct < selected->HealthPct)
+                selected = &unit;
+            continue;
+        }
+
+        if (!selected || unit.HealthPct < selected->HealthPct || (unit.IsOwner && unit.HealthPct == selected->HealthPct))
+            selected = &unit;
+    }
+    return selected;
 }
 }
 
@@ -173,10 +272,24 @@ void BotController::Update(uint32 diff, BotActionExecutor& executor, Player* own
 
     if (!_combatTargetGuid.IsEmpty() || combatState.InCombat || combatState.TargetLootable)
     {
+        _updateTimer = std::min<uint32>(_updateTimer, 100);
         BotCombatDecision combatDecision = DecideSoloCombat(combatState);
         Unit* target = combatState.TargetGuid.IsEmpty() ? nullptr : ObjectAccessor::GetUnit(*bot, combatState.TargetGuid);
-        ResolvedCombatAction combatAction = ResolveProfileCombat(combatDecision, combatState, bot, target);
-        BotActionResult combatResult = executor.ExecuteCombat(owner, bot, combatAction);
+        BotActionResult combatResult = BotActionResult::NoAction;
+        ResolvedCombatAction combatAction;
+        bool hadQueuedAction = _queuedCombatAction.Valid && _queuedCombatAction.SpellId;
+        if (hadQueuedAction)
+            combatAction = _queuedCombatAction;
+        if (!TryExecuteQueuedCombatAction(executor, owner, bot, combatResult))
+        {
+            combatAction = ResolveProfileCombat(combatDecision, combatState, bot, target);
+            combatResult = executor.ExecuteCombat(owner, bot, combatAction);
+            if (combatResult == BotActionResult::Casting || combatResult == BotActionResult::GlobalCooldown)
+            {
+                _queuedCombatAction = combatAction;
+                _queuedCombatActionMs = 1500;
+            }
+        }
         if (combatDecision.Intent == BotCombatIntent::Loot && combatResult == BotActionResult::Ok)
             ClearCombatTarget();
 
@@ -490,14 +603,12 @@ ResolvedCombatAction BotController::ResolveSoloCombat(BotCombatDecision const& d
 
 BotActionCandidate const* BotController::SelectProfileCombatAction(Player* bot, Unit* target, BotCombatState const& state, BotClassSpecActionProfile const& profile, std::vector<BotActionCandidate>& candidates) const
 {
-    BotActionCandidate* best = nullptr;
+    std::vector<BotActionCandidate*> valid;
+    uint8 bestBucket = 255;
+
     for (BotActionCandidate& candidate : candidates)
     {
-        if (candidate.Category == BotCombatActionCategory::HealFast
-            || candidate.Category == BotCombatActionCategory::HealEfficient
-            || candidate.Category == BotCombatActionCategory::HealAoe
-            || candidate.Category == BotCombatActionCategory::DispelCleanse
-            || candidate.Category == BotCombatActionCategory::ExternalDefensive)
+        if (IsHealingCategory(candidate.Category))
         {
             candidate.RejectReason = "requires_ally_target";
             continue;
@@ -508,6 +619,97 @@ BotActionCandidate const* BotController::SelectProfileCombatAction(Player* bot, 
             candidate.RejectReason = "threat_already_established";
             continue;
         }
+        if (candidate.Profile.RequiresTargetNotVictim && target && target->GetVictim() == bot)
+        {
+            candidate.RejectReason = "target_already_on_bot";
+            continue;
+        }
+        if (candidate.Profile.RequiresTargetVictim && target && target->GetVictim() != bot)
+        {
+            candidate.RejectReason = "target_not_on_bot";
+            continue;
+        }
+        if (candidate.Profile.MinEnemies > 1 && state.NearbyHostileCount < candidate.Profile.MinEnemies)
+        {
+            candidate.RejectReason = "enemy_count_too_low";
+            continue;
+        }
+        if (candidate.Profile.MaxEnemies && state.NearbyHostileCount > candidate.Profile.MaxEnemies)
+        {
+            candidate.RejectReason = "enemy_count_too_high";
+            continue;
+        }
+        if (state.TargetHpPct < candidate.Profile.MinTargetHealthPct || state.TargetHpPct > candidate.Profile.MaxTargetHealthPct)
+        {
+            candidate.RejectReason = "target_health_gate";
+            continue;
+        }
+        if (state.SelfHpPct < candidate.Profile.MinSelfHealthPct || state.SelfHpPct > candidate.Profile.MaxSelfHealthPct)
+        {
+            candidate.RejectReason = "self_health_gate";
+            continue;
+        }
+        if (candidate.Profile.RequiresInterruptibleTarget && !state.TargetInterruptible)
+        {
+            candidate.RejectReason = "target_not_interruptible";
+            continue;
+        }
+        if (candidate.Profile.RequiredSelfAura && !bot->HasAura(candidate.Profile.RequiredSelfAura))
+        {
+            candidate.RejectReason = "missing_self_aura";
+            continue;
+        }
+        if (candidate.Profile.ForbiddenSelfAura && bot->HasAura(candidate.Profile.ForbiddenSelfAura))
+        {
+            candidate.RejectReason = "forbidden_self_aura";
+            continue;
+        }
+        if (target && candidate.Profile.RequiredTargetAura && !target->HasAura(candidate.Profile.RequiredTargetAura))
+        {
+            candidate.RejectReason = "missing_target_aura";
+            continue;
+        }
+        if (target && candidate.Profile.ForbiddenTargetAura && target->HasAura(candidate.Profile.ForbiddenTargetAura))
+        {
+            candidate.RejectReason = "forbidden_target_aura";
+            continue;
+        }
+        if (candidate.Profile.RequiresMeleeRange && state.TargetDistance > 5.0f)
+        {
+            candidate.RejectReason = "melee_range_required";
+            continue;
+        }
+        if (candidate.Profile.RequiresRangedRange && state.TargetDistance < 5.0f)
+        {
+            candidate.RejectReason = "ranged_range_required";
+            continue;
+        }
+        float minRange = candidate.Profile.MinRange > 0.0f ? candidate.Profile.MinRange : profile.MinRange;
+        float maxRange = candidate.Profile.MaxRange > 0.0f ? candidate.Profile.MaxRange : profile.MaxRange;
+        if (minRange > 0.0f && state.TargetDistance < minRange)
+        {
+            candidate.RejectReason = "min_range_required";
+            continue;
+        }
+        if (maxRange > 0.0f && state.TargetDistance > maxRange)
+        {
+            candidate.RejectReason = "max_range_exceeded";
+            continue;
+        }
+        if (candidate.SpellId)
+            if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(candidate.SpellId))
+            {
+                if (!RotationHasEnoughPower(bot, spellInfo))
+                {
+                    candidate.RejectReason = "insufficient_spell_power_type_resource";
+                    continue;
+                }
+                if (!MeetsCastDirectives(bot, candidate.Profile, spellInfo))
+                {
+                    candidate.RejectReason = candidate.Profile.RequiresInstantCast ? "instant_cast_required" : "cast_time_too_long";
+                    continue;
+                }
+            }
 
         if (!candidate.RejectReason.empty())
             continue;
@@ -532,13 +734,37 @@ BotActionCandidate const* BotController::SelectProfileCombatAction(Player* bot, 
                 roleScore += state.TargetInterruptible ? 2.0f : -0.4f;
         }
 
+        roleScore += std::max<float>(0.0f, 12.0f - float(candidate.Profile.PriorityBucket)) * 0.35f;
         candidate.Score = roleScore;
-        candidate.Reason = "runtime_profile_role";
-        if (!best || candidate.Score > best->Score)
-            best = &candidate;
+        candidate.Reason = "guide_weighted_priority_band";
+        if (candidate.Profile.PriorityBucket < bestBucket)
+        {
+            bestBucket = candidate.Profile.PriorityBucket;
+            valid.clear();
+        }
+        if (candidate.Profile.PriorityBucket == bestBucket)
+            valid.push_back(&candidate);
     }
 
-    return best;
+    if (valid.empty())
+        return nullptr;
+
+    uint32 totalWeight = 0;
+    for (BotActionCandidate const* candidate : valid)
+        totalWeight += RotationWeight(candidate->Score);
+
+    if (!totalWeight)
+        return valid.front();
+
+    uint32 selected = urand(1, totalWeight);
+    uint32 cursor = 0;
+    for (BotActionCandidate const* candidate : valid)
+    {
+        cursor += RotationWeight(candidate->Score);
+        if (selected <= cursor)
+            return candidate;
+    }
+    return valid.back();
 }
 
 ResolvedCombatAction BotController::ResolveProfileCombat(BotCombatDecision const& decision, BotCombatState const& state, Player* bot, Unit* target) const
@@ -567,6 +793,11 @@ ResolvedCombatAction BotController::ResolveProfileCombat(BotCombatDecision const
     }
 
     BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(bot, _runtimeRole.c_str());
+    action.MovementDirective = profile.MovementDirective;
+    action.AutoAttackMode = profile.AutoAttackMode;
+    action.MinRange = profile.MinRange;
+    action.MaxRange = profile.MaxRange;
+
     std::vector<BotActionCandidate> candidates = BotClassSpecActionProfileStore::BuildCandidates(bot, target, profile);
     BotActionCandidate const* best = SelectProfileCombatAction(bot, target, state, profile, candidates);
     if (!best || !best->SpellId)
@@ -580,6 +811,10 @@ ResolvedCombatAction BotController::ResolveProfileCombat(BotCombatDecision const
     action.Type = "cast";
     action.SpellId = best->SpellId;
     action.TargetGuid = target->GetGUID();
+    action.MovementDirective = best->Profile.MovementDirective.empty() ? profile.MovementDirective : best->Profile.MovementDirective;
+    action.AutoAttackMode = best->Profile.AutoAttackMode.empty() ? profile.AutoAttackMode : best->Profile.AutoAttackMode;
+    action.MinRange = best->Profile.MinRange > 0.0f ? best->Profile.MinRange : profile.MinRange;
+    action.MaxRange = best->Profile.MaxRange > 0.0f ? best->Profile.MaxRange : profile.MaxRange;
     if ((best->Category == BotCombatActionCategory::Aoe || best->Category == BotCombatActionCategory::Cleave) && best->SpellId)
         if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(best->SpellId))
             if (spellInfo->GetMaxRange(false) <= 5.0f)
@@ -588,76 +823,133 @@ ResolvedCombatAction BotController::ResolveProfileCombat(BotCombatDecision const
     return action;
 }
 
+bool BotController::TryExecuteQueuedCombatAction(BotActionExecutor& executor, Player* owner, Player* bot, BotActionResult& result)
+{
+    if (!_queuedCombatAction.Valid || !_queuedCombatAction.SpellId || !_queuedCombatActionMs)
+        return false;
+
+    result = executor.ExecuteCombat(owner, bot, _queuedCombatAction);
+    if (result == BotActionResult::Ok)
+    {
+        _queuedCombatAction = ResolvedCombatAction();
+        _queuedCombatActionMs = 0;
+        return true;
+    }
+
+    if (result == BotActionResult::Casting || result == BotActionResult::GlobalCooldown)
+    {
+        _queuedCombatActionMs = _queuedCombatActionMs > 100 ? _queuedCombatActionMs - 100 : 0;
+        if (!_queuedCombatActionMs)
+            _queuedCombatAction = ResolvedCombatAction();
+        return true;
+    }
+
+    _queuedCombatAction = ResolvedCombatAction();
+    _queuedCombatActionMs = 0;
+    return false;
+}
+
 bool BotController::TryResolveHealerAction(BotActionExecutor& executor, Player* owner, Player* bot, BotRecentEvents const& recentEvents, bool shouldRecord, BotMovementFrame const& movementFrame)
 {
     HealerFrame frame = BuildFrame(owner, bot, recentEvents);
-    HealerDecision decision = _policy->Decide(frame);
-    if (decision.Intent == HealerIntent::Wait || decision.TargetGuid.IsEmpty())
-        return false;
-
-    Unit* target = ObjectAccessor::GetUnit(*bot, decision.TargetGuid);
     BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(bot, "healer");
     ResolvedBotAction action;
-    action.Intent = decision.Intent;
-    action.TargetGuid = decision.TargetGuid;
     action.DebugName = "no_valid_healer_action";
+    HealerDecision decision = _policy->Decide(frame);
 
-    auto acceptsIntent = [&decision](BotCombatActionCategory category)
+    struct HealerAttempt
     {
-        switch (decision.Intent)
-        {
-            case HealerIntent::AoeHeal:
-                return category == BotCombatActionCategory::HealAoe || category == BotCombatActionCategory::HealFast || category == BotCombatActionCategory::HealEfficient;
-            case HealerIntent::FastSingleHeal:
-            case HealerIntent::InstantSingleHeal:
-            case HealerIntent::BigSingleHeal:
-            case HealerIntent::ExternalDefensive:
-                return category == BotCombatActionCategory::HealFast || category == BotCombatActionCategory::ExternalDefensive || category == BotCombatActionCategory::HealEfficient;
-            case HealerIntent::EfficientSingleHeal:
-                return category == BotCombatActionCategory::HealEfficient || category == BotCombatActionCategory::HealFast;
-            case HealerIntent::Dispel:
-                return category == BotCombatActionCategory::DispelCleanse;
-            default:
-                return false;
-        }
+        BotActionProfileSpell const* Spell = nullptr;
+        ObjectGuid TargetGuid;
+        float Score = 0.0f;
     };
+    std::vector<HealerAttempt> attempts;
 
-    BotActionProfileSpell const* best = nullptr;
     for (BotActionProfileSpell const& spell : profile.Spells)
     {
-        if (!spell.SpellId || !acceptsIntent(spell.Category))
+        if (!spell.SpellId || !IsHealingCategory(spell.Category))
             continue;
-        if (!best || spell.HealingWeight + spell.SurvivalWeight > best->HealingWeight + best->SurvivalWeight)
-            best = &spell;
+        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spell.SpellId);
+        if (!spellInfo)
+            continue;
+        if (!bot->GetSpellHistory()->IsReady(spellInfo))
+            continue;
+        if (!RotationHasEnoughPower(bot, spellInfo))
+            continue;
+        if (!MeetsCastDirectives(bot, spell, spellInfo))
+            continue;
+        HealerUnitFrame const* unit = SelectHealerUnit(frame, spell.TargetSelector.empty() ? "lowest_ally" : spell.TargetSelector);
+        if (!unit)
+            continue;
+        if (spell.MinTargetHealthPct > 0.0f && float(unit->HealthPct) / 100.0f < spell.MinTargetHealthPct)
+            continue;
+        if (float(unit->HealthPct) / 100.0f > spell.MaxTargetHealthPct)
+            continue;
+        if (spell.MaxRange > 0.0f && unit->Distance > spell.MaxRange)
+            continue;
+        else if (spell.MaxRange <= 0.0f && unit->Distance > std::max(5.0f, spellInfo->GetMaxRange(false)))
+            continue;
+        Unit* target = ObjectAccessor::GetUnit(*bot, unit->Guid);
+        if (!target)
+            continue;
+        if (target && spell.ForbiddenTargetAura && target->HasAura(spell.ForbiddenTargetAura))
+            continue;
+        if (target && spell.MaintainAuraId && target->HasAura(spell.MaintainAuraId))
+            continue;
+        if (target && spell.RequiredTargetAura && !target->HasAura(spell.RequiredTargetAura))
+            continue;
+        if (spell.RequiredSelfAura && !bot->HasAura(spell.RequiredSelfAura))
+            continue;
+        if (spell.ForbiddenSelfAura && bot->HasAura(spell.ForbiddenSelfAura))
+            continue;
+
+        float urgency = 1.0f - float(unit->HealthPct) / 100.0f;
+        if (spell.TargetSelector == "tank")
+            urgency += 0.20f;
+        attempts.push_back(HealerAttempt{ &spell, unit->Guid, spell.HealingWeight + spell.SurvivalWeight + urgency + std::max<float>(0.0f, 12.0f - float(spell.PriorityBucket)) * 0.35f });
     }
 
-    if (best)
+    std::sort(attempts.begin(), attempts.end(), [](HealerAttempt const& left, HealerAttempt const& right)
     {
-        action.SpellId = best->SpellId;
-        action.DebugName = BotCombatActionCatalog::ToString(best->Category);
+        if (left.Spell->PriorityBucket != right.Spell->PriorityBucket)
+            return left.Spell->PriorityBucket < right.Spell->PriorityBucket;
+        return left.Score > right.Score;
+    });
+
+    BotActionResult result = BotActionResult::NoAction;
+    for (HealerAttempt const& attempt : attempts)
+    {
+        action.Intent = decision.Intent == HealerIntent::Wait ? HealerIntent::EfficientSingleHeal : decision.Intent;
+        action.TargetGuid = attempt.TargetGuid;
+        action.SpellId = attempt.Spell->SpellId;
+        action.DebugName = BotCombatActionCatalog::ToString(attempt.Spell->Category);
+        result = executor.Execute(owner, bot, action);
+        if (result == BotActionResult::Ok || result == BotActionResult::Casting || result == BotActionResult::GlobalCooldown)
+            break;
     }
 
-    BotActionResult result = best ? executor.Execute(owner, bot, action) : BotActionResult::NoAction;
     if (shouldRecord)
     {
         RecordFrame(frame, decision, &action, result, owner, bot);
         RecordMovementFrame(movementFrame, ToString(_movementMode), ToString(decision.Intent), action.DebugName.c_str(), result != BotActionResult::Disabled, owner, bot);
     }
 
-    return result == BotActionResult::Ok || (target && best);
+    return result == BotActionResult::Ok || result == BotActionResult::Casting || result == BotActionResult::GlobalCooldown;
 }
 
 void BotController::ApplyMovementPolicy(BotActionExecutor& executor, Player* owner, Player* bot, BotMovementFrame const& movementFrame)
 {
     if (movementFrame.StuckScore >= 1.0f || _movementMode == BotMovementMode::Unstuck)
     {
-        executor.MoveUnstuck(owner, bot);
         _movementMode = BotMovementMode::Follow;
         return;
     }
 
     if (_movementMode == BotMovementMode::Follow)
-        executor.MoveFollow(owner, bot);
+    {
+        BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(bot, _runtimeRole.c_str());
+        executor.MoveFollow(owner, bot, ProfileFollowDistance(profile));
+    }
     else if (_movementMode == BotMovementMode::Stay)
         executor.MoveStay(bot);
     else if (_movementMode == BotMovementMode::Stop)

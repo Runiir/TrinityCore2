@@ -1,4 +1,5 @@
 #include "Bots/BotClassSpecActionProfile.h"
+#include "DatabaseEnv.h"
 #include "Player.h"
 #include "SpellHistory.h"
 #include "SpellInfo.h"
@@ -7,6 +8,10 @@
 #include "Creature.h"
 #include "DataStores/DBCEnums.h"
 #include <algorithm>
+#include <cstdlib>
+#include <map>
+#include <mutex>
+#include <set>
 #include <sstream>
 
 namespace
@@ -35,20 +40,22 @@ char const* PowerName(Powers power)
     }
 }
 
-void Add(BotClassSpecActionProfile& profile, uint32 spellId, BotCombatActionCategory category, char const* tags, float damage, float healing, float threat, float mitigation, float survival, uint8 priority)
+struct DbRotationCache
 {
-    BotActionProfileSpell spell;
-    spell.SpellId = spellId;
-    spell.Category = category;
-    spell.MechanicTags = tags ? tags : "";
-    spell.DamageWeight = damage;
-    spell.HealingWeight = healing;
-    spell.ThreatWeight = threat;
-    spell.MitigationWeight = mitigation;
-    spell.SurvivalWeight = survival;
-    spell.ProgressionWeight = std::max(damage, std::max(healing, std::max(threat, mitigation)));
-    spell.PriorityBucket = priority;
-    profile.Spells.push_back(spell);
+    std::map<std::string, BotClassSpecActionProfile> Profiles;
+    std::vector<std::string> Order;
+    std::set<std::string> RequestedKeys;
+    std::string LastError;
+};
+
+std::mutex g_dbRotationMutex;
+DbRotationCache g_dbRotationCache;
+
+std::string DbRotationKey(uint8 classId, std::string const& specTag, std::string const& role)
+{
+    std::ostringstream key;
+    key << uint32(classId) << ":" << specTag << ":" << role;
+    return key.str();
 }
 
 bool HasAny(Player const* bot, std::vector<uint32> const& ids)
@@ -60,6 +67,199 @@ bool HasAny(Player const* bot, std::vector<uint32> const& ids)
             return true;
     return false;
 }
+
+std::string InferSpecTag(Player const* bot, std::string const& role)
+{
+    if (!bot)
+        return "generic";
+
+    switch (bot->getClass())
+    {
+        case CLASS_MAGE:
+            return HasAny(bot, {44457, 11366, 31661}) ? "fire" : "mage_generic";
+        case CLASS_PRIEST:
+            return role == "healer" ? "holy_priest" : "priest_generic";
+        case CLASS_SHAMAN:
+            return role == "healer" ? "restoration_shaman" : (HasAny(bot, {17364, 60103}) ? "enhancement" : "shaman_generic");
+        case CLASS_PALADIN:
+            return role == "tank" ? "protection" : (role == "healer" ? "holy_paladin" : "paladin_generic");
+        case CLASS_HUNTER:
+            return HasAny(bot, {53209, 19434}) ? "marksmanship" : "hunter_generic";
+        case CLASS_DEATH_KNIGHT:
+            return role == "tank" ? "blood" : "death_knight_generic";
+        case CLASS_WARRIOR:
+            return role == "tank" ? "protection" : "warrior_generic";
+        case CLASS_DRUID:
+            return role == "healer" ? "restoration_druid" : "druid_generic";
+        case CLASS_ROGUE:
+            return "rogue_generic";
+        case CLASS_WARLOCK:
+            return "warlock_generic";
+        default:
+            return "generic";
+    }
+}
+
+bool HasEnoughPowerForProfileSpell(Player const* bot, SpellInfo const* spellInfo)
+{
+    if (!bot || !spellInfo)
+        return false;
+
+    int32 cost = spellInfo->CalcPowerCost(bot, spellInfo->GetSchoolMask());
+    if (cost <= 0)
+        return true;
+    if (spellInfo->PowerType >= MAX_POWERS)
+        return true;
+    if (spellInfo->PowerType == POWER_HEALTH)
+        return int64(bot->GetHealth()) > cost;
+    return bot->GetPower(Powers(spellInfo->PowerType)) >= uint32(cost);
+}
+
+uint32 ProfileSpellCastTimeMs(Player const* bot, SpellInfo const* spellInfo)
+{
+    if (!bot || !spellInfo)
+        return 0;
+    return uint32(std::max<int32>(0, spellInfo->CalcCastTime(bot->getLevel())));
+}
+
+bool LoadDbProfileLocked(uint8 classId, std::string const& specTag, std::string const& role, std::string* failureReason)
+{
+    std::string key = DbRotationKey(classId, specTag, role);
+    g_dbRotationCache.RequestedKeys.insert(key);
+    g_dbRotationCache.LastError.clear();
+    std::string escapedSpecTag = specTag;
+    std::string escapedRole = role;
+    WorldDatabase.EscapeString(escapedSpecTag);
+    WorldDatabase.EscapeString(escapedRole);
+
+    QueryResult result = WorldDatabase.PQuery(
+        "SELECT p.id, p.class_id, p.spec_tag, p.role, p.resource_type, p.range_band, p.version, "
+        "p.movement_directive, p.auto_attack_mode, p.min_range, p.max_range, "
+        "a.spell_id, a.category, a.mechanic_tags, a.damage_weight, a.healing_weight, a.threat_weight, "
+        "a.mitigation_weight, a.survival_weight, a.movement_weight, a.progression_weight, "
+        "a.profession_weight, a.priority_bucket, a.min_enemies, a.max_enemies, "
+        "a.min_target_health_pct, a.max_target_health_pct, a.min_self_health_pct, a.max_self_health_pct, "
+        "a.required_self_aura, a.forbidden_self_aura, a.required_target_aura, a.forbidden_target_aura, "
+        "a.requires_interruptible_target, a.requires_target_not_victim, a.requires_target_victim, "
+        "a.requires_melee_range, a.requires_ranged_range, a.target_selector, a.movement_directive, "
+        "a.auto_attack_mode, a.min_range, a.max_range, a.requires_instant_cast, a.max_cast_time_ms, "
+        "a.maintain_aura_id, a.refresh_aura_below_ms "
+        "FROM bot_rotation_profile p "
+        "JOIN bot_rotation_action a ON a.profile_id = p.id "
+        "WHERE p.enabled = 1 AND a.enabled = 1 AND p.class_id = %u AND p.spec_tag = '%s' AND p.role = '%s' "
+        "ORDER BY a.priority_bucket, a.sort_order, a.id",
+        uint32(classId), escapedSpecTag.c_str(), escapedRole.c_str());
+
+    if (!result)
+    {
+        g_dbRotationCache.Profiles.erase(key);
+        g_dbRotationCache.LastError = "profile_not_found_" + key;
+        if (failureReason)
+            *failureReason = g_dbRotationCache.LastError;
+        return false;
+    }
+
+    BotClassSpecActionProfile profile;
+    do
+    {
+        Field* fields = result->Fetch();
+        uint32 profileId = fields[0].GetUInt32();
+        if (profile.Spells.empty())
+        {
+            profile.ClassId = fields[1].GetUInt8();
+            profile.SpecTag = fields[2].GetString();
+            profile.Role = fields[3].GetString();
+            profile.ResourceType = fields[4].GetString();
+            profile.RangeBand = fields[5].GetString();
+            profile.ProfileSource = "world_db_bot_rotation_profile_" + std::to_string(profileId) + "_v" + fields[6].GetString();
+            profile.MovementDirective = fields[7].GetString();
+            profile.AutoAttackMode = fields[8].GetString();
+            profile.MinRange = fields[9].GetFloat();
+            profile.MaxRange = fields[10].GetFloat();
+            profile.MissingProfile = false;
+        }
+
+        uint32 spellId = fields[11].GetUInt32();
+        if (spellId && !sSpellMgr->GetSpellInfo(spellId))
+        {
+            g_dbRotationCache.LastError = "invalid_spell_id_" + std::to_string(spellId);
+            continue;
+        }
+
+        std::string categoryName = fields[12].GetString();
+        BotCombatActionCategory category = BotCombatActionCatalog::CategoryFromString(categoryName);
+        if (category == BotCombatActionCategory::Wait && categoryName != "wait")
+        {
+            g_dbRotationCache.LastError = "invalid_category_" + categoryName;
+            continue;
+        }
+
+        BotActionProfileSpell spell;
+        spell.SpellId = spellId;
+        spell.Category = category;
+        spell.MechanicTags = fields[13].GetString();
+        spell.DamageWeight = fields[14].GetFloat();
+        spell.HealingWeight = fields[15].GetFloat();
+        spell.ThreatWeight = fields[16].GetFloat();
+        spell.MitigationWeight = fields[17].GetFloat();
+        spell.SurvivalWeight = fields[18].GetFloat();
+        spell.MovementWeight = fields[19].GetFloat();
+        spell.ProgressionWeight = fields[20].GetFloat();
+        spell.ProfessionWeight = fields[21].GetFloat();
+        spell.PriorityBucket = fields[22].GetUInt8();
+        spell.MinEnemies = fields[23].GetUInt8();
+        spell.MaxEnemies = fields[24].GetUInt8();
+        spell.MinTargetHealthPct = fields[25].GetFloat();
+        spell.MaxTargetHealthPct = fields[26].GetFloat();
+        spell.MinSelfHealthPct = fields[27].GetFloat();
+        spell.MaxSelfHealthPct = fields[28].GetFloat();
+        spell.RequiredSelfAura = fields[29].GetUInt32();
+        spell.ForbiddenSelfAura = fields[30].GetUInt32();
+        spell.RequiredTargetAura = fields[31].GetUInt32();
+        spell.ForbiddenTargetAura = fields[32].GetUInt32();
+        spell.RequiresInterruptibleTarget = fields[33].GetBool();
+        spell.RequiresTargetNotVictim = fields[34].GetBool();
+        spell.RequiresTargetVictim = fields[35].GetBool();
+        spell.RequiresMeleeRange = fields[36].GetBool();
+        spell.RequiresRangedRange = fields[37].GetBool();
+        spell.TargetSelector = fields[38].GetString();
+        spell.MovementDirective = fields[39].GetString();
+        spell.AutoAttackMode = fields[40].GetString();
+        spell.MinRange = fields[41].GetFloat();
+        spell.MaxRange = fields[42].GetFloat();
+        spell.RequiresInstantCast = fields[43].GetBool();
+        spell.MaxCastTimeMs = fields[44].GetUInt32();
+        spell.MaintainAuraId = fields[45].GetUInt32();
+        spell.RefreshAuraBelowMs = fields[46].GetUInt32();
+        profile.Spells.push_back(spell);
+    } while (result->NextRow());
+
+    if (profile.Spells.empty())
+    {
+        g_dbRotationCache.Profiles.erase(key);
+        g_dbRotationCache.LastError = g_dbRotationCache.LastError.empty() ? "no_valid_db_rotation_actions_" + key : g_dbRotationCache.LastError;
+        if (failureReason)
+            *failureReason = g_dbRotationCache.LastError;
+        return false;
+    }
+
+    if (!g_dbRotationCache.Profiles.count(key))
+        g_dbRotationCache.Order.push_back(key);
+    g_dbRotationCache.Profiles[key] = profile;
+    if (failureReason)
+        *failureReason = g_dbRotationCache.LastError;
+    return true;
+}
+
+bool EnsureDbProfileLoaded(uint8 classId, std::string const& specTag, std::string const& role)
+{
+    std::lock_guard<std::mutex> guard(g_dbRotationMutex);
+    std::string key = DbRotationKey(classId, specTag, role);
+    if (g_dbRotationCache.Profiles.count(key))
+        return true;
+    std::string ignored;
+    return LoadDbProfileLocked(classId, specTag, role, &ignored);
+}
 }
 
 std::string BotClassSpecActionProfile::EmbeddingJson() const
@@ -70,6 +270,10 @@ std::string BotClassSpecActionProfile::EmbeddingJson() const
          << ",\"role\":\"" << ClassSpecProfileEscape(Role) << "\""
          << ",\"resource_type\":\"" << ClassSpecProfileEscape(ResourceType) << "\""
          << ",\"range_band\":\"" << ClassSpecProfileEscape(RangeBand) << "\""
+         << ",\"movement_directive\":\"" << ClassSpecProfileEscape(MovementDirective) << "\""
+         << ",\"auto_attack_mode\":\"" << ClassSpecProfileEscape(AutoAttackMode) << "\""
+         << ",\"min_range\":" << MinRange
+         << ",\"max_range\":" << MaxRange
          << ",\"profile_source\":\"" << ClassSpecProfileEscape(ProfileSource) << "\""
          << ",\"missing_profile\":" << (MissingProfile ? "true" : "false")
          << ",\"known_spell_count\":" << Spells.size() << "}";
@@ -93,143 +297,37 @@ BotClassSpecActionProfile BotClassSpecActionProfileStore::Build(Player const* bo
     profile.ClassId = bot->getClass();
     profile.ResourceType = PowerName(bot->GetPowerType());
     profile.Role = roleHint && *roleHint ? roleHint : "dps";
-    profile.RangeBand = "melee";
+    profile.SpecTag = InferSpecTag(bot, profile.Role);
+    profile.RangeBand = "mixed";
+    profile.ProfileSource = "missing_db_rotation_profile";
+    profile.MissingProfile = true;
 
-    switch (profile.ClassId)
+    EnsureDbProfileLoaded(profile.ClassId, profile.SpecTag, profile.Role);
     {
-        case CLASS_MAGE:
-            profile.SpecTag = HasAny(bot, {11366, 44457, 31661}) ? "fire" : (HasAny(bot, {44425, 12042}) ? "arcane" : "frost_or_generic");
-            profile.RangeBand = "ranged";
-            profile.Role = "dps";
-            profile.MissingProfile = false;
-            profile.ProfileSource = "cata_434_static_mage";
-            Add(profile, 133, BotCombatActionCategory::Builder, "filler,cast", 0.70f, 0, 0, 0, 0, 5);
-            Add(profile, 44614, BotCombatActionCategory::Builder, "filler,cast", 0.75f, 0, 0, 0, 0, 5);
-            Add(profile, 11366, BotCombatActionCategory::Spender, "nuke,fire,proc_or_opener", 0.72f, 0, 0, 0, 0, 6);
-            Add(profile, 2136, BotCombatActionCategory::Spender, "instant,fire", 0.85f, 0, 0, 0, 0, 3);
-            Add(profile, 2120, BotCombatActionCategory::Aoe, "aoe,fire", 0.90f, 0, 0, 0, 0, 2);
-            Add(profile, 1449, BotCombatActionCategory::Aoe, "aoe,arcane", 0.80f, 0, 0, 0, 0, 3);
-            Add(profile, 2139, BotCombatActionCategory::Interrupt, "interrupt", 0.15f, 0, 0, 0, 0.2f, 1);
-            Add(profile, 45438, BotCombatActionCategory::Defensive, "immunity", 0, 0, 0, 0, 1.0f, 1);
-            break;
-        case CLASS_PRIEST:
-            profile.SpecTag = profile.Role == "healer" ? "holy_disc_generic" : "shadow_or_generic";
-            profile.RangeBand = "ranged";
-            profile.MissingProfile = false;
-            profile.ProfileSource = "cata_434_static_priest";
-            Add(profile, 585, BotCombatActionCategory::Builder, "filler,holy", 0.55f, 0, 0, 0, 0, 6);
-            Add(profile, 589, BotCombatActionCategory::Dot, "dot,shadow", 0.65f, 0, 0, 0, 0, 4);
-            Add(profile, 2061, BotCombatActionCategory::HealFast, "triage,heal", 0, 1.0f, 0, 0, 0.8f, 1);
-            Add(profile, 2050, BotCombatActionCategory::HealEfficient, "efficient,heal", 0, 0.75f, 0, 0, 0.6f, 2);
-            Add(profile, 596, BotCombatActionCategory::HealAoe, "aoe,heal", 0, 0.90f, 0, 0, 0.7f, 2);
-            Add(profile, 527, BotCombatActionCategory::DispelCleanse, "dispel,cleanse", 0, 0.25f, 0, 0, 0.7f, 1);
-            break;
-        case CLASS_WARLOCK:
-            profile.SpecTag = "affliction_destro_generic";
-            profile.RangeBand = "ranged";
-            profile.Role = "dps";
-            profile.MissingProfile = false;
-            profile.ProfileSource = "cata_434_static_warlock";
-            Add(profile, 686, BotCombatActionCategory::Builder, "filler,shadow", 0.70f, 0, 0, 0, 0, 5);
-            Add(profile, 172, BotCombatActionCategory::Dot, "dot,shadow", 0.80f, 0, 0, 0, 0, 3);
-            Add(profile, 348, BotCombatActionCategory::Dot, "dot,fire", 0.65f, 0, 0, 0, 0, 4);
-            Add(profile, 17962, BotCombatActionCategory::Spender, "instant,fire", 0.90f, 0, 0, 0, 0, 3);
-            break;
-        case CLASS_DRUID:
-            profile.SpecTag = profile.Role == "healer" ? "restoration_or_balance_generic" : "feral_or_balance_generic";
-            profile.RangeBand = HasAny(bot, {5176, 8921}) ? "ranged" : "melee";
-            profile.MissingProfile = false;
-            profile.ProfileSource = "cata_434_static_druid";
-            Add(profile, 5176, BotCombatActionCategory::Builder, "filler,nature", 0.65f, 0, 0, 0, 0, 5);
-            Add(profile, 8921, BotCombatActionCategory::Dot, "dot,arcane", 0.70f, 0, 0, 0, 0, 4);
-            Add(profile, 8936, BotCombatActionCategory::HealFast, "hot,heal", 0, 0.85f, 0, 0, 0.7f, 1);
-            Add(profile, 5185, BotCombatActionCategory::HealEfficient, "heal", 0, 0.75f, 0, 0, 0.6f, 2);
-            Add(profile, 80965, BotCombatActionCategory::Interrupt, "interrupt", 0.2f, 0, 0, 0, 0.2f, 1);
-            break;
-        case CLASS_SHAMAN:
-            profile.SpecTag = profile.Role == "healer" ? "restoration_or_elemental_generic" : "enhancement_or_elemental_generic";
-            profile.RangeBand = "ranged";
-            profile.MissingProfile = false;
-            profile.ProfileSource = "cata_434_static_shaman";
-            Add(profile, 403, BotCombatActionCategory::Builder, "filler,nature", 0.70f, 0, 0, 0, 0, 5);
-            Add(profile, 8050, BotCombatActionCategory::Dot, "dot,fire", 0.70f, 0, 0, 0, 0, 4);
-            Add(profile, 8042, BotCombatActionCategory::Spender, "shock,nature", 0.82f, 0, 0, 0, 0, 3);
-            Add(profile, 17364, BotCombatActionCategory::Builder, "melee,enhancement", 0.88f, 0, 0, 0, 0, 3);
-            Add(profile, 60103, BotCombatActionCategory::Spender, "melee,fire,enhancement", 0.84f, 0, 0, 0, 0, 3);
-            Add(profile, 421, BotCombatActionCategory::Cleave, "cleave,nature", 0.88f, 0, 0, 0, 0, 2);
-            Add(profile, 331, BotCombatActionCategory::HealEfficient, "heal", 0, 0.75f, 0, 0, 0.6f, 2);
-            Add(profile, 8004, BotCombatActionCategory::HealFast, "triage,heal", 0, 1.0f, 0, 0, 0.8f, 1);
-            Add(profile, 57994, BotCombatActionCategory::Interrupt, "interrupt", 0.15f, 0, 0, 0, 0.2f, 1);
-            break;
-        case CLASS_PALADIN:
-            profile.SpecTag = profile.Role == "tank" ? "protection" : (profile.Role == "healer" ? "holy" : "retribution_or_generic");
-            profile.MissingProfile = false;
-            profile.ProfileSource = "cata_434_static_paladin";
-            Add(profile, 20271, BotCombatActionCategory::Builder, "judgement", 0.65f, 0, 0.3f, 0, 0, 4);
-            Add(profile, 35395, BotCombatActionCategory::Builder, "crusader", 0.75f, 0, 0.5f, 0, 0, 4);
-            Add(profile, 53595, BotCombatActionCategory::Cleave, "aoe,holy_power,threat", 0.78f, 0, 0.9f, 0, 0, 2);
-            Add(profile, 31935, BotCombatActionCategory::ThreatBuild, "ranged,shield,threat", 0.86f, 0, 1.0f, 0, 0, 2);
-            Add(profile, 26573, BotCombatActionCategory::Aoe, "aoe,threat", 0.72f, 0, 1.1f, 0, 0, 2);
-            Add(profile, 53600, BotCombatActionCategory::Spender, "holy_power,threat", 0.82f, 0, 0.95f, 0, 0, 3);
-            Add(profile, 635, BotCombatActionCategory::HealEfficient, "heal", 0, 0.75f, 0, 0, 0.6f, 2);
-            Add(profile, 19750, BotCombatActionCategory::HealFast, "triage,heal", 0, 1.0f, 0, 0, 0.8f, 1);
-            Add(profile, 62124, BotCombatActionCategory::Taunt, "taunt", 0, 0, 1.0f, 0, 0.3f, 1);
-            Add(profile, 96231, BotCombatActionCategory::Interrupt, "interrupt", 0.15f, 0, 0, 0, 0.2f, 1);
-            break;
-        case CLASS_HUNTER:
-            profile.SpecTag = "hunter_generic";
-            profile.RangeBand = "ranged";
-            profile.Role = "dps";
-            profile.MissingProfile = false;
-            profile.ProfileSource = "cata_434_static_hunter";
-            Add(profile, 75, BotCombatActionCategory::AutoAttack, "ranged,auto", 0.45f, 0, 0, 0, 0, 7);
-            Add(profile, 1978, BotCombatActionCategory::Dot, "dot,sting", 0.70f, 0, 0, 0, 0, 4);
-            Add(profile, 3044, BotCombatActionCategory::Spender, "focus,instant", 0.85f, 0, 0, 0, 0, 3);
-            Add(profile, 56641, BotCombatActionCategory::Builder, "focus,ranged", 0.74f, 0, 0, 0, 0, 4);
-            Add(profile, 2643, BotCombatActionCategory::Aoe, "focus,aoe,ranged", 0.86f, 0, 0, 0, 0, 2);
-            break;
-        case CLASS_DEATH_KNIGHT:
-            profile.SpecTag = profile.Role == "tank" ? "blood" : "frost_unholy_generic";
-            profile.MissingProfile = false;
-            profile.ProfileSource = "cata_434_static_death_knight";
-            Add(profile, 45477, BotCombatActionCategory::Debuff, "disease,frost", 0.65f, 0, 0.3f, 0, 0, 4);
-            Add(profile, 45462, BotCombatActionCategory::Dot, "disease,shadow", 0.65f, 0, 0.3f, 0, 0, 4);
-            Add(profile, 47541, BotCombatActionCategory::Spender, "runic_power", 0.85f, 0, 0.4f, 0, 0, 3);
-            Add(profile, 47528, BotCombatActionCategory::Interrupt, "interrupt", 0.15f, 0, 0, 0, 0.2f, 1);
-            Add(profile, 56222, BotCombatActionCategory::Taunt, "taunt", 0, 0, 1.0f, 0, 0.3f, 1);
-            break;
-        case CLASS_WARRIOR:
-            profile.SpecTag = profile.Role == "tank" ? "protection" : "arms_fury_generic";
-            profile.MissingProfile = false;
-            profile.ProfileSource = "cata_434_static_warrior";
-            Add(profile, 78, BotCombatActionCategory::Spender, "rage", 0.70f, 0, 0.3f, 0, 0, 4);
-            Add(profile, 100, BotCombatActionCategory::Movement, "charge", 0.35f, 0, 0.2f, 0, 0.2f, 3);
-            Add(profile, 355, BotCombatActionCategory::Taunt, "taunt", 0, 0, 1.0f, 0, 0.3f, 1);
-            Add(profile, 2565, BotCombatActionCategory::Mitigation, "block,mitigation", 0, 0, 0.2f, 0.8f, 0.7f, 1);
-            Add(profile, 6552, BotCombatActionCategory::Interrupt, "interrupt", 0.15f, 0, 0, 0, 0.2f, 1);
-            break;
-        case CLASS_ROGUE:
-            profile.SpecTag = "rogue_generic";
-            profile.ResourceType = "energy";
-            profile.Role = "dps";
-            profile.MissingProfile = false;
-            profile.ProfileSource = "cata_434_static_rogue";
-            Add(profile, 1752, BotCombatActionCategory::Builder, "combo,energy", 0.70f, 0, 0, 0, 0, 4);
-            Add(profile, 2098, BotCombatActionCategory::Spender, "combo,finisher", 0.95f, 0, 0, 0, 0, 3);
-            Add(profile, 1766, BotCombatActionCategory::Interrupt, "interrupt", 0.15f, 0, 0, 0, 0.2f, 1);
-            Add(profile, 408, BotCombatActionCategory::StunCc, "stun,cc", 0.2f, 0, 0, 0, 0.3f, 2);
-            break;
-        default:
-            Add(profile, 0, BotCombatActionCategory::AutoAttack, "generic", 0.35f, 0, 0, 0, 0, 9);
-            break;
+        std::lock_guard<std::mutex> guard(g_dbRotationMutex);
+        auto itr = g_dbRotationCache.Profiles.find(DbRotationKey(profile.ClassId, profile.SpecTag, profile.Role));
+        if (itr != g_dbRotationCache.Profiles.end())
+            profile = itr->second;
     }
 
-    profile.Spells.erase(std::remove_if(profile.Spells.begin(), profile.Spells.end(), [bot](BotActionProfileSpell const& spell)
+    if (!profile.MissingProfile)
     {
-        return spell.SpellId && !bot->HasSpell(spell.SpellId);
-    }), profile.Spells.end());
-    if (profile.Spells.empty())
-        Add(profile, 0, BotCombatActionCategory::AutoAttack, "generic,no_known_spell", 0.35f, 0, 0, 0, 0, 9);
+        profile.Spells.erase(std::remove_if(profile.Spells.begin(), profile.Spells.end(), [bot](BotActionProfileSpell const& spell)
+        {
+            return spell.SpellId && !bot->HasSpell(spell.SpellId);
+        }), profile.Spells.end());
+        if (profile.Spells.empty())
+        {
+            profile.MissingProfile = true;
+            profile.ProfileSource = "db_rotation_profile_has_no_known_spells";
+        }
+        else if (profile.MovementDirective.empty() || profile.AutoAttackMode.empty())
+        {
+            profile.MissingProfile = true;
+            profile.ProfileSource = "db_rotation_profile_missing_movement_directives";
+            profile.Spells.clear();
+        }
+    }
     return profile;
 }
 
@@ -262,19 +360,22 @@ std::vector<BotActionCandidate> BotClassSpecActionProfileStore::BuildCandidates(
             if (!spellInfo)
                 candidate.RejectReason = "missing_spell_info";
             else if (bot->HasUnitState(UNIT_STATE_CASTING))
-                candidate.RejectReason = "bot_casting";
+                candidate.RejectReason.clear();
             else if (bot->GetSpellHistory()->HasGlobalCooldown(spellInfo))
-                candidate.RejectReason = "gcd_not_ready";
+                candidate.RejectReason.clear();
             else if (!bot->GetSpellHistory()->IsReady(spellInfo))
                 candidate.RejectReason = "cooldown_not_ready";
+            else if (spell.RequiresInstantCast && ProfileSpellCastTimeMs(bot, spellInfo) > 0)
+                candidate.RejectReason = "instant_cast_required";
+            else if (spell.MaxCastTimeMs && ProfileSpellCastTimeMs(bot, spellInfo) > spell.MaxCastTimeMs)
+                candidate.RejectReason = "cast_time_too_long";
             else if (target && (spell.Category == BotCombatActionCategory::HealFast || spell.Category == BotCombatActionCategory::HealEfficient || spell.Category == BotCombatActionCategory::HealAoe))
                 candidate.TargetType = "ally";
             else if (target && !bot->IsWithinDistInMap(target, std::max(5.0f, spellInfo->GetMaxRange(false))))
                 candidate.RejectReason = "out_of_range";
             else
             {
-                int32 cost = spellInfo->CalcPowerCost(bot, spellInfo->GetSchoolMask());
-                if (cost > 0 && bot->GetPower(bot->GetPowerType()) < uint32(cost))
+                if (!HasEnoughPowerForProfileSpell(bot, spellInfo))
                     candidate.RejectReason = "insufficient_resource";
             }
         }
@@ -313,6 +414,9 @@ std::string BotClassSpecActionProfileStore::CandidateMaskJson(std::vector<BotAct
              << ",\"progression_weight\":" << candidate.Profile.ProgressionWeight
              << ",\"profession_weight\":" << candidate.Profile.ProfessionWeight << "}"
              << ",\"mechanic_tags\":\"" << ClassSpecProfileEscape(candidate.Profile.MechanicTags) << "\""
+             << ",\"target_selector\":\"" << ClassSpecProfileEscape(candidate.Profile.TargetSelector) << "\""
+             << ",\"movement_directive\":\"" << ClassSpecProfileEscape(candidate.Profile.MovementDirective) << "\""
+             << ",\"auto_attack_mode\":\"" << ClassSpecProfileEscape(candidate.Profile.AutoAttackMode) << "\""
              << ",\"reject_reason\":\"" << ClassSpecProfileEscape(candidate.RejectReason) << "\""
              << ",\"role_goal\":\"" << ClassSpecProfileEscape(roleGoal ? roleGoal : profile.Role) << "\"}";
     }
@@ -339,5 +443,129 @@ std::string BotClassSpecActionProfileStore::ChosenActionJson(BotActionCandidate 
          << ",\"expected_threat\":" << (candidate ? candidate->Profile.ThreatWeight : 0.0f)
          << ",\"expected_mitigation\":" << (candidate ? candidate->Profile.MitigationWeight : 0.0f)
          << ",\"reject_reason\":\"" << ClassSpecProfileEscape(candidate ? candidate->RejectReason : "no_valid_action") << "\"}";
+    return json.str();
+}
+
+std::string BotClassSpecActionProfileStore::ReloadDbProfiles()
+{
+    std::lock_guard<std::mutex> guard(g_dbRotationMutex);
+    std::set<std::string> requested = g_dbRotationCache.RequestedKeys;
+    g_dbRotationCache.Profiles.clear();
+    g_dbRotationCache.Order.clear();
+    g_dbRotationCache.LastError.clear();
+
+    std::string failureReason;
+    bool ok = true;
+    for (std::string const& key : requested)
+    {
+        size_t first = key.find(':');
+        size_t second = key.find(':', first == std::string::npos ? first : first + 1);
+        if (first == std::string::npos || second == std::string::npos)
+            continue;
+        uint8 classId = uint8(std::atoi(key.substr(0, first).c_str()));
+        std::string specTag = key.substr(first + 1, second - first - 1);
+        std::string role = key.substr(second + 1);
+        ok = LoadDbProfileLocked(classId, specTag, role, &failureReason) && ok;
+    }
+
+    std::ostringstream json;
+    json << "{\"ok\":" << (ok ? "true" : "false")
+         << ",\"action\":\"botauto_rotations_reload\""
+         << ",\"requested_profile_count\":" << requested.size()
+         << ",\"profile_count\":" << g_dbRotationCache.Profiles.size()
+         << ",\"failure_reason\":" << (failureReason.empty() ? "null" : ("\"" + ClassSpecProfileEscape(failureReason) + "\""))
+         << "}";
+    return json.str();
+}
+
+std::string BotClassSpecActionProfileStore::DbProfilesJson()
+{
+    std::lock_guard<std::mutex> guard(g_dbRotationMutex);
+
+    std::ostringstream json;
+    json << "{\"ok\":true"
+         << ",\"action\":\"botauto_rotations_list\""
+         << ",\"load_mode\":\"lazy_per_spec\""
+         << ",\"requested_profile_count\":" << g_dbRotationCache.RequestedKeys.size()
+         << ",\"profile_count\":" << g_dbRotationCache.Profiles.size()
+         << ",\"failure_reason\":" << (g_dbRotationCache.LastError.empty() ? "null" : ("\"" + ClassSpecProfileEscape(g_dbRotationCache.LastError) + "\""))
+         << ",\"profiles\":[";
+    bool first = true;
+    for (std::string const& key : g_dbRotationCache.Order)
+    {
+        auto itr = g_dbRotationCache.Profiles.find(key);
+        if (itr == g_dbRotationCache.Profiles.end())
+            continue;
+        if (!first)
+            json << ",";
+        first = false;
+        BotClassSpecActionProfile const& profile = itr->second;
+        json << "{\"class_id\":" << uint32(profile.ClassId)
+             << ",\"spec_tag\":\"" << ClassSpecProfileEscape(profile.SpecTag) << "\""
+             << ",\"role\":\"" << ClassSpecProfileEscape(profile.Role) << "\""
+             << ",\"range_band\":\"" << ClassSpecProfileEscape(profile.RangeBand) << "\""
+             << ",\"movement_directive\":\"" << ClassSpecProfileEscape(profile.MovementDirective) << "\""
+             << ",\"auto_attack_mode\":\"" << ClassSpecProfileEscape(profile.AutoAttackMode) << "\""
+             << ",\"profile_source\":\"" << ClassSpecProfileEscape(profile.ProfileSource) << "\""
+             << ",\"action_count\":" << profile.Spells.size() << "}";
+    }
+    json << "]}";
+    return json.str();
+}
+
+std::string BotClassSpecActionProfileStore::DbProfileDumpJson(uint8 classId, std::string const& specTag, std::string const& role)
+{
+    EnsureDbProfileLoaded(classId, specTag, role);
+    std::lock_guard<std::mutex> guard(g_dbRotationMutex);
+
+    auto itr = g_dbRotationCache.Profiles.find(DbRotationKey(classId, specTag, role));
+    if (itr == g_dbRotationCache.Profiles.end())
+    {
+        std::ostringstream missing;
+        missing << "{\"ok\":false,\"action\":\"botauto_rotations_dump\",\"failure_reason\":\"profile_not_found\""
+                << ",\"class_id\":" << uint32(classId)
+                << ",\"spec_tag\":\"" << ClassSpecProfileEscape(specTag) << "\""
+                << ",\"role\":\"" << ClassSpecProfileEscape(role) << "\"}";
+        return missing.str();
+    }
+
+    BotClassSpecActionProfile const& profile = itr->second;
+    std::ostringstream json;
+    json << "{\"ok\":true,\"action\":\"botauto_rotations_dump\""
+         << ",\"profile\":" << profile.EmbeddingJson()
+         << ",\"actions\":[";
+    bool first = true;
+    for (BotActionProfileSpell const& spell : profile.Spells)
+    {
+        if (!first)
+            json << ",";
+        first = false;
+        json << "{\"spell_id\":" << spell.SpellId
+             << ",\"category\":\"" << ClassSpecProfileEscape(BotCombatActionCatalog::ToString(spell.Category)) << "\""
+             << ",\"tags\":\"" << ClassSpecProfileEscape(spell.MechanicTags) << "\""
+             << ",\"target_selector\":\"" << ClassSpecProfileEscape(spell.TargetSelector) << "\""
+             << ",\"movement_directive\":\"" << ClassSpecProfileEscape(spell.MovementDirective) << "\""
+             << ",\"auto_attack_mode\":\"" << ClassSpecProfileEscape(spell.AutoAttackMode) << "\""
+             << ",\"priority_bucket\":" << uint32(spell.PriorityBucket)
+             << ",\"weights\":{\"damage\":" << spell.DamageWeight
+             << ",\"healing\":" << spell.HealingWeight
+             << ",\"threat\":" << spell.ThreatWeight
+             << ",\"mitigation\":" << spell.MitigationWeight
+             << ",\"survival\":" << spell.SurvivalWeight << "}"
+             << ",\"gates\":{\"min_enemies\":" << uint32(spell.MinEnemies)
+             << ",\"max_enemies\":" << uint32(spell.MaxEnemies)
+             << ",\"max_target_health_pct\":" << spell.MaxTargetHealthPct
+             << ",\"max_self_health_pct\":" << spell.MaxSelfHealthPct
+             << ",\"required_self_aura\":" << spell.RequiredSelfAura
+             << ",\"forbidden_target_aura\":" << spell.ForbiddenTargetAura
+             << ",\"interrupt\":" << (spell.RequiresInterruptibleTarget ? "true" : "false")
+             << ",\"target_not_victim\":" << (spell.RequiresTargetNotVictim ? "true" : "false")
+             << ",\"requires_instant_cast\":" << (spell.RequiresInstantCast ? "true" : "false")
+             << ",\"max_cast_time_ms\":" << spell.MaxCastTimeMs
+             << ",\"min_range\":" << spell.MinRange
+             << ",\"max_range\":" << spell.MaxRange
+             << "}}";
+    }
+    json << "]}";
     return json.str();
 }

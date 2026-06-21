@@ -44,6 +44,7 @@ private:
     ResolvedCombatAction ResolveProfileCombat(BotCombatDecision const& decision, BotCombatState const& state, Player* bot, Unit* target) const;
     bool TryResolveHealerAction(BotActionExecutor& executor, Player* owner, Player* bot, BotRecentEvents const& recentEvents, bool shouldRecord, BotMovementFrame const& movementFrame);
     void ApplyMovementPolicy(BotActionExecutor& executor, Player* owner, Player* bot, BotMovementFrame const& movementFrame);
+    bool TryExecuteQueuedCombatAction(BotActionExecutor& executor, Player* owner, Player* bot, BotActionResult& result);
     void RecordFrame(HealerFrame const& frame, HealerDecision const& decision, ResolvedBotAction const* action, BotActionResult result, Player* owner, Player* bot) const;
     void RecordMovementFrame(BotMovementFrame const& frame, char const* policyMode, char const* intent, char const* action, bool valid, Player* owner, Player* bot) const;
     void RecordCombatFrame(BotCombatState const& frame, BotCombatDecision const& decision, ResolvedCombatAction const& action, BotActionResult result, Player* owner, Player* bot) const;
@@ -57,6 +58,8 @@ private:
     BotMovementMode _movementMode = BotMovementMode::Follow;
     BotMovementTarget _movementTarget;
     ObjectGuid _combatTargetGuid;
+    ResolvedCombatAction _queuedCombatAction;
+    uint32 _queuedCombatActionMs = 0;
     uint32 _updateTimer = 0;
     bool _recording = false;
     mutable uint32 _sequence = 0;

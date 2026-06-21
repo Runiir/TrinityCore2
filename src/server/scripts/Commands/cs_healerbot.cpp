@@ -3,6 +3,7 @@
  */
 
 #include "ScriptMgr.h"
+#include "Bots/BotClassSpecActionProfile.h"
 #include "Bots/BotMgr.h"
 #include "Bots/BotTypes.h"
 #include "Bots/BotWorldPopulationMgr.h"
@@ -809,6 +810,7 @@ public:
             { "status",  rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleStatusCommand,      "" },
             { "profiles", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoProfilesCommand, "" },
             { "profile", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoProfileCommand,  "" },
+            { "rotations", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoRotationsCommand, "" },
             { "debug",   rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoDebugCommand,   "" },
             { "diagnose", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoDiagnoseCommand, "" },
             { "trace",   rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoTraceCommand,   "" },
@@ -948,6 +950,28 @@ private:
             result = sBotWorldPopulationMgr->ReloadRuntimeProfiles();
         else
             result = sBotWorldPopulationMgr->SelectRuntimeProfile(tokens[0]);
+
+        if (handler)
+        {
+            handler->PSendSysMessage("%s", result.c_str());
+            if (result.find("\"ok\":true") == std::string::npos)
+                handler->SetSentErrorMessage(true);
+        }
+        return result.find("\"ok\":true") != std::string::npos;
+    }
+
+    static bool HandleAutoRotationsCommand(ChatHandler* handler, char const* args)
+    {
+        std::vector<std::string> tokens = Tokenize(args);
+        std::string result;
+        if (tokens.empty() || tokens[0] == "list")
+            result = BotClassSpecActionProfileStore::DbProfilesJson();
+        else if (tokens[0] == "reload")
+            result = BotClassSpecActionProfileStore::ReloadDbProfiles();
+        else if (tokens[0] == "dump" && tokens.size() >= 4)
+            result = BotClassSpecActionProfileStore::DbProfileDumpJson(uint8(std::atoi(tokens[1].c_str())), tokens[2], tokens[3]);
+        else
+            result = "{\"ok\":false,\"action\":\"botauto_rotations\",\"failure_reason\":\"usage: .botauto rotations list|reload|dump <class_id> <spec_tag> <role>\"}";
 
         if (handler)
         {

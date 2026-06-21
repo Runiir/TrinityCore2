@@ -146,13 +146,13 @@ stages:
     deps:
     - path: dataset/live_validation_scenario_reports_built
       hash: md5
-      md5: c6203a6bf9361d89b7435f44c78c6a4e.dir
-      size: 30120
+      md5: debcc14e55399368ef12ad3ad8789303.dir
+      size: 30220
       nfiles: 3
     - path: dataset/validation_scenarios
       hash: md5
-      md5: 720a36c74b4335d9f4c15bb803f6bcf7.dir
-      size: 72912
+      md5: ade4917fa4176e2a7479f090fedf261d.dir
+      size: 74770
       nfiles: 5
     - path: dataset/world_planner
       hash: md5
@@ -170,8 +170,8 @@ stages:
     outs:
     - path: dataset/world_validation/planner_report.json
       hash: md5
-      md5: d3cc5799e43c6c76ecb36908e8b33cb4
-      size: 194961
+      md5: 0606025fead81f3f6f37aab4e2658d38
+      size: 194985
   validation_provisioning:
     cmd: python -m tools.bot_ml.build_validation_provisioning --config 
       experiments/configs/validation_provisioning_cata_001.json --gear-profiles 
@@ -185,8 +185,8 @@ stages:
       nfiles: 3
     - path: experiments/configs/cata_434_action_profiles.json
       hash: md5
-      md5: 79c131cc36a1431bbeb3d0e89c053ccb
-      size: 1449
+      md5: 665b5ec0208c6bb3e893446c49482b35
+      size: 1520
     - path: experiments/configs/validation_provisioning_cata_001.json
       hash: md5
       md5: 0450d64c6ca47032f067c518c7d27cbd
@@ -202,8 +202,8 @@ stages:
     outs:
     - path: dataset/validation_provisioning
       hash: md5
-      md5: abd88b8ff2106c45e62fbe8c3ab017a8.dir
-      size: 314337
+      md5: 866031c34429ea7e00c073a137930efa.dir
+      size: 320029
       nfiles: 6
   validation_gear:
     cmd: python -m tools.bot_ml.build_validation_gear_profiles --config 
@@ -286,12 +286,12 @@ stages:
       nfiles: 3
     - path: dataset/validation_provisioning/report.json
       hash: md5
-      md5: 6b082874ec2f4281b1812c7aa127590d
+      md5: a28bb745d7e4d31503fbac21a2d831fa
       size: 2993
     - path: experiments/configs/cata_434_action_profiles.json
       hash: md5
-      md5: 79c131cc36a1431bbeb3d0e89c053ccb
-      size: 1449
+      md5: 665b5ec0208c6bb3e893446c49482b35
+      size: 1520
     - path: experiments/configs/cata_434_combat_loot_profiles.json
       hash: md5
       md5: 36366f66744aa78fbd2c5c2b37d68ed5
@@ -335,7 +335,7 @@ stages:
     deps:
     - path: dataset/validation_provisioning/report.json
       hash: md5
-      md5: 6b082874ec2f4281b1812c7aa127590d
+      md5: a28bb745d7e4d31503fbac21a2d831fa
       size: 2993
     - path: dataset/validation_provisioning_verification/report.json
       hash: md5
@@ -343,8 +343,8 @@ stages:
       size: 511
     - path: experiments/configs/validation_scenarios_cata_001.json
       hash: md5
-      md5: 02a8e5f3807a58179863fe3d179f5761
-      size: 7115
+      md5: 45b0a495a4e0390013b0aa6173290530
+      size: 7296
     - path: tools/bot_ml/build_validation_scenario_manifests.py
       hash: md5
       md5: dc1ccf967ddda150ff82688305eae877
@@ -356,8 +356,8 @@ stages:
     outs:
     - path: dataset/validation_scenarios
       hash: md5
-      md5: 720a36c74b4335d9f4c15bb803f6bcf7.dir
-      size: 72912
+      md5: ade4917fa4176e2a7479f090fedf261d.dir
+      size: 74770
       nfiles: 5
   live_scenario_reports:
     cmd: python -m tools.bot_ml.build_live_scenario_reports --live-report 
@@ -484,8 +484,8 @@ stages:
       size: 213265
     - path: dataset/validation_scenarios
       hash: md5
-      md5: 720a36c74b4335d9f4c15bb803f6bcf7.dir
-      size: 72912
+      md5: ade4917fa4176e2a7479f090fedf261d.dir
+      size: 74770
       nfiles: 5
     - path: tools/bot_ml/build_live_scenario_reports.py
       hash: md5
@@ -502,8 +502,8 @@ stages:
     outs:
     - path: dataset/live_validation_scenario_reports_built
       hash: md5
-      md5: c6203a6bf9361d89b7435f44c78c6a4e.dir
-      size: 30120
+      md5: debcc14e55399368ef12ad3ad8789303.dir
+      size: 30220
       nfiles: 3
   validation_run_plan:
     cmd: python -m tools.bot_ml.build_validation_run_plan 
@@ -514,8 +514,8 @@ stages:
     deps:
     - path: dataset/validation_scenarios
       hash: md5
-      md5: 720a36c74b4335d9f4c15bb803f6bcf7.dir
-      size: 72912
+      md5: ade4917fa4176e2a7479f090fedf261d.dir
+      size: 74770
       nfiles: 5
     - path: tools/bot_ml/build_validation_run_plan.py
       hash: md5
@@ -528,8 +528,8 @@ stages:
     outs:
     - path: dataset/validation_run_plan
       hash: md5
-      md5: 996fbdef79e41438a3d7a700cb704c7f.dir
-      size: 93575
+      md5: ce5484b09ccc9d77964a77b492f731a3.dir
+      size: 95421
       nfiles: 2
   live_validation_combined:
     cmd: python -m tools.bot_ml.run_live_bot_validation --input-log 
@@ -544,8 +544,8 @@ stages:
       size: 102801
     - path: dataset/live_validation_scenario_reports_built
       hash: md5
-      md5: c6203a6bf9361d89b7435f44c78c6a4e.dir
-      size: 30120
+      md5: debcc14e55399368ef12ad3ad8789303.dir
+      size: 30220
       nfiles: 3
     - path: tools/bot_ml/run_live_bot_validation.py
       hash: md5
@@ -554,8 +554,8 @@ stages:
     outs:
     - path: dataset/live_validation_combined
       hash: md5
-      md5: eb67e0a963eb4ec129a10391ba8f0f33.dir
-      size: 238799
+      md5: fa03a04819f46986563ca6b96dad1fb9.dir
+      size: 238915
       nfiles: 3
   validation_run_status:
     cmd: python -m tools.bot_ml.build_validation_run_status --run-plan 
@@ -565,13 +565,13 @@ stages:
     deps:
     - path: dataset/live_validation_scenario_reports_built
       hash: md5
-      md5: c6203a6bf9361d89b7435f44c78c6a4e.dir
-      size: 30120
+      md5: debcc14e55399368ef12ad3ad8789303.dir
+      size: 30220
       nfiles: 3
     - path: dataset/validation_run_plan/manifest.json
       hash: md5
-      md5: 792417218d130a021885ed1da3993ff5
-      size: 78497
+      md5: 8952f42f0b7c4a284e86edefee917141
+      size: 80287
     - path: tools/bot_ml/build_validation_run_status.py
       hash: md5
       md5: 8c5abca0bdf9ffe0ec5446e65a726313
@@ -583,8 +583,8 @@ stages:
     outs:
     - path: dataset/validation_run_status
       hash: md5
-      md5: 197bd5568edb29f9f91e145f421f41f2.dir
-      size: 93259
+      md5: 5318bfce1de3c9031f27d516a83487da.dir
+      size: 99959
       nfiles: 1
   quest_profession_report:
     cmd: python -m tools.bot_ml.build_quest_profession_reports --planner-dir 

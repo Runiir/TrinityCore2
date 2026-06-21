@@ -23,6 +23,30 @@ struct BotActionProfileSpell
     float ProgressionWeight = 0.0f;
     float ProfessionWeight = 0.0f;
     uint8 PriorityBucket = 5;
+    uint8 MinEnemies = 1;
+    uint8 MaxEnemies = 0;
+    float MinTargetHealthPct = 0.0f;
+    float MaxTargetHealthPct = 1.0f;
+    float MinSelfHealthPct = 0.0f;
+    float MaxSelfHealthPct = 1.0f;
+    uint32 RequiredSelfAura = 0;
+    uint32 ForbiddenSelfAura = 0;
+    uint32 RequiredTargetAura = 0;
+    uint32 ForbiddenTargetAura = 0;
+    bool RequiresInterruptibleTarget = false;
+    bool RequiresTargetNotVictim = false;
+    bool RequiresTargetVictim = false;
+    bool RequiresMeleeRange = false;
+    bool RequiresRangedRange = false;
+    std::string TargetSelector = "enemy";
+    std::string MovementDirective;
+    std::string AutoAttackMode;
+    float MinRange = 0.0f;
+    float MaxRange = 0.0f;
+    bool RequiresInstantCast = false;
+    uint32 MaxCastTimeMs = 0;
+    uint32 MaintainAuraId = 0;
+    uint32 RefreshAuraBelowMs = 0;
 };
 
 struct BotActionCandidate
@@ -46,7 +70,11 @@ struct BotClassSpecActionProfile
     std::string Role = "dps";
     std::string ResourceType = "mana";
     std::string RangeBand = "mixed";
-    std::string ProfileSource = "generic_fallback";
+    std::string MovementDirective;
+    std::string AutoAttackMode;
+    float MinRange = 0.0f;
+    float MaxRange = 0.0f;
+    std::string ProfileSource = "missing_db_rotation_profile";
     bool MissingProfile = true;
     std::vector<BotActionProfileSpell> Spells;
 
@@ -61,6 +89,9 @@ public:
     static std::vector<BotActionCandidate> BuildCandidates(Player const* bot, Unit const* target, BotClassSpecActionProfile const& profile);
     static std::string CandidateMaskJson(std::vector<BotActionCandidate> const& candidates, BotClassSpecActionProfile const& profile, char const* roleGoal, char const* saturationJson, char const* profileSourceOverride = nullptr);
     static std::string ChosenActionJson(BotActionCandidate const* candidate, BotClassSpecActionProfile const& profile, char const* roleGoal, char const* balanceMode, float confidence);
+    static std::string ReloadDbProfiles();
+    static std::string DbProfilesJson();
+    static std::string DbProfileDumpJson(uint8 classId, std::string const& specTag, std::string const& role);
 };
 
 #endif

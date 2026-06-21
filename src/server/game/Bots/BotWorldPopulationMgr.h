@@ -7,6 +7,7 @@
 #include "Bots/BotRoleSaturationPolicy.h"
 #include "Bots/BotTelemetryBuffer.h"
 #include "Bots/BotTelemetryPolicy.h"
+#include "Bots/BotTypes.h"
 #include <deque>
 #include <map>
 #include <memory>
@@ -464,6 +465,11 @@ private:
         std::string LastRecoveryResult;
         uint64 LastRecoveryMs = 0;
         uint32 RecoveryAttemptCount = 0;
+        bool Blocked = false;
+        std::string BlockedReason;
+        uint64 BlockedStartMs = 0;
+        bool BlockedMessageEmitted = false;
+        bool UnstuckMessageEmitted = false;
 
         struct DecisionTraceEntry
         {
@@ -968,7 +974,13 @@ private:
     std::string BuildDungeonTrashPackJson(DungeonTrashPackFeatures const& pack) const;
     std::string BuildBossMechanicsJson(BossMechanicFeatures const& features) const;
     uint32 SelectCombatSpell(Player* bot, Unit* target) const;
+    ResolvedCombatAction ResolveProfileCombatAction(Player* bot, Unit* target) const;
+    BotActionResult ExecuteProfileCombatAction(WorldBotState* state, Player* bot, Unit* target, ResolvedCombatAction* action = nullptr) const;
+    BotActionResult ExecuteProfileCombatAction(Player* bot, Unit* target, ResolvedCombatAction* action = nullptr) const;
+    bool MoveBotToProfileRange(WorldBotState& state, Player* bot, Unit* reference, ResolvedCombatAction const* action = nullptr);
     bool TryCastCombatSpell(Player* bot, Unit* target, uint32 spellId) const;
+    void MarkBotBlocked(WorldBotState& state, Player* bot, char const* reason) const;
+    void MarkBotUnstuck(WorldBotState& state, Player* bot, char const* reason) const;
     void MoveToWanderPoint(Player* bot, WorldBotState& state);
     void RecordRunStart();
     void RecordRunStop();
