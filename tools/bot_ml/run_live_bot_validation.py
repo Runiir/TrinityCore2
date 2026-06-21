@@ -985,7 +985,7 @@ def live_evidence(
         "party_formation": group_formation_evidence,
         "raid_formation": group_formation_evidence,
         "role_assignments": role_assignment_evidence,
-        "pulls": max(trash_pulls, boss_engagement_actions),
+        "pulls": max(trash_pulls, boss_engagement_actions, boss_kill_evidence),
         "target_priority": target_priority_evidence,
         "interrupts": interrupt_evidence,
         "healer_assignments": healer_assignment_evidence,
@@ -1136,6 +1136,7 @@ def validation_failure_labels(
         active_bots > 0
         and int(evidence.get("decisions") or 0) > 0
         and int(evidence.get("kill_evidence") or 0) <= 0
+        and boss_kills <= 0
         and trash_evidence <= 0
         and int(evidence.get("quest_objective_progress") or 0) <= 0
         and int(evidence.get("quests_accepted") or 0) <= 0
@@ -1220,6 +1221,14 @@ def terminal_failure_labels(failure_labels: list[str], state: dict[str, Any]) ->
     if progress_total <= 0:
         return failure_labels
 
+    counters = state.get("progress_counters") if isinstance(state.get("progress_counters"), dict) else {}
+    route_motion_progress = (
+        int(counters.get("validation_route_actions") or 0) > 0
+        and int(counters.get("moved_diagnoses") or 0) > 0
+        and int(counters.get("boss_engagement_actions") or 0) <= 0
+        and int(counters.get("trash_pulls") or 0) <= 0
+        and int(counters.get("kills") or 0) <= 0
+    )
     nonterminal = {
         "boss_attempt_no_kill",
         "no_progress_observed",
@@ -1227,6 +1236,8 @@ def terminal_failure_labels(failure_labels: list[str], state: dict[str, Any]) ->
         "validation_route_activation_no_engagement",
         "validation_route_no_engagement",
     }
+    if route_motion_progress:
+        nonterminal.add("validation_route_assist_focus_loop")
     return [label for label in failure_labels if label not in nonterminal]
 
 

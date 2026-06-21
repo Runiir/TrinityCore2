@@ -146,8 +146,8 @@ stages:
     deps:
     - path: dataset/live_validation_scenario_reports_built
       hash: md5
-      md5: 445f177868b5293a09b4a3c351cecfaa.dir
-      size: 29659
+      md5: b21e2251b5efa9ca0f010ba6e9812705.dir
+      size: 30014
       nfiles: 3
     - path: dataset/validation_scenarios
       hash: md5
@@ -361,21 +361,23 @@ stages:
       nfiles: 5
   live_scenario_reports:
     cmd: python -m tools.bot_ml.build_live_scenario_reports --live-report 
-      artifacts/live_validation_instances/stonecore_route_sequence_r5/01_entrance_packs/report.json
+      artifacts/live_validation_instances/stonecore_route_sequence_r8/report.json
       --live-report 
-      artifacts/live_validation_instances/stonecore_route_sequence_r5/03_crystalspawn_corridor/report.json
+      artifacts/live_validation_instances/stonecore_route_sequence_r8/01_entrance_packs/report.json
       --live-report 
-      artifacts/live_validation_instances/stonecore_route_sequence_r5/02_corborus/report.json
+      artifacts/live_validation_instances/stonecore_route_sequence_r8/02_corborus/report.json
       --live-report 
-      artifacts/live_validation_instances/stonecore_route_sequence_r5/04_slabhide/report.json
+      artifacts/live_validation_instances/stonecore_route_sequence_r8/03_crystalspawn_corridor/report.json
       --live-report 
-      artifacts/live_validation_instances/stonecore_route_sequence_r5/05_stonecore_sentry_gauntlet/report.json
+      artifacts/live_validation_instances/stonecore_route_sequence_r8/04_slabhide/report.json
       --live-report 
-      artifacts/live_validation_instances/stonecore_route_sequence_r5/06_ozruk/report.json
+      artifacts/live_validation_instances/stonecore_route_sequence_r8/05_stonecore_sentry_gauntlet/report.json
       --live-report 
-      artifacts/live_validation_instances/stonecore_route_sequence_r5/07_twilight_flayer_packs/report.json
+      artifacts/live_validation_instances/stonecore_route_sequence_r8/06_ozruk/report.json
       --live-report 
-      artifacts/live_validation_instances/stonecore_azil_interrupt_r2/report.json
+      artifacts/live_validation_instances/stonecore_route_sequence_r8/07_twilight_flayer_packs/report.json
+      --live-report 
+      artifacts/live_validation_instances/stonecore_route_sequence_r8/08_high_priestess_azil/report.json
       --live-report 
       dataset/live_validation_scenarios/blackwing_descent_10n/01_entry_trash/report.json
       --live-report 
@@ -396,45 +398,50 @@ stages:
       dataset/live_validation_scenario_reports_built
     deps:
     - path: 
-        artifacts/live_validation_instances/stonecore_azil_interrupt_r2/report.json
+        artifacts/live_validation_instances/stonecore_route_sequence_r8/01_entrance_packs/report.json
       hash: md5
-      md5: 42261bac008d45ff50e76454bf3572ba
-      size: 172827
+      md5: d2754765c42807cdcbcfdccc1832bf9f
+      size: 86381
     - path: 
-        artifacts/live_validation_instances/stonecore_route_sequence_r5/01_entrance_packs/report.json
+        artifacts/live_validation_instances/stonecore_route_sequence_r8/02_corborus/report.json
       hash: md5
-      md5: 827f6022ce637eaee689f865a8c99681
-      size: 86391
+      md5: 3884a57f9774ceacdfd64a660ab8d4c2
+      size: 176472
     - path: 
-        artifacts/live_validation_instances/stonecore_route_sequence_r5/02_corborus/report.json
+        artifacts/live_validation_instances/stonecore_route_sequence_r8/03_crystalspawn_corridor/report.json
       hash: md5
-      md5: c82a286246d647cfc86a64aaff2c6309
-      size: 174339
+      md5: 4450f0c0a4318a2da7c7f1a858a18cd8
+      size: 156397
     - path: 
-        artifacts/live_validation_instances/stonecore_route_sequence_r5/03_crystalspawn_corridor/report.json
+        artifacts/live_validation_instances/stonecore_route_sequence_r8/04_slabhide/report.json
       hash: md5
-      md5: 47b731ed620531fdcb91d61ecf358d7a
-      size: 85109
+      md5: 6e0c5774e30f60d8f63a405e3f02d9cf
+      size: 89641
     - path: 
-        artifacts/live_validation_instances/stonecore_route_sequence_r5/04_slabhide/report.json
+        artifacts/live_validation_instances/stonecore_route_sequence_r8/05_stonecore_sentry_gauntlet/report.json
       hash: md5
-      md5: 3383c284d270810de3b2a7561697f91b
-      size: 176278
+      md5: 546af619a453d28f066fca5b00f72861
+      size: 162050
     - path: 
-        artifacts/live_validation_instances/stonecore_route_sequence_r5/05_stonecore_sentry_gauntlet/report.json
+        artifacts/live_validation_instances/stonecore_route_sequence_r8/06_ozruk/report.json
       hash: md5
-      md5: d7226390689b794872568123dc8062da
-      size: 169468
+      md5: f90e77623d181d3828179fd0d3f5fac8
+      size: 92672
     - path: 
-        artifacts/live_validation_instances/stonecore_route_sequence_r5/06_ozruk/report.json
+        artifacts/live_validation_instances/stonecore_route_sequence_r8/07_twilight_flayer_packs/report.json
       hash: md5
-      md5: eabb2c55a66af235aab7e65b1cf98171
-      size: 172741
+      md5: c29a2924304b572a70cb02cc5a2018ff
+      size: 89068
     - path: 
-        artifacts/live_validation_instances/stonecore_route_sequence_r5/07_twilight_flayer_packs/report.json
+        artifacts/live_validation_instances/stonecore_route_sequence_r8/08_high_priestess_azil/report.json
       hash: md5
-      md5: fbfb73cdd1b342adcaba7b3534de2d3d
-      size: 180808
+      md5: cf0aaf1d23597b02b8fb709ca21b5b66
+      size: 99409
+    - path: 
+        artifacts/live_validation_instances/stonecore_route_sequence_r8/report.json
+      hash: md5
+      md5: 8c4e878d397e66d673169384d0d47c72
+      size: 26361
     - path: 
         dataset/live_validation_scenarios/blackwing_descent_10n/01_entry_trash/report.json
       hash: md5
@@ -490,13 +497,13 @@ stages:
       size: 5304
     - path: tools/bot_ml/run_live_bot_validation.py
       hash: md5
-      md5: b50530fd74aaedb5c7bce66b0a398acc
-      size: 109644
+      md5: e6f6b0e9f65c98416a46de883848d644
+      size: 110218
     outs:
     - path: dataset/live_validation_scenario_reports_built
       hash: md5
-      md5: 445f177868b5293a09b4a3c351cecfaa.dir
-      size: 29659
+      md5: b21e2251b5efa9ca0f010ba6e9812705.dir
+      size: 30014
       nfiles: 3
   validation_run_plan:
     cmd: python -m tools.bot_ml.build_validation_run_plan 
@@ -537,18 +544,18 @@ stages:
       size: 102801
     - path: dataset/live_validation_scenario_reports_built
       hash: md5
-      md5: 445f177868b5293a09b4a3c351cecfaa.dir
-      size: 29659
+      md5: b21e2251b5efa9ca0f010ba6e9812705.dir
+      size: 30014
       nfiles: 3
     - path: tools/bot_ml/run_live_bot_validation.py
       hash: md5
-      md5: b50530fd74aaedb5c7bce66b0a398acc
-      size: 109644
+      md5: e6f6b0e9f65c98416a46de883848d644
+      size: 110218
     outs:
     - path: dataset/live_validation_combined
       hash: md5
-      md5: ac20e69d1944e8b2fde664b547118e52.dir
-      size: 238307
+      md5: d675d9f06173aeba42fb5cf3ee158b33.dir
+      size: 238458
       nfiles: 3
   validation_run_status:
     cmd: python -m tools.bot_ml.build_validation_run_status --run-plan 
@@ -558,8 +565,8 @@ stages:
     deps:
     - path: dataset/live_validation_scenario_reports_built
       hash: md5
-      md5: 445f177868b5293a09b4a3c351cecfaa.dir
-      size: 29659
+      md5: b21e2251b5efa9ca0f010ba6e9812705.dir
+      size: 30014
       nfiles: 3
     - path: dataset/validation_run_plan/manifest.json
       hash: md5
@@ -576,8 +583,8 @@ stages:
     outs:
     - path: dataset/validation_run_status
       hash: md5
-      md5: 372f41575487a47e7a2059f02187481e.dir
-      size: 92974
+      md5: ab9307f957355a05888ef8db9d448a31.dir
+      size: 92989
       nfiles: 1
   quest_profession_report:
     cmd: python -m tools.bot_ml.build_quest_profession_reports --planner-dir 

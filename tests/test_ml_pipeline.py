@@ -767,10 +767,10 @@ def test_bot_ml_workflow_has_pixi_tasks_and_documented_dvc_steps():
         assert stage in dvc
 
     for segment_report in [
-        "dataset/live_validation_scenarios/stonecore_5n/02_corborus/report.json",
-        "dataset/live_validation_scenarios/stonecore_5n/04_slabhide/report.json",
-        "dataset/live_validation_scenarios/stonecore_5n/06_ozruk/report.json",
-        "dataset/live_validation_scenarios/stonecore_5n/08_high_priestess_azil/report.json",
+        "artifacts/live_validation_instances/stonecore_route_sequence_r8/02_corborus/report.json",
+        "artifacts/live_validation_instances/stonecore_route_sequence_r8/04_slabhide/report.json",
+        "artifacts/live_validation_instances/stonecore_route_sequence_r8/06_ozruk/report.json",
+        "artifacts/live_validation_instances/stonecore_route_sequence_r8/08_high_priestess_azil/report.json",
         "dataset/live_validation_scenarios/blackwing_descent_10n/02_magmaw/report.json",
         "dataset/live_validation_scenarios/blackwing_descent_10n/03_omnotron_defense_system/report.json",
         "dataset/live_validation_scenarios/blackwing_descent_10n/05_maloriak/report.json",
@@ -4658,6 +4658,21 @@ def test_route_segment_complete_accepts_terminal_trash_evidence():
     assert route_segment_complete(report, route) is True
 
 
+def test_route_segment_complete_counts_boss_kill_as_pull_evidence():
+    output = """
+TC> {"active_bots":5,"target_bots":5,"decisions":88}
+TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"snapshot":{"decision":{"action":"move_to_validation_route_assist_target"},"movement":{"is_moving":false,"distance_moved_since_last_decision":0}}}]}
+TC> {"trace_schema_version":1,"entries":[{"action":"boss_killed","result":"ok"},{"action":"validation_route_teacher_assist","result":"boss_route_no_health_progress"},{"action":"validation_route_group_heal","result":"assigned_lowest_ally"},{"action":"validation_target_priority","result":"assist_tank_focus"},{"action":"move_to_validation_route_assist_target","result":"ok"}]}
+TC> {"duration_minutes":2,"decisions":88}
+"""
+    report = live_validation_report(output, validation_context={"route_kind": "boss"})
+    route = {"kind": "boss", "required_evidence": ["pulls", "tank_positioning", "healer_assignments", "target_priority"]}
+
+    assert report["evidence"]["boss_kill_evidence"] == 1
+    assert report["evidence"]["validation_evidence_counts"]["pulls"] == 1
+    assert route_segment_complete(report, route) is True
+
+
 def test_watchdog_state_does_not_call_route_actions_zero_progress():
     state = watchdog_state(
         {
@@ -4685,6 +4700,20 @@ TC> {"duration_minutes":1,"decisions":25}
 
     assert "validation_route_no_engagement" in report["failure_labels"]
     assert report["watchdog_state"]["progress_total"] > 0
+    assert report["watchdog_state"]["no_progress"] is False
+    assert report["completion_reason"] == "incomplete_evidence"
+
+
+def test_live_bot_validation_keeps_moving_assist_focus_loop_incomplete():
+    output = """
+TC> {"active_bots":5,"target_bots":5,"decisions":44}
+TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"snapshot":{"decision":{"action":"move_to_validation_route_assist_target"},"movement":{"is_moving":true,"distance_moved_since_last_decision":70}}}]}
+TC> {"trace_schema_version":1,"entries":[{"action":"validation_route_target_search","result":"assist_tank_focus"},{"action":"validation_target_priority","result":"assist_tank_focus"},{"action":"validation_route_prerequisite_rejected","result":"force_tank_focus"},{"action":"move_to_validation_route_assist_target","result":"ok"},{"action":"validation_route_target_search","result":"assist_tank_focus"},{"action":"validation_target_priority","result":"assist_tank_focus"},{"action":"validation_route_prerequisite_rejected","result":"force_tank_focus"},{"action":"move_to_validation_route_assist_target","result":"ok"},{"action":"validation_route_target_search","result":"assist_tank_focus"},{"action":"validation_target_priority","result":"assist_tank_focus"},{"action":"validation_route_prerequisite_rejected","result":"force_tank_focus"},{"action":"move_to_validation_route_assist_target","result":"ok"},{"action":"validation_route_target_search","result":"assist_tank_focus"},{"action":"validation_target_priority","result":"assist_tank_focus"},{"action":"validation_route_prerequisite_rejected","result":"force_tank_focus"},{"action":"move_to_validation_route_assist_target","result":"ok"}]}
+TC> {"duration_minutes":1,"decisions":44}
+"""
+    report = live_validation_report(output, validation_context={"route_kind": "trash"})
+
+    assert "validation_route_assist_focus_loop" in report["failure_labels"]
     assert report["watchdog_state"]["no_progress"] is False
     assert report["completion_reason"] == "incomplete_evidence"
 

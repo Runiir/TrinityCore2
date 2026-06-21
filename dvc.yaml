@@ -119,21 +119,23 @@ stages:
         persist: true
   live_scenario_reports:
     cmd: python -m tools.bot_ml.build_live_scenario_reports --live-report
-      artifacts/live_validation_instances/stonecore_route_sequence_r5/01_entrance_packs/report.json
+      artifacts/live_validation_instances/stonecore_route_sequence_r8/report.json
       --live-report
-      artifacts/live_validation_instances/stonecore_route_sequence_r5/03_crystalspawn_corridor/report.json
+      artifacts/live_validation_instances/stonecore_route_sequence_r8/01_entrance_packs/report.json
       --live-report
-      artifacts/live_validation_instances/stonecore_route_sequence_r5/02_corborus/report.json
+      artifacts/live_validation_instances/stonecore_route_sequence_r8/02_corborus/report.json
       --live-report
-      artifacts/live_validation_instances/stonecore_route_sequence_r5/04_slabhide/report.json
+      artifacts/live_validation_instances/stonecore_route_sequence_r8/03_crystalspawn_corridor/report.json
       --live-report
-      artifacts/live_validation_instances/stonecore_route_sequence_r5/05_stonecore_sentry_gauntlet/report.json
+      artifacts/live_validation_instances/stonecore_route_sequence_r8/04_slabhide/report.json
       --live-report
-      artifacts/live_validation_instances/stonecore_route_sequence_r5/06_ozruk/report.json
+      artifacts/live_validation_instances/stonecore_route_sequence_r8/05_stonecore_sentry_gauntlet/report.json
       --live-report
-      artifacts/live_validation_instances/stonecore_route_sequence_r5/07_twilight_flayer_packs/report.json
+      artifacts/live_validation_instances/stonecore_route_sequence_r8/06_ozruk/report.json
       --live-report
-      artifacts/live_validation_instances/stonecore_azil_interrupt_r2/report.json
+      artifacts/live_validation_instances/stonecore_route_sequence_r8/07_twilight_flayer_packs/report.json
+      --live-report
+      artifacts/live_validation_instances/stonecore_route_sequence_r8/08_high_priestess_azil/report.json
       --live-report
       dataset/live_validation_scenarios/blackwing_descent_10n/01_entry_trash/report.json
       --live-report
@@ -156,14 +158,15 @@ stages:
     - tools/bot_ml/build_live_scenario_reports.py
     - tools/bot_ml/run_live_bot_validation.py
     - tools/bot_ml/common.py
-    - artifacts/live_validation_instances/stonecore_route_sequence_r5/01_entrance_packs/report.json
-    - artifacts/live_validation_instances/stonecore_route_sequence_r5/03_crystalspawn_corridor/report.json
-    - artifacts/live_validation_instances/stonecore_route_sequence_r5/02_corborus/report.json
-    - artifacts/live_validation_instances/stonecore_route_sequence_r5/04_slabhide/report.json
-    - artifacts/live_validation_instances/stonecore_route_sequence_r5/05_stonecore_sentry_gauntlet/report.json
-    - artifacts/live_validation_instances/stonecore_route_sequence_r5/06_ozruk/report.json
-    - artifacts/live_validation_instances/stonecore_route_sequence_r5/07_twilight_flayer_packs/report.json
-    - artifacts/live_validation_instances/stonecore_azil_interrupt_r2/report.json
+    - artifacts/live_validation_instances/stonecore_route_sequence_r8/report.json
+    - artifacts/live_validation_instances/stonecore_route_sequence_r8/01_entrance_packs/report.json
+    - artifacts/live_validation_instances/stonecore_route_sequence_r8/02_corborus/report.json
+    - artifacts/live_validation_instances/stonecore_route_sequence_r8/03_crystalspawn_corridor/report.json
+    - artifacts/live_validation_instances/stonecore_route_sequence_r8/04_slabhide/report.json
+    - artifacts/live_validation_instances/stonecore_route_sequence_r8/05_stonecore_sentry_gauntlet/report.json
+    - artifacts/live_validation_instances/stonecore_route_sequence_r8/06_ozruk/report.json
+    - artifacts/live_validation_instances/stonecore_route_sequence_r8/07_twilight_flayer_packs/report.json
+    - artifacts/live_validation_instances/stonecore_route_sequence_r8/08_high_priestess_azil/report.json
     - dataset/live_validation_scenarios/blackwing_descent_10n/01_entry_trash/report.json
     - dataset/live_validation_scenarios/blackwing_descent_10n/02_magmaw/report.json
     - dataset/live_validation_scenarios/blackwing_descent_10n/03_omnotron_defense_system/report.json
