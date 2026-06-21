@@ -7147,10 +7147,17 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     return true;
                 }
 
-                RecordEvent(state, bot, "validation_route_regroup", anchor, "hold_anchor_no_focus", raw.c_str(), semantic.c_str(), bot->GetExactDist(anchor), _config.ValidationRouteTargetEntry);
-                situation = "validation_route_regroup";
-                action = "validation_route_hold_anchor";
-                return true;
+                if (_config.ValidationRouteKind == "boss" && _validationRouteActivationApplied)
+                {
+                    RecordEvent(state, bot, "validation_route_regroup", anchor, "search_after_activation_no_focus", raw.c_str(), semantic.c_str(), bot->GetExactDist(anchor), _config.ValidationRouteTargetEntry);
+                }
+                else
+                {
+                    RecordEvent(state, bot, "validation_route_regroup", anchor, "hold_anchor_no_focus", raw.c_str(), semantic.c_str(), bot->GetExactDist(anchor), _config.ValidationRouteTargetEntry);
+                    situation = "validation_route_regroup";
+                    action = "validation_route_hold_anchor";
+                    return true;
+                }
             }
         }
     }

@@ -473,6 +473,7 @@ def test_quest_first_portfolio_routing_surface():
         function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteObjective"),
         "tryValidationRouteActivation(nullptr, \"boss_route_no_focus_activation\")",
         "RecordEvent(state, bot, \"validation_route_regroup\", anchor, \"advance_to_boss_route_no_focus\"",
+        "RecordEvent(state, bot, \"validation_route_regroup\", anchor, \"search_after_activation_no_focus\"",
         "RecordEvent(state, bot, \"validation_route_regroup\", anchor, \"hold_anchor_no_focus\"",
     )
     assert_ordered(

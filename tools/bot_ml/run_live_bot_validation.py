@@ -1154,7 +1154,7 @@ def validation_failure_labels(
         labels.append("validation_route_assist_focus_loop")
     if route_actions > 0 and (
         unstuck_failures >= 3
-        or repath_events >= max(8, active_bots)
+        or (repath_events >= max(8, active_bots) and not recovered_route_stuck)
         or (stuck_events >= max(8, active_bots) and not recovered_route_stuck)
     ):
         labels.append("validation_route_stuck_loop")
