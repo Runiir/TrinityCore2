@@ -5992,6 +5992,27 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         }
 
         Unit* activationTarget = seenTarget;
+        auto makeRouteSummonCombatReady = [this, bot, &rememberValidationRouteFocus](TempSummon* summon) -> Unit*
+        {
+            if (!summon)
+                return nullptr;
+
+            summon->SetFaction(FACTION_MONSTER);
+            summon->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_NON_ATTACKABLE | UNIT_FLAG_NOT_SELECTABLE | UNIT_FLAG_IMMUNE_TO_PC | UNIT_FLAG_IMMUNE_TO_NPC);
+            summon->SetReactState(REACT_AGGRESSIVE);
+            summon->SetHomePosition(summon->GetPositionX(), summon->GetPositionY(), summon->GetPositionZ(), summon->GetOrientation());
+
+            if (_config.ValidationRouteKind == "boss" && bot && bot->IsAlive())
+            {
+                summon->SetInCombatWith(bot);
+                bot->SetInCombatWith(summon);
+                if (summon->AI())
+                    summon->AI()->AttackStart(bot);
+                rememberValidationRouteFocus(summon);
+            }
+
+            return summon;
+        };
         InstanceMap* instanceMap = bot->GetMap() ? bot->GetMap()->ToInstanceMap() : nullptr;
         InstanceScript* instance = instanceMap ? instanceMap->GetInstanceScript() : nullptr;
         if (!instanceMap || !instance)
@@ -6000,7 +6021,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 return false;
 
             Position targetPos(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ, _config.ValidationRouteO);
-            activationTarget = bot->SummonCreature(_config.ValidationRouteTargetEntry, targetPos, TEMPSUMMON_MANUAL_DESPAWN);
+            activationTarget = makeRouteSummonCombatReady(bot->SummonCreature(_config.ValidationRouteTargetEntry, targetPos, TEMPSUMMON_MANUAL_DESPAWN));
             if (!activationTarget)
                 return false;
         }
@@ -6047,20 +6068,20 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (_config.ValidationRouteActivationSummonEntry)
         {
             Position summonPos(_config.ValidationRouteActivationSummonX, _config.ValidationRouteActivationSummonY, _config.ValidationRouteActivationSummonZ, _config.ValidationRouteActivationSummonO);
-            if (TempSummon* summon = bot->SummonCreature(_config.ValidationRouteActivationSummonEntry, summonPos, TEMPSUMMON_MANUAL_DESPAWN))
+            if (Unit* summon = makeRouteSummonCombatReady(bot->SummonCreature(_config.ValidationRouteActivationSummonEntry, summonPos, TEMPSUMMON_MANUAL_DESPAWN)))
                 activationTarget = summon;
         }
         if (_config.ValidationRouteOpenerSummonEntry)
         {
             Position openerPos(_config.ValidationRouteOpenerSummonX, _config.ValidationRouteOpenerSummonY, _config.ValidationRouteOpenerSummonZ, _config.ValidationRouteOpenerSummonO);
-            if (TempSummon* summon = bot->SummonCreature(_config.ValidationRouteOpenerSummonEntry, openerPos, TEMPSUMMON_MANUAL_DESPAWN))
+            if (Unit* summon = makeRouteSummonCombatReady(bot->SummonCreature(_config.ValidationRouteOpenerSummonEntry, openerPos, TEMPSUMMON_MANUAL_DESPAWN)))
                 activationTarget = summon;
         }
         if (!activationTarget
             && routeTargetActivationFallback)
         {
             Position targetPos(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ, _config.ValidationRouteO);
-            activationTarget = bot->SummonCreature(_config.ValidationRouteTargetEntry, targetPos, TEMPSUMMON_MANUAL_DESPAWN);
+            activationTarget = makeRouteSummonCombatReady(bot->SummonCreature(_config.ValidationRouteTargetEntry, targetPos, TEMPSUMMON_MANUAL_DESPAWN));
             if (!activationTarget)
                 return false;
         }

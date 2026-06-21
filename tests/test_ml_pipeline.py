@@ -1442,8 +1442,13 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert 49801 not in bwd_boss_entries
     assert 48964 not in bwd_boss_entries
     atramedes = next(row for row in routes if row["scenario_id"] == "blackwing_descent_10n" and row["label"] == "Atramedes")
+    slabhide = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "Slabhide")
     nefarian = next(row for row in routes if row["scenario_id"] == "blackwing_descent_10n" and row["label"] == "Nefarian")
     assert atramedes["expected_bot_count"] == 10
+    assert slabhide["x"] == 1292.352
+    assert slabhide["activation_data_id"] == 10
+    assert slabhide["activation_data_value"] == 2
+    assert slabhide["activation_summon_entry"] == 0
     assert nefarian["expected_bot_count"] == 10
     assert atramedes["activation_data_id"] == 10
     assert nefarian["activation_data_id"] == 35

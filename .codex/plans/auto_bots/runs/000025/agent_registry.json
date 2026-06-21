@@ -1,0 +1,18 @@
+{
+  "schema": "orchestrator_agent_registry_v1",
+  "agents": [
+    {
+      "id": "worker_slabhide_activation",
+      "role": "worker",
+      "status": "completed",
+      "complexity": "medium",
+      "model": "gpt-5.5",
+      "reasoning_effort": "medium",
+      "jsonl_path": "/home/runiir/Games/trinity-cata/.codex/plans/auto_bots/runs/000025/worker_slabhide_activation.jsonl",
+      "stderr_path": "/home/runiir/Games/trinity-cata/.codex/plans/auto_bots/runs/000025/worker_slabhide_activation.stderr",
+      "last_message_path": "/home/runiir/Games/trinity-cata/.codex/plans/auto_bots/runs/000025/worker_slabhide_activation.last_message.md",
+      "prompt_path": "/home/runiir/Games/trinity-cata/.codex/plans/auto_bots/runs/000025/worker_slabhide_activation_prompt.md",
+      "started_at_unix": 1782006321
+    }
+  ]
+}

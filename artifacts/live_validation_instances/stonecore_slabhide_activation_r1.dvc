@@ -1,0 +1,6 @@
+outs:
+- md5: 30d9488a7c730f2799ba6027706456d7.dir
+  size: 1100419
+  nfiles: 10
+  hash: md5
+  path: stonecore_slabhide_activation_r1
