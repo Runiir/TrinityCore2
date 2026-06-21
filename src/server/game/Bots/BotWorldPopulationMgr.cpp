@@ -2657,8 +2657,8 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
 
             if (_config.ValidationRouteKind != "boss"
                 && ValidationRouteHasProgressSinceApply()
-                && nearValidationRouteAnchor
-                && (state.LastDecisionFingerprintRepeatCount >= 6 || state.LastLoopGuardrailReason == "repeated_decision_loop"))
+                && (nearValidationRouteAnchor || routeAnchorDistance <= 45.0f)
+                && (state.LastDecisionFingerprintRepeatCount >= 6 || state.LastLoopGuardrailReason == "repeated_decision_loop" || state.RecoveryAttemptCount >= 3))
             {
                 _validationRouteFocusGuid.Clear();
                 _validationRouteFocusEntry = 0;
@@ -2695,6 +2695,7 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
                 RecordEvent(state, bot, "dungeon_trash_cleared", nullptr, "route_loop_exhausted_after_progress", raw.c_str(), semantic.c_str(), float(_metrics.Kills), _config.ValidationRouteTargetEntry);
                 RecordEvent(state, bot, "validation_route_recovery", nullptr, "route_loop_exhausted_after_progress", raw.c_str(), semantic.c_str(), routeAnchorDistance, _config.ValidationRouteTargetEntry);
                 RecordDecision(state, bot, "normal_dungeon_trash", "validation_route_complete", nullptr, raw.c_str(), semantic.c_str(), activityScores, chosenActivity, power, false, false);
+                MaybeAdvanceValidationRouteManifest();
                 return;
             }
 
@@ -3145,6 +3146,8 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
     bool failure = questAction.Failure || trashAction.Failure || bossAction.Failure || validationRouteFailure;
     bool rare = questAction.Rare || trashAction.Rare || bossAction.Rare || validationRouteFailure || runtimeRecovery;
     RecordDecision(state, bot, situation.c_str(), action.c_str(), target, raw.c_str(), semantic.c_str(), activityScores, chosenActivity, power, failure, rare);
+    if (action == "validation_route_complete")
+        MaybeAdvanceValidationRouteManifest();
 }
 
 Player* BotWorldPopulationMgr::GetLoadedBot(WorldBotState const& state) const
@@ -5868,6 +5871,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             RecordRaidTelemetry(state, bot, killedTarget, "raid_boss_killed", "ok", features, assignment, anchors, adapter, gearPlan, progression, raw.c_str(), semantic.c_str(), power.Total, _metrics.RaidBossKills);
         }
 
+        MaybeAdvanceValidationRouteManifest();
         return true;
     };
     auto routeUsableCombatTarget = [this, bot, &isValidationRouteScriptTarget](Unit* candidate) -> Unit*

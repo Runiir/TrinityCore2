@@ -787,6 +787,33 @@ def test_botauto_diagnosis_and_trace_surface():
     assert "diagnosis" in debug
 
 
+def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_next_tick():
+    mgr = read(BOT_MGR)
+    update_bot = function_body(mgr, "void BotWorldPopulationMgr::UpdateBot")
+    route_objective = function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteObjective")
+
+    assert_ordered(
+        update_bot,
+        'RecordDecision(state, bot, "normal_dungeon_trash", "validation_route_complete"',
+        "MaybeAdvanceValidationRouteManifest();",
+        "return;",
+    )
+    assert "(nearValidationRouteAnchor || routeAnchorDistance <= 45.0f)" in update_bot
+    assert "state.RecoveryAttemptCount >= 3" in update_bot
+    assert_ordered(
+        update_bot,
+        "RecordDecision(state, bot, situation.c_str(), action.c_str()",
+        'if (action == "validation_route_complete")',
+        "MaybeAdvanceValidationRouteManifest();",
+    )
+    assert_ordered(
+        route_objective,
+        '_validationRouteManifestAdvanceReason = "boss_killed";',
+        "MaybeAdvanceValidationRouteManifest();",
+        "return true;",
+    )
+
+
 def test_clip_capture_smoke_persists_clip_row_with_pre_and_post_frames():
     buffer = read(BOT_BUFFER)
     capture = function_body(buffer, "uint64 BotTelemetryBuffer::CaptureEvent")
