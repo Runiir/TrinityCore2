@@ -5954,11 +5954,13 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     };
     auto tryValidationRouteActivation = [this, &state, bot, &power, stage, activity, &isValidationRouteScriptTarget](Unit* seenTarget, char const* reason) -> bool
     {
+        bool routeTargetActivationFallback = _config.ValidationRouteKind == "boss" && _config.ValidationRouteTargetEntry;
         if ((!_config.ValidationRouteActivationDataId
             && !_config.ValidationRouteActivationSpawnGroupId
             && (!_config.ValidationRouteActivationActionEntry || !_config.ValidationRouteActivationActionId)
             && !_config.ValidationRouteActivationSummonEntry
-            && !_config.ValidationRouteOpenerSummonEntry) || !bot)
+            && !_config.ValidationRouteOpenerSummonEntry
+            && !routeTargetActivationFallback) || !bot)
             return false;
 
         if (_validationRouteActivationApplied)
@@ -5968,15 +5970,23 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return false;
         }
 
+        Unit* activationTarget = seenTarget;
         InstanceMap* instanceMap = bot->GetMap() ? bot->GetMap()->ToInstanceMap() : nullptr;
         InstanceScript* instance = instanceMap ? instanceMap->GetInstanceScript() : nullptr;
         if (!instanceMap || !instance)
-            return false;
+        {
+            if (!routeTargetActivationFallback)
+                return false;
 
-        if (_config.ValidationRouteActivationDataId)
+            Position targetPos(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ, _config.ValidationRouteO);
+            activationTarget = bot->SummonCreature(_config.ValidationRouteTargetEntry, targetPos, TEMPSUMMON_MANUAL_DESPAWN);
+            if (!activationTarget)
+                return false;
+        }
+
+        if (instance && _config.ValidationRouteActivationDataId)
             instance->SetData(_config.ValidationRouteActivationDataId, _config.ValidationRouteActivationDataValue);
 
-        Unit* activationTarget = seenTarget;
         if (_config.ValidationRouteActivationSpawnGroupId)
         {
             std::vector<WorldObject*> spawnedObjects;
@@ -6024,6 +6034,19 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             Position openerPos(_config.ValidationRouteOpenerSummonX, _config.ValidationRouteOpenerSummonY, _config.ValidationRouteOpenerSummonZ, _config.ValidationRouteOpenerSummonO);
             if (TempSummon* summon = bot->SummonCreature(_config.ValidationRouteOpenerSummonEntry, openerPos, TEMPSUMMON_MANUAL_DESPAWN))
                 activationTarget = summon;
+        }
+        if (!activationTarget
+            && routeTargetActivationFallback
+            && !_config.ValidationRouteActivationDataId
+            && !_config.ValidationRouteActivationSpawnGroupId
+            && !_config.ValidationRouteActivationActionEntry
+            && !_config.ValidationRouteActivationSummonEntry
+            && !_config.ValidationRouteOpenerSummonEntry)
+        {
+            Position targetPos(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ, _config.ValidationRouteO);
+            activationTarget = bot->SummonCreature(_config.ValidationRouteTargetEntry, targetPos, TEMPSUMMON_MANUAL_DESPAWN);
+            if (!activationTarget)
+                return false;
         }
 
         _validationRouteActivationApplied = true;
@@ -6368,6 +6391,12 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     state.QuestRouteDestination.Reason = routeAnchorReason;
 
     float routeDistance = bot->GetExactDist(routeAnchorX, routeAnchorY, routeAnchorZ);
+    bool hasValidationRouteActivation = _config.ValidationRouteActivationDataId
+        || _config.ValidationRouteActivationSpawnGroupId
+        || _config.ValidationRouteActivationActionEntry
+        || _config.ValidationRouteActivationSummonEntry
+        || _config.ValidationRouteOpenerSummonEntry
+        || (_config.ValidationRouteKind == "boss" && _config.ValidationRouteTargetEntry);
     auto markValidationRouteTerminalAfterProgress = [&](char const* reason) -> void
     {
         _validationRouteFocusGuid.Clear();
@@ -6735,26 +6764,25 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
                 std::string raw = BuildRawJson(bot, nullptr);
                 std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_regroup", &power, stage, activity);
+                if (_config.ValidationRouteKind == "boss"
+                    && hasValidationRouteActivation
+                    && !_validationRouteActivationApplied)
+                {
+                    if (tryValidationRouteActivation(nullptr, "boss_route_no_focus_activation"))
+                    {
+                        action = "validation_route_activate_target";
+                        return true;
+                    }
+
+                    RecordEvent(state, bot, "validation_route_recovery", nullptr, "boss_route_no_focus_activation_unavailable", raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry);
+                }
+
                 if (_config.ValidationRouteKind == "boss" && routeDistance > 12.0f)
                 {
                     MoveBotToPoint(state, bot, routeAnchorX, routeAnchorY, routeAnchorZ);
                     RecordEvent(state, bot, "validation_route_regroup", anchor, "advance_to_boss_route_no_focus", raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry);
                     situation = "validation_route_regroup";
                     action = "move_to_validation_route";
-                    return true;
-                }
-
-                if (_config.ValidationRouteKind == "boss"
-                    && !_validationRouteActivationApplied
-                    && (_config.ValidationRouteActivationDataId
-                        || _config.ValidationRouteActivationSpawnGroupId
-                        || _config.ValidationRouteActivationActionEntry
-                        || _config.ValidationRouteActivationSummonEntry
-                        || _config.ValidationRouteOpenerSummonEntry)
-                    && routeDistance <= 220.0f
-                    && tryValidationRouteActivation(nullptr, "boss_route_no_focus_activation"))
-                {
-                    action = "validation_route_activate_target";
                     return true;
                 }
 
@@ -6823,11 +6851,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         return true;
     }
 
-    bool hasValidationRouteActivation = _config.ValidationRouteActivationDataId
-        || _config.ValidationRouteActivationSpawnGroupId
-        || _config.ValidationRouteActivationActionEntry
-        || _config.ValidationRouteActivationSummonEntry
-        || _config.ValidationRouteOpenerSummonEntry;
     if (_config.ValidationRouteKind == "boss"
         && hasValidationRouteActivation
         && !_validationRouteActivationApplied

@@ -407,6 +407,7 @@ def test_quest_first_portfolio_routing_surface():
     assert "validation_route_activation" in mgr
     assert "boss_route_early_activation" in mgr
     assert "boss_route_no_focus_activation" in mgr
+    assert "boss_route_no_focus_activation_unavailable" in mgr
     assert "advance_to_boss_route_no_focus" in mgr
     assert "hasValidationRouteActivation" in mgr
     assert "routeDistance <= 220.0f" in mgr
@@ -438,6 +439,9 @@ def test_quest_first_portfolio_routing_surface():
     assert "SpawnGroupSpawn(_config.ValidationRouteActivationSpawnGroupId" in mgr
     assert "creature->AI()->DoAction(_config.ValidationRouteActivationActionId)" in mgr
     assert "bot->SummonCreature(_config.ValidationRouteOpenerSummonEntry" in mgr
+    assert "bot->SummonCreature(_config.ValidationRouteTargetEntry, targetPos" in mgr
+    assert "routeTargetActivationFallback" in mgr
+    assert "&& !routeTargetActivationFallback" in mgr
     assert "float routeArrivalRadius =" in mgr
     assert "_config.ValidationRouteActivationSpawnGroupId" in mgr
     assert "BotWorld.ValidationRoute.ActivationDataId" in mgr
@@ -457,6 +461,12 @@ def test_quest_first_portfolio_routing_surface():
     assert "SELECT role FROM character_bot_pool WHERE guid" in mgr
     assert 'poolRole.find("tank")' in mgr
     assert "if (routeProximity > 120.0f)" in mgr
+    assert_ordered(
+        function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteObjective"),
+        "tryValidationRouteActivation(nullptr, \"boss_route_no_focus_activation\")",
+        "RecordEvent(state, bot, \"validation_route_regroup\", anchor, \"advance_to_boss_route_no_focus\"",
+        "RecordEvent(state, bot, \"validation_route_regroup\", anchor, \"hold_anchor_no_focus\"",
+    )
     assert_ordered(
         function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteObjective"),
         "target = routeTarget;",
