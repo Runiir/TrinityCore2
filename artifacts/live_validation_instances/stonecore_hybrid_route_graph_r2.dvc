@@ -1,0 +1,6 @@
+outs:
+- md5: fd87c0d175ec25bcf13d94fec73bcd14.dir
+  size: 2811008
+  nfiles: 27
+  hash: md5
+  path: stonecore_hybrid_route_graph_r2

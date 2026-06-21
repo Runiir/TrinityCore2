@@ -111,6 +111,48 @@ def route_required_evidence(kind: str, families: list[str]) -> list[str]:
     return required
 
 
+STONECORE_TRASH_PACKS = {
+    "entrance packs": [43391, 42696, 43430, 43537],
+    "crystalspawn corridor": [42810, 42696, 43430, 43537, 42695, 42692],
+    "stonecore sentry gauntlet": [42428, 42696, 42695, 42692],
+    "twilight flayer packs": [42428, 42696, 42695, 42692, 42691],
+}
+
+STONECORE_SCRIPTED_EVENT_ACTORS = {
+    "entrance packs": [43391],
+}
+
+
+def route_node_kind(step: dict[str, Any]) -> str:
+    explicit = str(step.get("node_kind") or "")
+    if explicit:
+        return explicit
+    return "boss" if step.get("kind") == "boss" else "trash_cluster"
+
+
+def pack_target_entries(scenario_id: str, step: dict[str, Any]) -> list[int]:
+    explicit = [int(entry) for entry in (step.get("pack_target_entries") or []) if int(entry)]
+    if explicit:
+        return sorted(set(explicit))
+    if step.get("kind") != "trash":
+        return []
+    label = str(step.get("label") or "")
+    entries = list(STONECORE_TRASH_PACKS.get(label, [])) if scenario_id == "stonecore_5n" else []
+    source_entry = int(step.get("source_entry") or 0)
+    if source_entry and source_entry not in entries:
+        entries.insert(0, source_entry)
+    return entries
+
+
+def scripted_event_entries(scenario_id: str, step: dict[str, Any]) -> list[int]:
+    explicit = [int(entry) for entry in (step.get("scripted_event_entries") or []) if int(entry)]
+    if explicit:
+        return sorted(set(explicit))
+    if step.get("kind") != "trash" or scenario_id != "stonecore_5n":
+        return []
+    return list(STONECORE_SCRIPTED_EVENT_ACTORS.get(str(step.get("label") or ""), []))
+
+
 def evidence_contract(required_evidence: list[str]) -> list[dict[str, Any]]:
     return [
         {
@@ -223,11 +265,16 @@ def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any],
             coordinates_valid, coordinate_missing_reason = route_coordinate_status(step)
             family_rows = [str(family) for family in profiles.get(step.get("mechanic_profile") or "", [])]
             route_evidence = route_required_evidence(str(step.get("kind") or ""), family_rows)
+            node_kind = route_node_kind(step)
+            cluster_entries = pack_target_entries(scenario_id, step)
+            event_entries = scripted_event_entries(scenario_id, step)
+            cluster_radius_yards = float(step.get("cluster_radius_yards") or (90.0 if step.get("kind") == "trash" else 0.0))
             route = {
                 "scenario_id": scenario_id,
                 "map_id": int(scenario.get("map_id") or 0),
                 "step": int(step.get("step") or 0),
                 "kind": step.get("kind") or "unknown",
+                "node_kind": node_kind,
                 "label": step.get("label") or "",
                 "mechanic_profile": step.get("mechanic_profile") or "",
                 "x": float(step.get("x") or 0.0),
@@ -238,6 +285,13 @@ def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any],
                 "source_guid": str(step.get("source_guid") or ""),
                 "source_table": step.get("source_table") or "",
                 "source_sql": step.get("source_sql") or "",
+                "cluster_id": step.get("cluster_id") or (f"{scenario_id}_{int(step.get('step') or 0):02d}_{node_kind}" if node_kind == "trash_cluster" else ""),
+                "cluster_center": [float(step.get("x") or 0.0), float(step.get("y") or 0.0), float(step.get("z") or 0.0)],
+                "cluster_radius_yards": cluster_radius_yards,
+                "pack_target_entries": cluster_entries,
+                "scripted_event_entries": event_entries,
+                "expected_alive_count": int(step.get("expected_alive_count") or (len(cluster_entries) if cluster_entries else 0)),
+                "completion_policy": step.get("completion_policy") or ("cluster_clear_after_pull" if node_kind == "trash_cluster" else "boss_kill"),
                 "coordinates_valid": coordinates_valid,
                 "coordinate_missing_reason": coordinate_missing_reason,
                 "mechanic_families": family_rows,

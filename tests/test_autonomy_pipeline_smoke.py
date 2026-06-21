@@ -427,7 +427,7 @@ def test_quest_first_portfolio_routing_surface():
     assert "target_seen_not_attackable" in mgr
     assert "boss_killed" in mgr
     assert "raid_boss_killed" in mgr
-    assert "uint32 noProgressThreshold = bossRouteNoProgress ? 2 : 4" in mgr
+    assert 'uint32 noProgressThreshold = bossRouteNoProgress ? 2 : (_config.ValidationRouteKind == "boss" ? 4 : 12)' in mgr
     assert "validation_route_activation" in mgr
     assert "boss_route_early_activation" in mgr
     assert "boss_route_no_focus_activation" in mgr
@@ -449,16 +449,16 @@ def test_quest_first_portfolio_routing_surface():
     assert "rememberValidationRouteFocus(activationTarget);" in mgr
     assert "state.TargetGuid = activationTarget->GetGUID();" in mgr
     assert "isValidationRouteScriptTarget(creature)" in mgr
-    assert "validation_route_stuck_follow_focus" in mgr
+    assert "validation_route_stuck_no_fallback" in mgr
     assert "ValidationRouteOpenerTargetEntry" in mgr_header
     assert "ValidationRouteOpenerSummonEntry" in mgr_header
     assert "ValidationRouteActivationSpawnGroupId" in mgr_header
     assert "ValidationRouteActivationActionEntry" in mgr_header
     assert "ValidationRouteActivationActionId" in mgr_header
-    assert "route_loop_exhausted_after_progress" in mgr
+    assert "fallback_disabled" in mgr
     assert "markValidationRouteTerminalAfterProgress" in mgr
     assert "RecordEvent(state, bot, \"dungeon_trash_cleared\"" in mgr
-    assert "RecordDecision(state, bot, \"normal_dungeon_trash\", \"validation_route_failed\"" in mgr
+    assert "RecordDecision(state, bot, \"validation_route_recovery\", \"validation_route_stuck\"" in mgr
     assert "BotWorld.ValidationRoute.OpenerTargetEntry" in mgr
     assert "BotWorld.ValidationRoute.OpenerSummonEntry" in mgr
     assert "BotWorld.ValidationRoute.ActivationSpawnGroupId" in mgr
@@ -481,6 +481,15 @@ def test_quest_first_portfolio_routing_surface():
     assert "InstanceScript* instance" in mgr
     assert "blocker_path_no_progress" in mgr
     assert "Unit::DealDamage(bot, prerequisiteTarget, damage" in mgr
+    assert "creature->IsInEvadeMode() || creature->HasUnitState(UNIT_STATE_EVADE)" in mgr
+    assert "hasStrictPathToValidationRouteTarget(creature)" in mgr
+    assert "markValidationRouteTrashFailed" in mgr
+    assert "validation_trash_no_progress" in mgr
+    assert "validation_trash_requires_damage_progress" in mgr
+    assert "findTrashClusterThreatTarget" in mgr
+    assert "validation_route_stuck_no_fallback" in mgr
+    assert "fallback_disabled" in mgr
+    assert '(_config.ValidationRouteKind == "boss" ? 5 : 20)' in mgr
     assert "_validationRouteFocusGuid.Clear();" in mgr
     assert "state.QuestWork.SelectedTargetGuid.Clear();" in mgr
     assert "regroup_tank_focus_mismatch" in mgr
@@ -889,11 +898,12 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
 
     assert_ordered(
         update_bot,
-        'RecordDecision(state, bot, "normal_dungeon_trash", "validation_route_failed"',
+        'std::string recoveryReason = "validation_route_stuck_no_fallback";',
+        'RecordEvent(state, bot, "stuck_detected"',
+        'RecordDecision(state, bot, "validation_route_recovery", "validation_route_stuck"',
         "return;",
     )
-    assert "(nearValidationRouteAnchor || routeAnchorDistance <= 45.0f)" in update_bot
-    assert "state.RecoveryAttemptCount >= 3" in update_bot
+    assert "state.LastRecoveryResult = \"fallback_disabled\";" in update_bot
     assert_ordered(
         update_bot,
         "RecordDecision(state, bot, situation.c_str(), action.c_str()",
@@ -909,11 +919,12 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     assert_ordered(
         route_objective,
         'bool routeTargetKill = isValidationRouteScriptTarget(creature);',
-        '_validationRouteManifestAdvanceReason = "trash_route_target_killed";',
-        'RecordEvent(state, bot, "dungeon_trash_cleared", nullptr, "trash_route_target_killed"',
+        "if (!trashClusterHasLiveMobs())",
+        'markTrashClusterCleared("trash_cluster_cleared");',
+        'RecordEvent(state, bot, "dungeon_trash_cleared", nullptr, "trash_cluster_cleared"',
         "MaybeAdvanceValidationRouteManifest();",
     )
-    assert "uint32 routeTargetNoProgressThreshold = bot->GetMap() && bot->GetMap()->IsRaid() ? 2 : 5;" in route_objective
+    assert 'uint32 routeTargetNoProgressThreshold = bot->GetMap() && bot->GetMap()->IsRaid() ? 2 : (_config.ValidationRouteKind == "boss" ? 5 : 20);' in route_objective
     assert "bool _validationRouteManifestComplete = false;" in mgr_header
     assert_ordered(
         advance_manifest,
@@ -923,7 +934,7 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         "bool terminal = _validationRouteManifestAdvancePending;",
     )
     assert "bool successfulTerminal = state.LastDecisionAction == \"validation_route_complete\"" in advance_manifest
-    assert 'state.ValidationRouteTerminalReason == "trash_route_target_killed"' in advance_manifest
+    assert 'state.ValidationRouteTerminalReason == "trash_cluster_cleared"' in advance_manifest
     assert 'state.ValidationRouteTerminalReason == "boss_route_target_killed"' in advance_manifest
     assert_ordered(
         advance_manifest,

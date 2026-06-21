@@ -1460,6 +1460,16 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert stonecore_entry["bot_start_map_id"] == 725
     assert stonecore_entry["bot_start_x"] == 851.052
     assert stonecore_entry["bot_start_z"] == 317.266
+    assert stonecore_entry["node_kind"] == "trash_cluster"
+    assert stonecore_entry["cluster_id"] == "stonecore_5n_01_trash_cluster"
+    assert stonecore_entry["cluster_center"] == [903.255, 985.352, 317.198]
+    assert stonecore_entry["cluster_radius_yards"] == 90.0
+    assert stonecore_entry["pack_target_entries"]
+    assert {42696, 43430, 43537, 43391}.issubset(set(stonecore_entry["pack_target_entries"]))
+    assert stonecore_entry["scripted_event_entries"] == [43391]
+    assert stonecore_entry["completion_policy"] == "cluster_clear_after_pull"
+    assert slabhide["node_kind"] == "boss"
+    assert slabhide["completion_policy"] == "boss_kill"
     assert nefarian["expected_bot_count"] == 10
     assert atramedes["activation_data_id"] == 10
     assert nefarian["activation_data_id"] == 35
