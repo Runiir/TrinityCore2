@@ -819,6 +819,7 @@ def live_evidence(
     trace: dict[str, Any],
     summary: dict[str, Any],
     validation_context: dict[str, Any] | None = None,
+    raw_output: str = "",
 ) -> dict[str, Any]:
     entries = trace_entries(trace)
     diagnoses = diagnosis_rows(diagnosis)
@@ -846,6 +847,13 @@ def live_evidence(
     }
     action_counts = Counter(str(entry.get("action") or entry.get("situation") or "") for entry in entries if entry.get("action") or entry.get("situation"))
     result_counts = Counter(str(entry.get("result") or "") for entry in entries if entry.get("result"))
+    raw_manifest_complete_count = len(re.findall(r'"action"\s*:\s*"validation_route_manifest_complete"', raw_output or ""))
+    if raw_manifest_complete_count:
+        action_names.add("validation_route_manifest_complete")
+        action_counts["validation_route_manifest_complete"] = max(
+            action_counts.get("validation_route_manifest_complete", 0),
+            raw_manifest_complete_count,
+        )
     diagnosis_result_counts = Counter()
     stuck_events = int(status.get("stuck") or 0) + int(summary.get("stuck_events") or 0) + action_counts.get("stuck_detected", 0)
     unstuck_failures = sum(1 for entry in entries if str(entry.get("action") or "") == "unstuck" and str(entry.get("result") or "") in {"failed", "failure"})
@@ -1065,6 +1073,7 @@ def live_evidence(
         "unstuck_failures": unstuck_failures,
         "repath_events": repath_events,
         "validation_route_actions": validation_route_actions,
+        "validation_route_manifest_complete": action_counts.get("validation_route_manifest_complete", 0),
         "boss_engagement_actions": boss_engagement_actions,
         "trash_route_actions": trash_route_actions,
         "validation_route_prerequisite_repeats": action_counts.get("validation_route_prerequisite", 0),
@@ -1195,6 +1204,7 @@ def progress_counters_from_evidence(evidence: dict[str, Any]) -> dict[str, int]:
         "trash_pulls": int(evidence.get("trash_pulls") or 0),
         "gear_upgrades": int(evidence.get("gear_upgrades") or 0),
         "validation_route_actions": int(evidence.get("validation_route_actions") or 0),
+        "validation_route_manifest_complete": int(evidence.get("validation_route_manifest_complete") or 0),
         "repeated_decisions": int(action_counts.get("repeated_decision") or action_counts.get("decision_repeated") or 0),
         "death_loop_events": int(action_counts.get("repeated_death") or 0) + int(action_counts.get("death_loop") or 0),
         "stuck_events": int(evidence.get("stuck_events") or 0),
@@ -1221,6 +1231,7 @@ def watchdog_state(
         + counters["trash_pulls"]
         + counters["gear_upgrades"]
         + counters["validation_route_actions"]
+        + counters["validation_route_manifest_complete"]
     )
     route_motion_progress = (
         counters["validation_route_actions"] > 0
@@ -1276,7 +1287,11 @@ def completion_reason(
     timed_out: bool,
     failure_labels: list[str],
     state: dict[str, Any],
+    evidence: dict[str, Any] | None = None,
 ) -> str:
+    evidence = evidence or {}
+    if int(evidence.get("validation_route_manifest_complete") or 0) > 0 and not terminal_failure_labels(failure_labels, state):
+        return "validation_route_manifest_complete"
     if timed_out:
         return "emergency_wall_clock_timeout"
     if returncode != 0:
@@ -1305,8 +1320,9 @@ def final_evidence_rejections(
     completion: str = "",
 ) -> list[str]:
     context = validation_context or {}
+    manifest_complete = int(evidence.get("validation_route_manifest_complete") or 0) > 0
     rejections: list[str] = []
-    if not all_passed:
+    if not all_passed and not manifest_complete:
         rejections.append("not_all_stages_passed")
     if timed_out:
         rejections.append("timeout_is_not_final_evidence")
@@ -1351,7 +1367,7 @@ def live_validation_report(
     target_bots = int(status.get("target_bots") or status.get("targetBots") or 0)
     trace_entries = count_trace_entries(trace)
     diagnosis_count = len(diagnosis_rows(diagnosis))
-    evidence = live_evidence(status, diagnosis, trace, summary, validation_context)
+    evidence = live_evidence(status, diagnosis, trace, summary, validation_context, output)
     failure_labels = validation_failure_labels(returncode, timed_out, active_bots, target_bots, trace_entries, diagnosis_count, errors, evidence)
     scenario_reports = scenario_reports or {}
 
@@ -1405,6 +1421,7 @@ def live_validation_report(
         timed_out=timed_out,
         failure_labels=failure_labels,
         state=state,
+        evidence=evidence,
     )
     rejections = final_evidence_rejections(
         all_passed=all_passed,

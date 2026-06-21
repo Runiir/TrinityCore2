@@ -1,0 +1,18 @@
+{
+  "schema": "orchestrator_agent_registry_v1",
+  "agents": [
+    {
+      "id": "worker_azil_route_investigation",
+      "role": "worker",
+      "status": "completed",
+      "complexity": "large",
+      "model": "gpt-5.5",
+      "reasoning_effort": "high",
+      "jsonl_path": "/home/runiir/Games/trinity-cata/.codex/plans/auto_bots/runs/000032/worker_azil_route_investigation.jsonl",
+      "stderr_path": "/home/runiir/Games/trinity-cata/.codex/plans/auto_bots/runs/000032/worker_azil_route_investigation.stderr",
+      "last_message_path": "/home/runiir/Games/trinity-cata/.codex/plans/auto_bots/runs/000032/worker_azil_route_investigation.last_message.md",
+      "prompt_path": "/home/runiir/Games/trinity-cata/.codex/plans/auto_bots/runs/000032/worker_azil_route_investigation.prompt.md",
+      "started_at_unix": 1782020129
+    }
+  ]
+}

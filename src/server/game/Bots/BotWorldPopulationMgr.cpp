@@ -1030,6 +1030,7 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
     _validationRouteManifest.clear();
     _validationRouteManifestIndex = 0;
     _validationRouteManifestAdvancePending = false;
+    _validationRouteManifestComplete = false;
     _validationRouteManifestAdvanceReason.clear();
     _validationRouteManifestLoadError.clear();
     _validationRouteProgressBaselineKills = _metrics.Kills;
@@ -1209,6 +1210,7 @@ void BotWorldPopulationMgr::ResetValidationRouteRuntimeState(char const* reason)
     _validationRouteActivationApplied = false;
     _validationRouteActivationAttempts = 0;
     _validationRouteManifestAdvancePending = false;
+    _validationRouteManifestComplete = false;
     _validationRouteManifestAdvanceReason.clear();
 
     uint64 nowMs = NowMs();
@@ -1252,6 +1254,13 @@ bool BotWorldPopulationMgr::MaybeAdvanceValidationRouteManifest()
     if (_validationRouteManifest.empty() || _config.ValidationRouteAdvanceMode != "terminal")
         return false;
 
+    if (_validationRouteManifestComplete)
+    {
+        _validationRouteManifestAdvancePending = false;
+        _validationRouteManifestAdvanceReason.clear();
+        return true;
+    }
+
     bool terminal = _validationRouteManifestAdvancePending;
     std::string terminalReason = _validationRouteManifestAdvanceReason;
     for (WorldBotState const& state : _bots)
@@ -1282,15 +1291,27 @@ bool BotWorldPopulationMgr::MaybeAdvanceValidationRouteManifest()
 
     if (nextIndex >= _validationRouteManifest.size())
     {
+        _validationRouteManifestComplete = true;
         if (reporterState && reporter)
         {
             std::string raw = BuildRawJson(reporter, nullptr);
             std::string semantic = BuildSemanticJson(reporter, nullptr, "validation_route_manifest", nullptr);
             RecordEvent(*reporterState, reporter, "validation_route_manifest_complete", nullptr, terminalReason.empty() ? "all_routes_complete" : terminalReason.c_str(), raw.c_str(), semantic.c_str(), float(_validationRouteManifestIndex + 1), uint32(_validationRouteManifest.size()));
         }
+        uint64 nowMs = NowMs();
+        for (WorldBotState& state : _bots)
+        {
+            state.TargetGuid.Clear();
+            state.ValidationRouteCombatProgressTargetGuid.Clear();
+            state.ValidationRoutePackProgressTargetGuid.Clear();
+            state.ValidationRouteTerminalState = true;
+            state.ValidationRouteTerminalAtMs = nowMs;
+            state.ValidationRouteTerminalReason = terminalReason.empty() ? "all_routes_complete" : terminalReason;
+            state.LoopRecoveryCooldownUntilMs = nowMs + 60000;
+        }
         _validationRouteManifestAdvancePending = false;
         _validationRouteManifestAdvanceReason.clear();
-        return false;
+        return true;
     }
 
     if (reporterState && reporter)
@@ -5638,6 +5659,23 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         return true;
     }
 
+    if (_validationRouteManifestComplete)
+    {
+        bot->AttackStop();
+        bot->CombatStop(true);
+        state.TargetGuid.Clear();
+        state.WasInCombat = false;
+        state.ValidationRouteTerminalState = true;
+        if (!state.ValidationRouteTerminalAtMs)
+            state.ValidationRouteTerminalAtMs = NowMs();
+        if (state.ValidationRouteTerminalReason.empty())
+            state.ValidationRouteTerminalReason = "all_routes_complete";
+        state.LoopRecoveryCooldownUntilMs = NowMs() + 60000;
+        situation = "validation_route_manifest";
+        action = "validation_route_complete";
+        return true;
+    }
+
     auto routeEngageRange = [this](Player* engageBot, Unit* engageTarget, uint32 spellId) -> float
     {
         if (SpellInfo const* spellInfo = spellId ? sSpellMgr->GetSpellInfo(spellId) : nullptr)
@@ -7106,7 +7144,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     target = nullptr;
                 }
 
-                if (bot->GetExactDist(anchor) > 8.0f)
+                if (bot->GetExactDist(anchor) > 8.0f
+                    && !(_config.ValidationRouteKind == "boss" && _validationRouteActivationApplied))
                 {
                     MoveBotToPoint(state, bot, anchor->GetPositionX(), anchor->GetPositionY(), anchor->GetPositionZ());
                     std::string raw = BuildRawJson(bot, nullptr);
@@ -7138,7 +7177,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                         RecordEvent(state, bot, "validation_route_recovery", nullptr, "boss_route_no_focus_activation_unavailable", raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry);
                 }
 
-                if (_config.ValidationRouteKind == "boss" && routeDistance > 12.0f)
+                if (_config.ValidationRouteKind == "boss" && routeDistance > 12.0f && !_validationRouteActivationApplied)
                 {
                     MoveBotToPoint(state, bot, routeAnchorX, routeAnchorY, routeAnchorZ);
                     RecordEvent(state, bot, "validation_route_regroup", anchor, "advance_to_boss_route_no_focus", raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry);
@@ -10671,6 +10710,7 @@ void BotWorldPopulationMgr::RecordDecision(WorldBotState& state, Player* bot, ch
     state.LastDecisionAction = action ? action : "wait";
     if (_config.ValidationRouteEnable
         && !_validationRouteManifest.empty()
+        && !_validationRouteManifestComplete
         && _config.ValidationRouteAdvanceMode == "terminal"
         && state.LastDecisionAction == "validation_route_complete")
     {

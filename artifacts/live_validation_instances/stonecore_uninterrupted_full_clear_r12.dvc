@@ -1,0 +1,6 @@
+outs:
+- md5: f925850472a48232875e5c1134b67efe.dir
+  size: 5504426
+  nfiles: 17
+  hash: md5
+  path: stonecore_uninterrupted_full_clear_r12

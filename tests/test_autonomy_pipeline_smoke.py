@@ -9,6 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 BOT_COMMANDS = ROOT / "src/server/scripts/Commands/cs_healerbot.cpp"
 SERVER_COMMANDS = ROOT / "src/server/scripts/Commands/cs_server.cpp"
 BOT_MGR = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.cpp"
+BOT_MGR_HEADER = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h"
 BOT_POLICY = ROOT / "src/server/game/Bots/BotTelemetryPolicy.cpp"
 BOT_BUFFER = ROOT / "src/server/game/Bots/BotTelemetryBuffer.cpp"
 BOT_SEGMENTS = ROOT / "src/server/game/Bots/BotExperimentCoordinator.cpp"
@@ -471,7 +472,9 @@ def test_quest_first_portfolio_routing_surface():
     assert "if (routeProximity > 120.0f)" in mgr
     assert_ordered(
         function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteObjective"),
+        '&& !(_config.ValidationRouteKind == "boss" && _validationRouteActivationApplied)',
         "tryValidationRouteActivation(nullptr, \"boss_route_no_focus_activation\")",
+        'if (_config.ValidationRouteKind == "boss" && routeDistance > 12.0f && !_validationRouteActivationApplied)',
         "RecordEvent(state, bot, \"validation_route_regroup\", anchor, \"advance_to_boss_route_no_focus\"",
         "RecordEvent(state, bot, \"validation_route_regroup\", anchor, \"search_after_activation_no_focus\"",
         "RecordEvent(state, bot, \"validation_route_regroup\", anchor, \"hold_anchor_no_focus\"",
@@ -790,8 +793,11 @@ def test_botauto_diagnosis_and_trace_surface():
 
 def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_next_tick():
     mgr = read(BOT_MGR)
+    mgr_header = read(BOT_MGR_HEADER)
     update_bot = function_body(mgr, "void BotWorldPopulationMgr::UpdateBot")
     route_objective = function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    advance_manifest = function_body(mgr, "bool BotWorldPopulationMgr::MaybeAdvanceValidationRouteManifest")
+    record_decision = function_body(mgr, "void BotWorldPopulationMgr::RecordDecision")
 
     assert_ordered(
         update_bot,
@@ -813,6 +819,29 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         "MaybeAdvanceValidationRouteManifest();",
         "return true;",
     )
+    assert "bool _validationRouteManifestComplete = false;" in mgr_header
+    assert_ordered(
+        advance_manifest,
+        "if (_validationRouteManifestComplete)",
+        "_validationRouteManifestAdvancePending = false;",
+        "return true;",
+        "bool terminal = _validationRouteManifestAdvancePending;",
+    )
+    assert_ordered(
+        advance_manifest,
+        "if (nextIndex >= _validationRouteManifest.size())",
+        "_validationRouteManifestComplete = true;",
+        'RecordEvent(*reporterState, reporter, "validation_route_manifest_complete"',
+        "state.ValidationRouteTerminalState = true;",
+        "return true;",
+    )
+    assert_ordered(
+        route_objective,
+        "if (_validationRouteManifestComplete)",
+        'action = "validation_route_complete";',
+        "return true;",
+    )
+    assert "&& !_validationRouteManifestComplete" in record_decision
 
 
 def test_clip_capture_smoke_persists_clip_row_with_pre_and_post_frames():

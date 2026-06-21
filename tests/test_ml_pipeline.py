@@ -2625,6 +2625,22 @@ TC> {"duration_minutes":5,"decisions":40,"raid_boss_kills":1,"interrupt_success"
     assert evidence["validation_evidence_counts"]["instance_reset"] == 1
 
 
+def test_live_bot_validation_accepts_raw_manifest_complete_when_trace_json_is_interleaved():
+    output = """
+TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":120,"kills":10}
+TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"snapshot":{"decision":{"action":"validation_route_complete"},"movement":{"is_moving":false,"distance_moved_since_last_decision":0}}}]}
+TC> {"trace_schema_version":1,"entries":[{"action":"boss_started","situation":"dungeon_boss","result":"ok"},{"action":"boss_killed","situation":"boss_killed","result":"ok"},{"action":"validation_route_complete","situation":"validation_route_manifest","result":"all_routes_complete"}]}
+TC> {"trace_schema_version":1,"bots":[{"bot_guid":1,"entries":[{"action":"validation_route_manifest_complete","situation":"validation_route_manifest_complete","result":"boss_killed"}]}]$ .botexp summary
+TC> {"duration_minutes":9.0,"decisions":120,"total_kills":10,"quests_completed":0}
+"""
+    report = live_validation_report(output, validation_context={"scenario_id": "stonecore_5n"})
+
+    assert report["evidence"]["validation_route_manifest_complete"] == 1
+    assert report["completion_reason"] == "validation_route_manifest_complete"
+    assert report["acceptable_final_evidence"] is True
+    assert report["final_evidence_rejections"] == []
+
+
 def test_live_bot_validation_uses_scenario_reports_for_dungeon_and_raid_gates(tmp_path):
     output = """
 TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":4,"kills":0,"quests_accepted":0,"quest_objective_progress":0}

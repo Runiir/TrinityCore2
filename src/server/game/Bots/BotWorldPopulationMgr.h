@@ -977,6 +977,7 @@ private:
     size_t _validationRouteManifestIndex = 0;
     uint32 _validationRouteProgressBaselineKills = 0;
     bool _validationRouteManifestAdvancePending = false;
+    bool _validationRouteManifestComplete = false;
     std::string _validationRouteManifestAdvanceReason;
     std::string _validationRouteManifestLoadError;
     mutable std::map<uint32, std::string> _lastCombatMaskByBot;

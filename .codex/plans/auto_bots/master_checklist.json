@@ -1,6 +1,6 @@
 {
   "all_passed": false,
-  "checklist_hash": "b09b2b640764ff3dc3ce43c4f1f0ac13bbbaae421c1dfe9a39f55bb677c58d08",
+  "checklist_hash": "9145843382ea04fb62722bf5275276ea59262a3c00467ebf1d3663f60450bf85",
   "deliverables": [
     {
       "deliverable": "movement_smoke",
@@ -85,30 +85,30 @@
     },
     {
       "deliverable": "normal_dungeon_trash",
-      "evidence_artifact": "dataset/live_validation_scenario_reports_built/stonecore_5n.json",
-      "failure_label": "scenario_clear_not_complete,segment_evidence_debug_only,missing_uninterrupted_full_clear_report,missing_required_evidence",
+      "evidence_artifact": "artifacts/live_validation_instances/stonecore_uninterrupted_full_clear_r12/report.json",
+      "failure_label": "",
       "followup_lane": "",
-      "lane": "stonecore_5n",
+      "lane": "stonecore_5n_uninterrupted_full_clear",
       "reviewer": "",
-      "status": "review"
+      "status": "accepted"
     },
     {
       "deliverable": "dungeon_boss",
-      "evidence_artifact": "dataset/live_validation_scenario_reports_built/stonecore_5n.json",
-      "failure_label": "scenario_clear_not_complete,segment_evidence_debug_only,missing_uninterrupted_full_clear_report,missing_required_evidence",
+      "evidence_artifact": "artifacts/live_validation_instances/stonecore_uninterrupted_full_clear_r12/report.json",
+      "failure_label": "",
       "followup_lane": "",
-      "lane": "stonecore_5n",
+      "lane": "stonecore_5n_uninterrupted_full_clear",
       "reviewer": "",
-      "status": "review"
+      "status": "accepted"
     },
     {
       "deliverable": "full_stonecore_clear",
-      "evidence_artifact": "dataset/live_validation_scenario_reports_built/stonecore_5n.json",
-      "failure_label": "segment_evidence_debug_only,missing_uninterrupted_full_clear_report,missing_required_evidence",
-      "followup_lane": "stonecore_5n_uninterrupted_full_clear",
-      "lane": "stonecore_5n",
+      "evidence_artifact": "artifacts/live_validation_instances/stonecore_uninterrupted_full_clear_r12/report.json",
+      "failure_label": "",
+      "followup_lane": "",
+      "lane": "stonecore_5n_uninterrupted_full_clear",
       "reviewer": "",
-      "status": "needs_followup"
+      "status": "accepted"
     },
     {
       "deliverable": "raid_trash",
