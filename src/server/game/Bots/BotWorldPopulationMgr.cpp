@@ -1228,6 +1228,8 @@ void BotWorldPopulationMgr::ResetValidationRouteRuntimeState(char const* reason)
     _validationRouteFocusY = 0.0f;
     _validationRouteFocusZ = 0.0f;
     _validationRouteFocusSeenMs = 0;
+    _validationRouteBossProgressTargetGuid.Clear();
+    _validationRouteBossSlowProgressCount = 0;
     _validationRouteActivationApplied = false;
     _validationRouteActivationAttempts = 0;
     _validationRouteManifestAdvancePending = false;
@@ -5939,6 +5941,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             _validationRouteFocusZ = 0.0f;
             _validationRouteFocusSeenMs = 0;
         }
+        if (_validationRouteBossProgressTargetGuid == killedGuid)
+        {
+            _validationRouteBossProgressTargetGuid.Clear();
+            _validationRouteBossSlowProgressCount = 0;
+        }
 
         for (WorldBotState& cohortState : _bots)
         {
@@ -6001,16 +6008,27 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         clearValidationRouteKilledFocus(killedTarget->GetGUID());
 
         RecordEvent(state, bot, "boss_killed", killedTarget, "ok", raw.c_str(), semantic.c_str(), 0.0f, _metrics.Kills);
-        if (!_validationRouteManifest.empty() && _config.ValidationRouteAdvanceMode == "terminal" && _config.ValidationRouteKind == "boss")
+        if (_config.ValidationRouteKind == "boss")
         {
-            _validationRouteManifestAdvancePending = true;
-            _validationRouteManifestAdvanceReason = "boss_killed";
             uint64 nowMs = NowMs();
             for (WorldBotState& cohortState : _bots)
             {
+                cohortState.TargetGuid.Clear();
+                cohortState.ValidationRouteCombatProgressTargetGuid.Clear();
+                cohortState.ValidationRoutePackProgressTargetGuid.Clear();
+                cohortState.ValidationRouteCombatNoProgressCount = 0;
+                cohortState.ValidationRoutePackNoProgressCount = 0;
+                cohortState.ValidationRouteUnresolvedFocusHoldCount = 0;
                 cohortState.ValidationRouteTerminalState = true;
                 cohortState.ValidationRouteTerminalAtMs = nowMs;
                 cohortState.ValidationRouteTerminalReason = "boss_killed";
+                cohortState.LoopRecoveryCooldownUntilMs = nowMs + 60000;
+            }
+
+            if (!_validationRouteManifest.empty() && _config.ValidationRouteAdvanceMode == "terminal")
+            {
+                _validationRouteManifestAdvancePending = true;
+                _validationRouteManifestAdvanceReason = "boss_killed";
             }
         }
         if (bot->GetMap() && bot->GetMap()->IsRaid())
@@ -6084,7 +6102,14 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 state.ValidationRouteCombatNoProgressCount = 0;
                 state.ValidationRouteBossSlowProgressCount = 0;
             }
-            if (++state.ValidationRouteBossSlowProgressCount >= 2)
+            if (_validationRouteBossProgressTargetGuid != prerequisiteTarget->GetGUID())
+            {
+                _validationRouteBossProgressTargetGuid = prerequisiteTarget->GetGUID();
+                _validationRouteBossSlowProgressCount = 0;
+            }
+
+            uint32 sharedSlowProgressCount = ++_validationRouteBossSlowProgressCount;
+            if (++state.ValidationRouteBossSlowProgressCount >= 2 || sharedSlowProgressCount >= 8)
             {
                 std::string raw = BuildRawJson(bot, prerequisiteTarget);
                 std::string semantic = BuildSemanticJson(bot, prerequisiteTarget, "validation_route_boss_no_progress", &power, stage, activity);
@@ -6987,14 +7012,16 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         RecordEvent(state, bot, "dungeon_trash_cleared", nullptr, state.LastNoProgressReason.c_str(), raw.c_str(), semantic.c_str(), float(_metrics.Kills), _config.ValidationRouteTargetEntry);
         RecordEvent(state, bot, "validation_route_recovery", nullptr, state.LastNoProgressReason.c_str(), raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry);
     };
-    if (state.ValidationRouteTerminalState && _config.ValidationRouteKind != "boss")
+    if (state.ValidationRouteTerminalState)
     {
         bot->AttackStop();
         bot->CombatStop(true);
         state.TargetGuid.Clear();
         state.WasInCombat = false;
         state.LoopRecoveryCooldownUntilMs = NowMs() + 60000;
-        situation = "normal_dungeon_trash";
+        situation = _config.ValidationRouteKind == "boss"
+            ? "validation_route_manifest"
+            : "normal_dungeon_trash";
         action = "validation_route_complete";
         if (!state.ValidationRouteTerminalAtMs || NowMs() - state.ValidationRouteTerminalAtMs <= 5000)
         {
@@ -7433,7 +7460,10 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (!routeBossTarget)
             maybeValidationPrerequisiteNoProgressAssist(target, "current_combat_no_health_progress");
         if (routeBossTarget && _config.ValidationRouteKind == "boss")
+        {
             RecordEvent(state, bot, "boss_started", target, _config.ValidationRouteMechanicProfile.c_str(), raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry, cast ? spellId : 0);
+            maybeValidationPrerequisiteNoProgressAssist(target, "boss_route_no_health_progress");
+        }
         state.WasInCombat = true;
         return true;
     }

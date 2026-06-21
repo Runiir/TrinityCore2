@@ -52,3 +52,7 @@
 /run000079_omnotron_golem_route_focus_fix
 /run000080_omnotron_combat_focus
 /run000080_omnotron_combat_focus_r2
+/run000081_omnotron_current_combat_no_progress
+/run000081_omnotron_terminal_after_boss_kill
+/run000081_omnotron_shared_slow_progress
+/run000081_omnotron_shared_slow_progress_threshold8

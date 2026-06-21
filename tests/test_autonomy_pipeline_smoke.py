@@ -384,6 +384,8 @@ def test_quest_first_portfolio_routing_surface():
     assert "ValidationRouteUnresolvedFocusHoldCount" in mgr_header
     assert "ValidationRouteCombatNoProgressCount" in mgr_header
     assert "ValidationRouteBossSlowProgressCount" in mgr_header
+    assert "_validationRouteBossProgressTargetGuid" in mgr_header
+    assert "_validationRouteBossSlowProgressCount" in mgr_header
     assert "routeHasActiveCombatIntent" in mgr
     assert "state.ValidationRouteAnchorOverrideValid && routeHasActiveCombatIntent" in mgr
     assert "else if (!routeHasActiveCombatIntent && (routeAnchorDanger >= 3.0f || repeatedDeathNearRoute))" in mgr
@@ -403,6 +405,16 @@ def test_quest_first_portfolio_routing_surface():
     assert "validation_route_prerequisite_no_progress" in mgr
     assert "boss_route_no_health_progress" in mgr
     assert "boss_route_slow_progress_teacher_assist" in mgr
+    assert "_validationRouteBossSlowProgressCount = 0;" in mgr
+    assert "uint32 sharedSlowProgressCount = ++_validationRouteBossSlowProgressCount;" in mgr
+    assert "sharedSlowProgressCount >= 8" in mgr
+    assert_ordered(
+        validation_route_objective,
+        'RecordEvent(state, bot, routeBossTarget ? (_config.ValidationRouteKind == "boss" ? "boss_action" : "trash_action") : "validation_route_prerequisite"',
+        'if (!routeBossTarget)\n            maybeValidationPrerequisiteNoProgressAssist(target, "current_combat_no_health_progress");',
+        'if (routeBossTarget && _config.ValidationRouteKind == "boss")\n        {\n            RecordEvent(state, bot, "boss_started"',
+        'maybeValidationPrerequisiteNoProgressAssist(target, "boss_route_no_health_progress");\n        }\n        state.WasInCombat = true;',
+    )
     assert 'contextText.rfind("route_target_", 0) == 0' in mgr
     assert "recordValidationRouteBossKill" in mgr
     assert "isValidationRouteCombatEntry" in validation_route_objective

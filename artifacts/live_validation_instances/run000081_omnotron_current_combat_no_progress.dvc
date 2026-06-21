@@ -1,0 +1,6 @@
+outs:
+- md5: 2dfa2a48b66d062dc9905143ec8cb003.dir
+  size: 2058520
+  nfiles: 10
+  hash: md5
+  path: run000081_omnotron_current_combat_no_progress

@@ -1,0 +1,6 @@
+outs:
+- md5: dc29e685efab57b87ad0031a5ae050b6.dir
+  size: 3168830
+  nfiles: 11
+  hash: md5
+  path: run000081_omnotron_terminal_after_boss_kill

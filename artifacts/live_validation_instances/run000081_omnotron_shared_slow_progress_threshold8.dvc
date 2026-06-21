@@ -1,0 +1,6 @@
+outs:
+- md5: 12cc9cdf6ea4372e3544922750f6300e.dir
+  size: 1631501
+  nfiles: 10
+  hash: md5
+  path: run000081_omnotron_shared_slow_progress_threshold8

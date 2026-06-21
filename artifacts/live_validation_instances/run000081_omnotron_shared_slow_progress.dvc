@@ -1,0 +1,6 @@
+outs:
+- md5: 213e34615cd5e3c61e532deed7792d80.dir
+  size: 5184454
+  nfiles: 14
+  hash: md5
+  path: run000081_omnotron_shared_slow_progress

@@ -1509,7 +1509,7 @@ def test_validation_route_bosses_are_scripted_encounter_targets():
         ("stonecore_5n", "Ozruk"): (42188, "src/server/scripts/Maelstrom/maelstrom_script_loader.cpp", "AddSC_boss_ozruk", "src/server/scripts/Maelstrom/Stonecore/boss_ozruk.cpp", "boss_ozruk"),
         ("stonecore_5n", "High Priestess Azil"): (42333, "src/server/scripts/Maelstrom/maelstrom_script_loader.cpp", "AddSC_boss_high_priestess_azil", "src/server/scripts/Maelstrom/Stonecore/boss_high_priestess_azil.cpp", "boss_high_priestess_azil"),
         ("blackwing_descent_10n", "Magmaw"): (41570, "src/server/scripts/EasternKingdoms/eastern_kingdoms_script_loader.cpp", "AddSC_boss_magmaw", "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_magmaw.cpp", "boss_magmaw"),
-        ("blackwing_descent_10n", "Omnotron Defense System"): (42186, "src/server/scripts/EasternKingdoms/eastern_kingdoms_script_loader.cpp", "AddSC_boss_omnotron_defense_system", "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_omnotron_defense_system.cpp", "boss_omnotron_defense_system"),
+        ("blackwing_descent_10n", "Omnotron Defense System"): (42166, "src/server/scripts/EasternKingdoms/eastern_kingdoms_script_loader.cpp", "AddSC_boss_omnotron_defense_system", "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_omnotron_defense_system.cpp", "boss_omnotron_defense_system"),
         ("blackwing_descent_10n", "Maloriak"): (41378, "src/server/scripts/EasternKingdoms/eastern_kingdoms_script_loader.cpp", "AddSC_boss_maloriak", "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_maloriak.cpp", "boss_maloriak"),
         ("blackwing_descent_10n", "Atramedes"): (41442, "src/server/scripts/EasternKingdoms/eastern_kingdoms_script_loader.cpp", "AddSC_boss_atramedes", "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_atramedes.cpp", "boss_atramedes"),
         ("blackwing_descent_10n", "Chimaeron"): (43296, "src/server/scripts/EasternKingdoms/eastern_kingdoms_script_loader.cpp", "AddSC_boss_chimaeron", "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_chimaeron.cpp", "boss_chimaeron"),
@@ -1519,6 +1519,8 @@ def test_validation_route_bosses_are_scripted_encounter_targets():
     assert set(scripted_bosses).issubset(routes)
     for key, (entry, loader_path, addsc, script_path, script_symbol) in scripted_bosses.items():
         assert routes[key]["source_entry"] == entry
+        if key == ("blackwing_descent_10n", "Omnotron Defense System"):
+            assert routes[key]["activation_action_entry"] == 42186
         assert addsc in Path(loader_path).read_text(encoding="utf-8")
         script = Path(script_path).read_text(encoding="utf-8")
         assert script_symbol in script
