@@ -2433,6 +2433,32 @@ TC> {"duration_minutes":1.3,"decisions":35,"total_kills":0,"quests_completed":0,
     ]
 
 
+def test_live_bot_validation_preserves_boss_engagement_across_trace_heartbeats():
+    output = """
+TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":55,"kills":3}
+TC> {"trace_schema_version":1,"selector":"all","bots":[{"bot_guid":1,"entries":[{"sequence":1,"timestamp_ms":1000,"action":"boss_started","situation":"dungeon_boss","result":"ok","target_id":43438},{"sequence":2,"timestamp_ms":1001,"action":"boss_action","situation":"dungeon_boss","result":"ok","target_id":43438}]}]}
+TC> {"trace_schema_version":1,"selector":"all","bots":[{"bot_guid":1,"entries":[{"sequence":3,"timestamp_ms":2000,"action":"validation_route_regroup","situation":"validation_route_regroup","result":"hold_anchor_no_focus","target_id":0}]}]}
+TC> {"duration_minutes":2.0,"decisions":55,"total_kills":3,"quests_completed":0}
+"""
+    report = live_validation_report(output, validation_context={"route_kind": "boss"})
+
+    assert report["trace_entries"] == 3
+    assert report["evidence"]["boss_engagement_actions"] == 2
+    assert report["evidence"]["kill_evidence"] == 3
+
+
+def test_live_bot_validation_counts_assist_target_movement_as_tank_positioning():
+    output = """
+TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":20}
+TC> {"trace_schema_version":1,"entries":[{"action":"move_to_validation_route_assist_target","result":"assist_tank_focus"},{"action":"validation_route_regroup","result":"follow_last_known_tank_focus"}]}
+TC> {"duration_minutes":1.0,"decisions":20}
+"""
+    report = live_validation_report(output, validation_context={"route_kind": "boss"})
+
+    assert report["evidence"]["tank_positioning_evidence"] == 2
+    assert report["evidence"]["validation_evidence_ready"]["tank_positioning"] is True
+
+
 def test_live_bot_validation_counts_trash_route_action_as_progress_not_boss_failure():
     output = """
 TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":12,"kills":0,"quests_accepted":0,"quest_objective_progress":0}

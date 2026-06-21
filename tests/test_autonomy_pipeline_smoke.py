@@ -421,6 +421,10 @@ def test_quest_first_portfolio_routing_surface():
     assert "if (_validationRouteActivationApplied)" in mgr
     assert "state.ValidationRouteActivationAttempts = _validationRouteActivationAttempts;" in mgr
     assert "_validationRouteActivationApplied = true;" in mgr
+    assert "rememberValidationRouteFocus(activationTarget);" in mgr
+    assert "state.TargetGuid = activationTarget->GetGUID();" in mgr
+    assert "creature->GetEntry() == _config.ValidationRouteTargetEntry" in mgr
+    assert "validation_route_stuck_follow_focus" in mgr
     assert "ValidationRouteOpenerTargetEntry" in mgr_header
     assert "ValidationRouteOpenerSummonEntry" in mgr_header
     assert "ValidationRouteActivationSpawnGroupId" in mgr_header

@@ -2506,6 +2506,14 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
                 state.ValidationRouteAnchorOverrideReason = recoveryReason;
                 recovered = true;
             }
+            else if (nearValidationRouteAnchor && _config.ValidationRouteKind == "boss" && !_validationRouteFocusGuid.IsEmpty() && _validationRouteFocusMapId == bot->GetMapId())
+            {
+                recoveryX = _validationRouteFocusX;
+                recoveryY = _validationRouteFocusY;
+                recoveryZ = _validationRouteFocusZ;
+                recoveryReason = "validation_route_stuck_follow_focus";
+                recovered = true;
+            }
             else if (nearValidationRouteAnchor)
             {
                 _validationRouteFocusGuid.Clear();
@@ -5952,7 +5960,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         _validationRouteFocusZ = focus->GetPositionZ();
         _validationRouteFocusSeenMs = NowMs();
     };
-    auto tryValidationRouteActivation = [this, &state, bot, &power, stage, activity, &isValidationRouteScriptTarget](Unit* seenTarget, char const* reason) -> bool
+    auto tryValidationRouteActivation = [this, &state, bot, &power, stage, activity, &isValidationRouteScriptTarget, &rememberValidationRouteFocus](Unit* seenTarget, char const* reason) -> bool
     {
         bool routeTargetActivationFallback = _config.ValidationRouteKind == "boss" && _config.ValidationRouteTargetEntry;
         if ((!_config.ValidationRouteActivationDataId
@@ -6048,6 +6056,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         ++_validationRouteActivationAttempts;
         state.ValidationRouteActivationApplied = true;
         state.ValidationRouteActivationAttempts = _validationRouteActivationAttempts;
+        if (_config.ValidationRouteKind == "boss" && activationTarget)
+        {
+            rememberValidationRouteFocus(activationTarget);
+            state.TargetGuid = activationTarget->GetGUID();
+        }
 
         std::string raw = BuildRawJson(bot, activationTarget);
         std::string semantic = BuildSemanticJson(bot, activationTarget, "validation_route_activation", &power, stage, activity);
@@ -6176,6 +6189,12 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             {
                 if (Creature const* creature = focus->ToCreature())
                     if (creature->GetEntry() == _validationRouteFocusEntry)
+                        return focus;
+            }
+            if (_validationRouteActivationApplied && _config.ValidationRouteKind == "boss" && _config.ValidationRouteTargetEntry)
+            {
+                if (Creature const* creature = focus->ToCreature())
+                    if (creature->GetEntry() == _config.ValidationRouteTargetEntry)
                         return focus;
             }
             return nullptr;

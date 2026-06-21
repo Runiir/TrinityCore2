@@ -505,9 +505,62 @@ def parse_json_objects(output: str) -> list[dict[str, Any]]:
 def classify_payloads(payloads: list[dict[str, Any]]) -> dict[str, Any]:
     status = next((row for row in reversed(payloads) if row.get("action") in {"botexp_status", "botauto_status"} or {"active", "active_bots", "target_bots"} & set(row)), {})
     diagnosis = next((row for row in reversed(payloads) if row.get("diagnosis_schema_version") or row.get("diagnoses") or row.get("diagnosis")), {})
-    trace = next((row for row in reversed(payloads) if row.get("trace_schema_version") or row.get("entries")), {})
+    trace_payloads = [row for row in payloads if row.get("trace_schema_version") or row.get("entries")]
+    trace = combined_trace_payload(trace_payloads)
     summary = next((row for row in reversed(payloads) if row.get("summary_schema_version") or "duration_minutes" in row or "total_kills" in row or "bot_learning" in row), {})
     return {"status": status, "diagnosis": diagnosis, "trace": trace, "summary": summary}
+
+
+def combined_trace_payload(payloads: list[dict[str, Any]]) -> dict[str, Any]:
+    if not payloads:
+        return {}
+
+    combined: dict[str, Any] = {"trace_schema_version": payloads[-1].get("trace_schema_version", 1), "entries": []}
+    seen: set[tuple[Any, ...]] = set()
+
+    def add_entry(entry: dict[str, Any], bot_guid: Any = None, bot_name: Any = None, source_slot: int = 0) -> None:
+        row = dict(entry)
+        if bot_guid is not None and "bot_guid" not in row:
+            row["bot_guid"] = bot_guid
+        if bot_name is not None and "bot_name" not in row:
+            row["bot_name"] = bot_name
+        if row.get("sequence") is not None or row.get("timestamp_ms") is not None:
+            key = (
+                row.get("bot_guid"),
+                row.get("sequence"),
+                row.get("timestamp_ms"),
+                row.get("action"),
+                row.get("situation"),
+                row.get("result"),
+                row.get("target_id"),
+            )
+        else:
+            key = (
+                "unsequenced",
+                source_slot,
+                row.get("bot_guid"),
+                row.get("action"),
+                row.get("situation"),
+                row.get("result"),
+                row.get("target_id"),
+            )
+        if key in seen:
+            return
+        seen.add(key)
+        combined["entries"].append(row)
+
+    for payload in payloads:
+        for source_slot, entry in enumerate(payload.get("entries") or []):
+            if isinstance(entry, dict):
+                add_entry(entry, payload.get("bot_guid"), payload.get("bot_name"), source_slot)
+        for bot in payload.get("bots") or []:
+            if not isinstance(bot, dict):
+                continue
+            for source_slot, entry in enumerate(bot.get("entries") or []):
+                if isinstance(entry, dict):
+                    add_entry(entry, bot.get("bot_guid"), bot.get("bot_name"), source_slot)
+
+    return combined
 
 
 def command_errors(output: str) -> list[dict[str, str]]:
@@ -895,8 +948,14 @@ def live_evidence(
     )
     tank_positioning_evidence = max(
         int(summary.get("tank_positioning") or 0),
-        action_counts.get("validation_route_tank_boss", 0) + result_counts.get("force_tank_focus", 0),
-        diagnosis_action_counts.get("validation_route_tank_boss", 0) + diagnosis_result_counts.get("force_tank_focus", 0),
+        action_counts.get("validation_route_tank_boss", 0)
+        + action_counts.get("move_to_validation_route_assist_target", 0)
+        + result_counts.get("force_tank_focus", 0)
+        + result_counts.get("assist_tank_focus", 0),
+        diagnosis_action_counts.get("validation_route_tank_boss", 0)
+        + diagnosis_action_counts.get("move_to_validation_route_assist_target", 0)
+        + diagnosis_result_counts.get("force_tank_focus", 0)
+        + diagnosis_result_counts.get("assist_tank_focus", 0),
     )
     regrouping_evidence = max(
         int(summary.get("regroups") or 0),
