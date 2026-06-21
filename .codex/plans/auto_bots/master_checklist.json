@@ -1,6 +1,6 @@
 {
   "all_passed": false,
-  "checklist_hash": "3526b5d9aa9aedaffc39fa3833ad3aa2d70e151e5dfa5a493fcdcde720c395c0",
+  "checklist_hash": "d6d0c3bf7a0eca72cc8cbbed03db5e72327ac42bc322930c87f923636de953c6",
   "deliverables": [
     {
       "deliverable": "movement_smoke",
@@ -86,7 +86,7 @@
     {
       "deliverable": "normal_dungeon_trash",
       "evidence_artifact": "dataset/live_validation_scenario_reports_built/stonecore_5n.json",
-      "failure_label": "invalid_segment_live_reports,missing_segment_required_evidence,scenario_clear_not_complete,segment_evidence_debug_only,missing_uninterrupted_full_clear_report,missing_required_evidence",
+      "failure_label": "invalid_segment_live_reports,missing_segment_required_evidence,incomplete_segment_coverage,scenario_clear_not_complete,segment_evidence_debug_only,missing_uninterrupted_full_clear_report,missing_required_evidence,failure_labels_present",
       "followup_lane": "",
       "lane": "stonecore_5n",
       "reviewer": "",
@@ -95,7 +95,7 @@
     {
       "deliverable": "dungeon_boss",
       "evidence_artifact": "dataset/live_validation_scenario_reports_built/stonecore_5n.json",
-      "failure_label": "invalid_segment_live_reports,missing_segment_required_evidence,scenario_clear_not_complete,segment_evidence_debug_only,missing_uninterrupted_full_clear_report,missing_required_evidence",
+      "failure_label": "invalid_segment_live_reports,missing_segment_required_evidence,incomplete_segment_coverage,scenario_clear_not_complete,segment_evidence_debug_only,missing_uninterrupted_full_clear_report,missing_required_evidence,failure_labels_present",
       "followup_lane": "",
       "lane": "stonecore_5n",
       "reviewer": "",
@@ -104,7 +104,7 @@
     {
       "deliverable": "full_stonecore_clear",
       "evidence_artifact": "dataset/live_validation_scenario_reports_built/stonecore_5n.json",
-      "failure_label": "segment_evidence_debug_only,missing_uninterrupted_full_clear_report,missing_required_evidence",
+      "failure_label": "segment_evidence_debug_only,missing_uninterrupted_full_clear_report,missing_required_evidence,failure_labels_present",
       "followup_lane": "stonecore_5n_uninterrupted_full_clear",
       "lane": "stonecore_5n",
       "reviewer": "",

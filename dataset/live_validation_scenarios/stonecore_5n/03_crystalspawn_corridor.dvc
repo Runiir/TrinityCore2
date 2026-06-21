@@ -1,6 +1,6 @@
 outs:
-- md5: b4d7c2feba28a97297e8775ca9a92c7d.dir
-  size: 770423
-  nfiles: 7
+- md5: 1af73d6197b41b5f61279148cdcb8392.dir
+  size: 835315
+  nfiles: 11
   hash: md5
   path: 03_crystalspawn_corridor
