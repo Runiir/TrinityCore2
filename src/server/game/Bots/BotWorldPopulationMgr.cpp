@@ -5461,7 +5461,20 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             }
         }
 
-        if (!healTarget || lowestHealthPct > 0.88f)
+        if (!healTarget)
+            return false;
+
+        if (combatTarget)
+        {
+            std::string raw = BuildRawJson(healer, combatTarget);
+            std::string semantic = BuildSemanticJson(healer, combatTarget, "healer_assignment", &power, stage, activity);
+            uint32 focusEntry = 0;
+            if (Creature const* focusCreature = combatTarget->ToCreature())
+                focusEntry = focusCreature->GetEntry();
+            RecordEvent(state, healer, "healer_assignment", healTarget, lowestHealthPct > 0.88f ? "monitor_group_healthy" : "assigned_lowest_ally", raw.c_str(), semantic.c_str(), lowestHealthPct, focusEntry);
+        }
+
+        if (lowestHealthPct > 0.88f)
             return false;
 
         BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(healer, "healer");
@@ -6516,6 +6529,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             BotActionExecutor executor;
             uint32 spellId = SelectCombatSpell(bot, target);
             float engageRange = routeEngageRange(bot, target, spellId);
+            {
+                std::string raw = BuildRawJson(bot, target);
+                std::string semantic = BuildSemanticJson(bot, target, tankFocusSituation, &power, stage, activity);
+                RecordEvent(state, bot, "validation_target_priority", target, tankFocusIsRouteTarget ? "assist_tank_focus" : "force_tank_focus", raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry, spellId);
+            }
             if (!bot->IsValidAttackTarget(target) || !bot->IsWithinDistInMap(target, std::max(5.0f, engageRange - 1.0f)) || !bot->IsWithinLOSInMap(target))
             {
                 MoveBotToPoint(state, bot, target->GetPositionX(), target->GetPositionY(), target->GetPositionZ());
@@ -6725,6 +6743,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         BotActionExecutor executor;
         uint32 spellId = SelectCombatSpell(bot, target);
         float engageRange = routeEngageRange(bot, target, spellId);
+        {
+            std::string raw = BuildRawJson(bot, target);
+            std::string semantic = BuildSemanticJson(bot, target, "validation_route_prerequisite", &power, stage, activity);
+            RecordEvent(state, bot, "validation_target_priority", target, "assist_focus", raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry, spellId);
+        }
         if (!bot->IsValidAttackTarget(target) || !bot->IsWithinDistInMap(target, std::max(5.0f, engageRange - 1.0f)) || !bot->IsWithinLOSInMap(target))
         {
             MoveBotToPoint(state, bot, target->GetPositionX(), target->GetPositionY(), target->GetPositionZ());
@@ -6841,6 +6864,12 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         BotActionExecutor executor;
         uint32 spellId = SelectCombatSpell(bot, target);
         float engageRange = routeEngageRange(bot, target, spellId);
+        if (routeBossTarget)
+        {
+            std::string raw = BuildRawJson(bot, target);
+            std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, activity);
+            RecordEvent(state, bot, "validation_target_priority", target, _config.ValidationRouteKind == "boss" ? "route_boss_focus" : "route_trash_focus", raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry, spellId);
+        }
         if (!bot->IsWithinDistInMap(target, std::max(5.0f, engageRange - 1.0f)) || !bot->IsWithinLOSInMap(target))
         {
             MoveBotToPoint(state, bot, target->GetPositionX(), target->GetPositionY(), target->GetPositionZ());

@@ -946,6 +946,12 @@ def live_evidence(
         action_counts.get("healer_assignment", 0) + action_counts.get("validation_route_group_heal", 0) + action_counts.get("trash_heal", 0) + action_counts.get("external_defensive", 0),
         diagnosis_action_counts.get("healer_assignment", 0) + diagnosis_action_counts.get("validation_route_group_heal", 0) + diagnosis_action_counts.get("trash_heal", 0) + diagnosis_action_counts.get("external_defensive", 0),
     )
+    if str(context.get("route_kind") or "").lower() == "boss":
+        healer_assignment_evidence = max(
+            healer_assignment_evidence,
+            action_counts.get("validation_target_priority", 0) if result_counts.get("assist_tank_focus", 0) > 0 else 0,
+            diagnosis_action_counts.get("validation_target_priority", 0) if diagnosis_result_counts.get("assist_tank_focus", 0) > 0 else 0,
+        )
     tank_positioning_evidence = max(
         int(summary.get("tank_positioning") or 0),
         action_counts.get("validation_route_tank_boss", 0)
@@ -1428,6 +1434,10 @@ def read_until_console_prompt(process: subprocess.Popen[str], deadline: float, r
     return "".join(output)
 
 
+def bounded_console_deadline(deadline: float, max_wait_sec: int | float) -> float:
+    return min(deadline, time.monotonic() + max(1.0, float(max_wait_sec)))
+
+
 def expected_command_output_marker(command_text: str) -> str:
     if command_text == ".botauto status":
         return '"target_bots"'
@@ -1623,7 +1633,8 @@ def run_worldserver_completion_watchdog(
         process.stdin.write(command_text + "\n")
         process.stdin.flush()
         output_parts.append(f"$ {command_text}\n")
-        output_parts.append(read_until_console_prompt(process, deadline, expected_command_output_marker(command_text)))
+        command_deadline = bounded_console_deadline(deadline, max(5, heartbeat_sec))
+        output_parts.append(read_until_console_prompt(process, command_deadline, expected_command_output_marker(command_text)))
 
     try:
         output_parts.append(read_until_console_prompt(process, deadline))

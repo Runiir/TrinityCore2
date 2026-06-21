@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 import pytest
@@ -36,7 +37,7 @@ from tools.bot_ml.build_validation_scenario_manifests import build_manifests as 
 from tools.bot_ml.build_live_scenario_reports import build_reports as build_live_scenario_reports, build_reports_from_live_reports, main as live_scenario_reports_main
 from tools.bot_ml.build_validation_run_plan import build_plan as build_validation_run_plan
 from tools.bot_ml.build_validation_run_status import build_status as build_validation_run_status
-from tools.bot_ml.run_live_bot_validation import build_bot_pool_reset_sql, command_script, live_validation_report, load_scenario_reports, main as live_validation_main, parse_json_objects, parse_soap_result, route_segment_complete, run_worldserver, run_worldserver_completion_watchdog, split_sql_statements, trinity_config_bool, upsert_trinity_config, watchdog_state
+from tools.bot_ml.run_live_bot_validation import bounded_console_deadline, build_bot_pool_reset_sql, command_script, live_validation_report, load_scenario_reports, main as live_validation_main, parse_json_objects, parse_soap_result, route_segment_complete, run_worldserver, run_worldserver_completion_watchdog, split_sql_statements, trinity_config_bool, upsert_trinity_config, watchdog_state
 from tools.bot_ml.orchestrator_daemon import codex_command, detect_rate_limit, handle_rate_limit, initial_state, run_one_cycle, sleep_until_resume
 from tools.bot_ml.generate_lane_configs import write_lane_config
 from tools.bot_ml.promote_live_validation_artifact import promote
@@ -2459,6 +2460,20 @@ TC> {"duration_minutes":1.0,"decisions":20}
     assert report["evidence"]["validation_evidence_ready"]["tank_positioning"] is True
 
 
+def test_live_bot_validation_counts_route_priority_and_healer_assignment_evidence():
+    output = """
+TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":25}
+TC> {"trace_schema_version":1,"entries":[{"action":"validation_target_priority","result":"assist_tank_focus"}]}
+TC> {"duration_minutes":1.0,"decisions":25}
+"""
+    report = live_validation_report(output, validation_context={"route_kind": "boss"})
+
+    assert report["evidence"]["target_priority_evidence"] == 1
+    assert report["evidence"]["healer_assignment_evidence"] == 1
+    assert report["evidence"]["validation_evidence_ready"]["target_priority"] is True
+    assert report["evidence"]["validation_evidence_ready"]["healer_assignments"] is True
+
+
 def test_live_bot_validation_counts_trash_route_action_as_progress_not_boss_failure():
     output = """
 TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":12,"kills":0,"quests_accepted":0,"quest_objective_progress":0}
@@ -4524,6 +4539,15 @@ def test_live_bot_validation_completion_watchdog_writes_heartbeats(tmp_path):
     assert list((tmp_path / "validation" / "heartbeats").glob("*.json"))
     assert report["duration_policy"] == "completion-watchdog"
     assert report["completion_reason"] == "repeated_decision_watchdog"
+
+
+def test_bounded_console_deadline_caps_command_read_to_heartbeat_window():
+    long_deadline = time.monotonic() + 120
+    bounded = bounded_console_deadline(long_deadline, 2)
+
+    remaining = bounded - time.monotonic()
+    assert 0 < remaining <= 2.5
+    assert bounded < long_deadline
 
 
 def test_live_bot_validation_main_preserves_watchdog_report(tmp_path, monkeypatch, capsys):
