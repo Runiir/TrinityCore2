@@ -288,7 +288,8 @@ def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any],
                     alternate_target_entries.append(entry_id)
             route["alternate_target_entries"] = alternate_target_entries
             route["target_priority"]["alternate_target_entries"] = alternate_target_entries
-            bot_start = step.get("bot_start") or {}
+            scenario_start = scenario.get("start_position") or {}
+            bot_start = step.get("bot_start") or scenario_start
             route["bot_start_map_id"] = int(bot_start.get("map_id") or step.get("bot_start_map_id") or 0)
             route["bot_start_x"] = float(bot_start.get("x") or step.get("bot_start_x") or 0.0)
             route["bot_start_y"] = float(bot_start.get("y") or step.get("bot_start_y") or 0.0)

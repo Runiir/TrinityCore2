@@ -14,7 +14,7 @@ try:
         load_gem_properties,
         load_spell_item_enchantments,
     )
-    from .build_validation_provisioning import REQUIRED_EQUIPMENT_SLOTS, apply_gear_profiles, load_config, load_gear_profiles, required_equipment_slots_for, scenario_report
+    from .build_validation_provisioning import EQUIPMENT_SLOT_END, REQUIRED_EQUIPMENT_SLOTS, apply_gear_profiles, equipment_cache, load_config, load_gear_profiles, normalized_glyphs, required_equipment_slots_for, scenario_report
     from .common import stable_hash, write_json
     from .extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
 except ImportError:
@@ -26,7 +26,7 @@ except ImportError:
         load_gem_properties,
         load_spell_item_enchantments,
     )
-    from build_validation_provisioning import REQUIRED_EQUIPMENT_SLOTS, apply_gear_profiles, load_config, load_gear_profiles, required_equipment_slots_for, scenario_report
+    from build_validation_provisioning import EQUIPMENT_SLOT_END, REQUIRED_EQUIPMENT_SLOTS, apply_gear_profiles, equipment_cache, load_config, load_gear_profiles, normalized_glyphs, required_equipment_slots_for, scenario_report
     from common import stable_hash, write_json
     from extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
 
@@ -187,6 +187,43 @@ def fetch_existing_values(database_url: str, table: str, column: str, values: se
         conn.close()
 
 
+def fetch_runtime_gear(database_url: str, names: set[str]) -> dict[str, dict[str, Any]]:
+    if not names:
+        return {}
+    conn = connect_mysql(database_url)
+    try:
+        placeholders = ", ".join(["%s"] * len(names))
+        with conn.cursor() as cursor:
+            cursor.execute(
+                "SELECT c.guid, c.name, c.equipmentCache, ci.slot, ii.itemEntry, ii.durability "
+                "FROM characters c "
+                "LEFT JOIN character_inventory ci ON ci.guid = c.guid AND ci.bag = 0 AND ci.slot < %s "
+                "LEFT JOIN item_instance ii ON ii.guid = ci.item "
+                f"WHERE c.name IN ({placeholders})",
+                (EQUIPMENT_SLOT_END, *tuple(names)),
+            )
+            rows = cursor.fetchall()
+            payload: dict[str, dict[str, Any]] = {}
+            for row in rows:
+                name = str(row["name"])
+                entry = payload.setdefault(name, {"guid": int(row["guid"]), "equipmentCache": str(row.get("equipmentCache") or ""), "items": {}})
+                if row.get("slot") is not None:
+                    entry["items"][int(row["slot"])] = {"item_id": int(row.get("itemEntry") or 0), "durability": int(row.get("durability") or 0)}
+
+            cursor.execute(
+                "SELECT c.name, cg.glyph1, cg.glyph2, cg.glyph3, cg.glyph4, cg.glyph5, cg.glyph6, cg.glyph7, cg.glyph8, cg.glyph9 "
+                "FROM characters c LEFT JOIN character_glyphs cg ON cg.guid = c.guid AND cg.talentGroup = 0 "
+                f"WHERE c.name IN ({placeholders})",
+                tuple(names),
+            )
+            for row in cursor.fetchall():
+                entry = payload.setdefault(str(row["name"]), {"guid": 0, "equipmentCache": "", "items": {}})
+                entry["glyphs"] = [int(row.get(f"glyph{i}") or 0) for i in range(1, 10)]
+            return payload
+    finally:
+        conn.close()
+
+
 def validate_database(config: dict[str, Any], worldserver_conf: Path, require_applied: bool = False) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     failures: list[dict[str, Any]] = []
     auth_url = database_url_from_worldserver_conf(worldserver_conf, "LoginDatabaseInfo")
@@ -215,6 +252,63 @@ def validate_database(config: dict[str, Any], worldserver_conf: Path, require_ap
     if require_applied and missing_characters:
         failures.append({"check": "validation_characters_applied", "missing_characters": missing_characters, "recovery": "apply generated provision_characters.sql after creating accounts"})
 
+    runtime_gear_report: dict[str, Any] = {}
+    if require_applied and not missing_characters:
+        runtime = fetch_runtime_gear(character_url, expected_characters)
+        for bot in configured_bots(config):
+            name = str(bot.get("name"))
+            equipment = bot.get("equipment", [])
+            expected_slots = set(required_equipment_slots_for(equipment))
+            expected_by_slot = {int(item.get("slot", -1)): int(item.get("item_id") or 0) for item in equipment}
+            expected_durability_by_slot = {int(item.get("slot", -1)): int(item.get("durability") or 0) for item in equipment}
+            actual = runtime.get(name, {"items": {}, "equipmentCache": "", "glyphs": []})
+            actual_items = actual.get("items", {})
+            missing_slots = sorted(slot for slot in expected_slots if int(actual_items.get(slot, {}).get("item_id") or 0) <= 0)
+            wrong_items = [
+                {"slot": slot, "expected_item_id": item_id, "actual_item_id": int(actual_items.get(slot, {}).get("item_id") or 0)}
+                for slot, item_id in sorted(expected_by_slot.items())
+                if slot in expected_slots and int(actual_items.get(slot, {}).get("item_id") or 0) != item_id
+            ]
+            zero_durability = sorted(
+                slot
+                for slot, item in actual_items.items()
+                if slot in expected_slots
+                and expected_durability_by_slot.get(slot, 0) > 0
+                and int(item.get("durability") or 0) <= 0
+            )
+            expected_cache = equipment_cache(equipment)
+            cache_tokens = [int(token) for token in str(actual.get("equipmentCache") or "").split() if token.lstrip("-").isdigit()]
+            visible_missing = sorted(slot for slot in expected_slots if len(cache_tokens) <= slot * 2 or cache_tokens[slot * 2] != expected_by_slot.get(slot, 0))
+            expected_glyphs = normalized_glyphs(bot)
+            actual_glyphs = [int(value or 0) for value in actual.get("glyphs", [])]
+            invalid_actual_glyphs = [value for value in actual_glyphs if value < 0]
+            glyphs_missing = sorted(set(expected_glyphs) - set(actual_glyphs)) if expected_glyphs else []
+            avg_item_level = None
+            if equipment:
+                levels = [int(item.get("item_level") or item.get("ItemLevel") or 0) for item in equipment]
+                avg_item_level = round(sum(levels) / len(levels), 2) if levels else 0
+            runtime_gear_report[name] = {
+                "equipped_slots": sorted(actual_items),
+                "expected_slots": sorted(expected_slots),
+                "missing_slots": missing_slots,
+                "wrong_items": wrong_items,
+                "zero_durability_slots": zero_durability,
+                "visible_missing_slots": visible_missing,
+                "average_item_level": avg_item_level,
+                "glyphs_missing": glyphs_missing,
+                "invalid_actual_glyphs": invalid_actual_glyphs,
+            }
+            if missing_slots:
+                failures.append({"check": "runtime_equipment_slots", "bot": name, "missing_slots": missing_slots})
+            if wrong_items:
+                failures.append({"check": "runtime_equipment_items", "bot": name, "wrong_items": wrong_items})
+            if zero_durability:
+                failures.append({"check": "runtime_equipment_durability", "bot": name, "slots": zero_durability})
+            if visible_missing:
+                failures.append({"check": "runtime_equipment_cache", "bot": name, "visible_missing_slots": visible_missing, "expected_cache": expected_cache})
+            if invalid_actual_glyphs or glyphs_missing:
+                failures.append({"check": "runtime_glyphs", "bot": name, "missing_glyphs": glyphs_missing, "invalid_glyphs": invalid_actual_glyphs})
+
     evidence = {
         "auth_database": sanitize_database_url(auth_url),
         "character_database": sanitize_database_url(character_url),
@@ -223,6 +317,7 @@ def validate_database(config: dict[str, Any], worldserver_conf: Path, require_ap
         "expected_characters": len(expected_characters),
         "existing_characters": len(existing_characters),
         "require_applied": require_applied,
+        "runtime_gear": runtime_gear_report,
     }
     return failures, evidence
 

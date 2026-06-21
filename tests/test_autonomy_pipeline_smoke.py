@@ -458,7 +458,7 @@ def test_quest_first_portfolio_routing_surface():
     assert "route_loop_exhausted_after_progress" in mgr
     assert "markValidationRouteTerminalAfterProgress" in mgr
     assert "RecordEvent(state, bot, \"dungeon_trash_cleared\"" in mgr
-    assert "RecordDecision(state, bot, \"normal_dungeon_trash\", \"validation_route_complete\"" in mgr
+    assert "RecordDecision(state, bot, \"normal_dungeon_trash\", \"validation_route_failed\"" in mgr
     assert "BotWorld.ValidationRoute.OpenerTargetEntry" in mgr
     assert "BotWorld.ValidationRoute.OpenerSummonEntry" in mgr
     assert "BotWorld.ValidationRoute.ActivationSpawnGroupId" in mgr
@@ -561,7 +561,18 @@ def test_quest_first_portfolio_routing_surface():
     assert "recipe_candidates" in mgr
     assert "INSERT INTO bot_memory_recipe_sources" in mgr
     assert "RecordEvent(state, bot, \"profession_recipe_source\"" in mgr
-    assert "bot->GetMotionMaster()->MovePoint(0, x, y, z, true);" in mgr
+    assert "PathGenerator path(bot);" in mgr
+    assert "path.CalculatePath(x, y, z, false)" in mgr
+    assert "PATHFIND_INCOMPLETE" in mgr
+    assert "PATHFIND_SHORTCUT" in mgr
+    assert "PATHFIND_FARFROMPOLY" in mgr
+    assert "PATHFIND_NOT_USING_PATH" in mgr
+    assert "route_destination_unreachable" in mgr
+    assert "route_destination_partial_path" in mgr
+    assert "route_destination_shortcut_path" in mgr
+    assert "route_destination_off_mesh" in mgr
+    assert "route_destination_collision_blocked" in mgr
+    assert "alternatePathScore" not in function_body(mgr, "bool BotWorldPopulationMgr::MoveBotToPoint")
     assert "state.PreferMaterialMemoryAction = true;" in mgr
     assert "state.NextProfessionDecisionMs = NowMs() + 3000;" in mgr
     assert "situation = \"profession_recipe_acquisition\";" in mgr
@@ -574,7 +585,11 @@ def test_quest_first_portfolio_routing_surface():
     assert "FROM gameobject_loot_template glt INNER JOIN gameobject g ON g.id = glt.Entry" in mgr
     assert "ORDER BY ((x - %f) * (x - %f) + (y - %f) * (y - %f)) LIMIT 1" in mgr
     assert "INSERT INTO bot_memory_material_sources" in mgr
-    assert "bot->GetMotionMaster()->MovePoint(0, x, y, z, true);" in mgr
+    assert "bool BotWorldPopulationMgr::MoveBotToPoint" in mgr
+    move_bot_to_point = function_body(mgr, "bool BotWorldPopulationMgr::MoveBotToPoint")
+    assert "return rejectPath(\"route_destination_recently_failed\");" in move_bot_to_point
+    assert "recentFailureMemory && !_config.ValidationRouteEnable" in move_bot_to_point
+    assert 'state.LastNoProgressReason = "route_destination_recently_failed_memory";' in move_bot_to_point
     assert "RecordEvent(state, bot, \"material_farming_source\"" in mgr
     assert "state.PreferMaterialMemoryAction = false;" in mgr
     assert "situation = \"material_farming\";" in mgr
@@ -696,8 +711,10 @@ def test_botauto_diagnosis_and_trace_surface():
         "dead_recovery",
         "idle_no_candidate",
         "validation_route_terminal",
+        "route_destination_unreachable",
         "advance_validation_route_segment",
         "inspect_dungeon_trash_cleared_evidence",
+        "fail_validation_route_segment",
         "repeated_decision_loop",
         "idle_loop_guardrail",
         "target_churn_loop",
@@ -872,8 +889,7 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
 
     assert_ordered(
         update_bot,
-        'RecordDecision(state, bot, "normal_dungeon_trash", "validation_route_complete"',
-        "MaybeAdvanceValidationRouteManifest();",
+        'RecordDecision(state, bot, "normal_dungeon_trash", "validation_route_failed"',
         "return;",
     )
     assert "(nearValidationRouteAnchor || routeAnchorDistance <= 45.0f)" in update_bot
@@ -906,6 +922,9 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         "return true;",
         "bool terminal = _validationRouteManifestAdvancePending;",
     )
+    assert "bool successfulTerminal = state.LastDecisionAction == \"validation_route_complete\"" in advance_manifest
+    assert 'state.ValidationRouteTerminalReason == "trash_route_target_killed"' in advance_manifest
+    assert 'state.ValidationRouteTerminalReason == "boss_route_target_killed"' in advance_manifest
     assert_ordered(
         advance_manifest,
         "if (nextIndex >= _validationRouteManifest.size())",

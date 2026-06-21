@@ -25,6 +25,7 @@
 #include "MotionMaster.h"
 #include "ObjectAccessor.h"
 #include "ObjectMgr.h"
+#include "PathGenerator.h"
 #include "Player.h"
 #include "Quests/QuestDef.h"
 #include "Random.h"
@@ -1898,7 +1899,11 @@ bool BotWorldPopulationMgr::MaybeAdvanceValidationRouteManifest()
     std::string terminalReason = _validationRouteManifestAdvanceReason;
     for (WorldBotState const& state : _bots)
     {
-        if (state.ValidationRouteTerminalState || state.LastDecisionAction == "validation_route_complete")
+        bool successfulTerminal = state.LastDecisionAction == "validation_route_complete"
+            || state.ValidationRouteTerminalReason == "trash_route_target_killed"
+            || state.ValidationRouteTerminalReason == "boss_route_target_killed"
+            || state.ValidationRouteTerminalReason == "all_routes_complete";
+        if (successfulTerminal)
         {
             terminal = true;
             terminalReason = state.ValidationRouteTerminalReason;
@@ -2979,26 +2984,67 @@ void BotWorldPopulationMgr::MarkPoiVisited(uint64 poiId) const
     CharacterDatabase.DirectPExecute("UPDATE bot_memory_pois SET visit_count = visit_count + 1, last_seen_at = NOW() WHERE id = " UI64FMTD, poiId);
 }
 
-void BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, float x, float y, float z)
+bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, float x, float y, float z)
 {
     if (!bot)
-        return;
+        return false;
+
+    auto rejectPath = [&](char const* reason) -> bool
+    {
+        state.ActivePathValid = false;
+        state.LastPathRejectReason = reason ? reason : "route_destination_unreachable";
+        state.LastNoProgressReason = state.LastPathRejectReason;
+        state.LastRecoveryResult = state.LastPathRejectReason;
+        state.LastPathChangeMs = NowMs();
+
+        if (_config.ValidationRouteEnable)
+        {
+            state.ValidationRouteTerminalState = true;
+            state.ValidationRouteTerminalAtMs = NowMs();
+            state.ValidationRouteTerminalReason = state.LastPathRejectReason;
+            state.LoopRecoveryCooldownUntilMs = NowMs() + 60000;
+            std::string raw = BuildRawJson(bot, nullptr);
+            std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_manifest");
+            RecordEvent(state, bot, "validation_route_recovery", nullptr, state.LastPathRejectReason.c_str(), raw.c_str(), semantic.c_str(), bot->GetExactDist(x, y, z), _config.ValidationRouteTargetEntry);
+        }
+
+        return false;
+    };
+
+    if (!bot->IsInWorld() || !bot->GetMap())
+        return rejectPath("route_destination_unreachable");
+
+    float floorZ = bot->GetMap()->GetHeight(bot->GetPhaseShift(), x, y, z + 2.0f, true, 8.0f);
+    if (floorZ <= INVALID_HEIGHT)
+        return rejectPath("route_destination_invalid_floor");
+    if (std::fabs(floorZ - z) > 4.0f)
+        return rejectPath("route_destination_invalid_z_transition");
+
+    PathGenerator path(bot);
+    bool pathOk = path.CalculatePath(x, y, z, false);
+    PathType pathType = path.GetPathType();
+    if (!pathOk || (pathType & PATHFIND_NOPATH))
+        return rejectPath("route_destination_unreachable");
+    if (pathType & PATHFIND_NOT_USING_PATH)
+        return rejectPath("route_destination_missing_mmap");
+    if (pathType & PATHFIND_INCOMPLETE)
+        return rejectPath("route_destination_partial_path");
+    if (pathType & PATHFIND_SHORTCUT)
+        return rejectPath("route_destination_shortcut_path");
+    if (pathType & PATHFIND_FARFROMPOLY)
+        return rejectPath("route_destination_off_mesh");
+    if (!bot->IsWithinLOS(x, y, z + 1.0f, LINEOFSIGHT_ALL_CHECKS, VMAP::ModelIgnoreFlags::Nothing))
+        return rejectPath("route_destination_collision_blocked");
 
     BotLearnedScore pathScore = BotExperienceLearningPolicy::ScorePath(bot, bot->GetPositionX(), bot->GetPositionY(), x, y, _learningConfig);
-    if (IsFailedPathRecently(bot->GetGUID().GetCounter(), bot->GetMapId(), bot->GetPositionX(), bot->GetPositionY(), x, y)
-        || pathScore.Penalty >= _learningConfig.RecentFailurePenaltyWeight)
+    bool recentFailureMemory = IsFailedPathRecently(bot->GetGUID().GetCounter(), bot->GetMapId(), bot->GetPositionX(), bot->GetPositionY(), x, y)
+        || pathScore.Penalty >= _learningConfig.RecentFailurePenaltyWeight;
+    if (recentFailureMemory && !_config.ValidationRouteEnable)
     {
-        float angle = bot->GetAngle(x, y) + frand(-0.75f, 0.75f);
-        Position alternate = bot->GetFirstCollisionPosition(6.0f, angle);
-        BotLearnedScore alternatePathScore = BotExperienceLearningPolicy::ScorePath(bot, bot->GetPositionX(), bot->GetPositionY(), alternate.GetPositionX(), alternate.GetPositionY(), _learningConfig);
-        if (!IsFailedPathRecently(bot->GetGUID().GetCounter(), bot->GetMapId(), bot->GetPositionX(), bot->GetPositionY(), alternate.GetPositionX(), alternate.GetPositionY())
-            && alternatePathScore.Penalty < pathScore.Penalty)
-        {
-            x = alternate.GetPositionX();
-            y = alternate.GetPositionY();
-            z = alternate.GetPositionZ();
-        }
+        return rejectPath("route_destination_recently_failed");
     }
+    if (recentFailureMemory)
+        state.LastNoProgressReason = "route_destination_recently_failed_memory";
 
     state.ActivePathFromX = bot->GetPositionX();
     state.ActivePathFromY = bot->GetPositionY();
@@ -3007,10 +3053,12 @@ void BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, fl
     state.ActivePathToY = y;
     state.ActivePathToZ = z;
     state.ActivePathValid = true;
+    state.LastPathRejectReason.clear();
     state.LastPathChangeMs = NowMs();
 
     bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
     bot->GetMotionMaster()->MovePoint(0, x, y, z, true);
+    return true;
 }
 
 BotWorldPopulationMgr::BotDeathRecoveryPolicy BotWorldPopulationMgr::BuildDeathRecoveryPolicy() const
@@ -3418,14 +3466,12 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
                 bot->CombatStop(true);
                 state.StuckTimer = 0;
                 state.LastDecisionHandler = "validation_route";
-                state.LastRecoveryResult = "route_terminal_after_progress";
+                state.LastRecoveryResult = "route_terminal_failure";
                 state.LastNoProgressReason = "route_loop_exhausted_after_progress";
                 std::string raw = BuildRawJson(bot, nullptr);
                 std::string semantic = BuildSemanticJson(bot, nullptr, "normal_dungeon_trash", &power, stage, chosenActivity.Activity);
-                RecordEvent(state, bot, "dungeon_trash_cleared", nullptr, "route_loop_exhausted_after_progress", raw.c_str(), semantic.c_str(), float(_metrics.Kills), _config.ValidationRouteTargetEntry);
                 RecordEvent(state, bot, "validation_route_recovery", nullptr, "route_loop_exhausted_after_progress", raw.c_str(), semantic.c_str(), routeAnchorDistance, _config.ValidationRouteTargetEntry);
-                RecordDecision(state, bot, "normal_dungeon_trash", "validation_route_complete", nullptr, raw.c_str(), semantic.c_str(), activityScores, chosenActivity, power, false, false);
-                MaybeAdvanceValidationRouteManifest();
+                RecordDecision(state, bot, "normal_dungeon_trash", "validation_route_failed", nullptr, raw.c_str(), semantic.c_str(), activityScores, chosenActivity, power, true, true);
                 return;
             }
 
@@ -7646,10 +7692,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         target = nullptr;
         state.LastNoProgressReason = reason ? reason : "route_exhausted_after_progress";
         situation = "normal_dungeon_trash";
-        action = "validation_route_exhausted";
+        action = "validation_route_failed";
         std::string raw = BuildRawJson(bot, nullptr);
         std::string semantic = BuildSemanticJson(bot, nullptr, situation.c_str(), &power, stage, activity);
-        RecordEvent(state, bot, "dungeon_trash_cleared", nullptr, state.LastNoProgressReason.c_str(), raw.c_str(), semantic.c_str(), float(_metrics.Kills), _config.ValidationRouteTargetEntry);
         RecordEvent(state, bot, "validation_route_recovery", nullptr, state.LastNoProgressReason.c_str(), raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry);
     };
     if (state.ValidationRouteTerminalState)
@@ -7662,7 +7707,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         situation = _config.ValidationRouteKind == "boss"
             ? "validation_route_manifest"
             : "normal_dungeon_trash";
-        action = "validation_route_complete";
+        action = state.ValidationRouteTerminalReason == "trash_route_target_killed" || state.ValidationRouteTerminalReason == "boss_route_target_killed" ? "validation_route_complete" : "validation_route_failed";
         if (!state.ValidationRouteTerminalAtMs || NowMs() - state.ValidationRouteTerminalAtMs <= 5000)
         {
             std::string raw = BuildRawJson(bot, nullptr);
@@ -12780,6 +12825,15 @@ BotWorldPopulationMgr::BotDiagnosis BotWorldPopulationMgr::BuildBotDiagnosis(Wor
         diagnosis.Blocker = "bot_is_dead_or_recovering";
         diagnosis.NextExpectedAction = "death_recovery_tick";
         diagnosis.SuggestedInvestigation = "inspect_recent_death_and_recovery_trace";
+    }
+    else if (_config.ValidationRouteEnable && state.ValidationRouteTerminalState && state.ValidationRouteTerminalReason.rfind("route_destination_", 0) == 0)
+    {
+        diagnosis.DiagnosisCode = "route_destination_unreachable";
+        diagnosis.Severity = "error";
+        diagnosis.Confidence = 1.0f;
+        diagnosis.Blocker = state.ValidationRouteTerminalReason;
+        diagnosis.NextExpectedAction = "fail_validation_route_segment";
+        diagnosis.SuggestedInvestigation = "inspect_mmap_vmap_route_endpoint_and_manifest";
     }
     else if (bot->IsInCombat())
     {

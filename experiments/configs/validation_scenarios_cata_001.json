@@ -7,6 +7,7 @@
       "map_id": 725,
       "difficulty": "normal_5man",
       "provisioning_scenario_id": "stonecore_5n",
+      "start_position": { "map_id": 725, "x": 851.052, "y": 986.474, "z": 317.266, "o": 0.0 },
       "required_roles": { "tank": 1, "healer": 1, "dps": 3 },
       "route": [
         { "step": 1, "kind": "trash", "label": "entrance packs", "x": 903.255, "y": 985.352, "z": 317.198, "source_entry": 42696, "source_guid": "340419", "source_table": "creature", "source_sql": "world.creature" },
@@ -31,6 +32,7 @@
       "map_id": 669,
       "difficulty": "normal_10man",
       "provisioning_scenario_id": "blackwing_descent_10n",
+      "start_position": { "map_id": 669, "x": -345.872, "y": -224.344, "z": 193.127, "o": 0.0 },
       "required_roles": { "tank": 2, "healer": 3, "dps": 5 },
       "route": [
         { "step": 1, "kind": "trash", "label": "entry trash", "x": -338.622, "y": -347.5, "z": 214.159, "source_entry": 42800, "source_guid": "250049", "source_table": "creature", "source_sql": "world.creature" },

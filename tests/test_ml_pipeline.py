@@ -42,7 +42,7 @@ from tools.bot_ml.orchestrator_daemon import codex_command, detect_rate_limit, h
 from tools.bot_ml.generate_lane_configs import write_lane_config
 from tools.bot_ml.promote_live_validation_artifact import promote
 from tools.bot_ml.build_validation_gear_profiles import SHIELD_CLASSES, build_gem_catalog, build_profiles, build_report, fetch_items, load_gem_properties, load_spell_item_enchantments
-from tools.bot_ml.build_validation_provisioning import apply_gear_profiles, bot_spell_ids, build_account_insert_sql, main as provisioning_main, scenario_report, srp6_registration_data
+from tools.bot_ml.build_validation_provisioning import apply_gear_profiles, bot_spell_ids, build_account_insert_sql, build_character_insert_sql, equipment_cache, glyph_item_to_property_map, main as provisioning_main, normalized_glyphs, runtime_safe_enchantments, scenario_report, srp6_registration_data
 from tools.bot_ml.validate_validation_provisioning import build_report as provisioning_verify_report
 from tools.bot_ml.validate_validation_provisioning import main as provisioning_verify_main
 from tools.bot_ml.validate_validation_provisioning import validate_database as validate_provisioning_database
@@ -1443,6 +1443,7 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert 48964 not in bwd_boss_entries
     atramedes = next(row for row in routes if row["scenario_id"] == "blackwing_descent_10n" and row["label"] == "Atramedes")
     omnotron = next(row for row in routes if row["scenario_id"] == "blackwing_descent_10n" and row["label"] == "Omnotron Defense System")
+    stonecore_entry = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "entrance packs")
     slabhide = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "Slabhide")
     nefarian = next(row for row in routes if row["scenario_id"] == "blackwing_descent_10n" and row["label"] == "Nefarian")
     assert atramedes["expected_bot_count"] == 10
@@ -1456,6 +1457,9 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert slabhide["activation_data_id"] == 10
     assert slabhide["activation_data_value"] == 2
     assert slabhide["activation_summon_entry"] == 0
+    assert stonecore_entry["bot_start_map_id"] == 725
+    assert stonecore_entry["bot_start_x"] == 851.052
+    assert stonecore_entry["bot_start_z"] == 317.266
     assert nefarian["expected_bot_count"] == 10
     assert atramedes["activation_data_id"] == 10
     assert nefarian["activation_data_id"] == 35
@@ -5747,6 +5751,100 @@ def test_validation_provisioning_applies_gear_profiles_to_bots():
     assert report["scenarios"][0]["gear_missing_slots"]["Tank"] == []
     assert "complete_equipment_slots" not in report["scenarios"][0]["missing"]
     assert "enchants" in report["scenarios"][0]["missing"]
+
+
+def test_validation_provisioning_writes_equipment_cache_and_filters_glyphs():
+    bot = {"glyphs": [1, 0, -3, 2, 2, 3], "equipment": [{"slot": 15, "item_id": 5000, "enchant_id": 2673}, {"slot": 17, "item_id": 6000, "enchant_id": 0}]}
+    config = {
+        "scenarios": [
+            {
+                "id": "stonecore_5n",
+                "start_position": {"map_id": 725, "x": 1, "y": 2, "z": 3},
+                "bots": [{"account": "A", "name": "Hunter", "role": "dps", "class_spec": "marksmanship_hunter", "race": 1, "class": 3, "level": 85, **bot}],
+            }
+        ]
+    }
+
+    sql = build_character_insert_sql(config)
+    cache = equipment_cache(bot["equipment"])
+
+    assert normalized_glyphs(bot) == [1, 2, 3]
+    assert cache.split()[30] == "5000"
+    assert cache.split()[31] == "2673"
+    assert cache.split()[34] == "6000"
+    assert cache in sql
+    assert " 0, -3," not in sql
+
+
+def test_validation_provisioning_maps_glyph_items_to_glyph_properties():
+    glyph_map = glyph_item_to_property_map()
+
+    assert glyph_map[42739] == 316
+    assert normalized_glyphs({"glyphs": [42739, 42743, 42753]}, glyph_map) == [316, 320, 330]
+
+
+def test_validation_provisioning_strips_socket_gem_enchantments_for_runtime_load():
+    item = {"enchant_id": 2673, "enchantments": "2673 0 0 0 0 0 3996 0 0 3996 0 0 3996 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"}
+
+    fields = runtime_safe_enchantments(item).split()
+
+    assert len(fields) == 45
+    assert fields[0] == "2673"
+    assert fields[6] == "0"
+    assert fields[9] == "0"
+    assert fields[12] == "0"
+
+
+def test_validation_provisioning_runtime_gear_verification_fails_missing_hunter_ranged(monkeypatch, tmp_path):
+    conf = tmp_path / "worldserver.conf"
+    conf.write_text(
+        'LoginDatabaseInfo = "db.example;3306;trinity;secret;auth"\n'
+        'CharacterDatabaseInfo = "db.example;3306;trinity;secret;characters"\n',
+        encoding="utf-8",
+    )
+    equipment = [
+        {"slot": slot, "item_id": 5000 + slot, "inventory_type": 1, "durability": 100}
+        for slot in [0, 1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
+    ] + [{"slot": 15, "item_id": 5000, "inventory_type": 17, "durability": 100}, {"slot": 17, "item_id": 6000, "inventory_type": 26, "durability": 100}]
+    config = {"scenarios": [{"id": "stonecore_5n", "bots": [{"account": "A", "name": "Hunter", "class": 3, "glyphs": [1, 2, 3], "equipment": equipment}]}]}
+
+    monkeypatch.setattr("tools.bot_ml.validate_validation_provisioning.fetch_columns", lambda _url, table: {"id", "username"} if table == "account" else {"guid", "account", "name", "slot", "race", "class", "gender", "level", "xp", "money", "position_x", "position_y", "position_z", "map", "orientation", "taximask", "online", "cinematic", "totaltime", "leveltime", "logout_time", "health", "power1", "talentGroupsCount", "activeTalentGroup", "equipmentCache"} if table == "characters" else {"guid", "bag", "slot", "item", "itemEntry", "durability", "owner_guid", "creatorGuid", "giftCreatorGuid", "count", "duration", "charges", "flags", "enchantments", "randomPropertyType", "randomPropertyId", "creationTime", "text", "role", "class_spec", "enabled", "in_use", "experiment_tags", "notes", "talentGroup", "glyph1", "glyph2", "glyph3", "glyph4", "glyph5", "glyph6", "glyph7", "glyph8", "glyph9", "skill", "value", "max"})
+    monkeypatch.setattr("tools.bot_ml.validate_validation_provisioning.fetch_existing_values", lambda _url, _table, _column, values: set(values))
+    monkeypatch.setattr(
+        "tools.bot_ml.validate_validation_provisioning.fetch_runtime_gear",
+        lambda _url, _names: {"Hunter": {"guid": 1, "equipmentCache": equipment_cache([item for item in equipment if item["slot"] != 17]), "items": {item["slot"]: {"item_id": item["item_id"], "durability": 100} for item in equipment if item["slot"] != 17}, "glyphs": [1, 2, 3, 0, 0, 0, 0, 0, 0]}},
+    )
+
+    failures, evidence = validate_provisioning_database(config, conf, require_applied=True)
+
+    assert {"check": "runtime_equipment_slots", "bot": "Hunter", "missing_slots": [17]} in failures
+    assert evidence["runtime_gear"]["Hunter"]["visible_missing_slots"] == [17]
+
+
+def test_validation_provisioning_runtime_gear_verification_fails_stale_cache_and_zero_glyphs(monkeypatch, tmp_path):
+    conf = tmp_path / "worldserver.conf"
+    conf.write_text(
+        'LoginDatabaseInfo = "db.example;3306;trinity;secret;auth"\n'
+        'CharacterDatabaseInfo = "db.example;3306;trinity;secret;characters"\n',
+        encoding="utf-8",
+    )
+    slots = [0, 1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
+    equipment = [{"slot": slot, "item_id": 7000 + slot, "inventory_type": 1, "durability": 100} for slot in slots]
+    config = {"scenarios": [{"id": "stonecore_5n", "bots": [{"account": "A", "name": "Mage", "class": 8, "glyphs": [42739, 42743, 42753], "equipment": equipment}]}]}
+
+    monkeypatch.setattr("tools.bot_ml.validate_validation_provisioning.fetch_columns", lambda _url, table: {"id", "username"} if table == "account" else {"guid", "account", "name", "slot", "race", "class", "gender", "level", "xp", "money", "position_x", "position_y", "position_z", "map", "orientation", "taximask", "online", "cinematic", "totaltime", "leveltime", "logout_time", "health", "power1", "talentGroupsCount", "activeTalentGroup", "equipmentCache"} if table == "characters" else {"guid", "bag", "slot", "item", "itemEntry", "durability", "owner_guid", "creatorGuid", "giftCreatorGuid", "count", "duration", "charges", "flags", "enchantments", "randomPropertyType", "randomPropertyId", "creationTime", "text", "role", "class_spec", "enabled", "in_use", "experiment_tags", "notes", "talentGroup", "glyph1", "glyph2", "glyph3", "glyph4", "glyph5", "glyph6", "glyph7", "glyph8", "glyph9", "skill", "value", "max"})
+    monkeypatch.setattr("tools.bot_ml.validate_validation_provisioning.fetch_existing_values", lambda _url, _table, _column, values: set(values))
+    monkeypatch.setattr(
+        "tools.bot_ml.validate_validation_provisioning.fetch_runtime_gear",
+        lambda _url, _names: {"Mage": {"guid": 1, "equipmentCache": "", "items": {item["slot"]: {"item_id": item["item_id"], "durability": 100} for item in equipment}, "glyphs": [0] * 9}},
+    )
+
+    failures, evidence = validate_provisioning_database(config, conf, require_applied=True)
+
+    checks = {failure["check"] for failure in failures}
+    assert "runtime_equipment_cache" in checks
+    assert "runtime_glyphs" in checks
+    assert evidence["runtime_gear"]["Mage"]["glyphs_missing"] == [316, 320, 330]
 
 
 def test_validation_provisioning_verifier_accepts_generated_payloads(tmp_path, monkeypatch):

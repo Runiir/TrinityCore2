@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import struct
 from pathlib import Path
 from typing import Any
 
@@ -20,6 +21,12 @@ ROLE_REQUIREMENTS = {
 }
 
 REQUIRED_EQUIPMENT_SLOTS = [0, 1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
+EQUIPMENT_SLOT_END = 19
+INVENTORY_BAG_SLOTS = 4
+DEFAULT_DBC_DIR = Path("data/dbc/enUS")
+SPELL_EFFECT_LEARN_GLYPH = 74
+ITEM_SPARSE_FMT = "niiiffiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiifiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiisssssiiiiiiiiiiiiiiiiiiiiiifiiifii"
+_GLYPH_ITEM_TO_PROPERTY_CACHE: dict[Path, dict[int, int]] = {}
 
 
 def required_equipment_slots_for(equipment: list[dict[str, Any]]) -> list[int]:
@@ -27,6 +34,130 @@ def required_equipment_slots_for(equipment: list[dict[str, Any]]) -> list[int]:
     if any(int(item.get("slot", -1)) == 15 and int(item.get("inventory_type", 0)) == 17 for item in equipment):
         slots.discard(16)
     return sorted(slots)
+
+
+def read_dbc_string(data: bytes, offset: int) -> str:
+    if offset <= 0 or offset >= len(data):
+        return ""
+    end = data.find(b"\0", offset)
+    if end == -1:
+        end = len(data)
+    return data[offset:end].decode("utf-8", errors="replace")
+
+
+def load_wdb2_values(path: Path, fmt: str) -> list[list[Any]]:
+    blob = path.read_bytes()
+    if len(blob) < 48 or blob[:4] != b"WDB2":
+        raise ValueError(f"{path} is not a WDB2 file")
+    record_count, field_count, record_size, string_size, _table_hash, build, _unk1 = struct.unpack_from("<7I", blob, 4)
+    offset = 32
+    min_index = max_index = 0
+    if build > 12880:
+        min_index, max_index, _locale, _unk5 = struct.unpack_from("<4i", blob, offset)
+        offset += 16
+    if max_index:
+        span = max_index - min_index + 1
+        offset += span * 4 + span * 2
+    if field_count != len(fmt):
+        raise ValueError(f"{path} field count {field_count} does not match format length {len(fmt)}")
+    records_blob = blob[offset:offset + (record_count * record_size)]
+    string_blob = blob[offset + (record_count * record_size):offset + (record_count * record_size) + string_size]
+    return parse_dbc_records(records_blob, string_blob, record_count, record_size, fmt)
+
+
+def load_wdbc_values(path: Path, fmt: str) -> list[list[Any]]:
+    blob = path.read_bytes()
+    if len(blob) < 20 or blob[:4] != b"WDBC":
+        raise ValueError(f"{path} is not a WDBC file")
+    record_count, field_count, record_size, string_size = struct.unpack_from("<4I", blob, 4)
+    if field_count != len(fmt):
+        raise ValueError(f"{path} field count {field_count} does not match format length {len(fmt)}")
+    records_offset = 20
+    records_blob = blob[records_offset:records_offset + (record_count * record_size)]
+    string_blob = blob[records_offset + (record_count * record_size):records_offset + (record_count * record_size) + string_size]
+    return parse_dbc_records(records_blob, string_blob, record_count, record_size, fmt)
+
+
+def parse_dbc_records(records_blob: bytes, string_blob: bytes, record_count: int, record_size: int, fmt: str) -> list[list[Any]]:
+    rows: list[list[Any]] = []
+    for row_index in range(record_count):
+        row_offset = row_index * record_size
+        values: list[Any] = []
+        field_offset = 0
+        for field_type in fmt:
+            if field_type == "f":
+                values.append(struct.unpack_from("<f", records_blob, row_offset + field_offset)[0])
+            elif field_type == "s":
+                values.append(read_dbc_string(string_blob, struct.unpack_from("<I", records_blob, row_offset + field_offset)[0]))
+            else:
+                raw = struct.unpack_from("<I", records_blob, row_offset + field_offset)[0]
+                if field_type == "i" and raw >= 0x80000000:
+                    raw -= 0x100000000
+                values.append(raw)
+            field_offset += 4
+        rows.append(values)
+    return rows
+
+
+def glyph_item_to_property_map(dbc_dir: Path = DEFAULT_DBC_DIR) -> dict[int, int]:
+    dbc_dir = dbc_dir.resolve()
+    cached = _GLYPH_ITEM_TO_PROPERTY_CACHE.get(dbc_dir)
+    if cached is not None:
+        return cached
+    if not (dbc_dir / "Item-sparse.db2").exists() or not (dbc_dir / "SpellEffect.dbc").exists():
+        _GLYPH_ITEM_TO_PROPERTY_CACHE[dbc_dir] = {}
+        return {}
+
+    glyph_property_by_teach_spell: dict[int, int] = {}
+    for values in load_wdbc_values(dbc_dir / "SpellEffect.dbc", "nifiiiffiiiiiifiifiiiiiiiix"):
+        if int(values[1]) == SPELL_EFFECT_LEARN_GLYPH and int(values[12]) > 0 and int(values[24]) > 0:
+            glyph_property_by_teach_spell[int(values[24])] = int(values[12])
+
+    mapping: dict[int, int] = {}
+    for values in load_wdb2_values(dbc_dir / "Item-sparse.db2", ITEM_SPARSE_FMT):
+        teach_spell = int(values[69]) if len(values) > 69 else 0
+        glyph_property = glyph_property_by_teach_spell.get(teach_spell)
+        if glyph_property:
+            mapping[int(values[0])] = glyph_property
+    _GLYPH_ITEM_TO_PROPERTY_CACHE[dbc_dir] = mapping
+    return mapping
+
+
+def normalized_glyphs(bot: dict[str, Any], glyph_item_map: dict[int, int] | None = None) -> list[int]:
+    glyph_item_map = glyph_item_map if glyph_item_map is not None else glyph_item_to_property_map()
+    glyphs: list[int] = []
+    for value in bot.get("glyphs", []):
+        raw_glyph_id = int(value or 0)
+        glyph_id = glyph_item_map.get(raw_glyph_id, raw_glyph_id)
+        if glyph_id > 0 and glyph_id not in glyphs:
+            glyphs.append(glyph_id)
+        if len(glyphs) >= 9:
+            break
+    return glyphs
+
+
+def equipment_cache(equipment: list[dict[str, Any]], bag_slots: int = INVENTORY_BAG_SLOTS) -> str:
+    visible = [0] * (EQUIPMENT_SLOT_END * 2)
+    for item in equipment:
+        slot = int(item.get("slot", -1))
+        if 0 <= slot < EQUIPMENT_SLOT_END:
+            visible[slot * 2] = int(item.get("item_id") or 0)
+            visible[slot * 2 + 1] = int(item.get("enchant_id") or 0)
+    values = visible + [0 for _ in range(max(0, bag_slots) * 2)]
+    return " ".join(str(value) for value in values) + " "
+
+
+def runtime_safe_enchantments(item: dict[str, Any]) -> str:
+    values = [0] * 45
+    raw = str(item.get("enchantments") or "").split()
+    for index, token in enumerate(raw[:45]):
+        if token.lstrip("-").isdigit():
+            values[index] = int(token)
+    if not raw and int(item.get("enchant_id") or 0):
+        values[0] = int(item.get("enchant_id") or 0)
+    for socket_offset in (6, 9, 12):
+        values[socket_offset] = 0
+    return " ".join(str(value) for value in values)
 
 DEFAULT_ACTION_PROFILES = load_action_profile_manifest(DEFAULT_ACTION_PROFILE_MANIFEST)
 ACTION_PROFILE_SPELLS_BY_CLASS = DEFAULT_ACTION_PROFILES["action_profile_spells_by_class"]
@@ -171,11 +302,12 @@ def build_character_insert_sql(config: dict[str, Any], action_profiles: dict[str
             account = str(bot["account"]).upper()
             role = str(bot["role"])
             class_spec = str(bot.get("class_spec") or bot.get("class") or role)
+            cache = equipment_cache(bot.get("equipment", []))
             lines.append(
                 "INSERT INTO `characters`.`characters` "
                 "(`guid`, `account`, `name`, `slot`, `race`, `class`, `gender`, `level`, `xp`, `money`, `position_x`, `position_y`, `position_z`, `map`, `orientation`, `taximask`, `online`, `cinematic`, `totaltime`, `leveltime`, `logout_time`, `health`, `power1`, `talentGroupsCount`, `activeTalentGroup`, `equipmentCache`) "
                 f"SELECT COALESCE(MAX(c.`guid`), 0) + 1, a.`id`, {sql_quote(name)}, {slot}, {int(bot['race'])}, {int(bot['class'])}, {int(bot.get('gender', 0))}, {int(bot.get('level', 85))}, 0, {int(bot.get('money', config.get('default_money', 10000000)))}, "
-                f"{float(start['x'])}, {float(start['y'])}, {float(start['z'])}, {int(start['map_id'])}, {float(start.get('o', 0.0))}, '', 0, 1, 0, 0, 0, 100, 100, 1, 0, '' "
+                f"{float(start['x'])}, {float(start['y'])}, {float(start['z'])}, {int(start['map_id'])}, {float(start.get('o', 0.0))}, '', 0, 1, 0, 0, 0, 100, 100, 1, 0, {sql_quote(cache)} "
                 f"FROM `auth`.`account` a LEFT JOIN `characters`.`characters` c ON 1 = 1 WHERE a.`username` = {sql_quote(account)} GROUP BY a.`id`;"
             )
             lines.append(
@@ -195,7 +327,7 @@ def build_character_insert_sql(config: dict[str, Any], action_profiles: dict[str
                     f"SELECT c.`guid`, {spell_id}, 1, 0 FROM `characters`.`characters` c WHERE c.`name` = {sql_quote(name)} "
                     "ON DUPLICATE KEY UPDATE `active` = VALUES(`active`), `disabled` = VALUES(`disabled`);"
                 )
-            glyphs = list(bot.get("glyphs", []))[:9]
+            glyphs = normalized_glyphs(bot)
             if glyphs:
                 glyph_values = glyphs + [0] * (9 - len(glyphs))
                 lines.append(
@@ -205,9 +337,10 @@ def build_character_insert_sql(config: dict[str, Any], action_profiles: dict[str
                 )
             for item in bot.get("equipment", []):
                 item_guid += 1
+                enchantments = runtime_safe_enchantments(item)
                 lines.append(
                     "INSERT INTO `characters`.`item_instance` (`guid`, `itemEntry`, `owner_guid`, `creatorGuid`, `giftCreatorGuid`, `count`, `duration`, `charges`, `flags`, `enchantments`, `randomPropertyType`, `randomPropertyId`, `durability`, `creationTime`, `text`) "
-                    f"SELECT {item_guid}, {int(item['item_id'])}, c.`guid`, 0, 0, 1, 0, '', 0, {sql_quote(str(item.get('enchantments', '')))}, 0, 0, {int(item.get('durability', 100))}, UNIX_TIMESTAMP(), '' FROM `characters`.`characters` c WHERE c.`name` = {sql_quote(name)};"
+                    f"SELECT {item_guid}, {int(item['item_id'])}, c.`guid`, 0, 0, 1, 0, '', 0, {sql_quote(enchantments)}, 0, 0, {int(item.get('durability', 100))}, UNIX_TIMESTAMP(), '' FROM `characters`.`characters` c WHERE c.`name` = {sql_quote(name)};"
                 )
                 lines.append(
                     "INSERT INTO `characters`.`character_inventory` (`guid`, `bag`, `slot`, `item`) "

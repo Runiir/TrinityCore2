@@ -371,6 +371,7 @@ private:
         float ActivePathToY = 0.0f;
         float ActivePathToZ = 0.0f;
         bool ActivePathValid = false;
+        std::string LastPathRejectReason;
         uint32 LastDeathMapId = 0;
         uint32 LastDeathAreaId = 0;
         float LastDeathX = 0.0f;
@@ -891,7 +892,7 @@ private:
     bool IsFailedPathRecently(uint32 botGuid, uint32 mapId, float fromX, float fromY, float toX, float toY) const;
     bool FindMemoryPoiTarget(Player* bot, float& x, float& y, float& z, uint64& poiId) const;
     void MarkPoiVisited(uint64 poiId) const;
-    void MoveBotToPoint(WorldBotState& state, Player* bot, float x, float y, float z);
+    bool MoveBotToPoint(WorldBotState& state, Player* bot, float x, float y, float z);
     BotDeathRecoveryPolicy BuildDeathRecoveryPolicy() const;
     DeathRecoveryResult RecoverDeadBot(WorldBotState& state, Player* bot);
     bool TryCorpseRecovery(Player* bot, std::string& result) const;
