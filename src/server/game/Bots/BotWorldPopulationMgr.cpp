@@ -6445,6 +6445,49 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         || _config.ValidationRouteActivationSummonEntry
         || _config.ValidationRouteOpenerSummonEntry
         || (_config.ValidationRouteKind == "boss" && _config.ValidationRouteTargetEntry);
+    auto tryValidationRouteInterrupt = [this, &state, bot, &power, stage, activity, &situation, &action](Unit* interruptTarget, char const* context) -> bool
+    {
+        if (_config.ValidationRouteKind != "boss"
+            || _config.ValidationRouteMechanicProfile.find("interrupt") == std::string::npos
+            || !bot
+            || !interruptTarget
+            || !interruptTarget->IsAlive()
+            || !bot->IsValidAttackTarget(interruptTarget))
+            return false;
+
+        uint32 interruptSpell = SelectInterruptSpell(bot);
+        if (!interruptSpell)
+            return false;
+
+        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(interruptSpell);
+        if (!spellInfo || !bot->IsWithinLOSInMap(interruptTarget))
+            return false;
+
+        float maxRange = std::max(5.0f, spellInfo->GetMaxRange(false));
+        if (!bot->IsWithinDistInMap(interruptTarget, maxRange))
+            return false;
+
+        BossMechanicFeatures features = BuildBossMechanicFeatures(bot, interruptTarget);
+        bool cast = TryCastCombatSpell(bot, interruptTarget, interruptSpell);
+        if (!cast && !features.BossCasting)
+            return false;
+
+        std::string raw = BuildRawJson(bot, interruptTarget);
+        std::string semantic = BuildSemanticJson(bot, interruptTarget, "dungeon_boss", &power, stage, activity);
+        char const* eventName = cast && features.MustInterrupt ? "interrupt_success" : "validation_interrupt";
+        char const* result = cast
+            ? (features.MustInterrupt ? "ok" : "assigned_interrupt_probe")
+            : "assigned_interrupt_cast_window_missed";
+        RecordEvent(state, bot, eventName, interruptTarget, result, raw.c_str(), semantic.c_str(),
+            features.InterruptPriority > 0.0f ? features.InterruptPriority : 1.0f,
+            features.CastSpellId,
+            interruptSpell);
+        situation = "dungeon_boss";
+        action = "validation_interrupt";
+        state.TargetGuid = interruptTarget->GetGUID();
+        state.WasInCombat = true;
+        return true;
+    };
     auto markValidationRouteTerminalAfterProgress = [&](char const* reason) -> void
     {
         _validationRouteFocusGuid.Clear();
@@ -6545,6 +6588,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             target = tankFocusTarget;
             state.TargetGuid = target->GetGUID();
             if (tryRouteGroupHeal(bot, target))
+                return true;
+            if (tankFocusIsBossRoute && tryValidationRouteInterrupt(target, "assist_tank_focus_interrupt"))
                 return true;
 
             BotActionExecutor executor;
@@ -6880,6 +6925,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (routeBossTarget)
             rememberValidationRouteFocus(target);
         if (tryRouteGroupHeal(bot, target))
+            return true;
+        if (routeBossTarget && _config.ValidationRouteKind == "boss" && tryValidationRouteInterrupt(target, "route_boss_focus_interrupt"))
             return true;
 
         BotActionExecutor executor;
@@ -7268,6 +7315,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     state.ValidationRouteTargetSearchMissCount = 0;
     state.TargetGuid = target->GetGUID();
     rememberValidationRouteFocus(target);
+    if (_config.ValidationRouteKind == "boss" && tryValidationRouteInterrupt(target, "route_target_interrupt"))
+        return true;
     uint32 spellId = SelectCombatSpell(bot, target);
     float engageRange = routeEngageRange(bot, target, spellId);
     if (!bot->IsWithinDistInMap(target, std::max(5.0f, engageRange - 1.0f)) || !bot->IsWithinLOSInMap(target))

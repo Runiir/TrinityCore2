@@ -146,8 +146,8 @@ stages:
     deps:
     - path: dataset/live_validation_scenario_reports_built
       hash: md5
-      md5: d9714038feb33af50814808ae51a29b8.dir
-      size: 29944
+      md5: 445f177868b5293a09b4a3c351cecfaa.dir
+      size: 29659
       nfiles: 3
     - path: dataset/validation_scenarios
       hash: md5
@@ -375,7 +375,7 @@ stages:
       --live-report 
       artifacts/live_validation_instances/stonecore_route_sequence_r5/07_twilight_flayer_packs/report.json
       --live-report 
-      artifacts/live_validation_instances/stonecore_route_sequence_r5/08_high_priestess_azil/report.json
+      artifacts/live_validation_instances/stonecore_azil_interrupt_r2/report.json
       --live-report 
       dataset/live_validation_scenarios/blackwing_descent_10n/01_entry_trash/report.json
       --live-report 
@@ -395,6 +395,11 @@ stages:
       --validation-scenario-dir dataset/validation_scenarios --output-dir 
       dataset/live_validation_scenario_reports_built
     deps:
+    - path: 
+        artifacts/live_validation_instances/stonecore_azil_interrupt_r2/report.json
+      hash: md5
+      md5: 42261bac008d45ff50e76454bf3572ba
+      size: 172827
     - path: 
         artifacts/live_validation_instances/stonecore_route_sequence_r5/01_entrance_packs/report.json
       hash: md5
@@ -430,11 +435,6 @@ stages:
       hash: md5
       md5: fbfb73cdd1b342adcaba7b3534de2d3d
       size: 180808
-    - path: 
-        artifacts/live_validation_instances/stonecore_route_sequence_r5/08_high_priestess_azil/report.json
-      hash: md5
-      md5: b28a97f7934c291d53c7cb3dc129cb94
-      size: 1126387
     - path: 
         dataset/live_validation_scenarios/blackwing_descent_10n/01_entry_trash/report.json
       hash: md5
@@ -495,8 +495,8 @@ stages:
     outs:
     - path: dataset/live_validation_scenario_reports_built
       hash: md5
-      md5: d9714038feb33af50814808ae51a29b8.dir
-      size: 29944
+      md5: 445f177868b5293a09b4a3c351cecfaa.dir
+      size: 29659
       nfiles: 3
   validation_run_plan:
     cmd: python -m tools.bot_ml.build_validation_run_plan 
@@ -537,8 +537,8 @@ stages:
       size: 102801
     - path: dataset/live_validation_scenario_reports_built
       hash: md5
-      md5: d9714038feb33af50814808ae51a29b8.dir
-      size: 29944
+      md5: 445f177868b5293a09b4a3c351cecfaa.dir
+      size: 29659
       nfiles: 3
     - path: tools/bot_ml/run_live_bot_validation.py
       hash: md5
@@ -547,8 +547,8 @@ stages:
     outs:
     - path: dataset/live_validation_combined
       hash: md5
-      md5: 4332d50ee0d07f00cd068ac6df39bf1c.dir
-      size: 238578
+      md5: ac20e69d1944e8b2fde664b547118e52.dir
+      size: 238307
       nfiles: 3
   validation_run_status:
     cmd: python -m tools.bot_ml.build_validation_run_status --run-plan 
@@ -558,8 +558,8 @@ stages:
     deps:
     - path: dataset/live_validation_scenario_reports_built
       hash: md5
-      md5: d9714038feb33af50814808ae51a29b8.dir
-      size: 29944
+      md5: 445f177868b5293a09b4a3c351cecfaa.dir
+      size: 29659
       nfiles: 3
     - path: dataset/validation_run_plan/manifest.json
       hash: md5
@@ -576,8 +576,8 @@ stages:
     outs:
     - path: dataset/validation_run_status
       hash: md5
-      md5: cb22ca3a226010b6057b3808782570cb.dir
-      size: 96507
+      md5: 372f41575487a47e7a2059f02187481e.dir
+      size: 92974
       nfiles: 1
   quest_profession_report:
     cmd: python -m tools.bot_ml.build_quest_profession_reports --planner-dir 

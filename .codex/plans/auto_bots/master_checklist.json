@@ -1,6 +1,6 @@
 {
   "all_passed": false,
-  "checklist_hash": "11f27a3208eec08d4cad0c2f194024c10bf55fb5e5cd1e2135a29bc6547f4b49",
+  "checklist_hash": "b09b2b640764ff3dc3ce43c4f1f0ac13bbbaae421c1dfe9a39f55bb677c58d08",
   "deliverables": [
     {
       "deliverable": "movement_smoke",
@@ -86,7 +86,7 @@
     {
       "deliverable": "normal_dungeon_trash",
       "evidence_artifact": "dataset/live_validation_scenario_reports_built/stonecore_5n.json",
-      "failure_label": "invalid_segment_live_reports,missing_segment_required_evidence,scenario_clear_not_complete,segment_evidence_debug_only,missing_uninterrupted_full_clear_report,missing_required_evidence,failure_labels_present",
+      "failure_label": "scenario_clear_not_complete,segment_evidence_debug_only,missing_uninterrupted_full_clear_report,missing_required_evidence",
       "followup_lane": "",
       "lane": "stonecore_5n",
       "reviewer": "",
@@ -95,7 +95,7 @@
     {
       "deliverable": "dungeon_boss",
       "evidence_artifact": "dataset/live_validation_scenario_reports_built/stonecore_5n.json",
-      "failure_label": "invalid_segment_live_reports,missing_segment_required_evidence,scenario_clear_not_complete,segment_evidence_debug_only,missing_uninterrupted_full_clear_report,missing_required_evidence,failure_labels_present",
+      "failure_label": "scenario_clear_not_complete,segment_evidence_debug_only,missing_uninterrupted_full_clear_report,missing_required_evidence",
       "followup_lane": "",
       "lane": "stonecore_5n",
       "reviewer": "",
@@ -104,7 +104,7 @@
     {
       "deliverable": "full_stonecore_clear",
       "evidence_artifact": "dataset/live_validation_scenario_reports_built/stonecore_5n.json",
-      "failure_label": "segment_evidence_debug_only,missing_uninterrupted_full_clear_report,missing_required_evidence,failure_labels_present",
+      "failure_label": "segment_evidence_debug_only,missing_uninterrupted_full_clear_report,missing_required_evidence",
       "followup_lane": "stonecore_5n_uninterrupted_full_clear",
       "lane": "stonecore_5n",
       "reviewer": "",

@@ -133,7 +133,7 @@ stages:
       --live-report
       artifacts/live_validation_instances/stonecore_route_sequence_r5/07_twilight_flayer_packs/report.json
       --live-report
-      artifacts/live_validation_instances/stonecore_route_sequence_r5/08_high_priestess_azil/report.json
+      artifacts/live_validation_instances/stonecore_azil_interrupt_r2/report.json
       --live-report
       dataset/live_validation_scenarios/blackwing_descent_10n/01_entry_trash/report.json
       --live-report
@@ -163,7 +163,7 @@ stages:
     - artifacts/live_validation_instances/stonecore_route_sequence_r5/05_stonecore_sentry_gauntlet/report.json
     - artifacts/live_validation_instances/stonecore_route_sequence_r5/06_ozruk/report.json
     - artifacts/live_validation_instances/stonecore_route_sequence_r5/07_twilight_flayer_packs/report.json
-    - artifacts/live_validation_instances/stonecore_route_sequence_r5/08_high_priestess_azil/report.json
+    - artifacts/live_validation_instances/stonecore_azil_interrupt_r2/report.json
     - dataset/live_validation_scenarios/blackwing_descent_10n/01_entry_trash/report.json
     - dataset/live_validation_scenarios/blackwing_descent_10n/02_magmaw/report.json
     - dataset/live_validation_scenarios/blackwing_descent_10n/03_omnotron_defense_system/report.json

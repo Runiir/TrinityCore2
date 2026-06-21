@@ -1,0 +1,6 @@
+outs:
+- md5: b9cee9703fe282c67a3517491b534785.dir
+  size: 1106828
+  nfiles: 10
+  hash: md5
+  path: stonecore_azil_interrupt_r2
