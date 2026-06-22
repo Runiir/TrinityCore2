@@ -10031,6 +10031,11 @@ bool BotWorldPopulationMgr::TryValidationRouteReadiness(WorldBotState& state, Pl
             return false;
         }
         std::string attemptKey = std::string("self:") + readyReason;
+        if (state.ReadinessPartyCoverageSignature[attemptKey] == "cast_once")
+        {
+            TryResolveBotBlocker(state, bot, readyReason);
+            return false;
+        }
         if (!bot->HasSpell(spellId))
         {
             MarkBotBlocked(state, bot, blockedReason);
@@ -10046,6 +10051,7 @@ bool BotWorldPopulationMgr::TryValidationRouteReadiness(WorldBotState& state, Pl
             std::string raw = BuildRawJson(bot, pullTarget);
             std::string semantic = BuildSemanticJson(bot, pullTarget, "validation_route_readiness", &power, stage, activity);
             RecordEvent(state, bot, "validation_route_readiness", bot, readyReason, raw.c_str(), semantic.c_str(), 0.0f, 0, spellId);
+            state.ReadinessPartyCoverageSignature[attemptKey] = "cast_once";
             return true;
         }
         std::string failedReason = buffFailureReason(readyReason, spellId, bot);
@@ -10056,6 +10062,11 @@ bool BotWorldPopulationMgr::TryValidationRouteReadiness(WorldBotState& state, Pl
     auto castParty = [&](uint32 spellId, std::initializer_list<uint32> auraIds, char const* readyReason, char const* blockedReason) -> bool
     {
         std::string attemptKey = std::string("party:") + readyReason;
+        if (state.ReadinessPartyCoverageSignature[attemptKey] == "cast_once")
+        {
+            TryResolveBotBlocker(state, bot, readyReason);
+            return false;
+        }
         if (!bot->HasSpell(spellId))
         {
             MarkBotBlocked(state, bot, blockedReason);
@@ -10099,6 +10110,7 @@ bool BotWorldPopulationMgr::TryValidationRouteReadiness(WorldBotState& state, Pl
                     std::string raw = BuildRawJson(bot, pullTarget);
                     std::string semantic = BuildSemanticJson(bot, pullTarget, "validation_route_readiness", &power, stage, activity);
                     RecordEvent(state, bot, "validation_route_readiness", member, readyReason, raw.c_str(), semantic.c_str(), bot->GetExactDist(member), 0, spellId);
+                    state.ReadinessPartyCoverageSignature[attemptKey] = "cast_once";
                     return true;
                 }
                 std::string failedReason = buffFailureReason(readyReason, spellId, member);
@@ -10617,6 +10629,10 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
     action.Type = "cast";
     action.SpellId = best->SpellId;
     action.TargetGuid = target->GetGUID();
+    if ((best->Category == BotCombatActionCategory::Aoe || best->Category == BotCombatActionCategory::Cleave) && best->SpellId)
+        if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(best->SpellId))
+            if (spellInfo->GetMaxRange(false) <= 5.0f)
+                action.TargetGuid = bot->GetGUID();
     action.DebugName = BotCombatActionCatalog::ToString(best->Category);
     action.MovementDirective = best->Profile.MovementDirective.empty() ? profile.MovementDirective : best->Profile.MovementDirective;
     action.AutoAttackMode = best->Profile.AutoAttackMode.empty() ? profile.AutoAttackMode : best->Profile.AutoAttackMode;
@@ -10630,58 +10646,30 @@ bool BotWorldPopulationMgr::TryEnsureCombatTotems(WorldBotState& state, Player* 
     if (!bot || bot->getClass() != CLASS_SHAMAN || !bot->IsInCombat() || !target || !target->IsAlive())
         return false;
 
-    struct CombatTotemRequirement
+    bool missingTotem = false;
+    for (uint8 slot = SUMMON_SLOT_TOTEM_FIRE; slot < MAX_TOTEM_SLOT; ++slot)
     {
-        uint8 Slot;
-        uint32 SpellId;
-        char const* Key;
-    };
-
-    static CombatTotemRequirement const requirements[] =
-    {
-        { SUMMON_SLOT_TOTEM_EARTH, 8075, "strength_of_earth_totem" },
-        { SUMMON_SLOT_TOTEM_FIRE, 3599, "searing_totem" },
-        { SUMMON_SLOT_TOTEM_WATER, 5394, "healing_stream_totem" },
-        { SUMMON_SLOT_TOTEM_AIR, 8512, "windfury_totem" },
-    };
-
-    uint64 const nowMs = NowMs();
-    for (CombatTotemRequirement const& requirement : requirements)
-    {
-        if (!bot->HasSpell(requirement.SpellId))
-            continue;
-
-        if (bot->m_SummonSlot[requirement.Slot])
-        {
-            Creature* totem = bot->GetMap() ? bot->GetMap()->GetCreature(bot->m_SummonSlot[requirement.Slot]) : nullptr;
-            if (totem && totem->IsTotem() && totem->IsAlive())
-            {
-                TryResolveBotBlocker(state, bot, requirement.Key);
-                continue;
-            }
-        }
-
-        std::string attemptKey = std::string("totem:") + requirement.Key;
-        auto retryItr = state.ReadinessRetryUntilMs.find(attemptKey);
-        if (retryItr != state.ReadinessRetryUntilMs.end() && retryItr->second > nowMs)
-        {
-            MarkBotBlocked(state, bot, (std::string("totem_cast_failed:") + requirement.Key).c_str());
-            return true;
-        }
-
-        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(requirement.SpellId);
-        if (!spellInfo || bot->HasUnitState(UNIT_STATE_CASTING) || bot->GetSpellHistory()->HasGlobalCooldown(spellInfo) || !bot->GetSpellHistory()->IsReady(spellInfo))
-            return false;
-
-        if (bot->CastSpell(bot, requirement.SpellId, false) == SPELL_CAST_OK)
-            return true;
-
-        state.ReadinessRetryUntilMs[attemptKey] = nowMs + 15000;
-        MarkBotBlocked(state, bot, (std::string("totem_cast_failed:") + requirement.Key).c_str());
-        return true;
+        Creature* totem = bot->m_SummonSlot[slot] && bot->GetMap() ? bot->GetMap()->GetCreature(bot->m_SummonSlot[slot]) : nullptr;
+        if (!totem || !totem->IsTotem() || !totem->IsAlive())
+            missingTotem = true;
     }
 
-    return false;
+    if (!missingTotem)
+    {
+        TryResolveBotBlocker(state, bot, "totems_ready");
+        return false;
+    }
+
+    uint32 const callOfElements = 66842;
+    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(callOfElements);
+    if (!bot->HasSpell(callOfElements) || !spellInfo || bot->HasUnitState(UNIT_STATE_CASTING) || bot->GetSpellHistory()->HasGlobalCooldown(spellInfo) || !bot->GetSpellHistory()->IsReady(spellInfo))
+        return false;
+
+    if (bot->CastSpell(bot, callOfElements, false) == SPELL_CAST_OK)
+        return true;
+
+    MarkBotBlocked(state, bot, "totem_cast_failed:call_of_elements");
+    return true;
 }
 
 BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState* state, Player* bot, Unit* target, ResolvedCombatAction* actionOut) const

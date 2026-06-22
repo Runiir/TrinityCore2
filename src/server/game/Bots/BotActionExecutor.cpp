@@ -100,9 +100,10 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
     if (!action.SpellId)
         return BotActionResult::NoAction;
 
-    if (!target || !target->IsAlive() || !bot->IsValidAttackTarget(target))
+    if (!target || !target->IsAlive() || (target != bot && !bot->IsValidAttackTarget(target)))
         return BotActionResult::InvalidTarget;
-    Face(bot, target);
+    if (target != bot)
+        Face(bot, target);
 
     BotActionResult check = CheckHostileSpell(owner, bot, target, action.SpellId);
     if (check != BotActionResult::Ok)
