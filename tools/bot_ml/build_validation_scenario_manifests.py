@@ -64,7 +64,7 @@ EVIDENCE_ACTIONS = {
     "tank_positioning": ["validation_route_tank_boss", "tank_positioning", "force_tank_focus", "move_to_validation_route_assist_target", "raid_position_anchor", "raid_boss_action"],
     "regrouping": ["validation_route_regroup", "regroup", "validation_route_hold_anchor", "move_to_validation_route_focus", "raid_position_anchor"],
     "recovery": ["stuck_detected", "unstuck", "death", "dead_recovery", "validation_route_recovery", "raid_wipe"],
-    "instance_reset": ["instance_reset", "reset_stale_boss_activation", "bot_pool_reset"],
+    "instance_reset": ["instance_reset"],
 }
 
 

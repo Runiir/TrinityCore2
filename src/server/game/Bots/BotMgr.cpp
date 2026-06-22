@@ -14,6 +14,7 @@
 #include "MapManager.h"
 #include "MotionMaster.h"
 #include "ObjectAccessor.h"
+#include "Pet.h"
 #include "Player.h"
 #include "QueryHolder.h"
 #include "SpellInfo.h"
@@ -1079,6 +1080,56 @@ Player* BotMgr::LoadCharacterAsBotSession(ObjectGuid guid, uint32 accountId, Pla
 
     ObjectAccessor::AddObject(bot);
     TC_LOG_INFO("server", "PlayerBot object_accessor_add complete character=%s", guid.ToString().c_str());
+
+    bot->LoadPetsFromDB(holder->GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_ALL_PETS));
+    if (bot->getClass() == CLASS_HUNTER && !bot->GetPlayerPetDataCurrent())
+    {
+        for (uint8 slot = PET_SLOT_FIRST_ACTIVE_SLOT; slot <= PET_SLOT_LAST_ACTIVE_SLOT; ++slot)
+        {
+            PlayerPetData* petData = bot->GetPlayerPetDataBySlot(slot);
+            if (!petData || petData->Type != HUNTER_PET)
+                continue;
+
+            petData->Active = true;
+            TC_LOG_INFO("server", "PlayerBot hunter active-slot pet selected character=%s pet_id=%u entry=%u slot=%u",
+                guid.ToString().c_str(), petData->PetId, petData->CreatureId, petData->Slot);
+            break;
+        }
+    }
+    if (bot->IsMounted())
+    {
+        bot->RemoveAurasByType(SPELL_AURA_MOUNTED);
+        if (bot->IsMounted())
+            bot->Dismount();
+        TC_LOG_INFO("server", "PlayerBot dismounted before pet load character=%s", guid.ToString().c_str());
+    }
+    bot->LoadPet();
+    Pet* loadedPet = bot->GetPet();
+    std::string petGuid = loadedPet ? loadedPet->GetGUID().ToString() : ObjectGuid::Empty.ToString();
+    TC_LOG_INFO("server", "PlayerBot pets loaded character=%s pet=%s",
+        guid.ToString().c_str(), petGuid.c_str());
+
+    bot->UpdateObjectVisibility(true);
+    if (Map* map = bot->GetMap())
+    {
+        Map::PlayerList const& players = map->GetPlayers();
+        for (Map::PlayerList::const_iterator itr = players.begin(); itr != players.end(); ++itr)
+        {
+            Player* player = itr->GetSource();
+            if (!player || player == bot || !player->IsInWorld() || player->GetMap() != map)
+                continue;
+
+            WorldSession* session = player->GetSession();
+            if (!session || session->IsBotSession())
+                continue;
+
+            if (!bot->IsWithinDistInMap(player, bot->GetVisibilityRange()))
+                continue;
+
+            player->UpdateVisibilityOf(bot);
+        }
+    }
+    TC_LOG_INFO("server", "PlayerBot visibility refresh complete character=%s", guid.ToString().c_str());
     SetBotCharacterOnline(guid, true);
     _botSessions[guid] = std::move(session);
     return bot;

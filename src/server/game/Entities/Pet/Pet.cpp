@@ -1796,7 +1796,7 @@ bool Pet::Create(ObjectGuid::LowType guidlow, Map* map, uint32 Entry, uint32 pet
     ASSERT(map);
     SetMap(map);
 
-    Object::_Create(guidlow, petId, HighGuid::Pet);
+    Object::_Create(guidlow, Entry, HighGuid::Pet);
 
     m_spawnId = guidlow;
     m_originalEntry = Entry;

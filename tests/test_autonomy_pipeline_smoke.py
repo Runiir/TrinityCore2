@@ -15,6 +15,7 @@ PLAYER_BOT_TYPES = ROOT / "src/server/game/Bots/BotTypes.cpp"
 PLAYER_BOT_ACTION_PROFILE = ROOT / "src/server/game/Bots/BotClassSpecActionProfile.cpp"
 PLAYER_BOT_EXECUTOR = ROOT / "src/server/game/Bots/BotActionExecutor.cpp"
 BOT_MGR_HEADER = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h"
+PET_CPP = ROOT / "src/server/game/Entities/Pet/Pet.cpp"
 STONECORE_ROTATION_SQL = ROOT / "sql/custom/world/2026_06_21_00_bot_rotation_profiles.sql"
 BOT_POLICY = ROOT / "src/server/game/Bots/BotTelemetryPolicy.cpp"
 BOT_BUFFER = ROOT / "src/server/game/Bots/BotTelemetryBuffer.cpp"
@@ -173,6 +174,11 @@ def test_validation_blockers_require_matching_resolution_and_trace_episode_field
     assert "++state.BlockedEpisodeId" in blocked
     assert "Blocked: \" + state.BlockedFirstReason" in blocked
     assert "reason == resolver" in unstuck
+    assert "buff_cast_failed:" in unstuck
+    assert "totem_cast_failed:" in unstuck
+    assert "hunter_pet_unprovisioned" in unstuck
+    assert "hunter_pet_db_row_absent:" in unstuck
+    assert "hunter_pet_load_failed:" in unstuck
     assert "hunter_pet_missing" in unstuck
     assert "movement_progress" in unstuck
     assert "TryResolveBotBlocker(*state, bot, \"profile_action_valid\")" in execute_profile
@@ -188,7 +194,7 @@ def test_validation_route_readiness_buffs_party_and_hunter_pet_without_fallbacks
     route_objective = function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteObjective")
     trash = function_body(mgr, "BotWorldPopulationMgr::DungeonTrashActionResult BotWorldPopulationMgr::TryDungeonTrash")
 
-    for spell_id in ["25780", "31801", "465", "20217", "54428", "13165", "883", "982", "1130", "34477"]:
+    for spell_id in ["25780", "31801", "465", "20217", "54428", "13165", "982", "1130", "34477"]:
         assert spell_id in readiness
 
     for buff_key in [
@@ -198,7 +204,6 @@ def test_validation_route_readiness_buffs_party_and_hunter_pet_without_fallbacks
         "shadow_protection_ready",
         "horn_of_winter_ready",
         "arcane_brilliance_ready",
-        "dark_intent_ready",
         "mark_of_the_wild_ready",
     ]:
         assert buff_key in readiness
@@ -207,17 +212,83 @@ def test_validation_route_readiness_buffs_party_and_hunter_pet_without_fallbacks
     assert "_config.ValidationRouteEnable || !bot" not in readiness
     assert "ActiveBuffRequirement" in readiness
     assert "blessing_of_kings_ready" in readiness
+    assert "strength_of_earth_totem_ready" not in readiness
+    assert "wrath_of_air_totem_ready" not in readiness
+    assert "flametongue_totem_ready" not in readiness
     assert "std::string(requirement.PartyWide ? \"missing_party_buff:\" : \"missing_self_buff:\") + requirement.Key" in readiness
+    assert "ReadinessRetryUntilMs" in readiness
+    assert "ReadinessPartyCoverageSignature" in readiness
+    assert "!bot->IsWithinDistInMap(member, maxRange)" in readiness
+    assert "state.ReadinessPartyCoverageSignature[attemptKey] == signature" in readiness
+    assert "state.ReadinessPartyCoverageSignature[attemptKey] = signature" in readiness
+    assert "RecordEvent(state, bot, \"validation_route_readiness\", member, failedReason.c_str()" in readiness
+    assert "deferAttempt(attemptKey, failedReason.c_str())" in readiness
+    assert "TryReconcileHunterPetDataFromDB" not in mgr
+    assert "TrySummonConfiguredHunterPet" not in mgr
+    assert "bot->SummonPet(petData->Slot" not in mgr
+    assert "TryCastFriendlySpell(bot, bot, 883)" not in readiness
+    assert "hunter_pet_load_failed:" in readiness
     assert "hunter_pet_missing" in readiness
     assert "hunter_pet_dead" in readiness
+    assert "buff_cast_failed:\" << readyReason << \":spell=\" << spellId << \":target=\"" in readiness
+    assert "if (!canAttempt(attemptKey))\n            return true;" in readiness
     assert "validation_route_readiness_misdirection" in readiness
     assert "for (GroupReference* itr = group->GetFirstMember()" in readiness
-    assert "member->HasAura(auraId)" in readiness
+    assert "hasAnyAura(member, auraIds)" in readiness
     assert "validation_route_readiness_party_buff" in readiness
     assert "TryValidationRouteReadiness(state, bot, target" in route_objective
     assert "TryValidationRouteReadiness(state, bot, groupTarget" in trash
     assert "AttackStop" not in readiness
     assert "CombatStop" not in readiness
+
+
+def test_headless_bot_spawn_forces_visibility_after_registration():
+    bot_mgr = read(PLAYER_BOT_MGR)
+    load = function_body(bot_mgr, "Player* BotMgr::LoadCharacterAsBotSession")
+
+    assert_ordered(
+        load,
+        "bot->GetMap()->AddPlayerToMap(bot)",
+        "ObjectAccessor::AddObject(bot)",
+        "bot->LoadPetsFromDB(holder->GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_ALL_PETS))",
+        "petData->Active = true",
+        "bot->RemoveAurasByType(SPELL_AURA_MOUNTED)",
+        "bot->LoadPet()",
+        "bot->UpdateObjectVisibility(true)",
+        "player->UpdateVisibilityOf(bot)",
+        "SetBotCharacterOnline(guid, true)",
+    )
+    assert "Map::PlayerList const& players = map->GetPlayers()" in load
+    assert "session->IsBotSession()" in load
+    assert "bot->IsWithinDistInMap(player, bot->GetVisibilityRange())" in load
+    assert "PlayerBot pets loaded" in load
+    assert "PlayerBot hunter active-slot pet selected" in load
+    assert "PlayerBot dismounted before pet load" in load
+
+
+def test_persistent_pet_guid_uses_creature_entry_not_database_pet_id():
+    pet_cpp = read(PET_CPP)
+    create = function_body(pet_cpp, "bool Pet::Create(ObjectGuid::LowType")
+
+    assert "Object::_Create(guidlow, Entry, HighGuid::Pet)" in create
+    assert "Object::_Create(guidlow, petId, HighGuid::Pet)" not in create
+    assert "m_charmInfo->SetPetNumber(petId" in function_body(pet_cpp, "bool Pet::LoadPetData")
+
+
+def test_shaman_totems_are_combat_entry_setup_without_spam():
+    mgr = read(BOT_MGR)
+    totems = function_body(mgr, "bool BotWorldPopulationMgr::TryEnsureCombatTotems")
+    execute_profile = function_body(mgr, "BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction")
+
+    for spell_id in ["8075", "3599", "5394", "8512"]:
+        assert spell_id in totems
+
+    assert "bot->IsInCombat()" in totems
+    assert "m_SummonSlot" in totems
+    assert "totem->IsTotem() && totem->IsAlive()" in totems
+    assert "ReadinessRetryUntilMs" in totems
+    assert "totem_cast_failed:" in totems
+    assert "TryEnsureCombatTotems(*state, bot, target)" in execute_profile
 
 
 def test_stonecore_rotation_sql_declares_buffs_hunter_builder_and_aoe_gate():
@@ -580,10 +651,11 @@ def test_quest_first_portfolio_routing_surface():
     assert "routeDistance <= 220.0f" in mgr
     assert "ValidationRouteActivationApplied" in mgr_header
     assert "ValidationRouteTargetSearchMissCount" in mgr_header
-    assert "reset_stale_boss_activation" in mgr
+    assert "reset_stale_boss_activation" not in mgr
+    assert "MarkBotBlocked(state, bot, \"boss_route_activation_no_visible_target\")" in mgr
     assert "_validationRouteActivationApplied" in mgr_header
     assert "_validationRouteActivationAttempts" in mgr_header
-    assert "_validationRouteActivationApplied = false;" in mgr
+    assert "_validationRouteActivationApplied = false;" not in function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteObjective")
     assert "if (_validationRouteActivationApplied)" in mgr
     assert "state.ValidationRouteActivationAttempts = _validationRouteActivationAttempts;" in mgr
     assert "_validationRouteActivationApplied = true;" in mgr
@@ -883,6 +955,17 @@ def test_botauto_diagnosis_and_trace_surface():
         "active_quest_cluster_id",
         "quest_cooldown_count",
         "no_progress_cooldown_count",
+        "pet_db_row_present",
+        "pet_store_active",
+        "pet_guid",
+        "pet_entry",
+        "pet_alive",
+        "last_pet_readiness_action",
+        "paladin_righteous_fury_ready",
+        "paladin_seal_ready",
+        "paladin_aura_ready",
+        "paladin_blessing_ready",
+        "paladin_divine_plea_ready",
         "validation_route_manifest_index",
         "validation_route_manifest_count",
         "validation_route_advance_mode",

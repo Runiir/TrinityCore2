@@ -475,6 +475,12 @@ private:
         uint64 BlockedResolvedMs = 0;
         bool BlockedMessageEmitted = false;
         bool UnstuckMessageEmitted = false;
+        std::map<std::string, uint64> ReadinessRetryUntilMs;
+        std::map<std::string, uint32> ReadinessAttemptCount;
+        std::map<std::string, std::string> ReadinessPartyCoverageSignature;
+        std::string LastPetReadinessAction;
+        uint32 LastPetReadinessPetId = 0;
+        uint32 LastPetReadinessPetEntry = 0;
 
         struct DecisionTraceEntry
         {
@@ -978,6 +984,7 @@ private:
     DungeonTrashPackFeatures BuildDungeonTrashPackFeatures(Player* bot, Unit const* focus) const;
     DungeonTrashActionResult TryDungeonTrash(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity);
     bool TryValidationRouteReadiness(WorldBotState& state, Player* bot, Unit* pullTarget, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, DungeonTrashActionResult& result);
+    bool TryEnsureCombatTotems(WorldBotState& state, Player* bot, Unit* target) const;
     char const* GetDungeonRole(Player* bot) const;
     uint32 SelectInterruptSpell(Player* bot) const;
     uint32 SelectHealSpell(Player* bot) const;

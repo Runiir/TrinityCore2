@@ -3158,6 +3158,22 @@ bool BotWorldPopulationMgr::TryResolveBotBlocker(WorldBotState& state, Player* b
         resolved = true;
     else if (reason.rfind("missing_party_buff:", 0) == 0 && resolver == reason.substr(std::string("missing_party_buff:").size()))
         resolved = true;
+    else if (reason.rfind("buff_cast_failed:", 0) == 0)
+    {
+        std::string key = reason.substr(std::string("buff_cast_failed:").size());
+        size_t detailPos = key.find(':');
+        if (detailPos != std::string::npos)
+            key.resize(detailPos);
+        resolved = resolver == key;
+    }
+    else if (reason.rfind("totem_cast_failed:", 0) == 0 && resolver == reason.substr(std::string("totem_cast_failed:").size()))
+        resolved = true;
+    else if (reason == "hunter_pet_unprovisioned" && resolver == "hunter_pet_ready")
+        resolved = true;
+    else if (reason.rfind("hunter_pet_db_row_absent:", 0) == 0 && resolver == "hunter_pet_ready")
+        resolved = true;
+    else if (reason.rfind("hunter_pet_load_failed:", 0) == 0 && resolver == "hunter_pet_ready")
+        resolved = true;
     else if (reason == "hunter_pet_missing" && resolver == "hunter_pet_ready")
         resolved = true;
     else if (reason == "hunter_pet_dead" && resolver == "hunter_pet_ready")
@@ -8716,11 +8732,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             std::string raw = BuildRawJson(bot, nullptr);
             std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_activation_no_visible_target", &power, stage, activity);
             RecordEvent(state, bot, "validation_route_recovery", nullptr, "boss_route_activation_no_visible_target", raw.c_str(), semantic.c_str(), 0.0f, _config.ValidationRouteTargetEntry);
-            _validationRouteActivationApplied = false;
-            state.ValidationRouteActivationApplied = false;
-            state.ValidationRouteTargetSearchMissCount = 0;
-            RecordEvent(state, bot, "validation_route_recovery", nullptr, "reset_stale_boss_activation", raw.c_str(), semantic.c_str(), 0.0f, _config.ValidationRouteTargetEntry);
-            action = "search_validation_route_target";
+            MarkBotBlocked(state, bot, "boss_route_activation_no_visible_target");
+            situation = "validation_route_blocked";
+            action = "blocked_no_fallback";
             return true;
         }
 
@@ -9936,49 +9950,94 @@ bool BotWorldPopulationMgr::TryValidationRouteReadiness(WorldBotState& state, Pl
     if (!bot || bot->IsInCombat())
         return false;
 
+    uint64 const nowMs = NowMs();
+
     struct ActiveBuffRequirement
     {
         uint8 ClassId;
         char const* Role;
         uint32 SpellId;
-        uint32 AuraId;
+        std::initializer_list<uint32> AuraIds;
         char const* Key;
         bool PartyWide;
     };
 
+    // Keep this list to persistent Cataclysm setup only. Temporary combat
+    // effects such as shaman totems are handled on combat entry.
     static ActiveBuffRequirement const requirements[] =
     {
-        { CLASS_WARRIOR, nullptr, 6673, 6673, "battle_shout_ready", true },
-        { CLASS_WARRIOR, nullptr, 469, 469, "commanding_shout_ready", true },
-        { CLASS_PALADIN, "tank", 25780, 25780, "righteous_fury_ready", false },
-        { CLASS_PALADIN, "tank", 31801, 31801, "seal_of_truth_ready", false },
-        { CLASS_PALADIN, "tank", 465, 465, "devotion_aura_ready", false },
-        { CLASS_PALADIN, nullptr, 20217, 20217, "blessing_of_kings_ready", true },
-        { CLASS_PALADIN, nullptr, 19740, 19740, "blessing_of_might_ready", true },
-        { CLASS_HUNTER, nullptr, 13165, 13165, "aspect_of_the_hawk_ready", false },
-        { CLASS_PRIEST, nullptr, 79104, 79104, "power_word_fortitude_ready", true },
-        { CLASS_PRIEST, nullptr, 79106, 79106, "shadow_protection_ready", true },
-        { CLASS_DEATH_KNIGHT, nullptr, 57330, 57330, "horn_of_winter_ready", true },
-        { CLASS_SHAMAN, nullptr, 8075, 8075, "strength_of_earth_totem_ready", false },
-        { CLASS_SHAMAN, nullptr, 3738, 3738, "wrath_of_air_totem_ready", false },
-        { CLASS_SHAMAN, nullptr, 8227, 8227, "flametongue_totem_ready", false },
-        { CLASS_MAGE, nullptr, 79057, 79057, "arcane_brilliance_ready", true },
-        { CLASS_WARLOCK, nullptr, 85767, 85767, "dark_intent_ready", true },
-        { CLASS_DRUID, nullptr, 79060, 79060, "mark_of_the_wild_ready", true },
+        { CLASS_WARRIOR, nullptr, 6673, { 6673, 57330, 19740 }, "battle_shout_ready", true },
+        { CLASS_WARRIOR, nullptr, 469, { 469 }, "commanding_shout_ready", true },
+        { CLASS_PALADIN, "tank", 25780, { 25780 }, "righteous_fury_ready", false },
+        { CLASS_PALADIN, "tank", 31801, { 31801 }, "seal_of_truth_ready", false },
+        { CLASS_PALADIN, "tank", 465, { 465 }, "devotion_aura_ready", false },
+        { CLASS_PALADIN, nullptr, 20217, { 20217 }, "blessing_of_kings_ready", true },
+        { CLASS_HUNTER, nullptr, 13165, { 13165 }, "aspect_of_the_hawk_ready", false },
+        { CLASS_PRIEST, nullptr, 21562, { 21562 }, "power_word_fortitude_ready", true },
+        { CLASS_PRIEST, nullptr, 27683, { 27683 }, "shadow_protection_ready", true },
+        { CLASS_DEATH_KNIGHT, nullptr, 57330, { 57330, 6673, 19740 }, "horn_of_winter_ready", true },
+        { CLASS_MAGE, nullptr, 1459, { 1459 }, "arcane_brilliance_ready", true },
+        { CLASS_DRUID, nullptr, 1126, { 1126, 20217 }, "mark_of_the_wild_ready", true },
     };
 
-    auto castSelf = [&](uint32 spellId, char const* readyReason, char const* blockedReason) -> bool
+    auto hasAnyAura = [](Unit const* unit, std::initializer_list<uint32> auraIds) -> bool
     {
-        if (bot->HasAura(spellId))
+        if (!unit)
+            return false;
+        for (uint32 auraId : auraIds)
+            if (auraId && unit->HasAura(auraId))
+                return true;
+        return false;
+    };
+
+    auto canAttempt = [&](std::string const& key) -> bool
+    {
+        auto itr = state.ReadinessRetryUntilMs.find(key);
+        return itr == state.ReadinessRetryUntilMs.end() || itr->second <= nowMs;
+    };
+
+    auto deferAttempt = [&](std::string const& key, char const* blockedReason)
+    {
+        ++state.ReadinessAttemptCount[key];
+        state.ReadinessRetryUntilMs[key] = nowMs + 15000;
+        MarkBotBlocked(state, bot, blockedReason);
+    };
+
+    auto targetLabel = [](Unit const* unit) -> std::string
+    {
+        if (!unit)
+            return "none/0";
+        std::ostringstream label;
+        if (Player const* player = unit->ToPlayer())
+            label << player->GetName() << "/";
+        else
+            label << unit->GetName() << "/";
+        label << unit->GetGUID().GetCounter();
+        return label.str();
+    };
+
+    auto buffFailureReason = [&](char const* readyReason, uint32 spellId, Unit const* target) -> std::string
+    {
+        std::ostringstream reason;
+        reason << "buff_cast_failed:" << readyReason << ":spell=" << spellId << ":target=" << targetLabel(target);
+        return reason.str();
+    };
+
+    auto castSelf = [&](uint32 spellId, std::initializer_list<uint32> auraIds, char const* readyReason, char const* blockedReason) -> bool
+    {
+        if (hasAnyAura(bot, auraIds))
         {
             TryResolveBotBlocker(state, bot, readyReason);
             return false;
         }
+        std::string attemptKey = std::string("self:") + readyReason;
         if (!bot->HasSpell(spellId))
         {
             MarkBotBlocked(state, bot, blockedReason);
             return true;
         }
+        if (!canAttempt(attemptKey))
+            return true;
         if (TryCastFriendlySpell(bot, bot, spellId))
         {
             result.Action = "validation_route_readiness_buff";
@@ -9989,24 +10048,48 @@ bool BotWorldPopulationMgr::TryValidationRouteReadiness(WorldBotState& state, Pl
             RecordEvent(state, bot, "validation_route_readiness", bot, readyReason, raw.c_str(), semantic.c_str(), 0.0f, 0, spellId);
             return true;
         }
-        MarkBotBlocked(state, bot, blockedReason);
+        std::string failedReason = buffFailureReason(readyReason, spellId, bot);
+        deferAttempt(attemptKey, failedReason.c_str());
         return true;
     };
 
-    auto castParty = [&](uint32 spellId, uint32 auraId, char const* readyReason, char const* blockedReason) -> bool
+    auto castParty = [&](uint32 spellId, std::initializer_list<uint32> auraIds, char const* readyReason, char const* blockedReason) -> bool
     {
+        std::string attemptKey = std::string("party:") + readyReason;
         if (!bot->HasSpell(spellId))
         {
             MarkBotBlocked(state, bot, blockedReason);
             return true;
         }
+        if (!canAttempt(attemptKey))
+            return false;
+
+        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+        float maxRange = spellInfo ? std::max(5.0f, spellInfo->GetMaxRange(false)) : 5.0f;
+        std::ostringstream coverageSignature;
+        std::vector<Player*> eligibleMembers;
 
         if (Group* group = bot->GetGroup())
         {
             for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
             {
                 Player* member = itr->GetSource();
-                if (!member || !member->IsAlive() || member->GetMap() != bot->GetMap() || member->HasAura(auraId))
+                if (!member || !member->IsAlive() || member->GetMap() != bot->GetMap() || !bot->IsWithinDistInMap(member, maxRange))
+                    continue;
+                eligibleMembers.push_back(member);
+                coverageSignature << member->GetGUID().GetCounter() << ":alive:range;";
+            }
+
+            std::string signature = coverageSignature.str();
+            if (state.ReadinessPartyCoverageSignature[attemptKey] == signature)
+            {
+                TryResolveBotBlocker(state, bot, readyReason);
+                return false;
+            }
+
+            for (Player* member : eligibleMembers)
+            {
+                if (hasAnyAura(member, auraIds))
                     continue;
                 if (TryCastFriendlySpell(bot, member, spellId))
                 {
@@ -10018,12 +10101,19 @@ bool BotWorldPopulationMgr::TryValidationRouteReadiness(WorldBotState& state, Pl
                     RecordEvent(state, bot, "validation_route_readiness", member, readyReason, raw.c_str(), semantic.c_str(), bot->GetExactDist(member), 0, spellId);
                     return true;
                 }
-                MarkBotBlocked(state, bot, blockedReason);
-                return true;
+                std::string failedReason = buffFailureReason(readyReason, spellId, member);
+                state.ReadinessPartyCoverageSignature[attemptKey] = signature;
+                std::string raw = BuildRawJson(bot, pullTarget);
+                std::string semantic = BuildSemanticJson(bot, pullTarget, "validation_route_readiness", &power, stage, activity);
+                RecordEvent(state, bot, "validation_route_readiness", member, failedReason.c_str(), raw.c_str(), semantic.c_str(), bot->GetExactDist(member), 0, spellId);
+                TryResolveBotBlocker(state, bot, readyReason);
+                return false;
             }
+
+            state.ReadinessPartyCoverageSignature[attemptKey] = signature;
         }
-        else if (!bot->HasAura(auraId))
-            return castSelf(spellId, readyReason, blockedReason);
+        else if (!hasAnyAura(bot, auraIds))
+            return castSelf(spellId, auraIds, readyReason, blockedReason);
 
         TryResolveBotBlocker(state, bot, readyReason);
         return false;
@@ -10042,12 +10132,12 @@ bool BotWorldPopulationMgr::TryValidationRouteReadiness(WorldBotState& state, Pl
         std::string missing = std::string(requirement.PartyWide ? "missing_party_buff:" : "missing_self_buff:") + requirement.Key;
         if (requirement.PartyWide)
         {
-            if (castParty(requirement.SpellId, requirement.AuraId, requirement.Key, missing.c_str()))
+            if (castParty(requirement.SpellId, requirement.AuraIds, requirement.Key, missing.c_str()))
                 return true;
         }
         else
         {
-            if (castSelf(requirement.SpellId, requirement.Key, missing.c_str()))
+            if (castSelf(requirement.SpellId, requirement.AuraIds, requirement.Key, missing.c_str()))
                 return true;
         }
     }
@@ -10056,6 +10146,10 @@ bool BotWorldPopulationMgr::TryValidationRouteReadiness(WorldBotState& state, Pl
     {
         case CLASS_PALADIN:
             if (role == "tank" && pullTarget && bot->HasSpell(54428) && !bot->HasAura(54428))
+            {
+                std::string attemptKey = "self:divine_plea_ready";
+                if (!canAttempt(attemptKey))
+                    return true;
                 if (TryCastFriendlySpell(bot, bot, 54428))
                 {
                     result.Action = "validation_route_readiness_divine_plea";
@@ -10063,29 +10157,37 @@ bool BotWorldPopulationMgr::TryValidationRouteReadiness(WorldBotState& state, Pl
                     result.Target = bot;
                     return true;
                 }
+                std::string failedReason = buffFailureReason("divine_plea_ready", 54428, bot);
+                deferAttempt(attemptKey, failedReason.c_str());
+                return true;
+            }
             break;
         case CLASS_HUNTER:
             if (!bot->GetPet())
             {
-                if (bot->HasSpell(883) && TryCastFriendlySpell(bot, bot, 883))
+                PlayerPetData const* petData = bot->GetPlayerPetDataCurrent();
+                std::ostringstream missingReason;
+                missingReason << "hunter_pet_load_failed:" << (petData ? petData->PetId : 0);
+                state.LastPetReadinessAction = petData ? missingReason.str() : "hunter_pet_missing";
+                if (petData)
                 {
-                    result.Action = "validation_route_readiness_call_pet";
-                    result.SpellId = 883;
-                    result.Target = bot;
-                    return true;
+                    state.LastPetReadinessPetId = petData->PetId;
+                    state.LastPetReadinessPetEntry = petData->CreatureId;
                 }
-                MarkBotBlocked(state, bot, "hunter_pet_missing");
+                MarkBotBlocked(state, bot, state.LastPetReadinessAction.c_str());
                 return true;
             }
             if (!bot->GetPet()->IsAlive())
             {
-                if (bot->HasSpell(982) && TryCastFriendlySpell(bot, bot, 982))
+                std::string attemptKey = "hunter:revive_pet";
+                if (bot->HasSpell(982) && canAttempt(attemptKey) && TryCastFriendlySpell(bot, bot, 982))
                 {
                     result.Action = "validation_route_readiness_revive_pet";
                     result.SpellId = 982;
                     result.Target = bot;
                     return true;
                 }
+                state.ReadinessRetryUntilMs[attemptKey] = nowMs + 15000;
                 MarkBotBlocked(state, bot, "hunter_pet_dead");
                 return true;
             }
@@ -10523,8 +10625,70 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
     return action;
 }
 
+bool BotWorldPopulationMgr::TryEnsureCombatTotems(WorldBotState& state, Player* bot, Unit* target) const
+{
+    if (!bot || bot->getClass() != CLASS_SHAMAN || !bot->IsInCombat() || !target || !target->IsAlive())
+        return false;
+
+    struct CombatTotemRequirement
+    {
+        uint8 Slot;
+        uint32 SpellId;
+        char const* Key;
+    };
+
+    static CombatTotemRequirement const requirements[] =
+    {
+        { SUMMON_SLOT_TOTEM_EARTH, 8075, "strength_of_earth_totem" },
+        { SUMMON_SLOT_TOTEM_FIRE, 3599, "searing_totem" },
+        { SUMMON_SLOT_TOTEM_WATER, 5394, "healing_stream_totem" },
+        { SUMMON_SLOT_TOTEM_AIR, 8512, "windfury_totem" },
+    };
+
+    uint64 const nowMs = NowMs();
+    for (CombatTotemRequirement const& requirement : requirements)
+    {
+        if (!bot->HasSpell(requirement.SpellId))
+            continue;
+
+        if (bot->m_SummonSlot[requirement.Slot])
+        {
+            Creature* totem = bot->GetMap() ? bot->GetMap()->GetCreature(bot->m_SummonSlot[requirement.Slot]) : nullptr;
+            if (totem && totem->IsTotem() && totem->IsAlive())
+            {
+                TryResolveBotBlocker(state, bot, requirement.Key);
+                continue;
+            }
+        }
+
+        std::string attemptKey = std::string("totem:") + requirement.Key;
+        auto retryItr = state.ReadinessRetryUntilMs.find(attemptKey);
+        if (retryItr != state.ReadinessRetryUntilMs.end() && retryItr->second > nowMs)
+        {
+            MarkBotBlocked(state, bot, (std::string("totem_cast_failed:") + requirement.Key).c_str());
+            return true;
+        }
+
+        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(requirement.SpellId);
+        if (!spellInfo || bot->HasUnitState(UNIT_STATE_CASTING) || bot->GetSpellHistory()->HasGlobalCooldown(spellInfo) || !bot->GetSpellHistory()->IsReady(spellInfo))
+            return false;
+
+        if (bot->CastSpell(bot, requirement.SpellId, false) == SPELL_CAST_OK)
+            return true;
+
+        state.ReadinessRetryUntilMs[attemptKey] = nowMs + 15000;
+        MarkBotBlocked(state, bot, (std::string("totem_cast_failed:") + requirement.Key).c_str());
+        return true;
+    }
+
+    return false;
+}
+
 BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState* state, Player* bot, Unit* target, ResolvedCombatAction* actionOut) const
 {
+    if (state && TryEnsureCombatTotems(*state, bot, target))
+        return BotActionResult::Casting;
+
     ResolvedCombatAction action = ResolveProfileCombatAction(bot, target);
     if (actionOut)
         *actionOut = action;
@@ -12170,7 +12334,7 @@ void BotWorldPopulationMgr::RecordEvent(WorldBotState& state, Player* bot, char 
         ++_metrics.Regroups;
     if (observedEvent == "stuck_detected" || observedEvent == "unstuck" || observedEvent == "death" || observedEvent == "dead_recovery" || observedEvent == "validation_route_recovery" || observedEvent == "raid_wipe")
         ++_metrics.RecoveryEvents;
-    if (observedEvent == "instance_reset" || observedEvent == "reset_stale_boss_activation" || observedEvent == "bot_pool_reset")
+    if (observedEvent == "instance_reset")
         ++_metrics.InstanceResets;
 
     RecordDecisionTrace(state, eventType ? eventType : "event", eventType ? eventType : "event", target, 0, result ? result : "ok", EventLooksFailure(eventType, result) ? "event_failure" : "");
@@ -13622,6 +13786,30 @@ std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson(WorldBotState con
     float validationRouteDistance = -1.0f;
     if (bot && (!_config.ValidationRouteMapId || bot->GetMapId() == _config.ValidationRouteMapId))
         validationRouteDistance = bot->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ);
+    bool petDbRowPresent = false;
+    uint32 petDbId = 0;
+    uint32 petDbEntry = 0;
+    if (bot && bot->getClass() == CLASS_HUNTER)
+    {
+        if (QueryResult petRow = CharacterDatabase.PQuery("SELECT id, entry FROM character_pet WHERE owner = %u AND (active = 1 OR slot BETWEEN %u AND %u) ORDER BY active DESC, slot LIMIT 1", bot->GetGUID().GetCounter(), PET_SLOT_FIRST_ACTIVE_SLOT, PET_SLOT_LAST_ACTIVE_SLOT))
+        {
+            Field* fields = petRow->Fetch();
+            petDbRowPresent = true;
+            petDbId = fields[0].GetUInt32();
+            petDbEntry = fields[1].GetUInt32();
+        }
+    }
+    PlayerPetData const* activePetData = bot ? const_cast<Player*>(bot)->GetPlayerPetDataCurrent() : nullptr;
+    Pet const* livePet = bot ? bot->GetPet() : nullptr;
+    auto paladinReady = [&](std::initializer_list<uint32> auraIds) -> bool
+    {
+        if (!bot || bot->getClass() != CLASS_PALADIN)
+            return false;
+        for (uint32 auraId : auraIds)
+            if (bot->HasAura(auraId))
+                return true;
+        return false;
+    };
 
     std::ostringstream json;
     json << "{\"diagnosis_code\":\"" << JsonEscape(diagnosis.DiagnosisCode) << "\""
@@ -13701,7 +13889,22 @@ std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson(WorldBotState con
          << "{\"name\":\"blocked_first_reason\",\"value\":\"" << JsonEscape(state.BlockedFirstReason) << "\"},"
          << "{\"name\":\"blocked_current_reason\",\"value\":\"" << JsonEscape(state.BlockedReason) << "\"},"
          << "{\"name\":\"blocked_resolution\",\"value\":\"" << JsonEscape(state.BlockedResolution) << "\"},"
-         << "{\"name\":\"blocked_resolved_by\",\"value\":\"" << JsonEscape(state.BlockedResolvedBy) << "\"}"
+         << "{\"name\":\"blocked_resolved_by\",\"value\":\"" << JsonEscape(state.BlockedResolvedBy) << "\"},"
+         << "{\"name\":\"pet_db_row_present\",\"value\":" << (petDbRowPresent ? "true" : "false") << "},"
+         << "{\"name\":\"pet_db_id\",\"value\":" << petDbId << "},"
+         << "{\"name\":\"pet_db_entry\",\"value\":" << petDbEntry << "},"
+         << "{\"name\":\"pet_store_active\",\"value\":" << (activePetData ? "true" : "false") << "},"
+         << "{\"name\":\"pet_guid\",\"value\":" << (livePet ? livePet->GetGUID().GetCounter() : 0) << "},"
+         << "{\"name\":\"pet_entry\",\"value\":" << (livePet ? livePet->GetEntry() : (activePetData ? activePetData->CreatureId : 0)) << "},"
+         << "{\"name\":\"pet_alive\",\"value\":" << (livePet && livePet->IsAlive() ? "true" : "false") << "},"
+         << "{\"name\":\"last_pet_readiness_action\",\"value\":\"" << JsonEscape(state.LastPetReadinessAction) << "\"},"
+         << "{\"name\":\"last_pet_readiness_pet_id\",\"value\":" << state.LastPetReadinessPetId << "},"
+         << "{\"name\":\"last_pet_readiness_pet_entry\",\"value\":" << state.LastPetReadinessPetEntry << "},"
+         << "{\"name\":\"paladin_righteous_fury_ready\",\"value\":" << (paladinReady({ 25780 }) ? "true" : "false") << "},"
+         << "{\"name\":\"paladin_seal_ready\",\"value\":" << (paladinReady({ 31801 }) ? "true" : "false") << "},"
+         << "{\"name\":\"paladin_aura_ready\",\"value\":" << (paladinReady({ 465 }) ? "true" : "false") << "},"
+         << "{\"name\":\"paladin_blessing_ready\",\"value\":" << (paladinReady({ 20217, 1126 }) ? "true" : "false") << "},"
+         << "{\"name\":\"paladin_divine_plea_ready\",\"value\":" << (paladinReady({ 54428 }) ? "true" : "false") << "}"
          << "]"
          << ",\"next_expected_action\":\"" << JsonEscape(diagnosis.NextExpectedAction) << "\""
          << ",\"suggested_investigation\":\"" << JsonEscape(diagnosis.SuggestedInvestigation) << "\"}";

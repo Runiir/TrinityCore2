@@ -79,7 +79,7 @@ VALIDATION_EVIDENCE_ACTIONS = {
     "tank_positioning": {"validation_route_tank_boss", "tank_positioning", "force_tank_focus", "move_to_validation_route_assist_target", "raid_position_anchor", "raid_boss_action"},
     "regrouping": {"validation_route_regroup", "regroup", "validation_route_hold_anchor", "move_to_validation_route_focus", "raid_position_anchor"},
     "recovery": {"stuck_detected", "unstuck", "death", "dead_recovery", "validation_route_recovery", "raid_wipe"},
-    "instance_reset": {"instance_reset", "reset_stale_boss_activation", "bot_pool_reset"},
+    "instance_reset": {"instance_reset"},
 }
 
 
@@ -1059,8 +1059,8 @@ def live_evidence(
     )
     instance_reset_evidence = max(
         int(summary.get("instance_resets") or 0),
-        action_counts.get("instance_reset", 0) + action_counts.get("reset_stale_boss_activation", 0) + action_counts.get("bot_pool_reset", 0),
-        diagnosis_action_counts.get("instance_reset", 0) + diagnosis_action_counts.get("reset_stale_boss_activation", 0) + diagnosis_action_counts.get("bot_pool_reset", 0),
+        action_counts.get("instance_reset", 0),
+        diagnosis_action_counts.get("instance_reset", 0),
     )
     active_decision_evidence = decisions > 0 or non_spawn_trace_entries > 0 or moved_diagnoses > 0 or non_wait_diagnoses > 0
     boss_engagement_actions = sum(action_counts.get(action, 0) + legacy_diagnosis_action_counts.get(action, 0) for action in ["boss_started", "boss_action", "validation_route_tank_boss", "validation_route_group_heal"])

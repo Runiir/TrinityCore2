@@ -2672,7 +2672,7 @@ def test_live_bot_validation_counts_group_mechanic_evidence():
     output = """
 TC> {"active_bots":10,"target_bots":10,"action":"botauto_status","decisions":40}
 TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"snapshot":{"decision":{"action":"validation_role_assignment"},"movement":{"is_moving":true,"distance_moved_since_last_decision":2}}},{"identity":{"bot_guid":2},"snapshot":{"decision":{"action":"validation_route_tank_boss","result":"force_tank_focus"},"movement":{"is_moving":false,"distance_moved_since_last_decision":0}}}]}
-TC> {"trace_schema_version":1,"entries":[{"action":"raid_formed"},{"action":"boss_started"},{"action":"target_switch"},{"action":"assigned_interrupt_success"},{"action":"validation_route_group_heal"},{"action":"validation_route_regroup"},{"action":"reset_stale_boss_activation"}]}
+TC> {"trace_schema_version":1,"entries":[{"action":"raid_formed"},{"action":"boss_started"},{"action":"target_switch"},{"action":"assigned_interrupt_success"},{"action":"validation_route_group_heal"},{"action":"validation_route_regroup"},{"action":"validation_route_recovery"}]}
 TC> {"duration_minutes":5,"decisions":40,"raid_boss_kills":1,"interrupt_success":1}
 """
     report = live_validation_report(output)
@@ -2686,7 +2686,7 @@ TC> {"duration_minutes":5,"decisions":40,"raid_boss_kills":1,"interrupt_success"
     assert evidence["validation_evidence_counts"]["healer_assignments"] == 1
     assert evidence["validation_evidence_counts"]["tank_positioning"] >= 1
     assert evidence["validation_evidence_counts"]["regrouping"] == 1
-    assert evidence["validation_evidence_counts"]["instance_reset"] == 1
+    assert evidence["validation_evidence_counts"]["instance_reset"] == 0
 
 
 def test_live_bot_validation_counts_summary_only_raid_evidence_after_trace_rolloff():
@@ -5822,7 +5822,7 @@ def test_validation_provisioning_writes_configured_hunter_pet():
                         "class": 3,
                         "level": 85,
                         "glyphs": [1, 2, 3],
-                        "pet": {"id_offset": 7, "entry": 8959, "modelid": 0, "name": "Testwolf", "level": 85, "slot": 0, "active": 1, "spells": [2649, 17253]},
+                        "pet": {"id_offset": 7, "entry": 8959, "modelid": 4124, "created_by_spell": 0, "name": "Testwolf", "level": 85, "slot": 0, "active": 1, "spells": [2649, 17253]},
                     }
                 ],
             }
@@ -5834,7 +5834,7 @@ def test_validation_provisioning_writes_configured_hunter_pet():
     assert "DELETE ps FROM `characters`.`pet_spell`" in sql
     assert "DELETE FROM `characters`.`character_pet`" in sql
     assert "INSERT INTO `characters`.`character_pet`" in sql
-    assert "SELECT 8700007, 8959, c.`guid`, 0, 0, 1, 85" in sql
+    assert "SELECT 8700007, 8959, c.`guid`, 4124, 0, 1, 85" in sql
     assert "'Testwolf'" in sql
     assert "VALUES (8700007, 2649, 1)" in sql
     assert "VALUES (8700007, 17253, 1)" in sql
