@@ -992,6 +992,21 @@ Player* BotMgr::LoadBotFromPool(Player* owner, std::string const& role, std::str
     BotRole botRole = ParseBotRole(selectedRole);
     TC_LOG_INFO("server", "PlayerBot load selected bot=%s account=%u role=%s class_spec=%s", botGuid.ToString().c_str(), accountId, selectedRole.c_str(), selectedClassSpec.c_str());
 
+    if (Player* loadedBot = FindLoadedPlayer(botGuid))
+    {
+        bool managedAsWorldBotOrSession = _worldBots.find(botGuid) != _worldBots.end() || _botSessions.find(botGuid) != _botSessions.end();
+        TC_LOG_ERROR("server", "PlayerBot load skipped bot=%s name=%s role=%s selector=%s reason=pool_character_already_loaded managed=%u in_world=%u map=%u",
+            botGuid.ToString().c_str(), loadedBot->GetName().c_str(), selectedRole.c_str(), selector.empty() ? "<auto>" : selector.c_str(),
+            managedAsWorldBotOrSession ? 1 : 0, loadedBot->IsInWorld() ? 1 : 0, loadedBot->GetMapId());
+
+        if (managedAsWorldBotOrSession)
+            CharacterDatabase.DirectPExecute("UPDATE character_bot_pool SET in_use = 1 WHERE guid = %u", botGuid.GetCounter());
+        else
+            CleanupBot(botGuid, true);
+
+        return nullptr;
+    }
+
     Player* bot = LoadCharacterAsBotSession(botGuid, accountId, owner, placement, groupAnchor);
     if (!bot)
         return nullptr;

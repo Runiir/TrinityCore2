@@ -75,6 +75,21 @@ float UnitHealthPct(Unit const* unit)
     return float(unit->GetHealth()) / float(unit->GetMaxHealth());
 }
 
+bool HasPowerForSpell(Player const* bot, SpellInfo const* spellInfo)
+{
+    if (!bot || !spellInfo)
+        return false;
+
+    int32 powerCost = spellInfo->CalcPowerCost(bot, spellInfo->GetSchoolMask());
+    if (powerCost <= 0)
+        return true;
+    if (spellInfo->PowerType >= MAX_POWERS)
+        return true;
+    if (spellInfo->PowerType == POWER_HEALTH)
+        return int64(bot->GetHealth()) > powerCost;
+    return bot->GetPower(Powers(spellInfo->PowerType)) >= uint32(powerCost);
+}
+
 std::string LowerCopy(std::string value)
 {
     std::transform(value.begin(), value.end(), value.begin(), [](unsigned char c) { return char(std::tolower(c)); });
@@ -1455,32 +1470,14 @@ void BotWorldPopulationMgr::Update(uint32 diff)
             _lastPopulationFailureReason = "loaded_bot_not_in_world";
             if (_config.ValidationRouteEnable)
             {
-                if (TryReattachValidationBot(*itr, loadedBot, "update"))
-                {
-                    UpdateBot(*itr, diff);
-                    ++itr;
-                    continue;
-                }
-            }
-
-            bool validationBotStillDeciding = _config.ValidationRouteEnable
-                && itr->LastDecisionTickMs
-                && nowMs >= itr->LastDecisionTickMs
-                && nowMs - itr->LastDecisionTickMs < 15000;
-            if (validationBotStillDeciding)
-            {
-                ++itr;
-                continue;
-            }
-
-            if (_config.ValidationRouteEnable && itr->SpawnedMs && nowMs - itr->SpawnedMs >= 30000)
-            {
                 ObjectGuid prunedGuid = itr->Guid;
-                TC_LOG_ERROR("server", "BotWorld active bot respawn requested bot=%s reason=validation_route_loaded_bot_not_in_world spawn_source=%s age_ms=%llu",
-                    prunedGuid.ToString().c_str(), itr->SpawnSource.c_str(), static_cast<unsigned long long>(nowMs - itr->SpawnedMs));
+                MarkValidationCohortViolation(*itr, loadedBot, "validation_artificial_reattach_blocked");
+                itr->LastDecisionResult = "loaded_bot_not_in_world";
+                itr->LastDecisionReason = "validation_artificial_reattach_blocked";
+                TC_LOG_ERROR("server", "BotWorld active bot removed bot=%s reason=loaded_bot_not_in_world diagnostic=validation_artificial_reattach_blocked spawn_source=%s age_ms=%llu",
+                    prunedGuid.ToString().c_str(), itr->SpawnSource.c_str(), static_cast<unsigned long long>(itr->SpawnedMs ? nowMs - itr->SpawnedMs : 0));
                 sBotMgr->RemoveWorldBot(prunedGuid);
-                CharacterDatabase.DirectPExecute("UPDATE character_bot_pool SET in_use = 0 WHERE guid = %u", prunedGuid.GetCounter());
-                _failedSpawnGuids.erase(prunedGuid.GetCounter());
+                _failedSpawnGuids.insert(prunedGuid.GetCounter());
                 _validationRouteFocusGuid.Clear();
                 _validationRouteFocusEntry = 0;
                 _validationRouteFocusMapId = 0;
@@ -3091,6 +3088,177 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
     return MoveBotToPoint(state, bot, rangedPosition.GetPositionX(), rangedPosition.GetPositionY(), rangedPosition.GetPositionZ());
 }
 
+std::string BotWorldPopulationMgr::BuildCombatAttemptSummary(WorldBotState::CombatAttemptDiagnostic const& diagnostic) const
+{
+    if (diagnostic.Phase.empty() && diagnostic.Result.empty())
+        return "";
+
+    std::ostringstream summary;
+    summary << "phase=" << (diagnostic.Phase.empty() ? "unknown" : diagnostic.Phase);
+    if (diagnostic.SpellId)
+        summary << " spell=" << diagnostic.SpellId;
+    if (!diagnostic.DebugName.empty())
+        summary << " action=" << diagnostic.DebugName;
+    if (!diagnostic.Result.empty())
+        summary << " result=" << diagnostic.Result;
+    if (!diagnostic.TargetGuid.IsEmpty())
+        summary << " target=" << (diagnostic.SelfTarget ? "bot/" : "unit/") << diagnostic.TargetGuid.GetCounter();
+    if (!diagnostic.Reason.empty())
+        summary << " reason=" << diagnostic.Reason;
+    return summary.str();
+}
+
+std::string BotWorldPopulationMgr::BuildRouteProgressSummary(WorldBotState::RouteProgressDiagnostic const& diagnostic) const
+{
+    if (diagnostic.Reason.empty() && diagnostic.Summary.empty())
+        return "";
+
+    std::ostringstream summary;
+    summary << "reason=" << (diagnostic.Reason.empty() ? "route_no_progress" : diagnostic.Reason);
+    if (diagnostic.TargetEntry)
+        summary << " target=" << diagnostic.TargetEntry;
+    else if (!diagnostic.TargetGuid.IsEmpty())
+        summary << " target=" << diagnostic.TargetGuid.GetCounter();
+    summary << " hp=" << diagnostic.TargetHealthPct
+            << " best=" << diagnostic.BestHealthPct
+            << " count=" << diagnostic.NoProgressCount << "/" << diagnostic.NoProgressThreshold;
+    if (!diagnostic.LastCombatAttemptSummary.empty())
+        summary << " last_cast=" << diagnostic.LastCombatAttemptSummary;
+    return summary.str();
+}
+
+std::string BotWorldPopulationMgr::BuildCombatAttemptJson(WorldBotState::CombatAttemptDiagnostic const& diagnostic) const
+{
+    std::ostringstream json;
+    json << "{\"phase\":\"" << JsonEscape(diagnostic.Phase) << "\""
+         << ",\"action\":{\"spell_id\":" << diagnostic.SpellId
+         << ",\"debug_name\":\"" << JsonEscape(diagnostic.DebugName) << "\""
+         << ",\"action_type\":\"" << JsonEscape(diagnostic.ActionType) << "\""
+         << ",\"target_guid\":" << diagnostic.TargetGuid.GetCounter()
+         << ",\"target_entry\":" << diagnostic.TargetEntry
+         << ",\"self_target\":" << (diagnostic.SelfTarget ? "true" : "false") << "}"
+         << ",\"failure\":{\"result\":\"" << JsonEscape(diagnostic.Result) << "\""
+         << ",\"reason\":\"" << JsonEscape(diagnostic.Reason) << "\""
+         << ",\"gates\":{\"casting\":" << (diagnostic.Casting ? "true" : "false")
+         << ",\"global_cooldown\":" << (diagnostic.GlobalCooldown ? "true" : "false")
+         << ",\"cooldown_ready\":" << (diagnostic.CooldownReady ? "true" : "false")
+         << ",\"known_spell\":" << (diagnostic.KnownSpell ? "true" : "false")
+         << ",\"has_power\":" << (diagnostic.HasPower ? "true" : "false")
+         << ",\"line_of_sight\":" << (diagnostic.LineOfSight ? "true" : "false")
+         << ",\"in_range\":" << (diagnostic.InRange ? "true" : "false")
+         << ",\"target_alive\":" << (diagnostic.TargetAlive ? "true" : "false")
+         << ",\"target_attackable\":" << (diagnostic.TargetAttackable ? "true" : "false") << "}}"
+         << ",\"summary\":\"" << JsonEscape(diagnostic.Summary) << "\"}";
+    return json.str();
+}
+
+std::string BotWorldPopulationMgr::BuildRouteProgressJson(WorldBotState::RouteProgressDiagnostic const& diagnostic) const
+{
+    std::ostringstream json;
+    json << "{\"route\":{\"node_id\":\"" << JsonEscape(diagnostic.NodeId) << "\""
+         << ",\"kind\":\"" << JsonEscape(diagnostic.Kind) << "\"}"
+         << ",\"target\":{\"guid\":" << diagnostic.TargetGuid.GetCounter()
+         << ",\"entry\":" << diagnostic.TargetEntry
+         << ",\"hp_pct\":" << diagnostic.TargetHealthPct
+         << ",\"best_hp_pct\":" << diagnostic.BestHealthPct << "}"
+         << ",\"no_progress\":{\"count\":" << diagnostic.NoProgressCount
+         << ",\"threshold\":" << diagnostic.NoProgressThreshold
+         << ",\"reason\":\"" << JsonEscape(diagnostic.Reason) << "\"}"
+         << ",\"state\":{\"victim_guid\":" << diagnostic.VictimGuid.GetCounter()
+         << ",\"bot_in_combat\":" << (diagnostic.BotInCombat ? "true" : "false")
+         << ",\"bot_casting\":" << (diagnostic.BotCasting ? "true" : "false") << "}"
+         << ",\"last_combat_attempt_summary\":\"" << JsonEscape(diagnostic.LastCombatAttemptSummary) << "\""
+         << ",\"summary\":\"" << JsonEscape(diagnostic.Summary) << "\"}";
+    return json.str();
+}
+
+void BotWorldPopulationMgr::RecordCombatAttempt(WorldBotState& state, Player* bot, Unit* target, char const* phase, ResolvedCombatAction const* action, BotActionResult result, char const* reason) const
+{
+    WorldBotState::CombatAttemptDiagnostic diagnostic;
+    diagnostic.Phase = phase ? phase : "cast";
+    diagnostic.ActionType = action ? action->Type : "wait";
+    diagnostic.SpellId = action ? action->SpellId : 0;
+    diagnostic.DebugName = action ? action->DebugName : "";
+    Unit* actionTarget = target;
+    if (bot && action && !action->TargetGuid.IsEmpty())
+        actionTarget = ObjectAccessor::GetUnit(*bot, action->TargetGuid);
+    if (!actionTarget && target)
+        actionTarget = target;
+    if (action)
+        diagnostic.TargetGuid = action->TargetGuid;
+    if (diagnostic.TargetGuid.IsEmpty() && actionTarget)
+        diagnostic.TargetGuid = actionTarget->GetGUID();
+    if (Creature const* creature = actionTarget ? actionTarget->ToCreature() : nullptr)
+        diagnostic.TargetEntry = creature->GetEntry();
+    diagnostic.SelfTarget = bot && diagnostic.TargetGuid == bot->GetGUID();
+    diagnostic.Result = ToString(result);
+
+    SpellInfo const* spellInfo = diagnostic.SpellId ? sSpellMgr->GetSpellInfo(diagnostic.SpellId) : nullptr;
+    diagnostic.Casting = bot && bot->HasUnitState(UNIT_STATE_CASTING);
+    diagnostic.GlobalCooldown = bot && spellInfo && bot->GetSpellHistory()->HasGlobalCooldown(spellInfo);
+    diagnostic.CooldownReady = bot && spellInfo && bot->GetSpellHistory()->IsReady(spellInfo);
+    diagnostic.KnownSpell = bot && diagnostic.SpellId && bot->HasSpell(diagnostic.SpellId);
+    diagnostic.HasPower = bot && spellInfo && HasPowerForSpell(bot, spellInfo);
+    diagnostic.LineOfSight = bot && actionTarget && bot->IsWithinLOSInMap(actionTarget);
+    diagnostic.InRange = bot && actionTarget && spellInfo && bot->IsWithinDistInMap(actionTarget, std::max(5.0f, spellInfo->GetMaxRange(false)));
+    diagnostic.TargetAlive = actionTarget && actionTarget->IsAlive();
+    diagnostic.TargetAttackable = bot && actionTarget && (actionTarget == bot || (spellInfo ? bot->IsValidAttackTarget(actionTarget, spellInfo) : bot->IsValidAttackTarget(actionTarget)));
+    if (reason && *reason)
+        diagnostic.Reason = reason;
+    else if (!spellInfo && diagnostic.SpellId)
+        diagnostic.Reason = "bad_spell";
+    else if (!actionTarget)
+        diagnostic.Reason = "target_missing";
+    else if (!diagnostic.TargetAlive)
+        diagnostic.Reason = "target_dead";
+    else if (!diagnostic.TargetAttackable)
+        diagnostic.Reason = "target_not_attackable";
+    else if (!diagnostic.LineOfSight)
+        diagnostic.Reason = "no_line_of_sight";
+    else if (!diagnostic.InRange)
+        diagnostic.Reason = "out_of_range";
+    else if (diagnostic.Casting)
+        diagnostic.Reason = "already_casting";
+    else if (diagnostic.GlobalCooldown)
+        diagnostic.Reason = "global_cooldown";
+    else if (!diagnostic.CooldownReady)
+        diagnostic.Reason = "cooldown";
+    else if (!diagnostic.HasPower)
+        diagnostic.Reason = "no_power";
+    diagnostic.Summary = BuildCombatAttemptSummary(diagnostic);
+    state.LastCombatAttempt = diagnostic;
+}
+
+void BotWorldPopulationMgr::RecordRouteProgress(WorldBotState& state, Player* bot, Unit* target, char const* reason, float targetHealthPct, float bestHealthPct, uint32 noProgressCount, uint32 noProgressThreshold) const
+{
+    WorldBotState::RouteProgressDiagnostic diagnostic;
+    diagnostic.NodeId = _config.ValidationRouteNodeId;
+    diagnostic.Kind = _config.ValidationRouteKind;
+    diagnostic.TargetGuid = target ? target->GetGUID() : ObjectGuid::Empty;
+    if (Creature const* creature = target ? target->ToCreature() : nullptr)
+        diagnostic.TargetEntry = creature->GetEntry();
+    diagnostic.TargetHealthPct = targetHealthPct;
+    diagnostic.BestHealthPct = bestHealthPct;
+    diagnostic.NoProgressCount = noProgressCount;
+    diagnostic.NoProgressThreshold = noProgressThreshold;
+    diagnostic.Reason = reason ? reason : "route_no_progress";
+    diagnostic.VictimGuid = target && target->GetVictim() ? target->GetVictim()->GetGUID() : ObjectGuid::Empty;
+    diagnostic.BotInCombat = bot && bot->IsInCombat();
+    diagnostic.BotCasting = bot && bot->HasUnitState(UNIT_STATE_CASTING);
+    diagnostic.LastCombatAttemptSummary = state.LastCombatAttempt.Summary;
+    diagnostic.Summary = BuildRouteProgressSummary(diagnostic);
+    state.LastRouteProgress = diagnostic;
+}
+
+std::string BotWorldPopulationMgr::BuildBlockedDiagnosticText(WorldBotState const& state, char const* reason) const
+{
+    if (!state.LastRouteProgress.Summary.empty() && state.LastRouteProgress.Reason == (reason && *reason ? reason : state.LastRouteProgress.Reason))
+        return "Route reset: " + state.LastRouteProgress.Summary;
+    if (!state.LastCombatAttempt.Summary.empty())
+        return "Blocked: " + state.LastCombatAttempt.Summary;
+    return "Blocked: " + std::string(reason && *reason ? reason : "blocked");
+}
+
 void BotWorldPopulationMgr::MarkBotBlocked(WorldBotState& state, Player* bot, char const* reason) const
 {
     std::string blockedReason = reason && *reason ? reason : "blocked";
@@ -3108,6 +3276,7 @@ void BotWorldPopulationMgr::MarkBotBlocked(WorldBotState& state, Player* bot, ch
         state.BlockedStartMs = NowMs();
         state.BlockedResolvedMs = 0;
         state.BlockedMessageEmitted = false;
+        state.LastBlockedDiagnosticText.clear();
         state.UnstuckMessageEmitted = false;
     }
     else
@@ -3116,9 +3285,11 @@ void BotWorldPopulationMgr::MarkBotBlocked(WorldBotState& state, Player* bot, ch
         state.BlockedResolution = blockedReason;
     }
 
-    if (bot && !state.BlockedMessageEmitted)
+    std::string diagnosticText = BuildBlockedDiagnosticText(state, blockedReason.c_str());
+    if (bot && diagnosticText != state.LastBlockedDiagnosticText)
     {
-        bot->Say("Blocked: " + state.BlockedFirstReason, LANG_UNIVERSAL);
+        bot->Say(diagnosticText, LANG_UNIVERSAL);
+        state.LastBlockedDiagnosticText = diagnosticText;
         state.BlockedMessageEmitted = true;
     }
 }
@@ -3523,6 +3694,7 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
     float moved = Distance2d(bot->GetPositionX(), bot->GetPositionY(), state.LastX, state.LastY);
     bool moving = bot->isMoving() || bot->HasUnitState(UNIT_STATE_MOVING);
     bool combatOrCasting = bot->IsInCombat() || bot->HasUnitState(UNIT_STATE_CASTING) || (bot->GetVictim() && bot->GetVictim()->IsAlive());
+    uint32 previousStuckTimer = state.StuckTimer;
     state.IsMoving = moving;
     state.DistanceMovedSinceLastDecision += moved;
     if (moved >= 0.2f || combatOrCasting)
@@ -3536,6 +3708,20 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
     state.LastX = bot->GetPositionX();
     state.LastY = bot->GetPositionY();
     state.LastZ = bot->GetPositionZ();
+
+    uint32 const earlyStuckDiagnosticMs = 1500;
+    if (state.StuckTimer >= earlyStuckDiagnosticMs && previousStuckTimer < earlyStuckDiagnosticMs)
+    {
+        char const* stuckReason = _config.ValidationRouteEnable ? "validation_route_stuck_suspected" : "stuck_suspected";
+        float targetHealthPct = target ? UnitHealthPct(target) : 0.0f;
+        RecordRouteProgress(state, bot, target, stuckReason, targetHealthPct, targetHealthPct, state.StuckTimer, 6000);
+        std::string stuckText = "Stuck: " + state.LastRouteProgress.Summary;
+        if (bot && stuckText != state.LastBlockedDiagnosticText)
+        {
+            bot->Say(stuckText, LANG_UNIVERSAL);
+            state.LastBlockedDiagnosticText = stuckText;
+        }
+    }
 
     if (state.StuckTimer >= 6000)
     {
@@ -6714,15 +6900,25 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             cohortState.LoopRecoveryCooldownUntilMs = nowMs + 60000;
         }
     };
-    auto markValidationRouteTrashFailed = [&](Unit* failedTarget, char const* reason, char const* situationName, float metric, uint32 data) -> void
+    auto markValidationRouteTrashFailed = [&](Unit* failedTarget, char const* reason, char const* situationName, float metric, uint32 data, float bestHealthPct = -1.0f, uint32 noProgressCount = 0, uint32 noProgressThreshold = 0) -> void
     {
         uint64 nowMs = NowMs();
         std::string raw = BuildRawJson(bot, failedTarget);
         std::string semantic = BuildSemanticJson(bot, failedTarget, situationName ? situationName : "validation_route_trash_failed", &power, stage, activity);
         char const* terminalReason = reason ? reason : "validation_trash_no_progress";
         RecordEvent(state, bot, "validation_route_failed", failedTarget, terminalReason, raw.c_str(), semantic.c_str(), metric, data);
+        float targetHealthPct = failedTarget ? UnitHealthPct(failedTarget) : metric;
+        float observedBestHealthPct = bestHealthPct >= 0.0f ? bestHealthPct : targetHealthPct;
         for (WorldBotState& cohortState : _bots)
         {
+            RecordRouteProgress(cohortState, GetLoadedBot(cohortState), failedTarget, terminalReason, targetHealthPct, observedBestHealthPct, noProgressCount, noProgressThreshold);
+            Player* cohortBot = GetLoadedBot(cohortState);
+            std::string routeText = "Route reset: " + cohortState.LastRouteProgress.Summary;
+            if (cohortBot && routeText != cohortState.LastBlockedDiagnosticText)
+            {
+                cohortBot->Say(routeText, LANG_UNIVERSAL);
+                cohortState.LastBlockedDiagnosticText = routeText;
+            }
             cohortState.TargetGuid.Clear();
             cohortState.ValidationRouteCombatProgressTargetGuid.Clear();
             cohortState.ValidationRoutePackProgressTargetGuid.Clear();
@@ -6943,7 +7139,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             bool routeTargetKill = isValidationRouteScriptTarget(creature);
             if (applyDamage)
             {
-                markValidationRouteTrashFailed(prerequisiteTarget, "validation_trash_no_progress", "validation_route_trash_slow_progress", healthPct, _config.ValidationRouteTargetEntry);
+                markValidationRouteTrashFailed(prerequisiteTarget, "validation_trash_no_progress", "validation_route_trash_slow_progress", healthPct, _config.ValidationRouteTargetEntry, state.ValidationRoutePackBestHealthPct, state.ValidationRoutePackNoProgressCount, 0);
                 return;
             }
             if (!prerequisiteTarget->IsAlive())
@@ -7009,7 +7205,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             std::string raw = BuildRawJson(bot, prerequisiteTarget);
             std::string semantic = BuildSemanticJson(bot, prerequisiteTarget, "validation_route_pack_no_progress", &power, stage, activity);
             RecordEvent(state, bot, "validation_route_failed", prerequisiteTarget, "validation_trash_no_progress", raw.c_str(), semantic.c_str(), healthPct, _config.ValidationRouteTargetEntry);
-            markValidationRouteTrashFailed(prerequisiteTarget, "validation_trash_no_progress", "validation_route_pack_no_progress", healthPct, _config.ValidationRouteTargetEntry);
+            markValidationRouteTrashFailed(prerequisiteTarget, "validation_trash_no_progress", "validation_route_pack_no_progress", healthPct, _config.ValidationRouteTargetEntry, state.ValidationRoutePackBestHealthPct, state.ValidationRoutePackNoProgressCount, packNoProgressThreshold);
             state.ValidationRoutePackBestHealthPct = UnitHealthPct(prerequisiteTarget);
             state.ValidationRoutePackNoProgressCount = 0;
             state.LastNoProgressReason = "validation_trash_no_progress";
@@ -7035,7 +7231,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 std::string raw = BuildRawJson(bot, prerequisiteTarget);
                 std::string semantic = BuildSemanticJson(bot, prerequisiteTarget, "validation_route_trash_slow_progress", &power, stage, activity);
                 RecordEvent(state, bot, "validation_route_failed", prerequisiteTarget, "validation_trash_no_progress", raw.c_str(), semantic.c_str(), healthPct, _config.ValidationRouteTargetEntry);
-                markValidationRouteTrashFailed(prerequisiteTarget, "validation_trash_no_progress", "validation_route_trash_slow_progress", healthPct, _config.ValidationRouteTargetEntry);
+                markValidationRouteTrashFailed(prerequisiteTarget, "validation_trash_no_progress", "validation_route_trash_slow_progress", healthPct, _config.ValidationRouteTargetEntry, state.ValidationRoutePackBestHealthPct, state.ValidationRoutePackNoProgressCount, routeTargetNoProgressThreshold);
                 state.ValidationRoutePackBestHealthPct = UnitHealthPct(prerequisiteTarget);
                 state.ValidationRoutePackNoProgressCount = 0;
                 state.LastNoProgressReason = "validation_trash_no_progress";
@@ -7085,7 +7281,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             recordValidationRouteBossKill(prerequisiteTarget, context ? context : "boss_route_no_health_progress");
         }
         else
-            markValidationRouteTrashFailed(prerequisiteTarget, "validation_trash_no_progress", "validation_route_prerequisite_no_progress", healthPct, _config.ValidationRouteTargetEntry);
+            markValidationRouteTrashFailed(prerequisiteTarget, "validation_trash_no_progress", "validation_route_prerequisite_no_progress", healthPct, _config.ValidationRouteTargetEntry, state.ValidationRouteCombatBestHealthPct, state.ValidationRouteCombatNoProgressCount, noProgressThreshold);
         state.ValidationRouteCombatBestHealthPct = UnitHealthPct(prerequisiteTarget);
         state.ValidationRouteCombatNoProgressCount = 0;
         state.ValidationRoutePackBestHealthPct = UnitHealthPct(prerequisiteTarget);
@@ -10663,11 +10859,36 @@ bool BotWorldPopulationMgr::TryEnsureCombatTotems(WorldBotState& state, Player* 
     uint32 const callOfElements = 66842;
     SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(callOfElements);
     if (!bot->HasSpell(callOfElements) || !spellInfo || bot->HasUnitState(UNIT_STATE_CASTING) || bot->GetSpellHistory()->HasGlobalCooldown(spellInfo) || !bot->GetSpellHistory()->IsReady(spellInfo))
+    {
+        ResolvedCombatAction action;
+        action.Valid = true;
+        action.Type = "cast";
+        action.SpellId = callOfElements;
+        action.TargetGuid = bot->GetGUID();
+        action.DebugName = "call_of_elements";
+        RecordCombatAttempt(state, bot, bot, "totems", &action, BotActionResult::NoAction, "totem_gate_not_ready");
         return false;
+    }
 
     if (bot->CastSpell(bot, callOfElements, false) == SPELL_CAST_OK)
+    {
+        ResolvedCombatAction action;
+        action.Valid = true;
+        action.Type = "cast";
+        action.SpellId = callOfElements;
+        action.TargetGuid = bot->GetGUID();
+        action.DebugName = "call_of_elements";
+        RecordCombatAttempt(state, bot, bot, "totems", &action, BotActionResult::Ok);
         return true;
+    }
 
+    ResolvedCombatAction action;
+    action.Valid = true;
+    action.Type = "cast";
+    action.SpellId = callOfElements;
+    action.TargetGuid = bot->GetGUID();
+    action.DebugName = "call_of_elements";
+    RecordCombatAttempt(state, bot, bot, "totems", &action, BotActionResult::CastFailed, "totem_cast_failed");
     MarkBotBlocked(state, bot, "totem_cast_failed:call_of_elements");
     return true;
 }
@@ -10683,15 +10904,22 @@ BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState*
     if (!action.Valid)
     {
         if (state)
+            RecordCombatAttempt(*state, bot, target, "profile_resolve", &action, BotActionResult::NoAction, action.DebugName.c_str());
+        if (state)
             MarkBotBlocked(*state, bot, action.DebugName.c_str());
         return BotActionResult::NoAction;
     }
 
     if (state)
+    {
+        RecordCombatAttempt(*state, bot, target, "executor_check", &action, BotActionResult::Ok);
         TryResolveBotBlocker(*state, bot, "profile_action_valid");
+    }
 
     BotActionExecutor executor;
     BotActionResult result = executor.ExecuteCombat(bot, bot, action);
+    if (state)
+        RecordCombatAttempt(*state, bot, target, "cast", &action, result);
     if (state && result == BotActionResult::Ok)
         TryResolveBotBlocker(*state, bot, action.DebugName.c_str());
     else if (state && result != BotActionResult::Casting && result != BotActionResult::GlobalCooldown)
@@ -10700,6 +10928,12 @@ BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState*
         {
             state->LastNoProgressReason = ToString(result);
             state->LastRecoveryResult = state->LastNoProgressReason;
+            std::string diagnosticText = BuildBlockedDiagnosticText(*state, state->LastNoProgressReason.c_str());
+            if (bot && diagnosticText != state->LastBlockedDiagnosticText)
+            {
+                bot->Say(diagnosticText, LANG_UNIVERSAL);
+                state->LastBlockedDiagnosticText = diagnosticText;
+            }
             return result;
         }
         MarkBotBlocked(*state, bot, ToString(result));
@@ -13575,6 +13809,8 @@ void BotWorldPopulationMgr::RecordDecisionTrace(WorldBotState& state, char const
     entry.BlockedCurrentReason = state.BlockedReason;
     entry.BlockedResolution = state.BlockedResolution;
     entry.BlockedResolvedBy = state.BlockedResolvedBy;
+    entry.CombatAttempt = state.LastCombatAttempt;
+    entry.RouteProgress = state.LastRouteProgress;
     state.DecisionTrace.push_back(entry);
     while (state.DecisionTrace.size() > 64)
         state.DecisionTrace.pop_front();
@@ -13806,6 +14042,8 @@ std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson(WorldBotState con
          << ",\"intent\":\"" << JsonEscape(diagnosis.Intent) << "\""
          << ",\"current_action\":\"" << JsonEscape(diagnosis.CurrentAction) << "\""
          << ",\"blocker\":\"" << JsonEscape(diagnosis.Blocker) << "\""
+         << ",\"combat_attempt\":" << BuildCombatAttemptJson(state.LastCombatAttempt)
+         << ",\"route_progress\":" << BuildRouteProgressJson(state.LastRouteProgress)
          << ",\"evidence\":["
          << "{\"name\":\"loaded\",\"value\":" << (bot ? "true" : "false") << "},"
          << "{\"name\":\"in_world\",\"value\":" << (bot && bot->IsInWorld() ? "true" : "false") << "},"
@@ -13990,7 +14228,10 @@ std::string BotWorldPopulationMgr::BuildBotDecisionSnapshotJson(WorldBotState co
          << ",\"last_no_progress_reason\":\"" << JsonEscape(state.LastNoProgressReason) << "\""
          << ",\"last_no_quest_reason\":\"" << JsonEscape(state.LastNoQuestReason) << "\""
          << ",\"quest_cooldown_count\":" << state.QuestCooldownUntilMs.size()
-         << ",\"no_progress_cooldown_count\":" << state.NoProgressCooldownUntilMs.size() << "}}";
+         << ",\"no_progress_cooldown_count\":" << state.NoProgressCooldownUntilMs.size() << "}"
+         << ",\"combat_attempt\":" << BuildCombatAttemptJson(state.LastCombatAttempt)
+         << ",\"route_progress\":" << BuildRouteProgressJson(state.LastRouteProgress)
+         << "}";
     return json.str();
 }
 
@@ -14037,7 +14278,9 @@ std::string BotWorldPopulationMgr::BuildBotTraceEntriesJson(WorldBotState const&
              << ",\"saturation_reason\":\"" << JsonEscape(state.LastSaturationReason) << "\""
              << ",\"mechanic_family\":\"" << JsonEscape(state.LastMechanicFamily) << "\""
              << ",\"encounter_role_responsibility\":\"" << JsonEscape(state.LastEncounterRoleResponsibility) << "\""
-             << ",\"next_expected_action\":\"" << JsonEscape(state.LastNextExpectedAction) << "\"}";
+             << ",\"next_expected_action\":\"" << JsonEscape(state.LastNextExpectedAction) << "\""
+             << ",\"combat_attempt\":" << BuildCombatAttemptJson(itr->CombatAttempt)
+             << ",\"route_progress\":" << BuildRouteProgressJson(itr->RouteProgress) << "}";
     }
     json << "]";
     return json.str();
@@ -14169,7 +14412,10 @@ std::string BotWorldPopulationMgr::GetBotDiagnosisJson(std::string const& select
         }
 
         if (bot && !bot->IsInWorld() && _config.ValidationRouteEnable)
-            TryReattachValidationBot(state, bot, "diagnose");
+        {
+            state.LastDecisionResult = "loaded_bot_not_in_world";
+            state.LastDecisionReason = "validation_artificial_reattach_blocked";
+        }
 
         if (emitted)
             json << ",";
@@ -14413,6 +14659,8 @@ std::string BotWorldPopulationMgr::GetBotDebugJson(std::string const& selector) 
          << ",\"cooldown_until_ms\":" << selected->QuestWork.CooldownUntilMs
          << ",\"failure_reason\":\"" << JsonEscape(selected->QuestWork.FailedReason) << "\""
          << ",\"last_rejected_target_reason\":\"" << JsonEscape(selected->LastRejectedTargetReason) << "\""
+         << ",\"combat_attempt\":" << BuildCombatAttemptJson(selected->LastCombatAttempt)
+         << ",\"route_progress\":" << BuildRouteProgressJson(selected->LastRouteProgress)
          << ",\"diagnosis\":" << BuildBotDiagnosisObjectJson(*selected, bot)
          << "}";
     return json.str();

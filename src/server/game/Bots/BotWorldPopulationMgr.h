@@ -311,6 +311,47 @@ private:
 
     struct WorldBotState
     {
+        struct CombatAttemptDiagnostic
+        {
+            std::string Phase;
+            std::string ActionType;
+            uint32 SpellId = 0;
+            std::string DebugName;
+            ObjectGuid TargetGuid;
+            uint32 TargetEntry = 0;
+            bool SelfTarget = false;
+            std::string Result;
+            bool Casting = false;
+            bool GlobalCooldown = false;
+            bool CooldownReady = false;
+            bool KnownSpell = false;
+            bool HasPower = false;
+            bool LineOfSight = false;
+            bool InRange = false;
+            bool TargetAlive = false;
+            bool TargetAttackable = false;
+            std::string Reason;
+            std::string Summary;
+        };
+
+        struct RouteProgressDiagnostic
+        {
+            std::string NodeId;
+            std::string Kind;
+            ObjectGuid TargetGuid;
+            uint32 TargetEntry = 0;
+            float TargetHealthPct = 0.0f;
+            float BestHealthPct = 0.0f;
+            uint32 NoProgressCount = 0;
+            uint32 NoProgressThreshold = 0;
+            std::string Reason;
+            ObjectGuid VictimGuid;
+            bool BotInCombat = false;
+            bool BotCasting = false;
+            std::string LastCombatAttemptSummary;
+            std::string Summary;
+        };
+
         struct SafePosition
         {
             uint32 MapId = 0;
@@ -474,7 +515,10 @@ private:
         uint64 BlockedStartMs = 0;
         uint64 BlockedResolvedMs = 0;
         bool BlockedMessageEmitted = false;
+        std::string LastBlockedDiagnosticText;
         bool UnstuckMessageEmitted = false;
+        CombatAttemptDiagnostic LastCombatAttempt;
+        RouteProgressDiagnostic LastRouteProgress;
         std::map<std::string, uint64> ReadinessRetryUntilMs;
         std::map<std::string, uint32> ReadinessAttemptCount;
         std::map<std::string, std::string> ReadinessPartyCoverageSignature;
@@ -511,6 +555,8 @@ private:
             std::string BlockedCurrentReason;
             std::string BlockedResolution;
             std::string BlockedResolvedBy;
+            CombatAttemptDiagnostic CombatAttempt;
+            RouteProgressDiagnostic RouteProgress;
         };
         std::deque<DecisionTraceEntry> DecisionTrace;
 
@@ -1041,6 +1087,13 @@ private:
     std::string BuildBotDiagnosisObjectJson(WorldBotState const& state, Player const* bot) const;
     std::string BuildBotDecisionSnapshotJson(WorldBotState const& state, Player const* bot) const;
     std::string BuildBotTraceEntriesJson(WorldBotState const& state, uint32 limit) const;
+    void RecordCombatAttempt(WorldBotState& state, Player* bot, Unit* target, char const* phase, ResolvedCombatAction const* action, BotActionResult result, char const* reason = nullptr) const;
+    void RecordRouteProgress(WorldBotState& state, Player* bot, Unit* target, char const* reason, float targetHealthPct, float bestHealthPct, uint32 noProgressCount, uint32 noProgressThreshold) const;
+    std::string BuildCombatAttemptJson(WorldBotState::CombatAttemptDiagnostic const& diagnostic) const;
+    std::string BuildRouteProgressJson(WorldBotState::RouteProgressDiagnostic const& diagnostic) const;
+    std::string BuildCombatAttemptSummary(WorldBotState::CombatAttemptDiagnostic const& diagnostic) const;
+    std::string BuildRouteProgressSummary(WorldBotState::RouteProgressDiagnostic const& diagnostic) const;
+    std::string BuildBlockedDiagnosticText(WorldBotState const& state, char const* reason) const;
     BotTelemetryPolicyConfig GetTelemetryPolicyConfig() const;
     BotTelemetryPolicyInput BuildTelemetryPolicyInput(char const* eventType, char const* result, char const* situation, Unit const* target, uint32 spellId = 0, uint32 questId = 0, uint32 itemId = 0, float valueFloat = 0.0f, uint32 valueInt = 0, bool failure = false, bool rare = false, bool intervention = false) const;
     void RecordPolicyReplay(WorldBotState const& state, Player* bot, Unit const* target, BotTelemetryPolicyInput const& input, char const* rawJson, char const* semanticJson);
