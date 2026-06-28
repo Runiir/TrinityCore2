@@ -1,6 +1,6 @@
 {
-  "candidate_rows": 4,
-  "chosen_rows": 2,
+  "candidate_rows": 72972,
+  "chosen_rows": 18483,
   "contract_errors": {
     "candidate_count_mismatch": 0,
     "chosen_candidate_masked_off": 0,
@@ -33,12 +33,15 @@
     "decisions_without_exactly_one_observed_label": 0,
     "unchosen_rows_with_nonzero_labels": 0
   },
-  "decision_count": 2,
+  "decision_count": 18483,
   "failure_labels": {
-    "stuck_or_path_failure": 1
+    "death_outcome": 516,
+    "negative_outcome:objective_failed": 11688,
+    "no_future_outcome": 5501,
+    "stuck_or_path_failure": 358
   },
-  "filtered_teacher_rows": 1,
-  "imitable_teacher_rows": 1,
+  "filtered_teacher_rows": 18063,
+  "imitable_teacher_rows": 420,
   "leakage_contract": {
     "missing_eval_split": false,
     "missing_train_split": false,
@@ -78,14 +81,16 @@
     "teacher_action_quality": 0,
     "trace": 0
   },
-  "observed_label_rows": 2,
+  "observed_label_rows": 18483,
   "ok": true,
-  "rows": 4,
-  "run_count": 2,
+  "rows": 72972,
+  "run_count": 179,
   "runtime_ml_control": "disabled_until_shadow_assist_replay_validation_passes",
   "teacher_action_quality": {
-    "unsafe_teacher_action": 1,
-    "verified_teacher_action": 1
+    "failed_teacher_action": 14895,
+    "unsafe_teacher_action": 874,
+    "unverified_teacher_action": 2294,
+    "verified_teacher_action": 420
   },
   "teacher_filter_contract": {
     "filtered_chosen_rows_without_failure_label": 0,

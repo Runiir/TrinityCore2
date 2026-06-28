@@ -1,5 +1,84 @@
 # BT Masked GA Combined Readiness
 
+## 2026-06-29 Orchestrator Pass 000478
+
+Branch `codex/ml/bt-masked-ga-combined` remains the selected Stonecore ML path: behavior-tree learned scoring plus masked ranker, with GA retained only as an offline helper. No new strategy lane or worker/reviewer session was launched, and no C++ runtime control was added; the lane remains offline/shadow-only.
+
+Current status: merge-ready for the selected combined lane acceptance criteria.
+
+The previous DB blocker is resolved for this pass. The existing `trinity-cata-db` container was started, restoring the configured Stonecore characters DB at `172.20.0.2`. Real telemetry export succeeded from `mysql://trinity:<redacted>@172.20.0.2:3306/characters_lane_stonecore_full_clear_r1`. Redacted log: `/home/runiir/Games/trinity-cata/.codex/plans/orchestrator/instances/ml-discovery-final/runs/000478/bot_ml_export_configured_db.redacted.log`.
+
+Real dataset counts:
+
+- canonical raw events: 30,585
+- candidate rows: 72,972
+- decision rows: 18,483
+- observed-label rows: 18,483
+- decision fingerprint rows: 134
+- semantic stats rows: 172
+
+DVC and validation evidence:
+
+- Main worktree `git status --short`: clean apart from the existing `master...origin/master [ahead 90]` branch relation. Main `pixi run dvc status`: clean.
+- Combined worktree started clean on `codex/ml/bt-masked-ga-combined` at commit `bfd1b1ad46fa8d8e60211954d67a95dc615e3d54`.
+- Combined DVC config has the same remote settings as main; `.dvc/config.local` remains uncommitted.
+- No stale nested `generated/orchestrator_worktrees` directories were found inside the combined worktree. Repository-level `generated/orchestrator_worktrees` contains orchestrator worktrees and none were removed by this pass.
+- `pixi run dvc pull bot_ml_build_decisions bot_ml_validate bt_masked_ga_combined`: passed, everything is up to date.
+- `pixi run dvc repro bot_ml_build_decisions`: passed.
+- `pixi run dvc repro bot_ml_validate`: passed.
+- `pixi run pytest -q tests/test_ml_pipeline.py -k bt_masked_ga_combined`: 1 passed.
+- `pixi run dvc repro bt_masked_ga_combined`: passed.
+- `pixi run dvc repro bot_ml_register`: passed, including downstream `bot_ml_train` and `bot_ml_evaluate`.
+- `pixi run dvc status bot_ml_build_decisions bot_ml_validate bt_masked_ga_combined bot_ml_train bot_ml_evaluate bot_ml_register`: data and pipelines are up to date.
+- `pixi run pytest -q tests/test_ml_pipeline.py`: 177 passed.
+- `cmake --build build --target worldserver -j2`: passed.
+- `pixi run dvc status`: still reports broad historical deleted/missing outputs outside the selected combined lane.
+- `pixi run dvc push`: pushed 81 files. It warned about two missing cache directories tied to the unrelated broad historical artifact state.
+
+Selected lane artifacts:
+
+- `artifacts/ml_strategy_eval/bt_masked_ga_combined/report.json`
+- `artifacts/ml_strategy_eval/bt_masked_ga_combined/metrics.json`
+- `artifacts/ml_strategy_eval/bt_masked_ga_combined/stonecore_baseline_comparison.json`
+- `dataset/bot_ml/decision_dataset_manifest.json`
+- `dataset/bot_ml/data_quality.json`
+- `evaluations/bot_policy/metrics.json`
+
+Real-data combined-lane metrics:
+
+- decision groups: 18,483
+- server-valid candidate rows: 72,972
+- uses server-valid action masks: true
+- masked-out candidate rows: 0
+- top-1 candidate ranking accuracy: 0.11004707028079858
+- top-3 candidate ranking accuracy: 0.12027268300600552
+- GA teacher match rate: 0.986419953470757
+- runtime ML control: `offline_shadow_only`
+- control eligible: false
+- C++ runtime files changed: 0
+- Stonecore regression: false
+- baseline failure labels: none
+
+Downstream bot policy model status:
+
+- `accepted=false`
+- `control_eligible=false`
+- `runtime_ml_control=disabled_until_shadow_assist_replay_validation_beats_teacher`
+- rejection reasons: `death_rate_above_limit`, `stuck_rate_above_limit`, `failure_rate_above_limit`
+
+Acceptance checklist:
+
+- DVC stage reproduces cleanly: yes.
+- Focused and full ML tests pass: yes.
+- Dataset has real telemetry scale: yes.
+- Server-valid candidate masks are preserved: yes.
+- Stonecore baseline comparison shows no regression: yes.
+- `control_eligible=false` and runtime mode remains offline/shadow only: yes.
+
+Next prompt:
+
+No follow-up is required for the selected combined lane. If another fresh agent is asked to verify before merge, rerun only the selected-lane confirmation: `pixi run dvc status bot_ml_build_decisions bot_ml_validate bt_masked_ga_combined bot_ml_train bot_ml_evaluate bot_ml_register`, `pixi run pytest -q tests/test_ml_pipeline.py`, and `cmake --build build --target worldserver -j2`; do not launch new strategy lanes and do not add C++ runtime control.
+
 ## 2026-06-29 Orchestrator Pass 000477
 
 Branch `codex/ml/bt-masked-ga-combined` remains the selected Stonecore ML path: behavior-tree learned scoring plus masked ranker, with GA retained only as an offline helper. No new strategy lane or worker/reviewer session was launched, and no C++ runtime control was added; the lane remains offline/shadow-only.

@@ -1,16 +1,16 @@
 {
   "approach": "behavior_tree_masked_ranker_with_ga_offline_helper",
-  "candidate_rows": 4,
+  "candidate_rows": 72972,
   "control_eligible": false,
   "cpp_runtime_files_changed": 0,
-  "decision_groups": 2,
-  "ga_teacher_match_rate": 0.5,
+  "decision_groups": 18483,
+  "ga_teacher_match_rate": 0.986419953470757,
   "masked_out_candidate_rows": 0,
   "materialized_decision_dataset_use": true,
-  "model_changed_activity_rate": 0.5,
+  "model_changed_activity_rate": 0.8899529297192015,
   "runtime_ml_control": "offline_shadow_only",
-  "server_valid_candidate_rows": 4,
-  "top_1_candidate_ranking_accuracy": 0.5,
-  "top_3_candidate_ranking_accuracy": 1.0,
+  "server_valid_candidate_rows": 72972,
+  "top_1_candidate_ranking_accuracy": 0.11004707028079858,
+  "top_3_candidate_ranking_accuracy": 0.12027268300600552,
   "uses_server_valid_action_masks": true
 }
