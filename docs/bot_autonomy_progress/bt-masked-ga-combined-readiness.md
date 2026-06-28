@@ -1,5 +1,69 @@
 # BT Masked GA Combined Readiness
 
+## 2026-06-28 Orchestrator Pass 000184
+
+Branch `codex/ml/bt-masked-ga-combined` remains the selected Stonecore ML path: behavior-tree learned scoring plus masked ranker, with GA retained only as an offline helper. No new strategy lane was launched, no worker session was needed, and no C++ runtime control was added; the lane remains offline/shadow-only.
+
+Current status: not merge-ready.
+
+The blocker is unchanged and current as of pass 000184. `dataset/bot_ml/decision_dataset_manifest.json` still contains the fixture-scale dataset: 4 candidate rows, 2 decision rows, and 2 observed-label rows. Acceptance requires real telemetry scale, so this pass does not claim merge readiness.
+
+DB export attempts:
+
+- `pixi run bot-ml-export --database-url mysql://trinity:trinity@172.20.0.2:3306/characters_lane_stonecore_full_clear_r1 --output-dir dataset/bot_ml/raw`: failed, no route to host. Log: `/home/runiir/Games/trinity-cata/.codex/plans/orchestrator/instances/ml-discovery-final/runs/000184/bot_ml_export_172_20_0_2_lane_r1.log`.
+- `pixi run bot-ml-export --database-url mysql://trinity:trinity@172.20.0.2:3306/characters_lane_stonecore_full_clear_r2 --output-dir dataset/bot_ml/raw`: failed, no route to host. Log: `/home/runiir/Games/trinity-cata/.codex/plans/orchestrator/instances/ml-discovery-final/runs/000184/bot_ml_export_172_20_0_2_lane_r2.log`.
+- `pixi run bot-ml-export --database-url mysql://trinity:trinity@127.0.0.1:3306/characters --output-dir dataset/bot_ml/raw`: failed, connection refused. Log: `/home/runiir/Games/trinity-cata/.codex/plans/orchestrator/instances/ml-discovery-final/runs/000184/bot_ml_export_127_0_0_1_characters.log`.
+
+DB availability evidence:
+
+- Docker service probe and local socket probe were refreshed. Logs: `/home/runiir/Games/trinity-cata/.codex/plans/orchestrator/instances/ml-discovery-final/runs/000184/service_probe_docker.log` and `/home/runiir/Games/trinity-cata/.codex/plans/orchestrator/instances/ml-discovery-final/runs/000184/service_probe_ss.log`.
+- The only discovered Stonecore lane characters DB configs still point at `172.20.0.2:3306`. Search log: `/home/runiir/Games/trinity-cata/.codex/plans/orchestrator/instances/ml-discovery-final/runs/000184/db_url_search.log`.
+
+DVC and validation evidence:
+
+- Main worktree `pixi run dvc status`: clean. Log: `/home/runiir/Games/trinity-cata/.codex/plans/orchestrator/instances/ml-discovery-final/runs/000184/dvc_status_main_initial.log`.
+- Combined `.dvc/config.local`: present, gitignored, and byte-equivalent to main DVC local credentials; redacted config logs were recorded.
+- `git worktree list` was recorded for temporary-worktree visibility. Log: `/home/runiir/Games/trinity-cata/.codex/plans/orchestrator/instances/ml-discovery-final/runs/000184/git_worktree_list.log`.
+- `pixi run dvc pull --with-deps bt_masked_ga_combined`: passed. Log: `/home/runiir/Games/trinity-cata/.codex/plans/orchestrator/instances/ml-discovery-final/runs/000184/dvc_pull_selected.log`.
+- `pixi run dvc status bt_masked_ga_combined` and `pixi run dvc status bot_ml_build_decisions bot_ml_validate bt_masked_ga_combined`: passed, data and pipelines are up to date. Logs: `/home/runiir/Games/trinity-cata/.codex/plans/orchestrator/instances/ml-discovery-final/runs/000184/dvc_status_selected_after_pull.log` and `/home/runiir/Games/trinity-cata/.codex/plans/orchestrator/instances/ml-discovery-final/runs/000184/dvc_status_selected_three_stages_final.log`.
+- `pixi run dvc status`: still reports broad historical deleted-output state outside the selected combined lane. Log: `/home/runiir/Games/trinity-cata/.codex/plans/orchestrator/instances/ml-discovery-final/runs/000184/dvc_status_combined_after_pull.log`.
+- Focused/full ML tests and `worldserver` build were not rerun in pass 000184 because DB export remained unavailable and the prompt says to stop and write a blocker report when DB access is not available. Latest passing evidence remains pass 000004.
+- No selected DVC artifacts changed, so `pixi run dvc push` was not run.
+
+Selected lane artifacts:
+
+- `artifacts/ml_strategy_eval/bt_masked_ga_combined/report.json`
+- `artifacts/ml_strategy_eval/bt_masked_ga_combined/metrics.json`
+- `artifacts/ml_strategy_eval/bt_masked_ga_combined/stonecore_baseline_comparison.json`
+
+Current metrics from fixture data:
+
+- candidate rows: 4
+- decision groups: 2
+- server-valid candidate rows: 4
+- uses server-valid action masks: true
+- top-1 candidate ranking accuracy: 0.5
+- top-3 candidate ranking accuracy: 1.0
+- GA teacher match rate: 0.5
+- runtime ML control: `offline_shadow_only`
+- control eligible: false
+- C++ runtime files changed: 0
+- Stonecore regression: false
+- baseline failure labels: none
+
+Acceptance checklist:
+
+- DVC stage reproduces cleanly: selected DVC graph is up to date, but real dataset repro is blocked by DB access.
+- Focused and full ML tests pass: yes in latest pass 000004 evidence; not rerun in pass 000184 due the DB blocker stop condition.
+- Dataset has real telemetry scale: no, blocked by unreachable characters DB.
+- Server-valid candidate masks are preserved: yes in current fixture metrics.
+- Stonecore baseline comparison shows no regression: yes in current fixture metrics.
+- `control_eligible=false` and runtime mode remains offline/shadow only: yes.
+
+Next prompt:
+
+Continue `codex/ml/bt-masked-ga-combined` only. Do not launch new strategy lanes. Restore reachable characters DB access for `mysql://trinity:trinity@172.20.0.2:3306/characters_lane_stonecore_full_clear_r1` or provide the correct characters DB URL, then run `pixi run bot-ml-export --database-url <characters-db-url> --output-dir dataset/bot_ml/raw`, `pixi run dvc repro bot_ml_build_decisions`, `pixi run dvc repro bot_ml_validate`, and `pixi run dvc repro bt_masked_ga_combined`. Confirm `dataset/bot_ml/decision_dataset_manifest.json` is no longer 4 candidate rows / 2 decision rows, inspect the combined metrics and Stonecore comparison, run `pixi run pytest -q tests/test_ml_pipeline.py`, `cmake --build build --target worldserver -j2`, `pixi run dvc status`, `pixi run dvc push` if DVC artifacts changed, then commit the dataset/artifact pointer and docs updates. Mark merge-ready only if all acceptance criteria pass.
+
 ## 2026-06-28 Orchestrator Pass 000183
 
 Branch `codex/ml/bt-masked-ga-combined` remains the selected Stonecore ML path: behavior-tree learned scoring plus masked ranker, with GA retained only as an offline helper. No new strategy lane was launched, no worker session was needed, and no C++ runtime control was added; the lane remains offline/shadow-only.
