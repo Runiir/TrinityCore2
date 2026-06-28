@@ -1,25 +1,61 @@
 # BT Masked GA Combined Readiness
 
-## 2026-06-28
+## 2026-06-28 Orchestrator Pass 000001
 
-Branch `codex/ml/bt-masked-ga-combined` was rebased cleanly onto current `master` at `6f0666e86a279fb8e13a57460be56e108677655a`.
+Branch `codex/ml/bt-masked-ga-combined` remains the selected Stonecore ML path: behavior-tree learned scoring plus masked ranker, with GA retained only as an offline helper. No C++ runtime control was added; the lane remains offline/shadow-only.
 
-DVC credentials were checked against the main worktree. `.dvc/config.local` in `/home/runiir/Games/trinity-cata-bt-masked-ga-combined` matches `/home/runiir/Games/trinity-cata/.dvc/config.local`, and `pixi run dvc config --list` reports the same `object` remote with local access keys redacted.
+Current status: not merge-ready.
 
-Validation completed:
+The blocker is real telemetry data. `dataset/bot_ml/decision_dataset_manifest.json` still contains the fixture-scale dataset: 4 candidate rows, 2 decision rows, and 2 observed-label rows. Acceptance requires real telemetry scale, so this pass does not claim merge readiness.
 
-- `pixi run dvc pull dvc.yaml:bt_masked_ga_combined`: passed, everything up to date.
-- `pixi run pytest -q tests/test_ml_pipeline.py -k bt_masked_ga_combined`: passed, 1 selected test, 176 deselected, 1 `dvclive`/`pynvml` warning.
-- `pixi run dvc repro bt_masked_ga_combined`: passed, all relevant stages skipped as unchanged and up to date.
-- `pixi run dvc status`: completed. The combined lane stayed reproducible, while the worktree still reports broad pre-existing missing-cache and missing-output drift outside this lane.
+DB export attempts:
 
-The combined output report is `artifacts/ml_strategy_eval/bt_masked_ga_combined/report.json`. Current lane metrics include 4 candidate rows, 2 decision groups, server-valid action masks enabled, top-1 ranking accuracy 0.5, top-3 ranking accuracy 1.0, `runtime_ml_control=offline_shadow_only`, `control_eligible=false`, and `cpp_runtime_files_changed=0`.
+- `pixi run bot-ml-export --database-url mysql://trinity:trinity@172.20.0.2:3306/characters --output-dir dataset/bot_ml/raw`: failed, no route to host.
+- `pixi run bot-ml-export --database-url mysql://trinity:trinity@127.0.0.1:3306/characters --output-dir dataset/bot_ml/raw`: failed, connection refused.
 
-Stonecore baseline comparison is `artifacts/ml_strategy_eval/bt_masked_ga_combined/stonecore_baseline_comparison.json`. It records the accepted Stonecore r12 baseline, no baseline failure labels, no C++ runtime/live-control changes, and `stonecore_regression=false`.
+DVC and validation evidence:
 
-Real telemetry export was not rerun because no characters DB endpoint was reachable in this pass:
+- Main worktree `pixi run dvc status`: clean.
+- Combined `.dvc/config.local`: present, gitignored, and equivalent to main DVC credentials.
+- `pixi run dvc pull dvc.yaml:bot_ml_build_decisions dvc.yaml:bot_ml_validate dvc.yaml:bt_masked_ga_combined artifacts/live_validation_instances/stonecore_uninterrupted_full_clear_r12.dvc`: passed, everything up to date.
+- `pixi run dvc repro bot_ml_validate`: passed, stages skipped as unchanged.
+- `pixi run pytest -q tests/test_ml_pipeline.py -k bt_masked_ga_combined`: passed, 1 selected test, 176 deselected.
+- `pixi run dvc repro bt_masked_ga_combined`: passed, stages skipped as unchanged.
+- `pixi run pytest -q tests/test_ml_pipeline.py`: passed, 177 tests.
+- `cmake -S . -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo`: passed.
+- `cmake --build build --target worldserver -j2`: passed.
+- `pixi run dvc status`: still reports broad historical missing-cache and deleted-dependency state outside the selected combined lane. The selected `bot_ml_build_decisions`, `bot_ml_validate`, and `bt_masked_ga_combined` stages are present and reproducible.
 
-- `mysql://trinity:trinity@172.20.0.2:3306/characters`: no route to host.
-- `mysql://trinity:trinity@127.0.0.1:3306/characters`: connection refused.
+Selected lane artifacts:
 
-Merge readiness: the combined lane is merge-ready as an offline/shadow-only Python and DVC lane. It is not ready for runtime control, and this pass does not claim real-telemetry readiness beyond the existing DVC-tracked fixture dataset.
+- `artifacts/ml_strategy_eval/bt_masked_ga_combined/report.json`
+- `artifacts/ml_strategy_eval/bt_masked_ga_combined/metrics.json`
+- `artifacts/ml_strategy_eval/bt_masked_ga_combined/stonecore_baseline_comparison.json`
+
+Current metrics from fixture data:
+
+- candidate rows: 4
+- decision groups: 2
+- server-valid candidate rows: 4
+- uses server-valid action masks: true
+- top-1 candidate ranking accuracy: 0.5
+- top-3 candidate ranking accuracy: 1.0
+- GA teacher match rate: 0.5
+- runtime ML control: `offline_shadow_only`
+- control eligible: false
+- C++ runtime files changed: 0
+- Stonecore regression: false
+- baseline failure labels: none
+
+Acceptance checklist:
+
+- DVC stage reproduces cleanly: yes for the selected combined lane.
+- Focused and full ML tests pass: yes.
+- Dataset has real telemetry scale: no, blocked by unreachable characters DB.
+- Server-valid candidate masks are preserved: yes.
+- Stonecore baseline comparison shows no regression: yes.
+- `control_eligible=false` and runtime mode remains offline/shadow only: yes.
+
+Next prompt:
+
+Continue `codex/ml/bt-masked-ga-combined` only. Do not launch new strategy lanes. Restore reachable characters DB access for `mysql://trinity:trinity@172.20.0.2:3306/characters` or provide the correct characters DB URL, then run `pixi run bot-ml-export --database-url <characters-db-url> --output-dir dataset/bot_ml/raw`, `pixi run dvc repro bot_ml_build_decisions`, `pixi run dvc repro bot_ml_validate`, and `pixi run dvc repro bt_masked_ga_combined`. Confirm `dataset/bot_ml/decision_dataset_manifest.json` is no longer 4 candidate rows / 2 decision rows, inspect the combined metrics and Stonecore comparison, run `pixi run pytest -q tests/test_ml_pipeline.py`, `cmake --build build --target worldserver -j2`, `pixi run dvc status`, `pixi run dvc push` if DVC artifacts changed, then commit the dataset/artifact pointer and docs updates. Mark merge-ready only if all acceptance criteria pass.
