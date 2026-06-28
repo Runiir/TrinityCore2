@@ -16,8 +16,9 @@ Use this skill when acting as the prompt-driven orchestrator for bot autonomy or
 5. Record worker complexity, model, reasoning effort, and evidence paths in progress summaries when the tier choice is relevant.
 6. Keep worker tasks scoped, review results before merging, and run repository validation when behavior changes.
 7. Commit experiment code/configs to git, checkpoint generated data/artifacts with DVC, then run `dvc status` and `dvc push` after future experiments that produce artifacts.
-8. Before exiting every pass, update the current run status/progress artifacts with what changed, evidence paths, validation outcomes, blockers, and the exact next handoff prompt for the next fresh agent.
-9. Before exiting every pass, inspect `git status --short`, commit coherent finished changes and useful status/progress updates, checkpoint generated artifacts with DVC, run `dvc status`, run `dvc push` when artifacts were produced, and leave the worktree clean except for explicitly protected pre-existing user changes.
+8. For every new or existing worktree used for experiments, verify DVC remote credentials before `dvc pull`, `dvc repro`, or `dvc push`: compare `pixi run dvc config --list` against the main repository worktree with secrets redacted, and copy/recreate `.dvc/config.local` from the main worktree when the worktree is missing the local remote credentials. Never commit `.dvc/config.local`.
+9. Before exiting every pass, update the current run status/progress artifacts with what changed, evidence paths, validation outcomes, blockers, and the exact next handoff prompt for the next fresh agent.
+10. Before exiting every pass, inspect `git status --short`, commit coherent finished changes and useful status/progress updates, checkpoint generated artifacts with DVC, run `dvc status`, run `dvc push` when artifacts were produced, and leave the worktree clean except for explicitly protected pre-existing user changes.
 
 ## Worker Complexity
 
