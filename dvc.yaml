@@ -287,6 +287,32 @@ stages:
     outs:
     - ${bot_ml.register_sql}
     - models/bot_policy/register_model.json
+  bt_masked_ga_combined:
+    cmd: python -m tools.bot_ml.bt_masked_ga_combined --dataset
+      ${bot_ml.decision_dataset} --output-dir ${bt_masked_ga_combined.output_dir}
+      --baseline-report ${bt_masked_ga_combined.baseline_report} --population-size
+      ${bt_masked_ga_combined.population_size} --generations
+      ${bt_masked_ga_combined.generations} --seed ${bt_masked_ga_combined.seed}
+    deps:
+    - tools/bot_ml/bt_masked_ga_combined.py
+    - tools/bot_ml/common.py
+    - ${bot_ml.decision_dataset}
+    - ${bt_masked_ga_combined.baseline_report}
+    params:
+    - bt_masked_ga_combined
+    metrics:
+    - ${bt_masked_ga_combined.output_dir}/metrics.json:
+        cache: false
+    - ${bt_masked_ga_combined.output_dir}/stonecore_baseline_comparison.json:
+        cache: false
+    outs:
+    - ${bt_masked_ga_combined.output_dir}/model.json
+    - ${bt_masked_ga_combined.output_dir}/diagnostics.json
+    - ${bt_masked_ga_combined.output_dir}/ga_strategy_knobs.json
+    - ${bt_masked_ga_combined.output_dir}/ga_history.json
+    - ${bt_masked_ga_combined.output_dir}/report.json
+    - ${bt_masked_ga_combined.output_dir}/dvclive:
+        persist: true
   capture:
     cmd: python experiments/run_experiment.py ${capture.config} --raw-dir
       dataset/raw --runs-dir experiments/runs --live-dir ${tracking.live_dir}

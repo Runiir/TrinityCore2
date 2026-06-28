@@ -1,0 +1,16 @@
+{
+  "approach": "behavior_tree_masked_ranker_with_ga_offline_helper",
+  "candidate_rows": 4,
+  "control_eligible": false,
+  "cpp_runtime_files_changed": 0,
+  "decision_groups": 2,
+  "ga_teacher_match_rate": 0.5,
+  "masked_out_candidate_rows": 0,
+  "materialized_decision_dataset_use": true,
+  "model_changed_activity_rate": 0.5,
+  "runtime_ml_control": "offline_shadow_only",
+  "server_valid_candidate_rows": 4,
+  "top_1_candidate_ranking_accuracy": 0.5,
+  "top_3_candidate_ranking_accuracy": 1.0,
+  "uses_server_valid_action_masks": true
+}

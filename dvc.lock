@@ -777,3 +777,72 @@ stages:
       hash: md5
       md5: 858c3bd6cf15ca974779cb3b19fdb50f
       size: 3198
+  bt_masked_ga_combined:
+    cmd: python -m tools.bot_ml.bt_masked_ga_combined --dataset 
+      dataset/bot_ml/decision_dataset.jsonl --output-dir 
+      artifacts/ml_strategy_eval/bt_masked_ga_combined --baseline-report 
+      artifacts/live_validation_instances/stonecore_uninterrupted_full_clear_r12/report.json
+      --population-size 24 --generations 18 --seed 13
+    deps:
+    - path: 
+        artifacts/live_validation_instances/stonecore_uninterrupted_full_clear_r12/report.json
+      hash: md5
+      md5: 8b9a7fece8350701f0c4d56e46b64ca0
+      size: 714337
+    - path: dataset/bot_ml/decision_dataset.jsonl
+      hash: md5
+      md5: ed14e5e40516ffec4d2b1143259e5812
+      size: 13848
+    - path: tools/bot_ml/bt_masked_ga_combined.py
+      hash: md5
+      md5: 10264f3e745df6133c09c406d7b4e773
+      size: 16237
+    - path: tools/bot_ml/common.py
+      hash: md5
+      md5: 8b4aaef751f98fac4ad24680793a813d
+      size: 5304
+    params:
+      params.yaml:
+        bt_masked_ga_combined:
+          output_dir: artifacts/ml_strategy_eval/bt_masked_ga_combined
+          baseline_report: 
+            artifacts/live_validation_instances/stonecore_uninterrupted_full_clear_r12/report.json
+          population_size: 24
+          generations: 18
+          seed: 13
+    outs:
+    - path: artifacts/ml_strategy_eval/bt_masked_ga_combined/diagnostics.json
+      hash: md5
+      md5: fcb1961feb7cf2327aad31821f6f1808
+      size: 1939
+    - path: artifacts/ml_strategy_eval/bt_masked_ga_combined/dvclive
+      hash: md5
+      md5: b195ad589a644e8345acc6e3aa13a26d.dir
+      size: 1095
+      nfiles: 14
+    - path: artifacts/ml_strategy_eval/bt_masked_ga_combined/ga_history.json
+      hash: md5
+      md5: 0dd9fd64cfbeee53768da98c3cfe01d5
+      size: 10389
+    - path: 
+        artifacts/ml_strategy_eval/bt_masked_ga_combined/ga_strategy_knobs.json
+      hash: md5
+      md5: 2851f992e486cd103e08f4f82c4410c0
+      size: 557
+    - path: artifacts/ml_strategy_eval/bt_masked_ga_combined/metrics.json
+      hash: md5
+      md5: aa878c1620fa80c500b79855bda185fe
+      size: 541
+    - path: artifacts/ml_strategy_eval/bt_masked_ga_combined/model.json
+      hash: md5
+      md5: 1db66298ecf3817e746b722e1195ae39
+      size: 12530
+    - path: artifacts/ml_strategy_eval/bt_masked_ga_combined/report.json
+      hash: md5
+      md5: 14a49118dd7b7d637e5fe47aaa7fd5e7
+      size: 15421
+    - path: 
+        artifacts/ml_strategy_eval/bt_masked_ga_combined/stonecore_baseline_comparison.json
+      hash: md5
+      md5: d5aade41043045dec5399a9eea8e913a
+      size: 602

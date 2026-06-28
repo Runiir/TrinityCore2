@@ -63,6 +63,8 @@ __pycache__/
 /experiments/runs
 /dvclive
 /models
+!/artifacts/ml_strategy_eval/
+!/artifacts/ml_strategy_eval/bt_masked_ga_combined.dvc
 generated/bot_autonomy_lanes/*/run/*.pid
 # pixi environments
 .pixi/*

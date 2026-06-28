@@ -48,6 +48,7 @@ from tools.bot_ml.validate_validation_provisioning import main as provisioning_v
 from tools.bot_ml.validate_validation_provisioning import validate_database as validate_provisioning_database
 from tools.bot_ml.validation_profile_manifests import load_action_profile_manifest, load_combat_loot_profile_manifest
 from tools.bot_ml.validate_data_quality import validate_rows as validate_data_quality_rows
+from tools.bot_ml.bt_masked_ga_combined import run as run_bt_masked_ga_combined
 from ml.preprocessing.preprocess_frames import main as preprocess_main
 from ml.training.train_action_frequency import main as train_main
 from experiments.run_experiment import autonomous_metrics, dungeon_route_metrics, load_config, make_adapter, movement_metrics, profession_metrics, quest_metrics, run_experiment, solo_combat_metrics
@@ -382,6 +383,103 @@ def test_bot_ml_decision_builder_emits_candidate_rows_with_observed_chosen_label
     assert rows[1]["teacher_action_quality"] == "candidate_unobserved"
     assert rows[0]["trace"]["candidate_activity"] == "quest"
     assert rows[0]["trace"]["dataset_contract_version"] == DATASET_CONTRACT_VERSION
+
+
+def test_bt_masked_ga_combined_writes_offline_artifacts_and_baseline_comparison(tmp_path):
+    dataset = tmp_path / "decision_dataset.jsonl"
+    output_dir = tmp_path / "artifacts" / "ml_strategy_eval" / "bt_masked_ga_combined"
+    baseline = tmp_path / "stonecore" / "report.json"
+    write_jsonl(
+        dataset,
+        [
+            {
+                "run_id": 101,
+                "decision_id": 10,
+                "bot_guid": 1001,
+                "candidate_domain": "stonecore",
+                "candidate_activity": "boss_assist",
+                "candidate_allowed": 1,
+                "candidate_mask": {"allowed": True, "reason": ""},
+                "is_chosen": 1,
+                "label_observed": 1,
+                "imitate_teacher": 1,
+                "candidate_score": 0.3,
+                "utility_score": 0.4,
+                "learned_score": 0.2,
+                "confidence": 0.8,
+                "action_success": 1.0,
+                "expected_reward": 2.0,
+                "death_risk": 0.0,
+                "stuck_risk": 0.0,
+                "quest_completion_likelihood": 0.2,
+            },
+            {
+                "run_id": 101,
+                "decision_id": 10,
+                "bot_guid": 1001,
+                "candidate_domain": "stonecore",
+                "candidate_activity": "invalid_pull",
+                "candidate_allowed": 0,
+                "candidate_mask": {"allowed": False, "reason": "server_valid_action_mask"},
+                "is_chosen": 0,
+                "label_observed": 0,
+                "imitate_teacher": 0,
+                "candidate_score": 99.0,
+                "utility_score": 9.0,
+                "learned_score": 9.0,
+                "confidence": 1.0,
+                "action_success": 1.0,
+                "expected_reward": 10.0,
+                "death_risk": 0.5,
+                "stuck_risk": 0.5,
+            },
+            {
+                "run_id": 102,
+                "decision_id": 11,
+                "bot_guid": 1001,
+                "candidate_domain": "route",
+                "candidate_activity": "wait_regroup",
+                "candidate_allowed": 1,
+                "candidate_mask": {"allowed": True, "reason": ""},
+                "is_chosen": 1,
+                "label_observed": 1,
+                "imitate_teacher": 1,
+                "candidate_score": 0.1,
+                "utility_score": 0.2,
+                "learned_score": 0.1,
+                "confidence": 0.6,
+                "action_success": 1.0,
+                "expected_reward": 1.0,
+                "death_risk": 0.0,
+                "stuck_risk": 0.1,
+                "quest_completion_likelihood": 0.0,
+            },
+        ],
+    )
+    baseline.parent.mkdir(parents=True, exist_ok=True)
+    baseline.write_text(
+        json.dumps(
+            {
+                "acceptable_final_evidence": True,
+                "completion_reason": "validation_route_manifest_complete",
+                "failure_labels": [],
+                "active_bots": 5,
+                "diagnosis": {"diagnosis": {"blocker": "all_routes_complete"}},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    report = run_bt_masked_ga_combined(dataset, output_dir, baseline, population_size=6, generations=3, seed=13)
+
+    assert report["artifact_format"] == "bt_masked_ga_combined_v1"
+    assert report["metrics"]["uses_server_valid_action_masks"] is True
+    assert report["metrics"]["masked_out_candidate_rows"] == 1
+    assert report["metrics"]["cpp_runtime_files_changed"] == 0
+    assert report["acceptance_gate"]["ready_for_cpp_runtime_integration"] is False
+    assert report["stonecore_baseline_comparison"]["stonecore_regression"] is False
+    assert json.loads((output_dir / "diagnostics.json").read_text(encoding="utf-8"))["traces"][0]["masked_candidates"] == 1
+    assert (output_dir / "dvclive" / "metrics.json").exists()
 
 
 def test_bot_ml_decision_builder_counts_fallback_candidate_and_disambiguates_duplicates():

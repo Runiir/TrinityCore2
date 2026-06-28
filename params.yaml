@@ -27,3 +27,9 @@ bot_ml:
   register_sql: models/bot_policy/register_model.sql
   live_train_dir: artifacts/bot_policy_dvclive/train
   live_eval_dir: artifacts/bot_policy_dvclive/eval
+bt_masked_ga_combined:
+  output_dir: artifacts/ml_strategy_eval/bt_masked_ga_combined
+  baseline_report: artifacts/live_validation_instances/stonecore_uninterrupted_full_clear_r12/report.json
+  population_size: 24
+  generations: 18
+  seed: 13

@@ -1,0 +1,12 @@
+{
+  "accepted_stonecore_baseline": true,
+  "baseline_active_bots": 5,
+  "baseline_completion_reason": "validation_route_manifest_complete",
+  "baseline_failure_labels": [],
+  "baseline_report": "artifacts/live_validation_instances/stonecore_uninterrupted_full_clear_r12/report.json",
+  "baseline_route_blocker": "all_routes_complete",
+  "combined_lane_runtime_surface": "python_offline_only",
+  "cpp_runtime_files_changed": 0,
+  "regression_basis": "No C++ runtime or live-control files changed; accepted Stonecore r12 evidence is compared as an unchanged baseline.",
+  "stonecore_regression": false
+}
