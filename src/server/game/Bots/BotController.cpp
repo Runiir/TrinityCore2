@@ -815,10 +815,6 @@ ResolvedCombatAction BotController::ResolveProfileCombat(BotCombatDecision const
     action.AutoAttackMode = best->Profile.AutoAttackMode.empty() ? profile.AutoAttackMode : best->Profile.AutoAttackMode;
     action.MinRange = best->Profile.MinRange > 0.0f ? best->Profile.MinRange : profile.MinRange;
     action.MaxRange = best->Profile.MaxRange > 0.0f ? best->Profile.MaxRange : profile.MaxRange;
-    if ((best->Category == BotCombatActionCategory::Aoe || best->Category == BotCombatActionCategory::Cleave) && best->SpellId)
-        if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(best->SpellId))
-            if (spellInfo->GetMaxRange(false) <= 5.0f)
-                action.TargetGuid = bot->GetGUID();
     action.DebugName = BotCombatActionCatalog::ToString(best->Category);
     return action;
 }

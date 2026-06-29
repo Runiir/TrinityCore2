@@ -10825,10 +10825,6 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
     action.Type = "cast";
     action.SpellId = best->SpellId;
     action.TargetGuid = target->GetGUID();
-    if ((best->Category == BotCombatActionCategory::Aoe || best->Category == BotCombatActionCategory::Cleave) && best->SpellId)
-        if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(best->SpellId))
-            if (spellInfo->GetMaxRange(false) <= 5.0f)
-                action.TargetGuid = bot->GetGUID();
     action.DebugName = BotCombatActionCatalog::ToString(best->Category);
     action.MovementDirective = best->Profile.MovementDirective.empty() ? profile.MovementDirective : best->Profile.MovementDirective;
     action.AutoAttackMode = best->Profile.AutoAttackMode.empty() ? profile.AutoAttackMode : best->Profile.AutoAttackMode;
