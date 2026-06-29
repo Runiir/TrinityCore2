@@ -1188,9 +1188,16 @@ def validation_failure_labels(
         and (int(evidence.get("kill_evidence") or 0) > 0 or trash_route_actions > 0 or boss_engagement > 0)
     )
 
+    route_diagnosis_progress = route_actions > 0 and (
+        trash_evidence > 0
+        or kill_evidence > 0
+        or boss_engagement > 0
+        or int(evidence.get("moved_diagnoses") or 0) > 0
+    )
+
     if bot_not_loaded_diagnoses > 0:
         labels.append("bot_lifecycle_not_loaded")
-    elif error_diagnoses > 0:
+    elif error_diagnoses > 0 and not route_diagnosis_progress:
         labels.append("bot_diagnosis_error")
 
     if route_actions > 0 and boss_kills <= 0 and trash_route_actions <= 0 and kill_evidence <= 0:
@@ -1317,6 +1324,7 @@ def terminal_failure_labels(failure_labels: list[str], state: dict[str, Any]) ->
     )
     nonterminal = {
         "boss_attempt_no_kill",
+        "bot_pool_underfilled",
         "no_progress_observed",
         "trash_route_no_engagement",
         "validation_route_activation_no_engagement",

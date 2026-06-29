@@ -112,7 +112,7 @@ def live_validate_command(
         str(output_dir),
     ]
     if route_sequence:
-        command.append("--validation-route-sequence")
+        command.append("--validation-route-manifest")
     if duration_policy == "fixed-window":
         if observe_sec is not None:
             command.extend(["--observe-sec", str(observe_sec)])

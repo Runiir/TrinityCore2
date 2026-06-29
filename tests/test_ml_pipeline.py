@@ -1701,7 +1701,7 @@ def test_validation_run_plan_segments_boss_routes_for_aggregate_reports():
     assert "dataset/live_validation_scenarios/blackwing_descent_10n/01_entry_trash/report.json" in bwd["scenario_report_command"]
     assert "dataset/live_validation_scenarios/blackwing_descent_10n/02_magmaw/report.json" in bwd["scenario_report_command"]
     full_command = bwd["live_validate_command"]
-    assert "--validation-route-sequence" in full_command
+    assert "--validation-route-manifest" in full_command
     assert "--validation-route-node-id" not in full_command
     assert "--validation-route-kind" not in full_command
     assert "--validation-segment-id" not in full_command
@@ -1966,6 +1966,71 @@ def test_validation_run_status_reruns_invalid_existing_segment_reports(tmp_path)
     assert stonecore["next_commands"][0] == "pixi run bot-live-validate --validation-segment-id 02_corborus"
     assert stonecore["next_commands"][1] == "pixi run bot-live-validate --validation-scenario-id stonecore_5n"
     assert stonecore["validation_next_commands"]["uninterrupted_full_clear"] == "pixi run bot-live-validate --validation-scenario-id stonecore_5n"
+
+
+def test_validation_run_status_accepts_uninterrupted_full_clear_report_as_segment_coverage(tmp_path):
+    live_root = tmp_path / "live_validation_scenarios"
+    report_root = tmp_path / "scenario_reports"
+    plan = {
+        "scenarios": [
+            {
+                "scenario_id": "stonecore_5n",
+                "instance": "The Stonecore",
+                "difficulty": "normal_5man",
+                "live_validate_shell": "pixi run bot-live-validate --validation-scenario-id stonecore_5n",
+                "scenario_report_shell": "pixi run bot-live-scenario-reports --scenario-id stonecore_5n",
+                "segments": [
+                    {
+                        "segment_id": "01_entrance_packs",
+                        "route_node_id": "stonecore_trash",
+                        "kind": "trash",
+                        "label": "entrance packs",
+                        "mechanic_profile": "",
+                        "executable": True,
+                        "live_output_dir": str(live_root / "stonecore_5n" / "01_entrance_packs"),
+                        "live_validate_shell": "pixi run bot-live-validate --validation-segment-id 01_entrance_packs",
+                    },
+                    {
+                        "segment_id": "02_corborus",
+                        "route_node_id": "stonecore_corborus",
+                        "kind": "boss",
+                        "label": "Corborus",
+                        "mechanic_profile": "burrow_adds_ground_danger",
+                        "executable": True,
+                        "live_output_dir": str(live_root / "stonecore_5n" / "02_corborus"),
+                        "live_validate_shell": "pixi run bot-live-validate --validation-segment-id 02_corborus",
+                    },
+                ],
+            }
+        ]
+    }
+    report_root.mkdir()
+    (report_root / "stonecore_5n.json").write_text(
+        json.dumps(
+            {
+                "scenario_id": "stonecore_5n",
+                "clear_complete": True,
+                "completion_claim_valid": True,
+                "completion_evidence_mode": "uninterrupted_live_clear",
+                "natural_full_clear_evidence": True,
+                "complete_segment_coverage": True,
+                "source_segments": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    status = build_validation_run_status(plan, report_root)
+    stonecore = status["scenarios"][0]
+
+    assert status["all_ready"] is True
+    assert stonecore["full_clear_ready"] is True
+    assert stonecore["present_segments"] == ["01_entrance_packs", "02_corborus"]
+    assert stonecore["missing_segments"] == []
+    assert stonecore["invalid_segments"] == []
+    assert stonecore["blockers"] == []
+    assert stonecore["next_commands"] == []
+    assert {row["evidence_source"] for row in stonecore["segment_reports"]} == {"uninterrupted_full_clear_report"}
 
 
 def test_validation_run_status_accepts_boss_kill_evidence_counter(tmp_path):
@@ -2658,6 +2723,21 @@ TC> {"duration_minutes":1.0,"decisions":12,"total_kills":0,"quests_completed":0}
     assert report["failure_labels"] == []
 
 
+def test_live_bot_validation_keeps_route_progress_diagnosis_error_nonterminal():
+    output = """
+TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":20,"kills":0,"quests_accepted":0,"quest_objective_progress":0}
+TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"diagnosis":{"diagnosis_code":"blocked_no_fallback","severity":"error"},"snapshot":{"decision":{"action":"validation_route_prerequisite_assist"},"movement":{"is_moving":false,"distance_moved_since_last_decision":0}}}]}
+TC> {"trace_schema_version":1,"selector":"all","bots":[{"bot_guid":1,"entries":[{"action":"validation_route_prerequisite","situation":"validation_route_prerequisite","result":"force_tank_focus"},{"action":"trash_action","situation":"normal_dungeon_trash","result":"ok"},{"action":"validation_route_trash_action","situation":"normal_dungeon_trash","result":"ok"}]}]}
+TC> {"duration_minutes":1.0,"decisions":20,"total_kills":0,"quests_completed":0}
+"""
+    report = live_validation_report(output)
+
+    assert report["evidence"]["error_diagnoses"] == 1
+    assert report["evidence"]["trash_pulls"] == 2
+    assert "bot_diagnosis_error" not in report["failure_labels"]
+    assert report["completion_reason"] == "incomplete_evidence"
+
+
 def test_live_bot_validation_counts_trace_mob_killed_as_kill_evidence():
     output = """
 TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":12,"kills":0,"quests_accepted":0,"quest_objective_progress":0}
@@ -3099,7 +3179,15 @@ def test_live_scenario_report_builder_accepts_manifest_backed_uninterrupted_clea
     live_report = {
         "source_live_report": "stonecore_uninterrupted.json",
         "validation_context": {"scenario_id": "stonecore_5n"},
-        "validation_route_manifest": {"schema": "bot_live_validation_route_manifest_v1", "scenario_id": "stonecore_5n", "route_count": 2},
+        "completion_reason": "validation_route_manifest_complete",
+        "acceptable_final_evidence": True,
+        "final_evidence_rejections": [],
+        "validation_route_manifest": {
+            "schema": "bot_live_validation_route_manifest_v1",
+            "scenario_id": "stonecore_5n",
+            "route_count": 2,
+            "expected_segments": ["01_entrance_packs", "02_corborus"],
+        },
         "trace_entries": 6,
         "trace": {"entries": [{"action": "trash_action"}, {"action": "boss_started"}, {"action": "boss_killed"}]},
         "summary": {"boss_kills": 1, "trash_pulls": 1},
@@ -3120,7 +3208,60 @@ def test_live_scenario_report_builder_accepts_manifest_backed_uninterrupted_clea
     assert stonecore["completion_claim_valid"] is True
     assert stonecore["observed_uninterrupted_full_clear_signal"] is True
     assert stonecore["source_segments"] == []
+    assert stonecore["missing_segments"] == []
+    assert stonecore["complete_segment_coverage"] is True
     assert stonecore["scenario_evidence_mode"] == "generic_live_trace_inference"
+
+
+def test_live_scenario_report_builder_accepts_validator_approved_manifest_clear_without_boss_counter(tmp_path):
+    scenario_dir = tmp_path / "validation_scenarios"
+    write_jsonl(
+        scenario_dir / "validation_scenarios.jsonl",
+        [{"scenario_id": "stonecore_5n", "instance": "The Stonecore", "map_id": 725, "difficulty": "normal_5man", "provisioning_ready": True, "boss_count": 4}],
+    )
+    write_jsonl(
+        scenario_dir / "validation_routes.jsonl",
+        [
+            {"scenario_id": "stonecore_5n", "kind": "trash", "step": 1, "label": "entrance packs", "route_node_id": "stonecore_trash", "required_evidence": ["pulls"]},
+            {"scenario_id": "stonecore_5n", "kind": "boss", "step": 2, "label": "Corborus", "route_node_id": "stonecore_corborus", "required_evidence": ["pulls", "healer_assignments"]},
+            {"scenario_id": "stonecore_5n", "kind": "boss", "step": 3, "label": "Slabhide", "route_node_id": "stonecore_slabhide", "required_evidence": ["pulls"]},
+            {"scenario_id": "stonecore_5n", "kind": "boss", "step": 4, "label": "Ozruk", "route_node_id": "stonecore_ozruk", "required_evidence": ["pulls"]},
+            {"scenario_id": "stonecore_5n", "kind": "boss", "step": 5, "label": "High Priestess Azil", "route_node_id": "stonecore_azil", "required_evidence": ["pulls", "interrupts"]},
+        ],
+    )
+    live_report = {
+        "source_live_report": "stonecore_uninterrupted_r12.json",
+        "validation_context": {"scenario_id": "stonecore_5n"},
+        "completion_reason": "validation_route_manifest_complete",
+        "acceptable_final_evidence": True,
+        "final_evidence_rejections": [],
+        "validation_route_manifest": {
+            "schema": "bot_live_validation_route_manifest_v1",
+            "scenario_id": "stonecore_5n",
+            "route_count": 5,
+            "expected_segments": ["01_entrance_packs", "02_corborus", "03_slabhide", "04_ozruk", "05_high_priestess_azil"],
+        },
+        "trace_entries": 10,
+        "trace": {"entries": [{"action": "validation_route_manifest_complete"}, {"action": "trash_action"}]},
+        "summary": {"total_kills": 4},
+        "evidence": {
+            "failures": 12,
+            "boss_kill_evidence": 0,
+            "trash_pulls": 92,
+            "validation_evidence_counts": {"pulls": 92, "tank_positioning": 183, "target_priority": 89, "regrouping": 53},
+        },
+        "failure_labels": [],
+        "failure_reason": "",
+    }
+
+    stonecore = build_live_scenario_reports(live_report, scenario_dir)["stonecore_5n"]
+
+    assert stonecore["clear_complete"] is True
+    assert stonecore["boss_kills"] == 4
+    assert stonecore["completion_evidence_mode"] == "uninterrupted_live_clear"
+    assert stonecore["missing_segments"] == []
+    assert stonecore["missing_evidence"] == []
+    assert stonecore["complete_segment_coverage"] is True
 
 
 def test_live_scenario_report_builder_aggregates_segmented_raid_progress_without_full_clear(tmp_path):
@@ -4985,6 +5126,17 @@ def test_watchdog_state_does_not_call_route_actions_zero_progress():
 
     assert state["progress_total"] == 16
     assert state["no_progress"] is False
+    assert (
+        live_validation_report(
+            """
+TC> {"active_bots":1,"target_bots":5,"action":"botauto_status","decisions":85}
+TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"snapshot":{"decision":{"action":"validation_route_trash_action"},"movement":{"is_moving":false,"distance_moved_since_last_decision":0}}}]}
+TC> {"trace_schema_version":1,"entries":[{"action":"validation_route_trash_action","result":"ok"}]}
+TC> {"duration_minutes":2,"decisions":85}
+"""
+        )["completion_reason"]
+        == "incomplete_evidence"
+    )
 
 
 def test_live_bot_validation_keeps_route_progress_incomplete_until_watchdog_expires():

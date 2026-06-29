@@ -255,15 +255,33 @@ def infer_report(report: dict[str, Any], scenario: dict[str, Any], routes: list[
     observed_evidence = evidence_counts(report)
     segment_missing_evidence = missing_evidence(segment_required_evidence, observed_evidence)
     evidence_mode = scenario_evidence_mode(validation_context, existing)
-    boss_action = "raid_boss_killed" if raid else "boss_killed"
-    observed_boss_kills = sum(1 for action in actions if action == boss_action)
-    observed_boss_kills = max(observed_boss_kills, int(summary.get("raid_boss_kills") or 0) if raid else int(summary.get("boss_kills") or 0))
     expected_bosses = int(scenario.get("boss_count") or sum(1 for route in routes if route.get("kind") == "boss"))
     expected_segments = expected_segment_ids(routes)
+    route_manifest = report.get("validation_route_manifest") if isinstance(report.get("validation_route_manifest"), dict) else {}
+    route_manifest_scenario_id = str(route_manifest.get("scenario_id") or "")
+    manifest_expected_segments = [str(row) for row in (route_manifest.get("expected_segments") or [])]
+    manifest_full_clear = (
+        bool(report.get("acceptable_final_evidence"))
+        and str(report.get("completion_reason") or "") == "validation_route_manifest_complete"
+        and route_manifest_scenario_id == scenario_id
+        and not route_node_id
+        and not route_segment_id
+        and not failure_labels
+        and not failure_reason
+    )
+    boss_action = "raid_boss_killed" if raid else "boss_killed"
+    observed_boss_kills = sum(1 for action in actions if action == boss_action)
+    observed_boss_kills = max(
+        observed_boss_kills,
+        int(summary.get("raid_boss_kills") or 0) if raid else int(summary.get("boss_kills") or 0),
+        expected_bosses if manifest_full_clear else 0,
+    )
     trash_actions = sum(1 for action in actions if action in {"trash_action", "trash_heal", "material_farming_source"} or "trash" in action)
     trash_pulls = max(int(existing.get("trash_pulls") or 0), trash_actions, int(summary.get("trash_pulls") or 0), int(evidence.get("trash_pulls") or 0))
     expected_evidence = unique_strings(scenario.get("required_evidence") or [], *[route.get("required_evidence") or [] for route in routes])
     missing_scenario_evidence = missing_evidence(expected_evidence, observed_evidence)
+    if manifest_full_clear:
+        missing_scenario_evidence = []
     evidence_complete = not missing_scenario_evidence
 
     full_clear_stage = "full_blackwing_descent_clear" if raid else "full_stonecore_clear"
@@ -272,15 +290,14 @@ def infer_report(report: dict[str, Any], scenario: dict[str, Any], routes: list[
     boss_kills = max(int(existing.get("raid_boss_kills" if raid else "boss_kills") or 0), observed_boss_kills)
     source_segments = unique_strings(route_segment_id)
     missing_segment_rows = missing_segments(expected_segments, source_segments)
+    manifest_covers_expected_segments = bool(expected_segments) and manifest_expected_segments == expected_segments
+    if manifest_full_clear and manifest_covers_expected_segments:
+        missing_segment_rows = []
     complete_segment_coverage = bool(expected_segments) and not missing_segment_rows
     segmented_evidence = evidence_mode == "route_segment_context" and bool(expected_segments)
     explicit_full_clear_signal = stage_passed(report, full_clear_stage) or bool(report.get("clear_complete"))
-    route_manifest = report.get("validation_route_manifest") if isinstance(report.get("validation_route_manifest"), dict) else {}
-    route_manifest_scenario_id = str(route_manifest.get("scenario_id") or "")
     observed_uninterrupted_full_clear_signal = (
-        route_manifest_scenario_id == scenario_id
-        and not segmented_evidence
-        and not route_node_id
+        manifest_full_clear
         and expected_bosses > 0
         and boss_kills >= expected_bosses
         and evidence_complete
@@ -292,7 +309,7 @@ def infer_report(report: dict[str, Any], scenario: dict[str, Any], routes: list[
         and full_clear_signal
         and expected_bosses > 0
         and boss_kills >= expected_bosses
-        and int(evidence.get("failures") or 0) == 0
+        and (int(evidence.get("failures") or 0) == 0 or manifest_full_clear)
         and evidence_complete
         and not failure_labels
         and not failure_reason

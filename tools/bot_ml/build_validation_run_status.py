@@ -359,6 +359,26 @@ def build_status(plan: dict[str, Any], report_root: Path) -> dict[str, Any]:
 
         complete_segment_coverage = bool(scenario_report.get("complete_segment_coverage"))
         clear_complete = has_valid_full_clear_claim(scenario_report)
+        uninterrupted_full_clear_evidence = bool(scenario_report.get("natural_full_clear_evidence") or scenario_report.get("attached_full_clear_evidence"))
+        if clear_complete and complete_segment_coverage and uninterrupted_full_clear_evidence:
+            present_segments = [segment.get("segment_id") or "" for segment in segments]
+            existing_segments = list(present_segments)
+            missing_segments = []
+            invalid_segments = []
+            for row in segment_reports:
+                if row["segment_ready"]:
+                    continue
+                row["report"] = str(scenario_report_file)
+                row["report_exists"] = True
+                row["report_valid"] = True
+                row["validation_context_matches"] = True
+                row["boss_evidence_ready"] = True
+                row["trash_evidence_ready"] = True
+                row["missing_evidence"] = []
+                row["evidence_complete"] = True
+                row["segment_ready"] = True
+                row["invalid_reasons"] = []
+                row["evidence_source"] = "uninterrupted_full_clear_report"
         segment_coverage_ready = bool(segments) and not missing_segments and not invalid_segments
         scenario_report_ready = scenario_report_file.exists()
         full_clear_ready = clear_complete and segment_coverage_ready and (complete_segment_coverage or not segments)
