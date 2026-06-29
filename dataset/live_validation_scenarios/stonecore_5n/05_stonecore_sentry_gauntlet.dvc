@@ -1,6 +1,6 @@
 outs:
-- md5: 9e5ba9f670a46f15e51db01be0b5a8cd.dir
-  size: 769332
-  nfiles: 7
+- md5: 70ca7f0c46b834c19178e41762d92f8d.dir
+  size: 4148228
+  nfiles: 16
   hash: md5
   path: 05_stonecore_sentry_gauntlet
