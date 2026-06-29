@@ -1544,7 +1544,10 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     stonecore_entry = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "entrance packs")
     stonecore_sentry_gauntlet = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "stonecore sentry gauntlet")
     twilight_flayer_packs = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "twilight flayer packs")
+    corborus = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "Corborus")
     slabhide = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "Slabhide")
+    ozruk = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "Ozruk")
+    azil = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "High Priestess Azil")
     nefarian = next(row for row in routes if row["scenario_id"] == "blackwing_descent_10n" and row["label"] == "Nefarian")
     assert atramedes["expected_bot_count"] == 10
     assert omnotron["source_entry"] == 42166
@@ -1560,10 +1563,18 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert stonecore_entry["bot_start_map_id"] == 725
     assert stonecore_entry["bot_start_x"] == 851.052
     assert stonecore_entry["bot_start_z"] == 317.266
+    assert corborus["bot_start_x"] == 1150.34
+    assert corborus["bot_start_z"] == 283.8904
+    assert slabhide["bot_start_x"] == 1292.352
+    assert slabhide["bot_start_z"] == 247.6368
     assert stonecore_sentry_gauntlet["bot_start_x"] == 1364.55
     assert stonecore_sentry_gauntlet["bot_start_z"] == 214.4
+    assert ozruk["bot_start_x"] == 1507.859
+    assert ozruk["bot_start_z"] == 217.3286
     assert twilight_flayer_packs["bot_start_x"] == 1329.93
     assert twilight_flayer_packs["bot_start_z"] == 207.804
+    assert azil["bot_start_x"] == 1337.3
+    assert azil["bot_start_z"] == 214.2383
     assert stonecore_entry["node_kind"] == "trash_cluster"
     assert stonecore_entry["cluster_id"] == "stonecore_5n_01_trash_cluster"
     assert stonecore_entry["cluster_center"] == [903.255, 985.352, 317.198]
