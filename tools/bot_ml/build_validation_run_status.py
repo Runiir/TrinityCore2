@@ -140,9 +140,10 @@ def has_valid_full_clear_claim(report: dict[str, Any]) -> bool:
         return False
     mode = str(report.get("completion_evidence_mode") or report.get("scenario_evidence_mode") or "")
     modes = {str(row) for row in (report.get("scenario_evidence_modes") or [])}
-    if mode == "route_segment_context" or "route_segment_context" in modes:
+    has_full_clear_evidence = bool(report.get("natural_full_clear_evidence") or report.get("attached_full_clear_evidence"))
+    if (mode == "route_segment_context" or "route_segment_context" in modes) and not has_full_clear_evidence:
         return False
-    if report.get("source_segments"):
+    if report.get("source_segments") and not has_full_clear_evidence:
         return False
     return True
 

@@ -1524,7 +1524,9 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert scenarios["blackwing_descent_10n"]["group_kind"] == "raid"
     assert "role_assignments" in scenarios["stonecore_5n"]["required_evidence"]
     assert "party_formation" in scenarios["stonecore_5n"]["required_evidence"]
+    assert "instance_reset" not in scenarios["stonecore_5n"]["required_evidence"]
     assert "raid_formation" in scenarios["blackwing_descent_10n"]["required_evidence"]
+    assert "instance_reset" in scenarios["blackwing_descent_10n"]["required_evidence"]
     assert scenarios["blackwing_descent_10n"]["role_assignment"]["assignments"][0] == {
         "role": "tank",
         "required": 2,
@@ -2032,7 +2034,7 @@ def test_validation_run_status_accepts_uninterrupted_full_clear_report_as_segmen
                 "completion_evidence_mode": "uninterrupted_live_clear",
                 "natural_full_clear_evidence": True,
                 "complete_segment_coverage": True,
-                "source_segments": [],
+                "source_segments": ["01_entrance_packs", "02_corborus"],
             }
         ),
         encoding="utf-8",

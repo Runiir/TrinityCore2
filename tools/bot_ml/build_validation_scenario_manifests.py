@@ -223,7 +223,9 @@ def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any],
         scenario_group_kind = group_kind(required_roles, difficulty)
         scenario_required_evidence = ["role_assignments", "party_formation" if scenario_group_kind == "party" else "raid_formation"]
         if any(step.get("kind") in {"trash", "boss"} for step in route_steps):
-            scenario_required_evidence.extend(["pulls", "regrouping", "recovery", "instance_reset"])
+            scenario_required_evidence.extend(["pulls", "regrouping", "recovery"])
+            if scenario_group_kind == "raid":
+                scenario_required_evidence.append("instance_reset")
         if not verification_ready:
             missing.append("provisioning_verifier_ready")
         invalid_route_steps = [
