@@ -1542,6 +1542,8 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     atramedes = next(row for row in routes if row["scenario_id"] == "blackwing_descent_10n" and row["label"] == "Atramedes")
     omnotron = next(row for row in routes if row["scenario_id"] == "blackwing_descent_10n" and row["label"] == "Omnotron Defense System")
     stonecore_entry = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "entrance packs")
+    stonecore_sentry_gauntlet = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "stonecore sentry gauntlet")
+    twilight_flayer_packs = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "twilight flayer packs")
     slabhide = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "Slabhide")
     nefarian = next(row for row in routes if row["scenario_id"] == "blackwing_descent_10n" and row["label"] == "Nefarian")
     assert atramedes["expected_bot_count"] == 10
@@ -1558,6 +1560,10 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert stonecore_entry["bot_start_map_id"] == 725
     assert stonecore_entry["bot_start_x"] == 851.052
     assert stonecore_entry["bot_start_z"] == 317.266
+    assert stonecore_sentry_gauntlet["bot_start_x"] == 1364.55
+    assert stonecore_sentry_gauntlet["bot_start_z"] == 214.4
+    assert twilight_flayer_packs["bot_start_x"] == 1329.93
+    assert twilight_flayer_packs["bot_start_z"] == 207.804
     assert stonecore_entry["node_kind"] == "trash_cluster"
     assert stonecore_entry["cluster_id"] == "stonecore_5n_01_trash_cluster"
     assert stonecore_entry["cluster_center"] == [903.255, 985.352, 317.198]
