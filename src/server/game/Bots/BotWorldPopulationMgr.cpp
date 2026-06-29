@@ -6756,20 +6756,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         }
         return false;
     };
-    auto isValidationRouteScriptTarget = [&isValidationRouteEntry](Creature const* creature) -> bool
-    {
-        if (!creature)
-            return false;
-
-        return isValidationRouteEntry(creature->GetEntry());
-    };
-    auto isValidationRouteCombatTarget = [&isValidationRouteCombatEntry](Creature const* creature) -> bool
-    {
-        if (!creature)
-            return false;
-
-        return isValidationRouteCombatEntry(creature->GetEntry());
-    };
     auto isValidationRoutePackEntry = [this, &isValidationRouteCombatEntry](uint32 entry) -> bool
     {
         if (!entry)
@@ -6777,6 +6763,22 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (!_config.ValidationRoutePackTargetEntries.empty())
             return std::find(_config.ValidationRoutePackTargetEntries.begin(), _config.ValidationRoutePackTargetEntries.end(), entry) != _config.ValidationRoutePackTargetEntries.end();
         return isValidationRouteCombatEntry(entry);
+    };
+    auto isValidationRouteScriptTarget = [this, &isValidationRouteEntry, &isValidationRoutePackEntry](Creature const* creature) -> bool
+    {
+        if (!creature)
+            return false;
+
+        return _config.ValidationRouteKind != "boss"
+            ? isValidationRoutePackEntry(creature->GetEntry())
+            : isValidationRouteEntry(creature->GetEntry());
+    };
+    auto isValidationRouteCombatTarget = [&isValidationRouteCombatEntry](Creature const* creature) -> bool
+    {
+        if (!creature)
+            return false;
+
+        return isValidationRouteCombatEntry(creature->GetEntry());
     };
     auto hasStrictPathToValidationRouteTarget = [bot](Unit const* unit) -> bool
     {
@@ -6811,6 +6813,15 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             && creature->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ) <= radius
             && bot->IsWithinLOSInMap(creature)
             && hasStrictPathToValidationRouteTarget(creature);
+    };
+    auto isValidationRouteObjectiveTarget = [&isValidationRouteScriptTarget, &isEligibleTrashClusterMob, this](Creature const* creature) -> bool
+    {
+        if (!creature)
+            return false;
+
+        return _config.ValidationRouteKind == "boss"
+            ? isValidationRouteScriptTarget(creature)
+            : isEligibleTrashClusterMob(creature);
     };
     auto findNearestTrashClusterMob = [&]() -> Unit*
     {
@@ -8132,7 +8143,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (tankFocusTarget)
         {
             Creature* tankFocusCreature = tankFocusTarget->ToCreature();
-            bool tankFocusIsRouteTarget = isValidationRouteScriptTarget(tankFocusCreature);
+            bool tankFocusIsRouteTarget = isValidationRouteObjectiveTarget(tankFocusCreature);
             bool tankFocusIsBossRoute = tankFocusIsRouteTarget && _config.ValidationRouteKind == "boss";
             char const* tankFocusSituation = tankFocusIsRouteTarget
                 ? (tankFocusIsBossRoute ? (bot->GetMap() && bot->GetMap()->IsRaid() ? "raid_boss" : "dungeon_boss") : "normal_dungeon_trash")
@@ -8495,7 +8506,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     if (bot->IsInCombat() && target && target->IsAlive() && bot->IsValidAttackTarget(target))
     {
         Creature const* creature = target->ToCreature();
-        bool routeBossTarget = isValidationRouteScriptTarget(creature);
+        bool routeBossTarget = isValidationRouteObjectiveTarget(creature);
         float targetRouteDistance = target->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ);
         bool ineligibleTrashTarget = _config.ValidationRouteKind != "boss" && creature && !isEligibleTrashClusterMob(creature);
         if (!routeBossTarget && creature && targetRouteDistance > 120.0f)
@@ -8522,7 +8533,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     if (bot->IsInCombat() && target && target->IsAlive() && bot->IsValidAttackTarget(target))
     {
         Creature const* creature = target->ToCreature();
-        bool routeBossTarget = isValidationRouteScriptTarget(creature);
+        bool routeBossTarget = isValidationRouteObjectiveTarget(creature);
         if (routeBossTarget)
             rememberValidationRouteFocus(target);
         if (tryRouteGroupHeal(bot, target))

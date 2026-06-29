@@ -697,6 +697,9 @@ def test_quest_first_portfolio_routing_surface():
     assert "Unit::DealDamage(bot, prerequisiteTarget, damage" in mgr
     assert "creature->IsInEvadeMode() || creature->HasUnitState(UNIT_STATE_EVADE)" in mgr
     assert "hasStrictPathToValidationRouteTarget(creature)" in mgr
+    assert "isValidationRouteObjectiveTarget" in mgr
+    assert 'return _config.ValidationRouteKind == "boss"' in mgr
+    assert "isEligibleTrashClusterMob(creature)" in mgr
     assert "markValidationRouteTrashFailed" in mgr
     assert "validation_trash_no_progress" in mgr
     assert "validation_trash_requires_damage_progress" in mgr

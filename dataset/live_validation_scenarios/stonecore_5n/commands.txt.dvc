@@ -1,0 +1,5 @@
+outs:
+- md5: fadbc044ff7e67c3e61293a23a6e6011
+  size: 100
+  hash: md5
+  path: commands.txt

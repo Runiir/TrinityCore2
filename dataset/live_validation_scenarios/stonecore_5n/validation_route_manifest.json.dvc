@@ -1,0 +1,5 @@
+outs:
+- md5: 96059b9b83b04bd9ffee2242a51ecacb
+  size: 41000
+  hash: md5
+  path: validation_route_manifest.json
