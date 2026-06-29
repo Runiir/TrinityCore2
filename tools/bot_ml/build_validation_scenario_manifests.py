@@ -138,6 +138,8 @@ def pack_target_entries(scenario_id: str, step: dict[str, Any]) -> list[int]:
         return []
     label = str(step.get("label") or "")
     entries = list(STONECORE_TRASH_PACKS.get(label, [])) if scenario_id == "stonecore_5n" else []
+    scripted_entries = set(scripted_event_entries(scenario_id, step))
+    entries = [entry for entry in entries if entry not in scripted_entries]
     source_entry = int(step.get("source_entry") or 0)
     if source_entry and source_entry not in entries:
         entries.insert(0, source_entry)
