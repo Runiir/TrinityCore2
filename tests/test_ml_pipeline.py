@@ -2905,6 +2905,33 @@ TC> {"duration_minutes":12,"decisions":420,"raid_boss_kills":6,"role_assignments
     assert counts["instance_reset"] == 1
 
 
+def test_live_bot_validation_counts_route_complete_as_regrouping_evidence():
+    output = """
+TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":66,"kills":1}
+TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"snapshot":{"decision":{"action":"validation_route_complete"},"movement":{"is_moving":false,"distance_moved_since_last_decision":0}}}]}
+TC> {"trace_schema_version":1,"entries":[{"action":"boss_started","situation":"dungeon_boss","result":"ok"},{"action":"boss_killed","situation":"boss_killed","result":"ok"},{"action":"validation_route_complete","situation":"validation_route_manifest","result":"boss_killed"}]}
+TC> {"duration_minutes":0.5,"decisions":66,"total_kills":1,"target_priority_decisions":1,"healer_assignments":1,"tank_positioning":1}
+"""
+    report = live_validation_report(output, validation_context={"route_kind": "boss"})
+    counts = report["evidence"]["validation_evidence_counts"]
+
+    assert report["evidence"]["boss_kill_evidence"] == 1
+    assert counts["regrouping"] == 1
+
+
+def test_live_bot_validation_counts_boss_killed_diagnosis_as_boss_evidence():
+    output = """
+TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":69,"kills":1}
+TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"diagnosis":{"diagnosis_code":"validation_route_terminal","blocker":"boss_killed"},"snapshot":{"decision":{"action":"validation_route_complete"},"movement":{"is_moving":false,"distance_moved_since_last_decision":0}}}]}
+TC> {"trace_schema_version":1,"entries":[{"action":"boss_started","situation":"dungeon_boss","result":"ok"},{"action":"boss_action","situation":"dungeon_boss","result":"ok"},{"action":"validation_route_complete","situation":"validation_route_manifest","result":"ok"}]}
+TC> {"duration_minutes":0.5,"decisions":69,"total_kills":1,"target_priority_decisions":1,"healer_assignments":1,"tank_positioning":1}
+"""
+    report = live_validation_report(output, validation_context={"route_kind": "boss"})
+
+    assert report["evidence"]["boss_kill_evidence"] == 1
+    assert report["progress_counters"]["boss_kill_evidence"] == 1
+
+
 def test_live_bot_validation_accepts_raw_manifest_complete_when_trace_json_is_interleaved():
     output = """
 TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":120,"kills":10}
@@ -3168,6 +3195,52 @@ def test_live_scenario_report_builder_counts_stonecore_summary_boss_kills(tmp_pa
     assert stonecore["boss_kills"] == 4
     assert stonecore["clear_complete"] is False
     assert stonecore["clear_complete_blockers"] == ["missing_uninterrupted_full_clear_report"]
+
+
+def test_live_scenario_report_builder_counts_progress_boss_kill_evidence(tmp_path):
+    scenario_dir = tmp_path / "validation_scenarios"
+    write_jsonl(
+        scenario_dir / "validation_scenarios.jsonl",
+        [{"scenario_id": "stonecore_5n", "instance": "The Stonecore", "map_id": 725, "difficulty": "normal_5man", "provisioning_ready": True, "boss_count": 4}],
+    )
+    write_jsonl(
+        scenario_dir / "validation_routes.jsonl",
+        [
+            {
+                "scenario_id": "stonecore_5n",
+                "kind": "boss",
+                "step": 6,
+                "label": "Ozruk",
+                "route_node_id": "ozruk",
+                "required_evidence": ["pulls", "tank_positioning", "healer_assignments", "regrouping"],
+            }
+        ],
+    )
+    live_report = {
+        "validation_context": {
+            "scenario_id": "stonecore_5n",
+            "segment_id": "06_ozruk",
+            "route_node_id": "ozruk",
+            "route_label": "Ozruk",
+            "route_kind": "boss",
+            "route_step": 6,
+        },
+        "trace_entries": 4,
+        "trace": {"entries": [{"action": "boss_started"}, {"action": "boss_action"}, {"action": "validation_route_complete"}]},
+        "summary": {"total_kills": 1},
+        "evidence": {
+            "failures": 0,
+            "boss_kill_evidence": 1,
+            "validation_evidence_counts": {"pulls": 1, "tank_positioning": 1, "healer_assignments": 1, "regrouping": 1},
+        },
+        "progress_counters": {"boss_kill_evidence": 1},
+    }
+
+    stonecore = build_live_scenario_reports(live_report, scenario_dir)["stonecore_5n"]
+    segment = stonecore["segment_results"][0]
+
+    assert segment["boss_kills"] == 1
+    assert stonecore["boss_kills"] == 1
 
 
 def test_live_scenario_report_builder_accepts_manifest_backed_uninterrupted_clear(tmp_path):

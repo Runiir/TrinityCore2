@@ -241,6 +241,7 @@ def infer_report(report: dict[str, Any], scenario: dict[str, Any], routes: list[
     actions = action_names(report)
     summary = report.get("summary") if isinstance(report.get("summary"), dict) else {}
     evidence = report.get("evidence") if isinstance(report.get("evidence"), dict) else {}
+    progress_counters = report.get("progress_counters") if isinstance(report.get("progress_counters"), dict) else {}
     validation_context = report.get("validation_context") if isinstance(report.get("validation_context"), dict) else {}
     failure_labels = unique_strings(report.get("failure_labels") or [])
     failure_reason = str(report.get("failure_reason") or (failure_labels[0] if failure_labels else ""))
@@ -274,6 +275,8 @@ def infer_report(report: dict[str, Any], scenario: dict[str, Any], routes: list[
     observed_boss_kills = max(
         observed_boss_kills,
         int(summary.get("raid_boss_kills") or 0) if raid else int(summary.get("boss_kills") or 0),
+        int(evidence.get("boss_kill_evidence") or 0),
+        int(progress_counters.get("boss_kill_evidence") or 0),
         expected_bosses if manifest_full_clear else 0,
     )
     trash_actions = sum(1 for action in actions if action in {"trash_action", "trash_heal", "material_farming_source"} or "trash" in action)

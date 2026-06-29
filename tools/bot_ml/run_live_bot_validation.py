@@ -77,7 +77,7 @@ VALIDATION_EVIDENCE_ACTIONS = {
     "interrupts": {"interrupt", "interrupt_success", "assigned_interrupt_success", "validation_interrupt", "raid_interrupt"},
     "healer_assignments": {"healer_assignment", "validation_route_group_heal", "trash_heal", "external_defensive", "raid_healer_cooldown"},
     "tank_positioning": {"validation_route_tank_boss", "tank_positioning", "force_tank_focus", "move_to_validation_route_assist_target", "raid_position_anchor", "raid_boss_action"},
-    "regrouping": {"validation_route_regroup", "regroup", "validation_route_hold_anchor", "move_to_validation_route_focus", "raid_position_anchor"},
+    "regrouping": {"validation_route_regroup", "regroup", "validation_route_hold_anchor", "move_to_validation_route_focus", "raid_position_anchor", "validation_route_complete"},
     "recovery": {"stuck_detected", "unstuck", "death", "dead_recovery", "validation_route_recovery", "raid_wipe"},
     "instance_reset": {"instance_reset"},
 }
@@ -968,6 +968,7 @@ def live_evidence(
         int(summary.get("raid_boss_kills") or 0),
         action_counts.get("boss_killed", 0),
         action_counts.get("raid_boss_killed", 0),
+        sum(1 for row in diagnoses if str(nested_get(row, ["diagnosis", "blocker"], nested_get(row, ["blocker"], ""))) == "boss_killed"),
     )
     trash_action_evidence = sum(
         count
@@ -1048,8 +1049,8 @@ def live_evidence(
     )
     regrouping_evidence = max(
         int(summary.get("regroups") or 0),
-        action_counts.get("validation_route_regroup", 0) + action_counts.get("regroup", 0) + action_counts.get("validation_route_hold_anchor", 0) + action_counts.get("move_to_validation_route_focus", 0) + action_counts.get("raid_position_anchor", 0),
-        diagnosis_action_counts.get("validation_route_regroup", 0) + diagnosis_action_counts.get("regroup", 0) + diagnosis_action_counts.get("validation_route_hold_anchor", 0) + diagnosis_action_counts.get("move_to_validation_route_focus", 0) + diagnosis_action_counts.get("raid_position_anchor", 0),
+        action_counts.get("validation_route_regroup", 0) + action_counts.get("regroup", 0) + action_counts.get("validation_route_hold_anchor", 0) + action_counts.get("move_to_validation_route_focus", 0) + action_counts.get("raid_position_anchor", 0) + action_counts.get("validation_route_complete", 0),
+        diagnosis_action_counts.get("validation_route_regroup", 0) + diagnosis_action_counts.get("regroup", 0) + diagnosis_action_counts.get("validation_route_hold_anchor", 0) + diagnosis_action_counts.get("move_to_validation_route_focus", 0) + diagnosis_action_counts.get("raid_position_anchor", 0) + diagnosis_action_counts.get("validation_route_complete", 0),
     )
     recovery_evidence = max(
         int(summary.get("recovery_events") or 0),

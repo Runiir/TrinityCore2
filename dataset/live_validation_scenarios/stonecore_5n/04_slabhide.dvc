@@ -1,6 +1,6 @@
 outs:
-- md5: b92d3d3c86252b0d44640903a48c31c3.dir
-  size: 3984422
+- md5: 3d4f68a9dc86580fd018e7b83bc5b67d.dir
+  size: 3481305
   nfiles: 17
   hash: md5
   path: 04_slabhide

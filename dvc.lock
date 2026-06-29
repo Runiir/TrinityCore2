@@ -347,8 +347,8 @@ stages:
       size: 7835
     - path: tools/bot_ml/build_validation_scenario_manifests.py
       hash: md5
-      md5: 0f7b1175f4740297b653f2e0d311a7cc
-      size: 22003
+      md5: 9b69bc64607f7c58bbc11fdd4ccd931b
+      size: 22032
     - path: tools/bot_ml/common.py
       hash: md5
       md5: 8b4aaef751f98fac4ad24680793a813d
@@ -356,8 +356,8 @@ stages:
     outs:
     - path: dataset/validation_scenarios
       hash: md5
-      md5: 1be05eb4aa7ba61f81a5f493292d35bf.dir
-      size: 73825
+      md5: 968ef9b821e0de4092fdafa32c08f73e.dir
+      size: 74927
       nfiles: 5
   live_scenario_reports:
     cmd: python -m tools.bot_ml.build_live_scenario_reports --live-report 
@@ -514,8 +514,8 @@ stages:
     deps:
     - path: dataset/validation_scenarios
       hash: md5
-      md5: 1be05eb4aa7ba61f81a5f493292d35bf.dir
-      size: 73825
+      md5: 968ef9b821e0de4092fdafa32c08f73e.dir
+      size: 74927
       nfiles: 5
     - path: tools/bot_ml/build_validation_run_plan.py
       hash: md5
@@ -528,8 +528,8 @@ stages:
     outs:
     - path: dataset/validation_run_plan
       hash: md5
-      md5: 2c53a6cb7bd591b55778b3f899b186a3.dir
-      size: 95194
+      md5: 1c77469f33b2e3172be075c515666294.dir
+      size: 95771
       nfiles: 2
   live_validation_combined:
     cmd: python -m tools.bot_ml.run_live_bot_validation --input-log 
@@ -565,13 +565,13 @@ stages:
     deps:
     - path: dataset/live_validation_scenario_reports_built
       hash: md5
-      md5: 51f07fafefa5d07bece3c7229baaca44.dir
-      size: 29451
+      md5: 87b268e3c8601af499c607098e73546a.dir
+      size: 28164
       nfiles: 3
     - path: dataset/validation_run_plan/manifest.json
       hash: md5
-      md5: 582346e83349ab7bfda082d2ea8d0264
-      size: 80060
+      md5: 2b6b37b94f4c527a48003b34fdc0d644
+      size: 80637
     - path: tools/bot_ml/build_validation_run_status.py
       hash: md5
       md5: a819ca3f40eb3826f39533ff34700375
@@ -583,8 +583,8 @@ stages:
     outs:
     - path: dataset/validation_run_status
       hash: md5
-      md5: 9105431b04e30697aa3c761333f63f29.dir
-      size: 102275
+      md5: 18a2dd066ca171151aec3ea96b35afbe.dir
+      size: 89535
       nfiles: 1
   quest_profession_report:
     cmd: python -m tools.bot_ml.build_quest_profession_reports --planner-dir 
