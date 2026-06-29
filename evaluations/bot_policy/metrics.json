@@ -55,7 +55,7 @@
     "rmse": 109.52606705993662
   },
   "failure_rate": 0.29901960784313725,
-  "model_version": "policy_bfd1b1ad46fa",
+  "model_version": "policy_cce71b61380b",
   "observed_eval_rows": 408,
   "ranking": {
     "bad_action_rate": 1.0,
