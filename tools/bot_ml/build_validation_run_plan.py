@@ -278,7 +278,8 @@ def build_plan(
         "duration_policy": duration_policy,
         "scenario_count": len(rows),
         "scenarios": rows,
-        "runtime_ml_control": "disabled_until_live_clear_validation_passes",
+        "runtime_ml_control": "offline_shadow_only",
+        "control_eligible": False,
         "plan_hash": stable_hash(rows),
     }
 

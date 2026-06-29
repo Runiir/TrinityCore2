@@ -1517,7 +1517,8 @@ def live_validation_report(
         "passed": passed,
         "failed": len(stage_rows) - passed,
         "all_passed": all_passed,
-        "runtime_ml_control": "disabled_until_live_validation_passes",
+        "runtime_ml_control": "offline_shadow_only",
+        "control_eligible": False,
     }
 
 
@@ -2081,7 +2082,8 @@ def route_sequence_report(
         "passed": len(complete_segments),
         "failed": len(missing_segments),
         "all_passed": not failure_labels and not missing_segments,
-        "runtime_ml_control": "disabled_until_live_validation_passes",
+        "runtime_ml_control": "offline_shadow_only",
+        "control_eligible": False,
     }
 
 
@@ -2205,7 +2207,8 @@ def main() -> int:
                     "expected_segments": [route_segment_output_name(route) for route in sequence_routes],
                     "commands": commands,
                 },
-                "runtime_ml_control": "disabled_until_live_validation_passes",
+                "runtime_ml_control": "offline_shadow_only",
+                "control_eligible": False,
             }
             write_json(args.output_dir / "report.json", report)
             (args.output_dir / "commands.txt").write_text("\n".join(render_command(command) for command in commands) + "\n", encoding="utf-8")

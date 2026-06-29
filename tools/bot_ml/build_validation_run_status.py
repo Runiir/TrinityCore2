@@ -458,7 +458,8 @@ def build_status(plan: dict[str, Any], report_root: Path) -> dict[str, Any]:
         "scenarios": scenarios,
         "next_commands": [command for scenario in scenarios for command in scenario["next_commands"]],
         "status_hash": stable_hash(scenarios),
-        "runtime_ml_control": "disabled_until_live_clear_validation_passes",
+        "runtime_ml_control": "offline_shadow_only",
+        "control_eligible": False,
     }
 
 

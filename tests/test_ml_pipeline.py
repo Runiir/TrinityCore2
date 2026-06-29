@@ -865,19 +865,16 @@ def test_bot_ml_workflow_has_pixi_tasks_and_documented_dvc_steps():
         assert stage in dvc
 
     for segment_report in [
-        "artifacts/live_validation_instances/stonecore_route_sequence_r8/02_corborus/report.json",
-        "artifacts/live_validation_instances/stonecore_route_sequence_r8/04_slabhide/report.json",
-        "artifacts/live_validation_instances/stonecore_route_sequence_r8/06_ozruk/report.json",
-        "artifacts/live_validation_instances/stonecore_route_sequence_r8/08_high_priestess_azil/report.json",
-        "dataset/live_validation_scenarios/blackwing_descent_10n/02_magmaw/report.json",
-        "dataset/live_validation_scenarios/blackwing_descent_10n/03_omnotron_defense_system/report.json",
-        "dataset/live_validation_scenarios/blackwing_descent_10n/05_maloriak/report.json",
-        "dataset/live_validation_scenarios/blackwing_descent_10n/06_atramedes/report.json",
-        "dataset/live_validation_scenarios/blackwing_descent_10n/07_chimaeron/report.json",
-        "dataset/live_validation_scenarios/blackwing_descent_10n/08_nefarian_validation_activation_miss_assist_final_120s/report.json",
+        "dataset/live_validation_scenarios/stonecore_5n/report.json",
+        "dataset/live_validation_scenarios/stonecore_5n/02_corborus/report.json",
+        "dataset/live_validation_scenarios/stonecore_5n/04_slabhide/report.json",
+        "dataset/live_validation_scenarios/stonecore_5n/05_stonecore_sentry_gauntlet/report.json",
+        "dataset/live_validation_scenarios/stonecore_5n/06_ozruk/report.json",
+        "dataset/live_validation_scenarios/stonecore_5n/07_twilight_flayer_packs/report.json",
+        "dataset/live_validation_scenarios/stonecore_5n/08_high_priestess_azil/report.json",
     ]:
         assert segment_report in dvc
-    assert dvc.count("--live-report") >= 10
+    assert dvc.count("--live-report") >= 9
     assert "dataset/live_validation_scenario_reports/report.json" not in dvc
 
 
@@ -2606,7 +2603,8 @@ There is no such subcommand
     assert gates["quest_hub_batching"]["passed"] is True
     assert gates["full_stonecore_clear"]["passed"] is False
     assert "stonecore_live_clear_report" in gates["full_stonecore_clear"]["missing"]
-    assert report["runtime_ml_control"] == "disabled_until_live_validation_passes"
+    assert report["runtime_ml_control"] == "offline_shadow_only"
+    assert report["control_eligible"] is False
 
 
 def test_live_bot_validation_counts_labeled_teacher_assist_as_kill_quest_evidence():

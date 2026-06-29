@@ -407,7 +407,8 @@ def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any],
             for scenario in scenarios
             for invalid_step in scenario["invalid_route_steps"]
         ],
-        "runtime_ml_control": "disabled_until_live_clear_validation_passes",
+        "runtime_ml_control": "offline_shadow_only",
+        "control_eligible": False,
         "evidence_surfaces": sorted(EVIDENCE_ACTIONS),
     }
     return {
@@ -443,7 +444,8 @@ def main() -> int:
             "schema": "bot_validation_scenario_manifests_v1",
             "source_config": str(args.config),
             "files": {name: {"path": f"{name}.jsonl", "rows": counts[name], "sha256": hashes[name]} for name in sorted(counts)},
-            "runtime_ml_control": "disabled_until_live_clear_validation_passes",
+            "runtime_ml_control": "offline_shadow_only",
+            "control_eligible": False,
         },
     )
     return 0 if not report["invalid_mechanic_profiles"] else 1

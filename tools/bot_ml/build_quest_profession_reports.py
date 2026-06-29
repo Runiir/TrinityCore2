@@ -46,7 +46,8 @@ def build_report(planner_dir: Path) -> dict[str, Any]:
         "all_passed": passed == len(gates),
         "missing": missing,
         "evidence": validation["evidence"],
-        "runtime_ml_control": "disabled_until_live_validation_passes",
+        "runtime_ml_control": "offline_shadow_only",
+        "control_eligible": False,
     }
 
 

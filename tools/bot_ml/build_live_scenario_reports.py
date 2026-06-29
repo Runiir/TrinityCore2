@@ -401,7 +401,8 @@ def infer_report(report: dict[str, Any], scenario: dict[str, Any], routes: list[
         "failure_reason": failure_reason,
         "ml_training_label": "failed_teacher_attempt" if failure_labels else ("candidate_teacher_label" if label_quality in {"strong", "medium"} else "weak_inferred_label"),
         "source_trace_entries": int(report.get("trace_entries") or 0),
-        "runtime_ml_control": "disabled_until_live_clear_validation_passes",
+        "runtime_ml_control": "offline_shadow_only",
+        "control_eligible": False,
     }
     row["report_hash"] = stable_hash(row)[:16]
     return row
@@ -568,7 +569,8 @@ def main() -> int:
         "scenario_count": len(reports),
         "scenarios": sorted(reports),
         "clear_complete": {scenario_id: bool(report.get("clear_complete")) for scenario_id, report in sorted(reports.items())},
-        "runtime_ml_control": "disabled_until_live_clear_validation_passes",
+        "runtime_ml_control": "offline_shadow_only",
+        "control_eligible": False,
     }
     write_json(args.output_dir / "manifest.json", summary)
     print(json.dumps(summary, indent=2, sort_keys=True))
