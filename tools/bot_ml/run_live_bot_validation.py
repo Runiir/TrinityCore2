@@ -958,6 +958,22 @@ def live_evidence(
                     pass
         return max(values, default=0)
 
+    route_no_progress_diagnoses = 0
+    for row in diagnoses:
+        route_progress = nested_get(row, ["diagnosis", "route_progress"], None)
+        if not isinstance(route_progress, dict):
+            route_progress = nested_get(row, ["snapshot", "route_progress"], None)
+        if not isinstance(route_progress, dict):
+            continue
+        no_progress = route_progress.get("no_progress") if isinstance(route_progress.get("no_progress"), dict) else {}
+        try:
+            count = int(no_progress.get("count") or 0)
+            threshold = int(no_progress.get("threshold") or 0)
+        except (TypeError, ValueError):
+            continue
+        if threshold > 0 and count >= threshold:
+            route_no_progress_diagnoses += 1
+
     action_text = " ".join(sorted(action_names)).lower()
     quest_progress = max(int(status.get("quest_objective_progress") or 0), int(summary.get("quest_objective_progress") or 0))
     quests_accepted = max(int(status.get("quests_accepted") or 0), int(summary.get("quests_accepted") or 0), quest_acceptance_actions)
@@ -1127,6 +1143,7 @@ def live_evidence(
         "repath_events": repath_events,
         "validation_route_actions": validation_route_actions,
         "validation_route_manifest_complete": action_counts.get("validation_route_manifest_complete", 0),
+        "validation_route_no_progress_diagnoses": route_no_progress_diagnoses,
         "boss_engagement_actions": boss_engagement_actions,
         "trash_route_actions": trash_route_actions,
         "validation_route_prerequisite_repeats": action_counts.get("validation_route_prerequisite", 0),
@@ -1174,6 +1191,7 @@ def validation_failure_labels(
     route_actions = int(evidence.get("validation_route_actions") or 0)
     boss_engagement = int(evidence.get("boss_engagement_actions") or 0)
     trash_route_actions = int(evidence.get("trash_route_actions") or 0)
+    route_no_progress_diagnoses = int(evidence.get("validation_route_no_progress_diagnoses") or 0)
     activation_attempts = int(evidence.get("validation_route_activation_attempts") or 0)
     prerequisite_repeats = int(evidence.get("validation_route_prerequisite_repeats") or 0)
     no_visible_activations = int(evidence.get("validation_route_no_visible_target_activations") or 0)
@@ -1229,6 +1247,8 @@ def validation_failure_labels(
         labels.append("validation_route_stuck_loop")
     if route_actions > 0 and (repeated_deaths >= 3 or deaths >= max(8, active_bots)):
         labels.append("validation_route_death_loop")
+    if route_actions > 0 and route_no_progress_diagnoses > 0:
+        labels.append("no_progress_observed")
     if (
         active_bots > 0
         and int(evidence.get("decisions") or 0) > 0
@@ -1265,6 +1285,7 @@ def progress_counters_from_evidence(evidence: dict[str, Any]) -> dict[str, int]:
         "gear_upgrades": int(evidence.get("gear_upgrades") or 0),
         "validation_route_actions": int(evidence.get("validation_route_actions") or 0),
         "validation_route_manifest_complete": int(evidence.get("validation_route_manifest_complete") or 0),
+        "validation_route_no_progress_diagnoses": int(evidence.get("validation_route_no_progress_diagnoses") or 0),
         "repeated_decisions": int(action_counts.get("repeated_decision") or action_counts.get("decision_repeated") or 0),
         "death_loop_events": int(action_counts.get("repeated_death") or 0) + int(action_counts.get("death_loop") or 0),
         "stuck_events": int(evidence.get("stuck_events") or 0),
@@ -1288,9 +1309,7 @@ def watchdog_state(
         + counters["quests_completed"]
         + counters["kills"]
         + counters["boss_kill_evidence"]
-        + counters["trash_pulls"]
         + counters["gear_upgrades"]
-        + counters["validation_route_actions"]
         + counters["validation_route_manifest_complete"]
     )
     route_motion_progress = (
@@ -1298,7 +1317,11 @@ def watchdog_state(
         and counters["moved_diagnoses"] > 0
         and counters["boss_engagement_actions"] <= 0
     )
-    no_progress = not route_motion_progress and ("no_progress_observed" in failure_labels or (counters["decisions"] > 0 and progress_total <= 0))
+    route_terminal_no_progress = counters["validation_route_no_progress_diagnoses"] > 0
+    no_progress = (
+        route_terminal_no_progress
+        or (not route_motion_progress and ("no_progress_observed" in failure_labels or (counters["decisions"] > 0 and progress_total <= 0)))
+    )
     repeated_loop = counters["repeated_decisions"] >= max_repeated_decisions
     death_loop = counters["death_loop_events"] >= max_death_loops
     return {
@@ -1316,10 +1339,6 @@ def watchdog_state(
 
 
 def terminal_failure_labels(failure_labels: list[str], state: dict[str, Any]) -> list[str]:
-    progress_total = int(state.get("progress_total") or 0)
-    if progress_total <= 0:
-        return failure_labels
-
     counters = state.get("progress_counters") if isinstance(state.get("progress_counters"), dict) else {}
     route_motion_progress = (
         int(counters.get("validation_route_actions") or 0) > 0
@@ -1338,6 +1357,9 @@ def terminal_failure_labels(failure_labels: list[str], state: dict[str, Any]) ->
     }
     if route_motion_progress:
         nonterminal.add("validation_route_assist_focus_loop")
+    progress_total = int(state.get("progress_total") or 0)
+    if progress_total <= 0 and not route_motion_progress:
+        return failure_labels
     return [label for label in failure_labels if label not in nonterminal]
 
 

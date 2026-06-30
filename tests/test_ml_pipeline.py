@@ -2753,7 +2753,7 @@ TC> {"duration_minutes":1.0,"decisions":20,"total_kills":0,"quests_completed":0}
     assert report["evidence"]["error_diagnoses"] == 1
     assert report["evidence"]["trash_pulls"] == 2
     assert "bot_diagnosis_error" not in report["failure_labels"]
-    assert report["completion_reason"] == "incomplete_evidence"
+    assert report["completion_reason"] == "no_progress_watchdog"
 
 
 def test_live_bot_validation_counts_trace_mob_killed_as_kill_evidence():
@@ -5203,11 +5203,10 @@ TC> {"duration_minutes":2,"decisions":88}
     assert route_segment_complete(report, route) is True
 
 
-def test_watchdog_state_does_not_call_route_actions_zero_progress():
+def test_watchdog_state_calls_route_actions_without_route_progress_no_progress():
     state = watchdog_state(
         {
             "decisions": 85,
-            "moved_diagnoses": 1,
             "validation_route_actions": 16,
             "action_counts": {"validation_route_regroup": 9, "validation_route_hold_anchor": 7},
         },
@@ -5215,8 +5214,8 @@ def test_watchdog_state_does_not_call_route_actions_zero_progress():
         no_progress_window_sec=60,
     )
 
-    assert state["progress_total"] == 16
-    assert state["no_progress"] is False
+    assert state["progress_total"] == 0
+    assert state["no_progress"] is True
     assert (
         live_validation_report(
             """
@@ -5226,8 +5225,23 @@ TC> {"trace_schema_version":1,"entries":[{"action":"validation_route_trash_actio
 TC> {"duration_minutes":2,"decisions":85}
 """
         )["completion_reason"]
-        == "incomplete_evidence"
+        == "no_progress_watchdog"
     )
+
+
+def test_live_bot_validation_treats_terminal_route_no_progress_diagnosis_as_watchdog_failure():
+    output = """
+TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":517,"kills":0,"quests_accepted":0,"quest_objective_progress":0}
+TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"diagnosis":{"diagnosis_code":"repeated_decision_loop","route_progress":{"route":{"kind":"trash","node_id":"stonecore_entry"},"target":{"entry":42696,"hp_pct":0.00664742,"best_hp_pct":0.00664742},"no_progress":{"count":20,"threshold":20,"reason":"validation_trash_no_progress"}}},"snapshot":{"decision":{"action":"validation_route_failed"},"movement":{"is_moving":false,"distance_moved_since_last_decision":0},"route_progress":{"route":{"kind":"trash","node_id":"stonecore_entry"},"target":{"entry":42696,"hp_pct":0.00664742,"best_hp_pct":0.00664742},"no_progress":{"count":20,"threshold":20,"reason":"validation_trash_no_progress"}}}}]}
+TC> {"trace_schema_version":1,"entries":[{"action":"trash_action","result":"ok"},{"action":"validation_route_trash_action","result":"ok"},{"action":"validation_route_failed","result":"validation_trash_no_progress"}]}
+TC> {"duration_minutes":5,"decisions":517,"total_kills":0,"quests_completed":0}
+"""
+    report = live_validation_report(output)
+
+    assert report["evidence"]["validation_route_no_progress_diagnoses"] == 1
+    assert "no_progress_observed" in report["failure_labels"]
+    assert report["watchdog_state"]["progress_total"] == 0
+    assert report["watchdog_state"]["no_progress"] is True
 
 
 def test_live_bot_validation_keeps_route_progress_incomplete_until_watchdog_expires():
@@ -5240,7 +5254,7 @@ TC> {"duration_minutes":1,"decisions":25}
     report = live_validation_report(output, validation_context={"route_kind": "boss"})
 
     assert "validation_route_no_engagement" in report["failure_labels"]
-    assert report["watchdog_state"]["progress_total"] > 0
+    assert report["watchdog_state"]["progress_total"] == 0
     assert report["watchdog_state"]["no_progress"] is False
     assert report["completion_reason"] == "incomplete_evidence"
 
@@ -5272,7 +5286,7 @@ def test_watchdog_state_treats_boss_engagement_without_kill_as_no_progress():
         no_progress_window_sec=60,
     )
 
-    assert state["progress_total"] == 12
+    assert state["progress_total"] == 0
     assert state["no_progress"] is True
 
 
