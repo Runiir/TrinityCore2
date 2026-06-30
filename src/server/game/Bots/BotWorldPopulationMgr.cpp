@@ -10692,6 +10692,8 @@ uint32 BotWorldPopulationMgr::SelectCombatSpell(Player* bot, Unit* target) const
             candidate.RejectReason = "requires_ally_target";
             continue;
         }
+        if (!candidate.RejectReason.empty())
+            continue;
         if (candidate.Category == BotCombatActionCategory::Taunt && target->GetVictim() == bot)
         {
             candidate.RejectReason = "threat_already_established";
@@ -10805,6 +10807,8 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
             candidate.RejectReason = "requires_ally_target";
             continue;
         }
+        if (!candidate.RejectReason.empty())
+            continue;
         if (candidate.Category == BotCombatActionCategory::Taunt && target->GetVictim() == bot)
         {
             candidate.RejectReason = "threat_already_established";
@@ -10830,19 +10834,24 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
             candidate.RejectReason = "forbidden_self_aura";
             continue;
         }
-        if (candidate.Profile.RequiredTargetAura && !target->HasAura(candidate.Profile.RequiredTargetAura))
+        bool selfTarget = candidate.Profile.TargetSelector == "self";
+        Unit* actionTarget = selfTarget ? static_cast<Unit*>(bot) : target;
+        if (candidate.Profile.RequiredTargetAura && !actionTarget->HasAura(candidate.Profile.RequiredTargetAura))
         {
             candidate.RejectReason = "missing_target_aura";
             continue;
         }
-        if (candidate.Profile.ForbiddenTargetAura && target->HasAura(candidate.Profile.ForbiddenTargetAura))
+        if (candidate.Profile.ForbiddenTargetAura && actionTarget->HasAura(candidate.Profile.ForbiddenTargetAura))
         {
             candidate.RejectReason = "forbidden_target_aura";
             continue;
         }
-        float distance = bot->GetExactDist(target);
+        float distance = selfTarget ? 0.0f : bot->GetExactDist(actionTarget);
         float minRange = candidate.Profile.MinRange > 0.0f ? candidate.Profile.MinRange : profile.MinRange;
         float maxRange = candidate.Profile.MaxRange > 0.0f ? candidate.Profile.MaxRange : profile.MaxRange;
+        if (candidate.Profile.MaxRange <= 0.0f)
+            if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(candidate.SpellId))
+                maxRange = std::max(5.0f, spellInfo->GetMaxRange(false));
         if (candidate.Profile.RequiresMeleeRange && distance > 5.0f)
         {
             candidate.RejectReason = "melee_range_required";
@@ -10910,12 +10919,15 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
     action.Valid = true;
     action.Type = "cast";
     action.SpellId = best->SpellId;
-    action.TargetGuid = target->GetGUID();
+    action.TargetGuid = best->Profile.TargetSelector == "self" ? bot->GetGUID() : target->GetGUID();
     action.DebugName = BotCombatActionCatalog::ToString(best->Category);
     action.MovementDirective = best->Profile.MovementDirective.empty() ? profile.MovementDirective : best->Profile.MovementDirective;
     action.AutoAttackMode = best->Profile.AutoAttackMode.empty() ? profile.AutoAttackMode : best->Profile.AutoAttackMode;
     action.MinRange = best->Profile.MinRange > 0.0f ? best->Profile.MinRange : profile.MinRange;
     action.MaxRange = best->Profile.MaxRange > 0.0f ? best->Profile.MaxRange : profile.MaxRange;
+    if (best->Profile.MaxRange <= 0.0f)
+        if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(best->SpellId))
+            action.MaxRange = std::max(5.0f, spellInfo->GetMaxRange(false));
     return action;
 }
 

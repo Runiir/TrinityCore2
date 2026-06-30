@@ -343,17 +343,21 @@ std::vector<BotActionCandidate> BotClassSpecActionProfileStore::BuildCandidates(
     if (!bot)
         return candidates;
 
-    uint64 targetGuid = target ? target->GetGUID().GetCounter() : 0;
-    uint32 targetEntry = 0;
-    if (Creature const* creature = target ? target->ToCreature() : nullptr)
-        targetEntry = creature->GetEntry();
-
     for (BotActionProfileSpell const& spell : profile.Spells)
     {
+        bool selfTarget = spell.TargetSelector == "self";
+        bool partyTarget = spell.TargetSelector == "party";
+        Unit const* actionTarget = selfTarget ? static_cast<Unit const*>(bot) : target;
+        uint64 targetGuid = actionTarget ? actionTarget->GetGUID().GetCounter() : 0;
+        uint32 targetEntry = 0;
+        if (Creature const* creature = actionTarget ? actionTarget->ToCreature() : nullptr)
+            targetEntry = creature->GetEntry();
+
         BotActionCandidate candidate;
         candidate.ActionId = BotCombatActionCatalog::StableActionId(spell.Category, spell.SpellId);
         candidate.SpellId = spell.SpellId;
         candidate.Category = spell.Category;
+        candidate.TargetType = selfTarget ? "self" : (partyTarget ? "ally" : "enemy");
         candidate.TargetGuid = targetGuid;
         candidate.TargetEntry = targetEntry;
         candidate.Profile = spell;
@@ -365,19 +369,23 @@ std::vector<BotActionCandidate> BotClassSpecActionProfileStore::BuildCandidates(
             SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spell.SpellId);
             if (!spellInfo)
                 candidate.RejectReason = "missing_spell_info";
+            else if (partyTarget)
+                candidate.RejectReason = "requires_party_target";
             else if (bot->HasUnitState(UNIT_STATE_CASTING))
-                candidate.RejectReason.clear();
+                candidate.RejectReason = "already_casting";
             else if (bot->GetSpellHistory()->HasGlobalCooldown(spellInfo))
-                candidate.RejectReason.clear();
+                candidate.RejectReason = "global_cooldown";
             else if (!bot->GetSpellHistory()->IsReady(spellInfo))
                 candidate.RejectReason = "cooldown_not_ready";
+            else if (spell.MaintainAuraId && actionTarget && actionTarget->HasAura(spell.MaintainAuraId))
+                candidate.RejectReason = "maintain_aura_active";
             else if (spell.RequiresInstantCast && ProfileSpellCastTimeMs(bot, spellInfo) > 0)
                 candidate.RejectReason = "instant_cast_required";
             else if (spell.MaxCastTimeMs && ProfileSpellCastTimeMs(bot, spellInfo) > spell.MaxCastTimeMs)
                 candidate.RejectReason = "cast_time_too_long";
-            else if (target && (spell.Category == BotCombatActionCategory::HealFast || spell.Category == BotCombatActionCategory::HealEfficient || spell.Category == BotCombatActionCategory::HealAoe))
+            else if (actionTarget && (spell.Category == BotCombatActionCategory::HealFast || spell.Category == BotCombatActionCategory::HealEfficient || spell.Category == BotCombatActionCategory::HealAoe))
                 candidate.TargetType = "ally";
-            else if (target && !bot->IsWithinDistInMap(target, std::max(5.0f, spellInfo->GetMaxRange(false))))
+            else if (actionTarget && !bot->IsWithinDistInMap(actionTarget, std::max(5.0f, spellInfo->GetMaxRange(false))))
                 candidate.RejectReason = "out_of_range";
             else
             {

@@ -613,6 +613,8 @@ BotActionCandidate const* BotController::SelectProfileCombatAction(Player* bot, 
             candidate.RejectReason = "requires_ally_target";
             continue;
         }
+        if (!candidate.RejectReason.empty())
+            continue;
 
         if (candidate.Category == BotCombatActionCategory::Taunt && target && target->GetVictim() == bot)
         {
@@ -664,34 +666,40 @@ BotActionCandidate const* BotController::SelectProfileCombatAction(Player* bot, 
             candidate.RejectReason = "forbidden_self_aura";
             continue;
         }
-        if (target && candidate.Profile.RequiredTargetAura && !target->HasAura(candidate.Profile.RequiredTargetAura))
+        bool selfTarget = candidate.Profile.TargetSelector == "self";
+        Unit* actionTarget = selfTarget ? static_cast<Unit*>(bot) : target;
+        float targetDistance = selfTarget ? 0.0f : state.TargetDistance;
+        if (actionTarget && candidate.Profile.RequiredTargetAura && !actionTarget->HasAura(candidate.Profile.RequiredTargetAura))
         {
             candidate.RejectReason = "missing_target_aura";
             continue;
         }
-        if (target && candidate.Profile.ForbiddenTargetAura && target->HasAura(candidate.Profile.ForbiddenTargetAura))
+        if (actionTarget && candidate.Profile.ForbiddenTargetAura && actionTarget->HasAura(candidate.Profile.ForbiddenTargetAura))
         {
             candidate.RejectReason = "forbidden_target_aura";
             continue;
         }
-        if (candidate.Profile.RequiresMeleeRange && state.TargetDistance > 5.0f)
+        if (candidate.Profile.RequiresMeleeRange && targetDistance > 5.0f)
         {
             candidate.RejectReason = "melee_range_required";
             continue;
         }
-        if (candidate.Profile.RequiresRangedRange && state.TargetDistance < 5.0f)
+        if (candidate.Profile.RequiresRangedRange && targetDistance < 5.0f)
         {
             candidate.RejectReason = "ranged_range_required";
             continue;
         }
         float minRange = candidate.Profile.MinRange > 0.0f ? candidate.Profile.MinRange : profile.MinRange;
         float maxRange = candidate.Profile.MaxRange > 0.0f ? candidate.Profile.MaxRange : profile.MaxRange;
-        if (minRange > 0.0f && state.TargetDistance < minRange)
+        if (candidate.Profile.MaxRange <= 0.0f)
+            if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(candidate.SpellId))
+                maxRange = std::max(5.0f, spellInfo->GetMaxRange(false));
+        if (minRange > 0.0f && targetDistance < minRange)
         {
             candidate.RejectReason = "min_range_required";
             continue;
         }
-        if (maxRange > 0.0f && state.TargetDistance > maxRange)
+        if (maxRange > 0.0f && targetDistance > maxRange)
         {
             candidate.RejectReason = "max_range_exceeded";
             continue;
@@ -810,11 +818,14 @@ ResolvedCombatAction BotController::ResolveProfileCombat(BotCombatDecision const
 
     action.Type = "cast";
     action.SpellId = best->SpellId;
-    action.TargetGuid = target->GetGUID();
+    action.TargetGuid = best->Profile.TargetSelector == "self" ? bot->GetGUID() : target->GetGUID();
     action.MovementDirective = best->Profile.MovementDirective.empty() ? profile.MovementDirective : best->Profile.MovementDirective;
     action.AutoAttackMode = best->Profile.AutoAttackMode.empty() ? profile.AutoAttackMode : best->Profile.AutoAttackMode;
     action.MinRange = best->Profile.MinRange > 0.0f ? best->Profile.MinRange : profile.MinRange;
     action.MaxRange = best->Profile.MaxRange > 0.0f ? best->Profile.MaxRange : profile.MaxRange;
+    if (best->Profile.MaxRange <= 0.0f)
+        if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(best->SpellId))
+            action.MaxRange = std::max(5.0f, spellInfo->GetMaxRange(false));
     action.DebugName = BotCombatActionCatalog::ToString(best->Category);
     return action;
 }
