@@ -1476,6 +1476,16 @@ void BotWorldPopulationMgr::Update(uint32 diff)
             _lastPopulationFailureReason = "loaded_bot_not_in_world";
             if (_config.ValidationRouteEnable)
             {
+                bool validationBotStillDeciding = _config.ValidationRouteEnable && itr->SpawnedMs && nowMs - itr->SpawnedMs >= 30000
+                    && itr->LastDecisionTickMs && nowMs - itr->LastDecisionTickMs < 15000;
+                if (validationBotStillDeciding)
+                {
+                    TC_LOG_INFO("server", "BotWorld active bot respawn requested bot=%s reason=loaded_bot_not_in_world_waiting_for_recent_decision",
+                        itr->Guid.ToString().c_str());
+                    ++itr;
+                    continue;
+                }
+
                 if (TryReattachValidationBot(*itr, loadedBot, "population_update_loaded_not_in_world"))
                 {
                     _lastPopulationFailureReason.clear();
@@ -1491,7 +1501,7 @@ void BotWorldPopulationMgr::Update(uint32 diff)
                 TC_LOG_ERROR("server", "BotWorld active bot removed bot=%s reason=loaded_bot_not_in_world diagnostic=validation_same_instance_reattach_failed spawn_source=%s age_ms=%llu",
                     prunedGuid.ToString().c_str(), itr->SpawnSource.c_str(), static_cast<unsigned long long>(itr->SpawnedMs ? nowMs - itr->SpawnedMs : 0));
                 sBotMgr->RemoveWorldBot(prunedGuid);
-                _failedSpawnGuids.insert(prunedGuid.GetCounter());
+                _failedSpawnGuids.erase(prunedGuid.GetCounter());
                 _validationRouteFocusGuid.Clear();
                 _validationRouteFocusEntry = 0;
                 _validationRouteFocusMapId = 0;
@@ -1634,6 +1644,11 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
     _config.ValidationRouteActivationSummonY = sConfigMgr->GetFloatDefault("BotWorld.ValidationRoute.ActivationSummonY", _config.ValidationRouteActivationSummonY);
     _config.ValidationRouteActivationSummonZ = sConfigMgr->GetFloatDefault("BotWorld.ValidationRoute.ActivationSummonZ", _config.ValidationRouteActivationSummonZ);
     _config.ValidationRouteActivationSummonO = sConfigMgr->GetFloatDefault("BotWorld.ValidationRoute.ActivationSummonO", _config.ValidationRouteActivationSummonO);
+    _config.ValidationRouteOpenerTargetEntry = sConfigMgr->GetIntDefault("BotWorld.ValidationRoute.OpenerTargetEntry", _config.ValidationRouteOpenerTargetEntry);
+    _config.ValidationRouteOpenerSummonEntry = sConfigMgr->GetIntDefault("BotWorld.ValidationRoute.OpenerSummonEntry", _config.ValidationRouteOpenerSummonEntry);
+    _config.ValidationRouteActivationSpawnGroupId = sConfigMgr->GetIntDefault("BotWorld.ValidationRoute.ActivationSpawnGroupId", _config.ValidationRouteActivationSpawnGroupId);
+    _config.ValidationRouteActivationActionEntry = sConfigMgr->GetIntDefault("BotWorld.ValidationRoute.ActivationActionEntry", _config.ValidationRouteActivationActionEntry);
+    _config.ValidationRouteActivationActionId = sConfigMgr->GetIntDefault("BotWorld.ValidationRoute.ActivationActionId", _config.ValidationRouteActivationActionId);
     _config.AllowConfiguredCenterFallback = sConfigMgr->GetBoolDefault("BotWorld.AllowConfiguredCenterFallback", _config.AllowConfiguredCenterFallback);
     _config.UseSavedPosition = sConfigMgr->GetBoolDefault("BotWorld.UseSavedPosition", _config.UseSavedPosition);
     _config.NearPlayerRadius = sConfigMgr->GetFloatDefault("BotWorld.NearPlayerRadius", _config.NearPlayerRadius);
@@ -3339,7 +3354,7 @@ void BotWorldPopulationMgr::MarkBotBlocked(WorldBotState& state, Player* bot, ch
         state.BlockedResolution = blockedReason;
     }
 
-    std::string diagnosticText = BuildBlockedDiagnosticText(state, blockedReason.c_str());
+    std::string diagnosticText = "Blocked: " + state.BlockedFirstReason;
     if (bot && diagnosticText != state.LastBlockedDiagnosticText)
     {
         bot->Say(diagnosticText, LANG_UNIVERSAL);
@@ -9034,7 +9049,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         return true;
     ResolvedCombatAction profileAction = ResolveProfileCombatAction(bot, target);
     uint32 spellId = profileAction.SpellId;
-    float engageRange = profileAction.MaxRange > 0.0f ? profileAction.MaxRange : routeEngageRange(bot, target, spellId);
+    float engageRange = routeEngageRange(bot, target, spellId);
+    if (profileAction.MaxRange > 0.0f)
+        engageRange = profileAction.MaxRange;
     float targetDistance = bot->GetExactDist(target);
     if (profileAction.MinRange > 0.0f && targetDistance < profileAction.MinRange)
     {
@@ -9055,7 +9072,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         return true;
     }
 
+    BotActionExecutor executor;
+    BotActionResult pull = executor.Pull(bot, target);
     BotActionResult result = ExecuteProfileCombatAction(&state, bot, target, &profileAction);
+    if (result == BotActionResult::NoAction)
+        result = pull;
     action = _config.ValidationRouteKind == "boss"
         ? (std::string(GetDungeonRole(bot)) == "tank" ? "validation_route_tank_boss" : "validation_route_boss_action")
         : "validation_route_trash_action";
@@ -10903,11 +10924,23 @@ bool BotWorldPopulationMgr::TryEnsureCombatTotems(WorldBotState& state, Player* 
     if (!bot || bot->getClass() != CLASS_SHAMAN || !bot->IsInCombat() || !target || !target->IsAlive())
         return false;
 
+    uint32 const totemSpellIds[] = { 8075, 3599, 5394, 8512 };
+    for (uint32 spellId : totemSpellIds)
+    {
+        if (bot->HasSpell(spellId))
+            continue;
+
+        std::string key = "totem_spell_missing:" + std::to_string(spellId);
+        state.ReadinessRetryUntilMs[key] = NowMs() + 15000;
+        MarkBotBlocked(state, bot, key.c_str());
+        return true;
+    }
+
     bool missingTotem = false;
     for (uint8 slot = SUMMON_SLOT_TOTEM_FIRE; slot < MAX_TOTEM_SLOT; ++slot)
     {
         Creature* totem = bot->m_SummonSlot[slot] && bot->GetMap() ? bot->GetMap()->GetCreature(bot->m_SummonSlot[slot]) : nullptr;
-        if (!totem || !totem->IsTotem() || !totem->IsAlive())
+        if (!(totem && totem->IsTotem() && totem->IsAlive()))
             missingTotem = true;
     }
 

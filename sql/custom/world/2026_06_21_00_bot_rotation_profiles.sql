@@ -107,7 +107,7 @@ INSERT INTO `bot_rotation_action` (`profile_id`, `sort_order`, `spell_id`, `cate
 ((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=8 AND `spec_tag`='fire' AND `role`='dps'), 10, 2139, 'interrupt', 'counterspell,interrupt', 0.15, 0.20, 1, 1, 0, 0, 1, 'enemy', 'ranged', 'none', 0, 35, 1, 0),
 ((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=8 AND `spec_tag`='fire' AND `role`='dps'), 20, 44457, 'dot', 'living_bomb,maintain_debuff', 0.98, 0, 1, 1, 0, 44457, 0, 'enemy', 'ranged', 'none', 12, 35, 0, 0),
 ((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=8 AND `spec_tag`='fire' AND `role`='dps'), 30, 92315, 'spender', 'pyroblast,hot_streak_only,instant_proc', 1.00, 0, 1, 1, 48108, 0, 0, 'enemy', 'ranged', 'none', 12, 35, 1, 0),
-((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=8 AND `spec_tag`='fire' AND `role`='dps'), 40, 2120, 'aoe', 'flamestrike,aoe', 0.55, 0, 6, 5, 0, 0, 0, 'enemy', 'ranged', 'none', 12, 35, 0, 0),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=8 AND `spec_tag`='fire' AND `role`='dps'), 40, 2120, 'aoe', 'flamestrike,aoe', 0.90, 0, 3, 4, 0, 0, 0, 'enemy', 'ranged', 'none', 12, 35, 0, 0),
 ((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=8 AND `spec_tag`='fire' AND `role`='dps'), 50, 133, 'builder', 'fireball,filler', 0.78, 0, 4, 1, 0, 0, 0, 'enemy', 'ranged', 'none', 12, 35, 0, 0),
 ((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=8 AND `spec_tag`='fire' AND `role`='dps'), 60, 2136, 'spender', 'fire_blast,instant', 0.70, 0, 5, 1, 0, 0, 0, 'enemy', 'ranged', 'none', 12, 35, 1, 0);
 

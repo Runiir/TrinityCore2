@@ -902,6 +902,8 @@ bool BotController::TryResolveHealerAction(BotActionExecutor& executor, Player* 
         float urgency = 1.0f - float(unit->HealthPct) / 100.0f;
         if (spell.TargetSelector == "tank")
             urgency += 0.20f;
+        if (spell.Category == BotCombatActionCategory::HealFast)
+            urgency += 0.15f;
         attempts.push_back(HealerAttempt{ &spell, unit->Guid, spell.HealingWeight + spell.SurvivalWeight + urgency + std::max<float>(0.0f, 12.0f - float(spell.PriorityBucket)) * 0.35f });
     }
 

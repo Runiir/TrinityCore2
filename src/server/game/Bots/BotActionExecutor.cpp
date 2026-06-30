@@ -35,7 +35,10 @@ bool HasEnoughPowerForSpell(Player const* bot, SpellInfo const* spellInfo)
         return true;
     if (spellInfo->PowerType == POWER_HEALTH)
         return int64(bot->GetHealth()) > powerCost;
-    return bot->GetPower(Powers(spellInfo->PowerType)) >= uint32(powerCost);
+    Powers powerType = Powers(spellInfo->PowerType);
+    if (powerType != bot->GetPowerType())
+        return bot->GetPower(powerType) >= uint32(powerCost);
+    return bot->GetPower(bot->GetPowerType()) >= uint32(powerCost);
 }
 
 bool IsSchedulingResult(BotActionResult result)

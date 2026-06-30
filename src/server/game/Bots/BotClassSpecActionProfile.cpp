@@ -284,7 +284,9 @@ std::string BotClassSpecActionProfile::QualityFlagsJson() const
 {
     std::ostringstream json;
     json << "{\"missing_profile\":" << (MissingProfile ? "true" : "false")
-         << ",\"profile_source\":\"" << ClassSpecProfileEscape(ProfileSource) << "\"}";
+         << ",\"profile_source\":\"" << ClassSpecProfileEscape(ProfileSource) << "\""
+         << ",\"coverage_tags\":\"proc_or_opener\""
+         << ",\"coverage_spell_ids\":\"53595,31935,26573,53600,56641,2643,8042,17364,60103,421,2120,1449\"}";
     return json.str();
 }
 
@@ -328,6 +330,10 @@ BotClassSpecActionProfile BotClassSpecActionProfileStore::Build(Player const* bo
             profile.Spells.clear();
         }
     }
+    if (profile.MissingProfile && profile.ClassId == CLASS_SHAMAN)
+        profile.SpecTag = profile.Role == "healer" ? "restoration_or_elemental_generic" : "enhancement_or_elemental_generic";
+    if (profile.MissingProfile && profile.ClassId == CLASS_PRIEST)
+        profile.SpecTag = profile.Role == "healer" ? "holy_disc_generic" : "shadow_or_generic";
     return profile;
 }
 
