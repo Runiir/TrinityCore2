@@ -22,6 +22,8 @@ BOT_BUFFER = ROOT / "src/server/game/Bots/BotTelemetryBuffer.cpp"
 BOT_SEGMENTS = ROOT / "src/server/game/Bots/BotExperimentCoordinator.cpp"
 WORLDSERVER_CONF = ROOT / "src/server/worldserver/worldserver.conf.dist"
 CHASE_MOVEMENT = ROOT / "src/server/game/Movement/MovementGenerators/ChaseMovementGenerator.cpp"
+MAP_CPP = ROOT / "src/server/game/Maps/Map.cpp"
+PLAYER_CPP = ROOT / "src/server/game/Entities/Player/Player.cpp"
 
 
 def read(path: Path) -> str:
@@ -332,7 +334,10 @@ def test_server_start_autonomy_enabled_spawns_from_pool_without_center_requireme
     assert "PersistBotPosition" not in shutdown
     assert "spawned_bot_not_loaded" in update
     assert "UPDATE character_bot_pool SET in_use = 0 WHERE guid" in update
-    assert "validation_route_loaded_bot_not_in_world" in update
+    assert "TryReattachValidationBot(*itr, loadedBot, \"population_update_loaded_not_in_world\")" in update
+    assert "validation_same_instance_reattach_failed" in update
+    assert "validation_artificial_reattach_blocked" not in mgr
+    assert "session->HandleMoveWorldportAck();" in function_body(mgr, "bool BotWorldPopulationMgr::TryReattachValidationBot")
     assert "validationBotStillDeciding" in update
     assert "nowMs - itr->LastDecisionTickMs < 15000" in update
     assert "_config.ValidationRouteEnable && itr->SpawnedMs && nowMs - itr->SpawnedMs >= 30000" in update
@@ -346,7 +351,6 @@ def test_server_start_autonomy_enabled_spawns_from_pool_without_center_requireme
     assert 'RecordEvent(_bots.back(), bot, "bot_spawned"' in ensure_population
     assert "_config.PoolTagFilter" in select_candidate
     assert "cbp.experiment_tags LIKE" in select_candidate
-
     assert_ordered(
         resolve_placement,
         "ResolveSavedSpawnPlacement(candidateGuid, placement)",
@@ -358,6 +362,61 @@ def test_server_start_autonomy_enabled_spawns_from_pool_without_center_requireme
     assert "_config.AllowConfiguredCenterFallback" in resolve_placement
     assert "resume_or_race_start" in resolve_placement
     assert "race_start_only" in resolve_placement
+
+
+def test_stonecore_bot_instance_bind_does_not_wait_for_client_lock_prompt():
+    map_cpp = read(MAP_CPP)
+    add_player = function_body(map_cpp, "bool InstanceMap::AddPlayerToMap")
+
+    assert '#include "WorldSession.h"' in map_cpp
+    assert "player->GetSession()->IsBotSession()" in add_player
+    assert "player->BindToInstance(mapSave, true, EXTEND_STATE_KEEP);" in add_player
+    assert_ordered(
+        add_player,
+        "if (groupBind->perm)",
+        "player->GetSession()->IsBotSession()",
+        "player->BindToInstance(mapSave, true, EXTEND_STATE_KEEP);",
+        "WorldPackets::Instance::PendingRaidLock pendingRaidLock;",
+        "player->SetPendingBind(mapSave->GetInstanceId(), 60000);",
+    )
+
+
+def test_validation_bot_reattach_clears_stale_far_teleport():
+    mgr = read(BOT_MGR)
+    reattach = function_body(mgr, "bool BotWorldPopulationMgr::TryReattachValidationBot")
+    update = function_body(mgr, "void BotWorldPopulationMgr::Update")
+
+    assert "validation_artificial_reattach_blocked" not in mgr
+    assert "bot->IsBeingTeleportedFar()" in reattach
+    assert "destination.GetMapId() == state.ValidationCohortMapId" in reattach
+    assert "!destinationInstance || *destinationInstance == state.ValidationCohortInstanceId" in reattach
+    assert "session->HandleMoveWorldportAck();" in reattach
+    assert "validation same-instance worldport complete" in reattach
+    assert "bot->CancelDelayedTeleport();" in reattach
+    assert "bot->SetSemaphoreTeleportFar(false);" in reattach
+    assert "bot->GetMap()->AddPlayerToMap(bot)" in reattach
+    assert "validation_same_instance_reattach_failed" in update
+
+
+def test_bot_dungeon_summon_rejects_cross_map_detach():
+    player_cpp = read(PLAYER_CPP)
+    summon = function_body(player_cpp, "void Player::SummonIfPossible")
+
+    assert re.search(
+        r"bool Player::TeleportTo\(uint32.*?GetSession\(\)->IsBotSession\(\).*?GetMap\(\)->IsDungeon\(\).*?mapid != GetMapId\(\).*?return false;.*?DisableMgr::IsDisabledFor",
+        player_cpp,
+        re.DOTALL,
+    )
+    assert "GetSession()->IsBotSession()" in summon
+    assert "GetMap()->IsDungeon()" in summon
+    assert "m_summon_location.GetMapId() != GetMapId()" in summon
+    assert_ordered(
+        summon,
+        "m_summon_location.GetMapId() != GetMapId()",
+        "m_summon_expire = 0;",
+        "return;",
+        "TeleportTo(m_summon_location, TELE_TO_NONE, m_summon_instanceId);",
+    )
 
 
 def test_telemetry_policy_smoke_samples_normal_wander_and_keeps_critical_events():

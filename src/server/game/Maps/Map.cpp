@@ -52,6 +52,7 @@
 #include "Weather.h"
 #include "WeatherMgr.h"
 #include "World.h"
+#include "WorldSession.h"
 #include "WorldStateMgr.h"
 #include "WorldStatePackets.h"
 #include <boost/heap/fibonacci_heap.hpp>
@@ -2738,13 +2739,18 @@ bool InstanceMap::AddPlayerToMap(Player* player)
                 // players also become permanently bound when they enter
                 if (groupBind->perm)
                 {
-                    WorldPackets::Instance::PendingRaidLock pendingRaidLock;
-                    pendingRaidLock.TimeUntilLock = 60000;
-                    pendingRaidLock.CompletedMask = i_data ? i_data->GetCompletedEncounterMask() : 0;
-                    pendingRaidLock.Extending = false;
-                    pendingRaidLock.WarningOnly = false; // events it throws:  1 : INSTANCE_LOCK_WARNING   0 : INSTANCE_LOCK_STOP / INSTANCE_LOCK_START
-                    player->SendDirectMessage(pendingRaidLock.Write());
-                    player->SetPendingBind(mapSave->GetInstanceId(), 60000);
+                    if (player->GetSession() && player->GetSession()->IsBotSession())
+                        player->BindToInstance(mapSave, true, EXTEND_STATE_KEEP);
+                    else
+                    {
+                        WorldPackets::Instance::PendingRaidLock pendingRaidLock;
+                        pendingRaidLock.TimeUntilLock = 60000;
+                        pendingRaidLock.CompletedMask = i_data ? i_data->GetCompletedEncounterMask() : 0;
+                        pendingRaidLock.Extending = false;
+                        pendingRaidLock.WarningOnly = false; // events it throws:  1 : INSTANCE_LOCK_WARNING   0 : INSTANCE_LOCK_STOP / INSTANCE_LOCK_START
+                        player->SendDirectMessage(pendingRaidLock.Write());
+                        player->SetPendingBind(mapSave->GetInstanceId(), 60000);
+                    }
                 }
             }
         }

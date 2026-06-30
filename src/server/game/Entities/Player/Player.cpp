@@ -1367,6 +1367,9 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
         return false;
     }
 
+    if (GetSession() && GetSession()->IsBotSession() && GetMap() && GetMap()->IsDungeon() && mapid != GetMapId())
+        return false;
+
     if (!GetSession()->HasPermission(rbac::RBAC_PERM_SKIP_CHECK_DISABLE_MAP) && DisableMgr::IsDisabledFor(DISABLE_TYPE_MAP, mapid, this))
     {
         TC_LOG_INFO("entities.player.cheat", "Player::TeleportTo: Player '%s' (%s) tried to enter a forbidden map (MapID: %u)", GetGUID().ToString().c_str(), GetName().c_str(), mapid);
@@ -23967,6 +23970,12 @@ void Player::SummonIfPossible(bool agree)
     // expire and auto declined
     if (m_summon_expire < GameTime::GetGameTime())
         return;
+
+    if (GetSession() && GetSession()->IsBotSession() && GetMap() && GetMap()->IsDungeon() && m_summon_location.GetMapId() != GetMapId())
+    {
+        m_summon_expire = 0;
+        return;
+    }
 
     // stop taxi flight at summon
     if (IsInFlight())

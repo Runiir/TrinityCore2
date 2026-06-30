@@ -37,6 +37,7 @@
 #include "TemporarySummon.h"
 #include "Unit.h"
 #include "Creature.h"
+#include "WorldSession.h"
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -1475,11 +1476,19 @@ void BotWorldPopulationMgr::Update(uint32 diff)
             _lastPopulationFailureReason = "loaded_bot_not_in_world";
             if (_config.ValidationRouteEnable)
             {
+                if (TryReattachValidationBot(*itr, loadedBot, "population_update_loaded_not_in_world"))
+                {
+                    _lastPopulationFailureReason.clear();
+                    UpdateBot(*itr, diff);
+                    ++itr;
+                    continue;
+                }
+
                 ObjectGuid prunedGuid = itr->Guid;
-                MarkValidationCohortViolation(*itr, loadedBot, "validation_artificial_reattach_blocked");
+                MarkValidationCohortViolation(*itr, loadedBot, "validation_same_instance_reattach_failed");
                 itr->LastDecisionResult = "loaded_bot_not_in_world";
-                itr->LastDecisionReason = "validation_artificial_reattach_blocked";
-                TC_LOG_ERROR("server", "BotWorld active bot removed bot=%s reason=loaded_bot_not_in_world diagnostic=validation_artificial_reattach_blocked spawn_source=%s age_ms=%llu",
+                itr->LastDecisionReason = "validation_same_instance_reattach_failed";
+                TC_LOG_ERROR("server", "BotWorld active bot removed bot=%s reason=loaded_bot_not_in_world diagnostic=validation_same_instance_reattach_failed spawn_source=%s age_ms=%llu",
                     prunedGuid.ToString().c_str(), itr->SpawnSource.c_str(), static_cast<unsigned long long>(itr->SpawnedMs ? nowMs - itr->SpawnedMs : 0));
                 sBotMgr->RemoveWorldBot(prunedGuid);
                 _failedSpawnGuids.insert(prunedGuid.GetCounter());
@@ -1966,9 +1975,49 @@ bool BotWorldPopulationMgr::TryReattachValidationBot(WorldBotState& state, Playe
     if (!_config.ValidationRouteEnable || !bot)
         return false;
 
-    MarkValidationCohortViolation(state, bot, "validation_artificial_reattach_blocked");
-    TC_LOG_ERROR("server", "BotWorld validation artificial reattach blocked bot=%s context=%s", bot->GetGUID().ToString().c_str(), context ? context : "");
-    return false;
+    if (!state.ValidationCohortLocked
+        || bot->IsInWorld()
+        || bot->GetMapId() != state.ValidationCohortMapId
+        || bot->GetInstanceId() != state.ValidationCohortInstanceId
+        || !bot->GetMap())
+        return false;
+
+    if (bot->IsBeingTeleportedFar())
+    {
+        WorldLocation const& destination = bot->GetTeleportDest();
+        Optional<uint32> destinationInstance = bot->GetTeleportDestInstanceId();
+        if (destination.GetMapId() == state.ValidationCohortMapId
+            && (!destinationInstance || *destinationInstance == state.ValidationCohortInstanceId))
+        {
+            if (WorldSession* session = bot->GetSession())
+            {
+                session->HandleMoveWorldportAck();
+                if (bot->IsInWorld()
+                    && bot->GetMapId() == state.ValidationCohortMapId
+                    && bot->GetInstanceId() == state.ValidationCohortInstanceId)
+                {
+                    TC_LOG_INFO("server", "BotWorld validation same-instance worldport complete bot=%s context=%s map=%u instance=%u",
+                        bot->GetGUID().ToString().c_str(), context ? context : "", bot->GetMapId(), bot->GetInstanceId());
+                    return true;
+                }
+            }
+        }
+        else
+        {
+            bot->CancelDelayedTeleport();
+            bot->SetSemaphoreTeleportFar(false);
+        }
+    }
+
+    if (bot->IsInGrid())
+        bot->RemoveFromGrid();
+
+    if (!bot->GetMap()->AddPlayerToMap(bot))
+        return false;
+
+    TC_LOG_INFO("server", "BotWorld validation same-instance reattach complete bot=%s context=%s map=%u instance=%u",
+        bot->GetGUID().ToString().c_str(), context ? context : "", bot->GetMapId(), bot->GetInstanceId());
+    return true;
 }
 
 bool BotWorldPopulationMgr::IsValidationCohortMemberInOriginalInstance(WorldBotState const& state, Player const* bot) const
@@ -14426,7 +14475,7 @@ std::string BotWorldPopulationMgr::GetBotDiagnosisJson(std::string const& select
         if (bot && !bot->IsInWorld() && _config.ValidationRouteEnable)
         {
             state.LastDecisionResult = "loaded_bot_not_in_world";
-            state.LastDecisionReason = "validation_artificial_reattach_blocked";
+            state.LastDecisionReason = "validation_same_instance_reattach_failed";
         }
 
         if (emitted)

@@ -1897,6 +1897,7 @@ class TC_GAME_API Player : public Unit, public GridObject<Player>
         bool IsBeingTeleportedFar() const { return mSemaphoreTeleport_Far; }
         void SetSemaphoreTeleportNear(bool semphsetting) { mSemaphoreTeleport_Near = semphsetting; }
         void SetSemaphoreTeleportFar(bool semphsetting) { mSemaphoreTeleport_Far = semphsetting; }
+        void CancelDelayedTeleport() { m_bHasDelayedTeleport = false; }
         void ProcessDelayedOperations();
 
         void CheckAreaExplore();
