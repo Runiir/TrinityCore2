@@ -7997,7 +7997,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         routeAnchorZ = state.ValidationRouteAnchorOverrideZ;
         routeAnchorReason = state.ValidationRouteAnchorOverrideReason.empty() ? "validation_route_safe_memory_override" : state.ValidationRouteAnchorOverrideReason;
     }
-    else if (!routeHasActiveCombatIntent && (routeAnchorDanger >= 3.0f || repeatedDeathNearRoute))
+    else if (!routeHasActiveCombatIntent && repeatedDeathNearRoute)
     {
         PruneSafePositions(state, routeNowMs);
 
@@ -8032,7 +8032,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             routeAnchorX = bestSafe->X;
             routeAnchorY = bestSafe->Y;
             routeAnchorZ = bestSafe->Z;
-            routeAnchorReason = repeatedDeathNearRoute ? "validation_route_safe_memory_after_death_loop" : "validation_route_safe_memory_after_danger";
+            routeAnchorReason = "validation_route_safe_memory_after_death_loop";
             state.ValidationRouteAnchorOverrideValid = true;
             state.ValidationRouteAnchorOverrideUntilMs = routeNowMs + 120000;
             state.ValidationRouteAnchorOverrideX = routeAnchorX;
@@ -8061,6 +8061,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         || _config.ValidationRouteActivationSummonEntry
         || _config.ValidationRouteOpenerSummonEntry
         || (_config.ValidationRouteKind == "boss" && _config.ValidationRouteTargetEntry);
+    float routeArrivalRadius = hasValidationRouteActivation ? 40.0f : 18.0f;
     auto tryValidationRouteInterrupt = [this, &state, bot, &power, stage, activity, &situation, &action](Unit* interruptTarget, char const* context) -> bool
     {
         if (_config.ValidationRouteKind != "boss"
@@ -8546,7 +8547,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         state.WasInCombat = true;
         return true;
     }
-    if (std::string(GetDungeonRole(bot)) != "tank")
+    if (std::string(GetDungeonRole(bot)) != "tank" && routeDistance <= routeArrivalRadius)
     {
         if (Player* anchor = FindDungeonAnchor(bot))
         {
@@ -8566,7 +8567,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 if (bot->GetExactDist(anchor) > 8.0f
                     && !(_config.ValidationRouteKind == "boss" && _validationRouteActivationApplied))
                 {
-                    MoveBotToProfileRange(state, bot, anchor);
+                    MoveBotToPoint(state, bot, anchor->GetPositionX(), anchor->GetPositionY(), anchor->GetPositionZ());
                     std::string raw = BuildRawJson(bot, nullptr);
                     std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_regroup", &power, stage, activity);
                     RecordEvent(state, bot, "validation_route_regroup", anchor, "follow_anchor_no_focus", raw.c_str(), semantic.c_str(), bot->GetExactDist(anchor), _config.ValidationRouteTargetEntry);
@@ -8698,7 +8699,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         return true;
     }
 
-    float routeArrivalRadius = hasValidationRouteActivation ? 40.0f : 18.0f;
     if (routeDistance > routeArrivalRadius)
     {
         MoveBotToPoint(state, bot, routeAnchorX, routeAnchorY, routeAnchorZ);

@@ -691,7 +691,7 @@ def test_quest_first_portfolio_routing_surface():
     assert "_validationRouteBossSlowProgressCount" in mgr_header
     assert "routeHasActiveCombatIntent" in mgr
     assert "state.ValidationRouteAnchorOverrideValid && routeHasActiveCombatIntent" in mgr
-    assert "else if (!routeHasActiveCombatIntent && (routeAnchorDanger >= 3.0f || repeatedDeathNearRoute))" in mgr
+    assert "else if (!routeHasActiveCombatIntent && repeatedDeathNearRoute)" in mgr
     assert '_config.ValidationRouteKind == "boss" ? 60000 : 20000' in mgr
     assert "stale_focus_expired" in mgr
     assert "validation_route_recover_stale_focus" in mgr
@@ -819,9 +819,12 @@ def test_quest_first_portfolio_routing_surface():
     assert "SELECT role FROM character_bot_pool WHERE guid" in mgr
     assert 'poolRole.find("tank")' in mgr
     assert "if (routeProximity > 120.0f)" in mgr
+    assert 'if (std::string(GetDungeonRole(bot)) != "tank" && routeDistance <= routeArrivalRadius)' in mgr
     assert_ordered(
         function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteObjective"),
         '&& !(_config.ValidationRouteKind == "boss" && _validationRouteActivationApplied)',
+        "MoveBotToPoint(state, bot, anchor->GetPositionX(), anchor->GetPositionY(), anchor->GetPositionZ());",
+        'RecordEvent(state, bot, "validation_route_regroup", anchor, "follow_anchor_no_focus"',
         "boss_route_wait_for_tank_activation",
         "action = \"validation_route_hold_anchor\";",
         "RecordEvent(state, bot, \"validation_route_regroup\", anchor, \"hold_anchor_no_focus\"",
