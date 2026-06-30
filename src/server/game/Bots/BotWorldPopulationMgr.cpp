@@ -6868,7 +6868,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     };
     auto isEligibleTrashClusterMob = [this, bot, &isValidationRoutePackEntry, &hasStrictPathToValidationRouteTarget](Creature const* creature) -> bool
     {
-        if (!bot || !creature || !creature->IsAlive() || !bot->IsValidAttackTarget(creature))
+        if (!bot || !creature || !creature->IsAlive() || !creature->GetHealth() || !bot->IsValidAttackTarget(creature))
             return false;
         if (creature->IsInEvadeMode() || creature->HasUnitState(UNIT_STATE_EVADE))
             return false;
@@ -7143,6 +7143,41 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         MaybeAdvanceValidationRouteManifest();
         return true;
     };
+    auto recordValidationRouteTrashKill = [this, &state, bot, &power, stage, activity, &isValidationRouteScriptTarget, &clearValidationRouteKilledFocus, &trashClusterHasLiveMobs, &markTrashClusterCleared](Unit* killedTarget, char const* reason) -> bool
+    {
+        if (!killedTarget || (killedTarget->IsAlive() && killedTarget->GetHealth()))
+            return false;
+
+        Creature* creature = killedTarget->ToCreature();
+        if (!creature)
+            return false;
+
+        if (state.LastKilledTargetGuid != killedTarget->GetGUID())
+        {
+            ++_metrics.Kills;
+            state.LastKilledTargetGuid = killedTarget->GetGUID();
+        }
+
+        clearValidationRouteKilledFocus(killedTarget->GetGUID());
+        std::string raw = BuildRawJson(bot, killedTarget);
+        std::string semantic = BuildSemanticJson(bot, killedTarget, "validation_route_trash_outcome", &power, stage, activity);
+        RecordEvent(state, bot, "mob_killed", killedTarget, reason ? reason : "validation_route_recovery", raw.c_str(), semantic.c_str(), 0.0f, _metrics.Kills);
+        if (isValidationRouteScriptTarget(creature)
+            && !_validationRouteManifest.empty()
+            && _config.ValidationRouteAdvanceMode == "terminal"
+            && _config.ValidationRouteKind != "boss")
+        {
+            if (!trashClusterHasLiveMobs())
+            {
+                markTrashClusterCleared("trash_cluster_cleared");
+                RecordEvent(state, bot, "dungeon_trash_cleared", nullptr, "trash_cluster_cleared", raw.c_str(), semantic.c_str(), float(_metrics.Kills), _config.ValidationRouteTargetEntry);
+                MaybeAdvanceValidationRouteManifest();
+            }
+            else
+                RecordEvent(state, bot, "validation_route_target_search", nullptr, "trash_route_target_killed_cluster_still_alive", raw.c_str(), semantic.c_str(), float(_metrics.Kills), _config.ValidationRouteTargetEntry);
+        }
+        return true;
+    };
     auto routeUsableCombatTarget = [this, bot, &isValidationRouteCombatTarget, &isEligibleTrashClusterMob](Unit* candidate) -> Unit*
     {
         if (!candidate || !candidate->IsAlive() || !bot || !bot->IsValidAttackTarget(candidate))
@@ -7164,7 +7199,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         float routeProximity = candidate->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ);
         return routeProximity <= 120.0f ? candidate : nullptr;
     };
-    auto maybeValidationPrerequisiteNoProgressAssist = [this, &state, bot, &power, stage, activity, &isValidationRouteScriptTarget, &isValidationRoutePackEntry, &recordValidationRouteBossKill, &clearValidationRouteKilledFocus, &trashClusterHasLiveMobs, &markTrashClusterCleared, &markValidationRouteTrashFailed](Unit* prerequisiteTarget, char const* context) -> bool
+    auto maybeValidationPrerequisiteNoProgressAssist = [this, &state, bot, &power, stage, activity, &isValidationRouteScriptTarget, &isValidationRoutePackEntry, &recordValidationRouteBossKill, &recordValidationRouteTrashKill, &markValidationRouteTrashFailed](Unit* prerequisiteTarget, char const* context) -> bool
     {
         if (!prerequisiteTarget || !prerequisiteTarget->IsAlive() || !bot || !bot->IsValidAttackTarget(prerequisiteTarget))
             return false;
@@ -7240,41 +7275,10 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return true;
         }
 
-        auto recordValidationRouteTrashKill = [&](bool applyDamage) -> void
-        {
-            bool routeTargetKill = isValidationRouteScriptTarget(creature);
-            if (applyDamage)
-            {
-                markValidationRouteTrashFailed(prerequisiteTarget, "validation_trash_no_progress", "validation_route_trash_slow_progress", healthPct, _config.ValidationRouteTargetEntry, state.ValidationRoutePackBestHealthPct, state.ValidationRoutePackNoProgressCount, 0);
-                return;
-            }
-            if (!prerequisiteTarget->IsAlive())
-            {
-                if (state.LastKilledTargetGuid != prerequisiteTarget->GetGUID())
-                {
-                    ++_metrics.Kills;
-                    state.LastKilledTargetGuid = prerequisiteTarget->GetGUID();
-                }
-                clearValidationRouteKilledFocus(prerequisiteTarget->GetGUID());
-                std::string raw = BuildRawJson(bot, prerequisiteTarget);
-                std::string semantic = BuildSemanticJson(bot, prerequisiteTarget, "validation_route_prerequisite_no_progress", &power, stage, activity);
-                RecordEvent(state, bot, "mob_killed", prerequisiteTarget, "validation_route_recovery", raw.c_str(), semantic.c_str(), 0.0f, _metrics.Kills);
-                if (routeTargetKill
-                    && !_validationRouteManifest.empty()
-                    && _config.ValidationRouteAdvanceMode == "terminal"
-                    && _config.ValidationRouteKind != "boss")
-                {
-                    if (!trashClusterHasLiveMobs())
-                    {
-                        markTrashClusterCleared("trash_cluster_cleared");
-                        RecordEvent(state, bot, "dungeon_trash_cleared", nullptr, "trash_cluster_cleared", raw.c_str(), semantic.c_str(), float(_metrics.Kills), _config.ValidationRouteTargetEntry);
-                        MaybeAdvanceValidationRouteManifest();
-                    }
-                    else
-                        RecordEvent(state, bot, "validation_route_target_search", nullptr, "trash_route_target_killed_cluster_still_alive", raw.c_str(), semantic.c_str(), float(_metrics.Kills), _config.ValidationRouteTargetEntry);
-                }
-            }
-        };
+        if (_config.ValidationRouteKind != "boss"
+            && isValidationRoutePackEntry(creature->GetEntry())
+            && recordValidationRouteTrashKill(prerequisiteTarget, "validation_route_recovery"))
+            return true;
 
         auto maybeRoutePackNoProgressAssist = [&]() -> bool
         {
@@ -8242,7 +8246,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (Unit* tankTarget = routeUsableCombatTarget(target))
             rememberValidationRouteFocus(tankTarget);
     }
-    if (std::string(GetDungeonRole(bot)) != "tank")
+    if (_config.ValidationRouteKind == "boss" && std::string(GetDungeonRole(bot)) != "tank")
     {
         ObjectGuid tankFocusGuid = routeTankFocusGuid();
         Unit* tankFocusTarget = routeTankFocusTarget(tankFocusGuid);
@@ -8501,13 +8505,15 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (tryRouteGroupHeal(bot, target))
             return true;
 
+        bool routeTrashFocus = _config.ValidationRouteKind != "boss";
+        char const* focusSituation = routeTrashFocus ? "validation_route" : "validation_route_prerequisite";
         ResolvedCombatAction profileAction = ResolveProfileCombatAction(bot, target);
         uint32 spellId = profileAction.SpellId;
         float engageRange = profileAction.MaxRange > 0.0f ? profileAction.MaxRange : routeEngageRange(bot, target, spellId);
         {
             std::string raw = BuildRawJson(bot, target);
-            std::string semantic = BuildSemanticJson(bot, target, "validation_route_prerequisite", &power, stage, activity);
-            RecordEvent(state, bot, "validation_target_priority", target, "assist_focus", raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry, spellId);
+            std::string semantic = BuildSemanticJson(bot, target, focusSituation, &power, stage, activity);
+            RecordEvent(state, bot, "validation_target_priority", target, routeTrashFocus ? "route_trash_focus" : "assist_focus", raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry, spellId);
         }
         float targetDistance = bot->GetExactDist(target);
         if (profileAction.MinRange > 0.0f && targetDistance < profileAction.MinRange)
@@ -8515,28 +8521,28 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             Position away = bot->GetFirstCollisionPosition(profileAction.MinRange - targetDistance + 2.0f, target->GetAngle(bot));
             MoveBotToPoint(state, bot, away.GetPositionX(), away.GetPositionY(), away.GetPositionZ());
             action = "move_to_profile_min_range";
-            situation = "validation_route_prerequisite";
+            situation = focusSituation;
             return true;
         }
         if (!bot->IsValidAttackTarget(target) || !bot->IsWithinDistInMap(target, std::max(5.0f, engageRange - 1.0f)) || !bot->IsWithinLOSInMap(target))
         {
             MoveBotToProfileRange(state, bot, target, &profileAction);
-            action = "move_to_validation_route_assist_target";
-            situation = "validation_route_prerequisite";
+            action = routeTrashFocus ? "move_to_validation_route_target" : "move_to_validation_route_assist_target";
+            situation = focusSituation;
             std::string raw = BuildRawJson(bot, target);
             std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, activity);
-            RecordEvent(state, bot, "validation_route_prerequisite", target, "assist_focus", raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry);
-            maybeValidationPrerequisiteNoProgressAssist(target, "assist_focus_path_no_progress");
+            RecordEvent(state, bot, routeTrashFocus ? "validation_route_target_search" : "validation_route_prerequisite", target, routeTrashFocus ? "approach_target" : "assist_focus", raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry);
+            maybeValidationPrerequisiteNoProgressAssist(target, routeTrashFocus ? "route_target_path_no_progress" : "assist_focus_path_no_progress");
             return true;
         }
 
         BotActionResult result = ExecuteProfileCombatAction(&state, bot, target, &profileAction);
-        action = "validation_route_prerequisite_assist";
-        situation = "validation_route_prerequisite";
+        action = routeTrashFocus ? "validation_route_trash_action" : "validation_route_prerequisite_assist";
+        situation = focusSituation;
         std::string raw = BuildRawJson(bot, target);
         std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, activity);
-        RecordEvent(state, bot, "validation_route_prerequisite", target, ToString(result), raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry, result == BotActionResult::Ok ? spellId : 0);
-        maybeValidationPrerequisiteNoProgressAssist(target, "assist_focus_no_health_progress");
+        RecordEvent(state, bot, routeTrashFocus ? "trash_action" : "validation_route_prerequisite", target, ToString(result), raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry, result == BotActionResult::Ok ? spellId : 0);
+        maybeValidationPrerequisiteNoProgressAssist(target, routeTrashFocus ? "route_target_no_health_progress" : "assist_focus_no_health_progress");
         state.WasInCombat = true;
         return true;
     }
@@ -8758,7 +8764,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 continue;
             }
 
-            if (!creature->IsAlive())
+            if (!creature->IsAlive() || !creature->GetHealth())
             {
                 targetSearchResult = "target_seen_dead";
                 continue;
@@ -8820,6 +8826,15 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         action = "validation_route_recovery";
         return true;
     }
+    if (!routeTarget
+        && seenRouteTarget
+        && _config.ValidationRouteKind != "boss"
+        && targetSearchResult == "target_seen_dead"
+        && recordValidationRouteTrashKill(seenRouteTarget, "target_seen_dead"))
+    {
+        action = "validation_route_recovery";
+        return true;
+    }
     if (!routeTarget && seenRouteTarget && seenRouteTargetDistance > 8.0f)
     {
         tryValidationRouteActivation(seenRouteTarget, targetSearchResult.c_str());
@@ -8865,10 +8880,13 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     return true;
                 }
 
-                RecordEvent(state, bot, "validation_route_regroup", anchor, "hold_anchor_before_prerequisite", raw.c_str(), semantic.c_str(), anchor == bot ? 0.0f : bot->GetExactDist(anchor), _config.ValidationRouteTargetEntry);
-                situation = "validation_route_regroup";
-                action = "validation_route_hold_anchor";
-                return true;
+                if (_config.ValidationRouteKind == "boss")
+                {
+                    RecordEvent(state, bot, "validation_route_regroup", anchor, "hold_anchor_before_prerequisite", raw.c_str(), semantic.c_str(), anchor == bot ? 0.0f : bot->GetExactDist(anchor), _config.ValidationRouteTargetEntry);
+                    situation = "validation_route_regroup";
+                    action = "validation_route_hold_anchor";
+                    return true;
+                }
             }
         }
         std::vector<WorldObject*> objects;

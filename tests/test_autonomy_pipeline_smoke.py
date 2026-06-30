@@ -628,6 +628,9 @@ def test_quest_first_portfolio_routing_surface():
     assert "move_to_validation_route_assist_target" in mgr
     assert "validation_route_prerequisite_assist" in mgr
     assert "assist_focus" in mgr
+    assert 'bool routeTrashFocus = _config.ValidationRouteKind != "boss";' in validation_route_objective
+    assert 'action = routeTrashFocus ? "validation_route_trash_action" : "validation_route_prerequisite_assist";' in validation_route_objective
+    assert 'RecordEvent(state, bot, routeTrashFocus ? "trash_action" : "validation_route_prerequisite"' in validation_route_objective
     assert "for (WorldBotState const& cohortState : _bots)" in mgr
     assert "findCohortAnchor" in function_body(mgr, "Player* BotWorldPopulationMgr::FindDungeonAnchor")
     assert "for (WorldBotState const& state : _bots)" in function_body(mgr, "Player* BotWorldPopulationMgr::FindDungeonAnchor")
@@ -640,6 +643,12 @@ def test_quest_first_portfolio_routing_surface():
     assert "validation_route_hold_anchor" in mgr
     assert "follow_anchor_before_prerequisite" in mgr
     assert "hold_anchor_before_prerequisite" in mgr
+    assert 'if (_config.ValidationRouteKind == "boss" && std::string(GetDungeonRole(bot)) != "tank")' in validation_route_objective
+    assert (
+        'if (_config.ValidationRouteKind == "boss")\n'
+        '                {\n'
+        '                    RecordEvent(state, bot, "validation_route_regroup", anchor, "hold_anchor_before_prerequisite"'
+    ) in validation_route_objective
     assert "routeTankFocusGuid" in mgr
     assert "routeTankFocusTarget" in mgr
     assert "rememberValidationRouteFocus" in mgr
@@ -648,7 +657,12 @@ def test_quest_first_portfolio_routing_surface():
     assert "cohortState.ValidationRoutePackProgressTargetGuid.Clear();" in mgr
     assert "cohortState.ValidationRouteAnchorOverrideValid = false;" in mgr
     assert "cohortState.RecentDeathCount = 0;" in mgr
-    assert "clearValidationRouteKilledFocus(prerequisiteTarget->GetGUID());" in mgr
+    assert "auto recordValidationRouteTrashKill" in validation_route_objective
+    assert 'if (!killedTarget || (killedTarget->IsAlive() && killedTarget->GetHealth()))' in validation_route_objective
+    assert "clearValidationRouteKilledFocus(killedTarget->GetGUID());" in mgr
+    assert 'RecordEvent(state, bot, "mob_killed", killedTarget' in validation_route_objective
+    assert 'if (!creature->IsAlive() || !creature->GetHealth())' in validation_route_objective
+    assert 'recordValidationRouteTrashKill(seenRouteTarget, "target_seen_dead")' in validation_route_objective
     assert "activeCohortFocus" in mgr
     assert "member->IsInCombat() || focus->IsInCombat() || focus->GetVictim()" in mgr
     assert "authoritative_focus_state_target_inactive" in mgr
@@ -1233,7 +1247,8 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     )
     assert_ordered(
         route_objective,
-        'bool routeTargetKill = isValidationRouteScriptTarget(creature);',
+        "auto recordValidationRouteTrashKill",
+        "if (isValidationRouteScriptTarget(creature)",
         "if (!trashClusterHasLiveMobs())",
         'markTrashClusterCleared("trash_cluster_cleared");',
         'RecordEvent(state, bot, "dungeon_trash_cleared", nullptr, "trash_cluster_cleared"',
