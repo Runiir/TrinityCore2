@@ -3418,6 +3418,8 @@ bool BotWorldPopulationMgr::TryResolveBotBlocker(WorldBotState& state, Player* b
         resolved = true;
     else if (reason == "hunter_pet_dead" && resolver == "hunter_pet_ready")
         resolved = true;
+    else if (reason == "cast_failed" && resolver == "cast_succeeded")
+        resolved = true;
     else if (reason == "no_valid_profile_action" && resolver == "profile_action_valid")
         resolved = true;
 
@@ -10936,6 +10938,7 @@ bool BotWorldPopulationMgr::TryEnsureCombatTotems(WorldBotState& state, Player* 
     if (!bot || bot->getClass() != CLASS_SHAMAN || !bot->IsInCombat() || !target || !target->IsAlive())
         return false;
 
+    uint64 const nowMs = NowMs();
     uint32 const totemSpellIds[] = { 8075, 3599, 5394, 8512 };
     for (uint32 spellId : totemSpellIds)
     {
@@ -10943,7 +10946,7 @@ bool BotWorldPopulationMgr::TryEnsureCombatTotems(WorldBotState& state, Player* 
             continue;
 
         std::string key = "totem_spell_missing:" + std::to_string(spellId);
-        state.ReadinessRetryUntilMs[key] = NowMs() + 15000;
+        state.ReadinessRetryUntilMs[key] = nowMs + 15000;
         MarkBotBlocked(state, bot, key.c_str());
         return true;
     }
@@ -10963,6 +10966,11 @@ bool BotWorldPopulationMgr::TryEnsureCombatTotems(WorldBotState& state, Player* 
     }
 
     uint32 const callOfElements = 66842;
+    std::string const attemptKey = "totem:call_of_elements";
+    auto retryItr = state.ReadinessRetryUntilMs.find(attemptKey);
+    if (retryItr != state.ReadinessRetryUntilMs.end() && retryItr->second > nowMs)
+        return false;
+
     SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(callOfElements);
     if (!bot->HasSpell(callOfElements) || !spellInfo || bot->HasUnitState(UNIT_STATE_CASTING) || bot->GetSpellHistory()->HasGlobalCooldown(spellInfo) || !bot->GetSpellHistory()->IsReady(spellInfo))
     {
@@ -10985,6 +10993,8 @@ bool BotWorldPopulationMgr::TryEnsureCombatTotems(WorldBotState& state, Player* 
         action.TargetGuid = bot->GetGUID();
         action.DebugName = "call_of_elements";
         RecordCombatAttempt(state, bot, bot, "totems", &action, BotActionResult::Ok);
+        state.ReadinessRetryUntilMs[attemptKey] = nowMs + 30000;
+        TryResolveBotBlocker(state, bot, "call_of_elements");
         return true;
     }
 
@@ -10995,6 +11005,7 @@ bool BotWorldPopulationMgr::TryEnsureCombatTotems(WorldBotState& state, Player* 
     action.TargetGuid = bot->GetGUID();
     action.DebugName = "call_of_elements";
     RecordCombatAttempt(state, bot, bot, "totems", &action, BotActionResult::CastFailed, "totem_cast_failed");
+    state.ReadinessRetryUntilMs[attemptKey] = nowMs + 15000;
     MarkBotBlocked(state, bot, "totem_cast_failed:call_of_elements");
     return true;
 }
@@ -11027,7 +11038,10 @@ BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState*
     if (state)
         RecordCombatAttempt(*state, bot, target, "cast", &action, result);
     if (state && result == BotActionResult::Ok)
+    {
         TryResolveBotBlocker(*state, bot, action.DebugName.c_str());
+        TryResolveBotBlocker(*state, bot, "cast_succeeded");
+    }
     else if (state && result != BotActionResult::Casting && result != BotActionResult::GlobalCooldown)
     {
         if (state->Blocked && result == BotActionResult::CastFailed)

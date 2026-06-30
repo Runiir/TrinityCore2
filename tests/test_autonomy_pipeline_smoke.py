@@ -178,12 +178,14 @@ def test_validation_blockers_require_matching_resolution_and_trace_episode_field
     assert "reason == resolver" in unstuck
     assert "buff_cast_failed:" in unstuck
     assert "totem_cast_failed:" in unstuck
+    assert "cast_succeeded" in unstuck
     assert "hunter_pet_unprovisioned" in unstuck
     assert "hunter_pet_db_row_absent:" in unstuck
     assert "hunter_pet_load_failed:" in unstuck
     assert "hunter_pet_missing" in unstuck
     assert "movement_progress" in unstuck
     assert "TryResolveBotBlocker(*state, bot, \"profile_action_valid\")" in execute_profile
+    assert "TryResolveBotBlocker(*state, bot, \"cast_succeeded\")" in execute_profile
     assert "MarkBotUnstuck(*state, bot, action.DebugName.c_str())" not in execute_profile
     assert "entry.BlockedEpisodeId = state.BlockedEpisodeId" in trace
     assert "blocked_first_reason" in diagnose
@@ -290,6 +292,8 @@ def test_shaman_totems_are_combat_entry_setup_without_spam():
     assert "totem->IsTotem() && totem->IsAlive()" in totems
     assert "ReadinessRetryUntilMs" in totems
     assert "totem_cast_failed:" in totems
+    assert "totem:call_of_elements" in totems
+    assert "TryResolveBotBlocker(state, bot, \"call_of_elements\")" in totems
     assert "TryEnsureCombatTotems(*state, bot, target)" in execute_profile
 
 
