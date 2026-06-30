@@ -7164,7 +7164,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         float routeProximity = candidate->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ);
         return routeProximity <= 120.0f ? candidate : nullptr;
     };
-    auto maybeValidationPrerequisiteNoProgressAssist = [this, &state, bot, &power, stage, activity, &isValidationRouteScriptTarget, &recordValidationRouteBossKill, &clearValidationRouteKilledFocus, &trashClusterHasLiveMobs, &markTrashClusterCleared, &markValidationRouteTrashFailed](Unit* prerequisiteTarget, char const* context) -> bool
+    auto maybeValidationPrerequisiteNoProgressAssist = [this, &state, bot, &power, stage, activity, &isValidationRouteScriptTarget, &isValidationRoutePackEntry, &recordValidationRouteBossKill, &clearValidationRouteKilledFocus, &trashClusterHasLiveMobs, &markTrashClusterCleared, &markValidationRouteTrashFailed](Unit* prerequisiteTarget, char const* context) -> bool
     {
         if (!prerequisiteTarget || !prerequisiteTarget->IsAlive() || !bot || !bot->IsValidAttackTarget(prerequisiteTarget))
             return false;
@@ -7179,6 +7179,30 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
         float healthPct = UnitHealthPct(prerequisiteTarget);
         std::string contextText = context ? context : "";
+        auto lastCombatAttemptIsSchedulingWait = [&state]() -> bool
+        {
+            return state.LastCombatAttempt.Result == "casting"
+                || state.LastCombatAttempt.Result == "global_cooldown"
+                || state.LastCombatAttempt.Result == "cooldown"
+                || state.LastCombatAttempt.Reason == "already_casting"
+                || state.LastCombatAttempt.Reason == "global_cooldown"
+                || state.LastCombatAttempt.Reason == "cooldown";
+        };
+        auto lastCombatAttemptTargetsDifferentPackMob = [&state, prerequisiteTarget, &isValidationRoutePackEntry]() -> bool
+        {
+            return !state.LastCombatAttempt.TargetGuid.IsEmpty()
+                && state.LastCombatAttempt.TargetGuid != prerequisiteTarget->GetGUID()
+                && isValidationRoutePackEntry(state.LastCombatAttempt.TargetEntry);
+        };
+        auto contextIsCombatProgressProbe = [&contextText]() -> bool
+        {
+            return contextText.find("no_health_progress") != std::string::npos
+                || contextText.find("path_no_progress") != std::string::npos;
+        };
+        auto lastCombatAttemptIsNormalCombatTick = [&state, &lastCombatAttemptIsSchedulingWait]() -> bool
+        {
+            return state.LastCombatAttempt.Result == "ok" || lastCombatAttemptIsSchedulingWait();
+        };
         bool bossRouteContext = _config.ValidationRouteKind == "boss"
             && (contextText.rfind("boss_route_", 0) == 0
                 || (isValidationRouteScriptTarget(creature) && contextText.rfind("route_target_", 0) == 0)
@@ -7280,6 +7304,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 state.ValidationRoutePackBestHealthPct = healthPct;
             }
 
+            if (contextIsCombatProgressProbe() && lastCombatAttemptIsNormalCombatTick())
+                return false;
+
             uint32 packNoProgressThreshold = _config.ValidationRouteKind == "boss" ? 5 : 15;
             if (++state.ValidationRoutePackNoProgressCount < packNoProgressThreshold)
                 return false;
@@ -7299,6 +7326,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             && contextText.rfind("route_target_", 0) == 0;
         if (trashRouteTargetContext)
         {
+            if (lastCombatAttemptTargetsDifferentPackMob())
+                return false;
+
             if (state.ValidationRoutePackProgressTargetGuid != prerequisiteTarget->GetGUID())
             {
                 state.ValidationRoutePackProgressTargetGuid = prerequisiteTarget->GetGUID();
@@ -7306,6 +7336,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             }
             else if (healthPct < state.ValidationRoutePackBestHealthPct)
                 state.ValidationRoutePackBestHealthPct = healthPct;
+
+            if (contextIsCombatProgressProbe() && lastCombatAttemptIsNormalCombatTick())
+                return false;
 
             uint32 routeTargetNoProgressThreshold = bot->GetMap() && bot->GetMap()->IsRaid() ? 2 : (_config.ValidationRouteKind == "boss" ? 5 : 20);
             if (++state.ValidationRoutePackNoProgressCount >= routeTargetNoProgressThreshold)
@@ -7350,6 +7383,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
         bool bossRouteNoProgress = bossRouteContext && isValidationRouteScriptTarget(creature);
         uint32 noProgressThreshold = bossRouteNoProgress ? 2 : (_config.ValidationRouteKind == "boss" ? 4 : 12);
+        if (!bossRouteNoProgress && contextIsCombatProgressProbe() && lastCombatAttemptIsNormalCombatTick())
+            return false;
+
         if (++state.ValidationRouteCombatNoProgressCount < noProgressThreshold)
             return false;
 
@@ -11029,7 +11065,6 @@ BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState*
 
     if (state)
     {
-        RecordCombatAttempt(*state, bot, target, "executor_check", &action, BotActionResult::Ok);
         TryResolveBotBlocker(*state, bot, "profile_action_valid");
     }
 

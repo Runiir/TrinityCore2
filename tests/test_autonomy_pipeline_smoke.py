@@ -303,6 +303,7 @@ def test_stonecore_rotation_sql_declares_buffs_hunter_builder_and_aoe_gate():
     for token in [
         "25780, 'buff', 'righteous_fury",
         "31801, 'buff', 'seal_of_truth",
+        "20271, 'builder', 'judgement,threat,requires_seal'",
         "465, 'buff', 'devotion_aura",
         "20217, 'buff', 'blessing_of_kings",
         "13165, 'buff', 'aspect_of_the_hawk",
@@ -314,6 +315,17 @@ def test_stonecore_rotation_sql_declares_buffs_hunter_builder_and_aoe_gate():
 
     assert "77767, 'builder'" not in sql
     assert "2120, 'aoe', 'flamestrike,aoe', 0.90, 0, 3, 4" in sql
+    assert "'judgement,threat,requires_seal', 0.68, 0, 0.55, 0, 0, 4, 1, 0, 1, 1, 31801" in sql
+
+
+def test_action_profile_hard_masks_enforce_aura_prerequisites():
+    profile = read(PLAYER_BOT_ACTION_PROFILE)
+
+    assert 'spell.RequiredSelfAura && !bot->HasAura(spell.RequiredSelfAura)' in profile
+    assert 'spell.ForbiddenSelfAura && bot->HasAura(spell.ForbiddenSelfAura)' in profile
+    assert 'spell.RequiredTargetAura && actionTarget && !actionTarget->HasAura(spell.RequiredTargetAura)' in profile
+    assert 'spell.ForbiddenTargetAura && actionTarget && actionTarget->HasAura(spell.ForbiddenTargetAura)' in profile
+    assert 'candidate.RejectReason = "missing_required_self_aura"' in profile
 
 
 def test_server_start_autonomy_enabled_spawns_from_pool_without_center_requirement():
@@ -766,6 +778,17 @@ def test_quest_first_portfolio_routing_surface():
     assert "markValidationRouteTrashFailed" in mgr
     assert "validation_trash_no_progress" in mgr
     assert "validation_trash_requires_damage_progress" in mgr
+    assert "lastCombatAttemptIsSchedulingWait" in mgr
+    assert "lastCombatAttemptIsNormalCombatTick" in mgr
+    assert "contextIsCombatProgressProbe" in mgr
+    assert "lastCombatAttemptTargetsDifferentPackMob" in mgr
+    assert "isValidationRoutePackEntry(state.LastCombatAttempt.TargetEntry)" in mgr
+    assert 'state.LastCombatAttempt.Result == "ok" || lastCombatAttemptIsSchedulingWait()' in mgr
+    assert 'contextText.find("path_no_progress") != std::string::npos' in mgr
+    assert 'state.LastCombatAttempt.Reason == "global_cooldown"' in mgr
+    assert 'state.LastCombatAttempt.Result == "global_cooldown"' in mgr
+    assert 'contextIsCombatProgressProbe() && lastCombatAttemptIsNormalCombatTick()' in mgr
+    assert 'RecordCombatAttempt(*state, bot, target, "executor_check", &action, BotActionResult::Ok);' not in mgr
     assert "findTrashClusterThreatTarget" in mgr
     assert "validation_route_stuck_no_fallback" in mgr
     assert "fallback_disabled" in mgr

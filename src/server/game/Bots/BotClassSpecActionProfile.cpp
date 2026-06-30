@@ -377,6 +377,14 @@ std::vector<BotActionCandidate> BotClassSpecActionProfileStore::BuildCandidates(
                 candidate.RejectReason = "global_cooldown";
             else if (!bot->GetSpellHistory()->IsReady(spellInfo))
                 candidate.RejectReason = "cooldown_not_ready";
+            else if (spell.RequiredSelfAura && !bot->HasAura(spell.RequiredSelfAura))
+                candidate.RejectReason = "missing_required_self_aura";
+            else if (spell.ForbiddenSelfAura && bot->HasAura(spell.ForbiddenSelfAura))
+                candidate.RejectReason = "forbidden_self_aura_active";
+            else if (spell.RequiredTargetAura && actionTarget && !actionTarget->HasAura(spell.RequiredTargetAura))
+                candidate.RejectReason = "missing_required_target_aura";
+            else if (spell.ForbiddenTargetAura && actionTarget && actionTarget->HasAura(spell.ForbiddenTargetAura))
+                candidate.RejectReason = "forbidden_target_aura_active";
             else if (spell.MaintainAuraId && actionTarget && actionTarget->HasAura(spell.MaintainAuraId))
                 candidate.RejectReason = "maintain_aura_active";
             else if (spell.RequiresInstantCast && ProfileSpellCastTimeMs(bot, spellInfo) > 0)
