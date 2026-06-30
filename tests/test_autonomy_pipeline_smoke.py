@@ -732,10 +732,10 @@ def test_quest_first_portfolio_routing_surface():
     assert 'uint32 noProgressThreshold = bossRouteNoProgress ? 2 : (_config.ValidationRouteKind == "boss" ? 4 : 12)' in mgr
     assert "validation_route_activation" in mgr
     assert "boss_route_early_activation" in mgr
-    assert "boss_route_no_focus_activation" in mgr
     assert "boss_route_no_focus_activation_already_applied" in mgr
-    assert "boss_route_no_focus_activation_unavailable" in mgr
-    assert "advance_to_boss_route_no_focus" in mgr
+    assert "boss_route_wait_for_tank_activation" in mgr
+    assert "boss_route_no_focus_activation_unavailable" not in mgr
+    assert "advance_to_boss_route_no_focus" not in mgr
     assert "hasValidationRouteActivation" in mgr
     assert "routeDistance <= 220.0f" in mgr
     assert "ValidationRouteActivationApplied" in mgr_header
@@ -822,10 +822,8 @@ def test_quest_first_portfolio_routing_surface():
     assert_ordered(
         function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteObjective"),
         '&& !(_config.ValidationRouteKind == "boss" && _validationRouteActivationApplied)',
-        "tryValidationRouteActivation(nullptr, \"boss_route_no_focus_activation\")",
-        'if (_config.ValidationRouteKind == "boss" && routeDistance > 12.0f && !_validationRouteActivationApplied)',
-        "RecordEvent(state, bot, \"validation_route_regroup\", anchor, \"advance_to_boss_route_no_focus\"",
-        "RecordEvent(state, bot, \"validation_route_regroup\", anchor, \"search_after_activation_no_focus\"",
+        "boss_route_wait_for_tank_activation",
+        "action = \"validation_route_hold_anchor\";",
         "RecordEvent(state, bot, \"validation_route_regroup\", anchor, \"hold_anchor_no_focus\"",
     )
     assert_ordered(

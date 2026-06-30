@@ -8580,12 +8580,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 if (_config.ValidationRouteKind == "boss"
                     && hasValidationRouteActivation)
                 {
-                    if (!_validationRouteActivationApplied && tryValidationRouteActivation(nullptr, "boss_route_no_focus_activation"))
-                    {
-                        action = "validation_route_activate_target";
-                        return true;
-                    }
-
                     if (_validationRouteActivationApplied)
                     {
                         state.ValidationRouteActivationApplied = true;
@@ -8593,29 +8587,16 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                         RecordEvent(state, bot, "validation_route_recovery", nullptr, "boss_route_no_focus_activation_already_applied", raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry);
                     }
                     else
-                        RecordEvent(state, bot, "validation_route_recovery", nullptr, "boss_route_no_focus_activation_unavailable", raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry);
-                }
-
-                if (_config.ValidationRouteKind == "boss" && routeDistance > 12.0f && !_validationRouteActivationApplied)
-                {
-                    MoveBotToPoint(state, bot, routeAnchorX, routeAnchorY, routeAnchorZ);
-                    RecordEvent(state, bot, "validation_route_regroup", anchor, "advance_to_boss_route_no_focus", raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry);
-                    situation = "validation_route_regroup";
-                    action = "move_to_validation_route";
-                    return true;
-                }
-
-                if (_config.ValidationRouteKind == "boss" && _validationRouteActivationApplied)
-                {
-                    RecordEvent(state, bot, "validation_route_regroup", anchor, "search_after_activation_no_focus", raw.c_str(), semantic.c_str(), bot->GetExactDist(anchor), _config.ValidationRouteTargetEntry);
-                }
-                else
-                {
-                    RecordEvent(state, bot, "validation_route_regroup", anchor, "hold_anchor_no_focus", raw.c_str(), semantic.c_str(), bot->GetExactDist(anchor), _config.ValidationRouteTargetEntry);
+                        RecordEvent(state, bot, "validation_route_recovery", nullptr, "boss_route_wait_for_tank_activation", raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry);
                     situation = "validation_route_regroup";
                     action = "validation_route_hold_anchor";
                     return true;
                 }
+
+                RecordEvent(state, bot, "validation_route_regroup", anchor, "hold_anchor_no_focus", raw.c_str(), semantic.c_str(), bot->GetExactDist(anchor), _config.ValidationRouteTargetEntry);
+                situation = "validation_route_regroup";
+                action = "validation_route_hold_anchor";
+                return true;
             }
         }
     }
