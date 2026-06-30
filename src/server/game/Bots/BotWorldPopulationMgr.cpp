@@ -7326,6 +7326,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             && contextText.rfind("route_target_", 0) == 0;
         if (trashRouteTargetContext)
         {
+            if (std::string(GetDungeonRole(bot)) != "tank")
+                return false;
+
             if (lastCombatAttemptTargetsDifferentPackMob())
                 return false;
 

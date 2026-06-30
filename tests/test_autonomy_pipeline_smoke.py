@@ -782,6 +782,7 @@ def test_quest_first_portfolio_routing_surface():
     assert "lastCombatAttemptIsNormalCombatTick" in mgr
     assert "contextIsCombatProgressProbe" in mgr
     assert "lastCombatAttemptTargetsDifferentPackMob" in mgr
+    assert 'if (std::string(GetDungeonRole(bot)) != "tank")\n                return false;' in mgr
     assert "isValidationRoutePackEntry(state.LastCombatAttempt.TargetEntry)" in mgr
     assert 'state.LastCombatAttempt.Result == "ok" || lastCombatAttemptIsSchedulingWait()' in mgr
     assert 'contextText.find("path_no_progress") != std::string::npos' in mgr
