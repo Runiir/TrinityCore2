@@ -5761,6 +5761,11 @@ def test_live_bot_validation_bot_pool_reset_sql_is_scoped_to_tags():
     assert "DELETE gi FROM `characters`.`group_instance`" in sql
     assert "DELETE gm FROM `characters`.`group_member`" in sql
     assert "DELETE g FROM `characters`.`groups`" in sql
+    assert "DELETE ps FROM `characters`.`pet_spell`" in sql
+    assert "DELETE pa FROM `characters`.`pet_aura`" in sql
+    assert "DELETE pc FROM `characters`.`pet_spell_cooldown`" in sql
+    assert "DELETE FROM `characters`.`mail_items`" in sql
+    assert "DELETE FROM `characters`.`mail`" in sql
     assert "DELETE FROM `characters`.`character_queststatus`" in sql
     assert "DELETE FROM `characters`.`bot_memory_failed_paths`" in sql
     assert "bot_semantic_outcome_stats" not in sql

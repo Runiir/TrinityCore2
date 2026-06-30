@@ -1143,6 +1143,11 @@ bool BotWorldPopulationMgr::ResetValidationBotPool(char const* reason)
     CharacterDatabase.DirectExecute(("DELETE gi FROM `group_instance` gi JOIN `groups` g ON g.`guid` = gi.`guid` WHERE g.`leaderGuid` IN (" + guidSelect + ") OR g.`guid` IN (SELECT gm.`guid` FROM `group_member` gm WHERE gm.`memberGuid` IN (" + guidSelect + "))").c_str());
     CharacterDatabase.DirectExecute(("DELETE gm FROM `group_member` gm WHERE gm.`memberGuid` IN (" + guidSelect + ") OR gm.`guid` IN (SELECT g.`guid` FROM `groups` g WHERE g.`leaderGuid` IN (" + guidSelect + "))").c_str());
     CharacterDatabase.DirectExecute(("DELETE g FROM `groups` g WHERE g.`leaderGuid` IN (" + guidSelect + ")").c_str());
+    CharacterDatabase.DirectExecute(("DELETE pc FROM `pet_spell_cooldown` pc JOIN `character_pet` cp ON cp.`id` = pc.`guid` WHERE cp.`owner` IN (" + guidSelect + ")").c_str());
+    CharacterDatabase.DirectExecute(("DELETE pa FROM `pet_aura` pa JOIN `character_pet` cp ON cp.`id` = pa.`guid` WHERE cp.`owner` IN (" + guidSelect + ")").c_str());
+    CharacterDatabase.DirectExecute(("DELETE ps FROM `pet_spell` ps JOIN `character_pet` cp ON cp.`id` = ps.`guid` WHERE cp.`owner` IN (" + guidSelect + ")").c_str());
+    CharacterDatabase.DirectExecute(("DELETE FROM `mail_items` WHERE `receiver` IN (" + guidSelect + ")").c_str());
+    CharacterDatabase.DirectExecute(("DELETE FROM `mail` WHERE `receiver` IN (" + guidSelect + ")").c_str());
 
     TC_LOG_INFO("server", "BotWorld validation prepare reset profile=%s tag=%s reason=%s", _config.Name.c_str(), _config.PoolTagFilter.c_str(), reason ? reason : "");
     return true;

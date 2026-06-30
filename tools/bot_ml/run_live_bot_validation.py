@@ -393,6 +393,11 @@ def build_bot_pool_reset_sql(tags: list[str] | None = None, world_database: str 
         f"OR gm.`guid` IN (SELECT g.`guid` FROM `characters`.`groups` g WHERE g.`leaderGuid` IN ({guid_select}));",
         "DELETE g FROM `characters`.`groups` g "
         f"WHERE g.`leaderGuid` IN ({guid_select});",
+        f"DELETE pc FROM `characters`.`pet_spell_cooldown` pc JOIN `characters`.`character_pet` cp ON cp.`id` = pc.`guid` WHERE cp.`owner` IN ({guid_select});",
+        f"DELETE pa FROM `characters`.`pet_aura` pa JOIN `characters`.`character_pet` cp ON cp.`id` = pa.`guid` WHERE cp.`owner` IN ({guid_select});",
+        f"DELETE ps FROM `characters`.`pet_spell` ps JOIN `characters`.`character_pet` cp ON cp.`id` = ps.`guid` WHERE cp.`owner` IN ({guid_select});",
+        f"DELETE FROM `characters`.`mail_items` WHERE `receiver` IN ({guid_select});",
+        f"DELETE FROM `characters`.`mail` WHERE `receiver` IN ({guid_select});",
     ]
     if reset_positions:
         lines.append(
