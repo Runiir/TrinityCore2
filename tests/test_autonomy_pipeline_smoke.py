@@ -1287,7 +1287,7 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         "Unit* routeTarget = preAnchorTrashTarget;",
     )
     live_cluster_block = route_objective.split("auto isLiveTrashClusterMob", 1)[1].split("auto isValidationRouteObjectiveTarget", 1)[0]
-    assert "hasStrictPathToValidationRouteTarget" not in live_cluster_block
+    assert "return isEligibleTrashClusterMob(creature);" in live_cluster_block
     assert "bot->IsWithinLOSInMap(creature)" not in live_cluster_block
     assert "bot->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ) + radius + 40.0f" in route_objective
     assert 'node.ExpectedAliveCount = uint32(std::max(0, readInt(routeJson, "expected_alive_count")));' in mgr
@@ -1321,7 +1321,7 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         "if (_validationRouteManifestComplete)",
         "_validationRouteManifestAdvancePending = false;",
         "return true;",
-        'bool arrivalRoute = _config.ValidationRouteKind == "travel" || _config.ValidationRouteKind == "regroup";',
+        'bool arrivalRoute = _config.ValidationRouteKind == "travel" || _config.ValidationRouteKind == "regroup" || _config.ValidationRouteKind == "descent";',
         "bool terminal = !arrivalRoute && _validationRouteManifestAdvancePending;",
     )
     assert "uint32 loadedParticipants = 0;" in advance_manifest

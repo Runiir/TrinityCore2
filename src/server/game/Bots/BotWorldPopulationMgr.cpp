@@ -6931,22 +6931,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             && creature->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ) <= radius
             && hasStrictPathToValidationRouteTarget(creature);
     };
-    auto isLiveTrashClusterMob = [this, bot, &isValidationRoutePackEntry](Creature const* creature) -> bool
+    auto isLiveTrashClusterMob = [&isEligibleTrashClusterMob](Creature const* creature) -> bool
     {
-        if (!bot || !creature || !creature->IsAlive() || !creature->GetHealth() || !bot->IsValidAttackTarget(creature))
-            return false;
-        if (creature->IsInEvadeMode() || creature->HasUnitState(UNIT_STATE_EVADE))
-            return false;
-        if (creature->IsDungeonBoss() || creature->isWorldBoss())
-            return false;
-        if (creature->IsCritter() || creature->IsPet() || creature->IsTotem() || creature->IsSummon() || creature->IsGuardian() || !creature->GetOwnerGUID().IsEmpty())
-            return false;
-        if (!isValidationRoutePackEntry(creature->GetEntry()))
-            return false;
-
-        float radius = _config.ValidationRouteClusterRadiusYards > 1.0f ? _config.ValidationRouteClusterRadiusYards : 90.0f;
-        return creature->GetMapId() == bot->GetMapId()
-            && creature->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ) <= radius;
+        return isEligibleTrashClusterMob(creature);
     };
     auto isValidationRouteObjectiveTarget = [&isValidationRouteScriptTarget, &isEligibleTrashClusterMob, this](Creature const* creature) -> bool
     {
