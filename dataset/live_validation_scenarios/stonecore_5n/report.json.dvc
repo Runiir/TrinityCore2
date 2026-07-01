@@ -1,5 +1,5 @@
 outs:
-- md5: 7e0da10f9d5daf7ea77ebca5322f5efa
-  size: 2402078
+- md5: 32e6e4bb68c9cc8bbdb77b00cecc54ae
+  size: 1604816
   hash: md5
   path: report.json

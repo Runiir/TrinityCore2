@@ -1960,6 +1960,34 @@ bool BotWorldPopulationMgr::MaybeAdvanceValidationRouteManifest()
     }
     else
     {
+        uint32 loadedParticipants = 0;
+        bool cohortReadyForAdvance = true;
+        float terminalCohortRadius = _config.ValidationRouteClusterRadiusYards > 1.0f
+            ? std::min(_config.ValidationRouteClusterRadiusYards, 90.0f)
+            : 90.0f;
+        for (WorldBotState const& state : _bots)
+        {
+            Player* loadedBot = GetLoadedBot(state);
+            if (!loadedBot)
+                continue;
+
+            ++loadedParticipants;
+            if (!loadedBot->IsInWorld()
+                || !loadedBot->IsAlive()
+                || !IsValidationCohortMemberInOriginalInstance(state, loadedBot)
+                || loadedBot->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ) > terminalCohortRadius)
+            {
+                cohortReadyForAdvance = false;
+                break;
+            }
+        }
+
+        if (_config.TargetPopulation && loadedParticipants < _config.TargetPopulation)
+            cohortReadyForAdvance = false;
+
+        if (!cohortReadyForAdvance)
+            return false;
+
         for (WorldBotState const& state : _bots)
         {
             bool successfulTerminal = state.ValidationRouteTerminalState
@@ -8332,6 +8360,30 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     };
     if (state.ValidationRouteTerminalState)
     {
+        float terminalCohortRadius = _config.ValidationRouteClusterRadiusYards > 1.0f
+            ? std::min(_config.ValidationRouteClusterRadiusYards, 90.0f)
+            : 90.0f;
+        if (!arrivalRoute
+            && !_validationRouteManifest.empty()
+            && !_validationRouteManifestComplete
+            && _config.ValidationRouteAdvanceMode == "terminal"
+            && routeDistance > terminalCohortRadius)
+        {
+            bot->AttackStop();
+            bot->CombatStop(true);
+            target = nullptr;
+            state.TargetGuid.Clear();
+            if (MoveBotToPoint(state, bot, routeAnchorX, routeAnchorY, routeAnchorZ))
+            {
+                std::string raw = BuildRawJson(bot, nullptr);
+                std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_regroup", &power, stage, activity);
+                RecordEvent(state, bot, "validation_route_regroup", nullptr, "terminal_cohort_catchup", raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry);
+                situation = "validation_route_regroup";
+                action = "move_to_validation_route_anchor";
+                return true;
+            }
+        }
+
         bot->AttackStop();
         bot->CombatStop(true);
         state.TargetGuid.Clear();

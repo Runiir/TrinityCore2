@@ -1330,6 +1330,10 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     assert "!IsValidationCohortMemberInOriginalInstance(state, loadedBot)" in advance_manifest
     assert "_config.TargetPopulation && loadedParticipants < _config.TargetPopulation" in advance_manifest
     assert "if (loadedParticipants && allLoadedArrived)" in advance_manifest
+    assert "cohortReadyForAdvance" in advance_manifest
+    assert "terminalCohortRadius" in advance_manifest
+    assert "loadedBot->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ) > terminalCohortRadius" in advance_manifest
+    assert "if (!cohortReadyForAdvance)\n            return false;" in advance_manifest
     assert 'state.ValidationRouteTerminalReason != "arrival"' in advance_manifest
     assert "bool successfulTerminal = state.ValidationRouteTerminalState" in advance_manifest
     assert 'state.ValidationRouteTerminalReason == "all_routes_complete"' in advance_manifest
@@ -1347,6 +1351,13 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         'RecordEvent(*reporterState, reporter, "validation_route_manifest_complete"',
         "state.ValidationRouteTerminalState = true;",
         "return true;",
+    )
+    assert_ordered(
+        route_objective,
+        "if (state.ValidationRouteTerminalState)",
+        "terminal_cohort_catchup",
+        "MoveBotToPoint(state, bot, routeAnchorX, routeAnchorY, routeAnchorZ)",
+        'action = "move_to_validation_route_anchor";',
     )
     assert_ordered(
         route_objective,
