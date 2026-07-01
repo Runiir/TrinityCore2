@@ -63,6 +63,9 @@ __pycache__/
 !/dataset/live_validation_scenarios/stonecore_5n/commands.txt.dvc
 !/dataset/live_validation_scenarios/stonecore_5n/heartbeat_events.jsonl.dvc
 !/dataset/live_validation_scenarios/stonecore_5n/report.json.dvc
+!/dataset/live_validation_scenarios/stonecore_5n/bot_pool_reset.dvc
+!/dataset/live_validation_scenarios/stonecore_5n/route_bot_start.dvc
+!/dataset/live_validation_scenarios/stonecore_5n/validation_provisioning_apply.dvc
 !/dataset/live_validation_scenarios/stonecore_5n/validation_route_manifest.json.dvc
 !/dataset/live_validation_scenarios/stonecore_5n/worldserver.validation.conf.dvc
 !/dataset/live_validation_scenarios/stonecore_5n/worldserver_output.log.dvc

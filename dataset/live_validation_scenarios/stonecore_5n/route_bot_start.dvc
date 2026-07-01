@@ -1,0 +1,6 @@
+outs:
+- md5: d6e3b0609974cc852df8f3cb490e0722.dir
+  size: 478
+  nfiles: 1
+  hash: md5
+  path: route_bot_start
