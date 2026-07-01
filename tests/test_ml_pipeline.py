@@ -2877,6 +2877,22 @@ TC> {"duration_minutes":3.0,"decisions":480,"total_kills":4,"quests_completed":0
     assert "validation_route_stuck_loop" not in report["failure_labels"]
 
 
+def test_live_bot_validation_keeps_active_route_combat_from_terminal_stuck():
+    output = """
+TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":640,"kills":6,"quests_accepted":0,"quest_objective_progress":0,"stuck":5}
+TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"diagnosis":{"diagnosis_code":"normal_combat","route_progress":{"no_progress":{"count":0,"reason":"route_target_combat_progress","threshold":20},"route":{"kind":"trash"},"target":{"entry":42810,"guid":106,"hp_pct":0.42,"best_hp_pct":0.42}}},"snapshot":{"decision":{"action":"validation_route_trash_action"},"movement":{"is_moving":false,"distance_moved_since_last_decision":0}}}]}
+TC> {"trace_schema_version":1,"selector":"all","bots":[{"bot_guid":1,"entries":[{"action":"stuck_detected","situation":"stuck_detected","result":"validation_route_stuck_no_fallback"},{"action":"validation_route_recovery","situation":"validation_route_recovery","result":"validation_route_stuck_no_fallback"},{"action":"trash_action","situation":"validation_route","result":"ok"},{"action":"validation_route_trash_action","situation":"validation_route","result":"ok"},{"action":"mob_killed","situation":"normal_dungeon_trash","result":"stale_target_seen_dead"}]}]}
+TC> {"duration_minutes":4.0,"decisions":640,"total_kills":6,"quests_completed":0,"stuck_events":3}
+"""
+    report = live_validation_report(output, validation_context={"route_kind": "trash"})
+
+    assert report["evidence"]["stuck_events"] >= 8
+    assert report["evidence"]["kill_evidence"] == 6
+    assert report["evidence"]["validation_route_no_progress_diagnoses"] == 0
+    assert report["evidence"]["diagnosis_codes"]["normal_combat"] == 1
+    assert "validation_route_stuck_loop" not in report["failure_labels"]
+
+
 def test_live_bot_validation_labels_bot_not_loaded_diagnosis_as_lifecycle_failure():
     output = """
 TC> {"active_bots":2,"target_bots":2,"action":"botauto_status","decisions":20,"kills":0,"quests_accepted":0,"quest_objective_progress":0}

@@ -1223,6 +1223,12 @@ def validation_failure_labels(
         and route_no_progress_diagnoses <= 0
         and (int(evidence.get("kill_evidence") or 0) > 0 or trash_route_actions > 0 or boss_engagement > 0)
     )
+    recovered_by_active_route_combat = (
+        unstuck_failures <= 0
+        and route_no_progress_diagnoses <= 0
+        and int((evidence.get("diagnosis_codes") or {}).get("normal_combat") or 0) > 0
+        and (int(evidence.get("kill_evidence") or 0) > 0 or trash_evidence > 0 or boss_engagement > 0)
+    )
 
     route_diagnosis_progress = route_actions > 0 and (
         trash_evidence > 0
@@ -1254,7 +1260,7 @@ def validation_failure_labels(
     if route_actions > 0 and (
         unstuck_failures >= 3
         or (repath_events >= max(8, active_bots) and not recovered_route_stuck and not recovered_by_route_progress)
-        or (stuck_events >= max(8, active_bots) and not recovered_route_stuck and not recovered_by_route_progress)
+        or (stuck_events >= max(8, active_bots) and not recovered_route_stuck and not recovered_by_route_progress and not recovered_by_active_route_combat)
     ):
         labels.append("validation_route_stuck_loop")
     if route_actions > 0 and (repeated_deaths >= 3 or deaths >= max(8, active_bots)):

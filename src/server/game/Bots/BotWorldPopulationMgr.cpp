@@ -1882,6 +1882,7 @@ void BotWorldPopulationMgr::ResetValidationRouteRuntimeState(char const* reason)
         state.ValidationRoutePackProgressTargetGuid.Clear();
         state.ValidationRoutePackBestHealthPct = 1.0f;
         state.ValidationRoutePackNoProgressCount = 0;
+        state.LastRouteProgress = WorldBotState::RouteProgressDiagnostic();
         state.ValidationRouteActivationApplied = false;
         state.ValidationRouteActivationAttempts = 0;
         state.ValidationRouteTargetSearchMissCount = 0;
@@ -8645,6 +8646,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         BotActionResult result = ExecuteProfileCombatAction(&state, bot, target, &profileAction);
         action = routeTrashFocus ? "validation_route_trash_action" : "validation_route_prerequisite_assist";
         situation = focusSituation;
+        if (routeTrashFocus)
+        {
+            float healthPct = UnitHealthPct(target);
+            RecordRouteProgress(state, bot, target, "route_target_combat_progress", healthPct, healthPct, 0, 20);
+        }
         std::string raw = BuildRawJson(bot, target);
         std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, activity);
         RecordEvent(state, bot, routeTrashFocus ? "trash_action" : "validation_route_prerequisite", target, ToString(result), raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry, result == BotActionResult::Ok ? spellId : 0);
@@ -8780,6 +8786,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             ? (_config.ValidationRouteKind == "boss" ? (std::string(GetDungeonRole(bot)) == "tank" ? "validation_route_tank_boss" : "validation_route_boss_action") : "validation_route_trash_action")
             : "validation_route_prerequisite_action";
         situation = routeBossTarget ? situation : "validation_route_prerequisite";
+        if (routeBossTarget && _config.ValidationRouteKind != "boss")
+        {
+            float healthPct = UnitHealthPct(target);
+            RecordRouteProgress(state, bot, target, "route_target_combat_progress", healthPct, healthPct, 0, 20);
+        }
         std::string raw = BuildRawJson(bot, target);
         std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, activity);
         RecordEvent(state, bot, routeBossTarget ? (_config.ValidationRouteKind == "boss" ? "boss_action" : "trash_action") : "validation_route_prerequisite", target, ToString(result), raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry, result == BotActionResult::Ok ? spellId : 0);
@@ -9225,6 +9236,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         ? (std::string(GetDungeonRole(bot)) == "tank" ? "validation_route_tank_boss" : "validation_route_boss_action")
         : "validation_route_trash_action";
     state.WasInCombat = true;
+    if (_config.ValidationRouteKind != "boss")
+    {
+        float healthPct = UnitHealthPct(target);
+        RecordRouteProgress(state, bot, target, "route_target_combat_progress", healthPct, healthPct, 0, 20);
+    }
 
     std::string raw = BuildRawJson(bot, target);
     std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, activity);
