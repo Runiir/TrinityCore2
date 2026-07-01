@@ -619,6 +619,10 @@ def test_quest_first_portfolio_routing_surface():
     assert "approach_target" in mgr
     assert "tryRouteGroupHeal" in mgr
     assert "validation_route_group_heal" in mgr
+    assert "float approachRange = std::max(3.0f, std::min(healRange - 2.0f, 18.0f));" in mgr
+    assert "bool cast = TryCastFriendlySpell(healer, healTarget, bestHeal->SpellId);" in mgr
+    assert "action = cast ? \"validation_route_group_heal\" : \"validation_route_group_heal_failed\";" in mgr
+    assert "return cast;" in mgr
     assert_ordered(
         validation_route_objective,
         "target = routeTarget;",
@@ -1443,6 +1447,8 @@ def test_recovery_smoke_records_death_recovery_without_center_fallback_unless_en
     assert "policy.MaxDeathsBeforeFallback = _config.MaxDeathsBeforeFallback;" in build_policy
     assert "recovery.RepeatedDeath = state.RecentDeathCount >= policy.MaxDeathsBeforeFallback;" in recover
     assert 'mode == "configured_center_fallback" && (!policy.CenterFallbackEnabled || !recovery.RepeatedDeath)' in recover
+    assert 'GetLocalDangerScore(state.Guid.GetCounter(), itr->MapId, itr->X, itr->Y, itr->Z) >= 3.0f' in mgr
+    assert 'result = "safe_position_dangerous";' in mgr
     assert 'RecordEvent(state, bot, "death_recovery_started"' in update_bot
     assert 'RecordEvent(state, bot, "resurrected"' in update_bot
     assert 'RecordEvent(state, bot, "teleport_fallback_used"' in update_bot

@@ -3695,7 +3695,22 @@ bool BotWorldPopulationMgr::TryLastSafePositionResurrect(WorldBotState& state, P
         return true;
     }
 
-    WorldBotState::SafePosition const& position = state.SafePositions.back();
+    WorldBotState::SafePosition const* selected = nullptr;
+    for (auto itr = state.SafePositions.rbegin(); itr != state.SafePositions.rend(); ++itr)
+    {
+        if (_config.ValidationRouteEnable && GetLocalDangerScore(state.Guid.GetCounter(), itr->MapId, itr->X, itr->Y, itr->Z) >= 3.0f)
+            continue;
+
+        selected = &(*itr);
+        break;
+    }
+    if (!selected)
+    {
+        result = "safe_position_dangerous";
+        return false;
+    }
+
+    WorldBotState::SafePosition const& position = *selected;
     if (_config.ValidationRouteEnable && position.MapId != bot->GetMapId())
     {
         result = "validation_cross_map_safe_position_blocked";
@@ -6762,7 +6777,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (!healer || std::string(GetDungeonRole(healer)) != "healer")
             return false;
 
-        Unit* healTarget = healer;
+        Unit* lowestTarget = healer;
+        Unit* tankTarget = nullptr;
         float lowestHealthPct = UnitHealthPct(healer);
         if (Group* group = healer->GetGroup())
         {
@@ -6772,11 +6788,14 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 if (!member || !member->IsAlive() || member->GetMap() != healer->GetMap())
                     continue;
 
+                if (!tankTarget && std::string(GetDungeonRole(member)) == "tank")
+                    tankTarget = member;
+
                 float memberHealthPct = UnitHealthPct(member);
                 if (memberHealthPct < lowestHealthPct)
                 {
                     lowestHealthPct = memberHealthPct;
-                    healTarget = member;
+                    lowestTarget = member;
                 }
             }
         }
@@ -6788,16 +6807,19 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 if (!member || !member->IsAlive() || member->GetMap() != healer->GetMap())
                     continue;
 
+                if (!tankTarget && std::string(GetDungeonRole(member)) == "tank")
+                    tankTarget = member;
+
                 float memberHealthPct = UnitHealthPct(member);
                 if (memberHealthPct < lowestHealthPct)
                 {
                     lowestHealthPct = memberHealthPct;
-                    healTarget = member;
+                    lowestTarget = member;
                 }
             }
         }
 
-        if (!healTarget)
+        if (!lowestTarget)
             return false;
 
         if (combatTarget)
@@ -6807,7 +6829,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             uint32 focusEntry = 0;
             if (Creature const* focusCreature = combatTarget->ToCreature())
                 focusEntry = focusCreature->GetEntry();
-            RecordEvent(state, healer, "healer_assignment", healTarget, lowestHealthPct > 0.88f ? "monitor_group_healthy" : "assigned_lowest_ally", raw.c_str(), semantic.c_str(), lowestHealthPct, focusEntry);
+            RecordEvent(state, healer, "healer_assignment", lowestTarget, lowestHealthPct > 0.88f ? "monitor_group_healthy" : "assigned_lowest_ally", raw.c_str(), semantic.c_str(), lowestHealthPct, focusEntry);
         }
 
         if (lowestHealthPct > 0.88f)
@@ -6815,6 +6837,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
         BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(healer, "healer");
         BotActionProfileSpell const* bestHeal = nullptr;
+        Unit* healTarget = nullptr;
+        float healTargetHealthPct = 1.0f;
         for (BotActionProfileSpell const& spell : profile.Spells)
         {
             if (!spell.SpellId || !healer->HasSpell(spell.SpellId) || spell.HealingWeight <= 0.0f)
@@ -6829,6 +6853,21 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             if (!spellInfo)
                 continue;
 
+            Unit* candidateTarget = spell.TargetSelector == "self" ? static_cast<Unit*>(healer) : (spell.TargetSelector == "tank" ? tankTarget : lowestTarget);
+            if (!candidateTarget || !candidateTarget->IsAlive() || !healer->IsValidAssistTarget(candidateTarget))
+                continue;
+
+            float candidateHealthPct = UnitHealthPct(candidateTarget);
+            if ((spell.MinTargetHealthPct > 0.0f && candidateHealthPct < spell.MinTargetHealthPct)
+                || candidateHealthPct > spell.MaxTargetHealthPct)
+                continue;
+            if ((spell.RequiredSelfAura && !healer->HasAura(spell.RequiredSelfAura))
+                || (spell.ForbiddenSelfAura && healer->HasAura(spell.ForbiddenSelfAura))
+                || (spell.RequiredTargetAura && !candidateTarget->HasAura(spell.RequiredTargetAura))
+                || (spell.ForbiddenTargetAura && candidateTarget->HasAura(spell.ForbiddenTargetAura))
+                || (spell.MaintainAuraId && candidateTarget->HasAura(spell.MaintainAuraId)))
+                continue;
+
             int32 powerCost = spellInfo->CalcPowerCost(healer, spellInfo->GetSchoolMask());
             if (powerCost > 0 && healer->GetPower(healer->GetPowerType()) < uint32(powerCost))
                 continue;
@@ -6839,33 +6878,42 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             if (!bestHeal)
             {
                 bestHeal = &spell;
+                healTarget = candidateTarget;
+                healTargetHealthPct = candidateHealthPct;
                 continue;
             }
 
             bool currentFast = spell.Category == BotCombatActionCategory::HealFast;
             bool bestFast = bestHeal->Category == BotCombatActionCategory::HealFast;
-            if ((lowestHealthPct < 0.55f && currentFast && !bestFast) || spell.HealingWeight > bestHeal->HealingWeight)
+            if ((candidateHealthPct < 0.55f && currentFast && !bestFast) || spell.HealingWeight > bestHeal->HealingWeight)
+            {
                 bestHeal = &spell;
+                healTarget = candidateTarget;
+                healTargetHealthPct = candidateHealthPct;
+            }
         }
 
-        if (!bestHeal)
+        if (!bestHeal || !healTarget)
             return false;
 
         SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(bestHeal->SpellId);
-        float healRange = std::max(5.0f, spellInfo ? spellInfo->GetMaxRange(false) : 5.0f);
+        float healRange = bestHeal->MaxRange > 0.0f ? bestHeal->MaxRange : std::max(5.0f, spellInfo ? spellInfo->GetMaxRange(false) : 5.0f);
         std::string raw = BuildRawJson(healer, combatTarget);
         std::string semantic = BuildSemanticJson(healer, combatTarget, "validation_route_group_heal", &power, stage, activity);
         if (!healer->IsWithinDistInMap(healTarget, std::max(5.0f, healRange - 1.0f)) || !healer->IsWithinLOSInMap(healTarget))
         {
-            MoveBotToProfileRange(state, healer, healTarget);
-            RecordEvent(state, healer, "validation_route_group_heal", healTarget, "approach_ally", raw.c_str(), semantic.c_str(), lowestHealthPct, bestHeal->SpellId);
+            float approachRange = std::max(3.0f, std::min(healRange - 2.0f, 18.0f));
+            Position healPosition = healTarget->GetFirstCollisionPosition(approachRange, healTarget->GetAngle(healer));
+            MoveBotToPoint(state, healer, healPosition.GetPositionX(), healPosition.GetPositionY(), healPosition.GetPositionZ());
+            RecordEvent(state, healer, "validation_route_group_heal", healTarget, "approach_ally", raw.c_str(), semantic.c_str(), healTargetHealthPct, bestHeal->SpellId);
             situation = "validation_route_group_heal";
             action = "move_to_validation_route_heal_target";
             return true;
         }
 
-        bool cast = healer->CastSpell(healTarget, bestHeal->SpellId, false) == SPELL_CAST_OK;
-        RecordEvent(state, healer, "validation_route_group_heal", healTarget, cast ? "ok" : "cast_failed", raw.c_str(), semantic.c_str(), lowestHealthPct, bestHeal->SpellId);
+        healer->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+        bool cast = TryCastFriendlySpell(healer, healTarget, bestHeal->SpellId);
+        RecordEvent(state, healer, "validation_route_group_heal", healTarget, cast ? "ok" : "cast_failed", raw.c_str(), semantic.c_str(), healTargetHealthPct, bestHeal->SpellId);
         situation = "validation_route_group_heal";
         action = cast ? "validation_route_group_heal" : "validation_route_group_heal_failed";
         return cast;
