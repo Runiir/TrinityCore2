@@ -1925,29 +1925,34 @@ bool BotWorldPopulationMgr::MaybeAdvanceValidationRouteManifest()
     std::string terminalReason = _validationRouteManifestAdvanceReason;
     if (arrivalRoute)
     {
-        bool sawLoaded = false;
-        bool allLoadedArrived = !_bots.empty();
+        uint32 loadedParticipants = 0;
+        bool allLoadedArrived = true;
         float arrivalRadius = 18.0f;
         for (WorldBotState const& state : _bots)
         {
             Player* loadedBot = GetLoadedBot(state);
-            if (!loadedBot || !loadedBot->IsInWorld() || !loadedBot->IsAlive())
+            if (!loadedBot)
+                continue;
+
+            ++loadedParticipants;
+            if (!loadedBot->IsInWorld() || !loadedBot->IsAlive() || !IsValidationCohortMemberInOriginalInstance(state, loadedBot))
             {
                 allLoadedArrived = false;
                 break;
             }
 
-            sawLoaded = true;
-            if ((_config.ValidationRouteMapId && loadedBot->GetMapId() != _config.ValidationRouteMapId)
-                || (loadedBot->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ) > arrivalRadius
-                    && (!state.ValidationRouteTerminalState || state.ValidationRouteTerminalReason != "arrival")))
+            if (loadedBot->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ) > arrivalRadius
+                && (!state.ValidationRouteTerminalState || state.ValidationRouteTerminalReason != "arrival"))
             {
                 allLoadedArrived = false;
                 break;
             }
         }
 
-        if (sawLoaded && allLoadedArrived)
+        if (_config.TargetPopulation && loadedParticipants < _config.TargetPopulation)
+            allLoadedArrived = false;
+
+        if (loadedParticipants && allLoadedArrived)
         {
             terminal = true;
             terminalReason = "arrival";

@@ -1324,6 +1324,12 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         'bool arrivalRoute = _config.ValidationRouteKind == "travel" || _config.ValidationRouteKind == "regroup";',
         "bool terminal = !arrivalRoute && _validationRouteManifestAdvancePending;",
     )
+    assert "uint32 loadedParticipants = 0;" in advance_manifest
+    assert "if (!loadedBot)\n                continue;" in advance_manifest
+    assert "++loadedParticipants;" in advance_manifest
+    assert "!IsValidationCohortMemberInOriginalInstance(state, loadedBot)" in advance_manifest
+    assert "_config.TargetPopulation && loadedParticipants < _config.TargetPopulation" in advance_manifest
+    assert "if (loadedParticipants && allLoadedArrived)" in advance_manifest
     assert 'state.ValidationRouteTerminalReason != "arrival"' in advance_manifest
     assert "bool successfulTerminal = state.ValidationRouteTerminalState" in advance_manifest
     assert 'state.ValidationRouteTerminalReason == "all_routes_complete"' in advance_manifest
