@@ -1541,6 +1541,9 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     atramedes = next(row for row in routes if row["scenario_id"] == "blackwing_descent_10n" and row["label"] == "Atramedes")
     omnotron = next(row for row in routes if row["scenario_id"] == "blackwing_descent_10n" and row["label"] == "Omnotron Defense System")
     stonecore_entry = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "entrance packs")
+    stonecore_entrance_tunnel = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "entrance tunnel")
+    corborus_approach_pack = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "corborus approach pack")
+    corborus_antechamber_pack = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "corborus antechamber pack")
     stonecore_sentry_gauntlet = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "stonecore sentry gauntlet")
     twilight_flayer_packs = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "twilight flayer packs")
     corborus = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "Corborus")
@@ -1593,6 +1596,19 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert 43391 not in stonecore_entry["pack_target_entries"]
     assert stonecore_entry["scripted_event_entries"] == [43391]
     assert stonecore_entry["completion_policy"] == "cluster_clear_after_pull"
+    assert stonecore_entrance_tunnel["x"] == 982.464
+    assert stonecore_entrance_tunnel["source_guid"] == "@CGUID+51"
+    assert stonecore_entrance_tunnel["expected_alive_count"] == 0
+    assert {42696, 43430, 43537}.issubset(set(stonecore_entrance_tunnel["pack_target_entries"]))
+    assert corborus_approach_pack["x"] == 1054.68
+    assert corborus_approach_pack["source_guid"] == "@CGUID+62"
+    assert corborus_approach_pack["expected_alive_count"] == 0
+    assert {42696, 43430, 43537}.issubset(set(corborus_approach_pack["pack_target_entries"]))
+    assert corborus_antechamber_pack["x"] == 1155.75
+    assert corborus_antechamber_pack["source_guid"] == "@CGUID+82"
+    assert corborus_antechamber_pack["cluster_radius_yards"] == 55.0
+    assert corborus_antechamber_pack["expected_alive_count"] == 0
+    assert {42696, 43430, 43537}.issubset(set(corborus_antechamber_pack["pack_target_entries"]))
     assert slabhide["node_kind"] == "boss"
     assert slabhide["completion_policy"] == "boss_kill"
     assert nefarian["expected_bot_count"] == 10
