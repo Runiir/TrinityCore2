@@ -91,6 +91,10 @@ def database_name(database_url: str) -> str:
     return (urlparse(database_url).path or "/").lstrip("/")
 
 
+def qualify_sql_schema(sql: str, schema: str, database: str) -> str:
+    return sql.replace(f"`{schema}`.", f"`{database.replace('`', '``')}`.")
+
+
 def trinity_config_bool(path: Path, key: str, default: bool = False) -> bool:
     if not path.exists():
         return default
@@ -435,8 +439,10 @@ def prepare_validation_provisioning(
     apply: bool = False,
 ) -> dict[str, Any]:
     config = apply_gear_profiles(load_config(config_path), load_gear_profiles(gear_profiles_path))
-    account_sql = build_account_insert_sql(config)
-    character_sql = build_character_insert_sql(config)
+    auth_url = database_url_from_worldserver_conf(worldserver_conf, "LoginDatabaseInfo")
+    character_url = database_url_from_worldserver_conf(worldserver_conf, "CharacterDatabaseInfo")
+    account_sql = qualify_sql_schema(build_account_insert_sql(config), "auth", database_name(auth_url))
+    character_sql = qualify_sql_schema(build_character_insert_sql(config), "characters", database_name(character_url))
     provision_dir = output_dir / "validation_provisioning_apply"
     provision_dir.mkdir(parents=True, exist_ok=True)
     account_path = provision_dir / "provision_accounts.sql"
@@ -444,8 +450,6 @@ def prepare_validation_provisioning(
     account_path.write_text(account_sql, encoding="utf-8")
     character_path.write_text(character_sql, encoding="utf-8")
 
-    auth_url = database_url_from_worldserver_conf(worldserver_conf, "LoginDatabaseInfo")
-    character_url = database_url_from_worldserver_conf(worldserver_conf, "CharacterDatabaseInfo")
     report: dict[str, Any] = {
         "schema": "bot_live_validation_provisioning_apply_v1",
         "applied": apply,
@@ -485,13 +489,14 @@ def prepare_route_bot_start(output_dir: Path, route: dict[str, Any], worldserver
         + predicate
         + ";\n"
     )
+    character_url = database_url_from_worldserver_conf(worldserver_conf, "CharacterDatabaseInfo")
+    sql = qualify_sql_schema(sql, "characters", database_name(character_url))
     start_dir = output_dir / "route_bot_start"
     start_dir.mkdir(parents=True, exist_ok=True)
     sql_path = start_dir / "route_bot_start.sql"
     sql_path.write_text(sql, encoding="utf-8")
     statements = 0
     if apply:
-        character_url = database_url_from_worldserver_conf(worldserver_conf, "CharacterDatabaseInfo")
         statements = execute_sql_text(character_url, sql)
     return {
         "schema": "bot_live_validation_route_start_v1",
@@ -518,6 +523,7 @@ def prepare_bot_pool_reset(
     world_url = database_url_from_worldserver_conf(worldserver_conf, "WorldDatabaseInfo")
     character_url = database_url_from_worldserver_conf(worldserver_conf, "CharacterDatabaseInfo")
     sql = build_bot_pool_reset_sql(tags, database_name(world_url), reset_positions, reset_quests, reset_memory)
+    sql = qualify_sql_schema(sql, "characters", database_name(character_url))
     reset_dir = output_dir / "bot_pool_reset"
     reset_dir.mkdir(parents=True, exist_ok=True)
     sql_path = reset_dir / "reset_bot_pool.sql"

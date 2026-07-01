@@ -5798,7 +5798,7 @@ def test_live_bot_validation_bot_pool_reset_sql_is_scoped_to_tags():
 
 
 def test_live_bot_validation_dry_run_writes_reset_and_provisioning_artifacts(tmp_path, monkeypatch):
-    monkeypatch.setattr("tools.bot_ml.run_live_bot_validation.database_url_from_worldserver_conf", lambda _path, key="WorldDatabaseInfo": f"mysql://trinity:secret@db.example:3306/{'auth' if key == 'LoginDatabaseInfo' else 'characters' if key == 'CharacterDatabaseInfo' else 'world'}")
+    monkeypatch.setattr("tools.bot_ml.run_live_bot_validation.database_url_from_worldserver_conf", lambda _path, key="WorldDatabaseInfo": f"mysql://trinity:secret@db.example:3306/{'auth_lane' if key == 'LoginDatabaseInfo' else 'characters_lane' if key == 'CharacterDatabaseInfo' else 'world_lane'}")
     monkeypatch.setattr(
         "sys.argv",
         [
@@ -5825,9 +5825,10 @@ def test_live_bot_validation_dry_run_writes_reset_and_provisioning_artifacts(tmp
     assert report["preparation"]["bot_pool_reset"]["applied"] is False
     assert report["preparation"]["bot_pool_reset"]["tags"] == ["test_account"]
     assert report["preparation"]["validation_provisioning"]["applied"] is False
-    assert "UPDATE `characters`.`character_bot_pool`" in reset_sql
-    assert "INSERT INTO `auth`.`account`" in account_sql
-    assert "INSERT INTO `characters`.`characters`" in character_sql
+    assert "UPDATE `characters_lane`.`character_bot_pool`" in reset_sql
+    assert "JOIN `world_lane`.`playercreateinfo`" in reset_sql
+    assert "INSERT INTO `auth_lane`.`account`" in account_sql
+    assert "INSERT INTO `characters_lane`.`characters`" in character_sql
 
 
 def test_live_bot_validation_soap_dry_run_writes_non_exit_command_file(tmp_path, monkeypatch):

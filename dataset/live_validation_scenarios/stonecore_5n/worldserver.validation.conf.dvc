@@ -1,5 +1,5 @@
 outs:
-- md5: 9ad61dea2361c8f1d0d3a819880c6511
+- md5: b668f7bfac911b682e8abc8d81be7ffc
   size: 155220
   hash: md5
   path: worldserver.validation.conf
