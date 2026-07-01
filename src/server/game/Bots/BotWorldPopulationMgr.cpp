@@ -7178,9 +7178,26 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         }
         return true;
     };
+    auto recordDefeatedValidationRouteTarget = [&isValidationRouteScriptTarget, &recordValidationRouteBossKill, &recordValidationRouteTrashKill](Unit* defeatedTarget, char const* reason) -> bool
+    {
+        if (!defeatedTarget || (defeatedTarget->IsAlive() && defeatedTarget->GetHealth()))
+            return false;
+
+        if (Creature* creature = defeatedTarget->ToCreature())
+        {
+            if (!isValidationRouteScriptTarget(creature))
+                return false;
+
+            return creature->IsDungeonBoss() || creature->isWorldBoss()
+                ? recordValidationRouteBossKill(defeatedTarget, reason)
+                : recordValidationRouteTrashKill(defeatedTarget, reason);
+        }
+
+        return false;
+    };
     auto routeUsableCombatTarget = [this, bot, &isValidationRouteCombatTarget, &isEligibleTrashClusterMob](Unit* candidate) -> Unit*
     {
-        if (!candidate || !candidate->IsAlive() || !bot || !bot->IsValidAttackTarget(candidate))
+        if (!candidate || !candidate->IsAlive() || !candidate->GetHealth() || !bot || !bot->IsValidAttackTarget(candidate))
             return nullptr;
 
         Creature const* creature = candidate->ToCreature();
@@ -8236,6 +8253,15 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     }
     if (tryValidationRouteMovementCheck(target))
         return true;
+    if (recordDefeatedValidationRouteTarget(target, "stale_target_seen_dead")
+        || recordDefeatedValidationRouteTarget(bot->GetVictim(), "stale_victim_seen_dead"))
+    {
+        situation = "validation_route_recovery";
+        action = "validation_route_recovery";
+        target = nullptr;
+        state.TargetGuid.Clear();
+        return true;
+    }
     if (_config.ValidationRouteKind != "boss"
         && std::string(GetDungeonRole(bot)) == "tank")
         if (Unit* threatTarget = findTrashClusterThreatTarget())

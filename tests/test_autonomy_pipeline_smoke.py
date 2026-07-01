@@ -721,6 +721,10 @@ def test_quest_first_portfolio_routing_surface():
     assert 'contextText.rfind("route_target_", 0) == 0' in mgr
     assert "recordValidationRouteBossKill" in mgr
     assert "isValidationRouteCombatEntry" in validation_route_objective
+    assert "recordDefeatedValidationRouteTarget" in validation_route_objective
+    assert 'recordDefeatedValidationRouteTarget(target, "stale_target_seen_dead")' in validation_route_objective
+    assert 'recordDefeatedValidationRouteTarget(bot->GetVictim(), "stale_victim_seen_dead")' in validation_route_objective
+    assert "if (!candidate || !candidate->IsAlive() || !candidate->GetHealth()" in validation_route_objective
     assert "makeExistingValidationRouteCombatReady" in validation_route_objective
     assert "target_ready_after_activation" in validation_route_objective
     assert "target_seen_activation_target" in validation_route_objective
