@@ -10,10 +10,10 @@ from dvclive import Live
 
 try:
     from .common import DATASET_CONTRACT_VERSION, FEATURE_SCHEMA_VERSION, LABELS, git_commit, numeric_features, read_jsonl, split_by_run_ids, stable_hash, write_json
-    from .model_artifacts import BINARY_LABELS, feature_vector
+    from .model_artifacts import BINARY_LABELS, RANKING_LABELS, feature_vector
 except ImportError:
     from common import DATASET_CONTRACT_VERSION, FEATURE_SCHEMA_VERSION, LABELS, git_commit, numeric_features, read_jsonl, split_by_run_ids, stable_hash, write_json
-    from model_artifacts import BINARY_LABELS, feature_vector
+    from model_artifacts import BINARY_LABELS, RANKING_LABELS, feature_vector
 
 
 def fit_baseline(rows: list[dict[str, Any]], features: list[str]) -> dict[str, Any]:
@@ -40,6 +40,7 @@ def label_schema() -> dict[str, Any]:
     return {
         "labels": LABELS,
         "binary_labels": BINARY_LABELS,
+        "ranking_labels": RANKING_LABELS,
         "regression_labels": ["expected_reward"],
         "version": "bot_policy_labels_v2_time_window",
     }
@@ -102,6 +103,21 @@ def booster_to_portable_trees(booster: Any, objective: str, features: list[str])
     return {"objective": objective, "base_score": parse_booster_base_score(booster, objective), "trees": trees}
 
 
+def teacher_choice_training_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    imitable_decisions = {
+        int(row.get("decision_id") or 0)
+        for row in rows
+        if row.get("split") != "eval" and int(row.get("is_chosen") or 0) and int(row.get("imitate_teacher") or 0)
+    }
+    return [
+        row
+        for row in rows
+        if row.get("split") != "eval"
+        and int(row.get("decision_id") or 0) in imitable_decisions
+        and int(row.get("candidate_allowed", 1) or 0)
+    ]
+
+
 def compact_fallback_payload(model_version: str, backend: str, features: list[str], fallback: dict[str, Any], xgb_paths: dict[str, str], portable_trees: dict[str, Any]) -> dict[str, Any]:
     return {
         "artifact_format": "bot_policy_portable_v1",
@@ -115,6 +131,7 @@ def compact_fallback_payload(model_version: str, backend: str, features: list[st
         "tree_ensembles": portable_trees,
         "native_artifact_paths": xgb_paths,
         "fallback": fallback,
+        "ranking_labels": RANKING_LABELS,
         "base_score": fallback.get("means", {}),
         "objective": {
             "action_success": "binary:logistic",
@@ -122,6 +139,7 @@ def compact_fallback_payload(model_version: str, backend: str, features: list[st
             "death_risk": "binary:logistic",
             "stuck_risk": "binary:logistic",
             "quest_completion_likelihood": "binary:logistic",
+            "teacher_choice": "binary:logistic",
         },
     }
 
@@ -181,6 +199,34 @@ def train_xgboost(rows: list[dict[str, Any]], features: list[str], args: argpars
         portable_trees[label] = booster_to_portable_trees(model.get_booster(), objective, features)
         scores = model.get_booster().get_score(importance_type="gain")
         importance[label] = sorted(
+            [{"feature": key, "importance": float(value)} for key, value in scores.items()],
+            key=lambda item: -item["importance"],
+        )
+    choice_train = teacher_choice_training_rows(rows)
+    if choice_train:
+        x_choice = [feature_vector(row, features) for row in choice_train]
+        y_choice = [float(int(row.get("is_chosen") or 0)) for row in choice_train]
+        positives = sum(1 for value in y_choice if value > 0.5)
+        negatives = len(y_choice) - positives
+        sample_weight = [(negatives / max(1, positives)) if value > 0.5 else 1.0 for value in y_choice]
+        model = xgb.XGBClassifier(
+            objective="binary:logistic",
+            eval_metric="logloss",
+            max_depth=args.max_depth,
+            n_estimators=args.n_estimators,
+            learning_rate=args.learning_rate,
+            subsample=args.subsample,
+            colsample_bytree=args.colsample_bytree,
+            random_state=args.random_seed,
+            n_jobs=1,
+        )
+        model.fit(x_choice, y_choice, sample_weight=sample_weight)
+        artifact = model_dir / "teacher_choice.ubj"
+        model.save_model(artifact)
+        paths["teacher_choice"] = artifact.name
+        portable_trees["teacher_choice"] = booster_to_portable_trees(model.get_booster(), "binary:logistic", features)
+        scores = model.get_booster().get_score(importance_type="gain")
+        importance["teacher_choice"] = sorted(
             [{"feature": key, "importance": float(value)} for key, value in scores.items()],
             key=lambda item: -item["importance"],
         )
@@ -250,6 +296,7 @@ def main() -> int:
         "feature_schema_version": FEATURE_SCHEMA_VERSION,
         "dataset_contract_version": DATASET_CONTRACT_VERSION,
         "label_schema": label_schema(),
+        "ranking_labels": RANKING_LABELS,
         "train_run_ids": sorted(train_ids),
         "eval_run_ids": sorted(eval_ids),
         "artifact_paths": {"portable": "model.json", **xgb_paths},
@@ -262,6 +309,7 @@ def main() -> int:
         "observed_label_rows": len(observed_rows),
         "imitable_teacher_rows": sum(1 for row in observed_rows if int(row.get("imitate_teacher") or 0)),
         "filtered_teacher_rows": sum(1 for row in observed_rows if not int(row.get("imitate_teacher") or 0)),
+        "teacher_choice_train_rows": len(teacher_choice_training_rows(rows)),
         "train_run_ids": sorted(train_ids),
         "eval_run_ids": sorted(eval_ids),
         "runtime_ml_control": "disabled_until_shadow_assist_replay_validation_beats_teacher",

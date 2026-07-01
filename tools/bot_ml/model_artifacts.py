@@ -12,6 +12,15 @@ except ImportError:
 
 
 BINARY_LABELS = [label for label in LABELS if label != "expected_reward"]
+RANKING_LABELS = ["teacher_choice"]
+
+
+def prediction_labels(model: dict[str, Any]) -> list[str]:
+    labels = list(LABELS)
+    for label in model.get("ranking_labels", []):
+        if label not in labels:
+            labels.append(str(label))
+    return labels
 
 
 def sigmoid(value: float) -> float:
@@ -31,7 +40,7 @@ def baseline_predict(model: dict[str, Any], row: dict[str, Any]) -> dict[str, fl
     values = numeric_features(row)
     preds: dict[str, float] = {}
     fallback = model.get("fallback", model)
-    for label in LABELS:
+    for label in prediction_labels(model):
         value = float(fallback.get("means", {}).get(label, 0.0))
         for feature, weight in fallback.get("weights", {}).get(label, {}).items():
             value += values.get(feature, 0.0) * float(weight)
@@ -67,7 +76,7 @@ def portable_tree_predict(model: dict[str, Any], row: dict[str, Any]) -> dict[st
         return None
     features = numeric_features(row)
     preds: dict[str, float] = {}
-    for label in LABELS:
+    for label in prediction_labels(model):
         ensemble = ensembles.get(label)
         if not isinstance(ensemble, dict):
             return None
@@ -112,7 +121,7 @@ def predict_artifact(model: dict[str, Any], row: dict[str, Any]) -> dict[str, fl
     preds: dict[str, float] = {}
     vector = feature_vector(row, features)
     dmatrix = xgb.DMatrix([vector], feature_names=features)
-    for label in LABELS:
+    for label in prediction_labels(model):
         model_path = paths.get(label)
         if not model_path:
             portable = portable_tree_predict(model, row)

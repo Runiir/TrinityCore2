@@ -49,6 +49,8 @@ from tools.bot_ml.validate_validation_provisioning import validate_database as v
 from tools.bot_ml.validation_profile_manifests import load_action_profile_manifest, load_combat_loot_profile_manifest
 from tools.bot_ml.validate_data_quality import validate_rows as validate_data_quality_rows
 from tools.bot_ml.bt_masked_ga_combined import run as run_bt_masked_ga_combined
+from tools.bot_ml.evaluate_policy_model import policy_score, ranking_metrics
+from tools.bot_ml.train_policy_model import teacher_choice_training_rows
 from ml.preprocessing.preprocess_frames import main as preprocess_main
 from ml.training.train_action_frequency import main as train_main
 from experiments.run_experiment import autonomous_metrics, dungeon_route_metrics, load_config, make_adapter, movement_metrics, profession_metrics, quest_metrics, run_experiment, solo_combat_metrics
@@ -795,6 +797,38 @@ def test_bot_ml_run_split_stratifies_activity_and_outcomes():
 
     assert train_ids.isdisjoint(eval_ids)
     assert eval_profiles == train_profiles
+
+
+def test_bot_ml_teacher_choice_training_rows_use_imitable_allowed_candidates():
+    rows = [
+        {"split": "train", "decision_id": 1, "is_chosen": 1, "imitate_teacher": 1, "candidate_allowed": 1},
+        {"split": "train", "decision_id": 1, "is_chosen": 0, "imitate_teacher": 0, "candidate_allowed": 1},
+        {"split": "train", "decision_id": 1, "is_chosen": 0, "imitate_teacher": 0, "candidate_allowed": 0},
+        {"split": "train", "decision_id": 2, "is_chosen": 1, "imitate_teacher": 0, "candidate_allowed": 1},
+        {"split": "eval", "decision_id": 3, "is_chosen": 1, "imitate_teacher": 1, "candidate_allowed": 1},
+    ]
+
+    choice_rows = teacher_choice_training_rows(rows)
+
+    assert [row["decision_id"] for row in choice_rows] == [1, 1]
+    assert [row["is_chosen"] for row in choice_rows] == [1, 0]
+
+
+def test_bot_policy_ranking_uses_teacher_choice_and_hard_candidate_mask():
+    chosen = {"decision_id": 7, "candidate_allowed": 1, "is_chosen": 1, "trace": {"candidate_id": "chosen"}}
+    masked = {"decision_id": 7, "candidate_allowed": 0, "is_chosen": 0, "trace": {"candidate_id": "masked"}}
+    preds = {
+        id(chosen): {"action_success": 0.8, "expected_reward": 0.0, "death_risk": 0.0, "stuck_risk": 0.0, "quest_completion_likelihood": 0.0, "teacher_choice": 0.9},
+        id(masked): {"action_success": 1.0, "expected_reward": 50.0, "death_risk": 0.0, "stuck_risk": 0.0, "quest_completion_likelihood": 0.0, "teacher_choice": 0.0},
+    }
+
+    metrics = ranking_metrics([chosen, masked], preds)
+
+    assert policy_score(preds[id(chosen)]) > policy_score({**preds[id(chosen)], "teacher_choice": 0.0})
+    assert metrics["ranked_decisions"] == 1
+    assert metrics["masked_candidate_rows"] == 1
+    assert metrics["top_1_candidate_ranking_accuracy"] == 1.0
+    assert metrics["top_choice_predicted_teacher_choice"] == 0.9
 
 
 def test_bot_ml_workflow_has_pixi_tasks_and_documented_dvc_steps():

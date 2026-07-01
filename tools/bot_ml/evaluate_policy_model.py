@@ -57,7 +57,7 @@ def reward_metrics(rows: list[dict[str, Any]], preds: dict[int, dict[str, float]
 
 
 def policy_score(pred: dict[str, float]) -> float:
-    return pred.get("expected_reward", 0.0) + pred.get("action_success", 0.0) + pred.get("quest_completion_likelihood", 0.0) - pred.get("death_risk", 0.0) - pred.get("stuck_risk", 0.0)
+    return pred.get("expected_reward", 0.0) + pred.get("action_success", 0.0) + pred.get("quest_completion_likelihood", 0.0) + (2.0 * pred.get("teacher_choice", 0.0)) - pred.get("death_risk", 0.0) - pred.get("stuck_risk", 0.0)
 
 
 def ranking_metrics(rows: list[dict[str, Any]], preds: dict[int, dict[str, float]]) -> dict[str, Any]:
@@ -68,27 +68,53 @@ def ranking_metrics(rows: list[dict[str, Any]], preds: dict[int, dict[str, float
     top3 = 0
     changed = 0
     bad = 0
+    masked = 0
+    unrankable = 0
+    predicted_success = 0.0
+    predicted_death = 0.0
+    predicted_stuck = 0.0
+    predicted_reward = 0.0
+    predicted_teacher_choice = 0.0
     ranked_traces = []
     total = 0
     for decision_id, items in grouped.items():
         if not items:
             continue
-        ranked = sorted(items, key=lambda row: policy_score(preds[id(row)]), reverse=True)
+        allowed = [row for row in items if int(row.get("candidate_allowed", 1) or 0)]
+        masked += len(items) - len(allowed)
+        if not allowed:
+            unrankable += 1
+            continue
+        ranked = sorted(allowed, key=lambda row: policy_score(preds[id(row)]), reverse=True)
         chosen_index = next((index for index, row in enumerate(ranked) if row.get("is_chosen")), None)
         if chosen_index is None:
+            unrankable += 1
             continue
         total += 1
         top1 += int(chosen_index == 0)
         top3 += int(chosen_index < 3)
         changed += int(chosen_index != 0)
         top_pred = preds[id(ranked[0])]
+        predicted_success += float(top_pred.get("action_success", 0.0))
+        predicted_death += float(top_pred.get("death_risk", 0.0))
+        predicted_stuck += float(top_pred.get("stuck_risk", 0.0))
+        predicted_reward += float(top_pred.get("expected_reward", 0.0))
+        predicted_teacher_choice += float(top_pred.get("teacher_choice", 0.0))
         bad += int(top_pred.get("death_risk", 0.0) >= 0.5 or top_pred.get("stuck_risk", 0.0) >= 0.5 or top_pred.get("action_success", 0.0) < 0.5)
         ranked_traces.append({"decision_id": decision_id, "chosen_rank": chosen_index + 1, "trace": ranked[chosen_index].get("trace", {}), "top_prediction": top_pred})
     return {
+        "ranked_decisions": total,
+        "masked_candidate_rows": masked,
+        "unrankable_decisions": unrankable,
         "top_1_candidate_ranking_accuracy": top1 / max(1, total),
         "top_3_candidate_ranking_accuracy": top3 / max(1, total),
         "bad_action_rate": bad / max(1, total),
         "model_changed_activity_rate": changed / max(1, total),
+        "top_choice_predicted_action_success": predicted_success / max(1, total),
+        "top_choice_predicted_death_rate": predicted_death / max(1, total),
+        "top_choice_predicted_stuck_rate": predicted_stuck / max(1, total),
+        "top_choice_predicted_expected_reward": predicted_reward / max(1, total),
+        "top_choice_predicted_teacher_choice": predicted_teacher_choice / max(1, total),
         "ranked_traces": ranked_traces[:500],
     }
 
