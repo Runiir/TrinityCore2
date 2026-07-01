@@ -800,6 +800,8 @@ def test_quest_first_portfolio_routing_surface():
     assert "&& !routeTargetActivationFallback" in mgr
     assert "if (!activationTarget\n            && routeTargetActivationFallback)" in mgr
     assert "float routeArrivalRadius =" in mgr
+    assert "ValidationRouteClusterRadiusYards > routeArrivalRadius" not in validation_route_objective
+    assert "if (!preAnchorTrashTarget && routeDistance <= routeArrivalRadius)" in validation_route_objective
     assert "_config.ValidationRouteActivationSpawnGroupId" in mgr
     assert "BotWorld.ValidationRoute.ActivationDataId" in mgr
     assert "BotWorld.ValidationRoute.ActivationSummonEntry" in mgr

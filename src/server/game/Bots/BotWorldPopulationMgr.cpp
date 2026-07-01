@@ -8219,8 +8219,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         || _config.ValidationRouteOpenerSummonEntry
         || (_config.ValidationRouteKind == "boss" && _config.ValidationRouteTargetEntry);
     float routeArrivalRadius = hasValidationRouteActivation ? 40.0f : 18.0f;
-    if (_config.ValidationRouteKind != "boss" && _config.ValidationRouteClusterRadiusYards > routeArrivalRadius)
-        routeArrivalRadius = std::min(_config.ValidationRouteClusterRadiusYards, 90.0f);
     auto tryValidationRouteInterrupt = [this, &state, bot, &power, stage, activity, &situation, &action](Unit* interruptTarget, char const* context) -> bool
     {
         if (_config.ValidationRouteKind != "boss"
@@ -8971,7 +8969,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     if (_config.ValidationRouteKind != "boss" && std::string(GetDungeonRole(bot)) == "tank")
     {
         preAnchorTrashTarget = findTrashClusterThreatTarget();
-        if (!preAnchorTrashTarget)
+        if (!preAnchorTrashTarget && routeDistance <= routeArrivalRadius)
             preAnchorTrashTarget = findNearestTrashClusterMob();
     }
 
