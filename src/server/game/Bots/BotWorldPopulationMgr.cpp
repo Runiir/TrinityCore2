@@ -9377,6 +9377,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     state.ValidationRouteTargetSearchMissCount = 0;
     state.TargetGuid = target->GetGUID();
     rememberValidationRouteFocus(target);
+    if (tryRouteGroupHeal(bot, target))
+        return true;
     if (_config.ValidationRouteKind == "boss" && tryValidationRouteInterrupt(target, "route_target_interrupt"))
         return true;
     ResolvedCombatAction profileAction = ResolveProfileCombatAction(bot, target);

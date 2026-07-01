@@ -619,6 +619,15 @@ def test_quest_first_portfolio_routing_surface():
     assert "approach_target" in mgr
     assert "tryRouteGroupHeal" in mgr
     assert "validation_route_group_heal" in mgr
+    assert_ordered(
+        validation_route_objective,
+        "target = routeTarget;",
+        "state.TargetGuid = target->GetGUID();",
+        "rememberValidationRouteFocus(target);",
+        "if (tryRouteGroupHeal(bot, target))",
+        "if (_config.ValidationRouteKind == \"boss\" && tryValidationRouteInterrupt(target, \"route_target_interrupt\"))",
+        "ResolvedCombatAction profileAction = ResolveProfileCombatAction(bot, target);",
+    )
     assert "requires_ally_target" in mgr
     assert "threat_already_established" in mgr
     assert "routeGroupFocusTarget" in mgr
