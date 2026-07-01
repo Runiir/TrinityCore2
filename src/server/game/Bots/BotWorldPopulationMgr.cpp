@@ -1920,7 +1920,7 @@ bool BotWorldPopulationMgr::MaybeAdvanceValidationRouteManifest()
         return true;
     }
 
-    bool arrivalRoute = _config.ValidationRouteKind == "travel" || _config.ValidationRouteKind == "regroup";
+    bool arrivalRoute = _config.ValidationRouteKind == "travel" || _config.ValidationRouteKind == "regroup" || _config.ValidationRouteKind == "descent";
     bool terminal = !arrivalRoute && _validationRouteManifestAdvancePending;
     std::string terminalReason = _validationRouteManifestAdvanceReason;
     if (arrivalRoute)
@@ -6675,7 +6675,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     if (!_config.ValidationRouteEnable || !bot)
         return false;
 
-    bool arrivalRoute = _config.ValidationRouteKind == "travel" || _config.ValidationRouteKind == "regroup";
+    bool arrivalRoute = _config.ValidationRouteKind == "travel" || _config.ValidationRouteKind == "regroup" || _config.ValidationRouteKind == "descent";
     situation = _config.ValidationRouteKind == "boss"
         ? (bot->GetMap() && bot->GetMap()->IsRaid() ? "raid_boss" : "dungeon_boss")
         : (arrivalRoute ? "validation_route_regroup" : "validation_route");
@@ -8389,7 +8389,22 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return true;
         }
 
-        MoveBotToPoint(state, bot, routeAnchorX, routeAnchorY, routeAnchorZ);
+        if (_config.ValidationRouteKind == "descent")
+        {
+            state.ActivePathFromX = bot->GetPositionX();
+            state.ActivePathFromY = bot->GetPositionY();
+            state.ActivePathFromZ = bot->GetPositionZ();
+            state.ActivePathToX = routeAnchorX;
+            state.ActivePathToY = routeAnchorY;
+            state.ActivePathToZ = routeAnchorZ;
+            state.ActivePathValid = true;
+            state.LastPathRejectReason.clear();
+            state.LastPathChangeMs = NowMs();
+            bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+            bot->GetMotionMaster()->MoveJump(routeAnchorX, routeAnchorY, routeAnchorZ, _config.ValidationRouteO, 18.0f, 8.0f, 0, true);
+        }
+        else
+            MoveBotToPoint(state, bot, routeAnchorX, routeAnchorY, routeAnchorZ);
         RecordEvent(state, bot, "validation_route_regroup", nullptr, _config.ValidationRouteLabel.empty() ? "move_to_arrival" : _config.ValidationRouteLabel.c_str(), raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry);
         situation = "validation_route_regroup";
         action = "move_to_validation_route_anchor";

@@ -1598,8 +1598,10 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert stonecore_east_descent_shelf_regroup["z"] == 231.5103
     assert stonecore_east_descent_shelf_regroup["completion_policy"] == "arrival"
     assert lower_stonecore_regroup["step"] == 11
-    assert lower_stonecore_regroup["kind"] == "regroup"
+    assert lower_stonecore_regroup["kind"] == "descent"
+    assert lower_stonecore_regroup["node_kind"] == "descent"
     assert lower_stonecore_regroup["completion_policy"] == "arrival"
+    assert lower_stonecore_regroup["required_evidence"] == ["regrouping"]
     assert stonecore_sentry_gauntlet["step"] == 12
     assert stonecore_sentry_gauntlet["bot_start_x"] == 1364.55
     assert stonecore_sentry_gauntlet["bot_start_z"] == 214.4
