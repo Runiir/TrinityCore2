@@ -7300,6 +7300,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 || (isValidationRouteScriptTarget(creature) && contextText.rfind("route_target_", 0) == 0)
                 || contextText.find("force_tank_focus") != std::string::npos
                 || contextText.find("assist_focus") != std::string::npos);
+        auto refreshRouteProgress = [&](char const* reason, uint32 threshold) -> void
+        {
+            RecordRouteProgress(state, bot, prerequisiteTarget, reason ? reason : "route_target_observed",
+                healthPct, state.ValidationRouteCombatBestHealthPct, state.ValidationRouteCombatNoProgressCount, threshold);
+        };
         if (bossRouteContext
             && isValidationRouteScriptTarget(creature)
             && healthPct > 0.05f)
@@ -7310,6 +7315,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 state.ValidationRouteCombatBestHealthPct = healthPct;
                 state.ValidationRouteCombatNoProgressCount = 0;
                 state.ValidationRouteBossSlowProgressCount = 0;
+                refreshRouteProgress(context, 2);
             }
             if (_validationRouteBossProgressTargetGuid != prerequisiteTarget->GetGUID())
             {
@@ -7424,6 +7430,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             state.ValidationRouteCombatBestHealthPct = healthPct;
             state.ValidationRouteCombatNoProgressCount = 0;
             state.ValidationRouteBossSlowProgressCount = 0;
+            refreshRouteProgress(context, _config.ValidationRouteKind == "boss" ? 4 : 12);
             maybeRoutePackNoProgressAssist();
             return false;
         }
@@ -7433,6 +7440,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             state.ValidationRouteCombatBestHealthPct = healthPct;
             state.ValidationRouteCombatNoProgressCount = 0;
             state.ValidationRouteBossSlowProgressCount = 0;
+            refreshRouteProgress(context, _config.ValidationRouteKind == "boss" ? 4 : 12);
             if (!trashRouteTargetContext)
             {
                 state.ValidationRoutePackProgressTargetGuid = prerequisiteTarget->GetGUID();
@@ -7448,9 +7456,14 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         bool bossRouteNoProgress = bossRouteContext && isValidationRouteScriptTarget(creature);
         uint32 noProgressThreshold = bossRouteNoProgress ? 2 : (_config.ValidationRouteKind == "boss" ? 4 : 12);
         if (!bossRouteNoProgress && contextIsCombatProgressProbe() && lastCombatAttemptIsNormalCombatTick())
+        {
+            refreshRouteProgress(context, noProgressThreshold);
             return false;
+        }
 
-        if (++state.ValidationRouteCombatNoProgressCount < noProgressThreshold)
+        ++state.ValidationRouteCombatNoProgressCount;
+        refreshRouteProgress(context, noProgressThreshold);
+        if (state.ValidationRouteCombatNoProgressCount < noProgressThreshold)
             return false;
 
         std::string raw = BuildRawJson(bot, prerequisiteTarget);
@@ -7837,6 +7850,10 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             && _validationRouteFocusSeenMs
             && NowMs() - _validationRouteFocusSeenMs <= (_config.ValidationRouteKind == "boss" ? 60000 : 20000);
     };
+    auto authoritativeRouteFocusActive = [&]() -> bool
+    {
+        return _config.ValidationRouteKind == "boss" && routeFocusMemoryActive();
+    };
     auto findLastKnownFocusTarget = [this, bot, &routeUsableCombatTarget]() -> Unit*
     {
         if (_validationRouteFocusGuid.IsEmpty()
@@ -8006,9 +8023,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         state.TargetGuid = focus->GetGUID();
         return true;
     };
-    auto teacherAssistAuthoritativeFocus = [&state, &routeFocusMemoryActive, &findAuthoritativeRouteFocusTarget, &authoritativeFocusFailure](Unit* proposedFocus) -> Unit*
+    auto teacherAssistAuthoritativeFocus = [&state, &authoritativeRouteFocusActive, &findAuthoritativeRouteFocusTarget, &authoritativeFocusFailure](Unit* proposedFocus) -> Unit*
     {
-        if (!routeFocusMemoryActive())
+        if (!authoritativeRouteFocusActive())
             return proposedFocus;
 
         Unit* authoritativeFocus = findAuthoritativeRouteFocusTarget();
@@ -8562,7 +8579,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return true;
         }
 
-        if (routeFocusMemoryActive() && focusTarget->GetGUID() != _validationRouteFocusGuid)
+        if (authoritativeRouteFocusActive() && focusTarget->GetGUID() != _validationRouteFocusGuid)
         {
             std::string raw = BuildRawJson(bot, focusTarget);
             std::string semantic = BuildSemanticJson(bot, focusTarget, "validation_route_regroup", &power, stage, activity);

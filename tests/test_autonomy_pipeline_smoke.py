@@ -678,6 +678,8 @@ def test_quest_first_portfolio_routing_surface():
     assert "findLastKnownFocusTarget" in mgr
     assert "return nullptr;" in function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteObjective")
     assert "creature->GetEntry() != _validationRouteFocusEntry" in mgr
+    assert "auto authoritativeRouteFocusActive" in validation_route_objective
+    assert 'return _config.ValidationRouteKind == "boss" && routeFocusMemoryActive();' in validation_route_objective
     assert "reject_non_authoritative_focus" in mgr
     assert "follow_anchor_non_authoritative_focus" in mgr
     assert "follow_last_known_tank_focus" in mgr

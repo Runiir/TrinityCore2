@@ -2861,6 +2861,22 @@ TC> {"duration_minutes":5.0,"decisions":40,"total_kills":1,"quests_completed":0,
     assert "validation_route_stuck_loop" not in report["failure_labels"]
 
 
+def test_live_bot_validation_keeps_moving_route_progress_from_terminal_stuck():
+    output = """
+TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":480,"kills":4,"quests_accepted":0,"quest_objective_progress":0,"stuck":8}
+TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"diagnosis":{"route_progress":{"no_progress":{"count":0,"reason":"route_target_path_no_progress","threshold":2},"route":{"kind":"boss"},"target":{"entry":43438,"guid":434,"hp_pct":1,"best_hp_pct":1}}},"snapshot":{"decision":{"action":"move_to_validation_route_assist_target"},"movement":{"is_moving":true,"distance_moved_since_last_decision":20.8}}}]}
+TC> {"trace_schema_version":1,"selector":"all","bots":[{"bot_guid":1,"entries":[{"action":"trash_action","situation":"normal_dungeon_trash","result":"ok"},{"action":"validation_route_trash_action","situation":"normal_dungeon_trash","result":"ok"},{"action":"stuck_detected","situation":"stuck_detected","result":"repath"},{"action":"validation_route_target_search","situation":"dungeon_boss","result":"assist_tank_focus"},{"action":"move_to_validation_route_assist_target","situation":"dungeon_boss","result":"ok"}]}]}
+TC> {"duration_minutes":3.0,"decisions":480,"total_kills":4,"quests_completed":0,"stuck_events":8}
+"""
+    report = live_validation_report(output)
+
+    assert report["evidence"]["stuck_events"] >= 8
+    assert report["evidence"]["moved_diagnoses"] == 1
+    assert report["evidence"]["validation_route_actions"] > 0
+    assert report["evidence"]["validation_route_no_progress_diagnoses"] == 0
+    assert "validation_route_stuck_loop" not in report["failure_labels"]
+
+
 def test_live_bot_validation_labels_bot_not_loaded_diagnosis_as_lifecycle_failure():
     output = """
 TC> {"active_bots":2,"target_bots":2,"action":"botauto_status","decisions":20,"kills":0,"quests_accepted":0,"quest_objective_progress":0}
