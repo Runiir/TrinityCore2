@@ -1562,15 +1562,15 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert stonecore_entry["bot_start_map_id"] == 725
     assert stonecore_entry["bot_start_x"] == 851.052
     assert stonecore_entry["bot_start_z"] == 317.266
-    assert corborus["x"] == 1154.55
-    assert corborus["y"] == 878.843
-    assert corborus["z"] == 284.963
-    assert corborus["o"] == 3.176499
-    assert corborus["cluster_center"] == [1154.55, 878.843, 284.963]
-    assert corborus["bot_start_x"] == 1154.55
-    assert corborus["bot_start_y"] == 878.843
-    assert corborus["bot_start_z"] == 284.963
-    assert corborus["bot_start_o"] == 3.176499
+    assert corborus["x"] == 1150.34
+    assert corborus["y"] == 947.063
+    assert corborus["z"] == 283.89
+    assert corborus["o"] == 4.69494
+    assert corborus["cluster_center"] == [1150.34, 947.063, 283.89]
+    assert corborus["bot_start_x"] == 1150.34
+    assert corborus["bot_start_y"] == 947.063
+    assert corborus["bot_start_z"] == 283.89
+    assert corborus["bot_start_o"] == 4.69494
     assert corborus["activation_data_id"] == 10
     assert corborus["activation_data_value"] == 1
     assert corborus["activation_summon_entry"] == 0
@@ -5086,6 +5086,52 @@ def test_completion_watchdog_does_not_stop_manifest_run_on_first_route_segment(t
     assert report.get("route_segment_complete") is not True
 
 
+def test_completion_watchdog_stops_manifest_run_on_semantic_progress_plateau(tmp_path):
+    fake_worldserver = tmp_path / "fake_worldserver.py"
+    fake_worldserver.write_text(
+        "#!/usr/bin/env python3\n"
+        "import sys\n"
+        "print('TC> ', flush=True)\n"
+        "for line in sys.stdin:\n"
+        "    cmd = line.strip()\n"
+        "    print('CMD ' + cmd)\n"
+        "    if cmd == '.botauto status':\n"
+        "        print('{\"active_bots\":5,\"target_bots\":5,\"decisions\":120,\"kills\":4}')\n"
+        "    elif cmd.startswith('.botauto diagnose'):\n"
+        "        print('{\"diagnosis_schema_version\":1,\"bots\":[{\"identity\":{\"bot_guid\":1},\"snapshot\":{\"decision\":{\"action\":\"validation_route_failed\"},\"movement\":{\"is_moving\":false,\"distance_moved_since_last_decision\":0}}}]}')\n"
+        "    elif cmd.startswith('.botauto trace'):\n"
+        "        print('{\"trace_schema_version\":1,\"entries\":[{\"action\":\"validation_route_failed\",\"result\":\"route_destination_unreachable\"},{\"action\":\"validation_route_failed\",\"result\":\"route_destination_unreachable\"}]}')\n"
+        "    elif cmd == '.botexp summary':\n"
+        "        print('{\"duration_minutes\":1,\"decisions\":120,\"total_kills\":4}')\n"
+        "    elif cmd.startswith('server shutdown'):\n"
+        "        break\n"
+        "    print('TC> ', flush=True)\n",
+        encoding="utf-8",
+    )
+    fake_worldserver.chmod(0o755)
+    config = tmp_path / "worldserver.conf"
+    config.write_text("", encoding="utf-8")
+
+    run_worldserver_completion_watchdog(
+        fake_worldserver,
+        config,
+        5,
+        command_script(selector="all", trace_limit=5, start=False, stop=False),
+        tmp_path / "validation",
+        {},
+        {"scenario_id": "stonecore_5n"},
+        heartbeat_sec=1,
+        no_progress_window_sec=1,
+        validation_route_manifest={"schema": "bot_live_validation_route_manifest_v1", "route_count": 2},
+    )
+    report = json.loads((tmp_path / "validation" / "report.json").read_text(encoding="utf-8"))
+
+    assert report["completion_reason"] == "semantic_progress_plateau_watchdog"
+    assert report["watchdog_state"]["semantic_progress_plateau"] is True
+    assert report["watchdog_state"]["progress_total"] == 4
+    assert report["evidence"]["validation_route_actions"] > 0
+
+
 def test_bounded_console_deadline_caps_command_read_to_heartbeat_window():
     long_deadline = time.monotonic() + 120
     bounded = bounded_console_deadline(long_deadline, 2)
@@ -5237,6 +5283,23 @@ TC> {"duration_minutes":2,"decisions":85}
         )["completion_reason"]
         == "no_progress_watchdog"
     )
+
+
+def test_watchdog_state_calls_post_segment_route_plateau_no_progress():
+    state = watchdog_state(
+        {
+            "decisions": 1151,
+            "kills": 4,
+            "validation_route_actions": 932,
+            "action_counts": {"validation_route_failed": 198},
+        },
+        [],
+        no_progress_window_sec=180,
+    )
+
+    assert state["progress_total"] == 4
+    assert state["semantic_progress_plateau"] is True
+    assert state["no_progress"] is False
 
 
 def test_live_bot_validation_treats_terminal_route_no_progress_diagnosis_as_watchdog_failure():

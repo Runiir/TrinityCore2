@@ -8720,7 +8720,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     if (_config.ValidationRouteKind == "boss"
         && hasValidationRouteActivation
         && !_validationRouteActivationApplied
-        && routeDistance <= 220.0f
         && tryValidationRouteActivation(nullptr, "boss_route_early_activation"))
     {
         action = "validation_route_activate_target";

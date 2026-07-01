@@ -1324,6 +1324,13 @@ def watchdog_state(
         and counters["boss_engagement_actions"] <= 0
     )
     route_terminal_no_progress = counters["validation_route_no_progress_diagnoses"] > 0
+    route_semantic_plateau = (
+        counters["validation_route_actions"] > 0
+        and counters["validation_route_manifest_complete"] <= 0
+        and counters["boss_engagement_actions"] <= 0
+        and counters["moved_diagnoses"] <= 0
+        and progress_total > 0
+    )
     no_progress = (
         route_terminal_no_progress
         or (not route_motion_progress and ("no_progress_observed" in failure_labels or (counters["decisions"] > 0 and progress_total <= 0)))
@@ -1338,6 +1345,7 @@ def watchdog_state(
         "max_death_loops": max_death_loops,
         "progress_total": progress_total,
         "no_progress": no_progress,
+        "semantic_progress_plateau": route_semantic_plateau,
         "repeated_decision_loop": repeated_loop,
         "death_loop": death_loop,
         "progress_counters": counters,
@@ -1842,6 +1850,7 @@ def run_worldserver_completion_watchdog(
                 last_progress_total = progress_total
                 last_progress_at = time.monotonic()
             no_progress_expired = time.monotonic() - last_progress_at >= no_progress_window_sec
+            semantic_progress_plateau = last_progress_total >= 0 and progress_total <= last_progress_total and no_progress_expired
             if not validation_route_manifest and route_segment_complete(report, validation_route):
                 report["completion_reason"] = "route_segment_complete"
                 report["route_segment_complete"] = True
@@ -1855,6 +1864,11 @@ def run_worldserver_completion_watchdog(
             if report["acceptable_final_evidence"]:
                 break
             if report["completion_reason"] in {"repeated_decision_watchdog", "death_loop_watchdog", "machine_failure_predicate"}:
+                break
+            if validation_route_manifest and semantic_progress_plateau:
+                report["completion_reason"] = "semantic_progress_plateau_watchdog"
+                report["watchdog_state"]["semantic_progress_plateau"] = True
+                write_json(output_dir / "report.json", report)
                 break
             if report["watchdog_state"].get("no_progress") and no_progress_expired:
                 report["completion_reason"] = "no_progress_watchdog"

@@ -741,7 +741,12 @@ def test_quest_first_portfolio_routing_surface():
     assert "boss_route_no_focus_activation_unavailable" not in mgr
     assert "advance_to_boss_route_no_focus" not in mgr
     assert "hasValidationRouteActivation" in mgr
-    assert "routeDistance <= 220.0f" in mgr
+    assert "routeDistance <= 220.0f" not in validation_route_objective
+    assert_ordered(
+        validation_route_objective,
+        "&& tryValidationRouteActivation(nullptr, \"boss_route_early_activation\"))",
+        "if (routeDistance > routeArrivalRadius)",
+    )
     assert "ValidationRouteActivationApplied" in mgr_header
     assert "ValidationRouteTargetSearchMissCount" in mgr_header
     assert "reset_stale_boss_activation" not in mgr
