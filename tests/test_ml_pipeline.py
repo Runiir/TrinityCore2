@@ -1547,6 +1547,7 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     stonecore_sentry_gauntlet = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "stonecore sentry gauntlet")
     post_slabhide_regroup = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "post-Slabhide regroup")
     stonecore_descent_regroup = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "stonecore descent regroup")
+    stonecore_east_descent_shelf_regroup = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "stonecore east descent shelf regroup")
     lower_stonecore_regroup = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "lower stonecore approach regroup")
     twilight_flayer_packs = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "twilight flayer packs")
     corborus = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "Corborus")
@@ -1591,19 +1592,24 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert stonecore_descent_regroup["step"] == 9
     assert stonecore_descent_regroup["kind"] == "regroup"
     assert stonecore_descent_regroup["completion_policy"] == "arrival"
-    assert lower_stonecore_regroup["step"] == 10
+    assert stonecore_east_descent_shelf_regroup["step"] == 10
+    assert stonecore_east_descent_shelf_regroup["kind"] == "regroup"
+    assert stonecore_east_descent_shelf_regroup["x"] == 1412.931
+    assert stonecore_east_descent_shelf_regroup["z"] == 231.5103
+    assert stonecore_east_descent_shelf_regroup["completion_policy"] == "arrival"
+    assert lower_stonecore_regroup["step"] == 11
     assert lower_stonecore_regroup["kind"] == "regroup"
     assert lower_stonecore_regroup["completion_policy"] == "arrival"
-    assert stonecore_sentry_gauntlet["step"] == 11
+    assert stonecore_sentry_gauntlet["step"] == 12
     assert stonecore_sentry_gauntlet["bot_start_x"] == 1364.55
     assert stonecore_sentry_gauntlet["bot_start_z"] == 214.4
-    assert ozruk["step"] == 12
+    assert ozruk["step"] == 13
     assert ozruk["bot_start_x"] == 1507.859
     assert ozruk["bot_start_z"] == 217.3286
-    assert twilight_flayer_packs["step"] == 13
+    assert twilight_flayer_packs["step"] == 14
     assert twilight_flayer_packs["bot_start_x"] == 1329.93
     assert twilight_flayer_packs["bot_start_z"] == 207.804
-    assert azil["step"] == 14
+    assert azil["step"] == 15
     assert azil["bot_start_x"] == 1337.3
     assert azil["bot_start_z"] == 214.2383
     assert stonecore_entry["node_kind"] == "trash_cluster"
