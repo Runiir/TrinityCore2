@@ -755,7 +755,11 @@ def test_quest_first_portfolio_routing_surface():
     assert_ordered(
         validation_route_objective,
         "&& tryValidationRouteActivation(nullptr, \"boss_route_early_activation\"))",
-        "if (routeDistance > routeArrivalRadius)",
+        "Unit* preAnchorTrashTarget = nullptr;",
+        "preAnchorTrashTarget = findTrashClusterThreatTarget();",
+        "&& ValidationRouteHasProgressSinceApply()",
+        "&& !trashClusterHasLiveMobs())",
+        "if (routeDistance > routeArrivalRadius && !preAnchorTrashTarget)",
     )
     assert "ValidationRouteActivationApplied" in mgr_header
     assert "ValidationRouteTargetSearchMissCount" in mgr_header
@@ -1267,10 +1271,20 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     assert_ordered(
         route_objective,
         "auto isEligibleTrashClusterMob",
-        "&& bot->IsWithinLOSInMap(creature)",
         "&& hasStrictPathToValidationRouteTarget(creature);",
         "auto isLiveTrashClusterMob",
         "auto isValidationRouteObjectiveTarget",
+    )
+    assert "&& bot->IsWithinLOSInMap(creature)\n            && hasStrictPathToValidationRouteTarget(creature);" not in route_objective
+    assert_ordered(
+        route_objective,
+        "Unit* preAnchorTrashTarget = nullptr;",
+        "preAnchorTrashTarget = findTrashClusterThreatTarget();",
+        "&& ValidationRouteHasProgressSinceApply()",
+        "&& !trashClusterHasLiveMobs())",
+        'markTrashClusterCleared("trash_cluster_cleared");',
+        "if (routeDistance > routeArrivalRadius && !preAnchorTrashTarget)",
+        "Unit* routeTarget = preAnchorTrashTarget;",
     )
     live_cluster_block = route_objective.split("auto isLiveTrashClusterMob", 1)[1].split("auto isValidationRouteObjectiveTarget", 1)[0]
     assert "hasStrictPathToValidationRouteTarget" not in live_cluster_block

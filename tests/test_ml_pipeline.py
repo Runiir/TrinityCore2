@@ -5350,6 +5350,22 @@ def test_watchdog_state_calls_post_segment_route_plateau_no_progress():
     assert state["no_progress"] is False
 
 
+def test_watchdog_state_counts_route_combat_health_progress():
+    report = live_validation_report(
+        """
+TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":480,"kills":3}
+TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"diagnosis":{"diagnosis_code":"normal_combat","route_progress":{"route":{"kind":"trash","node_id":"crystalspawn_corridor"},"target":{"entry":42810,"hp_pct":0.515305,"best_hp_pct":0.515305},"no_progress":{"count":0,"threshold":20,"reason":"route_target_combat_progress"}}},"snapshot":{"decision":{"action":"validation_route_trash_action"},"movement":{"is_moving":false,"distance_moved_since_last_decision":0},"route_progress":{"route":{"kind":"trash","node_id":"crystalspawn_corridor"},"target":{"entry":42810,"hp_pct":0.515305,"best_hp_pct":0.515305},"no_progress":{"count":0,"threshold":20,"reason":"route_target_combat_progress"}}}}]}
+TC> {"trace_schema_version":1,"entries":[{"action":"validation_route_trash_action","result":"ok"}]}
+TC> {"duration_minutes":3,"decisions":480,"total_kills":3}
+"""
+    )
+
+    assert report["evidence"]["validation_route_combat_progress_diagnoses"] == 1
+    assert report["watchdog_state"]["progress_total"] == 4
+    assert report["watchdog_state"]["semantic_progress_plateau"] is False
+    assert "validation_route_stuck_loop" not in report["failure_labels"]
+
+
 def test_live_bot_validation_treats_terminal_route_no_progress_diagnosis_as_watchdog_failure():
     output = """
 TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":517,"kills":0,"quests_accepted":0,"quest_objective_progress":0}

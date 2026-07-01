@@ -965,6 +965,7 @@ def live_evidence(
         return max(values, default=0)
 
     route_no_progress_diagnoses = 0
+    route_combat_progress_diagnoses = 0
     for row in diagnoses:
         route_progress = nested_get(row, ["diagnosis", "route_progress"], None)
         if not isinstance(route_progress, dict):
@@ -972,6 +973,8 @@ def live_evidence(
         if not isinstance(route_progress, dict):
             continue
         no_progress = route_progress.get("no_progress") if isinstance(route_progress.get("no_progress"), dict) else {}
+        if str(no_progress.get("reason") or "") == "route_target_combat_progress":
+            route_combat_progress_diagnoses += 1
         try:
             count = int(no_progress.get("count") or 0)
             threshold = int(no_progress.get("threshold") or 0)
@@ -1150,6 +1153,7 @@ def live_evidence(
         "validation_route_actions": validation_route_actions,
         "validation_route_manifest_complete": action_counts.get("validation_route_manifest_complete", 0),
         "validation_route_no_progress_diagnoses": route_no_progress_diagnoses,
+        "validation_route_combat_progress_diagnoses": route_combat_progress_diagnoses,
         "boss_engagement_actions": boss_engagement_actions,
         "trash_route_actions": trash_route_actions,
         "validation_route_prerequisite_repeats": action_counts.get("validation_route_prerequisite", 0),
@@ -1198,6 +1202,7 @@ def validation_failure_labels(
     boss_engagement = int(evidence.get("boss_engagement_actions") or 0)
     trash_route_actions = int(evidence.get("trash_route_actions") or 0)
     route_no_progress_diagnoses = int(evidence.get("validation_route_no_progress_diagnoses") or 0)
+    route_combat_progress_diagnoses = int(evidence.get("validation_route_combat_progress_diagnoses") or 0)
     activation_attempts = int(evidence.get("validation_route_activation_attempts") or 0)
     prerequisite_repeats = int(evidence.get("validation_route_prerequisite_repeats") or 0)
     no_visible_activations = int(evidence.get("validation_route_no_visible_target_activations") or 0)
@@ -1226,7 +1231,7 @@ def validation_failure_labels(
     recovered_by_active_route_combat = (
         unstuck_failures <= 0
         and route_no_progress_diagnoses <= 0
-        and int((evidence.get("diagnosis_codes") or {}).get("normal_combat") or 0) > 0
+        and (int((evidence.get("diagnosis_codes") or {}).get("normal_combat") or 0) > 0 or route_combat_progress_diagnoses > 0)
         and (int(evidence.get("kill_evidence") or 0) > 0 or trash_evidence > 0 or boss_engagement > 0)
     )
 
@@ -1235,6 +1240,7 @@ def validation_failure_labels(
         or kill_evidence > 0
         or boss_engagement > 0
         or int(evidence.get("moved_diagnoses") or 0) > 0
+        or route_combat_progress_diagnoses > 0
     )
 
     if bot_not_loaded_diagnoses > 0:
@@ -1304,6 +1310,7 @@ def progress_counters_from_evidence(evidence: dict[str, Any]) -> dict[str, int]:
         "validation_route_actions": int(evidence.get("validation_route_actions") or 0),
         "validation_route_manifest_complete": int(evidence.get("validation_route_manifest_complete") or 0),
         "validation_route_no_progress_diagnoses": int(evidence.get("validation_route_no_progress_diagnoses") or 0),
+        "validation_route_combat_progress_diagnoses": int(evidence.get("validation_route_combat_progress_diagnoses") or 0),
         "repeated_decisions": int(action_counts.get("repeated_decision") or action_counts.get("decision_repeated") or 0),
         "death_loop_events": int(action_counts.get("repeated_death") or 0) + int(action_counts.get("death_loop") or 0),
         "stuck_events": int(evidence.get("stuck_events") or 0),
@@ -1329,6 +1336,7 @@ def watchdog_state(
         + counters["boss_kill_evidence"]
         + counters["gear_upgrades"]
         + counters["validation_route_manifest_complete"]
+        + counters["validation_route_combat_progress_diagnoses"]
     )
     route_motion_progress = (
         counters["validation_route_actions"] > 0
@@ -1341,6 +1349,7 @@ def watchdog_state(
         and counters["validation_route_manifest_complete"] <= 0
         and counters["boss_engagement_actions"] <= 0
         and counters["moved_diagnoses"] <= 0
+        and counters["validation_route_combat_progress_diagnoses"] <= 0
         and progress_total > 0
     )
     no_progress = (
