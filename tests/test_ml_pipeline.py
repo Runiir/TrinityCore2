@@ -2935,6 +2935,22 @@ TC> {"duration_minutes":7.0,"decisions":1109,"total_kills":9,"quests_completed":
     assert "validation_route_stuck_loop" not in report["failure_labels"]
 
 
+def test_live_bot_validation_keeps_trace_route_combat_progress_from_stonecore_stuck_loop():
+    output = """
+TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":1422,"kills":19,"quests_accepted":0,"quest_objective_progress":0,"stuck":25}
+TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"diagnosis":{"diagnosis_code":"waiting_decision_tick"},"snapshot":{"decision":{"action":"validation_route_hold_anchor"},"movement":{"is_moving":false,"distance_moved_since_last_decision":0}}}]}
+TC> {"trace_schema_version":1,"selector":"all","bots":[{"bot_guid":1,"entries":[{"action":"stuck_detected","situation":"stuck_detected","result":"validation_route_stuck_no_fallback"},{"action":"validation_route_recovery","situation":"validation_route_recovery","result":"validation_route_stuck_no_fallback"},{"action":"stuck_detected","situation":"stuck_detected","result":"validation_route_stuck_no_fallback"},{"action":"validation_route_recovery","situation":"validation_route_recovery","result":"validation_route_stuck_no_fallback"},{"action":"stuck_detected","situation":"stuck_detected","result":"validation_route_stuck_no_fallback"},{"action":"validation_route_recovery","situation":"validation_route_recovery","result":"validation_route_stuck_no_fallback"},{"action":"stuck_detected","situation":"stuck_detected","result":"validation_route_stuck_no_fallback"},{"action":"validation_route_recovery","situation":"validation_route_recovery","result":"validation_route_stuck_no_fallback"},{"action":"trash_action","situation":"validation_route","result":"ok","route_progress":{"route":{"node_id":"1a5e5160e80934e5","kind":"trash"},"target":{"guid":144,"entry":42428,"hp_pct":0.66,"best_hp_pct":0.66},"no_progress":{"count":0,"threshold":20,"reason":"route_target_combat_progress"}}},{"action":"validation_route_trash_action","situation":"validation_route","result":"ok","route_progress":{"route":{"node_id":"1a5e5160e80934e5","kind":"trash"},"target":{"guid":144,"entry":42428,"hp_pct":0.66,"best_hp_pct":0.66},"no_progress":{"count":0,"threshold":20,"reason":"route_target_combat_progress"}}},{"action":"mob_killed","situation":"normal_dungeon_trash","result":"stale_target_seen_dead"},{"action":"validation_route_target_search","situation":"validation_route_target_search","result":"trash_route_target_killed_cluster_still_alive"},{"action":"validation_route_regroup","situation":"validation_route_regroup","result":"hold_anchor_no_focus"},{"action":"validation_route_hold_anchor","situation":"validation_route_regroup","result":"hold_anchor_no_focus"}]}]}
+TC> {"duration_minutes":7.0,"decisions":1422,"total_kills":19,"quests_completed":0,"stuck_events":15}
+"""
+    report = live_validation_report(output, validation_context={"route_kind": "trash"})
+
+    assert report["evidence"]["validation_route_combat_progress_diagnoses"] >= 1
+    assert report["evidence"]["validation_route_no_progress_diagnoses"] == 0
+    assert report["evidence"]["kill_evidence"] == 19
+    assert report["evidence"]["trash_route_actions"] > 0
+    assert "validation_route_stuck_loop" not in report["failure_labels"]
+
+
 def test_live_bot_validation_labels_bot_not_loaded_diagnosis_as_lifecycle_failure():
     output = """
 TC> {"active_bots":2,"target_bots":2,"action":"botauto_status","decisions":20,"kills":0,"quests_accepted":0,"quest_objective_progress":0}

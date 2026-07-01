@@ -966,12 +966,11 @@ def live_evidence(
 
     route_no_progress_diagnoses = 0
     route_combat_progress_diagnoses = 0
-    for row in diagnoses:
-        route_progress = nested_get(row, ["diagnosis", "route_progress"], None)
+
+    def count_route_progress(route_progress: Any) -> None:
+        nonlocal route_no_progress_diagnoses, route_combat_progress_diagnoses
         if not isinstance(route_progress, dict):
-            route_progress = nested_get(row, ["snapshot", "route_progress"], None)
-        if not isinstance(route_progress, dict):
-            continue
+            return
         no_progress = route_progress.get("no_progress") if isinstance(route_progress.get("no_progress"), dict) else {}
         if str(no_progress.get("reason") or "") == "route_target_combat_progress":
             route_combat_progress_diagnoses += 1
@@ -979,9 +978,18 @@ def live_evidence(
             count = int(no_progress.get("count") or 0)
             threshold = int(no_progress.get("threshold") or 0)
         except (TypeError, ValueError):
-            continue
+            return
         if threshold > 0 and count >= threshold:
             route_no_progress_diagnoses += 1
+
+    for row in diagnoses:
+        route_progress = nested_get(row, ["diagnosis", "route_progress"], None)
+        if not isinstance(route_progress, dict):
+            route_progress = nested_get(row, ["snapshot", "route_progress"], None)
+        count_route_progress(route_progress)
+
+    for entry in entries:
+        count_route_progress(entry.get("route_progress") if isinstance(entry, dict) else None)
 
     action_text = " ".join(sorted(action_names)).lower()
     quest_progress = max(int(status.get("quest_objective_progress") or 0), int(summary.get("quest_objective_progress") or 0))
