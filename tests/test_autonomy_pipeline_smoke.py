@@ -713,7 +713,10 @@ def test_quest_first_portfolio_routing_surface():
     assert "_validationRouteBossProgressTargetGuid" in mgr_header
     assert "_validationRouteBossSlowProgressCount" in mgr_header
     assert "bool mechanicProfileRequiresMovement = _config.ValidationRouteMechanicProfile.find(\"movement_check\") != std::string::npos" in validation_route_objective
-    assert "if (!mechanicProfileRequiresMovement && !SpellLooksLikeGroundDanger(castSpell))" in validation_route_objective
+    assert "bool profileAllowsCastMovement = mechanicProfileRequiresMovement" in validation_route_objective
+    assert "&& _config.ValidationRouteMechanicProfile.find(\"movement_check\") != std::string::npos" in validation_route_objective
+    assert "&& _config.ValidationRouteMechanicProfile.find(\"ground_danger\") == std::string::npos;" in validation_route_objective
+    assert "if (!SpellLooksLikeGroundDanger(castSpell) && !profileAllowsCastMovement)" in validation_route_objective
     assert "routeHasActiveCombatIntent" in mgr
     assert "state.ValidationRouteAnchorOverrideValid && routeHasActiveCombatIntent" in mgr
     assert "else if (!routeHasActiveCombatIntent && repeatedDeathNearRoute)" in mgr
@@ -1442,6 +1445,7 @@ def test_recovery_smoke_records_death_recovery_without_center_fallback_unless_en
     mgr = read(BOT_MGR)
     conf = read(WORLDSERVER_CONF)
     recover = function_body(mgr, "BotWorldPopulationMgr::DeathRecoveryResult BotWorldPopulationMgr::RecoverDeadBot")
+    last_safe_recover = function_body(mgr, "bool BotWorldPopulationMgr::TryLastSafePositionResurrect")
     update_bot = function_body(mgr, "void BotWorldPopulationMgr::UpdateBot")
     build_policy = function_body(mgr, "BotWorldPopulationMgr::BotDeathRecoveryPolicy BotWorldPopulationMgr::BuildDeathRecoveryPolicy")
 
@@ -1450,8 +1454,13 @@ def test_recovery_smoke_records_death_recovery_without_center_fallback_unless_en
     assert "policy.MaxDeathsBeforeFallback = _config.MaxDeathsBeforeFallback;" in build_policy
     assert "recovery.RepeatedDeath = state.RecentDeathCount >= policy.MaxDeathsBeforeFallback;" in recover
     assert 'mode == "configured_center_fallback" && (!policy.CenterFallbackEnabled || !recovery.RepeatedDeath)' in recover
+    assert "void BotWorldPopulationMgr::RememberSafePosition" in mgr
+    assert "if (_config.ValidationRouteEnable)" in function_body(mgr, "void BotWorldPopulationMgr::RememberSafePosition")
+    assert "Distance2d(state.LastDeathX, state.LastDeathY, bot->GetPositionX(), bot->GetPositionY()) <= 70.0f" in mgr
     assert 'result = "safe_local_dangerous";' in mgr
-    assert 'GetLocalDangerScore(state.Guid.GetCounter(), itr->MapId, itr->X, itr->Y, itr->Z) >= 3.0f' in mgr
+    assert "unsafeValidationSafePosition(itr->MapId, itr->X, itr->Y, itr->Z)" in last_safe_recover
+    assert "ORDER BY last_seen_at DESC LIMIT 16" in last_safe_recover
+    assert "Distance2d(state.LastDeathX, state.LastDeathY, safe.X, safe.Y) <= 70.0f" in mgr
     assert 'result = "safe_position_dangerous";' in mgr
     assert 'RecordEvent(state, bot, "death_recovery_started"' in update_bot
     assert 'RecordEvent(state, bot, "resurrected"' in update_bot

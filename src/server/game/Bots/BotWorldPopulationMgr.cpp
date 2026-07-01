@@ -2809,6 +2809,15 @@ void BotWorldPopulationMgr::RememberSafePosition(WorldBotState& state, Player* b
 {
     if (!bot || !bot->IsAlive() || bot->IsInCombat() || state.StuckTimer)
         return;
+    if (_config.ValidationRouteEnable)
+    {
+        if (GetLocalDangerScore(state.Guid.GetCounter(), bot->GetMapId(), bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ()) >= 3.0f)
+            return;
+        if (state.RecentDeathCount >= 2
+            && state.LastDeathMapId == bot->GetMapId()
+            && Distance2d(state.LastDeathX, state.LastDeathY, bot->GetPositionX(), bot->GetPositionY()) <= 70.0f)
+            return;
+    }
 
     state.SafePositionTimer += diff;
     if (state.SafePositionTimer < 5000)
@@ -3667,13 +3676,26 @@ bool BotWorldPopulationMgr::TryLastSafePositionResurrect(WorldBotState& state, P
         return false;
     }
 
+    auto unsafeValidationSafePosition = [this, &state, bot](uint32 mapId, float x, float y, float z) -> bool
+    {
+        if (!_config.ValidationRouteEnable)
+            return false;
+        if (mapId != bot->GetMapId())
+            return true;
+        if (GetLocalDangerScore(state.Guid.GetCounter(), mapId, x, y, z) >= 3.0f)
+            return true;
+        return state.RecentDeathCount >= 2
+            && state.LastDeathMapId == mapId
+            && Distance2d(state.LastDeathX, state.LastDeathY, x, y) <= 70.0f;
+    };
+
     PruneSafePositions(state, NowMs());
     if (state.SafePositions.empty())
     {
         QueryResult stored = CharacterDatabase.PQuery(
             "SELECT map_id, x, y, z, o FROM bot_memory_safe_positions "
             "WHERE bot_guid = %u AND last_seen_at >= DATE_SUB(NOW(), INTERVAL %u SECOND) "
-            "ORDER BY last_seen_at DESC LIMIT 1",
+            "ORDER BY last_seen_at DESC LIMIT 16",
             state.Guid.GetCounter(), _config.SafePositionMemorySec);
         if (!stored)
         {
@@ -3681,30 +3703,34 @@ bool BotWorldPopulationMgr::TryLastSafePositionResurrect(WorldBotState& state, P
             return false;
         }
 
-        Field* fields = stored->Fetch();
-        uint32 mapId = fields[0].GetUInt32();
-        float x = fields[1].GetFloat();
-        float y = fields[2].GetFloat();
-        float z = fields[3].GetFloat();
-        float o = fields[4].GetFloat();
-        if (_config.ValidationRouteEnable && mapId != bot->GetMapId())
+        do
         {
-            result = "validation_cross_map_safe_position_blocked";
-            return false;
-        }
-        bot->ResurrectPlayer(0.7f, false);
-        if (mapId == bot->GetMapId())
-            bot->NearTeleportTo(x, y, z, o);
-        else
-            bot->TeleportTo(mapId, x, y, z, o);
-        result = "stored_safe_position_resurrected";
-        return true;
+            Field* fields = stored->Fetch();
+            uint32 mapId = fields[0].GetUInt32();
+            float x = fields[1].GetFloat();
+            float y = fields[2].GetFloat();
+            float z = fields[3].GetFloat();
+            float o = fields[4].GetFloat();
+            if (unsafeValidationSafePosition(mapId, x, y, z))
+                continue;
+
+            bot->ResurrectPlayer(0.7f, false);
+            if (mapId == bot->GetMapId())
+                bot->NearTeleportTo(x, y, z, o);
+            else
+                bot->TeleportTo(mapId, x, y, z, o);
+            result = "stored_safe_position_resurrected";
+            return true;
+        } while (stored->NextRow());
+
+        result = "safe_position_dangerous";
+        return false;
     }
 
     WorldBotState::SafePosition const* selected = nullptr;
     for (auto itr = state.SafePositions.rbegin(); itr != state.SafePositions.rend(); ++itr)
     {
-        if (_config.ValidationRouteEnable && GetLocalDangerScore(state.Guid.GetCounter(), itr->MapId, itr->X, itr->Y, itr->Z) >= 3.0f)
+        if (unsafeValidationSafePosition(itr->MapId, itr->X, itr->Y, itr->Z))
             continue;
 
         selected = &(*itr);
@@ -8222,6 +8248,10 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             float safeRouteDistance = Distance2d(safe.X, safe.Y, _config.ValidationRouteX, _config.ValidationRouteY);
             if (safeRouteDistance > 260.0f)
                 continue;
+            if (state.RecentDeathCount >= 2
+                && state.LastDeathMapId == routeAnchorMapId
+                && Distance2d(state.LastDeathX, state.LastDeathY, safe.X, safe.Y) <= 70.0f)
+                continue;
 
             float safeDanger = GetLocalDangerScore(state.Guid.GetCounter(), routeAnchorMapId, safe.X, safe.Y, safe.Z);
             if (safeDanger >= routeAnchorDanger && safeDanger >= 3.0f)
@@ -8320,6 +8350,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     {
         bool mechanicProfileRequiresMovement = _config.ValidationRouteMechanicProfile.find("movement_check") != std::string::npos
             || _config.ValidationRouteMechanicProfile.find("ground_danger") != std::string::npos;
+        bool profileAllowsCastMovement = mechanicProfileRequiresMovement
+            && _config.ValidationRouteMechanicProfile.find("movement_check") != std::string::npos
+            && _config.ValidationRouteMechanicProfile.find("ground_danger") == std::string::npos;
         if (!bot
             || !bot->IsAlive()
             || bot->IsFalling())
@@ -8342,7 +8375,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 castSpell = nullptr;
                 return false;
             }
-            if (!mechanicProfileRequiresMovement && !SpellLooksLikeGroundDanger(castSpell))
+            if (!SpellLooksLikeGroundDanger(castSpell) && !profileAllowsCastMovement)
             {
                 castSpell = nullptr;
                 return false;
