@@ -5949,6 +5949,7 @@ def test_live_bot_validation_dry_run_writes_command_file(tmp_path, monkeypatch):
     assert "BotWorld.ValidationRoute.ActivationActionEntry = 0" in generated_config
     assert "BotWorld.ValidationRoute.ActivationActionId = 0" in generated_config
     assert "BotWorld.ValidationRoute.OpenerSummonEntry = 0" in generated_config
+    assert "BotWorld.SafePositionMemorySec = 900" in generated_config
     assert "BotProgression.AllowDungeons = 1" in generated_config
 
 

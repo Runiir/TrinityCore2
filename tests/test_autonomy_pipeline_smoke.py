@@ -712,6 +712,8 @@ def test_quest_first_portfolio_routing_surface():
     assert "ValidationRouteBossSlowProgressCount" in mgr_header
     assert "_validationRouteBossProgressTargetGuid" in mgr_header
     assert "_validationRouteBossSlowProgressCount" in mgr_header
+    assert "bool mechanicProfileRequiresMovement = _config.ValidationRouteMechanicProfile.find(\"movement_check\") != std::string::npos" in validation_route_objective
+    assert "if (!mechanicProfileRequiresMovement && !SpellLooksLikeGroundDanger(castSpell))" in validation_route_objective
     assert "routeHasActiveCombatIntent" in mgr
     assert "state.ValidationRouteAnchorOverrideValid && routeHasActiveCombatIntent" in mgr
     assert "else if (!routeHasActiveCombatIntent && repeatedDeathNearRoute)" in mgr
@@ -1447,6 +1449,7 @@ def test_recovery_smoke_records_death_recovery_without_center_fallback_unless_en
     assert "policy.MaxDeathsBeforeFallback = _config.MaxDeathsBeforeFallback;" in build_policy
     assert "recovery.RepeatedDeath = state.RecentDeathCount >= policy.MaxDeathsBeforeFallback;" in recover
     assert 'mode == "configured_center_fallback" && (!policy.CenterFallbackEnabled || !recovery.RepeatedDeath)' in recover
+    assert 'result = "safe_local_dangerous";' in mgr
     assert 'GetLocalDangerScore(state.Guid.GetCounter(), itr->MapId, itr->X, itr->Y, itr->Z) >= 3.0f' in mgr
     assert 'result = "safe_position_dangerous";' in mgr
     assert 'RecordEvent(state, bot, "death_recovery_started"' in update_bot

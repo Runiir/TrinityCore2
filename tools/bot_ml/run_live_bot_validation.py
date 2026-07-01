@@ -295,6 +295,7 @@ def write_validation_config(
         if expected_bot_count > 0:
             text = upsert_trinity_config(text, "BotWorld.TargetPopulation", str(expected_bot_count))
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.Enable", "1")
+        text = upsert_trinity_config(text, "BotWorld.SafePositionMemorySec", "900")
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.ScenarioId", f'"{str(route.get("scenario_id") or "").replace(chr(34), "")}"')
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.NodeId", f'"{str(route.get("route_node_id") or "").replace(chr(34), "")}"')
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.Label", f'"{str(route.get("label") or "").replace(chr(34), "")}"')

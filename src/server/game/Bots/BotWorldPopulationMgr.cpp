@@ -3620,6 +3620,12 @@ bool BotWorldPopulationMgr::TrySafeLocalResurrect(Player* bot, std::string& resu
     }
 
     Position pos = bot->GetFirstCollisionPosition(4.0f, frand(0.0f, 2.0f * float(M_PI)));
+    if (_config.ValidationRouteEnable && GetLocalDangerScore(bot->GetGUID().GetCounter(), bot->GetMapId(), pos.GetPositionX(), pos.GetPositionY(), pos.GetPositionZ()) >= 3.0f)
+    {
+        result = "safe_local_dangerous";
+        return false;
+    }
+
     bot->ResurrectPlayer(0.7f, false);
     bot->NearTeleportTo(pos.GetPositionX(), pos.GetPositionY(), pos.GetPositionZ(), pos.GetOrientation());
     result = "safe_local_resurrected";
@@ -8312,9 +8318,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     };
     auto tryValidationRouteMovementCheck = [this, &state, bot, &power, stage, activity, &situation, &action](Unit* preferredTarget) -> bool
     {
-        if ((_config.ValidationRouteMechanicProfile.find("movement_check") == std::string::npos
-                && _config.ValidationRouteMechanicProfile.find("ground_danger") == std::string::npos)
-            || !bot
+        bool mechanicProfileRequiresMovement = _config.ValidationRouteMechanicProfile.find("movement_check") != std::string::npos
+            || _config.ValidationRouteMechanicProfile.find("ground_danger") != std::string::npos;
+        if (!bot
             || !bot->IsAlive()
             || bot->IsFalling())
             return false;
@@ -8332,6 +8338,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 if (Spell* spell = candidate->GetCurrentSpell(CURRENT_CHANNELED_SPELL))
                     castSpell = spell->GetSpellInfo();
             if (!castSpell || !castSpell->CalcCastTime(candidate->getLevel()))
+            {
+                castSpell = nullptr;
+                return false;
+            }
+            if (!mechanicProfileRequiresMovement && !SpellLooksLikeGroundDanger(castSpell))
             {
                 castSpell = nullptr;
                 return false;
