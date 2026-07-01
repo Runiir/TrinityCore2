@@ -1278,7 +1278,10 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     assert "bot->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ) + radius + 40.0f" in route_objective
     assert 'node.ExpectedAliveCount = uint32(std::max(0, readInt(routeJson, "expected_alive_count")));' in mgr
     assert "_config.ValidationRouteExpectedAliveCount = node.ExpectedAliveCount;" in mgr
-    assert "_config.ValidationRouteExpectedAliveCount && _metrics.Kills - _validationRouteProgressBaselineKills < _config.ValidationRouteExpectedAliveCount" in route_objective
+    trash_liveness_block = route_objective.split("auto trashClusterHasLiveMobs", 1)[1].split("auto markTrashClusterCleared", 1)[0]
+    assert "_config.ValidationRouteExpectedAliveCount && _metrics.Kills - _validationRouteProgressBaselineKills < _config.ValidationRouteExpectedAliveCount" not in trash_liveness_block
+    assert "cohortState.LastCombatAttempt = WorldBotState::CombatAttemptDiagnostic();" in route_objective
+    assert "cohortState.LastRouteProgress = WorldBotState::RouteProgressDiagnostic();" in route_objective
     assert 'markTrashClusterCleared("trash_cluster_expected_empty");' in route_objective
     assert_ordered(
         route_objective,

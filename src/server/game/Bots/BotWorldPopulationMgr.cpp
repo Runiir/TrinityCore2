@@ -6988,9 +6988,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (_config.ValidationRouteKind == "boss" || !bot)
             return false;
 
-        if (_config.ValidationRouteExpectedAliveCount && _metrics.Kills - _validationRouteProgressBaselineKills < _config.ValidationRouteExpectedAliveCount)
-            return true;
-
         float radius = _config.ValidationRouteClusterRadiusYards > 1.0f ? _config.ValidationRouteClusterRadiusYards : 90.0f;
         float searchRange = std::max(40.0f, bot->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ) + radius + 40.0f);
         std::vector<WorldObject*> objects;
@@ -7080,6 +7077,13 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
         for (WorldBotState& cohortState : _bots)
         {
+            Player* cohortBot = GetLoadedBot(cohortState);
+            bool referencedKilledTarget = cohortState.TargetGuid == killedGuid
+                || cohortState.ValidationRouteCombatProgressTargetGuid == killedGuid
+                || cohortState.ValidationRoutePackProgressTargetGuid == killedGuid
+                || cohortState.LastDecisionTargetGuid == killedGuid
+                || cohortState.LastCombatAttempt.TargetGuid == killedGuid
+                || cohortState.LastRouteProgress.TargetGuid == killedGuid;
             if (cohortState.TargetGuid == killedGuid)
                 cohortState.TargetGuid.Clear();
             if (cohortState.ValidationRouteCombatProgressTargetGuid == killedGuid)
@@ -7091,6 +7095,16 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             cohortState.ValidationRouteAnchorOverrideValid = false;
             cohortState.ValidationRouteAnchorOverrideUntilMs = 0;
             cohortState.ValidationRouteAnchorOverrideReason.clear();
+            if (cohortState.LastCombatAttempt.TargetGuid == killedGuid)
+                cohortState.LastCombatAttempt = WorldBotState::CombatAttemptDiagnostic();
+            if (cohortState.LastRouteProgress.TargetGuid == killedGuid)
+                cohortState.LastRouteProgress = WorldBotState::RouteProgressDiagnostic();
+            if (referencedKilledTarget && cohortBot)
+            {
+                cohortBot->AttackStop();
+                if (!cohortBot->GetVictim() || cohortBot->GetVictim()->GetGUID() == killedGuid)
+                    cohortBot->CombatStop(true);
+            }
             cohortState.ValidationRouteTerminalState = false;
             cohortState.ValidationRouteTerminalAtMs = 0;
             cohortState.ValidationRouteTerminalReason.clear();
