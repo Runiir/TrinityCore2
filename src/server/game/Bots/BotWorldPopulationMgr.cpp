@@ -8191,16 +8191,16 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     bool routeHasActiveCombatIntent = routeUsableCombatTarget(target)
         || routeUsableCombatTarget(bot->GetVictim())
         || !routeTankFocusGuid().IsEmpty();
-    if (state.ValidationRouteAnchorOverrideValid && routeHasActiveCombatIntent)
+    bool repeatedDeathNearRoute = state.LastDeathMapId == routeAnchorMapId
+        && Distance2d(state.LastDeathX, state.LastDeathY, _config.ValidationRouteX, _config.ValidationRouteY) <= 70.0f
+        && state.RecentDeathCount >= 2;
+    if (state.ValidationRouteAnchorOverrideValid && routeHasActiveCombatIntent && !repeatedDeathNearRoute)
     {
         state.ValidationRouteAnchorOverrideValid = false;
         state.ValidationRouteAnchorOverrideUntilMs = 0;
         state.ValidationRouteAnchorOverrideReason.clear();
     }
     float routeAnchorDanger = GetLocalDangerScore(state.Guid.GetCounter(), routeAnchorMapId, routeAnchorX, routeAnchorY, routeAnchorZ);
-    bool repeatedDeathNearRoute = state.LastDeathMapId == routeAnchorMapId
-        && Distance2d(state.LastDeathX, state.LastDeathY, _config.ValidationRouteX, _config.ValidationRouteY) <= 70.0f
-        && state.RecentDeathCount >= 2;
     if (state.ValidationRouteAnchorOverrideValid)
     {
         routeAnchorX = state.ValidationRouteAnchorOverrideX;
