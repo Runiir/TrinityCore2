@@ -8401,9 +8401,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return false;
 
         float angle = caster->GetAngle(bot);
-        Position dodge = bot->GetFirstCollisionPosition(2.0f, angle);
-        bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
-        bot->GetMotionMaster()->MoveJump(dodge, 8.0f, 7.0f);
+        Position dodge = bot->GetFirstCollisionPosition(8.0f, angle);
+        MoveBotToPoint(state, bot, dodge.GetPositionX(), dodge.GetPositionY(), dodge.GetPositionZ());
 
         std::string raw = BuildRawJson(bot, caster);
         std::string semantic = BuildSemanticJson(bot, caster, "validation_route_mechanic", &power, stage, activity);

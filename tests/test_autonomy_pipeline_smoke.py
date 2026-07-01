@@ -717,6 +717,8 @@ def test_quest_first_portfolio_routing_surface():
     assert "&& _config.ValidationRouteMechanicProfile.find(\"movement_check\") != std::string::npos" in validation_route_objective
     assert "&& _config.ValidationRouteMechanicProfile.find(\"ground_danger\") == std::string::npos;" in validation_route_objective
     assert "if (!SpellLooksLikeGroundDanger(castSpell) && !profileAllowsCastMovement)" in validation_route_objective
+    assert "bot->GetFirstCollisionPosition(8.0f, angle)" in validation_route_objective
+    assert "MoveBotToPoint(state, bot, dodge.GetPositionX(), dodge.GetPositionY(), dodge.GetPositionZ())" in validation_route_objective
     assert "routeHasActiveCombatIntent" in mgr
     assert "state.ValidationRouteAnchorOverrideValid && routeHasActiveCombatIntent" in mgr
     assert "else if (!routeHasActiveCombatIntent && repeatedDeathNearRoute)" in mgr
