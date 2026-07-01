@@ -14,7 +14,7 @@ from ml.group_roles.metrics import group_role_metrics
 from ml.group_roles.policies import policy_for_role
 from ml.raid.metrics import raid_metrics
 from ml.raid.scheduler import RaidAssignmentScheduler
-from tools.bot_ml.common import DATASET_CONTRACT_VERSION, EXPORT_TABLES, numeric_features
+from tools.bot_ml.common import DATASET_CONTRACT_VERSION, EXPORT_TABLES, numeric_features, split_by_run_ids
 from tools.bot_ml import orchestrator_daemon as daemon
 from tools.bot_ml.build_autonomy_master_checklist import refresh_checklist_from_evidence
 from tools.bot_ml.build_decision_dataset import build_row, build_rows, index_decision_fingerprints, index_semantic_stats
@@ -766,6 +766,35 @@ def test_bot_ml_numeric_features_exclude_observed_outcome_leakage():
     assert "imitate_teacher" not in features
     assert "imitation_weight" not in features
     assert features["utility_score"] == 1.5
+
+
+def test_bot_ml_run_split_stratifies_activity_and_outcomes():
+    rows = []
+    for run_id, activity, success, death, stuck in [
+        (1, "questing", 0.0, 0.0, 0.0),
+        (2, "questing", 0.0, 0.0, 0.0),
+        (3, "questing", 1.0, 0.0, 0.0),
+        (4, "questing", 1.0, 0.0, 0.0),
+        (5, "normal_dungeon", 1.0, 1.0, 0.0),
+        (6, "normal_dungeon", 1.0, 1.0, 0.0),
+    ]:
+        rows.append(
+            {
+                "run_id": run_id,
+                "label_observed": 1,
+                "current_activity": activity,
+                "action_success": success,
+                "death_risk": death,
+                "stuck_risk": stuck,
+            }
+        )
+
+    train_ids, eval_ids = split_by_run_ids(rows, eval_fraction=0.5)
+    train_profiles = {(row["current_activity"], row["action_success"], row["death_risk"], row["stuck_risk"]) for row in rows if row["run_id"] in train_ids}
+    eval_profiles = {(row["current_activity"], row["action_success"], row["death_risk"], row["stuck_risk"]) for row in rows if row["run_id"] in eval_ids}
+
+    assert train_ids.isdisjoint(eval_ids)
+    assert eval_profiles == train_profiles
 
 
 def test_bot_ml_workflow_has_pixi_tasks_and_documented_dvc_steps():

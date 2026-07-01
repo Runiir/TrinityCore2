@@ -132,11 +132,36 @@ def numeric_features(row: dict[str, Any]) -> dict[str, float]:
 
 
 def split_by_run_ids(rows: list[dict[str, Any]], eval_fraction: float = 0.2) -> tuple[set[int], set[int]]:
-    run_ids = sorted({int(row.get("run_id") or 0) for row in rows if row.get("run_id") is not None})
+    grouped: dict[int, list[dict[str, Any]]] = defaultdict(list)
+    for row in rows:
+        if row.get("run_id") is not None:
+            grouped[int(row.get("run_id") or 0)].append(row)
+    run_ids = sorted(grouped)
     if not run_ids:
         return set(), set()
     eval_count = max(1, int(round(len(run_ids) * eval_fraction))) if len(run_ids) > 1 else 1
-    eval_ids = set(run_ids[-eval_count:])
+    buckets: dict[tuple[str, int, int, int], list[int]] = defaultdict(list)
+    for run_id, run_rows in grouped.items():
+        observed = [row for row in run_rows if int(row.get("label_observed", 1) or 0)] or run_rows
+        activity_counts = Counter(str(row.get("current_activity") or "") for row in observed)
+        activity = activity_counts.most_common(1)[0][0] if activity_counts else ""
+        success = sum(float(row.get("action_success", 0.0)) for row in observed) / max(1, len(observed))
+        death = sum(float(row.get("death_risk", 0.0)) for row in observed) / max(1, len(observed))
+        stuck = sum(float(row.get("stuck_risk", 0.0)) for row in observed) / max(1, len(observed))
+        buckets[(activity, int(success >= 0.5), int(death >= 0.5), int(stuck >= 0.5))].append(run_id)
+    eval_ids: set[int] = set()
+    for key, ids in buckets.items():
+        if len(ids) < 2:
+            continue
+        count = min(len(ids) - 1, max(1, int(round(len(ids) * eval_fraction))))
+        ranked = sorted(ids, key=lambda run_id: stable_hash([key, run_id]))
+        eval_ids.update(ranked[:count])
+    for run_id in sorted(run_ids, key=lambda value: stable_hash(["eval", value])):
+        if len(eval_ids) >= eval_count or len(run_ids) - len(eval_ids) <= 1:
+            break
+        eval_ids.add(run_id)
+    if len(eval_ids) > eval_count:
+        eval_ids = set(sorted(eval_ids, key=lambda run_id: stable_hash(["eval", run_id]))[:eval_count])
     train_ids = set(run_ids) - eval_ids
     if not train_ids:
         train_ids = set(run_ids)

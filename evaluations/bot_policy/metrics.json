@@ -14,20 +14,20 @@
   "backend": "xgboost",
   "binary": {
     "action_success": {
-      "accuracy": 0.29901960784313725,
-      "auc": 0.38249455462570214,
-      "f1": 0.0,
-      "positive_rate": 0.7009803921568627,
-      "precision": 0.0,
-      "recall": 0.0
+      "accuracy": 0.8377766599597586,
+      "auc": 0.8701365227674547,
+      "f1": 0.11034482758620688,
+      "positive_rate": 0.12323943661971831,
+      "precision": 0.1702127659574468,
+      "recall": 0.08163265306122448
     },
     "death_risk": {
-      "accuracy": 0.7279411764705882,
-      "auc": 0.6609585037989479,
-      "f1": 0.5236051502145922,
-      "positive_rate": 0.28921568627450983,
-      "precision": 0.5304347826086957,
-      "recall": 0.5169491525423728
+      "accuracy": 0.960261569416499,
+      "auc": 0.8294207993943762,
+      "f1": 0.2752293577981651,
+      "positive_rate": 0.04552313883299799,
+      "precision": 0.8108108108108109,
+      "recall": 0.16574585635359115
     },
     "quest_completion_likelihood": {
       "accuracy": 1.0,
@@ -38,31 +38,31 @@
       "recall": 0.0
     },
     "stuck_risk": {
-      "accuracy": 0.8014705882352942,
-      "auc": 0.41937554271906974,
-      "f1": 0.0,
-      "positive_rate": 0.19852941176470587,
-      "precision": 0.0,
-      "recall": 0.0
+      "accuracy": 0.9336016096579477,
+      "auc": 0.6694164099225003,
+      "f1": 0.0958904109589041,
+      "positive_rate": 0.06841046277665996,
+      "precision": 0.7,
+      "recall": 0.051470588235294115
     }
   },
-  "candidate_eval_rows": 408,
+  "candidate_eval_rows": 15971,
   "control_eligible": false,
-  "death_rate": 0.28921568627450983,
-  "eval_rows": 408,
+  "death_rate": 0.04552313883299799,
+  "eval_rows": 3976,
   "expected_reward": {
-    "mae": 104.1199351746898,
-    "rmse": 109.52606705993662
+    "mae": 111.74937913007959,
+    "rmse": 160.49485689385304
   },
-  "failure_rate": 0.29901960784313725,
-  "model_version": "policy_880c38ddc568",
-  "observed_eval_rows": 408,
+  "failure_rate": 0.8767605633802817,
+  "model_version": "policy_b3d86c26cca0",
+  "observed_eval_rows": 3976,
   "ranking": {
-    "bad_action_rate": 1.0,
-    "model_changed_activity_rate": 0.0,
-    "top_1_candidate_ranking_accuracy": 1.0,
-    "top_3_candidate_ranking_accuracy": 1.0
+    "bad_action_rate": 0.9459255533199196,
+    "model_changed_activity_rate": 0.34004024144869216,
+    "top_1_candidate_ranking_accuracy": 0.6599597585513078,
+    "top_3_candidate_ranking_accuracy": 0.6612173038229376
   },
   "runtime_ml_control": "disabled_until_shadow_assist_replay_validation_beats_teacher",
-  "stuck_rate": 0.19852941176470587
+  "stuck_rate": 0.06841046277665996
 }
