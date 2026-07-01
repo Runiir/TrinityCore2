@@ -798,6 +798,16 @@ def test_quest_first_portfolio_routing_surface():
     assert "BotWorld.ValidationRoute.OpenerSummonEntry" in mgr
     assert "BotWorld.ValidationRoute.ActivationSpawnGroupId" in mgr
     assert "BotWorld.ValidationRoute.ActivationActionEntry" in mgr
+
+    get_dungeon_role = function_body(mgr, "char const* BotWorldPopulationMgr::GetDungeonRole")
+    assert_ordered(
+        get_dungeon_role,
+        "if (roles & lfg::PLAYER_ROLE_HEALER)",
+        "std::string botRole = sBotMgr->GetBotRoleName(bot->GetGUID());",
+        'CharacterDatabase.PQuery("SELECT role FROM character_bot_pool',
+        "if (Group* group = bot->GetGroup())",
+        "if (group->GetLfgRoles(bot->GetGUID()) & lfg::PLAYER_ROLE_DAMAGE)",
+    )
     assert "BotWorld.ValidationRoute.ActivationActionId" in mgr
     assert "isValidationRouteScriptTarget" in mgr
     assert "candidateOpener && !currentOpener" in mgr

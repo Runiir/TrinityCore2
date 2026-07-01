@@ -10449,8 +10449,6 @@ char const* BotWorldPopulationMgr::GetDungeonRole(Player* bot) const
             return "tank";
         if (roles & lfg::PLAYER_ROLE_HEALER)
             return "healer";
-        if (roles & lfg::PLAYER_ROLE_DAMAGE)
-            return "dps";
     }
 
     std::string botRole = sBotMgr->GetBotRoleName(bot->GetGUID());
@@ -10470,6 +10468,10 @@ char const* BotWorldPopulationMgr::GetDungeonRole(Player* bot) const
         if (poolRole.find("dps") != std::string::npos || poolRole.find("damage") != std::string::npos)
             return "dps";
     }
+
+    if (Group* group = bot->GetGroup())
+        if (group->GetLfgRoles(bot->GetGUID()) & lfg::PLAYER_ROLE_DAMAGE)
+            return "dps";
 
     switch (bot->getClass())
     {
