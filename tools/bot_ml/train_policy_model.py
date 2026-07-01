@@ -222,11 +222,7 @@ def main() -> int:
     portable_trees: dict[str, Any] = {}
     feature_importance: dict[str, list[dict[str, Any]]] = {"linear_baseline": []}
     if backend == "xgboost":
-        try:
-            backend, xgb_paths, portable_trees, feature_importance = train_xgboost(rows, features, args, model_root)
-        except Exception as exc:
-            backend = "linear_baseline"
-            feature_importance = {"fallback_reason": [{"feature": "xgboost_unavailable", "importance": 0.0, "error": str(exc)}]}
+        backend, xgb_paths, portable_trees, feature_importance = train_xgboost(rows, features, args, model_root)
 
     portable = compact_fallback_payload(model_version, backend, features, fallback, xgb_paths, portable_trees)
     portable.update(
