@@ -1923,11 +1923,13 @@ bool BotWorldPopulationMgr::MaybeAdvanceValidationRouteManifest()
     std::string terminalReason = _validationRouteManifestAdvanceReason;
     for (WorldBotState const& state : _bots)
     {
-        bool successfulTerminal = state.LastDecisionAction == "validation_route_complete"
-            || state.ValidationRouteTerminalReason == "trash_cluster_cleared"
-            || state.ValidationRouteTerminalReason == "boss_route_target_killed"
-            || state.ValidationRouteTerminalReason == "boss_killed"
-            || state.ValidationRouteTerminalReason == "all_routes_complete";
+        bool successfulTerminal = state.ValidationRouteTerminalState
+            && (state.LastDecisionAction == "validation_route_complete"
+                || state.ValidationRouteTerminalReason == "trash_cluster_cleared"
+                || state.ValidationRouteTerminalReason == "trash_cluster_expected_empty"
+                || state.ValidationRouteTerminalReason == "boss_route_target_killed"
+                || state.ValidationRouteTerminalReason == "boss_killed"
+                || state.ValidationRouteTerminalReason == "all_routes_complete");
         if (successfulTerminal)
         {
             terminal = true;
@@ -8265,6 +8267,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             ? "validation_route_manifest"
             : "normal_dungeon_trash";
         action = state.ValidationRouteTerminalReason == "trash_cluster_cleared"
+            || state.ValidationRouteTerminalReason == "trash_cluster_expected_empty"
             || state.ValidationRouteTerminalReason == "boss_route_target_killed"
             || state.ValidationRouteTerminalReason == "boss_killed"
             ? "validation_route_complete"
@@ -8289,6 +8292,25 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     }
     if (tryValidationRouteMovementCheck(target))
         return true;
+    if (!_validationRouteManifest.empty()
+        && _config.ValidationRouteAdvanceMode == "terminal"
+        && _config.ValidationRouteKind != "boss"
+        && !_config.ValidationRouteExpectedAliveCount
+        && routeDistance <= routeArrivalRadius)
+    {
+        bot->AttackStop();
+        bot->CombatStop(true);
+        target = nullptr;
+        state.TargetGuid.Clear();
+        std::string raw = BuildRawJson(bot, nullptr);
+        std::string semantic = BuildSemanticJson(bot, nullptr, "normal_dungeon_trash", &power, stage, activity);
+        markTrashClusterCleared("trash_cluster_expected_empty");
+        RecordEvent(state, bot, "dungeon_trash_cleared", nullptr, "trash_cluster_expected_empty", raw.c_str(), semantic.c_str(), float(_metrics.Kills), _config.ValidationRouteTargetEntry);
+        situation = "normal_dungeon_trash";
+        action = "validation_route_complete";
+        MaybeAdvanceValidationRouteManifest();
+        return true;
+    }
     if (recordDefeatedValidationRouteTarget(target, "stale_target_seen_dead")
         || recordDefeatedValidationRouteTarget(bot->GetVictim(), "stale_victim_seen_dead"))
     {

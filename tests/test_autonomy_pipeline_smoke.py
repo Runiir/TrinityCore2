@@ -1269,6 +1269,15 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     assert 'node.ExpectedAliveCount = uint32(std::max(0, readInt(routeJson, "expected_alive_count")));' in mgr
     assert "_config.ValidationRouteExpectedAliveCount = node.ExpectedAliveCount;" in mgr
     assert "_config.ValidationRouteExpectedAliveCount && _metrics.Kills - _validationRouteProgressBaselineKills < _config.ValidationRouteExpectedAliveCount" in route_objective
+    assert 'markTrashClusterCleared("trash_cluster_expected_empty");' in route_objective
+    assert_ordered(
+        route_objective,
+        '&& !_config.ValidationRouteExpectedAliveCount',
+        'markTrashClusterCleared("trash_cluster_expected_empty");',
+        "MaybeAdvanceValidationRouteManifest();",
+        "return true;",
+        "if (recordDefeatedValidationRouteTarget(target, \"stale_target_seen_dead\")",
+    )
     assert_ordered(
         route_objective,
         "auto recordValidationRouteTrashKill",
@@ -1287,8 +1296,10 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         "return true;",
         "bool terminal = _validationRouteManifestAdvancePending;",
     )
-    assert "bool successfulTerminal = state.LastDecisionAction == \"validation_route_complete\"" in advance_manifest
+    assert "bool successfulTerminal = state.ValidationRouteTerminalState" in advance_manifest
+    assert "&& (state.LastDecisionAction == \"validation_route_complete\"" in advance_manifest
     assert 'state.ValidationRouteTerminalReason == "trash_cluster_cleared"' in advance_manifest
+    assert 'state.ValidationRouteTerminalReason == "trash_cluster_expected_empty"' in advance_manifest
     assert 'state.ValidationRouteTerminalReason == "boss_route_target_killed"' in advance_manifest
     assert_ordered(
         advance_manifest,
