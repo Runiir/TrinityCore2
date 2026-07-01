@@ -6883,6 +6883,23 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             && bot->IsWithinLOSInMap(creature)
             && hasStrictPathToValidationRouteTarget(creature);
     };
+    auto isLiveTrashClusterMob = [this, bot, &isValidationRoutePackEntry](Creature const* creature) -> bool
+    {
+        if (!bot || !creature || !creature->IsAlive() || !creature->GetHealth() || !bot->IsValidAttackTarget(creature))
+            return false;
+        if (creature->IsInEvadeMode() || creature->HasUnitState(UNIT_STATE_EVADE))
+            return false;
+        if (creature->IsDungeonBoss() || creature->isWorldBoss())
+            return false;
+        if (creature->IsCritter() || creature->IsPet() || creature->IsTotem() || creature->IsSummon() || creature->IsGuardian() || !creature->GetOwnerGUID().IsEmpty())
+            return false;
+        if (!isValidationRoutePackEntry(creature->GetEntry()))
+            return false;
+
+        float radius = _config.ValidationRouteClusterRadiusYards > 1.0f ? _config.ValidationRouteClusterRadiusYards : 90.0f;
+        return creature->GetMapId() == bot->GetMapId()
+            && creature->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ) <= radius;
+    };
     auto isValidationRouteObjectiveTarget = [&isValidationRouteScriptTarget, &isEligibleTrashClusterMob, this](Creature const* creature) -> bool
     {
         if (!creature)
@@ -6959,7 +6976,20 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     };
     auto trashClusterHasLiveMobs = [&]() -> bool
     {
-        return findNearestTrashClusterMob() != nullptr;
+        if (_config.ValidationRouteKind == "boss" || !bot)
+            return false;
+
+        float radius = _config.ValidationRouteClusterRadiusYards > 1.0f ? _config.ValidationRouteClusterRadiusYards : 90.0f;
+        std::vector<WorldObject*> objects;
+        Trinity::AllWorldObjectsInRange check(bot, std::max(40.0f, radius + 40.0f));
+        Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(bot, objects, check);
+        Cell::VisitAllObjects(bot, searcher, std::max(40.0f, radius + 40.0f));
+
+        for (WorldObject* object : objects)
+            if (isLiveTrashClusterMob(object ? object->ToCreature() : nullptr))
+                return true;
+
+        return false;
     };
     auto markTrashClusterCleared = [&](char const* reason) -> void
     {

@@ -1256,6 +1256,17 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     )
     assert_ordered(
         route_objective,
+        "auto isEligibleTrashClusterMob",
+        "&& bot->IsWithinLOSInMap(creature)",
+        "&& hasStrictPathToValidationRouteTarget(creature);",
+        "auto isLiveTrashClusterMob",
+        "auto isValidationRouteObjectiveTarget",
+    )
+    live_cluster_block = route_objective.split("auto isLiveTrashClusterMob", 1)[1].split("auto isValidationRouteObjectiveTarget", 1)[0]
+    assert "hasStrictPathToValidationRouteTarget" not in live_cluster_block
+    assert "bot->IsWithinLOSInMap(creature)" not in live_cluster_block
+    assert_ordered(
+        route_objective,
         "auto recordValidationRouteTrashKill",
         "if (isValidationRouteScriptTarget(creature)",
         "if (!trashClusterHasLiveMobs())",
