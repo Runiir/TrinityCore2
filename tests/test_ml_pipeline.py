@@ -1549,6 +1549,7 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     stonecore_descent_regroup = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "stonecore descent regroup")
     stonecore_east_descent_shelf_regroup = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "stonecore east descent shelf regroup")
     lower_stonecore_regroup = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "lower stonecore approach regroup")
+    post_ozruk_flayer_regroup = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "post-Ozruk flayer approach regroup")
     twilight_flayer_packs = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "twilight flayer packs")
     corborus = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "Corborus")
     slabhide = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "Slabhide")
@@ -1608,10 +1609,17 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert ozruk["step"] == 13
     assert ozruk["bot_start_x"] == 1507.859
     assert ozruk["bot_start_z"] == 217.3286
-    assert twilight_flayer_packs["step"] == 14
+    assert post_ozruk_flayer_regroup["step"] == 14
+    assert post_ozruk_flayer_regroup["kind"] == "descent"
+    assert post_ozruk_flayer_regroup["node_kind"] == "descent"
+    assert post_ozruk_flayer_regroup["x"] == 1329.93
+    assert post_ozruk_flayer_regroup["z"] == 207.804
+    assert post_ozruk_flayer_regroup["completion_policy"] == "arrival"
+    assert post_ozruk_flayer_regroup["required_evidence"] == ["regrouping"]
+    assert twilight_flayer_packs["step"] == 15
     assert twilight_flayer_packs["bot_start_x"] == 1329.93
     assert twilight_flayer_packs["bot_start_z"] == 207.804
-    assert azil["step"] == 15
+    assert azil["step"] == 16
     assert azil["bot_start_x"] == 1337.3
     assert azil["bot_start_z"] == 214.2383
     assert stonecore_entry["node_kind"] == "trash_cluster"
