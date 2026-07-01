@@ -678,8 +678,16 @@ def test_quest_first_portfolio_routing_surface():
     assert "findLastKnownFocusTarget" in mgr
     assert "return nullptr;" in function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteObjective")
     assert "creature->GetEntry() != _validationRouteFocusEntry" in mgr
+    assert "auto routeFocusMemoryFresh" in validation_route_objective
+    assert "routeFocusMemoryFresh()" in validation_route_objective
+    assert "ObjectAccessor::GetUnit(*bot, _validationRouteFocusGuid)" in validation_route_objective
     assert "auto authoritativeRouteFocusActive" in validation_route_objective
-    assert 'return _config.ValidationRouteKind == "boss" && routeFocusMemoryActive();' in validation_route_objective
+    assert "return routeFocusMemoryActive();" in validation_route_objective
+    assert "if (_config.ValidationRouteKind != \"boss\")\n                continue;" in validation_route_objective
+    assert 'return _config.ValidationRouteKind == "boss" ? nearestMatchingEntry : nullptr;' in validation_route_objective
+    assert 'if (_config.ValidationRouteKind != "boss" && !_validationRouteFocusGuid.IsEmpty())' in validation_route_objective
+    assert "Unit* rememberedFocus = findLastKnownFocusTarget();" in validation_route_objective
+    assert "rememberedFocus = findTrashClusterThreatTarget();" in validation_route_objective
     assert "reject_non_authoritative_focus" in mgr
     assert "follow_anchor_non_authoritative_focus" in mgr
     assert "follow_last_known_tank_focus" in mgr
@@ -825,7 +833,7 @@ def test_quest_first_portfolio_routing_surface():
     assert "follow_anchor_tank_focus_mismatch" in mgr
     assert "hold_anchor_tank_focus_mismatch" in mgr
     assert "nearestMatchingEntry" in mgr
-    assert "return nearestMatchingEntry;" in mgr
+    assert 'return _config.ValidationRouteKind == "boss" ? nearestMatchingEntry : nullptr;' in mgr
     assert "Player* member = GetBot(cohortState)" in function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteObjective")
     assert "SELECT role FROM character_bot_pool WHERE guid" in mgr
     assert 'poolRole.find("tank")' in mgr

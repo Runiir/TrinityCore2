@@ -1,0 +1,6 @@
+outs:
+- md5: 20e7d611844414fc49a3e351ffed8fcc.dir
+  size: 1438040
+  nfiles: 9
+  hash: md5
+  path: stonecore_attachment_smoke_001311

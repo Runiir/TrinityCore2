@@ -7484,7 +7484,14 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         state.ValidationRoutePackNoProgressCount = 0;
         return true;
     };
-    auto routeGroupFocusTarget = [this, bot, &routeUsableCombatTarget]() -> Unit*
+    auto routeFocusMemoryFresh = [this, bot]() -> bool
+    {
+        return !_validationRouteFocusGuid.IsEmpty()
+            && _validationRouteFocusMapId == bot->GetMapId()
+            && _validationRouteFocusSeenMs
+            && NowMs() - _validationRouteFocusSeenMs <= (_config.ValidationRouteKind == "boss" ? 60000 : 20000);
+    };
+    auto routeGroupFocusTarget = [this, bot, &routeUsableCombatTarget, &routeFocusMemoryFresh]() -> Unit*
     {
         if (std::string(GetDungeonRole(bot)) == "tank")
             return nullptr;
@@ -7493,6 +7500,10 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         {
             return member && focus && (member->IsInCombat() || focus->IsInCombat() || focus->GetVictim());
         };
+
+        if (routeFocusMemoryFresh())
+            if (Unit* focus = routeUsableCombatTarget(ObjectAccessor::GetUnit(*bot, _validationRouteFocusGuid)))
+                return focus;
 
         Player* anchor = FindDungeonAnchor(bot);
         for (WorldBotState const& cohortState : _bots)
@@ -7591,12 +7602,16 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
         return nullptr;
     };
-    auto routeTankFocusGuid = [this, bot, &routeUsableCombatTarget]() -> ObjectGuid
+    auto routeTankFocusGuid = [this, bot, &routeUsableCombatTarget, &routeFocusMemoryFresh]() -> ObjectGuid
     {
         auto activeCohortFocus = [](Player* member, Unit* focus) -> bool
         {
             return member && focus && (member->IsInCombat() || focus->IsInCombat() || focus->GetVictim());
         };
+
+        if (routeFocusMemoryFresh())
+            if (Unit* focus = routeUsableCombatTarget(ObjectAccessor::GetUnit(*bot, _validationRouteFocusGuid)))
+                return focus->GetGUID();
 
         for (WorldBotState const& cohortState : _bots)
         {
@@ -7844,24 +7859,17 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
         return nullptr;
     };
-    auto routeFocusMemoryActive = [this, bot]() -> bool
+    auto routeFocusMemoryActive = [&routeFocusMemoryFresh]() -> bool
     {
-        return !_validationRouteFocusGuid.IsEmpty()
-            && _validationRouteFocusMapId == bot->GetMapId()
-            && _validationRouteFocusSeenMs
-            && NowMs() - _validationRouteFocusSeenMs <= (_config.ValidationRouteKind == "boss" ? 60000 : 20000);
+        return routeFocusMemoryFresh();
     };
     auto authoritativeRouteFocusActive = [&]() -> bool
     {
-        return _config.ValidationRouteKind == "boss" && routeFocusMemoryActive();
+        return routeFocusMemoryActive();
     };
-    auto findLastKnownFocusTarget = [this, bot, &routeUsableCombatTarget]() -> Unit*
+    auto findLastKnownFocusTarget = [this, bot, &routeUsableCombatTarget, &routeFocusMemoryFresh]() -> Unit*
     {
-        if (_validationRouteFocusGuid.IsEmpty()
-            || !_validationRouteFocusEntry
-            || _validationRouteFocusMapId != bot->GetMapId()
-            || !_validationRouteFocusSeenMs
-            || NowMs() - _validationRouteFocusSeenMs > (_config.ValidationRouteKind == "boss" ? 60000 : 20000))
+        if (!routeFocusMemoryFresh() || !_validationRouteFocusEntry)
             return nullptr;
 
         float focusSearchRange = _config.ValidationRouteKind == "boss" ? 220.0f : 160.0f;
@@ -7884,6 +7892,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
             if (candidate->GetGUID() == _validationRouteFocusGuid)
                 return candidate;
+            if (_config.ValidationRouteKind != "boss")
+                continue;
 
             float distance = bot->GetExactDist(candidate);
             if (!nearestMatchingEntry || distance < nearestMatchingEntryDistance)
@@ -7893,7 +7903,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             }
         }
 
-        return nearestMatchingEntry;
+        return _config.ValidationRouteKind == "boss" ? nearestMatchingEntry : nullptr;
     };
     std::string authoritativeFocusFailure = "authoritative_focus_not_checked";
     auto findAuthoritativeRouteFocusTarget = [this, bot, &routeUsableCombatTarget, &isValidationRouteScriptTarget, &authoritativeFocusFailure]() -> Unit*
@@ -7910,6 +7920,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 return nullptr;
             if (!_validationRouteFocusGuid.IsEmpty() && focus->GetGUID() == _validationRouteFocusGuid)
                 return focus;
+            if (_config.ValidationRouteKind != "boss" && !_validationRouteFocusGuid.IsEmpty())
+                return nullptr;
             if (_validationRouteFocusEntry)
             {
                 if (Creature const* creature = focus->ToCreature())
@@ -8342,12 +8354,16 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     }
     if (_config.ValidationRouteKind != "boss"
         && std::string(GetDungeonRole(bot)) == "tank")
-        if (Unit* threatTarget = findTrashClusterThreatTarget())
-            if (target != threatTarget && (threatTarget->GetVictim() != bot || !bot->GetVictim()))
-            {
-                target = threatTarget;
-                state.TargetGuid = target->GetGUID();
-            }
+    {
+        Unit* rememberedFocus = findLastKnownFocusTarget();
+        if (!rememberedFocus)
+            rememberedFocus = findTrashClusterThreatTarget();
+        if (rememberedFocus && target != rememberedFocus && (rememberedFocus->GetVictim() != bot || !bot->GetVictim()))
+        {
+            target = rememberedFocus;
+            state.TargetGuid = target->GetGUID();
+        }
+    }
     if (std::string(GetDungeonRole(bot)) == "tank")
     {
         if (Unit* tankTarget = routeUsableCombatTarget(target))
