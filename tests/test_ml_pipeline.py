@@ -5590,6 +5590,20 @@ def test_live_bot_validation_route_manifest_dry_run_writes_scenario_scoped_confi
                 "coordinates_valid": True,
                 "completion_policy": "arrival",
             },
+            {
+                "scenario_id": "stonecore_5n",
+                "route_node_id": "stonecore_descent",
+                "step": 4,
+                "kind": "descent",
+                "label": "lower stonecore approach regroup",
+                "map_id": 725,
+                "x": 1339.84,
+                "y": 1131.04,
+                "z": 214.056,
+                "source_entry": 0,
+                "coordinates_valid": True,
+                "completion_policy": "arrival",
+            },
         ],
     )
     base_config = tmp_path / "worldserver.conf"
@@ -5620,10 +5634,12 @@ def test_live_bot_validation_route_manifest_dry_run_writes_scenario_scoped_confi
 
     assert report["validation_context"] == {"scenario_id": "stonecore_5n"}
     assert report["validation_route"]["route_node_id"] == "stonecore_entry"
-    assert report["validation_route_manifest"]["route_count"] == 3
-    assert report["validation_route_manifest"]["expected_segments"] == ["01_entrance_packs", "02_corborus", "03_post_slabhide_regroup"]
+    assert report["validation_route_manifest"]["route_count"] == 4
+    assert report["validation_route_manifest"]["expected_segments"] == ["01_entrance_packs", "02_corborus", "03_post_slabhide_regroup", "04_lower_stonecore_approach_regroup"]
     assert report["validation_route_manifest"]["routes"][2]["kind"] == "regroup"
     assert report["validation_route_manifest"]["routes"][2]["completion_policy"] == "arrival"
+    assert report["validation_route_manifest"]["routes"][3]["kind"] == "descent"
+    assert report["validation_route_manifest"]["routes"][3]["completion_policy"] == "arrival"
     assert Path(report["validation_route_manifest_path"]).name == "validation_route_manifest.json"
     assert "BotWorld.ValidationRoute.ManifestPath" in generated_config
     assert 'BotWorld.ValidationRoute.AdvanceMode = "terminal"' in generated_config
