@@ -1924,12 +1924,14 @@ bool BotWorldPopulationMgr::MaybeAdvanceValidationRouteManifest()
     for (WorldBotState const& state : _bots)
     {
         bool successfulTerminal = state.ValidationRouteTerminalState
-            && (state.LastDecisionAction == "validation_route_complete"
-                || state.ValidationRouteTerminalReason == "trash_cluster_cleared"
-                || state.ValidationRouteTerminalReason == "trash_cluster_expected_empty"
-                || state.ValidationRouteTerminalReason == "boss_route_target_killed"
-                || state.ValidationRouteTerminalReason == "boss_killed"
-                || state.ValidationRouteTerminalReason == "all_routes_complete");
+            && (state.ValidationRouteTerminalReason == "all_routes_complete"
+                || (_config.ValidationRouteKind == "boss"
+                    && (state.ValidationRouteTerminalReason == "boss_route_target_killed"
+                        || state.ValidationRouteTerminalReason == "boss_killed"))
+                || (_config.ValidationRouteKind != "boss"
+                    && (state.LastDecisionAction == "validation_route_complete"
+                        || state.ValidationRouteTerminalReason == "trash_cluster_cleared"
+                        || state.ValidationRouteTerminalReason == "trash_cluster_expected_empty")));
         if (successfulTerminal)
         {
             terminal = true;
@@ -12931,6 +12933,7 @@ void BotWorldPopulationMgr::RecordDecision(WorldBotState& state, Player* bot, ch
         && !_validationRouteManifest.empty()
         && !_validationRouteManifestComplete
         && _config.ValidationRouteAdvanceMode == "terminal"
+        && state.ValidationRouteTerminalState
         && state.LastDecisionAction == "validation_route_complete")
     {
         _validationRouteManifestAdvancePending = true;

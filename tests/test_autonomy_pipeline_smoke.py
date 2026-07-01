@@ -1297,10 +1297,14 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         "bool terminal = _validationRouteManifestAdvancePending;",
     )
     assert "bool successfulTerminal = state.ValidationRouteTerminalState" in advance_manifest
+    assert 'state.ValidationRouteTerminalReason == "all_routes_complete"' in advance_manifest
+    assert '_config.ValidationRouteKind == "boss"' in advance_manifest
+    assert 'state.ValidationRouteTerminalReason == "boss_route_target_killed"' in advance_manifest
+    assert '_config.ValidationRouteKind != "boss"' in advance_manifest
     assert "&& (state.LastDecisionAction == \"validation_route_complete\"" in advance_manifest
     assert 'state.ValidationRouteTerminalReason == "trash_cluster_cleared"' in advance_manifest
     assert 'state.ValidationRouteTerminalReason == "trash_cluster_expected_empty"' in advance_manifest
-    assert 'state.ValidationRouteTerminalReason == "boss_route_target_killed"' in advance_manifest
+    assert "&& state.ValidationRouteTerminalState" in record_decision
     assert_ordered(
         advance_manifest,
         "if (nextIndex >= _validationRouteManifest.size())",
