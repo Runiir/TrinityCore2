@@ -1265,6 +1265,10 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     live_cluster_block = route_objective.split("auto isLiveTrashClusterMob", 1)[1].split("auto isValidationRouteObjectiveTarget", 1)[0]
     assert "hasStrictPathToValidationRouteTarget" not in live_cluster_block
     assert "bot->IsWithinLOSInMap(creature)" not in live_cluster_block
+    assert "bot->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ) + radius + 40.0f" in route_objective
+    assert 'node.ExpectedAliveCount = uint32(std::max(0, readInt(routeJson, "expected_alive_count")));' in mgr
+    assert "_config.ValidationRouteExpectedAliveCount = node.ExpectedAliveCount;" in mgr
+    assert "_config.ValidationRouteExpectedAliveCount && _metrics.Kills - _validationRouteProgressBaselineKills < _config.ValidationRouteExpectedAliveCount" in route_objective
     assert_ordered(
         route_objective,
         "auto recordValidationRouteTrashKill",

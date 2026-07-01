@@ -1777,6 +1777,7 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
         node.AlternateTargetEntries = ExtractJsonUIntArrayField(routeJson, "alternate_target_entries");
         node.PackTargetEntries = ExtractJsonUIntArrayField(routeJson, "pack_target_entries");
         node.ClusterRadiusYards = readFloat(routeJson, "cluster_radius_yards");
+        node.ExpectedAliveCount = uint32(std::max(0, readInt(routeJson, "expected_alive_count")));
         node.ActivationDataId = uint32(std::max(0, readInt(routeJson, "activation_data_id")));
         node.ActivationDataValue = uint32(std::max(0, readInt(routeJson, "activation_data_value")));
         node.ActivationSpawnGroupId = uint32(std::max(0, readInt(routeJson, "activation_spawn_group_id")));
@@ -1829,6 +1830,7 @@ bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode(size_t index, char 
     _config.ValidationRouteAlternateTargetEntries = node.AlternateTargetEntries;
     _config.ValidationRoutePackTargetEntries = node.PackTargetEntries;
     _config.ValidationRouteClusterRadiusYards = node.ClusterRadiusYards;
+    _config.ValidationRouteExpectedAliveCount = node.ExpectedAliveCount;
     _config.ValidationRouteActivationDataId = node.ActivationDataId;
     _config.ValidationRouteActivationDataValue = node.ActivationDataValue;
     _config.ValidationRouteActivationSpawnGroupId = node.ActivationSpawnGroupId;
@@ -6915,10 +6917,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return nullptr;
 
         float radius = _config.ValidationRouteClusterRadiusYards > 1.0f ? _config.ValidationRouteClusterRadiusYards : 90.0f;
+        float searchRange = std::max(40.0f, bot->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ) + radius + 40.0f);
         std::vector<WorldObject*> objects;
-        Trinity::AllWorldObjectsInRange check(bot, std::max(40.0f, radius + 40.0f));
+        Trinity::AllWorldObjectsInRange check(bot, searchRange);
         Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(bot, objects, check);
-        Cell::VisitAllObjects(bot, searcher, std::max(40.0f, radius + 40.0f));
+        Cell::VisitAllObjects(bot, searcher, searchRange);
 
         Unit* best = nullptr;
         float bestScore = std::numeric_limits<float>::max();
@@ -6942,10 +6945,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return nullptr;
 
         float radius = _config.ValidationRouteClusterRadiusYards > 1.0f ? _config.ValidationRouteClusterRadiusYards : 90.0f;
+        float searchRange = std::max(40.0f, bot->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ) + radius + 40.0f);
         std::vector<WorldObject*> objects;
-        Trinity::AllWorldObjectsInRange check(bot, std::max(40.0f, radius + 40.0f));
+        Trinity::AllWorldObjectsInRange check(bot, searchRange);
         Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(bot, objects, check);
-        Cell::VisitAllObjects(bot, searcher, std::max(40.0f, radius + 40.0f));
+        Cell::VisitAllObjects(bot, searcher, searchRange);
 
         Unit* best = nullptr;
         float bestScore = -1.0f;
@@ -6979,11 +6983,15 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (_config.ValidationRouteKind == "boss" || !bot)
             return false;
 
+        if (_config.ValidationRouteExpectedAliveCount && _metrics.Kills - _validationRouteProgressBaselineKills < _config.ValidationRouteExpectedAliveCount)
+            return true;
+
         float radius = _config.ValidationRouteClusterRadiusYards > 1.0f ? _config.ValidationRouteClusterRadiusYards : 90.0f;
+        float searchRange = std::max(40.0f, bot->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ) + radius + 40.0f);
         std::vector<WorldObject*> objects;
-        Trinity::AllWorldObjectsInRange check(bot, std::max(40.0f, radius + 40.0f));
+        Trinity::AllWorldObjectsInRange check(bot, searchRange);
         Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(bot, objects, check);
-        Cell::VisitAllObjects(bot, searcher, std::max(40.0f, radius + 40.0f));
+        Cell::VisitAllObjects(bot, searcher, searchRange);
 
         for (WorldObject* object : objects)
             if (isLiveTrashClusterMob(object ? object->ToCreature() : nullptr))
