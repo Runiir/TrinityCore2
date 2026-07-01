@@ -105,6 +105,8 @@ def route_required_evidence(kind: str, families: list[str]) -> list[str]:
     required = ["pulls"] if kind in {"trash", "boss"} else []
     if kind == "boss":
         required.extend(["tank_positioning", "healer_assignments"])
+    if kind in {"travel", "regroup"}:
+        required.append("regrouping")
     for evidence_name in mechanic_required_evidence(families):
         if evidence_name not in required:
             required.append(evidence_name)
@@ -130,6 +132,8 @@ def route_node_kind(step: dict[str, Any]) -> str:
     explicit = str(step.get("node_kind") or "")
     if explicit:
         return explicit
+    if step.get("kind") in {"travel", "regroup"}:
+        return str(step.get("kind"))
     return "boss" if step.get("kind") == "boss" else "trash_cluster"
 
 
@@ -304,7 +308,7 @@ def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any],
                 "pack_target_entries": cluster_entries,
                 "scripted_event_entries": event_entries,
                 "expected_alive_count": expected_alive_count(step, cluster_entries),
-                "completion_policy": step.get("completion_policy") or ("cluster_clear_after_pull" if node_kind == "trash_cluster" else "boss_kill"),
+                "completion_policy": step.get("completion_policy") or ("cluster_clear_after_pull" if node_kind == "trash_cluster" else ("arrival" if node_kind in {"travel", "regroup"} else "boss_kill")),
                 "coordinates_valid": coordinates_valid,
                 "coordinate_missing_reason": coordinate_missing_reason,
                 "mechanic_families": family_rows,

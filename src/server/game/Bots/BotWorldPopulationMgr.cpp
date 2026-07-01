@@ -1920,24 +1920,58 @@ bool BotWorldPopulationMgr::MaybeAdvanceValidationRouteManifest()
         return true;
     }
 
-    bool terminal = _validationRouteManifestAdvancePending;
+    bool arrivalRoute = _config.ValidationRouteKind == "travel" || _config.ValidationRouteKind == "regroup";
+    bool terminal = !arrivalRoute && _validationRouteManifestAdvancePending;
     std::string terminalReason = _validationRouteManifestAdvanceReason;
-    for (WorldBotState const& state : _bots)
+    if (arrivalRoute)
     {
-        bool successfulTerminal = state.ValidationRouteTerminalState
-            && (state.ValidationRouteTerminalReason == "all_routes_complete"
-                || (_config.ValidationRouteKind == "boss"
-                    && (state.ValidationRouteTerminalReason == "boss_route_target_killed"
-                        || state.ValidationRouteTerminalReason == "boss_killed"))
-                || (_config.ValidationRouteKind != "boss"
-                    && (state.LastDecisionAction == "validation_route_complete"
-                        || state.ValidationRouteTerminalReason == "trash_cluster_cleared"
-                        || state.ValidationRouteTerminalReason == "trash_cluster_expected_empty")));
-        if (successfulTerminal)
+        bool sawLoaded = false;
+        bool allLoadedArrived = !_bots.empty();
+        float arrivalRadius = 18.0f;
+        for (WorldBotState const& state : _bots)
+        {
+            Player* loadedBot = GetLoadedBot(state);
+            if (!loadedBot || !loadedBot->IsInWorld() || !loadedBot->IsAlive())
+            {
+                allLoadedArrived = false;
+                break;
+            }
+
+            sawLoaded = true;
+            if ((_config.ValidationRouteMapId && loadedBot->GetMapId() != _config.ValidationRouteMapId)
+                || (loadedBot->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ) > arrivalRadius
+                    && (!state.ValidationRouteTerminalState || state.ValidationRouteTerminalReason != "arrival")))
+            {
+                allLoadedArrived = false;
+                break;
+            }
+        }
+
+        if (sawLoaded && allLoadedArrived)
         {
             terminal = true;
-            terminalReason = state.ValidationRouteTerminalReason;
-            break;
+            terminalReason = "arrival";
+        }
+    }
+    else
+    {
+        for (WorldBotState const& state : _bots)
+        {
+            bool successfulTerminal = state.ValidationRouteTerminalState
+                && (state.ValidationRouteTerminalReason == "all_routes_complete"
+                    || (_config.ValidationRouteKind == "boss"
+                        && (state.ValidationRouteTerminalReason == "boss_route_target_killed"
+                            || state.ValidationRouteTerminalReason == "boss_killed"))
+                    || (_config.ValidationRouteKind != "boss"
+                        && (state.LastDecisionAction == "validation_route_complete"
+                            || state.ValidationRouteTerminalReason == "trash_cluster_cleared"
+                            || state.ValidationRouteTerminalReason == "trash_cluster_expected_empty")));
+            if (successfulTerminal)
+            {
+                terminal = true;
+                terminalReason = state.ValidationRouteTerminalReason;
+                break;
+            }
         }
     }
 
@@ -6636,9 +6670,10 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     if (!_config.ValidationRouteEnable || !bot)
         return false;
 
+    bool arrivalRoute = _config.ValidationRouteKind == "travel" || _config.ValidationRouteKind == "regroup";
     situation = _config.ValidationRouteKind == "boss"
         ? (bot->GetMap() && bot->GetMap()->IsRaid() ? "raid_boss" : "dungeon_boss")
-        : "validation_route";
+        : (arrivalRoute ? "validation_route_regroup" : "validation_route");
     action = "validation_route";
 
     if (_config.ValidationRouteMapId && bot->GetMapId() != _config.ValidationRouteMapId)
@@ -8317,6 +8352,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             || state.ValidationRouteTerminalReason == "trash_cluster_expected_empty"
             || state.ValidationRouteTerminalReason == "boss_route_target_killed"
             || state.ValidationRouteTerminalReason == "boss_killed"
+            || state.ValidationRouteTerminalReason == "arrival"
             ? "validation_route_complete"
             : "validation_route_failed";
         if (!state.ValidationRouteTerminalAtMs || NowMs() - state.ValidationRouteTerminalAtMs <= 5000)
@@ -8325,6 +8361,33 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             std::string semantic = BuildSemanticJson(bot, nullptr, situation.c_str(), &power, stage, activity);
             RecordEvent(state, bot, "validation_route_recovery", nullptr, state.ValidationRouteTerminalReason.empty() ? "route_terminal_hold" : state.ValidationRouteTerminalReason.c_str(), raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry);
         }
+        return true;
+    }
+    if (arrivalRoute)
+    {
+        bot->AttackStop();
+        bot->CombatStop(true);
+        target = nullptr;
+        state.TargetGuid.Clear();
+        std::string raw = BuildRawJson(bot, nullptr);
+        std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_regroup", &power, stage, activity);
+        if (routeDistance <= routeArrivalRadius)
+        {
+            state.ValidationRouteTerminalState = true;
+            state.ValidationRouteTerminalAtMs = NowMs();
+            state.ValidationRouteTerminalReason = "arrival";
+            state.LoopRecoveryCooldownUntilMs = NowMs() + 60000;
+            RecordEvent(state, bot, "validation_route_regroup", nullptr, "arrival", raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry);
+            situation = "validation_route_regroup";
+            action = "validation_route_complete";
+            MaybeAdvanceValidationRouteManifest();
+            return true;
+        }
+
+        MoveBotToPoint(state, bot, routeAnchorX, routeAnchorY, routeAnchorZ);
+        RecordEvent(state, bot, "validation_route_regroup", nullptr, _config.ValidationRouteLabel.empty() ? "move_to_arrival" : _config.ValidationRouteLabel.c_str(), raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry);
+        situation = "validation_route_regroup";
+        action = "move_to_validation_route_anchor";
         return true;
     }
     {

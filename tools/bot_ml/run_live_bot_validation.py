@@ -168,7 +168,7 @@ def load_validation_routes_for_scenario(scenario_dir: Path, scenario_id: str) ->
         if not line.strip():
             continue
         row = json.loads(line)
-        if str(row.get("scenario_id") or "") == scenario_id and str(row.get("kind") or "") in {"trash", "boss"} and bool(row.get("coordinates_valid", True)):
+        if str(row.get("scenario_id") or "") == scenario_id and str(row.get("kind") or "") in {"trash", "boss", "travel", "regroup"} and bool(row.get("coordinates_valid", True)):
             rows.append(row)
     rows.sort(key=lambda row: int(row.get("step") or 0))
     return rows

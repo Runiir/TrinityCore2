@@ -1545,6 +1545,9 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     corborus_approach_pack = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "corborus approach pack")
     corborus_antechamber_pack = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "corborus antechamber pack")
     stonecore_sentry_gauntlet = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "stonecore sentry gauntlet")
+    post_slabhide_regroup = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "post-Slabhide regroup")
+    stonecore_descent_regroup = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "stonecore descent regroup")
+    lower_stonecore_regroup = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "lower stonecore approach regroup")
     twilight_flayer_packs = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "twilight flayer packs")
     corborus = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "Corborus")
     slabhide = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "Slabhide")
@@ -1579,12 +1582,28 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert corborus["activation_summon_entry"] == 0
     assert slabhide["bot_start_x"] == 1292.352
     assert slabhide["bot_start_z"] == 247.6368
+    assert post_slabhide_regroup["step"] == 8
+    assert post_slabhide_regroup["kind"] == "regroup"
+    assert post_slabhide_regroup["node_kind"] == "regroup"
+    assert post_slabhide_regroup["source_entry"] == 0
+    assert post_slabhide_regroup["completion_policy"] == "arrival"
+    assert post_slabhide_regroup["required_evidence"] == ["regrouping"]
+    assert stonecore_descent_regroup["step"] == 9
+    assert stonecore_descent_regroup["kind"] == "regroup"
+    assert stonecore_descent_regroup["completion_policy"] == "arrival"
+    assert lower_stonecore_regroup["step"] == 10
+    assert lower_stonecore_regroup["kind"] == "regroup"
+    assert lower_stonecore_regroup["completion_policy"] == "arrival"
+    assert stonecore_sentry_gauntlet["step"] == 11
     assert stonecore_sentry_gauntlet["bot_start_x"] == 1364.55
     assert stonecore_sentry_gauntlet["bot_start_z"] == 214.4
+    assert ozruk["step"] == 12
     assert ozruk["bot_start_x"] == 1507.859
     assert ozruk["bot_start_z"] == 217.3286
+    assert twilight_flayer_packs["step"] == 13
     assert twilight_flayer_packs["bot_start_x"] == 1329.93
     assert twilight_flayer_packs["bot_start_z"] == 207.804
+    assert azil["step"] == 14
     assert azil["bot_start_x"] == 1337.3
     assert azil["bot_start_z"] == 214.2383
     assert stonecore_entry["node_kind"] == "trash_cluster"
@@ -5549,6 +5568,20 @@ def test_live_bot_validation_route_manifest_dry_run_writes_scenario_scoped_confi
                 "source_entry": 43438,
                 "coordinates_valid": True,
             },
+            {
+                "scenario_id": "stonecore_5n",
+                "route_node_id": "stonecore_regroup",
+                "step": 3,
+                "kind": "regroup",
+                "label": "post-Slabhide regroup",
+                "map_id": 725,
+                "x": 1313.26,
+                "y": 1236.83,
+                "z": 247.286,
+                "source_entry": 0,
+                "coordinates_valid": True,
+                "completion_policy": "arrival",
+            },
         ],
     )
     base_config = tmp_path / "worldserver.conf"
@@ -5579,8 +5612,10 @@ def test_live_bot_validation_route_manifest_dry_run_writes_scenario_scoped_confi
 
     assert report["validation_context"] == {"scenario_id": "stonecore_5n"}
     assert report["validation_route"]["route_node_id"] == "stonecore_entry"
-    assert report["validation_route_manifest"]["route_count"] == 2
-    assert report["validation_route_manifest"]["expected_segments"] == ["01_entrance_packs", "02_corborus"]
+    assert report["validation_route_manifest"]["route_count"] == 3
+    assert report["validation_route_manifest"]["expected_segments"] == ["01_entrance_packs", "02_corborus", "03_post_slabhide_regroup"]
+    assert report["validation_route_manifest"]["routes"][2]["kind"] == "regroup"
+    assert report["validation_route_manifest"]["routes"][2]["completion_policy"] == "arrival"
     assert Path(report["validation_route_manifest_path"]).name == "validation_route_manifest.json"
     assert "BotWorld.ValidationRoute.ManifestPath" in generated_config
     assert 'BotWorld.ValidationRoute.AdvanceMode = "terminal"' in generated_config
