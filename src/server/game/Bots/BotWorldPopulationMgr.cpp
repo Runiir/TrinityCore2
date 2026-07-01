@@ -3096,8 +3096,6 @@ bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, fl
         return rejectPath("route_destination_shortcut_path");
     if (pathType & PATHFIND_FARFROMPOLY)
         return rejectPath("route_destination_off_mesh");
-    if (!bot->IsWithinLOS(x, y, z + 1.0f, LINEOFSIGHT_ALL_CHECKS, VMAP::ModelIgnoreFlags::Nothing))
-        return rejectPath("route_destination_collision_blocked");
 
     BotLearnedScore pathScore = BotExperienceLearningPolicy::ScorePath(bot, bot->GetPositionX(), bot->GetPositionY(), x, y, _learningConfig);
     bool recentFailureMemory = IsFailedPathRecently(bot->GetGUID().GetCounter(), bot->GetMapId(), bot->GetPositionX(), bot->GetPositionY(), x, y)

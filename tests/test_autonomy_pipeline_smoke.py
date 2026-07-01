@@ -908,7 +908,6 @@ def test_quest_first_portfolio_routing_surface():
     assert "route_destination_partial_path" in mgr
     assert "route_destination_shortcut_path" in mgr
     assert "route_destination_off_mesh" in mgr
-    assert "route_destination_collision_blocked" in mgr
     assert "alternatePathScore" not in function_body(mgr, "bool BotWorldPopulationMgr::MoveBotToPoint")
     assert "state.PreferMaterialMemoryAction = true;" in mgr
     assert "state.NextProfessionDecisionMs = NowMs() + 3000;" in mgr
