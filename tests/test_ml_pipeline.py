@@ -703,7 +703,7 @@ def test_bot_ml_decision_labels_first_positive_outcome_before_later_risk():
                 "id": 21,
                 "run_id": 7,
                 "bot_guid": 99,
-                "ts": "2026-06-05 18:40:25",
+                "ts": "2026-06-05 18:40:08",
                 "event_type": "stuck_detected",
                 "result": "repath",
                 "value_float": 1.0,

@@ -302,7 +302,7 @@ def label_decision(decision: dict[str, Any], indexed_events: dict[tuple[int, int
         "label_reason": reason,
         "time_to_outcome_sec": time_to_outcome,
         "no_future_events": not used_events,
-        "ambiguous_label": bool(first_positive and first_negative and abs(float(first_positive["_ts_epoch"]) - float(first_negative["_ts_epoch"])) <= 5.0),
+        "ambiguous_label": bool(first_positive and first_negative and float(first_positive["_ts_epoch"]) == float(first_negative["_ts_epoch"])),
     }
 
 
