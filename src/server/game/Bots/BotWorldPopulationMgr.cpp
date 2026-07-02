@@ -10814,6 +10814,13 @@ bool BotWorldPopulationMgr::TryCastFriendlySpell(Player* bot, Unit* target, uint
     if (powerCost > 0 && bot->GetPower(bot->GetPowerType()) < uint32(powerCost))
         return fail("insufficient_power");
 
+    if (spellInfo->CalcCastTime(bot->getLevel()) > 0)
+    {
+        bot->StopMoving();
+        bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+        bot->GetMotionMaster()->MoveIdle();
+    }
+
     SpellCastResult castResult = bot->CastSpell(target, spellId, false);
     if (castResult != SPELL_CAST_OK)
     {

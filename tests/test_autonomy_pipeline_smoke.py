@@ -667,16 +667,19 @@ def test_quest_first_portfolio_routing_surface():
     assert "heal_cast_state_pending" in mgr
     assert "validation_route_group_heal_pending" in mgr
     assert "buildRouteHealRaw" in mgr
-    assert '"selected_heal_spell_id"' in mgr
-    assert '"heal_target_guid"' in mgr
-    assert '"heal_target_health_pct"' in mgr
-    assert '"cast_failure_reason"' in mgr
+    assert '\\"selected_heal_spell_id\\"' in mgr
+    assert '\\"heal_target_guid\\"' in mgr
+    assert '\\"heal_target_health_pct\\"' in mgr
+    assert '\\"cast_failure_reason\\"' in mgr
     assert "bool cast = TryCastFriendlySpell(healer, healTarget, bestHeal->SpellId, &castFailureReason);" in mgr
     assert 'RecordEvent(state, healer, "validation_route_group_heal", healTarget, cast ? "ok" : castFailureReason.c_str(), raw.c_str(), semantic.c_str(), healTargetHealthPct, 0, bestHeal->SpellId);' in mgr
     assert "action = cast ? \"validation_route_group_heal\" : \"validation_route_group_heal_failed\";" in mgr
     assert "return cast;" in mgr
     assert "return fail(\"line_of_sight\");" in mgr
     assert "return fail(\"global_cooldown\");" in mgr
+    assert "if (spellInfo->CalcCastTime(bot->getLevel()) > 0)" in mgr
+    assert "bot->StopMoving();" in mgr
+    assert "bot->GetMotionMaster()->MoveIdle();" in mgr
     assert "*failureReason = \"spell_cast_result_\" + std::to_string(uint32(castResult));" in mgr
     assert_ordered(
         validation_route_objective,
@@ -702,8 +705,9 @@ def test_quest_first_portfolio_routing_surface():
     assert "wait_for_tank_threat" in validation_route_objective
     assert "follow_anchor_wait_for_tank_threat" in validation_route_objective
     assert '"tank_positioning", target, "route_trash_tank_focus"' in validation_route_objective
-    assert "blood_presence,self,tank_stance,mitigation" in read("sql/custom/world/2026_06_21_00_bot_rotation_profiles.sql")
-    assert "death_strike,self_heal,melee,threat" in read("sql/custom/world/2026_06_21_00_bot_rotation_profiles.sql")
+    rotation_profiles_sql = read(ROOT / "sql/custom/world/2026_06_21_00_bot_rotation_profiles.sql")
+    assert "blood_presence,self,tank_stance,mitigation" in rotation_profiles_sql
+    assert "death_strike,self_heal,melee,threat" in rotation_profiles_sql
     assert 'if (_config.ValidationRouteKind == "boss" || activeTankFocus(focus))' in mgr
     assert 'if (_config.ValidationRouteKind != "boss" && !memberIsTank)' in mgr
     assert "move_to_validation_route_assist_target" in mgr
