@@ -8367,6 +8367,14 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     state.QuestRouteDestination.Reason = routeAnchorReason;
 
     float routeDistance = bot->GetExactDist(routeAnchorX, routeAnchorY, routeAnchorZ);
+    auto routeFocusTankOwned = [this, bot](Unit* focus) -> bool
+    {
+        Unit* victim = focus ? focus->GetVictim() : nullptr;
+        Player* victimPlayer = victim ? victim->ToPlayer() : nullptr;
+        return victimPlayer
+            && victimPlayer->GetMap() == bot->GetMap()
+            && std::string(GetDungeonRole(victimPlayer)) == "tank";
+    };
     bool hasValidationRouteActivation = _config.ValidationRouteActivationDataId
         || _config.ValidationRouteActivationSpawnGroupId
         || _config.ValidationRouteActivationActionEntry
@@ -8927,6 +8935,31 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
         bool routeTrashFocus = _config.ValidationRouteKind != "boss";
         char const* focusSituation = routeTrashFocus ? "validation_route" : "validation_route_prerequisite";
+        bool botIsTank = std::string(GetDungeonRole(bot)) == "tank";
+        if (routeTrashFocus && !botIsTank && !routeFocusTankOwned(target))
+        {
+            std::string raw = BuildRawJson(bot, target);
+            std::string semantic = BuildSemanticJson(bot, target, "validation_route_regroup", &power, stage, activity);
+            RecordEvent(state, bot, "validation_route_prerequisite_rejected", target, "wait_for_tank_threat", raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry);
+            bot->AttackStop();
+            bot->CombatStop(true);
+            state.TargetGuid.Clear();
+            target = nullptr;
+            if (Player* anchor = FindDungeonAnchor(bot))
+            {
+                if (anchor != bot && anchor->IsAlive() && anchor->GetMap() == bot->GetMap() && bot->GetExactDist(anchor) > 8.0f)
+                {
+                    MoveBotToProfileRange(state, bot, anchor);
+                    RecordEvent(state, bot, "validation_route_regroup", anchor, "follow_anchor_wait_for_tank_threat", raw.c_str(), semantic.c_str(), bot->GetExactDist(anchor), _config.ValidationRouteTargetEntry);
+                    situation = "validation_route_regroup";
+                    action = "move_to_validation_route_anchor";
+                    return true;
+                }
+            }
+            situation = "validation_route_regroup";
+            action = "validation_route_hold_anchor";
+            return true;
+        }
         ResolvedCombatAction profileAction = ResolveProfileCombatAction(bot, target);
         uint32 spellId = profileAction.SpellId;
         float engageRange = profileAction.MaxRange > 0.0f ? profileAction.MaxRange : routeEngageRange(bot, target, spellId);
@@ -8967,6 +9000,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         std::string raw = BuildRawJson(bot, target);
         std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, activity);
         RecordEvent(state, bot, routeTrashFocus ? "trash_action" : "validation_route_prerequisite", target, ToString(result), raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry, result == BotActionResult::Ok ? spellId : 0);
+        if (routeTrashFocus && botIsTank)
+            RecordEvent(state, bot, "tank_positioning", target, "route_trash_tank_focus", raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry, result == BotActionResult::Ok ? spellId : 0);
         maybeValidationPrerequisiteNoProgressAssist(target, routeTrashFocus ? "route_target_no_health_progress" : "assist_focus_no_health_progress");
         state.WasInCombat = true;
         return true;
@@ -9066,6 +9101,20 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         ResolvedCombatAction profileAction = ResolveProfileCombatAction(bot, target);
         uint32 spellId = profileAction.SpellId;
         float engageRange = profileAction.MaxRange > 0.0f ? profileAction.MaxRange : routeEngageRange(bot, target, spellId);
+        bool botIsTank = std::string(GetDungeonRole(bot)) == "tank";
+        if (routeBossTarget && _config.ValidationRouteKind != "boss" && !botIsTank && !routeFocusTankOwned(target))
+        {
+            std::string raw = BuildRawJson(bot, target);
+            std::string semantic = BuildSemanticJson(bot, target, "validation_route_regroup", &power, stage, activity);
+            RecordEvent(state, bot, "validation_route_prerequisite_rejected", target, "wait_for_tank_threat", raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry);
+            bot->AttackStop();
+            bot->CombatStop(true);
+            state.TargetGuid.Clear();
+            target = nullptr;
+            situation = "validation_route_regroup";
+            action = "validation_route_hold_anchor";
+            return true;
+        }
         if (routeBossTarget)
         {
             std::string raw = BuildRawJson(bot, target);
@@ -9107,6 +9156,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         std::string raw = BuildRawJson(bot, target);
         std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, activity);
         RecordEvent(state, bot, routeBossTarget ? (_config.ValidationRouteKind == "boss" ? "boss_action" : "trash_action") : "validation_route_prerequisite", target, ToString(result), raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry, result == BotActionResult::Ok ? spellId : 0);
+        if (routeBossTarget && _config.ValidationRouteKind != "boss" && botIsTank)
+            RecordEvent(state, bot, "tank_positioning", target, "route_trash_tank_focus", raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry, result == BotActionResult::Ok ? spellId : 0);
         if (!routeBossTarget)
             maybeValidationPrerequisiteNoProgressAssist(target, "current_combat_no_health_progress");
         if (routeBossTarget && _config.ValidationRouteKind == "boss")
