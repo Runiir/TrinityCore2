@@ -619,7 +619,8 @@ def test_quest_first_portfolio_routing_surface():
     assert "approach_target" in mgr
     assert "tryRouteGroupHeal" in mgr
     assert "validation_route_group_heal" in mgr
-    assert "float approachRange = std::max(3.0f, std::min(healRange - 2.0f, 18.0f));" in mgr
+    assert "float maxApproachRange = _config.ValidationRouteEnable && healer->GetMap() && healer->GetMap()->IsRaid() ? 35.0f : 18.0f;" in mgr
+    assert "float approachRange = std::max(3.0f, std::min(healRange - 2.0f, maxApproachRange));" in mgr
     assert "bool cast = TryCastFriendlySpell(healer, healTarget, bestHeal->SpellId);" in mgr
     assert "action = cast ? \"validation_route_group_heal\" : \"validation_route_group_heal_failed\";" in mgr
     assert "return cast;" in mgr
@@ -638,6 +639,9 @@ def test_quest_first_portfolio_routing_surface():
     assert "bestFocus" in mgr
     assert "voter->GetVictim() == focus" in mgr
     assert 'std::string(GetDungeonRole(member)) == "tank"' in mgr
+    assert "auto activeTankFocus" in mgr
+    assert 'if (_config.ValidationRouteKind == "boss" || activeTankFocus(focus))' in mgr
+    assert 'if (_config.ValidationRouteKind != "boss" && !memberIsTank)' in mgr
     assert "move_to_validation_route_assist_target" in mgr
     assert "validation_route_prerequisite_assist" in mgr
     assert "assist_focus" in mgr
@@ -1469,6 +1473,14 @@ def test_recovery_smoke_records_death_recovery_without_center_fallback_unless_en
     assert 'RecordEvent(state, bot, "resurrected"' in update_bot
     assert 'RecordEvent(state, bot, "teleport_fallback_used"' in update_bot
     assert 'RecordEvent(state, bot, "death_recovery_failed"' in update_bot
+
+
+def test_telemetry_frame_action_is_bounded_to_schema_width():
+    mgr = read(BOT_MGR)
+    frame_builder = function_body(mgr, "BotTelemetryFrame BotWorldPopulationMgr::BuildTelemetryFrame")
+
+    assert "frame.action = BoundedResultLabel(action);" in frame_builder
+    assert "frame.action = action ? action : \"\";" not in frame_builder
 
 
 def test_export_smoke_lists_old_and_new_bot_experiment_tables():

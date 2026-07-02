@@ -6934,7 +6934,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         std::string semantic = BuildSemanticJson(healer, combatTarget, "validation_route_group_heal", &power, stage, activity);
         if (!healer->IsWithinDistInMap(healTarget, std::max(5.0f, healRange - 1.0f)) || !healer->IsWithinLOSInMap(healTarget))
         {
-            float approachRange = std::max(3.0f, std::min(healRange - 2.0f, 18.0f));
+            float maxApproachRange = _config.ValidationRouteEnable && healer->GetMap() && healer->GetMap()->IsRaid() ? 35.0f : 18.0f;
+            float approachRange = std::max(3.0f, std::min(healRange - 2.0f, maxApproachRange));
             Position healPosition = healTarget->GetFirstCollisionPosition(approachRange, healTarget->GetAngle(healer));
             MoveBotToPoint(state, healer, healPosition.GetPositionX(), healPosition.GetPositionY(), healPosition.GetPositionZ());
             RecordEvent(state, healer, "validation_route_group_heal", healTarget, "approach_ally", raw.c_str(), semantic.c_str(), healTargetHealthPct, bestHeal->SpellId);
@@ -7650,10 +7651,30 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         {
             return member && focus && (member->IsInCombat() || focus->IsInCombat() || focus->GetVictim());
         };
+        auto activeTankFocus = [&](Unit* focus) -> bool
+        {
+            if (!focus)
+                return false;
+
+            for (WorldBotState const& cohortState : _bots)
+            {
+                Player* member = GetBot(cohortState);
+                if (!member || member == bot || !member->IsAlive() || member->GetMap() != bot->GetMap())
+                    continue;
+                if (std::string(GetDungeonRole(member)) != "tank")
+                    continue;
+                if (member->GetVictim() == focus)
+                    return true;
+                if (cohortState.TargetGuid == focus->GetGUID() && activeCohortFocus(member, focus))
+                    return true;
+            }
+            return false;
+        };
 
         if (routeFocusMemoryFresh())
             if (Unit* focus = routeUsableCombatTarget(ObjectAccessor::GetUnit(*bot, _validationRouteFocusGuid)))
-                return focus;
+                if (_config.ValidationRouteKind == "boss" || activeTankFocus(focus))
+                    return focus;
 
         Player* anchor = FindDungeonAnchor(bot);
         for (WorldBotState const& cohortState : _bots)
@@ -7690,7 +7711,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 return;
 
             float score = 1.0f;
-            if (std::string(GetDungeonRole(member)) == "tank")
+            bool memberIsTank = std::string(GetDungeonRole(member)) == "tank";
+            if (_config.ValidationRouteKind != "boss" && !memberIsTank)
+                return;
+
+            if (memberIsTank)
                 score += 5.0f;
             if (anchor && member == anchor)
                 score += 3.0f;
@@ -13050,7 +13075,7 @@ BotTelemetryFrame BotWorldPopulationMgr::BuildTelemetryFrame(Player* bot, Unit c
     }
     frame.quest_id = questId;
     frame.situation_type = situation ? situation : "";
-    frame.action = action ? action : "";
+    frame.action = BoundedResultLabel(action);
     frame.raw_json = rawJson ? rawJson : "{}";
     frame.semantic_json = semanticJson ? semanticJson : "{}";
     return frame;
