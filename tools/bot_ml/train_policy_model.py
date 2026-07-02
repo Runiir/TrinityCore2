@@ -118,6 +118,16 @@ def teacher_choice_training_rows(rows: list[dict[str, Any]]) -> list[dict[str, A
     ]
 
 
+def balanced_binary_weights(values: list[float]) -> list[float]:
+    positives = sum(1 for value in values if value > 0.5)
+    negatives = len(values) - positives
+    if positives == 0 or negatives == 0:
+        return [1.0 for _ in values]
+    positive_weight = negatives / positives
+    negative_weight = positives / negatives
+    return [positive_weight if value > 0.5 else negative_weight for value in values]
+
+
 def compact_fallback_payload(model_version: str, backend: str, features: list[str], fallback: dict[str, Any], xgb_paths: dict[str, str], portable_trees: dict[str, Any]) -> dict[str, Any]:
     return {
         "artifact_format": "bot_policy_portable_v1",
@@ -167,6 +177,8 @@ def train_xgboost(rows: list[dict[str, Any]], features: list[str], args: argpars
             else:
                 x_train_label = x_train
                 y_train_label = y_train
+                if label == "action_success":
+                    sample_weight = balanced_binary_weights(y_train_label)
             model = xgb.XGBClassifier(
                 objective="binary:logistic",
                 eval_metric="logloss",
@@ -206,9 +218,7 @@ def train_xgboost(rows: list[dict[str, Any]], features: list[str], args: argpars
     if choice_train:
         x_choice = [feature_vector(row, features) for row in choice_train]
         y_choice = [float(int(row.get("is_chosen") or 0)) for row in choice_train]
-        positives = sum(1 for value in y_choice if value > 0.5)
-        negatives = len(y_choice) - positives
-        sample_weight = [(negatives / max(1, positives)) if value > 0.5 else 1.0 for value in y_choice]
+        sample_weight = balanced_binary_weights(y_choice)
         model = xgb.XGBClassifier(
             objective="binary:logistic",
             eval_metric="logloss",

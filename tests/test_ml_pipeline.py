@@ -50,7 +50,7 @@ from tools.bot_ml.validation_profile_manifests import load_action_profile_manife
 from tools.bot_ml.validate_data_quality import validate_rows as validate_data_quality_rows
 from tools.bot_ml.bt_masked_ga_combined import run as run_bt_masked_ga_combined
 from tools.bot_ml.evaluate_policy_model import policy_score, ranking_metrics
-from tools.bot_ml.train_policy_model import teacher_choice_training_rows
+from tools.bot_ml.train_policy_model import balanced_binary_weights, teacher_choice_training_rows
 from ml.preprocessing.preprocess_frames import main as preprocess_main
 from ml.training.train_action_frequency import main as train_main
 from experiments.run_experiment import autonomous_metrics, dungeon_route_metrics, load_config, make_adapter, movement_metrics, profession_metrics, quest_metrics, run_experiment, solo_combat_metrics
@@ -812,6 +812,13 @@ def test_bot_ml_teacher_choice_training_rows_use_imitable_allowed_candidates():
 
     assert [row["decision_id"] for row in choice_rows] == [1, 1]
     assert [row["is_chosen"] for row in choice_rows] == [1, 0]
+
+
+def test_bot_ml_binary_weights_balance_sparse_positive_labels():
+    weights = balanced_binary_weights([1.0, 0.0, 0.0, 0.0])
+
+    assert weights == [3.0, 1.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0]
+    assert balanced_binary_weights([0.0, 0.0]) == [1.0, 1.0]
 
 
 def test_bot_policy_ranking_uses_teacher_choice_and_hard_candidate_mask():
