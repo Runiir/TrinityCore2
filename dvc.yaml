@@ -197,7 +197,7 @@ stages:
     # Materializes dataset/bot_ml/decision_dataset.jsonl from dataset/bot_ml/raw.
     cmd: python -m tools.bot_ml.build_decision_dataset --input-dir
       ${bot_ml.raw_dir} --output ${bot_ml.decision_dataset} --manifest
-      ${bot_ml.decision_manifest}
+      ${bot_ml.decision_manifest} --include-map-id ${bot_ml.teacher_map_id}
     deps:
     - tools/bot_ml/build_decision_dataset.py
     - tools/bot_ml/common.py

@@ -17,6 +17,7 @@ tracking:
   live_dir: dvclive
 bot_ml:
   raw_dir: dataset/bot_ml/raw
+  teacher_map_id: 725
   decision_dataset: dataset/bot_ml/decision_dataset.jsonl
   decision_manifest: dataset/bot_ml/decision_dataset_manifest.json
   data_quality_report: dataset/bot_ml/data_quality.json

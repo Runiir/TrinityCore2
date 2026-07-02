@@ -17,7 +17,7 @@ from ml.raid.scheduler import RaidAssignmentScheduler
 from tools.bot_ml.common import DATASET_CONTRACT_VERSION, EXPORT_TABLES, numeric_features, split_by_run_ids
 from tools.bot_ml import orchestrator_daemon as daemon
 from tools.bot_ml.build_autonomy_master_checklist import refresh_checklist_from_evidence
-from tools.bot_ml.build_decision_dataset import build_row, build_rows, index_decision_fingerprints, index_future_events, index_semantic_stats, label_decision
+from tools.bot_ml.build_decision_dataset import build_row, build_rows, filter_rows_by_map, index_decision_fingerprints, index_future_events, index_semantic_stats, label_decision
 from tools.bot_ml.extract_world_knowledge import (
     REQUIRED_NONEMPTY_WORLD_MANIFESTS,
     WORLD_MANIFEST_NAMES,
@@ -50,7 +50,7 @@ from tools.bot_ml.validation_profile_manifests import load_action_profile_manife
 from tools.bot_ml.validate_data_quality import validate_rows as validate_data_quality_rows
 from tools.bot_ml.bt_masked_ga_combined import run as run_bt_masked_ga_combined
 from tools.bot_ml.evaluate_policy_model import policy_score, ranking_metrics
-from tools.bot_ml.train_policy_model import balanced_binary_weights, teacher_choice_training_rows
+from tools.bot_ml.train_policy_model import add_synthetic_binary_class, balanced_binary_weights, teacher_choice_training_rows
 from ml.preprocessing.preprocess_frames import main as preprocess_main
 from ml.training.train_action_frequency import main as train_main
 from experiments.run_experiment import autonomous_metrics, dungeon_route_metrics, load_config, make_adapter, movement_metrics, profession_metrics, quest_metrics, run_experiment, solo_combat_metrics
@@ -385,6 +385,17 @@ def test_bot_ml_decision_builder_emits_candidate_rows_with_observed_chosen_label
     assert rows[1]["teacher_action_quality"] == "candidate_unobserved"
     assert rows[0]["trace"]["candidate_activity"] == "quest"
     assert rows[0]["trace"]["dataset_contract_version"] == DATASET_CONTRACT_VERSION
+
+
+def test_bot_ml_decision_builder_filters_teacher_source_by_map():
+    rows = [
+        {"id": 1, "map_id": 725},
+        {"id": 2, "map_id": 1},
+        {"id": 3, "map_id": 725},
+    ]
+
+    assert [row["id"] for row in filter_rows_by_map(rows, {725})] == [1, 3]
+    assert filter_rows_by_map(rows, set()) == rows
 
 
 def test_bt_masked_ga_combined_writes_offline_artifacts_and_baseline_comparison(tmp_path):
@@ -866,6 +877,14 @@ def test_bot_ml_binary_weights_balance_sparse_positive_labels():
     assert balanced_binary_weights([0.0, 0.0]) == [1.0, 1.0]
 
 
+def test_bot_ml_binary_training_adds_low_weight_missing_class():
+    x_train, y_train, weights = add_synthetic_binary_class([[0.4], [0.8]], [1.0, 1.0], ["score"])
+
+    assert x_train == [[0.4], [0.8], [0.0]]
+    assert y_train == [1.0, 1.0, 0.0]
+    assert weights == [1.0, 1.0, 1e-6]
+
+
 def test_bot_policy_ranking_uses_teacher_choice_and_hard_candidate_mask():
     chosen = {"decision_id": 7, "candidate_allowed": 1, "is_chosen": 1, "trace": {"candidate_id": "chosen"}}
     masked = {"decision_id": 7, "candidate_allowed": 0, "is_chosen": 0, "trace": {"candidate_id": "masked"}}
@@ -968,6 +987,7 @@ def test_bot_ml_workflow_has_pixi_tasks_and_documented_dvc_steps():
         "dataset/validation_run_status",
         "live_validation_combined:",
         "bot_ml_build_decisions:",
+        "--include-map-id ${bot_ml.teacher_map_id}",
         "bot_ml_validate:",
         "bot_ml_train:",
         "bot_ml_evaluate:",

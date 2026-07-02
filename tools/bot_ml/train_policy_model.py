@@ -128,6 +128,14 @@ def balanced_binary_weights(values: list[float]) -> list[float]:
     return [positive_weight if value > 0.5 else negative_weight for value in values]
 
 
+def add_synthetic_binary_class(x_train: list[list[float]], y_train: list[float], features: list[str]) -> tuple[list[list[float]], list[float], list[float] | None]:
+    classes = {int(value > 0.5) for value in y_train}
+    if len(classes) != 1:
+        return x_train, y_train, None
+    observed_class = next(iter(classes))
+    return list(x_train) + [[0.0 for _ in features]], list(y_train) + [0.0 if observed_class else 1.0], [1.0 for _ in y_train] + [1e-6]
+
+
 def compact_fallback_payload(model_version: str, backend: str, features: list[str], fallback: dict[str, Any], xgb_paths: dict[str, str], portable_trees: dict[str, Any]) -> dict[str, Any]:
     return {
         "artifact_format": "bot_policy_portable_v1",
@@ -168,17 +176,9 @@ def train_xgboost(rows: list[dict[str, Any]], features: list[str], args: argpars
         y_train = [float(row.get(label, 0.0)) for row in train]
         sample_weight: list[float] | None = None
         if label in BINARY_LABELS:
-            classes = {int(value > 0.5) for value in y_train}
-            if len(classes) < 2:
-                observed_class = next(iter(classes)) if classes else 0
-                x_train_label = list(x_train) + [[0.0 for _ in features]]
-                y_train_label = list(y_train) + [0.0 if observed_class else 1.0]
-                sample_weight = [1.0 for _ in y_train] + [1e-6]
-            else:
-                x_train_label = x_train
-                y_train_label = y_train
-                if label == "action_success":
-                    sample_weight = balanced_binary_weights(y_train_label)
+            x_train_label, y_train_label, sample_weight = add_synthetic_binary_class(x_train, y_train, features)
+            if sample_weight is None and label == "action_success":
+                sample_weight = balanced_binary_weights(y_train_label)
             model = xgb.XGBClassifier(
                 objective="binary:logistic",
                 eval_metric="logloss",
@@ -218,7 +218,9 @@ def train_xgboost(rows: list[dict[str, Any]], features: list[str], args: argpars
     if choice_train:
         x_choice = [feature_vector(row, features) for row in choice_train]
         y_choice = [float(int(row.get("is_chosen") or 0)) for row in choice_train]
-        sample_weight = balanced_binary_weights(y_choice)
+        x_choice, y_choice, sample_weight = add_synthetic_binary_class(x_choice, y_choice, features)
+        if sample_weight is None:
+            sample_weight = balanced_binary_weights(y_choice)
         model = xgb.XGBClassifier(
             objective="binary:logistic",
             eval_metric="logloss",

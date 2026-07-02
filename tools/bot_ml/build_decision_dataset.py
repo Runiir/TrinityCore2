@@ -182,6 +182,12 @@ def window_events(indexed: dict[tuple[int, int], tuple[list[float], list[dict[st
     return rows[start:end]
 
 
+def filter_rows_by_map(rows: list[dict[str, Any]], map_ids: set[int]) -> list[dict[str, Any]]:
+    if not map_ids:
+        return rows
+    return [row for row in rows if int(row.get("map_id") or 0) in map_ids]
+
+
 def event_reward(event: dict[str, Any]) -> float:
     event_type = str(event.get("event_type") or "")
     value = float(event.get("value_float") or 0.0)
@@ -517,10 +523,14 @@ def main() -> int:
     parser.add_argument("--quest-window-sec", type=int, default=600)
     parser.add_argument("--reward-window-sec", type=int, default=300)
     parser.add_argument("--loop-repeat-threshold", type=int, default=DEFAULT_LOOP_REPEAT_THRESHOLD)
+    parser.add_argument("--include-map-id", type=int, action="append", default=[])
     args = parser.parse_args()
     windows = {"outcome": args.outcome_window_sec, "death": args.death_window_sec, "stuck": args.stuck_window_sec, "quest": args.quest_window_sec, "reward": args.reward_window_sec}
-    decisions = read_jsonl(table_path(args.input_dir, "experiment_bot_decisions"))
-    events = read_jsonl(table_path(args.input_dir, "experiment_bot_events"))
+    include_map_ids = set(args.include_map_id)
+    all_decisions = read_jsonl(table_path(args.input_dir, "experiment_bot_decisions"))
+    all_events = read_jsonl(table_path(args.input_dir, "experiment_bot_events"))
+    decisions = filter_rows_by_map(all_decisions, include_map_ids)
+    events = filter_rows_by_map(all_events, include_map_ids)
     semantic_stats = index_semantic_stats(read_jsonl(table_path(args.input_dir, "bot_semantic_outcome_stats")))
     decision_fingerprints = index_decision_fingerprints(read_jsonl(table_path(args.input_dir, "bot_memory_decision_fingerprints")))
     indexed_events = index_future_events(events)
@@ -538,6 +548,9 @@ def main() -> int:
     manifest = {
         "rows": count,
         "decision_rows": len(decisions),
+        "source_decision_rows": len(all_decisions),
+        "source_event_rows": len(all_events),
+        "source_filter": {"include_map_ids": sorted(include_map_ids)},
         "candidate_rows": count,
         "observed_label_rows": sum(1 for row in rows if row.get("label_observed")),
         "jsonl": str(args.output),
