@@ -651,6 +651,9 @@ def test_quest_first_portfolio_routing_surface():
     assert "validation_route_group_heal" in mgr
     assert "float maxApproachRange = _config.ValidationRouteEnable && healer->GetMap() && healer->GetMap()->IsRaid() ? 35.0f : 18.0f;" in mgr
     assert "float approachRange = std::max(3.0f, std::min(healRange - 2.0f, maxApproachRange));" in mgr
+    assert "healBlockedByCastState = true;" in mgr
+    assert "heal_cast_state_pending" in mgr
+    assert "validation_route_group_heal_pending" in mgr
     assert "bool cast = TryCastFriendlySpell(healer, healTarget, bestHeal->SpellId);" in mgr
     assert "action = cast ? \"validation_route_group_heal\" : \"validation_route_group_heal_failed\";" in mgr
     assert "return cast;" in mgr
@@ -670,6 +673,9 @@ def test_quest_first_portfolio_routing_surface():
     assert "voter->GetVictim() == focus" in mgr
     assert 'std::string(GetDungeonRole(member)) == "tank"' in mgr
     assert "auto activeTankFocus" in mgr
+    assert "auto tankOwnsFocus" in validation_route_objective
+    assert 'if (_config.ValidationRouteKind != "boss" && !tankOwnsFocus(member, focus))' in validation_route_objective
+    assert "if (!ownedByTank)" in validation_route_objective
     assert 'if (_config.ValidationRouteKind == "boss" || activeTankFocus(focus))' in mgr
     assert 'if (_config.ValidationRouteKind != "boss" && !memberIsTank)' in mgr
     assert "move_to_validation_route_assist_target" in mgr
@@ -898,7 +904,7 @@ def test_quest_first_portfolio_routing_surface():
     assert "validation_route_stuck_no_fallback" in mgr
     assert "fallback_disabled" in mgr
     assert "state.ValidationRouteAnchorOverrideValid && routeHasActiveCombatIntent && !repeatedDeathNearRoute" in validation_route_objective
-    assert '(_config.ValidationRouteKind == "boss" ? 5 : 20)' in mgr
+    assert 'uint32 routeTargetNoProgressThreshold = _config.ValidationRouteKind == "boss" ? 5 : 20;' in mgr
     assert "_validationRouteFocusGuid.Clear();" in mgr
     assert "state.QuestWork.SelectedTargetGuid.Clear();" in mgr
     assert "regroup_tank_focus_mismatch" in mgr

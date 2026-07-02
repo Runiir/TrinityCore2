@@ -6871,6 +6871,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         BotActionProfileSpell const* bestHeal = nullptr;
         Unit* healTarget = nullptr;
         float healTargetHealthPct = 1.0f;
+        bool healBlockedByCastState = false;
         for (BotActionProfileSpell const& spell : profile.Spells)
         {
             if (!spell.SpellId || !healer->HasSpell(spell.SpellId) || spell.HealingWeight <= 0.0f)
@@ -6905,7 +6906,10 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 continue;
 
             if (healer->HasUnitState(UNIT_STATE_CASTING) || healer->GetSpellHistory()->HasGlobalCooldown(spellInfo) || !healer->GetSpellHistory()->IsReady(spellInfo))
+            {
+                healBlockedByCastState = true;
                 continue;
+            }
 
             if (!bestHeal)
             {
@@ -6926,7 +6930,18 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         }
 
         if (!bestHeal || !healTarget)
+        {
+            if (healBlockedByCastState)
+            {
+                std::string raw = BuildRawJson(healer, combatTarget);
+                std::string semantic = BuildSemanticJson(healer, combatTarget, "validation_route_group_heal", &power, stage, activity);
+                RecordEvent(state, healer, "validation_route_group_heal", lowestTarget, "heal_cast_state_pending", raw.c_str(), semantic.c_str(), lowestHealthPct, 0);
+                situation = "validation_route_group_heal";
+                action = "validation_route_group_heal_pending";
+                return true;
+            }
             return false;
+        }
 
         SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(bestHeal->SpellId);
         float healRange = bestHeal->MaxRange > 0.0f ? bestHeal->MaxRange : std::max(5.0f, spellInfo ? spellInfo->GetMaxRange(false) : 5.0f);
@@ -7651,6 +7666,10 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         {
             return member && focus && (member->IsInCombat() || focus->IsInCombat() || focus->GetVictim());
         };
+        auto tankOwnsFocus = [&](Player* member, Unit* focus) -> bool
+        {
+            return member && focus && focus->GetVictim() == member;
+        };
         auto activeTankFocus = [&](Unit* focus) -> bool
         {
             if (!focus)
@@ -7662,6 +7681,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 if (!member || member == bot || !member->IsAlive() || member->GetMap() != bot->GetMap())
                     continue;
                 if (std::string(GetDungeonRole(member)) != "tank")
+                    continue;
+                if (_config.ValidationRouteKind != "boss" && !tankOwnsFocus(member, focus))
                     continue;
                 if (member->GetVictim() == focus)
                     return true;
@@ -7688,6 +7709,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             if (Unit* focus = routeUsableCombatTarget(ObjectAccessor::GetUnit(*bot, cohortState.TargetGuid)))
             {
                 if (!activeCohortFocus(member, focus))
+                    continue;
+                if (_config.ValidationRouteKind != "boss" && !tankOwnsFocus(member, focus))
                     continue;
                 return focus;
             }
@@ -7783,10 +7806,31 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         {
             return member && focus && (member->IsInCombat() || focus->IsInCombat() || focus->GetVictim());
         };
+        auto tankOwnsFocus = [](Player* member, Unit* focus) -> bool
+        {
+            return member && focus && focus->GetVictim() == member;
+        };
 
         if (routeFocusMemoryFresh())
             if (Unit* focus = routeUsableCombatTarget(ObjectAccessor::GetUnit(*bot, _validationRouteFocusGuid)))
+            {
+                if (_config.ValidationRouteKind != "boss")
+                {
+                    bool ownedByTank = false;
+                    for (WorldBotState const& cohortState : _bots)
+                    {
+                        Player* member = GetBot(cohortState);
+                        if (member && member != bot && member->IsAlive() && member->GetMap() == bot->GetMap() && std::string(GetDungeonRole(member)) == "tank" && tankOwnsFocus(member, focus))
+                        {
+                            ownedByTank = true;
+                            break;
+                        }
+                    }
+                    if (!ownedByTank)
+                        return ObjectGuid::Empty;
+                }
                 return focus->GetGUID();
+            }
 
         for (WorldBotState const& cohortState : _bots)
         {
@@ -7802,6 +7846,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 if (Unit* focus = routeUsableCombatTarget(ObjectAccessor::GetUnit(*member, cohortState.TargetGuid)))
                 {
                     if (!activeCohortFocus(member, focus))
+                        continue;
+                    if (_config.ValidationRouteKind != "boss" && !tankOwnsFocus(member, focus))
                         continue;
                     return focus->GetGUID();
                 }
