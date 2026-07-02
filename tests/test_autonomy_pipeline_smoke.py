@@ -666,9 +666,18 @@ def test_quest_first_portfolio_routing_surface():
     assert "healBlockedByCastState = true;" in mgr
     assert "heal_cast_state_pending" in mgr
     assert "validation_route_group_heal_pending" in mgr
-    assert "bool cast = TryCastFriendlySpell(healer, healTarget, bestHeal->SpellId);" in mgr
+    assert "buildRouteHealRaw" in mgr
+    assert '"selected_heal_spell_id"' in mgr
+    assert '"heal_target_guid"' in mgr
+    assert '"heal_target_health_pct"' in mgr
+    assert '"cast_failure_reason"' in mgr
+    assert "bool cast = TryCastFriendlySpell(healer, healTarget, bestHeal->SpellId, &castFailureReason);" in mgr
+    assert 'RecordEvent(state, healer, "validation_route_group_heal", healTarget, cast ? "ok" : castFailureReason.c_str(), raw.c_str(), semantic.c_str(), healTargetHealthPct, 0, bestHeal->SpellId);' in mgr
     assert "action = cast ? \"validation_route_group_heal\" : \"validation_route_group_heal_failed\";" in mgr
     assert "return cast;" in mgr
+    assert "return fail(\"line_of_sight\");" in mgr
+    assert "return fail(\"global_cooldown\");" in mgr
+    assert "*failureReason = \"spell_cast_result_\" + std::to_string(uint32(castResult));" in mgr
     assert_ordered(
         validation_route_objective,
         "target = routeTarget;",

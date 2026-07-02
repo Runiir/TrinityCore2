@@ -6929,11 +6929,23 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             }
         }
 
+        auto buildRouteHealRaw = [&](Unit const* routeHealTarget, uint32 spellId, float healthPct, char const* castResult, char const* castFailureReason) -> std::string
+        {
+            std::ostringstream raw;
+            raw << "{\"base\":" << BuildRawJson(healer, combatTarget)
+                << ",\"route_heal\":{\"selected_heal_spell_id\":" << spellId
+                << ",\"heal_target_guid\":" << (routeHealTarget ? routeHealTarget->GetGUID().GetCounter() : 0)
+                << ",\"heal_target_health_pct\":" << healthPct
+                << ",\"cast_result\":\"" << JsonEscape(castResult ? castResult : "")
+                << "\",\"cast_failure_reason\":\"" << JsonEscape(castFailureReason ? castFailureReason : "") << "\"}}";
+            return raw.str();
+        };
+
         if (!bestHeal || !healTarget)
         {
             if (healBlockedByCastState)
             {
-                std::string raw = BuildRawJson(healer, combatTarget);
+                std::string raw = buildRouteHealRaw(lowestTarget, 0, lowestHealthPct, "pending", "cast_state_pending");
                 std::string semantic = BuildSemanticJson(healer, combatTarget, "validation_route_group_heal", &power, stage, activity);
                 RecordEvent(state, healer, "validation_route_group_heal", lowestTarget, "heal_cast_state_pending", raw.c_str(), semantic.c_str(), lowestHealthPct, 0);
                 situation = "validation_route_group_heal";
@@ -6945,7 +6957,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
         SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(bestHeal->SpellId);
         float healRange = bestHeal->MaxRange > 0.0f ? bestHeal->MaxRange : std::max(5.0f, spellInfo ? spellInfo->GetMaxRange(false) : 5.0f);
-        std::string raw = BuildRawJson(healer, combatTarget);
         std::string semantic = BuildSemanticJson(healer, combatTarget, "validation_route_group_heal", &power, stage, activity);
         if (!healer->IsWithinDistInMap(healTarget, std::max(5.0f, healRange - 1.0f)) || !healer->IsWithinLOSInMap(healTarget))
         {
@@ -6953,15 +6964,18 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             float approachRange = std::max(3.0f, std::min(healRange - 2.0f, maxApproachRange));
             Position healPosition = healTarget->GetFirstCollisionPosition(approachRange, healTarget->GetAngle(healer));
             MoveBotToPoint(state, healer, healPosition.GetPositionX(), healPosition.GetPositionY(), healPosition.GetPositionZ());
-            RecordEvent(state, healer, "validation_route_group_heal", healTarget, "approach_ally", raw.c_str(), semantic.c_str(), healTargetHealthPct, bestHeal->SpellId);
+            std::string raw = buildRouteHealRaw(healTarget, bestHeal->SpellId, healTargetHealthPct, "pending", !healer->IsWithinLOSInMap(healTarget) ? "line_of_sight" : "out_of_range");
+            RecordEvent(state, healer, "validation_route_group_heal", healTarget, "approach_ally", raw.c_str(), semantic.c_str(), healTargetHealthPct, 0, bestHeal->SpellId);
             situation = "validation_route_group_heal";
             action = "move_to_validation_route_heal_target";
             return true;
         }
 
         healer->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
-        bool cast = TryCastFriendlySpell(healer, healTarget, bestHeal->SpellId);
-        RecordEvent(state, healer, "validation_route_group_heal", healTarget, cast ? "ok" : "cast_failed", raw.c_str(), semantic.c_str(), healTargetHealthPct, bestHeal->SpellId);
+        std::string castFailureReason;
+        bool cast = TryCastFriendlySpell(healer, healTarget, bestHeal->SpellId, &castFailureReason);
+        std::string raw = buildRouteHealRaw(healTarget, bestHeal->SpellId, healTargetHealthPct, cast ? "ok" : "failed", cast ? "" : castFailureReason.c_str());
+        RecordEvent(state, healer, "validation_route_group_heal", healTarget, cast ? "ok" : castFailureReason.c_str(), raw.c_str(), semantic.c_str(), healTargetHealthPct, 0, bestHeal->SpellId);
         situation = "validation_route_group_heal";
         action = cast ? "validation_route_group_heal" : "validation_route_group_heal_failed";
         return cast;
@@ -10759,27 +10773,58 @@ uint32 BotWorldPopulationMgr::SelectHealSpell(Player* bot) const
     return 0;
 }
 
-bool BotWorldPopulationMgr::TryCastFriendlySpell(Player* bot, Unit* target, uint32 spellId) const
+bool BotWorldPopulationMgr::TryCastFriendlySpell(Player* bot, Unit* target, uint32 spellId, std::string* failureReason) const
 {
-    if (!bot || !target || !spellId || !target->IsAlive() || !bot->IsValidAssistTarget(target))
+    auto fail = [failureReason](char const* reason) -> bool
+    {
+        if (failureReason)
+            *failureReason = reason;
         return false;
+    };
+
+    if (!bot)
+        return fail("missing_bot");
+    if (!target)
+        return fail("missing_target");
+    if (!spellId)
+        return fail("missing_spell");
+    if (!target->IsAlive())
+        return fail("target_dead");
+    if (!bot->IsValidAssistTarget(target))
+        return fail("invalid_assist_target");
 
     SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
-    if (!spellInfo || !bot->IsWithinLOSInMap(target))
-        return false;
+    if (!spellInfo)
+        return fail("missing_spell_info");
+    if (!bot->IsWithinLOSInMap(target))
+        return fail("line_of_sight");
 
     float maxRange = std::max(5.0f, spellInfo->GetMaxRange(false));
     if (!bot->IsWithinDistInMap(target, maxRange))
-        return false;
+        return fail("out_of_range");
 
-    if (bot->HasUnitState(UNIT_STATE_CASTING) || bot->GetSpellHistory()->HasGlobalCooldown(spellInfo) || !bot->GetSpellHistory()->IsReady(spellInfo))
-        return false;
+    if (bot->HasUnitState(UNIT_STATE_CASTING))
+        return fail("already_casting");
+    if (bot->GetSpellHistory()->HasGlobalCooldown(spellInfo))
+        return fail("global_cooldown");
+    if (!bot->GetSpellHistory()->IsReady(spellInfo))
+        return fail("spell_not_ready");
 
     int32 powerCost = spellInfo->CalcPowerCost(bot, spellInfo->GetSchoolMask());
     if (powerCost > 0 && bot->GetPower(bot->GetPowerType()) < uint32(powerCost))
-        return false;
+        return fail("insufficient_power");
 
-    return bot->CastSpell(target, spellId, false) == SPELL_CAST_OK;
+    SpellCastResult castResult = bot->CastSpell(target, spellId, false);
+    if (castResult != SPELL_CAST_OK)
+    {
+        if (failureReason)
+            *failureReason = "spell_cast_result_" + std::to_string(uint32(castResult));
+        return false;
+    }
+
+    if (failureReason)
+        failureReason->clear();
+    return true;
 }
 
 bool BotWorldPopulationMgr::TryValidationRouteReadiness(WorldBotState& state, Player* bot, Unit* pullTarget, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, DungeonTrashActionResult& result)
