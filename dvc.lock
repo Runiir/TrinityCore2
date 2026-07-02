@@ -562,8 +562,8 @@ stages:
     deps:
     - path: dataset/bot_ml/raw
       hash: md5
-      md5: 47d7de45393748dbfd7d431e7d040004.dir
-      size: 1511121458
+      md5: 6c5331a75d43e22767dfebd8dce05394.dir
+      size: 1349114098
       nfiles: 45
     - path: tools/bot_ml/build_decision_dataset.py
       hash: md5
@@ -576,12 +576,12 @@ stages:
     outs:
     - path: dataset/bot_ml/decision_dataset.jsonl
       hash: md5
-      md5: 4e8152847c983bc77e99ff0b1b223cfb
-      size: 42758580
+      md5: 59b3665c96ba47dd40ae3862e8f2aa98
+      size: 52582260
     - path: dataset/bot_ml/decision_dataset_manifest.json
       hash: md5
-      md5: 5264908ed2a98ae06770415b962a8717
-      size: 4531
+      md5: 955e292704524d108708979da609104c
+      size: 2286
   bot_ml_train:
     cmd: python -m tools.bot_ml.train_policy_model --dataset 
       dataset/bot_ml/decision_dataset.jsonl --model 
@@ -590,8 +590,8 @@ stages:
     deps:
     - path: dataset/bot_ml/decision_dataset.jsonl
       hash: md5
-      md5: 4e8152847c983bc77e99ff0b1b223cfb
-      size: 42758580
+      md5: 59b3665c96ba47dd40ae3862e8f2aa98
+      size: 52582260
     - path: tools/bot_ml/common.py
       hash: md5
       md5: 456b2fbeef89f89a13495ebb9a8cf993
@@ -607,18 +607,18 @@ stages:
     outs:
     - path: artifacts/bot_policy_dvclive/train
       hash: md5
-      md5: 541012a4553fae9ec1adb730e169cbe4.dir
+      md5: 3034517453aecaee6904387f6057bf62.dir
       size: 169
       nfiles: 4
     - path: models/bot_policy/artifacts
       hash: md5
-      md5: d491981bdf145d95a77103aedcb2293d.dir
-      size: 17441861
-      nfiles: 82
+      md5: 4fc25489600a982bafb890418c54ed67.dir
+      size: 19575992
+      nfiles: 94
     - path: models/bot_policy/policy_model.json
       hash: md5
-      md5: 1c2cb4a2ba2099214a1d7fe4564b65aa
-      size: 1747053
+      md5: 004b99724340eb46da660c87c72b8306
+      size: 1334876
   bot_ml_evaluate:
     cmd: python -m tools.bot_ml.evaluate_policy_model --dataset 
       dataset/bot_ml/decision_dataset.jsonl --model 
@@ -629,12 +629,12 @@ stages:
     deps:
     - path: dataset/bot_ml/decision_dataset.jsonl
       hash: md5
-      md5: 4e8152847c983bc77e99ff0b1b223cfb
-      size: 42758580
+      md5: 59b3665c96ba47dd40ae3862e8f2aa98
+      size: 52582260
     - path: models/bot_policy/policy_model.json
       hash: md5
-      md5: 1c2cb4a2ba2099214a1d7fe4564b65aa
-      size: 1747053
+      md5: 004b99724340eb46da660c87c72b8306
+      size: 1334876
     - path: tools/bot_ml/common.py
       hash: md5
       md5: 456b2fbeef89f89a13495ebb9a8cf993
@@ -650,17 +650,17 @@ stages:
     outs:
     - path: artifacts/bot_policy_dvclive/eval
       hash: md5
-      md5: 5f0025407212f442cf4be2dbdf376e7f.dir
-      size: 295
+      md5: 420c894dbec1fbfdb8d72026bba3b60d.dir
+      size: 293
       nfiles: 5
     - path: evaluations/bot_policy/diagnostics.json
       hash: md5
-      md5: 52c7ae2d9fc69a7499bdd7c616ba3325
-      size: 743236
+      md5: 43fef7e7af1c1ab19370d60fc02f16c5
+      size: 1743701
     - path: evaluations/bot_policy/metrics.json
       hash: md5
-      md5: 8a1ab6199e3dc2379823b89aa299e34f
-      size: 2316
+      md5: 71a24313c8a1280198761a669ea18464
+      size: 2265
   bot_ml_register:
     cmd: python -m tools.bot_ml.register_policy_model --model 
       models/bot_policy/policy_model.json --metrics 
@@ -704,8 +704,8 @@ stages:
     deps:
     - path: dataset/bot_ml/decision_dataset.jsonl
       hash: md5
-      md5: 4e8152847c983bc77e99ff0b1b223cfb
-      size: 42758580
+      md5: 59b3665c96ba47dd40ae3862e8f2aa98
+      size: 52582260
     - path: tools/bot_ml/common.py
       hash: md5
       md5: 456b2fbeef89f89a13495ebb9a8cf993
@@ -717,8 +717,8 @@ stages:
     outs:
     - path: dataset/bot_ml/data_quality.json
       hash: md5
-      md5: 03f436c43a52d77ba2a23399dfbb215a
-      size: 3346
+      md5: 244b714bee9178f557a33030f20f8ce2
+      size: 3309
   bt_masked_ga_combined:
     cmd: python -m tools.bot_ml.bt_masked_ga_combined --dataset 
       dataset/bot_ml/decision_dataset.jsonl --output-dir 
