@@ -1,5 +1,5 @@
 outs:
-- md5: 2448496ae5a5059834933a5a7fba1318
-  size: 1670494
+- md5: 3130dffd916eb59ef5807456c9c703ae
+  size: 1707797
   hash: md5
   path: worldserver_output.log

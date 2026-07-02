@@ -72,7 +72,15 @@ INSERT INTO `bot_rotation_profile` (`class_id`, `spec_tag`, `role`, `resource_ty
 (5, 'holy_priest', 'healer', 'mana', 'ranged', 'healer_support', 'none', 18, 40, 1, 'stonecore_5n_cata_guide_seed', 'initial focused coverage for stonecore_5n; insert more rows for other specs'),
 (8, 'fire', 'dps', 'mana', 'ranged', 'ranged', 'none', 12, 35, 1, 'stonecore_5n_cata_guide_seed', 'initial focused coverage for stonecore_5n; insert more rows for other specs'),
 (3, 'marksmanship', 'dps', 'focus', 'ranged', 'ranged', 'ranged', 12, 35, 1, 'stonecore_5n_cata_guide_seed', 'initial focused coverage for stonecore_5n; insert more rows for other specs'),
-(7, 'enhancement', 'dps', 'mana_maelstrom', 'melee', 'melee', 'melee', 0, 5, 1, 'stonecore_5n_cata_guide_seed', 'initial focused coverage for stonecore_5n; insert more rows for other specs');
+(7, 'enhancement', 'dps', 'mana_maelstrom', 'melee', 'melee', 'melee', 0, 5, 1, 'stonecore_5n_cata_guide_seed', 'initial focused coverage for stonecore_5n; insert more rows for other specs'),
+(1, 'protection_warrior', 'tank', 'rage', 'melee', 'melee', 'melee', 0, 5, 1, 'stonecore_5n_cata_guide_seed', 'BWD validation roster coverage'),
+(6, 'blood_death_knight', 'tank', 'runes_runic_power', 'melee', 'melee', 'melee', 0, 5, 1, 'stonecore_5n_cata_guide_seed', 'BWD validation roster coverage'),
+(11, 'restoration_druid', 'healer', 'mana', 'ranged', 'healer_support', 'none', 18, 40, 1, 'stonecore_5n_cata_guide_seed', 'BWD validation roster coverage'),
+(2, 'holy_paladin', 'healer', 'mana_holy_power', 'ranged', 'healer_support', 'none', 18, 40, 1, 'stonecore_5n_cata_guide_seed', 'BWD validation roster coverage'),
+(5, 'discipline_priest', 'healer', 'mana', 'ranged', 'healer_support', 'none', 18, 40, 1, 'stonecore_5n_cata_guide_seed', 'BWD validation roster coverage'),
+(4, 'assassination_rogue', 'dps', 'energy', 'melee', 'melee', 'melee', 0, 5, 1, 'stonecore_5n_cata_guide_seed', 'BWD validation roster coverage'),
+(9, 'affliction_warlock', 'dps', 'mana', 'ranged', 'ranged', 'none', 12, 35, 1, 'stonecore_5n_cata_guide_seed', 'BWD validation roster coverage'),
+(7, 'elemental_shaman', 'dps', 'mana', 'ranged', 'ranged', 'none', 12, 35, 1, 'stonecore_5n_cata_guide_seed', 'BWD validation roster coverage');
 
 INSERT INTO `bot_rotation_action` (`profile_id`, `sort_order`, `spell_id`, `category`, `mechanic_tags`, `survival_weight`, `priority_bucket`, `min_enemies`, `target_selector`, `movement_directive`, `auto_attack_mode`, `maintain_aura_id`, `refresh_aura_below_ms`) VALUES
 ((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=2 AND `spec_tag`='protection' AND `role`='tank'), 1, 25780, 'buff', 'righteous_fury,self,threat,prepull_required', 1.00, 0, 1, 'self', 'melee', 'melee', 25780, 300000),
@@ -134,3 +142,52 @@ INSERT INTO `bot_rotation_action` (`profile_id`, `sort_order`, `spell_id`, `cate
 ((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=7 AND `spec_tag`='enhancement' AND `role`='dps'), 50, 60103, 'spender', 'lava_lash,melee', 0.92, 2, 1, 0, 0, 0, 1),
 ((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=7 AND `spec_tag`='enhancement' AND `role`='dps'), 60, 8050, 'dot', 'flame_shock,dot', 0.84, 2, 1, 0, 8050, 0, 0),
 ((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=7 AND `spec_tag`='enhancement' AND `role`='dps'), 70, 8042, 'spender', 'earth_shock', 0.76, 4, 1, 0, 0, 0, 0);
+
+INSERT INTO `bot_rotation_action` (`profile_id`, `sort_order`, `spell_id`, `category`, `mechanic_tags`, `damage_weight`, `threat_weight`, `mitigation_weight`, `survival_weight`, `priority_bucket`, `min_enemies`, `requires_interruptible_target`, `requires_melee_range`, `target_selector`, `movement_directive`, `auto_attack_mode`, `maintain_aura_id`) VALUES
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=1 AND `spec_tag`='protection_warrior' AND `role`='tank'), 10, 6673, 'buff', 'battle_shout,self,threat,prepull_required', 0.10, 0.20, 0, 0.50, 0, 1, 0, 0, 'self', 'melee', 'melee', 6673),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=1 AND `spec_tag`='protection_warrior' AND `role`='tank'), 20, 469, 'buff', 'commanding_shout,self,prepull_required', 0, 0.10, 0.20, 0.60, 0, 1, 0, 0, 'self', 'melee', 'melee', 469),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=1 AND `spec_tag`='protection_warrior' AND `role`='tank'), 40, 6552, 'interrupt', 'pummel,interrupt', 0.15, 0, 0, 0.20, 1, 1, 1, 1, 'enemy', 'melee', 'melee', 0),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=1 AND `spec_tag`='protection_warrior' AND `role`='tank'), 60, 78, 'threat_build', 'heroic_strike,threat,single_target', 0.74, 0.80, 0, 0, 2, 1, 0, 1, 'enemy', 'melee', 'melee', 0);
+
+INSERT INTO `bot_rotation_action` (`profile_id`, `sort_order`, `spell_id`, `category`, `mechanic_tags`, `damage_weight`, `threat_weight`, `survival_weight`, `priority_bucket`, `min_enemies`, `requires_interruptible_target`, `requires_melee_range`, `target_selector`, `movement_directive`, `auto_attack_mode`, `maintain_aura_id`) VALUES
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=6 AND `spec_tag`='blood_death_knight' AND `role`='tank'), 10, 57330, 'buff', 'horn_of_winter,self,prepull_required', 0.15, 0.20, 0.40, 0, 1, 0, 0, 'self', 'melee', 'melee', 57330),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=6 AND `spec_tag`='blood_death_knight' AND `role`='tank'), 30, 47528, 'interrupt', 'mind_freeze,interrupt', 0.15, 0, 0.20, 1, 1, 1, 1, 'enemy', 'melee', 'melee', 0),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=6 AND `spec_tag`='blood_death_knight' AND `role`='tank'), 50, 45462, 'builder', 'plague_strike,melee', 0.70, 0.60, 0, 3, 1, 0, 1, 'enemy', 'melee', 'melee', 0),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=6 AND `spec_tag`='blood_death_knight' AND `role`='tank'), 60, 47541, 'spender', 'death_coil,runic_power', 0.68, 0.45, 0, 4, 1, 0, 0, 'enemy', 'melee', 'melee', 0);
+
+INSERT INTO `bot_rotation_action` (`profile_id`, `sort_order`, `spell_id`, `category`, `mechanic_tags`, `damage_weight`, `healing_weight`, `survival_weight`, `priority_bucket`, `min_enemies`, `max_target_health_pct`, `target_selector`, `movement_directive`, `auto_attack_mode`, `max_range`, `maintain_aura_id`) VALUES
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=11 AND `spec_tag`='restoration_druid' AND `role`='healer'), 10, 8936, 'heal_fast', 'regrowth,triage,heal', 0, 0.92, 0.75, 1, 1, 0.70, 'lowest_ally', 'healer_support', 'none', 40, 0),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=11 AND `spec_tag`='restoration_druid' AND `role`='healer'), 20, 5185, 'heal_efficient', 'healing_touch,heal', 0, 0.86, 0.70, 2, 1, 0.82, 'lowest_ally', 'healer_support', 'none', 40, 0),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=11 AND `spec_tag`='restoration_druid' AND `role`='healer'), 30, 5176, 'builder', 'wrath,healer_dps', 0.45, 0, 0, 5, 1, 1.00, 'enemy', 'healer_support', 'none', 35, 0),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=11 AND `spec_tag`='restoration_druid' AND `role`='healer'), 40, 8921, 'dot', 'moonfire,healer_dps', 0.42, 0, 0, 5, 1, 1.00, 'enemy', 'healer_support', 'none', 35, 8921);
+
+INSERT INTO `bot_rotation_action` (`profile_id`, `sort_order`, `spell_id`, `category`, `mechanic_tags`, `damage_weight`, `healing_weight`, `survival_weight`, `priority_bucket`, `min_enemies`, `max_target_health_pct`, `target_selector`, `movement_directive`, `auto_attack_mode`, `max_range`, `maintain_aura_id`) VALUES
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=2 AND `spec_tag`='holy_paladin' AND `role`='healer'), 10, 20217, 'buff', 'blessing_of_kings,party,prepull_required', 0, 0.20, 0.50, 0, 1, 1.00, 'party', 'healer_support', 'none', 40, 20217),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=2 AND `spec_tag`='holy_paladin' AND `role`='healer'), 20, 19750, 'heal_fast', 'flash_of_light,triage,heal', 0, 0.94, 0.75, 1, 1, 0.62, 'lowest_ally', 'healer_support', 'none', 40, 0),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=2 AND `spec_tag`='holy_paladin' AND `role`='healer'), 30, 635, 'heal_efficient', 'holy_light,heal', 0, 0.82, 0.65, 2, 1, 0.85, 'lowest_ally', 'healer_support', 'none', 40, 0);
+
+INSERT INTO `bot_rotation_action` (`profile_id`, `sort_order`, `spell_id`, `category`, `mechanic_tags`, `damage_weight`, `healing_weight`, `survival_weight`, `priority_bucket`, `min_enemies`, `max_target_health_pct`, `forbidden_target_aura`, `target_selector`, `movement_directive`, `auto_attack_mode`, `max_range`, `maintain_aura_id`) VALUES
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=5 AND `spec_tag`='discipline_priest' AND `role`='healer'), 10, 33076, 'heal_efficient', 'prayer_of_mending,tank,heal,maintenance', 0, 0.86, 0.70, 1, 1, 0.98, 0, 'tank', 'healer_support', 'none', 40, 33076),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=5 AND `spec_tag`='discipline_priest' AND `role`='healer'), 20, 2061, 'heal_fast', 'flash_heal,triage,heal', 0, 1.00, 0.85, 1, 1, 0.55, 0, 'lowest_ally', 'healer_support', 'none', 40, 0),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=5 AND `spec_tag`='discipline_priest' AND `role`='healer'), 30, 2050, 'heal_efficient', 'heal,efficient,heal', 0, 0.74, 0.60, 3, 1, 0.88, 0, 'lowest_ally', 'healer_support', 'none', 40, 0),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=5 AND `spec_tag`='discipline_priest' AND `role`='healer'), 40, 589, 'dot', 'shadow_word_pain,healer_dps', 0.42, 0, 0, 5, 1, 1.00, 589, 'enemy', 'healer_support', 'none', 35, 589),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=5 AND `spec_tag`='discipline_priest' AND `role`='healer'), 50, 585, 'builder', 'smite,healer_dps', 0.40, 0, 0, 5, 1, 1.00, 0, 'enemy', 'healer_support', 'none', 35, 0);
+
+INSERT INTO `bot_rotation_action` (`profile_id`, `sort_order`, `spell_id`, `category`, `mechanic_tags`, `damage_weight`, `priority_bucket`, `min_enemies`, `requires_interruptible_target`, `requires_melee_range`, `target_selector`, `movement_directive`, `auto_attack_mode`) VALUES
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=4 AND `spec_tag`='assassination_rogue' AND `role`='dps'), 10, 1766, 'interrupt', 'kick,interrupt', 0.15, 1, 1, 1, 1, 'enemy', 'melee', 'melee'),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=4 AND `spec_tag`='assassination_rogue' AND `role`='dps'), 20, 1752, 'builder', 'sinister_strike,combo_builder', 0.88, 1, 1, 0, 1, 'enemy', 'melee', 'melee'),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=4 AND `spec_tag`='assassination_rogue' AND `role`='dps'), 30, 2098, 'spender', 'eviscerate,combo_spender', 0.82, 3, 1, 0, 1, 'enemy', 'melee', 'melee'),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=4 AND `spec_tag`='assassination_rogue' AND `role`='dps'), 40, 408, 'control', 'kidney_shot,stun', 0.35, 4, 1, 0, 1, 'enemy', 'melee', 'melee');
+
+INSERT INTO `bot_rotation_action` (`profile_id`, `sort_order`, `spell_id`, `category`, `mechanic_tags`, `damage_weight`, `priority_bucket`, `min_enemies`, `forbidden_target_aura`, `target_selector`, `movement_directive`, `auto_attack_mode`, `min_range`, `max_range`, `maintain_aura_id`) VALUES
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=9 AND `spec_tag`='affliction_warlock' AND `role`='dps'), 10, 172, 'dot', 'corruption,dot', 0.92, 1, 1, 172, 'enemy', 'ranged', 'none', 12, 35, 172),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=9 AND `spec_tag`='affliction_warlock' AND `role`='dps'), 20, 348, 'dot', 'immolate,dot', 0.84, 2, 1, 348, 'enemy', 'ranged', 'none', 12, 35, 348),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=9 AND `spec_tag`='affliction_warlock' AND `role`='dps'), 30, 17962, 'spender', 'conflagrate,instant', 0.80, 3, 1, 0, 'enemy', 'ranged', 'none', 12, 35, 0),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=9 AND `spec_tag`='affliction_warlock' AND `role`='dps'), 40, 686, 'builder', 'shadow_bolt,filler', 0.78, 4, 1, 0, 'enemy', 'ranged', 'none', 12, 35, 0);
+
+INSERT INTO `bot_rotation_action` (`profile_id`, `sort_order`, `spell_id`, `category`, `mechanic_tags`, `damage_weight`, `priority_bucket`, `min_enemies`, `forbidden_target_aura`, `requires_interruptible_target`, `target_selector`, `movement_directive`, `auto_attack_mode`, `min_range`, `max_range`, `maintain_aura_id`) VALUES
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=7 AND `spec_tag`='elemental_shaman' AND `role`='dps'), 10, 57994, 'interrupt', 'wind_shear,interrupt', 0.15, 1, 1, 0, 1, 'enemy', 'ranged', 'none', 0, 35, 0),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=7 AND `spec_tag`='elemental_shaman' AND `role`='dps'), 20, 8050, 'dot', 'flame_shock,dot', 0.84, 1, 1, 8050, 0, 'enemy', 'ranged', 'none', 12, 35, 8050),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=7 AND `spec_tag`='elemental_shaman' AND `role`='dps'), 30, 421, 'cleave', 'chain_lightning,aoe', 0.88, 2, 3, 0, 0, 'enemy', 'ranged', 'none', 12, 35, 0),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=7 AND `spec_tag`='elemental_shaman' AND `role`='dps'), 40, 403, 'builder', 'lightning_bolt,filler', 0.82, 3, 1, 0, 0, 'enemy', 'ranged', 'none', 12, 35, 0),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=7 AND `spec_tag`='elemental_shaman' AND `role`='dps'), 50, 8042, 'spender', 'earth_shock,instant', 0.76, 4, 1, 0, 0, 'enemy', 'ranged', 'none', 12, 35, 0);

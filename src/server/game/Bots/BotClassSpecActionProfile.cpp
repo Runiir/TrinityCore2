@@ -73,6 +73,24 @@ std::string InferSpecTag(Player const* bot, std::string const& role)
     if (!bot)
         return "generic";
 
+    if (QueryResult result = CharacterDatabase.PQuery("SELECT class_spec FROM character_bot_pool WHERE guid = %u LIMIT 1", bot->GetGUID().GetCounter()))
+    {
+        std::string classSpec = result->Fetch()[0].GetString();
+        std::transform(classSpec.begin(), classSpec.end(), classSpec.begin(), [](unsigned char c) { return std::tolower(c); });
+        std::replace(classSpec.begin(), classSpec.end(), '-', '_');
+        std::replace(classSpec.begin(), classSpec.end(), ' ', '_');
+        if (classSpec == "protection_paladin")
+            return "protection";
+        if (classSpec == "fire_mage")
+            return "fire";
+        if (classSpec == "marksmanship_hunter")
+            return "marksmanship";
+        if (classSpec == "enhancement_shaman")
+            return "enhancement";
+        if (!classSpec.empty())
+            return classSpec;
+    }
+
     switch (bot->getClass())
     {
         case CLASS_MAGE:

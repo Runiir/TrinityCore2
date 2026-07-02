@@ -108,6 +108,7 @@ def test_server_start_autonomy_enabled_by_default_contract():
 
 def test_playerbot_runtime_roles_drive_universal_profile_combat():
     bot_mgr = read(PLAYER_BOT_MGR)
+    world_mgr = read(BOT_MGR)
     controller = read(PLAYER_BOT_CONTROLLER)
     role_types = read(PLAYER_BOT_TYPES)
     profiles = read(PLAYER_BOT_ACTION_PROFILE)
@@ -146,6 +147,13 @@ def test_playerbot_runtime_roles_drive_universal_profile_combat():
 
     assert "profile.SpecTag = profile.Role == \"healer\" ? \"restoration_or_elemental_generic\" : \"enhancement_or_elemental_generic\";" in profiles
     assert "profile.SpecTag = profile.Role == \"healer\" ? \"holy_disc_generic\" : \"shadow_or_generic\";" in profiles
+    assert 'candidate.RejectReason = "target_health_gate";' in world_mgr
+    assert 'candidate.RejectReason = "self_health_gate";' in world_mgr
+    assert "SELECT class_spec FROM character_bot_pool WHERE guid" in profiles
+    assert 'classSpec == "protection_paladin"' in profiles
+    assert 'classSpec == "fire_mage"' in profiles
+    assert 'classSpec == "marksmanship_hunter"' in profiles
+    assert 'classSpec == "enhancement_shaman"' in profiles
     assert "proc_or_opener" in profiles
     for spell_id in ["53595", "31935", "26573", "53600", "56641", "2643", "8042", "17364", "60103", "421", "2120", "1449"]:
         assert spell_id in profiles
@@ -153,6 +161,28 @@ def test_playerbot_runtime_roles_drive_universal_profile_combat():
     assert "if (!action.Valid)" in executor
     assert "bot->GetPower(bot->GetPowerType())" in executor
     assert "target != bot && !bot->IsValidAttackTarget(target, spellInfo)" in executor
+
+
+def test_bwd_validation_roster_has_rotation_profiles():
+    sql = read(STONECORE_ROTATION_SQL)
+    for spec_tag in [
+        "protection_warrior",
+        "blood_death_knight",
+        "restoration_druid",
+        "holy_paladin",
+        "discipline_priest",
+        "assassination_rogue",
+        "affliction_warlock",
+        "elemental_shaman",
+    ]:
+        assert f"'{spec_tag}'" in sql
+
+    for spell_id in ["78", "45462", "8936", "19750", "2061", "1752", "686", "403"]:
+        assert re.search(rf", {spell_id}, '", sql)
+    assert not re.search(r", 355, 'taunt'.*'protection_warrior'", sql)
+    assert not re.search(r", 56222, 'taunt'.*'blood_death_knight'", sql)
+    assert not re.search(r", 45477, 'threat_build'.*'blood_death_knight'", sql)
+    assert not re.search(r", 2565, 'defensive'.*'protection_warrior'", sql)
 
 
 def test_validation_blockers_require_matching_resolution_and_trace_episode_fields():

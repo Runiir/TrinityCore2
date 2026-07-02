@@ -11188,6 +11188,20 @@ uint32 BotWorldPopulationMgr::SelectCombatSpell(Player* bot, Unit* target) const
                 }
             }
         }
+        bool selfTarget = candidate.Profile.TargetSelector == "self";
+        Unit* actionTarget = selfTarget ? static_cast<Unit*>(bot) : target;
+        float targetHealthPct = UnitHealthPct(actionTarget);
+        if (targetHealthPct < candidate.Profile.MinTargetHealthPct || targetHealthPct > candidate.Profile.MaxTargetHealthPct)
+        {
+            candidate.RejectReason = "target_health_gate";
+            continue;
+        }
+        float selfHealthPct = UnitHealthPct(bot);
+        if (selfHealthPct < candidate.Profile.MinSelfHealthPct || selfHealthPct > candidate.Profile.MaxSelfHealthPct)
+        {
+            candidate.RejectReason = "self_health_gate";
+            continue;
+        }
 
         if (!candidate.RejectReason.empty())
             continue;
@@ -11293,6 +11307,18 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         }
         bool selfTarget = candidate.Profile.TargetSelector == "self";
         Unit* actionTarget = selfTarget ? static_cast<Unit*>(bot) : target;
+        float targetHealthPct = UnitHealthPct(actionTarget);
+        if (targetHealthPct < candidate.Profile.MinTargetHealthPct || targetHealthPct > candidate.Profile.MaxTargetHealthPct)
+        {
+            candidate.RejectReason = "target_health_gate";
+            continue;
+        }
+        float selfHealthPct = UnitHealthPct(bot);
+        if (selfHealthPct < candidate.Profile.MinSelfHealthPct || selfHealthPct > candidate.Profile.MaxSelfHealthPct)
+        {
+            candidate.RejectReason = "self_health_gate";
+            continue;
+        }
         if (candidate.Profile.RequiredTargetAura && !actionTarget->HasAura(candidate.Profile.RequiredTargetAura))
         {
             candidate.RejectReason = "missing_target_aura";
