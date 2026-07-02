@@ -675,6 +675,7 @@ def test_quest_first_portfolio_routing_surface():
     assert "auto activeTankFocus" in mgr
     assert "auto tankOwnsFocus" in validation_route_objective
     assert 'if (_config.ValidationRouteKind != "boss" && !tankOwnsFocus(member, focus))' in validation_route_objective
+    assert 'if (_config.ValidationRouteKind == "boss" || activeTankFocus(focus))\n                    return focus;' in validation_route_objective
     assert "if (!ownedByTank)" in validation_route_objective
     assert "routeFocusTankOwned" in validation_route_objective
     assert "wait_for_tank_threat" in validation_route_objective

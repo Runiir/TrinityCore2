@@ -7719,7 +7719,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (anchor && anchor != bot)
         {
             if (Unit* focus = routeUsableCombatTarget(anchor->GetVictim()))
-                return focus;
+                if (_config.ValidationRouteKind == "boss" || activeTankFocus(focus))
+                    return focus;
         }
 
         Unit* bestFocus = nullptr;
