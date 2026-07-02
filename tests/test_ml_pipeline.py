@@ -749,6 +749,73 @@ def test_bot_ml_decision_labels_first_positive_outcome_before_later_risk():
     assert rows[0]["failure_label"] == ""
 
 
+def test_bot_ml_decision_labels_terminal_route_complete_action_without_future_events():
+    labels = label_decision(
+        {
+            "run_id": 7,
+            "bot_guid": 99,
+            "ts": "2026-06-05 18:40:00",
+            "situation_type": "validation_route_manifest",
+            "chosen_action_json": json.dumps({"action": "validation_route_complete"}),
+        },
+        index_future_events([]),
+        {"outcome": 30, "reward": 30, "death": 30, "stuck": 30, "quest": 30},
+    )
+    rows = build_rows(
+        {
+            "id": 1,
+            "run_id": 7,
+            "bot_guid": 99,
+            "brain_version": "utility_v1",
+            "candidate_actions_json": json.dumps([{"activity": "validation_route_complete", "score": 1.0}]),
+            "chosen_action_json": json.dumps({"action": "validation_route_complete", "activity_score": 1.0}),
+            "raw_state_json": "{}",
+            "semantic_state_json": "{}",
+            "outcome_json": "{}",
+        },
+        labels,
+        {},
+    )
+
+    assert labels["action_success"] == 1.0
+    assert labels["label_reason"] == "positive_progress:validation_route_complete"
+    assert labels["no_future_events"] is False
+    assert rows[0]["teacher_action_quality"] == "verified_teacher_action"
+
+
+def test_bot_ml_decision_labels_route_terminal_event_from_run_context():
+    indexed_events = index_future_events(
+        [
+            {
+                "id": 30,
+                "run_id": 7,
+                "bot_guid": 100,
+                "ts": "2026-06-05 18:40:05",
+                "event_type": "validation_route_manifest_complete",
+                "result": "boss_killed",
+                "value_float": 16.0,
+            }
+        ]
+    )
+
+    labels = label_decision(
+        {
+            "run_id": 7,
+            "bot_guid": 99,
+            "ts": "2026-06-05 18:40:00",
+            "situation_type": "validation_route_mechanic",
+            "chosen_action_json": json.dumps({"action": "movement_check_jump"}),
+        },
+        indexed_events,
+        {"outcome": 30, "reward": 30, "death": 30, "stuck": 30, "quest": 30},
+    )
+
+    assert labels["action_success"] == 1.0
+    assert labels["label_reason"] == "positive_progress:validation_route_manifest_complete"
+    assert labels["event_ids_used_for_label"] == [30]
+    assert labels["no_future_events"] is False
+
+
 def test_bot_ml_decision_builder_filters_repeated_decision_loops_from_imitation():
     fingerprints = index_decision_fingerprints([
         {"bot_guid": 99, "fingerprint_hash": 123456, "repeat_count": 4, "failure_count": 1}
