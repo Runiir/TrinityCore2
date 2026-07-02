@@ -183,12 +183,18 @@ def test_bwd_validation_roster_has_rotation_profiles():
     assert "'blood_death_knight' AND `role`='tank'), 35, 56222, 'taunt'" in sql
     assert "'blood_death_knight' AND `role`='tank'), 45, 45477, 'threat_build'" in sql
     assert "'protection_warrior' AND `role`='tank'), 35, 2565, 'defensive'" in sql
+    assert "'restoration_druid' AND `role`='healer'), 10, 8936, 'heal_fast', 'regrowth,triage,heal', 0, 0.92, 0.75, 1, 1, 0.82" in sql
+    assert "'holy_paladin' AND `role`='healer'), 20, 19750, 'heal_fast', 'flash_of_light,triage,heal', 0, 0.94, 0.75, 1, 1, 0.82" in sql
+    assert "'discipline_priest' AND `role`='healer'), 20, 2061, 'heal_fast', 'flash_heal,triage,heal', 0, 1.00, 0.85, 1, 1, 0.82" in sql
     update_sql = read(ROOT / "sql/custom/world/2026_07_02_01_bwd_tank_threat_profiles.sql")
     assert "p.`class_id` = 1 AND p.`spec_tag` = 'protection_warrior'" in update_sql
     assert "p.`class_id` = 6 AND p.`spec_tag` = 'blood_death_knight'" in update_sql
     assert "'protection_warrior' AND `role`='tank'), 30, 355, 'taunt'" in update_sql
     assert "'blood_death_knight' AND `role`='tank'), 35, 56222, 'taunt'" in update_sql
     assert "'blood_death_knight' AND `role`='tank'), 45, 45477, 'threat_build'" in update_sql
+    healer_update_sql = read(ROOT / "sql/custom/world/2026_07_02_02_bwd_healer_triage_profiles.sql")
+    assert "a.`spell_id` = 8936 THEN 0.82" in healer_update_sql
+    assert "a.`spell_id` = 635 THEN 0.94" in healer_update_sql
 
 
 def test_validation_blockers_require_matching_resolution_and_trace_episode_fields():
