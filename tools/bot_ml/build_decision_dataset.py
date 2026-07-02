@@ -286,12 +286,16 @@ def label_decision(decision: dict[str, Any], indexed_events: dict[tuple[int, int
         reason = "no_future_outcome"
         time_to_outcome = None
 
+    if first_positive and (not first_negative or float(first_positive["_ts_epoch"]) <= float(first_negative["_ts_epoch"])):
+        risk_events = [event for event in death_events + stuck_events if float(event.get("_ts_epoch") or 0.0) <= float(first_positive["_ts_epoch"])]
+    else:
+        risk_events = death_events + stuck_events
     expected_reward = sum(event_reward(event) for event in reward_events)
     return {
         "action_success": action_success,
         "expected_reward": expected_reward,
-        "death_risk": 1.0 if any(str(event.get("event_type") or "") in DEATH_EVENTS for event in death_events) else 0.0,
-        "stuck_risk": 1.0 if any(str(event.get("event_type") or "") in STUCK_EVENTS for event in stuck_events) else 0.0,
+        "death_risk": 1.0 if any(str(event.get("event_type") or "") in DEATH_EVENTS for event in risk_events) else 0.0,
+        "stuck_risk": 1.0 if any(str(event.get("event_type") or "") in STUCK_EVENTS for event in risk_events) else 0.0,
         "quest_completion_likelihood": 1.0 if any(str(event.get("event_type") or "") in QUEST_EVENTS for event in quest_events) else 0.0,
         "event_ids_used_for_label": sorted(used_events),
         "label_window_json": json.dumps(windows, sort_keys=True),

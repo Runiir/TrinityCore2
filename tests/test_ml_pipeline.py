@@ -687,6 +687,68 @@ def test_bot_ml_decision_labels_negative_events_before_positive_values():
     assert labels["death_risk"] == 1.0
 
 
+def test_bot_ml_decision_labels_first_positive_outcome_before_later_risk():
+    indexed_events = index_future_events(
+        [
+            {
+                "id": 20,
+                "run_id": 7,
+                "bot_guid": 99,
+                "ts": "2026-06-05 18:40:05",
+                "event_type": "validation_route_move",
+                "result": "progress",
+                "value_float": 1.0,
+            },
+            {
+                "id": 21,
+                "run_id": 7,
+                "bot_guid": 99,
+                "ts": "2026-06-05 18:40:25",
+                "event_type": "stuck_detected",
+                "result": "repath",
+                "value_float": 1.0,
+            },
+            {
+                "id": 22,
+                "run_id": 7,
+                "bot_guid": 99,
+                "ts": "2026-06-05 18:40:35",
+                "event_type": "death",
+                "result": "failed",
+                "value_float": 1.0,
+            },
+        ]
+    )
+
+    labels = label_decision(
+        {"run_id": 7, "bot_guid": 99, "ts": "2026-06-05 18:40:00"},
+        indexed_events,
+        {"outcome": 60, "reward": 60, "death": 60, "stuck": 60, "quest": 60},
+    )
+    rows = build_rows(
+        {
+            "id": 1,
+            "run_id": 7,
+            "bot_guid": 99,
+            "brain_version": "utility_v1",
+            "candidate_actions_json": json.dumps([{"activity": "route_move", "score": 1.0}]),
+            "chosen_action_json": json.dumps({"activity": "route_move", "activity_score": 1.0}),
+            "raw_state_json": "{}",
+            "semantic_state_json": "{}",
+            "outcome_json": "{}",
+        },
+        labels,
+        {},
+    )
+
+    assert labels["action_success"] == 1.0
+    assert labels["label_reason"] == "positive_progress:validation_route_move"
+    assert labels["stuck_risk"] == 0.0
+    assert labels["death_risk"] == 0.0
+    assert rows[0]["teacher_action_quality"] == "verified_teacher_action"
+    assert rows[0]["failure_label"] == ""
+
+
 def test_bot_ml_decision_builder_filters_repeated_decision_loops_from_imitation():
     fingerprints = index_decision_fingerprints([
         {"bot_guid": 99, "fingerprint_hash": 123456, "repeat_count": 4, "failure_count": 1}

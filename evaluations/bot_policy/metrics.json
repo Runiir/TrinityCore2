@@ -14,20 +14,20 @@
   "backend": "xgboost",
   "binary": {
     "action_success": {
-      "accuracy": 0.11904761904761904,
-      "auc": 0.35460122699386504,
-      "f1": 0.18681318681318682,
-      "positive_rate": 0.9702380952380952,
-      "precision": 0.8947368421052632,
-      "recall": 0.10429447852760736
+      "accuracy": 0.7740112994350282,
+      "auc": 0.40059880239520956,
+      "f1": 0.8726114649681529,
+      "positive_rate": 0.943502824858757,
+      "precision": 0.9319727891156463,
+      "recall": 0.8203592814371258
     },
     "death_risk": {
-      "accuracy": 0.6785714285714286,
-      "auc": 0.6655982905982906,
-      "f1": 0.24999999999999997,
-      "positive_rate": 0.07142857142857142,
-      "precision": 0.15,
-      "recall": 0.75
+      "accuracy": 0.9943502824858758,
+      "auc": 0.3693181818181818,
+      "f1": 0.0,
+      "positive_rate": 0.005649717514124294,
+      "precision": 0.0,
+      "recall": 0.0
     },
     "quest_completion_likelihood": {
       "accuracy": 1.0,
@@ -38,39 +38,39 @@
       "recall": 0.0
     },
     "stuck_risk": {
-      "accuracy": 0.47023809523809523,
-      "auc": 0.7346038970274499,
+      "accuracy": 0.96045197740113,
+      "auc": 0.28403361344537814,
       "f1": 0.0,
-      "positive_rate": 0.5297619047619048,
+      "positive_rate": 0.03954802259887006,
       "precision": 0.0,
       "recall": 0.0
     }
   },
-  "candidate_eval_rows": 1968,
+  "candidate_eval_rows": 2094,
   "control_eligible": false,
-  "death_rate": 0.07142857142857142,
-  "eval_rows": 168,
+  "death_rate": 0.005649717514124294,
+  "eval_rows": 177,
   "expected_reward": {
-    "mae": 134.6310206768471,
-    "rmse": 155.25227469851188
+    "mae": 105.87220949707638,
+    "rmse": 134.40023253033036
   },
-  "failure_rate": 0.02976190476190476,
-  "model_version": "policy_81be211e856c",
-  "observed_eval_rows": 168,
+  "failure_rate": 0.05649717514124294,
+  "model_version": "policy_62e376ba5a19",
+  "observed_eval_rows": 177,
   "ranking": {
-    "bad_action_rate": 0.9404761904761905,
-    "masked_candidate_rows": 1226,
-    "model_changed_activity_rate": 0.49404761904761907,
-    "ranked_decisions": 168,
-    "top_1_candidate_ranking_accuracy": 0.5059523809523809,
-    "top_3_candidate_ranking_accuracy": 0.8988095238095238,
-    "top_choice_predicted_action_success": 0.2861383752647089,
-    "top_choice_predicted_death_rate": 0.3151734865090546,
-    "top_choice_predicted_expected_reward": 48.70682570758008,
-    "top_choice_predicted_stuck_rate": 0.07027016598506977,
-    "top_choice_predicted_teacher_choice": 0.8074994713177701,
+    "bad_action_rate": 0.1694915254237288,
+    "masked_candidate_rows": 1284,
+    "model_changed_activity_rate": 0.4124293785310734,
+    "ranked_decisions": 177,
+    "top_1_candidate_ranking_accuracy": 0.5875706214689266,
+    "top_3_candidate_ranking_accuracy": 0.864406779661017,
+    "top_choice_predicted_action_success": 0.5413692057036936,
+    "top_choice_predicted_death_rate": 0.005952380999999977,
+    "top_choice_predicted_expected_reward": 252.12043129367828,
+    "top_choice_predicted_stuck_rate": 0.011459207659186383,
+    "top_choice_predicted_teacher_choice": 0.8696733213403898,
     "unrankable_decisions": 0
   },
   "runtime_ml_control": "disabled_until_shadow_assist_replay_validation_beats_teacher",
-  "stuck_rate": 0.5297619047619048
+  "stuck_rate": 0.03954802259887006
 }
