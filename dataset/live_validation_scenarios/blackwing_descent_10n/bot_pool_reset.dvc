@@ -1,0 +1,6 @@
+outs:
+- md5: 15d64f81e1eed1d7dd32341bef91ceee.dir
+  size: 6786
+  nfiles: 1
+  hash: md5
+  path: bot_pool_reset

@@ -7561,7 +7561,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             if (contextIsCombatProgressProbe() && lastCombatAttemptIsNormalCombatTick())
                 return false;
 
-            uint32 routeTargetNoProgressThreshold = bot->GetMap() && bot->GetMap()->IsRaid() ? 2 : (_config.ValidationRouteKind == "boss" ? 5 : 20);
+            uint32 routeTargetNoProgressThreshold = _config.ValidationRouteKind == "boss" ? 5 : 20;
             if (++state.ValidationRoutePackNoProgressCount >= routeTargetNoProgressThreshold)
             {
                 std::string raw = BuildRawJson(bot, prerequisiteTarget);

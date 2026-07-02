@@ -858,6 +858,7 @@ def test_quest_first_portfolio_routing_surface():
     assert 'state.LastCombatAttempt.Reason == "global_cooldown"' in mgr
     assert 'state.LastCombatAttempt.Result == "global_cooldown"' in mgr
     assert 'contextIsCombatProgressProbe() && lastCombatAttemptIsNormalCombatTick()' in mgr
+    assert 'bot->GetMap() && bot->GetMap()->IsRaid() ? 2' not in mgr
     assert 'RecordCombatAttempt(*state, bot, target, "executor_check", &action, BotActionResult::Ok);' not in mgr
     assert "findTrashClusterThreatTarget" in mgr
     assert "validation_route_stuck_no_fallback" in mgr
@@ -1347,7 +1348,7 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         'RecordEvent(state, bot, "dungeon_trash_cleared", nullptr, "trash_cluster_cleared"',
         "MaybeAdvanceValidationRouteManifest();",
     )
-    assert 'uint32 routeTargetNoProgressThreshold = bot->GetMap() && bot->GetMap()->IsRaid() ? 2 : (_config.ValidationRouteKind == "boss" ? 5 : 20);' in route_objective
+    assert 'uint32 routeTargetNoProgressThreshold = _config.ValidationRouteKind == "boss" ? 5 : 20;' in route_objective
     assert "bool _validationRouteManifestComplete = false;" in mgr_header
     assert_ordered(
         advance_manifest,

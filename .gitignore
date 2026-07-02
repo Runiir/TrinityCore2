@@ -73,6 +73,15 @@ __pycache__/
 /dataset/live_validation_scenarios/blackwing_descent_10n/*
 !/dataset/live_validation_scenarios/blackwing_descent_10n/01_entry_trash.dvc
 !/dataset/live_validation_scenarios/blackwing_descent_10n/04_laboratory_trash.dvc
+!/dataset/live_validation_scenarios/blackwing_descent_10n/commands.txt.dvc
+!/dataset/live_validation_scenarios/blackwing_descent_10n/heartbeat_events.jsonl.dvc
+!/dataset/live_validation_scenarios/blackwing_descent_10n/report.json.dvc
+!/dataset/live_validation_scenarios/blackwing_descent_10n/bot_pool_reset.dvc
+!/dataset/live_validation_scenarios/blackwing_descent_10n/route_bot_start.dvc
+!/dataset/live_validation_scenarios/blackwing_descent_10n/validation_provisioning_apply.dvc
+!/dataset/live_validation_scenarios/blackwing_descent_10n/validation_route_manifest.json.dvc
+!/dataset/live_validation_scenarios/blackwing_descent_10n/worldserver.validation.conf.dvc
+!/dataset/live_validation_scenarios/blackwing_descent_10n/worldserver_output.log.dvc
 /experiments/runs
 /dvclive
 /models
