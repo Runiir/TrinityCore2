@@ -11329,6 +11329,17 @@ uint32 BotWorldPopulationMgr::SelectCombatSpell(Player* bot, Unit* target) const
                 break;
         }
 
+        if (role == "tank" && candidate.Category == BotCombatActionCategory::Taunt)
+        {
+            if (Unit* victim = target->GetVictim())
+            {
+                Player* victimPlayer = victim->ToPlayer();
+                bool victimIsTank = victimPlayer && std::string(GetDungeonRole(victimPlayer)) == "tank";
+                if (victim != bot && !victimIsTank)
+                    roleScore += 10.0f;
+            }
+        }
+
         candidate.Score = roleScore;
         candidate.Reason = saturation.SaturationReason;
         if (!best || candidate.Score > best->Score)

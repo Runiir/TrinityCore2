@@ -177,12 +177,18 @@ def test_bwd_validation_roster_has_rotation_profiles():
     ]:
         assert f"'{spec_tag}'" in sql
 
-    for spell_id in ["78", "45462", "8936", "19750", "2061", "1752", "686", "403"]:
+    for spell_id in ["78", "355", "2565", "45462", "45477", "56222", "8936", "19750", "2061", "1752", "686", "403"]:
         assert re.search(rf", {spell_id}, '", sql)
-    assert not re.search(r", 355, 'taunt'.*'protection_warrior'", sql)
-    assert not re.search(r", 56222, 'taunt'.*'blood_death_knight'", sql)
-    assert not re.search(r", 45477, 'threat_build'.*'blood_death_knight'", sql)
-    assert not re.search(r", 2565, 'defensive'.*'protection_warrior'", sql)
+    assert "'protection_warrior' AND `role`='tank'), 30, 355, 'taunt'" in sql
+    assert "'blood_death_knight' AND `role`='tank'), 35, 56222, 'taunt'" in sql
+    assert "'blood_death_knight' AND `role`='tank'), 45, 45477, 'threat_build'" in sql
+    assert "'protection_warrior' AND `role`='tank'), 35, 2565, 'defensive'" in sql
+    update_sql = read(ROOT / "sql/custom/world/2026_07_02_01_bwd_tank_threat_profiles.sql")
+    assert "p.`class_id` = 1 AND p.`spec_tag` = 'protection_warrior'" in update_sql
+    assert "p.`class_id` = 6 AND p.`spec_tag` = 'blood_death_knight'" in update_sql
+    assert "'protection_warrior' AND `role`='tank'), 30, 355, 'taunt'" in update_sql
+    assert "'blood_death_knight' AND `role`='tank'), 35, 56222, 'taunt'" in update_sql
+    assert "'blood_death_knight' AND `role`='tank'), 45, 45477, 'threat_build'" in update_sql
 
 
 def test_validation_blockers_require_matching_resolution_and_trace_episode_fields():
