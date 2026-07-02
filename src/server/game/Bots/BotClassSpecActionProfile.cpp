@@ -1,4 +1,5 @@
 #include "Bots/BotClassSpecActionProfile.h"
+#include "DataStores/DBCStores.h"
 #include "DatabaseEnv.h"
 #include "Player.h"
 #include "SpellHistory.h"
@@ -8,6 +9,8 @@
 #include "Creature.h"
 #include "DataStores/DBCEnums.h"
 #include <algorithm>
+#include <array>
+#include <cmath>
 #include <cstdlib>
 #include <map>
 #include <mutex>
@@ -122,6 +125,48 @@ bool HasEnoughPowerForProfileSpell(Player const* bot, SpellInfo const* spellInfo
 {
     if (!bot || !spellInfo)
         return false;
+
+    if (spellInfo->PowerType == POWER_RUNE && spellInfo->RuneCostID && bot->getClass() == CLASS_DEATH_KNIGHT)
+    {
+        SpellRuneCostEntry const* runeCost = sSpellRuneCostStore.LookupEntry(spellInfo->RuneCostID);
+        if (runeCost && !runeCost->NoRuneCost())
+        {
+            std::array<int32, 3> required = { int32(runeCost->RuneCost[0]), int32(runeCost->RuneCost[1]), int32(runeCost->RuneCost[2]) };
+            uint8 deathRunes = 0;
+            for (uint8 i = 0; i < MAX_RUNES; ++i)
+            {
+                if (std::abs(bot->GetRuneCooldown(i)) > 0.0001f)
+                    continue;
+
+                switch (bot->GetCurrentRune(i))
+                {
+                    case RuneType::Blood:
+                        if (required[0] > 0)
+                            --required[0];
+                        break;
+                    case RuneType::Unholy:
+                        if (required[1] > 0)
+                            --required[1];
+                        break;
+                    case RuneType::Frost:
+                        if (required[2] > 0)
+                            --required[2];
+                        break;
+                    case RuneType::Death:
+                        ++deathRunes;
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            int32 deficit = 0;
+            for (int32 count : required)
+                deficit += std::max<int32>(0, count);
+            if (deficit > deathRunes)
+                return false;
+        }
+    }
 
     int32 cost = spellInfo->CalcPowerCost(bot, spellInfo->GetSchoolMask());
     if (cost <= 0)
@@ -405,6 +450,8 @@ std::vector<BotActionCandidate> BotClassSpecActionProfileStore::BuildCandidates(
                 candidate.RejectReason = "forbidden_target_aura_active";
             else if (spell.MaintainAuraId && actionTarget && actionTarget->HasAura(spell.MaintainAuraId))
                 candidate.RejectReason = "maintain_aura_active";
+            else if (spellInfo->NeedsComboPoints() && (!actionTarget || bot->GetComboTarget() != actionTarget->GetGUID() || !bot->GetComboPoints()))
+                candidate.RejectReason = "insufficient_combo_points";
             else if (spell.RequiresInstantCast && ProfileSpellCastTimeMs(bot, spellInfo) > 0)
                 candidate.RejectReason = "instant_cast_required";
             else if (spell.MaxCastTimeMs && ProfileSpellCastTimeMs(bot, spellInfo) > spell.MaxCastTimeMs)

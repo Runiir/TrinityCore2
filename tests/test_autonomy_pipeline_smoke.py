@@ -154,6 +154,11 @@ def test_playerbot_runtime_roles_drive_universal_profile_combat():
     assert 'classSpec == "fire_mage"' in profiles
     assert 'classSpec == "marksmanship_hunter"' in profiles
     assert 'classSpec == "enhancement_shaman"' in profiles
+    assert "spellInfo->PowerType == POWER_RUNE && spellInfo->RuneCostID" in profiles
+    assert "sSpellRuneCostStore.LookupEntry(spellInfo->RuneCostID)" in profiles
+    assert "bot->GetRuneCooldown(i)" in profiles
+    assert "spellInfo->NeedsComboPoints()" in profiles
+    assert "bot->GetComboTarget() != actionTarget->GetGUID()" in profiles
     assert "proc_or_opener" in profiles
     for spell_id in ["53595", "31935", "26573", "53600", "56641", "2643", "8042", "17364", "60103", "421", "2120", "1449"]:
         assert spell_id in profiles
@@ -161,6 +166,19 @@ def test_playerbot_runtime_roles_drive_universal_profile_combat():
     assert "if (!action.Valid)" in executor
     assert "bot->GetPower(bot->GetPowerType())" in executor
     assert "target != bot && !bot->IsValidAttackTarget(target, spellInfo)" in executor
+    assert "spellInfo->PowerType == POWER_RUNE && spellInfo->RuneCostID" in executor
+    assert "sSpellRuneCostStore.LookupEntry(spellInfo->RuneCostID)" in executor
+    assert "bot->GetRuneCooldown(i)" in executor
+    assert "spellInfo->NeedsComboPoints()" in executor
+    assert "bot->GetComboTarget() != target->GetGUID()" in executor
+    execute_combat = function_body(executor, "BotActionResult BotActionExecutor::ExecuteCombat")
+    assert_ordered(
+        execute_combat,
+        "BotActionResult check = CheckHostileSpell(owner, bot, target, action.SpellId);",
+        'action.AutoAttackMode == "melee"',
+        "bot->Attack(target, true);",
+        "SpellCastResult result = bot->CastSpell(target, action.SpellId, false);",
+    )
 
 
 def test_bwd_validation_roster_has_rotation_profiles():
