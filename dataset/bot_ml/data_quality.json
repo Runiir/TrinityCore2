@@ -1,5 +1,5 @@
 {
-  "candidate_rows": 582,
+  "candidate_rows": 3459,
   "chosen_rows": 582,
   "contract_errors": {
     "candidate_count_mismatch": 0,
@@ -82,7 +82,7 @@
   },
   "observed_label_rows": 582,
   "ok": true,
-  "rows": 582,
+  "rows": 3459,
   "run_count": 56,
   "runtime_ml_control": "disabled_until_shadow_assist_replay_validation_passes",
   "teacher_action_quality": {

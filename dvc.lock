@@ -567,8 +567,8 @@ stages:
       nfiles: 45
     - path: tools/bot_ml/build_decision_dataset.py
       hash: md5
-      md5: fa4c95b08818ec443c2c688d071fbdd6
-      size: 29500
+      md5: b4cb9ab7f4c82d3af4881698e736c75a
+      size: 30767
     - path: tools/bot_ml/common.py
       hash: md5
       md5: 456b2fbeef89f89a13495ebb9a8cf993
@@ -576,12 +576,12 @@ stages:
     outs:
     - path: dataset/bot_ml/decision_dataset.jsonl
       hash: md5
-      md5: 6ac44fc02382c896076fa92ae9f43ea1
-      size: 8259586
+      md5: 4e8152847c983bc77e99ff0b1b223cfb
+      size: 42758580
     - path: dataset/bot_ml/decision_dataset_manifest.json
       hash: md5
-      md5: 38fac2e68c19d7e9f5d621e338c060ce
-      size: 4529
+      md5: 5264908ed2a98ae06770415b962a8717
+      size: 4531
   bot_ml_train:
     cmd: python -m tools.bot_ml.train_policy_model --dataset 
       dataset/bot_ml/decision_dataset.jsonl --model 
@@ -590,8 +590,8 @@ stages:
     deps:
     - path: dataset/bot_ml/decision_dataset.jsonl
       hash: md5
-      md5: 6ac44fc02382c896076fa92ae9f43ea1
-      size: 8259586
+      md5: 4e8152847c983bc77e99ff0b1b223cfb
+      size: 42758580
     - path: tools/bot_ml/common.py
       hash: md5
       md5: 456b2fbeef89f89a13495ebb9a8cf993
@@ -607,18 +607,18 @@ stages:
     outs:
     - path: artifacts/bot_policy_dvclive/train
       hash: md5
-      md5: 3e18d9542e97771194d8b806565114b2.dir
-      size: 167
+      md5: 541012a4553fae9ec1adb730e169cbe4.dir
+      size: 169
       nfiles: 4
     - path: models/bot_policy/artifacts
       hash: md5
-      md5: 1176313bbd6a96ab0793e28636d9e626.dir
-      size: 14805394
-      nfiles: 70
+      md5: d491981bdf145d95a77103aedcb2293d.dir
+      size: 17441861
+      nfiles: 82
     - path: models/bot_policy/policy_model.json
       hash: md5
-      md5: 1f0331ab2ca0698a69bdcc2afe79713e
-      size: 1388867
+      md5: 1c2cb4a2ba2099214a1d7fe4564b65aa
+      size: 1747053
   bot_ml_evaluate:
     cmd: python -m tools.bot_ml.evaluate_policy_model --dataset 
       dataset/bot_ml/decision_dataset.jsonl --model 
@@ -629,12 +629,12 @@ stages:
     deps:
     - path: dataset/bot_ml/decision_dataset.jsonl
       hash: md5
-      md5: 6ac44fc02382c896076fa92ae9f43ea1
-      size: 8259586
+      md5: 4e8152847c983bc77e99ff0b1b223cfb
+      size: 42758580
     - path: models/bot_policy/policy_model.json
       hash: md5
-      md5: 1f0331ab2ca0698a69bdcc2afe79713e
-      size: 1388867
+      md5: 1c2cb4a2ba2099214a1d7fe4564b65aa
+      size: 1747053
     - path: tools/bot_ml/common.py
       hash: md5
       md5: 456b2fbeef89f89a13495ebb9a8cf993
@@ -650,17 +650,17 @@ stages:
     outs:
     - path: artifacts/bot_policy_dvclive/eval
       hash: md5
-      md5: 2bd9c76837bf0f0a5f6458769daec7f7.dir
-      size: 265
+      md5: 5f0025407212f442cf4be2dbdf376e7f.dir
+      size: 295
       nfiles: 5
     - path: evaluations/bot_policy/diagnostics.json
       hash: md5
-      md5: 48e8bfbd0c24458a8963236fe50af51a
-      size: 289890
+      md5: 52c7ae2d9fc69a7499bdd7c616ba3325
+      size: 743236
     - path: evaluations/bot_policy/metrics.json
       hash: md5
-      md5: 43cda4c22d9fdf810807a4907f419194
-      size: 2236
+      md5: 8a1ab6199e3dc2379823b89aa299e34f
+      size: 2316
   bot_ml_register:
     cmd: python -m tools.bot_ml.register_policy_model --model 
       models/bot_policy/policy_model.json --metrics 
@@ -704,8 +704,8 @@ stages:
     deps:
     - path: dataset/bot_ml/decision_dataset.jsonl
       hash: md5
-      md5: 6ac44fc02382c896076fa92ae9f43ea1
-      size: 8259586
+      md5: 4e8152847c983bc77e99ff0b1b223cfb
+      size: 42758580
     - path: tools/bot_ml/common.py
       hash: md5
       md5: 456b2fbeef89f89a13495ebb9a8cf993
@@ -717,8 +717,8 @@ stages:
     outs:
     - path: dataset/bot_ml/data_quality.json
       hash: md5
-      md5: 31fa2d775bc3c632441cddbbca733ba2
-      size: 3344
+      md5: 03f436c43a52d77ba2a23399dfbb215a
+      size: 3346
   bt_masked_ga_combined:
     cmd: python -m tools.bot_ml.bt_masked_ga_combined --dataset 
       dataset/bot_ml/decision_dataset.jsonl --output-dir 

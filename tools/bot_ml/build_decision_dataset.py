@@ -116,7 +116,7 @@ def infer_mechanic_key(decision: dict[str, Any], raw: dict[str, Any], semantic: 
 
 
 def activity_name(payload: dict[str, Any]) -> str:
-    return str(payload.get("activity") or payload.get("action") or payload.get("name") or "")
+    return str(payload.get("activity") or payload.get("action") or payload.get("name") or payload.get("action_category") or "")
 
 
 def domain_name(decision: dict[str, Any], raw: dict[str, Any], semantic: dict[str, Any], chosen: dict[str, Any], candidate: dict[str, Any] | None = None) -> str:
@@ -136,8 +136,8 @@ def candidate_mask(candidate: dict[str, Any], chosen: dict[str, Any]) -> dict[st
     mask = load_json(candidate.get("mask") or candidate.get("action_mask") or candidate.get("mask_json"), {})
     if not isinstance(mask, dict):
         mask = {}
-    allowed = candidate.get("allowed", candidate.get("valid", candidate.get("available", chosen.get("allowed", chosen.get("valid", True)))))
-    reason = str(candidate.get("mask_reason") or candidate.get("invalid_reason") or mask.get("reason") or "")
+    reason = str(candidate.get("mask_reason") or candidate.get("invalid_reason") or candidate.get("reject_reason") or mask.get("reason") or "")
+    allowed = candidate.get("allowed", candidate.get("valid", candidate.get("available", chosen.get("allowed", chosen.get("valid", not reason)))))
     mask.setdefault("allowed", bool(allowed))
     mask.setdefault("reason", reason)
     return mask
@@ -146,10 +146,31 @@ def candidate_mask(candidate: dict[str, Any], chosen: dict[str, Any]) -> dict[st
 def candidate_rows(candidates: Any, chosen: dict[str, Any]) -> list[dict[str, Any]]:
     if isinstance(candidates, list) and candidates:
         return [candidate for candidate in candidates if isinstance(candidate, dict)]
+    if isinstance(candidates, dict):
+        rows: list[dict[str, Any]] = []
+        for index, candidate in enumerate(candidates.get("activity_candidates") or []):
+            if isinstance(candidate, dict):
+                row = dict(candidate)
+                row.setdefault("candidate_id", f"activity:{row.get('activity') or index}")
+                row.setdefault("domain", "activity_selection")
+                rows.append(row)
+        combat_mask = candidates.get("combat_action_mask") if isinstance(candidates.get("combat_action_mask"), dict) else {}
+        for index, action in enumerate(combat_mask.get("actions") or []):
+            if isinstance(action, dict):
+                row = dict(action)
+                row.setdefault("candidate_id", f"action:{row.get('action_id') or row.get('spell_id') or index}")
+                row.setdefault("domain", "combat_action")
+                rows.append(row)
+        if rows:
+            return rows
     return [chosen]
 
 
 def candidate_key(payload: dict[str, Any]) -> str:
+    structured = payload.get("structured_action") if isinstance(payload.get("structured_action"), dict) else {}
+    action_id = structured.get("action_id") or payload.get("action_id")
+    if action_id:
+        return f"action:{action_id}"
     return str(payload.get("candidate_id") or payload.get("id") or "")
 
 

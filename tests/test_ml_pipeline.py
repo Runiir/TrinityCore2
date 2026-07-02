@@ -387,6 +387,54 @@ def test_bot_ml_decision_builder_emits_candidate_rows_with_observed_chosen_label
     assert rows[0]["trace"]["dataset_contract_version"] == DATASET_CONTRACT_VERSION
 
 
+def test_bot_ml_decision_builder_materializes_structured_mask_candidates():
+    rows = build_rows(
+        {
+            "id": 1,
+            "run_id": 7,
+            "bot_guid": 99,
+            "brain_version": "utility_v1",
+            "candidate_actions_json": json.dumps(
+                {
+                    "schema": "bot_decision_mask_v2",
+                    "activity_candidates": [
+                        {"activity": "heroic_raid", "score": -2.0},
+                        {"activity": "experiment_exploration", "score": -1.0},
+                    ],
+                    "combat_action_mask": {
+                        "actions": [
+                            {"action_id": 954428, "spell_id": 54428, "action_category": "buff", "score": 0.7, "reject_reason": ""},
+                            {"action_id": 1962124, "spell_id": 62124, "action_category": "taunt", "score": 1.27, "reject_reason": "out_of_range"},
+                        ]
+                    },
+                }
+            ),
+            "chosen_action_json": json.dumps(
+                {
+                    "action": "validation_route_stuck",
+                    "activity": "experiment_exploration",
+                    "activity_score": -1.0,
+                    "structured_action": {"action_id": 954428, "spell_id": 54428, "action_category": "buff"},
+                }
+            ),
+            "raw_state_json": "{}",
+            "semantic_state_json": "{}",
+            "outcome_json": "{}",
+            "reward": 1.0,
+        },
+        {},
+        {},
+    )
+
+    assert len(rows) == 4
+    assert {row["candidate_domain"] for row in rows} == {"activity_selection", "combat_action"}
+    assert [row["candidate_allowed"] for row in rows] == [1, 1, 1, 0]
+    assert rows[2]["candidate_activity"] == "buff"
+    assert rows[2]["is_chosen"] == 1
+    assert rows[2]["label_observed"] == 1
+    assert rows[3]["candidate_mask"] == {"allowed": False, "reason": "out_of_range"}
+
+
 def test_bot_ml_decision_builder_filters_teacher_source_by_map():
     rows = [
         {"id": 1, "map_id": 725},
