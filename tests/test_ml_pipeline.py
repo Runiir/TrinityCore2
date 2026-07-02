@@ -17,7 +17,7 @@ from ml.raid.scheduler import RaidAssignmentScheduler
 from tools.bot_ml.common import DATASET_CONTRACT_VERSION, EXPORT_TABLES, numeric_features, split_by_run_ids
 from tools.bot_ml import orchestrator_daemon as daemon
 from tools.bot_ml.build_autonomy_master_checklist import refresh_checklist_from_evidence
-from tools.bot_ml.build_decision_dataset import build_row, build_rows, index_decision_fingerprints, index_semantic_stats
+from tools.bot_ml.build_decision_dataset import build_row, build_rows, index_decision_fingerprints, index_future_events, index_semantic_stats, label_decision
 from tools.bot_ml.extract_world_knowledge import (
     REQUIRED_NONEMPTY_WORLD_MANIFESTS,
     WORLD_MANIFEST_NAMES,
@@ -581,6 +581,51 @@ def test_bot_ml_decision_builder_filters_bad_teacher_behavior_from_imitation():
     assert unresolved_rows[0]["imitate_teacher"] == 0
     assert unresolved_rows[0]["teacher_action_quality"] == "unverified_teacher_action"
     assert unresolved_rows[0]["failure_label"] == "no_future_outcome"
+
+
+def test_bot_ml_decision_labels_negative_events_before_positive_values():
+    indexed_events = index_future_events(
+        [
+            {
+                "id": 10,
+                "run_id": 7,
+                "bot_guid": 99,
+                "ts": "2026-06-05 18:40:10",
+                "event_type": "stuck_detected",
+                "result": "repath",
+                "value_float": 1.0,
+            },
+            {
+                "id": 11,
+                "run_id": 7,
+                "bot_guid": 99,
+                "ts": "2026-06-05 18:40:11",
+                "event_type": "repeated_death",
+                "result": "danger_zone",
+                "value_float": 1.0,
+            },
+            {
+                "id": 12,
+                "run_id": 7,
+                "bot_guid": 99,
+                "ts": "2026-06-05 18:40:12",
+                "event_type": "raid_wipe",
+                "result": "wipe",
+                "value_float": 1.0,
+            },
+        ]
+    )
+
+    labels = label_decision(
+        {"run_id": 7, "bot_guid": 99, "ts": "2026-06-05 18:40:00"},
+        indexed_events,
+        {"outcome": 30, "reward": 30, "death": 30, "stuck": 30, "quest": 30},
+    )
+
+    assert labels["action_success"] == 0.0
+    assert labels["label_reason"] == "negative_outcome:stuck_detected"
+    assert labels["stuck_risk"] == 1.0
+    assert labels["death_risk"] == 1.0
 
 
 def test_bot_ml_decision_builder_filters_repeated_decision_loops_from_imitation():

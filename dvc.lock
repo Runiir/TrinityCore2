@@ -566,8 +566,8 @@ stages:
       nfiles: 45
     - path: tools/bot_ml/build_decision_dataset.py
       hash: md5
-      md5: 3dac5219a7da8b815b56341805a131b4
-      size: 28568
+      md5: 5e3d740024f52d0285c9e9b0eb8b5a22
+      size: 28853
     - path: tools/bot_ml/common.py
       hash: md5
       md5: 456b2fbeef89f89a13495ebb9a8cf993
@@ -575,12 +575,12 @@ stages:
     outs:
     - path: dataset/bot_ml/decision_dataset.jsonl
       hash: md5
-      md5: dc78e801ca0e016d0735aede2c8d7c33
-      size: 757369762
+      md5: 7c1b9e41aa9565e73a542e1384fa3d8d
+      size: 757366125
     - path: dataset/bot_ml/decision_dataset_manifest.json
       hash: md5
-      md5: 9c6104ebbe707ab5f9eee028cdc668a4
-      size: 9323
+      md5: b4458d0e407dcda8995462850b9a26bb
+      size: 9411
   bot_ml_train:
     cmd: python -m tools.bot_ml.train_policy_model --dataset 
       dataset/bot_ml/decision_dataset.jsonl --model 
@@ -589,8 +589,8 @@ stages:
     deps:
     - path: dataset/bot_ml/decision_dataset.jsonl
       hash: md5
-      md5: dc78e801ca0e016d0735aede2c8d7c33
-      size: 757369762
+      md5: 7c1b9e41aa9565e73a542e1384fa3d8d
+      size: 757366125
     - path: tools/bot_ml/common.py
       hash: md5
       md5: 456b2fbeef89f89a13495ebb9a8cf993
@@ -606,18 +606,18 @@ stages:
     outs:
     - path: artifacts/bot_policy_dvclive/train
       hash: md5
-      md5: b26d591c892eae2701213c5668e52c37.dir
+      md5: 8d15ff18872fe497f14f6bda3a65af79.dir
       size: 175
       nfiles: 4
     - path: models/bot_policy/artifacts
       hash: md5
-      md5: 08eff5431ecfe4b8dfdfa68d1d67f848.dir
-      size: 9925455
-      nfiles: 46
+      md5: 8320cbb0187dbf066fbbc1804a9e78e1.dir
+      size: 12611869
+      nfiles: 58
     - path: models/bot_policy/policy_model.json
       hash: md5
-      md5: 8e53c539cb383af27342f3fc99f708fe
-      size: 1644022
+      md5: ccebe132076170499e7ec015fd63c97b
+      size: 1771680
   bot_ml_evaluate:
     cmd: python -m tools.bot_ml.evaluate_policy_model --dataset 
       dataset/bot_ml/decision_dataset.jsonl --model 
@@ -628,12 +628,12 @@ stages:
     deps:
     - path: dataset/bot_ml/decision_dataset.jsonl
       hash: md5
-      md5: dc78e801ca0e016d0735aede2c8d7c33
-      size: 757369762
+      md5: 7c1b9e41aa9565e73a542e1384fa3d8d
+      size: 757366125
     - path: models/bot_policy/policy_model.json
       hash: md5
-      md5: 8e53c539cb383af27342f3fc99f708fe
-      size: 1644022
+      md5: ccebe132076170499e7ec015fd63c97b
+      size: 1771680
     - path: tools/bot_ml/common.py
       hash: md5
       md5: 456b2fbeef89f89a13495ebb9a8cf993
@@ -649,17 +649,17 @@ stages:
     outs:
     - path: artifacts/bot_policy_dvclive/eval
       hash: md5
-      md5: d2b975d31c84604fde634f62f5b0ab0a.dir
+      md5: 283c3484d89972d478c3106e6f9617e5.dir
       size: 295
       nfiles: 5
     - path: evaluations/bot_policy/diagnostics.json
       hash: md5
-      md5: 80723e6d45ae2b7b4e229478d2f8caca
-      size: 989375
+      md5: 53fd1250c3e63918afc7bdc408c556ef
+      size: 1284527
     - path: evaluations/bot_policy/metrics.json
       hash: md5
-      md5: f5dbd4ca02d3a86c3bb7cd789ebb963c
-      size: 2329
+      md5: a93516404645c2751b71abeb78b583b8
+      size: 2330
   bot_ml_register:
     cmd: python -m tools.bot_ml.register_policy_model --model 
       models/bot_policy/policy_model.json --metrics 
@@ -703,8 +703,8 @@ stages:
     deps:
     - path: dataset/bot_ml/decision_dataset.jsonl
       hash: md5
-      md5: dc78e801ca0e016d0735aede2c8d7c33
-      size: 757369762
+      md5: 7c1b9e41aa9565e73a542e1384fa3d8d
+      size: 757366125
     - path: tools/bot_ml/common.py
       hash: md5
       md5: 456b2fbeef89f89a13495ebb9a8cf993
@@ -716,8 +716,8 @@ stages:
     outs:
     - path: dataset/bot_ml/data_quality.json
       hash: md5
-      md5: bb59eaeaa15afc2a83d06c830fc3b804
-      size: 3412
+      md5: 270c4c477ab5f288271f5d44873c4d4d
+      size: 3499
   bt_masked_ga_combined:
     cmd: python -m tools.bot_ml.bt_masked_ga_combined --dataset 
       dataset/bot_ml/decision_dataset.jsonl --output-dir 

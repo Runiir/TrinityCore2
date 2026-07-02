@@ -15,7 +15,23 @@ except ImportError:
 
 
 POSITIVE_EVENTS = {"quest_completed", "objective_progress", "mob_killed", "boss_killed", "loot_received", "gear_upgrade", "level_up"}
-NEGATIVE_EVENTS = {"death", "repeated_death", "stuck_detected", "unstuck", "objective_failed", "quest_abandoned", "timeout", "failed_path", "path_failed", "bad_loot", "death_recovery_failed", "interrupt_failed"}
+NEGATIVE_EVENTS = {
+    "bad_loot",
+    "death",
+    "death_recovery_failed",
+    "failed_path",
+    "interrupt_failed",
+    "loot_empty",
+    "objective_failed",
+    "objective_no_progress",
+    "path_failed",
+    "quest_abandoned",
+    "raid_wipe",
+    "repeated_death",
+    "stuck_detected",
+    "timeout",
+    "unstuck",
+}
 DEATH_EVENTS = {"death", "repeated_death", "death_recovery_failed"}
 STUCK_EVENTS = {"stuck_detected", "path_failed", "failed_path", "unstuck", "death_recovery_failed"}
 QUEST_EVENTS = {"quest_completed"}
@@ -199,6 +215,15 @@ def event_reward(event: dict[str, Any]) -> float:
     return reward
 
 
+def event_polarity(event: dict[str, Any]) -> tuple[bool, bool]:
+    event_type = str(event.get("event_type") or "")
+    value = float(event.get("value_float") or 0.0)
+    result = str(event.get("result") or "").lower()
+    negative = event_type in NEGATIVE_EVENTS or value < 0 or result in {"failed", "timeout", "bad_loot"}
+    positive = not negative and (event_type in POSITIVE_EVENTS or value > 0)
+    return positive, negative
+
+
 def label_decision(decision: dict[str, Any], indexed_events: dict[tuple[int, int], tuple[list[float], list[dict[str, Any]]]], windows: dict[str, int]) -> dict[str, Any]:
     run_id = int(decision.get("run_id") or 0)
     bot_guid = int(decision.get("bot_guid") or 0)
@@ -213,10 +238,7 @@ def label_decision(decision: dict[str, Any], indexed_events: dict[tuple[int, int
     first_positive: dict[str, Any] | None = None
     first_negative: dict[str, Any] | None = None
     for event in outcome_events:
-        event_type = str(event.get("event_type") or "")
-        value = float(event.get("value_float") or 0.0)
-        positive = event_type in POSITIVE_EVENTS or value > 0
-        negative = event_type in NEGATIVE_EVENTS or value < 0 or str(event.get("result") or "").lower() in {"failed", "timeout", "bad_loot"}
+        positive, negative = event_polarity(event)
         if positive and first_positive is None:
             first_positive = event
         if negative and first_negative is None:

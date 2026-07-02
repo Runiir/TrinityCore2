@@ -36,8 +36,10 @@
   "decision_count": 18483,
   "failure_labels": {
     "death_outcome": 516,
+    "negative_outcome:loot_empty": 2,
     "negative_outcome:objective_failed": 11688,
-    "no_future_outcome": 5501,
+    "negative_outcome:objective_no_progress": 1,
+    "no_future_outcome": 5498,
     "stuck_or_path_failure": 358
   },
   "filtered_teacher_rows": 18063,
