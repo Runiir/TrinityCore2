@@ -6469,7 +6469,7 @@ def test_cata_action_profile_manifest_drives_validation_spells(tmp_path, monkeyp
     assert {25780, 31801, 465, 20217, 19740, 54428}.issubset(set(bot_spell_ids(paladin, manifest)))
     assert {56641, 2643, 77767, 883, 982, 1130, 13165, 34477}.issubset(set(bot_spell_ids(hunter, manifest)))
     assert {79104, 79106}.issubset(set(bot_spell_ids(priest, manifest)))
-    assert 57330 in bot_spell_ids(death_knight, manifest)
+    assert {48263, 49222, 48792, 55233, 49998, 57330}.issubset(set(bot_spell_ids(death_knight, manifest)))
     assert 674 in bot_spell_ids(shaman, manifest)
     assert {8075, 3599, 5394, 8512, 3738, 8227, 66842}.issubset(set(bot_spell_ids(shaman, manifest)))
     assert 79057 in bot_spell_ids(mage, manifest)

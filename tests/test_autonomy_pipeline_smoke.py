@@ -680,6 +680,8 @@ def test_quest_first_portfolio_routing_surface():
     assert "wait_for_tank_threat" in validation_route_objective
     assert "follow_anchor_wait_for_tank_threat" in validation_route_objective
     assert '"tank_positioning", target, "route_trash_tank_focus"' in validation_route_objective
+    assert "blood_presence,self,tank_stance,mitigation" in read("sql/custom/world/2026_06_21_00_bot_rotation_profiles.sql")
+    assert "death_strike,self_heal,melee,threat" in read("sql/custom/world/2026_06_21_00_bot_rotation_profiles.sql")
     assert 'if (_config.ValidationRouteKind == "boss" || activeTankFocus(focus))' in mgr
     assert 'if (_config.ValidationRouteKind != "boss" && !memberIsTank)' in mgr
     assert "move_to_validation_route_assist_target" in mgr
