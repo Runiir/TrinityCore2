@@ -7,8 +7,10 @@ from typing import Any
 
 try:
     from .common import stable_hash, write_json
+    from .run_live_bot_validation import scoped_event_evidence, scoped_validation_evidence_counts, trace_entries
 except ImportError:
     from common import stable_hash, write_json
+    from run_live_bot_validation import scoped_event_evidence, scoped_validation_evidence_counts, trace_entries
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -61,10 +63,17 @@ def int_field(row: dict[str, Any], *keys: str) -> int:
     return max(values or [0])
 
 
-def evidence_counts(report: dict[str, Any]) -> dict[str, int]:
+def evidence_counts(report: dict[str, Any], segment: dict[str, Any] | None = None) -> dict[str, int]:
     evidence = report.get("evidence") if isinstance(report.get("evidence"), dict) else {}
     if isinstance(report.get("evidence_counts"), dict):
         return {str(key): int(value or 0) for key, value in report["evidence_counts"].items()}
+    if segment:
+        trace = report.get("trace") if isinstance(report.get("trace"), dict) else {}
+        return scoped_validation_evidence_counts(
+            trace_entries(trace),
+            str(segment.get("route_node_id") or ""),
+            int(segment.get("route_generation") or 0),
+        )
     counts = evidence.get("validation_evidence_counts") if isinstance(evidence.get("validation_evidence_counts"), dict) else {}
     rows = {str(key): int(value or 0) for key, value in counts.items()}
     aliases = {
@@ -87,7 +96,7 @@ def evidence_counts(report: dict[str, Any]) -> dict[str, int]:
 
 def missing_required_evidence(segment: dict[str, Any], report: dict[str, Any]) -> list[str]:
     required = [str(row) for row in (segment.get("required_evidence") or [])]
-    counts = evidence_counts(report)
+    counts = evidence_counts(report, segment)
     return [name for name in required if int(counts.get(name) or 0) <= 0]
 
 
@@ -106,71 +115,82 @@ def expected_trash_stage(scenario: dict[str, Any]) -> str:
     return "raid_trash" if is_raid_scenario(scenario) else "normal_dungeon_trash"
 
 
-def has_boss_kill_evidence(report: dict[str, Any], scenario: dict[str, Any]) -> bool:
-    stage = expected_boss_stage(scenario)
-    if stage_passed(report, stage):
-        return True
-    summary = report.get("summary") if isinstance(report.get("summary"), dict) else {}
+def scoped_evidence(report: dict[str, Any], key: str, actions: set[str]) -> list[dict[str, Any]]:
     evidence = report.get("evidence") if isinstance(report.get("evidence"), dict) else {}
-    actions = set(trace_actions(report))
-    if int_field(evidence, "boss_kill_evidence") > 0:
-        return True
-    if is_raid_scenario(scenario):
-        return int_field(summary, "raid_boss_kills", "boss_kills", "bosses_killed") > 0 or "raid_boss_killed" in actions
-    return int_field(summary, "boss_kills", "dungeon_boss_kills", "bosses_killed") > 0 or "boss_killed" in actions
+    rows = evidence.get(key) if isinstance(evidence.get(key), list) else None
+    if rows is not None:
+        return [row for row in rows if isinstance(row, dict)]
+    trace = report.get("trace") if isinstance(report.get("trace"), dict) else {}
+    entries = trace_entries(trace)
+    if key == "real_boss_kill_evidence":
+        entries = [entry for entry in entries if str(entry.get("result") or "") == "ok" and int(entry.get("target_id") or 0) > 0]
+    return scoped_event_evidence(entries, actions)
 
 
-def has_trash_evidence(report: dict[str, Any], scenario: dict[str, Any]) -> bool:
-    if stage_passed(report, expected_trash_stage(scenario)):
-        return True
-    summary = report.get("summary") if isinstance(report.get("summary"), dict) else {}
-    evidence = report.get("evidence") if isinstance(report.get("evidence"), dict) else {}
-    actions = set(trace_actions(report))
-    return (
-        int_field(summary, "trash_pulls", "trash_kills", "trash_packs_cleared") > 0
-        or int_field(evidence, "trash_pulls", "trash_kills", "trash_packs_cleared", "trash_action_evidence") > 0
-        or bool(actions & {"trash_action", "trash_killed", "dungeon_trash_cleared", "raid_trash_cleared"})
+def scope_matches(rows: list[dict[str, Any]], segment: dict[str, Any]) -> bool:
+    node_id = str(segment.get("route_node_id") or "")
+    generation = int(segment.get("route_generation") or 0)
+    return any(
+        isinstance(row, dict)
+        and str(row.get("route_node_id") or "") == node_id
+        and int(row.get("route_generation") or 0) == generation
+        for row in rows
     )
 
 
-def has_valid_full_clear_claim(report: dict[str, Any]) -> bool:
+def has_boss_kill_evidence(report: dict[str, Any], segment: dict[str, Any]) -> bool:
+    return scope_matches(scoped_evidence(report, "real_boss_kill_evidence", {"boss_killed", "raid_boss_killed"}), segment)
+
+
+def has_terminal_evidence(report: dict[str, Any], segment: dict[str, Any]) -> bool:
+    return scope_matches(scoped_evidence(report, "route_terminal_evidence", {"validation_route_terminal"}), segment)
+
+
+def has_trash_evidence(report: dict[str, Any], segment: dict[str, Any]) -> bool:
+    return int(evidence_counts(report, segment).get("pulls") or 0) > 0
+
+
+def has_valid_full_clear_claim(report: dict[str, Any], segments: list[dict[str, Any]]) -> bool:
     if not bool(report.get("clear_complete")):
         return False
     if not bool(report.get("completion_claim_valid")):
         return False
     mode = str(report.get("completion_evidence_mode") or report.get("scenario_evidence_mode") or "")
-    modes = {str(row) for row in (report.get("scenario_evidence_modes") or [])}
-    has_full_clear_evidence = bool(report.get("natural_full_clear_evidence") or report.get("attached_full_clear_evidence"))
-    if (mode == "route_segment_context" or "route_segment_context" in modes) and not has_full_clear_evidence:
+    if mode not in {"uninterrupted_live_clear", "attached_uninterrupted_live_clear"}:
         return False
-    if report.get("source_segments") and not has_full_clear_evidence:
-        return False
-    return True
+    terminal_rows = report.get("route_terminal_evidence") if isinstance(report.get("route_terminal_evidence"), list) else []
+    boss_rows = report.get("real_boss_kill_evidence") if isinstance(report.get("real_boss_kill_evidence"), list) else []
+    return (
+        bool(segments)
+        and all(scope_matches(terminal_rows, segment) for segment in segments)
+        and all(str(segment.get("kind") or "") != "boss" or scope_matches(boss_rows, segment) for segment in segments)
+        and not report.get("forbidden_completion_assists")
+        and not report.get("failure_labels")
+        and not report.get("failure_reason")
+    )
 
 
 def scenario_segment_result(scenario_report: dict[str, Any], segment: dict[str, Any]) -> dict[str, Any]:
     expected_segment_id = str(segment.get("segment_id") or "")
     expected_route_node_id = str(segment.get("route_node_id") or "")
-    fallback: dict[str, Any] = {}
     for row in scenario_report.get("segment_results") or []:
         if not isinstance(row, dict):
             continue
         if expected_segment_id and str(row.get("segment_id") or "") != expected_segment_id:
             continue
         if expected_route_node_id and str(row.get("route_node_id") or "") != expected_route_node_id:
-            if not fallback and (
-                str(row.get("route_label") or "") == str(segment.get("label") or "")
-                or str(row.get("mechanic_profile") or "") == str(segment.get("mechanic_profile") or "")
-            ):
-                fallback = row
+            continue
+        if int(row.get("route_generation") or 0) != int(segment.get("route_generation") or 0):
             continue
         return row
-    return fallback
+    return {}
 
 
-def validate_scenario_segment_result(row: dict[str, Any], segment: dict[str, Any], scenario: dict[str, Any]) -> dict[str, Any]:
+def validate_scenario_segment_result(row: dict[str, Any], segment: dict[str, Any], scenario: dict[str, Any], scenario_report: dict[str, Any]) -> dict[str, Any]:
     reasons = []
     warnings = []
+    scenario_terminal_rows = scenario_report.get("route_terminal_evidence") if isinstance(scenario_report.get("route_terminal_evidence"), list) else []
+    scenario_boss_rows = scenario_report.get("real_boss_kill_evidence") if isinstance(scenario_report.get("real_boss_kill_evidence"), list) else []
     if not row:
         return {
             "report_valid": False,
@@ -186,24 +206,31 @@ def validate_scenario_segment_result(row: dict[str, Any], segment: dict[str, Any
         reasons.append("mechanic_profile_mismatch")
     expected_route_node_id = str(segment.get("route_node_id") or "")
     actual_route_node_id = str(row.get("route_node_id") or "")
-    if expected_route_node_id and actual_route_node_id and actual_route_node_id != expected_route_node_id:
-        warnings.append("route_node_id_drift")
+    if expected_route_node_id != actual_route_node_id:
+        reasons.append("route_node_id_mismatch")
+    if int(row.get("route_generation") or 0) != int(segment.get("route_generation") or 0):
+        reasons.append("route_generation_mismatch")
     failure_labels = row.get("failure_labels") if isinstance(row.get("failure_labels"), list) else []
     failure_reason = str(row.get("failure_reason") or "")
     if failure_labels or failure_reason:
         reasons.append("scenario_segment_has_failures")
+    if row.get("forbidden_completion_assists") or scenario_report.get("forbidden_completion_assists"):
+        reasons.append("forced_or_teacher_kill_evidence")
     boss_ready = True
     if str(segment.get("kind") or "") == "boss":
-        boss_ready = int_field(row, "boss_kills", "raid_boss_kills", "bosses_killed") > 0
+        boss_ready = scope_matches(scenario_boss_rows, segment)
         if not boss_ready:
             reasons.append("missing_boss_kill_evidence")
     trash_ready = True
     if str(segment.get("kind") or "") == "trash":
-        trash_ready = int_field(row, "trash_pulls", "trash_kills", "trash_packs_cleared") > 0 or bool(row.get("trash_cleared"))
+        trash_ready = int(evidence_counts(row, segment).get("pulls") or 0) > 0
         if not trash_ready:
             reasons.append("missing_trash_evidence")
     missing_evidence = missing_required_evidence(segment, row)
     reasons.extend(f"missing_{name}_evidence" for name in missing_evidence)
+    terminal_ready = scope_matches(scenario_terminal_rows, segment)
+    if not terminal_ready:
+        reasons.append("missing_node_terminal_evidence")
     context_matches = not any(reason.endswith("_mismatch") for reason in reasons)
     return {
         "report_valid": True,
@@ -213,7 +240,7 @@ def validate_scenario_segment_result(row: dict[str, Any], segment: dict[str, Any
         "missing_evidence": missing_evidence,
         "evidence_counts": evidence_counts(row),
         "evidence_complete": not missing_evidence,
-        "segment_ready": context_matches and boss_ready and trash_ready and not missing_evidence and not failure_labels and not failure_reason,
+        "segment_ready": context_matches and terminal_ready and boss_ready and trash_ready and not missing_evidence and not failure_labels and not failure_reason and not row.get("forbidden_completion_assists") and not scenario_report.get("forbidden_completion_assists"),
         "invalid_reasons": reasons,
         "warnings": warnings,
     }
@@ -250,6 +277,10 @@ def validate_segment_report(report: dict[str, Any], segment: dict[str, Any], sce
     failure_reason = str(report.get("failure_reason") or "")
     if failure_labels or failure_reason:
         reasons.append("live_validation_has_failures")
+    evidence = report.get("evidence") if isinstance(report.get("evidence"), dict) else {}
+    forbidden_assists = evidence.get("forbidden_completion_assists") if isinstance(evidence.get("forbidden_completion_assists"), list) else []
+    if forbidden_assists:
+        reasons.append("forced_or_teacher_kill_evidence")
 
     context = report.get("validation_context") if isinstance(report.get("validation_context"), dict) else {}
     expected_context = {
@@ -257,43 +288,44 @@ def validate_segment_report(report: dict[str, Any], segment: dict[str, Any], sce
         "segment_id": segment.get("segment_id") or "",
         "route_node_id": segment.get("route_node_id") or "",
         "route_kind": segment.get("kind") or "",
+        "route_generation": segment.get("route_generation") or 0,
         "mechanic_profile": segment.get("mechanic_profile") or "",
     }
     context_matches = True
     for key, expected in expected_context.items():
         if expected and str(context.get(key) or "") != str(expected):
-            if key == "route_node_id":
-                warnings.append("route_node_id_drift")
-            else:
-                context_matches = False
-                reasons.append(f"{key}_mismatch")
+            context_matches = False
+            reasons.append(f"{key}_mismatch")
     if not context:
         context_matches = False
         reasons.append("missing_validation_context")
 
     boss_ready = True
     if str(segment.get("kind") or "") == "boss":
-        boss_ready = has_boss_kill_evidence(report, scenario)
+        boss_ready = has_boss_kill_evidence(report, segment)
         if not boss_ready:
             reasons.append("missing_boss_kill_evidence")
     trash_ready = True
     if str(segment.get("kind") or "") == "trash":
-        trash_ready = has_trash_evidence(report, scenario)
+        trash_ready = has_trash_evidence(report, segment)
         if not trash_ready:
             reasons.append("missing_trash_evidence")
     missing_evidence = missing_required_evidence(segment, report)
     reasons.extend(f"missing_{name}_evidence" for name in missing_evidence)
+    terminal_ready = has_terminal_evidence(report, segment)
+    if not terminal_ready:
+        reasons.append("missing_node_terminal_evidence")
 
-    report_valid = not load_error and schema == "bot_live_validation_report_v1" and not bool(report.get("timed_out")) and int_field(report, "returncode") == 0 and not failure_labels and not failure_reason
+    report_valid = not load_error and schema == "bot_live_validation_report_v1" and not bool(report.get("timed_out")) and int_field(report, "returncode") == 0 and not failure_labels and not failure_reason and not forbidden_assists
     return {
         "report_valid": report_valid,
         "validation_context_matches": context_matches,
         "boss_evidence_ready": boss_ready,
         "trash_evidence_ready": trash_ready,
         "missing_evidence": missing_evidence,
-        "evidence_counts": evidence_counts(report),
+        "evidence_counts": evidence_counts(report, segment),
         "evidence_complete": not missing_evidence,
-        "segment_ready": report_valid and context_matches and boss_ready and trash_ready and not missing_evidence,
+        "segment_ready": report_valid and context_matches and terminal_ready and boss_ready and trash_ready and not missing_evidence,
         "invalid_reasons": reasons,
         "warnings": warnings,
     }
@@ -303,7 +335,9 @@ def build_status(plan: dict[str, Any], report_root: Path) -> dict[str, Any]:
     scenarios = []
     for scenario in plan.get("scenarios") or []:
         scenario_id = str(scenario.get("scenario_id") or "")
-        segments = [segment for segment in scenario.get("segments") or [] if segment.get("executable", True)]
+        segments = [dict(segment) for segment in scenario.get("segments") or [] if segment.get("executable", True)]
+        for generation, segment in enumerate(segments, 1):
+            segment["route_generation"] = int(segment.get("route_generation") or generation)
         scenario_report_file = scenario_report_path(report_root, scenario_id)
         scenario_report = load_json(scenario_report_file)
         present_segments = []
@@ -319,7 +353,7 @@ def build_status(plan: dict[str, Any], report_root: Path) -> dict[str, Any]:
             scenario_segment = {}
             if not validation["segment_ready"]:
                 scenario_segment = scenario_segment_result(scenario_report, segment)
-                scenario_validation = validate_scenario_segment_result(scenario_segment, segment, scenario)
+                scenario_validation = validate_scenario_segment_result(scenario_segment, segment, scenario, scenario_report)
                 if scenario_validation["segment_ready"]:
                     validation = scenario_validation
                     evidence_source = "scenario_segment_result"
@@ -359,27 +393,7 @@ def build_status(plan: dict[str, Any], report_root: Path) -> dict[str, Any]:
                 missing_segments.append(row["segment_id"])
 
         complete_segment_coverage = bool(scenario_report.get("complete_segment_coverage"))
-        clear_complete = has_valid_full_clear_claim(scenario_report)
-        uninterrupted_full_clear_evidence = bool(scenario_report.get("natural_full_clear_evidence") or scenario_report.get("attached_full_clear_evidence"))
-        if clear_complete and complete_segment_coverage and uninterrupted_full_clear_evidence:
-            present_segments = [segment.get("segment_id") or "" for segment in segments]
-            existing_segments = list(present_segments)
-            missing_segments = []
-            invalid_segments = []
-            for row in segment_reports:
-                if row["segment_ready"]:
-                    continue
-                row["report"] = str(scenario_report_file)
-                row["report_exists"] = True
-                row["report_valid"] = True
-                row["validation_context_matches"] = True
-                row["boss_evidence_ready"] = True
-                row["trash_evidence_ready"] = True
-                row["missing_evidence"] = []
-                row["evidence_complete"] = True
-                row["segment_ready"] = True
-                row["invalid_reasons"] = []
-                row["evidence_source"] = "uninterrupted_full_clear_report"
+        clear_complete = has_valid_full_clear_claim(scenario_report, segments)
         segment_coverage_ready = bool(segments) and not missing_segments and not invalid_segments
         scenario_report_ready = scenario_report_file.exists()
         full_clear_ready = clear_complete and segment_coverage_ready and (complete_segment_coverage or not segments)

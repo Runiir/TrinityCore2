@@ -125,38 +125,29 @@ def load_validation_route(scenario_dir: Path, context: dict[str, Any]) -> dict[s
         row = json.loads(line)
         if str(row.get("scenario_id") or "") != scenario_id:
             continue
-        if route_node_id and str(row.get("route_node_id") or "") == route_node_id:
-            return row
         rows.append(row)
-
+    rows.sort(key=lambda row: int(row.get("step") or 0))
+    for generation, row in enumerate(rows, 1):
+        row["route_generation"] = generation
+    if route_node_id:
+        return next((row for row in rows if str(row.get("route_node_id") or "") == route_node_id), {})
     route_step = int(context.get("route_step") or 0)
     route_kind = str(context.get("route_kind") or "")
     route_label = str(context.get("route_label") or "")
     mechanic_profile = str(context.get("mechanic_profile") or "")
-    if not (route_step or route_kind or route_label):
+    if not (route_step and route_kind and route_label):
         return {}
-
-    def fallback_score(row: dict[str, Any]) -> int:
-        score = 0
-        if route_step and int(row.get("step") or 0) == route_step:
-            score += 8
-        if route_kind and str(row.get("kind") or "") == route_kind:
-            score += 4
-        if route_label and str(row.get("label") or "") == route_label:
-            score += 2
-        if mechanic_profile and str(row.get("mechanic_profile") or "") == mechanic_profile:
-            score += 1
-        return score
-
-    candidates: list[tuple[int, dict[str, Any]]] = []
-    for row in rows:
-        score = fallback_score(row)
-        if score >= 12:
-            candidates.append((score, row))
-    if not candidates:
-        return {}
-    candidates.sort(key=lambda scored: (-scored[0], int(scored[1].get("step") or 0), str(scored[1].get("route_node_id") or "")))
-    return candidates[0][1]
+    return next(
+        (
+            row
+            for row in rows
+            if int(row.get("step") or 0) == route_step
+            and str(row.get("kind") or "") == route_kind
+            and str(row.get("label") or "") == route_label
+            and (not mechanic_profile or str(row.get("mechanic_profile") or "") == mechanic_profile)
+        ),
+        {},
+    )
 
 
 def load_validation_routes_for_scenario(scenario_dir: Path, scenario_id: str) -> list[dict[str, Any]]:
@@ -171,6 +162,8 @@ def load_validation_routes_for_scenario(scenario_dir: Path, scenario_id: str) ->
         if str(row.get("scenario_id") or "") == scenario_id and str(row.get("kind") or "") in {"trash", "boss", "travel", "regroup", "descent"} and bool(row.get("coordinates_valid", True)):
             rows.append(row)
     rows.sort(key=lambda row: int(row.get("step") or 0))
+    for generation, row in enumerate(rows, 1):
+        row["route_generation"] = generation
     return rows
 
 
@@ -209,6 +202,7 @@ def route_validation_context(scenario_id: str, route: dict[str, Any], *, include
         "route_label": str(route.get("label") or ""),
         "route_kind": str(route.get("kind") or ""),
         "route_step": int(route.get("step") or 0),
+        "route_generation": int(route.get("route_generation") or 0),
         "mechanic_profile": str(route.get("mechanic_profile") or ""),
     }
     if include_segment:
@@ -220,21 +214,23 @@ def route_segment_complete(report: dict[str, Any], route: dict[str, Any] | None)
     if not route or report.get("failure_labels"):
         return False
     evidence = report.get("evidence") if isinstance(report.get("evidence"), dict) else {}
-    counters = report.get("progress_counters") if isinstance(report.get("progress_counters"), dict) else {}
-    counts = evidence.get("validation_evidence_counts") if isinstance(evidence.get("validation_evidence_counts"), dict) else {}
+    context = report.get("validation_context") if isinstance(report.get("validation_context"), dict) else {}
+    node_id = str(route.get("route_node_id") or context.get("route_node_id") or "")
+    generation = int(route.get("route_generation") or context.get("route_generation") or 0)
+    trace = report.get("trace") if isinstance(report.get("trace"), dict) else {}
+    counts = scoped_validation_evidence_counts(trace_entries(trace), node_id, generation)
     required = [str(row) for row in (route.get("required_evidence") or []) if row]
     if any(int(counts.get(name) or 0) <= 0 for name in required):
         return False
-    route_actions = int(evidence.get("validation_route_actions") or counters.get("validation_route_actions") or 0)
-    if route_actions <= 0:
+    terminals = evidence.get("route_terminal_evidence") if isinstance(evidence.get("route_terminal_evidence"), list) else []
+    if not any(str(row.get("route_node_id") or "") == node_id and int(row.get("route_generation") or 0) == generation for row in terminals):
         return False
     kind = str(route.get("kind") or "")
     if kind == "boss":
-        return int(evidence.get("boss_kill_evidence") or counters.get("boss_kill_evidence") or 0) > 0
+        kills = evidence.get("real_boss_kill_evidence") if isinstance(evidence.get("real_boss_kill_evidence"), list) else []
+        return any(str(row.get("route_node_id") or "") == node_id and int(row.get("route_generation") or 0) == generation for row in kills)
     if kind == "trash":
-        trash_pulls = int(evidence.get("trash_pulls") or counters.get("trash_pulls") or 0)
-        kills = int(evidence.get("kills") or counters.get("kills") or 0)
-        return trash_pulls > 0 or kills > 0
+        return int(evidence.get("trash_pulls") or 0) > 0
     return bool(required)
 
 
@@ -298,6 +294,7 @@ def write_validation_config(
         text = upsert_trinity_config(text, "BotWorld.SafePositionMemorySec", "900")
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.ScenarioId", f'"{str(route.get("scenario_id") or "").replace(chr(34), "")}"')
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.NodeId", f'"{str(route.get("route_node_id") or "").replace(chr(34), "")}"')
+        text = upsert_trinity_config(text, "BotWorld.ValidationRoute.Generation", str(int(route.get("route_generation") or 0)))
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.Label", f'"{str(route.get("label") or "").replace(chr(34), "")}"')
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.Kind", f'"{str(route.get("kind") or "").replace(chr(34), "")}"')
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.MechanicProfile", f'"{str(route.get("mechanic_profile") or "").replace(chr(34), "")}"')
@@ -729,6 +726,113 @@ def trace_entries(trace: dict[str, Any]) -> list[dict[str, Any]]:
     return []
 
 
+def route_scope(entry: dict[str, Any]) -> tuple[str, int]:
+    node_id = str(entry.get("route_node_id") or "")
+    generation = int(entry.get("route_generation") or 0)
+    if node_id and generation > 0:
+        return node_id, generation
+    validation_route = entry.get("validation_route") if isinstance(entry.get("validation_route"), dict) else {}
+    return str(validation_route.get("route_node_id") or ""), int(validation_route.get("route_generation") or 0)
+
+
+def scoped_event_evidence(entries: list[dict[str, Any]], actions: set[str]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    seen: set[tuple[str, int]] = set()
+    for entry in entries:
+        if str(entry.get("action") or "") not in actions:
+            continue
+        node_id, generation = route_scope(entry)
+        if not node_id or generation <= 0:
+            continue
+        scope = (node_id, generation)
+        if scope in seen:
+            continue
+        seen.add(scope)
+        rows.append({"route_node_id": node_id, "route_generation": generation})
+    return rows
+
+
+def scoped_validation_evidence_counts(entries: list[dict[str, Any]], node_id: str, generation: int) -> dict[str, int]:
+    return {
+        name: sum(
+            1
+            for entry in entries
+            if route_scope(entry) == (node_id, generation)
+            and str(entry.get("action") or entry.get("situation") or "") in actions
+        )
+        for name, actions in VALIDATION_EVIDENCE_ACTIONS.items()
+    }
+
+
+def forbidden_completion_assists(entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    rows = []
+    for entry in entries:
+        action = str(entry.get("action") or "")
+        result = str(entry.get("result") or "")
+        if action in {"teacher_kill_assist", "validation_route_teacher_assist"} or any(token in result for token in {"teacher_assist", "forced_kill", "force_terminal", "force_damage"}):
+            rows.append({"action": action, "result": result})
+    return rows
+
+
+def trace_order(entry: dict[str, Any]) -> tuple[int, int]:
+    return int(entry.get("timestamp_ms") or 0), int(entry.get("sequence") or 0)
+
+
+def progress_after_latest_route_failure(entries: list[dict[str, Any]]) -> bool:
+    failures = [
+        entry
+        for entry in entries
+        if str(entry.get("action") or "") in {"stuck_detected", "objective_target_lost", "validation_route_target_lost"}
+        or "target_lost" in str(entry.get("result") or "")
+    ]
+    if not failures:
+        return True
+    latest_failure = max(failures, key=trace_order)
+    latest_order = trace_order(latest_failure)
+    if latest_order == (0, 0):
+        return False
+    failure_scope = route_scope(latest_failure)
+    progress_actions = {
+        "mob_killed",
+        "boss_killed",
+        "raid_boss_killed",
+        "objective_progress",
+        "validation_route_terminal",
+        "validation_route_segment_advance",
+    }
+    return any(
+        trace_order(entry) > latest_order
+        and str(entry.get("action") or "") in progress_actions
+        and (failure_scope == ("", 0) or route_scope(entry) == failure_scope)
+        for entry in entries
+    )
+
+
+def strict_manifest_evidence(evidence: dict[str, Any], manifest: dict[str, Any]) -> dict[str, list[str]]:
+    terminal_scopes = {
+        (str(row.get("route_node_id") or ""), int(row.get("route_generation") or 0))
+        for row in evidence.get("route_terminal_evidence") or []
+        if isinstance(row, dict)
+    }
+    boss_scopes = {
+        (str(row.get("route_node_id") or ""), int(row.get("route_generation") or 0))
+        for row in evidence.get("real_boss_kill_evidence") or []
+        if isinstance(row, dict)
+    }
+    missing_terminals = []
+    missing_boss_kills = []
+    for generation, route in enumerate(manifest.get("routes") or [], 1):
+        if not isinstance(route, dict):
+            continue
+        node_id = str(route.get("route_node_id") or "")
+        expected = (node_id, int(route.get("route_generation") or generation))
+        if expected not in terminal_scopes:
+            missing_terminals.append(node_id)
+        if str(route.get("kind") or "") == "boss" and expected not in boss_scopes:
+            missing_boss_kills.append(node_id)
+    return {"missing_terminal_route_nodes": missing_terminals, "missing_boss_route_nodes": missing_boss_kills}
+
+
 def diagnosis_rows(diagnosis: dict[str, Any]) -> list[dict[str, Any]]:
     rows = diagnosis.get("diagnoses") or diagnosis.get("bots") or ([] if not diagnosis else [diagnosis])
     return [row for row in rows if isinstance(row, dict)]
@@ -810,7 +914,7 @@ def scenario_clear_complete(report: dict[str, Any]) -> bool:
     modes = {str(row) for row in (report.get("scenario_evidence_modes") or [])}
     if mode == "route_segment_context" or "route_segment_context" in modes:
         return False
-    if report.get("source_segments"):
+    if report.get("source_segments") and not bool(report.get("strict_completion_evidence")):
         return False
     return True
 
@@ -923,12 +1027,18 @@ def live_evidence(
         if str(entry.get("action") or "").startswith("complete_quest")
     )
     hub_acceptance_actions = sum(1 for entry in entries if str(entry.get("action") or "") == "accept_hub_quests")
-    teacher_assisted_kills = sum(
-        1
-        for entry in entries
-        if str(entry.get("action") or "") == "teacher_kill_assist"
-        and str(entry.get("result") or "") == "simple_open_world_quest_mob_target"
+    teacher_assisted_kills = sum(1 for entry in entries if str(entry.get("action") or "") == "teacher_kill_assist")
+    forbidden_assists = forbidden_completion_assists(entries)
+    route_terminal_evidence = scoped_event_evidence(entries, {"validation_route_terminal"})
+    real_boss_kill_evidence = scoped_event_evidence(
+        [
+            entry
+            for entry in entries
+            if str(entry.get("result") or "") == "ok" and int(entry.get("target_id") or 0) > 0
+        ],
+        {"boss_killed", "raid_boss_killed"},
     )
+    post_failure_progress = progress_after_latest_route_failure(entries)
     action_names.update(
         str(nested_get(row, ["snapshot", "decision", "action"], ""))
         for row in diagnoses
@@ -1002,13 +1112,7 @@ def live_evidence(
         action_counts.get("mob_killed", 0),
         action_counts.get("dungeon_trash_cleared", 0),
     )
-    boss_kill_evidence = max(
-        int(summary.get("boss_kills") or 0),
-        int(summary.get("raid_boss_kills") or 0),
-        action_counts.get("boss_killed", 0),
-        action_counts.get("raid_boss_killed", 0),
-        sum(1 for row in diagnoses if str(nested_get(row, ["diagnosis", "blocker"], nested_get(row, ["blocker"], ""))) == "boss_killed"),
-    )
+    boss_kill_evidence = len(real_boss_kill_evidence)
     trash_action_evidence = sum(
         count
         for action, count in action_counts.items()
@@ -1135,8 +1239,12 @@ def live_evidence(
         "hub_acceptance_actions": hub_acceptance_actions,
         "kills": kills,
         "teacher_assisted_kills": teacher_assisted_kills,
+        "forbidden_completion_assists": forbidden_assists,
         "kill_evidence": kill_evidence,
         "boss_kill_evidence": boss_kill_evidence,
+        "real_boss_kill_evidence": real_boss_kill_evidence,
+        "route_terminal_evidence": route_terminal_evidence,
+        "post_failure_progress": post_failure_progress,
         "trash_action_evidence": trash_action_evidence,
         "trash_pulls": trash_pulls,
         "gear_upgrades": gear_upgrades,
@@ -1225,20 +1333,21 @@ def validation_failure_labels(
     deaths = max(int(evidence.get("deaths") or 0), int(action_counts.get("death") or 0))
     bot_not_loaded_diagnoses = int(evidence.get("bot_not_loaded_diagnoses") or 0)
     error_diagnoses = int(evidence.get("error_diagnoses") or 0)
+    post_failure_progress = bool(evidence.get("post_failure_progress"))
     recovered_route_stuck = (
         action_counts.get("validation_route_recovery", 0) > 0
         and result_counts.get("validation_route_stuck_safe_memory", 0) > 0
-        and unstuck_failures <= 0
+        and post_failure_progress
         and (int(evidence.get("kill_evidence") or 0) > 0 or trash_route_actions > 0 or boss_engagement > 0)
     )
     recovered_by_route_progress = (
-        unstuck_failures <= 0
+        post_failure_progress
         and int(evidence.get("moved_diagnoses") or 0) > 0
         and route_no_progress_diagnoses <= 0
         and (int(evidence.get("kill_evidence") or 0) > 0 or trash_route_actions > 0 or boss_engagement > 0)
     )
     recovered_by_active_route_combat = (
-        unstuck_failures <= 0
+        post_failure_progress
         and route_no_progress_diagnoses <= 0
         and (int((evidence.get("diagnosis_codes") or {}).get("normal_combat") or 0) > 0 or route_combat_progress_diagnoses > 0)
         and (int(evidence.get("kill_evidence") or 0) > 0 or trash_evidence > 0 or boss_engagement > 0)
@@ -1272,7 +1381,7 @@ def validation_failure_labels(
         labels.append("validation_route_activation_target_absent")
     if route_actions > 0 and boss_kills <= 0 and trash_route_actions <= 0 and kill_evidence <= 0 and force_tank_focus >= 4 and boss_engagement <= 0:
         labels.append("validation_route_assist_focus_loop")
-    if route_actions > 0 and (
+    if route_actions > 0 and not post_failure_progress and (
         unstuck_failures >= 3
         or (repath_events >= max(8, active_bots) and not recovered_route_stuck and not recovered_by_route_progress and not recovered_by_active_route_combat)
         or (stuck_events >= max(8, active_bots) and not recovered_route_stuck and not recovered_by_route_progress and not recovered_by_active_route_combat)
@@ -1444,6 +1553,7 @@ def final_evidence_rejections(
     failure_labels: list[str],
     evidence: dict[str, Any],
     validation_context: dict[str, Any] | None = None,
+    validation_route_manifest: dict[str, Any] | None = None,
     completion: str = "",
 ) -> list[str]:
     context = validation_context or {}
@@ -1461,10 +1571,20 @@ def final_evidence_rejections(
         rejections.append("segment_or_route_context_is_debug_only")
     if completion in {"emergency_wall_clock_timeout", "no_progress_watchdog", "repeated_decision_watchdog", "death_loop_watchdog"}:
         rejections.append("watchdog_failure_is_not_final_evidence")
-    teacher_kills = int(evidence.get("teacher_assisted_kills") or 0)
-    real_kills = int(evidence.get("kills") or 0) + int(evidence.get("boss_kill_evidence") or 0)
-    if teacher_kills > 0 and real_kills <= 0:
-        rejections.append("teacher_assisted_only_evidence")
+    if evidence.get("forbidden_completion_assists"):
+        rejections.append("forced_or_teacher_kill_evidence")
+        if int(evidence.get("teacher_assisted_kills") or 0) > 0 and not evidence.get("real_boss_kill_evidence"):
+            rejections.append("teacher_assisted_only_evidence")
+    if manifest_complete:
+        manifest = validation_route_manifest or {}
+        if not manifest.get("routes"):
+            rejections.append("missing_validation_route_manifest")
+        else:
+            strict = strict_manifest_evidence(evidence, manifest)
+            if strict["missing_terminal_route_nodes"]:
+                rejections.append("missing_node_terminal_evidence")
+            if strict["missing_boss_route_nodes"]:
+                rejections.append("missing_real_boss_kill_evidence")
     return list(dict.fromkeys(rejections))
 
 
@@ -1476,6 +1596,7 @@ def live_validation_report(
     command: list[str] | None = None,
     scenario_reports: dict[str, dict[str, Any]] | None = None,
     validation_context: dict[str, Any] | None = None,
+    validation_route_manifest: dict[str, Any] | None = None,
     duration_policy: str = "completion-watchdog",
     heartbeat_sec: int = DEFAULT_COMPLETION_HEARTBEAT_SEC,
     no_progress_window_sec: int = DEFAULT_NO_PROGRESS_WINDOW_SEC,
@@ -1557,6 +1678,7 @@ def live_validation_report(
         failure_labels=failure_labels,
         evidence=evidence,
         validation_context=validation_context,
+        validation_route_manifest=validation_route_manifest,
         completion=reason,
     )
     return {
@@ -1740,6 +1862,7 @@ def rolling_heartbeat_report(
     no_progress_window_sec: int,
     max_repeated_decisions: int,
     max_death_loops: int,
+    validation_route_manifest: dict[str, Any] | None = None,
     completion_reason_override: str = "",
 ) -> dict[str, Any]:
     report = live_validation_report(
@@ -1749,6 +1872,7 @@ def rolling_heartbeat_report(
         command=command,
         scenario_reports=scenario_reports,
         validation_context=validation_context,
+        validation_route_manifest=validation_route_manifest,
         duration_policy=duration_policy,
         heartbeat_sec=heartbeat_sec,
         no_progress_window_sec=no_progress_window_sec,
@@ -1846,6 +1970,7 @@ def run_worldserver_completion_watchdog(
                     no_progress_window_sec,
                     max_repeated_decisions,
                     max_death_loops,
+                    validation_route_manifest,
                     completion_reason_override="worldserver_process_exit",
                 )
                 return joined_output(), process.returncode if process.returncode is not None else 0, False, command
@@ -1874,6 +1999,7 @@ def run_worldserver_completion_watchdog(
                 no_progress_window_sec,
                 max_repeated_decisions,
                 max_death_loops,
+                validation_route_manifest,
             )
             progress_total = int(report.get("watchdog_state", {}).get("progress_total") or 0)
             if progress_total > last_progress_total:
@@ -2295,6 +2421,8 @@ def main() -> int:
 
     validation_context = validation_context_from_args(args)
     validation_route = load_validation_route(args.validation_scenario_dir, validation_context)
+    if validation_route:
+        validation_context = route_validation_context(args.validation_scenario_id, validation_route, include_segment=bool(args.validation_segment_id))
     validation_route_manifest: dict[str, Any] = {}
     validation_route_manifest_path: Path | None = None
     if args.validation_route_manifest:
@@ -2424,6 +2552,7 @@ def main() -> int:
             command=command,
             scenario_reports=scenario_reports,
             validation_context=validation_context,
+            validation_route_manifest=validation_route_manifest,
             duration_policy=args.duration_policy,
             heartbeat_sec=args.heartbeat_sec,
             no_progress_window_sec=args.no_progress_window_sec,

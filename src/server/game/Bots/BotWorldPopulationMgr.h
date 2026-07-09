@@ -66,6 +66,7 @@ struct BotWorldExperimentConfig
     std::string ValidationRouteAdvanceMode = "disabled";
     std::string ValidationRouteScenarioId;
     std::string ValidationRouteNodeId;
+    uint32 ValidationRouteGeneration = 0;
     std::string ValidationRouteLabel;
     std::string ValidationRouteKind;
     std::string ValidationRouteMechanicProfile;
@@ -338,6 +339,7 @@ private:
 
         struct RouteProgressDiagnostic
         {
+            uint64 RecordedAtMs = 0;
             std::string NodeId;
             std::string Kind;
             ObjectGuid TargetGuid;
@@ -440,6 +442,8 @@ private:
         uint32 ValidationRouteTargetSearchMissCount = 0;
         bool ValidationRouteTerminalState = false;
         uint64 ValidationRouteTerminalAtMs = 0;
+        uint64 ValidationRouteGeneration = 0;
+        uint64 ValidationRouteTerminalGeneration = 0;
         std::string ValidationRouteTerminalReason;
         bool ValidationCohortLocked = false;
         bool ValidationCohortViolation = false;
@@ -515,6 +519,7 @@ private:
         std::string BlockedResolution;
         std::string BlockedResolvedBy;
         uint64 BlockedStartMs = 0;
+        uint64 BlockedProgressBaselineMs = 0;
         uint64 BlockedResolvedMs = 0;
         bool BlockedMessageEmitted = false;
         std::string LastBlockedDiagnosticText;
@@ -534,6 +539,8 @@ private:
             uint32 Sequence = 0;
             std::string Situation = "unknown";
             std::string Action = "wait";
+            std::string RouteNodeId;
+            uint64 RouteGeneration = 0;
             uint32 QuestId = 0;
             uint64 TargetGuid = 0;
             uint32 DestinationMapId = 0;
@@ -1155,8 +1162,11 @@ private:
     uint32 _validationRouteActivationAttempts = 0;
     std::vector<ValidationRouteManifestNode> _validationRouteManifest;
     size_t _validationRouteManifestIndex = 0;
+    uint64 _validationRouteGeneration = 0;
     uint32 _validationRouteProgressBaselineKills = 0;
+    bool _validationRouteObservedEngagement = false;
     bool _validationRouteManifestAdvancePending = false;
+    uint64 _validationRouteManifestAdvanceGeneration = 0;
     bool _validationRouteManifestComplete = false;
     std::string _validationRouteManifestAdvanceReason;
     std::string _validationRouteManifestLoadError;

@@ -3560,6 +3560,7 @@ BotWorld.ValidationRoute.ManifestPath = ""
 BotWorld.ValidationRoute.AdvanceMode = "disabled"
 BotWorld.ValidationRoute.ScenarioId = ""
 BotWorld.ValidationRoute.NodeId = ""
+BotWorld.ValidationRoute.Generation = 0
 BotWorld.ValidationRoute.Label = ""
 BotWorld.ValidationRoute.Kind = ""
 BotWorld.ValidationRoute.MechanicProfile = ""

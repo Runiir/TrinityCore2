@@ -24,6 +24,8 @@ WORLDSERVER_CONF = ROOT / "src/server/worldserver/worldserver.conf.dist"
 CHASE_MOVEMENT = ROOT / "src/server/game/Movement/MovementGenerators/ChaseMovementGenerator.cpp"
 MAP_CPP = ROOT / "src/server/game/Maps/Map.cpp"
 PLAYER_CPP = ROOT / "src/server/game/Entities/Player/Player.cpp"
+VALIDATION_SCENARIOS = ROOT / "experiments/configs/validation_scenarios_cata_001.json"
+PYTEST_CONFIG = ROOT / "pytest.ini"
 
 
 def read(path: Path) -> str:
@@ -50,6 +52,43 @@ def assert_ordered(text: str, *needles: str) -> None:
         found = text.find(needle, cursor + 1)
         assert found != -1, needle
         cursor = found
+
+
+def test_validation_scenario_trash_counts_are_descriptive_only():
+    from tools.bot_ml.build_validation_scenario_manifests import build_manifests
+
+    config = json.loads(read(VALIDATION_SCENARIOS))
+    stonecore = next(scenario for scenario in config["scenarios"] if scenario["id"] == "stonecore_5n")
+    trash_steps = [step for step in stonecore["route"] if step["kind"] == "trash"]
+    assert all(step.get("expected_alive_count") != 0 for step in trash_steps)
+
+    manifest = build_manifests(config, {}, {"all_passed": True})
+    generated_trash = [
+        route
+        for route in manifest["validation_routes"]
+        if route["scenario_id"] == "stonecore_5n" and route["node_kind"] == "trash_cluster"
+    ]
+    assert generated_trash
+    assert all(route["expected_alive_count"] == len(route["pack_target_entries"]) for route in generated_trash)
+    assert all(route["expected_alive_count"] > 0 for route in generated_trash)
+    assert all(route["expected_alive_count_semantics"] == "descriptive_only" for route in generated_trash)
+    assert all(route["completion_policy"] == "cluster_clear_after_pull" for route in generated_trash)
+
+
+def test_pytest_excludes_generated_orchestrator_worktrees():
+    pytest_config = read(PYTEST_CONFIG)
+    assert re.search(r"^testpaths\s*=\s*tests$", pytest_config, re.MULTILINE)
+    assert re.search(r"^norecursedirs\s*=\s*generated/orchestrator_worktrees$", pytest_config, re.MULTILINE)
+
+
+def test_validation_route_has_no_forced_teacher_damage_or_expected_empty_terminal():
+    route_objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    assert not re.search(r"\bUnit::(?:Kill|DealDamage)\s*\(", route_objective)
+    assert "SetHealth(0" not in route_objective
+    assert "JUST_DIED" not in route_objective
+    assert "validation_route_teacher_assist" not in route_objective
+    assert "trash_cluster_expected_empty" not in route_objective
+    assert "&& !_config.ValidationRouteExpectedAliveCount" not in route_objective
 
 
 def test_server_start_autonomy_enabled_by_default_contract():
@@ -761,7 +800,7 @@ def test_quest_first_portfolio_routing_surface():
     assert "cohortState.ValidationRouteAnchorOverrideValid = false;" in mgr
     assert "cohortState.RecentDeathCount = 0;" in mgr
     assert "auto recordValidationRouteTrashKill" in validation_route_objective
-    assert 'if (!killedTarget || (killedTarget->IsAlive() && killedTarget->GetHealth()))' in validation_route_objective
+    assert "if (!killedTarget || killedTarget->IsAlive() || killedTarget->GetHealth())" in validation_route_objective
     assert "clearValidationRouteKilledFocus(killedTarget->GetGUID());" in mgr
     assert 'RecordEvent(state, bot, "mob_killed", killedTarget' in validation_route_objective
     assert 'if (!creature->IsAlive() || !creature->GetHealth())' in validation_route_objective
@@ -816,7 +855,7 @@ def test_quest_first_portfolio_routing_surface():
     assert "stale_focus_expired" in mgr
     assert "validation_route_recover_stale_focus" in mgr
     assert "findAuthoritativeRouteFocusTarget" in mgr
-    assert "teacherAssistAuthoritativeFocus" in mgr
+    assert "teacherAssistAuthoritativeFocus" in validation_route_objective
     assert "assist_unresolved_authoritative_focus" in mgr
     assert "assist_target_search_authoritative_focus" in mgr
     assert "authoritative_focus_guid_not_resolved" in mgr
@@ -824,13 +863,13 @@ def test_quest_first_portfolio_routing_surface():
     assert "authoritative_focus_no_same_map_cohort" in mgr
     assert "unresolved_authoritative_focus_unavailable" in mgr
     assert "validation_route_recover_unresolved_focus" in mgr
-    assert "validation_route_teacher_assist" in mgr
+    assert "validation_route_teacher_assist" not in validation_route_objective
     assert "validation_route_prerequisite_no_progress" in mgr
     assert "boss_route_no_health_progress" in mgr
-    assert "boss_route_slow_progress_teacher_assist" in mgr
+    assert "boss_route_slow_progress_teacher_assist" not in validation_route_objective
     assert "_validationRouteBossSlowProgressCount = 0;" in mgr
-    assert "uint32 sharedSlowProgressCount = ++_validationRouteBossSlowProgressCount;" in mgr
-    assert "sharedSlowProgressCount >= 8" in mgr
+    assert "++_validationRouteBossSlowProgressCount;" in validation_route_objective
+    assert "++state.ValidationRouteBossSlowProgressCount;" in validation_route_objective
     assert_ordered(
         validation_route_objective,
         'RecordEvent(state, bot, routeBossTarget ? (_config.ValidationRouteKind == "boss" ? "boss_action" : "trash_action") : "validation_route_prerequisite"',
@@ -848,7 +887,7 @@ def test_quest_first_portfolio_routing_surface():
     assert "makeExistingValidationRouteCombatReady" in validation_route_objective
     assert "target_ready_after_activation" in validation_route_objective
     assert "target_seen_activation_target" in validation_route_objective
-    assert "boss_route_activation_no_visible_target_teacher_assist" in mgr
+    assert "boss_route_activation_no_visible_target_teacher_assist" not in validation_route_objective
     assert "validation_route_script_target_dead" in mgr
     assert "target_seen_not_attackable" in mgr
     assert "boss_killed" in mgr
@@ -928,7 +967,7 @@ def test_quest_first_portfolio_routing_surface():
     assert "activation_applied_no_visible_target" in mgr
     assert "InstanceScript* instance" in mgr
     assert "blocker_path_no_progress" in mgr
-    assert "Unit::DealDamage(bot, prerequisiteTarget, damage" in mgr
+    assert "Unit::DealDamage(bot, prerequisiteTarget, damage" not in validation_route_objective
     assert "creature->IsInEvadeMode() || creature->HasUnitState(UNIT_STATE_EVADE)" in mgr
     assert "hasStrictPathToValidationRouteTarget(creature)" in mgr
     assert "isValidationRouteObjectiveTarget" in mgr
@@ -1411,7 +1450,11 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         "Unit* routeTarget = preAnchorTrashTarget;",
     )
     live_cluster_block = route_objective.split("auto isLiveTrashClusterMob", 1)[1].split("auto isValidationRouteObjectiveTarget", 1)[0]
-    assert "return isEligibleTrashClusterMob(creature);" in live_cluster_block
+    assert "if (!bot || !creature || !creature->IsAlive() || !creature->GetHealth())" in live_cluster_block
+    assert "isValidationRoutePackEntry(creature->GetEntry())" in live_cluster_block
+    assert "creature->IsInEvadeMode()" not in live_cluster_block
+    assert "IsValidAttackTarget" not in live_cluster_block
+    assert "hasStrictPathToValidationRouteTarget" not in live_cluster_block
     assert "bot->IsWithinLOSInMap(creature)" not in live_cluster_block
     assert "bot->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ) + radius + 40.0f" in route_objective
     assert 'node.ExpectedAliveCount = uint32(std::max(0, readInt(routeJson, "expected_alive_count")));' in mgr
@@ -1420,15 +1463,8 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     assert "_config.ValidationRouteExpectedAliveCount && _metrics.Kills - _validationRouteProgressBaselineKills < _config.ValidationRouteExpectedAliveCount" not in trash_liveness_block
     assert "cohortState.LastCombatAttempt = WorldBotState::CombatAttemptDiagnostic();" in route_objective
     assert "cohortState.LastRouteProgress = WorldBotState::RouteProgressDiagnostic();" in route_objective
-    assert 'markTrashClusterCleared("trash_cluster_expected_empty");' in route_objective
-    assert_ordered(
-        route_objective,
-        '&& !_config.ValidationRouteExpectedAliveCount',
-        'markTrashClusterCleared("trash_cluster_expected_empty");',
-        "MaybeAdvanceValidationRouteManifest();",
-        "return true;",
-        "if (recordDefeatedValidationRouteTarget(target, \"stale_target_seen_dead\")",
-    )
+    assert 'markTrashClusterCleared("trash_cluster_expected_empty");' not in route_objective
+    assert "&& !_config.ValidationRouteExpectedAliveCount" not in route_objective
     assert_ordered(
         route_objective,
         "auto recordValidationRouteTrashKill",
@@ -1446,7 +1482,8 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         "_validationRouteManifestAdvancePending = false;",
         "return true;",
         'bool arrivalRoute = _config.ValidationRouteKind == "travel" || _config.ValidationRouteKind == "regroup" || _config.ValidationRouteKind == "descent";',
-        "bool terminal = !arrivalRoute && _validationRouteManifestAdvancePending;",
+        "bool terminal = !arrivalRoute",
+        "&& _validationRouteManifestAdvanceGeneration == _validationRouteGeneration;",
     )
     assert "uint32 loadedParticipants = 0;" in advance_manifest
     assert "if (!loadedBot)\n                continue;" in advance_manifest
@@ -1459,15 +1496,16 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     assert "loadedBot->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ) > terminalCohortRadius" in advance_manifest
     assert "if (!cohortReadyForAdvance)\n            return false;" in advance_manifest
     assert 'state.ValidationRouteTerminalReason != "arrival"' in advance_manifest
-    assert "bool successfulTerminal = state.ValidationRouteTerminalState" in advance_manifest
+    assert "bool successfulTerminal = state.ValidationRouteGeneration == _validationRouteGeneration" in advance_manifest
+    assert "&& state.ValidationRouteTerminalGeneration == _validationRouteGeneration" in advance_manifest
     assert 'state.ValidationRouteTerminalReason == "all_routes_complete"' in advance_manifest
     assert '_config.ValidationRouteKind == "boss"' in advance_manifest
-    assert 'state.ValidationRouteTerminalReason == "boss_route_target_killed"' in advance_manifest
+    assert 'state.ValidationRouteTerminalReason == "boss_killed"' in advance_manifest
     assert '_config.ValidationRouteKind != "boss"' in advance_manifest
-    assert "&& (state.LastDecisionAction == \"validation_route_complete\"" in advance_manifest
+    assert "state.LastDecisionAction" not in advance_manifest
     assert 'state.ValidationRouteTerminalReason == "trash_cluster_cleared"' in advance_manifest
-    assert 'state.ValidationRouteTerminalReason == "trash_cluster_expected_empty"' in advance_manifest
-    assert "&& state.ValidationRouteTerminalState" in record_decision
+    assert 'state.ValidationRouteTerminalReason == "trash_cluster_expected_empty"' not in advance_manifest
+    assert "ValidationRouteTerminalState" not in record_decision
     assert_ordered(
         advance_manifest,
         "if (nextIndex >= _validationRouteManifest.size())",
@@ -1478,9 +1516,10 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     )
     assert_ordered(
         route_objective,
-        "if (state.ValidationRouteTerminalState)",
-        "terminal_cohort_catchup",
+        "if (state.ValidationRouteTerminalState",
+        "&& state.ValidationRouteTerminalGeneration == _validationRouteGeneration)",
         "MoveBotToPoint(state, bot, routeAnchorX, routeAnchorY, routeAnchorZ)",
+        "terminal_cohort_catchup",
         'action = "move_to_validation_route_anchor";',
     )
     assert_ordered(
@@ -1489,7 +1528,7 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         'action = "validation_route_complete";',
         "return true;",
     )
-    assert "&& !_validationRouteManifestComplete" in record_decision
+    assert "_validationRouteManifestComplete" not in record_decision
 
 
 def test_clip_capture_smoke_persists_clip_row_with_pre_and_post_frames():
