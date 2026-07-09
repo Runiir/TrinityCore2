@@ -32,10 +32,10 @@ Use the lowest-cost model and reasoning effort that can reliably complete the ta
 
 | Model | Intelligence | Taste | Cost | Best use |
 | --- | --- | --- | --- | --- |
-| `gpt-5.6-sol` | Highest | Best detail, judgment, and polish | Highest usage | Complex, ambiguous, difficult, or high-value work |
-| `gpt-5.6-terra` | High; competitive with GPT-5.5 | Pragmatic and balanced | Lower than GPT-5.5 | Everyday implementation, debugging, and tool use |
-| `gpt-5.6-luna` | Strong | Clear and consistent | Lowest in the GPT-5.6 family | Specific, repeatable, high-volume structured work |
-| `gpt-5.3-codex-spark` | Focused coding capability | Rapid iteration over polish | No ChatGPT credits; Pro research preview | Near-instant, tightly scoped coding iteration |
+| `gpt-5.6-sol` | 9 | 8 | 8 | Complex, ambiguous, difficult, or high-value work |
+| `gpt-5.6-terra` | 8 | 6 | 7 | Everyday implementation, debugging, and tool use |
+| `gpt-5.6-luna` | 6 | 5 | 5 | Specific, repeatable, high-volume structured work |
+| `gpt-5.3-codex-spark` | 5 | 4 | 4 | Near-instant, tightly scoped coding iteration |
 
 Default roles:
 

@@ -131,11 +131,11 @@ test-configs:
 	perl -0pi -e 's|^BotWorld\.Enable\s*=.*$$|BotWorld.Enable = $(BOTWORLD_ENABLE)|gm; s|^BotWorld\.TargetPopulation\s*=.*$$|BotWorld.TargetPopulation = $(BOTWORLD_TARGET_POPULATION)|gm; s|^BotWorld\.SpawnMode\s*=.*$$|BotWorld.SpawnMode = "$(BOTWORLD_SPAWN_MODE)"|gm; s|^BotWorld\.AllowConfiguredCenterFallback\s*=.*$$|BotWorld.AllowConfiguredCenterFallback = $(BOTWORLD_ALLOW_CONFIGURED_CENTER_FALLBACK)|gm; s|^BotWorld\.UseSavedPosition\s*=.*$$|BotWorld.UseSavedPosition = $(BOTWORLD_USE_SAVED_POSITION)|gm; s|^BotWorld\.AllowGrinding\s*=.*$$|BotWorld.AllowGrinding = $(BOTWORLD_ALLOW_GRINDING)|gm; s|^BotWorld\.QuestFirst\s*=.*$$|BotWorld.QuestFirst = $(BOTWORLD_QUEST_FIRST)|gm; s|^BotWorld\.GrindOnlyWhenNoQuestAvailable\s*=.*$$|BotWorld.GrindOnlyWhenNoQuestAvailable = $(BOTWORLD_GRIND_ONLY_WHEN_NO_QUEST_AVAILABLE)|gm; s|^BotWorld\.DeathRecoveryMode\s*=.*$$|BotWorld.DeathRecoveryMode = "safe_local"\nBotWorld.RespawnMode = "safe_local"|gm; s|^BotProgression\.AllowQuesting\s*=.*$$|BotProgression.AllowQuesting = 1\nBotWorld.AllowQuesting = 1|gm; s|^BotProgression\.AllowDungeons\s*=.*$$|BotProgression.AllowDungeons = 0|gm; s|^BotProgression\.AllowRaids\s*=.*$$|BotProgression.AllowRaids = 0|gm; s|^BotLearning\.Enable\s*=.*$$|BotLearning.Enable = 1|gm' "$(WORLD_TEST_CONF)"
 	perl -0pi -e 's|^BotPolicyModel\.Enable\s*=.*$$|BotPolicyModel.Enable = $(BOTPOLICYMODEL_ENABLE)|gm; s|^BotPolicyModel\.Mode\s*=.*$$|BotPolicyModel.Mode = "$(BOTPOLICYMODEL_MODE)"|gm; s|^BotPolicyModel\.Version\s*=.*$$|BotPolicyModel.Version = "$(BOTPOLICYMODEL_VERSION)"|gm; s|^BotPolicyModel\.ScoreWeight\s*=.*$$|BotPolicyModel.ScoreWeight = $(BOTPOLICYMODEL_SCORE_WEIGHT)|gm; s|^BotPolicyModel\.FailClosed\s*=.*$$|BotPolicyModel.FailClosed = $(BOTPOLICYMODEL_FAIL_CLOSED)|gm' "$(WORLD_TEST_CONF)"
 
-host-auth: local-configure db test-configs
+host-auth: local-configure test-configs
 	cmake --build $(BUILD_DIR) --target authserver -j"$(JOBS)"
 	ulimit -c unlimited && $(BUILD_DIR)/src/server/authserver/authserver --config "$(AUTH_TEST_CONF)"
 
-host-world: local-configure db test-configs
+host-world: local-configure test-configs
 	cmake --build $(BUILD_DIR) --target worldserver -j"$(JOBS)"
 	ulimit -c unlimited && $(BUILD_DIR)/src/server/worldserver/worldserver --config "$(WORLD_TEST_CONF)"
 
