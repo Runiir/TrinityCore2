@@ -25,10 +25,10 @@ Worker routing:
 Verification:
 
 - `pixi run pytest -q`: 239 passed.
-- Fresh `cmake --build build --target game -- -j2`: passed.
+- Fresh `cmake --build build --target worldserver -- -j2`: passed from Phase 1 commit `c80c6e26cd`.
 - DVC remote credentials match the main worktree; `pixi run dvc status` was recorded and reports pre-existing missing-cache drift plus the changed validation stages.
 - No experiment or live-run artifacts were produced, so no DVC checkpoint or push was required.
 
 Next handoff:
 
-Reconfigure and build `worldserver` from the committed Phase 1 `HEAD`, then run the generated uninterrupted Stonecore manifest with `--observe-sec 300 --timeout-sec 900`. Accept no prior Stonecore evidence. Inspect `.botauto diagnose all` and `.botauto trace all 64`. Continue repairing deterministic teacher behavior until 10 consecutive clears show five bots in the original instance, four exact node/generation-scoped real boss kills, a terminal for every route node, zero forced/teacher completion, zero false terminals, and zero unresolved stuck states. Do not start Phase 2 until that gate passes.
+Run the generated uninterrupted Stonecore manifest from the exact Phase 1 `HEAD` with `--observe-sec 300 --timeout-sec 900`. Accept no prior Stonecore evidence. Inspect `.botauto diagnose all` and `.botauto trace all 64`. Continue repairing deterministic teacher behavior until 10 consecutive clears show five bots in the original instance, four exact node/generation-scoped real boss kills, a terminal for every route node, zero forced/teacher completion, zero false terminals, and zero unresolved stuck states. Do not start Phase 2 until that gate passes.
