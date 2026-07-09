@@ -12,7 +12,7 @@ Use this skill when acting as the prompt-driven orchestrator for bot autonomy or
 1. Read the user goal, current daemon state, checklist, prior artifacts, and git status snapshot before deciding the next action.
 2. Decide whether to work directly or create/resume a worker Codex session. The daemon does not auto-launch workers.
 3. Before creating a worker, classify the worker task complexity as `simple`, `medium`, or `large`.
-4. Select the worker model tier from the daemon's `worker_model_tiers` config.
+4. Choose the best worker model for the task from `worker_model_catalog`; consider ambiguity, difficulty, repetition, required polish, latency, and usage cost. Treat `worker_model_tiers` as defaults, not restrictions.
 5. Record worker complexity, model, reasoning effort, and evidence paths in progress summaries when the tier choice is relevant.
 6. Keep worker tasks scoped, review results before merging, and run repository validation when behavior changes.
 7. Commit experiment code/configs to git, checkpoint generated data/artifacts with DVC, then run `dvc status` and `dvc push` after future experiments that produce artifacts.
@@ -26,14 +26,29 @@ Use this skill when acting as the prompt-driven orchestrator for bot autonomy or
 - `medium`: normal implementation tasks that require several files, local tests, or moderate debugging.
 - `large`: broad, ambiguous, high-risk, or long-running investigations and changes.
 
-## Worker Model Tiers
+## Model Selection
 
-Use these defaults unless the active daemon config overrides them:
+Use the lowest-cost model and reasoning effort that can reliably complete the task. Current model characteristics:
+
+| Model | Intelligence | Taste | Cost | Best use |
+| --- | --- | --- | --- | --- |
+| `gpt-5.6-sol` | Highest | Best detail, judgment, and polish | Highest usage | Complex, ambiguous, difficult, or high-value work |
+| `gpt-5.6-terra` | High; competitive with GPT-5.5 | Pragmatic and balanced | Lower than GPT-5.5 | Everyday implementation, debugging, and tool use |
+| `gpt-5.6-luna` | Strong | Clear and consistent | Lowest in the GPT-5.6 family | Specific, repeatable, high-volume structured work |
+| `gpt-5.3-codex-spark` | Focused coding capability | Rapid iteration over polish | No ChatGPT credits; Pro research preview | Near-instant, tightly scoped coding iteration |
+
+Default roles:
+
+| Role | Model | Reasoning |
+| --- | --- | --- |
+| Orchestrator | `gpt-5.6-sol` | `high` |
+| Reviewer | `gpt-5.6-sol` | `medium` |
+| Worker | `gpt-5.6-terra` | `medium` |
+
+Default worker routing:
 
 | Complexity | Model | Reasoning |
 | --- | --- | --- |
 | `simple` | `gpt-5.3-codex-spark` | `low` |
-| `medium` | `gpt-5.5` | `medium` |
-| `large` | `gpt-5.5` | `high` |
-
-If a configured tier is missing or invalid, fall back to `worker_model` and `worker_reasoning_effort`.
+| `medium` | `gpt-5.6-terra` | `medium` |
+| `large` | `gpt-5.6-sol` | `high` |

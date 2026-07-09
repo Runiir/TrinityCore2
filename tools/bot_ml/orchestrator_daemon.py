@@ -46,9 +46,40 @@ LEGACY_INSTANCE_ID = "legacy"
 
 DEFAULT_WORKER_MODEL_TIERS: dict[str, dict[str, str]] = {
     "simple": {"model": "gpt-5.3-codex-spark", "reasoning_effort": "low"},
-    "medium": {"model": "gpt-5.5", "reasoning_effort": "medium"},
-    "large": {"model": "gpt-5.5", "reasoning_effort": "high"},
+    "medium": {"model": "gpt-5.6-terra", "reasoning_effort": "medium"},
+    "large": {"model": "gpt-5.6-sol", "reasoning_effort": "high"},
 }
+
+DEFAULT_WORKER_MODEL_CATALOG: list[dict[str, str]] = [
+    {
+        "model": "gpt-5.6-sol",
+        "intelligence": "highest",
+        "taste": "best detail, judgment, and polish",
+        "cost": "highest usage",
+        "best_for": "complex, ambiguous, difficult, or high-value work",
+    },
+    {
+        "model": "gpt-5.6-terra",
+        "intelligence": "high; competitive with GPT-5.5",
+        "taste": "pragmatic and balanced",
+        "cost": "lower than GPT-5.5",
+        "best_for": "everyday implementation, debugging, and tool use",
+    },
+    {
+        "model": "gpt-5.6-luna",
+        "intelligence": "strong",
+        "taste": "clear and consistent",
+        "cost": "lowest in the GPT-5.6 family",
+        "best_for": "specific, repeatable, high-volume structured work",
+    },
+    {
+        "model": "gpt-5.3-codex-spark",
+        "intelligence": "focused coding capability",
+        "taste": "rapid iteration over polish",
+        "cost": "no ChatGPT credits; Pro research preview",
+        "best_for": "near-instant, tightly scoped coding iteration",
+    },
+]
 
 TASK_COMPLEXITY_ALIASES = {
     "simple": "simple",
@@ -72,13 +103,14 @@ TASK_COMPLEXITY_ALIASES = {
 
 
 DEFAULT_CONFIG: dict[str, Any] = {
-    "orchestrator_model": "gpt-5.5",
-    "worker_model": "gpt-5.5",
+    "orchestrator_model": "gpt-5.6-sol",
+    "worker_model": "gpt-5.6-terra",
     "worker_model_tiers": copy.deepcopy(DEFAULT_WORKER_MODEL_TIERS),
-    "reviewer_model": "gpt-5.5",
+    "worker_model_catalog": copy.deepcopy(DEFAULT_WORKER_MODEL_CATALOG),
+    "reviewer_model": "gpt-5.6-sol",
     "orchestrator_reasoning_effort": "high",
     "worker_reasoning_effort": "medium",
-    "reviewer_reasoning_effort": "high",
+    "reviewer_reasoning_effort": "medium",
     "sandbox": "danger-full-access",
     "max_parallel_workers": 1,
     "heartbeat_sec": 30,
@@ -1210,6 +1242,7 @@ def orchestrator_prompt(
     if config:
         prompt_config.update(config)
     worker_tiers = worker_model_tier_table(prompt_config)
+    worker_model_catalog = prompt_config["worker_model_catalog"]
     worker_repo = resolve_path(prompt_config.get("repo"), REPO_ROOT) or REPO_ROOT
     worker_commands = {
         row["complexity"]: render_worker_codex_command_template(prompt_config, worker_repo, row["complexity"]) for row in worker_tiers
@@ -1233,18 +1266,22 @@ def orchestrator_prompt(
         "- Discard only changes you made in this pass that are wrong or failed; do not discard pre-existing user changes from the starting status snapshot unless the user explicitly asked you to.\n"
         "- This requirement applies whether the pass succeeds, fails, or needs follow-up; leave the worktree clean except for protected pre-existing changes.\n\n"
         "Worker model routing requirement:\n"
-        "- Before creating or resuming a worker Codex session, assign the worker task complexity as simple, medium, or large.\n"
+        "- Before creating or resuming a worker Codex session, assign the worker task complexity as simple, medium, or large and choose the best model for that specific task.\n"
         "- Use simple for near-instant scoped edits, inspections, or test updates with limited blast radius.\n"
         "- Use medium for normal implementation tasks that require several files, local tests, or moderate debugging.\n"
         "- Use large for broad, ambiguous, high-risk, or long-running investigations and changes.\n"
-        "- Launch worker sessions with the selected tier's model and reasoning effort; the daemon will not launch workers for you.\n"
+        "- Treat the tier table as defaults, not a restriction. Select from the model catalog by task ambiguity, difficulty, repetition, required polish, latency, and usage cost.\n"
+        "- Use the lowest reasoning effort that can reliably complete the task; use high for difficult multi-step work and medium for normal implementation or review.\n"
+        "- Launch worker sessions with the selected model and reasoning effort; the daemon will not launch workers for you.\n"
         "- When a worker tier affects the work, record the chosen complexity, model, and reasoning effort in progress summaries.\n\n"
         "Worker/reviewer visibility requirement:\n"
         f"- Put worker and reviewer artifacts under the current run directory: {active_run_dir}\n"
         "- For each launched or resumed worker/reviewer, use JSONL, stderr, and last-message paths in that run directory.\n"
         f"- Write or update {agent_registry_path} whenever launching or resuming a worker/reviewer.\n"
         f"- Use registry schema {AGENT_REGISTRY_SCHEMA} with an agents array; each entry should include id, role, status, complexity, model, reasoning_effort, jsonl_path, stderr_path, last_message_path, prompt_path, and started_at_unix when known.\n\n"
-        f"Worker model tier table:\n{json.dumps(worker_tiers, indent=2, sort_keys=True)}\n\n"
+        f"Worker model catalog:\n{json.dumps(worker_model_catalog, indent=2, sort_keys=True)}\n\n"
+        f"Worker model tier defaults:\n{json.dumps(worker_tiers, indent=2, sort_keys=True)}\n\n"
+        f"Reviewer default:\n{json.dumps({'model': prompt_config['reviewer_model'], 'reasoning_effort': prompt_config['reviewer_reasoning_effort']}, indent=2, sort_keys=True)}\n\n"
         f"Worker Codex command templates:\n{json.dumps(worker_commands, indent=2, sort_keys=True)}\n\n"
         "At the end of this pass, return a final JSON object and no other trailing text. "
         "The JSON contract is: status (continue, complete, or needs_followup), summary, "

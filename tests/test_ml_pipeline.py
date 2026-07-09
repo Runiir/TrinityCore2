@@ -4009,16 +4009,16 @@ def test_bot_autonomy_daemon_detects_rate_limit_retry_after():
 
 
 def test_bot_autonomy_daemon_default_models_and_reasoning_effort():
-    assert daemon.DEFAULT_CONFIG["orchestrator_model"] == "gpt-5.5"
-    assert daemon.DEFAULT_CONFIG["worker_model"] == "gpt-5.5"
-    assert daemon.DEFAULT_CONFIG["reviewer_model"] == "gpt-5.5"
+    assert daemon.DEFAULT_CONFIG["orchestrator_model"] == "gpt-5.6-sol"
+    assert daemon.DEFAULT_CONFIG["worker_model"] == "gpt-5.6-terra"
+    assert daemon.DEFAULT_CONFIG["reviewer_model"] == "gpt-5.6-sol"
     assert daemon.DEFAULT_CONFIG["orchestrator_reasoning_effort"] == "high"
     assert daemon.DEFAULT_CONFIG["worker_reasoning_effort"] == "medium"
-    assert daemon.DEFAULT_CONFIG["reviewer_reasoning_effort"] == "high"
+    assert daemon.DEFAULT_CONFIG["reviewer_reasoning_effort"] == "medium"
     assert daemon.DEFAULT_CONFIG["worker_model_tiers"] == {
         "simple": {"model": "gpt-5.3-codex-spark", "reasoning_effort": "low"},
-        "medium": {"model": "gpt-5.5", "reasoning_effort": "medium"},
-        "large": {"model": "gpt-5.5", "reasoning_effort": "high"},
+        "medium": {"model": "gpt-5.6-terra", "reasoning_effort": "medium"},
+        "large": {"model": "gpt-5.6-sol", "reasoning_effort": "high"},
     }
 
 
@@ -4047,7 +4047,7 @@ def test_orchestrator_daemon_selects_large_worker_model_tier():
     assert tier == {
         "complexity": "large",
         "source": "worker_model_tiers",
-        "model": "gpt-5.5",
+        "model": "gpt-5.6-sol",
         "reasoning_effort": "high",
     }
 
@@ -5162,9 +5162,12 @@ def test_bot_autonomy_daemon_copies_prompt_snapshot_and_prompts_orchestrator(tmp
     assert "Starting git status snapshot" in calls[0]["prompt"]
     assert "Worker model routing requirement" in calls[0]["prompt"]
     assert "assign the worker task complexity as simple, medium, or large" in calls[0]["prompt"]
-    assert "Worker model tier table" in calls[0]["prompt"]
+    assert "Worker model catalog" in calls[0]["prompt"]
+    assert "Worker model tier defaults" in calls[0]["prompt"]
     assert "gpt-5.3-codex-spark" in calls[0]["prompt"]
-    assert "gpt-5.5" in calls[0]["prompt"]
+    assert "gpt-5.6-sol" in calls[0]["prompt"]
+    assert "gpt-5.6-terra" in calls[0]["prompt"]
+    assert "gpt-5.6-luna" in calls[0]["prompt"]
     assert "model_reasoning_effort" in calls[0]["prompt"]
     assert "record the chosen complexity, model, and reasoning effort" in calls[0]["prompt"]
 
