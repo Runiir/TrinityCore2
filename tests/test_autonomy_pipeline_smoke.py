@@ -1005,7 +1005,13 @@ def test_quest_first_portfolio_routing_surface():
     assert "SELECT role FROM character_bot_pool WHERE guid" in mgr
     assert 'poolRole.find("tank")' in mgr
     assert "if (routeProximity > 120.0f)" in mgr
-    assert 'if (std::string(GetDungeonRole(bot)) != "tank" && routeDistance <= routeArrivalRadius)' in mgr
+    assert 'if (std::string(GetDungeonRole(bot)) != "tank"\n        && (_config.ValidationRouteKind != "boss" || routeDistance <= routeArrivalRadius))' in mgr
+    assert_ordered(
+        validation_route_objective,
+        'if (std::string(GetDungeonRole(bot)) != "tank"\n        && (_config.ValidationRouteKind != "boss" || routeDistance <= routeArrivalRadius))',
+        "Unit* preAnchorTrashTarget = nullptr;",
+        "MoveBotToPoint(state, bot, routeAnchorX, routeAnchorY, routeAnchorZ);",
+    )
     assert_ordered(
         function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteObjective"),
         '&& !(_config.ValidationRouteKind == "boss" && _validationRouteActivationApplied)',

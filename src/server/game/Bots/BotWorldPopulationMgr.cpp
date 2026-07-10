@@ -9017,7 +9017,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         state.WasInCombat = true;
         return true;
     }
-    if (std::string(GetDungeonRole(bot)) != "tank" && routeDistance <= routeArrivalRadius)
+    if (std::string(GetDungeonRole(bot)) != "tank"
+        && (_config.ValidationRouteKind != "boss" || routeDistance <= routeArrivalRadius))
     {
         if (Player* anchor = FindDungeonAnchor(bot))
         {
