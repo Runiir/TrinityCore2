@@ -806,19 +806,19 @@ def route_failure(entry: dict[str, Any]) -> bool:
     return action in ROUTE_FAILURE_ACTIONS or (action == "unstuck" and result in {"failed", "failure"}) or "target_lost" in result
 
 
-BOSS_ATTEMPT_FAILURE_ACTIONS = {"death", "repeated_death", "raid_wipe"}
+BOSS_ATTEMPT_RESET_ACTIONS = {"death", "repeated_death", "raid_wipe", "instance_reset"}
 BOSS_HEALTH_PROGRESS_EPSILON = 1e-6
 
 
-def boss_attempt_failure(entry: dict[str, Any]) -> bool:
-    return route_failure(entry) or str(entry.get("action") or "") in BOSS_ATTEMPT_FAILURE_ACTIONS
+def boss_attempt_reset(entry: dict[str, Any]) -> bool:
+    return str(entry.get("action") or "") in BOSS_ATTEMPT_RESET_ACTIONS
 
 
 def boss_route_health_progress(entries: list[dict[str, Any]]) -> int:
     samples: list[tuple[dict[str, Any], tuple[str, int], tuple[str, int, int, int], float]] = []
     failures: list[tuple[dict[str, Any], tuple[str, int]]] = []
     for entry in entries:
-        if boss_attempt_failure(entry):
+        if boss_attempt_reset(entry):
             scope = route_scope(entry)
             if scope != ("", 0):
                 failures.append((entry, scope))

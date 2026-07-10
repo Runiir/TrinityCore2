@@ -5935,6 +5935,32 @@ def test_boss_health_progress_resets_only_for_same_scope_attempt_failures():
     assert boss_route_health_progress(entries) == 3
 
 
+@pytest.mark.parametrize("action", ["stuck_detected", "guardrail_repath", "objective_target_lost"])
+def test_boss_health_progress_does_not_reset_for_ordinary_route_failure(action):
+    entries = [
+        boss_health_entry(1, 1.0),
+        boss_health_entry(2, 0.8),
+        {"sequence": 3, "action": action, "route_node_id": "corborus", "route_generation": 2},
+        boss_health_entry(4, 0.9),
+        boss_health_entry(5, 0.8),
+    ]
+
+    assert boss_route_health_progress(entries) == 1
+
+
+@pytest.mark.parametrize("action", ["death", "repeated_death", "raid_wipe", "instance_reset"])
+def test_boss_health_progress_starts_new_attempt_for_explicit_reset(action):
+    entries = [
+        boss_health_entry(1, 1.0),
+        boss_health_entry(2, 0.8),
+        {"sequence": 3, "action": action, "route_node_id": "corborus", "route_generation": 2},
+        boss_health_entry(4, 0.9),
+        boss_health_entry(5, 0.8),
+    ]
+
+    assert boss_route_health_progress(entries) == 2
+
+
 def test_boss_health_progress_handles_safe_full_reset_and_new_target_attempts():
     entries = [
         boss_health_entry(1, 1.0),
