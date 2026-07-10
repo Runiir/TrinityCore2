@@ -7141,7 +7141,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return false;
         bool persistedPackMember = _validationRoutePackGeneration == _validationRouteGeneration
             && _validationRoutePackMemberGuids.find(creature->GetGUID()) != _validationRoutePackMemberGuids.end();
-        if (!persistedPackMember && (discoveryLeg || !isValidationRoutePackEntry(creature->GetEntry())))
+        bool focusedDiscoveryCandidate = discoveryLeg && _validationRouteFocusGuid == creature->GetGUID();
+        if (!persistedPackMember && !focusedDiscoveryCandidate && (discoveryLeg || !isValidationRoutePackEntry(creature->GetEntry())))
             return false;
 
         float radius = discoveryLeg || persistedPackMember ? std::numeric_limits<float>::max()
@@ -7195,7 +7196,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     };
     auto enrollValidationRoutePackMember = [this, bot, &state, &power, stage, activity](Creature const* creature, bool engaged) -> void
     {
-        if (_config.ValidationRouteKind == "boss" || !creature || !creature->IsAlive() || !creature->GetHealth())
+        if (_config.ValidationRouteKind == "boss" || !engaged || !creature || !creature->IsAlive() || !creature->GetHealth())
             return;
 
         if (_validationRoutePackGeneration != _validationRouteGeneration)
@@ -7209,18 +7210,14 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             _validationRoutePackClearCandidateSinceMs = 0;
         }
         bool memberInserted = _validationRoutePackMemberGuids.insert(creature->GetGUID()).second;
-        bool engagementInserted = false;
-        if (engaged)
-        {
-            engagementInserted = _validationRoutePackEngagedGuids.insert(creature->GetGUID()).second;
-            _validationRoutePackObservedEngagement = true;
-            _validationRoutePackClearCandidateSinceMs = 0;
-        }
+        bool engagementInserted = _validationRoutePackEngagedGuids.insert(creature->GetGUID()).second;
+        _validationRoutePackObservedEngagement = true;
+        _validationRoutePackClearCandidateSinceMs = 0;
         if (memberInserted || engagementInserted)
         {
             std::string raw = BuildRawJson(bot, creature);
             std::string semantic = BuildSemanticJson(bot, creature, "validation_route_pack_enrollment", &power, stage, activity);
-            RecordEvent(state, bot, "validation_route_pack_enrolled", creature, engagementInserted ? "cohort_threat_link" : "route_selection", raw.c_str(), semantic.c_str(), bot ? bot->GetExactDist(creature) : 0.0f, creature->GetEntry());
+            RecordEvent(state, bot, "validation_route_pack_enrolled", creature, "cohort_threat_link", raw.c_str(), semantic.c_str(), bot ? bot->GetExactDist(creature) : 0.0f, creature->GetEntry());
         }
     };
     auto recordValidationRouteScriptedTransition = [this, bot, &state, &power, stage, activity](Creature* creature) -> bool
@@ -7322,7 +7319,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return false;
         return hasStrictPathToValidationRouteTarget(creature);
     };
-    auto findForwardDiscoveryTarget = [this, bot, discoveryLeg, &isNaturalForwardHostile, &enrollValidationRoutePackMember]() -> Unit*
+    auto findForwardDiscoveryTarget = [this, bot, discoveryLeg, &isNaturalForwardHostile]() -> Unit*
     {
         if (!discoveryLeg || !bot || std::string(GetDungeonRole(bot)) != "tank")
             return nullptr;
@@ -7381,8 +7378,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             }
         }
 
-        if (best)
-            enrollValidationRoutePackMember(best, false);
         return best;
     };
     auto isValidationRouteObjectiveTarget = [&isValidationRouteScriptTarget, &isEligibleTrashClusterMob, this](Creature const* creature) -> bool

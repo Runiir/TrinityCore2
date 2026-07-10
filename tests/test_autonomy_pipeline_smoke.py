@@ -1674,8 +1674,10 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         "creature->GetAttackDistance(bot)",
         "candidateAlongPath",
         "guid < bestGuid",
-        "enrollValidationRoutePackMember(best, false);",
+        "return best;",
     )
+    discovery_block = route_objective.split("auto findForwardDiscoveryTarget", 1)[1].split("auto isValidationRouteObjectiveTarget", 1)[0]
+    assert "enrollValidationRoutePackMember" not in discovery_block
     for rejected_path in [
         "PATHFIND_NOPATH",
         "PATHFIND_NOT_USING_PATH",
@@ -1699,6 +1701,7 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         "auto isValidationCohortPlayer",
         "auto isValidationCohortCombatLinked",
         "auto enrollValidationRoutePackMember",
+        "!engaged",
         "_validationRoutePackMemberGuids.insert(creature->GetGUID()).second;",
         "_validationRoutePackEngagedGuids.insert(creature->GetGUID()).second;",
         'RecordEvent(state, bot, "validation_route_pack_enrolled"',
@@ -1749,9 +1752,12 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     assert "_validationRoutePackTransitionGuids.find(guid) == _validationRoutePackTransitionGuids.end()" in route_objective
     enrollment_scan = route_objective.split("auto enrollEngagedValidationRoutePackMembers", 1)[1].split("auto persistedValidationRoutePackHasLiveMembers", 1)[0]
     assert "creature->IsSummon()" in enrollment_scan
-    assert 'engagementInserted ? "cohort_threat_link" : "route_selection"' in route_objective
+    assert 'RecordEvent(state, bot, "validation_route_pack_enrolled", creature, "cohort_threat_link"' in route_objective
+    assert '"route_selection"' not in route_objective
     eligible_block = route_objective.split("auto isEligibleTrashClusterMob", 1)[1].split("auto isLiveTrashClusterMob", 1)[0]
     assert "_validationRoutePackTransitionGuids.find(creature->GetGUID())" in eligible_block
+    assert "focusedDiscoveryCandidate" in eligible_block
+    assert "_validationRouteFocusGuid == creature->GetGUID()" in eligible_block
     assert "AttackStop" not in transition_block
     assert "CombatStop" not in transition_block
     assert_ordered(
