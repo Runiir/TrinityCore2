@@ -37,7 +37,7 @@ from tools.bot_ml.build_validation_scenario_manifests import build_manifests as 
 from tools.bot_ml.build_live_scenario_reports import build_reports as build_live_scenario_reports, build_reports_from_live_reports, main as live_scenario_reports_main
 from tools.bot_ml.build_validation_run_plan import build_plan as build_validation_run_plan
 from tools.bot_ml.build_validation_run_status import build_status as build_validation_run_status
-from tools.bot_ml.run_live_bot_validation import bounded_console_deadline, build_bot_pool_reset_sql, command_script, live_validation_report, load_scenario_reports, load_validation_route, main as live_validation_main, parse_json_objects, parse_soap_result, route_segment_complete, run_worldserver, run_worldserver_completion_watchdog, split_sql_statements, trinity_config_bool, upsert_trinity_config, watchdog_state, write_validation_config
+from tools.bot_ml.run_live_bot_validation import bounded_console_deadline, build_bot_pool_reset_sql, command_script, live_validation_report, load_scenario_reports, load_validation_route, main as live_validation_main, parse_json_objects, parse_soap_result, read_until_console_prompt, route_segment_complete, run_worldserver, run_worldserver_completion_watchdog, split_sql_statements, trinity_config_bool, upsert_trinity_config, watchdog_state, write_validation_config
 from tools.bot_ml.orchestrator_daemon import codex_command, detect_rate_limit, handle_rate_limit, initial_state, run_one_cycle, sleep_until_resume
 from tools.bot_ml.generate_lane_configs import write_lane_config
 from tools.bot_ml.promote_live_validation_artifact import promote
@@ -87,6 +87,19 @@ class FakeCursor:
 
     def fetchone(self):
         return self.rows[0] if self.rows else None
+
+
+class ChunkedConsoleProcess:
+    class Stdout:
+        def fileno(self):
+            return 42
+
+    def __init__(self, chunks: list[str]):
+        self.chunks = [chunk.encode() for chunk in chunks]
+        self.stdout = self.Stdout()
+
+    def poll(self):
+        return None if self.chunks else 0
 
 
 class FakeWorldDb:
@@ -4144,7 +4157,12 @@ def test_live_bot_validation_process_mode_observes_after_start(tmp_path, monkeyp
         "print('ARGS ' + ' '.join(sys.argv[1:]))\n"
         "print('TC> ', flush=True)\n"
         "for line in sys.stdin:\n"
-        "    print('CMD ' + line.strip())\n"
+        "    command = line.strip()\n"
+        "    print('CMD ' + command)\n"
+        "    if command == '.botauto status': print('{\"active_bots\": 1, \"target_bots\": 1}')\n"
+        "    if command.startswith('.botauto diagnose'): print('{\"diagnosis_schema_version\": 1}')\n"
+        "    if command.startswith('.botauto trace'): print('{\"trace_schema_version\": 1}')\n"
+        "    if command == '.botexp summary': print('{\"duration_minutes\": 1}')\n"
         "    print('TC> ', flush=True)\n",
         encoding="utf-8",
     )
@@ -4180,7 +4198,12 @@ def test_live_bot_validation_process_mode_observes_before_diagnose_without_start
         "print('ARGS ' + ' '.join(sys.argv[1:]))\n"
         "print('TC> ', flush=True)\n"
         "for line in sys.stdin:\n"
-        "    print('CMD ' + line.strip())\n"
+        "    command = line.strip()\n"
+        "    print('CMD ' + command)\n"
+        "    if command == '.botauto status': print('{\"active_bots\": 1, \"target_bots\": 1}')\n"
+        "    if command.startswith('.botauto diagnose'): print('{\"diagnosis_schema_version\": 1}')\n"
+        "    if command.startswith('.botauto trace'): print('{\"trace_schema_version\": 1}')\n"
+        "    if command == '.botexp summary': print('{\"duration_minutes\": 1}')\n"
         "    print('TC> ', flush=True)\n",
         encoding="utf-8",
     )
@@ -6433,6 +6456,39 @@ def test_upsert_trinity_config_normalizes_literal_newline_fragments():
     assert "BotWorld.ValidationRoute.Enable = 1" in generated
 
 
+def test_read_until_console_prompt_waits_for_prompt_after_required_marker(monkeypatch):
+    process = ChunkedConsoleProcess(["TC> ", 'CMD .botauto status\n{"target_bots": 1}\n', "TC> "])
+    module_globals = read_until_console_prompt.__globals__
+    monkeypatch.setattr(module_globals["select"], "select", lambda fds, *_args: (fds if process.chunks else [], [], []))
+    monkeypatch.setattr(module_globals["os"], "read", lambda _fd, _size: process.chunks.pop(0))
+
+    output = read_until_console_prompt(process, time.monotonic() + 1, '"target_bots"')
+
+    assert output.endswith("TC> ")
+
+
+def test_read_until_console_prompt_does_not_complete_on_required_marker_alone(monkeypatch):
+    process = ChunkedConsoleProcess(['{"target_bots": 1}\n', "more command output\n"])
+    module_globals = read_until_console_prompt.__globals__
+    monkeypatch.setattr(module_globals["select"], "select", lambda fds, *_args: (fds if process.chunks else [], [], []))
+    monkeypatch.setattr(module_globals["os"], "read", lambda _fd, _size: process.chunks.pop(0))
+
+    output = read_until_console_prompt(process, time.monotonic() + 1, '"target_bots"')
+
+    assert output.endswith("more command output\n")
+
+
+def test_read_until_console_prompt_completes_at_later_prompt(monkeypatch):
+    process = ChunkedConsoleProcess(['{"target_bots": 1}\n', "TC> ", "next command output\n"])
+    module_globals = read_until_console_prompt.__globals__
+    monkeypatch.setattr(module_globals["select"], "select", lambda fds, *_args: (fds if process.chunks else [], [], []))
+    monkeypatch.setattr(module_globals["os"], "read", lambda _fd, _size: process.chunks.pop(0))
+
+    output = read_until_console_prompt(process, time.monotonic() + 1, '"target_bots"')
+
+    assert output == '{"target_bots": 1}\nTC> '
+
+
 def test_live_bot_validation_force_start_overrides_config_autostart(tmp_path, monkeypatch):
     monkeypatch.setattr(
         "sys.argv",
@@ -6450,6 +6506,7 @@ def test_live_bot_validation_force_start_overrides_config_autostart(tmp_path, mo
     report = json.loads((tmp_path / "report.json").read_text(encoding="utf-8"))
 
     assert ".botauto start" in commands
+    assert ".botauto trace all 128" in commands
     assert report["config_autostart"] is True
     assert report["start_command"] is True
 

@@ -1741,10 +1741,10 @@ def read_until_console_prompt(process: subprocess.Popen[str], deadline: float, r
         text = chunk.decode(errors="replace")
         output.append(text)
         joined = "".join(output)
-        if required_text and required_text in joined:
-            break
-        if required_text and "CMD " in joined and "TC>" in joined:
-            break
+        if required_text:
+            marker_index = joined.find(required_text)
+            if marker_index >= 0 and "TC>" in joined[marker_index + len(required_text):]:
+                break
         if not required_text and ("TC>" in text or "TC>" in joined[-16:]):
             break
     return "".join(output)
@@ -2353,7 +2353,7 @@ def main() -> int:
     parser.add_argument("--max-repeated-decision-count", type=int, default=DEFAULT_MAX_REPEATED_DECISIONS)
     parser.add_argument("--max-death-loop-count", type=int, default=DEFAULT_MAX_DEATH_LOOPS)
     parser.add_argument("--selector", default="all")
-    parser.add_argument("--trace-limit", type=int, default=20)
+    parser.add_argument("--trace-limit", type=int, default=128)
     parser.add_argument("--no-start", action="store_true")
     parser.add_argument("--force-start-command", action="store_true", help="Send .botauto start even when BotWorld.AutoStart is enabled in the selected worldserver config.")
     parser.add_argument("--stop", action="store_true")
