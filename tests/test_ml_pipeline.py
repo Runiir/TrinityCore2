@@ -7696,6 +7696,42 @@ def test_stuck_recovery_requires_progress_after_latest_failure():
     assert "validation_route_stuck_loop" not in with_post_progress["failure_labels"]
 
 
+def test_stuck_recovery_ignores_historical_block_resolution():
+    entries = [
+        {"sequence": 1, "route_node_id": "trash", "route_generation": 1, "blocked_current_reason": "", "blocked_resolved_by": "movement_progress"},
+        {"action": "validation_route_recovery", "result": "validation_route_stuck_safe_memory", "sequence": 2, "route_node_id": "trash", "route_generation": 1},
+        *[{"action": "stuck_detected", "result": "repath", "sequence": 10 + index, "route_node_id": "trash", "route_generation": 1} for index in range(8)],
+    ]
+    report = live_validation_report('TC> {"active_bots":1,"target_bots":1,"decisions":20}\nTC> ' + json.dumps({"trace_schema_version": 1, "entries": entries}))
+
+    assert report["evidence"]["post_failure_progress"] is False
+    assert "validation_route_stuck_loop" in report["failure_labels"]
+
+
+def test_stuck_recovery_accepts_later_same_scope_movement_resolution():
+    entries = [
+        {"action": "validation_route_recovery", "result": "validation_route_stuck_safe_memory", "sequence": 2, "route_node_id": "trash", "route_generation": 1},
+        *[{"action": "stuck_detected", "result": "repath", "sequence": 10 + index, "route_node_id": "trash", "route_generation": 1} for index in range(8)],
+        {"sequence": 20, "route_node_id": "trash", "route_generation": 1, "blocked_current_reason": "", "blocked_resolved_by": "movement_progress"},
+    ]
+    report = live_validation_report('TC> {"active_bots":1,"target_bots":1,"decisions":20}\nTC> ' + json.dumps({"trace_schema_version": 1, "entries": entries}))
+
+    assert report["evidence"]["post_failure_progress"] is True
+    assert "validation_route_stuck_loop" not in report["failure_labels"]
+
+
+def test_stuck_recovery_rejects_wrong_scope_block_resolution():
+    entries = [
+        {"action": "validation_route_recovery", "result": "validation_route_stuck_safe_memory", "sequence": 2, "route_node_id": "trash", "route_generation": 1},
+        *[{"action": "stuck_detected", "result": "repath", "sequence": 10 + index, "route_node_id": "trash", "route_generation": 1} for index in range(8)],
+        {"sequence": 20, "route_node_id": "boss", "route_generation": 2, "blocked_current_reason": "", "blocked_resolved_by": "route_target_combat_progress"},
+    ]
+    report = live_validation_report('TC> {"active_bots":1,"target_bots":1,"decisions":20}\nTC> ' + json.dumps({"trace_schema_version": 1, "entries": entries}))
+
+    assert report["evidence"]["post_failure_progress"] is False
+    assert "validation_route_stuck_loop" in report["failure_labels"]
+
+
 def test_validation_status_requires_exact_scoped_terminal_and_boss_evidence(tmp_path):
     routes = [
         {"step": 1, "kind": "trash", "label": "trash", "route_node_id": "stonecore_trash"},

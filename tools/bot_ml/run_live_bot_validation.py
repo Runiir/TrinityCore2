@@ -802,8 +802,18 @@ def progress_after_latest_route_failure(entries: list[dict[str, Any]]) -> bool:
     }
     return any(
         trace_order(entry) > latest_order
-        and str(entry.get("action") or "") in progress_actions
-        and (failure_scope == ("", 0) or route_scope(entry) == failure_scope)
+        and (
+            (
+                str(entry.get("action") or "") in progress_actions
+                and (failure_scope == ("", 0) or route_scope(entry) == failure_scope)
+            )
+            or (
+                route_scope(entry) == failure_scope
+                and not str(entry.get("blocked_current_reason") or "")
+                and str(entry.get("blocked_resolved_by") or "")
+                in {"movement_progress", "route_target_combat_progress"}
+            )
+        )
         for entry in entries
     )
 
