@@ -1686,6 +1686,14 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         assert rejected_path in route_objective
     assert "if (discoveryLeg)\n            return findForwardDiscoveryTarget();" in route_objective
     assert "if (discoveryLeg)\n            return false;" in route_objective
+    threat_target_block = route_objective.split("auto findTrashClusterThreatTarget", 1)[1].split("auto trashClusterHasLiveMobs", 1)[0]
+    assert_ordered(
+        threat_target_block,
+        "Creature* creature = object ? object->ToCreature() : nullptr;",
+        "if (!isEligibleTrashClusterMob(creature))",
+        "Unit* victim = creature->GetVictim();",
+    )
+    assert "_validationRoutePackMemberGuids.find(creature->GetGUID())" not in threat_target_block
     assert_ordered(
         route_objective,
         "auto isValidationCohortPlayer",

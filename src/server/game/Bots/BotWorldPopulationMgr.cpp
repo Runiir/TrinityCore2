@@ -7444,9 +7444,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         for (WorldObject* object : objects)
         {
             Creature* creature = object ? object->ToCreature() : nullptr;
-            if (discoveryLeg && (_validationRoutePackGeneration != _validationRouteGeneration
-                || _validationRoutePackMemberGuids.find(creature->GetGUID()) == _validationRoutePackMemberGuids.end()))
-                continue;
             if (!isEligibleTrashClusterMob(creature))
                 continue;
 
