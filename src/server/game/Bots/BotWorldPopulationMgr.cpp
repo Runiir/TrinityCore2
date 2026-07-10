@@ -3206,6 +3206,13 @@ bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, fl
     if (recentFailureMemory)
         state.LastNoProgressReason = "route_destination_recently_failed_memory";
 
+    constexpr float activeDestinationEpsilon = 0.1f;
+    if (state.ActivePathValid && state.IsMoving
+        && std::fabs(x - state.ActivePathToX) <= activeDestinationEpsilon
+        && std::fabs(y - state.ActivePathToY) <= activeDestinationEpsilon
+        && std::fabs(z - state.ActivePathToZ) <= activeDestinationEpsilon)
+        return true;
+
     state.ActivePathFromX = bot->GetPositionX();
     state.ActivePathFromY = bot->GetPositionY();
     state.ActivePathFromZ = bot->GetPositionZ();

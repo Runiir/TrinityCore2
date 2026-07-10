@@ -1152,6 +1152,20 @@ def test_quest_first_portfolio_routing_surface():
         assert field in debug
 
 
+def test_move_bot_to_point_keeps_matching_active_motion():
+    move_bot_to_point = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::MoveBotToPoint")
+    assert "constexpr float activeDestinationEpsilon = 0.1f;" in move_bot_to_point
+    assert_ordered(
+        move_bot_to_point,
+        "if (recentFailureMemory)",
+        "if (state.ActivePathValid && state.IsMoving",
+        "return true;",
+        "state.ActivePathFromX = bot->GetPositionX();",
+        "bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);",
+        "bot->GetMotionMaster()->MovePoint(0, x, y, z, true);",
+    )
+
+
 def test_botauto_diagnosis_and_trace_surface():
     mgr_header = read(ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h")
     mgr = read(BOT_MGR)
