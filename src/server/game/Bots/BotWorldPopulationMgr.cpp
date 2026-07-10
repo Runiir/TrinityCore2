@@ -6833,7 +6833,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         return true;
     }
 
-    auto routeEngageRange = [this](Player* engageBot, Unit* engageTarget, uint32 spellId) -> float
+    auto routeEngageRange = [this](Player* engageBot, Unit const* engageTarget, uint32 spellId) -> float
     {
         if (SpellInfo const* spellInfo = spellId ? sSpellMgr->GetSpellInfo(spellId) : nullptr)
             return std::max(5.0f, spellInfo->GetMaxRange(false));
@@ -7102,7 +7102,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             && !(pathType & PATHFIND_SHORTCUT)
             && !(pathType & PATHFIND_FARFROMPOLY);
     };
-    auto isEligibleTrashClusterMob = [this, bot, &isValidationRoutePackEntry, &hasStrictPathToValidationRouteTarget](Creature const* creature) -> bool
+    auto isEligibleTrashClusterMob = [this, bot, &isValidationRoutePackEntry, &hasStrictPathToValidationRouteTarget, &routeEngageRange](Creature const* creature) -> bool
     {
         if (!bot || !creature || !creature->IsAlive() || !creature->GetHealth() || !bot->IsValidAttackTarget(creature))
             return false;
@@ -7116,9 +7116,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return false;
 
         float radius = _config.ValidationRouteClusterRadiusYards > 1.0f ? _config.ValidationRouteClusterRadiusYards : 90.0f;
+        bool pullable = bot->IsWithinLOSInMap(creature)
+            && bot->GetExactDist(creature) <= routeEngageRange(bot, creature, 0);
         return creature->GetMapId() == bot->GetMapId()
             && creature->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ) <= radius
-            && hasStrictPathToValidationRouteTarget(creature);
+            && (hasStrictPathToValidationRouteTarget(creature) || pullable);
     };
     auto isLiveTrashClusterMob = [this, bot, &isValidationRoutePackEntry](Creature const* creature) -> bool
     {

@@ -1562,7 +1562,9 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     assert_ordered(
         route_objective,
         "auto isEligibleTrashClusterMob",
-        "&& hasStrictPathToValidationRouteTarget(creature);",
+        "bool pullable = bot->IsWithinLOSInMap(creature)",
+        "&& bot->GetExactDist(creature) <= routeEngageRange(bot, creature, 0);",
+        "&& (hasStrictPathToValidationRouteTarget(creature) || pullable);",
         "auto isLiveTrashClusterMob",
         "auto isValidationRouteObjectiveTarget",
     )
