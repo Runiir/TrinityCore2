@@ -1729,6 +1729,7 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
 
 void BotWorldPopulationMgr::LoadValidationRouteManifest()
 {
+    _validationRouteFinalTransitionGuids.clear();
     if (_config.ValidationRouteManifestPath.empty())
         return;
 
@@ -7133,6 +7134,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (_validationRoutePackGeneration == _validationRouteGeneration
             && _validationRoutePackTransitionGuids.find(creature->GetGUID()) != _validationRoutePackTransitionGuids.end())
             return false;
+        if (_validationRouteFinalTransitionGuids.find(creature->GetGUID()) != _validationRouteFinalTransitionGuids.end())
+            return false;
         if (creature->IsInEvadeMode() || creature->HasUnitState(UNIT_STATE_EVADE))
             return false;
         if (creature->IsDungeonBoss() || creature->isWorldBoss())
@@ -7156,6 +7159,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     auto isLiveTrashClusterMob = [this, bot, discoveryLeg, &isValidationRoutePackEntry](Creature const* creature) -> bool
     {
         if (!bot || !creature || !creature->IsAlive() || !creature->GetHealth())
+            return false;
+        if (_validationRouteFinalTransitionGuids.find(creature->GetGUID()) != _validationRouteFinalTransitionGuids.end())
             return false;
         if (creature->IsDungeonBoss() || creature->isWorldBoss())
             return false;
@@ -7196,7 +7201,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     };
     auto enrollValidationRoutePackMember = [this, bot, &state, &power, stage, activity](Creature const* creature, bool engaged) -> void
     {
-        if (_config.ValidationRouteKind == "boss" || !engaged || !creature || !creature->IsAlive() || !creature->GetHealth())
+        if (_config.ValidationRouteKind == "boss" || !engaged || !creature || !creature->IsAlive() || !creature->GetHealth()
+            || _validationRouteFinalTransitionGuids.find(creature->GetGUID()) != _validationRouteFinalTransitionGuids.end())
             return;
 
         if (_validationRoutePackGeneration != _validationRouteGeneration)
@@ -7241,6 +7247,16 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
         _validationRoutePackTransitionGuids.insert(creature->GetGUID());
         ObjectGuid transitionedGuid = creature->GetGUID();
+        bool declaredByFutureNode = false;
+        for (size_t routeIndex = _validationRouteManifestIndex + 1; routeIndex < _validationRouteManifest.size(); ++routeIndex)
+            if (std::find(_validationRouteManifest[routeIndex].ScriptedEventEntries.begin(), _validationRouteManifest[routeIndex].ScriptedEventEntries.end(), creature->GetEntry())
+                != _validationRouteManifest[routeIndex].ScriptedEventEntries.end())
+            {
+                declaredByFutureNode = true;
+                break;
+            }
+        if (!declaredByFutureNode)
+            _validationRouteFinalTransitionGuids.insert(transitionedGuid);
         if (_validationRouteFocusGuid == transitionedGuid)
         {
             _validationRouteFocusGuid.Clear();
@@ -7289,7 +7305,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             Creature* creature = object ? object->ToCreature() : nullptr;
             if (!creature || !creature->IsAlive() || !creature->GetHealth() || creature->IsDungeonBoss() || creature->isWorldBoss())
                 continue;
-            if (creature->IsPet() || creature->IsTotem() || creature->IsSummon() || creature->IsGuardian() || !creature->GetOwnerGUID().IsEmpty())
+            if (creature->IsPet() || creature->IsTotem() || creature->IsSummon() || creature->IsGuardian() || !creature->GetOwnerGUID().IsEmpty()
+                || _validationRouteFinalTransitionGuids.find(creature->GetGUID()) != _validationRouteFinalTransitionGuids.end())
                 continue;
 
             if (isValidationCohortCombatLinked(creature))
@@ -7307,13 +7324,14 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 return true;
         return false;
     };
-    auto isNaturalForwardHostile = [bot, &hasStrictPathToValidationRouteTarget](Creature const* creature) -> bool
+    auto isNaturalForwardHostile = [this, bot, &hasStrictPathToValidationRouteTarget](Creature const* creature) -> bool
     {
         if (!bot || !creature || !creature->IsAlive() || !creature->GetHealth() || creature->GetMap() != bot->GetMap())
             return false;
         if (!bot->IsValidAttackTarget(creature) || creature->IsInEvadeMode() || creature->HasUnitState(UNIT_STATE_EVADE))
             return false;
-        if (creature->IsDungeonBoss() || creature->isWorldBoss() || creature->IsCivilian() || creature->IsNeutralToAll() || creature->HasReactState(REACT_PASSIVE))
+        if (creature->IsDungeonBoss() || creature->isWorldBoss() || creature->IsCivilian() || creature->IsNeutralToAll() || creature->HasReactState(REACT_PASSIVE)
+            || _validationRouteFinalTransitionGuids.find(creature->GetGUID()) != _validationRouteFinalTransitionGuids.end())
             return false;
         if (creature->IsCritter() || creature->IsPet() || creature->IsTotem() || creature->IsSummon() || creature->IsGuardian() || !creature->GetOwnerGUID().IsEmpty())
             return false;
@@ -7748,7 +7766,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return nullptr;
 
         Creature const* creature = candidate->ToCreature();
-        if (!creature)
+        if (!creature || _validationRouteFinalTransitionGuids.find(creature->GetGUID()) != _validationRouteFinalTransitionGuids.end())
             return nullptr;
 
         if (_config.ValidationRouteKind != "boss")

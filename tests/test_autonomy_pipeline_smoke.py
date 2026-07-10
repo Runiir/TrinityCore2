@@ -1614,6 +1614,7 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     )
     live_cluster_block = route_objective.split("auto isLiveTrashClusterMob", 1)[1].split("auto isValidationCohortPlayer", 1)[0]
     assert "if (!bot || !creature || !creature->IsAlive() || !creature->GetHealth())" in live_cluster_block
+    assert "_validationRouteFinalTransitionGuids.find(creature->GetGUID())" in live_cluster_block
     assert "isValidationRoutePackEntry(creature->GetEntry())" in live_cluster_block
     assert "creature->IsInEvadeMode()" not in live_cluster_block
     assert "IsValidAttackTarget" not in live_cluster_block
@@ -1648,6 +1649,7 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         "GuidSet _validationRoutePackEngagedGuids;",
         "GuidSet _validationRoutePackDeathGuids;",
         "GuidSet _validationRoutePackTransitionGuids;",
+        "GuidSet _validationRouteFinalTransitionGuids;",
         "uint64 _validationRoutePackGeneration",
         "bool _validationRoutePackObservedEngagement",
     ]:
@@ -1722,6 +1724,8 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     assert "bot->GetMap()->GetCreature(guid); creature && !creature->IsAlive() && !creature->GetHealth()" in defeated_pack_block
     assert 'recordValidationRouteTrashKill(creature, "enrolled_member_seen_dead")' in defeated_pack_block
     assert "if (!creature)" not in defeated_pack_block
+    usable_target_block = route_objective.split("auto routeUsableCombatTarget", 1)[1].split("auto maybeValidationPrerequisiteNoProgressAssist", 1)[0]
+    assert "_validationRouteFinalTransitionGuids.find(creature->GetGUID())" in usable_target_block
     assert_ordered(
         route_objective,
         'targetSearchResult = "target_seen_dead";',
@@ -1737,6 +1741,10 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         "creature->GetVictim()",
         "creature->HasReactState(REACT_PASSIVE)",
         "_validationRoutePackTransitionGuids.insert(creature->GetGUID())",
+        "_validationRouteManifestIndex + 1",
+        "ScriptedEventEntries.begin()",
+        "!declaredByFutureNode",
+        "_validationRouteFinalTransitionGuids.insert(transitionedGuid)",
         "_validationRouteFocusGuid == transitionedGuid",
         "cohortState.TargetGuid == transitionedGuid",
         "cohortState.LastDecisionTargetGuid == transitionedGuid",
@@ -1750,12 +1758,14 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     for generic_state in ["IsValidAttackTarget", "IsInEvadeMode", "UNIT_STATE_EVADE", "hasStrictPathToValidationRouteTarget", "IsWithinLOSInMap"]:
         assert generic_state not in transition_block
     assert "_validationRoutePackTransitionGuids.find(guid) == _validationRoutePackTransitionGuids.end()" in route_objective
+    assert "_validationRouteFinalTransitionGuids.clear();" in mgr
     enrollment_scan = route_objective.split("auto enrollEngagedValidationRoutePackMembers", 1)[1].split("auto persistedValidationRoutePackHasLiveMembers", 1)[0]
     assert "creature->IsSummon()" in enrollment_scan
     assert 'RecordEvent(state, bot, "validation_route_pack_enrolled", creature, "cohort_threat_link"' in route_objective
     assert '"route_selection"' not in route_objective
     eligible_block = route_objective.split("auto isEligibleTrashClusterMob", 1)[1].split("auto isLiveTrashClusterMob", 1)[0]
     assert "_validationRoutePackTransitionGuids.find(creature->GetGUID())" in eligible_block
+    assert "_validationRouteFinalTransitionGuids.find(creature->GetGUID())" in eligible_block
     assert "focusedDiscoveryCandidate" in eligible_block
     assert "_validationRouteFocusGuid == creature->GetGUID()" in eligible_block
     assert "AttackStop" not in transition_block

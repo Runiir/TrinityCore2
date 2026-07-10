@@ -1174,6 +1174,7 @@ private:
     GuidSet _validationRoutePackEngagedGuids;
     GuidSet _validationRoutePackDeathGuids;
     GuidSet _validationRoutePackTransitionGuids;
+    GuidSet _validationRouteFinalTransitionGuids;
     uint64 _validationRoutePackGeneration = 0;
     bool _validationRoutePackObservedEngagement = false;
     uint64 _validationRoutePackClearCandidateSinceMs = 0;
