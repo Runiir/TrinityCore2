@@ -1964,10 +1964,12 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert {42696, 43430, 43537}.issubset(set(stonecore_entrance_tunnel["pack_target_entries"]))
     assert corborus_approach_pack["x"] == 1054.68
     assert corborus_approach_pack["source_guid"] == "@CGUID+62"
-    assert corborus_approach_pack["cluster_radius_yards"] == 35.0
-    assert corborus_approach_pack["expected_alive_count"] == 4
+    assert corborus_approach_pack["node_kind"] == "discovery_leg"
+    assert corborus_approach_pack["cluster_radius_yards"] == 0.0
+    assert "expected_alive_count" not in corborus_approach_pack
     assert corborus_approach_pack["expected_alive_count_semantics"] == "descriptive_only"
-    assert {42696, 43430, 43537}.issubset(set(corborus_approach_pack["pack_target_entries"]))
+    assert corborus_approach_pack["pack_target_entries"] == []
+    assert corborus_approach_pack["completion_policy"] == "cluster_clear_after_pull"
     assert corborus_antechamber_pack["x"] == 1155.75
     assert corborus_antechamber_pack["source_guid"] == "@CGUID+82"
     assert corborus_antechamber_pack["cluster_radius_yards"] == 55.0

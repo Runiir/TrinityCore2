@@ -69,6 +69,7 @@ struct BotWorldExperimentConfig
     uint32 ValidationRouteGeneration = 0;
     std::string ValidationRouteLabel;
     std::string ValidationRouteKind;
+    std::string ValidationRouteNodeKind;
     std::string ValidationRouteMechanicProfile;
     uint32 ValidationRouteMapId = 0;
     float ValidationRouteX = 0.0f;
@@ -283,6 +284,7 @@ private:
         std::string NodeId;
         std::string Label;
         std::string Kind;
+        std::string NodeKind;
         std::string MechanicProfile;
         uint32 MapId = 0;
         float X = 0.0f;

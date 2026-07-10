@@ -138,6 +138,8 @@ def route_node_kind(step: dict[str, Any]) -> str:
 
 
 def pack_target_entries(scenario_id: str, step: dict[str, Any]) -> list[int]:
+    if route_node_kind(step) == "discovery_leg":
+        return []
     explicit = [int(entry) for entry in (step.get("pack_target_entries") or []) if int(entry)]
     if explicit:
         return sorted(set(explicit))
@@ -284,7 +286,7 @@ def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any],
             node_kind = route_node_kind(step)
             cluster_entries = pack_target_entries(scenario_id, step)
             event_entries = scripted_event_entries(scenario_id, step)
-            cluster_radius_yards = float(step.get("cluster_radius_yards") or (90.0 if step.get("kind") == "trash" else 0.0))
+            cluster_radius_yards = 0.0 if node_kind == "discovery_leg" else float(step.get("cluster_radius_yards") or (90.0 if step.get("kind") == "trash" else 0.0))
             route = {
                 "scenario_id": scenario_id,
                 "map_id": int(scenario.get("map_id") or 0),
@@ -306,9 +308,8 @@ def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any],
                 "cluster_radius_yards": cluster_radius_yards,
                 "pack_target_entries": cluster_entries,
                 "scripted_event_entries": event_entries,
-                "expected_alive_count": expected_alive_count(step, cluster_entries),
                 "expected_alive_count_semantics": "descriptive_only",
-                "completion_policy": step.get("completion_policy") or ("cluster_clear_after_pull" if node_kind == "trash_cluster" else ("arrival" if node_kind in {"travel", "regroup", "descent"} else "boss_kill")),
+                "completion_policy": step.get("completion_policy") or ("cluster_clear_after_pull" if node_kind in {"trash_cluster", "discovery_leg"} else ("arrival" if node_kind in {"travel", "regroup", "descent"} else "boss_kill")),
                 "coordinates_valid": coordinates_valid,
                 "coordinate_missing_reason": coordinate_missing_reason,
                 "mechanic_families": family_rows,
@@ -350,6 +351,8 @@ def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any],
                     "actions": EVIDENCE_ACTIONS["instance_reset"],
                 },
             }
+            if node_kind != "discovery_leg":
+                route["expected_alive_count"] = expected_alive_count(step, cluster_entries)
             route["route_node_id"] = stable_hash(route)[:16]
             route["expected_bot_count"] = expected_bot_count
             alternate_target_entries = []

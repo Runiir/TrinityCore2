@@ -60,22 +60,28 @@ def test_validation_scenario_trash_counts_are_descriptive_only():
     config = json.loads(read(VALIDATION_SCENARIOS))
     stonecore = next(scenario for scenario in config["scenarios"] if scenario["id"] == "stonecore_5n")
     trash_steps = [step for step in stonecore["route"] if step["kind"] == "trash"]
-    assert all(step.get("expected_alive_count") != 0 for step in trash_steps)
+    assert all(
+        "expected_alive_count" not in step
+        if step.get("node_kind") == "discovery_leg"
+        else step.get("expected_alive_count") != 0
+        for step in trash_steps
+    )
 
     manifest = build_manifests(config, {}, {"all_passed": True})
     generated_trash = [
         route
         for route in manifest["validation_routes"]
-        if route["scenario_id"] == "stonecore_5n" and route["node_kind"] == "trash_cluster"
+        if route["scenario_id"] == "stonecore_5n" and route["node_kind"] in {"trash_cluster", "discovery_leg"}
     ]
     assert generated_trash
     generated_by_step = {route["step"]: route for route in generated_trash}
     assert generated_by_step[2]["cluster_radius_yards"] == 35.0
     assert generated_by_step[2]["expected_alive_count"] == 4
-    assert generated_by_step[3]["cluster_radius_yards"] == 35.0
-    assert generated_by_step[3]["expected_alive_count"] == 4
+    assert generated_by_step[3]["cluster_radius_yards"] == 0.0
+    assert "expected_alive_count" not in generated_by_step[3]
+    assert generated_by_step[3]["pack_target_entries"] == []
     assert all(route["expected_alive_count"] == len(route["pack_target_entries"]) for route in generated_trash if route["step"] not in {2, 3})
-    assert all(route["expected_alive_count"] > 0 for route in generated_trash)
+    assert all(route["expected_alive_count"] > 0 for route in generated_trash if route["node_kind"] == "trash_cluster")
     assert all(route["expected_alive_count_semantics"] == "descriptive_only" for route in generated_trash)
     assert all(route["completion_policy"] == "cluster_clear_after_pull" for route in generated_trash)
     corborus = next(route for route in manifest["validation_routes"] if route["scenario_id"] == "stonecore_5n" and route["label"] == "Corborus")
@@ -1045,8 +1051,11 @@ def test_quest_first_portfolio_routing_surface():
     assert "SetInCombatWith" not in existing_activation
     assert "AttackStart" not in existing_activation
     assert "float routeArrivalRadius =" in mgr
+    assert 'float routeArrivalRadius = _config.ValidationRouteKind == "boss" ? 8.0f : 18.0f;' in validation_route_objective
+    assert validation_route_objective.count("AttackStop") == 4
+    assert validation_route_objective.count("CombatStop") == 4
     assert "ValidationRouteClusterRadiusYards > routeArrivalRadius" not in validation_route_objective
-    assert "if (!preAnchorTrashTarget && routeDistance <= routeArrivalRadius)" in validation_route_objective
+    assert "if (!preAnchorTrashTarget && (discoveryLeg || routeDistance <= routeArrivalRadius))" in validation_route_objective
     assert "_config.ValidationRouteActivationSpawnGroupId" in mgr
     assert "BotWorld.ValidationRoute.ActivationDataId" in mgr
     assert "BotWorld.ValidationRoute.ActivationSummonEntry" in mgr
@@ -1407,6 +1416,7 @@ def test_botauto_diagnosis_and_trace_surface():
         "validation_route_pack_death_count",
         "validation_route_pack_observed_engagement",
         "validation_route_config_kind",
+        "validation_route_config_node_kind",
         "validation_route_config_target_entry",
         "validation_route_config_activation_data_id",
         "validation_route_config_activation_spawn_group_id",
@@ -1600,7 +1610,7 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         "if (routeDistance > routeArrivalRadius && !preAnchorTrashTarget)",
         "Unit* routeTarget = preAnchorTrashTarget;",
     )
-    live_cluster_block = route_objective.split("auto isLiveTrashClusterMob", 1)[1].split("auto isValidationRouteObjectiveTarget", 1)[0]
+    live_cluster_block = route_objective.split("auto isLiveTrashClusterMob", 1)[1].split("auto isValidationCohortPlayer", 1)[0]
     assert "if (!bot || !creature || !creature->IsAlive() || !creature->GetHealth())" in live_cluster_block
     assert "isValidationRoutePackEntry(creature->GetEntry())" in live_cluster_block
     assert "creature->IsInEvadeMode()" not in live_cluster_block
@@ -1631,6 +1641,7 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     assert "GuidSet _validationRouteRecordedKillGuids;" in mgr_header
     assert "_validationRouteRecordedKillGuids.clear();" in mgr
     for symbol in [
+        "std::string ValidationRouteNodeKind;",
         "GuidSet _validationRoutePackMemberGuids;",
         "GuidSet _validationRoutePackEngagedGuids;",
         "GuidSet _validationRoutePackDeathGuids;",
@@ -1638,6 +1649,31 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         "bool _validationRoutePackObservedEngagement",
     ]:
         assert symbol in mgr_header
+    assert 'node.NodeKind = ExtractJsonStringField(routeJson, "node_kind");' in mgr
+    assert '_config.ValidationRouteNodeKind = node.NodeKind;' in mgr
+    assert '_config.ValidationRouteTargetEntry = node.NodeKind == "discovery_leg" ? 0 : node.TargetEntry;' in mgr
+    assert 'bool discoveryLeg = _config.ValidationRouteNodeKind == "discovery_leg";' in route_objective
+    assert_ordered(
+        route_objective,
+        "auto isNaturalForwardHostile",
+        "auto findForwardDiscoveryTarget",
+        "PathGenerator path(bot);",
+        "path.GetPath();",
+        "creature->GetAttackDistance(bot)",
+        "candidateAlongPath",
+        "guid < bestGuid",
+        "enrollValidationRoutePackMember(best, false);",
+    )
+    for rejected_path in [
+        "PATHFIND_NOPATH",
+        "PATHFIND_NOT_USING_PATH",
+        "PATHFIND_INCOMPLETE",
+        "PATHFIND_SHORTCUT",
+        "PATHFIND_FARFROMPOLY",
+    ]:
+        assert rejected_path in route_objective
+    assert "if (discoveryLeg)\n            return findForwardDiscoveryTarget();" in route_objective
+    assert "if (discoveryLeg)\n            return false;" in route_objective
     assert_ordered(
         route_objective,
         "auto isValidationCohortPlayer",
