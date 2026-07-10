@@ -1895,15 +1895,15 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert stonecore_entry["bot_start_map_id"] == 725
     assert stonecore_entry["bot_start_x"] == 851.052
     assert stonecore_entry["bot_start_z"] == 317.266
-    assert corborus["x"] == 1128.04
-    assert corborus["y"] == 966.894
-    assert corborus["z"] == 284.703
-    assert corborus["o"] == 5.56
-    assert corborus["cluster_center"] == [1128.04, 966.894, 284.703]
-    assert corborus["bot_start_x"] == 1128.04
-    assert corborus["bot_start_y"] == 966.894
-    assert corborus["bot_start_z"] == 284.703
-    assert corborus["bot_start_o"] == 5.56
+    assert corborus["x"] == 1103.9
+    assert corborus["y"] == 864.733
+    assert corborus["z"] == 287.98
+    assert corborus["o"] == 0.25
+    assert corborus["cluster_center"] == [1103.9, 864.733, 287.98]
+    assert corborus["bot_start_x"] == 1103.9
+    assert corborus["bot_start_y"] == 864.733
+    assert corborus["bot_start_z"] == 287.98
+    assert corborus["bot_start_o"] == 0.25
     assert corborus["activation_data_id"] == 10
     assert corborus["activation_data_value"] == 1
     assert corborus["activation_summon_entry"] == 0
