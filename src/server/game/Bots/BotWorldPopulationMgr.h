@@ -1184,6 +1184,8 @@ private:
     uint64 _validationRouteNodeClearCandidateSinceMs = 0;
     ObjectGuid _validationRouteBossProgressTargetGuid;
     uint32 _validationRouteBossSlowProgressCount = 0;
+    bool _validationRouteBossAddDensityPhase = false;
+    uint64 _validationRouteBossAddDensityGeneration = 0;
     bool _validationRouteActivationApplied = false;
     uint32 _validationRouteActivationAttempts = 0;
     std::vector<ValidationRouteManifestNode> _validationRouteManifest;

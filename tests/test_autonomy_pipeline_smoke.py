@@ -2209,16 +2209,30 @@ def test_profile_combat_resolver_can_require_legal_density_actions_for_exact_ene
 
 
 def test_validation_route_high_density_adds_move_from_centroid_and_fail_closed_to_density_contract():
-    objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    mgr = read(BOT_MGR)
+    objective = function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteObjective")
     start = objective.index("auto tryValidationRouteAdds")
     end = objective.index("auto markValidationRouteTerminalAfterProgress", start)
     adds = objective[start:end]
+    reset = function_body(mgr, "void BotWorldPopulationMgr::ResetValidationRouteRuntimeState")
 
     assert "nearbyAddX += creature->GetPositionX();" in adds
     assert "nearbyAddY += creature->GetPositionY();" in adds
-    assert "_validationRouteFocusEntry == _config.ValidationRouteTargetEntry" in adds
-    assert "routeBoss->IsAlive()" in adds
-    assert "!bot->IsValidAttackTarget(routeBoss)" in adds
+    assert 'observedBossEngagement = _config.ValidationRouteKind == "boss"' in adds
+    assert "!_validationRouteBossProgressTargetGuid.IsEmpty()" in adds
+    assert "ObjectAccessor::GetUnit(*bot, _validationRouteBossProgressTargetGuid)" in adds
+    assert "bool routeBossUnavailable = !routeBoss" in adds
+    assert "_validationRouteBossAddDensityGeneration = _validationRouteGeneration;" in adds
+    assert "_validationRouteBossAddDensityGeneration != _validationRouteGeneration || addCount < 3" in adds
+    assert "_validationRouteBossAddDensityPhase && routeBossAttackable" in adds
+    assert "_validationRouteBossAddDensityPhase = false;" in reset
+    assert "_validationRouteBossAddDensityGeneration = 0;" in reset
+    killed_focus = objective[objective.index("auto clearValidationRouteKilledFocus"):start]
+    assert "if (_validationRouteBossProgressTargetGuid == killedGuid)" in killed_focus
+    assert "_validationRouteBossAddDensityPhase = false;" in killed_focus
+    assert "_validationRouteBossAddDensityGeneration = 0;" in killed_focus
+    assert '\\"boss_add_density_phase\\"' in mgr
+    assert '\\"boss_add_density_generation\\"' in mgr
     assert 'role != "healer"' in adds
     assert "profile.MovementDirective != \"melee\"" in adds
     assert "bot->GetRelativeAngle(centroidX, centroidY) + float(M_PI)" in adds

@@ -1715,6 +1715,8 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
     _validationRouteManifestLoadError.clear();
     _validationRouteProgressBaselineKills = _metrics.Kills;
     _validationRouteObservedEngagement = false;
+    _validationRouteBossAddDensityPhase = false;
+    _validationRouteBossAddDensityGeneration = 0;
     LoadValidationRouteManifest();
 
     BotTelemetryBufferConfig telemetry;
@@ -1897,6 +1899,8 @@ void BotWorldPopulationMgr::ResetValidationRouteRuntimeState(char const* reason)
     _validationRouteFocusSeenMs = 0;
     _validationRouteBossProgressTargetGuid.Clear();
     _validationRouteBossSlowProgressCount = 0;
+    _validationRouteBossAddDensityPhase = false;
+    _validationRouteBossAddDensityGeneration = 0;
     _validationRouteActivationApplied = false;
     _validationRouteActivationAttempts = 0;
     _validationRouteManifestAdvancePending = false;
@@ -7610,6 +7614,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         {
             _validationRouteBossProgressTargetGuid.Clear();
             _validationRouteBossSlowProgressCount = 0;
+            _validationRouteBossAddDensityPhase = false;
+            _validationRouteBossAddDensityGeneration = 0;
         }
 
         for (WorldBotState& cohortState : _bots)
@@ -9033,6 +9039,37 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 bestGuid = guid;
             }
         }
+        if (_validationRouteBossAddDensityPhase
+            && (_validationRouteBossAddDensityGeneration != _validationRouteGeneration || addCount < 3))
+        {
+            _validationRouteBossAddDensityPhase = false;
+            _validationRouteBossAddDensityGeneration = 0;
+        }
+
+        bool observedBossEngagement = _config.ValidationRouteKind == "boss"
+            && !_validationRouteBossProgressTargetGuid.IsEmpty();
+        Unit* routeBoss = observedBossEngagement
+            ? ObjectAccessor::GetUnit(*bot, _validationRouteBossProgressTargetGuid)
+            : nullptr;
+        bool routeBossAttackable = routeBoss
+            && routeBoss->IsAlive()
+            && bot->IsValidAttackTarget(routeBoss);
+        if (_validationRouteBossAddDensityPhase && routeBossAttackable)
+        {
+            _validationRouteBossAddDensityPhase = false;
+            _validationRouteBossAddDensityGeneration = 0;
+        }
+        bool routeBossUnavailable = !routeBoss
+            || (routeBoss->IsAlive() && !bot->IsValidAttackTarget(routeBoss));
+        if (!_validationRouteBossAddDensityPhase
+            && addCount >= 3
+            && observedBossEngagement
+            && routeBossUnavailable)
+        {
+            _validationRouteBossAddDensityPhase = true;
+            _validationRouteBossAddDensityGeneration = _validationRouteGeneration;
+        }
+
         if (!add)
             return false;
         if (!sharedFocusValid)
@@ -9041,13 +9078,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             _validationRouteAddFocusGeneration = _validationRouteGeneration;
         }
 
-        Unit* routeBoss = _validationRouteFocusEntry == _config.ValidationRouteTargetEntry
-            ? ObjectAccessor::GetUnit(*bot, _validationRouteFocusGuid)
-            : nullptr;
-        bool highDensityPhase = addCount >= 3
-            && routeBoss
-            && routeBoss->IsAlive()
-            && !bot->IsValidAttackTarget(routeBoss);
+        bool highDensityPhase = _validationRouteBossAddDensityPhase
+            && _validationRouteBossAddDensityGeneration == _validationRouteGeneration;
         std::string role = GetDungeonRole(bot);
         BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(bot, role.c_str());
         if (highDensityPhase
@@ -14490,6 +14522,8 @@ std::string BotWorldPopulationMgr::BuildRawJson(Player* bot, Unit const* target)
          << ",\"dummy_allowed_by_quest\":" << (dummyAllowed ? "true" : "false")
          << ",\"route_node_id\":\"" << JsonEscape(_config.ValidationRouteNodeId) << "\""
          << ",\"route_generation\":" << _validationRouteGeneration
+         << ",\"boss_add_density_phase\":" << (_validationRouteBossAddDensityPhase ? "true" : "false")
+         << ",\"boss_add_density_generation\":" << _validationRouteBossAddDensityGeneration
          << "}";
     return json.str();
 }
@@ -14544,7 +14578,9 @@ std::string BotWorldPopulationMgr::BuildSemanticJson(Player* bot, Unit const* ta
          << ",\"role\":\"" << JsonEscape((dungeonTrash || bossEncounter) ? GetDungeonRole(bot) : "solo") << "\""
          << ",\"activity\":\"" << JsonEscape(BotLongTermProgressionBrain::ToString(activity)) << "\""
          << ",\"validation_route\":{\"route_node_id\":\"" << JsonEscape(_config.ValidationRouteNodeId)
-         << "\",\"route_generation\":" << _validationRouteGeneration << "}"
+         << "\",\"route_generation\":" << _validationRouteGeneration
+         << ",\"boss_add_density_phase\":" << (_validationRouteBossAddDensityPhase ? "true" : "false")
+         << ",\"boss_add_density_generation\":" << _validationRouteBossAddDensityGeneration << "}"
          << ",\"embedding_features\":{\"schema\":\"bot_semantic_phase6_v1\""
          << ",\"area\":" << BuildEmbeddingFeaturesJson(bot, target, "area", bot ? bot->GetAreaId() : 0, situationType.c_str())
          << ",\"mob\":" << BuildEmbeddingFeaturesJson(bot, target, "mob", targetEntry, situationType.c_str())
