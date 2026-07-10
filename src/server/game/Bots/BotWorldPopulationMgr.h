@@ -1072,6 +1072,7 @@ private:
     void LoadValidationRouteManifest();
     bool ApplyValidationRouteManifestNode(size_t index, char const* reason);
     bool MaybeAdvanceValidationRouteManifest();
+    void ResetValidationRouteBossAddEscapeState();
     void ResetValidationRouteBossAddDensityState();
     void ResetValidationRouteRuntimeState(char const* reason);
     bool ValidationRouteHasProgressSinceApply() const;

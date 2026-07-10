@@ -1887,10 +1887,8 @@ bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode(size_t index, char 
     return true;
 }
 
-void BotWorldPopulationMgr::ResetValidationRouteBossAddDensityState()
+void BotWorldPopulationMgr::ResetValidationRouteBossAddEscapeState()
 {
-    _validationRouteBossAddDensityPhase = false;
-    _validationRouteBossAddDensityGeneration = 0;
     _validationRouteBossAddEscapeActive = false;
     _validationRouteBossAddEscapeGeneration = 0;
     _validationRouteBossAddEscapeX = 0.0f;
@@ -1902,6 +1900,13 @@ void BotWorldPopulationMgr::ResetValidationRouteBossAddDensityState()
     _validationRouteBossAddCentroidX = 0.0f;
     _validationRouteBossAddCentroidY = 0.0f;
     _validationRouteBossAddEscapeIssuedGuids.clear();
+}
+
+void BotWorldPopulationMgr::ResetValidationRouteBossAddDensityState()
+{
+    _validationRouteBossAddDensityPhase = false;
+    _validationRouteBossAddDensityGeneration = 0;
+    ResetValidationRouteBossAddEscapeState();
 }
 
 void BotWorldPopulationMgr::ResetValidationRouteRuntimeState(char const* reason)
@@ -9111,21 +9116,30 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             && _validationRouteBossAddDensityGeneration == _validationRouteGeneration;
         std::string role = GetDungeonRole(bot);
         BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(bot, role.c_str());
+        Creature* densityApproachAnchor = nullptr;
         if (highDensityPhase && role != "healer")
         {
             Creature* densityAnchor = nullptr;
             float bestDistance = std::numeric_limits<float>::max();
+            float nearestDistance = std::numeric_limits<float>::max();
             uint32 bestAnchorGuid = 0;
+            uint32 nearestAnchorGuid = 0;
             bool meleeProfile = profile.MovementDirective == "melee" || (profile.MaxRange > 0.0f && profile.MaxRange <= 5.0f);
             float minRange = meleeProfile ? 0.0f : profile.MinRange;
             float maxRange = meleeProfile ? 5.0f : profile.MaxRange;
             for (Creature* candidate : localAdds)
             {
                 float distance = bot->GetExactDist(candidate);
+                uint32 guid = candidate->GetGUID().GetCounter();
+                if (!densityApproachAnchor || distance < nearestDistance || (distance == nearestDistance && guid < nearestAnchorGuid))
+                {
+                    densityApproachAnchor = candidate;
+                    nearestDistance = distance;
+                    nearestAnchorGuid = guid;
+                }
                 if ((minRange > 0.0f && distance < minRange) || (maxRange > 0.0f && distance > maxRange))
                     continue;
 
-                uint32 guid = candidate->GetGUID().GetCounter();
                 if (!densityAnchor || distance < bestDistance || (distance == bestDistance && guid < bestAnchorGuid))
                 {
                     densityAnchor = candidate;
@@ -9154,38 +9168,79 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             }
         }
 
-        if (highDensityPhase && densityTank && densityHealer && addCount >= 3)
+        float densityHealerRange = 0.0f;
+        if (densityHealer)
+        {
+            BotClassSpecActionProfile healerProfile = BotClassSpecActionProfileStore::Build(densityHealer, "healer");
+            for (BotActionProfileSpell const& spell : healerProfile.Spells)
+            {
+                if (!spell.SpellId || !densityHealer->HasSpell(spell.SpellId)
+                    || (spell.Category != BotCombatActionCategory::HealFast
+                        && spell.Category != BotCombatActionCategory::HealEfficient
+                        && spell.Category != BotCombatActionCategory::HealAoe))
+                    continue;
+                float spellRange = spell.MaxRange;
+                if (spellRange <= 0.0f)
+                    if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spell.SpellId))
+                        spellRange = spellInfo->GetMaxRange(true);
+                densityHealerRange = std::max(densityHealerRange, spellRange);
+            }
+        }
+
+        bool escapeCohortValid = densityTank && densityHealer && densityHealerRange > 3.0f;
+        if (_validationRouteBossAddEscapeActive && escapeCohortValid)
+        {
+            escapeCohortValid = densityTank->GetExactDist(_validationRouteBossAddEscapeX,
+                    _validationRouteBossAddEscapeY, _validationRouteBossAddEscapeZ) <= densityHealerRange - 1.0f
+                && densityHealer->GetExactDist(_validationRouteBossAddEscapeX,
+                    _validationRouteBossAddEscapeY, _validationRouteBossAddEscapeZ) <= densityHealerRange - 1.0f
+                && densityTank->IsWithinLOS(_validationRouteBossAddEscapeX, _validationRouteBossAddEscapeY, _validationRouteBossAddEscapeZ)
+                && densityHealer->IsWithinLOS(_validationRouteBossAddEscapeX, _validationRouteBossAddEscapeY, _validationRouteBossAddEscapeZ);
+        }
+        if (_validationRouteBossAddEscapeActive && !escapeCohortValid)
+            ResetValidationRouteBossAddEscapeState();
+
+        if (highDensityPhase && bot == densityTank && escapeCohortValid && addCount >= 3)
         {
             float centroidX = addX / float(addCount);
             float centroidY = addY / float(addCount);
             bool centroidMoved = std::hypot(centroidX - _validationRouteBossAddCentroidX, centroidY - _validationRouteBossAddCentroidY) >= 8.0f;
-            if (!_validationRouteBossAddEscapeActive || (bot == densityTank && centroidMoved))
+            if (!_validationRouteBossAddEscapeActive || centroidMoved)
             {
-                BotClassSpecActionProfile healerProfile = BotClassSpecActionProfileStore::Build(densityHealer, "healer");
-                float healerRange = healerProfile.MaxRange;
                 if (!_validationRouteBossAddEscapeActive)
                 {
                     _validationRouteBossAddEscapeAnchorX = densityTank->GetPositionX();
                     _validationRouteBossAddEscapeAnchorY = densityTank->GetPositionY();
                     _validationRouteBossAddEscapeAnchorZ = densityTank->GetPositionZ();
                 }
-                float anchorLeash = std::min(30.0f, healerRange - 2.0f);
+                float anchorLeash = std::min(30.0f, densityHealerRange - 2.0f);
                 float tankAnchorDistance = densityTank->GetExactDist(_validationRouteBossAddEscapeAnchorX,
                     _validationRouteBossAddEscapeAnchorY, _validationRouteBossAddEscapeAnchorZ);
-                float escapeDistance = std::min(10.0f, std::min(healerRange - 2.0f, anchorLeash - tankAnchorDistance));
+                float escapeDistance = std::min(10.0f, std::min(densityHealerRange - 2.0f, anchorLeash - tankAnchorDistance));
                 if (escapeDistance >= 3.0f)
                 {
                     Position escape = densityTank->GetFirstCollisionPosition(escapeDistance,
                         densityTank->GetRelativeAngle(centroidX, centroidY) + float(M_PI));
-                    _validationRouteBossAddEscapeActive = true;
-                    _validationRouteBossAddEscapeGeneration = _validationRouteGeneration;
-                    _validationRouteBossAddEscapeX = escape.GetPositionX();
-                    _validationRouteBossAddEscapeY = escape.GetPositionY();
-                    _validationRouteBossAddEscapeZ = escape.GetPositionZ();
-                    _validationRouteBossAddCentroidX = centroidX;
-                    _validationRouteBossAddCentroidY = centroidY;
-                    _validationRouteBossAddEscapeIssuedGuids.clear();
+                    bool proposedEscapeValid = densityTank->GetExactDist(escape) <= densityHealerRange - 1.0f
+                        && densityHealer->GetExactDist(escape) <= densityHealerRange - 1.0f
+                        && densityTank->IsWithinLOS(escape.GetPositionX(), escape.GetPositionY(), escape.GetPositionZ())
+                        && densityHealer->IsWithinLOS(escape.GetPositionX(), escape.GetPositionY(), escape.GetPositionZ());
+                    if (proposedEscapeValid)
+                    {
+                        _validationRouteBossAddEscapeActive = true;
+                        _validationRouteBossAddEscapeGeneration = _validationRouteGeneration;
+                        _validationRouteBossAddEscapeX = escape.GetPositionX();
+                        _validationRouteBossAddEscapeY = escape.GetPositionY();
+                        _validationRouteBossAddEscapeZ = escape.GetPositionZ();
+                        _validationRouteBossAddCentroidX = centroidX;
+                        _validationRouteBossAddCentroidY = centroidY;
+                        _validationRouteBossAddEscapeIssuedGuids.clear();
+                    }
+                    else
+                        ResetValidationRouteBossAddEscapeState();
                 }
+                else
+                    ResetValidationRouteBossAddEscapeState();
             }
         }
 
@@ -9203,8 +9258,12 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         {
             bool reachedEscape = bot->GetExactDist2d(_validationRouteBossAddEscapeX, _validationRouteBossAddEscapeY) <= 2.5f;
             bool escapeIssued = _validationRouteBossAddEscapeIssuedGuids.find(bot->GetGUID()) != _validationRouteBossAddEscapeIssuedGuids.end();
-            bool escapeMovementPending = bot->isMoving() || bot->HasUnitState(UNIT_STATE_MOVING);
-            bool shouldIssueEscape = !escapeIssued || (!reachedEscape && !escapeMovementPending);
+            constexpr float escapePathEpsilon = 0.5f;
+            bool escapePathPending = state.ActivePathValid
+                && std::fabs(state.ActivePathToX - _validationRouteBossAddEscapeX) <= escapePathEpsilon
+                && std::fabs(state.ActivePathToY - _validationRouteBossAddEscapeY) <= escapePathEpsilon
+                && std::fabs(state.ActivePathToZ - _validationRouteBossAddEscapeZ) <= escapePathEpsilon;
+            bool shouldIssueEscape = !reachedEscape && !escapePathPending;
             if (!reachedEscape && shouldIssueEscape
                 && MoveBotToPoint(state, bot, _validationRouteBossAddEscapeX, _validationRouteBossAddEscapeY, _validationRouteBossAddEscapeZ))
             {
@@ -9218,7 +9277,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 action = "move_to_boss_add_density_escape";
                 return true;
             }
-            if (!reachedEscape && escapeIssued && escapeMovementPending)
+            if (!reachedEscape && escapePathPending)
             {
                 state.TargetGuid = add ? add->GetGUID() : ObjectGuid::Empty;
                 target = add;
@@ -9229,6 +9288,24 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         }
         if (role == "healer")
             return false;
+        if (highDensityPhase && !add && densityApproachAnchor)
+        {
+            ResolvedCombatAction approachAction;
+            approachAction.MovementDirective = profile.MovementDirective;
+            approachAction.AutoAttackMode = profile.AutoAttackMode;
+            approachAction.MinRange = profile.MinRange;
+            approachAction.MaxRange = profile.MaxRange;
+            bool moved = MoveBotToProfileRange(state, bot, densityApproachAnchor, &approachAction);
+            std::string raw = BuildRawJson(bot, densityApproachAnchor);
+            std::string semantic = BuildSemanticJson(bot, densityApproachAnchor, "dungeon_boss", &power, stage, activity);
+            RecordEvent(state, bot, "boss_add_density", densityApproachAnchor, "approach_density_anchor", raw.c_str(), semantic.c_str(),
+                bot->GetExactDist(densityApproachAnchor), addCount);
+            state.TargetGuid = densityApproachAnchor->GetGUID();
+            target = densityApproachAnchor;
+            situation = "dungeon_boss";
+            action = moved ? "move_to_density_anchor_range" : "hold_density_anchor_range";
+            return true;
+        }
         if (!add)
         {
             std::string raw = BuildRawJson(bot, nullptr);

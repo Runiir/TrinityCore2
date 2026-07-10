@@ -2265,10 +2265,18 @@ def test_density_action_anchor_is_local_range_compatible_and_not_shared_cleanup_
     assert "distance < minRange" in adds
     assert "distance > maxRange" in adds
     assert "distance < bestDistance || (distance == bestDistance && guid < bestAnchorGuid)" in adds
+    assert "distance < nearestDistance || (distance == nearestDistance && guid < nearestAnchorGuid)" in adds
     assert "add = densityAnchor;" in adds
     assert "sharedFocusValid = false;" in adds
     assert "if (!highDensityPhase && !sharedFocusValid)" in adds
     assert '"no_compatible_density_anchor"' in adds
+    assert "ResolvedCombatAction approachAction;" in adds
+    assert "approachAction.MinRange = profile.MinRange;" in adds
+    assert "approachAction.MaxRange = profile.MaxRange;" in adds
+    assert "MoveBotToProfileRange(state, bot, densityApproachAnchor, &approachAction)" in adds
+    assert '"approach_density_anchor"' in adds
+    approach_block = adds[adds.index("if (highDensityPhase && !add && densityApproachAnchor)"):adds.index("if (!add)", adds.index("if (highDensityPhase && !add && densityApproachAnchor)"))]
+    assert "executor.Pull" not in approach_block
     assert_ordered(adds, "add = densityAnchor;", "if (!highDensityPhase && !sharedFocusValid)")
 
 
@@ -2278,23 +2286,36 @@ def test_density_escape_is_one_generation_scoped_tank_relative_point_with_healer
     start = objective.index("auto tryValidationRouteAdds")
     end = objective.index("auto markValidationRouteTerminalAfterProgress", start)
     adds = objective[start:end]
-    reset = function_body(mgr, "void BotWorldPopulationMgr::ResetValidationRouteBossAddDensityState")
+    reset = function_body(mgr, "void BotWorldPopulationMgr::ResetValidationRouteBossAddEscapeState")
+    density_reset = function_body(mgr, "void BotWorldPopulationMgr::ResetValidationRouteBossAddDensityState")
 
     assert "Player* densityTank = nullptr;" in adds
     assert "Player* densityHealer = nullptr;" in adds
     assert "BotClassSpecActionProfileStore::Build(densityHealer, \"healer\")" in adds
-    assert "anchorLeash = std::min(30.0f, healerRange - 2.0f)" in adds
+    assert "densityHealer->HasSpell(spell.SpellId)" in adds
+    assert "densityHealerRange = std::max(densityHealerRange, spellRange);" in adds
+    assert "anchorLeash = std::min(30.0f, densityHealerRange - 2.0f)" in adds
     assert "_validationRouteBossAddEscapeAnchorX = densityTank->GetPositionX();" in adds
-    assert "bot == densityTank && centroidMoved" in adds
+    assert "highDensityPhase && bot == densityTank && escapeCohortValid" in adds
+    assert "if (!_validationRouteBossAddEscapeActive || centroidMoved)" in adds
+    assert "densityTank->IsWithinLOS(escape.GetPositionX()" in adds
+    assert "densityHealer->IsWithinLOS(escape.GetPositionX()" in adds
+    assert "if (_validationRouteBossAddEscapeActive && !escapeCohortValid)" in adds
+    assert "ResetValidationRouteBossAddEscapeState();" in adds
     assert "_validationRouteBossAddEscapeIssuedGuids.clear();" in adds
     assert "_validationRouteBossAddEscapeGeneration == _validationRouteGeneration" in adds
     assert "if (highDensityPhase && role == \"healer\" && tryRouteGroupHeal(bot, add))" in adds
     assert "_validationRouteBossAddEscapeIssuedGuids.insert(bot->GetGUID());" in adds
-    assert "bool shouldIssueEscape = !escapeIssued || (!reachedEscape && !escapeMovementPending);" in adds
+    assert "bool escapePathPending = state.ActivePathValid" in adds
+    assert "state.ActivePathToX - _validationRouteBossAddEscapeX" in adds
+    assert "state.ActivePathToY - _validationRouteBossAddEscapeY" in adds
+    assert "state.ActivePathToZ - _validationRouteBossAddEscapeZ" in adds
+    assert "bool shouldIssueEscape = !reachedEscape && !escapePathPending;" in adds
     assert 'action = "continue_to_boss_add_density_escape";' in adds
     assert "_validationRouteBossAddEscapeActive = false;" in reset
     assert "_validationRouteBossAddEscapeGeneration = 0;" in reset
     assert "_validationRouteBossAddEscapeIssuedGuids.clear();" in reset
+    assert "ResetValidationRouteBossAddEscapeState();" in density_reset
     assert '\\"boss_add_escape_active\\"' in mgr
     assert '\\"boss_add_escape_issued_count\\"' in mgr
     assert '\\"validation_route_boss_add_escape_distance\\"' in mgr
