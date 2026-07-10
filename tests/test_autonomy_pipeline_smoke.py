@@ -1648,6 +1648,7 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         "GuidSet _validationRoutePackEngagedGuids;",
         "GuidSet _validationRoutePackDeathGuids;",
         "GuidSet _validationRoutePackTransitionGuids;",
+        "GuidSet _validationRoutePendingFinalTransitionGuids;",
         "GuidSet _validationRouteFinalTransitionGuids;",
         "uint64 _validationRoutePackGeneration",
         "bool _validationRoutePackObservedEngagement",
@@ -1738,7 +1739,10 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         "_validationRoutePackTransitionGuids.insert(creature->GetGUID())",
         "_validationRouteManifestIndex + 1",
         "ScriptedEventEntries.begin()",
-        "!discoveryLeg && !declaredByFutureNode",
+        "if (!declaredByFutureNode)",
+        "if (discoveryLeg)",
+        "_validationRoutePendingFinalTransitionGuids.insert(transitionedGuid)",
+        "else",
         "_validationRouteFinalTransitionGuids.insert(transitionedGuid)",
         "_validationRouteFocusGuid == transitionedGuid",
         "cohortState.TargetGuid == transitionedGuid",
@@ -1762,6 +1766,14 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     for generic_state in ["IsValidAttackTarget", "IsInEvadeMode", "UNIT_STATE_EVADE", "hasStrictPathToValidationRouteTarget", "IsWithinLOSInMap"]:
         assert generic_state not in transition_block
     assert "_validationRoutePackTransitionGuids.find(guid) == _validationRoutePackTransitionGuids.end()" in route_objective
+    assert_ordered(
+        mgr,
+        "void BotWorldPopulationMgr::LoadValidationRouteManifest()",
+        "_validationRoutePendingFinalTransitionGuids.clear();",
+        "_validationRouteFinalTransitionGuids.clear();",
+    )
+    apply_node = function_body(mgr, "bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode")
+    assert "_validationRoutePendingFinalTransitionGuids.clear();" in apply_node
     assert "_validationRouteFinalTransitionGuids.clear();" in mgr
     enrollment_scan = route_objective.split("auto enrollEngagedValidationRoutePackMembers", 1)[1].split("auto persistedValidationRoutePackHasLiveMembers", 1)[0]
     assert "creature->IsSummon()" in enrollment_scan
@@ -1831,6 +1843,16 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         "++_validationRoutePackSequence;",
         "_validationRoutePackMemberGuids.clear();",
         "if (completeDiscoveredPackIfReady())",
+    )
+    discovered_pack_terminal = route_objective.split("auto completeDiscoveredPackIfReady", 1)[1].split("auto routeUsableCombatTarget", 1)[0]
+    assert "_validationRoutePendingFinalTransitionGuids.clear()" not in discovered_pack_terminal
+    assert_ordered(
+        route_objective,
+        "if (discoveryLeg)",
+        "_validationRouteFinalTransitionGuids.insert(_validationRoutePendingFinalTransitionGuids.begin(), _validationRoutePendingFinalTransitionGuids.end());",
+        "_validationRoutePendingFinalTransitionGuids.clear();",
+        'markTrashClusterCleared("trash_cluster_cleared");',
+        "MaybeAdvanceValidationRouteManifest();",
     )
     assert 'uint32 routeTargetNoProgressThreshold = _config.ValidationRouteKind == "boss" ? 5 : 20;' in route_objective
     assert "bool _validationRouteManifestComplete = false;" in mgr_header

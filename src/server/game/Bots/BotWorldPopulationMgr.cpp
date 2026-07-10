@@ -1729,6 +1729,7 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
 
 void BotWorldPopulationMgr::LoadValidationRouteManifest()
 {
+    _validationRoutePendingFinalTransitionGuids.clear();
     _validationRouteFinalTransitionGuids.clear();
     if (_config.ValidationRouteManifestPath.empty())
         return;
@@ -1855,6 +1856,7 @@ bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode(size_t index, char 
     _validationRoutePackEngagedGuids.clear();
     _validationRoutePackDeathGuids.clear();
     _validationRoutePackTransitionGuids.clear();
+    _validationRoutePendingFinalTransitionGuids.clear();
     _validationRoutePackGeneration = _validationRouteGeneration;
     _validationRoutePackSequence = 1;
     _validationRouteCompletedPackCount = 0;
@@ -7269,8 +7271,13 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 declaredByFutureNode = true;
                 break;
             }
-        if (!discoveryLeg && !declaredByFutureNode)
-            _validationRouteFinalTransitionGuids.insert(transitionedGuid);
+        if (!declaredByFutureNode)
+        {
+            if (discoveryLeg)
+                _validationRoutePendingFinalTransitionGuids.insert(transitionedGuid);
+            else
+                _validationRouteFinalTransitionGuids.insert(transitionedGuid);
+        }
         if (_validationRouteFocusGuid == transitionedGuid)
         {
             _validationRouteFocusGuid.Clear();
@@ -10077,6 +10084,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 && fullCohortAtEndpoint
                 && nowMs - clearCandidateSinceMs >= 2000)
             {
+                if (discoveryLeg)
+                {
+                    _validationRouteFinalTransitionGuids.insert(_validationRoutePendingFinalTransitionGuids.begin(), _validationRoutePendingFinalTransitionGuids.end());
+                    _validationRoutePendingFinalTransitionGuids.clear();
+                }
                 std::string raw = BuildRawJson(bot, nullptr);
                 std::string semantic = BuildSemanticJson(bot, nullptr, "normal_dungeon_trash", &power, stage, activity);
                 markTrashClusterCleared("trash_cluster_cleared");
