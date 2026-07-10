@@ -9893,15 +9893,15 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         else if (ValidationRouteHasProgressSinceApply() && ++state.ValidationRouteTargetSearchMissCount >= 2)
         {
             bool packHasLiveMobs = trashClusterHasLiveMobs();
-            bool partyInCombat = false;
+            bool partyHasActiveCombatUnit = false;
             for (WorldBotState const& cohortState : _bots)
-                if (Player* member = GetLoadedBot(cohortState); member && member->IsInCombat())
+                if (Player* member = GetLoadedBot(cohortState); member && (member->GetVictim() || !member->getAttackers().empty()))
                 {
-                    partyInCombat = true;
+                    partyHasActiveCombatUnit = true;
                     break;
                 }
             uint64 nowMs = NowMs();
-            if (packHasLiveMobs || partyInCombat)
+            if (packHasLiveMobs || partyHasActiveCombatUnit)
                 _validationRoutePackClearCandidateSinceMs = 0;
             else if (!_validationRoutePackClearCandidateSinceMs)
                 _validationRoutePackClearCandidateSinceMs = nowMs;
@@ -9909,7 +9909,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             if (_config.ValidationRouteAdvanceMode == "terminal"
                 && _validationRoutePackObservedEngagement
                 && !packHasLiveMobs
-                && !partyInCombat
+                && !partyHasActiveCombatUnit
                 && nowMs - _validationRoutePackClearCandidateSinceMs >= 2000)
             {
                 std::string raw = BuildRawJson(bot, nullptr);

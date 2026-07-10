@@ -1777,7 +1777,8 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         'RecordEvent(state, bot, "mob_killed"',
     )
     assert "&& _validationRoutePackObservedEngagement" in route_objective
-    assert "&& !partyInCombat" in route_objective
+    assert "member->GetVictim() || !member->getAttackers().empty()" in route_objective
+    assert "&& !partyHasActiveCombatUnit" in route_objective
     assert "nowMs - _validationRoutePackClearCandidateSinceMs >= 2000" in route_objective
     assert "_validationRoutePackEngagedGuids.find(killedTarget->GetGUID())" in route_objective
     assert "bestAnchorTargetScore" not in route_objective
@@ -1808,7 +1809,7 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         "if (_config.ValidationRouteAdvanceMode == \"terminal\"",
         "&& _validationRoutePackObservedEngagement",
         "&& !packHasLiveMobs",
-        "&& !partyInCombat",
+        "&& !partyHasActiveCombatUnit",
         "&& nowMs - _validationRoutePackClearCandidateSinceMs >= 2000)",
         'markTrashClusterCleared("trash_cluster_cleared");',
     )
