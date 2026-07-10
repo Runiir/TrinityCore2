@@ -1086,15 +1086,12 @@ def live_evidence(
         return max(values, default=0)
 
     route_no_progress_diagnoses = 0
-    route_combat_progress_diagnoses = 0
 
     def count_route_progress(route_progress: Any) -> None:
-        nonlocal route_no_progress_diagnoses, route_combat_progress_diagnoses
+        nonlocal route_no_progress_diagnoses
         if not isinstance(route_progress, dict):
             return
         no_progress = route_progress.get("no_progress") if isinstance(route_progress.get("no_progress"), dict) else {}
-        if str(no_progress.get("reason") or "") == "route_target_combat_progress":
-            route_combat_progress_diagnoses += 1
         try:
             count = int(no_progress.get("count") or 0)
             threshold = int(no_progress.get("threshold") or 0)
@@ -1111,6 +1108,38 @@ def live_evidence(
 
     for entry in entries:
         count_route_progress(entry.get("route_progress") if isinstance(entry, dict) else None)
+
+    route_combat_progress_diagnoses = 0
+    target_best_health: dict[tuple[int, str, int, int, int], float] = {}
+    for payload in parse_json_objects(raw_output):
+        if not (payload.get("diagnosis_schema_version") or payload.get("diagnoses") or payload.get("diagnosis")):
+            continue
+        for row in diagnosis_rows(payload):
+            route_progress = nested_get(row, ["diagnosis", "route_progress"], None)
+            if not isinstance(route_progress, dict):
+                route_progress = nested_get(row, ["snapshot", "route_progress"], None)
+            if not isinstance(route_progress, dict):
+                continue
+            no_progress = route_progress.get("no_progress") if isinstance(route_progress.get("no_progress"), dict) else {}
+            if str(no_progress.get("reason") or "") != "route_target_combat_progress":
+                continue
+            route = route_progress.get("route") if isinstance(route_progress.get("route"), dict) else {}
+            target = route_progress.get("target") if isinstance(route_progress.get("target"), dict) else {}
+            try:
+                health = float(target["hp_pct"])
+            except (KeyError, TypeError, ValueError):
+                continue
+            key = (
+                int(nested_get(row, ["identity", "bot_guid"], 0) or 0),
+                str(route.get("node_id") or ""),
+                int(route.get("generation") or 0),
+                int(target.get("guid") or 0),
+                int(target.get("entry") or 0),
+            )
+            previous = target_best_health.get(key)
+            if previous is not None and health < previous:
+                route_combat_progress_diagnoses += 1
+            target_best_health[key] = min(previous, health) if previous is not None else health
 
     action_text = " ".join(sorted(action_names)).lower()
     quest_progress = max(int(status.get("quest_objective_progress") or 0), int(summary.get("quest_objective_progress") or 0))

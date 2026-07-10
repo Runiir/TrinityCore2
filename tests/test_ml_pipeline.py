@@ -1955,12 +1955,17 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert {42696, 43430, 43537}.issubset(set(stonecore_entry["pack_target_entries"]))
     assert 43391 not in stonecore_entry["pack_target_entries"]
     assert stonecore_entry["scripted_event_entries"] == [43391]
+    assert stonecore_entry["scripted_event_transition_aura_ids"] == [81216]
+    assert stonecore_entry["scripted_event_require_passive"] is True
     assert stonecore_entry["completion_policy"] == "cluster_clear_after_pull"
     assert stonecore_entrance_tunnel["x"] == 982.464
     assert stonecore_entrance_tunnel["source_guid"] == "@CGUID+51"
     assert stonecore_entrance_tunnel["cluster_radius_yards"] == 35.0
     assert stonecore_entrance_tunnel["expected_alive_count"] == 4
     assert stonecore_entrance_tunnel["expected_alive_count_semantics"] == "descriptive_only"
+    assert stonecore_entrance_tunnel["scripted_event_entries"] == [43391]
+    assert stonecore_entrance_tunnel["scripted_event_transition_aura_ids"] == [81216]
+    assert stonecore_entrance_tunnel["scripted_event_require_passive"] is True
     assert {42696, 43430, 43537}.issubset(set(stonecore_entrance_tunnel["pack_target_entries"]))
     assert corborus_approach_pack["x"] == 1054.68
     assert corborus_approach_pack["source_guid"] == "@CGUID+62"
@@ -1970,6 +1975,9 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert corborus_approach_pack["expected_alive_count_semantics"] == "descriptive_only"
     assert corborus_approach_pack["pack_target_entries"] == []
     assert corborus_approach_pack["completion_policy"] == "cluster_clear_after_pull"
+    assert corborus_approach_pack["scripted_event_entries"] == [43391]
+    assert corborus_approach_pack["scripted_event_transition_aura_ids"] == [81216]
+    assert corborus_approach_pack["scripted_event_require_passive"] is True
     assert corborus_antechamber_pack["x"] == 1155.75
     assert corborus_antechamber_pack["source_guid"] == "@CGUID+82"
     assert corborus_antechamber_pack["cluster_radius_yards"] == 55.0
@@ -3348,7 +3356,7 @@ TC> {"duration_minutes":7.0,"decisions":1109,"total_kills":9,"quests_completed":
     report = live_validation_report(output, validation_context={"route_kind": "trash"})
 
     assert report["evidence"]["repath_events"] >= 8
-    assert report["evidence"]["validation_route_combat_progress_diagnoses"] == 1
+    assert report["evidence"]["validation_route_combat_progress_diagnoses"] == 0
     assert report["evidence"]["validation_route_no_progress_diagnoses"] == 0
     assert report["evidence"]["post_failure_progress"] is False
     assert "validation_route_stuck_loop" in report["failure_labels"]
@@ -3363,7 +3371,7 @@ TC> {"duration_minutes":7.0,"decisions":1422,"total_kills":19,"quests_completed"
 """
     report = live_validation_report(output, validation_context={"route_kind": "trash"})
 
-    assert report["evidence"]["validation_route_combat_progress_diagnoses"] >= 1
+    assert report["evidence"]["validation_route_combat_progress_diagnoses"] == 0
     assert report["evidence"]["validation_route_no_progress_diagnoses"] == 0
     assert report["evidence"]["kill_evidence"] == 19
     assert report["evidence"]["trash_route_actions"] > 0
@@ -5696,7 +5704,7 @@ def test_completion_watchdog_stops_manifest_run_on_semantic_progress_plateau(tmp
         "    if cmd == '.botauto status':\n"
         "        print('{\"active_bots\":5,\"target_bots\":5,\"decisions\":120,\"kills\":4}')\n"
         "    elif cmd.startswith('.botauto diagnose'):\n"
-        "        print('{\"diagnosis_schema_version\":1,\"bots\":[{\"identity\":{\"bot_guid\":1},\"snapshot\":{\"decision\":{\"action\":\"validation_route_failed\"},\"movement\":{\"is_moving\":false,\"distance_moved_since_last_decision\":0}}}]}')\n"
+        "        print('{\"diagnosis_schema_version\":1,\"bots\":[{\"identity\":{\"bot_guid\":1},\"diagnosis\":{\"route_progress\":{\"route\":{\"kind\":\"trash\",\"node_id\":\"stonecore_entry\"},\"target\":{\"entry\":42696,\"guid\":56,\"hp_pct\":0.5},\"no_progress\":{\"count\":0,\"threshold\":20,\"reason\":\"route_target_combat_progress\"}}},\"snapshot\":{\"decision\":{\"action\":\"validation_route_failed\"},\"movement\":{\"is_moving\":false,\"distance_moved_since_last_decision\":0}}}]}')\n"
         "    elif cmd.startswith('.botauto trace'):\n"
         "        print('{\"trace_schema_version\":1,\"entries\":[{\"action\":\"validation_route_failed\",\"result\":\"route_destination_unreachable\"},{\"action\":\"validation_route_failed\",\"result\":\"route_destination_unreachable\"}]}')\n"
         "    elif cmd == '.botexp summary':\n"
@@ -5727,6 +5735,7 @@ def test_completion_watchdog_stops_manifest_run_on_semantic_progress_plateau(tmp
     assert report["completion_reason"] == "semantic_progress_plateau_watchdog"
     assert report["watchdog_state"]["semantic_progress_plateau"] is True
     assert report["watchdog_state"]["progress_total"] == 4
+    assert report["evidence"]["validation_route_combat_progress_diagnoses"] == 0
     assert report["evidence"]["validation_route_actions"] > 0
 
 
@@ -5902,7 +5911,7 @@ def test_watchdog_state_calls_post_segment_route_plateau_no_progress():
     assert state["no_progress"] is False
 
 
-def test_watchdog_state_counts_route_combat_health_progress():
+def test_watchdog_state_does_not_count_a_combat_health_baseline_as_progress():
     report = live_validation_report(
         """
 TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":480,"kills":3}
@@ -5912,10 +5921,41 @@ TC> {"duration_minutes":3,"decisions":480,"total_kills":3}
 """
     )
 
+    assert report["evidence"]["validation_route_combat_progress_diagnoses"] == 0
+    assert report["watchdog_state"]["progress_total"] == 3
+    assert report["watchdog_state"]["semantic_progress_plateau"] is True
+    assert "validation_route_stuck_loop" not in report["failure_labels"]
+
+
+def test_watchdog_state_counts_only_strict_combat_health_improvement():
+    output = """
+TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":480,"kills":3}
+TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"diagnosis":{"route_progress":{"route":{"kind":"trash","node_id":"crystalspawn_corridor"},"target":{"entry":42810,"guid":106,"hp_pct":0.8},"no_progress":{"count":0,"threshold":20,"reason":"route_target_combat_progress"}}}}]}
+TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"diagnosis":{"route_progress":{"route":{"kind":"trash","node_id":"crystalspawn_corridor"},"target":{"entry":42810,"guid":106,"hp_pct":0.8},"no_progress":{"count":0,"threshold":20,"reason":"route_target_combat_progress"}}}}]}
+TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"diagnosis":{"route_progress":{"route":{"kind":"trash","node_id":"crystalspawn_corridor"},"target":{"entry":42810,"guid":106,"hp_pct":0.7},"no_progress":{"count":0,"threshold":20,"reason":"route_target_combat_progress"}}}}]}
+TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"diagnosis":{"route_progress":{"route":{"kind":"trash","node_id":"crystalspawn_corridor"},"target":{"entry":42810,"guid":106,"hp_pct":0.7},"no_progress":{"count":0,"threshold":20,"reason":"route_target_combat_progress"}}}}]}
+TC> {"duration_minutes":3,"decisions":480,"total_kills":3}
+"""
+
+    report = live_validation_report(output)
+
     assert report["evidence"]["validation_route_combat_progress_diagnoses"] == 1
     assert report["watchdog_state"]["progress_total"] == 4
     assert report["watchdog_state"]["semantic_progress_plateau"] is False
-    assert "validation_route_stuck_loop" not in report["failure_labels"]
+
+
+def test_watchdog_health_baselines_are_isolated_per_bot():
+    output = """
+TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":480,"kills":3}
+TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"diagnosis":{"route_progress":{"route":{"kind":"trash","node_id":"entry","generation":1},"target":{"entry":43391,"guid":9,"hp_pct":0.8},"no_progress":{"count":0,"threshold":20,"reason":"route_target_combat_progress"}}}},{"identity":{"bot_guid":2},"diagnosis":{"route_progress":{"route":{"kind":"trash","node_id":"entry","generation":1},"target":{"entry":43391,"guid":9,"hp_pct":0.5},"no_progress":{"count":0,"threshold":20,"reason":"route_target_combat_progress"}}}}]}
+TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"diagnosis":{"route_progress":{"route":{"kind":"trash","node_id":"entry","generation":1},"target":{"entry":43391,"guid":9,"hp_pct":0.8},"no_progress":{"count":0,"threshold":20,"reason":"route_target_combat_progress"}}}},{"identity":{"bot_guid":2},"diagnosis":{"route_progress":{"route":{"kind":"trash","node_id":"entry","generation":1},"target":{"entry":43391,"guid":9,"hp_pct":0.5},"no_progress":{"count":0,"threshold":20,"reason":"route_target_combat_progress"}}}}]}
+TC> {"duration_minutes":3,"decisions":480,"total_kills":3}
+"""
+
+    report = live_validation_report(output)
+
+    assert report["evidence"]["validation_route_combat_progress_diagnoses"] == 0
+    assert report["watchdog_state"]["progress_total"] == 3
 
 
 def test_live_bot_validation_treats_terminal_route_no_progress_diagnosis_as_watchdog_failure():

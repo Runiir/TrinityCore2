@@ -1414,6 +1414,7 @@ def test_botauto_diagnosis_and_trace_surface():
         "validation_route_pack_member_count",
         "validation_route_pack_engaged_count",
         "validation_route_pack_death_count",
+        "validation_route_pack_transition_count",
         "validation_route_pack_observed_engagement",
         "validation_route_config_kind",
         "validation_route_config_node_kind",
@@ -1447,6 +1448,7 @@ def test_botauto_diagnosis_and_trace_surface():
         '<< ",\\"pack_member_count\\":" << _validationRoutePackMemberGuids.size()',
         '<< ",\\"pack_engaged_count\\":" << _validationRoutePackEngagedGuids.size()',
         '<< ",\\"pack_death_count\\":" << _validationRoutePackDeathGuids.size()',
+        '<< ",\\"pack_transition_count\\":" << _validationRoutePackTransitionGuids.size()',
         '<< ",\\"pack_observed_engagement\\":" << (_validationRoutePackObservedEngagement ? "true" : "false")',
     ]:
         assert mapping in config_json
@@ -1645,12 +1647,22 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         "GuidSet _validationRoutePackMemberGuids;",
         "GuidSet _validationRoutePackEngagedGuids;",
         "GuidSet _validationRoutePackDeathGuids;",
+        "GuidSet _validationRoutePackTransitionGuids;",
         "uint64 _validationRoutePackGeneration",
         "bool _validationRoutePackObservedEngagement",
     ]:
         assert symbol in mgr_header
     assert 'node.NodeKind = ExtractJsonStringField(routeJson, "node_kind");' in mgr
+    assert 'node.ScriptedEventEntries = ExtractJsonUIntArrayField(routeJson, "scripted_event_entries");' in mgr
+    assert 'node.ScriptedEventTransitionAuraIds = ExtractJsonUIntArrayField(routeJson, "scripted_event_transition_aura_ids");' in mgr
+    assert 'ExtractJsonBoolField(routeJson, "scripted_event_require_passive", node.ScriptedEventRequirePassive);' in mgr
     assert '_config.ValidationRouteNodeKind = node.NodeKind;' in mgr
+    assert '_config.ValidationRouteScriptedEventEntries = node.ScriptedEventEntries;' in mgr
+    assert '_config.ValidationRouteScriptedEventTransitionAuraIds = node.ScriptedEventTransitionAuraIds;' in mgr
+    route_progress_json = function_body(mgr, "std::string BotWorldPopulationMgr::BuildRouteProgressJson")
+    record_route_progress = function_body(mgr, "void BotWorldPopulationMgr::RecordRouteProgress")
+    assert '<< ",\\"generation\\":" << diagnostic.Generation' in route_progress_json
+    assert "diagnostic.Generation = _validationRouteGeneration;" in record_route_progress
     assert '_config.ValidationRouteTargetEntry = node.NodeKind == "discovery_leg" ? 0 : node.TargetEntry;' in mgr
     assert 'bool discoveryLeg = _config.ValidationRouteNodeKind == "discovery_leg";' in route_objective
     assert_ordered(
@@ -1689,6 +1701,21 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         "enrollEngagedValidationRoutePackMembers();",
         "persistedValidationRoutePackHasLiveMembers()",
     )
+    transition_block = route_objective.split("auto recordValidationRouteScriptedTransition", 1)[1].split("auto enrollEngagedValidationRoutePackMembers", 1)[0]
+    for required in [
+        "_validationRoutePackEngagedGuids.find(creature->GetGUID())",
+        "_config.ValidationRouteScriptedEventEntries.end()",
+        "_config.ValidationRouteScriptedEventTransitionAuraIds[index]",
+        "creature->HasAura(auraId)",
+        "creature->GetVictim()",
+        "creature->HasReactState(REACT_PASSIVE)",
+        "_validationRoutePackTransitionGuids.insert(creature->GetGUID())",
+        '"validation_route_scripted_transition"',
+    ]:
+        assert required in transition_block
+    for generic_state in ["IsValidAttackTarget", "IsInEvadeMode", "UNIT_STATE_EVADE", "hasStrictPathToValidationRouteTarget", "IsWithinLOSInMap"]:
+        assert generic_state not in transition_block
+    assert "_validationRoutePackTransitionGuids.find(guid) == _validationRoutePackTransitionGuids.end()" in route_objective
     assert_ordered(
         route_objective,
         "_validationRoutePackMemberGuids.insert(killedTarget->GetGUID());",
@@ -1708,6 +1735,7 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         "pack_member_count",
         "pack_engaged_count",
         "pack_death_count",
+        "pack_transition_count",
         "pack_observed_engagement",
     ]:
         assert f'\\"{field}\\"' in config_json

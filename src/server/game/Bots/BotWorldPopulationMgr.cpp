@@ -1783,6 +1783,9 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
         node.AlternateTargetEntries = ExtractJsonUIntArrayField(routeJson, "alternate_target_entries");
         node.AddTargetEntries = ExtractJsonUIntArrayField(routeJson, "add_target_entries");
         node.PackTargetEntries = ExtractJsonUIntArrayField(routeJson, "pack_target_entries");
+        node.ScriptedEventEntries = ExtractJsonUIntArrayField(routeJson, "scripted_event_entries");
+        node.ScriptedEventTransitionAuraIds = ExtractJsonUIntArrayField(routeJson, "scripted_event_transition_aura_ids");
+        ExtractJsonBoolField(routeJson, "scripted_event_require_passive", node.ScriptedEventRequirePassive);
         node.ClusterRadiusYards = readFloat(routeJson, "cluster_radius_yards");
         node.ExpectedAliveCount = uint32(std::max(0, readInt(routeJson, "expected_alive_count")));
         node.ActivationDataId = uint32(std::max(0, readInt(routeJson, "activation_data_id")));
@@ -1839,6 +1842,9 @@ bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode(size_t index, char 
     _config.ValidationRouteAlternateTargetEntries = node.AlternateTargetEntries;
     _config.ValidationRouteAddTargetEntries = node.AddTargetEntries;
     _config.ValidationRoutePackTargetEntries = node.PackTargetEntries;
+    _config.ValidationRouteScriptedEventEntries = node.ScriptedEventEntries;
+    _config.ValidationRouteScriptedEventTransitionAuraIds = node.ScriptedEventTransitionAuraIds;
+    _config.ValidationRouteScriptedEventRequirePassive = node.ScriptedEventRequirePassive;
     _config.ValidationRouteClusterRadiusYards = node.ClusterRadiusYards;
     _config.ValidationRouteExpectedAliveCount = node.ExpectedAliveCount;
     _validationRouteAddFocusGuid.Clear();
@@ -1847,6 +1853,7 @@ bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode(size_t index, char 
     _validationRoutePackMemberGuids.clear();
     _validationRoutePackEngagedGuids.clear();
     _validationRoutePackDeathGuids.clear();
+    _validationRoutePackTransitionGuids.clear();
     _validationRoutePackGeneration = _validationRouteGeneration;
     _validationRoutePackObservedEngagement = false;
     _validationRoutePackClearCandidateSinceMs = 0;
@@ -3356,6 +3363,7 @@ std::string BotWorldPopulationMgr::BuildRouteProgressJson(WorldBotState::RoutePr
 {
     std::ostringstream json;
     json << "{\"route\":{\"node_id\":\"" << JsonEscape(diagnostic.NodeId) << "\""
+         << ",\"generation\":" << diagnostic.Generation
          << ",\"kind\":\"" << JsonEscape(diagnostic.Kind) << "\"}"
          << ",\"target\":{\"guid\":" << diagnostic.TargetGuid.GetCounter()
          << ",\"entry\":" << diagnostic.TargetEntry
@@ -3433,6 +3441,7 @@ void BotWorldPopulationMgr::RecordRouteProgress(WorldBotState& state, Player* bo
 {
     WorldBotState::RouteProgressDiagnostic diagnostic;
     diagnostic.RecordedAtMs = NowMs();
+    diagnostic.Generation = _validationRouteGeneration;
     diagnostic.NodeId = _config.ValidationRouteNodeId;
     diagnostic.Kind = _config.ValidationRouteKind;
     diagnostic.TargetGuid = target ? target->GetGUID() : ObjectGuid::Empty;
@@ -7191,6 +7200,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             _validationRoutePackMemberGuids.clear();
             _validationRoutePackEngagedGuids.clear();
             _validationRoutePackDeathGuids.clear();
+            _validationRoutePackTransitionGuids.clear();
             _validationRoutePackGeneration = _validationRouteGeneration;
             _validationRoutePackObservedEngagement = false;
             _validationRoutePackClearCandidateSinceMs = 0;
@@ -7203,7 +7213,32 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             _validationRoutePackClearCandidateSinceMs = 0;
         }
     };
-    auto enrollEngagedValidationRoutePackMembers = [this, bot, &isValidationCohortCombatLinked, &enrollValidationRoutePackMember]() -> void
+    auto recordValidationRouteScriptedTransition = [this, bot, &state, &power, stage, activity](Creature* creature) -> bool
+    {
+        if (!creature || _validationRoutePackGeneration != _validationRouteGeneration
+            || _validationRoutePackEngagedGuids.find(creature->GetGUID()) == _validationRoutePackEngagedGuids.end()
+            || _validationRoutePackTransitionGuids.find(creature->GetGUID()) != _validationRoutePackTransitionGuids.end())
+            return false;
+
+        auto entryItr = std::find(_config.ValidationRouteScriptedEventEntries.begin(), _config.ValidationRouteScriptedEventEntries.end(), creature->GetEntry());
+        if (entryItr == _config.ValidationRouteScriptedEventEntries.end())
+            return false;
+        size_t index = std::distance(_config.ValidationRouteScriptedEventEntries.begin(), entryItr);
+        if (index >= _config.ValidationRouteScriptedEventTransitionAuraIds.size())
+            return false;
+        uint32 auraId = _config.ValidationRouteScriptedEventTransitionAuraIds[index];
+        if (!auraId || !creature->HasAura(auraId) || creature->GetVictim())
+            return false;
+        if (_config.ValidationRouteScriptedEventRequirePassive && !creature->HasReactState(REACT_PASSIVE))
+            return false;
+
+        _validationRoutePackTransitionGuids.insert(creature->GetGUID());
+        std::string raw = BuildRawJson(bot, creature);
+        std::string semantic = BuildSemanticJson(bot, creature, "validation_route_scripted_transition", &power, stage, activity);
+        RecordEvent(state, bot, "validation_route_scripted_transition", creature, "manifest_transition_observed", raw.c_str(), semantic.c_str(), UnitHealthPct(creature), auraId);
+        return true;
+    };
+    auto enrollEngagedValidationRoutePackMembers = [this, bot, &isValidationCohortCombatLinked, &enrollValidationRoutePackMember, &recordValidationRouteScriptedTransition]() -> void
     {
         if (_config.ValidationRouteKind == "boss" || !bot)
             return;
@@ -7222,6 +7257,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
             if (isValidationCohortCombatLinked(creature))
                 enrollValidationRoutePackMember(creature, true);
+            recordValidationRouteScriptedTransition(creature);
         }
     };
     auto persistedValidationRoutePackHasLiveMembers = [this]() -> bool
@@ -7229,7 +7265,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (_validationRoutePackGeneration != _validationRouteGeneration)
             return false;
         for (ObjectGuid const& guid : _validationRoutePackMemberGuids)
-            if (_validationRoutePackDeathGuids.find(guid) == _validationRoutePackDeathGuids.end())
+            if (_validationRoutePackDeathGuids.find(guid) == _validationRoutePackDeathGuids.end()
+                && _validationRoutePackTransitionGuids.find(guid) == _validationRoutePackTransitionGuids.end())
                 return true;
         return false;
     };
@@ -14415,6 +14452,7 @@ std::string BotWorldPopulationMgr::BuildConfigJson() const
          << ",\"pack_member_count\":" << _validationRoutePackMemberGuids.size()
          << ",\"pack_engaged_count\":" << _validationRoutePackEngagedGuids.size()
          << ",\"pack_death_count\":" << _validationRoutePackDeathGuids.size()
+         << ",\"pack_transition_count\":" << _validationRoutePackTransitionGuids.size()
          << ",\"pack_observed_engagement\":" << (_validationRoutePackObservedEngagement ? "true" : "false")
          << ",\"alternate_target_entries\":[";
     for (size_t index = 0; index < _config.ValidationRouteAlternateTargetEntries.size(); ++index)
@@ -14424,6 +14462,23 @@ std::string BotWorldPopulationMgr::BuildConfigJson() const
         json << _config.ValidationRouteAlternateTargetEntries[index];
     }
     json << "]"
+         << ",\"scripted_event_entries\":[";
+    for (size_t index = 0; index < _config.ValidationRouteScriptedEventEntries.size(); ++index)
+    {
+        if (index)
+            json << ",";
+        json << _config.ValidationRouteScriptedEventEntries[index];
+    }
+    json << "]"
+         << ",\"scripted_event_transition_aura_ids\":[";
+    for (size_t index = 0; index < _config.ValidationRouteScriptedEventTransitionAuraIds.size(); ++index)
+    {
+        if (index)
+            json << ",";
+        json << _config.ValidationRouteScriptedEventTransitionAuraIds[index];
+    }
+    json << "]"
+         << ",\"scripted_event_require_passive\":" << (_config.ValidationRouteScriptedEventRequirePassive ? "true" : "false")
          << ",\"add_target_entries\":[";
     for (size_t index = 0; index < _config.ValidationRouteAddTargetEntries.size(); ++index)
     {
@@ -15121,6 +15176,7 @@ std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson(WorldBotState con
          << "{\"name\":\"validation_route_pack_member_count\",\"value\":" << _validationRoutePackMemberGuids.size() << "},"
          << "{\"name\":\"validation_route_pack_engaged_count\",\"value\":" << _validationRoutePackEngagedGuids.size() << "},"
          << "{\"name\":\"validation_route_pack_death_count\",\"value\":" << _validationRoutePackDeathGuids.size() << "},"
+         << "{\"name\":\"validation_route_pack_transition_count\",\"value\":" << _validationRoutePackTransitionGuids.size() << "},"
          << "{\"name\":\"validation_route_pack_observed_engagement\",\"value\":" << (_validationRoutePackObservedEngagement ? "true" : "false") << "},"
          << "{\"name\":\"validation_route_activation_applied\",\"value\":" << (state.ValidationRouteActivationApplied ? "true" : "false") << "},"
          << "{\"name\":\"validation_route_activation_attempts\",\"value\":" << state.ValidationRouteActivationAttempts << "},"

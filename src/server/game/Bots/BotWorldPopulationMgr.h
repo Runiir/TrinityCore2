@@ -81,6 +81,9 @@ struct BotWorldExperimentConfig
     std::vector<uint32> ValidationRouteAlternateTargetEntries;
     std::vector<uint32> ValidationRouteAddTargetEntries;
     std::vector<uint32> ValidationRoutePackTargetEntries;
+    std::vector<uint32> ValidationRouteScriptedEventEntries;
+    std::vector<uint32> ValidationRouteScriptedEventTransitionAuraIds;
+    bool ValidationRouteScriptedEventRequirePassive = false;
     float ValidationRouteClusterRadiusYards = 0.0f;
     uint32 ValidationRouteExpectedAliveCount = 0;
     uint32 ValidationRouteActivationDataId = 0;
@@ -296,6 +299,9 @@ private:
         std::vector<uint32> AlternateTargetEntries;
         std::vector<uint32> AddTargetEntries;
         std::vector<uint32> PackTargetEntries;
+        std::vector<uint32> ScriptedEventEntries;
+        std::vector<uint32> ScriptedEventTransitionAuraIds;
+        bool ScriptedEventRequirePassive = false;
         float ClusterRadiusYards = 0.0f;
         uint32 ExpectedAliveCount = 0;
         uint32 ActivationDataId = 0;
@@ -344,6 +350,7 @@ private:
         struct RouteProgressDiagnostic
         {
             uint64 RecordedAtMs = 0;
+            uint64 Generation = 0;
             std::string NodeId;
             std::string Kind;
             ObjectGuid TargetGuid;
@@ -1166,6 +1173,7 @@ private:
     GuidSet _validationRoutePackMemberGuids;
     GuidSet _validationRoutePackEngagedGuids;
     GuidSet _validationRoutePackDeathGuids;
+    GuidSet _validationRoutePackTransitionGuids;
     uint64 _validationRoutePackGeneration = 0;
     bool _validationRoutePackObservedEngagement = false;
     uint64 _validationRoutePackClearCandidateSinceMs = 0;

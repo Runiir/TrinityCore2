@@ -286,6 +286,7 @@ def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any],
             node_kind = route_node_kind(step)
             cluster_entries = pack_target_entries(scenario_id, step)
             event_entries = scripted_event_entries(scenario_id, step)
+            event_transition_aura_ids = [int(aura_id) for aura_id in (step.get("scripted_event_transition_aura_ids") or []) if int(aura_id)]
             cluster_radius_yards = 0.0 if node_kind == "discovery_leg" else float(step.get("cluster_radius_yards") or (90.0 if step.get("kind") == "trash" else 0.0))
             route = {
                 "scenario_id": scenario_id,
@@ -308,6 +309,8 @@ def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any],
                 "cluster_radius_yards": cluster_radius_yards,
                 "pack_target_entries": cluster_entries,
                 "scripted_event_entries": event_entries,
+                "scripted_event_transition_aura_ids": event_transition_aura_ids,
+                "scripted_event_require_passive": bool(step.get("scripted_event_require_passive")),
                 "expected_alive_count_semantics": "descriptive_only",
                 "completion_policy": step.get("completion_policy") or ("cluster_clear_after_pull" if node_kind in {"trash_cluster", "discovery_leg"} else ("arrival" if node_kind in {"travel", "regroup", "descent"} else "boss_kill")),
                 "coordinates_valid": coordinates_valid,
