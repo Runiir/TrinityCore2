@@ -1895,15 +1895,15 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert stonecore_entry["bot_start_map_id"] == 725
     assert stonecore_entry["bot_start_x"] == 851.052
     assert stonecore_entry["bot_start_z"] == 317.266
-    assert corborus["x"] == 1150.34
-    assert corborus["y"] == 947.063
+    assert corborus["x"] == 1182.0
+    assert corborus["y"] == 960.0
     assert corborus["z"] == 283.89
-    assert corborus["o"] == 4.69494
-    assert corborus["cluster_center"] == [1150.34, 947.063, 283.89]
-    assert corborus["bot_start_x"] == 1150.34
-    assert corborus["bot_start_y"] == 947.063
+    assert corborus["o"] == 3.55
+    assert corborus["cluster_center"] == [1182.0, 960.0, 283.89]
+    assert corborus["bot_start_x"] == 1182.0
+    assert corborus["bot_start_y"] == 960.0
     assert corborus["bot_start_z"] == 283.89
-    assert corborus["bot_start_o"] == 4.69494
+    assert corborus["bot_start_o"] == 3.55
     assert corborus["activation_data_id"] == 10
     assert corborus["activation_data_value"] == 1
     assert corborus["activation_summon_entry"] == 0
@@ -1973,7 +1973,8 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert corborus_antechamber_pack["cluster_radius_yards"] == 55.0
     assert corborus_antechamber_pack["expected_alive_count"] == len(corborus_antechamber_pack["pack_target_entries"])
     assert corborus_antechamber_pack["expected_alive_count_semantics"] == "descriptive_only"
-    assert {42810, 42696, 43430, 43537}.issubset(set(corborus_antechamber_pack["pack_target_entries"]))
+    assert {42696, 43430, 43537}.issubset(set(corborus_antechamber_pack["pack_target_entries"]))
+    assert 42810 not in corborus_antechamber_pack["pack_target_entries"]
     assert slabhide["node_kind"] == "boss"
     assert slabhide["completion_policy"] == "boss_kill"
     assert nefarian["expected_bot_count"] == 10
