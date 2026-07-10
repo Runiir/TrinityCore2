@@ -4,6 +4,7 @@ import argparse
 import base64
 import html
 import json
+import math
 import os
 import select
 import subprocess
@@ -805,6 +806,97 @@ def route_failure(entry: dict[str, Any]) -> bool:
     return action in ROUTE_FAILURE_ACTIONS or (action == "unstuck" and result in {"failed", "failure"}) or "target_lost" in result
 
 
+BOSS_ATTEMPT_FAILURE_ACTIONS = {"death", "repeated_death", "raid_wipe"}
+BOSS_HEALTH_PROGRESS_EPSILON = 1e-6
+
+
+def boss_attempt_failure(entry: dict[str, Any]) -> bool:
+    return route_failure(entry) or str(entry.get("action") or "") in BOSS_ATTEMPT_FAILURE_ACTIONS
+
+
+def boss_route_health_progress(entries: list[dict[str, Any]]) -> int:
+    samples: list[tuple[dict[str, Any], tuple[str, int], tuple[str, int, int, int], float]] = []
+    failures: list[tuple[dict[str, Any], tuple[str, int]]] = []
+    for entry in entries:
+        if boss_attempt_failure(entry):
+            scope = route_scope(entry)
+            if scope != ("", 0):
+                failures.append((entry, scope))
+        route_progress = entry.get("route_progress") if isinstance(entry.get("route_progress"), dict) else {}
+        route = route_progress.get("route") if isinstance(route_progress.get("route"), dict) else {}
+        target = route_progress.get("target") if isinstance(route_progress.get("target"), dict) else {}
+        try:
+            node_id = str(route.get("node_id") or "")
+            generation = int(route.get("generation") or 0)
+            target_guid = int(target.get("guid") or 0)
+            target_entry = int(target.get("entry") or 0)
+            health = float(target.get("hp_pct"))
+        except (TypeError, ValueError):
+            continue
+        if (
+            str(route.get("kind") or "") != "boss"
+            or not node_id
+            or generation <= 0
+            or target_guid <= 0
+            or target_entry <= 0
+            or not math.isfinite(health)
+            or not 0.0 < health <= 1.0
+        ):
+            continue
+        scope = (node_id, generation)
+        samples.append((entry, scope, (node_id, generation, target_guid, target_entry), health))
+
+    ordered_groups: dict[tuple[str, tuple[str, int, int, int], tuple[int, ...]], list[tuple[dict[str, Any], float]]] = {}
+    for entry, scope, target_key, health in samples:
+        timestamp = int(entry.get("timestamp_ms") or 0)
+        sequence = int(entry.get("sequence") or 0)
+        if timestamp:
+            clock = "timestamp"
+        elif sequence:
+            clock = "sequence"
+        else:
+            continue
+        epoch: list[int] = []
+        ambiguous = False
+        for index, (failure, failure_scope) in enumerate(failures):
+            if failure_scope != scope:
+                continue
+            failure_timestamp = int(failure.get("timestamp_ms") or 0)
+            failure_sequence = int(failure.get("sequence") or 0)
+            failure_clock = "timestamp" if failure_timestamp else "sequence" if failure_sequence else ""
+            if failure_clock != clock:
+                continue
+            if trace_after(entry, failure):
+                epoch.append(index)
+            elif not trace_after(failure, entry):
+                ambiguous = True
+                break
+        if not ambiguous:
+            ordered_groups.setdefault((clock, target_key, tuple(epoch)), []).append((entry, health))
+
+    progress = 0
+    for (clock, _target_key, _epoch), rows in ordered_groups.items():
+        if clock == "timestamp":
+            rows.sort(key=lambda row: (int(row[0].get("timestamp_ms") or 0), int(row[0].get("sequence") or 0)))
+        else:
+            rows.sort(key=lambda row: int(row[0].get("sequence") or 0))
+        best_entry: dict[str, Any] | None = None
+        best_health = 0.0
+        for entry, health in rows:
+            if best_entry is None:
+                best_entry, best_health = entry, health
+                continue
+            if not trace_after(entry, best_entry):
+                continue
+            if health >= 0.95 and best_health <= 0.90:
+                best_entry, best_health = entry, health
+                continue
+            if health < best_health - BOSS_HEALTH_PROGRESS_EPSILON:
+                progress += 1
+                best_entry, best_health = entry, health
+    return progress
+
+
 def is_route_progress(entry: dict[str, Any], scope: tuple[str, int]) -> bool:
     same_scope = scope == ("", 0) or route_scope(entry) == scope
     return same_scope and (
@@ -1129,37 +1221,7 @@ def live_evidence(
     for entry in entries:
         count_route_progress(entry.get("route_progress") if isinstance(entry, dict) else None)
 
-    route_combat_progress_diagnoses = 0
-    target_best_health: dict[tuple[int, str, int, int, int], float] = {}
-    for payload in parse_json_objects(raw_output):
-        if not (payload.get("diagnosis_schema_version") or payload.get("diagnoses") or payload.get("diagnosis")):
-            continue
-        for row in diagnosis_rows(payload):
-            route_progress = nested_get(row, ["diagnosis", "route_progress"], None)
-            if not isinstance(route_progress, dict):
-                route_progress = nested_get(row, ["snapshot", "route_progress"], None)
-            if not isinstance(route_progress, dict):
-                continue
-            no_progress = route_progress.get("no_progress") if isinstance(route_progress.get("no_progress"), dict) else {}
-            if str(no_progress.get("reason") or "") != "route_target_combat_progress":
-                continue
-            route = route_progress.get("route") if isinstance(route_progress.get("route"), dict) else {}
-            target = route_progress.get("target") if isinstance(route_progress.get("target"), dict) else {}
-            try:
-                health = float(target["hp_pct"])
-            except (KeyError, TypeError, ValueError):
-                continue
-            key = (
-                int(nested_get(row, ["identity", "bot_guid"], 0) or 0),
-                str(route.get("node_id") or ""),
-                int(route.get("generation") or 0),
-                int(target.get("guid") or 0),
-                int(target.get("entry") or 0),
-            )
-            previous = target_best_health.get(key)
-            if previous is not None and health < previous:
-                route_combat_progress_diagnoses += 1
-            target_best_health[key] = min(previous, health) if previous is not None else health
+    route_combat_progress_diagnoses = boss_route_health_progress(entries)
 
     action_text = " ".join(sorted(action_names)).lower()
     quest_progress = max(int(status.get("quest_objective_progress") or 0), int(summary.get("quest_objective_progress") or 0))
@@ -2083,6 +2145,14 @@ def run_worldserver_completion_watchdog(
             if validation_route_manifest and semantic_progress_plateau:
                 report["completion_reason"] = "semantic_progress_plateau_watchdog"
                 report["watchdog_state"]["semantic_progress_plateau"] = True
+                if "semantic_progress_plateau" not in report["failure_labels"]:
+                    report["failure_labels"].append("semantic_progress_plateau")
+                report["failure_reason"] = report["failure_labels"][0]
+                report["failed"] = max(int(report.get("failed") or 0), 1)
+                report["all_passed"] = False
+                report["acceptable_final_evidence"] = False
+                if "failure_labels_present" not in report["final_evidence_rejections"]:
+                    report["final_evidence_rejections"].append("failure_labels_present")
                 write_json(output_dir / "report.json", report)
                 break
             if report["watchdog_state"].get("no_progress") and no_progress_expired:

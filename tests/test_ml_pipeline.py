@@ -37,7 +37,7 @@ from tools.bot_ml.build_validation_scenario_manifests import build_manifests as 
 from tools.bot_ml.build_live_scenario_reports import build_reports as build_live_scenario_reports, build_reports_from_live_reports, main as live_scenario_reports_main
 from tools.bot_ml.build_validation_run_plan import build_plan as build_validation_run_plan
 from tools.bot_ml.build_validation_run_status import build_status as build_validation_run_status
-from tools.bot_ml.run_live_bot_validation import bounded_console_deadline, build_bot_pool_reset_sql, command_script, live_validation_report, load_scenario_reports, load_validation_route, main as live_validation_main, parse_json_objects, parse_soap_result, read_until_console_prompt, route_segment_complete, run_worldserver, run_worldserver_completion_watchdog, split_sql_statements, trace_after, trinity_config_bool, unresolved_route_stuck_count, upsert_trinity_config, watchdog_state, write_validation_config
+from tools.bot_ml.run_live_bot_validation import boss_route_health_progress, bounded_console_deadline, build_bot_pool_reset_sql, command_script, live_validation_report, load_scenario_reports, load_validation_route, main as live_validation_main, parse_json_objects, parse_soap_result, read_until_console_prompt, route_segment_complete, run_worldserver, run_worldserver_completion_watchdog, split_sql_statements, trace_after, trinity_config_bool, unresolved_route_stuck_count, upsert_trinity_config, watchdog_state, write_validation_config
 from tools.bot_ml.orchestrator_daemon import codex_command, detect_rate_limit, handle_rate_limit, initial_state, run_one_cycle, sleep_until_resume
 from tools.bot_ml.generate_lane_configs import write_lane_config
 from tools.bot_ml.promote_live_validation_artifact import promote
@@ -5706,6 +5706,8 @@ def test_completion_watchdog_stops_manifest_run_on_semantic_progress_plateau(tmp
 
     assert report["completion_reason"] == "semantic_progress_plateau_watchdog"
     assert report["watchdog_state"]["semantic_progress_plateau"] is True
+    assert "semantic_progress_plateau" in report["failure_labels"]
+    assert report["all_passed"] is False
     assert report["watchdog_state"]["progress_total"] == 4
     assert report["evidence"]["validation_route_combat_progress_diagnoses"] == 0
     assert report["evidence"]["validation_route_actions"] > 0
@@ -5899,35 +5901,84 @@ TC> {"duration_minutes":3,"decisions":480,"total_kills":3}
     assert "validation_route_stuck_loop" not in report["failure_labels"]
 
 
-def test_watchdog_state_counts_only_strict_combat_health_improvement():
-    output = """
-TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":480,"kills":3}
-TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"diagnosis":{"route_progress":{"route":{"kind":"trash","node_id":"crystalspawn_corridor"},"target":{"entry":42810,"guid":106,"hp_pct":0.8},"no_progress":{"count":0,"threshold":20,"reason":"route_target_combat_progress"}}}}]}
-TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"diagnosis":{"route_progress":{"route":{"kind":"trash","node_id":"crystalspawn_corridor"},"target":{"entry":42810,"guid":106,"hp_pct":0.8},"no_progress":{"count":0,"threshold":20,"reason":"route_target_combat_progress"}}}}]}
-TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"diagnosis":{"route_progress":{"route":{"kind":"trash","node_id":"crystalspawn_corridor"},"target":{"entry":42810,"guid":106,"hp_pct":0.7},"no_progress":{"count":0,"threshold":20,"reason":"route_target_combat_progress"}}}}]}
-TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"diagnosis":{"route_progress":{"route":{"kind":"trash","node_id":"crystalspawn_corridor"},"target":{"entry":42810,"guid":106,"hp_pct":0.7},"no_progress":{"count":0,"threshold":20,"reason":"route_target_combat_progress"}}}}]}
-TC> {"duration_minutes":3,"decisions":480,"total_kills":3}
-"""
+def boss_health_entry(sequence, health, *, guid=85, node="corborus", generation=2, bot_guid=1):
+    return {
+        "sequence": sequence,
+        "bot_guid": bot_guid,
+        "route_progress": {
+            "route": {"kind": "boss", "node_id": node, "generation": generation},
+            "target": {"entry": 43438, "guid": guid, "hp_pct": health},
+            "no_progress": {"reason": "boss_route_no_health_progress"},
+        },
+    }
+
+
+def test_boss_health_progress_counts_party_shared_strict_minima_only():
+    entries = [boss_health_entry(1, 1.0, bot_guid=bot) for bot in range(1, 6)]
+    entries += [boss_health_entry(10 + bot, 0.8, bot_guid=bot) for bot in range(1, 6)]
+    entries += [boss_health_entry(20, 0.85), boss_health_entry(21, 0.8), boss_health_entry(22, 0.7)]
+
+    assert boss_route_health_progress(entries) == 2
+
+
+def test_boss_health_progress_resets_only_for_same_scope_attempt_failures():
+    entries = [
+        boss_health_entry(1, 1.0),
+        boss_health_entry(2, 0.8),
+        {"sequence": 3, "action": "raid_wipe", "route_node_id": "other", "route_generation": 2},
+        boss_health_entry(4, 0.75),
+        {"sequence": 5, "action": "death", "route_node_id": "corborus", "route_generation": 2},
+        boss_health_entry(6, 1.0),
+        boss_health_entry(7, 0.7),
+    ]
+
+    assert boss_route_health_progress(entries) == 3
+
+
+def test_boss_health_progress_handles_safe_full_reset_and_new_target_attempts():
+    entries = [
+        boss_health_entry(1, 1.0),
+        boss_health_entry(2, 0.8),
+        boss_health_entry(3, 0.98),
+        boss_health_entry(4, 0.7),
+        boss_health_entry(5, 1.0, guid=551),
+        boss_health_entry(6, 0.6, guid=551),
+    ]
+
+    assert boss_route_health_progress(entries) == 3
+
+
+def test_boss_health_progress_does_not_compare_partial_order_clock_domains():
+    timestamp_baseline = boss_health_entry(1, 1.0)
+    timestamp_baseline["timestamp_ms"] = 100
+    timestamp_baseline.pop("sequence")
+
+    assert boss_route_health_progress([timestamp_baseline, boss_health_entry(2, 0.5)]) == 0
+
+
+def test_run037_boss_health_regression_preserves_progress_across_wipe_and_new_spawn():
+    entries = [
+        boss_health_entry(1, 0.98),
+        boss_health_entry(2, 0.92),
+        boss_health_entry(3, 0.64),
+        boss_health_entry(4, 0.586),
+        {"sequence": 5, "action": "raid_wipe", "route_node_id": "corborus", "route_generation": 2},
+        boss_health_entry(6, 1.0, guid=551),
+        boss_health_entry(7, 0.739, guid=551),
+        boss_health_entry(8, 0.665, guid=551),
+    ]
+    output = "\n".join(
+        [
+            'TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":628,"kills":20}',
+            "TC> " + json.dumps({"trace_schema_version": 1, "entries": entries}),
+            'TC> {"duration_minutes":15,"decisions":628,"total_kills":20}',
+        ]
+    )
 
     report = live_validation_report(output)
 
-    assert report["evidence"]["validation_route_combat_progress_diagnoses"] == 1
-    assert report["watchdog_state"]["progress_total"] == 4
+    assert report["evidence"]["validation_route_combat_progress_diagnoses"] == 5
     assert report["watchdog_state"]["semantic_progress_plateau"] is False
-
-
-def test_watchdog_health_baselines_are_isolated_per_bot():
-    output = """
-TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":480,"kills":3}
-TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"diagnosis":{"route_progress":{"route":{"kind":"trash","node_id":"entry","generation":1},"target":{"entry":43391,"guid":9,"hp_pct":0.8},"no_progress":{"count":0,"threshold":20,"reason":"route_target_combat_progress"}}}},{"identity":{"bot_guid":2},"diagnosis":{"route_progress":{"route":{"kind":"trash","node_id":"entry","generation":1},"target":{"entry":43391,"guid":9,"hp_pct":0.5},"no_progress":{"count":0,"threshold":20,"reason":"route_target_combat_progress"}}}}]}
-TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"diagnosis":{"route_progress":{"route":{"kind":"trash","node_id":"entry","generation":1},"target":{"entry":43391,"guid":9,"hp_pct":0.8},"no_progress":{"count":0,"threshold":20,"reason":"route_target_combat_progress"}}}},{"identity":{"bot_guid":2},"diagnosis":{"route_progress":{"route":{"kind":"trash","node_id":"entry","generation":1},"target":{"entry":43391,"guid":9,"hp_pct":0.5},"no_progress":{"count":0,"threshold":20,"reason":"route_target_combat_progress"}}}}]}
-TC> {"duration_minutes":3,"decisions":480,"total_kills":3}
-"""
-
-    report = live_validation_report(output)
-
-    assert report["evidence"]["validation_route_combat_progress_diagnoses"] == 0
-    assert report["watchdog_state"]["progress_total"] == 3
 
 
 def test_live_bot_validation_treats_terminal_route_no_progress_diagnosis_as_watchdog_failure():
