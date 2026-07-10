@@ -882,6 +882,10 @@ def test_quest_first_portfolio_routing_surface():
     assert "if (!SpellLooksLikeGroundDanger(castSpell) && !profileAllowsCastMovement)" in validation_route_objective
     assert "for (auto const& [_, application] : bot->GetAppliedAuras())" in validation_route_objective
     assert "effect.ApplyAuraName == SPELL_AURA_PERIODIC_TRIGGER_SPELL" in validation_route_objective
+    assert "areaTargeted = areaTargeted || effect.IsTargetingArea();" in validation_route_objective
+    assert "if (!periodicTrigger || areaTargeted)" in validation_route_objective
+    assert "member->HasAura(auraSpell->Id)" in validation_route_objective
+    assert "if (sharedByParty)" in validation_route_objective
     assert_ordered(
         validation_route_objective,
         "inspectCaster(preferredTarget);",

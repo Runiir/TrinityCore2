@@ -8522,16 +8522,31 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     continue;
 
                 bool periodicTrigger = false;
+                bool areaTargeted = false;
                 for (SpellEffectInfo const& effect : auraSpell->Effects)
                 {
+                    areaTargeted = areaTargeted || effect.IsTargetingArea();
                     if (effect.ApplyAuraName == SPELL_AURA_PERIODIC_TRIGGER_SPELL
                         || effect.ApplyAuraName == SPELL_AURA_PERIODIC_TRIGGER_SPELL_WITH_VALUE)
-                    {
                         periodicTrigger = true;
-                        break;
+                }
+                if (!periodicTrigger || areaTargeted)
+                    continue;
+
+                bool sharedByParty = false;
+                if (Group* group = bot->GetGroup())
+                {
+                    for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
+                    {
+                        Player* member = itr->GetSource();
+                        if (member && member != bot && member->GetMap() == bot->GetMap() && member->HasAura(auraSpell->Id))
+                        {
+                            sharedByParty = true;
+                            break;
+                        }
                     }
                 }
-                if (!periodicTrigger && !SpellLooksLikeGroundDanger(auraSpell))
+                if (sharedByParty)
                     continue;
 
                 caster = ObjectAccessor::GetUnit(*bot, aura->GetCasterGUID());
