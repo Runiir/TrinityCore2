@@ -1702,6 +1702,13 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         "enrollEngagedValidationRoutePackMembers();",
         "persistedValidationRoutePackHasLiveMembers()",
     )
+    defeated_pack_block = route_objective.split("auto recordDefeatedValidationRoutePackMembers", 1)[1].split("auto routeUsableCombatTarget", 1)[0]
+    assert "_validationRoutePackEngagedGuids.find(guid) == _validationRoutePackEngagedGuids.end()" in defeated_pack_block
+    assert "_validationRoutePackDeathGuids.find(guid) != _validationRoutePackDeathGuids.end()" in defeated_pack_block
+    assert "_validationRoutePackTransitionGuids.find(guid) != _validationRoutePackTransitionGuids.end()" in defeated_pack_block
+    assert "bot->GetMap()->GetCreature(guid); creature && !creature->IsAlive() && !creature->GetHealth()" in defeated_pack_block
+    assert 'recordValidationRouteTrashKill(creature, "enrolled_member_seen_dead")' in defeated_pack_block
+    assert "if (!creature)" not in defeated_pack_block
     transition_block = route_objective.split("auto recordValidationRouteScriptedTransition", 1)[1].split("auto enrollEngagedValidationRoutePackMembers", 1)[0]
     for required in [
         "_validationRoutePackEngagedGuids.find(creature->GetGUID())",
@@ -1713,7 +1720,10 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         "_validationRoutePackTransitionGuids.insert(creature->GetGUID())",
         "_validationRouteFocusGuid == transitionedGuid",
         "cohortState.TargetGuid == transitionedGuid",
+        "cohortState.LastDecisionTargetGuid == transitionedGuid",
         "member->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE)",
+        "cohortState.LastCombatAttempt.TargetGuid == transitionedGuid",
+        "cohortState.LastRouteProgress.TargetGuid == transitionedGuid",
         "cohortState.ActivePathValid = false",
         '"validation_route_scripted_transition"',
     ]:

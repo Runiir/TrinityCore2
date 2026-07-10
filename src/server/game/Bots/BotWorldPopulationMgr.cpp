@@ -7261,10 +7261,16 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 member->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
             if (cohortState.TargetGuid == transitionedGuid)
                 cohortState.TargetGuid.Clear();
+            if (cohortState.LastDecisionTargetGuid == transitionedGuid)
+                cohortState.LastDecisionTargetGuid.Clear();
             cohortState.ValidationRouteCombatProgressTargetGuid.Clear();
             cohortState.ValidationRoutePackProgressTargetGuid.Clear();
             cohortState.ValidationRouteCombatNoProgressCount = 0;
             cohortState.ValidationRoutePackNoProgressCount = 0;
+            if (cohortState.LastCombatAttempt.TargetGuid == transitionedGuid)
+                cohortState.LastCombatAttempt = WorldBotState::CombatAttemptDiagnostic();
+            if (cohortState.LastRouteProgress.TargetGuid == transitionedGuid)
+                cohortState.LastRouteProgress = WorldBotState::RouteProgressDiagnostic();
             cohortState.ActivePathValid = false;
         }
         std::string raw = BuildRawJson(bot, creature);
@@ -7724,6 +7730,24 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         }
 
         return false;
+    };
+    auto recordDefeatedValidationRoutePackMembers = [this, bot, &recordValidationRouteTrashKill]() -> bool
+    {
+        if (_config.ValidationRouteKind == "boss" || !bot || !bot->GetMap()
+            || _validationRoutePackGeneration != _validationRouteGeneration)
+            return false;
+
+        bool recorded = false;
+        for (ObjectGuid const& guid : _validationRoutePackMemberGuids)
+        {
+            if (_validationRoutePackEngagedGuids.find(guid) == _validationRoutePackEngagedGuids.end()
+                || _validationRoutePackDeathGuids.find(guid) != _validationRoutePackDeathGuids.end()
+                || _validationRoutePackTransitionGuids.find(guid) != _validationRoutePackTransitionGuids.end())
+                continue;
+            if (Creature* creature = bot->GetMap()->GetCreature(guid); creature && !creature->IsAlive() && !creature->GetHealth())
+                recorded = recordValidationRouteTrashKill(creature, "enrolled_member_seen_dead") || recorded;
+        }
+        return recorded;
     };
     auto routeUsableCombatTarget = [this, bot, &isValidationRouteCombatTarget, &isEligibleTrashClusterMob](Unit* candidate) -> Unit*
     {
@@ -9073,7 +9097,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         return true;
     if (tryValidationRouteAdds())
         return true;
-    if (recordDefeatedValidationRouteTarget(target, "stale_target_seen_dead")
+    if (recordDefeatedValidationRoutePackMembers()
+        || recordDefeatedValidationRouteTarget(target, "stale_target_seen_dead")
         || recordDefeatedValidationRouteTarget(bot->GetVictim(), "stale_victim_seen_dead"))
     {
         situation = "validation_route_recovery";
