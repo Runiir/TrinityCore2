@@ -1072,6 +1072,7 @@ private:
     void LoadValidationRouteManifest();
     bool ApplyValidationRouteManifestNode(size_t index, char const* reason);
     bool MaybeAdvanceValidationRouteManifest();
+    void ResetValidationRouteBossAddDensityState();
     void ResetValidationRouteRuntimeState(char const* reason);
     bool ValidationRouteHasProgressSinceApply() const;
     ReplayRecord LoadReplayRecord(std::string const& replayType, std::string const& selector) const;
@@ -1186,6 +1187,17 @@ private:
     uint32 _validationRouteBossSlowProgressCount = 0;
     bool _validationRouteBossAddDensityPhase = false;
     uint64 _validationRouteBossAddDensityGeneration = 0;
+    bool _validationRouteBossAddEscapeActive = false;
+    uint64 _validationRouteBossAddEscapeGeneration = 0;
+    float _validationRouteBossAddEscapeX = 0.0f;
+    float _validationRouteBossAddEscapeY = 0.0f;
+    float _validationRouteBossAddEscapeZ = 0.0f;
+    float _validationRouteBossAddEscapeAnchorX = 0.0f;
+    float _validationRouteBossAddEscapeAnchorY = 0.0f;
+    float _validationRouteBossAddEscapeAnchorZ = 0.0f;
+    float _validationRouteBossAddCentroidX = 0.0f;
+    float _validationRouteBossAddCentroidY = 0.0f;
+    GuidSet _validationRouteBossAddEscapeIssuedGuids;
     bool _validationRouteActivationApplied = false;
     uint32 _validationRouteActivationAttempts = 0;
     std::vector<ValidationRouteManifestNode> _validationRouteManifest;

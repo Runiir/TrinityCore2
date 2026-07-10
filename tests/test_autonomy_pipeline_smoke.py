@@ -2208,16 +2208,17 @@ def test_profile_combat_resolver_can_require_legal_density_actions_for_exact_ene
     assert "ResolveProfileCombatAction(bot, target, hostileCount, densityOnly)" in executor
 
 
-def test_validation_route_high_density_adds_move_from_centroid_and_fail_closed_to_density_contract():
+def test_validation_route_high_density_adds_use_shared_escape_and_fail_closed_to_density_contract():
     mgr = read(BOT_MGR)
     objective = function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteObjective")
     start = objective.index("auto tryValidationRouteAdds")
     end = objective.index("auto markValidationRouteTerminalAfterProgress", start)
     adds = objective[start:end]
     reset = function_body(mgr, "void BotWorldPopulationMgr::ResetValidationRouteRuntimeState")
+    density_reset = function_body(mgr, "void BotWorldPopulationMgr::ResetValidationRouteBossAddDensityState")
 
-    assert "nearbyAddX += creature->GetPositionX();" in adds
-    assert "nearbyAddY += creature->GetPositionY();" in adds
+    assert "addX += creature->GetPositionX();" in adds
+    assert "addY += creature->GetPositionY();" in adds
     assert 'observedBossEngagement = _config.ValidationRouteKind == "boss"' in adds
     assert "!_validationRouteBossProgressTargetGuid.IsEmpty()" in adds
     assert "ObjectAccessor::GetUnit(*bot, _validationRouteBossProgressTargetGuid)" in adds
@@ -2225,31 +2226,79 @@ def test_validation_route_high_density_adds_move_from_centroid_and_fail_closed_t
     assert "_validationRouteBossAddDensityGeneration = _validationRouteGeneration;" in adds
     assert "_validationRouteBossAddDensityGeneration != _validationRouteGeneration || !cohortSwarmActive" in adds
     assert "_validationRouteBossAddDensityPhase && routeBossAttackable" in adds
-    assert "_validationRouteBossAddDensityPhase = false;" in reset
-    assert "_validationRouteBossAddDensityGeneration = 0;" in reset
+    assert "ResetValidationRouteBossAddDensityState();" in reset
+    assert "_validationRouteBossAddDensityPhase = false;" in density_reset
+    assert "_validationRouteBossAddDensityGeneration = 0;" in density_reset
     killed_focus = objective[objective.index("auto clearValidationRouteKilledFocus"):start]
     assert "if (_validationRouteBossProgressTargetGuid == killedGuid)" in killed_focus
-    assert "_validationRouteBossAddDensityPhase = false;" in killed_focus
-    assert "_validationRouteBossAddDensityGeneration = 0;" in killed_focus
+    assert "ResetValidationRouteBossAddDensityState();" in killed_focus
     assert '\\"boss_add_density_phase\\"' in mgr
     assert '\\"boss_add_density_generation\\"' in mgr
-    assert 'role != "healer"' in adds
     assert "profile.MovementDirective != \"melee\"" in adds
-    assert "bot->GetRelativeAngle(centroidX, centroidY) + float(M_PI)" in adds
-    assert 'RecordEvent(state, bot, "boss_add_density", add, "move_from_add_centroid"' in adds
+    assert "densityTank->GetRelativeAngle(centroidX, centroidY) + float(M_PI)" in adds
+    assert 'escapeIssued ? "reissue_shared_escape_unreached" : "move_to_shared_escape"' in adds
     assert "ResolveProfileCombatAction(bot, add, highDensityPhase ? addCount : 0, highDensityPhase)" in adds
     assert "ExecuteProfileCombatAction(&state, bot, add, &profileAction, addCount, true)" in adds
     assert 'RecordEvent(state, bot, "boss_add_density", add, "no_legal_density_action"' in adds
     assert 'densityGenerator ? "resource_generator_selected" : "area_action_selected"' in adds
     assert 'densityGenerator ? "generate_resource_boss_add_density"' in adds
     assert 'action = "hold_boss_add_density";' in adds
-    assert_ordered(adds, "move_from_add_centroid", 'if (role == "healer")', "no_legal_density_action")
+    assert_ordered(adds, "tryRouteGroupHeal(bot, add)", "move_to_shared_escape", 'if (role == "healer")', "no_legal_density_action")
     assert "43438" not in adds
     assert "43917" not in adds
 
     density_branch = adds[adds.index("if (highDensityPhase)", adds.index("BotActionResult result")):]
     density_branch = density_branch[:density_branch.index("else\n            {")]
     assert "executor.Pull" not in density_branch
+
+
+def test_density_action_anchor_is_local_range_compatible_and_not_shared_cleanup_focus():
+    objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    start = objective.index("auto tryValidationRouteAdds")
+    end = objective.index("auto markValidationRouteTerminalAfterProgress", start)
+    adds = objective[start:end]
+
+    assert "std::vector<Creature*> localAdds;" in adds
+    assert "if (highDensityPhase && role != \"healer\")" in adds
+    assert "for (Creature* candidate : localAdds)" in adds
+    assert 'profile.MovementDirective == "melee"' in adds
+    assert "distance < minRange" in adds
+    assert "distance > maxRange" in adds
+    assert "distance < bestDistance || (distance == bestDistance && guid < bestAnchorGuid)" in adds
+    assert "add = densityAnchor;" in adds
+    assert "sharedFocusValid = false;" in adds
+    assert "if (!highDensityPhase && !sharedFocusValid)" in adds
+    assert '"no_compatible_density_anchor"' in adds
+    assert_ordered(adds, "add = densityAnchor;", "if (!highDensityPhase && !sharedFocusValid)")
+
+
+def test_density_escape_is_one_generation_scoped_tank_relative_point_with_healer_priority():
+    mgr = read(BOT_MGR)
+    objective = function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    start = objective.index("auto tryValidationRouteAdds")
+    end = objective.index("auto markValidationRouteTerminalAfterProgress", start)
+    adds = objective[start:end]
+    reset = function_body(mgr, "void BotWorldPopulationMgr::ResetValidationRouteBossAddDensityState")
+
+    assert "Player* densityTank = nullptr;" in adds
+    assert "Player* densityHealer = nullptr;" in adds
+    assert "BotClassSpecActionProfileStore::Build(densityHealer, \"healer\")" in adds
+    assert "anchorLeash = std::min(30.0f, healerRange - 2.0f)" in adds
+    assert "_validationRouteBossAddEscapeAnchorX = densityTank->GetPositionX();" in adds
+    assert "bot == densityTank && centroidMoved" in adds
+    assert "_validationRouteBossAddEscapeIssuedGuids.clear();" in adds
+    assert "_validationRouteBossAddEscapeGeneration == _validationRouteGeneration" in adds
+    assert "if (highDensityPhase && role == \"healer\" && tryRouteGroupHeal(bot, add))" in adds
+    assert "_validationRouteBossAddEscapeIssuedGuids.insert(bot->GetGUID());" in adds
+    assert "bool shouldIssueEscape = !escapeIssued || (!reachedEscape && !escapeMovementPending);" in adds
+    assert 'action = "continue_to_boss_add_density_escape";' in adds
+    assert "_validationRouteBossAddEscapeActive = false;" in reset
+    assert "_validationRouteBossAddEscapeGeneration = 0;" in reset
+    assert "_validationRouteBossAddEscapeIssuedGuids.clear();" in reset
+    assert '\\"boss_add_escape_active\\"' in mgr
+    assert '\\"boss_add_escape_issued_count\\"' in mgr
+    assert '\\"validation_route_boss_add_escape_distance\\"' in mgr
+    assert_ordered(adds, "tryRouteGroupHeal(bot, add)", "MoveBotToPoint(state, bot, _validationRouteBossAddEscapeX")
 
 
 def test_shared_density_latch_uses_cohort_observation_before_swarm_end_clear():

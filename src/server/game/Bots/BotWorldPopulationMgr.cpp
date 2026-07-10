@@ -1715,8 +1715,7 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
     _validationRouteManifestLoadError.clear();
     _validationRouteProgressBaselineKills = _metrics.Kills;
     _validationRouteObservedEngagement = false;
-    _validationRouteBossAddDensityPhase = false;
-    _validationRouteBossAddDensityGeneration = 0;
+    ResetValidationRouteBossAddDensityState();
     LoadValidationRouteManifest();
 
     BotTelemetryBufferConfig telemetry;
@@ -1888,6 +1887,23 @@ bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode(size_t index, char 
     return true;
 }
 
+void BotWorldPopulationMgr::ResetValidationRouteBossAddDensityState()
+{
+    _validationRouteBossAddDensityPhase = false;
+    _validationRouteBossAddDensityGeneration = 0;
+    _validationRouteBossAddEscapeActive = false;
+    _validationRouteBossAddEscapeGeneration = 0;
+    _validationRouteBossAddEscapeX = 0.0f;
+    _validationRouteBossAddEscapeY = 0.0f;
+    _validationRouteBossAddEscapeZ = 0.0f;
+    _validationRouteBossAddEscapeAnchorX = 0.0f;
+    _validationRouteBossAddEscapeAnchorY = 0.0f;
+    _validationRouteBossAddEscapeAnchorZ = 0.0f;
+    _validationRouteBossAddCentroidX = 0.0f;
+    _validationRouteBossAddCentroidY = 0.0f;
+    _validationRouteBossAddEscapeIssuedGuids.clear();
+}
+
 void BotWorldPopulationMgr::ResetValidationRouteRuntimeState(char const* reason)
 {
     _validationRouteFocusGuid.Clear();
@@ -1899,8 +1915,7 @@ void BotWorldPopulationMgr::ResetValidationRouteRuntimeState(char const* reason)
     _validationRouteFocusSeenMs = 0;
     _validationRouteBossProgressTargetGuid.Clear();
     _validationRouteBossSlowProgressCount = 0;
-    _validationRouteBossAddDensityPhase = false;
-    _validationRouteBossAddDensityGeneration = 0;
+    ResetValidationRouteBossAddDensityState();
     _validationRouteActivationApplied = false;
     _validationRouteActivationAttempts = 0;
     _validationRouteManifestAdvancePending = false;
@@ -7614,8 +7629,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         {
             _validationRouteBossProgressTargetGuid.Clear();
             _validationRouteBossSlowProgressCount = 0;
-            _validationRouteBossAddDensityPhase = false;
-            _validationRouteBossAddDensityGeneration = 0;
+            ResetValidationRouteBossAddDensityState();
         }
 
         for (WorldBotState& cohortState : _bots)
@@ -8947,7 +8961,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         action = "movement_check_jump";
         return true;
     };
-    auto tryValidationRouteAdds = [this, &state, bot, &power, stage, activity, &situation, &action, &target, &routeEngageRange]() -> bool
+    auto tryValidationRouteAdds = [this, &state, bot, &power, stage, activity, &situation, &action, &target, &routeEngageRange, &tryRouteGroupHeal]() -> bool
     {
         if (_config.ValidationRouteKind != "boss"
             || _config.ValidationRouteMechanicProfile.find("adds") == std::string::npos
@@ -8958,11 +8972,12 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         bool sharedFocusValid = false;
         uint32 addCount = 0;
         uint32 nearbyAddCount = 0;
-        float nearbyAddX = 0.0f;
-        float nearbyAddY = 0.0f;
+        float addX = 0.0f;
+        float addY = 0.0f;
         uint8 bestPriority = 0;
         float bestHealthPct = 1.0f;
         uint32 bestGuid = 0;
+        std::vector<Creature*> localAdds;
         auto isUsableListedAdd = [this](Player* observer, Unit* candidate) -> bool
         {
             Creature* creature = candidate ? candidate->ToCreature() : nullptr;
@@ -9013,13 +9028,12 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 continue;
 
             cohortAddGuids.insert(creature->GetGUID());
+            localAdds.push_back(creature);
             ++addCount;
+            addX += creature->GetPositionX();
+            addY += creature->GetPositionY();
             if (bot->GetExactDist2d(creature) <= 12.0f)
-            {
                 ++nearbyAddCount;
-                nearbyAddX += creature->GetPositionX();
-                nearbyAddY += creature->GetPositionY();
-            }
             if (sharedFocusValid)
                 continue;
             uint8 priority = 1;
@@ -9067,8 +9081,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (_validationRouteBossAddDensityPhase
             && (_validationRouteBossAddDensityGeneration != _validationRouteGeneration || !cohortSwarmActive))
         {
-            _validationRouteBossAddDensityPhase = false;
-            _validationRouteBossAddDensityGeneration = 0;
+            ResetValidationRouteBossAddDensityState();
         }
 
         bool observedBossEngagement = _config.ValidationRouteKind == "boss"
@@ -9081,8 +9094,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             && bot->IsValidAttackTarget(routeBoss);
         if (_validationRouteBossAddDensityPhase && routeBossAttackable)
         {
-            _validationRouteBossAddDensityPhase = false;
-            _validationRouteBossAddDensityGeneration = 0;
+            ResetValidationRouteBossAddDensityState();
         }
         bool routeBossUnavailable = !routeBoss
             || (routeBoss->IsAlive() && !bot->IsValidAttackTarget(routeBoss));
@@ -9095,43 +9107,144 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             _validationRouteBossAddDensityGeneration = _validationRouteGeneration;
         }
 
-        if (!add)
-            return false;
-        if (!sharedFocusValid)
-        {
-            _validationRouteAddFocusGuid = add->GetGUID();
-            _validationRouteAddFocusGeneration = _validationRouteGeneration;
-        }
-
         bool highDensityPhase = _validationRouteBossAddDensityPhase
             && _validationRouteBossAddDensityGeneration == _validationRouteGeneration;
         std::string role = GetDungeonRole(bot);
         BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(bot, role.c_str());
+        if (highDensityPhase && role != "healer")
+        {
+            Creature* densityAnchor = nullptr;
+            float bestDistance = std::numeric_limits<float>::max();
+            uint32 bestAnchorGuid = 0;
+            bool meleeProfile = profile.MovementDirective == "melee" || (profile.MaxRange > 0.0f && profile.MaxRange <= 5.0f);
+            float minRange = meleeProfile ? 0.0f : profile.MinRange;
+            float maxRange = meleeProfile ? 5.0f : profile.MaxRange;
+            for (Creature* candidate : localAdds)
+            {
+                float distance = bot->GetExactDist(candidate);
+                if ((minRange > 0.0f && distance < minRange) || (maxRange > 0.0f && distance > maxRange))
+                    continue;
+
+                uint32 guid = candidate->GetGUID().GetCounter();
+                if (!densityAnchor || distance < bestDistance || (distance == bestDistance && guid < bestAnchorGuid))
+                {
+                    densityAnchor = candidate;
+                    bestDistance = distance;
+                    bestAnchorGuid = guid;
+                }
+            }
+            add = densityAnchor;
+            sharedFocusValid = false;
+        }
+
+        Player* densityTank = nullptr;
+        Player* densityHealer = nullptr;
+        if (highDensityPhase)
+        {
+            for (WorldBotState const& cohortState : _bots)
+            {
+                Player* member = GetLoadedBot(cohortState);
+                if (!member || !member->IsAlive() || member->GetMap() != bot->GetMap())
+                    continue;
+                std::string memberRole = GetDungeonRole(member);
+                if (!densityTank && memberRole == "tank")
+                    densityTank = member;
+                else if (!densityHealer && memberRole == "healer")
+                    densityHealer = member;
+            }
+        }
+
+        if (highDensityPhase && densityTank && densityHealer && addCount >= 3)
+        {
+            float centroidX = addX / float(addCount);
+            float centroidY = addY / float(addCount);
+            bool centroidMoved = std::hypot(centroidX - _validationRouteBossAddCentroidX, centroidY - _validationRouteBossAddCentroidY) >= 8.0f;
+            if (!_validationRouteBossAddEscapeActive || (bot == densityTank && centroidMoved))
+            {
+                BotClassSpecActionProfile healerProfile = BotClassSpecActionProfileStore::Build(densityHealer, "healer");
+                float healerRange = healerProfile.MaxRange;
+                if (!_validationRouteBossAddEscapeActive)
+                {
+                    _validationRouteBossAddEscapeAnchorX = densityTank->GetPositionX();
+                    _validationRouteBossAddEscapeAnchorY = densityTank->GetPositionY();
+                    _validationRouteBossAddEscapeAnchorZ = densityTank->GetPositionZ();
+                }
+                float anchorLeash = std::min(30.0f, healerRange - 2.0f);
+                float tankAnchorDistance = densityTank->GetExactDist(_validationRouteBossAddEscapeAnchorX,
+                    _validationRouteBossAddEscapeAnchorY, _validationRouteBossAddEscapeAnchorZ);
+                float escapeDistance = std::min(10.0f, std::min(healerRange - 2.0f, anchorLeash - tankAnchorDistance));
+                if (escapeDistance >= 3.0f)
+                {
+                    Position escape = densityTank->GetFirstCollisionPosition(escapeDistance,
+                        densityTank->GetRelativeAngle(centroidX, centroidY) + float(M_PI));
+                    _validationRouteBossAddEscapeActive = true;
+                    _validationRouteBossAddEscapeGeneration = _validationRouteGeneration;
+                    _validationRouteBossAddEscapeX = escape.GetPositionX();
+                    _validationRouteBossAddEscapeY = escape.GetPositionY();
+                    _validationRouteBossAddEscapeZ = escape.GetPositionZ();
+                    _validationRouteBossAddCentroidX = centroidX;
+                    _validationRouteBossAddCentroidY = centroidY;
+                    _validationRouteBossAddEscapeIssuedGuids.clear();
+                }
+            }
+        }
+
+        if (highDensityPhase && role == "healer" && tryRouteGroupHeal(bot, add))
+            return true;
+
         if (highDensityPhase
             && nearbyAddCount >= 3
-            && role != "healer"
             && !profile.MissingProfile
             && profile.MovementDirective != "melee"
+            && _validationRouteBossAddEscapeActive
+            && _validationRouteBossAddEscapeGeneration == _validationRouteGeneration
             && !bot->HasUnitState(UNIT_STATE_CASTING)
             && !bot->IsFalling())
         {
-            float centroidX = nearbyAddX / float(nearbyAddCount);
-            float centroidY = nearbyAddY / float(nearbyAddCount);
-            Position away = bot->GetFirstCollisionPosition(8.0f, bot->GetRelativeAngle(centroidX, centroidY) + float(M_PI));
-            if (MoveBotToPoint(state, bot, away.GetPositionX(), away.GetPositionY(), away.GetPositionZ()))
+            bool reachedEscape = bot->GetExactDist2d(_validationRouteBossAddEscapeX, _validationRouteBossAddEscapeY) <= 2.5f;
+            bool escapeIssued = _validationRouteBossAddEscapeIssuedGuids.find(bot->GetGUID()) != _validationRouteBossAddEscapeIssuedGuids.end();
+            bool escapeMovementPending = bot->isMoving() || bot->HasUnitState(UNIT_STATE_MOVING);
+            bool shouldIssueEscape = !escapeIssued || (!reachedEscape && !escapeMovementPending);
+            if (!reachedEscape && shouldIssueEscape
+                && MoveBotToPoint(state, bot, _validationRouteBossAddEscapeX, _validationRouteBossAddEscapeY, _validationRouteBossAddEscapeZ))
             {
                 std::string raw = BuildRawJson(bot, add);
                 std::string semantic = BuildSemanticJson(bot, add, "dungeon_boss", &power, stage, activity);
-                RecordEvent(state, bot, "boss_add_density", add, "move_from_add_centroid", raw.c_str(), semantic.c_str(), float(nearbyAddCount), addCount);
-                state.TargetGuid = add->GetGUID();
+                RecordEvent(state, bot, "boss_add_density", add, escapeIssued ? "reissue_shared_escape_unreached" : "move_to_shared_escape", raw.c_str(), semantic.c_str(), float(nearbyAddCount), addCount);
+                _validationRouteBossAddEscapeIssuedGuids.insert(bot->GetGUID());
+                state.TargetGuid = add ? add->GetGUID() : ObjectGuid::Empty;
                 target = add;
                 situation = "dungeon_boss";
-                action = "move_from_boss_add_density";
+                action = "move_to_boss_add_density_escape";
+                return true;
+            }
+            if (!reachedEscape && escapeIssued && escapeMovementPending)
+            {
+                state.TargetGuid = add ? add->GetGUID() : ObjectGuid::Empty;
+                target = add;
+                situation = "dungeon_boss";
+                action = "continue_to_boss_add_density_escape";
                 return true;
             }
         }
         if (role == "healer")
             return false;
+        if (!add)
+        {
+            std::string raw = BuildRawJson(bot, nullptr);
+            std::string semantic = BuildSemanticJson(bot, nullptr, "dungeon_boss", &power, stage, activity);
+            RecordEvent(state, bot, "boss_add_density", nullptr, "no_compatible_density_anchor", raw.c_str(), semantic.c_str(), float(addCount));
+            state.TargetGuid.Clear();
+            target = nullptr;
+            situation = "dungeon_boss";
+            action = "hold_boss_add_density";
+            return true;
+        }
+        if (!highDensityPhase && !sharedFocusValid)
+        {
+            _validationRouteAddFocusGuid = add->GetGUID();
+            _validationRouteAddFocusGeneration = _validationRouteGeneration;
+        }
         if (!bot->IsValidAttackTarget(add))
         {
             std::string raw = BuildRawJson(bot, add);
@@ -14549,6 +14662,11 @@ std::string BotWorldPopulationMgr::BuildRawJson(Player* bot, Unit const* target)
          << ",\"route_generation\":" << _validationRouteGeneration
          << ",\"boss_add_density_phase\":" << (_validationRouteBossAddDensityPhase ? "true" : "false")
          << ",\"boss_add_density_generation\":" << _validationRouteBossAddDensityGeneration
+         << ",\"boss_add_escape_active\":" << (_validationRouteBossAddEscapeActive ? "true" : "false")
+         << ",\"boss_add_escape_generation\":" << _validationRouteBossAddEscapeGeneration
+         << ",\"boss_add_escape_issued_count\":" << _validationRouteBossAddEscapeIssuedGuids.size()
+         << ",\"boss_add_escape_point\":{\"x\":" << _validationRouteBossAddEscapeX
+         << ",\"y\":" << _validationRouteBossAddEscapeY << ",\"z\":" << _validationRouteBossAddEscapeZ << "}"
          << "}";
     return json.str();
 }
@@ -14605,7 +14723,10 @@ std::string BotWorldPopulationMgr::BuildSemanticJson(Player* bot, Unit const* ta
          << ",\"validation_route\":{\"route_node_id\":\"" << JsonEscape(_config.ValidationRouteNodeId)
          << "\",\"route_generation\":" << _validationRouteGeneration
          << ",\"boss_add_density_phase\":" << (_validationRouteBossAddDensityPhase ? "true" : "false")
-         << ",\"boss_add_density_generation\":" << _validationRouteBossAddDensityGeneration << "}"
+         << ",\"boss_add_density_generation\":" << _validationRouteBossAddDensityGeneration
+         << ",\"boss_add_escape_active\":" << (_validationRouteBossAddEscapeActive ? "true" : "false")
+         << ",\"boss_add_escape_generation\":" << _validationRouteBossAddEscapeGeneration
+         << ",\"boss_add_escape_issued_count\":" << _validationRouteBossAddEscapeIssuedGuids.size() << "}"
          << ",\"embedding_features\":{\"schema\":\"bot_semantic_phase6_v1\""
          << ",\"area\":" << BuildEmbeddingFeaturesJson(bot, target, "area", bot ? bot->GetAreaId() : 0, situationType.c_str())
          << ",\"mob\":" << BuildEmbeddingFeaturesJson(bot, target, "mob", targetEntry, situationType.c_str())
@@ -15540,6 +15661,13 @@ std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson(WorldBotState con
          << "{\"name\":\"validation_route_pack_death_count\",\"value\":" << _validationRoutePackDeathGuids.size() << "},"
          << "{\"name\":\"validation_route_pack_transition_count\",\"value\":" << _validationRoutePackTransitionGuids.size() << "},"
          << "{\"name\":\"validation_route_pack_observed_engagement\",\"value\":" << (_validationRoutePackObservedEngagement ? "true" : "false") << "},"
+         << "{\"name\":\"validation_route_boss_add_density_phase\",\"value\":" << (_validationRouteBossAddDensityPhase ? "true" : "false") << "},"
+         << "{\"name\":\"validation_route_boss_add_density_generation\",\"value\":" << _validationRouteBossAddDensityGeneration << "},"
+         << "{\"name\":\"validation_route_boss_add_escape_active\",\"value\":" << (_validationRouteBossAddEscapeActive ? "true" : "false") << "},"
+         << "{\"name\":\"validation_route_boss_add_escape_generation\",\"value\":" << _validationRouteBossAddEscapeGeneration << "},"
+         << "{\"name\":\"validation_route_boss_add_escape_issued_count\",\"value\":" << _validationRouteBossAddEscapeIssuedGuids.size() << "},"
+         << "{\"name\":\"validation_route_boss_add_escape_distance\",\"value\":"
+         << (_validationRouteBossAddEscapeActive ? bot->GetExactDist(_validationRouteBossAddEscapeX, _validationRouteBossAddEscapeY, _validationRouteBossAddEscapeZ) : 0.0f) << "},"
          << "{\"name\":\"validation_route_activation_applied\",\"value\":" << (state.ValidationRouteActivationApplied ? "true" : "false") << "},"
          << "{\"name\":\"validation_route_activation_attempts\",\"value\":" << state.ValidationRouteActivationAttempts << "},"
          << "{\"name\":\"validation_route_config_kind\",\"value\":\"" << JsonEscape(_config.ValidationRouteKind) << "\"},"
