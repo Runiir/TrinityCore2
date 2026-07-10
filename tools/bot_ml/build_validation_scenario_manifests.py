@@ -162,8 +162,9 @@ def scripted_event_entries(scenario_id: str, step: dict[str, Any]) -> list[int]:
     return list(STONECORE_SCRIPTED_EVENT_ACTORS.get(str(step.get("label") or ""), []))
 
 
-def expected_alive_count(cluster_entries: list[int]) -> int:
-    return len(cluster_entries)
+def expected_alive_count(step: dict[str, Any], cluster_entries: list[int]) -> int:
+    explicit = int(step.get("expected_alive_count") or 0)
+    return explicit if explicit > 0 else len(cluster_entries)
 
 
 def evidence_contract(required_evidence: list[str]) -> list[dict[str, Any]]:
@@ -305,7 +306,7 @@ def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any],
                 "cluster_radius_yards": cluster_radius_yards,
                 "pack_target_entries": cluster_entries,
                 "scripted_event_entries": event_entries,
-                "expected_alive_count": expected_alive_count(cluster_entries),
+                "expected_alive_count": expected_alive_count(step, cluster_entries),
                 "expected_alive_count_semantics": "descriptive_only",
                 "completion_policy": step.get("completion_policy") or ("cluster_clear_after_pull" if node_kind == "trash_cluster" else ("arrival" if node_kind in {"travel", "regroup", "descent"} else "boss_kill")),
                 "coordinates_valid": coordinates_valid,

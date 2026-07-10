@@ -69,7 +69,12 @@ def test_validation_scenario_trash_counts_are_descriptive_only():
         if route["scenario_id"] == "stonecore_5n" and route["node_kind"] == "trash_cluster"
     ]
     assert generated_trash
-    assert all(route["expected_alive_count"] == len(route["pack_target_entries"]) for route in generated_trash)
+    generated_by_step = {route["step"]: route for route in generated_trash}
+    assert generated_by_step[2]["cluster_radius_yards"] == 35.0
+    assert generated_by_step[2]["expected_alive_count"] == 4
+    assert generated_by_step[3]["cluster_radius_yards"] == 35.0
+    assert generated_by_step[3]["expected_alive_count"] == 4
+    assert all(route["expected_alive_count"] == len(route["pack_target_entries"]) for route in generated_trash if route["step"] not in {2, 3})
     assert all(route["expected_alive_count"] > 0 for route in generated_trash)
     assert all(route["expected_alive_count_semantics"] == "descriptive_only" for route in generated_trash)
     assert all(route["completion_policy"] == "cluster_clear_after_pull" for route in generated_trash)

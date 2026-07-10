@@ -1945,12 +1945,14 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert stonecore_entry["completion_policy"] == "cluster_clear_after_pull"
     assert stonecore_entrance_tunnel["x"] == 982.464
     assert stonecore_entrance_tunnel["source_guid"] == "@CGUID+51"
-    assert stonecore_entrance_tunnel["expected_alive_count"] == len(stonecore_entrance_tunnel["pack_target_entries"])
+    assert stonecore_entrance_tunnel["cluster_radius_yards"] == 35.0
+    assert stonecore_entrance_tunnel["expected_alive_count"] == 4
     assert stonecore_entrance_tunnel["expected_alive_count_semantics"] == "descriptive_only"
     assert {42696, 43430, 43537}.issubset(set(stonecore_entrance_tunnel["pack_target_entries"]))
     assert corborus_approach_pack["x"] == 1054.68
     assert corborus_approach_pack["source_guid"] == "@CGUID+62"
-    assert corborus_approach_pack["expected_alive_count"] == len(corborus_approach_pack["pack_target_entries"])
+    assert corborus_approach_pack["cluster_radius_yards"] == 35.0
+    assert corborus_approach_pack["expected_alive_count"] == 4
     assert corborus_approach_pack["expected_alive_count_semantics"] == "descriptive_only"
     assert {42696, 43430, 43537}.issubset(set(corborus_approach_pack["pack_target_entries"]))
     assert corborus_antechamber_pack["x"] == 1155.75
