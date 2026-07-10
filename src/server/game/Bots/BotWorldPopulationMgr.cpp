@@ -771,7 +771,7 @@ uint32 SemanticMechanicKey(char const* eventType, char const* result)
         return 2;
     if (event == "boss_mechanic" || res == "move_out")
         return 1;
-    if (event == "boss_adds")
+    if (event == "boss_adds" || event == "boss_add_killed")
         return 5;
     if (event == "boss_heal")
         return 4;
@@ -8603,12 +8603,20 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (_validationRouteAddFocusGeneration == _validationRouteGeneration && !_validationRouteAddFocusGuid.IsEmpty())
         {
             add = ObjectAccessor::GetUnit(*bot, _validationRouteAddFocusGuid);
-            sharedFocusValid = isUsableListedAdd(add);
-            if (!sharedFocusValid)
+            if (!add)
             {
-                add = nullptr;
                 _validationRouteAddFocusGuid.Clear();
             }
+            else if (!add->IsAlive() || !add->GetHealth())
+            {
+                std::string raw = BuildRawJson(bot, add);
+                std::string semantic = BuildSemanticJson(bot, add, "dungeon_boss", &power, stage, activity);
+                RecordEvent(state, bot, "boss_add_killed", add, "observed_dead", raw.c_str(), semantic.c_str());
+                _validationRouteAddFocusGuid.Clear();
+                add = nullptr;
+            }
+            else
+                sharedFocusValid = true;
         }
 
         std::vector<WorldObject*> objects;
@@ -8649,6 +8657,17 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         {
             _validationRouteAddFocusGuid = add->GetGUID();
             _validationRouteAddFocusGeneration = _validationRouteGeneration;
+        }
+        if (!bot->IsValidAttackTarget(add))
+        {
+            std::string raw = BuildRawJson(bot, add);
+            std::string semantic = BuildSemanticJson(bot, add, "dungeon_boss", &power, stage, activity);
+            RecordEvent(state, bot, "boss_adds", add, "hold_unattackable_focus", raw.c_str(), semantic.c_str(), float(addCount));
+            state.TargetGuid = add->GetGUID();
+            target = add;
+            situation = "dungeon_boss";
+            action = "hold_boss_add_focus";
+            return true;
         }
 
         ResolvedCombatAction profileAction = ResolveProfileCombatAction(bot, add);
@@ -13471,6 +13490,7 @@ void BotWorldPopulationMgr::RecordEvent(WorldBotState& state, Player* bot, char 
     bool forceTeacherEvent = eventName == "combat_started"
         || eventName == "spell_cast"
         || eventName == "mob_killed"
+        || eventName == "boss_add_killed"
         || eventName == "boss_killed"
         || eventName == "loot_target"
         || eventName == "loot_received"

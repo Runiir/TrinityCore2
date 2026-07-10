@@ -902,6 +902,18 @@ def test_quest_first_portfolio_routing_surface():
     assert "_validationRouteAddFocusGeneration == _validationRouteGeneration" in validation_route_objective
     assert "add = ObjectAccessor::GetUnit(*bot, _validationRouteAddFocusGuid);" in validation_route_objective
     assert "_validationRouteAddFocusGuid = add->GetGUID();" in validation_route_objective
+    assert "if (!add)" in validation_route_objective
+    assert 'action = "hold_boss_add_focus";' in validation_route_objective
+    assert "if (!add->IsAlive() || !add->GetHealth())" in validation_route_objective
+    assert 'RecordEvent(state, bot, "boss_add_killed", add, "observed_dead"' in validation_route_objective
+    assert 'event == "boss_adds" || event == "boss_add_killed"' in mgr
+    assert 'eventName == "boss_add_killed"' in mgr
+    assert_ordered(
+        validation_route_objective,
+        "if (!add->IsAlive() || !add->GetHealth())",
+        "_validationRouteAddFocusGuid.Clear();",
+        "_validationRouteAddFocusGuid = add->GetGUID();",
+    )
     assert 'RecordEvent(state, bot, "boss_adds", add' in validation_route_objective
     assert_ordered(
         validation_route_objective,
