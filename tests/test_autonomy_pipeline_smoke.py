@@ -1593,13 +1593,23 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     assert_ordered(
         route_objective,
         "auto recordValidationRouteTrashKill",
-        "if (state.LastKilledTargetGuid == killedTarget->GetGUID())",
+        "if (_validationRouteRecordedKillGuids.find(killedTarget->GetGUID()) != _validationRouteRecordedKillGuids.end())",
         "return false;",
+        "_validationRouteRecordedKillGuids.insert(killedTarget->GetGUID());",
         "++_metrics.Kills;",
         "state.LastKilledTargetGuid = killedTarget->GetGUID();",
         "if (isValidationRouteScriptTarget(creature)",
         "if (!trashClusterHasLiveMobs())",
         '"trash_cluster_empty_pending_anchor_verification"',
+    )
+    assert "GuidSet _validationRouteRecordedKillGuids;" in mgr_header
+    assert "_validationRouteRecordedKillGuids.clear();" in mgr
+    assert_ordered(
+        route_objective,
+        'recordValidationRouteTrashKill(seenRouteTarget, "target_seen_dead");',
+        "clearValidationRouteKilledFocus(seenRouteTarget->GetGUID());",
+        "seenRouteTarget = nullptr;",
+        "if (!routeTarget && seenRouteTarget && seenRouteTargetDistance > 8.0f)",
     )
     assert_ordered(
         route_objective,

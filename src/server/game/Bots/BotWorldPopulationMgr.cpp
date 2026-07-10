@@ -1841,6 +1841,7 @@ bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode(size_t index, char 
     _config.ValidationRouteExpectedAliveCount = node.ExpectedAliveCount;
     _validationRouteAddFocusGuid.Clear();
     _validationRouteAddFocusGeneration = _validationRouteGeneration;
+    _validationRouteRecordedKillGuids.clear();
     _config.ValidationRouteActivationDataId = node.ActivationDataId;
     _config.ValidationRouteActivationDataValue = node.ActivationDataValue;
     _config.ValidationRouteActivationSpawnGroupId = node.ActivationSpawnGroupId;
@@ -7418,9 +7419,10 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (!creature)
             return false;
 
-        if (state.LastKilledTargetGuid == killedTarget->GetGUID())
+        if (_validationRouteRecordedKillGuids.find(killedTarget->GetGUID()) != _validationRouteRecordedKillGuids.end())
             return false;
 
+        _validationRouteRecordedKillGuids.insert(killedTarget->GetGUID());
         ++_metrics.Kills;
         state.LastKilledTargetGuid = killedTarget->GetGUID();
 
@@ -9464,11 +9466,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     if (!routeTarget
         && seenRouteTarget
         && _config.ValidationRouteKind != "boss"
-        && targetSearchResult == "target_seen_dead"
-        && recordValidationRouteTrashKill(seenRouteTarget, "target_seen_dead"))
+        && targetSearchResult == "target_seen_dead")
     {
-        action = "validation_route_recovery";
-        return true;
+        recordValidationRouteTrashKill(seenRouteTarget, "target_seen_dead");
+        clearValidationRouteKilledFocus(seenRouteTarget->GetGUID());
+        seenRouteTarget = nullptr;
     }
     if (!routeTarget && seenRouteTarget && seenRouteTargetDistance > 8.0f)
     {

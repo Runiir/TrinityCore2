@@ -1160,6 +1160,7 @@ private:
     uint64 _validationRouteFocusSeenMs = 0;
     ObjectGuid _validationRouteAddFocusGuid;
     uint64 _validationRouteAddFocusGeneration = 0;
+    GuidSet _validationRouteRecordedKillGuids;
     ObjectGuid _validationRouteBossProgressTargetGuid;
     uint32 _validationRouteBossSlowProgressCount = 0;
     bool _validationRouteActivationApplied = false;
