@@ -31,6 +31,7 @@
 #include "Quests/QuestDef.h"
 #include "Random.h"
 #include "Spell.h"
+#include "SpellAuras.h"
 #include "SpellHistory.h"
 #include "SpellInfo.h"
 #include "SpellMgr.h"
@@ -8508,6 +8509,41 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         };
 
         inspectCaster(preferredTarget);
+        if (!caster && mechanicProfileRequiresMovement)
+        {
+            for (auto const& [_, application] : bot->GetAppliedAuras())
+            {
+                if (!application || application->IsPositive())
+                    continue;
+
+                Aura const* aura = application->GetBase();
+                SpellInfo const* auraSpell = aura ? aura->GetSpellInfo() : nullptr;
+                if (!auraSpell)
+                    continue;
+
+                bool periodicTrigger = false;
+                for (SpellEffectInfo const& effect : auraSpell->Effects)
+                {
+                    if (effect.ApplyAuraName == SPELL_AURA_PERIODIC_TRIGGER_SPELL
+                        || effect.ApplyAuraName == SPELL_AURA_PERIODIC_TRIGGER_SPELL_WITH_VALUE)
+                    {
+                        periodicTrigger = true;
+                        break;
+                    }
+                }
+                if (!periodicTrigger && !SpellLooksLikeGroundDanger(auraSpell))
+                    continue;
+
+                caster = ObjectAccessor::GetUnit(*bot, aura->GetCasterGUID());
+                if (!caster)
+                    caster = preferredTarget;
+                if (!caster)
+                    continue;
+
+                castSpell = auraSpell;
+                break;
+            }
+        }
         if (!caster)
         {
             std::vector<WorldObject*> objects;

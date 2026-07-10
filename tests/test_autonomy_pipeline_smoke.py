@@ -880,6 +880,17 @@ def test_quest_first_portfolio_routing_surface():
     assert "&& _config.ValidationRouteMechanicProfile.find(\"movement_check\") != std::string::npos" in validation_route_objective
     assert "&& _config.ValidationRouteMechanicProfile.find(\"ground_danger\") == std::string::npos;" in validation_route_objective
     assert "if (!SpellLooksLikeGroundDanger(castSpell) && !profileAllowsCastMovement)" in validation_route_objective
+    assert "for (auto const& [_, application] : bot->GetAppliedAuras())" in validation_route_objective
+    assert "effect.ApplyAuraName == SPELL_AURA_PERIODIC_TRIGGER_SPELL" in validation_route_objective
+    assert_ordered(
+        validation_route_objective,
+        "inspectCaster(preferredTarget);",
+        "if (!caster && mechanicProfileRequiresMovement)",
+        "if (!caster)\n        {",
+        "Position dodge = bot->GetFirstCollisionPosition(8.0f, angle);",
+        "if (tryValidationRouteMovementCheck(target))",
+        "if (tryRouteGroupHeal(bot, target))",
+    )
     assert "bot->GetFirstCollisionPosition(8.0f, angle)" in validation_route_objective
     assert "MoveBotToPoint(state, bot, dodge.GetPositionX(), dodge.GetPositionY(), dodge.GetPositionZ())" in validation_route_objective
     assert "routeHasActiveCombatIntent" in mgr
