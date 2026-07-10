@@ -7193,7 +7193,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     return true;
         return false;
     };
-    auto enrollValidationRoutePackMember = [this](Creature const* creature, bool engaged) -> void
+    auto enrollValidationRoutePackMember = [this, bot, &state, &power, stage, activity](Creature const* creature, bool engaged) -> void
     {
         if (_config.ValidationRouteKind == "boss" || !creature || !creature->IsAlive() || !creature->GetHealth())
             return;
@@ -7208,12 +7208,19 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             _validationRoutePackObservedEngagement = false;
             _validationRoutePackClearCandidateSinceMs = 0;
         }
-        _validationRoutePackMemberGuids.insert(creature->GetGUID());
+        bool memberInserted = _validationRoutePackMemberGuids.insert(creature->GetGUID()).second;
+        bool engagementInserted = false;
         if (engaged)
         {
-            _validationRoutePackEngagedGuids.insert(creature->GetGUID());
+            engagementInserted = _validationRoutePackEngagedGuids.insert(creature->GetGUID()).second;
             _validationRoutePackObservedEngagement = true;
             _validationRoutePackClearCandidateSinceMs = 0;
+        }
+        if (memberInserted || engagementInserted)
+        {
+            std::string raw = BuildRawJson(bot, creature);
+            std::string semantic = BuildSemanticJson(bot, creature, "validation_route_pack_enrollment", &power, stage, activity);
+            RecordEvent(state, bot, "validation_route_pack_enrolled", creature, engagementInserted ? "cohort_threat_link" : "route_selection", raw.c_str(), semantic.c_str(), bot ? bot->GetExactDist(creature) : 0.0f, creature->GetEntry());
         }
     };
     auto recordValidationRouteScriptedTransition = [this, bot, &state, &power, stage, activity](Creature* creature) -> bool
@@ -7279,7 +7286,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             Creature* creature = object ? object->ToCreature() : nullptr;
             if (!creature || !creature->IsAlive() || !creature->GetHealth() || creature->IsDungeonBoss() || creature->isWorldBoss())
                 continue;
-            if (creature->IsPet() || creature->IsTotem() || creature->IsGuardian() || !creature->GetOwnerGUID().IsEmpty())
+            if (creature->IsPet() || creature->IsTotem() || creature->IsSummon() || creature->IsGuardian() || !creature->GetOwnerGUID().IsEmpty())
                 continue;
 
             if (isValidationCohortCombatLinked(creature))

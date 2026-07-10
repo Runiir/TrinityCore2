@@ -1691,8 +1691,9 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         "auto isValidationCohortPlayer",
         "auto isValidationCohortCombatLinked",
         "auto enrollValidationRoutePackMember",
-        "_validationRoutePackMemberGuids.insert(creature->GetGUID());",
-        "_validationRoutePackEngagedGuids.insert(creature->GetGUID());",
+        "_validationRoutePackMemberGuids.insert(creature->GetGUID()).second;",
+        "_validationRoutePackEngagedGuids.insert(creature->GetGUID()).second;",
+        'RecordEvent(state, bot, "validation_route_pack_enrolled"',
         "auto enrollEngagedValidationRoutePackMembers",
         "isValidationCohortCombatLinked(creature)",
         "auto persistedValidationRoutePackHasLiveMembers",
@@ -1720,6 +1721,9 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     for generic_state in ["IsValidAttackTarget", "IsInEvadeMode", "UNIT_STATE_EVADE", "hasStrictPathToValidationRouteTarget", "IsWithinLOSInMap"]:
         assert generic_state not in transition_block
     assert "_validationRoutePackTransitionGuids.find(guid) == _validationRoutePackTransitionGuids.end()" in route_objective
+    enrollment_scan = route_objective.split("auto enrollEngagedValidationRoutePackMembers", 1)[1].split("auto persistedValidationRoutePackHasLiveMembers", 1)[0]
+    assert "creature->IsSummon()" in enrollment_scan
+    assert 'engagementInserted ? "cohort_threat_link" : "route_selection"' in route_objective
     eligible_block = route_objective.split("auto isEligibleTrashClusterMob", 1)[1].split("auto isLiveTrashClusterMob", 1)[0]
     assert "_validationRoutePackTransitionGuids.find(creature->GetGUID())" in eligible_block
     assert "AttackStop" not in transition_block
