@@ -2307,6 +2307,7 @@ def test_density_escape_is_one_generation_scoped_tank_relative_point_with_healer
     assert "if (highDensityPhase && role == \"healer\" && tryRouteGroupHeal(bot, add))" in adds
     assert "_validationRouteBossAddEscapeIssuedGuids.insert(bot->GetGUID());" in adds
     assert "bool escapePathPending = state.ActivePathValid" in adds
+    assert "&& state.IsMoving" in adds[adds.index("bool escapePathPending"):adds.index("bool shouldIssueEscape")]
     assert "state.ActivePathToX - _validationRouteBossAddEscapeX" in adds
     assert "state.ActivePathToY - _validationRouteBossAddEscapeY" in adds
     assert "state.ActivePathToZ - _validationRouteBossAddEscapeZ" in adds

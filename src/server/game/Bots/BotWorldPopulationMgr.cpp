@@ -9260,6 +9260,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             bool escapeIssued = _validationRouteBossAddEscapeIssuedGuids.find(bot->GetGUID()) != _validationRouteBossAddEscapeIssuedGuids.end();
             constexpr float escapePathEpsilon = 0.5f;
             bool escapePathPending = state.ActivePathValid
+                && state.IsMoving
                 && std::fabs(state.ActivePathToX - _validationRouteBossAddEscapeX) <= escapePathEpsilon
                 && std::fabs(state.ActivePathToY - _validationRouteBossAddEscapeY) <= escapePathEpsilon
                 && std::fabs(state.ActivePathToZ - _validationRouteBossAddEscapeZ) <= escapePathEpsilon;
