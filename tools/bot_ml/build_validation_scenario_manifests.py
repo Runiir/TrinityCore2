@@ -117,7 +117,7 @@ STONECORE_TRASH_PACKS = {
     "entrance packs": [43391, 42696, 43430, 43537],
     "entrance tunnel": [42696, 43430, 43537],
     "corborus approach pack": [42696, 43430, 43537],
-    "corborus antechamber pack": [42696, 43430, 43537],
+    "corborus antechamber pack": [42810, 42696, 43430, 43537],
     "crystalspawn corridor": [42810, 42696, 43430, 43537, 42695, 42692],
     "stonecore sentry gauntlet": [42428, 42696, 42695, 42692],
     "twilight flayer packs": [42428, 42696, 42695, 42692, 42691],

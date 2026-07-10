@@ -1973,7 +1973,7 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert corborus_antechamber_pack["cluster_radius_yards"] == 55.0
     assert corborus_antechamber_pack["expected_alive_count"] == len(corborus_antechamber_pack["pack_target_entries"])
     assert corborus_antechamber_pack["expected_alive_count_semantics"] == "descriptive_only"
-    assert {42696, 43430, 43537}.issubset(set(corborus_antechamber_pack["pack_target_entries"]))
+    assert {42810, 42696, 43430, 43537}.issubset(set(corborus_antechamber_pack["pack_target_entries"]))
     assert slabhide["node_kind"] == "boss"
     assert slabhide["completion_policy"] == "boss_kill"
     assert nefarian["expected_bot_count"] == 10
