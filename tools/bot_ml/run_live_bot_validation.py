@@ -774,8 +774,16 @@ def forbidden_completion_assists(entries: list[dict[str, Any]]) -> list[dict[str
     return rows
 
 
-def trace_order(entry: dict[str, Any]) -> tuple[int, int]:
-    return int(entry.get("timestamp_ms") or 0), int(entry.get("sequence") or 0)
+def trace_after(entry: dict[str, Any], reference: dict[str, Any]) -> bool:
+    entry_timestamp = int(entry.get("timestamp_ms") or 0)
+    reference_timestamp = int(reference.get("timestamp_ms") or 0)
+    entry_sequence = int(entry.get("sequence") or 0)
+    reference_sequence = int(reference.get("sequence") or 0)
+    if entry_timestamp and reference_timestamp:
+        if entry_timestamp != reference_timestamp:
+            return entry_timestamp > reference_timestamp
+        return bool(entry_sequence and reference_sequence and entry_sequence > reference_sequence)
+    return bool(entry_sequence and reference_sequence and entry_sequence > reference_sequence)
 
 
 ROUTE_FAILURE_ACTIONS = {"stuck_detected", "guardrail_repath", "objective_target_lost", "validation_route_target_lost"}
@@ -808,31 +816,22 @@ def is_route_progress(entry: dict[str, Any], scope: tuple[str, int]) -> bool:
     )
 
 
+def route_failure_resolved(entries: list[dict[str, Any]], failure: dict[str, Any]) -> bool:
+    scope = route_scope(failure)
+    return any(trace_after(entry, failure) and is_route_progress(entry, scope) for entry in entries)
+
+
 def progress_after_latest_route_failure(entries: list[dict[str, Any]]) -> bool:
     failures = [entry for entry in entries if route_failure(entry)]
-    if not failures:
-        return True
-    latest_failure = max(failures, key=trace_order)
-    latest_order = trace_order(latest_failure)
-    if latest_order == (0, 0):
-        return False
-    failure_scope = route_scope(latest_failure)
-    return any(trace_order(entry) > latest_order and is_route_progress(entry, failure_scope) for entry in entries)
+    return all(route_failure_resolved(entries, failure) for failure in failures)
 
 
 def unresolved_route_stuck_count(entries: list[dict[str, Any]]) -> int:
     failures = [entry for entry in entries if route_failure(entry)]
     if not failures:
         return 0
-    failure_scope = route_scope(max(failures, key=trace_order))
-    scoped_failures = [entry for entry in failures if failure_scope == ("", 0) or route_scope(entry) == failure_scope]
-    if any(trace_order(entry) == (0, 0) for entry in scoped_failures):
-        return len(scoped_failures)
-    latest_progress = max(
-        (trace_order(entry) for entry in entries if is_route_progress(entry, failure_scope)),
-        default=(0, 0),
-    )
-    return sum(trace_order(entry) > latest_progress for entry in scoped_failures)
+    unresolved_by_scope = Counter(route_scope(failure) for failure in failures if not route_failure_resolved(entries, failure))
+    return max(unresolved_by_scope.values(), default=0)
 
 
 def strict_manifest_evidence(evidence: dict[str, Any], manifest: dict[str, Any]) -> dict[str, list[str]]:
@@ -1043,11 +1042,8 @@ def live_evidence(
     stuck_events = max(int(status.get("stuck") or 0), int(summary.get("stuck_events") or 0), action_counts.get("stuck_detected", 0))
     unresolved_route_stuck_events = unresolved_route_stuck_count(entries)
     failures = [entry for entry in entries if route_failure(entry)]
-    if failures:
-        failure_scope = route_scope(max(failures, key=trace_order))
-        has_ordered_progress = any(trace_order(entry) != (0, 0) and is_route_progress(entry, failure_scope) for entry in entries)
-        if not has_ordered_progress:
-            unresolved_route_stuck_events = max(unresolved_route_stuck_events, stuck_events)
+    if failures and not any(route_failure_resolved(entries, failure) for failure in failures):
+        unresolved_route_stuck_events = max(unresolved_route_stuck_events, stuck_events)
     unstuck_failures = sum(1 for entry in entries if str(entry.get("action") or "") == "unstuck" and str(entry.get("result") or "") in {"failed", "failure"})
     repath_events = result_counts.get("repath", 0)
     quest_acceptance_actions = sum(

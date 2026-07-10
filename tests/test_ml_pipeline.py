@@ -37,7 +37,7 @@ from tools.bot_ml.build_validation_scenario_manifests import build_manifests as 
 from tools.bot_ml.build_live_scenario_reports import build_reports as build_live_scenario_reports, build_reports_from_live_reports, main as live_scenario_reports_main
 from tools.bot_ml.build_validation_run_plan import build_plan as build_validation_run_plan
 from tools.bot_ml.build_validation_run_status import build_status as build_validation_run_status
-from tools.bot_ml.run_live_bot_validation import bounded_console_deadline, build_bot_pool_reset_sql, command_script, live_validation_report, load_scenario_reports, load_validation_route, main as live_validation_main, parse_json_objects, parse_soap_result, read_until_console_prompt, route_segment_complete, run_worldserver, run_worldserver_completion_watchdog, split_sql_statements, trinity_config_bool, unresolved_route_stuck_count, upsert_trinity_config, watchdog_state, write_validation_config
+from tools.bot_ml.run_live_bot_validation import bounded_console_deadline, build_bot_pool_reset_sql, command_script, live_validation_report, load_scenario_reports, load_validation_route, main as live_validation_main, parse_json_objects, parse_soap_result, read_until_console_prompt, route_segment_complete, run_worldserver, run_worldserver_completion_watchdog, split_sql_statements, trace_after, trinity_config_bool, unresolved_route_stuck_count, upsert_trinity_config, watchdog_state, write_validation_config
 from tools.bot_ml.orchestrator_daemon import codex_command, detect_rate_limit, handle_rate_limit, initial_state, run_one_cycle, sleep_until_resume
 from tools.bot_ml.generate_lane_configs import write_lane_config
 from tools.bot_ml.promote_live_validation_artifact import promote
@@ -7843,6 +7843,36 @@ def test_unresolved_route_stuck_count_accepts_same_scope_movement_resolution():
     ]
 
     assert unresolved_route_stuck_count(entries) == 0
+
+
+def test_trace_order_rejects_sequence_progress_against_timestamp_failure():
+    failure = {"action": "stuck_detected", "timestamp_ms": 1000}
+    progress = {"action": "validation_route_pack_terminal", "sequence": 9999}
+
+    assert trace_after(progress, failure) is False
+    assert unresolved_route_stuck_count([failure, progress]) == 1
+
+
+def test_trace_order_rejects_timestamp_progress_against_sequence_failure():
+    failure = {"action": "stuck_detected", "sequence": 10}
+    progress = {"action": "validation_route_pack_terminal", "timestamp_ms": 999999}
+
+    assert trace_after(progress, failure) is False
+    assert unresolved_route_stuck_count([failure, progress]) == 1
+
+
+def test_mixed_order_progress_cannot_hide_reviewer_stuck_repro():
+    scope = {"route_node_id": "corridor", "route_generation": 1}
+    failures = [{"action": "stuck_detected", "timestamp_ms": 1000 + index, **scope} for index in range(8)]
+    sequence_only_terminal = {"action": "validation_route_pack_terminal", "sequence": 5000, **scope}
+    entries = [*failures, sequence_only_terminal, {"action": "validation_route_trash_action", "sequence": 5001, **scope}]
+    output = 'TC> {"active_bots":1,"target_bots":1,"decisions":20}\nTC> ' + json.dumps({"trace_schema_version": 1, "entries": entries})
+
+    report = live_validation_report(output)
+
+    assert report["evidence"]["post_failure_progress"] is False
+    assert report["evidence"]["unresolved_route_stuck_events"] == 8
+    assert "validation_route_stuck_loop" in report["failure_labels"]
 
 
 def test_live_validation_deduplicates_redundant_stuck_counter_views():
