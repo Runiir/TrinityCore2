@@ -97,6 +97,18 @@ def test_validation_route_group_focus_reaches_profile_action_without_threat_rewa
     assert route_objective.index(later_threat_gate) > group_focus_end
 
 
+def test_decision_tick_caps_combat_and_validation_before_minimum_floor():
+    update_bot = function_body(read(BOT_MGR), "void BotWorldPopulationMgr::UpdateBot")
+
+    assert_ordered(
+        update_bot,
+        'uint32 decisionTickMs = sConfigMgr->GetIntDefault("BotWorld.DecisionTickMs", 3000);',
+        "if (bot->IsInCombat() || _config.ValidationRouteEnable)",
+        "decisionTickMs = std::min<uint32>(decisionTickMs, 1000);",
+        "state.DecisionTimer = std::max<uint32>(500, decisionTickMs);",
+    )
+
+
 def test_pytest_excludes_generated_orchestrator_worktrees():
     pytest_config = read(PYTEST_CONFIG)
     assert re.search(r"^testpaths\s*=\s*tests$", pytest_config, re.MULTILINE)

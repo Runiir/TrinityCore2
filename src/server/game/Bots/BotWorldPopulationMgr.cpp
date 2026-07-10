@@ -3988,7 +3988,10 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         state.DecisionTimer -= diff;
         return;
     }
-    state.DecisionTimer = std::max<uint32>(500, sConfigMgr->GetIntDefault("BotWorld.DecisionTickMs", 3000));
+    uint32 decisionTickMs = sConfigMgr->GetIntDefault("BotWorld.DecisionTickMs", 3000);
+    if (bot->IsInCombat() || _config.ValidationRouteEnable)
+        decisionTickMs = std::min<uint32>(decisionTickMs, 1000);
+    state.DecisionTimer = std::max<uint32>(500, decisionTickMs);
 
     if (target && StopDisallowedDummyCombat(state, bot, target))
         target = nullptr;
