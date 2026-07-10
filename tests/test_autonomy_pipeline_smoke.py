@@ -80,6 +80,23 @@ def test_validation_scenario_trash_counts_are_descriptive_only():
     assert all(route["completion_policy"] == "cluster_clear_after_pull" for route in generated_trash)
 
 
+def test_validation_route_group_focus_reaches_profile_action_without_threat_rewait():
+    route_objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    group_focus_start = route_objective.index("if (Unit* focusTarget = routeGroupFocusTarget())")
+    group_focus_end = route_objective.index('if (std::string(GetDungeonRole(bot)) != "tank"\n        && (', group_focus_start)
+    group_focus = route_objective[group_focus_start:group_focus_end]
+    later_threat_gate = 'if (routeBossTarget && _config.ValidationRouteKind != "boss" && !botIsTank && !routeFocusTankOwned(target))'
+
+    assert_ordered(
+        group_focus,
+        "target = focusTarget;",
+        "if (tryRouteGroupHeal(bot, target))",
+        "ResolvedCombatAction profileAction = ResolveProfileCombatAction(bot, target);",
+    )
+    assert "routeFocusTankOwned(target)" not in group_focus
+    assert route_objective.index(later_threat_gate) > group_focus_end
+
+
 def test_pytest_excludes_generated_orchestrator_worktrees():
     pytest_config = read(PYTEST_CONFIG)
     assert re.search(r"^testpaths\s*=\s*tests$", pytest_config, re.MULTILINE)
@@ -765,7 +782,7 @@ def test_quest_first_portfolio_routing_surface():
     assert "if (!ownedByTank)" in validation_route_objective
     assert "routeFocusTankOwned" in validation_route_objective
     assert "wait_for_tank_threat" in validation_route_objective
-    assert "follow_anchor_wait_for_tank_threat" in validation_route_objective
+    assert 'if (routeBossTarget && _config.ValidationRouteKind != "boss" && !botIsTank && !routeFocusTankOwned(target))' in validation_route_objective
     assert '"tank_positioning", target, "route_trash_tank_focus"' in validation_route_objective
     rotation_profiles_sql = read(ROOT / "sql/custom/world/2026_06_21_00_bot_rotation_profiles.sql")
     assert "blood_presence,self,tank_stance,mitigation" in rotation_profiles_sql

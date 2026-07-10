@@ -8947,30 +8947,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         bool routeTrashFocus = _config.ValidationRouteKind != "boss";
         char const* focusSituation = routeTrashFocus ? "validation_route" : "validation_route_prerequisite";
         bool botIsTank = std::string(GetDungeonRole(bot)) == "tank";
-        if (routeTrashFocus && !botIsTank && !routeFocusTankOwned(target))
-        {
-            std::string raw = BuildRawJson(bot, target);
-            std::string semantic = BuildSemanticJson(bot, target, "validation_route_regroup", &power, stage, activity);
-            RecordEvent(state, bot, "validation_route_prerequisite_rejected", target, "wait_for_tank_threat", raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry);
-            bot->AttackStop();
-            bot->CombatStop(true);
-            state.TargetGuid.Clear();
-            target = nullptr;
-            if (Player* anchor = FindDungeonAnchor(bot))
-            {
-                if (anchor != bot && anchor->IsAlive() && anchor->GetMap() == bot->GetMap() && bot->GetExactDist(anchor) > 8.0f)
-                {
-                    MoveBotToProfileRange(state, bot, anchor);
-                    RecordEvent(state, bot, "validation_route_regroup", anchor, "follow_anchor_wait_for_tank_threat", raw.c_str(), semantic.c_str(), bot->GetExactDist(anchor), _config.ValidationRouteTargetEntry);
-                    situation = "validation_route_regroup";
-                    action = "move_to_validation_route_anchor";
-                    return true;
-                }
-            }
-            situation = "validation_route_regroup";
-            action = "validation_route_hold_anchor";
-            return true;
-        }
         ResolvedCombatAction profileAction = ResolveProfileCombatAction(bot, target);
         uint32 spellId = profileAction.SpellId;
         float engageRange = profileAction.MaxRange > 0.0f ? profileAction.MaxRange : routeEngageRange(bot, target, spellId);
