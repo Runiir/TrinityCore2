@@ -684,6 +684,10 @@ def test_quest_first_portfolio_routing_surface():
     assert "auto isValidationRouteEntry" in validation_route_objective
     assert "_config.ValidationRouteAlternateTargetEntries.begin()" in validation_route_objective
     assert "isValidationRouteScriptTarget(creature)" in validation_route_objective
+    script_target_block = validation_route_objective.split("auto isValidationRouteScriptTarget", 1)[1].split("auto isValidationRouteCombatTarget", 1)[0]
+    assert 'if (_config.ValidationRouteKind == "boss")' in script_target_block
+    assert "isValidationRoutePackEntry(creature->GetEntry())" in script_target_block
+    assert "creature->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ) <= radius" in script_target_block
 
     assert "creature_loot_template" in select_objective
     assert "creature_loot_template" in route_objective

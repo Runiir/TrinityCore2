@@ -7071,14 +7071,19 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return std::find(_config.ValidationRoutePackTargetEntries.begin(), _config.ValidationRoutePackTargetEntries.end(), entry) != _config.ValidationRoutePackTargetEntries.end();
         return isValidationRouteCombatEntry(entry);
     };
-    auto isValidationRouteScriptTarget = [this, &isValidationRouteEntry, &isValidationRoutePackEntry](Creature const* creature) -> bool
+    auto isValidationRouteScriptTarget = [this, bot, &isValidationRouteEntry, &isValidationRoutePackEntry](Creature const* creature) -> bool
     {
         if (!creature)
             return false;
 
-        return _config.ValidationRouteKind != "boss"
-            ? isValidationRoutePackEntry(creature->GetEntry())
-            : isValidationRouteEntry(creature->GetEntry());
+        if (_config.ValidationRouteKind == "boss")
+            return isValidationRouteEntry(creature->GetEntry());
+        if (!isValidationRoutePackEntry(creature->GetEntry()))
+            return false;
+
+        float radius = _config.ValidationRouteClusterRadiusYards > 1.0f ? _config.ValidationRouteClusterRadiusYards : 90.0f;
+        return creature->GetMapId() == bot->GetMapId()
+            && creature->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ) <= radius;
     };
     auto isValidationRouteCombatTarget = [&isValidationRouteCombatEntry](Creature const* creature) -> bool
     {
