@@ -1176,8 +1176,11 @@ private:
     GuidSet _validationRoutePackTransitionGuids;
     GuidSet _validationRouteFinalTransitionGuids;
     uint64 _validationRoutePackGeneration = 0;
+    uint64 _validationRoutePackSequence = 1;
+    uint32 _validationRouteCompletedPackCount = 0;
     bool _validationRoutePackObservedEngagement = false;
     uint64 _validationRoutePackClearCandidateSinceMs = 0;
+    uint64 _validationRouteNodeClearCandidateSinceMs = 0;
     ObjectGuid _validationRouteBossProgressTargetGuid;
     uint32 _validationRouteBossSlowProgressCount = 0;
     bool _validationRouteActivationApplied = false;

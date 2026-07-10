@@ -1865,10 +1865,7 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert 48964 not in bwd_boss_entries
     atramedes = next(row for row in routes if row["scenario_id"] == "blackwing_descent_10n" and row["label"] == "Atramedes")
     omnotron = next(row for row in routes if row["scenario_id"] == "blackwing_descent_10n" and row["label"] == "Omnotron Defense System")
-    stonecore_entry = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "entrance packs")
-    stonecore_entrance_tunnel = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "entrance tunnel")
-    corborus_approach_pack = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "corborus approach pack")
-    corborus_antechamber_pack = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "corborus antechamber pack")
+    corborus_approach_corridor = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "Corborus approach corridor")
     stonecore_sentry_gauntlet = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "stonecore sentry gauntlet")
     post_slabhide_regroup = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "post-Slabhide regroup")
     stonecore_descent_regroup = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "stonecore descent regroup")
@@ -1892,9 +1889,9 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert slabhide["activation_data_id"] == 10
     assert slabhide["activation_data_value"] == 2
     assert slabhide["activation_summon_entry"] == 0
-    assert stonecore_entry["bot_start_map_id"] == 725
-    assert stonecore_entry["bot_start_x"] == 851.052
-    assert stonecore_entry["bot_start_z"] == 317.266
+    assert corborus_approach_corridor["bot_start_map_id"] == 725
+    assert corborus_approach_corridor["bot_start_x"] == 851.052
+    assert corborus_approach_corridor["bot_start_z"] == 317.266
     assert corborus["x"] == 1103.9
     assert corborus["y"] == 864.733
     assert corborus["z"] == 287.98
@@ -1947,44 +1944,19 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert azil["step"] == 16
     assert azil["bot_start_x"] == 1337.3
     assert azil["bot_start_z"] == 214.2383
-    assert stonecore_entry["node_kind"] == "trash_cluster"
-    assert stonecore_entry["cluster_id"] == "stonecore_5n_01_trash_cluster"
-    assert stonecore_entry["cluster_center"] == [851.052, 986.474, 317.266]
-    assert stonecore_entry["cluster_radius_yards"] == 90.0
-    assert stonecore_entry["pack_target_entries"]
-    assert {42696, 43430, 43537}.issubset(set(stonecore_entry["pack_target_entries"]))
-    assert 43391 not in stonecore_entry["pack_target_entries"]
-    assert stonecore_entry["scripted_event_entries"] == [43391]
-    assert stonecore_entry["scripted_event_transition_aura_ids"] == [81216]
-    assert stonecore_entry["scripted_event_require_passive"] is True
-    assert stonecore_entry["completion_policy"] == "cluster_clear_after_pull"
-    assert stonecore_entrance_tunnel["x"] == 982.464
-    assert stonecore_entrance_tunnel["source_guid"] == "@CGUID+51"
-    assert stonecore_entrance_tunnel["cluster_radius_yards"] == 35.0
-    assert stonecore_entrance_tunnel["expected_alive_count"] == 4
-    assert stonecore_entrance_tunnel["expected_alive_count_semantics"] == "descriptive_only"
-    assert stonecore_entrance_tunnel["scripted_event_entries"] == [43391]
-    assert stonecore_entrance_tunnel["scripted_event_transition_aura_ids"] == [81216]
-    assert stonecore_entrance_tunnel["scripted_event_require_passive"] is True
-    assert {42696, 43430, 43537}.issubset(set(stonecore_entrance_tunnel["pack_target_entries"]))
-    assert corborus_approach_pack["x"] == 1054.68
-    assert corborus_approach_pack["source_guid"] == "@CGUID+62"
-    assert corborus_approach_pack["node_kind"] == "discovery_leg"
-    assert corborus_approach_pack["cluster_radius_yards"] == 0.0
-    assert "expected_alive_count" not in corborus_approach_pack
-    assert corborus_approach_pack["expected_alive_count_semantics"] == "descriptive_only"
-    assert corborus_approach_pack["pack_target_entries"] == []
-    assert corborus_approach_pack["completion_policy"] == "cluster_clear_after_pull"
-    assert corborus_approach_pack["scripted_event_entries"] == [43391]
-    assert corborus_approach_pack["scripted_event_transition_aura_ids"] == [81216]
-    assert corborus_approach_pack["scripted_event_require_passive"] is True
-    assert corborus_antechamber_pack["x"] == 1155.75
-    assert corborus_antechamber_pack["source_guid"] == "@CGUID+82"
-    assert corborus_antechamber_pack["cluster_radius_yards"] == 55.0
-    assert corborus_antechamber_pack["expected_alive_count"] == len(corborus_antechamber_pack["pack_target_entries"])
-    assert corborus_antechamber_pack["expected_alive_count_semantics"] == "descriptive_only"
-    assert {42696, 43430, 43537}.issubset(set(corborus_antechamber_pack["pack_target_entries"]))
-    assert 42810 not in corborus_antechamber_pack["pack_target_entries"]
+    assert corborus_approach_corridor["node_kind"] == "discovery_leg"
+    assert corborus_approach_corridor["cluster_center"] == [1103.9, 864.733, 287.98]
+    assert corborus_approach_corridor["cluster_radius_yards"] == 0.0
+    assert corborus_approach_corridor["source_entry"] == 0
+    assert corborus_approach_corridor["source_guid"] == ""
+    assert corborus_approach_corridor["pack_target_entries"] == []
+    assert "expected_alive_count" not in corborus_approach_corridor
+    assert corborus_approach_corridor["expected_alive_count_semantics"] == "descriptive_only"
+    assert corborus_approach_corridor["completion_policy"] == "corridor_clear_after_engagement"
+    assert corborus_approach_corridor["scripted_event_entries"] == [43391]
+    assert corborus_approach_corridor["scripted_event_transition_aura_ids"] == [81216]
+    assert corborus_approach_corridor["scripted_event_require_passive"] is True
+    assert 42810 not in corborus_approach_corridor["pack_target_entries"]
     assert slabhide["node_kind"] == "boss"
     assert slabhide["completion_policy"] == "boss_kill"
     assert nefarian["expected_bot_count"] == 10

@@ -114,17 +114,13 @@ def route_required_evidence(kind: str, families: list[str]) -> list[str]:
 
 
 STONECORE_TRASH_PACKS = {
-    "entrance packs": [43391, 42696, 43430, 43537],
-    "entrance tunnel": [42696, 43430, 43537],
-    "corborus approach pack": [42696, 43430, 43537],
-    "corborus antechamber pack": [42696, 43430, 43537],
     "crystalspawn corridor": [42810, 42696, 43430, 43537, 42695, 42692],
     "stonecore sentry gauntlet": [42428, 42696, 42695, 42692],
     "twilight flayer packs": [42428, 42696, 42695, 42692, 42691],
 }
 
 STONECORE_SCRIPTED_EVENT_ACTORS = {
-    "entrance packs": [43391],
+    "Corborus approach corridor": [43391],
 }
 
 

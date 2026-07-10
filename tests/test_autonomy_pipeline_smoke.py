@@ -75,15 +75,14 @@ def test_validation_scenario_trash_counts_are_descriptive_only():
     ]
     assert generated_trash
     generated_by_step = {route["step"]: route for route in generated_trash}
-    assert generated_by_step[2]["cluster_radius_yards"] == 35.0
-    assert generated_by_step[2]["expected_alive_count"] == 4
-    assert generated_by_step[3]["cluster_radius_yards"] == 0.0
-    assert "expected_alive_count" not in generated_by_step[3]
-    assert generated_by_step[3]["pack_target_entries"] == []
-    assert all(route["expected_alive_count"] == len(route["pack_target_entries"]) for route in generated_trash if route["step"] not in {2, 3})
+    assert generated_by_step[1]["cluster_radius_yards"] == 0.0
+    assert "expected_alive_count" not in generated_by_step[1]
+    assert generated_by_step[1]["pack_target_entries"] == []
+    assert generated_by_step[1]["completion_policy"] == "corridor_clear_after_engagement"
+    assert all(route["expected_alive_count"] == len(route["pack_target_entries"]) for route in generated_trash if route["step"] != 1)
     assert all(route["expected_alive_count"] > 0 for route in generated_trash if route["node_kind"] == "trash_cluster")
     assert all(route["expected_alive_count_semantics"] == "descriptive_only" for route in generated_trash)
-    assert all(route["completion_policy"] == "cluster_clear_after_pull" for route in generated_trash)
+    assert all(route["completion_policy"] == "cluster_clear_after_pull" for route in generated_trash if route["step"] != 1)
     corborus = next(route for route in manifest["validation_routes"] if route["scenario_id"] == "stonecore_5n" and route["label"] == "Corborus")
     assert corborus["add_target_entries"] == [43917]
 
@@ -1735,15 +1734,11 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     transition_block = route_objective.split("auto recordValidationRouteScriptedTransition", 1)[1].split("auto enrollEngagedValidationRoutePackMembers", 1)[0]
     for required in [
         "_validationRoutePackEngagedGuids.find(creature->GetGUID())",
-        "_config.ValidationRouteScriptedEventEntries.end()",
-        "_config.ValidationRouteScriptedEventTransitionAuraIds[index]",
-        "creature->HasAura(auraId)",
-        "creature->GetVictim()",
-        "creature->HasReactState(REACT_PASSIVE)",
+        "resolvedScriptedTransitionAuraId(creature)",
         "_validationRoutePackTransitionGuids.insert(creature->GetGUID())",
         "_validationRouteManifestIndex + 1",
         "ScriptedEventEntries.begin()",
-        "!declaredByFutureNode",
+        "!discoveryLeg && !declaredByFutureNode",
         "_validationRouteFinalTransitionGuids.insert(transitionedGuid)",
         "_validationRouteFocusGuid == transitionedGuid",
         "cohortState.TargetGuid == transitionedGuid",
@@ -1755,6 +1750,15 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         '"validation_route_scripted_transition"',
     ]:
         assert required in transition_block
+    resolved_transition_block = route_objective.split("auto resolvedScriptedTransitionAuraId", 1)[1].split("auto isEligibleTrashClusterMob", 1)[0]
+    for required in [
+        "_config.ValidationRouteScriptedEventEntries.end()",
+        "_config.ValidationRouteScriptedEventTransitionAuraIds[index]",
+        "creature->HasAura(auraId)",
+        "creature->GetVictim()",
+        "creature->HasReactState(REACT_PASSIVE)",
+    ]:
+        assert required in resolved_transition_block
     for generic_state in ["IsValidAttackTarget", "IsInEvadeMode", "UNIT_STATE_EVADE", "hasStrictPathToValidationRouteTarget", "IsWithinLOSInMap"]:
         assert generic_state not in transition_block
     assert "_validationRoutePackTransitionGuids.find(guid) == _validationRoutePackTransitionGuids.end()" in route_objective
@@ -1776,10 +1780,10 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         "_validationRoutePackDeathGuids.insert(killedTarget->GetGUID());",
         'RecordEvent(state, bot, "mob_killed"',
     )
-    assert "&& _validationRoutePackObservedEngagement" in route_objective
+    assert "!_validationRoutePackObservedEngagement" in route_objective
     assert "member->GetVictim() || !member->getAttackers().empty()" in route_objective
     assert "&& !partyHasActiveCombatUnit" in route_objective
-    assert "nowMs - _validationRoutePackClearCandidateSinceMs >= 2000" in route_objective
+    assert "nowMs - _validationRoutePackClearCandidateSinceMs < 2000" in route_objective
     assert "_validationRoutePackEngagedGuids.find(killedTarget->GetGUID())" in route_objective
     assert "bestAnchorTargetScore" not in route_objective
     assert '"dynamic_pack_members_live_or_unobserved"' in route_objective
@@ -1787,6 +1791,8 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     diagnosis_json = function_body(mgr, "std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson")
     for field in [
         "pack_generation",
+        "pack_sequence",
+        "completed_pack_count",
         "pack_member_count",
         "pack_engaged_count",
         "pack_death_count",
@@ -1806,12 +1812,25 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         route_objective,
         "routeDistance <= routeArrivalRadius && std::string(GetDungeonRole(bot)) == \"tank\"",
         "++state.ValidationRouteTargetSearchMissCount >= 2",
+        "uint64& clearCandidateSinceMs = discoveryLeg ? _validationRouteNodeClearCandidateSinceMs : _validationRoutePackClearCandidateSinceMs;",
         "if (_config.ValidationRouteAdvanceMode == \"terminal\"",
-        "&& _validationRoutePackObservedEngagement",
+        "(discoveryLeg ? _validationRouteCompletedPackCount > 0 : _validationRoutePackObservedEngagement)",
         "&& !packHasLiveMobs",
         "&& !partyHasActiveCombatUnit",
-        "&& nowMs - _validationRoutePackClearCandidateSinceMs >= 2000)",
+        "&& fullCohortAtEndpoint",
+        "&& nowMs - clearCandidateSinceMs >= 2000)",
         'markTrashClusterCleared("trash_cluster_cleared");',
+    )
+    assert_ordered(
+        route_objective,
+        "auto completeDiscoveredPackIfReady",
+        "ledgerComplete = false;",
+        "validationPartyHasActiveCombat()",
+        'RecordEvent(state, bot, "validation_route_pack_terminal"',
+        "++_validationRouteCompletedPackCount;",
+        "++_validationRoutePackSequence;",
+        "_validationRoutePackMemberGuids.clear();",
+        "if (completeDiscoveredPackIfReady())",
     )
     assert 'uint32 routeTargetNoProgressThreshold = _config.ValidationRouteKind == "boss" ? 5 : 20;' in route_objective
     assert "bool _validationRouteManifestComplete = false;" in mgr_header
