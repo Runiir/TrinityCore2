@@ -16,19 +16,31 @@ Changed:
 
 Worker routing:
 
-- C++ runtime truth: large/high-risk.
-- Python evidence/report truth: large/high-risk.
-- Manifest and pytest discovery: medium.
-- Strict fixture migration and independent evidence review: medium and large/high-risk.
-- The collaboration API did not expose per-worker model selection; workers used the platform-provided Codex model.
+- Large/high-risk diagnosis used `gpt-5.6-sol` with high reasoning.
+- Medium implementation and debugging used `gpt-5.6-terra` with medium reasoning.
+- Structured SQL/manifest audits used `gpt-5.6-luna` with low reasoning.
+- Simple disk/DVC and predicate audits used `gpt-5.3-codex-spark` with low reasoning.
+- These were direct worker Codex sessions selected from the orchestration skill; `tools/bot_ml/orchestrator_daemon.py` was never invoked. A later Sol audit launch was blocked by account quota, so the existing collaboration reviewer performed that read-only audit.
+
+Strict live iterations:
+
+- Runs 001-003 isolated motion resets, cohort routing, and overlapping trash scopes.
+- Runs 004-005 established exact post-stuck progress and let dungeon cohorts join the tank's authoritative focus.
+- Run 006 exposed the three-second combat cadence; the active route/combat cadence is now capped at one second.
+- Run 007 reached Slabhide after a real Corborus kill, but its final trace was incomplete and the airborne approach failed strict Z validation.
+- Run 008 verified full trace capture and terrain-projected approaches, then wiped at Corborus with the healer dying first at 17.4% boss health.
+- Run 009 proved targeted aura movement for Crystal Barrage spell 86881, but also misclassified shared Dampening Wave spell 82415 and caused a manifest-route death loop.
+- Run 010 was aborted before Corborus after a DBC audit proved its periodic-trigger refinement would reject 86881. The aborted diagnostic is also checkpointed in DVC.
+- The current implementation matches the loaded spell shape: a harmful `PERSISTENT_AREA_AURA` with `PERIODIC_DAMAGE`, and moves away from the aura's dynamic-object owner rather than the boss caster. This accepts 86881, rejects 82415, and remains encounter-ID independent.
+- Runs 001-010 are committed as DVC pointers and pushed. Their working copies and the local DVC cache were removed after push; use `pixi run dvc pull <pointer>` to restore one.
 
 Verification:
 
-- `pixi run pytest -q`: 239 passed.
-- Fresh `cmake --build build --target worldserver -- -j2`: passed from Phase 1 commit `c80c6e26cd`.
+- `pixi run pytest -q`: 250 passed after the persistent-area spell-shape contract test.
+- `cmake --build build --target worldserver -j2`: passed; exact revision verification is required again after committing the current source and progress update.
 - DVC remote credentials match the main worktree; `pixi run dvc status` was recorded and reports pre-existing missing-cache drift plus the changed validation stages.
-- No experiment or live-run artifacts were produced, so no DVC checkpoint or push was required.
+- Every strict live artifact through run 009 was checkpointed and pushed with DVC before local cleanup.
 
 Next handoff:
 
-Run the generated uninterrupted Stonecore manifest from the exact Phase 1 `HEAD` with `--observe-sec 300 --timeout-sec 900`. Accept no prior Stonecore evidence. Inspect `.botauto diagnose all` and `.botauto trace all 64`. Continue repairing deterministic teacher behavior until 10 consecutive clears show five bots in the original instance, four exact node/generation-scoped real boss kills, a terminal for every route node, zero forced/teacher completion, zero false terminals, and zero unresolved stuck states. Do not start Phase 2 until that gate passes.
+Commit and rebuild the current persistent-area dodge, then run strict run 011. At Corborus, require spell 86881 `validation_route_mechanic` movement away from the dynamic-object owner, no spell 82415 movement, healer survival, and a real `boss_killed` terminal. Checkpoint and push the run before cleanup. Continue repairing the first truthful failure until 10 consecutive clears show five bots in the original instance, four exact node/generation-scoped real boss kills, a terminal for every route node, zero forced/teacher completion, zero false terminals, and zero unresolved stuck states. Do not start Phase 2 until that gate passes.

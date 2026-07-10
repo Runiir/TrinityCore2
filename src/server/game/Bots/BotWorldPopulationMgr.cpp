@@ -8482,6 +8482,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return false;
 
         Unit* caster = nullptr;
+        WorldObject const* movementOrigin = nullptr;
         SpellInfo const* castSpell = nullptr;
         auto inspectCaster = [&](Unit* candidate) -> bool
         {
@@ -8505,6 +8506,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             }
 
             caster = candidate;
+            movementOrigin = candidate;
             return true;
         };
 
@@ -8521,34 +8523,21 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 if (!auraSpell)
                     continue;
 
-                bool periodicTrigger = false;
-                bool areaTargeted = false;
+                bool persistentPeriodicDamage = false;
                 for (SpellEffectInfo const& effect : auraSpell->Effects)
                 {
-                    areaTargeted = areaTargeted || effect.IsTargetingArea();
-                    if (effect.ApplyAuraName == SPELL_AURA_PERIODIC_TRIGGER_SPELL
-                        || effect.ApplyAuraName == SPELL_AURA_PERIODIC_TRIGGER_SPELL_WITH_VALUE)
-                        periodicTrigger = true;
-                }
-                if (!periodicTrigger || areaTargeted)
-                    continue;
-
-                bool sharedByParty = false;
-                if (Group* group = bot->GetGroup())
-                {
-                    for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
+                    if (effect.Effect == SPELL_EFFECT_PERSISTENT_AREA_AURA
+                        && (effect.ApplyAuraName == SPELL_AURA_PERIODIC_DAMAGE
+                            || effect.ApplyAuraName == SPELL_AURA_PERIODIC_DAMAGE_PERCENT))
                     {
-                        Player* member = itr->GetSource();
-                        if (member && member != bot && member->GetMap() == bot->GetMap() && member->HasAura(auraSpell->Id))
-                        {
-                            sharedByParty = true;
-                            break;
-                        }
+                        persistentPeriodicDamage = true;
+                        break;
                     }
                 }
-                if (sharedByParty)
+                if (!persistentPeriodicDamage)
                     continue;
 
+                movementOrigin = aura->GetOwner();
                 caster = ObjectAccessor::GetUnit(*bot, aura->GetCasterGUID());
                 if (!caster)
                     caster = preferredTarget;
@@ -8573,7 +8562,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (!caster || !castSpell)
             return false;
 
-        float angle = caster->GetAngle(bot);
+        float angle = (movementOrigin ? movementOrigin : caster)->GetAngle(bot);
         Position dodge = bot->GetFirstCollisionPosition(8.0f, angle);
         MoveBotToPoint(state, bot, dodge.GetPositionX(), dodge.GetPositionY(), dodge.GetPositionZ());
 

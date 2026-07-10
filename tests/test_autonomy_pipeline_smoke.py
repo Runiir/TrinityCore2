@@ -881,11 +881,12 @@ def test_quest_first_portfolio_routing_surface():
     assert "&& _config.ValidationRouteMechanicProfile.find(\"ground_danger\") == std::string::npos;" in validation_route_objective
     assert "if (!SpellLooksLikeGroundDanger(castSpell) && !profileAllowsCastMovement)" in validation_route_objective
     assert "for (auto const& [_, application] : bot->GetAppliedAuras())" in validation_route_objective
-    assert "effect.ApplyAuraName == SPELL_AURA_PERIODIC_TRIGGER_SPELL" in validation_route_objective
-    assert "areaTargeted = areaTargeted || effect.IsTargetingArea();" in validation_route_objective
-    assert "if (!periodicTrigger || areaTargeted)" in validation_route_objective
-    assert "member->HasAura(auraSpell->Id)" in validation_route_objective
-    assert "if (sharedByParty)" in validation_route_objective
+    assert "effect.Effect == SPELL_EFFECT_PERSISTENT_AREA_AURA" in validation_route_objective
+    assert "effect.ApplyAuraName == SPELL_AURA_PERIODIC_DAMAGE" in validation_route_objective
+    assert "effect.ApplyAuraName == SPELL_AURA_PERIODIC_DAMAGE_PERCENT" in validation_route_objective
+    assert "if (!persistentPeriodicDamage)" in validation_route_objective
+    assert "movementOrigin = aura->GetOwner();" in validation_route_objective
+    assert "(movementOrigin ? movementOrigin : caster)->GetAngle(bot)" in validation_route_objective
     assert_ordered(
         validation_route_objective,
         "inspectCaster(preferredTarget);",
@@ -1230,6 +1231,26 @@ def test_move_bot_to_profile_range_projects_approaches_to_terrain():
     assert "return MoveBotToPoint(state, bot, x, y, floorZ);" in profile_range
     assert "return moveToTerrainProjectedPoint(reference->GetPositionX(), reference->GetPositionY(), reference->GetPositionZ());" in profile_range
     assert "return moveToTerrainProjectedPoint(rangedPosition.GetPositionX(), rangedPosition.GetPositionY(), rangedPosition.GetPositionZ());" in profile_range
+
+
+def test_applied_ground_danger_spell_shape_contract():
+    persistent_area_aura = 27
+    periodic_damage = 3
+    periodic_damage_percent = 89
+
+    def should_dodge(is_positive: bool, effects: list[tuple[int, int]]) -> bool:
+        return not is_positive and any(
+            effect == persistent_area_aura and aura in {periodic_damage, periodic_damage_percent}
+            for effect, aura in effects
+        )
+
+    dampening_wave_82415 = [(2, 0), (6, 301)]
+    crystal_barrage_86881 = [(persistent_area_aura, periodic_damage), (3, 0)]
+    assert not should_dodge(False, dampening_wave_82415)
+    assert should_dodge(False, crystal_barrage_86881)
+    assert all(should_dodge(False, crystal_barrage_86881) for _party_member in range(2))
+    assert not should_dodge(True, crystal_barrage_86881)
+    assert not should_dodge(False, [])
 
 
 def test_botauto_diagnosis_and_trace_surface():
