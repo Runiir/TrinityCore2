@@ -1158,6 +1158,8 @@ private:
     float _validationRouteFocusY = 0.0f;
     float _validationRouteFocusZ = 0.0f;
     uint64 _validationRouteFocusSeenMs = 0;
+    ObjectGuid _validationRouteAddFocusGuid;
+    uint64 _validationRouteAddFocusGeneration = 0;
     ObjectGuid _validationRouteBossProgressTargetGuid;
     uint32 _validationRouteBossSlowProgressCount = 0;
     bool _validationRouteActivationApplied = false;

@@ -36,7 +36,8 @@ Strict live iterations:
 - The manifest's `adds` tactic now uses a dedicated `add_target_entries` list inside the strict route handler: non-healers select only engaged listed adds with their DB-backed class/spec action profile, while the healer continues triage. Boss legality and kill evidence are unchanged.
 - Run 012 proved the dedicated manifest list selects only Rock Borer 43917, never charge hazard 43743 or unrelated creatures. The healer survived the previous failure point, but two of the first three add decisions returned `no_action`; DPS1266 and the tank died next.
 - Add engagement now initiates the normal auto-attack/pull alongside the class/spec action, matching the established boss-target path without changing hard masks or terminal evidence.
-- Runs 001-012 are committed as DVC pointers and pushed. Their working copies and the local DVC cache were removed after push; use `pixi run dvc pull <pointer>` to restore one.
+- Run 013 made every listed-add action succeed, but tank and DPS selected three different borer GUIDs and still wiped. A generation-scoped shared add focus now keeps the party on the first valid listed add until it dies, without touching boss focus or terminal evidence.
+- Runs 001-013 are committed as DVC pointers and pushed. Their working copies and the local DVC cache were removed after push; use `pixi run dvc pull <pointer>` to restore one.
 
 Verification:
 
@@ -47,4 +48,4 @@ Verification:
 
 Next handoff:
 
-Commit and rebuild add auto-attack initiation, then run strict run 013. At Corborus, require effective 43917 add damage during submerge, healer/tank survival, spell 86881 movement, no spell 82415 movement, and a real `boss_killed` terminal. Checkpoint and push the run before cleanup. Continue repairing the first truthful failure until 10 consecutive clears show five bots in the original instance, four exact node/generation-scoped real boss kills, a terminal for every route node, zero forced/teacher completion, zero false terminals, and zero unresolved stuck states. Do not start Phase 2 until that gate passes.
+Commit and rebuild shared add focus, then run strict run 014. At Corborus, require tank/DPS convergence on one 43917 GUID, add deaths, healer/tank survival, spell 86881 movement, no spell 82415 movement, and a real `boss_killed` terminal. Checkpoint and push the run before cleanup. Continue repairing the first truthful failure until 10 consecutive clears show five bots in the original instance, four exact node/generation-scoped real boss kills, a terminal for every route node, zero forced/teacher completion, zero false terminals, and zero unresolved stuck states. Do not start Phase 2 until that gate passes.

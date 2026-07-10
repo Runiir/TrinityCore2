@@ -891,7 +891,7 @@ def test_quest_first_portfolio_routing_surface():
     assert "(movementOrigin ? movementOrigin : caster)->GetAngle(bot)" in validation_route_objective
     assert 'ValidationRouteMechanicProfile.find("adds")' in validation_route_objective
     assert "ValidationRouteAddTargetEntries.empty()" in validation_route_objective
-    assert "creature->IsInCombat() && !creature->GetVictim()" in validation_route_objective
+    assert "creature->IsInCombat() || creature->GetVictim()" in validation_route_objective
     assert "ValidationRouteAddTargetEntries.end(), creature->GetEntry()" in validation_route_objective
     assert "BuildBossMechanicFeatures(bot, bossTarget)" not in validation_route_objective
     assert "BotActionResult pull = executor.Pull(bot, add);" in validation_route_objective
@@ -899,6 +899,9 @@ def test_quest_first_portfolio_routing_surface():
     assert 'priority = victimRole == "healer" ? 3 : (victimRole == "tank" ? 2 : 1);' in validation_route_objective
     assert "priority == bestPriority && healthPct < bestHealthPct" in validation_route_objective
     assert "healthPct == bestHealthPct && guid < bestGuid" in validation_route_objective
+    assert "_validationRouteAddFocusGeneration == _validationRouteGeneration" in validation_route_objective
+    assert "add = ObjectAccessor::GetUnit(*bot, _validationRouteAddFocusGuid);" in validation_route_objective
+    assert "_validationRouteAddFocusGuid = add->GetGUID();" in validation_route_objective
     assert 'RecordEvent(state, bot, "boss_adds", add' in validation_route_objective
     assert_ordered(
         validation_route_objective,

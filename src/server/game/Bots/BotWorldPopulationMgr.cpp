@@ -1839,6 +1839,8 @@ bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode(size_t index, char 
     _config.ValidationRoutePackTargetEntries = node.PackTargetEntries;
     _config.ValidationRouteClusterRadiusYards = node.ClusterRadiusYards;
     _config.ValidationRouteExpectedAliveCount = node.ExpectedAliveCount;
+    _validationRouteAddFocusGuid.Clear();
+    _validationRouteAddFocusGeneration = _validationRouteGeneration;
     _config.ValidationRouteActivationDataId = node.ActivationDataId;
     _config.ValidationRouteActivationDataValue = node.ActivationDataValue;
     _config.ValidationRouteActivationSpawnGroupId = node.ActivationSpawnGroupId;
@@ -8584,10 +8586,31 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return false;
 
         Unit* add = nullptr;
+        bool sharedFocusValid = false;
         uint32 addCount = 0;
         uint8 bestPriority = 0;
         float bestHealthPct = 1.0f;
         uint32 bestGuid = 0;
+        auto isUsableListedAdd = [this, bot](Unit* candidate) -> bool
+        {
+            Creature* creature = candidate ? candidate->ToCreature() : nullptr;
+            return creature && creature->IsAlive() && creature->GetHealth()
+                && creature->GetMap() == bot->GetMap()
+                && std::find(_config.ValidationRouteAddTargetEntries.begin(), _config.ValidationRouteAddTargetEntries.end(), creature->GetEntry()) != _config.ValidationRouteAddTargetEntries.end()
+                && (creature->IsInCombat() || creature->GetVictim())
+                && bot->IsValidAttackTarget(creature);
+        };
+        if (_validationRouteAddFocusGeneration == _validationRouteGeneration && !_validationRouteAddFocusGuid.IsEmpty())
+        {
+            add = ObjectAccessor::GetUnit(*bot, _validationRouteAddFocusGuid);
+            sharedFocusValid = isUsableListedAdd(add);
+            if (!sharedFocusValid)
+            {
+                add = nullptr;
+                _validationRouteAddFocusGuid.Clear();
+            }
+        }
+
         std::vector<WorldObject*> objects;
         Trinity::AllWorldObjectsInRange check(bot, 45.0f);
         Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(bot, objects, check);
@@ -8595,13 +8618,12 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         for (WorldObject* object : objects)
         {
             Creature* creature = object ? object->ToCreature() : nullptr;
-            if (!creature || !creature->IsAlive() || !creature->GetHealth()
-                || std::find(_config.ValidationRouteAddTargetEntries.begin(), _config.ValidationRouteAddTargetEntries.end(), creature->GetEntry()) == _config.ValidationRouteAddTargetEntries.end()
-                || (!creature->IsInCombat() && !creature->GetVictim())
-                || !bot->IsValidAttackTarget(creature) || !bot->IsWithinLOSInMap(creature))
+            if (!isUsableListedAdd(creature) || !bot->IsWithinLOSInMap(creature))
                 continue;
 
             ++addCount;
+            if (sharedFocusValid)
+                continue;
             uint8 priority = 1;
             if (Player* victim = creature->GetVictim() ? creature->GetVictim()->ToPlayer() : nullptr)
             {
@@ -8623,6 +8645,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         }
         if (!add)
             return false;
+        if (!sharedFocusValid)
+        {
+            _validationRouteAddFocusGuid = add->GetGUID();
+            _validationRouteAddFocusGeneration = _validationRouteGeneration;
+        }
 
         ResolvedCombatAction profileAction = ResolveProfileCombatAction(bot, add);
         uint32 spellId = profileAction.SpellId;
