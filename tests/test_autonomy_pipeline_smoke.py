@@ -1593,6 +1593,10 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     assert_ordered(
         route_objective,
         "auto recordValidationRouteTrashKill",
+        "if (state.LastKilledTargetGuid == killedTarget->GetGUID())",
+        "return false;",
+        "++_metrics.Kills;",
+        "state.LastKilledTargetGuid = killedTarget->GetGUID();",
         "if (isValidationRouteScriptTarget(creature)",
         "if (!trashClusterHasLiveMobs())",
         '"trash_cluster_empty_pending_anchor_verification"',

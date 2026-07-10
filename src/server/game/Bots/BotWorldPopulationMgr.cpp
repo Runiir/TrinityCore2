@@ -7418,11 +7418,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (!creature)
             return false;
 
-        if (state.LastKilledTargetGuid != killedTarget->GetGUID())
-        {
-            ++_metrics.Kills;
-            state.LastKilledTargetGuid = killedTarget->GetGUID();
-        }
+        if (state.LastKilledTargetGuid == killedTarget->GetGUID())
+            return false;
+
+        ++_metrics.Kills;
+        state.LastKilledTargetGuid = killedTarget->GetGUID();
 
         clearValidationRouteKilledFocus(killedTarget->GetGUID());
         _validationRouteObservedEngagement = true;
