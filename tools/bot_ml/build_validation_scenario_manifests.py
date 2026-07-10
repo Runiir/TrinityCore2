@@ -359,6 +359,7 @@ def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any],
                     alternate_target_entries.append(entry_id)
             route["alternate_target_entries"] = alternate_target_entries
             route["target_priority"]["alternate_target_entries"] = alternate_target_entries
+            route["add_target_entries"] = sorted({int(entry) for entry in step.get("add_target_entries") or [] if int(entry) > 0})
             scenario_start = scenario.get("start_position") or {}
             bot_start = step.get("bot_start") or scenario_start
             route["bot_start_map_id"] = int(bot_start.get("map_id") or step.get("bot_start_map_id") or 0)

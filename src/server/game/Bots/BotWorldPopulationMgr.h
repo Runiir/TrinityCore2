@@ -78,6 +78,7 @@ struct BotWorldExperimentConfig
     uint32 ValidationRouteTargetEntry = 0;
     uint32 ValidationRouteOpenerTargetEntry = 0;
     std::vector<uint32> ValidationRouteAlternateTargetEntries;
+    std::vector<uint32> ValidationRouteAddTargetEntries;
     std::vector<uint32> ValidationRoutePackTargetEntries;
     float ValidationRouteClusterRadiusYards = 0.0f;
     uint32 ValidationRouteExpectedAliveCount = 0;
@@ -291,6 +292,7 @@ private:
         uint32 TargetEntry = 0;
         uint32 OpenerTargetEntry = 0;
         std::vector<uint32> AlternateTargetEntries;
+        std::vector<uint32> AddTargetEntries;
         std::vector<uint32> PackTargetEntries;
         float ClusterRadiusYards = 0.0f;
         uint32 ExpectedAliveCount = 0;

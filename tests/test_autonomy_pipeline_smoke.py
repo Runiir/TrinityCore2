@@ -78,6 +78,8 @@ def test_validation_scenario_trash_counts_are_descriptive_only():
     assert all(route["expected_alive_count"] > 0 for route in generated_trash)
     assert all(route["expected_alive_count_semantics"] == "descriptive_only" for route in generated_trash)
     assert all(route["completion_policy"] == "cluster_clear_after_pull" for route in generated_trash)
+    corborus = next(route for route in manifest["validation_routes"] if route["scenario_id"] == "stonecore_5n" and route["label"] == "Corborus")
+    assert corborus["add_target_entries"] == [43917]
 
 
 def test_validation_route_group_focus_reaches_profile_action_without_threat_rewait():
@@ -887,6 +889,12 @@ def test_quest_first_portfolio_routing_surface():
     assert "if (!persistentPeriodicDamage)" in validation_route_objective
     assert "movementOrigin = aura->GetOwner();" in validation_route_objective
     assert "(movementOrigin ? movementOrigin : caster)->GetAngle(bot)" in validation_route_objective
+    assert 'ValidationRouteMechanicProfile.find("adds")' in validation_route_objective
+    assert "ValidationRouteAddTargetEntries.empty()" in validation_route_objective
+    assert "creature->IsInCombat() && !creature->GetVictim()" in validation_route_objective
+    assert "ValidationRouteAddTargetEntries.end(), creature->GetEntry()" in validation_route_objective
+    assert "BuildBossMechanicFeatures(bot, bossTarget)" not in validation_route_objective
+    assert 'RecordEvent(state, bot, "boss_adds", add' in validation_route_objective
     assert_ordered(
         validation_route_objective,
         "inspectCaster(preferredTarget);",
@@ -894,6 +902,7 @@ def test_quest_first_portfolio_routing_surface():
         "if (!caster)\n        {",
         "Position dodge = bot->GetFirstCollisionPosition(8.0f, angle);",
         "if (tryValidationRouteMovementCheck(target))",
+        "if (tryValidationRouteAdds())",
         "if (tryRouteGroupHeal(bot, target))",
     )
     assert "bot->GetFirstCollisionPosition(8.0f, angle)" in validation_route_objective

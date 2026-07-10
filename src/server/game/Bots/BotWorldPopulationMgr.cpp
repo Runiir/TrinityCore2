@@ -1780,6 +1780,7 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
         node.TargetEntry = uint32(std::max(0, readInt(routeJson, "source_entry")));
         node.OpenerTargetEntry = uint32(std::max(0, readInt(routeJson, "opener_target_entry")));
         node.AlternateTargetEntries = ExtractJsonUIntArrayField(routeJson, "alternate_target_entries");
+        node.AddTargetEntries = ExtractJsonUIntArrayField(routeJson, "add_target_entries");
         node.PackTargetEntries = ExtractJsonUIntArrayField(routeJson, "pack_target_entries");
         node.ClusterRadiusYards = readFloat(routeJson, "cluster_radius_yards");
         node.ExpectedAliveCount = uint32(std::max(0, readInt(routeJson, "expected_alive_count")));
@@ -1834,6 +1835,7 @@ bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode(size_t index, char 
     _config.ValidationRouteTargetEntry = node.TargetEntry;
     _config.ValidationRouteOpenerTargetEntry = node.OpenerTargetEntry;
     _config.ValidationRouteAlternateTargetEntries = node.AlternateTargetEntries;
+    _config.ValidationRouteAddTargetEntries = node.AddTargetEntries;
     _config.ValidationRoutePackTargetEntries = node.PackTargetEntries;
     _config.ValidationRouteClusterRadiusYards = node.ClusterRadiusYards;
     _config.ValidationRouteExpectedAliveCount = node.ExpectedAliveCount;
@@ -8573,6 +8575,63 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         action = "movement_check_jump";
         return true;
     };
+    auto tryValidationRouteAdds = [this, &state, bot, &power, stage, activity, &situation, &action, &target, &routeEngageRange]() -> bool
+    {
+        if (_config.ValidationRouteKind != "boss"
+            || _config.ValidationRouteMechanicProfile.find("adds") == std::string::npos
+            || _config.ValidationRouteAddTargetEntries.empty()
+            || std::string(GetDungeonRole(bot)) == "healer")
+            return false;
+
+        Unit* add = nullptr;
+        uint32 addCount = 0;
+        float bestScore = 0.0f;
+        std::vector<WorldObject*> objects;
+        Trinity::AllWorldObjectsInRange check(bot, 45.0f);
+        Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(bot, objects, check);
+        Cell::VisitAllObjects(bot, searcher, 45.0f);
+        for (WorldObject* object : objects)
+        {
+            Creature* creature = object ? object->ToCreature() : nullptr;
+            if (!creature || !creature->IsAlive() || !creature->GetHealth()
+                || std::find(_config.ValidationRouteAddTargetEntries.begin(), _config.ValidationRouteAddTargetEntries.end(), creature->GetEntry()) == _config.ValidationRouteAddTargetEntries.end()
+                || (!creature->IsInCombat() && !creature->GetVictim())
+                || !bot->IsValidAttackTarget(creature) || !bot->IsWithinLOSInMap(creature))
+                continue;
+
+            ++addCount;
+            float score = 45.0f - bot->GetExactDist(creature);
+            if (creature->GetVictim() == bot)
+                score += 20.0f;
+            if (!add || score > bestScore)
+            {
+                add = creature;
+                bestScore = score;
+            }
+        }
+        if (!add)
+            return false;
+
+        ResolvedCombatAction profileAction = ResolveProfileCombatAction(bot, add);
+        uint32 spellId = profileAction.SpellId;
+        float engageRange = profileAction.MaxRange > 0.0f ? profileAction.MaxRange : routeEngageRange(bot, add, spellId);
+        bool approach = bot->GetExactDist(add) > std::max(5.0f, engageRange - 1.0f) || !bot->IsWithinLOSInMap(add);
+        BotActionResult result = BotActionResult::NoAction;
+        if (approach)
+            MoveBotToProfileRange(state, bot, add, &profileAction);
+        else
+            result = ExecuteProfileCombatAction(&state, bot, add, &profileAction);
+
+        std::string raw = BuildRawJson(bot, add);
+        std::string semantic = BuildSemanticJson(bot, add, "dungeon_boss", &power, stage, activity);
+        RecordEvent(state, bot, "boss_adds", add, approach ? "approach_target" : ToString(result), raw.c_str(), semantic.c_str(), float(addCount), 0, result == BotActionResult::Ok ? spellId : 0);
+        state.TargetGuid = add->GetGUID();
+        state.WasInCombat = true;
+        target = add;
+        situation = "dungeon_boss";
+        action = approach ? "move_to_boss_add" : "switch_to_boss_add";
+        return true;
+    };
     auto markValidationRouteTerminalAfterProgress = [&](char const* reason) -> void
     {
         _validationRouteFocusGuid.Clear();
@@ -8714,6 +8773,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         }
     }
     if (tryValidationRouteMovementCheck(target))
+        return true;
+    if (tryValidationRouteAdds())
         return true;
     if (recordDefeatedValidationRouteTarget(target, "stale_target_seen_dead")
         || recordDefeatedValidationRouteTarget(bot->GetVictim(), "stale_victim_seen_dead"))
@@ -14178,6 +14239,14 @@ std::string BotWorldPopulationMgr::BuildConfigJson() const
         json << _config.ValidationRouteAlternateTargetEntries[index];
     }
     json << "]"
+         << ",\"add_target_entries\":[";
+    for (size_t index = 0; index < _config.ValidationRouteAddTargetEntries.size(); ++index)
+    {
+        if (index)
+            json << ",";
+        json << _config.ValidationRouteAddTargetEntries[index];
+    }
+    json << "]"
          << ",\"activation_data_id\":" << _config.ValidationRouteActivationDataId
          << ",\"activation_data_value\":" << _config.ValidationRouteActivationDataValue
          << ",\"activation_spawn_group_id\":" << _config.ValidationRouteActivationSpawnGroupId
@@ -14873,6 +14942,14 @@ std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson(WorldBotState con
         if (index)
             json << ",";
         json << _config.ValidationRouteAlternateTargetEntries[index];
+    }
+    json << "\"},"
+         << "{\"name\":\"validation_route_config_add_target_entries\",\"value\":\"";
+    for (size_t index = 0; index < _config.ValidationRouteAddTargetEntries.size(); ++index)
+    {
+        if (index)
+            json << ",";
+        json << _config.ValidationRouteAddTargetEntries[index];
     }
     json << "\"},"
          << "{\"name\":\"validation_route_config_activation_data_id\",\"value\":" << _config.ValidationRouteActivationDataId << "},"

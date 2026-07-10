@@ -32,7 +32,9 @@ Strict live iterations:
 - Run 009 proved targeted aura movement for Crystal Barrage spell 86881, but also misclassified shared Dampening Wave spell 82415 and caused a manifest-route death loop.
 - Run 010 was aborted before Corborus after a DBC audit proved its periodic-trigger refinement would reject 86881. The aborted diagnostic is also checkpointed in DVC.
 - The current implementation matches the loaded spell shape: a harmful `PERSISTENT_AREA_AURA` with `PERIODIC_DAMAGE`, and moves away from the aura's dynamic-object owner rather than the boss caster. This accepts 86881, rejects 82415, and remains encounter-ID independent.
-- Runs 001-010 are committed as DVC pointers and pushed. Their working copies and the local DVC cache were removed after push; use `pixi run dvc pull <pointer>` to restore one.
+- Run 011 verified 20 real 86881 movement events and zero 82415 movement events. The healer was never selected by 86881 but still died first immediately after the boss submerge/add phase, followed by a death-loop watchdog stop.
+- The next patch activates the manifest's `adds` tactic inside the strict route handler: non-healers use the shared boss-feature add detector and their DB-backed class/spec action profile, while the healer continues triage. Boss legality and kill evidence are unchanged.
+- Runs 001-011 are committed as DVC pointers and pushed. Their working copies and the local DVC cache were removed after push; use `pixi run dvc pull <pointer>` to restore one.
 
 Verification:
 
@@ -43,4 +45,4 @@ Verification:
 
 Next handoff:
 
-Commit and rebuild the current persistent-area dodge, then run strict run 011. At Corborus, require spell 86881 `validation_route_mechanic` movement away from the dynamic-object owner, no spell 82415 movement, healer survival, and a real `boss_killed` terminal. Checkpoint and push the run before cleanup. Continue repairing the first truthful failure until 10 consecutive clears show five bots in the original instance, four exact node/generation-scoped real boss kills, a terminal for every route node, zero forced/teacher completion, zero false terminals, and zero unresolved stuck states. Do not start Phase 2 until that gate passes.
+Commit and rebuild the manifest-gated add switch, then run strict run 012. At Corborus, require `boss_adds` actions during submerge, healer survival, spell 86881 movement, no spell 82415 movement, and a real `boss_killed` terminal. Checkpoint and push the run before cleanup. Continue repairing the first truthful failure until 10 consecutive clears show five bots in the original instance, four exact node/generation-scoped real boss kills, a terminal for every route node, zero forced/teacher completion, zero false terminals, and zero unresolved stuck states. Do not start Phase 2 until that gate passes.
