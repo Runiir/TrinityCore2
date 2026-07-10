@@ -1206,6 +1206,17 @@ def test_move_bot_to_point_keeps_matching_active_motion():
     )
 
 
+def test_move_bot_to_profile_range_projects_approaches_to_terrain():
+    profile_range = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::MoveBotToProfileRange")
+    assert "auto moveToTerrainProjectedPoint = [&](float x, float y, float z)" in profile_range
+    assert "Map* map = bot->GetMap();" in profile_range
+    assert "map->GetHeight(bot->GetPhaseShift(), x, y, z + 2.0f, true, 64.0f)" in profile_range
+    assert "if (floorZ == INVALID_HEIGHT)\n            return false;" in profile_range
+    assert "return MoveBotToPoint(state, bot, x, y, floorZ);" in profile_range
+    assert "return moveToTerrainProjectedPoint(reference->GetPositionX(), reference->GetPositionY(), reference->GetPositionZ());" in profile_range
+    assert "return moveToTerrainProjectedPoint(rangedPosition.GetPositionX(), rangedPosition.GetPositionY(), rangedPosition.GetPositionZ());" in profile_range
+
+
 def test_botauto_diagnosis_and_trace_surface():
     mgr_header = read(ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h")
     mgr = read(BOT_MGR)

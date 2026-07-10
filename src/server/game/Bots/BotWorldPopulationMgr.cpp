@@ -3233,6 +3233,19 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
     if (!bot || !reference)
         return false;
 
+    auto moveToTerrainProjectedPoint = [&](float x, float y, float z)
+    {
+        Map* map = bot->GetMap();
+        if (!map)
+            return false;
+
+        float floorZ = map->GetHeight(bot->GetPhaseShift(), x, y, z + 2.0f, true, 64.0f);
+        if (floorZ == INVALID_HEIGHT)
+            return false;
+
+        return MoveBotToPoint(state, bot, x, y, floorZ);
+    };
+
     std::string role = GetDungeonRole(bot);
     BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(bot, role.c_str());
     std::string directive = action && !action->MovementDirective.empty() ? action->MovementDirective : profile.MovementDirective;
@@ -3243,7 +3256,7 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
         return false;
 
     if (directive == "melee" || (minRange <= 0.0f && maxRange <= 5.0f))
-        return MoveBotToPoint(state, bot, reference->GetPositionX(), reference->GetPositionY(), reference->GetPositionZ());
+        return moveToTerrainProjectedPoint(reference->GetPositionX(), reference->GetPositionY(), reference->GetPositionZ());
 
     float desiredRange = minRange > 0.0f ? minRange : std::max(12.0f, std::min(maxRange - 2.0f, 25.0f));
     if (maxRange > 0.0f)
@@ -3258,7 +3271,7 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
 
     float angle = reference->GetAngle(bot);
     Position rangedPosition = reference->GetFirstCollisionPosition(desiredRange, angle);
-    return MoveBotToPoint(state, bot, rangedPosition.GetPositionX(), rangedPosition.GetPositionY(), rangedPosition.GetPositionZ());
+    return moveToTerrainProjectedPoint(rangedPosition.GetPositionX(), rangedPosition.GetPositionY(), rangedPosition.GetPositionZ());
 }
 
 std::string BotWorldPopulationMgr::BuildCombatAttemptSummary(WorldBotState::CombatAttemptDiagnostic const& diagnostic) const
