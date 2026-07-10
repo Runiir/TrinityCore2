@@ -7738,7 +7738,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return false;
 
         bool recorded = false;
-        for (ObjectGuid const& guid : _validationRoutePackMemberGuids)
+        std::vector<ObjectGuid> memberGuids(_validationRoutePackMemberGuids.begin(), _validationRoutePackMemberGuids.end());
+        for (ObjectGuid const& guid : memberGuids)
         {
             if (_validationRoutePackEngagedGuids.find(guid) == _validationRoutePackEngagedGuids.end()
                 || _validationRoutePackDeathGuids.find(guid) != _validationRoutePackDeathGuids.end()
@@ -9638,16 +9639,16 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 seenRouteTargetDistance = distance;
             }
 
+            if (!creature->IsAlive() || !creature->GetHealth())
+            {
+                targetSearchResult = "target_seen_dead";
+                continue;
+            }
+
             if (!isValidationRouteCombatTarget(creature))
             {
                 if (targetSearchResult == "target_not_found")
                     targetSearchResult = "target_seen_activation_target";
-                continue;
-            }
-
-            if (!creature->IsAlive() || !creature->GetHealth())
-            {
-                targetSearchResult = "target_seen_dead";
                 continue;
             }
 
