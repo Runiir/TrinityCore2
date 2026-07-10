@@ -8966,7 +8966,12 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 && (creature->IsInCombat() || creature->GetVictim())
                 && bot->IsValidAttackTarget(creature);
         };
-        if (_validationRouteAddFocusGeneration == _validationRouteGeneration && !_validationRouteAddFocusGuid.IsEmpty())
+        if (_validationRouteAddFocusGeneration != _validationRouteGeneration)
+        {
+            _validationRouteAddFocusGuid.Clear();
+            _validationRouteAddFocusGeneration = 0;
+        }
+        if (!_validationRouteAddFocusGuid.IsEmpty())
         {
             add = ObjectAccessor::GetUnit(*bot, _validationRouteAddFocusGuid);
             if (!add)
@@ -8978,6 +8983,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 std::string raw = BuildRawJson(bot, add);
                 std::string semantic = BuildSemanticJson(bot, add, "dungeon_boss", &power, stage, activity);
                 RecordEvent(state, bot, "boss_add_killed", add, "observed_dead", raw.c_str(), semantic.c_str());
+                _validationRouteAddFocusGuid.Clear();
+                add = nullptr;
+            }
+            else if (!isUsableListedAdd(add))
+            {
                 _validationRouteAddFocusGuid.Clear();
                 add = nullptr;
             }
@@ -9050,7 +9060,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         {
             float centroidX = nearbyAddX / float(nearbyAddCount);
             float centroidY = nearbyAddY / float(nearbyAddCount);
-            Position away = bot->GetFirstCollisionPosition(8.0f, bot->GetAngle(centroidX, centroidY) + float(M_PI));
+            Position away = bot->GetFirstCollisionPosition(8.0f, bot->GetRelativeAngle(centroidX, centroidY) + float(M_PI));
             if (MoveBotToPoint(state, bot, away.GetPositionX(), away.GetPositionY(), away.GetPositionZ()))
             {
                 std::string raw = BuildRawJson(bot, add);
@@ -9082,12 +9092,19 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         {
             std::string raw = BuildRawJson(bot, add);
             std::string semantic = BuildSemanticJson(bot, add, "dungeon_boss", &power, stage, activity);
-            RecordEvent(state, bot, "boss_add_density", add, "no_legal_area_action", raw.c_str(), semantic.c_str(), float(addCount));
+            RecordEvent(state, bot, "boss_add_density", add, "no_legal_density_action", raw.c_str(), semantic.c_str(), float(addCount));
             state.TargetGuid = add->GetGUID();
             target = add;
             situation = "dungeon_boss";
             action = "hold_boss_add_density";
             return true;
+        }
+        bool densityGenerator = highDensityPhase && profileAction.DebugName == "resource_generator";
+        if (highDensityPhase)
+        {
+            std::string raw = BuildRawJson(bot, add);
+            std::string semantic = BuildSemanticJson(bot, add, "dungeon_boss", &power, stage, activity);
+            RecordEvent(state, bot, "boss_add_density", add, densityGenerator ? "resource_generator_selected" : "area_action_selected", raw.c_str(), semantic.c_str(), float(addCount), 0, profileAction.SpellId);
         }
         uint32 spellId = profileAction.SpellId;
         float engageRange = profileAction.MaxRange > 0.0f ? profileAction.MaxRange : routeEngageRange(bot, add, spellId);
@@ -9116,7 +9133,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         state.WasInCombat = true;
         target = add;
         situation = "dungeon_boss";
-        action = approach ? "move_to_boss_add" : (highDensityPhase ? "area_attack_boss_add_density" : "switch_to_boss_add");
+        action = approach ? "move_to_boss_add" : (densityGenerator ? "generate_resource_boss_add_density" : (highDensityPhase ? "area_attack_boss_add_density" : "switch_to_boss_add"));
         return true;
     };
     auto markValidationRouteTerminalAfterProgress = [&](char const* reason) -> void
@@ -11959,7 +11976,7 @@ uint32 BotWorldPopulationMgr::SelectCombatSpell(Player* bot, Unit* target) const
     return best ? best->SpellId : 0;
 }
 
-ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* bot, Unit* target, uint32 hostileCount, bool areaOnly) const
+ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* bot, Unit* target, uint32 hostileCount, bool densityOnly) const
 {
     ResolvedCombatAction action;
     action.Valid = false;
@@ -11980,6 +11997,8 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
     std::vector<BotActionCandidate> candidates = BotClassSpecActionProfileStore::BuildCandidates(bot, target, profile);
 
     BotActionCandidate* best = nullptr;
+    BotActionCandidate* bestDensityArea = nullptr;
+    BotActionCandidate* bestDensityGenerator = nullptr;
     for (BotActionCandidate& candidate : candidates)
     {
         if (candidate.Category == BotCombatActionCategory::HealFast
@@ -11993,9 +12012,12 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         }
         if (!candidate.RejectReason.empty())
             continue;
-        if (areaOnly && candidate.Category != BotCombatActionCategory::Aoe && candidate.Category != BotCombatActionCategory::Cleave)
+        if (densityOnly
+            && candidate.Category != BotCombatActionCategory::Aoe
+            && candidate.Category != BotCombatActionCategory::Cleave
+            && candidate.Category != BotCombatActionCategory::ResourceGenerator)
         {
-            candidate.RejectReason = "high_density_requires_area_action";
+            candidate.RejectReason = "high_density_requires_area_or_generator";
             continue;
         }
         if (hostileCount && candidate.Profile.MinEnemies > hostileCount)
@@ -12111,9 +12133,22 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
 
         candidate.Score = roleScore;
         candidate.Reason = saturation.SaturationReason;
-        if (!best || candidate.Score > best->Score)
+        if (densityOnly && candidate.Category == BotCombatActionCategory::ResourceGenerator)
+        {
+            if (!bestDensityGenerator || candidate.Score > bestDensityGenerator->Score)
+                bestDensityGenerator = &candidate;
+        }
+        else if (densityOnly)
+        {
+            if (!bestDensityArea || candidate.Score > bestDensityArea->Score)
+                bestDensityArea = &candidate;
+        }
+        else if (!best || candidate.Score > best->Score)
             best = &candidate;
     }
+
+    if (densityOnly)
+        best = bestDensityArea ? bestDensityArea : bestDensityGenerator;
 
     uint32 botKey = bot->GetGUID().GetCounter();
     _lastSaturationByBot[botKey] = saturation;
@@ -12219,12 +12254,12 @@ bool BotWorldPopulationMgr::TryEnsureCombatTotems(WorldBotState& state, Player* 
     return true;
 }
 
-BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState* state, Player* bot, Unit* target, ResolvedCombatAction* actionOut, uint32 hostileCount, bool areaOnly) const
+BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState* state, Player* bot, Unit* target, ResolvedCombatAction* actionOut, uint32 hostileCount, bool densityOnly) const
 {
     if (state && TryEnsureCombatTotems(*state, bot, target))
         return BotActionResult::Casting;
 
-    ResolvedCombatAction action = ResolveProfileCombatAction(bot, target, hostileCount, areaOnly);
+    ResolvedCombatAction action = ResolveProfileCombatAction(bot, target, hostileCount, densityOnly);
     if (actionOut)
         *actionOut = action;
     if (!action.Valid)
@@ -12269,9 +12304,9 @@ BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState*
     return result;
 }
 
-BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(Player* bot, Unit* target, ResolvedCombatAction* actionOut, uint32 hostileCount, bool areaOnly) const
+BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(Player* bot, Unit* target, ResolvedCombatAction* actionOut, uint32 hostileCount, bool densityOnly) const
 {
-    return ExecuteProfileCombatAction(nullptr, bot, target, actionOut, hostileCount, areaOnly);
+    return ExecuteProfileCombatAction(nullptr, bot, target, actionOut, hostileCount, densityOnly);
 }
 
 bool BotWorldPopulationMgr::TryCastCombatSpell(Player* bot, Unit* target, uint32 spellId) const

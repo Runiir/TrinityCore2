@@ -51,6 +51,7 @@ char const* BotCombatActionCatalog::ToString(BotCombatActionCategory category)
         case BotCombatActionCategory::UseItem: return "use_item";
         case BotCombatActionCategory::EmoteMechanic: return "emote_mechanic";
         case BotCombatActionCategory::ProfessionAction: return "profession_action";
+        case BotCombatActionCategory::ResourceGenerator: return "resource_generator";
         default: return "wait";
     }
 }
@@ -89,6 +90,7 @@ BotCombatActionCategory BotCombatActionCatalog::CategoryFromString(std::string c
     MAP_CATEGORY("use_item", UseItem);
     MAP_CATEGORY("emote_mechanic", EmoteMechanic);
     MAP_CATEGORY("profession_action", ProfessionAction);
+    MAP_CATEGORY("resource_generator", ResourceGenerator);
 #undef MAP_CATEGORY
     return BotCombatActionCategory::Wait;
 }
@@ -111,7 +113,7 @@ BotCombatActionDefinition BotCombatActionCatalog::Get(BotCombatActionCategory ca
 std::vector<BotCombatActionDefinition> BotCombatActionCatalog::BaseTaxonomy()
 {
     std::vector<BotCombatActionDefinition> result;
-    for (uint8 i = uint8(BotCombatActionCategory::Movement); i <= uint8(BotCombatActionCategory::ProfessionAction); ++i)
+    for (uint8 i = uint8(BotCombatActionCategory::Movement); i <= uint8(BotCombatActionCategory::ResourceGenerator); ++i)
         result.push_back(Get(BotCombatActionCategory(i)));
     return result;
 }

@@ -37,7 +37,8 @@ enum class BotCombatActionCategory : uint8
     QuestInteract,
     UseItem,
     EmoteMechanic,
-    ProfessionAction
+    ProfessionAction,
+    ResourceGenerator
 };
 
 struct BotCombatActionDefinition

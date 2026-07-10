@@ -131,14 +131,14 @@ INSERT INTO `bot_rotation_action` (`profile_id`, `sort_order`, `spell_id`, `cate
 ((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=3 AND `spec_tag`='marksmanship' AND `role`='dps'), 40, 19434, 'spender', 'aimed_shot,focus', 0.92, 2, 1, 1, 0, 'enemy', 'ranged', 'ranged', 12, 35, 1),
 ((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=3 AND `spec_tag`='marksmanship' AND `role`='dps'), 50, 2643, 'aoe', 'multi_shot,aoe', 0.90, 2, 3, 1, 0, 'enemy', 'ranged', 'ranged', 12, 35, 1),
 ((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=3 AND `spec_tag`='marksmanship' AND `role`='dps'), 60, 3044, 'spender', 'arcane_shot,focus_dump', 0.80, 4, 1, 1, 0, 'enemy', 'ranged', 'ranged', 12, 35, 1),
-((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=3 AND `spec_tag`='marksmanship' AND `role`='dps'), 70, 56641, 'builder', 'steady_shot,focus_builder', 0.74, 5, 1, 1, 0, 'enemy', 'ranged', 'ranged', 12, 35, 1),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=3 AND `spec_tag`='marksmanship' AND `role`='dps'), 70, 56641, 'resource_generator', 'steady_shot,focus_builder', 0.74, 5, 1, 1, 0, 'enemy', 'ranged', 'ranged', 12, 35, 1),
 ((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=3 AND `spec_tag`='marksmanship' AND `role`='dps'), 80, 75, 'auto_attack', 'auto_shot,ranged', 0.45, 7, 1, 1, 0, 'enemy', 'ranged', 'ranged', 12, 35, 1);
 
 INSERT INTO `bot_rotation_action` (`profile_id`, `sort_order`, `spell_id`, `category`, `mechanic_tags`, `damage_weight`, `priority_bucket`, `min_enemies`, `required_self_aura`, `forbidden_target_aura`, `requires_interruptible_target`, `requires_melee_range`) VALUES
 ((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=7 AND `spec_tag`='enhancement' AND `role`='dps'), 10, 57994, 'interrupt', 'wind_shear,interrupt', 0.15, 1, 1, 0, 0, 1, 0),
 ((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=7 AND `spec_tag`='enhancement' AND `role`='dps'), 20, 421, 'cleave', 'chain_lightning,maelstrom_5,aoe', 0.94, 1, 3, 53817, 0, 0, 0),
 ((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=7 AND `spec_tag`='enhancement' AND `role`='dps'), 30, 403, 'builder', 'lightning_bolt,maelstrom_5', 0.88, 1, 1, 53817, 0, 0, 0),
-((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=7 AND `spec_tag`='enhancement' AND `role`='dps'), 40, 17364, 'builder', 'stormstrike,melee', 0.96, 1, 1, 0, 0, 0, 1),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=7 AND `spec_tag`='enhancement' AND `role`='dps'), 40, 17364, 'resource_generator', 'stormstrike,melee,maelstrom_generator', 0.96, 1, 1, 0, 0, 0, 1),
 ((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=7 AND `spec_tag`='enhancement' AND `role`='dps'), 50, 60103, 'spender', 'lava_lash,melee', 0.92, 2, 1, 0, 0, 0, 1),
 ((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=7 AND `spec_tag`='enhancement' AND `role`='dps'), 60, 8050, 'dot', 'flame_shock,dot', 0.84, 2, 1, 0, 8050, 0, 0),
 ((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=7 AND `spec_tag`='enhancement' AND `role`='dps'), 70, 8042, 'spender', 'earth_shock', 0.76, 4, 1, 0, 0, 0, 0);

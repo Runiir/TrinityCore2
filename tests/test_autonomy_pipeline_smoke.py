@@ -449,7 +449,7 @@ def test_stonecore_rotation_sql_declares_buffs_hunter_builder_and_aoe_gate():
         "13165, 'buff', 'aspect_of_the_hawk",
         "883, 'buff', 'call_pet",
         "34477, 'buff', 'misdirection",
-        "56641, 'builder', 'steady_shot,focus_builder",
+        "56641, 'resource_generator', 'steady_shot,focus_builder",
     ]:
         assert token in sql
 
@@ -908,7 +908,8 @@ def test_quest_first_portfolio_routing_surface():
     assert 'priority = victimRole == "healer" ? 3 : (victimRole == "tank" ? 2 : 1);' in validation_route_objective
     assert "priority == bestPriority && healthPct < bestHealthPct" in validation_route_objective
     assert "healthPct == bestHealthPct && guid < bestGuid" in validation_route_objective
-    assert "_validationRouteAddFocusGeneration == _validationRouteGeneration" in validation_route_objective
+    assert "_validationRouteAddFocusGeneration != _validationRouteGeneration" in validation_route_objective
+    assert "else if (!isUsableListedAdd(add))" in validation_route_objective
     assert "add = ObjectAccessor::GetUnit(*bot, _validationRouteAddFocusGuid);" in validation_route_objective
     assert "_validationRouteAddFocusGuid = add->GetGUID();" in validation_route_objective
     assert "if (!add)" in validation_route_objective
@@ -2184,28 +2185,30 @@ def test_player_bot_chase_movement_inform_does_not_deref_non_creature_owner():
     assert_ordered(inform, "if (!owner->IsCreature())", "return;", "owner->ToCreature()->AI()")
 
 
-def test_profile_combat_resolver_can_require_legal_area_actions_for_exact_enemy_count():
+def test_profile_combat_resolver_can_require_legal_density_actions_for_exact_enemy_count():
     mgr = read(BOT_MGR)
     resolver = function_body(
         mgr,
-        "ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* bot, Unit* target, uint32 hostileCount, bool areaOnly)",
+        "ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* bot, Unit* target, uint32 hostileCount, bool densityOnly)",
     )
     executor = function_body(
         mgr,
-        "BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState* state, Player* bot, Unit* target, ResolvedCombatAction* actionOut, uint32 hostileCount, bool areaOnly)",
+        "BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState* state, Player* bot, Unit* target, ResolvedCombatAction* actionOut, uint32 hostileCount, bool densityOnly)",
     )
 
     assert "candidate.Category != BotCombatActionCategory::Aoe" in resolver
     assert "candidate.Category != BotCombatActionCategory::Cleave" in resolver
-    assert 'candidate.RejectReason = "high_density_requires_area_action";' in resolver
+    assert "candidate.Category != BotCombatActionCategory::ResourceGenerator" in resolver
+    assert 'candidate.RejectReason = "high_density_requires_area_or_generator";' in resolver
     assert "candidate.Profile.MinEnemies > hostileCount" in resolver
     assert "hostileCount > candidate.Profile.MaxEnemies" in resolver
     assert 'candidate.RejectReason = "enemy_count_too_low";' in resolver
     assert 'candidate.RejectReason = "enemy_count_too_high";' in resolver
-    assert "ResolveProfileCombatAction(bot, target, hostileCount, areaOnly)" in executor
+    assert "best = bestDensityArea ? bestDensityArea : bestDensityGenerator;" in resolver
+    assert "ResolveProfileCombatAction(bot, target, hostileCount, densityOnly)" in executor
 
 
-def test_validation_route_high_density_adds_move_from_centroid_and_fail_closed_to_profile_aoe():
+def test_validation_route_high_density_adds_move_from_centroid_and_fail_closed_to_density_contract():
     objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
     start = objective.index("auto tryValidationRouteAdds")
     end = objective.index("auto markValidationRouteTerminalAfterProgress", start)
@@ -2218,16 +2221,34 @@ def test_validation_route_high_density_adds_move_from_centroid_and_fail_closed_t
     assert "!bot->IsValidAttackTarget(routeBoss)" in adds
     assert 'role != "healer"' in adds
     assert "profile.MovementDirective != \"melee\"" in adds
-    assert "bot->GetAngle(centroidX, centroidY) + float(M_PI)" in adds
+    assert "bot->GetRelativeAngle(centroidX, centroidY) + float(M_PI)" in adds
     assert 'RecordEvent(state, bot, "boss_add_density", add, "move_from_add_centroid"' in adds
     assert "ResolveProfileCombatAction(bot, add, highDensityPhase ? addCount : 0, highDensityPhase)" in adds
     assert "ExecuteProfileCombatAction(&state, bot, add, &profileAction, addCount, true)" in adds
-    assert 'RecordEvent(state, bot, "boss_add_density", add, "no_legal_area_action"' in adds
+    assert 'RecordEvent(state, bot, "boss_add_density", add, "no_legal_density_action"' in adds
+    assert 'densityGenerator ? "resource_generator_selected" : "area_action_selected"' in adds
+    assert 'densityGenerator ? "generate_resource_boss_add_density"' in adds
     assert 'action = "hold_boss_add_density";' in adds
-    assert_ordered(adds, "move_from_add_centroid", 'if (role == "healer")', "no_legal_area_action")
+    assert_ordered(adds, "move_from_add_centroid", 'if (role == "healer")', "no_legal_density_action")
     assert "43438" not in adds
     assert "43917" not in adds
 
     density_branch = adds[adds.index("if (highDensityPhase)", adds.index("BotActionResult result")):]
     density_branch = density_branch[:density_branch.index("else\n            {")]
     assert "executor.Pull" not in density_branch
+
+
+def test_density_action_taxonomy_and_stonecore_roster_profile_paths_are_explicit():
+    catalog_header = read(ROOT / "src/server/game/Bots/BotCombatActionCatalog.h")
+    catalog = read(ROOT / "src/server/game/Bots/BotCombatActionCatalog.cpp")
+    profiles = read(STONECORE_ROTATION_SQL)
+
+    assert_ordered(catalog_header, "ProfessionAction,", "ResourceGenerator")
+    assert 'case BotCombatActionCategory::ResourceGenerator: return "resource_generator";' in catalog
+    assert 'MAP_CATEGORY("resource_generator", ResourceGenerator);' in catalog
+    assert "hammer_of_the_righteous,aoe,holy_power,threat" in profiles
+    assert "multi_shot,aoe" in profiles
+    assert "flamestrike,aoe" in profiles
+    assert "chain_lightning,maelstrom_5,aoe" in profiles
+    assert "'resource_generator', 'steady_shot,focus_builder'" in profiles
+    assert "'resource_generator', 'stormstrike,melee,maelstrom_generator'" in profiles
