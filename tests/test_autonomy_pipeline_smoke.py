@@ -985,8 +985,6 @@ def test_quest_first_portfolio_routing_surface():
         "&& tryValidationRouteActivation(nullptr, \"boss_route_early_activation\"))",
         "Unit* preAnchorTrashTarget = nullptr;",
         "preAnchorTrashTarget = findTrashClusterThreatTarget();",
-        "&& ValidationRouteHasProgressSinceApply()",
-        "&& !trashClusterHasLiveMobs())",
         "if (routeDistance > routeArrivalRadius && !preAnchorTrashTarget)",
     )
     assert "ValidationRouteActivationApplied" in mgr_header
@@ -1573,9 +1571,6 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         route_objective,
         "Unit* preAnchorTrashTarget = nullptr;",
         "preAnchorTrashTarget = findTrashClusterThreatTarget();",
-        "&& ValidationRouteHasProgressSinceApply()",
-        "&& !trashClusterHasLiveMobs())",
-        'markTrashClusterCleared("trash_cluster_cleared");',
         "if (routeDistance > routeArrivalRadius && !preAnchorTrashTarget)",
         "Unit* routeTarget = preAnchorTrashTarget;",
     )
@@ -1600,9 +1595,14 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         "auto recordValidationRouteTrashKill",
         "if (isValidationRouteScriptTarget(creature)",
         "if (!trashClusterHasLiveMobs())",
+        '"trash_cluster_empty_pending_anchor_verification"',
+    )
+    assert_ordered(
+        route_objective,
+        "routeDistance <= routeArrivalRadius && std::string(GetDungeonRole(bot)) == \"tank\"",
+        "++state.ValidationRouteTargetSearchMissCount >= 2",
+        "if (_config.ValidationRouteAdvanceMode == \"terminal\" && !trashClusterHasLiveMobs())",
         'markTrashClusterCleared("trash_cluster_cleared");',
-        'RecordEvent(state, bot, "dungeon_trash_cleared", nullptr, "trash_cluster_cleared"',
-        "MaybeAdvanceValidationRouteManifest();",
     )
     assert 'uint32 routeTargetNoProgressThreshold = _config.ValidationRouteKind == "boss" ? 5 : 20;' in route_objective
     assert "bool _validationRouteManifestComplete = false;" in mgr_header

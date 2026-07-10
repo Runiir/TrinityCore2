@@ -7409,7 +7409,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         MaybeAdvanceValidationRouteManifest();
         return true;
     };
-    auto recordValidationRouteTrashKill = [this, &state, bot, &power, stage, activity, &isValidationRouteScriptTarget, &clearValidationRouteKilledFocus, &trashClusterHasLiveMobs, &markTrashClusterCleared](Unit* killedTarget, char const* reason) -> bool
+    auto recordValidationRouteTrashKill = [this, &state, bot, &power, stage, activity, &isValidationRouteScriptTarget, &clearValidationRouteKilledFocus, &trashClusterHasLiveMobs](Unit* killedTarget, char const* reason) -> bool
     {
         if (!killedTarget || killedTarget->IsAlive() || killedTarget->GetHealth())
             return false;
@@ -7435,11 +7435,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             && _config.ValidationRouteKind != "boss")
         {
             if (!trashClusterHasLiveMobs())
-            {
-                markTrashClusterCleared("trash_cluster_cleared");
-                RecordEvent(state, bot, "dungeon_trash_cleared", nullptr, "trash_cluster_cleared", raw.c_str(), semantic.c_str(), float(_metrics.Kills), _config.ValidationRouteTargetEntry);
-                MaybeAdvanceValidationRouteManifest();
-            }
+                RecordEvent(state, bot, "validation_route_target_search", nullptr, "trash_cluster_empty_pending_anchor_verification", raw.c_str(), semantic.c_str(), float(_metrics.Kills), _config.ValidationRouteTargetEntry);
             else
                 RecordEvent(state, bot, "validation_route_target_search", nullptr, "trash_route_target_killed_cluster_still_alive", raw.c_str(), semantic.c_str(), float(_metrics.Kills), _config.ValidationRouteTargetEntry);
         }
@@ -9353,22 +9349,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         preAnchorTrashTarget = findTrashClusterThreatTarget();
         if (!preAnchorTrashTarget && routeDistance <= routeArrivalRadius)
             preAnchorTrashTarget = findNearestTrashClusterMob();
-    }
-
-    if (!preAnchorTrashTarget
-        && _config.ValidationRouteKind != "boss"
-        && _config.ValidationRouteAdvanceMode == "terminal"
-        && ValidationRouteHasProgressSinceApply()
-        && !trashClusterHasLiveMobs())
-    {
-        std::string raw = BuildRawJson(bot, nullptr);
-        std::string semantic = BuildSemanticJson(bot, nullptr, "normal_dungeon_trash", &power, stage, activity);
-        markTrashClusterCleared("trash_cluster_cleared");
-        RecordEvent(state, bot, "dungeon_trash_cleared", nullptr, "trash_cluster_cleared", raw.c_str(), semantic.c_str(), float(_metrics.Kills), _config.ValidationRouteTargetEntry);
-        situation = "normal_dungeon_trash";
-        action = "validation_route_complete";
-        MaybeAdvanceValidationRouteManifest();
-        return true;
     }
 
     if (routeDistance > routeArrivalRadius && !preAnchorTrashTarget)
