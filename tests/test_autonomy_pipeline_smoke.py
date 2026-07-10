@@ -904,7 +904,7 @@ def test_quest_first_portfolio_routing_surface():
     assert "ValidationRouteAddTargetEntries.end(), creature->GetEntry()" in validation_route_objective
     assert "BuildBossMechanicFeatures(bot, bossTarget)" not in validation_route_objective
     assert "BotActionResult pull = executor.Pull(bot, add);" in validation_route_objective
-    assert "if (result == BotActionResult::NoAction)\n                result = pull;" in validation_route_objective
+    assert "if (result == BotActionResult::NoAction)\n                    result = pull;" in validation_route_objective
     assert 'priority = victimRole == "healer" ? 3 : (victimRole == "tank" ? 2 : 1);' in validation_route_objective
     assert "priority == bestPriority && healthPct < bestHealthPct" in validation_route_objective
     assert "healthPct == bestHealthPct && guid < bestGuid" in validation_route_objective
@@ -2160,3 +2160,52 @@ def test_player_bot_chase_movement_inform_does_not_deref_non_creature_owner():
 
     assert "if (!owner->IsCreature())" in inform
     assert_ordered(inform, "if (!owner->IsCreature())", "return;", "owner->ToCreature()->AI()")
+
+
+def test_profile_combat_resolver_can_require_legal_area_actions_for_exact_enemy_count():
+    mgr = read(BOT_MGR)
+    resolver = function_body(
+        mgr,
+        "ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* bot, Unit* target, uint32 hostileCount, bool areaOnly)",
+    )
+    executor = function_body(
+        mgr,
+        "BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState* state, Player* bot, Unit* target, ResolvedCombatAction* actionOut, uint32 hostileCount, bool areaOnly)",
+    )
+
+    assert "candidate.Category != BotCombatActionCategory::Aoe" in resolver
+    assert "candidate.Category != BotCombatActionCategory::Cleave" in resolver
+    assert 'candidate.RejectReason = "high_density_requires_area_action";' in resolver
+    assert "candidate.Profile.MinEnemies > hostileCount" in resolver
+    assert "hostileCount > candidate.Profile.MaxEnemies" in resolver
+    assert 'candidate.RejectReason = "enemy_count_too_low";' in resolver
+    assert 'candidate.RejectReason = "enemy_count_too_high";' in resolver
+    assert "ResolveProfileCombatAction(bot, target, hostileCount, areaOnly)" in executor
+
+
+def test_validation_route_high_density_adds_move_from_centroid_and_fail_closed_to_profile_aoe():
+    objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    start = objective.index("auto tryValidationRouteAdds")
+    end = objective.index("auto markValidationRouteTerminalAfterProgress", start)
+    adds = objective[start:end]
+
+    assert "nearbyAddX += creature->GetPositionX();" in adds
+    assert "nearbyAddY += creature->GetPositionY();" in adds
+    assert "_validationRouteFocusEntry == _config.ValidationRouteTargetEntry" in adds
+    assert "routeBoss->IsAlive()" in adds
+    assert "!bot->IsValidAttackTarget(routeBoss)" in adds
+    assert 'role != "healer"' in adds
+    assert "profile.MovementDirective != \"melee\"" in adds
+    assert "bot->GetAngle(centroidX, centroidY) + float(M_PI)" in adds
+    assert 'RecordEvent(state, bot, "boss_add_density", add, "move_from_add_centroid"' in adds
+    assert "ResolveProfileCombatAction(bot, add, highDensityPhase ? addCount : 0, highDensityPhase)" in adds
+    assert "ExecuteProfileCombatAction(&state, bot, add, &profileAction, addCount, true)" in adds
+    assert 'RecordEvent(state, bot, "boss_add_density", add, "no_legal_area_action"' in adds
+    assert 'action = "hold_boss_add_density";' in adds
+    assert_ordered(adds, "move_from_add_centroid", 'if (role == "healer")', "no_legal_area_action")
+    assert "43438" not in adds
+    assert "43917" not in adds
+
+    density_branch = adds[adds.index("if (highDensityPhase)", adds.index("BotActionResult result")):]
+    density_branch = density_branch[:density_branch.index("else\n            {")]
+    assert "executor.Pull" not in density_branch
