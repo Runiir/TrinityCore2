@@ -1295,6 +1295,7 @@ def test_botauto_diagnosis_and_trace_surface():
     commands = read(BOT_COMMANDS)
     update_bot = function_body(mgr, "void BotWorldPopulationMgr::UpdateBot")
     diagnose = function_body(mgr, "std::string BotWorldPopulationMgr::GetBotDiagnosisJson")
+    config_json = function_body(mgr, "std::string BotWorldPopulationMgr::BuildConfigJson")
     trace = function_body(mgr, "std::string BotWorldPopulationMgr::GetBotTraceJson")
     build_diagnosis = function_body(mgr, "BotWorldPopulationMgr::BotDiagnosis BotWorldPopulationMgr::BuildBotDiagnosis")
     diagnosis_json = function_body(mgr, "std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson")
@@ -1400,6 +1401,11 @@ def test_botauto_diagnosis_and_trace_surface():
         "validation_route_advance_reason",
         "validation_route_manifest_load_error",
         "validation_route_progress_baseline_kills",
+        "validation_route_pack_generation",
+        "validation_route_pack_member_count",
+        "validation_route_pack_engaged_count",
+        "validation_route_pack_death_count",
+        "validation_route_pack_observed_engagement",
         "validation_route_config_kind",
         "validation_route_config_target_entry",
         "validation_route_config_activation_data_id",
@@ -1425,6 +1431,15 @@ def test_botauto_diagnosis_and_trace_surface():
         "suggested_investigation",
     ]:
         assert field in diagnosis_json
+
+    for mapping in [
+        '<< ",\\"pack_generation\\":" << _validationRoutePackGeneration',
+        '<< ",\\"pack_member_count\\":" << _validationRoutePackMemberGuids.size()',
+        '<< ",\\"pack_engaged_count\\":" << _validationRoutePackEngagedGuids.size()',
+        '<< ",\\"pack_death_count\\":" << _validationRoutePackDeathGuids.size()',
+        '<< ",\\"pack_observed_engagement\\":" << (_validationRoutePackObservedEngagement ? "true" : "false")',
+    ]:
+        assert mapping in config_json
 
     for section in [
         "identity",
@@ -1615,6 +1630,52 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     )
     assert "GuidSet _validationRouteRecordedKillGuids;" in mgr_header
     assert "_validationRouteRecordedKillGuids.clear();" in mgr
+    for symbol in [
+        "GuidSet _validationRoutePackMemberGuids;",
+        "GuidSet _validationRoutePackEngagedGuids;",
+        "GuidSet _validationRoutePackDeathGuids;",
+        "uint64 _validationRoutePackGeneration",
+        "bool _validationRoutePackObservedEngagement",
+    ]:
+        assert symbol in mgr_header
+    assert_ordered(
+        route_objective,
+        "auto isValidationCohortPlayer",
+        "auto isValidationCohortCombatLinked",
+        "auto enrollValidationRoutePackMember",
+        "_validationRoutePackMemberGuids.insert(creature->GetGUID());",
+        "_validationRoutePackEngagedGuids.insert(creature->GetGUID());",
+        "auto enrollEngagedValidationRoutePackMembers",
+        "isValidationCohortCombatLinked(creature)",
+        "auto persistedValidationRoutePackHasLiveMembers",
+        "_validationRoutePackDeathGuids.find(guid) == _validationRoutePackDeathGuids.end()",
+        "auto trashClusterHasLiveMobs",
+        "enrollEngagedValidationRoutePackMembers();",
+        "persistedValidationRoutePackHasLiveMembers()",
+    )
+    assert_ordered(
+        route_objective,
+        "_validationRoutePackMemberGuids.insert(killedTarget->GetGUID());",
+        "_validationRoutePackDeathGuids.insert(killedTarget->GetGUID());",
+        'RecordEvent(state, bot, "mob_killed"',
+    )
+    assert "&& _validationRoutePackObservedEngagement" in route_objective
+    assert "&& !partyInCombat" in route_objective
+    assert "nowMs - _validationRoutePackClearCandidateSinceMs >= 2000" in route_objective
+    assert "_validationRoutePackEngagedGuids.find(killedTarget->GetGUID())" in route_objective
+    assert "bestAnchorTargetScore" not in route_objective
+    assert '"dynamic_pack_members_live_or_unobserved"' in route_objective
+    config_json = function_body(mgr, "std::string BotWorldPopulationMgr::BuildConfigJson")
+    diagnosis_json = function_body(mgr, "std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson")
+    for field in [
+        "pack_generation",
+        "pack_member_count",
+        "pack_engaged_count",
+        "pack_death_count",
+        "pack_observed_engagement",
+    ]:
+        assert f'\\"{field}\\"' in config_json
+        assert f'\\"validation_route_{field}\\"' in diagnosis_json
     assert_ordered(
         route_objective,
         'recordValidationRouteTrashKill(seenRouteTarget, "target_seen_dead");',
@@ -1626,7 +1687,11 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         route_objective,
         "routeDistance <= routeArrivalRadius && std::string(GetDungeonRole(bot)) == \"tank\"",
         "++state.ValidationRouteTargetSearchMissCount >= 2",
-        "if (_config.ValidationRouteAdvanceMode == \"terminal\" && !trashClusterHasLiveMobs())",
+        "if (_config.ValidationRouteAdvanceMode == \"terminal\"",
+        "&& _validationRoutePackObservedEngagement",
+        "&& !packHasLiveMobs",
+        "&& !partyInCombat",
+        "&& nowMs - _validationRoutePackClearCandidateSinceMs >= 2000)",
         'markTrashClusterCleared("trash_cluster_cleared");',
     )
     assert 'uint32 routeTargetNoProgressThreshold = _config.ValidationRouteKind == "boss" ? 5 : 20;' in route_objective

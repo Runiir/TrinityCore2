@@ -1842,6 +1842,12 @@ bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode(size_t index, char 
     _validationRouteAddFocusGuid.Clear();
     _validationRouteAddFocusGeneration = _validationRouteGeneration;
     _validationRouteRecordedKillGuids.clear();
+    _validationRoutePackMemberGuids.clear();
+    _validationRoutePackEngagedGuids.clear();
+    _validationRoutePackDeathGuids.clear();
+    _validationRoutePackGeneration = _validationRouteGeneration;
+    _validationRoutePackObservedEngagement = false;
+    _validationRoutePackClearCandidateSinceMs = 0;
     _config.ValidationRouteActivationDataId = node.ActivationDataId;
     _config.ValidationRouteActivationDataValue = node.ActivationDataValue;
     _config.ValidationRouteActivationSpawnGroupId = node.ActivationSpawnGroupId;
@@ -7142,6 +7148,80 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         return creature->GetMapId() == bot->GetMapId()
             && creature->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ) <= radius;
     };
+    auto isValidationCohortPlayer = [this](Unit const* unit) -> bool
+    {
+        Player const* player = unit ? unit->ToPlayer() : nullptr;
+        if (!player)
+            return false;
+        for (WorldBotState const& cohortState : _bots)
+            if (cohortState.Guid == player->GetGUID())
+                return true;
+        return false;
+    };
+    auto isValidationCohortCombatLinked = [this, &isValidationCohortPlayer](Creature const* creature) -> bool
+    {
+        if (!creature)
+            return false;
+        if (isValidationCohortPlayer(creature->GetVictim()))
+            return true;
+        for (WorldBotState const& cohortState : _bots)
+            if (Player* member = GetLoadedBot(cohortState))
+                if (member->GetVictim() == creature || creature->GetThreatManager().IsThreatenedBy(member, true))
+                    return true;
+        return false;
+    };
+    auto enrollValidationRoutePackMember = [this](Creature const* creature, bool engaged) -> void
+    {
+        if (_config.ValidationRouteKind == "boss" || !creature || !creature->IsAlive() || !creature->GetHealth())
+            return;
+
+        if (_validationRoutePackGeneration != _validationRouteGeneration)
+        {
+            _validationRoutePackMemberGuids.clear();
+            _validationRoutePackEngagedGuids.clear();
+            _validationRoutePackDeathGuids.clear();
+            _validationRoutePackGeneration = _validationRouteGeneration;
+            _validationRoutePackObservedEngagement = false;
+            _validationRoutePackClearCandidateSinceMs = 0;
+        }
+        _validationRoutePackMemberGuids.insert(creature->GetGUID());
+        if (engaged)
+        {
+            _validationRoutePackEngagedGuids.insert(creature->GetGUID());
+            _validationRoutePackObservedEngagement = true;
+            _validationRoutePackClearCandidateSinceMs = 0;
+        }
+    };
+    auto enrollEngagedValidationRoutePackMembers = [this, bot, &isValidationCohortCombatLinked, &enrollValidationRoutePackMember]() -> void
+    {
+        if (_config.ValidationRouteKind == "boss" || !bot)
+            return;
+
+        std::vector<WorldObject*> objects;
+        Trinity::AllWorldObjectsInRange check(bot, 120.0f);
+        Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(bot, objects, check);
+        Cell::VisitAllObjects(bot, searcher, 120.0f);
+        for (WorldObject* object : objects)
+        {
+            Creature* creature = object ? object->ToCreature() : nullptr;
+            if (!creature || !creature->IsAlive() || !creature->GetHealth() || creature->IsDungeonBoss() || creature->isWorldBoss())
+                continue;
+            if (creature->IsPet() || creature->IsTotem() || creature->IsGuardian() || !creature->GetOwnerGUID().IsEmpty())
+                continue;
+
+            if (isValidationCohortCombatLinked(creature))
+                enrollValidationRoutePackMember(creature, true);
+        }
+    };
+    auto persistedValidationRoutePackHasLiveMembers = [this]() -> bool
+    {
+        if (_validationRoutePackGeneration != _validationRouteGeneration)
+            return false;
+        for (ObjectGuid const& guid : _validationRoutePackMemberGuids)
+            if (_validationRoutePackDeathGuids.find(guid) == _validationRoutePackDeathGuids.end())
+                return true;
+        return false;
+    };
     auto isValidationRouteObjectiveTarget = [&isValidationRouteScriptTarget, &isEligibleTrashClusterMob, this](Creature const* creature) -> bool
     {
         if (!creature)
@@ -7177,6 +7257,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 bestScore = score;
             }
         }
+        if (Creature* creature = best ? best->ToCreature() : nullptr)
+            enrollValidationRoutePackMember(creature, isValidationCohortCombatLinked(creature));
         return best;
     };
     auto findTrashClusterThreatTarget = [&]() -> Unit*
@@ -7216,12 +7298,18 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 bestScore = score;
             }
         }
+        if (Creature* creature = best ? best->ToCreature() : nullptr)
+            enrollValidationRoutePackMember(creature, isValidationCohortCombatLinked(creature));
         return best;
     };
     auto trashClusterHasLiveMobs = [&]() -> bool
     {
         if (_config.ValidationRouteKind == "boss" || !bot)
             return false;
+
+        enrollEngagedValidationRoutePackMembers();
+        if (persistedValidationRoutePackHasLiveMembers())
+            return true;
 
         float radius = _config.ValidationRouteClusterRadiusYards > 1.0f ? _config.ValidationRouteClusterRadiusYards : 90.0f;
         float searchRange = std::max(40.0f, bot->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ) + radius + 40.0f);
@@ -7244,12 +7332,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         _validationRouteManifestAdvanceReason = reason ? reason : "trash_cluster_cleared";
         for (WorldBotState& cohortState : _bots)
         {
-            Player* cohortBot = GetLoadedBot(cohortState);
-            if (cohortBot)
-            {
-                cohortBot->AttackStop();
-                cohortBot->CombatStop(true);
-            }
             cohortState.TargetGuid.Clear();
             cohortState.ValidationRouteCombatProgressTargetGuid.Clear();
             cohortState.ValidationRoutePackProgressTargetGuid.Clear();
@@ -7429,7 +7511,16 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (_validationRouteRecordedKillGuids.find(killedTarget->GetGUID()) != _validationRouteRecordedKillGuids.end())
             return false;
 
+        if (_validationRoutePackGeneration != _validationRouteGeneration
+            || _validationRoutePackEngagedGuids.find(killedTarget->GetGUID()) == _validationRoutePackEngagedGuids.end())
+            return false;
+
         _validationRouteRecordedKillGuids.insert(killedTarget->GetGUID());
+        if (_validationRoutePackGeneration == _validationRouteGeneration)
+        {
+            _validationRoutePackMemberGuids.insert(killedTarget->GetGUID());
+            _validationRoutePackDeathGuids.insert(killedTarget->GetGUID());
+        }
         ++_metrics.Kills;
         state.LastKilledTargetGuid = killedTarget->GetGUID();
 
@@ -7450,14 +7541,16 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         }
         return true;
     };
-    auto recordDefeatedValidationRouteTarget = [&isValidationRouteScriptTarget, &recordValidationRouteBossKill, &recordValidationRouteTrashKill](Unit* defeatedTarget, char const* reason) -> bool
+    auto recordDefeatedValidationRouteTarget = [this, &isValidationRouteScriptTarget, &recordValidationRouteBossKill, &recordValidationRouteTrashKill](Unit* defeatedTarget, char const* reason) -> bool
     {
         if (!defeatedTarget || defeatedTarget->IsAlive() || defeatedTarget->GetHealth())
             return false;
 
         if (Creature* creature = defeatedTarget->ToCreature())
         {
-            if (!isValidationRouteScriptTarget(creature))
+            bool persistedPackMember = _validationRoutePackGeneration == _validationRouteGeneration
+                && _validationRoutePackMemberGuids.find(creature->GetGUID()) != _validationRoutePackMemberGuids.end();
+            if (!isValidationRouteScriptTarget(creature) && !persistedPackMember)
                 return false;
 
             return creature->IsDungeonBoss() || creature->isWorldBoss()
@@ -9237,6 +9330,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     {
         Creature const* creature = target->ToCreature();
         bool routeBossTarget = isValidationRouteObjectiveTarget(creature);
+        if (routeBossTarget && _config.ValidationRouteKind != "boss")
+            enrollValidationRoutePackMember(creature, isValidationCohortCombatLinked(creature));
         if (routeBossTarget)
             rememberValidationRouteFocus(target);
         if (tryRouteGroupHeal(bot, target))
@@ -9609,46 +9704,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         Unit* anchorTarget = findTrashClusterThreatTarget();
         if (!anchorTarget)
             anchorTarget = findNearestTrashClusterMob();
-        float bestAnchorTargetScore = std::numeric_limits<float>::max();
-        if (!anchorTarget && _config.ValidationRoutePackTargetEntries.empty())
-        {
-            std::vector<WorldObject*> objects;
-            Trinity::AllWorldObjectsInRange check(bot, 180.0f);
-            Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(bot, objects, check);
-            Cell::VisitAllObjects(bot, searcher, 180.0f);
-            for (WorldObject* object : objects)
-            {
-                Creature* creature = object ? object->ToCreature() : nullptr;
-                if (!creature || !creature->IsAlive() || !bot->IsValidAttackTarget(creature))
-                    continue;
-                if (creature->IsDungeonBoss() || creature->isWorldBoss())
-                    continue;
-                if (creature->IsCritter() || creature->IsPet() || creature->IsTotem() || creature->IsSummon() || creature->IsGuardian() || !creature->GetOwnerGUID().IsEmpty())
-                    continue;
-                if (!bot->IsWithinLOSInMap(creature))
-                    continue;
-
-                float anchorProximity = creature->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ);
-                if (anchorProximity > 120.0f)
-                    continue;
-
-                float botDistance = bot->GetExactDist(creature);
-                float score = anchorProximity + botDistance * 0.35f;
-                if (creature->GetVictim() == bot)
-                    score -= 25.0f;
-                if (creature->isElite())
-                    score -= 10.0f;
-                if (isValidationRouteScriptTarget(creature))
-                    score -= 100.0f;
-
-                if (!anchorTarget || score < bestAnchorTargetScore)
-                {
-                    anchorTarget = creature;
-                    bestAnchorTargetScore = score;
-                }
-            }
-        }
-
         if (anchorTarget)
         {
             routeTarget = anchorTarget;
@@ -9657,7 +9712,25 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         }
         else if (ValidationRouteHasProgressSinceApply() && ++state.ValidationRouteTargetSearchMissCount >= 2)
         {
-            if (_config.ValidationRouteAdvanceMode == "terminal" && !trashClusterHasLiveMobs())
+            bool packHasLiveMobs = trashClusterHasLiveMobs();
+            bool partyInCombat = false;
+            for (WorldBotState const& cohortState : _bots)
+                if (Player* member = GetLoadedBot(cohortState); member && member->IsInCombat())
+                {
+                    partyInCombat = true;
+                    break;
+                }
+            uint64 nowMs = NowMs();
+            if (packHasLiveMobs || partyInCombat)
+                _validationRoutePackClearCandidateSinceMs = 0;
+            else if (!_validationRoutePackClearCandidateSinceMs)
+                _validationRoutePackClearCandidateSinceMs = nowMs;
+
+            if (_config.ValidationRouteAdvanceMode == "terminal"
+                && _validationRoutePackObservedEngagement
+                && !packHasLiveMobs
+                && !partyInCombat
+                && nowMs - _validationRoutePackClearCandidateSinceMs >= 2000)
             {
                 std::string raw = BuildRawJson(bot, nullptr);
                 std::string semantic = BuildSemanticJson(bot, nullptr, "normal_dungeon_trash", &power, stage, activity);
@@ -9666,7 +9739,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 MaybeAdvanceValidationRouteManifest();
             }
             else
-                markValidationRouteTerminalAfterProgress("cluster_empty_after_partial_progress");
+            {
+                std::string raw = BuildRawJson(bot, nullptr);
+                std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_pack_hold", &power, stage, activity);
+                RecordEvent(state, bot, "validation_route_recovery", nullptr, "dynamic_pack_members_live_or_unobserved", raw.c_str(), semantic.c_str(), float(_validationRoutePackMemberGuids.size()), uint32(_validationRoutePackDeathGuids.size()));
+            }
             return true;
         }
     }
@@ -9720,6 +9797,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     state.ValidationRouteUnresolvedFocusHoldCount = 0;
     state.ValidationRouteTargetSearchMissCount = 0;
     state.TargetGuid = target->GetGUID();
+    if (_config.ValidationRouteKind != "boss")
+        enrollValidationRoutePackMember(target->ToCreature(), isValidationCohortCombatLinked(target->ToCreature()));
     rememberValidationRouteFocus(target);
     if (tryRouteGroupHeal(bot, target))
         return true;
@@ -14258,6 +14337,11 @@ std::string BotWorldPopulationMgr::BuildConfigJson() const
          << ",\"o\":" << _config.ValidationRouteO
          << ",\"target_entry\":" << _config.ValidationRouteTargetEntry
          << ",\"opener_target_entry\":" << _config.ValidationRouteOpenerTargetEntry
+         << ",\"pack_generation\":" << _validationRoutePackGeneration
+         << ",\"pack_member_count\":" << _validationRoutePackMemberGuids.size()
+         << ",\"pack_engaged_count\":" << _validationRoutePackEngagedGuids.size()
+         << ",\"pack_death_count\":" << _validationRoutePackDeathGuids.size()
+         << ",\"pack_observed_engagement\":" << (_validationRoutePackObservedEngagement ? "true" : "false")
          << ",\"alternate_target_entries\":[";
     for (size_t index = 0; index < _config.ValidationRouteAlternateTargetEntries.size(); ++index)
     {
@@ -14959,6 +15043,11 @@ std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson(WorldBotState con
          << "{\"name\":\"validation_route_advance_reason\",\"value\":\"" << JsonEscape(_validationRouteManifestAdvanceReason) << "\"},"
          << "{\"name\":\"validation_route_manifest_load_error\",\"value\":\"" << JsonEscape(_validationRouteManifestLoadError) << "\"},"
          << "{\"name\":\"validation_route_progress_baseline_kills\",\"value\":" << _validationRouteProgressBaselineKills << "},"
+         << "{\"name\":\"validation_route_pack_generation\",\"value\":" << _validationRoutePackGeneration << "},"
+         << "{\"name\":\"validation_route_pack_member_count\",\"value\":" << _validationRoutePackMemberGuids.size() << "},"
+         << "{\"name\":\"validation_route_pack_engaged_count\",\"value\":" << _validationRoutePackEngagedGuids.size() << "},"
+         << "{\"name\":\"validation_route_pack_death_count\",\"value\":" << _validationRoutePackDeathGuids.size() << "},"
+         << "{\"name\":\"validation_route_pack_observed_engagement\",\"value\":" << (_validationRoutePackObservedEngagement ? "true" : "false") << "},"
          << "{\"name\":\"validation_route_activation_applied\",\"value\":" << (state.ValidationRouteActivationApplied ? "true" : "false") << "},"
          << "{\"name\":\"validation_route_activation_attempts\",\"value\":" << state.ValidationRouteActivationAttempts << "},"
          << "{\"name\":\"validation_route_config_kind\",\"value\":\"" << JsonEscape(_config.ValidationRouteKind) << "\"},"

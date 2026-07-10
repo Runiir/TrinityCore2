@@ -1161,6 +1161,12 @@ private:
     ObjectGuid _validationRouteAddFocusGuid;
     uint64 _validationRouteAddFocusGeneration = 0;
     GuidSet _validationRouteRecordedKillGuids;
+    GuidSet _validationRoutePackMemberGuids;
+    GuidSet _validationRoutePackEngagedGuids;
+    GuidSet _validationRoutePackDeathGuids;
+    uint64 _validationRoutePackGeneration = 0;
+    bool _validationRoutePackObservedEngagement = false;
+    uint64 _validationRoutePackClearCandidateSinceMs = 0;
     ObjectGuid _validationRouteBossProgressTargetGuid;
     uint32 _validationRouteBossSlowProgressCount = 0;
     bool _validationRouteActivationApplied = false;
