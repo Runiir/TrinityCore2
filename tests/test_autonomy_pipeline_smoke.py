@@ -1710,12 +1710,20 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         "creature->GetVictim()",
         "creature->HasReactState(REACT_PASSIVE)",
         "_validationRoutePackTransitionGuids.insert(creature->GetGUID())",
+        "_validationRouteFocusGuid == transitionedGuid",
+        "cohortState.TargetGuid == transitionedGuid",
+        "member->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE)",
+        "cohortState.ActivePathValid = false",
         '"validation_route_scripted_transition"',
     ]:
         assert required in transition_block
     for generic_state in ["IsValidAttackTarget", "IsInEvadeMode", "UNIT_STATE_EVADE", "hasStrictPathToValidationRouteTarget", "IsWithinLOSInMap"]:
         assert generic_state not in transition_block
     assert "_validationRoutePackTransitionGuids.find(guid) == _validationRoutePackTransitionGuids.end()" in route_objective
+    eligible_block = route_objective.split("auto isEligibleTrashClusterMob", 1)[1].split("auto isLiveTrashClusterMob", 1)[0]
+    assert "_validationRoutePackTransitionGuids.find(creature->GetGUID())" in eligible_block
+    assert "AttackStop" not in transition_block
+    assert "CombatStop" not in transition_block
     assert_ordered(
         route_objective,
         "_validationRoutePackMemberGuids.insert(killedTarget->GetGUID());",

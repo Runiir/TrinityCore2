@@ -7130,6 +7130,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     {
         if (!bot || !creature || !creature->IsAlive() || !creature->GetHealth() || !bot->IsValidAttackTarget(creature))
             return false;
+        if (_validationRoutePackGeneration == _validationRouteGeneration
+            && _validationRoutePackTransitionGuids.find(creature->GetGUID()) != _validationRoutePackTransitionGuids.end())
+            return false;
         if (creature->IsInEvadeMode() || creature->HasUnitState(UNIT_STATE_EVADE))
             return false;
         if (creature->IsDungeonBoss() || creature->isWorldBoss())
@@ -7233,6 +7236,30 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return false;
 
         _validationRoutePackTransitionGuids.insert(creature->GetGUID());
+        ObjectGuid transitionedGuid = creature->GetGUID();
+        if (_validationRouteFocusGuid == transitionedGuid)
+        {
+            _validationRouteFocusGuid.Clear();
+            _validationRouteFocusEntry = 0;
+            _validationRouteFocusSeenMs = 0;
+        }
+        for (WorldBotState& cohortState : _bots)
+        {
+            bool pursuingTransition = cohortState.TargetGuid == transitionedGuid
+                || cohortState.ValidationRouteCombatProgressTargetGuid == transitionedGuid
+                || cohortState.ValidationRoutePackProgressTargetGuid == transitionedGuid;
+            if (!pursuingTransition)
+                continue;
+            if (Player* member = GetLoadedBot(cohortState))
+                member->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+            if (cohortState.TargetGuid == transitionedGuid)
+                cohortState.TargetGuid.Clear();
+            cohortState.ValidationRouteCombatProgressTargetGuid.Clear();
+            cohortState.ValidationRoutePackProgressTargetGuid.Clear();
+            cohortState.ValidationRouteCombatNoProgressCount = 0;
+            cohortState.ValidationRoutePackNoProgressCount = 0;
+            cohortState.ActivePathValid = false;
+        }
         std::string raw = BuildRawJson(bot, creature);
         std::string semantic = BuildSemanticJson(bot, creature, "validation_route_scripted_transition", &power, stage, activity);
         RecordEvent(state, bot, "validation_route_scripted_transition", creature, "manifest_transition_observed", raw.c_str(), semantic.c_str(), UnitHealthPct(creature), auraId);
