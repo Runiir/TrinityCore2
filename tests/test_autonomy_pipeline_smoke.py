@@ -894,6 +894,11 @@ def test_quest_first_portfolio_routing_surface():
     assert "creature->IsInCombat() && !creature->GetVictim()" in validation_route_objective
     assert "ValidationRouteAddTargetEntries.end(), creature->GetEntry()" in validation_route_objective
     assert "BuildBossMechanicFeatures(bot, bossTarget)" not in validation_route_objective
+    assert "BotActionResult pull = executor.Pull(bot, add);" in validation_route_objective
+    assert "if (result == BotActionResult::NoAction)\n                result = pull;" in validation_route_objective
+    assert 'priority = victimRole == "healer" ? 3 : (victimRole == "tank" ? 2 : 1);' in validation_route_objective
+    assert "priority == bestPriority && healthPct < bestHealthPct" in validation_route_objective
+    assert "healthPct == bestHealthPct && guid < bestGuid" in validation_route_objective
     assert 'RecordEvent(state, bot, "boss_adds", add' in validation_route_objective
     assert_ordered(
         validation_route_objective,

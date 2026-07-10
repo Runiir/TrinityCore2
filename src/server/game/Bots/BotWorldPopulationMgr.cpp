@@ -8585,7 +8585,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
         Unit* add = nullptr;
         uint32 addCount = 0;
-        float bestScore = 0.0f;
+        uint8 bestPriority = 0;
+        float bestHealthPct = 1.0f;
+        uint32 bestGuid = 0;
         std::vector<WorldObject*> objects;
         Trinity::AllWorldObjectsInRange check(bot, 45.0f);
         Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(bot, objects, check);
@@ -8600,13 +8602,23 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 continue;
 
             ++addCount;
-            float score = 45.0f - bot->GetExactDist(creature);
-            if (creature->GetVictim() == bot)
-                score += 20.0f;
-            if (!add || score > bestScore)
+            uint8 priority = 1;
+            if (Player* victim = creature->GetVictim() ? creature->GetVictim()->ToPlayer() : nullptr)
+            {
+                std::string victimRole = GetDungeonRole(victim);
+                priority = victimRole == "healer" ? 3 : (victimRole == "tank" ? 2 : 1);
+            }
+            float healthPct = UnitHealthPct(creature);
+            uint32 guid = creature->GetGUID().GetCounter();
+            if (!add
+                || priority > bestPriority
+                || (priority == bestPriority && healthPct < bestHealthPct)
+                || (priority == bestPriority && healthPct == bestHealthPct && guid < bestGuid))
             {
                 add = creature;
-                bestScore = score;
+                bestPriority = priority;
+                bestHealthPct = healthPct;
+                bestGuid = guid;
             }
         }
         if (!add)
@@ -8620,7 +8632,13 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (approach)
             MoveBotToProfileRange(state, bot, add, &profileAction);
         else
+        {
+            BotActionExecutor executor;
+            BotActionResult pull = executor.Pull(bot, add);
             result = ExecuteProfileCombatAction(&state, bot, add, &profileAction);
+            if (result == BotActionResult::NoAction)
+                result = pull;
+        }
 
         std::string raw = BuildRawJson(bot, add);
         std::string semantic = BuildSemanticJson(bot, add, "dungeon_boss", &power, stage, activity);
