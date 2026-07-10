@@ -986,6 +986,7 @@ def test_quest_first_portfolio_routing_surface():
     assert "routeDistance <= 220.0f" not in validation_route_objective
     assert_ordered(
         validation_route_objective,
+        "&& routeDistance <= routeArrivalRadius",
         "&& tryValidationRouteActivation(nullptr, \"boss_route_early_activation\"))",
         "Unit* preAnchorTrashTarget = nullptr;",
         "preAnchorTrashTarget = findTrashClusterThreatTarget();",
@@ -1035,10 +1036,14 @@ def test_quest_first_portfolio_routing_surface():
     assert "SpawnGroupSpawn(_config.ValidationRouteActivationSpawnGroupId" in mgr
     assert "creature->AI()->DoAction(_config.ValidationRouteActivationActionId)" in mgr
     assert "bot->SummonCreature(_config.ValidationRouteOpenerSummonEntry" in mgr
-    assert "bot->SummonCreature(_config.ValidationRouteTargetEntry, targetPos" in mgr
-    assert "routeTargetActivationFallback" in mgr
-    assert "&& !routeTargetActivationFallback" in mgr
-    assert "if (!activationTarget\n            && routeTargetActivationFallback)" in mgr
+    assert "bot->SummonCreature(_config.ValidationRouteTargetEntry, targetPos" not in mgr
+    assert "routeTargetActivationFallback" not in mgr
+    assert 'if (_config.ValidationRouteKind == "boss" && std::string(GetDungeonRole(bot)) != "tank")' in mgr
+    existing_activation = validation_route_objective.split("auto makeExistingValidationRouteCombatReady", 1)[1].split("auto tryValidationRouteActivation", 1)[0]
+    assert "SetFaction" not in existing_activation
+    assert "RemoveFlag" not in existing_activation
+    assert "SetInCombatWith" not in existing_activation
+    assert "AttackStart" not in existing_activation
     assert "float routeArrivalRadius =" in mgr
     assert "ValidationRouteClusterRadiusYards > routeArrivalRadius" not in validation_route_objective
     assert "if (!preAnchorTrashTarget && routeDistance <= routeArrivalRadius)" in validation_route_objective
