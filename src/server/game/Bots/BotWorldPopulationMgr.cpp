@@ -8963,14 +8963,14 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         uint8 bestPriority = 0;
         float bestHealthPct = 1.0f;
         uint32 bestGuid = 0;
-        auto isUsableListedAdd = [this, bot](Unit* candidate) -> bool
+        auto isUsableListedAdd = [this](Player* observer, Unit* candidate) -> bool
         {
             Creature* creature = candidate ? candidate->ToCreature() : nullptr;
-            return creature && creature->IsAlive() && creature->GetHealth()
-                && creature->GetMap() == bot->GetMap()
+            return observer && creature && creature->IsAlive() && creature->GetHealth()
+                && creature->GetMap() == observer->GetMap()
                 && std::find(_config.ValidationRouteAddTargetEntries.begin(), _config.ValidationRouteAddTargetEntries.end(), creature->GetEntry()) != _config.ValidationRouteAddTargetEntries.end()
                 && (creature->IsInCombat() || creature->GetVictim())
-                && bot->IsValidAttackTarget(creature);
+                && observer->IsValidAttackTarget(creature);
         };
         if (_validationRouteAddFocusGeneration != _validationRouteGeneration)
         {
@@ -8992,7 +8992,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 _validationRouteAddFocusGuid.Clear();
                 add = nullptr;
             }
-            else if (!isUsableListedAdd(add))
+            else if (!isUsableListedAdd(bot, add))
             {
                 _validationRouteAddFocusGuid.Clear();
                 add = nullptr;
@@ -9005,12 +9005,14 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         Trinity::AllWorldObjectsInRange check(bot, 45.0f);
         Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(bot, objects, check);
         Cell::VisitAllObjects(bot, searcher, 45.0f);
+        GuidSet cohortAddGuids;
         for (WorldObject* object : objects)
         {
             Creature* creature = object ? object->ToCreature() : nullptr;
-            if (!isUsableListedAdd(creature) || !bot->IsWithinLOSInMap(creature))
+            if (!isUsableListedAdd(bot, creature) || !bot->IsWithinLOSInMap(creature))
                 continue;
 
+            cohortAddGuids.insert(creature->GetGUID());
             ++addCount;
             if (bot->GetExactDist2d(creature) <= 12.0f)
             {
@@ -9039,8 +9041,31 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 bestGuid = guid;
             }
         }
+        if (_validationRouteBossAddDensityPhase && addCount < 3)
+        {
+            for (WorldBotState const& cohortState : _bots)
+            {
+                Player* observer = GetLoadedBot(cohortState);
+                if (!observer || !observer->IsAlive() || observer->GetMap() != bot->GetMap())
+                    continue;
+
+                std::vector<WorldObject*> cohortObjects;
+                Trinity::AllWorldObjectsInRange cohortCheck(observer, 45.0f);
+                Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> cohortSearcher(observer, cohortObjects, cohortCheck);
+                Cell::VisitAllObjects(observer, cohortSearcher, 45.0f);
+                for (WorldObject* object : cohortObjects)
+                {
+                    Creature* creature = object ? object->ToCreature() : nullptr;
+                    if (isUsableListedAdd(observer, creature) && observer->IsWithinLOSInMap(creature))
+                        cohortAddGuids.insert(creature->GetGUID());
+                }
+                if (cohortAddGuids.size() >= 3)
+                    break;
+            }
+        }
+        bool cohortSwarmActive = cohortAddGuids.size() >= 3;
         if (_validationRouteBossAddDensityPhase
-            && (_validationRouteBossAddDensityGeneration != _validationRouteGeneration || addCount < 3))
+            && (_validationRouteBossAddDensityGeneration != _validationRouteGeneration || !cohortSwarmActive))
         {
             _validationRouteBossAddDensityPhase = false;
             _validationRouteBossAddDensityGeneration = 0;

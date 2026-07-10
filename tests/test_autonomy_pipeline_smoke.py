@@ -909,7 +909,7 @@ def test_quest_first_portfolio_routing_surface():
     assert "priority == bestPriority && healthPct < bestHealthPct" in validation_route_objective
     assert "healthPct == bestHealthPct && guid < bestGuid" in validation_route_objective
     assert "_validationRouteAddFocusGeneration != _validationRouteGeneration" in validation_route_objective
-    assert "else if (!isUsableListedAdd(add))" in validation_route_objective
+    assert "else if (!isUsableListedAdd(bot, add))" in validation_route_objective
     assert "add = ObjectAccessor::GetUnit(*bot, _validationRouteAddFocusGuid);" in validation_route_objective
     assert "_validationRouteAddFocusGuid = add->GetGUID();" in validation_route_objective
     assert "if (!add)" in validation_route_objective
@@ -2223,7 +2223,7 @@ def test_validation_route_high_density_adds_move_from_centroid_and_fail_closed_t
     assert "ObjectAccessor::GetUnit(*bot, _validationRouteBossProgressTargetGuid)" in adds
     assert "bool routeBossUnavailable = !routeBoss" in adds
     assert "_validationRouteBossAddDensityGeneration = _validationRouteGeneration;" in adds
-    assert "_validationRouteBossAddDensityGeneration != _validationRouteGeneration || addCount < 3" in adds
+    assert "_validationRouteBossAddDensityGeneration != _validationRouteGeneration || !cohortSwarmActive" in adds
     assert "_validationRouteBossAddDensityPhase && routeBossAttackable" in adds
     assert "_validationRouteBossAddDensityPhase = false;" in reset
     assert "_validationRouteBossAddDensityGeneration = 0;" in reset
@@ -2250,6 +2250,23 @@ def test_validation_route_high_density_adds_move_from_centroid_and_fail_closed_t
     density_branch = adds[adds.index("if (highDensityPhase)", adds.index("BotActionResult result")):]
     density_branch = density_branch[:density_branch.index("else\n            {")]
     assert "executor.Pull" not in density_branch
+
+
+def test_shared_density_latch_uses_cohort_observation_before_swarm_end_clear():
+    objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    start = objective.index("auto tryValidationRouteAdds")
+    end = objective.index("auto markValidationRouteTerminalAfterProgress", start)
+    adds = objective[start:end]
+
+    assert "GuidSet cohortAddGuids;" in adds
+    assert "if (_validationRouteBossAddDensityPhase && addCount < 3)" in adds
+    assert "for (WorldBotState const& cohortState : _bots)" in adds
+    assert "Player* observer = GetLoadedBot(cohortState);" in adds
+    assert "cohortAddGuids.insert(creature->GetGUID());" in adds
+    assert "bool cohortSwarmActive = cohortAddGuids.size() >= 3;" in adds
+    assert "|| !cohortSwarmActive" in adds
+    assert "|| addCount < 3" not in adds
+    assert_ordered(adds, "if (_validationRouteBossAddDensityPhase && addCount < 3)", "bool cohortSwarmActive", "|| !cohortSwarmActive")
 
 
 def test_density_action_taxonomy_and_stonecore_roster_profile_paths_are_explicit():
