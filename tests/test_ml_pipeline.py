@@ -37,7 +37,7 @@ from tools.bot_ml.build_validation_scenario_manifests import build_manifests as 
 from tools.bot_ml.build_live_scenario_reports import build_reports as build_live_scenario_reports, build_reports_from_live_reports, main as live_scenario_reports_main
 from tools.bot_ml.build_validation_run_plan import build_plan as build_validation_run_plan
 from tools.bot_ml.build_validation_run_status import build_status as build_validation_run_status
-from tools.bot_ml.run_live_bot_validation import bounded_console_deadline, build_bot_pool_reset_sql, command_script, live_validation_report, load_scenario_reports, load_validation_route, main as live_validation_main, parse_json_objects, parse_soap_result, read_until_console_prompt, route_segment_complete, run_worldserver, run_worldserver_completion_watchdog, split_sql_statements, trinity_config_bool, upsert_trinity_config, watchdog_state, write_validation_config
+from tools.bot_ml.run_live_bot_validation import bounded_console_deadline, build_bot_pool_reset_sql, command_script, live_validation_report, load_scenario_reports, load_validation_route, main as live_validation_main, parse_json_objects, parse_soap_result, read_until_console_prompt, route_segment_complete, run_worldserver, run_worldserver_completion_watchdog, split_sql_statements, trinity_config_bool, unresolved_route_stuck_count, upsert_trinity_config, watchdog_state, write_validation_config
 from tools.bot_ml.orchestrator_daemon import codex_command, detect_rate_limit, handle_rate_limit, initial_state, run_one_cycle, sleep_until_resume
 from tools.bot_ml.generate_lane_configs import write_lane_config
 from tools.bot_ml.promote_live_validation_artifact import promote
@@ -3277,7 +3277,7 @@ TC> {"duration_minutes":5.0,"decisions":40,"total_kills":1,"quests_completed":0,
     report = live_validation_report(output)
 
     assert report["evidence"]["kill_evidence"] == 1
-    assert report["evidence"]["repath_events"] >= 8
+    assert report["evidence"]["unresolved_route_stuck_events"] >= 8
     assert report["evidence"]["unstuck_failures"] == 0
     assert report["evidence"]["validation_route_actions"] > 0
     assert report["evidence"]["post_failure_progress"] is False
@@ -3303,10 +3303,10 @@ TC> {"duration_minutes":3.0,"decisions":480,"total_kills":4,"quests_completed":0
 
 def test_live_bot_validation_rejects_unordered_combat_as_post_failure_progress():
     output = """
-TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":640,"kills":6,"quests_accepted":0,"quest_objective_progress":0,"stuck":5}
+TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":640,"kills":6,"quests_accepted":0,"quest_objective_progress":0,"stuck":8}
 TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"diagnosis":{"diagnosis_code":"normal_combat","route_progress":{"no_progress":{"count":0,"reason":"route_target_combat_progress","threshold":20},"route":{"kind":"trash"},"target":{"entry":42810,"guid":106,"hp_pct":0.42,"best_hp_pct":0.42}}},"snapshot":{"decision":{"action":"validation_route_trash_action"},"movement":{"is_moving":false,"distance_moved_since_last_decision":0}}}]}
 TC> {"trace_schema_version":1,"selector":"all","bots":[{"bot_guid":1,"entries":[{"action":"stuck_detected","situation":"stuck_detected","result":"validation_route_stuck_no_fallback"},{"action":"validation_route_recovery","situation":"validation_route_recovery","result":"validation_route_stuck_no_fallback"},{"action":"trash_action","situation":"validation_route","result":"ok"},{"action":"validation_route_trash_action","situation":"validation_route","result":"ok"},{"action":"mob_killed","situation":"normal_dungeon_trash","result":"stale_target_seen_dead"}]}]}
-TC> {"duration_minutes":4.0,"decisions":640,"total_kills":6,"quests_completed":0,"stuck_events":3}
+TC> {"duration_minutes":4.0,"decisions":640,"total_kills":6,"quests_completed":0,"stuck_events":8}
 """
     report = live_validation_report(output, validation_context={"route_kind": "trash"})
 
@@ -3327,7 +3327,7 @@ TC> {"duration_minutes":7.0,"decisions":1109,"total_kills":9,"quests_completed":
 """
     report = live_validation_report(output, validation_context={"route_kind": "trash"})
 
-    assert report["evidence"]["repath_events"] >= 8
+    assert report["evidence"]["unresolved_route_stuck_events"] >= 8
     assert report["evidence"]["validation_route_combat_progress_diagnoses"] == 0
     assert report["evidence"]["validation_route_no_progress_diagnoses"] == 0
     assert report["evidence"]["post_failure_progress"] is False
@@ -7802,6 +7802,86 @@ def test_stuck_recovery_rejects_wrong_scope_block_resolution():
 
     assert report["evidence"]["post_failure_progress"] is False
     assert "validation_route_stuck_loop" in report["failure_labels"]
+
+
+def test_unresolved_route_stuck_count_resets_recovered_history_at_pack_terminal():
+    scope = {"route_node_id": "corridor", "route_generation": 1}
+    entries = [
+        *[{"action": "stuck_detected", "sequence": index, **scope} for index in range(1, 9)],
+        {"action": "validation_route_pack_terminal", "sequence": 9, **scope},
+        {"action": "stuck_detected", "sequence": 10, **scope},
+    ]
+
+    assert unresolved_route_stuck_count(entries) == 1
+
+
+def test_unresolved_route_stuck_count_reaches_threshold_after_latest_progress():
+    scope = {"route_node_id": "corridor", "route_generation": 1}
+    entries = [
+        {"action": "validation_route_pack_terminal", "sequence": 1, **scope},
+        *[{"action": "stuck_detected", "sequence": index, **scope} for index in range(2, 10)],
+    ]
+
+    assert unresolved_route_stuck_count(entries) == 8
+
+
+def test_unresolved_route_stuck_count_ignores_wrong_scope_terminal():
+    scope = {"route_node_id": "corridor", "route_generation": 1}
+    entries = [
+        *[{"action": "stuck_detected", "sequence": index, **scope} for index in range(1, 9)],
+        {"action": "validation_route_terminal", "sequence": 9, "route_node_id": "boss", "route_generation": 2},
+    ]
+
+    assert unresolved_route_stuck_count(entries) == 8
+
+
+def test_unresolved_route_stuck_count_accepts_same_scope_movement_resolution():
+    scope = {"route_node_id": "corridor", "route_generation": 1}
+    entries = [
+        *[{"action": "stuck_detected", "sequence": index, **scope} for index in range(1, 9)],
+        {"sequence": 9, "blocked_current_reason": "", "blocked_resolved_by": "movement_progress", **scope},
+    ]
+
+    assert unresolved_route_stuck_count(entries) == 0
+
+
+def test_live_validation_deduplicates_redundant_stuck_counter_views():
+    entries = [{"action": "stuck_detected", "sequence": index} for index in range(1, 9)]
+    output = "\n".join([
+        'TC> {"active_bots":1,"target_bots":1,"decisions":20,"stuck":12}',
+        "TC> " + json.dumps({"trace_schema_version": 1, "entries": entries}),
+        'TC> {"duration_minutes":1,"decisions":20,"stuck_events":12}',
+    ])
+
+    report = live_validation_report(output)
+
+    assert report["evidence"]["stuck_events"] == 12
+    assert report["evidence"]["unresolved_route_stuck_events"] == 12
+
+
+def test_stuck_loop_uses_only_failures_unresolved_since_pack_terminal():
+    scope = {"route_node_id": "corridor", "route_generation": 1}
+    recovered = [
+        {"action": "validation_route_trash_action", "sequence": 1, **scope},
+        *[{"action": "stuck_detected", "sequence": index, **scope} for index in range(2, 10)],
+        {"action": "validation_route_pack_terminal", "sequence": 10, **scope},
+        {"action": "stuck_detected", "sequence": 11, **scope},
+    ]
+    unresolved = [
+        {"action": "validation_route_trash_action", "sequence": 1, **scope},
+        {"action": "validation_route_pack_terminal", "sequence": 2, **scope},
+        *[{"action": "stuck_detected", "sequence": index, **scope} for index in range(3, 11)],
+    ]
+    def report(entries):
+        return live_validation_report('TC> {"active_bots":1,"target_bots":1,"decisions":20}\nTC> ' + json.dumps({"trace_schema_version": 1, "entries": entries}))
+
+    recovered_report = report(recovered)
+    unresolved_report = report(unresolved)
+
+    assert recovered_report["evidence"]["unresolved_route_stuck_events"] == 1
+    assert "validation_route_stuck_loop" not in recovered_report["failure_labels"]
+    assert unresolved_report["evidence"]["unresolved_route_stuck_events"] == 8
+    assert "validation_route_stuck_loop" in unresolved_report["failure_labels"]
 
 
 def test_validation_status_requires_exact_scoped_terminal_and_boss_evidence(tmp_path):

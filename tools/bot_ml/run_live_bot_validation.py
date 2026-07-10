@@ -778,13 +778,38 @@ def trace_order(entry: dict[str, Any]) -> tuple[int, int]:
     return int(entry.get("timestamp_ms") or 0), int(entry.get("sequence") or 0)
 
 
+ROUTE_FAILURE_ACTIONS = {"stuck_detected", "guardrail_repath", "objective_target_lost", "validation_route_target_lost"}
+ROUTE_PROGRESS_ACTIONS = {
+    "mob_killed",
+    "boss_killed",
+    "raid_boss_killed",
+    "objective_progress",
+    "validation_route_pack_terminal",
+    "validation_route_terminal",
+    "validation_route_segment_advance",
+}
+ROUTE_PROGRESS_RESOLUTIONS = {"movement_progress", "route_target_combat_progress"}
+
+
+def route_failure(entry: dict[str, Any]) -> bool:
+    action = str(entry.get("action") or "")
+    result = str(entry.get("result") or "")
+    return action in ROUTE_FAILURE_ACTIONS or (action == "unstuck" and result in {"failed", "failure"}) or "target_lost" in result
+
+
+def is_route_progress(entry: dict[str, Any], scope: tuple[str, int]) -> bool:
+    same_scope = scope == ("", 0) or route_scope(entry) == scope
+    return same_scope and (
+        str(entry.get("action") or "") in ROUTE_PROGRESS_ACTIONS
+        or (
+            not str(entry.get("blocked_current_reason") or "")
+            and str(entry.get("blocked_resolved_by") or "") in ROUTE_PROGRESS_RESOLUTIONS
+        )
+    )
+
+
 def progress_after_latest_route_failure(entries: list[dict[str, Any]]) -> bool:
-    failures = [
-        entry
-        for entry in entries
-        if str(entry.get("action") or "") in {"stuck_detected", "objective_target_lost", "validation_route_target_lost"}
-        or "target_lost" in str(entry.get("result") or "")
-    ]
+    failures = [entry for entry in entries if route_failure(entry)]
     if not failures:
         return True
     latest_failure = max(failures, key=trace_order)
@@ -792,30 +817,22 @@ def progress_after_latest_route_failure(entries: list[dict[str, Any]]) -> bool:
     if latest_order == (0, 0):
         return False
     failure_scope = route_scope(latest_failure)
-    progress_actions = {
-        "mob_killed",
-        "boss_killed",
-        "raid_boss_killed",
-        "objective_progress",
-        "validation_route_terminal",
-        "validation_route_segment_advance",
-    }
-    return any(
-        trace_order(entry) > latest_order
-        and (
-            (
-                str(entry.get("action") or "") in progress_actions
-                and (failure_scope == ("", 0) or route_scope(entry) == failure_scope)
-            )
-            or (
-                route_scope(entry) == failure_scope
-                and not str(entry.get("blocked_current_reason") or "")
-                and str(entry.get("blocked_resolved_by") or "")
-                in {"movement_progress", "route_target_combat_progress"}
-            )
-        )
-        for entry in entries
+    return any(trace_order(entry) > latest_order and is_route_progress(entry, failure_scope) for entry in entries)
+
+
+def unresolved_route_stuck_count(entries: list[dict[str, Any]]) -> int:
+    failures = [entry for entry in entries if route_failure(entry)]
+    if not failures:
+        return 0
+    failure_scope = route_scope(max(failures, key=trace_order))
+    scoped_failures = [entry for entry in failures if failure_scope == ("", 0) or route_scope(entry) == failure_scope]
+    if any(trace_order(entry) == (0, 0) for entry in scoped_failures):
+        return len(scoped_failures)
+    latest_progress = max(
+        (trace_order(entry) for entry in entries if is_route_progress(entry, failure_scope)),
+        default=(0, 0),
     )
+    return sum(trace_order(entry) > latest_progress for entry in scoped_failures)
 
 
 def strict_manifest_evidence(evidence: dict[str, Any], manifest: dict[str, Any]) -> dict[str, list[str]]:
@@ -1023,9 +1040,16 @@ def live_evidence(
             raw_manifest_complete_count,
         )
     diagnosis_result_counts = Counter()
-    stuck_events = int(status.get("stuck") or 0) + int(summary.get("stuck_events") or 0) + action_counts.get("stuck_detected", 0)
+    stuck_events = max(int(status.get("stuck") or 0), int(summary.get("stuck_events") or 0), action_counts.get("stuck_detected", 0))
+    unresolved_route_stuck_events = unresolved_route_stuck_count(entries)
+    failures = [entry for entry in entries if route_failure(entry)]
+    if failures:
+        failure_scope = route_scope(max(failures, key=trace_order))
+        has_ordered_progress = any(trace_order(entry) != (0, 0) and is_route_progress(entry, failure_scope) for entry in entries)
+        if not has_ordered_progress:
+            unresolved_route_stuck_events = max(unresolved_route_stuck_events, stuck_events)
     unstuck_failures = sum(1 for entry in entries if str(entry.get("action") or "") == "unstuck" and str(entry.get("result") or "") in {"failed", "failure"})
-    repath_events = action_counts.get("stuck_detected", 0) + result_counts.get("repath", 0)
+    repath_events = result_counts.get("repath", 0)
     quest_acceptance_actions = sum(
         1
         for entry in entries
@@ -1304,6 +1328,7 @@ def live_evidence(
         "validation_evidence_counts": action_evidence_counts,
         "validation_evidence_ready": {name: count > 0 for name, count in sorted(action_evidence_counts.items())},
         "stuck_events": stuck_events,
+        "unresolved_route_stuck_events": unresolved_route_stuck_events,
         "unstuck_failures": unstuck_failures,
         "repath_events": repath_events,
         "validation_route_actions": validation_route_actions,
@@ -1363,9 +1388,7 @@ def validation_failure_labels(
     prerequisite_repeats = int(evidence.get("validation_route_prerequisite_repeats") or 0)
     no_visible_activations = int(evidence.get("validation_route_no_visible_target_activations") or 0)
     force_tank_focus = int(evidence.get("validation_route_force_tank_focus_repeats") or 0)
-    stuck_events = int(evidence.get("stuck_events") or 0)
-    unstuck_failures = int(evidence.get("unstuck_failures") or 0)
-    repath_events = int(evidence.get("repath_events") or 0)
+    unresolved_route_stuck_events = int(evidence.get("unresolved_route_stuck_events") or 0)
     action_counts = evidence.get("action_counts") if isinstance(evidence.get("action_counts"), dict) else {}
     result_counts = evidence.get("result_counts") if isinstance(evidence.get("result_counts"), dict) else {}
     repeated_deaths = int(action_counts.get("repeated_death") or 0)
@@ -1420,11 +1443,12 @@ def validation_failure_labels(
         labels.append("validation_route_activation_target_absent")
     if route_actions > 0 and boss_kills <= 0 and trash_route_actions <= 0 and kill_evidence <= 0 and force_tank_focus >= 4 and boss_engagement <= 0:
         labels.append("validation_route_assist_focus_loop")
-    if route_actions > 0 and not post_failure_progress and (
-        unstuck_failures >= 3
-        or (repath_events >= max(8, active_bots) and not recovered_route_stuck and not recovered_by_route_progress and not recovered_by_active_route_combat)
-        or (stuck_events >= max(8, active_bots) and not recovered_route_stuck and not recovered_by_route_progress and not recovered_by_active_route_combat)
-    ):
+    if (route_actions > 0
+        and not post_failure_progress
+        and unresolved_route_stuck_events >= max(8, active_bots)
+        and not recovered_route_stuck
+        and not recovered_by_route_progress
+        and not recovered_by_active_route_combat):
         labels.append("validation_route_stuck_loop")
     if route_actions > 0 and (repeated_deaths >= 3 or deaths >= max(8, active_bots)):
         labels.append("validation_route_death_loop")
