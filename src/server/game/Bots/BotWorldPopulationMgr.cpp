@@ -7534,14 +7534,48 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             enrollValidationRoutePackMember(creature, isValidationCohortCombatLinked(creature));
         return best;
     };
+    struct TrashClusterTerminalBlocker
+    {
+        ObjectGuid Guid;
+        uint32 Entry = 0;
+        float Distance = 0.0f;
+        bool Observed = false;
+        bool Alive = false;
+        bool Attackable = false;
+        bool Evade = false;
+        bool Path = false;
+        bool Member = false;
+    } trashClusterTerminalBlocker;
     auto trashClusterHasLiveMobs = [&]() -> bool
     {
+        trashClusterTerminalBlocker = TrashClusterTerminalBlocker();
         if (_config.ValidationRouteKind == "boss" || !bot)
             return false;
 
         enrollEngagedValidationRoutePackMembers();
         if (persistedValidationRoutePackHasLiveMembers())
+        {
+            for (ObjectGuid const& guid : _validationRoutePackMemberGuids)
+            {
+                if (_validationRoutePackDeathGuids.find(guid) != _validationRoutePackDeathGuids.end()
+                    || _validationRoutePackTransitionGuids.find(guid) != _validationRoutePackTransitionGuids.end())
+                    continue;
+                trashClusterTerminalBlocker.Guid = guid;
+                trashClusterTerminalBlocker.Member = true;
+                if (Creature* creature = bot->GetMap() ? bot->GetMap()->GetCreature(guid) : nullptr)
+                {
+                    trashClusterTerminalBlocker.Observed = true;
+                    trashClusterTerminalBlocker.Entry = creature->GetEntry();
+                    trashClusterTerminalBlocker.Distance = creature->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ);
+                    trashClusterTerminalBlocker.Alive = creature->IsAlive() && creature->GetHealth();
+                    trashClusterTerminalBlocker.Attackable = bot->IsValidAttackTarget(creature);
+                    trashClusterTerminalBlocker.Evade = creature->IsInEvadeMode() || creature->HasUnitState(UNIT_STATE_EVADE);
+                    trashClusterTerminalBlocker.Path = hasStrictPathToValidationRouteTarget(creature);
+                }
+                break;
+            }
             return true;
+        }
         if (discoveryLeg)
             return false;
 
@@ -7553,8 +7587,23 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         Cell::VisitAllObjects(bot, searcher, searchRange);
 
         for (WorldObject* object : objects)
-            if (isLiveTrashClusterMob(object ? object->ToCreature() : nullptr))
+        {
+            Creature* creature = object ? object->ToCreature() : nullptr;
+            if (isLiveTrashClusterMob(creature))
+            {
+                trashClusterTerminalBlocker.Guid = creature->GetGUID();
+                trashClusterTerminalBlocker.Entry = creature->GetEntry();
+                trashClusterTerminalBlocker.Distance = creature->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ);
+                trashClusterTerminalBlocker.Observed = true;
+                trashClusterTerminalBlocker.Alive = creature->IsAlive() && creature->GetHealth();
+                trashClusterTerminalBlocker.Attackable = bot->IsValidAttackTarget(creature);
+                trashClusterTerminalBlocker.Evade = creature->IsInEvadeMode() || creature->HasUnitState(UNIT_STATE_EVADE);
+                trashClusterTerminalBlocker.Path = hasStrictPathToValidationRouteTarget(creature);
+                trashClusterTerminalBlocker.Member = _validationRoutePackGeneration == _validationRouteGeneration
+                    && _validationRoutePackMemberGuids.find(creature->GetGUID()) != _validationRoutePackMemberGuids.end();
                 return true;
+            }
+        }
 
         return false;
     };
@@ -10072,6 +10121,13 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             if (!isValidationRouteScriptTarget(creature))
                 continue;
 
+            bool recordedCurrentDead = _validationRoutePackGeneration == _validationRouteGeneration
+                && (!creature->IsAlive() || !creature->GetHealth())
+                && (_validationRoutePackDeathGuids.find(creature->GetGUID()) != _validationRoutePackDeathGuids.end()
+                    || _validationRouteRecordedKillGuids.find(creature->GetGUID()) != _validationRouteRecordedKillGuids.end());
+            if (recordedCurrentDead)
+                continue;
+
             float distance = bot->GetExactDist(creature);
             if (!seenRouteTarget || distance < bestSeenDistance)
             {
@@ -10321,7 +10377,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             targetSearchResult = isValidationRouteScriptTarget(anchorTarget->ToCreature()) ? "target_ready" : "anchor_reacquired_reachable_target";
             state.ValidationRouteTargetSearchMissCount = 0;
         }
-        else if ((discoveryLeg ? _validationRouteCompletedPackCount > 0 : ValidationRouteHasProgressSinceApply())
+        else if ((discoveryLeg ? _validationRouteCompletedPackCount > 0
+                : _validationRoutePackGeneration == _validationRouteGeneration && _validationRoutePackObservedEngagement)
             && ++state.ValidationRouteTargetSearchMissCount >= 2)
         {
             bool packHasLiveMobs = trashClusterHasLiveMobs();
@@ -10365,9 +10422,19 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             }
             else
             {
-                std::string raw = BuildRawJson(bot, nullptr);
+                std::ostringstream raw;
+                raw << "{\"base\":" << BuildRawJson(bot, nullptr)
+                    << ",\"terminal_blocker\":{\"guid\":" << trashClusterTerminalBlocker.Guid.GetCounter()
+                    << ",\"entry\":" << trashClusterTerminalBlocker.Entry
+                    << ",\"distance\":" << trashClusterTerminalBlocker.Distance
+                    << ",\"observed\":" << (trashClusterTerminalBlocker.Observed ? "true" : "false")
+                    << ",\"alive\":" << (trashClusterTerminalBlocker.Alive ? "true" : "false")
+                    << ",\"attackable\":" << (trashClusterTerminalBlocker.Attackable ? "true" : "false")
+                    << ",\"evade\":" << (trashClusterTerminalBlocker.Evade ? "true" : "false")
+                    << ",\"path\":" << (trashClusterTerminalBlocker.Path ? "true" : "false")
+                    << ",\"member\":" << (trashClusterTerminalBlocker.Member ? "true" : "false") << "}}";
                 std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_pack_hold", &power, stage, activity);
-                RecordEvent(state, bot, "validation_route_recovery", nullptr, "dynamic_pack_members_live_or_unobserved", raw.c_str(), semantic.c_str(), float(_validationRoutePackMemberGuids.size()), uint32(_validationRoutePackDeathGuids.size()));
+                RecordEvent(state, bot, "validation_route_recovery", nullptr, "dynamic_pack_members_live_or_unobserved", raw.str().c_str(), semantic.c_str(), float(_validationRoutePackMemberGuids.size()), uint32(_validationRoutePackDeathGuids.size()));
             }
             return true;
         }

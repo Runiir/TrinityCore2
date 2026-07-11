@@ -1912,6 +1912,46 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     assert "_validationRouteManifestComplete" not in record_decision
 
 
+def test_trash_terminal_uses_current_generation_truth_after_metric_restart():
+    route_objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    terminal_block = route_objective.split(
+        'if (!routeTarget && _config.ValidationRouteKind != "boss" && routeDistance <= routeArrivalRadius', 1
+    )[1].split('if (!routeTarget && _config.ValidationRouteKind == "boss")', 1)[0]
+    direct_scan = route_objective.split("if (_config.ValidationRouteTargetEntry && !routeTarget)", 1)[1].split(
+        'if (!routeTarget\n        && seenRouteTarget', 1
+    )[0]
+    live_scan = route_objective.split("auto trashClusterHasLiveMobs", 1)[1].split("auto markTrashClusterCleared", 1)[0]
+
+    assert "ValidationRouteHasProgressSinceApply()" not in terminal_block
+    assert "_validationRoutePackGeneration == _validationRouteGeneration && _validationRoutePackObservedEngagement" in terminal_block
+    assert "++state.ValidationRouteTargetSearchMissCount >= 2" in terminal_block
+    assert "!packHasLiveMobs" in terminal_block
+    assert "!partyHasActiveCombatUnit" in terminal_block
+    assert "fullCohortAtEndpoint" in terminal_block
+    assert "nowMs - clearCandidateSinceMs >= 2000" in terminal_block
+
+    assert_ordered(
+        direct_scan,
+        "bool recordedCurrentDead = _validationRoutePackGeneration == _validationRouteGeneration",
+        "_validationRoutePackDeathGuids.find(creature->GetGUID())",
+        "_validationRouteRecordedKillGuids.find(creature->GetGUID())",
+        "if (recordedCurrentDead)",
+        "continue;",
+        "float distance = bot->GetExactDist(creature);",
+    )
+    assert "recordValidationRouteTrashKill(seenRouteTarget, \"target_seen_dead\")" in route_objective
+
+    for forbidden_filter in [
+        "if (!bot->IsValidAttackTarget(creature))",
+        "if (creature->IsInEvadeMode()",
+        "if (!hasStrictPathToValidationRouteTarget(creature))",
+    ]:
+        assert forbidden_filter not in live_scan
+    for blocker_field in ["guid", "entry", "distance", "alive", "attackable", "evade", "path", "member"]:
+        assert f'\\\"{blocker_field}\\\"' in terminal_block
+    assert '"dynamic_pack_members_live_or_unobserved"' in terminal_block
+
+
 def test_clip_capture_smoke_persists_clip_row_with_pre_and_post_frames():
     buffer = read(BOT_BUFFER)
     capture = function_body(buffer, "uint64 BotTelemetryBuffer::CaptureEvent")
