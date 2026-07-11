@@ -2280,6 +2280,19 @@ def test_density_action_anchor_is_local_range_compatible_and_not_shared_cleanup_
     assert_ordered(adds, "add = densityAnchor;", "if (!highDensityPhase && !sharedFocusValid)")
 
 
+def test_inactive_density_without_listed_add_does_not_consume_boss_activation_handler():
+    objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    start = objective.index("auto tryValidationRouteAdds")
+    end = objective.index("auto markValidationRouteTerminalAfterProgress", start)
+    adds = objective[start:end]
+    no_add = adds[adds.index("if (!add)", adds.index("approach_density_anchor")):adds.index("if (!highDensityPhase && !sharedFocusValid)")]
+
+    assert_ordered(no_add, "if (!highDensityPhase)", "return false;", '"no_compatible_density_anchor"', "return true;")
+    assert "if (highDensityPhase && !add && densityApproachAnchor)" in adds
+    assert '"approach_density_anchor"' in adds
+    assert '"no_compatible_density_anchor"' in no_add
+
+
 def test_density_escape_is_one_generation_scoped_tank_relative_point_with_healer_priority():
     mgr = read(BOT_MGR)
     objective = function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteObjective")
