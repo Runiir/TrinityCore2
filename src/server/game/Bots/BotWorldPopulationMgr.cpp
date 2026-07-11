@@ -9730,20 +9730,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             if (tryRouteGroupHeal(bot, nullptr))
                 return true;
 
-            if (Player* anchor = FindDungeonAnchor(bot))
-            {
-                if (anchor != bot && anchor->IsAlive() && anchor->GetMap() == bot->GetMap() && bot->GetExactDist(anchor) > 6.0f)
-                {
-                    std::string raw = BuildRawJson(bot, nullptr);
-                    std::string semantic = BuildSemanticJson(bot, anchor, "validation_route_regroup", &power, stage, activity);
-                    MoveBotToProfileRange(state, bot, anchor);
-                    RecordEvent(state, bot, "validation_route_regroup", anchor, "follow_anchor_last_known_tank_focus", raw.c_str(), semantic.c_str(), bot->GetExactDist(anchor), _config.ValidationRouteTargetEntry);
-                    situation = "validation_route_regroup";
-                    action = "move_to_validation_route_anchor";
-                    return true;
-                }
-            }
-
             float focusDistance = bot->GetExactDist(_validationRouteFocusX, _validationRouteFocusY, _validationRouteFocusZ);
             std::string raw = BuildRawJson(bot, nullptr);
             std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_regroup", &power, stage, activity);
@@ -9773,10 +9759,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     return true;
                 }
 
-                MoveBotToPoint(state, bot, _validationRouteFocusX, _validationRouteFocusY, _validationRouteFocusZ);
-                RecordEvent(state, bot, "validation_route_regroup", nullptr, "follow_last_known_tank_focus", raw.c_str(), semantic.c_str(), focusDistance, _config.ValidationRouteTargetEntry);
+                RecordEvent(state, bot, "validation_route_regroup", nullptr, "hold_unresolved_authoritative_focus", raw.c_str(), semantic.c_str(), focusDistance, _config.ValidationRouteTargetEntry);
                 situation = "validation_route_regroup";
-                action = "move_to_validation_route_focus";
+                action = "validation_route_hold_focus";
                 return true;
             }
 

@@ -907,9 +907,21 @@ def test_quest_first_portfolio_routing_surface():
     assert "rememberedFocus = findTrashClusterThreatTarget();" in validation_route_objective
     assert "reject_non_authoritative_focus" in mgr
     assert "follow_anchor_non_authoritative_focus" in mgr
-    assert "follow_last_known_tank_focus" in mgr
+    assert "hold_unresolved_authoritative_focus" in mgr
     assert "hold_last_known_tank_focus" in mgr
-    assert "follow_anchor_last_known_tank_focus" in mgr
+    authoritative_memory = validation_route_objective.split("if (routeFocusMemoryActive())", 1)[1].split('if (std::string(GetDungeonRole(bot)) != "tank")', 1)[0]
+    assert "follow_anchor_last_known_tank_focus" not in authoritative_memory
+    assert "follow_last_known_tank_focus" not in authoritative_memory
+    assert "FindDungeonAnchor(bot)" not in authoritative_memory
+    assert "MoveBotToPoint(state, bot, _validationRouteFocusX" not in authoritative_memory
+    assert_ordered(
+        authoritative_memory,
+        "if (tryRouteGroupHeal(bot, nullptr))",
+        "float focusDistance = bot->GetExactDist(_validationRouteFocusX, _validationRouteFocusY, _validationRouteFocusZ);",
+        "unresolved_authoritative_focus_recovery",
+        "hold_unresolved_authoritative_focus",
+        "hold_last_known_tank_focus",
+    )
     assert "validation_route_hold_focus" in mgr
     assert "ValidationRouteUnresolvedFocusHoldCount" in mgr_header
     assert "ValidationRouteCombatNoProgressCount" in mgr_header
