@@ -213,6 +213,17 @@ def route_coordinate_status(step: dict[str, Any]) -> tuple[bool, str]:
     return True, ""
 
 
+def route_navigation_anchor_status(step: dict[str, Any]) -> tuple[bool, str]:
+    anchor = step.get("navigation_anchor")
+    if anchor is None:
+        return route_coordinate_status(step)
+    if not isinstance(anchor, dict):
+        return False, "navigation_anchor_not_object"
+    if not all(key in anchor for key in ("x", "y", "z")):
+        return False, "navigation_anchor_missing_xyz"
+    return route_coordinate_status(anchor)
+
+
 def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any], provisioning_verify_report: dict[str, Any]) -> dict[str, list[dict[str, Any]] | dict[str, Any]]:
     provisioned = scenario_by_id(provisioning_report)
     verification_ready = bool(provisioning_verify_report.get("all_passed"))
@@ -243,10 +254,10 @@ def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any],
                 "step": int(step.get("step") or 0),
                 "kind": step.get("kind") or "unknown",
                 "label": step.get("label") or "",
-                "reason": route_coordinate_status(step)[1],
+                "reason": route_coordinate_status(step)[1] or route_navigation_anchor_status(step)[1],
             }
             for step in route_steps
-            if not route_coordinate_status(step)[0]
+            if not route_coordinate_status(step)[0] or not route_navigation_anchor_status(step)[0]
         ]
         if invalid_route_steps:
             missing.append("route_coordinates")
@@ -284,6 +295,7 @@ def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any],
             event_entries = scripted_event_entries(scenario_id, step)
             event_transition_aura_ids = [int(aura_id) for aura_id in (step.get("scripted_event_transition_aura_ids") or []) if int(aura_id)]
             cluster_radius_yards = 0.0 if node_kind == "discovery_leg" else float(step.get("cluster_radius_yards") or (90.0 if step.get("kind") == "trash" else 0.0))
+            navigation_anchor = step.get("navigation_anchor") or step
             route = {
                 "scenario_id": scenario_id,
                 "map_id": int(scenario.get("map_id") or 0),
@@ -296,6 +308,10 @@ def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any],
                 "y": float(step.get("y") or 0.0),
                 "z": float(step.get("z") or 0.0),
                 "o": float(step.get("o") or step.get("orientation") or 0.0),
+                "navigation_anchor_x": float(navigation_anchor.get("x") or 0.0),
+                "navigation_anchor_y": float(navigation_anchor.get("y") or 0.0),
+                "navigation_anchor_z": float(navigation_anchor.get("z") or 0.0),
+                "navigation_anchor_o": float(navigation_anchor.get("o") or navigation_anchor.get("orientation") or 0.0),
                 "source_entry": int(step.get("source_entry") or 0),
                 "source_guid": str(step.get("source_guid") or ""),
                 "source_table": step.get("source_table") or "",

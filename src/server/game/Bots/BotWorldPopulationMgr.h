@@ -298,6 +298,10 @@ private:
         float Y = 0.0f;
         float Z = 0.0f;
         float O = 0.0f;
+        float NavigationAnchorX = 0.0f;
+        float NavigationAnchorY = 0.0f;
+        float NavigationAnchorZ = 0.0f;
+        float NavigationAnchorO = 0.0f;
         uint32 TargetEntry = 0;
         uint32 OpenerTargetEntry = 0;
         std::vector<uint32> AlternateTargetEntries;

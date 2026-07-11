@@ -1942,8 +1942,16 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert twilight_flayer_packs["bot_start_x"] == 1329.93
     assert twilight_flayer_packs["bot_start_z"] == 207.804
     assert azil["step"] == 16
-    assert azil["bot_start_x"] == 1337.3
-    assert azil["bot_start_z"] == 214.2383
+    assert azil["x"] == 1337.3
+    assert azil["y"] == 964.894
+    assert azil["z"] == 214.2383
+    assert azil["navigation_anchor_x"] == 1329.93
+    assert azil["navigation_anchor_y"] == 985.712
+    assert azil["navigation_anchor_z"] == 207.804
+    assert azil["bot_start_x"] == 1329.93
+    assert azil["bot_start_z"] == 207.804
+    assert azil["source_entry"] == 42333
+    assert azil["completion_policy"] == "boss_kill"
     assert corborus_approach_corridor["node_kind"] == "discovery_leg"
     assert corborus_approach_corridor["cluster_center"] == [1103.9, 864.733, 287.98]
     assert corborus_approach_corridor["cluster_radius_yards"] == 0.0
@@ -1985,6 +1993,36 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert "interrupts" in manifests["report"]["evidence_surfaces"]
     assert manifests["report"]["invalid_route_steps"] == []
     assert manifests["report"]["invalid_mechanic_profiles"] == []
+
+
+def test_validation_scenario_manifest_rejects_partial_navigation_anchor():
+    config = {
+        "scenarios": [
+            {
+                "id": "anchor_validation",
+                "map_id": 725,
+                "difficulty": "normal_5man",
+                "required_roles": {},
+                "route": [
+                    {
+                        "step": 1,
+                        "kind": "boss",
+                        "label": "partial anchor",
+                        "x": 1.0,
+                        "y": 2.0,
+                        "z": 3.0,
+                        "navigation_anchor": {"x": 4.0, "y": 5.0},
+                    }
+                ],
+            }
+        ]
+    }
+
+    manifests = build_validation_scenario_manifests(config, {"scenarios": []}, {"all_passed": True})
+
+    scenario = manifests["validation_scenarios"][0]
+    assert scenario["route_coordinates_ready"] is False
+    assert scenario["invalid_route_steps"][0]["reason"] == "navigation_anchor_missing_xyz"
 
 
 def test_validation_route_bosses_are_scripted_encounter_targets():

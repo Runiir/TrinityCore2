@@ -1804,6 +1804,23 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         "_validationRouteFinalTransitionGuids.clear();",
     )
     apply_node = function_body(mgr, "bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode")
+    load_manifest = function_body(mgr, "void BotWorldPopulationMgr::LoadValidationRouteManifest")
+    for required in [
+        "node.NavigationAnchorX = node.X",
+        "node.NavigationAnchorY = node.Y",
+        "node.NavigationAnchorZ = node.Z",
+        "node.NavigationAnchorO = node.O",
+        'ExtractJsonNumberField(routeJson, "navigation_anchor_x", node.NavigationAnchorX)',
+        'ExtractJsonNumberField(routeJson, "navigation_anchor_y", node.NavigationAnchorY)',
+        'ExtractJsonNumberField(routeJson, "navigation_anchor_z", node.NavigationAnchorZ)',
+        'ExtractJsonNumberField(routeJson, "navigation_anchor_o", node.NavigationAnchorO)',
+    ]:
+        assert required in load_manifest
+    assert "_config.ValidationRouteX = node.NavigationAnchorX;" in apply_node
+    assert "_config.ValidationRouteY = node.NavigationAnchorY;" in apply_node
+    assert "_config.ValidationRouteZ = node.NavigationAnchorZ;" in apply_node
+    assert "_config.ValidationRouteO = node.NavigationAnchorO;" in apply_node
+    assert "_config.ValidationRouteTargetEntry = node.NodeKind == \"discovery_leg\" ? 0 : node.TargetEntry;" in apply_node
     assert "_validationRoutePendingFinalTransitionGuids.clear();" in apply_node
     assert "_validationRouteFinalTransitionGuids.clear();" in mgr
     enrollment_scan = route_objective.split("auto enrollEngagedValidationRoutePackMembers", 1)[1].split("auto persistedValidationRoutePackHasLiveMembers", 1)[0]
