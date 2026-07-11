@@ -410,6 +410,34 @@ def test_headless_bot_spawn_forces_visibility_after_registration():
     assert "PlayerBot dismounted before pet load" in load
 
 
+def test_headless_hunter_promotes_a_valid_stable_pet_without_displacing_active_slots():
+    bot_mgr = read(PLAYER_BOT_MGR)
+    load = function_body(bot_mgr, "Player* BotMgr::LoadCharacterAsBotSession")
+
+    assert_ordered(
+        load,
+        "bot->LoadPetsFromDB(holder->GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_ALL_PETS))",
+        "if (bot->getClass() == CLASS_HUNTER)",
+        "for (uint8 slot = PET_SLOT_FIRST_ACTIVE_SLOT; slot <= PET_SLOT_LAST_ACTIVE_SLOT; ++slot)",
+        "if (!bot->GetPlayerPetDataCurrent())",
+        "if (Optional<uint8> activeSlot = bot->GetFirstUnusedActivePetSlot())",
+        "for (uint8 slot = PET_SLOT_FIRST_STABLE_SLOT; slot <= PET_SLOT_LAST_STABLE_SLOT; ++slot)",
+        "stagedStablePet = petData;",
+        "petData->Slot = *activeSlot;",
+        "petData->Active = true;",
+        "PlayerBot hunter stable pet staged",
+        "bot->LoadPet()",
+        "loadedPet->GetCharmInfo()->GetPetNumber() == stagedStablePet->PetId",
+        "UPDATE character_pet SET active = 1, slot = %u WHERE owner = %u AND id = %u",
+        "PlayerBot hunter stable pet activated",
+    )
+    assert "isLoadableHunterPet" in load
+    assert "creatureInfo->IsTameable(bot->CanTameExoticPets())" in load
+    assert "GetFirstUnusedActivePetSlot" in load
+    assert "CHAR_UPD_CHAR_PET_SLOT_BY_SLOT" not in load
+    assert "TryCastFriendlySpell(bot, bot, 883)" not in load
+
+
 def test_persistent_pet_guid_uses_creature_entry_not_database_pet_id():
     pet_cpp = read(PET_CPP)
     create = function_body(pet_cpp, "bool Pet::Create(ObjectGuid::LowType")

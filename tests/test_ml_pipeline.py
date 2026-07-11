@@ -42,7 +42,7 @@ from tools.bot_ml.orchestrator_daemon import codex_command, detect_rate_limit, h
 from tools.bot_ml.generate_lane_configs import write_lane_config
 from tools.bot_ml.promote_live_validation_artifact import promote
 from tools.bot_ml.build_validation_gear_profiles import SHIELD_CLASSES, build_gem_catalog, build_profiles, build_report, fetch_items, load_gem_properties, load_spell_item_enchantments
-from tools.bot_ml.build_validation_provisioning import apply_gear_profiles, bot_spell_ids, bot_talent_spell_ids, build_account_insert_sql, build_character_insert_sql, equipment_cache, glyph_item_to_property_map, glyph_property_type_map, main as provisioning_main, normalized_glyph_slots, normalized_glyphs, runtime_safe_enchantments, scenario_report, srp6_registration_data, validate_talent_manifest
+from tools.bot_ml.build_validation_provisioning import apply_gear_profiles, bot_known_spell_ids, bot_primary_tree_spell_ids, bot_spell_ids, bot_talent_spell_ids, build_account_insert_sql, build_character_insert_sql, equipment_cache, glyph_item_to_property_map, glyph_property_type_map, main as provisioning_main, normalized_glyph_slots, normalized_glyphs, runtime_safe_enchantments, scenario_report, srp6_registration_data, validate_talent_manifest
 from tools.bot_ml.validate_validation_provisioning import build_report as provisioning_verify_report
 from tools.bot_ml.validate_validation_provisioning import main as provisioning_verify_main
 from tools.bot_ml.validate_validation_provisioning import validate_database as validate_provisioning_database
@@ -6849,7 +6849,13 @@ def test_validation_provisioning_generates_reproducible_sql_and_readiness(tmp_pa
     assert "DELETE FROM `characters`.`character_talent`" in sql
     assert "SELECT c.`guid`, 47788, 0 FROM `characters`.`characters` c WHERE c.`name` = 'Scvalheal'" in sql
     assert "SELECT c.`guid`, 14751, 0 FROM `characters`.`characters` c WHERE c.`name` = 'Scvalheal'" in sql
-    assert "SELECT c.`guid`, 34861, 1, 0 FROM `characters`.`characters` c WHERE c.`name` = 'Scvalheal'" not in sql
+    assert "SELECT c.`guid`, 34861, 1, 0 FROM `characters`.`characters` c WHERE c.`name` = 'Scvalheal'" in sql
+    assert "SELECT c.`guid`, 14751, 1, 0 FROM `characters`.`characters` c WHERE c.`name` = 'Scvalheal'" in sql
+    assert "SELECT c.`guid`, 47788, 1, 0 FROM `characters`.`characters` c WHERE c.`name` = 'Scvalheal'" in sql
+    assert "SELECT c.`guid`, 88625, 1, 0 FROM `characters`.`characters` c WHERE c.`name` = 'Scvalheal'" in sql
+    assert "SELECT c.`guid`, 87336, 1, 0 FROM `characters`.`characters` c WHERE c.`name` = 'Scvalheal'" in sql
+    assert "SELECT c.`guid`, 95861, 1, 0 FROM `characters`.`characters` c WHERE c.`name` = 'Scvalheal'" in sql
+    assert "SELECT c.`guid`, 33167, 1, 0 FROM `characters`.`characters` c WHERE c.`name` = 'Scvalheal'" in sql
     assert "SELECT c.`guid`, 64843, 1, 0 FROM `characters`.`characters` c WHERE c.`name` = 'Scvalheal'" in sql
     assert "SELECT c.`guid`, 64901, 1, 0 FROM `characters`.`characters` c WHERE c.`name` = 'Scvalheal'" in sql
     assert "SELECT c.`guid`, 586, 1, 0 FROM `characters`.`characters` c WHERE c.`name` = 'Scvalheal'" in sql
@@ -7181,6 +7187,8 @@ def test_holy_priest_manifest_is_legal_and_drives_talents_and_glyph_slots():
     assert set(priest["primary_tree_spells"]) == {88625, 87336, 95861, 33167}
     assert {586, 34433, 64843, 64901}.issubset(set(bot_spell_ids(priest)))
     assert {14751, 34861, 47788}.isdisjoint(set(bot_spell_ids(priest)))
+    assert set(bot_primary_tree_spell_ids(priest)) == {88625, 87336, 95861, 33167}
+    assert {14751, 34861, 47788, 88625, 87336, 95861, 33167}.issubset(set(bot_known_spell_ids(priest)))
     assert normalized_glyph_slots(priest) == [251, 0, 0, 0, 0, 0, 264, 709, 0]
     assert {251: 0, 264: 2, 709: 2}.items() <= glyph_property_type_map().items()
 
@@ -7249,6 +7257,30 @@ def test_validation_provisioning_runtime_gear_verification_fails_stale_cache_and
     assert evidence["runtime_gear"]["Mage"]["glyphs_missing"] == [316, 320, 330]
 
 
+def test_validation_provisioning_runtime_verifies_talent_tree_talents_and_known_spells(monkeypatch, tmp_path):
+    conf = tmp_path / "worldserver.conf"
+    conf.write_text(
+        'LoginDatabaseInfo = "db.example;3306;trinity;secret;auth"\n'
+        'CharacterDatabaseInfo = "db.example;3306;trinity;secret;characters"\n',
+        encoding="utf-8",
+    )
+    config = {"scenarios": [{"id": "stonecore_5n", "bots": [{"account": "A", "name": "Holy", "class": 5, "primary_talent_tree_id": 813, "talents": [{"spell_id": 34861}]}]}]}
+
+    monkeypatch.setattr("tools.bot_ml.validate_validation_provisioning.fetch_columns", lambda _url, _table: set())
+    monkeypatch.setattr("tools.bot_ml.validate_validation_provisioning.fetch_existing_values", lambda _url, _table, _column, values: set(values))
+    monkeypatch.setattr(
+        "tools.bot_ml.validate_validation_provisioning.fetch_runtime_gear",
+        lambda _url, _names: {"Holy": {"guid": 1, "talentTree": "0 0", "equipmentCache": "", "items": {}, "glyphs": [], "talent_spells": set(), "known_spells": set()}},
+    )
+
+    failures, evidence = validate_provisioning_database(config, conf, require_applied=True)
+
+    assert {failure["check"] for failure in failures} >= {"runtime_talent_tree", "runtime_character_talent", "runtime_character_spell"}
+    assert evidence["runtime_gear"]["Holy"]["talent_tree"] == {"expected": 813, "actual": 0}
+    assert evidence["runtime_gear"]["Holy"]["missing_talent_spells"] == [34861]
+    assert {34861, 88625, 87336, 95861, 33167}.issubset(evidence["runtime_gear"]["Holy"]["missing_known_spells"])
+
+
 def test_validation_provisioning_verifier_accepts_generated_payloads(tmp_path, monkeypatch):
     output = tmp_path / "verification" / "report.json"
     monkeypatch.setattr(
@@ -7307,6 +7339,7 @@ def test_validation_provisioning_database_preflight_reports_missing_accounts(tmp
                 "character_bot_pool": {"guid", "role", "class_spec", "enabled", "in_use", "experiment_tags", "notes"},
                 "character_glyphs": {"guid", "talentGroup", "glyph1", "glyph2", "glyph3", "glyph4", "glyph5", "glyph6", "glyph7", "glyph8", "glyph9"},
                 "character_talent": {"guid", "spell", "talentGroup"},
+                "character_spell": {"guid", "spell", "active", "disabled"},
                 "character_skills": {"guid", "skill", "value", "max"},
             },
         ]:

@@ -73,6 +73,9 @@ stages:
     - tools/bot_ml/validation_profile_manifests.py
     - experiments/configs/validation_provisioning_cata_001.json
     - experiments/configs/cata_434_action_profiles.json
+    - data/dbc/enUS/Talent.dbc
+    - data/dbc/enUS/TalentTreePrimarySpells.dbc
+    - data/dbc/enUS/GlyphProperties.dbc
     - dataset/validation_gear_profiles
     outs:
     - dataset/validation_provisioning:

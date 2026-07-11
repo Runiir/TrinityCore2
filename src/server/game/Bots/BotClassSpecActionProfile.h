@@ -47,6 +47,15 @@ struct BotActionProfileSpell
     uint32 MaxCastTimeMs = 0;
     uint32 MaintainAuraId = 0;
     uint32 RefreshAuraBelowMs = 0;
+    uint8 MinInjuredPlayers = 0;
+    uint8 MaxInjuredPlayers = 0;
+    float InjuredHealthPct = 1.0f;
+    float MinManaPct = 0.0f;
+    float MaxManaPct = 1.0f;
+    uint8 MinAttackers = 0;
+    uint8 MaxAttackers = 0;
+    bool RequiresStationary = false;
+    bool RequiresMoving = false;
 };
 
 struct BotActionCandidate

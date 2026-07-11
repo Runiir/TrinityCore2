@@ -57,11 +57,31 @@ CREATE TABLE IF NOT EXISTS `bot_rotation_action` (
   `max_cast_time_ms` INT UNSIGNED NOT NULL DEFAULT 0,
   `maintain_aura_id` INT UNSIGNED NOT NULL DEFAULT 0,
   `refresh_aura_below_ms` INT UNSIGNED NOT NULL DEFAULT 0,
+  `min_injured_players` TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  `max_injured_players` TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  `injured_health_pct` FLOAT NOT NULL DEFAULT 1,
+  `min_mana_pct` FLOAT NOT NULL DEFAULT 0,
+  `max_mana_pct` FLOAT NOT NULL DEFAULT 1,
+  `min_attackers` TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  `max_attackers` TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  `requires_stationary` TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  `requires_moving` TINYINT UNSIGNED NOT NULL DEFAULT 0,
   `enabled` TINYINT UNSIGNED NOT NULL DEFAULT 1,
   PRIMARY KEY (`id`),
   KEY `idx_bot_rotation_action_profile` (`profile_id`, `enabled`, `priority_bucket`, `sort_order`),
   CONSTRAINT `fk_bot_rotation_action_profile` FOREIGN KEY (`profile_id`) REFERENCES `bot_rotation_profile` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+ALTER TABLE `bot_rotation_action`
+  ADD COLUMN IF NOT EXISTS `min_injured_players` TINYINT UNSIGNED NOT NULL DEFAULT 0 AFTER `refresh_aura_below_ms`,
+  ADD COLUMN IF NOT EXISTS `max_injured_players` TINYINT UNSIGNED NOT NULL DEFAULT 0 AFTER `min_injured_players`,
+  ADD COLUMN IF NOT EXISTS `injured_health_pct` FLOAT NOT NULL DEFAULT 1 AFTER `max_injured_players`,
+  ADD COLUMN IF NOT EXISTS `min_mana_pct` FLOAT NOT NULL DEFAULT 0 AFTER `injured_health_pct`,
+  ADD COLUMN IF NOT EXISTS `max_mana_pct` FLOAT NOT NULL DEFAULT 1 AFTER `min_mana_pct`,
+  ADD COLUMN IF NOT EXISTS `min_attackers` TINYINT UNSIGNED NOT NULL DEFAULT 0 AFTER `max_mana_pct`,
+  ADD COLUMN IF NOT EXISTS `max_attackers` TINYINT UNSIGNED NOT NULL DEFAULT 0 AFTER `min_attackers`,
+  ADD COLUMN IF NOT EXISTS `requires_stationary` TINYINT UNSIGNED NOT NULL DEFAULT 0 AFTER `max_attackers`,
+  ADD COLUMN IF NOT EXISTS `requires_moving` TINYINT UNSIGNED NOT NULL DEFAULT 0 AFTER `requires_stationary`;
 
 DELETE a FROM `bot_rotation_action` a JOIN `bot_rotation_profile` p ON p.`id` = a.`profile_id`
 WHERE p.`source_note` = 'stonecore_5n_cata_guide_seed';
@@ -101,15 +121,21 @@ INSERT INTO `bot_rotation_action` (`profile_id`, `sort_order`, `spell_id`, `cate
 ((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=2 AND `spec_tag`='protection' AND `role`='tank'), 90, 35395, 'builder', 'crusader_strike,holy_power,threat,single_target', 0.76, 0, 0.65, 0, 0, 3, 1, 1, 1, 1, 0, 0, 0, 0, 1),
 ((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=2 AND `spec_tag`='protection' AND `role`='tank'), 100, 20271, 'builder', 'judgement,threat,requires_seal', 0.68, 0, 0.55, 0, 0, 4, 1, 0, 1, 1, 31801, 0, 0, 0, 0);
 
-INSERT INTO `bot_rotation_action` (`profile_id`, `sort_order`, `spell_id`, `category`, `mechanic_tags`, `damage_weight`, `healing_weight`, `survival_weight`, `priority_bucket`, `min_enemies`, `max_target_health_pct`, `forbidden_target_aura`, `target_selector`, `movement_directive`, `auto_attack_mode`, `max_range`, `maintain_aura_id`) VALUES
-((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=5 AND `spec_tag`='holy_priest' AND `role`='healer'), 10, 33076, 'heal_efficient', 'prayer_of_mending,tank,heal,maintenance', 0, 0.86, 0.70, 1, 1, 0.98, 0, 'tank', 'healer_support', 'none', 40, 33076),
-((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=5 AND `spec_tag`='holy_priest' AND `role`='healer'), 20, 2061, 'heal_fast', 'flash_heal,triage,heal', 0, 1.00, 0.85, 1, 1, 0.55, 0, 'lowest_ally', 'healer_support', 'none', 40, 0),
-((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=5 AND `spec_tag`='holy_priest' AND `role`='healer'), 30, 34861, 'heal_aoe', 'circle_of_healing,aoe,heal', 0, 0.94, 0.75, 1, 3, 0.85, 0, 'lowest_ally', 'healer_support', 'none', 40, 0),
-((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=5 AND `spec_tag`='holy_priest' AND `role`='healer'), 40, 139, 'heal_efficient', 'renew,hot,heal,maintenance', 0, 0.78, 0.65, 2, 1, 0.92, 139, 'tank', 'healer_support', 'none', 40, 139),
-((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=5 AND `spec_tag`='holy_priest' AND `role`='healer'), 50, 2060, 'heal_efficient', 'greater_heal,big,heal', 0, 0.90, 0.75, 2, 1, 0.72, 0, 'tank', 'healer_support', 'none', 40, 0),
-((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=5 AND `spec_tag`='holy_priest' AND `role`='healer'), 60, 596, 'heal_aoe', 'prayer_of_healing,aoe,heal', 0, 0.88, 0.70, 2, 3, 0.80, 0, 'lowest_ally', 'healer_support', 'none', 40, 0),
-((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=5 AND `spec_tag`='holy_priest' AND `role`='healer'), 70, 2050, 'heal_efficient', 'heal,efficient,heal', 0, 0.74, 0.60, 3, 1, 0.88, 0, 'lowest_ally', 'healer_support', 'none', 40, 0),
-((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=5 AND `spec_tag`='holy_priest' AND `role`='healer'), 80, 527, 'dispel_cleanse', 'dispel,cleanse', 0, 0.25, 0.70, 1, 1, 1.00, 0, 'lowest_ally', 'healer_support', 'none', 40, 0);
+INSERT INTO `bot_rotation_action` (`profile_id`, `sort_order`, `spell_id`, `category`, `mechanic_tags`, `damage_weight`, `healing_weight`, `threat_weight`, `mitigation_weight`, `survival_weight`, `priority_bucket`, `min_enemies`, `max_enemies`, `max_target_health_pct`, `max_self_health_pct`, `forbidden_target_aura`, `target_selector`, `movement_directive`, `auto_attack_mode`, `max_range`, `maintain_aura_id`, `min_injured_players`, `injured_health_pct`, `min_mana_pct`, `max_mana_pct`, `min_attackers`, `requires_stationary`) VALUES
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=5 AND `spec_tag`='holy_priest' AND `role`='healer'), 10, 33076, 'heal_efficient', 'prayer_of_mending,tank,heal,maintenance', 0, 0.86, 0, 0, 0.70, 1, 1, 0, 0.98, 1.00, 0, 'tank', 'healer_support', 'none', 40, 33076, 1, 0.98, 0.05, 1, 0, 0),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=5 AND `spec_tag`='holy_priest' AND `role`='healer'), 20, 2061, 'heal_fast', 'flash_heal,triage,heal', 0, 1.00, 0, 0, 0.85, 1, 1, 0, 0.55, 1.00, 0, 'lowest_ally', 'healer_support', 'none', 40, 0, 1, 0.55, 0.10, 1, 0, 0),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=5 AND `spec_tag`='holy_priest' AND `role`='healer'), 30, 34861, 'heal_aoe', 'circle_of_healing,aoe,heal', 0, 0.94, 0, 0, 0.75, 1, 3, 0, 0.85, 1.00, 0, 'lowest_ally', 'healer_support', 'none', 40, 0, 3, 0.85, 0.10, 1, 0, 0),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=5 AND `spec_tag`='holy_priest' AND `role`='healer'), 40, 139, 'heal_efficient', 'renew,hot,heal,maintenance', 0, 0.78, 0, 0, 0.65, 2, 1, 0, 0.92, 1.00, 139, 'tank', 'healer_support', 'none', 40, 139, 1, 0.92, 0.05, 1, 0, 0),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=5 AND `spec_tag`='holy_priest' AND `role`='healer'), 50, 2060, 'heal_efficient', 'greater_heal,big,heal', 0, 0.90, 0, 0, 0.75, 2, 1, 0, 0.72, 1.00, 0, 'tank', 'healer_support', 'none', 40, 0, 1, 0.72, 0.10, 1, 0, 1),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=5 AND `spec_tag`='holy_priest' AND `role`='healer'), 60, 596, 'heal_aoe', 'prayer_of_healing,aoe,heal', 0, 0.88, 0, 0, 0.70, 2, 3, 0, 0.80, 1.00, 0, 'lowest_ally', 'healer_support', 'none', 40, 0, 3, 0.80, 0.15, 1, 0, 1),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=5 AND `spec_tag`='holy_priest' AND `role`='healer'), 70, 2050, 'heal_efficient', 'heal,efficient,heal', 0, 0.74, 0, 0, 0.60, 3, 1, 0, 0.88, 1.00, 0, 'lowest_ally', 'healer_support', 'none', 40, 0, 1, 0.88, 0.05, 1, 0, 1),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=5 AND `spec_tag`='holy_priest' AND `role`='healer'), 80, 527, 'dispel_cleanse', 'dispel,cleanse', 0, 0.25, 0, 0, 0.70, 1, 1, 0, 1.00, 1.00, 0, 'lowest_ally', 'healer_support', 'none', 40, 0, 0, 1.00, 0, 1, 0, 0),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=5 AND `spec_tag`='holy_priest' AND `role`='healer'), 85, 47788, 'external_defensive', 'guardian_spirit,emergency', 0, 0, 0, 1.00, 1.00, 0, 1, 0, 0.30, 1.00, 0, 'lowest_ally', 'healer_support', 'none', 40, 0, 1, 0.30, 0.10, 1, 1, 0),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=5 AND `spec_tag`='holy_priest' AND `role`='healer'), 86, 19236, 'defensive', 'desperate_prayer,self_survival', 0, 0.65, 0, 0, 1.00, 0, 1, 0, 0.35, 0.35, 0, 'self', 'healer_support', 'none', 0, 0, 1, 0.35, 0, 1, 1, 0),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=5 AND `spec_tag`='holy_priest' AND `role`='healer'), 87, 586, 'defensive', 'fade,threat_drop', 0, 0, 1.00, 0, 0.80, 0, 1, 0, 1.00, 1.00, 0, 'self', 'healer_support', 'none', 0, 0, 0, 1.00, 0, 1, 1, 0),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=5 AND `spec_tag`='holy_priest' AND `role`='healer'), 88, 34433, 'offensive_cooldown', 'shadowfiend,mana', 0, 0, 0, 0, 0.40, 2, 1, 0, 1.00, 1.00, 0, 'enemy', 'healer_support', 'none', 40, 0, 0, 1.00, 0, 0.25, 0, 0),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=5 AND `spec_tag`='holy_priest' AND `role`='healer'), 89, 64901, 'offensive_cooldown', 'hymn_of_hope,mana', 0, 0, 0, 0, 0.40, 2, 1, 0, 1.00, 1.00, 0, 'self', 'healer_support', 'none', 0, 0, 0, 1.00, 0, 0.20, 0, 1),
+((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=5 AND `spec_tag`='holy_priest' AND `role`='healer'), 90, 64843, 'heal_aoe', 'divine_hymn,emergency_aoe', 0, 1.00, 0, 0, 1.00, 0, 3, 0, 0.45, 1.00, 0, 'lowest_ally', 'healer_support', 'none', 40, 0, 3, 0.45, 0.15, 1, 0, 1);
 
 INSERT INTO `bot_rotation_action` (`profile_id`, `sort_order`, `spell_id`, `category`, `mechanic_tags`, `damage_weight`, `survival_weight`, `priority_bucket`, `min_enemies`, `required_self_aura`, `forbidden_target_aura`, `requires_interruptible_target`, `target_selector`, `movement_directive`, `auto_attack_mode`, `min_range`, `max_range`, `requires_instant_cast`, `max_cast_time_ms`) VALUES
 ((SELECT `id` FROM `bot_rotation_profile` WHERE `class_id`=8 AND `spec_tag`='fire' AND `role`='dps'), 10, 2139, 'interrupt', 'counterspell,interrupt', 0.15, 0.20, 1, 1, 0, 0, 1, 'enemy', 'ranged', 'none', 0, 35, 1, 0),

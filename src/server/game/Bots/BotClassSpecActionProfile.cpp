@@ -206,7 +206,9 @@ bool LoadDbProfileLocked(uint8 classId, std::string const& specTag, std::string 
         "a.requires_interruptible_target, a.requires_target_not_victim, a.requires_target_victim, "
         "a.requires_melee_range, a.requires_ranged_range, a.target_selector, a.movement_directive, "
         "a.auto_attack_mode, a.min_range, a.max_range, a.requires_instant_cast, a.max_cast_time_ms, "
-        "a.maintain_aura_id, a.refresh_aura_below_ms "
+        "a.maintain_aura_id, a.refresh_aura_below_ms, a.min_injured_players, a.max_injured_players, "
+        "a.injured_health_pct, a.min_mana_pct, a.max_mana_pct, a.min_attackers, a.max_attackers, "
+        "a.requires_stationary, a.requires_moving "
         "FROM bot_rotation_profile p "
         "JOIN bot_rotation_action a ON a.profile_id = p.id "
         "WHERE p.enabled = 1 AND a.enabled = 1 AND p.class_id = %u AND p.spec_tag = '%s' AND p.role = '%s' "
@@ -294,6 +296,15 @@ bool LoadDbProfileLocked(uint8 classId, std::string const& specTag, std::string 
         spell.MaxCastTimeMs = fields[44].GetUInt32();
         spell.MaintainAuraId = fields[45].GetUInt32();
         spell.RefreshAuraBelowMs = fields[46].GetUInt32();
+        spell.MinInjuredPlayers = fields[47].GetUInt8();
+        spell.MaxInjuredPlayers = fields[48].GetUInt8();
+        spell.InjuredHealthPct = fields[49].GetFloat();
+        spell.MinManaPct = fields[50].GetFloat();
+        spell.MaxManaPct = fields[51].GetFloat();
+        spell.MinAttackers = fields[52].GetUInt8();
+        spell.MaxAttackers = fields[53].GetUInt8();
+        spell.RequiresStationary = fields[54].GetBool();
+        spell.RequiresMoving = fields[55].GetBool();
         profile.Spells.push_back(spell);
     } while (result->NextRow());
 
@@ -651,6 +662,15 @@ std::string BotClassSpecActionProfileStore::DbProfileDumpJson(uint8 classId, std
              << ",\"max_cast_time_ms\":" << spell.MaxCastTimeMs
              << ",\"min_range\":" << spell.MinRange
              << ",\"max_range\":" << spell.MaxRange
+             << ",\"min_injured_players\":" << uint32(spell.MinInjuredPlayers)
+             << ",\"max_injured_players\":" << uint32(spell.MaxInjuredPlayers)
+             << ",\"injured_health_pct\":" << spell.InjuredHealthPct
+             << ",\"min_mana_pct\":" << spell.MinManaPct
+             << ",\"max_mana_pct\":" << spell.MaxManaPct
+             << ",\"min_attackers\":" << uint32(spell.MinAttackers)
+             << ",\"max_attackers\":" << uint32(spell.MaxAttackers)
+             << ",\"requires_stationary\":" << (spell.RequiresStationary ? "true" : "false")
+             << ",\"requires_moving\":" << (spell.RequiresMoving ? "true" : "false")
              << "}}";
     }
     json << "]}";

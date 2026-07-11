@@ -362,6 +362,22 @@ def bot_talent_spell_ids(bot: dict[str, Any]) -> list[int]:
     return [int(talent["spell_id"]) for talent in bot.get("talents", [])]
 
 
+def bot_primary_tree_spell_ids(bot: dict[str, Any], dbc_dir: Path = DEFAULT_DBC_DIR) -> list[int]:
+    primary_tree = int(bot.get("primary_talent_tree_id") or 0)
+    if primary_tree <= 0:
+        return []
+    _talents, primary_spells = talent_data(dbc_dir)
+    return primary_spells.get(primary_tree, [])
+
+
+def bot_known_spell_ids(bot: dict[str, Any], action_profiles: dict[str, Any] | None = None) -> list[int]:
+    return sorted({
+        *bot_spell_ids(bot, action_profiles),
+        *bot_talent_spell_ids(bot),
+        *bot_primary_tree_spell_ids(bot),
+    })
+
+
 def build_character_insert_sql(config: dict[str, Any], action_profiles: dict[str, Any] | None = None) -> str:
     action_profiles = action_profiles or DEFAULT_ACTION_PROFILES
     lines = [
@@ -412,7 +428,7 @@ def build_character_insert_sql(config: dict[str, Any], action_profiles: dict[str
                     f"SELECT c.`guid`, {int(skill['id'])}, {int(skill.get('value', 525))}, {int(skill.get('max', 525))} FROM `characters`.`characters` c WHERE c.`name` = {sql_quote(name)} "
                     "ON DUPLICATE KEY UPDATE `value` = VALUES(`value`), `max` = VALUES(`max`);"
                 )
-            for spell_id in bot_spell_ids(bot, action_profiles):
+            for spell_id in bot_known_spell_ids(bot, action_profiles):
                 lines.append(
                     "INSERT INTO `characters`.`character_spell` (`guid`, `spell`, `active`, `disabled`) "
                     f"SELECT c.`guid`, {spell_id}, 1, 0 FROM `characters`.`characters` c WHERE c.`name` = {sql_quote(name)} "

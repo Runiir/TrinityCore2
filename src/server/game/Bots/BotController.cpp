@@ -128,7 +128,10 @@ bool IsHealingCategory(BotCombatActionCategory category)
         || category == BotCombatActionCategory::HealEfficient
         || category == BotCombatActionCategory::HealAoe
         || category == BotCombatActionCategory::DispelCleanse
-        || category == BotCombatActionCategory::ExternalDefensive;
+        || category == BotCombatActionCategory::ExternalDefensive
+        || category == BotCombatActionCategory::Defensive
+        || category == BotCombatActionCategory::Mitigation
+        || category == BotCombatActionCategory::OffensiveCooldown;
 }
 
 float ProfileFollowDistance(BotClassSpecActionProfile const& profile)
@@ -858,12 +861,12 @@ bool BotController::TryExecuteQueuedCombatAction(BotActionExecutor& executor, Pl
 
 bool BotController::TryResolveHealerAction(BotActionExecutor& executor, Player* owner, Player* bot, BotRecentEvents const& recentEvents, bool shouldRecord, BotMovementFrame const& movementFrame)
 {
+    // DB categories, including BotCombatActionCategory::HealFast, are the sole healer action authority.
     HealerFrame frame = BuildFrame(owner, bot, recentEvents);
     BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(bot, "healer");
     ResolvedBotAction action;
-    action.DebugName = "no_valid_healer_action";
-    HealerDecision decision = _policy->Decide(frame);
-
+    action.DebugName = "no_valid_db_healer_action";
+    HealerDecision decision;
     struct HealerAttempt
     {
         BotActionProfileSpell const* Spell = nullptr;
@@ -871,64 +874,93 @@ bool BotController::TryResolveHealerAction(BotActionExecutor& executor, Player* 
         float Score = 0.0f;
     };
     std::vector<HealerAttempt> attempts;
+    uint8 attackers = uint8(std::min<size_t>(255, bot->GetThreatManager().GetThreatenedByMeList().size()));
 
     for (BotActionProfileSpell const& spell : profile.Spells)
     {
         if (!spell.SpellId || !IsHealingCategory(spell.Category))
             continue;
         SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spell.SpellId);
-        if (!spellInfo)
+        if (!spellInfo || !bot->GetSpellHistory()->IsReady(spellInfo) || !RotationHasEnoughPower(bot, spellInfo))
             continue;
-        if (!bot->GetSpellHistory()->IsReady(spellInfo))
+        uint8 injuredPlayers = 0;
+        for (HealerUnitFrame const& partyUnit : frame.Party)
+            if (partyUnit.Alive && partyUnit.Friendly && float(partyUnit.HealthPct) / 100.0f <= spell.InjuredHealthPct)
+                ++injuredPlayers;
+        uint32 castTime = CastTimeMs(bot, spellInfo);
+        if (!MeetsCastDirectives(bot, spell, spellInfo)
+            || (movementFrame.Moving && castTime && !spell.RequiresMoving)
+            || (spell.RequiresStationary && movementFrame.Moving)
+            || (spell.RequiresMoving && !movementFrame.Moving)
+            || (spell.MinInjuredPlayers && injuredPlayers < spell.MinInjuredPlayers)
+            || (spell.MaxInjuredPlayers && injuredPlayers > spell.MaxInjuredPlayers)
+            || (spell.MinAttackers && attackers < spell.MinAttackers)
+            || (spell.MaxAttackers && attackers > spell.MaxAttackers)
+            || float(frame.BotManaPct) / 100.0f < spell.MinManaPct
+            || float(frame.BotManaPct) / 100.0f > spell.MaxManaPct)
             continue;
-        if (!RotationHasEnoughPower(bot, spellInfo))
+        bool utility = spell.Category == BotCombatActionCategory::Defensive || spell.Category == BotCombatActionCategory::Mitigation
+            || spell.Category == BotCombatActionCategory::OffensiveCooldown;
+        Unit* target = nullptr;
+        ObjectGuid targetGuid;
+        float healthPct = float(frame.BotHealthPct) / 100.0f;
+        if (spell.TargetSelector == "enemy")
+        {
+            target = bot->GetSelectedUnit();
+            if (!target || !bot->IsValidAttackTarget(target))
+                target = bot->GetVictim();
+            if (!target || !bot->IsValidAttackTarget(target))
+                continue;
+            targetGuid = target->GetGUID();
+        }
+        else
+        {
+            HealerUnitFrame const* unit = SelectHealerUnit(frame, spell.TargetSelector.empty() ? "lowest_ally" : spell.TargetSelector);
+            if (!unit)
+                continue;
+            targetGuid = unit->Guid;
+            healthPct = float(unit->HealthPct) / 100.0f;
+            target = ObjectAccessor::GetUnit(*bot, targetGuid);
+            if (!target)
+                continue;
+        }
+        if (float(frame.BotHealthPct) / 100.0f < spell.MinSelfHealthPct || float(frame.BotHealthPct) / 100.0f > spell.MaxSelfHealthPct
+            || (!utility && (healthPct < spell.MinTargetHealthPct || healthPct > spell.MaxTargetHealthPct
+                || (spell.InjuredHealthPct < 1.0f && healthPct > spell.InjuredHealthPct))))
             continue;
-        if (!MeetsCastDirectives(bot, spell, spellInfo))
+        float distance = bot->GetExactDist(target);
+        if ((spell.MaxRange > 0.0f && distance > spell.MaxRange) || (spell.MinRange > 0.0f && distance < spell.MinRange)
+            || (spell.MaxRange <= 0.0f && distance > std::max(5.0f, spellInfo->GetMaxRange(false))))
             continue;
-        HealerUnitFrame const* unit = SelectHealerUnit(frame, spell.TargetSelector.empty() ? "lowest_ally" : spell.TargetSelector);
-        if (!unit)
-            continue;
-        if (spell.MinTargetHealthPct > 0.0f && float(unit->HealthPct) / 100.0f < spell.MinTargetHealthPct)
-            continue;
-        if (float(unit->HealthPct) / 100.0f > spell.MaxTargetHealthPct)
-            continue;
-        if (spell.MaxRange > 0.0f && unit->Distance > spell.MaxRange)
-            continue;
-        else if (spell.MaxRange <= 0.0f && unit->Distance > std::max(5.0f, spellInfo->GetMaxRange(false)))
-            continue;
-        Unit* target = ObjectAccessor::GetUnit(*bot, unit->Guid);
-        if (!target)
-            continue;
-        if (target && spell.ForbiddenTargetAura && target->HasAura(spell.ForbiddenTargetAura))
-            continue;
-        if (target && spell.MaintainAuraId && target->HasAura(spell.MaintainAuraId))
-            continue;
-        if (target && spell.RequiredTargetAura && !target->HasAura(spell.RequiredTargetAura))
-            continue;
-        if (spell.RequiredSelfAura && !bot->HasAura(spell.RequiredSelfAura))
-            continue;
-        if (spell.ForbiddenSelfAura && bot->HasAura(spell.ForbiddenSelfAura))
+        if ((spell.ForbiddenTargetAura && target->HasAura(spell.ForbiddenTargetAura))
+            || (spell.MaintainAuraId && target->HasAura(spell.MaintainAuraId))
+            || (spell.RequiredTargetAura && !target->HasAura(spell.RequiredTargetAura))
+            || (spell.RequiredSelfAura && !bot->HasAura(spell.RequiredSelfAura))
+            || (spell.ForbiddenSelfAura && bot->HasAura(spell.ForbiddenSelfAura)))
             continue;
 
-        float urgency = 1.0f - float(unit->HealthPct) / 100.0f;
-        if (spell.TargetSelector == "tank")
-            urgency += 0.20f;
-        if (spell.Category == BotCombatActionCategory::HealFast)
-            urgency += 0.15f;
-        attempts.push_back(HealerAttempt{ &spell, unit->Guid, spell.HealingWeight + spell.SurvivalWeight + urgency + std::max<float>(0.0f, 12.0f - float(spell.PriorityBucket)) * 0.35f });
+        float missingHealth = float(target->GetMaxHealth() - target->GetHealth());
+        float expectedRawHealing = utility ? 0.0f : std::max(0.0f, spell.HealingWeight) * float(target->GetMaxHealth());
+        float expectedEffectiveHealing = utility ? 0.0f : std::min(missingHealth, expectedRawHealing);
+        float expectedOverheal = utility ? 0.0f : std::max(0.0f, expectedRawHealing - expectedEffectiveHealing);
+        float urgency = 1.0f - healthPct;
+        float score = utility
+            ? (spell.SurvivalWeight + spell.ThreatWeight * float(attackers) + spell.MitigationWeight + spell.MovementWeight) * float(bot->GetMaxHealth())
+            : expectedEffectiveHealing - expectedOverheal * 0.35f + spell.SurvivalWeight * urgency * float(target->GetMaxHealth());
+        score -= float(spell.PriorityBucket) * 0.03f;
+        uint32 manaCost = uint32(std::max<int32>(0, spellInfo->CalcPowerCost(bot, spellInfo->GetSchoolMask())));
+        attempts.push_back(HealerAttempt{ &spell, targetGuid, score });
     }
 
     std::sort(attempts.begin(), attempts.end(), [](HealerAttempt const& left, HealerAttempt const& right)
     {
-        if (left.Spell->PriorityBucket != right.Spell->PriorityBucket)
-            return left.Spell->PriorityBucket < right.Spell->PriorityBucket;
         return left.Score > right.Score;
     });
 
     BotActionResult result = BotActionResult::NoAction;
     for (HealerAttempt const& attempt : attempts)
     {
-        action.Intent = decision.Intent == HealerIntent::Wait ? HealerIntent::EfficientSingleHeal : decision.Intent;
+        action.Intent = HealerIntent::EfficientSingleHeal;
         action.TargetGuid = attempt.TargetGuid;
         action.SpellId = attempt.Spell->SpellId;
         action.DebugName = BotCombatActionCatalog::ToString(attempt.Spell->Category);
