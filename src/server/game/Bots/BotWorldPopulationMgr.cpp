@@ -932,6 +932,7 @@ bool BotWorldPopulationMgr::Start(std::string const& experimentName, BotWorldExp
 
 void BotWorldPopulationMgr::Stop()
 {
+    ClearPendingHealCasts("run_stop");
     if (!_active)
         return;
 
@@ -983,6 +984,7 @@ bool BotWorldPopulationMgr::StartAutonomy(BotWorldExperimentConfig const* overri
     if (!sConfigMgr->GetBoolDefault("BotWorld.Enable", false) || !sConfigMgr->GetBoolDefault("PlayerBot.Enable", false))
         return false;
 
+    ClearPendingHealCasts("autonomy_reset");
     LoadConfig("always_on_autonomy", overrideConfig);
     if (!overrideConfig && _config.ValidationRouteEnable && IsValidationProfileName(_config.Name) && !PrepareCurrentValidationProfile("autonomy_start"))
         return false;
@@ -1013,6 +1015,7 @@ bool BotWorldPopulationMgr::StartAutonomy(BotWorldExperimentConfig const* overri
 
 void BotWorldPopulationMgr::StopAutonomy()
 {
+    ClearPendingHealCasts("autonomy_stop");
     if (!_active || _runtimeMode != BotWorldRuntimeMode::AlwaysOnAutonomy)
         return;
 
@@ -1035,6 +1038,7 @@ void BotWorldPopulationMgr::StopAutonomy()
 
 void BotWorldPopulationMgr::Shutdown()
 {
+    ClearPendingHealCasts("shutdown");
     if (!_active)
         return;
 
@@ -1446,6 +1450,7 @@ void BotWorldPopulationMgr::Update(uint32 diff)
 
     _elapsedMs += diff;
     RotateAutoRecordingWindowIfNeeded(diff);
+    UpdatePendingHealCasts();
     EnsurePopulation();
     uint64 nowMs = NowMs();
 
@@ -10873,7 +10878,7 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
             }
         }
 
-        uint32 healSpell = SelectHealSpell(bot);
+        uint32 healSpell = SelectHealSpell(bot, healTarget);
         if (healSpell && UnitHealthPct(healTarget) < (result.Features.RaidDamage ? 0.9f : 0.75f) && TryCastFriendlySpell(bot, healTarget, healSpell))
         {
             result.Action = result.Features.RaidDamage ? "heal_raid_damage" : "heal_boss_damage";
@@ -11522,7 +11527,7 @@ BotWorldPopulationMgr::DungeonTrashActionResult BotWorldPopulationMgr::TryDungeo
         if (!healTarget)
             healTarget = bot;
 
-        uint32 healSpell = SelectHealSpell(bot);
+        uint32 healSpell = SelectHealSpell(bot, healTarget);
         if (healSpell && UnitHealthPct(healTarget) < 0.75f && TryCastFriendlySpell(bot, healTarget, healSpell))
         {
             result.Action = "heal_lowest_ally";
@@ -11642,42 +11647,61 @@ uint32 BotWorldPopulationMgr::SelectInterruptSpell(Player* bot) const
     return 0;
 }
 
-uint32 BotWorldPopulationMgr::SelectHealSpell(Player* bot) const
+uint32 BotWorldPopulationMgr::SelectHealSpell(Player* bot, Unit* target) const
 {
-    if (!bot)
+    if (!bot || !target)
         return 0;
 
-    uint32 candidates[4] = { 0, 0, 0, 0 };
-    switch (bot->getClass())
+    std::string role = GetDungeonRole(bot);
+    BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(bot, role.c_str());
+    RoleSaturationState saturation = BuildRoleSaturationState(bot, target, role.c_str());
+    std::string roleGoal = BotProgressionGoalPolicy::RoleGoal(role);
+    std::vector<BotActionCandidate> candidates = BotClassSpecActionProfileStore::BuildCandidates(bot, target, profile);
+    BotActionCandidate* best = nullptr;
+    for (BotActionCandidate& candidate : candidates)
     {
-        case CLASS_PALADIN:
-            candidates[0] = 635;    // Holy Light
-            candidates[1] = 19750;  // Flash of Light
-            break;
-        case CLASS_PRIEST:
-            candidates[0] = 2061;   // Flash Heal
-            candidates[1] = 2050;   // Heal
-            break;
-        case CLASS_SHAMAN:
-            candidates[0] = 331;    // Healing Wave
-            candidates[1] = 8004;   // Healing Surge
-            break;
-        case CLASS_DRUID:
-            candidates[0] = 8936;   // Regrowth
-            candidates[1] = 5185;   // Healing Touch
-            break;
-        default:
-            break;
+        uint32 injuredPlayers = 0;
+        if (Group* group = bot->GetGroup())
+            for (GroupReference* itr = group->GetFirstMember(); itr; itr = itr->next())
+                if (Player* member = itr->GetSource())
+                    if (member->IsAlive() && member->GetMap() == bot->GetMap()
+                        && UnitHealthPct(member) < candidate.Profile.InjuredHealthPct)
+                        ++injuredPlayers;
+        if (candidate.Category != BotCombatActionCategory::HealFast
+            && candidate.Category != BotCombatActionCategory::HealEfficient
+            && candidate.Category != BotCombatActionCategory::HealAoe)
+        {
+            candidate.RejectReason = "not_healing_action";
+            continue;
+        }
+        if (!candidate.RejectReason.empty())
+            continue;
+        float targetHp = UnitHealthPct(target);
+        if (targetHp < candidate.Profile.MinTargetHealthPct || targetHp > candidate.Profile.MaxTargetHealthPct)
+            candidate.RejectReason = "target_health_gate";
+        else if (candidate.Profile.MinInjuredPlayers > injuredPlayers)
+            candidate.RejectReason = "injured_player_count_too_low";
+        else if (candidate.Profile.MaxInjuredPlayers && injuredPlayers > candidate.Profile.MaxInjuredPlayers)
+            candidate.RejectReason = "injured_player_count_too_high";
+        else if ((bot->GetMaxPower(POWER_MANA) ? float(bot->GetPower(POWER_MANA)) / float(bot->GetMaxPower(POWER_MANA)) : 0.0f) < candidate.Profile.MinManaPct
+            || (bot->GetMaxPower(POWER_MANA) ? float(bot->GetPower(POWER_MANA)) / float(bot->GetMaxPower(POWER_MANA)) : 0.0f) > candidate.Profile.MaxManaPct)
+            candidate.RejectReason = "mana_gate";
+        else if (!best || candidate.Score > best->Score)
+        {
+            candidate.Reason = "db_profile_healing_policy";
+            best = &candidate;
+        }
     }
 
-    for (uint32 spellId : candidates)
-        if (spellId && bot->HasSpell(spellId))
-            return spellId;
-
-    return 0;
+    uint32 botKey = bot->GetGUID().GetCounter();
+    _lastSaturationByBot[botKey] = saturation;
+    _lastCombatMaskByBot[botKey] = BotClassSpecActionProfileStore::CandidateMaskJson(candidates, profile, roleGoal.c_str(), saturation.ToJson().c_str());
+    _lastChosenCombatByBot[botKey] = BotClassSpecActionProfileStore::ChosenActionJson(best, profile, roleGoal.c_str(), BotRoleSaturationPolicy::ToString(saturation.RecommendedBalanceMode), saturation.ExperimentConfidence);
+    _lastActionCategoryByBot[botKey] = best ? BotCombatActionCatalog::ToString(best->Category) : "wait";
+    return best ? best->SpellId : 0;
 }
 
-bool BotWorldPopulationMgr::TryCastFriendlySpell(Player* bot, Unit* target, uint32 spellId, std::string* failureReason) const
+bool BotWorldPopulationMgr::TryCastFriendlySpell(Player* bot, Unit* target, uint32 spellId, std::string* failureReason)
 {
     auto fail = [failureReason](char const* reason) -> bool
     {
@@ -11725,9 +11749,12 @@ bool BotWorldPopulationMgr::TryCastFriendlySpell(Player* bot, Unit* target, uint
         bot->GetMotionMaster()->MoveIdle();
     }
 
+    // Install the cast identity before CastSpell: instant spells can finish synchronously.
+    uint64 pendingCastId = BeginPendingHealCast(bot, target, spellId);
     SpellCastResult castResult = bot->CastSpell(target, spellId, false);
     if (castResult != SPELL_CAST_OK)
     {
+        CancelBotSpellStart(pendingCastId, bot, "cast_submission_failed");
         if (failureReason)
             *failureReason = "spell_cast_result_" + std::to_string(uint32(castResult));
         return false;
@@ -14587,6 +14614,211 @@ void BotWorldPopulationMgr::RecordDecision(WorldBotState& state, Player* bot, ch
 
     std::string areaFeatures = BuildEmbeddingFeaturesJson(bot, target, "area", bot->GetAreaId(), situation ? situation : "decision");
     UpdateSemanticOutcomeStats(bot, "area", bot->GetAreaId(), situation, failure ? "failed" : "sampled", failure ? -1.0f : chosenActivity.Score, power.Total - state.ActivityStartPower, failure, areaFeatures.c_str());
+}
+
+uint64 BotWorldPopulationMgr::BeginPendingHealCast(Player* bot, Unit* target, uint32 spellId, std::string const& candidateMaskJson, std::string const& chosenActionJson)
+{
+    if (!bot || !target || !spellId || GetDungeonRole(bot) != std::string("healer"))
+        return 0;
+
+    PendingHealCast cast;
+    cast.CastId = _nextHealCastId++;
+    cast.BotGuid = bot->GetGUID();
+    cast.SpellId = spellId;
+    cast.ChosenTargetGuid = target->GetGUID();
+    cast.StartedAtMs = NowMs();
+    SpellInfo const* info = sSpellMgr->GetSpellInfo(spellId);
+    uint32 castTime = info ? std::max<int32>(0, info->CalcCastTime(bot->getLevel())) : 0;
+    cast.DeadlineMs = cast.StartedAtMs + std::max<uint32>(5000, castTime + 3000);
+    cast.ManaBefore = bot->GetPower(POWER_MANA);
+    cast.AttackersBefore = uint32(bot->GetThreatManager().GetThreatenedByMeList().size());
+    for (auto const& [guid, ref] : bot->GetThreatManager().GetThreatenedByMeList())
+        if (ref)
+            cast.ThreatBefore += ref->GetThreat();
+    uint32 key = bot->GetGUID().GetCounter();
+    auto mask = _lastCombatMaskByBot.find(key);
+    auto chosen = _lastChosenCombatByBot.find(key);
+    cast.CandidateMaskJson = !candidateMaskJson.empty() ? candidateMaskJson : (mask == _lastCombatMaskByBot.end() ? "{}" : mask->second);
+    cast.ChosenActionJson = !chosenActionJson.empty() ? chosenActionJson : (chosen == _lastChosenCombatByBot.end() ? "{}" : chosen->second);
+    uint64 castId = cast.CastId;
+    _pendingHealCasts.emplace(castId, std::move(cast));
+    return castId;
+}
+
+uint64 BotWorldPopulationMgr::NotifyBotSpellStarted(Player* caster, Unit* target, uint32 spellId, std::string const& candidateMaskJson, std::string const& chosenActionJson)
+{
+    return BeginPendingHealCast(caster, target, spellId, candidateMaskJson, chosenActionJson);
+}
+
+void BotWorldPopulationMgr::CancelBotSpellStart(uint64 castId, Player* caster, char const* reason)
+{
+    auto itr = _pendingHealCasts.find(castId);
+    if (itr == _pendingHealCasts.end())
+        return;
+    PendingHealCast cast = itr->second;
+    _pendingHealCasts.erase(itr);
+    FlushPendingHealCast(cast, caster, "rejected", reason);
+}
+
+void BotWorldPopulationMgr::NotifyBotHeal(Unit* healer, Unit* target, uint32 spellId, uint32 attemptedHeal, uint32 effectiveHeal, uint32 absorbedHeal)
+{
+    if (!healer || !target || !spellId)
+        return;
+    Unit* owner = healer;
+    if (healer->GetTypeId() == TYPEID_UNIT && (healer->IsTotem() || healer->IsPet()))
+        owner = healer->GetOwner();
+    Player* bot = owner ? owner->ToPlayer() : nullptr;
+    if (!bot)
+        return;
+
+    uint64 now = NowMs();
+    PendingHealCast* best = nullptr;
+    for (auto& [id, cast] : _pendingHealCasts)
+        if (cast.BotGuid == bot->GetGUID() && cast.SpellId == spellId
+            && now >= cast.StartedAtMs && now <= cast.DeadlineMs
+            && (cast.ChosenTargetGuid == target->GetGUID() || cast.SpellFinished)
+            && (!best || cast.StartedAtMs > best->StartedAtMs))
+            best = &cast;
+    if (!best)
+    {
+        TC_LOG_DEBUG("server", "Unattributed bot heal bot=%s spell=%u target=%s attempted=%u effective=%u absorbed=%u reason=no_matching_cast_window",
+            bot->GetGUID().ToString().c_str(), spellId, target->GetGUID().ToString().c_str(), attemptedHeal, effectiveHeal, absorbedHeal);
+        return;
+    }
+    best->AttemptedHeal += attemptedHeal;
+    best->EffectiveHeal += effectiveHeal;
+    best->AbsorbedHeal += absorbedHeal;
+    best->AffectedAllyGuids.insert(target->GetGUID().GetRawValue());
+    best->LastHealAtMs = now;
+}
+
+void BotWorldPopulationMgr::NotifyBotSpellFinished(Player* caster, uint32 spellId, bool success)
+{
+    if (!caster || !spellId)
+        return;
+    auto found = _pendingHealCasts.end();
+    for (auto itr = _pendingHealCasts.begin(); itr != _pendingHealCasts.end(); ++itr)
+        if (itr->second.BotGuid == caster->GetGUID() && itr->second.SpellId == spellId && (found == _pendingHealCasts.end() || itr->second.StartedAtMs > found->second.StartedAtMs))
+            found = itr;
+    if (found == _pendingHealCasts.end())
+        return;
+    if (!success)
+    {
+        PendingHealCast cast = found->second;
+        _pendingHealCasts.erase(found);
+        FlushPendingHealCast(cast, caster, "interrupted", "spell_finish_failed");
+        return;
+    }
+    found->second.SpellFinished = true;
+    found->second.FinishedAtMs = NowMs();
+    found->second.ManaAfterCast = caster->GetPower(POWER_MANA);
+    found->second.AttackersAfterCast = uint32(caster->GetThreatManager().GetThreatenedByMeList().size());
+    for (auto const& [guid, ref] : caster->GetThreatManager().GetThreatenedByMeList())
+        if (ref)
+            found->second.ThreatAfterCast += ref->GetThreat();
+    found->second.DeadlineMs = found->second.FinishedAtMs + 2500; // collection only; outcome snapshots are fixed above
+}
+
+void BotWorldPopulationMgr::FlushPendingHealCast(PendingHealCast const& cast, Player* bot, char const* outcome, char const* reason)
+{
+    if (!bot)
+        return;
+    uint32 attackersAfter = uint32(bot->GetThreatManager().GetThreatenedByMeList().size());
+    float threatAfter = 0.0f;
+    for (auto const& [guid, ref] : bot->GetThreatManager().GetThreatenedByMeList())
+        if (ref)
+            threatAfter += ref->GetThreat();
+    uint32 manaAfter = cast.SpellFinished ? cast.ManaAfterCast : bot->GetPower(POWER_MANA);
+    if (cast.SpellFinished)
+    {
+        attackersAfter = cast.AttackersAfterCast;
+        threatAfter = cast.ThreatAfterCast;
+    }
+    std::ostringstream guids;
+    bool first = true;
+    for (uint64 guid : cast.AffectedAllyGuids)
+    {
+        if (!first) guids << ',';
+        first = false;
+        guids << guid;
+    }
+    std::ostringstream raw;
+    raw << "{\"schema\":\"bot_healing_lifecycle_v1\",\"cast_id\":" << cast.CastId
+        << ",\"bot_guid\":" << cast.BotGuid.GetCounter() << ",\"spell_id\":" << cast.SpellId
+        << ",\"chosen_target_guid\":" << cast.ChosenTargetGuid.GetCounter()
+        << ",\"outcome\":\"" << JsonEscape(outcome ? outcome : "unknown") << "\""
+        << ",\"reason\":\"" << JsonEscape(reason ? reason : "") << "\""
+        << ",\"attempted_heal\":" << cast.AttemptedHeal << ",\"effective_heal\":" << cast.EffectiveHeal
+        << ",\"absorbed_heal\":" << cast.AbsorbedHeal
+        << ",\"overheal\":" << (cast.AttemptedHeal - std::min(cast.AttemptedHeal, cast.EffectiveHeal))
+        << ",\"mana_before\":" << cast.ManaBefore << ",\"mana_after\":" << manaAfter
+        << ",\"mana_delta\":" << (int64(manaAfter) - int64(cast.ManaBefore))
+        << ",\"affected_ally_count\":" << cast.AffectedAllyGuids.size() << ",\"affected_ally_guids\":[" << guids.str() << ']'
+        << ",\"attackers_before\":" << cast.AttackersBefore << ",\"attackers_after\":" << attackersAfter
+        << ",\"threat_before\":" << cast.ThreatBefore << ",\"threat_after\":" << threatAfter
+        << ",\"candidate_mask\":" << (cast.CandidateMaskJson.empty() ? "{}" : cast.CandidateMaskJson)
+        << ",\"chosen_action\":" << (cast.ChosenActionJson.empty() ? "{}" : cast.ChosenActionJson) << '}';
+    BotDatasetEvent dataset;
+    dataset.run_id = _runId;
+    dataset.experiment_id = std::to_string(_experimentId);
+    dataset.episode_id = _runId;
+    dataset.bot_guid = bot->GetGUID();
+    dataset.bot_role = GetDungeonRole(bot);
+    dataset.bot_level = uint32(bot->getLevel());
+    dataset.policy_source = BotPolicySource::Rule;
+    dataset.policy_version = _config.BrainVersion;
+    dataset.timestamp_ms = NowMs();
+    dataset.tick_id = cast.CastId;
+    dataset.domain = "party_healing";
+    dataset.situation = "healing_lifecycle";
+    dataset.observation_json = raw.str();
+    dataset.semantic_json = raw.str();
+    dataset.valid_action_mask_json = cast.CandidateMaskJson.empty() ? "{}" : cast.CandidateMaskJson;
+    dataset.chosen_action_json = cast.ChosenActionJson.empty() ? "{}" : cast.ChosenActionJson;
+    dataset.action_result = outcome ? outcome : "unknown";
+    dataset.outcome_json = raw.str();
+    dataset.quality_flags_json = "{\"source\":\"heal_info_lifecycle\",\"hot_attribution\":\"bounded_bot_spell_target_window\"}";
+    std::string canonical = dataset.Validate() ? dataset.ToJson() : "";
+    std::string escapedRaw = raw.str();
+    std::string escapedOutcome = outcome ? outcome : "unknown";
+    std::string escapedCanonical = canonical;
+    CharacterDatabase.EscapeString(escapedRaw);
+    CharacterDatabase.EscapeString(escapedOutcome);
+    CharacterDatabase.EscapeString(escapedCanonical);
+    CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_events (schema_version, feature_schema_version, experiment_id, run_id, bot_guid, brain_version, map_id, zone_id, area_id, x, y, z, level, event_type, spell_id, result, value_float, value_int, raw_json, semantic_json, canonical_event_json) VALUES ('%s','%s'," UI64FMTD "," UI64FMTD ",%u,'%s',%u,%u,%u,%f,%f,%f,%u,'healing_lifecycle',%u,'%s',%f,%u,'%s','%s','%s')",
+        BotDatasetEvent::SchemaVersion, BotDatasetEvent::DefaultFeatureSchemaVersion, _experimentId, _runId, bot->GetGUID().GetCounter(), _config.BrainVersion.c_str(), bot->GetMapId(), bot->GetZoneId(), bot->GetAreaId(), bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(), uint32(bot->getLevel()), cast.SpellId, escapedOutcome.c_str(), float(cast.EffectiveHeal), uint32(cast.AffectedAllyGuids.size()), escapedRaw.c_str(), escapedRaw.c_str(), escapedCanonical.c_str());
+
+    for (WorldBotState& state : _bots)
+        if (state.Guid == bot->GetGUID())
+        {
+            RecordEvent(state, bot, "healing_lifecycle", nullptr, outcome, raw.str().c_str(), raw.str().c_str(), float(cast.EffectiveHeal), uint32(cast.AffectedAllyGuids.size()), cast.SpellId);
+            break;
+        }
+}
+
+void BotWorldPopulationMgr::ClearPendingHealCasts(char const* reason)
+{
+    for (auto const& [id, cast] : _pendingHealCasts)
+        if (Player* bot = ObjectAccessor::FindConnectedPlayer(cast.BotGuid))
+            FlushPendingHealCast(cast, bot, "cancelled", reason);
+    _pendingHealCasts.clear();
+}
+
+void BotWorldPopulationMgr::UpdatePendingHealCasts()
+{
+    uint64 now = NowMs();
+    for (auto itr = _pendingHealCasts.begin(); itr != _pendingHealCasts.end();)
+    {
+        if (now < itr->second.DeadlineMs)
+        {
+            ++itr;
+            continue;
+        }
+        PendingHealCast cast = itr->second;
+        itr = _pendingHealCasts.erase(itr);
+        if (Player* bot = ObjectAccessor::FindConnectedPlayer(cast.BotGuid))
+            FlushPendingHealCast(cast, bot, cast.SpellFinished ? "completed" : "timeout", cast.SpellFinished ? "collection_window_closed" : "cast_deadline_exceeded");
+    }
 }
 
 void BotWorldPopulationMgr::UpdateSemanticOutcomeStats(Player* bot, char const* entityType, uint32 entityKey, char const* eventType, char const* result, float reward, float powerDelta, bool failure, char const* featuresJson)

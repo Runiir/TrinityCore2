@@ -443,8 +443,8 @@ std::vector<BotActionCandidate> BotClassSpecActionProfileStore::BuildCandidates(
             SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spell.SpellId);
             if (!spellInfo)
                 candidate.RejectReason = "missing_spell_info";
-            else if (partyTarget)
-                candidate.RejectReason = "requires_party_target";
+            else if (partyTarget && !actionTarget)
+                candidate.RejectReason = "missing_party_target";
             else if (bot->HasUnitState(UNIT_STATE_CASTING))
                 candidate.RejectReason = "already_casting";
             else if (bot->GetSpellHistory()->HasGlobalCooldown(spellInfo))
@@ -515,6 +515,12 @@ std::string BotClassSpecActionProfileStore::CandidateMaskJson(std::vector<BotAct
              << ",\"target_selector\":\"" << ClassSpecProfileEscape(candidate.Profile.TargetSelector) << "\""
              << ",\"movement_directive\":\"" << ClassSpecProfileEscape(candidate.Profile.MovementDirective) << "\""
              << ",\"auto_attack_mode\":\"" << ClassSpecProfileEscape(candidate.Profile.AutoAttackMode) << "\""
+             << ",\"valid\":" << (candidate.RejectReason.empty() ? "true" : "false")
+             << ",\"predicted_raw_heal\":" << candidate.PredictedRawHeal
+             << ",\"predicted_effective_heal\":" << candidate.PredictedEffectiveHeal
+             << ",\"predicted_overheal\":" << candidate.PredictedOverheal
+             << ",\"mana_cost\":" << candidate.ManaCost
+             << ",\"cast_time_ms\":" << candidate.CastTimeMs
              << ",\"reject_reason\":\"" << ClassSpecProfileEscape(candidate.RejectReason) << "\""
              << ",\"role_goal\":\"" << ClassSpecProfileEscape(roleGoal ? roleGoal : profile.Role) << "\"}";
     }

@@ -69,6 +69,11 @@ struct BotActionCandidate
     float Score = 0.0f;
     std::string Reason;
     std::string RejectReason;
+    float PredictedRawHeal = 0.0f;
+    float PredictedEffectiveHeal = 0.0f;
+    float PredictedOverheal = 0.0f;
+    uint32 ManaCost = 0;
+    uint32 CastTimeMs = 0;
     BotActionProfileSpell Profile;
 };
 

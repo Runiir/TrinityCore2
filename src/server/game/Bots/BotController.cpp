@@ -1,5 +1,6 @@
 #include "Bots/BotController.h"
 #include "Bots/BotClassSpecActionProfile.h"
+#include "Bots/BotWorldPopulationMgr.h"
 #include "Bots/BotDatasetEvent.h"
 #include "Bots/BotMgr.h"
 #include "Config.h"
@@ -862,6 +863,8 @@ bool BotController::TryExecuteQueuedCombatAction(BotActionExecutor& executor, Pl
 bool BotController::TryResolveHealerAction(BotActionExecutor& executor, Player* owner, Player* bot, BotRecentEvents const& recentEvents, bool shouldRecord, BotMovementFrame const& movementFrame)
 {
     // DB categories, including BotCombatActionCategory::HealFast, are the sole healer action authority.
+    _lastHealerCandidateMaskJson = "{}";
+    _lastHealerChosenActionJson = "{}";
     HealerFrame frame = BuildFrame(owner, bot, recentEvents);
     BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(bot, "healer");
     ResolvedBotAction action;
@@ -872,33 +875,40 @@ bool BotController::TryResolveHealerAction(BotActionExecutor& executor, Player* 
         BotActionProfileSpell const* Spell = nullptr;
         ObjectGuid TargetGuid;
         float Score = 0.0f;
+        BotActionCandidate Candidate;
     };
     std::vector<HealerAttempt> attempts;
+    std::vector<BotActionCandidate> evaluatedCandidates;
     uint8 attackers = uint8(std::min<size_t>(255, bot->GetThreatManager().GetThreatenedByMeList().size()));
 
     for (BotActionProfileSpell const& spell : profile.Spells)
     {
         if (!spell.SpellId || !IsHealingCategory(spell.Category))
             continue;
+        BotActionCandidate telemetryCandidate;
+        telemetryCandidate.ActionId = BotCombatActionCatalog::StableActionId(spell.Category, spell.SpellId);
+        telemetryCandidate.SpellId = spell.SpellId;
+        telemetryCandidate.Category = spell.Category;
+        telemetryCandidate.TargetType = spell.TargetSelector;
+        telemetryCandidate.Profile = spell;
+        auto rejectCandidate = [&](char const* reason) { telemetryCandidate.RejectReason = reason; evaluatedCandidates.push_back(telemetryCandidate); };
         SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spell.SpellId);
-        if (!spellInfo || !bot->GetSpellHistory()->IsReady(spellInfo) || !RotationHasEnoughPower(bot, spellInfo))
-            continue;
+        if (!spellInfo) { rejectCandidate("missing_spell_info"); continue; }
+        if (!bot->GetSpellHistory()->IsReady(spellInfo)) { rejectCandidate("cooldown_not_ready"); continue; }
+        if (!RotationHasEnoughPower(bot, spellInfo)) { rejectCandidate("insufficient_power"); continue; }
         uint8 injuredPlayers = 0;
         for (HealerUnitFrame const& partyUnit : frame.Party)
             if (partyUnit.Alive && partyUnit.Friendly && float(partyUnit.HealthPct) / 100.0f <= spell.InjuredHealthPct)
                 ++injuredPlayers;
         uint32 castTime = CastTimeMs(bot, spellInfo);
-        if (!MeetsCastDirectives(bot, spell, spellInfo)
-            || (movementFrame.Moving && castTime && !spell.RequiresMoving)
-            || (spell.RequiresStationary && movementFrame.Moving)
-            || (spell.RequiresMoving && !movementFrame.Moving)
-            || (spell.MinInjuredPlayers && injuredPlayers < spell.MinInjuredPlayers)
-            || (spell.MaxInjuredPlayers && injuredPlayers > spell.MaxInjuredPlayers)
-            || (spell.MinAttackers && attackers < spell.MinAttackers)
-            || (spell.MaxAttackers && attackers > spell.MaxAttackers)
-            || float(frame.BotManaPct) / 100.0f < spell.MinManaPct
-            || float(frame.BotManaPct) / 100.0f > spell.MaxManaPct)
-            continue;
+        if (!MeetsCastDirectives(bot, spell, spellInfo)) { rejectCandidate("cast_directive_rejected"); continue; }
+        if ((movementFrame.Moving && castTime && !spell.RequiresMoving) || (spell.RequiresStationary && movementFrame.Moving) || (spell.RequiresMoving && !movementFrame.Moving)) { rejectCandidate("movement_gate"); continue; }
+        if (spell.MinInjuredPlayers && injuredPlayers < spell.MinInjuredPlayers) { rejectCandidate("injured_player_count_too_low"); continue; }
+        if (spell.MaxInjuredPlayers && injuredPlayers > spell.MaxInjuredPlayers) { rejectCandidate("injured_player_count_too_high"); continue; }
+        if (spell.MinAttackers && attackers < spell.MinAttackers) { rejectCandidate("attacker_count_too_low"); continue; }
+        if (spell.MaxAttackers && attackers > spell.MaxAttackers) { rejectCandidate("attacker_count_too_high"); continue; }
+        if (float(frame.BotManaPct) / 100.0f < spell.MinManaPct) { rejectCandidate("mana_too_low"); continue; }
+        if (float(frame.BotManaPct) / 100.0f > spell.MaxManaPct) { rejectCandidate("mana_too_high"); continue; }
         bool utility = spell.Category == BotCombatActionCategory::Defensive || spell.Category == BotCombatActionCategory::Mitigation
             || spell.Category == BotCombatActionCategory::OffensiveCooldown;
         Unit* target = nullptr;
@@ -910,34 +920,34 @@ bool BotController::TryResolveHealerAction(BotActionExecutor& executor, Player* 
             if (!target || !bot->IsValidAttackTarget(target))
                 target = bot->GetVictim();
             if (!target || !bot->IsValidAttackTarget(target))
-                continue;
+            { rejectCandidate("missing_enemy_target"); continue; }
             targetGuid = target->GetGUID();
         }
         else
         {
             HealerUnitFrame const* unit = SelectHealerUnit(frame, spell.TargetSelector.empty() ? "lowest_ally" : spell.TargetSelector);
             if (!unit)
-                continue;
+            { rejectCandidate("missing_ally_target"); continue; }
             targetGuid = unit->Guid;
             healthPct = float(unit->HealthPct) / 100.0f;
             target = ObjectAccessor::GetUnit(*bot, targetGuid);
             if (!target)
-                continue;
+            { rejectCandidate("invalid_ally_target"); continue; }
         }
         if (float(frame.BotHealthPct) / 100.0f < spell.MinSelfHealthPct || float(frame.BotHealthPct) / 100.0f > spell.MaxSelfHealthPct
             || (!utility && (healthPct < spell.MinTargetHealthPct || healthPct > spell.MaxTargetHealthPct
                 || (spell.InjuredHealthPct < 1.0f && healthPct > spell.InjuredHealthPct))))
-            continue;
+        { rejectCandidate("health_gate"); continue; }
         float distance = bot->GetExactDist(target);
         if ((spell.MaxRange > 0.0f && distance > spell.MaxRange) || (spell.MinRange > 0.0f && distance < spell.MinRange)
             || (spell.MaxRange <= 0.0f && distance > std::max(5.0f, spellInfo->GetMaxRange(false))))
-            continue;
+        { rejectCandidate("range_gate"); continue; }
         if ((spell.ForbiddenTargetAura && target->HasAura(spell.ForbiddenTargetAura))
             || (spell.MaintainAuraId && target->HasAura(spell.MaintainAuraId))
             || (spell.RequiredTargetAura && !target->HasAura(spell.RequiredTargetAura))
             || (spell.RequiredSelfAura && !bot->HasAura(spell.RequiredSelfAura))
             || (spell.ForbiddenSelfAura && bot->HasAura(spell.ForbiddenSelfAura)))
-            continue;
+        { rejectCandidate("aura_gate"); continue; }
 
         float missingHealth = float(target->GetMaxHealth() - target->GetHealth());
         float expectedRawHealing = utility ? 0.0f : std::max(0.0f, spell.HealingWeight) * float(target->GetMaxHealth());
@@ -949,7 +959,17 @@ bool BotController::TryResolveHealerAction(BotActionExecutor& executor, Player* 
             : expectedEffectiveHealing - expectedOverheal * 0.35f + spell.SurvivalWeight * urgency * float(target->GetMaxHealth());
         score -= float(spell.PriorityBucket) * 0.03f;
         uint32 manaCost = uint32(std::max<int32>(0, spellInfo->CalcPowerCost(bot, spellInfo->GetSchoolMask())));
-        attempts.push_back(HealerAttempt{ &spell, targetGuid, score });
+        telemetryCandidate.TargetGuid = targetGuid.GetCounter();
+        telemetryCandidate.Score = score;
+        telemetryCandidate.Reason = "db_profile_healing_policy";
+        telemetryCandidate.PredictedRawHeal = expectedRawHealing;
+        telemetryCandidate.PredictedEffectiveHeal = expectedEffectiveHealing;
+        telemetryCandidate.PredictedOverheal = expectedOverheal;
+        telemetryCandidate.ManaCost = manaCost;
+        telemetryCandidate.CastTimeMs = castTime;
+        telemetryCandidate.Profile = spell;
+        evaluatedCandidates.push_back(telemetryCandidate);
+        attempts.push_back(HealerAttempt{ &spell, targetGuid, score, telemetryCandidate });
     }
 
     std::sort(attempts.begin(), attempts.end(), [](HealerAttempt const& left, HealerAttempt const& right)
@@ -964,8 +984,17 @@ bool BotController::TryResolveHealerAction(BotActionExecutor& executor, Player* 
         action.TargetGuid = attempt.TargetGuid;
         action.SpellId = attempt.Spell->SpellId;
         action.DebugName = BotCombatActionCatalog::ToString(attempt.Spell->Category);
+        Unit* lifecycleTarget = ObjectAccessor::GetUnit(*bot, attempt.TargetGuid);
+        std::string candidateMaskJson = BotClassSpecActionProfileStore::CandidateMaskJson(evaluatedCandidates, profile, "preserve_party", "{}");
+        std::string chosenActionJson = BotClassSpecActionProfileStore::ChosenActionJson(&attempt.Candidate, profile, "preserve_party", "role_first", 1.0f);
+        _lastHealerCandidateMaskJson = candidateMaskJson;
+        _lastHealerChosenActionJson = chosenActionJson;
+        uint64 pendingCastId = sBotWorldPopulationMgr->NotifyBotSpellStarted(bot, lifecycleTarget, attempt.Spell->SpellId, candidateMaskJson, chosenActionJson);
         result = executor.Execute(owner, bot, action);
-        if (result == BotActionResult::Ok || result == BotActionResult::Casting || result == BotActionResult::GlobalCooldown)
+        if (result == BotActionResult::Ok || result == BotActionResult::Casting)
+            break;
+        sBotWorldPopulationMgr->CancelBotSpellStart(pendingCastId, bot, ToString(result));
+        if (result == BotActionResult::GlobalCooldown)
             break;
     }
 
@@ -1182,8 +1211,8 @@ void BotController::RecordFrame(HealerFrame const& frame, HealerDecision const& 
     dataset.situation = ToString(decision.Intent);
     dataset.observation_json = observation.str();
     dataset.semantic_json = "{\"role\":\"" + std::string(ToString(_role)) + "\"}";
-    dataset.valid_action_mask_json = "{\"healer_actions\":true}";
-    dataset.chosen_action_json = chosen.str();
+    dataset.valid_action_mask_json = _lastHealerCandidateMaskJson;
+    dataset.chosen_action_json = _lastHealerChosenActionJson;
     dataset.action_result = ToString(result);
     dataset.outcome_json = "{\"result\":\"" + std::string(ToString(result)) + "\"}";
     dataset.quality_flags_json = "{\"source\":\"playerbot_jsonl\"}";

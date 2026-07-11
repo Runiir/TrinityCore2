@@ -223,6 +223,10 @@ public:
     bool IsActive() const { return _active; }
     std::string Replay(std::string const& replayType, std::string const& selector, std::string const& brainVersion = "");
     std::string CompareBrains(uint64 replayId, std::string const& firstBrainVersion, std::string const& secondBrainVersion);
+    uint64 NotifyBotSpellStarted(Player* caster, Unit* target, uint32 spellId, std::string const& candidateMaskJson = {}, std::string const& chosenActionJson = {});
+    void CancelBotSpellStart(uint64 castId, Player* caster, char const* reason);
+    void NotifyBotSpellFinished(Player* caster, uint32 spellId, bool success);
+    void NotifyBotHeal(Unit* healer, Unit* target, uint32 spellId, uint32 attemptedHeal, uint32 effectiveHeal, uint32 absorbedHeal);
 
     enum class QuestObjectiveType
     {
@@ -858,6 +862,31 @@ private:
         float TargetItemLevel = 372.0f;
     };
 
+    struct PendingHealCast
+    {
+        uint64 CastId = 0;
+        ObjectGuid BotGuid;
+        uint32 SpellId = 0;
+        ObjectGuid ChosenTargetGuid;
+        uint64 StartedAtMs = 0;
+        uint64 LastHealAtMs = 0;
+        uint64 DeadlineMs = 0;
+        uint32 ManaBefore = 0;
+        uint32 AttemptedHeal = 0;
+        uint32 EffectiveHeal = 0;
+        uint32 AbsorbedHeal = 0;
+        std::set<uint64> AffectedAllyGuids;
+        uint32 AttackersBefore = 0;
+        float ThreatBefore = 0.0f;
+        std::string CandidateMaskJson;
+        std::string ChosenActionJson;
+        bool SpellFinished = false;
+        uint64 FinishedAtMs = 0;
+        uint32 ManaAfterCast = 0;
+        uint32 AttackersAfterCast = 0;
+        float ThreatAfterCast = 0.0f;
+    };
+
     struct SemanticOutcomeStats
     {
         bool Known = false;
@@ -1053,8 +1082,8 @@ private:
     bool TryEnsureCombatTotems(WorldBotState& state, Player* bot, Unit* target) const;
     char const* GetDungeonRole(Player* bot) const;
     uint32 SelectInterruptSpell(Player* bot) const;
-    uint32 SelectHealSpell(Player* bot) const;
-    bool TryCastFriendlySpell(Player* bot, Unit* target, uint32 spellId, std::string* failureReason = nullptr) const;
+    uint32 SelectHealSpell(Player* bot, Unit* target) const;
+    bool TryCastFriendlySpell(Player* bot, Unit* target, uint32 spellId, std::string* failureReason = nullptr);
     std::string BuildDungeonTrashPackJson(DungeonTrashPackFeatures const& pack) const;
     std::string BuildBossMechanicsJson(BossMechanicFeatures const& features) const;
     uint32 SelectCombatSpell(Player* bot, Unit* target) const;
@@ -1123,6 +1152,10 @@ private:
     uint64 MaybeCaptureTelemetryClip(Player* bot, Unit const* target, BotTelemetryPolicyInput const& input, BotTelemetryPolicyDecision const& decision, char const* rawJson, char const* semanticJson);
     void UpdateSemanticOutcomeStats(Player* bot, char const* entityType, uint32 entityKey, char const* eventType, char const* result, float reward, float powerDelta, bool failure, char const* featuresJson);
     void UpdateSemanticStatsFromEvent(Player* bot, Unit const* target, char const* eventType, char const* result, float valueFloat, uint32 valueInt, uint32 spellId, char const* semanticJson);
+    uint64 BeginPendingHealCast(Player* bot, Unit* target, uint32 spellId, std::string const& candidateMaskJson = {}, std::string const& chosenActionJson = {});
+    void FlushPendingHealCast(PendingHealCast const& cast, Player* bot, char const* outcome, char const* reason);
+    void UpdatePendingHealCasts();
+    void ClearPendingHealCasts(char const* reason);
     SemanticOutcomeStats GetSemanticOutcomeStats(char const* entityType, uint32 entityKey) const;
     std::string BuildOutcomeStatsJson(SemanticOutcomeStats const& stats) const;
     std::string BuildEmbeddingFeaturesJson(Player const* bot, Unit const* target, char const* entityType, uint32 entityKey, char const* semanticFamily) const;
@@ -1215,6 +1248,8 @@ private:
     mutable std::map<uint32, std::string> _lastChosenCombatByBot;
     mutable std::map<uint32, std::string> _lastActionCategoryByBot;
     mutable std::map<uint32, RoleSaturationState> _lastSaturationByBot;
+    uint64 _nextHealCastId = 1;
+    std::map<uint64, PendingHealCast> _pendingHealCasts;
 };
 
 #define sBotWorldPopulationMgr BotWorldPopulationMgr::instance()

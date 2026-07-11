@@ -2457,3 +2457,50 @@ def test_density_action_taxonomy_and_stonecore_roster_profile_paths_are_explicit
     assert "chain_lightning,maelstrom_5,aoe" in profiles
     assert "'resource_generator', 'steady_shot,focus_builder'" in profiles
     assert "'resource_generator', 'stormstrike,melee,maelstrom_generator'" in profiles
+
+
+def test_healer_lifecycle_telemetry_is_cast_scoped_and_uses_actual_heal_info():
+    root = Path(__file__).resolve().parents[1]
+    header = (root / "src/server/game/Bots/BotWorldPopulationMgr.h").read_text()
+    manager = (root / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+    unit = (root / "src/server/game/Entities/Unit/Unit.cpp").read_text()
+    spell = (root / "src/server/game/Spells/Spell.cpp").read_text()
+    controller = (root / "src/server/game/Bots/BotController.cpp").read_text()
+
+    assert "struct PendingHealCast" in header
+    assert "uint64 CastId" in header
+    assert "std::set<uint64> AffectedAllyGuids" in header
+    assert "uint64 pendingCastId = BeginPendingHealCast(bot, target, spellId);\n    SpellCastResult castResult" in manager
+    assert 'bot_healing_lifecycle_v1' in manager
+    for field in ("attempted_heal", "effective_heal", "overheal", "mana_delta",
+                  "affected_ally_count", "attackers_before", "attackers_after",
+                  "threat_before", "threat_after", "candidate_mask", "chosen_action"):
+        assert field in manager
+    assert "NotifyBotHeal(healer, victim, healInfo.GetSpellInfo()->Id, addhealth + healInfo.GetAbsorb()" in unit
+    assert "NotifyBotSpellFinished(playerCaster, m_spellInfo->Id, ok)" in spell
+    assert "NotifyBotSpellStarted(bot, lifecycleTarget, attempt.Spell->SpellId, candidateMaskJson, chosenActionJson)" in controller
+    assert "CancelBotSpellStart(pendingCastId, bot, ToString(result))" in controller
+    assert '"completed"' in manager and '"interrupted"' in manager and '"timeout"' in manager
+    assert 'CharacterDatabase.DirectPExecute("INSERT INTO experiment_bot_events' in manager
+    assert 'ClearPendingHealCasts("run_stop")' in manager
+    assert 'ClearPendingHealCasts("autonomy_stop")' in manager
+    assert 'ClearPendingHealCasts("shutdown")' in manager
+    assert "ManaAfterCast = caster->GetPower(POWER_MANA)" in manager
+    assert "AttackersAfterCast" in manager and "ThreatAfterCast" in manager
+    assert "absorbed_heal" in manager
+    assert "no_matching_cast_window" in manager
+    assert '_lastHealerCandidateMaskJson = "{}"' in controller
+    assert '_lastHealerChosenActionJson = "{}"' in controller
+
+
+def test_healer_candidate_mask_is_db_driven_and_records_rejections():
+    root = Path(__file__).resolve().parents[1]
+    profile = (root / "src/server/game/Bots/BotClassSpecActionProfile.cpp").read_text()
+    manager = (root / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+
+    assert '\\"valid\\":" << (candidate.RejectReason.empty() ? "true" : "false")' in profile
+    assert 'candidate.RejectReason = "missing_party_target"' in profile
+    assert "BotClassSpecActionProfileStore::Build(bot, role.c_str())" in manager
+    assert "candidate.Profile.InjuredHealthPct" in manager
+    assert 'candidate.RejectReason = "not_healing_action"' in manager
+    assert "return best ? best->SpellId : 0;" in manager
