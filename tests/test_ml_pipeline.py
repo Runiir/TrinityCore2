@@ -6030,6 +6030,31 @@ def test_unresolved_route_death_loop_requires_durable_progress_not_resurrection(
     assert unresolved_route_death_loop_count(entries) == 3
 
 
+def test_unsequenced_repeated_deaths_remain_distinct_and_fail_closed():
+    repeated = {
+        "bot_guid": 1,
+        "action": "repeated_death",
+        "route_node_id": "corborus",
+        "route_generation": 2,
+    }
+    entries = [dict(repeated), dict(repeated), dict(repeated)]
+    output = "\n".join(
+        [
+            'TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":20}',
+            'TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"snapshot":{"decision":{"action":"validation_route_hold_anchor"},"movement":{"is_moving":false}}}]}',
+            "TC> " + json.dumps({"trace_schema_version": 1, "entries": [{"action": "validation_route_regroup", "route_node_id": "corborus", "route_generation": 2}, *entries]}),
+            'TC> {"duration_minutes":1,"decisions":20}',
+        ]
+    )
+
+    report = live_validation_report(output)
+
+    assert unresolved_route_death_loop_count(entries) == 3
+    assert report["evidence"]["unresolved_route_death_loop_events"] == 3
+    assert "validation_route_death_loop" in report["failure_labels"]
+    assert report["watchdog_state"]["death_loop"] is True
+
+
 @pytest.mark.parametrize("action", ["boss_add_killed", "mob_killed", "validation_route_pack_terminal", "validation_route_terminal", "validation_route_segment_advance"])
 def test_scoped_route_progress_resolves_repeated_death_loop(action):
     entries = [route_death_loop_entry(sequence) for sequence in (1, 2, 3)]

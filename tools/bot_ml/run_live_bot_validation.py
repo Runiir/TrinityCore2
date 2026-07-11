@@ -931,16 +931,19 @@ def unresolved_route_death_loop_count(entries: list[dict[str, Any]]) -> int:
         scope = death_loop_scope(entry)
         if scope == ("", 0):
             continue
-        key = (
-            scope,
-            int(entry.get("bot_guid") or 0),
-            int(entry.get("timestamp_ms") or 0),
-            int(entry.get("sequence") or 0),
-            str(entry.get("action") or ""),
-        )
-        if key in seen:
-            continue
-        seen.add(key)
+        timestamp = int(entry.get("timestamp_ms") or 0)
+        sequence = int(entry.get("sequence") or 0)
+        if timestamp or sequence:
+            key = (
+                scope,
+                int(entry.get("bot_guid") or 0),
+                timestamp,
+                sequence,
+                str(entry.get("action") or ""),
+            )
+            if key in seen:
+                continue
+            seen.add(key)
         if not any(death_loop_scope(progress) == scope and trace_after(progress, entry) for progress in progress_entries):
             unresolved_by_scope[scope] += 1
     return max(unresolved_by_scope.values(), default=0)
