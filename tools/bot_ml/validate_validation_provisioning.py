@@ -59,6 +59,7 @@ REQUIRED_COLUMNS = {
             "power1",
             "talentGroupsCount",
             "activeTalentGroup",
+            "talentTree",
             "equipmentCache",
         },
         "item_instance": {
@@ -81,6 +82,7 @@ REQUIRED_COLUMNS = {
         "character_inventory": {"guid", "bag", "slot", "item"},
         "character_bot_pool": {"guid", "role", "class_spec", "enabled", "in_use", "experiment_tags", "notes"},
         "character_glyphs": {"guid", "talentGroup", "glyph1", "glyph2", "glyph3", "glyph4", "glyph5", "glyph6", "glyph7", "glyph8", "glyph9"},
+        "character_talent": {"guid", "spell", "talentGroup"},
         "character_skills": {"guid", "skill", "value", "max"},
     },
     "auth": {

@@ -42,7 +42,7 @@ from tools.bot_ml.orchestrator_daemon import codex_command, detect_rate_limit, h
 from tools.bot_ml.generate_lane_configs import write_lane_config
 from tools.bot_ml.promote_live_validation_artifact import promote
 from tools.bot_ml.build_validation_gear_profiles import SHIELD_CLASSES, build_gem_catalog, build_profiles, build_report, fetch_items, load_gem_properties, load_spell_item_enchantments
-from tools.bot_ml.build_validation_provisioning import apply_gear_profiles, bot_spell_ids, build_account_insert_sql, build_character_insert_sql, equipment_cache, glyph_item_to_property_map, main as provisioning_main, normalized_glyphs, runtime_safe_enchantments, scenario_report, srp6_registration_data
+from tools.bot_ml.build_validation_provisioning import apply_gear_profiles, bot_spell_ids, bot_talent_spell_ids, build_account_insert_sql, build_character_insert_sql, equipment_cache, glyph_item_to_property_map, glyph_property_type_map, main as provisioning_main, normalized_glyph_slots, normalized_glyphs, runtime_safe_enchantments, scenario_report, srp6_registration_data, validate_talent_manifest
 from tools.bot_ml.validate_validation_provisioning import build_report as provisioning_verify_report
 from tools.bot_ml.validate_validation_provisioning import main as provisioning_verify_main
 from tools.bot_ml.validate_validation_provisioning import validate_database as validate_provisioning_database
@@ -6846,6 +6846,14 @@ def test_validation_provisioning_generates_reproducible_sql_and_readiness(tmp_pa
     assert "SELECT c.`guid`, 750, 1, 0 FROM `characters`.`characters` c WHERE c.`name` = 'Scvaltank'" in sql
     assert "SELECT c.`guid`, 9116, 1, 0 FROM `characters`.`characters` c WHERE c.`name` = 'Scvaltank'" in sql
     assert "INSERT INTO `characters`.`character_glyphs`" in sql
+    assert "DELETE FROM `characters`.`character_talent`" in sql
+    assert "SELECT c.`guid`, 47788, 0 FROM `characters`.`characters` c WHERE c.`name` = 'Scvalheal'" in sql
+    assert "SELECT c.`guid`, 14751, 0 FROM `characters`.`characters` c WHERE c.`name` = 'Scvalheal'" in sql
+    assert "SELECT c.`guid`, 34861, 1, 0 FROM `characters`.`characters` c WHERE c.`name` = 'Scvalheal'" not in sql
+    assert "SELECT c.`guid`, 64843, 1, 0 FROM `characters`.`characters` c WHERE c.`name` = 'Scvalheal'" in sql
+    assert "SELECT c.`guid`, 64901, 1, 0 FROM `characters`.`characters` c WHERE c.`name` = 'Scvalheal'" in sql
+    assert "SELECT c.`guid`, 586, 1, 0 FROM `characters`.`characters` c WHERE c.`name` = 'Scvalheal'" in sql
+    assert "SELECT c.`guid`, 0, 251, 0, 0, 0, 0, 0, 264, 709, 0" in sql
     assert "DELETE FROM `characters`.`item_instance` WHERE `guid` >= 9700000" in sql
     assert manifest["schema"] == "bot_validation_provisioning_manifest_v1"
     assert manifest["bot_count"] == 15
@@ -7099,7 +7107,7 @@ def test_validation_provisioning_applies_gear_profiles_to_bots():
 
 
 def test_validation_provisioning_writes_equipment_cache_and_filters_glyphs():
-    bot = {"glyphs": [1, 0, -3, 2, 2, 3], "equipment": [{"slot": 15, "item_id": 5000, "enchant_id": 2673}, {"slot": 17, "item_id": 6000, "enchant_id": 0}]}
+    bot = {"glyphs": [42739, 0, -3, 42743, 42743, 42753], "equipment": [{"slot": 15, "item_id": 5000, "enchant_id": 2673}, {"slot": 17, "item_id": 6000, "enchant_id": 0}]}
     config = {
         "scenarios": [
             {
@@ -7113,7 +7121,7 @@ def test_validation_provisioning_writes_equipment_cache_and_filters_glyphs():
     sql = build_character_insert_sql(config)
     cache = equipment_cache(bot["equipment"])
 
-    assert normalized_glyphs(bot) == [1, 2, 3]
+    assert normalized_glyphs(bot) == [316, 320, 330]
     assert cache.split()[30] == "5000"
     assert cache.split()[31] == "2673"
     assert cache.split()[34] == "6000"
@@ -7137,7 +7145,7 @@ def test_validation_provisioning_writes_configured_hunter_pet():
                         "race": 1,
                         "class": 3,
                         "level": 85,
-                        "glyphs": [1, 2, 3],
+                        "glyphs": [42909, 42902, 42915],
                         "pet": {"id_offset": 7, "entry": 8959, "modelid": 4124, "created_by_spell": 0, "name": "Testwolf", "level": 85, "slot": 0, "active": 1, "spells": [2649, 17253]},
                     }
                 ],
@@ -7161,6 +7169,20 @@ def test_validation_provisioning_maps_glyph_items_to_glyph_properties():
 
     assert glyph_map[42739] == 316
     assert normalized_glyphs({"glyphs": [42739, 42743, 42753]}, glyph_map) == [316, 320, 330]
+
+
+def test_holy_priest_manifest_is_legal_and_drives_talents_and_glyph_slots():
+    config = json.loads(Path("experiments/configs/validation_provisioning_cata_001.json").read_text(encoding="utf-8"))
+    priest = next(bot for scenario in config["scenarios"] for bot in scenario["bots"] if bot["class_spec"] == "holy_priest")
+
+    validate_talent_manifest(priest)
+    assert len(bot_talent_spell_ids(priest)) == 23
+    assert sum({15020: 2, 33160: 3, 18533: 3, 19236: 1, 88690: 2, 15362: 2, 63542: 2, 34859: 2, 724: 1, 81625: 2, 95649: 1, 20711: 1, 63733: 2, 64129: 2, 14751: 1, 88627: 1, 33145: 2, 47560: 3, 34861: 1, 47788: 1, 14768: 2, 47588: 3, 14520: 1}.values()) == 41
+    assert set(priest["primary_tree_spells"]) == {88625, 87336, 95861, 33167}
+    assert {586, 34433, 64843, 64901}.issubset(set(bot_spell_ids(priest)))
+    assert {14751, 34861, 47788}.isdisjoint(set(bot_spell_ids(priest)))
+    assert normalized_glyph_slots(priest) == [251, 0, 0, 0, 0, 0, 264, 709, 0]
+    assert {251: 0, 264: 2, 709: 2}.items() <= glyph_property_type_map().items()
 
 
 def test_validation_provisioning_strips_socket_gem_enchantments_for_runtime_load():
@@ -7188,7 +7210,7 @@ def test_validation_provisioning_runtime_gear_verification_fails_missing_hunter_
     ] + [{"slot": 15, "item_id": 5000, "inventory_type": 17, "durability": 100}, {"slot": 17, "item_id": 6000, "inventory_type": 26, "durability": 100}]
     config = {"scenarios": [{"id": "stonecore_5n", "bots": [{"account": "A", "name": "Hunter", "class": 3, "glyphs": [1, 2, 3], "equipment": equipment}]}]}
 
-    monkeypatch.setattr("tools.bot_ml.validate_validation_provisioning.fetch_columns", lambda _url, table: {"id", "username"} if table == "account" else {"guid", "account", "name", "slot", "race", "class", "gender", "level", "xp", "money", "position_x", "position_y", "position_z", "map", "orientation", "taximask", "online", "cinematic", "totaltime", "leveltime", "logout_time", "health", "power1", "talentGroupsCount", "activeTalentGroup", "equipmentCache"} if table == "characters" else {"guid", "bag", "slot", "item", "itemEntry", "durability", "owner_guid", "creatorGuid", "giftCreatorGuid", "count", "duration", "charges", "flags", "enchantments", "randomPropertyType", "randomPropertyId", "creationTime", "text", "role", "class_spec", "enabled", "in_use", "experiment_tags", "notes", "talentGroup", "glyph1", "glyph2", "glyph3", "glyph4", "glyph5", "glyph6", "glyph7", "glyph8", "glyph9", "skill", "value", "max"})
+    monkeypatch.setattr("tools.bot_ml.validate_validation_provisioning.fetch_columns", lambda _url, table: {"id", "username"} if table == "account" else {"guid", "account", "name", "slot", "race", "class", "gender", "level", "xp", "money", "position_x", "position_y", "position_z", "map", "orientation", "taximask", "online", "cinematic", "totaltime", "leveltime", "logout_time", "health", "power1", "talentGroupsCount", "activeTalentGroup", "talentTree", "equipmentCache"} if table == "characters" else {"guid", "bag", "slot", "item", "itemEntry", "durability", "owner_guid", "creatorGuid", "giftCreatorGuid", "count", "duration", "charges", "flags", "enchantments", "randomPropertyType", "randomPropertyId", "creationTime", "text", "role", "class_spec", "enabled", "in_use", "experiment_tags", "notes", "talentGroup", "glyph1", "glyph2", "glyph3", "glyph4", "glyph5", "glyph6", "glyph7", "glyph8", "glyph9", "skill", "value", "max", "spell"})
     monkeypatch.setattr("tools.bot_ml.validate_validation_provisioning.fetch_existing_values", lambda _url, _table, _column, values: set(values))
     monkeypatch.setattr(
         "tools.bot_ml.validate_validation_provisioning.fetch_runtime_gear",
@@ -7212,7 +7234,7 @@ def test_validation_provisioning_runtime_gear_verification_fails_stale_cache_and
     equipment = [{"slot": slot, "item_id": 7000 + slot, "inventory_type": 1, "durability": 100} for slot in slots]
     config = {"scenarios": [{"id": "stonecore_5n", "bots": [{"account": "A", "name": "Mage", "class": 8, "glyphs": [42739, 42743, 42753], "equipment": equipment}]}]}
 
-    monkeypatch.setattr("tools.bot_ml.validate_validation_provisioning.fetch_columns", lambda _url, table: {"id", "username"} if table == "account" else {"guid", "account", "name", "slot", "race", "class", "gender", "level", "xp", "money", "position_x", "position_y", "position_z", "map", "orientation", "taximask", "online", "cinematic", "totaltime", "leveltime", "logout_time", "health", "power1", "talentGroupsCount", "activeTalentGroup", "equipmentCache"} if table == "characters" else {"guid", "bag", "slot", "item", "itemEntry", "durability", "owner_guid", "creatorGuid", "giftCreatorGuid", "count", "duration", "charges", "flags", "enchantments", "randomPropertyType", "randomPropertyId", "creationTime", "text", "role", "class_spec", "enabled", "in_use", "experiment_tags", "notes", "talentGroup", "glyph1", "glyph2", "glyph3", "glyph4", "glyph5", "glyph6", "glyph7", "glyph8", "glyph9", "skill", "value", "max"})
+    monkeypatch.setattr("tools.bot_ml.validate_validation_provisioning.fetch_columns", lambda _url, table: {"id", "username"} if table == "account" else {"guid", "account", "name", "slot", "race", "class", "gender", "level", "xp", "money", "position_x", "position_y", "position_z", "map", "orientation", "taximask", "online", "cinematic", "totaltime", "leveltime", "logout_time", "health", "power1", "talentGroupsCount", "activeTalentGroup", "talentTree", "equipmentCache"} if table == "characters" else {"guid", "bag", "slot", "item", "itemEntry", "durability", "owner_guid", "creatorGuid", "giftCreatorGuid", "count", "duration", "charges", "flags", "enchantments", "randomPropertyType", "randomPropertyId", "creationTime", "text", "role", "class_spec", "enabled", "in_use", "experiment_tags", "notes", "talentGroup", "glyph1", "glyph2", "glyph3", "glyph4", "glyph5", "glyph6", "glyph7", "glyph8", "glyph9", "skill", "value", "max", "spell"})
     monkeypatch.setattr("tools.bot_ml.validate_validation_provisioning.fetch_existing_values", lambda _url, _table, _column, values: set(values))
     monkeypatch.setattr(
         "tools.bot_ml.validate_validation_provisioning.fetch_runtime_gear",
@@ -7279,11 +7301,12 @@ def test_validation_provisioning_database_preflight_reports_missing_accounts(tmp
                 "account": {"id", "username"},
             },
             {
-                "characters": {"guid", "account", "name", "slot", "race", "class", "gender", "level", "xp", "money", "position_x", "position_y", "position_z", "map", "orientation", "taximask", "online", "cinematic", "totaltime", "leveltime", "logout_time", "health", "power1", "talentGroupsCount", "activeTalentGroup", "equipmentCache"},
+                "characters": {"guid", "account", "name", "slot", "race", "class", "gender", "level", "xp", "money", "position_x", "position_y", "position_z", "map", "orientation", "taximask", "online", "cinematic", "totaltime", "leveltime", "logout_time", "health", "power1", "talentGroupsCount", "activeTalentGroup", "talentTree", "equipmentCache"},
                 "item_instance": {"guid", "itemEntry", "owner_guid", "creatorGuid", "giftCreatorGuid", "count", "duration", "charges", "flags", "enchantments", "randomPropertyType", "randomPropertyId", "durability", "creationTime", "text"},
                 "character_inventory": {"guid", "bag", "slot", "item"},
                 "character_bot_pool": {"guid", "role", "class_spec", "enabled", "in_use", "experiment_tags", "notes"},
                 "character_glyphs": {"guid", "talentGroup", "glyph1", "glyph2", "glyph3", "glyph4", "glyph5", "glyph6", "glyph7", "glyph8", "glyph9"},
+                "character_talent": {"guid", "spell", "talentGroup"},
                 "character_skills": {"guid", "skill", "value", "max"},
             },
         ]:
