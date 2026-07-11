@@ -370,8 +370,10 @@ def test_validation_route_readiness_buffs_party_and_hunter_pet_without_fallbacks
     assert "TryReconcileHunterPetDataFromDB" not in mgr
     assert "TrySummonConfiguredHunterPet" not in mgr
     assert "bot->SummonPet(petData->Slot" not in mgr
-    assert "TryCastFriendlySpell(bot, bot, 883)" not in readiness
-    assert "hunter_pet_load_failed:" in readiness
+    assert "static uint32 const callPetSpells[] = { 883, 83242, 83243, 83244, 83245 };" in readiness
+    assert "bot->GetPlayerPetDataBySlot(slot)" in readiness
+    assert "validation_route_readiness_call_pet" in readiness
+    assert "hunter_pet_call_failed:" in readiness
     assert "hunter_pet_missing" in readiness
     assert "hunter_pet_dead" in readiness
     assert "buff_cast_failed:\" << readyReason << \":spell=\" << spellId << \":target=\"" in readiness

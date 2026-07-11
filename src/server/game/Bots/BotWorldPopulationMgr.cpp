@@ -3596,6 +3596,10 @@ bool BotWorldPopulationMgr::TryResolveBotBlocker(WorldBotState& state, Player* b
         resolved = true;
     else if (reason.rfind("hunter_pet_load_failed:", 0) == 0 && resolver == "hunter_pet_ready")
         resolved = true;
+    else if (reason.rfind("hunter_pet_call_failed:", 0) == 0 && resolver == "hunter_pet_ready")
+        resolved = true;
+    else if (reason.rfind("hunter:call_pet:", 0) == 0 && resolver == "hunter_pet_ready")
+        resolved = true;
     else if (reason == "hunter_pet_missing" && resolver == "hunter_pet_ready")
         resolved = true;
     else if (reason == "hunter_pet_dead" && resolver == "hunter_pet_ready")
@@ -11997,15 +12001,48 @@ bool BotWorldPopulationMgr::TryValidationRouteReadiness(WorldBotState& state, Pl
         case CLASS_HUNTER:
             if (!bot->GetPet())
             {
+                static uint32 const callPetSpells[] = { 883, 83242, 83243, 83244, 83245 };
                 PlayerPetData const* petData = bot->GetPlayerPetDataCurrent();
-                std::ostringstream missingReason;
-                missingReason << "hunter_pet_load_failed:" << (petData ? petData->PetId : 0);
-                state.LastPetReadinessAction = petData ? missingReason.str() : "hunter_pet_missing";
-                if (petData)
+                uint8 petSlot = PET_SLOT_FIRST_ACTIVE_SLOT;
+                if (!petData)
+                    for (uint8 slot = PET_SLOT_FIRST_ACTIVE_SLOT; slot <= PET_SLOT_LAST_ACTIVE_SLOT; ++slot)
+                        if (PlayerPetData const* stored = bot->GetPlayerPetDataBySlot(slot); stored && stored->Type == HUNTER_PET && stored->PetId && stored->CreatureId)
+                        {
+                            petData = stored;
+                            petSlot = slot;
+                            break;
+                        }
+                else
+                    petSlot = petData->Slot;
+
+                if (petData && petSlot <= PET_SLOT_LAST_ACTIVE_SLOT)
                 {
                     state.LastPetReadinessPetId = petData->PetId;
                     state.LastPetReadinessPetEntry = petData->CreatureId;
+                    std::string attemptKey = "hunter:call_pet:" + std::to_string(petSlot);
+                    uint32 callPetSpell = callPetSpells[petSlot - PET_SLOT_FIRST_ACTIVE_SLOT];
+                    if (!canAttempt(attemptKey))
+                        return true;
+                    std::string castFailureReason;
+                    if (bot->HasSpell(callPetSpell) && TryCastFriendlySpell(bot, bot, callPetSpell, &castFailureReason))
+                    {
+                        result.Action = "validation_route_readiness_call_pet";
+                        result.SpellId = callPetSpell;
+                        result.Target = bot;
+                        state.LastPetReadinessAction = attemptKey;
+                        state.ReadinessRetryUntilMs[attemptKey] = nowMs + 3000;
+                        RecordEvent(state, bot, "validation_route_readiness", bot, attemptKey.c_str(), "{}", "{}", 0.0f, petData->CreatureId, callPetSpell);
+                        return true;
+                    }
+                    std::ostringstream failedReason;
+                    failedReason << "hunter_pet_call_failed:" << petData->PetId << ":entry=" << petData->CreatureId << ":slot=" << uint32(petSlot) << ":spell=" << callPetSpell << ":reason=" << (castFailureReason.empty() ? "spell_unknown" : castFailureReason);
+                    state.LastPetReadinessAction = failedReason.str();
+                    deferAttempt(attemptKey, state.LastPetReadinessAction.c_str());
+                    MarkBotBlocked(state, bot, state.LastPetReadinessAction.c_str());
+                    return true;
                 }
+
+                state.LastPetReadinessAction = "hunter_pet_missing";
                 MarkBotBlocked(state, bot, state.LastPetReadinessAction.c_str());
                 return true;
             }
