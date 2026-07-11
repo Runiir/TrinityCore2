@@ -1949,7 +1949,29 @@ def test_trash_terminal_uses_current_generation_truth_after_metric_restart():
         assert forbidden_filter not in live_scan
     for blocker_field in ["guid", "entry", "distance", "alive", "attackable", "evade", "path", "member"]:
         assert f'\\\"{blocker_field}\\\"' in terminal_block
-    assert '"dynamic_pack_members_live_or_unobserved"' in terminal_block
+    for hold_field in [
+        "pack_has_live_mobs",
+        "party_has_active_combat",
+        "full_cohort_at_endpoint",
+        "quiet_elapsed_ms",
+        "quiet_remaining_ms",
+    ]:
+        assert f'\\\"{hold_field}\\\"' in terminal_block
+    for hold_reason in [
+        "dynamic_pack_members_live_or_unobserved",
+        "trash_cluster_party_combat_active",
+        "trash_cluster_cohort_not_at_endpoint",
+        "trash_cluster_terminal_mode_required",
+        "trash_cluster_clear_stability_pending",
+    ]:
+        assert f'"{hold_reason}"' in terminal_block
+    assert_ordered(
+        terminal_block,
+        "if (packHasLiveMobs)",
+        'raw << "{\\\"guid\\\":"',
+        "else",
+        'raw << "null";',
+    )
 
 
 def test_clip_capture_smoke_persists_clip_row_with_pre_and_post_frames():

@@ -10401,6 +10401,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 clearCandidateSinceMs = 0;
             else if (!clearCandidateSinceMs)
                 clearCandidateSinceMs = nowMs;
+            uint64 quietElapsedMs = clearCandidateSinceMs ? nowMs - clearCandidateSinceMs : 0;
+            uint64 quietRemainingMs = quietElapsedMs >= 2000 ? 0 : 2000 - quietElapsedMs;
 
             if (_config.ValidationRouteAdvanceMode == "terminal"
                 && (discoveryLeg ? _validationRouteCompletedPackCount > 0 : _validationRoutePackObservedEngagement)
@@ -10422,19 +10424,34 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             }
             else
             {
+                char const* holdReason = packHasLiveMobs ? "dynamic_pack_members_live_or_unobserved"
+                    : partyHasActiveCombatUnit ? "trash_cluster_party_combat_active"
+                    : !fullCohortAtEndpoint ? "trash_cluster_cohort_not_at_endpoint"
+                    : _config.ValidationRouteAdvanceMode != "terminal" ? "trash_cluster_terminal_mode_required"
+                    : "trash_cluster_clear_stability_pending";
                 std::ostringstream raw;
                 raw << "{\"base\":" << BuildRawJson(bot, nullptr)
-                    << ",\"terminal_blocker\":{\"guid\":" << trashClusterTerminalBlocker.Guid.GetCounter()
-                    << ",\"entry\":" << trashClusterTerminalBlocker.Entry
-                    << ",\"distance\":" << trashClusterTerminalBlocker.Distance
-                    << ",\"observed\":" << (trashClusterTerminalBlocker.Observed ? "true" : "false")
-                    << ",\"alive\":" << (trashClusterTerminalBlocker.Alive ? "true" : "false")
-                    << ",\"attackable\":" << (trashClusterTerminalBlocker.Attackable ? "true" : "false")
-                    << ",\"evade\":" << (trashClusterTerminalBlocker.Evade ? "true" : "false")
-                    << ",\"path\":" << (trashClusterTerminalBlocker.Path ? "true" : "false")
-                    << ",\"member\":" << (trashClusterTerminalBlocker.Member ? "true" : "false") << "}}";
+                    << ",\"terminal_hold\":{\"pack_has_live_mobs\":" << (packHasLiveMobs ? "true" : "false")
+                    << ",\"party_has_active_combat\":" << (partyHasActiveCombatUnit ? "true" : "false")
+                    << ",\"full_cohort_at_endpoint\":" << (fullCohortAtEndpoint ? "true" : "false")
+                    << ",\"quiet_elapsed_ms\":" << quietElapsedMs
+                    << ",\"quiet_remaining_ms\":" << quietRemainingMs << "}"
+                    << ",\"terminal_blocker\":";
+                if (packHasLiveMobs)
+                    raw << "{\"guid\":" << trashClusterTerminalBlocker.Guid.GetCounter()
+                        << ",\"entry\":" << trashClusterTerminalBlocker.Entry
+                        << ",\"distance\":" << trashClusterTerminalBlocker.Distance
+                        << ",\"observed\":" << (trashClusterTerminalBlocker.Observed ? "true" : "false")
+                        << ",\"alive\":" << (trashClusterTerminalBlocker.Alive ? "true" : "false")
+                        << ",\"attackable\":" << (trashClusterTerminalBlocker.Attackable ? "true" : "false")
+                        << ",\"evade\":" << (trashClusterTerminalBlocker.Evade ? "true" : "false")
+                        << ",\"path\":" << (trashClusterTerminalBlocker.Path ? "true" : "false")
+                        << ",\"member\":" << (trashClusterTerminalBlocker.Member ? "true" : "false") << "}";
+                else
+                    raw << "null";
+                raw << "}";
                 std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_pack_hold", &power, stage, activity);
-                RecordEvent(state, bot, "validation_route_recovery", nullptr, "dynamic_pack_members_live_or_unobserved", raw.str().c_str(), semantic.c_str(), float(_validationRoutePackMemberGuids.size()), uint32(_validationRoutePackDeathGuids.size()));
+                RecordEvent(state, bot, "validation_route_recovery", nullptr, holdReason, raw.str().c_str(), semantic.c_str(), float(_validationRoutePackMemberGuids.size()), uint32(_validationRoutePackDeathGuids.size()));
             }
             return true;
         }
