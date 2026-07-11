@@ -37,7 +37,7 @@ from tools.bot_ml.build_validation_scenario_manifests import build_manifests as 
 from tools.bot_ml.build_live_scenario_reports import build_reports as build_live_scenario_reports, build_reports_from_live_reports, main as live_scenario_reports_main
 from tools.bot_ml.build_validation_run_plan import build_plan as build_validation_run_plan
 from tools.bot_ml.build_validation_run_status import build_status as build_validation_run_status
-from tools.bot_ml.run_live_bot_validation import boss_route_health_progress, bounded_console_deadline, build_bot_pool_reset_sql, command_script, live_validation_report, load_scenario_reports, load_validation_route, main as live_validation_main, parse_json_objects, parse_soap_result, read_until_console_prompt, route_segment_complete, run_worldserver, run_worldserver_completion_watchdog, split_sql_statements, trace_after, trinity_config_bool, unresolved_route_stuck_count, upsert_trinity_config, watchdog_state, write_validation_config
+from tools.bot_ml.run_live_bot_validation import boss_route_health_progress, bounded_console_deadline, build_bot_pool_reset_sql, command_script, live_validation_report, load_scenario_reports, load_validation_route, main as live_validation_main, parse_json_objects, parse_soap_result, read_until_console_prompt, route_segment_complete, run_worldserver, run_worldserver_completion_watchdog, split_sql_statements, trace_after, trinity_config_bool, unresolved_route_death_loop_count, unresolved_route_stuck_count, upsert_trinity_config, watchdog_state, write_validation_config
 from tools.bot_ml.orchestrator_daemon import codex_command, detect_rate_limit, handle_rate_limit, initial_state, run_one_cycle, sleep_until_resume
 from tools.bot_ml.generate_lane_configs import write_lane_config
 from tools.bot_ml.promote_live_validation_artifact import promote
@@ -6007,6 +6007,85 @@ def test_run037_boss_health_regression_preserves_progress_across_wipe_and_new_sp
     assert report["watchdog_state"]["semantic_progress_plateau"] is False
 
 
+def route_death_loop_entry(sequence, *, action="repeated_death", node="corborus", generation=2, bot_guid=1):
+    return {
+        "sequence": sequence,
+        "bot_guid": bot_guid,
+        "action": action,
+        "route_node_id": node,
+        "route_generation": generation,
+    }
+
+
+def test_unresolved_route_death_loop_requires_durable_progress_not_resurrection():
+    entries = []
+    for sequence in (1, 3, 5):
+        entries.extend(
+            [
+                route_death_loop_entry(sequence),
+                route_death_loop_entry(sequence + 1, action="resurrected"),
+            ]
+        )
+
+    assert unresolved_route_death_loop_count(entries) == 3
+
+
+@pytest.mark.parametrize("action", ["boss_add_killed", "mob_killed", "validation_route_pack_terminal", "validation_route_terminal", "validation_route_segment_advance"])
+def test_scoped_route_progress_resolves_repeated_death_loop(action):
+    entries = [route_death_loop_entry(sequence) for sequence in (1, 2, 3)]
+    entries.append(route_death_loop_entry(4, action=action))
+
+    assert unresolved_route_death_loop_count(entries) == 0
+
+
+def test_strict_boss_health_progress_resolves_repeated_death_loop():
+    entries = [route_death_loop_entry(sequence) for sequence in (1, 2, 3)]
+    entries += [boss_health_entry(4, 0.5), boss_health_entry(5, 0.4)]
+
+    assert unresolved_route_death_loop_count(entries) == 0
+
+
+def test_wrong_scope_and_incomparable_progress_do_not_resolve_death_loop():
+    entries = [route_death_loop_entry(sequence) for sequence in (1, 2, 3)]
+    entries.append(route_death_loop_entry(4, action="boss_add_killed", node="slabhide"))
+    timestamp_baseline = boss_health_entry(0, 0.5)
+    timestamp_progress = boss_health_entry(0, 0.4)
+    timestamp_baseline.update(timestamp_ms=10)
+    timestamp_progress.update(timestamp_ms=20)
+    entries += [timestamp_baseline, timestamp_progress]
+
+    assert unresolved_route_death_loop_count(entries) == 3
+
+
+def test_run040_resolved_historical_deaths_do_not_stop_active_boss_attempt():
+    entries = [boss_health_entry(1, 0.544041)]
+    entries += [route_death_loop_entry(sequence, action="death", bot_guid=sequence) for sequence in range(2, 6)]
+    entries += [route_death_loop_entry(sequence, action="resurrected", bot_guid=sequence - 4) for sequence in range(6, 10)]
+    entries += [boss_health_entry(10, 0.4), boss_health_entry(11, 0.2), boss_health_entry(12, 0.0462236)]
+    entries += [route_death_loop_entry(sequence, action="death", bot_guid=sequence - 12) for sequence in range(13, 18)]
+    entries.append(route_death_loop_entry(18, bot_guid=1))
+    entries += [route_death_loop_entry(sequence, action="resurrected", bot_guid=sequence - 18) for sequence in range(19, 24)]
+    for entry in entries:
+        if entry.get("route_progress"):
+            entry["action"] = "validation_route_boss_action"
+    output = "\n".join(
+        [
+            'TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":2348,"kills":23,"deaths":9}',
+            'TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"snapshot":{"decision":{"action":"validation_route_group_heal"},"movement":{"is_moving":false}}}]}',
+            "TC> " + json.dumps({"trace_schema_version": 1, "entries": entries}),
+            'TC> {"duration_minutes":8,"decisions":2348,"total_kills":23,"total_deaths":9}',
+        ]
+    )
+
+    report = live_validation_report(output)
+
+    assert report["evidence"]["unresolved_route_death_loop_events"] == 1
+    assert report["watchdog_state"]["progress_counters"]["death_loop_events"] == 1
+    assert report["watchdog_state"]["death_loop"] is False
+    assert "validation_route_death_loop" not in report["failure_labels"]
+    assert report["completion_reason"] != "machine_failure_predicate"
+
+
 def test_live_bot_validation_treats_terminal_route_no_progress_diagnosis_as_watchdog_failure():
     output = """
 TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":517,"kills":0,"quests_accepted":0,"quest_objective_progress":0}
@@ -6409,13 +6488,16 @@ def test_live_bot_validation_labels_route_death_loop():
     output = """
 TC> {"active_bots":10,"target_bots":10,"decisions":20,"deaths":12}
 TC> {"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"diagnosis":{"diagnosis_code":"dead_recovery","severity":"warning"},"snapshot":{"decision":{"action":"validation_route_hold_anchor"},"movement":{"is_moving":false,"distance_moved_since_last_decision":0}}}]}
-TC> {"trace_schema_version":1,"entries":[{"action":"validation_route_regroup"},{"action":"death"},{"action":"repeated_death"},{"action":"repeated_death"},{"action":"repeated_death"}]}
+TC> {"trace_schema_version":1,"entries":[{"sequence":1,"action":"validation_route_regroup","route_node_id":"boss","route_generation":1},{"sequence":2,"action":"death","route_node_id":"boss","route_generation":1},{"sequence":3,"action":"repeated_death","route_node_id":"boss","route_generation":1},{"sequence":4,"action":"resurrected","route_node_id":"boss","route_generation":1},{"sequence":5,"action":"repeated_death","route_node_id":"boss","route_generation":1},{"sequence":6,"action":"resurrected","route_node_id":"boss","route_generation":1},{"sequence":7,"action":"death_loop","route_node_id":"boss","route_generation":1}]}
 TC> {"duration_minutes":5,"decisions":20,"total_kills":0,"total_deaths":12}
 """
     report = live_validation_report(output)
 
     assert "validation_route_death_loop" in report["failure_labels"]
-    assert report["evidence"]["action_counts"]["repeated_death"] == 3
+    assert report["evidence"]["unresolved_route_death_loop_events"] == 3
+    assert report["watchdog_state"]["progress_counters"]["death_loop_events"] == 3
+    assert report["watchdog_state"]["death_loop"] is True
+    assert report["completion_reason"] == "death_loop_watchdog"
 
 
 def test_live_bot_validation_counts_multi_bot_trace_entries():

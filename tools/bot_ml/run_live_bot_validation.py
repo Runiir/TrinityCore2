@@ -814,7 +814,7 @@ def boss_attempt_reset(entry: dict[str, Any]) -> bool:
     return str(entry.get("action") or "") in BOSS_ATTEMPT_RESET_ACTIONS
 
 
-def boss_route_health_progress(entries: list[dict[str, Any]]) -> int:
+def boss_route_health_progress_entries(entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
     samples: list[tuple[dict[str, Any], tuple[str, int], tuple[str, int, int, int], float]] = []
     failures: list[tuple[dict[str, Any], tuple[str, int]]] = []
     for entry in entries:
@@ -874,7 +874,7 @@ def boss_route_health_progress(entries: list[dict[str, Any]]) -> int:
         if not ambiguous:
             ordered_groups.setdefault((clock, target_key, tuple(epoch)), []).append((entry, health))
 
-    progress = 0
+    progress: list[dict[str, Any]] = []
     for (clock, _target_key, _epoch), rows in ordered_groups.items():
         if clock == "timestamp":
             rows.sort(key=lambda row: (int(row[0].get("timestamp_ms") or 0), int(row[0].get("sequence") or 0)))
@@ -892,9 +892,58 @@ def boss_route_health_progress(entries: list[dict[str, Any]]) -> int:
                 best_entry, best_health = entry, health
                 continue
             if health < best_health - BOSS_HEALTH_PROGRESS_EPSILON:
-                progress += 1
+                progress.append(entry)
                 best_entry, best_health = entry, health
     return progress
+
+
+def boss_route_health_progress(entries: list[dict[str, Any]]) -> int:
+    return len(boss_route_health_progress_entries(entries))
+
+
+DEATH_LOOP_ACTIONS = {"repeated_death", "death_loop"}
+DEATH_LOOP_DURABLE_PROGRESS_ACTIONS = ROUTE_PROGRESS_ACTIONS | {
+    "boss_add_killed",
+    "validation_route_pack_complete",
+}
+
+
+def death_loop_scope(entry: dict[str, Any]) -> tuple[str, int]:
+    scope = route_scope(entry)
+    if scope != ("", 0):
+        return scope
+    route_progress = entry.get("route_progress") if isinstance(entry.get("route_progress"), dict) else {}
+    route = route_progress.get("route") if isinstance(route_progress.get("route"), dict) else {}
+    return str(route.get("node_id") or ""), int(route.get("generation") or 0)
+
+
+def unresolved_route_death_loop_count(entries: list[dict[str, Any]]) -> int:
+    progress_entries = boss_route_health_progress_entries(entries) + [
+        entry
+        for entry in entries
+        if str(entry.get("action") or "") in DEATH_LOOP_DURABLE_PROGRESS_ACTIONS
+    ]
+    unresolved_by_scope: Counter[tuple[str, int]] = Counter()
+    seen: set[tuple[Any, ...]] = set()
+    for entry in entries:
+        if str(entry.get("action") or "") not in DEATH_LOOP_ACTIONS:
+            continue
+        scope = death_loop_scope(entry)
+        if scope == ("", 0):
+            continue
+        key = (
+            scope,
+            int(entry.get("bot_guid") or 0),
+            int(entry.get("timestamp_ms") or 0),
+            int(entry.get("sequence") or 0),
+            str(entry.get("action") or ""),
+        )
+        if key in seen:
+            continue
+        seen.add(key)
+        if not any(death_loop_scope(progress) == scope and trace_after(progress, entry) for progress in progress_entries):
+            unresolved_by_scope[scope] += 1
+    return max(unresolved_by_scope.values(), default=0)
 
 
 def is_route_progress(entry: dict[str, Any], scope: tuple[str, int]) -> bool:
@@ -1393,6 +1442,7 @@ def live_evidence(
         "validation_route_manifest_complete": action_counts.get("validation_route_manifest_complete", 0),
         "validation_route_no_progress_diagnoses": route_no_progress_diagnoses,
         "validation_route_combat_progress_diagnoses": route_combat_progress_diagnoses,
+        "unresolved_route_death_loop_events": unresolved_route_death_loop_count(entries),
         "boss_engagement_actions": boss_engagement_actions,
         "trash_route_actions": trash_route_actions,
         "validation_route_prerequisite_repeats": action_counts.get("validation_route_prerequisite", 0),
@@ -1419,6 +1469,7 @@ def validation_failure_labels(
     diagnosis_count: int,
     errors: list[dict[str, str]],
     evidence: dict[str, Any],
+    max_death_loops: int = DEFAULT_MAX_DEATH_LOOPS,
 ) -> list[str]:
     labels: list[str] = []
     if timed_out:
@@ -1449,8 +1500,7 @@ def validation_failure_labels(
     unresolved_route_stuck_events = int(evidence.get("unresolved_route_stuck_events") or 0)
     action_counts = evidence.get("action_counts") if isinstance(evidence.get("action_counts"), dict) else {}
     result_counts = evidence.get("result_counts") if isinstance(evidence.get("result_counts"), dict) else {}
-    repeated_deaths = int(action_counts.get("repeated_death") or 0)
-    deaths = max(int(evidence.get("deaths") or 0), int(action_counts.get("death") or 0))
+    unresolved_death_loop_events = int(evidence.get("unresolved_route_death_loop_events") or 0)
     bot_not_loaded_diagnoses = int(evidence.get("bot_not_loaded_diagnoses") or 0)
     error_diagnoses = int(evidence.get("error_diagnoses") or 0)
     post_failure_progress = bool(evidence.get("post_failure_progress"))
@@ -1508,7 +1558,7 @@ def validation_failure_labels(
         and not recovered_by_route_progress
         and not recovered_by_active_route_combat):
         labels.append("validation_route_stuck_loop")
-    if route_actions > 0 and (repeated_deaths >= 3 or deaths >= max(8, active_bots)):
+    if route_actions > 0 and unresolved_death_loop_events >= max_death_loops:
         labels.append("validation_route_death_loop")
     if route_actions > 0 and route_no_progress_diagnoses > 0:
         labels.append("no_progress_observed")
@@ -1551,7 +1601,7 @@ def progress_counters_from_evidence(evidence: dict[str, Any]) -> dict[str, int]:
         "validation_route_no_progress_diagnoses": int(evidence.get("validation_route_no_progress_diagnoses") or 0),
         "validation_route_combat_progress_diagnoses": int(evidence.get("validation_route_combat_progress_diagnoses") or 0),
         "repeated_decisions": int(action_counts.get("repeated_decision") or action_counts.get("decision_repeated") or 0),
-        "death_loop_events": int(action_counts.get("repeated_death") or 0) + int(action_counts.get("death_loop") or 0),
+        "death_loop_events": int(evidence.get("unresolved_route_death_loop_events") or 0),
         "stuck_events": int(evidence.get("stuck_events") or 0),
         "repath_events": int(evidence.get("repath_events") or 0),
     }
@@ -1737,7 +1787,17 @@ def live_validation_report(
     trace_entries = count_trace_entries(trace)
     diagnosis_count = len(diagnosis_rows(diagnosis))
     evidence = live_evidence(status, diagnosis, trace, summary, validation_context, output)
-    failure_labels = validation_failure_labels(returncode, timed_out, active_bots, target_bots, trace_entries, diagnosis_count, errors, evidence)
+    failure_labels = validation_failure_labels(
+        returncode,
+        timed_out,
+        active_bots,
+        target_bots,
+        trace_entries,
+        diagnosis_count,
+        errors,
+        evidence,
+        max_death_loops,
+    )
     scenario_reports = scenario_reports or {}
 
     stage_rows = []
