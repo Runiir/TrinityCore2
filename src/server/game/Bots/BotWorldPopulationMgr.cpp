@@ -3209,7 +3209,7 @@ void BotWorldPopulationMgr::MarkPoiVisited(uint64 poiId) const
     CharacterDatabase.DirectPExecute("UPDATE bot_memory_pois SET visit_count = visit_count + 1, last_seen_at = NOW() WHERE id = " UI64FMTD, poiId);
 }
 
-bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, float x, float y, float z)
+bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, float x, float y, float z, bool terminalOnFailure)
 {
     if (!bot)
         return false;
@@ -3224,11 +3224,14 @@ bool BotWorldPopulationMgr::MoveBotToPoint(WorldBotState& state, Player* bot, fl
 
         if (_config.ValidationRouteEnable)
         {
-            state.ValidationRouteTerminalState = true;
-            state.ValidationRouteTerminalAtMs = NowMs();
-            state.ValidationRouteTerminalGeneration = _validationRouteGeneration;
-            state.ValidationRouteTerminalReason = state.LastPathRejectReason;
-            state.LoopRecoveryCooldownUntilMs = NowMs() + 60000;
+            if (terminalOnFailure)
+            {
+                state.ValidationRouteTerminalState = true;
+                state.ValidationRouteTerminalAtMs = NowMs();
+                state.ValidationRouteTerminalGeneration = _validationRouteGeneration;
+                state.ValidationRouteTerminalReason = state.LastPathRejectReason;
+                state.LoopRecoveryCooldownUntilMs = NowMs() + 60000;
+            }
             std::string raw = BuildRawJson(bot, nullptr);
             std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_manifest");
             RecordEvent(state, bot, "validation_route_recovery", nullptr, state.LastPathRejectReason.c_str(), raw.c_str(), semantic.c_str(), bot->GetExactDist(x, y, z), _config.ValidationRouteTargetEntry);
@@ -3307,7 +3310,7 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
         if (floorZ == INVALID_HEIGHT)
             return false;
 
-        return MoveBotToPoint(state, bot, x, y, floorZ);
+        return MoveBotToPoint(state, bot, x, y, floorZ, false);
     };
 
     std::string role = GetDungeonRole(bot);
@@ -9505,7 +9508,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             bot->CombatStop(true);
             target = nullptr;
             state.TargetGuid.Clear();
-            if (MoveBotToPoint(state, bot, routeAnchorX, routeAnchorY, routeAnchorZ))
+            if (MoveBotToPoint(state, bot, routeAnchorX, routeAnchorY, routeAnchorZ, true))
             {
                 std::string raw = BuildRawJson(bot, nullptr);
                 std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_regroup", &power, stage, activity);
@@ -9575,7 +9578,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             bot->GetMotionMaster()->MoveJump(routeAnchorX, routeAnchorY, routeAnchorZ, _config.ValidationRouteO, 18.0f, 8.0f, 0, true);
         }
         else
-            MoveBotToPoint(state, bot, routeAnchorX, routeAnchorY, routeAnchorZ);
+            MoveBotToPoint(state, bot, routeAnchorX, routeAnchorY, routeAnchorZ, true);
         RecordEvent(state, bot, "validation_route_regroup", nullptr, _config.ValidationRouteLabel.empty() ? "move_to_arrival" : _config.ValidationRouteLabel.c_str(), raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry);
         situation = "validation_route_regroup";
         action = "move_to_validation_route_anchor";
@@ -9679,20 +9682,20 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             if (profileAction.MinRange > 0.0f && targetDistance < profileAction.MinRange)
             {
                 Position away = bot->GetFirstCollisionPosition(profileAction.MinRange - targetDistance + 2.0f, target->GetAngle(bot));
-                MoveBotToPoint(state, bot, away.GetPositionX(), away.GetPositionY(), away.GetPositionZ());
-                action = "move_to_profile_min_range";
+                bool moved = MoveBotToPoint(state, bot, away.GetPositionX(), away.GetPositionY(), away.GetPositionZ());
+                action = moved ? "move_to_profile_min_range" : "hold_tactical_path_rejected";
                 situation = tankFocusSituation;
                 return true;
             }
             if (!bot->IsValidAttackTarget(target) || targetDistance > std::max(5.0f, engageRange - 1.0f) || !bot->IsWithinLOSInMap(target))
             {
-                MoveBotToProfileRange(state, bot, target, &profileAction);
-                action = "move_to_validation_route_assist_target";
+                bool moved = MoveBotToProfileRange(state, bot, target, &profileAction);
+                action = moved ? "move_to_validation_route_assist_target" : "hold_tactical_path_rejected";
                 situation = tankFocusSituation;
                 std::string raw = BuildRawJson(bot, target);
                 std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, activity);
                 RecordEvent(state, bot, tankFocusIsRouteTarget ? "validation_route_target_search" : "validation_route_prerequisite", target,
-                    tankFocusIsRouteTarget ? "assist_tank_focus" : "force_tank_focus", raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry);
+                    moved ? (tankFocusIsRouteTarget ? "assist_tank_focus" : "force_tank_focus") : "tactical_path_rejected", raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry);
                 maybeValidationPrerequisiteNoProgressAssist(target, tankFocusIsRouteTarget ? "route_target_path_no_progress" : "force_tank_focus_path_no_progress");
                 return true;
             }
@@ -9883,19 +9886,22 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (profileAction.MinRange > 0.0f && targetDistance < profileAction.MinRange)
         {
             Position away = bot->GetFirstCollisionPosition(profileAction.MinRange - targetDistance + 2.0f, target->GetAngle(bot));
-            MoveBotToPoint(state, bot, away.GetPositionX(), away.GetPositionY(), away.GetPositionZ());
-            action = "move_to_profile_min_range";
+            bool moved = MoveBotToPoint(state, bot, away.GetPositionX(), away.GetPositionY(), away.GetPositionZ());
+            action = moved ? "move_to_profile_min_range" : "hold_tactical_path_rejected";
             situation = focusSituation;
             return true;
         }
         if (!bot->IsValidAttackTarget(target) || targetDistance > std::max(5.0f, engageRange - 1.0f) || !bot->IsWithinLOSInMap(target))
         {
-            MoveBotToProfileRange(state, bot, target, &profileAction);
-            action = routeTrashFocus ? "move_to_validation_route_target" : "move_to_validation_route_assist_target";
+            bool moved = MoveBotToProfileRange(state, bot, target, &profileAction);
+            action = moved
+                ? (routeTrashFocus ? "move_to_validation_route_target" : "move_to_validation_route_assist_target")
+                : "hold_tactical_path_rejected";
             situation = focusSituation;
             std::string raw = BuildRawJson(bot, target);
             std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, activity);
-            RecordEvent(state, bot, routeTrashFocus ? "validation_route_target_search" : "validation_route_prerequisite", target, routeTrashFocus ? "approach_target" : "assist_focus", raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry);
+            RecordEvent(state, bot, routeTrashFocus ? "validation_route_target_search" : "validation_route_prerequisite", target,
+                moved ? (routeTrashFocus ? "approach_target" : "assist_focus") : "tactical_path_rejected", raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry);
             maybeValidationPrerequisiteNoProgressAssist(target, routeTrashFocus ? "route_target_path_no_progress" : "assist_focus_path_no_progress");
             return true;
         }
@@ -10028,19 +10034,22 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (profileAction.MinRange > 0.0f && targetDistance < profileAction.MinRange)
         {
             Position away = bot->GetFirstCollisionPosition(profileAction.MinRange - targetDistance + 2.0f, target->GetAngle(bot));
-            MoveBotToPoint(state, bot, away.GetPositionX(), away.GetPositionY(), away.GetPositionZ());
-            action = "move_to_profile_min_range";
+            bool moved = MoveBotToPoint(state, bot, away.GetPositionX(), away.GetPositionY(), away.GetPositionZ());
+            action = moved ? "move_to_profile_min_range" : "hold_tactical_path_rejected";
             situation = routeBossTarget ? situation : "validation_route_prerequisite";
             return true;
         }
         if (targetDistance > std::max(5.0f, engageRange - 1.0f) || !bot->IsWithinLOSInMap(target))
         {
-            MoveBotToProfileRange(state, bot, target, &profileAction);
-            action = routeBossTarget ? "move_to_validation_route_target" : "move_to_validation_route_prerequisite";
+            bool moved = MoveBotToProfileRange(state, bot, target, &profileAction);
+            action = moved
+                ? (routeBossTarget ? "move_to_validation_route_target" : "move_to_validation_route_prerequisite")
+                : "hold_tactical_path_rejected";
             situation = routeBossTarget ? situation : "validation_route_prerequisite";
             std::string raw = BuildRawJson(bot, target);
             std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, activity);
-            RecordEvent(state, bot, routeBossTarget ? "validation_route_target_search" : "validation_route_prerequisite", target, "approach_target", raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry);
+            RecordEvent(state, bot, routeBossTarget ? "validation_route_target_search" : "validation_route_prerequisite", target,
+                moved ? "approach_target" : "tactical_path_rejected", raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry);
             if (!routeBossTarget)
                 maybeValidationPrerequisiteNoProgressAssist(target, "current_combat_path_no_progress");
             return true;
@@ -10092,7 +10101,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
     if (routeDistance > routeArrivalRadius && !preAnchorTrashTarget)
     {
-        MoveBotToPoint(state, bot, routeAnchorX, routeAnchorY, routeAnchorZ);
+        MoveBotToPoint(state, bot, routeAnchorX, routeAnchorY, routeAnchorZ, true);
         std::string raw = BuildRawJson(bot, nullptr);
         std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route", &power, stage, activity);
         RecordEvent(state, bot, "validation_route_move", nullptr, routeAnchorReason == "validation_route" ? _config.ValidationRouteLabel.c_str() : routeAnchorReason.c_str(), raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry);
@@ -10322,11 +10331,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
             if (prerequisiteDistance > 35.0f || !bot->IsWithinLOSInMap(target))
             {
-                MoveBotToProfileRange(state, bot, target);
-                RecordEvent(state, bot, "validation_route_prerequisite", target, "move_to_blocker", raw.c_str(), semantic.c_str(), prerequisiteDistance, _config.ValidationRouteTargetEntry);
+                bool moved = MoveBotToProfileRange(state, bot, target);
+                RecordEvent(state, bot, "validation_route_prerequisite", target, moved ? "move_to_blocker" : "tactical_path_rejected", raw.c_str(), semantic.c_str(), prerequisiteDistance, _config.ValidationRouteTargetEntry);
                 maybeValidationPrerequisiteNoProgressAssist(target, "blocker_path_no_progress");
                 situation = "validation_route_prerequisite";
-                action = "move_to_validation_route_prerequisite";
+                action = moved ? "move_to_validation_route_prerequisite" : "hold_tactical_path_rejected";
                 return true;
             }
 
@@ -10337,18 +10346,18 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             if (profileAction.MinRange > 0.0f && targetDistance < profileAction.MinRange)
             {
                 Position away = bot->GetFirstCollisionPosition(profileAction.MinRange - targetDistance + 2.0f, target->GetAngle(bot));
-                MoveBotToPoint(state, bot, away.GetPositionX(), away.GetPositionY(), away.GetPositionZ());
-                action = "move_to_profile_min_range";
+                bool moved = MoveBotToPoint(state, bot, away.GetPositionX(), away.GetPositionY(), away.GetPositionZ());
+                action = moved ? "move_to_profile_min_range" : "hold_tactical_path_rejected";
                 situation = "validation_route_prerequisite";
                 return true;
             }
             if (targetDistance > std::max(5.0f, engageRange - 1.0f) || !bot->IsWithinLOSInMap(target))
             {
-                MoveBotToProfileRange(state, bot, target, &profileAction);
-                RecordEvent(state, bot, "validation_route_prerequisite", target, "approach_target", raw.c_str(), semantic.c_str(), prerequisiteDistance, _config.ValidationRouteTargetEntry);
+                bool moved = MoveBotToProfileRange(state, bot, target, &profileAction);
+                RecordEvent(state, bot, "validation_route_prerequisite", target, moved ? "approach_target" : "tactical_path_rejected", raw.c_str(), semantic.c_str(), prerequisiteDistance, _config.ValidationRouteTargetEntry);
                 maybeValidationPrerequisiteNoProgressAssist(target, "blocker_path_no_progress");
                 situation = "validation_route_prerequisite";
-                action = "move_to_validation_route_prerequisite";
+                action = moved ? "move_to_validation_route_prerequisite" : "hold_tactical_path_rejected";
                 return true;
             }
 
@@ -10524,17 +10533,17 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     if (profileAction.MinRange > 0.0f && targetDistance < profileAction.MinRange)
     {
         Position away = bot->GetFirstCollisionPosition(profileAction.MinRange - targetDistance + 2.0f, target->GetAngle(bot));
-        MoveBotToPoint(state, bot, away.GetPositionX(), away.GetPositionY(), away.GetPositionZ());
-        action = "move_to_profile_min_range";
+        bool moved = MoveBotToPoint(state, bot, away.GetPositionX(), away.GetPositionY(), away.GetPositionZ());
+        action = moved ? "move_to_profile_min_range" : "hold_tactical_path_rejected";
         return true;
     }
     if (targetDistance > std::max(5.0f, engageRange - 1.0f) || !bot->IsWithinLOSInMap(target))
     {
-        MoveBotToProfileRange(state, bot, target, &profileAction);
-        action = "move_to_validation_route_target";
+        bool moved = MoveBotToProfileRange(state, bot, target, &profileAction);
+        action = moved ? "move_to_validation_route_target" : "hold_tactical_path_rejected";
         std::string raw = BuildRawJson(bot, target);
         std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, activity);
-        RecordEvent(state, bot, "validation_route_target_search", target, "approach_target", raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry);
+        RecordEvent(state, bot, "validation_route_target_search", target, moved ? "approach_target" : "tactical_path_rejected", raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry);
         if (_config.ValidationRouteKind != "boss")
             maybeValidationPrerequisiteNoProgressAssist(target, "route_target_path_no_progress");
         return true;

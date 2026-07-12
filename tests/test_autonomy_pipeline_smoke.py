@@ -1147,7 +1147,7 @@ def test_quest_first_portfolio_routing_surface():
         validation_route_objective,
         'if (std::string(GetDungeonRole(bot)) != "tank"\n        && (_config.ValidationRouteKind != "boss" || routeDistance <= routeArrivalRadius))',
         "Unit* preAnchorTrashTarget = nullptr;",
-        "MoveBotToPoint(state, bot, routeAnchorX, routeAnchorY, routeAnchorZ);",
+        "MoveBotToPoint(state, bot, routeAnchorX, routeAnchorY, routeAnchorZ, true);",
     )
     assert_ordered(
         function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteObjective"),
@@ -1295,6 +1295,26 @@ def test_quest_first_portfolio_routing_surface():
         assert field in debug
 
 
+def test_move_bot_to_point_only_terminalizes_strategic_route_failures():
+    mgr = read(BOT_MGR)
+    move_bot_to_point = function_body(mgr, "bool BotWorldPopulationMgr::MoveBotToPoint")
+    route_objective = function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteObjective")
+
+    assert "bool terminalOnFailure" in mgr
+    assert_ordered(
+        move_bot_to_point,
+        "if (_config.ValidationRouteEnable)",
+        "if (terminalOnFailure)",
+        "state.ValidationRouteTerminalState = true;",
+        'RecordEvent(state, bot, "validation_route_recovery"',
+    )
+    assert route_objective.count("MoveBotToPoint(state, bot, routeAnchorX, routeAnchorY, routeAnchorZ, true)") == 3
+    assert "MoveBotToProfileRange(state, bot, target, &profileAction)" in route_objective
+    assert "hold_tactical_path_rejected" in route_objective
+    assert 'moved ? "approach_target" : "tactical_path_rejected"' in route_objective
+    assert "MoveBotToPoint(state, bot, away.GetPositionX(), away.GetPositionY(), away.GetPositionZ())" in route_objective
+
+
 def test_move_bot_to_point_keeps_matching_active_motion():
     move_bot_to_point = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::MoveBotToPoint")
     assert "constexpr float activeDestinationEpsilon = 0.1f;" in move_bot_to_point
@@ -1315,7 +1335,7 @@ def test_move_bot_to_profile_range_projects_approaches_to_terrain():
     assert "Map* map = bot->GetMap();" in profile_range
     assert "map->GetHeight(bot->GetPhaseShift(), x, y, z + 2.0f, true, 64.0f)" in profile_range
     assert "if (floorZ == INVALID_HEIGHT)\n            return false;" in profile_range
-    assert "return MoveBotToPoint(state, bot, x, y, floorZ);" in profile_range
+    assert "return MoveBotToPoint(state, bot, x, y, floorZ, false);" in profile_range
     assert "return moveToTerrainProjectedPoint(reference->GetPositionX(), reference->GetPositionY(), reference->GetPositionZ());" in profile_range
     assert "return moveToTerrainProjectedPoint(rangedPosition.GetPositionX(), rangedPosition.GetPositionY(), rangedPosition.GetPositionZ());" in profile_range
 

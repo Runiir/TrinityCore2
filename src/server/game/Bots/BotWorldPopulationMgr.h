@@ -1017,7 +1017,7 @@ private:
     bool IsFailedPathRecently(uint32 botGuid, uint32 mapId, float fromX, float fromY, float toX, float toY) const;
     bool FindMemoryPoiTarget(Player* bot, float& x, float& y, float& z, uint64& poiId) const;
     void MarkPoiVisited(uint64 poiId) const;
-    bool MoveBotToPoint(WorldBotState& state, Player* bot, float x, float y, float z);
+    bool MoveBotToPoint(WorldBotState& state, Player* bot, float x, float y, float z, bool terminalOnFailure = false);
     BotDeathRecoveryPolicy BuildDeathRecoveryPolicy() const;
     DeathRecoveryResult RecoverDeadBot(WorldBotState& state, Player* bot);
     bool TryCorpseRecovery(Player* bot, std::string& result) const;
