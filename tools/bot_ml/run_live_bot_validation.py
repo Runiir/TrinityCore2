@@ -583,7 +583,16 @@ def parse_json_objects(output: str) -> list[dict[str, Any]]:
 
 
 def classify_payloads(payloads: list[dict[str, Any]]) -> dict[str, Any]:
-    status = next((row for row in reversed(payloads) if row.get("action") in {"botexp_status", "botauto_status"} or {"active", "active_bots", "target_bots"} & set(row)), {})
+    status = next(
+        (
+            row
+            for row in reversed(payloads)
+            if row.get("action") in {"botexp_status", "botauto_status"}
+            or "active" in row
+            or ({"active_bots", "target_bots"} <= set(row))
+        ),
+        {},
+    )
     diagnosis = next((row for row in reversed(payloads) if row.get("diagnosis_schema_version") or row.get("diagnoses") or row.get("diagnosis")), {})
     trace_payloads = [row for row in payloads if row.get("trace_schema_version") or row.get("entries")]
     trace = combined_trace_payload(trace_payloads)
