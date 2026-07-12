@@ -8983,9 +8983,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     {
         bool mechanicProfileRequiresMovement = _config.ValidationRouteMechanicProfile.find("movement_check") != std::string::npos
             || _config.ValidationRouteMechanicProfile.find("ground_danger") != std::string::npos;
-        bool profileAllowsCastMovement = mechanicProfileRequiresMovement
-            && _config.ValidationRouteMechanicProfile.find("movement_check") != std::string::npos
-            && _config.ValidationRouteMechanicProfile.find("ground_danger") == std::string::npos;
         if (!bot
             || !bot->IsAlive()
             || bot->IsFalling())
@@ -9009,7 +9006,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 castSpell = nullptr;
                 return false;
             }
-            if (!SpellLooksLikeGroundDanger(castSpell) && !profileAllowsCastMovement)
+            if (!SpellLooksLikeGroundDanger(castSpell))
             {
                 castSpell = nullptr;
                 return false;

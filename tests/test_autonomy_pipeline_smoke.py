@@ -1631,6 +1631,14 @@ def test_botauto_runtime_profiles_surface():
     assert '\\"validation_route\\"' in status
 
 
+def test_validation_route_movement_check_requires_classified_ground_danger():
+    route = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
+
+    assert "profileAllowsCastMovement" not in route
+    assert "if (!SpellLooksLikeGroundDanger(castSpell))" in route
+    assert "if (!castSpell || !castSpell->CalcCastTime(candidate->getLevel()))" in route
+
+
 def test_validation_route_cleared_trash_regroups_to_terminal_endpoint():
     mgr = read(BOT_MGR)
     route = function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteObjective")
