@@ -10,6 +10,7 @@ from __future__ import annotations
 import contextlib
 import fcntl
 import hashlib
+import json
 import re
 import subprocess
 from dataclasses import dataclass
@@ -46,6 +47,7 @@ class LiveValidationSession:
     git_head: str
     binary_sha256: str
     config_sha256: str
+    input_sha256: str
     repository_fingerprint: str
     environment_fingerprint: str
     fingerprint: str
@@ -62,6 +64,7 @@ class LiveValidationSession:
             "git_head": self.git_head,
             "binary_sha256": self.binary_sha256,
             "config_sha256": self.config_sha256,
+            "input_sha256": self.input_sha256,
         }
 
 
@@ -86,7 +89,10 @@ class SessionAction:
 
 
 def _default_runner(command: Sequence[str]) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(list(command), check=False, capture_output=True, text=True)
+    try:
+        return subprocess.run(list(command), check=False, capture_output=True, text=True, timeout=60)
+    except subprocess.TimeoutExpired as exc:
+        raise LiveValidationSessionError(f"session lifecycle command timed out: {command[0]}") from exc
 
 
 def sha256_text(value: str) -> str:
@@ -131,6 +137,7 @@ def build_session(
     binary: Path,
     config: Path,
     *,
+    fingerprint_paths: Sequence[Path] = (),
     command_runner: CommandRunner = _default_runner,
 ) -> LiveValidationSession:
     """Build a session identity from immutable validation inputs.
@@ -146,12 +153,14 @@ def build_session(
     head = git_head(root, command_runner=command_runner)
     binary_digest = sha256_file(resolved_binary)
     config_digest = sha256_file(resolved_config)
+    input_digest = sha256_text("\0".join(sha256_file(path.resolve()) for path in fingerprint_paths))
     repository_fingerprint = sha256_text(str(root))
     environment_fingerprint = sha256_text(normalized_environment)
     fingerprint = sha256_text(
-        "\0".join((repository_fingerprint, environment_fingerprint, head, binary_digest, config_digest))
+        "\0".join((repository_fingerprint, environment_fingerprint, head, binary_digest, config_digest, input_digest))
     )
-    unit_fragment = _SAFE_UNIT.sub("-", f"{_UNIT_PREFIX}{fingerprint[:24]}").strip("-")
+    unit_key = sha256_text(f"{repository_fingerprint}\0{environment_fingerprint}")
+    unit_fragment = _SAFE_UNIT.sub("-", f"{_UNIT_PREFIX}{unit_key[:24]}").strip("-")
     return LiveValidationSession(
         repository=root,
         environment=normalized_environment,
@@ -160,6 +169,7 @@ def build_session(
         git_head=head,
         binary_sha256=binary_digest,
         config_sha256=config_digest,
+        input_sha256=input_digest,
         repository_fingerprint=repository_fingerprint,
         environment_fingerprint=environment_fingerprint,
         fingerprint=fingerprint,
@@ -214,10 +224,32 @@ def dvc_repository_lock(repository: Path) -> Iterator[Path]:
         yield lock_path
 
 
+def session_metadata_path(session: LiveValidationSession) -> Path:
+    return session.repository / ".dvc" / "tmp" / "locks" / f"{session.unit_name}.json"
+
+
+def write_session_metadata(session: LiveValidationSession) -> None:
+    path = session_metadata_path(session)
+    path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
+    path.write_text(json.dumps(session.metadata(), sort_keys=True) + "\n", encoding="utf-8")
+
+
+def matching_session_metadata(session: LiveValidationSession) -> bool:
+    path = session_metadata_path(session)
+    if not path.is_file():
+        return False
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return False
+    return payload.get("session_fingerprint") == session.fingerprint
+
+
 def systemd_transient_command(session: LiveValidationSession) -> list[str]:
     """Construct the deterministic, bounded command for this exact session."""
     return [
         "systemd-run",
+        "--user",
         "--quiet",
         "--collect",
         f"--unit={session.unit_name}",
@@ -255,6 +287,7 @@ def inspect_session(
     completed = command_runner(
         [
             "systemctl",
+            "--user",
             "show",
             "--no-pager",
             "--property=LoadState",
@@ -294,7 +327,11 @@ def start_session(
     completed = command_runner(systemd_transient_command(session))
     if completed.returncode != 0:
         raise LiveValidationSessionError("systemd failed to start live validation session")
-    return SessionAction(session, "started", inspect_session(session, command_runner=command_runner))
+    action = SessionAction(session, "started", inspect_session(session, command_runner=command_runner))
+    if not action.status.healthy:
+        raise LiveValidationSessionError("live validation session did not become healthy")
+    write_session_metadata(session)
+    return action
 
 
 def stop_session(
@@ -306,7 +343,7 @@ def stop_session(
     before = inspect_session(session, command_runner=command_runner)
     if not before.exists:
         return SessionAction(session, "already_stopped", before)
-    completed = command_runner(["systemctl", "stop", "--no-block", session.unit_name])
+    completed = command_runner(["systemctl", "--user", "stop", session.unit_name])
     if completed.returncode != 0:
         raise LiveValidationSessionError("systemd failed to stop live validation session")
     return SessionAction(session, "stopped", inspect_session(session, command_runner=command_runner))
@@ -329,7 +366,7 @@ def ensure_healthy_matching_session(
 ) -> SessionAction:
     """Return a healthy matching session or create/recreate exactly that unit."""
     status = inspect_session(session, command_runner=command_runner)
-    if status.healthy:
+    if status.healthy and matching_session_metadata(session):
         return SessionAction(session, "already_healthy", status)
     if status.exists:
         return restart_session(session, command_runner=command_runner)

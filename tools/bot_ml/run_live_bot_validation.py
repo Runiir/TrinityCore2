@@ -22,10 +22,12 @@ try:
     from .build_validation_provisioning import apply_gear_profiles, build_account_insert_sql, build_character_insert_sql, load_config, load_gear_profiles
     from .common import write_json
     from .extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
+    from .live_validation_session import build_session, ensure_healthy_matching_session, live_validation_lock, stop_session
 except ImportError:
     from build_validation_provisioning import apply_gear_profiles, build_account_insert_sql, build_character_insert_sql, load_config, load_gear_profiles
     from common import write_json
     from extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
+    from live_validation_session import build_session, ensure_healthy_matching_session, live_validation_lock, stop_session
 
 
 DEFAULT_LIVE_VALIDATION_TIMEOUT_SEC = 90
@@ -94,6 +96,14 @@ def database_name(database_url: str) -> str:
 
 def qualify_sql_schema(sql: str, schema: str, database: str) -> str:
     return sql.replace(f"`{schema}`.", f"`{database.replace('`', '``')}`.")
+
+
+def trinity_config_string(path: Path, key: str, default: str = "") -> str:
+    if not path.exists():
+        return default
+    pattern = re.compile(rf'^\s*{re.escape(key)}\s*=\s*"(?P<value>[^"]*)"', re.MULTILINE)
+    match = pattern.search(path.read_text(encoding="utf-8"))
+    return match.group("value") if match else default
 
 
 def trinity_config_bool(path: Path, key: str, default: bool = False) -> bool:
@@ -723,6 +733,50 @@ def poll_bot_status(
             return "".join(output_parts), last_status, returncode, timed_out
         sleep(min(poll_sec, max(0.0, deadline - time.monotonic())))
     return "".join(output_parts), last_status, 124, True
+
+
+def wait_for_soap_command_available(
+    execute_command: Callable[[str, int], tuple[str, int, bool]],
+    deadline: float,
+    *,
+    poll_sec: float = 2.0,
+    sleep: Callable[[float], None] = time.sleep,
+) -> str:
+    output_parts: list[str] = []
+    while time.monotonic() < deadline:
+        remaining = max(1, int(deadline - time.monotonic()))
+        output, returncode, timed_out = execute_command(".botauto status", remaining)
+        output_parts.extend(("$ .botauto status\n", output))
+        if returncode == 0 and not timed_out and bot_status_snapshot(output) is not None:
+            return "".join(output_parts)
+        sleep(min(poll_sec, max(0.0, deadline - time.monotonic())))
+    raise RuntimeError("timed out waiting for reusable worldserver SOAP readiness")
+
+
+def wait_for_bot_status_state(
+    execute_command: Callable[[str, int], tuple[str, int, bool]],
+    expected_active: bool,
+    deadline: float,
+    *,
+    poll_sec: float = 2.0,
+    sleep: Callable[[float], None] = time.sleep,
+) -> tuple[str, dict[str, Any] | None]:
+    output_parts: list[str] = []
+    last_status: dict[str, Any] | None = None
+    while time.monotonic() < deadline:
+        remaining = max(1, int(deadline - time.monotonic()))
+        output, returncode, timed_out = execute_command(".botauto status", remaining)
+        output_parts.extend(("$ .botauto status\n", output))
+        status = bot_status_snapshot(output)
+        if status is not None:
+            last_status = status
+            ready = bot_status_state(output) is True
+            inactive = not status["active"] and int(status["active_bots"]) == 0
+            if returncode == 0 and not timed_out and ((expected_active and ready) or (not expected_active and inactive)):
+                return "".join(output_parts), status
+        sleep(min(poll_sec, max(0.0, deadline - time.monotonic())))
+    expected = "active and ready" if expected_active else "inactive with zero active bots"
+    raise RuntimeError(f"timed out waiting for BotWorld to become {expected}")
 
 
 def wait_for_bot_status_ready(process: subprocess.Popen[str], deadline: float, max_wait_sec: int = 180) -> str:
@@ -2203,6 +2257,7 @@ def run_transport_completion_watchdog(
     scenario_reports: dict[str, dict[str, Any]],
     validation_context: dict[str, Any],
     *,
+    validation_route_manifest: dict[str, Any] | None = None,
     duration_policy: str = "completion-watchdog",
     heartbeat_sec: int = DEFAULT_COMPLETION_HEARTBEAT_SEC,
     no_progress_window_sec: int = DEFAULT_NO_PROGRESS_WINDOW_SEC,
@@ -2251,6 +2306,7 @@ def run_transport_completion_watchdog(
             output_dir, heartbeat_index, "".join(output_parts), 0, False, command,
             scenario_reports, validation_context, duration_policy, heartbeat_sec,
             no_progress_window_sec, max_repeated_decisions, max_death_loops,
+            validation_route_manifest,
         )
         progress_total = int(report.get("watchdog_state", {}).get("progress_total") or 0)
         if progress_total > last_progress_total:
@@ -2704,6 +2760,147 @@ def run_route_sequence(args: argparse.Namespace, routes: list[dict[str, Any]]) -
     return 0 if report["all_passed"] else 1
 
 
+def run_reusable_validation_session(
+    args: argparse.Namespace,
+    script: str,
+    scenario_reports: dict[str, dict[str, Any]],
+    validation_context: dict[str, Any],
+    validation_route: dict[str, Any],
+    validation_route_manifest: dict[str, Any],
+    validation_route_manifest_path: Path | None,
+    bot_pool_tags: list[str],
+) -> tuple[str, int, bool, list[str], dict[str, Any]]:
+    if not args.soap_user or not args.soap_password:
+        raise SystemExit("--soap-user and --soap-password are required with --transport session")
+    profile_manifest = Path(trinity_config_string(args.config, "BotWorld.ProfileManifest", "dataset/bot_runtime_profiles/profiles.json"))
+    if not profile_manifest.is_absolute():
+        profile_manifest = REPO_ROOT / profile_manifest
+    fingerprint_paths = [
+        path for path in (
+            profile_manifest,
+            args.validation_scenario_dir / "validation_routes.jsonl",
+            args.validation_provisioning_config,
+            args.gear_profiles,
+        ) if path.is_file()
+    ]
+    profile = args.session_profile or str(validation_context.get("scenario_id") or "")
+    if validation_route_manifest_path and profile_manifest.is_file():
+        profiles = json.loads(profile_manifest.read_text(encoding="utf-8"))
+        selected = next((row for row in profiles.get("profiles", []) if str(row.get("name") or "") == profile), None)
+        configured_manifest = str(((selected or {}).get("validation_route") or {}).get("manifest_path") or "")
+        expected_manifest = args.validation_scenario_dir / "validation_routes.jsonl"
+        if not configured_manifest or Path(configured_manifest).resolve() != expected_manifest.resolve():
+            raise SystemExit("session runtime profile route manifest does not match --validation-scenario-dir")
+
+    session = build_session(
+        REPO_ROOT, args.session_environment, args.worldserver, args.config,
+        fingerprint_paths=fingerprint_paths,
+    )
+    command = ["SESSION", session.unit_name, args.soap_url]
+    output_parts: list[str] = []
+    lifecycle: dict[str, Any] = {**session.metadata(), "transport": "session"}
+
+    def execute(command_text: str, remaining: int) -> tuple[str, int, bool]:
+        return execute_soap_command(args.soap_url, args.soap_user, args.soap_password, command_text, remaining)
+
+    with live_validation_lock(REPO_ROOT, args.session_environment):
+        action = ensure_healthy_matching_session(session)
+        lifecycle["server_action"] = action.action
+        lifecycle["server_pid"] = int(action.status.properties.get("MainPID") or 0)
+        deadline = time.monotonic() + args.session_transition_timeout_sec
+        try:
+            output_parts.append(wait_for_soap_command_available(execute, deadline))
+            stop_output, returncode, timed_out = execute(".botauto stop", args.session_transition_timeout_sec)
+            output_parts.extend(("$ .botauto stop\n", stop_output))
+            if returncode != 0 or timed_out:
+                raise RuntimeError("failed to stop BotWorld before reusable validation")
+            inactive_output, _ = wait_for_bot_status_state(execute, False, deadline)
+            output_parts.append(inactive_output)
+            lifecycle["inactive_before_preparation"] = True
+
+            preparation: dict[str, Any] = {}
+            if args.reset_bot_pool:
+                preparation["bot_pool_reset"] = prepare_bot_pool_reset(
+                    args.output_dir, args.config, bot_pool_tags, apply=True,
+                    reset_positions=not args.keep_bot_pool_position,
+                    reset_quests=not args.keep_bot_pool_quests,
+                    reset_memory=not args.keep_bot_pool_memory,
+                )
+            if args.apply_validation_provisioning:
+                preparation["validation_provisioning"] = prepare_validation_provisioning(
+                    args.output_dir, args.validation_provisioning_config, args.gear_profiles, args.config, apply=True,
+                )
+            if validation_route and int(validation_route.get("bot_start_map_id") or 0):
+                preparation["route_bot_start"] = prepare_route_bot_start(
+                    args.output_dir, validation_route, args.config, bot_pool_tags, apply=True,
+                )
+            lifecycle["preparation"] = preparation
+
+            start_command = f".botauto start {profile}" if profile else ".botauto start"
+            start_output, returncode, timed_out = execute(start_command, args.session_transition_timeout_sec)
+            output_parts.extend((f"$ {start_command}\n", start_output))
+            if returncode != 0 or timed_out:
+                raise RuntimeError("failed to start BotWorld reusable validation")
+            ready_output, _ = wait_for_bot_status_state(
+                execute, True, time.monotonic() + args.session_transition_timeout_sec,
+            )
+            output_parts.append(ready_output)
+            lifecycle["active_after_start"] = True
+
+            watchdog_script = command_script(
+                selector=args.selector, trace_limit=args.trace_limit, start=False, stop=False, exit_server=False,
+            )
+            output, returncode, timed_out, _ = run_transport_completion_watchdog(
+                execute, command, args.timeout_sec, watchdog_script, args.output_dir,
+                scenario_reports, validation_context,
+                validation_route_manifest=validation_route_manifest,
+                duration_policy=args.duration_policy,
+                heartbeat_sec=args.heartbeat_sec,
+                no_progress_window_sec=args.no_progress_window_sec,
+                max_repeated_decisions=args.max_repeated_decision_count,
+                max_death_loops=args.max_death_loop_count,
+            )
+            output_parts.append(output)
+            lifecycle["watchdog_completed"] = True
+            return "".join(output_parts), returncode, timed_out, command, lifecycle
+        finally:
+            try:
+                output_parts.append(wait_for_soap_command_available(
+                    execute, time.monotonic() + args.session_transition_timeout_sec,
+                ))
+                stop_output, returncode, timed_out = execute(".botauto stop", args.session_transition_timeout_sec)
+                output_parts.extend(("$ .botauto stop\n", stop_output))
+                if returncode != 0 or timed_out:
+                    raise RuntimeError("failed to stop BotWorld after reusable validation")
+                inactive_output, _ = wait_for_bot_status_state(
+                    execute, False, time.monotonic() + args.session_transition_timeout_sec,
+                )
+                output_parts.append(inactive_output)
+                lifecycle["inactive_after_attempt"] = True
+            except Exception as exc:
+                lifecycle["inactive_after_attempt"] = False
+                lifecycle["cleanup_failure"] = str(exc)
+                report_path = args.output_dir / "report.json"
+                if report_path.is_file():
+                    try:
+                        failed_report = json.loads(report_path.read_text(encoding="utf-8"))
+                    except json.JSONDecodeError:
+                        failed_report = {}
+                    failed_report["acceptable_final_evidence"] = False
+                    failed_report["all_passed"] = False
+                    failed_report["failure_reason"] = "session_cleanup_failed"
+                    labels = list(failed_report.get("failure_labels") or [])
+                    if "session_cleanup_failed" not in labels:
+                        labels.append("session_cleanup_failed")
+                    failed_report["failure_labels"] = labels
+                    failed_report["session"] = lifecycle
+                    write_json(report_path, failed_report)
+                stop_session(session)
+                raise
+            finally:
+                write_json(args.output_dir / "session.json", lifecycle)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run or prepare live BotWorld validation diagnostics.")
     parser.add_argument("--worldserver", type=Path, default=Path("build/src/server/worldserver/worldserver"))
@@ -2722,8 +2919,11 @@ def main() -> int:
     parser.add_argument("--stop", action="store_true")
     parser.add_argument("--transport", choices=["process", "soap", "session"], default="process")
     parser.add_argument("--soap-url", default="http://127.0.0.1:7878/")
-    parser.add_argument("--soap-user")
-    parser.add_argument("--soap-password")
+    parser.add_argument("--soap-user", default=os.environ.get("TRINITY_SOAP_USER"))
+    parser.add_argument("--soap-password", default=os.environ.get("TRINITY_SOAP_PASSWORD"))
+    parser.add_argument("--session-environment", default="default", help="Stable identity for the shared validation server and live-attempt lock.")
+    parser.add_argument("--session-profile", default="", help="Runtime profile selected by .botauto start in reusable session mode; defaults to the scenario ID.")
+    parser.add_argument("--session-transition-timeout-sec", type=int, default=180, help="Bound for reusable-session stop/start state transitions.")
     parser.add_argument("--observe-sec", type=int, default=None, help="Sleep after .botauto start before collecting diagnostics. Defaults to 0 seconds for smoke checks and 300 seconds for boss-route validations.")
     parser.add_argument("--reset-bot-pool", action="store_true", help="Before validation, reset volatile state for enabled bot-pool rows matching --bot-pool-tag.")
     parser.add_argument("--bot-pool-tag", action="append", default=[], help="Experiment tag substring for --reset-bot-pool. Defaults to test_account when omitted.")
@@ -2758,6 +2958,9 @@ def main() -> int:
         args.timeout_sec = args.timeout_sec if args.timeout_sec is not None else DEFAULT_LIVE_VALIDATION_TIMEOUT_SEC
         args.observe_sec = args.observe_sec if args.observe_sec is not None else 0
 
+    output_dir_was_nonempty = args.output_dir.exists() and any(args.output_dir.iterdir())
+    if args.transport == "session" and output_dir_was_nonempty and not args.dry_run and not args.input_log:
+        raise SystemExit("--transport session requires a new or empty --output-dir")
     args.output_dir.mkdir(parents=True, exist_ok=True)
     bot_pool_tags = args.bot_pool_tag or ["test_account"]
 
@@ -2820,7 +3023,7 @@ def main() -> int:
             args.output_dir,
             args.config,
             bot_pool_tags,
-            apply=not args.dry_run,
+            apply=not args.dry_run and args.transport != "session",
             reset_positions=not args.keep_bot_pool_position,
             reset_quests=not args.keep_bot_pool_quests,
             reset_memory=not args.keep_bot_pool_memory,
@@ -2831,7 +3034,7 @@ def main() -> int:
             args.validation_provisioning_config,
             args.gear_profiles,
             args.config,
-            apply=not args.dry_run,
+            apply=not args.dry_run and args.transport != "session",
         )
     if validation_route and int(validation_route.get("bot_start_map_id") or 0):
         preparation["route_bot_start"] = prepare_route_bot_start(
@@ -2839,7 +3042,7 @@ def main() -> int:
             validation_route,
             args.config,
             bot_pool_tags,
-            apply=not args.dry_run,
+            apply=not args.dry_run and args.transport != "session",
         )
 
     if args.dry_run:
@@ -2875,6 +3078,7 @@ def main() -> int:
         return 0
 
     watchdog_report: dict[str, Any] | None = None
+    session_lifecycle: dict[str, Any] = {}
     if args.input_log:
         output = args.input_log.read_text(encoding="utf-8")
         returncode = 0
@@ -2911,7 +3115,23 @@ def main() -> int:
             else:
                 output, returncode, timed_out, command = run_soap_commands(args.soap_url, args.soap_user, args.soap_password, script, args.timeout_sec, args.observe_sec)
         elif args.transport == "session":
-            raise SystemExit("--transport session requires an injected session command callback; use --input-log for captured session output")
+            output, returncode, timed_out, command, session_lifecycle = run_reusable_validation_session(
+                args,
+                script,
+                scenario_reports,
+                validation_context,
+                validation_route,
+                validation_route_manifest,
+                validation_route_manifest_path,
+                bot_pool_tags,
+            )
+            preparation = session_lifecycle.get("preparation") or preparation
+            existing_report = args.output_dir / "report.json"
+            if existing_report.exists():
+                try:
+                    watchdog_report = json.loads(existing_report.read_text(encoding="utf-8"))
+                except json.JSONDecodeError:
+                    watchdog_report = None
         elif args.duration_policy == "completion-watchdog":
             output, returncode, timed_out, command = run_worldserver_completion_watchdog(
                 args.worldserver,
@@ -2969,11 +3189,17 @@ def main() -> int:
     report["validation_route_manifest_path"] = str(validation_route_manifest_path or "")
     report["start_command"] = send_start_command
     report["preparation"] = preparation
+    if args.transport == "session":
+        report["session"] = session_lifecycle
+        if not session_lifecycle.get("inactive_after_attempt"):
+            report["acceptable_final_evidence"] = False
+            report["all_passed"] = False
     report["validation_context"] = validation_context
     write_json(args.output_dir / "report.json", report)
     print(json.dumps(report, indent=2, sort_keys=True))
     segment_success = route_segment_complete(report, validation_route)
-    return 0 if (returncode == 0 and not timed_out) or segment_success else 1
+    full_success = bool(report.get("acceptable_final_evidence")) and bool(report.get("all_passed"))
+    return 0 if returncode == 0 and not timed_out and (segment_success or full_success) else 1
 
 
 if __name__ == "__main__":

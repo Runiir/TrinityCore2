@@ -49,7 +49,7 @@ from tools.bot_ml.live_validation_session import (
     sha256_file,
     systemd_transient_command,
 )
-from tools.bot_ml.run_live_bot_validation import boss_route_health_progress, bot_status_snapshot, bounded_console_deadline, build_bot_pool_reset_sql, command_script, live_validation_report, load_scenario_reports, load_validation_route, main as live_validation_main, parse_json_objects, parse_soap_result, poll_bot_status, read_until_console_prompt, route_segment_complete, run_transport_completion_watchdog, run_worldserver, run_worldserver_completion_watchdog, split_sql_statements, trace_after, trinity_config_bool, unresolved_route_death_loop_count, unresolved_route_stuck_count, upsert_trinity_config, watchdog_state, write_validation_config
+from tools.bot_ml.run_live_bot_validation import boss_route_health_progress, bot_status_snapshot, bounded_console_deadline, build_bot_pool_reset_sql, command_script, live_validation_report, load_scenario_reports, load_validation_route, main as live_validation_main, parse_json_objects, parse_soap_result, poll_bot_status, read_until_console_prompt, route_segment_complete, run_reusable_validation_session, run_transport_completion_watchdog, run_worldserver, run_worldserver_completion_watchdog, split_sql_statements, trace_after, trinity_config_bool, unresolved_route_death_loop_count, unresolved_route_stuck_count, upsert_trinity_config, wait_for_bot_status_state, watchdog_state, write_validation_config
 from tools.bot_ml.orchestrator_daemon import codex_command, detect_rate_limit, handle_rate_limit, initial_state, run_one_cycle, sleep_until_resume
 from tools.bot_ml.generate_lane_configs import write_lane_config
 from tools.bot_ml.promote_live_validation_artifact import promote
@@ -3178,6 +3178,21 @@ def test_live_bot_validation_status_snapshot_and_poll_preserve_inactive_state():
     assert timed_out is False
 
 
+def test_wait_for_bot_status_state_requires_explicit_zero_bot_inactive_state():
+    outputs = iter([
+        '{"active":true,"active_bots":1,"target_bots":5}',
+        '{"active":false,"active_bots":1,"target_bots":5}',
+        '{"active":false,"active_bots":0,"target_bots":5}',
+    ])
+
+    def execute(_command, _remaining):
+        return next(outputs), 0, False
+
+    output, status = wait_for_bot_status_state(execute, False, time.monotonic() + 2, poll_sec=0, sleep=lambda _value: None)
+    assert output.count("$ .botauto status") == 3
+    assert status == {"active": False, "active_bots": 0, "target_bots": 5, "payload": {"active": False, "active_bots": 0, "target_bots": 5}}
+
+
 def test_transport_completion_watchdog_never_sends_server_shutdown(tmp_path):
     commands: list[str] = []
     output = '\n'.join(
@@ -4540,7 +4555,7 @@ def test_live_validation_session_hashes_inputs_and_builds_bounded_systemd_comman
     assert session.environment not in session.metadata().values()
     assert "secret" not in str(session.metadata())
     assert command == [
-        "systemd-run", "--quiet", "--collect", f"--unit={session.unit_name}", "--service-type=exec",
+        "systemd-run", "--user", "--quiet", "--collect", f"--unit={session.unit_name}", "--service-type=exec",
         "--property=MemoryMax=8G", "--property=MemorySwapMax=2G", "--property=CPUQuota=300%",
         f"--working-directory={tmp_path}", str(binary), "--config", str(config),
     ]
@@ -4565,7 +4580,7 @@ def test_live_validation_session_inspects_and_restarts_only_matching_unit(tmp_pa
         commands.append(list(command))
         if command[0] == "git":
             return subprocess.CompletedProcess(command, 0, "b" * 40 + "\n", "")
-        if command[:2] == ["systemctl", "show"]:
+        if command[:3] == ["systemctl", "--user", "show"]:
             return subprocess.CompletedProcess(command, 0, next(states), "")
         return subprocess.CompletedProcess(command, 0, "", "")
 
@@ -4574,7 +4589,7 @@ def test_live_validation_session_inspects_and_restarts_only_matching_unit(tmp_pa
 
     assert result.action == "started"
     assert result.status.healthy is True
-    assert ["systemctl", "stop", "--no-block", session.unit_name] in commands
+    assert ["systemctl", "--user", "stop", session.unit_name] in commands
     assert systemd_transient_command(session) in commands
 
 
