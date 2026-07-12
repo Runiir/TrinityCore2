@@ -36,6 +36,7 @@ from tools.bot_ml.validate_world_planner import STAGED_GATES, main as world_plan
 from tools.bot_ml.build_validation_scenario_manifests import build_manifests as build_validation_scenario_manifests
 from tools.bot_ml.build_live_scenario_reports import build_reports as build_live_scenario_reports, build_reports_from_live_reports, main as live_scenario_reports_main
 from tools.bot_ml.build_validation_run_plan import build_plan as build_validation_run_plan
+from tools.bot_ml.build_validation_run_plan import main as validation_run_plan_main
 from tools.bot_ml.build_validation_run_status import build_status as build_validation_run_status
 from tools.bot_ml.live_validation_session import (
     LiveValidationSessionError,
@@ -2104,6 +2105,105 @@ def test_validation_run_plan_preserves_instance_positions_and_tags():
     assert "completion-watchdog" in stonecore["live_validate_command"]
     assert "--observe-sec" not in stonecore["live_validate_command"]
     assert "--timeout-sec" not in stonecore["live_validate_command"]
+
+
+def test_validation_run_plan_reusable_session_cli_flag(tmp_path, monkeypatch):
+    scenarios_dir = tmp_path / "validation_scenarios"
+    output_dir = tmp_path / "validation_run_plan"
+    write_jsonl(scenarios_dir / "validation_scenarios.jsonl", [{"scenario_id": "stonecore_5n"}])
+    write_jsonl(scenarios_dir / "validation_routes.jsonl", [])
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "bot-validation-run-plan",
+            "--validation-scenario-dir",
+            str(scenarios_dir),
+            "--output-dir",
+            str(output_dir),
+            "--live-output-root",
+            str(tmp_path / "live"),
+            "--scenario-report-root",
+            str(tmp_path / "reports"),
+            "--timeout-sec",
+            "2400",
+            "--reusable-session",
+        ],
+    )
+
+    assert validation_run_plan_main() == 0
+    manifest = json.loads((output_dir / "manifest.json").read_text(encoding="utf-8"))
+
+    assert manifest["reusable_session"]["enabled"] is True
+    command = manifest["scenarios"][0]["live_validate_command"]
+    assert command[command.index("--transport") + 1] == "session"
+    assert command[command.index("--timeout-sec") + 1] == "2400"
+
+
+def test_validation_run_plan_reusable_session_isolates_full_clear_output_and_timeout():
+    scenarios = [
+        {"scenario_id": "stonecore_5n", "instance": "The Stonecore", "map_id": 725, "difficulty": "normal_5man", "required_roles": {"tank": 1, "healer": 1, "dps": 3}},
+    ]
+    routes_by_scenario = {
+        "stonecore_5n": [
+            {"scenario_id": "stonecore_5n", "route_node_id": "stonecore_corborus", "step": 2, "kind": "boss", "label": "Corborus"},
+        ],
+    }
+
+    plan = build_validation_run_plan(
+        scenarios,
+        Path("dataset/live_validation_scenarios"),
+        Path("dataset/live_validation_scenario_reports_built"),
+        Path("dataset/validation_scenarios"),
+        300,
+        2400,
+        routes_by_scenario,
+        reusable_session=True,
+    )
+    stonecore = plan["scenarios"][0]
+    full_command = stonecore["live_validate_command"]
+    segment_command = stonecore["segments"][0]["live_validate_command"]
+
+    assert plan["reusable_session"] == {
+        "enabled": True,
+        "transport": "session",
+        "full_clear_output_dir_template": "{scenario_id}_reusable_session_full_clear",
+        "preserves_existing_report_paths": True,
+    }
+    assert stonecore["reusable_session"]["enabled"] is True
+    assert stonecore["reusable_session"]["emergency_timeout_sec"] == 2400
+    assert full_command[full_command.index("--transport") + 1] == "session"
+    assert full_command[full_command.index("--timeout-sec") + 1] == "2400"
+    assert full_command[full_command.index("--output-dir") + 1] == "dataset/live_validation_scenarios/stonecore_5n_reusable_session_full_clear"
+    assert "dataset/live_validation_scenarios/stonecore_5n_reusable_session_full_clear/report.json" in stonecore["scenario_report_command"]
+    assert "--transport" not in segment_command
+    assert "--timeout-sec" not in segment_command
+
+
+def test_validation_run_plan_reusable_session_keeps_fixed_window_segment_defaults():
+    scenarios = [{"scenario_id": "stonecore_5n"}]
+    routes_by_scenario = {
+        "stonecore_5n": [
+            {"scenario_id": "stonecore_5n", "route_node_id": "stonecore_corborus", "step": 2, "kind": "boss", "label": "Corborus"},
+        ],
+    }
+
+    plan = build_validation_run_plan(
+        scenarios,
+        Path("dataset/live_validation_scenarios"),
+        Path("dataset/live_validation_scenario_reports_built"),
+        Path("dataset/validation_scenarios"),
+        300,
+        2400,
+        routes_by_scenario,
+        duration_policy="fixed-window",
+        reusable_session=True,
+    )
+    stonecore = plan["scenarios"][0]
+
+    assert stonecore["live_validate_command"][stonecore["live_validate_command"].index("--timeout-sec") + 1] == "2400"
+    segment_command = stonecore["segments"][0]["live_validate_command"]
+    assert "--transport" not in segment_command
+    assert segment_command[segment_command.index("--timeout-sec") + 1] == "2400"
 
 
 def test_validation_run_plan_segments_boss_routes_for_aggregate_reports():
