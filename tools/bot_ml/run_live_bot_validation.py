@@ -14,7 +14,7 @@ import urllib.error
 import urllib.request
 from collections import Counter
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 from urllib.parse import urlparse
 import re
 
@@ -673,11 +673,8 @@ def should_observe_before_command(command_text: str) -> bool:
     )
 
 
-def bot_status_ready(output: str) -> bool:
-    return bot_status_state(output) is True
-
-
-def bot_status_state(output: str) -> bool | None:
+def bot_status_snapshot(output: str) -> dict[str, Any] | None:
+    """Return the latest bot status, preserving an explicit inactive state."""
     payloads = parse_json_objects(output)
     for row in reversed(payloads):
         if not isinstance(row, dict):
@@ -686,10 +683,46 @@ def bot_status_state(output: str) -> bool | None:
             continue
         active_bots = int(row.get("active_bots") or row.get("bots") or row.get("activeBots") or 0)
         target_bots = int(row.get("target_bots") or row.get("targetBots") or 0)
-        if active_bots > 0 and (target_bots <= 0 or active_bots >= target_bots):
-            return True
-        return False
+        active_value = row.get("active")
+        active = bool(active_value) if active_value is not None else active_bots > 0
+        return {"active": active, "active_bots": active_bots, "target_bots": target_bots, "payload": row}
     return None
+
+
+def bot_status_ready(output: str) -> bool:
+    return bot_status_state(output) is True
+
+
+def bot_status_state(output: str) -> bool | None:
+    status = bot_status_snapshot(output)
+    if status is None:
+        return None
+    if not status["active"] or status["active_bots"] <= 0:
+        return False
+    target_bots = int(status["target_bots"])
+    return target_bots <= 0 or int(status["active_bots"]) >= target_bots
+
+
+def poll_bot_status(
+    execute_command: Callable[[str, int], tuple[str, int, bool]],
+    deadline: float,
+    *,
+    poll_sec: float = 2.0,
+    sleep: Callable[[float], None] = time.sleep,
+) -> tuple[str, dict[str, Any] | None, int, bool]:
+    """Poll a transport-neutral status command until it is ready or inactive."""
+    output_parts: list[str] = []
+    last_status: dict[str, Any] | None = None
+    while time.monotonic() < deadline:
+        remaining = max(1, int(deadline - time.monotonic()))
+        output, returncode, timed_out = execute_command(".botauto status", remaining)
+        output_parts.append("$ .botauto status\n")
+        output_parts.append(output)
+        last_status = bot_status_snapshot(output)
+        if returncode != 0 or timed_out or last_status is None or not last_status["active"] or bot_status_state(output) is True:
+            return "".join(output_parts), last_status, returncode, timed_out
+        sleep(min(poll_sec, max(0.0, deadline - time.monotonic())))
+    return "".join(output_parts), last_status, 124, True
 
 
 def wait_for_bot_status_ready(process: subprocess.Popen[str], deadline: float, max_wait_sec: int = 180) -> str:
@@ -2161,6 +2194,77 @@ def rolling_heartbeat_report(
     return report
 
 
+def run_transport_completion_watchdog(
+    execute_command: Callable[[str, int], tuple[str, int, bool]],
+    command: list[str],
+    timeout_sec: int,
+    script: str,
+    output_dir: Path,
+    scenario_reports: dict[str, dict[str, Any]],
+    validation_context: dict[str, Any],
+    *,
+    duration_policy: str = "completion-watchdog",
+    heartbeat_sec: int = DEFAULT_COMPLETION_HEARTBEAT_SEC,
+    no_progress_window_sec: int = DEFAULT_NO_PROGRESS_WINDOW_SEC,
+    max_repeated_decisions: int = DEFAULT_MAX_REPEATED_DECISIONS,
+    max_death_loops: int = DEFAULT_MAX_DEATH_LOOPS,
+    sleep: Callable[[float], None] = time.sleep,
+) -> tuple[str, int, bool, list[str]]:
+    """Apply completion evidence watchdog policy to any command transport.
+
+    The callback owns connection and lifecycle details; this function never sends a
+    server shutdown command, making it safe for attached sessions and SOAP.
+    """
+    deadline = time.monotonic() + timeout_sec
+    startup_commands, heartbeat_commands = heartbeat_commands_from_script(script)
+    output_parts: list[str] = []
+    heartbeat_index = 0
+    last_progress_total = -1
+    last_progress_at = time.monotonic()
+
+    def send(command_text: str) -> tuple[int, bool]:
+        remaining = max(1, int(deadline - time.monotonic()))
+        output, returncode, timed_out = execute_command(command_text, remaining)
+        output_parts.extend((f"$ {command_text}\n", output))
+        return returncode, timed_out
+
+    for command_text in startup_commands:
+        returncode, timed_out = send(command_text)
+        if returncode != 0 or timed_out:
+            return "".join(output_parts), returncode, timed_out, command
+    if startup_commands:
+        status_output, _status, returncode, timed_out = poll_bot_status(execute_command, deadline, sleep=sleep)
+        output_parts.append(status_output)
+        if returncode != 0 or timed_out:
+            return "".join(output_parts), returncode, timed_out, command
+
+    while time.monotonic() < deadline:
+        sleep(min(max(1, heartbeat_sec), max(0.0, deadline - time.monotonic())))
+        heartbeat_index += 1
+        for command_text in heartbeat_commands:
+            if time.monotonic() >= deadline:
+                break
+            returncode, timed_out = send(command_text)
+            if returncode != 0 or timed_out:
+                return "".join(output_parts), returncode, timed_out, command
+        report = rolling_heartbeat_report(
+            output_dir, heartbeat_index, "".join(output_parts), 0, False, command,
+            scenario_reports, validation_context, duration_policy, heartbeat_sec,
+            no_progress_window_sec, max_repeated_decisions, max_death_loops,
+        )
+        progress_total = int(report.get("watchdog_state", {}).get("progress_total") or 0)
+        if progress_total > last_progress_total:
+            last_progress_total = progress_total
+            last_progress_at = time.monotonic()
+        if report["acceptable_final_evidence"] or report["completion_reason"] in {"repeated_decision_watchdog", "death_loop_watchdog", "machine_failure_predicate"}:
+            return "".join(output_parts), 0, False, command
+        if report["watchdog_state"].get("no_progress") and time.monotonic() - last_progress_at >= no_progress_window_sec:
+            report["completion_reason"] = "no_progress_watchdog"
+            write_json(output_dir / "report.json", report)
+            return "".join(output_parts), 0, False, command
+    return "".join(output_parts), 124, True, command
+
+
 def run_worldserver_completion_watchdog(
     binary: Path,
     config: Path,
@@ -2345,9 +2449,33 @@ def parse_soap_result(payload: str) -> str:
     return html.unescape(payload[start + len("<result>") : end])
 
 
+def execute_soap_command(soap_url: str, username: str, password: str, command_text: str, timeout_sec: int) -> tuple[str, int, bool]:
+    """Execute one SOAP console command without imposing process lifecycle policy."""
+    auth = base64.b64encode(f"{username}:{password}".encode("utf-8")).decode("ascii")
+    request = urllib.request.Request(
+        soap_url,
+        data=soap_envelope(command_text),
+        headers={
+            "Authorization": f"Basic {auth}",
+            "Content-Type": "text/xml; charset=utf-8",
+            "SOAPAction": "urn:TC#executeCommand",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=max(1, timeout_sec)) as response:
+            payload = response.read().decode("utf-8", errors="replace")
+            return parse_soap_result(payload), 0, False
+    except urllib.error.HTTPError as exc:
+        return exc.read().decode("utf-8", errors="replace"), exc.code, False
+    except TimeoutError:
+        return "", 124, True
+    except OSError as exc:
+        return str(exc), 1, False
+
+
 def run_soap_commands(soap_url: str, username: str, password: str, script: str, timeout_sec: int, observe_sec: int = 0) -> tuple[str, int, bool, list[str]]:
     output_parts: list[str] = []
-    auth = base64.b64encode(f"{username}:{password}".encode("utf-8")).decode("ascii")
     command = ["SOAP", soap_url]
     deadline = time.monotonic() + timeout_sec
     explicit_start = any(line.strip() == ".botauto start" for line in script.splitlines())
@@ -2363,36 +2491,14 @@ def run_soap_commands(soap_url: str, username: str, password: str, script: str, 
         remaining_float = deadline - time.monotonic()
         if remaining_float <= 0:
             return "\n".join(output_parts), 124, True, command
-        remaining = max(1, int(remaining_float))
-        request = urllib.request.Request(
-            soap_url,
-            data=soap_envelope(command_text),
-            headers={
-                "Authorization": f"Basic {auth}",
-                "Content-Type": "text/xml; charset=utf-8",
-                "SOAPAction": "urn:TC#executeCommand",
-            },
-            method="POST",
-        )
-        try:
-            with urllib.request.urlopen(request, timeout=remaining) as response:
-                payload = response.read().decode("utf-8", errors="replace")
-                output_parts.append(f"$ {command_text}")
-                output_parts.append(parse_soap_result(payload))
-                if observe_sec > 0 and command_text == ".botauto start":
-                    output_parts.append(f"$ sleep {observe_sec}")
-                    time.sleep(observe_sec)
-        except urllib.error.HTTPError as exc:
-            payload = exc.read().decode("utf-8", errors="replace")
-            output_parts.append(f"$ {command_text}")
-            output_parts.append(payload)
-            return "\n".join(output_parts), exc.code, False, command
-        except TimeoutError:
-            return "\n".join(output_parts), 124, True, command
-        except OSError as exc:
-            output_parts.append(f"$ {command_text}")
-            output_parts.append(str(exc))
-            return "\n".join(output_parts), 1, False, command
+        payload, returncode, timed_out = execute_soap_command(soap_url, username, password, command_text, max(1, int(remaining_float)))
+        output_parts.append(f"$ {command_text}")
+        output_parts.append(payload)
+        if returncode != 0 or timed_out:
+            return "\n".join(output_parts), returncode, timed_out, command
+        if observe_sec > 0 and command_text == ".botauto start":
+            output_parts.append(f"$ sleep {observe_sec}")
+            time.sleep(observe_sec)
     return "\n".join(output_parts), 0, False, command
 
 
@@ -2614,7 +2720,7 @@ def main() -> int:
     parser.add_argument("--no-start", action="store_true")
     parser.add_argument("--force-start-command", action="store_true", help="Send .botauto start even when BotWorld.AutoStart is enabled in the selected worldserver config.")
     parser.add_argument("--stop", action="store_true")
-    parser.add_argument("--transport", choices=["process", "soap"], default="process")
+    parser.add_argument("--transport", choices=["process", "soap", "session"], default="process")
     parser.add_argument("--soap-url", default="http://127.0.0.1:7878/")
     parser.add_argument("--soap-user")
     parser.add_argument("--soap-password")
@@ -2778,7 +2884,34 @@ def main() -> int:
         if args.transport == "soap":
             if not args.soap_user or not args.soap_password:
                 raise SystemExit("--soap-user and --soap-password are required with --transport soap")
-            output, returncode, timed_out, command = run_soap_commands(args.soap_url, args.soap_user, args.soap_password, script, args.timeout_sec, args.observe_sec)
+            if args.duration_policy == "completion-watchdog":
+                def execute_soap(command_text: str, remaining: int) -> tuple[str, int, bool]:
+                    return execute_soap_command(args.soap_url, args.soap_user, args.soap_password, command_text, remaining)
+
+                output, returncode, timed_out, command = run_transport_completion_watchdog(
+                    execute_soap,
+                    ["SOAP", args.soap_url],
+                    args.timeout_sec,
+                    script,
+                    args.output_dir,
+                    scenario_reports,
+                    validation_context,
+                    duration_policy=args.duration_policy,
+                    heartbeat_sec=args.heartbeat_sec,
+                    no_progress_window_sec=args.no_progress_window_sec,
+                    max_repeated_decisions=args.max_repeated_decision_count,
+                    max_death_loops=args.max_death_loop_count,
+                )
+                existing_report = args.output_dir / "report.json"
+                if existing_report.exists():
+                    try:
+                        watchdog_report = json.loads(existing_report.read_text(encoding="utf-8"))
+                    except json.JSONDecodeError:
+                        watchdog_report = None
+            else:
+                output, returncode, timed_out, command = run_soap_commands(args.soap_url, args.soap_user, args.soap_password, script, args.timeout_sec, args.observe_sec)
+        elif args.transport == "session":
+            raise SystemExit("--transport session requires an injected session command callback; use --input-log for captured session output")
         elif args.duration_policy == "completion-watchdog":
             output, returncode, timed_out, command = run_worldserver_completion_watchdog(
                 args.worldserver,

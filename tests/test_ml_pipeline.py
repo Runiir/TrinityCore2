@@ -48,7 +48,7 @@ from tools.bot_ml.live_validation_session import (
     sha256_file,
     systemd_transient_command,
 )
-from tools.bot_ml.run_live_bot_validation import boss_route_health_progress, bounded_console_deadline, build_bot_pool_reset_sql, command_script, live_validation_report, load_scenario_reports, load_validation_route, main as live_validation_main, parse_json_objects, parse_soap_result, read_until_console_prompt, route_segment_complete, run_worldserver, run_worldserver_completion_watchdog, split_sql_statements, trace_after, trinity_config_bool, unresolved_route_death_loop_count, unresolved_route_stuck_count, upsert_trinity_config, watchdog_state, write_validation_config
+from tools.bot_ml.run_live_bot_validation import boss_route_health_progress, bot_status_snapshot, bounded_console_deadline, build_bot_pool_reset_sql, command_script, live_validation_report, load_scenario_reports, load_validation_route, main as live_validation_main, parse_json_objects, parse_soap_result, poll_bot_status, read_until_console_prompt, route_segment_complete, run_transport_completion_watchdog, run_worldserver, run_worldserver_completion_watchdog, split_sql_statements, trace_after, trinity_config_bool, unresolved_route_death_loop_count, unresolved_route_stuck_count, upsert_trinity_config, watchdog_state, write_validation_config
 from tools.bot_ml.orchestrator_daemon import codex_command, detect_rate_limit, handle_rate_limit, initial_state, run_one_cycle, sleep_until_resume
 from tools.bot_ml.generate_lane_configs import write_lane_config
 from tools.bot_ml.promote_live_validation_artifact import promote
@@ -3053,6 +3053,62 @@ def test_validation_run_status_rejects_open_world_kills_as_dungeon_boss_evidence
     assert report_row["boss_evidence_ready"] is False
     assert "missing_boss_kill_evidence" in report_row["invalid_reasons"]
     assert stonecore["next_commands"][0] == "pixi run bot-live-validate --validation-segment-id 02_corborus"
+
+
+def test_live_bot_validation_status_snapshot_and_poll_preserve_inactive_state():
+    inactive = '{"action":"botauto_status","active":false,"active_bots":0,"target_bots":5}'
+    calls: list[str] = []
+
+    def execute(command: str, _timeout: int):
+        calls.append(command)
+        return inactive, 0, False
+
+    output, status, returncode, timed_out = poll_bot_status(execute, time.monotonic() + 1)
+
+    assert bot_status_snapshot(inactive) == {
+        "active": False,
+        "active_bots": 0,
+        "target_bots": 5,
+        "payload": json.loads(inactive),
+    }
+    assert calls == [".botauto status"]
+    assert "$ .botauto status" in output
+    assert status and status["active"] is False
+    assert returncode == 0
+    assert timed_out is False
+
+
+def test_transport_completion_watchdog_never_sends_server_shutdown(tmp_path):
+    commands: list[str] = []
+    output = '\n'.join(
+        [
+            '{"action":"botauto_status","active":true,"active_bots":1,"target_bots":1,"decisions":1}',
+            '{"trace_schema_version":1,"entries":[{"action":"mob_killed"}]}',
+            '{"duration_minutes":1,"total_kills":1}',
+        ]
+    )
+
+    def execute(command: str, _timeout: int):
+        commands.append(command)
+        return output, 0, False
+
+    result, returncode, timed_out, command = run_transport_completion_watchdog(
+        execute,
+        ["session"],
+        2,
+        command_script(start=False, exit_server=False),
+        tmp_path,
+        {},
+        {},
+        heartbeat_sec=1,
+        sleep=lambda _seconds: None,
+    )
+
+    assert "server shutdown" not in commands
+    assert command == ["session"]
+    assert returncode == 0
+    assert timed_out is False
+    assert "$ .botauto status" in result
 
 
 def test_live_bot_validation_command_script_and_output_parser():
