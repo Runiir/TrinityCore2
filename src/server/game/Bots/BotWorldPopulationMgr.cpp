@@ -1933,6 +1933,14 @@ void BotWorldPopulationMgr::ResetValidationRouteRuntimeState(char const* reason)
     _validationRouteFocusSeenMs = 0;
     _validationRouteBossProgressTargetGuid.Clear();
     _validationRouteBossSlowProgressCount = 0;
+    _validationRouteEngagedBossGuid.Clear();
+    _validationRouteEngagedBossGeneration = 0;
+    _validationRouteEngagedBossMapId = 0;
+    _validationRouteEngagedBossInstanceId = 0;
+    _validationRouteConfirmedBossDeathGuid.Clear();
+    _validationRouteConfirmedBossDeathGeneration = 0;
+    _validationRouteConfirmedBossDeathMapId = 0;
+    _validationRouteConfirmedBossDeathInstanceId = 0;
     ResetValidationRouteBossAddDensityState();
     _validationRouteActivationApplied = false;
     _validationRouteActivationAttempts = 0;
@@ -1995,7 +2003,12 @@ bool BotWorldPopulationMgr::MaybeAdvanceValidationRouteManifest()
     }
 
     bool arrivalRoute = _config.ValidationRouteKind == "travel" || _config.ValidationRouteKind == "regroup" || _config.ValidationRouteKind == "descent";
+    bool confirmedBossDeath = _config.ValidationRouteKind != "boss"
+        || (!_validationRouteConfirmedBossDeathGuid.IsEmpty()
+            && _validationRouteConfirmedBossDeathGeneration == _validationRouteGeneration
+            && _validationRouteConfirmedBossDeathMapId == _config.ValidationRouteMapId);
     bool terminal = !arrivalRoute
+        && confirmedBossDeath
         && _validationRouteManifestAdvancePending
         && _validationRouteManifestAdvanceGeneration == _validationRouteGeneration;
     std::string terminalReason = _validationRouteManifestAdvanceReason;
@@ -7737,6 +7750,21 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (!killedTarget)
             return false;
 
+        bool confirmedDeath = _validationRouteConfirmedBossDeathGuid == killedTarget->GetGUID()
+            && _validationRouteConfirmedBossDeathGeneration == _validationRouteGeneration
+            && _validationRouteConfirmedBossDeathMapId == killedTarget->GetMapId()
+            && _validationRouteConfirmedBossDeathInstanceId == killedTarget->GetInstanceId();
+        if (!confirmedDeath)
+        {
+            std::string raw = BuildRawJson(bot, killedTarget);
+            std::string semantic = BuildSemanticJson(bot, killedTarget, "validation_route_boss_outcome", &power, stage, activity);
+            RecordEvent(state, bot, "validation_route_recovery", killedTarget, "boss_death_unconfirmed", raw.c_str(), semantic.c_str(), UnitHealthPct(killedTarget), _config.ValidationRouteTargetEntry, killedTarget->GetHealth());
+            return false;
+        }
+        if (_validationRouteRecordedKillGuids.find(killedTarget->GetGUID()) != _validationRouteRecordedKillGuids.end())
+            return false;
+
+        _validationRouteRecordedKillGuids.insert(killedTarget->GetGUID());
         std::string raw = BuildRawJson(bot, killedTarget);
         std::string semantic = BuildSemanticJson(bot, killedTarget, "validation_route_boss_outcome", &power, stage, activity);
         if (killedTarget->IsAlive() || killedTarget->GetHealth())
@@ -8406,6 +8434,17 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         _validationRouteFocusY = focus->GetPositionY();
         _validationRouteFocusZ = focus->GetPositionZ();
         _validationRouteFocusSeenMs = NowMs();
+        Creature* boss = focus->ToCreature();
+        if (_config.ValidationRouteKind == "boss"
+            && boss
+            && focus->GetEntry() == _config.ValidationRouteTargetEntry
+            && (boss->IsDungeonBoss() || boss->isWorldBoss()))
+        {
+            _validationRouteEngagedBossGuid = focus->GetGUID();
+            _validationRouteEngagedBossGeneration = _validationRouteGeneration;
+            _validationRouteEngagedBossMapId = focus->GetMapId();
+            _validationRouteEngagedBossInstanceId = focus->GetInstanceId();
+        }
     };
     auto makeExistingValidationRouteCombatReady = [this, bot, &rememberValidationRouteFocus, &isValidationRouteCombatTarget](Creature* creature) -> Unit*
     {
@@ -14697,6 +14736,74 @@ void BotWorldPopulationMgr::CancelBotSpellStart(uint64 castId, Player* caster, c
     PendingHealCast cast = itr->second;
     _pendingHealCasts.erase(itr);
     FlushPendingHealCast(cast, caster, "rejected", reason);
+}
+
+void BotWorldPopulationMgr::NotifyCreatureDeath(Creature* killed)
+{
+    if (!_active || !killed || !_config.ValidationRouteEnable || _config.ValidationRouteKind != "boss"
+        || killed->IsAlive() || killed->GetHealth()
+        || (!killed->IsDungeonBoss() && !killed->isWorldBoss())
+        || killed->GetEntry() != _config.ValidationRouteTargetEntry
+        || _validationRouteEngagedBossGuid != killed->GetGUID()
+        || _validationRouteEngagedBossGeneration != _validationRouteGeneration
+        || _validationRouteEngagedBossMapId != killed->GetMapId()
+        || _validationRouteEngagedBossInstanceId != killed->GetInstanceId())
+        return;
+
+    _validationRouteConfirmedBossDeathGuid = killed->GetGUID();
+    _validationRouteConfirmedBossDeathGeneration = _validationRouteGeneration;
+    _validationRouteConfirmedBossDeathMapId = killed->GetMapId();
+    _validationRouteConfirmedBossDeathInstanceId = killed->GetInstanceId();
+
+    if (_validationRouteRecordedKillGuids.find(killed->GetGUID()) != _validationRouteRecordedKillGuids.end())
+        return;
+
+    WorldBotState* reporterState = nullptr;
+    Player* reporter = nullptr;
+    for (WorldBotState& state : _bots)
+    {
+        Player* candidate = GetLoadedBot(state);
+        if (!candidate || !candidate->IsInWorld()
+            || state.ValidationRouteGeneration != _validationRouteGeneration
+            || state.ValidationCohortMapId != killed->GetMapId()
+            || state.ValidationCohortInstanceId != killed->GetInstanceId())
+            continue;
+        reporterState = &state;
+        reporter = candidate;
+        break;
+    }
+    if (!reporterState || !reporter)
+        return;
+
+    _validationRouteRecordedKillGuids.insert(killed->GetGUID());
+    ++_metrics.Kills;
+    reporterState->LastKilledTargetGuid = killed->GetGUID();
+    std::string raw = BuildRawJson(reporter, killed);
+    std::string semantic = BuildSemanticJson(reporter, killed, "validation_route_boss_outcome", nullptr);
+    RecordEvent(*reporterState, reporter, "boss_killed", killed, "confirmed_unit_death", raw.c_str(), semantic.c_str(), 0.0f, _metrics.Kills);
+
+    if (!_validationRouteManifest.empty() && _config.ValidationRouteAdvanceMode == "terminal")
+    {
+        uint64 nowMs = NowMs();
+        for (WorldBotState& state : _bots)
+        {
+            state.TargetGuid.Clear();
+            state.ValidationRouteCombatProgressTargetGuid.Clear();
+            state.ValidationRoutePackProgressTargetGuid.Clear();
+            state.ValidationRouteCombatNoProgressCount = 0;
+            state.ValidationRoutePackNoProgressCount = 0;
+            state.ValidationRouteUnresolvedFocusHoldCount = 0;
+            state.ValidationRouteTerminalState = true;
+            state.ValidationRouteTerminalAtMs = nowMs;
+            state.ValidationRouteTerminalGeneration = _validationRouteGeneration;
+            state.ValidationRouteTerminalReason = "boss_killed";
+            state.LoopRecoveryCooldownUntilMs = nowMs + 60000;
+        }
+        _validationRouteManifestAdvancePending = true;
+        _validationRouteManifestAdvanceGeneration = _validationRouteGeneration;
+        _validationRouteManifestAdvanceReason = "boss_killed";
+        RecordEvent(*reporterState, reporter, "validation_route_terminal", killed, "boss_killed", raw.c_str(), semantic.c_str(), 0.0f, _config.ValidationRouteTargetEntry);
+    }
 }
 
 void BotWorldPopulationMgr::NotifyBotHeal(Unit* healer, Unit* target, uint32 spellId, uint32 attemptedHeal, uint32 effectiveHeal, uint32 absorbedHeal)

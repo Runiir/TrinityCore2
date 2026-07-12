@@ -1010,6 +1010,8 @@ def test_quest_first_portfolio_routing_surface():
     )
     assert 'contextText.rfind("route_target_", 0) == 0' in mgr
     assert "recordValidationRouteBossKill" in mgr
+    assert "boss_death_unconfirmed" in validation_route_objective
+    assert "_validationRouteConfirmedBossDeathGuid == killedTarget->GetGUID()" in validation_route_objective
     assert "isValidationRouteCombatEntry" in validation_route_objective
     assert "recordDefeatedValidationRouteTarget" in validation_route_objective
     assert 'recordDefeatedValidationRouteTarget(target, "stale_target_seen_dead")' in validation_route_objective
@@ -1629,6 +1631,33 @@ def test_botauto_runtime_profiles_surface():
     assert '\\"validation_route\\"' in status
 
 
+def test_validation_route_boss_terminal_requires_unit_kill_provenance():
+    mgr = read(BOT_MGR)
+    mgr_header = read(BOT_MGR_HEADER)
+    unit = read(ROOT / "src/server/game/Entities/Unit/Unit.cpp")
+    notify_death = function_body(mgr, "void BotWorldPopulationMgr::NotifyCreatureDeath")
+    route_objective = function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    advance_manifest = function_body(mgr, "bool BotWorldPopulationMgr::MaybeAdvanceValidationRouteManifest")
+
+    assert "void NotifyCreatureDeath(Creature* killed);" in mgr_header
+    assert_ordered(
+        unit,
+        "victim->setDeathState(JUST_DIED);",
+        "ai->JustDied(attacker);",
+        "sBotWorldPopulationMgr->NotifyCreatureDeath(creature);",
+    )
+    assert "killed->GetEntry() != _config.ValidationRouteTargetEntry" in notify_death
+    assert "_validationRouteEngagedBossGuid != killed->GetGUID()" in notify_death
+    assert "_validationRouteEngagedBossGeneration != _validationRouteGeneration" in notify_death
+    assert "_validationRouteEngagedBossMapId != killed->GetMapId()" in notify_death
+    assert "_validationRouteEngagedBossInstanceId != killed->GetInstanceId()" in notify_death
+    assert "_validationRouteConfirmedBossDeathGuid = killed->GetGUID();" in notify_death
+    assert 'RecordEvent(*reporterState, reporter, "boss_killed", killed, "confirmed_unit_death"' in notify_death
+    assert '_validationRouteManifestAdvanceReason = "boss_killed";' in notify_death
+    assert "boss_death_unconfirmed" in route_objective
+    assert "&& confirmedBossDeath" in advance_manifest
+
+
 def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_next_tick():
     mgr = read(BOT_MGR)
     mgr_header = read(BOT_MGR_HEADER)
@@ -1942,7 +1971,9 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         "_validationRouteManifestAdvancePending = false;",
         "return true;",
         'bool arrivalRoute = _config.ValidationRouteKind == "travel" || _config.ValidationRouteKind == "regroup" || _config.ValidationRouteKind == "descent";',
+        'bool confirmedBossDeath = _config.ValidationRouteKind != "boss"',
         "bool terminal = !arrivalRoute",
+        "&& confirmedBossDeath",
         "&& _validationRouteManifestAdvanceGeneration == _validationRouteGeneration;",
     )
     assert "uint32 loadedParticipants = 0;" in advance_manifest

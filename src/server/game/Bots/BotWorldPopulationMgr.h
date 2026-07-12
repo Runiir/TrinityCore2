@@ -15,6 +15,7 @@
 #include <string>
 #include <vector>
 
+class Creature;
 class Player;
 class Quest;
 class Unit;
@@ -227,6 +228,7 @@ public:
     void CancelBotSpellStart(uint64 castId, Player* caster, char const* reason);
     void NotifyBotSpellFinished(Player* caster, uint32 spellId, bool success);
     void NotifyBotHeal(Unit* healer, Unit* target, uint32 spellId, uint32 attemptedHeal, uint32 effectiveHeal, uint32 absorbedHeal);
+    void NotifyCreatureDeath(Creature* killed);
 
     enum class QuestObjectiveType
     {
@@ -1241,6 +1243,14 @@ private:
     std::vector<ValidationRouteManifestNode> _validationRouteManifest;
     size_t _validationRouteManifestIndex = 0;
     uint64 _validationRouteGeneration = 0;
+    ObjectGuid _validationRouteEngagedBossGuid;
+    uint64 _validationRouteEngagedBossGeneration = 0;
+    uint32 _validationRouteEngagedBossMapId = 0;
+    uint32 _validationRouteEngagedBossInstanceId = 0;
+    ObjectGuid _validationRouteConfirmedBossDeathGuid;
+    uint64 _validationRouteConfirmedBossDeathGeneration = 0;
+    uint32 _validationRouteConfirmedBossDeathMapId = 0;
+    uint32 _validationRouteConfirmedBossDeathInstanceId = 0;
     uint32 _validationRouteProgressBaselineKills = 0;
     bool _validationRouteObservedEngagement = false;
     bool _validationRouteManifestAdvancePending = false;
