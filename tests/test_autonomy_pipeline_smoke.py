@@ -1149,7 +1149,7 @@ def test_quest_first_portfolio_routing_surface():
         validation_route_objective,
         'if (std::string(GetDungeonRole(bot)) != "tank"\n        && (_config.ValidationRouteKind != "boss" || routeDistance <= routeArrivalRadius))',
         "Unit* preAnchorTrashTarget = nullptr;",
-        "MoveBotToPoint(state, bot, routeAnchorX, routeAnchorY, routeAnchorZ, true);",
+        "moveToRouteAnchor();",
     )
     assert_ordered(
         function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteObjective"),
@@ -1310,7 +1310,11 @@ def test_move_bot_to_point_only_terminalizes_strategic_route_failures():
         "state.ValidationRouteTerminalState = true;",
         'RecordEvent(state, bot, "validation_route_recovery"',
     )
-    assert route_objective.count("MoveBotToPoint(state, bot, routeAnchorX, routeAnchorY, routeAnchorZ, true)") == 3
+    assert route_objective.count("moveToRouteAnchor()") == 3
+    assert "auto moveToRouteAnchor = [&]() -> bool" in route_objective
+    assert "float floorZ = routeMap->GetHeight(bot->GetPhaseShift(), routeAnchorX, routeAnchorY, routeAnchorZ + 2.0f, true, 8.0f);" in route_objective
+    assert "if (floorZ > INVALID_HEIGHT && std::fabs(floorZ - routeAnchorZ) <= 8.0f)\n            routeAnchorZ = floorZ;" in route_objective
+    assert "return MoveBotToPoint(state, bot, routeAnchorX, routeAnchorY, routeAnchorZ, true);" in route_objective
     assert "MoveBotToProfileRange(state, bot, target, &profileAction)" in route_objective
     assert "hold_tactical_path_rejected" in route_objective
     assert 'moved ? "approach_target" : "tactical_path_rejected"' in route_objective

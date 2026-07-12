@@ -8912,6 +8912,14 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         }
     }
 
+    Map* routeMap = bot->GetMap();
+    if (routeMap)
+    {
+        float floorZ = routeMap->GetHeight(bot->GetPhaseShift(), routeAnchorX, routeAnchorY, routeAnchorZ + 2.0f, true, 8.0f);
+        if (floorZ > INVALID_HEIGHT && std::fabs(floorZ - routeAnchorZ) <= 8.0f)
+            routeAnchorZ = floorZ;
+    }
+
     state.QuestRouteDestination.Valid = true;
     state.QuestRouteDestination.MapId = routeAnchorMapId;
     state.QuestRouteDestination.X = routeAnchorX;
@@ -8921,6 +8929,10 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     state.QuestRouteDestination.Reason = routeAnchorReason;
 
     float routeDistance = bot->GetExactDist(routeAnchorX, routeAnchorY, routeAnchorZ);
+    auto moveToRouteAnchor = [&]() -> bool
+    {
+        return MoveBotToPoint(state, bot, routeAnchorX, routeAnchorY, routeAnchorZ, true);
+    };
     auto routeFocusTankOwned = [this, bot](Unit* focus) -> bool
     {
         Unit* victim = focus ? focus->GetVictim() : nullptr;
@@ -9553,7 +9565,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             bot->CombatStop(true);
             target = nullptr;
             state.TargetGuid.Clear();
-            if (MoveBotToPoint(state, bot, routeAnchorX, routeAnchorY, routeAnchorZ, true))
+            if (moveToRouteAnchor())
             {
                 std::string raw = BuildRawJson(bot, nullptr);
                 std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_regroup", &power, stage, activity);
@@ -9623,7 +9635,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             bot->GetMotionMaster()->MoveJump(routeAnchorX, routeAnchorY, routeAnchorZ, _config.ValidationRouteO, 18.0f, 8.0f, 0, true);
         }
         else
-            MoveBotToPoint(state, bot, routeAnchorX, routeAnchorY, routeAnchorZ, true);
+            moveToRouteAnchor();
         RecordEvent(state, bot, "validation_route_regroup", nullptr, _config.ValidationRouteLabel.empty() ? "move_to_arrival" : _config.ValidationRouteLabel.c_str(), raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry);
         situation = "validation_route_regroup";
         action = "move_to_validation_route_anchor";
@@ -10161,7 +10173,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
     if (routeDistance > routeArrivalRadius && !preAnchorTrashTarget)
     {
-        MoveBotToPoint(state, bot, routeAnchorX, routeAnchorY, routeAnchorZ, true);
+        moveToRouteAnchor();
         std::string raw = BuildRawJson(bot, nullptr);
         std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route", &power, stage, activity);
         RecordEvent(state, bot, "validation_route_move", nullptr, routeAnchorReason == "validation_route" ? _config.ValidationRouteLabel.c_str() : routeAnchorReason.c_str(), raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry);
