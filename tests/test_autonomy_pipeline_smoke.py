@@ -1631,6 +1631,21 @@ def test_botauto_runtime_profiles_surface():
     assert '\\"validation_route\\"' in status
 
 
+def test_validation_route_status_persists_terminal_and_boss_death_evidence():
+    mgr = read(BOT_MGR)
+    header = read(BOT_MGR_HEADER)
+    notify_death = function_body(mgr, "void BotWorldPopulationMgr::NotifyCreatureDeath")
+    advance = function_body(mgr, "bool BotWorldPopulationMgr::MaybeAdvanceValidationRouteManifest")
+    status = function_body(mgr, "std::string BotWorldPopulationMgr::GetStatusJson")
+
+    assert "std::vector<ValidationRouteEvidence> _validationRouteTerminalEvidence;" in header
+    assert "std::vector<ValidationRouteEvidence> _validationRouteBossDeathEvidence;" in header
+    assert "_validationRouteBossDeathEvidence.push_back" in notify_death
+    assert "_validationRouteTerminalEvidence.push_back" in advance
+    assert '"terminal_evidence"' in status
+    assert '"boss_death_evidence"' in status
+
+
 def test_validation_route_boss_terminal_requires_unit_kill_provenance():
     mgr = read(BOT_MGR)
     mgr_header = read(BOT_MGR_HEADER)

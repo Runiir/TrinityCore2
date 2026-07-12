@@ -3487,6 +3487,51 @@ TC> {"duration_minutes":0.5,"decisions":69,"total_kills":1,"target_priority_deci
     assert report["progress_counters"]["boss_kill_evidence"] == 0
 
 
+def test_live_bot_validation_accepts_confirmed_unit_death_as_scoped_boss_evidence():
+    output = """
+TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":120,"kills":4}
+TC> {"trace_schema_version":1,"entries":[{"action":"boss_killed","result":"confirmed_unit_death","target_id":392,"route_node_id":"azil","route_generation":2},{"action":"validation_route_terminal","result":"boss_killed","target_id":392,"route_node_id":"azil","route_generation":2},{"action":"validation_route_manifest_complete","result":"boss_killed","route_node_id":"azil","route_generation":2}]}
+TC> {"duration_minutes":9.0,"decisions":120,"total_kills":4}
+"""
+    manifest = {
+        "advance_mode": "terminal",
+        "routes": [
+            {"route_node_id": "corborus", "route_generation": 1, "kind": "boss"},
+            {"route_node_id": "azil", "route_generation": 2, "kind": "boss"},
+        ],
+    }
+
+    report = live_validation_report(
+        output,
+        validation_context={"scenario_id": "stonecore_5n"},
+        validation_route_manifest=manifest,
+    )
+
+    assert report["evidence"]["boss_kill_evidence"] == 1
+    assert report["evidence"]["manifest_completion_evidence"] == [
+        {"route_node_id": "azil", "route_generation": 2}
+    ]
+    assert "missing_node_terminal_evidence" in report["final_evidence_rejections"]
+    assert "missing_real_boss_kill_evidence" in report["final_evidence_rejections"]
+
+
+def test_live_bot_validation_rejects_unmatched_manifest_completion_scope():
+    evidence = {
+        "route_terminal_evidence": [],
+        "real_boss_kill_evidence": [],
+        "manifest_completion_evidence": [{"route_node_id": "wrong", "route_generation": 2}],
+    }
+    manifest = {
+        "advance_mode": "terminal",
+        "routes": [{"route_node_id": "azil", "route_generation": 2, "kind": "boss"}],
+    }
+
+    strict = strict_manifest_evidence(evidence, manifest)
+
+    assert strict["missing_terminal_route_nodes"] == ["azil"]
+    assert strict["missing_boss_route_nodes"] == ["azil"]
+
+
 def test_live_bot_validation_rejects_raw_manifest_complete_without_scoped_evidence():
     output = """
 TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":120,"kills":10}

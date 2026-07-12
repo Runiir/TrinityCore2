@@ -1711,6 +1711,8 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
     _validationRouteActivationApplied = false;
     _validationRouteActivationAttempts = 0;
     _validationRouteManifest.clear();
+    _validationRouteTerminalEvidence.clear();
+    _validationRouteBossDeathEvidence.clear();
     _validationRouteManifestIndex = 0;
     _validationRouteGeneration = _config.ValidationRouteGeneration;
     _validationRouteManifestAdvancePending = false;
@@ -2098,6 +2100,13 @@ bool BotWorldPopulationMgr::MaybeAdvanceValidationRouteManifest()
 
     if (!terminal)
         return false;
+
+    bool terminalRecorded = std::any_of(_validationRouteTerminalEvidence.begin(), _validationRouteTerminalEvidence.end(), [this](ValidationRouteEvidence const& evidence)
+    {
+        return evidence.NodeId == _config.ValidationRouteNodeId && evidence.Generation == _validationRouteGeneration;
+    });
+    if (!terminalRecorded)
+        _validationRouteTerminalEvidence.push_back({_config.ValidationRouteNodeId, _validationRouteGeneration, _config.ValidationRouteKind, ObjectGuid::Empty, _config.ValidationRouteTargetEntry, terminalReason});
 
     size_t nextIndex = _validationRouteManifestIndex + 1;
     Player* reporter = nullptr;
@@ -14776,6 +14785,7 @@ void BotWorldPopulationMgr::NotifyCreatureDeath(Creature* killed)
         return;
 
     _validationRouteRecordedKillGuids.insert(killed->GetGUID());
+    _validationRouteBossDeathEvidence.push_back({_config.ValidationRouteNodeId, _validationRouteGeneration, _config.ValidationRouteKind, killed->GetGUID(), killed->GetEntry(), "confirmed_unit_death"});
     ++_metrics.Kills;
     reporterState->LastKilledTargetGuid = killed->GetGUID();
     std::string raw = BuildRawJson(reporter, killed);
@@ -16443,6 +16453,26 @@ BotWorldStatus BotWorldPopulationMgr::GetStatus() const
     return status;
 }
 
+std::string BotWorldPopulationMgr::BuildValidationRouteEvidenceJson(std::vector<ValidationRouteEvidence> const& evidence) const
+{
+    std::ostringstream json;
+    json << "[";
+    for (size_t index = 0; index < evidence.size(); ++index)
+    {
+        if (index)
+            json << ",";
+        ValidationRouteEvidence const& row = evidence[index];
+        json << "{\"route_node_id\":\"" << JsonEscape(row.NodeId)
+             << "\",\"route_generation\":" << row.Generation
+             << ",\"route_kind\":\"" << JsonEscape(row.Kind)
+             << "\",\"target_id\":" << row.TargetGuid.GetRawValue()
+             << ",\"target_entry\":" << row.TargetEntry
+             << ",\"result\":\"" << JsonEscape(row.Reason) << "\"}";
+    }
+    json << "]";
+    return json.str();
+}
+
 std::string BotWorldPopulationMgr::GetStatusJson() const
 {
     BotWorldStatus status = GetStatus();
@@ -16485,7 +16515,10 @@ std::string BotWorldPopulationMgr::GetStatusJson() const
          << ",\"advance_mode\":\"" << JsonEscape(_config.ValidationRouteAdvanceMode) << "\""
          << ",\"manifest_index\":" << _validationRouteManifestIndex
          << ",\"manifest_count\":" << _validationRouteManifest.size()
+         << ",\"generation\":" << _validationRouteGeneration
          << ",\"manifest_complete\":" << (_validationRouteManifestComplete ? "true" : "false")
+         << ",\"terminal_evidence\":" << BuildValidationRouteEvidenceJson(_validationRouteTerminalEvidence)
+         << ",\"boss_death_evidence\":" << BuildValidationRouteEvidenceJson(_validationRouteBossDeathEvidence)
          << ",\"manifest_load_error\":\"" << JsonEscape(_validationRouteManifestLoadError) << "\""
          << ",\"scenario_id\":\"" << JsonEscape(_config.ValidationRouteScenarioId) << "\""
          << ",\"node_id\":\"" << JsonEscape(_config.ValidationRouteNodeId) << "\""

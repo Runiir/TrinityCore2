@@ -7,10 +7,10 @@ from typing import Any
 
 try:
     from .common import read_jsonl, stable_hash, write_json
-    from .run_live_bot_validation import forbidden_completion_assists, scoped_event_evidence, scoped_validation_evidence_counts, strict_manifest_evidence, trace_entries
+    from .run_live_bot_validation import confirmed_boss_death_event, forbidden_completion_assists, scoped_event_evidence, scoped_validation_evidence_counts, strict_manifest_evidence, trace_entries
 except ImportError:
     from common import read_jsonl, stable_hash, write_json
-    from run_live_bot_validation import forbidden_completion_assists, scoped_event_evidence, scoped_validation_evidence_counts, strict_manifest_evidence, trace_entries
+    from run_live_bot_validation import confirmed_boss_death_event, forbidden_completion_assists, scoped_event_evidence, scoped_validation_evidence_counts, strict_manifest_evidence, trace_entries
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -310,6 +310,7 @@ def infer_report(report: dict[str, Any], scenario: dict[str, Any], routes: list[
         row
         for row in [
             *scoped_event_evidence(entries, {"validation_route_terminal"}),
+            *[row for row in (evidence.get("route_terminal_evidence") or []) if isinstance(row, dict)],
             *([row for row in (existing.get("route_terminal_evidence") or []) if isinstance(row, dict)] if attached_full_clear else []),
         ]
         if (str(row.get("route_node_id") or ""), int(row.get("route_generation") or 0)) in expected_route_scopes
@@ -322,9 +323,10 @@ def infer_report(report: dict[str, Any], scenario: dict[str, Any], routes: list[
         row
         for row in [
             *scoped_event_evidence(
-                [entry for entry in entries if str(entry.get("result") or "") == "ok" and int(entry.get("target_id") or 0) > 0],
+                [entry for entry in entries if confirmed_boss_death_event(entry)],
                 {"boss_killed", "raid_boss_killed"},
             ),
+            *[row for row in (evidence.get("real_boss_kill_evidence") or []) if isinstance(row, dict)],
             *([row for row in (existing.get("real_boss_kill_evidence") or []) if isinstance(row, dict)] if attached_full_clear else []),
         ]
         if (str(row.get("route_node_id") or ""), int(row.get("route_generation") or 0)) in expected_boss_scopes

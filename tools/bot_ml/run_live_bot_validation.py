@@ -978,6 +978,14 @@ def unresolved_route_stuck_count(entries: list[dict[str, Any]]) -> int:
     return max(unresolved_by_scope.values(), default=0)
 
 
+def confirmed_boss_death_event(entry: dict[str, Any]) -> bool:
+    return (
+        str(entry.get("action") or "") in {"boss_killed", "raid_boss_killed"}
+        and str(entry.get("result") or "") in {"ok", "confirmed_unit_death"}
+        and int(entry.get("target_id") or 0) > 0
+    )
+
+
 def strict_manifest_evidence(evidence: dict[str, Any], manifest: dict[str, Any]) -> dict[str, list[str]]:
     terminal_scopes = {
         (str(row.get("route_node_id") or ""), int(row.get("route_generation") or 0))
@@ -1204,14 +1212,35 @@ def live_evidence(
     teacher_assisted_kills = sum(1 for entry in entries if str(entry.get("action") or "") == "teacher_kill_assist")
     forbidden_assists = forbidden_completion_assists(entries)
     route_terminal_evidence = scoped_event_evidence(entries, {"validation_route_terminal"})
+    status_route = status.get("validation_route") if isinstance(status.get("validation_route"), dict) else {}
+    terminal_scopes = {(row["route_node_id"], row["route_generation"]) for row in route_terminal_evidence}
+    for row in status_route.get("terminal_evidence") or []:
+        if not isinstance(row, dict):
+            continue
+        scope = (str(row.get("route_node_id") or ""), int(row.get("route_generation") or 0))
+        if not scope[0] or scope[1] <= 0 or scope in terminal_scopes:
+            continue
+        terminal_scopes.add(scope)
+        route_terminal_evidence.append({"route_node_id": scope[0], "route_generation": scope[1]})
+    manifest_completion_evidence = scoped_event_evidence(entries, {"validation_route_manifest_complete"})
+    if bool(status_route.get("manifest_complete")):
+        node_id = str(status_route.get("node_id") or "")
+        generation = int(status_route.get("generation") or status_route.get("manifest_count") or 0)
+        if node_id and generation > 0:
+            manifest_completion_evidence = [{"route_node_id": node_id, "route_generation": generation}]
     real_boss_kill_evidence = scoped_event_evidence(
-        [
-            entry
-            for entry in entries
-            if str(entry.get("result") or "") == "ok" and int(entry.get("target_id") or 0) > 0
-        ],
+        [entry for entry in entries if confirmed_boss_death_event(entry)],
         {"boss_killed", "raid_boss_killed"},
     )
+    boss_scopes = {(row["route_node_id"], row["route_generation"]) for row in real_boss_kill_evidence}
+    for row in status_route.get("boss_death_evidence") or []:
+        if not isinstance(row, dict) or not confirmed_boss_death_event({"action": "boss_killed", **row}):
+            continue
+        scope = (str(row.get("route_node_id") or ""), int(row.get("route_generation") or 0))
+        if not scope[0] or scope[1] <= 0 or scope in boss_scopes:
+            continue
+        boss_scopes.add(scope)
+        real_boss_kill_evidence.append({"route_node_id": scope[0], "route_generation": scope[1]})
     post_failure_progress = progress_after_latest_route_failure(entries)
     action_names.update(
         str(nested_get(row, ["snapshot", "decision", "action"], ""))
@@ -1417,6 +1446,7 @@ def live_evidence(
         "boss_kill_evidence": boss_kill_evidence,
         "real_boss_kill_evidence": real_boss_kill_evidence,
         "route_terminal_evidence": route_terminal_evidence,
+        "manifest_completion_evidence": manifest_completion_evidence,
         "post_failure_progress": post_failure_progress,
         "trash_action_evidence": trash_action_evidence,
         "trash_pulls": trash_pulls,
@@ -1700,7 +1730,7 @@ def completion_reason(
     evidence: dict[str, Any] | None = None,
 ) -> str:
     evidence = evidence or {}
-    if int(evidence.get("validation_route_manifest_complete") or 0) > 0 and not terminal_failure_labels(failure_labels, state):
+    if evidence.get("manifest_completion_evidence") and not terminal_failure_labels(failure_labels, state):
         return "validation_route_manifest_complete"
     if timed_out:
         return "emergency_wall_clock_timeout"
@@ -1731,7 +1761,7 @@ def final_evidence_rejections(
     completion: str = "",
 ) -> list[str]:
     context = validation_context or {}
-    manifest_complete = int(evidence.get("validation_route_manifest_complete") or 0) > 0
+    manifest_complete = bool(evidence.get("manifest_completion_evidence"))
     rejections: list[str] = []
     if not all_passed and not manifest_complete:
         rejections.append("not_all_stages_passed")

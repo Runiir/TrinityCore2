@@ -332,6 +332,16 @@ private:
         uint32 ExpectedBotCount = 0;
     };
 
+    struct ValidationRouteEvidence
+    {
+        std::string NodeId;
+        uint64 Generation = 0;
+        std::string Kind;
+        ObjectGuid TargetGuid;
+        uint32 TargetEntry = 0;
+        std::string Reason;
+    };
+
     struct WorldBotState
     {
         struct CombatAttemptDiagnostic
@@ -1162,6 +1172,7 @@ private:
     void FlushPendingHealCast(PendingHealCast const& cast, Player* bot, char const* outcome, char const* reason);
     void UpdatePendingHealCasts();
     void ClearPendingHealCasts(char const* reason);
+    std::string BuildValidationRouteEvidenceJson(std::vector<ValidationRouteEvidence> const& evidence) const;
     SemanticOutcomeStats GetSemanticOutcomeStats(char const* entityType, uint32 entityKey) const;
     std::string BuildOutcomeStatsJson(SemanticOutcomeStats const& stats) const;
     std::string BuildEmbeddingFeaturesJson(Player const* bot, Unit const* target, char const* entityType, uint32 entityKey, char const* semanticFamily) const;
@@ -1241,6 +1252,8 @@ private:
     bool _validationRouteActivationApplied = false;
     uint32 _validationRouteActivationAttempts = 0;
     std::vector<ValidationRouteManifestNode> _validationRouteManifest;
+    std::vector<ValidationRouteEvidence> _validationRouteTerminalEvidence;
+    std::vector<ValidationRouteEvidence> _validationRouteBossDeathEvidence;
     size_t _validationRouteManifestIndex = 0;
     uint64 _validationRouteGeneration = 0;
     ObjectGuid _validationRouteEngagedBossGuid;
