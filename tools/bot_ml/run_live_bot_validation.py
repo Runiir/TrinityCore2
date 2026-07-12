@@ -1704,6 +1704,38 @@ def watchdog_state(
     }
 
 
+def resolved_manifest_failure_labels(
+    failure_labels: list[str], evidence: dict[str, Any], manifest: dict[str, Any] | None
+) -> list[str]:
+    manifest = manifest or {}
+    routes = manifest.get("routes") or []
+    if not routes or not all(isinstance(route, dict) for route in routes):
+        return failure_labels
+    final_route = routes[-1]
+    final_scope = (
+        str(final_route.get("route_node_id") or ""),
+        int(final_route.get("route_generation") or len(routes)),
+    )
+    completion_scopes = {
+        (str(row.get("route_node_id") or ""), int(row.get("route_generation") or 0))
+        for row in evidence.get("manifest_completion_evidence") or []
+        if isinstance(row, dict)
+    }
+    if final_scope[0] == "" or final_scope not in completion_scopes:
+        return failure_labels
+    strict = strict_manifest_evidence(evidence, manifest)
+    if strict["missing_terminal_route_nodes"] or strict["missing_boss_route_nodes"]:
+        return failure_labels
+    resolved = {
+        "boss_attempt_no_kill",
+        "no_progress_observed",
+        "semantic_progress_plateau",
+        "validation_route_assist_focus_loop",
+        "validation_route_stuck_loop",
+    }
+    return [label for label in failure_labels if label not in resolved]
+
+
 def terminal_failure_labels(failure_labels: list[str], state: dict[str, Any]) -> list[str]:
     counters = state.get("progress_counters") if isinstance(state.get("progress_counters"), dict) else {}
     route_motion_progress = (
@@ -1886,11 +1918,14 @@ def live_validation_report(
         max_repeated_decisions=max_repeated_decisions,
         max_death_loops=max_death_loops,
     )
+    effective_failure_labels = resolved_manifest_failure_labels(
+        failure_labels, evidence, validation_route_manifest
+    )
     reason = completion_reason(
         all_passed=all_passed,
         returncode=returncode,
         timed_out=timed_out,
-        failure_labels=failure_labels,
+        failure_labels=effective_failure_labels,
         state=state,
         evidence=evidence,
     )
@@ -1898,7 +1933,7 @@ def live_validation_report(
         all_passed=all_passed,
         returncode=returncode,
         timed_out=timed_out,
-        failure_labels=failure_labels,
+        failure_labels=effective_failure_labels,
         evidence=evidence,
         validation_context=validation_context,
         validation_route_manifest=validation_route_manifest,
@@ -1927,12 +1962,13 @@ def live_validation_report(
         "completion_reason": reason,
         "acceptable_final_evidence": not rejections,
         "final_evidence_rejections": rejections,
-        "failure_labels": failure_labels,
-        "failure_reason": failure_labels[0] if failure_labels else None,
+        "failure_labels": effective_failure_labels,
+        "superseded_failure_labels": [label for label in failure_labels if label not in effective_failure_labels],
+        "failure_reason": effective_failure_labels[0] if effective_failure_labels else None,
         "stages": stage_rows,
         "passed": passed,
-        "failed": len(stage_rows) - passed,
-        "all_passed": all_passed,
+        "failed": 0 if not rejections else len(stage_rows) - passed,
+        "all_passed": not rejections,
         "runtime_ml_control": "offline_shadow_only",
         "control_eligible": False,
     }
