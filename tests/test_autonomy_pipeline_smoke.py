@@ -1631,6 +1631,17 @@ def test_botauto_runtime_profiles_surface():
     assert '\\"validation_route\\"' in status
 
 
+def test_validation_route_cleared_trash_regroups_to_terminal_endpoint():
+    mgr = read(BOT_MGR)
+    route = function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteObjective")
+
+    assert "bool terminalTrashRegroup" in route
+    assert "&& !trashClusterHasLiveMobs()" in route
+    assert "&& !validationPartyHasActiveCombat();" in route
+    assert "MoveBotToPoint(state, bot, _config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ, true)" in route
+    assert "move_to_terminal_route_endpoint" in route
+
+
 def test_validation_route_status_persists_terminal_and_boss_death_evidence():
     mgr = read(BOT_MGR)
     header = read(BOT_MGR_HEADER)
