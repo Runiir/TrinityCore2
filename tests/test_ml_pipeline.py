@@ -37,6 +37,17 @@ from tools.bot_ml.build_validation_scenario_manifests import build_manifests as 
 from tools.bot_ml.build_live_scenario_reports import build_reports as build_live_scenario_reports, build_reports_from_live_reports, main as live_scenario_reports_main
 from tools.bot_ml.build_validation_run_plan import build_plan as build_validation_run_plan
 from tools.bot_ml.build_validation_run_status import build_status as build_validation_run_status
+from tools.bot_ml.live_validation_session import (
+    LiveValidationSessionError,
+    dvc_lock_path,
+    dvc_repository_lock,
+    ensure_healthy_matching_session,
+    build_session,
+    inspect_session,
+    live_validation_lock,
+    sha256_file,
+    systemd_transient_command,
+)
 from tools.bot_ml.run_live_bot_validation import boss_route_health_progress, bounded_console_deadline, build_bot_pool_reset_sql, command_script, live_validation_report, load_scenario_reports, load_validation_route, main as live_validation_main, parse_json_objects, parse_soap_result, read_until_console_prompt, route_segment_complete, run_worldserver, run_worldserver_completion_watchdog, split_sql_statements, trace_after, trinity_config_bool, unresolved_route_death_loop_count, unresolved_route_stuck_count, upsert_trinity_config, watchdog_state, write_validation_config
 from tools.bot_ml.orchestrator_daemon import codex_command, detect_rate_limit, handle_rate_limit, initial_state, run_one_cycle, sleep_until_resume
 from tools.bot_ml.generate_lane_configs import write_lane_config
@@ -4353,6 +4364,87 @@ TC> {"duration_minutes":2,"decisions":5}
     assert "teacher_assisted_only_evidence" in report["final_evidence_rejections"]
     assert report["completion_reason"] == "emergency_wall_clock_timeout"
     assert report["watchdog_state"]["progress_counters"]["teacher_assisted_kills"] == 1
+
+def test_live_validation_session_hashes_inputs_and_builds_bounded_systemd_command(tmp_path):
+    (tmp_path / ".git").mkdir()
+    binary = tmp_path / "worldserver"
+    binary.write_bytes(b"worldserver-v1")
+    config = tmp_path / "worldserver.conf"
+    config.write_text("BotWorld.AutoStart = 1\n", encoding="utf-8")
+
+    def runner(command):
+        assert command[:4] == ["git", "-C", str(tmp_path), "rev-parse"]
+        return subprocess.CompletedProcess(command, 0, "a" * 40 + "\n", "")
+
+    session = build_session(tmp_path, "production/token=secret", binary, config, command_runner=runner)
+    command = systemd_transient_command(session)
+
+    assert session.git_head == "a" * 40
+    assert session.binary_sha256 == sha256_file(binary)
+    assert session.environment not in session.metadata().values()
+    assert "secret" not in str(session.metadata())
+    assert command == [
+        "systemd-run", "--quiet", "--collect", f"--unit={session.unit_name}", "--service-type=exec",
+        "--property=MemoryMax=8G", "--property=MemorySwapMax=2G", "--property=CPUQuota=300%",
+        f"--working-directory={tmp_path}", str(binary), "--config", str(config),
+    ]
+
+
+def test_live_validation_session_inspects_and_restarts_only_matching_unit(tmp_path):
+    (tmp_path / ".git").mkdir()
+    binary = tmp_path / "worldserver"
+    binary.write_bytes(b"binary")
+    config = tmp_path / "worldserver.conf"
+    config.write_text("config", encoding="utf-8")
+    commands = []
+    states = iter([
+        "LoadState=loaded\nActiveState=failed\nSubState=failed\nResult=exit-code\nMainPID=0\n",
+        "LoadState=loaded\nActiveState=failed\nSubState=failed\nResult=exit-code\nMainPID=0\n",
+        "LoadState=not-found\nActiveState=inactive\nSubState=dead\nResult=success\nMainPID=0\n",
+        "LoadState=not-found\nActiveState=inactive\nSubState=dead\nResult=success\nMainPID=0\n",
+        "LoadState=loaded\nActiveState=active\nSubState=running\nResult=success\nMainPID=123\n",
+    ])
+
+    def runner(command):
+        commands.append(list(command))
+        if command[0] == "git":
+            return subprocess.CompletedProcess(command, 0, "b" * 40 + "\n", "")
+        if command[:2] == ["systemctl", "show"]:
+            return subprocess.CompletedProcess(command, 0, next(states), "")
+        return subprocess.CompletedProcess(command, 0, "", "")
+
+    session = build_session(tmp_path, "staging", binary, config, command_runner=runner)
+    result = ensure_healthy_matching_session(session, command_runner=runner)
+
+    assert result.action == "started"
+    assert result.status.healthy is True
+    assert ["systemctl", "stop", "--no-block", session.unit_name] in commands
+    assert systemd_transient_command(session) in commands
+
+
+def test_live_validation_session_fails_closed_and_locks_are_repository_scoped(tmp_path):
+    (tmp_path / ".git").mkdir()
+    binary = tmp_path / "worldserver"
+    binary.write_bytes(b"binary")
+    config = tmp_path / "worldserver.conf"
+    config.write_text("config", encoding="utf-8")
+
+    def git_runner(command):
+        if command[0] == "git":
+            return subprocess.CompletedProcess(command, 0, "c" * 40 + "\n", "")
+        return subprocess.CompletedProcess(command, 0, "", "")
+
+    session = build_session(tmp_path, "staging", binary, config, command_runner=git_runner)
+    with pytest.raises(LiveValidationSessionError):
+        ensure_healthy_matching_session(session, command_runner=lambda command: subprocess.CompletedProcess(command, 1, "", "no systemd"))
+    assert dvc_lock_path(tmp_path).parent == tmp_path / ".dvc" / "tmp" / "locks"
+    assert inspect_session(session, command_runner=lambda command: subprocess.CompletedProcess(command, 1, "", "Unit does not exist")).exists is False
+    with live_validation_lock(tmp_path, "staging"):
+        with pytest.raises(Exception):
+            with live_validation_lock(tmp_path, "staging"):
+                pass
+    with dvc_repository_lock(tmp_path) as lock_path:
+        assert lock_path == dvc_lock_path(tmp_path)
 
 
 def test_bot_autonomy_daemon_detects_rate_limit_retry_after():
