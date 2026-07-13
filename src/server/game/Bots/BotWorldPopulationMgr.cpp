@@ -16185,6 +16185,56 @@ std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson(WorldBotState con
     }
     PlayerPetData const* activePetData = bot ? const_cast<Player*>(bot)->GetPlayerPetDataCurrent() : nullptr;
     Pet const* livePet = bot ? bot->GetPet() : nullptr;
+    std::ostringstream validationRoutePackMembers;
+    validationRoutePackMembers << "[";
+    bool firstPackMember = true;
+    for (ObjectGuid const& guid : _validationRoutePackMemberGuids)
+    {
+        if (!firstPackMember)
+            validationRoutePackMembers << ",";
+        firstPackMember = false;
+        Creature const* creature = bot && bot->IsInWorld() && bot->GetMap() ? bot->GetMap()->GetCreature(guid) : nullptr;
+        validationRoutePackMembers << "{\"guid\":" << guid.GetCounter()
+            << ",\"entry\":" << guid.GetEntry()
+            << ",\"observed\":" << (creature ? "true" : "false")
+            << ",\"alive\":" << (creature && creature->IsAlive() && creature->GetHealth() ? "true" : "false")
+            << ",\"attackable\":" << (creature && bot && bot->IsValidAttackTarget(creature) ? "true" : "false")
+            << ",\"evade\":" << (creature && (creature->IsInEvadeMode() || creature->HasUnitState(UNIT_STATE_EVADE)) ? "true" : "false")
+            << ",\"engaged\":" << (_validationRoutePackEngagedGuids.find(guid) != _validationRoutePackEngagedGuids.end() ? "true" : "false")
+            << ",\"death_recorded\":" << (_validationRoutePackDeathGuids.find(guid) != _validationRoutePackDeathGuids.end() ? "true" : "false")
+            << ",\"transition_recorded\":" << (_validationRoutePackTransitionGuids.find(guid) != _validationRoutePackTransitionGuids.end() ? "true" : "false") << "}";
+    }
+    validationRoutePackMembers << "]";
+    std::ostringstream validationRouteCombatLinks;
+    validationRouteCombatLinks << "[";
+    bool firstCombatMember = true;
+    for (WorldBotState const& cohortState : _bots)
+    {
+        Player const* member = GetLoadedBot(cohortState);
+        if (!member)
+            continue;
+        if (!firstCombatMember)
+            validationRouteCombatLinks << ",";
+        firstCombatMember = false;
+        validationRouteCombatLinks << "{\"bot_guid\":" << member->GetGUID().GetCounter()
+            << ",\"in_combat\":" << (member->IsInCombat() ? "true" : "false")
+            << ",\"victim_guid\":" << (member->GetVictim() ? member->GetVictim()->GetGUID().GetCounter() : 0)
+            << ",\"attacker_guids\":[";
+        std::vector<ObjectGuid> attackerGuids;
+        attackerGuids.reserve(member->getAttackers().size());
+        for (Unit const* attacker : member->getAttackers())
+            if (attacker)
+                attackerGuids.push_back(attacker->GetGUID());
+        std::sort(attackerGuids.begin(), attackerGuids.end());
+        for (size_t index = 0; index < attackerGuids.size(); ++index)
+        {
+            if (index)
+                validationRouteCombatLinks << ",";
+            validationRouteCombatLinks << attackerGuids[index].GetCounter();
+        }
+        validationRouteCombatLinks << "]}";
+    }
+    validationRouteCombatLinks << "]";
     auto paladinReady = [&](std::initializer_list<uint32> auraIds) -> bool
     {
         if (!bot || bot->getClass() != CLASS_PALADIN)
@@ -16242,6 +16292,8 @@ std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson(WorldBotState con
          << "{\"name\":\"validation_route_pack_engaged_count\",\"value\":" << _validationRoutePackEngagedGuids.size() << "},"
          << "{\"name\":\"validation_route_pack_death_count\",\"value\":" << _validationRoutePackDeathGuids.size() << "},"
          << "{\"name\":\"validation_route_pack_transition_count\",\"value\":" << _validationRoutePackTransitionGuids.size() << "},"
+         << "{\"name\":\"validation_route_pack_members\",\"value\":" << validationRoutePackMembers.str() << "},"
+         << "{\"name\":\"validation_route_combat_links\",\"value\":" << validationRouteCombatLinks.str() << "},"
          << "{\"name\":\"validation_route_pack_observed_engagement\",\"value\":" << (_validationRoutePackObservedEngagement ? "true" : "false") << "},"
          << "{\"name\":\"validation_route_boss_add_density_phase\",\"value\":" << (_validationRouteBossAddDensityPhase ? "true" : "false") << "},"
          << "{\"name\":\"validation_route_boss_add_density_generation\",\"value\":" << _validationRouteBossAddDensityGeneration << "},"

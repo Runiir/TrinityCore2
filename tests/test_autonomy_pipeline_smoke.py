@@ -1493,6 +1493,8 @@ def test_botauto_diagnosis_and_trace_surface():
         "validation_route_pack_engaged_count",
         "validation_route_pack_death_count",
         "validation_route_pack_transition_count",
+        "validation_route_pack_members",
+        "validation_route_combat_links",
         "validation_route_pack_observed_engagement",
         "validation_route_config_kind",
         "validation_route_config_node_kind",
@@ -1521,6 +1523,23 @@ def test_botauto_diagnosis_and_trace_surface():
     ]:
         assert field in diagnosis_json
 
+    for field in [
+        "guid",
+        "entry",
+        "observed",
+        "alive",
+        "attackable",
+        "evade",
+        "engaged",
+        "death_recorded",
+        "transition_recorded",
+        "victim_guid",
+        "attacker_guids",
+    ]:
+        assert field in diagnosis_json
+    assert "bot && bot->IsInWorld() && bot->GetMap()" in diagnosis_json
+    assert '<< ",\\\"entry\\\":" << guid.GetEntry()' in diagnosis_json
+    assert "std::sort(attackerGuids.begin(), attackerGuids.end());" in diagnosis_json
     for mapping in [
         '<< ",\\"pack_generation\\":" << _validationRoutePackGeneration',
         '<< ",\\"pack_member_count\\":" << _validationRoutePackMemberGuids.size()',
