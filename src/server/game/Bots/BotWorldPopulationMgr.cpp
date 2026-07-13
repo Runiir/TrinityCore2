@@ -3851,6 +3851,7 @@ bool BotWorldPopulationMgr::TryLastSafePositionResurrect(WorldBotState& state, P
                 continue;
 
             bot->ResurrectPlayer(0.7f, false);
+            bot->SpawnCorpseBones();
             if (mapId == bot->GetMapId())
                 bot->NearTeleportTo(x, y, z, o);
             else
@@ -3936,8 +3937,9 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
     if (!bot->IsAlive())
     {
         state.DeadTimer += diff;
-        if (state.DeadTimer == diff)
+        if (!state.DeathEpisodeRecorded)
         {
+            state.DeathEpisodeRecorded = true;
             ++_metrics.Deaths;
             Unit* lastTarget = state.TargetGuid.IsEmpty() ? nullptr : ObjectAccessor::GetUnit(*bot, state.TargetGuid);
             Creature const* lastCreature = lastTarget ? lastTarget->ToCreature() : nullptr;
@@ -3983,6 +3985,7 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
             semantic = BuildSemanticJson(bot, nullptr, "corpse_recovery");
             if (recovery.Recovered)
             {
+                state.DeathEpisodeRecorded = false;
                 state.TargetGuid.Clear();
                 state.QuestWork.SelectedTargetGuid.Clear();
                 state.ConsecutiveSameDecisionCount = 0;
@@ -4000,6 +4003,7 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         return;
     }
     state.DeadTimer = 0;
+    state.DeathEpisodeRecorded = false;
     RememberSafePosition(state, bot, diff);
     RememberVisiblePois(state, bot, diff);
 
@@ -9081,15 +9085,16 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (!caster || !castSpell)
             return false;
 
-        float angle = (movementOrigin ? movementOrigin : caster)->GetAngle(bot);
+        WorldObject const* dodgeOrigin = movementOrigin && movementOrigin != bot ? movementOrigin : caster;
+        float angle = bot->GetRelativeAngle(dodgeOrigin) + float(M_PI);
         Position dodge = bot->GetFirstCollisionPosition(8.0f, angle);
-        MoveBotToPoint(state, bot, dodge.GetPositionX(), dodge.GetPositionY(), dodge.GetPositionZ());
+        bool moved = MoveBotToPoint(state, bot, dodge.GetPositionX(), dodge.GetPositionY(), dodge.GetPositionZ());
 
         std::string raw = BuildRawJson(bot, caster);
         std::string semantic = BuildSemanticJson(bot, caster, "validation_route_mechanic", &power, stage, activity);
-        RecordEvent(state, bot, "validation_route_mechanic", caster, "movement_check_jump", raw.c_str(), semantic.c_str(), bot->GetExactDist(caster), _config.ValidationRouteTargetEntry, castSpell->Id);
+        RecordEvent(state, bot, "validation_route_mechanic", caster, moved ? "movement_check_jump" : "tactical_path_rejected", raw.c_str(), semantic.c_str(), bot->GetExactDist(caster), _config.ValidationRouteTargetEntry, castSpell->Id);
         situation = "validation_route_mechanic";
-        action = "movement_check_jump";
+        action = moved ? "movement_check_jump" : "hold_tactical_path_rejected";
         return true;
     };
     auto tryValidationRouteAdds = [this, &state, bot, &power, stage, activity, &situation, &action, &target, &routeEngageRange, &tryRouteGroupHeal]() -> bool

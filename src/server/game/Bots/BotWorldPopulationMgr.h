@@ -404,6 +404,7 @@ private:
         uint32 DecisionTimer = 0;
         uint32 StuckTimer = 0;
         uint32 DeadTimer = 0;
+        bool DeathEpisodeRecorded = false;
         uint32 SafePositionTimer = 0;
         uint32 PoiScanTimer = 0;
         uint32 RestTimer = 0;

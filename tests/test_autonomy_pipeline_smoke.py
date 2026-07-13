@@ -939,7 +939,8 @@ def test_quest_first_portfolio_routing_surface():
     assert "effect.ApplyAuraName == SPELL_AURA_PERIODIC_DAMAGE_PERCENT" in validation_route_objective
     assert "if (!persistentPeriodicDamage)" in validation_route_objective
     assert "movementOrigin = aura->GetOwner();" in validation_route_objective
-    assert "(movementOrigin ? movementOrigin : caster)->GetAngle(bot)" in validation_route_objective
+    assert "WorldObject const* dodgeOrigin = movementOrigin && movementOrigin != bot ? movementOrigin : caster;" in validation_route_objective
+    assert "bot->GetRelativeAngle(dodgeOrigin) + float(M_PI)" in validation_route_objective
     assert 'ValidationRouteMechanicProfile.find("adds")' in validation_route_objective
     assert "ValidationRouteAddTargetEntries.empty()" in validation_route_objective
     assert "creature->IsInCombat() || creature->GetVictim()" in validation_route_objective
@@ -978,7 +979,9 @@ def test_quest_first_portfolio_routing_surface():
         "if (tryRouteGroupHeal(bot, target))",
     )
     assert "bot->GetFirstCollisionPosition(8.0f, angle)" in validation_route_objective
-    assert "MoveBotToPoint(state, bot, dodge.GetPositionX(), dodge.GetPositionY(), dodge.GetPositionZ())" in validation_route_objective
+    assert "bool moved = MoveBotToPoint(state, bot, dodge.GetPositionX(), dodge.GetPositionY(), dodge.GetPositionZ())" in validation_route_objective
+    assert 'moved ? "movement_check_jump" : "tactical_path_rejected"' in validation_route_objective
+    assert 'action = moved ? "movement_check_jump" : "hold_tactical_path_rejected";' in validation_route_objective
     assert "routeHasActiveCombatIntent" in mgr
     assert "state.ValidationRouteAnchorOverrideValid && routeHasActiveCombatIntent" in mgr
     assert "else if (!routeHasActiveCombatIntent && repeatedDeathNearRoute)" in mgr
@@ -1641,6 +1644,10 @@ def test_validation_route_movement_check_requires_classified_ground_danger():
     assert "profileAllowsCastMovement" not in route
     assert "if (!SpellLooksLikeGroundDanger(castSpell))" in route
     assert "if (!castSpell || !castSpell->CalcCastTime(candidate->getLevel()))" in route
+    assert "WorldObject const* dodgeOrigin = movementOrigin && movementOrigin != bot ? movementOrigin : caster;" in route
+    assert "bot->GetRelativeAngle(dodgeOrigin) + float(M_PI)" in route
+    assert 'moved ? "movement_check_jump" : "tactical_path_rejected"' in route
+    assert 'action = moved ? "movement_check_jump" : "hold_tactical_path_rejected";' in route
 
 
 def test_validation_route_cleared_trash_regroups_to_terminal_endpoint():
@@ -2189,6 +2196,13 @@ def test_recovery_smoke_records_death_recovery_without_center_fallback_unless_en
     assert 'RecordEvent(state, bot, "resurrected"' in update_bot
     assert 'RecordEvent(state, bot, "teleport_fallback_used"' in update_bot
     assert 'RecordEvent(state, bot, "death_recovery_failed"' in update_bot
+    assert "bool DeathEpisodeRecorded = false;" in read(BOT_MGR_HEADER)
+    assert "if (!state.DeathEpisodeRecorded)" in update_bot
+    assert "state.DeathEpisodeRecorded = true;" in update_bot
+    assert "state.DeathEpisodeRecorded = false;" in update_bot
+    recovery_success = update_bot.split("if (recovery.Recovered)", 1)[1].split("else", 1)[0]
+    assert "state.DeathEpisodeRecorded = false;" in recovery_success
+    assert "if (state.DeadTimer == diff)" not in update_bot
 
 
 def test_telemetry_frame_action_is_bounded_to_schema_width():
