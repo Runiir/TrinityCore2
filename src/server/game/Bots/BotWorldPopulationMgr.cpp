@@ -9646,6 +9646,25 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         action = "move_to_validation_route_anchor";
         return true;
     }
+    if (_config.ValidationRouteKind != "boss"
+        && std::string(GetDungeonRole(bot)) != "tank"
+        && routeDistance > routeArrivalRadius
+        && (_validationRoutePackObservedEngagement || _validationRouteCompletedPackCount > 0)
+        && !routeFocusMemoryFresh()
+        && routeTankFocusGuid().IsEmpty()
+        && !trashClusterHasLiveMobs()
+        && !validationPartyHasActiveCombat())
+    {
+        if (tryValidationRouteMovementCheck(target))
+            return true;
+        bool moved = MoveBotToPoint(state, bot, _config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ, true);
+        std::string raw = BuildRawJson(bot, nullptr);
+        std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_regroup", &power, stage, activity);
+        RecordEvent(state, bot, "validation_route_regroup", nullptr, moved ? "move_to_terminal_route_endpoint" : "terminal_route_endpoint_path_rejected", raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry);
+        situation = "validation_route_regroup";
+        action = moved ? "move_to_validation_route_endpoint" : "validation_route_hold_anchor";
+        return true;
+    }
     {
         DungeonTrashActionResult readinessResult;
         if (TryValidationRouteReadiness(state, bot, target, power, stage, activity, readinessResult))
@@ -9988,21 +10007,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     if (std::string(GetDungeonRole(bot)) != "tank"
         && (_config.ValidationRouteKind != "boss" || routeDistance <= routeArrivalRadius))
     {
-        bool terminalTrashRegroup = _config.ValidationRouteKind != "boss"
-            && (_validationRoutePackObservedEngagement || _validationRouteCompletedPackCount > 0)
-            && !trashClusterHasLiveMobs()
-            && !validationPartyHasActiveCombat();
-        if (terminalTrashRegroup && routeDistance > routeArrivalRadius)
-        {
-            bool moved = MoveBotToPoint(state, bot, _config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ, true);
-            std::string raw = BuildRawJson(bot, nullptr);
-            std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_regroup", &power, stage, activity);
-            RecordEvent(state, bot, "validation_route_regroup", nullptr, moved ? "move_to_terminal_route_endpoint" : "terminal_route_endpoint_path_rejected", raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry);
-            situation = "validation_route_regroup";
-            action = moved ? "move_to_validation_route_endpoint" : "validation_route_hold_anchor";
-            return true;
-        }
-
         if (Player* anchor = FindDungeonAnchor(bot))
         {
             if (anchor != bot && anchor->IsAlive() && anchor->GetMap() == bot->GetMap())

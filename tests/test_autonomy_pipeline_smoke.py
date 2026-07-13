@@ -1679,12 +1679,25 @@ def test_validation_route_movement_check_requires_classified_ground_danger():
 def test_validation_route_cleared_trash_regroups_to_terminal_endpoint():
     mgr = read(BOT_MGR)
     route = function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    readiness_call = route.index("TryValidationRouteReadiness(state, bot, target, power, stage, activity, readinessResult)")
+    endpoint_move = route.index('moved ? "move_to_terminal_route_endpoint" : "terminal_route_endpoint_path_rejected"')
+    regroup_block = route[route.rfind('if (_config.ValidationRouteKind != "boss"', 0, endpoint_move):readiness_call]
 
-    assert "bool terminalTrashRegroup" in route
-    assert "&& !trashClusterHasLiveMobs()" in route
-    assert "&& !validationPartyHasActiveCombat();" in route
-    assert "MoveBotToPoint(state, bot, _config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ, true)" in route
-    assert "move_to_terminal_route_endpoint" in route
+    assert endpoint_move < readiness_call
+    assert 'std::string(GetDungeonRole(bot)) != "tank"' in regroup_block
+    assert "routeDistance > routeArrivalRadius" in regroup_block
+    assert "(_validationRoutePackObservedEngagement || _validationRouteCompletedPackCount > 0)" in regroup_block
+    assert "!routeFocusMemoryFresh()" in regroup_block
+    assert "routeTankFocusGuid().IsEmpty()" in regroup_block
+    assert "!trashClusterHasLiveMobs()" in regroup_block
+    assert "!validationPartyHasActiveCombat()" in regroup_block
+    assert_ordered(
+        regroup_block,
+        "if (tryValidationRouteMovementCheck(target))",
+        "return true;",
+        "MoveBotToPoint(state, bot, _config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ, true)",
+    )
+    assert "move_to_terminal_route_endpoint" in regroup_block
 
 
 def test_validation_route_status_persists_terminal_and_boss_death_evidence():
@@ -2122,6 +2135,22 @@ def test_trash_terminal_uses_current_generation_truth_after_metric_restart():
         "float distance = bot->GetExactDist(creature);",
     )
     assert "recordValidationRouteTrashKill(seenRouteTarget, \"target_seen_dead\")" in route_objective
+    readiness_call = route_objective.index("TryValidationRouteReadiness(state, bot, target, power, stage, activity, readinessResult)")
+    early_terminal_regroup = route_objective.index('moved ? "move_to_terminal_route_endpoint" : "terminal_route_endpoint_path_rejected"')
+    assert early_terminal_regroup < readiness_call
+    early_regroup_block = route_objective[route_objective.rfind('if (_config.ValidationRouteKind != "boss"', 0, early_terminal_regroup):readiness_call]
+    assert 'std::string(GetDungeonRole(bot)) != "tank"' in early_regroup_block
+    assert "routeDistance > routeArrivalRadius" in early_regroup_block
+    assert "!routeFocusMemoryFresh()" in early_regroup_block
+    assert "routeTankFocusGuid().IsEmpty()" in early_regroup_block
+    assert "!trashClusterHasLiveMobs()" in early_regroup_block
+    assert "!validationPartyHasActiveCombat()" in early_regroup_block
+    assert_ordered(
+        early_regroup_block,
+        "if (tryValidationRouteMovementCheck(target))",
+        "return true;",
+        "MoveBotToPoint(state, bot, _config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ, true)",
+    )
 
     for forbidden_filter in [
         "if (!bot->IsValidAttackTarget(creature))",
