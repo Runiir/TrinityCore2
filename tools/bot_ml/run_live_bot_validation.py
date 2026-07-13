@@ -1066,6 +1066,27 @@ def progress_after_latest_route_failure(entries: list[dict[str, Any]]) -> bool:
     return all(route_failure_resolved(entries, failure) for failure in failures)
 
 
+def scripted_activation_wait_pending(entries: list[dict[str, Any]]) -> bool:
+    failures = [entry for entry in entries if route_failure(entry) and route_scope(entry) != ("", 0)]
+    if not failures:
+        return False
+    latest_failure = max(failures, key=lambda entry: (int(entry.get("timestamp_ms") or 0), int(entry.get("sequence") or 0)))
+    scope = route_scope(latest_failure)
+    activations = [
+        entry for entry in entries
+        if route_scope(entry) == scope
+        and str(entry.get("action") or "") == "validation_route_activation"
+        and trace_after(entry, latest_failure)
+    ]
+    return any(
+        route_scope(entry) == scope
+        and str(entry.get("result") or "") == "target_seen_not_attackable"
+        and trace_after(entry, activation)
+        for activation in activations
+        for entry in entries
+    )
+
+
 def unresolved_route_stuck_count(entries: list[dict[str, Any]]) -> int:
     failures = [entry for entry in entries if route_failure(entry)]
     if not failures:
@@ -1544,6 +1565,7 @@ def live_evidence(
         "route_terminal_evidence": route_terminal_evidence,
         "manifest_completion_evidence": manifest_completion_evidence,
         "post_failure_progress": post_failure_progress,
+        "scripted_activation_wait_pending": scripted_activation_wait_pending(entries),
         "trash_action_evidence": trash_action_evidence,
         "trash_pulls": trash_pulls,
         "gear_upgrades": gear_upgrades,
@@ -1565,6 +1587,7 @@ def live_evidence(
         "validation_evidence_ready": {name: count > 0 for name, count in sorted(action_evidence_counts.items())},
         "stuck_events": stuck_events,
         "unresolved_route_stuck_events": unresolved_route_stuck_events,
+        "scripted_activation_wait_pending": scripted_activation_wait_pending(entries),
         "unstuck_failures": unstuck_failures,
         "repath_events": repath_events,
         "validation_route_actions": validation_route_actions,
@@ -1680,7 +1703,9 @@ def validation_failure_labels(
         labels.append("validation_route_activation_target_absent")
     if route_actions > 0 and boss_kills <= 0 and trash_route_actions <= 0 and kill_evidence <= 0 and force_tank_focus >= 4 and boss_engagement <= 0:
         labels.append("validation_route_assist_focus_loop")
+    pending_scripted_activation = bool(evidence.get("scripted_activation_wait_pending"))
     if (route_actions > 0
+        and not pending_scripted_activation
         and not post_failure_progress
         and unresolved_route_stuck_events >= max(8, active_bots)
         and not recovered_route_stuck

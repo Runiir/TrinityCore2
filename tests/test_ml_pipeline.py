@@ -49,7 +49,7 @@ from tools.bot_ml.live_validation_session import (
     sha256_file,
     systemd_transient_command,
 )
-from tools.bot_ml.run_live_bot_validation import boss_route_health_progress, bot_status_snapshot, bounded_console_deadline, build_bot_pool_reset_sql, command_script, live_validation_report, load_scenario_reports, load_validation_route, main as live_validation_main, parse_json_objects, parse_soap_result, poll_bot_status, read_until_console_prompt, route_segment_complete, run_reusable_validation_session, run_transport_completion_watchdog, run_worldserver, run_worldserver_completion_watchdog, split_sql_statements, trace_after, trinity_config_bool, unresolved_route_death_loop_count, unresolved_route_stuck_count, upsert_trinity_config, wait_for_bot_status_state, watchdog_state, write_validation_config
+from tools.bot_ml.run_live_bot_validation import boss_route_health_progress, bot_status_snapshot, bounded_console_deadline, build_bot_pool_reset_sql, command_script, live_validation_report, load_scenario_reports, load_validation_route, main as live_validation_main, parse_json_objects, parse_soap_result, poll_bot_status, read_until_console_prompt, route_segment_complete, run_reusable_validation_session, run_transport_completion_watchdog, run_worldserver, run_worldserver_completion_watchdog, scripted_activation_wait_pending, split_sql_statements, trace_after, trinity_config_bool, unresolved_route_death_loop_count, unresolved_route_stuck_count, upsert_trinity_config, wait_for_bot_status_state, watchdog_state, write_validation_config
 from tools.bot_ml.orchestrator_daemon import codex_command, detect_rate_limit, handle_rate_limit, initial_state, run_one_cycle, sleep_until_resume
 from tools.bot_ml.generate_lane_configs import write_lane_config
 from tools.bot_ml.promote_live_validation_artifact import promote
@@ -8421,7 +8421,36 @@ def test_unresolved_route_stuck_count_ignores_wrong_scope_terminal():
     assert unresolved_route_stuck_count(entries) == 8
 
 
-def test_unresolved_route_stuck_count_accepts_same_scope_movement_resolution():
+def test_unresolved_route_stuck_count_rejects_script_activation_without_later_progress():
+    scope = {"route_node_id": "boss", "route_generation": 4}
+    failures = [{"action": "stuck_detected", "sequence": index, **scope} for index in range(1, 9)]
+
+    assert unresolved_route_stuck_count([
+        *failures,
+        {"action": "validation_route_activation", "result": "boss_route_early_activation", "sequence": 9, **scope},
+    ]) == 8
+    assert unresolved_route_stuck_count([
+        *failures,
+        {"action": "validation_route_activation", "result": "target_not_found", "sequence": 9, **scope},
+    ]) == 8
+
+
+def test_scripted_activation_wait_requires_observed_same_scope_nonattackable_target():
+    scope = {"route_node_id": "boss", "route_generation": 4}
+    failures = [{"action": "stuck_detected", "sequence": index, **scope} for index in range(1, 9)]
+    activation = {"action": "validation_route_activation", "result": "boss_route_early_activation", "sequence": 9, **scope}
+
+    assert scripted_activation_wait_pending([*failures, activation]) is False
+    assert scripted_activation_wait_pending([
+        *failures, activation,
+        {"action": "validation_route_target_search", "result": "target_seen_not_attackable", "target_id": 86, "sequence": 10, **scope},
+    ]) is True
+    assert scripted_activation_wait_pending([
+        *failures, activation,
+        {"action": "validation_route_target_search", "result": "target_seen_not_attackable", "target_id": 86, "sequence": 10, "route_node_id": "other", "route_generation": 5},
+    ]) is False
+
+
     scope = {"route_node_id": "corridor", "route_generation": 1}
     entries = [
         *[{"action": "stuck_detected", "sequence": index, **scope} for index in range(1, 9)],
