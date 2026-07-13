@@ -405,6 +405,9 @@ private:
         uint32 StuckTimer = 0;
         uint32 DeadTimer = 0;
         bool DeathEpisodeRecorded = false;
+        uint64 NativeResurrectionPendingUntilMs = 0;
+        ObjectGuid NativeResurrectionCasterGuid;
+        uint32 NativeResurrectionSpellId = 0;
         uint32 SafePositionTimer = 0;
         uint32 PoiScanTimer = 0;
         uint32 RestTimer = 0;
@@ -1101,6 +1104,7 @@ private:
     uint32 SelectInterruptSpell(Player* bot) const;
     uint32 SelectHealSpell(Player* bot, Unit* target) const;
     bool TryCastFriendlySpell(Player* bot, Unit* target, uint32 spellId, std::string* failureReason = nullptr);
+    bool TryNativePartyResurrection(WorldBotState& state, Player* healer, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, DungeonTrashActionResult& result);
     std::string BuildDungeonTrashPackJson(DungeonTrashPackFeatures const& pack) const;
     std::string BuildBossMechanicsJson(BossMechanicFeatures const& features) const;
     uint32 SelectCombatSpell(Player* bot, Unit* target) const;

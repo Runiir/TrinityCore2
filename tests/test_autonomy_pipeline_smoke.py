@@ -2263,6 +2263,64 @@ def test_recovery_smoke_records_death_recovery_without_center_fallback_unless_en
     assert "if (state.DeadTimer == diff)" not in update_bot
 
 
+def test_validation_route_healer_uses_native_party_resurrection():
+    mgr = read(BOT_MGR)
+    header = read(BOT_MGR_HEADER)
+    route = function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    native = function_body(mgr, "bool BotWorldPopulationMgr::TryNativePartyResurrection")
+    update_bot = function_body(mgr, "void BotWorldPopulationMgr::UpdateBot")
+
+    assert "bool TryNativePartyResurrection" in header
+    terminal_state = route.index("if (state.ValidationRouteTerminalState")
+    native_call = route.index("TryNativePartyResurrection(state, bot")
+    readiness_call = route.index("TryValidationRouteReadiness(state, bot")
+    assert native_call < terminal_state < readiness_call
+    for gate in [
+        'std::string(GetDungeonRole(healer)) != "healer"',
+        "healer->IsInCombat()",
+        "member->GetVictim() || !member->getAttackers().empty()",
+        "!healer->IsInSameGroupWith(member)",
+        "member->GetMap() != healer->GetMap()",
+        "member->GetInstanceId() != healer->GetInstanceId()",
+    ]:
+        assert gate in native
+    for effect in [
+        "SPELL_EFFECT_RESURRECT",
+        "SPELL_EFFECT_RESURRECT_NEW",
+        "SPELL_EFFECT_RESURRECT_WITH_AURA",
+    ]:
+        assert effect in native
+    assert "healer->HasSpell(spellId)" in native
+    assert "healer->IsWithinLOSInMap(deadMember)" in native
+    assert "healer->IsWithinDistInMap(deadMember, resurrectionRange)" in native
+    assert "healer->CastSpell(deadMember, resurrectionSpellId, false)" in native
+    assert "deadMember->GetSession()" in native
+    assert "member->GetSession()->IsBotSession()" in native
+    assert "candidate.Guid == member->GetGUID()" in native
+    assert "deadMemberPriority" in native
+    assert "member->IsResurrectRequestedBy(healer->GetGUID()) ? 2" in native
+    assert "memberState->NativeResurrectionPendingUntilMs > NowMs()" in native
+    assert "deadMember->IsResurrectRequestedBy(healer->GetGUID())" in native
+    assert "HandleResurrectResponseOpcode(response)" in native
+    assert "HandleMoveTeleportAck(ack)" in native
+    assert '"native_resurrection_completed"' in native
+    assert "NativeResurrectionPendingUntilMs" in native
+    assert "NativeResurrectionCasterGuid" in native
+    assert "NativeResurrectionSpellId" in native
+    assert "healer->FindCurrentSpellBySpellId(spellId)" in native
+    assert 'result.Action = "validation_route_native_resurrection_casting"' in native
+    assert "SPELL_ATTR8_ENFORCE_IN_COMBAT_RESSURECTION_LIMIT" in native
+    assert "state.NativeResurrectionPendingUntilMs > NowMs()" in update_bot
+    assert_ordered(update_bot, "state.NativeResurrectionPendingUntilMs > NowMs()", "RecoverDeadBot(state, bot)")
+    assert "std::sort(resurrectionCandidates.begin(), resurrectionCandidates.end()" in native
+    assert "return !left.CombatResurrection;" in native
+    assert "healer->GetSpellMaxRangeForTarget(deadMember, spellInfo)" in native
+    assert "ResurrectUsingRequestData" not in native
+    assert "ResurrectPlayer" not in native
+    assert "NearTeleportTo" not in native
+    assert "TeleportTo(" not in native
+
+
 def test_telemetry_frame_action_is_bounded_to_schema_width():
     mgr = read(BOT_MGR)
     frame_builder = function_body(mgr, "BotTelemetryFrame BotWorldPopulationMgr::BuildTelemetryFrame")

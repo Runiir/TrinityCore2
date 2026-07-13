@@ -15,6 +15,7 @@
 #include "Group.h"
 #include "GroupMgr.h"
 #include "GroupReference.h"
+#include "GameClient.h"
 #include "Instances/InstanceScript.h"
 #include "Entities/Item/Item.h"
 #include "Entities/Item/ItemTemplate.h"
@@ -23,6 +24,7 @@
 #include "Map.h"
 #include "MapManager.h"
 #include "MotionMaster.h"
+#include "MovementPackets.h"
 #include "ObjectAccessor.h"
 #include "ObjectMgr.h"
 #include "PathGenerator.h"
@@ -3972,6 +3974,14 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
 
         if (state.DeadTimer >= 5000)
         {
+            if (state.NativeResurrectionPendingUntilMs > NowMs())
+            {
+                state.DeadTimer = 0;
+                return;
+            }
+            state.NativeResurrectionPendingUntilMs = 0;
+            state.NativeResurrectionCasterGuid.Clear();
+            state.NativeResurrectionSpellId = 0;
             std::string raw = BuildRawJson(bot, nullptr);
             std::string semantic = BuildSemanticJson(bot, nullptr, "corpse_recovery");
             RecordEvent(state, bot, "death_recovery_started", nullptr, _config.DeathRecoveryMode.c_str(), raw.c_str(), semantic.c_str(), 0.0f, state.RecentDeathCount);
@@ -9553,6 +9563,16 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         std::string semantic = BuildSemanticJson(bot, nullptr, situation.c_str(), &power, stage, activity);
         RecordEvent(state, bot, "validation_route_recovery", nullptr, state.LastNoProgressReason.c_str(), raw.c_str(), semantic.c_str(), routeDistance, _config.ValidationRouteTargetEntry);
     };
+    {
+        DungeonTrashActionResult resurrectionResult;
+        if (TryNativePartyResurrection(state, bot, power, stage, activity, resurrectionResult))
+        {
+            situation = "validation_route_resurrection";
+            action = resurrectionResult.Action;
+            target = resurrectionResult.Target;
+            return true;
+        }
+    }
     if (state.ValidationRouteTerminalState
         && state.ValidationRouteGeneration == _validationRouteGeneration
         && state.ValidationRouteTerminalGeneration == _validationRouteGeneration)
@@ -11849,6 +11869,191 @@ bool BotWorldPopulationMgr::TryCastFriendlySpell(Player* bot, Unit* target, uint
 
     if (failureReason)
         failureReason->clear();
+    return true;
+}
+
+bool BotWorldPopulationMgr::TryNativePartyResurrection(WorldBotState& state, Player* healer, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, DungeonTrashActionResult& result)
+{
+    if (!healer || healer->IsInCombat() || std::string(GetDungeonRole(healer)) != "healer" || !healer->GetGroup())
+        return false;
+
+    for (WorldBotState const& cohortState : _bots)
+        if (Player* member = GetLoadedBot(cohortState); member && (member->GetVictim() || !member->getAttackers().empty()))
+            return false;
+
+    Player* deadMember = nullptr;
+    uint8 deadMemberPriority = 0;
+    for (GroupReference* itr = healer->GetGroup()->GetFirstMember(); itr != nullptr; itr = itr->next())
+    {
+        Player* member = itr->GetSource();
+        WorldBotState const* memberState = nullptr;
+        if (member)
+            for (WorldBotState const& candidate : _bots)
+                if (candidate.Guid == member->GetGUID())
+                {
+                    memberState = &candidate;
+                    break;
+                }
+        bool managedBot = memberState != nullptr;
+        if (!managedBot || member == healer || member->IsAlive() || !member->IsInWorld()
+            || !member->GetSession() || !member->GetSession()->IsBotSession()
+            || !healer->IsInSameGroupWith(member) || member->GetMap() != healer->GetMap()
+            || member->GetInstanceId() != healer->GetInstanceId())
+            continue;
+        uint8 priority = member->IsResurrectRequestedBy(healer->GetGUID()) ? 2
+            : memberState->NativeResurrectionPendingUntilMs > NowMs()
+                && memberState->NativeResurrectionCasterGuid == healer->GetGUID() ? 1 : 0;
+        if (!deadMember || priority > deadMemberPriority
+            || (priority == deadMemberPriority && member->GetGUID() < deadMember->GetGUID()))
+        {
+            deadMember = member;
+            deadMemberPriority = priority;
+        }
+    }
+    if (!deadMember)
+        return false;
+
+    for (auto const& [spellId, playerSpell] : healer->GetSpellMap())
+    {
+        if (playerSpell.state == PLAYERSPELL_REMOVED || playerSpell.disabled || !playerSpell.active)
+            continue;
+        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+        if (!spellInfo || (!spellInfo->HasEffect(SPELL_EFFECT_RESURRECT)
+            && !spellInfo->HasEffect(SPELL_EFFECT_RESURRECT_NEW)
+            && !spellInfo->HasEffect(SPELL_EFFECT_RESURRECT_WITH_AURA)))
+            continue;
+        if (healer->FindCurrentSpellBySpellId(spellId))
+        {
+            result.Handled = true;
+            result.Action = "validation_route_native_resurrection_casting";
+            result.Target = deadMember;
+            return true;
+        }
+    }
+
+    if (deadMember->IsResurrectRequested())
+    {
+        if (deadMember->IsResurrectRequestedBy(healer->GetGUID()))
+        {
+            WorldPacket response(CMSG_RESURRECT_RESPONSE, 9);
+            response << healer->GetGUID();
+            response << uint8(1);
+            deadMember->GetSession()->HandleResurrectResponseOpcode(response);
+            if (deadMember->IsBeingTeleportedNear())
+            {
+                GameClient* client = deadMember->GetSession()->GetGameClient();
+                client->SetMovedUnit(deadMember, true);
+                client->SetActivelyMovedUnit(deadMember);
+                WorldPacket ackPayload(MSG_MOVE_TELEPORT_ACK, 0);
+                WorldPackets::Movement::MoveTeleportAck ack(std::move(ackPayload));
+                ack.MoverGUID = deadMember->GetGUID();
+                deadMember->GetSession()->HandleMoveTeleportAck(ack);
+            }
+            if (deadMember->IsAlive())
+                for (WorldBotState& cohortState : _bots)
+                    if (cohortState.Guid == deadMember->GetGUID())
+                    {
+                        cohortState.NativeResurrectionPendingUntilMs = 0;
+                        cohortState.NativeResurrectionCasterGuid.Clear();
+                        cohortState.NativeResurrectionSpellId = 0;
+                        break;
+                    }
+            std::string raw = BuildRawJson(healer, deadMember);
+            std::string semantic = BuildSemanticJson(healer, deadMember, "validation_route_resurrection", &power, stage, activity);
+            RecordEvent(state, healer, "validation_route_resurrection", deadMember, deadMember->IsAlive() ? "native_resurrection_completed" : "native_request_accept_failed", raw.c_str(), semantic.c_str(), healer->GetExactDist(deadMember), 0);
+            result.Handled = true;
+            result.Action = deadMember->IsAlive() ? "validation_route_native_resurrection_complete" : "validation_route_native_resurrection_pending";
+            result.Target = deadMember;
+            return true;
+        }
+        return false;
+    }
+
+    struct ResurrectionCandidate
+    {
+        uint32 SpellId = 0;
+        SpellInfo const* Info = nullptr;
+        bool CombatResurrection = false;
+    };
+    std::vector<ResurrectionCandidate> resurrectionCandidates;
+    for (auto const& [spellId, playerSpell] : healer->GetSpellMap())
+    {
+        if (playerSpell.state == PLAYERSPELL_REMOVED || playerSpell.disabled || !playerSpell.active || !healer->HasSpell(spellId))
+            continue;
+        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+        if (!spellInfo || (!spellInfo->HasEffect(SPELL_EFFECT_RESURRECT)
+            && !spellInfo->HasEffect(SPELL_EFFECT_RESURRECT_NEW)
+            && !spellInfo->HasEffect(SPELL_EFFECT_RESURRECT_WITH_AURA)))
+            continue;
+        bool combatResurrection = spellInfo->HasAttribute(SPELL_ATTR8_ENFORCE_IN_COMBAT_RESSURECTION_LIMIT);
+        resurrectionCandidates.push_back({ spellId, spellInfo, combatResurrection });
+    }
+    std::sort(resurrectionCandidates.begin(), resurrectionCandidates.end(), [](ResurrectionCandidate const& left, ResurrectionCandidate const& right)
+    {
+        if (left.CombatResurrection != right.CombatResurrection)
+            return !left.CombatResurrection;
+        uint32 leftRecovery = std::max(left.Info->RecoveryTime, left.Info->CategoryRecoveryTime);
+        uint32 rightRecovery = std::max(right.Info->RecoveryTime, right.Info->CategoryRecoveryTime);
+        if (leftRecovery != rightRecovery)
+            return leftRecovery < rightRecovery;
+        return left.SpellId > right.SpellId;
+    });
+
+    ResurrectionCandidate const* selected = nullptr;
+    for (ResurrectionCandidate const& candidate : resurrectionCandidates)
+    {
+        if (healer->GetSpellHistory()->IsReady(candidate.Info) && HasPowerForSpell(healer, candidate.Info))
+        {
+            selected = &candidate;
+            break;
+        }
+    }
+    if (!selected)
+        return false;
+    uint32 resurrectionSpellId = selected->SpellId;
+    SpellInfo const* spellInfo = selected->Info;
+    float resurrectionRange = std::max(5.0f, healer->GetSpellMaxRangeForTarget(deadMember, spellInfo));
+
+    std::string raw = BuildRawJson(healer, deadMember);
+    std::string semantic = BuildSemanticJson(healer, deadMember, "validation_route_resurrection", &power, stage, activity);
+    if (!healer->IsWithinLOSInMap(deadMember) || !healer->IsWithinDistInMap(deadMember, resurrectionRange))
+    {
+        bool moved = MoveBotToProfileRange(state, healer, deadMember);
+        RecordEvent(state, healer, "validation_route_resurrection", deadMember, moved ? "approach_dead_member" : "tactical_path_rejected", raw.c_str(), semantic.c_str(), healer->GetExactDist(deadMember), 0, resurrectionSpellId);
+        result.Handled = true;
+        result.Action = moved ? "move_to_native_resurrection_range" : "hold_tactical_path_rejected";
+        result.Target = deadMember;
+        return true;
+    }
+
+    if (healer->HasUnitState(UNIT_STATE_CASTING) || healer->GetSpellHistory()->HasGlobalCooldown(spellInfo)
+        || !healer->GetSpellHistory()->IsReady(spellInfo) || !HasPowerForSpell(healer, spellInfo))
+        return false;
+
+    if (spellInfo->CalcCastTime(healer->getLevel()) > 0)
+    {
+        healer->StopMoving();
+        healer->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+        healer->GetMotionMaster()->MoveIdle();
+    }
+    SpellCastResult castResult = healer->CastSpell(deadMember, resurrectionSpellId, false);
+    if (castResult == SPELL_CAST_OK)
+        for (WorldBotState& cohortState : _bots)
+            if (cohortState.Guid == deadMember->GetGUID())
+            {
+                cohortState.NativeResurrectionPendingUntilMs = NowMs() + uint64(std::max<int32>(5000, spellInfo->CalcCastTime(healer->getLevel()) + 5000));
+                cohortState.NativeResurrectionCasterGuid = healer->GetGUID();
+                cohortState.NativeResurrectionSpellId = resurrectionSpellId;
+                break;
+            }
+    std::string castResultLabel = castResult == SPELL_CAST_OK
+        ? "native_cast_submitted"
+        : "spell_cast_result_" + std::to_string(uint32(castResult));
+    RecordEvent(state, healer, "validation_route_resurrection", deadMember, castResultLabel.c_str(),
+        raw.c_str(), semantic.c_str(), healer->GetExactDist(deadMember), 0, castResult == SPELL_CAST_OK ? resurrectionSpellId : 0);
+    result.Handled = true;
+    result.Action = castResult == SPELL_CAST_OK ? "validation_route_native_resurrection" : "validation_route_native_resurrection_failed";
+    result.Target = deadMember;
     return true;
 }
 
