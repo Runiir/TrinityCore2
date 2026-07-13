@@ -2204,6 +2204,8 @@ def test_recovery_smoke_records_death_recovery_without_center_fallback_unless_en
     assert 'RecordEvent(state, bot, "resurrected"' in update_bot
     assert 'RecordEvent(state, bot, "teleport_fallback_used"' in update_bot
     assert 'RecordEvent(state, bot, "death_recovery_failed"' in update_bot
+    mark_death = function_body(mgr, "void BotWorldPopulationMgr::MarkDeathDangerZone")
+    assert 'sourceEntry, state.RecentDeathCount, 0u, metadataJson.c_str()' in mark_death
     assert "bool DeathEpisodeRecorded = false;" in read(BOT_MGR_HEADER)
     assert "if (!state.DeathEpisodeRecorded)" in update_bot
     assert "state.DeathEpisodeRecorded = true;" in update_bot

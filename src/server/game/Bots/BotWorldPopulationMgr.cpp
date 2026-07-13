@@ -3111,7 +3111,7 @@ void BotWorldPopulationMgr::MarkDeathDangerZone(WorldBotState& state, Player* bo
         "INSERT INTO bot_memory_danger_zones (bot_guid, map_id, zone_id, area_id, x, y, z, radius, danger_type, source_entry, death_count, failure_count, last_event_at, metadata_json) "
         "VALUES (%u, %u, %u, %u, %f, %f, %f, 35.0, '%s', %u, %u, %u, NOW(), '%s')",
         state.Guid.GetCounter(), bot->GetMapId(), bot->GetZoneId(), bot->GetAreaId(), bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(),
-        state.RecentDeathCount >= _config.MaxDeathsBeforeFallback ? "repeated_death" : "death", sourceEntry, state.RecentDeathCount, state.RecentDeathCount, metadataJson.c_str());
+        state.RecentDeathCount >= _config.MaxDeathsBeforeFallback ? "repeated_death" : "death", sourceEntry, state.RecentDeathCount, 0u, metadataJson.c_str());
 }
 
 void BotWorldPopulationMgr::MarkStuckFailure(WorldBotState& state, Player* bot)
