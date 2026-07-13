@@ -211,7 +211,9 @@ def test_playerbot_runtime_roles_drive_universal_profile_combat():
     )
 
     decide = function_body(controller, "BotCombatDecision BotController::DecideSoloCombat")
-    assert "CombatArchetypeForClass(state.ClassId, _runtimeRole)" in decide
+    assert "CombatArchetypeForClass(state.ClassId, _runtimeRole, _classSpec)" in decide
+    assert 'classSpec == "enhancement_shaman"' in controller
+    assert "return BotCombatArchetype::MeleeDps;" in controller
     assert "GetSoloCombatArchetype(_role) != BotCombatArchetype::RangedCaster" not in decide
 
     select_profile = function_body(controller, "BotActionCandidate const* BotController::SelectProfileCombatAction")

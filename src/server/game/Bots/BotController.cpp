@@ -101,12 +101,14 @@ std::string PlayerBotExperimentId()
     return experimentId.empty() ? "playerbot" : experimentId;
 }
 
-BotCombatArchetype CombatArchetypeForClass(uint8 classId, std::string const& runtimeRole)
+BotCombatArchetype CombatArchetypeForClass(uint8 classId, std::string const& runtimeRole, std::string const& classSpec = "")
 {
     if (runtimeRole == "tank")
         return BotCombatArchetype::TankLikeMelee;
     if (runtimeRole == "healer")
         return BotCombatArchetype::HealerSolo;
+    if (classSpec == "enhancement_shaman")
+        return BotCombatArchetype::MeleeDps;
 
     switch (classId)
     {
@@ -363,7 +365,7 @@ std::string BotController::GetStatus(Player const* owner, Player const* bot) con
        << "\",\"role\":\"" << ToString(_role)
        << "\",\"runtime_role\":\"" << JsonEscape(_runtimeRole)
        << "\",\"class_spec_tag\":\"" << JsonEscape(_classSpec.empty() ? ToString(_role) : _classSpec)
-       << "\",\"combat_archetype\":\"" << ToString(bot ? CombatArchetypeForClass(bot->getClass(), _runtimeRole) : GetSoloCombatArchetype(_role))
+       << "\",\"combat_archetype\":\"" << ToString(bot ? CombatArchetypeForClass(bot->getClass(), _runtimeRole, _classSpec) : GetSoloCombatArchetype(_role))
        << "\",\"state\":\"" << (bot && bot->IsInWorld() ? "online" : "offline")
        << "\",\"owner_guid\":" << _ownerGuid.GetCounter()
        << ",\"owner_name\":\"" << JsonEscape(owner ? owner->GetName() : "offline")
@@ -377,7 +379,7 @@ std::string BotController::GetStatus(Player const* owner, Player const* bot) con
        << ",\"nearby_hazard\":" << (movement.NearbyHazard ? "true" : "false")
        << ",\"safe_position_available\":" << (movement.SafePositionAvailable ? "true" : "false") << "}"
        << ",\"combat\":{\"target_guid\":" << (_combatTargetGuid.IsEmpty() ? 0 : _combatTargetGuid.GetCounter())
-       << ",\"archetype\":\"" << ToString(bot ? CombatArchetypeForClass(bot->getClass(), _runtimeRole) : GetSoloCombatArchetype(_role)) << "\"}"
+       << ",\"archetype\":\"" << ToString(bot ? CombatArchetypeForClass(bot->getClass(), _runtimeRole, _classSpec) : GetSoloCombatArchetype(_role)) << "\"}"
        << "}";
     return ss.str();
 }
@@ -544,7 +546,7 @@ BotCombatDecision BotController::DecideSoloCombat(BotCombatState const& state) c
         decision.Intent = BotCombatIntent::UseDefensive;
     else if (state.TargetCastingSpellId && state.TargetInterruptible)
         decision.Intent = BotCombatIntent::Interrupt;
-    else if (state.TargetDistance > 5.0f && CombatArchetypeForClass(state.ClassId, _runtimeRole) != BotCombatArchetype::RangedCaster && CombatArchetypeForClass(state.ClassId, _runtimeRole) != BotCombatArchetype::RangedPhysical)
+    else if (state.TargetDistance > 5.0f && CombatArchetypeForClass(state.ClassId, _runtimeRole, _classSpec) != BotCombatArchetype::RangedCaster && CombatArchetypeForClass(state.ClassId, _runtimeRole, _classSpec) != BotCombatArchetype::RangedPhysical)
         decision.Intent = BotCombatIntent::MoveToRange;
     else if (!state.InCombat)
         decision.Intent = BotCombatIntent::PullTarget;
@@ -1321,7 +1323,7 @@ void BotController::RecordCombatFrame(BotCombatState const& frame, BotCombatDeci
     dataset.domain = "combat";
     dataset.situation = ToString(decision.Intent);
     dataset.observation_json = observation.str();
-    dataset.semantic_json = "{\"runtime_role\":\"" + JsonEscape(_runtimeRole) + "\",\"class_spec\":\"" + JsonEscape(_classSpec) + "\",\"archetype\":\"" + std::string(ToString(CombatArchetypeForClass(frame.ClassId, _runtimeRole))) + "\"}";
+    dataset.semantic_json = "{\"runtime_role\":\"" + JsonEscape(_runtimeRole) + "\",\"class_spec\":\"" + JsonEscape(_classSpec) + "\",\"archetype\":\"" + std::string(ToString(CombatArchetypeForClass(frame.ClassId, _runtimeRole, _classSpec))) + "\"}";
     dataset.valid_action_mask_json = "{\"intents\":[\"pull_target\",\"maintain_rotation\",\"interrupt\",\"use_defensive\",\"heal_self\",\"move_to_range\",\"loot\",\"recover\",\"wait\"]}";
     dataset.chosen_action_json = chosen.str();
     dataset.action_result = ToString(result);
