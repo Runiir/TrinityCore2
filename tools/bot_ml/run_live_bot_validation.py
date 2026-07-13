@@ -1066,21 +1066,47 @@ def progress_after_latest_route_failure(entries: list[dict[str, Any]]) -> bool:
     return all(route_failure_resolved(entries, failure) for failure in failures)
 
 
-def scripted_activation_wait_pending(entries: list[dict[str, Any]]) -> bool:
-    failures = [entry for entry in entries if route_failure(entry) and route_scope(entry) != ("", 0)]
-    if not failures:
+def scripted_activation_wait_pending(entries: list[dict[str, Any]], now_ms: int, max_wait_ms: int = 30000) -> bool:
+    unresolved = [
+        entry for entry in entries
+        if route_failure(entry)
+        and route_scope(entry) != ("", 0)
+        and not route_failure_resolved(entries, entry)
+    ]
+    if not unresolved:
         return False
-    latest_failure = max(failures, key=lambda entry: (int(entry.get("timestamp_ms") or 0), int(entry.get("sequence") or 0)))
-    scope = route_scope(latest_failure)
+    unresolved_by_scope = Counter(route_scope(entry) for entry in unresolved)
+    unscoped_unresolved = sum(
+        1 for entry in entries
+        if route_failure(entry)
+        and route_scope(entry) == ("", 0)
+        and not route_failure_resolved(entries, entry)
+    )
+    max_unresolved = max([unscoped_unresolved, *unresolved_by_scope.values()], default=0)
+    if unscoped_unresolved >= max_unresolved:
+        return False
+    max_scopes = {scope for scope, count in unresolved_by_scope.items() if count == max_unresolved}
+    if len(max_scopes) != 1:
+        return False
+    scope = next(iter(max_scopes))
+    latest_failure = max(
+        (entry for entry in unresolved if route_scope(entry) == scope),
+        key=lambda entry: (int(entry.get("timestamp_ms") or 0), int(entry.get("sequence") or 0)),
+    )
     activations = [
         entry for entry in entries
         if route_scope(entry) == scope
         and str(entry.get("action") or "") == "validation_route_activation"
+        and int(entry.get("timestamp_ms") or 0) > 0
         and trace_after(entry, latest_failure)
     ]
     return any(
-        route_scope(entry) == scope
+        now_ms >= int(activation.get("timestamp_ms") or 0)
+        and now_ms - int(activation.get("timestamp_ms") or 0) <= max_wait_ms
+        and route_scope(entry) == scope
+        and str(entry.get("action") or "") == "validation_route_target_search"
         and str(entry.get("result") or "") == "target_seen_not_attackable"
+        and int(entry.get("target_id") or 0) > 0
         and trace_after(entry, activation)
         for activation in activations
         for entry in entries
@@ -1565,7 +1591,7 @@ def live_evidence(
         "route_terminal_evidence": route_terminal_evidence,
         "manifest_completion_evidence": manifest_completion_evidence,
         "post_failure_progress": post_failure_progress,
-        "scripted_activation_wait_pending": scripted_activation_wait_pending(entries),
+        "scripted_activation_wait_pending": scripted_activation_wait_pending(entries, int(time.time() * 1000)),
         "trash_action_evidence": trash_action_evidence,
         "trash_pulls": trash_pulls,
         "gear_upgrades": gear_upgrades,
@@ -1587,7 +1613,6 @@ def live_evidence(
         "validation_evidence_ready": {name: count > 0 for name, count in sorted(action_evidence_counts.items())},
         "stuck_events": stuck_events,
         "unresolved_route_stuck_events": unresolved_route_stuck_events,
-        "scripted_activation_wait_pending": scripted_activation_wait_pending(entries),
         "unstuck_failures": unstuck_failures,
         "repath_events": repath_events,
         "validation_route_actions": validation_route_actions,

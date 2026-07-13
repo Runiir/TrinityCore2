@@ -8435,22 +8435,49 @@ def test_unresolved_route_stuck_count_rejects_script_activation_without_later_pr
     ]) == 8
 
 
-def test_scripted_activation_wait_requires_observed_same_scope_nonattackable_target():
+def test_scripted_activation_wait_requires_recent_real_same_scope_target_search():
     scope = {"route_node_id": "boss", "route_generation": 4}
-    failures = [{"action": "stuck_detected", "sequence": index, **scope} for index in range(1, 9)]
-    activation = {"action": "validation_route_activation", "result": "boss_route_early_activation", "sequence": 9, **scope}
+    failures = [{"action": "stuck_detected", "timestamp_ms": 1000 + index, **scope} for index in range(8)]
+    activation = {"action": "validation_route_activation", "result": "boss_route_early_activation", "timestamp_ms": 2000, **scope}
+    target = {"action": "validation_route_target_search", "result": "target_seen_not_attackable", "target_id": 86, "timestamp_ms": 3000, **scope}
 
-    assert scripted_activation_wait_pending([*failures, activation]) is False
+    assert scripted_activation_wait_pending([*failures, activation], 3000) is False
+    assert scripted_activation_wait_pending([*failures, activation, target], 3001) is True
+    assert scripted_activation_wait_pending([*failures, activation, {**target, "target_id": 0}], 3001) is False
+    assert scripted_activation_wait_pending([*failures, activation, {**target, "action": "unrelated"}], 3001) is False
+    assert scripted_activation_wait_pending([*failures, activation, target], 32001) is False
     assert scripted_activation_wait_pending([
         *failures, activation,
-        {"action": "validation_route_target_search", "result": "target_seen_not_attackable", "target_id": 86, "sequence": 10, **scope},
-    ]) is True
-    assert scripted_activation_wait_pending([
-        *failures, activation,
-        {"action": "validation_route_target_search", "result": "target_seen_not_attackable", "target_id": 86, "sequence": 10, "route_node_id": "other", "route_generation": 5},
-    ]) is False
+        {**target, "route_node_id": "other", "route_generation": 5},
+    ], 3001) is False
 
 
+def test_scripted_activation_wait_does_not_hide_another_max_stuck_scope():
+    scope_a = {"route_node_id": "a", "route_generation": 1}
+    scope_b = {"route_node_id": "b", "route_generation": 2}
+    entries = [
+        *[{"action": "stuck_detected", "timestamp_ms": 1000 + index, **scope_a} for index in range(8)],
+        *[{"action": "stuck_detected", "timestamp_ms": 2000 + index, **scope_b} for index in range(8)],
+        {"action": "validation_route_activation", "timestamp_ms": 3000, **scope_b},
+        {"action": "validation_route_target_search", "result": "target_seen_not_attackable", "target_id": 86, "timestamp_ms": 3001, **scope_b},
+    ]
+
+    assert scripted_activation_wait_pending(entries, 3001) is False
+
+
+def test_scripted_activation_wait_does_not_hide_larger_unscoped_stuck_history():
+    scope = {"route_node_id": "boss", "route_generation": 4}
+    entries = [
+        *[{"action": "stuck_detected", "timestamp_ms": 1000 + index} for index in range(12)],
+        *[{"action": "stuck_detected", "timestamp_ms": 2000 + index, **scope} for index in range(8)],
+        {"action": "validation_route_activation", "timestamp_ms": 3000, **scope},
+        {"action": "validation_route_target_search", "result": "target_seen_not_attackable", "target_id": 86, "timestamp_ms": 3001, **scope},
+    ]
+
+    assert scripted_activation_wait_pending(entries, 3001) is False
+
+
+def test_unresolved_route_stuck_count_accepts_same_scope_movement_resolution():
     scope = {"route_node_id": "corridor", "route_generation": 1}
     entries = [
         *[{"action": "stuck_detected", "sequence": index, **scope} for index in range(1, 9)],
