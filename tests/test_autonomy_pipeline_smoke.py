@@ -840,6 +840,11 @@ def test_quest_first_portfolio_routing_surface():
     rotation_profiles_sql = read(ROOT / "sql/custom/world/2026_06_21_00_bot_rotation_profiles.sql")
     assert "blood_presence,self,tank_stance,mitigation" in rotation_profiles_sql
     assert "death_strike,self_heal,melee,threat" in rotation_profiles_sql
+    assert "(8, 'fire', 'dps', 'mana', 'ranged', 'ranged', 'none', 0, 35" in rotation_profiles_sql
+    assert "(3, 'marksmanship', 'dps', 'focus', 'ranged', 'ranged', 'ranged', 5, 35" in rotation_profiles_sql
+    for spell_id in (19434, 56641, 53209):
+        row = next(line for line in rotation_profiles_sql.splitlines() if f", {spell_id}," in line and "marksmanship" in line)
+        assert row.rstrip().endswith(", 0),") or row.rstrip().endswith(", 0);")
     assert 'if (_config.ValidationRouteKind == "boss" || activeTankFocus(focus))' in mgr
     assert 'if (_config.ValidationRouteKind != "boss" && !memberIsTank)' in mgr
     assert "move_to_validation_route_assist_target" in mgr
@@ -1931,6 +1936,7 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     assert "_validationRouteFinalTransitionGuids.clear();" in mgr
     enrollment_scan = route_objective.split("auto enrollEngagedValidationRoutePackMembers", 1)[1].split("auto persistedValidationRoutePackHasLiveMembers", 1)[0]
     assert "creature->IsSummon()" in enrollment_scan
+    assert "isLiveTrashClusterMob(creature) && isValidationCohortCombatLinked(creature)" in enrollment_scan
     assert 'RecordEvent(state, bot, "validation_route_pack_enrolled", creature, "cohort_threat_link"' in route_objective
     assert '"route_selection"' not in route_objective
     eligible_block = route_objective.split("auto isEligibleTrashClusterMob", 1)[1].split("auto isLiveTrashClusterMob", 1)[0]

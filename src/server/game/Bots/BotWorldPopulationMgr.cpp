@@ -7382,7 +7382,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         RecordEvent(state, bot, "validation_route_scripted_transition", creature, "manifest_transition_observed", raw.c_str(), semantic.c_str(), UnitHealthPct(creature), auraId);
         return true;
     };
-    auto enrollEngagedValidationRoutePackMembers = [this, bot, &isValidationCohortCombatLinked, &enrollValidationRoutePackMember, &recordValidationRouteScriptedTransition, &resolvedScriptedTransitionAuraId]() -> void
+    auto enrollEngagedValidationRoutePackMembers = [this, bot, &isLiveTrashClusterMob, &isValidationCohortCombatLinked, &enrollValidationRoutePackMember, &recordValidationRouteScriptedTransition, &resolvedScriptedTransitionAuraId]() -> void
     {
         if (_config.ValidationRouteKind == "boss" || !bot)
             return;
@@ -7405,7 +7405,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 recordValidationRouteScriptedTransition(creature);
                 continue;
             }
-            if (isValidationCohortCombatLinked(creature))
+            if (isLiveTrashClusterMob(creature) && isValidationCohortCombatLinked(creature))
                 enrollValidationRoutePackMember(creature, true);
             recordValidationRouteScriptedTransition(creature);
         }
