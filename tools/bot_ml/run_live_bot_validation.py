@@ -2362,9 +2362,24 @@ def run_transport_completion_watchdog(
         if progress_total > last_progress_total:
             last_progress_total = progress_total
             last_progress_at = time.monotonic()
+        no_progress_expired = time.monotonic() - last_progress_at >= no_progress_window_sec
+        semantic_progress_plateau = last_progress_total >= 0 and progress_total <= last_progress_total and no_progress_expired
         if report["acceptable_final_evidence"] or report["completion_reason"] in {"repeated_decision_watchdog", "death_loop_watchdog", "machine_failure_predicate"}:
             return "".join(output_parts), 0, False, command
-        if report["watchdog_state"].get("no_progress") and time.monotonic() - last_progress_at >= no_progress_window_sec:
+        if validation_route_manifest and semantic_progress_plateau:
+            report["completion_reason"] = "semantic_progress_plateau_watchdog"
+            report["watchdog_state"]["semantic_progress_plateau"] = True
+            if "semantic_progress_plateau" not in report["failure_labels"]:
+                report["failure_labels"].append("semantic_progress_plateau")
+            report["failure_reason"] = report["failure_labels"][0]
+            report["failed"] = max(int(report.get("failed") or 0), 1)
+            report["all_passed"] = False
+            report["acceptable_final_evidence"] = False
+            if "failure_labels_present" not in report["final_evidence_rejections"]:
+                report["final_evidence_rejections"].append("failure_labels_present")
+            write_json(output_dir / "report.json", report)
+            return "".join(output_parts), 0, False, command
+        if report["watchdog_state"].get("no_progress") and no_progress_expired:
             report["completion_reason"] = "no_progress_watchdog"
             write_json(output_dir / "report.json", report)
             return "".join(output_parts), 0, False, command

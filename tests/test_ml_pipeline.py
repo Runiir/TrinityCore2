@@ -3226,6 +3226,46 @@ def test_transport_completion_watchdog_never_sends_server_shutdown(tmp_path):
     assert "$ .botauto status" in result
 
 
+def test_transport_completion_watchdog_stops_manifest_semantic_plateau(tmp_path, monkeypatch):
+    commands: list[str] = []
+    output = "\n".join(
+        [
+            '{"action":"botauto_status","active":true,"active_bots":5,"target_bots":5,"decisions":500,"kills":15}',
+            '{"diagnosis_schema_version":1,"bots":[{"identity":{"bot_guid":1},"snapshot":{"decision":{"action":"validation_route_hold_anchor"},"movement":{"is_moving":false,"distance_moved_since_last_decision":0}}}]}',
+            '{"trace_schema_version":1,"entries":[{"action":"validation_route_recovery","result":"no_recovery_mode_succeeded"}]}',
+            '{"duration_minutes":8,"total_kills":15}',
+        ]
+    )
+    clock = iter(index * 0.5 for index in range(100))
+    monkeypatch.setattr("tools.bot_ml.run_live_bot_validation.time.monotonic", lambda: next(clock))
+
+    def execute(command: str, _timeout: int):
+        commands.append(command)
+        return output, 0, False
+
+    _result, returncode, timed_out, _command = run_transport_completion_watchdog(
+        execute,
+        ["session"],
+        10,
+        command_script(start=False, exit_server=False),
+        tmp_path,
+        {},
+        {"scenario_id": "stonecore_5n"},
+        validation_route_manifest={"schema": "bot_live_validation_route_manifest_v1", "route_count": 13},
+        heartbeat_sec=1,
+        no_progress_window_sec=2,
+        sleep=lambda _seconds: None,
+    )
+    report = json.loads((tmp_path / "report.json").read_text(encoding="utf-8"))
+
+    assert returncode == 0
+    assert timed_out is False
+    assert report["completion_reason"] == "semantic_progress_plateau_watchdog"
+    assert report["watchdog_state"]["semantic_progress_plateau"] is True
+    assert "semantic_progress_plateau" in report["failure_labels"]
+    assert len([command for command in commands if command == ".botauto status"]) == 2
+
+
 def test_live_bot_validation_command_script_and_output_parser():
     script = command_script(selector="all", trace_limit=20, start=True, stop=True)
 
