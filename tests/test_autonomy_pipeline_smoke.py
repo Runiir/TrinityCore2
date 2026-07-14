@@ -92,7 +92,7 @@ def test_validation_route_group_focus_reaches_profile_action_without_threat_rewa
     group_focus_start = route_objective.index("if (Unit* focusTarget = routeGroupFocusTarget())")
     group_focus_end = route_objective.index('if (std::string(GetDungeonRole(bot)) != "tank"\n        && (', group_focus_start)
     group_focus = route_objective[group_focus_start:group_focus_end]
-    later_threat_gate = 'if (routeBossTarget && _config.ValidationRouteKind != "boss" && !botIsTank && !routeFocusTankOwned(target))'
+    later_threat_gate = 'if (routeBossTarget && _config.ValidationRouteKind != "boss" && !botIsTank\n            && validationRouteHasLivingTank() && !routeFocusTankOwned(target))'
 
     assert_ordered(
         group_focus,
@@ -837,7 +837,9 @@ def test_quest_first_portfolio_routing_surface():
     assert "if (!ownedByTank)" in validation_route_objective
     assert "routeFocusTankOwned" in validation_route_objective
     assert "wait_for_tank_threat" in validation_route_objective
-    assert 'if (routeBossTarget && _config.ValidationRouteKind != "boss" && !botIsTank && !routeFocusTankOwned(target))' in validation_route_objective
+    assert 'validationRouteHasLivingTank() && !routeFocusTankOwned(target)' in validation_route_objective
+    assert "activeValidationRoutePackTarget" in validation_route_objective
+    assert "if (Unit* packTarget = activeValidationRoutePackTarget())" in validation_route_objective
     assert '"tank_positioning", target, "route_trash_tank_focus"' in validation_route_objective
     rotation_profiles_sql = read(ROOT / "sql/custom/world/2026_06_21_00_bot_rotation_profiles.sql")
     assert "blood_presence,self,tank_stance,mitigation" in rotation_profiles_sql
@@ -2601,6 +2603,33 @@ def test_profile_combat_resolver_can_require_legal_density_actions_for_exact_ene
     assert 'candidate.RejectReason = "enemy_count_too_high";' in resolver
     assert "best = bestDensityArea ? bestDensityArea : bestDensityGenerator;" in resolver
     assert "ResolveProfileCombatAction(bot, target, hostileCount, densityOnly)" in executor
+
+
+def test_hostile_profile_execution_rejects_buffs_and_stops_for_cast_time_spells():
+    mgr = read(BOT_MGR)
+    resolver = function_body(
+        mgr,
+        "ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* bot, Unit* target, uint32 hostileCount, bool densityOnly)",
+    )
+    executor = function_body(read(ROOT / "src/server/game/Bots/BotActionExecutor.cpp"), "BotActionResult BotActionExecutor::ExecuteCombat")
+
+    assert "candidate.Category == BotCombatActionCategory::Buff" in resolver
+    assert 'candidate.RejectReason = "requires_ally_target";' in resolver
+    assert "spellInfo->CalcCastTime(bot->getLevel()) > 0" in executor
+    assert_ordered(executor, "bot->StopMoving();", "MoveIdle();", "bot->CastSpell(target, action.SpellId, false)")
+
+
+def test_native_self_resurrection_uses_only_the_player_spell_cast_path():
+    mgr = read(BOT_MGR)
+    update = function_body(mgr, "void BotWorldPopulationMgr::UpdateBot")
+    self_res = function_body(mgr, "bool BotWorldPopulationMgr::TryNativeSelfResurrection")
+
+    assert "TryNativeSelfResurrection(state, bot)" in update
+    assert "PLAYER_SELF_RES_SPELL" in self_res
+    assert "SPELL_EFFECT_SELF_RESURRECT" in self_res
+    assert "bot->CastSpell(bot, spellId, false)" in self_res
+    assert "ResurrectPlayer" not in self_res
+    assert "native_self_resurrection_submitted" in self_res
 
 
 def test_validation_route_high_density_adds_use_shared_escape_and_fail_closed_to_density_contract():

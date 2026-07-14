@@ -166,6 +166,14 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
     if (target && target != bot && bot->IsValidAttackTarget(target) && action.AutoAttackMode == "melee")
         bot->Attack(target, true);
 
+    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(action.SpellId);
+    if (spellInfo && spellInfo->CalcCastTime(bot->getLevel()) > 0)
+    {
+        bot->StopMoving();
+        bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+        bot->GetMotionMaster()->MoveIdle();
+    }
+
     SpellCastResult result = bot->CastSpell(target, action.SpellId, false);
     if (result != SPELL_CAST_OK)
     {

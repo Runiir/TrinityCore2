@@ -3999,6 +3999,11 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
 
         if (state.DeadTimer >= 5000)
         {
+            if (TryNativeSelfResurrection(state, bot))
+            {
+                state.DeadTimer = 0;
+                return;
+            }
             if (state.NativeResurrectionPendingUntilMs > NowMs())
             {
                 state.DeadTimer = 0;
@@ -7523,6 +7528,31 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 return true;
         return false;
     };
+    auto activeValidationRoutePackTarget = [this, bot]() -> Unit*
+    {
+        if (_validationRoutePackGeneration != _validationRouteGeneration || !bot || !bot->GetMap())
+            return nullptr;
+
+        Creature* best = nullptr;
+        float bestScore = -std::numeric_limits<float>::max();
+        for (ObjectGuid const& guid : _validationRoutePackMemberGuids)
+        {
+            if (_validationRoutePackDeathGuids.find(guid) != _validationRoutePackDeathGuids.end()
+                || _validationRoutePackTransitionGuids.find(guid) != _validationRoutePackTransitionGuids.end())
+                continue;
+            Creature* creature = bot->GetMap()->GetCreature(guid);
+            if (!creature || !creature->IsAlive() || !creature->GetHealth() || !bot->IsValidAttackTarget(creature))
+                continue;
+            float score = (creature->IsInCombat() || creature->GetVictim() ? 10000.0f : 0.0f)
+                - bot->GetExactDist(creature);
+            if (!best || score > bestScore)
+            {
+                best = creature;
+                bestScore = score;
+            }
+        }
+        return best;
+    };
     auto isNaturalForwardHostile = [this, bot, &hasStrictPathToValidationRouteTarget, &resolvedScriptedTransitionAuraId](Creature const* creature) -> bool
     {
         if (!bot || !creature || !creature->IsAlive() || !creature->GetHealth() || creature->GetMap() != bot->GetMap())
@@ -7647,6 +7677,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return nullptr;
 
         enrollEngagedValidationRoutePackMembers();
+        if (Unit* packTarget = activeValidationRoutePackTarget())
+            return packTarget;
         float radius = discoveryLeg ? 120.0f : (_config.ValidationRouteClusterRadiusYards > 1.0f ? _config.ValidationRouteClusterRadiusYards : 90.0f);
         float searchRange = std::max(40.0f, bot->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ) + radius + 40.0f);
         std::vector<WorldObject*> objects;
@@ -9077,6 +9109,14 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             && victimPlayer->GetMap() == bot->GetMap()
             && std::string(GetDungeonRole(victimPlayer)) == "tank";
     };
+    auto validationRouteHasLivingTank = [this, bot]() -> bool
+    {
+        for (WorldBotState const& cohortState : _bots)
+            if (Player* member = GetBot(cohortState); member && member->IsAlive()
+                && member->GetMap() == bot->GetMap() && std::string(GetDungeonRole(member)) == "tank")
+                return true;
+        return false;
+    };
     bool hasValidationRouteActivation = _config.ValidationRouteActivationDataId
         || _config.ValidationRouteActivationSpawnGroupId
         || _config.ValidationRouteActivationActionEntry
@@ -10237,7 +10277,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         uint32 spellId = profileAction.SpellId;
         float engageRange = profileAction.MaxRange > 0.0f ? profileAction.MaxRange : routeEngageRange(bot, target, spellId);
         bool botIsTank = std::string(GetDungeonRole(bot)) == "tank";
-        if (routeBossTarget && _config.ValidationRouteKind != "boss" && !botIsTank && !routeFocusTankOwned(target))
+        if (routeBossTarget && _config.ValidationRouteKind != "boss" && !botIsTank
+            && validationRouteHasLivingTank() && !routeFocusTankOwned(target))
         {
             std::string raw = BuildRawJson(bot, target);
             std::string semantic = BuildSemanticJson(bot, target, "validation_route_regroup", &power, stage, activity);
@@ -12010,6 +12051,50 @@ bool BotWorldPopulationMgr::TryCastFriendlySpell(Player* bot, Unit* target, uint
     return true;
 }
 
+bool BotWorldPopulationMgr::TryNativeSelfResurrection(WorldBotState& state, Player* bot)
+{
+    if (!bot || bot->IsAlive() || bot->HasAuraType(SPELL_AURA_PREVENT_RESURRECTION))
+        return false;
+
+    uint64 const nowMs = NowMs();
+    uint32 const spellId = bot->GetUInt32Value(PLAYER_SELF_RES_SPELL);
+    if (!spellId || (state.NativeResurrectionRejectedSpellId == spellId
+        && state.NativeResurrectionRetryAfterMs > nowMs))
+        return false;
+
+    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+    if (!spellInfo || !spellInfo->HasEffect(SPELL_EFFECT_SELF_RESURRECT)
+        || !bot->GetSpellHistory()->IsReady(spellInfo))
+        return false;
+
+    std::string raw = BuildRawJson(bot, bot);
+    std::string semantic = BuildSemanticJson(bot, bot, "native_self_resurrection");
+    SpellCastResult castResult = bot->CastSpell(bot, spellId, false);
+    if (castResult == SPELL_CAST_OK)
+    {
+        state.NativeResurrectionRejectedSpellId = 0;
+        state.NativeResurrectionRejectedCastResult = 0;
+        state.NativeResurrectionRetryAfterMs = 0;
+        state.NativeResurrectionConsecutiveFailures = 0;
+        RecordEvent(state, bot, "validation_route_resurrection", bot, "native_self_resurrection_submitted",
+            raw.c_str(), semantic.c_str(), 0.0f, 0, spellId);
+        return true;
+    }
+
+    bool sameFailure = state.NativeResurrectionRejectedSpellId == spellId
+        && state.NativeResurrectionRejectedCastResult == uint32(castResult);
+    state.NativeResurrectionConsecutiveFailures = sameFailure
+        ? uint8(std::min<uint32>(255, uint32(state.NativeResurrectionConsecutiveFailures) + 1)) : 1;
+    state.NativeResurrectionRejectedTargetGuid = bot->GetGUID();
+    state.NativeResurrectionRejectedSpellId = spellId;
+    state.NativeResurrectionRejectedCastResult = uint32(castResult);
+    state.NativeResurrectionRetryAfterMs = nowMs + (state.NativeResurrectionConsecutiveFailures >= 2 ? 60000 : 5000);
+    std::string resultLabel = "native_self_resurrection_result_" + std::to_string(uint32(castResult));
+    RecordEvent(state, bot, "validation_route_resurrection", bot, resultLabel.c_str(),
+        raw.c_str(), semantic.c_str(), 0.0f, 0, spellId);
+    return false;
+}
+
 bool BotWorldPopulationMgr::TryNativePartyResurrection(WorldBotState& state, Player* healer, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, DungeonTrashActionResult& result)
 {
     if (!healer || !healer->IsAlive() || healer->IsInCombat() || !healer->GetGroup())
@@ -12754,7 +12839,10 @@ uint32 BotWorldPopulationMgr::SelectCombatSpell(Player* bot, Unit* target) const
         }
         if (candidate.Category == BotCombatActionCategory::HealFast
             || candidate.Category == BotCombatActionCategory::HealEfficient
-            || candidate.Category == BotCombatActionCategory::HealAoe)
+            || candidate.Category == BotCombatActionCategory::HealAoe
+            || candidate.Category == BotCombatActionCategory::Buff
+            || candidate.Category == BotCombatActionCategory::DispelCleanse
+            || candidate.Category == BotCombatActionCategory::ExternalDefensive)
         {
             candidate.RejectReason = "requires_ally_target";
             continue;
@@ -12854,7 +12942,8 @@ uint32 BotWorldPopulationMgr::SelectCombatSpell(Player* bot, Unit* target) const
 
         candidate.Score = roleScore;
         candidate.Reason = saturation.SaturationReason;
-        if (!best || candidate.Score > best->Score)
+        if (!best || candidate.Profile.PriorityBucket < best->Profile.PriorityBucket
+            || (candidate.Profile.PriorityBucket == best->Profile.PriorityBucket && candidate.Score > best->Score))
             best = &candidate;
     }
 
@@ -12887,6 +12976,21 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
     std::string roleGoal = BotProgressionGoalPolicy::RoleGoal(role);
     std::vector<BotActionCandidate> candidates = BotClassSpecActionProfileStore::BuildCandidates(bot, target, profile);
 
+    if (!hostileCount)
+    {
+        hostileCount = 1;
+        std::vector<WorldObject*> objects;
+        Trinity::AllWorldObjectsInRange check(target, 12.0f);
+        Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(target, objects, check);
+        Cell::VisitAllObjects(target, searcher, 12.0f);
+        for (WorldObject* object : objects)
+        {
+            Unit* unit = object ? object->ToUnit() : nullptr;
+            if (unit && unit != target && unit->IsAlive() && bot->IsValidAttackTarget(unit))
+                ++hostileCount;
+        }
+    }
+
     BotActionCandidate* best = nullptr;
     BotActionCandidate* bestDensityArea = nullptr;
     BotActionCandidate* bestDensityGenerator = nullptr;
@@ -12896,7 +13000,8 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
             || candidate.Category == BotCombatActionCategory::HealEfficient
             || candidate.Category == BotCombatActionCategory::HealAoe
             || candidate.Category == BotCombatActionCategory::DispelCleanse
-            || candidate.Category == BotCombatActionCategory::ExternalDefensive)
+            || candidate.Category == BotCombatActionCategory::ExternalDefensive
+            || candidate.Category == BotCombatActionCategory::Buff)
         {
             candidate.RejectReason = "requires_ally_target";
             continue;
@@ -12911,12 +13016,12 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
             candidate.RejectReason = "high_density_requires_area_or_generator";
             continue;
         }
-        if (hostileCount && candidate.Profile.MinEnemies > hostileCount)
+        if (candidate.Profile.MinEnemies > hostileCount)
         {
             candidate.RejectReason = "enemy_count_too_low";
             continue;
         }
-        if (hostileCount && candidate.Profile.MaxEnemies && hostileCount > candidate.Profile.MaxEnemies)
+        if (candidate.Profile.MaxEnemies && hostileCount > candidate.Profile.MaxEnemies)
         {
             candidate.RejectReason = "enemy_count_too_high";
             continue;
@@ -13026,15 +13131,18 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         candidate.Reason = saturation.SaturationReason;
         if (densityOnly && candidate.Category == BotCombatActionCategory::ResourceGenerator)
         {
-            if (!bestDensityGenerator || candidate.Score > bestDensityGenerator->Score)
+            if (!bestDensityGenerator || candidate.Profile.PriorityBucket < bestDensityGenerator->Profile.PriorityBucket
+                || (candidate.Profile.PriorityBucket == bestDensityGenerator->Profile.PriorityBucket && candidate.Score > bestDensityGenerator->Score))
                 bestDensityGenerator = &candidate;
         }
         else if (densityOnly)
         {
-            if (!bestDensityArea || candidate.Score > bestDensityArea->Score)
+            if (!bestDensityArea || candidate.Profile.PriorityBucket < bestDensityArea->Profile.PriorityBucket
+                || (candidate.Profile.PriorityBucket == bestDensityArea->Profile.PriorityBucket && candidate.Score > bestDensityArea->Score))
                 bestDensityArea = &candidate;
         }
-        else if (!best || candidate.Score > best->Score)
+        else if (!best || candidate.Profile.PriorityBucket < best->Profile.PriorityBucket
+            || (candidate.Profile.PriorityBucket == best->Profile.PriorityBucket && candidate.Score > best->Score))
             best = &candidate;
     }
 
