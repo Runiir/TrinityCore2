@@ -11968,13 +11968,14 @@ bool BotWorldPopulationMgr::TryCastFriendlySpell(Player* bot, Unit* target, uint
 
 bool BotWorldPopulationMgr::TryNativePartyResurrection(WorldBotState& state, Player* healer, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, DungeonTrashActionResult& result)
 {
-    if (!healer || healer->IsInCombat() || std::string(GetDungeonRole(healer)) != "healer" || !healer->GetGroup())
+    if (!healer || !healer->IsAlive() || healer->IsInCombat() || !healer->GetGroup())
         return false;
 
     for (WorldBotState const& cohortState : _bots)
         if (Player* member = GetLoadedBot(cohortState); member && (member->GetVictim() || !member->getAttackers().empty()))
             return false;
 
+    uint64 nowMs = NowMs();
     Player* deadMember = nullptr;
     uint8 deadMemberPriority = 0;
     for (GroupReference* itr = healer->GetGroup()->GetFirstMember(); itr != nullptr; itr = itr->next())
@@ -11994,9 +11995,13 @@ bool BotWorldPopulationMgr::TryNativePartyResurrection(WorldBotState& state, Pla
             || !healer->IsInSameGroupWith(member) || member->GetMap() != healer->GetMap()
             || member->GetInstanceId() != healer->GetInstanceId())
             continue;
-        uint8 priority = member->IsResurrectRequestedBy(healer->GetGUID()) ? 2
-            : memberState->NativeResurrectionPendingUntilMs > NowMs()
-                && memberState->NativeResurrectionCasterGuid == healer->GetGUID() ? 1 : 0;
+        bool requestedByHealer = member->IsResurrectRequestedBy(healer->GetGUID());
+        bool pendingByHealer = memberState->NativeResurrectionPendingUntilMs > nowMs
+            && memberState->NativeResurrectionCasterGuid == healer->GetGUID();
+        if ((member->IsResurrectRequested() && !requestedByHealer)
+            || (memberState->NativeResurrectionPendingUntilMs > nowMs && !pendingByHealer))
+            continue;
+        uint8 priority = requestedByHealer ? 2 : pendingByHealer ? 1 : 0;
         if (!deadMember || priority > deadMemberPriority
             || (priority == deadMemberPriority && member->GetGUID() < deadMember->GetGUID()))
         {
@@ -12093,60 +12098,62 @@ bool BotWorldPopulationMgr::TryNativePartyResurrection(WorldBotState& state, Pla
         return left.SpellId > right.SpellId;
     });
 
-    ResurrectionCandidate const* selected = nullptr;
-    for (ResurrectionCandidate const& candidate : resurrectionCandidates)
-    {
-        if (healer->GetSpellHistory()->IsReady(candidate.Info) && HasPowerForSpell(healer, candidate.Info))
-        {
-            selected = &candidate;
-            break;
-        }
-    }
-    if (!selected)
-        return false;
-    uint32 resurrectionSpellId = selected->SpellId;
-    SpellInfo const* spellInfo = selected->Info;
-    float resurrectionRange = std::max(5.0f, healer->GetSpellMaxRangeForTarget(deadMember, spellInfo));
-
     std::string raw = BuildRawJson(healer, deadMember);
     std::string semantic = BuildSemanticJson(healer, deadMember, "validation_route_resurrection", &power, stage, activity);
-    if (!healer->IsWithinLOSInMap(deadMember) || !healer->IsWithinDistInMap(deadMember, resurrectionRange))
+    for (ResurrectionCandidate const& candidate : resurrectionCandidates)
     {
-        bool moved = MoveBotToProfileRange(state, healer, deadMember);
-        RecordEvent(state, healer, "validation_route_resurrection", deadMember, moved ? "approach_dead_member" : "tactical_path_rejected", raw.c_str(), semantic.c_str(), healer->GetExactDist(deadMember), 0, resurrectionSpellId);
-        result.Handled = true;
-        result.Action = moved ? "move_to_native_resurrection_range" : "hold_tactical_path_rejected";
-        result.Target = deadMember;
-        return true;
+        SpellInfo const* spellInfo = candidate.Info;
+        if (!healer->GetSpellHistory()->IsReady(spellInfo) || !HasPowerForSpell(healer, spellInfo))
+            continue;
+
+        float resurrectionRange = std::max(5.0f, healer->GetSpellMaxRangeForTarget(deadMember, spellInfo));
+        if (!healer->IsWithinLOSInMap(deadMember) || !healer->IsWithinDistInMap(deadMember, resurrectionRange))
+        {
+            bool moved = MoveBotToProfileRange(state, healer, deadMember);
+            RecordEvent(state, healer, "validation_route_resurrection", deadMember, moved ? "approach_dead_member" : "tactical_path_rejected", raw.c_str(), semantic.c_str(), healer->GetExactDist(deadMember), 0, candidate.SpellId);
+            result.Handled = true;
+            result.Action = moved ? "move_to_native_resurrection_range" : "hold_tactical_path_rejected";
+            result.Target = deadMember;
+            return true;
+        }
+
+        if (healer->HasUnitState(UNIT_STATE_CASTING) || healer->GetSpellHistory()->HasGlobalCooldown(spellInfo))
+            return false;
+
+        if (spellInfo->CalcCastTime(healer->getLevel()) > 0)
+        {
+            healer->StopMoving();
+            healer->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+            healer->GetMotionMaster()->MoveIdle();
+        }
+        SpellCastResult castResult = healer->CastSpell(deadMember, candidate.SpellId, false);
+        if (castResult == SPELL_CAST_OK)
+        {
+            for (WorldBotState& cohortState : _bots)
+                if (cohortState.Guid == deadMember->GetGUID())
+                {
+                    cohortState.NativeResurrectionPendingUntilMs = NowMs() + uint64(std::max<int32>(5000, spellInfo->CalcCastTime(healer->getLevel()) + 5000));
+                    cohortState.NativeResurrectionCasterGuid = healer->GetGUID();
+                    cohortState.NativeResurrectionSpellId = candidate.SpellId;
+                    break;
+                }
+            RecordEvent(state, healer, "validation_route_resurrection", deadMember, "native_cast_submitted",
+                raw.c_str(), semantic.c_str(), healer->GetExactDist(deadMember), 0, candidate.SpellId);
+            result.Handled = true;
+            result.Action = "validation_route_native_resurrection";
+            result.Target = deadMember;
+            return true;
+        }
+
+        std::string castResultLabel = "spell_cast_result_" + std::to_string(uint32(castResult));
+        RecordEvent(state, healer, "validation_route_resurrection", deadMember, castResultLabel.c_str(),
+            raw.c_str(), semantic.c_str(), healer->GetExactDist(deadMember), 0, candidate.SpellId);
     }
 
-    if (healer->HasUnitState(UNIT_STATE_CASTING) || healer->GetSpellHistory()->HasGlobalCooldown(spellInfo)
-        || !healer->GetSpellHistory()->IsReady(spellInfo) || !HasPowerForSpell(healer, spellInfo))
+    if (resurrectionCandidates.empty())
         return false;
-
-    if (spellInfo->CalcCastTime(healer->getLevel()) > 0)
-    {
-        healer->StopMoving();
-        healer->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
-        healer->GetMotionMaster()->MoveIdle();
-    }
-    SpellCastResult castResult = healer->CastSpell(deadMember, resurrectionSpellId, false);
-    if (castResult == SPELL_CAST_OK)
-        for (WorldBotState& cohortState : _bots)
-            if (cohortState.Guid == deadMember->GetGUID())
-            {
-                cohortState.NativeResurrectionPendingUntilMs = NowMs() + uint64(std::max<int32>(5000, spellInfo->CalcCastTime(healer->getLevel()) + 5000));
-                cohortState.NativeResurrectionCasterGuid = healer->GetGUID();
-                cohortState.NativeResurrectionSpellId = resurrectionSpellId;
-                break;
-            }
-    std::string castResultLabel = castResult == SPELL_CAST_OK
-        ? "native_cast_submitted"
-        : "spell_cast_result_" + std::to_string(uint32(castResult));
-    RecordEvent(state, healer, "validation_route_resurrection", deadMember, castResultLabel.c_str(),
-        raw.c_str(), semantic.c_str(), healer->GetExactDist(deadMember), 0, castResult == SPELL_CAST_OK ? resurrectionSpellId : 0);
     result.Handled = true;
-    result.Action = castResult == SPELL_CAST_OK ? "validation_route_native_resurrection" : "validation_route_native_resurrection_failed";
+    result.Action = "validation_route_native_resurrection_failed";
     result.Target = deadMember;
     return true;
 }

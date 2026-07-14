@@ -7268,6 +7268,7 @@ def test_cata_action_profile_manifest_drives_validation_spells(tmp_path, monkeyp
     assert manifest["schema"] == "bot_cata_434_action_profiles_v1"
     assert 2061 in bot_spell_ids(priest, manifest)
     assert 2050 in bot_spell_ids(priest, manifest)
+    assert 2006 in bot_spell_ids(priest, manifest)
     assert 750 in bot_spell_ids(paladin, manifest)
     assert 9116 in bot_spell_ids(paladin, manifest)
     assert {53595, 31935, 26573, 53600}.issubset(set(bot_spell_ids(paladin, manifest)))
@@ -7277,6 +7278,7 @@ def test_cata_action_profile_manifest_drives_validation_spells(tmp_path, monkeyp
     assert {79104, 79106}.issubset(set(bot_spell_ids(priest, manifest)))
     assert {48263, 49222, 48792, 55233, 49998, 57330, 56222, 45477}.issubset(set(bot_spell_ids(death_knight, manifest)))
     assert 674 in bot_spell_ids(shaman, manifest)
+    assert 2008 in bot_spell_ids(shaman, manifest)
     assert {8075, 3599, 5394, 8512, 3738, 8227, 66842}.issubset(set(bot_spell_ids(shaman, manifest)))
     assert 79057 in bot_spell_ids(mage, manifest)
     assert 85767 in bot_spell_ids(warlock, manifest)

@@ -2299,12 +2299,14 @@ def test_validation_route_healer_uses_native_party_resurrection():
     readiness_call = route.index("TryValidationRouteReadiness(state, bot")
     assert native_call < terminal_state < readiness_call
     for gate in [
-        'std::string(GetDungeonRole(healer)) != "healer"',
+        "!healer->IsAlive()",
         "healer->IsInCombat()",
         "member->GetVictim() || !member->getAttackers().empty()",
         "!healer->IsInSameGroupWith(member)",
         "member->GetMap() != healer->GetMap()",
         "member->GetInstanceId() != healer->GetInstanceId()",
+        "member->IsResurrectRequested() && !requestedByHealer",
+        "memberState->NativeResurrectionPendingUntilMs > nowMs && !pendingByHealer",
     ]:
         assert gate in native
     for effect in [
@@ -2337,6 +2339,8 @@ def test_validation_route_healer_uses_native_party_resurrection():
     assert_ordered(update_bot, "state.NativeResurrectionPendingUntilMs > NowMs()", "RecoverDeadBot(state, bot)")
     assert "std::sort(resurrectionCandidates.begin(), resurrectionCandidates.end()" in native
     assert "return !left.CombatResurrection;" in native
+    assert "for (ResurrectionCandidate const& candidate : resurrectionCandidates)" in native
+    assert '"spell_cast_result_" + std::to_string(uint32(castResult))' in native
     assert "healer->GetSpellMaxRangeForTarget(deadMember, spellInfo)" in native
     assert "ResurrectUsingRequestData" not in native
     assert "ResurrectPlayer" not in native
