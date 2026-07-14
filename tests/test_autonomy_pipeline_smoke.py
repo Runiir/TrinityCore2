@@ -1999,6 +1999,8 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     assert "std::unordered_set<ObjectGuid> visited" in active_combat_scan
     assert "GetThreatManager().IsThreatenedBy" not in route_objective
     assert "combatReferences.find(creature->GetGUID())" in active_combat_scan
+    assert "_validationRoutePendingFinalTransitionGuids.find(creature->GetGUID())" in active_combat_scan
+    assert "_validationRouteFinalTransitionGuids.find(creature->GetGUID())" in active_combat_scan
     assert "AllWorldObjectsInRange" not in enrollment_scan
     assert "Cell::VisitAllObjects" not in enrollment_scan
     assert "forEachActiveValidationCohortCombatCreature" in enrollment_scan
@@ -2017,6 +2019,13 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     assert "_validationRouteFocusGuid == creature->GetGUID()" in eligible_block
     assert "AttackStop" not in transition_block
     assert "CombatStop" not in transition_block
+    ineligible_target_block = route_objective.split("else if (ineligibleTrashTarget)", 1)[1].split(
+        "if (bot->IsInCombat() && target", 1
+    )[0]
+    assert '"ineligible_trash_target"' in ineligible_target_block
+    assert "bot->AttackStop();" in ineligible_target_block
+    assert "state.TargetGuid.Clear();" in ineligible_target_block
+    assert "target = nullptr;" in ineligible_target_block
     assert_ordered(
         route_objective,
         "_validationRoutePackMemberGuids.insert(killedTarget->GetGUID());",

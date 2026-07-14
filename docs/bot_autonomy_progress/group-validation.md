@@ -20,6 +20,9 @@
 - Run 082 remained deathless for 31 kills with no stuck or repeated-decision events. Role telemetry showed 97.3% successful healing casts, zero tank cast failures, and strong DPS active-action coverage before the route blocker.
 - The remaining hunter cast failures and reduced threat-retention sample were attempts against transitioned, mechanic-immune Millhouse. The pending scripted-transition GUID was being re-enrolled from a stale combat reference after each discovered pack terminal.
 - Pending final-transition GUIDs are now excluded from natural pack enrollment until node completion promotes them to the final exclusion set. Run 082 raw evidence and its compact audit were pushed to DVC and evicted locally before this change.
+- Run 083 cleared four discovery packs and reached 37 deathless kills with no stuck, repath, or repeated-decision events. Tank threat retention improved to 90.7%, confirming the run 082 threat flag was transition-contaminated.
+- The completed fourth pack could not become terminal because party-wide active-combat detection still counted Millhouse's pending-transition stale combat reference. Pending/final transition GUIDs are now excluded from that predicate, and ineligible route targets are hard-rejected before profile action submission.
+- Run 083 raw evidence and compact role audit were pushed to DVC and evicted locally. Its 86.5% healing submission success remains a separate role-quality signal for later matched evidence; the party had zero deaths.
 
 ## 2026-06-20
 

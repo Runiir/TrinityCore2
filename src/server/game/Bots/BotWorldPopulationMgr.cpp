@@ -7461,6 +7461,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         {
             if (!creature || !creature->IsAlive() || !creature->GetHealth())
                 return;
+            if (_validationRoutePendingFinalTransitionGuids.find(creature->GetGUID()) != _validationRoutePendingFinalTransitionGuids.end()
+                || _validationRouteFinalTransitionGuids.find(creature->GetGUID()) != _validationRouteFinalTransitionGuids.end())
+                return;
             if (_validationRoutePackGeneration == _validationRouteGeneration
                 && (_validationRoutePackDeathGuids.find(creature->GetGUID()) != _validationRoutePackDeathGuids.end()
                     || _validationRoutePackTransitionGuids.find(creature->GetGUID()) != _validationRoutePackTransitionGuids.end()))
@@ -10432,6 +10435,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             std::string raw = BuildRawJson(bot, target);
             std::string semantic = BuildSemanticJson(bot, target, "validation_route_prerequisite_rejected", &power, stage, activity);
             RecordEvent(state, bot, "validation_route_prerequisite_rejected", target, "ineligible_trash_target", raw.c_str(), semantic.c_str(), targetRouteDistance, _config.ValidationRouteTargetEntry);
+            bot->AttackStop();
+            state.TargetGuid.Clear();
+            target = nullptr;
         }
     }
     if (bot->IsInCombat() && target && target->IsAlive() && bot->IsValidAttackTarget(target))
