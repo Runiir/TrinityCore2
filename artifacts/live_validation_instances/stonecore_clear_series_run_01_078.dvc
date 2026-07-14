@@ -1,0 +1,6 @@
+outs:
+- md5: d9a80070cd3ca99f2cc5db153b112d3b.dir
+  size: 209144452
+  nfiles: 27
+  hash: md5
+  path: stonecore_clear_series_run_01_078

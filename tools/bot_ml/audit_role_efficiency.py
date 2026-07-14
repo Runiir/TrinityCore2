@@ -108,6 +108,20 @@ def build_audit(report: dict[str, Any], source_hash: str) -> dict[str, Any]:
             or bool(sample.get("pet_attacking"))
             for sample in uptime_samples
         )
+        active_attempts = sum(
+            (
+                (entry.get("combat_attempt") or {}).get("failure", {}).get("result") == "ok"
+                or (entry.get("combat_attempt") or {}).get("failure", {}).get("result") in SCHEDULING_RESULTS
+                or (
+                    (entry.get("combat_attempt") or {}).get("failure", {}).get("result") == "no_action"
+                    and bool((entry.get("combat_attempt") or {}).get("failure", {}).get("gates", {}).get("casting"))
+                )
+                or bool((entry.get("combat_attempt") or {}).get("uptime", {}).get("melee_auto_attacking"))
+                or bool((entry.get("combat_attempt") or {}).get("uptime", {}).get("ranged_auto_active"))
+                or bool((entry.get("combat_attempt") or {}).get("uptime", {}).get("pet_attacking"))
+            )
+            for entry in bot_attempts
+        )
 
         tank_samples = []
         if role_by_name[name] == "tank":
@@ -138,7 +152,7 @@ def build_audit(report: dict[str, Any], source_hash: str) -> dict[str, Any]:
                 "attempts": total,
                 "result_counts": dict(sorted(result_counts.items())),
                 "successful_submission_rate": round(successes / actionable, 4) if actionable else None,
-                "active_action_coverage": round((successes + scheduling + scheduling_no_action) / total, 4) if total else None,
+                "active_action_coverage": round(active_attempts / total, 4) if total else None,
                 "cast_failure_rate": round(failures / actionable, 4) if actionable else None,
                 "passive_uptime_rate": round(passive_active / len(uptime_samples), 4) if uptime_samples else None,
                 "tank_threat_retention_rate": round(sum(tank_samples) / len(tank_samples), 4) if tank_samples else None,

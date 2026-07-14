@@ -37,6 +37,7 @@ public:
     void Face(Player* bot, Unit* target);
     void MoveUnstuck(Player* owner, Player* bot);
     void ResetThrottle(ObjectGuid botGuid);
+    uint32 LastSpellCastResult() const { return _lastSpellCastResult; }
 
 private:
     BotActionResult CheckSpell(Player* owner, Player* bot, Unit* target, uint32 spellId) const;
@@ -55,6 +56,7 @@ private:
     };
 
     std::map<ObjectGuid, FailureState> _failures;
+    uint32 _lastSpellCastResult = 0;
 };
 
 #endif

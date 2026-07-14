@@ -127,6 +127,7 @@ BotActionResult BotActionExecutor::Execute(Player* owner, Player* bot, ResolvedB
 
 BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, ResolvedCombatAction const& action)
 {
+    _lastSpellCastResult = 0;
     if (!owner)
         return BotActionResult::NoOwner;
     if (!bot || !bot->IsAlive())
@@ -195,6 +196,7 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
     SpellCastResult result = spellInfo && (spellInfo->GetExplicitTargetMask() & TARGET_FLAG_DEST_LOCATION)
         ? bot->CastSpell(Position{ target->GetPositionX(), target->GetPositionY(), target->GetPositionZ() }, action.SpellId, false)
         : bot->CastSpell(target, action.SpellId, false);
+    _lastSpellCastResult = uint32(result);
     if (result != SPELL_CAST_OK)
     {
         RecordFailure(bot->GetGUID(), action.SpellId, action.TargetGuid);

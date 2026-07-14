@@ -48,6 +48,8 @@ def test_role_audit_rejects_failed_or_idle_rotation():
         *[_entry(f"dps{i}", 3 + i, 1, "maximize_safe_damage", result="no_action", recorded=100 + i) for i in range(3)],
     ]
     entries[1]["combat_attempt"]["phase"] = "heal_cast"
+    for entry in entries[2:]:
+        entry["combat_attempt"]["uptime"]["melee_auto_attacking"] = False
     report = {"status": {}, "trace": {"entries": entries}}
 
     audit = build_audit(report, "abc")
@@ -55,6 +57,19 @@ def test_role_audit_rejects_failed_or_idle_rotation():
     assert audit["passed"] is False
     assert any(label.endswith("cast_failure_rate") for label in audit["failure_labels"])
     assert any(label.endswith("active_action_coverage") for label in audit["failure_labels"])
+
+
+def test_role_audit_credits_passive_damage_uptime_during_spell_idle_ticks():
+    entries = [
+        _entry(f"dps{i}", 3 + i, 1, "maximize_safe_damage", result="no_action", recorded=100 + i)
+        for i in range(3)
+    ]
+    report = {"status": {}, "trace": {"entries": entries}}
+
+    audit = build_audit(report, "abc")
+
+    for bot in audit["bots"]:
+        assert bot["active_action_coverage"] == 1.0
 
 
 def test_stonecore_role_profiles_include_runtime_efficiency_gates():
@@ -72,5 +87,7 @@ def test_stonecore_role_profiles_include_runtime_efficiency_gates():
     assert "pet->AI()->AttackStart(target)" in executor
     assert "a.`required_self_aura_stacks` = 5" in sql
     assert "a.`requires_interruptible_target` = 1" in sql
+    assert "a.`required_target_aura` = 1978" in sql
+    assert "a.`damage_weight` = 0.55, a.`min_enemies` = 5" in sql
     for spell_id in (31850, 85673, 86150, 11129, 3045, 34490, 30823, 51533, 73680):
         assert str(spell_id) in sql

@@ -13391,7 +13391,13 @@ BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState*
     BotActionExecutor executor;
     BotActionResult result = executor.ExecuteCombat(bot, bot, action);
     if (state)
-        RecordCombatAttempt(*state, bot, target, "cast", &action, result);
+    {
+        std::string castFailureReason;
+        if (result == BotActionResult::CastFailed)
+            castFailureReason = "spell_cast_result_" + std::to_string(executor.LastSpellCastResult());
+        RecordCombatAttempt(*state, bot, target, "cast", &action, result,
+            castFailureReason.empty() ? nullptr : castFailureReason.c_str());
+    }
     if (state && result == BotActionResult::Ok)
     {
         TryResolveBotBlocker(*state, bot, action.DebugName.c_str());

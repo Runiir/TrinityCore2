@@ -192,13 +192,13 @@ stages:
       size: 1445
     - path: dataset/validation_gear_profiles
       hash: md5
-      md5: 83ba41e1a30e7717b73d59ce96876184.dir
-      size: 360074
+      md5: e2f7d70260549ab0a6b039c4654da081.dir
+      size: 359162
       nfiles: 3
     - path: experiments/configs/cata_434_action_profiles.json
       hash: md5
-      md5: 916b55db86dc79719978797320da6bc5
-      size: 1746
+      md5: 15dd3582c15ce1235a6a010cdcc3d0bb
+      size: 1758
     - path: experiments/configs/validation_provisioning_cata_001.json
       hash: md5
       md5: e33935623a4f1a974ac000269da26015
@@ -214,9 +214,9 @@ stages:
     outs:
     - path: dataset/validation_provisioning
       hash: md5
-      md5: 28deb77ef249770ea3962772bf4c2530.dir
-      size: 339161
-      nfiles: 5
+      md5: d096fcdec0e0d60670c6ade161de9c16.dir
+      size: 352415
+      nfiles: 6
   validation_gear:
     cmd: python -m tools.bot_ml.build_validation_gear_profiles --config 
       experiments/configs/validation_provisioning_cata_001.json --output-dir 
@@ -265,8 +265,8 @@ stages:
     outs:
     - path: dataset/validation_gear_profiles
       hash: md5
-      md5: 83ba41e1a30e7717b73d59ce96876184.dir
-      size: 360074
+      md5: e2f7d70260549ab0a6b039c4654da081.dir
+      size: 359162
       nfiles: 3
   validation_provisioning_verify:
     cmd: python -m tools.bot_ml.validate_validation_provisioning --config 
@@ -293,17 +293,17 @@ stages:
       size: 337263
     - path: dataset/validation_gear_profiles
       hash: md5
-      md5: 83ba41e1a30e7717b73d59ce96876184.dir
-      size: 360074
+      md5: e2f7d70260549ab0a6b039c4654da081.dir
+      size: 359162
       nfiles: 3
     - path: dataset/validation_provisioning/report.json
       hash: md5
-      md5: 048684735f4d84d9c202dbee585f03cf
-      size: 3164
+      md5: f1fab79e4756636f5e6543c7ae77b7bb
+      size: 2993
     - path: experiments/configs/cata_434_action_profiles.json
       hash: md5
-      md5: 916b55db86dc79719978797320da6bc5
-      size: 1746
+      md5: 15dd3582c15ce1235a6a010cdcc3d0bb
+      size: 1758
     - path: experiments/configs/cata_434_combat_loot_profiles.json
       hash: md5
       md5: 36366f66744aa78fbd2c5c2b37d68ed5
@@ -347,8 +347,8 @@ stages:
     deps:
     - path: dataset/validation_provisioning/report.json
       hash: md5
-      md5: 048684735f4d84d9c202dbee585f03cf
-      size: 3164
+      md5: f1fab79e4756636f5e6543c7ae77b7bb
+      size: 2993
     - path: dataset/validation_provisioning_verification/report.json
       hash: md5
       md5: 58dfc80eda12bd5b477b11f3c2880952
