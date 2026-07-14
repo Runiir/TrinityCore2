@@ -40,6 +40,7 @@
 #include "TemporarySummon.h"
 #include "Unit.h"
 #include "Creature.h"
+#include "CreatureGroups.h"
 #include "WorldSession.h"
 #include <algorithm>
 #include <chrono>
@@ -7634,14 +7635,64 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     {
         ObjectGuid Guid;
         uint32 Entry = 0;
+        ObjectGuid::LowType SpawnId = 0;
+        uint32 FormationId = 0;
+        ObjectGuid FormationLeaderGuid;
         float Distance = 0.0f;
+        float PositionX = 0.0f;
+        float PositionY = 0.0f;
+        float PositionZ = 0.0f;
+        float HomeX = 0.0f;
+        float HomeY = 0.0f;
+        float HomeZ = 0.0f;
+        float HomeDistance = 0.0f;
+        uint32 CurrentMotionType = MAX_MOTION_TYPE;
+        uint32 ActiveMotionType = MAX_MOTION_TYPE;
         bool Observed = false;
         bool Alive = false;
         bool Attackable = false;
         bool Evade = false;
         bool Path = false;
         bool Member = false;
+        bool ReturningHome = false;
+        bool FormationMember = false;
+        bool FormationLeader = false;
+        bool FormationFormed = false;
     } trashClusterTerminalBlocker;
+    auto captureTrashClusterTerminalBlocker = [&](Creature* creature) -> void
+    {
+        if (!creature)
+            return;
+
+        trashClusterTerminalBlocker.Observed = true;
+        trashClusterTerminalBlocker.Entry = creature->GetEntry();
+        trashClusterTerminalBlocker.SpawnId = creature->GetSpawnId();
+        trashClusterTerminalBlocker.Distance = creature->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ);
+        trashClusterTerminalBlocker.PositionX = creature->GetPositionX();
+        trashClusterTerminalBlocker.PositionY = creature->GetPositionY();
+        trashClusterTerminalBlocker.PositionZ = creature->GetPositionZ();
+        Position const& home = creature->GetHomePosition();
+        trashClusterTerminalBlocker.HomeX = home.GetPositionX();
+        trashClusterTerminalBlocker.HomeY = home.GetPositionY();
+        trashClusterTerminalBlocker.HomeZ = home.GetPositionZ();
+        trashClusterTerminalBlocker.HomeDistance = creature->GetExactDist(home);
+        trashClusterTerminalBlocker.Alive = creature->IsAlive() && creature->GetHealth();
+        trashClusterTerminalBlocker.Attackable = bot->IsValidAttackTarget(creature);
+        trashClusterTerminalBlocker.Evade = creature->IsInEvadeMode() || creature->HasUnitState(UNIT_STATE_EVADE);
+        trashClusterTerminalBlocker.Path = hasStrictPathToValidationRouteTarget(creature);
+        trashClusterTerminalBlocker.ReturningHome = creature->IsReturningHome();
+        trashClusterTerminalBlocker.CurrentMotionType = creature->GetMotionMaster()->GetCurrentMovementGeneratorType();
+        trashClusterTerminalBlocker.ActiveMotionType = creature->GetMotionMaster()->GetMotionSlotType(MOTION_SLOT_ACTIVE);
+        if (CreatureGroup const* formation = creature->GetFormation())
+        {
+            trashClusterTerminalBlocker.FormationMember = true;
+            trashClusterTerminalBlocker.FormationId = formation->GetId();
+            trashClusterTerminalBlocker.FormationFormed = formation->isFormed();
+            trashClusterTerminalBlocker.FormationLeader = formation->IsLeader(creature);
+            if (Creature const* leader = formation->getLeader())
+                trashClusterTerminalBlocker.FormationLeaderGuid = leader->GetGUID();
+        }
+    };
     auto trashClusterHasLiveMobs = [&]() -> bool
     {
         trashClusterTerminalBlocker = TrashClusterTerminalBlocker();
@@ -7659,15 +7710,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 trashClusterTerminalBlocker.Guid = guid;
                 trashClusterTerminalBlocker.Member = true;
                 if (Creature* creature = bot->GetMap() ? bot->GetMap()->GetCreature(guid) : nullptr)
-                {
-                    trashClusterTerminalBlocker.Observed = true;
-                    trashClusterTerminalBlocker.Entry = creature->GetEntry();
-                    trashClusterTerminalBlocker.Distance = creature->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ);
-                    trashClusterTerminalBlocker.Alive = creature->IsAlive() && creature->GetHealth();
-                    trashClusterTerminalBlocker.Attackable = bot->IsValidAttackTarget(creature);
-                    trashClusterTerminalBlocker.Evade = creature->IsInEvadeMode() || creature->HasUnitState(UNIT_STATE_EVADE);
-                    trashClusterTerminalBlocker.Path = hasStrictPathToValidationRouteTarget(creature);
-                }
+                    captureTrashClusterTerminalBlocker(creature);
                 break;
             }
             return true;
@@ -7688,13 +7731,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             if (isLiveTrashClusterMob(creature))
             {
                 trashClusterTerminalBlocker.Guid = creature->GetGUID();
-                trashClusterTerminalBlocker.Entry = creature->GetEntry();
-                trashClusterTerminalBlocker.Distance = creature->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ);
-                trashClusterTerminalBlocker.Observed = true;
-                trashClusterTerminalBlocker.Alive = creature->IsAlive() && creature->GetHealth();
-                trashClusterTerminalBlocker.Attackable = bot->IsValidAttackTarget(creature);
-                trashClusterTerminalBlocker.Evade = creature->IsInEvadeMode() || creature->HasUnitState(UNIT_STATE_EVADE);
-                trashClusterTerminalBlocker.Path = hasStrictPathToValidationRouteTarget(creature);
+                captureTrashClusterTerminalBlocker(creature);
                 trashClusterTerminalBlocker.Member = _validationRoutePackGeneration == _validationRouteGeneration
                     && _validationRoutePackMemberGuids.find(creature->GetGUID()) != _validationRoutePackMemberGuids.end();
                 return true;
@@ -10585,13 +10622,29 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 if (packHasLiveMobs)
                     raw << "{\"guid\":" << trashClusterTerminalBlocker.Guid.GetCounter()
                         << ",\"entry\":" << trashClusterTerminalBlocker.Entry
+                        << ",\"spawn_id\":" << trashClusterTerminalBlocker.SpawnId
+                        << ",\"formation_id\":" << trashClusterTerminalBlocker.FormationId
+                        << ",\"formation_leader_guid\":" << trashClusterTerminalBlocker.FormationLeaderGuid.GetCounter()
                         << ",\"distance\":" << trashClusterTerminalBlocker.Distance
+                        << ",\"position\":{\"x\":" << trashClusterTerminalBlocker.PositionX
+                        << ",\"y\":" << trashClusterTerminalBlocker.PositionY
+                        << ",\"z\":" << trashClusterTerminalBlocker.PositionZ << "}"
+                        << ",\"home\":{\"x\":" << trashClusterTerminalBlocker.HomeX
+                        << ",\"y\":" << trashClusterTerminalBlocker.HomeY
+                        << ",\"z\":" << trashClusterTerminalBlocker.HomeZ
+                        << ",\"distance\":" << trashClusterTerminalBlocker.HomeDistance << "}"
+                        << ",\"current_motion_type\":" << trashClusterTerminalBlocker.CurrentMotionType
+                        << ",\"active_motion_type\":" << trashClusterTerminalBlocker.ActiveMotionType
                         << ",\"observed\":" << (trashClusterTerminalBlocker.Observed ? "true" : "false")
                         << ",\"alive\":" << (trashClusterTerminalBlocker.Alive ? "true" : "false")
                         << ",\"attackable\":" << (trashClusterTerminalBlocker.Attackable ? "true" : "false")
                         << ",\"evade\":" << (trashClusterTerminalBlocker.Evade ? "true" : "false")
                         << ",\"path\":" << (trashClusterTerminalBlocker.Path ? "true" : "false")
-                        << ",\"member\":" << (trashClusterTerminalBlocker.Member ? "true" : "false") << "}";
+                        << ",\"member\":" << (trashClusterTerminalBlocker.Member ? "true" : "false")
+                        << ",\"returning_home\":" << (trashClusterTerminalBlocker.ReturningHome ? "true" : "false")
+                        << ",\"formation_member\":" << (trashClusterTerminalBlocker.FormationMember ? "true" : "false")
+                        << ",\"formation_leader\":" << (trashClusterTerminalBlocker.FormationLeader ? "true" : "false")
+                        << ",\"formation_formed\":" << (trashClusterTerminalBlocker.FormationFormed ? "true" : "false") << "}";
                 else
                     raw << "null";
                 raw << "}";
@@ -16435,9 +16488,29 @@ std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson(WorldBotState con
         if (!firstPackMember)
             validationRoutePackMembers << ",";
         firstPackMember = false;
-        Creature const* creature = bot && bot->IsInWorld() && bot->GetMap() ? bot->GetMap()->GetCreature(guid) : nullptr;
+        Creature* creature = bot && bot->IsInWorld() && bot->GetMap() ? bot->GetMap()->GetCreature(guid) : nullptr;
+        CreatureGroup const* formation = creature ? creature->GetFormation() : nullptr;
+        Creature const* formationLeader = formation ? formation->getLeader() : nullptr;
+        Position const* home = creature ? &creature->GetHomePosition() : nullptr;
+        MotionMaster const* motion = creature ? creature->GetMotionMaster() : nullptr;
         validationRoutePackMembers << "{\"guid\":" << guid.GetCounter()
-            << ",\"entry\":" << guid.GetEntry()
+            << ",\"entry\":" << (creature ? creature->GetEntry() : guid.GetEntry())
+            << ",\"spawn_id\":" << (creature ? creature->GetSpawnId() : 0)
+            << ",\"position\":{\"x\":" << (creature ? creature->GetPositionX() : 0.0f)
+            << ",\"y\":" << (creature ? creature->GetPositionY() : 0.0f)
+            << ",\"z\":" << (creature ? creature->GetPositionZ() : 0.0f) << "}"
+            << ",\"home\":{\"x\":" << (home ? home->GetPositionX() : 0.0f)
+            << ",\"y\":" << (home ? home->GetPositionY() : 0.0f)
+            << ",\"z\":" << (home ? home->GetPositionZ() : 0.0f)
+            << ",\"distance\":" << (creature && home ? creature->GetExactDist(*home) : 0.0f) << "}"
+            << ",\"current_motion_type\":" << (motion ? uint32(motion->GetCurrentMovementGeneratorType()) : uint32(MAX_MOTION_TYPE))
+            << ",\"active_motion_type\":" << (motion ? uint32(motion->GetMotionSlotType(MOTION_SLOT_ACTIVE)) : uint32(MAX_MOTION_TYPE))
+            << ",\"returning_home\":" << (creature && creature->IsReturningHome() ? "true" : "false")
+            << ",\"formation_member\":" << (formation ? "true" : "false")
+            << ",\"formation_id\":" << (formation ? formation->GetId() : 0)
+            << ",\"formation_leader\":" << (formation && formation->IsLeader(creature) ? "true" : "false")
+            << ",\"formation_leader_guid\":" << (formationLeader ? formationLeader->GetGUID().GetCounter() : 0)
+            << ",\"formation_formed\":" << (formation && formation->isFormed() ? "true" : "false")
             << ",\"observed\":" << (creature ? "true" : "false")
             << ",\"alive\":" << (creature && creature->IsAlive() && creature->GetHealth() ? "true" : "false")
             << ",\"attackable\":" << (creature && bot && bot->IsValidAttackTarget(creature) ? "true" : "false")
