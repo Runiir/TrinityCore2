@@ -7281,32 +7281,79 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         return creature->GetMapId() == bot->GetMapId()
             && creature->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ) <= radius;
     };
-    auto isValidationCohortPlayer = [this](Unit const* unit) -> bool
+    auto forEachActiveValidationCohortCombatCreature = [this, bot](auto&& visitor) -> void
     {
-        Player const* player = unit ? unit->ToPlayer() : nullptr;
-        if (!player)
-            return false;
+        if (!bot || !bot->GetMap())
+            return;
+
+        std::unordered_set<ObjectGuid> visited;
         for (WorldBotState const& cohortState : _bots)
-            if (cohortState.Guid == player->GetGUID())
+        {
+            Player* member = GetLoadedBot(cohortState);
+            if (!member || !member->IsInWorld() || member->GetMap() != bot->GetMap())
+                continue;
+
+            for (auto const& pair : member->GetCombatManager().GetPvECombatRefs())
+            {
+                auto const* combatReference = pair.second;
+                if (!combatReference || combatReference->IsSuppressedFor(member))
+                    continue;
+
+                Unit* other = combatReference->GetOther(member);
+                if (!other || combatReference->IsSuppressedFor(other))
+                    continue;
+
+                Creature* creature = other->ToCreature();
+                if (!creature || creature->GetMap() != bot->GetMap() || !visited.insert(creature->GetGUID()).second)
+                    continue;
+                visitor(creature);
+            }
+        }
+    };
+    auto isValidationCohortCombatLinked = [this, bot](Creature const* creature) -> bool
+    {
+        if (!bot || !bot->GetMap() || !creature || creature->GetMap() != bot->GetMap())
+            return false;
+
+        for (WorldBotState const& cohortState : _bots)
+        {
+            Player* member = GetLoadedBot(cohortState);
+            if (!member || !member->IsInWorld() || member->GetMap() != bot->GetMap())
+                continue;
+
+            auto const& combatReferences = member->GetCombatManager().GetPvECombatRefs();
+            auto referenceItr = combatReferences.find(creature->GetGUID());
+            if (referenceItr == combatReferences.end())
+                continue;
+            auto const* combatReference = referenceItr->second;
+            if (combatReference && !combatReference->IsSuppressedFor(member) && !combatReference->IsSuppressedFor(creature))
                 return true;
+        }
         return false;
     };
-    auto isValidationCohortCombatLinked = [this, &isValidationCohortPlayer](Creature const* creature) -> bool
+    auto validationPartyHasActiveCombat = [&forEachActiveValidationCohortCombatCreature]() -> bool
     {
-        if (!creature)
+        bool active = false;
+        forEachActiveValidationCohortCombatCreature([&](Creature const*)
+        {
+            active = true;
+        });
+        return active;
+    };
+    auto isNaturalValidationRoutePackMember = [this, bot](Creature const* creature) -> bool
+    {
+        if (!bot || !creature || !creature->IsAlive() || !creature->GetHealth() || creature->GetMap() != bot->GetMap())
             return false;
-        if (isValidationCohortPlayer(creature->GetVictim()))
-            return true;
-        for (WorldBotState const& cohortState : _bots)
-            if (Player* member = GetLoadedBot(cohortState))
-                if (member->GetVictim() == creature || creature->GetThreatManager().IsThreatenedBy(member, true))
-                    return true;
-        return false;
+        if (_validationRouteFinalTransitionGuids.find(creature->GetGUID()) != _validationRouteFinalTransitionGuids.end())
+            return false;
+        if (creature->IsDungeonBoss() || creature->isWorldBoss())
+            return false;
+        return !creature->IsCritter() && !creature->IsPet() && !creature->IsTotem() && !creature->IsSummon()
+            && !creature->IsGuardian() && creature->GetOwnerGUID().IsEmpty();
     };
-    auto enrollValidationRoutePackMember = [this, bot, &state, &power, stage, activity](Creature const* creature, bool engaged) -> void
+    auto enrollValidationRoutePackMember = [this, bot, &state, &power, stage, activity, &isNaturalValidationRoutePackMember](Creature const* creature, bool engaged) -> void
     {
-        if (_config.ValidationRouteKind == "boss" || !engaged || !creature || !creature->IsAlive() || !creature->GetHealth()
-            || _validationRouteFinalTransitionGuids.find(creature->GetGUID()) != _validationRouteFinalTransitionGuids.end())
+        if (_config.ValidationRouteKind == "boss" || !engaged || !isNaturalValidationRoutePackMember(creature))
             return;
 
         if (_validationRoutePackGeneration != _validationRouteGeneration)
@@ -7327,7 +7374,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         {
             std::string raw = BuildRawJson(bot, creature);
             std::string semantic = BuildSemanticJson(bot, creature, "validation_route_pack_enrollment", &power, stage, activity);
-            RecordEvent(state, bot, "validation_route_pack_enrolled", creature, "cohort_threat_link", raw.c_str(), semantic.c_str(), bot ? bot->GetExactDist(creature) : 0.0f, creature->GetEntry());
+            RecordEvent(state, bot, "validation_route_pack_enrolled", creature, "cohort_combat_reference", raw.c_str(), semantic.c_str(), bot ? bot->GetExactDist(creature) : 0.0f, creature->GetEntry());
         }
     };
     auto recordValidationRouteScriptedTransition = [this, bot, discoveryLeg, &state, &power, stage, activity, &resolvedScriptedTransitionAuraId](Creature* creature) -> bool
@@ -7392,33 +7439,26 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         RecordEvent(state, bot, "validation_route_scripted_transition", creature, "manifest_transition_observed", raw.c_str(), semantic.c_str(), UnitHealthPct(creature), auraId);
         return true;
     };
-    auto enrollEngagedValidationRoutePackMembers = [this, bot, &isLiveTrashClusterMob, &isValidationCohortCombatLinked, &enrollValidationRoutePackMember, &recordValidationRouteScriptedTransition, &resolvedScriptedTransitionAuraId]() -> void
+    auto enrollEngagedValidationRoutePackMembers = [this, bot, discoveryLeg, &isLiveTrashClusterMob, &forEachActiveValidationCohortCombatCreature, &isNaturalValidationRoutePackMember, &enrollValidationRoutePackMember, &recordValidationRouteScriptedTransition]() -> void
     {
         if (_config.ValidationRouteKind == "boss" || !bot)
             return;
 
-        std::vector<WorldObject*> objects;
-        Trinity::AllWorldObjectsInRange check(bot, 120.0f);
-        Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(bot, objects, check);
-        Cell::VisitAllObjects(bot, searcher, 120.0f);
-        for (WorldObject* object : objects)
+        forEachActiveValidationCohortCombatCreature([&](Creature* creature)
         {
-            Creature* creature = object ? object->ToCreature() : nullptr;
-            if (!creature || !creature->IsAlive() || !creature->GetHealth() || creature->IsDungeonBoss() || creature->isWorldBoss())
-                continue;
-            if (creature->IsPet() || creature->IsTotem() || creature->IsSummon() || creature->IsGuardian() || !creature->GetOwnerGUID().IsEmpty()
-                || _validationRouteFinalTransitionGuids.find(creature->GetGUID()) != _validationRouteFinalTransitionGuids.end())
-                continue;
+            if (!isNaturalValidationRoutePackMember(creature) || (!discoveryLeg && !isLiveTrashClusterMob(creature)))
+                return;
 
-            if (resolvedScriptedTransitionAuraId(creature))
-            {
-                recordValidationRouteScriptedTransition(creature);
-                continue;
-            }
-            if (isLiveTrashClusterMob(creature) && isValidationCohortCombatLinked(creature))
-                enrollValidationRoutePackMember(creature, true);
+            enrollValidationRoutePackMember(creature, true);
             recordValidationRouteScriptedTransition(creature);
-        }
+        });
+
+        if (_validationRoutePackGeneration != _validationRouteGeneration || !bot->GetMap())
+            return;
+        std::vector<ObjectGuid> memberGuids(_validationRoutePackMemberGuids.begin(), _validationRoutePackMemberGuids.end());
+        for (ObjectGuid const& guid : memberGuids)
+            if (Creature* creature = bot->GetMap()->GetCreature(guid))
+                recordValidationRouteScriptedTransition(creature);
     };
     auto persistedValidationRoutePackHasLiveMembers = [this]() -> bool
     {
@@ -7933,13 +7973,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 recorded = recordValidationRouteTrashKill(creature, "enrolled_member_seen_dead") || recorded;
         }
         return recorded;
-    };
-    auto validationPartyHasActiveCombat = [this]() -> bool
-    {
-        for (WorldBotState const& cohortState : _bots)
-            if (Player* member = GetLoadedBot(cohortState); member && (member->GetVictim() || !member->getAttackers().empty()))
-                return true;
-        return false;
     };
     auto completeDiscoveredPackIfReady = [this, bot, discoveryLeg, &state, &power, stage, activity, &validationPartyHasActiveCombat]() -> bool
     {

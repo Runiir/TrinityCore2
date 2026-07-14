@@ -1969,9 +1969,28 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     assert "_validationRoutePendingFinalTransitionGuids.clear();" in apply_node
     assert "_validationRouteFinalTransitionGuids.clear();" in mgr
     enrollment_scan = route_objective.split("auto enrollEngagedValidationRoutePackMembers", 1)[1].split("auto persistedValidationRoutePackHasLiveMembers", 1)[0]
-    assert "creature->IsSummon()" in enrollment_scan
-    assert "isLiveTrashClusterMob(creature) && isValidationCohortCombatLinked(creature)" in enrollment_scan
-    assert 'RecordEvent(state, bot, "validation_route_pack_enrolled", creature, "cohort_threat_link"' in route_objective
+    active_combat_scan = route_objective.split("auto forEachActiveValidationCohortCombatCreature", 1)[1].split(
+        "auto enrollValidationRoutePackMember", 1
+    )[0]
+    assert "GetCombatManager().GetPvECombatRefs()" in active_combat_scan
+    assert "combatReference->IsSuppressedFor(member)" in active_combat_scan
+    assert "combatReference->IsSuppressedFor(other)" in active_combat_scan
+    assert "combatReference && !combatReference->IsSuppressedFor(member) && !combatReference->IsSuppressedFor(creature)" in active_combat_scan
+    assert "member->GetMap() != bot->GetMap()" in active_combat_scan
+    assert "creature->GetMap() != bot->GetMap()" in active_combat_scan
+    assert "std::unordered_set<ObjectGuid> visited" in active_combat_scan
+    assert "GetThreatManager().IsThreatenedBy" not in route_objective
+    assert "combatReferences.find(creature->GetGUID())" in active_combat_scan
+    assert "AllWorldObjectsInRange" not in enrollment_scan
+    assert "Cell::VisitAllObjects" not in enrollment_scan
+    assert "forEachActiveValidationCohortCombatCreature" in enrollment_scan
+    assert "isNaturalValidationRoutePackMember(creature)" in enrollment_scan
+    assert "!discoveryLeg && !isLiveTrashClusterMob(creature)" in enrollment_scan
+    assert "enrollValidationRoutePackMember(creature, true);" in enrollment_scan
+    assert '!engaged || !isNaturalValidationRoutePackMember(creature)' in route_objective
+    assert "std::vector<ObjectGuid> memberGuids" in enrollment_scan
+    assert "recordValidationRouteScriptedTransition(creature);" in enrollment_scan
+    assert 'RecordEvent(state, bot, "validation_route_pack_enrolled", creature, "cohort_combat_reference"' in route_objective
     assert '"route_selection"' not in route_objective
     eligible_block = route_objective.split("auto isEligibleTrashClusterMob", 1)[1].split("auto isLiveTrashClusterMob", 1)[0]
     assert "_validationRoutePackTransitionGuids.find(creature->GetGUID())" in eligible_block
