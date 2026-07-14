@@ -1963,6 +1963,7 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert azil["bot_start_x"] == 1329.93
     assert azil["bot_start_z"] == 207.804
     assert azil["source_entry"] == 42333
+    assert azil["add_target_entries"] == [42428]
     assert azil["completion_policy"] == "boss_kill"
     assert corborus_approach_corridor["node_kind"] == "discovery_leg"
     assert corborus_approach_corridor["cluster_center"] == [1103.9, 864.733, 287.98]

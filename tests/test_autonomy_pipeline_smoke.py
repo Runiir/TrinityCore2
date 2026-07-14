@@ -19,6 +19,7 @@ PET_CPP = ROOT / "src/server/game/Entities/Pet/Pet.cpp"
 STONECORE_ROTATION_SQL = ROOT / "sql/custom/world/2026_06_21_00_bot_rotation_profiles.sql"
 PRAYER_OF_MENDING_GUARD_SQL = ROOT / "sql/custom/world/2026_07_14_02_holy_priest_prayer_of_mending_aura_guard.sql"
 PALADIN_AOE_THREAT_SQL = ROOT / "sql/custom/world/2026_07_14_03_stonecore_paladin_aoe_threat_priority.sql"
+MARKSMAN_STATIONARY_SQL = ROOT / "sql/custom/world/2026_07_14_04_marksmanship_cast_time_stationary.sql"
 BOT_POLICY = ROOT / "src/server/game/Bots/BotTelemetryPolicy.cpp"
 BOT_BUFFER = ROOT / "src/server/game/Bots/BotTelemetryBuffer.cpp"
 BOT_SEGMENTS = ROOT / "src/server/game/Bots/BotExperimentCoordinator.cpp"
@@ -48,6 +49,13 @@ def test_protection_paladin_prioritizes_multi_target_threat_actions() -> None:
     assert "`profile`.`spec_tag` = 'protection'" in migration
     assert "`action`.`spell_id` IN (53595, 26573) THEN 1" in migration
     assert "`action`.`spell_id` IN (53595, 26573, 2812)" in migration
+
+
+def test_marksmanship_cast_time_shots_require_stationary_execution() -> None:
+    migration = read(MARKSMAN_STATIONARY_SQL)
+
+    assert "`action`.`spell_id` IN (19434, 56641)" in migration
+    assert "`action`.`requires_stationary` = 1" in migration
 
 
 def function_body(source: str, signature: str) -> str:
