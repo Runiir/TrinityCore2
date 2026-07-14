@@ -13,6 +13,8 @@ Use this skill when acting as the prompt-driven orchestrator for bot autonomy or
 2. Decide whether to work directly or create/resume a worker Codex session. The daemon does not auto-launch workers.
 3. Before creating a worker, classify the worker task complexity as `simple`, `medium`, or `large`.
 4. Choose the best worker model for the task from `worker_model_catalog`; consider ambiguity, difficulty, repetition, required polish, latency, and usage cost. Treat `worker_model_tiers` as defaults, not restrictions.
+   - Under Claude Code, spawn workers with the `Agent` tool and select its model alias by complexity: `haiku` for `simple`, `sonnet` for `medium`, and `opus` for `large`. The `claude-openai` launcher maps those aliases to Luna, Terra, and Sol respectively. Do not pass raw GPT model IDs to Claude's `Agent` tool.
+   - Use `run_in_background: true` for independent parallel workers. Keep dependent work foregrounded, and always collect and review every worker result before integration.
 5. Record worker complexity, model, reasoning effort, and evidence paths in progress summaries when the tier choice is relevant.
 6. Keep worker tasks scoped, review results before merging, and run repository validation when behavior changes.
 7. Commit experiment code/configs to git, checkpoint generated data/artifacts with DVC, then run `dvc status` and `dvc push` after future experiments that produce artifacts.

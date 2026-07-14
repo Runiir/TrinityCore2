@@ -5,5 +5,4 @@ After future experiments, run dvc status and dvc push to keep the remote in sync
 
 Bot diagnostics: Codex agents can run `make host-world` or `make host-world-botexp-small` to start an attached host `worldserver` with console stdin, then paste commands at the `TC>` prompt. For scripted smoke checks, pipe commands into the binary, e.g. `printf 'botauto diagnose all\nbotauto trace all 20\nserver exit\n' | timeout 90s build/src/server/worldserver/worldserver --config trinity-worldserver-test.conf`; this only proves command/diagnostic responsiveness, not boss completion. Route-directed boss validation must use the generated validation run plan or an equivalent long budget (`--observe-sec 300 --timeout-sec 900`) so fights longer than 90 seconds can produce complete evidence. During live autonomy runs, use `.botauto diagnose [selector|all]` for machine-readable bot state and diagnosis, then `.botauto trace [selector] [limit]` to inspect recent repeated decisions/events. `.botauto debug [selector]` remains backward compatible and includes a compact `diagnosis` object.
 
-DOnt add any fallbacks. 
-Write as little code as possible, no validations, no fallbacks, just pure robust code.
+Try to keep as little data as possible on the disk. offload to dvc as much as possible
