@@ -2749,6 +2749,13 @@ def test_validation_route_high_density_adds_use_shared_escape_and_fail_closed_to
     assert "ResolveProfileCombatAction(bot, add, highDensityPhase ? addCount : 0, highDensityPhase)" in adds
     assert "ExecuteProfileCombatAction(&state, bot, add, &profileAction, addCount, true)" in adds
     assert 'RecordEvent(state, bot, "boss_add_density", add, "no_legal_density_action"' in adds
+    assert_ordered(
+        adds,
+        "bool densitySingleTargetFallback = highDensityPhase && !profileAction.Valid;",
+        "profileAction = ResolveProfileCombatAction(bot, add);",
+        '"single_target_fallback_selected"',
+        '"focused_attack_boss_add_density"',
+    )
     assert 'densityGenerator ? "resource_generator_selected" : "area_action_selected"' in adds
     assert 'densityGenerator ? "generate_resource_boss_add_density"' in adds
     assert 'action = "hold_boss_add_density";' in adds

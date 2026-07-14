@@ -9783,6 +9783,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         }
 
         ResolvedCombatAction profileAction = ResolveProfileCombatAction(bot, add, highDensityPhase ? addCount : 0, highDensityPhase);
+        bool densitySingleTargetFallback = highDensityPhase && !profileAction.Valid;
+        if (densitySingleTargetFallback)
+            profileAction = ResolveProfileCombatAction(bot, add);
         if (highDensityPhase && !profileAction.Valid)
         {
             std::string raw = BuildRawJson(bot, add);
@@ -9799,7 +9802,10 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         {
             std::string raw = BuildRawJson(bot, add);
             std::string semantic = BuildSemanticJson(bot, add, "dungeon_boss", &power, stage, activity);
-            RecordEvent(state, bot, "boss_add_density", add, densityGenerator ? "resource_generator_selected" : "area_action_selected", raw.c_str(), semantic.c_str(), float(addCount), 0, profileAction.SpellId);
+            char const* densityActionReason = densitySingleTargetFallback
+                ? "single_target_fallback_selected"
+                : (densityGenerator ? "resource_generator_selected" : "area_action_selected");
+            RecordEvent(state, bot, "boss_add_density", add, densityActionReason, raw.c_str(), semantic.c_str(), float(addCount), 0, profileAction.SpellId);
         }
         uint32 spellId = profileAction.SpellId;
         float engageRange = profileAction.MaxRange > 0.0f ? profileAction.MaxRange : routeEngageRange(bot, add, spellId);
@@ -9828,7 +9834,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         state.WasInCombat = true;
         target = add;
         situation = "dungeon_boss";
-        action = approach ? "move_to_boss_add" : (densityGenerator ? "generate_resource_boss_add_density" : (highDensityPhase ? "area_attack_boss_add_density" : "switch_to_boss_add"));
+        action = approach ? "move_to_boss_add" : (densitySingleTargetFallback ? "focused_attack_boss_add_density" : (densityGenerator ? "generate_resource_boss_add_density" : (highDensityPhase ? "area_attack_boss_add_density" : "switch_to_boss_add")));
         return true;
     };
     auto markValidationRouteTerminalAfterProgress = [&](char const* reason) -> void
