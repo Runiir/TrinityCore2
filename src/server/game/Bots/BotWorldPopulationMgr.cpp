@@ -4037,15 +4037,23 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
     bool combatOrCasting = bot->IsInCombat() || bot->HasUnitState(UNIT_STATE_CASTING) || (bot->GetVictim() && bot->GetVictim()->IsAlive());
     uint32 previousStuckTimer = state.StuckTimer;
     state.IsMoving = moving;
+    state.MovementProgressWindowMs += diff;
+    state.MovementProgressWindowDistance += moved;
     state.DistanceMovedSinceLastDecision += moved;
-    if (moved >= 0.2f || combatOrCasting)
+    bool movementProgress = state.MovementProgressWindowDistance >= 0.2f;
+    if (movementProgress || combatOrCasting)
         state.LastMovementProgressMs = NowMs();
-    if (moved >= 0.2f)
+    if (movementProgress)
         TryResolveBotBlocker(state, bot, "movement_progress");
-    if (!combatOrCasting && moving && moved < 0.2f)
+    if (!combatOrCasting && moving && !movementProgress)
         state.StuckTimer += diff;
     else
         state.StuckTimer = 0;
+    if (movementProgress || state.MovementProgressWindowMs >= 1000)
+    {
+        state.MovementProgressWindowMs = 0;
+        state.MovementProgressWindowDistance = 0.0f;
+    }
     state.LastX = bot->GetPositionX();
     state.LastY = bot->GetPositionY();
     state.LastZ = bot->GetPositionZ();

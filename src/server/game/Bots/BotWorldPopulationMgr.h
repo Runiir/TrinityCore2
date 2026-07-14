@@ -507,6 +507,8 @@ private:
         uint64 LastMovementProgressMs = 0;
         uint64 LastPathChangeMs = 0;
         bool IsMoving = false;
+        uint32 MovementProgressWindowMs = 0;
+        float MovementProgressWindowDistance = 0.0f;
         float DistanceMovedSinceLastDecision = 0.0f;
         float LastDecisionDistanceMoved = 0.0f;
         std::string LastDecisionSituation = "unknown";

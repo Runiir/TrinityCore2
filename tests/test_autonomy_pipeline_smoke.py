@@ -1402,11 +1402,15 @@ def test_botauto_diagnosis_and_trace_surface():
     assert "combatOrCasting" in update_bot
     assert "bot->IsInCombat() || bot->HasUnitState(UNIT_STATE_CASTING)" in update_bot
     assert "bot->GetVictim() && bot->GetVictim()->IsAlive()" in update_bot
+    assert "state.MovementProgressWindowDistance += moved" in update_bot
+    assert "bool movementProgress = state.MovementProgressWindowDistance >= 0.2f" in update_bot
+    assert "if (movementProgress || state.MovementProgressWindowMs >= 1000)" in update_bot
     assert_ordered(
         update_bot,
         "Unit* target = state.TargetGuid.IsEmpty()",
         "bool combatOrCasting",
-        "if (!combatOrCasting && moving && moved < 0.2f)",
+        "bool movementProgress",
+        "if (!combatOrCasting && moving && !movementProgress)",
         "if (state.StuckTimer >= 6000)",
     )
 
