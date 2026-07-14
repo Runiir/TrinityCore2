@@ -12558,22 +12558,6 @@ bool BotWorldPopulationMgr::TryValidationRouteReadiness(WorldBotState& state, Pl
     switch (bot->getClass())
     {
         case CLASS_PALADIN:
-            if (role == "tank" && pullTarget && bot->HasSpell(54428) && !bot->HasAura(54428))
-            {
-                std::string attemptKey = "self:divine_plea_ready";
-                if (!canAttempt(attemptKey))
-                    return true;
-                if (TryCastFriendlySpell(bot, bot, 54428))
-                {
-                    result.Action = "validation_route_readiness_divine_plea";
-                    result.SpellId = 54428;
-                    result.Target = bot;
-                    return true;
-                }
-                std::string failedReason = buffFailureReason("divine_plea_ready", 54428, bot);
-                deferAttempt(attemptKey, failedReason.c_str());
-                return true;
-            }
             break;
         case CLASS_HUNTER:
             if (!bot->GetPet())

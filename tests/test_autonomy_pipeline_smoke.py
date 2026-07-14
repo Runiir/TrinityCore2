@@ -340,8 +340,10 @@ def test_validation_route_readiness_buffs_party_and_hunter_pet_without_fallbacks
     route_objective = function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteObjective")
     trash = function_body(mgr, "BotWorldPopulationMgr::DungeonTrashActionResult BotWorldPopulationMgr::TryDungeonTrash")
 
-    for spell_id in ["25780", "31801", "465", "20217", "54428", "13165", "982", "1130", "34477"]:
+    for spell_id in ["25780", "31801", "465", "20217", "13165", "982", "1130", "34477"]:
         assert spell_id in readiness
+
+    assert "divine_plea_ready" not in readiness
 
     for buff_key in [
         "battle_shout_ready",

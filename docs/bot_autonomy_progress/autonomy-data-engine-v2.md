@@ -175,3 +175,15 @@ Diagnose run 072's `bot_pool_underfilled`/29-second zero-active-bot final state 
 Next handoff:
 
 Continue from run 073, not run 072. Restore only the run-073 pointer when exact trace detail is required, then evict it again. The next runtime blocker is entrance-pack survivability with four dead bots and one Enhancement Shaman still fighting three enrolled targets. Implement legal in-combat resurrection reservations/charge checks before allowing any certified fallback, and separately diagnose the Holy Priest's repeated group-heal `SPELL_FAILED_PREVENTED_BY_MECHANIC` results. Preserve the working watchdog cleanup partition, certified no-local-resurrection gate, pack ledger truth, and strict terminal evidence. Rebuild exact HEAD, run uniquely named Stonecore attempts with `--observe-sec 300 --timeout-sec 900`, DVC-push each useful failed artifact, and remove its payload after remote verification. The certification streak remains zero until a natural uninterrupted clear.
+
+## 2026-07-14: Stonecore run 074 recovery and reacquisition
+
+- Commit `c542f86ff7` rejects readiness buffs from hostile action resolution, stops movement before cast-time hostile spells, honors rotation priority buckets and real nearby hostile counts, keeps active enrolled pack members authoritative, permits a living fallback focus owner after tank death, and adds native Shaman self-resurrection through `PLAYER_SELF_RES_SPELL`/`SPELL_EFFECT_SELF_RESURRECT` and the normal spell cast path. Divine Protection is corrected to self-target in the live world migration.
+- Run 074 used the exact `c542f86ff7ad` binary, uninterrupted manifest mode, and strict `--observe-sec 300 --timeout-sec 900` watchdog. It produced ten natural kills, five truthful deaths, zero stuck/death-loop/repeated-decision events, and zero teacher assistance.
+- The party recovered only after combat ended: safe-local recovery revived three members, the remaining native resurrection request completed, and all five bots were alive and out of combat. No local recovery occurred during the certified fight.
+- The truthful plateau retained eleven engaged members with ten natural deaths and one live, attackable Millhouse at home. All recovered bots stopped 267 yards away because optional Divine Plea readiness repeatedly failed and returned before route reacquisition. Divine Plea is no longer a required prep gate; persistent tank stance/seal/aura and party buffs remain unchanged.
+- The 204 MB/29-file artifact was added and pushed immediately as `artifacts/live_validation_instances/stonecore_clear_series_run_01_074.dvc`; remote status is current. Its materialized payload and cache are evicted except during this bounded diagnosis.
+
+Next handoff:
+
+Rebuild exact HEAD after the Divine Plea readiness removal and run 075 in uninterrupted manifest mode. Confirm the recovered cohort walks back to the persisted live pack member and terminalizes generation 1 without weakening the eleven-member ledger. Continue measuring actual hostile cast submissions and kill cadence; run 074 reached only about 84 kills/hour before the wipe, so end-to-end completion and good DPS uptime remain unproven.
