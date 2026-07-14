@@ -2228,20 +2228,23 @@ def append_jsonl(path: Path, payload: dict[str, Any]) -> None:
         handle.write(json.dumps(payload, sort_keys=True, default=str) + "\n")
 
 
-def heartbeat_commands_from_script(script: str) -> tuple[list[str], list[str]]:
+def heartbeat_commands_from_script(script: str) -> tuple[list[str], list[str], list[str]]:
     startup: list[str] = []
     heartbeat: list[str] = []
+    cleanup: list[str] = []
     for raw_command in script.splitlines():
         command_text = raw_command.strip()
         if not command_text:
             continue
         if command_text == ".botauto start":
             startup.append(command_text)
+        elif command_text == ".botauto stop":
+            cleanup.append(command_text)
         elif command_text.startswith("server shutdown") or command_text == "server exit":
             continue
         else:
             heartbeat.append(command_text)
-    return startup, heartbeat
+    return startup, heartbeat, cleanup
 
 
 def rolling_heartbeat_report(
@@ -2321,7 +2324,7 @@ def run_transport_completion_watchdog(
     server shutdown command, making it safe for attached sessions and SOAP.
     """
     deadline = time.monotonic() + timeout_sec
-    startup_commands, heartbeat_commands = heartbeat_commands_from_script(script)
+    startup_commands, heartbeat_commands, cleanup_commands = heartbeat_commands_from_script(script)
     output_parts: list[str] = []
     heartbeat_index = 0
     last_progress_total = -1
@@ -2333,15 +2336,23 @@ def run_transport_completion_watchdog(
         output_parts.extend((f"$ {command_text}\n", output))
         return returncode, timed_out
 
+    def finish(returncode: int, timed_out: bool) -> tuple[str, int, bool, list[str]]:
+        if not timed_out:
+            for command_text in cleanup_commands:
+                cleanup_returncode, cleanup_timed_out = send(command_text)
+                if cleanup_returncode != 0 or cleanup_timed_out:
+                    return "".join(output_parts), cleanup_returncode, cleanup_timed_out, command
+        return "".join(output_parts), returncode, timed_out, command
+
     for command_text in startup_commands:
         returncode, timed_out = send(command_text)
         if returncode != 0 or timed_out:
-            return "".join(output_parts), returncode, timed_out, command
+            return finish(returncode, timed_out)
     if startup_commands:
         status_output, _status, returncode, timed_out = poll_bot_status(execute_command, deadline, sleep=sleep)
         output_parts.append(status_output)
         if returncode != 0 or timed_out:
-            return "".join(output_parts), returncode, timed_out, command
+            return finish(returncode, timed_out)
 
     while time.monotonic() < deadline:
         sleep(min(max(1, heartbeat_sec), max(0.0, deadline - time.monotonic())))
@@ -2351,7 +2362,7 @@ def run_transport_completion_watchdog(
                 break
             returncode, timed_out = send(command_text)
             if returncode != 0 or timed_out:
-                return "".join(output_parts), returncode, timed_out, command
+                return finish(returncode, timed_out)
         report = rolling_heartbeat_report(
             output_dir, heartbeat_index, "".join(output_parts), 0, False, command,
             scenario_reports, validation_context, duration_policy, heartbeat_sec,
@@ -2365,7 +2376,7 @@ def run_transport_completion_watchdog(
         no_progress_expired = time.monotonic() - last_progress_at >= no_progress_window_sec
         semantic_progress_plateau = last_progress_total >= 0 and progress_total <= last_progress_total and no_progress_expired
         if report["acceptable_final_evidence"] or report["completion_reason"] in {"repeated_decision_watchdog", "death_loop_watchdog", "machine_failure_predicate"}:
-            return "".join(output_parts), 0, False, command
+            return finish(0, False)
         if validation_route_manifest and semantic_progress_plateau:
             report["completion_reason"] = "semantic_progress_plateau_watchdog"
             report["watchdog_state"]["semantic_progress_plateau"] = True
@@ -2378,12 +2389,12 @@ def run_transport_completion_watchdog(
             if "failure_labels_present" not in report["final_evidence_rejections"]:
                 report["final_evidence_rejections"].append("failure_labels_present")
             write_json(output_dir / "report.json", report)
-            return "".join(output_parts), 0, False, command
+            return finish(0, False)
         if report["watchdog_state"].get("no_progress") and no_progress_expired:
             report["completion_reason"] = "no_progress_watchdog"
             write_json(output_dir / "report.json", report)
-            return "".join(output_parts), 0, False, command
-    return "".join(output_parts), 124, True, command
+            return finish(0, False)
+    return finish(124, True)
 
 
 def run_worldserver_completion_watchdog(
@@ -2404,7 +2415,7 @@ def run_worldserver_completion_watchdog(
 ) -> tuple[str, int, bool, list[str]]:
     command = [str(binary), "--config", str(config)]
     deadline = time.monotonic() + timeout_sec
-    startup_commands, heartbeat_commands = heartbeat_commands_from_script(script)
+    startup_commands, heartbeat_commands, cleanup_commands = heartbeat_commands_from_script(script)
     output_parts: list[str] = []
     heartbeat_index = 0
     last_progress_total = -1
@@ -2523,6 +2534,9 @@ def run_worldserver_completion_watchdog(
                 write_json(output_dir / "report.json", report)
                 break
         timed_out = time.monotonic() >= deadline
+        if process.poll() is None:
+            for command_text in cleanup_commands:
+                send_command(command_text)
         if process.poll() is None and process.stdin and not process.stdin.closed:
             try:
                 send_command("server shutdown force 0")

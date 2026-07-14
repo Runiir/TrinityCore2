@@ -49,7 +49,7 @@ from tools.bot_ml.live_validation_session import (
     sha256_file,
     systemd_transient_command,
 )
-from tools.bot_ml.run_live_bot_validation import boss_route_health_progress, bot_status_snapshot, bounded_console_deadline, build_bot_pool_reset_sql, command_script, live_validation_report, load_scenario_reports, load_validation_route, main as live_validation_main, parse_json_objects, parse_soap_result, poll_bot_status, read_until_console_prompt, route_segment_complete, run_reusable_validation_session, run_transport_completion_watchdog, run_worldserver, run_worldserver_completion_watchdog, scripted_activation_wait_pending, split_sql_statements, trace_after, trinity_config_bool, unresolved_route_death_loop_count, unresolved_route_stuck_count, upsert_trinity_config, wait_for_bot_status_state, watchdog_state, write_validation_config
+from tools.bot_ml.run_live_bot_validation import boss_route_health_progress, bot_status_snapshot, bounded_console_deadline, build_bot_pool_reset_sql, command_script, heartbeat_commands_from_script, live_validation_report, load_scenario_reports, load_validation_route, main as live_validation_main, parse_json_objects, parse_soap_result, poll_bot_status, read_until_console_prompt, route_segment_complete, run_reusable_validation_session, run_transport_completion_watchdog, run_worldserver, run_worldserver_completion_watchdog, scripted_activation_wait_pending, split_sql_statements, trace_after, trinity_config_bool, unresolved_route_death_loop_count, unresolved_route_stuck_count, upsert_trinity_config, wait_for_bot_status_state, watchdog_state, write_validation_config
 from tools.bot_ml.orchestrator_daemon import codex_command, detect_rate_limit, handle_rate_limit, initial_state, run_one_cycle, sleep_until_resume
 from tools.bot_ml.generate_lane_configs import write_lane_config
 from tools.bot_ml.promote_live_validation_artifact import promote
@@ -3211,7 +3211,7 @@ def test_transport_completion_watchdog_never_sends_server_shutdown(tmp_path):
         execute,
         ["session"],
         2,
-        command_script(start=False, exit_server=False),
+        command_script(start=False, stop=True, exit_server=False),
         tmp_path,
         {},
         {},
@@ -3220,6 +3220,8 @@ def test_transport_completion_watchdog_never_sends_server_shutdown(tmp_path):
     )
 
     assert "server shutdown" not in commands
+    assert commands.count(".botauto stop") == 1
+    assert commands[-1] == ".botauto stop"
     assert command == ["session"]
     assert returncode == 0
     assert timed_out is False
@@ -3278,6 +3280,10 @@ def test_live_bot_validation_command_script_and_output_parser():
         ".botauto stop",
         "server shutdown force 0",
     ]
+    startup, heartbeat, cleanup = heartbeat_commands_from_script(script)
+    assert startup == [".botauto start"]
+    assert heartbeat == [".botauto status", ".botauto diagnose all", ".botauto trace all 20", ".botexp summary"]
+    assert cleanup == [".botauto stop"]
 
     output = """
 TC> {"active_bots":0,"target_bots":2,"action":"botauto_status","decisions":0,"kills":0,"quests_accepted":0,"quest_objective_progress":0}
