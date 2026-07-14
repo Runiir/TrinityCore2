@@ -195,3 +195,11 @@ Live run 075:
 - Millhouse reached 13.7186% health, but every bot treated the same ground-danger cast as a fresh dodge each second. Repeated 8-yard moves scattered the group roughly 240 yards away; the run then stopped on the semantic plateau watchdog with Millhouse as the one live member in an eight-member, seven-death ledger.
 - Ground-danger handling now reserves one dodge per bot/caster/spell for three seconds after a successful move (500 ms after a rejected move). Later casts and persistent danger remain eligible; the same cast window cannot issue an unbounded movement chain.
 - The 25-file run artifact was pushed immediately as `artifacts/live_validation_instances/stonecore_clear_series_run_01_075.dvc` and reported remote status current before local eviction.
+
+Live run 076:
+
+- Run 076 used exact revision `a511fc91fa47`. It produced four natural kills, seven truthful deaths, zero stuck/death-loop/repeated-decision events, and no assistance before a 270-second semantic plateau.
+- The unbounded dodge regression did not recur. The remaining pack contained three legitimate returning/evading formation mobs plus Millhouse; the run stopped because the party could not survive/recover enough damage uptime to finish them.
+- Source/trace review found that authoritative pack selection scored only engagement and distance, bypassing the tank's loose-attacker priority. Social mobs therefore remained on the mage/healer while the tank stayed on a different ledger member. The authoritative selector now prioritizes any pack mob whose victim is not a tank, then unengaged mobs, while preserving ledger membership.
+- If no living tank remains, role-group focus selection now permits a living non-tank's active focus. This prevents recovered survivors from holding anchor solely because the tank corpse has no focus.
+- The 14-file run artifact was pushed immediately as `artifacts/live_validation_instances/stonecore_clear_series_run_01_076.dvc`; remote status was current before local eviction.

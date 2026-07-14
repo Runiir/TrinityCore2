@@ -7543,8 +7543,18 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             Creature* creature = bot->GetMap()->GetCreature(guid);
             if (!creature || !creature->IsAlive() || !creature->GetHealth() || !bot->IsValidAttackTarget(creature))
                 continue;
-            float score = (creature->IsInCombat() || creature->GetVictim() ? 10000.0f : 0.0f)
+            Unit* victim = creature->GetVictim();
+            bool botIsTank = std::string(GetDungeonRole(bot)) == "tank";
+            Player* victimPlayer = victim ? victim->ToPlayer() : nullptr;
+            bool victimIsTank = victimPlayer && std::string(GetDungeonRole(victimPlayer)) == "tank";
+            float score = (creature->IsInCombat() || victim ? 10000.0f : 0.0f)
                 - bot->GetExactDist(creature);
+            if (botIsTank && victim && !victimIsTank)
+                score += 20000.0f;
+            else if (botIsTank && !victim)
+                score += 5000.0f;
+            if (victim == bot)
+                score += 1000.0f;
             if (!best || score > bestScore)
             {
                 best = creature;
@@ -8400,6 +8410,15 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (std::string(GetDungeonRole(bot)) == "tank")
             return nullptr;
 
+        bool livingTankAvailable = false;
+        for (WorldBotState const& cohortState : _bots)
+            if (Player* member = GetBot(cohortState); member && member->IsAlive()
+                && member->GetMap() == bot->GetMap() && std::string(GetDungeonRole(member)) == "tank")
+            {
+                livingTankAvailable = true;
+                break;
+            }
+
         auto activeCohortFocus = [](Player* member, Unit* focus) -> bool
         {
             return member && focus && (member->IsInCombat() || focus->IsInCombat() || focus->GetVictim());
@@ -8474,7 +8493,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
             float score = 1.0f;
             bool memberIsTank = std::string(GetDungeonRole(member)) == "tank";
-            if (_config.ValidationRouteKind != "boss" && !memberIsTank)
+            if (_config.ValidationRouteKind != "boss" && !memberIsTank && livingTankAvailable)
                 return;
 
             if (memberIsTank)

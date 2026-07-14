@@ -842,6 +842,10 @@ def test_quest_first_portfolio_routing_surface():
     assert 'validationRouteHasLivingTank() && !routeFocusTankOwned(target)' in validation_route_objective
     assert "activeValidationRoutePackTarget" in validation_route_objective
     assert "if (Unit* packTarget = activeValidationRoutePackTarget())" in validation_route_objective
+    assert "if (botIsTank && victim && !victimIsTank)" in validation_route_objective
+    assert "score += 20000.0f;" in validation_route_objective
+    assert "bool livingTankAvailable = false;" in validation_route_objective
+    assert 'if (_config.ValidationRouteKind != "boss" && !memberIsTank && livingTankAvailable)' in validation_route_objective
     assert '"tank_positioning", target, "route_trash_tank_focus"' in validation_route_objective
     rotation_profiles_sql = read(ROOT / "sql/custom/world/2026_06_21_00_bot_rotation_profiles.sql")
     assert "blood_presence,self,tank_stance,mitigation" in rotation_profiles_sql
@@ -852,7 +856,7 @@ def test_quest_first_portfolio_routing_surface():
         row = next(line for line in rotation_profiles_sql.splitlines() if f", {spell_id}," in line and "marksmanship" in line)
         assert row.rstrip().endswith(", 0),") or row.rstrip().endswith(", 0);")
     assert 'if (_config.ValidationRouteKind == "boss" || activeTankFocus(focus))' in mgr
-    assert 'if (_config.ValidationRouteKind != "boss" && !memberIsTank)' in mgr
+    assert 'if (_config.ValidationRouteKind != "boss" && !memberIsTank && livingTankAvailable)' in mgr
     assert "move_to_validation_route_assist_target" in mgr
     assert "validation_route_prerequisite_assist" in mgr
     assert "assist_focus" in mgr
