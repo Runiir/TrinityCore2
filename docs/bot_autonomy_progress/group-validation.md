@@ -38,6 +38,9 @@
 - Failed trash terminals now reopen only when the persisted pack ledger has no live members and the whole party is out of combat. The normal endpoint regroup and two-second clear-stability checks then remain authoritative; a genuinely live stalled target still fails closed.
 - Run 087 role telemetry passed healer recovery/triage at 95.8% and all DPS active-action coverage gates. Tank casts had zero failures but threat retention fell to 77.0% during the 33-mob wave, so Hammer of the Righteous and Consecration now outrank single-target spenders whenever their existing multi-enemy gates are met. Hunter submission failure was 5.03%, one sample over the threshold and dominated by transient line-of-sight changes; it remains under matched observation.
 - The 202 MB raw Run 087 evidence and its compact role audit were pushed to DVC before these diagnoses.
+- Run 088 again killed Corborus and Slabhide naturally and remained deathless through route index 8. Its smaller gauntlet ledger ended with three dead members and two living, attackable formation members that had disengaged and returned home; the failed terminal correctly remained closed because the pack was not complete, but it offered no retry path.
+- Failed trash terminals now also reopen when the party is out of combat and an enrolled live target passes the normal eligibility/path checks. The target is reacquired through ordinary movement and combat; unreachable or invalid live targets still fail closed.
+- The 182 MB raw Run 088 evidence and compact audit were pushed to DVC before diagnosis. Healing improved to 97.6% submission success and all DPS uptime gates passed, while tank threat remained 77.5%. The cause was broader than spell ordering: the wait-for-tank gate covered configured route targets but not naturally enrolled off-list pack members. All eligible trash-pack targets now require tank ownership before non-tanks attack.
 
 ## 2026-06-20
 

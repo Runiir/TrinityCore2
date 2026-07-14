@@ -9912,6 +9912,10 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return true;
         }
     }
+    bool failedTrashPackComplete = !persistedValidationRoutePackHasLiveMembers();
+    Unit* retryableFailedTrashTarget = failedTrashPackComplete ? nullptr : activeValidationRoutePackTarget();
+    bool failedTrashPackCanRetry = retryableFailedTrashTarget
+        && isEligibleTrashClusterMob(retryableFailedTrashTarget->ToCreature());
     if (state.ValidationRouteTerminalState
         && state.ValidationRouteGeneration == _validationRouteGeneration
         && state.ValidationRouteTerminalGeneration == _validationRouteGeneration
@@ -9919,7 +9923,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         && state.ValidationRouteTerminalReason == "validation_trash_no_progress"
         && _validationRoutePackGeneration == _validationRouteGeneration
         && _validationRoutePackObservedEngagement
-        && !persistedValidationRoutePackHasLiveMembers()
+        && (failedTrashPackComplete || failedTrashPackCanRetry)
         && !validationPartyHasActiveCombat())
     {
         for (WorldBotState& cohortState : _bots)
@@ -9934,10 +9938,15 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             cohortState.ValidationRouteTerminalGeneration = 0;
             cohortState.ValidationRouteTerminalReason.clear();
         }
-        target = nullptr;
-        std::string raw = BuildRawJson(bot, nullptr);
+        target = failedTrashPackCanRetry ? retryableFailedTrashTarget : nullptr;
+        if (target)
+            state.TargetGuid = target->GetGUID();
+        std::string raw = BuildRawJson(bot, target);
         std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_recovery", &power, stage, activity);
-        RecordEvent(state, bot, "validation_route_recovery", nullptr, "failed_terminal_reopened_after_pack_death",
+        char const* recoveryReason = failedTrashPackCanRetry
+            ? "failed_terminal_reopened_for_live_pack_retry"
+            : "failed_terminal_reopened_after_pack_death";
+        RecordEvent(state, bot, "validation_route_recovery", target, recoveryReason,
             raw.c_str(), semantic.c_str(), float(_validationRoutePackDeathGuids.size()), uint32(_validationRoutePackMemberGuids.size()));
     }
     if (state.ValidationRouteTerminalState
@@ -10485,7 +10494,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         uint32 spellId = profileAction.SpellId;
         float engageRange = profileAction.MaxRange > 0.0f ? profileAction.MaxRange : routeEngageRange(bot, target, spellId);
         bool botIsTank = std::string(GetDungeonRole(bot)) == "tank";
-        if (routeBossTarget && _config.ValidationRouteKind != "boss" && !botIsTank
+        bool routeTrashPackTarget = _config.ValidationRouteKind != "boss"
+            && creature && isEligibleTrashClusterMob(creature);
+        if (routeTrashPackTarget && !botIsTank
             && validationRouteHasLivingTank() && !routeFocusTankOwned(target))
         {
             std::string raw = BuildRawJson(bot, target);

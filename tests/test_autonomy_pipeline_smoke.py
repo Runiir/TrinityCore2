@@ -1791,8 +1791,15 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     assert "state.LastRecoveryResult = \"fallback_disabled\";" in update_bot
     assert 'state.ValidationRouteTerminalReason == "validation_trash_no_progress"' in route_objective
     assert "!persistedValidationRoutePackHasLiveMembers()" in route_objective
+    assert "activeValidationRoutePackTarget()" in route_objective
+    assert "failedTrashPackCanRetry" in route_objective
+    assert "isEligibleTrashClusterMob(retryableFailedTrashTarget->ToCreature())" in route_objective
     assert "!validationPartyHasActiveCombat()" in route_objective
     assert '"failed_terminal_reopened_after_pack_death"' in route_objective
+    assert '"failed_terminal_reopened_for_live_pack_retry"' in route_objective
+    assert 'bool routeTrashPackTarget = _config.ValidationRouteKind != "boss"' in route_objective
+    assert "creature && isEligibleTrashClusterMob(creature);" in route_objective
+    assert "if (routeTrashPackTarget && !botIsTank" in route_objective
     assert_ordered(
         update_bot,
         "RecordDecision(state, bot, situation.c_str(), action.c_str()",
