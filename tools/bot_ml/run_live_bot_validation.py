@@ -1776,6 +1776,7 @@ def progress_counters_from_evidence(evidence: dict[str, Any]) -> dict[str, int]:
         "trash_pulls": int(evidence.get("trash_pulls") or 0),
         "gear_upgrades": int(evidence.get("gear_upgrades") or 0),
         "validation_route_actions": int(evidence.get("validation_route_actions") or 0),
+        "validation_route_terminal_evidence": len(evidence.get("route_terminal_evidence") or []),
         "validation_route_manifest_complete": int(evidence.get("validation_route_manifest_complete") or 0),
         "validation_route_no_progress_diagnoses": int(evidence.get("validation_route_no_progress_diagnoses") or 0),
         "validation_route_combat_progress_diagnoses": int(evidence.get("validation_route_combat_progress_diagnoses") or 0),
@@ -1803,6 +1804,7 @@ def watchdog_state(
         + counters["kills"]
         + counters["boss_kill_evidence"]
         + counters["gear_upgrades"]
+        + counters["validation_route_terminal_evidence"]
         + counters["validation_route_manifest_complete"]
         + counters["validation_route_combat_progress_diagnoses"]
     )
@@ -2374,7 +2376,13 @@ def run_transport_completion_watchdog(
             last_progress_total = progress_total
             last_progress_at = time.monotonic()
         no_progress_expired = time.monotonic() - last_progress_at >= no_progress_window_sec
-        semantic_progress_plateau = last_progress_total >= 0 and progress_total <= last_progress_total and no_progress_expired
+        moved_diagnoses = int(report.get("watchdog_state", {}).get("progress_counters", {}).get("moved_diagnoses") or 0)
+        semantic_progress_plateau = (
+            last_progress_total >= 0
+            and progress_total <= last_progress_total
+            and no_progress_expired
+            and moved_diagnoses <= 0
+        )
         if report["acceptable_final_evidence"] or report["completion_reason"] in {"repeated_decision_watchdog", "death_loop_watchdog", "machine_failure_predicate"}:
             return finish(0, False)
         if validation_route_manifest and semantic_progress_plateau:
@@ -2501,7 +2509,13 @@ def run_worldserver_completion_watchdog(
                 last_progress_total = progress_total
                 last_progress_at = time.monotonic()
             no_progress_expired = time.monotonic() - last_progress_at >= no_progress_window_sec
-            semantic_progress_plateau = last_progress_total >= 0 and progress_total <= last_progress_total and no_progress_expired
+            moved_diagnoses = int(report.get("watchdog_state", {}).get("progress_counters", {}).get("moved_diagnoses") or 0)
+            semantic_progress_plateau = (
+                last_progress_total >= 0
+                and progress_total <= last_progress_total
+                and no_progress_expired
+                and moved_diagnoses <= 0
+            )
             if not validation_route_manifest and route_segment_complete(report, validation_route):
                 report["completion_reason"] = "route_segment_complete"
                 report["route_segment_complete"] = True

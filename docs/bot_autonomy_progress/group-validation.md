@@ -27,6 +27,9 @@
 - Matched role telemetry improved to 97.3% healing success and 93.7% tank threat retention. The only role gate was 22.5% hunter cast failure, all `TOO_CLOSE` on large bosses.
 - Hunter minimum range is now derived from each spell's hostile minimum plus caster/target melee reach, with the profile minimum as a floor. The resolved action carries that range into movement planning before cast submission.
 - Run 084 raw evidence and compact role audit were pushed to DVC and evicted locally.
+- Run 085 killed Corborus and Slabhide naturally, recovered one Slabhide death, advanced to Ozruk at route index 9, and did not reproduce the run 084 SIGSEGV. It was stopped only by the semantic plateau watchdog while all five bots were alive and moving seven yards per decision toward the boss.
+- Spell-aware hunter spacing reduced cast failures from 22.5% to 3.8%; fire and enhancement had zero cast failures, healing succeeded at 95.1%, and the tank had zero cast failures. The matched tank threat-retention sample was 79.9% and remains under observation.
+- The completion watchdog now counts route-terminal evidence as progress and will not declare a semantic plateau while diagnosis reports active movement. Run 085 raw evidence and compact role audit were pushed to DVC and evicted locally.
 
 ## 2026-06-20
 

@@ -6108,6 +6108,50 @@ def test_completion_watchdog_stops_manifest_run_on_semantic_progress_plateau(tmp
     assert report["evidence"]["validation_route_actions"] > 0
 
 
+def test_completion_watchdog_keeps_manifest_run_alive_while_party_is_moving(tmp_path):
+    fake_worldserver = tmp_path / "fake_worldserver.py"
+    fake_worldserver.write_text(
+        "#!/usr/bin/env python3\n"
+        "import sys\n"
+        "print('TC> ', flush=True)\n"
+        "for line in sys.stdin:\n"
+        "    cmd = line.strip()\n"
+        "    print('CMD ' + cmd)\n"
+        "    if cmd == '.botauto status':\n"
+        "        print('{\"active_bots\":5,\"target_bots\":5,\"decisions\":120,\"kills\":4}')\n"
+        "    elif cmd.startswith('.botauto diagnose'):\n"
+        "        print('{\"diagnosis_schema_version\":1,\"bots\":[{\"identity\":{\"bot_guid\":1},\"diagnosis\":{\"route_progress\":{}},\"snapshot\":{\"decision\":{\"action\":\"move_to_validation_route\"},\"movement\":{\"is_moving\":true,\"distance_moved_since_last_decision\":7}}}]}')\n"
+        "    elif cmd.startswith('.botauto trace'):\n"
+        "        print('{\"trace_schema_version\":1,\"entries\":[{\"action\":\"move_to_validation_route\",\"result\":\"ok\"}]}')\n"
+        "    elif cmd == '.botexp summary':\n"
+        "        print('{\"duration_minutes\":1,\"decisions\":120,\"total_kills\":4}')\n"
+        "    elif cmd.startswith('server shutdown'):\n"
+        "        break\n"
+        "    print('TC> ', flush=True)\n",
+        encoding="utf-8",
+    )
+    fake_worldserver.chmod(0o755)
+    config = tmp_path / "worldserver.conf"
+    config.write_text("", encoding="utf-8")
+
+    run_worldserver_completion_watchdog(
+        fake_worldserver,
+        config,
+        3,
+        command_script(selector="all", trace_limit=5, start=False, stop=False),
+        tmp_path / "validation",
+        {},
+        {"scenario_id": "stonecore_5n"},
+        heartbeat_sec=1,
+        no_progress_window_sec=1,
+        validation_route_manifest={"schema": "bot_live_validation_route_manifest_v1", "route_count": 2},
+    )
+    report = json.loads((tmp_path / "validation" / "report.json").read_text(encoding="utf-8"))
+
+    assert report["completion_reason"] != "semantic_progress_plateau_watchdog"
+    assert report["watchdog_state"]["progress_counters"]["moved_diagnoses"] > 0
+
+
 def test_bounded_console_deadline_caps_command_read_to_heartbeat_window():
     long_deadline = time.monotonic() + 120
     bounded = bounded_console_deadline(long_deadline, 2)
