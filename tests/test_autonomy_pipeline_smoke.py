@@ -17,6 +17,7 @@ PLAYER_BOT_EXECUTOR = ROOT / "src/server/game/Bots/BotActionExecutor.cpp"
 BOT_MGR_HEADER = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h"
 PET_CPP = ROOT / "src/server/game/Entities/Pet/Pet.cpp"
 STONECORE_ROTATION_SQL = ROOT / "sql/custom/world/2026_06_21_00_bot_rotation_profiles.sql"
+PRAYER_OF_MENDING_GUARD_SQL = ROOT / "sql/custom/world/2026_07_14_02_holy_priest_prayer_of_mending_aura_guard.sql"
 BOT_POLICY = ROOT / "src/server/game/Bots/BotTelemetryPolicy.cpp"
 BOT_BUFFER = ROOT / "src/server/game/Bots/BotTelemetryBuffer.cpp"
 BOT_SEGMENTS = ROOT / "src/server/game/Bots/BotExperimentCoordinator.cpp"
@@ -30,6 +31,14 @@ PYTEST_CONFIG = ROOT / "pytest.ini"
 
 def read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
+
+
+def test_prayer_of_mending_profile_uses_the_applied_aura_as_its_guard() -> None:
+    migration = read(PRAYER_OF_MENDING_GUARD_SQL)
+
+    assert "`action`.`spell_id` = 33076" in migration
+    assert "`action`.`forbidden_target_aura` = 41635" in migration
+    assert "`action`.`maintain_aura_id` = 41635" in migration
 
 
 def function_body(source: str, signature: str) -> str:
@@ -2005,7 +2014,7 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     assert "Cell::VisitAllObjects" not in enrollment_scan
     assert "forEachActiveValidationCohortCombatCreature" in enrollment_scan
     assert "isNaturalValidationRoutePackMember(creature)" in enrollment_scan
-    assert "!discoveryLeg && !isLiveTrashClusterMob(creature)" in enrollment_scan
+    assert "!discoveryLeg && !isLiveTrashClusterMob(creature)" not in enrollment_scan
     assert "enrollValidationRoutePackMember(creature, true);" in enrollment_scan
     assert '!engaged || !isNaturalValidationRoutePackMember(creature)' in route_objective
     assert "std::vector<ObjectGuid> memberGuids" in enrollment_scan

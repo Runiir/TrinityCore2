@@ -30,6 +30,10 @@
 - Run 085 killed Corborus and Slabhide naturally, recovered one Slabhide death, advanced to Ozruk at route index 9, and did not reproduce the run 084 SIGSEGV. It was stopped only by the semantic plateau watchdog while all five bots were alive and moving seven yards per decision toward the boss.
 - Spell-aware hunter spacing reduced cast failures from 22.5% to 3.8%; fire and enhancement had zero cast failures, healing succeeded at 95.1%, and the tank had zero cast failures. The matched tank threat-retention sample was 79.9% and remains under observation.
 - The completion watchdog now counts route-terminal evidence as progress and will not declare a semantic plateau while diagnosis reports active movement. Run 085 raw evidence and compact role audit were pushed to DVC and evicted locally.
+- Run 086 naturally killed Corborus and Slabhide without deaths, cleared the 39-member sentry-gauntlet ledger, and then correctly stopped on a real combat deadlock: two naturally pulled attackers remained outside the configured entry allowlist, so the cohort could neither target them nor leave combat.
+- Natural creatures present in the active cohort's PvE combat references are now enrolled in the persisted route pack even when their entries are not in the discovery list. This keeps enrollment bounded to actual combat while allowing every legitimate attacker to be finished.
+- The matched role audit passed tank threat retention at 91.7%, with zero tank and enhancement cast failures; fire and hunter failures were 1.8% and 1.4%. Healing narrowly missed at 94.4% because Prayer of Mending was guarded by spell 33076 rather than its applied aura 41635. The priest profiles now suppress recasts using aura 41635.
+- Run 086 raw evidence and compact role audit were pushed to DVC before diagnosis; their materialized files are evicted after the fix is recorded.
 
 ## 2026-06-20
 
