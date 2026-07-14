@@ -14,7 +14,7 @@ try:
         load_gem_properties,
         load_spell_item_enchantments,
     )
-    from .build_validation_provisioning import EQUIPMENT_SLOT_END, REQUIRED_EQUIPMENT_SLOTS, apply_gear_profiles, equipment_cache, load_config, load_gear_profiles, normalized_glyphs, required_equipment_slots_for, scenario_report
+    from .build_validation_provisioning import EQUIPMENT_SLOT_END, REQUIRED_EQUIPMENT_SLOTS, apply_gear_profiles, bot_known_spell_ids, bot_talent_spell_ids, equipment_cache, load_config, load_gear_profiles, normalized_glyphs, required_equipment_slots_for, scenario_report
     from .common import stable_hash, write_json
     from .extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
 except ImportError:
@@ -26,7 +26,7 @@ except ImportError:
         load_gem_properties,
         load_spell_item_enchantments,
     )
-    from build_validation_provisioning import EQUIPMENT_SLOT_END, REQUIRED_EQUIPMENT_SLOTS, apply_gear_profiles, equipment_cache, load_config, load_gear_profiles, normalized_glyphs, required_equipment_slots_for, scenario_report
+    from build_validation_provisioning import EQUIPMENT_SLOT_END, REQUIRED_EQUIPMENT_SLOTS, apply_gear_profiles, bot_known_spell_ids, bot_talent_spell_ids, equipment_cache, load_config, load_gear_profiles, normalized_glyphs, required_equipment_slots_for, scenario_report
     from common import stable_hash, write_json
     from extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
 
@@ -59,6 +59,7 @@ REQUIRED_COLUMNS = {
             "power1",
             "talentGroupsCount",
             "activeTalentGroup",
+            "talentTree",
             "equipmentCache",
         },
         "item_instance": {
@@ -81,6 +82,8 @@ REQUIRED_COLUMNS = {
         "character_inventory": {"guid", "bag", "slot", "item"},
         "character_bot_pool": {"guid", "role", "class_spec", "enabled", "in_use", "experiment_tags", "notes"},
         "character_glyphs": {"guid", "talentGroup", "glyph1", "glyph2", "glyph3", "glyph4", "glyph5", "glyph6", "glyph7", "glyph8", "glyph9"},
+        "character_talent": {"guid", "spell", "talentGroup"},
+        "character_spell": {"guid", "spell", "active", "disabled"},
         "character_skills": {"guid", "skill", "value", "max"},
     },
     "auth": {
@@ -195,7 +198,7 @@ def fetch_runtime_gear(database_url: str, names: set[str]) -> dict[str, dict[str
         placeholders = ", ".join(["%s"] * len(names))
         with conn.cursor() as cursor:
             cursor.execute(
-                "SELECT c.guid, c.name, c.equipmentCache, ci.slot, ii.itemEntry, ii.durability "
+                "SELECT c.guid, c.name, c.talentTree, c.equipmentCache, ci.slot, ii.itemEntry, ii.durability "
                 "FROM characters c "
                 "LEFT JOIN character_inventory ci ON ci.guid = c.guid AND ci.bag = 0 AND ci.slot < %s "
                 "LEFT JOIN item_instance ii ON ii.guid = ci.item "
@@ -206,7 +209,7 @@ def fetch_runtime_gear(database_url: str, names: set[str]) -> dict[str, dict[str
             payload: dict[str, dict[str, Any]] = {}
             for row in rows:
                 name = str(row["name"])
-                entry = payload.setdefault(name, {"guid": int(row["guid"]), "equipmentCache": str(row.get("equipmentCache") or ""), "items": {}})
+                entry = payload.setdefault(name, {"guid": int(row["guid"]), "talentTree": str(row.get("talentTree") or ""), "equipmentCache": str(row.get("equipmentCache") or ""), "items": {}})
                 if row.get("slot") is not None:
                     entry["items"][int(row["slot"])] = {"item_id": int(row.get("itemEntry") or 0), "durability": int(row.get("durability") or 0)}
 
@@ -217,8 +220,24 @@ def fetch_runtime_gear(database_url: str, names: set[str]) -> dict[str, dict[str
                 tuple(names),
             )
             for row in cursor.fetchall():
-                entry = payload.setdefault(str(row["name"]), {"guid": 0, "equipmentCache": "", "items": {}})
+                entry = payload.setdefault(str(row["name"]), {"guid": 0, "talentTree": "", "equipmentCache": "", "items": {}})
                 entry["glyphs"] = [int(row.get(f"glyph{i}") or 0) for i in range(1, 10)]
+
+            cursor.execute(
+                "SELECT c.name, ct.spell FROM characters c JOIN character_talent ct ON ct.guid = c.guid AND ct.talentGroup = 0 "
+                f"WHERE c.name IN ({placeholders})",
+                tuple(names),
+            )
+            for row in cursor.fetchall():
+                payload.setdefault(str(row["name"]), {"guid": 0, "talentTree": "", "equipmentCache": "", "items": {}}).setdefault("talent_spells", set()).add(int(row["spell"]))
+
+            cursor.execute(
+                "SELECT c.name, cs.spell FROM characters c JOIN character_spell cs ON cs.guid = c.guid AND cs.active = 1 AND cs.disabled = 0 "
+                f"WHERE c.name IN ({placeholders})",
+                tuple(names),
+            )
+            for row in cursor.fetchall():
+                payload.setdefault(str(row["name"]), {"guid": 0, "talentTree": "", "equipmentCache": "", "items": {}}).setdefault("known_spells", set()).add(int(row["spell"]))
             return payload
     finally:
         conn.close()
@@ -261,8 +280,17 @@ def validate_database(config: dict[str, Any], worldserver_conf: Path, require_ap
             expected_slots = set(required_equipment_slots_for(equipment))
             expected_by_slot = {int(item.get("slot", -1)): int(item.get("item_id") or 0) for item in equipment}
             expected_durability_by_slot = {int(item.get("slot", -1)): int(item.get("durability") or 0) for item in equipment}
-            actual = runtime.get(name, {"items": {}, "equipmentCache": "", "glyphs": []})
+            actual = runtime.get(name, {"items": {}, "talentTree": "", "equipmentCache": "", "glyphs": [], "talent_spells": set(), "known_spells": set()})
             actual_items = actual.get("items", {})
+            expected_talent_tree = int(bot.get("primary_talent_tree_id") or 0)
+            talent_tree_tokens = [int(token) for token in str(actual.get("talentTree") or "").split() if token.lstrip("-").isdigit()]
+            actual_talent_tree = talent_tree_tokens[0] if talent_tree_tokens else None
+            expected_talent_spells = set(bot_talent_spell_ids(bot))
+            actual_talent_spells = {int(spell) for spell in actual.get("talent_spells", set())}
+            missing_talent_spells = sorted(expected_talent_spells - actual_talent_spells)
+            expected_known_spells = set(bot_known_spell_ids(bot))
+            actual_known_spells = {int(spell) for spell in actual.get("known_spells", set())}
+            missing_known_spells = sorted(expected_known_spells - actual_known_spells)
             missing_slots = sorted(slot for slot in expected_slots if int(actual_items.get(slot, {}).get("item_id") or 0) <= 0)
             wrong_items = [
                 {"slot": slot, "expected_item_id": item_id, "actual_item_id": int(actual_items.get(slot, {}).get("item_id") or 0)}
@@ -288,6 +316,9 @@ def validate_database(config: dict[str, Any], worldserver_conf: Path, require_ap
                 levels = [int(item.get("item_level") or item.get("ItemLevel") or 0) for item in equipment]
                 avg_item_level = round(sum(levels) / len(levels), 2) if levels else 0
             runtime_gear_report[name] = {
+                "talent_tree": {"expected": expected_talent_tree, "actual": actual_talent_tree},
+                "missing_talent_spells": missing_talent_spells,
+                "missing_known_spells": missing_known_spells,
                 "equipped_slots": sorted(actual_items),
                 "expected_slots": sorted(expected_slots),
                 "missing_slots": missing_slots,
@@ -298,6 +329,12 @@ def validate_database(config: dict[str, Any], worldserver_conf: Path, require_ap
                 "glyphs_missing": glyphs_missing,
                 "invalid_actual_glyphs": invalid_actual_glyphs,
             }
+            if actual_talent_tree != expected_talent_tree:
+                failures.append({"check": "runtime_talent_tree", "bot": name, "expected_talent_tree": expected_talent_tree, "actual_talent_tree": actual_talent_tree})
+            if missing_talent_spells:
+                failures.append({"check": "runtime_character_talent", "bot": name, "missing_spells": missing_talent_spells})
+            if missing_known_spells:
+                failures.append({"check": "runtime_character_spell", "bot": name, "missing_spells": missing_known_spells})
             if missing_slots:
                 failures.append({"check": "runtime_equipment_slots", "bot": name, "missing_slots": missing_slots})
             if wrong_items:

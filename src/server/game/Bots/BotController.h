@@ -63,6 +63,8 @@ private:
     uint32 _updateTimer = 0;
     bool _recording = false;
     mutable uint32 _sequence = 0;
+    mutable std::string _lastHealerCandidateMaskJson = "{}";
+    mutable std::string _lastHealerChosenActionJson = "{}";
     mutable float _lastX = 0.0f;
     mutable float _lastY = 0.0f;
     mutable float _lastZ = 0.0f;

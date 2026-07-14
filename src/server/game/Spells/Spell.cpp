@@ -17,6 +17,7 @@
 
 #include "Spell.h"
 #include "Battlefield.h"
+#include "Bots/BotWorldPopulationMgr.h"
 #include "BattlefieldMgr.h"
 #include "Battleground.h"
 #include "CellImpl.h"
@@ -4233,6 +4234,9 @@ void Spell::finish(bool ok)
     Unit* unitCaster = m_caster->ToUnit();
     if (!unitCaster)
         return;
+
+    if (Player* playerCaster = unitCaster->ToPlayer())
+        sBotWorldPopulationMgr->NotifyBotSpellFinished(playerCaster, m_spellInfo->Id, ok);
 
     // successful cast of the initial autorepeat spell is moved to idle state so that it is not deleted as long as autorepeat is active
     if (IsAutoRepeat() && unitCaster->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL) == this)

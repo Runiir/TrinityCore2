@@ -6,6 +6,7 @@
 #include "DatabaseEnv.h"
 #include "Entities/Item/Container/Bag.h"
 #include "Entities/Item/Item.h"
+#include "Entities/Unit/CharmInfo.h"
 #include "Group.h"
 #include "GroupMgr.h"
 #include "LFG.h"
@@ -1097,18 +1098,56 @@ Player* BotMgr::LoadCharacterAsBotSession(ObjectGuid guid, uint32 accountId, Pla
     TC_LOG_INFO("server", "PlayerBot object_accessor_add complete character=%s", guid.ToString().c_str());
 
     bot->LoadPetsFromDB(holder->GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_ALL_PETS));
-    if (bot->getClass() == CLASS_HUNTER && !bot->GetPlayerPetDataCurrent())
+    PlayerPetData* stagedStablePet = nullptr;
+    uint8 stagedStableSlot = 0;
+    if (bot->getClass() == CLASS_HUNTER)
     {
-        for (uint8 slot = PET_SLOT_FIRST_ACTIVE_SLOT; slot <= PET_SLOT_LAST_ACTIVE_SLOT; ++slot)
+        auto isLoadableHunterPet = [bot](PlayerPetData const* petData)
         {
-            PlayerPetData* petData = bot->GetPlayerPetDataBySlot(slot);
-            if (!petData || petData->Type != HUNTER_PET)
-                continue;
+            if (!petData || petData->Type != HUNTER_PET || !petData->PetId || !petData->CreatureId)
+                return false;
 
-            petData->Active = true;
-            TC_LOG_INFO("server", "PlayerBot hunter active-slot pet selected character=%s pet_id=%u entry=%u slot=%u",
-                guid.ToString().c_str(), petData->PetId, petData->CreatureId, petData->Slot);
-            break;
+            CreatureTemplate const* creatureInfo = sObjectMgr->GetCreatureTemplate(petData->CreatureId);
+            return creatureInfo && creatureInfo->IsTameable(bot->CanTameExoticPets());
+        };
+
+        if (PlayerPetData* currentPet = bot->GetPlayerPetDataCurrent(); currentPet && !isLoadableHunterPet(currentPet))
+            currentPet->Active = false;
+
+        if (!bot->GetPlayerPetDataCurrent())
+        {
+            for (uint8 slot = PET_SLOT_FIRST_ACTIVE_SLOT; slot <= PET_SLOT_LAST_ACTIVE_SLOT; ++slot)
+            {
+                PlayerPetData* petData = bot->GetPlayerPetDataBySlot(slot);
+                if (!isLoadableHunterPet(petData))
+                    continue;
+
+                petData->Active = true;
+                TC_LOG_INFO("server", "PlayerBot hunter active-slot pet selected character=%s pet_id=%u entry=%u slot=%u",
+                    guid.ToString().c_str(), petData->PetId, petData->CreatureId, petData->Slot);
+                break;
+            }
+        }
+
+        if (!bot->GetPlayerPetDataCurrent())
+        {
+            if (Optional<uint8> activeSlot = bot->GetFirstUnusedActivePetSlot())
+            {
+                for (uint8 slot = PET_SLOT_FIRST_STABLE_SLOT; slot <= PET_SLOT_LAST_STABLE_SLOT; ++slot)
+                {
+                    PlayerPetData* petData = bot->GetPlayerPetDataBySlot(slot);
+                    if (!isLoadableHunterPet(petData))
+                        continue;
+
+                    stagedStablePet = petData;
+                    stagedStableSlot = petData->Slot;
+                    petData->Slot = *activeSlot;
+                    petData->Active = true;
+                    TC_LOG_INFO("server", "PlayerBot hunter stable pet staged character=%s pet_id=%u entry=%u slot=%u",
+                        guid.ToString().c_str(), petData->PetId, petData->CreatureId, petData->Slot);
+                    break;
+                }
+            }
         }
     }
     if (bot->IsMounted())
@@ -1120,6 +1159,23 @@ Player* BotMgr::LoadCharacterAsBotSession(ObjectGuid guid, uint32 accountId, Pla
     }
     bot->LoadPet();
     Pet* loadedPet = bot->GetPet();
+    if (stagedStablePet)
+    {
+        if (loadedPet && loadedPet->GetCharmInfo()->GetPetNumber() == stagedStablePet->PetId)
+        {
+            CharacterDatabase.DirectPExecute("UPDATE character_pet SET active = 1, slot = %u WHERE owner = %u AND id = %u",
+                stagedStablePet->Slot, guid.GetCounter(), stagedStablePet->PetId);
+            TC_LOG_INFO("server", "PlayerBot hunter stable pet activated character=%s pet_id=%u entry=%u slot=%u",
+                guid.ToString().c_str(), stagedStablePet->PetId, stagedStablePet->CreatureId, stagedStablePet->Slot);
+        }
+        else
+        {
+            stagedStablePet->Slot = stagedStableSlot;
+            stagedStablePet->Active = false;
+            TC_LOG_ERROR("server", "PlayerBot hunter stable pet load failed character=%s pet_id=%u entry=%u",
+                guid.ToString().c_str(), stagedStablePet->PetId, stagedStablePet->CreatureId);
+        }
+    }
     std::string petGuid = loadedPet ? loadedPet->GetGUID().ToString() : ObjectGuid::Empty.ToString();
     TC_LOG_INFO("server", "PlayerBot pets loaded character=%s pet=%s",
         guid.ToString().c_str(), petGuid.c_str());

@@ -37,6 +37,9 @@ STUCK_EVENTS = {"stuck_detected", "path_failed", "failed_path", "unstuck", "deat
 QUEST_EVENTS = {"quest_completed"}
 LOOP_FAILURE_LABELS = {"repeated_decision_loop", "repeated_failed_decision_loop"}
 DEFAULT_LOOP_REPEAT_THRESHOLD = 3
+RUN_TERMINAL_EVENT_BOT_GUID = -1
+ROUTE_TERMINAL_EVENTS = {"validation_route_manifest_complete"}
+ROUTE_TERMINAL_ACTIONS = {"validation_route_complete"}
 
 
 def parse_ts(value: Any) -> float:
@@ -73,7 +76,10 @@ def index_future_events(events: list[dict[str, Any]]) -> dict[tuple[int, int], t
     for event in events:
         row = dict(event)
         row["_ts_epoch"] = parse_ts(event.get("ts"))
-        grouped[(int(event.get("run_id") or 0), int(event.get("bot_guid") or 0))].append(row)
+        run_id = int(event.get("run_id") or 0)
+        grouped[(run_id, int(event.get("bot_guid") or 0))].append(row)
+        if str(event.get("event_type") or "") in ROUTE_TERMINAL_EVENTS:
+            grouped[(run_id, RUN_TERMINAL_EVENT_BOT_GUID)].append(row)
     indexed = {}
     for key, rows in grouped.items():
         rows.sort(key=lambda item: (item.get("_ts_epoch", 0.0), int(item.get("id") or 0)))
@@ -273,10 +279,27 @@ def label_decision(decision: dict[str, Any], indexed_events: dict[tuple[int, int
         if first_positive is not None and first_negative is not None:
             break
 
+    chosen = load_json(decision.get("chosen_action_json"), {})
+    chosen_action = str(chosen.get("action") or activity_name(chosen))
+    situation = str(decision.get("situation_type") or "")
+    route_terminal_decision = chosen_action in ROUTE_TERMINAL_ACTIONS or situation.startswith("validation_route") or situation == "dungeon_boss"
+    terminal_decision_evidence = False
+    if not first_positive and not first_negative and route_terminal_decision:
+        route_terminal_events = window_events(indexed_events, run_id, RUN_TERMINAL_EVENT_BOT_GUID, ts, windows["outcome"])
+        if route_terminal_events:
+            first_positive = route_terminal_events[0]
+            used_events.update(int(event.get("id") or 0) for event in route_terminal_events if event.get("id") is not None)
+        elif chosen_action in ROUTE_TERMINAL_ACTIONS:
+            terminal_decision_evidence = True
+
     if first_positive and (not first_negative or float(first_positive["_ts_epoch"]) <= float(first_negative["_ts_epoch"])):
         action_success = 1.0
         reason = f"positive_progress:{first_positive.get('event_type')}"
         time_to_outcome = float(first_positive["_ts_epoch"]) - ts
+    elif terminal_decision_evidence:
+        action_success = 1.0
+        reason = f"positive_progress:{chosen_action}"
+        time_to_outcome = 0.0
     elif first_negative:
         action_success = 0.0
         reason = f"negative_outcome:{first_negative.get('event_type')}"
@@ -286,19 +309,23 @@ def label_decision(decision: dict[str, Any], indexed_events: dict[tuple[int, int
         reason = "no_future_outcome"
         time_to_outcome = None
 
+    if first_positive and (not first_negative or float(first_positive["_ts_epoch"]) <= float(first_negative["_ts_epoch"])):
+        risk_events = [event for event in death_events + stuck_events if float(event.get("_ts_epoch") or 0.0) <= float(first_positive["_ts_epoch"])]
+    else:
+        risk_events = death_events + stuck_events
     expected_reward = sum(event_reward(event) for event in reward_events)
     return {
         "action_success": action_success,
         "expected_reward": expected_reward,
-        "death_risk": 1.0 if any(str(event.get("event_type") or "") in DEATH_EVENTS for event in death_events) else 0.0,
-        "stuck_risk": 1.0 if any(str(event.get("event_type") or "") in STUCK_EVENTS for event in stuck_events) else 0.0,
+        "death_risk": 1.0 if any(str(event.get("event_type") or "") in DEATH_EVENTS for event in risk_events) else 0.0,
+        "stuck_risk": 1.0 if any(str(event.get("event_type") or "") in STUCK_EVENTS for event in risk_events) else 0.0,
         "quest_completion_likelihood": 1.0 if any(str(event.get("event_type") or "") in QUEST_EVENTS for event in quest_events) else 0.0,
         "event_ids_used_for_label": sorted(used_events),
         "label_window_json": json.dumps(windows, sort_keys=True),
         "label_reason": reason,
         "time_to_outcome_sec": time_to_outcome,
-        "no_future_events": not used_events,
-        "ambiguous_label": bool(first_positive and first_negative and abs(float(first_positive["_ts_epoch"]) - float(first_negative["_ts_epoch"])) <= 5.0),
+        "no_future_events": not used_events and not terminal_decision_evidence,
+        "ambiguous_label": bool(first_positive and first_negative and float(first_positive["_ts_epoch"]) == float(first_negative["_ts_epoch"])),
     }
 
 

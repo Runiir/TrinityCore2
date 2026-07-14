@@ -46,6 +46,10 @@ def segment_output_name(route: dict[str, Any]) -> str:
     return f"{step:02d}_{slug or 'segment'}"
 
 
+def reusable_session_output_dir(output_root: Path, scenario_id: str) -> Path:
+    return output_root / f"{scenario_output_name(scenario_id)}_reusable_session_full_clear"
+
+
 def live_validate_command(
     scenario: dict[str, Any],
     output_root: Path,
@@ -59,9 +63,12 @@ def live_validate_command(
     no_progress_window_sec: int = 180,
     max_repeated_decisions: int = 20,
     max_death_loops: int = 3,
+    transport: str | None = None,
+    include_emergency_timeout: bool = False,
+    output_dir: Path | None = None,
 ) -> list[str]:
     scenario_id = str(scenario.get("scenario_id") or "")
-    output_dir = output_root / scenario_output_name(scenario_id)
+    output_dir = output_dir or output_root / scenario_output_name(scenario_id)
     context_args: list[str] = [
         "--validation-scenario-id",
         scenario_id,
@@ -111,6 +118,8 @@ def live_validate_command(
         "--output-dir",
         str(output_dir),
     ]
+    if transport:
+        command.extend(["--transport", transport])
     if route_sequence:
         command.append("--validation-route-manifest")
     if duration_policy == "fixed-window":
@@ -118,6 +127,8 @@ def live_validate_command(
             command.extend(["--observe-sec", str(observe_sec)])
         if timeout_sec is not None:
             command.extend(["--timeout-sec", str(timeout_sec)])
+    elif include_emergency_timeout and timeout_sec is not None:
+        command.extend(["--timeout-sec", str(timeout_sec)])
     return command
 
 
@@ -127,11 +138,18 @@ def route_coordinates_valid(route: dict[str, Any]) -> bool:
     return True
 
 
-def scenario_report_command(scenario: dict[str, Any], output_root: Path, report_root: Path, validation_scenario_dir: Path, routes: list[dict[str, Any]] | None = None) -> list[str]:
+def scenario_report_command(
+    scenario: dict[str, Any],
+    output_root: Path,
+    report_root: Path,
+    validation_scenario_dir: Path,
+    routes: list[dict[str, Any]] | None = None,
+    full_output_dir: Path | None = None,
+) -> list[str]:
     scenario_id = str(scenario.get("scenario_id") or "")
     live_reports: list[str]
     executable_routes = [row for row in routes or [] if route_coordinates_valid(row)]
-    full_report = str(output_root / scenario_output_name(scenario_id) / "report.json")
+    full_report = str((full_output_dir or output_root / scenario_output_name(scenario_id)) / "report.json")
     if executable_routes:
         live_reports = [full_report] + [
             str(output_root / scenario_output_name(scenario_id) / segment_output_name(route) / "report.json")
@@ -177,6 +195,7 @@ def build_plan(
     no_progress_window_sec: int = 180,
     max_repeated_decisions: int = 20,
     max_death_loops: int = 3,
+    reusable_session: bool = False,
 ) -> dict[str, Any]:
     rows = []
     for scenario in sorted(scenarios, key=lambda row: str(row.get("scenario_id") or "")):
@@ -186,6 +205,7 @@ def build_plan(
         routes = (routes_by_scenario or {}).get(scenario_id, [])
         route_segments = [route for route in routes if route.get("kind") in {"trash", "boss"}]
         executable_route_segments = [route for route in route_segments if route_coordinates_valid(route)]
+        full_output_dir = reusable_session_output_dir(output_root, scenario_id) if reusable_session else output_root / scenario_output_name(scenario_id)
         live_command = live_validate_command(
             scenario,
             output_root,
@@ -199,8 +219,18 @@ def build_plan(
             no_progress_window_sec=no_progress_window_sec,
             max_repeated_decisions=max_repeated_decisions,
             max_death_loops=max_death_loops,
+            transport="session" if reusable_session else None,
+            include_emergency_timeout=reusable_session,
+            output_dir=full_output_dir,
         )
-        report_command = scenario_report_command(scenario, output_root, report_root, validation_scenario_dir, route_segments)
+        report_command = scenario_report_command(
+            scenario,
+            output_root,
+            report_root,
+            validation_scenario_dir,
+            route_segments,
+            full_output_dir=full_output_dir,
+        )
         segments = []
         for route in route_segments:
             segment_command = live_validate_command(
@@ -249,8 +279,15 @@ def build_plan(
                 "role_assignment": scenario.get("role_assignment") or {},
                 "required_evidence": scenario.get("required_evidence") or [],
                 "evidence_contract": scenario.get("evidence_contract") or [],
-                "live_output_dir": str(output_root / scenario_output_name(scenario_id)),
+                "live_output_dir": str(full_output_dir),
                 "scenario_report_dir": str(report_root),
+                "reusable_session": {
+                    "enabled": reusable_session,
+                    "transport": "session" if reusable_session else "process_default",
+                    "full_clear_output_dir": str(full_output_dir),
+                    "output_dir_template": "{scenario_id}_reusable_session_full_clear" if reusable_session else "{scenario_id}",
+                    "emergency_timeout_sec": timeout_sec if reusable_session else None,
+                },
                 "preserve_start_position": True,
                 "bot_pool_tag": scenario_id,
                 "lane_name": f"{scenario_output_name(scenario_id)}_full_clear",
@@ -276,6 +313,12 @@ def build_plan(
     return {
         "schema": "bot_validation_run_plan_v1",
         "duration_policy": duration_policy,
+        "reusable_session": {
+            "enabled": reusable_session,
+            "transport": "session" if reusable_session else "process_default",
+            "full_clear_output_dir_template": "{scenario_id}_reusable_session_full_clear" if reusable_session else "{scenario_id}",
+            "preserves_existing_report_paths": reusable_session,
+        },
         "scenario_count": len(rows),
         "scenarios": rows,
         "runtime_ml_control": "offline_shadow_only",
@@ -336,6 +379,7 @@ def main() -> int:
     parser.add_argument("--no-progress-window-sec", type=int, default=180)
     parser.add_argument("--max-repeated-decision-count", type=int, default=20)
     parser.add_argument("--max-death-loop-count", type=int, default=3)
+    parser.add_argument("--reusable-session", action="store_true", help="Run full scenarios through the reusable session transport with isolated outputs.")
     args = parser.parse_args()
 
     plan = build_plan(
@@ -351,6 +395,7 @@ def main() -> int:
         no_progress_window_sec=args.no_progress_window_sec,
         max_repeated_decisions=args.max_repeated_decision_count,
         max_death_loops=args.max_death_loop_count,
+        reusable_session=args.reusable_session,
     )
     args.output_dir.mkdir(parents=True, exist_ok=True)
     write_json(args.output_dir / "manifest.json", plan)

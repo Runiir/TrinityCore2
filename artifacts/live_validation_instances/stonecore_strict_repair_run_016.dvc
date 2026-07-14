@@ -1,0 +1,6 @@
+outs:
+- md5: d4442641ca35405aef1d5476c9c84fe5.dir
+  size: 223241781
+  nfiles: 29
+  hash: md5
+  path: stonecore_strict_repair_run_016

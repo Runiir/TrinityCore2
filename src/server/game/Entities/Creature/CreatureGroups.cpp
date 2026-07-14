@@ -198,6 +198,12 @@ void CreatureGroup::FormationReset(bool dismiss)
     {
         if (itr->first != m_leader && itr->first->IsAlive())
         {
+            if (dismiss && itr->first->IsReturningHome())
+            {
+                TC_LOG_DEBUG("entities.unit", "Preserved home movement for dismissed formation member GUID: %u", itr->first->GetGUID().GetCounter());
+                continue;
+            }
+
             if (dismiss)
                 itr->first->GetMotionMaster()->Initialize();
             else

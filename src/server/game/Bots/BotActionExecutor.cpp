@@ -1,4 +1,5 @@
 #include "Bots/BotActionExecutor.h"
+#include "DataStores/DBCStores.h"
 #include "Entities/Item/Container/Bag.h"
 #include "Entities/Item/Item.h"
 #include "MotionMaster.h"
@@ -12,6 +13,7 @@
 #include "Creature.h"
 #include "Loot/Loot.h"
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <utility>
 #include <vector>
@@ -27,6 +29,48 @@ bool HasEnoughPowerForSpell(Player const* bot, SpellInfo const* spellInfo)
 {
     if (!bot || !spellInfo)
         return false;
+
+    if (spellInfo->PowerType == POWER_RUNE && spellInfo->RuneCostID && bot->getClass() == CLASS_DEATH_KNIGHT)
+    {
+        SpellRuneCostEntry const* runeCost = sSpellRuneCostStore.LookupEntry(spellInfo->RuneCostID);
+        if (runeCost && !runeCost->NoRuneCost())
+        {
+            std::array<int32, 3> required = { int32(runeCost->RuneCost[0]), int32(runeCost->RuneCost[1]), int32(runeCost->RuneCost[2]) };
+            uint8 deathRunes = 0;
+            for (uint8 i = 0; i < MAX_RUNES; ++i)
+            {
+                if (std::abs(bot->GetRuneCooldown(i)) > 0.0001f)
+                    continue;
+
+                switch (bot->GetCurrentRune(i))
+                {
+                    case RuneType::Blood:
+                        if (required[0] > 0)
+                            --required[0];
+                        break;
+                    case RuneType::Unholy:
+                        if (required[1] > 0)
+                            --required[1];
+                        break;
+                    case RuneType::Frost:
+                        if (required[2] > 0)
+                            --required[2];
+                        break;
+                    case RuneType::Death:
+                        ++deathRunes;
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            int32 deficit = 0;
+            for (int32 count : required)
+                deficit += std::max<int32>(0, count);
+            if (deficit > deathRunes)
+                return false;
+        }
+    }
 
     int32 powerCost = spellInfo->CalcPowerCost(bot, spellInfo->GetSchoolMask());
     if (powerCost <= 0)
@@ -119,6 +163,9 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
     if (IsThrottled(bot->GetGUID(), action.SpellId, action.TargetGuid))
         return BotActionResult::Throttled;
 
+    if (target && target != bot && bot->IsValidAttackTarget(target) && action.AutoAttackMode == "melee")
+        bot->Attack(target, true);
+
     SpellCastResult result = bot->CastSpell(target, action.SpellId, false);
     if (result != SPELL_CAST_OK)
     {
@@ -126,8 +173,6 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
         return BotActionResult::CastFailed;
     }
 
-    if (target && target != bot && bot->IsValidAttackTarget(target) && action.AutoAttackMode == "melee")
-        bot->Attack(target, true);
     RecordSuccess(bot->GetGUID());
     return BotActionResult::Ok;
 }
@@ -502,6 +547,8 @@ BotActionResult BotActionExecutor::CheckHostileSpell(Player* owner, Player* bot,
         return BotActionResult::GlobalCooldown;
     if (!bot->GetSpellHistory()->IsReady(spellInfo))
         return BotActionResult::Cooldown;
+    if (spellInfo->NeedsComboPoints() && (bot->GetComboTarget() != target->GetGUID() || !bot->GetComboPoints()))
+        return BotActionResult::NoMana;
     if (!HasEnoughPowerForSpell(bot, spellInfo))
         return BotActionResult::NoMana;
     if (owner && bot->GetMap() != owner->GetMap())

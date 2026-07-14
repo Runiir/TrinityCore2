@@ -15,6 +15,7 @@
 #include <string>
 #include <vector>
 
+class Creature;
 class Player;
 class Quest;
 class Unit;
@@ -66,8 +67,10 @@ struct BotWorldExperimentConfig
     std::string ValidationRouteAdvanceMode = "disabled";
     std::string ValidationRouteScenarioId;
     std::string ValidationRouteNodeId;
+    uint32 ValidationRouteGeneration = 0;
     std::string ValidationRouteLabel;
     std::string ValidationRouteKind;
+    std::string ValidationRouteNodeKind;
     std::string ValidationRouteMechanicProfile;
     uint32 ValidationRouteMapId = 0;
     float ValidationRouteX = 0.0f;
@@ -77,7 +80,11 @@ struct BotWorldExperimentConfig
     uint32 ValidationRouteTargetEntry = 0;
     uint32 ValidationRouteOpenerTargetEntry = 0;
     std::vector<uint32> ValidationRouteAlternateTargetEntries;
+    std::vector<uint32> ValidationRouteAddTargetEntries;
     std::vector<uint32> ValidationRoutePackTargetEntries;
+    std::vector<uint32> ValidationRouteScriptedEventEntries;
+    std::vector<uint32> ValidationRouteScriptedEventTransitionAuraIds;
+    bool ValidationRouteScriptedEventRequirePassive = false;
     float ValidationRouteClusterRadiusYards = 0.0f;
     uint32 ValidationRouteExpectedAliveCount = 0;
     uint32 ValidationRouteActivationDataId = 0;
@@ -217,6 +224,11 @@ public:
     bool IsActive() const { return _active; }
     std::string Replay(std::string const& replayType, std::string const& selector, std::string const& brainVersion = "");
     std::string CompareBrains(uint64 replayId, std::string const& firstBrainVersion, std::string const& secondBrainVersion);
+    uint64 NotifyBotSpellStarted(Player* caster, Unit* target, uint32 spellId, std::string const& candidateMaskJson = {}, std::string const& chosenActionJson = {});
+    void CancelBotSpellStart(uint64 castId, Player* caster, char const* reason);
+    void NotifyBotSpellFinished(Player* caster, uint32 spellId, bool success);
+    void NotifyBotHeal(Unit* healer, Unit* target, uint32 spellId, uint32 attemptedHeal, uint32 effectiveHeal, uint32 absorbedHeal);
+    void NotifyCreatureDeath(Creature* killed);
 
     enum class QuestObjectiveType
     {
@@ -281,16 +293,25 @@ private:
         std::string NodeId;
         std::string Label;
         std::string Kind;
+        std::string NodeKind;
         std::string MechanicProfile;
         uint32 MapId = 0;
         float X = 0.0f;
         float Y = 0.0f;
         float Z = 0.0f;
         float O = 0.0f;
+        float NavigationAnchorX = 0.0f;
+        float NavigationAnchorY = 0.0f;
+        float NavigationAnchorZ = 0.0f;
+        float NavigationAnchorO = 0.0f;
         uint32 TargetEntry = 0;
         uint32 OpenerTargetEntry = 0;
         std::vector<uint32> AlternateTargetEntries;
+        std::vector<uint32> AddTargetEntries;
         std::vector<uint32> PackTargetEntries;
+        std::vector<uint32> ScriptedEventEntries;
+        std::vector<uint32> ScriptedEventTransitionAuraIds;
+        bool ScriptedEventRequirePassive = false;
         float ClusterRadiusYards = 0.0f;
         uint32 ExpectedAliveCount = 0;
         uint32 ActivationDataId = 0;
@@ -309,6 +330,16 @@ private:
         float OpenerSummonZ = 0.0f;
         float OpenerSummonO = 0.0f;
         uint32 ExpectedBotCount = 0;
+    };
+
+    struct ValidationRouteEvidence
+    {
+        std::string NodeId;
+        uint64 Generation = 0;
+        std::string Kind;
+        ObjectGuid TargetGuid;
+        uint32 TargetEntry = 0;
+        std::string Reason;
     };
 
     struct WorldBotState
@@ -338,6 +369,8 @@ private:
 
         struct RouteProgressDiagnostic
         {
+            uint64 RecordedAtMs = 0;
+            uint64 Generation = 0;
             std::string NodeId;
             std::string Kind;
             ObjectGuid TargetGuid;
@@ -371,6 +404,10 @@ private:
         uint32 DecisionTimer = 0;
         uint32 StuckTimer = 0;
         uint32 DeadTimer = 0;
+        bool DeathEpisodeRecorded = false;
+        uint64 NativeResurrectionPendingUntilMs = 0;
+        ObjectGuid NativeResurrectionCasterGuid;
+        uint32 NativeResurrectionSpellId = 0;
         uint32 SafePositionTimer = 0;
         uint32 PoiScanTimer = 0;
         uint32 RestTimer = 0;
@@ -440,6 +477,8 @@ private:
         uint32 ValidationRouteTargetSearchMissCount = 0;
         bool ValidationRouteTerminalState = false;
         uint64 ValidationRouteTerminalAtMs = 0;
+        uint64 ValidationRouteGeneration = 0;
+        uint64 ValidationRouteTerminalGeneration = 0;
         std::string ValidationRouteTerminalReason;
         bool ValidationCohortLocked = false;
         bool ValidationCohortViolation = false;
@@ -468,6 +507,8 @@ private:
         uint64 LastMovementProgressMs = 0;
         uint64 LastPathChangeMs = 0;
         bool IsMoving = false;
+        uint32 MovementProgressWindowMs = 0;
+        float MovementProgressWindowDistance = 0.0f;
         float DistanceMovedSinceLastDecision = 0.0f;
         float LastDecisionDistanceMoved = 0.0f;
         std::string LastDecisionSituation = "unknown";
@@ -515,6 +556,7 @@ private:
         std::string BlockedResolution;
         std::string BlockedResolvedBy;
         uint64 BlockedStartMs = 0;
+        uint64 BlockedProgressBaselineMs = 0;
         uint64 BlockedResolvedMs = 0;
         bool BlockedMessageEmitted = false;
         std::string LastBlockedDiagnosticText;
@@ -534,6 +576,8 @@ private:
             uint32 Sequence = 0;
             std::string Situation = "unknown";
             std::string Action = "wait";
+            std::string RouteNodeId;
+            uint64 RouteGeneration = 0;
             uint32 QuestId = 0;
             uint64 TargetGuid = 0;
             uint32 DestinationMapId = 0;
@@ -840,6 +884,31 @@ private:
         float TargetItemLevel = 372.0f;
     };
 
+    struct PendingHealCast
+    {
+        uint64 CastId = 0;
+        ObjectGuid BotGuid;
+        uint32 SpellId = 0;
+        ObjectGuid ChosenTargetGuid;
+        uint64 StartedAtMs = 0;
+        uint64 LastHealAtMs = 0;
+        uint64 DeadlineMs = 0;
+        uint32 ManaBefore = 0;
+        uint32 AttemptedHeal = 0;
+        uint32 EffectiveHeal = 0;
+        uint32 AbsorbedHeal = 0;
+        std::set<uint64> AffectedAllyGuids;
+        uint32 AttackersBefore = 0;
+        float ThreatBefore = 0.0f;
+        std::string CandidateMaskJson;
+        std::string ChosenActionJson;
+        bool SpellFinished = false;
+        uint64 FinishedAtMs = 0;
+        uint32 ManaAfterCast = 0;
+        uint32 AttackersAfterCast = 0;
+        float ThreatAfterCast = 0.0f;
+    };
+
     struct SemanticOutcomeStats
     {
         bool Known = false;
@@ -966,7 +1035,7 @@ private:
     bool IsFailedPathRecently(uint32 botGuid, uint32 mapId, float fromX, float fromY, float toX, float toY) const;
     bool FindMemoryPoiTarget(Player* bot, float& x, float& y, float& z, uint64& poiId) const;
     void MarkPoiVisited(uint64 poiId) const;
-    bool MoveBotToPoint(WorldBotState& state, Player* bot, float x, float y, float z);
+    bool MoveBotToPoint(WorldBotState& state, Player* bot, float x, float y, float z, bool terminalOnFailure = false);
     BotDeathRecoveryPolicy BuildDeathRecoveryPolicy() const;
     DeathRecoveryResult RecoverDeadBot(WorldBotState& state, Player* bot);
     bool TryCorpseRecovery(Player* bot, std::string& result) const;
@@ -1035,14 +1104,15 @@ private:
     bool TryEnsureCombatTotems(WorldBotState& state, Player* bot, Unit* target) const;
     char const* GetDungeonRole(Player* bot) const;
     uint32 SelectInterruptSpell(Player* bot) const;
-    uint32 SelectHealSpell(Player* bot) const;
-    bool TryCastFriendlySpell(Player* bot, Unit* target, uint32 spellId) const;
+    uint32 SelectHealSpell(Player* bot, Unit* target) const;
+    bool TryCastFriendlySpell(Player* bot, Unit* target, uint32 spellId, std::string* failureReason = nullptr);
+    bool TryNativePartyResurrection(WorldBotState& state, Player* healer, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, DungeonTrashActionResult& result);
     std::string BuildDungeonTrashPackJson(DungeonTrashPackFeatures const& pack) const;
     std::string BuildBossMechanicsJson(BossMechanicFeatures const& features) const;
     uint32 SelectCombatSpell(Player* bot, Unit* target) const;
-    ResolvedCombatAction ResolveProfileCombatAction(Player* bot, Unit* target) const;
-    BotActionResult ExecuteProfileCombatAction(WorldBotState* state, Player* bot, Unit* target, ResolvedCombatAction* action = nullptr) const;
-    BotActionResult ExecuteProfileCombatAction(Player* bot, Unit* target, ResolvedCombatAction* action = nullptr) const;
+    ResolvedCombatAction ResolveProfileCombatAction(Player* bot, Unit* target, uint32 hostileCount = 0, bool densityOnly = false) const;
+    BotActionResult ExecuteProfileCombatAction(WorldBotState* state, Player* bot, Unit* target, ResolvedCombatAction* action = nullptr, uint32 hostileCount = 0, bool densityOnly = false) const;
+    BotActionResult ExecuteProfileCombatAction(Player* bot, Unit* target, ResolvedCombatAction* action = nullptr, uint32 hostileCount = 0, bool densityOnly = false) const;
     bool MoveBotToProfileRange(WorldBotState& state, Player* bot, Unit* reference, ResolvedCombatAction const* action = nullptr);
     bool TryCastCombatSpell(Player* bot, Unit* target, uint32 spellId) const;
     void MarkBotBlocked(WorldBotState& state, Player* bot, char const* reason) const;
@@ -1054,6 +1124,8 @@ private:
     void LoadValidationRouteManifest();
     bool ApplyValidationRouteManifestNode(size_t index, char const* reason);
     bool MaybeAdvanceValidationRouteManifest();
+    void ResetValidationRouteBossAddEscapeState();
+    void ResetValidationRouteBossAddDensityState();
     void ResetValidationRouteRuntimeState(char const* reason);
     bool ValidationRouteHasProgressSinceApply() const;
     ReplayRecord LoadReplayRecord(std::string const& replayType, std::string const& selector) const;
@@ -1103,6 +1175,11 @@ private:
     uint64 MaybeCaptureTelemetryClip(Player* bot, Unit const* target, BotTelemetryPolicyInput const& input, BotTelemetryPolicyDecision const& decision, char const* rawJson, char const* semanticJson);
     void UpdateSemanticOutcomeStats(Player* bot, char const* entityType, uint32 entityKey, char const* eventType, char const* result, float reward, float powerDelta, bool failure, char const* featuresJson);
     void UpdateSemanticStatsFromEvent(Player* bot, Unit const* target, char const* eventType, char const* result, float valueFloat, uint32 valueInt, uint32 spellId, char const* semanticJson);
+    uint64 BeginPendingHealCast(Player* bot, Unit* target, uint32 spellId, std::string const& candidateMaskJson = {}, std::string const& chosenActionJson = {});
+    void FlushPendingHealCast(PendingHealCast const& cast, Player* bot, char const* outcome, char const* reason);
+    void UpdatePendingHealCasts();
+    void ClearPendingHealCasts(char const* reason);
+    std::string BuildValidationRouteEvidenceJson(std::vector<ValidationRouteEvidence> const& evidence) const;
     SemanticOutcomeStats GetSemanticOutcomeStats(char const* entityType, uint32 entityKey) const;
     std::string BuildOutcomeStatsJson(SemanticOutcomeStats const& stats) const;
     std::string BuildEmbeddingFeaturesJson(Player const* bot, Unit const* target, char const* entityType, uint32 entityKey, char const* semanticFamily) const;
@@ -1149,14 +1226,55 @@ private:
     float _validationRouteFocusY = 0.0f;
     float _validationRouteFocusZ = 0.0f;
     uint64 _validationRouteFocusSeenMs = 0;
+    ObjectGuid _validationRouteAddFocusGuid;
+    uint64 _validationRouteAddFocusGeneration = 0;
+    GuidSet _validationRouteRecordedKillGuids;
+    GuidSet _validationRoutePackMemberGuids;
+    GuidSet _validationRoutePackEngagedGuids;
+    GuidSet _validationRoutePackDeathGuids;
+    GuidSet _validationRoutePackTransitionGuids;
+    GuidSet _validationRoutePendingFinalTransitionGuids;
+    GuidSet _validationRouteFinalTransitionGuids;
+    uint64 _validationRoutePackGeneration = 0;
+    uint64 _validationRoutePackSequence = 1;
+    uint32 _validationRouteCompletedPackCount = 0;
+    bool _validationRoutePackObservedEngagement = false;
+    uint64 _validationRoutePackClearCandidateSinceMs = 0;
+    uint64 _validationRouteNodeClearCandidateSinceMs = 0;
     ObjectGuid _validationRouteBossProgressTargetGuid;
     uint32 _validationRouteBossSlowProgressCount = 0;
+    bool _validationRouteBossAddDensityPhase = false;
+    uint64 _validationRouteBossAddDensityGeneration = 0;
+    bool _validationRouteBossAddEscapeActive = false;
+    uint64 _validationRouteBossAddEscapeGeneration = 0;
+    float _validationRouteBossAddEscapeX = 0.0f;
+    float _validationRouteBossAddEscapeY = 0.0f;
+    float _validationRouteBossAddEscapeZ = 0.0f;
+    float _validationRouteBossAddEscapeAnchorX = 0.0f;
+    float _validationRouteBossAddEscapeAnchorY = 0.0f;
+    float _validationRouteBossAddEscapeAnchorZ = 0.0f;
+    float _validationRouteBossAddCentroidX = 0.0f;
+    float _validationRouteBossAddCentroidY = 0.0f;
+    GuidSet _validationRouteBossAddEscapeIssuedGuids;
     bool _validationRouteActivationApplied = false;
     uint32 _validationRouteActivationAttempts = 0;
     std::vector<ValidationRouteManifestNode> _validationRouteManifest;
+    std::vector<ValidationRouteEvidence> _validationRouteTerminalEvidence;
+    std::vector<ValidationRouteEvidence> _validationRouteBossDeathEvidence;
     size_t _validationRouteManifestIndex = 0;
+    uint64 _validationRouteGeneration = 0;
+    ObjectGuid _validationRouteEngagedBossGuid;
+    uint64 _validationRouteEngagedBossGeneration = 0;
+    uint32 _validationRouteEngagedBossMapId = 0;
+    uint32 _validationRouteEngagedBossInstanceId = 0;
+    ObjectGuid _validationRouteConfirmedBossDeathGuid;
+    uint64 _validationRouteConfirmedBossDeathGeneration = 0;
+    uint32 _validationRouteConfirmedBossDeathMapId = 0;
+    uint32 _validationRouteConfirmedBossDeathInstanceId = 0;
     uint32 _validationRouteProgressBaselineKills = 0;
+    bool _validationRouteObservedEngagement = false;
     bool _validationRouteManifestAdvancePending = false;
+    uint64 _validationRouteManifestAdvanceGeneration = 0;
     bool _validationRouteManifestComplete = false;
     std::string _validationRouteManifestAdvanceReason;
     std::string _validationRouteManifestLoadError;
@@ -1164,6 +1282,8 @@ private:
     mutable std::map<uint32, std::string> _lastChosenCombatByBot;
     mutable std::map<uint32, std::string> _lastActionCategoryByBot;
     mutable std::map<uint32, RoleSaturationState> _lastSaturationByBot;
+    uint64 _nextHealCastId = 1;
+    std::map<uint64, PendingHealCast> _pendingHealCasts;
 };
 
 #define sBotWorldPopulationMgr BotWorldPopulationMgr::instance()

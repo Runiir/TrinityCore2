@@ -27,6 +27,8 @@ DEFAULT_DBC_DIR = Path("data/dbc/enUS")
 SPELL_EFFECT_LEARN_GLYPH = 74
 ITEM_SPARSE_FMT = "niiiffiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiifiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiisssssiiiiiiiiiiiiiiiiiiiiiifiiifii"
 _GLYPH_ITEM_TO_PROPERTY_CACHE: dict[Path, dict[int, int]] = {}
+_GLYPH_PROPERTY_TYPE_CACHE: dict[Path, dict[int, int]] = {}
+_TALENT_DATA_CACHE: dict[Path, tuple[dict[int, list[Any]], dict[int, list[int]]]] = {}
 
 
 def required_equipment_slots_for(equipment: list[dict[str, Any]]) -> list[int]:
@@ -136,6 +138,84 @@ def normalized_glyphs(bot: dict[str, Any], glyph_item_map: dict[int, int] | None
     return glyphs
 
 
+def glyph_property_type_map(dbc_dir: Path = DEFAULT_DBC_DIR) -> dict[int, int]:
+    dbc_dir = dbc_dir.resolve()
+    cached = _GLYPH_PROPERTY_TYPE_CACHE.get(dbc_dir)
+    if cached is not None:
+        return cached
+    mapping = {int(row[0]): int(row[2]) for row in load_wdbc_values(dbc_dir / "GlyphProperties.dbc", "niii")}
+    _GLYPH_PROPERTY_TYPE_CACHE[dbc_dir] = mapping
+    return mapping
+
+
+def normalized_glyph_slots(
+    bot: dict[str, Any],
+    glyph_item_map: dict[int, int] | None = None,
+    glyph_types: dict[int, int] | None = None,
+) -> list[int]:
+    glyphs = normalized_glyphs(bot, glyph_item_map)
+    glyph_types = glyph_types if glyph_types is not None else glyph_property_type_map()
+    slots = [0] * 9
+    slot_indices = {0: [0, 3, 5], 1: [1, 2, 4], 2: [6, 7, 8]}
+    used = {glyph_type: 0 for glyph_type in slot_indices}
+    for glyph in glyphs:
+        glyph_type = glyph_types[glyph]
+        index = slot_indices[glyph_type][used[glyph_type]]
+        slots[index] = glyph
+        used[glyph_type] += 1
+    return slots
+
+
+def talent_data(dbc_dir: Path = DEFAULT_DBC_DIR) -> tuple[dict[int, list[Any]], dict[int, list[int]]]:
+    dbc_dir = dbc_dir.resolve()
+    cached = _TALENT_DATA_CACHE.get(dbc_dir)
+    if cached is not None:
+        return cached
+    talents = {int(row[0]): row for row in load_wdbc_values(dbc_dir / "Talent.dbc", "niiiiiiiiiiiiiixxxx")}
+    primary_spells: dict[int, list[int]] = {}
+    for row in load_wdbc_values(dbc_dir / "TalentTreePrimarySpells.dbc", "xnii"):
+        primary_spells.setdefault(int(row[1]), []).append(int(row[2]))
+    result = talents, primary_spells
+    _TALENT_DATA_CACHE[dbc_dir] = result
+    return result
+
+
+def validate_talent_manifest(bot: dict[str, Any], dbc_dir: Path = DEFAULT_DBC_DIR) -> None:
+    configured = bot.get("talents", [])
+    if not configured:
+        return
+    talents, primary_spells = talent_data(dbc_dir)
+    selected: dict[int, tuple[list[Any], int]] = {}
+    points_by_tree: dict[int, int] = {}
+    for talent in configured:
+        talent_id = int(talent["talent_id"])
+        spell_id = int(talent["spell_id"])
+        row = talents[talent_id]
+        ranks = [int(value) for value in row[4:9] if int(value)]
+        rank = ranks.index(spell_id) + 1
+        selected[talent_id] = row, rank
+        points_by_tree[int(row[1])] = points_by_tree.get(int(row[1]), 0) + rank
+    primary_tree = int(bot["primary_talent_tree_id"])
+    if points_by_tree.get(primary_tree, 0) < 31:
+        raise ValueError(f"{bot['name']} primary talent tree requires at least 31 points")
+    if sum(points_by_tree.values()) > 41:
+        raise ValueError(f"{bot['name']} talent allocation exceeds 41 points")
+    for talent_id, (row, rank) in selected.items():
+        lower_tier_points = sum(
+            selected_rank
+            for selected_row, selected_rank in selected.values()
+            if int(selected_row[1]) == int(row[1]) and int(selected_row[2]) < int(row[2])
+        )
+        if lower_tier_points < int(row[2]) * 5:
+            raise ValueError(f"{bot['name']} talent {talent_id} does not satisfy its tier")
+        for prereq_id, prereq_rank in zip(row[9:12], row[12:15]):
+            if int(prereq_id) and (int(prereq_id) not in selected or selected[int(prereq_id)][1] < int(prereq_rank) + 1):
+                raise ValueError(f"{bot['name']} talent {talent_id} is missing prerequisite {prereq_id}")
+    expected_primary = sorted(primary_spells[primary_tree])
+    if sorted(int(spell) for spell in bot.get("primary_tree_spells", [])) != expected_primary:
+        raise ValueError(f"{bot['name']} primary tree spells do not match DBC tree {primary_tree}")
+
+
 def equipment_cache(equipment: list[dict[str, Any]], bag_slots: int = INVENTORY_BAG_SLOTS) -> str:
     visible = [0] * (EQUIPMENT_SLOT_END * 2)
     for item in equipment:
@@ -182,6 +262,7 @@ def load_config(path: Path) -> dict[str, Any]:
             normalized = normalize_ascii_player_name(name)
             if name != normalized:
                 raise ValueError(f"validation bot name {name!r} must use normalized player-name casing {normalized!r}")
+            validate_talent_manifest(bot)
     return config
 
 
@@ -273,7 +354,28 @@ def bot_spell_ids(bot: dict[str, Any], action_profiles: dict[str, Any] | None = 
     configured = [int(spell) for spell in bot.get("spells", [])]
     profile_spells = profiles["action_profile_spells_by_class"].get(int(bot.get("class", 0)), [])
     proficiency_spells = profiles["proficiency_spells_by_class"].get(int(bot.get("class", 0)), [])
-    return sorted({spell for spell in configured + profile_spells + proficiency_spells if spell > 0})
+    talent_spells = {int(talent["spell_id"]) for talent in bot.get("talents", [])}
+    return sorted({spell for spell in configured + profile_spells + proficiency_spells if spell > 0 and spell not in talent_spells})
+
+
+def bot_talent_spell_ids(bot: dict[str, Any]) -> list[int]:
+    return [int(talent["spell_id"]) for talent in bot.get("talents", [])]
+
+
+def bot_primary_tree_spell_ids(bot: dict[str, Any], dbc_dir: Path = DEFAULT_DBC_DIR) -> list[int]:
+    primary_tree = int(bot.get("primary_talent_tree_id") or 0)
+    if primary_tree <= 0:
+        return []
+    _talents, primary_spells = talent_data(dbc_dir)
+    return primary_spells.get(primary_tree, [])
+
+
+def bot_known_spell_ids(bot: dict[str, Any], action_profiles: dict[str, Any] | None = None) -> list[int]:
+    return sorted({
+        *bot_spell_ids(bot, action_profiles),
+        *bot_talent_spell_ids(bot),
+        *bot_primary_tree_spell_ids(bot),
+    })
 
 
 def build_character_insert_sql(config: dict[str, Any], action_profiles: dict[str, Any] | None = None) -> str:
@@ -289,6 +391,7 @@ def build_character_insert_sql(config: dict[str, Any], action_profiles: dict[str
     lines.append(f"DELETE FROM `characters`.`item_instance` WHERE `guid` >= {item_guid_base} AND `guid` < {item_guid_limit};")
     lines.append("DELETE FROM `characters`.`character_bot_pool` WHERE `guid` IN (SELECT `guid` FROM `characters`.`characters` WHERE `name` IN (" + ", ".join(sql_quote(name) for name in cleanup_character_names(config)) + "));")
     lines.append("DELETE FROM `characters`.`character_glyphs` WHERE `guid` IN (SELECT `guid` FROM `characters`.`characters` WHERE `name` IN (" + ", ".join(sql_quote(name) for name in cleanup_character_names(config)) + "));")
+    lines.append("DELETE FROM `characters`.`character_talent` WHERE `guid` IN (SELECT `guid` FROM `characters`.`characters` WHERE `name` IN (" + ", ".join(sql_quote(name) for name in cleanup_character_names(config)) + "));")
     lines.append("DELETE FROM `characters`.`character_skills` WHERE `guid` IN (SELECT `guid` FROM `characters`.`characters` WHERE `name` IN (" + ", ".join(sql_quote(name) for name in cleanup_character_names(config)) + "));")
     lines.append("DELETE FROM `characters`.`character_spell` WHERE `guid` IN (SELECT `guid` FROM `characters`.`characters` WHERE `name` IN (" + ", ".join(sql_quote(name) for name in cleanup_character_names(config)) + "));")
     lines.append("DELETE ps FROM `characters`.`pet_spell` ps JOIN `characters`.`character_pet` cp ON cp.`id` = ps.`guid` WHERE cp.`owner` IN (SELECT `guid` FROM `characters`.`characters` WHERE `name` IN (" + ", ".join(sql_quote(name) for name in cleanup_character_names(config)) + "));")
@@ -306,11 +409,12 @@ def build_character_insert_sql(config: dict[str, Any], action_profiles: dict[str
             role = str(bot["role"])
             class_spec = str(bot.get("class_spec") or bot.get("class") or role)
             cache = equipment_cache(bot.get("equipment", []))
+            talent_tree = f"{int(bot.get('primary_talent_tree_id', 0))} 0 "
             lines.append(
                 "INSERT INTO `characters`.`characters` "
-                "(`guid`, `account`, `name`, `slot`, `race`, `class`, `gender`, `level`, `xp`, `money`, `position_x`, `position_y`, `position_z`, `map`, `orientation`, `taximask`, `online`, `cinematic`, `totaltime`, `leveltime`, `logout_time`, `health`, `power1`, `talentGroupsCount`, `activeTalentGroup`, `equipmentCache`) "
+                "(`guid`, `account`, `name`, `slot`, `race`, `class`, `gender`, `level`, `xp`, `money`, `position_x`, `position_y`, `position_z`, `map`, `orientation`, `taximask`, `online`, `cinematic`, `totaltime`, `leveltime`, `logout_time`, `health`, `power1`, `talentGroupsCount`, `activeTalentGroup`, `talentTree`, `equipmentCache`) "
                 f"SELECT COALESCE(MAX(c.`guid`), 0) + 1, a.`id`, {sql_quote(name)}, {slot}, {int(bot['race'])}, {int(bot['class'])}, {int(bot.get('gender', 0))}, {int(bot.get('level', 85))}, 0, {int(bot.get('money', config.get('default_money', 10000000)))}, "
-                f"{float(start['x'])}, {float(start['y'])}, {float(start['z'])}, {int(start['map_id'])}, {float(start.get('o', 0.0))}, '', 0, 1, 0, 0, 0, 100, 100, 1, 0, {sql_quote(cache)} "
+                f"{float(start['x'])}, {float(start['y'])}, {float(start['z'])}, {int(start['map_id'])}, {float(start.get('o', 0.0))}, '', 0, 1, 0, 0, 0, 100, 100, 1, 0, {sql_quote(talent_tree)}, {sql_quote(cache)} "
                 f"FROM `auth`.`account` a LEFT JOIN `characters`.`characters` c ON 1 = 1 WHERE a.`username` = {sql_quote(account)} GROUP BY a.`id`;"
             )
             lines.append(
@@ -324,11 +428,16 @@ def build_character_insert_sql(config: dict[str, Any], action_profiles: dict[str
                     f"SELECT c.`guid`, {int(skill['id'])}, {int(skill.get('value', 525))}, {int(skill.get('max', 525))} FROM `characters`.`characters` c WHERE c.`name` = {sql_quote(name)} "
                     "ON DUPLICATE KEY UPDATE `value` = VALUES(`value`), `max` = VALUES(`max`);"
                 )
-            for spell_id in bot_spell_ids(bot, action_profiles):
+            for spell_id in bot_known_spell_ids(bot, action_profiles):
                 lines.append(
                     "INSERT INTO `characters`.`character_spell` (`guid`, `spell`, `active`, `disabled`) "
                     f"SELECT c.`guid`, {spell_id}, 1, 0 FROM `characters`.`characters` c WHERE c.`name` = {sql_quote(name)} "
                     "ON DUPLICATE KEY UPDATE `active` = VALUES(`active`), `disabled` = VALUES(`disabled`);"
+                )
+            for talent_spell_id in bot_talent_spell_ids(bot):
+                lines.append(
+                    "INSERT INTO `characters`.`character_talent` (`guid`, `spell`, `talentGroup`) "
+                    f"SELECT c.`guid`, {talent_spell_id}, 0 FROM `characters`.`characters` c WHERE c.`name` = {sql_quote(name)};"
                 )
             pet = bot.get("pet")
             if pet:
@@ -348,9 +457,8 @@ def build_character_insert_sql(config: dict[str, Any], action_profiles: dict[str
                         f"VALUES ({pet_id}, {int(pet_spell)}, 1) "
                         "ON DUPLICATE KEY UPDATE `active` = VALUES(`active`);"
                     )
-            glyphs = normalized_glyphs(bot)
-            if glyphs:
-                glyph_values = glyphs + [0] * (9 - len(glyphs))
+            glyph_values = normalized_glyph_slots(bot)
+            if any(glyph_values):
                 lines.append(
                     "INSERT INTO `characters`.`character_glyphs` (`guid`, `talentGroup`, `glyph1`, `glyph2`, `glyph3`, `glyph4`, `glyph5`, `glyph6`, `glyph7`, `glyph8`, `glyph9`) "
                     f"SELECT c.`guid`, 0, {', '.join(str(int(value)) for value in glyph_values)} FROM `characters`.`characters` c WHERE c.`name` = {sql_quote(name)} "

@@ -19,6 +19,7 @@
 #include "AbstractPursuer.h"
 #include "Archaeology.h"
 #include "Battlefield.h"
+#include "Bots/BotWorldPopulationMgr.h"
 #include "BattlefieldMgr.h"
 #include "Battleground.h"
 #include "BattlegroundScore.h"
@@ -6052,6 +6053,9 @@ void Unit::SetCharm(Unit* charm, bool apply)
 
     if (gain)
         healInfo.SetEffectiveHeal(gain > 0 ? static_cast<uint32>(gain) : 0UL);
+
+    if (healer && victim && healInfo.GetSpellInfo())
+        sBotWorldPopulationMgr->NotifyBotHeal(healer, victim, healInfo.GetSpellInfo()->Id, addhealth + healInfo.GetAbsorb(), gain > 0 ? static_cast<uint32>(gain) : 0U, healInfo.GetAbsorb());
 }
 
 bool Unit::IsMagnet() const
@@ -11001,6 +11005,9 @@ void Unit::PlayOneShotAnimKitId(uint16 animKitId)
             }
         }
     }
+
+    if (creature)
+        sBotWorldPopulationMgr->NotifyCreatureDeath(creature);
 
     // outdoor pvp things, do these after setting the death state, else the player activity notify won't work... doh...
     // handle player kill only if not suicide (spirit of redemption for example)

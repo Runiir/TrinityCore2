@@ -4,6 +4,7 @@ import argparse
 import base64
 import html
 import json
+import math
 import os
 import select
 import subprocess
@@ -13,7 +14,7 @@ import urllib.error
 import urllib.request
 from collections import Counter
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 from urllib.parse import urlparse
 import re
 
@@ -21,10 +22,12 @@ try:
     from .build_validation_provisioning import apply_gear_profiles, build_account_insert_sql, build_character_insert_sql, load_config, load_gear_profiles
     from .common import write_json
     from .extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
+    from .live_validation_session import build_session, ensure_healthy_matching_session, live_validation_lock, stop_session
 except ImportError:
     from build_validation_provisioning import apply_gear_profiles, build_account_insert_sql, build_character_insert_sql, load_config, load_gear_profiles
     from common import write_json
     from extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
+    from live_validation_session import build_session, ensure_healthy_matching_session, live_validation_lock, stop_session
 
 
 DEFAULT_LIVE_VALIDATION_TIMEOUT_SEC = 90
@@ -95,6 +98,14 @@ def qualify_sql_schema(sql: str, schema: str, database: str) -> str:
     return sql.replace(f"`{schema}`.", f"`{database.replace('`', '``')}`.")
 
 
+def trinity_config_string(path: Path, key: str, default: str = "") -> str:
+    if not path.exists():
+        return default
+    pattern = re.compile(rf'^\s*{re.escape(key)}\s*=\s*"(?P<value>[^"]*)"', re.MULTILINE)
+    match = pattern.search(path.read_text(encoding="utf-8"))
+    return match.group("value") if match else default
+
+
 def trinity_config_bool(path: Path, key: str, default: bool = False) -> bool:
     if not path.exists():
         return default
@@ -125,38 +136,29 @@ def load_validation_route(scenario_dir: Path, context: dict[str, Any]) -> dict[s
         row = json.loads(line)
         if str(row.get("scenario_id") or "") != scenario_id:
             continue
-        if route_node_id and str(row.get("route_node_id") or "") == route_node_id:
-            return row
         rows.append(row)
-
+    rows.sort(key=lambda row: int(row.get("step") or 0))
+    for generation, row in enumerate(rows, 1):
+        row["route_generation"] = generation
+    if route_node_id:
+        return next((row for row in rows if str(row.get("route_node_id") or "") == route_node_id), {})
     route_step = int(context.get("route_step") or 0)
     route_kind = str(context.get("route_kind") or "")
     route_label = str(context.get("route_label") or "")
     mechanic_profile = str(context.get("mechanic_profile") or "")
-    if not (route_step or route_kind or route_label):
+    if not (route_step and route_kind and route_label):
         return {}
-
-    def fallback_score(row: dict[str, Any]) -> int:
-        score = 0
-        if route_step and int(row.get("step") or 0) == route_step:
-            score += 8
-        if route_kind and str(row.get("kind") or "") == route_kind:
-            score += 4
-        if route_label and str(row.get("label") or "") == route_label:
-            score += 2
-        if mechanic_profile and str(row.get("mechanic_profile") or "") == mechanic_profile:
-            score += 1
-        return score
-
-    candidates: list[tuple[int, dict[str, Any]]] = []
-    for row in rows:
-        score = fallback_score(row)
-        if score >= 12:
-            candidates.append((score, row))
-    if not candidates:
-        return {}
-    candidates.sort(key=lambda scored: (-scored[0], int(scored[1].get("step") or 0), str(scored[1].get("route_node_id") or "")))
-    return candidates[0][1]
+    return next(
+        (
+            row
+            for row in rows
+            if int(row.get("step") or 0) == route_step
+            and str(row.get("kind") or "") == route_kind
+            and str(row.get("label") or "") == route_label
+            and (not mechanic_profile or str(row.get("mechanic_profile") or "") == mechanic_profile)
+        ),
+        {},
+    )
 
 
 def load_validation_routes_for_scenario(scenario_dir: Path, scenario_id: str) -> list[dict[str, Any]]:
@@ -171,6 +173,8 @@ def load_validation_routes_for_scenario(scenario_dir: Path, scenario_id: str) ->
         if str(row.get("scenario_id") or "") == scenario_id and str(row.get("kind") or "") in {"trash", "boss", "travel", "regroup", "descent"} and bool(row.get("coordinates_valid", True)):
             rows.append(row)
     rows.sort(key=lambda row: int(row.get("step") or 0))
+    for generation, row in enumerate(rows, 1):
+        row["route_generation"] = generation
     return rows
 
 
@@ -209,6 +213,7 @@ def route_validation_context(scenario_id: str, route: dict[str, Any], *, include
         "route_label": str(route.get("label") or ""),
         "route_kind": str(route.get("kind") or ""),
         "route_step": int(route.get("step") or 0),
+        "route_generation": int(route.get("route_generation") or 0),
         "mechanic_profile": str(route.get("mechanic_profile") or ""),
     }
     if include_segment:
@@ -220,21 +225,23 @@ def route_segment_complete(report: dict[str, Any], route: dict[str, Any] | None)
     if not route or report.get("failure_labels"):
         return False
     evidence = report.get("evidence") if isinstance(report.get("evidence"), dict) else {}
-    counters = report.get("progress_counters") if isinstance(report.get("progress_counters"), dict) else {}
-    counts = evidence.get("validation_evidence_counts") if isinstance(evidence.get("validation_evidence_counts"), dict) else {}
+    context = report.get("validation_context") if isinstance(report.get("validation_context"), dict) else {}
+    node_id = str(route.get("route_node_id") or context.get("route_node_id") or "")
+    generation = int(route.get("route_generation") or context.get("route_generation") or 0)
+    trace = report.get("trace") if isinstance(report.get("trace"), dict) else {}
+    counts = scoped_validation_evidence_counts(trace_entries(trace), node_id, generation)
     required = [str(row) for row in (route.get("required_evidence") or []) if row]
     if any(int(counts.get(name) or 0) <= 0 for name in required):
         return False
-    route_actions = int(evidence.get("validation_route_actions") or counters.get("validation_route_actions") or 0)
-    if route_actions <= 0:
+    terminals = evidence.get("route_terminal_evidence") if isinstance(evidence.get("route_terminal_evidence"), list) else []
+    if not any(str(row.get("route_node_id") or "") == node_id and int(row.get("route_generation") or 0) == generation for row in terminals):
         return False
     kind = str(route.get("kind") or "")
     if kind == "boss":
-        return int(evidence.get("boss_kill_evidence") or counters.get("boss_kill_evidence") or 0) > 0
+        kills = evidence.get("real_boss_kill_evidence") if isinstance(evidence.get("real_boss_kill_evidence"), list) else []
+        return any(str(row.get("route_node_id") or "") == node_id and int(row.get("route_generation") or 0) == generation for row in kills)
     if kind == "trash":
-        trash_pulls = int(evidence.get("trash_pulls") or counters.get("trash_pulls") or 0)
-        kills = int(evidence.get("kills") or counters.get("kills") or 0)
-        return trash_pulls > 0 or kills > 0
+        return int(evidence.get("trash_pulls") or 0) > 0
     return bool(required)
 
 
@@ -298,6 +305,7 @@ def write_validation_config(
         text = upsert_trinity_config(text, "BotWorld.SafePositionMemorySec", "900")
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.ScenarioId", f'"{str(route.get("scenario_id") or "").replace(chr(34), "")}"')
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.NodeId", f'"{str(route.get("route_node_id") or "").replace(chr(34), "")}"')
+        text = upsert_trinity_config(text, "BotWorld.ValidationRoute.Generation", str(int(route.get("route_generation") or 0)))
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.Label", f'"{str(route.get("label") or "").replace(chr(34), "")}"')
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.Kind", f'"{str(route.get("kind") or "").replace(chr(34), "")}"')
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.MechanicProfile", f'"{str(route.get("mechanic_profile") or "").replace(chr(34), "")}"')
@@ -585,7 +593,16 @@ def parse_json_objects(output: str) -> list[dict[str, Any]]:
 
 
 def classify_payloads(payloads: list[dict[str, Any]]) -> dict[str, Any]:
-    status = next((row for row in reversed(payloads) if row.get("action") in {"botexp_status", "botauto_status"} or {"active", "active_bots", "target_bots"} & set(row)), {})
+    status = next(
+        (
+            row
+            for row in reversed(payloads)
+            if row.get("action") in {"botexp_status", "botauto_status"}
+            or "active" in row
+            or ({"active_bots", "target_bots"} <= set(row))
+        ),
+        {},
+    )
     diagnosis = next((row for row in reversed(payloads) if row.get("diagnosis_schema_version") or row.get("diagnoses") or row.get("diagnosis")), {})
     trace_payloads = [row for row in payloads if row.get("trace_schema_version") or row.get("entries")]
     trace = combined_trace_payload(trace_payloads)
@@ -666,11 +683,8 @@ def should_observe_before_command(command_text: str) -> bool:
     )
 
 
-def bot_status_ready(output: str) -> bool:
-    return bot_status_state(output) is True
-
-
-def bot_status_state(output: str) -> bool | None:
+def bot_status_snapshot(output: str) -> dict[str, Any] | None:
+    """Return the latest bot status, preserving an explicit inactive state."""
     payloads = parse_json_objects(output)
     for row in reversed(payloads):
         if not isinstance(row, dict):
@@ -679,10 +693,90 @@ def bot_status_state(output: str) -> bool | None:
             continue
         active_bots = int(row.get("active_bots") or row.get("bots") or row.get("activeBots") or 0)
         target_bots = int(row.get("target_bots") or row.get("targetBots") or 0)
-        if active_bots > 0 and (target_bots <= 0 or active_bots >= target_bots):
-            return True
-        return False
+        active_value = row.get("active")
+        active = bool(active_value) if active_value is not None else active_bots > 0
+        return {"active": active, "active_bots": active_bots, "target_bots": target_bots, "payload": row}
     return None
+
+
+def bot_status_ready(output: str) -> bool:
+    return bot_status_state(output) is True
+
+
+def bot_status_state(output: str) -> bool | None:
+    status = bot_status_snapshot(output)
+    if status is None:
+        return None
+    if not status["active"] or status["active_bots"] <= 0:
+        return False
+    target_bots = int(status["target_bots"])
+    return target_bots <= 0 or int(status["active_bots"]) >= target_bots
+
+
+def poll_bot_status(
+    execute_command: Callable[[str, int], tuple[str, int, bool]],
+    deadline: float,
+    *,
+    poll_sec: float = 2.0,
+    sleep: Callable[[float], None] = time.sleep,
+) -> tuple[str, dict[str, Any] | None, int, bool]:
+    """Poll a transport-neutral status command until it is ready or inactive."""
+    output_parts: list[str] = []
+    last_status: dict[str, Any] | None = None
+    while time.monotonic() < deadline:
+        remaining = max(1, int(deadline - time.monotonic()))
+        output, returncode, timed_out = execute_command(".botauto status", remaining)
+        output_parts.append("$ .botauto status\n")
+        output_parts.append(output)
+        last_status = bot_status_snapshot(output)
+        if returncode != 0 or timed_out or last_status is None or not last_status["active"] or bot_status_state(output) is True:
+            return "".join(output_parts), last_status, returncode, timed_out
+        sleep(min(poll_sec, max(0.0, deadline - time.monotonic())))
+    return "".join(output_parts), last_status, 124, True
+
+
+def wait_for_soap_command_available(
+    execute_command: Callable[[str, int], tuple[str, int, bool]],
+    deadline: float,
+    *,
+    poll_sec: float = 2.0,
+    sleep: Callable[[float], None] = time.sleep,
+) -> str:
+    output_parts: list[str] = []
+    while time.monotonic() < deadline:
+        remaining = max(1, int(deadline - time.monotonic()))
+        output, returncode, timed_out = execute_command(".botauto status", remaining)
+        output_parts.extend(("$ .botauto status\n", output))
+        if returncode == 0 and not timed_out and bot_status_snapshot(output) is not None:
+            return "".join(output_parts)
+        sleep(min(poll_sec, max(0.0, deadline - time.monotonic())))
+    raise RuntimeError("timed out waiting for reusable worldserver SOAP readiness")
+
+
+def wait_for_bot_status_state(
+    execute_command: Callable[[str, int], tuple[str, int, bool]],
+    expected_active: bool,
+    deadline: float,
+    *,
+    poll_sec: float = 2.0,
+    sleep: Callable[[float], None] = time.sleep,
+) -> tuple[str, dict[str, Any] | None]:
+    output_parts: list[str] = []
+    last_status: dict[str, Any] | None = None
+    while time.monotonic() < deadline:
+        remaining = max(1, int(deadline - time.monotonic()))
+        output, returncode, timed_out = execute_command(".botauto status", remaining)
+        output_parts.extend(("$ .botauto status\n", output))
+        status = bot_status_snapshot(output)
+        if status is not None:
+            last_status = status
+            ready = bot_status_state(output) is True
+            inactive = not status["active"] and int(status["active_bots"]) == 0
+            if returncode == 0 and not timed_out and ((expected_active and ready) or (not expected_active and inactive)):
+                return "".join(output_parts), status
+        sleep(min(poll_sec, max(0.0, deadline - time.monotonic())))
+    expected = "active and ready" if expected_active else "inactive with zero active bots"
+    raise RuntimeError(f"timed out waiting for BotWorld to become {expected}")
 
 
 def wait_for_bot_status_ready(process: subprocess.Popen[str], deadline: float, max_wait_sec: int = 180) -> str:
@@ -727,6 +821,337 @@ def trace_entries(trace: dict[str, Any]) -> list[dict[str, Any]]:
                 rows.extend(entry for entry in bot.get("entries") or [] if isinstance(entry, dict))
         return rows
     return []
+
+
+def route_scope(entry: dict[str, Any]) -> tuple[str, int]:
+    node_id = str(entry.get("route_node_id") or "")
+    generation = int(entry.get("route_generation") or 0)
+    if node_id and generation > 0:
+        return node_id, generation
+    validation_route = entry.get("validation_route") if isinstance(entry.get("validation_route"), dict) else {}
+    return str(validation_route.get("route_node_id") or ""), int(validation_route.get("route_generation") or 0)
+
+
+def scoped_event_evidence(entries: list[dict[str, Any]], actions: set[str]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    seen: set[tuple[str, int]] = set()
+    for entry in entries:
+        if str(entry.get("action") or "") not in actions:
+            continue
+        node_id, generation = route_scope(entry)
+        if not node_id or generation <= 0:
+            continue
+        scope = (node_id, generation)
+        if scope in seen:
+            continue
+        seen.add(scope)
+        rows.append({"route_node_id": node_id, "route_generation": generation})
+    return rows
+
+
+def scoped_validation_evidence_counts(entries: list[dict[str, Any]], node_id: str, generation: int) -> dict[str, int]:
+    return {
+        name: sum(
+            1
+            for entry in entries
+            if route_scope(entry) == (node_id, generation)
+            and str(entry.get("action") or entry.get("situation") or "") in actions
+        )
+        for name, actions in VALIDATION_EVIDENCE_ACTIONS.items()
+    }
+
+
+def forbidden_completion_assists(entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    rows = []
+    for entry in entries:
+        action = str(entry.get("action") or "")
+        result = str(entry.get("result") or "")
+        if action in {"teacher_kill_assist", "validation_route_teacher_assist"} or any(token in result for token in {"teacher_assist", "forced_kill", "force_terminal", "force_damage"}):
+            rows.append({"action": action, "result": result})
+    return rows
+
+
+def trace_after(entry: dict[str, Any], reference: dict[str, Any]) -> bool:
+    entry_timestamp = int(entry.get("timestamp_ms") or 0)
+    reference_timestamp = int(reference.get("timestamp_ms") or 0)
+    entry_sequence = int(entry.get("sequence") or 0)
+    reference_sequence = int(reference.get("sequence") or 0)
+    if entry_timestamp and reference_timestamp:
+        if entry_timestamp != reference_timestamp:
+            return entry_timestamp > reference_timestamp
+        return bool(entry_sequence and reference_sequence and entry_sequence > reference_sequence)
+    return bool(entry_sequence and reference_sequence and entry_sequence > reference_sequence)
+
+
+ROUTE_FAILURE_ACTIONS = {"stuck_detected", "guardrail_repath", "objective_target_lost", "validation_route_target_lost"}
+ROUTE_PROGRESS_ACTIONS = {
+    "mob_killed",
+    "boss_killed",
+    "raid_boss_killed",
+    "objective_progress",
+    "validation_route_pack_terminal",
+    "validation_route_terminal",
+    "validation_route_segment_advance",
+}
+ROUTE_PROGRESS_RESOLUTIONS = {"movement_progress", "route_target_combat_progress"}
+
+
+def route_failure(entry: dict[str, Any]) -> bool:
+    action = str(entry.get("action") or "")
+    result = str(entry.get("result") or "")
+    return action in ROUTE_FAILURE_ACTIONS or (action == "unstuck" and result in {"failed", "failure"}) or "target_lost" in result
+
+
+BOSS_ATTEMPT_RESET_ACTIONS = {"death", "repeated_death", "raid_wipe", "instance_reset"}
+BOSS_HEALTH_PROGRESS_EPSILON = 1e-6
+
+
+def boss_attempt_reset(entry: dict[str, Any]) -> bool:
+    return str(entry.get("action") or "") in BOSS_ATTEMPT_RESET_ACTIONS
+
+
+def boss_route_health_progress_entries(entries: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    samples: list[tuple[dict[str, Any], tuple[str, int], tuple[str, int, int, int], float]] = []
+    failures: list[tuple[dict[str, Any], tuple[str, int]]] = []
+    for entry in entries:
+        if boss_attempt_reset(entry):
+            scope = route_scope(entry)
+            if scope != ("", 0):
+                failures.append((entry, scope))
+        route_progress = entry.get("route_progress") if isinstance(entry.get("route_progress"), dict) else {}
+        route = route_progress.get("route") if isinstance(route_progress.get("route"), dict) else {}
+        target = route_progress.get("target") if isinstance(route_progress.get("target"), dict) else {}
+        try:
+            node_id = str(route.get("node_id") or "")
+            generation = int(route.get("generation") or 0)
+            target_guid = int(target.get("guid") or 0)
+            target_entry = int(target.get("entry") or 0)
+            health = float(target.get("hp_pct"))
+        except (TypeError, ValueError):
+            continue
+        if (
+            str(route.get("kind") or "") != "boss"
+            or not node_id
+            or generation <= 0
+            or target_guid <= 0
+            or target_entry <= 0
+            or not math.isfinite(health)
+            or not 0.0 < health <= 1.0
+        ):
+            continue
+        scope = (node_id, generation)
+        samples.append((entry, scope, (node_id, generation, target_guid, target_entry), health))
+
+    ordered_groups: dict[tuple[str, tuple[str, int, int, int], tuple[int, ...]], list[tuple[dict[str, Any], float]]] = {}
+    for entry, scope, target_key, health in samples:
+        timestamp = int(entry.get("timestamp_ms") or 0)
+        sequence = int(entry.get("sequence") or 0)
+        if timestamp:
+            clock = "timestamp"
+        elif sequence:
+            clock = "sequence"
+        else:
+            continue
+        epoch: list[int] = []
+        ambiguous = False
+        for index, (failure, failure_scope) in enumerate(failures):
+            if failure_scope != scope:
+                continue
+            failure_timestamp = int(failure.get("timestamp_ms") or 0)
+            failure_sequence = int(failure.get("sequence") or 0)
+            failure_clock = "timestamp" if failure_timestamp else "sequence" if failure_sequence else ""
+            if failure_clock != clock:
+                continue
+            if trace_after(entry, failure):
+                epoch.append(index)
+            elif not trace_after(failure, entry):
+                ambiguous = True
+                break
+        if not ambiguous:
+            ordered_groups.setdefault((clock, target_key, tuple(epoch)), []).append((entry, health))
+
+    progress: list[dict[str, Any]] = []
+    for (clock, _target_key, _epoch), rows in ordered_groups.items():
+        if clock == "timestamp":
+            rows.sort(key=lambda row: (int(row[0].get("timestamp_ms") or 0), int(row[0].get("sequence") or 0)))
+        else:
+            rows.sort(key=lambda row: int(row[0].get("sequence") or 0))
+        best_entry: dict[str, Any] | None = None
+        best_health = 0.0
+        for entry, health in rows:
+            if best_entry is None:
+                best_entry, best_health = entry, health
+                continue
+            if not trace_after(entry, best_entry):
+                continue
+            if health >= 0.95 and best_health <= 0.90:
+                best_entry, best_health = entry, health
+                continue
+            if health < best_health - BOSS_HEALTH_PROGRESS_EPSILON:
+                progress.append(entry)
+                best_entry, best_health = entry, health
+    return progress
+
+
+def boss_route_health_progress(entries: list[dict[str, Any]]) -> int:
+    return len(boss_route_health_progress_entries(entries))
+
+
+DEATH_LOOP_ACTIONS = {"repeated_death", "death_loop"}
+DEATH_LOOP_DURABLE_PROGRESS_ACTIONS = ROUTE_PROGRESS_ACTIONS | {
+    "boss_add_killed",
+    "validation_route_pack_complete",
+}
+
+
+def death_loop_scope(entry: dict[str, Any]) -> tuple[str, int]:
+    scope = route_scope(entry)
+    if scope != ("", 0):
+        return scope
+    route_progress = entry.get("route_progress") if isinstance(entry.get("route_progress"), dict) else {}
+    route = route_progress.get("route") if isinstance(route_progress.get("route"), dict) else {}
+    return str(route.get("node_id") or ""), int(route.get("generation") or 0)
+
+
+def unresolved_route_death_loop_count(entries: list[dict[str, Any]]) -> int:
+    progress_entries = boss_route_health_progress_entries(entries) + [
+        entry
+        for entry in entries
+        if str(entry.get("action") or "") in DEATH_LOOP_DURABLE_PROGRESS_ACTIONS
+    ]
+    unresolved_by_scope: Counter[tuple[str, int]] = Counter()
+    seen: set[tuple[Any, ...]] = set()
+    for entry in entries:
+        if str(entry.get("action") or "") not in DEATH_LOOP_ACTIONS:
+            continue
+        scope = death_loop_scope(entry)
+        if scope == ("", 0):
+            continue
+        timestamp = int(entry.get("timestamp_ms") or 0)
+        sequence = int(entry.get("sequence") or 0)
+        if timestamp or sequence:
+            key = (
+                scope,
+                int(entry.get("bot_guid") or 0),
+                timestamp,
+                sequence,
+                str(entry.get("action") or ""),
+            )
+            if key in seen:
+                continue
+            seen.add(key)
+        if not any(death_loop_scope(progress) == scope and trace_after(progress, entry) for progress in progress_entries):
+            unresolved_by_scope[scope] += 1
+    return max(unresolved_by_scope.values(), default=0)
+
+
+def is_route_progress(entry: dict[str, Any], scope: tuple[str, int]) -> bool:
+    same_scope = scope == ("", 0) or route_scope(entry) == scope
+    return same_scope and (
+        str(entry.get("action") or "") in ROUTE_PROGRESS_ACTIONS
+        or (
+            not str(entry.get("blocked_current_reason") or "")
+            and str(entry.get("blocked_resolved_by") or "") in ROUTE_PROGRESS_RESOLUTIONS
+        )
+    )
+
+
+def route_failure_resolved(entries: list[dict[str, Any]], failure: dict[str, Any]) -> bool:
+    scope = route_scope(failure)
+    return any(trace_after(entry, failure) and is_route_progress(entry, scope) for entry in entries)
+
+
+def progress_after_latest_route_failure(entries: list[dict[str, Any]]) -> bool:
+    failures = [entry for entry in entries if route_failure(entry)]
+    return all(route_failure_resolved(entries, failure) for failure in failures)
+
+
+def scripted_activation_wait_pending(entries: list[dict[str, Any]], now_ms: int, max_wait_ms: int = 30000) -> bool:
+    unresolved = [
+        entry for entry in entries
+        if route_failure(entry)
+        and route_scope(entry) != ("", 0)
+        and not route_failure_resolved(entries, entry)
+    ]
+    if not unresolved:
+        return False
+    unresolved_by_scope = Counter(route_scope(entry) for entry in unresolved)
+    unscoped_unresolved = sum(
+        1 for entry in entries
+        if route_failure(entry)
+        and route_scope(entry) == ("", 0)
+        and not route_failure_resolved(entries, entry)
+    )
+    max_unresolved = max([unscoped_unresolved, *unresolved_by_scope.values()], default=0)
+    if unscoped_unresolved >= max_unresolved:
+        return False
+    max_scopes = {scope for scope, count in unresolved_by_scope.items() if count == max_unresolved}
+    if len(max_scopes) != 1:
+        return False
+    scope = next(iter(max_scopes))
+    latest_failure = max(
+        (entry for entry in unresolved if route_scope(entry) == scope),
+        key=lambda entry: (int(entry.get("timestamp_ms") or 0), int(entry.get("sequence") or 0)),
+    )
+    activations = [
+        entry for entry in entries
+        if route_scope(entry) == scope
+        and str(entry.get("action") or "") == "validation_route_activation"
+        and int(entry.get("timestamp_ms") or 0) > 0
+        and trace_after(entry, latest_failure)
+    ]
+    return any(
+        now_ms >= int(activation.get("timestamp_ms") or 0)
+        and now_ms - int(activation.get("timestamp_ms") or 0) <= max_wait_ms
+        and route_scope(entry) == scope
+        and str(entry.get("action") or "") == "validation_route_target_search"
+        and str(entry.get("result") or "") == "target_seen_not_attackable"
+        and int(entry.get("target_id") or 0) > 0
+        and trace_after(entry, activation)
+        for activation in activations
+        for entry in entries
+    )
+
+
+def unresolved_route_stuck_count(entries: list[dict[str, Any]]) -> int:
+    failures = [entry for entry in entries if route_failure(entry)]
+    if not failures:
+        return 0
+    unresolved_by_scope = Counter(route_scope(failure) for failure in failures if not route_failure_resolved(entries, failure))
+    return max(unresolved_by_scope.values(), default=0)
+
+
+def confirmed_boss_death_event(entry: dict[str, Any]) -> bool:
+    return (
+        str(entry.get("action") or "") in {"boss_killed", "raid_boss_killed"}
+        and str(entry.get("result") or "") in {"ok", "confirmed_unit_death"}
+        and int(entry.get("target_id") or 0) > 0
+    )
+
+
+def strict_manifest_evidence(evidence: dict[str, Any], manifest: dict[str, Any]) -> dict[str, list[str]]:
+    terminal_scopes = {
+        (str(row.get("route_node_id") or ""), int(row.get("route_generation") or 0))
+        for row in evidence.get("route_terminal_evidence") or []
+        if isinstance(row, dict)
+    }
+    boss_scopes = {
+        (str(row.get("route_node_id") or ""), int(row.get("route_generation") or 0))
+        for row in evidence.get("real_boss_kill_evidence") or []
+        if isinstance(row, dict)
+    }
+    missing_terminals = []
+    missing_boss_kills = []
+    for generation, route in enumerate(manifest.get("routes") or [], 1):
+        if not isinstance(route, dict):
+            continue
+        node_id = str(route.get("route_node_id") or "")
+        expected = (node_id, int(route.get("route_generation") or generation))
+        if expected not in terminal_scopes:
+            missing_terminals.append(node_id)
+        if str(route.get("kind") or "") == "boss" and expected not in boss_scopes:
+            missing_boss_kills.append(node_id)
+    return {"missing_terminal_route_nodes": missing_terminals, "missing_boss_route_nodes": missing_boss_kills}
 
 
 def diagnosis_rows(diagnosis: dict[str, Any]) -> list[dict[str, Any]]:
@@ -810,7 +1235,7 @@ def scenario_clear_complete(report: dict[str, Any]) -> bool:
     modes = {str(row) for row in (report.get("scenario_evidence_modes") or [])}
     if mode == "route_segment_context" or "route_segment_context" in modes:
         return False
-    if report.get("source_segments"):
+    if report.get("source_segments") and not bool(report.get("strict_completion_evidence")):
         return False
     return True
 
@@ -909,9 +1334,13 @@ def live_evidence(
             raw_manifest_complete_count,
         )
     diagnosis_result_counts = Counter()
-    stuck_events = int(status.get("stuck") or 0) + int(summary.get("stuck_events") or 0) + action_counts.get("stuck_detected", 0)
+    stuck_events = max(int(status.get("stuck") or 0), int(summary.get("stuck_events") or 0), action_counts.get("stuck_detected", 0))
+    unresolved_route_stuck_events = unresolved_route_stuck_count(entries)
+    failures = [entry for entry in entries if route_failure(entry)]
+    if failures and not any(route_failure_resolved(entries, failure) for failure in failures):
+        unresolved_route_stuck_events = max(unresolved_route_stuck_events, stuck_events)
     unstuck_failures = sum(1 for entry in entries if str(entry.get("action") or "") == "unstuck" and str(entry.get("result") or "") in {"failed", "failure"})
-    repath_events = action_counts.get("stuck_detected", 0) + result_counts.get("repath", 0)
+    repath_events = result_counts.get("repath", 0)
     quest_acceptance_actions = sum(
         1
         for entry in entries
@@ -923,12 +1352,39 @@ def live_evidence(
         if str(entry.get("action") or "").startswith("complete_quest")
     )
     hub_acceptance_actions = sum(1 for entry in entries if str(entry.get("action") or "") == "accept_hub_quests")
-    teacher_assisted_kills = sum(
-        1
-        for entry in entries
-        if str(entry.get("action") or "") == "teacher_kill_assist"
-        and str(entry.get("result") or "") == "simple_open_world_quest_mob_target"
+    teacher_assisted_kills = sum(1 for entry in entries if str(entry.get("action") or "") == "teacher_kill_assist")
+    forbidden_assists = forbidden_completion_assists(entries)
+    route_terminal_evidence = scoped_event_evidence(entries, {"validation_route_terminal"})
+    status_route = status.get("validation_route") if isinstance(status.get("validation_route"), dict) else {}
+    terminal_scopes = {(row["route_node_id"], row["route_generation"]) for row in route_terminal_evidence}
+    for row in status_route.get("terminal_evidence") or []:
+        if not isinstance(row, dict):
+            continue
+        scope = (str(row.get("route_node_id") or ""), int(row.get("route_generation") or 0))
+        if not scope[0] or scope[1] <= 0 or scope in terminal_scopes:
+            continue
+        terminal_scopes.add(scope)
+        route_terminal_evidence.append({"route_node_id": scope[0], "route_generation": scope[1]})
+    manifest_completion_evidence = scoped_event_evidence(entries, {"validation_route_manifest_complete"})
+    if bool(status_route.get("manifest_complete")):
+        node_id = str(status_route.get("node_id") or "")
+        generation = int(status_route.get("generation") or status_route.get("manifest_count") or 0)
+        if node_id and generation > 0:
+            manifest_completion_evidence = [{"route_node_id": node_id, "route_generation": generation}]
+    real_boss_kill_evidence = scoped_event_evidence(
+        [entry for entry in entries if confirmed_boss_death_event(entry)],
+        {"boss_killed", "raid_boss_killed"},
     )
+    boss_scopes = {(row["route_node_id"], row["route_generation"]) for row in real_boss_kill_evidence}
+    for row in status_route.get("boss_death_evidence") or []:
+        if not isinstance(row, dict) or not confirmed_boss_death_event({"action": "boss_killed", **row}):
+            continue
+        scope = (str(row.get("route_node_id") or ""), int(row.get("route_generation") or 0))
+        if not scope[0] or scope[1] <= 0 or scope in boss_scopes:
+            continue
+        boss_scopes.add(scope)
+        real_boss_kill_evidence.append({"route_node_id": scope[0], "route_generation": scope[1]})
+    post_failure_progress = progress_after_latest_route_failure(entries)
     action_names.update(
         str(nested_get(row, ["snapshot", "decision", "action"], ""))
         for row in diagnoses
@@ -966,15 +1422,12 @@ def live_evidence(
         return max(values, default=0)
 
     route_no_progress_diagnoses = 0
-    route_combat_progress_diagnoses = 0
 
     def count_route_progress(route_progress: Any) -> None:
-        nonlocal route_no_progress_diagnoses, route_combat_progress_diagnoses
+        nonlocal route_no_progress_diagnoses
         if not isinstance(route_progress, dict):
             return
         no_progress = route_progress.get("no_progress") if isinstance(route_progress.get("no_progress"), dict) else {}
-        if str(no_progress.get("reason") or "") == "route_target_combat_progress":
-            route_combat_progress_diagnoses += 1
         try:
             count = int(no_progress.get("count") or 0)
             threshold = int(no_progress.get("threshold") or 0)
@@ -992,6 +1445,8 @@ def live_evidence(
     for entry in entries:
         count_route_progress(entry.get("route_progress") if isinstance(entry, dict) else None)
 
+    route_combat_progress_diagnoses = boss_route_health_progress(entries)
+
     action_text = " ".join(sorted(action_names)).lower()
     quest_progress = max(int(status.get("quest_objective_progress") or 0), int(summary.get("quest_objective_progress") or 0))
     quests_accepted = max(int(status.get("quests_accepted") or 0), int(summary.get("quests_accepted") or 0), quest_acceptance_actions)
@@ -1002,13 +1457,7 @@ def live_evidence(
         action_counts.get("mob_killed", 0),
         action_counts.get("dungeon_trash_cleared", 0),
     )
-    boss_kill_evidence = max(
-        int(summary.get("boss_kills") or 0),
-        int(summary.get("raid_boss_kills") or 0),
-        action_counts.get("boss_killed", 0),
-        action_counts.get("raid_boss_killed", 0),
-        sum(1 for row in diagnoses if str(nested_get(row, ["diagnosis", "blocker"], nested_get(row, ["blocker"], ""))) == "boss_killed"),
-    )
+    boss_kill_evidence = len(real_boss_kill_evidence)
     trash_action_evidence = sum(
         count
         for action, count in action_counts.items()
@@ -1135,8 +1584,14 @@ def live_evidence(
         "hub_acceptance_actions": hub_acceptance_actions,
         "kills": kills,
         "teacher_assisted_kills": teacher_assisted_kills,
+        "forbidden_completion_assists": forbidden_assists,
         "kill_evidence": kill_evidence,
         "boss_kill_evidence": boss_kill_evidence,
+        "real_boss_kill_evidence": real_boss_kill_evidence,
+        "route_terminal_evidence": route_terminal_evidence,
+        "manifest_completion_evidence": manifest_completion_evidence,
+        "post_failure_progress": post_failure_progress,
+        "scripted_activation_wait_pending": scripted_activation_wait_pending(entries, int(time.time() * 1000)),
         "trash_action_evidence": trash_action_evidence,
         "trash_pulls": trash_pulls,
         "gear_upgrades": gear_upgrades,
@@ -1157,12 +1612,14 @@ def live_evidence(
         "validation_evidence_counts": action_evidence_counts,
         "validation_evidence_ready": {name: count > 0 for name, count in sorted(action_evidence_counts.items())},
         "stuck_events": stuck_events,
+        "unresolved_route_stuck_events": unresolved_route_stuck_events,
         "unstuck_failures": unstuck_failures,
         "repath_events": repath_events,
         "validation_route_actions": validation_route_actions,
         "validation_route_manifest_complete": action_counts.get("validation_route_manifest_complete", 0),
         "validation_route_no_progress_diagnoses": route_no_progress_diagnoses,
         "validation_route_combat_progress_diagnoses": route_combat_progress_diagnoses,
+        "unresolved_route_death_loop_events": unresolved_route_death_loop_count(entries),
         "boss_engagement_actions": boss_engagement_actions,
         "trash_route_actions": trash_route_actions,
         "validation_route_prerequisite_repeats": action_counts.get("validation_route_prerequisite", 0),
@@ -1189,6 +1646,7 @@ def validation_failure_labels(
     diagnosis_count: int,
     errors: list[dict[str, str]],
     evidence: dict[str, Any],
+    max_death_loops: int = DEFAULT_MAX_DEATH_LOOPS,
 ) -> list[str]:
     labels: list[str] = []
     if timed_out:
@@ -1216,29 +1674,27 @@ def validation_failure_labels(
     prerequisite_repeats = int(evidence.get("validation_route_prerequisite_repeats") or 0)
     no_visible_activations = int(evidence.get("validation_route_no_visible_target_activations") or 0)
     force_tank_focus = int(evidence.get("validation_route_force_tank_focus_repeats") or 0)
-    stuck_events = int(evidence.get("stuck_events") or 0)
-    unstuck_failures = int(evidence.get("unstuck_failures") or 0)
-    repath_events = int(evidence.get("repath_events") or 0)
+    unresolved_route_stuck_events = int(evidence.get("unresolved_route_stuck_events") or 0)
     action_counts = evidence.get("action_counts") if isinstance(evidence.get("action_counts"), dict) else {}
     result_counts = evidence.get("result_counts") if isinstance(evidence.get("result_counts"), dict) else {}
-    repeated_deaths = int(action_counts.get("repeated_death") or 0)
-    deaths = max(int(evidence.get("deaths") or 0), int(action_counts.get("death") or 0))
+    unresolved_death_loop_events = int(evidence.get("unresolved_route_death_loop_events") or 0)
     bot_not_loaded_diagnoses = int(evidence.get("bot_not_loaded_diagnoses") or 0)
     error_diagnoses = int(evidence.get("error_diagnoses") or 0)
+    post_failure_progress = bool(evidence.get("post_failure_progress"))
     recovered_route_stuck = (
         action_counts.get("validation_route_recovery", 0) > 0
         and result_counts.get("validation_route_stuck_safe_memory", 0) > 0
-        and unstuck_failures <= 0
+        and post_failure_progress
         and (int(evidence.get("kill_evidence") or 0) > 0 or trash_route_actions > 0 or boss_engagement > 0)
     )
     recovered_by_route_progress = (
-        unstuck_failures <= 0
+        post_failure_progress
         and int(evidence.get("moved_diagnoses") or 0) > 0
         and route_no_progress_diagnoses <= 0
         and (int(evidence.get("kill_evidence") or 0) > 0 or trash_route_actions > 0 or boss_engagement > 0)
     )
     recovered_by_active_route_combat = (
-        unstuck_failures <= 0
+        post_failure_progress
         and route_no_progress_diagnoses <= 0
         and (int((evidence.get("diagnosis_codes") or {}).get("normal_combat") or 0) > 0 or route_combat_progress_diagnoses > 0)
         and (int(evidence.get("kill_evidence") or 0) > 0 or trash_evidence > 0 or boss_engagement > 0)
@@ -1272,13 +1728,16 @@ def validation_failure_labels(
         labels.append("validation_route_activation_target_absent")
     if route_actions > 0 and boss_kills <= 0 and trash_route_actions <= 0 and kill_evidence <= 0 and force_tank_focus >= 4 and boss_engagement <= 0:
         labels.append("validation_route_assist_focus_loop")
-    if route_actions > 0 and (
-        unstuck_failures >= 3
-        or (repath_events >= max(8, active_bots) and not recovered_route_stuck and not recovered_by_route_progress and not recovered_by_active_route_combat)
-        or (stuck_events >= max(8, active_bots) and not recovered_route_stuck and not recovered_by_route_progress and not recovered_by_active_route_combat)
-    ):
+    pending_scripted_activation = bool(evidence.get("scripted_activation_wait_pending"))
+    if (route_actions > 0
+        and not pending_scripted_activation
+        and not post_failure_progress
+        and unresolved_route_stuck_events >= max(8, active_bots)
+        and not recovered_route_stuck
+        and not recovered_by_route_progress
+        and not recovered_by_active_route_combat):
         labels.append("validation_route_stuck_loop")
-    if route_actions > 0 and (repeated_deaths >= 3 or deaths >= max(8, active_bots)):
+    if route_actions > 0 and unresolved_death_loop_events >= max_death_loops:
         labels.append("validation_route_death_loop")
     if route_actions > 0 and route_no_progress_diagnoses > 0:
         labels.append("no_progress_observed")
@@ -1321,7 +1780,7 @@ def progress_counters_from_evidence(evidence: dict[str, Any]) -> dict[str, int]:
         "validation_route_no_progress_diagnoses": int(evidence.get("validation_route_no_progress_diagnoses") or 0),
         "validation_route_combat_progress_diagnoses": int(evidence.get("validation_route_combat_progress_diagnoses") or 0),
         "repeated_decisions": int(action_counts.get("repeated_decision") or action_counts.get("decision_repeated") or 0),
-        "death_loop_events": int(action_counts.get("repeated_death") or 0) + int(action_counts.get("death_loop") or 0),
+        "death_loop_events": int(evidence.get("unresolved_route_death_loop_events") or 0),
         "stuck_events": int(evidence.get("stuck_events") or 0),
         "repath_events": int(evidence.get("repath_events") or 0),
     }
@@ -1382,6 +1841,38 @@ def watchdog_state(
     }
 
 
+def resolved_manifest_failure_labels(
+    failure_labels: list[str], evidence: dict[str, Any], manifest: dict[str, Any] | None
+) -> list[str]:
+    manifest = manifest or {}
+    routes = manifest.get("routes") or []
+    if not routes or not all(isinstance(route, dict) for route in routes):
+        return failure_labels
+    final_route = routes[-1]
+    final_scope = (
+        str(final_route.get("route_node_id") or ""),
+        int(final_route.get("route_generation") or len(routes)),
+    )
+    completion_scopes = {
+        (str(row.get("route_node_id") or ""), int(row.get("route_generation") or 0))
+        for row in evidence.get("manifest_completion_evidence") or []
+        if isinstance(row, dict)
+    }
+    if final_scope[0] == "" or final_scope not in completion_scopes:
+        return failure_labels
+    strict = strict_manifest_evidence(evidence, manifest)
+    if strict["missing_terminal_route_nodes"] or strict["missing_boss_route_nodes"]:
+        return failure_labels
+    resolved = {
+        "boss_attempt_no_kill",
+        "no_progress_observed",
+        "semantic_progress_plateau",
+        "validation_route_assist_focus_loop",
+        "validation_route_stuck_loop",
+    }
+    return [label for label in failure_labels if label not in resolved]
+
+
 def terminal_failure_labels(failure_labels: list[str], state: dict[str, Any]) -> list[str]:
     counters = state.get("progress_counters") if isinstance(state.get("progress_counters"), dict) else {}
     route_motion_progress = (
@@ -1417,7 +1908,7 @@ def completion_reason(
     evidence: dict[str, Any] | None = None,
 ) -> str:
     evidence = evidence or {}
-    if int(evidence.get("validation_route_manifest_complete") or 0) > 0 and not terminal_failure_labels(failure_labels, state):
+    if evidence.get("manifest_completion_evidence") and not terminal_failure_labels(failure_labels, state):
         return "validation_route_manifest_complete"
     if timed_out:
         return "emergency_wall_clock_timeout"
@@ -1444,10 +1935,11 @@ def final_evidence_rejections(
     failure_labels: list[str],
     evidence: dict[str, Any],
     validation_context: dict[str, Any] | None = None,
+    validation_route_manifest: dict[str, Any] | None = None,
     completion: str = "",
 ) -> list[str]:
     context = validation_context or {}
-    manifest_complete = int(evidence.get("validation_route_manifest_complete") or 0) > 0
+    manifest_complete = bool(evidence.get("manifest_completion_evidence"))
     rejections: list[str] = []
     if not all_passed and not manifest_complete:
         rejections.append("not_all_stages_passed")
@@ -1461,10 +1953,20 @@ def final_evidence_rejections(
         rejections.append("segment_or_route_context_is_debug_only")
     if completion in {"emergency_wall_clock_timeout", "no_progress_watchdog", "repeated_decision_watchdog", "death_loop_watchdog"}:
         rejections.append("watchdog_failure_is_not_final_evidence")
-    teacher_kills = int(evidence.get("teacher_assisted_kills") or 0)
-    real_kills = int(evidence.get("kills") or 0) + int(evidence.get("boss_kill_evidence") or 0)
-    if teacher_kills > 0 and real_kills <= 0:
-        rejections.append("teacher_assisted_only_evidence")
+    if evidence.get("forbidden_completion_assists"):
+        rejections.append("forced_or_teacher_kill_evidence")
+        if int(evidence.get("teacher_assisted_kills") or 0) > 0 and not evidence.get("real_boss_kill_evidence"):
+            rejections.append("teacher_assisted_only_evidence")
+    if manifest_complete:
+        manifest = validation_route_manifest or {}
+        if not manifest.get("routes"):
+            rejections.append("missing_validation_route_manifest")
+        else:
+            strict = strict_manifest_evidence(evidence, manifest)
+            if strict["missing_terminal_route_nodes"]:
+                rejections.append("missing_node_terminal_evidence")
+            if strict["missing_boss_route_nodes"]:
+                rejections.append("missing_real_boss_kill_evidence")
     return list(dict.fromkeys(rejections))
 
 
@@ -1476,6 +1978,7 @@ def live_validation_report(
     command: list[str] | None = None,
     scenario_reports: dict[str, dict[str, Any]] | None = None,
     validation_context: dict[str, Any] | None = None,
+    validation_route_manifest: dict[str, Any] | None = None,
     duration_policy: str = "completion-watchdog",
     heartbeat_sec: int = DEFAULT_COMPLETION_HEARTBEAT_SEC,
     no_progress_window_sec: int = DEFAULT_NO_PROGRESS_WINDOW_SEC,
@@ -1495,7 +1998,17 @@ def live_validation_report(
     trace_entries = count_trace_entries(trace)
     diagnosis_count = len(diagnosis_rows(diagnosis))
     evidence = live_evidence(status, diagnosis, trace, summary, validation_context, output)
-    failure_labels = validation_failure_labels(returncode, timed_out, active_bots, target_bots, trace_entries, diagnosis_count, errors, evidence)
+    failure_labels = validation_failure_labels(
+        returncode,
+        timed_out,
+        active_bots,
+        target_bots,
+        trace_entries,
+        diagnosis_count,
+        errors,
+        evidence,
+        max_death_loops,
+    )
     scenario_reports = scenario_reports or {}
 
     stage_rows = []
@@ -1542,11 +2055,14 @@ def live_validation_report(
         max_repeated_decisions=max_repeated_decisions,
         max_death_loops=max_death_loops,
     )
+    effective_failure_labels = resolved_manifest_failure_labels(
+        failure_labels, evidence, validation_route_manifest
+    )
     reason = completion_reason(
         all_passed=all_passed,
         returncode=returncode,
         timed_out=timed_out,
-        failure_labels=failure_labels,
+        failure_labels=effective_failure_labels,
         state=state,
         evidence=evidence,
     )
@@ -1554,9 +2070,10 @@ def live_validation_report(
         all_passed=all_passed,
         returncode=returncode,
         timed_out=timed_out,
-        failure_labels=failure_labels,
+        failure_labels=effective_failure_labels,
         evidence=evidence,
         validation_context=validation_context,
+        validation_route_manifest=validation_route_manifest,
         completion=reason,
     )
     return {
@@ -1582,12 +2099,13 @@ def live_validation_report(
         "completion_reason": reason,
         "acceptable_final_evidence": not rejections,
         "final_evidence_rejections": rejections,
-        "failure_labels": failure_labels,
-        "failure_reason": failure_labels[0] if failure_labels else None,
+        "failure_labels": effective_failure_labels,
+        "superseded_failure_labels": [label for label in failure_labels if label not in effective_failure_labels],
+        "failure_reason": effective_failure_labels[0] if effective_failure_labels else None,
         "stages": stage_rows,
         "passed": passed,
-        "failed": len(stage_rows) - passed,
-        "all_passed": all_passed,
+        "failed": 0 if not rejections else len(stage_rows) - passed,
+        "all_passed": not rejections,
         "runtime_ml_control": "offline_shadow_only",
         "control_eligible": False,
     }
@@ -1609,10 +2127,10 @@ def read_until_console_prompt(process: subprocess.Popen[str], deadline: float, r
         text = chunk.decode(errors="replace")
         output.append(text)
         joined = "".join(output)
-        if required_text and required_text in joined:
-            break
-        if required_text and "CMD " in joined and "TC>" in joined:
-            break
+        if required_text:
+            marker_index = joined.find(required_text)
+            if marker_index >= 0 and "TC>" in joined[marker_index + len(required_text):]:
+                break
         if not required_text and ("TC>" in text or "TC>" in joined[-16:]):
             break
     return "".join(output)
@@ -1740,6 +2258,7 @@ def rolling_heartbeat_report(
     no_progress_window_sec: int,
     max_repeated_decisions: int,
     max_death_loops: int,
+    validation_route_manifest: dict[str, Any] | None = None,
     completion_reason_override: str = "",
 ) -> dict[str, Any]:
     report = live_validation_report(
@@ -1749,6 +2268,7 @@ def rolling_heartbeat_report(
         command=command,
         scenario_reports=scenario_reports,
         validation_context=validation_context,
+        validation_route_manifest=validation_route_manifest,
         duration_policy=duration_policy,
         heartbeat_sec=heartbeat_sec,
         no_progress_window_sec=no_progress_window_sec,
@@ -1776,6 +2296,94 @@ def rolling_heartbeat_report(
     )
     write_json(output_dir / "report.json", report)
     return report
+
+
+def run_transport_completion_watchdog(
+    execute_command: Callable[[str, int], tuple[str, int, bool]],
+    command: list[str],
+    timeout_sec: int,
+    script: str,
+    output_dir: Path,
+    scenario_reports: dict[str, dict[str, Any]],
+    validation_context: dict[str, Any],
+    *,
+    validation_route_manifest: dict[str, Any] | None = None,
+    duration_policy: str = "completion-watchdog",
+    heartbeat_sec: int = DEFAULT_COMPLETION_HEARTBEAT_SEC,
+    no_progress_window_sec: int = DEFAULT_NO_PROGRESS_WINDOW_SEC,
+    max_repeated_decisions: int = DEFAULT_MAX_REPEATED_DECISIONS,
+    max_death_loops: int = DEFAULT_MAX_DEATH_LOOPS,
+    sleep: Callable[[float], None] = time.sleep,
+) -> tuple[str, int, bool, list[str]]:
+    """Apply completion evidence watchdog policy to any command transport.
+
+    The callback owns connection and lifecycle details; this function never sends a
+    server shutdown command, making it safe for attached sessions and SOAP.
+    """
+    deadline = time.monotonic() + timeout_sec
+    startup_commands, heartbeat_commands = heartbeat_commands_from_script(script)
+    output_parts: list[str] = []
+    heartbeat_index = 0
+    last_progress_total = -1
+    last_progress_at = time.monotonic()
+
+    def send(command_text: str) -> tuple[int, bool]:
+        remaining = max(1, int(deadline - time.monotonic()))
+        output, returncode, timed_out = execute_command(command_text, remaining)
+        output_parts.extend((f"$ {command_text}\n", output))
+        return returncode, timed_out
+
+    for command_text in startup_commands:
+        returncode, timed_out = send(command_text)
+        if returncode != 0 or timed_out:
+            return "".join(output_parts), returncode, timed_out, command
+    if startup_commands:
+        status_output, _status, returncode, timed_out = poll_bot_status(execute_command, deadline, sleep=sleep)
+        output_parts.append(status_output)
+        if returncode != 0 or timed_out:
+            return "".join(output_parts), returncode, timed_out, command
+
+    while time.monotonic() < deadline:
+        sleep(min(max(1, heartbeat_sec), max(0.0, deadline - time.monotonic())))
+        heartbeat_index += 1
+        for command_text in heartbeat_commands:
+            if time.monotonic() >= deadline:
+                break
+            returncode, timed_out = send(command_text)
+            if returncode != 0 or timed_out:
+                return "".join(output_parts), returncode, timed_out, command
+        report = rolling_heartbeat_report(
+            output_dir, heartbeat_index, "".join(output_parts), 0, False, command,
+            scenario_reports, validation_context, duration_policy, heartbeat_sec,
+            no_progress_window_sec, max_repeated_decisions, max_death_loops,
+            validation_route_manifest,
+        )
+        progress_total = int(report.get("watchdog_state", {}).get("progress_total") or 0)
+        if progress_total > last_progress_total:
+            last_progress_total = progress_total
+            last_progress_at = time.monotonic()
+        no_progress_expired = time.monotonic() - last_progress_at >= no_progress_window_sec
+        semantic_progress_plateau = last_progress_total >= 0 and progress_total <= last_progress_total and no_progress_expired
+        if report["acceptable_final_evidence"] or report["completion_reason"] in {"repeated_decision_watchdog", "death_loop_watchdog", "machine_failure_predicate"}:
+            return "".join(output_parts), 0, False, command
+        if validation_route_manifest and semantic_progress_plateau:
+            report["completion_reason"] = "semantic_progress_plateau_watchdog"
+            report["watchdog_state"]["semantic_progress_plateau"] = True
+            if "semantic_progress_plateau" not in report["failure_labels"]:
+                report["failure_labels"].append("semantic_progress_plateau")
+            report["failure_reason"] = report["failure_labels"][0]
+            report["failed"] = max(int(report.get("failed") or 0), 1)
+            report["all_passed"] = False
+            report["acceptable_final_evidence"] = False
+            if "failure_labels_present" not in report["final_evidence_rejections"]:
+                report["final_evidence_rejections"].append("failure_labels_present")
+            write_json(output_dir / "report.json", report)
+            return "".join(output_parts), 0, False, command
+        if report["watchdog_state"].get("no_progress") and no_progress_expired:
+            report["completion_reason"] = "no_progress_watchdog"
+            write_json(output_dir / "report.json", report)
+            return "".join(output_parts), 0, False, command
+    return "".join(output_parts), 124, True, command
 
 
 def run_worldserver_completion_watchdog(
@@ -1846,6 +2454,7 @@ def run_worldserver_completion_watchdog(
                     no_progress_window_sec,
                     max_repeated_decisions,
                     max_death_loops,
+                    validation_route_manifest,
                     completion_reason_override="worldserver_process_exit",
                 )
                 return joined_output(), process.returncode if process.returncode is not None else 0, False, command
@@ -1874,6 +2483,7 @@ def run_worldserver_completion_watchdog(
                 no_progress_window_sec,
                 max_repeated_decisions,
                 max_death_loops,
+                validation_route_manifest,
             )
             progress_total = int(report.get("watchdog_state", {}).get("progress_total") or 0)
             if progress_total > last_progress_total:
@@ -1898,6 +2508,14 @@ def run_worldserver_completion_watchdog(
             if validation_route_manifest and semantic_progress_plateau:
                 report["completion_reason"] = "semantic_progress_plateau_watchdog"
                 report["watchdog_state"]["semantic_progress_plateau"] = True
+                if "semantic_progress_plateau" not in report["failure_labels"]:
+                    report["failure_labels"].append("semantic_progress_plateau")
+                report["failure_reason"] = report["failure_labels"][0]
+                report["failed"] = max(int(report.get("failed") or 0), 1)
+                report["all_passed"] = False
+                report["acceptable_final_evidence"] = False
+                if "failure_labels_present" not in report["final_evidence_rejections"]:
+                    report["final_evidence_rejections"].append("failure_labels_present")
                 write_json(output_dir / "report.json", report)
                 break
             if report["watchdog_state"].get("no_progress") and no_progress_expired:
@@ -1952,9 +2570,33 @@ def parse_soap_result(payload: str) -> str:
     return html.unescape(payload[start + len("<result>") : end])
 
 
+def execute_soap_command(soap_url: str, username: str, password: str, command_text: str, timeout_sec: int) -> tuple[str, int, bool]:
+    """Execute one SOAP console command without imposing process lifecycle policy."""
+    auth = base64.b64encode(f"{username}:{password}".encode("utf-8")).decode("ascii")
+    request = urllib.request.Request(
+        soap_url,
+        data=soap_envelope(command_text),
+        headers={
+            "Authorization": f"Basic {auth}",
+            "Content-Type": "text/xml; charset=utf-8",
+            "SOAPAction": "urn:TC#executeCommand",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=max(1, timeout_sec)) as response:
+            payload = response.read().decode("utf-8", errors="replace")
+            return parse_soap_result(payload), 0, False
+    except urllib.error.HTTPError as exc:
+        return exc.read().decode("utf-8", errors="replace"), exc.code, False
+    except TimeoutError:
+        return "", 124, True
+    except OSError as exc:
+        return str(exc), 1, False
+
+
 def run_soap_commands(soap_url: str, username: str, password: str, script: str, timeout_sec: int, observe_sec: int = 0) -> tuple[str, int, bool, list[str]]:
     output_parts: list[str] = []
-    auth = base64.b64encode(f"{username}:{password}".encode("utf-8")).decode("ascii")
     command = ["SOAP", soap_url]
     deadline = time.monotonic() + timeout_sec
     explicit_start = any(line.strip() == ".botauto start" for line in script.splitlines())
@@ -1970,36 +2612,14 @@ def run_soap_commands(soap_url: str, username: str, password: str, script: str, 
         remaining_float = deadline - time.monotonic()
         if remaining_float <= 0:
             return "\n".join(output_parts), 124, True, command
-        remaining = max(1, int(remaining_float))
-        request = urllib.request.Request(
-            soap_url,
-            data=soap_envelope(command_text),
-            headers={
-                "Authorization": f"Basic {auth}",
-                "Content-Type": "text/xml; charset=utf-8",
-                "SOAPAction": "urn:TC#executeCommand",
-            },
-            method="POST",
-        )
-        try:
-            with urllib.request.urlopen(request, timeout=remaining) as response:
-                payload = response.read().decode("utf-8", errors="replace")
-                output_parts.append(f"$ {command_text}")
-                output_parts.append(parse_soap_result(payload))
-                if observe_sec > 0 and command_text == ".botauto start":
-                    output_parts.append(f"$ sleep {observe_sec}")
-                    time.sleep(observe_sec)
-        except urllib.error.HTTPError as exc:
-            payload = exc.read().decode("utf-8", errors="replace")
-            output_parts.append(f"$ {command_text}")
-            output_parts.append(payload)
-            return "\n".join(output_parts), exc.code, False, command
-        except TimeoutError:
-            return "\n".join(output_parts), 124, True, command
-        except OSError as exc:
-            output_parts.append(f"$ {command_text}")
-            output_parts.append(str(exc))
-            return "\n".join(output_parts), 1, False, command
+        payload, returncode, timed_out = execute_soap_command(soap_url, username, password, command_text, max(1, int(remaining_float)))
+        output_parts.append(f"$ {command_text}")
+        output_parts.append(payload)
+        if returncode != 0 or timed_out:
+            return "\n".join(output_parts), returncode, timed_out, command
+        if observe_sec > 0 and command_text == ".botauto start":
+            output_parts.append(f"$ sleep {observe_sec}")
+            time.sleep(observe_sec)
     return "\n".join(output_parts), 0, False, command
 
 
@@ -2205,6 +2825,147 @@ def run_route_sequence(args: argparse.Namespace, routes: list[dict[str, Any]]) -
     return 0 if report["all_passed"] else 1
 
 
+def run_reusable_validation_session(
+    args: argparse.Namespace,
+    script: str,
+    scenario_reports: dict[str, dict[str, Any]],
+    validation_context: dict[str, Any],
+    validation_route: dict[str, Any],
+    validation_route_manifest: dict[str, Any],
+    validation_route_manifest_path: Path | None,
+    bot_pool_tags: list[str],
+) -> tuple[str, int, bool, list[str], dict[str, Any]]:
+    if not args.soap_user or not args.soap_password:
+        raise SystemExit("--soap-user and --soap-password are required with --transport session")
+    profile_manifest = Path(trinity_config_string(args.config, "BotWorld.ProfileManifest", "dataset/bot_runtime_profiles/profiles.json"))
+    if not profile_manifest.is_absolute():
+        profile_manifest = REPO_ROOT / profile_manifest
+    fingerprint_paths = [
+        path for path in (
+            profile_manifest,
+            args.validation_scenario_dir / "validation_routes.jsonl",
+            args.validation_provisioning_config,
+            args.gear_profiles,
+        ) if path.is_file()
+    ]
+    profile = args.session_profile or str(validation_context.get("scenario_id") or "")
+    if validation_route_manifest_path and profile_manifest.is_file():
+        profiles = json.loads(profile_manifest.read_text(encoding="utf-8"))
+        selected = next((row for row in profiles.get("profiles", []) if str(row.get("name") or "") == profile), None)
+        configured_manifest = str(((selected or {}).get("validation_route") or {}).get("manifest_path") or "")
+        expected_manifest = args.validation_scenario_dir / "validation_routes.jsonl"
+        if not configured_manifest or Path(configured_manifest).resolve() != expected_manifest.resolve():
+            raise SystemExit("session runtime profile route manifest does not match --validation-scenario-dir")
+
+    session = build_session(
+        REPO_ROOT, args.session_environment, args.worldserver, args.config,
+        fingerprint_paths=fingerprint_paths,
+    )
+    command = ["SESSION", session.unit_name, args.soap_url]
+    output_parts: list[str] = []
+    lifecycle: dict[str, Any] = {**session.metadata(), "transport": "session"}
+
+    def execute(command_text: str, remaining: int) -> tuple[str, int, bool]:
+        return execute_soap_command(args.soap_url, args.soap_user, args.soap_password, command_text, remaining)
+
+    with live_validation_lock(REPO_ROOT, args.session_environment):
+        action = ensure_healthy_matching_session(session)
+        lifecycle["server_action"] = action.action
+        lifecycle["server_pid"] = int(action.status.properties.get("MainPID") or 0)
+        deadline = time.monotonic() + args.session_transition_timeout_sec
+        try:
+            output_parts.append(wait_for_soap_command_available(execute, deadline))
+            stop_output, returncode, timed_out = execute(".botauto stop", args.session_transition_timeout_sec)
+            output_parts.extend(("$ .botauto stop\n", stop_output))
+            if returncode != 0 or timed_out:
+                raise RuntimeError("failed to stop BotWorld before reusable validation")
+            inactive_output, _ = wait_for_bot_status_state(execute, False, deadline)
+            output_parts.append(inactive_output)
+            lifecycle["inactive_before_preparation"] = True
+
+            preparation: dict[str, Any] = {}
+            if args.reset_bot_pool:
+                preparation["bot_pool_reset"] = prepare_bot_pool_reset(
+                    args.output_dir, args.config, bot_pool_tags, apply=True,
+                    reset_positions=not args.keep_bot_pool_position,
+                    reset_quests=not args.keep_bot_pool_quests,
+                    reset_memory=not args.keep_bot_pool_memory,
+                )
+            if args.apply_validation_provisioning:
+                preparation["validation_provisioning"] = prepare_validation_provisioning(
+                    args.output_dir, args.validation_provisioning_config, args.gear_profiles, args.config, apply=True,
+                )
+            if validation_route and int(validation_route.get("bot_start_map_id") or 0):
+                preparation["route_bot_start"] = prepare_route_bot_start(
+                    args.output_dir, validation_route, args.config, bot_pool_tags, apply=True,
+                )
+            lifecycle["preparation"] = preparation
+
+            start_command = f".botauto start {profile}" if profile else ".botauto start"
+            start_output, returncode, timed_out = execute(start_command, args.session_transition_timeout_sec)
+            output_parts.extend((f"$ {start_command}\n", start_output))
+            if returncode != 0 or timed_out:
+                raise RuntimeError("failed to start BotWorld reusable validation")
+            ready_output, _ = wait_for_bot_status_state(
+                execute, True, time.monotonic() + args.session_transition_timeout_sec,
+            )
+            output_parts.append(ready_output)
+            lifecycle["active_after_start"] = True
+
+            watchdog_script = command_script(
+                selector=args.selector, trace_limit=args.trace_limit, start=False, stop=False, exit_server=False,
+            )
+            output, returncode, timed_out, _ = run_transport_completion_watchdog(
+                execute, command, args.timeout_sec, watchdog_script, args.output_dir,
+                scenario_reports, validation_context,
+                validation_route_manifest=validation_route_manifest,
+                duration_policy=args.duration_policy,
+                heartbeat_sec=args.heartbeat_sec,
+                no_progress_window_sec=args.no_progress_window_sec,
+                max_repeated_decisions=args.max_repeated_decision_count,
+                max_death_loops=args.max_death_loop_count,
+            )
+            output_parts.append(output)
+            lifecycle["watchdog_completed"] = True
+            return "".join(output_parts), returncode, timed_out, command, lifecycle
+        finally:
+            try:
+                output_parts.append(wait_for_soap_command_available(
+                    execute, time.monotonic() + args.session_transition_timeout_sec,
+                ))
+                stop_output, returncode, timed_out = execute(".botauto stop", args.session_transition_timeout_sec)
+                output_parts.extend(("$ .botauto stop\n", stop_output))
+                if returncode != 0 or timed_out:
+                    raise RuntimeError("failed to stop BotWorld after reusable validation")
+                inactive_output, _ = wait_for_bot_status_state(
+                    execute, False, time.monotonic() + args.session_transition_timeout_sec,
+                )
+                output_parts.append(inactive_output)
+                lifecycle["inactive_after_attempt"] = True
+            except Exception as exc:
+                lifecycle["inactive_after_attempt"] = False
+                lifecycle["cleanup_failure"] = str(exc)
+                report_path = args.output_dir / "report.json"
+                if report_path.is_file():
+                    try:
+                        failed_report = json.loads(report_path.read_text(encoding="utf-8"))
+                    except json.JSONDecodeError:
+                        failed_report = {}
+                    failed_report["acceptable_final_evidence"] = False
+                    failed_report["all_passed"] = False
+                    failed_report["failure_reason"] = "session_cleanup_failed"
+                    labels = list(failed_report.get("failure_labels") or [])
+                    if "session_cleanup_failed" not in labels:
+                        labels.append("session_cleanup_failed")
+                    failed_report["failure_labels"] = labels
+                    failed_report["session"] = lifecycle
+                    write_json(report_path, failed_report)
+                stop_session(session)
+                raise
+            finally:
+                write_json(args.output_dir / "session.json", lifecycle)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run or prepare live BotWorld validation diagnostics.")
     parser.add_argument("--worldserver", type=Path, default=Path("build/src/server/worldserver/worldserver"))
@@ -2217,14 +2978,17 @@ def main() -> int:
     parser.add_argument("--max-repeated-decision-count", type=int, default=DEFAULT_MAX_REPEATED_DECISIONS)
     parser.add_argument("--max-death-loop-count", type=int, default=DEFAULT_MAX_DEATH_LOOPS)
     parser.add_argument("--selector", default="all")
-    parser.add_argument("--trace-limit", type=int, default=20)
+    parser.add_argument("--trace-limit", type=int, default=128)
     parser.add_argument("--no-start", action="store_true")
     parser.add_argument("--force-start-command", action="store_true", help="Send .botauto start even when BotWorld.AutoStart is enabled in the selected worldserver config.")
     parser.add_argument("--stop", action="store_true")
-    parser.add_argument("--transport", choices=["process", "soap"], default="process")
+    parser.add_argument("--transport", choices=["process", "soap", "session"], default="process")
     parser.add_argument("--soap-url", default="http://127.0.0.1:7878/")
-    parser.add_argument("--soap-user")
-    parser.add_argument("--soap-password")
+    parser.add_argument("--soap-user", default=os.environ.get("TRINITY_SOAP_USER"))
+    parser.add_argument("--soap-password", default=os.environ.get("TRINITY_SOAP_PASSWORD"))
+    parser.add_argument("--session-environment", default="default", help="Stable identity for the shared validation server and live-attempt lock.")
+    parser.add_argument("--session-profile", default="", help="Runtime profile selected by .botauto start in reusable session mode; defaults to the scenario ID.")
+    parser.add_argument("--session-transition-timeout-sec", type=int, default=180, help="Bound for reusable-session stop/start state transitions.")
     parser.add_argument("--observe-sec", type=int, default=None, help="Sleep after .botauto start before collecting diagnostics. Defaults to 0 seconds for smoke checks and 300 seconds for boss-route validations.")
     parser.add_argument("--reset-bot-pool", action="store_true", help="Before validation, reset volatile state for enabled bot-pool rows matching --bot-pool-tag.")
     parser.add_argument("--bot-pool-tag", action="append", default=[], help="Experiment tag substring for --reset-bot-pool. Defaults to test_account when omitted.")
@@ -2259,6 +3023,9 @@ def main() -> int:
         args.timeout_sec = args.timeout_sec if args.timeout_sec is not None else DEFAULT_LIVE_VALIDATION_TIMEOUT_SEC
         args.observe_sec = args.observe_sec if args.observe_sec is not None else 0
 
+    output_dir_was_nonempty = args.output_dir.exists() and any(args.output_dir.iterdir())
+    if args.transport == "session" and output_dir_was_nonempty and not args.dry_run and not args.input_log:
+        raise SystemExit("--transport session requires a new or empty --output-dir")
     args.output_dir.mkdir(parents=True, exist_ok=True)
     bot_pool_tags = args.bot_pool_tag or ["test_account"]
 
@@ -2295,6 +3062,8 @@ def main() -> int:
 
     validation_context = validation_context_from_args(args)
     validation_route = load_validation_route(args.validation_scenario_dir, validation_context)
+    if validation_route:
+        validation_context = route_validation_context(args.validation_scenario_id, validation_route, include_segment=bool(args.validation_segment_id))
     validation_route_manifest: dict[str, Any] = {}
     validation_route_manifest_path: Path | None = None
     if args.validation_route_manifest:
@@ -2319,7 +3088,7 @@ def main() -> int:
             args.output_dir,
             args.config,
             bot_pool_tags,
-            apply=not args.dry_run,
+            apply=not args.dry_run and args.transport != "session",
             reset_positions=not args.keep_bot_pool_position,
             reset_quests=not args.keep_bot_pool_quests,
             reset_memory=not args.keep_bot_pool_memory,
@@ -2330,7 +3099,7 @@ def main() -> int:
             args.validation_provisioning_config,
             args.gear_profiles,
             args.config,
-            apply=not args.dry_run,
+            apply=not args.dry_run and args.transport != "session",
         )
     if validation_route and int(validation_route.get("bot_start_map_id") or 0):
         preparation["route_bot_start"] = prepare_route_bot_start(
@@ -2338,7 +3107,7 @@ def main() -> int:
             validation_route,
             args.config,
             bot_pool_tags,
-            apply=not args.dry_run,
+            apply=not args.dry_run and args.transport != "session",
         )
 
     if args.dry_run:
@@ -2374,6 +3143,7 @@ def main() -> int:
         return 0
 
     watchdog_report: dict[str, Any] | None = None
+    session_lifecycle: dict[str, Any] = {}
     if args.input_log:
         output = args.input_log.read_text(encoding="utf-8")
         returncode = 0
@@ -2383,7 +3153,50 @@ def main() -> int:
         if args.transport == "soap":
             if not args.soap_user or not args.soap_password:
                 raise SystemExit("--soap-user and --soap-password are required with --transport soap")
-            output, returncode, timed_out, command = run_soap_commands(args.soap_url, args.soap_user, args.soap_password, script, args.timeout_sec, args.observe_sec)
+            if args.duration_policy == "completion-watchdog":
+                def execute_soap(command_text: str, remaining: int) -> tuple[str, int, bool]:
+                    return execute_soap_command(args.soap_url, args.soap_user, args.soap_password, command_text, remaining)
+
+                output, returncode, timed_out, command = run_transport_completion_watchdog(
+                    execute_soap,
+                    ["SOAP", args.soap_url],
+                    args.timeout_sec,
+                    script,
+                    args.output_dir,
+                    scenario_reports,
+                    validation_context,
+                    duration_policy=args.duration_policy,
+                    heartbeat_sec=args.heartbeat_sec,
+                    no_progress_window_sec=args.no_progress_window_sec,
+                    max_repeated_decisions=args.max_repeated_decision_count,
+                    max_death_loops=args.max_death_loop_count,
+                )
+                existing_report = args.output_dir / "report.json"
+                if existing_report.exists():
+                    try:
+                        watchdog_report = json.loads(existing_report.read_text(encoding="utf-8"))
+                    except json.JSONDecodeError:
+                        watchdog_report = None
+            else:
+                output, returncode, timed_out, command = run_soap_commands(args.soap_url, args.soap_user, args.soap_password, script, args.timeout_sec, args.observe_sec)
+        elif args.transport == "session":
+            output, returncode, timed_out, command, session_lifecycle = run_reusable_validation_session(
+                args,
+                script,
+                scenario_reports,
+                validation_context,
+                validation_route,
+                validation_route_manifest,
+                validation_route_manifest_path,
+                bot_pool_tags,
+            )
+            preparation = session_lifecycle.get("preparation") or preparation
+            existing_report = args.output_dir / "report.json"
+            if existing_report.exists():
+                try:
+                    watchdog_report = json.loads(existing_report.read_text(encoding="utf-8"))
+                except json.JSONDecodeError:
+                    watchdog_report = None
         elif args.duration_policy == "completion-watchdog":
             output, returncode, timed_out, command = run_worldserver_completion_watchdog(
                 args.worldserver,
@@ -2424,6 +3237,7 @@ def main() -> int:
             command=command,
             scenario_reports=scenario_reports,
             validation_context=validation_context,
+            validation_route_manifest=validation_route_manifest,
             duration_policy=args.duration_policy,
             heartbeat_sec=args.heartbeat_sec,
             no_progress_window_sec=args.no_progress_window_sec,
@@ -2440,11 +3254,17 @@ def main() -> int:
     report["validation_route_manifest_path"] = str(validation_route_manifest_path or "")
     report["start_command"] = send_start_command
     report["preparation"] = preparation
+    if args.transport == "session":
+        report["session"] = session_lifecycle
+        if not session_lifecycle.get("inactive_after_attempt"):
+            report["acceptable_final_evidence"] = False
+            report["all_passed"] = False
     report["validation_context"] = validation_context
     write_json(args.output_dir / "report.json", report)
     print(json.dumps(report, indent=2, sort_keys=True))
     segment_success = route_segment_complete(report, validation_route)
-    return 0 if (returncode == 0 and not timed_out) or segment_success else 1
+    full_success = bool(report.get("acceptable_final_evidence")) and bool(report.get("all_passed"))
+    return 0 if returncode == 0 and not timed_out and (segment_success or full_success) else 1
 
 
 if __name__ == "__main__":

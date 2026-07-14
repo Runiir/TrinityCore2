@@ -1,4 +1,5 @@
 #include "Bots/BotClassSpecActionProfile.h"
+#include "DataStores/DBCStores.h"
 #include "DatabaseEnv.h"
 #include "Player.h"
 #include "SpellHistory.h"
@@ -8,6 +9,8 @@
 #include "Creature.h"
 #include "DataStores/DBCEnums.h"
 #include <algorithm>
+#include <array>
+#include <cmath>
 #include <cstdlib>
 #include <map>
 #include <mutex>
@@ -73,6 +76,24 @@ std::string InferSpecTag(Player const* bot, std::string const& role)
     if (!bot)
         return "generic";
 
+    if (QueryResult result = CharacterDatabase.PQuery("SELECT class_spec FROM character_bot_pool WHERE guid = %u LIMIT 1", bot->GetGUID().GetCounter()))
+    {
+        std::string classSpec = result->Fetch()[0].GetString();
+        std::transform(classSpec.begin(), classSpec.end(), classSpec.begin(), [](unsigned char c) { return std::tolower(c); });
+        std::replace(classSpec.begin(), classSpec.end(), '-', '_');
+        std::replace(classSpec.begin(), classSpec.end(), ' ', '_');
+        if (classSpec == "protection_paladin")
+            return "protection";
+        if (classSpec == "fire_mage")
+            return "fire";
+        if (classSpec == "marksmanship_hunter")
+            return "marksmanship";
+        if (classSpec == "enhancement_shaman")
+            return "enhancement";
+        if (!classSpec.empty())
+            return classSpec;
+    }
+
     switch (bot->getClass())
     {
         case CLASS_MAGE:
@@ -104,6 +125,48 @@ bool HasEnoughPowerForProfileSpell(Player const* bot, SpellInfo const* spellInfo
 {
     if (!bot || !spellInfo)
         return false;
+
+    if (spellInfo->PowerType == POWER_RUNE && spellInfo->RuneCostID && bot->getClass() == CLASS_DEATH_KNIGHT)
+    {
+        SpellRuneCostEntry const* runeCost = sSpellRuneCostStore.LookupEntry(spellInfo->RuneCostID);
+        if (runeCost && !runeCost->NoRuneCost())
+        {
+            std::array<int32, 3> required = { int32(runeCost->RuneCost[0]), int32(runeCost->RuneCost[1]), int32(runeCost->RuneCost[2]) };
+            uint8 deathRunes = 0;
+            for (uint8 i = 0; i < MAX_RUNES; ++i)
+            {
+                if (std::abs(bot->GetRuneCooldown(i)) > 0.0001f)
+                    continue;
+
+                switch (bot->GetCurrentRune(i))
+                {
+                    case RuneType::Blood:
+                        if (required[0] > 0)
+                            --required[0];
+                        break;
+                    case RuneType::Unholy:
+                        if (required[1] > 0)
+                            --required[1];
+                        break;
+                    case RuneType::Frost:
+                        if (required[2] > 0)
+                            --required[2];
+                        break;
+                    case RuneType::Death:
+                        ++deathRunes;
+                        break;
+                    default:
+                        break;
+                }
+            }
+
+            int32 deficit = 0;
+            for (int32 count : required)
+                deficit += std::max<int32>(0, count);
+            if (deficit > deathRunes)
+                return false;
+        }
+    }
 
     int32 cost = spellInfo->CalcPowerCost(bot, spellInfo->GetSchoolMask());
     if (cost <= 0)
@@ -143,7 +206,9 @@ bool LoadDbProfileLocked(uint8 classId, std::string const& specTag, std::string 
         "a.requires_interruptible_target, a.requires_target_not_victim, a.requires_target_victim, "
         "a.requires_melee_range, a.requires_ranged_range, a.target_selector, a.movement_directive, "
         "a.auto_attack_mode, a.min_range, a.max_range, a.requires_instant_cast, a.max_cast_time_ms, "
-        "a.maintain_aura_id, a.refresh_aura_below_ms "
+        "a.maintain_aura_id, a.refresh_aura_below_ms, a.min_injured_players, a.max_injured_players, "
+        "a.injured_health_pct, a.min_mana_pct, a.max_mana_pct, a.min_attackers, a.max_attackers, "
+        "a.requires_stationary, a.requires_moving "
         "FROM bot_rotation_profile p "
         "JOIN bot_rotation_action a ON a.profile_id = p.id "
         "WHERE p.enabled = 1 AND a.enabled = 1 AND p.class_id = %u AND p.spec_tag = '%s' AND p.role = '%s' "
@@ -231,6 +296,15 @@ bool LoadDbProfileLocked(uint8 classId, std::string const& specTag, std::string 
         spell.MaxCastTimeMs = fields[44].GetUInt32();
         spell.MaintainAuraId = fields[45].GetUInt32();
         spell.RefreshAuraBelowMs = fields[46].GetUInt32();
+        spell.MinInjuredPlayers = fields[47].GetUInt8();
+        spell.MaxInjuredPlayers = fields[48].GetUInt8();
+        spell.InjuredHealthPct = fields[49].GetFloat();
+        spell.MinManaPct = fields[50].GetFloat();
+        spell.MaxManaPct = fields[51].GetFloat();
+        spell.MinAttackers = fields[52].GetUInt8();
+        spell.MaxAttackers = fields[53].GetUInt8();
+        spell.RequiresStationary = fields[54].GetBool();
+        spell.RequiresMoving = fields[55].GetBool();
         profile.Spells.push_back(spell);
     } while (result->NextRow());
 
@@ -369,8 +443,8 @@ std::vector<BotActionCandidate> BotClassSpecActionProfileStore::BuildCandidates(
             SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spell.SpellId);
             if (!spellInfo)
                 candidate.RejectReason = "missing_spell_info";
-            else if (partyTarget)
-                candidate.RejectReason = "requires_party_target";
+            else if (partyTarget && !actionTarget)
+                candidate.RejectReason = "missing_party_target";
             else if (bot->HasUnitState(UNIT_STATE_CASTING))
                 candidate.RejectReason = "already_casting";
             else if (bot->GetSpellHistory()->HasGlobalCooldown(spellInfo))
@@ -387,6 +461,8 @@ std::vector<BotActionCandidate> BotClassSpecActionProfileStore::BuildCandidates(
                 candidate.RejectReason = "forbidden_target_aura_active";
             else if (spell.MaintainAuraId && actionTarget && actionTarget->HasAura(spell.MaintainAuraId))
                 candidate.RejectReason = "maintain_aura_active";
+            else if (spellInfo->NeedsComboPoints() && (!actionTarget || bot->GetComboTarget() != actionTarget->GetGUID() || !bot->GetComboPoints()))
+                candidate.RejectReason = "insufficient_combo_points";
             else if (spell.RequiresInstantCast && ProfileSpellCastTimeMs(bot, spellInfo) > 0)
                 candidate.RejectReason = "instant_cast_required";
             else if (spell.MaxCastTimeMs && ProfileSpellCastTimeMs(bot, spellInfo) > spell.MaxCastTimeMs)
@@ -439,6 +515,12 @@ std::string BotClassSpecActionProfileStore::CandidateMaskJson(std::vector<BotAct
              << ",\"target_selector\":\"" << ClassSpecProfileEscape(candidate.Profile.TargetSelector) << "\""
              << ",\"movement_directive\":\"" << ClassSpecProfileEscape(candidate.Profile.MovementDirective) << "\""
              << ",\"auto_attack_mode\":\"" << ClassSpecProfileEscape(candidate.Profile.AutoAttackMode) << "\""
+             << ",\"valid\":" << (candidate.RejectReason.empty() ? "true" : "false")
+             << ",\"predicted_raw_heal\":" << candidate.PredictedRawHeal
+             << ",\"predicted_effective_heal\":" << candidate.PredictedEffectiveHeal
+             << ",\"predicted_overheal\":" << candidate.PredictedOverheal
+             << ",\"mana_cost\":" << candidate.ManaCost
+             << ",\"cast_time_ms\":" << candidate.CastTimeMs
              << ",\"reject_reason\":\"" << ClassSpecProfileEscape(candidate.RejectReason) << "\""
              << ",\"role_goal\":\"" << ClassSpecProfileEscape(roleGoal ? roleGoal : profile.Role) << "\"}";
     }
@@ -586,6 +668,15 @@ std::string BotClassSpecActionProfileStore::DbProfileDumpJson(uint8 classId, std
              << ",\"max_cast_time_ms\":" << spell.MaxCastTimeMs
              << ",\"min_range\":" << spell.MinRange
              << ",\"max_range\":" << spell.MaxRange
+             << ",\"min_injured_players\":" << uint32(spell.MinInjuredPlayers)
+             << ",\"max_injured_players\":" << uint32(spell.MaxInjuredPlayers)
+             << ",\"injured_health_pct\":" << spell.InjuredHealthPct
+             << ",\"min_mana_pct\":" << spell.MinManaPct
+             << ",\"max_mana_pct\":" << spell.MaxManaPct
+             << ",\"min_attackers\":" << uint32(spell.MinAttackers)
+             << ",\"max_attackers\":" << uint32(spell.MaxAttackers)
+             << ",\"requires_stationary\":" << (spell.RequiresStationary ? "true" : "false")
+             << ",\"requires_moving\":" << (spell.RequiresMoving ? "true" : "false")
              << "}}";
     }
     json << "]}";
