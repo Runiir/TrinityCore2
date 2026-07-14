@@ -89,5 +89,9 @@ def test_stonecore_role_profiles_include_runtime_efficiency_gates():
     assert "a.`requires_interruptible_target` = 1" in sql
     assert "a.`required_target_aura` = 1978" in sql
     assert "a.`damage_weight` = 0.55, a.`min_enemies` = 5" in sql
+    assert "a.`spell_id` = 26573" in sql
+    assert "SET `min_range` = 8" in sql
+    assert 'livingCombatResurrectionCaster = true' in manager
+    assert '"tactical_retreat_no_combat_res"' in manager
     for spell_id in (31850, 85673, 86150, 11129, 3045, 34490, 30823, 51533, 73680):
         assert str(spell_id) in sql

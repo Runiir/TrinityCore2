@@ -9828,6 +9828,93 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return true;
         }
     }
+    // If most of the party is dead and no living class can legally resurrect
+    // in combat, continuing a tank/healer-only stalemate cannot recover the
+    // group. Disengage through ordinary movement so the hostile leashes and
+    // native out-of-combat resurrection can run. This never changes combat,
+    // death, target, or terminal state directly.
+    if (bot->IsAlive() && bot->GetGroup())
+    {
+        uint32 aliveMembers = 0;
+        uint32 deadMembers = 0;
+        bool groupCombatActive = false;
+        bool livingCombatResurrectionCaster = false;
+        Unit* retreatThreat = nullptr;
+        for (GroupReference* itr = bot->GetGroup()->GetFirstMember(); itr != nullptr; itr = itr->next())
+        {
+            Player* member = itr->GetSource();
+            if (!member || member->GetMap() != bot->GetMap())
+                continue;
+            if (member->IsAlive())
+            {
+                ++aliveMembers;
+                groupCombatActive = groupCombatActive || member->IsInCombat() || member->GetVictim() || !member->getAttackers().empty();
+                if (!retreatThreat && std::string(GetDungeonRole(member)) == "tank")
+                    retreatThreat = member->GetVictim();
+                for (auto const& [spellId, playerSpell] : member->GetSpellMap())
+                {
+                    if (playerSpell.state == PLAYERSPELL_REMOVED || playerSpell.disabled || !playerSpell.active || !member->HasSpell(spellId))
+                        continue;
+                    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+                    if (spellInfo && spellInfo->HasAttribute(SPELL_ATTR8_ENFORCE_IN_COMBAT_RESSURECTION_LIMIT)
+                        && (spellInfo->HasEffect(SPELL_EFFECT_RESURRECT)
+                            || spellInfo->HasEffect(SPELL_EFFECT_RESURRECT_NEW)
+                            || spellInfo->HasEffect(SPELL_EFFECT_RESURRECT_WITH_AURA))
+                        && member->GetSpellHistory()->IsReady(spellInfo) && HasPowerForSpell(member, spellInfo))
+                    {
+                        livingCombatResurrectionCaster = true;
+                        break;
+                    }
+                }
+            }
+            else
+                ++deadMembers;
+        }
+        if (aliveMembers <= 2 && deadMembers >= 3 && groupCombatActive && !livingCombatResurrectionCaster)
+        {
+            if (!retreatThreat)
+                retreatThreat = bot->GetVictim();
+            float retreatX = _config.ValidationRouteX;
+            float retreatY = _config.ValidationRouteY;
+            float retreatZ = _config.ValidationRouteZ;
+            if (_validationRouteManifestIndex > 0)
+            {
+                ValidationRouteManifestNode const& previous = _validationRouteManifest[_validationRouteManifestIndex - 1];
+                float previousX = previous.NavigationAnchorX != 0.0f ? previous.NavigationAnchorX : previous.X;
+                float previousY = previous.NavigationAnchorY != 0.0f ? previous.NavigationAnchorY : previous.Y;
+                float previousZ = previous.NavigationAnchorZ != 0.0f ? previous.NavigationAnchorZ : previous.Z;
+                if (!retreatThreat || retreatThreat->GetExactDist(previousX, previousY, previousZ)
+                    > retreatThreat->GetExactDist(retreatX, retreatY, retreatZ))
+                {
+                    retreatX = previousX;
+                    retreatY = previousY;
+                    retreatZ = previousZ;
+                }
+            }
+
+            bot->AttackStop();
+            state.TargetGuid.Clear();
+            bool moved = bot->GetExactDist(retreatX, retreatY, retreatZ) > 5.0f
+                && MoveBotToPoint(state, bot, retreatX, retreatY, retreatZ);
+            uint64 nowMs = NowMs();
+            if (state.LastRecoveryMode != "tactical_retreat_no_combat_res" || nowMs - state.LastRecoveryMs >= 5000)
+            {
+                std::string raw = BuildRawJson(bot, retreatThreat);
+                std::string semantic = BuildSemanticJson(bot, retreatThreat, "validation_route_recovery", &power, stage, activity);
+                RecordEvent(state, bot, "validation_route_recovery", retreatThreat,
+                    moved ? "tactical_retreat_no_combat_res" : "hold_tactical_retreat_no_combat_res",
+                    raw.c_str(), semantic.c_str(), bot->GetExactDist(retreatX, retreatY, retreatZ), deadMembers);
+                state.LastRecoveryMode = "tactical_retreat_no_combat_res";
+                state.LastRecoveryResult = moved ? "moving" : "holding";
+                state.LastRecoveryMs = nowMs;
+                ++state.RecoveryAttemptCount;
+            }
+            situation = "validation_route_recovery";
+            action = moved ? "validation_route_tactical_retreat" : "validation_route_hold_retreat";
+            target = nullptr;
+            return true;
+        }
+    }
     if (state.ValidationRouteTerminalState
         && state.ValidationRouteGeneration == _validationRouteGeneration
         && state.ValidationRouteTerminalGeneration == _validationRouteGeneration)
@@ -12190,12 +12277,13 @@ bool BotWorldPopulationMgr::TryNativeSelfResurrection(WorldBotState& state, Play
 
 bool BotWorldPopulationMgr::TryNativePartyResurrection(WorldBotState& state, Player* healer, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, DungeonTrashActionResult& result)
 {
-    if (!healer || !healer->IsAlive() || healer->IsInCombat() || !healer->GetGroup())
+    if (!healer || !healer->IsAlive() || !healer->GetGroup())
         return false;
 
+    bool groupCombatActive = healer->IsInCombat();
     for (WorldBotState const& cohortState : _bots)
         if (Player* member = GetLoadedBot(cohortState); member && (member->GetVictim() || !member->getAttackers().empty()))
-            return false;
+            groupCombatActive = true;
 
     uint64 nowMs = NowMs();
     Player* deadMember = nullptr;
@@ -12307,6 +12395,8 @@ bool BotWorldPopulationMgr::TryNativePartyResurrection(WorldBotState& state, Pla
             && !spellInfo->HasEffect(SPELL_EFFECT_RESURRECT_WITH_AURA)))
             continue;
         bool combatResurrection = spellInfo->HasAttribute(SPELL_ATTR8_ENFORCE_IN_COMBAT_RESSURECTION_LIMIT);
+        if (groupCombatActive && !combatResurrection)
+            continue;
         resurrectionCandidates.push_back({ spellId, spellInfo, combatResurrection });
     }
     std::sort(resurrectionCandidates.begin(), resurrectionCandidates.end(), [](ResurrectionCandidate const& left, ResurrectionCandidate const& right)
