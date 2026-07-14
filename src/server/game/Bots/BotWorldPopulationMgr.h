@@ -408,6 +408,12 @@ private:
         uint64 NativeResurrectionPendingUntilMs = 0;
         ObjectGuid NativeResurrectionCasterGuid;
         uint32 NativeResurrectionSpellId = 0;
+        ObjectGuid NativeResurrectionRejectedTargetGuid;
+        uint32 NativeResurrectionRejectedSpellId = 0;
+        uint32 NativeResurrectionRejectedCastResult = 0;
+        uint64 NativeResurrectionRetryAfterMs = 0;
+        uint8 NativeResurrectionConsecutiveFailures = 0;
+        uint64 GroupReadinessStableSinceMs = 0;
         uint32 SafePositionTimer = 0;
         uint32 PoiScanTimer = 0;
         uint32 RestTimer = 0;

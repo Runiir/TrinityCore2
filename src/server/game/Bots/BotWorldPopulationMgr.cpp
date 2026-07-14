@@ -33,6 +33,7 @@
 #include "Quests/QuestDef.h"
 #include "Random.h"
 #include "Spell.h"
+#include "SpellAuraEffects.h"
 #include "SpellAuras.h"
 #include "SpellHistory.h"
 #include "SpellInfo.h"
@@ -93,6 +94,29 @@ bool HasPowerForSpell(Player const* bot, SpellInfo const* spellInfo)
     if (spellInfo->PowerType == POWER_HEALTH)
         return int64(bot->GetHealth()) > powerCost;
     return bot->GetPower(Powers(spellInfo->PowerType)) >= uint32(powerCost);
+}
+
+bool CancelRemovableShapeshifts(Player* bot)
+{
+    if (!bot)
+        return false;
+
+    Unit::AuraEffectList const& shapeshiftAuras = bot->GetAuraEffectsByType(SPELL_AURA_MOD_SHAPESHIFT);
+    std::vector<Aura*> removable;
+    for (AuraEffect* effect : shapeshiftAuras)
+    {
+        Aura* aura = effect ? effect->GetBase() : nullptr;
+        SpellInfo const* auraInfo = aura ? aura->GetSpellInfo() : nullptr;
+        if (!auraInfo || auraInfo->HasAttribute(SPELL_ATTR0_NO_AURA_CANCEL)
+            || !auraInfo->IsPositive() || auraInfo->IsPassive())
+            continue;
+        if (std::find(removable.begin(), removable.end(), aura) == removable.end())
+            removable.push_back(aura);
+    }
+
+    for (Aura* aura : removable)
+        bot->RemoveOwnedAura(aura, AuraRemoveFlags::ByCancel);
+    return !removable.empty();
 }
 
 std::string LowerCopy(std::string value)
@@ -3976,6 +4000,26 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         if (state.DeadTimer >= 5000)
         {
             if (state.NativeResurrectionPendingUntilMs > NowMs())
+            {
+                state.DeadTimer = 0;
+                return;
+            }
+            bool certifiedGroupCombatActive = false;
+            if (_config.ValidationRouteEnable)
+            {
+                if (Group* group = bot->GetGroup())
+                    for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
+                        if (Player* member = itr->GetSource(); member && member->IsInWorld()
+                            && (member->IsInCombat() || member->GetVictim() || !member->getAttackers().empty()))
+                        {
+                            certifiedGroupCombatActive = true;
+                            break;
+                        }
+                if (!certifiedGroupCombatActive)
+                    if (InstanceScript* instance = bot->GetInstanceScript())
+                        certifiedGroupCombatActive = instance->IsEncounterInProgress();
+            }
+            if (certifiedGroupCombatActive)
             {
                 state.DeadTimer = 0;
                 return;
@@ -12100,9 +12144,15 @@ bool BotWorldPopulationMgr::TryNativePartyResurrection(WorldBotState& state, Pla
 
     std::string raw = BuildRawJson(healer, deadMember);
     std::string semantic = BuildSemanticJson(healer, deadMember, "validation_route_resurrection", &power, stage, activity);
+    bool attemptedCandidate = false;
     for (ResurrectionCandidate const& candidate : resurrectionCandidates)
     {
         SpellInfo const* spellInfo = candidate.Info;
+        bool rejectedCandidate = state.NativeResurrectionRejectedTargetGuid == deadMember->GetGUID()
+            && state.NativeResurrectionRejectedSpellId == candidate.SpellId
+            && state.NativeResurrectionRetryAfterMs > nowMs;
+        if (rejectedCandidate)
+            continue;
         if (!healer->GetSpellHistory()->IsReady(spellInfo) || !HasPowerForSpell(healer, spellInfo))
             continue;
 
@@ -12127,8 +12177,14 @@ bool BotWorldPopulationMgr::TryNativePartyResurrection(WorldBotState& state, Pla
             healer->GetMotionMaster()->MoveIdle();
         }
         SpellCastResult castResult = healer->CastSpell(deadMember, candidate.SpellId, false);
+        attemptedCandidate = true;
         if (castResult == SPELL_CAST_OK)
         {
+            state.NativeResurrectionRejectedTargetGuid.Clear();
+            state.NativeResurrectionRejectedSpellId = 0;
+            state.NativeResurrectionRejectedCastResult = 0;
+            state.NativeResurrectionRetryAfterMs = 0;
+            state.NativeResurrectionConsecutiveFailures = 0;
             for (WorldBotState& cohortState : _bots)
                 if (cohortState.Guid == deadMember->GetGUID())
                 {
@@ -12148,14 +12204,37 @@ bool BotWorldPopulationMgr::TryNativePartyResurrection(WorldBotState& state, Pla
         std::string castResultLabel = "spell_cast_result_" + std::to_string(uint32(castResult));
         RecordEvent(state, healer, "validation_route_resurrection", deadMember, castResultLabel.c_str(),
             raw.c_str(), semantic.c_str(), healer->GetExactDist(deadMember), 0, candidate.SpellId);
+
+        bool sameRejection = state.NativeResurrectionRejectedTargetGuid == deadMember->GetGUID()
+            && state.NativeResurrectionRejectedSpellId == candidate.SpellId
+            && state.NativeResurrectionRejectedCastResult == uint32(castResult);
+        state.NativeResurrectionConsecutiveFailures = sameRejection
+            ? uint8(std::min<uint32>(255, uint32(state.NativeResurrectionConsecutiveFailures) + 1)) : 1;
+        state.NativeResurrectionRejectedTargetGuid = deadMember->GetGUID();
+        state.NativeResurrectionRejectedSpellId = candidate.SpellId;
+        state.NativeResurrectionRejectedCastResult = uint32(castResult);
+
+        if (castResult == SPELL_FAILED_NOT_SHAPESHIFT && CancelRemovableShapeshifts(healer))
+        {
+            state.NativeResurrectionRetryAfterMs = nowMs + 1000;
+            RecordEvent(state, healer, "validation_route_resurrection", deadMember, "cancelled_shapeshift_for_retry",
+                raw.c_str(), semantic.c_str(), healer->GetExactDist(deadMember), 0, candidate.SpellId);
+            result.Handled = true;
+            result.Action = "cancel_shapeshift_for_native_resurrection";
+            result.Target = deadMember;
+            return true;
+        }
+
+        uint64 retryDelayMs = state.NativeResurrectionConsecutiveFailures >= 2 ? 60000 : 5000;
+        state.NativeResurrectionRetryAfterMs = nowMs + retryDelayMs;
     }
 
     if (resurrectionCandidates.empty())
         return false;
-    result.Handled = true;
-    result.Action = "validation_route_native_resurrection_failed";
-    result.Target = deadMember;
-    return true;
+    if (attemptedCandidate)
+        RecordEvent(state, healer, "validation_route_resurrection", deadMember, "native_candidates_backed_off",
+            raw.c_str(), semantic.c_str(), healer->GetExactDist(deadMember), 0);
+    return false;
 }
 
 bool BotWorldPopulationMgr::TryValidationRouteReadiness(WorldBotState& state, Player* bot, Unit* pullTarget, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, DungeonTrashActionResult& result)
@@ -12164,6 +12243,30 @@ bool BotWorldPopulationMgr::TryValidationRouteReadiness(WorldBotState& state, Pl
         return false;
 
     uint64 const nowMs = NowMs();
+    bool groupStable = true;
+    if (Group* group = bot->GetGroup())
+        for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
+        {
+            Player* member = itr->GetSource();
+            if (!member || !member->IsInWorld() || !member->IsAlive() || member->IsInCombat()
+                || member->GetVictim() || !member->getAttackers().empty())
+            {
+                groupStable = false;
+                break;
+            }
+        }
+    if (!groupStable)
+    {
+        state.GroupReadinessStableSinceMs = 0;
+        return false;
+    }
+    if (!state.GroupReadinessStableSinceMs)
+    {
+        state.GroupReadinessStableSinceMs = nowMs;
+        return false;
+    }
+    if (nowMs - state.GroupReadinessStableSinceMs < 10000)
+        return false;
 
     struct ActiveBuffRequirement
     {

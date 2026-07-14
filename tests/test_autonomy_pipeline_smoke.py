@@ -2318,13 +2318,13 @@ def test_validation_route_healer_uses_native_party_resurrection():
     assert "healer->HasSpell(spellId)" in native
     assert "healer->IsWithinLOSInMap(deadMember)" in native
     assert "healer->IsWithinDistInMap(deadMember, resurrectionRange)" in native
-    assert "healer->CastSpell(deadMember, resurrectionSpellId, false)" in native
+    assert "healer->CastSpell(deadMember, candidate.SpellId, false)" in native
     assert "deadMember->GetSession()" in native
     assert "member->GetSession()->IsBotSession()" in native
     assert "candidate.Guid == member->GetGUID()" in native
     assert "deadMemberPriority" in native
-    assert "member->IsResurrectRequestedBy(healer->GetGUID()) ? 2" in native
-    assert "memberState->NativeResurrectionPendingUntilMs > NowMs()" in native
+    assert "requestedByHealer ? 2" in native
+    assert "memberState->NativeResurrectionPendingUntilMs > nowMs" in native
     assert "deadMember->IsResurrectRequestedBy(healer->GetGUID())" in native
     assert "HandleResurrectResponseOpcode(response)" in native
     assert "HandleMoveTeleportAck(ack)" in native
@@ -2342,10 +2342,38 @@ def test_validation_route_healer_uses_native_party_resurrection():
     assert "for (ResurrectionCandidate const& candidate : resurrectionCandidates)" in native
     assert '"spell_cast_result_" + std::to_string(uint32(castResult))' in native
     assert "healer->GetSpellMaxRangeForTarget(deadMember, spellInfo)" in native
+    assert "NativeResurrectionRejectedTargetGuid" in header
+    assert "NativeResurrectionRejectedSpellId" in header
+    assert "NativeResurrectionRejectedCastResult" in header
+    assert "NativeResurrectionRetryAfterMs" in header
+    assert "NativeResurrectionConsecutiveFailures" in header
+    assert "rejectedCandidate" in native
+    assert "CancelRemovableShapeshifts(healer)" in native
+    assert 'result.Action = "cancel_shapeshift_for_native_resurrection"' in native
+    assert '"native_candidates_backed_off"' in native
+    assert "state.NativeResurrectionConsecutiveFailures >= 2 ? 60000 : 5000" in native
+    assert 'result.Action = "validation_route_native_resurrection_failed"' not in native
     assert "ResurrectUsingRequestData" not in native
     assert "ResurrectPlayer" not in native
     assert "NearTeleportTo" not in native
     assert "TeleportTo(" not in native
+
+
+def test_certified_recovery_waits_for_group_combat_and_rebuffs_after_stability():
+    mgr = read(BOT_MGR)
+    header = read(BOT_MGR_HEADER)
+    update_bot = function_body(mgr, "void BotWorldPopulationMgr::UpdateBot")
+    readiness = function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteReadiness")
+
+    assert "uint64 GroupReadinessStableSinceMs = 0;" in header
+    assert "certifiedGroupCombatActive" in update_bot
+    assert "instance->IsEncounterInProgress()" in update_bot
+    assert_ordered(update_bot, "if (certifiedGroupCombatActive)", "RecoverDeadBot(state, bot)")
+    assert "member->IsInCombat()" in readiness
+    assert "member->GetVictim()" in readiness
+    assert "!member->getAttackers().empty()" in readiness
+    assert "state.GroupReadinessStableSinceMs = 0;" in readiness
+    assert "nowMs - state.GroupReadinessStableSinceMs < 10000" in readiness
 
 
 def test_telemetry_frame_action_is_bounded_to_schema_width():
