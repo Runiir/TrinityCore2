@@ -1954,6 +1954,11 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         assert required in resolved_transition_block
     for generic_state in ["IsValidAttackTarget", "IsInEvadeMode", "UNIT_STATE_EVADE", "hasStrictPathToValidationRouteTarget", "IsWithinLOSInMap"]:
         assert generic_state not in transition_block
+    natural_pack_member_block = route_objective.split("auto isNaturalValidationRoutePackMember", 1)[1].split(
+        "auto enrollValidationRoutePackMember", 1
+    )[0]
+    assert "_validationRoutePendingFinalTransitionGuids.find(creature->GetGUID())" in natural_pack_member_block
+    assert "_validationRouteFinalTransitionGuids.find(creature->GetGUID())" in natural_pack_member_block
     assert "_validationRoutePackTransitionGuids.find(guid) == _validationRoutePackTransitionGuids.end()" in route_objective
     assert_ordered(
         mgr,

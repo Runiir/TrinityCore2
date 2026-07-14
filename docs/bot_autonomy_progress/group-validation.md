@@ -17,6 +17,9 @@
 - The run then exposed a forward-progress defect: two damage dealers selected the previous route anchor while retreating after the Crystalspawn corridor wipe and became stranded behind the Corborus transition.
 - Tactical retreat is now pinned to the current route node's navigation anchor. This preserves natural leash recovery without allowing recovery movement to cross a completed one-way encounter transition.
 - Raw run 081 diagnostics and its compact role-efficiency report were pushed to DVC, then evicted locally to minimize disk use.
+- Run 082 remained deathless for 31 kills with no stuck or repeated-decision events. Role telemetry showed 97.3% successful healing casts, zero tank cast failures, and strong DPS active-action coverage before the route blocker.
+- The remaining hunter cast failures and reduced threat-retention sample were attempts against transitioned, mechanic-immune Millhouse. The pending scripted-transition GUID was being re-enrolled from a stale combat reference after each discovered pack terminal.
+- Pending final-transition GUIDs are now excluded from natural pack enrollment until node completion promotes them to the final exclusion set. Run 082 raw evidence and its compact audit were pushed to DVC and evicted locally before this change.
 
 ## 2026-06-20
 

@@ -7473,6 +7473,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     {
         if (!bot || !creature || !creature->IsAlive() || !creature->GetHealth() || creature->GetMap() != bot->GetMap())
             return false;
+        if (_validationRoutePendingFinalTransitionGuids.find(creature->GetGUID()) != _validationRoutePendingFinalTransitionGuids.end())
+            return false;
         if (_validationRouteFinalTransitionGuids.find(creature->GetGUID()) != _validationRouteFinalTransitionGuids.end())
             return false;
         if (creature->IsDungeonBoss() || creature->isWorldBoss())
