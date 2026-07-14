@@ -1851,6 +1851,15 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     assert 'RecordEvent(state, bot, "validation_route_recovery", prerequisiteTarget, "unengaged_trash_target_repath"' in route_objective
     assert_ordered(
         route_objective,
+        "Regroup and descent nodes must not suppress a natural pull",
+        "bool arrivalCombatActive = arrivalRoute && validationPartyHasActiveCombat();",
+        "if (arrivalCombatActive)",
+        "enrollEngagedValidationRoutePackMembers();",
+        "if (arrivalRoute && !arrivalCombatActive)",
+        "bot->CombatStop(true);",
+    )
+    assert_ordered(
+        route_objective,
         "A fresh trash node can expose its scripted target",
         'if (_config.ValidationRouteKind != "boss" && !_validationRoutePackObservedEngagement)',
         'RecordEvent(state, bot, "validation_route_recovery", prerequisiteTarget, "unengaged_trash_target_repath"',

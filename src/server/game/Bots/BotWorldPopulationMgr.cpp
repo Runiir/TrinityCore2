@@ -10035,7 +10035,14 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         }
         return true;
     }
-    if (arrivalRoute)
+    // Regroup and descent nodes must not suppress a natural pull merely because
+    // the cohort reached the navigation anchor. Finish every active attacker
+    // before marking arrival; otherwise mobs can evade back across a one-way
+    // descent and poison the following trash ledger with unreachable survivors.
+    bool arrivalCombatActive = arrivalRoute && validationPartyHasActiveCombat();
+    if (arrivalCombatActive)
+        enrollEngagedValidationRoutePackMembers();
+    if (arrivalRoute && !arrivalCombatActive)
     {
         bot->AttackStop();
         bot->CombatStop(true);
