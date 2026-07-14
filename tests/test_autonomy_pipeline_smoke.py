@@ -1846,6 +1846,16 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     assert "_config.ValidationRouteExpectedAliveCount && _metrics.Kills - _validationRouteProgressBaselineKills < _config.ValidationRouteExpectedAliveCount" not in trash_liveness_block
     assert "cohortState.LastCombatAttempt = WorldBotState::CombatAttemptDiagnostic();" in route_objective
     assert "cohortState.LastRouteProgress = WorldBotState::RouteProgressDiagnostic();" in route_objective
+    assert 'std::string(GetDungeonRole(bot)) != "tank"' in route_objective
+    assert 'cohortState.LastNoProgressReason = "unengaged_trash_target_repath";' in route_objective
+    assert 'RecordEvent(state, bot, "validation_route_recovery", prerequisiteTarget, "unengaged_trash_target_repath"' in route_objective
+    assert_ordered(
+        route_objective,
+        "A fresh trash node can expose its scripted target",
+        'if (_config.ValidationRouteKind != "boss" && !_validationRoutePackObservedEngagement)',
+        'RecordEvent(state, bot, "validation_route_recovery", prerequisiteTarget, "unengaged_trash_target_repath"',
+        'markValidationRouteTrashFailed(prerequisiteTarget, "validation_trash_no_progress"',
+    )
     assert 'markTrashClusterCleared("trash_cluster_expected_empty");' not in route_objective
     assert "&& !_config.ValidationRouteExpectedAliveCount" not in route_objective
     assert_ordered(
@@ -2016,6 +2026,9 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     assert "_config.ValidationRouteZ = node.NavigationAnchorZ;" in apply_node
     assert "_config.ValidationRouteO = node.NavigationAnchorO;" in apply_node
     assert "_config.ValidationRouteTargetEntry = node.NodeKind == \"discovery_leg\" ? 0 : node.TargetEntry;" in apply_node
+    reset_route = function_body(mgr, "void BotWorldPopulationMgr::ResetValidationRouteRuntimeState")
+    assert "state.LastCombatAttempt = WorldBotState::CombatAttemptDiagnostic();" in reset_route
+    assert "state.LastRouteProgress = WorldBotState::RouteProgressDiagnostic();" in reset_route
     assert "_validationRoutePendingFinalTransitionGuids.clear();" in apply_node
     assert "_validationRouteFinalTransitionGuids.clear();" in mgr
     enrollment_scan = route_objective.split("auto enrollEngagedValidationRoutePackMembers", 1)[1].split("auto persistedValidationRoutePackHasLiveMembers", 1)[0]

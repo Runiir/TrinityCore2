@@ -1990,6 +1990,7 @@ void BotWorldPopulationMgr::ResetValidationRouteRuntimeState(char const* reason)
         state.ValidationRoutePackProgressTargetGuid.Clear();
         state.ValidationRoutePackBestHealthPct = 1.0f;
         state.ValidationRoutePackNoProgressCount = 0;
+        state.LastCombatAttempt = WorldBotState::CombatAttemptDiagnostic();
         state.LastRouteProgress = WorldBotState::RouteProgressDiagnostic();
         state.ValidationRouteActivationApplied = false;
         state.ValidationRouteActivationAttempts = 0;
@@ -8460,6 +8461,42 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         refreshRouteProgress(context, noProgressThreshold);
         if (state.ValidationRouteCombatNoProgressCount < noProgressThreshold)
             return false;
+
+        // A fresh trash node can expose its scripted target before the cohort has
+        // reached or engaged it. Treat that as a navigation retry, not combat
+        // evidence, and never latch a certifying failure terminal for it.
+        if (_config.ValidationRouteKind != "boss" && !_validationRoutePackObservedEngagement)
+        {
+            if (std::string(GetDungeonRole(bot)) != "tank")
+            {
+                state.ValidationRouteCombatNoProgressCount = 0;
+                state.ValidationRoutePackNoProgressCount = 0;
+                return false;
+            }
+
+            std::string raw = BuildRawJson(bot, prerequisiteTarget);
+            std::string semantic = BuildSemanticJson(bot, prerequisiteTarget, "validation_route_unengaged_trash_repath", &power, stage, activity);
+            RecordEvent(state, bot, "validation_route_recovery", prerequisiteTarget, "unengaged_trash_target_repath", raw.c_str(), semantic.c_str(), healthPct, _config.ValidationRouteTargetEntry);
+            uint64 nowMs = NowMs();
+            for (WorldBotState& cohortState : _bots)
+            {
+                if (Player* member = GetLoadedBot(cohortState))
+                    member->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+                cohortState.TargetGuid.Clear();
+                cohortState.ValidationRouteCombatProgressTargetGuid.Clear();
+                cohortState.ValidationRoutePackProgressTargetGuid.Clear();
+                cohortState.ValidationRouteCombatBestHealthPct = 1.0f;
+                cohortState.ValidationRoutePackBestHealthPct = 1.0f;
+                cohortState.ValidationRouteCombatNoProgressCount = 0;
+                cohortState.ValidationRoutePackNoProgressCount = 0;
+                cohortState.LastCombatAttempt = WorldBotState::CombatAttemptDiagnostic();
+                cohortState.LastRouteProgress = WorldBotState::RouteProgressDiagnostic();
+                cohortState.ActivePathValid = false;
+                cohortState.LastNoProgressReason = "unengaged_trash_target_repath";
+                cohortState.LoopRecoveryCooldownUntilMs = nowMs + 3000;
+            }
+            return true;
+        }
 
         std::string raw = BuildRawJson(bot, prerequisiteTarget);
         std::string semantic = BuildSemanticJson(bot, prerequisiteTarget, "validation_route_prerequisite_no_progress", &power, stage, activity);

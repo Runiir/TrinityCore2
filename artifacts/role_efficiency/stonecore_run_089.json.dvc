@@ -1,0 +1,5 @@
+outs:
+- md5: 3ae3d8a4e42fe6cb4853399d46dc0a24
+  size: 5398
+  hash: md5
+  path: stonecore_run_089.json
