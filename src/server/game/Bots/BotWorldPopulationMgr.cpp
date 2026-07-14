@@ -9883,20 +9883,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             float retreatX = _config.ValidationRouteX;
             float retreatY = _config.ValidationRouteY;
             float retreatZ = _config.ValidationRouteZ;
-            if (_validationRouteManifestIndex > 0)
-            {
-                ValidationRouteManifestNode const& previous = _validationRouteManifest[_validationRouteManifestIndex - 1];
-                float previousX = previous.NavigationAnchorX != 0.0f ? previous.NavigationAnchorX : previous.X;
-                float previousY = previous.NavigationAnchorY != 0.0f ? previous.NavigationAnchorY : previous.Y;
-                float previousZ = previous.NavigationAnchorZ != 0.0f ? previous.NavigationAnchorZ : previous.Z;
-                if (!retreatThreat || retreatThreat->GetExactDist(previousX, previousY, previousZ)
-                    > retreatThreat->GetExactDist(retreatX, retreatY, retreatZ))
-                {
-                    retreatX = previousX;
-                    retreatY = previousY;
-                    retreatZ = previousZ;
-                }
-            }
 
             bot->AttackStop();
             state.TargetGuid.Clear();

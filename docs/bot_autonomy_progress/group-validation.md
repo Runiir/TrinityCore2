@@ -11,6 +11,13 @@
 - `pixi run dvc repro validation_run_status`, `pixi run dvc repro world_planner_validate`, and `pixi run dvc repro live_validation_combined` completed.
 - `pixi run dvc status` reports data and pipelines up to date.
 
+## 2026-07-14
+
+- Stonecore run 081 naturally killed Corborus and demonstrated wipe recovery through ordinary tactical retreat, combat disengagement, and native resurrection; it used no forced combat, death, resurrection, or terminal state.
+- The run then exposed a forward-progress defect: two damage dealers selected the previous route anchor while retreating after the Crystalspawn corridor wipe and became stranded behind the Corborus transition.
+- Tactical retreat is now pinned to the current route node's navigation anchor. This preserves natural leash recovery without allowing recovery movement to cross a completed one-way encounter transition.
+- Raw run 081 diagnostics and its compact role-efficiency report were pushed to DVC, then evicted locally to minimize disk use.
+
 ## 2026-06-20
 
 - Hardened `tools/bot_ml/build_validation_run_status.py` so route-node id drift between regenerated validation plans and older live segment artifacts is reported as `warnings: ["route_node_id_drift"]` instead of invalidating otherwise matching segment evidence.
