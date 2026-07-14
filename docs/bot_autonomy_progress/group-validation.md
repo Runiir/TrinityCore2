@@ -23,6 +23,10 @@
 - Run 083 cleared four discovery packs and reached 37 deathless kills with no stuck, repath, or repeated-decision events. Tank threat retention improved to 90.7%, confirming the run 082 threat flag was transition-contaminated.
 - The completed fourth pack could not become terminal because party-wide active-combat detection still counted Millhouse's pending-transition stale combat reference. Pending/final transition GUIDs are now excluded from that predicate, and ineligible route targets are hard-rejected before profile action submission.
 - Run 083 raw evidence and compact role audit were pushed to DVC and evicted locally. Its 86.5% healing submission success remains a separate role-quality signal for later matched evidence; the party had zero deaths.
+- Run 084 naturally killed Corborus, recovered the entire group after a four-death Crystalspawn wipe, advanced through the corridor, and engaged Slabhide. It ended with a worldserver SIGSEGV at Slabhide 11.5%, not a route or watchdog failure; no core was retained by the host crash handler.
+- Matched role telemetry improved to 97.3% healing success and 93.7% tank threat retention. The only role gate was 22.5% hunter cast failure, all `TOO_CLOSE` on large bosses.
+- Hunter minimum range is now derived from each spell's hostile minimum plus caster/target melee reach, with the profile minimum as a floor. The resolved action carries that range into movement planning before cast submission.
+- Run 084 raw evidence and compact role audit were pushed to DVC and evicted locally.
 
 ## 2026-06-20
 

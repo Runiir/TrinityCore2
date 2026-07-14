@@ -2026,6 +2026,16 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     assert "bot->AttackStop();" in ineligible_target_block
     assert "state.TargetGuid.Clear();" in ineligible_target_block
     assert "target = nullptr;" in ineligible_target_block
+    profile_action = function_body(mgr, "ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction")
+    for required in [
+        "auto effectiveSpellMinRange",
+        "bot->GetSpellMinRangeForTarget(target, spellInfo)",
+        "spellInfo->RangeEntry->Flags & SPELL_RANGE_RANGED",
+        "spellMinRange += bot->GetMeleeRange(target)",
+        "action.MinRange = std::max(action.MinRange, minRange)",
+        "action.MinRange = effectiveSpellMinRange(*best, action.MinRange)",
+    ]:
+        assert required in profile_action
     assert_ordered(
         route_objective,
         "_validationRoutePackMemberGuids.insert(killedTarget->GetGUID());",

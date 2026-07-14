@@ -13149,6 +13149,17 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
     RoleSaturationState saturation = BuildRoleSaturationState(bot, target, role.c_str());
     std::string roleGoal = BotProgressionGoalPolicy::RoleGoal(role);
     std::vector<BotActionCandidate> candidates = BotClassSpecActionProfileStore::BuildCandidates(bot, target, profile);
+    auto effectiveSpellMinRange = [bot, target](BotActionCandidate const& candidate, float configuredMinRange) -> float
+    {
+        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(candidate.SpellId);
+        if (!spellInfo)
+            return configuredMinRange;
+
+        float spellMinRange = bot->GetSpellMinRangeForTarget(target, spellInfo);
+        if (spellInfo->RangeEntry && (spellInfo->RangeEntry->Flags & SPELL_RANGE_RANGED))
+            spellMinRange += bot->GetMeleeRange(target);
+        return std::max(configuredMinRange, spellMinRange);
+    };
 
     if (!hostileCount)
     {
@@ -13287,6 +13298,8 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         }
         float distance = selfTarget ? 0.0f : bot->GetExactDist(actionTarget);
         float minRange = candidate.Profile.MinRange > 0.0f ? candidate.Profile.MinRange : profile.MinRange;
+        if (!selfTarget)
+            minRange = effectiveSpellMinRange(candidate, minRange);
         float maxRange = candidate.Profile.MaxRange > 0.0f ? candidate.Profile.MaxRange : profile.MaxRange;
         if (candidate.Profile.MaxRange <= 0.0f)
             if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(candidate.SpellId))
@@ -13303,6 +13316,7 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         }
         if (minRange > 0.0f && distance < minRange)
         {
+            action.MinRange = std::max(action.MinRange, minRange);
             candidate.RejectReason = "min_range_required";
             continue;
         }
@@ -13379,6 +13393,8 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
     action.MovementDirective = best->Profile.MovementDirective.empty() ? profile.MovementDirective : best->Profile.MovementDirective;
     action.AutoAttackMode = best->Profile.AutoAttackMode.empty() ? profile.AutoAttackMode : best->Profile.AutoAttackMode;
     action.MinRange = best->Profile.MinRange > 0.0f ? best->Profile.MinRange : profile.MinRange;
+    if (best->Profile.TargetSelector != "self")
+        action.MinRange = effectiveSpellMinRange(*best, action.MinRange);
     action.MaxRange = best->Profile.MaxRange > 0.0f ? best->Profile.MaxRange : profile.MaxRange;
     if (best->Profile.MaxRange <= 0.0f)
         if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(best->SpellId))
