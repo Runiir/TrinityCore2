@@ -414,6 +414,9 @@ private:
         uint64 NativeResurrectionRetryAfterMs = 0;
         uint8 NativeResurrectionConsecutiveFailures = 0;
         uint64 GroupReadinessStableSinceMs = 0;
+        ObjectGuid ValidationRouteDodgeCasterGuid;
+        uint32 ValidationRouteDodgeSpellId = 0;
+        uint64 ValidationRouteDodgeUntilMs = 0;
         uint32 SafePositionTimer = 0;
         uint32 PoiScanTimer = 0;
         uint32 RestTimer = 0;

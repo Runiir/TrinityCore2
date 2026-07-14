@@ -187,3 +187,11 @@ Continue from run 073, not run 072. Restore only the run-073 pointer when exact 
 Next handoff:
 
 Rebuild exact HEAD after the Divine Plea readiness removal and run 075 in uninterrupted manifest mode. Confirm the recovered cohort walks back to the persisted live pack member and terminalizes generation 1 without weakening the eleven-member ledger. Continue measuring actual hostile cast submissions and kill cadence; run 074 reached only about 84 kills/hour before the wipe, so end-to-end completion and good DPS uptime remain unproven.
+
+Live run 075:
+
+- Run 075 used exact revision `3201c2ab94ce`, the uninterrupted eight-node manifest, and strict `300/900` watchdog settings. It produced seven natural kills, nine truthful deaths with legal post-combat recovery, zero stuck/death-loop/repeated-decision events, and zero teacher assistance.
+- The Divine Plea removal passed live acceptance: after the first wipe, the recovered cohort walked back to the persisted pack, re-engaged it, and advanced from six to seven kills. The former readiness hold did not recur.
+- Millhouse reached 13.7186% health, but every bot treated the same ground-danger cast as a fresh dodge each second. Repeated 8-yard moves scattered the group roughly 240 yards away; the run then stopped on the semantic plateau watchdog with Millhouse as the one live member in an eight-member, seven-death ledger.
+- Ground-danger handling now reserves one dodge per bot/caster/spell for three seconds after a successful move (500 ms after a rejected move). Later casts and persistent danger remain eligible; the same cast window cannot issue an unbounded movement chain.
+- The 25-file run artifact was pushed immediately as `artifacts/live_validation_instances/stonecore_clear_series_run_01_075.dvc` and reported remote status current before local eviction.

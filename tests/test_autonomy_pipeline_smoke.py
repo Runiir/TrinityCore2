@@ -2678,6 +2678,22 @@ def test_validation_route_high_density_adds_use_shared_escape_and_fail_closed_to
     assert "executor.Pull" not in density_branch
 
 
+def test_validation_route_ground_danger_dodge_is_reserved_per_cast_window():
+    mgr = read(BOT_MGR)
+    header = read(BOT_MGR_HEADER)
+    objective = function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    movement = objective[objective.index("auto tryValidationRouteMovementCheck"):objective.index("auto tryValidationRouteAdds")]
+
+    assert "ValidationRouteDodgeCasterGuid" in header
+    assert "ValidationRouteDodgeSpellId" in header
+    assert "ValidationRouteDodgeUntilMs" in header
+    assert "state.ValidationRouteDodgeCasterGuid == caster->GetGUID()" in movement
+    assert "state.ValidationRouteDodgeSpellId == castSpell->Id" in movement
+    assert "state.ValidationRouteDodgeUntilMs > nowMs" in movement
+    assert "state.ValidationRouteDodgeUntilMs = nowMs + (moved ? 3000 : 500);" in movement
+    assert_ordered(movement, "ValidationRouteDodgeUntilMs > nowMs", "MoveBotToPoint", "ValidationRouteDodgeUntilMs = nowMs")
+
+
 def test_density_action_anchor_is_local_range_compatible_and_not_shared_cleanup_focus():
     objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
     start = objective.index("auto tryValidationRouteAdds")
