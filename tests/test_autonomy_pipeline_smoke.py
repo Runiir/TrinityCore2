@@ -256,10 +256,11 @@ def test_playerbot_runtime_roles_drive_universal_profile_combat():
     execute_combat = function_body(executor, "BotActionResult BotActionExecutor::ExecuteCombat")
     assert_ordered(
         execute_combat,
-        "BotActionResult check = CheckHostileSpell(owner, bot, target, action.SpellId);",
         'action.AutoAttackMode == "melee"',
         "bot->Attack(target, true);",
-        "SpellCastResult result = bot->CastSpell(target, action.SpellId, false);",
+        "BotActionResult check = CheckHostileSpell(owner, bot, target, action.SpellId);",
+        "TARGET_FLAG_DEST_LOCATION",
+        ": bot->CastSpell(target, action.SpellId, false);",
     )
 
 

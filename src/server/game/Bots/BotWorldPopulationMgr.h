@@ -346,6 +346,7 @@ private:
     {
         struct CombatAttemptDiagnostic
         {
+            uint64 RecordedAtMs = 0;
             std::string Phase;
             std::string ActionType;
             uint32 SpellId = 0;
@@ -363,6 +364,9 @@ private:
             bool InRange = false;
             bool TargetAlive = false;
             bool TargetAttackable = false;
+            bool MeleeAutoAttacking = false;
+            bool RangedAutoActive = false;
+            bool PetAttacking = false;
             std::string Reason;
             std::string Summary;
         };

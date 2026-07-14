@@ -2,6 +2,8 @@
 #include "DataStores/DBCStores.h"
 #include "Entities/Item/Container/Bag.h"
 #include "Entities/Item/Item.h"
+#include "Entities/Pet/Pet.h"
+#include "AI/CreatureAI.h"
 #include "MotionMaster.h"
 #include "ObjectAccessor.h"
 #include "Player.h"
@@ -152,6 +154,25 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
     if (target != bot)
         Face(bot, target);
 
+    // White swings, Auto Shot, and pet attacks are independent sources of role
+    // uptime.  Start them before checking the selected ability so a GCD or
+    // cooldown does not leave a tank, melee DPS, or hunter doing no damage.
+    if (target != bot && bot->IsValidAttackTarget(target))
+    {
+        if (action.AutoAttackMode == "melee")
+            bot->Attack(target, true);
+        else if (action.AutoAttackMode == "ranged" && bot->getClass() == CLASS_HUNTER)
+        {
+            if (!bot->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL))
+                bot->CastSpell(target, 75, false); // Auto Shot
+
+            if (Pet* pet = bot->GetPet())
+                if (pet->IsAlive() && pet->AI() && pet->IsValidAttackTarget(target)
+                    && (!pet->GetVictim() || pet->GetVictim() == target))
+                    pet->AI()->AttackStart(target);
+        }
+    }
+
     BotActionResult check = CheckHostileSpell(owner, bot, target, action.SpellId);
     if (check != BotActionResult::Ok)
     {
@@ -163,9 +184,6 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
     if (IsThrottled(bot->GetGUID(), action.SpellId, action.TargetGuid))
         return BotActionResult::Throttled;
 
-    if (target && target != bot && bot->IsValidAttackTarget(target) && action.AutoAttackMode == "melee")
-        bot->Attack(target, true);
-
     SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(action.SpellId);
     if (spellInfo && spellInfo->CalcCastTime(bot->getLevel()) > 0)
     {
@@ -174,7 +192,9 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
         bot->GetMotionMaster()->MoveIdle();
     }
 
-    SpellCastResult result = bot->CastSpell(target, action.SpellId, false);
+    SpellCastResult result = spellInfo && (spellInfo->GetExplicitTargetMask() & TARGET_FLAG_DEST_LOCATION)
+        ? bot->CastSpell(Position{ target->GetPositionX(), target->GetPositionY(), target->GetPositionZ() }, action.SpellId, false)
+        : bot->CastSpell(target, action.SpellId, false);
     if (result != SPELL_CAST_OK)
     {
         RecordFailure(bot->GetGUID(), action.SpellId, action.TargetGuid);

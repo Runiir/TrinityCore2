@@ -66,6 +66,7 @@ CREATE TABLE IF NOT EXISTS `bot_rotation_action` (
   `max_attackers` TINYINT UNSIGNED NOT NULL DEFAULT 0,
   `requires_stationary` TINYINT UNSIGNED NOT NULL DEFAULT 0,
   `requires_moving` TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  `required_self_aura_stacks` TINYINT UNSIGNED NOT NULL DEFAULT 0,
   `enabled` TINYINT UNSIGNED NOT NULL DEFAULT 1,
   PRIMARY KEY (`id`),
   KEY `idx_bot_rotation_action_profile` (`profile_id`, `enabled`, `priority_bucket`, `sort_order`),
@@ -81,7 +82,8 @@ ALTER TABLE `bot_rotation_action`
   ADD COLUMN IF NOT EXISTS `min_attackers` TINYINT UNSIGNED NOT NULL DEFAULT 0 AFTER `max_mana_pct`,
   ADD COLUMN IF NOT EXISTS `max_attackers` TINYINT UNSIGNED NOT NULL DEFAULT 0 AFTER `min_attackers`,
   ADD COLUMN IF NOT EXISTS `requires_stationary` TINYINT UNSIGNED NOT NULL DEFAULT 0 AFTER `max_attackers`,
-  ADD COLUMN IF NOT EXISTS `requires_moving` TINYINT UNSIGNED NOT NULL DEFAULT 0 AFTER `requires_stationary`;
+  ADD COLUMN IF NOT EXISTS `requires_moving` TINYINT UNSIGNED NOT NULL DEFAULT 0 AFTER `requires_stationary`,
+  ADD COLUMN IF NOT EXISTS `required_self_aura_stacks` TINYINT UNSIGNED NOT NULL DEFAULT 0 AFTER `requires_moving`;
 
 DELETE a FROM `bot_rotation_action` a JOIN `bot_rotation_profile` p ON p.`id` = a.`profile_id`
 WHERE p.`source_note` = 'stonecore_5n_cata_guide_seed';

@@ -667,6 +667,15 @@ BotActionCandidate const* BotController::SelectProfileCombatAction(Player* bot, 
             candidate.RejectReason = "missing_self_aura";
             continue;
         }
+        if (candidate.Profile.RequiredSelfAuraStacks)
+        {
+            Aura const* aura = candidate.Profile.RequiredSelfAura ? bot->GetAura(candidate.Profile.RequiredSelfAura) : nullptr;
+            if (!aura || aura->GetStackAmount() < candidate.Profile.RequiredSelfAuraStacks)
+            {
+                candidate.RejectReason = "insufficient_self_aura_stacks";
+                continue;
+            }
+        }
         if (candidate.Profile.ForbiddenSelfAura && bot->HasAura(candidate.Profile.ForbiddenSelfAura))
         {
             candidate.RejectReason = "forbidden_self_aura";

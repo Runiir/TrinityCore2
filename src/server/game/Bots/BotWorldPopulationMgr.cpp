@@ -3432,7 +3432,8 @@ std::string BotWorldPopulationMgr::BuildRouteProgressSummary(WorldBotState::Rout
 std::string BotWorldPopulationMgr::BuildCombatAttemptJson(WorldBotState::CombatAttemptDiagnostic const& diagnostic) const
 {
     std::ostringstream json;
-    json << "{\"phase\":\"" << JsonEscape(diagnostic.Phase) << "\""
+    json << "{\"recorded_at_ms\":" << diagnostic.RecordedAtMs
+         << ",\"phase\":\"" << JsonEscape(diagnostic.Phase) << "\""
          << ",\"action\":{\"spell_id\":" << diagnostic.SpellId
          << ",\"debug_name\":\"" << JsonEscape(diagnostic.DebugName) << "\""
          << ",\"action_type\":\"" << JsonEscape(diagnostic.ActionType) << "\""
@@ -3450,6 +3451,9 @@ std::string BotWorldPopulationMgr::BuildCombatAttemptJson(WorldBotState::CombatA
          << ",\"in_range\":" << (diagnostic.InRange ? "true" : "false")
          << ",\"target_alive\":" << (diagnostic.TargetAlive ? "true" : "false")
          << ",\"target_attackable\":" << (diagnostic.TargetAttackable ? "true" : "false") << "}}"
+         << ",\"uptime\":{\"melee_auto_attacking\":" << (diagnostic.MeleeAutoAttacking ? "true" : "false")
+         << ",\"ranged_auto_active\":" << (diagnostic.RangedAutoActive ? "true" : "false")
+         << ",\"pet_attacking\":" << (diagnostic.PetAttacking ? "true" : "false") << "}"
          << ",\"summary\":\"" << JsonEscape(diagnostic.Summary) << "\"}";
     return json.str();
 }
@@ -3478,6 +3482,7 @@ std::string BotWorldPopulationMgr::BuildRouteProgressJson(WorldBotState::RoutePr
 void BotWorldPopulationMgr::RecordCombatAttempt(WorldBotState& state, Player* bot, Unit* target, char const* phase, ResolvedCombatAction const* action, BotActionResult result, char const* reason) const
 {
     WorldBotState::CombatAttemptDiagnostic diagnostic;
+    diagnostic.RecordedAtMs = NowMs();
     diagnostic.Phase = phase ? phase : "cast";
     diagnostic.ActionType = action ? action->Type : "wait";
     diagnostic.SpellId = action ? action->SpellId : 0;
@@ -3506,6 +3511,11 @@ void BotWorldPopulationMgr::RecordCombatAttempt(WorldBotState& state, Player* bo
     diagnostic.InRange = bot && actionTarget && spellInfo && bot->IsWithinDistInMap(actionTarget, std::max(5.0f, spellInfo->GetMaxRange(false)));
     diagnostic.TargetAlive = actionTarget && actionTarget->IsAlive();
     diagnostic.TargetAttackable = bot && actionTarget && (actionTarget == bot || (spellInfo ? bot->IsValidAttackTarget(actionTarget, spellInfo) : bot->IsValidAttackTarget(actionTarget)));
+    diagnostic.MeleeAutoAttacking = bot && bot->HasUnitState(UNIT_STATE_MELEE_ATTACKING) && bot->GetVictim();
+    diagnostic.RangedAutoActive = bot && bot->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL);
+    if (bot)
+        if (Pet* pet = bot->GetPet())
+            diagnostic.PetAttacking = pet->IsAlive() && pet->GetVictim();
     if (reason && *reason)
         diagnostic.Reason = reason;
     else if (!spellInfo && diagnostic.SpellId)
@@ -7064,6 +7074,15 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (!lowestTarget)
             return false;
 
+        // The tank is the group's only stable threat owner.  At critical health
+        // it takes precedence over a marginally lower DPS target; otherwise the
+        // normal lowest-health triage remains in effect.
+        if (tankTarget && UnitHealthPct(tankTarget) <= 0.60f)
+        {
+            lowestTarget = tankTarget;
+            lowestHealthPct = UnitHealthPct(tankTarget);
+        }
+
         if (combatTarget)
         {
             std::string raw = BuildRawJson(healer, combatTarget);
@@ -7084,12 +7103,16 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         bool healBlockedByCastState = false;
         for (BotActionProfileSpell const& spell : profile.Spells)
         {
-            if (!spell.SpellId || !healer->HasSpell(spell.SpellId) || spell.HealingWeight <= 0.0f)
+            if (!spell.SpellId || !healer->HasSpell(spell.SpellId))
                 continue;
 
+            bool externalDefensive = spell.Category == BotCombatActionCategory::ExternalDefensive;
+            if (!externalDefensive && spell.HealingWeight <= 0.0f)
+                continue;
             if (spell.Category != BotCombatActionCategory::HealFast
                 && spell.Category != BotCombatActionCategory::HealEfficient
-                && spell.Category != BotCombatActionCategory::HealAoe)
+                && spell.Category != BotCombatActionCategory::HealAoe
+                && !externalDefensive)
                 continue;
 
             SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spell.SpellId);
@@ -7111,6 +7134,33 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 || (spell.MaintainAuraId && candidateTarget->HasAura(spell.MaintainAuraId)))
                 continue;
 
+            uint32 injuredPlayers = 0;
+            float injuredThreshold = spell.InjuredHealthPct > 0.0f ? spell.InjuredHealthPct : 1.0f;
+            auto countInjured = [&](Player* member)
+            {
+                if (member && member->IsAlive() && member->GetMap() == healer->GetMap()
+                    && UnitHealthPct(member) < injuredThreshold)
+                    ++injuredPlayers;
+            };
+            if (Group* group = healer->GetGroup())
+                for (GroupReference* itr = group->GetFirstMember(); itr; itr = itr->next())
+                    countInjured(itr->GetSource());
+            else
+                for (WorldBotState const& cohortState : _bots)
+                    countInjured(GetBot(cohortState));
+
+            float manaPct = healer->GetMaxPower(POWER_MANA)
+                ? float(healer->GetPower(POWER_MANA)) / float(healer->GetMaxPower(POWER_MANA)) : 0.0f;
+            uint32 attackerCount = uint32(healer->getAttackers().size());
+            if (injuredPlayers < spell.MinInjuredPlayers
+                || (spell.MaxInjuredPlayers && injuredPlayers > spell.MaxInjuredPlayers)
+                || manaPct < spell.MinManaPct || manaPct > spell.MaxManaPct
+                || attackerCount < spell.MinAttackers
+                || (spell.MaxAttackers && attackerCount > spell.MaxAttackers)
+                || (spell.RequiresStationary && healer->isMoving())
+                || (spell.RequiresMoving && !healer->isMoving()))
+                continue;
+
             int32 powerCost = spellInfo->CalcPowerCost(healer, spellInfo->GetSchoolMask());
             if (powerCost > 0 && healer->GetPower(healer->GetPowerType()) < uint32(powerCost))
                 continue;
@@ -7129,9 +7179,15 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 continue;
             }
 
+            bool currentEmergency = spell.Category == BotCombatActionCategory::ExternalDefensive;
+            bool bestEmergency = bestHeal->Category == BotCombatActionCategory::ExternalDefensive;
             bool currentFast = spell.Category == BotCombatActionCategory::HealFast;
             bool bestFast = bestHeal->Category == BotCombatActionCategory::HealFast;
-            if ((candidateHealthPct < 0.55f && currentFast && !bestFast) || spell.HealingWeight > bestHeal->HealingWeight)
+            if ((currentEmergency && !bestEmergency)
+                || (currentEmergency == bestEmergency && candidateHealthPct < 0.55f && currentFast && !bestFast)
+                || (currentEmergency == bestEmergency && currentFast == bestFast
+                    && (spell.PriorityBucket < bestHeal->PriorityBucket
+                        || (spell.PriorityBucket == bestHeal->PriorityBucket && spell.HealingWeight > bestHeal->HealingWeight))))
             {
                 bestHeal = &spell;
                 healTarget = candidateTarget;
@@ -7184,6 +7240,15 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         healer->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
         std::string castFailureReason;
         bool cast = TryCastFriendlySpell(healer, healTarget, bestHeal->SpellId, &castFailureReason);
+        ResolvedCombatAction healAction;
+        healAction.Valid = true;
+        healAction.Type = "cast";
+        healAction.SpellId = bestHeal->SpellId;
+        healAction.TargetGuid = healTarget->GetGUID();
+        healAction.DebugName = BotCombatActionCatalog::ToString(bestHeal->Category);
+        RecordCombatAttempt(state, healer, healTarget, "heal_cast", &healAction,
+            cast ? BotActionResult::Ok : BotActionResult::CastFailed,
+            cast ? nullptr : castFailureReason.c_str());
         std::string raw = buildRouteHealRaw(healTarget, bestHeal->SpellId, healTargetHealthPct, cast ? "ok" : "failed", cast ? "" : castFailureReason.c_str());
         RecordEvent(state, healer, "validation_route_group_heal", healTarget, cast ? "ok" : castFailureReason.c_str(), raw.c_str(), semantic.c_str(), healTargetHealthPct, 0, bestHeal->SpellId);
         situation = "validation_route_group_heal";
@@ -13038,6 +13103,33 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
             candidate.RejectReason = "enemy_count_too_high";
             continue;
         }
+        if (candidate.Profile.RequiresInterruptibleTarget
+            && !target->GetCurrentSpell(CURRENT_GENERIC_SPELL)
+            && !target->GetCurrentSpell(CURRENT_CHANNELED_SPELL))
+        {
+            candidate.RejectReason = "target_not_interruptible";
+            continue;
+        }
+        float manaPct = bot->GetMaxPower(POWER_MANA)
+            ? float(bot->GetPower(POWER_MANA)) / float(bot->GetMaxPower(POWER_MANA)) : 0.0f;
+        uint32 attackerCount = uint32(bot->getAttackers().size());
+        if (manaPct < candidate.Profile.MinManaPct || manaPct > candidate.Profile.MaxManaPct)
+        {
+            candidate.RejectReason = "mana_gate";
+            continue;
+        }
+        if (attackerCount < candidate.Profile.MinAttackers
+            || (candidate.Profile.MaxAttackers && attackerCount > candidate.Profile.MaxAttackers))
+        {
+            candidate.RejectReason = "attacker_count_gate";
+            continue;
+        }
+        if ((candidate.Profile.RequiresStationary && bot->isMoving())
+            || (candidate.Profile.RequiresMoving && !bot->isMoving()))
+        {
+            candidate.RejectReason = "movement_gate";
+            continue;
+        }
         if (candidate.Category == BotCombatActionCategory::Taunt && target->GetVictim() == bot)
         {
             candidate.RejectReason = "threat_already_established";
@@ -13057,6 +13149,15 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         {
             candidate.RejectReason = "missing_self_aura";
             continue;
+        }
+        if (candidate.Profile.RequiredSelfAuraStacks)
+        {
+            Aura const* aura = candidate.Profile.RequiredSelfAura ? bot->GetAura(candidate.Profile.RequiredSelfAura) : nullptr;
+            if (!aura || aura->GetStackAmount() < candidate.Profile.RequiredSelfAuraStacks)
+            {
+                candidate.RejectReason = "insufficient_self_aura_stacks";
+                continue;
+            }
         }
         if (candidate.Profile.ForbiddenSelfAura && bot->HasAura(candidate.Profile.ForbiddenSelfAura))
         {

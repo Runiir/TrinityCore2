@@ -56,6 +56,7 @@ struct BotActionProfileSpell
     uint8 MaxAttackers = 0;
     bool RequiresStationary = false;
     bool RequiresMoving = false;
+    uint8 RequiredSelfAuraStacks = 0;
 };
 
 struct BotActionCandidate

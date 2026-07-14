@@ -208,7 +208,7 @@ bool LoadDbProfileLocked(uint8 classId, std::string const& specTag, std::string 
         "a.auto_attack_mode, a.min_range, a.max_range, a.requires_instant_cast, a.max_cast_time_ms, "
         "a.maintain_aura_id, a.refresh_aura_below_ms, a.min_injured_players, a.max_injured_players, "
         "a.injured_health_pct, a.min_mana_pct, a.max_mana_pct, a.min_attackers, a.max_attackers, "
-        "a.requires_stationary, a.requires_moving "
+        "a.requires_stationary, a.requires_moving, a.required_self_aura_stacks "
         "FROM bot_rotation_profile p "
         "JOIN bot_rotation_action a ON a.profile_id = p.id "
         "WHERE p.enabled = 1 AND a.enabled = 1 AND p.class_id = %u AND p.spec_tag = '%s' AND p.role = '%s' "
@@ -305,6 +305,7 @@ bool LoadDbProfileLocked(uint8 classId, std::string const& specTag, std::string 
         spell.MaxAttackers = fields[53].GetUInt8();
         spell.RequiresStationary = fields[54].GetBool();
         spell.RequiresMoving = fields[55].GetBool();
+        spell.RequiredSelfAuraStacks = fields[56].GetUInt8();
         profile.Spells.push_back(spell);
     } while (result->NextRow());
 
@@ -677,6 +678,7 @@ std::string BotClassSpecActionProfileStore::DbProfileDumpJson(uint8 classId, std
              << ",\"max_attackers\":" << uint32(spell.MaxAttackers)
              << ",\"requires_stationary\":" << (spell.RequiresStationary ? "true" : "false")
              << ",\"requires_moving\":" << (spell.RequiresMoving ? "true" : "false")
+             << ",\"required_self_aura_stacks\":" << uint32(spell.RequiredSelfAuraStacks)
              << "}}";
     }
     json << "]}";
