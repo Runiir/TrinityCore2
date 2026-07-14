@@ -7454,11 +7454,17 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         }
         return false;
     };
-    auto validationPartyHasActiveCombat = [&forEachActiveValidationCohortCombatCreature]() -> bool
+    auto validationPartyHasActiveCombat = [this, &forEachActiveValidationCohortCombatCreature]() -> bool
     {
         bool active = false;
-        forEachActiveValidationCohortCombatCreature([&](Creature const*)
+        forEachActiveValidationCohortCombatCreature([&](Creature const* creature)
         {
+            if (!creature || !creature->IsAlive() || !creature->GetHealth())
+                return;
+            if (_validationRoutePackGeneration == _validationRouteGeneration
+                && (_validationRoutePackDeathGuids.find(creature->GetGUID()) != _validationRoutePackDeathGuids.end()
+                    || _validationRoutePackTransitionGuids.find(creature->GetGUID()) != _validationRoutePackTransitionGuids.end()))
+                return;
             active = true;
         });
         return active;
@@ -12142,6 +12148,13 @@ uint32 BotWorldPopulationMgr::SelectHealSpell(Player* bot, Unit* target) const
         }
         if (!candidate.RejectReason.empty())
             continue;
+        if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(candidate.SpellId);
+            spellInfo && (target->IsImmunedToSpell(spellInfo, bot)
+                || (spellInfo->HasOnlyDamageEffects() && target->IsImmunedToDamage(spellInfo))))
+        {
+            candidate.RejectReason = "target_immune";
+            continue;
+        }
         float targetHp = UnitHealthPct(target);
         if (targetHp < candidate.Profile.MinTargetHealthPct || targetHp > candidate.Profile.MaxTargetHealthPct)
             candidate.RejectReason = "target_health_gate";

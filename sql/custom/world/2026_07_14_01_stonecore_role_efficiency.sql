@@ -39,15 +39,15 @@ WHERE p.`class_id` = 2 AND p.`spec_tag` = 'protection' AND p.`role` = 'tank'
   AND a.`spell_id` = 26573;
 
 -- Cataclysm ranged attacks retain a dead zone beyond the nominal five-yard
--- spell minimum once combat reach is included. Hold eight yards so the actor
+-- spell minimum once combat reach is included. Hold ten yards so the actor
 -- moves before submitting shots that the server will reject as TOO_CLOSE.
 UPDATE `bot_rotation_profile`
-SET `min_range` = 8
+SET `min_range` = 10
 WHERE `class_id` = 3 AND `spec_tag` = 'marksmanship' AND `role` = 'dps';
 
 UPDATE `bot_rotation_action` a
 JOIN `bot_rotation_profile` p ON p.`id` = a.`profile_id`
-SET a.`min_range` = 8
+SET a.`min_range` = 10
 WHERE p.`class_id` = 3 AND p.`spec_tag` = 'marksmanship' AND p.`role` = 'dps'
   AND a.`target_selector` = 'enemy' AND a.`min_range` > 0;
 
