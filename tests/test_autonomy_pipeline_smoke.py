@@ -18,6 +18,7 @@ BOT_MGR_HEADER = ROOT / "src/server/game/Bots/BotWorldPopulationMgr.h"
 PET_CPP = ROOT / "src/server/game/Entities/Pet/Pet.cpp"
 STONECORE_ROTATION_SQL = ROOT / "sql/custom/world/2026_06_21_00_bot_rotation_profiles.sql"
 PRAYER_OF_MENDING_GUARD_SQL = ROOT / "sql/custom/world/2026_07_14_02_holy_priest_prayer_of_mending_aura_guard.sql"
+PALADIN_AOE_THREAT_SQL = ROOT / "sql/custom/world/2026_07_14_03_stonecore_paladin_aoe_threat_priority.sql"
 BOT_POLICY = ROOT / "src/server/game/Bots/BotTelemetryPolicy.cpp"
 BOT_BUFFER = ROOT / "src/server/game/Bots/BotTelemetryBuffer.cpp"
 BOT_SEGMENTS = ROOT / "src/server/game/Bots/BotExperimentCoordinator.cpp"
@@ -39,6 +40,14 @@ def test_prayer_of_mending_profile_uses_the_applied_aura_as_its_guard() -> None:
     assert "`action`.`spell_id` = 33076" in migration
     assert "`action`.`forbidden_target_aura` = 41635" in migration
     assert "`action`.`maintain_aura_id` = 41635" in migration
+
+
+def test_protection_paladin_prioritizes_multi_target_threat_actions() -> None:
+    migration = read(PALADIN_AOE_THREAT_SQL)
+
+    assert "`profile`.`spec_tag` = 'protection'" in migration
+    assert "`action`.`spell_id` IN (53595, 26573) THEN 1" in migration
+    assert "`action`.`spell_id` IN (53595, 26573, 2812)" in migration
 
 
 def function_body(source: str, signature: str) -> str:
@@ -1780,6 +1789,10 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         "return;",
     )
     assert "state.LastRecoveryResult = \"fallback_disabled\";" in update_bot
+    assert 'state.ValidationRouteTerminalReason == "validation_trash_no_progress"' in route_objective
+    assert "!persistedValidationRoutePackHasLiveMembers()" in route_objective
+    assert "!validationPartyHasActiveCombat()" in route_objective
+    assert '"failed_terminal_reopened_after_pack_death"' in route_objective
     assert_ordered(
         update_bot,
         "RecordDecision(state, bot, situation.c_str(), action.c_str()",
@@ -1809,7 +1822,9 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         "if (routeDistance > routeArrivalRadius && !preAnchorTrashTarget)",
         "Unit* routeTarget = preAnchorTrashTarget;",
     )
-    live_cluster_block = route_objective.split("auto isLiveTrashClusterMob", 1)[1].split("auto isValidationCohortPlayer", 1)[0]
+    live_cluster_block = route_objective.split("auto isLiveTrashClusterMob", 1)[1].split(
+        "auto forEachActiveValidationCohortCombatCreature", 1
+    )[0]
     assert "if (!bot || !creature || !creature->IsAlive() || !creature->GetHealth())" in live_cluster_block
     assert "_validationRouteFinalTransitionGuids.find(creature->GetGUID())" in live_cluster_block
     assert "isValidationRoutePackEntry(creature->GetEntry())" in live_cluster_block
@@ -1898,15 +1913,16 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     assert "_validationRoutePackMemberGuids.find(creature->GetGUID())" not in threat_target_block
     assert_ordered(
         route_objective,
-        "auto isValidationCohortPlayer",
+        "auto forEachActiveValidationCohortCombatCreature",
         "auto isValidationCohortCombatLinked",
+        "auto isNaturalValidationRoutePackMember",
         "auto enrollValidationRoutePackMember",
         "!engaged",
         "_validationRoutePackMemberGuids.insert(creature->GetGUID()).second;",
         "_validationRoutePackEngagedGuids.insert(creature->GetGUID()).second;",
         'RecordEvent(state, bot, "validation_route_pack_enrolled"',
         "auto enrollEngagedValidationRoutePackMembers",
-        "isValidationCohortCombatLinked(creature)",
+        "enrollValidationRoutePackMember(creature, true);",
         "auto persistedValidationRoutePackHasLiveMembers",
         "_validationRoutePackDeathGuids.find(guid) == _validationRoutePackDeathGuids.end()",
         "auto trashClusterHasLiveMobs",
@@ -2159,7 +2175,7 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         route_objective,
         "if (state.ValidationRouteTerminalState",
         "&& state.ValidationRouteTerminalGeneration == _validationRouteGeneration)",
-        "MoveBotToPoint(state, bot, routeAnchorX, routeAnchorY, routeAnchorZ)",
+        "moveToRouteAnchor()",
         "terminal_cohort_catchup",
         'action = "move_to_validation_route_anchor";',
     )

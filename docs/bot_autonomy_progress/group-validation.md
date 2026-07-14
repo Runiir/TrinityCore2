@@ -34,6 +34,10 @@
 - Natural creatures present in the active cohort's PvE combat references are now enrolled in the persisted route pack even when their entries are not in the discovery list. This keeps enrollment bounded to actual combat while allowing every legitimate attacker to be finished.
 - The matched role audit passed tank threat retention at 91.7%, with zero tank and enhancement cast failures; fire and hunter failures were 1.8% and 1.4%. Healing narrowly missed at 94.4% because Prayer of Mending was guarded by spell 33076 rather than its applied aura 41635. The priest profiles now suppress recasts using aura 41635.
 - Run 086 raw evidence and compact role audit were pushed to DVC before diagnosis; their materialized files are evicted after the fix is recorded.
+- Run 087 naturally killed Corborus and Slabhide, reached route index 8, killed all 33 enrolled Devout Followers, and ended with all five bots alive and out of combat. A prior `validation_trash_no_progress` terminal latched while the final follower was at 1% and remained failed after its natural death, preventing endpoint regroup and node completion.
+- Failed trash terminals now reopen only when the persisted pack ledger has no live members and the whole party is out of combat. The normal endpoint regroup and two-second clear-stability checks then remain authoritative; a genuinely live stalled target still fails closed.
+- Run 087 role telemetry passed healer recovery/triage at 95.8% and all DPS active-action coverage gates. Tank casts had zero failures but threat retention fell to 77.0% during the 33-mob wave, so Hammer of the Righteous and Consecration now outrank single-target spenders whenever their existing multi-enemy gates are met. Hunter submission failure was 5.03%, one sample over the threshold and dominated by transient line-of-sight changes; it remains under matched observation.
+- The 202 MB raw Run 087 evidence and its compact role audit were pushed to DVC before these diagnoses.
 
 ## 2026-06-20
 

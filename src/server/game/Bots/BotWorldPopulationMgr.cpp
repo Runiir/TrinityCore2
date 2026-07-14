@@ -9914,6 +9914,34 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     }
     if (state.ValidationRouteTerminalState
         && state.ValidationRouteGeneration == _validationRouteGeneration
+        && state.ValidationRouteTerminalGeneration == _validationRouteGeneration
+        && _config.ValidationRouteKind != "boss"
+        && state.ValidationRouteTerminalReason == "validation_trash_no_progress"
+        && _validationRoutePackGeneration == _validationRouteGeneration
+        && _validationRoutePackObservedEngagement
+        && !persistedValidationRoutePackHasLiveMembers()
+        && !validationPartyHasActiveCombat())
+    {
+        for (WorldBotState& cohortState : _bots)
+        {
+            cohortState.TargetGuid.Clear();
+            cohortState.ValidationRouteCombatProgressTargetGuid.Clear();
+            cohortState.ValidationRoutePackProgressTargetGuid.Clear();
+            cohortState.ValidationRouteCombatNoProgressCount = 0;
+            cohortState.ValidationRoutePackNoProgressCount = 0;
+            cohortState.ValidationRouteTerminalState = false;
+            cohortState.ValidationRouteTerminalAtMs = 0;
+            cohortState.ValidationRouteTerminalGeneration = 0;
+            cohortState.ValidationRouteTerminalReason.clear();
+        }
+        target = nullptr;
+        std::string raw = BuildRawJson(bot, nullptr);
+        std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_recovery", &power, stage, activity);
+        RecordEvent(state, bot, "validation_route_recovery", nullptr, "failed_terminal_reopened_after_pack_death",
+            raw.c_str(), semantic.c_str(), float(_validationRoutePackDeathGuids.size()), uint32(_validationRoutePackMemberGuids.size()));
+    }
+    if (state.ValidationRouteTerminalState
+        && state.ValidationRouteGeneration == _validationRouteGeneration
         && state.ValidationRouteTerminalGeneration == _validationRouteGeneration)
     {
         float terminalCohortRadius = _config.ValidationRouteClusterRadiusYards > 1.0f
