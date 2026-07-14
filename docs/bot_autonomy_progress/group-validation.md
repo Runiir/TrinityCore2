@@ -54,6 +54,10 @@
 - Azil's route declared an adds mechanic with an empty add-target list. During shield phases this produced 96 failed-route holds and 63 tactical path rejections while Devout Followers attacked the party. The manifest now declares entry 42428 as an Azil add so the shared add-focus and density logic clears followers while the boss is unavailable.
 - The Run 092 role audit passed tank threat at 90.7% and healing at 97.0%; fire and enhancement submission remained at 100% and 99.2%. Hunter failure rose to 11.3%, entirely dominated by Aimed Shot failing while moving during Azil. Aimed Shot and Steady Shot are now marked `requires_stationary`, allowing mobile phases to select instant legal shots instead.
 - Run 092 raw evidence (414 MB) and its compact audit were pushed to DVC before diagnosis.
+- Run 093 achieved the first accepted uninterrupted end-to-end Stonecore 5N manifest completion in this series. All 13 nodes completed, all four boss deaths were confirmed, no teacher/oracle action was used, and the live report records `all_passed=true` plus `acceptable_final_evidence=true`.
+- The run exercised recovery rather than merely avoiding it: the party recovered from one Corborus wipe, post-Ozruk flayer deaths, and one Azil wipe, then killed Azil on the following natural pull. It finished with all five bots alive and out of combat; 16 deaths and three transient stuck/failure events remain resilience evidence rather than golden-suite evidence.
+- Role efficiency passed every gate: tank threat retention 94.7%, healing submission success 98.1%, fire 97.1%, hunter 98.0%, enhancement 98.6%, with all active-action coverage thresholds met. The marksman stationary-shot migration reduced the prior Azil moving-cast failure from 11.3% to 2.0% total cast failure.
+- Run 093 raw evidence (470 MB) and its compact passing audit were pushed to DVC. The regenerated `validation_scenarios` and `validation_run_plan` artifacts now include Devout Follower entry 42428 in Azil's `add_target_entries` and are also pushed to DVC for subsequent runs.
 
 ## 2026-06-20
 
