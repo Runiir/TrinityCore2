@@ -88,8 +88,12 @@ def combat_log_fixture() -> dict:
             },
         ],
         "second_buckets": [
-            {"route_generation": 2, "perspective": "damage_done", "actor_guid": 10, "second": 1, "amount": 5000},
-            {"route_generation": 2, "perspective": "damage_done", "actor_guid": 10, "second": 10, "amount": 5000},
+            {"route_generation": 2, "perspective": "damage_done", "actor_guid": 10, "source_is_pet": False, "second": 1, "amount": 5000},
+            {"route_generation": 2, "perspective": "damage_done", "actor_guid": 10, "source_is_pet": False, "second": 10, "amount": 5000},
+            *[
+                {"route_generation": 2, "perspective": "damage_done", "actor_guid": 20, "source_is_pet": False, "second": second, "amount": 1}
+                for second in range(2, 10)
+            ],
         ],
         "recent_events": [{"kind": "damage"}],
     }
@@ -98,7 +102,7 @@ def combat_log_fixture() -> dict:
 def test_analyze_combat_log_reports_dps_rotation_and_positioning():
     report = analyze_combat_log(combat_log_fixture())
 
-    assert report["schema"] == "bot_combat_analysis_v1"
+    assert report["schema"] == "bot_combat_analysis_v2"
     assert report["tracked_event_count"] == 42
     assert report["recent_events_dropped"] == 7
     encounter = report["encounters"][0]
@@ -106,7 +110,9 @@ def test_analyze_combat_log_reports_dps_rotation_and_positioning():
     assert encounter["party_damage"] == 10000
     actor = encounter["actors"][0]
     assert actor["dps"] == 1000
+    assert actor["elapsed_dps"] == 1000
     assert actor["active_dps"] == 5000
+    assert actor["damage_uptime"] == 0.2
     assert actor["abilities"][0]["spell_name"] == "Fireball"
     assert actor["abilities"][0]["damage_share"] == 0.9
     assert {row["kind"] for row in report["diagnostics"]} >= {

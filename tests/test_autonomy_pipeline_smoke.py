@@ -384,7 +384,10 @@ def test_validation_route_readiness_buffs_party_and_hunter_pet_without_fallbacks
     ]:
         assert buff_key in readiness
 
-    assert "if (!bot || bot->IsInCombat())" in readiness
+    assert "if (bot->IsInCombat() && !urgentHunterPetRecovery)" in readiness
+    assert "hunterHasStoredPet" in readiness
+    assert "(!bot->GetPet() || !bot->GetPet()->IsAlive())" in readiness
+    assert "if (!urgentHunterPetRecovery)\n        for (ActiveBuffRequirement const& requirement" in readiness
     assert "_config.ValidationRouteEnable || !bot" not in readiness
     assert "ActiveBuffRequirement" in readiness
     assert "blessing_of_kings_ready" in readiness
@@ -2794,6 +2797,9 @@ def test_validation_route_ground_danger_dodge_is_reserved_per_cast_window():
     assert "state.ValidationRouteDodgeSpellId == castSpell->Id" in movement
     assert "state.ValidationRouteDodgeUntilMs > nowMs" in movement
     assert "state.ValidationRouteDodgeUntilMs = nowMs + (moved ? 3000 : 500);" in movement
+    assert "state.ValidationRouteDodgeUntilMs = nowMs + 1200;" in movement
+    assert 'configuredHazardShape == "frontal_cone"' in movement
+    assert "dodgeOrigin->GetOrientation() + side * float(M_PI_2)" in movement
     assert_ordered(movement, "ValidationRouteDodgeUntilMs > nowMs", "MoveBotToPoint", "ValidationRouteDodgeUntilMs = nowMs")
 
 
@@ -2944,6 +2950,7 @@ def test_stonecore_quality_repairs_cover_hazards_pet_recovery_and_healer_protect
     header = (root / "src/server/game/Bots/BotWorldPopulationMgr.h").read_text()
     rotation_sql = (root / "sql/custom/world/2026_07_15_00_stonecore_complete_role_rotations.sql").read_text()
     emergency_threat_sql = read(EMERGENCY_ADD_THREAT_SQL)
+    hunter_liveness_sql = (root / "sql/custom/world/2026_07_15_02_stonecore_hunter_rotation_liveness.sql").read_text()
 
     for field in (
         "ValidationRouteHazardSourceEntry",
@@ -2981,6 +2988,10 @@ def test_stonecore_quality_repairs_cover_hazards_pet_recovery_and_healer_protect
     assert "urgentHunterPetRecovery" in manager
     assert "(!densityHealer || densityHealer->getAttackers().empty())" in manager
     assert "float minRange = selfTarget ? 0.0f" in manager
+    assert 'candidate.RejectReason = "caster_controlled"' in manager
+    assert 'candidate.RejectReason = "caster_prevented"' in manager
     assert "WHEN `action`.`spell_id` = 26573 THEN 0" in emergency_threat_sql
+    assert "a.`priority_bucket` = 6" in hunter_liveness_sql
+    assert "a.`spell_id` = 1130" in hunter_liveness_sql
     for spell_id in (2948, 92315, 11129, 403, 421, 53595, 26573):
         assert str(spell_id) in rotation_sql

@@ -9411,7 +9411,10 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             if (previousDefinition)
             {
                 float safeRadius = std::max(1.0f, previousDefinition->RadiusYards + previousDefinition->SafetyMarginYards);
-                if (!previousHazard->IsAlive() || bot->GetExactDist2d(previousHazard) > safeRadius)
+                bool outsideHazard = bot->GetExactDist2d(previousHazard) > safeRadius;
+                if (previousDefinition->Shape == "frontal_cone" && !previousHazard->HasInArc(float(M_PI), bot))
+                    outsideHazard = true;
+                if (!previousHazard->IsAlive() || outsideHazard)
                 {
                     std::string raw = BuildRawJson(bot, previousHazard);
                     std::string semantic = BuildSemanticJson(bot, previousHazard, "validation_route_mechanic", &power, stage, activity);
@@ -9430,6 +9433,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         SpellInfo const* castSpell = nullptr;
         bool configuredHazard = false;
         float configuredSafeRadius = 0.0f;
+        std::string configuredHazardShape;
         auto inspectCaster = [&](Unit* candidate) -> bool
         {
             if (!candidate || !candidate->IsAlive() || !bot->IsValidAttackTarget(candidate) || !bot->IsWithinDistInMap(candidate, 35.0f))
@@ -9497,6 +9501,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     ? definition->DamageSpellId : definition->DetectionSpellId);
                 configuredHazard = castSpell != nullptr;
                 configuredSafeRadius = safeRadius;
+                configuredHazardShape = definition->Shape;
             }
         }
 
@@ -9554,7 +9559,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return false;
 
         uint64 const nowMs = NowMs();
-        if (!configuredHazard && state.ValidationRouteDodgeCasterGuid == caster->GetGUID()
+        if (state.ValidationRouteDodgeCasterGuid == caster->GetGUID()
             && state.ValidationRouteDodgeSpellId == castSpell->Id
             && state.ValidationRouteDodgeUntilMs > nowMs)
             return false;
@@ -9566,8 +9571,18 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         float angle = bot->GetRelativeAngle(dodgeOrigin) + float(M_PI);
         if (configuredHazard)
         {
-            float spreadOffset = (int32(bot->GetGUID().GetCounter() % 5) - 2) * 0.16f;
-            float absoluteAwayAngle = dodgeOrigin->GetAngle(bot) + spreadOffset;
+            float absoluteAwayAngle = dodgeOrigin->GetAngle(bot);
+            if (configuredHazardShape == "frontal_cone")
+            {
+                float side = bot->GetGUID().GetCounter() % 2 ? 1.0f : -1.0f;
+                absoluteAwayAngle = dodgeOrigin->GetOrientation() + side * float(M_PI_2);
+                dodgeDistance = std::max(4.0f, configuredSafeRadius);
+            }
+            else
+            {
+                float spreadOffset = (int32(bot->GetGUID().GetCounter() % 5) - 2) * 0.16f;
+                absoluteAwayAngle += spreadOffset;
+            }
             angle = absoluteAwayAngle - bot->GetOrientation();
         }
         Position dodge = bot->GetFirstCollisionPosition(dodgeDistance, angle);
@@ -9576,7 +9591,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         state.ValidationRouteDodgeSpellId = castSpell->Id;
         state.ValidationRouteDodgeUntilMs = nowMs + (moved ? 3000 : 500);
         if (configuredHazard && moved)
-            state.ValidationRouteDodgeUntilMs = nowMs + 500;
+            state.ValidationRouteDodgeUntilMs = nowMs + 1200;
 
         std::string raw = BuildRawJson(bot, caster);
         std::string semantic = BuildSemanticJson(bot, caster, "validation_route_mechanic", &power, stage, activity);
@@ -12978,12 +12993,23 @@ bool BotWorldPopulationMgr::TryNativePartyResurrection(WorldBotState& state, Pla
 
 bool BotWorldPopulationMgr::TryValidationRouteReadiness(WorldBotState& state, Player* bot, Unit* pullTarget, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, DungeonTrashActionResult& result)
 {
-    if (!bot || bot->IsInCombat())
+    if (!bot)
         return false;
 
     uint64 const nowMs = NowMs();
+    bool hunterHasStoredPet = bot->GetPlayerPetDataCurrent() != nullptr;
+    if (bot->getClass() == CLASS_HUNTER && !hunterHasStoredPet)
+        for (uint8 slot = PET_SLOT_FIRST_ACTIVE_SLOT; slot <= PET_SLOT_LAST_ACTIVE_SLOT; ++slot)
+            if (PlayerPetData const* stored = bot->GetPlayerPetDataBySlot(slot);
+                stored && stored->Type == HUNTER_PET && stored->PetId && stored->CreatureId)
+            {
+                hunterHasStoredPet = true;
+                break;
+            }
     bool urgentHunterPetRecovery = bot->getClass() == CLASS_HUNTER
-        && bot->GetPet() && !bot->GetPet()->IsAlive();
+        && hunterHasStoredPet && (!bot->GetPet() || !bot->GetPet()->IsAlive());
+    if (bot->IsInCombat() && !urgentHunterPetRecovery)
+        return false;
     bool groupStable = true;
     if (Group* group = bot->GetGroup())
         for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
@@ -13190,27 +13216,28 @@ bool BotWorldPopulationMgr::TryValidationRouteReadiness(WorldBotState& state, Pl
     };
 
     std::string role = GetDungeonRole(bot);
-    for (ActiveBuffRequirement const& requirement : requirements)
-    {
-        if (requirement.ClassId != bot->getClass())
-            continue;
-        if (requirement.Role && role != requirement.Role)
-            continue;
-        if (!bot->HasSpell(requirement.SpellId))
-            continue;
+    if (!urgentHunterPetRecovery)
+        for (ActiveBuffRequirement const& requirement : requirements)
+        {
+            if (requirement.ClassId != bot->getClass())
+                continue;
+            if (requirement.Role && role != requirement.Role)
+                continue;
+            if (!bot->HasSpell(requirement.SpellId))
+                continue;
 
-        std::string missing = std::string(requirement.PartyWide ? "missing_party_buff:" : "missing_self_buff:") + requirement.Key;
-        if (requirement.PartyWide)
-        {
-            if (castParty(requirement.SpellId, requirement.AuraIds, requirement.Key, missing.c_str()))
-                return true;
+            std::string missing = std::string(requirement.PartyWide ? "missing_party_buff:" : "missing_self_buff:") + requirement.Key;
+            if (requirement.PartyWide)
+            {
+                if (castParty(requirement.SpellId, requirement.AuraIds, requirement.Key, missing.c_str()))
+                    return true;
+            }
+            else
+            {
+                if (castSelf(requirement.SpellId, requirement.AuraIds, requirement.Key, missing.c_str()))
+                    return true;
+            }
         }
-        else
-        {
-            if (castSelf(requirement.SpellId, requirement.AuraIds, requirement.Key, missing.c_str()))
-                return true;
-        }
-    }
 
     switch (bot->getClass())
     {
@@ -13700,6 +13727,21 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
     BotActionCandidate* bestDensityGenerator = nullptr;
     for (BotActionCandidate& candidate : candidates)
     {
+        SpellInfo const* candidateSpellInfo = sSpellMgr->GetSpellInfo(candidate.SpellId);
+        if (bot->HasUnitState(UNIT_STATE_CONTROLLED))
+        {
+            candidate.RejectReason = "caster_controlled";
+            continue;
+        }
+        if (candidateSpellInfo
+            && ((candidateSpellInfo->PreventionType == SPELL_PREVENTION_TYPE_SILENCE
+                    && bot->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SILENCED))
+                || (candidateSpellInfo->PreventionType == SPELL_PREVENTION_TYPE_PACIFY
+                    && bot->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PACIFIED))))
+        {
+            candidate.RejectReason = "caster_prevented";
+            continue;
+        }
         if (candidate.Category == BotCombatActionCategory::HealFast
             || candidate.Category == BotCombatActionCategory::HealEfficient
             || candidate.Category == BotCombatActionCategory::HealAoe
@@ -13795,9 +13837,8 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         Unit* actionTarget = selfTarget ? static_cast<Unit*>(bot) : target;
         if (!selfTarget)
         {
-            SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(candidate.SpellId);
-            if (spellInfo && (actionTarget->IsImmunedToSpell(spellInfo, bot)
-                || (spellInfo->HasOnlyDamageEffects() && actionTarget->IsImmunedToDamage(spellInfo))))
+            if (candidateSpellInfo && (actionTarget->IsImmunedToSpell(candidateSpellInfo, bot)
+                || (candidateSpellInfo->HasOnlyDamageEffects() && actionTarget->IsImmunedToDamage(candidateSpellInfo))))
             {
                 candidate.RejectReason = "target_immune";
                 continue;
@@ -14077,6 +14118,12 @@ bool BotWorldPopulationMgr::TryCastCombatSpell(Player* bot, Unit* target, uint32
 
     SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
     if (!spellInfo || !bot->IsWithinLOSInMap(target))
+        return false;
+    if (bot->HasUnitState(UNIT_STATE_CONTROLLED)
+        || (spellInfo->PreventionType == SPELL_PREVENTION_TYPE_SILENCE
+            && bot->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_SILENCED))
+        || (spellInfo->PreventionType == SPELL_PREVENTION_TYPE_PACIFY
+            && bot->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PACIFIED)))
         return false;
 
     float maxRange = std::max(5.0f, spellInfo->GetMaxRange(false));
@@ -16188,6 +16235,9 @@ void BotWorldPopulationMgr::AddCombatLogAggregate(CombatLogPerspective perspecti
     if (!actor || !source || !target)
         return;
 
+    bool const sourceIsPet = source != actor
+        && source->GetCharmerOrOwnerPlayerOrPlayerItself() == actor;
+
     CombatLogAbilityKey key;
     key.RouteGeneration = _validationRouteGeneration;
     key.Perspective = perspective;
@@ -16209,7 +16259,7 @@ void BotWorldPopulationMgr::AddCombatLogAggregate(CombatLogPerspective perspecti
         aggregate.SpellName = spellId ? (sSpellMgr->GetSpellInfo(spellId) ? sSpellMgr->GetSpellInfo(spellId)->SpellName : "Unknown") : "Melee";
         aggregate.TargetName = target->GetName();
         aggregate.FirstAtMs = timestampMs;
-        aggregate.SourceIsPet = source != actor && source->GetCharmerOrOwnerPlayerOrPlayerItself() == actor;
+        aggregate.SourceIsPet = sourceIsPet;
     }
 
     float distance = source->GetExactDist(target);
@@ -16224,7 +16274,7 @@ void BotWorldPopulationMgr::AddCombatLogAggregate(CombatLogPerspective perspecti
         aggregate.MinDistance = distance;
     aggregate.MaxDistance = std::max(aggregate.MaxDistance, distance);
     _combatLogSecondBuckets[std::make_tuple(_validationRouteGeneration, perspective,
-        actor->GetGUID().GetCounter(), timestampMs / 1000)] += amount;
+        actor->GetGUID().GetCounter(), sourceIsPet, timestampMs / 1000)] += amount;
 }
 
 void BotWorldPopulationMgr::AddCombatLogEvent(char const* kind, Player* actor, Unit* source, Unit* target,
@@ -18311,7 +18361,7 @@ std::string BotWorldPopulationMgr::GetCombatLogJson() const
 
     std::ostringstream json;
     json << std::fixed << std::setprecision(3)
-         << "{\"ok\":true,\"action\":\"botauto_combatlog\",\"combat_log_schema_version\":1"
+         << "{\"ok\":true,\"action\":\"botauto_combatlog\",\"combat_log_schema_version\":2"
          << ",\"experiment_id\":" << _experimentId
          << ",\"run_id\":" << _runId
          << ",\"event_count\":" << _combatLogEventCount
@@ -18367,7 +18417,8 @@ std::string BotWorldPopulationMgr::GetCombatLogJson() const
         json << "{\"route_generation\":" << std::get<0>(key)
              << ",\"perspective\":\"" << perspectiveName(std::get<1>(key)) << "\""
              << ",\"actor_guid\":" << std::get<2>(key)
-             << ",\"second\":" << std::get<3>(key)
+             << ",\"source_is_pet\":" << (std::get<3>(key) ? "true" : "false")
+             << ",\"second\":" << std::get<4>(key)
              << ",\"amount\":" << amount << '}';
     }
 

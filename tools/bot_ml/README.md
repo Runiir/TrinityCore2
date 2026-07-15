@@ -39,6 +39,18 @@ The 45-90 second windows are smoke diagnostics only. They prove that worldserver
 
 The harness writes `commands.txt`, `worldserver_output.log` when executed, and `report.json` with parsed `.botauto status`, `.botauto diagnose all`, `.botauto trace all 20`, and `.botexp summary` evidence. Process mode starts `worldserver` and appends `server exit`; SOAP mode talks to an already-running server and does not stop it. `report.json` includes `completion_reason`, `watchdog_state`, `progress_counters`, `acceptable_final_evidence`, and `final_evidence_rejections`; timeout, segment/debug, stale/no-progress, and teacher-assisted-only reports are rejected as final clears. `bot-live-scenario-reports` derives JSON artifacts such as `stonecore_5n.json` and `blackwing_descent_10n.json` from live reports plus validation scenario manifests; pass `--live-report` multiple times to collect segmented dungeon/raid boss progress for debugging and label quality. Segmented progress never sets final `clear_complete`; that requires a whole-instance uninterrupted live report with explicit completion metadata. Missing or malformed live reports are listed in the manifest and are not used as teacher evidence. `bot-validation-run-status` compares the run plan, expected segment reports, whole-instance reports, and built scenario reports, then writes missing segments, invalid existing segments, per-segment readiness reasons, and the exact next commands required to produce or rerun them. `--scenario-report-dir` feeds those artifacts back into live validation as prepared-group, trash, boss, and full-clear evidence for dungeon/raid gates. Generated live-validation outputs are DVC artifacts, not Git files.
 
+### Bounded combat-log analysis
+
+`.botauto combatlog` exports exact landed damage and healing as compact per-spell aggregates, one-second activity buckets, and a bounded recent-event ring. The console export is chunked so long encounters cannot exceed the command transport limit. Live validation collects it only during cleanup, stores decoded `combat_log.json` once, and builds `combat_analysis.json` with encounter and actor DPS/HPS, spell shares, pet contribution, player/pet uptime, cast movement, range, incoming-damage sources, and rotation or positioning warnings.
+
+`dps` and `party_dps` use party active-combat seconds, so route traversal does not dilute comparisons. `elapsed_dps` and `elapsed_party_dps` retain wall-time values. Pet and player one-second buckets are separate in combat-log schema v2; the analyzer remains able to read schema v1 evidence, but v1 cannot reconstruct separate pet uptime.
+
+```bash
+pixi run python tools/bot_ml/analyze_combat_log.py \
+  artifacts/live_validation_instances/<run>/combat_log.json \
+  --output artifacts/live_validation_instances/<run>/combat_analysis.json
+```
+
 ## Offline Loop
 
 Extract DB-backed world knowledge manifests for the autonomous planner:

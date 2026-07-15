@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import math
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
@@ -88,7 +87,7 @@ def analyze_combat_log(combat_log: dict[str, Any]) -> dict[str, Any]:
     for row in abilities:
         by_generation[int(row.get("route_generation") or 0)].append(row)
 
-    bucket_seconds: dict[tuple[int, int, str], set[int]] = defaultdict(set)
+    bucket_seconds: dict[tuple[int, int, str, bool], set[int]] = defaultdict(set)
     for row in buckets:
         if int(row.get("amount") or 0) > 0:
             bucket_seconds[
@@ -96,6 +95,7 @@ def analyze_combat_log(combat_log: dict[str, Any]) -> dict[str, Any]:
                     int(row.get("route_generation") or 0),
                     int(row.get("actor_guid") or 0),
                     str(row.get("perspective") or ""),
+                    bool(row.get("source_is_pet")),
                 )
             ].add(int(row.get("second") or 0))
 
@@ -108,7 +108,11 @@ def analyze_combat_log(combat_log: dict[str, Any]) -> dict[str, Any]:
         first_ms = min(timestamps, default=0)
         last_ms = max(timestamps, default=first_ms)
         duration_sec = max(1.0, (last_ms - first_ms) / 1000.0)
-        wall_seconds = max(1, math.floor(duration_sec) + 1)
+        party_damage_seconds: set[int] = set()
+        for (bucket_generation, _actor_guid, perspective, _source_is_pet), seconds in bucket_seconds.items():
+            if bucket_generation == generation and perspective == "damage_done":
+                party_damage_seconds.update(seconds)
+        combat_seconds = max(1, len(party_damage_seconds))
         node_id = next((str(row.get("route_node_id") or "") for row in rows if row.get("route_node_id")), "")
         label = next((str(row.get("route_label") or "") for row in rows if row.get("route_label")), "")
 
@@ -122,31 +126,39 @@ def analyze_combat_log(combat_log: dict[str, Any]) -> dict[str, Any]:
             total_damage = sum(int(row.get("amount") or 0) for row in done)
             total_taken = sum(int(row.get("amount") or 0) for row in taken)
             total_healing = sum(int(row.get("amount") or 0) for row in healing)
-            active_seconds = len(bucket_seconds[(generation, actor_guid, "damage_done")])
-            healing_seconds = len(bucket_seconds[(generation, actor_guid, "healing_done")])
+            active_seconds = len(bucket_seconds[(generation, actor_guid, "damage_done", False)])
+            pet_active_seconds = len(bucket_seconds[(generation, actor_guid, "damage_done", True)])
+            healing_seconds = len(bucket_seconds[(generation, actor_guid, "healing_done", False)])
             ability_summary = _ability_rows(done, total_damage)
             actor_name = next((str(row.get("actor_name") or "") for row in actor_rows if row.get("actor_name")), "")
             actor_role = next((str(row.get("actor_role") or "") for row in actor_rows if row.get("actor_role")), "")
             actor_class_id = next((int(row.get("actor_class_id") or 0) for row in actor_rows if row.get("actor_class_id")), 0)
             pet_damage = sum(int(row["damage"]) for row in ability_summary if row.get("source_is_pet"))
+            player_damage = total_damage - pet_damage
+            player_done = [row for row in done if not row.get("source_is_pet")]
             actor_report = {
                 "actor_guid": actor_guid,
                 "actor_name": actor_name,
                 "actor_role": actor_role,
                 "actor_class_id": actor_class_id,
                 "damage": total_damage,
-                "dps": round(total_damage / duration_sec, 3),
+                "dps": round(total_damage / combat_seconds, 3),
+                "elapsed_dps": round(total_damage / duration_sec, 3),
                 "active_seconds": active_seconds,
-                "active_dps": round(total_damage / max(1, active_seconds), 3),
-                "damage_uptime": round(active_seconds / wall_seconds, 6),
+                "active_dps": round(player_damage / max(1, active_seconds), 3),
+                "damage_uptime": round(active_seconds / combat_seconds, 6),
                 "damage_taken": total_taken,
                 "healing": total_healing,
-                "hps": round(total_healing / duration_sec, 3),
+                "hps": round(total_healing / combat_seconds, 3),
+                "elapsed_hps": round(total_healing / duration_sec, 3),
                 "healing_active_seconds": healing_seconds,
                 "pet_damage": pet_damage,
                 "pet_damage_share": round(pet_damage / max(1, total_damage), 6),
-                "distance_avg": round(_weighted_average(done, "distance_avg"), 3),
-                "moving_fraction": round(_weighted_average(done, "moving_fraction"), 6),
+                "pet_active_seconds": pet_active_seconds,
+                "pet_active_dps": round(pet_damage / max(1, pet_active_seconds), 3),
+                "pet_uptime": round(pet_active_seconds / combat_seconds, 6),
+                "distance_avg": round(_weighted_average(player_done, "distance_avg"), 3),
+                "moving_fraction": round(_weighted_average(player_done, "moving_fraction"), 6),
                 "abilities": ability_summary,
                 "damage_taken_sources": _ability_rows(taken, total_taken)[:10],
             }
@@ -176,7 +188,7 @@ def analyze_combat_log(combat_log: dict[str, Any]) -> dict[str, Any]:
                     "spell_name": non_pet[0]["spell_name"],
                     "damage_share": non_pet[0]["damage_share"],
                 })
-            if actor_role == "dps" and duration_sec >= 10 and total_damage > 0 and active_seconds / wall_seconds < 0.35:
+            if actor_role == "dps" and combat_seconds >= 10 and total_damage > 0 and active_seconds / combat_seconds < 0.35:
                 diagnostics.append({
                     "severity": "warning",
                     "kind": "low_damage_uptime",
@@ -184,10 +196,10 @@ def analyze_combat_log(combat_log: dict[str, Any]) -> dict[str, Any]:
                     "route_node_id": node_id,
                     "actor_guid": actor_guid,
                     "actor_name": actor_name,
-                    "damage_uptime": round(active_seconds / wall_seconds, 6),
+                    "damage_uptime": round(active_seconds / combat_seconds, 6),
                 })
             non_pet_event_count = sum(int(row.get("event_count") or 0) for row in done if not row.get("source_is_pet"))
-            if actor_class_id in RANGED_CLASS_IDS and non_pet_event_count >= 10 and _weighted_average(done, "distance_avg") < 8.0:
+            if actor_class_id in RANGED_CLASS_IDS and non_pet_event_count >= 10 and _weighted_average(player_done, "distance_avg") < 8.0:
                 diagnostics.append({
                     "severity": "warning",
                     "kind": "ranged_damage_too_close",
@@ -195,7 +207,7 @@ def analyze_combat_log(combat_log: dict[str, Any]) -> dict[str, Any]:
                     "route_node_id": node_id,
                     "actor_guid": actor_guid,
                     "actor_name": actor_name,
-                    "distance_avg": round(_weighted_average(done, "distance_avg"), 3),
+                    "distance_avg": round(_weighted_average(player_done, "distance_avg"), 3),
                 })
 
             avoidable_damage = sum(
@@ -222,15 +234,17 @@ def analyze_combat_log(combat_log: dict[str, Any]) -> dict[str, Any]:
             "first_at_ms": first_ms,
             "last_at_ms": last_ms,
             "duration_sec": round(duration_sec, 3),
+            "combat_duration_sec": combat_seconds,
             "party_damage": sum(int(row["damage"]) for row in actors),
-            "party_dps": round(sum(int(row["damage"]) for row in actors) / duration_sec, 3),
+            "party_dps": round(sum(int(row["damage"]) for row in actors) / combat_seconds, 3),
+            "elapsed_party_dps": round(sum(int(row["damage"]) for row in actors) / duration_sec, 3),
             "party_healing": sum(int(row["healing"]) for row in actors),
             "party_damage_taken": sum(int(row["damage_taken"]) for row in actors),
             "actors": actors,
         })
 
     return {
-        "schema": "bot_combat_analysis_v1",
+        "schema": "bot_combat_analysis_v2",
         "source_schema_version": combat_log.get("combat_log_schema_version"),
         "tracked_event_count": int(combat_log.get("event_count") or 0),
         "aggregate_count": int(combat_log.get("aggregate_count") or len(abilities)),
