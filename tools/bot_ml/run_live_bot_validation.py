@@ -225,7 +225,16 @@ def route_validation_context(scenario_id: str, route: dict[str, Any], *, include
 
 
 def route_segment_complete(report: dict[str, Any], route: dict[str, Any] | None) -> bool:
-    if not route or report.get("failure_labels"):
+    if not route:
+        return False
+    transient_terminal_labels = {
+        "boss_attempt_no_kill",
+        "no_progress_observed",
+        "semantic_progress_plateau",
+        "validation_route_assist_focus_loop",
+        "validation_route_stuck_loop",
+    }
+    if any(label not in transient_terminal_labels for label in (report.get("failure_labels") or [])):
         return False
     evidence = report.get("evidence") if isinstance(report.get("evidence"), dict) else {}
     context = report.get("validation_context") if isinstance(report.get("validation_context"), dict) else {}

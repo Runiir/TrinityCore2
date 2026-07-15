@@ -6282,6 +6282,20 @@ TC> {"duration_minutes":2,"decisions":88}
     assert route_segment_complete(report, route) is True
 
 
+def test_route_segment_complete_ignores_transient_failure_after_exact_boss_terminal():
+    route = {"kind": "boss", "route_node_id": "stonecore_corborus", "route_generation": 2, "required_evidence": []}
+    report = {
+        "failure_labels": ["no_progress_observed"],
+        "evidence": {
+            "route_terminal_evidence": [{"route_node_id": "stonecore_corborus", "route_generation": 2}],
+            "real_boss_kill_evidence": [{"route_node_id": "stonecore_corborus", "route_generation": 2}],
+        },
+        "trace": {"entries": []},
+    }
+
+    assert route_segment_complete(report, route) is True
+
+
 def test_watchdog_state_calls_route_actions_without_route_progress_no_progress():
     state = watchdog_state(
         {

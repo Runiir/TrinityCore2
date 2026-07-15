@@ -7042,6 +7042,18 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (!healer || std::string(GetDungeonRole(healer)) != "healer")
             return false;
 
+        if (!healer->getAttackers().empty() && healer->HasSpell(586) && !healer->HasAura(586)
+            && TryCastFriendlySpell(healer, healer, 586))
+        {
+            std::string raw = BuildRawJson(healer, combatTarget);
+            std::string semantic = BuildSemanticJson(healer, combatTarget, "healer_assignment", &power, stage, activity);
+            RecordEvent(state, healer, "healer_assignment", healer, "fade_threat_drop",
+                raw.c_str(), semantic.c_str(), float(healer->getAttackers().size()), 0, 586);
+            situation = "validation_route_group_heal";
+            action = "fade_threat_drop";
+            return true;
+        }
+
         Unit* lowestTarget = healer;
         Unit* tankTarget = nullptr;
         float lowestHealthPct = UnitHealthPct(healer);
