@@ -85,6 +85,12 @@ struct BotWorldExperimentConfig
     std::vector<uint32> ValidationRouteScriptedEventEntries;
     std::vector<uint32> ValidationRouteScriptedEventTransitionAuraIds;
     bool ValidationRouteScriptedEventRequirePassive = false;
+    uint32 ValidationRouteHazardSourceEntry = 0;
+    uint32 ValidationRouteHazardDetectionSpellId = 0;
+    uint32 ValidationRouteHazardDamageSpellId = 0;
+    std::string ValidationRouteHazardShape;
+    float ValidationRouteHazardRadiusYards = 0.0f;
+    float ValidationRouteHazardSafetyMarginYards = 0.0f;
     float ValidationRouteClusterRadiusYards = 0.0f;
     uint32 ValidationRouteExpectedAliveCount = 0;
     uint32 ValidationRouteActivationDataId = 0;
@@ -312,6 +318,12 @@ private:
         std::vector<uint32> ScriptedEventEntries;
         std::vector<uint32> ScriptedEventTransitionAuraIds;
         bool ScriptedEventRequirePassive = false;
+        uint32 HazardSourceEntry = 0;
+        uint32 HazardDetectionSpellId = 0;
+        uint32 HazardDamageSpellId = 0;
+        std::string HazardShape;
+        float HazardRadiusYards = 0.0f;
+        float HazardSafetyMarginYards = 0.0f;
         float ClusterRadiusYards = 0.0f;
         uint32 ExpectedAliveCount = 0;
         uint32 ActivationDataId = 0;
@@ -421,6 +433,9 @@ private:
         ObjectGuid ValidationRouteDodgeCasterGuid;
         uint32 ValidationRouteDodgeSpellId = 0;
         uint64 ValidationRouteDodgeUntilMs = 0;
+        uint64 HunterPetRevivePendingUntilMs = 0;
+        uint64 HunterPetReviveStartedMs = 0;
+        uint32 HunterPetReviveAttemptCount = 0;
         uint32 SafePositionTimer = 0;
         uint32 PoiScanTimer = 0;
         uint32 RestTimer = 0;
@@ -605,6 +620,10 @@ private:
             uint32 ConsecutiveSameDecisionCount = 0;
             uint32 IdleDecisionRepeatCount = 0;
             uint32 TargetChurnCount = 0;
+            uint32 EngagedHostileCount = 0;
+            uint32 TankOwnedHostileCount = 0;
+            uint32 HealerTargetingHostileCount = 0;
+            bool PetAlive = false;
             std::string LoopGuardrailAction;
             std::string LoopGuardrailReason;
             std::string RecoveryMode;

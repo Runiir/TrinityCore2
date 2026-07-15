@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import hashlib
 import html
 import json
 import math
@@ -19,11 +20,13 @@ from urllib.parse import urlparse
 import re
 
 try:
+    from .audit_role_efficiency import build_audit
     from .build_validation_provisioning import apply_gear_profiles, build_account_insert_sql, build_character_insert_sql, load_config, load_gear_profiles
     from .common import write_json
     from .extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
     from .live_validation_session import build_session, ensure_healthy_matching_session, live_validation_lock, stop_session
 except ImportError:
+    from audit_role_efficiency import build_audit
     from build_validation_provisioning import apply_gear_profiles, build_account_insert_sql, build_character_insert_sql, load_config, load_gear_profiles
     from common import write_json
     from extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
@@ -1972,6 +1975,50 @@ def final_evidence_rejections(
     return list(dict.fromkeys(rejections))
 
 
+def attach_stonecore_role_quality_audit(
+    report: dict[str, Any],
+    validation_context: dict[str, Any] | None,
+    validation_route_manifest: dict[str, Any] | None,
+) -> dict[str, Any]:
+    """Make Stonecore full-clear acceptance depend on the strict role audit."""
+    context = validation_context or {}
+    manifest = validation_route_manifest or {}
+    is_full_stonecore = (
+        context.get("scenario_id") == "stonecore_5n"
+        and bool(manifest.get("routes"))
+        and not context.get("segment_id")
+        and not context.get("route_node_id")
+    )
+    if not is_full_stonecore:
+        return report
+
+    source = json.dumps(report, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    audit = build_audit(report, hashlib.sha256(source).hexdigest())
+    report["role_efficiency_audit"] = audit
+    if audit.get("passed"):
+        return report
+
+    labels = list(report.get("failure_labels") or [])
+    for label in audit.get("failure_labels") or []:
+        quality_label = f"role_quality:{label}"
+        if quality_label not in labels:
+            labels.append(quality_label)
+    if "stonecore_role_quality_audit_failed" not in labels:
+        labels.append("stonecore_role_quality_audit_failed")
+    report["failure_labels"] = labels
+    report["failure_reason"] = labels[0]
+    rejections = list(report.get("final_evidence_rejections") or [])
+    for rejection in ("failure_labels_present", "stonecore_role_quality_audit_failed"):
+        if rejection not in rejections:
+            rejections.append(rejection)
+    report["final_evidence_rejections"] = rejections
+    report["acceptable_final_evidence"] = False
+    report["all_passed"] = False
+    report["failed"] = max(1, int(report.get("failed") or 0))
+    report["completion_reason"] = "stonecore_role_quality_audit_failed"
+    return report
+
+
 def live_validation_report(
     output: str,
     stages: list[str] | None = None,
@@ -3288,6 +3335,7 @@ def main() -> int:
             report["acceptable_final_evidence"] = False
             report["all_passed"] = False
     report["validation_context"] = validation_context
+    attach_stonecore_role_quality_audit(report, validation_context, validation_route_manifest)
     write_json(args.output_dir / "report.json", report)
     print(json.dumps(report, indent=2, sort_keys=True))
     segment_success = route_segment_complete(report, validation_route)

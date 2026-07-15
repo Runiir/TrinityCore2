@@ -1831,6 +1831,12 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
         node.ScriptedEventEntries = ExtractJsonUIntArrayField(routeJson, "scripted_event_entries");
         node.ScriptedEventTransitionAuraIds = ExtractJsonUIntArrayField(routeJson, "scripted_event_transition_aura_ids");
         ExtractJsonBoolField(routeJson, "scripted_event_require_passive", node.ScriptedEventRequirePassive);
+        node.HazardSourceEntry = uint32(std::max(0, readInt(routeJson, "hazard_source_entry")));
+        node.HazardDetectionSpellId = uint32(std::max(0, readInt(routeJson, "hazard_detection_spell_id")));
+        node.HazardDamageSpellId = uint32(std::max(0, readInt(routeJson, "hazard_damage_spell_id")));
+        node.HazardShape = ExtractJsonStringField(routeJson, "hazard_shape");
+        node.HazardRadiusYards = readFloat(routeJson, "hazard_radius_yards");
+        node.HazardSafetyMarginYards = readFloat(routeJson, "hazard_safety_margin_yards");
         node.ClusterRadiusYards = readFloat(routeJson, "cluster_radius_yards");
         node.ExpectedAliveCount = uint32(std::max(0, readInt(routeJson, "expected_alive_count")));
         node.ActivationDataId = uint32(std::max(0, readInt(routeJson, "activation_data_id")));
@@ -1890,6 +1896,12 @@ bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode(size_t index, char 
     _config.ValidationRouteScriptedEventEntries = node.ScriptedEventEntries;
     _config.ValidationRouteScriptedEventTransitionAuraIds = node.ScriptedEventTransitionAuraIds;
     _config.ValidationRouteScriptedEventRequirePassive = node.ScriptedEventRequirePassive;
+    _config.ValidationRouteHazardSourceEntry = node.HazardSourceEntry;
+    _config.ValidationRouteHazardDetectionSpellId = node.HazardDetectionSpellId;
+    _config.ValidationRouteHazardDamageSpellId = node.HazardDamageSpellId;
+    _config.ValidationRouteHazardShape = node.HazardShape;
+    _config.ValidationRouteHazardRadiusYards = node.HazardRadiusYards;
+    _config.ValidationRouteHazardSafetyMarginYards = node.HazardSafetyMarginYards;
     _config.ValidationRouteClusterRadiusYards = node.ClusterRadiusYards;
     _config.ValidationRouteExpectedAliveCount = node.ExpectedAliveCount;
     _validationRouteAddFocusGuid.Clear();
@@ -7782,10 +7794,14 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 continue;
 
             Unit* victim = creature->GetVictim();
-            bool looseOnNonTank = victim && victim != bot;
+            Player* victimPlayer = victim ? victim->ToPlayer() : nullptr;
+            std::string victimRole = victimPlayer ? GetDungeonRole(victimPlayer) : "";
+            bool looseOnNonTank = victim && victimRole != "tank";
             bool unengaged = !victim;
             float score = 1000.0f - bot->GetExactDist(creature);
-            if (looseOnNonTank)
+            if (victimRole == "healer")
+                score += 7500.0f;
+            else if (looseOnNonTank)
                 score += 5000.0f;
             else if (unengaged)
                 score += 1500.0f;
@@ -9308,9 +9324,30 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             || bot->IsFalling())
             return false;
 
+        if (!state.ValidationRouteDodgeCasterGuid.IsEmpty()
+            && _config.ValidationRouteHazardSourceEntry
+            && state.ValidationRouteDodgeSpellId == _config.ValidationRouteHazardDamageSpellId)
+        {
+            Unit* previousHazard = ObjectAccessor::GetUnit(*bot, state.ValidationRouteDodgeCasterGuid);
+            float safeRadius = std::max(1.0f, _config.ValidationRouteHazardRadiusYards + _config.ValidationRouteHazardSafetyMarginYards);
+            if (!previousHazard || !previousHazard->IsAlive() || bot->GetExactDist2d(previousHazard) > safeRadius)
+            {
+                std::string raw = BuildRawJson(bot, previousHazard);
+                std::string semantic = BuildSemanticJson(bot, previousHazard, "validation_route_mechanic", &power, stage, activity);
+                RecordEvent(state, bot, "validation_route_mechanic", previousHazard, "hazard_exit_completed",
+                    raw.c_str(), semantic.c_str(), previousHazard ? bot->GetExactDist(previousHazard) : safeRadius,
+                    _config.ValidationRouteHazardSourceEntry, state.ValidationRouteDodgeSpellId);
+                state.ValidationRouteDodgeCasterGuid.Clear();
+                state.ValidationRouteDodgeSpellId = 0;
+                state.ValidationRouteDodgeUntilMs = 0;
+            }
+        }
+
         Unit* caster = nullptr;
         WorldObject const* movementOrigin = nullptr;
         SpellInfo const* castSpell = nullptr;
+        bool configuredHazard = false;
+        float configuredSafeRadius = 0.0f;
         auto inspectCaster = [&](Unit* candidate) -> bool
         {
             if (!candidate || !candidate->IsAlive() || !bot->IsValidAttackTarget(candidate) || !bot->IsWithinDistInMap(candidate, 35.0f))
@@ -9337,7 +9374,49 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return true;
         };
 
-        inspectCaster(preferredTarget);
+        if (mechanicProfileRequiresMovement && _config.ValidationRouteHazardSourceEntry)
+        {
+            std::vector<WorldObject*> hazardObjects;
+            Trinity::AllWorldObjectsInRange hazardCheck(bot, 35.0f);
+            Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> hazardSearcher(bot, hazardObjects, hazardCheck);
+            Cell::VisitAllObjects(bot, hazardSearcher, 35.0f);
+            float bestHazardDistance = std::numeric_limits<float>::max();
+            for (WorldObject* object : hazardObjects)
+            {
+                Creature* hazard = object ? object->ToCreature() : nullptr;
+                if (!hazard || !hazard->IsAlive() || hazard->GetEntry() != _config.ValidationRouteHazardSourceEntry)
+                    continue;
+
+                bool active = _config.ValidationRouteHazardShape == "radial";
+                if (_config.ValidationRouteHazardDetectionSpellId)
+                    for (CurrentSpellTypes spellType : { CURRENT_GENERIC_SPELL, CURRENT_CHANNELED_SPELL })
+                        if (Spell* spell = hazard->GetCurrentSpell(spellType))
+                            if (SpellInfo const* spellInfo = spell->GetSpellInfo(); spellInfo && spellInfo->Id == _config.ValidationRouteHazardDetectionSpellId)
+                                active = true;
+                if (!active)
+                    continue;
+
+                float safeRadius = std::max(1.0f, _config.ValidationRouteHazardRadiusYards + _config.ValidationRouteHazardSafetyMarginYards);
+                float distance = bot->GetExactDist2d(hazard);
+                if (distance > safeRadius)
+                    continue;
+                if (_config.ValidationRouteHazardShape == "frontal_cone" && !hazard->HasInArc(float(M_PI), bot))
+                    continue;
+                if (distance >= bestHazardDistance)
+                    continue;
+
+                bestHazardDistance = distance;
+                caster = hazard;
+                movementOrigin = hazard;
+                castSpell = sSpellMgr->GetSpellInfo(_config.ValidationRouteHazardDamageSpellId
+                    ? _config.ValidationRouteHazardDamageSpellId : _config.ValidationRouteHazardDetectionSpellId);
+                configuredHazard = castSpell != nullptr;
+                configuredSafeRadius = safeRadius;
+            }
+        }
+
+        if (!caster)
+            inspectCaster(preferredTarget);
         if (!caster && mechanicProfileRequiresMovement)
         {
             for (auto const& [_, application] : bot->GetAppliedAuras())
@@ -9390,24 +9469,39 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return false;
 
         uint64 const nowMs = NowMs();
-        if (state.ValidationRouteDodgeCasterGuid == caster->GetGUID()
+        if (!configuredHazard && state.ValidationRouteDodgeCasterGuid == caster->GetGUID()
             && state.ValidationRouteDodgeSpellId == castSpell->Id
             && state.ValidationRouteDodgeUntilMs > nowMs)
             return false;
 
         WorldObject const* dodgeOrigin = movementOrigin && movementOrigin != bot ? movementOrigin : caster;
+        float distanceFromOrigin = bot->GetExactDist2d(dodgeOrigin);
+        float dodgeDistance = configuredHazard
+            ? std::max(3.0f, configuredSafeRadius - distanceFromOrigin + 2.0f) : 8.0f;
         float angle = bot->GetRelativeAngle(dodgeOrigin) + float(M_PI);
-        Position dodge = bot->GetFirstCollisionPosition(8.0f, angle);
+        if (configuredHazard)
+        {
+            float spreadOffset = (int32(bot->GetGUID().GetCounter() % 5) - 2) * 0.16f;
+            float absoluteAwayAngle = dodgeOrigin->GetAngle(bot) + spreadOffset;
+            angle = absoluteAwayAngle - bot->GetOrientation();
+        }
+        Position dodge = bot->GetFirstCollisionPosition(dodgeDistance, angle);
         bool moved = MoveBotToPoint(state, bot, dodge.GetPositionX(), dodge.GetPositionY(), dodge.GetPositionZ());
         state.ValidationRouteDodgeCasterGuid = caster->GetGUID();
         state.ValidationRouteDodgeSpellId = castSpell->Id;
         state.ValidationRouteDodgeUntilMs = nowMs + (moved ? 3000 : 500);
+        if (configuredHazard && moved)
+            state.ValidationRouteDodgeUntilMs = nowMs + 500;
 
         std::string raw = BuildRawJson(bot, caster);
         std::string semantic = BuildSemanticJson(bot, caster, "validation_route_mechanic", &power, stage, activity);
-        RecordEvent(state, bot, "validation_route_mechanic", caster, moved ? "movement_check_jump" : "tactical_path_rejected", raw.c_str(), semantic.c_str(), bot->GetExactDist(caster), _config.ValidationRouteTargetEntry, castSpell->Id);
+        char const* movementReason = moved
+            ? (configuredHazard ? "hazard_exit_started" : "movement_check_jump")
+            : (configuredHazard ? "hazard_exit_failed" : "tactical_path_rejected");
+        RecordEvent(state, bot, "validation_route_mechanic", caster, movementReason, raw.c_str(), semantic.c_str(), bot->GetExactDist(caster), _config.ValidationRouteTargetEntry, castSpell->Id);
         situation = "validation_route_mechanic";
-        action = moved ? "movement_check_jump" : "hold_tactical_path_rejected";
+        action = moved ? (configuredHazard ? "move_out_of_hazard" : "movement_check_jump")
+            : (configuredHazard ? "hold_hazard_exit_failed" : "hold_tactical_path_rejected");
         return true;
     };
     auto tryValidationRouteAdds = [this, &state, bot, &power, stage, activity, &situation, &action, &target, &routeEngageRange, &tryRouteGroupHeal]() -> bool
@@ -9591,7 +9685,30 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     bestAnchorGuid = guid;
                 }
             }
-            add = densityAnchor;
+            if (role == "tank")
+            {
+                Creature* looseAdd = nullptr;
+                uint8 loosePriority = 0;
+                float looseDistance = std::numeric_limits<float>::max();
+                for (Creature* candidate : localAdds)
+                {
+                    Player* victim = candidate->GetVictim() ? candidate->GetVictim()->ToPlayer() : nullptr;
+                    std::string victimRole = victim ? GetDungeonRole(victim) : "";
+                    if (!victim || victim == bot || victimRole == "tank")
+                        continue;
+                    uint8 priority = victimRole == "healer" ? 3 : 2;
+                    float distance = bot->GetExactDist(candidate);
+                    if (!looseAdd || priority > loosePriority || (priority == loosePriority && distance < looseDistance))
+                    {
+                        looseAdd = candidate;
+                        loosePriority = priority;
+                        looseDistance = distance;
+                    }
+                }
+                add = looseAdd ? looseAdd : densityAnchor;
+            }
+            else
+                add = densityAnchor;
             sharedFocusValid = false;
         }
 
@@ -9610,6 +9727,19 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 else if (!densityHealer && memberRole == "healer")
                     densityHealer = member;
             }
+        }
+
+        if (bot->getClass() == CLASS_HUNTER && densityTank && densityTank != bot
+            && bot->HasSpell(34477) && !bot->HasAura(34477) && TryCastFriendlySpell(bot, densityTank, 34477))
+        {
+            std::string raw = BuildRawJson(bot, add);
+            std::string semantic = BuildSemanticJson(bot, add, "dungeon_boss", &power, stage, activity);
+            RecordEvent(state, bot, "boss_adds", add, "misdirection_to_tank", raw.c_str(), semantic.c_str(), float(addCount), 0, 34477);
+            state.TargetGuid = add ? add->GetGUID() : ObjectGuid::Empty;
+            target = add;
+            situation = "dungeon_boss";
+            action = "misdirection_boss_adds";
+            return true;
         }
 
         float densityHealerRange = 0.0f;
@@ -9644,47 +9774,33 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (_validationRouteBossAddEscapeActive && !escapeCohortValid)
             ResetValidationRouteBossAddEscapeState();
 
-        if (highDensityPhase && bot == densityTank && escapeCohortValid && addCount >= 3)
+        if (highDensityPhase && bot == densityTank && addCount >= 3)
         {
             float centroidX = addX / float(addCount);
             float centroidY = addY / float(addCount);
-            bool centroidMoved = std::hypot(centroidX - _validationRouteBossAddCentroidX, centroidY - _validationRouteBossAddCentroidY) >= 8.0f;
-            if (!_validationRouteBossAddEscapeActive || centroidMoved)
+            float centroidDistance = densityTank->GetExactDist2d(centroidX, centroidY);
+            if (centroidDistance > 4.0f && !densityTank->HasUnitState(UNIT_STATE_CASTING) && !densityTank->IsFalling())
             {
-                if (!_validationRouteBossAddEscapeActive)
+                Map* map = densityTank->GetMap();
+                float centroidZ = densityTank->GetPositionZ();
+                if (map)
                 {
-                    _validationRouteBossAddEscapeAnchorX = densityTank->GetPositionX();
-                    _validationRouteBossAddEscapeAnchorY = densityTank->GetPositionY();
-                    _validationRouteBossAddEscapeAnchorZ = densityTank->GetPositionZ();
+                    float floorZ = map->GetHeight(densityTank->GetPhaseShift(), centroidX, centroidY, centroidZ + 4.0f, true, 10.0f);
+                    if (floorZ > INVALID_HEIGHT && std::fabs(floorZ - centroidZ) <= 10.0f)
+                        centroidZ = floorZ;
                 }
-                float anchorLeash = std::min(30.0f, densityHealerRange - 2.0f);
-                float tankAnchorDistance = densityTank->GetExactDist(_validationRouteBossAddEscapeAnchorX,
-                    _validationRouteBossAddEscapeAnchorY, _validationRouteBossAddEscapeAnchorZ);
-                float escapeDistance = std::min(10.0f, std::min(densityHealerRange - 2.0f, anchorLeash - tankAnchorDistance));
-                if (escapeDistance >= 3.0f)
-                {
-                    Position escape = densityTank->GetFirstCollisionPosition(escapeDistance,
-                        densityTank->GetRelativeAngle(centroidX, centroidY) + float(M_PI));
-                    bool proposedEscapeValid = densityTank->GetExactDist(escape) <= densityHealerRange - 1.0f
-                        && densityHealer->GetExactDist(escape) <= densityHealerRange - 1.0f
-                        && densityTank->IsWithinLOS(escape.GetPositionX(), escape.GetPositionY(), escape.GetPositionZ())
-                        && densityHealer->IsWithinLOS(escape.GetPositionX(), escape.GetPositionY(), escape.GetPositionZ());
-                    if (proposedEscapeValid)
-                    {
-                        _validationRouteBossAddEscapeActive = true;
-                        _validationRouteBossAddEscapeGeneration = _validationRouteGeneration;
-                        _validationRouteBossAddEscapeX = escape.GetPositionX();
-                        _validationRouteBossAddEscapeY = escape.GetPositionY();
-                        _validationRouteBossAddEscapeZ = escape.GetPositionZ();
-                        _validationRouteBossAddCentroidX = centroidX;
-                        _validationRouteBossAddCentroidY = centroidY;
-                        _validationRouteBossAddEscapeIssuedGuids.clear();
-                    }
-                    else
-                        ResetValidationRouteBossAddEscapeState();
-                }
-                else
-                    ResetValidationRouteBossAddEscapeState();
+                bool moved = densityTank->IsWithinLOS(centroidX, centroidY, centroidZ)
+                    && MoveBotToPoint(state, densityTank, centroidX, centroidY, centroidZ);
+                std::string raw = BuildRawJson(bot, add);
+                std::string semantic = BuildSemanticJson(bot, add, "dungeon_boss", &power, stage, activity);
+                RecordEvent(state, bot, "boss_add_density", add,
+                    moved ? "tank_move_to_add_centroid" : "tank_add_centroid_path_rejected",
+                    raw.c_str(), semantic.c_str(), centroidDistance, addCount);
+                state.TargetGuid = add ? add->GetGUID() : ObjectGuid::Empty;
+                target = add;
+                situation = "dungeon_boss";
+                action = moved ? "tank_move_to_add_centroid" : "hold_tank_add_centroid";
+                return true;
             }
         }
 
@@ -12018,6 +12134,35 @@ BotWorldPopulationMgr::DungeonTrashActionResult BotWorldPopulationMgr::TryDungeo
     Player* anchor = FindDungeonAnchor(bot);
     char const* role = GetDungeonRole(bot);
     Unit* groupTarget = FindGroupCombatTarget(bot, anchor);
+    if (std::string(role) == "tank" && bot->GetGroup())
+    {
+        Unit* endangeredTarget = nullptr;
+        uint8 bestVictimPriority = 0;
+        float bestDistance = std::numeric_limits<float>::max();
+        for (GroupReference* itr = bot->GetGroup()->GetFirstMember(); itr; itr = itr->next())
+        {
+            Player* member = itr->GetSource();
+            if (!member || !member->IsAlive() || member->GetMap() != bot->GetMap() || member == bot)
+                continue;
+            std::string memberRole = GetDungeonRole(member);
+            uint8 victimPriority = memberRole == "healer" ? 3 : 2;
+            for (Unit* attacker : member->getAttackers())
+            {
+                if (!attacker || !attacker->IsAlive() || !bot->IsValidAttackTarget(attacker) || !bot->IsWithinLOSInMap(attacker))
+                    continue;
+                float distance = bot->GetExactDist(attacker);
+                if (!endangeredTarget || victimPriority > bestVictimPriority
+                    || (victimPriority == bestVictimPriority && distance < bestDistance))
+                {
+                    endangeredTarget = attacker;
+                    bestVictimPriority = victimPriority;
+                    bestDistance = distance;
+                }
+            }
+        }
+        if (endangeredTarget)
+            groupTarget = endangeredTarget;
+    }
     if (!groupTarget && !state.TargetGuid.IsEmpty())
         groupTarget = ObjectAccessor::GetUnit(*bot, state.TargetGuid);
 
@@ -12886,19 +13031,61 @@ bool BotWorldPopulationMgr::TryValidationRouteReadiness(WorldBotState& state, Pl
                 MarkBotBlocked(state, bot, state.LastPetReadinessAction.c_str());
                 return true;
             }
+            state.LastPetReadinessPetEntry = bot->GetPet()->GetEntry();
             if (!bot->GetPet()->IsAlive())
             {
                 std::string attemptKey = "hunter:revive_pet";
-                if (bot->HasSpell(982) && canAttempt(attemptKey) && TryCastFriendlySpell(bot, bot, 982))
+                if (state.HunterPetRevivePendingUntilMs > nowMs)
                 {
-                    result.Action = "validation_route_readiness_revive_pet";
+                    bot->StopMoving();
+                    bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+                    bot->GetMotionMaster()->MoveIdle();
+                    result.Action = bot->FindCurrentSpellBySpellId(982)
+                        ? "validation_route_readiness_revive_pet_casting"
+                        : "validation_route_readiness_revive_pet_verifying";
                     result.SpellId = 982;
                     result.Target = bot;
                     return true;
                 }
-                state.ReadinessRetryUntilMs[attemptKey] = nowMs + 15000;
+                if (state.HunterPetRevivePendingUntilMs)
+                {
+                    state.HunterPetRevivePendingUntilMs = 0;
+                    state.ReadinessRetryUntilMs[attemptKey] = nowMs + 1000;
+                    state.LastPetReadinessAction = "hunter_pet_revive_not_observed";
+                    RecordEvent(state, bot, "validation_route_readiness", bot, state.LastPetReadinessAction.c_str(),
+                        "{}", "{}", float(state.HunterPetReviveAttemptCount), state.LastPetReadinessPetEntry, 982);
+                }
+                std::string castFailureReason;
+                if (bot->HasSpell(982) && canAttempt(attemptKey) && TryCastFriendlySpell(bot, bot, 982, &castFailureReason))
+                {
+                    SpellInfo const* reviveInfo = sSpellMgr->GetSpellInfo(982);
+                    uint64 castTimeMs = reviveInfo ? uint64(std::max<int32>(0, reviveInfo->CalcCastTime(bot->getLevel()))) : 0;
+                    state.HunterPetReviveStartedMs = nowMs;
+                    state.HunterPetRevivePendingUntilMs = nowMs + std::max<uint64>(5000, castTimeMs + 3000);
+                    ++state.HunterPetReviveAttemptCount;
+                    state.ReadinessRetryUntilMs[attemptKey] = state.HunterPetRevivePendingUntilMs;
+                    state.LastPetReadinessAction = "hunter_pet_revive_submitted";
+                    result.Action = "validation_route_readiness_revive_pet";
+                    result.SpellId = 982;
+                    result.Target = bot;
+                    RecordEvent(state, bot, "validation_route_readiness", bot, state.LastPetReadinessAction.c_str(),
+                        "{}", "{}", float(castTimeMs), state.LastPetReadinessPetEntry, 982);
+                    return true;
+                }
+                state.LastPetReadinessAction = "hunter_pet_revive_failed:" + (castFailureReason.empty() ? std::string("spell_unknown") : castFailureReason);
+                state.ReadinessRetryUntilMs[attemptKey] = nowMs + 3000;
                 MarkBotBlocked(state, bot, "hunter_pet_dead");
                 return true;
+            }
+            if (state.HunterPetReviveStartedMs)
+            {
+                uint64 reviveLatencyMs = nowMs - state.HunterPetReviveStartedMs;
+                state.LastPetReadinessAction = "hunter_pet_revived";
+                RecordEvent(state, bot, "validation_route_readiness", bot, state.LastPetReadinessAction.c_str(),
+                    "{}", "{}", float(reviveLatencyMs), state.LastPetReadinessPetEntry, 982);
+                state.HunterPetRevivePendingUntilMs = 0;
+                state.HunterPetReviveStartedMs = 0;
+                state.ReadinessRetryUntilMs.erase("hunter:revive_pet");
             }
             TryResolveBotBlocker(state, bot, "hunter_pet_ready");
             if (Player* tank = FindDungeonAnchor(bot))
@@ -16802,6 +16989,29 @@ void BotWorldPopulationMgr::RecordDecisionTrace(WorldBotState& state, char const
     entry.ConsecutiveSameDecisionCount = state.ConsecutiveSameDecisionCount;
     entry.IdleDecisionRepeatCount = state.IdleDecisionRepeatCount;
     entry.TargetChurnCount = state.TargetChurnCount;
+    if (Player* bot = GetLoadedBot(state); bot && bot->IsInWorld())
+    {
+        if (Pet* pet = bot->GetPet())
+            entry.PetAlive = pet->IsAlive();
+        std::vector<WorldObject*> objects;
+        Trinity::AllWorldObjectsInRange check(bot, 45.0f);
+        Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(bot, objects, check);
+        Cell::VisitAllObjects(bot, searcher, 45.0f);
+        for (WorldObject* object : objects)
+        {
+            Creature* creature = object ? object->ToCreature() : nullptr;
+            if (!creature || !creature->IsAlive() || !creature->GetHealth()
+                || !bot->IsValidAttackTarget(creature) || (!creature->IsInCombat() && !creature->GetVictim()))
+                continue;
+            ++entry.EngagedHostileCount;
+            Player* victim = creature->GetVictim() ? creature->GetVictim()->ToPlayer() : nullptr;
+            std::string victimRole = victim ? GetDungeonRole(victim) : "";
+            if (victimRole == "tank")
+                ++entry.TankOwnedHostileCount;
+            else if (victimRole == "healer")
+                ++entry.HealerTargetingHostileCount;
+        }
+    }
     entry.LoopGuardrailAction = state.LastLoopGuardrailAction;
     entry.LoopGuardrailReason = state.LastLoopGuardrailReason;
     entry.RecoveryMode = state.LastRecoveryMode;
@@ -17191,6 +17401,11 @@ std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson(WorldBotState con
          << "{\"name\":\"validation_route_config_activation_action_id\",\"value\":" << _config.ValidationRouteActivationActionId << "},"
          << "{\"name\":\"validation_route_config_activation_summon_entry\",\"value\":" << _config.ValidationRouteActivationSummonEntry << "},"
          << "{\"name\":\"validation_route_config_opener_summon_entry\",\"value\":" << _config.ValidationRouteOpenerSummonEntry << "},"
+         << "{\"name\":\"validation_route_hazard_source_entry\",\"value\":" << _config.ValidationRouteHazardSourceEntry << "},"
+         << "{\"name\":\"validation_route_hazard_detection_spell_id\",\"value\":" << _config.ValidationRouteHazardDetectionSpellId << "},"
+         << "{\"name\":\"validation_route_hazard_damage_spell_id\",\"value\":" << _config.ValidationRouteHazardDamageSpellId << "},"
+         << "{\"name\":\"validation_route_hazard_shape\",\"value\":\"" << JsonEscape(_config.ValidationRouteHazardShape) << "\"},"
+         << "{\"name\":\"validation_route_hazard_radius_yards\",\"value\":" << _config.ValidationRouteHazardRadiusYards << "},"
          << "{\"name\":\"validation_route_has_activation\",\"value\":" << (hasValidationRouteActivation ? "true" : "false") << "},"
          << "{\"name\":\"validation_route_manager_activation_applied\",\"value\":" << (_validationRouteActivationApplied ? "true" : "false") << "},"
          << "{\"name\":\"validation_route_manager_activation_attempts\",\"value\":" << _validationRouteActivationAttempts << "},"
@@ -17224,6 +17439,8 @@ std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson(WorldBotState con
          << "{\"name\":\"last_pet_readiness_action\",\"value\":\"" << JsonEscape(state.LastPetReadinessAction) << "\"},"
          << "{\"name\":\"last_pet_readiness_pet_id\",\"value\":" << state.LastPetReadinessPetId << "},"
          << "{\"name\":\"last_pet_readiness_pet_entry\",\"value\":" << state.LastPetReadinessPetEntry << "},"
+         << "{\"name\":\"hunter_pet_revive_pending_until_ms\",\"value\":" << state.HunterPetRevivePendingUntilMs << "},"
+         << "{\"name\":\"hunter_pet_revive_attempt_count\",\"value\":" << state.HunterPetReviveAttemptCount << "},"
          << "{\"name\":\"paladin_righteous_fury_ready\",\"value\":" << (paladinReady({ 25780 }) ? "true" : "false") << "},"
          << "{\"name\":\"paladin_seal_ready\",\"value\":" << (paladinReady({ 31801 }) ? "true" : "false") << "},"
          << "{\"name\":\"paladin_aura_ready\",\"value\":" << (paladinReady({ 465 }) ? "true" : "false") << "},"
@@ -17363,6 +17580,10 @@ std::string BotWorldPopulationMgr::BuildBotTraceEntriesJson(WorldBotState const&
              << ",\"consecutive_same_decision_count\":" << itr->ConsecutiveSameDecisionCount
              << ",\"idle_decision_repeat_count\":" << itr->IdleDecisionRepeatCount
              << ",\"target_churn_count\":" << itr->TargetChurnCount
+             << ",\"threat_snapshot\":{\"engaged_hostiles\":" << itr->EngagedHostileCount
+             << ",\"tank_owned_hostiles\":" << itr->TankOwnedHostileCount
+             << ",\"healer_targeting_hostiles\":" << itr->HealerTargetingHostileCount << "}"
+             << ",\"pet_alive\":" << (itr->PetAlive ? "true" : "false")
              << ",\"loop_guardrail_action\":\"" << JsonEscape(itr->LoopGuardrailAction) << "\""
              << ",\"loop_guardrail_reason\":\"" << JsonEscape(itr->LoopGuardrailReason) << "\""
              << ",\"recovery_mode\":\"" << JsonEscape(itr->RecoveryMode) << "\""

@@ -59,6 +59,17 @@
 - Role efficiency passed every gate: tank threat retention 94.7%, healing submission success 98.1%, fire 97.1%, hunter 98.0%, enhancement 98.6%, with all active-action coverage thresholds met. The marksman stationary-shot migration reduced the prior Azil moving-cast failure from 11.3% to 2.0% total cast failure.
 - Run 093 raw evidence (470 MB) and its compact passing audit were pushed to DVC. The regenerated `validation_scenarios` and `validation_run_plan` artifacts now include Devout Follower entry 42428 in Azil's `add_target_entries` and are also pushed to DVC for subsequent runs.
 
+## 2026-07-15
+
+- Recount and live-database review showed that Run 093 was a resilience clear rather than a role-quality certification: the tank and all three DPS had incomplete talent/action provisioning, the hunter pet remained dead, the healer was repeatedly targeted, and the party stood in Slabhide lava fissures and Twilight Flayer Flay.
+- Validation provisioning now applies reusable, DBC-validated 41-point Protection Paladin, Fire Mage, Marksmanship Hunter, and Enhancement Shaman builds. Spec-specific learned-spell manifests cover the legal rotation, cooldown, pet, and movement actions used by Stonecore and the shared BWD roster.
+- Rotation version 3 prioritizes Fire procs/Combustion and moving Scorch, five-stack Enhancement Maelstrom casts, and Protection multi-target threat. Hunter Rapid Fire and pet revival are provisioned; revive readiness now waits for the cast result, verifies the living pet, records latency/failure evidence, and retries safely.
+- Stonecore hazard manifests now identify Slabhide Lava Fissure and Twilight Flayer Flay geometry. Runtime movement detects the configured source/cast, moves each bot beyond radius plus safety margin with deterministic spread, and emits explicit start, completion, and failure evidence.
+- Tank targeting now scans every party member's attackers, prioritizes mobs targeting the healer, moves into Corborus/Azil add centroids, and receives hunter Misdirection during add swarms.
+- Trace schema now records all-hostile tank ownership, healer-target exposure, and hunter-pet liveness. The role-efficiency v2 audit hard-gates complete rotation coverage, named-bot and party death/stuck freedom, 98% all-hostile tank ownership, at most 1% healer exposure and three-second dwell, 90% pet uptime, and successful hazard exits.
+- Uninterrupted Stonecore reports automatically embed that audit and revoke `all_passed` and `acceptable_final_evidence` on any role-quality failure. Segment runs remain diagnostic-only and do not claim full certification.
+- Focused Python/source tests pass and the modified `worldserver` builds successfully. Database provisioning, targeted Corborus/Slabhide/Flayer checks, and three consecutive clean full clears remain pending live execution.
+
 ## 2026-06-20
 
 - Hardened `tools/bot_ml/build_validation_run_status.py` so route-node id drift between regenerated validation plans and older live segment artifacts is reported as `warnings: ["route_node_id_drift"]` instead of invalidating otherwise matching segment evidence.

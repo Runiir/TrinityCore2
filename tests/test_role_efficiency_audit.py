@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from tools.bot_ml.audit_role_efficiency import build_audit
+from tools.bot_ml.run_live_bot_validation import attach_stonecore_role_quality_audit
 
 
 def _entry(name, guid, sequence, role_goal, result="ok", spell=1, recorded=100):
@@ -97,3 +98,100 @@ def test_stonecore_role_profiles_include_runtime_efficiency_gates():
     assert "_validationRoutePackTransitionGuids.find(creature->GetGUID())" in manager
     for spell_id in (31850, 85673, 86150, 11129, 3045, 34490, 30823, 51533, 73680):
         assert str(spell_id) in sql
+
+
+def test_role_audit_v2_requires_complete_rotations_pet_hazards_and_all_hostile_threat():
+    roles = {
+        "Scvaltank": (1, "survive_hold_threat_position_control_then_safe_dps", [53595, 26573, 31935, 53600]),
+        "Scvalheal": (2, "keep_group_alive_triage_dispel_mana_efficiency_then_safe_dps", [2061]),
+        "Scvaldpsa": (3, "maximize_safe_damage", [44457, 133, 92315, 11129]),
+        "Scvaldpsb": (4, "maximize_safe_damage", [1978, 53209, 56641, 19434, 3045]),
+        "Scvaldpsc": (5, "maximize_safe_damage", [17364, 60103, 8050, 73680, 403, 51533]),
+    }
+    entries = []
+    sequence = 0
+    for name, (guid, role_goal, spells) in roles.items():
+        for spell in spells:
+            sequence += 1
+            entry = _entry(name, guid, sequence, role_goal, spell=spell, recorded=100 + sequence)
+            entry["threat_snapshot"] = {
+                "engaged_hostiles": 4,
+                "tank_owned_hostiles": 4,
+                "healer_targeting_hostiles": 0,
+            }
+            entry["pet_alive"] = name == "Scvaldpsb"
+            if name == "Scvalheal":
+                entry["combat_attempt"]["phase"] = "heal_cast"
+            entries.append(entry)
+    for offset in range(2):
+        hazard = _entry("Scvaltank", 1, sequence + offset + 1, roles["Scvaltank"][1], spell=53595, recorded=1000 + offset)
+        hazard["action"] = "move_out_of_hazard"
+        hazard["threat_snapshot"] = {"engaged_hostiles": 4, "tank_owned_hostiles": 4, "healer_targeting_hostiles": 0}
+        entries.append(hazard)
+
+    audit = build_audit({"status": {"deaths": 0}, "trace": {"entries": entries}}, "abc")
+
+    assert audit["schema"] == "stonecore_role_efficiency_v2"
+    assert audit["passed"] is True
+    assert audit["mechanics"]["hazard_exit_actions"] == 2
+
+
+def test_role_audit_v2_rejects_observed_stonecore_quality_regressions():
+    entries = []
+    for index, (name, guid, role_goal) in enumerate(
+        [
+            ("Scvaltank", 1, "survive_hold_threat_position_control_then_safe_dps"),
+            ("Scvalheal", 2, "keep_group_alive_triage_dispel_mana_efficiency_then_safe_dps"),
+            ("Scvaldpsa", 3, "maximize_safe_damage"),
+            ("Scvaldpsb", 4, "maximize_safe_damage"),
+            ("Scvaldpsc", 5, "maximize_safe_damage"),
+        ]
+    ):
+        entry = _entry(name, guid, index + 1, role_goal, spell=133, recorded=100 + index)
+        entry["threat_snapshot"] = {"engaged_hostiles": 4, "tank_owned_hostiles": 2, "healer_targeting_hostiles": 2}
+        entry["pet_alive"] = False
+        entries.append(entry)
+
+    audit = build_audit({"status": {"deaths": 1}, "trace": {"entries": entries}}, "abc")
+
+    assert audit["passed"] is False
+    assert "Scvaltank:all_hostile_threat_retention" in audit["failure_labels"]
+    assert "Scvaltank:healer_target_exposure" in audit["failure_labels"]
+    assert "Scvaldpsb:pet_alive_rate" in audit["failure_labels"]
+    assert "party:hazard_activation_coverage" in audit["failure_labels"]
+
+
+def test_full_stonecore_acceptance_is_revoked_when_role_quality_fails():
+    report = {
+        "all_passed": True,
+        "acceptable_final_evidence": True,
+        "failure_labels": [],
+        "final_evidence_rejections": [],
+        "status": {"deaths": 1},
+        "trace": {"entries": []},
+    }
+
+    attach_stonecore_role_quality_audit(
+        report,
+        {"scenario_id": "stonecore_5n"},
+        {"routes": [{"route_node_id": "entrance"}]},
+    )
+
+    assert report["role_efficiency_audit"]["passed"] is False
+    assert report["all_passed"] is False
+    assert report["acceptable_final_evidence"] is False
+    assert "stonecore_role_quality_audit_failed" in report["failure_labels"]
+    assert "stonecore_role_quality_audit_failed" in report["final_evidence_rejections"]
+
+
+def test_stonecore_segment_diagnostics_do_not_run_full_clear_quality_gate():
+    report = {"all_passed": True, "acceptable_final_evidence": True}
+
+    attach_stonecore_role_quality_audit(
+        report,
+        {"scenario_id": "stonecore_5n", "segment_id": "corborus"},
+        {"routes": [{"route_node_id": "corborus"}]},
+    )
+
+    assert "role_efficiency_audit" not in report
+    assert report["all_passed"] is True

@@ -14,7 +14,7 @@ try:
         load_gem_properties,
         load_spell_item_enchantments,
     )
-    from .build_validation_provisioning import EQUIPMENT_SLOT_END, REQUIRED_EQUIPMENT_SLOTS, apply_gear_profiles, bot_known_spell_ids, bot_talent_spell_ids, equipment_cache, load_config, load_gear_profiles, normalized_glyphs, required_equipment_slots_for, scenario_report
+    from .build_validation_provisioning import EQUIPMENT_SLOT_END, REQUIRED_EQUIPMENT_SLOTS, apply_gear_profiles, bot_known_spell_ids, bot_talent_spell_ids, equipment_cache, load_config, load_gear_profiles, normalized_glyphs, required_equipment_slots_for, scenario_report, talent_point_count
     from .common import stable_hash, write_json
     from .extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
 except ImportError:
@@ -26,7 +26,7 @@ except ImportError:
         load_gem_properties,
         load_spell_item_enchantments,
     )
-    from build_validation_provisioning import EQUIPMENT_SLOT_END, REQUIRED_EQUIPMENT_SLOTS, apply_gear_profiles, bot_known_spell_ids, bot_talent_spell_ids, equipment_cache, load_config, load_gear_profiles, normalized_glyphs, required_equipment_slots_for, scenario_report
+    from build_validation_provisioning import EQUIPMENT_SLOT_END, REQUIRED_EQUIPMENT_SLOTS, apply_gear_profiles, bot_known_spell_ids, bot_talent_spell_ids, equipment_cache, load_config, load_gear_profiles, normalized_glyphs, required_equipment_slots_for, scenario_report, talent_point_count
     from common import stable_hash, write_json
     from extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
 
@@ -132,6 +132,11 @@ def validate_payloads(config: dict[str, Any], dbc_dir: Path, hotfix_url: str | N
 
     for scenario in config.get("scenarios", []):
         for bot in scenario.get("bots", []):
+            class_spec = str(bot.get("class_spec") or "")
+            if class_spec in config.get("talent_builds_by_spec", {}):
+                points = talent_point_count(bot, dbc_dir)
+                if points != 41:
+                    failures.append({"check": "complete_talent_build", "bot": bot.get("name"), "class_spec": class_spec, "points": points})
             equipment = bot.get("equipment", [])
             covered = {int(item.get("slot", -1)) for item in equipment}
             missing_slots = sorted(set(required_equipment_slots_for(equipment)) - covered)

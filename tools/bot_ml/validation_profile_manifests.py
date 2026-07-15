@@ -34,6 +34,10 @@ def load_action_profile_manifest(path: Path | None = None) -> dict[str, Any]:
         "schema": payload.get("schema", ""),
         "hash": stable_hash(payload),
         "action_profile_spells_by_class": int_keyed_spell_map(payload, "action_profile_spells_by_class"),
+        "action_profile_spells_by_spec": {
+            str(class_spec): sorted({int(spell_id) for spell_id in spells if int(spell_id) > 0})
+            for class_spec, spells in payload.get("action_profile_spells_by_spec", {}).items()
+        },
         "proficiency_spells_by_class": int_keyed_spell_map(payload, "proficiency_spells_by_class"),
         "raw": payload,
     }

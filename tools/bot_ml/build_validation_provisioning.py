@@ -216,6 +216,16 @@ def validate_talent_manifest(bot: dict[str, Any], dbc_dir: Path = DEFAULT_DBC_DI
         raise ValueError(f"{bot['name']} primary tree spells do not match DBC tree {primary_tree}")
 
 
+def talent_point_count(bot: dict[str, Any], dbc_dir: Path = DEFAULT_DBC_DIR) -> int:
+    talents, _primary_spells = talent_data(dbc_dir)
+    points = 0
+    for selected in bot.get("talents", []):
+        row = talents[int(selected["talent_id"])]
+        ranks = [int(value) for value in row[4:9] if int(value)]
+        points += ranks.index(int(selected["spell_id"])) + 1
+    return points
+
+
 def equipment_cache(equipment: list[dict[str, Any]], bag_slots: int = INVENTORY_BAG_SLOTS) -> str:
     visible = [0] * (EQUIPMENT_SLOT_END * 2)
     for item in equipment:
@@ -256,8 +266,13 @@ def normalize_ascii_player_name(name: str) -> str:
 
 def load_config(path: Path) -> dict[str, Any]:
     config = json.loads(path.read_text(encoding="utf-8"))
+    talent_builds = config.get("talent_builds_by_spec", {})
     for scenario in config.get("scenarios", []):
         for bot in scenario.get("bots", []):
+            build = talent_builds.get(str(bot.get("class_spec") or ""), {})
+            for key in ("primary_talent_tree_id", "talents", "primary_tree_spells"):
+                if key not in bot and key in build:
+                    bot[key] = json.loads(json.dumps(build[key]))
             name = str(bot.get("name", ""))
             normalized = normalize_ascii_player_name(name)
             if name != normalized:
@@ -353,9 +368,10 @@ def bot_spell_ids(bot: dict[str, Any], action_profiles: dict[str, Any] | None = 
     profiles = action_profiles or DEFAULT_ACTION_PROFILES
     configured = [int(spell) for spell in bot.get("spells", [])]
     profile_spells = profiles["action_profile_spells_by_class"].get(int(bot.get("class", 0)), [])
+    spec_profile_spells = profiles.get("action_profile_spells_by_spec", {}).get(str(bot.get("class_spec") or ""), [])
     proficiency_spells = profiles["proficiency_spells_by_class"].get(int(bot.get("class", 0)), [])
     talent_spells = {int(talent["spell_id"]) for talent in bot.get("talents", [])}
-    return sorted({spell for spell in configured + profile_spells + proficiency_spells if spell > 0 and spell not in talent_spells})
+    return sorted({spell for spell in configured + profile_spells + spec_profile_spells + proficiency_spells if spell > 0 and spell not in talent_spells})
 
 
 def bot_talent_spell_ids(bot: dict[str, Any]) -> list[int]:

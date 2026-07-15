@@ -54,7 +54,7 @@ from tools.bot_ml.orchestrator_daemon import codex_command, detect_rate_limit, h
 from tools.bot_ml.generate_lane_configs import write_lane_config
 from tools.bot_ml.promote_live_validation_artifact import promote
 from tools.bot_ml.build_validation_gear_profiles import SHIELD_CLASSES, build_gem_catalog, build_profiles, build_report, fetch_items, load_gem_properties, load_spell_item_enchantments
-from tools.bot_ml.build_validation_provisioning import apply_gear_profiles, bot_known_spell_ids, bot_primary_tree_spell_ids, bot_spell_ids, bot_talent_spell_ids, build_account_insert_sql, build_character_insert_sql, equipment_cache, glyph_item_to_property_map, glyph_property_type_map, main as provisioning_main, normalized_glyph_slots, normalized_glyphs, runtime_safe_enchantments, scenario_report, srp6_registration_data, validate_talent_manifest
+from tools.bot_ml.build_validation_provisioning import apply_gear_profiles, bot_known_spell_ids, bot_primary_tree_spell_ids, bot_spell_ids, bot_talent_spell_ids, build_account_insert_sql, build_character_insert_sql, equipment_cache, glyph_item_to_property_map, glyph_property_type_map, load_config as load_validation_provisioning_config, main as provisioning_main, normalized_glyph_slots, normalized_glyphs, runtime_safe_enchantments, scenario_report, srp6_registration_data, talent_point_count, validate_talent_manifest
 from tools.bot_ml.validate_validation_provisioning import build_report as provisioning_verify_report
 from tools.bot_ml.validate_validation_provisioning import main as provisioning_verify_main
 from tools.bot_ml.validate_validation_provisioning import validate_database as validate_provisioning_database
@@ -7319,7 +7319,7 @@ def test_cata_action_profile_manifest_drives_validation_spells(tmp_path, monkeyp
     warlock = {"class": 9, "spells": []}
     druid = {"class": 11, "spells": []}
 
-    assert manifest["schema"] == "bot_cata_434_action_profiles_v1"
+    assert manifest["schema"] == "bot_cata_434_action_profiles_v2"
     assert 2061 in bot_spell_ids(priest, manifest)
     assert 2050 in bot_spell_ids(priest, manifest)
     assert 2006 in bot_spell_ids(priest, manifest)
@@ -7633,6 +7633,39 @@ def test_holy_priest_manifest_is_legal_and_drives_talents_and_glyph_slots():
     assert {14751, 34861, 47788, 88625, 87336, 95861, 33167}.issubset(set(bot_known_spell_ids(priest)))
     assert normalized_glyph_slots(priest) == [251, 0, 0, 0, 0, 0, 264, 709, 0]
     assert {251: 0, 264: 2, 709: 2}.items() <= glyph_property_type_map().items()
+
+
+def test_stonecore_role_specs_inherit_complete_dbc_legal_talent_and_action_profiles():
+    config = load_validation_provisioning_config(Path("experiments/configs/validation_provisioning_cata_001.json"))
+    action_profiles = load_action_profile_manifest()
+    required = {
+        "protection_paladin": {53595, 26573, 31935, 53600, 62124},
+        "fire_mage": {133, 2948, 44457, 92315, 11129},
+        "marksmanship_hunter": {1978, 53209, 56641, 19434, 3045, 34490},
+        "enhancement_shaman": {17364, 60103, 8050, 73680, 403, 421, 51533},
+    }
+
+    for scenario in config["scenarios"]:
+        for bot in scenario["bots"]:
+            class_spec = bot["class_spec"]
+            if class_spec not in required:
+                continue
+            validate_talent_manifest(bot)
+            assert talent_point_count(bot) == 41
+            assert required[class_spec] <= set(bot_known_spell_ids(bot, action_profiles))
+
+    assert action_profiles["schema"] == "bot_cata_434_action_profiles_v2"
+
+
+def test_stonecore_hazard_geometry_is_emitted_in_route_manifest():
+    config = json.loads(Path("experiments/configs/validation_scenarios_cata_001.json").read_text(encoding="utf-8"))
+    manifests = build_validation_scenario_manifests(config, {"scenarios": []}, {"all_passed": True})
+    routes = [row for row in manifests["validation_routes"] if row["scenario_id"] == "stonecore_5n"]
+    slabhide = next(row for row in routes if row["label"] == "Slabhide")
+    flayers = next(row for row in routes if row["label"] == "twilight flayer packs")
+
+    assert (slabhide["hazard_source_entry"], slabhide["hazard_damage_spell_id"], slabhide["hazard_shape"], slabhide["hazard_radius_yards"]) == (43242, 80801, "radial", 5.0)
+    assert (flayers["hazard_source_entry"], flayers["hazard_detection_spell_id"], flayers["hazard_shape"], flayers["hazard_radius_yards"]) == (42808, 79922, "frontal_cone", 4.0)
 
 
 def test_validation_provisioning_strips_socket_gem_enchantments_for_runtime_load():

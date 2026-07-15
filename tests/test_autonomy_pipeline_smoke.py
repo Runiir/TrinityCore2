@@ -1711,8 +1711,10 @@ def test_validation_route_movement_check_requires_classified_ground_danger():
     assert "if (!castSpell || !castSpell->CalcCastTime(candidate->getLevel()))" in route
     assert "WorldObject const* dodgeOrigin = movementOrigin && movementOrigin != bot ? movementOrigin : caster;" in route
     assert "bot->GetRelativeAngle(dodgeOrigin) + float(M_PI)" in route
-    assert 'moved ? "movement_check_jump" : "tactical_path_rejected"' in route
-    assert 'action = moved ? "movement_check_jump" : "hold_tactical_path_rejected";' in route
+    assert 'configuredHazard ? "hazard_exit_started" : "movement_check_jump"' in route
+    assert 'configuredHazard ? "hazard_exit_failed" : "tactical_path_rejected"' in route
+    assert 'configuredHazard ? "move_out_of_hazard" : "movement_check_jump"' in route
+    assert 'configuredHazard ? "hold_hazard_exit_failed" : "hold_tactical_path_rejected"' in route
 
 
 def test_validation_route_cleared_trash_regroups_to_terminal_endpoint():
@@ -2725,7 +2727,7 @@ def test_native_self_resurrection_uses_only_the_player_spell_cast_path():
     assert "native_self_resurrection_submitted" in self_res
 
 
-def test_validation_route_high_density_adds_use_shared_escape_and_fail_closed_to_density_contract():
+def test_validation_route_high_density_adds_pull_the_tank_into_the_swarm_and_fail_closed_to_density_contract():
     mgr = read(BOT_MGR)
     objective = function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteObjective")
     start = objective.index("auto tryValidationRouteAdds")
@@ -2752,7 +2754,9 @@ def test_validation_route_high_density_adds_use_shared_escape_and_fail_closed_to
     assert '\\"boss_add_density_phase\\"' in mgr
     assert '\\"boss_add_density_generation\\"' in mgr
     assert "profile.MovementDirective != \"melee\"" in adds
-    assert "densityTank->GetRelativeAngle(centroidX, centroidY) + float(M_PI)" in adds
+    assert "float centroidDistance = densityTank->GetExactDist2d(centroidX, centroidY);" in adds
+    assert "MoveBotToPoint(state, densityTank, centroidX, centroidY, centroidZ)" in adds
+    assert 'moved ? "tank_move_to_add_centroid" : "tank_add_centroid_path_rejected"' in adds
     assert 'escapeIssued ? "reissue_shared_escape_unreached" : "move_to_shared_escape"' in adds
     assert "ResolveProfileCombatAction(bot, add, highDensityPhase ? addCount : 0, highDensityPhase)" in adds
     assert "ExecuteProfileCombatAction(&state, bot, add, &profileAction, addCount, true)" in adds
@@ -2833,47 +2837,24 @@ def test_inactive_density_without_listed_add_does_not_consume_boss_activation_ha
     assert '"no_compatible_density_anchor"' in no_add
 
 
-def test_density_escape_is_one_generation_scoped_tank_relative_point_with_healer_priority():
+def test_density_tank_centroid_control_prioritizes_loose_healer_targets():
     mgr = read(BOT_MGR)
     objective = function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteObjective")
     start = objective.index("auto tryValidationRouteAdds")
     end = objective.index("auto markValidationRouteTerminalAfterProgress", start)
     adds = objective[start:end]
-    reset = function_body(mgr, "void BotWorldPopulationMgr::ResetValidationRouteBossAddEscapeState")
-    density_reset = function_body(mgr, "void BotWorldPopulationMgr::ResetValidationRouteBossAddDensityState")
-
     assert "Player* densityTank = nullptr;" in adds
     assert "Player* densityHealer = nullptr;" in adds
-    assert "BotClassSpecActionProfileStore::Build(densityHealer, \"healer\")" in adds
-    assert "densityHealer->HasSpell(spell.SpellId)" in adds
-    assert "densityHealerRange = std::max(densityHealerRange, spellRange);" in adds
-    assert "anchorLeash = std::min(30.0f, densityHealerRange - 2.0f)" in adds
-    assert "_validationRouteBossAddEscapeAnchorX = densityTank->GetPositionX();" in adds
-    assert "highDensityPhase && bot == densityTank && escapeCohortValid" in adds
-    assert "if (!_validationRouteBossAddEscapeActive || centroidMoved)" in adds
-    assert "densityTank->IsWithinLOS(escape.GetPositionX()" in adds
-    assert "densityHealer->IsWithinLOS(escape.GetPositionX()" in adds
-    assert "if (_validationRouteBossAddEscapeActive && !escapeCohortValid)" in adds
-    assert "ResetValidationRouteBossAddEscapeState();" in adds
-    assert "_validationRouteBossAddEscapeIssuedGuids.clear();" in adds
-    assert "_validationRouteBossAddEscapeGeneration == _validationRouteGeneration" in adds
+    assert 'uint8 priority = victimRole == "healer" ? 3 : 2;' in adds
+    assert "add = looseAdd ? looseAdd : densityAnchor;" in adds
+    assert "highDensityPhase && bot == densityTank && addCount >= 3" in adds
+    assert "float centroidX = addX / float(addCount);" in adds
+    assert "float centroidY = addY / float(addCount);" in adds
+    assert "centroidDistance > 4.0f" in adds
+    assert "MoveBotToPoint(state, densityTank, centroidX, centroidY, centroidZ)" in adds
+    assert 'action = moved ? "tank_move_to_add_centroid" : "hold_tank_add_centroid";' in adds
     assert "if (highDensityPhase && role == \"healer\" && tryRouteGroupHeal(bot, add))" in adds
-    assert "_validationRouteBossAddEscapeIssuedGuids.insert(bot->GetGUID());" in adds
-    assert "bool escapePathPending = state.ActivePathValid" in adds
-    assert "&& state.IsMoving" in adds[adds.index("bool escapePathPending"):adds.index("bool shouldIssueEscape")]
-    assert "state.ActivePathToX - _validationRouteBossAddEscapeX" in adds
-    assert "state.ActivePathToY - _validationRouteBossAddEscapeY" in adds
-    assert "state.ActivePathToZ - _validationRouteBossAddEscapeZ" in adds
-    assert "bool shouldIssueEscape = !reachedEscape && !escapePathPending;" in adds
-    assert 'action = "continue_to_boss_add_density_escape";' in adds
-    assert "_validationRouteBossAddEscapeActive = false;" in reset
-    assert "_validationRouteBossAddEscapeGeneration = 0;" in reset
-    assert "_validationRouteBossAddEscapeIssuedGuids.clear();" in reset
-    assert "ResetValidationRouteBossAddEscapeState();" in density_reset
-    assert '\\"boss_add_escape_active\\"' in mgr
-    assert '\\"boss_add_escape_issued_count\\"' in mgr
-    assert '\\"validation_route_boss_add_escape_distance\\"' in mgr
-    assert_ordered(adds, "tryRouteGroupHeal(bot, add)", "MoveBotToPoint(state, bot, _validationRouteBossAddEscapeX")
+    assert_ordered(adds, "add = looseAdd ? looseAdd : densityAnchor;", "misdirection_to_tank", "tank_move_to_add_centroid")
 
 
 def test_shared_density_latch_uses_cohort_observation_before_swarm_end_clear():
@@ -2954,3 +2935,32 @@ def test_healer_candidate_mask_is_db_driven_and_records_rejections():
     assert "candidate.Profile.InjuredHealthPct" in manager
     assert 'candidate.RejectReason = "not_healing_action"' in manager
     assert "return best ? best->SpellId : 0;" in manager
+
+
+def test_stonecore_quality_repairs_cover_hazards_pet_recovery_and_healer_protection():
+    root = Path(__file__).resolve().parents[1]
+    manager = (root / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+    header = (root / "src/server/game/Bots/BotWorldPopulationMgr.h").read_text()
+    rotation_sql = (root / "sql/custom/world/2026_07_15_00_stonecore_complete_role_rotations.sql").read_text()
+
+    for field in (
+        "ValidationRouteHazardSourceEntry",
+        "ValidationRouteHazardDetectionSpellId",
+        "ValidationRouteHazardDamageSpellId",
+        "ValidationRouteHazardShape",
+        "ValidationRouteHazardRadiusYards",
+    ):
+        assert field in header
+        assert field in manager
+    assert 'HasInArc(float(M_PI), bot)' in manager
+    assert '"hazard_exit_started"' in manager
+    assert '"hazard_exit_completed"' in manager
+    assert '"hold_hazard_exit_failed"' in manager
+    assert "HunterPetRevivePendingUntilMs" in header
+    assert '"hunter_pet_revive_submitted"' in manager
+    assert '"hunter_pet_revived"' in manager
+    assert 'victimRole == "healer" ? 3 : 2' in manager
+    assert '"tank_move_to_add_centroid"' in manager
+    assert '"misdirection_to_tank"' in manager
+    for spell_id in (2948, 92315, 11129, 403, 421, 53595, 26573):
+        assert str(spell_id) in rotation_sql
