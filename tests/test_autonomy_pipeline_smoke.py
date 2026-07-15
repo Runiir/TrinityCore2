@@ -3013,6 +3013,8 @@ def test_stonecore_quality_repairs_cover_hazards_pet_recovery_and_healer_protect
     assert "bool _validationRouteObservedDeadScriptTarget = false;" in header
     assert "_validationRouteObservedDeadScriptTarget = true;" in manager
     assert "_validationRouteCompletedPackCount > 0 || _validationRouteObservedDeadScriptTarget" in manager
+    assert 'routeArrivalRadius = routeProfile.MovementDirective == "melee" ? 8.0f : 20.0f;' in manager
+    assert "_validationRoutePackObservedEngagement || _validationRouteObservedDeadScriptTarget" in manager
     assert '\\"validation_route_observed_dead_script_target\\"' in manager
     assert "float minRange = selfTarget ? 0.0f" in manager
     assert 'candidate.RejectReason = "caster_controlled"' in manager

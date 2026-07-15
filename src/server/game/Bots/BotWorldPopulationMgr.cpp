@@ -9341,7 +9341,12 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         || _config.ValidationRouteActivationSummonEntry
         || _config.ValidationRouteOpenerSummonEntry
         || (_config.ValidationRouteKind == "boss" && _config.ValidationRouteTargetEntry);
-    float routeArrivalRadius = _config.ValidationRouteKind == "boss" ? 8.0f : 18.0f;
+    float routeArrivalRadius = 18.0f;
+    if (_config.ValidationRouteKind == "boss")
+    {
+        BotClassSpecActionProfile routeProfile = BotClassSpecActionProfileStore::Build(bot, GetDungeonRole(bot));
+        routeArrivalRadius = routeProfile.MovementDirective == "melee" ? 8.0f : 20.0f;
+    }
     auto tryValidationRouteInterrupt = [this, &state, bot, &power, stage, activity, &situation, &action](Unit* interruptTarget, char const* context) -> bool
     {
         if (_config.ValidationRouteKind != "boss"
@@ -11425,7 +11430,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             state.ValidationRouteTargetSearchMissCount = 0;
         }
         else if ((discoveryLeg ? (_validationRouteCompletedPackCount > 0 || _validationRouteObservedDeadScriptTarget)
-                : _validationRoutePackGeneration == _validationRouteGeneration && _validationRoutePackObservedEngagement)
+                : _validationRoutePackGeneration == _validationRouteGeneration
+                    && (_validationRoutePackObservedEngagement || _validationRouteObservedDeadScriptTarget))
             && ++state.ValidationRouteTargetSearchMissCount >= 2)
         {
             bool packHasLiveMobs = trashClusterHasLiveMobs();
@@ -11452,7 +11458,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             uint64 quietRemainingMs = quietElapsedMs >= 2000 ? 0 : 2000 - quietElapsedMs;
 
             if (_config.ValidationRouteAdvanceMode == "terminal"
-                && (discoveryLeg ? (_validationRouteCompletedPackCount > 0 || _validationRouteObservedDeadScriptTarget) : _validationRoutePackObservedEngagement)
+                && (discoveryLeg ? (_validationRouteCompletedPackCount > 0 || _validationRouteObservedDeadScriptTarget)
+                    : (_validationRoutePackObservedEngagement || _validationRouteObservedDeadScriptTarget))
                 && !packHasLiveMobs
                 && !partyHasActiveCombatUnit
                 && fullCohortAtEndpoint
