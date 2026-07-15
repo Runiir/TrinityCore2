@@ -2863,7 +2863,8 @@ def test_density_tank_centroid_control_prioritizes_loose_healer_targets():
     assert "MoveBotToPoint(state, densityTank, centroidX, centroidY, centroidZ)" in adds
     assert 'action = moved ? "tank_move_to_add_centroid" : "hold_tank_add_centroid";' in adds
     assert '"dps_stack_for_add_pickup"' in adds
-    assert "densityDefenseTarget == bot && densityTank" in adds
+    assert "densityDefenseTarget == bot && densityTank" not in adds
+    assert 'role == "dps" && densityTank && !bot->getAttackers().empty()' in adds
     assert 'if (memberRole == "tank" || member->getAttackers().empty())' in adds
     assert "nearestAttacker->GetAngle(densityTank)" in adds
     assert "densityTank->GetFirstCollisionPosition(4.0f" in adds
@@ -3005,18 +3006,19 @@ def test_stonecore_quality_repairs_cover_hazards_pet_recovery_and_healer_protect
     assert "olderHealerTarget" not in manager
     assert "nearestDefenseAttacker" in manager
     assert '"dps_hold_for_nearby_add_pickup"' in manager
+    assert '"tank_auto_attack_density_fallback"' in manager
     assert "urgentHunterPetRecovery" in manager
     assert "addCount >= 3 && !densityDefenseTarget" in manager
     assert "MoveBotToProfileRange(state, bot, target, &profileAction)" in manager
     assert "GetFirstCollisionPosition(profileAction.MinRange" not in manager
-    assert "? std::max(12.0f, minRange + 4.0f)" in manager
+    assert "? std::max(24.0f, minRange + 8.0f)" in manager
     assert "auto moveOutOfProfileDeadZone" in manager
     assert "endpointDistance >= rangeAction.MinRange + 1.0f" in manager
     assert "for (float angleOffset : { 0.0f, float(M_PI_4), -float(M_PI_4), float(M_PI_2), -float(M_PI_2) })" in manager
     assert "bool _validationRouteObservedDeadScriptTarget = false;" in header
     assert "_validationRouteObservedDeadScriptTarget = true;" in manager
     assert "_validationRouteCompletedPackCount > 0 || _validationRouteObservedDeadScriptTarget" in manager
-    assert 'routeArrivalRadius = routeProfile.MovementDirective == "melee" ? 8.0f : 20.0f;' in manager
+    assert 'routeArrivalRadius = routeProfile.MovementDirective == "melee" ? 8.0f : 30.0f;' in manager
     assert "_validationRoutePackObservedEngagement || _validationRouteObservedDeadScriptTarget" in manager
     assert '\\"validation_route_observed_dead_script_target\\"' in manager
     assert "float minRange = selfTarget ? 0.0f" in manager

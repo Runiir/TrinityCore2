@@ -3398,7 +3398,7 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
     // inside its hostile minimum range.  Use a stable ranged band for every
     // real dead-zone escape, while retaining the profile maximum as the cap.
     float desiredRange = minRange > 0.0f
-        ? std::max(12.0f, minRange + 4.0f)
+        ? std::max(24.0f, minRange + 8.0f)
         : std::max(12.0f, std::min(maxRange - 2.0f, 25.0f));
     if (maxRange > 0.0f)
         desiredRange = std::min(desiredRange, std::max(5.0f, maxRange - 2.0f));
@@ -9351,7 +9351,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     if (_config.ValidationRouteKind == "boss")
     {
         BotClassSpecActionProfile routeProfile = BotClassSpecActionProfileStore::Build(bot, GetDungeonRole(bot));
-        routeArrivalRadius = routeProfile.MovementDirective == "melee" ? 8.0f : 20.0f;
+        routeArrivalRadius = routeProfile.MovementDirective == "melee" ? 8.0f : 30.0f;
     }
     auto tryValidationRouteInterrupt = [this, &state, bot, &power, stage, activity, &situation, &action](Unit* interruptTarget, char const* context) -> bool
     {
@@ -10000,7 +10000,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return true;
         }
 
-        if (role == "dps" && densityDefenseTarget == bot && densityTank && !bot->getAttackers().empty()
+        if (role == "dps" && densityTank && !bot->getAttackers().empty()
             && bot->GetExactDist2d(densityTank) > 8.0f
             && !bot->HasUnitState(UNIT_STATE_CASTING) && !bot->IsFalling())
         {
@@ -10042,7 +10042,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
         // If the bot is already in pickup range, or its legal path to the tank
         // was rejected above, stop adding threat until ownership transfers.
-        if (role == "dps" && densityDefenseTarget == bot && densityTank && !bot->getAttackers().empty())
+        if (role == "dps" && densityTank && !bot->getAttackers().empty())
         {
             bot->AttackStop();
             if (Pet* pet = bot->GetPet())
@@ -10235,6 +10235,24 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             profileAction = ResolveProfileCombatAction(bot, add);
         if (highDensityPhase && !profileAction.Valid)
         {
+            if (role == "tank")
+            {
+                BotActionExecutor executor;
+                BotActionResult pull = executor.Pull(bot, add);
+                if (pull == BotActionResult::Ok)
+                {
+                    std::string raw = BuildRawJson(bot, add);
+                    std::string semantic = BuildSemanticJson(bot, add, "dungeon_boss", &power, stage, activity);
+                    RecordEvent(state, bot, "boss_add_density", add, "tank_auto_attack_density_fallback",
+                        raw.c_str(), semantic.c_str(), float(addCount));
+                    state.TargetGuid = add->GetGUID();
+                    state.WasInCombat = true;
+                    target = add;
+                    situation = "dungeon_boss";
+                    action = "tank_auto_attack_density_fallback";
+                    return true;
+                }
+            }
             std::string raw = BuildRawJson(bot, add);
             std::string semantic = BuildSemanticJson(bot, add, "dungeon_boss", &power, stage, activity);
             RecordEvent(state, bot, "boss_add_density", add, "no_legal_density_action", raw.c_str(), semantic.c_str(), float(addCount));
