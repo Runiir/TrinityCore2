@@ -3393,7 +3393,13 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
     if (directive == "melee" || (minRange <= 0.0f && maxRange <= 5.0f))
         return moveToTerrainProjectedPoint(reference->GetPositionX(), reference->GetPositionY(), reference->GetPositionZ());
 
-    float desiredRange = minRange > 0.0f ? minRange + 2.0f : std::max(12.0f, std::min(maxRange - 2.0f, 25.0f));
+    // A small center-to-center offset is not enough around bosses with a large
+    // combat reach: the movement can finish while the ranged weapon is still
+    // inside its hostile minimum range.  Use a stable ranged band for every
+    // real dead-zone escape, while retaining the profile maximum as the cap.
+    float desiredRange = minRange > 0.0f
+        ? std::max(12.0f, minRange + 4.0f)
+        : std::max(12.0f, std::min(maxRange - 2.0f, 25.0f));
     if (maxRange > 0.0f)
         desiredRange = std::min(desiredRange, std::max(5.0f, maxRange - 2.0f));
     desiredRange = std::max(5.0f, desiredRange);
@@ -9625,8 +9631,19 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             }
             angle = absoluteAwayAngle - bot->GetOrientation();
         }
-        Position dodge = bot->GetFirstCollisionPosition(dodgeDistance, angle);
-        bool moved = MoveBotToPoint(state, bot, dodge.GetPositionX(), dodge.GetPositionY(), dodge.GetPositionZ());
+        bool moved = false;
+        // A direct radial exit can land outside the local navmesh beside lava
+        // cracks, walls, or shelf edges.  Try a small deterministic fan of
+        // equally safe bearings before reporting a failed hazard exit.
+        for (float angleOffset : { 0.0f, float(M_PI_4), -float(M_PI_4), float(M_PI_2), -float(M_PI_2) })
+        {
+            Position dodge = bot->GetFirstCollisionPosition(dodgeDistance, angle + angleOffset);
+            if (MoveBotToPoint(state, bot, dodge.GetPositionX(), dodge.GetPositionY(), dodge.GetPositionZ()))
+            {
+                moved = true;
+                break;
+            }
+        }
         state.ValidationRouteDodgeCasterGuid = caster->GetGUID();
         state.ValidationRouteDodgeSpellId = castSpell->Id;
         state.ValidationRouteDodgeUntilMs = nowMs + (moved ? 3000 : 500);
@@ -9840,9 +9857,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     uint8 priority = victimRole == "healer" ? 3 : 2;
                     float distance = bot->GetExactDist(candidate);
                     uint32 guid = candidate->GetGUID().GetCounter();
-                    bool olderHealerTarget = priority == 3 && loosePriority == 3 && guid < looseGuid;
-                    bool nearerNonHealerTarget = priority == loosePriority && priority != 3 && distance < looseDistance;
-                    if (!looseAdd || priority > loosePriority || olderHealerTarget || nearerNonHealerTarget)
+                    bool nearerSamePriority = priority == loosePriority
+                        && (distance < looseDistance || (distance == looseDistance && guid < looseGuid));
+                    if (!looseAdd || priority > loosePriority || nearerSamePriority)
                     {
                         looseAdd = candidate;
                         loosePriority = priority;
@@ -9890,6 +9907,36 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     densityDefenseAttackerCount = attackerCount;
                     densityDefenseGuid = guid;
                 }
+            }
+        }
+
+        // Defend the party member from the closest listed attacker the tank
+        // can acquire.  Selecting an older but distant healer attacker caused
+        // the tank and the kiting healer to cross paths while the nearby swarm
+        // continued hitting the party.
+        if (role == "tank" && densityDefenseTarget)
+        {
+            Unit* nearestDefenseAttacker = nullptr;
+            float nearestDefenseDistance = std::numeric_limits<float>::max();
+            uint32 nearestDefenseGuid = std::numeric_limits<uint32>::max();
+            for (Unit* attacker : densityDefenseTarget->getAttackers())
+            {
+                if (!isUsableListedAdd(bot, attacker) || !bot->IsWithinLOSInMap(attacker))
+                    continue;
+                float distance = bot->GetExactDist(attacker);
+                uint32 guid = attacker->GetGUID().GetCounter();
+                if (!nearestDefenseAttacker || distance < nearestDefenseDistance
+                    || (distance == nearestDefenseDistance && guid < nearestDefenseGuid))
+                {
+                    nearestDefenseAttacker = attacker;
+                    nearestDefenseDistance = distance;
+                    nearestDefenseGuid = guid;
+                }
+            }
+            if (nearestDefenseAttacker)
+            {
+                add = nearestDefenseAttacker;
+                sharedFocusValid = false;
             }
         }
 
@@ -9991,6 +10038,25 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     return true;
                 }
             }
+        }
+
+        // If the bot is already in pickup range, or its legal path to the tank
+        // was rejected above, stop adding threat until ownership transfers.
+        if (role == "dps" && densityDefenseTarget == bot && densityTank && !bot->getAttackers().empty())
+        {
+            bot->AttackStop();
+            if (Pet* pet = bot->GetPet())
+                pet->AttackStop();
+            Unit* pickupFocus = densityTank->GetVictim() ? densityTank->GetVictim() : add;
+            state.TargetGuid = pickupFocus ? pickupFocus->GetGUID() : ObjectGuid::Empty;
+            target = pickupFocus;
+            std::string raw = BuildRawJson(bot, add);
+            std::string semantic = BuildSemanticJson(bot, add, "dungeon_boss", &power, stage, activity);
+            RecordEvent(state, bot, "boss_adds", add, "dps_hold_for_nearby_add_pickup",
+                raw.c_str(), semantic.c_str(), float(bot->getAttackers().size()), addCount);
+            situation = "dungeon_boss";
+            action = "dps_hold_for_nearby_add_pickup";
+            return true;
         }
 
         if (role == "tank" && densityHealer && !densityHealer->getAttackers().empty()

@@ -7699,10 +7699,14 @@ def test_stonecore_hazard_geometry_is_emitted_in_route_manifest():
     config = json.loads(Path("experiments/configs/validation_scenarios_cata_001.json").read_text(encoding="utf-8"))
     manifests = build_validation_scenario_manifests(config, {"scenarios": []}, {"all_passed": True})
     routes = [row for row in manifests["validation_routes"] if row["scenario_id"] == "stonecore_5n"]
+    corridor = next(row for row in routes if row["label"] == "crystalspawn corridor")
     slabhide = next(row for row in routes if row["label"] == "Slabhide")
+    sentry = next(row for row in routes if row["label"] == "stonecore sentry gauntlet")
     flayers = next(row for row in routes if row["label"] == "twilight flayer packs")
 
+    assert (corridor["hazard_source_entry"], corridor["hazard_detection_spell_id"], corridor["hazard_shape"]) == (42808, 79922, "frontal_cone")
     assert (slabhide["hazard_source_entry"], slabhide["hazard_damage_spell_id"], slabhide["hazard_shape"], slabhide["hazard_radius_yards"]) == (43242, 80801, "radial", 5.0)
+    assert (sentry["hazard_source_entry"], sentry["hazard_detection_spell_id"], sentry["hazard_shape"]) == (42808, 79922, "frontal_cone")
     assert (flayers["hazard_source_entry"], flayers["hazard_detection_spell_id"], flayers["hazard_shape"], flayers["hazard_radius_yards"]) == (42808, 79922, "frontal_cone", 4.0)
     assert flayers["source_entry"] == 42808
     assert flayers["pack_target_entries"] == [42808]

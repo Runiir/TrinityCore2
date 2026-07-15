@@ -3002,14 +3002,17 @@ def test_stonecore_quality_repairs_cover_hazards_pet_recovery_and_healer_protect
     assert "bot->GetExactDist2d(tank) > 8.0f" in manager
     assert "Unit* pickupFocus = tank->GetVictim() ? tank->GetVictim() : nearestAttacker;" in manager
     assert '"hand_of_salvation_healer_threat_drop"' in manager
-    assert "olderHealerTarget" in manager
+    assert "olderHealerTarget" not in manager
+    assert "nearestDefenseAttacker" in manager
+    assert '"dps_hold_for_nearby_add_pickup"' in manager
     assert "urgentHunterPetRecovery" in manager
     assert "addCount >= 3 && !densityDefenseTarget" in manager
     assert "MoveBotToProfileRange(state, bot, target, &profileAction)" in manager
     assert "GetFirstCollisionPosition(profileAction.MinRange" not in manager
-    assert "float desiredRange = minRange > 0.0f ? minRange + 2.0f" in manager
+    assert "? std::max(12.0f, minRange + 4.0f)" in manager
     assert "auto moveOutOfProfileDeadZone" in manager
     assert "endpointDistance >= rangeAction.MinRange + 1.0f" in manager
+    assert "for (float angleOffset : { 0.0f, float(M_PI_4), -float(M_PI_4), float(M_PI_2), -float(M_PI_2) })" in manager
     assert "bool _validationRouteObservedDeadScriptTarget = false;" in header
     assert "_validationRouteObservedDeadScriptTarget = true;" in manager
     assert "_validationRouteCompletedPackCount > 0 || _validationRouteObservedDeadScriptTarget" in manager
