@@ -1,0 +1,6 @@
+outs:
+- md5: d43cf7ce21535b8b91539829234ff426.dir
+  size: 601776239
+  nfiles: 38
+  hash: md5
+  path: stonecore_quality_flayer_run_105_manifest_miss
