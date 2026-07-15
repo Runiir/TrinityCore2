@@ -626,6 +626,13 @@ def parse_json_objects(output: str) -> list[dict[str, Any]]:
     return rows
 
 
+def strip_combat_log_chunks(output: str) -> str:
+    """Drop transport-only base64 chunks after their decoded artifact is written."""
+    return "\n".join(
+        line for line in output.splitlines() if "botauto_combatlog_chunk" not in line
+    ) + ("\n" if output.endswith(("\n", "\r")) else "")
+
+
 def classify_payloads(payloads: list[dict[str, Any]]) -> dict[str, Any]:
     status = next(
         (
@@ -641,8 +648,44 @@ def classify_payloads(payloads: list[dict[str, Any]]) -> dict[str, Any]:
     trace_payloads = [row for row in payloads if row.get("trace_schema_version") or row.get("entries")]
     trace = combined_trace_payload(trace_payloads)
     summary = next((row for row in reversed(payloads) if row.get("summary_schema_version") or "duration_minutes" in row or "total_kills" in row or "bot_learning" in row), {})
-    combat_log = next((row for row in reversed(payloads) if row.get("combat_log_schema_version") or row.get("action") == "botauto_combatlog"), {})
+    combat_log = combined_combat_log(payloads)
     return {"status": status, "diagnosis": diagnosis, "trace": trace, "summary": summary, "combat_log": combat_log}
+
+
+def combined_combat_log(payloads: list[dict[str, Any]]) -> dict[str, Any]:
+    direct = next(
+        (
+            row
+            for row in reversed(payloads)
+            if row.get("combat_log_schema_version") or row.get("action") == "botauto_combatlog"
+        ),
+        {},
+    )
+    if direct:
+        return direct
+
+    chunks = [
+        row
+        for row in payloads
+        if row.get("combat_log_chunk_schema_version")
+        or row.get("action") == "botauto_combatlog_chunk"
+    ]
+    if not chunks:
+        return {}
+    expected = int(chunks[-1].get("chunk_count") or 0)
+    by_sequence = {
+        int(row.get("sequence") or 0): row
+        for row in chunks
+        if int(row.get("chunk_count") or 0) == expected
+    }
+    if expected <= 0 or len(by_sequence) != expected or set(by_sequence) != set(range(expected)):
+        return {}
+    try:
+        raw = b"".join(base64.b64decode(by_sequence[index]["data"], validate=True) for index in range(expected))
+        decoded = json.loads(raw)
+    except (KeyError, TypeError, ValueError, json.JSONDecodeError):
+        return {}
+    return decoded if isinstance(decoded, dict) else {}
 
 
 def combined_trace_payload(payloads: list[dict[str, Any]]) -> dict[str, Any]:
@@ -2523,12 +2566,16 @@ def run_worldserver_completion_watchdog(
     def joined_output() -> str:
         return "".join(output_parts)
 
-    def send_command(command_text: str) -> None:
+    def send_command(command_text: str, *, cleanup: bool = False) -> None:
         assert process.stdin is not None
         process.stdin.write(command_text + "\n")
         process.stdin.flush()
         output_parts.append(f"$ {command_text}\n")
-        command_deadline = bounded_console_deadline(deadline, max(5, heartbeat_sec))
+        command_deadline = (
+            time.monotonic() + max(120, heartbeat_sec)
+            if cleanup
+            else bounded_console_deadline(deadline, max(5, heartbeat_sec))
+        )
         output_parts.append(read_until_console_prompt(process, command_deadline, expected_command_output_marker(command_text)))
 
     try:
@@ -2634,7 +2681,7 @@ def run_worldserver_completion_watchdog(
         timed_out = time.monotonic() >= deadline
         if process.poll() is None:
             for command_text in cleanup_commands:
-                send_command(command_text)
+                send_command(command_text, cleanup=True)
         if process.poll() is None and process.stdin and not process.stdin.closed:
             try:
                 send_command("server shutdown force 0")
@@ -3335,7 +3382,7 @@ def main() -> int:
         else:
             output, returncode, timed_out, command = run_worldserver(args.worldserver, effective_config, args.timeout_sec, script, args.observe_sec)
 
-    (args.output_dir / "worldserver_output.log").write_text(output, encoding="utf-8")
+    (args.output_dir / "worldserver_output.log").write_text(strip_combat_log_chunks(output), encoding="utf-8")
     if watchdog_report:
         report = watchdog_report
         report["returncode"] = returncode
@@ -3377,7 +3424,20 @@ def main() -> int:
     report["validation_context"] = validation_context
     if report.get("combat_log"):
         report["combat_analysis"] = analyze_combat_log(report["combat_log"])
+        write_json(args.output_dir / "combat_log.json", report["combat_log"])
         write_json(args.output_dir / "combat_analysis.json", report["combat_analysis"])
+        report["combat_log_path"] = str(args.output_dir / "combat_log.json")
+        report["combat_log_summary"] = {
+            key: report["combat_log"].get(key)
+            for key in (
+                "combat_log_schema_version",
+                "event_count",
+                "aggregate_count",
+                "second_bucket_count",
+                "recent_events_dropped",
+            )
+        }
+        report["combat_log"] = {}
     attach_stonecore_role_quality_audit(report, validation_context, validation_route_manifest)
     write_json(args.output_dir / "report.json", report)
     print(json.dumps(report, indent=2, sort_keys=True))

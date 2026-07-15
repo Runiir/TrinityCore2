@@ -7,6 +7,7 @@
 #include "Bots/BotMgr.h"
 #include "Bots/BotTypes.h"
 #include "Bots/BotWorldPopulationMgr.h"
+#include "Base64.h"
 #include "Chat.h"
 #include "Config.h"
 #include "Log.h"
@@ -1077,7 +1078,22 @@ private:
             return false;
         }
         if (handler)
-            handler->PSendSysMessage("%s", sBotWorldPopulationMgr->GetCombatLogJson().c_str());
+        {
+            std::string combatLog = sBotWorldPopulationMgr->GetCombatLogJson();
+            static constexpr size_t RawChunkSize = 24 * 1024;
+            size_t chunkCount = std::max<size_t>(1, (combatLog.size() + RawChunkSize - 1) / RawChunkSize);
+            for (size_t sequence = 0; sequence < chunkCount; ++sequence)
+            {
+                size_t offset = sequence * RawChunkSize;
+                size_t length = std::min(RawChunkSize, combatLog.size() - offset);
+                std::vector<uint8> raw(combatLog.begin() + offset, combatLog.begin() + offset + length);
+                std::string encoded = Trinity::Encoding::Base64::Encode(raw);
+                handler->PSendSysMessage(
+                    "{\"ok\":true,\"action\":\"botauto_combatlog_chunk\",\"combat_log_chunk_schema_version\":1,"
+                    "\"sequence\":%zu,\"chunk_count\":%zu,\"encoding\":\"base64\",\"data\":\"%s\"}",
+                    sequence, chunkCount, encoded.c_str());
+            }
+        }
         return true;
     }
 

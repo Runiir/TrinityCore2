@@ -1,7 +1,8 @@
+import base64
 import json
 
 from tools.bot_ml.analyze_combat_log import analyze_combat_log
-from tools.bot_ml.run_live_bot_validation import heartbeat_commands_from_script, live_validation_report
+from tools.bot_ml.run_live_bot_validation import heartbeat_commands_from_script, live_validation_report, strip_combat_log_chunks
 
 
 def combat_log_fixture() -> dict:
@@ -137,3 +138,30 @@ def test_live_validation_attaches_combat_analysis_and_logs_only_at_cleanup():
     assert startup == [".botauto start"]
     assert heartbeat == [".botauto status"]
     assert cleanup == [".botauto combatlog", ".botauto stop"]
+
+
+def test_live_validation_reassembles_bounded_combat_log_chunks():
+    raw = json.dumps(combat_log_fixture(), separators=(",", ":")).encode()
+    chunk_size = 97
+    parts = [raw[index : index + chunk_size] for index in range(0, len(raw), chunk_size)]
+    output = "\n".join(
+        json.dumps(
+            {
+                "action": "botauto_combatlog_chunk",
+                "combat_log_chunk_schema_version": 1,
+                "sequence": sequence,
+                "chunk_count": len(parts),
+                "encoding": "base64",
+                "data": base64.b64encode(part).decode(),
+            }
+        )
+        for sequence, part in enumerate(parts)
+    )
+
+    report = live_validation_report(output)
+
+    assert report["combat_log"]["event_count"] == 42
+    assert report["combat_analysis"]["encounters"][0]["party_damage"] == 10000
+    stripped = strip_combat_log_chunks("prefix\n" + output + "\nsuffix\n")
+    assert "botauto_combatlog_chunk" not in stripped
+    assert stripped == "prefix\nsuffix\n"

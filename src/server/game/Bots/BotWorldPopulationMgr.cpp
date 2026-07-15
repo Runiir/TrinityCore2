@@ -16203,7 +16203,7 @@ void BotWorldPopulationMgr::AddCombatLogAggregate(CombatLogPerspective perspecti
         aggregate.RouteNodeId = _config.ValidationRouteNodeId;
         aggregate.RouteLabel = _config.ValidationRouteLabel;
         aggregate.ActorName = actor->GetName();
-        aggregate.ActorRole = sBotMgr->GetBotRoleName(actor->GetGUID());
+        aggregate.ActorRole = GetDungeonRole(actor);
         aggregate.ActorClassId = actor->getClass();
         aggregate.SourceName = source->GetName();
         aggregate.SpellName = spellId ? (sSpellMgr->GetSpellInfo(spellId) ? sSpellMgr->GetSpellInfo(spellId)->SpellName : "Unknown") : "Melee";
@@ -16241,7 +16241,7 @@ void BotWorldPopulationMgr::AddCombatLogEvent(char const* kind, Player* actor, U
     event.Kind = kind ? kind : "unknown";
     event.ActorGuid = actor->GetGUID().GetCounter();
     event.ActorName = actor->GetName();
-    event.ActorRole = sBotMgr->GetBotRoleName(actor->GetGUID());
+    event.ActorRole = GetDungeonRole(actor);
     event.ActorClassId = actor->getClass();
     event.SourceGuid = source->GetGUID().GetCounter();
     event.SourceEntry = source->GetEntry();
