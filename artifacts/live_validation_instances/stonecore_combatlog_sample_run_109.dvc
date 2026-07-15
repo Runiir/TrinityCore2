@@ -1,0 +1,6 @@
+outs:
+- md5: e2897c83d39d15ed4afddbe0fb982c8a.dir
+  size: 5585208
+  nfiles: 11
+  hash: md5
+  path: stonecore_combatlog_sample_run_109
