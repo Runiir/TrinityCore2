@@ -3281,6 +3281,7 @@ def test_live_bot_validation_command_script_and_output_parser():
         ".botauto status",
         ".botauto diagnose all",
         ".botauto trace all 20",
+        ".botauto combatlog",
         ".botexp summary",
         ".botauto stop",
         "server shutdown force 0",
@@ -3288,7 +3289,7 @@ def test_live_bot_validation_command_script_and_output_parser():
     startup, heartbeat, cleanup = heartbeat_commands_from_script(script)
     assert startup == [".botauto start"]
     assert heartbeat == [".botauto status", ".botauto diagnose all", ".botauto trace all 20", ".botexp summary"]
-    assert cleanup == [".botauto stop"]
+    assert cleanup == [".botauto combatlog", ".botauto stop"]
 
     output = """
 TC> {"active_bots":0,"target_bots":2,"action":"botauto_status","decisions":0,"kills":0,"quests_accepted":0,"quest_objective_progress":0}
@@ -4442,6 +4443,7 @@ def test_live_bot_validation_soap_script_does_not_exit_server():
         ".botauto status",
         ".botauto diagnose all",
         ".botauto trace all 5",
+        ".botauto combatlog",
         ".botexp summary",
     ]
     assert "server shutdown" not in script

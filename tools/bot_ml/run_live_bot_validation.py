@@ -20,12 +20,14 @@ from urllib.parse import urlparse
 import re
 
 try:
+    from .analyze_combat_log import analyze_combat_log
     from .audit_role_efficiency import build_audit
     from .build_validation_provisioning import apply_gear_profiles, build_account_insert_sql, build_character_insert_sql, load_config, load_gear_profiles
     from .common import write_json
     from .extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
     from .live_validation_session import build_session, ensure_healthy_matching_session, live_validation_lock, stop_session
 except ImportError:
+    from analyze_combat_log import analyze_combat_log
     from audit_role_efficiency import build_audit
     from build_validation_provisioning import apply_gear_profiles, build_account_insert_sql, build_character_insert_sql, load_config, load_gear_profiles
     from common import write_json
@@ -594,6 +596,7 @@ def command_script(selector: str = "all", trace_limit: int = 20, start: bool = T
             ".botauto status",
             f".botauto diagnose {selector}",
             f".botauto trace {selector} {trace_limit}",
+            ".botauto combatlog",
             ".botexp summary",
         ]
     )
@@ -638,7 +641,8 @@ def classify_payloads(payloads: list[dict[str, Any]]) -> dict[str, Any]:
     trace_payloads = [row for row in payloads if row.get("trace_schema_version") or row.get("entries")]
     trace = combined_trace_payload(trace_payloads)
     summary = next((row for row in reversed(payloads) if row.get("summary_schema_version") or "duration_minutes" in row or "total_kills" in row or "bot_learning" in row), {})
-    return {"status": status, "diagnosis": diagnosis, "trace": trace, "summary": summary}
+    combat_log = next((row for row in reversed(payloads) if row.get("combat_log_schema_version") or row.get("action") == "botauto_combatlog"), {})
+    return {"status": status, "diagnosis": diagnosis, "trace": trace, "summary": summary, "combat_log": combat_log}
 
 
 def combined_trace_payload(payloads: list[dict[str, Any]]) -> dict[str, Any]:
@@ -2069,6 +2073,8 @@ def live_validation_report(
     trace = classified["trace"]
     status = classified["status"]
     summary = classified["summary"]
+    combat_log = classified["combat_log"]
+    combat_analysis = analyze_combat_log(combat_log) if combat_log else {}
 
     active_bots = int(status.get("active_bots") or status.get("bots") or status.get("activeBots") or 0)
     target_bots = int(status.get("target_bots") or status.get("targetBots") or 0)
@@ -2168,6 +2174,8 @@ def live_validation_report(
         "diagnosis": diagnosis,
         "trace": trace,
         "summary": summary,
+        "combat_log": combat_log,
+        "combat_analysis": combat_analysis,
         "scenario_reports": scenario_reports,
         "command_errors": errors,
         "evidence": evidence,
@@ -2315,7 +2323,7 @@ def heartbeat_commands_from_script(script: str) -> tuple[list[str], list[str], l
             continue
         if command_text == ".botauto start":
             startup.append(command_text)
-        elif command_text == ".botauto stop":
+        elif command_text in {".botauto combatlog", ".botauto stop"}:
             cleanup.append(command_text)
         elif command_text.startswith("server shutdown") or command_text == "server exit":
             continue
@@ -3333,6 +3341,9 @@ def main() -> int:
         report["returncode"] = returncode
         report["timed_out"] = timed_out
         report["command"] = command
+        final_payloads = classify_payloads(parse_json_objects(output))
+        if final_payloads.get("combat_log"):
+            report["combat_log"] = final_payloads["combat_log"]
     else:
         report = live_validation_report(
             output,
@@ -3364,6 +3375,9 @@ def main() -> int:
             report["acceptable_final_evidence"] = False
             report["all_passed"] = False
     report["validation_context"] = validation_context
+    if report.get("combat_log"):
+        report["combat_analysis"] = analyze_combat_log(report["combat_log"])
+        write_json(args.output_dir / "combat_analysis.json", report["combat_analysis"])
     attach_stonecore_role_quality_audit(report, validation_context, validation_route_manifest)
     write_json(args.output_dir / "report.json", report)
     print(json.dumps(report, indent=2, sort_keys=True))

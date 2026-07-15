@@ -890,6 +890,10 @@ bool Unit::HasBreakableByDamageCrowdControlAura(Unit* excludeCasterChannel) cons
             victim->ToCreature()->LowerPlayerDamageReq(health < damage ?  health : damage);
     }
 
+    uint32 landedDamage = std::min(damage, health);
+    sBotWorldPopulationMgr->NotifyCombatDamage(attacker, victim, spellProto ? spellProto->Id : 0,
+        landedDamage, unmitigatedDamage ? unmitigatedDamage : damage, uint32(damagetype), uint32(damageSchoolMask));
+
     if (health <= damage)
     {
         if (victim->GetTypeId() == TYPEID_PLAYER && victim != attacker)
@@ -6055,7 +6059,13 @@ void Unit::SetCharm(Unit* charm, bool apply)
         healInfo.SetEffectiveHeal(gain > 0 ? static_cast<uint32>(gain) : 0UL);
 
     if (healer && victim && healInfo.GetSpellInfo())
-        sBotWorldPopulationMgr->NotifyBotHeal(healer, victim, healInfo.GetSpellInfo()->Id, addhealth + healInfo.GetAbsorb(), gain > 0 ? static_cast<uint32>(gain) : 0U, healInfo.GetAbsorb());
+    {
+        uint32 effectiveHeal = gain > 0 ? static_cast<uint32>(gain) : 0U;
+        sBotWorldPopulationMgr->NotifyCombatHeal(healer, victim, healInfo.GetSpellInfo()->Id,
+            addhealth + healInfo.GetAbsorb(), effectiveHeal, healInfo.GetAbsorb());
+        sBotWorldPopulationMgr->NotifyBotHeal(healer, victim, healInfo.GetSpellInfo()->Id,
+            addhealth + healInfo.GetAbsorb(), effectiveHeal, healInfo.GetAbsorb());
+    }
 }
 
 bool Unit::IsMagnet() const

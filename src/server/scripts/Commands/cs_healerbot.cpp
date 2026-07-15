@@ -814,6 +814,7 @@ public:
             { "debug",   rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoDebugCommand,   "" },
             { "diagnose", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoDiagnoseCommand, "" },
             { "trace",   rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoTraceCommand,   "" },
+            { "combatlog", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoCombatLogCommand, "" },
             { "spawn",   rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoSpawnCommand,   "" },
             { "despawn", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoDespawnCommand, "" },
         };
@@ -1064,6 +1065,19 @@ private:
 
         if (handler)
             handler->PSendSysMessage("%s", sBotWorldPopulationMgr->GetBotTraceJson(selector, limit).c_str());
+        return true;
+    }
+
+    static bool HandleAutoCombatLogCommand(ChatHandler* handler, char const* /*args*/)
+    {
+        if (handler && handler->GetSession())
+        {
+            handler->PSendSysMessage("{\"ok\":false,\"action\":\"botauto_combatlog\",\"failure_reason\":\"console_only_bounded_export\"}");
+            handler->SetSentErrorMessage(true);
+            return false;
+        }
+        if (handler)
+            handler->PSendSysMessage("%s", sBotWorldPopulationMgr->GetCombatLogJson().c_str());
         return true;
     }
 

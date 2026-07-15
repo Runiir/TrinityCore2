@@ -924,6 +924,7 @@ bool BotWorldPopulationMgr::Start(std::string const& experimentName, BotWorldExp
         _metrics.TargetBots = _config.TargetPopulation;
         _elapsedMs = 0;
         _recordingWindowElapsedMs = 0;
+        ResetCombatLog();
         RecordRunStart();
         return true;
     }
@@ -949,6 +950,7 @@ bool BotWorldPopulationMgr::Start(std::string const& experimentName, BotWorldExp
     _metrics.TargetBots = _config.TargetPopulation;
     _elapsedMs = 0;
     _recordingWindowElapsedMs = 0;
+    ResetCombatLog();
     _active = true;
     _runtimeMode = BotWorldRuntimeMode::ManualExperiment;
 
@@ -1031,6 +1033,7 @@ bool BotWorldPopulationMgr::StartAutonomy(BotWorldExperimentConfig const* overri
     _recordingWindowIndex = 0;
     _runId = 0;
     _experimentId = 0;
+    ResetCombatLog();
     _active = true;
     _runtimeMode = BotWorldRuntimeMode::AlwaysOnAutonomy;
     _runtimeProfileDirty = false;
@@ -16157,6 +16160,166 @@ void BotWorldPopulationMgr::NotifyBotHeal(Unit* healer, Unit* target, uint32 spe
     best->LastHealAtMs = now;
 }
 
+void BotWorldPopulationMgr::ResetCombatLog()
+{
+    _combatLogAbilities.clear();
+    _combatLogSecondBuckets.clear();
+    _combatLogRecentEvents.clear();
+    _combatLogEventCount = 0;
+    _combatLogRecentEventsDropped = 0;
+}
+
+Player* BotWorldPopulationMgr::FindCombatLogCohortPlayer(Unit* unit) const
+{
+    Player* player = unit ? unit->GetCharmerOrOwnerPlayerOrPlayerItself() : nullptr;
+    if (!player)
+        return nullptr;
+
+    for (WorldBotState const& state : _bots)
+        if (state.Guid == player->GetGUID())
+            return GetLoadedBot(state) == player ? player : nullptr;
+    return nullptr;
+}
+
+void BotWorldPopulationMgr::AddCombatLogAggregate(CombatLogPerspective perspective, Player* actor, Unit* source,
+    Unit* target, uint32 spellId, uint32 effectType, uint32 amount, uint32 rawAmount, uint32 absorbedAmount,
+    uint64 timestampMs)
+{
+    if (!actor || !source || !target)
+        return;
+
+    CombatLogAbilityKey key;
+    key.RouteGeneration = _validationRouteGeneration;
+    key.Perspective = perspective;
+    key.ActorGuid = actor->GetGUID().GetCounter();
+    key.SourceEntry = source->GetEntry();
+    key.SpellId = spellId;
+    key.TargetEntry = target->GetEntry();
+    key.EffectType = effectType;
+
+    CombatLogAbilityAggregate& aggregate = _combatLogAbilities[key];
+    if (!aggregate.EventCount)
+    {
+        aggregate.RouteNodeId = _config.ValidationRouteNodeId;
+        aggregate.RouteLabel = _config.ValidationRouteLabel;
+        aggregate.ActorName = actor->GetName();
+        aggregate.ActorRole = sBotMgr->GetBotRoleName(actor->GetGUID());
+        aggregate.ActorClassId = actor->getClass();
+        aggregate.SourceName = source->GetName();
+        aggregate.SpellName = spellId ? (sSpellMgr->GetSpellInfo(spellId) ? sSpellMgr->GetSpellInfo(spellId)->SpellName : "Unknown") : "Melee";
+        aggregate.TargetName = target->GetName();
+        aggregate.FirstAtMs = timestampMs;
+        aggregate.SourceIsPet = source != actor && source->GetCharmerOrOwnerPlayerOrPlayerItself() == actor;
+    }
+
+    float distance = source->GetExactDist(target);
+    aggregate.LastAtMs = timestampMs;
+    ++aggregate.EventCount;
+    aggregate.Amount += amount;
+    aggregate.RawAmount += rawAmount;
+    aggregate.AbsorbedAmount += absorbedAmount;
+    aggregate.MovingEvents += source->isMoving() ? 1 : 0;
+    aggregate.DistanceTotal += distance;
+    if (aggregate.MinDistance < 0.0f || distance < aggregate.MinDistance)
+        aggregate.MinDistance = distance;
+    aggregate.MaxDistance = std::max(aggregate.MaxDistance, distance);
+    _combatLogSecondBuckets[std::make_tuple(_validationRouteGeneration, perspective,
+        actor->GetGUID().GetCounter(), timestampMs / 1000)] += amount;
+}
+
+void BotWorldPopulationMgr::AddCombatLogEvent(char const* kind, Player* actor, Unit* source, Unit* target,
+    uint32 spellId, uint32 effectType, uint32 schoolMask, uint32 amount, uint32 rawAmount,
+    uint32 absorbedAmount, uint64 timestampMs)
+{
+    if (!actor || !source || !target)
+        return;
+
+    CombatLogEvent event;
+    event.TimestampMs = timestampMs;
+    event.RouteGeneration = _validationRouteGeneration;
+    event.RouteNodeId = _config.ValidationRouteNodeId;
+    event.Kind = kind ? kind : "unknown";
+    event.ActorGuid = actor->GetGUID().GetCounter();
+    event.ActorName = actor->GetName();
+    event.ActorRole = sBotMgr->GetBotRoleName(actor->GetGUID());
+    event.ActorClassId = actor->getClass();
+    event.SourceGuid = source->GetGUID().GetCounter();
+    event.SourceEntry = source->GetEntry();
+    event.SourceName = source->GetName();
+    event.TargetGuid = target->GetGUID().GetCounter();
+    event.TargetEntry = target->GetEntry();
+    event.TargetName = target->GetName();
+    event.SpellId = spellId;
+    event.SpellName = spellId ? (sSpellMgr->GetSpellInfo(spellId) ? sSpellMgr->GetSpellInfo(spellId)->SpellName : "Unknown") : "Melee";
+    event.EffectType = effectType;
+    event.SchoolMask = schoolMask;
+    event.Amount = amount;
+    event.RawAmount = rawAmount;
+    event.AbsorbedAmount = absorbedAmount;
+    event.SourceX = source->GetPositionX();
+    event.SourceY = source->GetPositionY();
+    event.SourceZ = source->GetPositionZ();
+    event.TargetX = target->GetPositionX();
+    event.TargetY = target->GetPositionY();
+    event.TargetZ = target->GetPositionZ();
+    event.Distance = source->GetExactDist(target);
+    event.SourceMoving = source->isMoving();
+    event.SourceIsPet = source != actor && source->GetCharmerOrOwnerPlayerOrPlayerItself() == actor;
+    _combatLogRecentEvents.push_back(std::move(event));
+    static constexpr size_t MaxRecentCombatEvents = 4096;
+    if (_combatLogRecentEvents.size() > MaxRecentCombatEvents)
+    {
+        _combatLogRecentEvents.pop_front();
+        ++_combatLogRecentEventsDropped;
+    }
+}
+
+void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uint32 spellId, uint32 damage,
+    uint32 unmitigatedDamage, uint32 damageType, uint32 schoolMask)
+{
+    if (!_active || !attacker || !victim || (!damage && !unmitigatedDamage))
+        return;
+
+    Player* sourceActor = FindCombatLogCohortPlayer(attacker);
+    Player* targetActor = FindCombatLogCohortPlayer(victim);
+    if (!sourceActor && !targetActor)
+        return;
+
+    uint64 nowMs = NowMs();
+    ++_combatLogEventCount;
+    if (sourceActor)
+        AddCombatLogAggregate(CombatLogPerspective::DamageDone, sourceActor, attacker, victim, spellId,
+            damageType, damage, unmitigatedDamage, 0, nowMs);
+    if (targetActor)
+        AddCombatLogAggregate(CombatLogPerspective::DamageTaken, targetActor, attacker, victim, spellId,
+            damageType, damage, unmitigatedDamage, 0, nowMs);
+    AddCombatLogEvent("damage", sourceActor ? sourceActor : targetActor, attacker, victim, spellId,
+        damageType, schoolMask, damage, unmitigatedDamage, 0, nowMs);
+}
+
+void BotWorldPopulationMgr::NotifyCombatHeal(Unit* healer, Unit* target, uint32 spellId, uint32 attemptedHeal,
+    uint32 effectiveHeal, uint32 absorbedHeal)
+{
+    if (!_active || !healer || !target || (!attemptedHeal && !effectiveHeal && !absorbedHeal))
+        return;
+
+    Player* sourceActor = FindCombatLogCohortPlayer(healer);
+    Player* targetActor = FindCombatLogCohortPlayer(target);
+    if (!sourceActor && !targetActor)
+        return;
+
+    uint64 nowMs = NowMs();
+    ++_combatLogEventCount;
+    if (sourceActor)
+        AddCombatLogAggregate(CombatLogPerspective::HealingDone, sourceActor, healer, target, spellId,
+            0, effectiveHeal, attemptedHeal, absorbedHeal, nowMs);
+    if (targetActor)
+        AddCombatLogAggregate(CombatLogPerspective::HealingReceived, targetActor, healer, target, spellId,
+            0, effectiveHeal, attemptedHeal, absorbedHeal, nowMs);
+    AddCombatLogEvent("heal", sourceActor ? sourceActor : targetActor, healer, target, spellId,
+        0, 0, effectiveHeal, attemptedHeal, absorbedHeal, nowMs);
+}
+
 void BotWorldPopulationMgr::NotifyBotSpellFinished(Player* caster, uint32 spellId, bool success)
 {
     if (!caster || !spellId)
@@ -18129,6 +18292,124 @@ std::string BotWorldPopulationMgr::GetBotTraceJson(std::string const& selector, 
          << ",\"kind\":\"" << JsonEscape(_config.ValidationRouteKind) << "\"}"
          << ",\"entries\":" << BuildBotTraceEntriesJson(*selected, normalizedLimit)
          << ",\"failure_reason\":null}";
+    return json.str();
+}
+
+std::string BotWorldPopulationMgr::GetCombatLogJson() const
+{
+    auto perspectiveName = [](CombatLogPerspective perspective) -> char const*
+    {
+        switch (perspective)
+        {
+            case CombatLogPerspective::DamageDone: return "damage_done";
+            case CombatLogPerspective::DamageTaken: return "damage_taken";
+            case CombatLogPerspective::HealingDone: return "healing_done";
+            case CombatLogPerspective::HealingReceived: return "healing_received";
+        }
+        return "unknown";
+    };
+
+    std::ostringstream json;
+    json << std::fixed << std::setprecision(3)
+         << "{\"ok\":true,\"action\":\"botauto_combatlog\",\"combat_log_schema_version\":1"
+         << ",\"experiment_id\":" << _experimentId
+         << ",\"run_id\":" << _runId
+         << ",\"event_count\":" << _combatLogEventCount
+         << ",\"recent_event_capacity\":4096"
+         << ",\"recent_events_dropped\":" << _combatLogRecentEventsDropped
+         << ",\"aggregate_count\":" << _combatLogAbilities.size()
+         << ",\"second_bucket_count\":" << _combatLogSecondBuckets.size()
+         << ",\"abilities\":[";
+
+    bool first = true;
+    for (auto const& [key, value] : _combatLogAbilities)
+    {
+        if (!first)
+            json << ',';
+        first = false;
+        double averageDistance = value.EventCount ? value.DistanceTotal / double(value.EventCount) : 0.0;
+        json << "{\"route_generation\":" << key.RouteGeneration
+             << ",\"route_node_id\":\"" << JsonEscape(value.RouteNodeId) << "\""
+             << ",\"route_label\":\"" << JsonEscape(value.RouteLabel) << "\""
+             << ",\"perspective\":\"" << perspectiveName(key.Perspective) << "\""
+             << ",\"actor_guid\":" << key.ActorGuid
+             << ",\"actor_name\":\"" << JsonEscape(value.ActorName) << "\""
+             << ",\"actor_role\":\"" << JsonEscape(value.ActorRole) << "\""
+             << ",\"actor_class_id\":" << uint32(value.ActorClassId)
+             << ",\"source_entry\":" << key.SourceEntry
+             << ",\"source_name\":\"" << JsonEscape(value.SourceName) << "\""
+             << ",\"source_is_pet\":" << (value.SourceIsPet ? "true" : "false")
+             << ",\"spell_id\":" << key.SpellId
+             << ",\"spell_name\":\"" << JsonEscape(value.SpellName) << "\""
+             << ",\"target_entry\":" << key.TargetEntry
+             << ",\"target_name\":\"" << JsonEscape(value.TargetName) << "\""
+             << ",\"effect_type\":" << key.EffectType
+             << ",\"first_at_ms\":" << value.FirstAtMs
+             << ",\"last_at_ms\":" << value.LastAtMs
+             << ",\"event_count\":" << value.EventCount
+             << ",\"amount\":" << value.Amount
+             << ",\"raw_amount\":" << value.RawAmount
+             << ",\"absorbed_amount\":" << value.AbsorbedAmount
+             << ",\"moving_events\":" << value.MovingEvents
+             << ",\"moving_fraction\":" << (value.EventCount ? double(value.MovingEvents) / double(value.EventCount) : 0.0)
+             << ",\"distance_avg\":" << averageDistance
+             << ",\"distance_min\":" << std::max(0.0f, value.MinDistance)
+             << ",\"distance_max\":" << value.MaxDistance << '}';
+    }
+
+    json << "],\"second_buckets\":[";
+    first = true;
+    for (auto const& [key, amount] : _combatLogSecondBuckets)
+    {
+        if (!first)
+            json << ',';
+        first = false;
+        json << "{\"route_generation\":" << std::get<0>(key)
+             << ",\"perspective\":\"" << perspectiveName(std::get<1>(key)) << "\""
+             << ",\"actor_guid\":" << std::get<2>(key)
+             << ",\"second\":" << std::get<3>(key)
+             << ",\"amount\":" << amount << '}';
+    }
+
+    json << "],\"recent_events\":[";
+    first = true;
+    for (CombatLogEvent const& event : _combatLogRecentEvents)
+    {
+        if (!first)
+            json << ',';
+        first = false;
+        json << "{\"timestamp_ms\":" << event.TimestampMs
+             << ",\"route_generation\":" << event.RouteGeneration
+             << ",\"route_node_id\":\"" << JsonEscape(event.RouteNodeId) << "\""
+             << ",\"kind\":\"" << JsonEscape(event.Kind) << "\""
+             << ",\"actor_guid\":" << event.ActorGuid
+             << ",\"actor_name\":\"" << JsonEscape(event.ActorName) << "\""
+             << ",\"actor_role\":\"" << JsonEscape(event.ActorRole) << "\""
+             << ",\"actor_class_id\":" << uint32(event.ActorClassId)
+             << ",\"source_guid\":" << event.SourceGuid
+             << ",\"source_entry\":" << event.SourceEntry
+             << ",\"source_name\":\"" << JsonEscape(event.SourceName) << "\""
+             << ",\"target_guid\":" << event.TargetGuid
+             << ",\"target_entry\":" << event.TargetEntry
+             << ",\"target_name\":\"" << JsonEscape(event.TargetName) << "\""
+             << ",\"spell_id\":" << event.SpellId
+             << ",\"spell_name\":\"" << JsonEscape(event.SpellName) << "\""
+             << ",\"effect_type\":" << event.EffectType
+             << ",\"school_mask\":" << event.SchoolMask
+             << ",\"amount\":" << event.Amount
+             << ",\"raw_amount\":" << event.RawAmount
+             << ",\"absorbed_amount\":" << event.AbsorbedAmount
+             << ",\"source_x\":" << event.SourceX
+             << ",\"source_y\":" << event.SourceY
+             << ",\"source_z\":" << event.SourceZ
+             << ",\"target_x\":" << event.TargetX
+             << ",\"target_y\":" << event.TargetY
+             << ",\"target_z\":" << event.TargetZ
+             << ",\"distance\":" << event.Distance
+             << ",\"source_moving\":" << (event.SourceMoving ? "true" : "false")
+             << ",\"source_is_pet\":" << (event.SourceIsPet ? "true" : "false") << '}';
+    }
+    json << "],\"failure_reason\":null}";
     return json.str();
 }
 

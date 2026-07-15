@@ -13,6 +13,7 @@
 #include <memory>
 #include <set>
 #include <string>
+#include <tuple>
 #include <vector>
 
 class Creature;
@@ -227,6 +228,7 @@ public:
     std::string GetBotDebugJson(std::string const& selector) const;
     std::string GetBotDiagnosisJson(std::string const& selector);
     std::string GetBotTraceJson(std::string const& selector, uint32 limit) const;
+    std::string GetCombatLogJson() const;
     bool IsActive() const { return _active; }
     std::string Replay(std::string const& replayType, std::string const& selector, std::string const& brainVersion = "");
     std::string CompareBrains(uint64 replayId, std::string const& firstBrainVersion, std::string const& secondBrainVersion);
@@ -234,6 +236,9 @@ public:
     void CancelBotSpellStart(uint64 castId, Player* caster, char const* reason);
     void NotifyBotSpellFinished(Player* caster, uint32 spellId, bool success);
     void NotifyBotHeal(Unit* healer, Unit* target, uint32 spellId, uint32 attemptedHeal, uint32 effectiveHeal, uint32 absorbedHeal);
+    void NotifyCombatDamage(Unit* attacker, Unit* victim, uint32 spellId, uint32 damage, uint32 unmitigatedDamage,
+        uint32 damageType, uint32 schoolMask);
+    void NotifyCombatHeal(Unit* healer, Unit* target, uint32 spellId, uint32 attemptedHeal, uint32 effectiveHeal, uint32 absorbedHeal);
     void NotifyCreatureDeath(Creature* killed);
 
     enum class QuestObjectiveType
@@ -944,6 +949,89 @@ private:
         float ThreatAfterCast = 0.0f;
     };
 
+    enum class CombatLogPerspective : uint8
+    {
+        DamageDone = 0,
+        DamageTaken = 1,
+        HealingDone = 2,
+        HealingReceived = 3
+    };
+
+    struct CombatLogAbilityKey
+    {
+        uint64 RouteGeneration = 0;
+        CombatLogPerspective Perspective = CombatLogPerspective::DamageDone;
+        uint32 ActorGuid = 0;
+        uint32 SourceEntry = 0;
+        uint32 SpellId = 0;
+        uint32 TargetEntry = 0;
+        uint32 EffectType = 0;
+
+        bool operator<(CombatLogAbilityKey const& other) const
+        {
+            return std::tie(RouteGeneration, Perspective, ActorGuid, SourceEntry, SpellId, TargetEntry, EffectType)
+                < std::tie(other.RouteGeneration, other.Perspective, other.ActorGuid, other.SourceEntry,
+                    other.SpellId, other.TargetEntry, other.EffectType);
+        }
+    };
+
+    struct CombatLogAbilityAggregate
+    {
+        std::string RouteNodeId;
+        std::string RouteLabel;
+        std::string ActorName;
+        std::string ActorRole;
+        uint8 ActorClassId = 0;
+        std::string SourceName;
+        std::string SpellName;
+        std::string TargetName;
+        uint64 FirstAtMs = 0;
+        uint64 LastAtMs = 0;
+        uint64 EventCount = 0;
+        uint64 Amount = 0;
+        uint64 RawAmount = 0;
+        uint64 AbsorbedAmount = 0;
+        uint64 MovingEvents = 0;
+        double DistanceTotal = 0.0;
+        float MinDistance = -1.0f;
+        float MaxDistance = 0.0f;
+        bool SourceIsPet = false;
+    };
+
+    struct CombatLogEvent
+    {
+        uint64 TimestampMs = 0;
+        uint64 RouteGeneration = 0;
+        std::string RouteNodeId;
+        std::string Kind;
+        uint32 ActorGuid = 0;
+        std::string ActorName;
+        std::string ActorRole;
+        uint8 ActorClassId = 0;
+        uint32 SourceGuid = 0;
+        uint32 SourceEntry = 0;
+        std::string SourceName;
+        uint32 TargetGuid = 0;
+        uint32 TargetEntry = 0;
+        std::string TargetName;
+        uint32 SpellId = 0;
+        std::string SpellName;
+        uint32 EffectType = 0;
+        uint32 SchoolMask = 0;
+        uint32 Amount = 0;
+        uint32 RawAmount = 0;
+        uint32 AbsorbedAmount = 0;
+        float SourceX = 0.0f;
+        float SourceY = 0.0f;
+        float SourceZ = 0.0f;
+        float TargetX = 0.0f;
+        float TargetY = 0.0f;
+        float TargetZ = 0.0f;
+        float Distance = 0.0f;
+        bool SourceMoving = false;
+        bool SourceIsPet = false;
+    };
+
     struct SemanticOutcomeStats
     {
         bool Known = false;
@@ -1231,6 +1319,12 @@ private:
     float PredictPolicyModelLabel(char const* label, std::map<std::string, float> const& features) const;
     static uint32 FeatureSchemaHash(std::string const& value);
     static std::string JsonEscape(std::string const& value);
+    void ResetCombatLog();
+    Player* FindCombatLogCohortPlayer(Unit* unit) const;
+    void AddCombatLogAggregate(CombatLogPerspective perspective, Player* actor, Unit* source, Unit* target,
+        uint32 spellId, uint32 effectType, uint32 amount, uint32 rawAmount, uint32 absorbedAmount, uint64 timestampMs);
+    void AddCombatLogEvent(char const* kind, Player* actor, Unit* source, Unit* target, uint32 spellId,
+        uint32 effectType, uint32 schoolMask, uint32 amount, uint32 rawAmount, uint32 absorbedAmount, uint64 timestampMs);
 
     bool _active = false;
     BotWorldRuntimeMode _runtimeMode = BotWorldRuntimeMode::ManualExperiment;
@@ -1320,6 +1414,11 @@ private:
     mutable std::map<uint32, RoleSaturationState> _lastSaturationByBot;
     uint64 _nextHealCastId = 1;
     std::map<uint64, PendingHealCast> _pendingHealCasts;
+    std::map<CombatLogAbilityKey, CombatLogAbilityAggregate> _combatLogAbilities;
+    std::map<std::tuple<uint64, CombatLogPerspective, uint32, uint64>, uint64> _combatLogSecondBuckets;
+    std::deque<CombatLogEvent> _combatLogRecentEvents;
+    uint64 _combatLogEventCount = 0;
+    uint64 _combatLogRecentEventsDropped = 0;
 };
 
 #define sBotWorldPopulationMgr BotWorldPopulationMgr::instance()
