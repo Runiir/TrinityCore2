@@ -1,0 +1,5 @@
+outs:
+- md5: 715555224b8ff77efb1030ce1c2d27b3
+  size: 7693
+  hash: md5
+  path: stonecore_quality_full_run_107.json

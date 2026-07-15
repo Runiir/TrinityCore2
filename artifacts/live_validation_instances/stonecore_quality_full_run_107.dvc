@@ -1,0 +1,6 @@
+outs:
+- md5: e32cb2368652fea8880fed70e13b8bd5.dir
+  size: 1566042988
+  nfiles: 59
+  hash: md5
+  path: stonecore_quality_full_run_107
