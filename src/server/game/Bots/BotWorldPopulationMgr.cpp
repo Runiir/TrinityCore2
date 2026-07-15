@@ -7108,6 +7108,23 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             lowestHealthPct = UnitHealthPct(tankTarget);
         }
 
+        // Loose adds follow their current victim.  Bring them through the
+        // tank's melee/AoE threat radius instead of healing in place while the
+        // tank chases a moving swarm centroid.
+        if (!healer->getAttackers().empty() && tankTarget
+            && healer->GetExactDist2d(tankTarget) > 4.0f
+            && !healer->HasUnitState(UNIT_STATE_CASTING) && !healer->IsFalling()
+            && MoveBotToPoint(state, healer, tankTarget->GetPositionX(), tankTarget->GetPositionY(), tankTarget->GetPositionZ()))
+        {
+            std::string raw = BuildRawJson(healer, combatTarget);
+            std::string semantic = BuildSemanticJson(healer, combatTarget, "healer_assignment", &power, stage, activity);
+            RecordEvent(state, healer, "healer_assignment", tankTarget, "healer_stack_for_add_pickup",
+                raw.c_str(), semantic.c_str(), healer->GetExactDist2d(tankTarget), float(healer->getAttackers().size()));
+            situation = "validation_route_group_heal";
+            action = "healer_stack_for_add_pickup";
+            return true;
+        }
+
         if (combatTarget)
         {
             std::string raw = BuildRawJson(healer, combatTarget);
@@ -9783,6 +9800,38 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             target = add;
             situation = "dungeon_boss";
             action = "hand_of_reckoning_add_pickup";
+            return true;
+        }
+
+        // If both taunts are cooling down, close directly on the healer before
+        // falling back to the swarm centroid.  This puts the loose borers into
+        // Consecration/Hammer range on the following decision tick.
+        if (role == "tank" && densityHealer && !densityHealer->getAttackers().empty()
+            && bot->GetExactDist2d(densityHealer) > 4.0f
+            && !bot->HasUnitState(UNIT_STATE_CASTING) && !bot->IsFalling()
+            && MoveBotToPoint(state, bot, densityHealer->GetPositionX(), densityHealer->GetPositionY(), densityHealer->GetPositionZ()))
+        {
+            std::string raw = BuildRawJson(bot, densityHealer);
+            std::string semantic = BuildSemanticJson(bot, densityHealer, "dungeon_boss", &power, stage, activity);
+            RecordEvent(state, bot, "boss_adds", densityHealer, "tank_close_to_healer_adds",
+                raw.c_str(), semantic.c_str(), bot->GetExactDist2d(densityHealer), float(densityHealer->getAttackers().size()));
+            target = add;
+            situation = "dungeon_boss";
+            action = "tank_close_to_healer_adds";
+            return true;
+        }
+
+        if (role == "tank" && densityHealer && !densityHealer->getAttackers().empty()
+            && bot->HasSpell(1038) && !densityHealer->HasAura(1038)
+            && TryCastFriendlySpell(bot, densityHealer, 1038))
+        {
+            std::string raw = BuildRawJson(bot, densityHealer);
+            std::string semantic = BuildSemanticJson(bot, densityHealer, "dungeon_boss", &power, stage, activity);
+            RecordEvent(state, bot, "boss_adds", densityHealer, "hand_of_salvation_healer_threat_drop",
+                raw.c_str(), semantic.c_str(), float(densityHealer->getAttackers().size()), addCount, 1038);
+            target = add;
+            situation = "dungeon_boss";
+            action = "hand_of_salvation_healer_threat_drop";
             return true;
         }
 

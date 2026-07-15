@@ -2971,6 +2971,9 @@ def test_stonecore_quality_repairs_cover_hazards_pet_recovery_and_healer_protect
     assert '"righteous_defense_healer_pickup"' in manager
     assert '"hand_of_reckoning_add_pickup"' in manager
     assert '"fade_threat_drop"' in manager
+    assert '"healer_stack_for_add_pickup"' in manager
+    assert '"tank_close_to_healer_adds"' in manager
+    assert '"hand_of_salvation_healer_threat_drop"' in manager
     assert "float minRange = selfTarget ? 0.0f" in manager
     assert "WHEN `action`.`spell_id` = 26573 THEN 0" in emergency_threat_sql
     for spell_id in (2948, 92315, 11129, 403, 421, 53595, 26573):
