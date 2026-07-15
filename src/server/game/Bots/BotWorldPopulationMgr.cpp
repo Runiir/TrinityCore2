@@ -7108,23 +7108,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             lowestHealthPct = UnitHealthPct(tankTarget);
         }
 
-        // Loose adds follow their current victim.  Bring them through the
-        // tank's melee/AoE threat radius instead of healing in place while the
-        // tank chases a moving swarm centroid.
-        if (!healer->getAttackers().empty() && tankTarget
-            && healer->GetExactDist2d(tankTarget) > 4.0f
-            && !healer->HasUnitState(UNIT_STATE_CASTING) && !healer->IsFalling()
-            && MoveBotToPoint(state, healer, tankTarget->GetPositionX(), tankTarget->GetPositionY(), tankTarget->GetPositionZ()))
-        {
-            std::string raw = BuildRawJson(healer, combatTarget);
-            std::string semantic = BuildSemanticJson(healer, combatTarget, "healer_assignment", &power, stage, activity);
-            RecordEvent(state, healer, "healer_assignment", tankTarget, "healer_stack_for_add_pickup",
-                raw.c_str(), semantic.c_str(), healer->GetExactDist2d(tankTarget), float(healer->getAttackers().size()));
-            situation = "validation_route_group_heal";
-            action = "healer_stack_for_add_pickup";
-            return true;
-        }
-
         if (combatTarget)
         {
             std::string raw = BuildRawJson(healer, combatTarget);
@@ -9818,6 +9801,20 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             target = add;
             situation = "dungeon_boss";
             action = "tank_close_to_healer_adds";
+            return true;
+        }
+
+        if (role == "tank" && densityHealer && !densityHealer->getAttackers().empty()
+            && bot->GetExactDist2d(densityHealer) <= 8.0f
+            && bot->HasSpell(26573) && TryCastFriendlySpell(bot, bot, 26573))
+        {
+            std::string raw = BuildRawJson(bot, densityHealer);
+            std::string semantic = BuildSemanticJson(bot, densityHealer, "dungeon_boss", &power, stage, activity);
+            RecordEvent(state, bot, "boss_adds", densityHealer, "consecration_healer_pickup",
+                raw.c_str(), semantic.c_str(), float(densityHealer->getAttackers().size()), addCount, 26573);
+            target = add;
+            situation = "dungeon_boss";
+            action = "consecration_healer_pickup";
             return true;
         }
 
