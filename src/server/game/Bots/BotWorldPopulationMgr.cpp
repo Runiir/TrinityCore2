@@ -4120,7 +4120,8 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         state.LastMovementProgressMs = NowMs();
     if (movementProgress)
         TryResolveBotBlocker(state, bot, "movement_progress");
-    if (!combatOrCasting && moving && !movementProgress)
+    bool validationRouteComplete = _config.ValidationRouteEnable && _validationRouteManifestComplete;
+    if (!combatOrCasting && moving && !movementProgress && !validationRouteComplete)
         state.StuckTimer += diff;
     else
         state.StuckTimer = 0;
@@ -9848,7 +9849,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     densityTank = member;
                 if (!densityHealer && memberRole == "healer")
                     densityHealer = member;
-                if (member == bot || memberRole == "tank" || member->getAttackers().empty())
+                if (memberRole == "tank" || member->getAttackers().empty())
                     continue;
 
                 uint8 priority = memberRole == "healer" ? 2 : 1;
@@ -9910,18 +9911,58 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return true;
         }
 
-        if (role == "tank" && densityHealer && !densityHealer->getAttackers().empty()
-            && bot->GetExactDist2d(densityHealer) <= 8.0f
+        if (role == "tank" && densityDefenseTarget
+            && bot->GetExactDist2d(densityDefenseTarget) <= 8.0f
             && bot->HasSpell(26573) && TryCastFriendlySpell(bot, bot, 26573))
         {
-            std::string raw = BuildRawJson(bot, densityHealer);
-            std::string semantic = BuildSemanticJson(bot, densityHealer, "dungeon_boss", &power, stage, activity);
-            RecordEvent(state, bot, "boss_adds", densityHealer, "consecration_healer_pickup",
-                raw.c_str(), semantic.c_str(), float(densityHealer->getAttackers().size()), addCount, 26573);
+            bool healerPickup = densityDefenseTarget == densityHealer;
+            char const* pickupAction = healerPickup ? "consecration_healer_pickup" : "consecration_party_pickup";
+            std::string raw = BuildRawJson(bot, densityDefenseTarget);
+            std::string semantic = BuildSemanticJson(bot, densityDefenseTarget, "dungeon_boss", &power, stage, activity);
+            RecordEvent(state, bot, "boss_adds", densityDefenseTarget, pickupAction,
+                raw.c_str(), semantic.c_str(), float(densityDefenseTarget->getAttackers().size()), addCount, 26573);
             target = add;
             situation = "dungeon_boss";
-            action = "consecration_healer_pickup";
+            action = pickupAction;
             return true;
+        }
+
+        if (role == "dps" && densityDefenseTarget == bot && densityTank && !bot->getAttackers().empty()
+            && !bot->HasUnitState(UNIT_STATE_CASTING) && !bot->IsFalling())
+        {
+            Unit* nearestAttacker = nullptr;
+            float nearestDistance = std::numeric_limits<float>::max();
+            for (Unit* attacker : bot->getAttackers())
+            {
+                if (!attacker || !attacker->IsAlive() || attacker->GetMap() != bot->GetMap())
+                    continue;
+                float distance = bot->GetExactDist2d(attacker);
+                if (!nearestAttacker || distance < nearestDistance)
+                {
+                    nearestAttacker = attacker;
+                    nearestDistance = distance;
+                }
+            }
+            if (nearestAttacker)
+            {
+                Position pickup = densityTank->GetFirstCollisionPosition(4.0f, nearestAttacker->GetAngle(densityTank));
+                if (bot->GetExactDist2d(pickup.GetPositionX(), pickup.GetPositionY()) > 2.0f
+                    && MoveBotToPoint(state, bot, pickup.GetPositionX(), pickup.GetPositionY(), pickup.GetPositionZ()))
+                {
+                    bot->AttackStop();
+                    if (Pet* pet = bot->GetPet())
+                        pet->AttackStop();
+                    std::string raw = BuildRawJson(bot, nearestAttacker);
+                    std::string semantic = BuildSemanticJson(bot, nearestAttacker, "dungeon_boss", &power, stage, activity);
+                    RecordEvent(state, bot, "boss_adds", nearestAttacker, "dps_stack_for_add_pickup",
+                        raw.c_str(), semantic.c_str(), nearestDistance, addCount);
+                    state.TargetGuid = add ? add->GetGUID() : ObjectGuid::Empty;
+                    target = add;
+                    situation = "dungeon_boss";
+                    action = "dps_stack_for_add_pickup";
+                    return true;
+                }
+            }
         }
 
         if (role == "tank" && densityHealer && !densityHealer->getAttackers().empty()
@@ -9970,8 +10011,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (_validationRouteBossAddEscapeActive && !escapeCohortValid)
             ResetValidationRouteBossAddEscapeState();
 
-        if (highDensityPhase && bot == densityTank && addCount >= 3
-            && (!densityHealer || densityHealer->getAttackers().empty()))
+        if (highDensityPhase && bot == densityTank && addCount >= 3 && !densityDefenseTarget)
         {
             float centroidX = addX / float(addCount);
             float centroidY = addY / float(addCount);
@@ -10582,8 +10622,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             float targetDistance = bot->GetExactDist(target);
             if (profileAction.MinRange > 0.0f && targetDistance < profileAction.MinRange)
             {
-                Position away = bot->GetFirstCollisionPosition(profileAction.MinRange - targetDistance + 2.0f, target->GetAngle(bot));
-                bool moved = MoveBotToPoint(state, bot, away.GetPositionX(), away.GetPositionY(), away.GetPositionZ());
+                bool moved = MoveBotToProfileRange(state, bot, target, &profileAction);
                 action = moved ? "move_to_profile_min_range" : "hold_tactical_path_rejected";
                 situation = tankFocusSituation;
                 return true;
@@ -10786,8 +10825,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         float targetDistance = bot->GetExactDist(target);
         if (profileAction.MinRange > 0.0f && targetDistance < profileAction.MinRange)
         {
-            Position away = bot->GetFirstCollisionPosition(profileAction.MinRange - targetDistance + 2.0f, target->GetAngle(bot));
-            bool moved = MoveBotToPoint(state, bot, away.GetPositionX(), away.GetPositionY(), away.GetPositionZ());
+            bool moved = MoveBotToProfileRange(state, bot, target, &profileAction);
             action = moved ? "move_to_profile_min_range" : "hold_tactical_path_rejected";
             situation = focusSituation;
             return true;
@@ -10943,8 +10981,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         float targetDistance = bot->GetExactDist(target);
         if (profileAction.MinRange > 0.0f && targetDistance < profileAction.MinRange)
         {
-            Position away = bot->GetFirstCollisionPosition(profileAction.MinRange - targetDistance + 2.0f, target->GetAngle(bot));
-            bool moved = MoveBotToPoint(state, bot, away.GetPositionX(), away.GetPositionY(), away.GetPositionZ());
+            bool moved = MoveBotToProfileRange(state, bot, target, &profileAction);
             action = moved ? "move_to_profile_min_range" : "hold_tactical_path_rejected";
             situation = routeBossTarget ? situation : "validation_route_prerequisite";
             return true;
@@ -11255,8 +11292,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             float targetDistance = bot->GetExactDist(target);
             if (profileAction.MinRange > 0.0f && targetDistance < profileAction.MinRange)
             {
-                Position away = bot->GetFirstCollisionPosition(profileAction.MinRange - targetDistance + 2.0f, target->GetAngle(bot));
-                bool moved = MoveBotToPoint(state, bot, away.GetPositionX(), away.GetPositionY(), away.GetPositionZ());
+                bool moved = MoveBotToProfileRange(state, bot, target, &profileAction);
                 action = moved ? "move_to_profile_min_range" : "hold_tactical_path_rejected";
                 situation = "validation_route_prerequisite";
                 return true;
@@ -11458,8 +11494,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     float targetDistance = bot->GetExactDist(target);
     if (profileAction.MinRange > 0.0f && targetDistance < profileAction.MinRange)
     {
-        Position away = bot->GetFirstCollisionPosition(profileAction.MinRange - targetDistance + 2.0f, target->GetAngle(bot));
-        bool moved = MoveBotToPoint(state, bot, away.GetPositionX(), away.GetPositionY(), away.GetPositionZ());
+        bool moved = MoveBotToProfileRange(state, bot, target, &profileAction);
         action = moved ? "move_to_profile_min_range" : "hold_tactical_path_rejected";
         return true;
     }

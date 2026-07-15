@@ -1367,7 +1367,7 @@ def test_move_bot_to_point_only_terminalizes_strategic_route_failures():
     assert "MoveBotToProfileRange(state, bot, target, &profileAction)" in route_objective
     assert "hold_tactical_path_rejected" in route_objective
     assert 'moved ? "approach_target" : "tactical_path_rejected"' in route_objective
-    assert "MoveBotToPoint(state, bot, away.GetPositionX(), away.GetPositionY(), away.GetPositionZ())" in route_objective
+    assert "GetFirstCollisionPosition(profileAction.MinRange" not in route_objective
 
 
 def test_move_bot_to_point_keeps_matching_active_motion():
@@ -1449,7 +1449,8 @@ def test_botauto_diagnosis_and_trace_surface():
         "Unit* target = state.TargetGuid.IsEmpty()",
         "bool combatOrCasting",
         "bool movementProgress",
-        "if (!combatOrCasting && moving && !movementProgress)",
+        "bool validationRouteComplete = _config.ValidationRouteEnable && _validationRouteManifestComplete;",
+        "if (!combatOrCasting && moving && !movementProgress && !validationRouteComplete)",
         "if (state.StuckTimer >= 6000)",
     )
 
@@ -2855,11 +2856,18 @@ def test_density_tank_centroid_control_prioritizes_loose_healer_targets():
     assert 'uint8 priority = victimRole == "healer" ? 3 : 2;' in adds
     assert "add = looseAdd ? looseAdd : densityAnchor;" in adds
     assert "highDensityPhase && bot == densityTank && addCount >= 3" in adds
+    assert "&& !densityDefenseTarget" in adds
     assert "float centroidX = addX / float(addCount);" in adds
     assert "float centroidY = addY / float(addCount);" in adds
     assert "centroidDistance > 4.0f" in adds
     assert "MoveBotToPoint(state, densityTank, centroidX, centroidY, centroidZ)" in adds
     assert 'action = moved ? "tank_move_to_add_centroid" : "hold_tank_add_centroid";' in adds
+    assert '"dps_stack_for_add_pickup"' in adds
+    assert "densityDefenseTarget == bot && densityTank" in adds
+    assert 'if (memberRole == "tank" || member->getAttackers().empty())' in adds
+    assert "nearestAttacker->GetAngle(densityTank)" in adds
+    assert "densityTank->GetFirstCollisionPosition(4.0f" in adds
+    assert '"consecration_party_pickup"' in adds
     assert "if (highDensityPhase && role == \"healer\" && tryRouteGroupHeal(bot, add))" in adds
     assert_ordered(adds, "add = looseAdd ? looseAdd : densityAnchor;", "misdirection_to_tank", "tank_move_to_add_centroid")
 
@@ -2986,10 +2994,14 @@ def test_stonecore_quality_repairs_cover_hazards_pet_recovery_and_healer_protect
     assert "if (Pet* pet = bot->GetPet())\n                pet->AttackStop();" in manager
     assert '"tank_close_to_healer_adds"' not in manager
     assert '"consecration_healer_pickup"' in manager
+    assert '"consecration_party_pickup"' in manager
+    assert '"dps_stack_for_add_pickup"' in manager
     assert '"hand_of_salvation_healer_threat_drop"' in manager
     assert "olderHealerTarget" in manager
     assert "urgentHunterPetRecovery" in manager
-    assert "(!densityHealer || densityHealer->getAttackers().empty())" in manager
+    assert "addCount >= 3 && !densityDefenseTarget" in manager
+    assert "MoveBotToProfileRange(state, bot, target, &profileAction)" in manager
+    assert "GetFirstCollisionPosition(profileAction.MinRange" not in manager
     assert "float minRange = selfTarget ? 0.0f" in manager
     assert 'candidate.RejectReason = "caster_controlled"' in manager
     assert 'candidate.RejectReason = "caster_prevented"' in manager
