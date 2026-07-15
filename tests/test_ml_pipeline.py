@@ -1951,8 +1951,12 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert post_ozruk_flayer_regroup["completion_policy"] == "arrival"
     assert post_ozruk_flayer_regroup["required_evidence"] == ["regrouping"]
     assert twilight_flayer_packs["step"] == 15
-    assert twilight_flayer_packs["bot_start_x"] == 1329.93
-    assert twilight_flayer_packs["bot_start_z"] == 207.804
+    assert twilight_flayer_packs["source_entry"] == 42808
+    assert twilight_flayer_packs["source_guid"] == "340762"
+    assert twilight_flayer_packs["pack_target_entries"] == [42808]
+    assert twilight_flayer_packs["cluster_radius_yards"] == 100.0
+    assert twilight_flayer_packs["bot_start_x"] == 1380.19
+    assert twilight_flayer_packs["bot_start_z"] == 212.862
     assert azil["step"] == 16
     assert azil["x"] == 1337.3
     assert azil["y"] == 964.894
@@ -7698,6 +7702,8 @@ def test_stonecore_hazard_geometry_is_emitted_in_route_manifest():
 
     assert (slabhide["hazard_source_entry"], slabhide["hazard_damage_spell_id"], slabhide["hazard_shape"], slabhide["hazard_radius_yards"]) == (43242, 80801, "radial", 5.0)
     assert (flayers["hazard_source_entry"], flayers["hazard_detection_spell_id"], flayers["hazard_shape"], flayers["hazard_radius_yards"]) == (42808, 79922, "frontal_cone", 4.0)
+    assert flayers["source_entry"] == 42808
+    assert flayers["pack_target_entries"] == [42808]
 
 
 def test_validation_provisioning_strips_socket_gem_enchantments_for_runtime_load():

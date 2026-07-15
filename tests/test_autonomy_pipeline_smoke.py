@@ -2955,6 +2955,8 @@ def test_stonecore_quality_repairs_cover_hazards_pet_recovery_and_healer_protect
         assert field in header
         assert field in manager
     assert 'HasInArc(float(M_PI), bot)' in manager
+    assert "for (ValidationRouteManifestNode const& node : _validationRouteManifest)" in manager
+    assert "hazardDefinitionFor(hazard->GetEntry(), 0)" in manager
     assert '"hazard_exit_started"' in manager
     assert '"hazard_exit_completed"' in manager
     assert '"hold_hazard_exit_failed"' in manager

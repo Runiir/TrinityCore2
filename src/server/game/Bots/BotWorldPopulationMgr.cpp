@@ -9349,29 +9349,76 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     };
     auto tryValidationRouteMovementCheck = [this, &state, bot, &power, stage, activity, &situation, &action](Unit* preferredTarget) -> bool
     {
-        bool mechanicProfileRequiresMovement = _config.ValidationRouteMechanicProfile.find("movement_check") != std::string::npos
-            || _config.ValidationRouteMechanicProfile.find("ground_danger") != std::string::npos;
         if (!bot
             || !bot->IsAlive()
             || bot->IsFalling())
             return false;
 
+        struct HazardDefinition
+        {
+            uint32 SourceEntry = 0;
+            uint32 DetectionSpellId = 0;
+            uint32 DamageSpellId = 0;
+            std::string Shape;
+            float RadiusYards = 0.0f;
+            float SafetyMarginYards = 0.0f;
+        };
+        std::vector<HazardDefinition> hazardDefinitions;
+        auto addHazardDefinition = [&hazardDefinitions](uint32 sourceEntry, uint32 detectionSpellId,
+            uint32 damageSpellId, std::string const& shape, float radiusYards, float safetyMarginYards)
+        {
+            if (!sourceEntry)
+                return;
+            for (HazardDefinition const& definition : hazardDefinitions)
+                if (definition.SourceEntry == sourceEntry
+                    && definition.DetectionSpellId == detectionSpellId
+                    && definition.DamageSpellId == damageSpellId)
+                    return;
+            hazardDefinitions.push_back({ sourceEntry, detectionSpellId, damageSpellId, shape, radiusYards, safetyMarginYards });
+        };
+        addHazardDefinition(_config.ValidationRouteHazardSourceEntry,
+            _config.ValidationRouteHazardDetectionSpellId,
+            _config.ValidationRouteHazardDamageSpellId,
+            _config.ValidationRouteHazardShape,
+            _config.ValidationRouteHazardRadiusYards,
+            _config.ValidationRouteHazardSafetyMarginYards);
+        for (ValidationRouteManifestNode const& node : _validationRouteManifest)
+            if (!node.MapId || node.MapId == bot->GetMapId())
+                addHazardDefinition(node.HazardSourceEntry, node.HazardDetectionSpellId, node.HazardDamageSpellId,
+                    node.HazardShape, node.HazardRadiusYards, node.HazardSafetyMarginYards);
+
+        bool mechanicProfileRequiresMovement = _config.ValidationRouteMechanicProfile.find("movement_check") != std::string::npos
+            || _config.ValidationRouteMechanicProfile.find("ground_danger") != std::string::npos
+            || !hazardDefinitions.empty();
+        auto hazardDefinitionFor = [&hazardDefinitions](uint32 sourceEntry, uint32 spellId) -> HazardDefinition const*
+        {
+            for (HazardDefinition const& definition : hazardDefinitions)
+                if (definition.SourceEntry == sourceEntry
+                    && (!spellId || definition.DamageSpellId == spellId || definition.DetectionSpellId == spellId))
+                    return &definition;
+            return nullptr;
+        };
+
         if (!state.ValidationRouteDodgeCasterGuid.IsEmpty()
-            && _config.ValidationRouteHazardSourceEntry
-            && state.ValidationRouteDodgeSpellId == _config.ValidationRouteHazardDamageSpellId)
+            && state.ValidationRouteDodgeSpellId)
         {
             Unit* previousHazard = ObjectAccessor::GetUnit(*bot, state.ValidationRouteDodgeCasterGuid);
-            float safeRadius = std::max(1.0f, _config.ValidationRouteHazardRadiusYards + _config.ValidationRouteHazardSafetyMarginYards);
-            if (!previousHazard || !previousHazard->IsAlive() || bot->GetExactDist2d(previousHazard) > safeRadius)
+            HazardDefinition const* previousDefinition = previousHazard
+                ? hazardDefinitionFor(previousHazard->GetEntry(), state.ValidationRouteDodgeSpellId) : nullptr;
+            if (previousDefinition)
             {
-                std::string raw = BuildRawJson(bot, previousHazard);
-                std::string semantic = BuildSemanticJson(bot, previousHazard, "validation_route_mechanic", &power, stage, activity);
-                RecordEvent(state, bot, "validation_route_mechanic", previousHazard, "hazard_exit_completed",
-                    raw.c_str(), semantic.c_str(), previousHazard ? bot->GetExactDist(previousHazard) : safeRadius,
-                    _config.ValidationRouteHazardSourceEntry, state.ValidationRouteDodgeSpellId);
-                state.ValidationRouteDodgeCasterGuid.Clear();
-                state.ValidationRouteDodgeSpellId = 0;
-                state.ValidationRouteDodgeUntilMs = 0;
+                float safeRadius = std::max(1.0f, previousDefinition->RadiusYards + previousDefinition->SafetyMarginYards);
+                if (!previousHazard->IsAlive() || bot->GetExactDist2d(previousHazard) > safeRadius)
+                {
+                    std::string raw = BuildRawJson(bot, previousHazard);
+                    std::string semantic = BuildSemanticJson(bot, previousHazard, "validation_route_mechanic", &power, stage, activity);
+                    RecordEvent(state, bot, "validation_route_mechanic", previousHazard, "hazard_exit_completed",
+                        raw.c_str(), semantic.c_str(), bot->GetExactDist(previousHazard),
+                        previousDefinition->SourceEntry, state.ValidationRouteDodgeSpellId);
+                    state.ValidationRouteDodgeCasterGuid.Clear();
+                    state.ValidationRouteDodgeSpellId = 0;
+                    state.ValidationRouteDodgeUntilMs = 0;
+                }
             }
         }
 
@@ -9406,7 +9453,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return true;
         };
 
-        if (mechanicProfileRequiresMovement && _config.ValidationRouteHazardSourceEntry)
+        if (mechanicProfileRequiresMovement && !hazardDefinitions.empty())
         {
             std::vector<WorldObject*> hazardObjects;
             Trinity::AllWorldObjectsInRange hazardCheck(bot, 35.0f);
@@ -9416,23 +9463,26 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             for (WorldObject* object : hazardObjects)
             {
                 Creature* hazard = object ? object->ToCreature() : nullptr;
-                if (!hazard || !hazard->IsAlive() || hazard->GetEntry() != _config.ValidationRouteHazardSourceEntry)
+                if (!hazard || !hazard->IsAlive())
+                    continue;
+                HazardDefinition const* definition = hazardDefinitionFor(hazard->GetEntry(), 0);
+                if (!definition)
                     continue;
 
-                bool active = _config.ValidationRouteHazardShape == "radial";
-                if (_config.ValidationRouteHazardDetectionSpellId)
+                bool active = definition->Shape == "radial";
+                if (definition->DetectionSpellId)
                     for (CurrentSpellTypes spellType : { CURRENT_GENERIC_SPELL, CURRENT_CHANNELED_SPELL })
                         if (Spell* spell = hazard->GetCurrentSpell(spellType))
-                            if (SpellInfo const* spellInfo = spell->GetSpellInfo(); spellInfo && spellInfo->Id == _config.ValidationRouteHazardDetectionSpellId)
+                            if (SpellInfo const* spellInfo = spell->GetSpellInfo(); spellInfo && spellInfo->Id == definition->DetectionSpellId)
                                 active = true;
                 if (!active)
                     continue;
 
-                float safeRadius = std::max(1.0f, _config.ValidationRouteHazardRadiusYards + _config.ValidationRouteHazardSafetyMarginYards);
+                float safeRadius = std::max(1.0f, definition->RadiusYards + definition->SafetyMarginYards);
                 float distance = bot->GetExactDist2d(hazard);
                 if (distance > safeRadius)
                     continue;
-                if (_config.ValidationRouteHazardShape == "frontal_cone" && !hazard->HasInArc(float(M_PI), bot))
+                if (definition->Shape == "frontal_cone" && !hazard->HasInArc(float(M_PI), bot))
                     continue;
                 if (distance >= bestHazardDistance)
                     continue;
@@ -9440,8 +9490,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 bestHazardDistance = distance;
                 caster = hazard;
                 movementOrigin = hazard;
-                castSpell = sSpellMgr->GetSpellInfo(_config.ValidationRouteHazardDamageSpellId
-                    ? _config.ValidationRouteHazardDamageSpellId : _config.ValidationRouteHazardDetectionSpellId);
+                castSpell = sSpellMgr->GetSpellInfo(definition->DamageSpellId
+                    ? definition->DamageSpellId : definition->DetectionSpellId);
                 configuredHazard = castSpell != nullptr;
                 configuredSafeRadius = safeRadius;
             }
