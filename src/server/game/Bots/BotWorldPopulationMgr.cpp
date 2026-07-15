@@ -9801,6 +9801,10 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
         Player* densityTank = nullptr;
         Player* densityHealer = nullptr;
+        Player* densityDefenseTarget = nullptr;
+        uint8 densityDefensePriority = 0;
+        size_t densityDefenseAttackerCount = 0;
+        uint32 densityDefenseGuid = std::numeric_limits<uint32>::max();
         if (highDensityPhase)
         {
             for (WorldBotState const& cohortState : _bots)
@@ -9811,8 +9815,23 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 std::string memberRole = GetDungeonRole(member);
                 if (!densityTank && memberRole == "tank")
                     densityTank = member;
-                else if (!densityHealer && memberRole == "healer")
+                if (!densityHealer && memberRole == "healer")
                     densityHealer = member;
+                if (member == bot || memberRole == "tank" || member->getAttackers().empty())
+                    continue;
+
+                uint8 priority = memberRole == "healer" ? 2 : 1;
+                size_t attackerCount = member->getAttackers().size();
+                uint32 guid = member->GetGUID().GetCounter();
+                if (!densityDefenseTarget || priority > densityDefensePriority
+                    || (priority == densityDefensePriority && attackerCount > densityDefenseAttackerCount)
+                    || (priority == densityDefensePriority && attackerCount == densityDefenseAttackerCount && guid < densityDefenseGuid))
+                {
+                    densityDefenseTarget = member;
+                    densityDefensePriority = priority;
+                    densityDefenseAttackerCount = attackerCount;
+                    densityDefenseGuid = guid;
+                }
             }
         }
 
@@ -9829,16 +9848,18 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return true;
         }
 
-        if (role == "tank" && densityHealer && !densityHealer->getAttackers().empty()
-            && bot->HasSpell(31789) && TryCastFriendlySpell(bot, densityHealer, 31789))
+        if (role == "tank" && densityDefenseTarget
+            && bot->HasSpell(31789) && TryCastFriendlySpell(bot, densityDefenseTarget, 31789))
         {
-            std::string raw = BuildRawJson(bot, densityHealer);
-            std::string semantic = BuildSemanticJson(bot, densityHealer, "dungeon_boss", &power, stage, activity);
-            RecordEvent(state, bot, "boss_adds", densityHealer, "righteous_defense_healer_pickup",
-                raw.c_str(), semantic.c_str(), float(densityHealer->getAttackers().size()), addCount, 31789);
+            bool healerPickup = densityDefenseTarget == densityHealer;
+            char const* pickupAction = healerPickup ? "righteous_defense_healer_pickup" : "righteous_defense_party_pickup";
+            std::string raw = BuildRawJson(bot, densityDefenseTarget);
+            std::string semantic = BuildSemanticJson(bot, densityDefenseTarget, "dungeon_boss", &power, stage, activity);
+            RecordEvent(state, bot, "boss_adds", densityDefenseTarget, pickupAction,
+                raw.c_str(), semantic.c_str(), float(densityDefenseTarget->getAttackers().size()), addCount, 31789);
             target = add;
             situation = "dungeon_boss";
-            action = "righteous_defense_healer_pickup";
+            action = pickupAction;
             return true;
         }
 
@@ -10409,6 +10430,63 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     if (_config.ValidationRouteKind != "boss"
         && std::string(GetDungeonRole(bot)) == "tank")
     {
+        Player* defenseTarget = nullptr;
+        uint8 defensePriority = 0;
+        size_t defenseAttackerCount = 0;
+        uint32 defenseGuid = std::numeric_limits<uint32>::max();
+        for (WorldBotState const& cohortState : _bots)
+        {
+            Player* member = GetLoadedBot(cohortState);
+            if (!member || member == bot || !member->IsAlive() || member->GetMap() != bot->GetMap()
+                || member->GetGroup() != bot->GetGroup() || member->getAttackers().empty())
+                continue;
+            std::string memberRole = GetDungeonRole(member);
+            if (memberRole == "tank")
+                continue;
+            uint8 priority = memberRole == "healer" ? 2 : 1;
+            size_t attackerCount = member->getAttackers().size();
+            uint32 guid = member->GetGUID().GetCounter();
+            if (!defenseTarget || priority > defensePriority
+                || (priority == defensePriority && attackerCount > defenseAttackerCount)
+                || (priority == defensePriority && attackerCount == defenseAttackerCount && guid < defenseGuid))
+            {
+                defenseTarget = member;
+                defensePriority = priority;
+                defenseAttackerCount = attackerCount;
+                defenseGuid = guid;
+            }
+        }
+        if (defenseTarget && bot->HasSpell(31789) && TryCastFriendlySpell(bot, defenseTarget, 31789))
+        {
+            Unit* pickupTarget = nullptr;
+            uint32 pickupGuid = std::numeric_limits<uint32>::max();
+            for (Unit* attacker : defenseTarget->getAttackers())
+            {
+                if (!attacker || !attacker->IsAlive() || !bot->IsValidAttackTarget(attacker))
+                    continue;
+                uint32 guid = attacker->GetGUID().GetCounter();
+                if (!pickupTarget || guid < pickupGuid)
+                {
+                    pickupTarget = attacker;
+                    pickupGuid = guid;
+                }
+            }
+            if (pickupTarget)
+            {
+                target = pickupTarget;
+                state.TargetGuid = pickupTarget->GetGUID();
+            }
+            bool healerPickup = std::string(GetDungeonRole(defenseTarget)) == "healer";
+            char const* pickupAction = healerPickup ? "righteous_defense_healer_pickup" : "righteous_defense_party_pickup";
+            std::string raw = BuildRawJson(bot, defenseTarget);
+            std::string semantic = BuildSemanticJson(bot, defenseTarget, "normal_dungeon_trash", &power, stage, activity);
+            RecordEvent(state, bot, "validation_route_threat_pickup", defenseTarget, pickupAction,
+                raw.c_str(), semantic.c_str(), float(defenseAttackerCount), _config.ValidationRouteTargetEntry, 31789);
+            situation = "normal_dungeon_trash";
+            action = pickupAction;
+            return true;
+        }
+
         Unit* threatFocus = findTrashClusterThreatTarget();
         Player* threatVictim = threatFocus && threatFocus->GetVictim() ? threatFocus->GetVictim()->ToPlayer() : nullptr;
         bool loosePartyThreat = threatVictim && threatVictim->GetGroup() == bot->GetGroup()
@@ -13490,6 +13568,16 @@ uint32 BotWorldPopulationMgr::SelectCombatSpell(Player* bot, Unit* target) const
         }
         bool selfTarget = candidate.Profile.TargetSelector == "self";
         Unit* actionTarget = selfTarget ? static_cast<Unit*>(bot) : target;
+        if (!selfTarget)
+        {
+            SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(candidate.SpellId);
+            if (spellInfo && (actionTarget->IsImmunedToSpell(spellInfo, bot)
+                || (spellInfo->HasOnlyDamageEffects() && actionTarget->IsImmunedToDamage(spellInfo))))
+            {
+                candidate.RejectReason = "target_immune";
+                continue;
+            }
+        }
         float targetHealthPct = UnitHealthPct(actionTarget);
         if (targetHealthPct < candidate.Profile.MinTargetHealthPct || targetHealthPct > candidate.Profile.MaxTargetHealthPct)
         {
@@ -13702,6 +13790,16 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         }
         bool selfTarget = candidate.Profile.TargetSelector == "self";
         Unit* actionTarget = selfTarget ? static_cast<Unit*>(bot) : target;
+        if (!selfTarget)
+        {
+            SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(candidate.SpellId);
+            if (spellInfo && (actionTarget->IsImmunedToSpell(spellInfo, bot)
+                || (spellInfo->HasOnlyDamageEffects() && actionTarget->IsImmunedToDamage(spellInfo))))
+            {
+                candidate.RejectReason = "target_immune";
+                continue;
+            }
+        }
         float targetHealthPct = UnitHealthPct(actionTarget);
         if (targetHealthPct < candidate.Profile.MinTargetHealthPct || targetHealthPct > candidate.Profile.MaxTargetHealthPct)
         {
