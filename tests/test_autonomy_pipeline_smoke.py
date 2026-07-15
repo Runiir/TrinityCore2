@@ -1392,7 +1392,8 @@ def test_move_bot_to_profile_range_projects_approaches_to_terrain():
     assert "if (floorZ == INVALID_HEIGHT)\n            return false;" in profile_range
     assert "return MoveBotToPoint(state, bot, x, y, floorZ, false);" in profile_range
     assert "return moveToTerrainProjectedPoint(reference->GetPositionX(), reference->GetPositionY(), reference->GetPositionZ());" in profile_range
-    assert "return moveToTerrainProjectedPoint(rangedPosition.GetPositionX(), rangedPosition.GetPositionY(), rangedPosition.GetPositionZ());" in profile_range
+    assert "if (moveToTerrainProjectedPoint(rangedPosition.GetPositionX(), rangedPosition.GetPositionY(), rangedPosition.GetPositionZ()))" in profile_range
+    assert "return true;" in profile_range
 
 
 def test_applied_ground_danger_spell_shape_contract():
@@ -2866,8 +2867,13 @@ def test_density_tank_centroid_control_prioritizes_loose_healer_targets():
     assert "densityDefenseTarget == bot && densityTank" not in adds
     assert 'role == "dps" && densityTank && !bot->getAttackers().empty()' in adds
     assert 'if (memberRole == "tank" || member->getAttackers().empty())' in adds
-    assert "nearestAttacker->GetAngle(densityTank)" in adds
+    assert "nearestAttacker->GetAngle(densityTank) - densityTank->GetOrientation()" in adds
     assert "densityTank->GetFirstCollisionPosition(4.0f" in adds
+    assert "bool swarmDefenseActive = highDensityPhase || cohortSwarmActive;" in adds
+    assert "if (swarmDefenseActive)" in adds
+    assert "defenseScore = attackerCount + (memberRole == \"healer\" ? 3 : 0)" in adds
+    assert '"dps_stack_for_swarm_pickup"' in adds
+    assert '"dps_wait_for_swarm_tank_ownership"' in adds
     assert '"consecration_party_pickup"' in adds
     assert "if (highDensityPhase && role == \"healer\" && tryRouteGroupHeal(bot, add))" in adds
     assert_ordered(adds, "add = looseAdd ? looseAdd : densityAnchor;", "misdirection_to_tank", "tank_move_to_add_centroid")
@@ -2990,7 +2996,7 @@ def test_stonecore_quality_repairs_cover_hazards_pet_recovery_and_healer_protect
     assert '"hand_of_reckoning_add_pickup"' in manager
     assert '"fade_threat_drop"' in manager
     assert '"healer_stack_for_add_pickup"' in manager
-    assert "nearestAttacker->GetAngle(tankTarget)" in manager
+    assert "safeAngle - tankTarget->GetOrientation()" in manager
     assert "pickup = tankTarget->GetFirstCollisionPosition(4.0f" in manager
     assert "if (Pet* pet = bot->GetPet())\n                pet->AttackStop();" in manager
     assert '"tank_close_to_healer_adds"' not in manager
@@ -3014,7 +3020,10 @@ def test_stonecore_quality_repairs_cover_hazards_pet_recovery_and_healer_protect
     assert "? std::max(24.0f, minRange + 8.0f)" in manager
     assert "auto moveOutOfProfileDeadZone" in manager
     assert "endpointDistance >= rangeAction.MinRange + 1.0f" in manager
+    assert "float radialAngle = reference->GetAngle(bot) - reference->GetOrientation();" in manager
     assert "for (float angleOffset : { 0.0f, float(M_PI_4), -float(M_PI_4), float(M_PI_2), -float(M_PI_2) })" in manager
+    assert 'state.LastDecisionAction == "validation_route_complete"' in manager
+    assert 'state.LastDecisionSituation == "validation_route_manifest"' in manager
     assert "bool _validationRouteObservedDeadScriptTarget = false;" in header
     assert "_validationRouteObservedDeadScriptTarget = true;" in manager
     assert "_validationRouteCompletedPackCount > 0 || _validationRouteObservedDeadScriptTarget" in manager

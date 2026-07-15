@@ -3410,9 +3410,18 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
         && bot->IsWithinLOSInMap(reference))
         return false;
 
-    float angle = reference->GetAngle(bot);
-    Position rangedPosition = reference->GetFirstCollisionPosition(desiredRange, angle);
-    return moveToTerrainProjectedPoint(rangedPosition.GetPositionX(), rangedPosition.GetPositionY(), rangedPosition.GetPositionZ());
+    // GetFirstCollisionPosition expects an angle relative to the reference's
+    // orientation.  Passing GetAngle(bot) directly rotates the bearing twice;
+    // on large bosses that repeatedly selected a point beside the hunter and
+    // left every ranged action inside its effective dead zone.
+    float radialAngle = reference->GetAngle(bot) - reference->GetOrientation();
+    for (float angleOffset : { 0.0f, float(M_PI_4), -float(M_PI_4), float(M_PI_2), -float(M_PI_2) })
+    {
+        Position rangedPosition = reference->GetFirstCollisionPosition(desiredRange, radialAngle + angleOffset);
+        if (moveToTerrainProjectedPoint(rangedPosition.GetPositionX(), rangedPosition.GetPositionY(), rangedPosition.GetPositionZ()))
+            return true;
+    }
+    return false;
 }
 
 std::string BotWorldPopulationMgr::BuildCombatAttemptSummary(WorldBotState::CombatAttemptDiagnostic const& diagnostic) const
@@ -4130,7 +4139,10 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
     if (movementProgress)
         TryResolveBotBlocker(state, bot, "movement_progress");
     bool validationRouteComplete = _config.ValidationRouteEnable && _validationRouteManifestComplete;
-    if (!combatOrCasting && moving && !movementProgress && !validationRouteComplete)
+    bool terminalRouteAction = _config.ValidationRouteEnable
+        && (state.LastDecisionAction == "validation_route_complete"
+            || state.LastDecisionSituation == "validation_route_manifest");
+    if (!combatOrCasting && moving && !movementProgress && !validationRouteComplete && !terminalRouteAction)
         state.StuckTimer += diff;
     else
         state.StuckTimer = 0;
@@ -4144,7 +4156,8 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
     state.LastZ = bot->GetPositionZ();
 
     uint32 const earlyStuckDiagnosticMs = 1500;
-    if (state.StuckTimer >= earlyStuckDiagnosticMs && previousStuckTimer < earlyStuckDiagnosticMs)
+    if (!validationRouteComplete && !terminalRouteAction
+        && state.StuckTimer >= earlyStuckDiagnosticMs && previousStuckTimer < earlyStuckDiagnosticMs)
     {
         char const* stuckReason = _config.ValidationRouteEnable ? "validation_route_stuck_suspected" : "stuck_suspected";
         float targetHealthPct = target ? UnitHealthPct(target) : 0.0f;
@@ -4157,7 +4170,7 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         }
     }
 
-    if (state.StuckTimer >= 6000)
+    if (!validationRouteComplete && !terminalRouteAction && state.StuckTimer >= 6000)
     {
         ++_metrics.StuckEvents;
         MarkStuckFailure(state, bot);
@@ -7014,6 +7027,10 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     {
         bot->AttackStop();
         bot->CombatStop(true);
+        bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+        state.ActivePathValid = false;
+        state.IsMoving = false;
+        state.StuckTimer = 0;
         state.TargetGuid.Clear();
         state.WasInCombat = false;
         state.ValidationRouteTerminalState = true;
@@ -9809,6 +9826,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
         bool highDensityPhase = _validationRouteBossAddDensityPhase
             && _validationRouteBossAddDensityGeneration == _validationRouteGeneration;
+        // A listed swarm needs party-protection rules as soon as it engages,
+        // even while the boss remains attackable.  Waiting for the scripted
+        // shield/unavailable phase let Azil followers build lethal healer/DPS
+        // threat before the tank's density handler existed.
+        bool swarmDefenseActive = highDensityPhase || cohortSwarmActive;
         std::string role = GetDungeonRole(bot);
         BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(bot, role.c_str());
         Creature* densityApproachAnchor = nullptr;
@@ -9877,10 +9899,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         Player* densityTank = nullptr;
         Player* densityHealer = nullptr;
         Player* densityDefenseTarget = nullptr;
-        uint8 densityDefensePriority = 0;
+        size_t densityDefenseScore = 0;
+        uint8 densityDefenseRolePriority = 0;
         size_t densityDefenseAttackerCount = 0;
         uint32 densityDefenseGuid = std::numeric_limits<uint32>::max();
-        if (highDensityPhase)
+        if (swarmDefenseActive)
         {
             for (WorldBotState const& cohortState : _bots)
             {
@@ -9895,15 +9918,22 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 if (memberRole == "tank" || member->getAttackers().empty())
                     continue;
 
-                uint8 priority = memberRole == "healer" ? 2 : 1;
                 size_t attackerCount = member->getAttackers().size();
+                uint8 rolePriority = memberRole == "healer" ? 2 : 1;
+                // Preserve a healer bias without allowing a single healer
+                // attacker to hide a lethal swarm on a damage dealer.
+                size_t defenseScore = attackerCount + (memberRole == "healer" ? 3 : 0);
                 uint32 guid = member->GetGUID().GetCounter();
-                if (!densityDefenseTarget || priority > densityDefensePriority
-                    || (priority == densityDefensePriority && attackerCount > densityDefenseAttackerCount)
-                    || (priority == densityDefensePriority && attackerCount == densityDefenseAttackerCount && guid < densityDefenseGuid))
+                if (!densityDefenseTarget || defenseScore > densityDefenseScore
+                    || (defenseScore == densityDefenseScore && rolePriority > densityDefenseRolePriority)
+                    || (defenseScore == densityDefenseScore && rolePriority == densityDefenseRolePriority
+                        && attackerCount > densityDefenseAttackerCount)
+                    || (defenseScore == densityDefenseScore && rolePriority == densityDefenseRolePriority
+                        && attackerCount == densityDefenseAttackerCount && guid < densityDefenseGuid))
                 {
                     densityDefenseTarget = member;
-                    densityDefensePriority = priority;
+                    densityDefenseScore = defenseScore;
+                    densityDefenseRolePriority = rolePriority;
                     densityDefenseAttackerCount = attackerCount;
                     densityDefenseGuid = guid;
                 }
@@ -10000,6 +10030,48 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return true;
         }
 
+        // Do not let the first ranged AoE tick assign an entire newly spawned
+        // swarm to a DPS before the tank can act.  Stack an unowned focus into
+        // the pickup radius and suppress new threat until that focus transfers.
+        if (role == "dps" && densityTank && cohortSwarmActive && add
+            && add->GetVictim() != densityTank)
+        {
+            bot->AttackStop();
+            if (Pet* pet = bot->GetPet())
+                pet->AttackStop();
+
+            if (bot->GetExactDist2d(densityTank) > 8.0f
+                && !bot->HasUnitState(UNIT_STATE_CASTING) && !bot->IsFalling())
+            {
+                Position pickup = densityTank->GetFirstCollisionPosition(4.0f,
+                    add->GetAngle(densityTank) - densityTank->GetOrientation());
+                if (bot->GetExactDist2d(pickup.GetPositionX(), pickup.GetPositionY()) > 2.0f
+                    && MoveBotToPoint(state, bot, pickup.GetPositionX(), pickup.GetPositionY(), pickup.GetPositionZ()))
+                {
+                    std::string raw = BuildRawJson(bot, add);
+                    std::string semantic = BuildSemanticJson(bot, add, "dungeon_boss", &power, stage, activity);
+                    RecordEvent(state, bot, "boss_adds", add, "dps_stack_for_swarm_pickup",
+                        raw.c_str(), semantic.c_str(), bot->GetExactDist2d(densityTank), addCount);
+                    state.TargetGuid = densityTank->GetVictim() ? densityTank->GetVictim()->GetGUID() : add->GetGUID();
+                    target = densityTank->GetVictim() ? densityTank->GetVictim() : add;
+                    situation = "dungeon_boss";
+                    action = "dps_stack_for_swarm_pickup";
+                    return true;
+                }
+            }
+
+            Unit* pickupFocus = densityTank->GetVictim() ? densityTank->GetVictim() : add;
+            state.TargetGuid = pickupFocus ? pickupFocus->GetGUID() : ObjectGuid::Empty;
+            target = pickupFocus;
+            std::string raw = BuildRawJson(bot, add);
+            std::string semantic = BuildSemanticJson(bot, add, "dungeon_boss", &power, stage, activity);
+            RecordEvent(state, bot, "boss_adds", add, "dps_wait_for_swarm_tank_ownership",
+                raw.c_str(), semantic.c_str(), float(bot->getAttackers().size()), addCount);
+            situation = "dungeon_boss";
+            action = "dps_wait_for_swarm_tank_ownership";
+            return true;
+        }
+
         if (role == "dps" && densityTank && !bot->getAttackers().empty()
             && bot->GetExactDist2d(densityTank) > 8.0f
             && !bot->HasUnitState(UNIT_STATE_CASTING) && !bot->IsFalling())
@@ -10019,7 +10091,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             }
             if (nearestAttacker)
             {
-                Position pickup = densityTank->GetFirstCollisionPosition(4.0f, nearestAttacker->GetAngle(densityTank));
+                Position pickup = densityTank->GetFirstCollisionPosition(4.0f,
+                    nearestAttacker->GetAngle(densityTank) - densityTank->GetOrientation());
                 if (bot->GetExactDist2d(pickup.GetPositionX(), pickup.GetPositionY()) > 2.0f
                     && MoveBotToPoint(state, bot, pickup.GetPositionX(), pickup.GetPositionY(), pickup.GetPositionZ()))
                 {
@@ -10643,7 +10716,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         }
         if (tank && nearestAttacker && bot->GetExactDist2d(tank) > 8.0f)
         {
-            Position pickup = tank->GetFirstCollisionPosition(4.0f, nearestAttacker->GetAngle(tank));
+            Position pickup = tank->GetFirstCollisionPosition(4.0f,
+                nearestAttacker->GetAngle(tank) - tank->GetOrientation());
             if (bot->GetExactDist2d(pickup.GetPositionX(), pickup.GetPositionY()) > 2.0f
                 && MoveBotToPoint(state, bot, pickup.GetPositionX(), pickup.GetPositionY(), pickup.GetPositionZ()))
             {
