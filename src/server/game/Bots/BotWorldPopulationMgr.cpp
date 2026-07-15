@@ -9745,6 +9745,35 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return true;
         }
 
+        if (role == "tank" && densityHealer && !densityHealer->getAttackers().empty()
+            && bot->HasSpell(31789) && TryCastFriendlySpell(bot, densityHealer, 31789))
+        {
+            std::string raw = BuildRawJson(bot, densityHealer);
+            std::string semantic = BuildSemanticJson(bot, densityHealer, "dungeon_boss", &power, stage, activity);
+            RecordEvent(state, bot, "boss_adds", densityHealer, "righteous_defense_healer_pickup",
+                raw.c_str(), semantic.c_str(), float(densityHealer->getAttackers().size()), addCount, 31789);
+            target = add;
+            situation = "dungeon_boss";
+            action = "righteous_defense_healer_pickup";
+            return true;
+        }
+
+        Player* addVictim = add && add->GetVictim() ? add->GetVictim()->ToPlayer() : nullptr;
+        if (role == "tank" && addVictim && addVictim != bot
+            && std::string(GetDungeonRole(addVictim)) != "tank"
+            && bot->HasSpell(62124) && TryCastCombatSpell(bot, add, 62124))
+        {
+            std::string raw = BuildRawJson(bot, add);
+            std::string semantic = BuildSemanticJson(bot, add, "dungeon_boss", &power, stage, activity);
+            RecordEvent(state, bot, "boss_adds", add, "hand_of_reckoning_add_pickup",
+                raw.c_str(), semantic.c_str(), bot->GetExactDist(add), addCount, 62124);
+            state.TargetGuid = add->GetGUID();
+            target = add;
+            situation = "dungeon_boss";
+            action = "hand_of_reckoning_add_pickup";
+            return true;
+        }
+
         float densityHealerRange = 0.0f;
         if (densityHealer)
         {

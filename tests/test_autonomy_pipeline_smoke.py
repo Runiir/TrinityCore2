@@ -20,6 +20,7 @@ STONECORE_ROTATION_SQL = ROOT / "sql/custom/world/2026_06_21_00_bot_rotation_pro
 PRAYER_OF_MENDING_GUARD_SQL = ROOT / "sql/custom/world/2026_07_14_02_holy_priest_prayer_of_mending_aura_guard.sql"
 PALADIN_AOE_THREAT_SQL = ROOT / "sql/custom/world/2026_07_14_03_stonecore_paladin_aoe_threat_priority.sql"
 MARKSMAN_STATIONARY_SQL = ROOT / "sql/custom/world/2026_07_14_04_marksmanship_cast_time_stationary.sql"
+EMERGENCY_ADD_THREAT_SQL = ROOT / "sql/custom/world/2026_07_15_01_stonecore_emergency_add_threat.sql"
 BOT_POLICY = ROOT / "src/server/game/Bots/BotTelemetryPolicy.cpp"
 BOT_BUFFER = ROOT / "src/server/game/Bots/BotTelemetryBuffer.cpp"
 BOT_SEGMENTS = ROOT / "src/server/game/Bots/BotExperimentCoordinator.cpp"
@@ -2942,6 +2943,7 @@ def test_stonecore_quality_repairs_cover_hazards_pet_recovery_and_healer_protect
     manager = (root / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
     header = (root / "src/server/game/Bots/BotWorldPopulationMgr.h").read_text()
     rotation_sql = (root / "sql/custom/world/2026_07_15_00_stonecore_complete_role_rotations.sql").read_text()
+    emergency_threat_sql = read(EMERGENCY_ADD_THREAT_SQL)
 
     for field in (
         "ValidationRouteHazardSourceEntry",
@@ -2966,6 +2968,9 @@ def test_stonecore_quality_repairs_cover_hazards_pet_recovery_and_healer_protect
     assert "victim->GetGroup() != bot->GetGroup()" in manager
     assert '"tank_move_to_add_centroid"' in manager
     assert '"misdirection_to_tank"' in manager
+    assert '"righteous_defense_healer_pickup"' in manager
+    assert '"hand_of_reckoning_add_pickup"' in manager
     assert "float minRange = selfTarget ? 0.0f" in manager
+    assert "WHEN `action`.`spell_id` = 26573 THEN 0" in emergency_threat_sql
     for spell_id in (2948, 92315, 11129, 403, 421, 53595, 26573):
         assert str(spell_id) in rotation_sql
