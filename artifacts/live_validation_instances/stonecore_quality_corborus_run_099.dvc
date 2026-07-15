@@ -1,0 +1,6 @@
+outs:
+- md5: 0a4e81477344bc72398be3851f836d76.dir
+  size: 198460743
+  nfiles: 25
+  hash: md5
+  path: stonecore_quality_corborus_run_099
