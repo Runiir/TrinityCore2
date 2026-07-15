@@ -2971,7 +2971,8 @@ def test_stonecore_quality_repairs_cover_hazards_pet_recovery_and_healer_protect
     assert '"righteous_defense_healer_pickup"' in manager
     assert '"hand_of_reckoning_add_pickup"' in manager
     assert '"fade_threat_drop"' in manager
-    assert '"tank_close_to_healer_adds"' in manager
+    assert '"healer_stack_for_add_pickup"' in manager
+    assert '"tank_close_to_healer_adds"' not in manager
     assert '"consecration_healer_pickup"' in manager
     assert '"hand_of_salvation_healer_threat_drop"' in manager
     assert "olderHealerTarget" in manager
