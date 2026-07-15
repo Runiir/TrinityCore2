@@ -9705,6 +9705,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 Creature* looseAdd = nullptr;
                 uint8 loosePriority = 0;
                 float looseDistance = std::numeric_limits<float>::max();
+                uint32 looseGuid = std::numeric_limits<uint32>::max();
                 for (Creature* candidate : localAdds)
                 {
                     Player* victim = candidate->GetVictim() ? candidate->GetVictim()->ToPlayer() : nullptr;
@@ -9713,11 +9714,15 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                         continue;
                     uint8 priority = victimRole == "healer" ? 3 : 2;
                     float distance = bot->GetExactDist(candidate);
-                    if (!looseAdd || priority > loosePriority || (priority == loosePriority && distance < looseDistance))
+                    uint32 guid = candidate->GetGUID().GetCounter();
+                    bool olderHealerTarget = priority == 3 && loosePriority == 3 && guid < looseGuid;
+                    bool nearerNonHealerTarget = priority == loosePriority && priority != 3 && distance < looseDistance;
+                    if (!looseAdd || priority > loosePriority || olderHealerTarget || nearerNonHealerTarget)
                     {
                         looseAdd = candidate;
                         loosePriority = priority;
                         looseDistance = distance;
+                        looseGuid = guid;
                     }
                 }
                 add = looseAdd ? looseAdd : densityAnchor;
@@ -12846,6 +12851,8 @@ bool BotWorldPopulationMgr::TryValidationRouteReadiness(WorldBotState& state, Pl
         return false;
 
     uint64 const nowMs = NowMs();
+    bool urgentHunterPetRecovery = bot->getClass() == CLASS_HUNTER
+        && bot->GetPet() && !bot->GetPet()->IsAlive();
     bool groupStable = true;
     if (Group* group = bot->GetGroup())
         for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
@@ -12858,7 +12865,7 @@ bool BotWorldPopulationMgr::TryValidationRouteReadiness(WorldBotState& state, Pl
                 break;
             }
         }
-    if (!groupStable)
+    if (!groupStable && !urgentHunterPetRecovery)
     {
         state.GroupReadinessStableSinceMs = 0;
         return false;
@@ -12866,9 +12873,10 @@ bool BotWorldPopulationMgr::TryValidationRouteReadiness(WorldBotState& state, Pl
     if (!state.GroupReadinessStableSinceMs)
     {
         state.GroupReadinessStableSinceMs = nowMs;
-        return false;
+        if (!urgentHunterPetRecovery)
+            return false;
     }
-    if (nowMs - state.GroupReadinessStableSinceMs < 10000)
+    if (!urgentHunterPetRecovery && nowMs - state.GroupReadinessStableSinceMs < 10000)
         return false;
 
     struct ActiveBuffRequirement
