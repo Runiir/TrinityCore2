@@ -2960,7 +2960,12 @@ def test_stonecore_quality_repairs_cover_hazards_pet_recovery_and_healer_protect
     assert '"hunter_pet_revive_submitted"' in manager
     assert '"hunter_pet_revived"' in manager
     assert 'victimRole == "healer" ? 3 : 2' in manager
+    assert 'if (botIsTank && victimRole == "healer")' in manager
+    assert "score += 30000.0f;" in manager
+    assert "bool loosePartyThreat = threatVictim && threatVictim->GetGroup() == bot->GetGroup()" in manager
+    assert "victim->GetGroup() != bot->GetGroup()" in manager
     assert '"tank_move_to_add_centroid"' in manager
     assert '"misdirection_to_tank"' in manager
+    assert "float minRange = selfTarget ? 0.0f" in manager
     for spell_id in (2948, 92315, 11129, 403, 421, 53595, 26573):
         assert str(spell_id) in rotation_sql

@@ -69,6 +69,8 @@
 - Trace schema now records all-hostile tank ownership, healer-target exposure, and hunter-pet liveness. The role-efficiency v2 audit hard-gates complete rotation coverage, named-bot and party death/stuck freedom, 98% all-hostile tank ownership, at most 1% healer exposure and three-second dwell, 90% pet uptime, and successful hazard exits.
 - Uninterrupted Stonecore reports automatically embed that audit and revoke `all_passed` and `acceptable_final_evidence` on any role-quality failure. Segment runs remain diagnostic-only and do not claim full certification.
 - Focused Python/source tests pass and the modified `worldserver` builds successfully. Database provisioning, targeted Corborus/Slabhide/Flayer checks, and three consecutive clean full clears remain pending live execution.
+- The first post-change Corborus segment naturally cleared its prerequisite corridor and killed Corborus with 24 total kills, zero deaths, and zero stuck events. Fire exercised Living Bomb, Fireball, moving Scorch, Hot Streak, and Combustion; Enhancement exercised Flame Shock, Stormstrike, Lava Lash, Unleash Elements, five-stack Lightning Bolt/Chain Lightning, and Feral Spirit; the hunter pet was alive in every combat sample.
+- That segment exposed two follow-up defects before acceptance: all-hostile telemetry counted nearby enemies fighting non-party NPCs, and self-targeted Rapid Fire inherited the hunter profile's five-yard minimum range and was rejected. Threat telemetry now scopes victims to the validation party, the tank interrupts remembered focus to pick up loose party attackers with healer-first scoring, and self-targeted actions bypass hostile minimum-range gates.
 
 ## 2026-06-20
 

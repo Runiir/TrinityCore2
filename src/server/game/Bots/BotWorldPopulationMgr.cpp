@@ -7635,10 +7635,13 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             Unit* victim = creature->GetVictim();
             bool botIsTank = std::string(GetDungeonRole(bot)) == "tank";
             Player* victimPlayer = victim ? victim->ToPlayer() : nullptr;
-            bool victimIsTank = victimPlayer && std::string(GetDungeonRole(victimPlayer)) == "tank";
+            std::string victimRole = victimPlayer ? GetDungeonRole(victimPlayer) : "";
+            bool victimIsTank = victimRole == "tank";
             float score = (creature->IsInCombat() || victim ? 10000.0f : 0.0f)
                 - bot->GetExactDist(creature);
-            if (botIsTank && victim && !victimIsTank)
+            if (botIsTank && victimRole == "healer")
+                score += 30000.0f;
+            else if (botIsTank && victim && !victimIsTank)
                 score += 20000.0f;
             else if (botIsTank && !victim)
                 score += 5000.0f;
@@ -10264,9 +10267,13 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     if (_config.ValidationRouteKind != "boss"
         && std::string(GetDungeonRole(bot)) == "tank")
     {
-        Unit* rememberedFocus = findLastKnownFocusTarget();
+        Unit* threatFocus = findTrashClusterThreatTarget();
+        Player* threatVictim = threatFocus && threatFocus->GetVictim() ? threatFocus->GetVictim()->ToPlayer() : nullptr;
+        bool loosePartyThreat = threatVictim && threatVictim->GetGroup() == bot->GetGroup()
+            && std::string(GetDungeonRole(threatVictim)) != "tank";
+        Unit* rememberedFocus = loosePartyThreat ? threatFocus : findLastKnownFocusTarget();
         if (!rememberedFocus)
-            rememberedFocus = findTrashClusterThreatTarget();
+            rememberedFocus = threatFocus;
         if (rememberedFocus && target != rememberedFocus && (rememberedFocus->GetVictim() != bot || !bot->GetVictim()))
         {
             target = rememberedFocus;
@@ -13573,7 +13580,8 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
             continue;
         }
         float distance = selfTarget ? 0.0f : bot->GetExactDist(actionTarget);
-        float minRange = candidate.Profile.MinRange > 0.0f ? candidate.Profile.MinRange : profile.MinRange;
+        float minRange = selfTarget ? 0.0f
+            : (candidate.Profile.MinRange > 0.0f ? candidate.Profile.MinRange : profile.MinRange);
         if (!selfTarget)
             minRange = effectiveSpellMinRange(candidate, minRange);
         float maxRange = candidate.Profile.MaxRange > 0.0f ? candidate.Profile.MaxRange : profile.MaxRange;
@@ -17003,8 +17011,10 @@ void BotWorldPopulationMgr::RecordDecisionTrace(WorldBotState& state, char const
             if (!creature || !creature->IsAlive() || !creature->GetHealth()
                 || !bot->IsValidAttackTarget(creature) || (!creature->IsInCombat() && !creature->GetVictim()))
                 continue;
-            ++entry.EngagedHostileCount;
             Player* victim = creature->GetVictim() ? creature->GetVictim()->ToPlayer() : nullptr;
+            if (!victim || (bot->GetGroup() ? victim->GetGroup() != bot->GetGroup() : victim != bot))
+                continue;
+            ++entry.EngagedHostileCount;
             std::string victimRole = victim ? GetDungeonRole(victim) : "";
             if (victimRole == "tank")
                 ++entry.TankOwnedHostileCount;
