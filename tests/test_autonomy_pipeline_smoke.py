@@ -2996,12 +2996,21 @@ def test_stonecore_quality_repairs_cover_hazards_pet_recovery_and_healer_protect
     assert '"consecration_healer_pickup"' in manager
     assert '"consecration_party_pickup"' in manager
     assert '"dps_stack_for_add_pickup"' in manager
+    assert '"consecration_party_trash_pickup"' in manager
+    assert '"dps_stack_for_trash_pickup"' in manager
     assert '"hand_of_salvation_healer_threat_drop"' in manager
     assert "olderHealerTarget" in manager
     assert "urgentHunterPetRecovery" in manager
     assert "addCount >= 3 && !densityDefenseTarget" in manager
     assert "MoveBotToProfileRange(state, bot, target, &profileAction)" in manager
     assert "GetFirstCollisionPosition(profileAction.MinRange" not in manager
+    assert "float desiredRange = minRange > 0.0f ? minRange + 2.0f" in manager
+    assert "auto moveOutOfProfileDeadZone" in manager
+    assert "endpointDistance >= rangeAction.MinRange + 1.0f" in manager
+    assert "bool _validationRouteObservedDeadScriptTarget = false;" in header
+    assert "_validationRouteObservedDeadScriptTarget = true;" in manager
+    assert "_validationRouteCompletedPackCount > 0 || _validationRouteObservedDeadScriptTarget" in manager
+    assert '\\"validation_route_observed_dead_script_target\\"' in manager
     assert "float minRange = selfTarget ? 0.0f" in manager
     assert 'candidate.RejectReason = "caster_controlled"' in manager
     assert 'candidate.RejectReason = "caster_prevented"' in manager

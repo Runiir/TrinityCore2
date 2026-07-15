@@ -1403,6 +1403,7 @@ private:
     uint32 _validationRouteConfirmedBossDeathInstanceId = 0;
     uint32 _validationRouteProgressBaselineKills = 0;
     bool _validationRouteObservedEngagement = false;
+    bool _validationRouteObservedDeadScriptTarget = false;
     bool _validationRouteManifestAdvancePending = false;
     uint64 _validationRouteManifestAdvanceGeneration = 0;
     bool _validationRouteManifestComplete = false;
