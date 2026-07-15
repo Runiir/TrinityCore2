@@ -2998,6 +2998,9 @@ def test_stonecore_quality_repairs_cover_hazards_pet_recovery_and_healer_protect
     assert '"dps_stack_for_add_pickup"' in manager
     assert '"consecration_party_trash_pickup"' in manager
     assert '"dps_stack_for_trash_pickup"' in manager
+    assert "bot->GetExactDist2d(densityTank) > 8.0f" in manager
+    assert "bot->GetExactDist2d(tank) > 8.0f" in manager
+    assert "Unit* pickupFocus = tank->GetVictim() ? tank->GetVictim() : nearestAttacker;" in manager
     assert '"hand_of_salvation_healer_threat_drop"' in manager
     assert "olderHealerTarget" in manager
     assert "urgentHunterPetRecovery" in manager

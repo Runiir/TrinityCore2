@@ -9949,6 +9949,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         }
 
         if (role == "dps" && densityDefenseTarget == bot && densityTank && !bot->getAttackers().empty()
+            && bot->GetExactDist2d(densityTank) > 8.0f
             && !bot->HasUnitState(UNIT_STATE_CASTING) && !bot->IsFalling())
         {
             Unit* nearestAttacker = nullptr;
@@ -9977,8 +9978,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     std::string semantic = BuildSemanticJson(bot, nearestAttacker, "dungeon_boss", &power, stage, activity);
                     RecordEvent(state, bot, "boss_adds", nearestAttacker, "dps_stack_for_add_pickup",
                         raw.c_str(), semantic.c_str(), nearestDistance, addCount);
-                    state.TargetGuid = add ? add->GetGUID() : ObjectGuid::Empty;
-                    target = add;
+                    Unit* pickupFocus = densityTank->GetVictim() ? densityTank->GetVictim() : add;
+                    state.TargetGuid = pickupFocus ? pickupFocus->GetGUID() : ObjectGuid::Empty;
+                    target = pickupFocus;
                     situation = "dungeon_boss";
                     action = "dps_stack_for_add_pickup";
                     return true;
@@ -10550,7 +10552,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 nearestDistance = distance;
             }
         }
-        if (tank && nearestAttacker)
+        if (tank && nearestAttacker && bot->GetExactDist2d(tank) > 8.0f)
         {
             Position pickup = tank->GetFirstCollisionPosition(4.0f, nearestAttacker->GetAngle(tank));
             if (bot->GetExactDist2d(pickup.GetPositionX(), pickup.GetPositionY()) > 2.0f
@@ -10563,8 +10565,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 std::string semantic = BuildSemanticJson(bot, nearestAttacker, "normal_dungeon_trash", &power, stage, activity);
                 RecordEvent(state, bot, "validation_route_threat_pickup", nearestAttacker, "dps_stack_for_trash_pickup",
                     raw.c_str(), semantic.c_str(), nearestDistance, _config.ValidationRouteTargetEntry);
-                state.TargetGuid.Clear();
-                target = nullptr;
+                Unit* pickupFocus = tank->GetVictim() ? tank->GetVictim() : nearestAttacker;
+                state.TargetGuid = pickupFocus->GetGUID();
+                target = pickupFocus;
                 situation = "validation_route_regroup";
                 action = "dps_stack_for_trash_pickup";
                 return true;
