@@ -17102,12 +17102,22 @@ void BotWorldPopulationMgr::RecordDecisionTrace(WorldBotState& state, char const
             if (!victim || (bot->GetGroup() ? victim->GetGroup() != bot->GetGroup() : victim != bot))
                 continue;
             ++entry.EngagedHostileCount;
+            entry.EngagedHostileGuids.push_back(creature->GetGUID().GetCounter());
             std::string victimRole = victim ? GetDungeonRole(victim) : "";
             if (victimRole == "tank")
+            {
                 ++entry.TankOwnedHostileCount;
+                entry.TankOwnedHostileGuids.push_back(creature->GetGUID().GetCounter());
+            }
             else if (victimRole == "healer")
+            {
                 ++entry.HealerTargetingHostileCount;
+                entry.HealerTargetingHostileGuids.push_back(creature->GetGUID().GetCounter());
+            }
         }
+        std::sort(entry.EngagedHostileGuids.begin(), entry.EngagedHostileGuids.end());
+        std::sort(entry.TankOwnedHostileGuids.begin(), entry.TankOwnedHostileGuids.end());
+        std::sort(entry.HealerTargetingHostileGuids.begin(), entry.HealerTargetingHostileGuids.end());
     }
     entry.LoopGuardrailAction = state.LastLoopGuardrailAction;
     entry.LoopGuardrailReason = state.LastLoopGuardrailReason;
@@ -17121,7 +17131,7 @@ void BotWorldPopulationMgr::RecordDecisionTrace(WorldBotState& state, char const
     entry.CombatAttempt = state.LastCombatAttempt;
     entry.RouteProgress = state.LastRouteProgress;
     state.DecisionTrace.push_back(entry);
-    while (state.DecisionTrace.size() > 64)
+    while (state.DecisionTrace.size() > 128)
         state.DecisionTrace.pop_front();
 }
 
@@ -17651,7 +17661,19 @@ std::string BotWorldPopulationMgr::BuildBotTraceEntriesJson(WorldBotState const&
 {
     if (!limit)
         limit = 20;
-    limit = std::min<uint32>(limit, 64);
+    limit = std::min<uint32>(limit, 128);
+
+    auto appendGuidArray = [](std::ostringstream& output, std::vector<uint32> const& guids)
+    {
+        output << "[";
+        for (size_t index = 0; index < guids.size(); ++index)
+        {
+            if (index)
+                output << ",";
+            output << guids[index];
+        }
+        output << "]";
+    };
 
     std::ostringstream json;
     json << "[";
@@ -17679,7 +17701,14 @@ std::string BotWorldPopulationMgr::BuildBotTraceEntriesJson(WorldBotState const&
              << ",\"target_churn_count\":" << itr->TargetChurnCount
              << ",\"threat_snapshot\":{\"engaged_hostiles\":" << itr->EngagedHostileCount
              << ",\"tank_owned_hostiles\":" << itr->TankOwnedHostileCount
-             << ",\"healer_targeting_hostiles\":" << itr->HealerTargetingHostileCount << "}"
+             << ",\"healer_targeting_hostiles\":" << itr->HealerTargetingHostileCount
+             << ",\"engaged_hostile_guids\":";
+        appendGuidArray(json, itr->EngagedHostileGuids);
+        json << ",\"tank_owned_hostile_guids\":";
+        appendGuidArray(json, itr->TankOwnedHostileGuids);
+        json << ",\"healer_targeting_hostile_guids\":";
+        appendGuidArray(json, itr->HealerTargetingHostileGuids);
+        json << "}"
              << ",\"pet_alive\":" << (itr->PetAlive ? "true" : "false")
              << ",\"loop_guardrail_action\":\"" << JsonEscape(itr->LoopGuardrailAction) << "\""
              << ",\"loop_guardrail_reason\":\"" << JsonEscape(itr->LoopGuardrailReason) << "\""

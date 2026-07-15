@@ -100,7 +100,7 @@ def test_stonecore_role_profiles_include_runtime_efficiency_gates():
         assert str(spell_id) in sql
 
 
-def test_role_audit_v2_requires_complete_rotations_pet_hazards_and_all_hostile_threat():
+def test_role_audit_v3_requires_complete_rotations_pet_hazards_and_all_hostile_threat():
     roles = {
         "Scvaltank": (1, "survive_hold_threat_position_control_then_safe_dps", [53595, 26573, 31935, 53600]),
         "Scvalheal": (2, "keep_group_alive_triage_dispel_mana_efficiency_then_safe_dps", [2061]),
@@ -131,12 +131,12 @@ def test_role_audit_v2_requires_complete_rotations_pet_hazards_and_all_hostile_t
 
     audit = build_audit({"status": {"deaths": 0}, "trace": {"entries": entries}}, "abc")
 
-    assert audit["schema"] == "stonecore_role_efficiency_v2"
+    assert audit["schema"] == "stonecore_role_efficiency_v3"
     assert audit["passed"] is True
     assert audit["mechanics"]["hazard_exit_actions"] == 2
 
 
-def test_role_audit_v2_rejects_observed_stonecore_quality_regressions():
+def test_role_audit_v3_rejects_observed_stonecore_quality_regressions():
     entries = []
     for index, (name, guid, role_goal) in enumerate(
         [
@@ -159,6 +159,44 @@ def test_role_audit_v2_rejects_observed_stonecore_quality_regressions():
     assert "Scvaltank:healer_target_exposure" in audit["failure_labels"]
     assert "Scvaldpsb:pet_alive_rate" in audit["failure_labels"]
     assert "party:hazard_activation_coverage" in audit["failure_labels"]
+
+
+def test_role_audit_v3_scopes_pickup_grace_and_dwell_to_each_hostile_guid():
+    entries = []
+    snapshots = [
+        (100, [101], [], [101]),
+        (1100, [101], [], [101]),
+        (2100, [101, 102], [101], [102]),
+        (3100, [101, 102], [101], [102]),
+        (4100, [101, 102], [101], [102]),
+    ]
+    for sequence, (timestamp, engaged, tank_owned, healer_targeting) in enumerate(snapshots, start=1):
+        entry = _entry(
+            "Scvaltank",
+            1,
+            sequence,
+            "survive_hold_threat_position_control_then_safe_dps",
+            spell=53595,
+            recorded=timestamp,
+        )
+        entry["threat_snapshot"] = {
+            "engaged_hostiles": len(engaged),
+            "tank_owned_hostiles": len(tank_owned),
+            "healer_targeting_hostiles": len(healer_targeting),
+            "engaged_hostile_guids": engaged,
+            "tank_owned_hostile_guids": tank_owned,
+            "healer_targeting_hostile_guids": healer_targeting,
+        }
+        entries.append(entry)
+
+    audit = build_audit({"status": {}, "trace": {"entries": entries}}, "abc")
+    tank = next(bot for bot in audit["bots"] if bot["bot_name"] == "Scvaltank")
+
+    assert tank["identity_scoped_threat"] is True
+    assert tank["tank_all_hostile_retention_rate"] == 1.0
+    assert tank["healer_target_exposure_rate"] == 0.0
+    assert tank["max_healer_target_dwell_ms"] == 2000
+    assert audit["mechanics"]["threat_acquisition_grace_ms"] == 3000
 
 
 def test_full_stonecore_acceptance_is_revoked_when_role_quality_fails():

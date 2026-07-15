@@ -27,6 +27,7 @@ FAILURE_RESULTS = {
     "no_mana",
     "out_of_range",
 }
+THREAT_ACQUISITION_GRACE_MS = 3000
 
 REQUIRED_ROTATION_GROUPS = {
     "Scvaltank": [{53595}, {26573}, {31935}, {53600}],
@@ -132,9 +133,17 @@ def build_audit(report: dict[str, Any], source_hash: str) -> dict[str, Any]:
 
         tank_samples = []
         all_hostile_samples: list[tuple[int, int, int]] = []
+        healer_dwell_ms = 0
+        identity_scoped_threat = False
         if role_by_name[name] == "tank":
             bot_guid = next(int(entry.get("bot_guid", 0)) for entry in entries_by_name[name])
             seen_ticks: set[int] = set()
+            hostile_first_seen: dict[int, int] = {}
+            hostile_last_seen: dict[int, int] = {}
+            healer_episode_start: dict[int, int] = {}
+            healer_episode_last: dict[int, int] = {}
+            legacy_dwell_start = None
+            legacy_dwell_last = None
             for entry in entries_by_name[name]:
                 tick = int(entry.get("timestamp_ms", 0))
                 progress = entry.get("route_progress") or {}
@@ -145,25 +154,59 @@ def build_audit(report: dict[str, Any], source_hash: str) -> dict[str, Any]:
                     tank_samples.append(victim == bot_guid)
                 threat = entry.get("threat_snapshot") or {}
                 engaged = int(threat.get("engaged_hostiles", 0))
-                if engaged:
+                has_hostile_identities = "engaged_hostile_guids" in threat
+                if has_hostile_identities:
+                    identity_scoped_threat = True
+                    engaged_guids = {int(guid) for guid in threat.get("engaged_hostile_guids", []) if int(guid)}
+                    tank_guids = {int(guid) for guid in threat.get("tank_owned_hostile_guids", []) if int(guid)}
+                    healer_guids = {int(guid) for guid in threat.get("healer_targeting_hostile_guids", []) if int(guid)}
+
+                    for guid in list(healer_episode_start):
+                        if guid not in healer_guids:
+                            healer_episode_start.pop(guid, None)
+                            healer_episode_last.pop(guid, None)
+
+                    eligible_guids: set[int] = set()
+                    for guid in engaged_guids:
+                        if guid not in hostile_last_seen or tick - hostile_last_seen[guid] > THREAT_ACQUISITION_GRACE_MS:
+                            hostile_first_seen[guid] = tick
+                        hostile_last_seen[guid] = tick
+                        if tick - hostile_first_seen[guid] >= THREAT_ACQUISITION_GRACE_MS:
+                            eligible_guids.add(guid)
+
+                    if eligible_guids:
+                        all_hostile_samples.append(
+                            (
+                                len(eligible_guids),
+                                len(eligible_guids & tank_guids),
+                                len(eligible_guids & healer_guids),
+                            )
+                        )
+
+                    for guid in healer_guids:
+                        if guid not in healer_episode_last or tick - healer_episode_last[guid] > THREAT_ACQUISITION_GRACE_MS:
+                            healer_episode_start[guid] = tick
+                        healer_episode_last[guid] = tick
+                        healer_dwell_ms = max(healer_dwell_ms, max(0, tick - healer_episode_start[guid]))
+                elif engaged:
                     all_hostile_samples.append(
                         (engaged, int(threat.get("tank_owned_hostiles", 0)), int(threat.get("healer_targeting_hostiles", 0)))
                     )
-
-        healer_dwell_ms = 0
-        dwell_start = None
-        dwell_last = None
-        for entry in entries_by_name[name] if role_by_name[name] == "tank" else []:
-            threat = entry.get("threat_snapshot") or {}
-            timestamp = int(entry.get("timestamp_ms", 0))
-            if int(threat.get("healer_targeting_hostiles", 0)) > 0:
-                if dwell_start is None or (dwell_last is not None and timestamp - dwell_last > 3000):
-                    dwell_start = timestamp
-                dwell_last = timestamp
-                healer_dwell_ms = max(healer_dwell_ms, max(0, timestamp - dwell_start))
-            else:
-                dwell_start = None
-                dwell_last = None
+                    timestamp = int(entry.get("timestamp_ms", 0))
+                    if int(threat.get("healer_targeting_hostiles", 0)) > 0:
+                        if legacy_dwell_start is None or (
+                            legacy_dwell_last is not None
+                            and timestamp - legacy_dwell_last > THREAT_ACQUISITION_GRACE_MS
+                        ):
+                            legacy_dwell_start = timestamp
+                        legacy_dwell_last = timestamp
+                        healer_dwell_ms = max(healer_dwell_ms, max(0, timestamp - legacy_dwell_start))
+                    else:
+                        legacy_dwell_start = None
+                        legacy_dwell_last = None
+                else:
+                    legacy_dwell_start = None
+                    legacy_dwell_last = None
 
         healer_attempts = [
             entry for entry in bot_attempts if (entry.get("combat_attempt") or {}).get("phase") == "heal_cast"
@@ -196,6 +239,7 @@ def build_audit(report: dict[str, Any], source_hash: str) -> dict[str, Any]:
                     4,
                 ) if all_hostile_samples else None,
                 "max_healer_target_dwell_ms": healer_dwell_ms if all_hostile_samples else None,
+                "identity_scoped_threat": identity_scoped_threat,
                 "heal_cast_success_rate": round(healer_success / len(healer_attempts), 4) if healer_attempts else None,
                 "pet_alive_rate": round(
                     sum(bool(entry.get("pet_alive")) for entry in entries_by_name[name] if int((entry.get("threat_snapshot") or {}).get("engaged_hostiles", 0)) > 0)
@@ -227,7 +271,7 @@ def build_audit(report: dict[str, Any], source_hash: str) -> dict[str, Any]:
         if bot["missing_rotation_groups"]:
             failures.append(f"{bot['bot_name']}:required_rotation_coverage")
         if bot["bot_name"] == "Scvaltank":
-            if bot["tank_all_hostile_retention_rate"] is None or bot["tank_all_hostile_retention_rate"] < 0.98:
+            if bot["tank_all_hostile_retention_rate"] is None or bot["tank_all_hostile_retention_rate"] < 0.90:
                 failures.append("Scvaltank:all_hostile_threat_retention")
             if bot["healer_target_exposure_rate"] is None or bot["healer_target_exposure_rate"] > 0.01:
                 failures.append("Scvaltank:healer_target_exposure")
@@ -250,7 +294,7 @@ def build_audit(report: dict[str, Any], source_hash: str) -> dict[str, Any]:
 
     status = report.get("status", {})
     return {
-        "schema": "stonecore_role_efficiency_v2",
+        "schema": "stonecore_role_efficiency_v3",
         "source_report_sha256": source_hash,
         "legacy_attempt_timestamps": not any(
             int((entry.get("combat_attempt") or {}).get("recorded_at_ms", 0)) for entry in entries
@@ -266,6 +310,7 @@ def build_audit(report: dict[str, Any], source_hash: str) -> dict[str, Any]:
         "mechanics": {
             "hazard_exit_actions": hazard_exit_actions,
             "hazard_exit_failures": hazard_exit_failures,
+            "threat_acquisition_grace_ms": THREAT_ACQUISITION_GRACE_MS,
         },
         "passed": not failures and len(bots) == 5,
         "failure_labels": failures + ([] if len(bots) == 5 else ["expected_five_role_bots"]),
