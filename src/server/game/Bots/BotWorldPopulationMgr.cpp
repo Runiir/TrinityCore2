@@ -9869,7 +9869,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (_validationRouteBossAddEscapeActive && !escapeCohortValid)
             ResetValidationRouteBossAddEscapeState();
 
-        if (highDensityPhase && bot == densityTank && addCount >= 3)
+        if (highDensityPhase && bot == densityTank && addCount >= 3
+            && (!densityHealer || densityHealer->getAttackers().empty()))
         {
             float centroidX = addX / float(addCount);
             float centroidY = addY / float(addCount);

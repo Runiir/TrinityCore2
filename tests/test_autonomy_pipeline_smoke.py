@@ -2976,6 +2976,7 @@ def test_stonecore_quality_repairs_cover_hazards_pet_recovery_and_healer_protect
     assert '"hand_of_salvation_healer_threat_drop"' in manager
     assert "olderHealerTarget" in manager
     assert "urgentHunterPetRecovery" in manager
+    assert "(!densityHealer || densityHealer->getAttackers().empty())" in manager
     assert "float minRange = selfTarget ? 0.0f" in manager
     assert "WHEN `action`.`spell_id` = 26573 THEN 0" in emergency_threat_sql
     for spell_id in (2948, 92315, 11129, 403, 421, 53595, 26573):
