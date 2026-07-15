@@ -629,7 +629,8 @@ def parse_json_objects(output: str) -> list[dict[str, Any]]:
 def strip_combat_log_chunks(output: str) -> str:
     """Drop transport-only base64 chunks after their decoded artifact is written."""
     return "\n".join(
-        line for line in output.splitlines() if "botauto_combatlog_chunk" not in line
+        line for line in output.splitlines()
+        if "botauto_combatlog_chunk" not in line and "botauto_combatlog_complete" not in line
     ) + ("\n" if output.endswith(("\n", "\r")) else "")
 
 
@@ -649,7 +650,35 @@ def classify_payloads(payloads: list[dict[str, Any]]) -> dict[str, Any]:
     trace = combined_trace_payload(trace_payloads)
     summary = next((row for row in reversed(payloads) if row.get("summary_schema_version") or "duration_minutes" in row or "total_kills" in row or "bot_learning" in row), {})
     combat_log = combined_combat_log(payloads)
-    return {"status": status, "diagnosis": diagnosis, "trace": trace, "summary": summary, "combat_log": combat_log}
+    return {
+        "status": status,
+        "diagnosis": diagnosis,
+        "trace": trace,
+        "summary": summary,
+        "combat_log": combat_log,
+        "combat_log_transport": combat_log_transport_status(payloads),
+    }
+
+
+def combat_log_transport_status(payloads: list[dict[str, Any]]) -> dict[str, Any]:
+    chunks = [row for row in payloads if row.get("action") == "botauto_combatlog_chunk"]
+    completion = next(
+        (row for row in reversed(payloads) if row.get("action") == "botauto_combatlog_complete"),
+        {},
+    )
+    expected = int(completion.get("chunk_count") or (chunks[-1].get("chunk_count") if chunks else 0) or 0)
+    sequences = {
+        int(row.get("sequence") or 0)
+        for row in chunks
+        if int(row.get("chunk_count") or 0) == expected
+    }
+    return {
+        "complete_marker": bool(completion),
+        "expected_chunks": expected,
+        "received_chunks": len(sequences),
+        "total_bytes": int(completion.get("total_bytes") or 0),
+        "reassembled": bool(expected and len(sequences) == expected and sequences == set(range(expected))),
+    }
 
 
 def combined_combat_log(payloads: list[dict[str, Any]]) -> dict[str, Any]:
@@ -667,8 +696,8 @@ def combined_combat_log(payloads: list[dict[str, Any]]) -> dict[str, Any]:
     chunks = [
         row
         for row in payloads
-        if row.get("combat_log_chunk_schema_version")
-        or row.get("action") == "botauto_combatlog_chunk"
+        if row.get("action") == "botauto_combatlog_chunk"
+        or (row.get("combat_log_chunk_schema_version") and "sequence" in row)
     ]
     if not chunks:
         return {}
@@ -2117,6 +2146,7 @@ def live_validation_report(
     status = classified["status"]
     summary = classified["summary"]
     combat_log = classified["combat_log"]
+    combat_log_transport = classified["combat_log_transport"]
     combat_analysis = analyze_combat_log(combat_log) if combat_log else {}
 
     active_bots = int(status.get("active_bots") or status.get("bots") or status.get("activeBots") or 0)
@@ -2218,6 +2248,7 @@ def live_validation_report(
         "trace": trace,
         "summary": summary,
         "combat_log": combat_log,
+        "combat_log_transport": combat_log_transport,
         "combat_analysis": combat_analysis,
         "scenario_reports": scenario_reports,
         "command_errors": errors,
@@ -2275,6 +2306,8 @@ def expected_command_output_marker(command_text: str) -> str:
         return '"diagnosis_schema_version"'
     if command_text.startswith(".botauto trace"):
         return '"trace_schema_version"'
+    if command_text == ".botauto combatlog":
+        return '"action":"botauto_combatlog_complete"'
     if command_text == ".botexp summary":
         return '"duration_minutes"'
     return ""
@@ -3389,6 +3422,7 @@ def main() -> int:
         report["timed_out"] = timed_out
         report["command"] = command
         final_payloads = classify_payloads(parse_json_objects(output))
+        report["combat_log_transport"] = final_payloads["combat_log_transport"]
         if final_payloads.get("combat_log"):
             report["combat_log"] = final_payloads["combat_log"]
     else:

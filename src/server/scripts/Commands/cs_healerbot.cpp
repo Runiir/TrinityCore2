@@ -1093,6 +1093,10 @@ private:
                     "\"sequence\":%zu,\"chunk_count\":%zu,\"encoding\":\"base64\",\"data\":\"%s\"}",
                     sequence, chunkCount, encoded.c_str());
             }
+            handler->PSendSysMessage(
+                "{\"ok\":true,\"action\":\"botauto_combatlog_complete\",\"combat_log_chunk_schema_version\":1,"
+                "\"chunk_count\":%zu,\"total_bytes\":%zu}",
+                chunkCount, combatLog.size());
         }
         return true;
     }

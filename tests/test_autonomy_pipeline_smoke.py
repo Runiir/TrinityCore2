@@ -2981,6 +2981,9 @@ def test_stonecore_quality_repairs_cover_hazards_pet_recovery_and_healer_protect
     assert '"hand_of_reckoning_add_pickup"' in manager
     assert '"fade_threat_drop"' in manager
     assert '"healer_stack_for_add_pickup"' in manager
+    assert "nearestAttacker->GetAngle(tankTarget)" in manager
+    assert "pickup = tankTarget->GetFirstCollisionPosition(4.0f" in manager
+    assert "if (Pet* pet = bot->GetPet())\n                pet->AttackStop();" in manager
     assert '"tank_close_to_healer_adds"' not in manager
     assert '"consecration_healer_pickup"' in manager
     assert '"hand_of_salvation_healer_threat_drop"' in manager

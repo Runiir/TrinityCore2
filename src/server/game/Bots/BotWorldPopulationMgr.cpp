@@ -7115,17 +7115,30 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         // attackers into the stationary tank's AoE instead of both actors
         // chasing one another and overwriting their paths.
         if (!healer->getAttackers().empty() && tankTarget
-            && healer->GetExactDist2d(tankTarget) > 4.0f
-            && !healer->HasUnitState(UNIT_STATE_CASTING) && !healer->IsFalling()
-            && MoveBotToPoint(state, healer, tankTarget->GetPositionX(), tankTarget->GetPositionY(), tankTarget->GetPositionZ()))
+            && !healer->HasUnitState(UNIT_STATE_CASTING) && !healer->IsFalling())
         {
-            std::string raw = BuildRawJson(healer, combatTarget);
-            std::string semantic = BuildSemanticJson(healer, combatTarget, "healer_assignment", &power, stage, activity);
-            RecordEvent(state, healer, "healer_assignment", tankTarget, "healer_stack_for_add_pickup",
-                raw.c_str(), semantic.c_str(), healer->GetExactDist2d(tankTarget), float(healer->getAttackers().size()));
-            situation = "validation_route_group_heal";
-            action = "healer_stack_for_add_pickup";
-            return true;
+            Unit* nearestAttacker = nullptr;
+            float nearestAttackerDistance = std::numeric_limits<float>::max();
+            for (Unit* attacker : healer->getAttackers())
+                if (attacker && attacker->IsAlive() && healer->GetExactDist2d(attacker) < nearestAttackerDistance)
+                {
+                    nearestAttacker = attacker;
+                    nearestAttackerDistance = healer->GetExactDist2d(attacker);
+                }
+            float safeAngle = nearestAttacker
+                ? nearestAttacker->GetAngle(tankTarget) : tankTarget->GetAngle(healer);
+            Position pickup = tankTarget->GetFirstCollisionPosition(4.0f, safeAngle - tankTarget->GetOrientation());
+            if (healer->GetExactDist2d(pickup) > 2.0f
+                && MoveBotToPoint(state, healer, pickup.GetPositionX(), pickup.GetPositionY(), pickup.GetPositionZ()))
+            {
+                std::string raw = BuildRawJson(healer, combatTarget);
+                std::string semantic = BuildSemanticJson(healer, combatTarget, "healer_assignment", &power, stage, activity);
+                RecordEvent(state, healer, "healer_assignment", tankTarget, "healer_stack_for_add_pickup",
+                    raw.c_str(), semantic.c_str(), healer->GetExactDist2d(tankTarget), float(healer->getAttackers().size()));
+                situation = "validation_route_group_heal";
+                action = "healer_stack_for_add_pickup";
+                return true;
+            }
         }
 
         if (combatTarget)
@@ -10913,6 +10926,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             std::string raw = BuildRawJson(bot, target);
             std::string semantic = BuildSemanticJson(bot, target, "validation_route_regroup", &power, stage, activity);
             RecordEvent(state, bot, "validation_route_prerequisite_rejected", target, "wait_for_tank_threat", raw.c_str(), semantic.c_str(), bot->GetExactDist(target), _config.ValidationRouteTargetEntry);
+            bot->AttackStop();
+            if (Pet* pet = bot->GetPet())
+                pet->AttackStop();
             state.TargetGuid.Clear();
             situation = "validation_route_regroup";
             action = "validation_route_hold_anchor";

@@ -150,7 +150,7 @@ def test_live_validation_reassembles_bounded_combat_log_chunks():
     raw = json.dumps(combat_log_fixture(), separators=(",", ":")).encode()
     chunk_size = 97
     parts = [raw[index : index + chunk_size] for index in range(0, len(raw), chunk_size)]
-    output = "\n".join(
+    chunk_rows = [
         json.dumps(
             {
                 "action": "botauto_combatlog_chunk",
@@ -162,12 +162,22 @@ def test_live_validation_reassembles_bounded_combat_log_chunks():
             }
         )
         for sequence, part in enumerate(parts)
-    )
+    ]
+    chunk_rows.append(json.dumps({
+        "ok": True,
+        "action": "botauto_combatlog_complete",
+        "combat_log_chunk_schema_version": 1,
+        "chunk_count": len(parts),
+        "total_bytes": len(raw),
+    }))
+    output = "\n".join(chunk_rows)
 
     report = live_validation_report(output)
 
     assert report["combat_log"]["event_count"] == 42
     assert report["combat_analysis"]["encounters"][0]["party_damage"] == 10000
+    assert report["combat_log_transport"]["complete_marker"] is True
+    assert report["combat_log_transport"]["reassembled"] is True
     stripped = strip_combat_log_chunks("prefix\n" + output + "\nsuffix\n")
     assert "botauto_combatlog_chunk" not in stripped
     assert stripped == "prefix\nsuffix\n"
