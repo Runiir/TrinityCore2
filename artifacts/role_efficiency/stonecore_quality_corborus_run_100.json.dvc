@@ -1,0 +1,5 @@
+outs:
+- md5: 6bcda73368e53dde49d8a9fa74f8bb81
+  size: 7175
+  hash: md5
+  path: stonecore_quality_corborus_run_100.json
