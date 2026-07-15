@@ -257,6 +257,25 @@ def route_segment_complete(report: dict[str, Any], route: dict[str, Any] | None)
     return bool(required)
 
 
+def supersede_transient_route_failures(report: dict[str, Any]) -> None:
+    transient = {
+        "boss_attempt_no_kill",
+        "no_progress_observed",
+        "semantic_progress_plateau",
+        "validation_route_assist_focus_loop",
+        "validation_route_stuck_loop",
+    }
+    labels = [str(label) for label in (report.get("failure_labels") or [])]
+    resolved = [label for label in labels if label in transient]
+    report["failure_labels"] = [label for label in labels if label not in transient]
+    superseded = [str(label) for label in (report.get("superseded_failure_labels") or [])]
+    for label in resolved:
+        if label not in superseded:
+            superseded.append(label)
+    report["superseded_failure_labels"] = superseded
+    report["failure_reason"] = report["failure_labels"][0] if report["failure_labels"] else None
+
+
 def shell_quote(value: str) -> str:
     return "'" + value.replace("'", "'\"'\"'") + "'"
 
@@ -2573,6 +2592,7 @@ def run_worldserver_completion_watchdog(
                 and moved_diagnoses <= 0
             )
             if not validation_route_manifest and route_segment_complete(report, validation_route):
+                supersede_transient_route_failures(report)
                 report["completion_reason"] = "route_segment_complete"
                 report["route_segment_complete"] = True
                 report["acceptable_final_evidence"] = False
