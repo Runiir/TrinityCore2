@@ -1477,6 +1477,8 @@ def test_trash_swarm_waits_for_secure_tank_threat_before_dps_release():
     assert '"hold_for_secure_trash_threat"' in route
     assert '"focused_damage_during_trash_threat_build"' in route
     assert "ResolveProfileCombatAction(bot, tankFocus, 1, false)" in route
+    assert "BotActionResult result = executor.Pull(bot, tankFocus);" in route
+    assert 'action = moved ? "move_to_focused_trash_target"' in route
     assert "bot->InterruptNonMeleeSpells(false);" in route
     assert "pet->AttackStop();" in route
     assert '"trash_density_area_threat"' in route

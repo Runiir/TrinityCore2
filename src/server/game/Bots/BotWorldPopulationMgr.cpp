@@ -11023,22 +11023,40 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             float engageRange = focusedAction.MaxRange > 0.0f
                 ? focusedAction.MaxRange : routeEngageRange(bot, tankFocus, focusedAction.SpellId);
             float targetDistance = bot->GetExactDist(tankFocus);
-            if (focusedAction.Valid
-                && targetDistance <= std::max(5.0f, engageRange - 1.0f)
-                && bot->IsWithinLOSInMap(tankFocus))
+            if (focusedAction.Valid && focusedAction.MinRange > 0.0f && targetDistance < focusedAction.MinRange)
             {
-                BotActionResult result = ExecuteProfileCombatAction(&state, bot, tankFocus, &focusedAction, 1, false);
-                std::string raw = BuildRawJson(bot, tankFocus);
-                std::string semantic = BuildSemanticJson(bot, tankFocus, "normal_dungeon_trash", &power, stage, activity);
-                RecordEvent(state, bot, "validation_route_threat_gate", tankFocus,
-                    "focused_damage_during_trash_threat_build", raw.c_str(), semantic.c_str(),
-                    float(trashThreatControl.SecureTankCount), trashThreatControl.EngagedCount,
-                    result == BotActionResult::Ok ? focusedAction.SpellId : 0);
+                bool moved = moveOutOfProfileDeadZone(bot, tankFocus, focusedAction);
                 situation = "normal_dungeon_trash";
-                action = "focused_damage_during_trash_threat_build";
-                state.WasInCombat = true;
+                action = moved ? "move_to_profile_min_range" : "hold_tactical_path_rejected";
                 return true;
             }
+            if (targetDistance > std::max(5.0f, engageRange - 1.0f) || !bot->IsWithinLOSInMap(tankFocus))
+            {
+                bool moved = MoveBotToProfileRange(state, bot, tankFocus,
+                    focusedAction.Valid ? &focusedAction : nullptr);
+                situation = "normal_dungeon_trash";
+                action = moved ? "move_to_focused_trash_target" : "hold_tactical_path_rejected";
+                return true;
+            }
+
+            BotActionExecutor executor;
+            BotActionResult result = executor.Pull(bot, tankFocus);
+            if (focusedAction.Valid)
+            {
+                BotActionResult focusedResult = ExecuteProfileCombatAction(&state, bot, tankFocus, &focusedAction, 1, false);
+                if (focusedResult != BotActionResult::NoAction)
+                    result = focusedResult;
+            }
+            std::string raw = BuildRawJson(bot, tankFocus);
+            std::string semantic = BuildSemanticJson(bot, tankFocus, "normal_dungeon_trash", &power, stage, activity);
+            RecordEvent(state, bot, "validation_route_threat_gate", tankFocus,
+                "focused_damage_during_trash_threat_build", raw.c_str(), semantic.c_str(),
+                float(trashThreatControl.SecureTankCount), trashThreatControl.EngagedCount,
+                result == BotActionResult::Ok && focusedAction.Valid ? focusedAction.SpellId : 0);
+            situation = "normal_dungeon_trash";
+            action = "focused_damage_during_trash_threat_build";
+            state.WasInCombat = true;
+            return true;
         }
 
         bot->InterruptNonMeleeSpells(false);
