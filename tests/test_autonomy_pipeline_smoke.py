@@ -1392,6 +1392,10 @@ def test_move_bot_to_profile_range_projects_approaches_to_terrain():
     assert "if (floorZ == INVALID_HEIGHT)\n            return false;" in profile_range
     assert "return MoveBotToPoint(state, bot, x, y, floorZ, false);" in profile_range
     assert "return moveToTerrainProjectedPoint(reference->GetPositionX(), reference->GetPositionY(), reference->GetPositionZ());" in profile_range
+    assert "float candidateRange = reference->GetExactDist(rangedPosition);" in profile_range
+    assert "float minimumCandidateRange = minRange > 0.0f ? minRange + 2.0f : 5.0f;" in profile_range
+    assert "if (candidateRange < minimumCandidateRange" in profile_range
+    assert "|| bot->GetExactDist(rangedPosition) < 1.0f)" in profile_range
     assert "if (moveToTerrainProjectedPoint(rangedPosition.GetPositionX(), rangedPosition.GetPositionY(), rangedPosition.GetPositionZ()))" in profile_range
     assert "return true;" in profile_range
 
@@ -1812,7 +1816,9 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     assert "isEligibleTrashClusterMob(retryableFailedTrashTarget->ToCreature())" in route_objective
     assert "!validationPartyHasActiveCombat()" in route_objective
     assert '"failed_terminal_reopened_after_pack_death"' in route_objective
-    assert '"failed_terminal_reopened_for_live_pack_retry"' in route_objective
+    assert '"failed_terminal_reopened_for_live_pack_reapproach"' in route_objective
+    assert 'cohortState.ValidationRouteAnchorOverrideReason = "validation_route_disengaged_pack_reapproach";' in route_objective
+    assert "cohortState.LoopRecoveryCooldownUntilMs = retryNowMs + 1000;" in route_objective
     assert 'bool routeTrashPackTarget = _config.ValidationRouteKind != "boss"' in route_objective
     assert "creature && isEligibleTrashClusterMob(creature);" in route_objective
     assert "if (routeTrashPackTarget && !botIsTank" in route_objective
@@ -2874,6 +2880,8 @@ def test_density_tank_centroid_control_prioritizes_loose_healer_targets():
     assert "defenseScore = attackerCount + (memberRole == \"healer\" ? 3 : 0)" in adds
     assert '"dps_stack_for_swarm_pickup"' in adds
     assert '"dps_wait_for_swarm_tank_ownership"' in adds
+    assert "&& (densityDefenseTarget || add->GetVictim() != densityTank)" in adds
+    assert "bot->GetExactDist2d(densityTank) > 8.0f" not in adds
     assert '"consecration_party_pickup"' in adds
     assert "if (highDensityPhase && role == \"healer\" && tryRouteGroupHeal(bot, add))" in adds
     assert_ordered(adds, "add = looseAdd ? looseAdd : densityAnchor;", "misdirection_to_tank", "tank_move_to_add_centroid")
@@ -3005,7 +3013,8 @@ def test_stonecore_quality_repairs_cover_hazards_pet_recovery_and_healer_protect
     assert '"dps_stack_for_add_pickup"' in manager
     assert '"consecration_party_trash_pickup"' in manager
     assert '"dps_stack_for_trash_pickup"' in manager
-    assert "bot->GetExactDist2d(densityTank) > 8.0f" in manager
+    assert "bot->GetExactDist2d(densityTank) > 8.0f" not in manager
+    assert "&& (densityDefenseTarget || add->GetVictim() != densityTank)" in manager
     assert "bot->GetExactDist2d(tank) > 8.0f" in manager
     assert "Unit* pickupFocus = tank->GetVictim() ? tank->GetVictim() : nearestAttacker;" in manager
     assert '"hand_of_salvation_healer_threat_drop"' in manager

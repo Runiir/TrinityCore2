@@ -3418,6 +3418,16 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
     for (float angleOffset : { 0.0f, float(M_PI_4), -float(M_PI_4), float(M_PI_2), -float(M_PI_2) })
     {
         Position rangedPosition = reference->GetFirstCollisionPosition(desiredRange, radialAngle + angleOffset);
+        // Collision projection can truncate a ray at the boss model or arena
+        // geometry and return a point only inches from the caster. Accepting
+        // that point reports successful movement forever while the ranged bot
+        // remains inside the hostile minimum range. Reject it and try a side.
+        float candidateRange = reference->GetExactDist(rangedPosition);
+        float minimumCandidateRange = minRange > 0.0f ? minRange + 2.0f : 5.0f;
+        if (candidateRange < minimumCandidateRange
+            || (maxRange > 0.0f && candidateRange > maxRange - 1.0f)
+            || bot->GetExactDist(rangedPosition) < 1.0f)
+            continue;
         if (moveToTerrainProjectedPoint(rangedPosition.GetPositionX(), rangedPosition.GetPositionY(), rangedPosition.GetPositionZ()))
             return true;
     }
@@ -10034,14 +10044,13 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         // swarm to a DPS before the tank can act.  Stack an unowned focus into
         // the pickup radius and suppress new threat until that focus transfers.
         if (role == "dps" && densityTank && cohortSwarmActive && add
-            && add->GetVictim() != densityTank)
+            && (densityDefenseTarget || add->GetVictim() != densityTank))
         {
             bot->AttackStop();
             if (Pet* pet = bot->GetPet())
                 pet->AttackStop();
 
-            if (bot->GetExactDist2d(densityTank) > 8.0f
-                && !bot->HasUnitState(UNIT_STATE_CASTING) && !bot->IsFalling())
+            if (!bot->HasUnitState(UNIT_STATE_CASTING) && !bot->IsFalling())
             {
                 Position pickup = densityTank->GetFirstCollisionPosition(4.0f,
                     add->GetAngle(densityTank) - densityTank->GetOrientation());
@@ -10073,7 +10082,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         }
 
         if (role == "dps" && densityTank && !bot->getAttackers().empty()
-            && bot->GetExactDist2d(densityTank) > 8.0f
             && !bot->HasUnitState(UNIT_STATE_CASTING) && !bot->IsFalling())
         {
             Unit* nearestAttacker = nullptr;
@@ -10507,8 +10515,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         && (failedTrashPackComplete || failedTrashPackCanRetry)
         && !validationPartyHasActiveCombat())
     {
+        uint64 retryNowMs = NowMs();
         for (WorldBotState& cohortState : _bots)
         {
+            if (Player* cohortBot = GetLoadedBot(cohortState))
+                cohortBot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
             cohortState.TargetGuid.Clear();
             cohortState.ValidationRouteCombatProgressTargetGuid.Clear();
             cohortState.ValidationRoutePackProgressTargetGuid.Clear();
@@ -10518,16 +10529,32 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             cohortState.ValidationRouteTerminalAtMs = 0;
             cohortState.ValidationRouteTerminalGeneration = 0;
             cohortState.ValidationRouteTerminalReason.clear();
+            cohortState.ActivePathValid = false;
+            cohortState.IsMoving = false;
+            cohortState.LoopRecoveryCooldownUntilMs = retryNowMs + 1000;
+            if (failedTrashPackCanRetry)
+            {
+                // Reopen onto the actual surviving pack member rather than
+                // the already-cleared lower anchor. This covers formation
+                // members that evade home above a one-way descent.
+                cohortState.ValidationRouteAnchorOverrideValid = true;
+                cohortState.ValidationRouteAnchorOverrideUntilMs = retryNowMs + 30000;
+                cohortState.ValidationRouteAnchorOverrideX = retryableFailedTrashTarget->GetPositionX();
+                cohortState.ValidationRouteAnchorOverrideY = retryableFailedTrashTarget->GetPositionY();
+                cohortState.ValidationRouteAnchorOverrideZ = retryableFailedTrashTarget->GetPositionZ();
+                cohortState.ValidationRouteAnchorOverrideReason = "validation_route_disengaged_pack_reapproach";
+            }
         }
-        target = failedTrashPackCanRetry ? retryableFailedTrashTarget : nullptr;
-        if (target)
-            state.TargetGuid = target->GetGUID();
-        std::string raw = BuildRawJson(bot, target);
+        Unit* retryEvidenceTarget = failedTrashPackCanRetry ? retryableFailedTrashTarget : nullptr;
+        // Leave combat focus empty for one decision so the route override
+        // stays authoritative and all roles reapproach with the tank.
+        target = nullptr;
+        std::string raw = BuildRawJson(bot, retryEvidenceTarget);
         std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_recovery", &power, stage, activity);
         char const* recoveryReason = failedTrashPackCanRetry
-            ? "failed_terminal_reopened_for_live_pack_retry"
+            ? "failed_terminal_reopened_for_live_pack_reapproach"
             : "failed_terminal_reopened_after_pack_death";
-        RecordEvent(state, bot, "validation_route_recovery", target, recoveryReason,
+        RecordEvent(state, bot, "validation_route_recovery", retryEvidenceTarget, recoveryReason,
             raw.c_str(), semantic.c_str(), float(_validationRoutePackDeathGuids.size()), uint32(_validationRoutePackMemberGuids.size()));
     }
     if (state.ValidationRouteTerminalState
