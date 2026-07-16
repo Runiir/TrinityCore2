@@ -6884,6 +6884,29 @@ def test_live_bot_validation_config_can_disable_autostart_for_calibration_only(t
     assert 'BotWorld.PoolTagFilter = "combat_calibration"' in config_text
 
 
+def test_live_bot_validation_config_calibration_only_starts_empty_controller(tmp_path):
+    base_config = tmp_path / "worldserver.conf"
+    base_config.write_text(
+        'BotWorld.AutoStart = 0\nBotWorld.RuntimeProfile = "stonecore_5n"\n'
+        "BotWorld.TargetPopulation = 5\nBotWorld.ValidationRoute.Enable = 1\n",
+        encoding="utf-8",
+    )
+
+    generated = write_validation_config(
+        base_config,
+        tmp_path / "live",
+        pool_tag="combat_calibration",
+        calibration_only=True,
+    )
+
+    config_text = generated.read_text(encoding="utf-8")
+    assert "BotWorld.AutoStart = 1" in config_text
+    assert 'BotWorld.RuntimeProfile = ""' in config_text
+    assert "BotWorld.TargetPopulation = 0" in config_text
+    assert "BotWorld.ValidationRoute.Enable = 0" in config_text
+    assert 'BotWorld.PoolTagFilter = "combat_calibration"' in config_text
+
+
 def test_live_bot_validation_route_manifest_dry_run_writes_scenario_scoped_config(tmp_path, monkeypatch, capsys):
     scenario_dir = tmp_path / "validation_scenarios"
     scenario_dir.mkdir()

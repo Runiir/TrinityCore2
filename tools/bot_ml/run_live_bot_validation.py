@@ -312,9 +312,10 @@ def write_validation_config(
     validation_route: dict[str, Any] | None = None,
     validation_route_manifest_path: Path | None = None,
     autostart: bool = True,
+    calibration_only: bool = False,
 ) -> Path:
     route = validation_route or {}
-    if not pool_tag and not route and not validation_route_manifest_path and autostart:
+    if not pool_tag and not route and not validation_route_manifest_path and autostart and not calibration_only:
         return base_config
     output_dir.mkdir(parents=True, exist_ok=True)
     generated = output_dir / "worldserver.validation.conf"
@@ -329,6 +330,14 @@ def write_validation_config(
     text = upsert_trinity_config(text, "BotWorld.AutoStart", "1" if autostart else "0")
     if pool_tag:
         text = upsert_trinity_config(text, "BotWorld.PoolTagFilter", f'"{pool_tag.replace(chr(34), "")}"')
+    if calibration_only:
+        # Calibration requires an active autonomy controller, but its four
+        # clones must remain available for EnsureCalibrationPopulation rather
+        # than being consumed by the normal world cohort.
+        text = upsert_trinity_config(text, "BotWorld.AutoStart", "1")
+        text = upsert_trinity_config(text, "BotWorld.RuntimeProfile", '""')
+        text = upsert_trinity_config(text, "BotWorld.TargetPopulation", "0")
+        text = upsert_trinity_config(text, "BotWorld.ValidationRoute.Enable", "0")
     if validation_route_manifest_path:
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.ManifestPath", f'"{str(validation_route_manifest_path).replace(chr(34), "")}"')
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.AdvanceMode", '"terminal"')
@@ -3322,6 +3331,7 @@ def main() -> int:
     parser.add_argument("--force-start-command", action="store_true", help="Send .botauto start even when BotWorld.AutoStart is enabled in the selected worldserver config.")
     parser.add_argument("--stop", action="store_true")
     parser.add_argument("--combat-calibration", action="store_true", help="Run isolated DPS/TPS training-dummy clones beside the validation cohort and attach their status to the report.")
+    parser.add_argument("--calibration-only", action="store_true", help="Start an empty autonomy controller and run only the isolated combat-calibration clones, without a route/world cohort.")
     parser.add_argument("--transport", choices=["process", "soap", "session"], default="process")
     parser.add_argument("--soap-url", default="http://127.0.0.1:7878/")
     parser.add_argument("--soap-user", default=os.environ.get("TRINITY_SOAP_USER"))
@@ -3352,6 +3362,9 @@ def main() -> int:
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--input-log", type=Path)
     args = parser.parse_args()
+
+    if args.calibration_only:
+        args.combat_calibration = True
 
     if args.duration_policy == "completion-watchdog":
         args.timeout_sec = args.timeout_sec if args.timeout_sec is not None else DEFAULT_BOSS_ROUTE_TIMEOUT_SEC
@@ -3422,7 +3435,8 @@ def main() -> int:
             pool_tag_filter,
             validation_route,
             validation_route_manifest_path,
-            autostart=not args.no_start,
+            autostart=True if args.calibration_only else not args.no_start,
+            calibration_only=args.calibration_only,
         )
     config_autostart = trinity_config_bool(effective_config, "BotWorld.AutoStart", False)
     send_start_command = not args.no_start and (args.force_start_command or not config_autostart)
@@ -3492,6 +3506,7 @@ def main() -> int:
             "max_death_loop_count": args.max_death_loop_count,
             "config_autostart": config_autostart,
             "start_command": send_start_command,
+            "calibration_only": args.calibration_only,
             "preparation": preparation,
             "scenario_reports": scenario_reports,
             "validation_context": validation_context,
@@ -3616,6 +3631,7 @@ def main() -> int:
     report["validation_route_manifest"] = validation_route_manifest
     report["validation_route_manifest_path"] = str(validation_route_manifest_path or "")
     report["start_command"] = send_start_command
+    report["calibration_only"] = args.calibration_only
     report["preparation"] = preparation
     if args.transport == "session":
         report["session"] = session_lifecycle
