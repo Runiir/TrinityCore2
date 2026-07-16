@@ -1970,6 +1970,7 @@ void BotWorldPopulationMgr::Update(uint32 diff)
                     Creature* dummy = object ? object->ToCreature() : nullptr;
                     if (!dummy || !IsTrainingDummy(dummy))
                         continue;
+                    dummy->SetFullHealth();
                     dummy->RemoveOwnedAuras([casterGuid](Aura const* aura)
                     {
                         return aura && aura->GetCasterGUID() == casterGuid
@@ -3232,6 +3233,20 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
     CalibrationMetrics& metrics = _calibrationMetrics[state.Guid.GetCounter()];
     metrics.ReferenceBuffsReady = referenceBuffsReady;
     metrics.ReferenceTargetDebuffsReady = referenceTargetDebuffsReady;
+
+    // A permanent training dummy never reaches the execute phase represented
+    // in a full-fight simulator. Use the real target-health gate for the final
+    // 20% of the Hunter's single-target window, then restore the dummy outside
+    // that interval. This changes only target health, never spell coefficients.
+    if (bot->getClass() == CLASS_HUNTER && target->GetMaxHealth())
+    {
+        uint64 windowElapsedMs = metrics.WindowStartedMs ? NowMs() - metrics.WindowStartedMs : 0;
+        bool executeWindow = !_calibrationAoePhase && windowElapsedMs >= 96000;
+        uint64 desiredHealth = executeWindow
+            ? std::max<uint64>(1, target->GetMaxHealth() * 19 / 100) : target->GetMaxHealth();
+        if (target->GetHealth() != desiredHealth)
+            target->SetHealth(desiredHealth);
+    }
 
     if (TryEnsurePersistentCombatSetup(state, bot, target))
         return;
