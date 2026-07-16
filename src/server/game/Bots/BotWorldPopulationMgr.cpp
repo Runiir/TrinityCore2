@@ -7205,6 +7205,34 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return true;
         }
 
+        float healerHealthPct = UnitHealthPct(healer);
+        size_t healerAttackerCount = healer->getAttackers().size();
+        bool guardianSpiritEmergency = healerAttackerCount >= 3 && healerHealthPct <= 0.55f;
+        bool guardianSpiritSwarm = healerAttackerCount >= 8 && healerHealthPct <= 0.90f;
+        if ((guardianSpiritEmergency || guardianSpiritSwarm)
+            && healer->HasSpell(47788) && !healer->HasAura(47788)
+            && TryCastFriendlySpell(healer, healer, 47788))
+        {
+            std::string raw = BuildRawJson(healer, combatTarget);
+            std::string semantic = BuildSemanticJson(healer, combatTarget, "healer_assignment", &power, stage, activity);
+            RecordEvent(state, healer, "external_defensive", healer, "guardian_spirit_self_emergency",
+                raw.c_str(), semantic.c_str(), healerHealthPct, uint32(healerAttackerCount), 47788);
+            situation = "validation_route_group_heal";
+            action = "guardian_spirit_self_emergency";
+            return true;
+        }
+        if (healerAttackerCount >= 5 && healerHealthPct <= 0.85f
+            && healer->HasSpell(19236) && TryCastFriendlySpell(healer, healer, 19236))
+        {
+            std::string raw = BuildRawJson(healer, combatTarget);
+            std::string semantic = BuildSemanticJson(healer, combatTarget, "healer_assignment", &power, stage, activity);
+            RecordEvent(state, healer, "healing_lifecycle", healer, "desperate_prayer_self_emergency",
+                raw.c_str(), semantic.c_str(), healerHealthPct, uint32(healerAttackerCount), 19236);
+            situation = "validation_route_group_heal";
+            action = "desperate_prayer_self_emergency";
+            return true;
+        }
+
         Unit* lowestTarget = healer;
         Unit* tankTarget = nullptr;
         float lowestHealthPct = UnitHealthPct(healer);
@@ -7253,7 +7281,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         // The tank is the group's only stable threat owner.  At critical health
         // it takes precedence over a marginally lower DPS target; otherwise the
         // normal lowest-health triage remains in effect.
-        if (tankTarget && UnitHealthPct(tankTarget) <= 0.60f)
+        if (tankTarget && UnitHealthPct(tankTarget) <= 0.60f
+            && (healer->getAttackers().empty() || UnitHealthPct(healer) > 0.60f))
         {
             lowestTarget = tankTarget;
             lowestHealthPct = UnitHealthPct(tankTarget);
@@ -8481,6 +8510,20 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         Creature* creature = prerequisiteTarget->ToCreature();
         if (!creature || ((creature->IsDungeonBoss() || creature->isWorldBoss()) && !isValidationRouteScriptTarget(creature)))
             return false;
+
+        bool listedBossAdd = _config.ValidationRouteKind == "boss"
+            && std::find(_config.ValidationRouteAddTargetEntries.begin(), _config.ValidationRouteAddTargetEntries.end(), creature->GetEntry())
+                != _config.ValidationRouteAddTargetEntries.end();
+        if (listedBossAdd)
+        {
+            // Boss adds legitimately churn through shared focus and may have no
+            // legal action during their final global cooldown or range step.
+            // Their dedicated add handler and the external watchdog own
+            // progress; never let that transient handoff latch a route failure.
+            state.ValidationRouteCombatNoProgressCount = 0;
+            state.ValidationRoutePackNoProgressCount = 0;
+            return false;
+        }
 
         float routeProximity = prerequisiteTarget->GetExactDist(_config.ValidationRouteX, _config.ValidationRouteY, _config.ValidationRouteZ);
         if (!isValidationRouteScriptTarget(creature) && routeProximity > 120.0f)

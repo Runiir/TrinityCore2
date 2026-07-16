@@ -3081,6 +3081,9 @@ def test_stonecore_quality_repairs_cover_hazards_pet_recovery_and_healer_protect
     assert '"hand_of_reckoning_add_pickup"' in manager
     assert '"fade_threat_drop"' in manager
     assert '"healer_stack_for_add_pickup"' in manager
+    assert '"guardian_spirit_self_emergency"' in manager
+    assert '"desperate_prayer_self_emergency"' in manager
+    assert "healer->getAttackers().empty() || UnitHealthPct(healer) > 0.60f" in manager
     assert "safeAngle - tankTarget->GetOrientation()" in manager
     assert "pickup = tankTarget->GetFirstCollisionPosition(4.0f" in manager
     assert "if (Pet* pet = bot->GetPet())\n                pet->AttackStop();" in manager
@@ -3092,6 +3095,7 @@ def test_stonecore_quality_repairs_cover_hazards_pet_recovery_and_healer_protect
     assert '"dps_stack_for_trash_pickup"' in manager
     assert "bot->GetExactDist2d(densityTank) > 8.0f" not in manager
     assert "densityTankSecureAddCount * 10 >= addCount * 9" in manager
+    assert "bool listedBossAdd = _config.ValidationRouteKind == \"boss\"" in manager
     assert "bot->GetExactDist2d(densityTank) <= 6.0f" in manager
     assert "(!bot->getAttackers().empty() && !botInsideTankPickup)" in manager
     assert "bot->GetExactDist2d(tank) > 8.0f" in manager
