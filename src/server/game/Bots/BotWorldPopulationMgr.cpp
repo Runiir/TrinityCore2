@@ -2876,6 +2876,8 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
     if (!metrics.WindowStartedMs)
         metrics.WindowStartedMs = NowMs();
     ++metrics.ResultCounts[ToString(result)];
+    if (result == BotActionResult::CastFailed && !state.LastCombatAttempt.Reason.empty())
+        ++metrics.ResultCounts[std::string("cast_failed:") + state.LastCombatAttempt.Reason];
     if (action.Valid && action.SpellId)
         ++metrics.ActionAttempts[action.SpellId];
     if (result != BotActionResult::Casting && result != BotActionResult::GlobalCooldown && result != BotActionResult::NoAction)
