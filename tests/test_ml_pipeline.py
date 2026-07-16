@@ -4589,6 +4589,43 @@ def test_live_bot_validation_process_mode_observes_before_diagnose_without_start
     assert "CMD server shutdown force 0" in output
 
 
+def test_live_bot_validation_process_mode_calibration_only_observes_once(tmp_path, monkeypatch):
+    fake_worldserver = tmp_path / "fake_worldserver.py"
+    fake_worldserver.write_text(
+        "#!/usr/bin/env python3\n"
+        "import sys\n"
+        "print('TC> ', flush=True)\n"
+        "for line in sys.stdin:\n"
+        "    command = line.strip()\n"
+        "    print('CMD ' + command)\n"
+        "    if command == '.botauto calibrate start': print('{\"ok\": true, \"action\": \"botauto_calibrate_start\"}')\n"
+        "    if command == '.botauto calibrate status': print('{\"ok\": true, \"action\": \"botauto_calibrate_status\", \"active\": true}')\n"
+        "    if command.startswith('server shutdown'): break\n"
+        "    print('TC> ', flush=True)\n",
+        encoding="utf-8",
+    )
+    fake_worldserver.chmod(0o755)
+    config = tmp_path / "worldserver.conf"
+    config.write_text("", encoding="utf-8")
+    sleeps = []
+    monkeypatch.setattr("tools.bot_ml.run_live_bot_validation.time.sleep", lambda seconds: sleeps.append(seconds))
+
+    output, returncode, timed_out, _ = run_worldserver(
+        fake_worldserver,
+        config,
+        5,
+        command_script(selector="all", trace_limit=5, start=False, stop=False, combat_calibration=True),
+        observe_sec=31,
+    )
+
+    assert returncode == 0
+    assert timed_out is False
+    assert sleeps.count(31) == 1
+    assert "CMD .botauto start" not in output
+    assert "CMD .botauto calibrate start" in output
+    assert "CMD .botauto calibrate status" in output
+
+
 def test_live_bot_validation_boss_routes_default_to_long_observation_window(tmp_path, monkeypatch, capsys):
     output_dir = tmp_path / "live_validation"
     config = tmp_path / "worldserver.conf"
@@ -6829,6 +6866,22 @@ def test_live_bot_validation_config_writes_alternate_route_targets(tmp_path):
     assert "BotWorld.ValidationRoute.HazardSafetyMarginYards = 2.5" in config_text
     assert "BotWorld.ValidationRoute.ClusterRadiusYards = 80.0" in config_text
     assert "BotProgression.AllowDungeons = 1" in config_text
+
+
+def test_live_bot_validation_config_can_disable_autostart_for_calibration_only(tmp_path):
+    base_config = tmp_path / "worldserver.conf"
+    base_config.write_text("BotWorld.AutoStart = 1\n", encoding="utf-8")
+
+    generated = write_validation_config(
+        base_config,
+        tmp_path / "live",
+        pool_tag="combat_calibration",
+        autostart=False,
+    )
+
+    config_text = generated.read_text(encoding="utf-8")
+    assert "BotWorld.AutoStart = 0" in config_text
+    assert 'BotWorld.PoolTagFilter = "combat_calibration"' in config_text
 
 
 def test_live_bot_validation_route_manifest_dry_run_writes_scenario_scoped_config(tmp_path, monkeypatch, capsys):
