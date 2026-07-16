@@ -10070,6 +10070,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     ++densityTankOwnedAddCount;
         bool densityTankOwnsVisibleMajority = addCount > 0
             && densityTankOwnedAddCount * 10 >= addCount * 9;
+        bool botInsideTankPickup = densityTank && bot->GetExactDist2d(densityTank) <= 6.0f;
 
         // Defend the party member from the closest listed attacker the tank
         // can acquire.  Selecting an older but distant healer attacker caused
@@ -10179,7 +10180,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         // swarm to a DPS before the tank can act.  Stack an unowned focus into
         // the pickup radius and suppress new threat until that focus transfers.
         if (role == "dps" && densityTank && cohortSwarmActive && add
-            && (!bot->getAttackers().empty() || !densityTankOwnsVisibleMajority))
+            && (!densityTankOwnsVisibleMajority
+                || (!bot->getAttackers().empty() && !botInsideTankPickup)))
         {
             bot->AttackStop();
             if (Pet* pet = bot->GetPet())
