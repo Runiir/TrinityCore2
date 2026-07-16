@@ -1187,6 +1187,38 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
             double dps = metrics && elapsedSec > 0.0 ? double(metrics->Damage) / elapsedSec : 0.0;
             double tps = metrics && metrics->ThreatBaseline >= 0.0f && elapsedSec > 0.0
                 ? std::max(0.0, double(metrics->ThreatCurrent - metrics->ThreatBaseline) / elapsedSec) : 0.0;
+            uint32 mainhandTempEnchant = 0;
+            uint32 offhandTempEnchant = 0;
+            if (bot)
+            {
+                if (Item* item = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND))
+                    mainhandTempEnchant = item->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT);
+                if (Item* item = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_OFFHAND))
+                    offhandTempEnchant = item->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT);
+            }
+            bool persistentSetupReady = false;
+            if (bot)
+            {
+                switch (bot->getClass())
+                {
+                    case CLASS_PALADIN:
+                        persistentSetupReady = bot->HasAura(25780) && bot->HasAura(31801) && bot->HasAura(465)
+                            && (bot->HasAura(20217) || bot->HasAura(79063));
+                        break;
+                    case CLASS_MAGE:
+                        persistentSetupReady = (bot->HasAura(1459) || bot->HasAura(79058)) && bot->HasAura(30482);
+                        break;
+                    case CLASS_HUNTER:
+                        persistentSetupReady = bot->HasAura(13165) && bot->GetPet() && bot->GetPet()->IsAlive();
+                        break;
+                    case CLASS_SHAMAN:
+                        persistentSetupReady = bot->HasAura(324) && mainhandTempEnchant && offhandTempEnchant;
+                        break;
+                    default:
+                        persistentSetupReady = true;
+                        break;
+                }
+            }
             json << "{\"guid\":" << state.Guid.GetCounter()
                  << ",\"name\":\"" << JsonEscape(bot ? bot->GetName() : "loading") << "\""
                  << ",\"class_id\":" << (bot ? uint32(bot->getClass()) : 0)
@@ -1194,6 +1226,13 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                  << ",\"level\":" << (bot ? uint32(bot->getLevel()) : 0)
                  << ",\"average_item_level\":" << std::fixed << std::setprecision(3)
                  << (bot ? bot->GetAverageItemLevel() : 0.0f)
+                 << ",\"persistent_setup\":{\"ready\":" << (persistentSetupReady ? "true" : "false")
+                 << ",\"arcane_brilliance\":" << (bot && (bot->HasAura(1459) || bot->HasAura(79058)) ? "true" : "false")
+                 << ",\"molten_armor\":" << (bot && bot->HasAura(30482) ? "true" : "false")
+                 << ",\"aspect_of_the_hawk\":" << (bot && bot->HasAura(13165) ? "true" : "false")
+                 << ",\"lightning_shield\":" << (bot && bot->HasAura(324) ? "true" : "false")
+                 << ",\"mainhand_temp_enchant\":" << mainhandTempEnchant
+                 << ",\"offhand_temp_enchant\":" << offhandTempEnchant << '}'
                  << ",\"elapsed_seconds\":" << std::fixed << std::setprecision(3) << elapsedSec
                  << ",\"damage\":" << (metrics ? metrics->Damage : 0)
                  << ",\"dps\":" << std::fixed << std::setprecision(2) << dps
@@ -14858,12 +14897,12 @@ bool BotWorldPopulationMgr::TryValidationRouteReadiness(WorldBotState& state, Pl
         { CLASS_PALADIN, "tank", 25780, { 25780 }, "righteous_fury_ready", false },
         { CLASS_PALADIN, "tank", 31801, { 31801 }, "seal_of_truth_ready", false },
         { CLASS_PALADIN, "tank", 465, { 465 }, "devotion_aura_ready", false },
-        { CLASS_PALADIN, nullptr, 20217, { 20217 }, "blessing_of_kings_ready", true },
+        { CLASS_PALADIN, nullptr, 20217, { 20217, 79063 }, "blessing_of_kings_ready", true },
         { CLASS_HUNTER, nullptr, 13165, { 13165 }, "aspect_of_the_hawk_ready", false },
         { CLASS_PRIEST, nullptr, 21562, { 21562 }, "power_word_fortitude_ready", true },
         { CLASS_PRIEST, nullptr, 27683, { 27683 }, "shadow_protection_ready", true },
         { CLASS_DEATH_KNIGHT, nullptr, 57330, { 57330, 6673, 19740 }, "horn_of_winter_ready", true },
-        { CLASS_MAGE, nullptr, 1459, { 1459 }, "arcane_brilliance_ready", true },
+        { CLASS_MAGE, nullptr, 1459, { 1459, 79058 }, "arcane_brilliance_ready", true },
         { CLASS_DRUID, nullptr, 1126, { 1126, 20217 }, "mark_of_the_wild_ready", true },
     };
 
@@ -15858,24 +15897,26 @@ bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup(WorldBotState& state,
         char const* Role;
         uint32 SpellId;
         uint32 AuraId;
+        uint32 AlternateAuraId;
         char const* Name;
     };
     static SelfBuff const buffs[] =
     {
-        { CLASS_PALADIN, "tank", 25780, 25780, "righteous_fury" },
-        { CLASS_PALADIN, "tank", 31801, 31801, "seal_of_truth" },
-        { CLASS_PALADIN, "tank", 465, 465, "devotion_aura" },
-        { CLASS_PALADIN, nullptr, 20217, 20217, "blessing_of_kings" },
-        { CLASS_MAGE, nullptr, 1459, 1459, "arcane_brilliance" },
-        { CLASS_MAGE, nullptr, 30482, 30482, "molten_armor" },
-        { CLASS_HUNTER, nullptr, 13165, 13165, "aspect_of_the_hawk" },
-        { CLASS_SHAMAN, nullptr, 324, 324, "lightning_shield" },
+        { CLASS_PALADIN, "tank", 25780, 25780, 0, "righteous_fury" },
+        { CLASS_PALADIN, "tank", 31801, 31801, 0, "seal_of_truth" },
+        { CLASS_PALADIN, "tank", 465, 465, 0, "devotion_aura" },
+        { CLASS_PALADIN, nullptr, 20217, 20217, 79063, "blessing_of_kings" },
+        { CLASS_MAGE, nullptr, 1459, 1459, 79058, "arcane_brilliance" },
+        { CLASS_MAGE, nullptr, 30482, 30482, 0, "molten_armor" },
+        { CLASS_HUNTER, nullptr, 13165, 13165, 0, "aspect_of_the_hawk" },
+        { CLASS_SHAMAN, nullptr, 324, 324, 0, "lightning_shield" },
     };
 
     std::string const role = GetDungeonRole(bot);
     for (SelfBuff const& buff : buffs)
     {
-        if (buff.ClassId != bot->getClass() || (buff.Role && role != buff.Role) || bot->HasAura(buff.AuraId))
+        if (buff.ClassId != bot->getClass() || (buff.Role && role != buff.Role)
+            || bot->HasAura(buff.AuraId) || (buff.AlternateAuraId && bot->HasAura(buff.AlternateAuraId)))
             continue;
         if (!bot->HasSpell(buff.SpellId))
         {

@@ -585,6 +585,8 @@ def test_persistent_spec_setup_precedes_dummy_and_profile_rotations():
 
     for spell_id in ["25780", "31801", "465", "20217", "1459", "30482", "13165", "324", "8232", "8024", "1130"]:
         assert spell_id in setup
+    assert "79058" in setup
+    assert "79063" in setup
     assert "TEMP_ENCHANTMENT_SLOT" in setup
     assert "EQUIPMENT_SLOT_MAINHAND" in setup
     assert "EQUIPMENT_SLOT_OFFHAND" in setup
@@ -592,6 +594,11 @@ def test_persistent_spec_setup_precedes_dummy_and_profile_rotations():
     assert "TryEnsurePersistentCombatSetup(state, bot, target)" in calibration
     assert_ordered(calibration, "TryEnsurePersistentCombatSetup(state, bot, target)", "metrics.WindowStartedMs = NowMs()")
     assert "TryEnsurePersistentCombatSetup(*state, bot, target)" in execute_profile
+
+    calibration_json = function_body(mgr, "std::string BotWorldPopulationMgr::GetCombatCalibrationJson")
+    assert '\\"persistent_setup\\"' in calibration_json
+    assert '\\"mainhand_temp_enchant\\"' in calibration_json
+    assert '\\"offhand_temp_enchant\\"' in calibration_json
 
 
 def test_requested_wowhead_profiles_and_target_count_aware_misdirection_are_explicit():
