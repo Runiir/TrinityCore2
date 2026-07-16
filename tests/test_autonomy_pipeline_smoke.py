@@ -706,6 +706,11 @@ def test_enhancement_uses_and_preserves_fire_elemental_before_searing_fallback()
     assert "2894,'offensive_cooldown','fire_elemental_totem" in sql
     assert provisioning.count('"spells": [2894]') == 2
 
+    elemental_ai = (root / "src/server/scripts/Pet/pet_shaman.cpp").read_text()
+    assert "AcquireShamanOwnerVictim" in elemental_ai
+    assert "owner->GetVictim()" in elemental_ai
+    assert "UNIT_FLAG_PLAYER_CONTROLLED" in elemental_ai
+
 
 def test_dummy_calibration_followup_spreads_living_bomb_and_avoids_refresh_waste():
     root = Path(__file__).resolve().parents[1]

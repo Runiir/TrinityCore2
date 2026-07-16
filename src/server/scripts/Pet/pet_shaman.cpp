@@ -25,6 +25,24 @@
 
 namespace Pets::Shaman
 {
+bool AcquireShamanOwnerVictim(Creature* elemental)
+{
+    if (!elemental)
+        return false;
+
+    Unit* owner = elemental->GetCharmerOrOwner();
+    if (owner && owner->IsTotem())
+        owner = owner->GetOwner();
+    Unit* victim = owner ? owner->GetVictim() : nullptr;
+    if (!victim || !victim->IsAlive() || !owner->IsValidAttackTarget(victim))
+        return false;
+
+    if (owner->GetTypeId() == TYPEID_PLAYER)
+        elemental->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED);
+    elemental->AI()->AttackStart(victim);
+    return true;
+}
+
 enum ShamanSpells
 {
     SPELL_SHAMAN_ANGEREDEARTH   = 36213,
@@ -62,7 +80,7 @@ class npc_pet_shaman_earth_elemental : public CreatureScript
 
             void UpdateAI(uint32 diff) override
             {
-                if (!UpdateVictim())
+                if (!UpdateVictim() && (!AcquireShamanOwnerVictim(me) || !UpdateVictim()))
                     return;
 
                 _events.Update(diff);
@@ -106,7 +124,7 @@ class npc_pet_shaman_fire_elemental : public CreatureScript
 
             void UpdateAI(uint32 diff) override
             {
-                if (!UpdateVictim())
+                if (!UpdateVictim() && (!AcquireShamanOwnerVictim(me) || !UpdateVictim()))
                     return;
 
                 if (me->HasUnitState(UNIT_STATE_CASTING))
