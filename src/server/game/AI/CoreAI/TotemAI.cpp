@@ -80,6 +80,7 @@ void TotemAI::UpdateAI(uint32 /*diff*/)
         _victimGUID.Clear();
 }
 
-void TotemAI::AttackStart(Unit* /*victim*/)
+void TotemAI::AttackStart(Unit* victim)
 {
+    _victimGUID = victim ? victim->GetGUID() : ObjectGuid::Empty;
 }

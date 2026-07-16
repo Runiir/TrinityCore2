@@ -245,6 +245,14 @@ class spell_hun_cobra_shot : public SpellScript
         {
             int32 newDuration = aur->GetDuration() + GetEffectValue() * IN_MILLISECONDS;
             aur->SetDuration(std::min(newDuration, aur->GetMaxDuration()), true);
+
+            // SetDuration extends the visible aura but not its finite periodic
+            // tick budget. Without renewing that budget, Cobra Shot can keep
+            // Serpent Sting active after its final tick while it deals no more
+            // damage. Preserve the current timer/cadence and allow the
+            // extended aura to continue ticking.
+            if (AuraEffect* periodic = aur->GetEffect(EFFECT_0))
+                periodic->ResetTicks();
         }
     }
 

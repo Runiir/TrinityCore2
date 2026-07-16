@@ -16283,7 +16283,15 @@ bool BotWorldPopulationMgr::TryEnsureCombatTotems(WorldBotState& state, Player* 
         bool const ready = totem && totem->IsAlive()
             && (slot != SUMMON_SLOT_TOTEM_FIRE || totem->GetUInt32Value(UNIT_CREATED_BY_SPELL) == spellId);
         if (ready)
+        {
+            // Training dummies do not always establish the ordinary victim
+            // relationship used by TotemAI's proximity search. Pin an active
+            // fire totem to the bot's already validated combat target; the AI
+            // still enforces targetability, range, visibility, and faction.
+            if (slot == SUMMON_SLOT_TOTEM_FIRE && totem->GetTotemType() == TOTEM_ACTIVE)
+                totem->AI()->AttackStart(target);
             continue;
+        }
 
         std::string const attemptKey = "totem:" + std::to_string(spellId);
         auto retryItr = state.ReadinessRetryUntilMs.find(attemptKey);

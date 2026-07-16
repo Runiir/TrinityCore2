@@ -572,6 +572,15 @@ def test_shaman_totems_are_combat_entry_setup_without_spam():
     assert "SUMMON_SLOT_TOTEM_AIR" in totems
     assert "TryEnsureCombatTotems(*state, bot, target, hostileCount)" in execute_profile
     assert "hostileCount >= 3 && bot->HasSpell(8190) ? 8190 : 3599" in totems
+    assert "totem->AI()->AttackStart(target)" in totems
+
+
+def test_cobra_shot_extends_serpent_sting_periodic_tick_budget():
+    hunter = read(ROOT / "src/server/scripts/Spells/spell_hunter.cpp")
+    cobra = hunter[hunter.index("// 77767 - Cobra Shot"):hunter.index("// -53234 - Piercing Shots")]
+
+    assert "aur->SetDuration(std::min(newDuration, aur->GetMaxDuration()), true)" in cobra
+    assert "periodic->ResetTicks()" in cobra
 
 
 def test_persistent_spec_setup_precedes_dummy_and_profile_rotations():
