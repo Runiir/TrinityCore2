@@ -618,6 +618,7 @@ def test_persistent_spec_setup_precedes_dummy_and_profile_rotations():
     assert '\\"last_cast_result\\"' in calibration_json
     assert '\\"cast_successes\\"' in calibration_json
     assert '\\"uses_totem_ai\\"' in calibration_json
+    assert '\\"autorepeat_spell\\"' in calibration_json
     assert '\\"stats\\"' in calibration_json
 
 

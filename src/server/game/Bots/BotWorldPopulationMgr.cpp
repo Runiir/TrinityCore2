@@ -1223,6 +1223,9 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
             uint64 fireTotemUpdateCalls = 0;
             uint32 fireTotemLastCastResult = SPELL_FAILED_DONT_REPORT;
             bool fireTotemUsesTotemAI = false;
+            uint32 fireTotemGenericSpell = 0;
+            uint32 fireTotemChanneledSpell = 0;
+            uint32 fireTotemAutorepeatSpell = 0;
             bool fireTotemTargetValid = false;
             bool fireTotemOwnerTargetValid = false;
             if (bot)
@@ -1240,6 +1243,12 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                             fireTotemEntry = totem->GetEntry();
                             fireTotemAlive = totem->IsAlive();
                             fireTotemActive = totem->GetTotemType() == TOTEM_ACTIVE;
+                            if (Spell* spell = totem->GetCurrentSpell(CURRENT_GENERIC_SPELL))
+                                fireTotemGenericSpell = spell->GetSpellInfo()->Id;
+                            if (Spell* spell = totem->GetCurrentSpell(CURRENT_CHANNELED_SPELL))
+                                fireTotemChanneledSpell = spell->GetSpellInfo()->Id;
+                            if (Spell* spell = totem->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL))
+                                fireTotemAutorepeatSpell = spell->GetSpellInfo()->Id;
                             if (TotemAI* ai = dynamic_cast<TotemAI*>(totem->AI()))
                             {
                                 fireTotemUsesTotemAI = true;
@@ -1298,6 +1307,9 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                  << ",\"active\":" << (fireTotemActive ? "true" : "false")
                  << ",\"uses_totem_ai\":" << (fireTotemUsesTotemAI ? "true" : "false")
                  << ",\"update_calls\":" << fireTotemUpdateCalls
+                 << ",\"generic_spell\":" << fireTotemGenericSpell
+                 << ",\"channeled_spell\":" << fireTotemChanneledSpell
+                 << ",\"autorepeat_spell\":" << fireTotemAutorepeatSpell
                  << ",\"cast_attempts\":" << fireTotemCastAttempts
                  << ",\"cast_successes\":" << fireTotemCastSuccesses
                  << ",\"last_cast_result\":" << fireTotemLastCastResult
