@@ -2778,6 +2778,9 @@ def test_profile_combat_resolver_can_require_legal_density_actions_for_exact_ene
     assert "hostileCount > candidate.Profile.MaxEnemies" in resolver
     assert 'candidate.RejectReason = "enemy_count_too_low";' in resolver
     assert 'candidate.RejectReason = "enemy_count_too_high";' in resolver
+    assert "auto engagedWithBotParty = [bot](Unit* unit) -> bool" in resolver
+    assert "player->GetGroup() == bot->GetGroup()" in resolver
+    assert "&& engagedWithBotParty(unit)" in resolver
     assert "best = bestDensityArea ? bestDensityArea : bestDensityGenerator;" in resolver
     assert "ResolveProfileCombatAction(bot, target, hostileCount, densityOnly)" in executor
 

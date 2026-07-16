@@ -13988,6 +13988,22 @@ uint32 BotWorldPopulationMgr::SelectCombatSpell(Player* bot, Unit* target) const
     RoleSaturationState saturation = BuildRoleSaturationState(bot, target, role.c_str());
     std::string roleGoal = BotProgressionGoalPolicy::RoleGoal(role);
     std::vector<BotActionCandidate> candidates = BotClassSpecActionProfileStore::BuildCandidates(bot, target, profile);
+    auto engagedWithBotParty = [bot](Unit* unit) -> bool
+    {
+        auto belongsToBotParty = [bot](Unit* participant) -> bool
+        {
+            Player* player = participant ? participant->GetCharmerOrOwnerPlayerOrPlayerItself() : nullptr;
+            return player && (player == bot || (bot->GetGroup() && player->GetGroup() == bot->GetGroup()));
+        };
+        if (!unit || (!unit->IsInCombat() && !unit->GetVictim()))
+            return false;
+        if (belongsToBotParty(unit->GetVictim()))
+            return true;
+        for (Unit* attacker : unit->getAttackers())
+            if (belongsToBotParty(attacker))
+                return true;
+        return false;
+    };
     uint32 nearbyEnemyCount = 1;
     {
         std::vector<WorldObject*> objects;
@@ -13997,7 +14013,8 @@ uint32 BotWorldPopulationMgr::SelectCombatSpell(Player* bot, Unit* target) const
         for (WorldObject* object : objects)
         {
             Unit* unit = object ? object->ToUnit() : nullptr;
-            if (unit && unit != target && unit->IsAlive() && bot->IsValidAttackTarget(unit))
+            if (unit && unit != target && unit->IsAlive() && bot->IsValidAttackTarget(unit)
+                && engagedWithBotParty(unit))
                 ++nearbyEnemyCount;
         }
     }
@@ -14163,6 +14180,22 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
     RoleSaturationState saturation = BuildRoleSaturationState(bot, target, role.c_str());
     std::string roleGoal = BotProgressionGoalPolicy::RoleGoal(role);
     std::vector<BotActionCandidate> candidates = BotClassSpecActionProfileStore::BuildCandidates(bot, target, profile);
+    auto engagedWithBotParty = [bot](Unit* unit) -> bool
+    {
+        auto belongsToBotParty = [bot](Unit* participant) -> bool
+        {
+            Player* player = participant ? participant->GetCharmerOrOwnerPlayerOrPlayerItself() : nullptr;
+            return player && (player == bot || (bot->GetGroup() && player->GetGroup() == bot->GetGroup()));
+        };
+        if (!unit || (!unit->IsInCombat() && !unit->GetVictim()))
+            return false;
+        if (belongsToBotParty(unit->GetVictim()))
+            return true;
+        for (Unit* attacker : unit->getAttackers())
+            if (belongsToBotParty(attacker))
+                return true;
+        return false;
+    };
     auto effectiveSpellMinRange = [bot, target](BotActionCandidate const& candidate, float configuredMinRange) -> float
     {
         SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(candidate.SpellId);
@@ -14185,7 +14218,8 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         for (WorldObject* object : objects)
         {
             Unit* unit = object ? object->ToUnit() : nullptr;
-            if (unit && unit != target && unit->IsAlive() && bot->IsValidAttackTarget(unit))
+            if (unit && unit != target && unit->IsAlive() && bot->IsValidAttackTarget(unit)
+                && engagedWithBotParty(unit))
                 ++hostileCount;
         }
     }
