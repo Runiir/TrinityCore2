@@ -10340,7 +10340,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         bool majorTankDefensiveActive = bot->HasAura(498) || bot->HasAura(31850)
             || bot->HasAura(86150) || bot->HasAura(86659);
         if (role == "tank" && cohortSwarmActive && addCount >= 12
-            && UnitHealthPct(bot) <= 0.90f && !majorTankDefensiveActive)
+            && UnitHealthPct(bot) <= 0.90f && !majorTankDefensiveActive
+            && (!densityHealer || densityHealer->getAttackers().empty()))
         {
             std::array<uint32, 3> defensiveSpells = UnitHealthPct(bot) <= 0.50f
                 ? std::array<uint32, 3>{ 86150, 31850, 498 }
@@ -10654,6 +10655,35 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 target = add;
                 situation = "dungeon_boss";
                 action = moved ? "tank_move_to_add_centroid" : "hold_tank_add_centroid";
+                return true;
+            }
+        }
+
+        // Healing at maximum range makes newly spawned adds run away from the
+        // tank's Consecration/Hammer radius. Issue one pickup-stack movement,
+        // then allow normal instant healing while that path remains active.
+        // Exact hazard exits run before this branch and remain authoritative.
+        if (highDensityPhase && role == "healer" && densityTank
+            && !bot->getAttackers().empty()
+            && UnitHealthPct(bot) > 0.45f && UnitHealthPct(densityTank) > 0.40f
+            && bot->GetExactDist2d(densityTank) > 6.0f
+            && !bot->HasUnitState(UNIT_STATE_CASTING) && !bot->IsFalling()
+            && !(state.ActivePathValid && state.IsMoving))
+        {
+            Unit* approachFrom = add ? add : densityTank;
+            Position pickup = densityTank->GetFirstCollisionPosition(4.0f,
+                approachFrom->GetAngle(densityTank) - densityTank->GetOrientation());
+            if (MoveBotToPoint(state, bot, pickup.GetPositionX(), pickup.GetPositionY(), pickup.GetPositionZ()))
+            {
+                std::string raw = BuildRawJson(bot, add);
+                std::string semantic = BuildSemanticJson(bot, add, "dungeon_boss", &power, stage, activity);
+                RecordEvent(state, bot, "boss_adds", add, "healer_stack_for_swarm_pickup",
+                    raw.c_str(), semantic.c_str(), bot->GetExactDist2d(densityTank), addCount);
+                state.TargetGuid = densityTank->GetVictim()
+                    ? densityTank->GetVictim()->GetGUID() : (add ? add->GetGUID() : ObjectGuid::Empty);
+                target = densityTank->GetVictim() ? densityTank->GetVictim() : add;
+                situation = "dungeon_boss";
+                action = "healer_stack_for_swarm_pickup";
                 return true;
             }
         }

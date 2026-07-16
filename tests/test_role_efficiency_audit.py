@@ -99,6 +99,7 @@ def test_stonecore_role_profiles_include_runtime_efficiency_gates():
     assert '"righteous_defense_party_pickup"' in manager
     assert '"tank_immediate_aoe_threat"' in manager
     assert '"tank_hazard_hold_aoe_threat"' in manager
+    assert '"healer_stack_for_swarm_pickup"' in manager
     assert (
         'if (std::string(GetDungeonRole(bot)) == "tank")\n'
         '    {\n'
