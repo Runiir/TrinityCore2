@@ -15598,6 +15598,69 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         }
     }
 
+    // Fire AoE is multi-DoT first. Select up to three engaged enemies that do
+    // not already carry this mage's Living Bomb, while preserving the normal
+    // priority target for every other action.
+    if (bot->getClass() == CLASS_MAGE && hostileCount >= 3 && bot->HasSpell(44457))
+    {
+        std::vector<Unit*> spreadTargets = { target };
+        std::vector<WorldObject*> nearbyObjects;
+        Trinity::AllWorldObjectsInRange spreadCheck(target, 12.0f);
+        Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> spreadSearcher(
+            target, nearbyObjects, spreadCheck);
+        Cell::VisitAllObjects(target, spreadSearcher, 12.0f);
+        for (WorldObject* object : nearbyObjects)
+        {
+            Unit* unit = object ? object->ToUnit() : nullptr;
+            Creature* creature = unit ? unit->ToCreature() : nullptr;
+            if (!unit || unit == target || !unit->IsAlive() || !bot->IsValidAttackTarget(unit))
+                continue;
+            if (!engagedWithBotParty(unit) && (!creature || !IsTrainingDummy(creature)))
+                continue;
+            spreadTargets.push_back(unit);
+        }
+        std::sort(spreadTargets.begin(), spreadTargets.end(), [bot](Unit const* left, Unit const* right)
+        {
+            return bot->GetExactDist(left) < bot->GetExactDist(right);
+        });
+
+        uint32 activeLivingBombs = 0;
+        for (Unit* spreadTarget : spreadTargets)
+            if (spreadTarget->HasAura(44457, bot->GetGUID()))
+                ++activeLivingBombs;
+        if (activeLivingBombs < 3)
+        {
+            for (Unit* spreadTarget : spreadTargets)
+            {
+                if (spreadTarget->HasAura(44457, bot->GetGUID()))
+                    continue;
+                std::vector<BotActionCandidate> spreadCandidates =
+                    BotClassSpecActionProfileStore::BuildCandidates(bot, spreadTarget, profile);
+                auto livingBomb = std::find_if(spreadCandidates.begin(), spreadCandidates.end(), [](BotActionCandidate const& candidate)
+                {
+                    return candidate.SpellId == 44457 && candidate.RejectReason.empty();
+                });
+                if (livingBomb == spreadCandidates.end())
+                    break;
+
+                action.Valid = true;
+                action.Type = "cast";
+                action.SpellId = 44457;
+                action.TargetGuid = spreadTarget->GetGUID();
+                action.DebugName = "living_bomb_spread";
+                action.MovementDirective = livingBomb->Profile.MovementDirective.empty()
+                    ? profile.MovementDirective : livingBomb->Profile.MovementDirective;
+                action.AutoAttackMode = livingBomb->Profile.AutoAttackMode.empty()
+                    ? profile.AutoAttackMode : livingBomb->Profile.AutoAttackMode;
+                action.MinRange = livingBomb->Profile.MinRange > 0.0f
+                    ? livingBomb->Profile.MinRange : profile.MinRange;
+                action.MaxRange = livingBomb->Profile.MaxRange > 0.0f
+                    ? livingBomb->Profile.MaxRange : profile.MaxRange;
+                return action;
+            }
+        }
+    }
+
     BotActionCandidate* best = nullptr;
     BotActionCandidate* bestDensityArea = nullptr;
     BotActionCandidate* bestDensityGenerator = nullptr;

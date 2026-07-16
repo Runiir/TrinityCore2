@@ -639,6 +639,19 @@ def test_dummy_calibration_tuning_gates_spenders_and_adds_measured_aoe_actions()
     assert "combustion_dot_window_not_ready" in manager
 
 
+def test_dummy_calibration_followup_spreads_living_bomb_and_avoids_refresh_waste():
+    root = Path(__file__).resolve().parents[1]
+    sql = (root / "sql/custom/world/2026_07_16_04_dummy_dps_rotation_followup.sql").read_text()
+    resolver = function_body(read(BOT_MGR), "ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction")
+
+    assert "activeLivingBombs < 3" in resolver
+    assert "spreadTarget->HasAura(44457, bot->GetGUID())" in resolver
+    assert 'action.DebugName = "living_bomb_spread"' in resolver
+    assert "`action`.`maintain_aura_id`=84963" in sql
+    assert "`action`.`spell_id`=73680" in sql
+    assert "`action`.`priority_bucket`=4" in sql
+
+
 def test_stonecore_rotation_sql_declares_buffs_hunter_builder_and_aoe_gate():
     sql = read(STONECORE_ROTATION_SQL)
 
