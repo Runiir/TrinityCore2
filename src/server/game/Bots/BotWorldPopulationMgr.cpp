@@ -1212,12 +1212,27 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                 ? std::max(0.0, double(metrics->ThreatCurrent - metrics->ThreatBaseline) / elapsedSec) : 0.0;
             uint32 mainhandTempEnchant = 0;
             uint32 offhandTempEnchant = 0;
+            uint32 fireTotemSpell = 0;
+            uint32 fireTotemCreatedBySpell = 0;
+            uint32 fireTotemEntry = 0;
+            bool fireTotemAlive = false;
+            bool fireTotemActive = false;
             if (bot)
             {
                 if (Item* item = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND))
                     mainhandTempEnchant = item->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT);
                 if (Item* item = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_OFFHAND))
                     offhandTempEnchant = item->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT);
+                if (bot->getClass() == CLASS_SHAMAN && bot->m_SummonSlot[SUMMON_SLOT_TOTEM_FIRE] && bot->GetMap())
+                    if (Creature* creature = bot->GetMap()->GetCreature(bot->m_SummonSlot[SUMMON_SLOT_TOTEM_FIRE]))
+                        if (Totem* totem = creature->ToTotem())
+                        {
+                            fireTotemSpell = totem->GetSpell();
+                            fireTotemCreatedBySpell = totem->GetUInt32Value(UNIT_CREATED_BY_SPELL);
+                            fireTotemEntry = totem->GetEntry();
+                            fireTotemAlive = totem->IsAlive();
+                            fireTotemActive = totem->GetTotemType() == TOTEM_ACTIVE;
+                        }
             }
             bool persistentSetupReady = false;
             if (bot)
@@ -1257,7 +1272,22 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                  << ",\"aspect_of_the_hawk\":" << (bot && bot->HasAura(13165) ? "true" : "false")
                  << ",\"lightning_shield\":" << (bot && bot->HasAura(324) ? "true" : "false")
                  << ",\"mainhand_temp_enchant\":" << mainhandTempEnchant
-                 << ",\"offhand_temp_enchant\":" << offhandTempEnchant << '}'
+                 << ",\"offhand_temp_enchant\":" << offhandTempEnchant
+                 << ",\"fire_totem\":{\"entry\":" << fireTotemEntry
+                 << ",\"created_by_spell\":" << fireTotemCreatedBySpell
+                 << ",\"attack_spell\":" << fireTotemSpell
+                 << ",\"alive\":" << (fireTotemAlive ? "true" : "false")
+                 << ",\"active\":" << (fireTotemActive ? "true" : "false") << "}}"
+                 << ",\"stats\":{\"strength\":" << (bot ? bot->GetStat(STAT_STRENGTH) : 0.0f)
+                 << ",\"agility\":" << (bot ? bot->GetStat(STAT_AGILITY) : 0.0f)
+                 << ",\"intellect\":" << (bot ? bot->GetStat(STAT_INTELLECT) : 0.0f)
+                 << ",\"melee_attack_power\":" << (bot ? bot->GetTotalAttackPowerValue(BASE_ATTACK) : 0.0f)
+                 << ",\"ranged_attack_power\":" << (bot ? bot->GetTotalAttackPowerValue(RANGED_ATTACK) : 0.0f)
+                 << ",\"spell_power\":" << (bot ? bot->SpellBaseDamageBonusDone(SPELL_SCHOOL_MASK_SPELL, true) : 0)
+                 << ",\"melee_hit_pct\":" << (bot ? bot->GetRatingBonusValue(CR_HIT_MELEE) : 0.0f)
+                 << ",\"ranged_hit_pct\":" << (bot ? bot->GetRatingBonusValue(CR_HIT_RANGED) : 0.0f)
+                 << ",\"spell_hit_pct\":" << (bot ? bot->GetRatingBonusValue(CR_HIT_SPELL) : 0.0f)
+                 << ",\"mastery_points\":" << (bot ? bot->GetRatingBonusValue(CR_MASTERY) : 0.0f) << '}'
                  << ",\"reference_setup\":{\"enabled\":" << (_config.CombatCalibrationReferenceConditions ? "true" : "false")
                  << ",\"buffs_ready\":" << (metrics && metrics->ReferenceBuffsReady ? "true" : "false")
                  << ",\"target_debuffs_ready\":" << (metrics && metrics->ReferenceTargetDebuffsReady ? "true" : "false") << '}'
@@ -1329,7 +1359,11 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
          << ",\"normalization\":{\"gear_basis\":\"equipped_clone_average_item_level\""
          << ",\"buff_basis\":\"" << (_config.CombatCalibrationReferenceConditions
             ? "full_raid_reference_auras" : "stonecore_party_owned_buffs") << "\""
-         << ",\"consumables\":" << (_config.CombatCalibrationReferenceConditions ? "true" : "false")
+         << ",\"flask\":" << (_config.CombatCalibrationReferenceConditions ? "true" : "false")
+         << ",\"potions\":false"
+         << ",\"engineering_cooldowns\":false"
+         << ",\"racial_cooldowns\":false"
+         << ",\"consumables\":false"
          << ",\"target_debuffs\":" << (_config.CombatCalibrationReferenceConditions ? "true" : "false")
          << ",\"reference_conditions\":" << (_config.CombatCalibrationReferenceConditions ? "true" : "false")
          << ",\"external_bis_target_configured\":false"

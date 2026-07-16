@@ -608,6 +608,19 @@ def test_persistent_spec_setup_precedes_dummy_and_profile_rotations():
     assert '\\"persistent_setup\\"' in calibration_json
     assert '\\"mainhand_temp_enchant\\"' in calibration_json
     assert '\\"offhand_temp_enchant\\"' in calibration_json
+    assert '\\"fire_totem\\"' in calibration_json
+    assert '\\"stats\\"' in calibration_json
+
+
+def test_reference_calibration_reports_only_conditions_it_applies():
+    mgr = read(BOT_MGR)
+    calibration_json = function_body(mgr, "std::string BotWorldPopulationMgr::GetCombatCalibrationJson")
+
+    assert '\\"flask\\"' in calibration_json
+    assert '\\"potions\\":false' in calibration_json
+    assert '\\"engineering_cooldowns\\":false' in calibration_json
+    assert '\\"racial_cooldowns\\":false' in calibration_json
+    assert '\\"consumables\\":false' in calibration_json
 
 
 def test_requested_wowhead_profiles_and_target_count_aware_misdirection_are_explicit():
