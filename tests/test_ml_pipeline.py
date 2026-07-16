@@ -7735,6 +7735,29 @@ def test_stonecore_role_specs_inherit_complete_dbc_legal_talent_and_action_profi
     assert action_profiles["schema"] == "bot_cata_434_action_profiles_v2"
 
 
+def test_provisioning_does_not_learn_unselected_cross_spec_talents():
+    config = load_validation_provisioning_config(Path("experiments/configs/validation_provisioning_cata_001.json"))
+    hunter = next(
+        bot
+        for scenario in config["scenarios"]
+        for bot in scenario["bots"]
+        if bot["class_spec"] == "survival_hunter"
+    )
+    action_profiles = load_action_profile_manifest()
+
+    ordinary_spells = set(bot_spell_ids(hunter, action_profiles))
+    known_spells = set(bot_known_spell_ids(hunter, action_profiles))
+    assert 53209 not in ordinary_spells  # unselected Marksmanship Chimera Shot talent
+    assert 19434 not in ordinary_spells  # unselected Marksmanship primary-tree spell
+    assert {3674, 53301} <= known_spells
+
+    sql = build_character_insert_sql({"scenarios": [{"id": "stonecore_5n", "start_position": {"map_id": 725, "x": 1, "y": 2, "z": 3}, "bots": [hunter]}]}, action_profiles)
+    assert "SELECT c.`guid`, 53209, 1, 0" not in sql
+    assert "SELECT c.`guid`, 19434, 1, 0" not in sql
+    assert "SELECT c.`guid`, 3674, 1, 0" in sql
+    assert "SELECT c.`guid`, 53301, 1, 0" in sql
+
+
 def test_stonecore_hazard_geometry_is_emitted_in_route_manifest():
     config = json.loads(Path("experiments/configs/validation_scenarios_cata_001.json").read_text(encoding="utf-8"))
     manifests = build_validation_scenario_manifests(config, {"scenarios": []}, {"all_passed": True})

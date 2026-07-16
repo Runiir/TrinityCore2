@@ -370,8 +370,26 @@ def bot_spell_ids(bot: dict[str, Any], action_profiles: dict[str, Any] | None = 
     profile_spells = profiles["action_profile_spells_by_class"].get(int(bot.get("class", 0)), [])
     spec_profile_spells = profiles.get("action_profile_spells_by_spec", {}).get(str(bot.get("class_spec") or ""), [])
     proficiency_spells = profiles["proficiency_spells_by_class"].get(int(bot.get("class", 0)), [])
-    talent_spells = {int(talent["spell_id"]) for talent in bot.get("talents", [])}
-    return sorted({spell for spell in configured + profile_spells + spec_profile_spells + proficiency_spells if spell > 0 and spell not in talent_spells})
+    specialization_spells: set[int] = set()
+    if int(bot.get("primary_talent_tree_id") or 0) > 0:
+        talents, primary_spells = talent_data()
+        specialization_spells.update(
+            int(spell_id)
+            for row in talents.values()
+            for spell_id in row[4:9]
+            if int(spell_id)
+        )
+        specialization_spells.update(
+            int(spell_id)
+            for spell_ids in primary_spells.values()
+            for spell_id in spell_ids
+            if int(spell_id)
+        )
+    return sorted({
+        spell
+        for spell in configured + profile_spells + spec_profile_spells + proficiency_spells
+        if spell > 0 and spell not in specialization_spells
+    })
 
 
 def bot_talent_spell_ids(bot: dict[str, Any]) -> list[int]:
