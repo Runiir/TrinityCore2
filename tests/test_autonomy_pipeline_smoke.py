@@ -3245,6 +3245,11 @@ def test_stonecore_quality_repairs_cover_hazards_pet_recovery_and_healer_protect
     assert "bot->StopMoving();" in manager
     assert "transferAction.SpellId = 2643;" in manager
     assert 'RecordCombatAttempt(state, bot, add, "misdirection_aoe_transfer"' in manager
+    assert "bool hunterTrashAoeTransferReady = true;" in manager
+    assert 'RecordCombatAttempt(state, bot, target, "misdirection_aoe_transfer"' in manager
+    assert '"swarm_pickup_emergency_defensive"' in manager
+    assert "bot->getClass() == CLASS_SHAMAN ? 3 : 5" in manager
+    assert "&& (creature->IsInCombat() || creature->GetVictim())" not in manager
     assert '"righteous_defense_healer_pickup"' in manager
     assert '"hand_of_reckoning_add_pickup"' in manager
     assert '"fade_threat_drop"' in manager

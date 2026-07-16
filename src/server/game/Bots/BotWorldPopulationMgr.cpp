@@ -10341,7 +10341,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return observer && creature && creature->IsAlive() && creature->GetHealth()
                 && creature->GetMap() == observer->GetMap()
                 && std::find(_config.ValidationRouteAddTargetEntries.begin(), _config.ValidationRouteAddTargetEntries.end(), creature->GetEntry()) != _config.ValidationRouteAddTargetEntries.end()
-                && (creature->IsInCombat() || creature->GetVictim())
                 && observer->IsValidAttackTarget(creature);
         };
         if (_validationRouteAddFocusGeneration != _validationRouteGeneration)
@@ -10895,25 +10894,33 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return true;
         }
 
-        // Azil can activate an entire follower wave on one ranged player in a
-        // single server tick.  The tank normally owns the wave on its next
-        // decision, but that one-second pickup window is already lethal.  Use
-        // the mage's native immunity immediately, without changing threat or
-        // encounter state, so ordinary tank pickup can complete.
-        if (role == "dps" && cohortSwarmActive && bot->getAttackers().size() >= 5
-            && bot->HasSpell(45438) && !bot->HasAura(45438)
-            && TryCastFriendlySpell(bot, bot, 45438))
+        // Azil can activate an entire follower wave on one damage dealer in a
+        // single server tick. The tank normally owns the wave on its next
+        // decision, but that interval is enough to kill a cloth or mail DPS.
+        // Use each spec's native emergency defensive immediately while normal
+        // tank pickup completes; Enhancement needs the earlier threshold
+        // because Shamanistic Rage mitigates rather than immunizes.
+        size_t swarmDefensiveThreshold = bot->getClass() == CLASS_SHAMAN ? 3 : 5;
+        uint32 swarmDefensiveSpellId = bot->getClass() == CLASS_MAGE ? 45438
+            : (bot->getClass() == CLASS_HUNTER ? 19263
+                : (bot->getClass() == CLASS_SHAMAN ? 30823 : 0));
+        if (role == "dps" && cohortSwarmActive
+            && bot->getAttackers().size() >= swarmDefensiveThreshold
+            && swarmDefensiveSpellId && bot->HasSpell(swarmDefensiveSpellId)
+            && !bot->HasAura(swarmDefensiveSpellId)
+            && TryCastFriendlySpell(bot, bot, swarmDefensiveSpellId))
         {
             bot->AttackStop();
             std::string raw = BuildRawJson(bot, add);
             std::string semantic = BuildSemanticJson(bot, add, "dungeon_boss", &power, stage, activity);
-            RecordEvent(state, bot, "defensive", bot, "ice_block_swarm_pickup_emergency",
-                raw.c_str(), semantic.c_str(), float(bot->getAttackers().size()), addCount, 45438);
+            RecordEvent(state, bot, "defensive", bot, "swarm_pickup_emergency_defensive",
+                raw.c_str(), semantic.c_str(), float(bot->getAttackers().size()), addCount,
+                swarmDefensiveSpellId);
             state.TargetGuid = densityTank && densityTank->GetVictim()
                 ? densityTank->GetVictim()->GetGUID() : (add ? add->GetGUID() : ObjectGuid::Empty);
             target = densityTank && densityTank->GetVictim() ? densityTank->GetVictim() : add;
             situation = "dungeon_boss";
-            action = "ice_block_swarm_pickup_emergency";
+            action = "swarm_pickup_emergency_defensive";
             return true;
         }
 
@@ -11693,6 +11700,15 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     bool tankOwnsTrashMajority = trashThreatControl.EngagedCount > 0
         && trashThreatControl.TankOwnedCount * 10 >= trashThreatControl.EngagedCount * 9;
     bool hunterTrashMisdirectionActive = bot->getClass() == CLASS_HUNTER && bot->HasAura(34477);
+    bool hunterTrashAoeTransferReady = true;
+    if (bot->getClass() == CLASS_HUNTER && trashThreatControl.EngagedCount >= 2)
+    {
+        Unit* areaTarget = trashThreatControl.AreaTarget;
+        hunterTrashAoeTransferReady = areaTarget && bot->HasSpell(2643)
+            && bot->GetPower(POWER_FOCUS) >= 40
+            && bot->GetExactDist(areaTarget) >= 5.0f && bot->GetExactDist(areaTarget) <= 35.0f
+            && bot->IsWithinLOSInMap(areaTarget);
+    }
     if (std::string(GetDungeonRole(bot)) == "dps"
         && trashThreatControl.EngagedCount >= 3
         && UnitHealthPct(bot) <= (bot->getClass() == CLASS_SHAMAN ? 0.45f : 0.35f))
@@ -11726,6 +11742,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         && trashThreatControl.EngagedCount > 0
         && bot->HasSpell(34477)
         && !hunterTrashMisdirectionActive
+        && hunterTrashAoeTransferReady
         && TryCastFriendlySpell(bot, trashThreatControl.Tank, 34477))
     {
         std::string raw = BuildRawJson(bot, trashThreatControl.AreaTarget);
@@ -11747,10 +11764,36 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         target = trashThreatControl.AreaTarget;
         state.TargetGuid = target->GetGUID();
         bool useAreaTransfer = trashThreatControl.EngagedCount >= 2;
-        ResolvedCombatAction transferAction = ResolveProfileCombatAction(bot, target,
-            trashThreatControl.EngagedCount, useAreaTransfer);
-        BotActionResult result = ExecuteProfileCombatAction(&state, bot, target, &transferAction,
-            trashThreatControl.EngagedCount, useAreaTransfer);
+        if (useAreaTransfer && bot->isMoving()
+            && bot->GetExactDist(target) >= 5.0f && bot->GetExactDist(target) <= 35.0f
+            && bot->IsWithinLOSInMap(target))
+            bot->StopMoving();
+        ResolvedCombatAction transferAction;
+        BotActionResult result = BotActionResult::NoAction;
+        if (useAreaTransfer)
+        {
+            transferAction.Valid = true;
+            transferAction.Type = "cast";
+            transferAction.SpellId = 2643;
+            transferAction.TargetGuid = target->GetGUID();
+            transferAction.DebugName = "cleave";
+            transferAction.MovementDirective = "ranged";
+            transferAction.AutoAttackMode = "ranged";
+            transferAction.MinRange = 5.0f;
+            transferAction.MaxRange = 35.0f;
+            BotActionExecutor executor;
+            result = executor.ExecuteCombat(bot, bot, transferAction);
+            std::string castFailureReason;
+            if (result == BotActionResult::CastFailed)
+                castFailureReason = "spell_cast_result_" + std::to_string(executor.LastSpellCastResult());
+            RecordCombatAttempt(state, bot, target, "misdirection_aoe_transfer", &transferAction,
+                result, castFailureReason.empty() ? nullptr : castFailureReason.c_str());
+        }
+        else
+        {
+            transferAction = ResolveProfileCombatAction(bot, target, 1, false);
+            result = ExecuteProfileCombatAction(&state, bot, target, &transferAction, 1, false);
+        }
         std::string raw = BuildRawJson(bot, target);
         std::string semantic = BuildSemanticJson(bot, target, "normal_dungeon_trash", &power, stage, activity);
         RecordEvent(state, bot, "validation_route_threat_transfer", target,
