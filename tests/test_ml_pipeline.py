@@ -6380,6 +6380,23 @@ TC> {"duration_minutes":2,"decisions":85}
     )
 
 
+def test_watchdog_state_counts_active_boss_engagement_as_progress():
+    state = watchdog_state(
+        {
+            "decisions": 900,
+            "kills": 40,
+            "boss_engagement_actions": 75,
+            "validation_route_actions": 600,
+            "validation_route_combat_progress_diagnoses": 12,
+        },
+        [],
+        no_progress_window_sec=180,
+    )
+
+    assert state["progress_total"] == 127
+    assert state["semantic_progress_plateau"] is False
+
+
 def test_watchdog_state_calls_post_segment_route_plateau_no_progress():
     state = watchdog_state(
         {

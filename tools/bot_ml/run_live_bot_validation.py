@@ -1968,6 +1968,7 @@ def watchdog_state(
         + counters["quests_completed"]
         + counters["kills"]
         + counters["boss_kill_evidence"]
+        + counters["boss_engagement_actions"]
         + counters["gear_upgrades"]
         + counters["validation_route_terminal_evidence"]
         + counters["validation_route_manifest_complete"]
