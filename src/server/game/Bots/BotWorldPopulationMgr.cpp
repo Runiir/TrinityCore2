@@ -16314,6 +16314,17 @@ bool BotWorldPopulationMgr::TryEnsureCombatTotems(WorldBotState& state, Player* 
         Creature* creature = bot->m_SummonSlot[slot] && bot->GetMap()
             ? bot->GetMap()->GetCreature(bot->m_SummonSlot[slot]) : nullptr;
         Totem* totem = creature ? creature->ToTotem() : nullptr;
+        if (totem && IsTrainingDummy(target)
+            && _calibrationMetrics.find(bot->GetGUID().GetCounter()) != _calibrationMetrics.end())
+        {
+            // Ordinary hostile NPCs are faction-hostile to an offensive
+            // totem. Neutral training dummies instead rely on their player's
+            // reputation/attackability rules, while Totem is intentionally
+            // not player-controlled by Minion::InitStats. In the isolated
+            // calibration cohort only, let the summon inherit those owner
+            // attackability rules so its real attack spell can be measured.
+            totem->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED);
+        }
         bool const ready = totem && totem->IsAlive()
             && (slot != SUMMON_SLOT_TOTEM_FIRE || totem->GetUInt32Value(UNIT_CREATED_BY_SPELL) == spellId);
         if (ready)
