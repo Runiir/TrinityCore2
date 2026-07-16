@@ -339,10 +339,13 @@ def test_playerbot_runtime_roles_drive_universal_profile_combat():
         execute_combat,
         'action.AutoAttackMode == "melee"',
         "bot->Attack(target, true);",
+        "action.SpellId == 75",
+        "CURRENT_AUTOREPEAT_SPELL",
         "BotActionResult check = CheckHostileSpell(owner, bot, target, action.SpellId);",
         "TARGET_FLAG_DEST_LOCATION",
         ": bot->CastSpell(target, action.SpellId, false);",
     )
+    assert "!bot->IsWithinMeleeRange(actionTarget)" in world_mgr
 
 
 def test_bwd_validation_roster_has_rotation_profiles():

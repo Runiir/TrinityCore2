@@ -694,7 +694,7 @@ BotActionCandidate const* BotController::SelectProfileCombatAction(Player* bot, 
             candidate.RejectReason = "forbidden_target_aura";
             continue;
         }
-        if (candidate.Profile.RequiresMeleeRange && targetDistance > 5.0f)
+        if (candidate.Profile.RequiresMeleeRange && actionTarget && !bot->IsWithinMeleeRange(actionTarget))
         {
             candidate.RejectReason = "melee_range_required";
             continue;

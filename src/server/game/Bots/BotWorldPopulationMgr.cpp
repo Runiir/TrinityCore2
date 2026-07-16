@@ -15465,7 +15465,7 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         if (candidate.Profile.MaxRange <= 0.0f)
             if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(candidate.SpellId))
                 maxRange = std::max(5.0f, spellInfo->GetMaxRange(false));
-        if (candidate.Profile.RequiresMeleeRange && distance > 5.0f)
+        if (candidate.Profile.RequiresMeleeRange && !bot->IsWithinMeleeRange(actionTarget))
         {
             candidate.RejectReason = "melee_range_required";
             continue;

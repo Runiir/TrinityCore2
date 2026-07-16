@@ -174,6 +174,18 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
         }
     }
 
+    // Auto Shot is an autorepeat state, not a spell that should be resubmitted
+    // every time the rotation reaches its fallback action.  The uptime block
+    // above has already started it, so treat the active state as success.  A
+    // second CastSpell(75) returns SPELL_FAILED_DONT_REPORT and otherwise
+    // pollutes cast-failure telemetry without representing lost damage.
+    if (action.SpellId == 75 && bot->getClass() == CLASS_HUNTER
+        && bot->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL))
+    {
+        RecordSuccess(bot->GetGUID());
+        return BotActionResult::Ok;
+    }
+
     BotActionResult check = CheckHostileSpell(owner, bot, target, action.SpellId);
     if (check != BotActionResult::Ok)
     {
