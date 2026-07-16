@@ -2843,12 +2843,12 @@ def test_validation_route_high_density_adds_pull_the_tank_into_the_swarm_and_fai
     assert "MoveBotToPoint(state, densityTank, centroidX, centroidY, centroidZ)" in adds
     assert 'moved ? "tank_move_to_add_centroid" : "tank_add_centroid_path_rejected"' in adds
     assert 'escapeIssued ? "reissue_shared_escape_unreached" : "move_to_shared_escape"' in adds
-    assert "ResolveProfileCombatAction(bot, add, highDensityPhase ? addCount : 0, highDensityPhase)" in adds
+    assert "densityAreaPhase ? addCount : 0, densityAreaPhase" in adds
     assert "ExecuteProfileCombatAction(&state, bot, add, &profileAction, addCount, true)" in adds
     assert 'RecordEvent(state, bot, "boss_add_density", add, "no_legal_density_action"' in adds
     assert_ordered(
         adds,
-        "bool densitySingleTargetFallback = highDensityPhase && !profileAction.Valid;",
+        "bool densitySingleTargetFallback = densityAreaPhase && !profileAction.Valid;",
         "profileAction = ResolveProfileCombatAction(bot, add);",
         '"single_target_fallback_selected"',
         '"focused_attack_boss_add_density"',
@@ -2860,7 +2860,7 @@ def test_validation_route_high_density_adds_pull_the_tank_into_the_swarm_and_fai
     assert "43438" not in adds
     assert "43917" not in adds
 
-    density_branch = adds[adds.index("if (highDensityPhase)", adds.index("BotActionResult result")):]
+    density_branch = adds[adds.index("if (densityAreaPhase)", adds.index("BotActionResult result")):]
     density_branch = density_branch[:density_branch.index("else\n            {")]
     assert "executor.Pull" not in density_branch
 
@@ -2957,6 +2957,8 @@ def test_density_tank_centroid_control_prioritizes_loose_healer_targets():
     assert "densityTankSecureAddCount * 10 >= addCount * 9" in adds
     assert "tankThreat >= 2000.0f && tankThreat >= highestPartyThreat * 2.5f" in adds
     assert '"ice_block_swarm_pickup_emergency"' in adds
+    assert 'bool secureSwarmAreaPhase = role == "dps" && cohortSwarmActive && densityTankOwnsSecureMajority;' in adds
+    assert "bool densityAreaPhase = highDensityPhase || secureSwarmAreaPhase;" in adds
     assert "bot->GetExactDist2d(densityTank) <= 6.0f" in adds
     assert "(!bot->getAttackers().empty() && !botInsideTankPickup)" in adds
     assert "bot->GetExactDist2d(densityTank) > 8.0f" not in adds
@@ -3097,6 +3099,7 @@ def test_stonecore_quality_repairs_cover_hazards_pet_recovery_and_healer_protect
     assert "bot->GetExactDist2d(densityTank) > 8.0f" not in manager
     assert "densityTankSecureAddCount * 10 >= addCount * 9" in manager
     assert "bool listedBossAdd = _config.ValidationRouteKind == \"boss\"" in manager
+    assert 'candidate.RejectReason = "major_tank_defensive_already_active";' in manager
     assert "bot->GetExactDist2d(densityTank) <= 6.0f" in manager
     assert "(!bot->getAttackers().empty() && !botInsideTankPickup)" in manager
     assert "bot->GetExactDist2d(tank) > 8.0f" in manager

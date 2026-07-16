@@ -10531,11 +10531,14 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return true;
         }
 
-        ResolvedCombatAction profileAction = ResolveProfileCombatAction(bot, add, highDensityPhase ? addCount : 0, highDensityPhase);
-        bool densitySingleTargetFallback = highDensityPhase && !profileAction.Valid;
+        bool secureSwarmAreaPhase = role == "dps" && cohortSwarmActive && densityTankOwnsSecureMajority;
+        bool densityAreaPhase = highDensityPhase || secureSwarmAreaPhase;
+        ResolvedCombatAction profileAction = ResolveProfileCombatAction(bot, add,
+            densityAreaPhase ? addCount : 0, densityAreaPhase);
+        bool densitySingleTargetFallback = densityAreaPhase && !profileAction.Valid;
         if (densitySingleTargetFallback)
             profileAction = ResolveProfileCombatAction(bot, add);
-        if (highDensityPhase && !profileAction.Valid)
+        if (densityAreaPhase && !profileAction.Valid)
         {
             if (role == "tank")
             {
@@ -10564,8 +10567,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             action = "hold_boss_add_density";
             return true;
         }
-        bool densityGenerator = highDensityPhase && profileAction.DebugName == "resource_generator";
-        if (highDensityPhase)
+        bool densityGenerator = densityAreaPhase && profileAction.DebugName == "resource_generator";
+        if (densityAreaPhase)
         {
             std::string raw = BuildRawJson(bot, add);
             std::string semantic = BuildSemanticJson(bot, add, "dungeon_boss", &power, stage, activity);
@@ -10582,7 +10585,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             MoveBotToProfileRange(state, bot, add, &profileAction);
         else
         {
-            if (highDensityPhase)
+            if (densityAreaPhase)
                 result = ExecuteProfileCombatAction(&state, bot, add, &profileAction, addCount, true);
             else
             {
@@ -10601,7 +10604,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         state.WasInCombat = true;
         target = add;
         situation = "dungeon_boss";
-        action = approach ? "move_to_boss_add" : (densitySingleTargetFallback ? "focused_attack_boss_add_density" : (densityGenerator ? "generate_resource_boss_add_density" : (highDensityPhase ? "area_attack_boss_add_density" : "switch_to_boss_add")));
+        action = approach ? "move_to_boss_add" : (densitySingleTargetFallback ? "focused_attack_boss_add_density" : (densityGenerator ? "generate_resource_boss_add_density" : (densityAreaPhase ? "area_attack_boss_add_density" : "switch_to_boss_add")));
         return true;
     };
     auto markValidationRouteTerminalAfterProgress = [&](char const* reason) -> void
@@ -14342,6 +14345,17 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         }
         if (!candidate.RejectReason.empty())
             continue;
+        bool candidateIsMajorTankDefensive = role == "tank"
+            && candidate.Category == BotCombatActionCategory::Defensive
+            && (candidate.SpellId == 498 || candidate.SpellId == 31850 || candidate.SpellId == 86150);
+        bool anotherMajorTankDefensiveActive = bot->HasAura(498)
+            || bot->HasAura(31850) || bot->HasAura(86150) || bot->HasAura(86659);
+        if (candidateIsMajorTankDefensive && anotherMajorTankDefensiveActive
+            && !bot->HasAura(candidate.SpellId))
+        {
+            candidate.RejectReason = "major_tank_defensive_already_active";
+            continue;
+        }
         if (densityOnly
             && candidate.Category != BotCombatActionCategory::Aoe
             && candidate.Category != BotCombatActionCategory::Cleave
