@@ -560,6 +560,8 @@ def test_shaman_totems_are_combat_entry_setup_without_spam():
     assert "m_SummonSlot" in totems
     assert "Totem* totem = creature ? creature->ToTotem()" in totems
     assert "totem && totem->IsAlive()" in totems
+    assert "totem->GetUInt32Value(UNIT_CREATED_BY_SPELL) == spellId" in totems
+    assert "totem->GetSpell() == spellId" not in totems
     assert "ReadinessRetryUntilMs" in totems
     assert "totem_cast_failed:" in totems
     assert "desiredTotems" in totems

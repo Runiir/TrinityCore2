@@ -15874,7 +15874,7 @@ bool BotWorldPopulationMgr::TryEnsureCombatTotems(WorldBotState& state, Player* 
             ? bot->GetMap()->GetCreature(bot->m_SummonSlot[slot]) : nullptr;
         Totem* totem = creature ? creature->ToTotem() : nullptr;
         bool const ready = totem && totem->IsAlive()
-            && (slot != SUMMON_SLOT_TOTEM_FIRE || totem->GetSpell() == spellId);
+            && (slot != SUMMON_SLOT_TOTEM_FIRE || totem->GetUInt32Value(UNIT_CREATED_BY_SPELL) == spellId);
         if (ready)
             continue;
 
