@@ -30,6 +30,7 @@
 #include "SpellMgr.h"
 #include "SpellScript.h"
 #include "TemporarySummon.h"
+#include "Totem.h"
 #include "Unit.h"
 
 namespace Spells::Shaman
@@ -1717,7 +1718,8 @@ class spell_sha_searing_bolt : public SpellScript
         if (!caster)
             return;
 
-        if (Unit* owner = caster->GetOwner())
+        Unit* owner = caster->IsTotem() ? caster->ToTotem()->GetOwner() : caster->GetOwner();
+        if (owner)
             if (AuraEffect const* effect = owner->GetDummyAuraEffect(SPELLFAMILY_SHAMAN, SHAMAN_ICON_ID_SEARING_FLAMES, EFFECT_0))
                 if (roll_chance_i(effect->GetAmount()))
                     owner->CastSpell(GetHitUnit(), SPELL_SHAMAN_SEARING_FLAMES_DAMAGE, effect);
