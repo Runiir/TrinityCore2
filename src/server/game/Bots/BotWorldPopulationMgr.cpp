@@ -1125,6 +1125,10 @@ std::string BotWorldPopulationMgr::StartCombatCalibration()
     _calibrationStartedMs = NowMs();
     _calibrationMetrics.clear();
     _calibrationPreviousMetrics.clear();
+    _calibrationBestSingleMetrics.clear();
+    _calibrationBestAoeMetrics.clear();
+    _calibrationCompletedSingleWindows = 0;
+    _calibrationCompletedAoeWindows = 0;
     _calibrationPreviousWindowValid = false;
     EnsureCalibrationPopulation();
     return GetCombatCalibrationJson();
@@ -1144,10 +1148,14 @@ std::string BotWorldPopulationMgr::StopCombatCalibration()
     _calibrationBots.clear();
     _calibrationMetrics.clear();
     _calibrationPreviousMetrics.clear();
+    _calibrationBestSingleMetrics.clear();
+    _calibrationBestAoeMetrics.clear();
     _calibrationActive = false;
     _calibrationAoePhase = false;
     _calibrationPreviousWindowValid = false;
     _calibrationPreviousAoePhase = false;
+    _calibrationCompletedSingleWindows = 0;
+    _calibrationCompletedAoeWindows = 0;
     _calibrationStartedMs = 0;
 
     std::ostringstream json;
@@ -1173,8 +1181,9 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
             auto itr = metricsByGuid.find(state.Guid.GetCounter());
             CalibrationMetrics const* metrics = itr == metricsByGuid.end() ? nullptr : &itr->second;
             uint64 startedMs = metrics && metrics->WindowStartedMs ? metrics->WindowStartedMs : _calibrationStartedMs;
-            double elapsedSec = completedWindow ? 120.0
-                : (startedMs && nowMs > startedMs ? double(nowMs - startedMs) / 1000.0 : 0.0);
+            uint64 endedMs = completedWindow && metrics ? metrics->WindowEndedMs : nowMs;
+            double elapsedSec = startedMs && endedMs > startedMs
+                ? double(endedMs - startedMs) / 1000.0 : 0.0;
             double dps = metrics && elapsedSec > 0.0 ? double(metrics->Damage) / elapsedSec : 0.0;
             double tps = metrics && metrics->ThreatBaseline >= 0.0f && elapsedSec > 0.0
                 ? std::max(0.0, double(metrics->ThreatCurrent - metrics->ThreatBaseline) / elapsedSec) : 0.0;
@@ -1182,6 +1191,9 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                  << ",\"name\":\"" << JsonEscape(bot ? bot->GetName() : "loading") << "\""
                  << ",\"class_id\":" << (bot ? uint32(bot->getClass()) : 0)
                  << ",\"role\":\"" << (bot ? JsonEscape(GetDungeonRole(bot)) : "unknown") << "\""
+                 << ",\"level\":" << (bot ? uint32(bot->getLevel()) : 0)
+                 << ",\"average_item_level\":" << std::fixed << std::setprecision(3)
+                 << (bot ? bot->GetAverageItemLevel() : 0.0f)
                  << ",\"elapsed_seconds\":" << std::fixed << std::setprecision(3) << elapsedSec
                  << ",\"damage\":" << (metrics ? metrics->Damage : 0)
                  << ",\"dps\":" << std::fixed << std::setprecision(2) << dps
@@ -1246,7 +1258,14 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
          << ",\"isolated_from_route_telemetry\":true"
          << ",\"damage_basis\":\"effective_or_unmitigated\""
          << ",\"phase\":\"" << (_calibrationAoePhase ? "aoe" : "single_target") << "\""
-         << ",\"window_seconds\":120,\"bots\":";
+         << ",\"window_seconds\":120"
+         << ",\"normalization\":{\"gear_basis\":\"equipped_clone_average_item_level\""
+         << ",\"buff_basis\":\"self_and_rotation_only\",\"consumables\":false"
+         << ",\"external_bis_target_configured\":false"
+         << ",\"comparison_policy\":\"sustained_completed_windows_only\"}"
+         << ",\"completed_windows\":{\"single_target\":" << _calibrationCompletedSingleWindows
+         << ",\"aoe\":" << _calibrationCompletedAoeWindows << "}"
+         << ",\"bots\":";
     writeBots(_calibrationMetrics, false);
     json << ",\"previous_window\":";
     if (!_calibrationPreviousWindowValid)
@@ -1257,6 +1276,17 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
         writeBots(_calibrationPreviousMetrics, true);
         json << '}';
     }
+    json << ",\"best_windows\":{\"single_target\":";
+    if (_calibrationBestSingleMetrics.empty())
+        json << "null";
+    else
+        writeBots(_calibrationBestSingleMetrics, true);
+    json << ",\"aoe\":";
+    if (_calibrationBestAoeMetrics.empty())
+        json << "null";
+    else
+        writeBots(_calibrationBestAoeMetrics, true);
+    json << '}';
     json << ",\"failure_reason\":null}";
     return json.str();
 }
@@ -1722,10 +1752,55 @@ void BotWorldPopulationMgr::Update(uint32 diff)
         bool aoePhase = ((NowMs() - _calibrationStartedMs) / 120000) % 2 == 1;
         if (aoePhase != _calibrationAoePhase)
         {
+            uint64 windowEndedMs = NowMs();
+            std::map<uint32, CalibrationMetrics>& bestMetrics = _calibrationAoePhase
+                ? _calibrationBestAoeMetrics : _calibrationBestSingleMetrics;
+            for (auto& [guid, metrics] : _calibrationMetrics)
+            {
+                metrics.WindowEndedMs = windowEndedMs;
+                auto best = bestMetrics.find(guid);
+                if (best == bestMetrics.end() || metrics.Damage > best->second.Damage)
+                    bestMetrics[guid] = metrics;
+            }
+            if (_calibrationAoePhase)
+                ++_calibrationCompletedAoeWindows;
+            else
+                ++_calibrationCompletedSingleWindows;
             _calibrationPreviousMetrics = _calibrationMetrics;
             _calibrationPreviousAoePhase = _calibrationAoePhase;
             _calibrationPreviousWindowValid = true;
             _calibrationAoePhase = aoePhase;
+            // Auras such as Living Bomb, Black Arrow, Flame Shock, and
+            // Censure belong to the completed phase. Remove only effects
+            // owned by each clone before opening the next window so delayed
+            // ticks cannot contaminate the opposite single/AoE measurement.
+            for (WorldBotState const& calibrationState : _calibrationBots)
+            {
+                Player* calibrationBot = GetLoadedBot(calibrationState);
+                if (!calibrationBot || !calibrationBot->IsInWorld())
+                    continue;
+                calibrationBot->InterruptNonMeleeSpells(false);
+                calibrationBot->AttackStop();
+                if (Pet* pet = calibrationBot->GetPet())
+                    pet->AttackStop();
+
+                std::vector<WorldObject*> nearbyObjects;
+                Trinity::AllWorldObjectsInRange dummyCheck(calibrationBot, 80.0f);
+                Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> dummySearcher(
+                    calibrationBot, nearbyObjects, dummyCheck);
+                Cell::VisitAllObjects(calibrationBot, dummySearcher, 80.0f);
+                ObjectGuid casterGuid = calibrationBot->GetGUID();
+                for (WorldObject* object : nearbyObjects)
+                {
+                    Creature* dummy = object ? object->ToCreature() : nullptr;
+                    if (!dummy || !IsTrainingDummy(dummy))
+                        continue;
+                    dummy->RemoveOwnedAuras([casterGuid](Aura const* aura)
+                    {
+                        return aura && aura->GetCasterGUID() == casterGuid;
+                    }, AuraRemoveFlags::ByCancel);
+                }
+            }
             uint64 windowStartedMs = NowMs();
             for (auto& [guid, metrics] : _calibrationMetrics)
             {
@@ -10717,6 +10792,33 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (hunterMisdirectionActive && densityTank && add)
         {
             bool useAreaTransfer = addCount >= 2;
+            if (useAreaTransfer && bot->GetPower(POWER_FOCUS) < 40)
+            {
+                std::string raw = BuildRawJson(bot, add);
+                std::string semantic = BuildSemanticJson(bot, add, "dungeon_boss", &power, stage, activity);
+                RecordEvent(state, bot, "boss_adds", add, "misdirection_aoe_wait_for_focus",
+                    raw.c_str(), semantic.c_str(), float(bot->GetPower(POWER_FOCUS)), addCount, 2643);
+                state.TargetGuid = add->GetGUID();
+                target = add;
+                situation = "dungeon_boss";
+                action = "misdirection_aoe_wait_for_focus";
+                return true;
+            }
+            if (useAreaTransfer && (bot->GetExactDist(add) < 5.0f || bot->GetExactDist(add) > 35.0f
+                || !bot->IsWithinLOSInMap(add)))
+            {
+                ResolvedCombatAction rangeAction;
+                rangeAction.MovementDirective = "ranged";
+                rangeAction.AutoAttackMode = "ranged";
+                rangeAction.MinRange = 5.0f;
+                rangeAction.MaxRange = 35.0f;
+                bool moved = MoveBotToProfileRange(state, bot, add, &rangeAction);
+                state.TargetGuid = add->GetGUID();
+                target = add;
+                situation = "dungeon_boss";
+                action = moved ? "move_to_misdirection_aoe_range" : "hold_misdirection_aoe_range";
+                return true;
+            }
             // Cobra Shot and the configured ground-target AoE require the bot
             // to be stationary. Clear residual route movement once it is in a
             // legal ranged band so the active transfer window produces an
@@ -11764,6 +11866,31 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         target = trashThreatControl.AreaTarget;
         state.TargetGuid = target->GetGUID();
         bool useAreaTransfer = trashThreatControl.EngagedCount >= 2;
+        if (useAreaTransfer && bot->GetPower(POWER_FOCUS) < 40)
+        {
+            std::string raw = BuildRawJson(bot, target);
+            std::string semantic = BuildSemanticJson(bot, target,
+                "normal_dungeon_trash", &power, stage, activity);
+            RecordEvent(state, bot, "validation_route_threat_transfer", target,
+                "misdirection_aoe_wait_for_focus", raw.c_str(), semantic.c_str(),
+                float(bot->GetPower(POWER_FOCUS)), trashThreatControl.EngagedCount, 2643);
+            situation = "normal_dungeon_trash";
+            action = "misdirection_aoe_wait_for_focus";
+            return true;
+        }
+        if (useAreaTransfer && (bot->GetExactDist(target) < 5.0f || bot->GetExactDist(target) > 35.0f
+            || !bot->IsWithinLOSInMap(target)))
+        {
+            ResolvedCombatAction rangeAction;
+            rangeAction.MovementDirective = "ranged";
+            rangeAction.AutoAttackMode = "ranged";
+            rangeAction.MinRange = 5.0f;
+            rangeAction.MaxRange = 35.0f;
+            bool moved = MoveBotToProfileRange(state, bot, target, &rangeAction);
+            situation = "normal_dungeon_trash";
+            action = moved ? "move_to_misdirection_aoe_range" : "hold_misdirection_aoe_range";
+            return true;
+        }
         if (useAreaTransfer && bot->isMoving()
             && bot->GetExactDist(target) >= 5.0f && bot->GetExactDist(target) <= 35.0f
             && bot->IsWithinLOSInMap(target))

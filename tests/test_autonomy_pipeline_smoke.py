@@ -3326,6 +3326,8 @@ def test_parallel_combat_calibration_is_isolated_and_uses_live_rotations():
 
     assert "std::vector<WorldBotState> _calibrationBots" in header
     assert "std::map<uint32, CalibrationMetrics> _calibrationMetrics" in header
+    assert "std::map<uint32, CalibrationMetrics> _calibrationBestSingleMetrics" in header
+    assert "std::map<uint32, CalibrationMetrics> _calibrationBestAoeMetrics" in header
     assert "std::map<uint32, std::string> _lastCombatRejectsByBot" in header
     assert "combat_calibration" in manager
     assert "SelectCalibrationPoolCandidateGuid" in manager
@@ -3340,6 +3342,10 @@ def test_parallel_combat_calibration_is_isolated_and_uses_live_rotations():
     assert "calibration->second.SpellDamage[spellId] += measuredDamage" in damage
     assert "damageBeforeScriptAdjustment" in unit
     assert "isolated_from_route_telemetry" in manager
+    assert "best_windows" in manager
+    assert "external_bis_target_configured" in manager
+    assert "dummy->RemoveOwnedAuras([casterGuid](Aura const* aura)" in manager
+    assert "metrics.WindowEndedMs = windowEndedMs;" in manager
     assert "last_action_rejections" in manager
     assert "last_chosen_action" in manager
     assert "Unit* target = dummies.front();" in update

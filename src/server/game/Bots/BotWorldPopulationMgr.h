@@ -1354,6 +1354,7 @@ private:
     struct CalibrationMetrics
     {
         uint64 WindowStartedMs = 0;
+        uint64 WindowEndedMs = 0;
         uint64 Damage = 0;
         uint32 Attempts = 0;
         uint32 Successes = 0;
@@ -1371,6 +1372,10 @@ private:
     bool _calibrationPreviousWindowValid = false;
     bool _calibrationPreviousAoePhase = false;
     std::map<uint32, CalibrationMetrics> _calibrationPreviousMetrics;
+    std::map<uint32, CalibrationMetrics> _calibrationBestSingleMetrics;
+    std::map<uint32, CalibrationMetrics> _calibrationBestAoeMetrics;
+    uint32 _calibrationCompletedSingleWindows = 0;
+    uint32 _calibrationCompletedAoeWindows = 0;
     std::set<uint32> _failedSpawnGuids;
     std::string _lastPopulationFailureReason;
     BotWorldStatus _metrics;
