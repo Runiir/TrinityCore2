@@ -10626,6 +10626,27 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         bool dpsSwarmDamageRelease = densityTankOwnsSecureMajority || urgentSwarmDamageRelease;
         bool botInsideTankPickup = densityTank && bot->GetExactDist2d(densityTank) <= 8.0f;
 
+        // Fade before the first healing tick can assign a newly activated
+        // wave to the priest. Waiting for getAttackers() to become non-empty
+        // is reactive and leaves a full decision interval in which Corborus
+        // or Azil adds can kill the healer. Keep the ordinary reactive Fade
+        // in tryRouteGroupHeal for smaller pulls, but use it proactively while
+        // a listed swarm is not yet securely owned by the tank.
+        if (role == "healer" && cohortSwarmActive && !densityTankOwnsSecureMajority
+            && bot->HasSpell(586) && !bot->HasAura(586)
+            && TryCastFriendlySpell(bot, bot, 586))
+        {
+            std::string raw = BuildRawJson(bot, add);
+            std::string semantic = BuildSemanticJson(bot, add, "dungeon_boss", &power, stage, activity);
+            RecordEvent(state, bot, "boss_adds", bot, "fade_preemptive_add_wave_threat_drop",
+                raw.c_str(), semantic.c_str(), float(bot->getAttackers().size()), addCount, 586);
+            state.TargetGuid = add ? add->GetGUID() : ObjectGuid::Empty;
+            target = add;
+            situation = "dungeon_boss";
+            action = "fade_preemptive_add_wave_threat_drop";
+            return true;
+        }
+
         // Defend the party member from the closest listed attacker the tank
         // can acquire.  Selecting an older but distant healer attacker caused
         // the tank and the kiting healer to cross paths while the nearby swarm

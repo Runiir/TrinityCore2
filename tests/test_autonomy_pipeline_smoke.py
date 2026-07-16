@@ -3248,6 +3248,8 @@ def test_stonecore_quality_repairs_cover_hazards_pet_recovery_and_healer_protect
     assert '"righteous_defense_healer_pickup"' in manager
     assert '"hand_of_reckoning_add_pickup"' in manager
     assert '"fade_threat_drop"' in manager
+    assert '"fade_preemptive_add_wave_threat_drop"' in manager
+    assert 'role == "healer" && cohortSwarmActive && !densityTankOwnsSecureMajority' in manager
     assert '"healer_stack_for_add_pickup"' in manager
     assert '"guardian_spirit_self_emergency"' in manager
     assert '"desperate_prayer_self_emergency"' in manager
