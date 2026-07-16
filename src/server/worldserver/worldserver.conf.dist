@@ -3492,6 +3492,11 @@ PlayerBot.Debug = 1
 #        Description: Comma-separated training dummy creature entries. Prefix an entry with ! or - to deny.
 #        Default:     ""
 #
+#    BotWorld.CombatCalibration.ReferenceConditions
+#        Description: Applies real full-raid buff/debuff auras and flasks only to isolated combat-calibration clones.
+#                     This does not alter spell coefficients and never affects route or normal world cohorts.
+#        Default:     0
+#
 #    BotWorld.DeathRecoveryMode
 #        Description: Death recovery strategy. Supported values include safe_local, corpse_recover,
 #                     nearest_graveyard_or_spirit_healer, last_safe_position, and configured_center_fallback.
@@ -3586,6 +3591,7 @@ BotWorld.AllowConfiguredCenterFallback = 0
 BotWorld.UseSavedPosition = 1
 BotWorld.NearPlayerRadius = 20
 BotWorld.TrainingDummyEntries = ""
+BotWorld.CombatCalibration.ReferenceConditions = 0
 BotWorld.DeathRecoveryMode = "safe_local"
 BotWorld.TeleportToCenterOnDeath = 0
 BotWorld.MaxDeathsBeforeFallback = 3

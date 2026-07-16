@@ -3406,6 +3406,12 @@ def test_parallel_combat_calibration_is_isolated_and_uses_live_rotations():
     assert "external_bis_target_configured" in manager
     assert "EnsureCalibrationCohortGroup();" in manager
     assert "stonecore_party_owned_buffs" in manager
+    assert "full_raid_reference_auras" in manager
+    assert "ApplyCalibrationReferenceConditions(bot, target);" in update
+    reference_conditions = function_body(manager, "void BotWorldPopulationMgr::ApplyCalibrationReferenceConditions")
+    for spell_id in ["79102", "53646", "17007", "2895", "8515", "8076", "82930", "79470", "79471", "79472", "1490", "22959", "81326", "58567"]:
+        assert spell_id in reference_conditions
+    assert "sunder->SetStackAmount(3)" in reference_conditions
     assert "calibrationGroup->Disband();" in manager
     assert "group->AddMember(bot)" in manager
     assert '\\"grouped\\"' in manager

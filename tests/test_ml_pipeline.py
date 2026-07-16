@@ -6935,6 +6935,23 @@ def test_live_bot_validation_config_calibration_only_starts_empty_controller(tmp
     assert "BotWorld.TargetPopulation = 0" in config_text
     assert "BotWorld.ValidationRoute.Enable = 0" in config_text
     assert 'BotWorld.PoolTagFilter = "combat_calibration"' in config_text
+    assert "BotWorld.CombatCalibration.ReferenceConditions = 0" in config_text
+
+
+def test_live_bot_validation_config_enables_calibration_reference_conditions(tmp_path):
+    base_config = tmp_path / "worldserver.conf"
+    base_config.write_text("BotWorld.AutoStart = 0\n", encoding="utf-8")
+
+    generated = write_validation_config(
+        base_config,
+        tmp_path / "live",
+        pool_tag="combat_calibration",
+        calibration_only=True,
+        calibration_reference_conditions=True,
+    )
+
+    config_text = generated.read_text(encoding="utf-8")
+    assert "BotWorld.CombatCalibration.ReferenceConditions = 1" in config_text
 
 
 def test_live_bot_validation_route_manifest_dry_run_writes_scenario_scoped_config(tmp_path, monkeypatch, capsys):

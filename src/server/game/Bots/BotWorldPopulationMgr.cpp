@@ -1315,7 +1315,11 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
          << ",\"phase\":\"" << (_calibrationAoePhase ? "aoe" : "single_target") << "\""
          << ",\"window_seconds\":120"
          << ",\"normalization\":{\"gear_basis\":\"equipped_clone_average_item_level\""
-         << ",\"buff_basis\":\"stonecore_party_owned_buffs\",\"consumables\":false"
+         << ",\"buff_basis\":\"" << (_config.CombatCalibrationReferenceConditions
+            ? "full_raid_reference_auras" : "stonecore_party_owned_buffs") << "\""
+         << ",\"consumables\":" << (_config.CombatCalibrationReferenceConditions ? "true" : "false")
+         << ",\"target_debuffs\":" << (_config.CombatCalibrationReferenceConditions ? "true" : "false")
+         << ",\"reference_conditions\":" << (_config.CombatCalibrationReferenceConditions ? "true" : "false")
          << ",\"external_bis_target_configured\":false"
          << ",\"comparison_policy\":\"sustained_completed_windows_only\"}"
          << ",\"completed_windows\":{\"single_target\":" << _calibrationCompletedSingleWindows
@@ -1988,6 +1992,8 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
     _config.BrainVersion = sConfigMgr->GetStringDefault("BotExperiment.BrainVersion", _config.BrainVersion);
     _config.SpawnMode = sConfigMgr->GetStringDefault("BotWorld.SpawnMode", _config.SpawnMode);
     _config.PoolTagFilter = sConfigMgr->GetStringDefault("BotWorld.PoolTagFilter", _config.PoolTagFilter);
+    _config.CombatCalibrationReferenceConditions = sConfigMgr->GetBoolDefault(
+        "BotWorld.CombatCalibration.ReferenceConditions", _config.CombatCalibrationReferenceConditions);
     _config.ValidationRouteEnable = sConfigMgr->GetBoolDefault("BotWorld.ValidationRoute.Enable", _config.ValidationRouteEnable);
     _config.ValidationRouteManifestPath = sConfigMgr->GetStringDefault("BotWorld.ValidationRoute.ManifestPath", _config.ValidationRouteManifestPath);
     _config.ValidationRouteAdvanceMode = sConfigMgr->GetStringDefault("BotWorld.ValidationRoute.AdvanceMode", _config.ValidationRouteAdvanceMode);
@@ -2994,6 +3000,60 @@ void BotWorldPopulationMgr::EnsureCalibrationCohortGroup()
     }
 }
 
+void BotWorldPopulationMgr::ApplyCalibrationReferenceConditions(Player* bot, Unit* target) const
+{
+    if (!_config.CombatCalibrationReferenceConditions || !bot || !target)
+        return;
+
+    // One real Cataclysm aura from each non-overlapping raid-buff category.
+    // This mode is calibration-only: it makes the live dummy conditions closer
+    // to the full-raid WoWSims reference without changing damage coefficients.
+    static constexpr std::array<uint32, 7> RaidBuffAuras = {
+        79102, // Blessing of Might: attack power and mana regeneration
+        53646, // Demonic Pact: spell power
+        17007, // Leader of the Pack: critical strike
+        2895,  // Wrath of Air Totem: spell haste
+        8515,  // Windfury Totem: melee/ranged haste
+        8076,  // Strength of Earth: strength and agility
+        82930, // Arcane Tactics: 3% damage
+    };
+    for (uint32 spellId : RaidBuffAuras)
+        if (!bot->HasAura(spellId))
+            bot->AddAura(spellId, bot);
+
+    uint32 flaskSpellId = 0;
+    switch (bot->getClass())
+    {
+        case CLASS_MAGE: flaskSpellId = 79470; break;  // Draconic Mind
+        case CLASS_HUNTER:
+        case CLASS_SHAMAN: flaskSpellId = 79471; break; // Winds
+        case CLASS_PALADIN: flaskSpellId = 79472; break; // Titanic Strength
+        default: break;
+    }
+    if (flaskSpellId && !bot->HasAura(flaskSpellId))
+        bot->AddAura(flaskSpellId, bot);
+
+    // A single calibration clone owns the reference debuffs so aura ownership
+    // and stacking remain deterministic. The tank is present in every cohort.
+    if (std::string(GetDungeonRole(bot)) != "tank")
+        return;
+
+    static constexpr std::array<uint32, 3> TargetDebuffAuras = {
+        1490,  // Curse of the Elements: magic damage taken
+        22959, // Critical Mass: spell critical chance taken
+        81326, // Brittle Bones: physical damage taken
+    };
+    for (uint32 spellId : TargetDebuffAuras)
+        if (!target->HasAura(spellId))
+            bot->AddAura(spellId, target);
+
+    Aura* sunder = target->GetAura(58567, bot->GetGUID());
+    if (!sunder)
+        sunder = bot->AddAura(58567, target);
+    if (sunder && sunder->GetStackAmount() < 3)
+        sunder->SetStackAmount(3);
+}
+
 void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 diff)
 {
     if (state.DecisionTimer > diff)
@@ -3034,6 +3094,8 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
     // different dummy every tick and never reach its melee abilities.
     Unit* target = dummies.front();
     uint32 hostileCount = _calibrationAoePhase ? std::max<uint32>(3, uint32(dummies.size())) : 1;
+
+    ApplyCalibrationReferenceConditions(bot, target);
 
     if (TryEnsurePersistentCombatSetup(state, bot, target))
         return;

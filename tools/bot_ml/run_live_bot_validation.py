@@ -313,6 +313,7 @@ def write_validation_config(
     validation_route_manifest_path: Path | None = None,
     autostart: bool = True,
     calibration_only: bool = False,
+    calibration_reference_conditions: bool = False,
 ) -> Path:
     route = validation_route or {}
     if not pool_tag and not route and not validation_route_manifest_path and autostart and not calibration_only:
@@ -338,6 +339,11 @@ def write_validation_config(
         text = upsert_trinity_config(text, "BotWorld.RuntimeProfile", '""')
         text = upsert_trinity_config(text, "BotWorld.TargetPopulation", "0")
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.Enable", "0")
+        text = upsert_trinity_config(
+            text,
+            "BotWorld.CombatCalibration.ReferenceConditions",
+            "1" if calibration_reference_conditions else "0",
+        )
     if validation_route_manifest_path:
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.ManifestPath", f'"{str(validation_route_manifest_path).replace(chr(34), "")}"')
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.AdvanceMode", '"terminal"')
@@ -3388,6 +3394,7 @@ def main() -> int:
     parser.add_argument("--stop", action="store_true")
     parser.add_argument("--combat-calibration", action="store_true", help="Run isolated DPS/TPS training-dummy clones beside the validation cohort and attach their status to the report.")
     parser.add_argument("--calibration-only", action="store_true", help="Start an empty autonomy controller and run only the isolated combat-calibration clones, without a route/world cohort.")
+    parser.add_argument("--calibration-reference-conditions", action="store_true", help="For calibration-only runs, apply real full-raid reference auras, target debuffs, and class-appropriate flasks without changing damage coefficients.")
     parser.add_argument("--transport", choices=["process", "soap", "session"], default="process")
     parser.add_argument("--soap-url", default="http://127.0.0.1:7878/")
     parser.add_argument("--soap-user", default=os.environ.get("TRINITY_SOAP_USER"))
@@ -3421,6 +3428,8 @@ def main() -> int:
 
     if args.calibration_only:
         args.combat_calibration = True
+    if args.calibration_reference_conditions and not args.calibration_only:
+        raise SystemExit("--calibration-reference-conditions requires --calibration-only")
 
     if args.duration_policy == "completion-watchdog":
         args.timeout_sec = args.timeout_sec if args.timeout_sec is not None else DEFAULT_BOSS_ROUTE_TIMEOUT_SEC
@@ -3493,6 +3502,7 @@ def main() -> int:
             validation_route_manifest_path,
             autostart=True if args.calibration_only else not args.no_start,
             calibration_only=args.calibration_only,
+            calibration_reference_conditions=args.calibration_reference_conditions,
         )
     config_autostart = trinity_config_bool(effective_config, "BotWorld.AutoStart", False)
     send_start_command = not args.no_start and (args.force_start_command or not config_autostart)
@@ -3563,6 +3573,7 @@ def main() -> int:
             "config_autostart": config_autostart,
             "start_command": send_start_command,
             "calibration_only": args.calibration_only,
+            "calibration_reference_conditions": args.calibration_reference_conditions,
             "preparation": preparation,
             "scenario_reports": scenario_reports,
             "validation_context": validation_context,
@@ -3688,6 +3699,7 @@ def main() -> int:
     report["validation_route_manifest_path"] = str(validation_route_manifest_path or "")
     report["start_command"] = send_start_command
     report["calibration_only"] = args.calibration_only
+    report["calibration_reference_conditions"] = args.calibration_reference_conditions
     report["preparation"] = preparation
     if args.transport == "session":
         report["session"] = session_lifecycle

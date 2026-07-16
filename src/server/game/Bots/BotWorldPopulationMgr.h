@@ -63,6 +63,7 @@ struct BotWorldExperimentConfig
     std::string BrainVersion = "utility_v1";
     std::string SpawnMode = "resume_or_race_start";
     std::string PoolTagFilter;
+    bool CombatCalibrationReferenceConditions = false;
     bool ValidationRouteEnable = false;
     std::string ValidationRouteManifestPath;
     std::string ValidationRouteAdvanceMode = "disabled";
@@ -1142,6 +1143,7 @@ private:
     bool LoadPolicyModelArtifact(std::string const& artifactPath);
     void EnsurePopulation();
     void EnsureCalibrationPopulation();
+    void ApplyCalibrationReferenceConditions(Player* bot, Unit* target) const;
     void UpdateCalibrationBot(WorldBotState& state, uint32 diff);
     bool ResolveSpawnPlacement(uint32 candidateGuid, SpawnPlacement& placement) const;
     bool ResolveSavedSpawnPlacement(uint32 candidateGuid, SpawnPlacement& placement) const;
