@@ -1,0 +1,6 @@
+outs:
+- md5: 4191bb475cc98754fc16fe3164855922.dir
+  size: 63462
+  nfiles: 4
+  hash: md5
+  path: combat_calibration_run_187
