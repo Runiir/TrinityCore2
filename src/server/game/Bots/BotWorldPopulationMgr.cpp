@@ -108,12 +108,17 @@ Player* CombatOwnerPlayer(Unit* unit)
     if (Player* player = unit->GetCharmerOrOwnerPlayerOrPlayerItself())
         return player;
 
-    // Player totems retain their summoner through Totem::GetOwner() even
-    // when the generic Unit owner chain is empty.  Resolve that path so
-    // damage meters include real offensive-totem damage.
-    if (Totem* totem = unit->ToTotem())
-        if (Unit* owner = totem->GetOwner())
-            return owner->GetCharmerOrOwnerPlayerOrPlayerItself();
+    // Resolve nested summon ownership (for example elemental -> totem ->
+    // player). The generic helper only checks one owner GUID level.
+    Unit* current = unit;
+    for (uint8 depth = 0; depth < 4 && current; ++depth)
+    {
+        current = current->IsTotem() ? current->ToTotem()->GetOwner() : current->GetCharmerOrOwner();
+        if (!current)
+            break;
+        if (Player* player = current->ToPlayer())
+            return player;
+    }
 
     return nullptr;
 }
@@ -16392,6 +16397,18 @@ bool BotWorldPopulationMgr::TryEnsureCombatTotems(WorldBotState& state, Player* 
             // still enforces targetability, range, visibility, and faction.
             if (slot == SUMMON_SLOT_TOTEM_FIRE && totem->GetTotemType() == TOTEM_ACTIVE)
                 totem->AI()->AttackStart(target);
+            if (slot == SUMMON_SLOT_TOTEM_FIRE
+                && totem->GetUInt32Value(UNIT_CREATED_BY_SPELL) == 2894)
+            {
+                for (Unit* controlled : bot->m_Controlled)
+                {
+                    Creature* elemental = controlled ? controlled->ToCreature() : nullptr;
+                    if (!elemental || elemental->GetEntry() != 15438 || !elemental->IsAlive())
+                        continue;
+                    elemental->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED);
+                    elemental->AI()->AttackStart(target);
+                }
+            }
             continue;
         }
 

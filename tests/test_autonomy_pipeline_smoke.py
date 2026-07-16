@@ -68,8 +68,8 @@ def test_combat_telemetry_attributes_player_totem_damage_to_its_owner() -> None:
     owner_helper = function_body(manager, "Player* CombatOwnerPlayer")
     damage_hook = function_body(manager, "void BotWorldPopulationMgr::NotifyCombatDamage")
 
-    assert "unit->ToTotem()" in owner_helper
-    assert "totem->GetOwner()" in owner_helper
+    assert "current->ToTotem()->GetOwner()" in owner_helper
+    assert "depth < 4" in owner_helper
     assert "CombatOwnerPlayer(attacker)" in damage_hook
 
 
@@ -582,6 +582,8 @@ def test_shaman_totems_are_combat_entry_setup_without_spam():
     assert "totem && totem->IsAlive()" in totems
     assert "totem->GetUInt32Value(UNIT_CREATED_BY_SPELL) == spellId" in totems
     assert "totem->GetUInt32Value(UNIT_CREATED_BY_SPELL) == 2894" in totems
+    assert "elemental->GetEntry() != 15438" in totems
+    assert "elemental->AI()->AttackStart(target)" in totems
     assert "totem->GetSpell() == spellId" not in totems
     assert "ReadinessRetryUntilMs" in totems
     assert "totem_cast_failed:" in totems
