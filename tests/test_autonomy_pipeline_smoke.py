@@ -2138,6 +2138,9 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
         "spellMinRange += bot->GetMeleeRange(target)",
         "action.MinRange = std::max(action.MinRange, minRange)",
         "action.MinRange = effectiveSpellMinRange(*best, action.MinRange)",
+        'bool selfTarget = best->Profile.TargetSelector == "self";',
+        "action.MinRange = selfTarget ? 0.0f",
+        "action.MaxRange = selfTarget ? 0.0f",
     ]:
         assert required in profile_action
     assert_ordered(

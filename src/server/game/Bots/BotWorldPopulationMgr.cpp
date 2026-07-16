@@ -14401,15 +14401,16 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
     action.Valid = true;
     action.Type = "cast";
     action.SpellId = best->SpellId;
-    action.TargetGuid = best->Profile.TargetSelector == "self" ? bot->GetGUID() : target->GetGUID();
+    bool selfTarget = best->Profile.TargetSelector == "self";
+    action.TargetGuid = selfTarget ? bot->GetGUID() : target->GetGUID();
     action.DebugName = BotCombatActionCatalog::ToString(best->Category);
     action.MovementDirective = best->Profile.MovementDirective.empty() ? profile.MovementDirective : best->Profile.MovementDirective;
     action.AutoAttackMode = best->Profile.AutoAttackMode.empty() ? profile.AutoAttackMode : best->Profile.AutoAttackMode;
-    action.MinRange = best->Profile.MinRange > 0.0f ? best->Profile.MinRange : profile.MinRange;
-    if (best->Profile.TargetSelector != "self")
+    action.MinRange = selfTarget ? 0.0f : (best->Profile.MinRange > 0.0f ? best->Profile.MinRange : profile.MinRange);
+    if (!selfTarget)
         action.MinRange = effectiveSpellMinRange(*best, action.MinRange);
-    action.MaxRange = best->Profile.MaxRange > 0.0f ? best->Profile.MaxRange : profile.MaxRange;
-    if (best->Profile.MaxRange <= 0.0f)
+    action.MaxRange = selfTarget ? 0.0f : (best->Profile.MaxRange > 0.0f ? best->Profile.MaxRange : profile.MaxRange);
+    if (!selfTarget && best->Profile.MaxRange <= 0.0f)
         if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(best->SpellId))
             action.MaxRange = std::max(5.0f, spellInfo->GetMaxRange(false));
     return action;
