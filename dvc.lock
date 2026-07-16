@@ -192,7 +192,7 @@ stages:
       size: 1445
     - path: dataset/validation_gear_profiles
       hash: md5
-      md5: 35717c8c05be4abfd614598f81010ed6.dir
+      md5: 98685fc1a224c89ea297af75cda708d7.dir
       size: 385890
       nfiles: 3
     - path: experiments/configs/cata_434_action_profiles.json
@@ -201,12 +201,12 @@ stages:
       size: 2540
     - path: experiments/configs/validation_provisioning_cata_001.json
       hash: md5
-      md5: 2cd8dc24e8de886c201bf022ff13daa9
-      size: 11904
+      md5: 2a399fc2b7e2867fa24ae1b107901bc6
+      size: 13074
     - path: tools/bot_ml/build_validation_provisioning.py
       hash: md5
-      md5: 6cad94865c5574e028f0e184178a72ab
-      size: 35452
+      md5: c93894c5afd99a836fed10ca5f87b909
+      size: 35501
     - path: tools/bot_ml/validation_profile_manifests.py
       hash: md5
       md5: 1fa2c87b3ecad9db30acc761a0483ede
@@ -214,8 +214,8 @@ stages:
     outs:
     - path: dataset/validation_provisioning
       hash: md5
-      md5: 0385cafa2a5fcf7d48dc5123216b71cf.dir
-      size: 413540
+      md5: 3d0c5632afe555d83eac72212c6f809b.dir
+      size: 543992
       nfiles: 6
   validation_gear:
     cmd: python -m tools.bot_ml.build_validation_gear_profiles --config 
@@ -244,16 +244,16 @@ stages:
       size: 2340
     - path: experiments/configs/validation_provisioning_cata_001.json
       hash: md5
-      md5: 2cd8dc24e8de886c201bf022ff13daa9
-      size: 11904
+      md5: 2a399fc2b7e2867fa24ae1b107901bc6
+      size: 13074
     - path: tools/bot_ml/build_validation_gear_profiles.py
       hash: md5
       md5: ae0ff517b3f7109cf8f39c42cee65019
       size: 36327
     - path: tools/bot_ml/build_validation_provisioning.py
       hash: md5
-      md5: 6cad94865c5574e028f0e184178a72ab
-      size: 35452
+      md5: c93894c5afd99a836fed10ca5f87b909
+      size: 35501
     - path: tools/bot_ml/extract_world_knowledge.py
       hash: md5
       md5: 9f9d6ddb0fcae27397951db8b02c3d68
@@ -265,7 +265,7 @@ stages:
     outs:
     - path: dataset/validation_gear_profiles
       hash: md5
-      md5: 35717c8c05be4abfd614598f81010ed6.dir
+      md5: 98685fc1a224c89ea297af75cda708d7.dir
       size: 385890
       nfiles: 3
   validation_provisioning_verify:

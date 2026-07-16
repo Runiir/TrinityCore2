@@ -395,6 +395,23 @@ def write_validation_config(
     return generated
 
 
+def bind_validation_provisioning_sql(config_path: Path, provisioning: dict[str, Any]) -> Path:
+    """Keep worldserver auto-prepare on the exact SQL generated for this run.
+
+    Named validation profiles provision again when BotWorld starts.  Pointing the
+    generated config at the run-scoped SQL prevents an older DVC checkout from
+    replacing freshly provisioned characters (and, in particular, assigning
+    deterministic item GUIDs to the wrong owners).
+    """
+    text = config_path.read_text(encoding="utf-8")
+    account_path = Path(str(provisioning["account_sql"])).resolve()
+    character_path = Path(str(provisioning["character_sql"])).resolve()
+    text = upsert_trinity_config(text, "BotWorld.ValidationProvisionAccountsSql", f'"{account_path}"')
+    text = upsert_trinity_config(text, "BotWorld.ValidationProvisionCharactersSql", f'"{character_path}"')
+    config_path.write_text(text, encoding="utf-8")
+    return config_path
+
+
 def split_sql_statements(sql: str) -> list[str]:
     statements: list[str] = []
     current: list[str] = []
@@ -3365,6 +3382,11 @@ def main() -> int:
             args.config,
             apply=not args.dry_run and args.transport != "session",
         )
+        if args.transport == "process" and not args.input_log:
+            effective_config = bind_validation_provisioning_sql(
+                effective_config,
+                preparation["validation_provisioning"],
+            )
     if validation_route and int(validation_route.get("bot_start_map_id") or 0):
         preparation["route_bot_start"] = prepare_route_bot_start(
             args.output_dir,

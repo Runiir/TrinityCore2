@@ -7304,6 +7304,7 @@ def test_live_bot_validation_dry_run_writes_reset_and_provisioning_artifacts(tmp
     reset_sql = (tmp_path / "bot_pool_reset" / "reset_bot_pool.sql").read_text(encoding="utf-8")
     account_sql = (tmp_path / "validation_provisioning_apply" / "provision_accounts.sql").read_text(encoding="utf-8")
     character_sql = (tmp_path / "validation_provisioning_apply" / "provision_characters.sql").read_text(encoding="utf-8")
+    worldserver_config = (tmp_path / "worldserver.validation.conf").read_text(encoding="utf-8")
 
     assert report["dry_run"] is True
     assert report["preparation"]["bot_pool_reset"]["applied"] is False
@@ -7313,6 +7314,8 @@ def test_live_bot_validation_dry_run_writes_reset_and_provisioning_artifacts(tmp
     assert "JOIN `world_lane`.`playercreateinfo`" in reset_sql
     assert "INSERT INTO `auth_lane`.`account`" in account_sql
     assert "INSERT INTO `characters_lane`.`characters`" in character_sql
+    assert f'BotWorld.ValidationProvisionAccountsSql = "{(tmp_path / "validation_provisioning_apply" / "provision_accounts.sql").resolve()}"' in worldserver_config
+    assert f'BotWorld.ValidationProvisionCharactersSql = "{(tmp_path / "validation_provisioning_apply" / "provision_characters.sql").resolve()}"' in worldserver_config
 
 
 def test_live_bot_validation_soap_dry_run_writes_non_exit_command_file(tmp_path, monkeypatch):
