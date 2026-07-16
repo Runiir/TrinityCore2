@@ -25,6 +25,7 @@ REQUIRED_EQUIPMENT_SLOTS = [0, 1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 1
 EQUIPMENT_SLOT_END = 19
 INVENTORY_BAG_SLOTS = 4
 DEFAULT_DBC_DIR = Path("data/dbc/enUS")
+DEFAULT_WOWSIMS_GEAR_PROFILES = Path(__file__).resolve().parents[2] / "experiments/configs/wowsims_cata_p4_gear_profiles.json"
 SPELL_EFFECT_LEARN_GLYPH = 74
 ITEM_SPARSE_FMT = "niiiffiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiifiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiisssssiiiiiiiiiiiiiiiiiiiiiifiiifii"
 _GLYPH_ITEM_TO_PROPERTY_CACHE: dict[Path, dict[int, int]] = {}
@@ -246,8 +247,14 @@ def runtime_safe_enchantments(item: dict[str, Any]) -> str:
             values[index] = int(token)
     if not raw and int(item.get("enchant_id") or 0):
         values[0] = int(item.get("enchant_id") or 0)
-    for socket_offset in (6, 9, 12):
-        values[socket_offset] = 0
+    if item.get("preserve_socket_enchantments"):
+        for socket_offset, enchant_id in zip((6, 9, 12), item.get("gem_enchant_ids", [])):
+            values[socket_offset] = int(enchant_id or 0)
+    else:
+        for socket_offset in (6, 9, 12):
+            values[socket_offset] = 0
+    if int(item.get("reforge_id") or 0):
+        values[24] = int(item["reforge_id"])
     return " ".join(str(value) for value in values)
 
 DEFAULT_ACTION_PROFILES = load_action_profile_manifest(DEFAULT_ACTION_PROFILE_MANIFEST)
@@ -286,7 +293,40 @@ def load_gear_profiles(path: Path | None) -> dict[str, Any]:
     if not path or not path.exists():
         return {}
     payload = json.loads(path.read_text(encoding="utf-8"))
-    return payload.get("profiles", {})
+    profiles = dict(payload.get("profiles", {}))
+    if path.resolve() != DEFAULT_WOWSIMS_GEAR_PROFILES.resolve() and DEFAULT_WOWSIMS_GEAR_PROFILES.is_file():
+        overlay = json.loads(DEFAULT_WOWSIMS_GEAR_PROFILES.read_text(encoding="utf-8"))
+        slot_map = [int(slot) for slot in overlay.get("slot_map", [])]
+        gem_enchantments = {int(item): int(enchant) for item, enchant in overlay.get("gem_enchantments", {}).items()}
+        for name, source_profile in overlay.get("profiles", {}).items():
+            equipment = []
+            inventory_types = {int(slot): int(value) for slot, value in source_profile.get("inventory_types", {}).items()}
+            for index, source_item in enumerate(source_profile.get("items", [])):
+                if not source_item or int(source_item.get("id") or 0) <= 0:
+                    continue
+                slot = slot_map[index]
+                gem_items = [int(gem) for gem in source_item.get("gems", [])]
+                gem_enchant_ids = [gem_enchantments.get(gem, 0) for gem in gem_items]
+                enchantment_fields = [0] * 45
+                enchantment_fields[0] = int(source_item.get("enchant") or 0)
+                for offset, enchant_id in zip((6, 9, 12), gem_enchant_ids):
+                    enchantment_fields[offset] = enchant_id
+                enchantment_fields[24] = int(source_item.get("reforging") or 0)
+                equipment.append(
+                    {
+                        "slot": slot,
+                        "item_id": int(source_item["id"]),
+                        "enchant_id": int(source_item.get("enchant") or 0),
+                        "gem_item_ids": gem_items,
+                        "gem_enchant_ids": gem_enchant_ids,
+                        "reforge_id": int(source_item.get("reforging") or 0),
+                        "enchantments": " ".join(str(value) for value in enchantment_fields),
+                        "inventory_type": inventory_types.get(slot, 0),
+                        "preserve_socket_enchantments": True,
+                    }
+                )
+            profiles[name] = {"equipment": equipment, "source": source_profile.get("source", {})}
+    return profiles
 
 
 def apply_gear_profiles(config: dict[str, Any], profiles: dict[str, Any]) -> dict[str, Any]:
@@ -297,10 +337,12 @@ def apply_gear_profiles(config: dict[str, Any], profiles: dict[str, Any]) -> dic
         for bot in scenario["bots"]:
             if bot.get("equipment"):
                 continue
-            profile = profiles.get(str(bot.get("class_spec") or ""))
+            profile_name = str(bot.get("gear_profile") or bot.get("class_spec") or "")
+            profile = profiles.get(profile_name)
             if profile:
                 bot["equipment"] = profile.get("equipment", [])
-                bot["gear_profile"] = str(bot.get("class_spec") or "")
+                bot["gear_profile"] = profile_name
+                bot["gear_profile_source"] = profile.get("source", {})
     return copied
 
 
@@ -551,7 +593,15 @@ def scenario_report(config: dict[str, Any], action_profiles: dict[str, Any] | No
         }
         gear_ok = all(not missing for missing in gear_missing.values())
         gems_ok = all(all(not item.get("socket_colors") or item.get("gem_item_ids") for item in bot.get("equipment", [])) for bot in bots)
-        enchants_ok = all(all(int(item.get("enchant_id") or 0) for item in bot.get("equipment", [])) for bot in bots)
+        enchants_ok = all(
+            all(
+                int(item.get("enchant_id") or 0)
+                for item in bot.get("equipment", [])
+                if int(item.get("slot", -1)) in {0, 2, 4, 6, 7, 8, 9, 14, 15, 16}
+                or (int(bot.get("class") or 0) == 3 and int(item.get("slot", -1)) == 17)
+            )
+            for bot in bots
+        )
         missing = []
         if not role_ok:
             missing.append("role_coverage")

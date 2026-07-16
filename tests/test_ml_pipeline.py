@@ -54,7 +54,7 @@ from tools.bot_ml.orchestrator_daemon import codex_command, detect_rate_limit, h
 from tools.bot_ml.generate_lane_configs import write_lane_config
 from tools.bot_ml.promote_live_validation_artifact import promote
 from tools.bot_ml.build_validation_gear_profiles import SHIELD_CLASSES, build_gem_catalog, build_profiles, build_report, fetch_items, load_gem_properties, load_spell_item_enchantments
-from tools.bot_ml.build_validation_provisioning import apply_gear_profiles, bot_known_spell_ids, bot_primary_tree_spell_ids, bot_spell_ids, bot_talent_spell_ids, build_account_insert_sql, build_character_insert_sql, equipment_cache, glyph_item_to_property_map, glyph_property_type_map, load_config as load_validation_provisioning_config, main as provisioning_main, normalized_glyph_slots, normalized_glyphs, runtime_safe_enchantments, scenario_report, srp6_registration_data, talent_point_count, validate_talent_manifest
+from tools.bot_ml.build_validation_provisioning import apply_gear_profiles, bot_known_spell_ids, bot_primary_tree_spell_ids, bot_spell_ids, bot_talent_spell_ids, build_account_insert_sql, build_character_insert_sql, equipment_cache, glyph_item_to_property_map, glyph_property_type_map, load_config as load_validation_provisioning_config, load_gear_profiles, main as provisioning_main, normalized_glyph_slots, normalized_glyphs, runtime_safe_enchantments, scenario_report, srp6_registration_data, talent_point_count, validate_talent_manifest
 from tools.bot_ml.validate_validation_provisioning import build_report as provisioning_verify_report
 from tools.bot_ml.validate_validation_provisioning import main as provisioning_verify_main
 from tools.bot_ml.validate_validation_provisioning import validate_database as validate_provisioning_database
@@ -7857,6 +7857,33 @@ def test_validation_provisioning_strips_socket_gem_enchantments_for_runtime_load
     assert fields[6] == "0"
     assert fields[9] == "0"
     assert fields[12] == "0"
+
+
+def test_validation_provisioning_preserves_verified_wowsims_gems_and_reforge():
+    fields = runtime_safe_enchantments(
+        {
+            "enchant_id": 4207,
+            "gem_enchant_ids": [4253, 4331],
+            "reforge_id": 151,
+            "preserve_socket_enchantments": True,
+        }
+    ).split()
+
+    assert fields[0] == "4207"
+    assert fields[6] == "4253"
+    assert fields[9] == "4331"
+    assert fields[24] == "151"
+
+
+def test_validation_provisioning_loads_exact_wowsims_calibration_overlays():
+    profiles = load_gear_profiles(Path("dataset/validation_gear_profiles/profiles.json"))
+
+    fire = profiles["wowsims_cata_p4_fire_mage"]
+    hunter = profiles["wowsims_cata_p4_survival_hunter"]
+    shaman = profiles["wowsims_cata_p4_enhancement_shaman"]
+    assert next(item for item in fire["equipment"] if item["slot"] == 15)["item_id"] == 71086
+    assert next(item for item in hunter["equipment"] if item["slot"] == 17)["item_id"] == 78471
+    assert [item["item_id"] for item in shaman["equipment"] if item["slot"] in {15, 16}] == [78472, 78472]
 
 
 def test_validation_provisioning_runtime_gear_verification_fails_missing_hunter_ranged(monkeypatch, tmp_path):

@@ -1,0 +1,97 @@
+{
+  "schema": "bot_wowsims_cata_gear_profiles_v1",
+  "slot_map": [0, 1, 2, 14, 4, 8, 9, 5, 6, 7, 10, 11, 12, 13, 15, 16, 17],
+  "gem_enchantments": {
+    "68778": 4251,
+    "68780": 4253,
+    "71840": 4295,
+    "71842": 4297,
+    "71852": 4307,
+    "71862": 4317,
+    "71879": 4329,
+    "71881": 4331
+  },
+  "profiles": {
+    "wowsims_cata_p4_fire_mage": {
+      "source": {
+        "repository": "https://github.com/wowsims/cata",
+        "commit": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+        "path": "ui/mage/fire/gear_sets/p4_fire.gear.json"
+      },
+      "inventory_types": {"15": 17, "17": 26},
+      "items": [
+        {"id": 78701, "enchant": 4207, "gems": [68780, 71881], "reforging": 151},
+        {"id": 77088, "reforging": 152},
+        {"id": 78748, "enchant": 4200, "gems": [71881, 71881], "reforging": 165},
+        {"id": 77098, "enchant": 4115, "gems": [71881], "reforging": 166},
+        {"id": 78729, "enchant": 4102, "gems": [71881, 71881, 71842], "reforging": 152},
+        {"id": 78417, "enchant": 4257, "gems": [71881, 0], "reforging": 166},
+        {"id": 78461, "enchant": 4068, "gems": [71881, 71881, 0], "reforging": 151},
+        {"id": 78391, "gems": [71881, 71881, 71881], "reforging": 151},
+        {"id": 78720, "enchant": 4114, "gems": [71881, 71881, 71842], "reforging": 166},
+        {"id": 78449, "enchant": 4104, "gems": [71881, 71881], "reforging": 151},
+        {"id": 78419, "gems": [71881], "reforging": 165},
+        {"id": 78490, "gems": [71881]},
+        {"id": 77995},
+        {"id": 77991},
+        {"id": 71086, "enchant": 4097, "gems": [71881, 71881, 71881], "reforging": 152},
+        {},
+        {"id": 78392, "reforging": 166}
+      ]
+    },
+    "wowsims_cata_p4_survival_hunter": {
+      "source": {
+        "repository": "https://github.com/wowsims/cata",
+        "commit": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+        "path": "ui/hunter/survival/gear_sets/p4_sv.gear.json"
+      },
+      "inventory_types": {"15": 17, "17": 15},
+      "items": [
+        {"id": 78698, "enchant": 4209, "gems": [68778, 71840], "reforging": 165},
+        {"id": 71610, "reforging": 152},
+        {"id": 78737, "enchant": 4204, "gems": [71879, 71879], "reforging": 154},
+        {"id": 71415, "enchant": 4100, "gems": [71879, 71879], "reforging": 137},
+        {"id": 78661, "enchant": 4102, "gems": [71879, 71879, 71840], "reforging": 152},
+        {"id": 78430, "enchant": 4258, "gems": [71879, 71879], "reforging": 165},
+        {"id": 78362, "enchant": 4107, "gems": [71879, 71879, 71879], "reforging": 151},
+        {"id": 78447, "gems": [71879, 71879, 71879], "reforging": 151},
+        {"id": 78709, "enchant": 4126, "gems": [71879, 71879, 71879], "reforging": 165},
+        {"id": 78415, "enchant": 4105, "gems": [71879, 71879], "reforging": 154},
+        {"id": 78413, "gems": [71879], "reforging": 151},
+        {"id": 78489, "gems": [71879], "reforging": 159},
+        {"id": 77994},
+        {"id": 77999},
+        {"id": 78473, "enchant": 4227},
+        {},
+        {"id": 78471, "enchant": 4267}
+      ]
+    },
+    "wowsims_cata_p4_enhancement_shaman": {
+      "source": {
+        "repository": "https://github.com/wowsims/cata",
+        "commit": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+        "path": "ui/shaman/enhancement/gear_sets/p4.orc.gear.json"
+      },
+      "inventory_types": {"15": 13, "16": 13, "17": 28},
+      "items": [
+        {"id": 78686, "enchant": 4209, "gems": [68778, 71879], "reforging": 154},
+        {"id": 71610, "reforging": 151},
+        {"id": 78733, "enchant": 4204, "gems": [71879, 71852], "reforging": 161},
+        {"id": 71415, "enchant": 4100, "gems": [71879, 71879]},
+        {"id": 78724, "enchant": 4102, "gems": [71879, 71879, 71879]},
+        {"id": 78430, "enchant": 4190, "gems": [71879, 0], "reforging": 144},
+        {"id": 78667, "enchant": 4107, "gems": [71862, 0], "reforging": 158},
+        {"id": 78447, "gems": [71879, 71879, 71879], "reforging": 154},
+        {"id": 78704, "enchant": 4440, "gems": [71879, 71879, 71852], "reforging": 147},
+        {"id": 78415, "enchant": 4076, "gems": [71879, 71879], "reforging": 154},
+        {"id": 78489, "gems": [71879], "reforging": 158},
+        {"id": 78413, "gems": [71879], "reforging": 154},
+        {"id": 77994},
+        {"id": 77999},
+        {"id": 78472, "enchant": 4099},
+        {"id": 78472, "enchant": 4099},
+        {"id": 71567, "gems": [71879], "reforging": 146}
+      ]
+    }
+  }
+}
