@@ -187,6 +187,8 @@ def test_boss_prerequisites_use_trash_swarm_threat_security_without_intercepting
     assert 'if (bot->getClass() == CLASS_HUNTER' in threat_security
     assert "bool useAreaTransfer = trashThreatControl.EngagedCount >= 2;" in threat_security
     assert 'if (std::string(GetDungeonRole(bot)) == "dps"' in threat_security
+    assert '"prerequisite_swarm_emergency_defensive"' in threat_security
+    assert '"spread_after_secure_prerequisite_threat"' in threat_security
     assert 'if (_config.ValidationRouteKind != "boss"' not in threat_security
 
 

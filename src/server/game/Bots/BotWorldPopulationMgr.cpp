@@ -11263,6 +11263,34 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     bool tankOwnsTrashMajority = trashThreatControl.EngagedCount > 0
         && trashThreatControl.TankOwnedCount * 10 >= trashThreatControl.EngagedCount * 9;
     bool hunterTrashMisdirectionActive = bot->getClass() == CLASS_HUNTER && bot->HasAura(34477);
+    if (std::string(GetDungeonRole(bot)) == "dps"
+        && trashThreatControl.EngagedCount >= 3
+        && UnitHealthPct(bot) <= (bot->getClass() == CLASS_SHAMAN ? 0.45f : 0.35f))
+    {
+        uint32 emergencySpellId = bot->getClass() == CLASS_MAGE ? 45438
+            : (bot->getClass() == CLASS_HUNTER ? 19263
+                : (bot->getClass() == CLASS_SHAMAN ? 30823 : 0));
+        if (emergencySpellId && bot->HasSpell(emergencySpellId)
+            && !bot->HasAura(emergencySpellId)
+            && TryCastFriendlySpell(bot, bot, emergencySpellId))
+        {
+            bot->AttackStop();
+            if (Pet* pet = bot->GetPet())
+                pet->AttackStop();
+            std::string raw = BuildRawJson(bot, trashThreatControl.AreaTarget);
+            std::string semantic = BuildSemanticJson(bot, trashThreatControl.AreaTarget,
+                "normal_dungeon_trash", &power, stage, activity);
+            RecordEvent(state, bot, "defensive", bot, "prerequisite_swarm_emergency_defensive",
+                raw.c_str(), semantic.c_str(), UnitHealthPct(bot), trashThreatControl.EngagedCount,
+                emergencySpellId);
+            target = trashThreatControl.Tank && trashThreatControl.Tank->GetVictim()
+                ? trashThreatControl.Tank->GetVictim() : trashThreatControl.AreaTarget;
+            state.TargetGuid = target ? target->GetGUID() : ObjectGuid::Empty;
+            situation = "normal_dungeon_trash";
+            action = "prerequisite_swarm_emergency_defensive";
+            return true;
+        }
+    }
     if (bot->getClass() == CLASS_HUNTER
         && trashThreatControl.Tank
         && trashThreatControl.EngagedCount > 0
@@ -11312,6 +11340,35 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         Unit* tankFocus = trashThreatControl.Tank->GetVictim();
         if (tankOwnsTrashMajority && tankFocus && tankFocus->IsAlive() && bot->IsValidAttackTarget(tankFocus))
         {
+            bool rangedDps = bot->getClass() == CLASS_MAGE || bot->getClass() == CLASS_HUNTER;
+            if (rangedDps && trashThreatControl.EngagedCount >= 3
+                && bot->GetExactDist2d(trashThreatControl.Tank) < 8.0f
+                && !bot->HasUnitState(UNIT_STATE_CASTING) && !bot->IsFalling())
+            {
+                Unit* approachFrom = trashThreatControl.AreaTarget
+                    ? trashThreatControl.AreaTarget : tankFocus;
+                float spreadOffset = bot->GetGUID().GetCounter() % 2 ? 0.35f : -0.35f;
+                Position safeRange = trashThreatControl.Tank->GetFirstCollisionPosition(10.0f,
+                    approachFrom->GetAngle(trashThreatControl.Tank)
+                        - trashThreatControl.Tank->GetOrientation() + spreadOffset);
+                if (MoveBotToPoint(state, bot, safeRange.GetPositionX(), safeRange.GetPositionY(), safeRange.GetPositionZ()))
+                {
+                    bot->AttackStop();
+                    if (Pet* pet = bot->GetPet())
+                        pet->AttackStop();
+                    std::string raw = BuildRawJson(bot, tankFocus);
+                    std::string semantic = BuildSemanticJson(bot, tankFocus,
+                        "normal_dungeon_trash", &power, stage, activity);
+                    RecordEvent(state, bot, "validation_route_threat_gate", tankFocus,
+                        "spread_after_secure_prerequisite_threat", raw.c_str(), semantic.c_str(),
+                        bot->GetExactDist2d(trashThreatControl.Tank), trashThreatControl.EngagedCount);
+                    target = tankFocus;
+                    state.TargetGuid = tankFocus->GetGUID();
+                    situation = "validation_route_regroup";
+                    action = "spread_after_secure_prerequisite_threat";
+                    return true;
+                }
+            }
             if (bot->GetVictim() && bot->GetVictim() != tankFocus)
                 bot->AttackStop();
             if (Pet* pet = bot->GetPet(); pet && pet->GetVictim() && pet->GetVictim() != tankFocus)
