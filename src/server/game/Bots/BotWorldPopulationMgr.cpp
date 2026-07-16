@@ -11416,8 +11416,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             }
         }
     }
-    if (_config.ValidationRouteKind != "boss"
-        && std::string(GetDungeonRole(bot)) == "tank")
+    // Threat rescue is route-kind agnostic. A boss can activate while a
+    // prerequisite target is still alive (Ozruk does this during the approach
+    // handoff), and suppressing this block on boss nodes left the new boss on
+    // the healer while the tank continued the prerequisite rotation.
+    if (std::string(GetDungeonRole(bot)) == "tank")
     {
         Player* defenseTarget = nullptr;
         uint8 defensePriority = 0;
