@@ -1399,8 +1399,10 @@ def test_move_bot_to_profile_range_projects_approaches_to_terrain():
     assert "reference->GetFirstCollisionPosition(desiredRange" not in profile_range
     assert 'std::string(GetDungeonRole(member)) == "tank"' in profile_range
     assert "member->GetExactDist(reference) <= 12.0f" in profile_range
-    assert "tankAnchor->GetFirstCollisionPosition(desiredRange, anchorBearing + angleOffset)" in profile_range
-    assert "3.0f * float(M_PI_4)" in profile_range
+    assert "float ringRanges[] = { desiredRange, std::max(minimumRingRange, desiredRange - 2.0f) };" in profile_range
+    assert "for (uint8 ringIndex = 0; ringIndex < 16; ++ringIndex)" in profile_range
+    assert "reference->GetPositionX() + std::cos(angle) * ringRange" in profile_range
+    assert "tankAnchor->GetFirstCollisionPosition" not in profile_range
     assert "MoveChase(reference, desiredRange)" not in profile_range
     assert "float minimumCandidateRange = movingOutward" in profile_range
     assert "if (candidateRange < minimumCandidateRange" in profile_range
@@ -3055,7 +3057,9 @@ def test_stonecore_quality_repairs_cover_hazards_pet_recovery_and_healer_protect
     assert "endpointDistance >= rangeAction.MinRange + 1.0f" in manager
     assert "float absoluteBearing = movingOutward ? reference->GetAngle(bot) : bot->GetAngle(reference);" in manager
     assert "Position rangedPosition = bot->GetFirstCollisionPosition(travelDistance, relativeBearing + angleOffset);" in manager
-    assert "tankAnchor->GetFirstCollisionPosition(desiredRange, anchorBearing + angleOffset);" in manager
+    assert "for (uint8 ringIndex = 0; ringIndex < 16; ++ringIndex)" in manager
+    assert "reference->GetPositionY() + std::sin(angle) * ringRange" in manager
+    assert "tankAnchor->GetFirstCollisionPosition" not in manager
     assert "MoveChase(reference, desiredRange)" not in manager
     assert 'state.LastDecisionAction == "validation_route_complete"' in manager
     assert 'state.LastDecisionSituation == "validation_route_manifest"' in manager

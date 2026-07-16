@@ -3434,11 +3434,13 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
             return true;
     }
 
-    // If the ranged bot is pinned at an arena wall, build the same ring from
-    // the tank's navigable position beside the target. Search the full ring:
-    // the hunter-facing side may be blocked while another legal firing point
-    // is reachable around the boss. This remains a one-shot point path and
-    // cannot leave a persistent chase generator behind after the encounter.
+    // If the ranged bot is pinned at an arena wall, require a tank to have a
+    // legal melee anchor and search geometric firing rings around the target.
+    // Do not use a collision ray whose origin is the boss or whose radius is
+    // measured from the tank: large boss models truncate the former, while
+    // the latter can still place the hunter inside the hostile minimum range.
+    // Every candidate is terrain-projected and must pass the normal complete
+    // mmap path validation before it can become a one-shot point movement.
     Player* tankAnchor = nullptr;
     if (Group* group = bot->GetGroup())
         for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
@@ -3452,18 +3454,27 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
 
     if (tankAnchor)
     {
-        float anchorBearing = reference->GetAngle(bot) - tankAnchor->GetOrientation();
-        for (float angleOffset : { 0.0f, float(M_PI_4), -float(M_PI_4), float(M_PI_2), -float(M_PI_2),
-            3.0f * float(M_PI_4), -3.0f * float(M_PI_4), float(M_PI) })
+        float minimumRingRange = minRange > 0.0f ? minRange + 1.0f : 5.0f;
+        float ringRanges[] = { desiredRange, std::max(minimumRingRange, desiredRange - 2.0f) };
+        float baseAngle = reference->GetAngle(bot);
+        for (float ringRange : ringRanges)
         {
-            Position rangedPosition = tankAnchor->GetFirstCollisionPosition(desiredRange, anchorBearing + angleOffset);
-            float candidateRange = reference->GetExactDist(rangedPosition);
-            if (candidateRange < (minRange > 0.0f ? minRange + 1.0f : 5.0f)
-                || (maxRange > 0.0f && candidateRange > maxRange - 1.0f)
-                || bot->GetExactDist(rangedPosition) < 1.0f)
-                continue;
-            if (moveToTerrainProjectedPoint(rangedPosition.GetPositionX(), rangedPosition.GetPositionY(), rangedPosition.GetPositionZ()))
-                return true;
+            for (uint8 ringIndex = 0; ringIndex < 16; ++ringIndex)
+            {
+                float angle = baseAngle + float(ringIndex) * float(M_PI) / 8.0f;
+                Position rangedPosition;
+                rangedPosition.Relocate(
+                    reference->GetPositionX() + std::cos(angle) * ringRange,
+                    reference->GetPositionY() + std::sin(angle) * ringRange,
+                    reference->GetPositionZ(), angle);
+                float candidateRange = reference->GetExactDist(rangedPosition);
+                if (candidateRange < minimumRingRange
+                    || (maxRange > 0.0f && candidateRange > maxRange - 1.0f)
+                    || bot->GetExactDist(rangedPosition) < 1.0f)
+                    continue;
+                if (moveToTerrainProjectedPoint(rangedPosition.GetPositionX(), rangedPosition.GetPositionY(), rangedPosition.GetPositionZ()))
+                    return true;
+            }
         }
     }
     return false;
