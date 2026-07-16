@@ -3270,6 +3270,9 @@ def test_stonecore_quality_repairs_cover_hazards_pet_recovery_and_healer_protect
     assert "nearestDefenseAttacker" in manager
     assert '"dps_hold_for_nearby_add_pickup"' in manager
     assert '"tank_auto_attack_density_fallback"' in manager
+    assert '"avengers_shield_ranged_wave_pickup"' in manager
+    assert "bot->GetExactDist2d(add) > 7.0f" in manager
+    assert "TryCastCombatSpell(bot, add, 31935)" in manager
     assert "urgentHunterPetRecovery" in manager
     assert "addCount >= 3 && !densityDefenseTarget" in manager
     assert "MoveBotToProfileRange(state, bot, target, &profileAction)" in manager

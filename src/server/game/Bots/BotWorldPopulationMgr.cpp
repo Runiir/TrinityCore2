@@ -10726,6 +10726,26 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 }
         }
 
+        // If the threatened cluster has not reached the tank yet, open with
+        // Avenger's Shield instead of dropping a self-centered area spell on
+        // empty ground. It applies ranged threat to up to three converging
+        // adds, then the ordinary area cycle below takes over in melee.
+        if (role == "tank" && densityDefenseTarget && add && addCount >= 2
+            && bot->GetExactDist2d(add) > 7.0f
+            && bot->HasSpell(31935) && TryCastCombatSpell(bot, add, 31935))
+        {
+            std::string raw = BuildRawJson(bot, add);
+            std::string semantic = BuildSemanticJson(bot, add, "dungeon_boss", &power, stage, activity);
+            RecordEvent(state, bot, "boss_add_density", add, "avengers_shield_ranged_wave_pickup",
+                raw.c_str(), semantic.c_str(), bot->GetExactDist2d(add), addCount, 31935);
+            state.TargetGuid = add->GetGUID();
+            state.WasInCombat = true;
+            target = add;
+            situation = "dungeon_boss";
+            action = "avengers_shield_ranged_wave_pickup";
+            return true;
+        }
+
         // On a multi-target wave, establish area threat before spending
         // decision ticks on individual taunts.  Corborus and Azil can assign
         // a complete spawn burst to healing threat in one tick; alternating
