@@ -160,6 +160,22 @@ def test_validation_route_has_no_forced_teacher_damage_or_expected_empty_termina
     assert "&& !_config.ValidationRouteExpectedAliveCount" not in route_objective
 
 
+def test_validation_route_prerequisite_switch_resets_pack_progress_budget():
+    route_objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    switch_marker = "else\n            {\n                state.ValidationRoutePackProgressTargetGuid"
+    target_switch = switch_marker + route_objective.split(switch_marker, 1)[1]
+    target_switch = target_switch.split("}\n\n            if (contextIsCombatProgressProbe()", 1)[0]
+
+    assert "A prerequisite switch is fresh progress context" in target_switch
+    assert_ordered(
+        target_switch,
+        "state.ValidationRoutePackProgressTargetGuid = prerequisiteTarget->GetGUID();",
+        "state.ValidationRoutePackBestHealthPct = healthPct;",
+        "state.ValidationRoutePackNoProgressCount = 0;",
+        "return false;",
+    )
+
+
 def test_server_start_autonomy_enabled_by_default_contract():
     conf = read(WORLDSERVER_CONF)
     commands = read(BOT_COMMANDS)

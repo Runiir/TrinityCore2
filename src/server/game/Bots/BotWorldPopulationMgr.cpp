@@ -8641,6 +8641,12 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             {
                 state.ValidationRoutePackProgressTargetGuid = prerequisiteTarget->GetGUID();
                 state.ValidationRoutePackBestHealthPct = healthPct;
+                // A prerequisite switch is fresh progress context. Carrying the
+                // previous mob's counter into this target can immediately trip
+                // the pack failure threshold while the tank is only pathing into
+                // range, especially during the final pull before a boss.
+                state.ValidationRoutePackNoProgressCount = 0;
+                return false;
             }
 
             if (contextIsCombatProgressProbe() && lastCombatAttemptIsNormalCombatTick())
