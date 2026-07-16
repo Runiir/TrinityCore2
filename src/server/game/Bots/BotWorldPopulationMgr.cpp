@@ -11185,7 +11185,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         uint32 TankOwnedCount = 0;
         uint32 SecureTankCount = 0;
     } trashThreatControl;
-    if (_config.ValidationRouteKind != "boss")
+    // Boss nodes can still contain ordinary prerequisite packs. Apply the
+    // same secure-threat and Misdirection policy to those mobs, while leaving
+    // the configured boss and declared boss adds to their specialized logic.
     {
         for (WorldBotState const& cohortState : _bots)
         {
@@ -11211,6 +11213,13 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             Creature* creature = object ? object->ToCreature() : nullptr;
             if (!creature || !creature->IsAlive() || !creature->GetHealth()
                 || !bot->IsValidAttackTarget(creature) || (!creature->IsInCombat() && !creature->GetVictim()))
+                continue;
+            bool declaredBossAdd = _config.ValidationRouteKind == "boss"
+                && std::find(_config.ValidationRouteAddTargetEntries.begin(),
+                    _config.ValidationRouteAddTargetEntries.end(), creature->GetEntry())
+                    != _config.ValidationRouteAddTargetEntries.end();
+            if (_config.ValidationRouteKind == "boss"
+                && (isValidationRouteScriptTarget(creature) || declaredBossAdd))
                 continue;
             Player* victim = creature->GetVictim() ? creature->GetVictim()->ToPlayer() : nullptr;
             if (!victim || victim->GetGroup() != bot->GetGroup())
@@ -11254,8 +11263,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     bool tankOwnsTrashMajority = trashThreatControl.EngagedCount > 0
         && trashThreatControl.TankOwnedCount * 10 >= trashThreatControl.EngagedCount * 9;
     bool hunterTrashMisdirectionActive = bot->getClass() == CLASS_HUNTER && bot->HasAura(34477);
-    if (_config.ValidationRouteKind != "boss"
-        && bot->getClass() == CLASS_HUNTER
+    if (bot->getClass() == CLASS_HUNTER
         && trashThreatControl.Tank
         && trashThreatControl.EngagedCount > 0
         && bot->HasSpell(34477)
@@ -11274,8 +11282,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         action = "misdirection_to_tank";
         return true;
     }
-    if (_config.ValidationRouteKind != "boss"
-        && hunterTrashMisdirectionActive
+    if (hunterTrashMisdirectionActive
         && trashThreatControl.Tank
         && trashThreatControl.AreaTarget)
     {
@@ -11297,8 +11304,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         state.WasInCombat = true;
         return true;
     }
-    if (_config.ValidationRouteKind != "boss"
-        && std::string(GetDungeonRole(bot)) == "dps"
+    if (std::string(GetDungeonRole(bot)) == "dps"
         && trashThreatControl.Tank
         && insecureTrashSwarm
         && !hunterTrashMisdirectionActive)
@@ -11398,7 +11404,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         target = nullptr;
         return true;
     }
-    if (_config.ValidationRouteKind != "boss"
+    if ((_config.ValidationRouteKind != "boss" || trashThreatControl.EngagedCount > 0)
         && std::string(GetDungeonRole(bot)) == "dps"
         && !bot->getAttackers().empty()
         && !bot->HasUnitState(UNIT_STATE_CASTING)

@@ -176,6 +176,20 @@ def test_validation_route_prerequisite_switch_resets_pack_progress_budget():
     )
 
 
+def test_boss_prerequisites_use_trash_swarm_threat_security_without_intercepting_boss_adds():
+    route_objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    threat_security = route_objective.split("struct TrashThreatControl", 1)[1].split(
+        "if (tryValidationRouteAdds())", 1
+    )[0]
+
+    assert "Boss nodes can still contain ordinary prerequisite packs" in threat_security
+    assert "isValidationRouteScriptTarget(creature) || declaredBossAdd" in threat_security
+    assert 'if (bot->getClass() == CLASS_HUNTER' in threat_security
+    assert "bool useAreaTransfer = trashThreatControl.EngagedCount >= 2;" in threat_security
+    assert 'if (std::string(GetDungeonRole(bot)) == "dps"' in threat_security
+    assert 'if (_config.ValidationRouteKind != "boss"' not in threat_security
+
+
 def test_server_start_autonomy_enabled_by_default_contract():
     conf = read(WORLDSERVER_CONF)
     commands = read(BOT_COMMANDS)
