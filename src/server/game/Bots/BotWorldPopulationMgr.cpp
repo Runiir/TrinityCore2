@@ -3008,8 +3008,7 @@ void BotWorldPopulationMgr::ApplyCalibrationReferenceConditions(Player* bot, Uni
     // One real Cataclysm aura from each non-overlapping raid-buff category.
     // This mode is calibration-only: it makes the live dummy conditions closer
     // to the full-raid WoWSims reference without changing damage coefficients.
-    static constexpr std::array<uint32, 7> RaidBuffAuras = {
-        79102, // Blessing of Might: attack power and mana regeneration
+    static constexpr std::array<uint32, 6> RaidBuffAuras = {
         53646, // Demonic Pact: spell power
         17007, // Leader of the Pack: critical strike
         2895,  // Wrath of Air Totem: spell haste
@@ -3020,6 +3019,12 @@ void BotWorldPopulationMgr::ApplyCalibrationReferenceConditions(Player* bot, Uni
     for (uint32 spellId : RaidBuffAuras)
         if (!bot->HasAura(spellId))
             bot->AddAura(spellId, bot);
+
+    // A paladin cannot own Kings and Might on itself simultaneously. The
+    // calibration tank must retain Kings for its production setup contract;
+    // the three DPS clones can still receive the separate reference Might aura.
+    if (bot->getClass() != CLASS_PALADIN && !bot->HasAura(79102))
+        bot->AddAura(79102, bot);
 
     uint32 flaskSpellId = 0;
     switch (bot->getClass())

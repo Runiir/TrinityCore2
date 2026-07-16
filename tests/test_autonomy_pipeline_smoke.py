@@ -3411,6 +3411,7 @@ def test_parallel_combat_calibration_is_isolated_and_uses_live_rotations():
     reference_conditions = function_body(manager, "void BotWorldPopulationMgr::ApplyCalibrationReferenceConditions")
     for spell_id in ["79102", "53646", "17007", "2895", "8515", "8076", "82930", "79470", "79471", "79472", "1490", "22959", "81326", "58567"]:
         assert spell_id in reference_conditions
+    assert "bot->getClass() != CLASS_PALADIN" in reference_conditions
     assert "sunder->SetStackAmount(3)" in reference_conditions
     assert "calibrationGroup->Disband();" in manager
     assert "group->AddMember(bot)" in manager
