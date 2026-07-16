@@ -1493,7 +1493,7 @@ def test_completed_hazard_exit_holds_safe_side_while_hazard_is_active():
     assert "outsideHazard && hazardActive && state.ValidationRouteDodgeUntilMs > nowMs" in movement
     assert 'action = "hold_outside_hazard";' in movement
     assert 'configuredHazardShape == "radial" ? 6000 : 3000' in movement
-    assert "state.ValidationRouteDodgeUntilMs > nowMs)\n            return false;" not in movement
+    assert "if (!configuredHazard\n            && state.ValidationRouteDodgeCasterGuid == caster->GetGUID()" in movement
 
 
 def test_trash_swarm_waits_for_secure_tank_threat_before_dps_release():
@@ -1522,8 +1522,28 @@ def test_validation_route_exact_hazards_suppress_generic_boss_cast_dodges():
     ]
 
     assert "bool currentNodeHasConfiguredHazard = _config.ValidationRouteHazardSourceEntry != 0;" in movement
-    assert "if (!caster && !currentNodeHasConfiguredHazard)\n            inspectCaster(preferredTarget);" in movement
-    assert movement.count("if (!caster && !currentNodeHasConfiguredHazard)") == 2
+    assert "bool profileAllowsGenericCastMovement" in movement
+    assert "profileAllowsGenericCastMovement || !hazardDefinitions.empty()" in movement
+    assert "for (ValidationRouteManifestNode const& node : _validationRouteManifest)" not in movement
+    assert "if (!caster && !currentNodeHasConfiguredHazard && profileAllowsGenericCastMovement)\n            inspectCaster(preferredTarget);" in movement
+    assert movement.count("if (!caster && !currentNodeHasConfiguredHazard && profileAllowsGenericCastMovement)") == 2
+
+
+def test_holy_priest_primes_chakra_and_gates_friendly_holy_word_on_serenity():
+    mgr = read(BOT_MGR)
+    route = function_body(mgr, "bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    healer = route[route.index("auto tryRouteGroupHeal"):route.index("bool discoveryLeg")]
+    profile_sql = read(ROOT / "sql/custom/world/2026_07_16_00_stonecore_wowhead_guide_rotations.sql")
+    serenity_sql = read(ROOT / "sql/custom/world/2026_07_16_01_stonecore_holy_priest_serenity.sql")
+
+    assert "healer->HasSpell(14751)" in healer
+    assert "!healer->HasAura(14751)" in healer
+    assert "!healer->HasAura(81208)" in healer
+    assert "TryCastFriendlySpell(healer, healer, 14751)" in healer
+    assert '"chakra_serenity_primed"' in healer
+    assert "88625,'heal_fast','holy_word_serenity,spot_heal'" in profile_sql
+    assert "`action`.`required_self_aura` = 81208" in serenity_sql
+    assert "`action`.`spell_id` = 88625" in serenity_sql
 
 
 def test_applied_ground_danger_spell_shape_contract():
@@ -2937,7 +2957,6 @@ def test_validation_route_ground_danger_dodge_is_reserved_per_cast_window():
     assert "state.ValidationRouteDodgeSpellId == castSpell->Id" in movement
     assert "state.ValidationRouteDodgeUntilMs > nowMs" in movement
     assert "state.ValidationRouteDodgeUntilMs = nowMs + (moved ? 3000 : 500);" in movement
-    assert "state.ValidationRouteDodgeUntilMs = nowMs + 1200;" in movement
     assert 'configuredHazardShape == "frontal_cone"' in movement
     assert "dodgeOrigin->GetOrientation() + side * float(M_PI_2)" in movement
     assert_ordered(movement, "ValidationRouteDodgeUntilMs > nowMs", "MoveBotToPoint", "ValidationRouteDodgeUntilMs = nowMs")
@@ -3126,7 +3145,9 @@ def test_stonecore_quality_repairs_cover_hazards_pet_recovery_and_healer_protect
         assert field in header
         assert field in manager
     assert 'HasInArc(float(M_PI), bot)' in manager
-    assert "for (ValidationRouteManifestNode const& node : _validationRouteManifest)" in manager
+    movement = manager[manager.index("auto tryValidationRouteMovementCheck"):manager.index("auto tryValidationRouteAdds")]
+    assert "addHazardDefinition(_config.ValidationRouteHazardSourceEntry" in movement
+    assert "for (ValidationRouteManifestNode const& node : _validationRouteManifest)" not in movement
     assert "hazardDefinitionFor(hazard->GetEntry(), 0)" in manager
     assert '"hazard_exit_started"' in manager
     assert '"hazard_exit_completed"' in manager

@@ -7194,6 +7194,24 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (!healer || std::string(GetDungeonRole(healer)) != "healer")
             return false;
 
+        // Holy Word: Chastise only becomes a friendly Holy Word: Serenity
+        // while Chakra: Serenity is active. Establish Chakra before choosing
+        // heals; a following Heal/Flash Heal/Greater Heal activates Serenity.
+        if (healer->getClass() == CLASS_PRIEST
+            && healer->HasSpell(14751)
+            && !healer->HasAura(14751)
+            && !healer->HasAura(81208)
+            && TryCastFriendlySpell(healer, healer, 14751))
+        {
+            std::string raw = BuildRawJson(healer, combatTarget);
+            std::string semantic = BuildSemanticJson(healer, combatTarget, "healer_assignment", &power, stage, activity);
+            RecordEvent(state, healer, "healing_stance", healer, "chakra_serenity_primed",
+                raw.c_str(), semantic.c_str(), UnitHealthPct(healer), 0, 14751);
+            situation = "validation_route_group_heal";
+            action = "prime_chakra_serenity";
+            return true;
+        }
+
         if (!healer->getAttackers().empty() && healer->HasSpell(586) && !healer->HasAura(586)
             && TryCastFriendlySpell(healer, healer, 586))
         {
@@ -9595,14 +9613,13 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             _config.ValidationRouteHazardShape,
             _config.ValidationRouteHazardRadiusYards,
             _config.ValidationRouteHazardSafetyMarginYards);
-        for (ValidationRouteManifestNode const& node : _validationRouteManifest)
-            if (!node.MapId || node.MapId == bot->GetMapId())
-                addHazardDefinition(node.HazardSourceEntry, node.HazardDetectionSpellId, node.HazardDamageSpellId,
-                    node.HazardShape, node.HazardRadiusYards, node.HazardSafetyMarginYards);
 
-        bool mechanicProfileRequiresMovement = _config.ValidationRouteMechanicProfile.find("movement_check") != std::string::npos
-            || _config.ValidationRouteMechanicProfile.find("ground_danger") != std::string::npos
-            || !hazardDefinitions.empty();
+        // Hazard geometry belongs to the active route node. Importing every
+        // later manifest node here made ordinary opening-pack casts inherit
+        // Slabhide, Flayer, and Azil dodge behavior before those encounters.
+        bool profileAllowsGenericCastMovement = _config.ValidationRouteMechanicProfile.find("movement_check") != std::string::npos
+            || _config.ValidationRouteMechanicProfile.find("ground_danger") != std::string::npos;
+        bool mechanicProfileRequiresMovement = profileAllowsGenericCastMovement || !hazardDefinitions.empty();
         bool currentNodeHasConfiguredHazard = _config.ValidationRouteHazardSourceEntry != 0;
         auto hazardDefinitionFor = [&hazardDefinitions](uint32 sourceEntry, uint32 spellId) -> HazardDefinition const*
         {
@@ -9751,7 +9768,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         // Boss phase and shield spells can look like area damage in DBC data;
         // treating those casts as a hazard moves support players away from the
         // party even though no damaging ground object is under them.
-        if (!caster && !currentNodeHasConfiguredHazard)
+        if (!caster && !currentNodeHasConfiguredHazard && profileAllowsGenericCastMovement)
             inspectCaster(preferredTarget);
         if (!caster && mechanicProfileRequiresMovement)
         {
@@ -9790,7 +9807,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 break;
             }
         }
-        if (!caster && !currentNodeHasConfiguredHazard)
+        if (!caster && !currentNodeHasConfiguredHazard && profileAllowsGenericCastMovement)
         {
             std::vector<WorldObject*> objects;
             Trinity::AllWorldObjectsInRange check(bot, 35.0f);
@@ -9802,6 +9819,15 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         }
 
         if (!caster || !castSpell)
+            return false;
+
+        // A generic cast is one dodge window, not a movement command on every
+        // AI tick. Exact configured hazards use the active exit/hold logic
+        // above because they may remain dangerous after the cast completes.
+        if (!configuredHazard
+            && state.ValidationRouteDodgeCasterGuid == caster->GetGUID()
+            && state.ValidationRouteDodgeSpellId == castSpell->Id
+            && state.ValidationRouteDodgeUntilMs > nowMs)
             return false;
 
         WorldObject const* dodgeOrigin = movementOrigin && movementOrigin != bot ? movementOrigin : caster;
