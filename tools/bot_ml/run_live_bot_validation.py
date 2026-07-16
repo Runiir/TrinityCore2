@@ -2054,7 +2054,10 @@ def completion_reason(
     if state.get("repeated_decision_loop"):
         return "repeated_decision_watchdog"
     if state.get("no_progress"):
-        return "no_progress_watchdog"
+        # This report has observed a no-progress diagnosis, but only the live
+        # controller owns the elapsed-time window. It promotes this provisional
+        # reason to no_progress_watchdog once the window actually expires.
+        return "no_progress_observed"
     if terminal_failure_labels(failure_labels, state):
         return "machine_failure_predicate"
     return "incomplete_evidence"

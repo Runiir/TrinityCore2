@@ -3482,7 +3482,7 @@ TC> {"duration_minutes":1.0,"decisions":20,"total_kills":0,"quests_completed":0}
     assert report["evidence"]["error_diagnoses"] == 1
     assert report["evidence"]["trash_pulls"] == 2
     assert "bot_diagnosis_error" not in report["failure_labels"]
-    assert report["completion_reason"] == "no_progress_watchdog"
+    assert report["completion_reason"] == "no_progress_observed"
 
 
 def test_live_bot_validation_counts_trace_mob_killed_as_kill_evidence():
@@ -6351,7 +6351,7 @@ TC> {"trace_schema_version":1,"entries":[{"action":"validation_route_trash_actio
 TC> {"duration_minutes":2,"decisions":85}
 """
         )["completion_reason"]
-        == "no_progress_watchdog"
+        == "no_progress_observed"
     )
 
 
