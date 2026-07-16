@@ -7895,7 +7895,7 @@ def test_validation_provisioning_writes_configured_hunter_pet():
                         "class": 3,
                         "level": 85,
                         "glyphs": [42909, 42902, 42915],
-                        "pet": {"id_offset": 7, "entry": 8959, "modelid": 4124, "created_by_spell": 0, "name": "Testwolf", "level": 85, "slot": 0, "active": 1, "spells": [2649, 17253]},
+                        "pet": {"id_offset": 7, "entry": 8959, "modelid": 4124, "created_by_spell": 0, "name": "Testwolf", "level": 85, "slot": 0, "active": 1, "spells": [2649, 17253, {"id": 53401, "active": 193}]},
                     }
                 ],
             }
@@ -7911,6 +7911,7 @@ def test_validation_provisioning_writes_configured_hunter_pet():
     assert "'Testwolf'" in sql
     assert "VALUES (8700007, 2649, 1)" in sql
     assert "VALUES (8700007, 17253, 1)" in sql
+    assert "VALUES (8700007, 53401, 193)" in sql
 
 
 def test_validation_provisioning_maps_glyph_items_to_glyph_properties():

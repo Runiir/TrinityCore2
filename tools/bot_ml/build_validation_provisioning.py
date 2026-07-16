@@ -529,9 +529,15 @@ def build_character_insert_sql(config: dict[str, Any], action_profiles: dict[str
                     "ON DUPLICATE KEY UPDATE `entry` = VALUES(`entry`), `owner` = VALUES(`owner`), `modelid` = VALUES(`modelid`), `PetType` = VALUES(`PetType`), `level` = VALUES(`level`), `Reactstate` = VALUES(`Reactstate`), `name` = VALUES(`name`), `active` = VALUES(`active`), `slot` = VALUES(`slot`), `curhealth` = VALUES(`curhealth`), `curmana` = VALUES(`curmana`), `savetime` = VALUES(`savetime`);"
                 )
                 for pet_spell in pet.get("spells", []):
+                    if isinstance(pet_spell, dict):
+                        pet_spell_id = int(pet_spell["id"])
+                        pet_spell_active = int(pet_spell.get("active", 1))
+                    else:
+                        pet_spell_id = int(pet_spell)
+                        pet_spell_active = 1
                     lines.append(
                         "INSERT INTO `characters`.`pet_spell` (`guid`, `spell`, `active`) "
-                        f"VALUES ({pet_id}, {int(pet_spell)}, 1) "
+                        f"VALUES ({pet_id}, {pet_spell_id}, {pet_spell_active}) "
                         "ON DUPLICATE KEY UPDATE `active` = VALUES(`active`);"
                     )
             glyph_values = normalized_glyph_slots(bot)
