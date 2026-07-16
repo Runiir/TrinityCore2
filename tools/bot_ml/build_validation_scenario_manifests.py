@@ -116,6 +116,7 @@ def route_required_evidence(kind: str, families: list[str]) -> list[str]:
 STONECORE_TRASH_PACKS = {
     "crystalspawn corridor": [42810, 42696, 43430, 43537, 42695, 42692],
     "stonecore sentry gauntlet": [42428, 42696, 42695, 42692],
+    "Ozruk approach pack": [42691, 42692, 42696, 42789],
     "twilight flayer packs": [42808],
 }
 

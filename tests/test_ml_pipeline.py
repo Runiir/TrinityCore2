@@ -1879,6 +1879,7 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     omnotron = next(row for row in routes if row["scenario_id"] == "blackwing_descent_10n" and row["label"] == "Omnotron Defense System")
     corborus_approach_corridor = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "Corborus approach corridor")
     stonecore_sentry_gauntlet = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "stonecore sentry gauntlet")
+    ozruk_approach_pack = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "Ozruk approach pack")
     post_slabhide_regroup = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "post-Slabhide regroup")
     stonecore_descent_regroup = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "stonecore descent regroup")
     stonecore_east_descent_shelf_regroup = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "stonecore east descent shelf regroup")
@@ -1940,24 +1941,28 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert stonecore_sentry_gauntlet["step"] == 12
     assert stonecore_sentry_gauntlet["bot_start_x"] == 1364.55
     assert stonecore_sentry_gauntlet["bot_start_z"] == 214.4
-    assert ozruk["step"] == 13
+    assert ozruk_approach_pack["step"] == 13
+    assert ozruk_approach_pack["source_entry"] == 42789
+    assert ozruk_approach_pack["pack_target_entries"] == [42691, 42692, 42696, 42789]
+    assert ozruk_approach_pack["cluster_radius_yards"] == 14.0
+    assert ozruk["step"] == 14
     assert ozruk["bot_start_x"] == 1507.859
     assert ozruk["bot_start_z"] == 217.3286
-    assert post_ozruk_flayer_regroup["step"] == 14
+    assert post_ozruk_flayer_regroup["step"] == 15
     assert post_ozruk_flayer_regroup["kind"] == "descent"
     assert post_ozruk_flayer_regroup["node_kind"] == "descent"
     assert post_ozruk_flayer_regroup["x"] == 1329.93
     assert post_ozruk_flayer_regroup["z"] == 207.804
     assert post_ozruk_flayer_regroup["completion_policy"] == "arrival"
     assert post_ozruk_flayer_regroup["required_evidence"] == ["regrouping"]
-    assert twilight_flayer_packs["step"] == 15
+    assert twilight_flayer_packs["step"] == 16
     assert twilight_flayer_packs["source_entry"] == 42808
     assert twilight_flayer_packs["source_guid"] == "340762"
     assert twilight_flayer_packs["pack_target_entries"] == [42808]
     assert twilight_flayer_packs["cluster_radius_yards"] == 100.0
     assert twilight_flayer_packs["bot_start_x"] == 1380.19
     assert twilight_flayer_packs["bot_start_z"] == 212.862
-    assert azil["step"] == 16
+    assert azil["step"] == 17
     assert azil["x"] == 1337.3
     assert azil["y"] == 964.894
     assert azil["z"] == 214.2383

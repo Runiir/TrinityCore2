@@ -10016,6 +10016,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         Player* densityTank = nullptr;
         Player* densityHealer = nullptr;
         Player* densityDefenseTarget = nullptr;
+        uint32 densityTankOwnedAddCount = 0;
         size_t densityDefenseScore = 0;
         uint8 densityDefenseRolePriority = 0;
         size_t densityDefenseAttackerCount = 0;
@@ -10062,6 +10063,13 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 }
             }
         }
+
+        if (densityTank)
+            for (Creature* candidate : localAdds)
+                if (candidate && candidate->GetVictim() == densityTank)
+                    ++densityTankOwnedAddCount;
+        bool densityTankOwnsVisibleMajority = addCount > 0
+            && densityTankOwnedAddCount * 10 >= addCount * 9;
 
         // Defend the party member from the closest listed attacker the tank
         // can acquire.  Selecting an older but distant healer attacker caused
@@ -10171,7 +10179,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         // swarm to a DPS before the tank can act.  Stack an unowned focus into
         // the pickup radius and suppress new threat until that focus transfers.
         if (role == "dps" && densityTank && cohortSwarmActive && add
-            && (densityDefenseTarget || add->GetVictim() != densityTank))
+            && (!bot->getAttackers().empty() || !densityTankOwnsVisibleMajority))
         {
             bot->AttackStop();
             if (Pet* pet = bot->GetPet())

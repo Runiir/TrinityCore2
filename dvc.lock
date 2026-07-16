@@ -197,8 +197,8 @@ stages:
       nfiles: 3
     - path: experiments/configs/cata_434_action_profiles.json
       hash: md5
-      md5: e66a99a4b253aed6fe24216c28f3ad7a
-      size: 2273
+      md5: 1d84c9b7bbd87517cdf9429c5ce6d19c
+      size: 2285
     - path: experiments/configs/validation_provisioning_cata_001.json
       hash: md5
       md5: a738a8752fdc6292ccc9d13e801800f1
@@ -214,8 +214,8 @@ stages:
     outs:
     - path: dataset/validation_provisioning
       hash: md5
-      md5: 0caee3431bd00b26ad50f77fc84a9a2d.dir
-      size: 408544
+      md5: bd340e6349c18b312b942bfbafa7c837.dir
+      size: 409061
       nfiles: 6
   validation_gear:
     cmd: python -m tools.bot_ml.build_validation_gear_profiles --config 
@@ -298,12 +298,12 @@ stages:
       nfiles: 3
     - path: dataset/validation_provisioning/report.json
       hash: md5
-      md5: 5f26e9ddb7734bf4bfec6f8aa1b3e8f7
+      md5: 4fd07c5537fe6749175b4718e7be3951
       size: 2993
     - path: experiments/configs/cata_434_action_profiles.json
       hash: md5
-      md5: e66a99a4b253aed6fe24216c28f3ad7a
-      size: 2273
+      md5: 1d84c9b7bbd87517cdf9429c5ce6d19c
+      size: 2285
     - path: experiments/configs/cata_434_combat_loot_profiles.json
       hash: md5
       md5: 36366f66744aa78fbd2c5c2b37d68ed5
@@ -347,7 +347,7 @@ stages:
     deps:
     - path: dataset/validation_provisioning/report.json
       hash: md5
-      md5: 5f26e9ddb7734bf4bfec6f8aa1b3e8f7
+      md5: 4fd07c5537fe6749175b4718e7be3951
       size: 2993
     - path: dataset/validation_provisioning_verification/report.json
       hash: md5
@@ -355,12 +355,12 @@ stages:
       size: 511
     - path: experiments/configs/validation_scenarios_cata_001.json
       hash: md5
-      md5: c15dbefdce165566821004a91794ec21
-      size: 9964
+      md5: e0a6236725d3c7cd298261c7ef3cf47f
+      size: 10646
     - path: tools/bot_ml/build_validation_scenario_manifests.py
       hash: md5
-      md5: 5d75f93ee36ff20889048fb096543618
-      size: 24823
+      md5: 7a427658a0cdb6b8972aa54e2621795a
+      size: 24880
     - path: tools/bot_ml/common.py
       hash: md5
       md5: 456b2fbeef89f89a13495ebb9a8cf993
@@ -368,8 +368,8 @@ stages:
     outs:
     - path: dataset/validation_scenarios
       hash: md5
-      md5: 5078d5375ba5f43b0110d03e26a21a84.dir
-      size: 99675
+      md5: 5dfe31a0a270ee2ccf4e75401bedcd4a.dir
+      size: 103677
       nfiles: 5
   live_scenario_reports:
     cmd: python -m tools.bot_ml.build_live_scenario_reports --live-report 
@@ -467,8 +467,8 @@ stages:
     deps:
     - path: dataset/validation_scenarios
       hash: md5
-      md5: 5078d5375ba5f43b0110d03e26a21a84.dir
-      size: 99675
+      md5: 5dfe31a0a270ee2ccf4e75401bedcd4a.dir
+      size: 103677
       nfiles: 5
     - path: tools/bot_ml/build_validation_run_plan.py
       hash: md5
@@ -481,8 +481,8 @@ stages:
     outs:
     - path: dataset/validation_run_plan
       hash: md5
-      md5: 21b6802eeaeb0602caa716753b141539.dir
-      size: 97520
+      md5: d43e82e50a6eca2d335077efb70c1c54.dir
+      size: 102431
       nfiles: 2
   live_validation_combined:
     cmd: python -m tools.bot_ml.run_live_bot_validation --input-log 
