@@ -558,13 +558,18 @@ def test_shaman_totems_are_combat_entry_setup_without_spam():
 
     assert "bot->IsInCombat()" in totems
     assert "m_SummonSlot" in totems
-    assert "totem->IsTotem() && totem->IsAlive()" in totems
+    assert "Totem* totem = creature ? creature->ToTotem()" in totems
+    assert "totem && totem->IsAlive()" in totems
     assert "ReadinessRetryUntilMs" in totems
     assert "totem_cast_failed:" in totems
-    assert "totem:call_of_elements" in totems
-    assert "TryResolveBotBlocker(state, bot, \"call_of_elements\")" in totems
+    assert "desiredTotems" in totems
+    assert "individual_combat_totem" in totems
+    assert "SUMMON_SLOT_TOTEM_FIRE" in totems
+    assert "SUMMON_SLOT_TOTEM_EARTH" in totems
+    assert "SUMMON_SLOT_TOTEM_WATER" in totems
+    assert "SUMMON_SLOT_TOTEM_AIR" in totems
     assert "TryEnsureCombatTotems(*state, bot, target, hostileCount)" in execute_profile
-    assert "hostileCount >= 3 ? 8190 : 3599" in totems
+    assert "hostileCount >= 3 && bot->HasSpell(8190) ? 8190 : 3599" in totems
 
 
 def test_requested_wowhead_profiles_and_target_count_aware_misdirection_are_explicit():

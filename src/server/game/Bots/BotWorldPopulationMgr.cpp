@@ -15861,87 +15861,58 @@ bool BotWorldPopulationMgr::TryEnsureCombatTotems(WorldBotState& state, Player* 
         return true;
     }
 
-    bool missingTotem = false;
-    for (uint8 slot = SUMMON_SLOT_TOTEM_FIRE; slot < MAX_TOTEM_SLOT; ++slot)
+    uint32 const desiredFireTotemSpell = hostileCount >= 3 && bot->HasSpell(8190) ? 8190 : 3599;
+    std::array<std::pair<uint8, uint32>, 4> const desiredTotems = {{
+        { SUMMON_SLOT_TOTEM_FIRE, desiredFireTotemSpell },
+        { SUMMON_SLOT_TOTEM_EARTH, 8075 },
+        { SUMMON_SLOT_TOTEM_WATER, 5394 },
+        { SUMMON_SLOT_TOTEM_AIR, 8512 },
+    }};
+    for (auto const& [slot, spellId] : desiredTotems)
     {
-        Creature* totem = bot->m_SummonSlot[slot] && bot->GetMap() ? bot->GetMap()->GetCreature(bot->m_SummonSlot[slot]) : nullptr;
-        if (!(totem && totem->IsTotem() && totem->IsAlive()))
-            missingTotem = true;
-    }
+        Creature* creature = bot->m_SummonSlot[slot] && bot->GetMap()
+            ? bot->GetMap()->GetCreature(bot->m_SummonSlot[slot]) : nullptr;
+        Totem* totem = creature ? creature->ToTotem() : nullptr;
+        bool const ready = totem && totem->IsAlive()
+            && (slot != SUMMON_SLOT_TOTEM_FIRE || totem->GetSpell() == spellId);
+        if (ready)
+            continue;
 
-    if (!missingTotem)
-    {
-        uint32 desiredFireTotemSpell = hostileCount >= 3 ? 8190 : 3599;
-        Creature* fireCreature = bot->m_SummonSlot[SUMMON_SLOT_TOTEM_FIRE] && bot->GetMap()
-            ? bot->GetMap()->GetCreature(bot->m_SummonSlot[SUMMON_SLOT_TOTEM_FIRE]) : nullptr;
-        Totem* fireTotem = fireCreature ? fireCreature->ToTotem() : nullptr;
-        if (bot->HasSpell(desiredFireTotemSpell)
-            && (!fireTotem || fireTotem->GetSpell() != desiredFireTotemSpell))
+        std::string const attemptKey = "totem:" + std::to_string(spellId);
+        auto retryItr = state.ReadinessRetryUntilMs.find(attemptKey);
+        if (retryItr != state.ReadinessRetryUntilMs.end() && retryItr->second > nowMs)
+            continue;
+
+        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+        if (!bot->HasSpell(spellId) || !spellInfo || bot->HasUnitState(UNIT_STATE_CASTING)
+            || bot->GetSpellHistory()->HasGlobalCooldown(spellInfo) || !bot->GetSpellHistory()->IsReady(spellInfo))
+            return false;
+
+        ResolvedCombatAction action;
+        action.Valid = true;
+        action.Type = "cast";
+        action.SpellId = spellId;
+        action.TargetGuid = bot->GetGUID();
+        action.DebugName = slot == SUMMON_SLOT_TOTEM_FIRE
+            ? (spellId == 8190 ? "magma_totem" : "searing_totem") : "combat_totem";
+        if (bot->CastSpell(bot, spellId, false) == SPELL_CAST_OK)
         {
-            SpellInfo const* fireSpell = sSpellMgr->GetSpellInfo(desiredFireTotemSpell);
-            if (fireSpell && !bot->HasUnitState(UNIT_STATE_CASTING)
-                && !bot->GetSpellHistory()->HasGlobalCooldown(fireSpell)
-                && bot->GetSpellHistory()->IsReady(fireSpell)
-                && bot->CastSpell(bot, desiredFireTotemSpell, false) == SPELL_CAST_OK)
-            {
-                ResolvedCombatAction action;
-                action.Valid = true;
-                action.Type = "cast";
-                action.SpellId = desiredFireTotemSpell;
-                action.TargetGuid = bot->GetGUID();
-                action.DebugName = hostileCount >= 3 ? "magma_totem" : "searing_totem";
-                RecordCombatAttempt(state, bot, bot, "totems", &action, BotActionResult::Ok,
-                    hostileCount >= 3 ? "aoe_fire_totem" : "single_target_fire_totem");
-                return true;
-            }
+            RecordCombatAttempt(state, bot, bot, "totems", &action, BotActionResult::Ok,
+                spellId == 8190 ? "aoe_fire_totem" : (spellId == 3599 ? "single_target_fire_totem" : "individual_combat_totem"));
+            state.ReadinessRetryUntilMs.erase(attemptKey);
+            TryResolveBotBlocker(state, bot, "individual_combat_totem");
+            return true;
         }
-        TryResolveBotBlocker(state, bot, "totems_ready");
-        return false;
-    }
 
-    uint32 const callOfElements = 66842;
-    std::string const attemptKey = "totem:call_of_elements";
-    auto retryItr = state.ReadinessRetryUntilMs.find(attemptKey);
-    if (retryItr != state.ReadinessRetryUntilMs.end() && retryItr->second > nowMs)
-        return false;
-
-    SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(callOfElements);
-    if (!bot->HasSpell(callOfElements) || !spellInfo || bot->HasUnitState(UNIT_STATE_CASTING) || bot->GetSpellHistory()->HasGlobalCooldown(spellInfo) || !bot->GetSpellHistory()->IsReady(spellInfo))
-    {
-        ResolvedCombatAction action;
-        action.Valid = true;
-        action.Type = "cast";
-        action.SpellId = callOfElements;
-        action.TargetGuid = bot->GetGUID();
-        action.DebugName = "call_of_elements";
-        RecordCombatAttempt(state, bot, bot, "totems", &action, BotActionResult::NoAction, "totem_gate_not_ready");
-        return false;
-    }
-
-    if (bot->CastSpell(bot, callOfElements, false) == SPELL_CAST_OK)
-    {
-        ResolvedCombatAction action;
-        action.Valid = true;
-        action.Type = "cast";
-        action.SpellId = callOfElements;
-        action.TargetGuid = bot->GetGUID();
-        action.DebugName = "call_of_elements";
-        RecordCombatAttempt(state, bot, bot, "totems", &action, BotActionResult::Ok);
-        state.ReadinessRetryUntilMs[attemptKey] = nowMs + 30000;
-        TryResolveBotBlocker(state, bot, "call_of_elements");
+        RecordCombatAttempt(state, bot, bot, "totems", &action, BotActionResult::CastFailed, "totem_cast_failed");
+        state.ReadinessRetryUntilMs[attemptKey] = nowMs + 3000;
+        std::string const blocker = "totem_cast_failed:" + std::to_string(spellId);
+        MarkBotBlocked(state, bot, blocker.c_str());
         return true;
     }
 
-    ResolvedCombatAction action;
-    action.Valid = true;
-    action.Type = "cast";
-    action.SpellId = callOfElements;
-    action.TargetGuid = bot->GetGUID();
-    action.DebugName = "call_of_elements";
-    RecordCombatAttempt(state, bot, bot, "totems", &action, BotActionResult::CastFailed, "totem_cast_failed");
-    state.ReadinessRetryUntilMs[attemptKey] = nowMs + 15000;
-    MarkBotBlocked(state, bot, "totem_cast_failed:call_of_elements");
-    return true;
+    TryResolveBotBlocker(state, bot, "totems_ready");
+    return false;
 }
 
 BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState* state, Player* bot, Unit* target, ResolvedCombatAction* actionOut, uint32 hostileCount, bool densityOnly) const
