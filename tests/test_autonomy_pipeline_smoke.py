@@ -2953,8 +2953,9 @@ def test_density_tank_centroid_control_prioritizes_loose_healer_targets():
     assert "defenseScore = attackerCount + (memberRole == \"healer\" ? 3 : 0)" in adds
     assert '"dps_stack_for_swarm_pickup"' in adds
     assert '"dps_wait_for_swarm_tank_ownership"' in adds
-    assert "uint32 densityTankOwnedAddCount = 0;" in adds
-    assert "densityTankOwnedAddCount * 10 >= addCount * 9" in adds
+    assert "uint32 densityTankSecureAddCount = 0;" in adds
+    assert "densityTankSecureAddCount * 10 >= addCount * 9" in adds
+    assert "tankThreat >= 2000.0f && tankThreat >= highestPartyThreat * 2.5f" in adds
     assert "bot->GetExactDist2d(densityTank) <= 6.0f" in adds
     assert "(!bot->getAttackers().empty() && !botInsideTankPickup)" in adds
     assert "bot->GetExactDist2d(densityTank) > 8.0f" not in adds
@@ -3090,7 +3091,7 @@ def test_stonecore_quality_repairs_cover_hazards_pet_recovery_and_healer_protect
     assert '"consecration_party_trash_pickup"' in manager
     assert '"dps_stack_for_trash_pickup"' in manager
     assert "bot->GetExactDist2d(densityTank) > 8.0f" not in manager
-    assert "densityTankOwnedAddCount * 10 >= addCount * 9" in manager
+    assert "densityTankSecureAddCount * 10 >= addCount * 9" in manager
     assert "bot->GetExactDist2d(densityTank) <= 6.0f" in manager
     assert "(!bot->getAttackers().empty() && !botInsideTankPickup)" in manager
     assert "bot->GetExactDist2d(tank) > 8.0f" in manager
