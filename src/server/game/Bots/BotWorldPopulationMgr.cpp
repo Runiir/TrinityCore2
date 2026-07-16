@@ -15655,7 +15655,8 @@ uint32 BotWorldPopulationMgr::SelectCombatSpell(Player* bot, Unit* target) const
         }
         if (!candidate.RejectReason.empty())
             continue;
-        if (candidate.Category == BotCombatActionCategory::Taunt && target->GetVictim() == bot)
+        if (candidate.Category == BotCombatActionCategory::Taunt
+            && (!target->GetVictim() || target->GetVictim() == bot))
         {
             candidate.RejectReason = "threat_already_established";
             continue;
@@ -16003,7 +16004,8 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
             candidate.RejectReason = "movement_gate";
             continue;
         }
-        if (candidate.Category == BotCombatActionCategory::Taunt && target->GetVictim() == bot)
+        if (candidate.Category == BotCombatActionCategory::Taunt
+            && (!target->GetVictim() || target->GetVictim() == bot))
         {
             candidate.RejectReason = "threat_already_established";
             continue;

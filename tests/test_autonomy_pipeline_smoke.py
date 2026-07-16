@@ -53,6 +53,16 @@ def test_protection_paladin_prioritizes_multi_target_threat_actions() -> None:
     assert "`action`.`spell_id` IN (53595, 26573, 2812)" in migration
 
 
+def test_profile_taunts_require_a_real_non_tank_victim() -> None:
+    manager = read(BOT_MGR)
+    assert manager.count("(!target->GetVictim() || target->GetVictim() == bot)") >= 2
+
+    fillers = read(ROOT / "sql/custom/world/2026_07_16_06_protection_single_target_fillers.sql")
+    assert "`action`.`min_enemies`=1" in fillers
+    assert "WHEN `action`.`spell_id`=26573 THEN 5" in fillers
+    assert "WHEN `action`.`spell_id`=2812 THEN 6" in fillers
+
+
 def test_marksmanship_cast_time_shots_require_stationary_execution() -> None:
     migration = read(MARKSMAN_STATIONARY_SQL)
 
@@ -575,6 +585,7 @@ def test_shaman_totems_are_combat_entry_setup_without_spam():
     assert "totem->AI()->AttackStart(target)" in totems
 
     totem_ai = read(ROOT / "src/server/game/AI/CoreAI/TotemAI.cpp")
+    assert "me->ToTotem()->GetOwner()" in totem_ai
     assert "owner->IsValidAttackTarget(victim, spellInfo)" in totem_ai
     assert "TRIGGERED_IGNORE_TARGET_CHECK" in totem_ai
     assert "_lastCastResult = me->CastSpell" in totem_ai

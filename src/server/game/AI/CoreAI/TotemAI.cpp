@@ -69,7 +69,11 @@ void TotemAI::UpdateAI(uint32 /*diff*/)
 
     // pointer to appropriate target if found any
     Unit* victim = _victimGUID ? ObjectAccessor::GetUnit(*me, _victimGUID) : nullptr;
-    Unit* owner = me->GetCharmerOrOwner();
+    // Totems keep their authoritative summoner on Totem::GetOwner().  The
+    // generic charmer/owner accessor can be empty for a freshly summoned
+    // player totem, which made offensive totems reject their owner's valid
+    // target and idle for their entire lifetime.
+    Unit* owner = me->ToTotem()->GetOwner();
     bool totemCanAttack = victim && me->IsValidAttackTarget(victim, spellInfo);
     bool ownerCanAttack = victim && owner && owner->IsValidAttackTarget(victim, spellInfo);
 
@@ -78,7 +82,7 @@ void TotemAI::UpdateAI(uint32 /*diff*/)
         || (!totemCanAttack && !ownerCanAttack) || !me->CanSeeOrDetect(victim))
     {
         victim = nullptr;
-        Trinity::NearestAttackableUnitInObjectRangeCheck u_check(me, me->GetCharmerOrOwnerOrSelf(), max_range);
+        Trinity::NearestAttackableUnitInObjectRangeCheck u_check(me, owner ? owner : me, max_range);
         Trinity::UnitLastSearcher<Trinity::NearestAttackableUnitInObjectRangeCheck> checker(me, victim, u_check);
         Cell::VisitAllObjects(me, checker, max_range);
         totemCanAttack = victim && me->IsValidAttackTarget(victim, spellInfo);
