@@ -1416,6 +1416,19 @@ def test_move_bot_to_profile_range_projects_approaches_to_terrain():
     assert "return true;" in profile_range
 
 
+def test_confirmed_direct_boss_death_emits_route_terminal_without_manifest():
+    confirmed_death = function_body(read(BOT_MGR), "void BotWorldPopulationMgr::NotifyCreatureDeath")
+    terminal_block = confirmed_death.split('if (_config.ValidationRouteKind == "boss")', 1)[1]
+    assert 'state.ValidationRouteTerminalReason = "boss_killed";' in terminal_block
+    assert 'RecordEvent(*reporterState, reporter, "validation_route_terminal"' in terminal_block
+    assert_ordered(
+        terminal_block,
+        'state.ValidationRouteTerminalReason = "boss_killed";',
+        'if (!_validationRouteManifest.empty() && _config.ValidationRouteAdvanceMode == "terminal")',
+        'RecordEvent(*reporterState, reporter, "validation_route_terminal"',
+    )
+
+
 def test_validation_route_exact_hazards_suppress_generic_boss_cast_dodges():
     route_objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
     movement = route_objective[

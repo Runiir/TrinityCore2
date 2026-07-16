@@ -1,0 +1,6 @@
+outs:
+- md5: b93a5dedaec966951e7cb5c7a2a19edb.dir
+  size: 13671452
+  nfiles: 4
+  hash: md5
+  path: stonecore_slabhide_range_run_128

@@ -16594,7 +16594,7 @@ void BotWorldPopulationMgr::NotifyCreatureDeath(Creature* killed)
     std::string semantic = BuildSemanticJson(reporter, killed, "validation_route_boss_outcome", nullptr);
     RecordEvent(*reporterState, reporter, "boss_killed", killed, "confirmed_unit_death", raw.c_str(), semantic.c_str(), 0.0f, _metrics.Kills);
 
-    if (!_validationRouteManifest.empty() && _config.ValidationRouteAdvanceMode == "terminal")
+    if (_config.ValidationRouteKind == "boss")
     {
         uint64 nowMs = NowMs();
         for (WorldBotState& state : _bots)
@@ -16611,9 +16611,12 @@ void BotWorldPopulationMgr::NotifyCreatureDeath(Creature* killed)
             state.ValidationRouteTerminalReason = "boss_killed";
             state.LoopRecoveryCooldownUntilMs = nowMs + 60000;
         }
-        _validationRouteManifestAdvancePending = true;
-        _validationRouteManifestAdvanceGeneration = _validationRouteGeneration;
-        _validationRouteManifestAdvanceReason = "boss_killed";
+        if (!_validationRouteManifest.empty() && _config.ValidationRouteAdvanceMode == "terminal")
+        {
+            _validationRouteManifestAdvancePending = true;
+            _validationRouteManifestAdvanceGeneration = _validationRouteGeneration;
+            _validationRouteManifestAdvanceReason = "boss_killed";
+        }
         RecordEvent(*reporterState, reporter, "validation_route_terminal", killed, "boss_killed", raw.c_str(), semantic.c_str(), 0.0f, _config.ValidationRouteTargetEntry);
     }
 }
