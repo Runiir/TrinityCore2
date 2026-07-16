@@ -1228,6 +1228,9 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
             uint32 fireTotemAutorepeatSpell = 0;
             bool fireTotemTargetValid = false;
             bool fireTotemOwnerTargetValid = false;
+            uint64 fireTotemCastingSkips = 0;
+            uint64 fireTotemMissingSpellSkips = 0;
+            uint64 fireTotemNoTargetSkips = 0;
             if (bot)
             {
                 if (Item* item = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND))
@@ -1258,6 +1261,9 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                                 fireTotemLastCastResult = uint32(ai->GetLastCastResult());
                                 fireTotemTargetValid = ai->WasLastTargetValidForTotem();
                                 fireTotemOwnerTargetValid = ai->WasLastTargetValidForOwner();
+                                fireTotemCastingSkips = ai->GetCastingSkips();
+                                fireTotemMissingSpellSkips = ai->GetMissingSpellSkips();
+                                fireTotemNoTargetSkips = ai->GetNoTargetSkips();
                             }
                         }
             }
@@ -1314,7 +1320,10 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                  << ",\"cast_successes\":" << fireTotemCastSuccesses
                  << ",\"last_cast_result\":" << fireTotemLastCastResult
                  << ",\"totem_target_valid\":" << (fireTotemTargetValid ? "true" : "false")
-                 << ",\"owner_target_valid\":" << (fireTotemOwnerTargetValid ? "true" : "false") << "}}"
+                 << ",\"owner_target_valid\":" << (fireTotemOwnerTargetValid ? "true" : "false")
+                 << ",\"casting_skips\":" << fireTotemCastingSkips
+                 << ",\"missing_spell_skips\":" << fireTotemMissingSpellSkips
+                 << ",\"no_target_skips\":" << fireTotemNoTargetSkips << "}}"
                  << ",\"stats\":{\"strength\":" << (bot ? bot->GetStat(STAT_STRENGTH) : 0.0f)
                  << ",\"agility\":" << (bot ? bot->GetStat(STAT_AGILITY) : 0.0f)
                  << ",\"intellect\":" << (bot ? bot->GetStat(STAT_INTELLECT) : 0.0f)

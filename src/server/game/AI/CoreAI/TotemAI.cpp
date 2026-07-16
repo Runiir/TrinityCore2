@@ -45,13 +45,22 @@ void TotemAI::UpdateAI(uint32 /*diff*/)
     if (me->ToTotem()->GetTotemType() != TOTEM_ACTIVE)
         return;
 
-    if (!me->IsAlive() || me->IsNonMeleeSpellCast(false))
+    if (!me->IsAlive())
         return;
+
+    if (me->IsNonMeleeSpellCast(false))
+    {
+        ++_castingSkips;
+        return;
+    }
 
     // Search spell
     SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(me->ToTotem()->GetSpell());
     if (!spellInfo)
+    {
+        ++_missingSpellSkips;
         return;
+    }
 
     // Get spell range
     float max_range = spellInfo->GetMaxRange(false);
@@ -93,7 +102,10 @@ void TotemAI::UpdateAI(uint32 /*diff*/)
             ++_castSuccesses;
     }
     else
+    {
+        ++_noTargetSkips;
         _victimGUID.Clear();
+    }
 }
 
 void TotemAI::AttackStart(Unit* victim)

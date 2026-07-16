@@ -43,6 +43,9 @@ class TC_GAME_API TotemAI : public NullCreatureAI
         SpellCastResult GetLastCastResult() const { return _lastCastResult; }
         bool WasLastTargetValidForTotem() const { return _lastTotemTargetValid; }
         bool WasLastTargetValidForOwner() const { return _lastOwnerTargetValid; }
+        uint64 GetCastingSkips() const { return _castingSkips; }
+        uint64 GetMissingSpellSkips() const { return _missingSpellSkips; }
+        uint64 GetNoTargetSkips() const { return _noTargetSkips; }
 
     private:
         ObjectGuid _victimGUID;
@@ -52,5 +55,8 @@ class TC_GAME_API TotemAI : public NullCreatureAI
         SpellCastResult _lastCastResult = SPELL_FAILED_DONT_REPORT;
         bool _lastTotemTargetValid = false;
         bool _lastOwnerTargetValid = false;
+        uint64 _castingSkips = 0;
+        uint64 _missingSpellSkips = 0;
+        uint64 _noTargetSkips = 0;
 };
 #endif
