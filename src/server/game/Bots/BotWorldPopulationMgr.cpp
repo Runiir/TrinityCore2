@@ -8763,10 +8763,13 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (state.ValidationRouteCombatNoProgressCount < noProgressThreshold)
             return false;
 
-        // A fresh trash node can expose its scripted target before the cohort has
-        // reached or engaged it. Treat that as a navigation retry, not combat
-        // evidence, and never latch a certifying failure terminal for it.
-        if (_config.ValidationRouteKind != "boss" && !_validationRoutePackObservedEngagement)
+        // A trash route can expose the next target after an earlier pack was
+        // cleared but before the tank has reached or pulled it. Treat any such
+        // out-of-combat observation as a navigation retry, not failed combat
+        // evidence, regardless of prior engagement elsewhere in the node.
+        if (_config.ValidationRouteKind != "boss"
+            && !prerequisiteTarget->IsInCombat()
+            && !prerequisiteTarget->GetVictim())
         {
             if (std::string(GetDungeonRole(bot)) != "tank")
             {

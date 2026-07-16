@@ -2092,8 +2092,10 @@ def test_validation_route_terminal_paths_consume_manifest_without_waiting_for_ne
     )
     assert_ordered(
         route_objective,
-        "A fresh trash node can expose its scripted target",
-        'if (_config.ValidationRouteKind != "boss" && !_validationRoutePackObservedEngagement)',
+        "A trash route can expose the next target",
+        'if (_config.ValidationRouteKind != "boss"',
+        "&& !prerequisiteTarget->IsInCombat()",
+        "&& !prerequisiteTarget->GetVictim())",
         'RecordEvent(state, bot, "validation_route_recovery", prerequisiteTarget, "unengaged_trash_target_repath"',
         'markValidationRouteTrashFailed(prerequisiteTarget, "validation_trash_no_progress"',
     )
