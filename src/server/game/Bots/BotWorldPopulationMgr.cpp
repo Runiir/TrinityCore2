@@ -3038,11 +3038,10 @@ void BotWorldPopulationMgr::ApplyCalibrationReferenceConditions(Player* bot, Uni
     if (flaskSpellId && !bot->HasAura(flaskSpellId))
         bot->AddAura(flaskSpellId, bot);
 
-    // A single calibration clone owns the reference debuffs so aura ownership
-    // and stacking remain deterministic. The tank is present in every cohort.
-    if (std::string(GetDungeonRole(bot)) != "tank")
-        return;
-
+    // Each clone uses its own nearest dummy, so each clone must own the
+    // reference debuffs on that primary target. Keeping caster ownership local
+    // also makes Sunder stacking deterministic when AoE splash reaches a
+    // neighboring clone's dummy.
     static constexpr std::array<uint32, 3> TargetDebuffAuras = {
         1490,  // Curse of the Elements: magic damage taken
         22959, // Critical Mass: spell critical chance taken
