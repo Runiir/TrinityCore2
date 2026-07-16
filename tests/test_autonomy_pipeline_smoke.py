@@ -1455,6 +1455,31 @@ def test_active_hazard_exit_cannot_be_preempted_by_combat_movement():
     assert "return true;" in exit_guard
 
 
+def test_completed_hazard_exit_holds_safe_side_while_hazard_is_active():
+    route_objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    movement = route_objective[
+        route_objective.index("auto tryValidationRouteMovementCheck"):
+        route_objective.index("auto tryValidationRouteAdds")
+    ]
+
+    assert "outsideHazard && hazardActive && state.ValidationRouteDodgeUntilMs > nowMs" in movement
+    assert 'action = "hold_outside_hazard";' in movement
+    assert 'configuredHazardShape == "radial" ? 6000 : 3000' in movement
+    assert "state.ValidationRouteDodgeUntilMs > nowMs)\n            return false;" not in movement
+
+
+def test_trash_swarm_waits_for_secure_tank_threat_before_dps_release():
+    route = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
+
+    assert "trashThreatControl.SecureTankCount * 10 < trashThreatControl.EngagedCount * 9" in route
+    assert "tankThreat >= 2000.0f && tankThreat >= highestPartyThreat * 2.5f" in route
+    assert '"hold_for_secure_trash_threat"' in route
+    assert "bot->InterruptNonMeleeSpells(false);" in route
+    assert "pet->AttackStop();" in route
+    assert '"trash_density_area_threat"' in route
+    assert "trashThreatControl.EngagedCount, true" in route
+
+
 def test_validation_route_exact_hazards_suppress_generic_boss_cast_dodges():
     route_objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
     movement = route_objective[

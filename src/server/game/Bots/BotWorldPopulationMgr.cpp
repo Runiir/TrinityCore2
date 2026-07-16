@@ -9611,6 +9611,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     return &definition;
             return nullptr;
         };
+        uint64 const nowMs = NowMs();
 
         if (!state.ValidationRouteDodgeCasterGuid.IsEmpty()
             && state.ValidationRouteDodgeSpellId)
@@ -9624,7 +9625,28 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 bool outsideHazard = bot->GetExactDist2d(previousHazard) > safeRadius;
                 if (previousDefinition->Shape == "frontal_cone" && !previousHazard->HasInArc(float(M_PI), bot))
                     outsideHazard = true;
-                if (!previousHazard->IsAlive() || outsideHazard)
+                bool hazardActive = previousDefinition->Shape == "radial" && previousHazard->IsAlive();
+                if (!hazardActive && previousHazard->IsAlive())
+                    for (CurrentSpellTypes spellType : { CURRENT_GENERIC_SPELL, CURRENT_CHANNELED_SPELL })
+                        if (Spell* spell = previousHazard->GetCurrentSpell(spellType))
+                            if (SpellInfo const* spellInfo = spell->GetSpellInfo(); spellInfo
+                                && (spellInfo->Id == previousDefinition->DetectionSpellId
+                                    || spellInfo->Id == previousDefinition->DamageSpellId))
+                                hazardActive = true;
+                if (outsideHazard && hazardActive && state.ValidationRouteDodgeUntilMs > nowMs)
+                {
+                    // Crossing the radius is not enough: ordinary melee/range
+                    // movement immediately walked bots back into live fissures
+                    // and rotating Flay cones. Hold the safe side briefly while
+                    // the exact hazard remains active.
+                    bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+                    state.ActivePathValid = false;
+                    state.IsMoving = false;
+                    situation = "validation_route_mechanic";
+                    action = "hold_outside_hazard";
+                    return true;
+                }
+                if (!previousHazard->IsAlive() || outsideHazard || !hazardActive)
                 {
                     std::string raw = BuildRawJson(bot, previousHazard);
                     std::string semantic = BuildSemanticJson(bot, previousHazard, "validation_route_mechanic", &power, stage, activity);
@@ -9781,12 +9803,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (!caster || !castSpell)
             return false;
 
-        uint64 const nowMs = NowMs();
-        if (state.ValidationRouteDodgeCasterGuid == caster->GetGUID()
-            && state.ValidationRouteDodgeSpellId == castSpell->Id
-            && state.ValidationRouteDodgeUntilMs > nowMs)
-            return false;
-
         WorldObject const* dodgeOrigin = movementOrigin && movementOrigin != bot ? movementOrigin : caster;
         float distanceFromOrigin = bot->GetExactDist2d(dodgeOrigin);
         float dodgeDistance = configuredHazard
@@ -9825,7 +9841,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         state.ValidationRouteDodgeSpellId = castSpell->Id;
         state.ValidationRouteDodgeUntilMs = nowMs + (moved ? 3000 : 500);
         if (configuredHazard && moved)
-            state.ValidationRouteDodgeUntilMs = nowMs + 1200;
+            state.ValidationRouteDodgeUntilMs = nowMs + (configuredHazardShape == "radial" ? 6000 : 3000);
 
         std::string raw = BuildRawJson(bot, caster);
         std::string semantic = BuildSemanticJson(bot, caster, "validation_route_mechanic", &power, stage, activity);
@@ -10912,6 +10928,108 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     }
     if (tryValidationRouteMovementCheck(target))
         return true;
+
+    struct TrashThreatControl
+    {
+        Player* Tank = nullptr;
+        Unit* AreaTarget = nullptr;
+        uint32 EngagedCount = 0;
+        uint32 SecureTankCount = 0;
+    } trashThreatControl;
+    if (_config.ValidationRouteKind != "boss")
+    {
+        for (WorldBotState const& cohortState : _bots)
+        {
+            Player* member = GetLoadedBot(cohortState);
+            if (member && member->IsAlive() && member->GetMap() == bot->GetMap()
+                && member->GetGroup() == bot->GetGroup()
+                && std::string(GetDungeonRole(member)) == "tank")
+            {
+                trashThreatControl.Tank = member;
+                break;
+            }
+        }
+
+        std::vector<WorldObject*> threatObjects;
+        Trinity::AllWorldObjectsInRange threatCheck(bot, 80.0f);
+        Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> threatSearcher(bot, threatObjects, threatCheck);
+        Cell::VisitAllObjects(bot, threatSearcher, 80.0f);
+        uint8 areaTargetPriority = 0;
+        float areaTargetDistance = std::numeric_limits<float>::max();
+        uint32 areaTargetGuid = std::numeric_limits<uint32>::max();
+        for (WorldObject* object : threatObjects)
+        {
+            Creature* creature = object ? object->ToCreature() : nullptr;
+            if (!creature || !creature->IsAlive() || !creature->GetHealth()
+                || !bot->IsValidAttackTarget(creature) || (!creature->IsInCombat() && !creature->GetVictim()))
+                continue;
+            Player* victim = creature->GetVictim() ? creature->GetVictim()->ToPlayer() : nullptr;
+            if (!victim || victim->GetGroup() != bot->GetGroup())
+                continue;
+
+            ++trashThreatControl.EngagedCount;
+            std::string victimRole = GetDungeonRole(victim);
+            uint8 priority = victimRole == "healer" ? 3 : (victimRole == "tank" ? 1 : 2);
+            float distance = bot->GetExactDist(creature);
+            uint32 guid = creature->GetGUID().GetCounter();
+            if (!trashThreatControl.AreaTarget || priority > areaTargetPriority
+                || (priority == areaTargetPriority && (distance < areaTargetDistance
+                    || (distance == areaTargetDistance && guid < areaTargetGuid))))
+            {
+                trashThreatControl.AreaTarget = creature;
+                areaTargetPriority = priority;
+                areaTargetDistance = distance;
+                areaTargetGuid = guid;
+            }
+
+            if (!trashThreatControl.Tank || victim != trashThreatControl.Tank)
+                continue;
+            float tankThreat = creature->GetThreatManager().GetThreat(trashThreatControl.Tank, true);
+            float highestPartyThreat = 0.0f;
+            for (WorldBotState const& cohortState : _bots)
+            {
+                Player* member = GetLoadedBot(cohortState);
+                if (!member || member == trashThreatControl.Tank || !member->IsAlive()
+                    || member->GetMap() != creature->GetMap())
+                    continue;
+                highestPartyThreat = std::max(highestPartyThreat,
+                    creature->GetThreatManager().GetThreat(member, true));
+            }
+            if (tankThreat >= 2000.0f && tankThreat >= highestPartyThreat * 2.5f)
+                ++trashThreatControl.SecureTankCount;
+        }
+    }
+    bool insecureTrashSwarm = trashThreatControl.EngagedCount >= 3
+        && trashThreatControl.SecureTankCount * 10 < trashThreatControl.EngagedCount * 9;
+    if (_config.ValidationRouteKind != "boss"
+        && std::string(GetDungeonRole(bot)) == "dps"
+        && trashThreatControl.Tank
+        && insecureTrashSwarm)
+    {
+        bot->InterruptNonMeleeSpells(false);
+        bot->AttackStop();
+        if (Pet* pet = bot->GetPet())
+            pet->AttackStop();
+        bool moved = false;
+        if (bot->GetExactDist2d(trashThreatControl.Tank) > 6.0f && !bot->IsFalling())
+        {
+            Unit* approachFrom = trashThreatControl.AreaTarget ? trashThreatControl.AreaTarget : trashThreatControl.Tank;
+            Position pickup = trashThreatControl.Tank->GetFirstCollisionPosition(4.0f,
+                approachFrom->GetAngle(trashThreatControl.Tank) - trashThreatControl.Tank->GetOrientation());
+            moved = MoveBotToPoint(state, bot, pickup.GetPositionX(), pickup.GetPositionY(), pickup.GetPositionZ());
+        }
+        std::string raw = BuildRawJson(bot, trashThreatControl.AreaTarget);
+        std::string semantic = BuildSemanticJson(bot, trashThreatControl.AreaTarget, "normal_dungeon_trash", &power, stage, activity);
+        RecordEvent(state, bot, "validation_route_threat_gate", trashThreatControl.AreaTarget,
+            moved ? "stack_for_secure_trash_threat" : "hold_for_secure_trash_threat",
+            raw.c_str(), semantic.c_str(), float(trashThreatControl.SecureTankCount), trashThreatControl.EngagedCount);
+        state.TargetGuid = trashThreatControl.Tank->GetVictim()
+            ? trashThreatControl.Tank->GetVictim()->GetGUID() : ObjectGuid::Empty;
+        target = trashThreatControl.Tank->GetVictim();
+        situation = "validation_route_regroup";
+        action = moved ? "stack_for_secure_trash_threat" : "hold_for_secure_trash_threat";
+        return true;
+    }
     if (tryValidationRouteAdds())
         return true;
     if (recordDefeatedValidationRoutePackMembers()
@@ -11059,6 +11177,40 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             situation = "normal_dungeon_trash";
             action = pickupAction;
             return true;
+        }
+
+        if (trashThreatControl.EngagedCount >= 3 && trashThreatControl.AreaTarget)
+        {
+            target = trashThreatControl.AreaTarget;
+            state.TargetGuid = target->GetGUID();
+            rememberValidationRouteFocus(target);
+            ResolvedCombatAction areaAction = ResolveProfileCombatAction(bot, target,
+                trashThreatControl.EngagedCount, true);
+            if (areaAction.Valid)
+            {
+                float engageRange = areaAction.MaxRange > 0.0f
+                    ? areaAction.MaxRange : routeEngageRange(bot, target, areaAction.SpellId);
+                float targetDistance = bot->GetExactDist(target);
+                if (targetDistance > std::max(5.0f, engageRange - 1.0f) || !bot->IsWithinLOSInMap(target))
+                {
+                    bool moved = MoveBotToProfileRange(state, bot, target, &areaAction);
+                    situation = "normal_dungeon_trash";
+                    action = moved ? "move_to_trash_density" : "hold_tactical_path_rejected";
+                    return true;
+                }
+
+                BotActionResult result = ExecuteProfileCombatAction(&state, bot, target, &areaAction,
+                    trashThreatControl.EngagedCount, true);
+                std::string raw = BuildRawJson(bot, target);
+                std::string semantic = BuildSemanticJson(bot, target, "normal_dungeon_trash", &power, stage, activity);
+                RecordEvent(state, bot, "validation_route_threat_pickup", target, "trash_density_area_threat",
+                    raw.c_str(), semantic.c_str(), float(trashThreatControl.SecureTankCount),
+                    trashThreatControl.EngagedCount, result == BotActionResult::Ok ? areaAction.SpellId : 0);
+                situation = "normal_dungeon_trash";
+                action = "trash_density_area_threat";
+                state.WasInCombat = true;
+                return true;
+            }
         }
 
         Unit* threatFocus = findTrashClusterThreatTarget();

@@ -1879,7 +1879,7 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     omnotron = next(row for row in routes if row["scenario_id"] == "blackwing_descent_10n" and row["label"] == "Omnotron Defense System")
     corborus_approach_corridor = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "Corborus approach corridor")
     stonecore_sentry_gauntlet = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "stonecore sentry gauntlet")
-    ozruk_approach_pack = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "Ozruk approach pack")
+    ozruk_approach_clearance = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "Ozruk approach clearance")
     post_slabhide_regroup = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "post-Slabhide regroup")
     stonecore_descent_regroup = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "stonecore descent regroup")
     stonecore_east_descent_shelf_regroup = next(row for row in routes if row["scenario_id"] == "stonecore_5n" and row["label"] == "stonecore east descent shelf regroup")
@@ -1941,10 +1941,14 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert stonecore_sentry_gauntlet["step"] == 12
     assert stonecore_sentry_gauntlet["bot_start_x"] == 1364.55
     assert stonecore_sentry_gauntlet["bot_start_z"] == 214.4
-    assert ozruk_approach_pack["step"] == 13
-    assert ozruk_approach_pack["source_entry"] == 42789
-    assert ozruk_approach_pack["pack_target_entries"] == [42691, 42692, 42696, 42789]
-    assert ozruk_approach_pack["cluster_radius_yards"] == 14.0
+    assert ozruk_approach_clearance["step"] == 13
+    assert ozruk_approach_clearance["kind"] == "regroup"
+    assert ozruk_approach_clearance["node_kind"] == "regroup"
+    assert ozruk_approach_clearance["source_entry"] == 0
+    assert ozruk_approach_clearance["pack_target_entries"] == []
+    assert ozruk_approach_clearance["cluster_radius_yards"] == 0.0
+    assert ozruk_approach_clearance["completion_policy"] == "arrival"
+    assert ozruk_approach_clearance["required_evidence"] == ["regrouping"]
     assert ozruk["step"] == 14
     assert ozruk["bot_start_x"] == 1507.859
     assert ozruk["bot_start_z"] == 217.3286
