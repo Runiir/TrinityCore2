@@ -1394,9 +1394,12 @@ def test_move_bot_to_profile_range_projects_approaches_to_terrain():
     assert "return moveToTerrainProjectedPoint(reference->GetPositionX(), reference->GetPositionY(), reference->GetPositionZ());" in profile_range
     assert "float candidateRange = reference->GetExactDist(rangedPosition);" in profile_range
     assert "bool movingOutward = distance < desiredRange - 1.0f;" in profile_range
+    assert "GetCurrentMovementGeneratorType() == CHASE_MOTION_TYPE" in profile_range
     assert "reference->GetAngle(bot) : bot->GetAngle(reference)" in profile_range
     assert "bot->GetFirstCollisionPosition(travelDistance, relativeBearing + angleOffset)" in profile_range
     assert "reference->GetFirstCollisionPosition(desiredRange" not in profile_range
+    assert "bot->GetMotionMaster()->MoveChase(reference, desiredRange);" in profile_range
+    assert "state.ActivePathValid = false;" in profile_range
     assert "float minimumCandidateRange = movingOutward" in profile_range
     assert "if (candidateRange < minimumCandidateRange" in profile_range
     assert "|| bot->GetExactDist(rangedPosition) < 1.0f)" in profile_range
@@ -3034,6 +3037,9 @@ def test_stonecore_quality_repairs_cover_hazards_pet_recovery_and_healer_protect
     assert "bot->GetExactDist2d(tank) > 8.0f" in manager
     assert "Unit* pickupFocus = tank->GetVictim() ? tank->GetVictim() : nearestAttacker;" in manager
     assert '"hand_of_salvation_healer_threat_drop"' in manager
+    assert '"hand_of_protection_healer_emergency"' in manager
+    assert "densityHealer->getAttackers().size() >= 5" in manager
+    assert "defenseScore += 1000;" in manager
     assert "olderHealerTarget" not in manager
     assert "nearestDefenseAttacker" in manager
     assert '"dps_hold_for_nearby_add_pickup"' in manager
@@ -3042,11 +3048,12 @@ def test_stonecore_quality_repairs_cover_hazards_pet_recovery_and_healer_protect
     assert "addCount >= 3 && !densityDefenseTarget" in manager
     assert "MoveBotToProfileRange(state, bot, target, &profileAction)" in manager
     assert "GetFirstCollisionPosition(profileAction.MinRange" not in manager
-    assert "? std::max(24.0f, minRange + 8.0f)" in manager
+    assert "? std::max(12.0f, minRange + 4.0f)" in manager
     assert "auto moveOutOfProfileDeadZone" in manager
     assert "endpointDistance >= rangeAction.MinRange + 1.0f" in manager
     assert "float absoluteBearing = movingOutward ? reference->GetAngle(bot) : bot->GetAngle(reference);" in manager
     assert "Position rangedPosition = bot->GetFirstCollisionPosition(travelDistance, relativeBearing + angleOffset);" in manager
+    assert "bot->GetMotionMaster()->MoveChase(reference, desiredRange);" in manager
     assert 'state.LastDecisionAction == "validation_route_complete"' in manager
     assert 'state.LastDecisionSituation == "validation_route_manifest"' in manager
     assert "bool _validationRouteObservedDeadScriptTarget = false;" in header

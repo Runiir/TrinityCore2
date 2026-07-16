@@ -3398,7 +3398,7 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
     // inside its hostile minimum range.  Use a stable ranged band for every
     // real dead-zone escape, while retaining the profile maximum as the cap.
     float desiredRange = minRange > 0.0f
-        ? std::max(24.0f, minRange + 8.0f)
+        ? std::max(12.0f, minRange + 4.0f)
         : std::max(12.0f, std::min(maxRange - 2.0f, 25.0f));
     if (maxRange > 0.0f)
         desiredRange = std::min(desiredRange, std::max(5.0f, maxRange - 2.0f));
@@ -3409,6 +3409,8 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
         && (maxRange <= 0.0f || distance <= maxRange - 1.0f)
         && bot->IsWithinLOSInMap(reference))
         return false;
+    if (bot->GetMotionMaster()->GetCurrentMovementGeneratorType() == CHASE_MOTION_TYPE)
+        return true;
 
     // Boss origins are often outside or on the edge of the navigable polygon.
     // Project from the bot's known-good polygon instead: move radially away
@@ -3420,8 +3422,8 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
     float relativeBearing = absoluteBearing - bot->GetOrientation();
     float travelDistance = std::max(4.0f, std::fabs(desiredRange - distance) + (movingOutward ? 2.0f : 0.0f));
     float minimumCandidateRange = movingOutward
-        ? std::max(minRange > 0.0f ? minRange + 2.0f : 5.0f, desiredRange - 2.0f)
-        : (minRange > 0.0f ? minRange + 2.0f : 5.0f);
+        ? std::max(minRange > 0.0f ? minRange + 1.0f : 5.0f, desiredRange - 1.0f)
+        : (minRange > 0.0f ? minRange + 1.0f : 5.0f);
     for (float angleOffset : { 0.0f, float(M_PI_4) / 2.0f, -float(M_PI_4) / 2.0f, float(M_PI_4), -float(M_PI_4) })
     {
         Position rangedPosition = bot->GetFirstCollisionPosition(travelDistance, relativeBearing + angleOffset);
@@ -3433,7 +3435,17 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
         if (moveToTerrainProjectedPoint(rangedPosition.GetPositionX(), rangedPosition.GetPositionY(), rangedPosition.GetPositionZ()))
             return true;
     }
-    return false;
+
+    // Tight boss arenas can truncate every static ray even though the chase
+    // generator can find a legal point on the requested range ring. Let the
+    // core chase movement resolve that navmesh path instead of leaving ranged
+    // bots stationary and pet-only for the whole encounter.
+    bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+    bot->GetMotionMaster()->MoveChase(reference, desiredRange);
+    state.ActivePathValid = false;
+    state.LastPathChangeMs = NowMs();
+    state.IsMoving = true;
+    return true;
 }
 
 std::string BotWorldPopulationMgr::BuildCombatAttemptSummary(WorldBotState::CombatAttemptDiagnostic const& diagnostic) const
@@ -9940,6 +9952,12 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 // Preserve a healer bias without allowing a single healer
                 // attacker to hide a lethal swarm on a damage dealer.
                 size_t defenseScore = attackerCount + (memberRole == "healer" ? 3 : 0);
+                // Three attackers can erase a healer in one decision interval.
+                // Once that threshold is reached, protect the healer before a
+                // larger DPS swarm; damage dealers already stop attacks and
+                // stack for pickup while the healer must remain able to cast.
+                if (memberRole == "healer" && attackerCount >= 3)
+                    defenseScore += 1000;
                 uint32 guid = member->GetGUID().GetCounter();
                 if (!densityDefenseTarget || defenseScore > densityDefenseScore
                     || (defenseScore == densityDefenseScore && rolePriority > densityDefenseRolePriority)
@@ -9997,6 +10015,20 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             target = add;
             situation = "dungeon_boss";
             action = "misdirection_boss_adds";
+            return true;
+        }
+
+        if (role == "tank" && densityHealer && densityHealer->getAttackers().size() >= 5
+            && bot->HasSpell(1022) && !densityHealer->HasAura(1022)
+            && TryCastFriendlySpell(bot, densityHealer, 1022))
+        {
+            std::string raw = BuildRawJson(bot, densityHealer);
+            std::string semantic = BuildSemanticJson(bot, densityHealer, "dungeon_boss", &power, stage, activity);
+            RecordEvent(state, bot, "external_defensive", densityHealer, "hand_of_protection_healer_emergency",
+                raw.c_str(), semantic.c_str(), float(densityHealer->getAttackers().size()), addCount, 1022);
+            target = add;
+            situation = "dungeon_boss";
+            action = "hand_of_protection_healer_emergency";
             return true;
         }
 
