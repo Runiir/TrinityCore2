@@ -22,6 +22,8 @@
 
 #include "ScriptMgr.h"
 #include "ScriptedCreature.h"
+#include "TemporarySummon.h"
+#include "Totem.h"
 
 namespace Pets::Shaman
 {
@@ -30,9 +32,10 @@ bool AcquireShamanOwnerVictim(Creature* elemental)
     if (!elemental)
         return false;
 
-    Unit* owner = elemental->GetCharmerOrOwner();
+    TempSummon* summon = elemental->ToTempSummon();
+    Unit* owner = summon ? summon->GetSummoner() : elemental->GetCharmerOrOwner();
     if (owner && owner->IsTotem())
-        owner = owner->GetOwner();
+        owner = owner->ToTotem()->GetOwner();
     Unit* victim = owner ? owner->GetVictim() : nullptr;
     if (!victim || !victim->IsAlive() || !owner->IsValidAttackTarget(victim))
         return false;
