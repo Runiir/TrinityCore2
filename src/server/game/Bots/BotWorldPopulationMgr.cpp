@@ -9645,7 +9645,14 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 bool outsideHazard = bot->GetExactDist2d(previousHazard) > safeRadius;
                 if (previousDefinition->Shape == "frontal_cone" && !previousHazard->HasInArc(float(M_PI), bot))
                     outsideHazard = true;
-                bool hazardActive = previousDefinition->Shape == "radial" && previousHazard->IsAlive();
+                // Persistent ground objects (lava fissures, gravity wells)
+                // remain active while alive, but attackable radial sources
+                // such as Stonecore Flayers are dangerous only during their
+                // declared cast. Treating every living Flayer as an always-on
+                // hazard starved the party's combat rotation indefinitely.
+                bool hazardActive = previousDefinition->Shape == "radial"
+                    && previousHazard->IsAlive()
+                    && !bot->IsValidAttackTarget(previousHazard);
                 if (!hazardActive && previousHazard->IsAlive())
                     for (CurrentSpellTypes spellType : { CURRENT_GENERIC_SPELL, CURRENT_CHANNELED_SPELL })
                         if (Spell* spell = previousHazard->GetCurrentSpell(spellType))
@@ -9737,7 +9744,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 if (!definition)
                     continue;
 
-                bool active = definition->Shape == "radial";
+                bool active = definition->Shape == "radial"
+                    && !bot->IsValidAttackTarget(hazard);
                 if (definition->DetectionSpellId)
                     for (CurrentSpellTypes spellType : { CURRENT_GENERIC_SPELL, CURRENT_CHANNELED_SPELL })
                         if (Spell* spell = hazard->GetCurrentSpell(spellType))

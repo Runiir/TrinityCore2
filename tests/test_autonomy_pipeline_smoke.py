@@ -1525,6 +1525,8 @@ def test_validation_route_exact_hazards_suppress_generic_boss_cast_dodges():
     assert "bool profileAllowsGenericCastMovement" in movement
     assert "profileAllowsGenericCastMovement || !hazardDefinitions.empty()" in movement
     assert "for (ValidationRouteManifestNode const& node : _validationRouteManifest)" not in movement
+    assert 'previousDefinition->Shape == "radial"\n                    && previousHazard->IsAlive()\n                    && !bot->IsValidAttackTarget(previousHazard)' in movement
+    assert 'definition->Shape == "radial"\n                    && !bot->IsValidAttackTarget(hazard)' in movement
     assert "if (!caster && !currentNodeHasConfiguredHazard && profileAllowsGenericCastMovement)\n            inspectCaster(preferredTarget);" in movement
     assert movement.count("if (!caster && !currentNodeHasConfiguredHazard && profileAllowsGenericCastMovement)") == 2
 
@@ -3192,7 +3194,7 @@ def test_stonecore_quality_repairs_cover_hazards_pet_recovery_and_healer_protect
     assert "densityTankSecureAddCount * 10 >= addCount * 9" in manager
     assert "bool listedBossAdd = _config.ValidationRouteKind == \"boss\"" in manager
     assert 'candidate.RejectReason = "major_tank_defensive_already_active";' in manager
-    assert "bot->GetExactDist2d(densityTank) <= 6.0f" in manager
+    assert "bot->GetExactDist2d(densityTank) <= 8.0f" in manager
     assert "(!bot->getAttackers().empty() && !botInsideTankPickup)" in manager
     assert "bot->GetExactDist2d(tank) > 8.0f" in manager
     assert "Unit* pickupFocus = tank->GetVictim() ? tank->GetVictim() : nearestAttacker;" in manager
