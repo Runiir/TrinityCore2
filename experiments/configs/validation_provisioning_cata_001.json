@@ -87,6 +87,31 @@
       ],
       "primary_tree_spells": [19434, 87326]
     },
+    "survival_hunter": {
+      "primary_talent_tree_id": 809,
+      "talents": [
+        { "talent_id": 9442, "spell_id": 56341 },
+        { "talent_id": 9432, "spell_id": 52786 },
+        { "talent_id": 9450, "spell_id": 82834 },
+        { "talent_id": 9444, "spell_id": 19287 },
+        { "talent_id": 10753, "spell_id": 63458 },
+        { "talent_id": 9440, "spell_id": 19387 },
+        { "talent_id": 9472, "spell_id": 53299 },
+        { "talent_id": 9484, "spell_id": 34499 },
+        { "talent_id": 9448, "spell_id": 19306 },
+        { "talent_id": 9452, "spell_id": 56343 },
+        { "talent_id": 9460, "spell_id": 34493 },
+        { "talent_id": 9482, "spell_id": 83495 },
+        { "talent_id": 9462, "spell_id": 56336 },
+        { "talent_id": 9468, "spell_id": 19386 },
+        { "talent_id": 9480, "spell_id": 3674 },
+        { "talent_id": 9390, "spell_id": 34954 },
+        { "talent_id": 9380, "spell_id": 19418 },
+        { "talent_id": 9378, "spell_id": 34949 },
+        { "talent_id": 9402, "spell_id": 53222 }
+      ],
+      "primary_tree_spells": [53301, 84729]
+    },
     "enhancement_shaman": {
       "primary_talent_tree_id": 263,
       "talents": [
@@ -169,7 +194,7 @@
           "glyphs": [42396, 42409, 45755]
         },
         { "account": "SCVALDPSA", "name": "Scvaldpsa", "legacy_names": ["ScValDpsA"], "role": "dps", "class_spec": "fire_mage", "race": 1, "class": 8, "level": 85, "glyphs": [42739, 42743, 42753] },
-        { "account": "SCVALDPSB", "name": "Scvaldpsb", "legacy_names": ["ScValDpsB"], "role": "dps", "class_spec": "marksmanship_hunter", "race": 1, "class": 3, "level": 85, "glyphs": [42909, 42902, 42915], "pet": { "id_offset": 1, "entry": 8959, "modelid": 4124, "created_by_spell": 0, "name": "Scvalwolf", "level": 85, "slot": 0, "active": 1, "spells": [2649, 17253] } },
+        { "account": "SCVALDPSB", "name": "Scvaldpsb", "legacy_names": ["ScValDpsB"], "role": "dps", "class_spec": "survival_hunter", "race": 1, "class": 3, "level": 85, "glyphs": [42909, 42902, 42915], "pet": { "id_offset": 1, "entry": 8959, "modelid": 4124, "created_by_spell": 0, "name": "Scvalwolf", "level": 85, "slot": 0, "active": 1, "spells": [2649, 17253] } },
         { "account": "SCVALDPSC", "name": "Scvaldpsc", "legacy_names": ["ScValDpsC"], "role": "dps", "class_spec": "enhancement_shaman", "race": 11, "class": 7, "level": 85, "glyphs": [41518, 41539, 41540] }
       ]
     },

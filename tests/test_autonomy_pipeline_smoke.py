@@ -21,6 +21,7 @@ PRAYER_OF_MENDING_GUARD_SQL = ROOT / "sql/custom/world/2026_07_14_02_holy_priest
 PALADIN_AOE_THREAT_SQL = ROOT / "sql/custom/world/2026_07_14_03_stonecore_paladin_aoe_threat_priority.sql"
 MARKSMAN_STATIONARY_SQL = ROOT / "sql/custom/world/2026_07_14_04_marksmanship_cast_time_stationary.sql"
 EMERGENCY_ADD_THREAT_SQL = ROOT / "sql/custom/world/2026_07_15_01_stonecore_emergency_add_threat.sql"
+WOWHEAD_GUIDE_ROTATION_SQL = ROOT / "sql/custom/world/2026_07_16_00_stonecore_wowhead_guide_rotations.sql"
 BOT_POLICY = ROOT / "src/server/game/Bots/BotTelemetryPolicy.cpp"
 BOT_BUFFER = ROOT / "src/server/game/Bots/BotTelemetryBuffer.cpp"
 BOT_SEGMENTS = ROOT / "src/server/game/Bots/BotExperimentCoordinator.cpp"
@@ -262,6 +263,7 @@ def test_playerbot_runtime_roles_drive_universal_profile_combat():
     assert 'classSpec == "protection_paladin"' in profiles
     assert 'classSpec == "fire_mage"' in profiles
     assert 'classSpec == "marksmanship_hunter"' in profiles
+    assert 'classSpec == "survival_hunter"' in profiles
     assert 'classSpec == "enhancement_shaman"' in profiles
     assert "spellInfo->PowerType == POWER_RUNE && spellInfo->RuneCostID" in profiles
     assert "sSpellRuneCostStore.LookupEntry(spellInfo->RuneCostID)" in profiles
@@ -499,7 +501,33 @@ def test_shaman_totems_are_combat_entry_setup_without_spam():
     assert "totem_cast_failed:" in totems
     assert "totem:call_of_elements" in totems
     assert "TryResolveBotBlocker(state, bot, \"call_of_elements\")" in totems
-    assert "TryEnsureCombatTotems(*state, bot, target)" in execute_profile
+    assert "TryEnsureCombatTotems(*state, bot, target, hostileCount)" in execute_profile
+    assert "hostileCount >= 3 ? 8190 : 3599" in totems
+
+
+def test_requested_wowhead_profiles_and_target_count_aware_misdirection_are_explicit():
+    sql = read(WOWHEAD_GUIDE_ROTATION_SQL)
+    manager = read(BOT_MGR)
+
+    for token in [
+        "'survival', 'dps', 'focus'",
+        "53301, 'spender', 'explosive_shot",
+        "3674, 'dot', 'black_arrow",
+        "2643, 'aoe', 'multi_shot,aoe,misdirection_transfer'",
+        "77767, 'resource_generator', 'cobra_shot",
+        "11129,'spender','combustion",
+        "51533,'offensive_cooldown','feral_spirit",
+        "88625,'heal_fast','holy_word_serenity",
+        "84963,'spender','inquisition",
+    ]:
+        assert token in sql
+    assert "`action`.`required_self_aura_stacks` = CASE" in sql
+    assert "WHEN `action`.`spell_id` IN (403,421) THEN 5" in sql
+    assert "a.min_primary_power_pct, a.max_primary_power_pct" in read(PLAYER_BOT_ACTION_PROFILE)
+    assert "bool useAreaTransfer = trashThreatControl.EngagedCount >= 2;" in manager
+    assert "bool useAreaTransfer = addCount >= 2;" in manager
+    assert 'useAreaTransfer ? "misdirection_aoe_transfer" : "misdirection_single_target_transfer"' in manager
+    assert "ResolveProfileCombatAction(bot, target, 1, false)" in manager
 
 
 def test_stonecore_rotation_sql_declares_buffs_hunter_builder_and_aoe_gate():
@@ -2988,8 +3016,10 @@ def test_density_tank_centroid_control_prioritizes_loose_healer_targets():
     assert "densityTankSecureAddCount * 10 >= addCount * 9" in adds
     assert "tankThreat >= 2000.0f && tankThreat >= highestPartyThreat * 2.5f" in adds
     assert '"ice_block_swarm_pickup_emergency"' in adds
-    assert 'bool secureSwarmAreaPhase = role == "dps" && cohortSwarmActive && densityTankOwnsSecureMajority;' in adds
-    assert "bool densityAreaPhase = highDensityPhase || secureSwarmAreaPhase;" in adds
+    assert 'bool tankSwarmAreaPhase = role == "tank" && cohortSwarmActive;' in adds
+    assert 'bool secureSwarmAreaPhase = role == "dps" && cohortSwarmActive' in adds
+    assert "densityTankOwnsSecureMajority || hunterMisdirectionActive" in adds
+    assert "bool densityAreaPhase = highDensityPhase || tankSwarmAreaPhase || secureSwarmAreaPhase;" in adds
     assert "bot->GetExactDist2d(densityTank) <= 6.0f" in adds
     assert "(!bot->getAttackers().empty() && !botInsideTankPickup)" in adds
     assert "bot->GetExactDist2d(densityTank) > 8.0f" not in adds

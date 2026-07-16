@@ -1224,7 +1224,7 @@ private:
     DungeonTrashPackFeatures BuildDungeonTrashPackFeatures(Player* bot, Unit const* focus) const;
     DungeonTrashActionResult TryDungeonTrash(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity);
     bool TryValidationRouteReadiness(WorldBotState& state, Player* bot, Unit* pullTarget, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, DungeonTrashActionResult& result);
-    bool TryEnsureCombatTotems(WorldBotState& state, Player* bot, Unit* target) const;
+    bool TryEnsureCombatTotems(WorldBotState& state, Player* bot, Unit* target, uint32 hostileCount) const;
     char const* GetDungeonRole(Player* bot) const;
     uint32 SelectInterruptSpell(Player* bot) const;
     uint32 SelectHealSpell(Player* bot, Unit* target) const;

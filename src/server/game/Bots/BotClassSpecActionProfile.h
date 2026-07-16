@@ -52,6 +52,8 @@ struct BotActionProfileSpell
     float InjuredHealthPct = 1.0f;
     float MinManaPct = 0.0f;
     float MaxManaPct = 1.0f;
+    float MinPrimaryPowerPct = 0.0f;
+    float MaxPrimaryPowerPct = 1.0f;
     uint8 MinAttackers = 0;
     uint8 MaxAttackers = 0;
     bool RequiresStationary = false;

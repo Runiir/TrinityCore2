@@ -88,6 +88,8 @@ std::string InferSpecTag(Player const* bot, std::string const& role)
             return "fire";
         if (classSpec == "marksmanship_hunter")
             return "marksmanship";
+        if (classSpec == "survival_hunter")
+            return "survival";
         if (classSpec == "enhancement_shaman")
             return "enhancement";
         if (!classSpec.empty())
@@ -105,7 +107,8 @@ std::string InferSpecTag(Player const* bot, std::string const& role)
         case CLASS_PALADIN:
             return role == "tank" ? "protection" : (role == "healer" ? "holy_paladin" : "paladin_generic");
         case CLASS_HUNTER:
-            return HasAny(bot, {53209, 19434}) ? "marksmanship" : "hunter_generic";
+            return HasAny(bot, {53301, 3674}) ? "survival"
+                : (HasAny(bot, {53209, 19434}) ? "marksmanship" : "hunter_generic");
         case CLASS_DEATH_KNIGHT:
             return role == "tank" ? "blood" : "death_knight_generic";
         case CLASS_WARRIOR:
@@ -208,7 +211,8 @@ bool LoadDbProfileLocked(uint8 classId, std::string const& specTag, std::string 
         "a.auto_attack_mode, a.min_range, a.max_range, a.requires_instant_cast, a.max_cast_time_ms, "
         "a.maintain_aura_id, a.refresh_aura_below_ms, a.min_injured_players, a.max_injured_players, "
         "a.injured_health_pct, a.min_mana_pct, a.max_mana_pct, a.min_attackers, a.max_attackers, "
-        "a.requires_stationary, a.requires_moving, a.required_self_aura_stacks "
+        "a.requires_stationary, a.requires_moving, a.required_self_aura_stacks, "
+        "a.min_primary_power_pct, a.max_primary_power_pct "
         "FROM bot_rotation_profile p "
         "JOIN bot_rotation_action a ON a.profile_id = p.id "
         "WHERE p.enabled = 1 AND a.enabled = 1 AND p.class_id = %u AND p.spec_tag = '%s' AND p.role = '%s' "
@@ -306,6 +310,8 @@ bool LoadDbProfileLocked(uint8 classId, std::string const& specTag, std::string 
         spell.RequiresStationary = fields[54].GetBool();
         spell.RequiresMoving = fields[55].GetBool();
         spell.RequiredSelfAuraStacks = fields[56].GetUInt8();
+        spell.MinPrimaryPowerPct = fields[57].GetFloat();
+        spell.MaxPrimaryPowerPct = fields[58].GetFloat();
         profile.Spells.push_back(spell);
     } while (result->NextRow());
 
@@ -476,6 +482,14 @@ std::vector<BotActionCandidate> BotClassSpecActionProfileStore::BuildCandidates(
             {
                 if (!HasEnoughPowerForProfileSpell(bot, spellInfo))
                     candidate.RejectReason = "insufficient_resource";
+                else
+                {
+                    Powers powerType = bot->GetPowerType();
+                    uint32 maxPower = bot->GetMaxPower(powerType);
+                    float powerPct = maxPower ? float(bot->GetPower(powerType)) / float(maxPower) : 0.0f;
+                    if (powerPct < spell.MinPrimaryPowerPct || powerPct > spell.MaxPrimaryPowerPct)
+                        candidate.RejectReason = "primary_power_gate";
+                }
             }
         }
         candidates.push_back(candidate);
@@ -674,6 +688,8 @@ std::string BotClassSpecActionProfileStore::DbProfileDumpJson(uint8 classId, std
              << ",\"injured_health_pct\":" << spell.InjuredHealthPct
              << ",\"min_mana_pct\":" << spell.MinManaPct
              << ",\"max_mana_pct\":" << spell.MaxManaPct
+             << ",\"min_primary_power_pct\":" << spell.MinPrimaryPowerPct
+             << ",\"max_primary_power_pct\":" << spell.MaxPrimaryPowerPct
              << ",\"min_attackers\":" << uint32(spell.MinAttackers)
              << ",\"max_attackers\":" << uint32(spell.MaxAttackers)
              << ",\"requires_stationary\":" << (spell.RequiresStationary ? "true" : "false")

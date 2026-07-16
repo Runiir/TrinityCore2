@@ -7566,22 +7566,24 @@ def test_validation_gear_profiles_complete_from_local_db2_files():
     profiles = build_profiles(config, items, enchantments, gems)
     report = build_report(profiles, {"database": "hotfixes"})
 
-    assert report["profile_count"] == 13
+    assert report["profile_count"] == 14
     assert report["all_equipment_slots_complete"] is True
     assert report["all_gemmed"] is True
     assert report["all_enchanted"] is True
-    assert report["source_counts"]["enchanted_items"] >= 13 * 16
+    assert report["source_counts"]["enchanted_items"] >= 14 * 16
     assert report["source_counts"]["gemmed_items"] == report["source_counts"]["socketed_items"]
     assert report["enchant_applicability_verified_by_server"] is False
     assert report["profile_manifest"]["schema"] == "bot_cata_434_combat_loot_profiles_v1"
     assert report["smart_loot_validation_surface"]["ready_for_upgrade_scoring"] is True
-    assert report["smart_loot_validation_surface"]["selected_equipment_count"] >= 13 * 16
+    assert report["smart_loot_validation_surface"]["selected_equipment_count"] >= 14 * 16
     assert "dps_intellect" in report["stat_weight_archetypes"]
-    assert report["source_counts"]["client_db2_items"] >= 13 * 16
+    assert report["source_counts"]["client_db2_items"] >= 14 * 16
     assert all(not profile["missing_slots"] for profile in profiles.values())
     assert next(item for item in profiles["blood_death_knight"]["equipment"] if item["slot"] == 15)["name"] == "Gurthalak, Voice of the Deeps"
     assert next(item for item in profiles["marksmanship_hunter"]["equipment"] if item["slot"] == 15)["name"] == "Kiril, Fury of Beasts"
     assert next(item for item in profiles["marksmanship_hunter"]["equipment"] if item["slot"] == 17)["name"] == "Vishanka, Jaws of the Earth"
+    assert next(item for item in profiles["survival_hunter"]["equipment"] if item["slot"] == 15)["name"] == "Kiril, Fury of Beasts"
+    assert next(item for item in profiles["survival_hunter"]["equipment"] if item["slot"] == 17)["name"] == "Vishanka, Jaws of the Earth"
     assert 16 not in {item["slot"] for item in profiles["blood_death_knight"]["equipment"]}
     assert all(
         next(item for item in profile["equipment"] if item["slot"] == 16)["inventory_type"] != 14
@@ -7717,6 +7719,7 @@ def test_stonecore_role_specs_inherit_complete_dbc_legal_talent_and_action_profi
         "protection_paladin": {53595, 26573, 31935, 53600, 62124, 1022},
         "fire_mage": {133, 2948, 44457, 92315, 11129},
         "marksmanship_hunter": {1978, 53209, 56641, 19434, 3045, 34490},
+        "survival_hunter": {1978, 53301, 3674, 77767, 2643, 34477, 3045},
         "enhancement_shaman": {17364, 60103, 8050, 73680, 403, 421, 51533},
     }
 
@@ -7742,10 +7745,10 @@ def test_stonecore_hazard_geometry_is_emitted_in_route_manifest():
     flayers = next(row for row in routes if row["label"] == "twilight flayer packs")
     azil = next(row for row in routes if row["label"] == "High Priestess Azil")
 
-    assert (corridor["hazard_source_entry"], corridor["hazard_detection_spell_id"], corridor["hazard_shape"]) == (42808, 79922, "frontal_cone")
+    assert (corridor["hazard_source_entry"], corridor["hazard_detection_spell_id"], corridor["hazard_shape"]) == (42808, 79922, "radial")
     assert (slabhide["hazard_source_entry"], slabhide["hazard_damage_spell_id"], slabhide["hazard_shape"], slabhide["hazard_radius_yards"]) == (43242, 80801, "radial", 5.0)
-    assert (sentry["hazard_source_entry"], sentry["hazard_detection_spell_id"], sentry["hazard_shape"]) == (42808, 79922, "frontal_cone")
-    assert (flayers["hazard_source_entry"], flayers["hazard_detection_spell_id"], flayers["hazard_shape"], flayers["hazard_radius_yards"]) == (42808, 79922, "frontal_cone", 4.0)
+    assert (sentry["hazard_source_entry"], sentry["hazard_detection_spell_id"], sentry["hazard_shape"]) == (42808, 79922, "radial")
+    assert (flayers["hazard_source_entry"], flayers["hazard_detection_spell_id"], flayers["hazard_shape"], flayers["hazard_radius_yards"]) == (42808, 79922, "radial", 4.0)
     assert (azil["hazard_source_entry"], azil["hazard_detection_spell_id"], azil["hazard_damage_spell_id"], azil["hazard_shape"], azil["hazard_radius_yards"]) == (42499, 79244, 79249, "radial", 6.0)
     assert flayers["source_entry"] == 42808
     assert flayers["pack_target_entries"] == [42808]

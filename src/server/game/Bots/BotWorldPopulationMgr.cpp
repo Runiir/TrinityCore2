@@ -39,6 +39,7 @@
 #include "SpellInfo.h"
 #include "SpellMgr.h"
 #include "TemporarySummon.h"
+#include "Totem.h"
 #include "Unit.h"
 #include "Creature.h"
 #include "CreatureGroups.h"
@@ -10193,6 +10194,33 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return true;
         }
 
+        // Misdirection is useful for every pull size.  Once it is active, make
+        // the transfer attack explicit: use a single-target priority action
+        // for one hostile and an area-profile action for two or more.  This
+        // prevents an active Misdirection window from being consumed by a
+        // low-value single-target filler during an add wave.
+        bool hunterMisdirectionActive = bot->getClass() == CLASS_HUNTER && bot->HasAura(34477);
+        if (hunterMisdirectionActive && densityTank && add)
+        {
+            bool useAreaTransfer = addCount >= 2;
+            ResolvedCombatAction transferAction = ResolveProfileCombatAction(bot, add,
+                std::max<uint32>(1, addCount), useAreaTransfer);
+            BotActionResult result = ExecuteProfileCombatAction(&state, bot, add, &transferAction,
+                std::max<uint32>(1, addCount), useAreaTransfer);
+            std::string raw = BuildRawJson(bot, add);
+            std::string semantic = BuildSemanticJson(bot, add, "dungeon_boss", &power, stage, activity);
+            RecordEvent(state, bot, "boss_adds", add,
+                useAreaTransfer ? "misdirection_aoe_transfer" : "misdirection_single_target_transfer",
+                raw.c_str(), semantic.c_str(), float(addCount), 0,
+                result == BotActionResult::Ok ? transferAction.SpellId : 0);
+            state.TargetGuid = add->GetGUID();
+            state.WasInCombat = true;
+            target = add;
+            situation = "dungeon_boss";
+            action = useAreaTransfer ? "misdirection_aoe_transfer" : "misdirection_single_target_transfer";
+            return true;
+        }
+
         if (role == "tank" && densityHealer && densityHealer->getAttackers().size() >= 5
             && bot->HasSpell(1022) && !densityHealer->HasAura(1022)
             && TryCastFriendlySpell(bot, densityHealer, 1022))
@@ -10280,6 +10308,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         // swarm to a DPS before the tank can act.  Stack an unowned focus into
         // the pickup radius and suppress new threat until that focus transfers.
         if (role == "dps" && densityTank && cohortSwarmActive && add
+            && !hunterMisdirectionActive
             && (!densityTankOwnsSecureMajority
                 || (!bot->getAttackers().empty() && !botInsideTankPickup)))
         {
@@ -10547,8 +10576,15 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return true;
         }
 
-        bool secureSwarmAreaPhase = role == "dps" && cohortSwarmActive && densityTankOwnsSecureMajority;
-        bool densityAreaPhase = highDensityPhase || secureSwarmAreaPhase;
+        // The boss can remain attackable while a complete add wave activates.
+        // Tanks must enter their area-threat profile immediately in that case;
+        // otherwise they alternate single-target taunts while healing threat
+        // assigns most of an Azil follower wave to the healer.  DPS still wait
+        // for secure ownership before using their own area profiles.
+        bool tankSwarmAreaPhase = role == "tank" && cohortSwarmActive;
+        bool secureSwarmAreaPhase = role == "dps" && cohortSwarmActive
+            && (densityTankOwnsSecureMajority || hunterMisdirectionActive);
+        bool densityAreaPhase = highDensityPhase || tankSwarmAreaPhase || secureSwarmAreaPhase;
         ResolvedCombatAction profileAction = ResolveProfileCombatAction(bot, add,
             densityAreaPhase ? addCount : 0, densityAreaPhase);
         bool densitySingleTargetFallback = densityAreaPhase && !profileAction.Valid;
@@ -11005,10 +11041,55 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         && trashThreatControl.SecureTankCount * 10 < trashThreatControl.EngagedCount * 9;
     bool tankOwnsTrashMajority = trashThreatControl.EngagedCount > 0
         && trashThreatControl.TankOwnedCount * 10 >= trashThreatControl.EngagedCount * 9;
+    bool hunterTrashMisdirectionActive = bot->getClass() == CLASS_HUNTER && bot->HasAura(34477);
+    if (_config.ValidationRouteKind != "boss"
+        && bot->getClass() == CLASS_HUNTER
+        && trashThreatControl.Tank
+        && trashThreatControl.EngagedCount > 0
+        && bot->HasSpell(34477)
+        && !hunterTrashMisdirectionActive
+        && TryCastFriendlySpell(bot, trashThreatControl.Tank, 34477))
+    {
+        std::string raw = BuildRawJson(bot, trashThreatControl.AreaTarget);
+        std::string semantic = BuildSemanticJson(bot, trashThreatControl.AreaTarget,
+            "normal_dungeon_trash", &power, stage, activity);
+        RecordEvent(state, bot, "validation_route_threat_transfer", trashThreatControl.AreaTarget,
+            "misdirection_to_tank", raw.c_str(), semantic.c_str(),
+            float(trashThreatControl.EngagedCount), _config.ValidationRouteTargetEntry, 34477);
+        target = trashThreatControl.AreaTarget;
+        state.TargetGuid = target ? target->GetGUID() : ObjectGuid::Empty;
+        situation = "normal_dungeon_trash";
+        action = "misdirection_to_tank";
+        return true;
+    }
+    if (_config.ValidationRouteKind != "boss"
+        && hunterTrashMisdirectionActive
+        && trashThreatControl.Tank
+        && trashThreatControl.AreaTarget)
+    {
+        target = trashThreatControl.AreaTarget;
+        state.TargetGuid = target->GetGUID();
+        bool useAreaTransfer = trashThreatControl.EngagedCount >= 2;
+        ResolvedCombatAction transferAction = ResolveProfileCombatAction(bot, target,
+            trashThreatControl.EngagedCount, useAreaTransfer);
+        BotActionResult result = ExecuteProfileCombatAction(&state, bot, target, &transferAction,
+            trashThreatControl.EngagedCount, useAreaTransfer);
+        std::string raw = BuildRawJson(bot, target);
+        std::string semantic = BuildSemanticJson(bot, target, "normal_dungeon_trash", &power, stage, activity);
+        RecordEvent(state, bot, "validation_route_threat_transfer", target,
+            useAreaTransfer ? "misdirection_aoe_transfer" : "misdirection_single_target_transfer",
+            raw.c_str(), semantic.c_str(), float(trashThreatControl.EngagedCount),
+            _config.ValidationRouteTargetEntry, result == BotActionResult::Ok ? transferAction.SpellId : 0);
+        situation = "normal_dungeon_trash";
+        action = useAreaTransfer ? "misdirection_aoe_transfer" : "misdirection_single_target_transfer";
+        state.WasInCombat = true;
+        return true;
+    }
     if (_config.ValidationRouteKind != "boss"
         && std::string(GetDungeonRole(bot)) == "dps"
         && trashThreatControl.Tank
-        && insecureTrashSwarm)
+        && insecureTrashSwarm
+        && !hunterTrashMisdirectionActive)
     {
         Unit* tankFocus = trashThreatControl.Tank->GetVictim();
         if (tankOwnsTrashMajority && tankFocus && tankFocus->IsAlive() && bot->IsValidAttackTarget(tankFocus))
@@ -11672,6 +11753,41 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return true;
         if (routeBossTarget && _config.ValidationRouteKind == "boss" && tryValidationRouteInterrupt(target, "route_boss_focus_interrupt"))
             return true;
+
+        if (routeBossTarget && _config.ValidationRouteKind == "boss" && bot->getClass() == CLASS_HUNTER)
+        {
+            Player* tank = FindDungeonAnchor(bot);
+            if (tank && tank != bot && std::string(GetDungeonRole(tank)) == "tank")
+            {
+                if (bot->HasSpell(34477) && !bot->HasAura(34477)
+                    && TryCastFriendlySpell(bot, tank, 34477))
+                {
+                    std::string raw = BuildRawJson(bot, target);
+                    std::string semantic = BuildSemanticJson(bot, target, "dungeon_boss", &power, stage, activity);
+                    RecordEvent(state, bot, "validation_route_threat_transfer", target,
+                        "misdirection_to_tank", raw.c_str(), semantic.c_str(), 1.0f,
+                        _config.ValidationRouteTargetEntry, 34477);
+                    situation = "dungeon_boss";
+                    action = "misdirection_to_tank";
+                    return true;
+                }
+                if (bot->HasAura(34477))
+                {
+                    ResolvedCombatAction transferAction = ResolveProfileCombatAction(bot, target, 1, false);
+                    BotActionResult result = ExecuteProfileCombatAction(&state, bot, target, &transferAction, 1, false);
+                    std::string raw = BuildRawJson(bot, target);
+                    std::string semantic = BuildSemanticJson(bot, target, "dungeon_boss", &power, stage, activity);
+                    RecordEvent(state, bot, "validation_route_threat_transfer", target,
+                        "misdirection_single_target_transfer", raw.c_str(), semantic.c_str(), 1.0f,
+                        _config.ValidationRouteTargetEntry,
+                        result == BotActionResult::Ok ? transferAction.SpellId : 0);
+                    situation = "dungeon_boss";
+                    action = "misdirection_single_target_transfer";
+                    state.WasInCombat = true;
+                    return true;
+                }
+            }
+        }
 
         ResolvedCombatAction profileAction = ResolveProfileCombatAction(bot, target);
         uint32 spellId = profileAction.SpellId;
@@ -14607,6 +14723,16 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
             candidate.RejectReason = "mana_gate";
             continue;
         }
+        Powers primaryPowerType = bot->GetPowerType();
+        uint32 maxPrimaryPower = bot->GetMaxPower(primaryPowerType);
+        float primaryPowerPct = maxPrimaryPower
+            ? float(bot->GetPower(primaryPowerType)) / float(maxPrimaryPower) : 0.0f;
+        if (primaryPowerPct < candidate.Profile.MinPrimaryPowerPct
+            || primaryPowerPct > candidate.Profile.MaxPrimaryPowerPct)
+        {
+            candidate.RejectReason = "primary_power_gate";
+            continue;
+        }
         if (attackerCount < candidate.Profile.MinAttackers
             || (candidate.Profile.MaxAttackers && attackerCount > candidate.Profile.MaxAttackers))
         {
@@ -14794,7 +14920,7 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
     return action;
 }
 
-bool BotWorldPopulationMgr::TryEnsureCombatTotems(WorldBotState& state, Player* bot, Unit* target) const
+bool BotWorldPopulationMgr::TryEnsureCombatTotems(WorldBotState& state, Player* bot, Unit* target, uint32 hostileCount) const
 {
     if (!bot || bot->getClass() != CLASS_SHAMAN || !bot->IsInCombat() || !target || !target->IsAlive())
         return false;
@@ -14822,6 +14948,30 @@ bool BotWorldPopulationMgr::TryEnsureCombatTotems(WorldBotState& state, Player* 
 
     if (!missingTotem)
     {
+        uint32 desiredFireTotemSpell = hostileCount >= 3 ? 8190 : 3599;
+        Creature* fireCreature = bot->m_SummonSlot[SUMMON_SLOT_TOTEM_FIRE] && bot->GetMap()
+            ? bot->GetMap()->GetCreature(bot->m_SummonSlot[SUMMON_SLOT_TOTEM_FIRE]) : nullptr;
+        Totem* fireTotem = fireCreature ? fireCreature->ToTotem() : nullptr;
+        if (bot->HasSpell(desiredFireTotemSpell)
+            && (!fireTotem || fireTotem->GetSpell() != desiredFireTotemSpell))
+        {
+            SpellInfo const* fireSpell = sSpellMgr->GetSpellInfo(desiredFireTotemSpell);
+            if (fireSpell && !bot->HasUnitState(UNIT_STATE_CASTING)
+                && !bot->GetSpellHistory()->HasGlobalCooldown(fireSpell)
+                && bot->GetSpellHistory()->IsReady(fireSpell)
+                && bot->CastSpell(bot, desiredFireTotemSpell, false) == SPELL_CAST_OK)
+            {
+                ResolvedCombatAction action;
+                action.Valid = true;
+                action.Type = "cast";
+                action.SpellId = desiredFireTotemSpell;
+                action.TargetGuid = bot->GetGUID();
+                action.DebugName = hostileCount >= 3 ? "magma_totem" : "searing_totem";
+                RecordCombatAttempt(state, bot, bot, "totems", &action, BotActionResult::Ok,
+                    hostileCount >= 3 ? "aoe_fire_totem" : "single_target_fire_totem");
+                return true;
+            }
+        }
         TryResolveBotBlocker(state, bot, "totems_ready");
         return false;
     }
@@ -14873,7 +15023,7 @@ bool BotWorldPopulationMgr::TryEnsureCombatTotems(WorldBotState& state, Player* 
 
 BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState* state, Player* bot, Unit* target, ResolvedCombatAction* actionOut, uint32 hostileCount, bool densityOnly) const
 {
-    if (state && TryEnsureCombatTotems(*state, bot, target))
+    if (state && TryEnsureCombatTotems(*state, bot, target, hostileCount))
         return BotActionResult::Casting;
 
     ResolvedCombatAction action = ResolveProfileCombatAction(bot, target, hostileCount, densityOnly);

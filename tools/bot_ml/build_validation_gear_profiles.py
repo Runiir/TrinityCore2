@@ -108,6 +108,7 @@ CURATED_BIS_NAMES_BY_SPEC = {
     "protection_paladin": ["Souldrinker", "Blackhorn's Mighty Bulwark"],
     "holy_priest": ["Lightning Rod", "Ledger of Revolting Rituals"],
     "marksmanship_hunter": ["Kiril, Fury of Beasts", "Vishanka, Jaws of the Earth"],
+    "survival_hunter": ["Kiril, Fury of Beasts", "Vishanka, Jaws of the Earth"],
     "enhancement_shaman": ["No'Kaled, the Elements of Death", "Morningstar of Heroic Will"],
     "protection_warrior": ["Souldrinker", "Blackhorn's Mighty Bulwark"],
     "blood_death_knight": ["Gurthalak, Voice of the Deeps"],

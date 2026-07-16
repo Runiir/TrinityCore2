@@ -20,6 +20,7 @@
     "affliction_warlock": "dps_intellect",
     "elemental_shaman": "dps_intellect",
     "marksmanship_hunter": "dps_agility",
+    "survival_hunter": "dps_agility",
     "assassination_rogue": "dps_agility",
     "enhancement_shaman": "dps_agility"
   },
