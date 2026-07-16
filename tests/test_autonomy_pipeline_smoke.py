@@ -1393,11 +1393,27 @@ def test_move_bot_to_profile_range_projects_approaches_to_terrain():
     assert "return MoveBotToPoint(state, bot, x, y, floorZ, false);" in profile_range
     assert "return moveToTerrainProjectedPoint(reference->GetPositionX(), reference->GetPositionY(), reference->GetPositionZ());" in profile_range
     assert "float candidateRange = reference->GetExactDist(rangedPosition);" in profile_range
-    assert "float minimumCandidateRange = minRange > 0.0f ? minRange + 2.0f : 5.0f;" in profile_range
+    assert "bool movingOutward = distance < desiredRange - 1.0f;" in profile_range
+    assert "reference->GetAngle(bot) : bot->GetAngle(reference)" in profile_range
+    assert "bot->GetFirstCollisionPosition(travelDistance, relativeBearing + angleOffset)" in profile_range
+    assert "reference->GetFirstCollisionPosition(desiredRange" not in profile_range
+    assert "float minimumCandidateRange = movingOutward" in profile_range
     assert "if (candidateRange < minimumCandidateRange" in profile_range
     assert "|| bot->GetExactDist(rangedPosition) < 1.0f)" in profile_range
     assert "if (moveToTerrainProjectedPoint(rangedPosition.GetPositionX(), rangedPosition.GetPositionY(), rangedPosition.GetPositionZ()))" in profile_range
     assert "return true;" in profile_range
+
+
+def test_validation_route_exact_hazards_suppress_generic_boss_cast_dodges():
+    route_objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    movement = route_objective[
+        route_objective.index("auto tryValidationRouteMovementCheck"):
+        route_objective.index("auto tryValidationRouteAdds")
+    ]
+
+    assert "bool currentNodeHasConfiguredHazard = _config.ValidationRouteHazardSourceEntry != 0;" in movement
+    assert "if (!caster && !currentNodeHasConfiguredHazard)\n            inspectCaster(preferredTarget);" in movement
+    assert movement.count("if (!caster && !currentNodeHasConfiguredHazard)") == 2
 
 
 def test_applied_ground_danger_spell_shape_contract():
@@ -3029,8 +3045,8 @@ def test_stonecore_quality_repairs_cover_hazards_pet_recovery_and_healer_protect
     assert "? std::max(24.0f, minRange + 8.0f)" in manager
     assert "auto moveOutOfProfileDeadZone" in manager
     assert "endpointDistance >= rangeAction.MinRange + 1.0f" in manager
-    assert "float radialAngle = reference->GetAngle(bot) - reference->GetOrientation();" in manager
-    assert "for (float angleOffset : { 0.0f, float(M_PI_4), -float(M_PI_4), float(M_PI_2), -float(M_PI_2) })" in manager
+    assert "float absoluteBearing = movingOutward ? reference->GetAngle(bot) : bot->GetAngle(reference);" in manager
+    assert "Position rangedPosition = bot->GetFirstCollisionPosition(travelDistance, relativeBearing + angleOffset);" in manager
     assert 'state.LastDecisionAction == "validation_route_complete"' in manager
     assert 'state.LastDecisionSituation == "validation_route_manifest"' in manager
     assert "bool _validationRouteObservedDeadScriptTarget = false;" in header

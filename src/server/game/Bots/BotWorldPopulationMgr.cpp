@@ -3410,20 +3410,22 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
         && bot->IsWithinLOSInMap(reference))
         return false;
 
-    // GetFirstCollisionPosition expects an angle relative to the reference's
-    // orientation.  Passing GetAngle(bot) directly rotates the bearing twice;
-    // on large bosses that repeatedly selected a point beside the hunter and
-    // left every ranged action inside its effective dead zone.
-    float radialAngle = reference->GetAngle(bot) - reference->GetOrientation();
-    for (float angleOffset : { 0.0f, float(M_PI_4), -float(M_PI_4), float(M_PI_2), -float(M_PI_2) })
+    // Boss origins are often outside or on the edge of the navigable polygon.
+    // Project from the bot's known-good polygon instead: move radially away
+    // when inside the ranged band and toward the target when outside it. This
+    // avoids collision rays being truncated at the boss model before the
+    // hunter has cleared the hostile minimum range.
+    bool movingOutward = distance < desiredRange - 1.0f;
+    float absoluteBearing = movingOutward ? reference->GetAngle(bot) : bot->GetAngle(reference);
+    float relativeBearing = absoluteBearing - bot->GetOrientation();
+    float travelDistance = std::max(4.0f, std::fabs(desiredRange - distance) + (movingOutward ? 2.0f : 0.0f));
+    float minimumCandidateRange = movingOutward
+        ? std::max(minRange > 0.0f ? minRange + 2.0f : 5.0f, desiredRange - 2.0f)
+        : (minRange > 0.0f ? minRange + 2.0f : 5.0f);
+    for (float angleOffset : { 0.0f, float(M_PI_4) / 2.0f, -float(M_PI_4) / 2.0f, float(M_PI_4), -float(M_PI_4) })
     {
-        Position rangedPosition = reference->GetFirstCollisionPosition(desiredRange, radialAngle + angleOffset);
-        // Collision projection can truncate a ray at the boss model or arena
-        // geometry and return a point only inches from the caster. Accepting
-        // that point reports successful movement forever while the ranged bot
-        // remains inside the hostile minimum range. Reject it and try a side.
+        Position rangedPosition = bot->GetFirstCollisionPosition(travelDistance, relativeBearing + angleOffset);
         float candidateRange = reference->GetExactDist(rangedPosition);
-        float minimumCandidateRange = minRange > 0.0f ? minRange + 2.0f : 5.0f;
         if (candidateRange < minimumCandidateRange
             || (maxRange > 0.0f && candidateRange > maxRange - 1.0f)
             || bot->GetExactDist(rangedPosition) < 1.0f)
@@ -9466,6 +9468,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         bool mechanicProfileRequiresMovement = _config.ValidationRouteMechanicProfile.find("movement_check") != std::string::npos
             || _config.ValidationRouteMechanicProfile.find("ground_danger") != std::string::npos
             || !hazardDefinitions.empty();
+        bool currentNodeHasConfiguredHazard = _config.ValidationRouteHazardSourceEntry != 0;
         auto hazardDefinitionFor = [&hazardDefinitions](uint32 sourceEntry, uint32 spellId) -> HazardDefinition const*
         {
             for (HazardDefinition const& definition : hazardDefinitions)
@@ -9578,7 +9581,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             }
         }
 
-        if (!caster)
+        // Exact route geometry takes precedence over spell-shape guessing.
+        // Boss phase and shield spells can look like area damage in DBC data;
+        // treating those casts as a hazard moves support players away from the
+        // party even though no damaging ground object is under them.
+        if (!caster && !currentNodeHasConfiguredHazard)
             inspectCaster(preferredTarget);
         if (!caster && mechanicProfileRequiresMovement)
         {
@@ -9617,7 +9624,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 break;
             }
         }
-        if (!caster)
+        if (!caster && !currentNodeHasConfiguredHazard)
         {
             std::vector<WorldObject*> objects;
             Trinity::AllWorldObjectsInRange check(bot, 35.0f);

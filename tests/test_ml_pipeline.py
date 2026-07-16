@@ -7703,11 +7703,13 @@ def test_stonecore_hazard_geometry_is_emitted_in_route_manifest():
     slabhide = next(row for row in routes if row["label"] == "Slabhide")
     sentry = next(row for row in routes if row["label"] == "stonecore sentry gauntlet")
     flayers = next(row for row in routes if row["label"] == "twilight flayer packs")
+    azil = next(row for row in routes if row["label"] == "High Priestess Azil")
 
     assert (corridor["hazard_source_entry"], corridor["hazard_detection_spell_id"], corridor["hazard_shape"]) == (42808, 79922, "frontal_cone")
     assert (slabhide["hazard_source_entry"], slabhide["hazard_damage_spell_id"], slabhide["hazard_shape"], slabhide["hazard_radius_yards"]) == (43242, 80801, "radial", 5.0)
     assert (sentry["hazard_source_entry"], sentry["hazard_detection_spell_id"], sentry["hazard_shape"]) == (42808, 79922, "frontal_cone")
     assert (flayers["hazard_source_entry"], flayers["hazard_detection_spell_id"], flayers["hazard_shape"], flayers["hazard_radius_yards"]) == (42808, 79922, "frontal_cone", 4.0)
+    assert (azil["hazard_source_entry"], azil["hazard_detection_spell_id"], azil["hazard_damage_spell_id"], azil["hazard_shape"], azil["hazard_radius_yards"]) == (42499, 79244, 79249, "radial", 6.0)
     assert flayers["source_entry"] == 42808
     assert flayers["pack_target_entries"] == [42808]
 
