@@ -1,0 +1,6 @@
+outs:
+- md5: 8043e906dd89ae9735e024f18d86079c.dir
+  size: 107603401
+  nfiles: 11
+  hash: md5
+  path: stonecore_parallel_calibration_run_183
