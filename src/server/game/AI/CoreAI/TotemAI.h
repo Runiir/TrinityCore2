@@ -39,12 +39,14 @@ class TC_GAME_API TotemAI : public NullCreatureAI
 
         uint64 GetCastAttempts() const { return _castAttempts; }
         uint64 GetCastSuccesses() const { return _castSuccesses; }
+        uint64 GetUpdateCalls() const { return _updateCalls; }
         SpellCastResult GetLastCastResult() const { return _lastCastResult; }
         bool WasLastTargetValidForTotem() const { return _lastTotemTargetValid; }
         bool WasLastTargetValidForOwner() const { return _lastOwnerTargetValid; }
 
     private:
         ObjectGuid _victimGUID;
+        uint64 _updateCalls = 0;
         uint64 _castAttempts = 0;
         uint64 _castSuccesses = 0;
         SpellCastResult _lastCastResult = SPELL_FAILED_DONT_REPORT;

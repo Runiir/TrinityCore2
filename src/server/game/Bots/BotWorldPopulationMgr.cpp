@@ -1220,7 +1220,9 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
             bool fireTotemActive = false;
             uint64 fireTotemCastAttempts = 0;
             uint64 fireTotemCastSuccesses = 0;
+            uint64 fireTotemUpdateCalls = 0;
             uint32 fireTotemLastCastResult = SPELL_FAILED_DONT_REPORT;
+            bool fireTotemUsesTotemAI = false;
             bool fireTotemTargetValid = false;
             bool fireTotemOwnerTargetValid = false;
             if (bot)
@@ -1240,6 +1242,8 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                             fireTotemActive = totem->GetTotemType() == TOTEM_ACTIVE;
                             if (TotemAI* ai = dynamic_cast<TotemAI*>(totem->AI()))
                             {
+                                fireTotemUsesTotemAI = true;
+                                fireTotemUpdateCalls = ai->GetUpdateCalls();
                                 fireTotemCastAttempts = ai->GetCastAttempts();
                                 fireTotemCastSuccesses = ai->GetCastSuccesses();
                                 fireTotemLastCastResult = uint32(ai->GetLastCastResult());
@@ -1292,6 +1296,8 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                  << ",\"attack_spell\":" << fireTotemSpell
                  << ",\"alive\":" << (fireTotemAlive ? "true" : "false")
                  << ",\"active\":" << (fireTotemActive ? "true" : "false")
+                 << ",\"uses_totem_ai\":" << (fireTotemUsesTotemAI ? "true" : "false")
+                 << ",\"update_calls\":" << fireTotemUpdateCalls
                  << ",\"cast_attempts\":" << fireTotemCastAttempts
                  << ",\"cast_successes\":" << fireTotemCastSuccesses
                  << ",\"last_cast_result\":" << fireTotemLastCastResult

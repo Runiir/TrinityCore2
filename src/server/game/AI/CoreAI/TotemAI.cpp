@@ -40,6 +40,8 @@ TotemAI::TotemAI(Creature* creature) : NullCreatureAI(creature), _victimGUID()
 
 void TotemAI::UpdateAI(uint32 /*diff*/)
 {
+    ++_updateCalls;
+
     if (me->ToTotem()->GetTotemType() != TOTEM_ACTIVE)
         return;
 
