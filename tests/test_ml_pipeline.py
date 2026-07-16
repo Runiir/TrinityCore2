@@ -7707,7 +7707,7 @@ def test_holy_priest_manifest_is_legal_and_drives_talents_and_glyph_slots():
     assert {586, 34433, 64843, 64901}.issubset(set(bot_spell_ids(priest)))
     assert {14751, 34861, 47788}.isdisjoint(set(bot_spell_ids(priest)))
     assert set(bot_primary_tree_spell_ids(priest)) == {88625, 87336, 95861, 33167}
-    assert {14751, 34861, 47788, 88625, 87336, 95861, 33167}.issubset(set(bot_known_spell_ids(priest)))
+    assert {14751, 34861, 47788, 88625, 88684, 87336, 95861, 33167}.issubset(set(bot_known_spell_ids(priest)))
     assert normalized_glyph_slots(priest) == [251, 0, 0, 0, 0, 0, 264, 709, 0]
     assert {251: 0, 264: 2, 709: 2}.items() <= glyph_property_type_map().items()
 

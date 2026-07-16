@@ -190,7 +190,7 @@
             { "talent_id": 8595, "spell_id": 14520 }
           ],
           "primary_tree_spells": [88625, 87336, 95861, 33167],
-          "spells": [586, 2006, 34433, 64843, 64901, 73325],
+          "spells": [586, 2006, 34433, 64843, 64901, 73325, 88684],
           "glyphs": [42396, 42409, 45755]
         },
         { "account": "SCVALDPSA", "name": "Scvaldpsa", "legacy_names": ["ScValDpsA"], "role": "dps", "class_spec": "fire_mage", "race": 1, "class": 8, "level": 85, "glyphs": [42739, 42743, 42753] },

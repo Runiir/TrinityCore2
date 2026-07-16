@@ -1535,6 +1535,7 @@ def test_holy_priest_primes_chakra_and_gates_friendly_holy_word_on_serenity():
     healer = route[route.index("auto tryRouteGroupHeal"):route.index("bool discoveryLeg")]
     profile_sql = read(ROOT / "sql/custom/world/2026_07_16_00_stonecore_wowhead_guide_rotations.sql")
     serenity_sql = read(ROOT / "sql/custom/world/2026_07_16_01_stonecore_holy_priest_serenity.sql")
+    direct_cast_sql = read(ROOT / "sql/custom/world/2026_07_16_02_stonecore_holy_word_serenity_cast.sql")
 
     assert "healer->HasSpell(14751)" in healer
     assert "!healer->HasAura(14751)" in healer
@@ -1544,6 +1545,8 @@ def test_holy_priest_primes_chakra_and_gates_friendly_holy_word_on_serenity():
     assert "88625,'heal_fast','holy_word_serenity,spot_heal'" in profile_sql
     assert "`action`.`required_self_aura` = 81208" in serenity_sql
     assert "`action`.`spell_id` = 88625" in serenity_sql
+    assert "`action`.`spell_id` = 88684" in direct_cast_sql
+    assert "AND `action`.`spell_id` = 88625" in direct_cast_sql
 
 
 def test_applied_ground_danger_spell_shape_contract():
