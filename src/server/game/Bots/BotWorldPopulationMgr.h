@@ -1268,6 +1268,7 @@ private:
     void RecordActivityStart(WorldBotState& state, Player* bot);
     void RecordActivityStop(WorldBotState const& state, Player* bot = nullptr);
     void EnsureValidationCohortGroup();
+    void EnsureCalibrationCohortGroup();
     bool IsValidationProfileName(std::string const& name) const;
     bool PrepareCurrentValidationProfile(char const* reason);
     bool ApplyValidationProvisioningSql(char const* reason);

@@ -1131,11 +1131,25 @@ std::string BotWorldPopulationMgr::StartCombatCalibration()
     _calibrationCompletedAoeWindows = 0;
     _calibrationPreviousWindowValid = false;
     EnsureCalibrationPopulation();
+    EnsureCalibrationCohortGroup();
     return GetCombatCalibrationJson();
 }
 
 std::string BotWorldPopulationMgr::StopCombatCalibration()
 {
+    Group* calibrationGroup = nullptr;
+    for (WorldBotState const& state : _calibrationBots)
+    {
+        Player* bot = GetLoadedBot(state);
+        if (bot && bot->GetGroup())
+        {
+            calibrationGroup = bot->GetGroup();
+            break;
+        }
+    }
+    if (calibrationGroup)
+        calibrationGroup->Disband();
+
     for (WorldBotState const& state : _calibrationBots)
     {
         if (!state.Guid.IsEmpty())
@@ -1226,6 +1240,8 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                  << ",\"level\":" << (bot ? uint32(bot->getLevel()) : 0)
                  << ",\"average_item_level\":" << std::fixed << std::setprecision(3)
                  << (bot ? bot->GetAverageItemLevel() : 0.0f)
+                 << ",\"grouped\":" << (bot && bot->GetGroup() ? "true" : "false")
+                 << ",\"group_size\":" << (bot && bot->GetGroup() ? bot->GetGroup()->GetMembersCount() : 0)
                  << ",\"persistent_setup\":{\"ready\":" << (persistentSetupReady ? "true" : "false")
                  << ",\"arcane_brilliance\":" << (bot && (bot->HasAura(1459) || bot->HasAura(79058)) ? "true" : "false")
                  << ",\"molten_armor\":" << (bot && bot->HasAura(30482) ? "true" : "false")
@@ -1299,7 +1315,7 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
          << ",\"phase\":\"" << (_calibrationAoePhase ? "aoe" : "single_target") << "\""
          << ",\"window_seconds\":120"
          << ",\"normalization\":{\"gear_basis\":\"equipped_clone_average_item_level\""
-         << ",\"buff_basis\":\"self_and_rotation_only\",\"consumables\":false"
+         << ",\"buff_basis\":\"stonecore_party_owned_buffs\",\"consumables\":false"
          << ",\"external_bis_target_configured\":false"
          << ",\"comparison_policy\":\"sustained_completed_windows_only\"}"
          << ",\"completed_windows\":{\"single_target\":" << _calibrationCompletedSingleWindows
@@ -1788,6 +1804,7 @@ void BotWorldPopulationMgr::Update(uint32 diff)
     if (_calibrationActive)
     {
         EnsureCalibrationPopulation();
+        EnsureCalibrationCohortGroup();
         bool aoePhase = ((NowMs() - _calibrationStartedMs) / 120000) % 2 == 1;
         if (aoePhase != _calibrationAoePhase)
         {
@@ -2928,6 +2945,52 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
         _calibrationMetrics.emplace(bot->GetGUID().GetCounter(), std::move(metrics));
         TC_LOG_INFO("server", "BotWorld calibration clone spawned bot=%s slot=%zu map=%u position=%f,%f,%f",
             bot->GetGUID().ToString().c_str(), slot, bot->GetMapId(), bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ());
+    }
+}
+
+void BotWorldPopulationMgr::EnsureCalibrationCohortGroup()
+{
+    std::vector<Player*> members;
+    members.reserve(_calibrationBots.size());
+    for (WorldBotState const& state : _calibrationBots)
+    {
+        Player* bot = GetLoadedBot(state);
+        if (bot && bot->IsInWorld())
+            members.push_back(bot);
+    }
+    if (members.empty())
+        return;
+
+    Player* leader = members.front();
+    Group* group = leader->GetGroup();
+    if (!group)
+    {
+        group = new Group();
+        if (!group->Create(leader))
+        {
+            delete group;
+            return;
+        }
+        sGroupMgr->AddGroup(group);
+        TC_LOG_INFO("server", "BotWorld calibration group created leader=%s group=%s",
+            leader->GetGUID().ToString().c_str(), group->GetGUID().ToString().c_str());
+    }
+
+    for (Player* bot : members)
+    {
+        if (!bot || bot == leader)
+            continue;
+        if (!bot->GetGroup() && !group->AddMember(bot))
+        {
+            TC_LOG_ERROR("server", "BotWorld calibration group add failed leader=%s bot=%s",
+                leader->GetGUID().ToString().c_str(), bot->GetGUID().ToString().c_str());
+            continue;
+        }
+        if (bot->GetGroup() != group)
+            continue;
+
+        std::string role = sBotMgr->GetBotRoleName(bot->GetGUID());
+        group->SetLfgRoles(bot->GetGUID(), role == "tank" ? lfg::PLAYER_ROLE_TANK : lfg::PLAYER_ROLE_DAMAGE);
     }
 }
 

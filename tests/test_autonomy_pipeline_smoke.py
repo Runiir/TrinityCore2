@@ -3404,6 +3404,11 @@ def test_parallel_combat_calibration_is_isolated_and_uses_live_rotations():
     assert "isolated_from_route_telemetry" in manager
     assert "best_windows" in manager
     assert "external_bis_target_configured" in manager
+    assert "EnsureCalibrationCohortGroup();" in manager
+    assert "stonecore_party_owned_buffs" in manager
+    assert "calibrationGroup->Disband();" in manager
+    assert "group->AddMember(bot)" in manager
+    assert '\\"grouped\\"' in manager
     reference = json.loads((root / "dataset/combat_calibration/wowsims_cata_p4.json").read_text())
     assert reference["schema"] == "bot_combat_calibration_reference_v1"
     assert {profile["spec"] for profile in reference["profiles"]} == {
