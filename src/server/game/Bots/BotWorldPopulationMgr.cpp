@@ -10656,7 +10656,22 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             }
         }
 
+        bool hunterAoeTransferReady = true;
+        if (bot->getClass() == CLASS_HUNTER && addCount >= 2)
+        {
+            SpellInfo const* multiShot = sSpellMgr->GetSpellInfo(2643);
+            int32 multiShotCost = multiShot
+                ? multiShot->CalcPowerCost(bot, multiShot->GetSchoolMask()) : 0;
+            hunterAoeTransferReady = multiShot && bot->HasSpell(2643)
+                && (multiShotCost <= 0 || bot->GetPower(POWER_FOCUS) >= uint32(multiShotCost));
+        }
+
+        // Do not start the short Misdirection window until the hunter can pay
+        // for its transfer shot. Previously a low-focus hunter activated the
+        // aura, then spent most of the window returning no_valid_profile_action
+        // while a fresh wave accumulated healing threat.
         if (bot->getClass() == CLASS_HUNTER && densityTank && densityTank != bot
+            && hunterAoeTransferReady
             && bot->HasSpell(34477) && !bot->HasAura(34477) && TryCastFriendlySpell(bot, densityTank, 34477))
         {
             std::string raw = BuildRawJson(bot, add);
@@ -10678,6 +10693,14 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (hunterMisdirectionActive && densityTank && add)
         {
             bool useAreaTransfer = addCount >= 2;
+            // Cobra Shot and the configured ground-target AoE require the bot
+            // to be stationary. Clear residual route movement once it is in a
+            // legal ranged band so the active transfer window produces an
+            // attack instead of repeated movement-gate rejections.
+            if (useAreaTransfer && bot->isMoving()
+                && bot->GetExactDist(add) >= 5.0f && bot->GetExactDist(add) <= 35.0f
+                && bot->IsWithinLOSInMap(add))
+                bot->StopMoving();
             ResolvedCombatAction transferAction = ResolveProfileCombatAction(bot, add,
                 std::max<uint32>(1, addCount), useAreaTransfer);
             BotActionResult result = ExecuteProfileCombatAction(&state, bot, add, &transferAction,
