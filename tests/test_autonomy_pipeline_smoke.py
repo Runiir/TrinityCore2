@@ -3265,6 +3265,18 @@ def test_stonecore_quality_repairs_cover_hazards_pet_recovery_and_healer_protect
     assert '"hand_of_salvation_healer_threat_drop"' in manager
     assert '"hand_of_protection_healer_emergency"' in manager
     assert "densityHealer->getAttackers().size() >= 5" in manager
+    boss_add_rescue = manager[manager.index(
+        "// A fresh Azil wave can assign every add to healing threat"
+    ):manager.index("// Azil can activate an entire follower wave")]
+    assert boss_add_rescue.index('"hand_of_protection_healer_emergency"') < boss_add_rescue.index(
+        '"tank_immediate_aoe_threat"'
+    )
+    assert boss_add_rescue.index('"righteous_defense_healer_pickup"') < boss_add_rescue.index(
+        '"tank_immediate_aoe_threat"'
+    )
+    assert '"tank_close_for_aoe_threat"' in boss_add_rescue
+    assert "immediateAreaThreat.SpellId == 26573" in boss_add_rescue
+    assert "immediateAreaThreat.SpellId == 2812" in boss_add_rescue
     assert "defenseScore += 1000;" in manager
     assert "olderHealerTarget" not in manager
     assert "nearestDefenseAttacker" in manager
