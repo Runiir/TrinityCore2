@@ -1437,6 +1437,7 @@ private:
     std::string _validationRouteManifestAdvanceReason;
     std::string _validationRouteManifestLoadError;
     mutable std::map<uint32, std::string> _lastCombatMaskByBot;
+    mutable std::map<uint32, std::string> _lastCombatRejectsByBot;
     mutable std::map<uint32, std::string> _lastChosenCombatByBot;
     mutable std::map<uint32, std::string> _lastActionCategoryByBot;
     mutable std::map<uint32, RoleSaturationState> _lastSaturationByBot;

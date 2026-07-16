@@ -1230,10 +1230,10 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                 }
             }
             uint32 botKey = state.Guid.GetCounter();
-            auto maskItr = _lastCombatMaskByBot.find(botKey);
+            auto rejectsItr = _lastCombatRejectsByBot.find(botKey);
             auto chosenItr = _lastChosenCombatByBot.find(botKey);
-            json << "],\"last_valid_action_mask\":"
-                 << (!completedWindow && maskItr != _lastCombatMaskByBot.end() ? maskItr->second : "null")
+            json << "],\"last_action_rejections\":"
+                 << (!completedWindow && rejectsItr != _lastCombatRejectsByBot.end() ? rejectsItr->second : "null")
                  << ",\"last_chosen_action\":"
                  << (!completedWindow && chosenItr != _lastChosenCombatByBot.end() ? chosenItr->second : "null")
                  << '}';
@@ -2852,11 +2852,10 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
     if (dummies.empty())
         return;
 
-    size_t cloneIndex = 0;
-    for (; cloneIndex < _calibrationBots.size(); ++cloneIndex)
-        if (_calibrationBots[cloneIndex].Guid == state.Guid)
-            break;
-    Unit* target = dummies[cloneIndex % dummies.size()];
+    // Always use the nearest dummy. Indexing a distance-sorted list made the
+    // selected target jump whenever a melee clone moved, so it could chase a
+    // different dummy every tick and never reach its melee abilities.
+    Unit* target = dummies.front();
     uint32 hostileCount = _calibrationAoePhase ? std::max<uint32>(3, uint32(dummies.size())) : 1;
 
     // Keep the tank's normal threat stance active. Other rotational choices go
@@ -14173,6 +14172,21 @@ uint32 BotWorldPopulationMgr::SelectHealSpell(Player* bot, Unit* target) const
     }
 
     uint32 botKey = bot->GetGUID().GetCounter();
+    std::ostringstream rejectionJson;
+    rejectionJson << '[';
+    bool firstReject = true;
+    for (BotActionCandidate const& candidate : candidates)
+    {
+        if (!candidate.SpellId || candidate.RejectReason.empty())
+            continue;
+        if (!firstReject)
+            rejectionJson << ',';
+        firstReject = false;
+        rejectionJson << "{\"spell_id\":" << candidate.SpellId
+                      << ",\"reason\":\"" << JsonEscape(candidate.RejectReason) << "\"}";
+    }
+    rejectionJson << ']';
+    _lastCombatRejectsByBot[botKey] = rejectionJson.str();
     _lastSaturationByBot[botKey] = saturation;
     _lastCombatMaskByBot[botKey] = BotClassSpecActionProfileStore::CandidateMaskJson(candidates, profile, roleGoal.c_str(), saturation.ToJson().c_str());
     _lastChosenCombatByBot[botKey] = BotClassSpecActionProfileStore::ChosenActionJson(best, profile, roleGoal.c_str(), BotRoleSaturationPolicy::ToString(saturation.RecommendedBalanceMode), saturation.ExperimentConfidence);
@@ -15542,6 +15556,21 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         best = bestDensityArea ? bestDensityArea : bestDensityGenerator;
 
     uint32 botKey = bot->GetGUID().GetCounter();
+    std::ostringstream rejectionJson;
+    rejectionJson << '[';
+    bool firstReject = true;
+    for (BotActionCandidate const& candidate : candidates)
+    {
+        if (!candidate.SpellId || candidate.RejectReason.empty())
+            continue;
+        if (!firstReject)
+            rejectionJson << ',';
+        firstReject = false;
+        rejectionJson << "{\"spell_id\":" << candidate.SpellId
+                      << ",\"reason\":\"" << JsonEscape(candidate.RejectReason) << "\"}";
+    }
+    rejectionJson << ']';
+    _lastCombatRejectsByBot[botKey] = rejectionJson.str();
     _lastSaturationByBot[botKey] = saturation;
     _lastCombatMaskByBot[botKey] = BotClassSpecActionProfileStore::CandidateMaskJson(candidates, profile, roleGoal.c_str(), saturation.ToJson().c_str());
     _lastChosenCombatByBot[botKey] = BotClassSpecActionProfileStore::ChosenActionJson(best, profile, roleGoal.c_str(), BotRoleSaturationPolicy::ToString(saturation.RecommendedBalanceMode), saturation.ExperimentConfidence);

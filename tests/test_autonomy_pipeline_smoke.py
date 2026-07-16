@@ -3312,6 +3312,7 @@ def test_parallel_combat_calibration_is_isolated_and_uses_live_rotations():
 
     assert "std::vector<WorldBotState> _calibrationBots" in header
     assert "std::map<uint32, CalibrationMetrics> _calibrationMetrics" in header
+    assert "std::map<uint32, std::string> _lastCombatRejectsByBot" in header
     assert "combat_calibration" in manager
     assert "SelectCalibrationPoolCandidateGuid" in manager
     update = function_body(manager, "void BotWorldPopulationMgr::UpdateCalibrationBot")
@@ -3325,8 +3326,9 @@ def test_parallel_combat_calibration_is_isolated_and_uses_live_rotations():
     assert "calibration->second.SpellDamage[spellId] += measuredDamage" in damage
     assert "damageBeforeScriptAdjustment" in unit
     assert "isolated_from_route_telemetry" in manager
-    assert "last_valid_action_mask" in manager
+    assert "last_action_rejections" in manager
     assert "last_chosen_action" in manager
+    assert "Unit* target = dummies.front();" in update
     assert '{ "calibrate", rbac::RBAC_PERM_COMMAND_HEALERBOT' in commands
     assert "StartCombatCalibration" in commands
     assert "StopCombatCalibration" in commands
