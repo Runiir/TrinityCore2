@@ -2956,6 +2956,7 @@ def test_density_tank_centroid_control_prioritizes_loose_healer_targets():
     assert "uint32 densityTankSecureAddCount = 0;" in adds
     assert "densityTankSecureAddCount * 10 >= addCount * 9" in adds
     assert "tankThreat >= 2000.0f && tankThreat >= highestPartyThreat * 2.5f" in adds
+    assert '"ice_block_swarm_pickup_emergency"' in adds
     assert "bot->GetExactDist2d(densityTank) <= 6.0f" in adds
     assert "(!bot->getAttackers().empty() && !botInsideTankPickup)" in adds
     assert "bot->GetExactDist2d(densityTank) > 8.0f" not in adds

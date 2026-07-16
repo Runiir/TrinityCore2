@@ -10238,6 +10238,28 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return true;
         }
 
+        // Azil can activate an entire follower wave on one ranged player in a
+        // single server tick.  The tank normally owns the wave on its next
+        // decision, but that one-second pickup window is already lethal.  Use
+        // the mage's native immunity immediately, without changing threat or
+        // encounter state, so ordinary tank pickup can complete.
+        if (role == "dps" && cohortSwarmActive && bot->getAttackers().size() >= 5
+            && bot->HasSpell(45438) && !bot->HasAura(45438)
+            && TryCastFriendlySpell(bot, bot, 45438))
+        {
+            bot->AttackStop();
+            std::string raw = BuildRawJson(bot, add);
+            std::string semantic = BuildSemanticJson(bot, add, "dungeon_boss", &power, stage, activity);
+            RecordEvent(state, bot, "defensive", bot, "ice_block_swarm_pickup_emergency",
+                raw.c_str(), semantic.c_str(), float(bot->getAttackers().size()), addCount, 45438);
+            state.TargetGuid = densityTank && densityTank->GetVictim()
+                ? densityTank->GetVictim()->GetGUID() : (add ? add->GetGUID() : ObjectGuid::Empty);
+            target = densityTank && densityTank->GetVictim() ? densityTank->GetVictim() : add;
+            situation = "dungeon_boss";
+            action = "ice_block_swarm_pickup_emergency";
+            return true;
+        }
+
         // Do not let the first ranged AoE tick assign an entire newly spawned
         // swarm to a DPS before the tank can act.  Stack an unowned focus into
         // the pickup radius and suppress new threat until that focus transfers.
