@@ -1474,10 +1474,13 @@ def test_trash_swarm_waits_for_secure_tank_threat_before_dps_release():
     assert "trashThreatControl.SecureTankCount * 10 < trashThreatControl.EngagedCount * 9" in route
     assert "tankThreat >= 2000.0f && tankThreat >= highestPartyThreat * 2.5f" in route
     assert '"hold_for_secure_trash_threat"' in route
+    assert '"focused_damage_during_trash_threat_build"' in route
+    assert "ResolveProfileCombatAction(bot, tankFocus, 1, false)" in route
     assert "bot->InterruptNonMeleeSpells(false);" in route
     assert "pet->AttackStop();" in route
     assert '"trash_density_area_threat"' in route
     assert "trashThreatControl.EngagedCount, true" in route
+    assert '"hand_of_salvation_healer_trash_threat_drop"' in route
 
 
 def test_validation_route_exact_hazards_suppress_generic_boss_cast_dodges():

@@ -11006,6 +11006,37 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         && trashThreatControl.Tank
         && insecureTrashSwarm)
     {
+        Unit* tankFocus = trashThreatControl.Tank->GetVictim();
+        if (tankFocus && tankFocus->IsAlive() && bot->IsValidAttackTarget(tankFocus))
+        {
+            if (bot->GetVictim() && bot->GetVictim() != tankFocus)
+                bot->AttackStop();
+            if (Pet* pet = bot->GetPet(); pet && pet->GetVictim() && pet->GetVictim() != tankFocus)
+                pet->AttackStop();
+            target = tankFocus;
+            state.TargetGuid = tankFocus->GetGUID();
+            ResolvedCombatAction focusedAction = ResolveProfileCombatAction(bot, tankFocus, 1, false);
+            float engageRange = focusedAction.MaxRange > 0.0f
+                ? focusedAction.MaxRange : routeEngageRange(bot, tankFocus, focusedAction.SpellId);
+            float targetDistance = bot->GetExactDist(tankFocus);
+            if (focusedAction.Valid
+                && targetDistance <= std::max(5.0f, engageRange - 1.0f)
+                && bot->IsWithinLOSInMap(tankFocus))
+            {
+                BotActionResult result = ExecuteProfileCombatAction(&state, bot, tankFocus, &focusedAction, 1, false);
+                std::string raw = BuildRawJson(bot, tankFocus);
+                std::string semantic = BuildSemanticJson(bot, tankFocus, "normal_dungeon_trash", &power, stage, activity);
+                RecordEvent(state, bot, "validation_route_threat_gate", tankFocus,
+                    "focused_damage_during_trash_threat_build", raw.c_str(), semantic.c_str(),
+                    float(trashThreatControl.SecureTankCount), trashThreatControl.EngagedCount,
+                    result == BotActionResult::Ok ? focusedAction.SpellId : 0);
+                situation = "normal_dungeon_trash";
+                action = "focused_damage_during_trash_threat_build";
+                state.WasInCombat = true;
+                return true;
+            }
+        }
+
         bot->InterruptNonMeleeSpells(false);
         bot->AttackStop();
         if (Pet* pet = bot->GetPet())
@@ -11163,6 +11194,19 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 raw.c_str(), semantic.c_str(), float(defenseAttackerCount), _config.ValidationRouteTargetEntry, 31789);
             situation = "normal_dungeon_trash";
             action = pickupAction;
+            return true;
+        }
+        if (defenseTarget && std::string(GetDungeonRole(defenseTarget)) == "healer"
+            && bot->HasSpell(1038) && !defenseTarget->HasAura(1038)
+            && TryCastFriendlySpell(bot, defenseTarget, 1038))
+        {
+            std::string raw = BuildRawJson(bot, defenseTarget);
+            std::string semantic = BuildSemanticJson(bot, defenseTarget, "normal_dungeon_trash", &power, stage, activity);
+            RecordEvent(state, bot, "validation_route_threat_pickup", defenseTarget,
+                "hand_of_salvation_healer_trash_threat_drop", raw.c_str(), semantic.c_str(),
+                float(defenseAttackerCount), _config.ValidationRouteTargetEntry, 1038);
+            situation = "normal_dungeon_trash";
+            action = "hand_of_salvation_healer_trash_threat_drop";
             return true;
         }
         if (defenseTarget && bot->GetExactDist2d(defenseTarget) <= 8.0f
