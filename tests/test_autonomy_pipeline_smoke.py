@@ -626,6 +626,19 @@ def test_requested_wowhead_profiles_and_target_count_aware_misdirection_are_expl
     assert "ResolveProfileCombatAction(bot, target, 1, false)" in manager
 
 
+def test_dummy_calibration_tuning_gates_spenders_and_adds_measured_aoe_actions():
+    root = Path(__file__).resolve().parents[1]
+    sql = (root / "sql/custom/world/2026_07_16_03_dummy_dps_rotation_tuning.sql").read_text()
+    manager = read(BOT_MGR)
+
+    assert "11113,'aoe','blast_wave,aoe,on_cooldown'" in sql
+    assert "`action`.`required_self_aura`=64343" in sql
+    assert "`action`.`required_self_aura`=73683" in sql
+    assert "POWER_HOLY_POWER" in manager
+    assert 'candidate.SpellId == 53600 || candidate.SpellId == 84963' in manager
+    assert "combustion_dot_window_not_ready" in manager
+
+
 def test_stonecore_rotation_sql_declares_buffs_hunter_builder_and_aoe_gate():
     sql = read(STONECORE_ROTATION_SQL)
 

@@ -49,7 +49,7 @@ from tools.bot_ml.live_validation_session import (
     sha256_file,
     systemd_transient_command,
 )
-from tools.bot_ml.run_live_bot_validation import boss_route_health_progress, bot_status_snapshot, bounded_console_deadline, build_bot_pool_reset_sql, command_script, heartbeat_commands_from_script, live_validation_report, load_scenario_reports, load_validation_route, main as live_validation_main, parse_json_objects, parse_soap_result, poll_bot_status, read_until_console_prompt, route_segment_complete, run_reusable_validation_session, run_transport_completion_watchdog, run_worldserver, run_worldserver_completion_watchdog, scripted_activation_wait_pending, split_sql_statements, supersede_transient_route_failures, trace_after, trinity_config_bool, unresolved_route_death_loop_count, unresolved_route_stuck_count, upsert_trinity_config, wait_for_bot_status_state, watchdog_state, write_validation_config
+from tools.bot_ml.run_live_bot_validation import apply_calibration_only_acceptance, boss_route_health_progress, bot_status_snapshot, bounded_console_deadline, build_bot_pool_reset_sql, command_script, heartbeat_commands_from_script, live_validation_report, load_scenario_reports, load_validation_route, main as live_validation_main, parse_json_objects, parse_soap_result, poll_bot_status, read_until_console_prompt, route_segment_complete, run_reusable_validation_session, run_transport_completion_watchdog, run_worldserver, run_worldserver_completion_watchdog, scripted_activation_wait_pending, split_sql_statements, supersede_transient_route_failures, trace_after, trinity_config_bool, unresolved_route_death_loop_count, unresolved_route_stuck_count, upsert_trinity_config, wait_for_bot_status_state, watchdog_state, write_validation_config
 from tools.bot_ml.orchestrator_daemon import codex_command, detect_rate_limit, handle_rate_limit, initial_state, run_one_cycle, sleep_until_resume
 from tools.bot_ml.generate_lane_configs import write_lane_config
 from tools.bot_ml.promote_live_validation_artifact import promote
@@ -3382,6 +3382,36 @@ TC> {"ok":true,"action":"botauto_calibrate_status","active":true,"normalization"
             "directly_comparable": False,
         }
     ]
+
+
+def test_calibration_only_acceptance_uses_capture_integrity_not_dungeon_gates():
+    bots = [
+        {
+            "class_id": class_id,
+            "elapsed_seconds": 120,
+            "dps": 10000,
+            "attempts": 10,
+            "persistent_setup": {"ready": True},
+        }
+        for class_id in (2, 3, 7, 8)
+    ]
+    report = {
+        "returncode": 0,
+        "timed_out": False,
+        "combat_calibration": {
+            "completed_windows": {"single_target": 1, "aoe": 1},
+            "best_windows": {"single_target": bots, "aoe": bots},
+        },
+        "stages": [{"stage": "full_stonecore_clear", "passed": False}],
+    }
+
+    apply_calibration_only_acceptance(report)
+
+    assert report["all_passed"] is True
+    assert report["acceptable_final_evidence"] is True
+    assert report["completion_reason"] == "combat_calibration_complete"
+    assert report["stages"] == [{"stage": "combat_calibration", "passed": True, "missing": []}]
+    assert report["calibration_acceptance"]["performance_threshold_applied"] is False
 
 
 def test_live_bot_validation_counts_labeled_teacher_assist_as_kill_quest_evidence():

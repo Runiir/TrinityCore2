@@ -15652,6 +15652,20 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
             candidate.RejectReason = "enemy_count_too_high";
             continue;
         }
+        if (bot->getClass() == CLASS_PALADIN
+            && (candidate.SpellId == 53600 || candidate.SpellId == 84963)
+            && bot->GetPower(POWER_HOLY_POWER) < 3 && !bot->HasAura(90174))
+        {
+            candidate.RejectReason = "insufficient_holy_power";
+            continue;
+        }
+        if (bot->getClass() == CLASS_MAGE && candidate.SpellId == 11129
+            && (!target->HasAura(12654) || !target->HasAura(44457)
+                || (!target->HasAura(92315) && !target->HasAura(11366))))
+        {
+            candidate.RejectReason = "combustion_dot_window_not_ready";
+            continue;
+        }
         if (candidate.Profile.RequiresInterruptibleTarget
             && !target->GetCurrentSpell(CURRENT_GENERIC_SPELL)
             && !target->GetCurrentSpell(CURRENT_CHANNELED_SPELL))

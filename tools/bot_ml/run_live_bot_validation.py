@@ -792,6 +792,62 @@ def enrich_combat_calibration_reference(
     return calibration
 
 
+def apply_calibration_only_acceptance(report: dict[str, Any]) -> dict[str, Any]:
+    """Evaluate collection integrity for an isolated calibration run.
+
+    Performance remains visible through the reference comparisons, but does
+    not decide whether the telemetry capture itself is valid.
+    """
+    calibration = report.get("combat_calibration") or {}
+    completed = calibration.get("completed_windows") or {}
+    best_windows = calibration.get("best_windows") or {}
+    rejections: list[str] = []
+    expected_classes = {2, 3, 7, 8}
+
+    if report.get("timed_out"):
+        rejections.append("calibration_timed_out")
+    if int(report.get("returncode") or 0) != 0:
+        rejections.append("calibration_worldserver_failed")
+    for mode in ("single_target", "aoe"):
+        if int(completed.get(mode) or 0) < 1:
+            rejections.append(f"missing_{mode}_window")
+            continue
+        bots = best_windows.get(mode) or []
+        classes = {int(bot.get("class_id") or 0) for bot in bots}
+        if not expected_classes.issubset(classes):
+            rejections.append(f"incomplete_{mode}_cohort")
+        if any(float(bot.get("elapsed_seconds") or 0) < 100.0 for bot in bots):
+            rejections.append(f"short_{mode}_window")
+        if any(float(bot.get("dps") or 0) <= 0.0 for bot in bots):
+            rejections.append(f"zero_{mode}_dps")
+        if any(int(bot.get("attempts") or 0) <= 0 for bot in bots):
+            rejections.append(f"missing_{mode}_actions")
+        if any(not bool((bot.get("persistent_setup") or {}).get("ready")) for bot in bots):
+            rejections.append(f"incomplete_{mode}_persistent_setup")
+
+    rejections = list(dict.fromkeys(rejections))
+    passed = not rejections
+    report["calibration_acceptance"] = {
+        "schema": "bot_combat_calibration_acceptance_v1",
+        "passed": passed,
+        "performance_threshold_applied": False,
+        "expected_class_ids": sorted(expected_classes),
+        "rejections": rejections,
+    }
+    report["stages"] = [
+        {"stage": "combat_calibration", "passed": passed, "missing": rejections}
+    ]
+    report["passed"] = 1 if passed else 0
+    report["failed"] = 0 if passed else 1
+    report["final_evidence_rejections"] = rejections
+    report["failure_labels"] = rejections
+    report["failure_reason"] = rejections[0] if rejections else None
+    report["completion_reason"] = "combat_calibration_complete" if passed else "combat_calibration_incomplete"
+    report["acceptable_final_evidence"] = passed
+    report["all_passed"] = passed
+    return report
+
+
 def combat_log_transport_status(payloads: list[dict[str, Any]]) -> dict[str, Any]:
     chunks = [row for row in payloads if row.get("action") == "botauto_combatlog_chunk"]
     completion = next(
@@ -3656,6 +3712,8 @@ def main() -> int:
         }
         report["combat_log"] = {}
     attach_stonecore_role_quality_audit(report, validation_context, validation_route_manifest)
+    if args.calibration_only:
+        apply_calibration_only_acceptance(report)
     write_json(args.output_dir / "report.json", report)
     print(json.dumps(report, indent=2, sort_keys=True))
     segment_success = route_segment_complete(report, validation_route)
