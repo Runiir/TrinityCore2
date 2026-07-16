@@ -1360,6 +1360,8 @@ private:
         float ThreatBaseline = -1.0f;
         float ThreatCurrent = 0.0f;
         std::map<uint32, uint64> SpellDamage;
+        std::map<uint32, uint32> ActionAttempts;
+        std::map<std::string, uint32> ResultCounts;
     };
     bool _calibrationActive = false;
     bool _calibrationAoePhase = false;

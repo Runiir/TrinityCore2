@@ -1189,7 +1189,30 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                  << ",\"threat_observable\":" << (metrics && metrics->ThreatBaseline >= 0.0f && metrics->ThreatCurrent > metrics->ThreatBaseline ? "true" : "false")
                  << ",\"attempts\":" << (metrics ? metrics->Attempts : 0)
                  << ",\"successes\":" << (metrics ? metrics->Successes : 0)
-                 << ",\"spell_damage\":[";
+                 << ",\"result_counts\":{";
+            bool firstResult = true;
+            if (metrics)
+                for (auto const& [result, count] : metrics->ResultCounts)
+                {
+                    if (!firstResult)
+                        json << ',';
+                    firstResult = false;
+                    json << '\"' << JsonEscape(result) << "\":" << count;
+                }
+            json << "},\"action_attempts\":[";
+            bool firstAction = true;
+            if (metrics)
+                for (auto const& [spellId, count] : metrics->ActionAttempts)
+                {
+                    if (!firstAction)
+                        json << ',';
+                    firstAction = false;
+                    SpellInfo const* info = spellId ? sSpellMgr->GetSpellInfo(spellId) : nullptr;
+                    json << "{\"spell_id\":" << spellId
+                         << ",\"spell_name\":\"" << JsonEscape(info ? info->SpellName : "None") << "\""
+                         << ",\"count\":" << count << '}';
+                }
+            json << "],\"spell_damage\":[";
             bool firstSpell = true;
             if (metrics)
             {
@@ -2852,6 +2875,9 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
     CalibrationMetrics& metrics = _calibrationMetrics[state.Guid.GetCounter()];
     if (!metrics.WindowStartedMs)
         metrics.WindowStartedMs = NowMs();
+    ++metrics.ResultCounts[ToString(result)];
+    if (action.Valid && action.SpellId)
+        ++metrics.ActionAttempts[action.SpellId];
     if (result != BotActionResult::Casting && result != BotActionResult::GlobalCooldown && result != BotActionResult::NoAction)
     {
         ++metrics.Attempts;

@@ -3305,6 +3305,7 @@ def test_parallel_combat_calibration_is_isolated_and_uses_live_rotations():
     manager = (root / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
     header = (root / "src/server/game/Bots/BotWorldPopulationMgr.h").read_text()
     commands = (root / "src/server/scripts/Commands/cs_healerbot.cpp").read_text()
+    unit = (root / "src/server/game/Entities/Unit/Unit.cpp").read_text()
 
     assert "std::vector<WorldBotState> _calibrationBots" in header
     assert "std::map<uint32, CalibrationMetrics> _calibrationMetrics" in header
@@ -3319,6 +3320,7 @@ def test_parallel_combat_calibration_is_isolated_and_uses_live_rotations():
     assert damage.index("_calibrationMetrics.find") < damage.index("FindCombatLogCohortPlayer(attacker)")
     assert "uint32 measuredDamage = damage ? damage : unmitigatedDamage" in damage
     assert "calibration->second.SpellDamage[spellId] += measuredDamage" in damage
+    assert "damageBeforeScriptAdjustment" in unit
     assert "isolated_from_route_telemetry" in manager
     assert '{ "calibrate", rbac::RBAC_PERM_COMMAND_HEALERBOT' in commands
     assert "StartCombatCalibration" in commands
