@@ -1366,6 +1366,9 @@ private:
     uint64 _calibrationStartedMs = 0;
     std::vector<WorldBotState> _calibrationBots;
     std::map<uint32, CalibrationMetrics> _calibrationMetrics;
+    bool _calibrationPreviousWindowValid = false;
+    bool _calibrationPreviousAoePhase = false;
+    std::map<uint32, CalibrationMetrics> _calibrationPreviousMetrics;
     std::set<uint32> _failedSpawnGuids;
     std::string _lastPopulationFailureReason;
     BotWorldStatus _metrics;

@@ -1124,6 +1124,8 @@ std::string BotWorldPopulationMgr::StartCombatCalibration()
     _calibrationAoePhase = false;
     _calibrationStartedMs = NowMs();
     _calibrationMetrics.clear();
+    _calibrationPreviousMetrics.clear();
+    _calibrationPreviousWindowValid = false;
     EnsureCalibrationPopulation();
     return GetCombatCalibrationJson();
 }
@@ -1141,8 +1143,11 @@ std::string BotWorldPopulationMgr::StopCombatCalibration()
     uint32 removed = uint32(_calibrationBots.size());
     _calibrationBots.clear();
     _calibrationMetrics.clear();
+    _calibrationPreviousMetrics.clear();
     _calibrationActive = false;
     _calibrationAoePhase = false;
+    _calibrationPreviousWindowValid = false;
+    _calibrationPreviousAoePhase = false;
     _calibrationStartedMs = 0;
 
     std::ostringstream json;
@@ -1155,55 +1160,74 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
 {
     uint64 nowMs = NowMs();
     std::ostringstream json;
+    auto writeBots = [&](std::map<uint32, CalibrationMetrics> const& metricsByGuid, bool completedWindow)
+    {
+        json << '[';
+        bool firstBot = true;
+        for (WorldBotState const& state : _calibrationBots)
+        {
+            if (!firstBot)
+                json << ',';
+            firstBot = false;
+            Player* bot = GetLoadedBot(state);
+            auto itr = metricsByGuid.find(state.Guid.GetCounter());
+            CalibrationMetrics const* metrics = itr == metricsByGuid.end() ? nullptr : &itr->second;
+            uint64 startedMs = metrics && metrics->WindowStartedMs ? metrics->WindowStartedMs : _calibrationStartedMs;
+            double elapsedSec = completedWindow ? 120.0
+                : (startedMs && nowMs > startedMs ? double(nowMs - startedMs) / 1000.0 : 0.0);
+            double dps = metrics && elapsedSec > 0.0 ? double(metrics->Damage) / elapsedSec : 0.0;
+            double tps = metrics && metrics->ThreatBaseline >= 0.0f && elapsedSec > 0.0
+                ? std::max(0.0, double(metrics->ThreatCurrent - metrics->ThreatBaseline) / elapsedSec) : 0.0;
+            json << "{\"guid\":" << state.Guid.GetCounter()
+                 << ",\"name\":\"" << JsonEscape(bot ? bot->GetName() : "loading") << "\""
+                 << ",\"class_id\":" << (bot ? uint32(bot->getClass()) : 0)
+                 << ",\"role\":\"" << (bot ? JsonEscape(GetDungeonRole(bot)) : "unknown") << "\""
+                 << ",\"elapsed_seconds\":" << std::fixed << std::setprecision(3) << elapsedSec
+                 << ",\"damage\":" << (metrics ? metrics->Damage : 0)
+                 << ",\"dps\":" << std::fixed << std::setprecision(2) << dps
+                 << ",\"threat_per_second\":" << std::fixed << std::setprecision(2) << tps
+                 << ",\"threat_observable\":" << (metrics && metrics->ThreatBaseline >= 0.0f && metrics->ThreatCurrent > metrics->ThreatBaseline ? "true" : "false")
+                 << ",\"attempts\":" << (metrics ? metrics->Attempts : 0)
+                 << ",\"successes\":" << (metrics ? metrics->Successes : 0)
+                 << ",\"spell_damage\":[";
+            bool firstSpell = true;
+            if (metrics)
+            {
+                std::vector<std::pair<uint32, uint64>> spells(metrics->SpellDamage.begin(), metrics->SpellDamage.end());
+                std::sort(spells.begin(), spells.end(), [](auto const& left, auto const& right) { return left.second > right.second; });
+                for (auto const& [spellId, amount] : spells)
+                {
+                    if (!firstSpell)
+                        json << ',';
+                    firstSpell = false;
+                    SpellInfo const* info = spellId ? sSpellMgr->GetSpellInfo(spellId) : nullptr;
+                    json << "{\"spell_id\":" << spellId
+                         << ",\"spell_name\":\"" << JsonEscape(info ? info->SpellName : "Melee") << "\""
+                         << ",\"damage\":" << amount << '}';
+                }
+            }
+            json << "]}";
+        }
+        json << ']';
+    };
+
     json << "{\"ok\":true,\"action\":\"botauto_calibrate_status\""
          << ",\"active\":" << (_calibrationActive ? "true" : "false")
          << ",\"isolated_from_route_telemetry\":true"
+         << ",\"damage_basis\":\"effective_or_unmitigated\""
          << ",\"phase\":\"" << (_calibrationAoePhase ? "aoe" : "single_target") << "\""
-         << ",\"window_seconds\":120,\"bots\":[";
-    bool firstBot = true;
-    for (WorldBotState const& state : _calibrationBots)
+         << ",\"window_seconds\":120,\"bots\":";
+    writeBots(_calibrationMetrics, false);
+    json << ",\"previous_window\":";
+    if (!_calibrationPreviousWindowValid)
+        json << "null";
+    else
     {
-        if (!firstBot)
-            json << ',';
-        firstBot = false;
-        Player* bot = GetLoadedBot(state);
-        auto itr = _calibrationMetrics.find(state.Guid.GetCounter());
-        CalibrationMetrics const* metrics = itr == _calibrationMetrics.end() ? nullptr : &itr->second;
-        uint64 startedMs = metrics && metrics->WindowStartedMs ? metrics->WindowStartedMs : _calibrationStartedMs;
-        double elapsedSec = startedMs && nowMs > startedMs ? double(nowMs - startedMs) / 1000.0 : 0.0;
-        double dps = metrics && elapsedSec > 0.0 ? double(metrics->Damage) / elapsedSec : 0.0;
-        double tps = metrics && metrics->ThreatBaseline >= 0.0f && elapsedSec > 0.0
-            ? std::max(0.0, double(metrics->ThreatCurrent - metrics->ThreatBaseline) / elapsedSec) : 0.0;
-        json << "{\"guid\":" << state.Guid.GetCounter()
-             << ",\"name\":\"" << JsonEscape(bot ? bot->GetName() : "loading") << "\""
-             << ",\"class_id\":" << (bot ? uint32(bot->getClass()) : 0)
-             << ",\"role\":\"" << (bot ? JsonEscape(GetDungeonRole(bot)) : "unknown") << "\""
-             << ",\"elapsed_seconds\":" << std::fixed << std::setprecision(3) << elapsedSec
-             << ",\"damage\":" << (metrics ? metrics->Damage : 0)
-             << ",\"dps\":" << std::fixed << std::setprecision(2) << dps
-             << ",\"threat_per_second\":" << std::fixed << std::setprecision(2) << tps
-             << ",\"attempts\":" << (metrics ? metrics->Attempts : 0)
-             << ",\"successes\":" << (metrics ? metrics->Successes : 0)
-             << ",\"spell_damage\":[";
-        bool firstSpell = true;
-        if (metrics)
-        {
-            std::vector<std::pair<uint32, uint64>> spells(metrics->SpellDamage.begin(), metrics->SpellDamage.end());
-            std::sort(spells.begin(), spells.end(), [](auto const& left, auto const& right) { return left.second > right.second; });
-            for (auto const& [spellId, amount] : spells)
-            {
-                if (!firstSpell)
-                    json << ',';
-                firstSpell = false;
-                SpellInfo const* info = spellId ? sSpellMgr->GetSpellInfo(spellId) : nullptr;
-                json << "{\"spell_id\":" << spellId
-                     << ",\"spell_name\":\"" << JsonEscape(info ? info->SpellName : "Melee") << "\""
-                     << ",\"damage\":" << amount << '}';
-            }
-        }
-        json << "]}";
+        json << "{\"phase\":\"" << (_calibrationPreviousAoePhase ? "aoe" : "single_target") << "\",\"bots\":";
+        writeBots(_calibrationPreviousMetrics, true);
+        json << '}';
     }
-    json << "],\"failure_reason\":null}";
+    json << ",\"failure_reason\":null}";
     return json.str();
 }
 
@@ -1668,6 +1692,9 @@ void BotWorldPopulationMgr::Update(uint32 diff)
         bool aoePhase = ((NowMs() - _calibrationStartedMs) / 120000) % 2 == 1;
         if (aoePhase != _calibrationAoePhase)
         {
+            _calibrationPreviousMetrics = _calibrationMetrics;
+            _calibrationPreviousAoePhase = _calibrationAoePhase;
+            _calibrationPreviousWindowValid = true;
             _calibrationAoePhase = aoePhase;
             uint64 windowStartedMs = NowMs();
             for (auto& [guid, metrics] : _calibrationMetrics)
@@ -17899,8 +17926,9 @@ void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uin
         auto calibration = _calibrationMetrics.find(owner->GetGUID().GetCounter());
         if (calibration != _calibrationMetrics.end())
         {
-            calibration->second.Damage += damage;
-            calibration->second.SpellDamage[spellId] += damage;
+            uint32 measuredDamage = damage ? damage : unmitigatedDamage;
+            calibration->second.Damage += measuredDamage;
+            calibration->second.SpellDamage[spellId] += measuredDamage;
             return;
         }
     }

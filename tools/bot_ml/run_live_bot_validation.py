@@ -2398,7 +2398,11 @@ def run_worldserver(binary: Path, config: Path, timeout_sec: int, script: str, o
                     if not calibration_start:
                         time.sleep(observe_sec)
                 elif command_text == ".botauto calibrate start":
-                    output_prefix += read_until_console_prompt(process, deadline, expected_command_output_marker(command_text))
+                    output_prefix += read_until_console_prompt(
+                        process,
+                        bounded_console_deadline(deadline, 10),
+                        expected_command_output_marker(command_text),
+                    )
                     time.sleep(observe_sec)
                 elif command_text.startswith("server shutdown") or command_text == "server exit":
                     if process.stdin and not process.stdin.closed:
@@ -2413,7 +2417,8 @@ def run_worldserver(binary: Path, config: Path, timeout_sec: int, script: str, o
                         killed_after_shutdown = True
                     break
                 elif command_text:
-                    output_prefix += read_until_console_prompt(process, deadline, expected_command_output_marker(command_text))
+                    command_deadline = bounded_console_deadline(deadline, 10) if command_text.startswith(".botauto calibrate") else deadline
+                    output_prefix += read_until_console_prompt(process, command_deadline, expected_command_output_marker(command_text))
             if process.stdin and not process.stdin.closed:
                 process.stdin.close()
                 process.stdin = None

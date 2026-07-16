@@ -3317,7 +3317,8 @@ def test_parallel_combat_calibration_is_isolated_and_uses_live_rotations():
 
     damage = function_body(manager, "void BotWorldPopulationMgr::NotifyCombatDamage")
     assert damage.index("_calibrationMetrics.find") < damage.index("FindCombatLogCohortPlayer(attacker)")
-    assert "calibration->second.SpellDamage[spellId] += damage" in damage
+    assert "uint32 measuredDamage = damage ? damage : unmitigatedDamage" in damage
+    assert "calibration->second.SpellDamage[spellId] += measuredDamage" in damage
     assert "isolated_from_route_telemetry" in manager
     assert '{ "calibrate", rbac::RBAC_PERM_COMMAND_HEALERBOT' in commands
     assert "StartCombatCalibration" in commands
