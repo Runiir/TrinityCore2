@@ -74,6 +74,8 @@ void TotemAI::UpdateAI(uint32 /*diff*/)
     // player totem, which made offensive totems reject their owner's valid
     // target and idle for their entire lifetime.
     Unit* owner = me->ToTotem()->GetOwner();
+    if (owner && owner->GetTypeId() == TYPEID_PLAYER)
+        me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED);
     bool totemCanAttack = victim && me->IsValidAttackTarget(victim, spellInfo);
     bool ownerCanAttack = victim && owner && owner->IsValidAttackTarget(victim, spellInfo);
 

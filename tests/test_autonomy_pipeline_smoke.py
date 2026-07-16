@@ -596,6 +596,7 @@ def test_shaman_totems_are_combat_entry_setup_without_spam():
 
     totem_ai = read(ROOT / "src/server/game/AI/CoreAI/TotemAI.cpp")
     assert "me->ToTotem()->GetOwner()" in totem_ai
+    assert "me->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED)" in totem_ai
     assert "owner->IsValidAttackTarget(victim, spellInfo)" in totem_ai
     assert "TRIGGERED_IGNORE_TARGET_CHECK" in totem_ai
     assert "_lastCastResult = me->CastSpell" in totem_ai
