@@ -3239,10 +3239,12 @@ def test_stonecore_quality_repairs_cover_hazards_pet_recovery_and_healer_protect
     assert '"tank_move_to_add_centroid"' in manager
     assert '"misdirection_to_tank"' in manager
     assert "bool hunterAoeTransferReady = true;" in manager
-    assert "bot->GetPower(POWER_FOCUS) >= uint32(multiShotCost)" in manager
+    assert "bot->GetPower(POWER_FOCUS) >= 40" in manager
     assert "hunterAoeTransferReady\n            && bot->HasSpell(34477)" in manager
     assert "if (useAreaTransfer && bot->isMoving()" in manager
     assert "bot->StopMoving();" in manager
+    assert "transferAction.SpellId = 2643;" in manager
+    assert 'RecordCombatAttempt(state, bot, add, "misdirection_aoe_transfer"' in manager
     assert '"righteous_defense_healer_pickup"' in manager
     assert '"hand_of_reckoning_add_pickup"' in manager
     assert '"fade_threat_drop"' in manager

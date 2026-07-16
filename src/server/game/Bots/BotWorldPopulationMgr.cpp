@@ -10659,11 +10659,15 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         bool hunterAoeTransferReady = true;
         if (bot->getClass() == CLASS_HUNTER && addCount >= 2)
         {
-            SpellInfo const* multiShot = sSpellMgr->GetSpellInfo(2643);
-            int32 multiShotCost = multiShot
-                ? multiShot->CalcPowerCost(bot, multiShot->GetSchoolMask()) : 0;
-            hunterAoeTransferReady = multiShot && bot->HasSpell(2643)
-                && (multiShotCost <= 0 || bot->GetPower(POWER_FOCUS) >= uint32(multiShotCost));
+            // Cataclysm Multi-Shot costs 40 focus. CalcPowerCost can report
+            // zero here because the spell's focus cost is supplied through a
+            // secondary effect in this client data, while candidate building
+            // correctly rejects it as insufficient_resource. Use the actual
+            // gameplay threshold so the gate agrees with the cast validator.
+            hunterAoeTransferReady = add && bot->HasSpell(2643)
+                && bot->GetPower(POWER_FOCUS) >= 40
+                && bot->GetExactDist(add) >= 5.0f && bot->GetExactDist(add) <= 35.0f
+                && bot->IsWithinLOSInMap(add);
         }
 
         // Do not start the short Misdirection window until the hunter can pay
@@ -10701,10 +10705,35 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 && bot->GetExactDist(add) >= 5.0f && bot->GetExactDist(add) <= 35.0f
                 && bot->IsWithinLOSInMap(add))
                 bot->StopMoving();
-            ResolvedCombatAction transferAction = ResolveProfileCombatAction(bot, add,
-                std::max<uint32>(1, addCount), useAreaTransfer);
-            BotActionResult result = ExecuteProfileCombatAction(&state, bot, add, &transferAction,
-                std::max<uint32>(1, addCount), useAreaTransfer);
+            ResolvedCombatAction transferAction;
+            BotActionResult result = BotActionResult::NoAction;
+            if (useAreaTransfer)
+            {
+                // Do not allow the density resolver to fall back to Cobra Shot
+                // during an active AoE Misdirection window. The transfer cast
+                // must itself be an area attack.
+                transferAction.Valid = true;
+                transferAction.Type = "cast";
+                transferAction.SpellId = 2643;
+                transferAction.TargetGuid = add->GetGUID();
+                transferAction.DebugName = "cleave";
+                transferAction.MovementDirective = "ranged";
+                transferAction.AutoAttackMode = "ranged";
+                transferAction.MinRange = 5.0f;
+                transferAction.MaxRange = 35.0f;
+                BotActionExecutor executor;
+                result = executor.ExecuteCombat(bot, bot, transferAction);
+                std::string castFailureReason;
+                if (result == BotActionResult::CastFailed)
+                    castFailureReason = "spell_cast_result_" + std::to_string(executor.LastSpellCastResult());
+                RecordCombatAttempt(state, bot, add, "misdirection_aoe_transfer", &transferAction,
+                    result, castFailureReason.empty() ? nullptr : castFailureReason.c_str());
+            }
+            else
+            {
+                transferAction = ResolveProfileCombatAction(bot, add, 1, false);
+                result = ExecuteProfileCombatAction(&state, bot, add, &transferAction, 1, false);
+            }
             std::string raw = BuildRawJson(bot, add);
             std::string semantic = BuildSemanticJson(bot, add, "dungeon_boss", &power, stage, activity);
             RecordEvent(state, bot, "boss_adds", add,
