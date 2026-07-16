@@ -652,6 +652,19 @@ def test_dummy_calibration_followup_spreads_living_bomb_and_avoids_refresh_waste
     assert "`action`.`priority_bucket`=4" in sql
 
 
+def test_dummy_calibration_uses_aura_refresh_threshold_for_serpent_sting():
+    sql = read(ROOT / "sql/custom/world/2026_07_16_05_dummy_dps_aura_refresh.sql")
+    profile = read(PLAYER_BOT_ACTION_PROFILE)
+    manager = read(BOT_MGR)
+
+    assert "`action`.`maintain_aura_id`=1978" in sql
+    assert "`action`.`refresh_aura_below_ms`=3000" in sql
+    assert "MaintainedAuraBlocksRefresh" in profile
+    assert "spell.RefreshAuraBelowMs" in profile
+    assert "MaintainedProfileAuraBlocksRefresh" in manager
+    assert "spell.RefreshAuraBelowMs" in manager
+
+
 def test_stonecore_rotation_sql_declares_buffs_hunter_builder_and_aoe_gate():
     sql = read(STONECORE_ROTATION_SQL)
 

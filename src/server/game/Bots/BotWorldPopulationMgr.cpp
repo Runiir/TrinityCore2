@@ -122,6 +122,15 @@ bool CancelRemovableShapeshifts(Player* bot)
     return !removable.empty();
 }
 
+bool MaintainedProfileAuraBlocksRefresh(Unit const* target, BotActionProfileSpell const& spell)
+{
+    Aura const* aura = target && spell.MaintainAuraId ? target->GetAura(spell.MaintainAuraId) : nullptr;
+    if (!aura)
+        return false;
+    int32 durationMs = aura->GetDuration();
+    return !spell.RefreshAuraBelowMs || durationMs < 0 || uint32(durationMs) > spell.RefreshAuraBelowMs;
+}
+
 std::string LowerCopy(std::string value)
 {
     std::transform(value.begin(), value.end(), value.begin(), [](unsigned char c) { return char(std::tolower(c)); });
@@ -7988,7 +7997,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 || (spell.ForbiddenSelfAura && healer->HasAura(spell.ForbiddenSelfAura))
                 || (spell.RequiredTargetAura && !candidateTarget->HasAura(spell.RequiredTargetAura))
                 || (spell.ForbiddenTargetAura && candidateTarget->HasAura(spell.ForbiddenTargetAura))
-                || (spell.MaintainAuraId && candidateTarget->HasAura(spell.MaintainAuraId)))
+                || MaintainedProfileAuraBlocksRefresh(candidateTarget, spell))
                 continue;
 
             uint32 injuredPlayers = 0;
@@ -15979,6 +15988,11 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         if (candidate.Profile.ForbiddenTargetAura && actionTarget->HasAura(candidate.Profile.ForbiddenTargetAura))
         {
             candidate.RejectReason = "forbidden_target_aura";
+            continue;
+        }
+        if (MaintainedProfileAuraBlocksRefresh(actionTarget, candidate.Profile))
+        {
+            candidate.RejectReason = "maintain_aura_active";
             continue;
         }
         float distance = selfTarget ? 0.0f : bot->GetExactDist(actionTarget);

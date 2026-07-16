@@ -2,6 +2,7 @@
 #include "DataStores/DBCStores.h"
 #include "DatabaseEnv.h"
 #include "Player.h"
+#include "SpellAuras.h"
 #include "SpellHistory.h"
 #include "SpellInfo.h"
 #include "SpellMgr.h"
@@ -41,6 +42,15 @@ char const* PowerName(Powers power)
         case POWER_RUNIC_POWER: return "runic_power";
         default: return "mana";
     }
+}
+
+bool MaintainedAuraBlocksRefresh(Unit const* target, uint32 auraId, uint32 refreshBelowMs)
+{
+    Aura const* aura = target && auraId ? target->GetAura(auraId) : nullptr;
+    if (!aura)
+        return false;
+    int32 durationMs = aura->GetDuration();
+    return !refreshBelowMs || durationMs < 0 || uint32(durationMs) > refreshBelowMs;
 }
 
 struct DbRotationCache
@@ -466,7 +476,8 @@ std::vector<BotActionCandidate> BotClassSpecActionProfileStore::BuildCandidates(
                 candidate.RejectReason = "missing_required_target_aura";
             else if (spell.ForbiddenTargetAura && actionTarget && actionTarget->HasAura(spell.ForbiddenTargetAura))
                 candidate.RejectReason = "forbidden_target_aura_active";
-            else if (spell.MaintainAuraId && actionTarget && actionTarget->HasAura(spell.MaintainAuraId))
+            else if (spell.MaintainAuraId && MaintainedAuraBlocksRefresh(
+                actionTarget, spell.MaintainAuraId, spell.RefreshAuraBelowMs))
                 candidate.RejectReason = "maintain_aura_active";
             else if (spellInfo->NeedsComboPoints() && (!actionTarget || bot->GetComboTarget() != actionTarget->GetGUID() || !bot->GetComboPoints()))
                 candidate.RejectReason = "insufficient_combo_points";
