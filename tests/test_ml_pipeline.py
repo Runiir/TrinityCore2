@@ -6729,6 +6729,15 @@ def test_live_bot_validation_config_writes_alternate_route_targets(tmp_path):
             "z": 227.6403,
             "source_entry": 42186,
             "alternate_target_entries": [42166, 42178, 42179, 42180, 42166, 0],
+            "add_target_entries": [42362, 0],
+            "pack_target_entries": [42166],
+            "hazard_source_entry": 42187,
+            "hazard_detection_spell_id": 79888,
+            "hazard_damage_spell_id": 79889,
+            "hazard_shape": "radial",
+            "hazard_radius_yards": 6.0,
+            "hazard_safety_margin_yards": 2.5,
+            "cluster_radius_yards": 80.0,
             "expected_bot_count": 10,
         },
     )
@@ -6737,6 +6746,15 @@ def test_live_bot_validation_config_writes_alternate_route_targets(tmp_path):
     assert 'BotWorld.RuntimeProfile = ""' in config_text
     assert "BotWorld.ValidationRoute.TargetEntry = 42186" in config_text
     assert 'BotWorld.ValidationRoute.AlternateTargetEntries = "42166,42178,42179,42180"' in config_text
+    assert 'BotWorld.ValidationRoute.AddTargetEntries = "42362"' in config_text
+    assert 'BotWorld.ValidationRoute.PackTargetEntries = "42166"' in config_text
+    assert "BotWorld.ValidationRoute.HazardSourceEntry = 42187" in config_text
+    assert "BotWorld.ValidationRoute.HazardDetectionSpellId = 79888" in config_text
+    assert "BotWorld.ValidationRoute.HazardDamageSpellId = 79889" in config_text
+    assert 'BotWorld.ValidationRoute.HazardShape = "radial"' in config_text
+    assert "BotWorld.ValidationRoute.HazardRadiusYards = 6.0" in config_text
+    assert "BotWorld.ValidationRoute.HazardSafetyMarginYards = 2.5" in config_text
+    assert "BotWorld.ValidationRoute.ClusterRadiusYards = 80.0" in config_text
     assert "BotProgression.AllowDungeons = 1" in config_text
 
 

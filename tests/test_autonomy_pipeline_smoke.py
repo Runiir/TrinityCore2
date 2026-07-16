@@ -1429,6 +1429,22 @@ def test_confirmed_direct_boss_death_emits_route_terminal_without_manifest():
     )
 
 
+def test_direct_route_config_loads_mechanics_without_manifest():
+    load_config = function_body(read(BOT_MGR), "void BotWorldPopulationMgr::LoadConfig")
+    for key in [
+        "BotWorld.ValidationRoute.AddTargetEntries",
+        "BotWorld.ValidationRoute.PackTargetEntries",
+        "BotWorld.ValidationRoute.HazardSourceEntry",
+        "BotWorld.ValidationRoute.HazardDetectionSpellId",
+        "BotWorld.ValidationRoute.HazardDamageSpellId",
+        "BotWorld.ValidationRoute.HazardShape",
+        "BotWorld.ValidationRoute.HazardRadiusYards",
+        "BotWorld.ValidationRoute.HazardSafetyMarginYards",
+        "BotWorld.ValidationRoute.ClusterRadiusYards",
+    ]:
+        assert key in load_config
+
+
 def test_validation_route_exact_hazards_suppress_generic_boss_cast_dodges():
     route_objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
     movement = route_objective[

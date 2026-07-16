@@ -1674,6 +1674,15 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
     _config.ValidationRouteO = sConfigMgr->GetFloatDefault("BotWorld.ValidationRoute.O", _config.ValidationRouteO);
     _config.ValidationRouteTargetEntry = sConfigMgr->GetIntDefault("BotWorld.ValidationRoute.TargetEntry", _config.ValidationRouteTargetEntry);
     _config.ValidationRouteAlternateTargetEntries = ParseUIntList(sConfigMgr->GetStringDefault("BotWorld.ValidationRoute.AlternateTargetEntries", ""));
+    _config.ValidationRouteAddTargetEntries = ParseUIntList(sConfigMgr->GetStringDefault("BotWorld.ValidationRoute.AddTargetEntries", ""));
+    _config.ValidationRoutePackTargetEntries = ParseUIntList(sConfigMgr->GetStringDefault("BotWorld.ValidationRoute.PackTargetEntries", ""));
+    _config.ValidationRouteHazardSourceEntry = sConfigMgr->GetIntDefault("BotWorld.ValidationRoute.HazardSourceEntry", _config.ValidationRouteHazardSourceEntry);
+    _config.ValidationRouteHazardDetectionSpellId = sConfigMgr->GetIntDefault("BotWorld.ValidationRoute.HazardDetectionSpellId", _config.ValidationRouteHazardDetectionSpellId);
+    _config.ValidationRouteHazardDamageSpellId = sConfigMgr->GetIntDefault("BotWorld.ValidationRoute.HazardDamageSpellId", _config.ValidationRouteHazardDamageSpellId);
+    _config.ValidationRouteHazardShape = sConfigMgr->GetStringDefault("BotWorld.ValidationRoute.HazardShape", _config.ValidationRouteHazardShape);
+    _config.ValidationRouteHazardRadiusYards = sConfigMgr->GetFloatDefault("BotWorld.ValidationRoute.HazardRadiusYards", _config.ValidationRouteHazardRadiusYards);
+    _config.ValidationRouteHazardSafetyMarginYards = sConfigMgr->GetFloatDefault("BotWorld.ValidationRoute.HazardSafetyMarginYards", _config.ValidationRouteHazardSafetyMarginYards);
+    _config.ValidationRouteClusterRadiusYards = sConfigMgr->GetFloatDefault("BotWorld.ValidationRoute.ClusterRadiusYards", _config.ValidationRouteClusterRadiusYards);
     _config.ValidationRouteActivationDataId = sConfigMgr->GetIntDefault("BotWorld.ValidationRoute.ActivationDataId", _config.ValidationRouteActivationDataId);
     _config.ValidationRouteActivationDataValue = sConfigMgr->GetIntDefault("BotWorld.ValidationRoute.ActivationDataValue", _config.ValidationRouteActivationDataValue);
     _config.ValidationRouteActivationSummonEntry = sConfigMgr->GetIntDefault("BotWorld.ValidationRoute.ActivationSummonEntry", _config.ValidationRouteActivationSummonEntry);
