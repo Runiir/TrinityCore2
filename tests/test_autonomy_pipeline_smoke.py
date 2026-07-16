@@ -1392,6 +1392,10 @@ def test_move_bot_to_profile_range_projects_approaches_to_terrain():
     assert "if (floorZ == INVALID_HEIGHT)\n            return false;" in profile_range
     assert "return MoveBotToPoint(state, bot, x, y, floorZ, false);" in profile_range
     assert "return moveToTerrainProjectedPoint(reference->GetPositionX(), reference->GetPositionY(), reference->GetPositionZ());" in profile_range
+    assert "Player* partyRangedAnchor = nullptr;" in profile_range
+    assert 'std::string(GetDungeonRole(member)) == "healer"' in profile_range
+    assert "for (float spread : { 3.0f, -3.0f, 0.0f })" in profile_range
+    assert "partyRangedAnchor->GetPositionX() + std::cos(tangentAngle) * spread" in profile_range
     assert "float candidateRange = reference->GetExactDist(rangedPosition);" in profile_range
     assert "bool movingOutward = distance < desiredRange - 1.0f;" in profile_range
     assert "reference->GetAngle(bot) : bot->GetAngle(reference)" in profile_range
@@ -3054,6 +3058,8 @@ def test_stonecore_quality_repairs_cover_hazards_pet_recovery_and_healer_protect
     assert "GetFirstCollisionPosition(profileAction.MinRange" not in manager
     assert "? std::max(12.0f, minRange + 4.0f)" in manager
     assert "auto moveOutOfProfileDeadZone" in manager
+    assert "Player* partyRangedAnchor = nullptr;" in manager
+    assert "for (float spread : { 3.0f, -3.0f, 0.0f })" in manager
     assert "endpointDistance >= rangeAction.MinRange + 1.0f" in manager
     assert "float absoluteBearing = movingOutward ? reference->GetAngle(bot) : bot->GetAngle(reference);" in manager
     assert "Position rangedPosition = bot->GetFirstCollisionPosition(travelDistance, relativeBearing + angleOffset);" in manager

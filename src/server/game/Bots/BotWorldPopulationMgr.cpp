@@ -3410,6 +3410,45 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
         && bot->IsWithinLOSInMap(reference))
         return false;
 
+    // A party member already casting from a legal ranged lane is stronger
+    // navigation evidence than a ray projected out of a large boss model.
+    // Try small perpendicular spread offsets first and the member's exact
+    // point last. The normal path validator and hazard controller remain
+    // authoritative, so this cannot force an off-mesh or unsafe destination.
+    Player* partyRangedAnchor = nullptr;
+    if (Group* group = bot->GetGroup())
+        for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
+            if (Player* member = itr->GetSource(); member && member != bot && member->IsAlive()
+                && member->GetMap() == bot->GetMap() && std::string(GetDungeonRole(member)) == "healer")
+            {
+                float memberRange = member->GetExactDist(reference);
+                if (memberRange >= (minRange > 0.0f ? minRange + 1.0f : 5.0f)
+                    && (maxRange <= 0.0f || memberRange <= maxRange - 1.0f)
+                    && member->IsWithinLOSInMap(reference))
+                {
+                    partyRangedAnchor = member;
+                    break;
+                }
+            }
+
+    if (partyRangedAnchor)
+    {
+        float tangentAngle = reference->GetAngle(partyRangedAnchor) + float(M_PI_2);
+        for (float spread : { 3.0f, -3.0f, 0.0f })
+        {
+            float x = partyRangedAnchor->GetPositionX() + std::cos(tangentAngle) * spread;
+            float y = partyRangedAnchor->GetPositionY() + std::sin(tangentAngle) * spread;
+            Position rangedPosition;
+            rangedPosition.Relocate(x, y, partyRangedAnchor->GetPositionZ(), tangentAngle);
+            float candidateRange = reference->GetExactDist(rangedPosition);
+            if (candidateRange < (minRange > 0.0f ? minRange + 1.0f : 5.0f)
+                || (maxRange > 0.0f && candidateRange > maxRange - 1.0f))
+                continue;
+            if (moveToTerrainProjectedPoint(x, y, rangedPosition.GetPositionZ()))
+                return true;
+        }
+    }
+
     // Boss origins are often outside or on the edge of the navigable polygon.
     // Project from the bot's known-good polygon instead: move radially away
     // when inside the ranged band and toward the target when outside it. This
