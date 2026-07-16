@@ -2927,6 +2927,13 @@ def test_validation_route_high_density_adds_pull_the_tank_into_the_swarm_and_fai
     assert 'escapeIssued ? "reissue_shared_escape_unreached" : "move_to_shared_escape"' in adds
     assert "densityAreaPhase ? addCount : 0, densityAreaPhase" in adds
     assert "ExecuteProfileCombatAction(&state, bot, add, &profileAction, addCount, true)" in adds
+    assert "++densityTankOwnedAddCount;" in adds
+    assert "densityTankOwnedAddCount * 10 >= addCount * 8" in adds
+    assert "bool urgentSwarmDamageRelease = cohortSwarmActive && addCount >= 12" in adds
+    assert "bool dpsSwarmDamageRelease = densityTankOwnsSecureMajority || urgentSwarmDamageRelease;" in adds
+    assert "!dpsSwarmDamageRelease && !bot->getAttackers().empty()" in adds
+    assert '"tank_swarm_defensive"' in adds
+    assert "std::array<uint32, 3>{ 86150, 31850, 498 }" in adds
     assert 'RecordEvent(state, bot, "boss_add_density", add, "no_legal_density_action"' in adds
     assert_ordered(
         adds,
@@ -3025,7 +3032,7 @@ def test_density_tank_centroid_control_prioritizes_loose_healer_targets():
     assert 'action = moved ? "tank_move_to_add_centroid" : "hold_tank_add_centroid";' in adds
     assert '"dps_stack_for_add_pickup"' in adds
     assert "densityDefenseTarget == bot && densityTank" not in adds
-    assert 'role == "dps" && densityTank && !bot->getAttackers().empty()' in adds
+    assert 'role == "dps" && densityTank && !dpsSwarmDamageRelease && !bot->getAttackers().empty()' in adds
     assert 'if (memberRole == "tank" || member->getAttackers().empty())' in adds
     assert "nearestAttacker->GetAngle(densityTank) - densityTank->GetOrientation()" in adds
     assert "densityTank->GetFirstCollisionPosition(4.0f" in adds
@@ -3040,9 +3047,9 @@ def test_density_tank_centroid_control_prioritizes_loose_healer_targets():
     assert '"ice_block_swarm_pickup_emergency"' in adds
     assert 'bool tankSwarmAreaPhase = role == "tank" && cohortSwarmActive;' in adds
     assert 'bool secureSwarmAreaPhase = role == "dps" && cohortSwarmActive' in adds
-    assert "densityTankOwnsSecureMajority || hunterMisdirectionActive" in adds
+    assert "dpsSwarmDamageRelease || hunterMisdirectionActive" in adds
     assert "bool densityAreaPhase = highDensityPhase || tankSwarmAreaPhase || secureSwarmAreaPhase;" in adds
-    assert "bot->GetExactDist2d(densityTank) <= 6.0f" in adds
+    assert "bot->GetExactDist2d(densityTank) <= 8.0f" in adds
     assert "(!bot->getAttackers().empty() && !botInsideTankPickup)" in adds
     assert "bot->GetExactDist2d(densityTank) > 8.0f" not in adds
     assert '"consecration_party_pickup"' in adds

@@ -44,6 +44,8 @@
 #include "Creature.h"
 #include "CreatureGroups.h"
 #include "WorldSession.h"
+
+#include <array>
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -10102,6 +10104,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         Player* densityTank = nullptr;
         Player* densityHealer = nullptr;
         Player* densityDefenseTarget = nullptr;
+        uint32 densityTankOwnedAddCount = 0;
         uint32 densityTankSecureAddCount = 0;
         size_t densityDefenseScore = 0;
         uint8 densityDefenseRolePriority = 0;
@@ -10154,6 +10157,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             for (Creature* candidate : localAdds)
                 if (candidate && candidate->GetVictim() == densityTank)
                 {
+                    ++densityTankOwnedAddCount;
                     float tankThreat = candidate->GetThreatManager().GetThreat(densityTank, true);
                     float highestPartyThreat = 0.0f;
                     for (WorldBotState const& cohortState : _bots)
@@ -10175,7 +10179,17 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 }
         bool densityTankOwnsSecureMajority = addCount > 0
             && densityTankSecureAddCount * 10 >= addCount * 9;
-        bool botInsideTankPickup = densityTank && bot->GetExactDist2d(densityTank) <= 6.0f;
+        bool densityTankOwnsVictimMajority = addCount > 0
+            && densityTankOwnedAddCount * 10 >= addCount * 8;
+        // A very large wave must be burned before its incoming damage exceeds
+        // tank cooldown and healer throughput. At that point, 80% current
+        // victim ownership is sufficient to release party AoE; demanding 90%
+        // of adds at 2.5x threat caused DPS to wait while Corborus grew from 30
+        // to 57 adds. Small waves retain the stricter threat-headroom gate.
+        bool urgentSwarmDamageRelease = cohortSwarmActive && addCount >= 12
+            && densityTankOwnsVictimMajority;
+        bool dpsSwarmDamageRelease = densityTankOwnsSecureMajority || urgentSwarmDamageRelease;
+        bool botInsideTankPickup = densityTank && bot->GetExactDist2d(densityTank) <= 8.0f;
 
         // Defend the party member from the closest listed attacker the tank
         // can acquire.  Selecting an older but distant healer attacker caused
@@ -10245,6 +10259,35 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             situation = "dungeon_boss";
             action = useAreaTransfer ? "misdirection_aoe_transfer" : "misdirection_single_target_transfer";
             return true;
+        }
+
+        // The density-only action resolver intentionally filters defensives,
+        // so protect the tank here before selecting the next area-threat cast.
+        // This is proactive at 12+ adds and escalates as health falls without
+        // overlapping major Protection Paladin cooldowns.
+        bool majorTankDefensiveActive = bot->HasAura(498) || bot->HasAura(31850)
+            || bot->HasAura(86150) || bot->HasAura(86659);
+        if (role == "tank" && cohortSwarmActive && addCount >= 12
+            && UnitHealthPct(bot) <= 0.90f && !majorTankDefensiveActive)
+        {
+            std::array<uint32, 3> defensiveSpells = UnitHealthPct(bot) <= 0.50f
+                ? std::array<uint32, 3>{ 86150, 31850, 498 }
+                : (UnitHealthPct(bot) <= 0.75f
+                    ? std::array<uint32, 3>{ 31850, 498, 86150 }
+                    : std::array<uint32, 3>{ 498, 31850, 86150 });
+            for (uint32 defensiveSpellId : defensiveSpells)
+                if (bot->HasSpell(defensiveSpellId)
+                    && TryCastFriendlySpell(bot, bot, defensiveSpellId))
+                {
+                    std::string raw = BuildRawJson(bot, add);
+                    std::string semantic = BuildSemanticJson(bot, add, "dungeon_boss", &power, stage, activity);
+                    RecordEvent(state, bot, "defensive", bot, "tank_swarm_defensive",
+                        raw.c_str(), semantic.c_str(), UnitHealthPct(bot), addCount, defensiveSpellId);
+                    target = add;
+                    situation = "dungeon_boss";
+                    action = "tank_swarm_defensive";
+                    return true;
+                }
         }
 
         if (role == "tank" && densityHealer && densityHealer->getAttackers().size() >= 5
@@ -10335,7 +10378,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         // the pickup radius and suppress new threat until that focus transfers.
         if (role == "dps" && densityTank && cohortSwarmActive && add
             && !hunterMisdirectionActive
-            && (!densityTankOwnsSecureMajority
+            && (!dpsSwarmDamageRelease
                 || (!bot->getAttackers().empty() && !botInsideTankPickup)))
         {
             bot->AttackStop();
@@ -10373,7 +10416,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return true;
         }
 
-        if (role == "dps" && densityTank && !bot->getAttackers().empty()
+        if (role == "dps" && densityTank && !dpsSwarmDamageRelease && !bot->getAttackers().empty()
             && !bot->HasUnitState(UNIT_STATE_CASTING) && !bot->IsFalling())
         {
             Unit* nearestAttacker = nullptr;
@@ -10415,7 +10458,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
         // If the bot is already in pickup range, or its legal path to the tank
         // was rejected above, stop adding threat until ownership transfers.
-        if (role == "dps" && densityTank && !bot->getAttackers().empty())
+        if (role == "dps" && densityTank && !dpsSwarmDamageRelease && !bot->getAttackers().empty())
         {
             bot->AttackStop();
             if (Pet* pet = bot->GetPet())
@@ -10609,7 +10652,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         // for secure ownership before using their own area profiles.
         bool tankSwarmAreaPhase = role == "tank" && cohortSwarmActive;
         bool secureSwarmAreaPhase = role == "dps" && cohortSwarmActive
-            && (densityTankOwnsSecureMajority || hunterMisdirectionActive);
+            && (dpsSwarmDamageRelease || hunterMisdirectionActive);
         bool densityAreaPhase = highDensityPhase || tankSwarmAreaPhase || secureSwarmAreaPhase;
         ResolvedCombatAction profileAction = ResolveProfileCombatAction(bot, add,
             densityAreaPhase ? addCount : 0, densityAreaPhase);
