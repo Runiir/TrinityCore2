@@ -1367,6 +1367,7 @@ private:
         bool ReferenceBuffsReady = false;
         bool ReferenceTargetDebuffsReady = false;
         std::map<uint32, uint64> SpellDamage;
+        std::map<uint32, uint32> SpellDamageEvents;
         std::map<uint32, uint32> ActionAttempts;
         std::map<std::string, uint32> ResultCounts;
     };

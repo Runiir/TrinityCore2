@@ -1236,6 +1236,7 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                 ? std::max(0.0, double(metrics->ThreatCurrent - metrics->ThreatBaseline) / elapsedSec) : 0.0;
             uint32 mainhandTempEnchant = 0;
             uint32 offhandTempEnchant = 0;
+            uint32 mainhandItemEntry = 0;
             uint32 fireTotemSpell = 0;
             uint32 fireTotemCreatedBySpell = 0;
             uint32 fireTotemEntry = 0;
@@ -1257,7 +1258,10 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
             if (bot)
             {
                 if (Item* item = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND))
+                {
+                    mainhandItemEntry = item->GetEntry();
                     mainhandTempEnchant = item->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT);
+                }
                 if (Item* item = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_OFFHAND))
                     offhandTempEnchant = item->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT);
                 if (bot->getClass() == CLASS_SHAMAN && bot->m_SummonSlot[SUMMON_SLOT_TOTEM_FIRE] && bot->GetMap())
@@ -1327,6 +1331,8 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                  << ",\"molten_armor\":" << (bot && bot->HasAura(30482) ? "true" : "false")
                  << ",\"aspect_of_the_hawk\":" << (bot && bot->HasAura(13165) ? "true" : "false")
                  << ",\"lightning_shield\":" << (bot && bot->HasAura(324) ? "true" : "false")
+                 << ",\"mainhand_item_entry\":" << mainhandItemEntry
+                 << ",\"dragonwrath_proc_aura\":" << (bot && bot->HasAura(101056) ? "true" : "false")
                  << ",\"mainhand_temp_enchant\":" << mainhandTempEnchant
                  << ",\"offhand_temp_enchant\":" << offhandTempEnchant
                  << ",\"fire_totem\":{\"entry\":" << fireTotemEntry
@@ -1404,7 +1410,8 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                     SpellInfo const* info = spellId ? sSpellMgr->GetSpellInfo(spellId) : nullptr;
                     json << "{\"spell_id\":" << spellId
                          << ",\"spell_name\":\"" << JsonEscape(info ? info->SpellName : "Melee") << "\""
-                         << ",\"damage\":" << amount << '}';
+                         << ",\"damage\":" << amount
+                         << ",\"event_count\":" << metrics->SpellDamageEvents.at(spellId) << '}';
                 }
             }
             uint32 botKey = state.Guid.GetCounter();
@@ -18758,6 +18765,7 @@ void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uin
             uint32 measuredDamage = damage ? damage : unmitigatedDamage;
             calibration->second.Damage += measuredDamage;
             calibration->second.SpellDamage[spellId] += measuredDamage;
+            ++calibration->second.SpellDamageEvents[spellId];
             return;
         }
     }
