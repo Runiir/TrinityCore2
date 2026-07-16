@@ -195,7 +195,7 @@
         },
         { "account": "SCVALDPSA", "name": "Scvaldpsa", "legacy_names": ["ScValDpsA"], "role": "dps", "class_spec": "fire_mage", "race": 1, "class": 8, "level": 85, "glyphs": [42739, 42743, 42753] },
         { "account": "SCVALDPSB", "name": "Scvaldpsb", "legacy_names": ["ScValDpsB"], "role": "dps", "class_spec": "survival_hunter", "race": 1, "class": 3, "level": 85, "glyphs": [42909, 42902, 42915], "pet": { "id_offset": 1, "entry": 8959, "modelid": 4124, "created_by_spell": 0, "name": "Scvalwolf", "level": 85, "slot": 0, "active": 1, "spells": [2649, 17253, 61683, 53184, 53186, 52858, 53205, 62760, { "id": 23145, "active": 193 }, { "id": 53401, "active": 193 }, { "id": 53434, "active": 193 }] } },
-        { "account": "SCVALDPSC", "name": "Scvaldpsc", "legacy_names": ["ScValDpsC"], "role": "dps", "class_spec": "enhancement_shaman", "race": 11, "class": 7, "level": 85, "glyphs": [41518, 41539, 41540] }
+        { "account": "SCVALDPSC", "name": "Scvaldpsc", "legacy_names": ["ScValDpsC"], "role": "dps", "class_spec": "enhancement_shaman", "race": 11, "class": 7, "level": 85, "spells": [2894], "glyphs": [41518, 41539, 41540] }
       ]
     },
     {
@@ -206,7 +206,7 @@
         { "account": "CALIBTANK", "name": "Calibtank", "role": "tank", "class_spec": "protection_paladin", "race": 1, "class": 2, "level": 85, "glyphs": [45745, 41106, 41092, 43365, 43340] },
         { "account": "CALIBMAGE", "name": "Calibmage", "role": "dps", "class_spec": "fire_mage", "gear_profile": "wowsims_cata_p4_fire_mage", "race": 1, "class": 8, "level": 85, "glyphs": [42739, 42743, 42753] },
         { "account": "CALIBHUNT", "name": "Calibhunt", "role": "dps", "class_spec": "survival_hunter", "gear_profile": "wowsims_cata_p4_survival_hunter", "race": 1, "class": 3, "level": 85, "glyphs": [42909, 42902, 42915], "pet": { "id_offset": 3, "entry": 8959, "modelid": 4124, "created_by_spell": 0, "name": "Calibwolf", "level": 85, "slot": 0, "active": 1, "spells": [2649, 17253, 61683, 53184, 53186, 52858, 53205, 62760, { "id": 23145, "active": 193 }, { "id": 53401, "active": 193 }, { "id": 53434, "active": 193 }] } },
-        { "account": "CALIBSHAM", "name": "Calibsham", "role": "dps", "class_spec": "enhancement_shaman", "gear_profile": "wowsims_cata_p4_enhancement_shaman", "race": 11, "class": 7, "level": 85, "glyphs": [41518, 41539, 41540] }
+        { "account": "CALIBSHAM", "name": "Calibsham", "role": "dps", "class_spec": "enhancement_shaman", "gear_profile": "wowsims_cata_p4_enhancement_shaman", "race": 11, "class": 7, "level": 85, "spells": [2894], "glyphs": [41518, 41539, 41540] }
       ]
     },
     {

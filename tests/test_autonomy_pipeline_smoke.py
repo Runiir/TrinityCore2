@@ -581,6 +581,7 @@ def test_shaman_totems_are_combat_entry_setup_without_spam():
     assert "Totem* totem = creature ? creature->ToTotem()" in totems
     assert "totem && totem->IsAlive()" in totems
     assert "totem->GetUInt32Value(UNIT_CREATED_BY_SPELL) == spellId" in totems
+    assert "totem->GetUInt32Value(UNIT_CREATED_BY_SPELL) == 2894" in totems
     assert "totem->GetSpell() == spellId" not in totems
     assert "ReadinessRetryUntilMs" in totems
     assert "totem_cast_failed:" in totems
@@ -693,6 +694,15 @@ def test_dummy_calibration_tuning_gates_spenders_and_adds_measured_aoe_actions()
     assert "POWER_HOLY_POWER" in manager
     assert 'candidate.SpellId == 53600 || candidate.SpellId == 84963' in manager
     assert "combustion_dot_window_not_ready" in manager
+
+
+def test_enhancement_uses_and_preserves_fire_elemental_before_searing_fallback():
+    root = Path(__file__).resolve().parents[1]
+    sql = (root / "sql/custom/world/2026_07_16_07_enhancement_fire_elemental.sql").read_text()
+    provisioning = (root / "experiments/configs/validation_provisioning_cata_001.json").read_text()
+
+    assert "2894,'offensive_cooldown','fire_elemental_totem" in sql
+    assert provisioning.count('"spells": [2894]') == 2
 
 
 def test_dummy_calibration_followup_spreads_living_bomb_and_avoids_refresh_waste():

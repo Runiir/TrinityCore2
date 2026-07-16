@@ -16381,7 +16381,9 @@ bool BotWorldPopulationMgr::TryEnsureCombatTotems(WorldBotState& state, Player* 
             ? bot->GetMap()->GetCreature(bot->m_SummonSlot[slot]) : nullptr;
         Totem* totem = creature ? creature->ToTotem() : nullptr;
         bool const ready = totem && totem->IsAlive()
-            && (slot != SUMMON_SLOT_TOTEM_FIRE || totem->GetUInt32Value(UNIT_CREATED_BY_SPELL) == spellId);
+            && (slot != SUMMON_SLOT_TOTEM_FIRE
+                || totem->GetUInt32Value(UNIT_CREATED_BY_SPELL) == spellId
+                || totem->GetUInt32Value(UNIT_CREATED_BY_SPELL) == 2894);
         if (ready)
         {
             // Training dummies do not always establish the ordinary victim
