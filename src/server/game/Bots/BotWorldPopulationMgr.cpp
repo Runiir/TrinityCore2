@@ -3423,8 +3423,7 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
             {
                 float memberRange = member->GetExactDist(reference);
                 if (memberRange >= (minRange > 0.0f ? minRange + 1.0f : 5.0f)
-                    && (maxRange <= 0.0f || memberRange <= maxRange - 1.0f)
-                    && member->IsWithinLOSInMap(reference))
+                    && (maxRange <= 0.0f || memberRange <= maxRange - 1.0f))
                 {
                     partyRangedAnchor = member;
                     break;

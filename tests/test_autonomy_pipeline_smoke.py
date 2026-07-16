@@ -1394,6 +1394,7 @@ def test_move_bot_to_profile_range_projects_approaches_to_terrain():
     assert "return moveToTerrainProjectedPoint(reference->GetPositionX(), reference->GetPositionY(), reference->GetPositionZ());" in profile_range
     assert "Player* partyRangedAnchor = nullptr;" in profile_range
     assert 'std::string(GetDungeonRole(member)) == "healer"' in profile_range
+    assert "member->IsWithinLOSInMap(reference)" not in profile_range
     assert "for (float spread : { 3.0f, -3.0f, 0.0f })" in profile_range
     assert "partyRangedAnchor->GetPositionX() + std::cos(tangentAngle) * spread" in profile_range
     assert "float candidateRange = reference->GetExactDist(rangedPosition);" in profile_range
