@@ -1472,6 +1472,7 @@ def test_trash_swarm_waits_for_secure_tank_threat_before_dps_release():
     route = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
 
     assert "trashThreatControl.SecureTankCount * 10 < trashThreatControl.EngagedCount * 9" in route
+    assert "trashThreatControl.TankOwnedCount * 10 >= trashThreatControl.EngagedCount * 9" in route
     assert "tankThreat >= 2000.0f && tankThreat >= highestPartyThreat * 2.5f" in route
     assert '"hold_for_secure_trash_threat"' in route
     assert '"focused_damage_during_trash_threat_build"' in route

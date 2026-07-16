@@ -10934,6 +10934,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         Player* Tank = nullptr;
         Unit* AreaTarget = nullptr;
         uint32 EngagedCount = 0;
+        uint32 TankOwnedCount = 0;
         uint32 SecureTankCount = 0;
     } trashThreatControl;
     if (_config.ValidationRouteKind != "boss")
@@ -10984,6 +10985,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
             if (!trashThreatControl.Tank || victim != trashThreatControl.Tank)
                 continue;
+            ++trashThreatControl.TankOwnedCount;
             float tankThreat = creature->GetThreatManager().GetThreat(trashThreatControl.Tank, true);
             float highestPartyThreat = 0.0f;
             for (WorldBotState const& cohortState : _bots)
@@ -11001,13 +11003,15 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     }
     bool insecureTrashSwarm = trashThreatControl.EngagedCount >= 3
         && trashThreatControl.SecureTankCount * 10 < trashThreatControl.EngagedCount * 9;
+    bool tankOwnsTrashMajority = trashThreatControl.EngagedCount > 0
+        && trashThreatControl.TankOwnedCount * 10 >= trashThreatControl.EngagedCount * 9;
     if (_config.ValidationRouteKind != "boss"
         && std::string(GetDungeonRole(bot)) == "dps"
         && trashThreatControl.Tank
         && insecureTrashSwarm)
     {
         Unit* tankFocus = trashThreatControl.Tank->GetVictim();
-        if (tankFocus && tankFocus->IsAlive() && bot->IsValidAttackTarget(tankFocus))
+        if (tankOwnsTrashMajority && tankFocus && tankFocus->IsAlive() && bot->IsValidAttackTarget(tankFocus))
         {
             if (bot->GetVictim() && bot->GetVictim() != tankFocus)
                 bot->AttackStop();
@@ -11053,7 +11057,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         std::string semantic = BuildSemanticJson(bot, trashThreatControl.AreaTarget, "normal_dungeon_trash", &power, stage, activity);
         RecordEvent(state, bot, "validation_route_threat_gate", trashThreatControl.AreaTarget,
             moved ? "stack_for_secure_trash_threat" : "hold_for_secure_trash_threat",
-            raw.c_str(), semantic.c_str(), float(trashThreatControl.SecureTankCount), trashThreatControl.EngagedCount);
+            raw.c_str(), semantic.c_str(), float(trashThreatControl.TankOwnedCount), trashThreatControl.EngagedCount);
         state.TargetGuid = trashThreatControl.Tank->GetVictim()
             ? trashThreatControl.Tank->GetVictim()->GetGUID() : ObjectGuid::Empty;
         target = trashThreatControl.Tank->GetVictim();
