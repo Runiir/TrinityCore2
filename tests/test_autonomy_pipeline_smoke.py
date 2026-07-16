@@ -176,6 +176,26 @@ def test_validation_route_prerequisite_switch_resets_pack_progress_budget():
     )
 
 
+def test_unengaged_boss_prerequisite_cannot_latch_trash_failure_terminal():
+    route_objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    no_progress = route_objective.split("bool unengagedBossPrerequisite", 1)[1].split(
+        "if (bossRouteContext", 1
+    )[0]
+
+    assert '&& !isValidationRouteScriptTarget(creature)' in no_progress
+    assert '&& !prerequisiteTarget->IsInCombat()' in no_progress
+    assert '&& !prerequisiteTarget->GetVictim();' in no_progress
+    assert_ordered(
+        no_progress,
+        "if (unengagedBossPrerequisite)",
+        "state.ValidationRouteCombatNoProgressCount = 0;",
+        "state.ValidationRoutePackNoProgressCount = 0;",
+        'refreshRouteProgress("unengaged_boss_prerequisite_observed", 0);',
+        "return false;",
+    )
+    assert "markValidationRouteTrashFailed" not in no_progress
+
+
 def test_boss_prerequisites_use_trash_swarm_threat_security_without_intercepting_boss_adds():
     route_objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
     threat_security = route_objective.split("struct TrashThreatControl", 1)[1].split(

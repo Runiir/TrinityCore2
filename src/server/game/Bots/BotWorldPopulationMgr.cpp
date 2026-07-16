@@ -8581,11 +8581,30 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 || (isValidationRouteScriptTarget(creature) && contextText.rfind("route_target_", 0) == 0)
                 || contextText.find("force_tank_focus") != std::string::npos
                 || contextText.find("assist_focus") != std::string::npos);
+        bool unengagedBossPrerequisite = _config.ValidationRouteKind == "boss"
+            && !isValidationRouteScriptTarget(creature)
+            && !prerequisiteTarget->IsInCombat()
+            && !prerequisiteTarget->GetVictim();
         auto refreshRouteProgress = [&](char const* reason, uint32 threshold) -> void
         {
             RecordRouteProgress(state, bot, prerequisiteTarget, reason ? reason : "route_target_observed",
                 healthPct, state.ValidationRouteCombatBestHealthPct, state.ValidationRouteCombatNoProgressCount, threshold);
         };
+        // A boss node may expose an ordinary prerequisite before the tank has
+        // reached or pulled it. Full health while out of combat is navigation
+        // state, not failed combat progress; do not latch a trash terminal that
+        // can suppress the boss pull for the rest of this route generation.
+        if (unengagedBossPrerequisite)
+        {
+            state.ValidationRouteCombatProgressTargetGuid = prerequisiteTarget->GetGUID();
+            state.ValidationRouteCombatBestHealthPct = healthPct;
+            state.ValidationRouteCombatNoProgressCount = 0;
+            state.ValidationRoutePackProgressTargetGuid = prerequisiteTarget->GetGUID();
+            state.ValidationRoutePackBestHealthPct = healthPct;
+            state.ValidationRoutePackNoProgressCount = 0;
+            refreshRouteProgress("unengaged_boss_prerequisite_observed", 0);
+            return false;
+        }
         if (bossRouteContext
             && isValidationRouteScriptTarget(creature)
             && healthPct > 0.05f)
