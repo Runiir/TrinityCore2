@@ -1366,6 +1366,7 @@ private:
         float ThreatCurrent = 0.0f;
         bool ReferenceBuffsReady = false;
         bool ReferenceTargetDebuffsReady = false;
+        bool ReferenceHeroismWindowObserved = false;
         std::map<uint32, uint64> SpellDamage;
         std::map<uint32, uint32> SpellDamageEvents;
         std::map<uint32, uint32> ActionAttempts;

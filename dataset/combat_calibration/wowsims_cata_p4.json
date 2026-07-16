@@ -22,12 +22,27 @@
     "comparison_mode": "informational_only",
     "direct_comparison_valid": false,
     "mismatch_reasons": [
-      "live clones use equipped validation gear rather than the simulator gear JSON",
-      "live clones use self and rotation buffs rather than full raid buffs and debuffs",
-      "live clones do not use consumables",
+      "live clones omit combat potions, profession cooldowns, food, and racial cooldowns",
       "live windows last 120 seconds rather than 300 plus or minus 5 seconds",
       "live combat executes TrinityCore mechanics rather than the WoWSims engine"
     ]
+  },
+  "live_acceptance": {
+    "purpose": "User-directed dummy-training gate; the tank uses role-appropriate floors rather than a DPS-spec target.",
+    "minimum_dps": {
+      "single_target": {
+        "2": 14000,
+        "3": 40000,
+        "7": 40000,
+        "8": 40000
+      },
+      "aoe": {
+        "2": 18000,
+        "3": 30000,
+        "7": 30000,
+        "8": 30000
+      }
+    }
   },
   "profiles": [
     {

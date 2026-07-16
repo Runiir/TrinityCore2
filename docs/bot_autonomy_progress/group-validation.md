@@ -115,6 +115,13 @@
 - Run 183's stable pre-normalization best single-target windows were Fire 22.18k, Survival 14.75k, and Enhancement 14.09k DPS; best AoE windows were 9.21k, 29.28k, and 11.53k. The official WoWSims Cataclysm Phase 4 regression references at commit `70d87383a9b92f30fb9e370c4676d3ce33b6e6b6` are 51.06k, 50.72k, and 49.94k under full raid buffs/debuffs, consumables, Engineering, racial, and 300±5-second conditions, so reports label the comparison informational rather than directly equivalent.
 - Calibration provisioning now overlays the exact WoWSims P4 item IDs, permanent enchants, epic gem enchantments, and reforge IDs for those three specs while leaving the dungeon party unchanged. The local 4.3.4 payload verifier accepts all referenced enchant and reforge DBC entries. Shaman combat setup now places each element's totem explicitly instead of relying on an unconfigured Call of the Elements bar, preserving Searing Totem for single-target and Magma Totem for three or more hostiles.
 
+## 2026-07-17
+
+- Dummy calibration stopped at the user's request after verifying structurally complete Cataclysm priorities for Protection Paladin, Fire Mage, Survival Hunter (including a living/autocasting pet), and Enhancement Shaman. No additional dummy or Stonecore run was launched.
+- The final sustained single-target diagnostic (Run 227) measured Protection 15.02k, Fire 35.50k, Survival 33.07k, and Enhancement 38.06k DPS. These remain informational against the pinned WoWSims P4 references of 51.06k, 50.72k, and 49.94k because the live 120-second runs omit potion, food, Engineering, and racial cooldown conditions.
+- Calibration acceptance now encodes the requested 40k single-target floor for all three DPS, with role-appropriate Protection floors of 14k single-target and 18k AoE. Reports can no longer claim accepted performance merely because telemetry collection succeeded. Reference telemetry also records whether the real 40-second Bloodlust window was observed.
+- Validation passed: the modified `worldserver` built successfully, focused calibration/rotation tests passed, and no live experiment was run after the final code change. Handoff: calibration and Stonecore work are stopped; resume only on an explicit future request.
+
 ## 2026-06-20
 
 - Hardened `tools/bot_ml/build_validation_run_status.py` so route-node id drift between regenerated validation plans and older live segment artifacts is reported as `warnings: ["route_node_id_drift"]` instead of invalidating otherwise matching segment evidence.

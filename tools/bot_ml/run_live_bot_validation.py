@@ -793,22 +793,22 @@ def enrich_combat_calibration_reference(
         "source": reference.get("source"),
         "methodology": reference.get("methodology"),
         "profiles": profiles,
+        "live_acceptance": reference.get("live_acceptance"),
     }
     calibration["external_reference_comparisons"] = comparisons
     return calibration
 
 
 def apply_calibration_only_acceptance(report: dict[str, Any]) -> dict[str, Any]:
-    """Evaluate collection integrity for an isolated calibration run.
-
-    Performance remains visible through the reference comparisons, but does
-    not decide whether the telemetry capture itself is valid.
-    """
+    """Evaluate telemetry integrity and configured live-performance floors."""
     calibration = report.get("combat_calibration") or {}
     completed = calibration.get("completed_windows") or {}
     best_windows = calibration.get("best_windows") or {}
     rejections: list[str] = []
     expected_classes = {2, 3, 7, 8}
+    live_acceptance = ((calibration.get("external_reference") or {}).get("live_acceptance") or {})
+    minimum_dps = live_acceptance.get("minimum_dps") or {}
+    performance_threshold_applied = bool(minimum_dps)
 
     if report.get("timed_out"):
         rejections.append("calibration_timed_out")
@@ -835,13 +835,22 @@ def apply_calibration_only_acceptance(report: dict[str, Any]) -> dict[str, Any]:
                 rejections.append(f"incomplete_{mode}_reference_buffs")
             if any(not bool((bot.get("reference_setup") or {}).get("target_debuffs_ready")) for bot in bots):
                 rejections.append(f"incomplete_{mode}_target_debuffs")
+            if any(not bool((bot.get("reference_setup") or {}).get("heroism_window_observed")) for bot in bots):
+                rejections.append(f"incomplete_{mode}_heroism_window")
+        mode_thresholds = minimum_dps.get(mode) or {}
+        for bot in bots:
+            class_id = int(bot.get("class_id") or 0)
+            minimum = float(mode_thresholds.get(str(class_id)) or 0.0)
+            if minimum > 0.0 and float(bot.get("dps") or 0.0) < minimum:
+                rejections.append(f"below_{mode}_dps_class_{class_id}")
 
     rejections = list(dict.fromkeys(rejections))
     passed = not rejections
     report["calibration_acceptance"] = {
         "schema": "bot_combat_calibration_acceptance_v1",
         "passed": passed,
-        "performance_threshold_applied": False,
+        "performance_threshold_applied": performance_threshold_applied,
+        "minimum_dps": minimum_dps,
         "expected_class_ids": sorted(expected_classes),
         "rejections": rejections,
     }

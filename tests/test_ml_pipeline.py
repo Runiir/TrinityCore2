@@ -3384,7 +3384,7 @@ TC> {"ok":true,"action":"botauto_calibrate_status","active":true,"normalization"
     ]
 
 
-def test_calibration_only_acceptance_uses_capture_integrity_not_dungeon_gates():
+def test_calibration_only_acceptance_uses_configured_performance_floors_not_dungeon_gates():
     bots = [
         {
             "class_id": class_id,
@@ -3401,6 +3401,14 @@ def test_calibration_only_acceptance_uses_capture_integrity_not_dungeon_gates():
         "combat_calibration": {
             "completed_windows": {"single_target": 1, "aoe": 1},
             "best_windows": {"single_target": bots, "aoe": bots},
+            "external_reference": {
+                "live_acceptance": {
+                    "minimum_dps": {
+                        "single_target": {"2": 9000, "3": 9000, "7": 9000, "8": 9000},
+                        "aoe": {"2": 9000, "3": 9000, "7": 9000, "8": 9000},
+                    }
+                }
+            },
         },
         "stages": [{"stage": "full_stonecore_clear", "passed": False}],
     }
@@ -3411,7 +3419,44 @@ def test_calibration_only_acceptance_uses_capture_integrity_not_dungeon_gates():
     assert report["acceptable_final_evidence"] is True
     assert report["completion_reason"] == "combat_calibration_complete"
     assert report["stages"] == [{"stage": "combat_calibration", "passed": True, "missing": []}]
-    assert report["calibration_acceptance"]["performance_threshold_applied"] is False
+    assert report["calibration_acceptance"]["performance_threshold_applied"] is True
+
+
+def test_calibration_only_acceptance_rejects_below_live_dps_floor():
+    bots = [
+        {
+            "class_id": class_id,
+            "elapsed_seconds": 120,
+            "dps": 39000 if class_id != 2 else 15000,
+            "attempts": 10,
+            "persistent_setup": {"ready": True},
+        }
+        for class_id in (2, 3, 7, 8)
+    ]
+    report = {
+        "returncode": 0,
+        "timed_out": False,
+        "combat_calibration": {
+            "completed_windows": {"single_target": 1, "aoe": 1},
+            "best_windows": {"single_target": bots, "aoe": bots},
+            "external_reference": {
+                "live_acceptance": {
+                    "minimum_dps": {
+                        "single_target": {"2": 14000, "3": 40000, "7": 40000, "8": 40000}
+                    }
+                }
+            },
+        },
+    }
+
+    apply_calibration_only_acceptance(report)
+
+    assert report["all_passed"] is False
+    assert report["calibration_acceptance"]["rejections"] == [
+        "below_single_target_dps_class_3",
+        "below_single_target_dps_class_7",
+        "below_single_target_dps_class_8",
+    ]
 
 
 def test_calibration_only_acceptance_verifies_reference_conditions():
@@ -3422,7 +3467,11 @@ def test_calibration_only_acceptance_verifies_reference_conditions():
             "dps": 10000,
             "attempts": 10,
             "persistent_setup": {"ready": True},
-            "reference_setup": {"buffs_ready": True, "target_debuffs_ready": class_id != 3},
+            "reference_setup": {
+                "buffs_ready": True,
+                "target_debuffs_ready": class_id != 3,
+                "heroism_window_observed": True,
+            },
         }
         for class_id in (2, 3, 7, 8)
     ]

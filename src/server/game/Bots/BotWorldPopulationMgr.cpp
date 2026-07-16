@@ -1365,7 +1365,8 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                  << ",\"mastery_points\":" << (bot ? bot->GetRatingBonusValue(CR_MASTERY) : 0.0f) << '}'
                  << ",\"reference_setup\":{\"enabled\":" << (_config.CombatCalibrationReferenceConditions ? "true" : "false")
                  << ",\"buffs_ready\":" << (metrics && metrics->ReferenceBuffsReady ? "true" : "false")
-                 << ",\"target_debuffs_ready\":" << (metrics && metrics->ReferenceTargetDebuffsReady ? "true" : "false") << '}'
+                 << ",\"target_debuffs_ready\":" << (metrics && metrics->ReferenceTargetDebuffsReady ? "true" : "false")
+                 << ",\"heroism_window_observed\":" << (metrics && metrics->ReferenceHeroismWindowObserved ? "true" : "false") << '}'
                  << ",\"elapsed_seconds\":" << std::fixed << std::setprecision(3) << elapsedSec
                  << ",\"damage\":" << (metrics ? metrics->Damage : 0)
                  << ",\"dps\":" << std::fixed << std::setprecision(2) << dps
@@ -1436,6 +1437,7 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
          << ",\"buff_basis\":\"" << (_config.CombatCalibrationReferenceConditions
             ? "full_raid_reference_auras" : "stonecore_party_owned_buffs") << "\""
          << ",\"flask\":" << (_config.CombatCalibrationReferenceConditions ? "true" : "false")
+         << ",\"heroism_window_seconds\":" << (_config.CombatCalibrationReferenceConditions ? 40 : 0)
          << ",\"potions\":false"
          << ",\"engineering_cooldowns\":false"
          << ",\"racial_cooldowns\":false"
@@ -3161,6 +3163,16 @@ std::pair<bool, bool> BotWorldPopulationMgr::ApplyCalibrationReferenceConditions
     if (flaskSpellId && !bot->HasAura(flaskSpellId))
         bot->AddAura(flaskSpellId, bot);
 
+    // Full raid WoWSims configurations include one 40-second Bloodlust window.
+    // Apply the real aura during the opening third of every 120-second phase,
+    // then explicitly remove it so it cannot inflate the rest of the window.
+    uint64 calibrationElapsedMs = _calibrationStartedMs ? NowMs() - _calibrationStartedMs : 0;
+    bool heroismActive = calibrationElapsedMs % 120000 < 40000;
+    if (heroismActive && !bot->HasAura(2825))
+        bot->AddAura(2825, bot);
+    else if (!heroismActive && bot->HasAura(2825))
+        bot->RemoveAurasDueToSpell(2825);
+
     bool buffsReady = std::all_of(RaidBuffAuras.begin(), RaidBuffAuras.end(), [bot](uint32 spellId)
     {
         return bot->HasAura(spellId);
@@ -3240,6 +3252,7 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
     CalibrationMetrics& metrics = _calibrationMetrics[state.Guid.GetCounter()];
     metrics.ReferenceBuffsReady = referenceBuffsReady;
     metrics.ReferenceTargetDebuffsReady = referenceTargetDebuffsReady;
+    metrics.ReferenceHeroismWindowObserved = metrics.ReferenceHeroismWindowObserved || bot->HasAura(2825);
 
     // A permanent training dummy never reaches the execute phase represented
     // in a full-fight simulator. Use the real target-health gate for the final
