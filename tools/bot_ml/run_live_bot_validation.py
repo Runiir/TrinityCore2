@@ -830,6 +830,11 @@ def apply_calibration_only_acceptance(report: dict[str, Any]) -> dict[str, Any]:
             rejections.append(f"missing_{mode}_actions")
         if any(not bool((bot.get("persistent_setup") or {}).get("ready")) for bot in bots):
             rejections.append(f"incomplete_{mode}_persistent_setup")
+        if bool((calibration.get("normalization") or {}).get("reference_conditions")):
+            if any(not bool((bot.get("reference_setup") or {}).get("buffs_ready")) for bot in bots):
+                rejections.append(f"incomplete_{mode}_reference_buffs")
+            if any(not bool((bot.get("reference_setup") or {}).get("target_debuffs_ready")) for bot in bots):
+                rejections.append(f"incomplete_{mode}_target_debuffs")
 
     rejections = list(dict.fromkeys(rejections))
     passed = not rejections

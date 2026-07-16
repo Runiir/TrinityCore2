@@ -3414,6 +3414,37 @@ def test_calibration_only_acceptance_uses_capture_integrity_not_dungeon_gates():
     assert report["calibration_acceptance"]["performance_threshold_applied"] is False
 
 
+def test_calibration_only_acceptance_verifies_reference_conditions():
+    bots = [
+        {
+            "class_id": class_id,
+            "elapsed_seconds": 120,
+            "dps": 10000,
+            "attempts": 10,
+            "persistent_setup": {"ready": True},
+            "reference_setup": {"buffs_ready": True, "target_debuffs_ready": class_id != 3},
+        }
+        for class_id in (2, 3, 7, 8)
+    ]
+    report = {
+        "returncode": 0,
+        "timed_out": False,
+        "combat_calibration": {
+            "normalization": {"reference_conditions": True},
+            "completed_windows": {"single_target": 1, "aoe": 1},
+            "best_windows": {"single_target": bots, "aoe": bots},
+        },
+    }
+
+    apply_calibration_only_acceptance(report)
+
+    assert report["all_passed"] is False
+    assert report["calibration_acceptance"]["rejections"] == [
+        "incomplete_single_target_target_debuffs",
+        "incomplete_aoe_target_debuffs",
+    ]
+
+
 def test_live_bot_validation_counts_labeled_teacher_assist_as_kill_quest_evidence():
     output = """
 TC> {"active_bots":1,"target_bots":1,"action":"botauto_status","decisions":2,"kills":0,"quests_accepted":1,"quest_objective_progress":1}

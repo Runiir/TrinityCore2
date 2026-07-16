@@ -1249,6 +1249,9 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                  << ",\"lightning_shield\":" << (bot && bot->HasAura(324) ? "true" : "false")
                  << ",\"mainhand_temp_enchant\":" << mainhandTempEnchant
                  << ",\"offhand_temp_enchant\":" << offhandTempEnchant << '}'
+                 << ",\"reference_setup\":{\"enabled\":" << (_config.CombatCalibrationReferenceConditions ? "true" : "false")
+                 << ",\"buffs_ready\":" << (metrics && metrics->ReferenceBuffsReady ? "true" : "false")
+                 << ",\"target_debuffs_ready\":" << (metrics && metrics->ReferenceTargetDebuffsReady ? "true" : "false") << '}'
                  << ",\"elapsed_seconds\":" << std::fixed << std::setprecision(3) << elapsedSec
                  << ",\"damage\":" << (metrics ? metrics->Damage : 0)
                  << ",\"dps\":" << std::fixed << std::setprecision(2) << dps
@@ -3000,10 +3003,10 @@ void BotWorldPopulationMgr::EnsureCalibrationCohortGroup()
     }
 }
 
-void BotWorldPopulationMgr::ApplyCalibrationReferenceConditions(Player* bot, Unit* target) const
+std::pair<bool, bool> BotWorldPopulationMgr::ApplyCalibrationReferenceConditions(Player* bot, Unit* target) const
 {
     if (!_config.CombatCalibrationReferenceConditions || !bot || !target)
-        return;
+        return { false, false };
 
     // One real Cataclysm aura from each non-overlapping raid-buff category.
     // This mode is calibration-only: it makes the live dummy conditions closer
@@ -3038,6 +3041,13 @@ void BotWorldPopulationMgr::ApplyCalibrationReferenceConditions(Player* bot, Uni
     if (flaskSpellId && !bot->HasAura(flaskSpellId))
         bot->AddAura(flaskSpellId, bot);
 
+    bool buffsReady = std::all_of(RaidBuffAuras.begin(), RaidBuffAuras.end(), [bot](uint32 spellId)
+    {
+        return bot->HasAura(spellId);
+    });
+    buffsReady = buffsReady && (bot->getClass() == CLASS_PALADIN || bot->HasAura(79102));
+    buffsReady = buffsReady && (!flaskSpellId || bot->HasAura(flaskSpellId));
+
     // Each clone uses its own nearest dummy, so each clone must own the
     // reference debuffs on that primary target. Keeping caster ownership local
     // also makes Sunder stacking deterministic when AoE splash reaches a
@@ -3056,6 +3066,13 @@ void BotWorldPopulationMgr::ApplyCalibrationReferenceConditions(Player* bot, Uni
         sunder = bot->AddAura(58567, target);
     if (sunder && sunder->GetStackAmount() < 3)
         sunder->SetStackAmount(3);
+
+    bool targetDebuffsReady = std::all_of(TargetDebuffAuras.begin(), TargetDebuffAuras.end(), [target](uint32 spellId)
+    {
+        return target->HasAura(spellId);
+    });
+    targetDebuffsReady = targetDebuffsReady && sunder && sunder->GetStackAmount() >= 3;
+    return { buffsReady, targetDebuffsReady };
 }
 
 void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 diff)
@@ -3099,12 +3116,14 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
     Unit* target = dummies.front();
     uint32 hostileCount = _calibrationAoePhase ? std::max<uint32>(3, uint32(dummies.size())) : 1;
 
-    ApplyCalibrationReferenceConditions(bot, target);
+    auto [referenceBuffsReady, referenceTargetDebuffsReady] = ApplyCalibrationReferenceConditions(bot, target);
+    CalibrationMetrics& metrics = _calibrationMetrics[state.Guid.GetCounter()];
+    metrics.ReferenceBuffsReady = referenceBuffsReady;
+    metrics.ReferenceTargetDebuffsReady = referenceTargetDebuffsReady;
 
     if (TryEnsurePersistentCombatSetup(state, bot, target))
         return;
 
-    CalibrationMetrics& metrics = _calibrationMetrics[state.Guid.GetCounter()];
     if (!metrics.WindowStartedMs)
         metrics.WindowStartedMs = NowMs();
 

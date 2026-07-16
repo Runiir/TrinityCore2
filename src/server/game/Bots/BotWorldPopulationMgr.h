@@ -1143,7 +1143,7 @@ private:
     bool LoadPolicyModelArtifact(std::string const& artifactPath);
     void EnsurePopulation();
     void EnsureCalibrationPopulation();
-    void ApplyCalibrationReferenceConditions(Player* bot, Unit* target) const;
+    std::pair<bool, bool> ApplyCalibrationReferenceConditions(Player* bot, Unit* target) const;
     void UpdateCalibrationBot(WorldBotState& state, uint32 diff);
     bool ResolveSpawnPlacement(uint32 candidateGuid, SpawnPlacement& placement) const;
     bool ResolveSavedSpawnPlacement(uint32 candidateGuid, SpawnPlacement& placement) const;
@@ -1364,6 +1364,8 @@ private:
         uint32 Successes = 0;
         float ThreatBaseline = -1.0f;
         float ThreatCurrent = 0.0f;
+        bool ReferenceBuffsReady = false;
+        bool ReferenceTargetDebuffsReady = false;
         std::map<uint32, uint64> SpellDamage;
         std::map<uint32, uint32> ActionAttempts;
         std::map<std::string, uint32> ResultCounts;
