@@ -965,6 +965,8 @@ bool BotWorldPopulationMgr::Start(std::string const& experimentName, BotWorldExp
 void BotWorldPopulationMgr::Stop()
 {
     ClearPendingHealCasts("run_stop");
+    if (_calibrationActive || !_calibrationBots.empty())
+        StopCombatCalibration();
     if (!_active)
         return;
 
@@ -1049,6 +1051,8 @@ bool BotWorldPopulationMgr::StartAutonomy(BotWorldExperimentConfig const* overri
 void BotWorldPopulationMgr::StopAutonomy()
 {
     ClearPendingHealCasts("autonomy_stop");
+    if (_calibrationActive || !_calibrationBots.empty())
+        StopCombatCalibration();
     if (!_active || _runtimeMode != BotWorldRuntimeMode::AlwaysOnAutonomy)
         return;
 
@@ -1072,6 +1076,8 @@ void BotWorldPopulationMgr::StopAutonomy()
 void BotWorldPopulationMgr::Shutdown()
 {
     ClearPendingHealCasts("shutdown");
+    if (_calibrationActive || !_calibrationBots.empty())
+        StopCombatCalibration();
     if (!_active)
         return;
 
@@ -1104,6 +1110,101 @@ bool BotWorldPopulationMgr::SpawnAutonomyBots(uint32 count)
     _metrics.TargetBots = _config.TargetPopulation;
     EnsurePopulation();
     return true;
+}
+
+std::string BotWorldPopulationMgr::StartCombatCalibration()
+{
+    if (!_active || _runtimeMode != BotWorldRuntimeMode::AlwaysOnAutonomy)
+        return "{\"ok\":false,\"action\":\"botauto_calibrate_start\",\"failure_reason\":\"autonomy_not_active\"}";
+
+    if (_calibrationActive)
+        return GetCombatCalibrationJson();
+
+    _calibrationActive = true;
+    _calibrationAoePhase = false;
+    _calibrationStartedMs = NowMs();
+    _calibrationMetrics.clear();
+    EnsureCalibrationPopulation();
+    return GetCombatCalibrationJson();
+}
+
+std::string BotWorldPopulationMgr::StopCombatCalibration()
+{
+    for (WorldBotState const& state : _calibrationBots)
+    {
+        if (!state.Guid.IsEmpty())
+        {
+            sBotMgr->RemoveWorldBot(state.Guid);
+            CharacterDatabase.DirectPExecute("UPDATE character_bot_pool SET in_use = 0 WHERE guid = %u", state.Guid.GetCounter());
+        }
+    }
+    uint32 removed = uint32(_calibrationBots.size());
+    _calibrationBots.clear();
+    _calibrationMetrics.clear();
+    _calibrationActive = false;
+    _calibrationAoePhase = false;
+    _calibrationStartedMs = 0;
+
+    std::ostringstream json;
+    json << "{\"ok\":true,\"action\":\"botauto_calibrate_stop\",\"removed\":" << removed
+         << ",\"failure_reason\":null}";
+    return json.str();
+}
+
+std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
+{
+    uint64 nowMs = NowMs();
+    std::ostringstream json;
+    json << "{\"ok\":true,\"action\":\"botauto_calibrate_status\""
+         << ",\"active\":" << (_calibrationActive ? "true" : "false")
+         << ",\"isolated_from_route_telemetry\":true"
+         << ",\"phase\":\"" << (_calibrationAoePhase ? "aoe" : "single_target") << "\""
+         << ",\"window_seconds\":120,\"bots\":[";
+    bool firstBot = true;
+    for (WorldBotState const& state : _calibrationBots)
+    {
+        if (!firstBot)
+            json << ',';
+        firstBot = false;
+        Player* bot = GetLoadedBot(state);
+        auto itr = _calibrationMetrics.find(state.Guid.GetCounter());
+        CalibrationMetrics const* metrics = itr == _calibrationMetrics.end() ? nullptr : &itr->second;
+        uint64 startedMs = metrics && metrics->WindowStartedMs ? metrics->WindowStartedMs : _calibrationStartedMs;
+        double elapsedSec = startedMs && nowMs > startedMs ? double(nowMs - startedMs) / 1000.0 : 0.0;
+        double dps = metrics && elapsedSec > 0.0 ? double(metrics->Damage) / elapsedSec : 0.0;
+        double tps = metrics && metrics->ThreatBaseline >= 0.0f && elapsedSec > 0.0
+            ? std::max(0.0, double(metrics->ThreatCurrent - metrics->ThreatBaseline) / elapsedSec) : 0.0;
+        json << "{\"guid\":" << state.Guid.GetCounter()
+             << ",\"name\":\"" << JsonEscape(bot ? bot->GetName() : "loading") << "\""
+             << ",\"class_id\":" << (bot ? uint32(bot->getClass()) : 0)
+             << ",\"role\":\"" << (bot ? JsonEscape(GetDungeonRole(bot)) : "unknown") << "\""
+             << ",\"elapsed_seconds\":" << std::fixed << std::setprecision(3) << elapsedSec
+             << ",\"damage\":" << (metrics ? metrics->Damage : 0)
+             << ",\"dps\":" << std::fixed << std::setprecision(2) << dps
+             << ",\"threat_per_second\":" << std::fixed << std::setprecision(2) << tps
+             << ",\"attempts\":" << (metrics ? metrics->Attempts : 0)
+             << ",\"successes\":" << (metrics ? metrics->Successes : 0)
+             << ",\"spell_damage\":[";
+        bool firstSpell = true;
+        if (metrics)
+        {
+            std::vector<std::pair<uint32, uint64>> spells(metrics->SpellDamage.begin(), metrics->SpellDamage.end());
+            std::sort(spells.begin(), spells.end(), [](auto const& left, auto const& right) { return left.second > right.second; });
+            for (auto const& [spellId, amount] : spells)
+            {
+                if (!firstSpell)
+                    json << ',';
+                firstSpell = false;
+                SpellInfo const* info = spellId ? sSpellMgr->GetSpellInfo(spellId) : nullptr;
+                json << "{\"spell_id\":" << spellId
+                     << ",\"spell_name\":\"" << JsonEscape(info ? info->SpellName : "Melee") << "\""
+                     << ",\"damage\":" << amount << '}';
+            }
+        }
+        json << "]}";
+    }
+    json << "],\"failure_reason\":null}";
+    return json.str();
 }
 
 bool BotWorldPopulationMgr::IsValidationProfileName(std::string const& name) const
@@ -1559,6 +1660,43 @@ void BotWorldPopulationMgr::Update(uint32 diff)
 
         UpdateBot(*itr, diff);
         ++itr;
+    }
+
+    if (_calibrationActive)
+    {
+        EnsureCalibrationPopulation();
+        bool aoePhase = ((NowMs() - _calibrationStartedMs) / 120000) % 2 == 1;
+        if (aoePhase != _calibrationAoePhase)
+        {
+            _calibrationAoePhase = aoePhase;
+            uint64 windowStartedMs = NowMs();
+            for (auto& [guid, metrics] : _calibrationMetrics)
+            {
+                metrics = CalibrationMetrics();
+                metrics.WindowStartedMs = windowStartedMs;
+            }
+        }
+
+        for (auto itr = _calibrationBots.begin(); itr != _calibrationBots.end();)
+        {
+            Player* bot = GetLoadedBot(*itr);
+            if (!bot || !bot->IsInWorld())
+            {
+                if (itr->SpawnedMs && NowMs() - itr->SpawnedMs < 10000)
+                {
+                    ++itr;
+                    continue;
+                }
+                ObjectGuid guid = itr->Guid;
+                sBotMgr->RemoveWorldBot(guid);
+                CharacterDatabase.DirectPExecute("UPDATE character_bot_pool SET in_use = 0 WHERE guid = %u", guid.GetCounter());
+                _calibrationMetrics.erase(guid.GetCounter());
+                itr = _calibrationBots.erase(itr);
+                continue;
+            }
+            UpdateCalibrationBot(*itr, diff);
+            ++itr;
+        }
     }
 
     MaybeAdvanceValidationRouteManifest();
@@ -2574,6 +2712,132 @@ void BotWorldPopulationMgr::EnsurePopulation()
     }
 
     EnsureValidationCohortGroup();
+}
+
+void BotWorldPopulationMgr::EnsureCalibrationPopulation()
+{
+    static constexpr uint32 CalibrationPopulation = 4;
+    static constexpr float CalibrationX = -8962.05f;
+    static constexpr float CalibrationY = -157.16f;
+    static constexpr float CalibrationZ = 81.5856f;
+    uint32 attempts = 0;
+    while (_calibrationActive && _calibrationBots.size() < CalibrationPopulation && attempts++ < CalibrationPopulation * 2)
+    {
+        uint32 candidateGuid = SelectCalibrationPoolCandidateGuid();
+        if (!candidateGuid)
+            break;
+
+        size_t slot = _calibrationBots.size();
+        float x = CalibrationX + float(slot % 2) * 2.0f;
+        float y = CalibrationY + float(slot / 2) * 2.0f;
+        Player* bot = sBotMgr->SpawnWorldBot("any", std::to_string(candidateGuid), 0, x, y, CalibrationZ, 0.0f);
+        if (!bot)
+        {
+            CharacterDatabase.DirectPExecute("UPDATE character_bot_pool SET in_use = 0 WHERE guid = %u", candidateGuid);
+            continue;
+        }
+
+        WorldBotState state;
+        state.Guid = bot->GetGUID();
+        state.DecisionTimer = 0;
+        state.LastX = bot->GetPositionX();
+        state.LastY = bot->GetPositionY();
+        state.LastZ = bot->GetPositionZ();
+        state.SpawnedMs = NowMs();
+        state.SpawnSource = "combat_calibration";
+        state.SpawnMapId = bot->GetMapId();
+        state.SpawnX = bot->GetPositionX();
+        state.SpawnY = bot->GetPositionY();
+        state.SpawnZ = bot->GetPositionZ();
+        state.SpawnO = bot->GetOrientation();
+        _calibrationBots.push_back(state);
+
+        CalibrationMetrics metrics;
+        metrics.WindowStartedMs = NowMs();
+        _calibrationMetrics.emplace(bot->GetGUID().GetCounter(), std::move(metrics));
+        TC_LOG_INFO("server", "BotWorld calibration clone spawned bot=%s slot=%zu map=%u position=%f,%f,%f",
+            bot->GetGUID().ToString().c_str(), slot, bot->GetMapId(), bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ());
+    }
+}
+
+void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 diff)
+{
+    if (state.DecisionTimer > diff)
+    {
+        state.DecisionTimer -= diff;
+        return;
+    }
+    state.DecisionTimer = 500;
+
+    Player* bot = GetBot(state);
+    if (!bot || !bot->IsAlive())
+        return;
+
+    std::vector<Creature*> dummies;
+    std::vector<WorldObject*> objects;
+    Trinity::AllWorldObjectsInRange check(bot, 80.0f);
+    Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(bot, objects, check);
+    Cell::VisitAllObjects(bot, searcher, 80.0f);
+    for (WorldObject* object : objects)
+    {
+        Creature* creature = object ? object->ToCreature() : nullptr;
+        if (creature && creature->IsAlive() && IsTrainingDummy(creature) && bot->IsValidAttackTarget(creature))
+            dummies.push_back(creature);
+    }
+    std::sort(dummies.begin(), dummies.end(), [bot](Creature const* left, Creature const* right)
+    {
+        float leftDistance = bot->GetExactDist(left);
+        float rightDistance = bot->GetExactDist(right);
+        if (std::fabs(leftDistance - rightDistance) > 0.01f)
+            return leftDistance < rightDistance;
+        return left->GetGUID() < right->GetGUID();
+    });
+    if (dummies.empty())
+        return;
+
+    size_t cloneIndex = 0;
+    for (; cloneIndex < _calibrationBots.size(); ++cloneIndex)
+        if (_calibrationBots[cloneIndex].Guid == state.Guid)
+            break;
+    Unit* target = dummies[cloneIndex % dummies.size()];
+    uint32 hostileCount = _calibrationAoePhase ? std::max<uint32>(3, uint32(dummies.size())) : 1;
+
+    // Keep the tank's normal threat stance active. Other rotational choices go
+    // through the same profile resolver and executor used in the dungeon.
+    if (bot->getClass() == CLASS_PALADIN && std::string(GetDungeonRole(bot)) == "tank"
+        && bot->HasSpell(25780) && !bot->HasAura(25780) && !bot->HasUnitState(UNIT_STATE_CASTING))
+    {
+        bot->CastSpell(bot, 25780, false);
+        return;
+    }
+
+    ResolvedCombatAction action = ResolveProfileCombatAction(bot, target, hostileCount, _calibrationAoePhase);
+    float distance = bot->GetExactDist(target);
+    if ((action.MinRange > 0.0f && distance < action.MinRange)
+        || (action.MaxRange > 0.0f && distance > std::max(5.0f, action.MaxRange - 1.0f))
+        || !bot->IsWithinLOSInMap(target))
+    {
+        MoveBotToProfileRange(state, bot, target, &action);
+        return;
+    }
+
+    BotActionResult result = ExecuteProfileCombatAction(&state, bot, target, &action, hostileCount, _calibrationAoePhase);
+    CalibrationMetrics& metrics = _calibrationMetrics[state.Guid.GetCounter()];
+    if (!metrics.WindowStartedMs)
+        metrics.WindowStartedMs = NowMs();
+    if (result != BotActionResult::Casting && result != BotActionResult::GlobalCooldown && result != BotActionResult::NoAction)
+    {
+        ++metrics.Attempts;
+        if (result == BotActionResult::Ok)
+            ++metrics.Successes;
+    }
+
+    float threat = 0.0f;
+    for (Creature* dummy : dummies)
+        threat += dummy->GetThreatManager().GetThreat(bot, true);
+    if (metrics.ThreatBaseline < 0.0f)
+        metrics.ThreatBaseline = threat;
+    metrics.ThreatCurrent = threat;
 }
 
 void BotWorldPopulationMgr::EnsureValidationCohortGroup()
@@ -4683,6 +4947,16 @@ uint32 BotWorldPopulationMgr::SelectPoolCandidateGuid() const
     if (QueryResult result = CharacterDatabase.Query(query.str().c_str()))
         return result->Fetch()[0].GetUInt32();
 
+    return 0;
+}
+
+uint32 BotWorldPopulationMgr::SelectCalibrationPoolCandidateGuid() const
+{
+    if (QueryResult result = CharacterDatabase.Query(
+        "SELECT cbp.guid FROM character_bot_pool cbp INNER JOIN characters c ON c.guid = cbp.guid "
+        "WHERE cbp.enabled = 1 AND cbp.in_use = 0 AND c.level = 85 "
+        "AND cbp.experiment_tags LIKE '%combat_calibration%' ORDER BY cbp.guid LIMIT 1"))
+        return result->Fetch()[0].GetUInt32();
     return 0;
 }
 
@@ -17618,6 +17892,18 @@ void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uin
 {
     if (!_active || !attacker || !victim || (!damage && !unmitigatedDamage))
         return;
+
+    Player* owner = attacker->GetCharmerOrOwnerPlayerOrPlayerItself();
+    if (owner)
+    {
+        auto calibration = _calibrationMetrics.find(owner->GetGUID().GetCounter());
+        if (calibration != _calibrationMetrics.end())
+        {
+            calibration->second.Damage += damage;
+            calibration->second.SpellDamage[spellId] += damage;
+            return;
+        }
+    }
 
     Player* sourceActor = FindCombatLogCohortPlayer(attacker);
     Player* targetActor = FindCombatLogCohortPlayer(victim);

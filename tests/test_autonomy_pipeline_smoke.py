@@ -3298,3 +3298,27 @@ def test_stonecore_quality_repairs_cover_hazards_pet_recovery_and_healer_protect
     assert "a.`spell_id` = 1130" in hunter_liveness_sql
     for spell_id in (2948, 92315, 11129, 403, 421, 53595, 26573):
         assert str(spell_id) in rotation_sql
+
+
+def test_parallel_combat_calibration_is_isolated_and_uses_live_rotations():
+    root = Path(__file__).resolve().parents[1]
+    manager = (root / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+    header = (root / "src/server/game/Bots/BotWorldPopulationMgr.h").read_text()
+    commands = (root / "src/server/scripts/Commands/cs_healerbot.cpp").read_text()
+
+    assert "std::vector<WorldBotState> _calibrationBots" in header
+    assert "std::map<uint32, CalibrationMetrics> _calibrationMetrics" in header
+    assert "combat_calibration" in manager
+    assert "SelectCalibrationPoolCandidateGuid" in manager
+    update = function_body(manager, "void BotWorldPopulationMgr::UpdateCalibrationBot")
+    assert "ResolveProfileCombatAction(bot, target, hostileCount, _calibrationAoePhase)" in update
+    assert "ExecuteProfileCombatAction(&state, bot, target, &action, hostileCount, _calibrationAoePhase)" in update
+    assert "std::max<uint32>(3, uint32(dummies.size()))" in update
+
+    damage = function_body(manager, "void BotWorldPopulationMgr::NotifyCombatDamage")
+    assert damage.index("_calibrationMetrics.find") < damage.index("FindCombatLogCohortPlayer(attacker)")
+    assert "calibration->second.SpellDamage[spellId] += damage" in damage
+    assert "isolated_from_route_telemetry" in manager
+    assert '{ "calibrate", rbac::RBAC_PERM_COMMAND_HEALERBOT' in commands
+    assert "StartCombatCalibration" in commands
+    assert "StopCombatCalibration" in commands

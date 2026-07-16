@@ -217,6 +217,9 @@ public:
     void StopAutonomy();
     void Shutdown();
     bool SpawnAutonomyBots(uint32 count);
+    std::string StartCombatCalibration();
+    std::string StopCombatCalibration();
+    std::string GetCombatCalibrationJson() const;
     std::string GetRuntimeProfilesJson();
     std::string SelectRuntimeProfile(std::string const& name);
     std::string ClearRuntimeProfile();
@@ -1138,6 +1141,8 @@ private:
     void ValidatePolicyModelDeployment();
     bool LoadPolicyModelArtifact(std::string const& artifactPath);
     void EnsurePopulation();
+    void EnsureCalibrationPopulation();
+    void UpdateCalibrationBot(WorldBotState& state, uint32 diff);
     bool ResolveSpawnPlacement(uint32 candidateGuid, SpawnPlacement& placement) const;
     bool ResolveSavedSpawnPlacement(uint32 candidateGuid, SpawnPlacement& placement) const;
     bool ResolveRaceStartSpawnPlacement(uint32 candidateGuid, SpawnPlacement& placement) const;
@@ -1170,6 +1175,7 @@ private:
     Player* GetLoadedBot(WorldBotState const& state) const;
     Player* GetBot(WorldBotState const& state) const;
     uint32 SelectPoolCandidateGuid() const;
+    uint32 SelectCalibrationPoolCandidateGuid() const;
     Unit* SelectSafeTarget(WorldBotState& state, Player* bot);
     Unit* SelectQuestObjectiveTarget(Player* bot, QuestObjectivePlan const& plan) const;
     Unit* SelectQuestAbilityObjectiveTarget(Player* bot, QuestObjectivePlan const& plan, WorldBotState const& state) const;
@@ -1345,6 +1351,21 @@ private:
     BotExperienceLearningConfig _learningConfig;
     BotPolicyModelConfig _policyModelConfig;
     std::vector<WorldBotState> _bots;
+    struct CalibrationMetrics
+    {
+        uint64 WindowStartedMs = 0;
+        uint64 Damage = 0;
+        uint32 Attempts = 0;
+        uint32 Successes = 0;
+        float ThreatBaseline = -1.0f;
+        float ThreatCurrent = 0.0f;
+        std::map<uint32, uint64> SpellDamage;
+    };
+    bool _calibrationActive = false;
+    bool _calibrationAoePhase = false;
+    uint64 _calibrationStartedMs = 0;
+    std::vector<WorldBotState> _calibrationBots;
+    std::map<uint32, CalibrationMetrics> _calibrationMetrics;
     std::set<uint32> _failedSpawnGuids;
     std::string _lastPopulationFailureReason;
     BotWorldStatus _metrics;

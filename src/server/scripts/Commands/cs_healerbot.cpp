@@ -816,6 +816,7 @@ public:
             { "diagnose", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoDiagnoseCommand, "" },
             { "trace",   rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoTraceCommand,   "" },
             { "combatlog", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoCombatLogCommand, "" },
+            { "calibrate", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoCalibrateCommand, "" },
             { "spawn",   rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoSpawnCommand,   "" },
             { "despawn", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoDespawnCommand, "" },
         };
@@ -1099,6 +1100,29 @@ private:
                 chunkCount, combatLog.size());
         }
         return true;
+    }
+
+    static bool HandleAutoCalibrateCommand(ChatHandler* handler, char const* args)
+    {
+        std::vector<std::string> tokens = Tokenize(args);
+        std::string operation = tokens.empty() ? "status" : tokens[0];
+        std::string result;
+        if (operation == "start")
+            result = sBotWorldPopulationMgr->StartCombatCalibration();
+        else if (operation == "stop")
+            result = sBotWorldPopulationMgr->StopCombatCalibration();
+        else if (operation == "status")
+            result = sBotWorldPopulationMgr->GetCombatCalibrationJson();
+        else
+            result = "{\"ok\":false,\"action\":\"botauto_calibrate\",\"failure_reason\":\"usage: .botauto calibrate start|stop|status\"}";
+
+        if (handler)
+        {
+            handler->PSendSysMessage("%s", result.c_str());
+            if (result.find("\"ok\":true") == std::string::npos)
+                handler->SetSentErrorMessage(true);
+        }
+        return result.find("\"ok\":true") != std::string::npos;
     }
 
     static bool HandleStatusCommand(ChatHandler* handler, char const* /*args*/)
