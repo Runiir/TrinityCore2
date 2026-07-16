@@ -1,0 +1,6 @@
+outs:
+- md5: 6105de13cc0df99cbbf7311b31029784.dir
+  size: 295098560
+  nfiles: 16
+  hash: md5
+  path: stonecore_combat_quality_full_run_118
