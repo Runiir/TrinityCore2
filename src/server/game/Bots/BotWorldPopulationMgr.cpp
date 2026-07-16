@@ -9592,6 +9592,15 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     state.ValidationRouteDodgeSpellId = 0;
                     state.ValidationRouteDodgeUntilMs = 0;
                 }
+                else if (state.ActivePathValid && state.IsMoving)
+                {
+                    // Keep the accepted exit path authoritative until the bot
+                    // is outside the hazard. A normal combat/range decision on
+                    // the next tick must not replace the dodge mid-stride.
+                    situation = "validation_route_mechanic";
+                    action = "move_out_of_hazard";
+                    return true;
+                }
             }
         }
 

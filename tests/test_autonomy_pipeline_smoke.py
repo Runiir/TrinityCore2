@@ -1445,6 +1445,16 @@ def test_direct_route_config_loads_mechanics_without_manifest():
         assert key in load_config
 
 
+def test_active_hazard_exit_cannot_be_preempted_by_combat_movement():
+    route_objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    exit_guard = route_objective.split("else if (state.ActivePathValid && state.IsMoving)", 1)[1].split(
+        "Unit* caster = nullptr;", 1
+    )[0]
+    assert 'situation = "validation_route_mechanic";' in exit_guard
+    assert 'action = "move_out_of_hazard";' in exit_guard
+    assert "return true;" in exit_guard
+
+
 def test_validation_route_exact_hazards_suppress_generic_boss_cast_dodges():
     route_objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
     movement = route_objective[
