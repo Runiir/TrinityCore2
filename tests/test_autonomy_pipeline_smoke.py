@@ -386,7 +386,10 @@ def test_validation_route_readiness_buffs_party_and_hunter_pet_without_fallbacks
     ]:
         assert buff_key in readiness
 
-    assert "if (bot->IsInCombat() && !urgentHunterPetRecovery)" in readiness
+    assert "if (bot->IsInCombat())" in readiness
+    assert "state.GroupReadinessStableSinceMs = 0;" in readiness
+    assert 'result.Action = "validation_route_readiness_wait";' in readiness
+    assert "nowMs - state.GroupReadinessStableSinceMs < 10000" in readiness
     assert "hunterHasStoredPet" in readiness
     assert "(!bot->GetPet() || !bot->GetPet()->IsAlive())" in readiness
     assert "if (!urgentHunterPetRecovery)\n        for (ActiveBuffRequirement const& requirement" in readiness

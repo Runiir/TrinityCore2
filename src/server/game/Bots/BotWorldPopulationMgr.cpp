@@ -14011,8 +14011,15 @@ bool BotWorldPopulationMgr::TryValidationRouteReadiness(WorldBotState& state, Pl
             }
     bool urgentHunterPetRecovery = bot->getClass() == CLASS_HUNTER
         && hunterHasStoredPet && (!bot->GetPet() || !bot->GetPet()->IsAlive());
-    if (bot->IsInCombat() && !urgentHunterPetRecovery)
-        return false;
+    if (bot->IsInCombat())
+    {
+        // A completed combat invalidates the old stability window. The next
+        // pull must not start until persistent stances and buffs have been
+        // verified again.
+        state.GroupReadinessStableSinceMs = 0;
+        if (!urgentHunterPetRecovery)
+            return false;
+    }
     bool groupStable = true;
     if (Group* group = bot->GetGroup())
         for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
@@ -14034,10 +14041,18 @@ bool BotWorldPopulationMgr::TryValidationRouteReadiness(WorldBotState& state, Pl
     {
         state.GroupReadinessStableSinceMs = nowMs;
         if (!urgentHunterPetRecovery)
-            return false;
+        {
+            result.Action = "validation_route_readiness_wait";
+            result.Target = bot;
+            return true;
+        }
     }
     if (!urgentHunterPetRecovery && nowMs - state.GroupReadinessStableSinceMs < 10000)
-        return false;
+    {
+        result.Action = "validation_route_readiness_wait";
+        result.Target = bot;
+        return true;
+    }
 
     struct ActiveBuffRequirement
     {
