@@ -611,19 +611,31 @@ def prepare_bot_pool_reset(
     return report
 
 
-def command_script(selector: str = "all", trace_limit: int = 20, start: bool = True, stop: bool = False, exit_server: bool = True) -> str:
+def command_script(
+    selector: str = "all",
+    trace_limit: int = 20,
+    start: bool = True,
+    stop: bool = False,
+    exit_server: bool = True,
+    combat_calibration: bool = False,
+) -> str:
     commands: list[str] = []
     if start:
         commands.append(".botauto start")
+    if combat_calibration:
+        commands.append(".botauto calibrate start")
     commands.extend(
         [
             ".botauto status",
             f".botauto diagnose {selector}",
             f".botauto trace {selector} {trace_limit}",
+            *([".botauto calibrate status"] if combat_calibration else []),
             ".botauto combatlog",
             ".botexp summary",
         ]
     )
+    if combat_calibration:
+        commands.append(".botauto calibrate stop")
     if stop:
         commands.append(".botauto stop")
     if exit_server:
@@ -664,7 +676,7 @@ def classify_payloads(payloads: list[dict[str, Any]]) -> dict[str, Any]:
             row
             for row in reversed(payloads)
             if row.get("action") in {"botexp_status", "botauto_status"}
-            or "active" in row
+            or ("active" in row and not str(row.get("action") or "").startswith("botauto_calibrate"))
             or ({"active_bots", "target_bots"} <= set(row))
         ),
         {},
@@ -674,6 +686,10 @@ def classify_payloads(payloads: list[dict[str, Any]]) -> dict[str, Any]:
     trace = combined_trace_payload(trace_payloads)
     summary = next((row for row in reversed(payloads) if row.get("summary_schema_version") or "duration_minutes" in row or "total_kills" in row or "bot_learning" in row), {})
     combat_log = combined_combat_log(payloads)
+    combat_calibration = next(
+        (row for row in reversed(payloads) if row.get("action") == "botauto_calibrate_status" and row.get("active")),
+        {},
+    )
     return {
         "status": status,
         "diagnosis": diagnosis,
@@ -681,6 +697,7 @@ def classify_payloads(payloads: list[dict[str, Any]]) -> dict[str, Any]:
         "summary": summary,
         "combat_log": combat_log,
         "combat_log_transport": combat_log_transport_status(payloads),
+        "combat_calibration": combat_calibration,
     }
 
 
@@ -2174,6 +2191,7 @@ def live_validation_report(
     summary = classified["summary"]
     combat_log = classified["combat_log"]
     combat_log_transport = classified["combat_log_transport"]
+    combat_calibration = classified["combat_calibration"]
     combat_analysis = analyze_combat_log(combat_log) if combat_log else {}
 
     active_bots = int(status.get("active_bots") or status.get("bots") or status.get("activeBots") or 0)
@@ -2276,6 +2294,7 @@ def live_validation_report(
         "summary": summary,
         "combat_log": combat_log,
         "combat_log_transport": combat_log_transport,
+        "combat_calibration": combat_calibration,
         "combat_analysis": combat_analysis,
         "scenario_reports": scenario_reports,
         "command_errors": errors,
@@ -2337,6 +2356,8 @@ def expected_command_output_marker(command_text: str) -> str:
         return '"action":"botauto_combatlog_complete"'
     if command_text == ".botexp summary":
         return '"duration_minutes"'
+    if command_text.startswith(".botauto calibrate"):
+        return '"action":"botauto_calibrate_'
     return ""
 
 
@@ -2345,6 +2366,7 @@ def run_worldserver(binary: Path, config: Path, timeout_sec: int, script: str, o
     if observe_sec > 0:
         deadline = time.monotonic() + timeout_sec
         explicit_start = any(line.strip() == ".botauto start" for line in script.splitlines())
+        calibration_start = any(line.strip() == ".botauto calibrate start" for line in script.splitlines())
         observed_autostart = False
         output_prefix = ""
         process = subprocess.Popen(
@@ -2373,6 +2395,10 @@ def run_worldserver(binary: Path, config: Path, timeout_sec: int, script: str, o
                     if not waited_for_ready:
                         output_prefix += wait_for_bot_status_ready(process, deadline)
                         waited_for_ready = True
+                    if not calibration_start:
+                        time.sleep(observe_sec)
+                elif command_text == ".botauto calibrate start":
+                    output_prefix += read_until_console_prompt(process, deadline, expected_command_output_marker(command_text))
                     time.sleep(observe_sec)
                 elif command_text.startswith("server shutdown") or command_text == "server exit":
                     if process.stdin and not process.stdin.closed:
@@ -2424,9 +2450,9 @@ def heartbeat_commands_from_script(script: str) -> tuple[list[str], list[str], l
         command_text = raw_command.strip()
         if not command_text:
             continue
-        if command_text == ".botauto start":
+        if command_text in {".botauto start", ".botauto calibrate start"}:
             startup.append(command_text)
-        elif command_text in {".botauto combatlog", ".botauto stop"}:
+        elif command_text in {".botauto combatlog", ".botauto calibrate stop", ".botauto stop"}:
             cleanup.append(command_text)
         elif command_text.startswith("server shutdown") or command_text == "server exit":
             continue
@@ -2819,6 +2845,7 @@ def run_soap_commands(soap_url: str, username: str, password: str, script: str, 
     command = ["SOAP", soap_url]
     deadline = time.monotonic() + timeout_sec
     explicit_start = any(line.strip() == ".botauto start" for line in script.splitlines())
+    calibration_start = any(line.strip() == ".botauto calibrate start" for line in script.splitlines())
     observed_autostart = False
     for raw_command in script.splitlines():
         command_text = raw_command.strip()
@@ -2836,7 +2863,10 @@ def run_soap_commands(soap_url: str, username: str, password: str, script: str, 
         output_parts.append(payload)
         if returncode != 0 or timed_out:
             return "\n".join(output_parts), returncode, timed_out, command
-        if observe_sec > 0 and command_text == ".botauto start":
+        if observe_sec > 0 and command_text == ".botauto start" and not calibration_start:
+            output_parts.append(f"$ sleep {observe_sec}")
+            time.sleep(observe_sec)
+        elif observe_sec > 0 and command_text == ".botauto calibrate start":
             output_parts.append(f"$ sleep {observe_sec}")
             time.sleep(observe_sec)
     return "\n".join(output_parts), 0, False, command
@@ -2898,6 +2928,8 @@ def route_sequence_child_command(args: argparse.Namespace, route: dict[str, Any]
         command.append("--force-start-command")
     if args.stop:
         command.append("--stop")
+    if getattr(args, "combat_calibration", False):
+        command.append("--combat-calibration")
     if args.soap_user:
         command.extend(["--soap-user", args.soap_user])
     if args.soap_password:
@@ -3201,6 +3233,7 @@ def main() -> int:
     parser.add_argument("--no-start", action="store_true")
     parser.add_argument("--force-start-command", action="store_true", help="Send .botauto start even when BotWorld.AutoStart is enabled in the selected worldserver config.")
     parser.add_argument("--stop", action="store_true")
+    parser.add_argument("--combat-calibration", action="store_true", help="Run isolated DPS/TPS training-dummy clones beside the validation cohort and attach their status to the report.")
     parser.add_argument("--transport", choices=["process", "soap", "session"], default="process")
     parser.add_argument("--soap-url", default="http://127.0.0.1:7878/")
     parser.add_argument("--soap-user", default=os.environ.get("TRINITY_SOAP_USER"))
@@ -3298,7 +3331,14 @@ def main() -> int:
         effective_config = write_validation_config(args.config, args.output_dir, pool_tag_filter, validation_route, validation_route_manifest_path)
     config_autostart = trinity_config_bool(effective_config, "BotWorld.AutoStart", False)
     send_start_command = not args.no_start and (args.force_start_command or not config_autostart)
-    script = command_script(selector=args.selector, trace_limit=args.trace_limit, start=send_start_command, stop=args.stop, exit_server=args.transport == "process")
+    script = command_script(
+        selector=args.selector,
+        trace_limit=args.trace_limit,
+        start=send_start_command,
+        stop=args.stop,
+        exit_server=args.transport == "process",
+        combat_calibration=args.combat_calibration,
+    )
     (args.output_dir / "commands.txt").write_text(script, encoding="utf-8")
     preparation: dict[str, Any] = {}
     scenario_reports = load_scenario_reports(args.scenario_report_dir)

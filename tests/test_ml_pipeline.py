@@ -3337,6 +3337,31 @@ There is no such subcommand
     assert report["control_eligible"] is False
 
 
+def test_live_bot_validation_parallel_combat_calibration_commands_and_report():
+    script = command_script(
+        selector="all",
+        trace_limit=20,
+        start=True,
+        stop=True,
+        combat_calibration=True,
+    )
+    startup, heartbeat, cleanup = heartbeat_commands_from_script(script)
+
+    assert startup == [".botauto start", ".botauto calibrate start"]
+    assert ".botauto calibrate status" in heartbeat
+    assert cleanup == [".botauto combatlog", ".botauto calibrate stop", ".botauto stop"]
+
+    output = """
+TC> {"active_bots":5,"target_bots":5,"action":"botauto_status","decisions":3}
+TC> {"ok":true,"action":"botauto_calibrate_status","active":true,"phase":"single_target","bots":[{"name":"Calibmage","dps":12345.0}]}
+"""
+    report = live_validation_report(output)
+
+    assert report["active_bots"] == 5
+    assert report["combat_calibration"]["active"] is True
+    assert report["combat_calibration"]["bots"][0]["dps"] == 12345.0
+
+
 def test_live_bot_validation_counts_labeled_teacher_assist_as_kill_quest_evidence():
     output = """
 TC> {"active_bots":1,"target_bots":1,"action":"botauto_status","decisions":2,"kills":0,"quests_accepted":1,"quest_objective_progress":1}
