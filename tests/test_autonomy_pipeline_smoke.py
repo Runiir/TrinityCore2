@@ -573,9 +573,10 @@ def test_shaman_totems_are_combat_entry_setup_without_spam():
     assert "TryEnsureCombatTotems(*state, bot, target, hostileCount)" in execute_profile
     assert "hostileCount >= 3 && bot->HasSpell(8190) ? 8190 : 3599" in totems
     assert "totem->AI()->AttackStart(target)" in totems
-    assert "IsTrainingDummy(target)" in totems
-    assert "_calibrationMetrics.find(bot->GetGUID().GetCounter())" in totems
-    assert "UNIT_FLAG_PLAYER_CONTROLLED" in totems
+
+    totem_ai = read(ROOT / "src/server/game/AI/CoreAI/TotemAI.cpp")
+    assert "owner->IsValidAttackTarget(victim, spellInfo)" in totem_ai
+    assert "TRIGGERED_IGNORE_TARGET_CHECK" in totem_ai
 
 
 def test_cobra_shot_extends_serpent_sting_periodic_tick_budget():

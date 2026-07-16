@@ -19,6 +19,7 @@
 #include "Totem.h"
 #include "Creature.h"
 #include "ObjectAccessor.h"
+#include "SpellDefines.h"
 #include "SpellMgr.h"
 #include "GridNotifiers.h"
 #include "GridNotifiersImpl.h"
@@ -57,14 +58,20 @@ void TotemAI::UpdateAI(uint32 /*diff*/)
 
     // pointer to appropriate target if found any
     Unit* victim = _victimGUID ? ObjectAccessor::GetUnit(*me, _victimGUID) : nullptr;
+    Unit* owner = me->GetCharmerOrOwner();
+    bool totemCanAttack = victim && me->IsValidAttackTarget(victim, spellInfo);
+    bool ownerCanAttack = victim && owner && owner->IsValidAttackTarget(victim, spellInfo);
 
     // Search victim if no, not attackable, or out of range, or friendly (possible in case duel end)
-    if (!victim || !victim->isTargetableForAttack() || !me->IsWithinDistInMap(victim, max_range) || me->IsFriendlyTo(victim) || !me->CanSeeOrDetect(victim))
+    if (!victim || !victim->isTargetableForAttack() || !me->IsWithinDistInMap(victim, max_range)
+        || (!totemCanAttack && !ownerCanAttack) || !me->CanSeeOrDetect(victim))
     {
         victim = nullptr;
         Trinity::NearestAttackableUnitInObjectRangeCheck u_check(me, me->GetCharmerOrOwnerOrSelf(), max_range);
         Trinity::UnitLastSearcher<Trinity::NearestAttackableUnitInObjectRangeCheck> checker(me, victim, u_check);
         Cell::VisitAllObjects(me, checker, max_range);
+        totemCanAttack = victim && me->IsValidAttackTarget(victim, spellInfo);
+        ownerCanAttack = victim && owner && owner->IsValidAttackTarget(victim, spellInfo);
     }
 
     // If have target
@@ -74,7 +81,9 @@ void TotemAI::UpdateAI(uint32 /*diff*/)
         _victimGUID = victim->GetGUID();
 
         // attack
-        me->CastSpell(victim, me->ToTotem()->GetSpell());
+        TriggerCastFlags flags = !totemCanAttack && ownerCanAttack
+            ? TRIGGERED_IGNORE_TARGET_CHECK : TRIGGERED_NONE;
+        me->CastSpell(victim, me->ToTotem()->GetSpell(), CastSpellExtraArgs(flags));
     }
     else
         _victimGUID.Clear();
