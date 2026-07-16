@@ -3409,8 +3409,6 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
         && (maxRange <= 0.0f || distance <= maxRange - 1.0f)
         && bot->IsWithinLOSInMap(reference))
         return false;
-    if (bot->GetMotionMaster()->GetCurrentMovementGeneratorType() == CHASE_MOTION_TYPE)
-        return true;
 
     // Boss origins are often outside or on the edge of the navigable polygon.
     // Project from the bot's known-good polygon instead: move radially away
@@ -3436,16 +3434,39 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
             return true;
     }
 
-    // Tight boss arenas can truncate every static ray even though the chase
-    // generator can find a legal point on the requested range ring. Let the
-    // core chase movement resolve that navmesh path instead of leaving ranged
-    // bots stationary and pet-only for the whole encounter.
-    bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
-    bot->GetMotionMaster()->MoveChase(reference, desiredRange);
-    state.ActivePathValid = false;
-    state.LastPathChangeMs = NowMs();
-    state.IsMoving = true;
-    return true;
+    // If the ranged bot is pinned at an arena wall, build the same ring from
+    // the tank's navigable position beside the target. Search the full ring:
+    // the hunter-facing side may be blocked while another legal firing point
+    // is reachable around the boss. This remains a one-shot point path and
+    // cannot leave a persistent chase generator behind after the encounter.
+    Player* tankAnchor = nullptr;
+    if (Group* group = bot->GetGroup())
+        for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
+            if (Player* member = itr->GetSource(); member && member->IsAlive()
+                && member->GetMap() == bot->GetMap() && std::string(GetDungeonRole(member)) == "tank"
+                && member->GetExactDist(reference) <= 12.0f)
+            {
+                tankAnchor = member;
+                break;
+            }
+
+    if (tankAnchor)
+    {
+        float anchorBearing = reference->GetAngle(bot) - tankAnchor->GetOrientation();
+        for (float angleOffset : { 0.0f, float(M_PI_4), -float(M_PI_4), float(M_PI_2), -float(M_PI_2),
+            3.0f * float(M_PI_4), -3.0f * float(M_PI_4), float(M_PI) })
+        {
+            Position rangedPosition = tankAnchor->GetFirstCollisionPosition(desiredRange, anchorBearing + angleOffset);
+            float candidateRange = reference->GetExactDist(rangedPosition);
+            if (candidateRange < (minRange > 0.0f ? minRange + 1.0f : 5.0f)
+                || (maxRange > 0.0f && candidateRange > maxRange - 1.0f)
+                || bot->GetExactDist(rangedPosition) < 1.0f)
+                continue;
+            if (moveToTerrainProjectedPoint(rangedPosition.GetPositionX(), rangedPosition.GetPositionY(), rangedPosition.GetPositionZ()))
+                return true;
+        }
+    }
+    return false;
 }
 
 std::string BotWorldPopulationMgr::BuildCombatAttemptSummary(WorldBotState::CombatAttemptDiagnostic const& diagnostic) const
