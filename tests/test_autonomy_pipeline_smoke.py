@@ -696,6 +696,16 @@ def test_dummy_calibration_tuning_gates_spenders_and_adds_measured_aoe_actions()
     assert "POWER_HOLY_POWER" in manager
     assert 'candidate.SpellId == 53600 || candidate.SpellId == 84963' in manager
     assert "combustion_dot_window_not_ready" in manager
+    assert "ignite->GetAmount() < 10000" in manager
+
+
+def test_enhancement_requires_unleash_flame_for_flame_shock_refresh():
+    sql = read(ROOT / "sql/custom/world/2026_07_17_01_enhancement_unleash_flame_priority.sql")
+
+    assert "`action`.`spell_id`=73680" in sql
+    assert "`action`.`required_self_aura`=73683" in sql
+    assert "`action`.`maintain_aura_id`=8050" in sql
+    assert "`action`.`refresh_aura_below_ms`=9000" in sql
 
 
 def test_enhancement_uses_and_preserves_fire_elemental_before_searing_fallback():

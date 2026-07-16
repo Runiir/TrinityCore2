@@ -16005,12 +16005,20 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
             candidate.RejectReason = "insufficient_holy_power";
             continue;
         }
-        if (bot->getClass() == CLASS_MAGE && candidate.SpellId == 11129
-            && (!target->HasAura(12654) || !target->HasAura(44457)
-                || (!target->HasAura(92315) && !target->HasAura(11366))))
+        if (bot->getClass() == CLASS_MAGE && candidate.SpellId == 11129)
         {
-            candidate.RejectReason = "combustion_dot_window_not_ready";
-            continue;
+            // WoWSims waits for a meaningful Combustion estimate, not merely
+            // the presence of three weak DoTs.  Ignite's current periodic
+            // amount is the reliable live proxy available to the bot.  A
+            // 10k tick is reachable in raid-normalized P4 gear while avoiding
+            // the near-empty Combustions observed in calibration run 225.
+            AuraEffect const* ignite = target->GetAuraEffect(12654, EFFECT_0, bot->GetGUID());
+            if (!ignite || ignite->GetAmount() < 10000 || !target->HasAura(44457, bot->GetGUID())
+                || (!target->HasAura(92315, bot->GetGUID()) && !target->HasAura(11366, bot->GetGUID())))
+            {
+                candidate.RejectReason = "combustion_dot_window_not_ready";
+                continue;
+            }
         }
         if (candidate.Profile.RequiresInterruptibleTarget
             && !target->GetCurrentSpell(CURRENT_GENERIC_SPELL)
