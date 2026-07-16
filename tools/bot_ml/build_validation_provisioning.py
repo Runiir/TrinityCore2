@@ -17,6 +17,7 @@ except ImportError:
 
 ROLE_REQUIREMENTS = {
     "stonecore_5n": {"tank": 1, "healer": 1, "dps": 3},
+    "combat_calibration": {"tank": 1, "dps": 3},
     "blackwing_descent_10n": {"tank": 2, "healer": 3, "dps": 5},
 }
 

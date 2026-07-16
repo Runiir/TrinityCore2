@@ -7321,8 +7321,10 @@ def test_validation_provisioning_generates_reproducible_sql_and_readiness(tmp_pa
     assert report["all_ready"] is False
     scenarios = {scenario["scenario_id"]: scenario for scenario in report["scenarios"]}
     assert scenarios["stonecore_5n"]["role_counts"] == {"tank": 1, "healer": 1, "dps": 3}
+    assert scenarios["combat_calibration"]["role_counts"] == {"tank": 1, "healer": 0, "dps": 3}
     assert scenarios["blackwing_descent_10n"]["role_counts"] == {"tank": 2, "healer": 3, "dps": 5}
     assert scenarios["stonecore_5n"]["start_position"]["map_id"] == 725
+    assert scenarios["combat_calibration"]["start_position"]["map_id"] == 0
     assert scenarios["blackwing_descent_10n"]["start_position"]["map_id"] == 669
     assert "complete_equipment_slots" in scenarios["stonecore_5n"]["missing"]
 
@@ -7347,6 +7349,7 @@ def test_validation_provisioning_generates_reproducible_sql_and_readiness(tmp_pa
     generated_report = json.loads((tmp_path / "report.json").read_text(encoding="utf-8"))
 
     assert "account create SCVALTANK validation" in commands
+    assert "account create CALIBTANK validation" in commands
     assert "account create BWDVALTKA validation" in commands
     assert "INSERT INTO `auth`.`account`" in account_sql
     assert "`salt`, `verifier`" in account_sql
@@ -7377,7 +7380,7 @@ def test_validation_provisioning_generates_reproducible_sql_and_readiness(tmp_pa
     assert "SELECT c.`guid`, 0, 251, 0, 0, 0, 0, 0, 264, 709, 0" in sql
     assert "DELETE FROM `characters`.`item_instance` WHERE `guid` >= 9700000" in sql
     assert manifest["schema"] == "bot_validation_provisioning_manifest_v1"
-    assert manifest["bot_count"] == 15
+    assert manifest["bot_count"] == 19
     assert generated_report == report
 
 

@@ -199,6 +199,17 @@
       ]
     },
     {
+      "id": "combat_calibration",
+      "description": "Isolated Stonecore-equivalent DPS/TPS calibration cohort parked at the Stormwind training-dummy cluster.",
+      "start_position": { "map_id": 0, "x": -8962.05, "y": -157.16, "z": 81.5856, "o": 0.0 },
+      "bots": [
+        { "account": "CALIBTANK", "name": "Calibtank", "role": "tank", "class_spec": "protection_paladin", "race": 1, "class": 2, "level": 85, "glyphs": [45745, 41106, 41092, 43365, 43340] },
+        { "account": "CALIBMAGE", "name": "Calibmage", "role": "dps", "class_spec": "fire_mage", "race": 1, "class": 8, "level": 85, "glyphs": [42739, 42743, 42753] },
+        { "account": "CALIBHUNT", "name": "Calibhunt", "role": "dps", "class_spec": "survival_hunter", "race": 1, "class": 3, "level": 85, "glyphs": [42909, 42902, 42915], "pet": { "id_offset": 3, "entry": 8959, "modelid": 4124, "created_by_spell": 0, "name": "Calibwolf", "level": 85, "slot": 0, "active": 1, "spells": [2649, 17253] } },
+        { "account": "CALIBSHAM", "name": "Calibsham", "role": "dps", "class_spec": "enhancement_shaman", "race": 11, "class": 7, "level": 85, "glyphs": [41518, 41539, 41540] }
+      ]
+    },
+    {
       "id": "blackwing_descent_10n",
       "description": "Prepared 10-player raid parked inside Blackwing Descent entrance target for raid validation.",
       "start_position": { "map_id": 669, "x": -345.872, "y": -224.344, "z": 193.127, "o": 0.0 },
