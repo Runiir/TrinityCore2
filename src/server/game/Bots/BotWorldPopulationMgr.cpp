@@ -9632,6 +9632,68 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return nullptr;
         };
         uint64 const nowMs = NowMs();
+        auto tryTankHazardHoldAreaThreat = [&]() -> bool
+        {
+            if (std::string(GetDungeonRole(bot)) != "tank" || !bot->IsInCombat())
+                return false;
+
+            std::vector<WorldObject*> objects;
+            Trinity::AllWorldObjectsInRange check(bot, 45.0f);
+            Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(bot, objects, check);
+            Cell::VisitAllObjects(bot, searcher, 45.0f);
+            Unit* areaTarget = nullptr;
+            uint8 areaPriority = 0;
+            float areaDistance = std::numeric_limits<float>::max();
+            uint32 areaGuid = std::numeric_limits<uint32>::max();
+            uint32 engagedCount = 0;
+            for (WorldObject* object : objects)
+            {
+                Creature* creature = object ? object->ToCreature() : nullptr;
+                if (!creature || !creature->IsAlive() || !creature->GetHealth()
+                    || !bot->IsValidAttackTarget(creature) || (!creature->IsInCombat() && !creature->GetVictim()))
+                    continue;
+                Player* victim = creature->GetVictim() ? creature->GetVictim()->ToPlayer() : nullptr;
+                if (!victim || (bot->GetGroup() ? victim->GetGroup() != bot->GetGroup() : victim != bot))
+                    continue;
+
+                ++engagedCount;
+                std::string victimRole = GetDungeonRole(victim);
+                uint8 priority = victimRole == "healer" ? 3 : (victimRole == "tank" ? 1 : 2);
+                float distance = bot->GetExactDist(creature);
+                uint32 guid = creature->GetGUID().GetCounter();
+                if (!areaTarget || priority > areaPriority
+                    || (priority == areaPriority && (distance < areaDistance
+                        || (distance == areaDistance && guid < areaGuid))))
+                {
+                    areaTarget = creature;
+                    areaPriority = priority;
+                    areaDistance = distance;
+                    areaGuid = guid;
+                }
+            }
+            if (!areaTarget || engagedCount < 2)
+                return false;
+
+            ResolvedCombatAction areaThreat = ResolveProfileCombatAction(bot, areaTarget, engagedCount, true);
+            if (!areaThreat.Valid)
+                return false;
+            BotActionResult areaResult = ExecuteProfileCombatAction(
+                &state, bot, areaTarget, &areaThreat, engagedCount, true);
+            if (areaResult != BotActionResult::Ok)
+                return false;
+
+            std::string raw = BuildRawJson(bot, areaTarget);
+            std::string semantic = BuildSemanticJson(
+                bot, areaTarget, "validation_route_mechanic", &power, stage, activity);
+            RecordEvent(state, bot, "validation_route_threat_pickup", areaTarget,
+                "tank_hazard_hold_aoe_threat", raw.c_str(), semantic.c_str(),
+                float(engagedCount), _config.ValidationRouteTargetEntry, areaThreat.SpellId);
+            state.TargetGuid = areaTarget->GetGUID();
+            state.WasInCombat = true;
+            situation = "validation_route_mechanic";
+            action = "tank_hazard_hold_aoe_threat";
+            return true;
+        };
 
         if (!state.ValidationRouteDodgeCasterGuid.IsEmpty()
             && state.ValidationRouteDodgeSpellId)
@@ -9669,6 +9731,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
                     state.ActivePathValid = false;
                     state.IsMoving = false;
+                    if (tryTankHazardHoldAreaThreat())
+                        return true;
                     situation = "validation_route_mechanic";
                     action = "hold_outside_hazard";
                     return true;

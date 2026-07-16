@@ -98,6 +98,7 @@ def test_stonecore_role_profiles_include_runtime_efficiency_gates():
     assert manager.count('candidate.RejectReason = "target_immune"') >= 3
     assert '"righteous_defense_party_pickup"' in manager
     assert '"tank_immediate_aoe_threat"' in manager
+    assert '"tank_hazard_hold_aoe_threat"' in manager
     assert "'rapid_fire,burn', 1.20" in sql
     assert "_validationRoutePackTransitionGuids.find(creature->GetGUID())" in manager
     for spell_id in (31850, 85673, 86150, 11129, 3045, 34490, 30823, 51533, 73680):
