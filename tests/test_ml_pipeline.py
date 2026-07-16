@@ -6734,6 +6734,7 @@ def test_live_bot_validation_config_writes_alternate_route_targets(tmp_path):
     )
 
     config_text = generated.read_text(encoding="utf-8")
+    assert 'BotWorld.RuntimeProfile = ""' in config_text
     assert "BotWorld.ValidationRoute.TargetEntry = 42186" in config_text
     assert 'BotWorld.ValidationRoute.AlternateTargetEntries = "42166,42178,42179,42180"' in config_text
     assert "BotProgression.AllowDungeons = 1" in config_text
@@ -6838,6 +6839,7 @@ def test_live_bot_validation_route_manifest_dry_run_writes_scenario_scoped_confi
     assert report["validation_route_manifest"]["routes"][3]["completion_policy"] == "arrival"
     assert Path(report["validation_route_manifest_path"]).name == "validation_route_manifest.json"
     assert "BotWorld.ValidationRoute.ManifestPath" in generated_config
+    assert 'BotWorld.RuntimeProfile = ""' not in generated_config
     assert 'BotWorld.ValidationRoute.AdvanceMode = "terminal"' in generated_config
     assert 'BotWorld.ValidationRoute.NodeId = "stonecore_entry"' in generated_config
     assert "BotWorld.TargetPopulation = 5" in generated_config

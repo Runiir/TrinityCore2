@@ -331,6 +331,13 @@ def write_validation_config(
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.ManifestPath", f'"{str(validation_route_manifest_path).replace(chr(34), "")}"')
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.AdvanceMode", '"terminal"')
     if route:
+        # A configured runtime profile is applied after the file-backed route
+        # settings.  Validation profiles commonly carry a full manifest, which
+        # would silently replace a requested direct segment with node zero.
+        # Direct-node configs already contain the pool and route contract, so
+        # suppress only that late profile application for segment validation.
+        if not validation_route_manifest_path:
+            text = upsert_trinity_config(text, "BotWorld.RuntimeProfile", '""')
         expected_bot_count = int(route.get("expected_bot_count") or 0)
         if expected_bot_count > 0:
             text = upsert_trinity_config(text, "BotWorld.TargetPopulation", str(expected_bot_count))
