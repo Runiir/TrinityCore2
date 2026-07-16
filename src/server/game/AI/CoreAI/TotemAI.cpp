@@ -83,7 +83,12 @@ void TotemAI::UpdateAI(uint32 /*diff*/)
         // attack
         TriggerCastFlags flags = !totemCanAttack && ownerCanAttack
             ? TRIGGERED_IGNORE_TARGET_CHECK : TRIGGERED_NONE;
-        me->CastSpell(victim, me->ToTotem()->GetSpell(), CastSpellExtraArgs(flags));
+        _lastTotemTargetValid = totemCanAttack;
+        _lastOwnerTargetValid = ownerCanAttack;
+        ++_castAttempts;
+        _lastCastResult = me->CastSpell(victim, me->ToTotem()->GetSpell(), CastSpellExtraArgs(flags));
+        if (_lastCastResult == SPELL_CAST_OK)
+            ++_castSuccesses;
     }
     else
         _victimGUID.Clear();

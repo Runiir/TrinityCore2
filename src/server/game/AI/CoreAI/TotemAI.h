@@ -20,6 +20,7 @@
 
 #include "CreatureAI.h"
 #include "PassiveAI.h"
+#include "SpellDefines.h"
 #include "Timer.h"
 
 class Creature;
@@ -36,7 +37,18 @@ class TC_GAME_API TotemAI : public NullCreatureAI
         void UpdateAI(uint32 diff) override;
         static int32 Permissible(Creature const* creature);
 
+        uint64 GetCastAttempts() const { return _castAttempts; }
+        uint64 GetCastSuccesses() const { return _castSuccesses; }
+        SpellCastResult GetLastCastResult() const { return _lastCastResult; }
+        bool WasLastTargetValidForTotem() const { return _lastTotemTargetValid; }
+        bool WasLastTargetValidForOwner() const { return _lastOwnerTargetValid; }
+
     private:
         ObjectGuid _victimGUID;
+        uint64 _castAttempts = 0;
+        uint64 _castSuccesses = 0;
+        SpellCastResult _lastCastResult = SPELL_FAILED_DONT_REPORT;
+        bool _lastTotemTargetValid = false;
+        bool _lastOwnerTargetValid = false;
 };
 #endif

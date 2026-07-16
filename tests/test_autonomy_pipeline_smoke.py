@@ -577,6 +577,7 @@ def test_shaman_totems_are_combat_entry_setup_without_spam():
     totem_ai = read(ROOT / "src/server/game/AI/CoreAI/TotemAI.cpp")
     assert "owner->IsValidAttackTarget(victim, spellInfo)" in totem_ai
     assert "TRIGGERED_IGNORE_TARGET_CHECK" in totem_ai
+    assert "_lastCastResult = me->CastSpell" in totem_ai
 
 
 def test_cobra_shot_extends_serpent_sting_periodic_tick_budget():
@@ -613,6 +614,8 @@ def test_persistent_spec_setup_precedes_dummy_and_profile_rotations():
     assert '\\"mainhand_temp_enchant\\"' in calibration_json
     assert '\\"offhand_temp_enchant\\"' in calibration_json
     assert '\\"fire_totem\\"' in calibration_json
+    assert '\\"last_cast_result\\"' in calibration_json
+    assert '\\"cast_successes\\"' in calibration_json
     assert '\\"stats\\"' in calibration_json
 
 

@@ -40,6 +40,7 @@
 #include "SpellMgr.h"
 #include "TemporarySummon.h"
 #include "Totem.h"
+#include "TotemAI.h"
 #include "Unit.h"
 #include "Creature.h"
 #include "CreatureGroups.h"
@@ -1217,6 +1218,11 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
             uint32 fireTotemEntry = 0;
             bool fireTotemAlive = false;
             bool fireTotemActive = false;
+            uint64 fireTotemCastAttempts = 0;
+            uint64 fireTotemCastSuccesses = 0;
+            uint32 fireTotemLastCastResult = SPELL_FAILED_DONT_REPORT;
+            bool fireTotemTargetValid = false;
+            bool fireTotemOwnerTargetValid = false;
             if (bot)
             {
                 if (Item* item = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_MAINHAND))
@@ -1232,6 +1238,14 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                             fireTotemEntry = totem->GetEntry();
                             fireTotemAlive = totem->IsAlive();
                             fireTotemActive = totem->GetTotemType() == TOTEM_ACTIVE;
+                            if (TotemAI* ai = dynamic_cast<TotemAI*>(totem->AI()))
+                            {
+                                fireTotemCastAttempts = ai->GetCastAttempts();
+                                fireTotemCastSuccesses = ai->GetCastSuccesses();
+                                fireTotemLastCastResult = uint32(ai->GetLastCastResult());
+                                fireTotemTargetValid = ai->WasLastTargetValidForTotem();
+                                fireTotemOwnerTargetValid = ai->WasLastTargetValidForOwner();
+                            }
                         }
             }
             bool persistentSetupReady = false;
@@ -1277,7 +1291,12 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                  << ",\"created_by_spell\":" << fireTotemCreatedBySpell
                  << ",\"attack_spell\":" << fireTotemSpell
                  << ",\"alive\":" << (fireTotemAlive ? "true" : "false")
-                 << ",\"active\":" << (fireTotemActive ? "true" : "false") << "}}"
+                 << ",\"active\":" << (fireTotemActive ? "true" : "false")
+                 << ",\"cast_attempts\":" << fireTotemCastAttempts
+                 << ",\"cast_successes\":" << fireTotemCastSuccesses
+                 << ",\"last_cast_result\":" << fireTotemLastCastResult
+                 << ",\"totem_target_valid\":" << (fireTotemTargetValid ? "true" : "false")
+                 << ",\"owner_target_valid\":" << (fireTotemOwnerTargetValid ? "true" : "false") << "}}"
                  << ",\"stats\":{\"strength\":" << (bot ? bot->GetStat(STAT_STRENGTH) : 0.0f)
                  << ",\"agility\":" << (bot ? bot->GetStat(STAT_AGILITY) : 0.0f)
                  << ",\"intellect\":" << (bot ? bot->GetStat(STAT_INTELLECT) : 0.0f)
