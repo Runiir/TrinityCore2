@@ -63,6 +63,16 @@ def test_profile_taunts_require_a_real_non_tank_victim() -> None:
     assert "WHEN `action`.`spell_id`=2812 THEN 6" in fillers
 
 
+def test_combat_telemetry_attributes_player_totem_damage_to_its_owner() -> None:
+    manager = read(BOT_MGR)
+    owner_helper = function_body(manager, "Player* CombatOwnerPlayer")
+    damage_hook = function_body(manager, "void BotWorldPopulationMgr::NotifyCombatDamage")
+
+    assert "unit->ToTotem()" in owner_helper
+    assert "totem->GetOwner()" in owner_helper
+    assert "CombatOwnerPlayer(attacker)" in damage_hook
+
+
 def test_marksmanship_cast_time_shots_require_stationary_execution() -> None:
     migration = read(MARKSMAN_STATIONARY_SQL)
 

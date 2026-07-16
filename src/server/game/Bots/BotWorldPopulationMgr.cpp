@@ -100,6 +100,24 @@ bool HasPowerForSpell(Player const* bot, SpellInfo const* spellInfo)
     return bot->GetPower(Powers(spellInfo->PowerType)) >= uint32(powerCost);
 }
 
+Player* CombatOwnerPlayer(Unit* unit)
+{
+    if (!unit)
+        return nullptr;
+
+    if (Player* player = unit->GetCharmerOrOwnerPlayerOrPlayerItself())
+        return player;
+
+    // Player totems retain their summoner through Totem::GetOwner() even
+    // when the generic Unit owner chain is empty.  Resolve that path so
+    // damage meters include real offensive-totem damage.
+    if (Totem* totem = unit->ToTotem())
+        if (Unit* owner = totem->GetOwner())
+            return owner->GetCharmerOrOwnerPlayerOrPlayerItself();
+
+    return nullptr;
+}
+
 bool CancelRemovableShapeshifts(Player* bot)
 {
     if (!bot)
@@ -18586,7 +18604,7 @@ void BotWorldPopulationMgr::ResetCombatLog()
 
 Player* BotWorldPopulationMgr::FindCombatLogCohortPlayer(Unit* unit) const
 {
-    Player* player = unit ? unit->GetCharmerOrOwnerPlayerOrPlayerItself() : nullptr;
+    Player* player = CombatOwnerPlayer(unit);
     if (!player)
         return nullptr;
 
@@ -18603,8 +18621,7 @@ void BotWorldPopulationMgr::AddCombatLogAggregate(CombatLogPerspective perspecti
     if (!actor || !source || !target)
         return;
 
-    bool const sourceIsPet = source != actor
-        && source->GetCharmerOrOwnerPlayerOrPlayerItself() == actor;
+    bool const sourceIsPet = source != actor && CombatOwnerPlayer(source) == actor;
 
     CombatLogAbilityKey key;
     key.RouteGeneration = _validationRouteGeneration;
@@ -18682,7 +18699,7 @@ void BotWorldPopulationMgr::AddCombatLogEvent(char const* kind, Player* actor, U
     event.TargetZ = target->GetPositionZ();
     event.Distance = source->GetExactDist(target);
     event.SourceMoving = source->isMoving();
-    event.SourceIsPet = source != actor && source->GetCharmerOrOwnerPlayerOrPlayerItself() == actor;
+    event.SourceIsPet = source != actor && CombatOwnerPlayer(source) == actor;
     _combatLogRecentEvents.push_back(std::move(event));
     static constexpr size_t MaxRecentCombatEvents = 4096;
     if (_combatLogRecentEvents.size() > MaxRecentCombatEvents)
@@ -18698,7 +18715,7 @@ void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uin
     if (!_active || !attacker || !victim || (!damage && !unmitigatedDamage))
         return;
 
-    Player* owner = attacker->GetCharmerOrOwnerPlayerOrPlayerItself();
+    Player* owner = CombatOwnerPlayer(attacker);
     if (owner)
     {
         auto calibration = _calibrationMetrics.find(owner->GetGUID().GetCounter());
