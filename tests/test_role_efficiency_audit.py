@@ -122,6 +122,7 @@ def test_role_audit_v3_requires_complete_rotations_pet_hazards_and_all_hostile_t
                 "engaged_hostiles": 4,
                 "tank_owned_hostiles": 4,
                 "healer_targeting_hostiles": 0,
+                "tank_threat_aura_active": True,
             }
             entry["pet_alive"] = name == "Scvaldpsb"
             if name == "Scvalheal":
@@ -130,7 +131,12 @@ def test_role_audit_v3_requires_complete_rotations_pet_hazards_and_all_hostile_t
     for offset in range(2):
         hazard = _entry("Scvaltank", 1, sequence + offset + 1, roles["Scvaltank"][1], spell=53595, recorded=1000 + offset)
         hazard["action"] = "move_out_of_hazard"
-        hazard["threat_snapshot"] = {"engaged_hostiles": 4, "tank_owned_hostiles": 4, "healer_targeting_hostiles": 0}
+        hazard["threat_snapshot"] = {
+            "engaged_hostiles": 4,
+            "tank_owned_hostiles": 4,
+            "healer_targeting_hostiles": 0,
+            "tank_threat_aura_active": True,
+        }
         entries.append(hazard)
     aoe_misdirection = _entry("Scvaldpsb", 4, sequence + 3, roles["Scvaldpsb"][1], spell=2643, recorded=1100)
     aoe_misdirection["action"] = "misdirection_aoe_transfer"
@@ -156,7 +162,12 @@ def test_role_audit_v3_rejects_observed_stonecore_quality_regressions():
         ]
     ):
         entry = _entry(name, guid, index + 1, role_goal, spell=133, recorded=100 + index)
-        entry["threat_snapshot"] = {"engaged_hostiles": 4, "tank_owned_hostiles": 2, "healer_targeting_hostiles": 2}
+        entry["threat_snapshot"] = {
+            "engaged_hostiles": 4,
+            "tank_owned_hostiles": 2,
+            "healer_targeting_hostiles": 2,
+            "tank_threat_aura_active": False,
+        }
         entry["pet_alive"] = False
         entries.append(entry)
 
@@ -194,6 +205,7 @@ def test_role_audit_v3_scopes_pickup_grace_and_dwell_to_each_hostile_guid():
             "engaged_hostile_guids": engaged,
             "tank_owned_hostile_guids": tank_owned,
             "healer_targeting_hostile_guids": healer_targeting,
+            "tank_threat_aura_active": True,
         }
         entries.append(entry)
 
@@ -201,10 +213,34 @@ def test_role_audit_v3_scopes_pickup_grace_and_dwell_to_each_hostile_guid():
     tank = next(bot for bot in audit["bots"] if bot["bot_name"] == "Scvaltank")
 
     assert tank["identity_scoped_threat"] is True
+    assert tank["tank_threat_aura_uptime_rate"] == 1.0
     assert tank["tank_all_hostile_retention_rate"] == 1.0
     assert tank["healer_target_exposure_rate"] == 0.0
     assert tank["max_healer_target_dwell_ms"] == 2000
     assert audit["mechanics"]["threat_acquisition_grace_ms"] == 3000
+
+
+def test_role_audit_v3_rejects_missing_tank_threat_aura_during_combat():
+    entry = _entry(
+        "Scvaltank",
+        1,
+        1,
+        "survive_hold_threat_position_control_then_safe_dps",
+        spell=53595,
+        recorded=100,
+    )
+    entry["threat_snapshot"] = {
+        "engaged_hostiles": 1,
+        "tank_owned_hostiles": 1,
+        "healer_targeting_hostiles": 0,
+        "tank_threat_aura_active": False,
+    }
+
+    audit = build_audit({"status": {}, "trace": {"entries": [entry]}}, "abc")
+
+    tank = next(bot for bot in audit["bots"] if bot["bot_name"] == "Scvaltank")
+    assert tank["tank_threat_aura_uptime_rate"] == 0.0
+    assert "Scvaltank:tank_threat_aura_uptime" in audit["failure_labels"]
 
 
 def test_full_stonecore_acceptance_is_revoked_when_role_quality_fails():

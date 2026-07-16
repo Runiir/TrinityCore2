@@ -631,6 +631,7 @@ private:
             std::vector<uint32> EngagedHostileGuids;
             std::vector<uint32> TankOwnedHostileGuids;
             std::vector<uint32> HealerTargetingHostileGuids;
+            bool TankThreatAuraActive = false;
             bool PetAlive = false;
             std::string LoopGuardrailAction;
             std::string LoopGuardrailReason;

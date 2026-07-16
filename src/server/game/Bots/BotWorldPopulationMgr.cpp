@@ -14114,15 +14114,11 @@ bool BotWorldPopulationMgr::TryValidationRouteReadiness(WorldBotState& state, Pl
     {
         if (hasAnyAura(bot, auraIds))
         {
+            state.ReadinessPartyCoverageSignature.erase(std::string("self:") + readyReason);
             TryResolveBotBlocker(state, bot, readyReason);
             return false;
         }
         std::string attemptKey = std::string("self:") + readyReason;
-        if (state.ReadinessPartyCoverageSignature[attemptKey] == "cast_once")
-        {
-            TryResolveBotBlocker(state, bot, readyReason);
-            return false;
-        }
         if (!bot->HasSpell(spellId))
         {
             MarkBotBlocked(state, bot, blockedReason);
@@ -14138,7 +14134,11 @@ bool BotWorldPopulationMgr::TryValidationRouteReadiness(WorldBotState& state, Pl
             std::string raw = BuildRawJson(bot, pullTarget);
             std::string semantic = BuildSemanticJson(bot, pullTarget, "validation_route_readiness", &power, stage, activity);
             RecordEvent(state, bot, "validation_route_readiness", bot, readyReason, raw.c_str(), semantic.c_str(), 0.0f, 0, spellId);
-            state.ReadinessPartyCoverageSignature[attemptKey] = "cast_once";
+            // The aura itself is the source of truth. A short retry delay avoids
+            // duplicate submissions while the cast is applied, but still lets
+            // persistent tank stances and seals be restored after a route
+            // transition or encounter removes them.
+            state.ReadinessRetryUntilMs[attemptKey] = nowMs + 5000;
             return true;
         }
         std::string failedReason = buffFailureReason(readyReason, spellId, bot);
@@ -18542,6 +18542,8 @@ void BotWorldPopulationMgr::RecordDecisionTrace(WorldBotState& state, char const
     entry.TargetChurnCount = state.TargetChurnCount;
     if (Player* bot = GetLoadedBot(state); bot && bot->IsInWorld())
     {
+        entry.TankThreatAuraActive = GetDungeonRole(bot) != "tank"
+            || bot->getClass() != CLASS_PALADIN || bot->HasAura(25780);
         if (Pet* pet = bot->GetPet())
             entry.PetAlive = pet->IsAlive();
         std::vector<WorldObject*> objects;
@@ -19165,7 +19167,7 @@ std::string BotWorldPopulationMgr::BuildBotTraceEntriesJson(WorldBotState const&
         appendGuidArray(json, itr->TankOwnedHostileGuids);
         json << ",\"healer_targeting_hostile_guids\":";
         appendGuidArray(json, itr->HealerTargetingHostileGuids);
-        json << "}"
+        json << ",\"tank_threat_aura_active\":" << (itr->TankThreatAuraActive ? "true" : "false") << "}"
              << ",\"pet_alive\":" << (itr->PetAlive ? "true" : "false")
              << ",\"loop_guardrail_action\":\"" << JsonEscape(itr->LoopGuardrailAction) << "\""
              << ",\"loop_guardrail_reason\":\"" << JsonEscape(itr->LoopGuardrailReason) << "\""

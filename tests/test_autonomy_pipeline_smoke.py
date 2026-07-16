@@ -415,6 +415,10 @@ def test_validation_route_readiness_buffs_party_and_hunter_pet_without_fallbacks
     assert "hunter_pet_dead" in readiness
     assert "buff_cast_failed:\" << readyReason << \":spell=\" << spellId << \":target=\"" in readiness
     assert "if (!canAttempt(attemptKey))\n            return true;" in readiness
+    assert 'state.ReadinessPartyCoverageSignature[attemptKey] == "cast_once"' not in function_body(
+        readiness, "auto castSelf"
+    )
+    assert "state.ReadinessRetryUntilMs[attemptKey] = nowMs + 5000;" in readiness
     assert "validation_route_readiness_misdirection" in readiness
     assert "for (GroupReference* itr = group->GetFirstMember()" in readiness
     assert "hasAnyAura(member, auraIds)" in readiness

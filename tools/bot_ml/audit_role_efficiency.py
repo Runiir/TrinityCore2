@@ -140,6 +140,7 @@ def build_audit(report: dict[str, Any], source_hash: str) -> dict[str, Any]:
         all_hostile_samples: list[tuple[int, int, int]] = []
         healer_dwell_ms = 0
         identity_scoped_threat = False
+        tank_threat_aura_samples: list[bool] = []
         if role_by_name[name] == "tank":
             bot_guid = next(int(entry.get("bot_guid", 0)) for entry in entries_by_name[name])
             seen_ticks: set[int] = set()
@@ -159,6 +160,8 @@ def build_audit(report: dict[str, Any], source_hash: str) -> dict[str, Any]:
                     tank_samples.append(victim == bot_guid)
                 threat = entry.get("threat_snapshot") or {}
                 engaged = int(threat.get("engaged_hostiles", 0))
+                if engaged and "tank_threat_aura_active" in threat:
+                    tank_threat_aura_samples.append(bool(threat["tank_threat_aura_active"]))
                 has_hostile_identities = "engaged_hostile_guids" in threat
                 if has_hostile_identities:
                     identity_scoped_threat = True
@@ -233,6 +236,9 @@ def build_audit(report: dict[str, Any], source_hash: str) -> dict[str, Any]:
                 "cast_failure_rate": round(failures / actionable, 4) if actionable else None,
                 "passive_uptime_rate": round(passive_active / len(uptime_samples), 4) if uptime_samples else None,
                 "tank_threat_retention_rate": round(sum(tank_samples) / len(tank_samples), 4) if tank_samples else None,
+                "tank_threat_aura_uptime_rate": round(
+                    sum(tank_threat_aura_samples) / len(tank_threat_aura_samples), 4
+                ) if tank_threat_aura_samples else None,
                 "tank_all_hostile_retention_rate": round(
                     sum(owned for _engaged, owned, _healer in all_hostile_samples)
                     / sum(engaged for engaged, _owned, _healer in all_hostile_samples),
@@ -276,6 +282,8 @@ def build_audit(report: dict[str, Any], source_hash: str) -> dict[str, Any]:
         if bot["missing_rotation_groups"]:
             failures.append(f"{bot['bot_name']}:required_rotation_coverage")
         if bot["bot_name"] == "Scvaltank":
+            if bot["tank_threat_aura_uptime_rate"] is None or bot["tank_threat_aura_uptime_rate"] < 0.99:
+                failures.append("Scvaltank:tank_threat_aura_uptime")
             if bot["tank_all_hostile_retention_rate"] is None or bot["tank_all_hostile_retention_rate"] < 0.90:
                 failures.append("Scvaltank:all_hostile_threat_retention")
             if bot["healer_target_exposure_rate"] is None or bot["healer_target_exposure_rate"] > 0.01:
