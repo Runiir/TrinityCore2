@@ -1,0 +1,6 @@
+outs:
+- md5: 1ed65ffe7058a50ab5b6597d928ba8e8.dir
+  size: 17091245
+  nfiles: 6
+  hash: md5
+  path: stonecore_azil_swarm_run_140
