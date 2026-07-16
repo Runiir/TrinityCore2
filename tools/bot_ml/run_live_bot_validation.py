@@ -43,6 +43,7 @@ DEFAULT_NO_PROGRESS_WINDOW_SEC = 180
 DEFAULT_MAX_REPEATED_DECISIONS = 20
 DEFAULT_MAX_DEATH_LOOPS = 3
 REPO_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_COMBAT_CALIBRATION_REFERENCE = REPO_ROOT / "dataset/combat_calibration/wowsims_cata_p4.json"
 
 
 DEFAULT_STAGES = [
@@ -716,6 +717,69 @@ def classify_payloads(payloads: list[dict[str, Any]]) -> dict[str, Any]:
         "combat_log_transport": combat_log_transport_status(payloads),
         "combat_calibration": combat_calibration,
     }
+
+
+def load_combat_calibration_reference(
+    path: Path = DEFAULT_COMBAT_CALIBRATION_REFERENCE,
+) -> dict[str, Any]:
+    if not path.is_file():
+        return {}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    if payload.get("schema") != "bot_combat_calibration_reference_v1":
+        return {}
+    return payload
+
+
+def enrich_combat_calibration_reference(
+    calibration: dict[str, Any],
+    reference: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    if not calibration:
+        return calibration
+    reference = reference if reference is not None else load_combat_calibration_reference()
+    profiles = reference.get("profiles") if reference else None
+    if not isinstance(profiles, list) or not profiles:
+        return calibration
+
+    profile_by_class = {
+        int(profile.get("class_id") or 0): profile
+        for profile in profiles
+        if int(profile.get("class_id") or 0) > 0
+    }
+    comparisons: list[dict[str, Any]] = []
+    best_single = ((calibration.get("best_windows") or {}).get("single_target") or [])
+    for bot in best_single:
+        profile = profile_by_class.get(int(bot.get("class_id") or 0))
+        if not profile:
+            continue
+        live_dps = float(bot.get("dps") or 0.0)
+        reference_dps = float(profile.get("single_target_dps") or 0.0)
+        comparisons.append(
+            {
+                "name": str(bot.get("name") or ""),
+                "spec": str(profile.get("spec") or ""),
+                "live_dps": round(live_dps, 2),
+                "reference_dps": round(reference_dps, 2),
+                "reference_ratio": round(live_dps / reference_dps, 4) if reference_dps > 0 else None,
+                "directly_comparable": False,
+            }
+        )
+
+    normalization = calibration.setdefault("normalization", {})
+    normalization["external_bis_target_configured"] = True
+    normalization["external_reference_id"] = str(reference.get("reference_id") or "")
+    normalization["external_reference_mode"] = "informational_only_conditions_mismatched"
+    calibration["external_reference"] = {
+        "reference_id": reference.get("reference_id"),
+        "source": reference.get("source"),
+        "methodology": reference.get("methodology"),
+        "profiles": profiles,
+    }
+    calibration["external_reference_comparisons"] = comparisons
+    return calibration
 
 
 def combat_log_transport_status(payloads: list[dict[str, Any]]) -> dict[str, Any]:
@@ -2209,7 +2273,7 @@ def live_validation_report(
     summary = classified["summary"]
     combat_log = classified["combat_log"]
     combat_log_transport = classified["combat_log_transport"]
-    combat_calibration = classified["combat_calibration"]
+    combat_calibration = enrich_combat_calibration_reference(classified["combat_calibration"])
     combat_analysis = analyze_combat_log(combat_log) if combat_log else {}
 
     active_bots = int(status.get("active_bots") or status.get("bots") or status.get("activeBots") or 0)

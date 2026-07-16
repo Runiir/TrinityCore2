@@ -3362,6 +3362,28 @@ TC> {"ok":true,"action":"botauto_calibrate_status","active":true,"phase":"single
     assert report["combat_calibration"]["bots"][0]["dps"] == 12345.0
 
 
+def test_live_bot_validation_attaches_condition_labeled_wowsims_reference():
+    output = """
+TC> {"ok":true,"action":"botauto_calibrate_status","active":true,"normalization":{"external_bis_target_configured":false},"best_windows":{"single_target":[{"name":"Calibmage","class_id":8,"dps":25529.7}],"aoe":[]},"bots":[]}
+"""
+    report = live_validation_report(output)
+    calibration = report["combat_calibration"]
+
+    assert calibration["normalization"]["external_bis_target_configured"] is True
+    assert calibration["normalization"]["external_reference_mode"] == "informational_only_conditions_mismatched"
+    assert calibration["external_reference"]["source"]["name"] == "WoWSims Cataclysm"
+    assert calibration["external_reference_comparisons"] == [
+        {
+            "name": "Calibmage",
+            "spec": "fire_mage",
+            "live_dps": 25529.7,
+            "reference_dps": 51059.39,
+            "reference_ratio": 0.5,
+            "directly_comparable": False,
+        }
+    ]
+
+
 def test_live_bot_validation_counts_labeled_teacher_assist_as_kill_quest_evidence():
     output = """
 TC> {"active_bots":1,"target_bots":1,"action":"botauto_status","decisions":2,"kills":0,"quests_accepted":1,"quest_objective_progress":1}

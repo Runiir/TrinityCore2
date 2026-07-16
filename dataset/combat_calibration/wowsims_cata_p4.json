@@ -1,0 +1,68 @@
+{
+  "schema": "bot_combat_calibration_reference_v1",
+  "reference_id": "wowsims_cata_p4_70d87383",
+  "source": {
+    "name": "WoWSims Cataclysm",
+    "repository": "https://github.com/wowsims/cata",
+    "simulator": "https://wowsims.github.io/cata/",
+    "commit": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+    "commit_date": "2025-10-13T18:52:32+02:00"
+  },
+  "methodology": {
+    "phase": "phase_4",
+    "target_count": 1,
+    "duration_seconds": 300,
+    "duration_variation_seconds": 5,
+    "iterations": 2000,
+    "reaction_time_ms": 100,
+    "raid_buffs": "full",
+    "target_debuffs": "full",
+    "consumables": true,
+    "profession": "engineering",
+    "comparison_mode": "informational_only",
+    "direct_comparison_valid": false,
+    "mismatch_reasons": [
+      "live clones use equipped validation gear rather than the simulator gear JSON",
+      "live clones use self and rotation buffs rather than full raid buffs and debuffs",
+      "live clones do not use consumables",
+      "live windows last 120 seconds rather than 300 plus or minus 5 seconds",
+      "live combat executes TrinityCore mechanics rather than the WoWSims engine"
+    ]
+  },
+  "profiles": [
+    {
+      "spec": "fire_mage",
+      "class_id": 8,
+      "race": "troll",
+      "gear": "ui/mage/fire/gear_sets/p4_fire.gear.json",
+      "apl": "ui/mage/fire/apls/fire.apl.json",
+      "test": "sim/mage/fire/fire_test.go",
+      "results": "sim/mage/fire/TestFire.results",
+      "result_key": "TestFire-Average-Default",
+      "single_target_dps": 51059.39052
+    },
+    {
+      "spec": "survival_hunter",
+      "class_id": 3,
+      "race": "orc",
+      "gear": "ui/hunter/survival/gear_sets/p4_sv.gear.json",
+      "apl": "ui/hunter/survival/apls/sv.apl.json",
+      "aoe_apl": "ui/hunter/survival/apls/aoe.apl.json",
+      "test": "sim/hunter/survival/survival_test.go",
+      "results": "sim/hunter/survival/TestSV.results",
+      "result_key": "TestSV-Average-Default",
+      "single_target_dps": 50716.5781
+    },
+    {
+      "spec": "enhancement_shaman",
+      "class_id": 7,
+      "race": "dwarf",
+      "gear": "ui/shaman/enhancement/gear_sets/p4.orc.gear.json",
+      "apl": "ui/shaman/enhancement/apls/default.apl.json",
+      "test": "sim/shaman/enhancement/enhancement_test.go",
+      "results": "sim/shaman/enhancement/TestEnhancement.results",
+      "result_key": "TestEnhancement-Average-Default",
+      "single_target_dps": 49941.18585
+    }
+  ]
+}
