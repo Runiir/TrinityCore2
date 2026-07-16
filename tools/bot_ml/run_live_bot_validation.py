@@ -350,10 +350,18 @@ def write_validation_config(
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.Kind", f'"{str(route.get("kind") or "").replace(chr(34), "")}"')
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.MechanicProfile", f'"{str(route.get("mechanic_profile") or "").replace(chr(34), "")}"')
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.Map", str(int(route.get("map_id") or 0)))
-        text = upsert_trinity_config(text, "BotWorld.ValidationRoute.X", str(float(route.get("x") or 0.0)))
-        text = upsert_trinity_config(text, "BotWorld.ValidationRoute.Y", str(float(route.get("y") or 0.0)))
-        text = upsert_trinity_config(text, "BotWorld.ValidationRoute.Z", str(float(route.get("z") or 0.0)))
-        text = upsert_trinity_config(text, "BotWorld.ValidationRoute.O", str(float(route.get("o") or 0.0)))
+        # Direct segments need the same legal movement destination used when
+        # the node is loaded from a manifest.  Boss coordinates can be on an
+        # elevated platform or inside collision while the navigation anchor
+        # is the reachable pull position.
+        route_x = route.get("navigation_anchor_x", route.get("x"))
+        route_y = route.get("navigation_anchor_y", route.get("y"))
+        route_z = route.get("navigation_anchor_z", route.get("z"))
+        route_o = route.get("navigation_anchor_o", route.get("o"))
+        text = upsert_trinity_config(text, "BotWorld.ValidationRoute.X", str(float(route_x or 0.0)))
+        text = upsert_trinity_config(text, "BotWorld.ValidationRoute.Y", str(float(route_y or 0.0)))
+        text = upsert_trinity_config(text, "BotWorld.ValidationRoute.Z", str(float(route_z or 0.0)))
+        text = upsert_trinity_config(text, "BotWorld.ValidationRoute.O", str(float(route_o or 0.0)))
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.TargetEntry", str(int(route.get("source_entry") or 0)))
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.OpenerTargetEntry", str(int(route.get("opener_target_entry") or 0)))
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.AlternateTargetEntries", f'"{",".join(str(entry) for entry in route_alternate_target_entries(route))}"')

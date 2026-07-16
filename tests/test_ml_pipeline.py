@@ -7070,6 +7070,10 @@ def test_live_bot_validation_dry_run_writes_command_file(tmp_path, monkeypatch):
                 "y": -31.7101,
                 "z": 210.8483,
                 "o": 4.118977,
+                "navigation_anchor_x": -305.0,
+                "navigation_anchor_y": -30.0,
+                "navigation_anchor_z": 211.0,
+                "navigation_anchor_o": 4.0,
                 "source_entry": 41570,
                 "expected_bot_count": 10,
             }
@@ -7138,6 +7142,10 @@ def test_live_bot_validation_dry_run_writes_command_file(tmp_path, monkeypatch):
     assert "BotWorld.ValidationRoute.Enable = 1" in generated_config
     assert "BotWorld.TargetPopulation = 10" in generated_config
     assert 'BotWorld.ValidationRoute.NodeId = "bwd_magmaw"' in generated_config
+    assert "BotWorld.ValidationRoute.X = -305.0" in generated_config
+    assert "BotWorld.ValidationRoute.Y = -30.0" in generated_config
+    assert "BotWorld.ValidationRoute.Z = 211.0" in generated_config
+    assert "BotWorld.ValidationRoute.O = 4.0" in generated_config
     assert "BotWorld.ValidationRoute.TargetEntry = 41570" in generated_config
     assert "BotWorld.ValidationRoute.OpenerTargetEntry = 0" in generated_config
     assert "BotWorld.ValidationRoute.ActivationSpawnGroupId = 0" in generated_config
