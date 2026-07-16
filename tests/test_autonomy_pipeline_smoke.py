@@ -574,6 +574,26 @@ def test_shaman_totems_are_combat_entry_setup_without_spam():
     assert "hostileCount >= 3 && bot->HasSpell(8190) ? 8190 : 3599" in totems
 
 
+def test_persistent_spec_setup_precedes_dummy_and_profile_rotations():
+    mgr = read(BOT_MGR)
+    setup = function_body(mgr, "bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup")
+    calibration = function_body(mgr, "void BotWorldPopulationMgr::UpdateCalibrationBot")
+    execute_profile = function_body(
+        mgr,
+        "BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState* state, Player* bot, Unit* target, ResolvedCombatAction* actionOut, uint32 hostileCount, bool densityOnly)",
+    )
+
+    for spell_id in ["25780", "31801", "465", "20217", "1459", "30482", "13165", "324", "8232", "8024", "1130"]:
+        assert spell_id in setup
+    assert "TEMP_ENCHANTMENT_SLOT" in setup
+    assert "EQUIPMENT_SLOT_MAINHAND" in setup
+    assert "EQUIPMENT_SLOT_OFFHAND" in setup
+    assert "targets.SetItemTarget(weapon)" in setup
+    assert "TryEnsurePersistentCombatSetup(state, bot, target)" in calibration
+    assert_ordered(calibration, "TryEnsurePersistentCombatSetup(state, bot, target)", "metrics.WindowStartedMs = NowMs()")
+    assert "TryEnsurePersistentCombatSetup(*state, bot, target)" in execute_profile
+
+
 def test_requested_wowhead_profiles_and_target_count_aware_misdirection_are_explicit():
     sql = read(WOWHEAD_GUIDE_ROTATION_SQL)
     manager = read(BOT_MGR)
@@ -2914,7 +2934,7 @@ def test_player_bot_chase_movement_inform_does_not_deref_non_creature_owner():
     assert_ordered(inform, "if (!owner->IsCreature())", "return;", "owner->ToCreature()->AI()")
 
 
-def test_profile_combat_resolver_can_require_legal_density_actions_for_exact_enemy_count():
+def test_profile_combat_resolver_prioritizes_density_actions_then_uses_rotation_fallbacks():
     mgr = read(BOT_MGR)
     resolver = function_body(
         mgr,
@@ -2925,10 +2945,10 @@ def test_profile_combat_resolver_can_require_legal_density_actions_for_exact_ene
         "BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState* state, Player* bot, Unit* target, ResolvedCombatAction* actionOut, uint32 hostileCount, bool densityOnly)",
     )
 
-    assert "candidate.Category != BotCombatActionCategory::Aoe" in resolver
-    assert "candidate.Category != BotCombatActionCategory::Cleave" in resolver
-    assert "candidate.Category != BotCombatActionCategory::ResourceGenerator" in resolver
-    assert 'candidate.RejectReason = "high_density_requires_area_or_generator";' in resolver
+    assert "candidate.Category == BotCombatActionCategory::Aoe" in resolver
+    assert "candidate.Category == BotCombatActionCategory::Cleave" in resolver
+    assert "candidate.Category == BotCombatActionCategory::ResourceGenerator" in resolver
+    assert "bestDensityFallback" in resolver
     assert "candidate.Profile.MinEnemies > hostileCount" in resolver
     assert "hostileCount > candidate.Profile.MaxEnemies" in resolver
     assert 'candidate.RejectReason = "enemy_count_too_low";' in resolver
@@ -2936,7 +2956,7 @@ def test_profile_combat_resolver_can_require_legal_density_actions_for_exact_ene
     assert "auto engagedWithBotParty = [bot](Unit* unit) -> bool" in resolver
     assert "player->GetGroup() == bot->GetGroup()" in resolver
     assert "&& engagedWithBotParty(unit)" in resolver
-    assert "best = bestDensityArea ? bestDensityArea : bestDensityGenerator;" in resolver
+    assert "best = bestDensityArea ? bestDensityArea : (bestDensityGenerator ? bestDensityGenerator : bestDensityFallback);" in resolver
     assert "ResolveProfileCombatAction(bot, target, hostileCount, densityOnly)" in executor
 
 

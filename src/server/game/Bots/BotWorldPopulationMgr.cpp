@@ -1797,7 +1797,8 @@ void BotWorldPopulationMgr::Update(uint32 diff)
                         continue;
                     dummy->RemoveOwnedAuras([casterGuid](Aura const* aura)
                     {
-                        return aura && aura->GetCasterGUID() == casterGuid;
+                        return aura && aura->GetCasterGUID() == casterGuid
+                            && aura->GetSpellInfo() && aura->GetSpellInfo()->Id != 1130;
                     }, AuraRemoveFlags::ByCancel);
                 }
             }
@@ -2885,7 +2886,6 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
         _calibrationBots.push_back(state);
 
         CalibrationMetrics metrics;
-        metrics.WindowStartedMs = NowMs();
         _calibrationMetrics.emplace(bot->GetGUID().GetCounter(), std::move(metrics));
         TC_LOG_INFO("server", "BotWorld calibration clone spawned bot=%s slot=%zu map=%u position=%f,%f,%f",
             bot->GetGUID().ToString().c_str(), slot, bot->GetMapId(), bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ());
@@ -2933,6 +2933,13 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
     Unit* target = dummies.front();
     uint32 hostileCount = _calibrationAoePhase ? std::max<uint32>(3, uint32(dummies.size())) : 1;
 
+    if (TryEnsurePersistentCombatSetup(state, bot, target))
+        return;
+
+    CalibrationMetrics& metrics = _calibrationMetrics[state.Guid.GetCounter()];
+    if (!metrics.WindowStartedMs)
+        metrics.WindowStartedMs = NowMs();
+
     // Keep the tank's normal threat stance active. Other rotational choices go
     // through the same profile resolver and executor used in the dungeon.
     if (bot->getClass() == CLASS_PALADIN && std::string(GetDungeonRole(bot)) == "tank"
@@ -2953,9 +2960,6 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
     }
 
     BotActionResult result = ExecuteProfileCombatAction(&state, bot, target, &action, hostileCount, _calibrationAoePhase);
-    CalibrationMetrics& metrics = _calibrationMetrics[state.Guid.GetCounter()];
-    if (!metrics.WindowStartedMs)
-        metrics.WindowStartedMs = NowMs();
     ++metrics.ResultCounts[ToString(result)];
     if (result == BotActionResult::CastFailed && !state.LastCombatAttempt.Reason.empty())
         ++metrics.ResultCounts[std::string("cast_failed:") + state.LastCombatAttempt.Reason];
@@ -15558,6 +15562,7 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
     BotActionCandidate* best = nullptr;
     BotActionCandidate* bestDensityArea = nullptr;
     BotActionCandidate* bestDensityGenerator = nullptr;
+    BotActionCandidate* bestDensityFallback = nullptr;
     for (BotActionCandidate& candidate : candidates)
     {
         SpellInfo const* candidateSpellInfo = sSpellMgr->GetSpellInfo(candidate.SpellId);
@@ -15596,14 +15601,6 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
             && !bot->HasAura(candidate.SpellId))
         {
             candidate.RejectReason = "major_tank_defensive_already_active";
-            continue;
-        }
-        if (densityOnly
-            && candidate.Category != BotCombatActionCategory::Aoe
-            && candidate.Category != BotCombatActionCategory::Cleave
-            && candidate.Category != BotCombatActionCategory::ResourceGenerator)
-        {
-            candidate.RejectReason = "high_density_requires_area_or_generator";
             continue;
         }
         if (candidate.Profile.MinEnemies > hostileCount)
@@ -15784,11 +15781,18 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
                 || (candidate.Profile.PriorityBucket == bestDensityGenerator->Profile.PriorityBucket && candidate.Score > bestDensityGenerator->Score))
                 bestDensityGenerator = &candidate;
         }
-        else if (densityOnly)
+        else if (densityOnly && (candidate.Category == BotCombatActionCategory::Aoe
+            || candidate.Category == BotCombatActionCategory::Cleave))
         {
             if (!bestDensityArea || candidate.Profile.PriorityBucket < bestDensityArea->Profile.PriorityBucket
                 || (candidate.Profile.PriorityBucket == bestDensityArea->Profile.PriorityBucket && candidate.Score > bestDensityArea->Score))
                 bestDensityArea = &candidate;
+        }
+        else if (densityOnly)
+        {
+            if (!bestDensityFallback || candidate.Profile.PriorityBucket < bestDensityFallback->Profile.PriorityBucket
+                || (candidate.Profile.PriorityBucket == bestDensityFallback->Profile.PriorityBucket && candidate.Score > bestDensityFallback->Score))
+                bestDensityFallback = &candidate;
         }
         else if (!best || candidate.Profile.PriorityBucket < best->Profile.PriorityBucket
             || (candidate.Profile.PriorityBucket == best->Profile.PriorityBucket && candidate.Score > best->Score))
@@ -15796,7 +15800,7 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
     }
 
     if (densityOnly)
-        best = bestDensityArea ? bestDensityArea : bestDensityGenerator;
+        best = bestDensityArea ? bestDensityArea : (bestDensityGenerator ? bestDensityGenerator : bestDensityFallback);
 
     uint32 botKey = bot->GetGUID().GetCounter();
     std::ostringstream rejectionJson;
@@ -15841,6 +15845,129 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(best->SpellId))
             action.MaxRange = std::max(5.0f, spellInfo->GetMaxRange(false));
     return action;
+}
+
+bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup(WorldBotState& state, Player* bot, Unit* target) const
+{
+    if (!bot || !bot->IsAlive())
+        return false;
+
+    struct SelfBuff
+    {
+        uint8 ClassId;
+        char const* Role;
+        uint32 SpellId;
+        uint32 AuraId;
+        char const* Name;
+    };
+    static SelfBuff const buffs[] =
+    {
+        { CLASS_PALADIN, "tank", 25780, 25780, "righteous_fury" },
+        { CLASS_PALADIN, "tank", 31801, 31801, "seal_of_truth" },
+        { CLASS_PALADIN, "tank", 465, 465, "devotion_aura" },
+        { CLASS_PALADIN, nullptr, 20217, 20217, "blessing_of_kings" },
+        { CLASS_MAGE, nullptr, 1459, 1459, "arcane_brilliance" },
+        { CLASS_MAGE, nullptr, 30482, 30482, "molten_armor" },
+        { CLASS_HUNTER, nullptr, 13165, 13165, "aspect_of_the_hawk" },
+        { CLASS_SHAMAN, nullptr, 324, 324, "lightning_shield" },
+    };
+
+    std::string const role = GetDungeonRole(bot);
+    for (SelfBuff const& buff : buffs)
+    {
+        if (buff.ClassId != bot->getClass() || (buff.Role && role != buff.Role) || bot->HasAura(buff.AuraId))
+            continue;
+        if (!bot->HasSpell(buff.SpellId))
+        {
+            std::string blocker = std::string("persistent_setup_spell_missing:") + std::to_string(buff.SpellId);
+            MarkBotBlocked(state, bot, blocker.c_str());
+            continue;
+        }
+
+        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(buff.SpellId);
+        if (!spellInfo || bot->HasUnitState(UNIT_STATE_CASTING)
+            || bot->GetSpellHistory()->HasGlobalCooldown(spellInfo) || !bot->GetSpellHistory()->IsReady(spellInfo))
+            return true;
+
+        ResolvedCombatAction action;
+        action.Valid = true;
+        action.Type = "cast";
+        action.SpellId = buff.SpellId;
+        action.TargetGuid = bot->GetGUID();
+        action.DebugName = buff.Name;
+        if (bot->CastSpell(bot, buff.SpellId, false) == SPELL_CAST_OK)
+        {
+            RecordCombatAttempt(state, bot, bot, "persistent_setup", &action, BotActionResult::Ok, buff.Name);
+            return true;
+        }
+        RecordCombatAttempt(state, bot, bot, "persistent_setup", &action, BotActionResult::CastFailed, "self_buff_cast_failed");
+        return true;
+    }
+
+    if (bot->getClass() == CLASS_SHAMAN)
+    {
+        auto ensureWeaponImbue = [&](uint8 equipmentSlot, uint32 spellId, char const* name) -> bool
+        {
+            Item* weapon = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, equipmentSlot);
+            if (!weapon || weapon->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT))
+                return false;
+            if (!bot->HasSpell(spellId))
+            {
+                std::string blocker = std::string("persistent_setup_spell_missing:") + std::to_string(spellId);
+                MarkBotBlocked(state, bot, blocker.c_str());
+                return false;
+            }
+
+            SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+            if (!spellInfo || bot->HasUnitState(UNIT_STATE_CASTING)
+                || bot->GetSpellHistory()->HasGlobalCooldown(spellInfo) || !bot->GetSpellHistory()->IsReady(spellInfo))
+                return true;
+
+            SpellCastTargets targets;
+            targets.SetItemTarget(weapon);
+            Spell* spell = new Spell(bot, spellInfo, TRIGGERED_NONE);
+            SpellCastResult result = spell->prepare(targets);
+            ResolvedCombatAction action;
+            action.Valid = true;
+            action.Type = "cast";
+            action.SpellId = spellId;
+            action.TargetGuid = bot->GetGUID();
+            action.DebugName = name;
+            RecordCombatAttempt(state, bot, bot, "persistent_setup", &action,
+                result == SPELL_CAST_OK ? BotActionResult::Ok : BotActionResult::CastFailed,
+                result == SPELL_CAST_OK ? name : "weapon_imbue_cast_failed");
+            return true;
+        };
+
+        if (ensureWeaponImbue(EQUIPMENT_SLOT_MAINHAND, 8232, "windfury_weapon"))
+            return true;
+        if (ensureWeaponImbue(EQUIPMENT_SLOT_OFFHAND, 8024, "flametongue_weapon"))
+            return true;
+    }
+
+    if (bot->getClass() == CLASS_HUNTER && target && target->IsAlive() && bot->HasSpell(1130)
+        && !target->HasAura(1130, bot->GetGUID()))
+    {
+        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(1130);
+        if (!spellInfo || bot->HasUnitState(UNIT_STATE_CASTING)
+            || bot->GetSpellHistory()->HasGlobalCooldown(spellInfo) || !bot->GetSpellHistory()->IsReady(spellInfo))
+            return true;
+
+        ResolvedCombatAction action;
+        action.Valid = true;
+        action.Type = "cast";
+        action.SpellId = 1130;
+        action.TargetGuid = target->GetGUID();
+        action.DebugName = "hunters_mark";
+        BotActionResult result = bot->CastSpell(target, 1130, false) == SPELL_CAST_OK
+            ? BotActionResult::Ok : BotActionResult::CastFailed;
+        RecordCombatAttempt(state, bot, target, "persistent_setup", &action, result,
+            result == BotActionResult::Ok ? "hunters_mark" : "hunters_mark_cast_failed");
+        return true;
+    }
+
+    TryResolveBotBlocker(state, bot, "persistent_combat_setup_ready");
+    return false;
 }
 
 bool BotWorldPopulationMgr::TryEnsureCombatTotems(WorldBotState& state, Player* bot, Unit* target, uint32 hostileCount) const
@@ -15917,6 +16044,9 @@ bool BotWorldPopulationMgr::TryEnsureCombatTotems(WorldBotState& state, Player* 
 
 BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState* state, Player* bot, Unit* target, ResolvedCombatAction* actionOut, uint32 hostileCount, bool densityOnly) const
 {
+    if (state && TryEnsurePersistentCombatSetup(*state, bot, target))
+        return BotActionResult::Casting;
+
     if (state && TryEnsureCombatTotems(*state, bot, target, hostileCount))
         return BotActionResult::Casting;
 
