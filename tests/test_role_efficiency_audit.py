@@ -97,6 +97,7 @@ def test_stonecore_role_profiles_include_runtime_efficiency_gates():
     assert 'candidate.RejectReason = "target_immune"' in manager
     assert manager.count('candidate.RejectReason = "target_immune"') >= 3
     assert '"righteous_defense_party_pickup"' in manager
+    assert '"tank_immediate_aoe_threat"' in manager
     assert "'rapid_fire,burn', 1.20" in sql
     assert "_validationRoutePackTransitionGuids.find(creature->GetGUID())" in manager
     for spell_id in (31850, 85673, 86150, 11129, 3045, 34490, 30823, 51533, 73680):
@@ -107,8 +108,8 @@ def test_role_audit_v3_requires_complete_rotations_pet_hazards_and_all_hostile_t
     roles = {
         "Scvaltank": (1, "survive_hold_threat_position_control_then_safe_dps", [53595, 26573, 31935, 53600]),
         "Scvalheal": (2, "keep_group_alive_triage_dispel_mana_efficiency_then_safe_dps", [2061]),
-        "Scvaldpsa": (3, "maximize_safe_damage", [44457, 133, 92315, 11129]),
-        "Scvaldpsb": (4, "maximize_safe_damage", [1978, 53209, 56641, 19434, 3045]),
+        "Scvaldpsa": (3, "maximize_safe_damage", [44457, 133, 2120, 11129]),
+        "Scvaldpsb": (4, "maximize_safe_damage", [53301, 1978, 3674, 77767, 2643, 3045]),
         "Scvaldpsc": (5, "maximize_safe_damage", [17364, 60103, 8050, 73680, 403, 51533]),
     }
     entries = []
@@ -131,12 +132,16 @@ def test_role_audit_v3_requires_complete_rotations_pet_hazards_and_all_hostile_t
         hazard["action"] = "move_out_of_hazard"
         hazard["threat_snapshot"] = {"engaged_hostiles": 4, "tank_owned_hostiles": 4, "healer_targeting_hostiles": 0}
         entries.append(hazard)
+    aoe_misdirection = _entry("Scvaldpsb", 4, sequence + 3, roles["Scvaldpsb"][1], spell=2643, recorded=1100)
+    aoe_misdirection["action"] = "misdirection_aoe_transfer"
+    entries.append(aoe_misdirection)
 
     audit = build_audit({"status": {"deaths": 0}, "trace": {"entries": entries}}, "abc")
 
     assert audit["schema"] == "stonecore_role_efficiency_v3"
     assert audit["passed"] is True
     assert audit["mechanics"]["hazard_exit_actions"] == 2
+    assert audit["mechanics"]["misdirection_aoe_successes"] == 1
 
 
 def test_role_audit_v3_rejects_observed_stonecore_quality_regressions():

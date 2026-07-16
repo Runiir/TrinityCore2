@@ -28,11 +28,16 @@ FAILURE_RESULTS = {
     "out_of_range",
 }
 THREAT_ACQUISITION_GRACE_MS = 3000
+HUNTER_AOE_TRANSFER_SPELLS = {2643, 13813}
 
 REQUIRED_ROTATION_GROUPS = {
     "Scvaltank": [{53595}, {26573}, {31935}, {53600}],
-    "Scvaldpsa": [{44457}, {133}, {92315, 11366}, {11129}],
-    "Scvaldpsb": [{1978}, {53209}, {56641}, {19434, 3044}, {3045}],
+    # Pyroblast is Hot Streak-proc-only, so a run cannot require it when the
+    # proc never occurs.  Flame Orb/Flamestrike prove the non-filler branch.
+    "Scvaldpsa": [{44457}, {133}, {2120, 82731}, {11129}],
+    # The validation hunter is Survival, not Marksmanship.  Require the core
+    # single-target, focus-cycle, trap/Black Arrow, and multi-target branches.
+    "Scvaldpsb": [{53301}, {1978}, {3674, 13813}, {77767}, {2643}, {3045}],
     "Scvaldpsc": [{17364}, {60103}, {8050}, {73680}, {403, 421}, {51533}],
 }
 
@@ -282,6 +287,30 @@ def build_audit(report: dict[str, Any], source_hash: str) -> dict[str, Any]:
 
     hazard_exit_actions = sum(entry.get("action") == "move_out_of_hazard" for entry in entries)
     hazard_exit_failures = sum(entry.get("action") == "hold_hazard_exit_failed" for entry in entries)
+    misdirection_aoe_attempts = [entry for entry in entries if entry.get("action") == "misdirection_aoe_transfer"]
+    misdirection_single_attempts = [
+        entry for entry in entries if entry.get("action") == "misdirection_single_target_transfer"
+    ]
+    misdirection_aoe_successes = sum(
+        int((entry.get("combat_attempt") or {}).get("action", {}).get("spell_id", 0))
+        in HUNTER_AOE_TRANSFER_SPELLS
+        and (entry.get("combat_attempt") or {}).get("failure", {}).get("result") == "ok"
+        for entry in misdirection_aoe_attempts
+    )
+    misdirection_aoe_wrong_successes = sum(
+        bool(int((entry.get("combat_attempt") or {}).get("action", {}).get("spell_id", 0)))
+        and int((entry.get("combat_attempt") or {}).get("action", {}).get("spell_id", 0))
+        not in HUNTER_AOE_TRANSFER_SPELLS
+        and (entry.get("combat_attempt") or {}).get("failure", {}).get("result") == "ok"
+        for entry in misdirection_aoe_attempts
+    )
+    misdirection_single_successes = sum(
+        bool(int((entry.get("combat_attempt") or {}).get("action", {}).get("spell_id", 0)))
+        and int((entry.get("combat_attempt") or {}).get("action", {}).get("spell_id", 0))
+        not in HUNTER_AOE_TRANSFER_SPELLS
+        and (entry.get("combat_attempt") or {}).get("failure", {}).get("result") == "ok"
+        for entry in misdirection_single_attempts
+    )
     if REQUIRED_ROTATION_GROUPS.keys() <= set(names):
         if int(report.get("status", {}).get("deaths") or 0) > 0:
             failures.append("party:death_free")
@@ -291,6 +320,12 @@ def build_audit(report: dict[str, Any], source_hash: str) -> dict[str, Any]:
             failures.append("party:hazard_activation_coverage")
         if hazard_exit_failures:
             failures.append("party:hazard_exit_failure")
+        if not misdirection_aoe_attempts or not misdirection_aoe_successes:
+            failures.append("Scvaldpsb:misdirection_aoe_transfer")
+        if misdirection_aoe_wrong_successes:
+            failures.append("Scvaldpsb:misdirection_aoe_used_single_target_spell")
+        if misdirection_single_attempts and not misdirection_single_successes:
+            failures.append("Scvaldpsb:misdirection_single_target_transfer")
 
     status = report.get("status", {})
     return {
@@ -311,6 +346,11 @@ def build_audit(report: dict[str, Any], source_hash: str) -> dict[str, Any]:
             "hazard_exit_actions": hazard_exit_actions,
             "hazard_exit_failures": hazard_exit_failures,
             "threat_acquisition_grace_ms": THREAT_ACQUISITION_GRACE_MS,
+            "misdirection_aoe_attempts": len(misdirection_aoe_attempts),
+            "misdirection_aoe_successes": misdirection_aoe_successes,
+            "misdirection_aoe_wrong_successes": misdirection_aoe_wrong_successes,
+            "misdirection_single_attempts": len(misdirection_single_attempts),
+            "misdirection_single_successes": misdirection_single_successes,
         },
         "passed": not failures and len(bots) == 5,
         "failure_labels": failures + ([] if len(bots) == 5 else ["expected_five_role_bots"]),

@@ -10298,6 +10298,41 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 }
         }
 
+        // On a multi-target wave, establish area threat before spending
+        // decision ticks on individual taunts.  Corborus and Azil can assign
+        // a complete spawn burst to healing threat in one tick; alternating
+        // Righteous Defense, Hand of Reckoning, and movement allowed the
+        // oldest adds to remain on the healer for several seconds.  Use the
+        // configured Protection AoE profile immediately and fall through to
+        // the rescue tools only while every legal area action is unavailable.
+        if (role == "tank" && add && addCount >= 2)
+        {
+            ResolvedCombatAction immediateAreaThreat = ResolveProfileCombatAction(
+                bot, add, addCount, true);
+            if (immediateAreaThreat.Valid)
+            {
+                BotActionResult areaResult = ExecuteProfileCombatAction(
+                    &state, bot, add, &immediateAreaThreat, addCount, true);
+                if (areaResult == BotActionResult::Ok)
+                {
+                    std::string raw = BuildRawJson(bot, add);
+                    std::string semantic = BuildSemanticJson(
+                        bot, add, "dungeon_boss", &power, stage, activity);
+                    RecordEvent(state, bot, "boss_add_density", add,
+                        "tank_immediate_aoe_threat", raw.c_str(), semantic.c_str(),
+                        float(addCount), densityHealer
+                            ? float(densityHealer->getAttackers().size()) : 0.0f,
+                        immediateAreaThreat.SpellId);
+                    state.TargetGuid = add->GetGUID();
+                    state.WasInCombat = true;
+                    target = add;
+                    situation = "dungeon_boss";
+                    action = "tank_immediate_aoe_threat";
+                    return true;
+                }
+            }
+        }
+
         if (role == "tank" && densityHealer && densityHealer->getAttackers().size() >= 5
             && bot->HasSpell(1022) && !densityHealer->HasAura(1022)
             && TryCastFriendlySpell(bot, densityHealer, 1022))
