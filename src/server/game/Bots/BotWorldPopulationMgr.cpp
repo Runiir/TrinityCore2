@@ -1229,7 +1229,14 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                          << ",\"damage\":" << amount << '}';
                 }
             }
-            json << "]}";
+            uint32 botKey = state.Guid.GetCounter();
+            auto maskItr = _lastCombatMaskByBot.find(botKey);
+            auto chosenItr = _lastChosenCombatByBot.find(botKey);
+            json << "],\"last_valid_action_mask\":"
+                 << (!completedWindow && maskItr != _lastCombatMaskByBot.end() ? maskItr->second : "null")
+                 << ",\"last_chosen_action\":"
+                 << (!completedWindow && chosenItr != _lastChosenCombatByBot.end() ? chosenItr->second : "null")
+                 << '}';
         }
         json << ']';
     };
