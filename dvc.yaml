@@ -80,6 +80,47 @@ stages:
     outs:
     - dataset/validation_provisioning:
         persist: true
+  baseline_inventory:
+    cmd: python -m tools.bot_ml.build_baseline_inventory --output-dir
+      dataset/baseline_inventory
+    deps:
+    - tools/bot_ml/build_baseline_inventory.py
+    - tools/bot_ml/extract_world_knowledge.py
+    - experiments/configs/bot_acceptance_policy_v1.json
+    - experiments/configs/baseline_dvc_pointer_inventory_v1.json
+    - experiments/configs/validation_provisioning_cata_001.json
+    - experiments/configs/cata_434_action_profiles.json
+    - experiments/configs/validation_scenarios_cata_001.json
+    - dataset/validation_gear_profiles/profiles.json
+    - dataset/validation_scenarios/validation_routes.jsonl
+    - dataset/validation_run_plan/run_validation_scenarios.sh
+    - sql/custom/world/2026_06_21_00_bot_rotation_profiles.sql
+    - sql/custom/world/2026_07_02_00_bwd_blood_dk_tank_profile.sql
+    - sql/custom/world/2026_07_02_01_bwd_tank_threat_profiles.sql
+    - sql/custom/world/2026_07_02_02_bwd_healer_triage_profiles.sql
+    - sql/custom/world/2026_07_14_00_stonecore_rotation_liveness.sql
+    - sql/custom/world/2026_07_14_01_stonecore_role_efficiency.sql
+    - sql/custom/world/2026_07_14_02_holy_priest_prayer_of_mending_aura_guard.sql
+    - sql/custom/world/2026_07_14_03_stonecore_paladin_aoe_threat_priority.sql
+    - sql/custom/world/2026_07_14_04_marksmanship_cast_time_stationary.sql
+    - sql/custom/world/2026_07_15_00_stonecore_complete_role_rotations.sql
+    - sql/custom/world/2026_07_15_01_stonecore_emergency_add_threat.sql
+    - sql/custom/world/2026_07_15_02_stonecore_hunter_rotation_liveness.sql
+    - sql/custom/world/2026_07_16_00_stonecore_wowhead_guide_rotations.sql
+    - sql/custom/world/2026_07_16_01_stonecore_holy_priest_serenity.sql
+    - sql/custom/world/2026_07_16_02_stonecore_holy_word_serenity_cast.sql
+    - sql/custom/world/2026_07_16_03_dummy_dps_rotation_tuning.sql
+    - sql/custom/world/2026_07_16_04_dummy_dps_rotation_followup.sql
+    - sql/custom/world/2026_07_16_05_dummy_dps_aura_refresh.sql
+    - sql/custom/world/2026_07_16_06_protection_single_target_fillers.sql
+    - sql/custom/world/2026_07_16_07_enhancement_fire_elemental.sql
+    - sql/custom/world/2026_07_17_00_enhancement_searing_priority.sql
+    - sql/custom/world/2026_07_17_01_enhancement_unleash_flame_priority.sql
+    - sql/custom/world/2026_07_17_01_protection_avenging_wrath.sql
+    - sql/custom/world/2026_07_17_02_enhancement_unleash_flame_rollback.sql
+    outs:
+    - dataset/baseline_inventory:
+        persist: true
   validation_provisioning_verify:
     cmd: python -m tools.bot_ml.validate_validation_provisioning --config
       experiments/configs/validation_provisioning_cata_001.json --gear-profiles

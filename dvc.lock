@@ -192,21 +192,21 @@ stages:
       size: 1445
     - path: dataset/validation_gear_profiles
       hash: md5
-      md5: 98685fc1a224c89ea297af75cda708d7.dir
+      md5: 12e41cf1d4ba3f7c804095755a156fc9.dir
       size: 385890
       nfiles: 3
     - path: experiments/configs/cata_434_action_profiles.json
       hash: md5
-      md5: e4b4ba90fc9048debac8b92141f15858
-      size: 2540
+      md5: 081c8a6a8107ca37bbf1e3a1c0a6ddd4
+      size: 2614
     - path: experiments/configs/validation_provisioning_cata_001.json
       hash: md5
-      md5: 2a399fc2b7e2867fa24ae1b107901bc6
-      size: 13074
+      md5: b136d725227b0e711df9c70d236ec0e0
+      size: 14870
     - path: tools/bot_ml/build_validation_provisioning.py
       hash: md5
-      md5: c93894c5afd99a836fed10ca5f87b909
-      size: 35501
+      md5: c9b67e1eb5c7df089ce4b2a8835b4934
+      size: 38778
     - path: tools/bot_ml/validation_profile_manifests.py
       hash: md5
       md5: 1fa2c87b3ecad9db30acc761a0483ede
@@ -214,8 +214,8 @@ stages:
     outs:
     - path: dataset/validation_provisioning
       hash: md5
-      md5: 3d0c5632afe555d83eac72212c6f809b.dir
-      size: 543992
+      md5: 61b6bd098d8b92c2c6a04536073a3382.dir
+      size: 548685
       nfiles: 6
   validation_gear:
     cmd: python -m tools.bot_ml.build_validation_gear_profiles --config 
@@ -244,16 +244,16 @@ stages:
       size: 2340
     - path: experiments/configs/validation_provisioning_cata_001.json
       hash: md5
-      md5: 2a399fc2b7e2867fa24ae1b107901bc6
-      size: 13074
+      md5: b136d725227b0e711df9c70d236ec0e0
+      size: 14870
     - path: tools/bot_ml/build_validation_gear_profiles.py
       hash: md5
       md5: ae0ff517b3f7109cf8f39c42cee65019
       size: 36327
     - path: tools/bot_ml/build_validation_provisioning.py
       hash: md5
-      md5: c93894c5afd99a836fed10ca5f87b909
-      size: 35501
+      md5: c9b67e1eb5c7df089ce4b2a8835b4934
+      size: 38778
     - path: tools/bot_ml/extract_world_knowledge.py
       hash: md5
       md5: 9f9d6ddb0fcae27397951db8b02c3d68
@@ -265,7 +265,7 @@ stages:
     outs:
     - path: dataset/validation_gear_profiles
       hash: md5
-      md5: 98685fc1a224c89ea297af75cda708d7.dir
+      md5: 12e41cf1d4ba3f7c804095755a156fc9.dir
       size: 385890
       nfiles: 3
   validation_provisioning_verify:
@@ -293,41 +293,41 @@ stages:
       size: 337263
     - path: dataset/validation_gear_profiles
       hash: md5
-      md5: 35717c8c05be4abfd614598f81010ed6.dir
+      md5: 12e41cf1d4ba3f7c804095755a156fc9.dir
       size: 385890
       nfiles: 3
     - path: dataset/validation_provisioning/report.json
       hash: md5
-      md5: aba58794cc82ae04b387e9ea8ea07d5f
-      size: 2989
+      md5: 7e57a4985cb5edd269301e7c850c78cb
+      size: 4068
     - path: experiments/configs/cata_434_action_profiles.json
       hash: md5
-      md5: e4b4ba90fc9048debac8b92141f15858
-      size: 2540
+      md5: 081c8a6a8107ca37bbf1e3a1c0a6ddd4
+      size: 2614
     - path: experiments/configs/cata_434_combat_loot_profiles.json
       hash: md5
       md5: ff1d7533647293c7c24c374e08762f6c
       size: 2340
     - path: experiments/configs/validation_provisioning_cata_001.json
       hash: md5
-      md5: 2cd8dc24e8de886c201bf022ff13daa9
-      size: 11904
+      md5: b136d725227b0e711df9c70d236ec0e0
+      size: 14870
     - path: tools/bot_ml/build_validation_gear_profiles.py
       hash: md5
       md5: ae0ff517b3f7109cf8f39c42cee65019
       size: 36327
     - path: tools/bot_ml/build_validation_provisioning.py
       hash: md5
-      md5: 6cad94865c5574e028f0e184178a72ab
-      size: 35452
+      md5: c9b67e1eb5c7df089ce4b2a8835b4934
+      size: 38778
     - path: tools/bot_ml/extract_world_knowledge.py
       hash: md5
       md5: 9f9d6ddb0fcae27397951db8b02c3d68
       size: 31879
     - path: tools/bot_ml/validate_validation_provisioning.py
       hash: md5
-      md5: 1a4b796b10d79bcf3d5bcbb85742740b
-      size: 23476
+      md5: 817ca8b71e0a94bac54f7ef6f7260b4f
+      size: 24545
     - path: tools/bot_ml/validation_profile_manifests.py
       hash: md5
       md5: 1fa2c87b3ecad9db30acc761a0483ede
@@ -335,8 +335,8 @@ stages:
     outs:
     - path: dataset/validation_provisioning_verification/report.json
       hash: md5
-      md5: ec4235056459308c909b81aeaa09b0b2
-      size: 511
+      md5: 3b193af1dd43d5749e15aee1618d9269
+      size: 574
   validation_scenarios:
     cmd: python -m tools.bot_ml.build_validation_scenario_manifests --config 
       experiments/configs/validation_scenarios_cata_001.json 
@@ -347,12 +347,12 @@ stages:
     deps:
     - path: dataset/validation_provisioning/report.json
       hash: md5
-      md5: aba58794cc82ae04b387e9ea8ea07d5f
-      size: 2989
+      md5: 7e57a4985cb5edd269301e7c850c78cb
+      size: 4068
     - path: dataset/validation_provisioning_verification/report.json
       hash: md5
-      md5: c73c2173d2c956539ee8f19f0e47485c
-      size: 511
+      md5: 3b193af1dd43d5749e15aee1618d9269
+      size: 574
     - path: experiments/configs/validation_scenarios_cata_001.json
       hash: md5
       md5: 7f130d40ed3f6a3f8229cdd42dbd5c78
@@ -467,8 +467,8 @@ stages:
     deps:
     - path: dataset/validation_scenarios
       hash: md5
-      md5: 5dfe31a0a270ee2ccf4e75401bedcd4a.dir
-      size: 103677
+      md5: 6a610845896208b6290dd123043d9b19.dir
+      size: 103035
       nfiles: 5
     - path: tools/bot_ml/build_validation_run_plan.py
       hash: md5
@@ -481,8 +481,8 @@ stages:
     outs:
     - path: dataset/validation_run_plan
       hash: md5
-      md5: d43e82e50a6eca2d335077efb70c1c54.dir
-      size: 102431
+      md5: 5deb77c9fb0a203da6b72332b5766c91.dir
+      size: 97520
       nfiles: 2
   live_validation_combined:
     cmd: python -m tools.bot_ml.run_live_bot_validation --input-log 
@@ -800,3 +800,149 @@ stages:
       hash: md5
       md5: d5aade41043045dec5399a9eea8e913a
       size: 602
+  baseline_inventory:
+    cmd: python -m tools.bot_ml.build_baseline_inventory --output-dir dataset/baseline_inventory
+    deps:
+    - path: dataset/validation_gear_profiles/profiles.json
+      hash: md5
+      md5: 73df0a61377bf68d8e0b5bb50a0c6978
+      size: 381929
+    - path: dataset/validation_run_plan/run_validation_scenarios.sh
+      hash: md5
+      md5: b1e4a7d0e76521a5e6bafa70a8ef0637
+      size: 15238
+      isexec: true
+    - path: dataset/validation_scenarios/validation_routes.jsonl
+      hash: md5
+      md5: 3e301ebe5b637ca8cc69149fa769c718
+      size: 85934
+    - path: experiments/configs/baseline_dvc_pointer_inventory_v1.json
+      hash: md5
+      md5: 990a61946bd57fb23b991790acd51c0d
+      size: 129575
+    - path: experiments/configs/bot_acceptance_policy_v1.json
+      hash: md5
+      md5: 9f1db8e2465871eb7c0ef4cf519f1088
+      size: 13973
+    - path: experiments/configs/cata_434_action_profiles.json
+      hash: md5
+      md5: 081c8a6a8107ca37bbf1e3a1c0a6ddd4
+      size: 2614
+    - path: experiments/configs/validation_provisioning_cata_001.json
+      hash: md5
+      md5: b136d725227b0e711df9c70d236ec0e0
+      size: 14870
+    - path: experiments/configs/validation_scenarios_cata_001.json
+      hash: md5
+      md5: 7f130d40ed3f6a3f8229cdd42dbd5c78
+      size: 10342
+    - path: sql/custom/world/2026_06_21_00_bot_rotation_profiles.sql
+      hash: md5
+      md5: 509366630b9e0c1cfadc664c011671b5
+      size: 34869
+    - path: sql/custom/world/2026_07_02_00_bwd_blood_dk_tank_profile.sql
+      hash: md5
+      md5: e1ed826d180cef5a323105711ef65094
+      size: 2819
+    - path: sql/custom/world/2026_07_02_01_bwd_tank_threat_profiles.sql
+      hash: md5
+      md5: 97ac0155ff415d916bd3979fe4abe1f9
+      size: 5170
+    - path: sql/custom/world/2026_07_02_02_bwd_healer_triage_profiles.sql
+      hash: md5
+      md5: 745dc1a7ba8b478472ae3d4a8b717414
+      size: 1062
+    - path: sql/custom/world/2026_07_14_00_stonecore_rotation_liveness.sql
+      hash: md5
+      md5: 85d88a172be5f8f0f9c86bfd9bc81741
+      size: 767
+    - path: sql/custom/world/2026_07_14_01_stonecore_role_efficiency.sql
+      hash: md5
+      md5: 9ad80cf9469ff8c1060a66331ff45177
+      size: 6727
+    - path: sql/custom/world/2026_07_14_02_holy_priest_prayer_of_mending_aura_guard.sql
+      hash: md5
+      md5: 1beeb944738ad73e2079a95f231c277a
+      size: 514
+    - path: sql/custom/world/2026_07_14_03_stonecore_paladin_aoe_threat_priority.sql
+      hash: md5
+      md5: 0c365058973ac007f743c68e693db68b
+      size: 771
+    - path: sql/custom/world/2026_07_14_04_marksmanship_cast_time_stationary.sql
+      hash: md5
+      md5: d4310e76a6aeb7ad5ab29e8d2a6d96bd
+      size: 480
+    - path: sql/custom/world/2026_07_15_00_stonecore_complete_role_rotations.sql
+      hash: md5
+      md5: 27a54415ed66faec4f22e9ffd89a7750
+      size: 3289
+    - path: sql/custom/world/2026_07_15_01_stonecore_emergency_add_threat.sql
+      hash: md5
+      md5: fec206afba7ab6a122fde3e4c24b7277
+      size: 531
+    - path: sql/custom/world/2026_07_15_02_stonecore_hunter_rotation_liveness.sql
+      hash: md5
+      md5: f676cdce5eb5c547e516ea740273ac6f
+      size: 488
+    - path: sql/custom/world/2026_07_16_00_stonecore_wowhead_guide_rotations.sql
+      hash: md5
+      md5: a28fc1e3913a23591ca2a5e155830cfa
+      size: 13283
+    - path: sql/custom/world/2026_07_16_01_stonecore_holy_priest_serenity.sql
+      hash: md5
+      md5: 02f57c1be1deca5fb64e96bc7e97a071
+      size: 551
+    - path: sql/custom/world/2026_07_16_02_stonecore_holy_word_serenity_cast.sql
+      hash: md5
+      md5: ad4c37b0178a3b65f443516d3cb9cf66
+      size: 605
+    - path: sql/custom/world/2026_07_16_03_dummy_dps_rotation_tuning.sql
+      hash: md5
+      md5: 9326dde7d3ae65afa949a98f30b84f1e
+      size: 2608
+    - path: sql/custom/world/2026_07_16_04_dummy_dps_rotation_followup.sql
+      hash: md5
+      md5: f5b8ce525b96dc963495fabbd81b86d6
+      size: 1541
+    - path: sql/custom/world/2026_07_16_05_dummy_dps_aura_refresh.sql
+      hash: md5
+      md5: 324ff2b589ff629b49088991f1dfc971
+      size: 909
+    - path: sql/custom/world/2026_07_16_06_protection_single_target_fillers.sql
+      hash: md5
+      md5: 395906088b2d6ce5388333ade6248710
+      size: 1315
+    - path: sql/custom/world/2026_07_16_07_enhancement_fire_elemental.sql
+      hash: md5
+      md5: 914283fcc07b2884623d0b5f8fb70e23
+      size: 1201
+    - path: sql/custom/world/2026_07_17_00_enhancement_searing_priority.sql
+      hash: md5
+      md5: b3baa5e832d9a1a4ff0d14e3277eec98
+      size: 911
+    - path: sql/custom/world/2026_07_17_01_enhancement_unleash_flame_priority.sql
+      hash: md5
+      md5: 661eeccaa4349352d454d49a7c12d681
+      size: 1553
+    - path: sql/custom/world/2026_07_17_01_protection_avenging_wrath.sql
+      hash: md5
+      md5: 528fd9de949054a4256f0b1ce0c4cd4e
+      size: 1207
+    - path: sql/custom/world/2026_07_17_02_enhancement_unleash_flame_rollback.sql
+      hash: md5
+      md5: 254dfc2bdda32b625681a61c44347e1d
+      size: 1564
+    - path: tools/bot_ml/build_baseline_inventory.py
+      hash: md5
+      md5: f9b2a246f332c9638f3eb4812cf7872a
+      size: 61325
+    - path: tools/bot_ml/extract_world_knowledge.py
+      hash: md5
+      md5: 9f9d6ddb0fcae27397951db8b02c3d68
+      size: 31879
+    outs:
+    - path: dataset/baseline_inventory
+      hash: md5
+      md5: 5c19262727c5d4338fc65c549ed95617.dir
+      size: 362245
+      nfiles: 4

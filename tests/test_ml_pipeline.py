@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import subprocess
 import sys
@@ -60,6 +61,7 @@ from tools.bot_ml.validate_validation_provisioning import main as provisioning_v
 from tools.bot_ml.validate_validation_provisioning import validate_database as validate_provisioning_database
 from tools.bot_ml.validation_profile_manifests import load_action_profile_manifest, load_combat_loot_profile_manifest
 from tools.bot_ml.validate_data_quality import validate_rows as validate_data_quality_rows
+from tools.bot_ml.build_baseline_inventory import build_inventory, canonical_hash, git_identity, parse_dvc_pointer, reconcile_live_db, reconcile_targets, rotation_tuples, validate_policy, write_bundle
 from tools.bot_ml.bt_masked_ga_combined import run as run_bt_masked_ga_combined
 from tools.bot_ml.evaluate_policy_model import policy_score, ranking_metrics
 from tools.bot_ml.train_policy_model import add_synthetic_binary_class, balanced_binary_weights, teacher_choice_training_rows
@@ -1121,6 +1123,7 @@ def test_bot_ml_workflow_has_pixi_tasks_and_documented_dvc_steps():
         "bot-validation-scenarios",
         "bot-validation-run-plan",
         "bot-validation-run-status",
+        "bot-baseline-inventory",
         "bot-live-scenario-reports",
         "bot-live-validate",
         "bot-ml-export",
@@ -9133,3 +9136,201 @@ def test_validation_status_requires_exact_scoped_terminal_and_boss_evidence(tmp_
     assert status["all_ready"] is True
     assert status["scenarios"][0]["present_segments"] == ["01_trash", "02_boss"]
     assert {row["evidence_source"] for row in status["scenarios"][0]["segment_reports"]} == {"scenario_segment_result"}
+
+
+def test_baseline_inventory_policy_contract_coverage_and_manifest_are_deterministic(tmp_path):
+    root = Path.cwd()
+    inputs = {
+        "policy_path": root / "experiments/configs/bot_acceptance_policy_v1.json",
+        "provisioning_path": root / "experiments/configs/validation_provisioning_cata_001.json",
+        "gear_path": root / "dataset/validation_gear_profiles/profiles.json",
+        "action_path": root / "experiments/configs/cata_434_action_profiles.json",
+    }
+    first = build_inventory(root, **inputs)
+    second = build_inventory(root, **inputs)
+    policy = json.loads(inputs["policy_path"].read_text(encoding="utf-8"))
+    declared_rotations = [root / row["path"] for row in policy["artifact_declarations"] if row["artifact_class"] == "effective_rotation_sql"]
+    with pytest.raises(ValueError, match="declaration order"):
+        build_inventory(root, **inputs, rotation_paths=list(reversed(declared_rotations)))
+    report = first["reconciliation_report.json"]
+    classified = first["artifact_classification.json"]["artifacts"]
+    manifest = first["manifest.json"]
+
+    assert canonical_hash(first) == canonical_hash(second)
+    assert len(report["rows"]) == 31
+    assert report["coverage"] == {"target_count": 31, "role_counts": {"tank": 4, "healer": 5, "dps": 22}, "configured_count": 14, "unsupported_count": 17, "complete": False}
+    assert report["offline_inventory"] == {
+        "complete": True,
+        "artifact_complete": True,
+        "candidate_inventory_complete": True,
+        "configured_coverage_complete": False,
+        "identity_complete": True,
+        "reason_codes": ["offline_inventory_complete"],
+    }
+    assert report["phase0_gate"]["passed"] is False
+    assert all(row["gameplay_payload"] is None for row in report["rows"] if row["status"] == "unsupported")
+    assert report["current_acceptance"] is False
+    assert report["stonecore_gameplay_accepted"] is False
+    assert report["live_db_reconciliation"]["reason_codes"] == ["live_db_not_probed"]
+    policy = json.loads(inputs["policy_path"].read_text(encoding="utf-8"))
+    pointer_inventory = json.loads((root / policy["dvc_pointer_inventory"]).read_text(encoding="utf-8"))
+    assert len(classified) == len(policy["artifact_declarations"]) + len(pointer_inventory["pointers"])
+    assert len(pointer_inventory["pointers"]) >= 250
+    declared_rotation_paths = {row["path"] for row in policy["artifact_declarations"] if row["artifact_class"] == "effective_rotation_sql"}
+    referenced_rotation_paths = {str(path.relative_to(root)) for path in (root / "sql/custom/world").glob("*.sql") if "bot_rotation_profile" in path.read_text(encoding="utf-8")}
+    assert declared_rotation_paths == referenced_rotation_paths
+    assert {row["temporal_state"] for row in classified} <= {"current_diagnostic", "historical", "superseded", "unusable"}
+    assert all("rotation_profile" in row["gameplay_payload"] for row in report["rows"] if row["status"] == "configured")
+    assert all("rotation_profile" not in row["gameplay_payload"] for row in report["rows"] if "missing_rotation_profile" in row["coverage"]["missing_layers"])
+    assert manifest["bundle_hash"] == canonical_hash(manifest["bundle_members"])
+    output_dir = tmp_path / "bundle"
+    output_dir.mkdir()
+    (output_dir / "old.json").write_text("stale", encoding="utf-8")
+    write_bundle(output_dir, first)
+    assert {path.name for path in output_dir.iterdir()} == {"identity_snapshot.json", "artifact_classification.json", "reconciliation_report.json", "manifest.json"}
+    for member in manifest["bundle_members"]:
+        data = (output_dir / member["path"]).read_bytes()
+        assert hashlib.sha256(data).hexdigest() == member["sha256"]
+        assert len(data) == member["byte_count"]
+
+
+def test_baseline_inventory_rotation_coverage_and_policy_validation_report_exact_gaps():
+    root = Path.cwd()
+    policy = json.loads((root / "experiments/configs/bot_acceptance_policy_v1.json").read_text(encoding="utf-8"))
+    provisioning = json.loads((root / "experiments/configs/validation_provisioning_cata_001.json").read_text(encoding="utf-8"))
+    gear = json.loads((root / "dataset/validation_gear_profiles/profiles.json").read_text(encoding="utf-8"))
+    actions = json.loads((root / "experiments/configs/cata_434_action_profiles.json").read_text(encoding="utf-8"))
+    rotations = [{"class_id": 3, "spec_tag": "survival", "role": "dps", "source_path": "survival.sql"}]
+
+    policy["locked_acceptance_contract"]["hard_floor_ratio"] = 0.70
+    with pytest.raises(ValueError, match="locked acceptance contract"):
+        validate_policy(policy)
+    policy["locked_acceptance_contract"]["hard_floor_ratio"] = 0.75
+    policy["scope"]["target_count"] = 999
+    with pytest.raises(ValueError, match="31 targets"):
+        validate_policy(policy)
+    policy["scope"]["target_count"] = 31
+    policy["temporal_state_vocabulary"] = ["current_diagnostic", "historical", "superseded"]
+    with pytest.raises(ValueError, match="temporal-state vocabulary"):
+        validate_policy(policy)
+    policy["temporal_state_vocabulary"] = ["current_diagnostic", "historical", "superseded", "unusable"]
+    rows = reconcile_targets(policy, provisioning, gear, actions, rotations)
+    survival = next(row for row in rows if row["spec_target_id"] == "survival_hunter")
+    protection = next(row for row in rows if row["spec_target_id"] == "protection_warrior")
+    assert survival["status"] == "configured"
+    assert survival["gameplay_payload"]["rotation_profile"]["spec_tag"] == "survival"
+    assert protection["status"] == "incomplete"
+    assert "missing_rotation_profile" in protection["coverage"]["missing_layers"]
+    assert "rotation_profile" not in protection["gameplay_payload"]
+
+
+def test_baseline_inventory_pointer_and_live_db_reconciliation_are_fail_closed(monkeypatch, tmp_path):
+    bad_pointer = tmp_path / "bad.dvc"
+    bad_pointer.write_text("outs:\n- path: report.json\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="malformed DVC pointer"):
+        parse_dvc_pointer(bad_pointer)
+    pointer = tmp_path / "directory.dvc"
+    pointer.write_text("outs:\n- md5: 27f7487de8f6dc9a6f82d42a81c4584e.dir\n  size: 93829\n  nfiles: 2\n  hash: md5\n  path: report\n", encoding="utf-8")
+    assert parse_dvc_pointer(pointer)["md5"].endswith(".dir")
+
+    class Cursor:
+        def __enter__(self):
+            return self
+        def __exit__(self, *_args):
+            return False
+        def execute(self, query):
+            assert query.startswith("SELECT DISTINCT `class_id`, `spec_tag`, `role`")
+            assert "FROM `bot_rotation_profile`" in query
+        def fetchall(self):
+            return [{"class_id": 1, "spec_tag": "protection_warrior", "role": "tank"}]
+    class Connection:
+        def cursor(self):
+            return Cursor()
+        def close(self):
+            pass
+    monkeypatch.setattr("tools.bot_ml.build_baseline_inventory.connect_mysql", lambda _url: Connection())
+    rows = [
+        {"class_id": 1, "rotation_spec_tag": "protection_warrior", "role": "tank"},
+        {"class_id": 2, "rotation_spec_tag": "holy_paladin", "role": "healer"},
+    ]
+    result, identity = reconcile_live_db(rows, True, "mysql://user:secret@db.example:3306/world", None)
+    assert result["available"] is True
+    assert result["exact"] is False
+    assert result["reason_codes"] == ["live_db_mismatch"]
+    assert "secret" not in json.dumps(identity)
+
+
+def test_baseline_inventory_live_db_detects_unexpected_in_scope_profile(monkeypatch):
+    class Cursor:
+        def __enter__(self):
+            return self
+        def __exit__(self, *_args):
+            return False
+        def execute(self, query):
+            assert "FROM `bot_rotation_profile`" in query
+            assert "`enabled` = 1" in query
+        def fetchall(self):
+            return [
+                {"class_id": 1, "spec_tag": "protection_warrior", "role": "tank"},
+                {"class_id": 2, "spec_tag": "holy_paladin", "role": "healer"},
+                {"class_id": 8, "spec_tag": "unexpected_spec", "role": "dps"},
+            ]
+    class Connection:
+        def cursor(self):
+            return Cursor()
+        def close(self):
+            pass
+    monkeypatch.setattr("tools.bot_ml.build_baseline_inventory.connect_mysql", lambda _url: Connection())
+    rows = [
+        {"class_id": 1, "rotation_spec_tag": "protection_warrior", "role": "tank"},
+        {"class_id": 2, "rotation_spec_tag": "holy_paladin", "role": "healer"},
+    ]
+    result, _ = reconcile_live_db(rows, True, "mysql://user:secret@db.example:3306/world", None)
+    assert result["exact"] is False
+    assert result["conflicting_profile_keys"] == [{"class_id": 8, "spec_tag": "unexpected_spec", "role": "dps"}]
+
+
+def test_baseline_inventory_rotation_state_honors_declaration_order_deletes_and_repo_root(tmp_path):
+    root = tmp_path / "checkout"
+    rotations = root / "rotations"
+    rotations.mkdir(parents=True)
+    insert = rotations / "01_insert.sql"
+    disable = rotations / "02_disable.sql"
+    delete = rotations / "03_delete.sql"
+    insert.write_text("INSERT INTO `bot_rotation_profile` (`class_id`, `spec_tag`, `role`) VALUES (3, 'survival', 'dps');", encoding="utf-8")
+    disable.write_text("UPDATE `bot_rotation_profile` SET `enabled` = 0 WHERE `class_id` = 3 AND `spec_tag` = 'survival' AND `role` = 'dps';", encoding="utf-8")
+    delete.write_text("DELETE FROM `bot_rotation_profile` WHERE `class_id` = 3 AND `spec_tag` = 'survival' AND `role` = 'dps';", encoding="utf-8")
+    assert rotation_tuples([insert, disable], root) == []
+    assert rotation_tuples([insert, delete], root) == []
+    with pytest.raises(ValueError, match="inside --repo-root"):
+        rotation_tuples([insert], tmp_path / "other-checkout")
+
+
+def test_baseline_inventory_git_identity_excludes_lock_and_generated_output_cycles(tmp_path):
+    subprocess.run(["git", "init", str(tmp_path)], check=True, capture_output=True)
+    subprocess.run(["git", "-C", str(tmp_path), "config", "user.email", "test@example.invalid"], check=True)
+    subprocess.run(["git", "-C", str(tmp_path), "config", "user.name", "Test"], check=True)
+    (tmp_path / "tracked.txt").write_text("clean", encoding="utf-8")
+    (tmp_path / "dvc.lock").write_text("initial", encoding="utf-8")
+    subprocess.run(["git", "-C", str(tmp_path), "add", "tracked.txt", "dvc.lock"], check=True)
+    subprocess.run(["git", "-C", str(tmp_path), "commit", "-m", "initial"], check=True, capture_output=True)
+    clean = git_identity(tmp_path)
+    (tmp_path / "dvc.lock").write_text("changed", encoding="utf-8")
+    cycle_dir = tmp_path / "dataset" / "baseline_inventory"
+    cycle_dir.mkdir(parents=True)
+    (cycle_dir / "manifest.json").write_text("generated", encoding="utf-8")
+    excluded = git_identity(tmp_path)
+    (tmp_path / "tracked.txt").write_text("dirty", encoding="utf-8")
+    dirty = git_identity(tmp_path)
+    secret = tmp_path / "trinity-worldserver-test.conf"
+    secret.write_text("WorldDatabaseInfo = mysql://user:dictionary-secret@localhost/world", encoding="utf-8")
+    sensitive = git_identity(tmp_path)
+
+    assert clean["identity_hash"] == excluded["identity_hash"]
+    assert clean["worktree_state"] == "clean"
+    assert dirty["worktree_state"] == "dirty"
+    assert dirty["identity_hash"] != clean["identity_hash"]
+    assert sensitive["identity_complete"] is False
+    assert sensitive["sensitive_untracked_present"] is True
+    assert "dictionary-secret" not in json.dumps(sensitive)
+    assert not any("content_sha256" in row for row in sensitive["untracked_files"] if row["path"] == secret.name)

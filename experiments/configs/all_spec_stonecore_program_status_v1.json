@@ -1,0 +1,83 @@
+{
+  "schema": "all_spec_stonecore_program_status_v1",
+  "program": "all_spec_stonecore",
+  "updated_date": "2026-07-18",
+  "active_phase": 1,
+  "phase_status": [
+    {
+      "phase": 0,
+      "name": "baseline_inventory_and_policy_freeze",
+      "status": "completed",
+      "gate": {
+        "passed": true,
+        "reason_codes": [
+          "offline_inventory_complete",
+          "live_db_exact",
+          "runtime_inventory_complete"
+        ]
+      },
+      "scope": {
+        "target_count": 31,
+        "role_counts": {
+          "tank": 4,
+          "healer": 5,
+          "dps": 22
+        },
+        "configured_candidates": 14,
+        "unconfigured_candidates": 17,
+        "configured_complete_layers": 6,
+        "configured_incomplete_layers": 8
+      },
+      "live_inventory": {
+        "world_rotation_profile_rows": 14,
+        "world_rotation_action_rows": 131,
+        "profile_key_gap_count": 0,
+        "provisioning_gap_count": 45,
+        "pool_gap_count": 0,
+        "pet_gap_count": 0,
+        "unknown_pool_alias_candidate_count": 13,
+        "stored_claims_accepted": false,
+        "classified_artifacts": {
+          "current_diagnostic": 31,
+          "historical": 222,
+          "unusable": 55
+        }
+      },
+      "identity": {
+        "policy_sha256": "c53da85bcf8dd8a28e5097af1c54ff48d7130ba38ba56d2b1964ad7c5b15113a",
+        "live_identity_sha256": "dc559f04dc6abb398ec477eefe8ec7a534d5e00baf40a816f4fd57eb99dccbeb",
+        "live_bundle_sha256": "42f0a34d4c0432fbe364f0c54c422feb5061078b43f4394b01d618b5377ec0b8",
+        "live_report_sha256": "86d3e47993b5c4148807cbc0dc5513e06a83f09f6e9fcfa4be11a44f13c9c822"
+      },
+      "evidence": {
+        "offline_bundle": "dataset/baseline_inventory",
+        "live_bundle_pointer": "artifacts/all_spec_program/phase0_baseline_inventory_20260718.dvc",
+        "live_bundle_dvc_md5": "a0deb4eae2babc080746624fa7d14869.dir",
+        "remote_verification": "pixi run dvc status -c dataset/baseline_inventory artifacts/all_spec_program/phase0_baseline_inventory_20260718.dvc",
+        "remote_verification_outcome": "cache_and_remote_in_sync"
+      },
+      "validation": {
+        "focused_tests": "6 passed",
+        "full_test_file": "279 passed, 8 unrelated live-validation/watchdog failures",
+        "dvc_stage_status": "up_to_date"
+      },
+      "orchestration": {
+        "owner": "root",
+        "model": "gpt-5.6-sol",
+        "reasoning": "high",
+        "workers_launched": 0
+      }
+    },
+    {
+      "phase": 1,
+      "name": "canonical_catalogs_references_and_provisioning",
+      "status": "in_progress"
+    },
+    {
+      "phase_range": "2-12",
+      "status": "pending"
+    }
+  ],
+  "blockers": [],
+  "exact_next_handoff_prompt": "Continue approved all-spec Stonecore execution at Phase 1 only. Use experiments/configs/all_spec_stonecore_program_status_v1.json and artifacts/all_spec_program/phase0_baseline_inventory_20260718.dvc as the Phase 0 checkpoint. Build exactly 31 canonical target rows with aliases, capabilities, calibration scenarios, Phase 4 references, pairwise constraints, and deterministic provisioning/profile links; run the single consolidated 31-target research pass with reviewed provenance; do not begin Phase 2 until the Phase 1 gate passes."
+}

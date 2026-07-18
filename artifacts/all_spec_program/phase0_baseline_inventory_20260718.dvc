@@ -1,0 +1,6 @@
+outs:
+- md5: a0deb4eae2babc080746624fa7d14869.dir
+  size: 695406
+  nfiles: 4
+  hash: md5
+  path: phase0_baseline_inventory_20260718
