@@ -94,6 +94,32 @@ pixi run dvc repro live_validation_combined
 
 `bot-baseline-inventory` is the Phase 0 contract/inventory gate. Its DVC stage is deliberately offline: it reads only declared repository inputs and does not opt into DB probing, DVC pulls, or live validation. Checked-in identities and fail-closed temporal classifications for every tracked calibration/Stonecore DVC pointer are recorded in `experiments/configs/baseline_dvc_pointer_inventory_v1.json`, a regular DVC dependency, rather than declaring hundreds of `.dvc` files as graph dependencies. `--probe-live-db` is an explicit read-only diagnostic that reads database URLs only from the existing worldserver config, compares every enabled `bot_rotation_profile` class/spec/role key with the 14 configured candidates, inventories complete world rotation profile/action rows by content hash, records binary/config/database/schema identities, and reports live character pool, alias, talent, glyph, spell, gear, and pet gaps. It never accepts connection URLs or emits credentials. Without an available exact profile-key probe and complete runtime inventory report the Phase 0 gate remains false; even with both, Phase 0 records stored calibration and Stonecore claims without accepting gameplay evidence.
 
+### All-spec Phase 1 catalogs and provisioning
+
+Refresh the pinned WoWSims/Icy Veins source records only when intentionally updating content-addressed provenance, then use the offline command for routine validation and DVC reproduction:
+
+```bash
+pixi run python -m tools.bot_ml.build_all_spec_phase1_catalogs --refresh-sources --output-dir dataset/all_spec_phase1_catalogs
+pixi run python -m tools.bot_ml.build_all_spec_phase1_catalogs --output-dir dataset/all_spec_phase1_catalogs
+pixi run dvc repro validation_gear validation_provisioning all_spec_phase1_catalogs
+```
+
+The refresh is one consolidated pass across all ten Cataclysm classes and all 31 canonical targets. Its second pass is limited to records explicitly marked unsupported by the pinned simulator; it does not repeat complete research. The checked-in catalogs hold exactly 31 stable targets, reviewed and hashed source provenance, local Phase 4 runtime gear identities, calibration contracts, and all 20 tank/healer pairwise Stonecore compositions. `load_config()` materializes the linked `all_spec_candidate_pool` as 31 deterministic, unique, leaseable characters when provisioning artifacts are built.
+
+Runtime action authority remains the explicit `bot_rotation_profile`/`bot_rotation_action` SQL in `sql/custom/world/2026_07_18_00_all_spec_rotation_profile_coverage.sql`; guide prose is provenance, not executable policy, and generic ML remains offline/shadow-only. Apply that migration and the generated account/character provisioning SQL through the normal test-database migration workflow before requesting strict live proof. The live verifier reads database URLs only from `trinity-worldserver-test.conf`, sanitizes them in evidence, and fails closed for missing profiles, profiles without enabled actions, profiles without any spell known by the linked character, incomplete movement/auto-attack directives, or incomplete provisioning:
+
+```bash
+pixi run python -m tools.bot_ml.validate_validation_provisioning \
+  --config experiments/configs/validation_provisioning_cata_001.json \
+  --gear-profiles dataset/validation_gear_profiles/profiles.json \
+  --provisioning-report dataset/validation_provisioning/report.json \
+  --worldserver-conf trinity-worldserver-test.conf \
+  --check-db --require-applied \
+  --output dataset/validation_provisioning_verification/report.json
+```
+
+The DVC verification stage remains reproducible and offline; strict live verification is recorded separately as an immutable receipt so external database state cannot silently rewrite the offline stage result.
+
 The gear generator reads Cataclysm `Item.db2`/`Item-sparse.db2`, `SpellItemEnchantment.dbc`, and `GemProperties.dbc` client data plus hotfix overrides. It also reads `experiments/configs/cata_434_combat_loot_profiles.json` for class/spec archetypes, stat weights, consumable profile metadata, smart-loot validation surfaces, and BiS/source reporting scaffolds. It writes class/spec equipment profiles with selected item IDs, stats, item levels, source labels, `complete_equipment_slots`, socket-compatible gem IDs, permanent enchant IDs, stat-weight manifest hashes, BiS/source summaries, and the exact 45-field `item_instance.enchantments` payload used by the server. The provisioning generator reads `experiments/configs/cata_434_action_profiles.json` for class action and proficiency spells, then writes `account_commands.txt`, `provision_accounts.sql`, `provision_characters.sql`, `manifest.json`, and `report.json`. It does not apply destructive database changes automatically. `provision_accounts.sql` creates only missing validation accounts with deterministic Trinity SRP6 `salt`/`verifier` values and does not overwrite existing account passwords. The verifier checks generated payloads against DBC enchant/gem IDs and can additionally check the configured auth/characters schema plus missing validation accounts with `--check-db`. The scenario generator writes `validation_scenarios.jsonl`, `validation_routes.jsonl`, and `validation_mechanics.jsonl` so Stonecore/BWD planners can consume route and mechanic embeddings without C++ encounter branches. The run-plan generator writes `run_validation_scenarios.sh` with per-scenario `bot-live-validate` commands that apply deterministic provisioning, reset only the matching scenario tag, and preserve the configured instance start positions. The combined validation stage reparses open-world live evidence with scenario reports attached, giving one staged pass/fail artifact across questing, professions, loot, Stonecore, and BWD gates. The current config provisions max-level Stonecore and Blackwing Descent validation rosters with role coverage, skills, glyphs, consumables, complete class/spec equipment slots, gems, enchants, and instance start positions. The gear report intentionally keeps `enchant_applicability_verified_by_server=false` until a live worldserver load validates the generated enchant IDs on equipped items.
 
 Export all learning-loop tables:

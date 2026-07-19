@@ -55,6 +55,7 @@ stages:
     - tools/bot_ml/validation_profile_manifests.py
     - tools/bot_ml/extract_world_knowledge.py
     - experiments/configs/validation_provisioning_cata_001.json
+    - experiments/configs/all_spec_targets_cata_p4_v1.json
     - experiments/configs/cata_434_combat_loot_profiles.json
     - data/dbc/enUS/Item.db2
     - data/dbc/enUS/Item-sparse.db2
@@ -72,6 +73,7 @@ stages:
     - tools/bot_ml/build_validation_provisioning.py
     - tools/bot_ml/validation_profile_manifests.py
     - experiments/configs/validation_provisioning_cata_001.json
+    - experiments/configs/all_spec_targets_cata_p4_v1.json
     - experiments/configs/cata_434_action_profiles.json
     - data/dbc/enUS/Talent.dbc
     - data/dbc/enUS/TalentTreePrimarySpells.dbc
@@ -89,6 +91,7 @@ stages:
     - experiments/configs/bot_acceptance_policy_v1.json
     - experiments/configs/baseline_dvc_pointer_inventory_v1.json
     - experiments/configs/validation_provisioning_cata_001.json
+    - experiments/configs/all_spec_targets_cata_p4_v1.json
     - experiments/configs/cata_434_action_profiles.json
     - experiments/configs/validation_scenarios_cata_001.json
     - dataset/validation_gear_profiles/profiles.json
@@ -121,6 +124,25 @@ stages:
     outs:
     - dataset/baseline_inventory:
         persist: true
+  all_spec_phase1_catalogs:
+    cmd: python -m tools.bot_ml.build_all_spec_phase1_catalogs --output-dir
+      dataset/all_spec_phase1_catalogs
+    deps:
+    - tools/bot_ml/build_all_spec_phase1_catalogs.py
+    - tools/bot_ml/build_validation_provisioning.py
+    - experiments/configs/all_spec_targets_cata_p4_v1.json
+    - experiments/configs/all_spec_references_cata_p4_v1.json
+    - experiments/configs/all_spec_calibration_scenarios_v1.json
+    - experiments/configs/stonecore_pairwise_constraints_v1.json
+    - experiments/configs/validation_provisioning_cata_001.json
+    - experiments/configs/cata_434_action_profiles.json
+    - experiments/configs/cata_434_combat_loot_profiles.json
+    - sql/custom/world/2026_07_18_00_all_spec_rotation_profile_coverage.sql
+    - data/dbc/enUS/Talent.dbc
+    - data/dbc/enUS/TalentTreePrimarySpells.dbc
+    outs:
+    - dataset/all_spec_phase1_catalogs:
+        persist: true
   validation_provisioning_verify:
     cmd: python -m tools.bot_ml.validate_validation_provisioning --config
       experiments/configs/validation_provisioning_cata_001.json --gear-profiles
@@ -134,6 +156,7 @@ stages:
     - tools/bot_ml/validation_profile_manifests.py
     - tools/bot_ml/extract_world_knowledge.py
     - experiments/configs/validation_provisioning_cata_001.json
+    - experiments/configs/all_spec_targets_cata_p4_v1.json
     - experiments/configs/cata_434_action_profiles.json
     - experiments/configs/cata_434_combat_loot_profiles.json
     - dataset/validation_gear_profiles

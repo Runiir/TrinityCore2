@@ -1,8 +1,8 @@
 {
   "schema": "all_spec_stonecore_program_status_v1",
   "program": "all_spec_stonecore",
-  "updated_date": "2026-07-18",
-  "active_phase": 1,
+  "updated_date": "2026-07-19",
+  "active_phase": 2,
   "phase_status": [
     {
       "phase": 0,
@@ -71,13 +71,93 @@
     {
       "phase": 1,
       "name": "canonical_catalogs_references_and_provisioning",
+      "status": "completed",
+      "gate": {
+        "passed": true,
+        "reason_codes": [
+          "exactly_31_canonical_targets",
+          "complete_deterministic_provisioning",
+          "exactly_31_live_rotation_profiles",
+          "all_live_profiles_have_known_actions",
+          "reviewed_content_addressed_provenance",
+          "phase4_runtime_gear_complete"
+        ]
+      },
+      "scope": {
+        "target_count": 31,
+        "role_counts": {
+          "tank": 4,
+          "healer": 5,
+          "dps": 22
+        },
+        "class_count": 10,
+        "first_pass_target_count": 31,
+        "unsupported_second_pass_target_count": 6,
+        "hashed_guide_count": 31,
+        "phase4_runtime_gear_count": 31,
+        "legacy_simulator_preset_count": 5,
+        "tank_healer_pair_count": 20
+      },
+      "live_verification": {
+        "all_passed": true,
+        "expected_accounts": 50,
+        "existing_accounts": 50,
+        "expected_characters": 50,
+        "existing_characters": 50,
+        "expected_rotation_profiles": 31,
+        "enabled_rotation_profiles": 31,
+        "ready_rotation_profiles": 31,
+        "minimum_enabled_action_count": 3,
+        "minimum_known_action_count": 3,
+        "missing_db_rotation_profile_count": 0,
+        "incomplete_provisioning_count": 0
+      },
+      "identity": {
+        "target_catalog_sha256": "dbe6e23d97af89ccb3b7750bb10d7ed812b93b7e5dfc529890b71bc860e08072",
+        "reference_catalog_sha256": "86a09b937d5067f844109091319c7dfbeb1d014fc02a1430e934993a0cd3ba9f",
+        "calibration_catalog_sha256": "e123f8c60e560b181132380763f4d702468a503fa966d8901c2132cd1795021a",
+        "pairwise_catalog_sha256": "ae1c733f8530ca40a3a0e10c83973f02d91db7552ba86854e46630a35eafc1a9",
+        "runtime_rotation_sql_sha256": "555abdb0e5c5ec0fcb4cb0af086a2c4fed65d927433f6accca0978b8008ff802",
+        "live_verification_report_sha256": "6721a7a4da3cdaeb48538f44737b5b1f88b02181cca7343915399b94f479b21d"
+      },
+      "evidence": {
+        "catalog_bundle": "dataset/all_spec_phase1_catalogs",
+        "catalog_bundle_dvc_md5": "74580c3671e3ef518c10892282543bfb.dir",
+        "gear_bundle": "dataset/validation_gear_profiles",
+        "gear_bundle_dvc_md5": "a82726d4677a0c32c85ff6f067d9f363.dir",
+        "provisioning_bundle": "dataset/validation_provisioning",
+        "provisioning_bundle_dvc_md5": "6c2292e612d2f0133ffd4a03edcc2253.dir",
+        "live_receipt_pointer": "artifacts/all_spec_program/phase1_live_provisioning_verification_20260719.dvc",
+        "live_receipt_dvc_md5": "dbb5e5ec7b0495c5d124c12dd83973fd.dir",
+        "remote_verification": "pixi run dvc status -c dataset/validation_gear_profiles dataset/validation_provisioning dataset/all_spec_phase1_catalogs artifacts/all_spec_program/phase1_live_provisioning_verification_20260719.dvc",
+        "remote_verification_outcome": "cache_and_remote_in_sync"
+      },
+      "validation": {
+        "focused_catalog_tests": "5 passed",
+        "focused_provisioning_verifier_tests": "6 passed",
+        "affected_regression_tests": "3 passed",
+        "broader_test_file": "284 passed, 1 unrelated live-validation failure, 7 unrelated live-validation tests deselected; prior full run identified the same 8 unrelated failures",
+        "git_diff_check": "passed",
+        "dvc_stage_status": "up_to_date",
+        "dvc_remote_status": "cache_and_remote_in_sync"
+      },
+      "orchestration": {
+        "owner": "root",
+        "model": "gpt-5.6-sol",
+        "reasoning": "high",
+        "workers_launched": 0
+      }
+    },
+    {
+      "phase": 2,
+      "name": "composite_evidence_identity_and_independent_acceptance",
       "status": "in_progress"
     },
     {
-      "phase_range": "2-12",
+      "phase_range": "3-12",
       "status": "pending"
     }
   ],
   "blockers": [],
-  "exact_next_handoff_prompt": "Continue approved all-spec Stonecore execution at Phase 1 only. Use experiments/configs/all_spec_stonecore_program_status_v1.json and artifacts/all_spec_program/phase0_baseline_inventory_20260718.dvc as the Phase 0 checkpoint. Build exactly 31 canonical target rows with aliases, capabilities, calibration scenarios, Phase 4 references, pairwise constraints, and deterministic provisioning/profile links; run the single consolidated 31-target research pass with reviewed provenance; do not begin Phase 2 until the Phase 1 gate passes."
+  "exact_next_handoff_prompt": "Continue approved all-spec Stonecore execution at Phase 2 only. Extend tools/bot_ml/live_validation_session.py into the shared evidence envelope; bind attempts to Git/dirty state, binary/config/DB/schema/process/server epoch, canonical catalog/provisioning/gear/profile/reference/policy/scenario/route hashes, batch/cohort/composition/party/instance/attempt/repeat/window IDs, and raw/compact/DVC/freshness/supersession identities. Extract a pure acceptance evaluator that consumes facts and canonical manifests rather than stored pass booleans, compare recomputed results with stored summaries, fail closed on discrepancies, enforce restart/profile-generation epoch rules, and do not begin Phase 3 until changing any identity component prevents incompatible aggregation and marks older evidence stale or superseded without deletion."
 }

@@ -56,12 +56,14 @@ from tools.bot_ml.generate_lane_configs import write_lane_config
 from tools.bot_ml.promote_live_validation_artifact import promote
 from tools.bot_ml.build_validation_gear_profiles import SHIELD_CLASSES, build_gem_catalog, build_profiles, build_report, fetch_items, load_gem_properties, load_spell_item_enchantments
 from tools.bot_ml.build_validation_provisioning import apply_gear_profiles, bot_known_spell_ids, bot_primary_tree_spell_ids, bot_spell_ids, bot_talent_spell_ids, build_account_insert_sql, build_character_insert_sql, equipment_cache, glyph_item_to_property_map, glyph_property_type_map, load_config as load_validation_provisioning_config, load_gear_profiles, main as provisioning_main, normalized_glyph_slots, normalized_glyphs, runtime_safe_enchantments, scenario_report, srp6_registration_data, talent_point_count, validate_talent_manifest
+from tools.bot_ml.validate_validation_provisioning import REQUIRED_COLUMNS as PROVISIONING_REQUIRED_COLUMNS
 from tools.bot_ml.validate_validation_provisioning import build_report as provisioning_verify_report
 from tools.bot_ml.validate_validation_provisioning import main as provisioning_verify_main
 from tools.bot_ml.validate_validation_provisioning import validate_database as validate_provisioning_database
 from tools.bot_ml.validation_profile_manifests import load_action_profile_manifest, load_combat_loot_profile_manifest
 from tools.bot_ml.validate_data_quality import validate_rows as validate_data_quality_rows
 from tools.bot_ml.build_baseline_inventory import build_inventory, canonical_hash, git_identity, parse_dvc_pointer, reconcile_live_db, reconcile_targets, rotation_tuples, validate_policy, write_bundle
+from tools.bot_ml.build_all_spec_phase1_catalogs import RUNTIME_ACTION_SPELL_IDS, build_catalogs as build_phase1_catalogs, validate_catalogs as validate_phase1_catalogs, write_bundle as write_phase1_bundle
 from tools.bot_ml.bt_masked_ga_combined import run as run_bt_masked_ga_combined
 from tools.bot_ml.evaluate_policy_model import policy_score, ranking_metrics
 from tools.bot_ml.train_policy_model import add_synthetic_binary_class, balanced_binary_weights, teacher_choice_training_rows
@@ -7653,8 +7655,8 @@ def test_validation_provisioning_generates_reproducible_sql_and_readiness(tmp_pa
     assert "SELECT c.`guid`, 0, 251, 0, 0, 0, 0, 0, 264, 709, 0" in sql
     assert "DELETE FROM `characters`.`item_instance` WHERE `guid` >= 9700000" in sql
     assert manifest["schema"] == "bot_validation_provisioning_manifest_v1"
-    assert manifest["bot_count"] == 19
-    assert generated_report == report
+    assert manifest["bot_count"] == 50
+    assert generated_report == scenario_report(load_validation_provisioning_config(config_path))
 
 
 def test_cata_action_profile_manifest_drives_validation_spells(tmp_path, monkeypatch):
@@ -7995,7 +7997,7 @@ def test_stonecore_role_specs_inherit_complete_dbc_legal_talent_and_action_profi
     required = {
         "protection_paladin": {53595, 26573, 31935, 53600, 62124, 1022},
         "fire_mage": {133, 2948, 44457, 92315, 11129},
-        "marksmanship_hunter": {1978, 53209, 56641, 19434, 3045, 34490},
+        "marksmanship_hunter": {1978, 53209, 56641, 19434, 3045},
         "survival_hunter": {1978, 53301, 3674, 77767, 2643, 34477, 3045},
         "enhancement_shaman": {17364, 60103, 8050, 73680, 403, 421, 51533},
     }
@@ -8246,6 +8248,64 @@ def test_validation_provisioning_database_preflight_reports_missing_accounts(tmp
     assert failures == [{"check": "validation_accounts", "missing_accounts": ["SCVALTANK"], "recovery": "apply generated provision_accounts.sql or run account_commands.txt in the worldserver console"}]
     assert evidence["expected_accounts"] == 1
     assert evidence["existing_accounts"] == 0
+
+
+def test_validation_provisioning_database_fails_closed_on_missing_rotation_profile(tmp_path, monkeypatch):
+    conf = tmp_path / "worldserver.conf"
+    conf.write_text(
+        'LoginDatabaseInfo = "db.example;3306;trinity;secret;auth"\n'
+        'CharacterDatabaseInfo = "db.example;3306;trinity;secret;characters"\n'
+        'WorldDatabaseInfo = "db.example;3306;trinity;secret;world"\n',
+        encoding="utf-8",
+    )
+    catalog = tmp_path / "targets.json"
+    catalog.write_text(
+        json.dumps(
+            {
+                "target_count": 1,
+                "targets": [
+                    {
+                        "spec_target_id": "arms_warrior",
+                        "runtime_rotation_profile": {"class_id": 1, "spec_tag": "arms_warrior", "role": "dps"},
+                        "provisioning_bot": {"account": "ASPC01", "name": "Armswar"},
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    config = {
+        "canonical_target_catalog": str(catalog),
+        "scenarios": [{"id": "all_spec_candidate_pool", "bots": [{"account": "ASPC01", "name": "Armswar"}]}],
+    }
+
+    all_columns = set().union(*(columns for database in PROVISIONING_REQUIRED_COLUMNS.values() for columns in database.values()))
+    monkeypatch.setattr("tools.bot_ml.validate_validation_provisioning.fetch_columns", lambda _url, _table: all_columns)
+    monkeypatch.setattr("tools.bot_ml.validate_validation_provisioning.fetch_existing_values", lambda _url, _table, _column, values: set(values))
+    monkeypatch.setattr("tools.bot_ml.validate_validation_provisioning.fetch_runtime_rotation_profiles", lambda _url, _keys: {})
+
+    failures, evidence = validate_provisioning_database(config, conf)
+
+    assert {
+        "check": "runtime_rotation_profile",
+        "reason": "missing_db_rotation_profile",
+        "spec_target_id": "arms_warrior",
+        "identity": "1:arms_warrior:dps",
+    } in failures
+    assert evidence["runtime_rotation_profiles"] == {
+        "expected": 1,
+        "existing_enabled": 0,
+        "ready": 0,
+        "targets": {
+            "arms_warrior": {
+                "identity": "1:arms_warrior:dps",
+                "state": "missing_db_rotation_profile",
+                "enabled_action_count": 0,
+                "known_action_count": 0,
+            }
+        },
+    }
+    assert "secret" not in json.dumps(evidence)
 
 
 def test_headless_movement_smoke_records_metrics(tmp_path):
@@ -9158,12 +9218,12 @@ def test_baseline_inventory_policy_contract_coverage_and_manifest_are_determinis
 
     assert canonical_hash(first) == canonical_hash(second)
     assert len(report["rows"]) == 31
-    assert report["coverage"] == {"target_count": 31, "role_counts": {"tank": 4, "healer": 5, "dps": 22}, "configured_count": 14, "unsupported_count": 17, "complete": False}
+    assert report["coverage"] == {"target_count": 31, "role_counts": {"tank": 4, "healer": 5, "dps": 22}, "configured_count": 14, "unsupported_count": 17, "complete": True}
     assert report["offline_inventory"] == {
         "complete": True,
         "artifact_complete": True,
         "candidate_inventory_complete": True,
-        "configured_coverage_complete": False,
+        "configured_coverage_complete": True,
         "identity_complete": True,
         "reason_codes": ["offline_inventory_complete"],
     }
@@ -9178,7 +9238,8 @@ def test_baseline_inventory_policy_contract_coverage_and_manifest_are_determinis
     assert len(pointer_inventory["pointers"]) >= 250
     declared_rotation_paths = {row["path"] for row in policy["artifact_declarations"] if row["artifact_class"] == "effective_rotation_sql"}
     referenced_rotation_paths = {str(path.relative_to(root)) for path in (root / "sql/custom/world").glob("*.sql") if "bot_rotation_profile" in path.read_text(encoding="utf-8")}
-    assert declared_rotation_paths == referenced_rotation_paths
+    phase1_post_baseline_paths = {"sql/custom/world/2026_07_18_00_all_spec_rotation_profile_coverage.sql"}
+    assert declared_rotation_paths == referenced_rotation_paths - phase1_post_baseline_paths
     assert {row["temporal_state"] for row in classified} <= {"current_diagnostic", "historical", "superseded", "unusable"}
     assert all("rotation_profile" in row["gameplay_payload"] for row in report["rows"] if row["status"] == "configured")
     assert all("rotation_profile" not in row["gameplay_payload"] for row in report["rows"] if "missing_rotation_profile" in row["coverage"]["missing_layers"])
@@ -9334,3 +9395,88 @@ def test_baseline_inventory_git_identity_excludes_lock_and_generated_output_cycl
     assert sensitive["sensitive_untracked_present"] is True
     assert "dictionary-secret" not in json.dumps(sensitive)
     assert not any("content_sha256" in row for row in sensitive["untracked_files"] if row["path"] == secret.name)
+
+
+def test_phase1_catalog_gate_has_exact_targets_links_and_reviewed_provenance(tmp_path):
+    payloads = build_phase1_catalogs(False)
+    validate_phase1_catalogs(payloads, check_linked=True)
+    targets = payloads["all_spec_targets_cata_p4_v1.json"]["targets"]
+    references = payloads["all_spec_references_cata_p4_v1.json"]["references"]
+    calibrations = payloads["all_spec_calibration_scenarios_v1.json"]["scenarios"]
+
+    assert len(targets) == 31
+    assert {role: sum(row["role"] == role for row in targets) for role in ("tank", "healer", "dps")} == {"tank": 4, "healer": 5, "dps": 22}
+    assert len({row["runtime_join_key"] for row in targets}) == 31
+    assert all(row["gear_profile_id"] == row["spec_target_id"] for row in targets)
+    assert all(row["action_profile_spell_ids"] for row in targets)
+    assert all(row["reference_id"] == f"cata_p4:{row['spec_target_id']}" for row in targets)
+    assert {row["spec_target_id"] for row in references} == {row["spec_target_id"] for row in targets}
+    assert all(row["review_status"] == "reviewed" and row["source_assets"] for row in references)
+    assert all(row["guide_url"] in {asset["url"] for asset in row["source_assets"]} for row in references)
+    assert all(row["gear"]["phase"] == "phase_4" and row["gear"]["runtime_profile_id"] == row["spec_target_id"] for row in references)
+    assert len({row["runtime_rotation_profile"]["identity"] for row in targets}) == 31
+    assert all(row["runtime_rotation_profile"]["authority"] == "world_db_bot_rotation_profile" for row in targets)
+    by_target = {row["spec_target_id"]: row for row in targets}
+    assert all(set(spells) <= set(by_target[target_id]["action_profile_spell_ids"]) for target_id, spells in RUNTIME_ACTION_SPELL_IDS.items())
+    assert {row["spec_target_id"] for row in calibrations} == {row["spec_target_id"] for row in targets}
+    assert all(row["primary"]["scored_window_seconds"] == 300 for row in calibrations)
+    assert all(row["aoe"]["mixed_with_primary"] is False for row in calibrations)
+
+    write_phase1_bundle(tmp_path, payloads)
+    manifest = json.loads((tmp_path / "manifest.json").read_text(encoding="utf-8"))
+    assert manifest["gate_passed"] is True
+    assert manifest["target_count"] == 31
+    assert len(manifest["bundle_members"]) == 4
+
+
+def test_phase1_research_second_pass_is_limited_to_explicit_unsupported_targets():
+    references = build_phase1_catalogs(False)["all_spec_references_cata_p4_v1.json"]
+    expected = {
+        "discipline_priest",
+        "frost_mage",
+        "holy_paladin",
+        "holy_priest",
+        "restoration_druid",
+        "restoration_shaman",
+    }
+    assert set(references["research_contract"]["second_pass_scope"]) == expected
+    assert {
+        row["spec_target_id"]
+        for row in references["references"]
+        if row["research_pass"] == "unsupported_second_pass"
+    } == expected
+    assert all(
+        row["expected_output"]["type"] == "deterministic_controlled_party_damage"
+        for row in references["references"]
+        if row["spec_target_id"] in expected - {"frost_mage"}
+    )
+
+
+def test_phase1_pairwise_constraints_cover_all_tank_healer_pairs_and_dps():
+    payloads = build_phase1_catalogs(False)
+    targets = payloads["all_spec_targets_cata_p4_v1.json"]["targets"]
+    pairwise = payloads["stonecore_pairwise_constraints_v1.json"]
+    tanks = {row["spec_target_id"] for row in targets if row["role"] == "tank"}
+    healers = {row["spec_target_id"] for row in targets if row["role"] == "healer"}
+    dps = {row["spec_target_id"] for row in targets if row["role"] == "dps"}
+
+    assert len(pairwise["parties"]) == 20
+    assert {(row["tank"], row["healer"]) for row in pairwise["parties"]} == {(tank, healer) for tank in tanks for healer in healers}
+    assert {member for row in pairwise["parties"] for member in row["dps"]} == dps
+    assert all(len(row["dps"]) == len(set(row["dps"])) == 3 for row in pairwise["parties"])
+    assert pairwise["certification"] == "strict_uninterrupted_current_manifest_full_clear"
+    assert pairwise["diagnostic_segments_certify"] is False
+
+
+def test_validation_provisioning_loads_canonical_leaseable_candidate_pool():
+    config = load_validation_provisioning_config(Path("experiments/configs/validation_provisioning_cata_001.json"))
+    scenario = next(row for row in config["scenarios"] if row["id"] == "all_spec_candidate_pool")
+    bots = scenario["bots"]
+
+    assert len(bots) == 31
+    assert len({bot["account"] for bot in bots}) == 31
+    assert len({bot["name"] for bot in bots}) == 31
+    assert len({bot["class_spec"] for bot in bots}) == 31
+    assert all(bot["gear_profile"] == bot["class_spec"] for bot in bots)
+    assert all(bot["talents"] and bot["primary_tree_spells"] for bot in bots)
+    assert all(3 <= len(bot["glyphs"]) <= 9 for bot in bots)

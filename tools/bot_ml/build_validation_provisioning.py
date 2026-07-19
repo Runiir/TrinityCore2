@@ -24,8 +24,9 @@ ROLE_REQUIREMENTS = {
 REQUIRED_EQUIPMENT_SLOTS = [0, 1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17]
 EQUIPMENT_SLOT_END = 19
 INVENTORY_BAG_SLOTS = 4
+REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_DBC_DIR = Path("data/dbc/enUS")
-DEFAULT_WOWSIMS_GEAR_PROFILES = Path(__file__).resolve().parents[2] / "experiments/configs/wowsims_cata_p4_gear_profiles.json"
+DEFAULT_WOWSIMS_GEAR_PROFILES = REPO_ROOT / "experiments/configs/wowsims_cata_p4_gear_profiles.json"
 SPELL_EFFECT_LEARN_GLYPH = 74
 ITEM_SPARSE_FMT = "niiiffiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiifiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiisssssiiiiiiiiiiiiiiiiiiiiiifiiifii"
 _GLYPH_ITEM_TO_PROPERTY_CACHE: dict[Path, dict[int, int]] = {}
@@ -274,6 +275,31 @@ def normalize_ascii_player_name(name: str) -> str:
 
 def load_config(path: Path) -> dict[str, Any]:
     config = json.loads(path.read_text(encoding="utf-8"))
+    catalog_reference = str(config.get("canonical_target_catalog") or "")
+    if catalog_reference:
+        catalog_path = Path(catalog_reference)
+        if not catalog_path.is_absolute():
+            catalog_path = REPO_ROOT / catalog_path
+        catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+        catalog_bots = [json.loads(json.dumps(row["provisioning_bot"])) for row in catalog.get("targets", [])]
+        scenario_id = str(config.get("canonical_candidate_pool_scenario_id") or catalog.get("candidate_pool_scenario_id") or "")
+        if not scenario_id or len(catalog_bots) != int(catalog.get("target_count") or 0):
+            raise ValueError("canonical target catalog candidate pool is incomplete")
+        existing = next((row for row in config.get("scenarios", []) if str(row.get("id")) == scenario_id), None)
+        if existing is None:
+            config.setdefault("scenarios", []).append(
+                {
+                    "id": scenario_id,
+                    "description": "Canonical leaseable all-spec candidate pool; not a simultaneous gameplay party.",
+                    "start_position": {"map_id": 0, "x": -8962.05, "y": -157.16, "z": 81.5856, "o": 0.0},
+                    "bots": catalog_bots,
+                }
+            )
+        elif existing.get("bots") != catalog_bots:
+            raise ValueError("canonical candidate pool conflicts with checked-in provisioning scenario")
+        talent_builds = config.setdefault("talent_builds_by_spec", {})
+        for row in catalog.get("targets", []):
+            talent_builds[str(row["spec_target_id"])] = json.loads(json.dumps(row["talent_build"]))
     talent_builds = config.get("talent_builds_by_spec", {})
     for scenario in config.get("scenarios", []):
         for bot in scenario.get("bots", []):

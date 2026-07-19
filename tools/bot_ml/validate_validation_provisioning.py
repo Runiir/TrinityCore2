@@ -35,7 +35,29 @@ except ImportError:
     from extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
 
 
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
 REQUIRED_COLUMNS = {
+    "world": {
+        "bot_rotation_profile": {
+            "id",
+            "class_id",
+            "spec_tag",
+            "role",
+            "movement_directive",
+            "auto_attack_mode",
+            "enabled",
+        },
+        "bot_rotation_action": {
+            "profile_id",
+            "spell_id",
+            "category",
+            "movement_directive",
+            "auto_attack_mode",
+            "enabled",
+        },
+    },
     "characters": {
         "characters": {
             "guid",
@@ -119,6 +141,20 @@ def account_names(config: dict[str, Any]) -> set[str]:
 
 def character_names(config: dict[str, Any]) -> set[str]:
     return {str(bot.get("name", "")) for bot in configured_bots(config) if bot.get("name")}
+
+
+def canonical_rotation_targets(config: dict[str, Any]) -> list[dict[str, Any]]:
+    catalog_reference = str(config.get("canonical_target_catalog") or "")
+    if not catalog_reference:
+        return []
+    catalog_path = Path(catalog_reference)
+    if not catalog_path.is_absolute():
+        catalog_path = REPO_ROOT / catalog_path
+    catalog = load_json(catalog_path)
+    targets = catalog.get("targets", [])
+    if len(targets) != int(catalog.get("target_count") or 0):
+        raise ValueError("canonical target catalog is incomplete")
+    return targets
 
 
 def validate_payloads(config: dict[str, Any], dbc_dir: Path, hotfix_url: str | None = None) -> tuple[list[dict[str, Any]], dict[str, Any]]:
@@ -266,11 +302,65 @@ def fetch_runtime_gear(database_url: str, names: set[str]) -> dict[str, dict[str
         conn.close()
 
 
+def fetch_runtime_rotation_profiles(
+    database_url: str,
+    profile_keys: set[tuple[int, str, str]],
+) -> dict[tuple[int, str, str], dict[str, Any]]:
+    if not profile_keys:
+        return {}
+    conn = connect_mysql(database_url)
+    try:
+        with conn.cursor() as cursor:
+            cursor.execute(
+                "SELECT p.id, p.class_id, p.spec_tag, p.role, p.enabled, "
+                "p.movement_directive AS profile_movement_directive, "
+                "p.auto_attack_mode AS profile_auto_attack_mode, "
+                "a.spell_id, a.category, a.movement_directive, a.auto_attack_mode "
+                "FROM bot_rotation_profile p "
+                "LEFT JOIN bot_rotation_action a ON a.profile_id = p.id AND a.enabled = 1"
+            )
+            profiles: dict[tuple[int, str, str], dict[str, Any]] = {}
+            for row in cursor.fetchall():
+                key = (int(row["class_id"]), str(row["spec_tag"]), str(row["role"]))
+                if key not in profile_keys:
+                    continue
+                profile = profiles.setdefault(
+                    key,
+                    {
+                        "profile_id": int(row["id"]),
+                        "enabled": bool(row["enabled"]),
+                        "movement_directive": str(row.get("profile_movement_directive") or ""),
+                        "auto_attack_mode": str(row.get("profile_auto_attack_mode") or ""),
+                        "actions": [],
+                    },
+                )
+                if row.get("spell_id") is not None:
+                    profile["actions"].append(
+                        {
+                            "spell_id": int(row.get("spell_id") or 0),
+                            "category": str(row.get("category") or ""),
+                            "movement_directive": str(row.get("movement_directive") or ""),
+                            "auto_attack_mode": str(row.get("auto_attack_mode") or ""),
+                        }
+                    )
+            return profiles
+    finally:
+        conn.close()
+
+
 def validate_database(config: dict[str, Any], worldserver_conf: Path, require_applied: bool = False) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     failures: list[dict[str, Any]] = []
     auth_url = database_url_from_worldserver_conf(worldserver_conf, "LoginDatabaseInfo")
     character_url = database_url_from_worldserver_conf(worldserver_conf, "CharacterDatabaseInfo")
+    canonical_targets = canonical_rotation_targets(config)
+    world_url = database_url_from_worldserver_conf(worldserver_conf, "WorldDatabaseInfo") if canonical_targets else ""
 
+    if canonical_targets:
+        for table, required in REQUIRED_COLUMNS["world"].items():
+            columns = fetch_columns(world_url, table)
+            missing = sorted(required - columns)
+            if missing:
+                failures.append({"check": "world_schema_columns", "table": table, "missing_columns": missing})
     for table, required in REQUIRED_COLUMNS["auth"].items():
         columns = fetch_columns(auth_url, table)
         missing = sorted(required - columns)
@@ -295,6 +385,7 @@ def validate_database(config: dict[str, Any], worldserver_conf: Path, require_ap
         failures.append({"check": "validation_characters_applied", "missing_characters": missing_characters, "recovery": "apply generated provision_characters.sql after creating accounts"})
 
     runtime_gear_report: dict[str, Any] = {}
+    runtime: dict[str, dict[str, Any]] = {}
     if require_applied and not missing_characters:
         runtime = fetch_runtime_gear(character_url, expected_characters)
         for bot in configured_bots(config):
@@ -369,7 +460,108 @@ def validate_database(config: dict[str, Any], worldserver_conf: Path, require_ap
             if invalid_actual_glyphs or glyphs_missing:
                 failures.append({"check": "runtime_glyphs", "bot": name, "missing_glyphs": glyphs_missing, "invalid_glyphs": invalid_actual_glyphs})
 
+    expected_profiles = {
+        (
+            int(row["runtime_rotation_profile"]["class_id"]),
+            str(row["runtime_rotation_profile"]["spec_tag"]),
+            str(row["runtime_rotation_profile"]["role"]),
+        ): row
+        for row in canonical_targets
+    }
+    runtime_profiles = fetch_runtime_rotation_profiles(world_url, set(expected_profiles))
+    runtime_profile_report: dict[str, Any] = {}
+    for key, target in expected_profiles.items():
+        target_id = str(target["spec_target_id"])
+        profile = runtime_profiles.get(key)
+        if profile is None or not profile.get("enabled"):
+            failures.append(
+                {
+                    "check": "runtime_rotation_profile",
+                    "reason": "missing_db_rotation_profile",
+                    "spec_target_id": target_id,
+                    "identity": f"{key[0]}:{key[1]}:{key[2]}",
+                }
+            )
+            runtime_profile_report[target_id] = {
+                "identity": f"{key[0]}:{key[1]}:{key[2]}",
+                "state": "missing_db_rotation_profile",
+                "enabled_action_count": 0,
+                "known_action_count": 0,
+            }
+            continue
+        actions = [
+            action
+            for action in profile.get("actions", [])
+            if int(action.get("spell_id") or 0) > 0 and str(action.get("category") or "")
+        ]
+        name = str((target.get("provisioning_bot") or {}).get("name") or "")
+        character = runtime.get(name, {})
+        known_spells = {
+            int(spell)
+            for spell in character.get("known_spells", set()) | character.get("talent_spells", set())
+        }
+        known_actions = [action for action in actions if int(action["spell_id"]) in known_spells]
+        movement_directives = {
+            str(profile.get("movement_directive") or ""),
+            *(str(action.get("movement_directive") or "") for action in actions),
+        } - {""}
+        auto_attack_modes = {
+            str(profile.get("auto_attack_mode") or ""),
+            *(str(action.get("auto_attack_mode") or "") for action in actions),
+        } - {""}
+        state = "ready"
+        if not actions:
+            state = "db_rotation_profile_has_no_enabled_actions"
+            failures.append(
+                {
+                    "check": "runtime_rotation_profile",
+                    "reason": state,
+                    "spec_target_id": target_id,
+                    "identity": f"{key[0]}:{key[1]}:{key[2]}",
+                }
+            )
+        elif require_applied and not known_actions:
+            state = "db_rotation_profile_has_no_known_spells"
+            failures.append(
+                {
+                    "check": "runtime_rotation_profile",
+                    "reason": state,
+                    "spec_target_id": target_id,
+                    "bot": name,
+                    "identity": f"{key[0]}:{key[1]}:{key[2]}",
+                }
+            )
+        if not movement_directives:
+            state = "db_rotation_profile_missing_movement_directives"
+            failures.append(
+                {
+                    "check": "runtime_rotation_profile",
+                    "reason": state,
+                    "spec_target_id": target_id,
+                    "identity": f"{key[0]}:{key[1]}:{key[2]}",
+                }
+            )
+        if not auto_attack_modes:
+            state = "db_rotation_profile_missing_auto_attack_mode"
+            failures.append(
+                {
+                    "check": "runtime_rotation_profile",
+                    "reason": state,
+                    "spec_target_id": target_id,
+                    "identity": f"{key[0]}:{key[1]}:{key[2]}",
+                }
+            )
+        runtime_profile_report[target_id] = {
+            "identity": f"{key[0]}:{key[1]}:{key[2]}",
+            "state": state,
+            "enabled_action_count": len(actions),
+            "known_action_count": len(known_actions),
+            "movement_directives": sorted(movement_directives),
+            "auto_attack_modes": sorted(auto_attack_modes),
+        }
+
     evidence = {
+        "world_database": sanitize_database_url(world_url) if world_url else None,
         "auth_database": sanitize_database_url(auth_url),
         "character_database": sanitize_database_url(character_url),
         "expected_accounts": len(expected_accounts),
@@ -378,6 +570,12 @@ def validate_database(config: dict[str, Any], worldserver_conf: Path, require_ap
         "existing_characters": len(existing_characters),
         "require_applied": require_applied,
         "runtime_gear": runtime_gear_report,
+        "runtime_rotation_profiles": {
+            "expected": len(expected_profiles),
+            "existing_enabled": sum(1 for profile in runtime_profiles.values() if profile.get("enabled")),
+            "ready": sum(1 for row in runtime_profile_report.values() if row.get("state") == "ready"),
+            "targets": runtime_profile_report,
+        },
     }
     return failures, evidence
 
