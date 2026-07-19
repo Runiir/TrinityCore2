@@ -11,6 +11,7 @@
 #include <deque>
 #include <map>
 #include <memory>
+#include <mutex>
 #include <set>
 #include <string>
 #include <tuple>
@@ -209,7 +210,27 @@ struct BotWorldStatus
 class BotWorldPopulationMgr
 {
 public:
+    static constexpr uint32 MaxActiveCohorts = 1;
+
     static BotWorldPopulationMgr* instance();
+
+    std::string CreateCohort(std::string const& cohortId);
+    bool HasCohort(std::string const& cohortId) const;
+    size_t GetCohortCount() const;
+    std::string ResolveGlobalCohortId() const;
+    std::string GetCohortRegistryJson() const;
+    std::string GetCohortIsolationContractJson();
+    bool StartAutonomyForCohort(std::string const& cohortId, BotWorldExperimentConfig const* overrideConfig = nullptr);
+    void StopAutonomyForCohort(std::string const& cohortId);
+    std::string SelectRuntimeProfileForCohort(std::string const& cohortId, std::string const& name);
+    std::string PrepareValidationProfileForCohort(std::string const& cohortId, std::string const& name);
+    std::string GetStatusJsonForCohort(std::string const& cohortId) const;
+    std::string GetBotDiagnosisJsonForCohort(std::string const& cohortId, std::string const& selector);
+    std::string GetBotTraceJsonForCohort(std::string const& cohortId, std::string const& selector, uint32 limit) const;
+    std::string GetCombatLogJsonForCohort(std::string const& cohortId) const;
+    std::string StartCombatCalibrationForCohort(std::string const& cohortId);
+    std::string StopCombatCalibrationForCohort(std::string const& cohortId);
+    std::string GetCombatCalibrationJsonForCohort(std::string const& cohortId) const;
 
     void Update(uint32 diff);
     bool Start(std::string const& experimentName, BotWorldExperimentConfig const* overrideConfig = nullptr);
@@ -233,7 +254,7 @@ public:
     std::string GetBotDiagnosisJson(std::string const& selector);
     std::string GetBotTraceJson(std::string const& selector, uint32 limit) const;
     std::string GetCombatLogJson() const;
-    bool IsActive() const { return _active; }
+    bool IsActive() const;
     std::string Replay(std::string const& replayType, std::string const& selector, std::string const& brainVersion = "");
     std::string CompareBrains(uint64 replayId, std::string const& firstBrainVersion, std::string const& secondBrainVersion);
     uint64 NotifyBotSpellStarted(Player* caster, Unit* target, uint32 spellId, std::string const& candidateMaskJson = {}, std::string const& chosenActionJson = {});
@@ -1337,24 +1358,6 @@ private:
     void AddCombatLogEvent(char const* kind, Player* actor, Unit* source, Unit* target, uint32 spellId,
         uint32 effectType, uint32 schoolMask, uint32 amount, uint32 rawAmount, uint32 absorbedAmount, uint64 timestampMs);
 
-    bool _active = false;
-    BotWorldRuntimeMode _runtimeMode = BotWorldRuntimeMode::ManualExperiment;
-    uint64 _experimentId = 0;
-    uint64 _runId = 0;
-    uint32 _elapsedMs = 0;
-    uint32 _recordingWindowElapsedMs = 0;
-    uint32 _recordingWindowIndex = 0;
-    BotWorldExperimentConfig _config;
-    std::string _profileManifestPath;
-    std::map<std::string, BotWorldExperimentProfile> _runtimeProfiles;
-    std::vector<std::string> _runtimeProfileOrder;
-    std::string _selectedProfileName;
-    std::string _profileManifestLoadError;
-    bool _runtimeProfilesLoaded = false;
-    bool _runtimeProfileDirty = false;
-    BotExperienceLearningConfig _learningConfig;
-    BotPolicyModelConfig _policyModelConfig;
-    std::vector<WorldBotState> _bots;
     struct CalibrationMetrics
     {
         uint64 WindowStartedMs = 0;
@@ -1372,95 +1375,164 @@ private:
         std::map<uint32, uint32> ActionAttempts;
         std::map<std::string, uint32> ResultCounts;
     };
-    bool _calibrationActive = false;
-    bool _calibrationAoePhase = false;
-    uint64 _calibrationStartedMs = 0;
-    std::vector<WorldBotState> _calibrationBots;
-    std::map<uint32, CalibrationMetrics> _calibrationMetrics;
-    bool _calibrationPreviousWindowValid = false;
-    bool _calibrationPreviousAoePhase = false;
-    std::map<uint32, CalibrationMetrics> _calibrationPreviousMetrics;
-    std::map<uint32, CalibrationMetrics> _calibrationBestSingleMetrics;
-    std::map<uint32, CalibrationMetrics> _calibrationBestAoeMetrics;
-    uint32 _calibrationCompletedSingleWindows = 0;
-    uint32 _calibrationCompletedAoeWindows = 0;
-    std::set<uint32> _failedSpawnGuids;
-    std::string _lastPopulationFailureReason;
-    BotWorldStatus _metrics;
-    BotTelemetryBuffer _telemetryBuffer;
-    BotExperimentCoordinator _experimentCoordinator;
-    ObjectGuid _validationRouteFocusGuid;
-    uint32 _validationRouteFocusEntry = 0;
-    uint32 _validationRouteFocusMapId = 0;
-    float _validationRouteFocusX = 0.0f;
-    float _validationRouteFocusY = 0.0f;
-    float _validationRouteFocusZ = 0.0f;
-    uint64 _validationRouteFocusSeenMs = 0;
-    ObjectGuid _validationRouteAddFocusGuid;
-    uint64 _validationRouteAddFocusGeneration = 0;
-    GuidSet _validationRouteRecordedKillGuids;
-    GuidSet _validationRoutePackMemberGuids;
-    GuidSet _validationRoutePackEngagedGuids;
-    GuidSet _validationRoutePackDeathGuids;
-    GuidSet _validationRoutePackTransitionGuids;
-    GuidSet _validationRoutePendingFinalTransitionGuids;
-    GuidSet _validationRouteFinalTransitionGuids;
-    uint64 _validationRoutePackGeneration = 0;
-    uint64 _validationRoutePackSequence = 1;
-    uint32 _validationRouteCompletedPackCount = 0;
-    bool _validationRoutePackObservedEngagement = false;
-    uint64 _validationRoutePackClearCandidateSinceMs = 0;
-    uint64 _validationRouteNodeClearCandidateSinceMs = 0;
-    ObjectGuid _validationRouteBossProgressTargetGuid;
-    uint32 _validationRouteBossSlowProgressCount = 0;
-    bool _validationRouteBossAddDensityPhase = false;
-    uint64 _validationRouteBossAddDensityGeneration = 0;
-    bool _validationRouteBossAddEscapeActive = false;
-    uint64 _validationRouteBossAddEscapeGeneration = 0;
-    float _validationRouteBossAddEscapeX = 0.0f;
-    float _validationRouteBossAddEscapeY = 0.0f;
-    float _validationRouteBossAddEscapeZ = 0.0f;
-    float _validationRouteBossAddEscapeAnchorX = 0.0f;
-    float _validationRouteBossAddEscapeAnchorY = 0.0f;
-    float _validationRouteBossAddEscapeAnchorZ = 0.0f;
-    float _validationRouteBossAddCentroidX = 0.0f;
-    float _validationRouteBossAddCentroidY = 0.0f;
-    GuidSet _validationRouteBossAddEscapeIssuedGuids;
-    bool _validationRouteActivationApplied = false;
-    uint32 _validationRouteActivationAttempts = 0;
-    std::vector<ValidationRouteManifestNode> _validationRouteManifest;
-    std::vector<ValidationRouteEvidence> _validationRouteTerminalEvidence;
-    std::vector<ValidationRouteEvidence> _validationRouteBossDeathEvidence;
-    size_t _validationRouteManifestIndex = 0;
-    uint64 _validationRouteGeneration = 0;
-    ObjectGuid _validationRouteEngagedBossGuid;
-    uint64 _validationRouteEngagedBossGeneration = 0;
-    uint32 _validationRouteEngagedBossMapId = 0;
-    uint32 _validationRouteEngagedBossInstanceId = 0;
-    ObjectGuid _validationRouteConfirmedBossDeathGuid;
-    uint64 _validationRouteConfirmedBossDeathGeneration = 0;
-    uint32 _validationRouteConfirmedBossDeathMapId = 0;
-    uint32 _validationRouteConfirmedBossDeathInstanceId = 0;
-    uint32 _validationRouteProgressBaselineKills = 0;
-    bool _validationRouteObservedEngagement = false;
-    bool _validationRouteObservedDeadScriptTarget = false;
-    bool _validationRouteManifestAdvancePending = false;
-    uint64 _validationRouteManifestAdvanceGeneration = 0;
-    bool _validationRouteManifestComplete = false;
-    std::string _validationRouteManifestAdvanceReason;
-    std::string _validationRouteManifestLoadError;
-    mutable std::map<uint32, std::string> _lastCombatMaskByBot;
-    mutable std::map<uint32, std::string> _lastCombatRejectsByBot;
-    mutable std::map<uint32, std::string> _lastChosenCombatByBot;
-    mutable std::map<uint32, std::string> _lastActionCategoryByBot;
-    mutable std::map<uint32, RoleSaturationState> _lastSaturationByBot;
-    uint64 _nextHealCastId = 1;
-    std::map<uint64, PendingHealCast> _pendingHealCasts;
-    std::map<CombatLogAbilityKey, CombatLogAbilityAggregate> _combatLogAbilities;
-    std::map<std::tuple<uint64, CombatLogPerspective, uint32, bool, uint64>, uint64> _combatLogSecondBuckets;
-    std::deque<CombatLogEvent> _combatLogRecentEvents;
-    uint64 _combatLogEventCount = 0;
-    uint64 _combatLogRecentEventsDropped = 0;
+
+    struct PartyRuntime
+    {
+        std::vector<WorldBotState> Bots;
+        std::vector<WorldBotState> CalibrationBots;
+        ObjectGuid GroupGuid;
+        uint32 MapId = 0;
+        uint32 InstanceId = 0;
+        std::map<uint32, std::string> RoleByGuid;
+
+        ObjectGuid ValidationRouteFocusGuid;
+        uint32 ValidationRouteFocusEntry = 0;
+        uint32 ValidationRouteFocusMapId = 0;
+        float ValidationRouteFocusX = 0.0f;
+        float ValidationRouteFocusY = 0.0f;
+        float ValidationRouteFocusZ = 0.0f;
+        uint64 ValidationRouteFocusSeenMs = 0;
+        ObjectGuid ValidationRouteAddFocusGuid;
+        uint64 ValidationRouteAddFocusGeneration = 0;
+        GuidSet ValidationRouteRecordedKillGuids;
+        GuidSet ValidationRoutePackMemberGuids;
+        GuidSet ValidationRoutePackEngagedGuids;
+        GuidSet ValidationRoutePackDeathGuids;
+        GuidSet ValidationRoutePackTransitionGuids;
+        GuidSet ValidationRoutePendingFinalTransitionGuids;
+        GuidSet ValidationRouteFinalTransitionGuids;
+        uint64 ValidationRoutePackGeneration = 0;
+        uint64 ValidationRoutePackSequence = 1;
+        uint32 ValidationRouteCompletedPackCount = 0;
+        bool ValidationRoutePackObservedEngagement = false;
+        uint64 ValidationRoutePackClearCandidateSinceMs = 0;
+        uint64 ValidationRouteNodeClearCandidateSinceMs = 0;
+        ObjectGuid ValidationRouteBossProgressTargetGuid;
+        uint32 ValidationRouteBossSlowProgressCount = 0;
+        bool ValidationRouteBossAddDensityPhase = false;
+        uint64 ValidationRouteBossAddDensityGeneration = 0;
+        bool ValidationRouteBossAddEscapeActive = false;
+        uint64 ValidationRouteBossAddEscapeGeneration = 0;
+        float ValidationRouteBossAddEscapeX = 0.0f;
+        float ValidationRouteBossAddEscapeY = 0.0f;
+        float ValidationRouteBossAddEscapeZ = 0.0f;
+        float ValidationRouteBossAddEscapeAnchorX = 0.0f;
+        float ValidationRouteBossAddEscapeAnchorY = 0.0f;
+        float ValidationRouteBossAddEscapeAnchorZ = 0.0f;
+        float ValidationRouteBossAddCentroidX = 0.0f;
+        float ValidationRouteBossAddCentroidY = 0.0f;
+        GuidSet ValidationRouteBossAddEscapeIssuedGuids;
+        bool ValidationRouteActivationApplied = false;
+        uint32 ValidationRouteActivationAttempts = 0;
+        std::vector<ValidationRouteManifestNode> ValidationRouteManifest;
+        std::vector<ValidationRouteEvidence> ValidationRouteTerminalEvidence;
+        std::vector<ValidationRouteEvidence> ValidationRouteBossDeathEvidence;
+        size_t ValidationRouteManifestIndex = 0;
+        uint64 ValidationRouteGeneration = 0;
+        ObjectGuid ValidationRouteEngagedBossGuid;
+        uint64 ValidationRouteEngagedBossGeneration = 0;
+        uint32 ValidationRouteEngagedBossMapId = 0;
+        uint32 ValidationRouteEngagedBossInstanceId = 0;
+        ObjectGuid ValidationRouteConfirmedBossDeathGuid;
+        uint64 ValidationRouteConfirmedBossDeathGeneration = 0;
+        uint32 ValidationRouteConfirmedBossDeathMapId = 0;
+        uint32 ValidationRouteConfirmedBossDeathInstanceId = 0;
+        uint32 ValidationRouteProgressBaselineKills = 0;
+        bool ValidationRouteObservedEngagement = false;
+        bool ValidationRouteObservedDeadScriptTarget = false;
+        bool ValidationRouteManifestAdvancePending = false;
+        uint64 ValidationRouteManifestAdvanceGeneration = 0;
+        bool ValidationRouteManifestComplete = false;
+        std::string ValidationRouteManifestAdvanceReason;
+        std::string ValidationRouteManifestLoadError;
+
+        mutable std::map<uint32, std::string> LastCombatMaskByBot;
+        mutable std::map<uint32, std::string> LastCombatRejectsByBot;
+        mutable std::map<uint32, std::string> LastChosenCombatByBot;
+        mutable std::map<uint32, std::string> LastActionCategoryByBot;
+        mutable std::map<uint32, RoleSaturationState> LastSaturationByBot;
+        uint64 NextHealCastId = 1;
+        std::map<uint64, PendingHealCast> PendingHealCasts;
+        std::map<CombatLogAbilityKey, CombatLogAbilityAggregate> CombatLogAbilities;
+        std::map<std::tuple<uint64, CombatLogPerspective, uint32, bool, uint64>, uint64> CombatLogSecondBuckets;
+        std::deque<CombatLogEvent> CombatLogRecentEvents;
+        uint64 CombatLogEventCount = 0;
+        uint64 CombatLogRecentEventsDropped = 0;
+    };
+
+    struct CohortRuntime
+    {
+        std::string Id;
+        uint64 AttemptId = 0;
+        uint64 PinnedProfileGeneration = 0;
+        std::string PinnedProfileContentHash;
+        std::set<uint32> RosterLeases;
+        bool Active = false;
+        BotWorldRuntimeMode RuntimeMode = BotWorldRuntimeMode::ManualExperiment;
+        uint64 ExperimentId = 0;
+        uint64 RunId = 0;
+        uint32 ElapsedMs = 0;
+        uint32 RecordingWindowElapsedMs = 0;
+        uint32 RecordingWindowIndex = 0;
+        BotWorldExperimentConfig Config;
+        std::string ProfileManifestPath;
+        std::map<std::string, BotWorldExperimentProfile> RuntimeProfiles;
+        std::vector<std::string> RuntimeProfileOrder;
+        std::string SelectedProfileName;
+        std::string ProfileManifestLoadError;
+        bool RuntimeProfilesLoaded = false;
+        bool RuntimeProfileDirty = false;
+        BotExperienceLearningConfig LearningConfig;
+        BotPolicyModelConfig PolicyModelConfig;
+        bool CalibrationActive = false;
+        bool CalibrationAoePhase = false;
+        uint64 CalibrationStartedMs = 0;
+        std::map<uint32, CalibrationMetrics> CalibrationMetricsByGuid;
+        bool CalibrationPreviousWindowValid = false;
+        bool CalibrationPreviousAoePhase = false;
+        std::map<uint32, CalibrationMetrics> CalibrationPreviousMetrics;
+        std::map<uint32, CalibrationMetrics> CalibrationBestSingleMetrics;
+        std::map<uint32, CalibrationMetrics> CalibrationBestAoeMetrics;
+        uint32 CalibrationCompletedSingleWindows = 0;
+        uint32 CalibrationCompletedAoeWindows = 0;
+        std::set<uint32> FailedSpawnGuids;
+        std::string LastPopulationFailureReason;
+        BotWorldStatus Metrics;
+        BotTelemetryBuffer TelemetryBuffer;
+        BotExperimentCoordinator ExperimentCoordinator;
+        PartyRuntime Party;
+    };
+
+    struct BotGuidLease
+    {
+        uint64 ServerEpoch = 0;
+        std::string CohortId;
+        uint64 AttemptId = 0;
+        std::string RoleSlot;
+    };
+
+    BotWorldPopulationMgr();
+    CohortRuntime& Cohort();
+    CohortRuntime const& Cohort() const;
+    PartyRuntime& Party();
+    PartyRuntime const& Party() const;
+    CohortRuntime* FindCohort(std::string const& cohortId);
+    CohortRuntime const* FindCohort(std::string const& cohortId) const;
+    bool SelectCohort(std::string const& cohortId);
+    uint32 ActiveCohortCount() const;
+    bool ClaimBotGuid(uint32 guid, std::string const& roleSlot);
+    bool ReleaseBotGuid(uint32 guid);
+    void ReleaseCohortLeases();
+    bool LeaseOwnedByCurrentCohort(uint32 guid) const;
+    std::string UnknownCohortJson(char const* action, std::string const& cohortId) const;
+
+    uint64 _serverEpoch = 0;
+    std::map<std::string, std::unique_ptr<CohortRuntime>> _cohorts;
+    mutable std::string _selectedCohortId = "default";
+    std::string _runningCohortId;
+    mutable std::mutex _leaseMutex;
+    std::map<uint32, BotGuidLease> _guidLeases;
+
 };
 
 #define sBotWorldPopulationMgr BotWorldPopulationMgr::instance()

@@ -162,6 +162,20 @@ pixi run dvc repro all_spec_phase4_rotation_contract
 
 Apply `sql/custom/world/2026_07_19_00_phase4_rotation_snapshots.sql` and `2026_07_19_01_phase4_rotation_category_normalization.sql` through the normal world updater. The exact pre-migration profile hashes are in `experiments/configs/all_spec_phase4_previous_profile_hashes_v1.json`; the controlled restore payload is under `sql/custom/rollback/world/` so the live updater cannot apply it accidentally.
 
+### All-spec Phase 5 cohort and party ownership
+
+`BotWorldPopulationMgr` remains the process scheduler and registry, while each constructed cohort owns its lifecycle, profile pin, clocks, telemetry, capture, and roster leases through `CohortRuntime`. Party-specific group, instance, route, pending-heal, trace, combat-log, and encounter evidence live under `PartyRuntime`. Bot GUID claims are keyed by server epoch, cohort, attempt, and role slot and are released only by the owning epoch and attempt. Execution remains serial with `MaxActiveCohorts = 1`.
+
+The live contract constructs two probe cohorts, proves fail-closed lease conflicts and isolation across all owned state domains, then verifies cohort-addressed status, diagnosis, trace, calibration, and chunked combat-log responses. Once more than one cohort exists, unaddressed cohort operations reject with `ambiguous_global_cohort` rather than using process-global selection state:
+
+```bash
+pixi run bot-phase5-cohort-ownership-contract \
+  --output-dir dataset/all_spec_phase5_cohort_ownership_contract \
+  --worldserver-conf trinity-worldserver-test.conf \
+  --worldserver-binary build/src/server/worldserver/worldserver
+pixi run dvc repro all_spec_phase5_cohort_ownership_contract
+```
+
 The gear generator reads Cataclysm `Item.db2`/`Item-sparse.db2`, `SpellItemEnchantment.dbc`, and `GemProperties.dbc` client data plus hotfix overrides. It also reads `experiments/configs/cata_434_combat_loot_profiles.json` for class/spec archetypes, stat weights, consumable profile metadata, smart-loot validation surfaces, and BiS/source reporting scaffolds. It writes class/spec equipment profiles with selected item IDs, stats, item levels, source labels, `complete_equipment_slots`, socket-compatible gem IDs, permanent enchant IDs, stat-weight manifest hashes, BiS/source summaries, and the exact 45-field `item_instance.enchantments` payload used by the server. The provisioning generator reads `experiments/configs/cata_434_action_profiles.json` for class action and proficiency spells, then writes `account_commands.txt`, `provision_accounts.sql`, `provision_characters.sql`, `manifest.json`, and `report.json`. It does not apply destructive database changes automatically. `provision_accounts.sql` creates only missing validation accounts with deterministic Trinity SRP6 `salt`/`verifier` values and does not overwrite existing account passwords. The verifier checks generated payloads against DBC enchant/gem IDs and can additionally check the configured auth/characters schema plus missing validation accounts with `--check-db`. The scenario generator writes `validation_scenarios.jsonl`, `validation_routes.jsonl`, and `validation_mechanics.jsonl` so Stonecore/BWD planners can consume route and mechanic embeddings without C++ encounter branches. The run-plan generator writes `run_validation_scenarios.sh` with per-scenario `bot-live-validate` commands that apply deterministic provisioning, reset only the matching scenario tag, and preserve the configured instance start positions. The combined validation stage reparses open-world live evidence with scenario reports attached, giving one staged pass/fail artifact across questing, professions, loot, Stonecore, and BWD gates. The current config provisions max-level Stonecore and Blackwing Descent validation rosters with role coverage, skills, glyphs, consumables, complete class/spec equipment slots, gems, enchants, and instance start positions. The gear report intentionally keeps `enchant_applicability_verified_by_server=false` until a live worldserver load validates the generated enchant IDs on equipped items.
 
 Export all learning-loop tables:

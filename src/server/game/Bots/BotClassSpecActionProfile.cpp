@@ -897,6 +897,20 @@ std::string BotClassSpecActionProfileStore::ChosenActionJson(BotActionCandidate 
     return json.str();
 }
 
+uint64 BotClassSpecActionProfileStore::ActiveDbGeneration()
+{
+    EnsureDbSnapshotLoaded();
+    std::lock_guard<std::mutex> guard(g_dbRotationMutex);
+    return g_activeDbRotationSnapshot ? g_activeDbRotationSnapshot->Generation : 0;
+}
+
+std::string BotClassSpecActionProfileStore::ActiveDbContentHash()
+{
+    EnsureDbSnapshotLoaded();
+    std::lock_guard<std::mutex> guard(g_dbRotationMutex);
+    return g_activeDbRotationSnapshot ? g_activeDbRotationSnapshot->ContentHash : "";
+}
+
 std::string BotClassSpecActionProfileStore::ReloadDbProfiles()
 {
     std::string failureReason;

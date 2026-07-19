@@ -1165,3 +1165,43 @@ stages:
       md5: a86ec269c69d83b9d2b4ab92fb19b008.dir
       size: 2026
       nfiles: 2
+  all_spec_phase5_cohort_ownership_contract:
+    cmd: python -m tools.bot_ml.build_phase5_cohort_ownership_contract
+      --output-dir dataset/all_spec_phase5_cohort_ownership_contract
+      --worldserver-conf trinity-worldserver-test.conf --worldserver-binary
+      build/src/server/worldserver/worldserver
+    deps:
+    - path: src/server/game/Bots/BotClassSpecActionProfile.cpp
+      hash: md5
+      md5: 4ffa3fa36c6b5a66c0f7163f38647e93
+      size: 56068
+    - path: src/server/game/Bots/BotClassSpecActionProfile.h
+      hash: md5
+      md5: 94d2c5945b2cf1ca7214c19842f1a2f7
+      size: 4679
+    - path: src/server/game/Bots/BotWorldPopulationMgr.cpp
+      hash: md5
+      md5: fc4f07f1271efd15f44c7372e9d9a14a
+      size: 1131712
+    - path: src/server/game/Bots/BotWorldPopulationMgr.h
+      hash: md5
+      md5: fef16e92e193fe093f09ca303fa59a7c
+      size: 70642
+    - path: src/server/scripts/Commands/cs_healerbot.cpp
+      hash: md5
+      md5: 104aaeab251f41c7bf9cfb122595fb76
+      size: 58370
+    - path: tools/bot_ml/build_phase4_rotation_contract.py
+      hash: md5
+      md5: 3b0c16d36dca90afbae7fb704ea5390d
+      size: 17590
+    - path: tools/bot_ml/build_phase5_cohort_ownership_contract.py
+      hash: md5
+      md5: 8228b2e437255964f8a86db096cd46fa
+      size: 13485
+    outs:
+    - path: dataset/all_spec_phase5_cohort_ownership_contract
+      hash: md5
+      md5: b1a3e0ed140a708265f63b8f10f99521.dir
+      size: 2424
+      nfiles: 2

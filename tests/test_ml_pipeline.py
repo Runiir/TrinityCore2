@@ -86,6 +86,7 @@ from tools.bot_ml.validate_data_quality import validate_rows as validate_data_qu
 from tools.bot_ml.build_baseline_inventory import build_inventory, canonical_hash, git_identity, parse_dvc_pointer, reconcile_live_db, reconcile_targets, rotation_tuples, validate_policy, write_bundle
 from tools.bot_ml.build_all_spec_phase1_catalogs import RUNTIME_ACTION_SPELL_IDS, build_catalogs as build_phase1_catalogs, validate_catalogs as validate_phase1_catalogs, write_bundle as write_phase1_bundle
 from tools.bot_ml import build_phase4_rotation_contract as phase4_contract
+from tools.bot_ml import build_phase5_cohort_ownership_contract as phase5_contract
 from tools.bot_ml.bt_masked_ga_combined import run as run_bt_masked_ga_combined
 from tools.bot_ml.evaluate_policy_model import policy_score, ranking_metrics
 from tools.bot_ml.train_policy_model import add_synthetic_binary_class, balanced_binary_weights, teacher_choice_training_rows
@@ -10026,3 +10027,32 @@ def test_phase4_live_publication_restores_mutation_after_command_failure(monkeyp
     assert all(connection.closed for connection in connections)
     assert all(connection.committed for connection in connections[1:])
     assert Session.instance.closed is True
+
+
+def test_phase5_cohort_ownership_static_contract_and_manifest_are_deterministic(tmp_path):
+    static = phase5_contract.static_contract()
+    assert static["passed"] is True
+    assert all(static["checks"].values())
+
+    live = {
+        "passed": True,
+        "checks": {"two_constructed_cohorts_present": True},
+        "server_epoch": 1,
+        "cohort_count": 3,
+        "isolation_checks": {"serial_execution_limit": True},
+    }
+    payload = {
+        "schema": "all_spec_phase5_cohort_ownership_contract_v1",
+        "static": static,
+        "live": live,
+        "gate_passed": True,
+    }
+    payload["contract_sha256"] = phase5_contract._sha256_json(payload)
+    phase5_contract.write_contract(tmp_path, payload)
+
+    manifest = json.loads((tmp_path / "manifest.json").read_text(encoding="utf-8"))
+    assert manifest["gate_passed"] is True
+    assert manifest["contract_sha256"] == payload["contract_sha256"]
+    assert manifest["files"]["contract.json"] == hashlib.sha256(
+        (tmp_path / "contract.json").read_bytes()
+    ).hexdigest()

@@ -2,7 +2,7 @@
   "schema": "all_spec_stonecore_program_status_v1",
   "program": "all_spec_stonecore",
   "updated_date": "2026-07-19",
-  "active_phase": 5,
+  "active_phase": 6,
   "phase_status": [
     {
       "phase": 0,
@@ -335,13 +335,84 @@
     {
       "phase": 5,
       "name": "extract_cohort_and_party_ownership_from_global_runtime_state",
+      "status": "completed",
+      "gate": {
+        "passed": true,
+        "reason_codes": [
+          "cohort_runtime_owns_lifecycle_clocks_telemetry_and_capture",
+          "party_runtime_owns_group_instance_route_heals_trace_combatlog_and_evidence",
+          "atomic_epoch_cohort_attempt_role_slot_guid_leases",
+          "owner_scoped_release_and_attempt_restart_ordering",
+          "exact_pool_tag_matching_and_guarded_reset",
+          "cohort_addressed_botauto_commands",
+          "ambiguous_global_aliases_fail_closed",
+          "all_14_isolation_domains_proved",
+          "serial_execution_limit_retained"
+        ]
+      },
+      "scope": {
+        "constructed_cohort_count": 3,
+        "probe_cohort_count": 2,
+        "max_active_cohorts": 1,
+        "isolation_domain_count": 14,
+        "addressed_command_families": 9,
+        "runtime_authority": "explicit_sql_rule_profiles",
+        "generic_ml_runtime_authority": false
+      },
+      "identity": {
+        "contract_sha256": "4d2224bae6f97a49c7ae443881c0428b7f809bb72e6a86dbfebb7ad085201696",
+        "contract_file_sha256": "c42e68a093cc58416ec7fe9b31ca4e2217256a4e30db60242716d4b484674cdc",
+        "contract_bundle_dvc_md5": "b1a3e0ed140a708265f63b8f10f99521.dir",
+        "verified_server_epoch": 1784453062470
+      },
+      "live_verification": {
+        "all_passed": true,
+        "atomic_guid_lease_conflict_rejected": true,
+        "owner_scoped_release": true,
+        "group_and_roles_isolated": true,
+        "instance_isolated": true,
+        "route_isolated": true,
+        "calibration_clocks_isolated": true,
+        "recording_windows_isolated": true,
+        "pending_heals_isolated": true,
+        "threat_healing_metrics_isolated": true,
+        "trace_isolated": true,
+        "combat_log_isolated": true,
+        "telemetry_isolated": true,
+        "evidence_isolated": true,
+        "probe_cleanup_left_empty_parties": true,
+        "ambiguous_global_operations_rejected": true
+      },
+      "evidence": {
+        "contract_bundle": "dataset/all_spec_phase5_cohort_ownership_contract",
+        "remote_verification": "pixi run dvc status -c all_spec_phase5_cohort_ownership_contract",
+        "remote_verification_outcome": "cache_and_remote_in_sync"
+      },
+      "validation": {
+        "focused_phase5_tests": "1 passed",
+        "worldserver_build": "passed",
+        "runtime_verification": "live ownership, addressed-command, ambiguity, cleanup, and chunked combat-log contract passed",
+        "git_diff_check": "passed",
+        "dvc_stage_status": "up_to_date",
+        "dvc_remote_status": "cache_and_remote_in_sync"
+      },
+      "orchestration": {
+        "owner": "root",
+        "model": "gpt-5.6-sol",
+        "reasoning": "high",
+        "workers_launched": 0
+      }
+    },
+    {
+      "phase": 6,
+      "name": "split_server_ownership_scheduling_execution_capture_and_publication",
       "status": "in_progress"
     },
     {
-      "phase_range": "6-12",
+      "phase_range": "7-12",
       "status": "pending"
     }
   ],
   "blockers": [],
-  "exact_next_handoff_prompt": "Continue approved all-spec Stonecore execution at Phase 5 only. Keep BotWorldPopulationMgr as the process scheduler and registry, but move mutable run state into explicit CohortRuntime and PartyRuntime ownership objects before enabling concurrency. CohortRuntime owns roster leases, identities, pinned manifests/profile generation, calibration clocks, watchdog state, telemetry, capture, and lifecycle. PartyRuntime owns group/roles, instance, route manifest/cursor/generation, encounter/recovery state, pending heals, threat/healing metrics, and party-scoped evidence. Add atomic GUID leases keyed by server epoch, cohort, attempt, and role slot; replace global pool reset and substring ownership with fail-closed lease claims and owner-scoped release. Add cohort-addressed botauto commands and preserve global aliases only when exactly one cohort exists. Move route, calibration, pending-heal, combat-log, trace, and recording-window state out of process-global fields. Prove two constructed cohorts, still executed serially with MaxActiveCohorts=1, cannot lease the same bot or mutate/read each other's group, instance, route, clocks, heals, trace, combat log, telemetry, or evidence; do not begin Phase 6 until the Phase 5 gate is checkpointed and remotely synchronized."
+  "exact_next_handoff_prompt": "Continue approved all-spec Stonecore execution at Phase 6 only. Refactor tools/bot_ml/run_live_bot_validation.py while preserving watchdog and strict-manifest logic: one server owner starts, attaches, and restarts the long-lived worldserver and defines the epoch; one scheduler owns admission and work queues; cohort executors use only cohort-addressed commands; watchdogs are scoped by cohort and attempt; one capture writer demultiplexes immutable events; one acceptance recomputer validates facts; and one DVC publisher serializes close, push, verify, and targeted eviction. Provision once per server epoch where possible, use atomic profile reload for DB-only tuning, batch C++ changes and rebuild once per round, and invalidate final evidence from older epochs after any C++ restart. Prove a multi-hour serial soak on one process with repeated fresh attempts, no global lifecycle command in the new path, no state leakage, clean lease release, and successful push/evict lifecycle before beginning Phase 7."
 }

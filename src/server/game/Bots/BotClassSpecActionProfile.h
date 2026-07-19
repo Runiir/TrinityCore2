@@ -125,6 +125,8 @@ public:
     static std::vector<BotActionCandidate> BuildCandidates(Player const* bot, Unit const* target, BotClassSpecActionProfile const& profile);
     static std::string CandidateMaskJson(std::vector<BotActionCandidate> const& candidates, BotClassSpecActionProfile const& profile, char const* roleGoal, char const* saturationJson, char const* profileSourceOverride = nullptr);
     static std::string ChosenActionJson(BotActionCandidate const* candidate, BotClassSpecActionProfile const& profile, char const* roleGoal, char const* balanceMode, float confidence);
+    static uint64 ActiveDbGeneration();
+    static std::string ActiveDbContentHash();
     static std::string ReloadDbProfiles();
     static std::string RollbackDbProfiles();
     static std::string DbProfilesJson();

@@ -192,6 +192,21 @@ stages:
     outs:
     - dataset/all_spec_phase4_rotation_contract:
         persist: true
+  all_spec_phase5_cohort_ownership_contract:
+    cmd: python -m tools.bot_ml.build_phase5_cohort_ownership_contract --output-dir
+      dataset/all_spec_phase5_cohort_ownership_contract --worldserver-conf trinity-worldserver-test.conf
+      --worldserver-binary build/src/server/worldserver/worldserver
+    deps:
+    - tools/bot_ml/build_phase5_cohort_ownership_contract.py
+    - tools/bot_ml/build_phase4_rotation_contract.py
+    - src/server/game/Bots/BotClassSpecActionProfile.cpp
+    - src/server/game/Bots/BotClassSpecActionProfile.h
+    - src/server/game/Bots/BotWorldPopulationMgr.cpp
+    - src/server/game/Bots/BotWorldPopulationMgr.h
+    - src/server/scripts/Commands/cs_healerbot.cpp
+    outs:
+    - dataset/all_spec_phase5_cohort_ownership_contract:
+        persist: true
   validation_provisioning_verify:
     cmd: python -m tools.bot_ml.validate_validation_provisioning --config
       experiments/configs/validation_provisioning_cata_001.json --gear-profiles
