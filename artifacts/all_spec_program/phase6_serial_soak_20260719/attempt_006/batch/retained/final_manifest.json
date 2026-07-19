@@ -1,0 +1,65 @@
+{
+  "acceptance": {
+    "accepted": false,
+    "discrepancies": [],
+    "fail_closed": false,
+    "recomputed": {
+      "accepted": false,
+      "all_stages_passed": false,
+      "facts_sha256": "1f91bd702abed7612700507cd8af0c964aabbdc8db37744f7c2ef38f7adb424f",
+      "failed_count": 14,
+      "manifest_complete": false,
+      "passed_count": 1,
+      "rejections": [
+        "not_all_stages_passed",
+        "failure_labels_present",
+        "watchdog_failure_is_not_final_evidence",
+        "incomplete_evidence_identity"
+      ],
+      "result_sha256": "4be651f76f8c16c30f572de86556a09c6162ceb23c82886efea39b88ced9671d",
+      "schema": "bot_live_acceptance_result_v1"
+    },
+    "schema": "bot_live_acceptance_verification_v1"
+  },
+  "batch_id": "phase6-serial-soak-6",
+  "compact": {
+    "bundle_sha256": "2a4ac089626dacda4cb6fef73523f9bd96fde83a0fafd5dbc8bd95146d535f90",
+    "files": [
+      {
+        "path": "evidence.parquet",
+        "sha256": "899a5a86e0c21958516ec56df427ac2a4b015f1c41e2b443fb84248982b3ce60",
+        "size": 2383
+      }
+    ],
+    "format": "parquet_zstd",
+    "row_count": 1
+  },
+  "database_export": null,
+  "duplicate_uncompressed_jsonl_retained": false,
+  "identity_sha256": "6a845bfbcdb8032d2bf9039698e332a90521f50985cb6d70b51061a844557e2a",
+  "max_pending_raw_bytes": 67108864,
+  "raw": {
+    "bundle_sha256": "4f112297b7dd53ca908703d04c74080278b2400842498552cb04fc9db7ce0b14",
+    "files": [
+      {
+        "path": "acceptance_source_report.json",
+        "sha256": "0f636a818740e3894a2983a6d64e61be3fab2e95b69bc7e75038fa8f1e1884d8",
+        "size": 6489686
+      },
+      {
+        "path": "events.jsonl.zst",
+        "sha256": "5e02cb78bf83438457bf1ccbd0917182ee1b48b3f7238473a70803976dc4b401",
+        "size": 49290
+      },
+      {
+        "path": "exact_manifests.json",
+        "sha256": "9c5a89f22f6a2554abd0017356fd317c66fd5942aadcfc2085ff1bfa63435c11",
+        "size": 10372
+      }
+    ],
+    "format": "jsonl.zst",
+    "row_count": 103
+  },
+  "schema": "bot_immutable_batch_manifest_v1",
+  "state": "closed_unpublished"
+}

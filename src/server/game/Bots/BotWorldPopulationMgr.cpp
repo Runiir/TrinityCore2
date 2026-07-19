@@ -60,8 +60,30 @@
 #include <sstream>
 #include <unordered_set>
 
+#if defined(_WIN32)
+#include <process.h>
+#else
+#include <unistd.h>
+#endif
+
 namespace
 {
+uint64 CurrentProcessId()
+{
+#if defined(_WIN32)
+    return static_cast<uint64>(::_getpid());
+#else
+    return static_cast<uint64>(::getpid());
+#endif
+}
+
+uint64 BuildServerEpoch()
+{
+    uint64 const startedAtUs = static_cast<uint64>(std::chrono::duration_cast<std::chrono::microseconds>(
+        std::chrono::system_clock::now().time_since_epoch()).count());
+    return startedAtUs ^ (CurrentProcessId() << 32);
+}
+
 uint64 ReadLastInsertId()
 {
     if (QueryResult result = CharacterDatabase.Query("SELECT LAST_INSERT_ID()"))
@@ -928,7 +950,7 @@ std::string BuildSpellTagJson(SpellInfo const* spellInfo, bool mustInterrupt, bo
 }
 }
 
-BotWorldPopulationMgr::BotWorldPopulationMgr() : _serverEpoch(NowMs())
+BotWorldPopulationMgr::BotWorldPopulationMgr() : _serverEpoch(BuildServerEpoch())
 {
     auto runtime = std::make_unique<CohortRuntime>();
     runtime->Id = "default";
@@ -1025,6 +1047,7 @@ std::string BotWorldPopulationMgr::GetCohortRegistryJson() const
 {
     std::ostringstream json;
     json << "{\"ok\":true,\"action\":\"botauto_cohorts\",\"server_epoch\":" << _serverEpoch
+         << ",\"server_process_id\":" << CurrentProcessId()
          << ",\"max_active_cohorts\":" << MaxActiveCohorts
          << ",\"active_cohort_count\":" << ActiveCohortCount()
          << ",\"cohort_count\":" << _cohorts.size() << ",\"cohorts\":[";

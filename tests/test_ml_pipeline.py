@@ -87,6 +87,7 @@ from tools.bot_ml.build_baseline_inventory import build_inventory, canonical_has
 from tools.bot_ml.build_all_spec_phase1_catalogs import RUNTIME_ACTION_SPELL_IDS, build_catalogs as build_phase1_catalogs, validate_catalogs as validate_phase1_catalogs, write_bundle as write_phase1_bundle
 from tools.bot_ml import build_phase4_rotation_contract as phase4_contract
 from tools.bot_ml import build_phase5_cohort_ownership_contract as phase5_contract
+from tools.bot_ml import build_phase6_serial_soak_contract as phase6_contract
 from tools.bot_ml.bt_masked_ga_combined import run as run_bt_masked_ga_combined
 from tools.bot_ml.evaluate_policy_model import policy_score, ranking_metrics
 from tools.bot_ml.train_policy_model import add_synthetic_binary_class, balanced_binary_weights, teacher_choice_training_rows
@@ -4919,7 +4920,7 @@ def test_live_validation_session_fails_closed_and_locks_are_repository_scoped(tm
     assert inspect_session(session, command_runner=lambda command: subprocess.CompletedProcess(command, 1, "", "Unit does not exist")).exists is False
     with live_validation_lock(tmp_path, "staging"):
         with pytest.raises(Exception):
-            with live_validation_lock(tmp_path, "staging"):
+            with live_validation_lock(tmp_path, "other-environment"):
                 pass
     with dvc_repository_lock(tmp_path) as lock_path:
         assert lock_path == dvc_lock_path(tmp_path)
@@ -10056,3 +10057,68 @@ def test_phase5_cohort_ownership_static_contract_and_manifest_are_deterministic(
     assert manifest["files"]["contract.json"] == hashlib.sha256(
         (tmp_path / "contract.json").read_bytes()
     ).hexdigest()
+
+
+def test_phase6_serial_soak_contract_requires_one_clean_published_epoch(tmp_path):
+    static = phase6_contract._static_contract()
+    assert static["passed"] is True
+    assert all(static["checks"].values())
+
+    for index in (1, 2):
+        root = tmp_path / f"attempt_{index:03d}"
+        (root / "batch/retained").mkdir(parents=True)
+        session = {
+            "cohort_id": "phase6-test",
+            "attempt_index": index,
+            "runtime_attempt_id": 40 + index,
+            "server_action": "started" if index == 1 else "already_healthy",
+            "server_pid": 1234,
+            "server_process_id": 1234,
+            "server_process_identity_verified": True,
+            "server_epoch": 5678,
+            "profile_generation": 9,
+            "profile_content_hash": "a" * 64,
+            "admitted_at_unix": 100 + ((index - 1) * 10),
+            "closed_at_unix": 110 + ((index - 1) * 10),
+            "inactive_after_attempt": True,
+            "global_lifecycle_command_count": 0,
+            "scheduler_events": [
+                {"action": "admit"},
+                {"action": "close"},
+            ],
+            "commands": [
+                ".botauto create phase6-test",
+                ".botauto start phase6-test stonecore_5n",
+                ".botauto status phase6-test",
+                ".botauto stop phase6-test",
+            ],
+            "cleanup": {
+                "active_bots": 0,
+                "lease_count": 0,
+                "party_bot_count": 0,
+            },
+        }
+        report = {
+            "session": {"attempt_index": index},
+            "published_raw_payloads_retained_locally": False,
+        }
+        receipt = {
+            "remote_verified": True,
+            "receipt_sha256": str(index) * 64,
+            "pointers": [
+                {"path": f"{root}/batch/raw.dvc"},
+                {"path": f"{root}/batch/compact.dvc"},
+            ],
+        }
+        (root / "session.json").write_text(json.dumps(session), encoding="utf-8")
+        (root / "report.json").write_text(json.dumps(report), encoding="utf-8")
+        (root / "batch/retained/publication_receipt.json").write_text(
+            json.dumps(receipt), encoding="utf-8"
+        )
+
+    live = phase6_contract._live_contract(tmp_path, minimum_soak_sec=20)
+
+    assert live["passed"] is True
+    assert live["soak_seconds"] == 20
+    assert live["runtime_attempt_ids"] == [41, 42]
+    assert all(row["passed"] for row in live["attempts"])

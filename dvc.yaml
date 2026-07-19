@@ -207,6 +207,19 @@ stages:
     outs:
     - dataset/all_spec_phase5_cohort_ownership_contract:
         persist: true
+  all_spec_phase6_serial_soak_contract:
+    cmd: python -m tools.bot_ml.build_phase6_serial_soak_contract --attempt-root
+      artifacts/all_spec_program/phase6_serial_soak_20260719_epoch2 --output-dir
+      dataset/all_spec_phase6_serial_soak_contract
+    deps:
+    - tools/bot_ml/build_phase6_serial_soak_contract.py
+    - tools/bot_ml/run_live_bot_validation.py
+    - tools/bot_ml/live_validation_session.py
+    - tools/bot_ml/batch_evidence_lifecycle.py
+    - artifacts/all_spec_program/phase6_serial_soak_20260719_epoch2/soak_manifest.json
+    outs:
+    - dataset/all_spec_phase6_serial_soak_contract:
+        persist: true
   validation_provisioning_verify:
     cmd: python -m tools.bot_ml.validate_validation_provisioning --config
       experiments/configs/validation_provisioning_cata_001.json --gear-profiles

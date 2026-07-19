@@ -323,12 +323,11 @@ def build_session(
 
 
 def live_validation_lock_path(repository: Path, environment: str) -> Path:
-    """Return the session lock location keyed by repository and environment."""
+    """Return the single live-server ownership lock for a repository."""
     root = _repository_root(repository)
-    environment_fingerprint = sha256_text(_validated_environment(environment))
+    _validated_environment(environment)
     repository_fingerprint = sha256_text(str(root))
-    lock_key = sha256_text(f"{repository_fingerprint}\0{environment_fingerprint}")
-    return root / ".dvc" / "tmp" / "locks" / f"live-validation-{lock_key}.lock"
+    return root / ".dvc" / "tmp" / "locks" / f"live-validation-{repository_fingerprint}.lock"
 
 
 def dvc_lock_path(repository: Path) -> Path:
@@ -388,6 +387,52 @@ def matching_session_metadata(session: LiveValidationSession) -> bool:
     except (OSError, json.JSONDecodeError):
         return False
     return payload.get("session_fingerprint") == session.fingerprint
+
+
+def active_conflicting_session_units(
+    session: LiveValidationSession,
+    *,
+    command_runner: CommandRunner = _default_runner,
+) -> list[str]:
+    """Find other managed worldservers that can own the shared live ports."""
+    metadata_root = session.repository / ".dvc" / "tmp" / "locks"
+    conflicts: list[str] = []
+    for path in sorted(metadata_root.glob(f"{_UNIT_PREFIX}*.json")):
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        unit_name = str(payload.get("unit_name") or "")
+        if (
+            payload.get("repository_fingerprint") != session.repository_fingerprint
+            or unit_name == session.unit_name
+            or not unit_name.startswith(_UNIT_PREFIX)
+        ):
+            continue
+        completed = command_runner(
+            [
+                "systemctl",
+                "--user",
+                "show",
+                "--no-pager",
+                "--property=LoadState",
+                "--property=ActiveState",
+                "--property=SubState",
+                "--property=MainPID",
+                unit_name,
+            ]
+        )
+        if completed.returncode != 0 or _unit_is_missing(completed):
+            continue
+        properties = _parse_systemctl_properties(completed.stdout)
+        if (
+            properties.get("LoadState") == "loaded"
+            and properties.get("ActiveState") == "active"
+            and properties.get("SubState") == "running"
+            and int(properties.get("MainPID") or 0) > 0
+        ):
+            conflicts.append(unit_name)
+    return conflicts
 
 
 def systemd_transient_command(session: LiveValidationSession) -> list[str]:
@@ -510,6 +555,12 @@ def ensure_healthy_matching_session(
     command_runner: CommandRunner = _default_runner,
 ) -> SessionAction:
     """Return a healthy matching session or create/recreate exactly that unit."""
+    conflicts = active_conflicting_session_units(session, command_runner=command_runner)
+    if conflicts:
+        raise LiveValidationSessionError(
+            "another managed worldserver owns the shared live ports: "
+            + ", ".join(conflicts)
+        )
     status = inspect_session(session, command_runner=command_runner)
     if status.healthy and matching_session_metadata(session):
         return SessionAction(session, "already_healthy", status)

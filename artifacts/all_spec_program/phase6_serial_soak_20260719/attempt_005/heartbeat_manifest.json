@@ -1,0 +1,8 @@
+{
+  "heartbeat_count": 31,
+  "identity_sha256": "405b330fa75371dec9dbeae4c96209c343322b6a2f3472b770074b0f3db37cc7",
+  "latest_sha256": "47c9391037dc1633c525b4bc7b98d74626f6b422bf880e6611ffea1104a69a46",
+  "one_file_per_heartbeat": false,
+  "schema": "bot_compact_heartbeat_manifest_v1",
+  "stream_sha256": "094b538edb4c8a56ae646b9cf863d8ff3b89d98442a0b1380936a1a55993c646"
+}

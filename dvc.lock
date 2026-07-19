@@ -1205,3 +1205,35 @@ stages:
       md5: b1a3e0ed140a708265f63b8f10f99521.dir
       size: 2424
       nfiles: 2
+  all_spec_phase6_serial_soak_contract:
+    cmd: python -m tools.bot_ml.build_phase6_serial_soak_contract --attempt-root
+      artifacts/all_spec_program/phase6_serial_soak_20260719_epoch2 --output-dir
+      dataset/all_spec_phase6_serial_soak_contract
+    deps:
+    - path:
+        artifacts/all_spec_program/phase6_serial_soak_20260719_epoch2/soak_manifest.json
+      hash: md5
+      md5: a796c434354a4f3f7b99f305ac8075e6
+      size: 2899
+    - path: tools/bot_ml/batch_evidence_lifecycle.py
+      hash: md5
+      md5: c2ee995e1d735a8beff14821798384d5
+      size: 25587
+    - path: tools/bot_ml/build_phase6_serial_soak_contract.py
+      hash: md5
+      md5: eaca16d7f20264ce067de2dea657a758
+      size: 17327
+    - path: tools/bot_ml/live_validation_session.py
+      hash: md5
+      md5: cc0d1b4e58cadef65423daa15cad2373
+      size: 44631
+    - path: tools/bot_ml/run_live_bot_validation.py
+      hash: md5
+      md5: ce962ca0798aa8d0e0ecc104fc084bb6
+      size: 217995
+    outs:
+    - path: dataset/all_spec_phase6_serial_soak_contract
+      hash: md5
+      md5: d13fd01ae750f65e8232509346b258c7.dir
+      size: 11042
+      nfiles: 2

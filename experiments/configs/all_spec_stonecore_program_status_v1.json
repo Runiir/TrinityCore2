@@ -2,7 +2,7 @@
   "schema": "all_spec_stonecore_program_status_v1",
   "program": "all_spec_stonecore",
   "updated_date": "2026-07-19",
-  "active_phase": 6,
+  "active_phase": 7,
   "phase_status": [
     {
       "phase": 0,
@@ -406,13 +406,92 @@
     {
       "phase": 6,
       "name": "split_server_ownership_scheduling_execution_capture_and_publication",
+      "status": "completed",
+      "gate": {
+        "passed": true,
+        "reason_codes": [
+          "repository_wide_single_server_owner",
+          "transport_process_identity_matches_systemd_mainpid",
+          "process_unique_server_epoch",
+          "cohort_only_runtime_commands",
+          "serial_scheduler_and_attempt_scoped_watchdog",
+          "independent_acceptance_before_capture_and_publication",
+          "clean_active_bot_party_and_lease_release",
+          "eight_remote_verified_raw_compact_publications",
+          "targeted_eviction_after_remote_verification",
+          "multi_hour_same_process_soak_passed"
+        ]
+      },
+      "scope": {
+        "attempt_count": 8,
+        "soak_seconds": 7537,
+        "minimum_soak_seconds": 7200,
+        "server_pid": 3547737,
+        "server_epoch": 13639095441220466,
+        "runtime_attempt_ids": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8
+        ],
+        "max_active_cohorts": 1,
+        "global_lifecycle_command_count": 0
+      },
+      "identity": {
+        "contract_sha256": "9d8aaaabb779c258bd1134c75a66ca9341a0c3ba473924a3c3015d4e785de989",
+        "contract_file_sha256": "80851d797f426f888b8974c12c0919c575cf93e1c505d02c1b606d139b4d63bb",
+        "contract_bundle_dvc_md5": "d13fd01ae750f65e8232509346b258c7.dir"
+      },
+      "live_verification": {
+        "all_attempts_passed": true,
+        "one_worldserver_process": true,
+        "one_server_epoch": true,
+        "later_attempts_attach_without_restart": true,
+        "fresh_runtime_attempts_monotonic": true,
+        "one_profile_generation_and_hash": true,
+        "transport_process_identity_verified": true,
+        "zero_state_leakage": true,
+        "all_remote_verified": true,
+        "all_targeted_evictions_complete": true
+      },
+      "evidence": {
+        "contract_bundle": "dataset/all_spec_phase6_serial_soak_contract",
+        "attempt_manifest": "artifacts/all_spec_program/phase6_serial_soak_20260719_epoch2/soak_manifest.json",
+        "attempt_root": "artifacts/all_spec_program/phase6_serial_soak_20260719_epoch2",
+        "failed_superseded_attempt_root": "artifacts/all_spec_program/phase6_serial_soak_20260719",
+        "remote_verification": "pixi run dvc status -c dataset/all_spec_phase6_serial_soak_contract",
+        "remote_verification_outcome": "cache_and_remote_in_sync; eight attempt batch receipts remote_verified"
+      },
+      "validation": {
+        "focused_phase6_tests": "4 passed",
+        "worldserver_build": "passed",
+        "runtime_process_identity_probe": "two fresh attempts passed on one PID with second already_healthy",
+        "multi_hour_runtime_verification": "eight attempts and 7537 seconds passed on one PID and epoch",
+        "git_diff_check": "passed",
+        "dvc_stage_status": "reproduced",
+        "dvc_remote_status": "cache_and_remote_in_sync"
+      },
+      "orchestration": {
+        "owner": "root",
+        "model": "gpt-5.6-sol",
+        "reasoning": "high",
+        "workers_launched": 0
+      }
+    },
+    {
+      "phase": 7,
+      "name": "deterministic_role_calibration_harnesses",
       "status": "in_progress"
     },
     {
-      "phase_range": "7-12",
+      "phase_range": "8-12",
       "status": "pending"
     }
   ],
   "blockers": [],
-  "exact_next_handoff_prompt": "Continue approved all-spec Stonecore execution at Phase 6 only. Refactor tools/bot_ml/run_live_bot_validation.py while preserving watchdog and strict-manifest logic: one server owner starts, attaches, and restarts the long-lived worldserver and defines the epoch; one scheduler owns admission and work queues; cohort executors use only cohort-addressed commands; watchdogs are scoped by cohort and attempt; one capture writer demultiplexes immutable events; one acceptance recomputer validates facts; and one DVC publisher serializes close, push, verify, and targeted eviction. Provision once per server epoch where possible, use atomic profile reload for DB-only tuning, batch C++ changes and rebuild once per round, and invalidate final evidence from older epochs after any C++ restart. Prove a multi-hour serial soak on one process with repeated fresh attempts, no global lifecycle command in the new path, no state leakage, clean lease release, and successful push/evict lifecycle before beginning Phase 7."
+  "exact_next_handoff_prompt": "Continue approved all-spec Stonecore execution at Phase 7 only. Implement deterministic single_target_300, aoe_300, tank_threat_300, and healer_controlled_damage_300 modes with separate warmup and fixed 300 +/-5 second scored windows, deterministic reset and declared identity inputs. Add role-specific metrics and hard gates plus deliberate fault injection for missing delivery, duration mismatch, one-target healer spam, missed dispels, missing tank stance/form/presence, threat loss, illegal actions, and cross-window contamination. Keep SQL/rule profiles authoritative and generic ML shadow-only. Do not begin broad calibration until all deterministic success and deliberate-failure harness gates pass."
 }

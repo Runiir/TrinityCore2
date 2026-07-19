@@ -176,6 +176,24 @@ pixi run bot-phase5-cohort-ownership-contract \
 pixi run dvc repro all_spec_phase5_cohort_ownership_contract
 ```
 
+### All-spec Phase 6 reusable-session orchestration
+
+`run_live_bot_validation.py` separates the long-lived server owner, serial admission scheduler, cohort-only command executor, cohort/attempt watchdog, immutable capture writer, independent acceptance recomputer, and serialized DVC publisher. Reusable-session lifecycle commands always include `--cohort-id`; the executor rejects global or cross-cohort forms. Cleanup requires inactive status, zero active bots, zero GUID leases, and an empty party registry entry. Live ownership is repository-wide because all environments share the configured world/SOAP ports: a second managed unit fails closed, and `.botauto cohorts` must report the same process ID as systemd `MainPID` before admission. The process-derived server epoch changes across actual restarts. The server owner can atomically reload DB-backed rotation profiles without restarting the process, while deterministic provisioning is memoized by server epoch and input identity. A changed binary/config/input fingerprint restarts the owned process and therefore creates a new server epoch.
+
+Closed session batches are captured as bounded Zstandard JSONL plus one Parquet/Zstandard compact table. `--publish-batch` pushes raw and compact identities under the single DVC publisher lock, verifies the remote, target-evicts only those payloads, deletes duplicate high-volume runner files, and retains compact reports, manifests, receipts, and `.dvc` pointers. Batch roots must be under a Git-visible path such as `artifacts/all_spec_program/`; the repository-wide ignored `dataset/*` namespace is reserved for stage outputs.
+
+Run or resume the two-hour serial gate with credentials supplied only through the environment, then reproduce its compact contract:
+
+```bash
+TRINITY_SOAP_USER=... TRINITY_SOAP_PASSWORD=... \
+  pixi run bot-phase6-serial-soak-contract --run-soak \
+  --attempt-root artifacts/all_spec_program/phase6_serial_soak_20260719_epoch2 \
+  --output-dir dataset/all_spec_phase6_serial_soak_contract
+pixi run dvc repro all_spec_phase6_serial_soak_contract
+```
+
+The gate requires eight fresh serial attempts on one PID and one server epoch, monotonic runtime attempt IDs, no global lifecycle command, clean lease/party release after every attempt, remote-verified separate raw/compact pointers, targeted local eviction, and at least 7,200 seconds between first admission and final closure.
+
 The gear generator reads Cataclysm `Item.db2`/`Item-sparse.db2`, `SpellItemEnchantment.dbc`, and `GemProperties.dbc` client data plus hotfix overrides. It also reads `experiments/configs/cata_434_combat_loot_profiles.json` for class/spec archetypes, stat weights, consumable profile metadata, smart-loot validation surfaces, and BiS/source reporting scaffolds. It writes class/spec equipment profiles with selected item IDs, stats, item levels, source labels, `complete_equipment_slots`, socket-compatible gem IDs, permanent enchant IDs, stat-weight manifest hashes, BiS/source summaries, and the exact 45-field `item_instance.enchantments` payload used by the server. The provisioning generator reads `experiments/configs/cata_434_action_profiles.json` for class action and proficiency spells, then writes `account_commands.txt`, `provision_accounts.sql`, `provision_characters.sql`, `manifest.json`, and `report.json`. It does not apply destructive database changes automatically. `provision_accounts.sql` creates only missing validation accounts with deterministic Trinity SRP6 `salt`/`verifier` values and does not overwrite existing account passwords. The verifier checks generated payloads against DBC enchant/gem IDs and can additionally check the configured auth/characters schema plus missing validation accounts with `--check-db`. The scenario generator writes `validation_scenarios.jsonl`, `validation_routes.jsonl`, and `validation_mechanics.jsonl` so Stonecore/BWD planners can consume route and mechanic embeddings without C++ encounter branches. The run-plan generator writes `run_validation_scenarios.sh` with per-scenario `bot-live-validate` commands that apply deterministic provisioning, reset only the matching scenario tag, and preserve the configured instance start positions. The combined validation stage reparses open-world live evidence with scenario reports attached, giving one staged pass/fail artifact across questing, professions, loot, Stonecore, and BWD gates. The current config provisions max-level Stonecore and Blackwing Descent validation rosters with role coverage, skills, glyphs, consumables, complete class/spec equipment slots, gems, enchants, and instance start positions. The gear report intentionally keeps `enchant_applicability_verified_by_server=false` until a live worldserver load validates the generated enchant IDs on equipped items.
 
 Export all learning-loop tables:

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import contextlib
 import hashlib
 import html
 import json
@@ -13,16 +14,17 @@ import sys
 import time
 import urllib.error
 import urllib.request
-from collections import Counter
+from collections import Counter, deque
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Mapping, Sequence
 from urllib.parse import urlparse
 import re
 
 try:
     from .analyze_combat_log import analyze_combat_log
     from .audit_role_efficiency import build_audit
-    from .batch_evidence_lifecycle import append_heartbeat, finalize_heartbeat
+    from .batch_evidence_lifecycle import append_heartbeat, capture_batch, finalize_heartbeat, publish_batch, validate_capture
     from .build_validation_provisioning import apply_gear_profiles, build_account_insert_sql, build_character_insert_sql, load_config, load_gear_profiles
     from .common import write_json
     from .extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
@@ -30,7 +32,7 @@ try:
 except ImportError:
     from analyze_combat_log import analyze_combat_log
     from audit_role_efficiency import build_audit
-    from batch_evidence_lifecycle import append_heartbeat, finalize_heartbeat
+    from batch_evidence_lifecycle import append_heartbeat, capture_batch, finalize_heartbeat, publish_batch, validate_capture
     from build_validation_provisioning import apply_gear_profiles, build_account_insert_sql, build_character_insert_sql, load_config, load_gear_profiles
     from common import write_json
     from extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
@@ -93,6 +95,264 @@ class BoundedOutputParts(list[str]):
     def extend(self, values: tuple[str, ...] | list[str]) -> None:
         for value in values:
             self.append(value)
+
+
+CommandTransport = Callable[[str, int], tuple[str, int, bool]]
+
+
+@dataclass(frozen=True)
+class ValidationAttempt:
+    cohort_id: str
+    attempt_index: int
+    profile: str
+    output_dir: Path
+    timeout_sec: int
+    observe_sec: int
+
+    def __post_init__(self) -> None:
+        if not re.fullmatch(r"[A-Za-z0-9._-]{1,64}", self.cohort_id):
+            raise ValueError("invalid cohort_id")
+        if self.attempt_index < 1:
+            raise ValueError("attempt_index must be positive")
+        if self.timeout_sec < 1 or self.observe_sec < 0:
+            raise ValueError("attempt timing must be non-negative")
+
+
+@dataclass
+class SerialValidationScheduler:
+    attempts: Sequence[ValidationAttempt]
+    pending: deque[ValidationAttempt] = field(init=False)
+    active: ValidationAttempt | None = field(default=None, init=False)
+    completed: list[ValidationAttempt] = field(default_factory=list, init=False)
+    events: list[dict[str, Any]] = field(default_factory=list, init=False)
+
+    def __post_init__(self) -> None:
+        self.pending = deque(self.attempts)
+        identities = {(attempt.cohort_id, attempt.attempt_index) for attempt in self.attempts}
+        if len(identities) != len(self.attempts):
+            raise ValueError("duplicate cohort attempt identity")
+
+    def admit_next(self) -> ValidationAttempt | None:
+        if self.active is not None:
+            raise RuntimeError("serial scheduler already owns an active attempt")
+        if not self.pending:
+            return None
+        self.active = self.pending.popleft()
+        self.events.append(
+            {
+                "action": "admit",
+                "cohort_id": self.active.cohort_id,
+                "attempt_index": self.active.attempt_index,
+            }
+        )
+        return self.active
+
+    def close_active(self) -> None:
+        if self.active is None:
+            raise RuntimeError("serial scheduler has no active attempt")
+        self.events.append(
+            {
+                "action": "close",
+                "cohort_id": self.active.cohort_id,
+                "attempt_index": self.active.attempt_index,
+            }
+        )
+        self.completed.append(self.active)
+        self.active = None
+
+
+@dataclass
+class CohortCommandExecutor:
+    execute_command: CommandTransport
+    cohort_id: str
+    default_timeout_sec: int = 180
+    commands: list[str] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        if not re.fullmatch(r"[A-Za-z0-9._-]{1,64}", self.cohort_id):
+            raise ValueError("invalid cohort_id")
+
+    @property
+    def status_command(self) -> str:
+        return f".botauto status {self.cohort_id}"
+
+    def run(self, command: str, timeout_sec: int | None = None) -> tuple[str, int, bool]:
+        tokens = command.split()
+        addressed_actions = {
+            "create",
+            "prepare",
+            "start",
+            "stop",
+            "status",
+            "diagnose",
+            "trace",
+            "combatlog",
+            "calibrate",
+        }
+        if (
+            len(tokens) >= 2
+            and tokens[0] == ".botauto"
+            and tokens[1] in addressed_actions
+            and (len(tokens) < 3 or tokens[2] != self.cohort_id)
+        ):
+            raise RuntimeError("global or cross-cohort botauto command is forbidden")
+        self.commands.append(command)
+        output, returncode, timed_out = self.execute_command(
+            command,
+            max(1, int(timeout_sec or self.default_timeout_sec)),
+        )
+        for payload in parse_json_objects(output):
+            payload_cohort = payload.get("cohort_id")
+            action = str(payload.get("action") or "")
+            if action.startswith("botauto_") and payload_cohort not in {None, self.cohort_id}:
+                raise RuntimeError("cohort command returned cross-cohort payload")
+        return output, returncode, timed_out
+
+    def create(self) -> tuple[str, int, bool]:
+        return self.run(f".botauto create {self.cohort_id}")
+
+    def prepare(self, profile: str) -> tuple[str, int, bool]:
+        return self.run(f".botauto prepare {self.cohort_id} {profile}")
+
+    def start(self, profile: str = "") -> tuple[str, int, bool]:
+        suffix = f" {profile}" if profile else ""
+        return self.run(f".botauto start {self.cohort_id}{suffix}")
+
+    def stop(self) -> tuple[str, int, bool]:
+        return self.run(f".botauto stop {self.cohort_id}")
+
+    def diagnose(self, selector: str) -> tuple[str, int, bool]:
+        return self.run(f".botauto diagnose {self.cohort_id} {selector}")
+
+    def trace(self, selector: str, limit: int) -> tuple[str, int, bool]:
+        return self.run(f".botauto trace {self.cohort_id} {selector} {max(1, limit)}")
+
+    def combat_log(self) -> tuple[str, int, bool]:
+        return self.run(f".botauto combatlog {self.cohort_id}")
+
+    def calibration(self, operation: str) -> tuple[str, int, bool]:
+        if operation not in {"start", "stop", "status"}:
+            raise ValueError("invalid calibration operation")
+        return self.run(f".botauto calibrate {self.cohort_id} {operation}")
+
+
+@dataclass
+class CohortAttemptWatchdog:
+    executor: CohortCommandExecutor
+    attempt: ValidationAttempt
+
+    def script(self, selector: str, trace_limit: int, combat_calibration: bool = False) -> str:
+        return command_script(
+            selector=selector,
+            trace_limit=trace_limit,
+            start=False,
+            stop=False,
+            exit_server=False,
+            combat_calibration=combat_calibration,
+            cohort_id=self.attempt.cohort_id,
+        )
+
+
+@dataclass
+class ImmutableCaptureWriter:
+    repository: Path
+
+    def capture(
+        self,
+        attempt: ValidationAttempt,
+        report: Mapping[str, Any],
+        output: str,
+        exact_manifests: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        batch_root = attempt.output_dir / "batch"
+        payloads = parse_json_objects(output)
+        raw_rows = [
+            {
+                "batch_id": f"{attempt.cohort_id}-{attempt.attempt_index}",
+                "cohort_id": attempt.cohort_id,
+                "attempt_index": attempt.attempt_index,
+                "sequence": index,
+                "payload": payload,
+            }
+            for index, payload in enumerate(payloads)
+        ]
+        compact_rows = [
+            {
+                "batch_id": f"{attempt.cohort_id}-{attempt.attempt_index}",
+                "cohort_id": attempt.cohort_id,
+                "attempt_index": attempt.attempt_index,
+                "all_passed": bool(report.get("all_passed")),
+                "acceptable_final_evidence": bool(report.get("acceptable_final_evidence")),
+                "failure_reason": str(report.get("failure_reason") or ""),
+                "completion_reason": str(report.get("completion_reason") or ""),
+            }
+        ]
+        return capture_batch(
+            batch_root,
+            batch_id=f"{attempt.cohort_id}-{attempt.attempt_index}",
+            raw_rows=raw_rows,
+            compact_rows=compact_rows,
+            exact_manifests=dict(exact_manifests),
+            summary=compact_rows[0],
+            acceptance_report=dict(report),
+        )
+
+
+def compact_published_report(report: Mapping[str, Any]) -> dict[str, Any]:
+    """Retain acceptance and provenance without duplicating published raw payloads."""
+    keys = (
+        "schema",
+        "generated_at_unix",
+        "returncode",
+        "timed_out",
+        "completion_reason",
+        "failure_reason",
+        "failure_labels",
+        "all_passed",
+        "acceptable_final_evidence",
+        "acceptance_facts",
+        "acceptance_verification",
+        "evidence_envelope",
+        "session",
+        "validation_context",
+        "validation_route_manifest",
+        "batch_capture",
+        "batch_publication",
+    )
+    compact = {key: report[key] for key in keys if key in report}
+    compact["published_raw_payloads_retained_locally"] = False
+    return compact
+
+
+class AcceptanceRecomputer:
+    def recompute(
+        self,
+        report: dict[str, Any],
+        *,
+        identity_required: bool,
+        session_required: bool,
+    ) -> dict[str, Any]:
+        return apply_acceptance_evaluation(
+            report,
+            identity_required=identity_required,
+            session_required=session_required,
+        )
+
+
+@dataclass
+class SerializedDvcPublisher:
+    repository: Path
+    evict_after_verify: bool = True
+
+    def publish(self, batch_root: Path) -> dict[str, Any]:
+        receipt = publish_batch(
+            self.repository,
+            batch_root,
+            evict_after_verify=self.evict_after_verify,
+        )
+        if not self.evict_after_verify:
+            validate_capture(batch_root)
+        return receipt
 
 
 BOT_MEMORY_TABLES = [
@@ -683,26 +943,30 @@ def command_script(
     stop: bool = False,
     exit_server: bool = True,
     combat_calibration: bool = False,
+    cohort_id: str = "",
 ) -> str:
+    if cohort_id and not re.fullmatch(r"[A-Za-z0-9._-]{1,64}", cohort_id):
+        raise ValueError("invalid cohort_id")
+    scope = f" {cohort_id}" if cohort_id else ""
     commands: list[str] = []
     if start:
-        commands.append(".botauto start")
+        commands.append(f".botauto start{scope}")
     if combat_calibration:
-        commands.append(".botauto calibrate start")
+        commands.append(f".botauto calibrate{scope} start")
     commands.extend(
         [
-            ".botauto status",
-            f".botauto diagnose {selector}",
-            f".botauto trace {selector} {trace_limit}",
-            *([".botauto calibrate status"] if combat_calibration else []),
-            ".botauto combatlog",
-            ".botexp summary",
+            f".botauto status{scope}",
+            f".botauto diagnose{scope} {selector}",
+            f".botauto trace{scope} {selector} {trace_limit}",
+            *([f".botauto calibrate{scope} status"] if combat_calibration else []),
+            f".botauto combatlog{scope}",
+            *([] if cohort_id else [".botexp summary"]),
         ]
     )
     if combat_calibration:
-        commands.append(".botauto calibrate stop")
+        commands.append(f".botauto calibrate{scope} stop")
     if stop:
-        commands.append(".botauto stop")
+        commands.append(f".botauto stop{scope}")
     if exit_server:
         commands.append("server shutdown force 0")
     return "\n".join(commands) + "\n"
@@ -1022,7 +1286,7 @@ def command_errors(output: str) -> list[dict[str, str]]:
 
 def should_observe_before_command(command_text: str) -> bool:
     return (
-        command_text == ".botauto status"
+        command_text.startswith(".botauto status")
         or command_text.startswith(".botauto diagnose")
         or command_text.startswith(".botauto trace")
         or command_text == ".botexp summary"
@@ -1063,6 +1327,7 @@ def poll_bot_status(
     execute_command: Callable[[str, int], tuple[str, int, bool]],
     deadline: float,
     *,
+    status_command: str = ".botauto status",
     poll_sec: float = 2.0,
     sleep: Callable[[float], None] = time.sleep,
 ) -> tuple[str, dict[str, Any] | None, int, bool]:
@@ -1071,8 +1336,8 @@ def poll_bot_status(
     last_status: dict[str, Any] | None = None
     while time.monotonic() < deadline:
         remaining = max(1, int(deadline - time.monotonic()))
-        output, returncode, timed_out = execute_command(".botauto status", remaining)
-        output_parts.append("$ .botauto status\n")
+        output, returncode, timed_out = execute_command(status_command, remaining)
+        output_parts.append(f"$ {status_command}\n")
         output_parts.append(output)
         last_status = bot_status_snapshot(output)
         if returncode != 0 or timed_out or last_status is None or not last_status["active"] or bot_status_state(output) is True:
@@ -1085,14 +1350,15 @@ def wait_for_soap_command_available(
     execute_command: Callable[[str, int], tuple[str, int, bool]],
     deadline: float,
     *,
+    status_command: str = ".botauto status",
     poll_sec: float = 2.0,
     sleep: Callable[[float], None] = time.sleep,
 ) -> str:
     output_parts = BoundedOutputParts()
     while time.monotonic() < deadline:
         remaining = max(1, int(deadline - time.monotonic()))
-        output, returncode, timed_out = execute_command(".botauto status", remaining)
-        output_parts.extend(("$ .botauto status\n", output))
+        output, returncode, timed_out = execute_command(status_command, remaining)
+        output_parts.extend((f"$ {status_command}\n", output))
         if returncode == 0 and not timed_out and bot_status_snapshot(output) is not None:
             return "".join(output_parts)
         sleep(min(poll_sec, max(0.0, deadline - time.monotonic())))
@@ -1104,6 +1370,7 @@ def wait_for_bot_status_state(
     expected_active: bool,
     deadline: float,
     *,
+    status_command: str = ".botauto status",
     poll_sec: float = 2.0,
     sleep: Callable[[float], None] = time.sleep,
 ) -> tuple[str, dict[str, Any] | None]:
@@ -1111,8 +1378,8 @@ def wait_for_bot_status_state(
     last_status: dict[str, Any] | None = None
     while time.monotonic() < deadline:
         remaining = max(1, int(deadline - time.monotonic()))
-        output, returncode, timed_out = execute_command(".botauto status", remaining)
-        output_parts.extend(("$ .botauto status\n", output))
+        output, returncode, timed_out = execute_command(status_command, remaining)
+        output_parts.extend((f"$ {status_command}\n", output))
         status = bot_status_snapshot(output)
         if status is not None:
             last_status = status
@@ -2550,13 +2817,13 @@ def bounded_console_deadline(deadline: float, max_wait_sec: int | float) -> floa
 
 
 def expected_command_output_marker(command_text: str) -> str:
-    if command_text == ".botauto status":
+    if command_text.startswith(".botauto status"):
         return '"target_bots"'
     if command_text.startswith(".botauto diagnose"):
         return '"diagnosis_schema_version"'
     if command_text.startswith(".botauto trace"):
         return '"trace_schema_version"'
-    if command_text == ".botauto combatlog":
+    if command_text.startswith(".botauto combatlog"):
         return '"action":"botauto_combatlog_complete"'
     if command_text == ".botexp summary":
         return '"duration_minutes"'
@@ -2569,8 +2836,11 @@ def run_worldserver(binary: Path, config: Path, timeout_sec: int, script: str, o
     command = [str(binary), "--config", str(config)]
     if observe_sec > 0:
         deadline = time.monotonic() + timeout_sec
-        explicit_start = any(line.strip() == ".botauto start" for line in script.splitlines())
-        calibration_start = any(line.strip() == ".botauto calibrate start" for line in script.splitlines())
+        explicit_start = any(line.strip().startswith(".botauto start") for line in script.splitlines())
+        calibration_start = any(
+        line.strip().startswith(".botauto calibrate") and line.strip().endswith(" start")
+        for line in script.splitlines()
+    )
         observed_autostart = False
         output_prefix = ""
         process = subprocess.Popen(
@@ -2594,14 +2864,14 @@ def run_worldserver(binary: Path, config: Path, timeout_sec: int, script: str, o
                     observed_autostart = True
                 process.stdin.write(raw_command + "\n")
                 process.stdin.flush()
-                if command_text == ".botauto start":
+                if command_text.startswith(".botauto start"):
                     output_prefix += read_until_console_prompt(process, deadline)
                     if not waited_for_ready:
                         output_prefix += wait_for_bot_status_ready(process, deadline)
                         waited_for_ready = True
                     if not calibration_start:
                         time.sleep(observe_sec)
-                elif command_text == ".botauto calibrate start":
+                elif command_text.startswith(".botauto calibrate") and command_text.endswith(" start"):
                     output_prefix += read_until_console_prompt(
                         process,
                         bounded_console_deadline(deadline, 10),
@@ -2653,9 +2923,13 @@ def heartbeat_commands_from_script(script: str) -> tuple[list[str], list[str], l
         command_text = raw_command.strip()
         if not command_text:
             continue
-        if command_text in {".botauto start", ".botauto calibrate start"}:
+        if command_text.startswith(".botauto start") or (
+            command_text.startswith(".botauto calibrate") and command_text.endswith(" start")
+        ):
             startup.append(command_text)
-        elif command_text in {".botauto combatlog", ".botauto calibrate stop", ".botauto stop"}:
+        elif command_text.startswith(".botauto combatlog") or (
+            command_text.startswith(".botauto calibrate") and command_text.endswith(" stop")
+        ) or command_text.startswith(".botauto stop"):
             cleanup.append(command_text)
         elif command_text.startswith("server shutdown") or command_text == "server exit":
             continue
@@ -2719,6 +2993,7 @@ def run_transport_completion_watchdog(
     no_progress_window_sec: int = DEFAULT_NO_PROGRESS_WINDOW_SEC,
     max_repeated_decisions: int = DEFAULT_MAX_REPEATED_DECISIONS,
     max_death_loops: int = DEFAULT_MAX_DEATH_LOOPS,
+    status_command: str = ".botauto status",
     sleep: Callable[[float], None] = time.sleep,
 ) -> tuple[str, int, bool, list[str]]:
     """Apply completion evidence watchdog policy to any command transport.
@@ -2752,7 +3027,12 @@ def run_transport_completion_watchdog(
         if returncode != 0 or timed_out:
             return finish(returncode, timed_out)
     if startup_commands:
-        status_output, _status, returncode, timed_out = poll_bot_status(execute_command, deadline, sleep=sleep)
+        status_output, _status, returncode, timed_out = poll_bot_status(
+            execute_command,
+            deadline,
+            status_command=status_command,
+            sleep=sleep,
+        )
         output_parts.append(status_output)
         if returncode != 0 or timed_out:
             return finish(returncode, timed_out)
@@ -3038,8 +3318,11 @@ def run_soap_commands(soap_url: str, username: str, password: str, script: str, 
     output_parts = BoundedOutputParts()
     command = ["SOAP", soap_url]
     deadline = time.monotonic() + timeout_sec
-    explicit_start = any(line.strip() == ".botauto start" for line in script.splitlines())
-    calibration_start = any(line.strip() == ".botauto calibrate start" for line in script.splitlines())
+    explicit_start = any(line.strip().startswith(".botauto start") for line in script.splitlines())
+    calibration_start = any(
+        line.strip().startswith(".botauto calibrate") and line.strip().endswith(" start")
+        for line in script.splitlines()
+    )
     observed_autostart = False
     for raw_command in script.splitlines():
         command_text = raw_command.strip()
@@ -3057,10 +3340,10 @@ def run_soap_commands(soap_url: str, username: str, password: str, script: str, 
         output_parts.append(payload)
         if returncode != 0 or timed_out:
             return "\n".join(output_parts), returncode, timed_out, command
-        if observe_sec > 0 and command_text == ".botauto start" and not calibration_start:
+        if observe_sec > 0 and command_text.startswith(".botauto start") and not calibration_start:
             output_parts.append(f"$ sleep {observe_sec}")
             time.sleep(observe_sec)
-        elif observe_sec > 0 and command_text == ".botauto calibrate start":
+        elif observe_sec > 0 and command_text.startswith(".botauto calibrate") and command_text.endswith(" start"):
             output_parts.append(f"$ sleep {observe_sec}")
             time.sleep(observe_sec)
     return "\n".join(output_parts), 0, False, command
@@ -3097,6 +3380,16 @@ def route_sequence_child_command(args: argparse.Namespace, route: dict[str, Any]
         str(args.trace_limit),
         "--transport",
         args.transport,
+        "--cohort-id",
+        args.cohort_id,
+        "--session-attempt-index",
+        str(max(1, int(context.get("route_step") or 1))),
+        "--session-environment",
+        args.session_environment,
+        "--session-profile",
+        args.session_profile or scenario_id,
+        "--session-transition-timeout-sec",
+        str(args.session_transition_timeout_sec),
         "--observe-sec",
         str(args.observe_sec),
         "--validation-scenario-dir",
@@ -3144,6 +3437,12 @@ def route_sequence_child_command(args: argparse.Namespace, route: dict[str, Any]
         )
     if first_route and args.reset_bot_pool:
         command.append("--reset-bot-pool")
+    if args.publish_batch:
+        command.append("--publish-batch")
+    if args.retain_published_batch:
+        command.append("--retain-published-batch")
+    if first_route and args.reload_rotation_profiles:
+        command.append("--reload-rotation-profiles")
     for tag in args.bot_pool_tag:
         command.extend(["--bot-pool-tag", tag])
     if args.keep_bot_pool_position:
@@ -3369,6 +3668,134 @@ def attempt_evidence_envelope(
     return envelope
 
 
+@dataclass
+class ReusableValidationServerOwner:
+    repository: Path
+    environment: str
+    session: Any
+    execute_command: CommandTransport
+    transition_timeout_sec: int
+    lifecycle: dict[str, Any] = field(default_factory=dict)
+
+    def wait_until_ready(self) -> str:
+        output_parts = BoundedOutputParts()
+        deadline = time.monotonic() + self.transition_timeout_sec
+        while time.monotonic() < deadline:
+            remaining = max(1, int(deadline - time.monotonic()))
+            output, returncode, timed_out = self.execute_command(
+                ".botauto cohorts", remaining
+            )
+            output_parts.extend(("$ .botauto cohorts\n", output))
+            payload = next(
+                (
+                    row
+                    for row in reversed(parse_json_objects(output))
+                    if row.get("action") == "botauto_cohorts"
+                ),
+                None,
+            )
+            if returncode == 0 and not timed_out and payload is not None:
+                server_pid = int(self.lifecycle.get("server_pid") or 0)
+                responder_pid = int(payload.get("server_process_id") or 0)
+                self.lifecycle["server_process_id"] = responder_pid
+                self.lifecycle["server_process_identity_verified"] = (
+                    server_pid > 0 and responder_pid == server_pid
+                )
+                if not self.lifecycle["server_process_identity_verified"]:
+                    raise RuntimeError(
+                        "worldserver command responder does not match the owned systemd process"
+                    )
+                self.lifecycle["server_epoch"] = int(payload.get("server_epoch") or 0)
+                self.lifecycle["max_active_cohorts"] = int(
+                    payload.get("max_active_cohorts") or 0
+                )
+                return "".join(output_parts)
+            time.sleep(min(2.0, max(0.0, deadline - time.monotonic())))
+        raise RuntimeError("timed out waiting for reusable worldserver ownership API")
+
+    def reload_rotation_profiles(self) -> dict[str, Any]:
+        output, returncode, timed_out = self.execute_command(
+            ".botauto rotations reload",
+            self.transition_timeout_sec,
+        )
+        payload = next(
+            (
+                row for row in reversed(parse_json_objects(output))
+                if row.get("action") == "botauto_rotations_reload"
+            ),
+            None,
+        )
+        if (
+            returncode != 0
+            or timed_out
+            or payload is None
+            or not bool(payload.get("ok"))
+        ):
+            raise RuntimeError("atomic rotation profile reload failed")
+        result = {
+            "generation": int(payload.get("active_generation") or 0),
+            "content_hash": str(payload.get("active_content_hash") or ""),
+        }
+        self.lifecycle["rotation_reload"] = result
+        return result
+
+    def provision_once(
+        self,
+        identity: Mapping[str, Any],
+        provision: Callable[[], Mapping[str, Any]],
+    ) -> dict[str, Any]:
+        epoch = int(self.lifecycle.get("server_epoch") or 0)
+        if epoch <= 0:
+            raise RuntimeError("server epoch is unavailable for provisioning")
+        state_root = Path("/tmp") / "trinity-cata-live-validation"
+        state_root.mkdir(parents=True, exist_ok=True)
+        state_name = canonical_sha256(
+            {
+                "repository": str(self.repository.resolve()),
+                "environment": self.environment,
+            }
+        )
+        state_path = state_root / f"{state_name}.json"
+        identity_sha256 = canonical_sha256(dict(identity))
+        if state_path.is_file():
+            try:
+                stored = json.loads(state_path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                stored = {}
+            if (
+                int(stored.get("server_epoch") or 0) == epoch
+                and stored.get("identity_sha256") == identity_sha256
+            ):
+                self.lifecycle["provisioning_reused"] = True
+                return dict(stored.get("result") or {})
+        result = dict(provision())
+        payload = {
+            "server_epoch": epoch,
+            "identity_sha256": identity_sha256,
+            "result": result,
+        }
+        temporary = state_path.with_suffix(".tmp")
+        temporary.write_text(
+            json.dumps(payload, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        temporary.replace(state_path)
+        self.lifecycle["provisioning_reused"] = False
+        return result
+
+    @contextlib.contextmanager
+    def owned(self):
+        with live_validation_lock(self.repository, self.environment):
+            action = ensure_healthy_matching_session(self.session)
+            self.lifecycle.update(self.session.metadata())
+            self.lifecycle["transport"] = "session"
+            self.lifecycle["server_action"] = action.action
+            self.lifecycle["server_pid"] = int(
+                action.status.properties.get("MainPID") or 0
+            )
+            yield self
+
+
 def run_reusable_validation_session(
     args: argparse.Namespace,
     script: str,
@@ -3379,6 +3806,7 @@ def run_reusable_validation_session(
     validation_route_manifest_path: Path | None,
     bot_pool_tags: list[str],
 ) -> tuple[str, int, bool, list[str], dict[str, Any]]:
+    del script
     if not args.soap_user or not args.soap_password:
         raise SystemExit("--soap-user and --soap-password are required with --transport session")
     profile_manifest = Path(trinity_config_string(args.config, "BotWorld.ProfileManifest", "dataset/bot_runtime_profiles/profiles.json"))
@@ -3393,6 +3821,8 @@ def run_reusable_validation_session(
         ) if path.is_file()
     ]
     profile = args.session_profile or str(validation_context.get("scenario_id") or "")
+    if not profile:
+        raise SystemExit("--transport session requires --session-profile or --validation-scenario-id")
     if validation_route_manifest_path and profile_manifest.is_file():
         profiles = json.loads(profile_manifest.read_text(encoding="utf-8"))
         selected = next((row for row in profiles.get("profiles", []) if str(row.get("name") or "") == profile), None)
@@ -3421,60 +3851,153 @@ def run_reusable_validation_session(
     )
     command = ["SESSION", session.unit_name, args.soap_url]
     output_parts = BoundedOutputParts()
-    lifecycle: dict[str, Any] = {**session.metadata(), "transport": "session"}
 
     def execute(command_text: str, remaining: int) -> tuple[str, int, bool]:
         return execute_soap_command(args.soap_url, args.soap_user, args.soap_password, command_text, remaining)
 
-    with live_validation_lock(REPO_ROOT, args.session_environment):
-        action = ensure_healthy_matching_session(session)
-        lifecycle["server_action"] = action.action
-        lifecycle["server_pid"] = int(action.status.properties.get("MainPID") or 0)
-        deadline = time.monotonic() + args.session_transition_timeout_sec
+    attempt = ValidationAttempt(
+        cohort_id=args.cohort_id,
+        attempt_index=args.session_attempt_index,
+        profile=profile,
+        output_dir=args.output_dir,
+        timeout_sec=args.timeout_sec,
+        observe_sec=args.observe_sec,
+    )
+    scheduler = SerialValidationScheduler([attempt])
+    admitted = scheduler.admit_next()
+    if admitted is None:
+        raise RuntimeError("serial scheduler did not admit the validation attempt")
+    executor = CohortCommandExecutor(
+        execute,
+        admitted.cohort_id,
+        args.session_transition_timeout_sec,
+    )
+    watchdog = CohortAttemptWatchdog(executor, admitted)
+    owner = ReusableValidationServerOwner(
+        REPO_ROOT,
+        args.session_environment,
+        session,
+        execute,
+        args.session_transition_timeout_sec,
+    )
+    lifecycle = owner.lifecycle
+    lifecycle.update(
+        {
+            "cohort_id": admitted.cohort_id,
+            "attempt_index": admitted.attempt_index,
+            "profile": admitted.profile,
+            "admitted_at_unix": int(time.time()),
+            "scheduler_events": scheduler.events,
+        }
+    )
+
+    def checked(label: str, result: tuple[str, int, bool]) -> str:
+        output, returncode, timed_out = result
+        output_parts.extend((f"$ {label}\n", output))
+        if returncode != 0 or timed_out:
+            raise RuntimeError(f"cohort command failed: {label}")
+        return output
+
+    def cohort_registry() -> tuple[str, dict[str, Any]]:
+        output, returncode, timed_out = execute(
+            ".botauto cohorts",
+            args.session_transition_timeout_sec,
+        )
+        output_parts.extend(("$ .botauto cohorts\n", output))
+        payload = next(
+            (
+                row for row in reversed(parse_json_objects(output))
+                if row.get("action") == "botauto_cohorts"
+            ),
+            None,
+        )
+        if returncode != 0 or timed_out or payload is None:
+            raise RuntimeError("failed to read cohort registry")
+        return output, payload
+
+    with owner.owned():
+        output_parts.append(owner.wait_until_ready())
+        lifecycle["server_epoch"] = owner.lifecycle["server_epoch"]
+        if int(owner.lifecycle.get("max_active_cohorts") or 0) != 1:
+            raise RuntimeError("serial validation requires max_active_cohorts=1")
+        if args.reload_rotation_profiles:
+            owner.reload_rotation_profiles()
         try:
-            output_parts.append(wait_for_soap_command_available(execute, deadline))
-            stop_output, returncode, timed_out = execute(".botauto stop", args.session_transition_timeout_sec)
-            output_parts.extend(("$ .botauto stop\n", stop_output))
-            if returncode != 0 or timed_out:
-                raise RuntimeError("failed to stop BotWorld before reusable validation")
-            inactive_output, _ = wait_for_bot_status_state(execute, False, deadline)
+            create_output, create_returncode, create_timed_out = executor.create()
+            output_parts.extend((f"$ .botauto create {admitted.cohort_id}\n", create_output))
+            create_payloads = parse_json_objects(create_output)
+            already_exists = any(
+                row.get("failure_reason") == "cohort_already_exists"
+                for row in create_payloads
+            )
+            if (create_returncode != 0 or create_timed_out) and not already_exists:
+                raise RuntimeError("failed to create validation cohort")
+
+            checked(f".botauto stop {admitted.cohort_id}", executor.stop())
+            inactive_output, inactive_status = wait_for_bot_status_state(
+                executor.run,
+                False,
+                time.monotonic() + args.session_transition_timeout_sec,
+                status_command=executor.status_command,
+            )
             output_parts.append(inactive_output)
             lifecycle["inactive_before_preparation"] = True
-
-            preparation: dict[str, Any] = {}
-            if args.reset_bot_pool:
-                preparation["bot_pool_reset"] = prepare_bot_pool_reset(
-                    args.output_dir, args.config, bot_pool_tags, apply=True,
-                    reset_positions=not args.keep_bot_pool_position,
-                    reset_quests=not args.keep_bot_pool_quests,
-                    reset_memory=not args.keep_bot_pool_memory,
-                )
+            lifecycle["preparation"] = {
+                "provisioning_scope": "server_epoch",
+                "server_epoch": lifecycle["server_epoch"],
+                "bot_pool_reset": "cohort_prepare",
+                "profile": admitted.profile,
+            }
             if args.apply_validation_provisioning:
-                preparation["validation_provisioning"] = prepare_validation_provisioning(
-                    args.output_dir, args.validation_provisioning_config, args.gear_profiles, args.config, apply=True,
+                lifecycle["preparation"]["validation_provisioning"] = owner.provision_once(
+                    {
+                        "validation_provisioning_sha256": sha256_file(args.validation_provisioning_config.resolve()),
+                        "gear_profiles_sha256": sha256_file(args.gear_profiles.resolve()),
+                    },
+                    lambda: prepare_validation_provisioning(
+                        args.output_dir,
+                        args.validation_provisioning_config,
+                        args.gear_profiles,
+                        args.config,
+                        apply=True,
+                    ),
                 )
             if validation_route and int(validation_route.get("bot_start_map_id") or 0):
-                preparation["route_bot_start"] = prepare_route_bot_start(
+                lifecycle["preparation"]["route_bot_start"] = prepare_route_bot_start(
                     args.output_dir, validation_route, args.config, bot_pool_tags, apply=True,
                 )
-            lifecycle["preparation"] = preparation
 
-            start_command = f".botauto start {profile}" if profile else ".botauto start"
-            start_output, returncode, timed_out = execute(start_command, args.session_transition_timeout_sec)
-            output_parts.extend((f"$ {start_command}\n", start_output))
-            if returncode != 0 or timed_out:
-                raise RuntimeError("failed to start BotWorld reusable validation")
-            ready_output, _ = wait_for_bot_status_state(
-                execute, True, time.monotonic() + args.session_transition_timeout_sec,
+            checked(
+                f".botauto prepare {admitted.cohort_id} {admitted.profile}",
+                executor.prepare(admitted.profile),
+            )
+            checked(
+                f".botauto start {admitted.cohort_id} {admitted.profile}",
+                executor.start(admitted.profile),
+            )
+            ready_output, ready_status = wait_for_bot_status_state(
+                executor.run,
+                True,
+                time.monotonic() + args.session_transition_timeout_sec,
+                status_command=executor.status_command,
             )
             output_parts.append(ready_output)
+            if ready_status is None:
+                raise RuntimeError("cohort status unavailable after start")
+            ready_payload = ready_status["payload"]
             lifecycle["active_after_start"] = True
+            lifecycle["runtime_attempt_id"] = int(ready_payload.get("attempt_id") or 0)
+            lifecycle["profile_generation"] = int(ready_payload.get("profile_generation") or 0)
+            lifecycle["profile_content_hash"] = str(ready_payload.get("profile_content_hash") or "")
+            lifecycle["lease_count_after_start"] = int(ready_payload.get("lease_count") or 0)
 
-            watchdog_script = command_script(
-                selector=args.selector, trace_limit=args.trace_limit, start=False, stop=False, exit_server=False,
+            watchdog_script = watchdog.script(
+                args.selector,
+                args.trace_limit,
+                args.combat_calibration,
             )
             output, returncode, timed_out, _ = run_transport_completion_watchdog(
-                execute, command, args.timeout_sec, watchdog_script, args.output_dir,
+                executor.run, command, admitted.timeout_sec, watchdog_script, admitted.output_dir,
                 scenario_reports, validation_context,
                 validation_route_manifest=validation_route_manifest,
                 duration_policy=args.duration_policy,
@@ -3482,45 +4005,67 @@ def run_reusable_validation_session(
                 no_progress_window_sec=args.no_progress_window_sec,
                 max_repeated_decisions=args.max_repeated_decision_count,
                 max_death_loops=args.max_death_loop_count,
+                status_command=executor.status_command,
             )
             output_parts.append(output)
             lifecycle["watchdog_completed"] = True
             return "".join(output_parts), returncode, timed_out, command, lifecycle
         finally:
             try:
-                output_parts.append(wait_for_soap_command_available(
-                    execute, time.monotonic() + args.session_transition_timeout_sec,
-                ))
-                stop_output, returncode, timed_out = execute(".botauto stop", args.session_transition_timeout_sec)
-                output_parts.extend(("$ .botauto stop\n", stop_output))
-                if returncode != 0 or timed_out:
-                    raise RuntimeError("failed to stop BotWorld after reusable validation")
-                inactive_output, _ = wait_for_bot_status_state(
-                    execute, False, time.monotonic() + args.session_transition_timeout_sec,
+                checked(f".botauto stop {admitted.cohort_id}", executor.stop())
+                inactive_output, inactive_status = wait_for_bot_status_state(
+                    execute,
+                    False,
+                    time.monotonic() + args.session_transition_timeout_sec,
+                    status_command=executor.status_command,
                 )
                 output_parts.append(inactive_output)
+                if inactive_status is None:
+                    raise RuntimeError("cohort status unavailable after stop")
+                inactive_payload = inactive_status["payload"]
+                _, registry = cohort_registry()
+                cohort_row = next(
+                    (
+                        row for row in registry.get("cohorts", [])
+                        if row.get("cohort_id") == admitted.cohort_id
+                    ),
+                    None,
+                )
+                clean = (
+                    not inactive_status["active"]
+                    and int(inactive_status["active_bots"]) == 0
+                    and int(inactive_payload.get("lease_count") or 0) == 0
+                    and cohort_row is not None
+                    and not bool(cohort_row.get("active"))
+                    and int(cohort_row.get("lease_count") or 0) == 0
+                    and int(cohort_row.get("party_bot_count") or 0) == 0
+                )
+                if not clean:
+                    raise RuntimeError("cohort cleanup left active bots, leases, or party state")
+                scheduler.close_active()
+                lifecycle["scheduler_events"] = scheduler.events
+                lifecycle["closed_at_unix"] = int(time.time())
                 lifecycle["inactive_after_attempt"] = True
+                lifecycle["cleanup"] = {
+                    "active": False,
+                    "active_bots": 0,
+                    "lease_count": 0,
+                    "party_bot_count": 0,
+                    "server_epoch": int(registry.get("server_epoch") or 0),
+                }
+                if lifecycle["cleanup"]["server_epoch"] != lifecycle["server_epoch"]:
+                    raise RuntimeError("server epoch changed during validation attempt")
             except Exception as exc:
                 lifecycle["inactive_after_attempt"] = False
                 lifecycle["cleanup_failure"] = str(exc)
-                report_path = args.output_dir / "report.json"
-                if report_path.is_file():
-                    try:
-                        failed_report = json.loads(report_path.read_text(encoding="utf-8"))
-                    except json.JSONDecodeError:
-                        failed_report = {}
-                    failed_report["acceptable_final_evidence"] = False
-                    failed_report["all_passed"] = False
-                    failed_report["failure_reason"] = "session_cleanup_failed"
-                    labels = list(failed_report.get("failure_labels") or [])
-                    if "session_cleanup_failed" not in labels:
-                        labels.append("session_cleanup_failed")
-                    failed_report["failure_labels"] = labels
-                    failed_report["session"] = lifecycle
-                    write_json(report_path, failed_report)
                 stop_session(session)
                 raise
             finally:
+                lifecycle["commands"] = executor.commands
+                lifecycle["global_lifecycle_command_count"] = sum(
+                    command_text in {".botauto start", ".botauto stop", ".botauto status"}
+                    for command_text in executor.commands
+                )
                 write_json(args.output_dir / "session.json", lifecycle)
 
 
@@ -3549,7 +4094,12 @@ def main() -> int:
     parser.add_argument("--soap-password", default=os.environ.get("TRINITY_SOAP_PASSWORD"))
     parser.add_argument("--session-environment", default="default", help="Stable identity for the shared validation server and live-attempt lock.")
     parser.add_argument("--session-profile", default="", help="Runtime profile selected by .botauto start in reusable session mode; defaults to the scenario ID.")
+    parser.add_argument("--cohort-id", default="live-validation", help="Explicit cohort identity used by every reusable-session command.")
+    parser.add_argument("--session-attempt-index", type=int, default=1, help="Immutable scheduler attempt index for reusable-session evidence.")
     parser.add_argument("--session-transition-timeout-sec", type=int, default=180, help="Bound for reusable-session stop/start state transitions.")
+    parser.add_argument("--publish-batch", action="store_true", help="Capture, DVC-push, remotely verify, and target-evict the closed reusable-session batch.")
+    parser.add_argument("--retain-published-batch", action="store_true", help="Keep raw and compact batch files locally after verified publication.")
+    parser.add_argument("--reload-rotation-profiles", action="store_true", help="Ask the server owner to atomically reload DB-only rotation tuning before admission.")
     parser.add_argument("--evidence-identity-manifest", type=Path, help="Canonical Phase 2 component hashes and scope IDs; DB/schema/epoch/profile generation hashes are required for certifying acceptance.")
     parser.add_argument("--observe-sec", type=int, default=None, help="Sleep after .botauto start before collecting diagnostics. Defaults to 0 seconds for smoke checks and 300 seconds for boss-route validations.")
     parser.add_argument("--reset-bot-pool", action="store_true", help="Before validation, reset volatile state for enabled bot-pool rows matching --bot-pool-tag.")
@@ -3658,10 +4208,11 @@ def main() -> int:
     script = command_script(
         selector=args.selector,
         trace_limit=args.trace_limit,
-        start=send_start_command,
-        stop=args.stop,
+        start=send_start_command if args.transport != "session" else False,
+        stop=args.stop if args.transport != "session" else False,
         exit_server=args.transport == "process",
         combat_calibration=args.combat_calibration,
+        cohort_id=args.cohort_id if args.transport == "session" else "",
     )
     (args.output_dir / "commands.txt").write_text(script, encoding="utf-8")
     preparation: dict[str, Any] = {}
@@ -3882,13 +4433,50 @@ def main() -> int:
         validation_route_manifest,
         session_lifecycle,
     )
-    apply_acceptance_evaluation(
+    AcceptanceRecomputer().recompute(
         report,
         identity_required=True,
         session_required=args.transport == "session",
     )
-    write_json(args.output_dir / "report.json", report)
-    print(json.dumps(report, indent=2, sort_keys=True))
+    if args.transport == "session":
+        attempt = ValidationAttempt(
+            cohort_id=args.cohort_id,
+            attempt_index=args.session_attempt_index,
+            profile=args.session_profile or str(validation_context.get("scenario_id") or ""),
+            output_dir=args.output_dir,
+            timeout_sec=args.timeout_sec,
+            observe_sec=args.observe_sec,
+        )
+        capture_manifest = ImmutableCaptureWriter(REPO_ROOT).capture(
+            attempt,
+            report,
+            output,
+            {
+                "evidence_envelope": report["evidence_envelope"],
+                "session": session_lifecycle,
+                "validation_context": validation_context,
+                "validation_route_manifest": validation_route_manifest,
+            },
+        )
+        report["batch_capture"] = capture_manifest
+        if args.publish_batch:
+            report["batch_publication"] = SerializedDvcPublisher(
+                REPO_ROOT,
+                evict_after_verify=not args.retain_published_batch,
+            ).publish(args.output_dir / "batch")
+    stored_report = report
+    if args.transport == "session" and args.publish_batch:
+        stored_report = compact_published_report(report)
+        for name in (
+            "combat_analysis.json",
+            "combat_log.json",
+            "heartbeat_events.jsonl",
+            "latest.json",
+            "worldserver_output.log",
+        ):
+            (args.output_dir / name).unlink(missing_ok=True)
+    write_json(args.output_dir / "report.json", stored_report)
+    print(json.dumps(stored_report, indent=2, sort_keys=True))
     segment_success = route_segment_complete(report, validation_route)
     full_success = bool(report.get("acceptable_final_evidence")) and bool(report.get("all_passed"))
     return 0 if returncode == 0 and not timed_out and (segment_success or full_success) else 1
