@@ -220,6 +220,17 @@ stages:
     outs:
     - dataset/all_spec_phase6_serial_soak_contract:
         persist: true
+  all_spec_phase7_role_calibration_contract:
+    cmd: python -m tools.bot_ml.build_phase7_role_calibration_contract --policy
+      experiments/configs/all_spec_role_calibration_policy_v1.json --output-dir
+      dataset/all_spec_phase7_role_calibration_contract
+    deps:
+    - tools/bot_ml/build_phase7_role_calibration_contract.py
+    - tools/bot_ml/role_calibration_harness.py
+    - experiments/configs/all_spec_role_calibration_policy_v1.json
+    outs:
+    - dataset/all_spec_phase7_role_calibration_contract:
+        persist: true
   validation_provisioning_verify:
     cmd: python -m tools.bot_ml.validate_validation_provisioning --config
       experiments/configs/validation_provisioning_cata_001.json --gear-profiles

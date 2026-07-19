@@ -88,6 +88,8 @@ from tools.bot_ml.build_all_spec_phase1_catalogs import RUNTIME_ACTION_SPELL_IDS
 from tools.bot_ml import build_phase4_rotation_contract as phase4_contract
 from tools.bot_ml import build_phase5_cohort_ownership_contract as phase5_contract
 from tools.bot_ml import build_phase6_serial_soak_contract as phase6_contract
+from tools.bot_ml import build_phase7_role_calibration_contract as phase7_contract
+from tools.bot_ml.role_calibration_harness import evaluate_calibration, inject_fault, load_policy
 from tools.bot_ml.bt_masked_ga_combined import run as run_bt_masked_ga_combined
 from tools.bot_ml.evaluate_policy_model import policy_score, ranking_metrics
 from tools.bot_ml.train_policy_model import add_synthetic_binary_class, balanced_binary_weights, teacher_choice_training_rows
@@ -10122,3 +10124,39 @@ def test_phase6_serial_soak_contract_requires_one_clean_published_epoch(tmp_path
     assert live["soak_seconds"] == 20
     assert live["runtime_attempt_ids"] == [41, 42]
     assert all(row["passed"] for row in live["attempts"])
+
+
+def test_phase7_role_calibration_harness_passes_modes_and_detects_faults():
+    policy = load_policy(
+        Path("experiments/configs/all_spec_role_calibration_policy_v1.json")
+    )
+    records = phase7_contract.baseline_records(policy)
+
+    assert set(records) == {
+        "single_target_300",
+        "aoe_300",
+        "tank_threat_300",
+        "healer_controlled_damage_300",
+    }
+    assert all(evaluate_calibration(record, policy)["passed"] for record in records.values())
+
+    fault_sources = {
+        "missing_damage_delivery": "healer_controlled_damage_300",
+        "duration_mismatch": "single_target_300",
+        "one_target_spam": "healer_controlled_damage_300",
+        "missed_dispels": "healer_controlled_damage_300",
+        "missing_tank_stance": "tank_threat_300",
+        "threat_loss": "tank_threat_300",
+        "illegal_actions": "aoe_300",
+        "cross_window_contamination": "single_target_300",
+    }
+    for fault, mode in fault_sources.items():
+        evaluation = evaluate_calibration(inject_fault(records[mode], fault), policy)
+        assert evaluation["passed"] is False, fault
+        assert evaluation["failure_reasons"], fault
+
+    contract = phase7_contract.build_contract(
+        Path("experiments/configs/all_spec_role_calibration_policy_v1.json").resolve()
+    )
+    assert contract["gate_passed"] is True
+    assert all(contract["checks"].values())

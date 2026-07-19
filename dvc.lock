@@ -1237,3 +1237,26 @@ stages:
       md5: d13fd01ae750f65e8232509346b258c7.dir
       size: 11042
       nfiles: 2
+  all_spec_phase7_role_calibration_contract:
+    cmd: python -m tools.bot_ml.build_phase7_role_calibration_contract --policy
+      experiments/configs/all_spec_role_calibration_policy_v1.json --output-dir
+      dataset/all_spec_phase7_role_calibration_contract
+    deps:
+    - path: experiments/configs/all_spec_role_calibration_policy_v1.json
+      hash: md5
+      md5: 611bd58f9450abf3c1423c5b3c654351
+      size: 2191
+    - path: tools/bot_ml/build_phase7_role_calibration_contract.py
+      hash: md5
+      md5: 0ed25b804453a59e8e15720436307887
+      size: 9029
+    - path: tools/bot_ml/role_calibration_harness.py
+      hash: md5
+      md5: c55c15393fc470cf0f2578457caa55d1
+      size: 12968
+    outs:
+    - path: dataset/all_spec_phase7_role_calibration_contract
+      hash: md5
+      md5: 05135e73cd142af50cd93a4346ef8f13.dir
+      size: 9557
+      nfiles: 2

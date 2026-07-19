@@ -2,7 +2,7 @@
   "schema": "all_spec_stonecore_program_status_v1",
   "program": "all_spec_stonecore",
   "updated_date": "2026-07-19",
-  "active_phase": 7,
+  "active_phase": 8,
   "phase_status": [
     {
       "phase": 0,
@@ -485,13 +485,70 @@
     {
       "phase": 7,
       "name": "deterministic_role_calibration_harnesses",
+      "status": "completed",
+      "gate": {
+        "passed": true,
+        "reason_codes": [
+          "four_explicit_non_mixing_modes",
+          "separate_warmup_and_300_plus_minus_5_scored_window",
+          "declared_target_conditions_profile_and_reset_identity",
+          "dps_reference_rotation_resource_uptime_and_pet_gates",
+          "tank_dps_tps_threat_mitigation_survival_and_interrupt_gates",
+          "healer_controlled_damage_delivery_and_role_gates",
+          "75_percent_hard_floor_and_80_percent_optimization_target",
+          "hard_failures_not_overridden_by_reference_ratio",
+          "all_eight_deliberate_faults_detected",
+          "deterministic_independent_recomputation",
+          "explicit_sql_rules_authoritative_and_ml_shadow_only"
+        ]
+      },
+      "scope": {
+        "mode_count": 4,
+        "scored_window_seconds": 300,
+        "duration_tolerance_seconds": 5,
+        "fault_injection_count": 8,
+        "modes": [
+          "single_target_300",
+          "aoe_300",
+          "tank_threat_300",
+          "healer_controlled_damage_300"
+        ]
+      },
+      "identity": {
+        "contract_sha256": "2486c5bd63f7436abecbe24a5de4fe1d05029427cc93be02aeec4bd67f521a05",
+        "contract_file_sha256": "88a2da1a56e0d3b09a739ac4701c9c74bde2244f36705dd2df9d3a5fca640dc0",
+        "contract_bundle_dvc_md5": "05135e73cd142af50cd93a4346ef8f13.dir"
+      },
+      "evidence": {
+        "contract_bundle": "dataset/all_spec_phase7_role_calibration_contract",
+        "policy": "experiments/configs/all_spec_role_calibration_policy_v1.json",
+        "remote_verification": "pixi run dvc status -c dataset/all_spec_phase7_role_calibration_contract",
+        "remote_verification_outcome": "cache_and_remote_in_sync"
+      },
+      "validation": {
+        "focused_phase7_tests": "1 passed",
+        "deterministic_contract": "gate_passed",
+        "git_diff_check": "passed",
+        "dvc_stage_status": "up_to_date",
+        "dvc_remote_status": "cache_and_remote_in_sync"
+      },
+      "orchestration": {
+        "owner": "root",
+        "model": "gpt-5.6-sol",
+        "reasoning": "high",
+        "workers_launched": 0
+      }
+    },
+    {
+      "phase": 8,
+      "name": "serial_all_spec_tuning_loop",
       "status": "in_progress"
     },
     {
-      "phase_range": "8-12",
+      "phase_range": "9-12",
       "status": "pending"
     }
   ],
   "blockers": [],
-  "exact_next_handoff_prompt": "Continue approved all-spec Stonecore execution at Phase 7 only. Implement deterministic single_target_300, aoe_300, tank_threat_300, and healer_controlled_damage_300 modes with separate warmup and fixed 300 +/-5 second scored windows, deterministic reset and declared identity inputs. Add role-specific metrics and hard gates plus deliberate fault injection for missing delivery, duration mismatch, one-target healer spam, missed dispels, missing tank stance/form/presence, threat loss, illegal actions, and cross-window contamination. Keep SQL/rule profiles authoritative and generic ML shadow-only. Do not begin broad calibration until all deterministic success and deliberate-failure harness gates pass."
+  "exact_next_handoff_prompt": "Continue approved all-spec Stonecore execution at Phase 8 only. Keep one active cohort and run role-appropriate deterministic 300-second calibration for all 31 canonical targets. Verify provisioning/profile identity, publish and target-evict every closed batch, classify failures, batch tuning changes under one owner, rerun affected full windows, and use three seeded qualifying repeats with variance. No target below the 75 percent hard floor may proceed; expose every 75-80 percent target in the optimization backlog. Do not begin Phase 9 until 31/31 meet role hard gates and reference floor with verified DVC receipts."
 }
