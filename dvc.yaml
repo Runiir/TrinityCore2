@@ -173,6 +173,25 @@ stages:
     outs:
     - dataset/all_spec_phase3_batch_lifecycle:
         persist: true
+  all_spec_phase4_rotation_contract:
+    cmd: python -m tools.bot_ml.build_phase4_rotation_contract --output-dir
+      dataset/all_spec_phase4_rotation_contract --worldserver-conf trinity-worldserver-test.conf
+      --worldserver-binary build/src/server/worldserver/worldserver
+    deps:
+    - tools/bot_ml/build_phase4_rotation_contract.py
+    - src/server/game/Bots/BotClassSpecActionProfile.cpp
+    - src/server/game/Bots/BotClassSpecActionProfile.h
+    - src/server/game/Bots/BotActionExecutor.cpp
+    - src/server/game/Bots/BotController.cpp
+    - src/server/game/Bots/BotWorldPopulationMgr.cpp
+    - src/server/scripts/Commands/cs_healerbot.cpp
+    - experiments/configs/all_spec_phase4_previous_profile_hashes_v1.json
+    - sql/custom/world/2026_07_19_00_phase4_rotation_snapshots.sql
+    - sql/custom/world/2026_07_19_01_phase4_rotation_category_normalization.sql
+    - sql/custom/rollback/world/2026_07_19_00_phase4_rotation_snapshots_rollback.sql
+    outs:
+    - dataset/all_spec_phase4_rotation_contract:
+        persist: true
   validation_provisioning_verify:
     cmd: python -m tools.bot_ml.validate_validation_provisioning --config
       experiments/configs/validation_provisioning_cata_001.json --gear-profiles

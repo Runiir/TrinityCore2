@@ -146,6 +146,22 @@ pixi run bot-phase3-batch-lifecycle --output-dir dataset/all_spec_phase3_batch_l
 pixi run dvc repro all_spec_phase3_batch_lifecycle
 ```
 
+### All-spec Phase 4 immutable rotation snapshots
+
+`BotClassSpecActionProfileStore` publishes the complete 31-profile SQL catalog as an immutable, content-hashed snapshot. Candidate snapshots are validated against the canonical class/spec/role keys, DBC spell records, action taxonomy, target selectors, numeric ranges, and typed predicates before atomic publication. Reload and rollback each allocate a new generation, while a copied decision profile retains the generation and content hash captured for that action attempt. The previous snapshot remains available for controlled runtime rollback. `mechanic_tags` are emitted as descriptive diagnostics and are not evaluated as executable conditions.
+
+The live contract starts one attached worldserver, verifies all 31 profiles, temporarily changes one Fire Mage action to an invalid category, proves the failed reload leaves the active generation/hash unchanged, restores the database value in a fresh connection, then verifies valid reload, rollback, and legacy-alias dump behavior. Database contents and worldserver publication are external live state, so use `dvc repro --force all_spec_phase4_rotation_contract` when intentionally refreshing the checkpoint without changing tracked dependencies:
+
+```bash
+pixi run bot-phase4-rotation-contract \
+  --output-dir dataset/all_spec_phase4_rotation_contract \
+  --worldserver-conf trinity-worldserver-test.conf \
+  --worldserver-binary build/src/server/worldserver/worldserver
+pixi run dvc repro all_spec_phase4_rotation_contract
+```
+
+Apply `sql/custom/world/2026_07_19_00_phase4_rotation_snapshots.sql` and `2026_07_19_01_phase4_rotation_category_normalization.sql` through the normal world updater. The exact pre-migration profile hashes are in `experiments/configs/all_spec_phase4_previous_profile_hashes_v1.json`; the controlled restore payload is under `sql/custom/rollback/world/` so the live updater cannot apply it accidentally.
+
 The gear generator reads Cataclysm `Item.db2`/`Item-sparse.db2`, `SpellItemEnchantment.dbc`, and `GemProperties.dbc` client data plus hotfix overrides. It also reads `experiments/configs/cata_434_combat_loot_profiles.json` for class/spec archetypes, stat weights, consumable profile metadata, smart-loot validation surfaces, and BiS/source reporting scaffolds. It writes class/spec equipment profiles with selected item IDs, stats, item levels, source labels, `complete_equipment_slots`, socket-compatible gem IDs, permanent enchant IDs, stat-weight manifest hashes, BiS/source summaries, and the exact 45-field `item_instance.enchantments` payload used by the server. The provisioning generator reads `experiments/configs/cata_434_action_profiles.json` for class action and proficiency spells, then writes `account_commands.txt`, `provision_accounts.sql`, `provision_characters.sql`, `manifest.json`, and `report.json`. It does not apply destructive database changes automatically. `provision_accounts.sql` creates only missing validation accounts with deterministic Trinity SRP6 `salt`/`verifier` values and does not overwrite existing account passwords. The verifier checks generated payloads against DBC enchant/gem IDs and can additionally check the configured auth/characters schema plus missing validation accounts with `--check-db`. The scenario generator writes `validation_scenarios.jsonl`, `validation_routes.jsonl`, and `validation_mechanics.jsonl` so Stonecore/BWD planners can consume route and mechanic embeddings without C++ encounter branches. The run-plan generator writes `run_validation_scenarios.sh` with per-scenario `bot-live-validate` commands that apply deterministic provisioning, reset only the matching scenario tag, and preserve the configured instance start positions. The combined validation stage reparses open-world live evidence with scenario reports attached, giving one staged pass/fail artifact across questing, professions, loot, Stonecore, and BWD gates. The current config provisions max-level Stonecore and Blackwing Descent validation rosters with role coverage, skills, glyphs, consumables, complete class/spec equipment slots, gems, enchants, and instance start positions. The gear report intentionally keeps `enchant_applicability_verified_by_server=false` until a live worldserver load validates the generated enchant IDs on equipped items.
 
 Export all learning-loop tables:

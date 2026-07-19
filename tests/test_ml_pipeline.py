@@ -85,6 +85,7 @@ from tools.bot_ml.validation_profile_manifests import load_action_profile_manife
 from tools.bot_ml.validate_data_quality import validate_rows as validate_data_quality_rows
 from tools.bot_ml.build_baseline_inventory import build_inventory, canonical_hash, git_identity, parse_dvc_pointer, reconcile_live_db, reconcile_targets, rotation_tuples, validate_policy, write_bundle
 from tools.bot_ml.build_all_spec_phase1_catalogs import RUNTIME_ACTION_SPELL_IDS, build_catalogs as build_phase1_catalogs, validate_catalogs as validate_phase1_catalogs, write_bundle as write_phase1_bundle
+from tools.bot_ml import build_phase4_rotation_contract as phase4_contract
 from tools.bot_ml.bt_masked_ga_combined import run as run_bt_masked_ga_combined
 from tools.bot_ml.evaluate_policy_model import policy_score, ranking_metrics
 from tools.bot_ml.train_policy_model import add_synthetic_binary_class, balanced_binary_weights, teacher_choice_training_rows
@@ -9482,8 +9483,11 @@ def test_baseline_inventory_policy_contract_coverage_and_manifest_are_determinis
     assert len(pointer_inventory["pointers"]) >= 250
     declared_rotation_paths = {row["path"] for row in policy["artifact_declarations"] if row["artifact_class"] == "effective_rotation_sql"}
     referenced_rotation_paths = {str(path.relative_to(root)) for path in (root / "sql/custom/world").glob("*.sql") if "bot_rotation_profile" in path.read_text(encoding="utf-8")}
-    phase1_post_baseline_paths = {"sql/custom/world/2026_07_18_00_all_spec_rotation_profile_coverage.sql"}
-    assert declared_rotation_paths == referenced_rotation_paths - phase1_post_baseline_paths
+    post_baseline_rotation_paths = {
+        "sql/custom/world/2026_07_18_00_all_spec_rotation_profile_coverage.sql",
+        "sql/custom/world/2026_07_19_00_phase4_rotation_snapshots.sql",
+    }
+    assert declared_rotation_paths == referenced_rotation_paths - post_baseline_rotation_paths
     assert {row["temporal_state"] for row in classified} <= {"current_diagnostic", "historical", "superseded", "unusable"}
     assert all("rotation_profile" in row["gameplay_payload"] for row in report["rows"] if row["status"] == "configured")
     assert all("rotation_profile" not in row["gameplay_payload"] for row in report["rows"] if "missing_rotation_profile" in row["coverage"]["missing_layers"])
@@ -9911,3 +9915,114 @@ def test_phase3_worldserver_output_is_bounded_and_fails_closed():
     assert output.truncated is True
     assert "worldserver_output_truncated" in report["failure_labels"]
     assert report["acceptable_final_evidence"] is False
+
+
+def test_phase4_rotation_static_contract_and_manifest_are_deterministic(tmp_path):
+    static = phase4_contract.static_contract()
+    assert static["passed"] is True
+    assert all(static["checks"].values())
+
+    first = phase4_contract.build_contract()
+    second = phase4_contract.build_contract()
+    assert first == second
+    assert first["gate_passed"] is True
+    assert first["database"] == {"passed": True, "skipped": True}
+    assert first["publication"] == {"passed": True, "skipped": True}
+
+    phase4_contract.write_contract(tmp_path, first)
+    manifest = json.loads((tmp_path / "manifest.json").read_text(encoding="utf-8"))
+    assert manifest["gate_passed"] is True
+    assert manifest["contract_sha256"] == first["contract_sha256"]
+    assert manifest["files"]["contract.json"] == hashlib.sha256(
+        (tmp_path / "contract.json").read_bytes()
+    ).hexdigest()
+
+
+def test_phase4_live_publication_restores_mutation_after_command_failure(monkeypatch):
+    updates = []
+    connections = []
+
+    class Cursor:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def execute(self, sql, parameters=None):
+            if sql.startswith("SELECT a.id, a.category"):
+                self.row = {"id": 77, "category": "builder"}
+            elif sql.startswith("UPDATE bot_rotation_action"):
+                updates.append(parameters)
+
+        def fetchone(self):
+            return self.row
+
+    class Connection:
+        def __init__(self):
+            self.committed = False
+            self.closed = False
+
+        def cursor(self):
+            return Cursor()
+
+        def commit(self):
+            self.committed = True
+
+        def close(self):
+            self.closed = True
+
+    class Session:
+        instance = None
+
+        def __init__(self, _binary, _config):
+            self.commands = 0
+            self.closed = False
+            Session.instance = self
+
+        def wait_for(self, _predicate, _timeout):
+            return "ready"
+
+        def command(self, _command, action, _timeout=30.0):
+            self.commands += 1
+            if self.commands == 1:
+                return {
+                    "ok": True,
+                    "profile_count": 31,
+                    "missing_keys": [],
+                    "active_generation": 1,
+                    "active_content_hash": "snapshot-hash",
+                }
+            if self.commands == 2:
+                return {
+                    "ok": False,
+                    "failure_reason": "invalid_category_phase4_invalid_category",
+                }
+            raise RuntimeError(f"injected failure after {action}")
+
+        def close(self):
+            self.closed = True
+
+    def connect(_url):
+        connection = Connection()
+        connections.append(connection)
+        return connection
+
+    monkeypatch.setattr(phase4_contract, "WorldserverSession", Session)
+    monkeypatch.setattr(phase4_contract, "connect_mysql", connect)
+    monkeypatch.setattr(
+        phase4_contract,
+        "database_url_from_worldserver_conf",
+        lambda _path, _key: "mysql://redacted/world",
+    )
+
+    with pytest.raises(RuntimeError, match="injected failure"):
+        phase4_contract.live_publication_contract(Path("worldserver"), Path("world.conf"))
+
+    assert updates == [
+        ("phase4_invalid_category", 77),
+        ("builder", 77),
+    ]
+    assert all(connection.closed for connection in connections)
+    assert all(connection.committed for connection in connections[1:])
+    assert Session.instance.closed is True

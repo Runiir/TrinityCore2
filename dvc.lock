@@ -1,8 +1,8 @@
 schema: '2.0'
 stages:
   capture:
-    cmd: python experiments/run_experiment.py 
-      experiments/configs/headless_autonomous_loop_smoke_001.json --raw-dir 
+    cmd: python experiments/run_experiment.py
+      experiments/configs/headless_autonomous_loop_smoke_001.json --raw-dir
       dataset/raw --runs-dir experiments/runs --live-dir dvclive --local
     deps:
     - path: experiments/configs/headless_autonomous_loop_smoke_001.json
@@ -30,8 +30,8 @@ stages:
       size: 2247108
       nfiles: 116
   preprocess:
-    cmd: python ml/preprocessing/preprocess_frames.py --raw-dir dataset/raw 
-      --output dataset/processed/frames.jsonl --manifest 
+    cmd: python ml/preprocessing/preprocess_frames.py --raw-dir dataset/raw
+      --output dataset/processed/frames.jsonl --manifest
       dataset/processed/manifest.json
     deps:
     - path: dataset/raw
@@ -53,7 +53,7 @@ stages:
       md5: c035f06857b7105ccb3af4cda99ba7df
       size: 1127
   train:
-    cmd: python ml/training/train_action_frequency.py --frames 
+    cmd: python ml/training/train_action_frequency.py --frames
       dataset/processed/frames.jsonl --model models/action_frequency_model.json
     deps:
     - path: dataset/processed/frames.jsonl
@@ -70,9 +70,9 @@ stages:
       md5: 3f23171db669185934a28da7cc4aaa69
       size: 405
   evaluate:
-    cmd: python ml/evaluation/evaluate_action_frequency.py --frames 
-      dataset/processed/frames.jsonl --model models/action_frequency_model.json 
-      --metrics dataset/evaluations/metrics.json --report 
+    cmd: python ml/evaluation/evaluate_action_frequency.py --frames
+      dataset/processed/frames.jsonl --model models/action_frequency_model.json
+      --metrics dataset/evaluations/metrics.json --report
       dataset/evaluations/report.json
     deps:
     - path: dataset/processed/frames.jsonl
@@ -97,7 +97,7 @@ stages:
       md5: 73fa757aebba89e9b9661a051adc5fef
       size: 354
   world_knowledge:
-    cmd: python -m tools.bot_ml.extract_world_knowledge --output-dir 
+    cmd: python -m tools.bot_ml.extract_world_knowledge --output-dir
       dataset/world_knowledge
     deps:
     - path: tools/bot_ml/common.py
@@ -115,7 +115,7 @@ stages:
       size: 1203658848
       nfiles: 19
   world_planner:
-    cmd: python -m tools.bot_ml.build_world_planner_manifests --world-dir 
+    cmd: python -m tools.bot_ml.build_world_planner_manifests --world-dir
       dataset/world_knowledge --output-dir dataset/world_planner
     deps:
     - path: dataset/world_knowledge
@@ -138,10 +138,10 @@ stages:
       size: 314432118
       nfiles: 27
   world_planner_validate:
-    cmd: python -m tools.bot_ml.validate_world_planner --planner-dir 
-      dataset/world_planner --validation-scenario-dir 
-      dataset/validation_scenarios --live-scenario-report-dir 
-      dataset/live_validation_scenario_reports_built --report 
+    cmd: python -m tools.bot_ml.validate_world_planner --planner-dir
+      dataset/world_planner --validation-scenario-dir
+      dataset/validation_scenarios --live-scenario-report-dir
+      dataset/live_validation_scenario_reports_built --report
       dataset/world_validation/planner_report.json
     deps:
     - path: dataset/live_validation_scenario_reports_built
@@ -173,9 +173,9 @@ stages:
       md5: 46bd018a02a7a15a6230231dd091db6d
       size: 193169
   validation_provisioning:
-    cmd: python -m tools.bot_ml.build_validation_provisioning --config 
-      experiments/configs/validation_provisioning_cata_001.json --gear-profiles 
-      dataset/validation_gear_profiles/profiles.json --output-dir 
+    cmd: python -m tools.bot_ml.build_validation_provisioning --config
+      experiments/configs/validation_provisioning_cata_001.json --gear-profiles
+      dataset/validation_gear_profiles/profiles.json --output-dir
       dataset/validation_provisioning
     deps:
     - path: data/dbc/enUS/GlyphProperties.dbc
@@ -222,8 +222,8 @@ stages:
       size: 1577597
       nfiles: 6
   validation_gear:
-    cmd: python -m tools.bot_ml.build_validation_gear_profiles --config 
-      experiments/configs/validation_provisioning_cata_001.json --output-dir 
+    cmd: python -m tools.bot_ml.build_validation_gear_profiles --config
+      experiments/configs/validation_provisioning_cata_001.json --output-dir
       dataset/validation_gear_profiles
     deps:
     - path: data/dbc/enUS/GemProperties.dbc
@@ -277,10 +277,10 @@ stages:
       size: 841069
       nfiles: 3
   validation_provisioning_verify:
-    cmd: python -m tools.bot_ml.validate_validation_provisioning --config 
-      experiments/configs/validation_provisioning_cata_001.json --gear-profiles 
-      dataset/validation_gear_profiles/profiles.json --provisioning-report 
-      dataset/validation_provisioning/report.json --output 
+    cmd: python -m tools.bot_ml.validate_validation_provisioning --config
+      experiments/configs/validation_provisioning_cata_001.json --gear-profiles
+      dataset/validation_gear_profiles/profiles.json --provisioning-report
+      dataset/validation_provisioning/report.json --output
       dataset/validation_provisioning_verification/report.json
     deps:
     - path: data/dbc/enUS/GemProperties.dbc
@@ -350,11 +350,11 @@ stages:
       md5: e6c43c07893d9b063e77612ff63a8563
       size: 574
   validation_scenarios:
-    cmd: python -m tools.bot_ml.build_validation_scenario_manifests --config 
-      experiments/configs/validation_scenarios_cata_001.json 
-      --provisioning-report dataset/validation_provisioning/report.json 
-      --provisioning-verification 
-      dataset/validation_provisioning_verification/report.json --output-dir 
+    cmd: python -m tools.bot_ml.build_validation_scenario_manifests --config
+      experiments/configs/validation_scenarios_cata_001.json
+      --provisioning-report dataset/validation_provisioning/report.json
+      --provisioning-verification
+      dataset/validation_provisioning_verification/report.json --output-dir
       dataset/validation_scenarios
     deps:
     - path: dataset/validation_provisioning/report.json
@@ -384,43 +384,48 @@ stages:
       size: 103035
       nfiles: 5
   live_scenario_reports:
-    cmd: python -m tools.bot_ml.build_live_scenario_reports --live-report 
-      dataset/live_validation_scenarios/stonecore_5n/report.json --live-report 
+    cmd: python -m tools.bot_ml.build_live_scenario_reports --live-report
+      dataset/live_validation_scenarios/stonecore_5n/report.json --live-report
       dataset/live_validation_scenarios/stonecore_5n/01_entrance_packs/report.json
-      --live-report 
-      dataset/live_validation_scenarios/stonecore_5n/02_corborus/report.json 
-      --live-report 
+      --live-report
+      dataset/live_validation_scenarios/stonecore_5n/02_corborus/report.json
+      --live-report
       dataset/live_validation_scenarios/stonecore_5n/03_crystalspawn_corridor/report.json
-      --live-report 
-      dataset/live_validation_scenarios/stonecore_5n/04_slabhide/report.json 
-      --live-report 
+      --live-report
+      dataset/live_validation_scenarios/stonecore_5n/04_slabhide/report.json
+      --live-report
       dataset/live_validation_scenarios/stonecore_5n/05_stonecore_sentry_gauntlet/report.json
-      --live-report 
-      dataset/live_validation_scenarios/stonecore_5n/06_ozruk/report.json 
-      --live-report 
+      --live-report
+      dataset/live_validation_scenarios/stonecore_5n/06_ozruk/report.json
+      --live-report
       dataset/live_validation_scenarios/stonecore_5n/07_twilight_flayer_packs/report.json
-      --live-report 
+      --live-report
       dataset/live_validation_scenarios/stonecore_5n/08_high_priestess_azil/report.json
-      --validation-scenario-dir dataset/validation_scenarios --output-dir 
+      --validation-scenario-dir dataset/validation_scenarios --output-dir
       dataset/live_validation_scenario_reports_built
     deps:
-    - path: dataset/live_validation_scenarios/stonecore_5n/01_entrance_packs/report.json
+    - path:
+        dataset/live_validation_scenarios/stonecore_5n/01_entrance_packs/report.json
       hash: md5
       md5: 00fa658aaab579e86bd6d371b9447130
       size: 83784
-    - path: dataset/live_validation_scenarios/stonecore_5n/02_corborus/report.json
+    - path:
+        dataset/live_validation_scenarios/stonecore_5n/02_corborus/report.json
       hash: md5
       md5: e3efd5f855aca6f2df28b6a9af13d08e
       size: 253460
-    - path: dataset/live_validation_scenarios/stonecore_5n/03_crystalspawn_corridor/report.json
+    - path:
+        dataset/live_validation_scenarios/stonecore_5n/03_crystalspawn_corridor/report.json
       hash: md5
       md5: aed97486a4f7dd7f985ae9dc0a284564
       size: 84944
-    - path: dataset/live_validation_scenarios/stonecore_5n/04_slabhide/report.json
+    - path:
+        dataset/live_validation_scenarios/stonecore_5n/04_slabhide/report.json
       hash: md5
       md5: 73f7726d934db7275043a2e854b695c8
       size: 244360
-    - path: dataset/live_validation_scenarios/stonecore_5n/05_stonecore_sentry_gauntlet/report.json
+    - path:
+        dataset/live_validation_scenarios/stonecore_5n/05_stonecore_sentry_gauntlet/report.json
       hash: md5
       md5: a674e570211b3aaec10756a2cfb9998c
       size: 281701
@@ -428,11 +433,13 @@ stages:
       hash: md5
       md5: 228ca3bd131d3d50772ab751365309f1
       size: 237007
-    - path: dataset/live_validation_scenarios/stonecore_5n/07_twilight_flayer_packs/report.json
+    - path:
+        dataset/live_validation_scenarios/stonecore_5n/07_twilight_flayer_packs/report.json
       hash: md5
       md5: ec266cb2241d49a3bc086d3fcb54b04b
       size: 275680
-    - path: dataset/live_validation_scenarios/stonecore_5n/08_high_priestess_azil/report.json
+    - path:
+        dataset/live_validation_scenarios/stonecore_5n/08_high_priestess_azil/report.json
       hash: md5
       md5: 159a764e0fd0ad559eda25fd351595e7
       size: 264893
@@ -464,10 +471,10 @@ stages:
       size: 14220
       nfiles: 2
   validation_run_plan:
-    cmd: python -m tools.bot_ml.build_validation_run_plan 
-      --validation-scenario-dir dataset/validation_scenarios --output-dir 
-      dataset/validation_run_plan --live-output-root 
-      dataset/live_validation_scenarios --scenario-report-root 
+    cmd: python -m tools.bot_ml.build_validation_run_plan
+      --validation-scenario-dir dataset/validation_scenarios --output-dir
+      dataset/validation_run_plan --live-output-root
+      dataset/live_validation_scenarios --scenario-report-root
       dataset/live_validation_scenario_reports_built
     deps:
     - path: dataset/validation_scenarios
@@ -490,12 +497,13 @@ stages:
       size: 97520
       nfiles: 2
   live_validation_combined:
-    cmd: python -m tools.bot_ml.run_live_bot_validation --input-log 
-      artifacts/live_validation_quest_mob_assist_150s/worldserver_output.log 
-      --scenario-report-dir dataset/live_validation_scenario_reports_built 
+    cmd: python -m tools.bot_ml.run_live_bot_validation --input-log
+      artifacts/live_validation_quest_mob_assist_150s/worldserver_output.log
+      --scenario-report-dir dataset/live_validation_scenario_reports_built
       --output-dir dataset/live_validation_combined
     deps:
-    - path: artifacts/live_validation_quest_mob_assist_150s/worldserver_output.log
+    - path:
+        artifacts/live_validation_quest_mob_assist_150s/worldserver_output.log
       hash: md5
       md5: 6ad5bc0e9bf15eb4ef439fcaeba2c454
       size: 102801
@@ -515,9 +523,9 @@ stages:
       size: 222956
       nfiles: 3
   validation_run_status:
-    cmd: python -m tools.bot_ml.build_validation_run_status --run-plan 
-      dataset/validation_run_plan/manifest.json --scenario-report-root 
-      dataset/live_validation_scenario_reports_built --output-dir 
+    cmd: python -m tools.bot_ml.build_validation_run_status --run-plan
+      dataset/validation_run_plan/manifest.json --scenario-report-root
+      dataset/live_validation_scenario_reports_built --output-dir
       dataset/validation_run_status
     deps:
     - path: dataset/live_validation_scenario_reports_built
@@ -544,8 +552,8 @@ stages:
       size: 82960
       nfiles: 1
   quest_profession_report:
-    cmd: python -m tools.bot_ml.build_quest_profession_reports --planner-dir 
-      dataset/world_planner --report 
+    cmd: python -m tools.bot_ml.build_quest_profession_reports --planner-dir
+      dataset/world_planner --report
       dataset/quest_profession_reports/report.json
     deps:
     - path: dataset/world_planner
@@ -571,9 +579,9 @@ stages:
       md5: b4e8b7909753bba2d1fe8e7ead5bdac8
       size: 123473
   bot_ml_build_decisions:
-    cmd: python -m tools.bot_ml.build_decision_dataset --input-dir 
-      dataset/bot_ml/raw --output dataset/bot_ml/decision_dataset.jsonl 
-      --manifest dataset/bot_ml/decision_dataset_manifest.json --include-map-id 
+    cmd: python -m tools.bot_ml.build_decision_dataset --input-dir
+      dataset/bot_ml/raw --output dataset/bot_ml/decision_dataset.jsonl
+      --manifest dataset/bot_ml/decision_dataset_manifest.json --include-map-id
       725
     deps:
     - path: dataset/bot_ml/raw
@@ -599,9 +607,9 @@ stages:
       md5: 6c508fa59a417b2ae164ed57f0b5917f
       size: 2201
   bot_ml_train:
-    cmd: python -m tools.bot_ml.train_policy_model --dataset 
-      dataset/bot_ml/decision_dataset.jsonl --model 
-      models/bot_policy/policy_model.json --model-dir 
+    cmd: python -m tools.bot_ml.train_policy_model --dataset
+      dataset/bot_ml/decision_dataset.jsonl --model
+      models/bot_policy/policy_model.json --model-dir
       models/bot_policy/artifacts --live-dir artifacts/bot_policy_dvclive/train
     deps:
     - path: dataset/bot_ml/decision_dataset.jsonl
@@ -636,11 +644,11 @@ stages:
       md5: 22f216948e218728d391541128e1eda5
       size: 993385
   bot_ml_evaluate:
-    cmd: python -m tools.bot_ml.evaluate_policy_model --dataset 
-      dataset/bot_ml/decision_dataset.jsonl --model 
-      models/bot_policy/policy_model.json --metrics 
-      evaluations/bot_policy/metrics.json --diagnostics 
-      evaluations/bot_policy/diagnostics.json --live-dir 
+    cmd: python -m tools.bot_ml.evaluate_policy_model --dataset
+      dataset/bot_ml/decision_dataset.jsonl --model
+      models/bot_policy/policy_model.json --metrics
+      evaluations/bot_policy/metrics.json --diagnostics
+      evaluations/bot_policy/diagnostics.json --live-dir
       artifacts/bot_policy_dvclive/eval
     deps:
     - path: dataset/bot_ml/decision_dataset.jsonl
@@ -678,10 +686,10 @@ stages:
       md5: e930f3843866b77e350be3324fcde95d
       size: 2190
   bot_ml_register:
-    cmd: python -m tools.bot_ml.register_policy_model --model 
-      models/bot_policy/policy_model.json --metrics 
-      evaluations/bot_policy/metrics.json --diagnostics 
-      evaluations/bot_policy/diagnostics.json --sql-output 
+    cmd: python -m tools.bot_ml.register_policy_model --model
+      models/bot_policy/policy_model.json --metrics
+      evaluations/bot_policy/metrics.json --diagnostics
+      evaluations/bot_policy/diagnostics.json --sql-output
       models/bot_policy/register_model.sql
     deps:
     - path: evaluations/bot_policy/diagnostics.json
@@ -714,8 +722,8 @@ stages:
       md5: 5960f712ff8d4d3d96aab37f44d94463
       size: 1344870
   bot_ml_validate:
-    cmd: python -m tools.bot_ml.validate_data_quality --dataset 
-      dataset/bot_ml/decision_dataset.jsonl --report 
+    cmd: python -m tools.bot_ml.validate_data_quality --dataset
+      dataset/bot_ml/decision_dataset.jsonl --report
       dataset/bot_ml/data_quality.json
     deps:
     - path: dataset/bot_ml/decision_dataset.jsonl
@@ -736,13 +744,14 @@ stages:
       md5: 31292e5da0266953d17ea4dbaa52f28d
       size: 3240
   bt_masked_ga_combined:
-    cmd: python -m tools.bot_ml.bt_masked_ga_combined --dataset 
-      dataset/bot_ml/decision_dataset.jsonl --output-dir 
-      artifacts/ml_strategy_eval/bt_masked_ga_combined --baseline-report 
+    cmd: python -m tools.bot_ml.bt_masked_ga_combined --dataset
+      dataset/bot_ml/decision_dataset.jsonl --output-dir
+      artifacts/ml_strategy_eval/bt_masked_ga_combined --baseline-report
       artifacts/live_validation_instances/stonecore_uninterrupted_full_clear_r12/report.json
       --population-size 24 --generations 18 --seed 13
     deps:
-    - path: artifacts/live_validation_instances/stonecore_uninterrupted_full_clear_r12/report.json
+    - path:
+        artifacts/live_validation_instances/stonecore_uninterrupted_full_clear_r12/report.json
       hash: md5
       md5: 8b9a7fece8350701f0c4d56e46b64ca0
       size: 714337
@@ -762,7 +771,7 @@ stages:
       params.yaml:
         bt_masked_ga_combined:
           output_dir: artifacts/ml_strategy_eval/bt_masked_ga_combined
-          baseline_report: 
+          baseline_report:
             artifacts/live_validation_instances/stonecore_uninterrupted_full_clear_r12/report.json
           population_size: 24
           generations: 18
@@ -781,7 +790,8 @@ stages:
       hash: md5
       md5: e5a2bc7ae91a4730fb151844784a58a7
       size: 12135
-    - path: artifacts/ml_strategy_eval/bt_masked_ga_combined/ga_strategy_knobs.json
+    - path:
+        artifacts/ml_strategy_eval/bt_masked_ga_combined/ga_strategy_knobs.json
       hash: md5
       md5: 476efead66ffa34cd279b7286d03ad15
       size: 659
@@ -797,7 +807,8 @@ stages:
       hash: md5
       md5: 08da236dc371c5818b3f86a5eba00844
       size: 30923
-    - path: artifacts/ml_strategy_eval/bt_masked_ga_combined/stonecore_baseline_comparison.json
+    - path:
+        artifacts/ml_strategy_eval/bt_masked_ga_combined/stonecore_baseline_comparison.json
       hash: md5
       md5: d5aade41043045dec5399a9eea8e913a
       size: 602
@@ -862,11 +873,13 @@ stages:
       hash: md5
       md5: 9ad80cf9469ff8c1060a66331ff45177
       size: 6727
-    - path: sql/custom/world/2026_07_14_02_holy_priest_prayer_of_mending_aura_guard.sql
+    - path:
+        sql/custom/world/2026_07_14_02_holy_priest_prayer_of_mending_aura_guard.sql
       hash: md5
       md5: 1beeb944738ad73e2079a95f231c277a
       size: 514
-    - path: sql/custom/world/2026_07_14_03_stonecore_paladin_aoe_threat_priority.sql
+    - path:
+        sql/custom/world/2026_07_14_03_stonecore_paladin_aoe_threat_priority.sql
       hash: md5
       md5: 0c365058973ac007f743c68e693db68b
       size: 771
@@ -882,7 +895,8 @@ stages:
       hash: md5
       md5: fec206afba7ab6a122fde3e4c24b7277
       size: 531
-    - path: sql/custom/world/2026_07_15_02_stonecore_hunter_rotation_liveness.sql
+    - path:
+        sql/custom/world/2026_07_15_02_stonecore_hunter_rotation_liveness.sql
       hash: md5
       md5: f676cdce5eb5c547e516ea740273ac6f
       size: 488
@@ -922,7 +936,8 @@ stages:
       hash: md5
       md5: b3baa5e832d9a1a4ff0d14e3277eec98
       size: 911
-    - path: sql/custom/world/2026_07_17_01_enhancement_unleash_flame_priority.sql
+    - path:
+        sql/custom/world/2026_07_17_01_enhancement_unleash_flame_priority.sql
       hash: md5
       md5: 661eeccaa4349352d454d49a7c12d681
       size: 1553
@@ -930,7 +945,8 @@ stages:
       hash: md5
       md5: 528fd9de949054a4256f0b1ce0c4cd4e
       size: 1207
-    - path: sql/custom/world/2026_07_17_02_enhancement_unleash_flame_rollback.sql
+    - path:
+        sql/custom/world/2026_07_17_02_enhancement_unleash_flame_rollback.sql
       hash: md5
       md5: 254dfc2bdda32b625681a61c44347e1d
       size: 1564
@@ -988,7 +1004,8 @@ stages:
       hash: md5
       md5: ab033e42803d700ae85947c741d9283e
       size: 24355
-    - path: sql/custom/world/2026_07_18_00_all_spec_rotation_profile_coverage.sql
+    - path:
+        sql/custom/world/2026_07_18_00_all_spec_rotation_profile_coverage.sql
       hash: md5
       md5: c46352d799127dec42c0abefcf8f7ca4
       size: 37613
@@ -1089,4 +1106,62 @@ stages:
       hash: md5
       md5: 4ad46e3e691f32455af85de5ba53f417.dir
       size: 897
+      nfiles: 2
+  all_spec_phase4_rotation_contract:
+    cmd: python -m tools.bot_ml.build_phase4_rotation_contract --output-dir
+      dataset/all_spec_phase4_rotation_contract --worldserver-conf
+      trinity-worldserver-test.conf --worldserver-binary
+      build/src/server/worldserver/worldserver
+    deps:
+    - path: experiments/configs/all_spec_phase4_previous_profile_hashes_v1.json
+      hash: md5
+      md5: 215e9ff1f912a07b09542787b25f62f4
+      size: 4960
+    - path:
+        sql/custom/rollback/world/2026_07_19_00_phase4_rotation_snapshots_rollback.sql
+      hash: md5
+      md5: ad9eac3a5e838fd4c74d49dfde287ada
+      size: 1634
+    - path: sql/custom/world/2026_07_19_00_phase4_rotation_snapshots.sql
+      hash: md5
+      md5: dd7131cd5eee75adc79118d86f204bed
+      size: 5533
+    - path:
+        sql/custom/world/2026_07_19_01_phase4_rotation_category_normalization.sql
+      hash: md5
+      md5: 9457346bb5127da98bd4921767fef3c3
+      size: 386
+    - path: src/server/game/Bots/BotActionExecutor.cpp
+      hash: md5
+      md5: 23fb9a500616696c7cbc18a4d2ac3d0a
+      size: 21556
+    - path: src/server/game/Bots/BotClassSpecActionProfile.cpp
+      hash: md5
+      md5: ebcae9ee9d18538c1e29263b096c2e81
+      size: 55586
+    - path: src/server/game/Bots/BotClassSpecActionProfile.h
+      hash: md5
+      md5: 4938e5b6e6b13e5a65ee66def9fb4c6d
+      size: 4593
+    - path: src/server/game/Bots/BotController.cpp
+      hash: md5
+      md5: 8035e5d5d3201a6a17f1bb9677ca194b
+      size: 62348
+    - path: src/server/game/Bots/BotWorldPopulationMgr.cpp
+      hash: md5
+      md5: f6fad5d9f98c14a14c35fbfade573d14
+      size: 1092177
+    - path: src/server/scripts/Commands/cs_healerbot.cpp
+      hash: md5
+      md5: e815b6ea9387945f06f3300b38e7c72d
+      size: 53219
+    - path: tools/bot_ml/build_phase4_rotation_contract.py
+      hash: md5
+      md5: 3b0c16d36dca90afbae7fb704ea5390d
+      size: 17590
+    outs:
+    - path: dataset/all_spec_phase4_rotation_contract
+      hash: md5
+      md5: a86ec269c69d83b9d2b4ab92fb19b008.dir
+      size: 2026
       nfiles: 2

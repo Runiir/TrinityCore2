@@ -2,7 +2,7 @@
   "schema": "all_spec_stonecore_program_status_v1",
   "program": "all_spec_stonecore",
   "updated_date": "2026-07-19",
-  "active_phase": 4,
+  "active_phase": 5,
   "phase_status": [
     {
       "phase": 0,
@@ -259,13 +259,89 @@
     {
       "phase": 4,
       "name": "complete_and_version_explicit_rotation_engine",
+      "status": "completed",
+      "gate": {
+        "passed": true,
+        "reason_codes": [
+          "all_31_profiles_in_one_valid_snapshot",
+          "invalid_action_blocks_atomic_publication",
+          "failed_reload_preserves_active_generation_and_hash",
+          "profile_copy_pins_action_attempt_generation_and_hash",
+          "reload_and_rollback_generations_monotonic",
+          "previous_snapshot_available_for_controlled_rollback",
+          "legacy_spec_aliases_canonicalized",
+          "full_catalog_list_and_dump_reporting",
+          "typed_predicates_dbc_validated",
+          "mechanic_tags_descriptive_only",
+          "deterministic_priority_score_order_action_selection"
+        ]
+      },
+      "scope": {
+        "profile_count": 31,
+        "action_count": 260,
+        "role_counts": {
+          "tank": 4,
+          "healer": 5,
+          "dps": 22
+        },
+        "typed_predicate_column_count": 16,
+        "canonical_legacy_alias_count": 5,
+        "runtime_authority": "world_db_bot_rotation_profile",
+        "generic_ml_runtime_authority": false
+      },
+      "identity": {
+        "contract_sha256": "ed91ab6e8e093ce98c439e9257dfd6e7fec132e08584633fd139bc08664f582c",
+        "contract_file_sha256": "3565127503c40f1e488fbd040feaf8d377b63f7585e8905a45d904b127400e01",
+        "contract_bundle_dvc_md5": "a86ec269c69d83b9d2b4ab92fb19b008.dir",
+        "snapshot_content_hash": "ED7F5B3E14E7EF44D6ECB156D5DC8DB62C06294D9FD3B42B08DB76EF3287CC2C",
+        "previous_profile_aggregate_sha256": "7d4adf8b347cbc8d4754fe02f41988982a10cfe077edd7ac816827eb6477c4c7"
+      },
+      "live_verification": {
+        "all_passed": true,
+        "baseline_generation": 1,
+        "reloaded_generation": 2,
+        "rollback_generation": 3,
+        "invalid_action_rejected": true,
+        "failed_reload_kept_active_snapshot": true,
+        "legacy_alias_dump": true,
+        "database_restored_and_second_run_passed": true
+      },
+      "evidence": {
+        "contract_bundle": "dataset/all_spec_phase4_rotation_contract",
+        "previous_profile_hashes": "experiments/configs/all_spec_phase4_previous_profile_hashes_v1.json",
+        "forward_schema_migration": "sql/custom/world/2026_07_19_00_phase4_rotation_snapshots.sql",
+        "category_normalization_migration": "sql/custom/world/2026_07_19_01_phase4_rotation_category_normalization.sql",
+        "controlled_restore_payload": "sql/custom/rollback/world/2026_07_19_00_phase4_rotation_snapshots_rollback.sql",
+        "remote_verification": "pixi run dvc status -c dataset/all_spec_phase4_rotation_contract",
+        "remote_verification_outcome": "cache_and_remote_in_sync"
+      },
+      "validation": {
+        "focused_phase4_tests": "3 passed",
+        "broad_test_file": "295 passed, 9 known unrelated live-process/watchdog tests deselected",
+        "worldserver_build": "passed",
+        "runtime_verification": "two consecutive live contract runs passed with restored database state",
+        "python_compile": "passed",
+        "git_diff_check": "passed",
+        "dvc_stage_status": "up_to_date",
+        "dvc_remote_status": "cache_and_remote_in_sync"
+      },
+      "orchestration": {
+        "owner": "root",
+        "model": "gpt-5.6-sol",
+        "reasoning": "high",
+        "workers_launched": 0
+      }
+    },
+    {
+      "phase": 5,
+      "name": "extract_cohort_and_party_ownership_from_global_runtime_state",
       "status": "in_progress"
     },
     {
-      "phase_range": "5-12",
+      "phase_range": "6-12",
       "status": "pending"
     }
   ],
   "blockers": [],
-  "exact_next_handoff_prompt": "Continue approved all-spec Stonecore execution at Phase 4 only. Keep BotClassSpecActionProfileStore as runtime authority and replace lazy mutable profile loading with validated immutable snapshots. Validate all 31 catalog keys, canonicalize legacy tags, hash and monotonically version profile generations, publish atomically only when the whole snapshot is valid, pin attempts to a snapshot, retain the previous snapshot for controlled rollback, and make listing/dump report full catalog coverage. Add only the typed predicates required by Phase 4 rotations, split candidate evaluation into legality, compiled conditions, target selection, deterministic priority/scoring, and explicit rejection diagnostics, and keep mechanic_tags descriptive. Deliver forward and rollback SQL with exact prior hashes and DBC validation. Prove all 31 profiles load in one valid snapshot, invalid actions block publication, and active attempts remain pinned across reload and rollback; do not begin Phase 5 until the Phase 4 gate is checkpointed and remotely synchronized."
+  "exact_next_handoff_prompt": "Continue approved all-spec Stonecore execution at Phase 5 only. Keep BotWorldPopulationMgr as the process scheduler and registry, but move mutable run state into explicit CohortRuntime and PartyRuntime ownership objects before enabling concurrency. CohortRuntime owns roster leases, identities, pinned manifests/profile generation, calibration clocks, watchdog state, telemetry, capture, and lifecycle. PartyRuntime owns group/roles, instance, route manifest/cursor/generation, encounter/recovery state, pending heals, threat/healing metrics, and party-scoped evidence. Add atomic GUID leases keyed by server epoch, cohort, attempt, and role slot; replace global pool reset and substring ownership with fail-closed lease claims and owner-scoped release. Add cohort-addressed botauto commands and preserve global aliases only when exactly one cohort exists. Move route, calibration, pending-heal, combat-log, trace, and recording-window state out of process-global fields. Prove two constructed cohorts, still executed serially with MaxActiveCohorts=1, cannot lease the same bot or mutate/read each other's group, instance, route, clocks, heals, trace, combat log, telemetry, or evidence; do not begin Phase 6 until the Phase 5 gate is checkpointed and remotely synchronized."
 }

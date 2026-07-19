@@ -51,13 +51,6 @@ bool RotationHasEnoughPower(Player const* bot, SpellInfo const* spellInfo)
     return bot->GetPower(Powers(spellInfo->PowerType)) >= uint32(cost);
 }
 
-uint32 RotationWeight(float score)
-{
-    if (score <= 0.0f)
-        return 1;
-    return std::max<uint32>(1, uint32(score * 100.0f));
-}
-
 std::string JsonEscape(std::string const& value)
 {
     std::ostringstream escaped;
@@ -772,22 +765,14 @@ BotActionCandidate const* BotController::SelectProfileCombatAction(Player* bot, 
     if (valid.empty())
         return nullptr;
 
-    uint32 totalWeight = 0;
-    for (BotActionCandidate const* candidate : valid)
-        totalWeight += RotationWeight(candidate->Score);
-
-    if (!totalWeight)
-        return valid.front();
-
-    uint32 selected = urand(1, totalWeight);
-    uint32 cursor = 0;
-    for (BotActionCandidate const* candidate : valid)
+    return *std::max_element(valid.begin(), valid.end(), [](BotActionCandidate const* left, BotActionCandidate const* right)
     {
-        cursor += RotationWeight(candidate->Score);
-        if (selected <= cursor)
-            return candidate;
-    }
-    return valid.back();
+        if (left->Score != right->Score)
+            return left->Score < right->Score;
+        if (left->Profile.SortOrder != right->Profile.SortOrder)
+            return left->Profile.SortOrder > right->Profile.SortOrder;
+        return left->ActionId > right->ActionId;
+    });
 }
 
 ResolvedCombatAction BotController::ResolveProfileCombat(BotCombatDecision const& decision, BotCombatState const& state, Player* bot, Unit* target) const

@@ -8191,7 +8191,10 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 || (currentEmergency == bestEmergency && candidateHealthPct < 0.55f && currentFast && !bestFast)
                 || (currentEmergency == bestEmergency && currentFast == bestFast
                     && (spell.PriorityBucket < bestHeal->PriorityBucket
-                        || (spell.PriorityBucket == bestHeal->PriorityBucket && spell.HealingWeight > bestHeal->HealingWeight))))
+                        || (spell.PriorityBucket == bestHeal->PriorityBucket
+                            && (spell.HealingWeight > bestHeal->HealingWeight
+                                || (spell.HealingWeight == bestHeal->HealingWeight && spell.SortOrder < bestHeal->SortOrder)
+                                || (spell.HealingWeight == bestHeal->HealingWeight && spell.SortOrder == bestHeal->SortOrder && spell.SpellId < bestHeal->SpellId))))))
             {
                 bestHeal = &spell;
                 healTarget = candidateTarget;
@@ -15818,7 +15821,10 @@ uint32 BotWorldPopulationMgr::SelectCombatSpell(Player* bot, Unit* target) const
         candidate.Score = roleScore;
         candidate.Reason = saturation.SaturationReason;
         if (!best || candidate.Profile.PriorityBucket < best->Profile.PriorityBucket
-            || (candidate.Profile.PriorityBucket == best->Profile.PriorityBucket && candidate.Score > best->Score))
+            || (candidate.Profile.PriorityBucket == best->Profile.PriorityBucket
+                && (candidate.Score > best->Score
+                    || (candidate.Score == best->Score && candidate.Profile.SortOrder < best->Profile.SortOrder)
+                    || (candidate.Score == best->Score && candidate.Profile.SortOrder == best->Profile.SortOrder && candidate.ActionId < best->ActionId))))
             best = &candidate;
     }
 
@@ -16204,24 +16210,36 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         if (densityOnly && candidate.Category == BotCombatActionCategory::ResourceGenerator)
         {
             if (!bestDensityGenerator || candidate.Profile.PriorityBucket < bestDensityGenerator->Profile.PriorityBucket
-                || (candidate.Profile.PriorityBucket == bestDensityGenerator->Profile.PriorityBucket && candidate.Score > bestDensityGenerator->Score))
+                || (candidate.Profile.PriorityBucket == bestDensityGenerator->Profile.PriorityBucket
+                    && (candidate.Score > bestDensityGenerator->Score
+                        || (candidate.Score == bestDensityGenerator->Score && candidate.Profile.SortOrder < bestDensityGenerator->Profile.SortOrder)
+                        || (candidate.Score == bestDensityGenerator->Score && candidate.Profile.SortOrder == bestDensityGenerator->Profile.SortOrder && candidate.ActionId < bestDensityGenerator->ActionId))))
                 bestDensityGenerator = &candidate;
         }
         else if (densityOnly && (candidate.Category == BotCombatActionCategory::Aoe
             || candidate.Category == BotCombatActionCategory::Cleave))
         {
             if (!bestDensityArea || candidate.Profile.PriorityBucket < bestDensityArea->Profile.PriorityBucket
-                || (candidate.Profile.PriorityBucket == bestDensityArea->Profile.PriorityBucket && candidate.Score > bestDensityArea->Score))
+                || (candidate.Profile.PriorityBucket == bestDensityArea->Profile.PriorityBucket
+                    && (candidate.Score > bestDensityArea->Score
+                        || (candidate.Score == bestDensityArea->Score && candidate.Profile.SortOrder < bestDensityArea->Profile.SortOrder)
+                        || (candidate.Score == bestDensityArea->Score && candidate.Profile.SortOrder == bestDensityArea->Profile.SortOrder && candidate.ActionId < bestDensityArea->ActionId))))
                 bestDensityArea = &candidate;
         }
         else if (densityOnly)
         {
             if (!bestDensityFallback || candidate.Profile.PriorityBucket < bestDensityFallback->Profile.PriorityBucket
-                || (candidate.Profile.PriorityBucket == bestDensityFallback->Profile.PriorityBucket && candidate.Score > bestDensityFallback->Score))
+                || (candidate.Profile.PriorityBucket == bestDensityFallback->Profile.PriorityBucket
+                    && (candidate.Score > bestDensityFallback->Score
+                        || (candidate.Score == bestDensityFallback->Score && candidate.Profile.SortOrder < bestDensityFallback->Profile.SortOrder)
+                        || (candidate.Score == bestDensityFallback->Score && candidate.Profile.SortOrder == bestDensityFallback->Profile.SortOrder && candidate.ActionId < bestDensityFallback->ActionId))))
                 bestDensityFallback = &candidate;
         }
         else if (!best || candidate.Profile.PriorityBucket < best->Profile.PriorityBucket
-            || (candidate.Profile.PriorityBucket == best->Profile.PriorityBucket && candidate.Score > best->Score))
+            || (candidate.Profile.PriorityBucket == best->Profile.PriorityBucket
+                && (candidate.Score > best->Score
+                    || (candidate.Score == best->Score && candidate.Profile.SortOrder < best->Profile.SortOrder)
+                    || (candidate.Score == best->Score && candidate.Profile.SortOrder == best->Profile.SortOrder && candidate.ActionId < best->ActionId))))
             best = &candidate;
     }
 

@@ -971,10 +971,12 @@ private:
             result = BotClassSpecActionProfileStore::DbProfilesJson();
         else if (tokens[0] == "reload")
             result = BotClassSpecActionProfileStore::ReloadDbProfiles();
+        else if (tokens[0] == "rollback")
+            result = BotClassSpecActionProfileStore::RollbackDbProfiles();
         else if (tokens[0] == "dump" && tokens.size() >= 4)
             result = BotClassSpecActionProfileStore::DbProfileDumpJson(uint8(std::atoi(tokens[1].c_str())), tokens[2], tokens[3]);
         else
-            result = "{\"ok\":false,\"action\":\"botauto_rotations\",\"failure_reason\":\"usage: .botauto rotations list|reload|dump <class_id> <spec_tag> <role>\"}";
+            result = "{\"ok\":false,\"action\":\"botauto_rotations\",\"failure_reason\":\"usage: .botauto rotations list|reload|rollback|dump <class_id> <spec_tag> <role>\"}";
 
         if (handler)
         {
