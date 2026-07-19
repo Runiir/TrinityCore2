@@ -2,7 +2,7 @@
   "schema": "all_spec_stonecore_program_status_v1",
   "program": "all_spec_stonecore",
   "updated_date": "2026-07-19",
-  "active_phase": 2,
+  "active_phase": 3,
   "phase_status": [
     {
       "phase": 0,
@@ -151,13 +151,67 @@
     {
       "phase": 2,
       "name": "composite_evidence_identity_and_independent_acceptance",
+      "status": "completed",
+      "gate": {
+        "passed": true,
+        "reason_codes": [
+          "all_16_execution_identity_components_bound",
+          "incompatible_identity_changes_block_aggregation",
+          "older_evidence_retained_and_superseded",
+          "open_attempt_epoch_transitions_blocked",
+          "profile_reload_and_rollback_generations_unique",
+          "stored_acceptance_booleans_ignored",
+          "report_discrepancies_fail_closed",
+          "promotion_recomputes_acceptance"
+        ]
+      },
+      "scope": {
+        "execution_hash_component_count": 16,
+        "scope_id_count": 8,
+        "artifact_hash_count": 4,
+        "aggregation_scope_id_count": 4,
+        "runner_external_identity_requirements": [
+          "database_snapshot_sha256",
+          "database_schema_sha256",
+          "server_epoch_sha256",
+          "profile_generation_sha256"
+        ]
+      },
+      "identity": {
+        "contract_sha256": "8a02d5f3df8819e2b915fc4e447e3483013539cbf600140514b5fb54befef4e6",
+        "contract_bundle_dvc_md5": "5392a296993004204e398f76b6fc768f.dir"
+      },
+      "evidence": {
+        "contract_bundle": "dataset/all_spec_phase2_evidence_contract",
+        "remote_verification": "pixi run dvc status -c dataset/all_spec_phase2_evidence_contract",
+        "remote_verification_outcome": "cache_and_remote_in_sync"
+      },
+      "validation": {
+        "focused_phase2_tests": "23 passed",
+        "broad_test_file": "288 passed, 9 known unrelated live-process/watchdog tests deselected",
+        "full_test_attempt": "Phase 2 regressions passed; pre-existing live-process shutdown and watchdog timing failures remain outside this phase",
+        "python_compile": "passed",
+        "git_diff_check": "passed",
+        "dvc_stage_status": "up_to_date",
+        "dvc_remote_status": "cache_and_remote_in_sync"
+      },
+      "orchestration": {
+        "owner": "root",
+        "model": "gpt-5.6-sol",
+        "reasoning": "high",
+        "workers_launched": 0
+      }
+    },
+    {
+      "phase": 3,
+      "name": "low_disk_immutable_batch_capture_and_dvc_publication",
       "status": "in_progress"
     },
     {
-      "phase_range": "3-12",
+      "phase_range": "4-12",
       "status": "pending"
     }
   ],
   "blockers": [],
-  "exact_next_handoff_prompt": "Continue approved all-spec Stonecore execution at Phase 2 only. Extend tools/bot_ml/live_validation_session.py into the shared evidence envelope; bind attempts to Git/dirty state, binary/config/DB/schema/process/server epoch, canonical catalog/provisioning/gear/profile/reference/policy/scenario/route hashes, batch/cohort/composition/party/instance/attempt/repeat/window IDs, and raw/compact/DVC/freshness/supersession identities. Extract a pure acceptance evaluator that consumes facts and canonical manifests rather than stored pass booleans, compare recomputed results with stored summaries, fail closed on discrepancies, enforce restart/profile-generation epoch rules, and do not begin Phase 3 until changing any identity component prevents incompatible aggregation and marks older evidence stale or superseded without deletion."
+  "exact_next_handoff_prompt": "Continue approved all-spec Stonecore execution at Phase 3 only. Land the low-disk immutable batch lifecycle before high-volume experiments: bounded compressed raw capture, one compact analytical representation, compact heartbeat/final manifests, independent acceptance and content hashes, repository DVC publication locking, separate raw/compact DVC identities, immediate push and remote/hash receipt verification, targeted batch-cache eviction only after verified publication, retained summaries/manifests/receipts/pointers only, immutable DB batch/window export cleanup, and bounded pending bytes. Prove the gate with a synthetic push/remote-verify/targeted-evict/hydrate round trip plus corruption and failed-push cleanup prevention tests; do not begin Phase 4 until the Phase 3 gate is checkpointed and remotely synchronized."
 }

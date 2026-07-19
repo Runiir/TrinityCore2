@@ -7,9 +7,11 @@ from typing import Any
 
 try:
     from .common import read_jsonl, stable_hash, write_json
+    from .live_validation_session import verify_report_acceptance
     from .run_live_bot_validation import confirmed_boss_death_event, forbidden_completion_assists, scoped_event_evidence, scoped_validation_evidence_counts, strict_manifest_evidence, trace_entries
 except ImportError:
     from common import read_jsonl, stable_hash, write_json
+    from live_validation_session import verify_report_acceptance
     from run_live_bot_validation import confirmed_boss_death_event, forbidden_completion_assists, scoped_event_evidence, scoped_validation_evidence_counts, strict_manifest_evidence, trace_entries
 
 
@@ -87,7 +89,7 @@ def action_names(report: dict[str, Any]) -> list[str]:
 def stage_passed(report: dict[str, Any], stage: str) -> bool:
     for row in report.get("stages") or []:
         if isinstance(row, dict) and row.get("stage") == stage:
-            return bool(row.get("passed"))
+            return "missing" in row and not [value for value in (row.get("missing") or []) if value]
     return False
 
 
@@ -173,10 +175,6 @@ def teacher_label_quality(mode: str) -> str:
 
 
 def attached_full_clear_valid(existing: dict[str, Any], routes: list[dict[str, Any]]) -> bool:
-    if not bool(existing.get("clear_complete")):
-        return False
-    if not bool(existing.get("completion_claim_valid")):
-        return False
     mode = str(existing.get("completion_evidence_mode") or existing.get("scenario_evidence_mode") or "")
     strict = strict_manifest_evidence(existing, {"routes": routes})
     segment_results = {
@@ -255,6 +253,7 @@ def infer_report(report: dict[str, Any], scenario: dict[str, Any], routes: list[
     validation_context = report.get("validation_context") if isinstance(report.get("validation_context"), dict) else {}
     failure_labels = unique_strings(report.get("failure_labels") or [])
     failure_reason = str(report.get("failure_reason") or (failure_labels[0] if failure_labels else ""))
+    source_acceptance = verify_report_acceptance(report)
     route_segment_id = str(validation_context.get("segment_id") or "")
     route_node_id = str(validation_context.get("route_node_id") or "")
     route_label = str(validation_context.get("route_label") or "")
@@ -347,7 +346,7 @@ def infer_report(report: dict[str, Any], scenario: dict[str, Any], routes: list[
     ]
     expected_manifest_scopes = [(row["route_node_id"], row["route_generation"], row["route_kind"]) for row in expected_route_evidence]
     manifest_full_clear = (
-        bool(report.get("acceptable_final_evidence"))
+        bool(source_acceptance["accepted"])
         and str(report.get("completion_reason") or "") == "validation_route_manifest_complete"
         and route_manifest_scenario_id == scenario_id
         and bool(route_manifest.get("routes"))
@@ -479,6 +478,7 @@ def infer_report(report: dict[str, Any], scenario: dict[str, Any], routes: list[
         "clear_complete": clear_complete,
         "source_live_report": source_live_report,
         "source_live_reports": [source_live_report] if source_live_report else [],
+        "source_acceptance_verification": source_acceptance,
         "expected_segments": expected_segments,
         "expected_route_evidence": expected_route_evidence,
         "source_segments": source_segments,

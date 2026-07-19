@@ -359,11 +359,11 @@ stages:
     deps:
     - path: dataset/validation_provisioning/report.json
       hash: md5
-      md5: 7e57a4985cb5edd269301e7c850c78cb
-      size: 4068
+      md5: e1cbe3b3fcf9780329405d5bdbf881bc
+      size: 6795
     - path: dataset/validation_provisioning_verification/report.json
       hash: md5
-      md5: 3b193af1dd43d5749e15aee1618d9269
+      md5: e6c43c07893d9b063e77612ff63a8563
       size: 574
     - path: experiments/configs/validation_scenarios_cata_001.json
       hash: md5
@@ -1006,3 +1006,65 @@ stages:
       md5: 74580c3671e3ef518c10892282543bfb.dir
       size: 249922
       nfiles: 5
+  all_spec_phase2_evidence_contract:
+    cmd: python -m tools.bot_ml.live_validation_session --output-dir
+      dataset/all_spec_phase2_evidence_contract
+    deps:
+    - path: dataset/validation_gear_profiles/profiles.json
+      hash: md5
+      md5: 4c9a86d4a4a5516bdb13073d095c575e
+      size: 836693
+    - path: dataset/validation_scenarios/validation_routes.jsonl
+      hash: md5
+      md5: 3e301ebe5b637ca8cc69149fa769c718
+      size: 85934
+    - path: experiments/configs/all_spec_calibration_scenarios_v1.json
+      hash: md5
+      md5: a6bcac697c6b26de277ad370e05322b4
+      size: 16841
+    - path: experiments/configs/all_spec_references_cata_p4_v1.json
+      hash: md5
+      md5: 53c978c7d0b010752c60dcb7cedb22aa
+      size: 157326
+    - path: experiments/configs/all_spec_targets_cata_p4_v1.json
+      hash: md5
+      md5: 5c75e06158fb7c0a2e5a9075d8e7025a
+      size: 215583
+    - path: experiments/configs/bot_acceptance_policy_v1.json
+      hash: md5
+      md5: 9f1db8e2465871eb7c0ef4cf519f1088
+      size: 13973
+    - path: experiments/configs/stonecore_pairwise_constraints_v1.json
+      hash: md5
+      md5: 73ec2e1039d257ab30501d05a19a70dd
+      size: 5077
+    - path: experiments/configs/validation_provisioning_cata_001.json
+      hash: md5
+      md5: ab033e42803d700ae85947c741d9283e
+      size: 24355
+    - path: experiments/configs/validation_scenarios_cata_001.json
+      hash: md5
+      md5: 7f130d40ed3f6a3f8229cdd42dbd5c78
+      size: 10342
+    - path: tools/bot_ml/build_live_scenario_reports.py
+      hash: md5
+      md5: 57753673c58639afcee8b3a405619192
+      size: 39753
+    - path: tools/bot_ml/live_validation_session.py
+      hash: md5
+      md5: c50a01cbec7eb9de4d05aa6ca8188178
+      size: 42819
+    - path: tools/bot_ml/promote_live_validation_artifact.py
+      hash: md5
+      md5: a2959c5c228db41531ddbed61623292b
+      size: 3023
+    - path: tools/bot_ml/run_live_bot_validation.py
+      hash: md5
+      md5: a0890e80180b59b8351ba8a6cc5d5efc
+      size: 194635
+    outs:
+    - path: dataset/all_spec_phase2_evidence_contract
+      hash: md5
+      md5: 5392a296993004204e398f76b6fc768f.dir
+      size: 6736
+      nfiles: 2

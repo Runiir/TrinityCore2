@@ -143,6 +143,26 @@ stages:
     outs:
     - dataset/all_spec_phase1_catalogs:
         persist: true
+  all_spec_phase2_evidence_contract:
+    cmd: python -m tools.bot_ml.live_validation_session --output-dir
+      dataset/all_spec_phase2_evidence_contract
+    deps:
+    - tools/bot_ml/live_validation_session.py
+    - tools/bot_ml/run_live_bot_validation.py
+    - tools/bot_ml/build_live_scenario_reports.py
+    - tools/bot_ml/promote_live_validation_artifact.py
+    - experiments/configs/all_spec_targets_cata_p4_v1.json
+    - experiments/configs/all_spec_references_cata_p4_v1.json
+    - experiments/configs/all_spec_calibration_scenarios_v1.json
+    - experiments/configs/stonecore_pairwise_constraints_v1.json
+    - experiments/configs/validation_provisioning_cata_001.json
+    - experiments/configs/bot_acceptance_policy_v1.json
+    - experiments/configs/validation_scenarios_cata_001.json
+    - dataset/validation_gear_profiles/profiles.json
+    - dataset/validation_scenarios/validation_routes.jsonl
+    outs:
+    - dataset/all_spec_phase2_evidence_contract:
+        persist: true
   validation_provisioning_verify:
     cmd: python -m tools.bot_ml.validate_validation_provisioning --config
       experiments/configs/validation_provisioning_cata_001.json --gear-profiles

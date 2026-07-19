@@ -6,6 +6,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -35,22 +36,32 @@ from tools.bot_ml.build_world_planner_manifests import build_planner_manifests, 
 from tools.bot_ml.build_quest_profession_reports import build_report as build_quest_profession_report
 from tools.bot_ml.validate_world_planner import STAGED_GATES, main as world_planner_validate_main, validate_manifest_coverage
 from tools.bot_ml.build_validation_scenario_manifests import build_manifests as build_validation_scenario_manifests
-from tools.bot_ml.build_live_scenario_reports import build_reports as build_live_scenario_reports, build_reports_from_live_reports, main as live_scenario_reports_main
+from tools.bot_ml.build_live_scenario_reports import attached_full_clear_valid, build_reports as build_live_scenario_reports, build_reports_from_live_reports, main as live_scenario_reports_main
 from tools.bot_ml.build_validation_run_plan import build_plan as build_validation_run_plan
 from tools.bot_ml.build_validation_run_plan import main as validation_run_plan_main
 from tools.bot_ml.build_validation_run_status import build_status as build_validation_run_status
 from tools.bot_ml.live_validation_session import (
+    EVIDENCE_ARTIFACT_HASHES,
+    EVIDENCE_HASH_COMPONENTS,
+    EVIDENCE_SCOPE_IDS,
     LiveValidationSessionError,
+    acceptance_facts_from_report,
+    advance_evidence_epoch,
+    apply_acceptance_evaluation,
+    build_evidence_envelope,
+    classify_evidence_freshness,
     dvc_lock_path,
     dvc_repository_lock,
     ensure_healthy_matching_session,
     build_session,
+    evidence_compatible_for_aggregation,
+    evaluate_acceptance,
     inspect_session,
     live_validation_lock,
     sha256_file,
     systemd_transient_command,
 )
-from tools.bot_ml.run_live_bot_validation import apply_calibration_only_acceptance, boss_route_health_progress, bot_status_snapshot, bounded_console_deadline, build_bot_pool_reset_sql, command_script, heartbeat_commands_from_script, live_validation_report, load_scenario_reports, load_validation_route, main as live_validation_main, parse_json_objects, parse_soap_result, poll_bot_status, read_until_console_prompt, route_segment_complete, run_reusable_validation_session, run_transport_completion_watchdog, run_worldserver, run_worldserver_completion_watchdog, scripted_activation_wait_pending, split_sql_statements, supersede_transient_route_failures, trace_after, trinity_config_bool, unresolved_route_death_loop_count, unresolved_route_stuck_count, upsert_trinity_config, wait_for_bot_status_state, watchdog_state, write_validation_config
+from tools.bot_ml.run_live_bot_validation import apply_calibration_only_acceptance, attempt_evidence_envelope, boss_route_health_progress, bot_status_snapshot, bounded_console_deadline, build_bot_pool_reset_sql, command_script, heartbeat_commands_from_script, live_validation_report, load_scenario_reports, load_validation_route, main as live_validation_main, parse_json_objects, parse_soap_result, poll_bot_status, read_until_console_prompt, route_segment_complete, run_reusable_validation_session, run_transport_completion_watchdog, run_worldserver, run_worldserver_completion_watchdog, scripted_activation_wait_pending, split_sql_statements, strict_manifest_evidence, supersede_transient_route_failures, trace_after, trinity_config_bool, unresolved_route_death_loop_count, unresolved_route_stuck_count, upsert_trinity_config, wait_for_bot_status_state, watchdog_state, write_validation_config
 from tools.bot_ml.orchestrator_daemon import codex_command, detect_rate_limit, handle_rate_limit, initial_state, run_one_cycle, sleep_until_resume
 from tools.bot_ml.generate_lane_configs import write_lane_config
 from tools.bot_ml.promote_live_validation_artifact import promote
@@ -3948,9 +3959,9 @@ TC> {"duration_minutes":9.0,"decisions":120,"total_kills":10,"quests_completed":
     report = live_validation_report(output, validation_context={"scenario_id": "stonecore_5n"})
 
     assert report["evidence"]["validation_route_manifest_complete"] == 1
-    assert report["completion_reason"] == "validation_route_manifest_complete"
+    assert report["completion_reason"] == "incomplete_evidence"
     assert report["acceptable_final_evidence"] is False
-    assert "missing_validation_route_manifest" in report["final_evidence_rejections"]
+    assert "not_all_stages_passed" in report["final_evidence_rejections"]
 
 
 def test_live_bot_validation_uses_scenario_reports_for_dungeon_and_raid_gates(tmp_path):
@@ -4036,7 +4047,7 @@ def test_live_scenario_report_builder_rejects_unscoped_cross_scenario_kills(tmp_
     assert reports["stonecore_5n"]["teacher_label_quality"] == "weak"
     assert reports["stonecore_5n"]["ml_training_label"] == "weak_inferred_label"
     assert reports["blackwing_descent_10n"]["raid_boss_kills"] == 0
-    assert reports["blackwing_descent_10n"]["boss_stage_passed"] is True
+    assert reports["blackwing_descent_10n"]["boss_stage_passed"] is False
     assert reports["blackwing_descent_10n"]["clear_complete"] is False
 
 
@@ -4339,7 +4350,12 @@ def test_live_scenario_report_builder_accepts_manifest_backed_uninterrupted_clea
         },
         "failure_labels": [],
         "failure_reason": None,
+        "returncode": 0,
+        "timed_out": False,
+        "stages": [{"stage": "full_stonecore_clear", "missing": []}],
+        "watchdog_state": {},
     }
+    apply_acceptance_evaluation(live_report)
 
     stonecore = build_live_scenario_reports(live_report, scenario_dir)["stonecore_5n"]
 
@@ -4805,14 +4821,32 @@ def test_live_validation_session_hashes_inputs_and_builds_bounded_systemd_comman
     config.write_text("BotWorld.AutoStart = 1\n", encoding="utf-8")
 
     def runner(command):
-        assert command[:4] == ["git", "-C", str(tmp_path), "rev-parse"]
-        return subprocess.CompletedProcess(command, 0, "a" * 40 + "\n", "")
+        assert command[:3] == ["git", "-C", str(tmp_path)]
+        stdout = "a" * 40 + "\n" if command[3] == "rev-parse" else ""
+        return subprocess.CompletedProcess(command, 0, stdout, "")
 
-    session = build_session(tmp_path, "production/token=secret", binary, config, command_runner=runner)
+    session = build_session(
+        tmp_path,
+        "production/token=secret",
+        binary,
+        config,
+        restart_components={"database_schema_sha256": "d" * 64},
+        command_runner=runner,
+    )
+    changed_schema = build_session(
+        tmp_path,
+        "production/token=secret",
+        binary,
+        config,
+        restart_components={"database_schema_sha256": "e" * 64},
+        command_runner=runner,
+    )
     command = systemd_transient_command(session)
 
     assert session.git_head == "a" * 40
     assert session.binary_sha256 == sha256_file(binary)
+    assert session.fingerprint != changed_schema.fingerprint
+    assert session.restart_components_sha256 != changed_schema.restart_components_sha256
     assert session.environment not in session.metadata().values()
     assert "secret" not in str(session.metadata())
     assert command == [
@@ -4877,6 +4911,181 @@ def test_live_validation_session_fails_closed_and_locks_are_repository_scoped(tm
                 pass
     with dvc_repository_lock(tmp_path) as lock_path:
         assert lock_path == dvc_lock_path(tmp_path)
+
+
+def phase2_identity_inputs():
+    components = {name: hashlib.sha256(f"component:{name}".encode()).hexdigest() for name in EVIDENCE_HASH_COMPONENTS}
+    scopes = {name: f"scope:{name}" for name in EVIDENCE_SCOPE_IDS}
+    artifacts = {name: hashlib.sha256(f"artifact:{name}".encode()).hexdigest() for name in EVIDENCE_ARTIFACT_HASHES}
+    return components, scopes, artifacts
+
+
+def test_phase2_composite_identity_blocks_incompatible_aggregation_and_supersedes_without_deletion():
+    components, scopes, artifacts = phase2_identity_inputs()
+    baseline = build_evidence_envelope(components, scopes, artifacts)
+
+    for component in EVIDENCE_HASH_COMPONENTS:
+        changed_components = dict(components)
+        changed_components[component] = hashlib.sha256(f"changed:{component}".encode()).hexdigest()
+        changed = build_evidence_envelope(changed_components, scopes, artifacts)
+        assert not evidence_compatible_for_aggregation(baseline, changed), component
+        classified = classify_evidence_freshness([baseline, changed], changed)
+        assert len(classified) == 2
+        assert classified[0]["freshness"] == "superseded"
+        assert classified[0]["superseded_by"] == changed["attempt_identity_sha256"]
+        assert classified[1]["freshness"] == "current"
+
+    changed_attempt = dict(scopes)
+    changed_attempt["attempt_id"] = "scope:attempt_id:repeat-2"
+    repeat = build_evidence_envelope(components, changed_attempt, artifacts)
+    assert evidence_compatible_for_aggregation(baseline, repeat)
+    assert baseline["attempt_identity_sha256"] != repeat["attempt_identity_sha256"]
+
+
+def test_phase2_runner_binds_every_attempt_and_requires_external_epoch_database_identity(tmp_path):
+    worldserver = tmp_path / "worldserver"
+    worldserver.write_bytes(b"binary")
+    config = tmp_path / "worldserver.conf"
+    config.write_text("", encoding="utf-8")
+    provisioning = tmp_path / "provisioning.json"
+    provisioning.write_text("{}", encoding="utf-8")
+    gear = tmp_path / "gear.json"
+    gear.write_text("{}", encoding="utf-8")
+    output_dir = tmp_path / "attempt"
+    output_dir.mkdir()
+    (output_dir / "worldserver_output.log").write_text("TC> evidence\n", encoding="utf-8")
+    args = SimpleNamespace(
+        evidence_identity_manifest=None,
+        config=config,
+        worldserver=worldserver,
+        validation_provisioning_config=provisioning,
+        gear_profiles=gear,
+        transport="process",
+        output_dir=output_dir,
+        bot_pool_tag=["party-a"],
+        selector="all",
+        observe_sec=300,
+        timeout_sec=900,
+    )
+    report = {"command": [str(worldserver)], "config": str(config), "generated_at_unix": 1}
+
+    incomplete = attempt_evidence_envelope(args, report, {"scenario_id": "stonecore_5n"}, {}, {})
+    assert incomplete["identity_complete"] is False
+    assert len(incomplete["identity_incomplete_reasons"]) == 4
+    acceptance_report = {
+        "returncode": 0,
+        "timed_out": False,
+        "stages": [{"stage": "attempt", "missing": []}],
+        "failure_labels": [],
+        "validation_context": {},
+        "evidence": {},
+        "validation_route_manifest": {},
+        "watchdog_state": {},
+    }
+    apply_acceptance_evaluation(acceptance_report)
+    assert acceptance_report["acceptable_final_evidence"] is True
+    acceptance_report["evidence_envelope"] = incomplete
+    apply_acceptance_evaluation(acceptance_report, identity_required=True)
+    assert acceptance_report["acceptable_final_evidence"] is False
+    assert acceptance_report["final_evidence_rejections"] == ["incomplete_evidence_identity"]
+
+    identity_manifest = tmp_path / "identity.json"
+    identity_manifest.write_text(
+        json.dumps(
+            {
+                "component_hashes": {
+                    name: hashlib.sha256(name.encode()).hexdigest()
+                    for name in (
+                        "database_snapshot_sha256",
+                        "database_schema_sha256",
+                        "server_epoch_sha256",
+                        "profile_generation_sha256",
+                    )
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    args.evidence_identity_manifest = identity_manifest
+    complete = attempt_evidence_envelope(args, report, {"scenario_id": "stonecore_5n"}, {}, {})
+    assert complete["identity_complete"] is True
+    assert complete["identity_incomplete_reasons"] == []
+    assert complete["scope_ids"]["measurement_window_id"] == "observe:300:timeout:900"
+    assert complete["artifact_hashes"]["raw_artifact_sha256"] == sha256_file(output_dir / "worldserver_output.log")
+
+
+def test_phase2_epoch_transitions_drain_attempts_and_never_reuse_rollback_generation():
+    restart_v1 = hashlib.sha256(b"restart-v1").hexdigest()
+    restart_v2 = hashlib.sha256(b"restart-v2").hexdigest()
+    profile_v1 = hashlib.sha256(b"profile-v1").hexdigest()
+    profile_v2 = hashlib.sha256(b"profile-v2").hexdigest()
+    first = advance_evidence_epoch(None, restart_identity_sha256=restart_v1, profile_content_sha256=profile_v1)
+    reload = advance_evidence_epoch(first, restart_identity_sha256=restart_v1, profile_content_sha256=profile_v2)
+    rollback = advance_evidence_epoch(reload, restart_identity_sha256=restart_v1, profile_content_sha256=profile_v1)
+
+    assert reload["transition"] == "profile_generation"
+    assert reload["restart_required"] is False
+    assert reload["server_epoch_id"] == first["server_epoch_id"]
+    assert rollback["profile_generation_id"] not in {first["profile_generation_id"], reload["profile_generation_id"]}
+    assert rollback["logical_epoch_id"] not in {first["logical_epoch_id"], reload["logical_epoch_id"]}
+    with pytest.raises(LiveValidationSessionError, match="open attempts"):
+        advance_evidence_epoch(
+            rollback,
+            restart_identity_sha256=restart_v2,
+            profile_content_sha256=profile_v1,
+            open_attempt_count=1,
+        )
+    restarted = advance_evidence_epoch(
+        rollback,
+        restart_identity_sha256=restart_v2,
+        profile_content_sha256=profile_v1,
+    )
+    assert restarted["transition"] == "process_restart"
+    assert restarted["restart_required"] is True
+    assert restarted["server_epoch_id"] != rollback["server_epoch_id"]
+    assert restarted["profile_generation_id"] == rollback["profile_generation_id"]
+
+
+def test_phase2_acceptance_recomputes_facts_and_fails_closed_on_stored_summary_discrepancy():
+    report = {
+        "returncode": 0,
+        "timed_out": False,
+        "stages": [{"stage": "movement_smoke", "passed": False, "missing": []}],
+        "failure_labels": [],
+        "validation_context": {},
+        "evidence": {},
+        "validation_route_manifest": {},
+        "watchdog_state": {},
+        "acceptable_final_evidence": False,
+        "all_passed": False,
+        "passed": 0,
+        "failed": 1,
+        "final_evidence_rejections": ["stored_only_claim"],
+    }
+    facts = acceptance_facts_from_report(report)
+    result = evaluate_acceptance(facts)
+
+    assert result["accepted"] is True
+    assert result["passed_count"] == 1
+    assert "passed" not in facts["stages"][0]
+
+    apply_acceptance_evaluation(report)
+    assert report["acceptable_final_evidence"] is False
+    assert report["acceptance_verification"]["stored_summary_discrepancies"]
+    assert "stored_summary_discrepancy" in report["final_evidence_rejections"]
+
+
+def test_phase2_scenario_acceptance_ignores_stored_clear_booleans():
+    routes = [{"step": 1, "kind": "boss", "route_node_id": "corborus", "route_generation": 1}]
+    stored_claim_only = {
+        "clear_complete": True,
+        "completion_claim_valid": True,
+        "completion_evidence_mode": "uninterrupted_live_clear",
+        "expected_segments": ["01_corborus"],
+        "segment_results": [],
+    }
+
+    assert attached_full_clear_valid(stored_claim_only, routes) is False
 
 
 def test_bot_autonomy_daemon_detects_rate_limit_retry_after():
@@ -7192,9 +7401,26 @@ def test_live_artifact_promotion_requires_accepted_evidence(tmp_path):
     assert not canonical.exists()
 
     source.write_text(json.dumps({"all_passed": True, "acceptable_final_evidence": True}), encoding="utf-8")
+    with pytest.raises(SystemExit):
+        promote(source, canonical, manifest)
+
+    independently_accepted = {
+        "schema": "bot_live_validation_report_v1",
+        "returncode": 0,
+        "timed_out": False,
+        "stages": [{"stage": "movement_smoke", "missing": []}],
+        "failure_labels": [],
+        "validation_context": {},
+        "evidence": {},
+        "validation_route_manifest": {},
+        "watchdog_state": {},
+    }
+    apply_acceptance_evaluation(independently_accepted)
+    source.write_text(json.dumps(independently_accepted), encoding="utf-8")
     accepted = promote(source, canonical, manifest)
 
     assert accepted["accepted"] is True
+    assert accepted["acceptance_verification"]["discrepancies"] == []
     assert json.loads(canonical.read_text(encoding="utf-8"))["all_passed"] is True
 
 
@@ -8834,7 +9060,8 @@ def test_phase14_telemetry_clip_storage_surface():
 
 
 def strict_stonecore_report(routes: list[dict], entries: list[dict]) -> dict:
-    return {
+    report = {
+        "schema": "bot_live_validation_report_v1",
         "source_live_report": "stonecore_strict.json",
         "validation_context": {"scenario_id": "stonecore_5n"},
         "completion_reason": "validation_route_manifest_complete",
@@ -8851,7 +9078,12 @@ def strict_stonecore_report(routes: list[dict], entries: list[dict]) -> dict:
         "evidence": {"failures": 0, "trash_pulls": 1},
         "failure_labels": [],
         "failure_reason": "",
+        "returncode": 0,
+        "timed_out": False,
+        "stages": [{"stage": "full_stonecore_clear", "missing": []}],
+        "watchdog_state": {},
     }
+    return apply_acceptance_evaluation(report)
 
 
 def strict_stonecore_scenario(tmp_path: Path, routes: list[dict]) -> Path:

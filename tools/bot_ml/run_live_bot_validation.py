@@ -25,14 +25,14 @@ try:
     from .build_validation_provisioning import apply_gear_profiles, build_account_insert_sql, build_character_insert_sql, load_config, load_gear_profiles
     from .common import write_json
     from .extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
-    from .live_validation_session import build_session, ensure_healthy_matching_session, live_validation_lock, stop_session
+    from .live_validation_session import apply_acceptance_evaluation, build_evidence_envelope, build_session, canonical_sha256, ensure_healthy_matching_session, git_dirty_state_sha256, git_head, live_validation_lock, sha256_file, sha256_text, stop_session
 except ImportError:
     from analyze_combat_log import analyze_combat_log
     from audit_role_efficiency import build_audit
     from build_validation_provisioning import apply_gear_profiles, build_account_insert_sql, build_character_insert_sql, load_config, load_gear_profiles
     from common import write_json
     from extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
-    from live_validation_session import build_session, ensure_healthy_matching_session, live_validation_lock, stop_session
+    from live_validation_session import apply_acceptance_evaluation, build_evidence_envelope, build_session, canonical_sha256, ensure_healthy_matching_session, git_dirty_state_sha256, git_head, live_validation_lock, sha256_file, sha256_text, stop_session
 
 
 DEFAULT_LIVE_VALIDATION_TIMEOUT_SEC = 90
@@ -2445,7 +2445,7 @@ def live_validation_report(
         validation_route_manifest=validation_route_manifest,
         completion=reason,
     )
-    return {
+    report = {
         "schema": "bot_live_validation_report_v1",
         "command": command or [],
         "duration_policy": duration_policy,
@@ -2465,6 +2465,8 @@ def live_validation_report(
         "combat_calibration": combat_calibration,
         "combat_analysis": combat_analysis,
         "scenario_reports": scenario_reports,
+        "validation_context": validation_context or {},
+        "validation_route_manifest": validation_route_manifest or {},
         "command_errors": errors,
         "evidence": evidence,
         "progress_counters": state["progress_counters"],
@@ -2477,11 +2479,12 @@ def live_validation_report(
         "failure_reason": effective_failure_labels[0] if effective_failure_labels else None,
         "stages": stage_rows,
         "passed": passed,
-        "failed": 0 if not rejections else len(stage_rows) - passed,
-        "all_passed": not rejections,
+        "failed": len(stage_rows) - passed,
+        "all_passed": all_passed,
         "runtime_ml_control": "offline_shadow_only",
         "control_eligible": False,
     }
+    return apply_acceptance_evaluation(report)
 
 
 def read_until_console_prompt(process: subprocess.Popen[str], deadline: float, required_text: str = "") -> str:
@@ -3249,6 +3252,105 @@ def run_route_sequence(args: argparse.Namespace, routes: list[dict[str, Any]]) -
     return 0 if report["all_passed"] else 1
 
 
+def attempt_evidence_envelope(
+    args: argparse.Namespace,
+    report: dict[str, Any],
+    validation_context: dict[str, Any],
+    validation_route_manifest: dict[str, Any],
+    session_lifecycle: dict[str, Any],
+) -> dict[str, Any]:
+    """Bind one closed attempt to the shared Phase 2 evidence identity."""
+    supplied: dict[str, Any] = {}
+    manifest_path = getattr(args, "evidence_identity_manifest", None)
+    if manifest_path:
+        try:
+            payload = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise SystemExit(f"invalid --evidence-identity-manifest: {exc}") from exc
+        if not isinstance(payload, dict):
+            raise SystemExit("--evidence-identity-manifest must contain a JSON object")
+        supplied = payload
+    supplied_components = supplied.get("component_hashes") if isinstance(supplied.get("component_hashes"), dict) else {}
+    supplied_scopes = supplied.get("scope_ids") if isinstance(supplied.get("scope_ids"), dict) else {}
+    supplied_artifacts = supplied.get("artifact_hashes") if isinstance(supplied.get("artifact_hashes"), dict) else {}
+
+    def file_hash(path: Path, label: str) -> str:
+        return sha256_file(path) if path.is_file() else canonical_sha256({"missing": label, "path": str(path)})
+
+    profile_manifest = Path(trinity_config_string(args.config, "BotWorld.ProfileManifest", "dataset/bot_runtime_profiles/profiles.json"))
+    if not profile_manifest.is_absolute():
+        profile_manifest = REPO_ROOT / profile_manifest
+    target_catalog = REPO_ROOT / "experiments/configs/all_spec_targets_cata_p4_v1.json"
+    reference_catalog = REPO_ROOT / "experiments/configs/all_spec_references_cata_p4_v1.json"
+    policy = REPO_ROOT / "experiments/configs/bot_acceptance_policy_v1.json"
+    scenario_config = REPO_ROOT / "experiments/configs/validation_scenarios_cata_001.json"
+    external_names = (
+        "database_snapshot_sha256",
+        "database_schema_sha256",
+        "server_epoch_sha256",
+        "profile_generation_sha256",
+    )
+    incomplete = [name for name in external_names if not re.fullmatch(r"[0-9a-f]{64}", str(supplied_components.get(name) or ""))]
+    process_session = canonical_sha256(
+        {
+            "transport": args.transport,
+            "command": report.get("command") or [],
+            "session_fingerprint": session_lifecycle.get("session_fingerprint") or "",
+            "server_pid": int(session_lifecycle.get("server_pid") or 0),
+            "generated_at_unix": int(report.get("generated_at_unix") or 0),
+        }
+    )
+    components = {
+        "git_commit_sha256": sha256_text(str(session_lifecycle.get("git_head") or git_head(REPO_ROOT))),
+        "git_dirty_state_sha256": str(session_lifecycle.get("git_dirty_state_sha256") or git_dirty_state_sha256(REPO_ROOT)),
+        "binary_sha256": sha256_file(args.worldserver.resolve()),
+        "config_sha256": sha256_file(Path(report.get("config") or args.config).resolve()),
+        "database_snapshot_sha256": str(supplied_components.get("database_snapshot_sha256") or canonical_sha256({"state": "unprobed_database_snapshot"})),
+        "database_schema_sha256": str(supplied_components.get("database_schema_sha256") or canonical_sha256({"state": "unprobed_database_schema"})),
+        "process_session_sha256": process_session,
+        "server_epoch_sha256": str(supplied_components.get("server_epoch_sha256") or canonical_sha256({"state": "unpublished_server_epoch", "process_session_sha256": process_session})),
+        "spec_catalog_sha256": file_hash(target_catalog, "spec_catalog"),
+        "provisioning_sha256": file_hash(args.validation_provisioning_config.resolve(), "provisioning"),
+        "gear_sha256": file_hash(args.gear_profiles.resolve(), "gear"),
+        "profile_generation_sha256": str(supplied_components.get("profile_generation_sha256") or canonical_sha256({"state": "unpublished_profile_generation", "profile_content_sha256": file_hash(profile_manifest, "profile_manifest")})),
+        "reference_sha256": file_hash(reference_catalog, "reference_catalog"),
+        "policy_sha256": file_hash(policy, "acceptance_policy"),
+        "scenario_sha256": file_hash(scenario_config, "scenario_config"),
+        "route_sha256": canonical_sha256(validation_route_manifest or validation_context or {"state": "no_route"}),
+    }
+    generated = int(report.get("generated_at_unix") or 0)
+    scenario_id = str(validation_context.get("scenario_id") or "unscoped")
+    scope_defaults = {
+        "batch_id": str(args.output_dir.parent.resolve()),
+        "cohort_id": ",".join(sorted(str(value) for value in (args.bot_pool_tag or []))) or str(args.selector),
+        "composition_id": scenario_id,
+        "party_id": scenario_id,
+        "instance_id": scenario_id,
+        "attempt_id": f"{args.output_dir.resolve()}:{generated}",
+        "repeat_id": str(validation_context.get("segment_id") or validation_context.get("route_node_id") or "full"),
+        "measurement_window_id": f"observe:{int(args.observe_sec or 0)}:timeout:{int(args.timeout_sec or 0)}",
+    }
+    scopes = {name: str(supplied_scopes.get(name) or value) for name, value in scope_defaults.items()}
+    raw_log = args.output_dir / "worldserver_output.log"
+    compact_payload = {key: value for key, value in report.items() if key not in {"evidence_envelope", "acceptance_facts", "acceptance_verification"}}
+    artifacts = {
+        "raw_artifact_sha256": file_hash(raw_log, "raw_worldserver_output"),
+        "compact_artifact_sha256": canonical_sha256(compact_payload),
+        "dvc_pointer_sha256": str(supplied_artifacts.get("dvc_pointer_sha256") or canonical_sha256({"state": "not_yet_published_to_dvc"})),
+        "remote_verification_receipt_sha256": str(supplied_artifacts.get("remote_verification_receipt_sha256") or canonical_sha256({"state": "not_yet_remote_verified"})),
+    }
+    envelope = build_evidence_envelope(
+        components,
+        scopes,
+        artifacts,
+        freshness="current" if not incomplete else "current_unpublished",
+    )
+    envelope["identity_complete"] = not incomplete
+    envelope["identity_incomplete_reasons"] = [f"missing_external_{name}" for name in incomplete]
+    envelope["identity_manifest"] = str(Path(manifest_path).resolve()) if manifest_path else ""
+    return envelope
+
+
 def run_reusable_validation_session(
     args: argparse.Namespace,
     script: str,
@@ -3281,9 +3383,23 @@ def run_reusable_validation_session(
         if not configured_manifest or Path(configured_manifest).resolve() != expected_manifest.resolve():
             raise SystemExit("session runtime profile route manifest does not match --validation-scenario-dir")
 
+    restart_components: dict[str, str] = {}
+    if args.evidence_identity_manifest:
+        try:
+            identity_payload = json.loads(args.evidence_identity_manifest.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise SystemExit(f"invalid --evidence-identity-manifest: {exc}") from exc
+        identity_components = identity_payload.get("component_hashes") if isinstance(identity_payload, dict) else {}
+        for name in ("database_snapshot_sha256", "database_schema_sha256"):
+            value = str((identity_components or {}).get(name) or "")
+            if not re.fullmatch(r"[0-9a-f]{64}", value):
+                raise SystemExit(f"--evidence-identity-manifest is missing valid {name}")
+            restart_components[name] = value
+
     session = build_session(
         REPO_ROOT, args.session_environment, args.worldserver, args.config,
         fingerprint_paths=fingerprint_paths,
+        restart_components=restart_components,
     )
     command = ["SESSION", session.unit_name, args.soap_url]
     output_parts: list[str] = []
@@ -3416,6 +3532,7 @@ def main() -> int:
     parser.add_argument("--session-environment", default="default", help="Stable identity for the shared validation server and live-attempt lock.")
     parser.add_argument("--session-profile", default="", help="Runtime profile selected by .botauto start in reusable session mode; defaults to the scenario ID.")
     parser.add_argument("--session-transition-timeout-sec", type=int, default=180, help="Bound for reusable-session stop/start state transitions.")
+    parser.add_argument("--evidence-identity-manifest", type=Path, help="Canonical Phase 2 component hashes and scope IDs; DB/schema/epoch/profile generation hashes are required for certifying acceptance.")
     parser.add_argument("--observe-sec", type=int, default=None, help="Sleep after .botauto start before collecting diagnostics. Defaults to 0 seconds for smoke checks and 300 seconds for boss-route validations.")
     parser.add_argument("--reset-bot-pool", action="store_true", help="Before validation, reset volatile state for enabled bot-pool rows matching --bot-pool-tag.")
     parser.add_argument("--bot-pool-tag", action="append", default=[], help="Experiment tag substring for --reset-bot-pool. Defaults to test_account when omitted.")
@@ -3740,6 +3857,18 @@ def main() -> int:
     attach_stonecore_role_quality_audit(report, validation_context, validation_route_manifest)
     if args.calibration_only:
         apply_calibration_only_acceptance(report)
+    report["evidence_envelope"] = attempt_evidence_envelope(
+        args,
+        report,
+        validation_context,
+        validation_route_manifest,
+        session_lifecycle,
+    )
+    apply_acceptance_evaluation(
+        report,
+        identity_required=True,
+        session_required=args.transport == "session",
+    )
     write_json(args.output_dir / "report.json", report)
     print(json.dumps(report, indent=2, sort_keys=True))
     segment_success = route_segment_complete(report, validation_route)

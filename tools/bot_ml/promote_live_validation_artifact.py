@@ -8,8 +8,10 @@ from typing import Any
 
 try:
     from .common import stable_hash, write_json
+    from .live_validation_session import verify_report_acceptance
 except ImportError:
     from common import stable_hash, write_json
+    from live_validation_session import verify_report_acceptance
 
 
 def load_report(path: Path) -> dict[str, Any]:
@@ -17,10 +19,13 @@ def load_report(path: Path) -> dict[str, Any]:
 
 
 def promotion_manifest(source_report: Path, canonical_report: Path, report: dict[str, Any]) -> dict[str, Any]:
-    accepted = bool(report.get("acceptable_final_evidence")) and bool(report.get("all_passed"))
-    rejections = list(report.get("final_evidence_rejections") or [])
+    verification = verify_report_acceptance(report)
+    accepted = bool(verification["accepted"])
+    rejections = list((verification.get("recomputed") or {}).get("rejections") or [])
+    if verification.get("discrepancies"):
+        rejections.append("stored_summary_discrepancy")
     if not accepted and not rejections:
-        rejections.append("report_not_marked_acceptable_final_evidence")
+        rejections.append("independent_acceptance_failed")
     return {
         "schema": "bot_live_validation_artifact_promotion_v1",
         "accepted": accepted,
@@ -28,7 +33,8 @@ def promotion_manifest(source_report: Path, canonical_report: Path, report: dict
         "canonical_report": str(canonical_report),
         "completion_reason": report.get("completion_reason"),
         "failure_labels": report.get("failure_labels") or [],
-        "final_evidence_rejections": rejections,
+        "final_evidence_rejections": list(dict.fromkeys(rejections)),
+        "acceptance_verification": verification,
         "source_report_hash": stable_hash(report),
         "db_clone": (report.get("lane_manifest") or {}).get("databases") or (report.get("preparation") or {}).get("db_clone") or {},
     }
