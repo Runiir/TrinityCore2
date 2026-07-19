@@ -2,7 +2,7 @@
   "schema": "all_spec_stonecore_program_status_v1",
   "program": "all_spec_stonecore",
   "updated_date": "2026-07-19",
-  "active_phase": 3,
+  "active_phase": 4,
   "phase_status": [
     {
       "phase": 0,
@@ -205,13 +205,67 @@
     {
       "phase": 3,
       "name": "low_disk_immutable_batch_capture_and_dvc_publication",
+      "status": "completed",
+      "gate": {
+        "passed": true,
+        "reason_codes": [
+          "bounded_zstd_raw_capture",
+          "single_parquet_zstd_analytical_representation",
+          "compact_latest_stream_and_heartbeat_manifest",
+          "independent_acceptance_and_content_hash_recomputation",
+          "single_publisher_dvc_lock",
+          "separate_raw_and_compact_dvc_identities",
+          "remote_verification_receipt_before_targeted_eviction",
+          "immutable_pointer_hydration_verified",
+          "corruption_and_failed_push_retain_workspace",
+          "immutable_database_batch_window_cleanup_guard",
+          "bounded_pending_raw_and_worldserver_output_bytes"
+        ]
+      },
+      "scope": {
+        "raw_format": "jsonl.zst",
+        "compact_format": "parquet_zstd",
+        "default_max_pending_raw_bytes": 67108864,
+        "default_max_worldserver_output_bytes": 67108864,
+        "heartbeat_files_per_run": 3,
+        "batch_specific_dvc_cache": true,
+        "broad_dvc_gc_used": false
+      },
+      "identity": {
+        "contract_sha256": "e03be2efe35a81f129e757b3fab0314261fabf8800d4aa7d5f63d736dcf13330",
+        "contract_bundle_dvc_md5": "4ad46e3e691f32455af85de5ba53f417.dir"
+      },
+      "evidence": {
+        "contract_bundle": "dataset/all_spec_phase3_batch_lifecycle",
+        "remote_verification": "pixi run dvc status -c dataset/all_spec_phase2_evidence_contract dataset/all_spec_phase3_batch_lifecycle",
+        "remote_verification_outcome": "cache_and_remote_in_sync"
+      },
+      "validation": {
+        "focused_phase3_tests": "5 passed",
+        "broad_test_file": "293 passed, 9 known unrelated live-process/watchdog tests deselected",
+        "known_watchdog_probe": "existing process shutdown timing test still returns 124 instead of 0; heartbeat storage assertions were updated",
+        "python_compile": "passed",
+        "git_diff_check": "passed",
+        "dvc_stage_status": "up_to_date",
+        "dvc_remote_status": "cache_and_remote_in_sync"
+      },
+      "orchestration": {
+        "owner": "root",
+        "model": "gpt-5.6-sol",
+        "reasoning": "high",
+        "workers_launched": 0
+      }
+    },
+    {
+      "phase": 4,
+      "name": "complete_and_version_explicit_rotation_engine",
       "status": "in_progress"
     },
     {
-      "phase_range": "4-12",
+      "phase_range": "5-12",
       "status": "pending"
     }
   ],
   "blockers": [],
-  "exact_next_handoff_prompt": "Continue approved all-spec Stonecore execution at Phase 3 only. Land the low-disk immutable batch lifecycle before high-volume experiments: bounded compressed raw capture, one compact analytical representation, compact heartbeat/final manifests, independent acceptance and content hashes, repository DVC publication locking, separate raw/compact DVC identities, immediate push and remote/hash receipt verification, targeted batch-cache eviction only after verified publication, retained summaries/manifests/receipts/pointers only, immutable DB batch/window export cleanup, and bounded pending bytes. Prove the gate with a synthetic push/remote-verify/targeted-evict/hydrate round trip plus corruption and failed-push cleanup prevention tests; do not begin Phase 4 until the Phase 3 gate is checkpointed and remotely synchronized."
+  "exact_next_handoff_prompt": "Continue approved all-spec Stonecore execution at Phase 4 only. Keep BotClassSpecActionProfileStore as runtime authority and replace lazy mutable profile loading with validated immutable snapshots. Validate all 31 catalog keys, canonicalize legacy tags, hash and monotonically version profile generations, publish atomically only when the whole snapshot is valid, pin attempts to a snapshot, retain the previous snapshot for controlled rollback, and make listing/dump report full catalog coverage. Add only the typed predicates required by Phase 4 rotations, split candidate evaluation into legality, compiled conditions, target selection, deterministic priority/scoring, and explicit rejection diagnostics, and keep mechanic_tags descriptive. Deliver forward and rollback SQL with exact prior hashes and DBC validation. Prove all 31 profiles load in one valid snapshot, invalid actions block publication, and active attempts remain pinned across reload and rollback; do not begin Phase 5 until the Phase 4 gate is checkpointed and remotely synchronized."
 }

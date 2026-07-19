@@ -40,6 +40,15 @@ from tools.bot_ml.build_live_scenario_reports import attached_full_clear_valid, 
 from tools.bot_ml.build_validation_run_plan import build_plan as build_validation_run_plan
 from tools.bot_ml.build_validation_run_plan import main as validation_run_plan_main
 from tools.bot_ml.build_validation_run_status import build_status as build_validation_run_status
+from tools.bot_ml.batch_evidence_lifecycle import (
+    BatchLifecycleError,
+    append_heartbeat,
+    capture_batch,
+    cleanup_exported_database_rows,
+    publish_batch,
+    synthetic_round_trip_contract,
+    validate_capture,
+)
 from tools.bot_ml.live_validation_session import (
     EVIDENCE_ARTIFACT_HASHES,
     EVIDENCE_HASH_COMPONENTS,
@@ -49,6 +58,7 @@ from tools.bot_ml.live_validation_session import (
     advance_evidence_epoch,
     apply_acceptance_evaluation,
     build_evidence_envelope,
+    canonical_sha256,
     classify_evidence_freshness,
     dvc_lock_path,
     dvc_repository_lock,
@@ -61,7 +71,7 @@ from tools.bot_ml.live_validation_session import (
     sha256_file,
     systemd_transient_command,
 )
-from tools.bot_ml.run_live_bot_validation import apply_calibration_only_acceptance, attempt_evidence_envelope, boss_route_health_progress, bot_status_snapshot, bounded_console_deadline, build_bot_pool_reset_sql, command_script, heartbeat_commands_from_script, live_validation_report, load_scenario_reports, load_validation_route, main as live_validation_main, parse_json_objects, parse_soap_result, poll_bot_status, read_until_console_prompt, route_segment_complete, run_reusable_validation_session, run_transport_completion_watchdog, run_worldserver, run_worldserver_completion_watchdog, scripted_activation_wait_pending, split_sql_statements, strict_manifest_evidence, supersede_transient_route_failures, trace_after, trinity_config_bool, unresolved_route_death_loop_count, unresolved_route_stuck_count, upsert_trinity_config, wait_for_bot_status_state, watchdog_state, write_validation_config
+from tools.bot_ml.run_live_bot_validation import BoundedOutputParts, apply_calibration_only_acceptance, attempt_evidence_envelope, boss_route_health_progress, bot_status_snapshot, bounded_console_deadline, build_bot_pool_reset_sql, command_script, heartbeat_commands_from_script, live_validation_report, load_scenario_reports, load_validation_route, main as live_validation_main, parse_json_objects, parse_soap_result, poll_bot_status, read_until_console_prompt, route_segment_complete, run_reusable_validation_session, run_transport_completion_watchdog, run_worldserver, run_worldserver_completion_watchdog, scripted_activation_wait_pending, split_sql_statements, strict_manifest_evidence, supersede_transient_route_failures, trace_after, trinity_config_bool, unresolved_route_death_loop_count, unresolved_route_stuck_count, upsert_trinity_config, wait_for_bot_status_state, watchdog_state, write_validation_config
 from tools.bot_ml.orchestrator_daemon import codex_command, detect_rate_limit, handle_rate_limit, initial_state, run_one_cycle, sleep_until_resume
 from tools.bot_ml.generate_lane_configs import write_lane_config
 from tools.bot_ml.promote_live_validation_artifact import promote
@@ -6430,7 +6440,9 @@ def test_live_bot_validation_completion_watchdog_writes_heartbeats(tmp_path):
     assert command == [str(fake_worldserver), "--config", str(config)]
     assert "CMD .botauto status" in output
     assert (tmp_path / "validation" / "heartbeat_events.jsonl").exists()
-    assert list((tmp_path / "validation" / "heartbeats").glob("*.json"))
+    assert (tmp_path / "validation" / "latest.json").exists()
+    assert (tmp_path / "validation" / "heartbeat_manifest.json").exists()
+    assert not (tmp_path / "validation" / "heartbeats").exists()
     assert report["duration_policy"] == "completion-watchdog"
     assert report["completion_reason"] == "repeated_decision_watchdog"
 
@@ -9712,3 +9724,190 @@ def test_validation_provisioning_loads_canonical_leaseable_candidate_pool():
     assert all(bot["gear_profile"] == bot["class_spec"] for bot in bots)
     assert all(bot["talents"] and bot["primary_tree_spells"] for bot in bots)
     assert all(3 <= len(bot["glyphs"]) <= 9 for bot in bots)
+
+
+def phase3_acceptance_report():
+    return {
+        "schema": "bot_live_validation_report_v1",
+        "returncode": 0,
+        "timed_out": False,
+        "stages": [{"stage": "synthetic", "missing": []}],
+        "failure_labels": [],
+        "validation_context": {},
+        "evidence": {},
+        "validation_route_manifest": {},
+        "watchdog_state": {},
+    }
+
+
+def test_phase3_capture_is_bounded_compressed_and_content_addressed(tmp_path):
+    batch = tmp_path / "batch"
+    manifest = capture_batch(
+        batch,
+        batch_id="batch-001",
+        raw_rows=[{"batch_id": "batch-001", "event": "start"}],
+        compact_rows=[{"metric": "damage", "value": 42.0}],
+        exact_manifests={"config_sha256": hashlib.sha256(b"config").hexdigest()},
+        summary={"closed": True},
+        acceptance_report=phase3_acceptance_report(),
+        database_rows=[
+            {
+                "batch_id": "batch-001",
+                "measurement_window_id": "window-001",
+                "event": "decision",
+            }
+        ],
+        measurement_window_ids=["window-001"],
+    )
+
+    assert manifest["raw"]["format"] == "jsonl.zst"
+    assert manifest["compact"]["format"] == "parquet_zstd"
+    assert manifest["database_export"]["measurement_window_ids"] == ["window-001"]
+    assert manifest["duplicate_uncompressed_jsonl_retained"] is False
+    assert validate_capture(batch)["identity_sha256"] == manifest["identity_sha256"]
+    assert not list(batch.rglob("*.jsonl"))
+
+    oversized = tmp_path / "oversized"
+    with pytest.raises(BatchLifecycleError, match="pending bytes"):
+        capture_batch(
+            oversized,
+            batch_id="batch-oversized",
+            raw_rows=[{"payload": "x" * 256}],
+            compact_rows=[{"metric": "value", "value": 1}],
+            exact_manifests={},
+            summary={},
+            acceptance_report=phase3_acceptance_report(),
+            max_pending_raw_bytes=32,
+        )
+    assert not (oversized / "raw" / "events.jsonl.zst").exists()
+
+
+def test_phase3_heartbeat_uses_latest_stream_and_manifest_only(tmp_path):
+    append_heartbeat(
+        tmp_path,
+        {
+            "heartbeat_index": 1,
+            "heartbeat_generated_at_unix": 10,
+            "completion_reason": "running",
+            "failure_labels": [],
+            "progress_counters": {"decisions": 1},
+        },
+    )
+    append_heartbeat(
+        tmp_path,
+        {
+            "heartbeat_index": 2,
+            "heartbeat_generated_at_unix": 20,
+            "completion_reason": "complete",
+            "failure_labels": [],
+            "progress_counters": {"decisions": 2},
+        },
+    )
+
+    latest = json.loads((tmp_path / "latest.json").read_text(encoding="utf-8"))
+    heartbeat_manifest = json.loads((tmp_path / "heartbeat_manifest.json").read_text(encoding="utf-8"))
+    assert latest["heartbeat_index"] == 2
+    assert heartbeat_manifest["heartbeat_count"] == 2
+    assert heartbeat_manifest["one_file_per_heartbeat"] is False
+    assert len((tmp_path / "heartbeat_events.jsonl").read_text(encoding="utf-8").splitlines()) == 2
+    assert not (tmp_path / "heartbeats").exists()
+
+
+def test_phase3_database_cleanup_requires_verified_immutable_receipt(tmp_path):
+    batch = tmp_path / "batch"
+    manifest = capture_batch(
+        batch,
+        batch_id="batch-db",
+        raw_rows=[{"event": "start"}],
+        compact_rows=[{"metric": "value", "value": 1}],
+        exact_manifests={},
+        summary={},
+        acceptance_report=phase3_acceptance_report(),
+        database_rows=[
+            {
+                "batch_id": "batch-db",
+                "measurement_window_id": "window-db",
+                "event": "decision",
+            }
+        ],
+        measurement_window_ids=["window-db"],
+    )
+
+    class FakeCursor:
+        rowcount = 3
+
+        def __init__(self):
+            self.calls = []
+
+        def execute(self, sql, parameters):
+            self.calls.append((sql, parameters))
+
+        def close(self):
+            pass
+
+    class FakeConnection:
+        def __init__(self):
+            self.db_cursor = FakeCursor()
+            self.committed = False
+            self.rolled_back = False
+
+        def cursor(self):
+            return self.db_cursor
+
+        def commit(self):
+            self.committed = True
+
+        def rollback(self):
+            self.rolled_back = True
+
+    connection = FakeConnection()
+    with pytest.raises(BatchLifecycleError, match="publication receipt"):
+        cleanup_exported_database_rows(connection, batch, tables=["bot_ml_decisions"])
+    assert connection.db_cursor.calls == []
+
+    receipt = {
+        "schema": "bot_immutable_batch_publication_receipt_v1",
+        "batch_id": "batch-db",
+        "batch_identity_sha256": manifest["identity_sha256"],
+        "remote_verified": True,
+    }
+    receipt["receipt_sha256"] = canonical_sha256(receipt)
+    (batch / "retained" / "publication_receipt.json").write_text(
+        json.dumps(receipt, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    cleanup = cleanup_exported_database_rows(
+        connection,
+        batch,
+        tables=["bot_ml_decisions"],
+    )
+    assert cleanup["deleted_rows"] == {"bot_ml_decisions": 3}
+    assert connection.committed is True
+    sql, parameters = connection.db_cursor.calls[0]
+    assert "batch_id = %s" in sql
+    assert "measurement_window_id IN (%s)" in sql
+    assert parameters == ["batch-db", "window-db"]
+
+
+def test_phase3_synthetic_round_trip_gate():
+    contract = synthetic_round_trip_contract()
+
+    assert contract["gate_passed"] is True
+    assert contract["publication"]["remote_verified"] is True
+    assert contract["publication"]["targeted_eviction"] is True
+    assert contract["hydration"]["hydrated"] is True
+    assert contract["failure_guards"]["corruption_blocks_cleanup"] is True
+    assert contract["failure_guards"]["failed_push_blocks_cleanup"] is True
+
+
+def test_phase3_worldserver_output_is_bounded_and_fails_closed():
+    output = BoundedOutputParts(max_bytes=128)
+    output.append("x" * 256)
+    output.append("ignored")
+
+    rendered = "".join(output)
+    report = live_validation_report(rendered, stages=["movement_smoke"])
+    assert len(rendered.encode("utf-8")) <= 128
+    assert output.truncated is True
+    assert "worldserver_output_truncated" in report["failure_labels"]
+    assert report["acceptable_final_evidence"] is False

@@ -163,6 +163,16 @@ stages:
     outs:
     - dataset/all_spec_phase2_evidence_contract:
         persist: true
+  all_spec_phase3_batch_lifecycle:
+    cmd: python -m tools.bot_ml.batch_evidence_lifecycle --output-dir
+      dataset/all_spec_phase3_batch_lifecycle
+    deps:
+    - tools/bot_ml/batch_evidence_lifecycle.py
+    - tools/bot_ml/live_validation_session.py
+    - tools/bot_ml/run_live_bot_validation.py
+    outs:
+    - dataset/all_spec_phase3_batch_lifecycle:
+        persist: true
   validation_provisioning_verify:
     cmd: python -m tools.bot_ml.validate_validation_provisioning --config
       experiments/configs/validation_provisioning_cata_001.json --gear-profiles

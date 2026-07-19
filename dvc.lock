@@ -1060,11 +1060,33 @@ stages:
       size: 3023
     - path: tools/bot_ml/run_live_bot_validation.py
       hash: md5
-      md5: a0890e80180b59b8351ba8a6cc5d5efc
-      size: 194635
+      md5: 14d2e36e16adb8cc0c336f485470a196
+      size: 195476
     outs:
     - path: dataset/all_spec_phase2_evidence_contract
       hash: md5
       md5: 5392a296993004204e398f76b6fc768f.dir
       size: 6736
+      nfiles: 2
+  all_spec_phase3_batch_lifecycle:
+    cmd: python -m tools.bot_ml.batch_evidence_lifecycle --output-dir
+      dataset/all_spec_phase3_batch_lifecycle
+    deps:
+    - path: tools/bot_ml/batch_evidence_lifecycle.py
+      hash: md5
+      md5: c2ee995e1d735a8beff14821798384d5
+      size: 25587
+    - path: tools/bot_ml/live_validation_session.py
+      hash: md5
+      md5: c50a01cbec7eb9de4d05aa6ca8188178
+      size: 42819
+    - path: tools/bot_ml/run_live_bot_validation.py
+      hash: md5
+      md5: 14d2e36e16adb8cc0c336f485470a196
+      size: 195476
+    outs:
+    - path: dataset/all_spec_phase3_batch_lifecycle
+      hash: md5
+      md5: 4ad46e3e691f32455af85de5ba53f417.dir
+      size: 897
       nfiles: 2

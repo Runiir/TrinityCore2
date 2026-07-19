@@ -22,6 +22,7 @@ import re
 try:
     from .analyze_combat_log import analyze_combat_log
     from .audit_role_efficiency import build_audit
+    from .batch_evidence_lifecycle import append_heartbeat, finalize_heartbeat
     from .build_validation_provisioning import apply_gear_profiles, build_account_insert_sql, build_character_insert_sql, load_config, load_gear_profiles
     from .common import write_json
     from .extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
@@ -29,6 +30,7 @@ try:
 except ImportError:
     from analyze_combat_log import analyze_combat_log
     from audit_role_efficiency import build_audit
+    from batch_evidence_lifecycle import append_heartbeat, finalize_heartbeat
     from build_validation_provisioning import apply_gear_profiles, build_account_insert_sql, build_character_insert_sql, load_config, load_gear_profiles
     from common import write_json
     from extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
@@ -42,6 +44,8 @@ DEFAULT_COMPLETION_HEARTBEAT_SEC = 30
 DEFAULT_NO_PROGRESS_WINDOW_SEC = 180
 DEFAULT_MAX_REPEATED_DECISIONS = 20
 DEFAULT_MAX_DEATH_LOOPS = 3
+DEFAULT_MAX_WORLDSERVER_OUTPUT_BYTES = 64 * 1024 * 1024
+WORLDSERVER_OUTPUT_TRUNCATED_MARKER = "\n[worldserver_output_truncated]\n"
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_COMBAT_CALIBRATION_REFERENCE = REPO_ROOT / "dataset/combat_calibration/wowsims_cata_p4.json"
 
@@ -63,6 +67,33 @@ DEFAULT_STAGES = [
     "raid_boss",
     "full_blackwing_descent_clear",
 ]
+
+class BoundedOutputParts(list[str]):
+    def __init__(self, max_bytes: int = DEFAULT_MAX_WORLDSERVER_OUTPUT_BYTES):
+        super().__init__()
+        self.max_bytes = max_bytes
+        self.written_bytes = 0
+        self.truncated = False
+
+    def append(self, value: str) -> None:
+        if self.truncated:
+            return
+        encoded = value.encode("utf-8")
+        remaining = self.max_bytes - self.written_bytes
+        if len(encoded) <= remaining:
+            super().append(value)
+            self.written_bytes += len(encoded)
+            return
+        marker = WORLDSERVER_OUTPUT_TRUNCATED_MARKER.encode("utf-8")
+        prefix = encoded[: max(0, remaining - len(marker))].decode("utf-8", errors="ignore")
+        super().append(prefix + WORLDSERVER_OUTPUT_TRUNCATED_MARKER)
+        self.written_bytes = self.max_bytes
+        self.truncated = True
+
+    def extend(self, values: tuple[str, ...] | list[str]) -> None:
+        for value in values:
+            self.append(value)
+
 
 BOT_MEMORY_TABLES = [
     "bot_memory_daily_cooldowns",
@@ -1036,7 +1067,7 @@ def poll_bot_status(
     sleep: Callable[[float], None] = time.sleep,
 ) -> tuple[str, dict[str, Any] | None, int, bool]:
     """Poll a transport-neutral status command until it is ready or inactive."""
-    output_parts: list[str] = []
+    output_parts = BoundedOutputParts()
     last_status: dict[str, Any] | None = None
     while time.monotonic() < deadline:
         remaining = max(1, int(deadline - time.monotonic()))
@@ -1057,7 +1088,7 @@ def wait_for_soap_command_available(
     poll_sec: float = 2.0,
     sleep: Callable[[float], None] = time.sleep,
 ) -> str:
-    output_parts: list[str] = []
+    output_parts = BoundedOutputParts()
     while time.monotonic() < deadline:
         remaining = max(1, int(deadline - time.monotonic()))
         output, returncode, timed_out = execute_command(".botauto status", remaining)
@@ -1076,7 +1107,7 @@ def wait_for_bot_status_state(
     poll_sec: float = 2.0,
     sleep: Callable[[float], None] = time.sleep,
 ) -> tuple[str, dict[str, Any] | None]:
-    output_parts: list[str] = []
+    output_parts = BoundedOutputParts()
     last_status: dict[str, Any] | None = None
     while time.monotonic() < deadline:
         remaining = max(1, int(deadline - time.monotonic()))
@@ -2378,6 +2409,8 @@ def live_validation_report(
         evidence,
         max_death_loops,
     )
+    if WORLDSERVER_OUTPUT_TRUNCATED_MARKER.strip() in output:
+        failure_labels.append("worldserver_output_truncated")
     scenario_reports = scenario_reports or {}
 
     stage_rows = []
@@ -2612,12 +2645,6 @@ def run_worldserver(binary: Path, config: Path, timeout_sec: int, script: str, o
         return output, 124, True, command
 
 
-def append_jsonl(path: Path, payload: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a", encoding="utf-8") as handle:
-        handle.write(json.dumps(payload, sort_keys=True, default=str) + "\n")
-
-
 def heartbeat_commands_from_script(script: str) -> tuple[list[str], list[str], list[str]]:
     startup: list[str] = []
     heartbeat: list[str] = []
@@ -2672,21 +2699,7 @@ def rolling_heartbeat_report(
         report["completion_reason"] = completion_reason_override
     report["heartbeat_index"] = heartbeat_index
     report["heartbeat_generated_at_unix"] = int(time.time())
-    heartbeat_path = output_dir / "heartbeats" / f"{heartbeat_index:06d}.json"
-    write_json(heartbeat_path, report)
-    append_jsonl(
-        output_dir / "heartbeat_events.jsonl",
-        {
-            "heartbeat_index": heartbeat_index,
-            "generated_at_unix": report["heartbeat_generated_at_unix"],
-            "completion_reason": report["completion_reason"],
-            "acceptable_final_evidence": report["acceptable_final_evidence"],
-            "all_passed": report["all_passed"],
-            "failure_labels": report["failure_labels"],
-            "progress_counters": report["progress_counters"],
-            "report": str(heartbeat_path),
-        },
-    )
+    append_heartbeat(output_dir, report)
     write_json(output_dir / "report.json", report)
     return report
 
@@ -2715,7 +2728,7 @@ def run_transport_completion_watchdog(
     """
     deadline = time.monotonic() + timeout_sec
     startup_commands, heartbeat_commands, cleanup_commands = heartbeat_commands_from_script(script)
-    output_parts: list[str] = []
+    output_parts = BoundedOutputParts()
     heartbeat_index = 0
     last_progress_total = -1
     last_progress_at = time.monotonic()
@@ -2784,10 +2797,12 @@ def run_transport_completion_watchdog(
             report["acceptable_final_evidence"] = False
             if "failure_labels_present" not in report["final_evidence_rejections"]:
                 report["final_evidence_rejections"].append("failure_labels_present")
+            finalize_heartbeat(output_dir, report)
             write_json(output_dir / "report.json", report)
             return finish(0, False)
         if report["watchdog_state"].get("no_progress") and no_progress_expired:
             report["completion_reason"] = "no_progress_watchdog"
+            finalize_heartbeat(output_dir, report)
             write_json(output_dir / "report.json", report)
             return finish(0, False)
     return finish(124, True)
@@ -2812,7 +2827,7 @@ def run_worldserver_completion_watchdog(
     command = [str(binary), "--config", str(config)]
     deadline = time.monotonic() + timeout_sec
     startup_commands, heartbeat_commands, cleanup_commands = heartbeat_commands_from_script(script)
-    output_parts: list[str] = []
+    output_parts = BoundedOutputParts()
     heartbeat_index = 0
     last_progress_total = -1
     last_progress_at = time.monotonic()
@@ -2917,6 +2932,7 @@ def run_worldserver_completion_watchdog(
                 if "segment_or_route_context_is_debug_only" not in rejections:
                     rejections.append("segment_or_route_context_is_debug_only")
                 report["final_evidence_rejections"] = rejections
+                finalize_heartbeat(output_dir, report)
                 write_json(output_dir / "report.json", report)
                 break
             if report["acceptable_final_evidence"]:
@@ -2934,10 +2950,12 @@ def run_worldserver_completion_watchdog(
                 report["acceptable_final_evidence"] = False
                 if "failure_labels_present" not in report["final_evidence_rejections"]:
                     report["final_evidence_rejections"].append("failure_labels_present")
+                finalize_heartbeat(output_dir, report)
                 write_json(output_dir / "report.json", report)
                 break
             if report["watchdog_state"].get("no_progress") and no_progress_expired:
                 report["completion_reason"] = "no_progress_watchdog"
+                finalize_heartbeat(output_dir, report)
                 write_json(output_dir / "report.json", report)
                 break
         timed_out = time.monotonic() >= deadline
@@ -3017,7 +3035,7 @@ def execute_soap_command(soap_url: str, username: str, password: str, command_te
 
 
 def run_soap_commands(soap_url: str, username: str, password: str, script: str, timeout_sec: int, observe_sec: int = 0) -> tuple[str, int, bool, list[str]]:
-    output_parts: list[str] = []
+    output_parts = BoundedOutputParts()
     command = ["SOAP", soap_url]
     deadline = time.monotonic() + timeout_sec
     explicit_start = any(line.strip() == ".botauto start" for line in script.splitlines())
@@ -3402,7 +3420,7 @@ def run_reusable_validation_session(
         restart_components=restart_components,
     )
     command = ["SESSION", session.unit_name, args.soap_url]
-    output_parts: list[str] = []
+    output_parts = BoundedOutputParts()
     lifecycle: dict[str, Any] = {**session.metadata(), "transport": "session"}
 
     def execute(command_text: str, remaining: int) -> tuple[str, int, bool]:
