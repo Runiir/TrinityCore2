@@ -3713,12 +3713,6 @@ void AuraEffect::HandleModTotalPercentStat(AuraApplication const* aurApp, uint8 
     if (!(mode & (AURA_EFFECT_HANDLE_CHANGE_AMOUNT_MASK | AURA_EFFECT_HANDLE_STAT)))
         return;
 
-    if (GetMiscValue() < -1 || GetMiscValue() > 4)
-    {
-        TC_LOG_ERROR("spells", "WARNING: Misc Value for SPELL_AURA_MOD_PERCENT_STAT not valid");
-        return;
-    }
-
     Unit* target = aurApp->GetTarget();
 
     // save current health state

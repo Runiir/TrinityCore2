@@ -1,0 +1,27 @@
+{
+  "batch_id": "p8-s3-blood-death-knight-single-target-300-71",
+  "batch_identity_sha256": "bbae93263626a7a5a3ebb36f64f1627e98733ded21da9f048384ed21a9e87d87",
+  "cache_scope": "batch_specific",
+  "compact_bundle_sha256": "3251f44929166da5377dbd3d69d1b69ff6d189a66a7aaf68d7e847a79ee92525",
+  "pointers": [
+    {
+      "dvc_md5": "0d6108d4401591431bc2f3c0a7fd2cd1.dir",
+      "nfiles": 3,
+      "path": "artifacts/all_spec_program/phase8_live_calibration_20260728_representative_final_r105_campaign/attempts/seed-03/blood_death_knight/single_target_300/batch/raw.dvc",
+      "pointer_sha256": "f4993119548afe3da3d38cbb960684e6345c8ac294890e3c9167cc396fd4a758",
+      "size": 112551
+    },
+    {
+      "dvc_md5": "d8629dc96203ffc84721aed723cd6c7e.dir",
+      "nfiles": 1,
+      "path": "artifacts/all_spec_program/phase8_live_calibration_20260728_representative_final_r105_campaign/attempts/seed-03/blood_death_knight/single_target_300/batch/compact.dvc",
+      "pointer_sha256": "9ccea5ff2418ef65562f3fbcae8dbbfea33b3bffb18b76d6011b6c2864a446d4",
+      "size": 2568
+    }
+  ],
+  "raw_bundle_sha256": "a738bf5130a3edb8ecf486deaf47f1a01601cb9f0d1a4ff24f0b0424ab0c523d",
+  "receipt_sha256": "93001b5d03b4c0910b0d440c309cbcc5d037778e6305188082bf0c57c2a7c839",
+  "remote_status_sha256": "efed9e5afcfe149915ae98b9ed9e69304eb48f5ce2e2265b18b5b5ed2f155e60",
+  "remote_verified": true,
+  "schema": "bot_immutable_batch_publication_receipt_v1"
+}

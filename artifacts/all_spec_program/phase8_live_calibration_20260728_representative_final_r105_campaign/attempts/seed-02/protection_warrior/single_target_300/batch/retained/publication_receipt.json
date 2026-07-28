@@ -1,0 +1,27 @@
+{
+  "batch_id": "p8-s2-protection-warrior-single-target-300-34",
+  "batch_identity_sha256": "196705a3fbe5569e71c71621283b872dcab34b5dd0e479a6465f80b1d56fa825",
+  "cache_scope": "batch_specific",
+  "compact_bundle_sha256": "bfd45cd0a95d80bd5f86a947e9429f6d6004c8939592957d59bf80df6d028386",
+  "pointers": [
+    {
+      "dvc_md5": "682a763d674576f9f3183b7e8e3134e9.dir",
+      "nfiles": 3,
+      "path": "artifacts/all_spec_program/phase8_live_calibration_20260728_representative_final_r105_campaign/attempts/seed-02/protection_warrior/single_target_300/batch/raw.dvc",
+      "pointer_sha256": "8b379fb37d3646a01f4a05a4ce50327fcc3a3c250252eb6d8939c1f7e50eaeed",
+      "size": 106363
+    },
+    {
+      "dvc_md5": "3f95407315eca1248976b6d5a1d94882.dir",
+      "nfiles": 1,
+      "path": "artifacts/all_spec_program/phase8_live_calibration_20260728_representative_final_r105_campaign/attempts/seed-02/protection_warrior/single_target_300/batch/compact.dvc",
+      "pointer_sha256": "90495d074da4ddeba496f24e010d7c4249df986fb105581b9cfc448e00a4eaa2",
+      "size": 2568
+    }
+  ],
+  "raw_bundle_sha256": "cd781ca03cf7128bded44ddb8da8f4a2eae1eb349c68cd619df12f219c99ff05",
+  "receipt_sha256": "80d7169dfc66d7f053863020440b5a9967e51858ee6639bf55e4f1945dcbf193",
+  "remote_status_sha256": "efed9e5afcfe149915ae98b9ed9e69304eb48f5ce2e2265b18b5b5ed2f155e60",
+  "remote_verified": true,
+  "schema": "bot_immutable_batch_publication_receipt_v1"
+}

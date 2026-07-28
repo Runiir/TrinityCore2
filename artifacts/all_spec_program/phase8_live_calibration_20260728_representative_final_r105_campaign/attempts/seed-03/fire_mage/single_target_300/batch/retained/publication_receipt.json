@@ -1,0 +1,27 @@
+{
+  "batch_id": "p8-s3-fire-mage-single-target-300-92",
+  "batch_identity_sha256": "c1b2f7c57b97d0e45b4f5a23830991286c775aaa520ebbaa5a33c70c1768f89b",
+  "cache_scope": "batch_specific",
+  "compact_bundle_sha256": "6590ecbf610bae8119a17254e358b56de0e3ebfcae6dd0d1c86a5099cb8445dc",
+  "pointers": [
+    {
+      "dvc_md5": "f2454e08a09a6a91870c0e52893d31f8.dir",
+      "nfiles": 3,
+      "path": "artifacts/all_spec_program/phase8_live_calibration_20260728_representative_final_r105_campaign/attempts/seed-03/fire_mage/single_target_300/batch/raw.dvc",
+      "pointer_sha256": "632b3735976143ed5d14cd20c4e1d51862330fe17cb83580142de0023c19e299",
+      "size": 111047
+    },
+    {
+      "dvc_md5": "21aec7daab022cfb5728cda9e817ee39.dir",
+      "nfiles": 1,
+      "path": "artifacts/all_spec_program/phase8_live_calibration_20260728_representative_final_r105_campaign/attempts/seed-03/fire_mage/single_target_300/batch/compact.dvc",
+      "pointer_sha256": "dce6830c7ad5448260d6f06e54cedd9a3ca74d726f98708e3d649d74db4da281",
+      "size": 2478
+    }
+  ],
+  "raw_bundle_sha256": "20a7d4d50996dce17e0fbd918c7ee1aa76bd6a41978b392bb2c865f36dbef786",
+  "receipt_sha256": "a342c183203786d1b1a5adb8cfa892774b50861a84c086c48721ca55fdafa89d",
+  "remote_status_sha256": "efed9e5afcfe149915ae98b9ed9e69304eb48f5ce2e2265b18b5b5ed2f155e60",
+  "remote_verified": true,
+  "schema": "bot_immutable_batch_publication_receipt_v1"
+}

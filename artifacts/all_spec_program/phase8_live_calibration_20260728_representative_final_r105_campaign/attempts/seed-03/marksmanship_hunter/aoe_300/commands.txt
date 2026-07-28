@@ -1,0 +1,5 @@
+.botauto calibrate p8-s3-marksmanship-hunter-aoe-300 start aoe_300 marksmanship_hunter 3
+.botauto status p8-s3-marksmanship-hunter-aoe-300
+.botauto calibrate p8-s3-marksmanship-hunter-aoe-300 status
+.botauto combatlog p8-s3-marksmanship-hunter-aoe-300
+.botauto calibrate p8-s3-marksmanship-hunter-aoe-300 stop

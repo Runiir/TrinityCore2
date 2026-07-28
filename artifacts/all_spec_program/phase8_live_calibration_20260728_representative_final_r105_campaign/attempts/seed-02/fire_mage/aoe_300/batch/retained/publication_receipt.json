@@ -1,0 +1,27 @@
+{
+  "batch_id": "p8-s2-fire-mage-aoe-300-60",
+  "batch_identity_sha256": "1f61e39c353d60befa671584b0764b9044339ff5d648c3608406324a90c46b49",
+  "cache_scope": "batch_specific",
+  "compact_bundle_sha256": "075f5ef543dd702099af71c637a4e6a68ba8dce077f01dafcad9a5092365478a",
+  "pointers": [
+    {
+      "dvc_md5": "ffe06df14907fca38d21a89694b02d5d.dir",
+      "nfiles": 3,
+      "path": "artifacts/all_spec_program/phase8_live_calibration_20260728_representative_final_r105_campaign/attempts/seed-02/fire_mage/aoe_300/batch/raw.dvc",
+      "pointer_sha256": "6d6d71a0750511a27b7081206cc15a58f1bd26f51234ed764aa61115ce314ceb",
+      "size": 119494
+    },
+    {
+      "dvc_md5": "20f34ca78fd33e59a9e11d78dcfcee45.dir",
+      "nfiles": 1,
+      "path": "artifacts/all_spec_program/phase8_live_calibration_20260728_representative_final_r105_campaign/attempts/seed-02/fire_mage/aoe_300/batch/compact.dvc",
+      "pointer_sha256": "7b79f85d8d09f62e2964dae466dc7dc27711381e1a6071a46d7edcc4945742fe",
+      "size": 2377
+    }
+  ],
+  "raw_bundle_sha256": "6f8121ef3f59c97e4fba9d9cff483678677f3f3644340e45913e515ea1fb9176",
+  "receipt_sha256": "08788983fe256d35f6ba66379e1d1c3a5d6b0959ec038ae6d91c60b6234fd11e",
+  "remote_status_sha256": "efed9e5afcfe149915ae98b9ed9e69304eb48f5ce2e2265b18b5b5ed2f155e60",
+  "remote_verified": true,
+  "schema": "bot_immutable_batch_publication_receipt_v1"
+}

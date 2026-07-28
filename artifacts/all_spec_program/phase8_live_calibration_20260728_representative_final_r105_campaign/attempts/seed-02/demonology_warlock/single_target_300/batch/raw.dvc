@@ -1,0 +1,6 @@
+outs:
+- md5: fda7312923085fefd936555591a32c7d.dir
+  size: 121658
+  nfiles: 3
+  hash: md5
+  path: raw

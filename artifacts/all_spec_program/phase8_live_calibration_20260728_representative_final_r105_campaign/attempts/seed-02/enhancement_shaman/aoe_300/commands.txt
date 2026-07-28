@@ -1,0 +1,5 @@
+.botauto calibrate p8-s2-enhancement-shaman-aoe-300 start aoe_300 enhancement_shaman 2
+.botauto status p8-s2-enhancement-shaman-aoe-300
+.botauto calibrate p8-s2-enhancement-shaman-aoe-300 status
+.botauto combatlog p8-s2-enhancement-shaman-aoe-300
+.botauto calibrate p8-s2-enhancement-shaman-aoe-300 stop

@@ -1,0 +1,27 @@
+{
+  "batch_id": "p8-s3-blood-death-knight-tank-threat-300-72",
+  "batch_identity_sha256": "06362ad4b965dc5a8dcbe2985e47a2eac3acacd3ec4159de74d956db8f1f38cc",
+  "cache_scope": "batch_specific",
+  "compact_bundle_sha256": "c571d4508c85d613f2460a56d6de884ff95f21751d538e698f39a70b35a9f50e",
+  "pointers": [
+    {
+      "dvc_md5": "13358aed54b842b1672970eb25eb20d4.dir",
+      "nfiles": 3,
+      "path": "artifacts/all_spec_program/phase8_live_calibration_20260728_representative_final_r105_campaign/attempts/seed-03/blood_death_knight/tank_threat_300/batch/raw.dvc",
+      "pointer_sha256": "4bcb8a5ce852c3ddc72934a9895f05ecd59d0801b49c4fab748d7500ec468e4b",
+      "size": 165158
+    },
+    {
+      "dvc_md5": "7f64d7c16c123f32cbc5201854f8a79b.dir",
+      "nfiles": 1,
+      "path": "artifacts/all_spec_program/phase8_live_calibration_20260728_representative_final_r105_campaign/attempts/seed-03/blood_death_knight/tank_threat_300/batch/compact.dvc",
+      "pointer_sha256": "a69f766be82dd7ee64d0770887f65340ddb2d65506f59d36b6c2232d3caf2d5e",
+      "size": 2548
+    }
+  ],
+  "raw_bundle_sha256": "56a476f05771e64961094458da9e7c196d96d910819a01959c6e47abacf1080a",
+  "receipt_sha256": "98befe1afc064bf4695cd7f15eada3ff7b84f30ab5c8e39a726efc853cac6b13",
+  "remote_status_sha256": "efed9e5afcfe149915ae98b9ed9e69304eb48f5ce2e2265b18b5b5ed2f155e60",
+  "remote_verified": true,
+  "schema": "bot_immutable_batch_publication_receipt_v1"
+}

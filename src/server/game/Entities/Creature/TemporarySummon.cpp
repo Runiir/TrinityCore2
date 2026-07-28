@@ -391,6 +391,12 @@ Guardian::Guardian(SummonPropertiesEntry const* properties, Unit* owner, bool is
 
 void Guardian::InitStats(uint32 duration)
 {
+    // Shadowfiend uses PetAI despite its summon title being Minion. PetAI needs
+    // CharmInfo before the guardian is registered with its owner and added to
+    // the map, rather than relying on script AI initialization to add it later.
+    if (GetEntry() == ENTRY_SHADOWFIEND && !GetCharmInfo())
+        InitCharmInfo();
+
     Minion::InitStats(duration);
 
     InitStatsForLevel(GetOwner()->getLevel());

@@ -76,7 +76,7 @@ from tools.bot_ml.orchestrator_daemon import codex_command, detect_rate_limit, h
 from tools.bot_ml.generate_lane_configs import write_lane_config
 from tools.bot_ml.promote_live_validation_artifact import promote
 from tools.bot_ml.build_validation_gear_profiles import SHIELD_CLASSES, build_gem_catalog, build_profiles, build_report, fetch_items, load_gem_properties, load_spell_item_enchantments
-from tools.bot_ml.build_validation_provisioning import apply_gear_profiles, bot_known_spell_ids, bot_primary_tree_spell_ids, bot_spell_ids, bot_talent_spell_ids, build_account_insert_sql, build_character_insert_sql, equipment_cache, glyph_item_to_property_map, glyph_property_type_map, load_config as load_validation_provisioning_config, load_gear_profiles, main as provisioning_main, normalized_glyph_slots, normalized_glyphs, runtime_safe_enchantments, scenario_report, srp6_registration_data, talent_point_count, validate_talent_manifest
+from tools.bot_ml.build_validation_provisioning import apply_gear_profiles, bot_known_spell_ids, bot_primary_tree_spell_ids, bot_spell_ids, bot_talent_spell_ids, build_account_insert_sql, build_character_insert_sql, equipment_cache, glyph_item_to_property_map, glyph_property_type_map, load_config as load_validation_provisioning_config, load_gear_profiles, main as provisioning_main, normalized_glyph_slots, normalized_glyphs, required_equipment_slots_for, runtime_safe_enchantments, scenario_report, srp6_registration_data, talent_point_count, validate_talent_manifest
 from tools.bot_ml.validate_validation_provisioning import REQUIRED_COLUMNS as PROVISIONING_REQUIRED_COLUMNS
 from tools.bot_ml.validate_validation_provisioning import build_report as provisioning_verify_report
 from tools.bot_ml.validate_validation_provisioning import main as provisioning_verify_main
@@ -84,11 +84,14 @@ from tools.bot_ml.validate_validation_provisioning import validate_database as v
 from tools.bot_ml.validation_profile_manifests import load_action_profile_manifest, load_combat_loot_profile_manifest
 from tools.bot_ml.validate_data_quality import validate_rows as validate_data_quality_rows
 from tools.bot_ml.build_baseline_inventory import build_inventory, canonical_hash, git_identity, parse_dvc_pointer, reconcile_live_db, reconcile_targets, rotation_tuples, validate_policy, write_bundle
-from tools.bot_ml.build_all_spec_phase1_catalogs import RUNTIME_ACTION_SPELL_IDS, build_catalogs as build_phase1_catalogs, validate_catalogs as validate_phase1_catalogs, write_bundle as write_phase1_bundle
+from tools.bot_ml.build_all_spec_phase1_catalogs import PERSISTENT_SETUP_SPELL_IDS, QUALIFICATION_TUNED_ACTION_SPELL_IDS, RUNTIME_ACTION_SPELL_IDS, build_catalogs as build_phase1_catalogs, validate_catalogs as validate_phase1_catalogs, write_bundle as write_phase1_bundle
 from tools.bot_ml import build_phase4_rotation_contract as phase4_contract
 from tools.bot_ml import build_phase5_cohort_ownership_contract as phase5_contract
 from tools.bot_ml import build_phase6_serial_soak_contract as phase6_contract
 from tools.bot_ml import build_phase7_role_calibration_contract as phase7_contract
+from tools.bot_ml import build_phase8_all_spec_calibration_contract as phase8_contract
+from tools.bot_ml import run_phase8_all_spec_calibration as phase8_runner
+from tools.bot_ml.phase8_evidence_identity import profile_generation_identity, server_epoch_identity, validate_manifest as validate_phase8_evidence_manifest
 from tools.bot_ml.role_calibration_harness import evaluate_calibration, inject_fault, load_policy
 from tools.bot_ml.bt_masked_ga_combined import run as run_bt_masked_ga_combined
 from tools.bot_ml.evaluate_policy_model import policy_score, ranking_metrics
@@ -7908,6 +7911,7 @@ def test_cata_action_profile_manifest_drives_validation_spells(tmp_path, monkeyp
     priest = {"class": 5, "spells": [12345]}
     paladin = {"class": 2, "spells": []}
     hunter = {"class": 3, "spells": []}
+    rogue = {"class": 4, "spells": []}
     shaman = {"class": 7, "spells": []}
     mage = {"class": 8, "spells": []}
     warrior = {"class": 1, "spells": []}
@@ -7925,6 +7929,31 @@ def test_cata_action_profile_manifest_drives_validation_spells(tmp_path, monkeyp
     assert {6673, 469, 355, 2565}.issubset(set(bot_spell_ids(warrior, manifest)))
     assert {25780, 31801, 465, 20217, 19740, 54428}.issubset(set(bot_spell_ids(paladin, manifest)))
     assert {56641, 2643, 77767, 883, 982, 1130, 13165, 34477}.issubset(set(bot_spell_ids(hunter, manifest)))
+    mastery_spells_by_class = {
+        1: 87500,
+        2: 87494,
+        3: 87493,
+        4: 87496,
+        5: 87495,
+        6: 87492,
+        7: 87497,
+        8: 86467,
+        9: 87498,
+        11: 87491,
+    }
+    for bot in (
+        warrior,
+        paladin,
+        hunter,
+        rogue,
+        priest,
+        death_knight,
+        shaman,
+        mage,
+        warlock,
+        druid,
+    ):
+        assert mastery_spells_by_class[bot["class"]] in bot_spell_ids(bot, manifest)
     assert {79104, 79106}.issubset(set(bot_spell_ids(priest, manifest)))
     assert {48263, 49222, 48792, 55233, 49998, 57330, 56222, 45477}.issubset(set(bot_spell_ids(death_knight, manifest)))
     assert 674 in bot_spell_ids(shaman, manifest)
@@ -8106,6 +8135,11 @@ def test_validation_gear_profiles_complete_from_local_db2_files():
     assert next(item for item in profiles["survival_hunter"]["equipment"] if item["slot"] == 15)["name"] == "Kiril, Fury of Beasts"
     assert next(item for item in profiles["survival_hunter"]["equipment"] if item["slot"] == 17)["name"] == "Vishanka, Jaws of the Earth"
     assert 16 not in {item["slot"] for item in profiles["blood_death_knight"]["equipment"]}
+    fury_weapons = [item for item in profiles["fury_warrior"]["equipment"] if item["slot"] in {15, 16}]
+    assert [item["slot"] for item in fury_weapons] == [15, 16]
+    assert all(item["inventory_type"] == 17 and item["subclass"] != 6 for item in fury_weapons)
+    assert fury_weapons[0]["item_id"] != fury_weapons[1]["item_id"]
+    assert 16 in required_equipment_slots_for(profiles["fury_warrior"]["equipment"])
     assert all(
         next(item for item in profile["equipment"] if item["slot"] == 16)["inventory_type"] != 14
         for profile in profiles.values()
@@ -8242,6 +8276,7 @@ def test_stonecore_role_specs_inherit_complete_dbc_legal_talent_and_action_profi
         "fire_mage": {133, 2948, 44457, 92315, 11129},
         "marksmanship_hunter": {1978, 53209, 56641, 19434, 3045},
         "survival_hunter": {1978, 53301, 3674, 77767, 2643, 34477, 3045},
+        "assassination_rogue": {53, 1329, 1766, 1943, 5171, 32645, 57934, 79140},
         "enhancement_shaman": {17364, 60103, 8050, 73680, 403, 421, 51533},
     }
 
@@ -8332,10 +8367,82 @@ def test_validation_provisioning_loads_exact_wowsims_calibration_overlays():
 
     fire = profiles["wowsims_cata_p4_fire_mage"]
     hunter = profiles["wowsims_cata_p4_survival_hunter"]
+    rogue = profiles["assassination_rogue"]
     shaman = profiles["wowsims_cata_p4_enhancement_shaman"]
     assert next(item for item in fire["equipment"] if item["slot"] == 15)["item_id"] == 71086
-    assert next(item for item in hunter["equipment"] if item["slot"] == 17)["item_id"] == 78471
     assert [item["item_id"] for item in shaman["equipment"] if item["slot"] in {15, 16}] == [78472, 78472]
+    rogue_weapons = [item for item in rogue["equipment"] if item["slot"] in {15, 16}]
+    assert [item["item_id"] for item in rogue_weapons] == [77949, 77950]
+    assert [item["source_temp_enchant_id"] for item in rogue_weapons] == [3771, 3769]
+    assert [item["temp_enchant_id"] for item in rogue_weapons] == [7, 323]
+    assert [item["temp_enchant_duration_ms"] for item in rogue_weapons] == [3600000, 3600000]
+    assert [item["enchantments"].split()[3:5] for item in rogue_weapons] == [["7", "3600000"], ["323", "3600000"]]
+
+    expected_hunter = [
+        (0, 78698, 4209, [68778, 71840], [4251, 4295], 165),
+        (1, 71610, 0, [], [], 152),
+        (2, 78737, 4204, [71879, 71879], [4329, 4329], 154),
+        (14, 71415, 4100, [71879, 71879], [4329, 4329], 137),
+        (4, 78661, 4102, [71879, 71879, 71840], [4329, 4329, 4295], 152),
+        (8, 78430, 4258, [71879, 71879], [4329, 4329], 165),
+        (9, 78362, 4107, [71879, 71879, 71879], [4329, 4329, 4329], 151),
+        (5, 78447, 0, [71879, 71879, 71879], [4329, 4329, 4329], 151),
+        (6, 78709, 4126, [71879, 71879, 71879], [4329, 4329, 4329], 165),
+        (7, 78415, 4105, [71879, 71879], [4329, 4329], 154),
+        (10, 78413, 0, [71879], [4329], 151),
+        (11, 78489, 0, [71879], [4329], 159),
+        (12, 77994, 0, [], [], 0),
+        (13, 77999, 0, [], [], 0),
+        (15, 78473, 4227, [], [], 0),
+        (17, 78471, 4267, [], [], 0),
+    ]
+    assert [
+        (
+            item["slot"],
+            item["item_id"],
+            item["enchant_id"],
+            item["gem_item_ids"],
+            item["gem_enchant_ids"],
+            item["reforge_id"],
+        )
+        for item in hunter["equipment"]
+    ] == expected_hunter
+    assert all(item["preserve_socket_enchantments"] is True for item in hunter["equipment"])
+
+
+def test_survival_candidate_generates_exact_wowsims_item_payloads():
+    config = load_validation_provisioning_config(Path("experiments/configs/validation_provisioning_cata_001.json"))
+    profiles = load_gear_profiles(Path("dataset/validation_gear_profiles/profiles.json"))
+    config = apply_gear_profiles(config, profiles)
+    survival = next(
+        bot
+        for scenario in config["scenarios"]
+        if scenario["id"] == "all_spec_candidate_pool"
+        for bot in scenario["bots"]
+        if bot["class_spec"] == "survival_hunter"
+    )
+
+    assert survival["name"] == "Svhunter"
+    assert survival["gear_profile"] == "wowsims_cata_p4_survival_hunter"
+    sql = build_character_insert_sql(
+        {"scenarios": [{"id": "all_spec_candidate_pool", "start_position": {"map_id": 1, "x": 0, "y": 0, "z": 0}, "bots": [survival]}]}
+    )
+    item_lines = [line for line in sql.splitlines() if "item_instance" in line and "'Svhunter'" in line]
+    assert len(item_lines) == len(survival["equipment"]) == 16
+    for item, line in zip(survival["equipment"], item_lines):
+        payload = runtime_safe_enchantments(item)
+        assert f", {item['item_id']}, c.`guid`," in line
+        assert f", '{payload}', 0, 0," in line
+
+
+def test_validation_provisioning_dvc_tracks_static_wowsims_overlay():
+    dvc = Path("dvc.yaml").read_text(encoding="utf-8")
+    provisioning = dvc.split("  validation_provisioning:", 1)[1].split("\n  baseline_inventory:", 1)[0]
+    verification = dvc.split("  validation_provisioning_verify:", 1)[1].split("\n  validation_scenarios:", 1)[0]
+
+    dependency = "experiments/configs/wowsims_cata_p4_gear_profiles.json"
+    assert dependency in provisioning
+    assert dependency in verification
 
 
 def test_validation_provisioning_runtime_gear_verification_fails_missing_hunter_ranged(monkeypatch, tmp_path):
@@ -9659,7 +9766,11 @@ def test_phase1_catalog_gate_has_exact_targets_links_and_reviewed_provenance(tmp
     assert len(targets) == 31
     assert {role: sum(row["role"] == role for row in targets) for role in ("tank", "healer", "dps")} == {"tank": 4, "healer": 5, "dps": 22}
     assert len({row["runtime_join_key"] for row in targets}) == 31
-    assert all(row["gear_profile_id"] == row["spec_target_id"] for row in targets)
+    assert all(
+        row["gear_profile_id"] == row["spec_target_id"]
+        for row in targets
+        if row["spec_target_id"] != "survival_hunter"
+    )
     assert all(row["action_profile_spell_ids"] for row in targets)
     assert all(row["reference_id"] == f"cata_p4:{row['spec_target_id']}" for row in targets)
     assert {row["spec_target_id"] for row in references} == {row["spec_target_id"] for row in targets}
@@ -9670,6 +9781,62 @@ def test_phase1_catalog_gate_has_exact_targets_links_and_reviewed_provenance(tmp
     assert all(row["runtime_rotation_profile"]["authority"] == "world_db_bot_rotation_profile" for row in targets)
     by_target = {row["spec_target_id"]: row for row in targets}
     assert all(set(spells) <= set(by_target[target_id]["action_profile_spell_ids"]) for target_id, spells in RUNTIME_ACTION_SPELL_IDS.items())
+    assert all(
+        set(spells) <= set(by_target[target_id]["action_profile_spell_ids"])
+        for target_id, spells in QUALIFICATION_TUNED_ACTION_SPELL_IDS.items()
+    )
+    assert all(
+        set(spells) <= set(by_target[target_id]["action_profile_spell_ids"])
+        for target_id, spells in PERSISTENT_SETUP_SPELL_IDS.items()
+    )
+    survival = by_target["survival_hunter"]
+    assert survival["gear_profile_id"] == "wowsims_cata_p4_survival_hunter"
+    assert survival["provisioning_bot"]["gear_profile"] == "wowsims_cata_p4_survival_hunter"
+    assert survival["provisioning_bot"]["race"] == 2
+    assert 20572 in survival["action_profile_spell_ids"]
+    for hunter in (row for row in targets if row["class_name"] == "hunter" and row["spec_target_id"] != "survival_hunter"):
+        pet_spells = {
+            int(spell["id"] if isinstance(spell, dict) else spell): int(spell.get("active", 1) if isinstance(spell, dict) else 1)
+            for spell in hunter["provisioning_bot"]["pet"]["spells"]
+        }
+        assert {
+            19596: 1,
+            53184: 1,
+            53205: 1,
+            53401: 193,
+            53434: 193,
+            61681: 1,
+            61683: 1,
+            61684: 193,
+            62762: 1,
+        }.items() <= pet_spells.items()
+    survival_pet_spells = {
+        int(spell["id"] if isinstance(spell, dict) else spell): int(spell.get("active", 1) if isinstance(spell, dict) else 1)
+        for spell in survival["provisioning_bot"]["pet"]["spells"]
+    }
+    assert {
+        23145: 193,
+        53184: 1,
+        53186: 1,
+        53205: 1,
+        53401: 193,
+        53434: 193,
+        61681: 1,
+        61683: 1,
+        62760: 1,
+    }.items() <= survival_pet_spells.items()
+    for build in (survival["talent_build"], survival["provisioning_bot"]):
+        talents = {row["talent_id"]: row["spell_id"] for row in build["talents"]}
+        assert talents[9442] == 56340  # Hunter vs. Wild rank 2 from the numeric result fixture
+        assert 9440 not in talents  # Entrapment is not selected by the numeric result fixture
+    survival_reference = next(row for row in references if row["spec_target_id"] == "survival_hunter")
+    assert survival_reference["talents"] == {
+        "provider": "WoWSims",
+        "path": "sim/hunter/survival/survival_test.go",
+        "talent_string": "03-2302-23203003023022121311",
+        "selection_basis": "numeric_result_fixture",
+    }
+    assert survival_reference["expected_output"]["metrics"]["dps"] == 50716.5781
     assert {row["spec_target_id"] for row in calibrations} == {row["spec_target_id"] for row in targets}
     assert all(row["primary"]["scored_window_seconds"] == 300 for row in calibrations)
     assert all(row["aoe"]["mixed_with_primary"] is False for row in calibrations)
@@ -9729,9 +9896,36 @@ def test_validation_provisioning_loads_canonical_leaseable_candidate_pool():
     assert len({bot["account"] for bot in bots}) == 31
     assert len({bot["name"] for bot in bots}) == 31
     assert len({bot["class_spec"] for bot in bots}) == 31
-    assert all(bot["gear_profile"] == bot["class_spec"] for bot in bots)
+    assert all(
+        bot["gear_profile"] == bot["class_spec"]
+        for bot in bots
+        if bot["class_spec"] != "survival_hunter"
+    )
     assert all(bot["talents"] and bot["primary_tree_spells"] for bot in bots)
     assert all(3 <= len(bot["glyphs"]) <= 9 for bot in bots)
+    survival = next(bot for bot in bots if bot["class_spec"] == "survival_hunter")
+    assert survival["gear_profile"] == "wowsims_cata_p4_survival_hunter"
+    assert survival["race"] == 2
+    assert 20572 in survival["spells"]
+    survival_pet_spells = {
+        int(spell["id"] if isinstance(spell, dict) else spell): int(spell.get("active", 1) if isinstance(spell, dict) else 1)
+        for spell in survival["pet"]["spells"]
+    }
+    assert {
+        23145: 193,
+        53184: 1,
+        53186: 1,
+        53205: 1,
+        53401: 193,
+        53434: 193,
+        61681: 1,
+        61683: 1,
+        62760: 1,
+    }.items() <= survival_pet_spells.items()
+    survival_talents = {row["talent_id"]: row["spell_id"] for row in survival["talents"]}
+    assert talent_point_count(survival) == 41
+    assert survival_talents[9442] == 56340
+    assert 9440 not in survival_talents
 
 
 def phase3_acceptance_report():
@@ -10160,3 +10354,291 @@ def test_phase7_role_calibration_harness_passes_modes_and_detects_faults():
     )
     assert contract["gate_passed"] is True
     assert all(contract["checks"].values())
+
+
+def test_phase8_campaign_schedule_and_publication_identity(tmp_path: Path):
+    representatives = phase8_runner.load_dps_representatives()
+    targets = phase8_runner.campaign_targets(
+        phase8_runner.load_targets(), representatives
+    )
+    attempts = phase8_runner.campaign_attempts(targets, [1, 2, 3])
+
+    assert len(attempts) == 99
+    assert len({row["attempt_id"] for row in attempts}) == 99
+    assert sum(row["role"] == "dps" for row in attempts) == 60
+    assert sum(row["role"] == "tank" for row in attempts) == 24
+    assert sum(row["role"] == "healer" for row in attempts) == 15
+
+    attempt = attempts[0]
+    attempt_dir = phase8_runner.attempt_base_dir(tmp_path, attempt)
+    (attempt_dir / "batch/retained").mkdir(parents=True)
+    report = {
+        "requested_calibration": {
+            "mode": attempt["mode"],
+            "target_spec": attempt["runtime_join_key"],
+            "seed": attempt["seed"],
+        },
+        "role_calibration_evaluation": {"passed": True},
+        "role_calibration_identity": {
+            "spec_target_id": attempt["spec_target_id"],
+            "runtime_join_key": attempt["runtime_join_key"],
+            "seed": attempt["seed"],
+        },
+        "session": {"cohort_id": attempt["cohort_id"]},
+        "evidence_envelope": {
+            "identity_complete": True,
+            "identity_manifest_sha256": "f" * 64,
+        },
+    }
+    batch_identity = canonical_sha256({"attempt_id": attempt["attempt_id"]})
+    receipt = {
+        "remote_verified": True,
+        "batch_identity_sha256": batch_identity,
+    }
+    receipt["receipt_sha256"] = canonical_sha256(receipt)
+    (attempt_dir / "report.json").write_text(json.dumps(report), encoding="utf-8")
+    (attempt_dir / "batch/retained/final_manifest.json").write_text(
+        json.dumps({"identity_sha256": batch_identity}), encoding="utf-8"
+    )
+    (attempt_dir / "batch/retained/publication_receipt.json").write_text(
+        json.dumps(receipt), encoding="utf-8"
+    )
+
+    assert phase8_runner.valid_publication(attempt_dir, attempt) is True
+    assert phase8_runner.completed_attempt_dir(tmp_path, attempt) == attempt_dir
+    report["role_calibration_evaluation"]["passed"] = False
+    (attempt_dir / "report.json").write_text(json.dumps(report), encoding="utf-8")
+    assert phase8_runner.valid_publication(attempt_dir, attempt) is True
+    assert phase8_runner.completed_attempt_dir(tmp_path, attempt) is None
+    mismatched = {**attempt, "seed": 99}
+    assert phase8_runner.valid_publication(attempt_dir, mismatched) is False
+
+
+def test_phase8_evidence_manifest_rejects_runtime_mismatch():
+    server_binding = server_epoch_identity(
+        server_epoch=10,
+        server_process_id=20,
+        session_fingerprint="fingerprint",
+    )
+    profile_binding = profile_generation_identity(
+        profile_generation=3,
+        profile_content_hash="a" * 64,
+    )
+    manifest = {
+        "schema": "all_spec_phase8_evidence_identity_manifest_v1",
+        "component_hashes": {
+            "database_snapshot_sha256": "b" * 64,
+            "database_schema_sha256": "c" * 64,
+            "server_epoch_sha256": canonical_sha256(server_binding),
+            "profile_generation_sha256": canonical_sha256(profile_binding),
+        },
+        "runtime_identity": {**server_binding, **profile_binding},
+        "database_summary": {},
+    }
+    manifest["manifest_sha256"] = canonical_sha256(manifest)
+
+    assert validate_phase8_evidence_manifest(manifest)["manifest_sha256"]
+    with pytest.raises(ValueError, match="live runtime does not match"):
+        validate_phase8_evidence_manifest(
+            manifest,
+            runtime_identity={
+                **server_binding,
+                **profile_binding,
+                "server_epoch": 11,
+            },
+        )
+
+
+def test_phase8_contract_reconstructs_all_attempts_and_rejects_duplicate_state(tmp_path: Path):
+    representatives = phase8_runner.load_dps_representatives()
+    targets = phase8_runner.campaign_targets(
+        phase8_runner.load_targets(), representatives
+    )
+    attempts = phase8_runner.campaign_attempts(targets, [1, 2, 3])
+    server_binding = server_epoch_identity(
+        server_epoch=12345,
+        server_process_id=54321,
+        session_fingerprint="session-fingerprint",
+    )
+    profile_binding = profile_generation_identity(
+        profile_generation=7,
+        profile_content_hash="a" * 64,
+    )
+    components = {
+        "database_snapshot_sha256": "b" * 64,
+        "database_schema_sha256": "c" * 64,
+        "server_epoch_sha256": canonical_sha256(server_binding),
+        "profile_generation_sha256": canonical_sha256(profile_binding),
+    }
+    evidence_manifest = {
+        "schema": "all_spec_phase8_evidence_identity_manifest_v1",
+        "component_hashes": components,
+        "runtime_identity": {**server_binding, **profile_binding},
+        "database_summary": {},
+    }
+    evidence_manifest["manifest_sha256"] = canonical_sha256(evidence_manifest)
+    (tmp_path / "evidence_identity_manifest.json").write_text(
+        json.dumps(evidence_manifest),
+        encoding="utf-8",
+    )
+    representatives_payload = {
+        "schema": "phase8_dps_representatives_cata_p4_v1",
+        "qualification_policy": "one_representative_per_class_at_75_percent_floor",
+        "representatives": dict(sorted(representatives.items())),
+        "representatives_sha256": canonical_sha256(
+            dict(sorted(representatives.items()))
+        ),
+    }
+    (tmp_path / "dps_representatives.json").write_text(
+        json.dumps(representatives_payload),
+        encoding="utf-8",
+    )
+    results = []
+    for index, attempt in enumerate(attempts):
+        attempt_dir = phase8_runner.attempt_base_dir(tmp_path, attempt)
+        (attempt_dir / "batch/retained").mkdir(parents=True)
+        reference_ratio = 0.79 if index % 11 == 0 else 0.81
+        optimization_target_met = reference_ratio >= 0.8
+        record_sha256 = canonical_sha256({"record": attempt["attempt_id"]})
+        evaluation = {
+            "passed": True,
+            "hard_floor_passed": True,
+            "optimization_target_met": optimization_target_met,
+            "reference_ratio": reference_ratio,
+            "failure_reasons": [],
+            "record_sha256": record_sha256,
+        }
+        report = {
+            "requested_calibration": {
+                "mode": attempt["mode"],
+                "target_spec": attempt["runtime_join_key"],
+                "seed": attempt["seed"],
+            },
+            "role_calibration_evaluation": evaluation,
+            "role_calibration_identity": {
+                "spec_target_id": attempt["spec_target_id"],
+                "runtime_join_key": attempt["runtime_join_key"],
+                "seed": attempt["seed"],
+                "profile_generation": 7,
+                "profile_content_hash": "a" * 64,
+            },
+            "evidence_envelope": {
+                "identity_complete": True,
+                "identity_manifest_sha256": evidence_manifest["manifest_sha256"],
+                "component_hashes": components,
+            },
+            "session": {
+                "cohort_id": attempt["cohort_id"],
+                "attempt_index": attempt["attempt_index"],
+                "server_epoch": 12345,
+                "server_process_id": 54321,
+                "session_fingerprint": "session-fingerprint",
+                "server_process_identity_verified": True,
+                "max_active_cohorts": 1,
+            },
+        }
+        batch_identity = canonical_sha256({"batch": attempt["attempt_id"]})
+        receipt = {
+            "remote_verified": True,
+            "batch_identity_sha256": batch_identity,
+        }
+        receipt["receipt_sha256"] = canonical_sha256(receipt)
+        report_path = attempt_dir / "report.json"
+        report_path.write_text(json.dumps(report), encoding="utf-8")
+        (attempt_dir / "batch/retained/final_manifest.json").write_text(
+            json.dumps({"identity_sha256": batch_identity}), encoding="utf-8"
+        )
+        (attempt_dir / "batch/retained/publication_receipt.json").write_text(
+            json.dumps(receipt), encoding="utf-8"
+        )
+        results.append(
+            {
+                **attempt,
+                "returncode": 0,
+                "published": True,
+                "passed": True,
+                "hard_floor_passed": True,
+                "optimization_target_met": optimization_target_met,
+                "reference_ratio": reference_ratio,
+                "failure_reasons": [],
+                "record_sha256": record_sha256,
+                "receipt_sha256": receipt["receipt_sha256"],
+                "report_path": str(report_path),
+            }
+        )
+
+    phase8_runner.write_campaign_state(
+        tmp_path,
+        attempts,
+        results,
+        active_attempt=None,
+        dps_representatives=representatives,
+    )
+    contract = phase8_contract.build_contract(tmp_path)
+
+    assert contract["passed"] is True
+    assert all(contract["checks"].values())
+    assert len(contract["optimization_backlog"]) == 9
+
+    state_path = tmp_path / "campaign_state.json"
+    state = json.loads(state_path.read_text(encoding="utf-8"))
+    valid_state = json.loads(json.dumps(state))
+    state["results"][-1]["attempt_id"] = state["results"][0]["attempt_id"]
+    state.pop("state_sha256")
+    state["state_sha256"] = canonical_sha256(state)
+    state_path.write_text(json.dumps(state), encoding="utf-8")
+    rejected = phase8_contract.build_contract(tmp_path)
+
+    assert rejected["passed"] is False
+    assert rejected["checks"]["unique_state_results"] is False
+    assert rejected["checks"]["exact_attempt_coverage"] is False
+
+    backlog_mismatch = json.loads(json.dumps(valid_state))
+    backlog_mismatch["optimization_backlog"].pop()
+    backlog_mismatch["optimization_backlog_count"] -= 1
+    backlog_mismatch.pop("state_sha256")
+    backlog_mismatch["state_sha256"] = canonical_sha256(backlog_mismatch)
+    state_path.write_text(json.dumps(backlog_mismatch), encoding="utf-8")
+    rejected = phase8_contract.build_contract(tmp_path)
+    assert rejected["checks"]["optimization_backlog_complete"] is False
+
+    escaped = json.loads(json.dumps(valid_state))
+    outside_report = tmp_path.parent / "escaped-phase8-report.json"
+    outside_report.write_text("{}", encoding="utf-8")
+    escaped["results"][0]["report_path"] = str(outside_report)
+    escaped.pop("state_sha256")
+    escaped["state_sha256"] = canonical_sha256(escaped)
+    state_path.write_text(json.dumps(escaped), encoding="utf-8")
+    rejected = phase8_contract.build_contract(tmp_path)
+    assert rejected["checks"]["all_reports_inside_campaign"] is False
+
+    invalid_retry = json.loads(json.dumps(valid_state))
+    first_attempt = attempts[0]
+    first_base = phase8_runner.attempt_base_dir(tmp_path, first_attempt)
+    invalid_dir = first_base.parent / f"{first_base.name}-retry-invalid"
+    first_base.rename(invalid_dir)
+    invalid_retry["results"][0]["report_path"] = str(invalid_dir / "report.json")
+    invalid_retry.pop("state_sha256")
+    invalid_retry["state_sha256"] = canonical_sha256(invalid_retry)
+    state_path.write_text(json.dumps(invalid_retry), encoding="utf-8")
+    rejected = phase8_contract.build_contract(tmp_path)
+    assert rejected["checks"]["all_attempt_paths_valid"] is False
+    invalid_dir.rename(first_base)
+
+    duplicate_receipt = json.loads(json.dumps(valid_state))
+    first_receipt_path = first_base / "batch/retained/publication_receipt.json"
+    first_manifest_path = first_base / "batch/retained/final_manifest.json"
+    second_base = phase8_runner.attempt_base_dir(tmp_path, attempts[1])
+    second_receipt_path = second_base / "batch/retained/publication_receipt.json"
+    second_manifest_path = second_base / "batch/retained/final_manifest.json"
+    first_receipt = json.loads(first_receipt_path.read_text(encoding="utf-8"))
+    first_manifest = json.loads(first_manifest_path.read_text(encoding="utf-8"))
+    second_receipt_path.write_text(json.dumps(first_receipt), encoding="utf-8")
+    second_manifest_path.write_text(json.dumps(first_manifest), encoding="utf-8")
+    duplicate_receipt["results"][1]["receipt_sha256"] = first_receipt["receipt_sha256"]
+    duplicate_receipt.pop("state_sha256")
+    duplicate_receipt["state_sha256"] = canonical_sha256(duplicate_receipt)
+    state_path.write_text(json.dumps(duplicate_receipt), encoding="utf-8")
+    rejected = phase8_contract.build_contract(tmp_path)
+    assert rejected["checks"]["unique_receipt_hashes"] is False
+    assert rejected["checks"]["unique_batch_identities"] is False

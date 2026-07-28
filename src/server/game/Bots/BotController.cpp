@@ -271,7 +271,8 @@ void BotController::Update(uint32 diff, BotActionExecutor& executor, Player* own
 
     if (!_combatTargetGuid.IsEmpty() || combatState.InCombat || combatState.TargetLootable)
     {
-        _updateTimer = std::min<uint32>(_updateTimer, 100);
+        uint32 combatUpdateMs = _runtimeRole == "dps" && _classSpec == "frost_death_knight" ? 50 : 100;
+        _updateTimer = std::min(_updateTimer, combatUpdateMs);
         BotCombatDecision combatDecision = DecideSoloCombat(combatState);
         Unit* target = combatState.TargetGuid.IsEmpty() ? nullptr : ObjectAccessor::GetUnit(*bot, combatState.TargetGuid);
         BotActionResult combatResult = BotActionResult::NoAction;
@@ -845,7 +846,7 @@ bool BotController::TryExecuteQueuedCombatAction(BotActionExecutor& executor, Pl
 
     if (result == BotActionResult::Casting || result == BotActionResult::GlobalCooldown)
     {
-        _queuedCombatActionMs = _queuedCombatActionMs > 100 ? _queuedCombatActionMs - 100 : 0;
+        _queuedCombatActionMs = _queuedCombatActionMs > _updateTimer ? _queuedCombatActionMs - _updateTimer : 0;
         if (!_queuedCombatActionMs)
             _queuedCombatAction = ResolvedCombatAction();
         return true;

@@ -206,6 +206,34 @@ pixi run bot-phase7-role-calibration-contract \
 pixi run dvc repro all_spec_phase7_role_calibration_contract
 ```
 
+### All-spec Phase 8 live tuning campaign
+
+`run_phase8_all_spec_calibration.py` serializes one active cohort through the complete canonical matrix: three seeds for one selected DPS representative per DPS-capable class (10 single-target/AoE pairs), four tank single-target/threat pairs, and five controlled-damage healer windows. This is 99 real scored 300-second windows across 19 selected targets. The representative map is pinned in `experiments/configs/phase8_dps_representatives_cata_p4_v1.json`; sibling DPS specializations remain cataloged but do not block class-level qualification. Every attempt selects its bot by canonical runtime join key, reuses one managed worldserver owner, independently normalizes the public `.botauto calibrate` status through `phase8_calibration_adapter.py`, evaluates the Phase 7 policy, DVC-publishes the closed immutable batch, verifies its receipt, and target-evicts high-volume local payloads. Published qualification failures remain resumable evidence for tuning; unpublished infrastructure failures stop the campaign.
+
+Supply SOAP credentials only through the process environment. Generate the plan without credentials. Before a live run, build the read-only evidence manifest; it hashes the current world/character schemas and exact 31-candidate/profile/action snapshot, ensures the managed server uses those database restart components, and binds its process/epoch and immutable rotation generation/hash. The campaign requires that manifest, copies it into the campaign root, and refuses resume under a different identity:
+
+```bash
+pixi run bot-phase8-all-spec-calibration --dry-run \
+  --output-root "$CLAUDE_JOB_DIR/tmp/phase8-campaign-plan"
+
+TRINITY_SOAP_USER=... TRINITY_SOAP_PASSWORD=... \
+  pixi run bot-phase8-evidence-identity \
+  --output artifacts/all_spec_program/phase8_live_calibration_20260719/evidence_identity_manifest.json
+
+TRINITY_SOAP_USER=... TRINITY_SOAP_PASSWORD=... \
+  pixi run bot-phase8-all-spec-calibration \
+  --evidence-identity-manifest artifacts/all_spec_program/phase8_live_calibration_20260719/evidence_identity_manifest.json \
+  --output-root artifacts/all_spec_program/phase8_live_calibration_20260719
+```
+
+`build_phase8_all_spec_calibration_contract.py` reconstructs the gate from the campaign identity manifest, pinned DPS representative map, retained reports, final manifests, and canonical remote-verification receipts. It independently rechecks every report against the bound server epoch/process/profile generation, and requires exact 99-attempt/19-target coverage, one passing representative for each of the 10 DPS-capable classes, all tank/healer role gates and 75% floors, one server epoch/process/profile snapshot, at most one active cohort, and an exact 75-80% optimization backlog:
+
+```bash
+pixi run dvc repro all_spec_phase8_live_calibration_contract
+pixi run dvc status
+pixi run dvc push
+```
+
 The gear generator reads Cataclysm `Item.db2`/`Item-sparse.db2`, `SpellItemEnchantment.dbc`, and `GemProperties.dbc` client data plus hotfix overrides. It also reads `experiments/configs/cata_434_combat_loot_profiles.json` for class/spec archetypes, stat weights, consumable profile metadata, smart-loot validation surfaces, and BiS/source reporting scaffolds. It writes class/spec equipment profiles with selected item IDs, stats, item levels, source labels, `complete_equipment_slots`, socket-compatible gem IDs, permanent enchant IDs, stat-weight manifest hashes, BiS/source summaries, and the exact 45-field `item_instance.enchantments` payload used by the server. The provisioning generator reads `experiments/configs/cata_434_action_profiles.json` for class action and proficiency spells, then writes `account_commands.txt`, `provision_accounts.sql`, `provision_characters.sql`, `manifest.json`, and `report.json`. It does not apply destructive database changes automatically. `provision_accounts.sql` creates only missing validation accounts with deterministic Trinity SRP6 `salt`/`verifier` values and does not overwrite existing account passwords. The verifier checks generated payloads against DBC enchant/gem IDs and can additionally check the configured auth/characters schema plus missing validation accounts with `--check-db`. The scenario generator writes `validation_scenarios.jsonl`, `validation_routes.jsonl`, and `validation_mechanics.jsonl` so Stonecore/BWD planners can consume route and mechanic embeddings without C++ encounter branches. The run-plan generator writes `run_validation_scenarios.sh` with per-scenario `bot-live-validate` commands that apply deterministic provisioning, reset only the matching scenario tag, and preserve the configured instance start positions. The combined validation stage reparses open-world live evidence with scenario reports attached, giving one staged pass/fail artifact across questing, professions, loot, Stonecore, and BWD gates. The current config provisions max-level Stonecore and Blackwing Descent validation rosters with role coverage, skills, glyphs, consumables, complete class/spec equipment slots, gems, enchants, and instance start positions. The gear report intentionally keeps `enchant_applicability_verified_by_server=false` until a live worldserver load validates the generated enchant IDs on equipped items.
 
 Export all learning-loop tables:

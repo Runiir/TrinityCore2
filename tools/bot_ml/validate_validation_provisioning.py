@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import struct
 from pathlib import Path
 from typing import Any
 
@@ -55,6 +56,8 @@ REQUIRED_COLUMNS = {
             "category",
             "movement_directive",
             "auto_attack_mode",
+            "requires_pet",
+            "forbids_pet",
             "enabled",
         },
     },
@@ -131,6 +134,17 @@ def parse_enchantment_payload(text: str) -> list[int]:
         return []
 
 
+def wdbc_record_ids(path: Path) -> set[int]:
+    blob = path.read_bytes()
+    if len(blob) < 20 or blob[:4] != b"WDBC":
+        raise ValueError(f"{path} is not a WDBC file")
+    record_count, _, record_size, _ = struct.unpack_from("<4I", blob, 4)
+    return {
+        struct.unpack_from("<I", blob, 20 + row_index * record_size)[0]
+        for row_index in range(record_count)
+    }
+
+
 def configured_bots(config: dict[str, Any]) -> list[dict[str, Any]]:
     return [bot for scenario in config.get("scenarios", []) for bot in scenario.get("bots", [])]
 
@@ -160,10 +174,12 @@ def canonical_rotation_targets(config: dict[str, Any]) -> list[dict[str, Any]]:
 def validate_payloads(config: dict[str, Any], dbc_dir: Path, hotfix_url: str | None = None) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     failures: list[dict[str, Any]] = []
     enchantments = {int(row["id"]): row for row in load_spell_item_enchantments(dbc_dir)}
-    all_enchantment_ids = {
-        int(row["values"][0])
+    all_enchantment_rows = {
+        int(row["values"][0]): row["values"]
         for row in load_wdbc(dbc_dir / "SpellItemEnchantment.dbc", SPELL_ITEM_ENCHANTMENT_FMT)
     }
+    all_enchantment_ids = set(all_enchantment_rows)
+    spell_ids = wdbc_record_ids(dbc_dir / "Spell.dbc")
     reforge_ids = {
         int(row[0]) for row in load_wdbc_values(dbc_dir / "ItemReforge.dbc", "nifif")
     }
@@ -199,6 +215,27 @@ def validate_payloads(config: dict[str, Any], dbc_dir: Path, hotfix_url: str | N
                     failures.append({"check": "enchantment_payload_length", "bot": bot.get("name"), "item_id": item.get("item_id"), "length": len(payload)})
                 if enchant_id and payload and payload[0] != enchant_id:
                     failures.append({"check": "permanent_enchant_payload", "bot": bot.get("name"), "item_id": item.get("item_id"), "payload_enchant_id": payload[0], "enchant_id": enchant_id})
+                temp_enchant_id = int(item.get("temp_enchant_id") or 0)
+                temp_enchant_duration_ms = int(item.get("temp_enchant_duration_ms") or 0)
+                if temp_enchant_id and temp_enchant_id not in all_enchantment_ids:
+                    failures.append({"check": "temporary_enchant_id", "bot": bot.get("name"), "item_id": item.get("item_id"), "enchant_id": temp_enchant_id})
+                if temp_enchant_id and len(payload) != 45:
+                    failures.append({"check": "temporary_enchant_payload_length", "bot": bot.get("name"), "item_id": item.get("item_id"), "length": len(payload)})
+                if temp_enchant_id and payload and payload[3] != temp_enchant_id:
+                    failures.append({"check": "temporary_enchant_payload", "bot": bot.get("name"), "item_id": item.get("item_id"), "payload_enchant_id": payload[3], "enchant_id": temp_enchant_id})
+                if temp_enchant_id and (temp_enchant_duration_ms <= 0 or (payload and payload[4] != temp_enchant_duration_ms)):
+                    failures.append({"check": "temporary_enchant_duration", "bot": bot.get("name"), "item_id": item.get("item_id"), "payload_duration_ms": payload[4] if len(payload) > 4 else 0, "duration_ms": temp_enchant_duration_ms})
+                enchantment_row = all_enchantment_rows.get(temp_enchant_id)
+                if enchantment_row:
+                    effects = [int(value) for value in enchantment_row[2:5]]
+                    effect_args = [int(value) for value in enchantment_row[11:14]]
+                    missing_proc_spells = sorted(
+                        spell_id
+                        for effect, spell_id in zip(effects, effect_args)
+                        if effect == 1 and spell_id and spell_id not in spell_ids
+                    )
+                    if missing_proc_spells:
+                        failures.append({"check": "temporary_enchant_combat_spells", "bot": bot.get("name"), "item_id": item.get("item_id"), "enchant_id": temp_enchant_id, "missing_spell_ids": missing_proc_spells})
                 socket_colors = item.get("socket_colors") or []
                 gem_item_ids = item.get("gem_item_ids") or []
                 gem_enchant_ids = item.get("gem_enchant_ids") or []
@@ -219,6 +256,7 @@ def validate_payloads(config: dict[str, Any], dbc_dir: Path, hotfix_url: str | N
     evidence = {
         "enchantment_count": len(enchantments),
         "all_enchantment_id_count": len(all_enchantment_ids),
+        "spell_id_count": len(spell_ids),
         "reforge_count": len(reforge_ids),
         "gem_property_count": len(gem_properties),
         "gem_catalog_count": gem_catalog_count,
@@ -315,7 +353,8 @@ def fetch_runtime_rotation_profiles(
                 "SELECT p.id, p.class_id, p.spec_tag, p.role, p.enabled, "
                 "p.movement_directive AS profile_movement_directive, "
                 "p.auto_attack_mode AS profile_auto_attack_mode, "
-                "a.spell_id, a.category, a.movement_directive, a.auto_attack_mode "
+                "a.spell_id, a.category, a.movement_directive, a.auto_attack_mode, "
+                "a.requires_pet, a.forbids_pet "
                 "FROM bot_rotation_profile p "
                 "LEFT JOIN bot_rotation_action a ON a.profile_id = p.id AND a.enabled = 1"
             )
@@ -341,6 +380,8 @@ def fetch_runtime_rotation_profiles(
                             "category": str(row.get("category") or ""),
                             "movement_directive": str(row.get("movement_directive") or ""),
                             "auto_attack_mode": str(row.get("auto_attack_mode") or ""),
+                            "requires_pet": bool(row.get("requires_pet")),
+                            "forbids_pet": bool(row.get("forbids_pet")),
                         }
                     )
             return profiles
@@ -501,6 +542,37 @@ def validate_database(config: dict[str, Any], worldserver_conf: Path, require_ap
             for spell in character.get("known_spells", set()) | character.get("talent_spells", set())
         }
         known_actions = [action for action in actions if int(action["spell_id"]) in known_spells]
+        capabilities = set(target.get("pet_form_stance_presence") or [])
+        pet_contract_state = "ready"
+        if "felguard_pet" in capabilities:
+            summon_felguard = next(
+                (action for action in actions if int(action["spell_id"]) == 30146),
+                None,
+            )
+            demon_soul = next(
+                (action for action in actions if int(action["spell_id"]) == 77801),
+                None,
+            )
+            if not summon_felguard or not summon_felguard.get("forbids_pet"):
+                pet_contract_state = "felguard_summon_missing_or_ungated"
+                failures.append(
+                    {
+                        "check": "runtime_pet_contract",
+                        "reason": "felguard_summon_missing_or_ungated",
+                        "spec_target_id": target_id,
+                        "identity": f"{key[0]}:{key[1]}:{key[2]}",
+                    }
+                )
+            if not demon_soul or not demon_soul.get("requires_pet"):
+                pet_contract_state = "demon_soul_missing_pet_gate"
+                failures.append(
+                    {
+                        "check": "runtime_pet_contract",
+                        "reason": "demon_soul_missing_pet_gate",
+                        "spec_target_id": target_id,
+                        "identity": f"{key[0]}:{key[1]}:{key[2]}",
+                    }
+                )
         movement_directives = {
             str(profile.get("movement_directive") or ""),
             *(str(action.get("movement_directive") or "") for action in actions),
@@ -509,7 +581,7 @@ def validate_database(config: dict[str, Any], worldserver_conf: Path, require_ap
             str(profile.get("auto_attack_mode") or ""),
             *(str(action.get("auto_attack_mode") or "") for action in actions),
         } - {""}
-        state = "ready"
+        state = pet_contract_state
         if not actions:
             state = "db_rotation_profile_has_no_enabled_actions"
             failures.append(
@@ -556,6 +628,7 @@ def validate_database(config: dict[str, Any], worldserver_conf: Path, require_ap
             "state": state,
             "enabled_action_count": len(actions),
             "known_action_count": len(known_actions),
+            "pet_contract_state": pet_contract_state,
             "movement_directives": sorted(movement_directives),
             "auto_attack_modes": sorted(auto_attack_modes),
         }

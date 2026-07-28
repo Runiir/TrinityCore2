@@ -1224,13 +1224,18 @@ private:
         std::string operation = tokens.empty() ? "status" : tokens[0];
         std::string result;
         if (operation == "start")
-            result = sBotWorldPopulationMgr->StartCombatCalibrationForCohort(cohortId);
+        {
+            std::string mode = tokens.size() > 1 ? tokens[1] : "";
+            std::string targetSpec = tokens.size() > 2 ? tokens[2] : "";
+            uint32 seed = tokens.size() > 3 ? std::max<uint32>(1, uint32(strtoul(tokens[3].c_str(), nullptr, 10))) : 1;
+            result = sBotWorldPopulationMgr->StartCombatCalibrationForCohort(cohortId, mode, targetSpec, seed);
+        }
         else if (operation == "stop")
             result = sBotWorldPopulationMgr->StopCombatCalibrationForCohort(cohortId);
         else if (operation == "status")
             result = sBotWorldPopulationMgr->GetCombatCalibrationJsonForCohort(cohortId);
         else
-            result = "{\"ok\":false,\"action\":\"botauto_calibrate\",\"failure_reason\":\"usage: .botauto calibrate [cohort_id] start|stop|status\"}";
+            result = "{\"ok\":false,\"action\":\"botauto_calibrate\",\"failure_reason\":\"usage: .botauto calibrate [cohort_id] start <mode> <target_spec> [seed]|stop|status\"}";
         return SendAutoResult(handler, result);
     }
 

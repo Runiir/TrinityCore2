@@ -91,9 +91,16 @@ TALENT_VARIANT = {
     "fury_warrior": 1,
     "frost_death_knight": 2,
     "elemental_shaman": 0,
-    "demonology_warlock": 0,
+    "demonology_warlock": 1,
     "feral_druid_dps": 0,
     "feral_druid_tank": 0,
+}
+
+# Numeric result fixtures can intentionally use a different legal build from
+# the UI preset. Keep the canonical live target aligned with the fixture that
+# produced the pinned reference value.
+RESULT_TALENT_OVERRIDE = {
+    "survival_hunter": "03-2302-23203003023022121311",
 }
 
 GEAR_PATH = {
@@ -304,8 +311,50 @@ LEGACY_TUNED_ACTION_SPELL_IDS = {
     "holy_priest": [586],
     "fire_mage": [133, 1459, 2948, 2136, 2120, 2139, 30482, 44457, 92315, 82731, 45438, 55342, 11129, 11113],
     "marksmanship_hunter": [75, 1978, 3044, 56641, 2643, 53351, 77767, 883, 982, 2641, 1130, 13165, 34477, 3045],
-    "survival_hunter": [75, 1978, 3044, 2643, 53351, 77767, 883, 982, 2641, 1130, 13165, 34477, 3045, 53301, 3674, 13813, 77769],
+    "survival_hunter": [75, 1978, 3044, 2643, 53351, 77767, 883, 982, 2641, 1130, 13165, 34477, 3045, 53301, 3674, 13813, 77769, 20572],
     "enhancement_shaman": [324, 403, 421, 8024, 8050, 8042, 8232, 17364, 60103, 57994, 73680, 8075, 3599, 8190, 8512, 51533],
+}
+
+# Phase 8 tuning migrations extend the original canonical profile source. Keep
+# every added runtime action provisioned when pinned source catalogs refresh.
+QUALIFICATION_TUNED_ACTION_SPELL_IDS = {
+    "protection_warrior": [772, 845, 871, 6343],
+    "arms_warrior": [845, 1719, 6343],
+    "fury_warrior": [845, 1134, 1719, 18499],
+    "blood_death_knight": [48721, 56815],
+    "frost_death_knight": [42650, 45529, 46584, 47568, 77575],
+    "unholy_death_knight": [42650, 43265, 45529, 46584, 47568, 48265, 49016, 49206, 77575],
+    "feral_druid_tank": [6807, 80964],
+    "holy_paladin": [4987],
+    "holy_priest": [34433, 64843, 64901, 88684],
+    "restoration_druid": [774, 2782],
+    "fire_mage": [5405, 6117, 12051],
+    "marksmanship_hunter": [34490],
+    "protection_paladin": [24275],
+    "demonology_warlock": [603, 6353, 18540, 29722, 33697, 47897, 50589, 74434],
+}
+
+# BotWorldPopulationMgr's persistent setup casts these spells before choosing a
+# rotation action. Missing setup spells can invalidate an otherwise complete
+# profile, such as Shield Block outside Defensive Stance.
+PERSISTENT_SETUP_SPELL_IDS = {
+    "protection_warrior": [71],
+    "arms_warrior": [2457],
+    "fury_warrior": [2458],
+    "protection_paladin": [25780, 31801, 465, 20217],
+    "holy_paladin": [20217],
+    "retribution_paladin": [20217],
+    "blood_death_knight": [48263],
+    "feral_druid_tank": [5487],
+    "arcane_mage": [1459, 30482],
+    "fire_mage": [759, 1459, 30482],
+    "frost_mage": [1459, 30482],
+    "beast_mastery_hunter": [13165],
+    "marksmanship_hunter": [13165],
+    "survival_hunter": [13165],
+    "elemental_shaman": [324],
+    "enhancement_shaman": [324],
+    "restoration_shaman": [324],
 }
 
 # Explicit SQL/rule profiles remain runtime authority. These spell lists seed the
@@ -318,15 +367,16 @@ RUNTIME_ACTION_SPELL_IDS = {
     "fury_warrior": [1464, 1680, 5308, 6552, 23881, 85288, 86346],
     "retribution_paladin": [879, 20271, 24275, 35395, 53385, 85256, 96231],
     "beast_mastery_hunter": [1978, 2643, 3044, 19577, 34026, 53351, 77767],
+    "assassination_rogue": [53, 1329, 1766, 1943, 5171, 14177, 32645, 51723, 57934, 79140],
     "combat_rogue": [1752, 1766, 1943, 2098, 5171, 13750, 51690, 84617],
-    "subtlety_rogue": [53, 1752, 1766, 1943, 2098, 5171, 16511, 51713],
+    "subtlety_rogue": [53, 1752, 1766, 1943, 2098, 5171, 16511, 51713, 51723],
     "frost_death_knight": [45462, 47528, 48266, 49020, 49143, 49184, 51271, 57330],
     "unholy_death_knight": [45462, 46584, 47528, 47541, 55090, 57330, 63560, 77575, 85948],
     "arcane_mage": [1449, 2139, 5143, 12042, 12051, 30451, 44425],
     "frost_mage": [10, 116, 2139, 12472, 30455, 31687, 44572, 44614],
     "demonology_warlock": [172, 348, 686, 1949, 6353, 47241, 71521, 77801],
     "destruction_warlock": [348, 5740, 6353, 17877, 17962, 29722, 50796, 77801],
-    "shadow_priest": [589, 2944, 8092, 8122, 15407, 32379, 34914, 47585, 48045],
+    "shadow_priest": [588, 589, 2944, 8092, 8122, 15407, 15473, 26297, 32379, 34433, 34914, 47585, 48045, 87151, 87153],
     "balance_druid": [5570, 8921, 16914, 2912, 5176, 33831, 48505, 50516, 78674],
     "feral_druid_dps": [1079, 1822, 5217, 5221, 22568, 33876, 50334, 52610, 62078, 80965],
 }
@@ -361,7 +411,8 @@ def parse_wowsims_talents(
     strings = re.findall(r"talentsString:\s*['\"]([^'\"]+)", preset_text)
     if not strings:
         raise ValueError(f"{target_id}: missing WoWSims talent string")
-    selected = strings[TALENT_VARIANT.get(target_id, 0)]
+    preset_selected = strings[TALENT_VARIANT.get(target_id, 0)]
+    selected = RESULT_TALENT_OVERRIDE.get(target_id, preset_selected)
     if sum(int(char) for char in selected if char.isdigit()) != 41:
         raise ValueError(f"{target_id}: WoWSims talent string is not a Cataclysm 41-point build")
     segments = selected.split("-")
@@ -393,7 +444,7 @@ def parse_wowsims_talents(
         "primary_tree_spells": sorted(primary_spells[primary_tree_id]),
     }
     validate_talent_manifest({"name": target_id, **build})
-    occurrence = [match.start() for match in re.finditer(re.escape(selected), preset_text)][0]
+    occurrence = [match.start() for match in re.finditer(re.escape(preset_selected), preset_text)][0]
     glyph_block = preset_text[occurrence : occurrence + 2400]
     glyph_names = re.findall(r"(?:prime|major|minor)\d:\s*\w+\.([A-Za-z0-9_]+)", glyph_block)
     enum_values = {name: int(value) for name, value in re.findall(r"\b([A-Za-z0-9_]+)\s*=\s*(\d+)\s*;", proto_text)}
@@ -496,7 +547,21 @@ def pet_for(target_id: str, index: int) -> dict[str, Any] | None:
         "level": 85,
         "slot": 0,
         "active": 1,
-        "spells": [2649, 17253, 61683, 53184, 53186, 52858, 53205, 62760],
+        # Match sim/hunter/survival/survival_test.go's numeric fixture rather
+        # than the UI preset's different ferocityDefault allocation.
+        "spells": [
+            2649,
+            17253,
+            61683,
+            {"id": 23145, "active": 193},
+            53184,
+            53186,
+            61681,
+            53205,
+            {"id": 53401, "active": 193},
+            {"id": 53434, "active": 193},
+            62760,
+        ],
     }
 
 
@@ -513,11 +578,21 @@ def action_spell_ids(target_id: str, class_id: int, build: dict[str, Any]) -> li
     class_spells = action_profiles["action_profile_spells_by_class"].get(str(class_id), [])
     selected = [row["spell_id"] for row in build["talents"]]
     tuned_actions = LEGACY_TUNED_ACTION_SPELL_IDS.get(target_id, [])
+    qualification_actions = QUALIFICATION_TUNED_ACTION_SPELL_IDS.get(target_id, [])
     runtime_actions = RUNTIME_ACTION_SPELL_IDS.get(target_id, [])
+    persistent_setup = PERSISTENT_SETUP_SPELL_IDS.get(target_id, [])
     return sorted(
         {
             int(spell)
-            for spell in class_spells + build["primary_tree_spells"] + selected + tuned_actions + runtime_actions
+            for spell in (
+                class_spells
+                + build["primary_tree_spells"]
+                + selected
+                + tuned_actions
+                + qualification_actions
+                + runtime_actions
+                + persistent_setup
+            )
             if int(spell) > 0
         }
     )
@@ -600,22 +675,58 @@ def build_catalogs(refresh_sources: bool) -> dict[str, dict[str, Any]]:
                 [source_record(f"{WOWSIMS_RAW}/{test_path}", test_bytes), source_record(f"{WOWSIMS_RAW}/{result_path}", result_bytes)]
             )
             result = result_reference(result_bytes.decode())
+            if target_id in RESULT_TALENT_OVERRIDE:
+                talent_source = {
+                    "provider": "WoWSims",
+                    "path": test_path,
+                    "talent_string": RESULT_TALENT_OVERRIDE[target_id],
+                    "selection_basis": "numeric_result_fixture",
+                }
 
         pet = pet_for(target_id, index)
         consumables = [58085, 58086, 58257]
+        if target_id in {"demonology_warlock", "shadow_priest"}:
+            consumables.append(58091)
+        if target_id == "demonology_warlock":
+            consumables.append(70142)
+        runtime_gear_profile = {
+            "enhancement_shaman": "wowsims_cata_p4_enhancement_shaman",
+            "shadow_priest": "wowsims_cata_p4_shadow_priest",
+            "survival_hunter": "wowsims_cata_p4_survival_hunter",
+        }.get(target_id, target_id)
+        runtime_race = {
+            "demonology_warlock": 2,
+            "shadow_priest": 8,
+            "survival_hunter": 2,
+        }.get(target_id, CLASS_META[class_name]["race"])
         provisioning_bot = {
             "account": f"ASPC{index:02d}",
             "name": bot_name,
             "role": role,
             "class_spec": target_id,
-            "race": CLASS_META[class_name]["race"],
+            "race": runtime_race,
             "class": class_id,
             "level": 85,
-            "gear_profile": target_id,
+            "gear_profile": runtime_gear_profile,
             "glyphs": glyphs,
             "consumable_item_ids": consumables,
             **build,
         }
+        if target_id == "demonology_warlock":
+            provisioning_bot["consumables"] = [
+                {"item_id": 58085, "slot": 23, "count": 20},
+                {"item_id": 58086, "slot": 24, "count": 20},
+                {"item_id": 58257, "slot": 25, "count": 20},
+                {"item_id": 58091, "slot": 26, "count": 20},
+                {"item_id": 70142, "slot": 27, "count": 1},
+            ]
+        elif target_id == "shadow_priest":
+            provisioning_bot["consumables"] = [
+                {"item_id": 58085, "slot": 23, "count": 20},
+                {"item_id": 58086, "slot": 24, "count": 20},
+                {"item_id": 58257, "slot": 25, "count": 20},
+                {"item_id": 58091, "slot": 26, "count": 20},
+            ]
         if pet:
             provisioning_bot["pet"] = pet
         spell_ids = action_spell_ids(target_id, class_id, build)
@@ -635,7 +746,7 @@ def build_catalogs(refresh_sources: bool) -> dict[str, dict[str, Any]]:
                 "provisioning_bot": provisioning_bot,
                 "talent_build": build,
                 "glyph_item_ids": glyphs,
-                "gear_profile_id": target_id,
+                "gear_profile_id": runtime_gear_profile,
                 "consumable_item_ids": consumables,
                 "pet_form_stance_presence": SPEC_BEHAVIOR.get(target_id, []),
                 "action_profile_identity": f"cata_434:{class_id}:{target_id}",
@@ -841,11 +952,14 @@ def validate_catalogs(payloads: dict[str, dict[str, Any]], *, check_linked: bool
         if expected_runtime_identity in runtime_profiles_seen:
             raise ValueError(f"duplicate runtime rotation profile identity: {expected_runtime_identity}")
         runtime_profiles_seen.add(expected_runtime_identity)
-        required_action_spells = set(LEGACY_TUNED_ACTION_SPELL_IDS.get(row["spec_target_id"], [])) | set(
-            RUNTIME_ACTION_SPELL_IDS.get(row["spec_target_id"], [])
+        required_action_spells = set().union(
+            LEGACY_TUNED_ACTION_SPELL_IDS.get(row["spec_target_id"], []),
+            QUALIFICATION_TUNED_ACTION_SPELL_IDS.get(row["spec_target_id"], []),
+            RUNTIME_ACTION_SPELL_IDS.get(row["spec_target_id"], []),
+            PERSISTENT_SETUP_SPELL_IDS.get(row["spec_target_id"], []),
         )
         if not required_action_spells <= set(row["action_profile_spell_ids"]):
-            raise ValueError(f"{row['spec_target_id']}: runtime action spells are not provisioned")
+            raise ValueError(f"{row['spec_target_id']}: runtime action/setup spells are not provisioned")
         for alias in row["accepted_aliases"]:
             previous = aliases_seen.setdefault(alias, row["spec_target_id"])
             if previous != row["spec_target_id"]:

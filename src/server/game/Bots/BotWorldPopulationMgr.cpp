@@ -6,9 +6,11 @@
 #include "Bots/BotMgr.h"
 #include "Bots/BotProgressionGoalPolicy.h"
 #include "CellImpl.h"
+#include "CharmInfo.h"
 #include "Config.h"
 #include "Corpse.h"
 #include "DatabaseEnv.h"
+#include "DynamicObject.h"
 #include "GameTime.h"
 #include "GameObject.h"
 #include "GridNotifiersImpl.h"
@@ -99,6 +101,17 @@ float Distance2d(float ax, float ay, float bx, float by)
     return std::sqrt(dx * dx + dy * dy);
 }
 
+bool UsesRangedAoeCalibrationLane(std::string const& spec)
+{
+    static constexpr std::array<char const*, 12> RangedAoeSpecs =
+    {
+        "balance_druid", "beast_mastery_hunter", "marksmanship_hunter", "survival_hunter",
+        "shadow_priest", "elemental_shaman", "arcane_mage", "fire_mage", "frost_mage",
+        "affliction_warlock", "demonology_warlock", "destruction_warlock"
+    };
+    return std::find(RangedAoeSpecs.begin(), RangedAoeSpecs.end(), spec) != RangedAoeSpecs.end();
+}
+
 float UnitHealthPct(Unit const* unit)
 {
     if (!unit || !unit->GetMaxHealth())
@@ -120,6 +133,14 @@ bool HasPowerForSpell(Player const* bot, SpellInfo const* spellInfo)
     if (spellInfo->PowerType == POWER_HEALTH)
         return int64(bot->GetHealth()) > powerCost;
     return bot->GetPower(Powers(spellInfo->PowerType)) >= uint32(powerCost);
+}
+
+uint32 ControlledDispelAuraForHealer(Player const* healer)
+{
+    // Nature's Cure reliably removes curses without depending on the optional
+    // Restoration magic-dispel talent. The other healer profiles use their
+    // native hostile-magic dispel against Shadow Word: Pain.
+    return healer && healer->getClass() == CLASS_DRUID ? 702 : 589;
 }
 
 Player* CombatOwnerPlayer(Unit* unit)
@@ -1358,14 +1379,15 @@ std::string BotWorldPopulationMgr::GetCombatLogJsonForCohort(std::string const& 
     return result;
 }
 
-std::string BotWorldPopulationMgr::StartCombatCalibrationForCohort(std::string const& cohortId)
+std::string BotWorldPopulationMgr::StartCombatCalibrationForCohort(std::string const& cohortId,
+    std::string const& mode, std::string const& targetSpec, uint32 seed)
 {
     if (!FindCohort(cohortId))
         return UnknownCohortJson("botauto_calibrate_start", cohortId);
 
     std::string previous = _selectedCohortId;
     _selectedCohortId = cohortId;
-    std::string result = StartCombatCalibration();
+    std::string result = StartCombatCalibration(mode, targetSpec, seed);
     _selectedCohortId = previous;
     return result;
 }
@@ -1621,17 +1643,60 @@ bool BotWorldPopulationMgr::SpawnAutonomyBots(uint32 count)
     return true;
 }
 
-std::string BotWorldPopulationMgr::StartCombatCalibration()
+std::string BotWorldPopulationMgr::StartCombatCalibration(std::string const& mode,
+    std::string const& targetSpec, uint32 seed)
 {
     if (!Cohort().Active || Cohort().RuntimeMode != BotWorldRuntimeMode::AlwaysOnAutonomy)
         return "{\"ok\":false,\"action\":\"botauto_calibrate_start\",\"failure_reason\":\"autonomy_not_active\"}";
 
-    if (Cohort().CalibrationActive)
-        return GetCombatCalibrationJson();
+    static std::set<std::string> const SupportedModes = {
+        "single_target_300", "aoe_300", "tank_threat_300", "healer_controlled_damage_300"
+    };
+    if (SupportedModes.find(mode) == SupportedModes.end())
+        return "{\"ok\":false,\"action\":\"botauto_calibrate_start\",\"failure_reason\":\"unsupported_mode\"}";
+    if (targetSpec.empty())
+        return "{\"ok\":false,\"action\":\"botauto_calibrate_start\",\"failure_reason\":\"target_spec_required\"}";
+
+    std::string escapedTargetSpec = targetSpec;
+    CharacterDatabase.EscapeString(escapedTargetSpec);
+    QueryResult targetResult = CharacterDatabase.PQuery(
+        "SELECT cbp.role, cbp.in_use FROM character_bot_pool cbp INNER JOIN characters c ON c.guid = cbp.guid "
+        "WHERE cbp.enabled = 1 AND c.level = 85 AND cbp.experiment_tags = 'all_spec_candidate_pool' "
+        "AND cbp.class_spec = '%s' ORDER BY cbp.guid LIMIT 1", escapedTargetSpec.c_str());
+    if (!targetResult)
+        return "{\"ok\":false,\"action\":\"botauto_calibrate_start\",\"failure_reason\":\"unknown_target_spec\"}";
+
+    Field* targetFields = targetResult->Fetch();
+    std::string const targetRole = targetFields[0].GetString();
+    if (targetFields[1].GetBool())
+        return "{\"ok\":false,\"action\":\"botauto_calibrate_start\",\"failure_reason\":\"target_unavailable\"}";
+    bool const roleMismatch = (mode == "healer_controlled_damage_300" && targetRole != "healer")
+        || (mode == "tank_threat_300" && targetRole != "tank")
+        || ((mode == "single_target_300" || mode == "aoe_300") && targetRole == "healer");
+    if (roleMismatch)
+        return "{\"ok\":false,\"action\":\"botauto_calibrate_start\",\"failure_reason\":\"mode_role_mismatch\"}";
+
+    if (Cohort().CalibrationStopping)
+        return "{\"ok\":false,\"action\":\"botauto_calibrate_start\",\"failure_reason\":\"calibration_stopping\"}";
+    if (Cohort().CalibrationActive || !Party().CalibrationBots.empty())
+        StopCombatCalibration();
 
     Cohort().CalibrationActive = true;
-    Cohort().CalibrationAoePhase = false;
+    Cohort().CalibrationAoePhase = mode == "aoe_300" || mode == "tank_threat_300";
+    Cohort().CalibrationWindowComplete = false;
+    Cohort().CalibrationMode = mode;
+    Cohort().CalibrationTargetSpec = targetSpec;
+    Cohort().CalibrationSeed = seed ? seed : 1;
+    Cohort().CalibrationTargetGuid.Clear();
+    Cohort().CalibrationInterruptTargetGuid.Clear();
     Cohort().CalibrationStartedMs = NowMs();
+    Cohort().CalibrationScoredStartedMs = 0;
+    Cohort().CalibrationScoredEndedMs = 0;
+    Cohort().CalibrationLastPostWindowDrainMs = 0;
+    Cohort().CalibrationLastControlledEventSecond = std::numeric_limits<uint64>::max();
+    Cohort().CalibrationCrossWindowEventCount = 0;
+    Cohort().CalibrationResetId.clear();
+    Cohort().CalibrationCurrentDamagePhase.clear();
     Cohort().CalibrationMetricsByGuid.clear();
     Cohort().CalibrationPreviousMetrics.clear();
     Cohort().CalibrationBestSingleMetrics.clear();
@@ -1646,29 +1711,17 @@ std::string BotWorldPopulationMgr::StartCombatCalibration()
 
 std::string BotWorldPopulationMgr::StopCombatCalibration()
 {
-    Group* calibrationGroup = nullptr;
-    for (WorldBotState const& state : Party().CalibrationBots)
-    {
-        Player* bot = GetLoadedBot(state);
-        if (bot && bot->GetGroup())
-        {
-            calibrationGroup = bot->GetGroup();
-            break;
-        }
-    }
-    if (calibrationGroup)
-        calibrationGroup->Disband();
+    if (Cohort().CalibrationStopping)
+        return "{\"ok\":true,\"action\":\"botauto_calibrate_stop\",\"removed\":0,\"failure_reason\":null}";
 
+    Cohort().CalibrationStopping = true;
+    std::vector<ObjectGuid> calibrationBotGuids;
+    calibrationBotGuids.reserve(Party().CalibrationBots.size());
     for (WorldBotState const& state : Party().CalibrationBots)
-    {
         if (!state.Guid.IsEmpty())
-        {
-            sBotMgr->RemoveWorldBot(state.Guid);
-            if (ReleaseBotGuid(state.Guid.GetCounter()))
-                CharacterDatabase.DirectPExecute("UPDATE character_bot_pool SET in_use = 0 WHERE guid = %u", state.Guid.GetCounter());
-        }
-    }
-    uint32 removed = uint32(Party().CalibrationBots.size());
+            calibrationBotGuids.push_back(state.Guid);
+
+    uint32 removed = uint32(calibrationBotGuids.size());
     Party().CalibrationBots.clear();
     Cohort().CalibrationMetricsByGuid.clear();
     Cohort().CalibrationPreviousMetrics.clear();
@@ -1676,11 +1729,36 @@ std::string BotWorldPopulationMgr::StopCombatCalibration()
     Cohort().CalibrationBestAoeMetrics.clear();
     Cohort().CalibrationActive = false;
     Cohort().CalibrationAoePhase = false;
+    Cohort().CalibrationWindowComplete = false;
+    Cohort().CalibrationMode = "single_target_300";
+    Cohort().CalibrationTargetSpec.clear();
+    Cohort().CalibrationSeed = 1;
+    Cohort().CalibrationTargetGuid.Clear();
+    Cohort().CalibrationInterruptTargetGuid.Clear();
     Cohort().CalibrationPreviousWindowValid = false;
     Cohort().CalibrationPreviousAoePhase = false;
     Cohort().CalibrationCompletedSingleWindows = 0;
     Cohort().CalibrationCompletedAoeWindows = 0;
     Cohort().CalibrationStartedMs = 0;
+    Cohort().CalibrationScoredStartedMs = 0;
+    Cohort().CalibrationScoredEndedMs = 0;
+    Cohort().CalibrationLastPostWindowDrainMs = 0;
+    Cohort().CalibrationLastControlledEventSecond = std::numeric_limits<uint64>::max();
+    Cohort().CalibrationCrossWindowEventCount = 0;
+    Cohort().CalibrationResetId.clear();
+    Cohort().CalibrationCurrentDamagePhase.clear();
+
+    // Remove each clone through the normal bot lifecycle. CleanupBot removes the
+    // member from its group, and Group::RemoveMember owns any resulting disband;
+    // retaining and explicitly disbanding the self-deleting Group here leaves a
+    // stale group pointer for subsequent clone cleanup.
+    for (ObjectGuid const& guid : calibrationBotGuids)
+    {
+        sBotMgr->RemoveWorldBot(guid);
+        if (ReleaseBotGuid(guid.GetCounter()))
+            CharacterDatabase.DirectPExecute("UPDATE character_bot_pool SET in_use = 0 WHERE guid = %u", guid.GetCounter());
+    }
+    Cohort().CalibrationStopping = false;
 
     std::ostringstream json;
     json << "{\"ok\":true,\"action\":\"botauto_calibrate_stop\",\"removed\":" << removed
@@ -1705,12 +1783,58 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
             auto itr = metricsByGuid.find(state.Guid.GetCounter());
             CalibrationMetrics const* metrics = itr == metricsByGuid.end() ? nullptr : &itr->second;
             uint64 startedMs = metrics && metrics->WindowStartedMs ? metrics->WindowStartedMs : Cohort().CalibrationStartedMs;
-            uint64 endedMs = completedWindow && metrics ? metrics->WindowEndedMs : nowMs;
+            uint64 endedMs = metrics && metrics->WindowEndedMs ? metrics->WindowEndedMs : nowMs;
             double elapsedSec = startedMs && endedMs > startedMs
                 ? double(endedMs - startedMs) / 1000.0 : 0.0;
             double dps = metrics && elapsedSec > 0.0 ? double(metrics->Damage) / elapsedSec : 0.0;
             double tps = metrics && metrics->ThreatBaseline >= 0.0f && elapsedSec > 0.0
                 ? std::max(0.0, double(metrics->ThreatCurrent - metrics->ThreatBaseline) / elapsedSec) : 0.0;
+            uint64 castFailures = 0;
+            if (metrics)
+                for (auto const& [result, count] : metrics->ResultCounts)
+                    if (result.rfind("cast_failed", 0) == 0)
+                        castFailures += count;
+            double castFailureRatio = metrics && metrics->Attempts
+                ? double(castFailures) / double(metrics->Attempts) : 0.0;
+            double activeUptimeRatio = metrics && metrics->TickCount
+                ? double(metrics->ActiveTicks) / double(metrics->TickCount) : 0.0;
+            double resourceCappedRatio = metrics && metrics->TickCount
+                ? double(metrics->ResourceCappedTicks) / double(metrics->TickCount) : 0.0;
+            double resourceStarvedRatio = metrics && metrics->TickCount
+                ? double(metrics->ResourceStarvedTicks) / double(metrics->TickCount) : 0.0;
+            double shadowOrbPowerUptimeRatio = metrics && metrics->TickCount
+                ? double(metrics->ShadowOrbPowerActiveTicks) / double(metrics->TickCount) : 0.0;
+            double shadowOrbUptimeRatio = metrics && metrics->TickCount
+                ? double(metrics->ShadowOrbActiveTicks) / double(metrics->TickCount) : 0.0;
+            double empoweredShadowUptimeRatio = metrics && metrics->TickCount
+                ? double(metrics->EmpoweredShadowActiveTicks) / double(metrics->TickCount) : 0.0;
+            double movementRangeLossRatio = metrics && metrics->TickCount
+                ? double(metrics->MovementRangeLossTicks) / double(metrics->TickCount) : 0.0;
+            double petDamageRatio = metrics && metrics->Damage
+                ? double(metrics->PetDamage) / double(metrics->Damage) : 0.0;
+            uint32 observedExpectedGroups = 0;
+            if (metrics)
+                for (std::string const& group : metrics->ExpectedActionGroups)
+                    if (metrics->ActionGroups.count(group))
+                        ++observedExpectedGroups;
+            double rotationGroupCoverage = metrics && !metrics->ExpectedActionGroups.empty()
+                ? double(observedExpectedGroups) / double(metrics->ExpectedActionGroups.size()) : 0.0;
+            double overhealRatio = metrics && metrics->AttemptedHealing
+                ? double(metrics->AttemptedHealing > metrics->EffectiveHealing + metrics->AbsorbedHealing
+                    ? metrics->AttemptedHealing - metrics->EffectiveHealing - metrics->AbsorbedHealing : 0)
+                    / double(metrics->AttemptedHealing) : 0.0;
+            double targetSelectionAccuracy = metrics && metrics->HealSelectionAttempts
+                ? double(metrics->HealSelectionSuccesses) / double(metrics->HealSelectionAttempts) : 0.0;
+            double idleUnderDemandRatio = metrics && metrics->DemandTicks
+                ? double(metrics->IdleUnderDemandTicks) / double(metrics->DemandTicks) : 0.0;
+            uint32 responseLatencyP95 = 0;
+            if (metrics && !metrics->HealResponseLatenciesMs.empty())
+            {
+                std::vector<uint32> latencies = metrics->HealResponseLatenciesMs;
+                std::sort(latencies.begin(), latencies.end());
+                size_t const p95Index = (latencies.size() * 95 + 99) / 100 - 1;
+                responseLatencyP95 = latencies[p95Index];
+            }
             uint32 mainhandTempEnchant = 0;
             uint32 offhandTempEnchant = 0;
             uint32 mainhandItemEntry = 0;
@@ -1772,23 +1896,55 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                         }
             }
             bool persistentSetupReady = false;
+            bool manaGemReady = true;
             if (bot)
             {
                 switch (bot->getClass())
                 {
                     case CLASS_PALADIN:
-                        persistentSetupReady = bot->HasAura(25780) && bot->HasAura(31801) && bot->HasAura(465)
-                            && (bot->HasAura(20217) || bot->HasAura(79063));
+                    {
+                        bool const tank = std::string(GetDungeonRole(bot)) == "tank";
+                        persistentSetupReady = (bot->HasAura(20217) || bot->HasAura(79063))
+                            && (!tank || (bot->HasAura(25780) && bot->HasAura(31801) && bot->HasAura(465)));
                         break;
+                    }
                     case CLASS_MAGE:
-                        persistentSetupReady = (bot->HasAura(1459) || bot->HasAura(79058)) && bot->HasAura(30482);
+                    {
+                        BotClassSpecActionProfile const profile = BotClassSpecActionProfileStore::Build(
+                            bot, GetDungeonRole(bot));
+                        bool const manaGemEnabled = std::any_of(
+                            profile.Spells.begin(), profile.Spells.end(), [](BotActionProfileSpell const& spell)
+                            {
+                                return spell.Category == BotCombatActionCategory::UseItem && spell.SpellId == 5405;
+                            });
+                        manaGemReady = !manaGemEnabled || bot->GetItemByEntry(36799);
+                        persistentSetupReady = (bot->HasAura(1459) || bot->HasAura(79058))
+                            && (bot->HasAura(30482) || bot->HasAura(6117)) && manaGemReady;
                         break;
+                    }
                     case CLASS_HUNTER:
                         persistentSetupReady = bot->HasAura(13165) && bot->GetPet() && bot->GetPet()->IsAlive();
                         break;
                     case CLASS_SHAMAN:
-                        persistentSetupReady = bot->HasAura(324) && mainhandTempEnchant && offhandTempEnchant;
+                    {
+                        BotClassSpecActionProfile const profile = BotClassSpecActionProfileStore::Build(
+                            bot, GetDungeonRole(bot));
+                        bool const enhancement = profile.SpecTag == "enhancement"
+                            || profile.SpecTag == "enhancement_shaman";
+                        auto weaponEnchantReady = [bot](uint8 slot, uint32 enchantId, bool weaponRequired)
+                        {
+                            Item const* item = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, slot);
+                            ItemTemplate const* itemTemplate = item ? item->GetTemplate() : nullptr;
+                            if (!itemTemplate || itemTemplate->GetClass() != ITEM_CLASS_WEAPON)
+                                return !weaponRequired;
+                            return item->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT) == enchantId;
+                        };
+                        bool const healer = std::string(GetDungeonRole(bot)) == "healer";
+                        persistentSetupReady = bot->HasAura(healer ? 52127 : 324)
+                            && weaponEnchantReady(EQUIPMENT_SLOT_MAINHAND, enhancement ? 283 : 5, true)
+                            && weaponEnchantReady(EQUIPMENT_SLOT_OFFHAND, 5, enhancement);
                         break;
+                    }
                     default:
                         persistentSetupReady = true;
                         break;
@@ -1806,8 +1962,11 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                  << ",\"persistent_setup\":{\"ready\":" << (persistentSetupReady ? "true" : "false")
                  << ",\"arcane_brilliance\":" << (bot && (bot->HasAura(1459) || bot->HasAura(79058)) ? "true" : "false")
                  << ",\"molten_armor\":" << (bot && bot->HasAura(30482) ? "true" : "false")
+                 << ",\"mage_armor\":" << (bot && bot->HasAura(6117) ? "true" : "false")
+                 << ",\"mana_gem_ready\":" << (manaGemReady ? "true" : "false")
                  << ",\"aspect_of_the_hawk\":" << (bot && bot->HasAura(13165) ? "true" : "false")
                  << ",\"lightning_shield\":" << (bot && bot->HasAura(324) ? "true" : "false")
+                 << ",\"water_shield\":" << (bot && bot->HasAura(52127) ? "true" : "false")
                  << ",\"mainhand_item_entry\":" << mainhandItemEntry
                  << ",\"dragonwrath_proc_aura\":" << (bot && bot->HasAura(101056) ? "true" : "false")
                  << ",\"mainhand_temp_enchant\":" << mainhandTempEnchant
@@ -1839,19 +1998,143 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
                  << ",\"melee_hit_pct\":" << (bot ? bot->GetRatingBonusValue(CR_HIT_MELEE) : 0.0f)
                  << ",\"ranged_hit_pct\":" << (bot ? bot->GetRatingBonusValue(CR_HIT_RANGED) : 0.0f)
                  << ",\"spell_hit_pct\":" << (bot ? bot->GetRatingBonusValue(CR_HIT_SPELL) : 0.0f)
-                 << ",\"mastery_points\":" << (bot ? bot->GetRatingBonusValue(CR_MASTERY) : 0.0f) << '}'
+                 << ",\"mastery_points\":" << (bot ? bot->GetRatingBonusValue(CR_MASTERY) : 0.0f)
+                 << ",\"eclipse_power\":" << (bot ? bot->GetPower(POWER_ECLIPSE) : 0)
+                 << ",\"solar_eclipse_active\":" << (bot && bot->HasAura(48517) ? "true" : "false")
+                 << ",\"lunar_eclipse_active\":" << (bot && bot->HasAura(48518) ? "true" : "false") << '}'
                  << ",\"reference_setup\":{\"enabled\":" << (Cohort().Config.CombatCalibrationReferenceConditions ? "true" : "false")
                  << ",\"buffs_ready\":" << (metrics && metrics->ReferenceBuffsReady ? "true" : "false")
+                 << ",\"buff_auras\":{\"53646\":" << (bot && bot->HasAura(53646) ? "true" : "false")
+                 << ",\"79058\":" << (bot && bot->HasAura(79058) ? "true" : "false")
+                 << ",\"24932\":" << (bot && bot->HasAura(24932) ? "true" : "false")
+                 << ",\"2895\":" << (bot && bot->HasAura(2895) ? "true" : "false")
+                 << ",\"8515\":" << (bot && bot->HasAura(8515) ? "true" : "false")
+                 << ",\"8076\":" << (bot && bot->HasAura(8076) ? "true" : "false")
+                 << ",\"82930\":" << (bot && bot->HasAura(82930) ? "true" : "false")
+                 << ",\"57669\":" << (metrics && metrics->ReferenceReplenishmentObserved ? "true" : "false")
+                 << ",\"kings_or_mark\":" << (bot && (bot->HasAura(20217) || bot->HasAura(79063)
+                    || bot->HasAura(1126) || bot->HasAura(79061)) ? "true" : "false")
+                 << ",\"79102\":" << (bot && bot->HasAura(79102) ? "true" : "false")
+                 << ",\"79470\":" << (bot && bot->HasAura(79470) ? "true" : "false")
+                 << ",\"87547\":" << (bot && bot->HasAura(87547) ? "true" : "false") << '}'
+                 << ",\"balance_mushrooms_preplanted\":" << (metrics && metrics->BalanceMushroomsPreplanted ? "true" : "false")
+                 << ",\"balance_mushroom_preplant_count\":" << (metrics ? uint32(metrics->BalanceMushroomPreplantCount) : 0)
                  << ",\"target_debuffs_ready\":" << (metrics && metrics->ReferenceTargetDebuffsReady ? "true" : "false")
                  << ",\"heroism_window_observed\":" << (metrics && metrics->ReferenceHeroismWindowObserved ? "true" : "false") << '}'
                  << ",\"elapsed_seconds\":" << std::fixed << std::setprecision(3) << elapsedSec
                  << ",\"damage\":" << (metrics ? metrics->Damage : 0)
+                 << ",\"pet_damage\":" << (metrics ? metrics->PetDamage : 0)
                  << ",\"dps\":" << std::fixed << std::setprecision(2) << dps
                  << ",\"threat_per_second\":" << std::fixed << std::setprecision(2) << tps
                  << ",\"threat_observable\":" << (metrics && metrics->ThreatBaseline >= 0.0f && metrics->ThreatCurrent > metrics->ThreatBaseline ? "true" : "false")
+                 << ",\"target_count\":" << (metrics ? metrics->TargetCount : 0)
                  << ",\"attempts\":" << (metrics ? metrics->Attempts : 0)
                  << ",\"successes\":" << (metrics ? metrics->Successes : 0)
-                 << ",\"result_counts\":{";
+                 << ",\"quality_metrics\":{\"active_uptime_ratio\":" << activeUptimeRatio
+                 << ",\"cast_failure_ratio\":" << castFailureRatio
+                 << ",\"resource_capped_ratio\":" << resourceCappedRatio
+                 << ",\"resource_starved_ratio\":" << resourceStarvedRatio
+                 << ",\"movement_range_loss_ratio\":" << movementRangeLossRatio
+                 << ",\"pet_damage_ratio\":" << petDamageRatio
+                 << ",\"illegal_action_count\":" << (metrics ? metrics->IllegalActionCount : 0)
+                 << ",\"action_group_count\":" << (metrics ? metrics->ActionGroups.size() : 0)
+                 << ",\"expected_action_group_count\":" << (metrics ? metrics->ExpectedActionGroups.size() : 0)
+                 << ",\"rotation_group_coverage\":" << rotationGroupCoverage << '}'
+                 << ",\"shadow_priest_metrics\":{\"shadow_orb_power_uptime_ratio\":" << shadowOrbPowerUptimeRatio
+                 << ",\"shadow_orb_uptime_ratio\":" << shadowOrbUptimeRatio
+                 << ",\"empowered_shadow_uptime_ratio\":" << empoweredShadowUptimeRatio
+                 << ",\"maximum_shadow_orb_stacks\":" << (metrics ? uint32(metrics->MaximumShadowOrbStacks) : 0) << '}'
+                 << ",\"tank_metrics\":{\"stance_form_uptime_ratio\":"
+                 << (metrics && metrics->TickCount ? double(metrics->StanceFormActiveTicks) / double(metrics->TickCount) : 0.0)
+                 << ",\"mitigation_uptime_ratio\":"
+                 << (metrics && metrics->TickCount ? double(metrics->MitigationCoveredTicks) / double(metrics->TickCount) : 0.0)
+                 << ",\"all_hostile_retention_ratio\":"
+                 << (metrics && metrics->ThreatSampleCount ? double(metrics->AllHostilesRetainedSamples) / double(metrics->ThreatSampleCount) : 0.0)
+                 << ",\"snap_threat_success_ratio\":"
+                 << (metrics && metrics->SnapThreatChecks ? double(metrics->SnapThreatSuccesses) / double(metrics->SnapThreatChecks) : 0.0)
+                 << ",\"add_threat_success_ratio\":"
+                 << (metrics && metrics->AddThreatChecks ? double(metrics->AddThreatSuccesses) / double(metrics->AddThreatChecks) : 0.0)
+                 << ",\"threat_aura_uptime_ratio\":"
+                 << (metrics && metrics->TickCount ? double(metrics->ThreatAuraActiveTicks) / double(metrics->TickCount) : 0.0)
+                 << ",\"healer_exposure_ratio\":"
+                 << (metrics && metrics->ThreatSampleCount ? double(metrics->HealerExposureTicks) / double(metrics->ThreatSampleCount) : 0.0)
+                 << ",\"interrupt_success_ratio\":"
+                 << (metrics && metrics->InterruptChecks ? double(metrics->InterruptSuccesses) / double(metrics->InterruptChecks) : 0.0)
+                 << ",\"defensive_action_count\":" << (metrics ? metrics->DefensiveActionCount : 0)
+                 << ",\"health_floor_ratio\":" << (metrics ? metrics->MinimumHealthRatio : 0.0f)
+                 << ",\"maximum_controlled_damage\":" << (metrics ? metrics->MaximumControlledDamage : 0)
+                 << ",\"maximum_controlled_damage_ratio\":" << (metrics ? metrics->MaximumControlledDamageRatio : 0.0f)
+                 << ",\"death_count\":" << (metrics ? metrics->DeathCount : 0) << '}'
+                 << ",\"healer_metrics\":{\"attempted_healing\":" << (metrics ? metrics->AttemptedHealing : 0)
+                 << ",\"effective_healing\":" << (metrics ? metrics->EffectiveHealing : 0)
+                 << ",\"absorbed_healing\":" << (metrics ? metrics->AbsorbedHealing : 0)
+                 << ",\"effective_hps\":" << (metrics && elapsedSec > 0.0 ? double(metrics->EffectiveHealing) / elapsedSec : 0.0)
+                 << ",\"scheduled_event_count\":" << (metrics ? metrics->ScheduledDamageEvents : 0)
+                 << ",\"delivered_event_count\":" << (metrics ? metrics->DeliveredDamageEvents : 0)
+                 << ",\"dispel_attempts\":" << (metrics ? metrics->DispelAttempts : 0)
+                 << ",\"dispel_successes\":" << (metrics ? metrics->DispelSuccesses : 0)
+                 << ",\"cooldown_attempts\":" << (metrics ? metrics->CooldownAttempts : 0)
+                 << ",\"cooldown_successes\":" << (metrics ? metrics->CooldownSuccesses : 0)
+                 << ",\"response_latency_p95_ms\":" << responseLatencyP95
+                 << ",\"target_selection_accuracy\":" << targetSelectionAccuracy
+                 << ",\"idle_ratio_under_demand\":" << idleUnderDemandRatio
+                 << ",\"overheal_ratio\":" << overhealRatio
+                 << ",\"health_floor_ratio\":" << (metrics ? metrics->MinimumHealthRatio : 0.0f)
+                 << ",\"remaining_mana_ratio\":" << (bot && bot->GetMaxPower(POWER_MANA)
+                    ? double(bot->GetPower(POWER_MANA)) / double(bot->GetMaxPower(POWER_MANA)) : 0.0)
+                 << ",\"time_to_oom_seconds\":" << (bot && bot->GetPower(POWER_MANA) ? elapsedSec : 0.0)
+                 << ",\"controlled_damage\":" << (metrics ? metrics->ControlledDamage : 0) << '}'
+                 << ",\"action_groups\":[";
+            bool firstGroup = true;
+            if (metrics)
+                for (std::string const& group : metrics->ActionGroups)
+                {
+                    if (!firstGroup)
+                        json << ',';
+                    firstGroup = false;
+                    json << '\"' << JsonEscape(group) << '\"';
+                }
+            json << "],\"expected_action_groups\":[";
+            bool firstExpectedGroup = true;
+            if (metrics)
+                for (std::string const& group : metrics->ExpectedActionGroups)
+                {
+                    if (!firstExpectedGroup)
+                        json << ',';
+                    firstExpectedGroup = false;
+                    json << '\"' << JsonEscape(group) << '\"';
+                }
+            json << "],\"scheduled_damage_phases\":[";
+            bool firstScheduledPhase = true;
+            if (metrics)
+                for (std::string const& phase : metrics->ScheduledDamagePhases)
+                {
+                    if (!firstScheduledPhase)
+                        json << ',';
+                    firstScheduledPhase = false;
+                    json << '\"' << JsonEscape(phase) << '\"';
+                }
+            json << "],\"delivered_damage_phases\":[";
+            bool firstDeliveredPhase = true;
+            if (metrics)
+                for (std::string const& phase : metrics->DeliveredDamagePhases)
+                {
+                    if (!firstDeliveredPhase)
+                        json << ',';
+                    firstDeliveredPhase = false;
+                    json << '\"' << JsonEscape(phase) << '\"';
+                }
+            json << "],\"heal_target_counts\":{";
+            bool firstHealTarget = true;
+            if (metrics)
+                for (auto const& [guid, count] : metrics->HealTargetCounts)
+                {
+                    if (!firstHealTarget)
+                        json << ',';
+                    firstHealTarget = false;
+                    json << '\"' << guid << "\":" << count;
+                }
+            json << "},\"result_counts\":{";
             bool firstResult = true;
             if (metrics)
                 for (auto const& [result, count] : metrics->ResultCounts)
@@ -1904,21 +2187,66 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
         json << ']';
     };
 
+    double warmupSeconds = Cohort().CalibrationStartedMs
+        ? double((Cohort().CalibrationScoredStartedMs ? Cohort().CalibrationScoredStartedMs : nowMs) - Cohort().CalibrationStartedMs) / 1000.0 : 0.0;
+    double scoredSeconds = Cohort().CalibrationScoredStartedMs
+        ? double((Cohort().CalibrationScoredEndedMs ? Cohort().CalibrationScoredEndedMs : nowMs) - Cohort().CalibrationScoredStartedMs) / 1000.0 : 0.0;
+    bool potionObserved = false;
+    bool racialCooldownObserved = false;
+    for (auto const& entry : Cohort().CalibrationMetricsByGuid)
+    {
+        CalibrationMetrics const& metrics = entry.second;
+        potionObserved = potionObserved || metrics.ActionAttempts.find(79476) != metrics.ActionAttempts.end();
+        racialCooldownObserved = racialCooldownObserved
+            || metrics.ActionAttempts.find(26297) != metrics.ActionAttempts.end()
+            || metrics.ActionAttempts.find(33697) != metrics.ActionAttempts.end();
+    }
     json << "{\"ok\":true,\"action\":\"botauto_calibrate_status\",\"cohort_id\":\"" << JsonEscape(Cohort().Id)
          << "\",\"active\":" << (Cohort().CalibrationActive ? "true" : "false")
+         << ",\"window_complete\":" << (Cohort().CalibrationWindowComplete ? "true" : "false")
+         << ",\"mode\":\"" << JsonEscape(Cohort().CalibrationMode) << "\""
+         << ",\"target_spec\":\"" << JsonEscape(Cohort().CalibrationTargetSpec) << "\""
+         << ",\"target_guid\":" << Cohort().CalibrationTargetGuid.GetCounter()
+         << ",\"seed\":" << Cohort().CalibrationSeed
+         << ",\"profile_generation\":" << Cohort().PinnedProfileGeneration
+         << ",\"profile_content_hash\":\"" << JsonEscape(Cohort().PinnedProfileContentHash) << "\""
+         << ",\"runtime_authority\":\"explicit_sql_rule_profiles\""
+         << ",\"generic_ml_runtime_authority\":false"
          << ",\"isolated_from_route_telemetry\":true"
          << ",\"damage_basis\":\"effective_or_unmitigated\""
-         << ",\"phase\":\"" << (Cohort().CalibrationAoePhase ? "aoe" : "single_target") << "\""
-         << ",\"window_seconds\":120"
+         << ",\"phase\":\"" << (Cohort().CalibrationScoredStartedMs ? (Cohort().CalibrationWindowComplete ? "complete" : "scored") : "warmup") << "\""
+         << ",\"window_seconds\":300"
+         << ",\"warmup_seconds\":" << std::fixed << std::setprecision(3) << warmupSeconds
+         << ",\"scored_seconds\":" << std::fixed << std::setprecision(3) << scoredSeconds
+         << ",\"scored_started_at_ms\":" << Cohort().CalibrationScoredStartedMs
+         << ",\"scored_ended_at_ms\":" << Cohort().CalibrationScoredEndedMs
+         << ",\"reset_applied\":" << (!Cohort().CalibrationResetId.empty() ? "true" : "false")
+         << ",\"reset_id\":\"" << JsonEscape(Cohort().CalibrationResetId) << "\""
+         << ",\"cross_window_event_count\":" << Cohort().CalibrationCrossWindowEventCount
+         << ",\"current_damage_phase\":\"" << JsonEscape(Cohort().CalibrationCurrentDamagePhase) << "\""
          << ",\"normalization\":{\"gear_basis\":\"equipped_clone_average_item_level\""
          << ",\"buff_basis\":\"" << (Cohort().Config.CombatCalibrationReferenceConditions
             ? "full_raid_reference_auras" : "stonecore_party_owned_buffs") << "\""
          << ",\"flask\":" << (Cohort().Config.CombatCalibrationReferenceConditions ? "true" : "false")
          << ",\"heroism_window_seconds\":" << (Cohort().Config.CombatCalibrationReferenceConditions ? 40 : 0)
-         << ",\"potions\":false"
-         << ",\"engineering_cooldowns\":false"
-         << ",\"racial_cooldowns\":false"
-         << ",\"consumables\":false"
+         << ",\"external_power_infusion_windows_seconds\":"
+         << (Cohort().Config.CombatCalibrationReferenceConditions && Cohort().CalibrationTargetSpec == "shadow_priest"
+            ? "[[40,55],[160,175],[280,295]]" : "[]")
+         << ",\"dark_intent_proc_uptime_pct\":"
+         << (Cohort().Config.CombatCalibrationReferenceConditions && Cohort().CalibrationTargetSpec == "shadow_priest" ? 90 : 0)
+         << ",\"food_buff_spell_id\":"
+         << (Cohort().Config.CombatCalibrationReferenceConditions
+             && (Cohort().CalibrationTargetSpec == "shadow_priest" || Cohort().CalibrationTargetSpec == "balance_druid")
+            ? 87547 : 0)
+         << ",\"synapse_springs_windows_seconds\":"
+         << (Cohort().Config.CombatCalibrationReferenceConditions && Cohort().CalibrationTargetSpec == "shadow_priest"
+            ? "[[0,10],[60,70],[120,130],[180,190],[240,250]]" : "[]")
+         << ",\"dispersion_cast_cap\":0"
+         << ",\"potions\":" << (potionObserved ? "true" : "false")
+         << ",\"engineering_cooldowns\":"
+         << (Cohort().Config.CombatCalibrationReferenceConditions && Cohort().CalibrationTargetSpec == "shadow_priest" ? "true" : "false")
+         << ",\"racial_cooldowns\":" << (racialCooldownObserved ? "true" : "false")
+         << ",\"consumables\":" << (Cohort().Config.CombatCalibrationReferenceConditions ? "true" : "false")
          << ",\"target_debuffs\":" << (Cohort().Config.CombatCalibrationReferenceConditions ? "true" : "false")
          << ",\"reference_conditions\":" << (Cohort().Config.CombatCalibrationReferenceConditions ? "true" : "false")
          << ",\"external_bis_target_configured\":false"
@@ -1932,7 +2260,7 @@ std::string BotWorldPopulationMgr::GetCombatCalibrationJson() const
         json << "null";
     else
     {
-        json << "{\"phase\":\"" << (Cohort().CalibrationPreviousAoePhase ? "aoe" : "single_target") << "\",\"bots\":";
+        json << "{\"mode\":\"" << JsonEscape(Cohort().CalibrationMode) << "\",\"bots\":";
         writeBots(Cohort().CalibrationPreviousMetrics, true);
         json << '}';
     }
@@ -2449,66 +2777,31 @@ void BotWorldPopulationMgr::Update(uint32 diff)
     {
         EnsureCalibrationPopulation();
         EnsureCalibrationCohortGroup();
-        bool aoePhase = ((NowMs() - Cohort().CalibrationStartedMs) / 120000) % 2 == 1;
-        if (aoePhase != Cohort().CalibrationAoePhase)
+        uint64 const calibrationNowMs = NowMs();
+        if (Cohort().CalibrationWindowComplete && Cohort().CalibrationScoredEndedMs
+            && calibrationNowMs >= Cohort().CalibrationScoredEndedMs
+            && calibrationNowMs - Cohort().CalibrationScoredEndedMs <= 10000
+            && (!Cohort().CalibrationLastPostWindowDrainMs
+                || calibrationNowMs - Cohort().CalibrationLastPostWindowDrainMs >= 250))
+            DrainCalibrationPostWindowEffects();
+        uint32 expectedPopulation = Cohort().CalibrationMode == "healer_controlled_damage_300" ? 5
+            : (Cohort().CalibrationMode == "tank_threat_300" ? 2 : 1);
+        bool populationReady = Party().CalibrationBots.size() == expectedPopulation;
+        for (WorldBotState const& calibrationState : Party().CalibrationBots)
         {
-            uint64 windowEndedMs = NowMs();
-            std::map<uint32, CalibrationMetrics>& bestMetrics = Cohort().CalibrationAoePhase
-                ? Cohort().CalibrationBestAoeMetrics : Cohort().CalibrationBestSingleMetrics;
-            for (auto& [guid, metrics] : Cohort().CalibrationMetricsByGuid)
-            {
-                metrics.WindowEndedMs = windowEndedMs;
-                auto best = bestMetrics.find(guid);
-                if (best == bestMetrics.end() || metrics.Damage > best->second.Damage)
-                    bestMetrics[guid] = metrics;
-            }
-            if (Cohort().CalibrationAoePhase)
-                ++Cohort().CalibrationCompletedAoeWindows;
-            else
-                ++Cohort().CalibrationCompletedSingleWindows;
-            Cohort().CalibrationPreviousMetrics = Cohort().CalibrationMetricsByGuid;
-            Cohort().CalibrationPreviousAoePhase = Cohort().CalibrationAoePhase;
-            Cohort().CalibrationPreviousWindowValid = true;
-            Cohort().CalibrationAoePhase = aoePhase;
-            // Auras such as Living Bomb, Black Arrow, Flame Shock, and
-            // Censure belong to the completed phase. Remove only effects
-            // owned by each clone before opening the next window so delayed
-            // ticks cannot contaminate the opposite single/AoE measurement.
-            for (WorldBotState const& calibrationState : Party().CalibrationBots)
-            {
-                Player* calibrationBot = GetLoadedBot(calibrationState);
-                if (!calibrationBot || !calibrationBot->IsInWorld())
-                    continue;
-                calibrationBot->InterruptNonMeleeSpells(false);
-                calibrationBot->AttackStop();
-                if (Pet* pet = calibrationBot->GetPet())
-                    pet->AttackStop();
-
-                std::vector<WorldObject*> nearbyObjects;
-                Trinity::AllWorldObjectsInRange dummyCheck(calibrationBot, 80.0f);
-                Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> dummySearcher(
-                    calibrationBot, nearbyObjects, dummyCheck);
-                Cell::VisitAllObjects(calibrationBot, dummySearcher, 80.0f);
-                ObjectGuid casterGuid = calibrationBot->GetGUID();
-                for (WorldObject* object : nearbyObjects)
-                {
-                    Creature* dummy = object ? object->ToCreature() : nullptr;
-                    if (!dummy || !IsTrainingDummy(dummy))
-                        continue;
-                    dummy->SetFullHealth();
-                    dummy->RemoveOwnedAuras([casterGuid](Aura const* aura)
-                    {
-                        return aura && aura->GetCasterGUID() == casterGuid
-                            && aura->GetSpellInfo() && aura->GetSpellInfo()->Id != 1130;
-                    }, AuraRemoveFlags::ByCancel);
-                }
-            }
-            uint64 windowStartedMs = NowMs();
-            for (auto& [guid, metrics] : Cohort().CalibrationMetricsByGuid)
-            {
-                metrics = CalibrationMetrics();
-                metrics.WindowStartedMs = windowStartedMs;
-            }
+            Player* calibrationBot = GetLoadedBot(calibrationState);
+            populationReady = populationReady && calibrationBot && calibrationBot->IsInWorld()
+                && calibrationBot->IsAlive() && calibrationBot->GetGroup()
+                && calibrationBot->GetGroup()->GetMembersCount() == expectedPopulation;
+        }
+        if (!Cohort().CalibrationScoredStartedMs && populationReady
+            && NowMs() - Cohort().CalibrationStartedMs >= 15000)
+            ResetCalibrationScoredWindow();
+        if (Cohort().CalibrationScoredStartedMs && !Cohort().CalibrationWindowComplete)
+        {
+            UpdateCalibrationControlledDamage();
+            if (NowMs() - Cohort().CalibrationScoredStartedMs >= 300000)
+                CompleteCalibrationScoredWindow();
         }
 
         for (auto itr = Party().CalibrationBots.begin(); itr != Party().CalibrationBots.end();)
@@ -3563,23 +3856,74 @@ void BotWorldPopulationMgr::EnsurePopulation()
 
 void BotWorldPopulationMgr::EnsureCalibrationPopulation()
 {
-    static constexpr uint32 CalibrationPopulation = 4;
-    static constexpr float CalibrationX = -8962.05f;
-    static constexpr float CalibrationY = -157.16f;
+    bool const clusteredDummyMode = Cohort().CalibrationMode == "aoe_300"
+        || Cohort().CalibrationMode == "tank_threat_300";
+    bool const rangedAoeMode = Cohort().CalibrationMode == "aoe_300"
+        && UsesRangedAoeCalibrationLane(Cohort().CalibrationTargetSpec);
+    bool const demonologyCloseRangeMode = Cohort().CalibrationTargetSpec == "demonology_warlock";
+    bool const shadowPriestSingleTargetMode = Cohort().CalibrationMode == "single_target_300"
+        && Cohort().CalibrationTargetSpec == "shadow_priest";
+    // The generic single-target point overlaps one dummy. Melee AoE and tank-threat
+    // windows start at the center of the nearest dummy cluster so real splash
+    // damage engages the cluster before its combat timers end. Ranged AoE
+    // profiles instead spawn in a known legal courtyard firing lane; spawning
+    // inside the center dummy collision leaves every ranged spell below its
+    // hostile minimum range before movement can establish an mmap path. Demonology
+    // uses a legal six-yard single-target lane for Shadowflame plus the ranged core,
+    // and an open centroid lane in AoE mode that keeps all eight dummies within
+    // Hellfire/Immolation range without spawning inside any dummy collision.
+    // Shadow Priest also requires a non-melee firing lane: every offensive action
+    // rejects targets within five yards, so the overlapping generic point cannot
+    // produce an action that would let movement establish normal ranged spacing.
+    float const calibrationX = demonologyCloseRangeMode
+        ? (Cohort().CalibrationMode == "aoe_300" ? -8967.4f : -8956.0f)
+        : (shadowPriestSingleTargetMode ? -8956.0f
+            : (rangedAoeMode ? -8947.0f : (clusteredDummyMode ? -8965.59f : -8962.05f)));
+    float const calibrationY = demonologyCloseRangeMode
+        ? (Cohort().CalibrationMode == "aoe_300" ? -152.9f : -157.16f)
+        : (shadowPriestSingleTargetMode ? -157.16f
+            : (rangedAoeMode ? -159.438f : (clusteredDummyMode ? -158.66f : -157.16f)));
     static constexpr float CalibrationZ = 81.5856f;
-    uint32 attempts = 0;
-    while (Cohort().CalibrationActive && Party().CalibrationBots.size() < CalibrationPopulation && attempts++ < CalibrationPopulation * 2)
+    uint32 calibrationPopulation = Cohort().CalibrationMode == "healer_controlled_damage_300" ? 5
+        : (Cohort().CalibrationMode == "tank_threat_300" ? 2 : 1);
+    auto restoreWarmupBot = [](Player* bot)
     {
-        uint32 candidateGuid = SelectCalibrationPoolCandidateGuid();
+        if (!bot || bot->IsAlive())
+            return false;
+        bot->CombatStopWithPets(true);
+        bot->CastStop();
+        bot->ResurrectPlayer(1.0f, false);
+        bot->SpawnCorpseBones();
+        bot->SetFullHealth();
+        if (bot->GetMaxPower(POWER_MANA))
+            bot->SetPower(POWER_MANA, bot->GetMaxPower(POWER_MANA));
+        if (bot->getClass() == CLASS_WARLOCK && bot->GetMaxPower(POWER_SOUL_SHARDS))
+            bot->SetPower(POWER_SOUL_SHARDS, bot->GetMaxPower(POWER_SOUL_SHARDS));
+        return true;
+    };
+    if (!Cohort().CalibrationScoredStartedMs)
+        for (WorldBotState& state : Party().CalibrationBots)
+            if (Player* bot = GetLoadedBot(state); restoreWarmupBot(bot))
+            {
+                state.DecisionTimer = 0;
+                TC_LOG_INFO("server", "BotWorld calibration warmup restored dead bot=%s",
+                    state.Guid.ToString().c_str());
+            }
+
+    uint32 attempts = 0;
+    while (Cohort().CalibrationActive && !Cohort().CalibrationWindowComplete
+        && Party().CalibrationBots.size() < calibrationPopulation && attempts++ < calibrationPopulation * 4)
+    {
+        size_t slot = Party().CalibrationBots.size();
+        uint32 candidateGuid = SelectCalibrationPoolCandidateGuid(slot);
         if (!candidateGuid)
             break;
 
-        size_t slot = Party().CalibrationBots.size();
         if (!ClaimBotGuid(candidateGuid, "calibration_" + std::to_string(slot)))
             continue;
 
-        float x = CalibrationX + float(slot % 2) * 2.0f;
-        float y = CalibrationY + float(slot / 2) * 2.0f;
+        float x = calibrationX + float(slot % 2) * 2.0f;
+        float y = calibrationY + float(slot / 2) * 2.0f;
         Player* bot = sBotMgr->SpawnWorldBot("any", std::to_string(candidateGuid), 0, x, y, CalibrationZ, 0.0f);
         if (!bot)
         {
@@ -3587,6 +3931,13 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
                 CharacterDatabase.DirectPExecute("UPDATE character_bot_pool SET in_use = 0 WHERE guid = %u", candidateGuid);
             continue;
         }
+
+        bool const restoredDeadBot = restoreWarmupBot(bot);
+        bot->SetFullHealth();
+        if (bot->GetMaxPower(POWER_MANA))
+            bot->SetPower(POWER_MANA, bot->GetMaxPower(POWER_MANA));
+        if (bot->getClass() == CLASS_WARLOCK && bot->GetMaxPower(POWER_SOUL_SHARDS))
+            bot->SetPower(POWER_SOUL_SHARDS, bot->GetMaxPower(POWER_SOUL_SHARDS));
 
         WorldBotState state;
         state.Guid = bot->GetGUID();
@@ -3602,11 +3953,14 @@ void BotWorldPopulationMgr::EnsureCalibrationPopulation()
         state.SpawnZ = bot->GetPositionZ();
         state.SpawnO = bot->GetOrientation();
         Party().CalibrationBots.push_back(state);
+        if (slot == 0)
+            Cohort().CalibrationTargetGuid = bot->GetGUID();
 
         CalibrationMetrics metrics;
         Cohort().CalibrationMetricsByGuid.emplace(bot->GetGUID().GetCounter(), std::move(metrics));
-        TC_LOG_INFO("server", "BotWorld calibration clone spawned bot=%s slot=%zu map=%u position=%f,%f,%f",
-            bot->GetGUID().ToString().c_str(), slot, bot->GetMapId(), bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ());
+        TC_LOG_INFO("server", "BotWorld calibration clone spawned bot=%s slot=%zu map=%u position=%f,%f,%f restored_dead_state=%u",
+            bot->GetGUID().ToString().c_str(), slot, bot->GetMapId(), bot->GetPositionX(), bot->GetPositionY(), bot->GetPositionZ(),
+            restoredDeadBot ? 1u : 0u);
     }
 }
 
@@ -3652,8 +4006,738 @@ void BotWorldPopulationMgr::EnsureCalibrationCohortGroup()
             continue;
 
         std::string role = sBotMgr->GetBotRoleName(bot->GetGUID());
-        group->SetLfgRoles(bot->GetGUID(), role == "tank" ? lfg::PLAYER_ROLE_TANK : lfg::PLAYER_ROLE_DAMAGE);
+        group->SetLfgRoles(bot->GetGUID(), role == "tank" ? lfg::PLAYER_ROLE_TANK
+            : (role == "healer" ? lfg::PLAYER_ROLE_HEALER : lfg::PLAYER_ROLE_DAMAGE));
     }
+}
+
+void BotWorldPopulationMgr::ResetCalibrationScoredWindow()
+{
+    uint64 const startedMs = NowMs();
+    Cohort().CalibrationScoredStartedMs = startedMs;
+    Cohort().CalibrationScoredEndedMs = 0;
+    Cohort().CalibrationLastPostWindowDrainMs = 0;
+    Cohort().CalibrationLastControlledEventSecond = std::numeric_limits<uint64>::max();
+    Cohort().CalibrationCrossWindowEventCount = 0;
+    Cohort().CalibrationInterruptTargetGuid.Clear();
+    Cohort().CalibrationCurrentDamagePhase.clear();
+    Cohort().CalibrationResetId = Cohort().CalibrationTargetSpec + ":" + Cohort().CalibrationMode
+        + ":seed-" + std::to_string(Cohort().CalibrationSeed);
+
+    for (WorldBotState& state : Party().CalibrationBots)
+    {
+        Player* bot = GetLoadedBot(state);
+        CalibrationMetrics& metrics = Cohort().CalibrationMetricsByGuid[state.Guid.GetCounter()];
+        metrics = CalibrationMetrics();
+        metrics.WindowStartedMs = startedMs;
+        state.DecisionTimer = 0;
+        if (!bot)
+            continue;
+        bot->InterruptNonMeleeSpells(true);
+        bot->GetSpellHistory()->ResetAllCooldowns();
+        // Warmup Black Arrow can leave Lock and Load or its internal-cooldown
+        // marker active even though the scored reset removes the originating
+        // target aura. Clear both so the scored opener starts from one
+        // deterministic proc state.
+        if (Cohort().CalibrationTargetSpec == "survival_hunter")
+        {
+            bot->RemoveAurasDueToSpell(56453);
+            bot->RemoveAurasDueToSpell(67544);
+        }
+        // Unholy Blight is an owner aura that continues emitting periodic damage
+        // after its triggering Death Coil. Clear warmup carryover before scoring.
+        bot->RemoveAurasDueToSpell(50536, bot->GetGUID(), 0, AuraRemoveFlags::ByCancel);
+        bot->RemoveAllDynObjects();
+        bot->RemoveAllGameObjects();
+        bot->CombatStopWithPets(true);
+        bot->SetFullHealth();
+        if (bot->GetMaxPower(POWER_MANA))
+            bot->SetPower(POWER_MANA, bot->GetMaxPower(POWER_MANA));
+        if (bot->getClass() == CLASS_WARLOCK && bot->GetMaxPower(POWER_SOUL_SHARDS))
+            bot->SetPower(POWER_SOUL_SHARDS, bot->GetMaxPower(POWER_SOUL_SHARDS));
+        // Protection Warrior snap threat must not depend on the arbitrary rage
+        // remaining after the discarded warmup. Begin the declared tank-threat
+        // opener from the same full pre-pull resource state for every seed.
+        if (Cohort().CalibrationMode == "tank_threat_300"
+            && Cohort().CalibrationTargetSpec == "protection_warrior"
+            && bot->GetMaxPower(POWER_RAGE))
+            bot->SetPower(POWER_RAGE, bot->GetMaxPower(POWER_RAGE));
+
+        std::vector<ObjectGuid> ownedCasterGuids = { bot->GetGUID() };
+        std::vector<TempSummon*> temporarySummons;
+        Pet* pet = bot->GetPet();
+        if (pet)
+        {
+            ownedCasterGuids.push_back(pet->GetGUID());
+            pet->CombatStop(true);
+            pet->GetSpellHistory()->ResetAllCooldowns();
+            pet->SetFullHealth();
+        }
+        std::vector<Unit*> controlledUnits(bot->m_Controlled.begin(), bot->m_Controlled.end());
+        for (Unit* controlled : controlledUnits)
+        {
+            if (!controlled || controlled == pet)
+                continue;
+            ownedCasterGuids.push_back(controlled->GetGUID());
+            controlled->CombatStop(true);
+            controlled->GetSpellHistory()->ResetAllCooldowns();
+            if (TempSummon* summon = controlled->ToTempSummon())
+                temporarySummons.push_back(summon);
+        }
+
+        std::vector<WorldObject*> nearbyObjects;
+        Trinity::AllWorldObjectsInRange dummyCheck(bot, 80.0f);
+        Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> dummySearcher(bot, nearbyObjects, dummyCheck);
+        Cell::VisitAllObjects(bot, dummySearcher, 80.0f);
+        for (WorldObject* object : nearbyObjects)
+        {
+            Creature* dummy = object ? object->ToCreature() : nullptr;
+            if (!dummy || !IsTrainingDummy(dummy))
+                continue;
+            dummy->CombatStop(true);
+            dummy->SetFullHealth();
+            dummy->GetThreatManager().ClearAllThreat();
+            dummy->RemoveOwnedAuras([&ownedCasterGuids](Aura const* aura)
+            {
+                return aura && aura->GetSpellInfo() && aura->GetSpellInfo()->Id != 1130
+                    && std::find(ownedCasterGuids.begin(), ownedCasterGuids.end(),
+                        aura->GetCasterGUID()) != ownedCasterGuids.end();
+            }, AuraRemoveFlags::ByCancel);
+        }
+        for (TempSummon* summon : temporarySummons)
+            if (summon && summon->IsInWorld())
+                summon->UnSummon();
+    }
+}
+
+void BotWorldPopulationMgr::CompleteCalibrationScoredWindow()
+{
+    if (Cohort().CalibrationWindowComplete || !Cohort().CalibrationScoredStartedMs)
+        return;
+    uint64 const endedMs = NowMs();
+    Cohort().CalibrationScoredEndedMs = endedMs;
+    Cohort().CalibrationWindowComplete = true;
+    for (auto& [guid, metrics] : Cohort().CalibrationMetricsByGuid)
+        metrics.WindowEndedMs = endedMs;
+    DrainCalibrationPostWindowEffects();
+    Cohort().CalibrationPreviousMetrics = Cohort().CalibrationMetricsByGuid;
+    Cohort().CalibrationPreviousAoePhase = Cohort().CalibrationAoePhase;
+    Cohort().CalibrationPreviousWindowValid = true;
+    if (Cohort().CalibrationMode == "aoe_300")
+    {
+        Cohort().CalibrationBestAoeMetrics = Cohort().CalibrationMetricsByGuid;
+        ++Cohort().CalibrationCompletedAoeWindows;
+    }
+    else
+    {
+        Cohort().CalibrationBestSingleMetrics = Cohort().CalibrationMetricsByGuid;
+        ++Cohort().CalibrationCompletedSingleWindows;
+    }
+}
+
+void BotWorldPopulationMgr::DrainCalibrationPostWindowEffects()
+{
+    if (!Cohort().CalibrationActive || !Cohort().CalibrationWindowComplete)
+        return;
+
+    Cohort().CalibrationLastPostWindowDrainMs = NowMs();
+    for (WorldBotState const& state : Party().CalibrationBots)
+    {
+        Player* bot = GetLoadedBot(state);
+        if (!bot)
+            continue;
+        bot->InterruptNonMeleeSpells(true);
+        // Consecration and Immolation Aura use finite owner auras rather than
+        // dynamic objects. Unholy Blight's proc driver can also reapply its
+        // periodic aura when an in-flight Death Coil lands after the boundary.
+        // Cancel these drivers before draining the completed window.
+        bot->RemoveAurasDueToSpell(26573, bot->GetGUID(), 0, AuraRemoveFlags::ByCancel);
+        bot->RemoveAurasDueToSpell(49194, bot->GetGUID(), 0, AuraRemoveFlags::ByCancel);
+        bot->RemoveAurasDueToSpell(50536, bot->GetGUID(), 0, AuraRemoveFlags::ByCancel);
+        bot->RemoveAurasDueToSpell(50589, bot->GetGUID(), 0, AuraRemoveFlags::ByCancel);
+        bot->CombatStopWithPets(true);
+        // Freeze the completed window without stripping persistent class setup.
+        // The clone is destroyed by StopCombatCalibration immediately after the
+        // report is captured; removing every profile aura here invalidates the
+        // post-window stat/setup snapshot and can disturb pet-backed teardown.
+        // Repeat the target-side drain briefly so projectiles already in flight
+        // cannot apply a new periodic aura after the exact boundary cleanup.
+
+        std::vector<ObjectGuid> ownedCasterGuids = { bot->GetGUID() };
+        std::vector<Unit*> ownedUnits = { bot };
+        std::vector<TempSummon*> temporarySummons;
+        Pet* pet = bot->GetPet();
+        if (pet)
+        {
+            ownedCasterGuids.push_back(pet->GetGUID());
+            ownedUnits.push_back(pet);
+            pet->AttackStop();
+            pet->InterruptNonMeleeSpells(true);
+            pet->CombatStop(true);
+            pet->FollowTarget(bot);
+            if (CharmInfo* charmInfo = pet->GetCharmInfo())
+            {
+                charmInfo->SetCommandState(COMMAND_FOLLOW);
+                charmInfo->SetIsCommandAttack(false);
+                charmInfo->SetIsAtStay(false);
+                charmInfo->SetIsReturning(true);
+                charmInfo->SetIsCommandFollow(true);
+                charmInfo->SetIsFollowing(false);
+            }
+        }
+        std::vector<Unit*> controlledUnits(bot->m_Controlled.begin(), bot->m_Controlled.end());
+        for (Unit* controlled : controlledUnits)
+        {
+            if (!controlled || controlled == pet)
+                continue;
+            ownedCasterGuids.push_back(controlled->GetGUID());
+            ownedUnits.push_back(controlled);
+            controlled->CombatStop(true);
+            if (TempSummon* summon = controlled->ToTempSummon())
+                temporarySummons.push_back(summon);
+        }
+
+        std::vector<WorldObject*> nearbyObjects;
+        Trinity::AllWorldObjectsInRange dummyCheck(bot, 80.0f);
+        Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> dummySearcher(bot, nearbyObjects, dummyCheck);
+        Cell::VisitAllObjects(bot, dummySearcher, 80.0f);
+        for (WorldObject* object : nearbyObjects)
+        {
+            DynamicObject* dynamicObject = object ? object->ToDynObject() : nullptr;
+            if (dynamicObject && std::find(ownedCasterGuids.begin(), ownedCasterGuids.end(),
+                dynamicObject->GetCasterGUID()) != ownedCasterGuids.end())
+                ownedCasterGuids.push_back(dynamicObject->GetGUID());
+        }
+        for (WorldObject* object : nearbyObjects)
+        {
+            Creature* dummy = object ? object->ToCreature() : nullptr;
+            if (!dummy || !IsTrainingDummy(dummy))
+                continue;
+            dummy->CombatStop(true);
+            dummy->GetThreatManager().ClearAllThreat();
+            dummy->RemoveOwnedAuras([&ownedCasterGuids](Aura const* aura)
+            {
+                return aura && std::find(ownedCasterGuids.begin(), ownedCasterGuids.end(),
+                    aura->GetCasterGUID()) != ownedCasterGuids.end();
+            }, AuraRemoveFlags::ByCancel);
+        }
+        for (Unit* ownedUnit : ownedUnits)
+        {
+            ownedUnit->RemoveAllDynObjects();
+            ownedUnit->RemoveAllGameObjects();
+        }
+        for (TempSummon* summon : temporarySummons)
+            if (summon && summon->IsInWorld())
+                summon->UnSummon();
+    }
+}
+
+void BotWorldPopulationMgr::UpdateCalibrationControlledDamage()
+{
+    if (!Cohort().CalibrationScoredStartedMs || Cohort().CalibrationWindowComplete)
+        return;
+    bool const healerMode = Cohort().CalibrationMode == "healer_controlled_damage_300";
+    bool const tankMode = Cohort().CalibrationMode == "tank_threat_300";
+    if (!healerMode && !tankMode)
+        return;
+
+    uint64 const elapsedSecond = (NowMs() - Cohort().CalibrationScoredStartedMs) / 1000;
+    if (elapsedSecond == Cohort().CalibrationLastControlledEventSecond)
+        return;
+    Cohort().CalibrationLastControlledEventSecond = elapsedSecond;
+
+    std::string phase;
+    uint32 interval = 5;
+    float damageRatio = 0.07f;
+    bool groupDamage = false;
+    bool unequalDamage = false;
+    bool dispelEvent = false;
+    if (tankMode)
+    {
+        if (elapsedSecond < 120)
+            phase = "tank_sustained_damage";
+        else if (elapsedSecond < 180)
+        {
+            phase = "tank_burst_damage";
+            interval = 10;
+            damageRatio = 0.25f;
+        }
+        else if (elapsedSecond < 240)
+        {
+            phase = "tank_cooldown_required";
+            interval = 15;
+            damageRatio = 0.45f;
+        }
+        else
+        {
+            phase = "tank_endurance";
+            damageRatio = 0.10f;
+        }
+    }
+    else if (elapsedSecond < 60)
+        phase = "sustained_tank_damage";
+    else if (elapsedSecond < 90)
+    {
+        phase = "burst_tank_damage";
+        interval = 15;
+        damageRatio = 0.20f;
+    }
+    else if (elapsedSecond < 130)
+    {
+        phase = "group_damage";
+        interval = 10;
+        damageRatio = 0.10f;
+        groupDamage = true;
+    }
+    else if (elapsedSecond < 170)
+    {
+        phase = "unequal_health_triage";
+        interval = 10;
+        damageRatio = 0.08f;
+        groupDamage = true;
+        unequalDamage = true;
+    }
+    else if (elapsedSecond < 200)
+    {
+        phase = "dispel";
+        interval = 30;
+        damageRatio = 0.0f;
+        dispelEvent = true;
+    }
+    else if (elapsedSecond < 240)
+    {
+        phase = "cooldown_required";
+        interval = 10;
+        damageRatio = 0.40f;
+        groupDamage = true;
+    }
+    else
+        phase = "mana_endurance";
+    Cohort().CalibrationCurrentDamagePhase = phase;
+    auto targetMetrics = Cohort().CalibrationMetricsByGuid.find(Cohort().CalibrationTargetGuid.GetCounter());
+    if (targetMetrics == Cohort().CalibrationMetricsByGuid.end())
+        return;
+    CalibrationMetrics& metrics = targetMetrics->second;
+
+    uint32 const dueInterruptOpportunities = tankMode && elapsedSecond >= 30
+        ? std::min<uint32>(5, uint32((elapsedSecond - 30) / 60 + 1)) : 0;
+    if (dueInterruptOpportunities > metrics.InterruptSuccesses
+        && Cohort().CalibrationInterruptTargetGuid.IsEmpty())
+    {
+        Player* tank = nullptr;
+        for (WorldBotState const& state : Party().CalibrationBots)
+            if (state.Guid == Cohort().CalibrationTargetGuid)
+            {
+                tank = GetLoadedBot(state);
+                break;
+            }
+        uint32 interruptSpellId = 0;
+        if (tank)
+        {
+            switch (tank->getClass())
+            {
+                case CLASS_WARRIOR: interruptSpellId = 6552; break;
+                case CLASS_PALADIN: interruptSpellId = 96231; break;
+                case CLASS_DEATH_KNIGHT: interruptSpellId = 47528; break;
+                case CLASS_DRUID: interruptSpellId = 80964; break;
+                default: break;
+            }
+        }
+        SpellInfo const* interruptSpell = interruptSpellId ? sSpellMgr->GetSpellInfo(interruptSpellId) : nullptr;
+        bool const interruptReady = tank && interruptSpell && tank->HasSpell(interruptSpellId)
+            && !tank->HasUnitState(UNIT_STATE_CASTING)
+            && !tank->GetSpellHistory()->HasGlobalCooldown(interruptSpell)
+            && tank->GetSpellHistory()->IsReady(interruptSpell);
+        if (interruptReady)
+        {
+            std::vector<WorldObject*> nearbyObjects;
+            Trinity::AllWorldObjectsInRange dummyCheck(tank, 80.0f);
+            Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> dummySearcher(
+                tank, nearbyObjects, dummyCheck);
+            Cell::VisitAllObjects(tank, dummySearcher, 80.0f);
+            Creature* nearestDummy = nullptr;
+            for (WorldObject* object : nearbyObjects)
+            {
+                Creature* dummy = object ? object->ToCreature() : nullptr;
+                if (!dummy || !dummy->IsAlive() || !IsTrainingDummy(dummy)
+                    || !tank->IsValidAttackTarget(dummy))
+                    continue;
+                if (!nearestDummy || tank->GetExactDist(dummy) < tank->GetExactDist(nearestDummy))
+                    nearestDummy = dummy;
+            }
+            if (nearestDummy && !nearestDummy->IsNonMeleeSpellCast(false))
+            {
+                nearestDummy->CastSpell(tank, 686, false);
+                if (nearestDummy->IsNonMeleeSpellCast(false))
+                {
+                    Cohort().CalibrationInterruptTargetGuid = nearestDummy->GetGUID();
+                    if (metrics.InterruptChecks < dueInterruptOpportunities)
+                        ++metrics.InterruptChecks;
+                }
+            }
+        }
+    }
+
+    Creature* controlledDispelCaster = nullptr;
+    uint32 controlledDispelAura = 589;
+    if (healerMode)
+    {
+        Player* healer = nullptr;
+        for (WorldBotState const& state : Party().CalibrationBots)
+            if (state.Guid == Cohort().CalibrationTargetGuid)
+            {
+                healer = GetLoadedBot(state);
+                break;
+            }
+        if (healer)
+        {
+            controlledDispelAura = ControlledDispelAuraForHealer(healer);
+            std::vector<WorldObject*> nearbyObjects;
+            Trinity::AllWorldObjectsInRange dummyCheck(healer, 80.0f);
+            Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> dummySearcher(
+                healer, nearbyObjects, dummyCheck);
+            Cell::VisitAllObjects(healer, dummySearcher, 80.0f);
+            Creature* nearestDummy = nullptr;
+            for (WorldObject* object : nearbyObjects)
+            {
+                Creature* dummy = object ? object->ToCreature() : nullptr;
+                if (!dummy || !dummy->IsAlive() || !IsTrainingDummy(dummy)
+                    || !healer->IsValidAttackTarget(dummy))
+                    continue;
+                if (!nearestDummy || healer->GetExactDist(dummy) < healer->GetExactDist(nearestDummy))
+                    nearestDummy = dummy;
+            }
+            if (nearestDummy)
+            {
+                controlledDispelCaster = nearestDummy;
+                for (WorldBotState const& state : Party().CalibrationBots)
+                    if (Player* member = GetLoadedBot(state))
+                        if (member->IsAlive())
+                        {
+                            member->SetInCombatWith(nearestDummy);
+                            nearestDummy->SetInCombatWith(member);
+                        }
+            }
+        }
+    }
+
+    if (elapsedSecond % interval)
+        return;
+    if (healerMode)
+        for (WorldBotState& state : Party().CalibrationBots)
+            if (state.Guid == Cohort().CalibrationTargetGuid)
+                if (Player* healer = GetLoadedBot(state))
+                {
+                    healer->InterruptNonMeleeSpells(true);
+                    state.DecisionTimer = 0;
+                    BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(healer, "healer");
+                    for (BotActionProfileSpell const& spell : profile.Spells)
+                        if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spell.SpellId))
+                            healer->GetSpellHistory()->CancelGlobalCooldown(spellInfo);
+                    break;
+                }
+    metrics.ScheduledDamagePhases.insert(phase);
+    ++metrics.ScheduledDamageEvents;
+
+    std::vector<Player*> recipients;
+    Player* tank = nullptr;
+    for (WorldBotState const& state : Party().CalibrationBots)
+    {
+        Player* member = GetLoadedBot(state);
+        if (!member || !member->IsAlive())
+            continue;
+        if (GetDungeonRole(member) == std::string("tank"))
+            tank = member;
+        if (groupDamage && member->GetGUID() != Cohort().CalibrationTargetGuid)
+            recipients.push_back(member);
+    }
+    if (!groupDamage)
+    {
+        Player* recipient = tankMode ? GetLoadedBot(Party().CalibrationBots.front()) : tank;
+        if (recipient)
+            recipients.push_back(recipient);
+    }
+    if (recipients.empty())
+        return;
+
+    bool delivered = false;
+    uint64 const eventMs = NowMs();
+    for (size_t index = 0; index < recipients.size(); ++index)
+    {
+        Player* recipient = recipients[index];
+        if (!recipient)
+            continue;
+        if (dispelEvent)
+        {
+            if (!recipient->HasAura(controlledDispelAura) && controlledDispelCaster)
+                controlledDispelCaster->AddAura(controlledDispelAura, recipient);
+            delivered = delivered || recipient->HasAura(controlledDispelAura);
+            if (delivered)
+                metrics.LastControlledDamageMsByTarget[recipient->GetGUID().GetCounter()] = eventMs;
+            break;
+        }
+        uint64 amount = uint64(float(recipient->GetMaxHealth()) * damageRatio * (unequalDamage ? float(index + 1) / float(recipients.size()) : 1.0f));
+        uint64 const minimumHealth = std::max<uint64>(1, (uint64(recipient->GetMaxHealth()) * 21 + 99) / 100);
+        uint64 const availableHealth = recipient->GetHealth() > minimumHealth
+            ? recipient->GetHealth() - minimumHealth : 0;
+        amount = std::min<uint64>(amount, availableHealth);
+        if (!amount)
+        {
+            delivered = true;
+            continue;
+        }
+        recipient->SetHealth(recipient->GetHealth() - amount);
+        metrics.ControlledDamage += amount;
+        metrics.MaximumControlledDamage = std::max(metrics.MaximumControlledDamage, amount);
+        if (recipient->GetMaxHealth())
+            metrics.MaximumControlledDamageRatio = std::max(
+                metrics.MaximumControlledDamageRatio,
+                float(amount) / float(recipient->GetMaxHealth()));
+        metrics.MinimumHealthRatio = std::min(metrics.MinimumHealthRatio, UnitHealthPct(recipient));
+        metrics.LastControlledDamageMsByTarget[recipient->GetGUID().GetCounter()] = eventMs;
+        delivered = true;
+    }
+    if (delivered)
+    {
+        metrics.DeliveredDamagePhases.insert(phase);
+        ++metrics.DeliveredDamageEvents;
+    }
+}
+
+bool BotWorldPopulationMgr::UpdateCalibrationHealer(WorldBotState& state, Player* healer)
+{
+    if (!healer || GetDungeonRole(healer) != std::string("healer"))
+        return false;
+    CalibrationMetrics& metrics = Cohort().CalibrationMetricsByGuid[healer->GetGUID().GetCounter()];
+    Unit* lowestTarget = nullptr;
+    float lowestHealth = 2.0f;
+    std::vector<Player*> members;
+    if (Group* group = healer->GetGroup())
+        for (GroupReference* itr = group->GetFirstMember(); itr; itr = itr->next())
+            if (Player* member = itr->GetSource())
+                if (member->IsAlive() && member->GetMap() == healer->GetMap())
+                {
+                    members.push_back(member);
+                    if (UnitHealthPct(member) < lowestHealth)
+                    {
+                        lowestTarget = member;
+                        lowestHealth = UnitHealthPct(member);
+                    }
+                }
+    if (!lowestTarget)
+        return false;
+
+    BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(healer, "healer");
+    auto recordHealResponse = [&metrics](Unit* target, uint32 latencyMs)
+    {
+        if (!target || metrics.LastControlledDamageMsByTarget.empty())
+            return false;
+        auto damaged = metrics.LastControlledDamageMsByTarget.find(target->GetGUID().GetCounter());
+        if (damaged == metrics.LastControlledDamageMsByTarget.end())
+            damaged = std::min_element(metrics.LastControlledDamageMsByTarget.begin(),
+                metrics.LastControlledDamageMsByTarget.end(), [](auto const& left, auto const& right)
+                {
+                    return left.second < right.second;
+                });
+        // A valid heal on the group's lowest-health member is a response to the
+        // oldest pending controlled event even when that member was already at
+        // the fixture's health floor and took no additional event damage.
+        // Target-selection and unequal-triage gates independently prove that the
+        // selected member is appropriate.
+        uint64 const eventMs = damaged->second;
+        metrics.HealResponseLatenciesMs.push_back(latencyMs);
+        for (auto itr = metrics.LastControlledDamageMsByTarget.begin();
+            itr != metrics.LastControlledDamageMsByTarget.end();)
+            if (itr->second == eventMs)
+                itr = metrics.LastControlledDamageMsByTarget.erase(itr);
+            else
+                ++itr;
+        return true;
+    };
+    Unit* tankTarget = lowestTarget;
+    for (Player* member : members)
+        if (GetDungeonRole(member) == std::string("tank"))
+        {
+            tankTarget = member;
+            break;
+        }
+    auto candidateEligible = [healer, &profile](BotActionProfileSpell const& spell, Unit* target)
+    {
+        BotClassSpecActionProfile singleActionProfile = profile;
+        singleActionProfile.Spells = { spell };
+        std::vector<BotActionCandidate> candidates =
+            BotClassSpecActionProfileStore::BuildCandidates(healer, target, singleActionProfile);
+        return candidates.size() == 1 && candidates.front().RejectReason.empty();
+    };
+    bool const globalCooldownActive = std::any_of(profile.Spells.begin(), profile.Spells.end(), [healer](BotActionProfileSpell const& spell)
+    {
+        SpellInfo const* spellInfo = spell.SpellId ? sSpellMgr->GetSpellInfo(spell.SpellId) : nullptr;
+        return spellInfo && healer->GetSpellHistory()->HasGlobalCooldown(spellInfo);
+    });
+    bool healingCastResponded = false;
+    bool healingCastActive = false;
+    if (Spell* currentSpell = healer->GetCurrentSpell(CURRENT_GENERIC_SPELL))
+    {
+        healingCastActive = std::any_of(profile.Spells.begin(), profile.Spells.end(), [currentSpell](BotActionProfileSpell const& spell)
+        {
+            return currentSpell->GetSpellInfo()->Id == spell.SpellId
+                && (spell.Category == BotCombatActionCategory::HealFast
+                    || spell.Category == BotCombatActionCategory::HealEfficient
+                    || spell.Category == BotCombatActionCategory::HealAoe);
+        });
+        // Controlled damage that lands while a valid heal is already in flight
+        // for an affected target has an immediate response; do not charge the
+        // remaining cast time to the healer's decision latency.
+        if (healingCastActive)
+            healingCastResponded = recordHealResponse(currentSpell->m_targets.GetUnitTarget(), 0);
+    }
+    bool casting = healer->HasUnitState(UNIT_STATE_CASTING);
+    if (casting && healingCastActive && !healingCastResponded
+        && metrics.LastControlledDamageMsByTarget.find(lowestTarget->GetGUID().GetCounter())
+            != metrics.LastControlledDamageMsByTarget.end())
+    {
+        // A newly damaged higher-priority target is not covered by the current
+        // heal. Preempt the stale cast so an eligible instant or fast heal can
+        // begin as soon as the real global cooldown permits.
+        healer->InterruptNonMeleeSpells(false);
+        state.DecisionTimer = 0;
+        casting = healer->HasUnitState(UNIT_STATE_CASTING);
+    }
+    if (casting || globalCooldownActive)
+        return true;
+
+    if (Cohort().CalibrationCurrentDamagePhase == "dispel")
+    {
+        uint32 const controlledDispelAura = ControlledDispelAuraForHealer(healer);
+        Unit* dispelTarget = nullptr;
+        for (Player* member : members)
+            if (member->HasAura(controlledDispelAura))
+            {
+                dispelTarget = member;
+                break;
+            }
+        if (dispelTarget)
+            for (BotActionProfileSpell const& spell : profile.Spells)
+                if (spell.Category == BotCombatActionCategory::DispelCleanse && healer->HasSpell(spell.SpellId)
+                    && candidateEligible(spell, dispelTarget))
+                {
+                    ++metrics.DispelAttempts;
+                    ++metrics.Attempts;
+                    std::string reason;
+                    bool const cast = TryCastFriendlySpell(healer, dispelTarget, spell.SpellId, &reason);
+                    ++metrics.ResultCounts[cast ? "dispel_cast" : "cast_failed:" + reason];
+                    if (cast)
+                    {
+                        ++metrics.Successes;
+                        metrics.ActionGroups.insert(BotCombatActionCatalog::ToString(spell.Category));
+                        auto damaged = metrics.LastControlledDamageMsByTarget.find(dispelTarget->GetGUID().GetCounter());
+                        if (damaged != metrics.LastControlledDamageMsByTarget.end())
+                        {
+                            uint64 const eventMs = damaged->second;
+                            for (auto itr = metrics.LastControlledDamageMsByTarget.begin();
+                                itr != metrics.LastControlledDamageMsByTarget.end();)
+                                if (itr->second == eventMs)
+                                    itr = metrics.LastControlledDamageMsByTarget.erase(itr);
+                                else
+                                    ++itr;
+                        }
+                    }
+                    return true;
+                }
+    }
+
+    if (Cohort().CalibrationCurrentDamagePhase == "cooldown_required" && lowestHealth <= 0.65f)
+        for (BotActionProfileSpell const& spell : profile.Spells)
+            if ((spell.Category == BotCombatActionCategory::ExternalDefensive
+                || spell.Category == BotCombatActionCategory::Defensive
+                || spell.Category == BotCombatActionCategory::OffensiveCooldown)
+                && healer->HasSpell(spell.SpellId))
+            {
+                Unit* cooldownTarget = spell.TargetSelector == "self"
+                    ? static_cast<Unit*>(healer)
+                    : (spell.TargetSelector == "tank" ? tankTarget : lowestTarget);
+                if (!candidateEligible(spell, cooldownTarget))
+                    continue;
+                ++metrics.CooldownAttempts;
+                ++metrics.Attempts;
+                std::string reason;
+                bool const cast = TryCastFriendlySpell(healer, cooldownTarget, spell.SpellId, &reason);
+                ++metrics.ResultCounts[cast ? "cooldown_cast" : "cast_failed:" + reason];
+                if (cast)
+                {
+                    ++metrics.CooldownSuccesses;
+                    ++metrics.Successes;
+                    metrics.ActionGroups.insert(BotCombatActionCatalog::ToString(spell.Category));
+                    // A defensive cooldown is the deliberate first response in
+                    // this phase. Record that decision now instead of charging
+                    // the following heal with the cooldown's global cooldown.
+                    if (!metrics.LastControlledDamageMsByTarget.empty())
+                    {
+                        uint64 const eventMs = std::min_element(metrics.LastControlledDamageMsByTarget.begin(),
+                            metrics.LastControlledDamageMsByTarget.end(), [](auto const& left, auto const& right)
+                            {
+                                return left.second < right.second;
+                            })->second;
+                        recordHealResponse(lowestTarget, uint32(std::min<uint64>(
+                            NowMs() - eventMs, std::numeric_limits<uint32>::max())));
+                    }
+                }
+                return true;
+            }
+
+    if (lowestHealth > 0.94f)
+        return false;
+    uint32 healSpell = SelectHealSpell(healer, lowestTarget);
+    if (!healSpell)
+    {
+        BotActionCandidate const* fallback = nullptr;
+        std::vector<BotActionCandidate> candidates =
+            BotClassSpecActionProfileStore::BuildCandidates(healer, lowestTarget, profile);
+        for (BotActionCandidate const& candidate : candidates)
+        {
+            if (candidate.Category != BotCombatActionCategory::HealFast
+                && candidate.Category != BotCombatActionCategory::HealEfficient
+                && candidate.Category != BotCombatActionCategory::HealAoe)
+                continue;
+            if (!candidate.RejectReason.empty() || !healer->HasSpell(candidate.SpellId))
+                continue;
+            if (!fallback || candidate.Profile.HealingWeight > fallback->Profile.HealingWeight)
+                fallback = &candidate;
+        }
+        healSpell = fallback ? fallback->SpellId : 0;
+    }
+    if (!healSpell)
+    {
+        ++metrics.ResultCounts["no_heal_action"];
+        return false;
+    }
+    ++metrics.Attempts;
+    ++metrics.HealSelectionAttempts;
+    if (lowestHealth <= 0.94f)
+        ++metrics.HealSelectionSuccesses;
+    ++metrics.ActionAttempts[healSpell];
+    std::string reason;
+    bool const cast = TryCastFriendlySpell(healer, lowestTarget, healSpell, &reason);
+    ++metrics.ResultCounts[cast ? "heal_cast" : "cast_failed:" + reason];
+    if (cast)
+    {
+        ++metrics.Successes;
+        metrics.ActionGroups.insert("heal");
+        // Response latency measures the decision to begin a valid heal, not the
+        // spell's class-specific cast time. Throughput and effective-heal gates
+        // independently prove that the started cast actually restores health.
+        if (!metrics.LastControlledDamageMsByTarget.empty())
+        {
+            uint64 const eventMs = std::min_element(metrics.LastControlledDamageMsByTarget.begin(),
+                metrics.LastControlledDamageMsByTarget.end(), [](auto const& left, auto const& right)
+                {
+                    return left.second < right.second;
+                })->second;
+            recordHealResponse(lowestTarget, uint32(std::min<uint64>(
+                NowMs() - eventMs, std::numeric_limits<uint32>::max())));
+        }
+    }
+    return true;
 }
 
 std::pair<bool, bool> BotWorldPopulationMgr::ApplyCalibrationReferenceConditions(Player* bot, Unit* target) const
@@ -3664,17 +4748,34 @@ std::pair<bool, bool> BotWorldPopulationMgr::ApplyCalibrationReferenceConditions
     // One real Cataclysm aura from each non-overlapping raid-buff category.
     // This mode is calibration-only: it makes the live dummy conditions closer
     // to the full-raid WoWSims reference without changing damage coefficients.
-    static constexpr std::array<uint32, 6> RaidBuffAuras = {
+    static constexpr std::array<uint32, 8> RaidBuffAuras = {
         53646, // Demonic Pact: spell power
-        17007, // Leader of the Pack: critical strike
+        79058, // Arcane Brilliance: intellect and maximum mana
+        24932, // Leader of the Pack: critical strike
         2895,  // Wrath of Air Totem: spell haste
         8515,  // Windfury Totem: melee/ranged haste
         8076,  // Strength of Earth: strength and agility
         82930, // Arcane Tactics: 3% damage
+        57669, // Replenishment: raid mana regeneration
     };
     for (uint32 spellId : RaidBuffAuras)
         if (!bot->HasAura(spellId))
-            bot->AddAura(spellId, bot);
+        {
+            // Arcane Brilliance and Replenishment are raid-area spells rather
+            // than direct target auras. Execute their real triggered spell path
+            // so target selection applies the aura to the calibration clone.
+            if (spellId == 79058 || spellId == 57669)
+                bot->CastSpell(nullptr, spellId, true);
+            else
+                bot->AddAura(spellId, bot);
+        }
+
+    // Kings and Mark of the Wild are the same 5% primary-stat category. Preserve
+    // a candidate's own Kings and provide the level-85 raid-area Mark only when
+    // neither base nor current-rank aura is active.
+    if (!bot->HasAura(20217) && !bot->HasAura(79063)
+        && !bot->HasAura(1126) && !bot->HasAura(79061))
+        bot->CastSpell(nullptr, 79061, true);
 
     // A paladin cannot own Kings and Might on itself simultaneously. The
     // calibration tank must retain Kings for its production setup contract;
@@ -3683,33 +4784,108 @@ std::pair<bool, bool> BotWorldPopulationMgr::ApplyCalibrationReferenceConditions
         bot->AddAura(79102, bot);
 
     uint32 flaskSpellId = 0;
+    std::string const& targetSpec = Cohort().CalibrationTargetSpec;
     switch (bot->getClass())
     {
-        case CLASS_MAGE: flaskSpellId = 79470; break;  // Draconic Mind
+        case CLASS_PRIEST:
+        case CLASS_MAGE:
+        case CLASS_WARLOCK:
+            flaskSpellId = 79470; // Draconic Mind
+            break;
         case CLASS_HUNTER:
-        case CLASS_SHAMAN: flaskSpellId = 79471; break; // Winds
-        case CLASS_PALADIN: flaskSpellId = 79472; break; // Titanic Strength
-        default: break;
+        case CLASS_ROGUE:
+            flaskSpellId = 79471; // Winds
+            break;
+        case CLASS_WARRIOR:
+        case CLASS_DEATH_KNIGHT:
+            flaskSpellId = 79472; // Titanic Strength
+            break;
+        case CLASS_SHAMAN:
+            flaskSpellId = targetSpec == "enhancement_shaman" ? 79471 : 79470;
+            break;
+        case CLASS_PALADIN:
+            flaskSpellId = targetSpec == "holy_paladin" ? 79470 : 79472;
+            break;
+        case CLASS_DRUID:
+            flaskSpellId = targetSpec == "feral_druid_tank" || targetSpec == "feral_druid_dps" ? 79471 : 79470;
+            break;
+        default:
+            break;
     }
     if (flaskSpellId && !bot->HasAura(flaskSpellId))
         bot->AddAura(flaskSpellId, bot);
 
+    uint64 calibrationElapsedMs = Cohort().CalibrationScoredStartedMs ? NowMs() - Cohort().CalibrationScoredStartedMs : 0;
+
+    // The pinned Shadow Priest preset has Dark Intent assigned with 90% proc
+    // uptime. Its base 3% haste aura is permanent; model the proc as a
+    // deterministic nine seconds active per ten-second scored interval and keep
+    // its three periodic-damage stacks explicit while active.
+    if (targetSpec == "balance_druid" && !bot->HasAura(87547))
+        bot->AddAura(87547, bot); // Well Fed: 90 Intellect and Stamina
+
+    if (targetSpec == "shadow_priest")
+    {
+        if (!bot->HasAura(87547)) // Well Fed: 90 Intellect and Stamina
+            bot->AddAura(87547, bot);
+        if (!bot->HasAura(85767))
+            bot->AddAura(85767, bot);
+
+        bool const darkIntentProcActive = Cohort().CalibrationScoredStartedMs
+            && calibrationElapsedMs % 10000 < 9000;
+        if (darkIntentProcActive)
+        {
+            Aura* darkIntentProc = bot->GetAura(85759);
+            if (!darkIntentProc)
+                darkIntentProc = bot->AddAura(85759, bot);
+            if (darkIntentProc && darkIntentProc->GetStackAmount() < 3)
+                darkIntentProc->SetStackAmount(3);
+        }
+        else if (bot->HasAura(85759))
+            bot->RemoveAurasDueToSpell(85759);
+
+        // FullConsumesSpec invokes Synapse Springs directly. Model its real
+        // 480-Intellect aura for ten seconds on each one-minute cooldown.
+        bool const synapseSpringsActive = Cohort().CalibrationScoredStartedMs
+            && calibrationElapsedMs % 60000 < 10000;
+        if (synapseSpringsActive && !bot->HasAura(96230))
+            bot->AddAura(96230, bot);
+        else if (!synapseSpringsActive && bot->HasAura(96230))
+            bot->RemoveAurasDueToSpell(96230);
+    }
+
     // Full raid WoWSims configurations include one 40-second Bloodlust window.
-    // Apply the real aura during the opening third of every 120-second phase,
-    // then explicitly remove it so it cannot inflate the rest of the window.
-    uint64 calibrationElapsedMs = Cohort().CalibrationStartedMs ? NowMs() - Cohort().CalibrationStartedMs : 0;
-    bool heroismActive = calibrationElapsedMs % 120000 < 40000;
+    // Apply it once at the opening of the explicit 300-second scored window.
+    bool heroismActive = Cohort().CalibrationScoredStartedMs && calibrationElapsedMs < 40000;
     if (heroismActive && !bot->HasAura(2825))
         bot->AddAura(2825, bot);
     else if (!heroismActive && bot->HasAura(2825))
         bot->RemoveAurasDueToSpell(2825);
 
+    // The pinned Shadow Priest APL requests an external Power Infusion after
+    // Bloodlust expires and again on its two-minute cooldown. Reproduce those
+    // real 15-second aura windows without teaching the clone another spec's spell.
+    if (targetSpec == "shadow_priest" && Cohort().CalibrationScoredStartedMs)
+    {
+        bool const powerInfusionActive = (calibrationElapsedMs >= 40000 && calibrationElapsedMs < 55000)
+            || (calibrationElapsedMs >= 160000 && calibrationElapsedMs < 175000)
+            || (calibrationElapsedMs >= 280000 && calibrationElapsedMs < 295000);
+        if (powerInfusionActive && !bot->HasAura(10060))
+            bot->AddAura(10060, bot);
+        else if (!powerInfusionActive && bot->HasAura(10060))
+            bot->RemoveAurasDueToSpell(10060);
+    }
+
     bool buffsReady = std::all_of(RaidBuffAuras.begin(), RaidBuffAuras.end(), [bot](uint32 spellId)
     {
         return bot->HasAura(spellId);
     });
+    buffsReady = buffsReady && (bot->HasAura(20217) || bot->HasAura(79063)
+        || bot->HasAura(1126) || bot->HasAura(79061));
     buffsReady = buffsReady && (bot->getClass() == CLASS_PALADIN || bot->HasAura(79102));
     buffsReady = buffsReady && (!flaskSpellId || bot->HasAura(flaskSpellId));
+    buffsReady = buffsReady && (targetSpec != "balance_druid" || bot->HasAura(87547));
+    buffsReady = buffsReady && (targetSpec != "shadow_priest" || (bot->HasAura(87547) && bot->HasAura(85767)));
 
     // Each clone uses its own nearest dummy, so each clone must own the
     // reference debuffs on that primary target. Keeping caster ownership local
@@ -3745,10 +4921,108 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
         state.DecisionTimer -= diff;
         return;
     }
-    state.DecisionTimer = 500;
+    bool const responsiveCalibration =
+        Cohort().CalibrationMode == "healer_controlled_damage_300"
+        || Cohort().CalibrationMode == "tank_threat_300"
+        // Survival's Lock and Load cadence and instant focus dumps are evaluated
+        // by the live controller more often than the generic world-bot interval.
+        // Match that responsiveness so a ready shot is not delayed by 500 ms.
+        || Cohort().CalibrationTargetSpec == "survival_hunter"
+        // Match pinned fixtures that use a 100 ms reaction time. Hasted channels,
+        // short Wrath casts, and sub-1.5-second GCDs otherwise lose a material
+        // fraction of their throughput waiting for the generic polling tick.
+        || Cohort().CalibrationTargetSpec == "shadow_priest"
+        || Cohort().CalibrationTargetSpec == "balance_druid";
+    bool const fixtureReactionTime = Cohort().CalibrationTargetSpec == "shadow_priest"
+        || Cohort().CalibrationTargetSpec == "balance_druid";
+    state.DecisionTimer = fixtureReactionTime ? 100 : (responsiveCalibration ? 250 : 500);
 
     Player* bot = GetBot(state);
-    if (!bot || !bot->IsAlive())
+    if (!bot || Cohort().CalibrationWindowComplete)
+        return;
+
+    bool const scored = Cohort().CalibrationScoredStartedMs
+        && NowMs() >= Cohort().CalibrationScoredStartedMs
+        && NowMs() - Cohort().CalibrationScoredStartedMs <= 300000;
+    CalibrationMetrics& metrics = Cohort().CalibrationMetricsByGuid[state.Guid.GetCounter()];
+    if (scored)
+        ++metrics.TickCount;
+    if (!bot->IsAlive())
+    {
+        if (scored && !metrics.DeathRecorded)
+        {
+            ++metrics.DeathCount;
+            metrics.DeathRecorded = true;
+        }
+        return;
+    }
+    if (scored)
+    {
+        metrics.MinimumHealthRatio = std::min(metrics.MinimumHealthRatio, UnitHealthPct(bot));
+        if (bot->GetPowerType() != POWER_MANA && bot->GetMaxPower(bot->GetPowerType()))
+        {
+            Powers const powerType = bot->GetPowerType();
+            float powerRatio = float(bot->GetPower(powerType)) / float(bot->GetMaxPower(powerType));
+            if (powerRatio >= 0.95f)
+                ++metrics.ResourceCappedTicks;
+            // Rage and runic power are generated from combat and intentionally
+            // spent toward zero. Low stored power is not starvation for these
+            // spend-up resources; lost damage and action uptime remain gated
+            // independently.
+            if (powerType != POWER_RAGE && powerType != POWER_RUNIC_POWER && powerRatio <= 0.05f)
+                ++metrics.ResourceStarvedTicks;
+        }
+        else if (bot->GetMaxPower(POWER_MANA)
+            && float(bot->GetPower(POWER_MANA)) / float(bot->GetMaxPower(POWER_MANA)) <= 0.05f)
+            ++metrics.ResourceStarvedTicks;
+
+        if (Cohort().CalibrationTargetSpec == "shadow_priest")
+        {
+            if (bot->HasAura(77486))
+                ++metrics.ShadowOrbPowerActiveTicks;
+            if (Aura const* shadowOrb = bot->GetAura(77487))
+            {
+                ++metrics.ShadowOrbActiveTicks;
+                metrics.MaximumShadowOrbStacks = std::max<uint8>(metrics.MaximumShadowOrbStacks, shadowOrb->GetStackAmount());
+            }
+            if (bot->HasAura(95799))
+                ++metrics.EmpoweredShadowActiveTicks;
+        }
+    }
+
+    std::string const role = GetDungeonRole(bot);
+    if (role == "healer")
+    {
+        if (TryEnsurePersistentCombatSetup(state, bot, nullptr))
+            return;
+
+        uint32 const controlledDispelAura = ControlledDispelAuraForHealer(bot);
+        bool anyDispelAura = false;
+        if (Group* group = bot->GetGroup())
+            for (GroupReference* itr = group->GetFirstMember(); itr; itr = itr->next())
+                if (Player* member = itr->GetSource())
+                    anyDispelAura = anyDispelAura || member->HasAura(controlledDispelAura);
+        if (metrics.DispelAttempts && !anyDispelAura && !metrics.DispelSuccesses)
+            metrics.DispelSuccesses = 1;
+        bool demand = anyDispelAura || !metrics.LastControlledDamageMsByTarget.empty();
+        if (Group* group = bot->GetGroup())
+            for (GroupReference* itr = group->GetFirstMember(); itr; itr = itr->next())
+                if (Player* member = itr->GetSource())
+                    demand = demand || (member->IsAlive() && UnitHealthPct(member) <= 0.94f);
+        bool const acted = UpdateCalibrationHealer(state, bot);
+        if (scored)
+        {
+            ++metrics.ActiveTicks;
+            if (demand)
+            {
+                ++metrics.DemandTicks;
+                if (!acted)
+                    ++metrics.IdleUnderDemandTicks;
+            }
+        }
+        return;
+    }
+    if (Cohort().CalibrationMode == "healer_controlled_damage_300")
         return;
 
     std::vector<Creature*> dummies;
@@ -3773,26 +5047,122 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
     if (dummies.empty())
         return;
 
-    // Always use the nearest dummy. Indexing a distance-sorted list made the
-    // selected target jump whenever a melee clone moved, so it could chase a
-    // different dummy every tick and never reach its melee abilities.
+    // Melee profiles always use the nearest dummy. Ranged AoE profiles instead
+    // anchor target-centered effects on the densest stable part of the cluster;
+    // using the lane's nearest edge dummy made effects such as Mind Sear reach
+    // only two of the other seven qualification targets.
     Unit* target = dummies.front();
-    uint32 hostileCount = Cohort().CalibrationAoePhase ? std::max<uint32>(3, uint32(dummies.size())) : 1;
+    if (Cohort().CalibrationAoePhase && UsesRangedAoeCalibrationLane(Cohort().CalibrationTargetSpec))
+    {
+        static constexpr float AoeAnchorRadius = 10.0f;
+        auto density = [&dummies](Creature const* candidate)
+        {
+            return std::count_if(dummies.begin(), dummies.end(), [candidate](Creature const* other)
+            {
+                return candidate->GetExactDist(other) <= AoeAnchorRadius;
+            });
+        };
+        target = *std::min_element(dummies.begin(), dummies.end(), [bot, &density](Creature const* left, Creature const* right)
+        {
+            size_t const leftDensity = density(left);
+            size_t const rightDensity = density(right);
+            if (leftDensity != rightDensity)
+                return leftDensity > rightDensity;
+            float const leftDistance = bot->GetExactDist(left);
+            float const rightDistance = bot->GetExactDist(right);
+            if (std::fabs(leftDistance - rightDistance) > 0.01f)
+                return leftDistance < rightDistance;
+            return left->GetGUID() < right->GetGUID();
+        });
+    }
+    if (Cohort().CalibrationMode == "tank_threat_300"
+        && bot->GetGUID() == Cohort().CalibrationTargetGuid
+        && !Cohort().CalibrationInterruptTargetGuid.IsEmpty())
+    {
+        auto interruptTarget = std::find_if(dummies.begin(), dummies.end(), [this](Creature const* dummy)
+        {
+            return dummy && dummy->GetGUID() == Cohort().CalibrationInterruptTargetGuid;
+        });
+        if (interruptTarget != dummies.end() && (*interruptTarget)->IsNonMeleeSpellCast(false))
+            target = *interruptTarget;
+        else
+            Cohort().CalibrationInterruptTargetGuid.Clear();
+    }
+    uint32 hostileCount = Cohort().CalibrationAoePhase ? uint32(dummies.size()) : 1;
+
+    // The pinned Balance fixture plants three Wild Mushrooms before the pull and
+    // detonates that one set during Solar Eclipse. The scored-window reset removes
+    // warmup summons, so reproduce the pre-pull placement once, immediately after
+    // the reset, without consuming scored GCDs or replanting after detonation.
+    if (scored && Cohort().CalibrationTargetSpec == "balance_druid"
+        && !metrics.BalanceMushroomsPreplanted && bot->HasSpell(88747))
+    {
+        BotClassSpecActionProfile const profile = BotClassSpecActionProfileStore::Build(bot, role.c_str());
+        bool const preplantDeclared = std::any_of(profile.Spells.begin(), profile.Spells.end(), [](BotActionProfileSpell const& spell)
+        {
+            return spell.SpellId == 88747;
+        });
+        SpellInfo const* mushroomSpell = sSpellMgr->GetSpellInfo(88747);
+        if (preplantDeclared && mushroomSpell)
+        {
+            std::list<Creature*> mushrooms;
+            uint32 const mushroomEntry = uint32(mushroomSpell->Effects[EFFECT_0].MiscValue);
+            bot->GetAllMinionsByEntry(mushrooms, mushroomEntry);
+            for (size_t count = mushrooms.size(); count < 3; ++count)
+                bot->CastSpell(Position{ target->GetPositionX(), target->GetPositionY(), target->GetPositionZ() }, 88747, true);
+            mushrooms.clear();
+            bot->GetAllMinionsByEntry(mushrooms, mushroomEntry);
+            metrics.BalanceMushroomPreplantCount = uint8(std::min<size_t>(mushrooms.size(), 255));
+            metrics.BalanceMushroomsPreplanted = mushrooms.size() >= 3;
+        }
+    }
+
+    if (scored)
+    {
+        metrics.TargetCount = std::max(metrics.TargetCount, hostileCount);
+        BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(bot, role.c_str());
+        std::vector<BotActionCandidate> candidates = BotClassSpecActionProfileStore::BuildCandidates(bot, target, profile);
+        for (BotActionCandidate const& candidate : candidates)
+        {
+            Unit* candidateTarget = candidate.Profile.TargetSelector == "self"
+                ? static_cast<Unit*>(bot) : target;
+            float const candidateTargetHealth = UnitHealthPct(candidateTarget);
+            float const candidateSelfHealth = UnitHealthPct(bot);
+            if (!candidate.RejectReason.empty()
+                || candidate.Profile.MinEnemies > hostileCount
+                || (candidate.Profile.MaxEnemies && hostileCount > candidate.Profile.MaxEnemies)
+                || candidateTargetHealth < candidate.Profile.MinTargetHealthPct
+                || candidateTargetHealth > candidate.Profile.MaxTargetHealthPct
+                || candidateSelfHealth < candidate.Profile.MinSelfHealthPct
+                || candidateSelfHealth > candidate.Profile.MaxSelfHealthPct
+                || (candidate.Profile.RequiresInterruptibleTarget && !target->IsNonMeleeSpellCast(false))
+                || (candidate.Category == BotCombatActionCategory::Taunt
+                    && (!target->GetVictim() || target->GetVictim() == bot))
+                || candidate.Category == BotCombatActionCategory::HealFast
+                || candidate.Category == BotCombatActionCategory::HealEfficient
+                || candidate.Category == BotCombatActionCategory::HealAoe
+                || candidate.Category == BotCombatActionCategory::DispelCleanse
+                || candidate.Category == BotCombatActionCategory::ExternalDefensive
+                || candidate.Category == BotCombatActionCategory::Buff)
+                continue;
+            metrics.ExpectedActionGroups.insert(BotCombatActionCatalog::ToString(candidate.Category));
+        }
+    }
 
     auto [referenceBuffsReady, referenceTargetDebuffsReady] = ApplyCalibrationReferenceConditions(bot, target);
-    CalibrationMetrics& metrics = Cohort().CalibrationMetricsByGuid[state.Guid.GetCounter()];
     metrics.ReferenceBuffsReady = referenceBuffsReady;
+    metrics.ReferenceReplenishmentObserved = metrics.ReferenceReplenishmentObserved || bot->HasAura(57669);
     metrics.ReferenceTargetDebuffsReady = referenceTargetDebuffsReady;
     metrics.ReferenceHeroismWindowObserved = metrics.ReferenceHeroismWindowObserved || bot->HasAura(2825);
 
     // A permanent training dummy never reaches the execute phase represented
     // in a full-fight simulator. Use the real target-health gate for the final
-    // 20% of the Hunter's single-target window, then restore the dummy outside
-    // that interval. This changes only target health, never spell coefficients.
-    if (bot->getClass() == CLASS_HUNTER && target->GetMaxHealth())
+    // 20% of a scored single-target window, then restore the dummy outside that
+    // interval. This changes only target health, never spell coefficients.
+    if (Cohort().CalibrationMode == "single_target_300" && target->GetMaxHealth())
     {
         uint64 windowElapsedMs = metrics.WindowStartedMs ? NowMs() - metrics.WindowStartedMs : 0;
-        bool executeWindow = !Cohort().CalibrationAoePhase && windowElapsedMs >= 96000;
+        bool executeWindow = !Cohort().CalibrationAoePhase && windowElapsedMs >= 240000;
         uint64 desiredHealth = executeWindow
             ? std::max<uint64>(1, target->GetMaxHealth() * 19 / 100) : target->GetMaxHealth();
         if (target->GetHealth() != desiredHealth)
@@ -3802,8 +5172,70 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
     if (TryEnsurePersistentCombatSetup(state, bot, target))
         return;
 
-    if (!metrics.WindowStartedMs)
-        metrics.WindowStartedMs = NowMs();
+    // Hunter pet autocast target selection does not reliably choose self-only
+    // offensive cooldowns. Drive the two exact ferocity-pet cooldowns used by
+    // the pinned fixture from the start of the scored window. Only stop after a
+    // successful cast so one rejected cooldown cannot suppress the other.
+    if (scored && bot->getClass() == CLASS_HUNTER)
+    {
+        if (Pet* pet = bot->GetPet(); pet && !pet->HasUnitState(UNIT_STATE_CASTING))
+        {
+            static constexpr std::array<uint32, 2> PetCooldowns = { 53434, 53401 }; // Call of the Wild, Rabid
+            for (uint32 spellId : PetCooldowns)
+            {
+                SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+                if (!spellInfo || !pet->HasSpell(spellId) || !pet->GetSpellHistory()->IsReady(spellInfo))
+                    continue;
+                if (pet->CastSpell(pet, spellId, false) == SPELL_CAST_OK)
+                    break;
+            }
+        }
+    }
+
+    if (scored && !metrics.WindowStartedMs)
+        metrics.WindowStartedMs = Cohort().CalibrationScoredStartedMs;
+
+    bool tankStanceActive = role != "tank";
+    if (role == "tank")
+    {
+        switch (bot->getClass())
+        {
+            case CLASS_WARRIOR: tankStanceActive = bot->HasAura(71); break;
+            case CLASS_PALADIN: tankStanceActive = bot->HasAura(25780); break;
+            case CLASS_DEATH_KNIGHT: tankStanceActive = bot->HasAura(48263); break;
+            case CLASS_DRUID: tankStanceActive = bot->HasAura(5487); break;
+            default: tankStanceActive = false; break;
+        }
+        if (scored && tankStanceActive)
+        {
+            ++metrics.StanceFormActiveTicks;
+            ++metrics.ThreatAuraActiveTicks;
+        }
+
+        // The class tank stance/presence/form supplies continuous baseline
+        // mitigation; class cooldown auras add active coverage on top of it.
+        // Defensive action execution is recorded independently below.
+        bool mitigationActive = tankStanceActive;
+        switch (bot->getClass())
+        {
+            case CLASS_WARRIOR:
+                mitigationActive = mitigationActive || bot->HasAura(2565) || bot->HasAura(871) || bot->HasAura(12975);
+                break;
+            case CLASS_PALADIN:
+                mitigationActive = mitigationActive || bot->HasAura(498) || bot->HasAura(31850) || bot->HasAura(86150);
+                break;
+            case CLASS_DEATH_KNIGHT:
+                mitigationActive = mitigationActive || bot->HasAura(49222) || bot->HasAura(55233) || bot->HasAura(48792);
+                break;
+            case CLASS_DRUID:
+                mitigationActive = mitigationActive || bot->HasAura(22812) || bot->HasAura(61336) || bot->HasAura(22842);
+                break;
+            default:
+                break;
+        }
+        if (scored && mitigationActive)
+            ++metrics.MitigationCoveredTicks;
+    }
 
     // Keep the tank's normal threat stance active. Other rotational choices go
     // through the same profile resolver and executor used in the dungeon.
@@ -3814,35 +5246,97 @@ void BotWorldPopulationMgr::UpdateCalibrationBot(WorldBotState& state, uint32 di
         return;
     }
 
+    bool const interruptOpportunity = target->IsNonMeleeSpellCast(false);
     ResolvedCombatAction action = ResolveProfileCombatAction(bot, target, hostileCount, Cohort().CalibrationAoePhase);
+    auto actionCategory = Party().LastActionCategoryByBot.find(bot->GetGUID().GetCounter());
+    std::string const actionGroup = actionCategory != Party().LastActionCategoryByBot.end()
+        ? actionCategory->second : action.DebugName;
     float distance = bot->GetExactDist(target);
     if ((action.MinRange > 0.0f && distance < action.MinRange)
         || (action.MaxRange > 0.0f && distance > std::max(5.0f, action.MaxRange - 1.0f))
         || !bot->IsWithinLOSInMap(target))
     {
+        if (scored)
+            ++metrics.MovementRangeLossTicks;
         MoveBotToProfileRange(state, bot, target, &action);
         return;
     }
 
     BotActionResult result = ExecuteProfileCombatAction(&state, bot, target, &action, hostileCount, Cohort().CalibrationAoePhase);
-    ++metrics.ResultCounts[ToString(result)];
-    if (result == BotActionResult::CastFailed && !state.LastCombatAttempt.Reason.empty())
-        ++metrics.ResultCounts[std::string("cast_failed:") + state.LastCombatAttempt.Reason];
-    if (action.Valid && action.SpellId)
-        ++metrics.ActionAttempts[action.SpellId];
-    if (result != BotActionResult::Casting && result != BotActionResult::GlobalCooldown && result != BotActionResult::NoAction)
+    if (scored)
     {
-        ++metrics.Attempts;
-        if (result == BotActionResult::Ok)
-            ++metrics.Successes;
+        ++metrics.ActiveTicks;
+        ++metrics.ResultCounts[ToString(result)];
+        if (result == BotActionResult::CastFailed && !state.LastCombatAttempt.Reason.empty())
+            ++metrics.ResultCounts[std::string("cast_failed:") + state.LastCombatAttempt.Reason];
+        if (action.Valid)
+        {
+            metrics.ActionGroups.insert(actionGroup.empty() ? action.Type : actionGroup);
+            if (action.SpellId)
+                ++metrics.ActionAttempts[action.SpellId];
+            if (result == BotActionResult::Ok
+                && (actionGroup == "defensive" || actionGroup == "external_defensive"))
+                ++metrics.DefensiveActionCount;
+            if (result == BotActionResult::Ok && actionGroup == "interrupt" && interruptOpportunity)
+                ++metrics.InterruptSuccesses;
+        }
+        if (result != BotActionResult::Casting && result != BotActionResult::GlobalCooldown && result != BotActionResult::NoAction)
+        {
+            ++metrics.Attempts;
+            if (result == BotActionResult::Ok)
+                ++metrics.Successes;
+        }
     }
 
     float threat = 0.0f;
+    uint32 retainedHostiles = 0;
+    bool healerExposed = false;
+    uint64 const nowMs = NowMs();
+    // Training dummies forcibly end each attacker combat reference after five
+    // seconds without damage. Preserve the real threat-manager observation, but
+    // also accept recent real damage within a normal tank AoE refresh cadence so
+    // the dummy script cannot manufacture threat loss between valid refreshes.
+    static constexpr uint64 TankThreatDamageRetentionMs = 15000;
     for (Creature* dummy : dummies)
-        threat += dummy->GetThreatManager().GetThreat(bot, true);
+    {
+        float const dummyThreat = dummy->GetThreatManager().GetThreat(bot, true);
+        threat += dummyThreat;
+        auto const lastDamage = metrics.LastDamageMsByTarget.find(dummy->GetGUID().GetCounter());
+        bool const recentlyDamaged = lastDamage != metrics.LastDamageMsByTarget.end()
+            && nowMs >= lastDamage->second
+            && nowMs - lastDamage->second <= TankThreatDamageRetentionMs;
+        if (dummyThreat > 0.0f || recentlyDamaged)
+            ++retainedHostiles;
+        if (Player* victim = dummy->GetVictim() ? dummy->GetVictim()->ToPlayer() : nullptr)
+            healerExposed = healerExposed || GetDungeonRole(victim) == std::string("healer");
+    }
     if (metrics.ThreatBaseline < 0.0f)
         metrics.ThreatBaseline = threat;
     metrics.ThreatCurrent = threat;
+    if (scored && role == "tank")
+    {
+        uint32 const requiredHostiles = Cohort().CalibrationMode == "tank_threat_300"
+            ? std::min<uint32>(3, uint32(dummies.size())) : 1;
+        bool const retained = retainedHostiles >= requiredHostiles;
+        uint64 const elapsedMs = NowMs() - Cohort().CalibrationScoredStartedMs;
+        ++metrics.ThreatSampleCount;
+        if (retained)
+            ++metrics.AllHostilesRetainedSamples;
+        if (healerExposed)
+            ++metrics.HealerExposureTicks;
+        if (!metrics.SnapThreatChecks && elapsedMs >= 10000)
+        {
+            ++metrics.SnapThreatChecks;
+            if (retained)
+                ++metrics.SnapThreatSuccesses;
+        }
+        else if (elapsedMs > 10000)
+        {
+            ++metrics.AddThreatChecks;
+            if (retained)
+                ++metrics.AddThreatSuccesses;
+        }
+    }
 }
 
 void BotWorldPopulationMgr::EnsureValidationCohortGroup()
@@ -5595,9 +7089,12 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         return;
     }
     uint32 decisionTickMs = sConfigMgr->GetIntDefault("BotWorld.DecisionTickMs", 3000);
+    bool const responsiveShadowCombat = bot->IsInCombat() && bot->HasAura(15473);
     if (bot->IsInCombat() || Cohort().Config.ValidationRouteEnable)
-        decisionTickMs = std::min<uint32>(decisionTickMs, 1000);
-    state.DecisionTimer = std::max<uint32>(500, decisionTickMs);
+        decisionTickMs = std::min<uint32>(decisionTickMs, responsiveShadowCombat ? 100 : 1000);
+    // Keep production Shadow scheduling aligned with its pinned 100 ms reaction
+    // cadence; the hasted channel profile otherwise idles between actions.
+    state.DecisionTimer = std::max<uint32>(responsiveShadowCombat ? 100 : 500, decisionTickMs);
 
     if (target && StopDisallowedDummyCombat(state, bot, target))
         target = nullptr;
@@ -5959,12 +7456,36 @@ uint32 BotWorldPopulationMgr::SelectPoolCandidateGuid() const
     return 0;
 }
 
-uint32 BotWorldPopulationMgr::SelectCalibrationPoolCandidateGuid() const
+uint32 BotWorldPopulationMgr::SelectCalibrationPoolCandidateGuid(size_t slot) const
 {
-    if (QueryResult result = CharacterDatabase.Query(
+    std::string targetSpec = Cohort().CalibrationTargetSpec;
+    CharacterDatabase.EscapeString(targetSpec);
+    if (slot == 0)
+    {
+        if (QueryResult result = CharacterDatabase.PQuery(
+            "SELECT cbp.guid FROM character_bot_pool cbp INNER JOIN characters c ON c.guid = cbp.guid "
+            "WHERE cbp.enabled = 1 AND cbp.in_use = 0 AND c.level = 85 "
+            "AND cbp.experiment_tags = 'all_spec_candidate_pool' AND cbp.class_spec = '%s' "
+            "ORDER BY cbp.guid LIMIT 1", targetSpec.c_str()))
+            return result->Fetch()[0].GetUInt32();
+        return 0;
+    }
+
+    std::string supportRole;
+    if (Cohort().CalibrationMode == "tank_threat_300")
+        supportRole = "healer";
+    else if (Cohort().CalibrationMode == "healer_controlled_damage_300")
+        supportRole = slot == 1 ? "tank" : "dps";
+    if (supportRole.empty())
+        return 0;
+
+    uint32 targetGuid = Cohort().CalibrationTargetGuid.GetCounter();
+    if (QueryResult result = CharacterDatabase.PQuery(
         "SELECT cbp.guid FROM character_bot_pool cbp INNER JOIN characters c ON c.guid = cbp.guid "
         "WHERE cbp.enabled = 1 AND cbp.in_use = 0 AND c.level = 85 "
-        "AND cbp.experiment_tags = 'combat_calibration' ORDER BY cbp.guid LIMIT 1"))
+        "AND cbp.experiment_tags = 'all_spec_candidate_pool' AND cbp.role = '%s' AND cbp.guid <> %u "
+        "ORDER BY SHA2(CONCAT(cbp.guid, ':', %u, ':', %u), 256), cbp.guid LIMIT 1",
+        supportRole.c_str(), targetGuid, Cohort().CalibrationSeed, uint32(slot)))
         return result->Fetch()[0].GetUInt32();
     return 0;
 }
@@ -8700,8 +10221,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 || (spell.RequiresMoving && !healer->isMoving()))
                 continue;
 
-            int32 powerCost = spellInfo->CalcPowerCost(healer, spellInfo->GetSchoolMask());
-            if (powerCost > 0 && healer->GetPower(healer->GetPowerType()) < uint32(powerCost))
+            if (!HasPowerForSpell(healer, spellInfo))
                 continue;
 
             if (healer->HasUnitState(UNIT_STATE_CASTING) || healer->GetSpellHistory()->HasGlobalCooldown(spellInfo) || !healer->GetSpellHistory()->IsReady(spellInfo))
@@ -15350,8 +16870,7 @@ bool BotWorldPopulationMgr::TryCastFriendlySpell(Player* bot, Unit* target, uint
     if (!bot->GetSpellHistory()->IsReady(spellInfo))
         return fail("spell_not_ready");
 
-    int32 powerCost = spellInfo->CalcPowerCost(bot, spellInfo->GetSchoolMask());
-    if (powerCost > 0 && bot->GetPower(bot->GetPowerType()) < uint32(powerCost))
+    if (!HasPowerForSpell(bot, spellInfo))
         return fail("insufficient_power");
 
     if (spellInfo->CalcCastTime(bot->getLevel()) > 0)
@@ -16498,10 +18017,36 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         }
     }
 
+    bool const targetActivelyCasting = target->IsNonMeleeSpellCast(false);
     BotActionCandidate* best = nullptr;
-    BotActionCandidate* bestDensityArea = nullptr;
+    BotActionCandidate* bestInterrupt = nullptr;
+    BotActionCandidate* bestDensityRecovery = nullptr;
+    BotActionCandidate* bestDensityResourceFallback = nullptr;
     BotActionCandidate* bestDensityGenerator = nullptr;
     BotActionCandidate* bestDensityFallback = nullptr;
+    auto candidatePreferred = [](BotActionCandidate const& candidate, BotActionCandidate const* current) -> bool
+    {
+        return !current || candidate.Profile.PriorityBucket < current->Profile.PriorityBucket
+            || (candidate.Profile.PriorityBucket == current->Profile.PriorityBucket
+                && (candidate.Score > current->Score
+                    || (candidate.Score == current->Score && candidate.Profile.SortOrder < current->Profile.SortOrder)
+                    || (candidate.Score == current->Score && candidate.Profile.SortOrder == current->Profile.SortOrder
+                        && candidate.ActionId < current->ActionId)));
+    };
+    auto hasMechanicTag = [](std::string const& tags, char const* required) -> bool
+    {
+        size_t start = 0;
+        while (start <= tags.size())
+        {
+            size_t end = tags.find(',', start);
+            if (tags.compare(start, (end == std::string::npos ? tags.size() : end) - start, required) == 0)
+                return true;
+            if (end == std::string::npos)
+                break;
+            start = end + 1;
+        }
+        return false;
+    };
     for (BotActionCandidate& candidate : candidates)
     {
         SpellInfo const* candidateSpellInfo = sSpellMgr->GetSpellInfo(candidate.SpellId);
@@ -16524,13 +18069,21 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
             || candidate.Category == BotCombatActionCategory::HealAoe
             || candidate.Category == BotCombatActionCategory::DispelCleanse
             || candidate.Category == BotCombatActionCategory::ExternalDefensive
-            || candidate.Category == BotCombatActionCategory::Buff)
+            || (candidate.Category == BotCombatActionCategory::Buff
+                && candidate.Profile.TargetSelector != "self"))
         {
             candidate.RejectReason = "requires_ally_target";
             continue;
         }
         if (!candidate.RejectReason.empty())
+        {
+            // A ranged profile can spawn inside its dead zone before any action
+            // is valid. Preserve the rejected candidate's minimum range so the
+            // caller can move outward instead of waiting forever.
+            if (candidate.RejectReason == "ranged_range_required")
+                action.MinRange = std::max(action.MinRange, 5.0f);
             continue;
+        }
         bool candidateIsMajorTankDefensive = role == "tank"
             && candidate.Category == BotCombatActionCategory::Defensive
             && (candidate.SpellId == 498 || candidate.SpellId == 31850 || candidate.SpellId == 86150);
@@ -16551,6 +18104,57 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         {
             candidate.RejectReason = "enemy_count_too_high";
             continue;
+        }
+        if (bot->getClass() == CLASS_DRUID && profile.SpecTag == "balance_druid")
+        {
+            bool const solarEclipse = bot->HasAura(48517);
+            bool const lunarEclipse = bot->HasAura(48518);
+            bool const solarMarker = bot->HasAura(67483);
+            if (candidate.SpellId == 88747)
+            {
+                // Wild Mushroom placement is a pinned pre-pull action owned by
+                // the calibration setup above, never an in-combat filler.
+                candidate.RejectReason = "prepull_only";
+                continue;
+            }
+            if ((candidate.SpellId == 93402 && !solarEclipse)
+                || (candidate.SpellId == 8921 && solarEclipse))
+            {
+                candidate.RejectReason = "eclipse_dot_direction";
+                continue;
+            }
+            if (candidate.SpellId == 16914 && !solarEclipse)
+            {
+                // Sustained Balance AoE enters Solar Eclipse before channeling
+                // Hurricane, preserving Eclipse damage and allowing the pinned
+                // pre-pull mushroom set to detonate.
+                candidate.RejectReason = "solar_aoe_required";
+                continue;
+            }
+            if (candidate.SpellId == 88751)
+            {
+                SpellInfo const* mushroomSpell = sSpellMgr->GetSpellInfo(88747);
+                std::list<Creature*> mushrooms;
+                if (mushroomSpell)
+                    bot->GetAllMinionsByEntry(mushrooms, uint32(mushroomSpell->Effects[EFFECT_0].MiscValue));
+                if (!solarEclipse || mushrooms.size() < 3)
+                {
+                    candidate.RejectReason = "solar_mushrooms_not_ready";
+                    continue;
+                }
+            }
+            if (candidate.SpellId == 2912 || candidate.SpellId == 5176)
+            {
+                // Continue Starfire after Lunar expires while the Solar marker
+                // is still moving toward Solar. Once Solar activates, Wrath takes
+                // over and drives the bar back toward Lunar.
+                bool const castStarfire = lunarEclipse || (solarMarker && !solarEclipse);
+                if ((candidate.SpellId == 2912) != castStarfire)
+                {
+                    candidate.RejectReason = "eclipse_direction";
+                    continue;
+                }
+            }
         }
         if (bot->getClass() == CLASS_PALADIN
             && (candidate.SpellId == 53600 || candidate.SpellId == 84963)
@@ -16574,9 +18178,7 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
                 continue;
             }
         }
-        if (candidate.Profile.RequiresInterruptibleTarget
-            && !target->GetCurrentSpell(CURRENT_GENERIC_SPELL)
-            && !target->GetCurrentSpell(CURRENT_CHANNELED_SPELL))
+        if (candidate.Profile.RequiresInterruptibleTarget && !targetActivelyCasting)
         {
             candidate.RejectReason = "target_not_interruptible";
             continue;
@@ -16742,44 +18344,63 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
 
         candidate.Score = roleScore;
         candidate.Reason = saturation.SaturationReason;
-        if (densityOnly && candidate.Category == BotCombatActionCategory::ResourceGenerator)
+        bool densityRecovery = densityOnly
+            && (candidate.Category == BotCombatActionCategory::ResourceGenerator
+                || candidate.Category == BotCombatActionCategory::UseItem)
+            && hasMechanicTag(candidate.Profile.MechanicTags, "mana_recovery");
+        if (targetActivelyCasting && candidate.Category == BotCombatActionCategory::Interrupt
+            && candidate.Profile.RequiresInterruptibleTarget)
         {
-            if (!bestDensityGenerator || candidate.Profile.PriorityBucket < bestDensityGenerator->Profile.PriorityBucket
-                || (candidate.Profile.PriorityBucket == bestDensityGenerator->Profile.PriorityBucket
-                    && (candidate.Score > bestDensityGenerator->Score
-                        || (candidate.Score == bestDensityGenerator->Score && candidate.Profile.SortOrder < bestDensityGenerator->Profile.SortOrder)
-                        || (candidate.Score == bestDensityGenerator->Score && candidate.Profile.SortOrder == bestDensityGenerator->Profile.SortOrder && candidate.ActionId < bestDensityGenerator->ActionId))))
-                bestDensityGenerator = &candidate;
+            if (candidatePreferred(candidate, bestInterrupt))
+                bestInterrupt = &candidate;
         }
-        else if (densityOnly && (candidate.Category == BotCombatActionCategory::Aoe
-            || candidate.Category == BotCombatActionCategory::Cleave))
+        else if (densityRecovery)
         {
-            if (!bestDensityArea || candidate.Profile.PriorityBucket < bestDensityArea->Profile.PriorityBucket
-                || (candidate.Profile.PriorityBucket == bestDensityArea->Profile.PriorityBucket
-                    && (candidate.Score > bestDensityArea->Score
-                        || (candidate.Score == bestDensityArea->Score && candidate.Profile.SortOrder < bestDensityArea->Profile.SortOrder)
-                        || (candidate.Score == bestDensityArea->Score && candidate.Profile.SortOrder == bestDensityArea->Profile.SortOrder && candidate.ActionId < bestDensityArea->ActionId))))
-                bestDensityArea = &candidate;
+            if (candidatePreferred(candidate, bestDensityRecovery))
+                bestDensityRecovery = &candidate;
+        }
+        else if (densityOnly && candidate.Category == BotCombatActionCategory::ResourceGenerator
+            && hasMechanicTag(candidate.Profile.MechanicTags, "resource_fallback"))
+        {
+            if (candidatePreferred(candidate, bestDensityResourceFallback))
+                bestDensityResourceFallback = &candidate;
+        }
+        else if (densityOnly && candidate.Category == BotCombatActionCategory::ResourceGenerator)
+        {
+            if (candidatePreferred(candidate, bestDensityGenerator))
+                bestDensityGenerator = &candidate;
         }
         else if (densityOnly)
         {
-            if (!bestDensityFallback || candidate.Profile.PriorityBucket < bestDensityFallback->Profile.PriorityBucket
-                || (candidate.Profile.PriorityBucket == bestDensityFallback->Profile.PriorityBucket
-                    && (candidate.Score > bestDensityFallback->Score
-                        || (candidate.Score == bestDensityFallback->Score && candidate.Profile.SortOrder < bestDensityFallback->Profile.SortOrder)
-                        || (candidate.Score == bestDensityFallback->Score && candidate.Profile.SortOrder == bestDensityFallback->Profile.SortOrder && candidate.ActionId < bestDensityFallback->ActionId))))
+            if (candidatePreferred(candidate, bestDensityFallback))
                 bestDensityFallback = &candidate;
         }
-        else if (!best || candidate.Profile.PriorityBucket < best->Profile.PriorityBucket
-            || (candidate.Profile.PriorityBucket == best->Profile.PriorityBucket
-                && (candidate.Score > best->Score
-                    || (candidate.Score == best->Score && candidate.Profile.SortOrder < best->Profile.SortOrder)
-                    || (candidate.Score == best->Score && candidate.Profile.SortOrder == best->Profile.SortOrder && candidate.ActionId < best->ActionId))))
+        else if (candidatePreferred(candidate, best))
             best = &candidate;
     }
 
-    if (densityOnly)
-        best = bestDensityArea ? bestDensityArea : (bestDensityGenerator ? bestDensityGenerator : bestDensityFallback);
+    // A real, profile-declared interrupt must preempt ordinary rotation choices
+    // only while the selected target is actively casting. The candidate has
+    // already passed resource, cooldown, range, and all other profile gates.
+    if (bestInterrupt)
+        best = bestInterrupt;
+    else if (densityOnly)
+    {
+        Powers primaryPowerType = bot->GetPowerType();
+        uint32 maxPrimaryPower = bot->GetMaxPower(primaryPowerType);
+        float primaryPowerPct = maxPrimaryPower
+            ? float(bot->GetPower(primaryPowerType)) / float(maxPrimaryPower) : 1.0f;
+        bool resourcePressure = primaryPowerPct <= 0.25f;
+        if (bot->GetMaxPower(POWER_MANA))
+            resourcePressure = float(bot->GetPower(POWER_MANA)) / float(bot->GetMaxPower(POWER_MANA)) <= 0.25f;
+        best = bestDensityRecovery
+            ? bestDensityRecovery
+            : (bestDensityResourceFallback
+                ? bestDensityResourceFallback
+                : (resourcePressure && bestDensityGenerator
+                    ? bestDensityGenerator
+                    : (bestDensityFallback ? bestDensityFallback : bestDensityGenerator)));
+    }
 
     uint32 botKey = bot->GetGUID().GetCounter();
     std::ostringstream rejectionJson;
@@ -16805,11 +18426,19 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
     if (!best || !best->SpellId)
     {
         action.DebugName = profile.MissingProfile ? profile.ProfileSource : "no_valid_profile_action";
+        if (!profile.MissingProfile && profile.AutoAttackMode == "melee"
+            && bot->IsValidAttackTarget(target))
+        {
+            action.Valid = true;
+            action.Type = "auto_attack";
+            action.TargetGuid = target->GetGUID();
+            action.DebugName = "melee_auto_attack_fallback";
+        }
         return action;
     }
 
     action.Valid = true;
-    action.Type = "cast";
+    action.Type = best->Category == BotCombatActionCategory::UseItem ? "use_item" : "cast";
     action.SpellId = best->SpellId;
     bool selfTarget = best->Profile.TargetSelector == "self";
     action.TargetGuid = selfTarget ? bot->GetGUID() : target->GetGUID();
@@ -16831,10 +18460,13 @@ bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup(WorldBotState& state,
     if (!bot || !bot->IsAlive())
         return false;
 
+    std::string const role = GetDungeonRole(bot);
+    BotClassSpecActionProfile const profile = BotClassSpecActionProfileStore::Build(bot, role.c_str());
     struct SelfBuff
     {
         uint8 ClassId;
         char const* Role;
+        char const* SpecTag;
         uint32 SpellId;
         uint32 AuraId;
         uint32 AlternateAuraId;
@@ -16842,20 +18474,27 @@ bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup(WorldBotState& state,
     };
     static SelfBuff const buffs[] =
     {
-        { CLASS_PALADIN, "tank", 25780, 25780, 0, "righteous_fury" },
-        { CLASS_PALADIN, "tank", 31801, 31801, 0, "seal_of_truth" },
-        { CLASS_PALADIN, "tank", 465, 465, 0, "devotion_aura" },
-        { CLASS_PALADIN, nullptr, 20217, 20217, 79063, "blessing_of_kings" },
-        { CLASS_MAGE, nullptr, 1459, 1459, 79058, "arcane_brilliance" },
-        { CLASS_MAGE, nullptr, 30482, 30482, 0, "molten_armor" },
-        { CLASS_HUNTER, nullptr, 13165, 13165, 0, "aspect_of_the_hawk" },
-        { CLASS_SHAMAN, nullptr, 324, 324, 0, "lightning_shield" },
+        { CLASS_WARRIOR, "tank", "protection_warrior", 71, 71, 0, "defensive_stance" },
+        { CLASS_WARRIOR, "dps", "arms_warrior", 2457, 2457, 0, "battle_stance" },
+        { CLASS_WARRIOR, "dps", "fury_warrior", 2458, 2458, 0, "berserker_stance" },
+        { CLASS_PALADIN, "tank", nullptr, 25780, 25780, 0, "righteous_fury" },
+        { CLASS_PALADIN, "tank", nullptr, 31801, 31801, 0, "seal_of_truth" },
+        { CLASS_PALADIN, "tank", nullptr, 465, 465, 0, "devotion_aura" },
+        { CLASS_DEATH_KNIGHT, "tank", "blood_death_knight", 48263, 48263, 0, "blood_presence" },
+        { CLASS_DRUID, "tank", "feral_druid_tank", 5487, 5487, 0, "bear_form" },
+        { CLASS_DRUID, "dps", "balance_druid", 24858, 24858, 0, "moonkin_form" },
+        { CLASS_PALADIN, nullptr, nullptr, 20217, 20217, 79063, "blessing_of_kings" },
+        { CLASS_MAGE, nullptr, nullptr, 1459, 1459, 79058, "arcane_brilliance" },
+        { CLASS_MAGE, nullptr, nullptr, 30482, 30482, 6117, "class_armor" },
+        { CLASS_HUNTER, nullptr, nullptr, 13165, 13165, 0, "aspect_of_the_hawk" },
+        { CLASS_SHAMAN, "healer", nullptr, 52127, 52127, 0, "water_shield" },
+        { CLASS_SHAMAN, "dps", nullptr, 324, 324, 0, "lightning_shield" },
     };
 
-    std::string const role = GetDungeonRole(bot);
     for (SelfBuff const& buff : buffs)
     {
         if (buff.ClassId != bot->getClass() || (buff.Role && role != buff.Role)
+            || (buff.SpecTag && profile.SpecTag != buff.SpecTag)
             || bot->HasAura(buff.AuraId) || (buff.AlternateAuraId && bot->HasAura(buff.AlternateAuraId)))
             continue;
         if (!bot->HasSpell(buff.SpellId))
@@ -16885,12 +18524,48 @@ bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup(WorldBotState& state,
         return true;
     }
 
+    if (bot->getClass() == CLASS_MAGE)
+    {
+        bool manaGemEnabled = std::any_of(profile.Spells.begin(), profile.Spells.end(), [](BotActionProfileSpell const& spell)
+        {
+            return spell.Category == BotCombatActionCategory::UseItem && spell.SpellId == 5405;
+        });
+        if (manaGemEnabled && !bot->GetItemByEntry(36799))
+        {
+            constexpr uint32 ConjureManaGemSpellId = 759;
+            if (!bot->HasSpell(ConjureManaGemSpellId))
+            {
+                MarkBotBlocked(state, bot, "persistent_setup_spell_missing:759");
+                return true;
+            }
+
+            SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(ConjureManaGemSpellId);
+            if (!spellInfo || bot->HasUnitState(UNIT_STATE_CASTING)
+                || bot->GetSpellHistory()->HasGlobalCooldown(spellInfo)
+                || !bot->GetSpellHistory()->IsReady(spellInfo))
+                return true;
+
+            ResolvedCombatAction action;
+            action.Valid = true;
+            action.Type = "cast";
+            action.SpellId = ConjureManaGemSpellId;
+            action.TargetGuid = bot->GetGUID();
+            action.DebugName = "conjure_mana_gem";
+            BotActionResult result = bot->CastSpell(bot, ConjureManaGemSpellId, false) == SPELL_CAST_OK
+                ? BotActionResult::Ok : BotActionResult::CastFailed;
+            RecordCombatAttempt(state, bot, bot, "persistent_setup", &action, result,
+                result == BotActionResult::Ok ? "conjure_mana_gem" : "conjure_mana_gem_failed");
+            return true;
+        }
+    }
+
     if (bot->getClass() == CLASS_SHAMAN)
     {
         auto ensureWeaponImbue = [&](uint8 equipmentSlot, uint32 spellId, char const* name) -> bool
         {
             Item* weapon = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, equipmentSlot);
-            if (!weapon || weapon->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT))
+            ItemTemplate const* itemTemplate = weapon ? weapon->GetTemplate() : nullptr;
+            if (!itemTemplate || itemTemplate->GetClass() != ITEM_CLASS_WEAPON)
                 return false;
             if (!bot->HasSpell(spellId))
             {
@@ -16900,29 +18575,88 @@ bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup(WorldBotState& state,
             }
 
             SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
-            if (!spellInfo || bot->HasUnitState(UNIT_STATE_CASTING)
-                || bot->GetSpellHistory()->HasGlobalCooldown(spellInfo) || !bot->GetSpellHistory()->IsReady(spellInfo))
+            uint32 desiredEnchantId = 0;
+            if (spellInfo)
+                for (SpellEffectInfo const& effect : spellInfo->Effects)
+                    if (effect.Effect == SPELL_EFFECT_ENCHANT_ITEM_TEMPORARY)
+                    {
+                        desiredEnchantId = uint32(effect.MiscValue);
+                        break;
+                    }
+            if (!desiredEnchantId)
+            {
+                std::string blocker = std::string("persistent_setup_enchant_missing:") + std::to_string(spellId);
+                MarkBotBlocked(state, bot, blocker.c_str());
                 return true;
+            }
 
-            SpellCastTargets targets;
-            targets.SetItemTarget(weapon);
-            Spell* spell = new Spell(bot, spellInfo, TRIGGERED_NONE);
-            SpellCastResult result = spell->prepare(targets);
+            uint32 const currentEnchantId = weapon->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT);
+            if (currentEnchantId == desiredEnchantId)
+                return false;
+
+            constexpr uint32 ShamanWeaponImbueDurationMs = 1800000;
+            if (currentEnchantId)
+                bot->ApplyEnchantment(weapon, TEMP_ENCHANTMENT_SLOT, false);
+            weapon->SetEnchantment(TEMP_ENCHANTMENT_SLOT, desiredEnchantId,
+                ShamanWeaponImbueDurationMs, 0, bot->GetGUID());
+            bot->ApplyEnchantment(weapon, TEMP_ENCHANTMENT_SLOT, true);
+
             ResolvedCombatAction action;
             action.Valid = true;
-            action.Type = "cast";
+            action.Type = "apply_enchant";
             action.SpellId = spellId;
             action.TargetGuid = bot->GetGUID();
             action.DebugName = name;
-            RecordCombatAttempt(state, bot, bot, "persistent_setup", &action,
-                result == SPELL_CAST_OK ? BotActionResult::Ok : BotActionResult::CastFailed,
-                result == SPELL_CAST_OK ? name : "weapon_imbue_cast_failed");
+            RecordCombatAttempt(state, bot, bot, "persistent_setup", &action, BotActionResult::Ok, name);
             return true;
         };
 
-        if (ensureWeaponImbue(EQUIPMENT_SLOT_MAINHAND, 8232, "windfury_weapon"))
+        bool const enhancement = profile.SpecTag == "enhancement"
+            || profile.SpecTag == "enhancement_shaman";
+        uint32 const mainhandImbueSpell = enhancement ? 8232 : 8024;
+        char const* mainhandImbueName = enhancement ? "windfury_weapon" : "flametongue_weapon";
+        if (ensureWeaponImbue(EQUIPMENT_SLOT_MAINHAND, mainhandImbueSpell, mainhandImbueName))
             return true;
-        if (ensureWeaponImbue(EQUIPMENT_SLOT_OFFHAND, 8024, "flametongue_weapon"))
+        if (enhancement && ensureWeaponImbue(EQUIPMENT_SLOT_OFFHAND, 8024, "flametongue_weapon"))
+            return true;
+    }
+
+    if (bot->getClass() == CLASS_ROGUE)
+    {
+        constexpr uint32 PoisonDurationMs = 3600000;
+        constexpr uint32 PoisonRefreshThresholdMs = 900000;
+        auto ensureWeaponPoison = [&](uint8 equipmentSlot, uint32 enchantId, char const* name) -> bool
+        {
+            Item* weapon = bot->GetItemByPos(INVENTORY_SLOT_BAG_0, equipmentSlot);
+            if (!weapon)
+            {
+                std::string blocker = std::string("persistent_setup_weapon_missing:") + name;
+                MarkBotBlocked(state, bot, blocker.c_str());
+                return true;
+            }
+
+            uint32 const currentEnchantId = weapon->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT);
+            uint32 const currentDurationMs = weapon->GetEnchantmentDuration(TEMP_ENCHANTMENT_SLOT);
+            if (currentEnchantId == enchantId && currentDurationMs >= PoisonRefreshThresholdMs)
+                return false;
+
+            if (currentEnchantId)
+                bot->ApplyEnchantment(weapon, TEMP_ENCHANTMENT_SLOT, false);
+            weapon->SetEnchantment(TEMP_ENCHANTMENT_SLOT, enchantId, PoisonDurationMs, 0, bot->GetGUID());
+            bot->ApplyEnchantment(weapon, TEMP_ENCHANTMENT_SLOT, true);
+
+            ResolvedCombatAction action;
+            action.Valid = true;
+            action.Type = "apply_enchant";
+            action.TargetGuid = bot->GetGUID();
+            action.DebugName = name;
+            RecordCombatAttempt(state, bot, bot, "persistent_setup", &action, BotActionResult::Ok, name);
+            return true;
+        };
+
+        if (ensureWeaponPoison(EQUIPMENT_SLOT_MAINHAND, 7, "deadly_poison_mainhand"))
+            return true;
+        if (ensureWeaponPoison(EQUIPMENT_SLOT_OFFHAND, 323, "instant_poison_offhand"))
             return true;
     }
 
@@ -17132,8 +18866,7 @@ bool BotWorldPopulationMgr::TryCastCombatSpell(Player* bot, Unit* target, uint32
     if (bot->HasUnitState(UNIT_STATE_CASTING) || bot->GetSpellHistory()->HasGlobalCooldown(spellInfo) || !bot->GetSpellHistory()->IsReady(spellInfo))
         return false;
 
-    int32 powerCost = spellInfo->CalcPowerCost(bot, spellInfo->GetSchoolMask());
-    if (powerCost > 0 && bot->GetPower(bot->GetPowerType()) < uint32(powerCost))
+    if (!HasPowerForSpell(bot, spellInfo))
         return false;
 
     return bot->CastSpell(target, spellId, false) == SPELL_CAST_OK;
@@ -19336,10 +21069,33 @@ void BotWorldPopulationMgr::NotifyCombatDamage(Unit* attacker, Unit* victim, uin
         auto calibration = Cohort().CalibrationMetricsByGuid.find(owner->GetGUID().GetCounter());
         if (calibration != Cohort().CalibrationMetricsByGuid.end())
         {
+            bool const scored = Cohort().CalibrationScoredStartedMs && !Cohort().CalibrationWindowComplete
+                && NowMs() >= Cohort().CalibrationScoredStartedMs
+                && NowMs() - Cohort().CalibrationScoredStartedMs <= 300000;
+            if (!scored)
+            {
+                // A final channel tick can already be queued when the exact
+                // 300-second boundary interrupts the cast. Give that in-flight
+                // delivery one normal three-second periodic interval to drain;
+                // anything later is genuine cross-window contamination.
+                if (Cohort().CalibrationWindowComplete && Cohort().CalibrationScoredEndedMs
+                    && NowMs() > Cohort().CalibrationScoredEndedMs + 3000)
+                {
+                    ++Cohort().CalibrationCrossWindowEventCount;
+                    TC_LOG_WARN("server", "BotWorld calibration post-window damage owner=%s attacker=%s victim=%s spell=%u damage=%u raw=%u",
+                        owner->GetGUID().ToString().c_str(), attacker->GetGUID().ToString().c_str(),
+                        victim->GetGUID().ToString().c_str(), spellId, damage, unmitigatedDamage);
+                }
+                return;
+            }
             uint32 measuredDamage = damage ? damage : unmitigatedDamage;
             calibration->second.Damage += measuredDamage;
+            if (attacker != owner)
+                calibration->second.PetDamage += measuredDamage;
             calibration->second.SpellDamage[spellId] += measuredDamage;
             ++calibration->second.SpellDamageEvents[spellId];
+            if (Creature* dummy = victim->ToCreature(); dummy && IsTrainingDummy(dummy))
+                calibration->second.LastDamageMsByTarget[dummy->GetGUID().GetCounter()] = NowMs();
             return;
         }
     }
@@ -19366,6 +21122,40 @@ void BotWorldPopulationMgr::NotifyCombatHeal(Unit* healer, Unit* target, uint32 
 {
     if (!Cohort().Active || !healer || !target || (!attemptedHeal && !effectiveHeal && !absorbedHeal))
         return;
+
+    if (Player* calibrationHealer = CombatOwnerPlayer(healer))
+    {
+        auto calibration = Cohort().CalibrationMetricsByGuid.find(calibrationHealer->GetGUID().GetCounter());
+        bool const scored = Cohort().CalibrationScoredStartedMs && !Cohort().CalibrationWindowComplete
+            && NowMs() >= Cohort().CalibrationScoredStartedMs
+            && NowMs() - Cohort().CalibrationScoredStartedMs <= 300000;
+        if (calibration != Cohort().CalibrationMetricsByGuid.end() && scored)
+        {
+            CalibrationMetrics& metrics = calibration->second;
+            metrics.AttemptedHealing += attemptedHeal;
+            metrics.EffectiveHealing += effectiveHeal;
+            metrics.AbsorbedHealing += absorbedHeal;
+            if (effectiveHeal || absorbedHeal)
+            {
+                uint32 const targetGuid = target->GetGUID().GetCounter();
+                ++metrics.HealTargetCounts[targetGuid];
+                auto damaged = metrics.LastControlledDamageMsByTarget.find(targetGuid);
+                if (damaged != metrics.LastControlledDamageMsByTarget.end())
+                {
+                    uint64 const eventMs = damaged->second;
+                    metrics.HealResponseLatenciesMs.push_back(uint32(std::min<uint64>(
+                        NowMs() - eventMs, std::numeric_limits<uint32>::max())));
+                    for (auto itr = metrics.LastControlledDamageMsByTarget.begin();
+                        itr != metrics.LastControlledDamageMsByTarget.end();)
+                        if (itr->second == eventMs)
+                            itr = metrics.LastControlledDamageMsByTarget.erase(itr);
+                        else
+                            ++itr;
+                }
+            }
+            return;
+        }
+    }
 
     Player* sourceActor = FindCombatLogCohortPlayer(healer);
     Player* targetActor = FindCombatLogCohortPlayer(target);

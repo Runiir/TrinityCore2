@@ -1,0 +1,5 @@
+.botauto calibrate p8-s3-feral-druid-tank-single-target-300 start single_target_300 feral_druid_tank 3
+.botauto status p8-s3-feral-druid-tank-single-target-300
+.botauto calibrate p8-s3-feral-druid-tank-single-target-300 status
+.botauto combatlog p8-s3-feral-druid-tank-single-target-300
+.botauto calibrate p8-s3-feral-druid-tank-single-target-300 stop

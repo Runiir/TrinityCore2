@@ -87,6 +87,32 @@
     "balance_druid": "dps_intellect",
     "feral_druid_dps": "dps_intellect"
   },
+  "stat_weight_overrides_by_spec": {
+    "protection_paladin": {
+      "stamina": 1.2,
+      "dodge": 0.6,
+      "parry": 0.6,
+      "mastery": 0.8,
+      "strength": 2.0,
+      "block": 0.4,
+      "expertise": 2.5,
+      "hit": 3.0,
+      "crit": 0.5,
+      "haste": 0.5
+    },
+    "blood_death_knight": {
+      "stamina": 1.2,
+      "dodge": 0.6,
+      "parry": 0.6,
+      "mastery": 0.8,
+      "strength": 2.0,
+      "block": 0.4,
+      "expertise": 2.5,
+      "hit": 3.0,
+      "crit": 0.5,
+      "haste": 0.5
+    }
+  },
   "loot_validation": {
     "minimum_required_item_source_labels": [
       "client_db2",

@@ -74,6 +74,7 @@ stages:
     - tools/bot_ml/validation_profile_manifests.py
     - experiments/configs/validation_provisioning_cata_001.json
     - experiments/configs/all_spec_targets_cata_p4_v1.json
+    - experiments/configs/wowsims_cata_p4_gear_profiles.json
     - experiments/configs/cata_434_action_profiles.json
     - data/dbc/enUS/Talent.dbc
     - data/dbc/enUS/TalentTreePrimarySpells.dbc
@@ -121,6 +122,70 @@ stages:
     - sql/custom/world/2026_07_17_01_enhancement_unleash_flame_priority.sql
     - sql/custom/world/2026_07_17_01_protection_avenging_wrath.sql
     - sql/custom/world/2026_07_17_02_enhancement_unleash_flame_rollback.sql
+    - sql/custom/world/2026_07_19_00_phase8_healer_qualification_profiles.sql
+    - sql/custom/world/2026_07_19_01_phase8_fire_mage_calibration.sql
+    - sql/custom/world/2026_07_20_01_phase8_holy_paladin_calibration.sql
+    - sql/custom/world/2026_07_20_02_phase8_protection_warrior_calibration.sql
+    - sql/custom/world/2026_07_20_03_phase8_feral_tank_calibration.sql
+    - sql/custom/world/2026_07_20_04_phase8_warrior_calibration.sql
+    - sql/custom/world/2026_07_20_05_phase8_retribution_calibration.sql
+    - sql/custom/world/2026_07_20_06_phase8_role_qualification_tuning.sql
+    - sql/custom/world/2026_07_20_07_phase8_role_qualification_tuning2.sql
+    - sql/custom/world/2026_07_20_08_phase8_role_qualification_tuning3.sql
+    - sql/custom/world/2026_07_20_09_phase8_role_qualification_tuning4.sql
+    - sql/custom/world/2026_07_21_00_phase8_dps_qualification_tuning.sql
+    - sql/custom/world/2026_07_21_01_phase8_survival_qualification_tuning.sql
+    - sql/custom/world/2026_07_21_02_phase8_assassination_qualification.sql
+    - sql/custom/world/2026_07_22_00_phase8_survival_reference_timing.sql
+    - sql/custom/world/2026_07_22_01_phase8_survival_pet_reference_alignment.sql
+    - sql/custom/world/2026_07_22_02_phase8_survival_orc_fixture.sql
+    - sql/custom/world/2026_07_22_03_phase8_assassination_aoe_qualification.sql
+    - sql/custom/world/2026_07_22_04_phase8_survival_focus_margin.sql
+    - sql/custom/world/2026_07_22_05_phase8_survival_execute_focus.sql
+    - sql/custom/world/2026_07_22_06_phase8_survival_cooldown_separation.sql
+    - sql/custom/world/2026_07_22_07_phase8_survival_focus_reserve.sql
+    - sql/custom/world/2026_07_22_08_phase8_survival_scored_opener_trap.sql
+    - sql/custom/world/2026_07_22_09_phase8_survival_repeatable_trap.sql
+    - sql/custom/world/2026_07_22_10_phase8_survival_opener_trap_restore.sql
+    - sql/custom/world/2026_07_22_11_phase8_combat_rogue_aoe.sql
+    - sql/custom/world/2026_07_23_00_phase8_restoration_druid_overheal.sql
+    - sql/custom/world/2026_07_23_01_phase8_subtlety_rogue_aoe.sql
+    - sql/custom/world/2026_07_23_02_phase8_subtlety_rogue_aoe_priority.sql
+    - sql/custom/world/2026_07_23_03_phase8_subtlety_rogue_aoe_builder.sql
+    - sql/custom/world/2026_07_23_04_phase8_subtlety_rogue_aoe_cycle.sql
+    - sql/custom/world/2026_07_23_05_phase8_subtlety_rogue_hemorrhage_refresh.sql
+    - sql/custom/world/2026_07_23_06_phase8_protection_warrior_snap_threat.sql
+    - sql/custom/world/2026_07_23_07_phase8_frost_death_knight_masterfrost.sql
+    - sql/custom/world/2026_07_23_08_phase8_frost_death_knight_unholy_presence.sql
+    - sql/custom/world/2026_07_23_09_phase8_frost_death_knight_masterfrost_core.sql
+    - sql/custom/world/2026_07_23_10_phase8_frost_death_knight_masterfrost_priority.sql
+    - sql/custom/world/2026_07_23_11_phase8_frost_death_knight_masterfrost_priority_rollback.sql
+    - sql/custom/world/2026_07_23_12_phase8_frost_death_knight_killing_machine_obliterate.sql
+    - sql/custom/world/2026_07_23_13_phase8_frost_death_knight_killing_machine_reservation.sql
+    - sql/custom/world/2026_07_23_14_phase8_frost_death_knight_killing_machine_rollback.sql
+    - sql/custom/world/2026_07_23_15_phase8_frost_death_knight_blood_tap.sql
+    - sql/custom/world/2026_07_23_16_phase8_frost_death_knight_army_of_the_dead.sql
+    - sql/custom/world/2026_07_23_17_phase8_frost_death_knight_aoe_resource_cycle.sql
+    - sql/custom/world/2026_07_24_00_phase8_unholy_death_knight_apl.sql
+    - sql/custom/world/2026_07_24_01_phase8_elemental_runtime_integrity.sql
+    - sql/custom/world/2026_07_24_02_phase8_elemental_spender_cadence.sql
+    - sql/custom/world/2026_07_24_03_phase8_elemental_aoe_builder_gate.sql
+    - sql/custom/world/2026_07_24_04_phase8_enhancement_melee_priority.sql
+    - sql/custom/world/2026_07_25_00_phase8_protection_warrior_threat_margin.sql
+    - sql/custom/world/2026_07_25_01_phase8_protection_warrior_cast_health.sql
+    - sql/custom/world/2026_07_25_02_phase8_warrior_cleave_action_integrity.sql
+    - sql/custom/world/2026_07_25_03_phase8_warrior_heroic_strike_aoe_fallback.sql
+    - sql/custom/world/2026_07_25_04_phase8_demonology_felguard_contract.sql
+    - sql/custom/world/2026_07_25_05_phase8_demonology_ranged_lane.sql
+    - sql/custom/world/2026_07_25_06_phase8_demonology_pinned_apl.sql
+    - sql/custom/world/2026_07_25_07_phase8_demonology_metamorphosis_activation.sql
+    - sql/custom/world/2026_07_25_08_phase8_demonology_guardian_cooldown.sql
+    - sql/custom/world/2026_07_25_09_phase8_demonology_impending_doom.sql
+    - sql/custom/world/2026_07_25_10_phase8_demonology_soulburn_burst.sql
+    - sql/custom/world/2026_07_25_11_phase8_demonology_volcanic_potion.sql
+    - sql/custom/world/2026_07_25_12_phase8_demonology_melee_burst.sql
+    - sql/custom/world/2026_07_26_00_phase8_shadow_priest_burst.sql
+    - sql/custom/world/2026_07_27_00_phase8_balance_druid_apl.sql
     outs:
     - dataset/baseline_inventory:
         persist: true
@@ -231,6 +296,101 @@ stages:
     outs:
     - dataset/all_spec_phase7_role_calibration_contract:
         persist: true
+  all_spec_phase8_live_calibration_contract:
+    cmd: python -m tools.bot_ml.build_phase8_all_spec_calibration_contract --campaign-root
+      artifacts/all_spec_program/phase8_live_calibration_20260728_representative_final_r105_campaign --output-dir
+      dataset/all_spec_phase8_live_calibration_contract
+    deps:
+    - tools/bot_ml/build_phase8_all_spec_calibration_contract.py
+    - tools/bot_ml/build_phase8_evidence_identity_manifest.py
+    - tools/bot_ml/run_phase8_all_spec_calibration.py
+    - tools/bot_ml/phase8_calibration_adapter.py
+    - tools/bot_ml/phase8_evidence_identity.py
+    - tools/bot_ml/role_calibration_harness.py
+    - experiments/configs/all_spec_targets_cata_p4_v1.json
+    - experiments/configs/all_spec_references_cata_p4_v1.json
+    - experiments/configs/all_spec_calibration_scenarios_v1.json
+    - experiments/configs/all_spec_role_calibration_policy_v1.json
+    - experiments/configs/phase8_dps_representatives_cata_p4_v1.json
+    - experiments/configs/cata_434_action_profiles.json
+    - experiments/configs/wowsims_cata_p4_gear_profiles.json
+    - src/server/game/Bots/BotMgr.cpp
+    - src/server/game/Bots/BotWorldPopulationMgr.cpp
+    - src/server/game/Bots/BotWorldPopulationMgr.h
+    - src/server/game/Spells/SpellInfo.cpp
+    - sql/custom/world/2026_07_19_00_phase8_healer_qualification_profiles.sql
+    - sql/custom/world/2026_07_19_01_phase8_fire_mage_calibration.sql
+    - sql/custom/world/2026_07_20_01_phase8_holy_paladin_calibration.sql
+    - sql/custom/world/2026_07_20_02_phase8_protection_warrior_calibration.sql
+    - sql/custom/world/2026_07_20_03_phase8_feral_tank_calibration.sql
+    - sql/custom/world/2026_07_20_04_phase8_warrior_calibration.sql
+    - sql/custom/world/2026_07_20_05_phase8_retribution_calibration.sql
+    - sql/custom/world/2026_07_20_06_phase8_role_qualification_tuning.sql
+    - sql/custom/world/2026_07_20_07_phase8_role_qualification_tuning2.sql
+    - sql/custom/world/2026_07_20_08_phase8_role_qualification_tuning3.sql
+    - sql/custom/world/2026_07_20_09_phase8_role_qualification_tuning4.sql
+    - sql/custom/world/2026_07_21_00_phase8_dps_qualification_tuning.sql
+    - sql/custom/world/2026_07_21_01_phase8_survival_qualification_tuning.sql
+    - sql/custom/world/2026_07_21_02_phase8_assassination_qualification.sql
+    - sql/custom/world/2026_07_22_00_phase8_survival_reference_timing.sql
+    - sql/custom/world/2026_07_22_01_phase8_survival_pet_reference_alignment.sql
+    - sql/custom/world/2026_07_22_02_phase8_survival_orc_fixture.sql
+    - sql/custom/world/2026_07_22_03_phase8_assassination_aoe_qualification.sql
+    - sql/custom/world/2026_07_22_04_phase8_survival_focus_margin.sql
+    - sql/custom/world/2026_07_22_05_phase8_survival_execute_focus.sql
+    - sql/custom/world/2026_07_22_06_phase8_survival_cooldown_separation.sql
+    - sql/custom/world/2026_07_22_07_phase8_survival_focus_reserve.sql
+    - sql/custom/world/2026_07_22_08_phase8_survival_scored_opener_trap.sql
+    - sql/custom/world/2026_07_22_09_phase8_survival_repeatable_trap.sql
+    - sql/custom/world/2026_07_22_10_phase8_survival_opener_trap_restore.sql
+    - sql/custom/world/2026_07_22_11_phase8_combat_rogue_aoe.sql
+    - sql/custom/world/2026_07_23_00_phase8_restoration_druid_overheal.sql
+    - sql/custom/world/2026_07_23_01_phase8_subtlety_rogue_aoe.sql
+    - sql/custom/world/2026_07_23_02_phase8_subtlety_rogue_aoe_priority.sql
+    - sql/custom/world/2026_07_23_03_phase8_subtlety_rogue_aoe_builder.sql
+    - sql/custom/world/2026_07_23_04_phase8_subtlety_rogue_aoe_cycle.sql
+    - sql/custom/world/2026_07_23_05_phase8_subtlety_rogue_hemorrhage_refresh.sql
+    - sql/custom/world/2026_07_23_06_phase8_protection_warrior_snap_threat.sql
+    - sql/custom/world/2026_07_23_07_phase8_frost_death_knight_masterfrost.sql
+    - sql/custom/world/2026_07_23_08_phase8_frost_death_knight_unholy_presence.sql
+    - sql/custom/world/2026_07_23_09_phase8_frost_death_knight_masterfrost_core.sql
+    - sql/custom/world/2026_07_23_10_phase8_frost_death_knight_masterfrost_priority.sql
+    - sql/custom/world/2026_07_23_11_phase8_frost_death_knight_masterfrost_priority_rollback.sql
+    - sql/custom/world/2026_07_23_12_phase8_frost_death_knight_killing_machine_obliterate.sql
+    - sql/custom/world/2026_07_23_13_phase8_frost_death_knight_killing_machine_reservation.sql
+    - sql/custom/world/2026_07_23_14_phase8_frost_death_knight_killing_machine_rollback.sql
+    - sql/custom/world/2026_07_23_15_phase8_frost_death_knight_blood_tap.sql
+    - sql/custom/world/2026_07_23_16_phase8_frost_death_knight_army_of_the_dead.sql
+    - sql/custom/world/2026_07_23_17_phase8_frost_death_knight_aoe_resource_cycle.sql
+    - sql/custom/world/2026_07_24_00_phase8_unholy_death_knight_apl.sql
+    - sql/custom/world/2026_07_24_01_phase8_elemental_runtime_integrity.sql
+    - sql/custom/world/2026_07_24_02_phase8_elemental_spender_cadence.sql
+    - sql/custom/world/2026_07_24_03_phase8_elemental_aoe_builder_gate.sql
+    - sql/custom/world/2026_07_24_04_phase8_enhancement_melee_priority.sql
+    - sql/custom/world/2026_07_25_00_phase8_protection_warrior_threat_margin.sql
+    - sql/custom/world/2026_07_25_01_phase8_protection_warrior_cast_health.sql
+    - sql/custom/world/2026_07_25_02_phase8_warrior_cleave_action_integrity.sql
+    - sql/custom/world/2026_07_25_03_phase8_warrior_heroic_strike_aoe_fallback.sql
+    - sql/custom/world/2026_07_25_04_phase8_demonology_felguard_contract.sql
+    - sql/custom/world/2026_07_25_05_phase8_demonology_ranged_lane.sql
+    - sql/custom/world/2026_07_25_06_phase8_demonology_pinned_apl.sql
+    - sql/custom/world/2026_07_25_07_phase8_demonology_metamorphosis_activation.sql
+    - sql/custom/world/2026_07_25_08_phase8_demonology_guardian_cooldown.sql
+    - sql/custom/world/2026_07_25_09_phase8_demonology_impending_doom.sql
+    - sql/custom/world/2026_07_25_10_phase8_demonology_soulburn_burst.sql
+    - sql/custom/world/2026_07_25_11_phase8_demonology_volcanic_potion.sql
+    - sql/custom/world/2026_07_25_12_phase8_demonology_melee_burst.sql
+    - sql/custom/world/2026_07_26_00_phase8_shadow_priest_burst.sql
+    - sql/custom/world/2026_07_27_00_phase8_balance_druid_apl.sql
+    - sql/custom/world/2026_07_27_01_phase8_retribution_hammer_range.sql
+    - sql/custom/world/2026_07_27_02_phase8_demonology_hellfire_survival.sql
+    - artifacts/all_spec_program/phase8_live_calibration_20260728_representative_final_r105_campaign/campaign_state.json
+    - artifacts/all_spec_program/phase8_live_calibration_20260728_representative_final_r105_campaign/dps_representatives.json
+    - artifacts/all_spec_program/phase8_live_calibration_20260728_representative_final_r105_campaign/evidence_identity_manifest.json
+    - artifacts/all_spec_program/phase8_live_calibration_20260728_representative_final_r105_campaign/independent_campaign_verification.json
+    outs:
+    - dataset/all_spec_phase8_live_calibration_contract:
+        persist: true
   validation_provisioning_verify:
     cmd: python -m tools.bot_ml.validate_validation_provisioning --config
       experiments/configs/validation_provisioning_cata_001.json --gear-profiles
@@ -245,6 +405,7 @@ stages:
     - tools/bot_ml/extract_world_knowledge.py
     - experiments/configs/validation_provisioning_cata_001.json
     - experiments/configs/all_spec_targets_cata_p4_v1.json
+    - experiments/configs/wowsims_cata_p4_gear_profiles.json
     - experiments/configs/cata_434_action_profiles.json
     - experiments/configs/cata_434_combat_loot_profiles.json
     - dataset/validation_gear_profiles

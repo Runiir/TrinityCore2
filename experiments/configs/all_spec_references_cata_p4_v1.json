@@ -63,8 +63,8 @@
         },
         {
           "url": "https://www.icy-veins.com/cataclysm-classic/protection-warrior-pve-guide",
-          "sha256": "7fe08ca6439e1f0fd271229e5f81d3f8c42a6ba41c5e48fbeaa90e1c6d2c908a",
-          "byte_count": 140220
+          "sha256": "3536e58ed90a6021aa05e701f6c8e894f3146546f0f29e1b344b0c37915ad54f",
+          "byte_count": 140201
         },
         {
           "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/warrior/protection/gear_sets/p4_bis.gear.json",
@@ -176,8 +176,8 @@
         },
         {
           "url": "https://www.icy-veins.com/cataclysm-classic/protection-paladin-pve-guide",
-          "sha256": "91bcd0c64d1d46fd96b7818055e2ec13460dbc0a2481ccdd385ddca24c04afe1",
-          "byte_count": 136415
+          "sha256": "740b805e3ee8d5c36562bbaf577e02613b61727f22c6376cbe5ff70b40a941c0",
+          "byte_count": 136396
         },
         {
           "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/paladin/protection/gear_sets/T12.gear.json",
@@ -290,8 +290,8 @@
         },
         {
           "url": "https://www.icy-veins.com/cataclysm-classic/blood-death-knight-pve-guide",
-          "sha256": "d55a0567333a09ffa51a98963c3df6685303890b2b2e886fe496b1412b0dfb05",
-          "byte_count": 138365
+          "sha256": "1b98c90c590fd15dd678f57968734015f9f80a613bb8e287029549832f6eb5e0",
+          "byte_count": 138346
         },
         {
           "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/death_knight/blood/gear_sets/p3-balanced.gear.json",
@@ -404,8 +404,8 @@
         },
         {
           "url": "https://www.icy-veins.com/cataclysm-classic/feral-druid-tank-pve-guide",
-          "sha256": "230cfe2d40377c1d4dd1fd2c145cd443c1317cd7d8633855679b9fbf7160ead4",
-          "byte_count": 135109
+          "sha256": "1602d74fc987e7ac8b7a7d8e1de669f9ff9290f41255706298dc3c6e06ac16af",
+          "byte_count": 135090
         },
         {
           "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/druid/guardian/gear_sets/p4.gear.json",
@@ -517,8 +517,8 @@
         },
         {
           "url": "https://www.icy-veins.com/cataclysm-classic/holy-paladin-pve-guide",
-          "sha256": "306f4b50a70e17f4e7151ab10d607abb60c77ac1000a2d006d766fd5291a47a8",
-          "byte_count": 137810
+          "sha256": "2731255be918b48bed8473473d598ed34004fb0e78423ea5f0524a7326128d92",
+          "byte_count": 137791
         },
         {
           "url": "https://static.icy-veins.com/json/cata-talent-calculator/paladin.json",
@@ -627,8 +627,8 @@
         },
         {
           "url": "https://www.icy-veins.com/cataclysm-classic/discipline-priest-pve-guide",
-          "sha256": "e44ef567c98a8b7e9039b4df2e13fa1ad2d10eccb95aa3deedad0804a52d5ceb",
-          "byte_count": 139495
+          "sha256": "6ddaaaf23d00f76a5f9af1a8b755ed9ccd402082cc6dc1b002f8b454bcfc53b5",
+          "byte_count": 139476
         },
         {
           "url": "https://static.icy-veins.com/json/cata-talent-calculator/priest.json",
@@ -737,8 +737,8 @@
         },
         {
           "url": "https://www.icy-veins.com/cataclysm-classic/holy-priest-pve-guide",
-          "sha256": "9d1fcc866ee30c48dc238238155935af8ccee1561ef606dd23fa39f53f6eaf5f",
-          "byte_count": 138361
+          "sha256": "e7107fdd56b9efbe8da74a4be5256eab9a0d10a41b76b3e1b70103d8696ab079",
+          "byte_count": 138342
         },
         {
           "url": "https://static.icy-veins.com/json/cata-talent-calculator/priest.json",
@@ -847,8 +847,8 @@
         },
         {
           "url": "https://www.icy-veins.com/cataclysm-classic/restoration-shaman-pve-guide",
-          "sha256": "5f7d91be266cebf6554197635af8cda0b3328faf18298ba91dbbda272765a4fa",
-          "byte_count": 135385
+          "sha256": "e6eb32c13c00d3a3f366ccfc8a90967025a299dc4a70d1ecb5d5feb272a50784",
+          "byte_count": 135366
         },
         {
           "url": "https://static.icy-veins.com/json/cata-talent-calculator/shaman.json",
@@ -957,8 +957,8 @@
         },
         {
           "url": "https://www.icy-veins.com/cataclysm-classic/restoration-druid-pve-guide",
-          "sha256": "ba56aab357d2929d59737cab8d689566feb1fa534417a6a270a73fdaa287640e",
-          "byte_count": 132602
+          "sha256": "6437b2c28e5615bf61b74d118c093832be43504bdeffa41b33a6ca08de8b4565",
+          "byte_count": 132583
         },
         {
           "url": "https://static.icy-veins.com/json/cata-talent-calculator/druid.json",
@@ -1067,8 +1067,8 @@
         },
         {
           "url": "https://www.icy-veins.com/cataclysm-classic/arms-warrior-pve-guide",
-          "sha256": "1097b09a9e26f886962106d8cd1c83ec68f2a3a1212966eede6ed9bef9cea429",
-          "byte_count": 138631
+          "sha256": "5062a677a8fb6494fd6d9c89f767f23765fd05035f59993b6793d8454c1b5ee0",
+          "byte_count": 138612
         },
         {
           "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/warrior/arms/gear_sets/p4_arms_bis.gear.json",
@@ -1179,8 +1179,8 @@
         },
         {
           "url": "https://www.icy-veins.com/cataclysm-classic/fury-warrior-pve-guide",
-          "sha256": "fffc6bcabe6740f21e557b6155425805dbd75c4067ab81754ff9f9af35b13404",
-          "byte_count": 140173
+          "sha256": "a7f1f10a5814089cfa9559573890746ee5994085d56d7a8523cdc8833cf26656",
+          "byte_count": 140154
         },
         {
           "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/warrior/fury/gear_sets/p4_fury_tg.gear.json",
@@ -1291,8 +1291,8 @@
         },
         {
           "url": "https://www.icy-veins.com/cataclysm-classic/retribution-paladin-pve-guide",
-          "sha256": "2c77c9f15ce7c69e23db5314823ec10943f5f0a49450721d6777dc90f23d85ae",
-          "byte_count": 135698
+          "sha256": "f82538e17791ea6d0fb502aa6f8bf75458b42d2a103438089f764d29c8e14a77",
+          "byte_count": 135679
         },
         {
           "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/paladin/retribution/gear_sets/p4_bis.gear.json",
@@ -1403,8 +1403,8 @@
         },
         {
           "url": "https://www.icy-veins.com/cataclysm-classic/beast-mastery-hunter-pve-guide",
-          "sha256": "f920867ee74bed08f0342d5f12dd89bf0ee1e813fe692cdeb3b35886537eb1af",
-          "byte_count": 134755
+          "sha256": "fd62d29a80b1be62a0276865171e95ecc582bb679671bd5ed32ec07d13bbf8f5",
+          "byte_count": 134736
         },
         {
           "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/hunter/beast_mastery/gear_sets/p3_bm.gear.json",
@@ -1516,8 +1516,8 @@
         },
         {
           "url": "https://www.icy-veins.com/cataclysm-classic/marksmanship-hunter-pve-guide",
-          "sha256": "4fdf00bf9ee83e177e72bfceae9d4bd4d0e4cb02780bec45ff77e10ea3a42c66",
-          "byte_count": 134690
+          "sha256": "edbf1b2d147d5226b009fa909a1bb262007ca2e7bef81ba260ad83a7ef3d879e",
+          "byte_count": 134671
         },
         {
           "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/hunter/marksmanship/gear_sets/p3_mm.gear.json",
@@ -1606,8 +1606,9 @@
       },
       "talents": {
         "provider": "WoWSims",
-        "path": "ui/hunter/survival/presets.ts",
-        "talent_string": "03-2302-03203203023022121311"
+        "path": "sim/hunter/survival/survival_test.go",
+        "talent_string": "03-2302-23203003023022121311",
+        "selection_basis": "numeric_result_fixture"
       },
       "test": "sim/hunter/survival/survival_test.go",
       "results": "sim/hunter/survival/TestSV.results",
@@ -1629,8 +1630,8 @@
         },
         {
           "url": "https://www.icy-veins.com/cataclysm-classic/survival-hunter-pve-guide",
-          "sha256": "5f156e6f8a7f961e61563adbcd248b413b17680890468f1e94593fd219a972f9",
-          "byte_count": 133997
+          "sha256": "e5e3a00906dbe415bd34e1a65f07d225ffcaadc7ada2614bb9469622b09384f6",
+          "byte_count": 133978
         },
         {
           "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/hunter/survival/gear_sets/p4_sv.gear.json",
@@ -1741,8 +1742,8 @@
         },
         {
           "url": "https://www.icy-veins.com/cataclysm-classic/assassination-rogue-pve-guide",
-          "sha256": "dd191348d085062260b162edf3fdeceec9d30bab1ee979c3b254c58a68d7fbc8",
-          "byte_count": 134891
+          "sha256": "db10ced95ee0e2d9730c9bdebe83e119ed39d3a14291167f4c293cc1c9fad529",
+          "byte_count": 134872
         },
         {
           "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/rogue/assassination/gear_sets/p4_assassination.gear.json",
@@ -1853,8 +1854,8 @@
         },
         {
           "url": "https://www.icy-veins.com/cataclysm-classic/combat-rogue-pve-guide",
-          "sha256": "2e329b54512defe4296dc9de4d5faadb2ce7d040b9cf158529cd02ea6bb6214d",
-          "byte_count": 134805
+          "sha256": "6447ea266e176b821ca8703eedcd5d99037d6773e241a27b003ce8aef76639b1",
+          "byte_count": 134786
         },
         {
           "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/rogue/combat/gear_sets/p4_combat.gear.json",
@@ -1965,8 +1966,8 @@
         },
         {
           "url": "https://www.icy-veins.com/cataclysm-classic/subtlety-rogue-pve-guide",
-          "sha256": "c186cd4e6f41ec226a1f85d51ce63bdf9a778d28e22a6478e48333f2071560ba",
-          "byte_count": 134934
+          "sha256": "f4392abf79ab5139bf68f37dac88508d86e265721c3db7f541e0ce1f2a9474f2",
+          "byte_count": 134915
         },
         {
           "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/rogue/subtlety/gear_sets/p4_subtlety.gear.json",
@@ -2077,8 +2078,8 @@
         },
         {
           "url": "https://www.icy-veins.com/cataclysm-classic/frost-death-knight-pve-guide",
-          "sha256": "cad6531a97260b0c4bd1503b58960f49a68bf3179f50c6b7c94ab67dfffb37a7",
-          "byte_count": 136109
+          "sha256": "85b1f9cecee6272117c7603af694108f99c6f8922a2cf9e85c00e0373c731c1c",
+          "byte_count": 136090
         },
         {
           "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/death_knight/frost/gear_sets/p4.masterfrost.gear.json",
@@ -2190,8 +2191,8 @@
         },
         {
           "url": "https://www.icy-veins.com/cataclysm-classic/unholy-death-knight-pve-guide",
-          "sha256": "84ca17d47d510b6af8b89f6135a45c7d57390ba79fa3bfb7e6ca4e27840ca82d",
-          "byte_count": 135632
+          "sha256": "d4fe6a58f67234a64dd3a8b7968b4afff363d33fd3411ce9974ef7cb743d35a2",
+          "byte_count": 135613
         },
         {
           "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/death_knight/unholy/gear_sets/p4.bis.gear.json",
@@ -2303,8 +2304,8 @@
         },
         {
           "url": "https://www.icy-veins.com/cataclysm-classic/elemental-shaman-pve-guide",
-          "sha256": "749dd6dd26f7cfb2806a7e48a84438be4daae6ca328046eba005d26ff8aa9fbf",
-          "byte_count": 136019
+          "sha256": "0c0a5a4dc6b753818a0e229e5971b49966fbc05d4504e542c1e94b8589781d2a",
+          "byte_count": 136000
         },
         {
           "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/shaman/elemental/gear_sets/p4.default.gear.json",
@@ -2415,8 +2416,8 @@
         },
         {
           "url": "https://www.icy-veins.com/cataclysm-classic/enhancement-shaman-pve-guide",
-          "sha256": "9b030412006d890509d9126b55a6618b22b4977ca4c0b6273b2c5da2057f6396",
-          "byte_count": 136678
+          "sha256": "87511b9d1de52d7e98be69609bad7df857c8e5b6c0084b79598709b97b801e1c",
+          "byte_count": 136659
         },
         {
           "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/shaman/enhancement/gear_sets/p4.orc.gear.json",
@@ -2527,8 +2528,8 @@
         },
         {
           "url": "https://www.icy-veins.com/cataclysm-classic/arcane-mage-pve-guide",
-          "sha256": "15682ac2eaab90f47184ccb2f6e83c377fc42ed72e7a0bc6b085605d3819faa6",
-          "byte_count": 135434
+          "sha256": "7a4b609293ac621b4970381ce5ef5882ab6f0ae857cd5d1a8a471d56aad800f8",
+          "byte_count": 135415
         },
         {
           "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/mage/arcane/gear_sets/p4.gear.json",
@@ -2639,8 +2640,8 @@
         },
         {
           "url": "https://www.icy-veins.com/cataclysm-classic/fire-mage-pve-guide",
-          "sha256": "ee95f5ff1d5aa86d284f75415cb1ee32a0c2de9d64fb1d23b55b14d5abb171ab",
-          "byte_count": 135975
+          "sha256": "5800fb01fdf1a9bc8617e947c0a4661f341dfb20cc7794d2d5cf6b6e209f7d44",
+          "byte_count": 135956
         },
         {
           "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/mage/fire/gear_sets/p4_fire.gear.json",
@@ -2751,8 +2752,8 @@
         },
         {
           "url": "https://www.icy-veins.com/cataclysm-classic/frost-mage-pve-guide",
-          "sha256": "72739e3474a0a7dadaf8277a48b01a3339830a31abbc7d83f07ebd091e943c8d",
-          "byte_count": 134953
+          "sha256": "a0e9f9c61f27540298be657b0733263d8575a72d9b65fdc5d6c7b15d9e37d48c",
+          "byte_count": 134934
         },
         {
           "url": "https://static.icy-veins.com/json/cata-talent-calculator/mage.json",
@@ -2861,8 +2862,8 @@
         },
         {
           "url": "https://www.icy-veins.com/cataclysm-classic/affliction-warlock-pve-guide",
-          "sha256": "b95ca416f323b84047981197fc2083acbeeeec5a4a077bdeba1dd324bbf01d93",
-          "byte_count": 138433
+          "sha256": "e08257f7b5fc42f062f6c3e6884a8aae49855c0bb0b712a28feb7d6d8c8c0f32",
+          "byte_count": 138414
         },
         {
           "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/warlock/affliction/gear_sets/p4.gear.json",
@@ -2951,7 +2952,7 @@
       "talents": {
         "provider": "WoWSims",
         "path": "ui/warlock/demonology/presets.ts",
-        "talent_string": "-3312222300310212211-33202"
+        "talent_string": "003-3312222300310212211-03202"
       },
       "test": "sim/warlock/demonology/demonology_test.go",
       "results": "sim/warlock/demonology/TestDemonology.results",
@@ -2973,8 +2974,8 @@
         },
         {
           "url": "https://www.icy-veins.com/cataclysm-classic/demonology-warlock-pve-guide",
-          "sha256": "05e69fb141aff2dacbe6202ede65a230f586592ddc720231b78494d54156fca8",
-          "byte_count": 139305
+          "sha256": "500bde78d39590f56ac714cf9c284fe8a62d1231de534aaa1cbfdcb5a4ed4f88",
+          "byte_count": 139286
         },
         {
           "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/warlock/demonology/gear_sets/p4.gear.json",
@@ -3085,8 +3086,8 @@
         },
         {
           "url": "https://www.icy-veins.com/cataclysm-classic/destruction-warlock-pve-guide",
-          "sha256": "afd5cfedd04ee5d411e74011b18a0c17cc634e817cc5dd2f68f710d55f621cb2",
-          "byte_count": 139430
+          "sha256": "2c657d14c81d242a8e135af37f247f16d9e5933923655acaa3cb212a9aa51f94",
+          "byte_count": 139411
         },
         {
           "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/warlock/destruction/gear_sets/p4.gear.json",
@@ -3197,8 +3198,8 @@
         },
         {
           "url": "https://www.icy-veins.com/cataclysm-classic/shadow-priest-pve-guide",
-          "sha256": "2df25f94a95c2c9bbe9f33f7d5361e3561c3123e8ffffb59ff68b7368fdbeff0",
-          "byte_count": 137826
+          "sha256": "6c0c8814a53beb08daa78bb63b57ca705cb04934d04e7d22aa9a8383c024bb4d",
+          "byte_count": 137807
         },
         {
           "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/priest/shadow/gear_sets/p4.gear.json",
@@ -3272,9 +3273,9 @@
       "guide_url": "https://www.icy-veins.com/cataclysm-classic/balance-druid-pve-guide",
       "gear": {
         "phase": "phase_4",
-        "runtime_profile_id": "balance_druid",
+        "runtime_profile_id": "wowsims_cata_p4_balance_druid",
         "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
-        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "runtime_manifest": "experiments/configs/wowsims_cata_p4_gear_profiles.json",
         "simulator_preset": {
           "path": "ui/druid/balance/gear_sets/t13.gear.json",
           "phase": "phase_4"
@@ -3309,8 +3310,8 @@
         },
         {
           "url": "https://www.icy-veins.com/cataclysm-classic/balance-druid-pve-guide",
-          "sha256": "e1036f2c65de508fc729816842e1b96d80627e3a983642107a7d113fbbc0afd1",
-          "byte_count": 135842
+          "sha256": "b6da480fc74b5a61db591ec59392f954f590f9dad3fe91be505c8ec1dd7ef085",
+          "byte_count": 135823
         },
         {
           "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/druid/balance/gear_sets/t13.gear.json",
@@ -3421,8 +3422,8 @@
         },
         {
           "url": "https://www.icy-veins.com/cataclysm-classic/feral-druid-dps-pve-guide",
-          "sha256": "cc8719993ec2a019f63a873edbd5eac591f85ea196f9e85431dbfe2fc67eb8e3",
-          "byte_count": 133822
+          "sha256": "685dbb33d017b6b6209301233ab5e65b1273654046bbc0eb98b33fb8018a3ed7",
+          "byte_count": 133803
         },
         {
           "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/druid/feral/gear_sets/p4.gear.json",

@@ -1,2 +1,7 @@
 /phase0_baseline_inventory_20260718
 /phase1_live_provisioning_verification_20260719
+/phase8_live_calibration_*
+**/.batch-dvc-cache/
+**/worldserver.validation.conf
+**/runner.log
+**/validation_provisioning_apply/provision_characters.sql

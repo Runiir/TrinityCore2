@@ -1,8 +1,8 @@
 {
   "schema": "all_spec_stonecore_program_status_v1",
   "program": "all_spec_stonecore",
-  "updated_date": "2026-07-19",
-  "active_phase": 8,
+  "updated_date": "2026-07-28",
+  "active_phase": 9,
   "phase_status": [
     {
       "phase": 0,
@@ -540,15 +540,165 @@
       }
     },
     {
-      "phase": 8,
+      "authoritative_evidence": {
+        "campaign_root": "artifacts/all_spec_program/phase8_live_calibration_20260728_representative_final_r105_campaign",
+        "campaign_state": "artifacts/all_spec_program/phase8_live_calibration_20260728_representative_final_r105_campaign/campaign_state.json",
+        "contract_dvc_md5": "e055d2c5da0208dc99e8860753047af0.dir",
+        "contract_file_sha256": "7ca44e9a760e6b190f3be360d3cbe27ecf94f1fa22572400c8eccee68aafa53b",
+        "contract_identity_sha256": "7feec2af1a9f44dab773e2e5cfc743804567e8867cc41557b44cad8f327f4314",
+        "contract_manifest": "dataset/all_spec_phase8_live_calibration_contract/manifest.json",
+        "contract_manifest_sha256": "ba7169865e7f89784ee73a2b2029c4dcc4d7d593b48340585381758a63370a42",
+        "contract_path": "dataset/all_spec_phase8_live_calibration_contract/contract.json",
+        "identity_label": "r105",
+        "identity_manifest": "artifacts/all_spec_program/phase8_live_calibration_20260728_representative_final_r105/evidence_identity_manifest.json",
+        "identity_manifest_sha256": "e3fc5e9efe78b52a88b01d736739eb9921beb04595e1fde39b57576220b495ae",
+        "independent_verification": "artifacts/all_spec_program/phase8_live_calibration_20260728_representative_final_r105_campaign/independent_campaign_verification.json",
+        "profile_content_hash": "58bcb30dc53692cbf8eac93da6cb1d5fdca5d56371390aec0bc41dc6cbd45f44",
+        "profile_generation": 1,
+        "server_epoch": 4626787632286734,
+        "server_process_id": 1451945,
+        "session_fingerprint": "c192a986e9c6d4b6489080013f15910e89b0ec213e400e551799cf5373be522a"
+      },
+      "diagnostic_evidence": {
+        "r103_protection_warrior_interrupt_diagnosis": "artifacts/all_spec_program/phase8_live_calibration_20260728_representative_final_r103/protection_warrior_interrupt_diagnosis.json",
+        "r104_protection_warrior_interrupt_proof": "artifacts/all_spec_program/phase8_live_calibration_20260728_representative_final_r104/protection_warrior_interrupt_proof_summary.json"
+      },
+      "dps_qualification_policy": "one_representative_per_class_at_75_percent_floor",
+      "dps_representatives": {
+        "death_knight": "unholy_death_knight",
+        "druid": "balance_druid",
+        "hunter": "marksmanship_hunter",
+        "mage": "fire_mage",
+        "paladin": "retribution_paladin",
+        "priest": "shadow_priest",
+        "rogue": "combat_rogue",
+        "shaman": "enhancement_shaman",
+        "warlock": "demonology_warlock",
+        "warrior": "arms_warrior"
+      },
+      "gate": {
+        "all_attempts_remotely_verified": true,
+        "all_published_raw_payloads_evicted_locally": true,
+        "attempt_count": 99,
+        "hard_floor_failure_count": 0,
+        "infrastructure_failure_count": 0,
+        "max_active_cohorts": 1,
+        "minimum_reference_ratio": 0.826993,
+        "mode_attempt_counts": {
+          "aoe_300": 30,
+          "healer_controlled_damage_300": 15,
+          "single_target_300": 42,
+          "tank_threat_300": 12
+        },
+        "one_profile_content_hash": true,
+        "one_profile_generation": true,
+        "one_server_epoch": true,
+        "one_server_process": true,
+        "one_session_fingerprint": true,
+        "optimization_backlog_count": 0,
+        "passed": true,
+        "passing_attempt_count": 99,
+        "published_attempt_count": 99,
+        "qualification_failure_count": 0,
+        "seed_count": 3,
+        "selected_target_count": 19,
+        "unique_batch_identity_count": 99,
+        "unique_publication_receipt_count": 99
+      },
       "name": "serial_all_spec_tuning_loop",
+      "phase": 8,
+      "scope": {
+        "attempt_count": 99,
+        "canonical_target_count": 31,
+        "dps_class_representative_count": 10,
+        "dps_hard_floor": 0.75,
+        "healer_count": 5,
+        "optimization_target": 0.8,
+        "scored_window_seconds": 300,
+        "seed_count": 3,
+        "selected_target_count": 19,
+        "tank_count": 4
+      },
+      "status": "completed",
+      "superseded_evidence_summary": {
+        "last_pre_gate_campaign": {
+          "campaign_root": "artifacts/all_spec_program/phase8_live_calibration_20260727_representative_final_r95_campaign",
+          "identity_root": "artifacts/all_spec_program/phase8_live_calibration_20260727_representative_final_r95",
+          "state": "superseded_by_authoritative_r105"
+        },
+        "note": "Superseded diagnostic identities do not certify Phase 8; compact failure causes and evidence pointers are retained for Phase 12 lineage.",
+        "recorded_diagnostic_campaigns": {
+          "r89_diagnostic_campaign_root": "artifacts/all_spec_program/phase8_live_calibration_20260726_representative_final_r89_campaign",
+          "r89_failure_attempt": "seed-01/balance_druid/single_target_300",
+          "r89_failure_cause": "ranged profile spawned inside five-yard dead zone and invalid action did not carry a movement minimum",
+          "r89_passing_attempt_count": 31,
+          "r89_published_attempt_count": 32,
+          "r90_diagnostic_campaign_root": "artifacts/all_spec_program/phase8_live_calibration_20260726_representative_final_r90_campaign",
+          "r90_failure_attempt": "seed-01/unholy_death_knight/single_target_300",
+          "r90_failure_cause": "an in-flight Death Coil reapplied Unholy Blight after the scored boundary because its 49194 proc driver remained active",
+          "r90_passing_attempt_count": 21,
+          "r90_published_attempt_count": 22,
+          "r91_diagnostic_campaign_root": "artifacts/all_spec_program/phase8_live_calibration_20260727_representative_final_r91_campaign",
+          "r91_failure_attempt": "seed-01/balance_druid/single_target_300",
+          "r91_failure_cause": "the Balance profile remained on Starfire for the full window, omitted Moonkin Form and single-target Starfall, and never traversed the pinned APL Eclipse cycle",
+          "r91_failure_reference_ratio": 0.420433,
+          "r91_passing_attempt_count": 31,
+          "r91_published_attempt_count": 32,
+          "r92_diagnostic_identity_root": "artifacts/all_spec_program/phase8_live_calibration_20260727_representative_final_r92",
+          "r92_failure_attempt": "seed-01/balance_druid/single_target_300",
+          "r92_failure_cause": "Eclipse traversal and single-target Starfall worked, but the clone still used generic over-hit runtime gear instead of the pinned Dragonwrath set and lacked the provisioned Volcanic Potion item",
+          "r92_failure_reference_ratio": 0.654741,
+          "r92_passing_attempt_count": 0,
+          "r92_published_attempt_count": 1,
+          "r93_diagnostic_identity_root": "artifacts/all_spec_program/phase8_live_calibration_20260727_representative_final_r93",
+          "r93_failure_attempt": "seed-01/balance_druid/single_target_300",
+          "r93_failure_cause": "Exact Dragonwrath gear and Volcanic Potion raised Balance to 72.754%, but the pinned APL still lacked Solar Sunfire and the pre-planted three-mushroom detonation; aggregate reference readiness also remained false",
+          "r93_failure_reference_ratio": 0.72754,
+          "r93_passing_attempt_count": 0,
+          "r93_published_attempt_count": 1,
+          "r94_balance_single_target_reference_ratio": 0.784973,
+          "r94_diagnostic_identity_root": "artifacts/all_spec_program/phase8_live_calibration_20260727_representative_final_r94",
+          "r94_followup_cause": "Balance passed the 75% floor with Sunfire and pre-planted Wild Mushrooms, but per-aura telemetry proved Arcane Brilliance, Mark of the Wild, and Replenishment raid-area spells were not applied by the direct-aura reference setup path",
+          "r94_passing_attempt_count": 1,
+          "r94_published_attempt_count": 1,
+          "shadow_aoe_maximum_resource_starved_ratio": 0.08,
+          "shadow_aoe_minimum_reference_ratio": 1.172777,
+          "shadow_proof_all_passed": true,
+          "shadow_proof_attempt_count": 6,
+          "shadow_proof_root": "artifacts/all_spec_program/phase8_live_calibration_20260726_representative_final_r87_shadow_100ms_disp20",
+          "shadow_single_target_maximum_resource_starved_ratio": 0.18,
+          "shadow_single_target_minimum_reference_ratio": 0.760679
+        }
+      },
+      "validation": {
+        "independent_campaign_reconstruction": "passed",
+        "method": "actual worldserver runtime calibration surface; no tests or typechecks",
+        "official_dvc_contract": "passed",
+        "runtime_and_contract_gate": "passed",
+        "worldserver_build": "passed"
+      }
+    },
+    {
+      "gate": {
+        "all_batches_published_and_remotely_verified": false,
+        "covering_array_complete": false,
+        "independent_gpt_5_6_sol_architecture_evidence_approval": false,
+        "pair_universe_reconstructed": false,
+        "passed": false,
+        "serial_canary_rows_cover_all_31_targets": false,
+        "strict_uninterrupted_serial_clears_passed": false
+      },
+      "name": "pairwise_matrix_and_serial_stonecore_canaries",
+      "phase": 9,
+      "scope": "Build and independently reconstruct the constrained unordered pair universe, generate a deterministic balanced covering array, select serial rows whose union represents all 31 canonical targets, and prove strict uninterrupted current-identity clears of the complete 14-node Stonecore route one party at a time.",
       "status": "in_progress"
     },
     {
-      "phase_range": "9-12",
+      "note": "Adaptive concurrency, the full pairwise Stonecore campaign, and the compact static readiness report remain blocked until the Phase 9 serial-correctness gate and mandatory independent gpt-5.6-sol approval pass.",
+      "phase_range": "10-12",
       "status": "pending"
     }
   ],
   "blockers": [],
-  "exact_next_handoff_prompt": "Continue approved all-spec Stonecore execution at Phase 8 only. Keep one active cohort and run role-appropriate deterministic 300-second calibration for all 31 canonical targets. Verify provisioning/profile identity, publish and target-evict every closed batch, classify failures, batch tuning changes under one owner, rerun affected full windows, and use three seeded qualifying repeats with variance. No target below the 75 percent hard floor may proceed; expose every 75-80 percent target in the optimization backlog. Do not begin Phase 9 until 31/31 meet role hard gates and reference floor with verified DVC receipts."
+  "exact_next_handoff_prompt": "Execute Phase 9 only. Generate the deterministic constrained covering array over canonical unordered tank x healer x sorted DPS-triple parties; independently reconstruct all required and excluded tank-healer, tank-DPS, healer-DPS, and compatible DPS-DPS pairs; record coverage, exclusions, representation balance, and composition-to-pair mappings. Select deterministic serial rows whose union represents all 31 canonical targets, then run strict uninterrupted current-manifest clears of the full 14-node Stonecore route one party at a time on one long-lived worldserver with one live operator, one cohort, and one DVC publisher. Publish, remotely verify, and evict raw payloads after each closed batch. Before Phase 10, run .agents/skills/trinity-orchestrator/scripts/check-openai-models.sh and obtain mandatory independent gpt-5.6-sol high-reasoning architecture/evidence approval; no Claude substitute is permitted."
 }

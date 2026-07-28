@@ -7,6 +7,7 @@
 #include "Entities/Item/Container/Bag.h"
 #include "Entities/Item/Item.h"
 #include "Entities/Unit/CharmInfo.h"
+#include "GameClient.h"
 #include "Group.h"
 #include "GroupMgr.h"
 #include "LFG.h"
@@ -1201,6 +1202,7 @@ Player* BotMgr::LoadCharacterAsBotSession(ObjectGuid guid, uint32 accountId, Pla
         }
     }
     TC_LOG_INFO("server", "PlayerBot visibility refresh complete character=%s", guid.ToString().c_str());
+    bot->GetGameClient()->SetMovedUnit(bot, true);
     SetBotCharacterOnline(guid, true);
     _botSessions[guid] = std::move(session);
     return bot;

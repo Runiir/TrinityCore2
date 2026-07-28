@@ -1,0 +1,27 @@
+{
+  "batch_id": "p8-s1-arms-warrior-aoe-300-15",
+  "batch_identity_sha256": "2e7806e9eef5db4ee405540115a0c61a7b789e56d2426946c446f698c06844da",
+  "cache_scope": "batch_specific",
+  "compact_bundle_sha256": "41093c671d5f5274a3f2fae3a71f25d61705b856834a92de07975c7aa685b42c",
+  "pointers": [
+    {
+      "dvc_md5": "85564d283d01da41cd14fa2a06f401fa.dir",
+      "nfiles": 3,
+      "path": "artifacts/all_spec_program/phase8_live_calibration_20260728_representative_final_r105_campaign/attempts/seed-01/arms_warrior/aoe_300/batch/raw.dvc",
+      "pointer_sha256": "10b533adc839b32c92d32b3585d266ce2e78360e0e83e53ff55f35924074624c",
+      "size": 104736
+    },
+    {
+      "dvc_md5": "82ca34591d39d862e142c8a7c02ef4a0.dir",
+      "nfiles": 1,
+      "path": "artifacts/all_spec_program/phase8_live_calibration_20260728_representative_final_r105_campaign/attempts/seed-01/arms_warrior/aoe_300/batch/compact.dvc",
+      "pointer_sha256": "283533139bfde391975f3df0863043dc3a304cb95ebc1ddb8838e344d5c2f61d",
+      "size": 2407
+    }
+  ],
+  "raw_bundle_sha256": "66634b0939bb1e1444d6de85dbb3a7e5daddf61a71b3399f101ca4014d921a6d",
+  "receipt_sha256": "0f097aaf80da1aced6531c77caedc856c128b6c9047dc4ab8eabfd9bb15bc17e",
+  "remote_status_sha256": "efed9e5afcfe149915ae98b9ed9e69304eb48f5ce2e2265b18b5b5ed2f155e60",
+  "remote_verified": true,
+  "schema": "bot_immutable_batch_publication_receipt_v1"
+}

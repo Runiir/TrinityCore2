@@ -2,6 +2,7 @@
 #include "Cryptography/CryptoHash.h"
 #include "DataStores/DBCStores.h"
 #include "DatabaseEnv.h"
+#include "Bag.h"
 #include "Item.h"
 #include "Player.h"
 #include "SpellAuras.h"
@@ -25,6 +26,8 @@
 
 namespace
 {
+constexpr uint32 ProfileDarkTransformationSpellId = 63560;
+
 std::string ClassSpecProfileEscape(std::string const& value)
 {
     std::ostringstream out;
@@ -56,6 +59,53 @@ bool MaintainedAuraBlocksRefresh(Unit const* target, uint32 auraId, uint32 refre
         return false;
     int32 durationMs = aura->GetDuration();
     return !refreshBelowMs || durationMs < 0 || uint32(durationMs) > refreshBelowMs;
+}
+
+bool HasMechanicTag(std::string const& tags, char const* required)
+{
+    size_t start = 0;
+    while (start <= tags.size())
+    {
+        size_t end = tags.find(',', start);
+        if (tags.compare(start, (end == std::string::npos ? tags.size() : end) - start, required) == 0)
+            return true;
+        if (end == std::string::npos)
+            break;
+        start = end + 1;
+    }
+    return false;
+}
+
+Item* FindOnUseItemForSpell(Player const* player, uint32 spellId)
+{
+    if (!player || !spellId)
+        return nullptr;
+
+    auto matches = [player, spellId](Item* item) -> bool
+    {
+        ItemTemplate const* itemTemplate = item ? item->GetTemplate() : nullptr;
+        if (!itemTemplate || (item->IsPotion() && player->GetLastPotionId()))
+            return false;
+        for (uint8 index = 0; index < itemTemplate->Effects.size(); ++index)
+        {
+            ItemEffect const& effect = itemTemplate->Effects[index];
+            if (effect.SpellID == int32(spellId) && effect.Trigger == ITEM_SPELLTRIGGER_ON_USE
+                && (!effect.Charges || item->GetSpellCharges(index)
+                    || (itemTemplate->GetClass() == ITEM_CLASS_CONSUMABLE && item->GetCount())))
+                return true;
+        }
+        return false;
+    };
+
+    for (uint8 slot = INVENTORY_SLOT_ITEM_START; slot < INVENTORY_SLOT_ITEM_END; ++slot)
+        if (Item* item = player->GetItemByPos(INVENTORY_SLOT_BAG_0, slot); matches(item))
+            return item;
+    for (uint8 bagSlot = INVENTORY_SLOT_BAG_START; bagSlot < INVENTORY_SLOT_BAG_END; ++bagSlot)
+        if (Bag* bag = player->GetBagByPos(bagSlot))
+            for (uint32 slot = 0; slot < bag->GetBagSize(); ++slot)
+                if (Item* item = bag->GetItemByPos(slot); matches(item))
+                    return item;
+    return nullptr;
 }
 
 struct CanonicalRotationKey
@@ -198,6 +248,11 @@ bool HasEnoughPowerForProfileSpell(Player const* bot, SpellInfo const* spellInfo
     if (!bot || !spellInfo)
         return false;
 
+    // Dark Transformation consumes the ghoul's Shadow Infusion stacks.  Its
+    // SQL profile requires the owner-side ready aura before this resource check.
+    if (spellInfo->Id == ProfileDarkTransformationSpellId)
+        return true;
+
     if (spellInfo->PowerType == POWER_RUNE && spellInfo->RuneCostID && bot->getClass() == CLASS_DEATH_KNIGHT)
     {
         SpellRuneCostEntry const* runeCost = sSpellRuneCostStore.LookupEntry(spellInfo->RuneCostID);
@@ -274,7 +329,7 @@ uint32 EquippedTemporaryEnchant(Player const* bot, uint8 slot)
     return item ? item->GetEnchantmentId(TEMP_ENCHANTMENT_SLOT) : 0;
 }
 
-std::string EvaluateCompiledConditions(Player const* bot, Unit const* target, BotActionProfileSpell const& spell)
+std::string EvaluateCompiledConditions(Player const* bot, Unit const* target, Unit const* comboTarget, BotActionProfileSpell const& spell)
 {
     if (!bot)
         return "missing_bot";
@@ -300,23 +355,34 @@ std::string EvaluateCompiledConditions(Player const* bot, Unit const* target, Bo
         return "missing_required_target_aura";
     if (spell.ForbiddenTargetAura && target && target->HasAura(spell.ForbiddenTargetAura))
         return "forbidden_target_aura_active";
+    Aura const* lacerate = target ? target->GetAura(33745, bot->GetGUID()) : nullptr;
+    if (HasMechanicTag(spell.MechanicTags, "lacerate_spender")
+        && (!lacerate || lacerate->GetStackAmount() < 3))
+        return "insufficient_lacerate_stacks";
+    if (HasMechanicTag(spell.MechanicTags, "lacerate")
+        && !HasMechanicTag(spell.MechanicTags, "lacerate_spender")
+        && lacerate && lacerate->GetStackAmount() >= 3 && lacerate->GetDuration() > 3000)
+        return "lacerate_stacks_ready";
     if (spell.RequiredOwnedTargetAura && (!target || !target->HasAura(spell.RequiredOwnedTargetAura, bot->GetGUID())))
         return "missing_required_owned_target_aura";
     if (spell.ForbiddenOwnedTargetAura && target && target->HasAura(spell.ForbiddenOwnedTargetAura, bot->GetGUID()))
         return "forbidden_owned_target_aura_active";
+    if (HasMechanicTag(spell.MechanicTags, "holy_power_3") && bot->GetPower(POWER_HOLY_POWER) < 3)
+        return "insufficient_holy_power";
     if (spell.MaintainAuraId && !spell.RequiredOwnedTargetAura && !spell.ForbiddenOwnedTargetAura
         && MaintainedAuraBlocksRefresh(target, spell.MaintainAuraId, spell.RefreshAuraBelowMs))
         return "maintain_aura_active";
 
-    uint8 comboPoints = bot->GetComboTarget() == (target ? target->GetGUID() : ObjectGuid::Empty) ? bot->GetComboPoints() : 0;
+    uint8 comboPoints = bot->GetComboTarget() == (comboTarget ? comboTarget->GetGUID() : ObjectGuid::Empty)
+        ? bot->GetComboPoints() : 0;
     if (comboPoints < spell.MinComboPoints || (spell.MaxComboPoints && comboPoints > spell.MaxComboPoints))
         return "combo_point_gate";
     if (spell.MinReadyRunes && ReadyRuneCount(bot) < spell.MinReadyRunes)
         return "ready_rune_gate";
     if (spell.RequiredShapeshiftForm && uint8(bot->GetShapeshiftForm()) != spell.RequiredShapeshiftForm)
         return "shapeshift_form_gate";
-    if (spell.RequiresPet && !bot->GetPet())
-        return "pet_required";
+    if (spell.RequiresPet && (!bot->GetPet() || !bot->GetPet()->IsAlive()))
+        return "living_pet_required";
     if (spell.ForbidsPet && bot->GetPet())
         return "pet_forbidden";
     if (spell.RequiredMainHandEnchant
@@ -721,7 +787,8 @@ BotClassSpecActionProfile BotClassSpecActionProfileStore::Build(Player const* bo
     {
         profile.Spells.erase(std::remove_if(profile.Spells.begin(), profile.Spells.end(), [bot](BotActionProfileSpell const& spell)
         {
-            return spell.SpellId && !bot->HasSpell(spell.SpellId);
+            return spell.SpellId && spell.Category != BotCombatActionCategory::UseItem
+                && !bot->HasSpell(spell.SpellId);
         }), profile.Spells.end());
         if (profile.Spells.empty())
         {
@@ -784,21 +851,47 @@ std::vector<BotActionCandidate> BotClassSpecActionProfileStore::BuildCandidates(
         candidate.Reason = "deterministic_profile_priority";
 
         SpellInfo const* spellInfo = spell.SpellId ? sSpellMgr->GetSpellInfo(spell.SpellId) : nullptr;
-        std::string conditionRejection = EvaluateCompiledConditions(bot, actionTarget, spell);
+        Unit const* comboTarget = selfTarget ? target : actionTarget;
+        std::string conditionRejection = EvaluateCompiledConditions(bot, actionTarget, comboTarget, spell);
         if (!selfTarget && !actionTarget)
             candidate.RejectReason = allyTarget ? "missing_ally_target" : "missing_enemy_target";
         else if (spell.SpellId && !spellInfo)
             candidate.RejectReason = "missing_spell_info";
+        else if (spell.Category == BotCombatActionCategory::UseItem
+            && !FindOnUseItemForSpell(bot, spell.SpellId))
+            candidate.RejectReason = "missing_or_depleted_item";
+        else if (!conditionRejection.empty())
+            candidate.RejectReason = conditionRejection;
         else if (bot->HasUnitState(UNIT_STATE_CASTING))
             candidate.RejectReason = "already_casting";
         else if (spellInfo && bot->GetSpellHistory()->HasGlobalCooldown(spellInfo))
             candidate.RejectReason = "global_cooldown";
         else if (spellInfo && !bot->GetSpellHistory()->IsReady(spellInfo))
             candidate.RejectReason = "cooldown_not_ready";
+        else if (spellInfo && spellInfo->CasterAuraState
+            && !bot->HasAuraState(AuraStateType(spellInfo->CasterAuraState), spellInfo, bot))
+            candidate.RejectReason = "missing_caster_aura_state";
+        else if (spellInfo && spellInfo->CasterAuraStateNot
+            && bot->HasAuraState(AuraStateType(spellInfo->CasterAuraStateNot), spellInfo, bot))
+            candidate.RejectReason = "forbidden_caster_aura_state";
+        else if (spellInfo && spellInfo->CasterAuraSpell && !bot->HasAura(spellInfo->CasterAuraSpell))
+            candidate.RejectReason = "missing_caster_aura";
+        else if (spellInfo && spellInfo->ExcludeCasterAuraSpell && bot->HasAura(spellInfo->ExcludeCasterAuraSpell))
+            candidate.RejectReason = "forbidden_caster_aura";
+        else if (spellInfo && actionTarget && spellInfo->TargetAuraState
+            && !actionTarget->HasAuraState(AuraStateType(spellInfo->TargetAuraState), spellInfo, bot))
+            candidate.RejectReason = "missing_target_aura_state";
+        else if (spellInfo && actionTarget && spellInfo->TargetAuraStateNot
+            && actionTarget->HasAuraState(AuraStateType(spellInfo->TargetAuraStateNot), spellInfo, bot))
+            candidate.RejectReason = "forbidden_target_aura_state";
+        else if (spellInfo && actionTarget && spellInfo->TargetAuraSpell
+            && !actionTarget->HasAura(spellInfo->TargetAuraSpell))
+            candidate.RejectReason = "missing_spell_target_aura";
+        else if (spellInfo && actionTarget && spellInfo->ExcludeTargetAuraSpell
+            && actionTarget->HasAura(spellInfo->ExcludeTargetAuraSpell))
+            candidate.RejectReason = "forbidden_spell_target_aura";
         else if (!spell.CooldownGroup.empty() && !cooldownGroupsReady[spell.CooldownGroup])
             candidate.RejectReason = "cooldown_group_not_aligned";
-        else if (!conditionRejection.empty())
-            candidate.RejectReason = conditionRejection;
         else if (spell.RequiresInterruptibleTarget && actionTarget
             && !actionTarget->GetCurrentSpell(CURRENT_GENERIC_SPELL)
             && !actionTarget->GetCurrentSpell(CURRENT_CHANNELED_SPELL))
@@ -812,7 +905,7 @@ std::vector<BotActionCandidate> BotClassSpecActionProfileStore::BuildCandidates(
         else if (spell.RequiresRangedRange && actionTarget && bot->GetExactDist(actionTarget) < 5.0f)
             candidate.RejectReason = "ranged_range_required";
         else if (spellInfo && spellInfo->NeedsComboPoints()
-            && (!actionTarget || bot->GetComboTarget() != actionTarget->GetGUID() || !bot->GetComboPoints()))
+            && (!comboTarget || bot->GetComboTarget() != comboTarget->GetGUID() || !bot->GetComboPoints()))
             candidate.RejectReason = "insufficient_combo_points";
         else if (spellInfo && spell.RequiresInstantCast && ProfileSpellCastTimeMs(bot, spellInfo) > 0)
             candidate.RejectReason = "instant_cast_required";

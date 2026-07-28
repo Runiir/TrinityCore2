@@ -1,0 +1,27 @@
+{
+  "batch_id": "p8-s1-retribution-paladin-single-target-300-16",
+  "batch_identity_sha256": "940674d8113339740170a35fdbf5bc3db67a987f5f0aaf1b9c1eee01790fd5ca",
+  "cache_scope": "batch_specific",
+  "compact_bundle_sha256": "19282ab4fa4e831d3e6bf1a8a1007bbb64ef0be49cc83d90cb4eced2c9ff7dc7",
+  "pointers": [
+    {
+      "dvc_md5": "63de0c156b9b3d71e6527fa1ee718241.dir",
+      "nfiles": 3,
+      "path": "artifacts/all_spec_program/phase8_live_calibration_20260728_representative_final_r105_campaign/attempts/seed-01/retribution_paladin/single_target_300/batch/raw.dvc",
+      "pointer_sha256": "edcd3dd2a8db024e1bf5b22fdbc94d247ead12420423b65de1d71c4f05711c75",
+      "size": 110634
+    },
+    {
+      "dvc_md5": "59120de9be65e08eb1e750cfd2bba338.dir",
+      "nfiles": 1,
+      "path": "artifacts/all_spec_program/phase8_live_calibration_20260728_representative_final_r105_campaign/attempts/seed-01/retribution_paladin/single_target_300/batch/compact.dvc",
+      "pointer_sha256": "497e35a0fb8cd2d1636b81c5fa09408ad13a398c2072533112fbda10a6abfb13",
+      "size": 2578
+    }
+  ],
+  "raw_bundle_sha256": "35420b85e2b236ad97ee12d5c85c368ba66ecf41cda0e3197afc25c429211459",
+  "receipt_sha256": "92f89240248e70693db1cdcbcc9c8ca891db9814b400d2522059d65238cdfafc",
+  "remote_status_sha256": "efed9e5afcfe149915ae98b9ed9e69304eb48f5ce2e2265b18b5b5ed2f155e60",
+  "remote_verified": true,
+  "schema": "bot_immutable_batch_publication_receipt_v1"
+}

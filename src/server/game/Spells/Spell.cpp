@@ -7155,7 +7155,9 @@ SpellCastResult Spell::CheckItems(uint32* param1 /*= nullptr*/, uint32* param2 /
 
         for (uint8 i = 0; i < proto->Effects.size(); ++i)
             if (proto->Effects[i].Charges)
-                if (m_CastItem->GetSpellCharges(i) == 0)
+                if (m_CastItem->GetSpellCharges(i) == 0
+                    && !(proto->GetClass() == ITEM_CLASS_CONSUMABLE && proto->GetMaxStackSize() > 1
+                        && m_CastItem->GetCount()))
                     return SPELL_FAILED_NO_CHARGES_REMAIN;
 
         // Consumable cast item checks

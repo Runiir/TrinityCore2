@@ -527,7 +527,7 @@ int32 SpellEffectInfo::CalcValue(WorldObject const* caster /*= nullptr*/, int32 
     {
         double comboDamage = CalcPointsPerResource(casterUnit);
         if (comboDamage != 0.0)
-            if (uint8 comboPoints = casterUnit->GetGameClientMovingMe()->GetBasePlayer()->GetComboPoints())
+            if (uint8 comboPoints = casterUnit->IsMovedByClient() ? casterUnit->GetGameClientMovingMe()->GetBasePlayer()->GetComboPoints() : 0)
                 value += comboDamage * comboPoints;
     }
 

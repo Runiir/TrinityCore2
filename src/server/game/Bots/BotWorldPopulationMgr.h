@@ -11,6 +11,7 @@
 #include <deque>
 #include <map>
 #include <memory>
+#include <limits>
 #include <mutex>
 #include <set>
 #include <string>
@@ -228,7 +229,7 @@ public:
     std::string GetBotDiagnosisJsonForCohort(std::string const& cohortId, std::string const& selector);
     std::string GetBotTraceJsonForCohort(std::string const& cohortId, std::string const& selector, uint32 limit) const;
     std::string GetCombatLogJsonForCohort(std::string const& cohortId) const;
-    std::string StartCombatCalibrationForCohort(std::string const& cohortId);
+    std::string StartCombatCalibrationForCohort(std::string const& cohortId, std::string const& mode = "single_target_300", std::string const& targetSpec = "", uint32 seed = 1);
     std::string StopCombatCalibrationForCohort(std::string const& cohortId);
     std::string GetCombatCalibrationJsonForCohort(std::string const& cohortId) const;
 
@@ -239,7 +240,7 @@ public:
     void StopAutonomy();
     void Shutdown();
     bool SpawnAutonomyBots(uint32 count);
-    std::string StartCombatCalibration();
+    std::string StartCombatCalibration(std::string const& mode = "single_target_300", std::string const& targetSpec = "", uint32 seed = 1);
     std::string StopCombatCalibration();
     std::string GetCombatCalibrationJson() const;
     std::string GetRuntimeProfilesJson();
@@ -1164,6 +1165,11 @@ private:
     bool LoadPolicyModelArtifact(std::string const& artifactPath);
     void EnsurePopulation();
     void EnsureCalibrationPopulation();
+    void ResetCalibrationScoredWindow();
+    void UpdateCalibrationControlledDamage();
+    void CompleteCalibrationScoredWindow();
+    void DrainCalibrationPostWindowEffects();
+    bool UpdateCalibrationHealer(WorldBotState& state, Player* healer);
     std::pair<bool, bool> ApplyCalibrationReferenceConditions(Player* bot, Unit* target) const;
     void UpdateCalibrationBot(WorldBotState& state, uint32 diff);
     bool ResolveSpawnPlacement(uint32 candidateGuid, SpawnPlacement& placement) const;
@@ -1198,7 +1204,7 @@ private:
     Player* GetLoadedBot(WorldBotState const& state) const;
     Player* GetBot(WorldBotState const& state) const;
     uint32 SelectPoolCandidateGuid() const;
-    uint32 SelectCalibrationPoolCandidateGuid() const;
+    uint32 SelectCalibrationPoolCandidateGuid(size_t slot) const;
     Unit* SelectSafeTarget(WorldBotState& state, Player* bot);
     Unit* SelectQuestObjectiveTarget(Player* bot, QuestObjectivePlan const& plan) const;
     Unit* SelectQuestAbilityObjectiveTarget(Player* bot, QuestObjectivePlan const& plan, WorldBotState const& state) const;
@@ -1363,16 +1369,71 @@ private:
         uint64 WindowStartedMs = 0;
         uint64 WindowEndedMs = 0;
         uint64 Damage = 0;
+        uint64 PetDamage = 0;
+        uint64 AttemptedHealing = 0;
+        uint64 EffectiveHealing = 0;
+        uint64 AbsorbedHealing = 0;
         uint32 Attempts = 0;
         uint32 Successes = 0;
+        uint32 TickCount = 0;
+        uint32 ActiveTicks = 0;
+        uint32 MovementRangeLossTicks = 0;
+        uint32 ResourceCappedTicks = 0;
+        uint32 ResourceStarvedTicks = 0;
+        uint32 IllegalActionCount = 0;
+        uint32 ShadowOrbPowerActiveTicks = 0;
+        uint32 ShadowOrbActiveTicks = 0;
+        uint32 EmpoweredShadowActiveTicks = 0;
+        uint8 MaximumShadowOrbStacks = 0;
+        uint32 StanceFormActiveTicks = 0;
+        uint32 MitigationCoveredTicks = 0;
+        uint32 ThreatSampleCount = 0;
+        uint32 AllHostilesRetainedSamples = 0;
+        uint32 SnapThreatChecks = 0;
+        uint32 SnapThreatSuccesses = 0;
+        uint32 AddThreatChecks = 0;
+        uint32 AddThreatSuccesses = 0;
+        uint32 ThreatAuraActiveTicks = 0;
+        uint32 HealerExposureTicks = 0;
+        uint32 InterruptChecks = 0;
+        uint32 InterruptSuccesses = 0;
+        uint32 DefensiveActionCount = 0;
+        uint32 ScheduledDamageEvents = 0;
+        uint32 DeliveredDamageEvents = 0;
+        uint32 DispelAttempts = 0;
+        uint32 DispelSuccesses = 0;
+        uint32 CooldownAttempts = 0;
+        uint32 CooldownSuccesses = 0;
+        uint32 HealSelectionAttempts = 0;
+        uint32 HealSelectionSuccesses = 0;
+        uint32 DemandTicks = 0;
+        uint32 IdleUnderDemandTicks = 0;
+        uint32 TargetCount = 0;
+        uint32 DeathCount = 0;
+        uint64 ControlledDamage = 0;
+        uint64 MaximumControlledDamage = 0;
+        float MaximumControlledDamageRatio = 0.0f;
         float ThreatBaseline = -1.0f;
         float ThreatCurrent = 0.0f;
+        float MinimumHealthRatio = 1.0f;
         bool ReferenceBuffsReady = false;
+        bool ReferenceReplenishmentObserved = false;
         bool ReferenceTargetDebuffsReady = false;
         bool ReferenceHeroismWindowObserved = false;
+        bool BalanceMushroomsPreplanted = false;
+        uint8 BalanceMushroomPreplantCount = 0;
+        bool DeathRecorded = false;
         std::map<uint32, uint64> SpellDamage;
         std::map<uint32, uint32> SpellDamageEvents;
         std::map<uint32, uint32> ActionAttempts;
+        std::map<uint32, uint32> HealTargetCounts;
+        std::map<uint32, uint64> LastDamageMsByTarget;
+        std::map<uint32, uint64> LastControlledDamageMsByTarget;
+        std::vector<uint32> HealResponseLatenciesMs;
+        std::set<std::string> ActionGroups;
+        std::set<std::string> ExpectedActionGroups;
+        std::set<std::string> ScheduledDamagePhases;
+        std::set<std::string> DeliveredDamagePhases;
         std::map<std::string, uint32> ResultCounts;
     };
 
@@ -1485,8 +1546,22 @@ private:
         BotExperienceLearningConfig LearningConfig;
         BotPolicyModelConfig PolicyModelConfig;
         bool CalibrationActive = false;
+        bool CalibrationStopping = false;
         bool CalibrationAoePhase = false;
+        bool CalibrationWindowComplete = false;
+        std::string CalibrationMode = "single_target_300";
+        std::string CalibrationTargetSpec;
+        uint32 CalibrationSeed = 1;
+        ObjectGuid CalibrationTargetGuid;
+        ObjectGuid CalibrationInterruptTargetGuid;
         uint64 CalibrationStartedMs = 0;
+        uint64 CalibrationScoredStartedMs = 0;
+        uint64 CalibrationScoredEndedMs = 0;
+        uint64 CalibrationLastPostWindowDrainMs = 0;
+        uint64 CalibrationLastControlledEventSecond = std::numeric_limits<uint64>::max();
+        uint32 CalibrationCrossWindowEventCount = 0;
+        std::string CalibrationResetId;
+        std::string CalibrationCurrentDamagePhase;
         std::map<uint32, CalibrationMetrics> CalibrationMetricsByGuid;
         bool CalibrationPreviousWindowValid = false;
         bool CalibrationPreviousAoePhase = false;

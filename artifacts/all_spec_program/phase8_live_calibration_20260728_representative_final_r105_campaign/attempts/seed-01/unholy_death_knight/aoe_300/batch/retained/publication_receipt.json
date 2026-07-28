@@ -1,0 +1,27 @@
+{
+  "batch_id": "p8-s1-unholy-death-knight-aoe-300-23",
+  "batch_identity_sha256": "fb03fb870aaafb044dc6cf600e8309a4774bf0c0cf454a87ba3b113407978ba2",
+  "cache_scope": "batch_specific",
+  "compact_bundle_sha256": "059f34c3992ffd680e8ad1072bf4c129736c5c4898c04f05713f7cda5cb6dece",
+  "pointers": [
+    {
+      "dvc_md5": "ff6dafc268fbab6568409f15226e9ddf.dir",
+      "nfiles": 3,
+      "path": "artifacts/all_spec_program/phase8_live_calibration_20260728_representative_final_r105_campaign/attempts/seed-01/unholy_death_knight/aoe_300/batch/raw.dvc",
+      "pointer_sha256": "58efdd1c5e0d0dd921c2a683630e9fd46c83e143affd50cc374c7306e72718e5",
+      "size": 120579
+    },
+    {
+      "dvc_md5": "035ab6a4381f2dd0200cb325e809310e.dir",
+      "nfiles": 1,
+      "path": "artifacts/all_spec_program/phase8_live_calibration_20260728_representative_final_r105_campaign/attempts/seed-01/unholy_death_knight/aoe_300/batch/compact.dvc",
+      "pointer_sha256": "4f4d68fabdda58c916ce6a9e02e73076a10103b95fd0db69f6d5b0ab6eccb2bb",
+      "size": 2478
+    }
+  ],
+  "raw_bundle_sha256": "2cce9773c3bec2e2fd102779abe6db15ee5ff72d4e2e3cd9acbff752b8747a12",
+  "receipt_sha256": "feb65ccc159d3fec602b199c104939520f8a2db7daf98eb9e67ff34a7f082c80",
+  "remote_status_sha256": "efed9e5afcfe149915ae98b9ed9e69304eb48f5ce2e2265b18b5b5ed2f155e60",
+  "remote_verified": true,
+  "schema": "bot_immutable_batch_publication_receipt_v1"
+}

@@ -1,0 +1,5 @@
+.botauto calibrate p8-s3-arms-warrior-aoe-300 start aoe_300 arms_warrior 3
+.botauto status p8-s3-arms-warrior-aoe-300
+.botauto calibrate p8-s3-arms-warrior-aoe-300 status
+.botauto combatlog p8-s3-arms-warrior-aoe-300
+.botauto calibrate p8-s3-arms-warrior-aoe-300 stop

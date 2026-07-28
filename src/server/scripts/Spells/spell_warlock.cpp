@@ -32,6 +32,7 @@
 #include "SpellAuraEffects.h"
 #include "SpellAuras.h"
 #include "SpellMgr.h"
+#include "SpellHistory.h"
 #include "SpellScript.h"
 
 namespace Spells::Warlock
@@ -73,6 +74,7 @@ enum WarlockSpells
     SPELL_WARLOCK_HAUNT_HEAL                        = 48210,
     SPELL_WARLOCK_HEALTHSTONE                       = 6262,
     SPELL_WARLOCK_IMMOLATE                          = 348,
+    SPELL_WARLOCK_METAMORPHOSIS                     = 47241,
     SPELL_WARLOCK_IMPROVED_HEALTH_FUNNEL_BUFF_R1    = 60955,
     SPELL_WARLOCK_IMPROVED_HEALTH_FUNNEL_BUFF_R2    = 60956,
     SPELL_WARLOCK_IMPROVED_HEALTH_FUNNEL_R1         = 18703,
@@ -647,6 +649,30 @@ class spell_warl_healthstone_heal : public SpellScript
     void Register() override
     {
         OnHit.Register(&spell_warl_healthstone_heal::HandleOnHit);
+    }
+};
+
+// -85106 - Impending Doom
+class spell_warl_impending_doom : public AuraScript
+{
+    bool Validate(SpellInfo const* /*spellInfo*/) override
+    {
+        return ValidateSpellInfo({ SPELL_WARLOCK_METAMORPHOSIS });
+    }
+
+    void HandleProc(AuraEffect const* /*aurEff*/, ProcEventInfo& /*eventInfo*/)
+    {
+        PreventDefaultAction();
+        if (Player* player = GetTarget()->ToPlayer())
+        {
+            int32 cooldownReduction = GetSpellInfo()->Effects[EFFECT_1].CalcValue(player) * IN_MILLISECONDS;
+            player->GetSpellHistory()->ModifyCooldown(SPELL_WARLOCK_METAMORPHOSIS, -cooldownReduction);
+        }
+    }
+
+    void Register() override
+    {
+        OnEffectProc.Register(&spell_warl_impending_doom::HandleProc, EFFECT_0, SPELL_AURA_ADD_FLAT_MODIFIER);
     }
 };
 
@@ -1844,6 +1870,7 @@ void AddSC_warlock_spell_scripts()
     RegisterSpellAndAuraScriptPair(spell_warl_haunt, spell_warl_haunt_AuraScript);
     RegisterSpellScript(spell_warl_health_funnel);
     RegisterSpellScript(spell_warl_healthstone_heal);
+    RegisterSpellScript(spell_warl_impending_doom);
     RegisterSpellScript(spell_warl_improved_soul_fire);
     RegisterSpellScript(spell_warl_incinerate);
     RegisterSpellScript(spell_warl_jinx);

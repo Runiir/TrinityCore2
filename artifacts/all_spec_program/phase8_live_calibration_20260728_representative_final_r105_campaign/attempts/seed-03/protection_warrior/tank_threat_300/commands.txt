@@ -1,0 +1,5 @@
+.botauto calibrate p8-s3-protection-warrior-tank-threat-300 start tank_threat_300 protection_warrior 3
+.botauto status p8-s3-protection-warrior-tank-threat-300
+.botauto calibrate p8-s3-protection-warrior-tank-threat-300 status
+.botauto combatlog p8-s3-protection-warrior-tank-threat-300
+.botauto calibrate p8-s3-protection-warrior-tank-threat-300 stop

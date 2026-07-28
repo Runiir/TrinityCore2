@@ -1,0 +1,27 @@
+{
+  "batch_id": "p8-s3-demonology-warlock-aoe-300-95",
+  "batch_identity_sha256": "b021ce25dadd9ac6b032f071301242d3c3be0b7acd354fc6b65d9fc16b1d555b",
+  "cache_scope": "batch_specific",
+  "compact_bundle_sha256": "253fcd976444a4e0e12675725bb5d9ba0e1472bb00f39d0d3108302a1d0c586e",
+  "pointers": [
+    {
+      "dvc_md5": "dd90491ad552b22a278e8f547d95b574.dir",
+      "nfiles": 3,
+      "path": "artifacts/all_spec_program/phase8_live_calibration_20260728_representative_final_r105_campaign/attempts/seed-03/demonology_warlock/aoe_300/batch/raw.dvc",
+      "pointer_sha256": "ca5ff39006d3de7d4b8994395d7af1ff643f9c86d2ccb39afaf32e6e62e04922",
+      "size": 114249
+    },
+    {
+      "dvc_md5": "feb8e2e4fa8369db077586941f6cb768.dir",
+      "nfiles": 1,
+      "path": "artifacts/all_spec_program/phase8_live_calibration_20260728_representative_final_r105_campaign/attempts/seed-03/demonology_warlock/aoe_300/batch/compact.dvc",
+      "pointer_sha256": "2f1ab2d168e7b44732c147223b45f27ed068d1e2691d1517e6b945bf95dabcf3",
+      "size": 2468
+    }
+  ],
+  "raw_bundle_sha256": "90706befd63a6382e55149b4ccf0e2830a5e437e6f77cd52cc3b10794f214fa1",
+  "receipt_sha256": "d159e64addb21217c58e77f95a9c68905f8572dd55ae883cbec05af9ad2ee67a",
+  "remote_status_sha256": "efed9e5afcfe149915ae98b9ed9e69304eb48f5ce2e2265b18b5b5ed2f155e60",
+  "remote_verified": true,
+  "schema": "bot_immutable_batch_publication_receipt_v1"
+}

@@ -1,0 +1,60 @@
+{
+  "acceptance": {
+    "accepted": true,
+    "discrepancies": [],
+    "fail_closed": false,
+    "recomputed": {
+      "accepted": true,
+      "all_stages_passed": true,
+      "facts_sha256": "a490521fd2758006d7d70ff3c736ad783e9dbf00df8f026ef1a4ee4eb391252b",
+      "failed_count": 0,
+      "manifest_complete": false,
+      "passed_count": 2,
+      "rejections": [],
+      "result_sha256": "f052c3cbce2ee4e588e756eee01eee96c5f9924cb5254f5f56514c5dcc2d5301",
+      "schema": "bot_live_acceptance_result_v1"
+    },
+    "schema": "bot_live_acceptance_verification_v1"
+  },
+  "batch_id": "p8-s2-holy-priest-healer-controlled-damage-300-44",
+  "compact": {
+    "bundle_sha256": "6540d3d862b0b6d48b04b94e84498f861f50bfdf962e102d4e6f37e289bc346b",
+    "files": [
+      {
+        "path": "evidence.parquet",
+        "sha256": "be26b438e84e2686e1f208f14cdf1b623607b2e6758927a7ddf7015cca617e12",
+        "size": 2608
+      }
+    ],
+    "format": "parquet_zstd",
+    "row_count": 1
+  },
+  "database_export": null,
+  "duplicate_uncompressed_jsonl_retained": false,
+  "identity_sha256": "cd2c5cbc11457271f0d88d5b8c632b6b441c2d3f84ecb3434a76d2add9d4ffae",
+  "max_pending_raw_bytes": 67108864,
+  "raw": {
+    "bundle_sha256": "73887649252392ef0079304e6ac008bf5c56199b9d0bb1a894be1dc91bc7ef77",
+    "files": [
+      {
+        "path": "acceptance_source_report.json",
+        "sha256": "d6add65bfff939d9c48e65cf26c46766e4edca1e853df0112b2416df7dd8b621",
+        "size": 219341
+      },
+      {
+        "path": "events.jsonl.zst",
+        "sha256": "5dd3a3a6d7b68f45c1f91db57b327ae86e6bbedcc50bad284f8ed4d93eb18345",
+        "size": 8457
+      },
+      {
+        "path": "exact_manifests.json",
+        "sha256": "9274663fd312b012148c27a4a71a2b5a4097a20275f795d04ff421b9b337232d",
+        "size": 8263
+      }
+    ],
+    "format": "jsonl.zst",
+    "row_count": 32
+  },
+  "schema": "bot_immutable_batch_manifest_v1",
+  "state": "closed_unpublished"
+}

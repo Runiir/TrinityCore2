@@ -56,6 +56,10 @@ def load_combat_loot_profile_manifest(path: Path | None = None) -> dict[str, Any
         "hash": stable_hash(payload),
         "stat_weights_by_archetype": weights,
         "class_spec_archetypes": {str(key): str(value) for key, value in payload.get("class_spec_archetypes", {}).items()},
+        "stat_weight_overrides_by_spec": {
+            str(spec): {str(stat): float(value) for stat, value in values.items()}
+            for spec, values in payload.get("stat_weight_overrides_by_spec", {}).items()
+        },
         "loot_validation": payload.get("loot_validation", {}),
         "consumable_profiles": payload.get("consumable_profiles", {}),
         "glyph_source": payload.get("glyph_source", ""),

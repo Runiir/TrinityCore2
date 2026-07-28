@@ -36,7 +36,12 @@ _TALENT_DATA_CACHE: dict[Path, tuple[dict[int, list[Any]], dict[int, list[int]]]
 
 def required_equipment_slots_for(equipment: list[dict[str, Any]]) -> list[int]:
     slots = set(REQUIRED_EQUIPMENT_SLOTS)
-    if any(int(item.get("slot", -1)) == 15 and int(item.get("inventory_type", 0)) == 17 for item in equipment):
+    has_two_handed_mainhand = any(
+        int(item.get("slot", -1)) == 15 and int(item.get("inventory_type", 0)) == 17
+        for item in equipment
+    )
+    has_offhand = any(int(item.get("slot", -1)) == 16 for item in equipment)
+    if has_two_handed_mainhand and not has_offhand:
         slots.discard(16)
     return sorted(slots)
 
@@ -333,8 +338,12 @@ def load_gear_profiles(path: Path | None) -> dict[str, Any]:
                 slot = slot_map[index]
                 gem_items = [int(gem) for gem in source_item.get("gems", [])]
                 gem_enchant_ids = [gem_enchantments.get(gem, 0) for gem in gem_items]
+                runtime_temp_enchant = int(source_item.get("runtime_temp_enchant") or source_item.get("temp_enchant") or 0)
+                runtime_temp_enchant_duration_ms = int(source_item.get("runtime_temp_enchant_duration_ms") or 0)
                 enchantment_fields = [0] * 45
                 enchantment_fields[0] = int(source_item.get("enchant") or 0)
+                enchantment_fields[3] = runtime_temp_enchant
+                enchantment_fields[4] = runtime_temp_enchant_duration_ms
                 for offset, enchant_id in zip((6, 9, 12), gem_enchant_ids):
                     enchantment_fields[offset] = enchant_id
                 enchantment_fields[24] = int(source_item.get("reforging") or 0)
@@ -343,6 +352,9 @@ def load_gear_profiles(path: Path | None) -> dict[str, Any]:
                         "slot": slot,
                         "item_id": int(source_item["id"]),
                         "enchant_id": int(source_item.get("enchant") or 0),
+                        "source_temp_enchant_id": int(source_item.get("temp_enchant") or 0),
+                        "temp_enchant_id": runtime_temp_enchant,
+                        "temp_enchant_duration_ms": runtime_temp_enchant_duration_ms,
                         "gem_item_ids": gem_items,
                         "gem_enchant_ids": gem_enchant_ids,
                         "reforge_id": int(source_item.get("reforging") or 0),

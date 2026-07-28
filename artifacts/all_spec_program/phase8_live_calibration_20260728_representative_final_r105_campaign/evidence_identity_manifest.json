@@ -1,0 +1,69 @@
+{
+  "component_hashes": {
+    "database_schema_sha256": "510ab3bd27d0fbd1f21a5b9e820eb90787b4d72438a09192935ac0fafb4c0a99",
+    "database_snapshot_sha256": "c24f9f1de7aea53b8e6a367463873cd37352337675eb661b7a19c354e1f6f904",
+    "profile_generation_sha256": "a9c6629397610c100fd01a13193e6222db715f06ba90ae4b41cfd45a9de75624",
+    "server_epoch_sha256": "7957cb847f27e3c446bf21d1996f4d363b45b54cbca9388bae8c8789d3f09477"
+  },
+  "database_summary": {
+    "candidate_count": 31,
+    "candidate_specs": [
+      "affliction_warlock",
+      "arcane_mage",
+      "arms_warrior",
+      "assassination_rogue",
+      "balance_druid",
+      "beast_mastery_hunter",
+      "blood_death_knight",
+      "combat_rogue",
+      "demonology_warlock",
+      "destruction_warlock",
+      "discipline_priest",
+      "elemental_shaman",
+      "enhancement_shaman",
+      "feral_druid_dps",
+      "feral_druid_tank",
+      "fire_mage",
+      "frost_death_knight",
+      "frost_mage",
+      "fury_warrior",
+      "holy_paladin",
+      "holy_priest",
+      "marksmanship_hunter",
+      "protection_paladin",
+      "protection_warrior",
+      "restoration_druid",
+      "restoration_shaman",
+      "retribution_paladin",
+      "shadow_priest",
+      "subtlety_rogue",
+      "survival_hunter",
+      "unholy_death_knight"
+    ],
+    "character_schema_sha256": "9ffe2817786289fb87c2f8028642ebfe868ecc85e46b3c8132430ff9eb288788",
+    "character_table_row_counts": {
+      "character_glyphs": 31,
+      "character_inventory": 602,
+      "character_pet": 3,
+      "character_spell": 1494,
+      "character_talent": 618,
+      "item_instance": 602,
+      "pet_spell": 33
+    },
+    "world_action_count": 352,
+    "world_profile_count": 31,
+    "world_schema_sha256": "9f48c883cbdc4ef9c51b6b68758cf1f346c9d94efb7427cb51281b61e8098988",
+    "world_spell_proc_count": 1557,
+    "world_spell_script_name_count": 3283
+  },
+  "manifest_sha256": "e3fc5e9efe78b52a88b01d736739eb9921beb04595e1fde39b57576220b495ae",
+  "runtime_identity": {
+    "max_active_cohorts": 1,
+    "profile_content_hash": "58bcb30dc53692cbf8eac93da6cb1d5fdca5d56371390aec0bc41dc6cbd45f44",
+    "profile_generation": 1,
+    "server_epoch": 4626787632286734,
+    "server_process_id": 1451945,
+    "session_fingerprint": "c192a986e9c6d4b6489080013f15910e89b0ec213e400e551799cf5373be522a"
+  },
+  "schema": "all_spec_phase8_evidence_identity_manifest_v1"
+}
