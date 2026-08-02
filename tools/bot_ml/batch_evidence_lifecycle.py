@@ -32,6 +32,7 @@ except ImportError:
 
 CommandRunner = Callable[[Sequence[str], Path], subprocess.CompletedProcess[str]]
 DEFAULT_MAX_PENDING_RAW_BYTES = 64 * 1024 * 1024
+DEFAULT_MAX_RAW_PARTS = 16
 
 
 class BatchLifecycleError(RuntimeError):
@@ -70,6 +71,10 @@ def _write_json(path: Path, payload: Mapping[str, Any]) -> None:
     )
 
 
+def _encoded_jsonl(row: Mapping[str, Any]) -> bytes:
+    return (json.dumps(dict(row), sort_keys=True, default=str) + "\n").encode("utf-8")
+
+
 def _write_zstd_jsonl(
     path: Path,
     rows: Sequence[Mapping[str, Any]],
@@ -82,7 +87,7 @@ def _write_zstd_jsonl(
         with pa.output_stream(path) as sink:
             with pa.CompressedOutputStream(sink, "zstd") as compressed:
                 for row in rows:
-                    encoded = (json.dumps(dict(row), sort_keys=True, default=str) + "\n").encode("utf-8")
+                    encoded = _encoded_jsonl(row)
                     if written + len(encoded) > max_uncompressed_bytes:
                         raise BatchLifecycleError(
                             f"raw capture exceeds {max_uncompressed_bytes} pending bytes"
@@ -95,11 +100,79 @@ def _write_zstd_jsonl(
     return len(rows)
 
 
+def _write_zstd_jsonl_parts(
+    folder: Path,
+    stem: str,
+    rows: Sequence[Mapping[str, Any]],
+    *,
+    max_uncompressed_bytes: int = DEFAULT_MAX_PENDING_RAW_BYTES,
+    max_parts: int = DEFAULT_MAX_RAW_PARTS,
+) -> dict[str, int]:
+    """Write bounded Zstandard parts without imposing one-file limits on a batch."""
+    if max_uncompressed_bytes <= 0 or max_parts <= 0:
+        raise BatchLifecycleError("raw part limits must be positive")
+
+    folder.mkdir(parents=True, exist_ok=True)
+    parts: list[Path] = []
+    pending: list[Mapping[str, Any]] = []
+    pending_bytes = 0
+    total_bytes = 0
+    row_count = 0
+
+    def flush() -> None:
+        nonlocal pending, pending_bytes
+        if len(parts) >= max_parts:
+            raise BatchLifecycleError(f"raw capture exceeds {max_parts} bounded parts")
+        suffix = "" if not parts else f"-{len(parts):05d}"
+        path = folder / f"{stem}{suffix}.jsonl.zst"
+        _write_zstd_jsonl(
+            path,
+            pending,
+            max_uncompressed_bytes=max_uncompressed_bytes,
+        )
+        parts.append(path)
+        pending = []
+        pending_bytes = 0
+
+    try:
+        for row in rows:
+            encoded_size = len(_encoded_jsonl(row))
+            if encoded_size > max_uncompressed_bytes:
+                raise BatchLifecycleError(
+                    f"single raw row exceeds {max_uncompressed_bytes} pending bytes"
+                )
+            if pending and pending_bytes + encoded_size > max_uncompressed_bytes:
+                flush()
+            pending.append(row)
+            pending_bytes += encoded_size
+            total_bytes += encoded_size
+            row_count += 1
+        if pending or not parts:
+            flush()
+    except Exception:
+        for path in parts:
+            path.unlink(missing_ok=True)
+        raise
+
+    return {
+        "row_count": row_count,
+        "part_count": len(parts),
+        "uncompressed_bytes": total_bytes,
+    }
+
+
 def _read_zstd_jsonl(path: Path) -> list[dict[str, Any]]:
     with pa.input_stream(path) as source:
         with pa.CompressedInputStream(source, "zstd") as compressed:
             payload = compressed.read().decode("utf-8")
     return [json.loads(line) for line in payload.splitlines() if line.strip()]
+
+
+def _jsonl_part_paths(folder: Path, stem: str) -> list[Path]:
+    primary = folder / f"{stem}.jsonl.zst"
+    paths = [primary] if primary.is_file() else []
+    paths.extend(sorted(folder.glob(f"{stem}-*.jsonl.zst")))
+    return paths
 
 
 def _write_parquet(path: Path, rows: Sequence[Mapping[str, Any]]) -> int:
@@ -140,6 +213,7 @@ def capture_batch(
     database_rows: Sequence[Mapping[str, Any]] | None = None,
     measurement_window_ids: Sequence[str] = (),
     max_pending_raw_bytes: int = DEFAULT_MAX_PENDING_RAW_BYTES,
+    max_raw_parts: int = DEFAULT_MAX_RAW_PARTS,
 ) -> dict[str, Any]:
     """Capture one bounded raw stream and one compact analytical representation."""
     if not batch_id.strip():
@@ -149,11 +223,14 @@ def capture_batch(
     retained_dir = batch_root / "retained"
     if raw_dir.exists() or compact_dir.exists():
         raise BatchLifecycleError("immutable batch paths already exist")
-    raw_count = _write_zstd_jsonl(
-        raw_dir / "events.jsonl.zst",
+    raw_capture = _write_zstd_jsonl_parts(
+        raw_dir,
+        "events",
         raw_rows,
         max_uncompressed_bytes=max_pending_raw_bytes,
+        max_parts=max_raw_parts,
     )
+    raw_count = raw_capture["row_count"]
     database_export: dict[str, Any] | None = None
     if database_rows is not None:
         window_ids = sorted({str(value) for value in measurement_window_ids if str(value)})
@@ -188,8 +265,10 @@ def capture_batch(
         "batch_id": batch_id,
         "state": "closed_unpublished",
         "raw": {
-            "format": "jsonl.zst",
+            "format": "chunked_jsonl_zst",
             "row_count": raw_count,
+            "part_count": raw_capture["part_count"],
+            "uncompressed_bytes": raw_capture["uncompressed_bytes"],
             "files": raw_files,
             "bundle_sha256": _manifest_hash(raw_files),
         },
@@ -202,6 +281,7 @@ def capture_batch(
         "acceptance": acceptance,
         "database_export": database_export,
         "max_pending_raw_bytes": max_pending_raw_bytes,
+        "max_raw_parts": max_raw_parts,
         "duplicate_uncompressed_jsonl_retained": False,
     }
     manifest["identity_sha256"] = canonical_sha256(manifest)
@@ -222,7 +302,13 @@ def validate_capture(batch_root: Path) -> dict[str, Any]:
             raise BatchLifecycleError(f"{bundle} bundle content hash mismatch")
         if _manifest_hash(actual_files) != expected.get("bundle_sha256"):
             raise BatchLifecycleError(f"{bundle} bundle identity mismatch")
-    if len(_read_zstd_jsonl(batch_root / "raw" / "events.jsonl.zst")) != int((manifest.get("raw") or {}).get("row_count") or 0):
+    raw_manifest = manifest.get("raw") or {}
+    event_parts = _jsonl_part_paths(batch_root / "raw", "events")
+    expected_parts = int(raw_manifest.get("part_count") or 1)
+    if len(event_parts) != expected_parts:
+        raise BatchLifecycleError("raw part count mismatch")
+    raw_row_count = sum(len(_read_zstd_jsonl(path)) for path in event_parts)
+    if raw_row_count != int(raw_manifest.get("row_count") or 0):
         raise BatchLifecycleError("raw row count mismatch")
     parquet_rows = pq.read_table(batch_root / "compact" / "evidence.parquet").num_rows
     if parquet_rows != int((manifest.get("compact") or {}).get("row_count") or 0):

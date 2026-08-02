@@ -915,6 +915,7 @@
       ],
       "action_profile_identity": "cata_434:6:blood_death_knight",
       "action_profile_spell_ids": [
+        43265,
         45462,
         45477,
         47528,
@@ -1232,6 +1233,7 @@
       ],
       "action_profile_identity": "cata_434:11:feral_druid_tank",
       "action_profile_spell_ids": [
+        99,
         779,
         5176,
         5185,
@@ -1879,6 +1881,7 @@
         139,
         527,
         585,
+        586,
         589,
         596,
         2006,
@@ -1940,7 +1943,8 @@
         "pain_suppression",
         "party_heal",
         "power_word_shield",
-        "single_target_heal"
+        "single_target_heal",
+        "threat_drop"
       ],
       "required_rotation_groups": [
         "opener",
@@ -2272,7 +2276,8 @@
         "mass_dispel",
         "party_heal",
         "prayer_of_mending",
-        "single_target_heal"
+        "single_target_heal",
+        "threat_drop"
       ],
       "required_rotation_groups": [
         "opener",
@@ -9193,6 +9198,7 @@
         139,
         527,
         585,
+        586,
         588,
         589,
         596,
@@ -9262,7 +9268,8 @@
         "shadow_word_death_execute",
         "shadowform",
         "single_target_damage",
-        "target_switch"
+        "target_switch",
+        "threat_drop"
       ],
       "required_rotation_groups": [
         "opener",

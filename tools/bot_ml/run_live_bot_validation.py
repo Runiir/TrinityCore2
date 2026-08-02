@@ -31,6 +31,7 @@ try:
     from .live_validation_session import apply_acceptance_evaluation, build_evidence_envelope, build_session, canonical_sha256, ensure_healthy_matching_session, git_dirty_state_sha256, git_head, live_validation_lock, sha256_file, sha256_text, stop_session
     from .phase8_calibration_adapter import Phase8CalibrationNormalizationError, evaluate_runtime_calibration
     from .phase8_evidence_identity import validate_manifest as validate_phase8_evidence_manifest
+    from .phase9_evidence_identity import validate_manifest as validate_phase9_evidence_manifest
 except ImportError:
     from analyze_combat_log import analyze_combat_log
     from audit_role_efficiency import build_audit
@@ -41,6 +42,7 @@ except ImportError:
     from live_validation_session import apply_acceptance_evaluation, build_evidence_envelope, build_session, canonical_sha256, ensure_healthy_matching_session, git_dirty_state_sha256, git_head, live_validation_lock, sha256_file, sha256_text, stop_session
     from phase8_calibration_adapter import Phase8CalibrationNormalizationError, evaluate_runtime_calibration
     from phase8_evidence_identity import validate_manifest as validate_phase8_evidence_manifest
+    from phase9_evidence_identity import validate_manifest as validate_phase9_evidence_manifest
 
 
 DEFAULT_LIVE_VALIDATION_TIMEOUT_SEC = 90
@@ -215,8 +217,16 @@ class CohortCommandExecutor:
     def create(self) -> tuple[str, int, bool]:
         return self.run(f".botauto create {self.cohort_id}")
 
-    def prepare(self, profile: str) -> tuple[str, int, bool]:
-        return self.run(f".botauto prepare {self.cohort_id} {profile}")
+    def prepare(
+        self,
+        profile: str,
+        pool_tag: str = "",
+        class_specs: Sequence[str] = (),
+    ) -> tuple[str, int, bool]:
+        exact_party = ""
+        if class_specs:
+            exact_party = " " + " ".join((pool_tag, *class_specs))
+        return self.run(f".botauto prepare {self.cohort_id} {profile}{exact_party}")
 
     def start(self, profile: str = "") -> tuple[str, int, bool]:
         suffix = f" {profile}" if profile else ""
@@ -3207,12 +3217,10 @@ def run_transport_completion_watchdog(
             last_progress_total = progress_total
             last_progress_at = time.monotonic()
         no_progress_expired = time.monotonic() - last_progress_at >= no_progress_window_sec
-        moved_diagnoses = int(report.get("watchdog_state", {}).get("progress_counters", {}).get("moved_diagnoses") or 0)
         semantic_progress_plateau = (
             last_progress_total >= 0
             and progress_total <= last_progress_total
             and no_progress_expired
-            and moved_diagnoses <= 0
         )
         calibration = report.get("combat_calibration") or {}
         if bool(calibration.get("window_complete")):
@@ -3349,12 +3357,10 @@ def run_worldserver_completion_watchdog(
                 last_progress_total = progress_total
                 last_progress_at = time.monotonic()
             no_progress_expired = time.monotonic() - last_progress_at >= no_progress_window_sec
-            moved_diagnoses = int(report.get("watchdog_state", {}).get("progress_counters", {}).get("moved_diagnoses") or 0)
             semantic_progress_plateau = (
                 last_progress_total >= 0
                 and progress_total <= last_progress_total
                 and no_progress_expired
-                and moved_diagnoses <= 0
             )
             if not validation_route_manifest and route_segment_complete(report, validation_route):
                 supersede_transient_route_failures(report)
@@ -3762,6 +3768,8 @@ def attempt_evidence_envelope(
     reference_catalog = REPO_ROOT / "experiments/configs/all_spec_references_cata_p4_v1.json"
     policy = REPO_ROOT / "experiments/configs/bot_acceptance_policy_v1.json"
     scenario_config = REPO_ROOT / "experiments/configs/validation_scenarios_cata_001.json"
+    phase9_matrix = REPO_ROOT / "experiments/configs/stonecore_phase9_pairwise_matrix_v1.json"
+    phase9_pair_policy = REPO_ROOT / "experiments/configs/stonecore_phase9_pair_policy_v1.json"
     external_names = (
         "database_snapshot_sha256",
         "database_schema_sha256",
@@ -3793,16 +3801,23 @@ def attempt_evidence_envelope(
         "profile_generation_sha256": str(supplied_components.get("profile_generation_sha256") or canonical_sha256({"state": "unpublished_profile_generation", "profile_content_sha256": file_hash(profile_manifest, "profile_manifest")})),
         "reference_sha256": file_hash(reference_catalog, "reference_catalog"),
         "policy_sha256": file_hash(policy, "acceptance_policy"),
-        "scenario_sha256": file_hash(scenario_config, "scenario_config"),
+        "scenario_sha256": canonical_sha256(
+            {
+                "validation_scenario_sha256": file_hash(scenario_config, "scenario_config"),
+                "phase9_matrix_sha256": file_hash(phase9_matrix, "phase9_pairwise_matrix"),
+                "phase9_pair_policy_sha256": file_hash(phase9_pair_policy, "phase9_pair_policy"),
+            }
+        ) if args.party_spec_target else file_hash(scenario_config, "scenario_config"),
         "route_sha256": canonical_sha256(validation_route_manifest or validation_context or {"state": "no_route"}),
     }
     generated = int(report.get("generated_at_unix") or 0)
     scenario_id = str(validation_context.get("scenario_id") or "unscoped")
+    exact_party_id = canonical_sha256(list(args.party_spec_target)) if args.party_spec_target else scenario_id
     scope_defaults = {
         "batch_id": str(args.output_dir.parent.resolve()),
-        "cohort_id": ",".join(sorted(str(value) for value in (args.bot_pool_tag or []))) or str(args.selector),
-        "composition_id": scenario_id,
-        "party_id": scenario_id,
+        "cohort_id": str(args.cohort_id) if args.transport == "session" else (",".join(sorted(str(value) for value in (args.bot_pool_tag or []))) or str(args.selector)),
+        "composition_id": exact_party_id,
+        "party_id": exact_party_id,
         "instance_id": scenario_id,
         "attempt_id": f"{args.output_dir.resolve()}:{generated}",
         "repeat_id": str(validation_context.get("segment_id") or validation_context.get("route_node_id") or "full"),
@@ -3976,6 +3991,8 @@ def run_reusable_validation_session(
     profile_manifest = Path(trinity_config_string(args.config, "BotWorld.ProfileManifest", "dataset/bot_runtime_profiles/profiles.json"))
     if not profile_manifest.is_absolute():
         profile_manifest = REPO_ROOT / profile_manifest
+    phase9_matrix = REPO_ROOT / "experiments/configs/stonecore_phase9_pairwise_matrix_v1.json"
+    phase9_pair_policy = REPO_ROOT / "experiments/configs/stonecore_phase9_pair_policy_v1.json"
     fingerprint_paths = [
         path for path in (
             profile_manifest,
@@ -3985,7 +4002,9 @@ def run_reusable_validation_session(
             REPO_ROOT / "experiments/configs/wowsims_cata_p4_gear_profiles.json",
             args.gear_profiles,
             REPO_ROOT / "dataset/validation_provisioning/manifest.json",
-        ) if path.is_file()
+            phase9_matrix if args.party_spec_target else None,
+            phase9_pair_policy if args.party_spec_target else None,
+        ) if path is not None and path.is_file()
     ]
     profile = args.session_profile or str(validation_context.get("scenario_id") or "")
     if not profile:
@@ -3999,16 +4018,31 @@ def run_reusable_validation_session(
             raise SystemExit("session runtime profile route manifest does not match --validation-scenario-dir")
 
     restart_components: dict[str, str] = {}
+    identity_payload: dict[str, Any] = {}
+    phase9_artifact_hashes: dict[str, str] = {}
+    if args.party_spec_target:
+        phase9_artifact_hashes = {
+            "target_catalog_sha256": sha256_file(args.all_spec_target_catalog.resolve()),
+            "pair_policy_sha256": sha256_file(phase9_pair_policy),
+            "pairwise_matrix_sha256": sha256_file(phase9_matrix),
+            "route_manifest_sha256": canonical_sha256(validation_route_manifest),
+        }
     if args.evidence_identity_manifest:
         try:
             identity_payload = json.loads(args.evidence_identity_manifest.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError) as exc:
             raise SystemExit(f"invalid --evidence-identity-manifest: {exc}") from exc
-        if args.calibration_only:
-            try:
+        try:
+            if args.calibration_only:
                 identity_payload = validate_phase8_evidence_manifest(identity_payload)
-            except (TypeError, ValueError) as exc:
-                raise SystemExit(f"invalid Phase 8 evidence identity manifest: {exc}") from exc
+            elif args.party_spec_target:
+                identity_payload = validate_phase9_evidence_manifest(
+                    identity_payload,
+                    artifact_hashes=phase9_artifact_hashes,
+                )
+        except (TypeError, ValueError) as exc:
+            phase = "Phase 8" if args.calibration_only else "Phase 9"
+            raise SystemExit(f"invalid {phase} evidence identity manifest: {exc}") from exc
         identity_components = identity_payload.get("component_hashes") if isinstance(identity_payload, dict) else {}
         for name in ("database_snapshot_sha256", "database_schema_sha256"):
             value = str((identity_components or {}).get(name) or "")
@@ -4060,6 +4094,9 @@ def run_reusable_validation_session(
             "profile": admitted.profile,
             "admitted_at_unix": int(time.time()),
             "scheduler_events": scheduler.events,
+            "exact_party_pool_tag": args.party_pool_tag if args.party_spec_target else "",
+            "exact_party_class_specs": list(args.party_spec_target),
+            "exact_party_sha256": canonical_sha256(list(args.party_spec_target)) if args.party_spec_target else "",
         }
     )
 
@@ -4135,9 +4172,16 @@ def run_reusable_validation_session(
                     ),
                 )
             if validation_route and int(validation_route.get("bot_start_map_id") or 0):
-                lifecycle["preparation"]["route_bot_start"] = prepare_route_bot_start(
-                    args.output_dir, validation_route, args.config, bot_pool_tags, apply=True,
-                )
+                if args.skip_route_bot_start_mutation:
+                    lifecycle["preparation"]["route_bot_start"] = {
+                        "schema": "bot_live_validation_route_start_v1",
+                        "applied": False,
+                        "reason": "preapplied_before_evidence_identity",
+                    }
+                else:
+                    lifecycle["preparation"]["route_bot_start"] = prepare_route_bot_start(
+                        args.output_dir, validation_route, args.config, bot_pool_tags, apply=True,
+                    )
 
             if args.calibration_only:
                 lifecycle["preparation"]["profile"] = "calibration_only"
@@ -4146,9 +4190,12 @@ def run_reusable_validation_session(
                     executor.start(),
                 )
             else:
+                prepare_suffix = ""
+                if args.party_spec_target:
+                    prepare_suffix = " " + " ".join((args.party_pool_tag, *args.party_spec_target))
                 checked(
-                    f".botauto prepare {admitted.cohort_id} {admitted.profile}",
-                    executor.prepare(admitted.profile),
+                    f".botauto prepare {admitted.cohort_id} {admitted.profile}{prepare_suffix}",
+                    executor.prepare(admitted.profile, args.party_pool_tag, args.party_spec_target),
                 )
                 checked(
                     f".botauto start {admitted.cohort_id} {admitted.profile}",
@@ -4170,12 +4217,30 @@ def run_reusable_validation_session(
             lifecycle["profile_generation"] = int(ready_payload.get("profile_generation") or 0)
             lifecycle["profile_content_hash"] = str(ready_payload.get("profile_content_hash") or "")
             lifecycle["lease_count_after_start"] = int(ready_payload.get("lease_count") or 0)
-            if args.evidence_identity_manifest and args.calibration_only:
-                try:
-                    validate_phase8_evidence_manifest(
-                        identity_payload,
-                        runtime_identity=lifecycle,
+            if args.party_spec_target:
+                observed_party = [str(value) for value in ready_payload.get("exact_party_class_specs") or []]
+                if observed_party != list(args.party_spec_target):
+                    raise RuntimeError(
+                        f"exact party mismatch after start: expected {args.party_spec_target}, observed {observed_party}"
                     )
+                if str(ready_payload.get("pool_tag_filter") or "") != args.party_pool_tag:
+                    raise RuntimeError("exact party pool tag mismatch after start")
+                if int(ready_payload.get("lease_count") or 0) != 5 or int(ready_payload.get("bots") or 0) != 5:
+                    raise RuntimeError("exact party did not admit exactly five leased bots")
+                lifecycle["exact_party_verified"] = True
+            if args.evidence_identity_manifest and (args.calibration_only or args.party_spec_target):
+                try:
+                    if args.calibration_only:
+                        validate_phase8_evidence_manifest(
+                            identity_payload,
+                            runtime_identity=lifecycle,
+                        )
+                    else:
+                        validate_phase9_evidence_manifest(
+                            identity_payload,
+                            runtime_identity=lifecycle,
+                            artifact_hashes=phase9_artifact_hashes,
+                        )
                 except ValueError as exc:
                     raise RuntimeError(
                         f"live runtime identity mismatch: {exc}"
@@ -4290,9 +4355,13 @@ def main() -> int:
     parser.add_argument("--soap-user", default=os.environ.get("TRINITY_SOAP_USER"))
     parser.add_argument("--soap-password", default=os.environ.get("TRINITY_SOAP_PASSWORD"))
     parser.add_argument("--session-environment", default="default", help="Stable identity for the shared validation server and live-attempt lock.")
+    parser.add_argument("--session-runtime-dir", type=Path, help="Stable directory for the shared session config and route manifest across serial attempts.")
     parser.add_argument("--session-profile", default="", help="Runtime profile selected by .botauto start in reusable session mode; defaults to the scenario ID.")
     parser.add_argument("--cohort-id", default="live-validation", help="Explicit cohort identity used by every reusable-session command.")
     parser.add_argument("--session-attempt-index", type=int, default=1, help="Immutable scheduler attempt index for reusable-session evidence.")
+    parser.add_argument("--party-spec-target", action="append", default=[], help="Ordered exact-party class/spec target. Supply exactly five in tank, healer, then sorted DPS order.")
+    parser.add_argument("--party-pool-tag", default="all_spec_candidate_pool", help="Immutable candidate-pool tag used with --party-spec-target.")
+    parser.add_argument("--all-spec-target-catalog", type=Path, default=Path("experiments/configs/all_spec_targets_cata_p4_v1.json"), help="Canonical target catalog used to validate an exact party before live admission.")
     parser.add_argument("--session-transition-timeout-sec", type=int, default=180, help="Bound for reusable-session stop/start state transitions.")
     parser.add_argument("--publish-batch", action="store_true", help="Capture, DVC-push, remotely verify, and target-evict the closed reusable-session batch.")
     parser.add_argument("--retain-published-batch", action="store_true", help="Keep raw and compact batch files locally after verified publication.")
@@ -4304,7 +4373,9 @@ def main() -> int:
     parser.add_argument("--keep-bot-pool-position", action="store_true", help="Do not move reset bot-pool characters back to race/class start positions.")
     parser.add_argument("--keep-bot-pool-quests", action="store_true", help="Do not clear quest/aura/cooldown state for reset bot-pool characters.")
     parser.add_argument("--keep-bot-pool-memory", action="store_true", help="Do not clear persistent bot memory tables for reset bot-pool characters.")
+    parser.add_argument("--skip-route-bot-start-mutation", action="store_true", help="Do not apply route-start character SQL after an evidence identity has been captured.")
     parser.add_argument("--apply-validation-provisioning", action="store_true", help="Apply deterministic Stonecore/BWD validation account and character SQL before running diagnostics.")
+    parser.add_argument("--prepare-only", action="store_true", help="Apply requested deterministic provisioning and route-start state, write a report, and exit without launching a worldserver.")
     parser.add_argument("--validation-provisioning-config", type=Path, default=Path("experiments/configs/validation_provisioning_cata_001.json"))
     parser.add_argument("--gear-profiles", type=Path, default=Path("dataset/validation_gear_profiles/profiles.json"))
     parser.add_argument("--scenario-report-dir", type=Path, help="Optional directory or JSON file containing scenario live reports such as stonecore_5n.json and blackwing_descent_10n.json.")
@@ -4326,6 +4397,42 @@ def main() -> int:
         args.combat_calibration = True
     if args.calibration_reference_conditions and not args.calibration_only:
         raise SystemExit("--calibration-reference-conditions requires --calibration-only")
+    if args.session_runtime_dir and args.transport != "session":
+        raise SystemExit("--session-runtime-dir requires --transport session")
+    if args.prepare_only:
+        if args.transport == "session" or args.input_log or args.dry_run:
+            raise SystemExit("--prepare-only requires a live non-session preparation run")
+        if not args.apply_validation_provisioning:
+            raise SystemExit("--prepare-only requires --apply-validation-provisioning")
+    if args.skip_route_bot_start_mutation and (
+        args.transport != "session" or not args.evidence_identity_manifest
+    ):
+        raise SystemExit("--skip-route-bot-start-mutation requires session transport and an evidence identity manifest")
+
+    exact_party_specs = [str(value) for value in args.party_spec_target]
+    if exact_party_specs:
+        if args.transport != "session":
+            raise SystemExit("--party-spec-target requires --transport session")
+        if args.validation_scenario_id != "stonecore_5n":
+            raise SystemExit("--party-spec-target requires --validation-scenario-id stonecore_5n")
+        if len(exact_party_specs) != 5 or len(set(exact_party_specs)) != 5:
+            raise SystemExit("--party-spec-target requires exactly five unique targets")
+        if not args.party_pool_tag:
+            raise SystemExit("--party-pool-tag must be non-empty with --party-spec-target")
+        target_catalog_path = args.all_spec_target_catalog
+        if not target_catalog_path.is_absolute():
+            target_catalog_path = REPO_ROOT / target_catalog_path
+        target_catalog = json.loads(target_catalog_path.read_text(encoding="utf-8"))
+        target_roles = {
+            str(row.get("spec_target_id") or ""): str(row.get("role") or "")
+            for row in target_catalog.get("targets") or []
+        }
+        if any(target not in target_roles for target in exact_party_specs):
+            raise SystemExit("--party-spec-target contains an unknown canonical target")
+        if [target_roles[target] for target in exact_party_specs] != ["tank", "healer", "dps", "dps", "dps"]:
+            raise SystemExit("--party-spec-target order must be tank, healer, then three DPS")
+        if exact_party_specs[2:] != sorted(exact_party_specs[2:]):
+            raise SystemExit("--party-spec-target DPS targets must be canonically sorted")
 
     if args.duration_policy == "completion-watchdog":
         args.timeout_sec = args.timeout_sec if args.timeout_sec is not None else DEFAULT_BOSS_ROUTE_TIMEOUT_SEC
@@ -4343,7 +4450,7 @@ def main() -> int:
     if args.transport == "session" and output_dir_was_nonempty and not args.dry_run and not args.input_log:
         raise SystemExit("--transport session requires a new or empty --output-dir")
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    bot_pool_tags = args.bot_pool_tag or ["test_account"]
+    bot_pool_tags = [args.party_pool_tag] if exact_party_specs else (args.bot_pool_tag or ["test_account"])
 
     if args.validation_route_sequence:
         if not args.validation_scenario_id:
@@ -4376,6 +4483,11 @@ def main() -> int:
             return 0
         return run_route_sequence(args, sequence_routes)
 
+    session_runtime_dir = (
+        args.session_runtime_dir.resolve()
+        if args.transport == "session" and args.session_runtime_dir
+        else args.output_dir
+    )
     validation_context = validation_context_from_args(args)
     validation_route = load_validation_route(args.validation_scenario_dir, validation_context)
     if validation_route:
@@ -4386,19 +4498,27 @@ def main() -> int:
         if not args.validation_scenario_id:
             raise SystemExit("--validation-route-manifest requires --validation-scenario-id")
         manifest_routes = load_validation_routes_for_scenario(args.validation_scenario_dir, args.validation_scenario_id)
-        validation_route_manifest_path, validation_route_manifest = write_validation_route_manifest(args.output_dir, args.validation_scenario_id, manifest_routes)
+        validation_route_manifest_path, validation_route_manifest = write_validation_route_manifest(
+            session_runtime_dir,
+            args.validation_scenario_id,
+            manifest_routes,
+        )
         if not validation_route and manifest_routes:
             validation_route = manifest_routes[0]
-    pool_tag_filter = str(validation_context.get("scenario_id") or (bot_pool_tags[0] if bot_pool_tags else ""))
+    pool_tag_filter = str(
+        args.party_pool_tag
+        if exact_party_specs
+        else (validation_context.get("scenario_id") or (bot_pool_tags[0] if bot_pool_tags else ""))
+    )
     effective_config = args.config
     if args.transport in {"process", "session"} and not args.input_log:
         effective_config = write_validation_config(
             args.config,
-            args.output_dir,
+            session_runtime_dir,
             pool_tag_filter,
             validation_route,
             validation_route_manifest_path,
-            autostart=True if args.calibration_only else not args.no_start,
+            autostart=False if args.transport == "session" else (True if args.calibration_only else not args.no_start),
             calibration_only=args.calibration_only,
             calibration_reference_conditions=args.calibration_reference_conditions,
             console_enabled=False if args.transport == "session" else None,
@@ -4445,13 +4565,34 @@ def main() -> int:
                 preparation["validation_provisioning"],
             )
     if validation_route and int(validation_route.get("bot_start_map_id") or 0):
-        preparation["route_bot_start"] = prepare_route_bot_start(
-            args.output_dir,
-            validation_route,
-            args.config,
-            bot_pool_tags,
-            apply=not args.dry_run and args.transport != "session",
-        )
+        if args.skip_route_bot_start_mutation:
+            preparation["route_bot_start"] = {
+                "schema": "bot_live_validation_route_start_v1",
+                "applied": False,
+                "reason": "preapplied_before_evidence_identity",
+            }
+        else:
+            preparation["route_bot_start"] = prepare_route_bot_start(
+                args.output_dir,
+                validation_route,
+                args.config,
+                bot_pool_tags,
+                apply=not args.dry_run and args.transport != "session",
+            )
+
+    if args.prepare_only:
+        report = {
+            "schema": "bot_live_validation_preparation_v1",
+            "prepared": True,
+            "worldserver_started": False,
+            "validation_context": validation_context,
+            "validation_route_manifest": validation_route_manifest,
+            "pool_tags": bot_pool_tags,
+            "preparation": preparation,
+        }
+        write_json(args.output_dir / "report.json", report)
+        print(json.dumps(report, indent=2, sort_keys=True))
+        return 0
 
     if args.dry_run:
         report = {
@@ -4462,6 +4603,9 @@ def main() -> int:
             "config": str(effective_config),
             "base_config": str(args.config),
             "pool_tag_filter": pool_tag_filter,
+            "exact_party_pool_tag": args.party_pool_tag if exact_party_specs else "",
+            "exact_party_class_specs": exact_party_specs,
+            "exact_party_sha256": canonical_sha256(exact_party_specs) if exact_party_specs else "",
             "validation_route": validation_route,
             "validation_route_manifest": validation_route_manifest,
             "validation_route_manifest_path": str(validation_route_manifest_path or ""),
@@ -4600,6 +4744,9 @@ def main() -> int:
     report["config"] = str(effective_config)
     report["base_config"] = str(args.config)
     report["pool_tag_filter"] = pool_tag_filter
+    report["exact_party_pool_tag"] = args.party_pool_tag if exact_party_specs else ""
+    report["exact_party_class_specs"] = exact_party_specs
+    report["exact_party_sha256"] = canonical_sha256(exact_party_specs) if exact_party_specs else ""
     report["validation_route"] = validation_route
     report["validation_route_manifest"] = validation_route_manifest
     report["validation_route_manifest_path"] = str(validation_route_manifest_path or "")

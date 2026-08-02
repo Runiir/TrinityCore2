@@ -65,6 +65,7 @@ struct BotWorldExperimentConfig
     std::string BrainVersion = "utility_v1";
     std::string SpawnMode = "resume_or_race_start";
     std::string PoolTagFilter;
+    std::vector<std::string> PoolClassSpecFilter;
     bool CombatCalibrationReferenceConditions = false;
     bool ValidationRouteEnable = false;
     std::string ValidationRouteManifestPath;
@@ -224,7 +225,8 @@ public:
     bool StartAutonomyForCohort(std::string const& cohortId, BotWorldExperimentConfig const* overrideConfig = nullptr);
     void StopAutonomyForCohort(std::string const& cohortId);
     std::string SelectRuntimeProfileForCohort(std::string const& cohortId, std::string const& name);
-    std::string PrepareValidationProfileForCohort(std::string const& cohortId, std::string const& name);
+    std::string PrepareValidationProfileForCohort(std::string const& cohortId, std::string const& name,
+        std::string const& poolTag = {}, std::vector<std::string> const& classSpecs = {});
     std::string GetStatusJsonForCohort(std::string const& cohortId) const;
     std::string GetBotDiagnosisJsonForCohort(std::string const& cohortId, std::string const& selector);
     std::string GetBotTraceJsonForCohort(std::string const& cohortId, std::string const& selector, uint32 limit) const;
@@ -247,7 +249,8 @@ public:
     std::string SelectRuntimeProfile(std::string const& name);
     std::string ClearRuntimeProfile();
     std::string ReloadRuntimeProfiles();
-    std::string PrepareValidationProfile(std::string const& name);
+    std::string PrepareValidationProfile(std::string const& name, std::string const& poolTag = {},
+        std::vector<std::string> const& classSpecs = {});
     BotWorldStatus GetStatus() const;
     std::string GetStatusJson() const;
     std::string GetSummaryJson() const;
@@ -342,6 +345,7 @@ private:
         float NavigationAnchorZ = 0.0f;
         float NavigationAnchorO = 0.0f;
         uint32 TargetEntry = 0;
+        ObjectGuid::LowType TargetSpawnId = 0;
         uint32 OpenerTargetEntry = 0;
         std::vector<uint32> AlternateTargetEntries;
         std::vector<uint32> AddTargetEntries;
@@ -523,14 +527,29 @@ private:
         uint32 RecentDeathCount = 0;
         ObjectGuid TargetGuid;
         bool WasInCombat = false;
+        ObjectGuid FeralChargePickupTargetGuid;
+        uint64 FeralChargePickupUntilMs = 0;
+        ObjectGuid TankPendingSwarmPickupAnchorGuid;
+        uint64 TankPendingSwarmPickupUntilMs = 0;
+        bool TankPendingSwarmPickupEngagedHandoff = false;
+        ObjectGuid FeralActiveSwarmPickupAnchorGuid;
+        uint64 FeralActiveSwarmPickupUntilMs = 0;
+        bool FeralActiveSwarmPickupAttempted = false;
+        bool FeralActiveSwarmPickupArrived = false;
+        ObjectGuid FeralHealerThreatHandoffTargetGuid;
+        ObjectGuid FeralHealerThreatHandoffAnchorGuid;
+        uint64 FeralHealerThreatHandoffUntilMs = 0;
+        bool FeralHealerThreatHandoffRemoteCluster = false;
         uint32 ValidationRouteUnresolvedFocusHoldCount = 0;
         ObjectGuid ValidationRouteCombatProgressTargetGuid;
         float ValidationRouteCombatBestHealthPct = 1.0f;
         uint32 ValidationRouteCombatNoProgressCount = 0;
+        uint64 ValidationRouteCombatNoProgressSinceMs = 0;
         uint32 ValidationRouteBossSlowProgressCount = 0;
         ObjectGuid ValidationRoutePackProgressTargetGuid;
         float ValidationRoutePackBestHealthPct = 1.0f;
         uint32 ValidationRoutePackNoProgressCount = 0;
+        uint64 ValidationRoutePackNoProgressSinceMs = 0;
         bool ValidationRouteActivationApplied = false;
         uint32 ValidationRouteActivationAttempts = 0;
         uint32 ValidationRouteTargetSearchMissCount = 0;
@@ -622,6 +641,11 @@ private:
         bool UnstuckMessageEmitted = false;
         CombatAttemptDiagnostic LastCombatAttempt;
         RouteProgressDiagnostic LastRouteProgress;
+        uint32 ProfileCastSuppressedSpellId = 0;
+        ObjectGuid ProfileCastSuppressedTargetGuid;
+        uint64 ProfileCastSuppressedUntilMs = 0;
+        ObjectGuid RouteHealSuppressedTargetGuid;
+        uint64 RouteHealSuppressedUntilMs = 0;
         std::map<std::string, uint64> ReadinessRetryUntilMs;
         std::map<std::string, uint32> ReadinessAttemptCount;
         std::map<std::string, std::string> ReadinessPartyCoverageSignature;
@@ -1271,9 +1295,9 @@ private:
     std::string BuildDungeonTrashPackJson(DungeonTrashPackFeatures const& pack) const;
     std::string BuildBossMechanicsJson(BossMechanicFeatures const& features) const;
     uint32 SelectCombatSpell(Player* bot, Unit* target) const;
-    ResolvedCombatAction ResolveProfileCombatAction(Player* bot, Unit* target, uint32 hostileCount = 0, bool densityOnly = false) const;
-    BotActionResult ExecuteProfileCombatAction(WorldBotState* state, Player* bot, Unit* target, ResolvedCombatAction* action = nullptr, uint32 hostileCount = 0, bool densityOnly = false) const;
-    BotActionResult ExecuteProfileCombatAction(Player* bot, Unit* target, ResolvedCombatAction* action = nullptr, uint32 hostileCount = 0, bool densityOnly = false) const;
+    ResolvedCombatAction ResolveProfileCombatAction(Player* bot, Unit* target, uint32 hostileCount = 0, bool densityOnly = false, uint32 excludedSpellId = 0, bool areaOnly = false) const;
+    BotActionResult ExecuteProfileCombatAction(WorldBotState* state, Player* bot, Unit* target, ResolvedCombatAction* action = nullptr, uint32 hostileCount = 0, bool densityOnly = false, uint32 excludedSpellId = 0, bool areaOnly = false) const;
+    BotActionResult ExecuteProfileCombatAction(Player* bot, Unit* target, ResolvedCombatAction* action = nullptr, uint32 hostileCount = 0, bool densityOnly = false, uint32 excludedSpellId = 0, bool areaOnly = false) const;
     bool MoveBotToProfileRange(WorldBotState& state, Player* bot, Unit* reference, ResolvedCombatAction const* action = nullptr);
     bool TryCastCombatSpell(Player* bot, Unit* target, uint32 spellId) const;
     void MarkBotBlocked(WorldBotState& state, Player* bot, char const* reason) const;
@@ -1485,6 +1509,8 @@ private:
         GuidSet ValidationRouteBossAddEscapeIssuedGuids;
         bool ValidationRouteActivationApplied = false;
         uint32 ValidationRouteActivationAttempts = 0;
+        uint32 ValidationRouteCanonicalBossRecoveryAttempts = 0;
+        uint64 ValidationRouteCanonicalBossRecoveryLastMs = 0;
         std::vector<ValidationRouteManifestNode> ValidationRouteManifest;
         std::vector<ValidationRouteEvidence> ValidationRouteTerminalEvidence;
         std::vector<ValidationRouteEvidence> ValidationRouteBossDeathEvidence;
@@ -1540,6 +1566,8 @@ private:
         std::map<std::string, BotWorldExperimentProfile> RuntimeProfiles;
         std::vector<std::string> RuntimeProfileOrder;
         std::string SelectedProfileName;
+        std::string PreparedPoolTagFilter;
+        std::vector<std::string> PreparedClassSpecs;
         std::string ProfileManifestLoadError;
         bool RuntimeProfilesLoaded = false;
         bool RuntimeProfileDirty = false;

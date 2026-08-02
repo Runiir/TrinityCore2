@@ -1319,14 +1319,15 @@ std::string BotWorldPopulationMgr::SelectRuntimeProfileForCohort(std::string con
     return result;
 }
 
-std::string BotWorldPopulationMgr::PrepareValidationProfileForCohort(std::string const& cohortId, std::string const& name)
+std::string BotWorldPopulationMgr::PrepareValidationProfileForCohort(std::string const& cohortId, std::string const& name,
+    std::string const& poolTag, std::vector<std::string> const& classSpecs)
 {
     if (!FindCohort(cohortId))
         return UnknownCohortJson("botauto_prepare", cohortId);
 
     std::string previous = _selectedCohortId;
     _selectedCohortId = cohortId;
-    std::string result = PrepareValidationProfile(name);
+    std::string result = PrepareValidationProfile(name, poolTag, classSpecs);
     _selectedCohortId = previous;
     return result;
 }
@@ -1460,6 +1461,7 @@ bool BotWorldPopulationMgr::Start(std::string const& experimentName, BotWorldExp
 
     if (!Cohort().AttemptId)
         Cohort().AttemptId = 1;
+    Party() = PartyRuntime();
     LoadConfig(experimentName.empty() ? "autonomous_zone_10" : experimentName, overrideConfig);
     Cohort().PinnedProfileGeneration = BotClassSpecActionProfileStore::ActiveDbGeneration();
     Cohort().PinnedProfileContentHash = BotClassSpecActionProfileStore::ActiveDbContentHash();
@@ -1467,7 +1469,6 @@ bool BotWorldPopulationMgr::Start(std::string const& experimentName, BotWorldExp
         return false;
     Cohort().TelemetryBuffer.Clear();
     Cohort().ExperimentCoordinator.Clear();
-    Party() = PartyRuntime();
     Cohort().FailedSpawnGuids.clear();
     Cohort().LastPopulationFailureReason.clear();
     Cohort().Metrics = BotWorldStatus();
@@ -1546,6 +1547,7 @@ bool BotWorldPopulationMgr::StartAutonomy(BotWorldExperimentConfig const* overri
     ClearPendingHealCasts("autonomy_reset");
     if (!Cohort().AttemptId)
         Cohort().AttemptId = 1;
+    Party() = PartyRuntime();
     LoadConfig("always_on_autonomy", overrideConfig);
     Cohort().PinnedProfileGeneration = BotClassSpecActionProfileStore::ActiveDbGeneration();
     Cohort().PinnedProfileContentHash = BotClassSpecActionProfileStore::ActiveDbContentHash();
@@ -1554,7 +1556,6 @@ bool BotWorldPopulationMgr::StartAutonomy(BotWorldExperimentConfig const* overri
     Cohort().TelemetryBuffer.Clear();
     Cohort().ExperimentCoordinator.Clear();
     Cohort().ExperimentCoordinator.Configure(0, Cohort().Config.BrainVersion);
-    Party() = PartyRuntime();
     Cohort().FailedSpawnGuids.clear();
     Cohort().LastPopulationFailureReason.clear();
     Cohort().Metrics = BotWorldStatus();
@@ -2284,7 +2285,8 @@ bool BotWorldPopulationMgr::IsValidationProfileName(std::string const& name) con
     return name == "stonecore_5n" || name == "blackwing_descent_10n";
 }
 
-std::string BotWorldPopulationMgr::PrepareValidationProfile(std::string const& name)
+std::string BotWorldPopulationMgr::PrepareValidationProfile(std::string const& name, std::string const& poolTag,
+    std::vector<std::string> const& classSpecs)
 {
     if (!sConfigMgr->GetBoolDefault("BotWorld.Enable", false) || !sConfigMgr->GetBoolDefault("PlayerBot.Enable", false))
         return "{\"ok\":false,\"action\":\"botauto_prepare\",\"failure_reason\":\"botworld_or_playerbot_disabled\"}";
@@ -2294,11 +2296,22 @@ std::string BotWorldPopulationMgr::PrepareValidationProfile(std::string const& n
         return "{\"ok\":false,\"action\":\"botauto_prepare\",\"failure_reason\":\"profile_required\"}";
     if (!IsValidationProfileName(profileName))
         return "{\"ok\":false,\"action\":\"botauto_prepare\",\"failure_reason\":\"not_validation_profile\"}";
+    if (!classSpecs.empty())
+    {
+        std::set<std::string> uniqueSpecs(classSpecs.begin(), classSpecs.end());
+        if (profileName != "stonecore_5n" || poolTag.empty() || classSpecs.size() != 5 || uniqueSpecs.size() != classSpecs.size()
+            || std::any_of(classSpecs.begin(), classSpecs.end(), [](std::string const& value) { return value.empty(); }))
+            return "{\"ok\":false,\"action\":\"botauto_prepare\",\"failure_reason\":\"invalid_exact_party_contract\"}";
+    }
+    else if (!poolTag.empty())
+        return "{\"ok\":false,\"action\":\"botauto_prepare\",\"failure_reason\":\"pool_tag_requires_exact_party\"}";
 
     std::string selectResult = SelectRuntimeProfile(profileName);
     if (selectResult.find("\"ok\":true") == std::string::npos)
         return selectResult;
 
+    Cohort().PreparedPoolTagFilter = poolTag;
+    Cohort().PreparedClassSpecs = classSpecs;
     LoadConfig(profileName, nullptr);
     bool ok = Cohort().Config.ValidationRouteEnable && IsValidationProfileName(Cohort().Config.Name) && PrepareCurrentValidationProfile("manual_prepare");
     std::ostringstream json;
@@ -2306,6 +2319,14 @@ std::string BotWorldPopulationMgr::PrepareValidationProfile(std::string const& n
          << ",\"action\":\"botauto_prepare\""
          << ",\"profile\":\"" << JsonEscape(profileName) << "\""
          << ",\"pool_tag_filter\":\"" << JsonEscape(Cohort().Config.PoolTagFilter) << "\""
+         << ",\"exact_party_class_specs\":[";
+    for (size_t index = 0; index < Cohort().Config.PoolClassSpecFilter.size(); ++index)
+    {
+        if (index)
+            json << ',';
+        json << '\"' << JsonEscape(Cohort().Config.PoolClassSpecFilter[index]) << '\"';
+    }
+    json << "]"
          << ",\"failure_reason\":" << (ok ? "null" : ("\"" + JsonEscape(Cohort().LastPopulationFailureReason.empty() ? "validation_prepare_failed" : Cohort().LastPopulationFailureReason) + "\"")) << "}";
     return json.str();
 }
@@ -2347,9 +2368,32 @@ bool BotWorldPopulationMgr::ResetValidationBotPool(char const* reason)
 {
     std::string tag = Cohort().Config.PoolTagFilter;
     CharacterDatabase.EscapeString(tag);
-    QueryResult result = CharacterDatabase.PQuery(
-        "SELECT `guid` FROM `character_bot_pool` WHERE `enabled` = 1 AND `experiment_tags` = '%s' ORDER BY `guid`",
-        tag.c_str());
+    std::vector<std::string> escapedSpecs = Cohort().Config.PoolClassSpecFilter;
+    for (std::string& spec : escapedSpecs)
+        CharacterDatabase.EscapeString(spec);
+
+    std::ostringstream query;
+    query << "SELECT cbp.`guid`, cbp.`role`, cbp.`class_spec` FROM `character_bot_pool` cbp "
+          << "INNER JOIN `characters` c ON c.`guid` = cbp.`guid` "
+          << "WHERE cbp.`enabled` = 1 AND c.`level` = 85 AND cbp.`experiment_tags` = '" << tag << "'";
+    if (!escapedSpecs.empty())
+    {
+        query << " AND cbp.`class_spec` IN (";
+        for (size_t index = 0; index < escapedSpecs.size(); ++index)
+        {
+            if (index)
+                query << ',';
+            query << '\'' << escapedSpecs[index] << '\'';
+        }
+        query << ") ORDER BY FIELD(cbp.`class_spec`";
+        for (std::string const& spec : escapedSpecs)
+            query << ",'" << spec << '\'';
+        query << "), cbp.`guid`";
+    }
+    else
+        query << " ORDER BY cbp.`guid`";
+
+    QueryResult result = CharacterDatabase.Query(query.str().c_str());
     if (!result)
     {
         Cohort().LastPopulationFailureReason = "validation_pool_empty";
@@ -2357,10 +2401,31 @@ bool BotWorldPopulationMgr::ResetValidationBotPool(char const* reason)
     }
 
     std::vector<uint32> guids;
+    std::vector<std::string> observedSpecs;
+    uint32 tankCount = 0;
+    uint32 healerCount = 0;
+    uint32 dpsCount = 0;
     do
     {
-        guids.push_back(result->Fetch()[0].GetUInt32());
+        Field* fields = result->Fetch();
+        guids.push_back(fields[0].GetUInt32());
+        std::string role = fields[1].GetString();
+        observedSpecs.push_back(fields[2].GetString());
+        if (role == "tank")
+            ++tankCount;
+        else if (role == "healer")
+            ++healerCount;
+        else if (role == "dps")
+            ++dpsCount;
     } while (result->NextRow());
+
+    if (!Cohort().Config.PoolClassSpecFilter.empty()
+        && (observedSpecs != Cohort().Config.PoolClassSpecFilter || guids.size() != 5
+            || tankCount != 1 || healerCount != 1 || dpsCount != 3))
+    {
+        Cohort().LastPopulationFailureReason = "exact_party_pool_mismatch";
+        return false;
+    }
 
     std::ostringstream guidList;
     for (size_t index = 0; index < guids.size(); ++index)
@@ -3017,9 +3082,18 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
             Cohort().SelectedProfileName.clear();
     }
 
+    if (!Cohort().PreparedClassSpecs.empty())
+    {
+        Cohort().Config.PoolTagFilter = Cohort().PreparedPoolTagFilter;
+        Cohort().Config.PoolClassSpecFilter = Cohort().PreparedClassSpecs;
+        Cohort().Config.TargetPopulation = uint32(Cohort().PreparedClassSpecs.size());
+    }
+
     Cohort().LearningConfig = Cohort().Config.Learning;
     Party().ValidationRouteActivationApplied = false;
     Party().ValidationRouteActivationAttempts = 0;
+    Party().ValidationRouteCanonicalBossRecoveryAttempts = 0;
+    Party().ValidationRouteCanonicalBossRecoveryLastMs = 0;
     Party().ValidationRouteManifest.clear();
     Party().ValidationRouteTerminalEvidence.clear();
     Party().ValidationRouteBossDeathEvidence.clear();
@@ -3108,6 +3182,11 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
         ExtractJsonNumberField(routeJson, "navigation_anchor_z", node.NavigationAnchorZ);
         ExtractJsonNumberField(routeJson, "navigation_anchor_o", node.NavigationAnchorO);
         node.TargetEntry = uint32(std::max(0, readInt(routeJson, "source_entry")));
+        std::string targetSpawnIdText = ExtractJsonStringField(routeJson, "source_guid");
+        if (!targetSpawnIdText.empty())
+            node.TargetSpawnId = ObjectGuid::LowType(strtoull(targetSpawnIdText.c_str(), nullptr, 10));
+        else
+            node.TargetSpawnId = ObjectGuid::LowType(std::max(0, readInt(routeJson, "source_guid")));
         node.OpenerTargetEntry = uint32(std::max(0, readInt(routeJson, "opener_target_entry")));
         node.AlternateTargetEntries = ExtractJsonUIntArrayField(routeJson, "alternate_target_entries");
         node.AddTargetEntries = ExtractJsonUIntArrayField(routeJson, "add_target_entries");
@@ -3270,6 +3349,8 @@ void BotWorldPopulationMgr::ResetValidationRouteRuntimeState(char const* reason)
     ResetValidationRouteBossAddDensityState();
     Party().ValidationRouteActivationApplied = false;
     Party().ValidationRouteActivationAttempts = 0;
+    Party().ValidationRouteCanonicalBossRecoveryAttempts = 0;
+    Party().ValidationRouteCanonicalBossRecoveryLastMs = 0;
     Party().ValidationRouteManifestAdvancePending = false;
     Party().ValidationRouteManifestAdvanceGeneration = 0;
     Party().ValidationRouteManifestComplete = false;
@@ -3284,10 +3365,12 @@ void BotWorldPopulationMgr::ResetValidationRouteRuntimeState(char const* reason)
         state.ValidationRouteCombatProgressTargetGuid.Clear();
         state.ValidationRouteCombatBestHealthPct = 1.0f;
         state.ValidationRouteCombatNoProgressCount = 0;
+        state.ValidationRouteCombatNoProgressSinceMs = 0;
         state.ValidationRouteBossSlowProgressCount = 0;
         state.ValidationRoutePackProgressTargetGuid.Clear();
         state.ValidationRoutePackBestHealthPct = 1.0f;
         state.ValidationRoutePackNoProgressCount = 0;
+        state.ValidationRoutePackNoProgressSinceMs = 0;
         state.LastCombatAttempt = WorldBotState::CombatAttemptDiagnostic();
         state.LastRouteProgress = WorldBotState::RouteProgressDiagnostic();
         state.ValidationRouteActivationApplied = false;
@@ -3352,14 +3435,14 @@ bool BotWorldPopulationMgr::MaybeAdvanceValidationRouteManifest()
                 continue;
 
             ++loadedParticipants;
-            if (!loadedBot->IsInWorld() || !loadedBot->IsAlive() || !IsValidationCohortMemberInOriginalInstance(state, loadedBot))
+            if (!loadedBot->IsInWorld() || !loadedBot->IsAlive() || !IsValidationCohortMemberInOriginalInstance(state, loadedBot)
+                || loadedBot->IsInCombat() || loadedBot->GetVictim() || !loadedBot->getAttackers().empty())
             {
                 allLoadedArrived = false;
                 break;
             }
 
-            if (loadedBot->GetExactDist(Cohort().Config.ValidationRouteX, Cohort().Config.ValidationRouteY, Cohort().Config.ValidationRouteZ) > arrivalRadius
-                && (!state.ValidationRouteTerminalState || state.ValidationRouteTerminalReason != "arrival"))
+            if (loadedBot->GetExactDist(Cohort().Config.ValidationRouteX, Cohort().Config.ValidationRouteY, Cohort().Config.ValidationRouteZ) > arrivalRadius)
             {
                 allLoadedArrived = false;
                 break;
@@ -6769,7 +6852,20 @@ bool BotWorldPopulationMgr::TryLastSafePositionResurrect(WorldBotState& state, P
             && Distance2d(state.LastDeathX, state.LastDeathY, x, y) <= 70.0f;
     };
 
-    PruneSafePositions(state, NowMs());
+    uint64 nowMs = NowMs();
+    if (Cohort().Config.ValidationRouteEnable
+        && state.ValidationRouteAnchorOverrideValid
+        && state.ValidationRouteAnchorOverrideUntilMs > nowMs
+        && state.ValidationRouteAnchorOverrideReason == "validation_route_partial_wipe_retreat_rendezvous")
+    {
+        bot->ResurrectPlayer(0.7f, false);
+        bot->NearTeleportTo(state.ValidationRouteAnchorOverrideX, state.ValidationRouteAnchorOverrideY,
+            state.ValidationRouteAnchorOverrideZ, bot->GetOrientation());
+        result = "validation_route_retreat_anchor_resurrected";
+        return true;
+    }
+
+    PruneSafePositions(state, nowMs);
     if (state.SafePositions.empty())
     {
         QueryResult stored = CharacterDatabase.PQuery(
@@ -6946,6 +7042,37 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
                 state.DeadTimer = 0;
                 return;
             }
+
+            // A critical-role death can make the survivors retreat after combat
+            // drops. Do not let the ordinary five-second recovery resurrect the
+            // dead member at an individual safe position while that retreat is
+            // still moving. Once the survivors arrive, the route handler binds
+            // the shared rendezvous override and the existing recovery path
+            // resurrects the dead member beside them.
+            bool validationRetreatRendezvousPending = false;
+            uint64 nowMs = NowMs();
+            if (Cohort().Config.ValidationRouteEnable && !state.ValidationRouteAnchorOverrideValid)
+                for (WorldBotState const& cohortState : Party().Bots)
+                {
+                    Player* cohortBot = GetLoadedBot(cohortState);
+                    bool recentRetreat = cohortState.LastRecoveryMs && nowMs >= cohortState.LastRecoveryMs
+                        && nowMs - cohortState.LastRecoveryMs <= 120000;
+                    bool retreatInProgress = cohortState.LastRecoveryResult.rfind("moving_", 0) == 0
+                        || cohortState.LastRecoveryResult.rfind("holding_", 0) == 0;
+                    if (cohortBot && cohortBot->IsAlive() && recentRetreat
+                        && cohortState.LastRecoveryMode == "tactical_retreat_no_combat_res"
+                        && retreatInProgress)
+                    {
+                        validationRetreatRendezvousPending = true;
+                        break;
+                    }
+                }
+            if (validationRetreatRendezvousPending)
+            {
+                state.DeadTimer = 0;
+                return;
+            }
+
             state.NativeResurrectionPendingUntilMs = 0;
             state.NativeResurrectionCasterGuid.Clear();
             state.NativeResurrectionSpellId = 0;
@@ -7432,6 +7559,15 @@ uint32 BotWorldPopulationMgr::SelectPoolCandidateGuid() const
         std::string escapedTag = Cohort().Config.PoolTagFilter;
         CharacterDatabase.EscapeString(escapedTag);
         query << " AND cbp.experiment_tags = '" << escapedTag << "'";
+    }
+    if (!Cohort().Config.PoolClassSpecFilter.empty())
+    {
+        size_t slot = Party().Bots.size();
+        if (slot >= Cohort().Config.PoolClassSpecFilter.size())
+            return 0;
+        std::string escapedSpec = Cohort().Config.PoolClassSpecFilter[slot];
+        CharacterDatabase.EscapeString(escapedSpec);
+        query << " AND cbp.class_spec = '" << escapedSpec << "'";
     }
 
     if (!Cohort().FailedSpawnGuids.empty())
@@ -10000,6 +10136,19 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (!healer || std::string(GetDungeonRole(healer)) != "healer")
             return false;
 
+        uint64 nowMs = NowMs();
+        if (state.RouteHealSuppressedUntilMs <= nowMs)
+        {
+            state.RouteHealSuppressedTargetGuid.Clear();
+            state.RouteHealSuppressedUntilMs = 0;
+        }
+        auto routeHealTargetSuppressed = [&state, nowMs](Unit const* target) -> bool
+        {
+            return target && !state.RouteHealSuppressedTargetGuid.IsEmpty()
+                && state.RouteHealSuppressedTargetGuid == target->GetGUID()
+                && state.RouteHealSuppressedUntilMs > nowMs;
+        };
+
         // Holy Word: Chastise only becomes a friendly Holy Word: Serenity
         // while Chakra: Serenity is active. Establish Chakra before choosing
         // heals; a following Heal/Flash Heal/Greater Heal activates Serenity.
@@ -10018,20 +10167,45 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return true;
         }
 
-        if (!healer->getAttackers().empty() && healer->HasSpell(586) && !healer->HasAura(586)
+        // Unit::getAttackers can lag a scripted follower transition in either
+        // direction. Keep its broader count for healing/defensive heuristics,
+        // but spend Fade only when the same explicit current-victim observation
+        // used by identity-scoped evidence proves at least two live healer
+        // attackers. Rerun86 consumed Fade with zero, and rerun87 consumed it
+        // for one attacker nine seconds before the 27-47-hostile Flayer wave.
+        // The existing Feral Growl rule retains the single-attacker fallback.
+        size_t healerAttackerCount = healer->getAttackers().size();
+        size_t healerTargetingHostileCount = 0;
+        std::vector<WorldObject*> healerObjects;
+        Trinity::AllWorldObjectsInRange healerCheck(healer, 45.0f);
+        Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> healerSearcher(
+            healer, healerObjects, healerCheck);
+        Cell::VisitAllObjects(healer, healerSearcher, 45.0f);
+        for (WorldObject* object : healerObjects)
+        {
+            Creature* creature = object ? object->ToCreature() : nullptr;
+            if (creature && creature->IsAlive() && creature->GetHealth()
+                && healer->IsValidAttackTarget(creature)
+                && creature->GetVictim() == healer)
+                ++healerTargetingHostileCount;
+        }
+        healerAttackerCount = std::max(healerAttackerCount, healerTargetingHostileCount);
+
+        if (healerTargetingHostileCount >= 2
+            && healer->HasSpell(586) && !healer->HasAura(586)
             && TryCastFriendlySpell(healer, healer, 586))
         {
             std::string raw = BuildRawJson(healer, combatTarget);
             std::string semantic = BuildSemanticJson(healer, combatTarget, "healer_assignment", &power, stage, activity);
             RecordEvent(state, healer, "healer_assignment", healer, "fade_threat_drop",
-                raw.c_str(), semantic.c_str(), float(healer->getAttackers().size()), 0, 586);
+                raw.c_str(), semantic.c_str(),
+                float(healerTargetingHostileCount), 0, 586);
             situation = "validation_route_group_heal";
             action = "fade_threat_drop";
             return true;
         }
 
         float healerHealthPct = UnitHealthPct(healer);
-        size_t healerAttackerCount = healer->getAttackers().size();
         bool guardianSpiritEmergency = healerAttackerCount >= 3 && healerHealthPct <= 0.55f;
         bool guardianSpiritSwarm = healerAttackerCount >= 8 && healerHealthPct <= 0.90f;
         if ((guardianSpiritEmergency || guardianSpiritSwarm)
@@ -10058,9 +10232,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return true;
         }
 
-        Unit* lowestTarget = healer;
+        Unit* lowestTarget = routeHealTargetSuppressed(healer) ? nullptr : healer;
         Unit* tankTarget = nullptr;
-        float lowestHealthPct = UnitHealthPct(healer);
+        float lowestHealthPct = lowestTarget ? UnitHealthPct(lowestTarget) : 2.0f;
         if (Group* group = healer->GetGroup())
         {
             for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
@@ -10073,7 +10247,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     tankTarget = member;
 
                 float memberHealthPct = UnitHealthPct(member);
-                if (memberHealthPct < lowestHealthPct)
+                if (!routeHealTargetSuppressed(member) && memberHealthPct < lowestHealthPct)
                 {
                     lowestHealthPct = memberHealthPct;
                     lowestTarget = member;
@@ -10092,7 +10266,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     tankTarget = member;
 
                 float memberHealthPct = UnitHealthPct(member);
-                if (memberHealthPct < lowestHealthPct)
+                if (!routeHealTargetSuppressed(member) && memberHealthPct < lowestHealthPct)
                 {
                     lowestHealthPct = memberHealthPct;
                     lowestTarget = member;
@@ -10106,17 +10280,119 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         // The tank is the group's only stable threat owner.  At critical health
         // it takes precedence over a marginally lower DPS target; otherwise the
         // normal lowest-health triage remains in effect.
-        if (tankTarget && UnitHealthPct(tankTarget) <= 0.60f
+        if (tankTarget && !routeHealTargetSuppressed(tankTarget) && UnitHealthPct(tankTarget) <= 0.60f
             && (healer->getAttackers().empty() || UnitHealthPct(healer) > 0.60f))
         {
             lowestTarget = tankTarget;
             lowestHealthPct = UnitHealthPct(tankTarget);
         }
 
-        // Use one movement authority during add pickup: the healer kites its
-        // attackers into the stationary tank's AoE instead of both actors
-        // chasing one another and overwriting their paths.
-        if (!healer->getAttackers().empty() && tankTarget
+        // Reactive convergence starts after follower victim assignment and
+        // cannot erase the first grace-eligible exposure samples. While the
+        // whole group is healthy and no hostile owns the healer, keep the
+        // ranged healer inside the Feral's bounded pickup radius before the
+        // next wave activates. Healing triage above and configured hazard
+        // movement outside this helper remain authoritative.
+        bool proactiveFeralPickupStack = tankTarget
+            && tankTarget->getClass() == CLASS_DRUID
+            && healerAttackerCount == 0
+            && lowestHealthPct > 0.88f
+            && UnitHealthPct(tankTarget) > 0.88f
+            && healer->GetExactDist2d(tankTarget) > 6.0f
+            && !healer->HasUnitState(UNIT_STATE_CASTING)
+            && !healer->IsFalling();
+        if (proactiveFeralPickupStack)
+        {
+            float pickupAngle = combatTarget
+                ? combatTarget->GetAngle(tankTarget)
+                    - tankTarget->GetOrientation()
+                : tankTarget->GetAngle(healer)
+                    - tankTarget->GetOrientation();
+            Position pickup = tankTarget->GetFirstCollisionPosition(
+                4.0f, pickupAngle);
+            if (MoveBotToPoint(state, healer,
+                    pickup.GetPositionX(), pickup.GetPositionY(),
+                    pickup.GetPositionZ()))
+            {
+                std::string raw = BuildRawJson(healer, combatTarget);
+                std::string semantic = BuildSemanticJson(
+                    healer, combatTarget, "healer_assignment",
+                    &power, stage, activity);
+                RecordEvent(state, healer, "healer_assignment", tankTarget,
+                    "healer_preposition_for_feral_swarm_pickup",
+                    raw.c_str(), semantic.c_str(),
+                    healer->GetExactDist2d(tankTarget), 0.0f);
+                situation = "validation_route_group_heal";
+                action = "healer_preposition_for_feral_swarm_pickup";
+                return true;
+            }
+        }
+
+        // A stable healer anchor is sufficient for a small Feral pickup, but a
+        // large spread swarm cannot converge inside the three-second retention
+        // gate while only the tank moves. When both are healthy, close the
+        // existing bounded pickup distance from both sides. Configured hazard
+        // movement runs before group healing and remains authoritative.
+        bool feralTankApproachesHealerSwarm = tankTarget
+            && tankTarget->getClass() == CLASS_DRUID && healerAttackerCount >= 3;
+        bool urgentFeralHealerStack = feralTankApproachesHealerSwarm
+            && healerAttackerCount >= 5
+            && UnitHealthPct(healer) > 0.45f
+            && UnitHealthPct(tankTarget) > 0.40f
+            && !healer->HasUnitState(UNIT_STATE_CASTING)
+            && !healer->IsFalling()
+            && healer->GetExactDist2d(tankTarget) > 6.0f;
+        if (urgentFeralHealerStack)
+        {
+            Unit* nearestAttacker = nullptr;
+            float nearestAttackerDistance = std::numeric_limits<float>::max();
+            for (Unit* attacker : healer->getAttackers())
+                if (attacker && attacker->IsAlive()
+                    && healer->GetExactDist2d(attacker) < nearestAttackerDistance)
+                {
+                    nearestAttacker = attacker;
+                    nearestAttackerDistance = healer->GetExactDist2d(attacker);
+                }
+            float pickupAngle = nearestAttacker
+                ? nearestAttacker->GetAngle(tankTarget)
+                : tankTarget->GetAngle(healer);
+            Position pickup = tankTarget->GetFirstCollisionPosition(
+                4.0f, pickupAngle - tankTarget->GetOrientation());
+            if (MoveBotToPoint(state, healer,
+                    pickup.GetPositionX(), pickup.GetPositionY(),
+                    pickup.GetPositionZ()))
+            {
+                std::string raw = BuildRawJson(healer, combatTarget);
+                std::string semantic = BuildSemanticJson(
+                    healer, combatTarget, "healer_assignment",
+                    &power, stage, activity);
+                RecordEvent(state, healer, "healer_assignment", tankTarget,
+                    "healer_converge_for_feral_swarm_pickup",
+                    raw.c_str(), semantic.c_str(),
+                    healer->GetExactDist2d(tankTarget),
+                    float(healerAttackerCount));
+                situation = "validation_route_group_heal";
+                action = "healer_converge_for_feral_swarm_pickup";
+                return true;
+            }
+        }
+        if (feralTankApproachesHealerSwarm)
+        {
+            if (state.ActivePathValid || state.IsMoving || healer->isMoving())
+            {
+                healer->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+                healer->StopMoving();
+                state.ActivePathValid = false;
+                state.IsMoving = false;
+            }
+            std::string raw = BuildRawJson(healer, combatTarget);
+            std::string semantic = BuildSemanticJson(healer, combatTarget, "healer_assignment", &power, stage, activity);
+            RecordEvent(state, healer, "healer_assignment", tankTarget, "healer_hold_for_feral_swarm_pickup",
+                raw.c_str(), semantic.c_str(), healer->GetExactDist2d(tankTarget), float(healerAttackerCount));
+            situation = "validation_route_group_heal";
+            action = "healer_hold_for_feral_swarm_pickup";
+        }
+        else if (!healer->getAttackers().empty() && tankTarget
             && !healer->HasUnitState(UNIT_STATE_CASTING) && !healer->IsFalling())
         {
             Unit* nearestAttacker = nullptr;
@@ -10154,7 +10430,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         }
 
         if (lowestHealthPct > 0.88f)
-            return false;
+            return feralTankApproachesHealerSwarm;
 
         BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(healer, "healer");
         BotActionProfileSpell const* bestHeal = nullptr;
@@ -10180,7 +10456,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 continue;
 
             Unit* candidateTarget = spell.TargetSelector == "self" ? static_cast<Unit*>(healer) : (spell.TargetSelector == "tank" ? tankTarget : lowestTarget);
-            if (!candidateTarget || !candidateTarget->IsAlive() || !healer->IsValidAssistTarget(candidateTarget))
+            if (!candidateTarget || routeHealTargetSuppressed(candidateTarget)
+                || !candidateTarget->IsAlive() || !healer->IsValidAssistTarget(candidateTarget))
                 continue;
 
             float candidateHealthPct = UnitHealthPct(candidateTarget);
@@ -10211,7 +10488,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
             float manaPct = healer->GetMaxPower(POWER_MANA)
                 ? float(healer->GetPower(POWER_MANA)) / float(healer->GetMaxPower(POWER_MANA)) : 0.0f;
-            uint32 attackerCount = uint32(healer->getAttackers().size());
+            uint32 attackerCount = uint32(healerAttackerCount);
             if (injuredPlayers < spell.MinInjuredPlayers
                 || (spell.MaxInjuredPlayers && injuredPlayers > spell.MaxInjuredPlayers)
                 || manaPct < spell.MinManaPct || manaPct > spell.MaxManaPct
@@ -10280,7 +10557,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 action = "validation_route_group_heal_pending";
                 return true;
             }
-            return false;
+            return feralTankApproachesHealerSwarm;
         }
 
         SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(bestHeal->SpellId);
@@ -10288,6 +10565,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         std::string semantic = BuildSemanticJson(healer, combatTarget, "validation_route_group_heal", &power, stage, activity);
         if (!healer->IsWithinDistInMap(healTarget, std::max(5.0f, healRange - 1.0f)) || !healer->IsWithinLOSInMap(healTarget))
         {
+            if (feralTankApproachesHealerSwarm)
+                return true;
+
             float maxApproachRange = Cohort().Config.ValidationRouteEnable && healer->GetMap() && healer->GetMap()->IsRaid() ? 35.0f : 18.0f;
             float approachRange = std::max(3.0f, std::min(healRange - 2.0f, maxApproachRange));
             Position healPosition = healTarget->GetFirstCollisionPosition(approachRange, healTarget->GetAngle(healer));
@@ -10302,6 +10582,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         healer->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
         std::string castFailureReason;
         bool cast = TryCastFriendlySpell(healer, healTarget, bestHeal->SpellId, &castFailureReason);
+        if (!cast && castFailureReason == "spell_cast_result_150")
+        {
+            state.RouteHealSuppressedTargetGuid = healTarget->GetGUID();
+            state.RouteHealSuppressedUntilMs = NowMs() + 5000;
+        }
         ResolvedCombatAction healAction;
         healAction.Valid = true;
         healAction.Type = "cast";
@@ -10315,9 +10600,60 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         RecordEvent(state, healer, "validation_route_group_heal", healTarget, cast ? "ok" : castFailureReason.c_str(), raw.c_str(), semantic.c_str(), healTargetHealthPct, 0, bestHeal->SpellId);
         situation = "validation_route_group_heal";
         action = cast ? "validation_route_group_heal" : "validation_route_group_heal_failed";
-        return cast;
+        return cast || feralTankApproachesHealerSwarm;
     };
     bool discoveryLeg = Cohort().Config.ValidationRouteNodeKind == "discovery_leg";
+    auto currentValidationRouteTargetSpawnId = [this]() -> ObjectGuid::LowType
+    {
+        if (Party().ValidationRouteManifestIndex >= Party().ValidationRouteManifest.size())
+            return 0;
+        return Party().ValidationRouteManifest[Party().ValidationRouteManifestIndex].TargetSpawnId;
+    };
+    auto isFutureCanonicalValidationRouteSource = [this](Creature const* creature) -> bool
+    {
+        if (!creature)
+            return false;
+        for (size_t routeIndex = Party().ValidationRouteManifestIndex + 1;
+            routeIndex < Party().ValidationRouteManifest.size(); ++routeIndex)
+        {
+            ValidationRouteManifestNode const& futureNode = Party().ValidationRouteManifest[routeIndex];
+            if (futureNode.Kind != "trash" || !futureNode.TargetSpawnId)
+                continue;
+            if (creature->GetSpawnId() == futureNode.TargetSpawnId)
+                return true;
+        }
+        return false;
+    };
+    auto wouldPullProtectedFutureValidationRouteSource = [this, bot](Creature const* creature) -> bool
+    {
+        if (!bot || !bot->GetMap() || !creature || creature->GetMap() != bot->GetMap())
+            return false;
+
+        static constexpr float FutureSourceSocialGuardYards = 35.0f;
+        for (size_t routeIndex = Party().ValidationRouteManifestIndex + 1;
+            routeIndex < Party().ValidationRouteManifest.size(); ++routeIndex)
+        {
+            ValidationRouteManifestNode const& futureNode = Party().ValidationRouteManifest[routeIndex];
+            if (futureNode.Kind != "trash" || !futureNode.TargetSpawnId || futureNode.MapId != bot->GetMapId())
+                continue;
+
+            if (creature->GetSpawnId() == futureNode.TargetSpawnId)
+                return true;
+            Creature* futureSource = bot->GetMap()->GetCreatureBySpawnId(futureNode.TargetSpawnId);
+            if (futureSource && futureSource->IsAlive() && futureSource->GetHealth()
+                && creature->GetExactDist(futureSource) <= FutureSourceSocialGuardYards)
+                return true;
+            CreatureData const* futureSourceData = sObjectMgr->GetCreatureData(futureNode.TargetSpawnId);
+            if (futureSourceData && futureSourceData->mapId == bot->GetMapId()
+                && Distance2d(
+                    creature->GetPositionX(),
+                    creature->GetPositionY(),
+                    futureSourceData->spawnPoint.GetPositionX(),
+                    futureSourceData->spawnPoint.GetPositionY()) <= FutureSourceSocialGuardYards)
+                return true;
+        }
+        return false;
+    };
     auto isValidationRouteEntry = [this](uint32 entry) -> bool
     {
         if (!entry)
@@ -10358,7 +10694,15 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return std::find(Cohort().Config.ValidationRoutePackTargetEntries.begin(), Cohort().Config.ValidationRoutePackTargetEntries.end(), entry) != Cohort().Config.ValidationRoutePackTargetEntries.end();
         return isValidationRouteCombatEntry(entry);
     };
-    auto isValidationRouteScriptTarget = [this, bot, discoveryLeg, &isValidationRouteEntry, &isValidationRoutePackEntry](Creature const* creature) -> bool
+    auto isValidationRouteScriptTarget = [
+        this,
+        bot,
+        discoveryLeg,
+        &currentValidationRouteTargetSpawnId,
+        &isValidationRouteEntry,
+        &isValidationRoutePackEntry,
+        &wouldPullProtectedFutureValidationRouteSource
+    ](Creature const* creature) -> bool
     {
         if (!creature)
             return false;
@@ -10369,6 +10713,18 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return Party().ValidationRoutePackGeneration == Party().ValidationRouteGeneration
                 && Party().ValidationRoutePackMemberGuids.find(creature->GetGUID()) != Party().ValidationRoutePackMemberGuids.end();
         if (!isValidationRoutePackEntry(creature->GetEntry()))
+            return false;
+
+        bool persistedPackMember = Party().ValidationRoutePackGeneration == Party().ValidationRouteGeneration
+            && Party().ValidationRoutePackMemberGuids.find(creature->GetGUID()) != Party().ValidationRoutePackMemberGuids.end();
+        if (!persistedPackMember && wouldPullProtectedFutureValidationRouteSource(creature))
+            return false;
+
+        ObjectGuid::LowType canonicalSpawnId = currentValidationRouteTargetSpawnId();
+        if (canonicalSpawnId
+            && creature->GetEntry() == Cohort().Config.ValidationRouteTargetEntry
+            && !Party().ValidationRoutePackObservedEngagement
+            && creature->GetSpawnId() != canonicalSpawnId)
             return false;
 
         float radius = Cohort().Config.ValidationRouteClusterRadiusYards > 1.0f ? Cohort().Config.ValidationRouteClusterRadiusYards : 90.0f;
@@ -10414,7 +10770,17 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return 0;
         return auraId;
     };
-    auto isEligibleTrashClusterMob = [this, bot, discoveryLeg, &isValidationRoutePackEntry, &hasStrictPathToValidationRouteTarget, &resolvedScriptedTransitionAuraId, &routeEngageRange](Creature const* creature) -> bool
+    auto isEligibleTrashClusterMob = [
+        this,
+        bot,
+        discoveryLeg,
+        &currentValidationRouteTargetSpawnId,
+        &isValidationRoutePackEntry,
+        &hasStrictPathToValidationRouteTarget,
+        &resolvedScriptedTransitionAuraId,
+        &routeEngageRange,
+        &wouldPullProtectedFutureValidationRouteSource
+    ](Creature const* creature) -> bool
     {
         if (!bot || !creature || !creature->IsAlive() || !creature->GetHealth() || !bot->IsValidAttackTarget(creature))
             return false;
@@ -10436,6 +10802,16 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         bool focusedDiscoveryCandidate = discoveryLeg && Party().ValidationRouteFocusGuid == creature->GetGUID();
         if (!persistedPackMember && !focusedDiscoveryCandidate && (discoveryLeg || !isValidationRoutePackEntry(creature->GetEntry())))
             return false;
+        if (!persistedPackMember && wouldPullProtectedFutureValidationRouteSource(creature))
+            return false;
+
+        ObjectGuid::LowType canonicalSpawnId = currentValidationRouteTargetSpawnId();
+        if (!persistedPackMember
+            && canonicalSpawnId
+            && creature->GetEntry() == Cohort().Config.ValidationRouteTargetEntry
+            && !Party().ValidationRoutePackObservedEngagement
+            && creature->GetSpawnId() != canonicalSpawnId)
+            return false;
 
         float radius = discoveryLeg || persistedPackMember ? std::numeric_limits<float>::max()
             : (Cohort().Config.ValidationRouteClusterRadiusYards > 1.0f ? Cohort().Config.ValidationRouteClusterRadiusYards : 90.0f);
@@ -10444,27 +10820,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         return creature->GetMapId() == bot->GetMapId()
             && creature->GetExactDist(Cohort().Config.ValidationRouteX, Cohort().Config.ValidationRouteY, Cohort().Config.ValidationRouteZ) <= radius
             && (hasStrictPathToValidationRouteTarget(creature) || pullable);
-    };
-    auto isLiveTrashClusterMob = [this, bot, discoveryLeg, &isValidationRoutePackEntry](Creature const* creature) -> bool
-    {
-        if (!bot || !creature || !creature->IsAlive() || !creature->GetHealth())
-            return false;
-        if (Party().ValidationRouteFinalTransitionGuids.find(creature->GetGUID()) != Party().ValidationRouteFinalTransitionGuids.end())
-            return false;
-        if (creature->IsDungeonBoss() || creature->isWorldBoss())
-            return false;
-        if (creature->IsCritter() || creature->IsPet() || creature->IsTotem() || creature->IsSummon() || creature->IsGuardian() || !creature->GetOwnerGUID().IsEmpty())
-            return false;
-        if (discoveryLeg
-            ? Party().ValidationRoutePackGeneration != Party().ValidationRouteGeneration
-                || Party().ValidationRoutePackMemberGuids.find(creature->GetGUID()) == Party().ValidationRoutePackMemberGuids.end()
-            : !isValidationRoutePackEntry(creature->GetEntry()))
-            return false;
-
-        float radius = discoveryLeg ? std::numeric_limits<float>::max()
-            : (Cohort().Config.ValidationRouteClusterRadiusYards > 1.0f ? Cohort().Config.ValidationRouteClusterRadiusYards : 90.0f);
-        return creature->GetMapId() == bot->GetMapId()
-            && creature->GetExactDist(Cohort().Config.ValidationRouteX, Cohort().Config.ValidationRouteY, Cohort().Config.ValidationRouteZ) <= radius;
     };
     auto forEachActiveValidationCohortCombatCreature = [this, bot](auto&& visitor) -> void
     {
@@ -10516,7 +10871,45 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         }
         return false;
     };
-    auto validationPartyHasActiveCombat = [this, &forEachActiveValidationCohortCombatCreature]() -> bool
+    auto isImmediateNextValidationRouteBossTarget = [this](Creature const* creature) -> bool
+    {
+        if (!creature || Cohort().Config.ValidationRouteKind == "boss")
+            return false;
+
+        size_t nextIndex = Party().ValidationRouteManifestIndex + 1;
+        if (nextIndex >= Party().ValidationRouteManifest.size())
+            return false;
+
+        ValidationRouteManifestNode const& nextNode = Party().ValidationRouteManifest[nextIndex];
+        if (nextNode.Kind != "boss")
+            return false;
+
+        uint32 entry = creature->GetEntry();
+        return entry == nextNode.TargetEntry
+            || entry == nextNode.OpenerTargetEntry
+            || std::find(nextNode.AlternateTargetEntries.begin(), nextNode.AlternateTargetEntries.end(), entry) != nextNode.AlternateTargetEntries.end();
+    };
+    auto isImmediateNextValidationRouteEncounterMember = [
+        this,
+        &isImmediateNextValidationRouteBossTarget
+    ](Creature const* creature) -> bool
+    {
+        if (isImmediateNextValidationRouteBossTarget(creature))
+            return true;
+        if (!creature || Cohort().Config.ValidationRouteKind == "boss")
+            return false;
+
+        size_t nextIndex = Party().ValidationRouteManifestIndex + 1;
+        if (nextIndex >= Party().ValidationRouteManifest.size())
+            return false;
+        ValidationRouteManifestNode const& nextNode =
+            Party().ValidationRouteManifest[nextIndex];
+        return nextNode.Kind == "boss"
+            && std::find(nextNode.AddTargetEntries.begin(),
+                nextNode.AddTargetEntries.end(), creature->GetEntry())
+                != nextNode.AddTargetEntries.end();
+    };
+    auto validationPartyHasActiveCombat = [this, &forEachActiveValidationCohortCombatCreature, &isImmediateNextValidationRouteBossTarget]() -> bool
     {
         bool active = false;
         forEachActiveValidationCohortCombatCreature([&](Creature const* creature)
@@ -10530,17 +10923,235 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 && (Party().ValidationRoutePackDeathGuids.find(creature->GetGUID()) != Party().ValidationRoutePackDeathGuids.end()
                     || Party().ValidationRoutePackTransitionGuids.find(creature->GetGUID()) != Party().ValidationRoutePackTransitionGuids.end()))
                 return;
+            // A future canonical boss remains isolated until its own route
+            // generation. Non-boss adds that are already exact-party
+            // combat-linked are no longer future work: terminal recovery must
+            // count and resolve them instead of leaving the party idle in a
+            // lethal combat reference.
+            if (isImmediateNextValidationRouteBossTarget(creature))
+                return;
             active = true;
         });
         return active;
     };
-    auto isNaturalValidationRoutePackMember = [this, bot](Creature const* creature) -> bool
+    auto isBoundedTerminalPartyCombatTarget = [
+        this,
+        bot,
+        &isValidationCohortCombatLinked,
+        &isImmediateNextValidationRouteBossTarget,
+        &hasStrictPathToValidationRouteTarget
+    ](Creature const* creature) -> bool
+    {
+        if (!bot || !creature || !creature->IsAlive() || !creature->GetHealth()
+            || creature->GetMap() != bot->GetMap() || !bot->IsValidAttackTarget(creature))
+            return false;
+        if (Party().ValidationRoutePendingFinalTransitionGuids.find(creature->GetGUID()) != Party().ValidationRoutePendingFinalTransitionGuids.end()
+            || Party().ValidationRouteFinalTransitionGuids.find(creature->GetGUID()) != Party().ValidationRouteFinalTransitionGuids.end()
+            || isImmediateNextValidationRouteBossTarget(creature)
+            || creature->IsDungeonBoss() || creature->isWorldBoss())
+            return false;
+        if (!isValidationCohortCombatLinked(creature))
+            return false;
+
+        // This is only a bounded resolver for a terminal node whose normal
+        // pack is already dead. Keep it inside the same 120-yard
+        // prerequisite envelope used by route combat, and require either
+        // current LOS or a strict path before it can become shared focus.
+        if (creature->GetExactDist(
+                Cohort().Config.ValidationRouteX,
+                Cohort().Config.ValidationRouteY,
+                Cohort().Config.ValidationRouteZ) > 120.0f)
+            return false;
+        return bot->IsWithinLOSInMap(creature)
+            || hasStrictPathToValidationRouteTarget(creature);
+    };
+    auto findBoundedTerminalPartyCombatTarget = [
+        this,
+        bot,
+        &forEachActiveValidationCohortCombatCreature,
+        &isBoundedTerminalPartyCombatTarget
+    ]() -> Unit*
+    {
+        Creature* best = nullptr;
+        uint8 bestPriority = 0;
+        float bestDistance = std::numeric_limits<float>::max();
+        uint64 bestGuid = std::numeric_limits<uint64>::max();
+        forEachActiveValidationCohortCombatCreature([&](Creature* creature)
+        {
+            if (!isBoundedTerminalPartyCombatTarget(creature))
+                return;
+
+            Unit* victim = creature->GetVictim();
+            Player* victimPlayer = victim ? victim->ToPlayer() : nullptr;
+            std::string victimRole = victimPlayer ? GetDungeonRole(victimPlayer) : "";
+            uint8 priority = victimRole == "healer" ? 3
+                : victimPlayer && victimRole != "tank" ? 2
+                : victim != bot ? 1 : 0;
+            float distance = bot->GetExactDist(creature);
+            uint64 guid = creature->GetGUID().GetRawValue();
+            if (!best || priority > bestPriority
+                || (priority == bestPriority && distance < bestDistance)
+                || (priority == bestPriority && distance == bestDistance && guid < bestGuid))
+            {
+                best = creature;
+                bestPriority = priority;
+                bestDistance = distance;
+                bestGuid = guid;
+            }
+        });
+        return best;
+    };
+    auto tryCanonicalValidationRouteBossRecovery = [
+        this,
+        bot,
+        &state,
+        &power,
+        stage,
+        activity,
+        &validationPartyHasActiveCombat
+    ](std::string& recoveryResult, bool& recoveryInitiated) -> bool
+    {
+        recoveryResult.clear();
+        recoveryInitiated = false;
+        if (!bot || !bot->GetMap()
+            || Cohort().Config.ValidationRouteKind != "boss"
+            || std::string(GetDungeonRole(bot)) != "tank"
+            || !Cohort().Config.ValidationRouteTargetEntry
+            || Party().ValidationRouteManifestIndex >= Party().ValidationRouteManifest.size())
+            return false;
+
+        uint32 deathParticipants = 0;
+        uint32 recentDeathCount = 0;
+        for (WorldBotState const& cohortState : Party().Bots)
+            if (cohortState.RecentDeathCount)
+            {
+                ++deathParticipants;
+                recentDeathCount += cohortState.RecentDeathCount;
+            }
+        if (deathParticipants < 2 || recentDeathCount < 2 || validationPartyHasActiveCombat())
+            return false;
+
+        uint64 nowMs = NowMs();
+        if (Party().ValidationRouteCanonicalBossRecoveryAttempts >= 2
+            || (Party().ValidationRouteCanonicalBossRecoveryLastMs
+                && nowMs - Party().ValidationRouteCanonicalBossRecoveryLastMs < 10000))
+            return false;
+
+        ValidationRouteManifestNode const& node = Party().ValidationRouteManifest[Party().ValidationRouteManifestIndex];
+        ObjectGuid::LowType canonicalSpawnId = 0;
+        float canonicalDistance = 0.0f;
+        for (auto const& pair : sObjectMgr->GetAllCreatureData())
+        {
+            CreatureData const& data = pair.second;
+            if (data.id != Cohort().Config.ValidationRouteTargetEntry || data.mapId != bot->GetMapId())
+                continue;
+
+            float distance = Distance2d(node.X, node.Y, data.spawnPoint.GetPositionX(), data.spawnPoint.GetPositionY());
+            if (!canonicalSpawnId || distance < canonicalDistance)
+            {
+                canonicalSpawnId = pair.first;
+                canonicalDistance = distance;
+            }
+        }
+
+        ++Party().ValidationRouteCanonicalBossRecoveryAttempts;
+        Party().ValidationRouteCanonicalBossRecoveryLastMs = nowMs;
+        if (!canonicalSpawnId || canonicalDistance > 80.0f)
+            recoveryResult = "canonical_boss_spawn_not_found";
+        else
+        {
+            Map* routeMap = bot->GetMap();
+            if (Creature* loaded = routeMap->GetCreatureBySpawnId(canonicalSpawnId))
+            {
+                loaded->Respawn(true);
+                recoveryResult = "canonical_boss_loaded_spawn_forced_respawn";
+                recoveryInitiated = true;
+            }
+            else if (routeMap->GetCreatureRespawnTime(canonicalSpawnId))
+            {
+                routeMap->Respawn(SPAWN_TYPE_CREATURE, canonicalSpawnId);
+                recoveryResult = "canonical_boss_scheduled_respawn_advanced";
+                recoveryInitiated = true;
+            }
+            else
+            {
+                Creature* recovered = new Creature();
+                if (recovered->LoadFromDB(canonicalSpawnId, routeMap, true, false))
+                {
+                    recoveryResult = "canonical_boss_spawn_loaded_from_database";
+                    recoveryInitiated = true;
+                }
+                else
+                {
+                    delete recovered;
+                    recoveryResult = "canonical_boss_spawn_load_failed";
+                }
+            }
+        }
+
+        if (recoveryInitiated)
+        {
+            Party().ValidationRouteFocusGuid.Clear();
+            Party().ValidationRouteFocusEntry = 0;
+            Party().ValidationRouteFocusMapId = 0;
+            Party().ValidationRouteFocusX = 0.0f;
+            Party().ValidationRouteFocusY = 0.0f;
+            Party().ValidationRouteFocusZ = 0.0f;
+            Party().ValidationRouteFocusSeenMs = 0;
+            Party().ValidationRouteBossProgressTargetGuid.Clear();
+            Party().ValidationRouteBossSlowProgressCount = 0;
+            Party().ValidationRouteEngagedBossGuid.Clear();
+            Party().ValidationRouteEngagedBossGeneration = 0;
+            Party().ValidationRouteEngagedBossMapId = 0;
+            Party().ValidationRouteEngagedBossInstanceId = 0;
+            ResetValidationRouteBossAddDensityState();
+            for (WorldBotState& cohortState : Party().Bots)
+            {
+                cohortState.TargetGuid.Clear();
+                cohortState.ValidationRouteCombatProgressTargetGuid.Clear();
+                cohortState.ValidationRouteCombatBestHealthPct = 1.0f;
+                cohortState.ValidationRouteCombatNoProgressCount = 0;
+                cohortState.ValidationRouteCombatNoProgressSinceMs = 0;
+                cohortState.ValidationRouteBossSlowProgressCount = 0;
+                cohortState.ValidationRouteTargetSearchMissCount = 0;
+                cohortState.ValidationRouteAnchorOverrideValid = false;
+                cohortState.ValidationRouteAnchorOverrideUntilMs = 0;
+                cohortState.ValidationRouteAnchorOverrideReason.clear();
+            }
+        }
+
+        std::ostringstream raw;
+        raw << "{\"base\":" << BuildRawJson(bot, nullptr)
+            << ",\"canonical_boss_recovery\":{\"spawn_id\":" << canonicalSpawnId
+            << ",\"entry\":" << Cohort().Config.ValidationRouteTargetEntry
+            << ",\"route_generation\":" << Party().ValidationRouteGeneration
+            << ",\"distance\":" << canonicalDistance
+            << ",\"death_participants\":" << deathParticipants
+            << ",\"recent_death_count\":" << recentDeathCount
+            << ",\"attempt\":" << Party().ValidationRouteCanonicalBossRecoveryAttempts
+            << ",\"initiated\":" << (recoveryInitiated ? "true" : "false") << "}}";
+        std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_canonical_boss_recovery", &power, stage, activity);
+        RecordEvent(state, bot, "validation_route_recovery", nullptr, recoveryResult.c_str(), raw.str().c_str(), semantic.c_str(), canonicalDistance, Cohort().Config.ValidationRouteTargetEntry);
+        if (!recoveryInitiated)
+            MarkBotBlocked(state, bot, recoveryResult.c_str());
+        return true;
+    };
+    auto isNaturalValidationRoutePackMember = [
+        this,
+        bot,
+        &isFutureCanonicalValidationRouteSource,
+        &isImmediateNextValidationRouteEncounterMember
+    ](Creature const* creature) -> bool
     {
         if (!bot || !creature || !creature->IsAlive() || !creature->GetHealth() || creature->GetMap() != bot->GetMap())
             return false;
         if (Party().ValidationRoutePendingFinalTransitionGuids.find(creature->GetGUID()) != Party().ValidationRoutePendingFinalTransitionGuids.end())
             return false;
         if (Party().ValidationRouteFinalTransitionGuids.find(creature->GetGUID()) != Party().ValidationRouteFinalTransitionGuids.end())
+            return false;
+        if (isImmediateNextValidationRouteEncounterMember(creature))
+            return false;
+        if (isFutureCanonicalValidationRouteSource(creature))
             return false;
         if (creature->IsDungeonBoss() || creature->isWorldBoss())
             return false;
@@ -10564,6 +11175,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         }
         bool memberInserted = Party().ValidationRoutePackMemberGuids.insert(creature->GetGUID()).second;
         bool engagementInserted = Party().ValidationRoutePackEngagedGuids.insert(creature->GetGUID()).second;
+        Party().ValidationRoutePackTransitionGuids.erase(creature->GetGUID());
         Party().ValidationRoutePackObservedEngagement = true;
         Party().ValidationRoutePackClearCandidateSinceMs = 0;
         if (memberInserted || engagementInserted)
@@ -10623,7 +11235,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             cohortState.ValidationRouteCombatProgressTargetGuid.Clear();
             cohortState.ValidationRoutePackProgressTargetGuid.Clear();
             cohortState.ValidationRouteCombatNoProgressCount = 0;
+            cohortState.ValidationRouteCombatNoProgressSinceMs = 0;
             cohortState.ValidationRoutePackNoProgressCount = 0;
+            cohortState.ValidationRoutePackNoProgressSinceMs = 0;
             if (cohortState.LastCombatAttempt.TargetGuid == transitionedGuid)
                 cohortState.LastCombatAttempt = WorldBotState::CombatAttemptDiagnostic();
             if (cohortState.LastRouteProgress.TargetGuid == transitionedGuid)
@@ -10635,7 +11249,112 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         RecordEvent(state, bot, "validation_route_scripted_transition", creature, "manifest_transition_observed", raw.c_str(), semantic.c_str(), UnitHealthPct(creature), auraId);
         return true;
     };
-    auto enrollEngagedValidationRoutePackMembers = [this, bot, &forEachActiveValidationCohortCombatCreature, &isNaturalValidationRoutePackMember, &enrollValidationRoutePackMember, &recordValidationRouteScriptedTransition]() -> void
+    auto retireStaleValidationRoutePackMembers = [
+        this,
+        bot,
+        &state,
+        &power,
+        stage,
+        activity,
+        &isNaturalValidationRoutePackMember,
+        &isValidationCohortCombatLinked
+    ]() -> void
+    {
+        if (Cohort().Config.ValidationRouteKind == "boss" || !bot || !bot->GetMap()
+            || Party().ValidationRoutePackGeneration != Party().ValidationRouteGeneration)
+            return;
+
+        std::vector<ObjectGuid> memberGuids(Party().ValidationRoutePackMemberGuids.begin(), Party().ValidationRoutePackMemberGuids.end());
+        for (ObjectGuid const& guid : memberGuids)
+        {
+            if (Party().ValidationRoutePackDeathGuids.find(guid) != Party().ValidationRoutePackDeathGuids.end()
+                || Party().ValidationRoutePackTransitionGuids.find(guid) != Party().ValidationRoutePackTransitionGuids.end())
+                continue;
+
+            Creature* creature = bot->GetMap()->GetCreature(guid);
+            if (creature && (!creature->IsAlive() || !creature->GetHealth()))
+                continue;
+
+            bool combatLinked = creature && isValidationCohortCombatLinked(creature);
+            bool recentProgress = false;
+            uint64 nowMs = NowMs();
+            static constexpr uint64 PackProgressFreshMs = 10000;
+            for (WorldBotState const& cohortState : Party().Bots)
+            {
+                bool recentCombatAttempt = cohortState.LastCombatAttempt.TargetGuid == guid
+                    && cohortState.LastCombatAttempt.RecordedAtMs
+                    && nowMs >= cohortState.LastCombatAttempt.RecordedAtMs
+                    && nowMs - cohortState.LastCombatAttempt.RecordedAtMs <= PackProgressFreshMs;
+                bool recentRouteProgress = cohortState.LastRouteProgress.TargetGuid == guid
+                    && cohortState.LastRouteProgress.RecordedAtMs
+                    && nowMs >= cohortState.LastRouteProgress.RecordedAtMs
+                    && nowMs - cohortState.LastRouteProgress.RecordedAtMs <= PackProgressFreshMs;
+                if (recentCombatAttempt || recentRouteProgress)
+                {
+                    recentProgress = true;
+                    break;
+                }
+            }
+
+            bool naturalMember = creature && isNaturalValidationRoutePackMember(creature);
+            bool attackable = creature && bot->IsValidAttackTarget(creature);
+            if (naturalMember && attackable && (combatLinked || recentProgress))
+                continue;
+
+            if (!Party().ValidationRoutePackTransitionGuids.insert(guid).second)
+                continue;
+
+            if (Party().ValidationRouteFocusGuid == guid)
+            {
+                Party().ValidationRouteFocusGuid.Clear();
+                Party().ValidationRouteFocusEntry = 0;
+                Party().ValidationRouteFocusMapId = 0;
+                Party().ValidationRouteFocusX = 0.0f;
+                Party().ValidationRouteFocusY = 0.0f;
+                Party().ValidationRouteFocusZ = 0.0f;
+                Party().ValidationRouteFocusSeenMs = 0;
+            }
+            for (WorldBotState& cohortState : Party().Bots)
+            {
+                if (Player* member = GetLoadedBot(cohortState); member && cohortState.TargetGuid == guid)
+                    member->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+                if (cohortState.TargetGuid == guid)
+                    cohortState.TargetGuid.Clear();
+                if (cohortState.LastDecisionTargetGuid == guid)
+                    cohortState.LastDecisionTargetGuid.Clear();
+                if (cohortState.ValidationRouteCombatProgressTargetGuid == guid)
+                    cohortState.ValidationRouteCombatProgressTargetGuid.Clear();
+                if (cohortState.ValidationRoutePackProgressTargetGuid == guid)
+                    cohortState.ValidationRoutePackProgressTargetGuid.Clear();
+                if (cohortState.LastCombatAttempt.TargetGuid == guid)
+                    cohortState.LastCombatAttempt = WorldBotState::CombatAttemptDiagnostic();
+                if (cohortState.LastRouteProgress.TargetGuid == guid)
+                    cohortState.LastRouteProgress = WorldBotState::RouteProgressDiagnostic();
+                cohortState.ValidationRouteCombatNoProgressCount = 0;
+                cohortState.ValidationRouteCombatNoProgressSinceMs = 0;
+                cohortState.ValidationRoutePackNoProgressCount = 0;
+                cohortState.ValidationRoutePackNoProgressSinceMs = 0;
+                cohortState.ActivePathValid = false;
+            }
+
+            char const* reason = !creature ? "member_not_loaded"
+                : !naturalMember ? "member_no_longer_natural"
+                : !attackable ? "member_no_longer_attackable"
+                : "member_no_longer_engaged_or_progressing";
+            std::ostringstream raw;
+            raw << "{\"base\":" << BuildRawJson(bot, creature)
+                << ",\"pack_retirement\":{\"guid\":" << guid.GetCounter()
+                << ",\"route_generation\":" << Party().ValidationRouteGeneration
+                << ",\"combat_linked\":" << (combatLinked ? "true" : "false")
+                << ",\"recent_progress\":" << (recentProgress ? "true" : "false")
+                << ",\"natural_member\":" << (naturalMember ? "true" : "false")
+                << ",\"attackable\":" << (attackable ? "true" : "false") << "}}";
+            std::string semantic = BuildSemanticJson(bot, creature, "validation_route_pack_retirement", &power, stage, activity);
+            RecordEvent(state, bot, "validation_route_pack_retired", creature, reason, raw.str().c_str(), semantic.c_str(),
+                creature ? bot->GetExactDist(creature) : 0.0f, creature ? creature->GetEntry() : 0);
+        }
+    };
+    auto enrollEngagedValidationRoutePackMembers = [this, bot, &forEachActiveValidationCohortCombatCreature, &isNaturalValidationRoutePackMember, &enrollValidationRoutePackMember, &recordValidationRouteScriptedTransition, &retireStaleValidationRoutePackMembers]() -> void
     {
         if (Cohort().Config.ValidationRouteKind == "boss" || !bot)
             return;
@@ -10655,6 +11374,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         for (ObjectGuid const& guid : memberGuids)
             if (Creature* creature = bot->GetMap()->GetCreature(guid))
                 recordValidationRouteScriptedTransition(creature);
+        retireStaleValidationRoutePackMembers();
     };
     auto persistedValidationRoutePackHasLiveMembers = [this]() -> bool
     {
@@ -10967,7 +11687,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         for (WorldObject* object : objects)
         {
             Creature* creature = object ? object->ToCreature() : nullptr;
-            if (isLiveTrashClusterMob(creature))
+            if (isEligibleTrashClusterMob(creature))
             {
                 trashClusterTerminalBlocker.Guid = creature->GetGUID();
                 captureTrashClusterTerminalBlocker(creature);
@@ -10991,7 +11711,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             cohortState.ValidationRouteCombatProgressTargetGuid.Clear();
             cohortState.ValidationRoutePackProgressTargetGuid.Clear();
             cohortState.ValidationRouteCombatNoProgressCount = 0;
+            cohortState.ValidationRouteCombatNoProgressSinceMs = 0;
             cohortState.ValidationRoutePackNoProgressCount = 0;
+            cohortState.ValidationRoutePackNoProgressSinceMs = 0;
             cohortState.ValidationRouteUnresolvedFocusHoldCount = 0;
             cohortState.ValidationRouteTerminalState = true;
             cohortState.ValidationRouteTerminalAtMs = nowMs;
@@ -11026,7 +11748,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             cohortState.ValidationRouteCombatProgressTargetGuid.Clear();
             cohortState.ValidationRoutePackProgressTargetGuid.Clear();
             cohortState.ValidationRouteCombatNoProgressCount = 0;
+            cohortState.ValidationRouteCombatNoProgressSinceMs = 0;
             cohortState.ValidationRoutePackNoProgressCount = 0;
+            cohortState.ValidationRoutePackNoProgressSinceMs = 0;
             cohortState.ValidationRouteUnresolvedFocusHoldCount = 0;
             cohortState.ValidationRouteTerminalState = true;
             cohortState.ValidationRouteTerminalAtMs = nowMs;
@@ -11060,6 +11784,10 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
         for (WorldBotState& cohortState : Party().Bots)
         {
+            bool preservePartialWipeRendezvous =
+                cohortState.ValidationRouteAnchorOverrideValid
+                && cohortState.ValidationRouteAnchorOverrideReason
+                    == "validation_route_partial_wipe_retreat_rendezvous";
             if (cohortState.TargetGuid == killedGuid)
                 cohortState.TargetGuid.Clear();
             if (cohortState.ValidationRouteCombatProgressTargetGuid == killedGuid)
@@ -11068,9 +11796,16 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 cohortState.ValidationRoutePackProgressTargetGuid.Clear();
             if (cohortState.LastDecisionTargetGuid == killedGuid)
                 cohortState.LastDecisionTargetGuid.Clear();
-            cohortState.ValidationRouteAnchorOverrideValid = false;
-            cohortState.ValidationRouteAnchorOverrideUntilMs = 0;
-            cohortState.ValidationRouteAnchorOverrideReason.clear();
+            // A retreat rendezvous is recovery state, not killed-focus state.
+            // Clearing it when the abandoned pack leashes or dies makes the
+            // dead critical role resurrect at its old safe position instead
+            // of beside the survivors.
+            if (!preservePartialWipeRendezvous)
+            {
+                cohortState.ValidationRouteAnchorOverrideValid = false;
+                cohortState.ValidationRouteAnchorOverrideUntilMs = 0;
+                cohortState.ValidationRouteAnchorOverrideReason.clear();
+            }
             if (cohortState.LastCombatAttempt.TargetGuid == killedGuid)
                 cohortState.LastCombatAttempt = WorldBotState::CombatAttemptDiagnostic();
             if (cohortState.LastRouteProgress.TargetGuid == killedGuid)
@@ -11079,7 +11814,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             cohortState.ValidationRouteTerminalAtMs = 0;
             cohortState.ValidationRouteTerminalGeneration = 0;
             cohortState.ValidationRouteTerminalReason.clear();
-            cohortState.RecentDeathCount = 0;
+            if (!preservePartialWipeRendezvous)
+                cohortState.RecentDeathCount = 0;
         }
 
         state.ValidationRouteUnresolvedFocusHoldCount = 0;
@@ -11130,7 +11866,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 cohortState.ValidationRouteCombatProgressTargetGuid.Clear();
                 cohortState.ValidationRoutePackProgressTargetGuid.Clear();
                 cohortState.ValidationRouteCombatNoProgressCount = 0;
+                cohortState.ValidationRouteCombatNoProgressSinceMs = 0;
                 cohortState.ValidationRoutePackNoProgressCount = 0;
+                cohortState.ValidationRoutePackNoProgressSinceMs = 0;
                 cohortState.ValidationRouteUnresolvedFocusHoldCount = 0;
                 cohortState.ValidationRouteTerminalState = true;
                 cohortState.ValidationRouteTerminalAtMs = nowMs;
@@ -11304,11 +12042,19 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             cohortState.ValidationRouteCombatProgressTargetGuid.Clear();
             cohortState.ValidationRoutePackProgressTargetGuid.Clear();
             cohortState.ValidationRouteCombatNoProgressCount = 0;
+            cohortState.ValidationRouteCombatNoProgressSinceMs = 0;
             cohortState.ValidationRoutePackNoProgressCount = 0;
+            cohortState.ValidationRoutePackNoProgressSinceMs = 0;
         }
         return true;
     };
-    auto routeUsableCombatTarget = [this, bot, &isValidationRouteCombatTarget, &isEligibleTrashClusterMob](Unit* candidate) -> Unit*
+    auto routeUsableCombatTarget = [
+        this,
+        bot,
+        &isValidationRouteCombatTarget,
+        &isEligibleTrashClusterMob,
+        &isBoundedTerminalPartyCombatTarget
+    ](Unit* candidate) -> Unit*
     {
         if (!candidate || !candidate->IsAlive() || !candidate->GetHealth() || !bot || !bot->IsValidAttackTarget(candidate))
             return nullptr;
@@ -11318,7 +12064,14 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return nullptr;
 
         if (Cohort().Config.ValidationRouteKind != "boss")
-            return isEligibleTrashClusterMob(creature) ? candidate : nullptr;
+        {
+            if (isEligibleTrashClusterMob(creature))
+                return candidate;
+            bool explicitTerminalCombatFocus = !Party().ValidationRouteFocusGuid.IsEmpty()
+                && candidate->GetGUID() == Party().ValidationRouteFocusGuid
+                && isBoundedTerminalPartyCombatTarget(creature);
+            return explicitTerminalCombatFocus ? candidate : nullptr;
+        }
 
         if (isValidationRouteCombatTarget(creature))
             return candidate;
@@ -11348,7 +12101,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             // Their dedicated add handler and the external watchdog own
             // progress; never let that transient handoff latch a route failure.
             state.ValidationRouteCombatNoProgressCount = 0;
+            state.ValidationRouteCombatNoProgressSinceMs = 0;
             state.ValidationRoutePackNoProgressCount = 0;
+            state.ValidationRoutePackNoProgressSinceMs = 0;
             return false;
         }
 
@@ -11358,29 +12113,45 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
         float healthPct = UnitHealthPct(prerequisiteTarget);
         std::string contextText = context ? context : "";
-        auto lastCombatAttemptIsSchedulingWait = [&state]() -> bool
+        // Trash route liveness is a party-level contract owned by the tank. A
+        // ranged bot can reject several tactical candidate paths in one second;
+        // letting that decision frequency terminalize the shared pack made a
+        // still-viable corridor pull fail before the tank could reapproach it.
+        if (Cohort().Config.ValidationRouteKind != "boss" && std::string(GetDungeonRole(bot)) != "tank")
         {
-            return state.LastCombatAttempt.Result == "casting"
-                || state.LastCombatAttempt.Result == "global_cooldown"
-                || state.LastCombatAttempt.Result == "cooldown"
-                || state.LastCombatAttempt.Reason == "already_casting"
-                || state.LastCombatAttempt.Reason == "global_cooldown"
-                || state.LastCombatAttempt.Reason == "cooldown";
+            state.ValidationRouteCombatNoProgressCount = 0;
+            state.ValidationRouteCombatNoProgressSinceMs = 0;
+            state.ValidationRoutePackNoProgressCount = 0;
+            state.ValidationRoutePackNoProgressSinceMs = 0;
+            return false;
+        }
+
+        constexpr uint64 noProgressSampleIntervalMs = 5000;
+        uint64 nowMs = NowMs();
+        auto elapsedNoProgressSamples = [nowMs, noProgressSampleIntervalMs](uint64& sinceMs) -> uint32
+        {
+            if (!sinceMs)
+            {
+                sinceMs = nowMs;
+                return 0;
+            }
+            return uint32((nowMs - sinceMs) / noProgressSampleIntervalMs);
+        };
+        auto resetCombatNoProgress = [&state, nowMs]() -> void
+        {
+            state.ValidationRouteCombatNoProgressCount = 0;
+            state.ValidationRouteCombatNoProgressSinceMs = nowMs;
+        };
+        auto resetPackNoProgress = [&state, nowMs]() -> void
+        {
+            state.ValidationRoutePackNoProgressCount = 0;
+            state.ValidationRoutePackNoProgressSinceMs = nowMs;
         };
         auto lastCombatAttemptTargetsDifferentPackMob = [&state, prerequisiteTarget, &isValidationRoutePackEntry]() -> bool
         {
             return !state.LastCombatAttempt.TargetGuid.IsEmpty()
                 && state.LastCombatAttempt.TargetGuid != prerequisiteTarget->GetGUID()
                 && isValidationRoutePackEntry(state.LastCombatAttempt.TargetEntry);
-        };
-        auto contextIsCombatProgressProbe = [&contextText]() -> bool
-        {
-            return contextText.find("no_health_progress") != std::string::npos
-                || contextText.find("path_no_progress") != std::string::npos;
-        };
-        auto lastCombatAttemptIsNormalCombatTick = [&state, &lastCombatAttemptIsSchedulingWait]() -> bool
-        {
-            return state.LastCombatAttempt.Result == "ok" || lastCombatAttemptIsSchedulingWait();
         };
         bool bossRouteContext = Cohort().Config.ValidationRouteKind == "boss"
             && (contextText.rfind("boss_route_", 0) == 0
@@ -11404,10 +12175,10 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         {
             state.ValidationRouteCombatProgressTargetGuid = prerequisiteTarget->GetGUID();
             state.ValidationRouteCombatBestHealthPct = healthPct;
-            state.ValidationRouteCombatNoProgressCount = 0;
+            resetCombatNoProgress();
             state.ValidationRoutePackProgressTargetGuid = prerequisiteTarget->GetGUID();
             state.ValidationRoutePackBestHealthPct = healthPct;
-            state.ValidationRoutePackNoProgressCount = 0;
+            resetPackNoProgress();
             refreshRouteProgress("unengaged_boss_prerequisite_observed", 0);
             return false;
         }
@@ -11419,7 +12190,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             {
                 state.ValidationRouteCombatProgressTargetGuid = prerequisiteTarget->GetGUID();
                 state.ValidationRouteCombatBestHealthPct = healthPct;
-                state.ValidationRouteCombatNoProgressCount = 0;
+                resetCombatNoProgress();
                 state.ValidationRouteBossSlowProgressCount = 0;
                 refreshRouteProgress(context, 2);
             }
@@ -11449,7 +12220,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             {
                 state.ValidationRoutePackProgressTargetGuid = prerequisiteTarget->GetGUID();
                 state.ValidationRoutePackBestHealthPct = healthPct;
-                state.ValidationRoutePackNoProgressCount = 0;
+                resetPackNoProgress();
                 return false;
             }
 
@@ -11458,7 +12229,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 if (healthPct + 0.02f < state.ValidationRoutePackBestHealthPct)
                 {
                     state.ValidationRoutePackBestHealthPct = healthPct;
-                    state.ValidationRoutePackNoProgressCount = 0;
+                    resetPackNoProgress();
                     return false;
                 }
             }
@@ -11470,15 +12241,13 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 // previous mob's counter into this target can immediately trip
                 // the pack failure threshold while the tank is only pathing into
                 // range, especially during the final pull before a boss.
-                state.ValidationRoutePackNoProgressCount = 0;
+                resetPackNoProgress();
                 return false;
             }
 
-            if (contextIsCombatProgressProbe() && lastCombatAttemptIsNormalCombatTick())
-                return false;
-
             uint32 packNoProgressThreshold = Cohort().Config.ValidationRouteKind == "boss" ? 5 : 15;
-            if (++state.ValidationRoutePackNoProgressCount < packNoProgressThreshold)
+            state.ValidationRoutePackNoProgressCount = elapsedNoProgressSamples(state.ValidationRoutePackNoProgressSinceMs);
+            if (state.ValidationRoutePackNoProgressCount < packNoProgressThreshold)
                 return false;
 
             std::string raw = BuildRawJson(bot, prerequisiteTarget);
@@ -11486,7 +12255,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             RecordEvent(state, bot, "validation_route_failed", prerequisiteTarget, "validation_trash_no_progress", raw.c_str(), semantic.c_str(), healthPct, Cohort().Config.ValidationRouteTargetEntry);
             markValidationRouteTrashFailed(prerequisiteTarget, "validation_trash_no_progress", "validation_route_pack_no_progress", healthPct, Cohort().Config.ValidationRouteTargetEntry, state.ValidationRoutePackBestHealthPct, state.ValidationRoutePackNoProgressCount, packNoProgressThreshold);
             state.ValidationRoutePackBestHealthPct = UnitHealthPct(prerequisiteTarget);
-            state.ValidationRoutePackNoProgressCount = 0;
+            resetPackNoProgress();
             state.LastNoProgressReason = "validation_trash_no_progress";
             return true;
         };
@@ -11506,24 +12275,33 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             {
                 state.ValidationRoutePackProgressTargetGuid = prerequisiteTarget->GetGUID();
                 state.ValidationRoutePackBestHealthPct = healthPct;
-            }
-            else if (healthPct < state.ValidationRoutePackBestHealthPct)
-                state.ValidationRoutePackBestHealthPct = healthPct;
-
-            if (contextIsCombatProgressProbe() && lastCombatAttemptIsNormalCombatTick())
+                resetPackNoProgress();
                 return false;
-
-            uint32 routeTargetNoProgressThreshold = Cohort().Config.ValidationRouteKind == "boss" ? 5 : 20;
-            if (++state.ValidationRoutePackNoProgressCount >= routeTargetNoProgressThreshold)
+            }
+            if (healthPct < state.ValidationRoutePackBestHealthPct)
             {
-                std::string raw = BuildRawJson(bot, prerequisiteTarget);
-                std::string semantic = BuildSemanticJson(bot, prerequisiteTarget, "validation_route_trash_slow_progress", &power, stage, activity);
-                RecordEvent(state, bot, "validation_route_failed", prerequisiteTarget, "validation_trash_no_progress", raw.c_str(), semantic.c_str(), healthPct, Cohort().Config.ValidationRouteTargetEntry);
-                markValidationRouteTrashFailed(prerequisiteTarget, "validation_trash_no_progress", "validation_route_trash_slow_progress", healthPct, Cohort().Config.ValidationRouteTargetEntry, state.ValidationRoutePackBestHealthPct, state.ValidationRoutePackNoProgressCount, routeTargetNoProgressThreshold);
-                state.ValidationRoutePackBestHealthPct = UnitHealthPct(prerequisiteTarget);
-                state.ValidationRoutePackNoProgressCount = 0;
-                state.LastNoProgressReason = "validation_trash_no_progress";
-                return true;
+                state.ValidationRoutePackBestHealthPct = healthPct;
+                resetPackNoProgress();
+            }
+
+            bool unengagedRouteTarget = !prerequisiteTarget->IsInCombat() && !prerequisiteTarget->GetVictim();
+            if (unengagedRouteTarget)
+                resetPackNoProgress();
+            else
+            {
+                uint32 routeTargetNoProgressThreshold = Cohort().Config.ValidationRouteKind == "boss" ? 5 : 20;
+                state.ValidationRoutePackNoProgressCount = elapsedNoProgressSamples(state.ValidationRoutePackNoProgressSinceMs);
+                if (state.ValidationRoutePackNoProgressCount >= routeTargetNoProgressThreshold)
+                {
+                    std::string raw = BuildRawJson(bot, prerequisiteTarget);
+                    std::string semantic = BuildSemanticJson(bot, prerequisiteTarget, "validation_route_trash_slow_progress", &power, stage, activity);
+                    RecordEvent(state, bot, "validation_route_failed", prerequisiteTarget, "validation_trash_no_progress", raw.c_str(), semantic.c_str(), healthPct, Cohort().Config.ValidationRouteTargetEntry);
+                    markValidationRouteTrashFailed(prerequisiteTarget, "validation_trash_no_progress", "validation_route_trash_slow_progress", healthPct, Cohort().Config.ValidationRouteTargetEntry, state.ValidationRoutePackBestHealthPct, state.ValidationRoutePackNoProgressCount, routeTargetNoProgressThreshold);
+                    state.ValidationRoutePackBestHealthPct = UnitHealthPct(prerequisiteTarget);
+                    resetPackNoProgress();
+                    state.LastNoProgressReason = "validation_trash_no_progress";
+                    return true;
+                }
             }
         }
 
@@ -11531,24 +12309,24 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         {
             state.ValidationRouteCombatProgressTargetGuid = prerequisiteTarget->GetGUID();
             state.ValidationRouteCombatBestHealthPct = healthPct;
-            state.ValidationRouteCombatNoProgressCount = 0;
+            resetCombatNoProgress();
             state.ValidationRouteBossSlowProgressCount = 0;
             refreshRouteProgress(context, Cohort().Config.ValidationRouteKind == "boss" ? 4 : 12);
             maybeRoutePackNoProgressAssist();
             return false;
         }
 
-        if (healthPct + 0.02f < state.ValidationRouteCombatBestHealthPct)
+        if (healthPct < state.ValidationRouteCombatBestHealthPct)
         {
             state.ValidationRouteCombatBestHealthPct = healthPct;
-            state.ValidationRouteCombatNoProgressCount = 0;
+            resetCombatNoProgress();
             state.ValidationRouteBossSlowProgressCount = 0;
             refreshRouteProgress(context, Cohort().Config.ValidationRouteKind == "boss" ? 4 : 12);
             if (!trashRouteTargetContext)
             {
                 state.ValidationRoutePackProgressTargetGuid = prerequisiteTarget->GetGUID();
                 state.ValidationRoutePackBestHealthPct = healthPct;
-                state.ValidationRoutePackNoProgressCount = 0;
+                resetPackNoProgress();
             }
             return false;
         }
@@ -11558,13 +12336,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
         bool bossRouteNoProgress = bossRouteContext && isValidationRouteScriptTarget(creature);
         uint32 noProgressThreshold = bossRouteNoProgress ? 2 : (Cohort().Config.ValidationRouteKind == "boss" ? 4 : 12);
-        if (!bossRouteNoProgress && contextIsCombatProgressProbe() && lastCombatAttemptIsNormalCombatTick())
-        {
-            refreshRouteProgress(context, noProgressThreshold);
-            return false;
-        }
-
-        ++state.ValidationRouteCombatNoProgressCount;
+        state.ValidationRouteCombatNoProgressCount = elapsedNoProgressSamples(state.ValidationRouteCombatNoProgressSinceMs);
         refreshRouteProgress(context, noProgressThreshold);
         if (state.ValidationRouteCombatNoProgressCount < noProgressThreshold)
             return false;
@@ -11580,7 +12352,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             if (std::string(GetDungeonRole(bot)) != "tank")
             {
                 state.ValidationRouteCombatNoProgressCount = 0;
+                state.ValidationRouteCombatNoProgressSinceMs = 0;
                 state.ValidationRoutePackNoProgressCount = 0;
+                state.ValidationRoutePackNoProgressSinceMs = 0;
                 return false;
             }
 
@@ -11598,7 +12372,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 cohortState.ValidationRouteCombatBestHealthPct = 1.0f;
                 cohortState.ValidationRoutePackBestHealthPct = 1.0f;
                 cohortState.ValidationRouteCombatNoProgressCount = 0;
+                cohortState.ValidationRouteCombatNoProgressSinceMs = 0;
                 cohortState.ValidationRoutePackNoProgressCount = 0;
+                cohortState.ValidationRoutePackNoProgressSinceMs = 0;
                 cohortState.LastCombatAttempt = WorldBotState::CombatAttemptDiagnostic();
                 cohortState.LastRouteProgress = WorldBotState::RouteProgressDiagnostic();
                 cohortState.ActivePathValid = false;
@@ -11616,9 +12392,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         else
             markValidationRouteTrashFailed(prerequisiteTarget, "validation_trash_no_progress", "validation_route_prerequisite_no_progress", healthPct, Cohort().Config.ValidationRouteTargetEntry, state.ValidationRouteCombatBestHealthPct, state.ValidationRouteCombatNoProgressCount, noProgressThreshold);
         state.ValidationRouteCombatBestHealthPct = UnitHealthPct(prerequisiteTarget);
-        state.ValidationRouteCombatNoProgressCount = 0;
+        resetCombatNoProgress();
         state.ValidationRoutePackBestHealthPct = UnitHealthPct(prerequisiteTarget);
-        state.ValidationRoutePackNoProgressCount = 0;
+        resetPackNoProgress();
         return true;
     };
     auto routeFocusMemoryFresh = [this, bot]() -> bool
@@ -11628,7 +12404,20 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             && Party().ValidationRouteFocusSeenMs
             && NowMs() - Party().ValidationRouteFocusSeenMs <= (Cohort().Config.ValidationRouteKind == "boss" ? 60000 : 20000);
     };
-    auto routeGroupFocusTarget = [this, bot, &routeUsableCombatTarget, &routeFocusMemoryFresh]() -> Unit*
+    auto routeUsableValidationFocus = [this, &routeUsableCombatTarget, &isValidationRouteScriptTarget, &isValidationCohortCombatLinked](Unit* focus) -> Unit*
+    {
+        focus = routeUsableCombatTarget(focus);
+        if (!focus)
+            return nullptr;
+
+        if (Cohort().Config.ValidationRouteKind != "boss" || !Party().ValidationRouteActivationApplied
+            || isValidationRouteScriptTarget(focus->ToCreature()) || focus->IsInCombat() || focus->GetVictim())
+            return focus;
+
+        Creature* creature = focus->ToCreature();
+        return creature && isValidationCohortCombatLinked(creature) ? focus : nullptr;
+    };
+    auto routeGroupFocusTarget = [this, bot, &routeUsableValidationFocus, &routeFocusMemoryFresh]() -> Unit*
     {
         if (std::string(GetDungeonRole(bot)) == "tank")
             return nullptr;
@@ -11673,7 +12462,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         };
 
         if (routeFocusMemoryFresh())
-            if (Unit* focus = routeUsableCombatTarget(ObjectAccessor::GetUnit(*bot, Party().ValidationRouteFocusGuid)))
+            if (Unit* focus = routeUsableValidationFocus(ObjectAccessor::GetUnit(*bot, Party().ValidationRouteFocusGuid)))
                 if (Cohort().Config.ValidationRouteKind == "boss" || activeTankFocus(focus))
                     return focus;
 
@@ -11686,7 +12475,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             if (std::string(GetDungeonRole(member)) != "tank" || cohortState.TargetGuid.IsEmpty())
                 continue;
 
-            if (Unit* focus = routeUsableCombatTarget(ObjectAccessor::GetUnit(*bot, cohortState.TargetGuid)))
+            if (Unit* focus = routeUsableValidationFocus(ObjectAccessor::GetUnit(*bot, cohortState.TargetGuid)))
             {
                 if (!activeCohortFocus(member, focus))
                     continue;
@@ -11698,7 +12487,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
         if (anchor && anchor != bot)
         {
-            if (Unit* focus = routeUsableCombatTarget(anchor->GetVictim()))
+            if (Unit* focus = routeUsableValidationFocus(anchor->GetVictim()))
                 if (Cohort().Config.ValidationRouteKind == "boss" || activeTankFocus(focus))
                     return focus;
         }
@@ -11710,7 +12499,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             if (!member || member == bot || !member->IsAlive() || member->GetMap() != bot->GetMap())
                 return;
 
-            focus = routeUsableCombatTarget(focus);
+            focus = routeUsableValidationFocus(focus);
             if (!focus)
                 return;
 
@@ -11781,7 +12570,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
         return nullptr;
     };
-    auto routeTankFocusGuid = [this, bot, &routeUsableCombatTarget, &routeFocusMemoryFresh]() -> ObjectGuid
+    auto routeTankFocusGuid = [this, bot, &routeUsableValidationFocus, &routeFocusMemoryFresh]() -> ObjectGuid
     {
         auto activeCohortFocus = [](Player* member, Unit* focus) -> bool
         {
@@ -11793,7 +12582,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         };
 
         if (routeFocusMemoryFresh())
-            if (Unit* focus = routeUsableCombatTarget(ObjectAccessor::GetUnit(*bot, Party().ValidationRouteFocusGuid)))
+            if (Unit* focus = routeUsableValidationFocus(ObjectAccessor::GetUnit(*bot, Party().ValidationRouteFocusGuid)))
             {
                 if (Cohort().Config.ValidationRouteKind != "boss")
                 {
@@ -11821,10 +12610,10 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             if (std::string(GetDungeonRole(member)) != "tank")
                 continue;
 
-            if (Unit* victim = routeUsableCombatTarget(member->GetVictim()))
+            if (Unit* victim = routeUsableValidationFocus(member->GetVictim()))
                 return victim->GetGUID();
             if (!cohortState.TargetGuid.IsEmpty())
-                if (Unit* focus = routeUsableCombatTarget(ObjectAccessor::GetUnit(*member, cohortState.TargetGuid)))
+                if (Unit* focus = routeUsableValidationFocus(ObjectAccessor::GetUnit(*member, cohortState.TargetGuid)))
                 {
                     if (!activeCohortFocus(member, focus))
                         continue;
@@ -11835,7 +12624,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         }
 
         if (Player* anchor = FindDungeonAnchor(bot))
-            if (Unit* victim = routeUsableCombatTarget(anchor->GetVictim()))
+            if (Unit* victim = routeUsableValidationFocus(anchor->GetVictim()))
                 return victim->GetGUID();
 
         return ObjectGuid::Empty;
@@ -12255,7 +13044,12 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     bool repeatedDeathNearRoute = state.LastDeathMapId == routeAnchorMapId
         && Distance2d(state.LastDeathX, state.LastDeathY, Cohort().Config.ValidationRouteX, Cohort().Config.ValidationRouteY) <= 70.0f
         && state.RecentDeathCount >= 2;
-    if (state.ValidationRouteAnchorOverrideValid && routeHasActiveCombatIntent && !repeatedDeathNearRoute)
+    bool partialWipeRetreatRendezvous =
+        state.ValidationRouteAnchorOverrideValid
+        && state.ValidationRouteAnchorOverrideReason
+            == "validation_route_partial_wipe_retreat_rendezvous";
+    if (state.ValidationRouteAnchorOverrideValid && routeHasActiveCombatIntent
+        && !repeatedDeathNearRoute && !partialWipeRetreatRendezvous)
     {
         state.ValidationRouteAnchorOverrideValid = false;
         state.ValidationRouteAnchorOverrideUntilMs = 0;
@@ -12339,6 +13133,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     state.QuestRouteDestination.Reason = routeAnchorReason;
 
     float routeDistance = bot->GetExactDist(routeAnchorX, routeAnchorY, routeAnchorZ);
+    float canonicalRouteDistance = bot->GetExactDist(
+        Cohort().Config.ValidationRouteX, Cohort().Config.ValidationRouteY, Cohort().Config.ValidationRouteZ);
     auto moveToRouteAnchor = [&]() -> bool
     {
         return MoveBotToPoint(state, bot, routeAnchorX, routeAnchorY, routeAnchorZ, true);
@@ -12466,7 +13262,208 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return nullptr;
         };
         uint64 const nowMs = NowMs();
-        auto tryTankHazardHoldAreaThreat = [&]() -> bool
+        auto tryFeralInFlightHazardHealerRoar = [&]() -> bool
+        {
+            BotClassSpecActionProfile hazardProfile = BotClassSpecActionProfileStore::Build(
+                bot, GetDungeonRole(bot));
+            if (hazardProfile.SpecTag != "feral_druid_tank"
+                || !bot->IsInCombat() || !bot->HasSpell(99))
+                return false;
+
+            Unit* nearbyHealerOwnedAttacker = nullptr;
+            uint32 nearbyHealerOwnedCount = 0;
+            float nearestDistance = std::numeric_limits<float>::max();
+            uint32 nearestGuid = std::numeric_limits<uint32>::max();
+            std::vector<WorldObject*> objects;
+            Trinity::AllWorldObjectsInRange check(bot, 45.0f);
+            Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(
+                bot, objects, check);
+            Cell::VisitAllObjects(bot, searcher, 45.0f);
+            for (WorldObject* object : objects)
+            {
+                Creature* creature = object ? object->ToCreature() : nullptr;
+                Player* victim = creature && creature->GetVictim()
+                    ? creature->GetVictim()->ToPlayer() : nullptr;
+                if (!creature || !creature->IsAlive() || !creature->GetHealth()
+                    || !bot->IsValidAttackTarget(creature) || !victim
+                    || GetDungeonRole(victim) != "healer"
+                    || (bot->GetGroup() ? victim->GetGroup() != bot->GetGroup()
+                                        : victim != bot)
+                    || bot->GetExactDist2d(creature) > 10.0f)
+                    continue;
+
+                ++nearbyHealerOwnedCount;
+                float distance = bot->GetExactDist(creature);
+                uint32 guid = creature->GetGUID().GetCounter();
+                if (!nearbyHealerOwnedAttacker || distance < nearestDistance
+                    || (distance == nearestDistance && guid < nearestGuid))
+                {
+                    nearbyHealerOwnedAttacker = creature;
+                    nearestDistance = distance;
+                    nearestGuid = guid;
+                }
+            }
+            if (nearbyHealerOwnedCount < 2
+                || !TryCastFriendlySpell(bot, bot, 99))
+                return false;
+
+            // Rerun101 proved the native in-flight Roar immediately recovers
+            // an exposed strict-hazard wave, but the next healer-owned arrivals
+            // were still sampled at the ordinary one-second cadence. Preserve
+            // the accepted exit path and observe only this active pickup at the
+            // established 500 ms runtime lower bound.
+            state.DecisionTimer = std::min<uint32>(
+                state.DecisionTimer, 500);
+
+            std::string raw = BuildRawJson(bot, nearbyHealerOwnedAttacker);
+            std::string semantic = BuildSemanticJson(
+                bot, nearbyHealerOwnedAttacker, "validation_route_mechanic",
+                &power, stage, activity);
+            RecordEvent(state, bot, "validation_route_threat_pickup",
+                nearbyHealerOwnedAttacker,
+                "feral_in_flight_hazard_healer_roar",
+                raw.c_str(), semantic.c_str(),
+                float(nearbyHealerOwnedCount),
+                Cohort().Config.ValidationRouteTargetEntry, 99);
+            state.TargetGuid = nearbyHealerOwnedAttacker
+                ? nearbyHealerOwnedAttacker->GetGUID() : ObjectGuid::Empty;
+            state.WasInCombat = true;
+            situation = "validation_route_mechanic";
+            action = "feral_in_flight_hazard_healer_roar";
+            return true;
+        };
+        auto tryFeralInFlightHazardLooseTaunt = [&]() -> bool
+        {
+            BotClassSpecActionProfile hazardProfile = BotClassSpecActionProfileStore::Build(
+                bot, GetDungeonRole(bot));
+            if (hazardProfile.SpecTag != "feral_druid_tank"
+                || !bot->IsInCombat() || !bot->HasSpell(6795))
+                return false;
+
+            Creature* looseAttacker = nullptr;
+            uint8 bestPriority = 0;
+            float bestDistance = std::numeric_limits<float>::max();
+            uint32 bestGuid = std::numeric_limits<uint32>::max();
+            std::vector<WorldObject*> objects;
+            Trinity::AllWorldObjectsInRange check(bot, 45.0f);
+            Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(bot, objects, check);
+            Cell::VisitAllObjects(bot, searcher, 45.0f);
+            for (WorldObject* object : objects)
+            {
+                Creature* creature = object ? object->ToCreature() : nullptr;
+                Player* victim = creature && creature->GetVictim()
+                    ? creature->GetVictim()->ToPlayer() : nullptr;
+                if (!creature || !creature->IsAlive() || !creature->GetHealth()
+                    || !bot->IsValidAttackTarget(creature) || !victim
+                    || (bot->GetGroup() ? victim->GetGroup() != bot->GetGroup() : victim != bot))
+                    continue;
+
+                std::string victimRole = GetDungeonRole(victim);
+                if (victimRole == "tank")
+                    continue;
+                // Boss-add encounters can activate an overlapping healer wave
+                // inside Growl's cooldown. Rerun76 spent Growl on a DPS
+                // attacker while healer exposure was zero, then could not
+                // taunt the following Azil wave until its dwell gate had
+                // already expired. Trash hazards retain generalized party
+                // pickup; declared boss-add nodes reserve Growl for the healer.
+                bool declaredBossAddEncounter =
+                    Cohort().Config.ValidationRouteKind == "boss"
+                    && !Cohort().Config.ValidationRouteAddTargetEntries.empty()
+                    && Cohort().Config.ValidationRouteMechanicProfile.find("adds")
+                        != std::string::npos;
+                if (declaredBossAddEncounter && victimRole != "healer")
+                    continue;
+                uint8 priority = victimRole == "healer" ? 2 : 1;
+                float distance = bot->GetExactDist(creature);
+                uint32 guid = creature->GetGUID().GetCounter();
+                if (!looseAttacker || priority > bestPriority
+                    || (priority == bestPriority && (distance < bestDistance
+                        || (distance == bestDistance && guid < bestGuid))))
+                {
+                    looseAttacker = creature;
+                    bestPriority = priority;
+                    bestDistance = distance;
+                    bestGuid = guid;
+                }
+            }
+            if (!looseAttacker || !TryCastCombatSpell(bot, looseAttacker, 6795))
+                return false;
+
+            Player* victim = looseAttacker->GetVictim()
+                ? looseAttacker->GetVictim()->ToPlayer() : nullptr;
+            bool healerVictim = GetDungeonRole(victim) == "healer";
+            if (healerVictim)
+                state.DecisionTimer = std::min<uint32>(
+                    state.DecisionTimer, 500);
+            std::string raw = BuildRawJson(bot, looseAttacker);
+            std::string semantic = BuildSemanticJson(
+                bot, looseAttacker, "validation_route_mechanic", &power, stage, activity);
+            RecordEvent(state, bot, "validation_route_threat_pickup", looseAttacker,
+                healerVictim
+                    ? "feral_in_flight_hazard_healer_growl"
+                    : "feral_in_flight_hazard_party_growl",
+                raw.c_str(), semantic.c_str(),
+                bestDistance, Cohort().Config.ValidationRouteTargetEntry, 6795);
+            state.TargetGuid = looseAttacker->GetGUID();
+            state.WasInCombat = true;
+            situation = "validation_route_mechanic";
+            action = healerVictim
+                ? "feral_in_flight_hazard_healer_growl"
+                : "feral_in_flight_hazard_party_growl";
+            return true;
+        };
+        auto tryHealerInFlightHazardFade = [&]() -> bool
+        {
+            if (std::string(GetDungeonRole(bot)) != "healer"
+                || !bot->IsInCombat() || !bot->HasSpell(586)
+                || bot->HasAura(586))
+                return false;
+
+            size_t healerTargetingHostileCount = 0;
+            std::vector<WorldObject*> objects;
+            Trinity::AllWorldObjectsInRange check(bot, 45.0f);
+            Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(
+                bot, objects, check);
+            Cell::VisitAllObjects(bot, searcher, 45.0f);
+            for (WorldObject* object : objects)
+            {
+                Creature* creature = object ? object->ToCreature() : nullptr;
+                if (creature && creature->IsAlive() && creature->GetHealth()
+                    && bot->IsValidAttackTarget(creature)
+                    && creature->GetVictim() == bot)
+                    ++healerTargetingHostileCount;
+            }
+            // Rerun114 passed Feral all-hostile retention, but Fade was spent
+            // on a transient two-hostile transfer that cleared by the next
+            // sample. It was then unavailable for the ten-hostile Flayer
+            // hazard transfer responsible for the entire 8.120-second dwell
+            // failure. Rerun116 then showed a three-attacker precursor still
+            // consuming Fade before a 20-hostile Flayer transfer. Reserve the
+            // existing native threat drop for nine or more exact-party
+            // attackers. Rerun117 proved the precursor peaks at eight while
+            // the sustained follow-up reaches eleven inside acquisition grace.
+            // Hazard geometry remains unchanged.
+            if (healerTargetingHostileCount < 9
+                || !TryCastFriendlySpell(bot, bot, 586))
+                return false;
+
+            std::string raw = BuildRawJson(bot, preferredTarget);
+            std::string semantic = BuildSemanticJson(
+                bot, preferredTarget, "validation_route_mechanic",
+                &power, stage, activity);
+            RecordEvent(state, bot, "healer_assignment", bot,
+                "fade_in_flight_hazard_threat_drop",
+                raw.c_str(), semantic.c_str(),
+                float(healerTargetingHostileCount),
+                Cohort().Config.ValidationRouteTargetEntry, 586);
+            situation = "validation_route_mechanic";
+            action = "fade_in_flight_hazard_threat_drop";
+            state.WasInCombat = true;
+            return true;
+        };
+        auto tryTankHazardHoldAreaThreat = [&](Unit* activeHazard, float safeRadius,
+            bool radialHazard, bool allowMovement = true) -> bool
         {
             if (std::string(GetDungeonRole(bot)) != "tank" || !bot->IsInCombat())
                 return false;
@@ -12475,11 +13472,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             Trinity::AllWorldObjectsInRange check(bot, 45.0f);
             Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(bot, objects, check);
             Cell::VisitAllObjects(bot, searcher, 45.0f);
-            Unit* areaTarget = nullptr;
-            uint8 areaPriority = 0;
-            float areaDistance = std::numeric_limits<float>::max();
-            uint32 areaGuid = std::numeric_limits<uint32>::max();
-            uint32 engagedCount = 0;
+            std::vector<Creature*> engagedHostiles;
             for (WorldObject* object : objects)
             {
                 Creature* creature = object ? object->ToCreature() : nullptr;
@@ -12489,32 +13482,275 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 Player* victim = creature->GetVictim() ? creature->GetVictim()->ToPlayer() : nullptr;
                 if (!victim || (bot->GetGroup() ? victim->GetGroup() != bot->GetGroup() : victim != bot))
                     continue;
+                engagedHostiles.push_back(creature);
+            }
+            uint32 engagedCount = engagedHostiles.size();
+            if (engagedCount < 2)
+                return false;
 
-                ++engagedCount;
+            // Rerun86 showed the generic hazard area resolver selecting Thrash
+            // while a local healer-owned cluster remained exposed for 8.061
+            // seconds. Prefer the existing native self-centered Roar when at
+            // least two such hostiles are already inside its exact ten-yard
+            // radius. This does not alter the accepted hazard path.
+            if (tryFeralInFlightHazardHealerRoar())
+                return true;
+
+            // Growl remains the instant single-target fallback and does not
+            // replace the accepted hazard path or the area-threat resolver
+            // below. Rerun75 showed non-healer party attackers can otherwise
+            // remain loose through an entire safe-side hold.
+            tryFeralInFlightHazardLooseTaunt();
+
+            // A nearest hostile can sit on the safe-side edge while most of a
+            // newly activated wave remains around the healer. Select the densest
+            // exact-party cluster first, preserving victim-role priority and
+            // deterministic distance/GUID tie-breaks.
+            Unit* areaTarget = nullptr;
+            uint8 areaPriority = 0;
+            uint32 areaClusterCount = 0;
+            float areaDistance = std::numeric_limits<float>::max();
+            uint32 areaGuid = std::numeric_limits<uint32>::max();
+            for (Creature* creature : engagedHostiles)
+            {
+                Player* victim = creature->GetVictim() ? creature->GetVictim()->ToPlayer() : nullptr;
                 std::string victimRole = GetDungeonRole(victim);
                 uint8 priority = victimRole == "healer" ? 3 : (victimRole == "tank" ? 1 : 2);
+                uint32 clusterCount = 0;
+                for (Creature* neighbor : engagedHostiles)
+                    if (creature->GetExactDist2d(neighbor) <= 10.0f)
+                        ++clusterCount;
                 float distance = bot->GetExactDist(creature);
                 uint32 guid = creature->GetGUID().GetCounter();
                 if (!areaTarget || priority > areaPriority
-                    || (priority == areaPriority && (distance < areaDistance
-                        || (distance == areaDistance && guid < areaGuid))))
+                    || (priority == areaPriority && clusterCount > areaClusterCount)
+                    || (priority == areaPriority && clusterCount == areaClusterCount
+                        && (distance < areaDistance
+                            || (distance == areaDistance && guid < areaGuid))))
                 {
                     areaTarget = creature;
                     areaPriority = priority;
+                    areaClusterCount = clusterCount;
                     areaDistance = distance;
                     areaGuid = guid;
                 }
             }
-            if (!areaTarget || engagedCount < 2)
-                return false;
 
-            ResolvedCombatAction areaThreat = ResolveProfileCombatAction(bot, areaTarget, engagedCount, true);
+            BotClassSpecActionProfile hazardProfile = BotClassSpecActionProfileStore::Build(
+                bot, GetDungeonRole(bot));
+            auto tryFeralHazardSwipeMargin = [&]() -> bool
+            {
+                if (hazardProfile.SpecTag != "feral_druid_tank"
+                    || engagedCount < 12 || !bot->HasSpell(779))
+                    return false;
+
+                Creature* swipeTarget = nullptr;
+                float swipeDistance = std::numeric_limits<float>::max();
+                uint32 swipeGuid = std::numeric_limits<uint32>::max();
+                for (Creature* creature : engagedHostiles)
+                {
+                    float distance = bot->GetExactDist(creature);
+                    uint32 guid = creature->GetGUID().GetCounter();
+                    if (!swipeTarget || distance < swipeDistance
+                        || (distance == swipeDistance && guid < swipeGuid))
+                    {
+                        swipeTarget = creature;
+                        swipeDistance = distance;
+                        swipeGuid = guid;
+                    }
+                }
+                if (!swipeTarget
+                    || !TryCastCombatSpell(bot, swipeTarget, 779))
+                    return false;
+
+                std::string raw = BuildRawJson(bot, swipeTarget);
+                std::string semantic = BuildSemanticJson(
+                    bot, swipeTarget, "validation_route_mechanic",
+                    &power, stage, activity);
+                RecordEvent(state, bot, "validation_route_threat_pickup",
+                    swipeTarget, "feral_swipe_hazard_secure_threat_margin",
+                    raw.c_str(), semantic.c_str(), float(engagedCount),
+                    Cohort().Config.ValidationRouteTargetEntry, 779);
+                state.TargetGuid = swipeTarget->GetGUID();
+                state.WasInCombat = true;
+                situation = "validation_route_mechanic";
+                action = "feral_swipe_hazard_secure_threat_margin";
+                return true;
+            };
+            // The safe-side movement branch below already used the lower
+            // cadence, but rerun101's accepted in-flight path returned through
+            // Roar, Growl, area threat, or the bounded hold before reaching it.
+            // Lower cadence as soon as the deterministic strict-area target is
+            // healer-owned; spell and movement legality remain unchanged.
+            if (hazardProfile.SpecTag == "feral_druid_tank"
+                && areaPriority == 3)
+                state.DecisionTimer = std::min<uint32>(
+                    state.DecisionTimer, 500);
+            auto radialChargePathSafe = [&](Unit* chargeTarget) -> bool
+            {
+                if (!chargeTarget || !radialHazard || !activeHazard || safeRadius <= 0.0f)
+                    return false;
+                float fromX = bot->GetPositionX();
+                float fromY = bot->GetPositionY();
+                float toX = chargeTarget->GetPositionX();
+                float toY = chargeTarget->GetPositionY();
+                float deltaX = toX - fromX;
+                float deltaY = toY - fromY;
+                float segmentLengthSq = deltaX * deltaX + deltaY * deltaY;
+                float projection = 0.0f;
+                if (segmentLengthSq > 0.01f)
+                    projection = std::clamp(
+                        ((activeHazard->GetPositionX() - fromX) * deltaX
+                            + (activeHazard->GetPositionY() - fromY) * deltaY)
+                            / segmentLengthSq,
+                        0.0f, 1.0f);
+                float closestX = fromX + projection * deltaX;
+                float closestY = fromY + projection * deltaY;
+                return Distance2d(
+                    closestX, closestY,
+                    activeHazard->GetPositionX(), activeHazard->GetPositionY())
+                    > safeRadius + 0.5f;
+            };
+            auto radialGroundPathSafe = [&](Unit* movementTarget) -> bool
+            {
+                if (!movementTarget || !radialHazard || !activeHazard
+                    || safeRadius <= 0.0f)
+                    return false;
+
+                PathGenerator path(bot);
+                if (!path.CalculatePath(
+                        movementTarget->GetPositionX(),
+                        movementTarget->GetPositionY(),
+                        movementTarget->GetPositionZ(), false))
+                    return false;
+                PathType pathType = path.GetPathType();
+                if ((pathType & PATHFIND_NOPATH)
+                    || (pathType & PATHFIND_NOT_USING_PATH)
+                    || (pathType & PATHFIND_INCOMPLETE)
+                    || (pathType & PATHFIND_SHORTCUT)
+                    || (pathType & PATHFIND_FARFROMPOLY))
+                    return false;
+
+                for (G3D::Vector3 const& point : path.GetPath())
+                    if (Distance2d(
+                            point.x, point.y,
+                            activeHazard->GetPositionX(),
+                            activeHazard->GetPositionY())
+                        <= safeRadius + 0.5f)
+                        return false;
+                return true;
+            };
+
+            Unit* chargeTarget = nullptr;
+            uint8 chargePriority = 0;
+            uint32 chargeClusterCount = 0;
+            float chargeDistance = std::numeric_limits<float>::max();
+            uint32 chargeGuid = std::numeric_limits<uint32>::max();
+            if (hazardProfile.SpecTag == "feral_druid_tank" && engagedCount >= 3)
+                for (Creature* creature : engagedHostiles)
+                {
+                    float distance = bot->GetExactDist(creature);
+                    if (distance <= 8.0f || !radialChargePathSafe(creature))
+                        continue;
+                    Player* victim = creature->GetVictim() ? creature->GetVictim()->ToPlayer() : nullptr;
+                    std::string victimRole = GetDungeonRole(victim);
+                    uint8 priority = victimRole == "healer" ? 3 : (victimRole == "tank" ? 1 : 2);
+                    uint32 clusterCount = 0;
+                    for (Creature* neighbor : engagedHostiles)
+                        if (creature->GetExactDist2d(neighbor) <= 10.0f)
+                            ++clusterCount;
+                    uint32 guid = creature->GetGUID().GetCounter();
+                    if (!chargeTarget || priority > chargePriority
+                        || (priority == chargePriority && clusterCount > chargeClusterCount)
+                        || (priority == chargePriority && clusterCount == chargeClusterCount
+                            && (distance < chargeDistance
+                                || (distance == chargeDistance && guid < chargeGuid))))
+                    {
+                        chargeTarget = creature;
+                        chargePriority = priority;
+                        chargeClusterCount = clusterCount;
+                        chargeDistance = distance;
+                        chargeGuid = guid;
+                    }
+                }
+
+            if (allowMovement && chargeTarget && bot->HasSpell(16979)
+                && TryCastCombatSpell(bot, chargeTarget, 16979))
+            {
+                std::string raw = BuildRawJson(bot, chargeTarget);
+                std::string semantic = BuildSemanticJson(
+                    bot, chargeTarget, "validation_route_mechanic", &power, stage, activity);
+                RecordEvent(state, bot, "validation_route_threat_pickup", chargeTarget,
+                    "feral_charge_safe_hazard_swarm_pickup", raw.c_str(), semantic.c_str(),
+                    float(engagedCount), Cohort().Config.ValidationRouteTargetEntry, 16979);
+                state.FeralChargePickupTargetGuid = chargeTarget->GetGUID();
+                state.FeralChargePickupUntilMs = NowMs() + 2500;
+                state.TargetGuid = chargeTarget->GetGUID();
+                state.WasInCombat = true;
+                situation = "validation_route_mechanic";
+                action = "feral_charge_safe_hazard_swarm_pickup";
+                return true;
+            }
+
+            // A ready Charge is the fastest safe-side pickup, but its native
+            // cooldown must not pin Feral outside the hazard for the entire
+            // acquisition window. Reuse the unchanged radial safety margin
+            // against every point in the strict mmap path before allowing
+            // ordinary ground movement toward the selected hostile cluster.
+            // Unsafe or incomplete paths still fall through to the bounded
+            // safe-side hold.
+            if (allowMovement
+                && hazardProfile.SpecTag == "feral_druid_tank"
+                && areaTarget
+                && bot->GetExactDist2d(areaTarget) > 10.0f
+                && radialGroundPathSafe(areaTarget))
+            {
+                bool moved = MoveBotToProfileRange(
+                    state, bot, areaTarget);
+                if (moved)
+                {
+                    // Rerun98's only generation-13 dwell failure spent four
+                    // one-second decisions on this already-accepted safe path
+                    // before native Roar became legal (4032 ms total). Keep
+                    // hazard movement authoritative, but observe this active
+                    // healer-owned pickup at the established 500 ms lower
+                    // cadence until the local Roar resolver can acquire it.
+                    if (areaPriority == 3)
+                        state.DecisionTimer = std::min<uint32>(
+                            state.DecisionTimer, 500);
+                    std::string raw = BuildRawJson(bot, areaTarget);
+                    std::string semantic = BuildSemanticJson(
+                        bot, areaTarget, "validation_route_mechanic",
+                        &power, stage, activity);
+                    RecordEvent(state, bot, "validation_route_threat_pickup",
+                        areaTarget, "feral_move_safe_side_hazard_swarm_pickup",
+                        raw.c_str(), semantic.c_str(),
+                        bot->GetExactDist2d(areaTarget),
+                        Cohort().Config.ValidationRouteTargetEntry);
+                    state.TargetGuid = areaTarget->GetGUID();
+                    situation = "validation_route_mechanic";
+                    action = "feral_move_safe_side_hazard_swarm_pickup";
+                    return true;
+                }
+            }
+
+            ResolvedCombatAction areaThreat = ResolveProfileCombatAction(
+                bot, areaTarget, engagedCount, true, 0, true);
             if (!areaThreat.Valid)
-                return false;
+                return tryFeralHazardSwipeMargin();
+            if (areaThreat.TargetGuid == bot->GetGUID())
+            {
+                uint32 nearbyEngagedCount = 0;
+                for (Creature* creature : engagedHostiles)
+                    if (creature && bot->GetExactDist2d(creature) <= 10.0f)
+                        ++nearbyEngagedCount;
+                if (nearbyEngagedCount < 2)
+                    return tryFeralHazardSwipeMargin();
+            }
             BotActionResult areaResult = ExecuteProfileCombatAction(
-                &state, bot, areaTarget, &areaThreat, engagedCount, true);
+                &state, bot, areaTarget, &areaThreat, engagedCount, true, 0, true);
             if (areaResult != BotActionResult::Ok)
-                return false;
+                return tryFeralHazardSwipeMargin();
 
             std::string raw = BuildRawJson(bot, areaTarget);
             std::string semantic = BuildSemanticJson(
@@ -12558,14 +13794,53 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                                 hazardActive = true;
                 if (outsideHazard && hazardActive && state.ValidationRouteDodgeUntilMs > nowMs)
                 {
+                    if (previousDefinition->Shape == "radial"
+                        && state.FeralChargePickupUntilMs > nowMs
+                        && !state.FeralChargePickupTargetGuid.IsEmpty())
+                    {
+                        Unit* chargeTarget = ObjectAccessor::GetUnit(
+                            *bot, state.FeralChargePickupTargetGuid);
+                        if (chargeTarget && chargeTarget->IsAlive()
+                            && bot->IsValidAttackTarget(chargeTarget)
+                            && bot->GetExactDist2d(chargeTarget) > 10.0f)
+                        {
+                            std::string raw = BuildRawJson(bot, chargeTarget);
+                            std::string semantic = BuildSemanticJson(
+                                bot, chargeTarget, "validation_route_mechanic",
+                                &power, stage, activity);
+                            RecordEvent(state, bot, "validation_route_threat_pickup",
+                                chargeTarget,
+                                "feral_charge_safe_hazard_swarm_pickup_in_flight",
+                                raw.c_str(), semantic.c_str(),
+                                bot->GetExactDist2d(chargeTarget),
+                                Cohort().Config.ValidationRouteTargetEntry, 16979);
+                            state.TargetGuid = chargeTarget->GetGUID();
+                            situation = "validation_route_mechanic";
+                            action = "feral_charge_safe_hazard_swarm_pickup_in_flight";
+                            return true;
+                        }
+                        state.FeralChargePickupTargetGuid.Clear();
+                        state.FeralChargePickupUntilMs = 0;
+                    }
+                    else if (state.FeralChargePickupUntilMs
+                        && state.FeralChargePickupUntilMs <= nowMs)
+                    {
+                        state.FeralChargePickupTargetGuid.Clear();
+                        state.FeralChargePickupUntilMs = 0;
+                    }
+
                     // Crossing the radius is not enough: ordinary melee/range
                     // movement immediately walked bots back into live fissures
                     // and rotating Flay cones. Hold the safe side briefly while
-                    // the exact hazard remains active.
+                    // the exact hazard remains active. A bounded safe Charge keeps
+                    // its motion until arrival before this hold clears the slot.
                     bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
                     state.ActivePathValid = false;
                     state.IsMoving = false;
-                    if (tryTankHazardHoldAreaThreat())
+                    if (tryHealerInFlightHazardFade())
+                        return true;
+                    if (tryTankHazardHoldAreaThreat(previousHazard, safeRadius,
+                            previousDefinition->Shape == "radial"))
                         return true;
                     situation = "validation_route_mechanic";
                     action = "hold_outside_hazard";
@@ -12587,6 +13862,27 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     // Keep the accepted exit path authoritative until the bot
                     // is outside the hazard. A normal combat/range decision on
                     // the next tick must not replace the dodge mid-stride.
+                    // Rerun73 isolated one healer-owned hostile for 15 seconds
+                    // while every Feral decision returned here. Growl is an
+                    // instant single-target pickup and does not replace or
+                    // clear the already accepted hazard-exit motion.
+                    if (tryHealerInFlightHazardFade())
+                        return true;
+                    // Preserve the accepted strict hazard-exit path while still
+                    // allowing native instant self-centered threat. Rerun83
+                    // showed Flayer and Azil waves targeting the healer for
+                    // 6-10 seconds because every Feral tick returned here
+                    // before the declared add handler could submit Roar,
+                    // Swipe, or Thrash. This in-flight mode cannot Charge or
+                    // issue ground movement, so hazard geometry remains the
+                    // sole movement authority.
+                    if (previousDefinition->Shape == "radial"
+                        && tryTankHazardHoldAreaThreat(
+                            previousHazard, safeRadius, true, false))
+                        return true;
+                    if (previousDefinition->Shape == "radial"
+                        && tryFeralInFlightHazardLooseTaunt())
+                        return true;
                     situation = "validation_route_mechanic";
                     action = "move_out_of_hazard";
                     return true;
@@ -12759,13 +14055,150 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             }
             angle = absoluteAwayAngle - bot->GetOrientation();
         }
+        // Rerun84 showed the new strict radial path was accepted before the
+        // instant healer threat-drop and Feral loose-healer taunt were
+        // submitted. Once movement owned the decision, the last loose hostile
+        // persisted for 4017 ms even though the subsequent safe-side area
+        // resolver succeeded. Submit only these existing instant native rules
+        // before path ownership; the strict hazard destination below remains
+        // unchanged and is still issued in this decision.
+        if (configuredHazard && configuredHazardShape == "radial")
+        {
+            tryHealerInFlightHazardFade();
+            if (!tryFeralInFlightHazardHealerRoar())
+                tryFeralInFlightHazardLooseTaunt();
+        }
+
         bool moved = false;
+        bool feralHazardHandoffBiased = false;
+        bool feralHazardCurrentClusterBiased = false;
+        std::vector<Position> dodgeCandidates;
         // A direct radial exit can land outside the local navmesh beside lava
         // cracks, walls, or shelf edges.  Try a small deterministic fan of
         // equally safe bearings before reporting a failed hazard exit.
         for (float angleOffset : { 0.0f, float(M_PI_4), -float(M_PI_4), float(M_PI_2), -float(M_PI_2) })
+            dodgeCandidates.push_back(
+                bot->GetFirstCollisionPosition(dodgeDistance, angle + angleOffset));
+
+        // Rerun106's longest healer dwell began while ordinary-trash recovery
+        // already owned a validated remote hostile anchor. A new strict radial
+        // hazard correctly replaced that movement, but the geometry-only fan
+        // chose the opposite safe side and local Swipe could not reach the
+        // remote cluster for 6.56 seconds. Preserve the same five collision-safe
+        // candidates and unchanged hazard radius, but rank their endpoints
+        // toward the still-valid identity-bound handoff anchor. Hazard movement
+        // remains authoritative and every candidate still passes MoveBotToPoint.
+        Unit* feralHazardHandoffAnchor = nullptr;
+        if (configuredHazard && configuredHazardShape == "radial"
+            && state.FeralHealerThreatHandoffUntilMs > nowMs
+            && !state.FeralHealerThreatHandoffAnchorGuid.IsEmpty())
         {
-            Position dodge = bot->GetFirstCollisionPosition(dodgeDistance, angle + angleOffset);
+            BotClassSpecActionProfile hazardProfile =
+                BotClassSpecActionProfileStore::Build(bot, GetDungeonRole(bot));
+            Unit* candidate = ObjectAccessor::GetUnit(
+                *bot, state.FeralHealerThreatHandoffAnchorGuid);
+            Player* victim = candidate && candidate->GetVictim()
+                ? candidate->GetVictim()->ToPlayer() : nullptr;
+            if (hazardProfile.SpecTag == "feral_druid_tank"
+                && candidate && candidate->IsAlive()
+                && candidate->GetMap() == bot->GetMap()
+                && bot->IsValidAttackTarget(candidate)
+                && victim && GetDungeonRole(victim) == "healer"
+                && bot->GetGroup()
+                && victim->GetGroup() == bot->GetGroup())
+                feralHazardHandoffAnchor = candidate;
+        }
+        // Rerun109's largest loss began when a fresh Flayer wave flipped to
+        // the healer after hazard movement became authoritative but before an
+        // ordinary handoff existed.  In that state the rerun106 rule had no
+        // anchor and retained the geometry-only bearing for 5.6 seconds.  Use
+        // the same deterministic densest healer-owned cluster as a bearing
+        // hint for the unchanged five safe candidates.  This neither creates
+        // a handoff nor changes the hazard radius/path acceptance contract.
+        if (!feralHazardHandoffAnchor
+            && configuredHazard && configuredHazardShape == "radial")
+        {
+            BotClassSpecActionProfile hazardProfile =
+                BotClassSpecActionProfileStore::Build(
+                    bot, GetDungeonRole(bot));
+            if (hazardProfile.SpecTag == "feral_druid_tank")
+            {
+                std::vector<WorldObject*> objects;
+                Trinity::AllWorldObjectsInRange check(bot, 45.0f);
+                Trinity::WorldObjectListSearcher<
+                    Trinity::AllWorldObjectsInRange> searcher(
+                        bot, objects, check);
+                Cell::VisitAllObjects(bot, searcher, 45.0f);
+                std::vector<Creature*> healerAttackers;
+                for (WorldObject* object : objects)
+                {
+                    Creature* creature = object ? object->ToCreature() : nullptr;
+                    Player* victim = creature && creature->GetVictim()
+                        ? creature->GetVictim()->ToPlayer() : nullptr;
+                    if (creature && creature->IsAlive()
+                        && creature->GetMap() == bot->GetMap()
+                        && bot->IsValidAttackTarget(creature)
+                        && victim && GetDungeonRole(victim) == "healer"
+                        && bot->GetGroup()
+                        && victim->GetGroup() == bot->GetGroup())
+                        healerAttackers.push_back(creature);
+                }
+                uint32 bestClusterCount = 0;
+                float bestDistance = std::numeric_limits<float>::max();
+                uint32 bestGuid = std::numeric_limits<uint32>::max();
+                for (Creature* candidate : healerAttackers)
+                {
+                    uint32 clusterCount = 0;
+                    for (Creature* neighbor : healerAttackers)
+                        if (candidate->GetExactDist2d(neighbor) <= 10.0f)
+                            ++clusterCount;
+                    float distance = bot->GetExactDist(candidate);
+                    uint32 guid = candidate->GetGUID().GetCounter();
+                    if (!feralHazardHandoffAnchor
+                        || clusterCount > bestClusterCount
+                        || (clusterCount == bestClusterCount
+                            && (distance < bestDistance
+                                || (distance == bestDistance
+                                    && guid < bestGuid))))
+                    {
+                        feralHazardHandoffAnchor = candidate;
+                        bestClusterCount = clusterCount;
+                        bestDistance = distance;
+                        bestGuid = guid;
+                    }
+                }
+                feralHazardCurrentClusterBiased =
+                    feralHazardHandoffAnchor != nullptr;
+            }
+        }
+        if (feralHazardHandoffAnchor)
+        {
+            std::stable_sort(dodgeCandidates.begin(), dodgeCandidates.end(),
+                [&](Position const& left, Position const& right)
+                {
+                    bool leftOutside = Distance2d(
+                        left.GetPositionX(), left.GetPositionY(),
+                        dodgeOrigin->GetPositionX(), dodgeOrigin->GetPositionY())
+                        > configuredSafeRadius + 0.5f;
+                    bool rightOutside = Distance2d(
+                        right.GetPositionX(), right.GetPositionY(),
+                        dodgeOrigin->GetPositionX(), dodgeOrigin->GetPositionY())
+                        > configuredSafeRadius + 0.5f;
+                    if (leftOutside != rightOutside)
+                        return leftOutside;
+                    return Distance2d(
+                        left.GetPositionX(), left.GetPositionY(),
+                        feralHazardHandoffAnchor->GetPositionX(),
+                        feralHazardHandoffAnchor->GetPositionY())
+                        < Distance2d(
+                            right.GetPositionX(), right.GetPositionY(),
+                            feralHazardHandoffAnchor->GetPositionX(),
+                            feralHazardHandoffAnchor->GetPositionY());
+                });
+            feralHazardHandoffBiased = true;
+        }
+        for (Position const& dodge : dodgeCandidates)
+        {
             if (MoveBotToPoint(state, bot, dodge.GetPositionX(), dodge.GetPositionY(), dodge.GetPositionZ()))
             {
                 moved = true;
@@ -12781,9 +14214,19 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         std::string raw = BuildRawJson(bot, caster);
         std::string semantic = BuildSemanticJson(bot, caster, "validation_route_mechanic", &power, stage, activity);
         char const* movementReason = moved
-            ? (configuredHazard ? "hazard_exit_started" : "movement_check_jump")
+            ? (configuredHazard
+                ? (feralHazardHandoffBiased
+                    ? (feralHazardCurrentClusterBiased
+                        ? "hazard_exit_started_toward_feral_healer_cluster"
+                        : "hazard_exit_started_toward_feral_healer_handoff")
+                    : "hazard_exit_started")
+                : "movement_check_jump")
             : (configuredHazard ? "hazard_exit_failed" : "tactical_path_rejected");
         RecordEvent(state, bot, "validation_route_mechanic", caster, movementReason, raw.c_str(), semantic.c_str(), bot->GetExactDist(caster), Cohort().Config.ValidationRouteTargetEntry, castSpell->Id);
+        if (moved && configuredHazard && configuredHazardShape == "radial"
+            && tryTankHazardHoldAreaThreat(
+                caster, configuredSafeRadius, true, false))
+            return true;
         situation = "validation_route_mechanic";
         action = moved ? (configuredHazard ? "move_out_of_hazard" : "movement_check_jump")
             : (configuredHazard ? "hold_hazard_exit_failed" : "hold_tactical_path_rejected");
@@ -12796,9 +14239,139 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             || Cohort().Config.ValidationRouteAddTargetEntries.empty())
             return false;
 
+        // Declared add bosses can assign a full spawn wave to the healer before
+        // the tank's next decision.  Establish pickup positioning while the
+        // group is healthy instead of waiting for healing threat to exist, then
+        // let the ordinary reactive stack logic handle any wave already active.
+        // Exact hazard movement runs before this add handler and remains the
+        // higher movement authority.
+        if (std::string(GetDungeonRole(bot)) == "healer"
+            && !Party().ValidationRouteBossProgressTargetGuid.IsEmpty())
+        {
+            Unit* routeBoss = ObjectAccessor::GetUnit(
+                *bot, Party().ValidationRouteBossProgressTargetGuid);
+            Player* routeTank = nullptr;
+            for (WorldBotState const& cohortState : Party().Bots)
+            {
+                Player* member = GetLoadedBot(cohortState);
+                if (member && member->IsAlive() && member->GetMap() == bot->GetMap()
+                    && std::string(GetDungeonRole(member)) == "tank")
+                {
+                    routeTank = member;
+                    break;
+                }
+            }
+
+            if (routeBoss && routeBoss->IsAlive() && routeBoss->IsInCombat()
+                && routeTank && routeTank->IsInCombat()
+                && bot->GetExactDist2d(routeTank) > 5.0f
+                && !bot->HasUnitState(UNIT_STATE_CASTING) && !bot->IsFalling())
+            {
+                // Rerun122 proved the native attacker container can lag the
+                // explicit listed-victim view during an Azil activation: the
+                // authoritative trace observed nineteen followers targeting
+                // the healer while this early branch kept classifying the
+                // pickup as non-urgent and preempted the later Fade resolver.
+                // Reconstruct the same bounded 45-yard listed-add view here so
+                // preposition and threat-drop decisions agree with the add
+                // resolver and identity-scoped retention evidence.
+                size_t explicitListedHealerAttackers = 0;
+                std::vector<WorldObject*> pickupObjects;
+                Trinity::AllWorldObjectsInRange pickupCheck(bot, 45.0f);
+                Trinity::WorldObjectListSearcher<
+                    Trinity::AllWorldObjectsInRange> pickupSearcher(
+                        bot, pickupObjects, pickupCheck);
+                Cell::VisitAllObjects(bot, pickupSearcher, 45.0f);
+                for (WorldObject* object : pickupObjects)
+                {
+                    Creature* creature = object ? object->ToCreature() : nullptr;
+                    if (!creature || !creature->IsAlive() || !creature->GetHealth()
+                        || creature->GetMap() != bot->GetMap()
+                        || creature->GetVictim() != bot
+                        || !bot->IsValidAttackTarget(creature)
+                        || !bot->IsWithinLOSInMap(creature)
+                        || std::find(
+                            Cohort().Config.ValidationRouteAddTargetEntries.begin(),
+                            Cohort().Config.ValidationRouteAddTargetEntries.end(),
+                            creature->GetEntry())
+                            == Cohort().Config.ValidationRouteAddTargetEntries.end())
+                        continue;
+                    ++explicitListedHealerAttackers;
+                }
+                size_t observedHealerAttackers = std::max(
+                    bot->getAttackers().size(), explicitListedHealerAttackers);
+                // Rerun71 showed the healer repeatedly selecting ordinary
+                // group heals while 15+ followers retained it and the Feral
+                // crossed the platform. Preserve emergency healing, but when
+                // both healer and tank have safe health, begin the existing
+                // bounded stack movement before another heal can keep the
+                // remote swarm split from the tank.
+                bool urgentPickupStack = observedHealerAttackers >= 3
+                    && UnitHealthPct(bot) > 0.45f
+                    && UnitHealthPct(routeTank) > 0.40f;
+                // Rerun115 showed this early preposition branch returning for
+                // seven seconds while 9--20 Azil followers targeted the
+                // healer. It precedes the general boss-wave Fade resolver, so
+                // submit the same ready native threat drop before movement
+                // when the urgent exact-attacker gate is already satisfied.
+                if (urgentPickupStack && bot->HasSpell(586)
+                    && !bot->HasAura(586))
+                {
+                    std::string fadeFailureReason;
+                    if (TryCastFriendlySpell(
+                            bot, bot, 586, &fadeFailureReason))
+                    {
+                        std::string raw = BuildRawJson(bot, routeBoss);
+                        std::string semantic = BuildSemanticJson(
+                            bot, routeBoss, "dungeon_boss",
+                            &power, stage, activity);
+                        RecordEvent(state, bot, "boss_adds", bot,
+                            "fade_before_urgent_add_pickup_preposition",
+                            raw.c_str(), semantic.c_str(),
+                            float(observedHealerAttackers),
+                            Cohort().Config.ValidationRouteTargetEntry, 586);
+                        state.TargetGuid = routeBoss->GetGUID();
+                        target = routeBoss;
+                        situation = "dungeon_boss";
+                        action = "fade_before_urgent_add_pickup_preposition";
+                        return true;
+                    }
+                    // The first rerun122 attempt occurred one second after a
+                    // legal instant heal. Keep movement bounded and retry only
+                    // that GCD-blocked urgent Fade at the established lower
+                    // decision cadence; native cooldown failures do not pin
+                    // healer movement or healing.
+                    if (fadeFailureReason == "global_cooldown")
+                        state.DecisionTimer = std::min<uint32>(
+                            state.DecisionTimer, 500);
+                }
+                if (!urgentPickupStack && tryRouteGroupHeal(bot, routeBoss))
+                    return true;
+
+                Position pickup = routeTank->GetFirstCollisionPosition(4.0f,
+                    routeBoss->GetAngle(routeTank) - routeTank->GetOrientation());
+                if (MoveBotToPoint(state, bot,
+                        pickup.GetPositionX(), pickup.GetPositionY(), pickup.GetPositionZ()))
+                {
+                    std::string raw = BuildRawJson(bot, routeBoss);
+                    std::string semantic = BuildSemanticJson(
+                        bot, routeBoss, "dungeon_boss", &power, stage, activity);
+                    RecordEvent(state, bot, "boss_adds", routeTank,
+                        "healer_preposition_for_add_pickup", raw.c_str(), semantic.c_str(),
+                        bot->GetExactDist2d(routeTank), Cohort().Config.ValidationRouteTargetEntry);
+                    state.TargetGuid = routeBoss->GetGUID();
+                    target = routeBoss;
+                    situation = "dungeon_boss";
+                    action = "healer_preposition_for_add_pickup";
+                    return true;
+                }
+            }
+        }
+
         Unit* add = nullptr;
         bool sharedFocusValid = false;
         uint32 addCount = 0;
+        uint32 engagedAddCount = 0;
         uint32 nearbyAddCount = 0;
         float addX = 0.0f;
         float addY = 0.0f;
@@ -12813,6 +14386,29 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 && creature->GetMap() == observer->GetMap()
                 && std::find(Cohort().Config.ValidationRouteAddTargetEntries.begin(), Cohort().Config.ValidationRouteAddTargetEntries.end(), creature->GetEntry()) != Cohort().Config.ValidationRouteAddTargetEntries.end()
                 && observer->IsValidAttackTarget(creature);
+        };
+        auto isUsableUnexpectedPartyHostile = [this](Player* observer, Unit* candidate) -> bool
+        {
+            Creature* creature = candidate ? candidate->ToCreature() : nullptr;
+            if (!observer || !creature || !creature->IsAlive() || !creature->GetHealth()
+                || creature->GetMap() != observer->GetMap()
+                || !observer->IsValidAttackTarget(creature))
+                return false;
+
+            uint32 entry = creature->GetEntry();
+            if (entry == Cohort().Config.ValidationRouteTargetEntry
+                || std::find(Cohort().Config.ValidationRouteAlternateTargetEntries.begin(),
+                    Cohort().Config.ValidationRouteAlternateTargetEntries.end(), entry)
+                    != Cohort().Config.ValidationRouteAlternateTargetEntries.end()
+                || std::find(Cohort().Config.ValidationRoutePackTargetEntries.begin(),
+                    Cohort().Config.ValidationRoutePackTargetEntries.end(), entry)
+                    != Cohort().Config.ValidationRoutePackTargetEntries.end())
+                return false;
+
+            Player* victim = creature->GetVictim() ? creature->GetVictim()->ToPlayer() : nullptr;
+            return victim && (observer->GetGroup()
+                ? victim->GetGroup() == observer->GetGroup()
+                : victim == observer);
         };
         if (Party().ValidationRouteAddFocusGeneration != Party().ValidationRouteGeneration)
         {
@@ -12848,21 +14444,19 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(bot, objects, check);
         Cell::VisitAllObjects(bot, searcher, 45.0f);
         GuidSet cohortAddGuids;
-        for (WorldObject* object : objects)
+        auto considerLocalAdd = [&](Creature* creature)
         {
-            Creature* creature = object ? object->ToCreature() : nullptr;
-            if (!isUsableListedAdd(bot, creature) || !bot->IsWithinLOSInMap(creature))
-                continue;
-
             cohortAddGuids.insert(creature->GetGUID());
             localAdds.push_back(creature);
             ++addCount;
+            if (creature->GetVictim())
+                ++engagedAddCount;
             addX += creature->GetPositionX();
             addY += creature->GetPositionY();
             if (bot->GetExactDist2d(creature) <= 12.0f)
                 ++nearbyAddCount;
             if (sharedFocusValid)
-                continue;
+                return;
             uint8 priority = 1;
             if (Player* victim = creature->GetVictim() ? creature->GetVictim()->ToPlayer() : nullptr)
             {
@@ -12881,7 +14475,31 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 bestHealthPct = healthPct;
                 bestGuid = guid;
             }
+        };
+        std::vector<Creature*> unexpectedPartyHostiles;
+        for (WorldObject* object : objects)
+        {
+            Creature* creature = object ? object->ToCreature() : nullptr;
+            bool listedAdd = isUsableListedAdd(bot, creature);
+            bool unexpectedPartyHostile = !listedAdd
+                && isUsableUnexpectedPartyHostile(bot, creature);
+            if ((!listedAdd && !unexpectedPartyHostile)
+                || !bot->IsWithinLOSInMap(creature))
+                continue;
+            if (unexpectedPartyHostile)
+            {
+                unexpectedPartyHostiles.push_back(creature);
+                continue;
+            }
+            considerLocalAdd(creature);
         }
+        // The authoritative retention audit includes every hostile creature
+        // attacking this exact party. Admit only a real unexpected swarm here,
+        // so natural encounter overlap cannot be invisible to tank pickup while
+        // ordinary route targets remain owned by the route-pack logic.
+        if (unexpectedPartyHostiles.size() >= 3)
+            for (Creature* creature : unexpectedPartyHostiles)
+                considerLocalAdd(creature);
         if (Party().ValidationRouteBossAddDensityPhase && addCount < 3)
         {
             for (WorldBotState const& cohortState : Party().Bots)
@@ -12936,6 +14554,20 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
         bool highDensityPhase = Party().ValidationRouteBossAddDensityPhase
             && Party().ValidationRouteBossAddDensityGeneration == Party().ValidationRouteGeneration;
+        auto explicitListedAttackerCount = [&localAdds](Player const* member) -> size_t
+        {
+            size_t count = 0;
+            for (Creature const* candidate : localAdds)
+                if (candidate && candidate->GetVictim() == member)
+                    ++count;
+            return count;
+        };
+        auto observedListedAttackerCount = [&explicitListedAttackerCount](Player const* member) -> size_t
+        {
+            return member
+                ? std::max(member->getAttackers().size(), explicitListedAttackerCount(member))
+                : 0;
+        };
         // A listed swarm needs party-protection rules as soon as it engages,
         // even while the boss remains attackable.  Waiting for the scripted
         // shield/unavailable phase let Azil followers build lethal healer/DPS
@@ -12943,6 +14575,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         bool swarmDefenseActive = highDensityPhase || cohortSwarmActive;
         std::string role = GetDungeonRole(bot);
         BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(bot, role.c_str());
+        // Preserve Blood's 30-second ground threat for a real follower wave.
+        // Small precursor sets still receive Blood Boil and ordinary pickup,
+        // while non-boss trash keeps Death and Decay available at two targets.
+        uint32 reservedAreaSpellId = role == "tank"
+            && profile.SpecTag == "blood_death_knight" && addCount < 5 ? 43265 : 0;
         Creature* densityApproachAnchor = nullptr;
         if (highDensityPhase && role != "healer")
         {
@@ -13027,10 +14664,10 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     densityTank = member;
                 if (!densityHealer && memberRole == "healer")
                     densityHealer = member;
-                if (memberRole == "tank" || member->getAttackers().empty())
+                size_t attackerCount = observedListedAttackerCount(member);
+                if (memberRole == "tank" || !attackerCount)
                     continue;
 
-                size_t attackerCount = member->getAttackers().size();
                 uint8 rolePriority = memberRole == "healer" ? 2 : 1;
                 // Preserve a healer bias without allowing a single healer
                 // attacker to hide a lethal swarm on a damage dealer.
@@ -13096,20 +14733,118 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         bool dpsSwarmDamageRelease = densityTankOwnsSecureMajority || urgentSwarmDamageRelease;
         bool botInsideTankPickup = densityTank && bot->GetExactDist2d(densityTank) <= 8.0f;
 
-        // Fade before the first healing tick can assign a newly activated
-        // wave to the priest. Waiting for getAttackers() to become non-empty
-        // is reactive and leaves a full decision interval in which Corborus
-        // or Azil adds can kill the healer. Keep the ordinary reactive Fade
-        // in tryRouteGroupHeal for smaller pulls, but use it proactively while
-        // a listed swarm is not yet securely owned by the tank.
-        if (role == "healer" && cohortSwarmActive && !densityTankOwnsSecureMajority
-            && bot->HasSpell(586) && !bot->HasAura(586)
+        // A passive follower cluster can flicker across the local visibility
+        // boundary while the tank is prepositioning at its spawn. Preserve the
+        // accepted move for a short bounded interval so ordinary route movement
+        // cannot pull the tank away between observations. Rerun68 proved that
+        // clearing it immediately on engagement loses a prepositioned large
+        // wave, so hand the same anchor through one 2.5-second engaged interval.
+        uint64 pendingSwarmPickupNowMs = NowMs();
+        bool tankPendingSwarmPickup = role == "tank"
+            && state.TankPendingSwarmPickupUntilMs > pendingSwarmPickupNowMs
+            && !state.TankPendingSwarmPickupAnchorGuid.IsEmpty();
+        Unit* pendingSwarmPickupAnchor = nullptr;
+        if (tankPendingSwarmPickup)
+        {
+            pendingSwarmPickupAnchor = ObjectAccessor::GetUnit(
+                *bot, state.TankPendingSwarmPickupAnchorGuid);
+            if (!pendingSwarmPickupAnchor || !pendingSwarmPickupAnchor->IsAlive()
+                || pendingSwarmPickupAnchor->GetMap() != bot->GetMap())
+            {
+                state.TankPendingSwarmPickupAnchorGuid.Clear();
+                state.TankPendingSwarmPickupUntilMs = 0;
+                state.TankPendingSwarmPickupEngagedHandoff = false;
+                tankPendingSwarmPickup = false;
+                pendingSwarmPickupAnchor = nullptr;
+            }
+            else if (engagedAddCount >= 3
+                && !state.TankPendingSwarmPickupEngagedHandoff)
+            {
+                state.TankPendingSwarmPickupEngagedHandoff = true;
+                state.TankPendingSwarmPickupUntilMs =
+                    pendingSwarmPickupNowMs + 2500;
+            }
+        }
+        else if (!state.TankPendingSwarmPickupAnchorGuid.IsEmpty()
+            || state.TankPendingSwarmPickupUntilMs)
+        {
+            state.TankPendingSwarmPickupAnchorGuid.Clear();
+            state.TankPendingSwarmPickupUntilMs = 0;
+            state.TankPendingSwarmPickupEngagedHandoff = false;
+        }
+        if (tankPendingSwarmPickup && pendingSwarmPickupAnchor
+            && !bot->HasUnitState(UNIT_STATE_CASTING) && !bot->IsFalling())
+        {
+            bool engagedHandoff =
+                state.TankPendingSwarmPickupEngagedHandoff;
+            bool insidePickup = bot->GetExactDist2d(pendingSwarmPickupAnchor)
+                <= (engagedHandoff ? 10.0f : 6.0f);
+            if (insidePickup)
+            {
+                bot->StopMoving();
+                if (engagedHandoff)
+                {
+                    state.TankPendingSwarmPickupAnchorGuid.Clear();
+                    state.TankPendingSwarmPickupUntilMs = 0;
+                    state.TankPendingSwarmPickupEngagedHandoff = false;
+                }
+                // Reaching the anchor completes movement ownership. Continue
+                // through the ordinary encounter resolver on this decision so
+                // a passive precursor cannot turn a bounded reservation into
+                // an unbounded boss-progress hold.
+            }
+            else
+            {
+                bool moved = MoveBotToPoint(state, bot,
+                    pendingSwarmPickupAnchor->GetPositionX(),
+                    pendingSwarmPickupAnchor->GetPositionY(),
+                    pendingSwarmPickupAnchor->GetPositionZ());
+                std::string raw = BuildRawJson(bot, pendingSwarmPickupAnchor);
+                std::string semantic = BuildSemanticJson(
+                    bot, pendingSwarmPickupAnchor, "dungeon_boss",
+                    &power, stage, activity);
+                RecordEvent(state, bot, "boss_add_density",
+                    pendingSwarmPickupAnchor,
+                    moved ? "tank_continue_pending_swarm_pickup_preposition"
+                          : "tank_pending_swarm_pickup_path_rejected",
+                    raw.c_str(), semantic.c_str(),
+                    bot->GetExactDist2d(pendingSwarmPickupAnchor), addCount);
+                state.TargetGuid = add ? add->GetGUID() : ObjectGuid::Empty;
+                target = add;
+                situation = "dungeon_boss";
+                action = moved ? "continue_pending_swarm_pickup_preposition"
+                               : "hold_pending_swarm_pickup_path_rejected";
+                return true;
+            }
+        }
+
+        // Fade before the first healing tick after a newly activated wave
+        // reaches the priest.  Do not spend the native cooldown while the
+        // healer has no listed attackers: rerun80 showed that an early
+        // zero-exposure cast left Fade unavailable for the actual Azil wave.
+        // Keep the ordinary reactive Fade in tryRouteGroupHeal for smaller
+        // pulls, but use it here while a listed swarm is not yet securely
+        // owned by the tank.
+        bool healerWaveFadeReady = role == "healer" && cohortSwarmActive
+            && observedListedAttackerCount(bot) > 0
+            && !densityTankOwnsSecureMajority
+            && bot->HasSpell(586) && !bot->HasAura(586);
+        // Rerun104's first 60-follower wave reached the healer while Smite was
+        // still in flight. The existing preemptive Fade could not submit until
+        // the following healer decision, which left eight identities beyond
+        // the hard dwell gate. Interrupt only a harmful cast for this declared
+        // wave; a positive healing cast remains authoritative.
+        if (healerWaveFadeReady)
+            if (Spell* currentSpell = bot->GetCurrentSpell(CURRENT_GENERIC_SPELL))
+                if (!currentSpell->IsPositive())
+                    bot->InterruptNonMeleeSpells(false);
+        if (healerWaveFadeReady && !bot->HasUnitState(UNIT_STATE_CASTING)
             && TryCastFriendlySpell(bot, bot, 586))
         {
             std::string raw = BuildRawJson(bot, add);
             std::string semantic = BuildSemanticJson(bot, add, "dungeon_boss", &power, stage, activity);
             RecordEvent(state, bot, "boss_adds", bot, "fade_preemptive_add_wave_threat_drop",
-                raw.c_str(), semantic.c_str(), float(bot->getAttackers().size()), addCount, 586);
+                raw.c_str(), semantic.c_str(), float(observedListedAttackerCount(bot)), addCount, 586);
             state.TargetGuid = add ? add->GetGUID() : ObjectGuid::Empty;
             target = add;
             situation = "dungeon_boss";
@@ -13117,37 +14852,935 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return true;
         }
 
-        // Defend the party member from the closest listed attacker the tank
-        // can acquire.  Selecting an older but distant healer attacker caused
-        // the tank and the kiting healer to cross paths while the nearby swarm
-        // continued hitting the party.
+        // Aim area threat at a representative of the densest listed attacker
+        // cluster. Selecting only the closest healer attacker could place a
+        // ground effect on the edge of an Azil wave and move self-centered AoE
+        // away from most of the swarm. Distance and GUID remain deterministic
+        // tie-breakers after local cluster coverage.
+        static constexpr float TankDensityClusterRadius = 10.0f;
         if (role == "tank" && densityDefenseTarget)
         {
-            Unit* nearestDefenseAttacker = nullptr;
-            float nearestDefenseDistance = std::numeric_limits<float>::max();
-            uint32 nearestDefenseGuid = std::numeric_limits<uint32>::max();
-            for (Unit* attacker : densityDefenseTarget->getAttackers())
+            std::vector<Unit*> densityDefenseAttackers;
+            for (Creature* candidate : localAdds)
+                if (candidate && candidate->GetVictim() == densityDefenseTarget
+                    && bot->IsWithinLOSInMap(candidate))
+                    densityDefenseAttackers.push_back(candidate);
+            if (densityDefenseAttackers.empty())
+                for (Unit* attacker : densityDefenseTarget->getAttackers())
+                    if (isUsableListedAdd(bot, attacker) && bot->IsWithinLOSInMap(attacker))
+                        densityDefenseAttackers.push_back(attacker);
+
+            Unit* densityClusterAttacker = nullptr;
+            uint32 densityClusterCount = 0;
+            float densityClusterDistance = std::numeric_limits<float>::max();
+            uint32 densityClusterGuid = std::numeric_limits<uint32>::max();
+            for (Unit* attacker : densityDefenseAttackers)
             {
-                if (!isUsableListedAdd(bot, attacker) || !bot->IsWithinLOSInMap(attacker))
-                    continue;
+                uint32 localClusterCount = 0;
+                for (Unit* neighbor : densityDefenseAttackers)
+                    if (attacker->GetExactDist2d(neighbor) <= TankDensityClusterRadius)
+                        ++localClusterCount;
+
                 float distance = bot->GetExactDist(attacker);
                 uint32 guid = attacker->GetGUID().GetCounter();
-                if (!nearestDefenseAttacker || distance < nearestDefenseDistance
-                    || (distance == nearestDefenseDistance && guid < nearestDefenseGuid))
+                if (!densityClusterAttacker || localClusterCount > densityClusterCount
+                    || (localClusterCount == densityClusterCount
+                        && (distance < densityClusterDistance
+                            || (distance == densityClusterDistance && guid < densityClusterGuid))))
                 {
-                    nearestDefenseAttacker = attacker;
-                    nearestDefenseDistance = distance;
-                    nearestDefenseGuid = guid;
+                    densityClusterAttacker = attacker;
+                    densityClusterCount = localClusterCount;
+                    densityClusterDistance = distance;
+                    densityClusterGuid = guid;
                 }
             }
-            if (nearestDefenseAttacker)
+            if (densityClusterAttacker)
             {
-                add = nearestDefenseAttacker;
+                add = densityClusterAttacker;
                 sharedFocusValid = false;
             }
         }
 
+        // Rerun64 proved that passive-cluster preposition can hand a large wave
+        // to the Feral quickly enough to expose an ordering gap: pickup actions
+        // continued while native defensives were suppressed by healer ownership,
+        // and the tank died after acquiring most of a 60-follower wave. Feral
+        // defensives are off the global cooldown, so submit one at the existing
+        // health/add thresholds and continue through the same decision to native
+        // threat pickup. Exact hazard movement has already run before this block.
+        if (role == "tank" && profile.SpecTag == "feral_druid_tank"
+            && cohortSwarmActive && addCount >= 12
+            && UnitHealthPct(bot) <= 0.90f
+            && !bot->HasAura(61336) && !bot->HasAura(22812))
+        {
+            std::array<uint32, 2> defensiveSpells = { 61336, 22812 };
+            for (uint32 defensiveSpellId : defensiveSpells)
+                if (bot->HasSpell(defensiveSpellId)
+                    && TryCastFriendlySpell(bot, bot, defensiveSpellId))
+                {
+                    std::string raw = BuildRawJson(bot, add);
+                    std::string semantic = BuildSemanticJson(
+                        bot, add, "dungeon_boss", &power, stage, activity);
+                    RecordEvent(state, bot, "defensive", bot,
+                        "tank_swarm_defensive", raw.c_str(), semantic.c_str(),
+                        UnitHealthPct(bot), addCount, defensiveSpellId);
+                    break;
+                }
+        }
+
+        // Build native Roar pickup as a deferred action. Charge ownership and
+        // arrival proof run first below; otherwise a legal edge Roar can preempt
+        // the bounded charge one decision after launch. Cast only once the tank
+        // is centered on the stationary healer's melee ring or already covers a
+        // deterministic majority of the healer-owned wave. This preserves the
+        // passive split-cluster pickup while avoiding low-coverage edge casts.
+        // Rerun98 passed both Feral retention gates, but two Azil waves cleared
+        // at 3018 ms and 3012 ms. Rerun100 then began 60/60 tank-owned and lost
+        // 29 followers to the healer exactly 3013 ms after activation; waiting
+        // for healer ownership before lowering the cadence was already too
+        // late for the first acquisition-eligible snapshot. Sample any real
+        // active three-or-more-add Feral swarm at the established lower bound.
+        if (role == "tank" && profile.SpecTag == "feral_druid_tank"
+            && cohortSwarmActive)
+            state.DecisionTimer = std::min<uint32>(
+                state.DecisionTimer, 500);
+
+        auto tryFeralRoarPickup = [&](bool activeClusterArrived = false) -> bool
+        {
+            if (role != "tank" || profile.SpecTag != "feral_druid_tank"
+                || !densityHealer
+                || observedListedAttackerCount(densityHealer) < 3
+                || !bot->HasSpell(99))
+                return false;
+
+            uint32 nearbyHealerOwnedCount = 0;
+            Unit* nearbyHealerOwnedAdd = nullptr;
+            float nearbyHealerOwnedDistance = std::numeric_limits<float>::max();
+            uint32 nearbyHealerOwnedGuid = std::numeric_limits<uint32>::max();
+            for (Creature* candidate : localAdds)
+                if (candidate && candidate->GetVictim() == densityHealer
+                    && bot->GetExactDist2d(candidate) <= 10.0f)
+                {
+                    ++nearbyHealerOwnedCount;
+                    float distance = bot->GetExactDist(candidate);
+                    uint32 guid = candidate->GetGUID().GetCounter();
+                    if (!nearbyHealerOwnedAdd
+                        || distance < nearbyHealerOwnedDistance
+                        || (distance == nearbyHealerOwnedDistance
+                            && guid < nearbyHealerOwnedGuid))
+                    {
+                        nearbyHealerOwnedAdd = candidate;
+                        nearbyHealerOwnedDistance = distance;
+                        nearbyHealerOwnedGuid = guid;
+                    }
+                }
+
+            uint32 healerOwnedCount =
+                uint32(observedListedAttackerCount(densityHealer));
+            bool centeredOnHealer =
+                bot->GetExactDist2d(densityHealer) <= 3.0f;
+            bool coversHealerOwnedMajority =
+                nearbyHealerOwnedCount * 2 >= healerOwnedCount;
+            // Rerun81 reached Azil's 60-follower activation after completing
+            // passive medoid prepositioning, but the first active snapshot had
+            // fewer than two healer-owned followers inside Roar range.  The
+            // ordinary density action consumed that decision and the two-cluster
+            // native pickup finished 13 ms after the acquisition gate.  Begin
+            // the existing bounded healer handoff immediately when no useful
+            // local Roar exists; once followers enter range, the unchanged Roar
+            // path below remains authoritative.
+            if (healerOwnedCount >= 12 && nearbyHealerOwnedCount < 2
+                && !centeredOnHealer
+                && !bot->HasUnitState(UNIT_STATE_CASTING)
+                && !bot->IsFalling()
+                && MoveBotToPoint(state, bot,
+                    densityHealer->GetPositionX(),
+                    densityHealer->GetPositionY(),
+                    densityHealer->GetPositionZ()))
+            {
+                std::string raw = BuildRawJson(bot, densityHealer);
+                std::string semantic = BuildSemanticJson(
+                    bot, densityHealer, "dungeon_boss",
+                    &power, stage, activity);
+                RecordEvent(state, bot, "boss_add_density", densityHealer,
+                    "feral_move_to_healer_for_split_swarm_pickup",
+                    raw.c_str(), semantic.c_str(),
+                    float(nearbyHealerOwnedCount),
+                    float(healerOwnedCount));
+                state.TargetGuid = nearbyHealerOwnedAdd
+                    ? nearbyHealerOwnedAdd->GetGUID() : ObjectGuid::Empty;
+                target = nearbyHealerOwnedAdd;
+                situation = "dungeon_boss";
+                action = "feral_move_to_healer_for_split_swarm_pickup";
+                return true;
+            }
+            // Rerun84's final 60-follower wave was already visible from the
+            // passive medoid, but waiting one decision for a strict local
+            // majority delayed the first Roar until 1009 ms after activation.
+            // Rerun94 then exposed the same topology in a 23-follower overlap:
+            // ten established local followers flipped to the healer, but a
+            // remote Charge preempted their immediately useful Roar. For any
+            // large healer-owned wave, acquire a useful local cluster first;
+            // the unchanged bounded handoff can then close the remote cluster.
+            bool immediateLargeWavePickup =
+                healerOwnedCount >= 12 && nearbyHealerOwnedCount >= 2;
+            // Rerun102 proved a moderate eight-to-ten-follower wave can have
+            // exactly one useful local target while its remote remainder owns
+            // the healer. Waiting for two local targets delayed Roar and the
+            // already-bounded post-cast healer handoff for 5.5 seconds. Cast on
+            // that one legal local target only for a 3-11 follower wave; large
+            // waves retain the established two-target coverage guard.
+            bool immediateModerateWavePickup =
+                healerOwnedCount >= 3 && healerOwnedCount < 12
+                && engagedAddCount < 12
+                && nearbyHealerOwnedCount >= 1;
+            bool usefulLocalPickup = immediateModerateWavePickup
+                || (activeClusterArrived
+                    && nearbyHealerOwnedCount >= 1)
+                || (nearbyHealerOwnedCount >= 2
+                    && (centeredOnHealer || coversHealerOwnedMajority
+                        || activeClusterArrived || immediateLargeWavePickup));
+            if (usefulLocalPickup
+                && TryCastFriendlySpell(bot, bot, 99))
+            {
+                // Rerun70 showed that split follower clusters can retain the
+                // healer for one avoidable decision after an instant Roar. The
+                // ordinary stationary-healer pickup below already owns this
+                // bounded destination, but previously could not start until
+                // the next update because a successful cast returned here.
+                // Begin that same legal movement immediately when the pre-cast
+                // snapshot proves a remote cluster remains. Rerun103 showed
+                // that returning to the healer center cancels an accepted
+                // remote-cluster path, so retain a deterministic remote anchor
+                // for the bounded post-Roar phase. Hazard movement has already
+                // run and remains authoritative.
+                bool remoteClusterRemains =
+                    nearbyHealerOwnedCount < healerOwnedCount;
+                Unit* remoteClusterAnchor = nullptr;
+                uint32 remoteClusterCount = 0;
+                float remoteClusterDistance =
+                    std::numeric_limits<float>::max();
+                uint32 remoteClusterGuid =
+                    std::numeric_limits<uint32>::max();
+                for (Creature* candidate : localAdds)
+                {
+                    if (!candidate || candidate->GetVictim() != densityHealer
+                        || bot->GetExactDist2d(candidate) <= 10.0f)
+                        continue;
+                    uint32 clusterCount = 0;
+                    for (Creature* neighbor : localAdds)
+                        if (neighbor && neighbor->GetVictim() == densityHealer
+                            && candidate->GetExactDist2d(neighbor) <= 10.0f)
+                            ++clusterCount;
+                    float distance = bot->GetExactDist(candidate);
+                    uint32 guid = candidate->GetGUID().GetCounter();
+                    if (!remoteClusterAnchor
+                        || clusterCount > remoteClusterCount
+                        || (clusterCount == remoteClusterCount
+                            && (distance < remoteClusterDistance
+                                || (distance == remoteClusterDistance
+                                    && guid < remoteClusterGuid))))
+                    {
+                        remoteClusterAnchor = candidate;
+                        remoteClusterCount = clusterCount;
+                        remoteClusterDistance = distance;
+                        remoteClusterGuid = guid;
+                    }
+                }
+                bool splitClusterHandoff = remoteClusterRemains
+                    && !bot->HasUnitState(UNIT_STATE_CASTING)
+                    && !bot->IsFalling()
+                    && MoveBotToPoint(state, bot,
+                        remoteClusterAnchor
+                            ? remoteClusterAnchor->GetPositionX()
+                            : densityHealer->GetPositionX(),
+                        remoteClusterAnchor
+                            ? remoteClusterAnchor->GetPositionY()
+                            : densityHealer->GetPositionY(),
+                        remoteClusterAnchor
+                            ? remoteClusterAnchor->GetPositionZ()
+                            : densityHealer->GetPositionZ());
+                if (remoteClusterRemains)
+                {
+                    state.FeralHealerThreatHandoffTargetGuid =
+                        densityHealer->GetGUID();
+                    state.FeralHealerThreatHandoffAnchorGuid =
+                        remoteClusterAnchor
+                            ? remoteClusterAnchor->GetGUID()
+                            : ObjectGuid::Empty;
+                    state.FeralHealerThreatHandoffUntilMs = NowMs() + 2500;
+                    state.FeralHealerThreatHandoffRemoteCluster =
+                        remoteClusterAnchor != nullptr;
+                }
+                else
+                {
+                    state.FeralHealerThreatHandoffTargetGuid.Clear();
+                    state.FeralHealerThreatHandoffAnchorGuid.Clear();
+                    state.FeralHealerThreatHandoffUntilMs = 0;
+                    state.FeralHealerThreatHandoffRemoteCluster = false;
+                }
+                std::string raw = BuildRawJson(bot, nearbyHealerOwnedAdd);
+                std::string semantic = BuildSemanticJson(
+                    bot, nearbyHealerOwnedAdd, "dungeon_boss",
+                    &power, stage, activity);
+                RecordEvent(state, bot, "boss_add_density",
+                    nearbyHealerOwnedAdd,
+                    splitClusterHandoff
+                        ? "feral_demoralizing_roar_split_swarm_handoff"
+                        : "feral_demoralizing_roar_swarm_pickup",
+                    raw.c_str(), semantic.c_str(),
+                    float(nearbyHealerOwnedCount),
+                    float(observedListedAttackerCount(densityHealer)), 99);
+                state.TargetGuid = nearbyHealerOwnedAdd
+                    ? nearbyHealerOwnedAdd->GetGUID() : ObjectGuid::Empty;
+                state.WasInCombat = true;
+                target = nearbyHealerOwnedAdd;
+                situation = "dungeon_boss";
+                action = splitClusterHandoff
+                    ? "feral_demoralizing_roar_split_swarm_handoff"
+                    : "feral_demoralizing_roar_swarm_pickup";
+                state.DecisionTimer = std::min<uint32>(
+                    state.DecisionTimer, 250);
+                return true;
+            }
+            return false;
+        };
+
+        // A successful Feral Charge owns its movement briefly. Issuing MovePoint
+        // on the next decision clears MOTION_SLOT_ACTIVE and can cancel the charge
+        // before the tank reaches a newly activated follower wave. Preserve the
+        // charged target until that target and nearby adds prove arrival, then
+        // hand control back to the existing strict self-centered area resolver.
+        uint64 feralChargeNowMs = NowMs();
+        bool feralChargePickupInFlight = role == "tank"
+            && profile.SpecTag == "feral_druid_tank"
+            && state.FeralChargePickupUntilMs > feralChargeNowMs
+            && !state.FeralChargePickupTargetGuid.IsEmpty();
+        Unit* feralChargePickupTarget = nullptr;
+        bool feralChargePickupArrived = false;
+        if (feralChargePickupInFlight)
+        {
+            for (Creature* candidate : localAdds)
+                if (candidate && candidate->GetGUID() == state.FeralChargePickupTargetGuid)
+                {
+                    feralChargePickupTarget = candidate;
+                    break;
+                }
+            if (feralChargePickupTarget)
+            {
+                add = feralChargePickupTarget;
+                sharedFocusValid = false;
+            }
+            else
+            {
+                // Rerun126 charged the first Azil follower in 508 ms, but the
+                // anchor died on arrival and discarded the accepted movement.
+                // Preserve arrival only when a live healer-owned follower is
+                // already inside native Roar range; no victim is reassigned.
+                Unit* nearbyHealerFollower = nullptr;
+                float nearbyHealerFollowerDistance =
+                    std::numeric_limits<float>::max();
+                uint32 nearbyHealerFollowerGuid =
+                    std::numeric_limits<uint32>::max();
+                for (Creature* candidate : localAdds)
+                    if (candidate && densityHealer
+                        && candidate->GetVictim() == densityHealer
+                        && bot->GetExactDist2d(candidate) <= 10.0f)
+                    {
+                        float distance = bot->GetExactDist(candidate);
+                        uint32 guid = candidate->GetGUID().GetCounter();
+                        if (!nearbyHealerFollower
+                            || distance < nearbyHealerFollowerDistance
+                            || (distance == nearbyHealerFollowerDistance
+                                && guid < nearbyHealerFollowerGuid))
+                        {
+                            nearbyHealerFollower = candidate;
+                            nearbyHealerFollowerDistance = distance;
+                            nearbyHealerFollowerGuid = guid;
+                        }
+                    }
+                if (nearbyHealerFollower)
+                {
+                    add = nearbyHealerFollower;
+                    sharedFocusValid = false;
+                    feralChargePickupArrived = true;
+                }
+                state.FeralChargePickupTargetGuid.Clear();
+                state.FeralChargePickupUntilMs = 0;
+                feralChargePickupInFlight = false;
+            }
+        }
+        else if (!state.FeralChargePickupTargetGuid.IsEmpty()
+            || state.FeralChargePickupUntilMs)
+        {
+            state.FeralChargePickupTargetGuid.Clear();
+            state.FeralChargePickupUntilMs = 0;
+        }
+
+        if (feralChargePickupInFlight && feralChargePickupTarget)
+        {
+            Unit* nearbyPickupAdd = nullptr;
+            float nearbyPickupDistance = std::numeric_limits<float>::max();
+            uint32 nearbyPickupAddCount = 0;
+            for (Creature* candidate : localAdds)
+                if (candidate && bot->GetExactDist2d(candidate) <= 10.0f)
+                {
+                    ++nearbyPickupAddCount;
+                    float distance = bot->GetExactDist(candidate);
+                    if (!nearbyPickupAdd || distance < nearbyPickupDistance
+                        || (distance == nearbyPickupDistance
+                            && candidate->GetGUID().GetCounter()
+                                < nearbyPickupAdd->GetGUID().GetCounter()))
+                    {
+                        nearbyPickupAdd = candidate;
+                        nearbyPickupDistance = distance;
+                    }
+                }
+
+            if (bot->GetExactDist2d(feralChargePickupTarget) <= 10.0f
+                && nearbyPickupAddCount >= 2 && nearbyPickupAdd)
+            {
+                add = nearbyPickupAdd;
+                sharedFocusValid = false;
+                feralChargePickupArrived = true;
+            }
+            else if (bot->GetExactDist2d(feralChargePickupTarget) > 10.0f)
+            {
+                std::string raw = BuildRawJson(bot, feralChargePickupTarget);
+                std::string semantic = BuildSemanticJson(
+                    bot, feralChargePickupTarget, "dungeon_boss", &power, stage, activity);
+                RecordEvent(state, bot, "boss_add_density", feralChargePickupTarget,
+                    "feral_charge_swarm_pickup_in_flight",
+                    raw.c_str(), semantic.c_str(),
+                    bot->GetExactDist2d(feralChargePickupTarget), addCount, 16979);
+                state.TargetGuid = feralChargePickupTarget->GetGUID();
+                target = feralChargePickupTarget;
+                situation = "dungeon_boss";
+                action = "feral_charge_swarm_pickup_in_flight";
+                return true;
+            }
+        }
+
+        // Preserve the bounded post-Roar movement for 2.5 seconds while exact
+        // hazard movement above remains authoritative. Rerun103 proved the
+        // stationary-healer form must not replace an already accepted path to
+        // the remaining remote follower cluster. On arrival, hold through the
+        // native Roar GCD instead of walking back to another cluster.
+        uint64 feralHealerHandoffNowMs = NowMs();
+        Unit* feralHealerHandoffAnchor = nullptr;
+        if (!state.FeralHealerThreatHandoffAnchorGuid.IsEmpty())
+            feralHealerHandoffAnchor = ObjectAccessor::GetUnit(
+                *bot, state.FeralHealerThreatHandoffAnchorGuid);
+        bool feralHealerRemoteHandoffValid =
+            !state.FeralHealerThreatHandoffRemoteCluster
+            || (feralHealerHandoffAnchor
+                && feralHealerHandoffAnchor->IsAlive()
+                && feralHealerHandoffAnchor->GetMap() == bot->GetMap()
+                && feralHealerHandoffAnchor->GetVictim() == densityHealer
+                && bot->IsValidAttackTarget(feralHealerHandoffAnchor));
+        bool feralHealerHandoffActive = role == "tank"
+            && profile.SpecTag == "feral_druid_tank"
+            && densityHealer
+            && state.FeralHealerThreatHandoffUntilMs
+                > feralHealerHandoffNowMs
+            && state.FeralHealerThreatHandoffTargetGuid
+                == densityHealer->GetGUID()
+            && feralHealerRemoteHandoffValid
+            && observedListedAttackerCount(densityHealer) >= 2;
+        if (!feralHealerHandoffActive
+            && (!state.FeralHealerThreatHandoffTargetGuid.IsEmpty()
+                || !state.FeralHealerThreatHandoffAnchorGuid.IsEmpty()
+                || state.FeralHealerThreatHandoffUntilMs
+                || state.FeralHealerThreatHandoffRemoteCluster))
+        {
+            state.FeralHealerThreatHandoffTargetGuid.Clear();
+            state.FeralHealerThreatHandoffAnchorGuid.Clear();
+            state.FeralHealerThreatHandoffUntilMs = 0;
+            state.FeralHealerThreatHandoffRemoteCluster = false;
+        }
+        bool feralHealerHandoffArrived = false;
+        if (feralHealerHandoffActive)
+        {
+            // Rerun109's Azil episode repeatedly waited on one moving anchor
+            // although two other still-unaffected healer followers were
+            // already inside native Roar range. Match the corrected ordinary
+            // handoff: an unaffected local majority proves bounded arrival,
+            // without accepting a minority edge cast for a large wave.
+            uint32 localMissingRoarDuringHandoff = 0;
+            for (Creature* candidate : localAdds)
+                if (candidate && candidate->GetVictim() == densityHealer
+                    && bot->GetExactDist2d(candidate) <= 10.0f
+                    && !candidate->HasAura(99, bot->GetGUID()))
+                    ++localMissingRoarDuringHandoff;
+            uint32 healerOwnedDuringHandoff =
+                uint32(observedListedAttackerCount(densityHealer));
+            bool localMissingRoarCoversMajority =
+                localMissingRoarDuringHandoff >= 2
+                && localMissingRoarDuringHandoff * 2
+                    >= healerOwnedDuringHandoff;
+            feralHealerHandoffArrived =
+                localMissingRoarCoversMajority
+                || (state.FeralHealerThreatHandoffRemoteCluster
+                    ? bot->GetExactDist2d(feralHealerHandoffAnchor) <= 10.0f
+                    : bot->GetExactDist2d(densityHealer) <= 3.0f);
+            // Rerun106 isolated two Azil split waves whose successful local
+            // Roar was followed by 3.5-4.6 seconds of ground movement. The
+            // ordinary Charge branch below was suppressed solely because this
+            // identity-bound post-Roar handoff was active. Reuse native Charge
+            // against that same validated remote anchor before continuing the
+            // ground path. Exact hazard handling has already run and remains
+            // authoritative; cooldown, range, casting, falling, target, and
+            // the existing 2.5-second Charge reservation stay unchanged.
+            if (!feralHealerHandoffArrived
+                && state.FeralHealerThreatHandoffRemoteCluster
+                && bot->GetExactDist(feralHealerHandoffAnchor) > 8.0f
+                && bot->HasSpell(16979)
+                && !bot->HasUnitState(UNIT_STATE_CASTING)
+                && !bot->IsFalling()
+                && TryCastCombatSpell(bot, feralHealerHandoffAnchor, 16979))
+            {
+                std::string raw = BuildRawJson(bot, feralHealerHandoffAnchor);
+                std::string semantic = BuildSemanticJson(
+                    bot, feralHealerHandoffAnchor, "dungeon_boss",
+                    &power, stage, activity);
+                RecordEvent(state, bot, "boss_add_density",
+                    feralHealerHandoffAnchor,
+                    "feral_charge_remote_cluster_swarm_handoff",
+                    raw.c_str(), semantic.c_str(),
+                    bot->GetExactDist(feralHealerHandoffAnchor),
+                    float(observedListedAttackerCount(densityHealer)), 16979);
+                state.FeralChargePickupTargetGuid =
+                    feralHealerHandoffAnchor->GetGUID();
+                state.FeralChargePickupUntilMs = NowMs() + 2500;
+                state.DecisionTimer = std::min<uint32>(
+                    state.DecisionTimer, 500);
+                state.TargetGuid = feralHealerHandoffAnchor->GetGUID();
+                state.WasInCombat = true;
+                target = feralHealerHandoffAnchor;
+                situation = "dungeon_boss";
+                action = "feral_charge_remote_cluster_swarm_handoff";
+                return true;
+            }
+            if (!feralHealerHandoffArrived
+                && !bot->HasUnitState(UNIT_STATE_CASTING)
+                && !bot->IsFalling())
+            {
+                Unit* movementAnchor =
+                    state.FeralHealerThreatHandoffRemoteCluster
+                        ? feralHealerHandoffAnchor : densityHealer;
+                bool continuingRemotePath =
+                    state.FeralHealerThreatHandoffRemoteCluster
+                    && state.ActivePathValid && state.IsMoving
+                    && movementAnchor->GetExactDist2d(
+                        state.ActivePathToX, state.ActivePathToY) <= 10.0f;
+                bool moved = continuingRemotePath || MoveBotToPoint(state, bot,
+                    movementAnchor->GetPositionX(),
+                    movementAnchor->GetPositionY(),
+                    movementAnchor->GetPositionZ());
+                std::string raw = BuildRawJson(bot, movementAnchor);
+                std::string semantic = BuildSemanticJson(
+                    bot, movementAnchor, "dungeon_boss",
+                    &power, stage, activity);
+                RecordEvent(state, bot, "boss_add_density", movementAnchor,
+                    moved
+                        ? (state.FeralHealerThreatHandoffRemoteCluster
+                            ? "feral_continue_remote_cluster_swarm_handoff"
+                            : "feral_continue_healer_swarm_handoff")
+                        : "feral_healer_swarm_handoff_path_rejected",
+                    raw.c_str(), semantic.c_str(),
+                    bot->GetExactDist2d(movementAnchor),
+                    float(observedListedAttackerCount(densityHealer)));
+                state.TargetGuid = add
+                    ? add->GetGUID() : ObjectGuid::Empty;
+                target = add;
+                situation = "dungeon_boss";
+                action = moved
+                    ? (state.FeralHealerThreatHandoffRemoteCluster
+                        ? "feral_continue_remote_cluster_swarm_handoff"
+                        : "feral_continue_healer_swarm_handoff")
+                    : "feral_hold_healer_swarm_handoff_path_rejected";
+                return true;
+            }
+            if (feralHealerHandoffArrived)
+                bot->StopMoving();
+        }
+
+        // A remote Charge must not abandon a useful local healer-owned cluster.
+        // Rerun94 had ten established followers already inside the Feral's Roar
+        // radius when a newer remote cluster appeared; charging first turned
+        // those already-eligible followers into the entire exposure failure.
+        // Resolve only the currently local native area pickup here. If fewer
+        // than two are local, fall through to Charge exactly as before.
+        uint32 localHealerOwnedBeforeCharge = 0;
+        if (!feralChargePickupInFlight && role == "tank"
+            && profile.SpecTag == "feral_druid_tank" && densityHealer)
+            for (Creature* candidate : localAdds)
+                if (candidate && candidate->GetVictim() == densityHealer
+                    && bot->GetExactDist2d(candidate) <= 10.0f)
+                    ++localHealerOwnedBeforeCharge;
+        if (localHealerOwnedBeforeCharge >= 2
+            && tryFeralRoarPickup(feralHealerHandoffArrived))
+            return true;
+
+        // Feral Charge closes the gap before healing threat can retain a newly
+        // activated follower wave beyond the acquisition grace. Reserve it for
+        // a healer-owned listed add: rerun76 spent the charge on a non-healer
+        // precursor, then overlapping Azil waves retained the healer for 5-7
+        // seconds while the cooldown recovered.
+        Player* feralChargeVictim = add && add->GetVictim()
+            ? add->GetVictim()->ToPlayer() : nullptr;
+        bool feralChargeProtectsHealer = feralChargeVictim
+            && std::string(GetDungeonRole(feralChargeVictim)) == "healer";
+        // Keep Charge reserved from low-density non-healer precursors, but do
+        // not force a real party-owned follower wave through a three-second
+        // melee approach. Rerun101 observed 16-18 engaged Azil followers on a
+        // damage dealer with zero healer attackers; ten identities became
+        // acquisition-eligible before the unchanged strict area action reached
+        // range. Twelve engaged listed adds prove this is the active wave.
+        // Rerun125 observed an activated Azil wave grow from 14 to 17 listed
+        // adds with no victim, then assign all 19 to the healer in one tick.
+        // The existing high-density reservation rejected Charge solely because
+        // the selected add did not have a victim yet.  Treat that pre-victim
+        // state as the earliest form of the same declared wave; native Charge
+        // still owns range, line-of-sight, cooldown, and target legality.
+        bool feralChargeProtectsHighDensityParty =
+            (!feralChargeVictim
+                || (feralChargeVictim != bot
+                    && std::string(GetDungeonRole(feralChargeVictim))
+                        != "tank"))
+            && engagedAddCount >= 12
+            && densityHealer
+            && observedListedAttackerCount(densityHealer) == 0;
+        if (role == "tank" && profile.SpecTag == "feral_druid_tank"
+            && engagedAddCount >= 3 && add
+            && (feralChargeProtectsHealer
+                || feralChargeProtectsHighDensityParty)
+            && !feralHealerHandoffActive
+            && add->GetVictim() != bot && bot->GetExactDist(add) > 8.0f
+            && bot->HasSpell(16979) && TryCastCombatSpell(bot, add, 16979))
+        {
+            std::string raw = BuildRawJson(bot, add);
+            std::string semantic = BuildSemanticJson(
+                bot, add, "dungeon_boss", &power, stage, activity);
+            RecordEvent(state, bot, "boss_add_density", add,
+                "feral_charge_swarm_pickup", raw.c_str(), semantic.c_str(),
+                bot->GetExactDist(add), addCount, 16979);
+            state.FeralChargePickupTargetGuid = add->GetGUID();
+            state.FeralChargePickupUntilMs = NowMs() + 2500;
+            state.DecisionTimer = std::min<uint32>(
+                state.DecisionTimer, 250);
+            state.TargetGuid = add->GetGUID();
+            state.WasInCombat = true;
+            target = add;
+            situation = "dungeon_boss";
+            action = "feral_charge_swarm_pickup";
+            return true;
+        }
+
+        // Charge either proved arrival above or was unavailable/illegal. Only
+        // now may the self-centered native pickup consume this decision.
+        if (tryFeralRoarPickup(
+                feralHealerHandoffArrived || feralChargePickupArrived))
+        {
+            if (feralChargePickupArrived)
+            {
+                state.FeralChargePickupTargetGuid.Clear();
+                state.FeralChargePickupUntilMs = 0;
+            }
+            return true;
+        }
+        // Rerun93 proved that Charge can reach a healer-owned wave while its
+        // global cooldown still prevents the native Roar in that exact arrival
+        // decision. Clearing the charged GUID here returned the Feral to generic
+        // density movement and let a 19-follower wave retain the healer for
+        // 4031 ms. Preserve only the original 2.5-second Charge reservation and
+        // retry the existing legal Roar at the established lower cadence.
+        if (feralChargePickupArrived && densityHealer
+            && observedListedAttackerCount(densityHealer) >= 3)
+        {
+            bot->StopMoving();
+            state.DecisionTimer = std::min<uint32>(
+                state.DecisionTimer, 500);
+            std::string raw = BuildRawJson(bot, feralChargePickupTarget);
+            std::string semantic = BuildSemanticJson(
+                bot, feralChargePickupTarget, "dungeon_boss",
+                &power, stage, activity);
+            RecordEvent(state, bot, "boss_add_density",
+                feralChargePickupTarget,
+                "feral_hold_charge_swarm_arrival_for_roar",
+                raw.c_str(), semantic.c_str(),
+                bot->GetExactDist2d(feralChargePickupTarget), addCount);
+            state.TargetGuid = feralChargePickupTarget->GetGUID();
+            target = feralChargePickupTarget;
+            situation = "dungeon_boss";
+            action = "feral_hold_charge_swarm_arrival_for_roar";
+            return true;
+        }
+        if (feralHealerHandoffActive && feralHealerHandoffArrived)
+        {
+            // Rerun86's correct Azil two-cluster handoff missed the hard dwell
+            // gate by 19 ms because the ordinary one-second cadence observed
+            // the second Roar only after 3019 ms. Retry only this already-bound
+            // handoff at the runtime's established 500 ms lower decision bound
+            // so the next native GCD boundary can be observed without changing
+            // movement, target selection, or spell legality.
+            state.DecisionTimer = std::min<uint32>(
+                state.DecisionTimer, 500);
+            std::string raw = BuildRawJson(bot, densityHealer);
+            std::string semantic = BuildSemanticJson(
+                bot, densityHealer, "dungeon_boss",
+                &power, stage, activity);
+            RecordEvent(state, bot, "boss_add_density", densityHealer,
+                "feral_hold_healer_swarm_handoff_for_roar",
+                raw.c_str(), semantic.c_str(),
+                bot->GetExactDist2d(densityHealer),
+                float(observedListedAttackerCount(densityHealer)));
+            state.TargetGuid = add ? add->GetGUID() : ObjectGuid::Empty;
+            target = add;
+            situation = "dungeon_boss";
+            action = "feral_hold_healer_swarm_handoff_for_roar";
+            return true;
+        }
+
+        // Once a split wave is down to one healer-owned follower, the Roar
+        // resolver is intentionally inactive. Rerun85 let that final follower
+        // survive another full decision behind the generic density cycle.
+        // Reuse native Growl immediately, matching the existing ordinary-trash
+        // single-follower rule.
+        if (role == "tank" && profile.SpecTag == "feral_druid_tank"
+            && densityHealer
+            && observedListedAttackerCount(densityHealer) == 1
+            && bot->HasSpell(6795))
+        {
+            Creature* healerOwnedAdd = nullptr;
+            for (Creature* candidate : localAdds)
+                if (candidate && candidate->GetVictim() == densityHealer
+                    && (!healerOwnedAdd
+                        || bot->GetExactDist(candidate)
+                            < bot->GetExactDist(healerOwnedAdd)
+                        || (bot->GetExactDist(candidate)
+                                == bot->GetExactDist(healerOwnedAdd)
+                            && candidate->GetGUID().GetCounter()
+                                < healerOwnedAdd->GetGUID().GetCounter())))
+                    healerOwnedAdd = candidate;
+            if (healerOwnedAdd
+                && TryCastCombatSpell(bot, healerOwnedAdd, 6795))
+            {
+                std::string raw = BuildRawJson(bot, healerOwnedAdd);
+                std::string semantic = BuildSemanticJson(
+                    bot, healerOwnedAdd, "dungeon_boss",
+                    &power, stage, activity);
+                RecordEvent(state, bot, "boss_add_density", healerOwnedAdd,
+                    "feral_growl_lingering_healer_swarm_attacker",
+                    raw.c_str(), semantic.c_str(),
+                    bot->GetExactDist(healerOwnedAdd), addCount, 6795);
+                state.TargetGuid = healerOwnedAdd->GetGUID();
+                target = healerOwnedAdd;
+                situation = "dungeon_boss";
+                action = "feral_growl_lingering_healer_swarm_attacker";
+                return true;
+            }
+        }
+
+        // Rerun66 rejected tightening the stable healer anchor: scripted
+        // followers were not centered on the healer, so the Feral spent five
+        // decisions moving there and still reached only two followers. For a
+        // moderate active wave, reserve one deterministic density representative
+        // for at most 2.5 seconds. Rerun67 proved that its first accepted point
+        // becomes stale as the healer-owned hostile moves, so revalidate the
+        // same GUID's current endpoint on each reserved tick. Larger split waves
+        // retain passive preposition/Charge, and hazard movement remains
+        // authoritative because it runs before this resolver.
+        uint64 activeSwarmPickupNowMs = NowMs();
+        bool activeSwarmPickupEligible = role == "tank"
+            && profile.SpecTag == "feral_druid_tank"
+            && densityHealer
+            && observedListedAttackerCount(densityHealer) >= 3
+            && engagedAddCount >= 3 && addCount <= 24;
+        if (!activeSwarmPickupEligible)
+        {
+            state.FeralActiveSwarmPickupAttempted = false;
+            state.FeralActiveSwarmPickupArrived = false;
+        }
+        bool activeSwarmPickupReserved = activeSwarmPickupEligible
+            && state.FeralActiveSwarmPickupUntilMs > activeSwarmPickupNowMs
+            && !state.FeralActiveSwarmPickupAnchorGuid.IsEmpty();
+        Unit* activeSwarmPickupAnchor = nullptr;
+        if (activeSwarmPickupReserved)
+        {
+            activeSwarmPickupAnchor = ObjectAccessor::GetUnit(
+                *bot, state.FeralActiveSwarmPickupAnchorGuid);
+            if (!activeSwarmPickupAnchor || !activeSwarmPickupAnchor->IsAlive()
+                || activeSwarmPickupAnchor->GetMap() != bot->GetMap()
+                || activeSwarmPickupAnchor->GetVictim() != densityHealer)
+            {
+                state.FeralActiveSwarmPickupAnchorGuid.Clear();
+                state.FeralActiveSwarmPickupUntilMs = 0;
+                state.FeralActiveSwarmPickupArrived = false;
+                activeSwarmPickupReserved = false;
+                activeSwarmPickupAnchor = nullptr;
+            }
+        }
+        else if (!state.FeralActiveSwarmPickupAnchorGuid.IsEmpty()
+            || state.FeralActiveSwarmPickupUntilMs)
+        {
+            state.FeralActiveSwarmPickupAnchorGuid.Clear();
+            state.FeralActiveSwarmPickupUntilMs = 0;
+            state.FeralActiveSwarmPickupArrived = false;
+        }
+
+        bool startingActiveSwarmPickup = !activeSwarmPickupReserved
+            && activeSwarmPickupEligible
+            && !state.FeralActiveSwarmPickupAttempted && add
+            && add->GetVictim() == densityHealer
+            && !bot->HasUnitState(UNIT_STATE_CASTING)
+            && !bot->IsFalling();
+        if (startingActiveSwarmPickup)
+            activeSwarmPickupAnchor = add;
+        if (activeSwarmPickupAnchor
+            && !bot->HasUnitState(UNIT_STATE_CASTING) && !bot->IsFalling())
+        {
+            if (bot->GetExactDist2d(activeSwarmPickupAnchor)
+                <= TankDensityClusterRadius)
+            {
+                if (startingActiveSwarmPickup)
+                {
+                    state.FeralActiveSwarmPickupAttempted = true;
+                    state.FeralActiveSwarmPickupAnchorGuid =
+                        activeSwarmPickupAnchor->GetGUID();
+                }
+                if (!state.FeralActiveSwarmPickupArrived)
+                {
+                    state.FeralActiveSwarmPickupArrived = true;
+                    state.FeralActiveSwarmPickupUntilMs =
+                        activeSwarmPickupNowMs + 1500;
+                }
+                bot->StopMoving();
+                if (tryFeralRoarPickup(true))
+                {
+                    state.FeralActiveSwarmPickupAnchorGuid.Clear();
+                    state.FeralActiveSwarmPickupUntilMs = 0;
+                    state.FeralActiveSwarmPickupArrived = false;
+                    return true;
+                }
+                if (state.FeralActiveSwarmPickupUntilMs
+                    > activeSwarmPickupNowMs)
+                {
+                    std::string raw = BuildRawJson(
+                        bot, activeSwarmPickupAnchor);
+                    std::string semantic = BuildSemanticJson(
+                        bot, activeSwarmPickupAnchor, "dungeon_boss",
+                        &power, stage, activity);
+                    RecordEvent(state, bot, "boss_add_density",
+                        activeSwarmPickupAnchor,
+                        "feral_hold_bounded_active_swarm_cluster_for_roar",
+                        raw.c_str(), semantic.c_str(),
+                        bot->GetExactDist2d(activeSwarmPickupAnchor),
+                        addCount);
+                    state.TargetGuid =
+                        activeSwarmPickupAnchor->GetGUID();
+                    target = activeSwarmPickupAnchor;
+                    situation = "dungeon_boss";
+                    action =
+                        "hold_bounded_active_swarm_cluster_for_roar";
+                    return true;
+                }
+                state.FeralActiveSwarmPickupAnchorGuid.Clear();
+                state.FeralActiveSwarmPickupUntilMs = 0;
+                state.FeralActiveSwarmPickupArrived = false;
+            }
+            else
+            {
+                bool continuingReservedPickup = activeSwarmPickupReserved;
+                bool moved = MoveBotToPoint(state, bot,
+                    activeSwarmPickupAnchor->GetPositionX(),
+                    activeSwarmPickupAnchor->GetPositionY(),
+                    activeSwarmPickupAnchor->GetPositionZ());
+                if (moved)
+                {
+                    if (startingActiveSwarmPickup)
+                    {
+                        state.FeralActiveSwarmPickupAttempted = true;
+                        state.FeralActiveSwarmPickupArrived = false;
+                        state.FeralActiveSwarmPickupAnchorGuid =
+                            activeSwarmPickupAnchor->GetGUID();
+                        state.FeralActiveSwarmPickupUntilMs =
+                            activeSwarmPickupNowMs + 2500;
+                    }
+                    std::string raw = BuildRawJson(bot, activeSwarmPickupAnchor);
+                    std::string semantic = BuildSemanticJson(
+                        bot, activeSwarmPickupAnchor, "dungeon_boss",
+                        &power, stage, activity);
+                    RecordEvent(state, bot, "boss_add_density",
+                        activeSwarmPickupAnchor,
+                        continuingReservedPickup
+                            ? "feral_continue_bounded_active_swarm_cluster"
+                            : "feral_move_to_bounded_active_swarm_cluster",
+                        raw.c_str(), semantic.c_str(),
+                        bot->GetExactDist2d(activeSwarmPickupAnchor), addCount);
+                    state.TargetGuid = activeSwarmPickupAnchor->GetGUID();
+                    target = activeSwarmPickupAnchor;
+                    situation = "dungeon_boss";
+                    action = continuingReservedPickup
+                        ? "continue_bounded_active_swarm_cluster"
+                        : "move_to_bounded_active_swarm_cluster";
+                    return true;
+                }
+
+                state.FeralActiveSwarmPickupAnchorGuid.Clear();
+                state.FeralActiveSwarmPickupUntilMs = 0;
+                state.FeralActiveSwarmPickupArrived = false;
+            }
+        }
+
+        // Keep the healer stationary while the Feral closes to its stable
+        // pickup anchor. Rerun58 rejected pursuing successive remote clusters:
+        // it did not clear the role gates and lost the prior death-free result.
+        if (role == "tank" && profile.SpecTag == "feral_druid_tank"
+            && !feralChargePickupArrived && densityDefenseTarget
+            && std::string(GetDungeonRole(densityDefenseTarget)) == "healer"
+            && observedListedAttackerCount(densityDefenseTarget) >= 3
+            && bot->GetExactDist2d(densityDefenseTarget) > 6.0f
+            && !bot->HasUnitState(UNIT_STATE_CASTING) && !bot->IsFalling())
+        {
+            constexpr float anchorDestinationEpsilon = 0.1f;
+            bool continuingAnchorPath = state.ActivePathValid && state.IsMoving
+                && std::fabs(state.ActivePathToX - densityDefenseTarget->GetPositionX())
+                    <= anchorDestinationEpsilon
+                && std::fabs(state.ActivePathToY - densityDefenseTarget->GetPositionY())
+                    <= anchorDestinationEpsilon
+                && std::fabs(state.ActivePathToZ - densityDefenseTarget->GetPositionZ())
+                    <= anchorDestinationEpsilon;
+            bool moved = MoveBotToPoint(state, bot,
+                densityDefenseTarget->GetPositionX(),
+                densityDefenseTarget->GetPositionY(),
+                densityDefenseTarget->GetPositionZ());
+            std::string raw = BuildRawJson(bot, densityDefenseTarget);
+            std::string semantic = BuildSemanticJson(
+                bot, densityDefenseTarget, "dungeon_boss", &power, stage, activity);
+            RecordEvent(state, bot, "boss_add_density", densityDefenseTarget,
+                continuingAnchorPath
+                    ? "feral_continue_to_stationary_healer_swarm_pickup"
+                    : (moved ? "feral_move_to_stationary_healer_swarm_pickup"
+                             : "feral_stationary_healer_swarm_pickup_path_rejected"),
+                raw.c_str(), semantic.c_str(),
+                bot->GetExactDist2d(densityDefenseTarget),
+                float(observedListedAttackerCount(densityDefenseTarget)));
+            state.TargetGuid = add ? add->GetGUID() : ObjectGuid::Empty;
+            target = add;
+            situation = "dungeon_boss";
+            action = continuingAnchorPath
+                ? "continue_to_stationary_healer_swarm_pickup"
+                : (moved ? "move_to_stationary_healer_swarm_pickup"
+                         : "hold_stationary_healer_swarm_pickup");
+            return true;
+        }
+
         bool hunterAoeTransferReady = true;
+        bool hunterAoeResourceReady = true;
+        float hunterAoeMinRange = 5.0f;
+        static constexpr float HunterAoeMinRangeSafety = 3.0f;
+        static constexpr float HunterAoeMaxRange = 35.0f;
         if (bot->getClass() == CLASS_HUNTER && addCount >= 2)
         {
             // Cataclysm Multi-Shot costs 40 focus. CalcPowerCost can report
@@ -13155,10 +15788,72 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             // secondary effect in this client data, while candidate building
             // correctly rejects it as insufficient_resource. Use the actual
             // gameplay threshold so the gate agrees with the cast validator.
-            hunterAoeTransferReady = add && bot->HasSpell(2643)
-                && bot->GetPower(POWER_FOCUS) >= 40
-                && bot->GetExactDist(add) >= 5.0f && bot->GetExactDist(add) <= 35.0f
+            hunterAoeResourceReady = add && bot->HasSpell(2643)
+                && bot->GetPower(POWER_FOCUS) >= 40;
+            if (add)
+                if (SpellInfo const* multiShot = sSpellMgr->GetSpellInfo(2643))
+                {
+                    float spellMinRange = bot->GetSpellMinRangeForTarget(add, multiShot);
+                    if (multiShot->RangeEntry && (multiShot->RangeEntry->Flags & SPELL_RANGE_RANGED))
+                        spellMinRange += bot->GetMeleeRange(add);
+                    hunterAoeMinRange = std::max(hunterAoeMinRange, spellMinRange);
+                }
+            // Keep a bounded buffer above the strict minimum. The selected add
+            // can close distance between movement completion and CastSpell.
+            hunterAoeMinRange = std::min(HunterAoeMaxRange - 1.0f,
+                hunterAoeMinRange + HunterAoeMinRangeSafety);
+            hunterAoeTransferReady = hunterAoeResourceReady
+                && bot->GetExactDist(add) >= hunterAoeMinRange
+                && bot->GetExactDist(add) <= HunterAoeMaxRange
                 && bot->IsWithinLOSInMap(add);
+        }
+
+        if (bot->getClass() == CLASS_HUNTER && densityTank && densityTank != bot
+            && addCount >= 2 && hunterAoeResourceReady && !hunterAoeTransferReady
+            && !bot->HasAura(34477))
+        {
+            ResolvedCombatAction rangeAction;
+            rangeAction.MovementDirective = "ranged";
+            rangeAction.AutoAttackMode = "ranged";
+            rangeAction.MinRange = hunterAoeMinRange;
+            rangeAction.MaxRange = HunterAoeMaxRange;
+            bool moved = MoveBotToProfileRange(state, bot, add, &rangeAction);
+            state.TargetGuid = add->GetGUID();
+            target = add;
+            situation = "dungeon_boss";
+            action = moved ? "move_to_misdirection_aoe_range" : "hold_misdirection_aoe_range";
+            return true;
+        }
+
+        // Rerun60 proved that an in-range Multi-Shot transfers a fresh wave
+        // inside the acquisition grace, but an overlapping wave can activate
+        // after the short Misdirection aura ends while its ordinary cooldown
+        // remains. Marksmanship already provisions native Readiness; select it
+        // only for an active healer-owned swarm and let the registered spell
+        // script perform its normal Hunter cooldown reset.
+        bool hunterMisdirectionActive = bot->getClass() == CLASS_HUNTER
+            && (bot->HasAura(34477) || bot->HasAura(35079));
+        SpellInfo const* misdirectionInfo = sSpellMgr->GetSpellInfo(34477);
+        if (bot->getClass() == CLASS_HUNTER && densityTank && densityTank != bot
+            && densityHealer && observedListedAttackerCount(densityHealer) >= 3
+            && addCount >= 3 && !hunterMisdirectionActive
+            && misdirectionInfo
+            && !bot->GetSpellHistory()->IsReady(misdirectionInfo)
+            && bot->HasSpell(23989)
+            && TryCastFriendlySpell(bot, bot, 23989))
+        {
+            std::string raw = BuildRawJson(bot, add);
+            std::string semantic = BuildSemanticJson(
+                bot, add, "dungeon_boss", &power, stage, activity);
+            RecordEvent(state, bot, "boss_adds", add,
+                "readiness_for_misdirection_swarm_pickup",
+                raw.c_str(), semantic.c_str(),
+                float(observedListedAttackerCount(densityHealer)), addCount, 23989);
+            state.TargetGuid = add ? add->GetGUID() : ObjectGuid::Empty;
+            target = add;
+            situation = "dungeon_boss";
+            action = "readiness_for_misdirection_swarm_pickup";
+            return true;
         }
 
         // Do not start the short Misdirection window until the hunter can pay
@@ -13184,7 +15879,44 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         // for one hostile and an area-profile action for two or more.  This
         // prevents an active Misdirection window from being consumed by a
         // low-value single-target filler during an add wave.
-        bool hunterMisdirectionActive = bot->getClass() == CLASS_HUNTER && bot->HasAura(34477);
+        if (hunterMisdirectionActive && addCount >= 2)
+        {
+            Creature* legalTransferTarget = nullptr;
+            uint32 legalTransferCoverage = 0;
+            float legalTransferDistance = std::numeric_limits<float>::max();
+            uint32 legalTransferGuid = std::numeric_limits<uint32>::max();
+            for (Creature* candidate : localAdds)
+            {
+                if (!candidate)
+                    continue;
+                float distance = bot->GetExactDist(candidate);
+                if (distance < hunterAoeMinRange || distance > HunterAoeMaxRange
+                    || !bot->IsWithinLOSInMap(candidate))
+                    continue;
+                uint32 coverage = 0;
+                for (Creature* neighbor : localAdds)
+                    if (neighbor && candidate->GetExactDist2d(neighbor)
+                        <= TankDensityClusterRadius)
+                        ++coverage;
+                uint32 guid = candidate->GetGUID().GetCounter();
+                if (!legalTransferTarget || coverage > legalTransferCoverage
+                    || (coverage == legalTransferCoverage
+                        && (distance < legalTransferDistance
+                            || (distance == legalTransferDistance
+                                && guid < legalTransferGuid))))
+                {
+                    legalTransferTarget = candidate;
+                    legalTransferCoverage = coverage;
+                    legalTransferDistance = distance;
+                    legalTransferGuid = guid;
+                }
+            }
+            if (legalTransferTarget)
+            {
+                add = legalTransferTarget;
+                sharedFocusValid = false;
+            }
+        }
         if (hunterMisdirectionActive && densityTank && add)
         {
             bool useAreaTransfer = addCount >= 2;
@@ -13200,14 +15932,15 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 action = "misdirection_aoe_wait_for_focus";
                 return true;
             }
-            if (useAreaTransfer && (bot->GetExactDist(add) < 5.0f || bot->GetExactDist(add) > 35.0f
+            if (useAreaTransfer && (bot->GetExactDist(add) < hunterAoeMinRange
+                || bot->GetExactDist(add) > HunterAoeMaxRange
                 || !bot->IsWithinLOSInMap(add)))
             {
                 ResolvedCombatAction rangeAction;
                 rangeAction.MovementDirective = "ranged";
                 rangeAction.AutoAttackMode = "ranged";
-                rangeAction.MinRange = 5.0f;
-                rangeAction.MaxRange = 35.0f;
+                rangeAction.MinRange = hunterAoeMinRange;
+                rangeAction.MaxRange = HunterAoeMaxRange;
                 bool moved = MoveBotToProfileRange(state, bot, add, &rangeAction);
                 state.TargetGuid = add->GetGUID();
                 target = add;
@@ -13220,7 +15953,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             // legal ranged band so the active transfer window produces an
             // attack instead of repeated movement-gate rejections.
             if (useAreaTransfer && bot->isMoving()
-                && bot->GetExactDist(add) >= 5.0f && bot->GetExactDist(add) <= 35.0f
+                && bot->GetExactDist(add) >= hunterAoeMinRange
+                && bot->GetExactDist(add) <= HunterAoeMaxRange
                 && bot->IsWithinLOSInMap(add))
                 bot->StopMoving();
             ResolvedCombatAction transferAction;
@@ -13237,8 +15971,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 transferAction.DebugName = "cleave";
                 transferAction.MovementDirective = "ranged";
                 transferAction.AutoAttackMode = "ranged";
-                transferAction.MinRange = 5.0f;
-                transferAction.MaxRange = 35.0f;
+                transferAction.MinRange = hunterAoeMinRange;
+                transferAction.MaxRange = HunterAoeMaxRange;
                 BotActionExecutor executor;
                 result = executor.ExecuteCombat(bot, bot, transferAction);
                 std::string castFailureReason;
@@ -13266,23 +16000,27 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return true;
         }
 
-        // The density-only action resolver intentionally filters defensives,
+        // The strict area-only resolver intentionally filters defensives,
         // so protect the tank here before selecting the next area-threat cast.
         // This is proactive at 12+ adds and escalates as health falls without
-        // overlapping major Protection Paladin cooldowns.
+        // overlapping major native tank cooldowns.
+        bool feralDruidTank = profile.SpecTag == "feral_druid_tank";
         bool majorTankDefensiveActive = bot->HasAura(498) || bot->HasAura(31850)
-            || bot->HasAura(86150) || bot->HasAura(86659);
+            || bot->HasAura(86150) || bot->HasAura(86659)
+            || (feralDruidTank && (bot->HasAura(61336) || bot->HasAura(22812)));
         if (role == "tank" && cohortSwarmActive && addCount >= 12
             && UnitHealthPct(bot) <= 0.90f && !majorTankDefensiveActive
-            && (!densityHealer || densityHealer->getAttackers().empty()))
+            && (!densityHealer || !observedListedAttackerCount(densityHealer)))
         {
-            std::array<uint32, 3> defensiveSpells = UnitHealthPct(bot) <= 0.50f
-                ? std::array<uint32, 3>{ 86150, 31850, 498 }
-                : (UnitHealthPct(bot) <= 0.75f
-                    ? std::array<uint32, 3>{ 31850, 498, 86150 }
-                    : std::array<uint32, 3>{ 498, 31850, 86150 });
+            std::array<uint32, 3> defensiveSpells = feralDruidTank
+                ? std::array<uint32, 3>{ 61336, 22812, 0 }
+                : (UnitHealthPct(bot) <= 0.50f
+                    ? std::array<uint32, 3>{ 86150, 31850, 498 }
+                    : (UnitHealthPct(bot) <= 0.75f
+                        ? std::array<uint32, 3>{ 31850, 498, 86150 }
+                        : std::array<uint32, 3>{ 498, 31850, 86150 }));
             for (uint32 defensiveSpellId : defensiveSpells)
-                if (bot->HasSpell(defensiveSpellId)
+                if (defensiveSpellId && bot->HasSpell(defensiveSpellId)
                     && TryCastFriendlySpell(bot, bot, defensiveSpellId))
                 {
                     std::string raw = BuildRawJson(bot, add);
@@ -13296,6 +16034,118 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 }
         }
 
+        // Preserve the next native area-threat cast once the current swarm has
+        // secure tank ownership. Also hold while a listed wave is visible but has
+        // not activated at swarm density yet. Azil can leave one precursor engaged
+        // shortly before activating a full follower wave; spending Death and Decay
+        // on that precursor leaves only self-centered threat while the tank crosses
+        // the platform. Auto-attacks remain active while this hold is in effect,
+        // and any party target or three engaged adds resumes the strict area path.
+        bool pendingSwarmActivation = cohortSwarmActive && engagedAddCount < 3;
+        // Rerun91 showed that a non-Feral tank can hold indefinitely outside a
+        // passive follower cluster while DPS waits for ownership. Select the
+        // deterministic ten-yard medoid of the visible listed followers instead,
+        // so each tank reaches its existing native area-threat pickup radius on
+        // the first active decision. A rejected bounded path falls through to
+        // the unchanged resource hold below.
+        Creature* passiveSwarmClusterAnchor = nullptr;
+        uint32 pendingSwarmPickupCoverage = 0;
+        float pendingSwarmPickupDistance = std::numeric_limits<float>::max();
+        uint32 pendingSwarmPickupGuid = std::numeric_limits<uint32>::max();
+        if (pendingSwarmActivation)
+            for (Creature* candidate : localAdds)
+            {
+                if (!candidate)
+                    continue;
+                uint32 coverage = 0;
+                for (Creature* neighbor : localAdds)
+                    if (neighbor && candidate->GetExactDist2d(neighbor)
+                        <= TankDensityClusterRadius)
+                        ++coverage;
+                float distance = bot->GetExactDist(candidate);
+                uint32 guid = candidate->GetGUID().GetCounter();
+                if (!passiveSwarmClusterAnchor
+                    || coverage > pendingSwarmPickupCoverage
+                    || (coverage == pendingSwarmPickupCoverage
+                        && (distance < pendingSwarmPickupDistance
+                            || (distance == pendingSwarmPickupDistance
+                                && guid < pendingSwarmPickupGuid))))
+                {
+                    passiveSwarmClusterAnchor = candidate;
+                    pendingSwarmPickupCoverage = coverage;
+                    pendingSwarmPickupDistance = distance;
+                    pendingSwarmPickupGuid = guid;
+                }
+            }
+        if (role == "tank" && pendingSwarmActivation && passiveSwarmClusterAnchor
+            && bot->GetExactDist2d(passiveSwarmClusterAnchor) > 6.0f
+            && !bot->HasUnitState(UNIT_STATE_CASTING) && !bot->IsFalling())
+        {
+            bool moved = MoveBotToPoint(state, bot,
+                passiveSwarmClusterAnchor->GetPositionX(),
+                passiveSwarmClusterAnchor->GetPositionY(),
+                passiveSwarmClusterAnchor->GetPositionZ());
+            if (moved)
+            {
+                state.TankPendingSwarmPickupAnchorGuid =
+                    passiveSwarmClusterAnchor->GetGUID();
+                state.TankPendingSwarmPickupUntilMs = NowMs() + 4000;
+                state.TankPendingSwarmPickupEngagedHandoff = false;
+                std::string raw = BuildRawJson(bot, passiveSwarmClusterAnchor);
+                std::string semantic = BuildSemanticJson(
+                    bot, passiveSwarmClusterAnchor, "dungeon_boss",
+                    &power, stage, activity);
+                RecordEvent(state, bot, "boss_add_density",
+                    passiveSwarmClusterAnchor,
+                    "tank_preposition_for_pending_swarm_pickup",
+                    raw.c_str(), semantic.c_str(),
+                    bot->GetExactDist2d(passiveSwarmClusterAnchor),
+                    pendingSwarmPickupCoverage);
+                state.TargetGuid = add ? add->GetGUID() : ObjectGuid::Empty;
+                target = add;
+                situation = "dungeon_boss";
+                action = "tank_preposition_for_pending_swarm_pickup";
+                return true;
+            }
+        }
+        if (role == "tank" && cohortSwarmActive && !densityDefenseTarget
+            && (densityTankOwnsSecureMajority || pendingSwarmActivation))
+        {
+            char const* holdAction = pendingSwarmActivation
+                ? "hold_pending_swarm_area_threat_resources"
+                : "hold_secure_area_threat_resources";
+            std::string raw = BuildRawJson(bot, add);
+            std::string semantic = BuildSemanticJson(
+                bot, add, "dungeon_boss", &power, stage, activity);
+            RecordEvent(state, bot, "boss_add_density", add,
+                holdAction, raw.c_str(), semantic.c_str(),
+                float(engagedAddCount), addCount);
+            state.TargetGuid = add ? add->GetGUID() : ObjectGuid::Empty;
+            target = add;
+            situation = "dungeon_boss";
+            action = holdAction;
+            return true;
+        }
+
+        // A moving swarm can select a different representative attacker every
+        // decision tick. Replacing the path for each target change prevented a
+        // melee Feral tank from reaching an otherwise stable density cluster.
+        // Keep one destination briefly, then repath to the current explicit
+        // victim cluster so a stale but still nearby endpoint cannot own an
+        // unbounded approach.
+        auto continueStableFeralSwarmApproach = [&](Unit* selectedAdd) -> bool
+        {
+            uint64 currentMs = NowMs();
+            uint64 pathAgeMs = state.LastPathChangeMs && currentMs >= state.LastPathChangeMs
+                ? currentMs - state.LastPathChangeMs
+                : std::numeric_limits<uint64>::max();
+            return role == "tank" && profile.SpecTag == "feral_druid_tank"
+                && cohortSwarmActive && selectedAdd && state.ActivePathValid
+                && state.IsMoving && pathAgeMs <= 2000
+                && selectedAdd->GetExactDist2d(state.ActivePathToX, state.ActivePathToY)
+                    <= TankDensityClusterRadius;
+        };
+
         // On a multi-target wave, establish area threat before spending
         // decision ticks on individual taunts.  Corborus and Azil can assign
         // a complete spawn burst to healing threat in one tick; alternating
@@ -13306,11 +16156,54 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (role == "tank" && add && addCount >= 2)
         {
             ResolvedCombatAction immediateAreaThreat = ResolveProfileCombatAction(
-                bot, add, addCount, true);
+                bot, add, addCount, true, reservedAreaSpellId, true);
             if (immediateAreaThreat.Valid)
             {
+                float engageRange = immediateAreaThreat.MaxRange > 0.0f
+                    ? immediateAreaThreat.MaxRange
+                    : routeEngageRange(bot, add, immediateAreaThreat.SpellId);
+                uint32 selfCenteredTargets = 0;
+                if (immediateAreaThreat.TargetGuid == bot->GetGUID())
+                    for (Creature* candidate : localAdds)
+                        if (candidate && bot->GetExactDist2d(candidate) <= 10.0f)
+                            ++selfCenteredTargets;
+                // Local adds make self-centered AoE immediately useful only when
+                // the selected urgent pickup is also inside its radius. Otherwise
+                // move into the loose healer/DPS cluster before casting instead of
+                // repeatedly hitting adds the tank already owns.
+                bool selfCenteredAreaReady = immediateAreaThreat.TargetGuid == bot->GetGUID()
+                    && selfCenteredTargets >= 2
+                    && (!densityDefenseTarget || bot->GetExactDist2d(add) <= 10.0f);
+                bool approach = !selfCenteredAreaReady
+                    && (bot->GetExactDist(add) > std::max(5.0f, engageRange - 1.0f)
+                        || !bot->IsWithinLOSInMap(add));
+                if (approach)
+                {
+                    bool continuingStableApproach = continueStableFeralSwarmApproach(add);
+                    bool moved = continuingStableApproach
+                        || MoveBotToProfileRange(state, bot, add, &immediateAreaThreat);
+                    char const* moveAction = continuingStableApproach
+                        ? "tank_continue_stable_swarm_approach"
+                        : (moved ? "tank_move_to_immediate_aoe_threat_range"
+                                 : "tank_immediate_aoe_threat_path_rejected");
+                    std::string raw = BuildRawJson(bot, add);
+                    std::string semantic = BuildSemanticJson(
+                        bot, add, "dungeon_boss", &power, stage, activity);
+                    RecordEvent(state, bot, "boss_add_density", add,
+                        moveAction, raw.c_str(), semantic.c_str(),
+                        bot->GetExactDist(add), addCount, immediateAreaThreat.SpellId);
+                    state.TargetGuid = add->GetGUID();
+                    target = add;
+                    situation = "dungeon_boss";
+                    action = continuingStableApproach
+                        ? "continue_stable_swarm_approach"
+                        : (moved ? "move_to_immediate_aoe_threat_range"
+                                 : "hold_immediate_aoe_threat_range");
+                    return true;
+                }
+
                 BotActionResult areaResult = ExecuteProfileCombatAction(
-                    &state, bot, add, &immediateAreaThreat, addCount, true);
+                    &state, bot, add, &immediateAreaThreat, addCount, true, reservedAreaSpellId, true);
                 if (areaResult == BotActionResult::Ok)
                 {
                     std::string raw = BuildRawJson(bot, add);
@@ -13319,7 +16212,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     RecordEvent(state, bot, "boss_add_density", add,
                         "tank_immediate_aoe_threat", raw.c_str(), semantic.c_str(),
                         float(addCount), densityHealer
-                            ? float(densityHealer->getAttackers().size()) : 0.0f,
+                            ? float(observedListedAttackerCount(densityHealer)) : 0.0f,
                         immediateAreaThreat.SpellId);
                     state.TargetGuid = add->GetGUID();
                     state.WasInCombat = true;
@@ -13331,14 +16224,15 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             }
         }
 
-        if (role == "tank" && densityHealer && densityHealer->getAttackers().size() >= 5
+        if (role == "tank" && densityHealer
+            && observedListedAttackerCount(densityHealer) >= 5
             && bot->HasSpell(1022) && !densityHealer->HasAura(1022)
             && TryCastFriendlySpell(bot, densityHealer, 1022))
         {
             std::string raw = BuildRawJson(bot, densityHealer);
             std::string semantic = BuildSemanticJson(bot, densityHealer, "dungeon_boss", &power, stage, activity);
             RecordEvent(state, bot, "external_defensive", densityHealer, "hand_of_protection_healer_emergency",
-                raw.c_str(), semantic.c_str(), float(densityHealer->getAttackers().size()), addCount, 1022);
+                raw.c_str(), semantic.c_str(), float(observedListedAttackerCount(densityHealer)), addCount, 1022);
             target = add;
             situation = "dungeon_boss";
             action = "hand_of_protection_healer_emergency";
@@ -13353,7 +16247,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             std::string raw = BuildRawJson(bot, densityDefenseTarget);
             std::string semantic = BuildSemanticJson(bot, densityDefenseTarget, "dungeon_boss", &power, stage, activity);
             RecordEvent(state, bot, "boss_adds", densityDefenseTarget, pickupAction,
-                raw.c_str(), semantic.c_str(), float(densityDefenseTarget->getAttackers().size()), addCount, 31789);
+                raw.c_str(), semantic.c_str(), float(observedListedAttackerCount(densityDefenseTarget)), addCount, 31789);
             target = add;
             situation = "dungeon_boss";
             action = pickupAction;
@@ -13385,7 +16279,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             std::string raw = BuildRawJson(bot, densityDefenseTarget);
             std::string semantic = BuildSemanticJson(bot, densityDefenseTarget, "dungeon_boss", &power, stage, activity);
             RecordEvent(state, bot, "boss_adds", densityDefenseTarget, pickupAction,
-                raw.c_str(), semantic.c_str(), float(densityDefenseTarget->getAttackers().size()), addCount, 26573);
+                raw.c_str(), semantic.c_str(), float(observedListedAttackerCount(densityDefenseTarget)), addCount, 26573);
             target = add;
             situation = "dungeon_boss";
             action = pickupAction;
@@ -13403,7 +16297,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             : (bot->getClass() == CLASS_HUNTER ? 19263
                 : (bot->getClass() == CLASS_SHAMAN ? 30823 : 0));
         if (role == "dps" && cohortSwarmActive
-            && bot->getAttackers().size() >= swarmDefensiveThreshold
+            && observedListedAttackerCount(bot) >= swarmDefensiveThreshold
             && swarmDefensiveSpellId && bot->HasSpell(swarmDefensiveSpellId)
             && !bot->HasAura(swarmDefensiveSpellId)
             && TryCastFriendlySpell(bot, bot, swarmDefensiveSpellId))
@@ -13412,7 +16306,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             std::string raw = BuildRawJson(bot, add);
             std::string semantic = BuildSemanticJson(bot, add, "dungeon_boss", &power, stage, activity);
             RecordEvent(state, bot, "defensive", bot, "swarm_pickup_emergency_defensive",
-                raw.c_str(), semantic.c_str(), float(bot->getAttackers().size()), addCount,
+                raw.c_str(), semantic.c_str(), float(observedListedAttackerCount(bot)), addCount,
                 swarmDefensiveSpellId);
             state.TargetGuid = densityTank && densityTank->GetVictim()
                 ? densityTank->GetVictim()->GetGUID() : (add ? add->GetGUID() : ObjectGuid::Empty);
@@ -13428,7 +16322,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (role == "dps" && densityTank && cohortSwarmActive && add
             && !hunterMisdirectionActive
             && (!dpsSwarmDamageRelease
-                || (!bot->getAttackers().empty() && !botInsideTankPickup)))
+                || (observedListedAttackerCount(bot) && !botInsideTankPickup)))
         {
             bot->AttackStop();
             if (Pet* pet = bot->GetPet())
@@ -13459,28 +16353,34 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             std::string raw = BuildRawJson(bot, add);
             std::string semantic = BuildSemanticJson(bot, add, "dungeon_boss", &power, stage, activity);
             RecordEvent(state, bot, "boss_adds", add, "dps_wait_for_swarm_tank_ownership",
-                raw.c_str(), semantic.c_str(), float(bot->getAttackers().size()), addCount);
+                raw.c_str(), semantic.c_str(), float(observedListedAttackerCount(bot)), addCount);
             situation = "dungeon_boss";
             action = "dps_wait_for_swarm_tank_ownership";
             return true;
         }
 
-        if (role == "dps" && densityTank && !dpsSwarmDamageRelease && !bot->getAttackers().empty()
+        if (role == "dps" && densityTank && !dpsSwarmDamageRelease && observedListedAttackerCount(bot)
             && !bot->HasUnitState(UNIT_STATE_CASTING) && !bot->IsFalling())
         {
             Unit* nearestAttacker = nullptr;
             float nearestDistance = std::numeric_limits<float>::max();
-            for (Unit* attacker : bot->getAttackers())
+            auto considerPickupAttacker = [&](Unit* attacker)
             {
                 if (!attacker || !attacker->IsAlive() || attacker->GetMap() != bot->GetMap())
-                    continue;
+                    return;
                 float distance = bot->GetExactDist2d(attacker);
                 if (!nearestAttacker || distance < nearestDistance)
                 {
                     nearestAttacker = attacker;
                     nearestDistance = distance;
                 }
-            }
+            };
+            for (Creature* candidate : localAdds)
+                if (candidate && candidate->GetVictim() == bot)
+                    considerPickupAttacker(candidate);
+            if (!nearestAttacker)
+                for (Unit* attacker : bot->getAttackers())
+                    considerPickupAttacker(attacker);
             if (nearestAttacker)
             {
                 Position pickup = densityTank->GetFirstCollisionPosition(4.0f,
@@ -13507,7 +16407,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
         // If the bot is already in pickup range, or its legal path to the tank
         // was rejected above, stop adding threat until ownership transfers.
-        if (role == "dps" && densityTank && !dpsSwarmDamageRelease && !bot->getAttackers().empty())
+        if (role == "dps" && densityTank && !dpsSwarmDamageRelease && observedListedAttackerCount(bot))
         {
             bot->AttackStop();
             if (Pet* pet = bot->GetPet())
@@ -13518,20 +16418,21 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             std::string raw = BuildRawJson(bot, add);
             std::string semantic = BuildSemanticJson(bot, add, "dungeon_boss", &power, stage, activity);
             RecordEvent(state, bot, "boss_adds", add, "dps_hold_for_nearby_add_pickup",
-                raw.c_str(), semantic.c_str(), float(bot->getAttackers().size()), addCount);
+                raw.c_str(), semantic.c_str(), float(observedListedAttackerCount(bot)), addCount);
             situation = "dungeon_boss";
             action = "dps_hold_for_nearby_add_pickup";
             return true;
         }
 
-        if (role == "tank" && densityHealer && !densityHealer->getAttackers().empty()
+        if (role == "tank" && densityHealer
+            && observedListedAttackerCount(densityHealer)
             && bot->HasSpell(1038) && !densityHealer->HasAura(1038)
             && TryCastFriendlySpell(bot, densityHealer, 1038))
         {
             std::string raw = BuildRawJson(bot, densityHealer);
             std::string semantic = BuildSemanticJson(bot, densityHealer, "dungeon_boss", &power, stage, activity);
             RecordEvent(state, bot, "boss_adds", densityHealer, "hand_of_salvation_healer_threat_drop",
-                raw.c_str(), semantic.c_str(), float(densityHealer->getAttackers().size()), addCount, 1038);
+                raw.c_str(), semantic.c_str(), float(observedListedAttackerCount(densityHealer)), addCount, 1038);
             target = add;
             situation = "dungeon_boss";
             action = "hand_of_salvation_healer_threat_drop";
@@ -13605,7 +16506,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         // then allow normal instant healing while that path remains active.
         // Exact hazard exits run before this branch and remain authoritative.
         if (highDensityPhase && role == "healer" && densityTank
-            && !bot->getAttackers().empty()
+            && observedListedAttackerCount(bot)
             && UnitHealthPct(bot) > 0.45f && UnitHealthPct(densityTank) > 0.40f
             && bot->GetExactDist2d(densityTank) > 6.0f
             && !bot->HasUnitState(UNIT_STATE_CASTING) && !bot->IsFalling()
@@ -13734,7 +16635,16 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         bool densityAreaPhase = highDensityPhase || tankSwarmAreaPhase || secureSwarmAreaPhase;
         ResolvedCombatAction profileAction = ResolveProfileCombatAction(bot, add,
             densityAreaPhase ? addCount : 0, densityAreaPhase);
-        bool densitySingleTargetFallback = densityAreaPhase && !profileAction.Valid;
+        // A tank with an active scripted swarm must not spend native area
+        // resources through the ordinary single-target fallback. In particular,
+        // Heart Strike can consume the Blood rune needed by the next Blood Boil
+        // after the strict area resolver reports only cooldown/resource gates.
+        // The invalid-area branch below preserves auto-attack uptime without
+        // consuming that resource, while non-swarm and non-tank fallbacks retain
+        // their existing behavior.
+        bool preserveTankSwarmAreaResources = role == "tank" && cohortSwarmActive;
+        bool densitySingleTargetFallback = densityAreaPhase && !profileAction.Valid
+            && !preserveTankSwarmAreaResources;
         if (densitySingleTargetFallback)
             profileAction = ResolveProfileCombatAction(bot, add);
         if (densityAreaPhase && !profileAction.Valid)
@@ -13779,10 +16689,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         uint32 spellId = profileAction.SpellId;
         float engageRange = profileAction.MaxRange > 0.0f ? profileAction.MaxRange : routeEngageRange(bot, add, spellId);
         bool approach = bot->GetExactDist(add) > std::max(5.0f, engageRange - 1.0f) || !bot->IsWithinLOSInMap(add);
+        bool continuingStableApproach = approach && continueStableFeralSwarmApproach(add);
         BotActionResult result = BotActionResult::NoAction;
-        if (approach)
+        if (approach && !continuingStableApproach)
             MoveBotToProfileRange(state, bot, add, &profileAction);
-        else
+        else if (!approach)
         {
             if (densityAreaPhase)
                 result = ExecuteProfileCombatAction(&state, bot, add, &profileAction, addCount, true);
@@ -13798,12 +16709,20 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
         std::string raw = BuildRawJson(bot, add);
         std::string semantic = BuildSemanticJson(bot, add, "dungeon_boss", &power, stage, activity);
-        RecordEvent(state, bot, "boss_adds", add, approach ? "approach_target" : ToString(result), raw.c_str(), semantic.c_str(), float(addCount), 0, result == BotActionResult::Ok ? spellId : 0);
+        RecordEvent(state, bot, "boss_adds", add,
+            continuingStableApproach ? "continue_stable_swarm_approach"
+                : (approach ? "approach_target" : ToString(result)),
+            raw.c_str(), semantic.c_str(), float(addCount), 0,
+            result == BotActionResult::Ok ? spellId : 0);
         state.TargetGuid = add->GetGUID();
         state.WasInCombat = true;
         target = add;
         situation = "dungeon_boss";
-        action = approach ? "move_to_boss_add" : (densitySingleTargetFallback ? "focused_attack_boss_add_density" : (densityGenerator ? "generate_resource_boss_add_density" : (densityAreaPhase ? "area_attack_boss_add_density" : "switch_to_boss_add")));
+        action = continuingStableApproach ? "continue_stable_feral_swarm_approach"
+            : (approach ? "move_to_boss_add"
+                : (densitySingleTargetFallback ? "focused_attack_boss_add_density"
+                    : (densityGenerator ? "generate_resource_boss_add_density"
+                        : (densityAreaPhase ? "area_attack_boss_add_density" : "switch_to_boss_add"))));
         return true;
     };
     auto markValidationRouteTerminalAfterProgress = [&](char const* reason) -> void
@@ -13821,7 +16740,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             cohortState.ValidationRouteCombatProgressTargetGuid.Clear();
             cohortState.ValidationRoutePackProgressTargetGuid.Clear();
             cohortState.ValidationRouteCombatNoProgressCount = 0;
+            cohortState.ValidationRouteCombatNoProgressSinceMs = 0;
             cohortState.ValidationRoutePackNoProgressCount = 0;
+            cohortState.ValidationRoutePackNoProgressSinceMs = 0;
             cohortState.ValidationRouteUnresolvedFocusHoldCount = 0;
             cohortState.ValidationRouteAnchorOverrideValid = false;
             cohortState.ValidationRouteAnchorOverrideUntilMs = 0;
@@ -13851,15 +16772,16 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return true;
         }
     }
-    // If most of the party is dead and no living class can legally resurrect
-    // in combat, continuing a tank/healer-only stalemate cannot recover the
-    // group. Disengage through ordinary movement so the hostile leashes and
-    // native out-of-combat resurrection can run. This never changes combat,
-    // death, target, or terminal state directly.
+    // If most of the party or a critical role is dead and no living class can
+    // legally resurrect in combat, continuing at the abandoned pack cannot
+    // recover the group. Retreat through ordinary movement so the hostile
+    // exceeds its home leash, then end the survivors' combat references together
+    // at the fallback anchor so native out-of-combat resurrection can run.
     if (bot->IsAlive() && bot->GetGroup())
     {
         uint32 aliveMembers = 0;
         uint32 deadMembers = 0;
+        bool criticalRoleDead = false;
         bool groupCombatActive = false;
         bool livingCombatResurrectionCaster = false;
         Unit* retreatThreat = nullptr;
@@ -13891,30 +16813,108 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 }
             }
             else
+            {
                 ++deadMembers;
+                std::string role = GetDungeonRole(member);
+                criticalRoleDead = criticalRoleDead || role == "tank" || role == "healer";
+            }
         }
-        if (aliveMembers <= 2 && deadMembers >= 3 && groupCombatActive && !livingCombatResurrectionCaster)
+        bool majorityDead = aliveMembers <= 2 && deadMembers >= 3;
+        if ((majorityDead || criticalRoleDead) && groupCombatActive && !livingCombatResurrectionCaster)
         {
             if (!retreatThreat)
                 retreatThreat = bot->GetVictim();
             float retreatX = Cohort().Config.ValidationRouteX;
             float retreatY = Cohort().Config.ValidationRouteY;
             float retreatZ = Cohort().Config.ValidationRouteZ;
+            char const* retreatDestination = "route_anchor";
+            if (Party().ValidationRouteManifestIndex > 0
+                && Party().ValidationRouteManifestIndex < Party().ValidationRouteManifest.size())
+            {
+                ValidationRouteManifestNode const& previousNode = Party().ValidationRouteManifest[Party().ValidationRouteManifestIndex - 1];
+                if ((!previousNode.MapId || previousNode.MapId == bot->GetMapId())
+                    && Distance2d(previousNode.NavigationAnchorX, previousNode.NavigationAnchorY,
+                        Cohort().Config.ValidationRouteX, Cohort().Config.ValidationRouteY) > 20.0f)
+                {
+                    // The manifest anchor is a previously traversed, accepted
+                    // route point. A straight-line inset toward the next node
+                    // can cross disconnected terrain and synthesize an invalid
+                    // Z before pathfinding gets a chance to validate the route.
+                    retreatX = previousNode.NavigationAnchorX;
+                    retreatY = previousNode.NavigationAnchorY;
+                    retreatZ = previousNode.NavigationAnchorZ;
+                    retreatDestination = "previous_route_anchor";
+                }
+            }
+
+            bool livingMembersAtRetreatAnchor = true;
+            for (GroupReference* itr = bot->GetGroup()->GetFirstMember(); itr != nullptr; itr = itr->next())
+            {
+                Player* member = itr->GetSource();
+                if (!member || !member->IsAlive() || member->GetMap() != bot->GetMap())
+                    continue;
+                if (member->GetExactDist(retreatX, retreatY, retreatZ) > 5.0f)
+                {
+                    livingMembersAtRetreatAnchor = false;
+                    break;
+                }
+            }
+
+            uint64 nowMs = NowMs();
+            if (livingMembersAtRetreatAnchor)
+            {
+                for (WorldBotState& cohortState : Party().Bots)
+                {
+                    // Bind every cohort member to the same post-retreat
+                    // rendezvous before combat is released. Dead members then
+                    // resurrect beside the survivors instead of returning to
+                    // an individual safe position near the abandoned pack.
+                    cohortState.ValidationRouteAnchorOverrideValid = true;
+                    cohortState.ValidationRouteAnchorOverrideUntilMs = nowMs + 120000;
+                    cohortState.ValidationRouteAnchorOverrideX = retreatX;
+                    cohortState.ValidationRouteAnchorOverrideY = retreatY;
+                    cohortState.ValidationRouteAnchorOverrideZ = retreatZ;
+                    cohortState.ValidationRouteAnchorOverrideReason = "validation_route_partial_wipe_retreat_rendezvous";
+
+                    Player* cohortBot = GetLoadedBot(cohortState);
+                    if (!cohortBot || !cohortBot->IsAlive() || cohortBot->GetMap() != bot->GetMap())
+                        continue;
+                    cohortBot->AttackStop();
+                    cohortBot->CombatStopWithPets(true);
+                    cohortBot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+                    cohortState.TargetGuid.Clear();
+                    cohortState.WasInCombat = false;
+                    cohortState.ActivePathValid = false;
+                    cohortState.IsMoving = false;
+                }
+
+                std::string raw = BuildRawJson(bot, retreatThreat);
+                std::string semantic = BuildSemanticJson(bot, retreatThreat, "validation_route_recovery", &power, stage, activity);
+                std::string retreatReason = std::string("partial_wipe_retreat_combat_disengaged_") + retreatDestination;
+                RecordEvent(state, bot, "validation_route_recovery", retreatThreat,
+                    retreatReason.c_str(), raw.c_str(), semantic.c_str(), 0.0f, deadMembers);
+                state.LastRecoveryMode = "tactical_retreat_no_combat_res";
+                state.LastRecoveryResult = std::string("combat_disengaged_") + retreatDestination;
+                state.LastRecoveryMs = nowMs;
+                ++state.RecoveryAttemptCount;
+                situation = "validation_route_recovery";
+                action = "validation_route_retreat_disengage";
+                target = nullptr;
+                return true;
+            }
 
             bot->AttackStop();
             state.TargetGuid.Clear();
-            bool moved = bot->GetExactDist(retreatX, retreatY, retreatZ) > 5.0f
-                && MoveBotToPoint(state, bot, retreatX, retreatY, retreatZ);
-            uint64 nowMs = NowMs();
+            bool moved = MoveBotToPoint(state, bot, retreatX, retreatY, retreatZ);
             if (state.LastRecoveryMode != "tactical_retreat_no_combat_res" || nowMs - state.LastRecoveryMs >= 5000)
             {
                 std::string raw = BuildRawJson(bot, retreatThreat);
                 std::string semantic = BuildSemanticJson(bot, retreatThreat, "validation_route_recovery", &power, stage, activity);
+                std::string retreatReason = std::string(moved ? "tactical_retreat_no_combat_res_" : "hold_tactical_retreat_no_combat_res_") + retreatDestination;
                 RecordEvent(state, bot, "validation_route_recovery", retreatThreat,
-                    moved ? "tactical_retreat_no_combat_res" : "hold_tactical_retreat_no_combat_res",
-                    raw.c_str(), semantic.c_str(), bot->GetExactDist(retreatX, retreatY, retreatZ), deadMembers);
+                    retreatReason.c_str(), raw.c_str(), semantic.c_str(), bot->GetExactDist(retreatX, retreatY, retreatZ), deadMembers);
                 state.LastRecoveryMode = "tactical_retreat_no_combat_res";
-                state.LastRecoveryResult = moved ? "moving" : "holding";
+                state.LastRecoveryResult = std::string(moved ? "moving_" : "holding_") + retreatDestination;
                 state.LastRecoveryMs = nowMs;
                 ++state.RecoveryAttemptCount;
             }
@@ -13924,10 +16924,14 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return true;
         }
     }
+    retireStaleValidationRoutePackMembers();
     bool failedTrashPackComplete = !persistedValidationRoutePackHasLiveMembers();
     Unit* retryableFailedTrashTarget = failedTrashPackComplete ? nullptr : activeValidationRoutePackTarget();
     bool failedTrashPackCanRetry = retryableFailedTrashTarget
         && isEligibleTrashClusterMob(retryableFailedTrashTarget->ToCreature());
+    bool failedTrashPartyCombatActive = validationPartyHasActiveCombat();
+    bool failedTrashRetryDue = state.ValidationRouteTerminalAtMs
+        && NowMs() - state.ValidationRouteTerminalAtMs >= 5000;
     if (state.ValidationRouteTerminalState
         && state.ValidationRouteGeneration == Party().ValidationRouteGeneration
         && state.ValidationRouteTerminalGeneration == Party().ValidationRouteGeneration
@@ -13936,7 +16940,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         && Party().ValidationRoutePackGeneration == Party().ValidationRouteGeneration
         && Party().ValidationRoutePackObservedEngagement
         && (failedTrashPackComplete || failedTrashPackCanRetry)
-        && !validationPartyHasActiveCombat())
+        && (!failedTrashPartyCombatActive || (failedTrashPackCanRetry && failedTrashRetryDue)))
     {
         uint64 retryNowMs = NowMs();
         for (WorldBotState& cohortState : Party().Bots)
@@ -13947,7 +16951,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             cohortState.ValidationRouteCombatProgressTargetGuid.Clear();
             cohortState.ValidationRoutePackProgressTargetGuid.Clear();
             cohortState.ValidationRouteCombatNoProgressCount = 0;
+            cohortState.ValidationRouteCombatNoProgressSinceMs = 0;
             cohortState.ValidationRoutePackNoProgressCount = 0;
+            cohortState.ValidationRoutePackNoProgressSinceMs = 0;
             cohortState.ValidationRouteTerminalState = false;
             cohortState.ValidationRouteTerminalAtMs = 0;
             cohortState.ValidationRouteTerminalGeneration = 0;
@@ -13958,14 +16964,15 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             if (failedTrashPackCanRetry)
             {
                 // Reopen onto the actual surviving pack member rather than
-                // the already-cleared lower anchor. This covers formation
-                // members that evade home above a one-way descent.
+                // the already-cleared lower anchor. This also recovers a live
+                // engaged pack after the bounded terminal hold instead of
+                // waiting forever for hostile combat state to disappear.
                 cohortState.ValidationRouteAnchorOverrideValid = true;
                 cohortState.ValidationRouteAnchorOverrideUntilMs = retryNowMs + 30000;
                 cohortState.ValidationRouteAnchorOverrideX = retryableFailedTrashTarget->GetPositionX();
                 cohortState.ValidationRouteAnchorOverrideY = retryableFailedTrashTarget->GetPositionY();
                 cohortState.ValidationRouteAnchorOverrideZ = retryableFailedTrashTarget->GetPositionZ();
-                cohortState.ValidationRouteAnchorOverrideReason = "validation_route_disengaged_pack_reapproach";
+                cohortState.ValidationRouteAnchorOverrideReason = "validation_route_live_pack_reapproach";
             }
         }
         Unit* retryEvidenceTarget = failedTrashPackCanRetry ? retryableFailedTrashTarget : nullptr;
@@ -13979,7 +16986,68 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             : "failed_terminal_reopened_after_pack_death";
         RecordEvent(state, bot, "validation_route_recovery", retryEvidenceTarget, recoveryReason,
             raw.c_str(), semantic.c_str(), float(Party().ValidationRoutePackDeathGuids.size()), uint32(Party().ValidationRoutePackMemberGuids.size()));
+        situation = "validation_route_recovery";
+        action = "validation_route_recovery";
+        return true;
     }
+    bool routePartyCombatActive = validationPartyHasActiveCombat();
+    bool arrivalCombatActive = arrivalRoute && routePartyCombatActive;
+    bool allRouteParticipantsAlive = true;
+    uint32 loadedRouteParticipants = 0;
+    for (WorldBotState const& cohortState : Party().Bots)
+    {
+        Player* cohortBot = GetLoadedBot(cohortState);
+        if (!cohortBot)
+            continue;
+        ++loadedRouteParticipants;
+        if (!cohortBot->IsAlive() || !IsValidationCohortMemberInOriginalInstance(cohortState, cohortBot))
+        {
+            allRouteParticipantsAlive = false;
+            break;
+        }
+    }
+    if (Cohort().Config.TargetPopulation && loadedRouteParticipants < Cohort().Config.TargetPopulation)
+        allRouteParticipantsAlive = false;
+
+    bool releasedRetreatRendezvous = !routePartyCombatActive && allRouteParticipantsAlive
+        && state.ValidationRouteAnchorOverrideValid
+        && state.ValidationRouteAnchorOverrideReason == "validation_route_partial_wipe_retreat_rendezvous";
+    if (releasedRetreatRendezvous)
+    {
+        for (WorldBotState& cohortState : Party().Bots)
+        {
+            if (cohortState.ValidationRouteAnchorOverrideReason != "validation_route_partial_wipe_retreat_rendezvous")
+                continue;
+            cohortState.ValidationRouteAnchorOverrideValid = false;
+            cohortState.ValidationRouteAnchorOverrideUntilMs = 0;
+            cohortState.ValidationRouteAnchorOverrideReason.clear();
+        }
+        routeAnchorX = Cohort().Config.ValidationRouteX;
+        routeAnchorY = Cohort().Config.ValidationRouteY;
+        routeAnchorZ = Cohort().Config.ValidationRouteZ;
+        routeAnchorReason = "validation_route_anchor";
+        routeDistance = canonicalRouteDistance;
+        state.QuestRouteDestination.X = routeAnchorX;
+        state.QuestRouteDestination.Y = routeAnchorY;
+        state.QuestRouteDestination.Z = routeAnchorZ;
+        state.QuestRouteDestination.Reason = routeAnchorReason;
+    }
+
+    bool invalidArrivalTerminal = arrivalRoute
+        && state.ValidationRouteTerminalState
+        && state.ValidationRouteGeneration == Party().ValidationRouteGeneration
+        && state.ValidationRouteTerminalGeneration == Party().ValidationRouteGeneration
+        && state.ValidationRouteTerminalReason == "arrival"
+        && (canonicalRouteDistance > routeArrivalRadius || arrivalCombatActive);
+    if (invalidArrivalTerminal)
+    {
+        state.ValidationRouteTerminalState = false;
+        state.ValidationRouteTerminalAtMs = 0;
+        state.ValidationRouteTerminalGeneration = 0;
+        state.ValidationRouteTerminalReason.clear();
+        state.LoopRecoveryCooldownUntilMs = 0;
+    }
+
     if (state.ValidationRouteTerminalState
         && state.ValidationRouteGeneration == Party().ValidationRouteGeneration
         && state.ValidationRouteTerminalGeneration == Party().ValidationRouteGeneration)
@@ -14033,7 +17101,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     // the cohort reached the navigation anchor. Finish every active attacker
     // before marking arrival; otherwise mobs can evade back across a one-way
     // descent and poison the following trash ledger with unreachable survivors.
-    bool arrivalCombatActive = arrivalRoute && validationPartyHasActiveCombat();
     if (arrivalCombatActive)
         enrollEngagedValidationRoutePackMembers();
     if (arrivalRoute && !arrivalCombatActive)
@@ -14044,15 +17111,15 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         state.TargetGuid.Clear();
         std::string raw = BuildRawJson(bot, nullptr);
         std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_regroup", &power, stage, activity);
-        if (routeDistance <= routeArrivalRadius)
+        if (canonicalRouteDistance <= routeArrivalRadius)
         {
             state.ValidationRouteTerminalState = true;
             state.ValidationRouteTerminalAtMs = NowMs();
             state.ValidationRouteTerminalGeneration = Party().ValidationRouteGeneration;
             state.ValidationRouteTerminalReason = "arrival";
             state.LoopRecoveryCooldownUntilMs = NowMs() + 60000;
-            RecordEvent(state, bot, "validation_route_regroup", nullptr, "arrival", raw.c_str(), semantic.c_str(), routeDistance, Cohort().Config.ValidationRouteTargetEntry);
-            RecordEvent(state, bot, "validation_route_terminal", nullptr, "arrival", raw.c_str(), semantic.c_str(), routeDistance, Cohort().Config.ValidationRouteTargetEntry);
+            RecordEvent(state, bot, "validation_route_regroup", nullptr, "arrival", raw.c_str(), semantic.c_str(), canonicalRouteDistance, Cohort().Config.ValidationRouteTargetEntry);
+            RecordEvent(state, bot, "validation_route_terminal", nullptr, "arrival", raw.c_str(), semantic.c_str(), canonicalRouteDistance, Cohort().Config.ValidationRouteTargetEntry);
             situation = "validation_route_regroup";
             action = "validation_route_complete";
             MaybeAdvanceValidationRouteManifest();
@@ -14115,8 +17182,10 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     struct TrashThreatControl
     {
         Player* Tank = nullptr;
+        Player* HealerTarget = nullptr;
         Unit* AreaTarget = nullptr;
         uint32 EngagedCount = 0;
+        uint32 HealerTargetCount = 0;
         uint32 TankOwnedCount = 0;
         uint32 SecureTankCount = 0;
     } trashThreatControl;
@@ -14147,7 +17216,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         {
             Creature* creature = object ? object->ToCreature() : nullptr;
             if (!creature || !creature->IsAlive() || !creature->GetHealth()
-                || !bot->IsValidAttackTarget(creature) || (!creature->IsInCombat() && !creature->GetVictim()))
+                || !bot->IsValidAttackTarget(creature) || (!creature->IsInCombat() && !creature->GetVictim())
+                || isImmediateNextValidationRouteBossTarget(creature))
                 continue;
             bool declaredBossAdd = Cohort().Config.ValidationRouteKind == "boss"
                 && std::find(Cohort().Config.ValidationRouteAddTargetEntries.begin(),
@@ -14162,6 +17232,14 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
             ++trashThreatControl.EngagedCount;
             std::string victimRole = GetDungeonRole(victim);
+            if (victimRole == "healer")
+            {
+                ++trashThreatControl.HealerTargetCount;
+                if (!trashThreatControl.HealerTarget
+                    || victim->GetGUID().GetCounter()
+                        < trashThreatControl.HealerTarget->GetGUID().GetCounter())
+                    trashThreatControl.HealerTarget = victim;
+            }
             uint8 priority = victimRole == "healer" ? 3 : (victimRole == "tank" ? 1 : 2);
             float distance = bot->GetExactDist(creature);
             uint32 guid = creature->GetGUID().GetCounter();
@@ -14197,14 +17275,136 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         && trashThreatControl.SecureTankCount * 10 < trashThreatControl.EngagedCount * 9;
     bool tankOwnsTrashMajority = trashThreatControl.EngagedCount > 0
         && trashThreatControl.TankOwnedCount * 10 >= trashThreatControl.EngagedCount * 9;
-    bool hunterTrashMisdirectionActive = bot->getClass() == CLASS_HUNTER && bot->HasAura(34477);
+    bool hunterTrashMisdirectionActive = bot->getClass() == CLASS_HUNTER
+        && (bot->HasAura(34477) || bot->HasAura(35079));
+    // Ordinary route movement repeatedly preempted Discipline's existing Fade
+    // while 11-13 Flayers retained the healer in rerun104. Put the same native
+    // gate ahead of those movement/hold decisions. Rerun115 showed that a
+    // two-attacker transient can consume Fade before a later 15-hostile wave,
+    // rerun116 found the same pattern at three, and rerun117 at a precursor
+    // peaking at eight, so use the shared nine-attacker reservation. Never
+    // cancel a positive
+    // heal; if one is active, this branch is retried on the next tick.
+    if (std::string(GetDungeonRole(bot)) == "healer"
+        && trashThreatControl.HealerTargetCount >= 9
+        && bot->HasSpell(586) && !bot->HasAura(586))
+    {
+        if (Spell* currentSpell = bot->GetCurrentSpell(CURRENT_GENERIC_SPELL))
+            if (!currentSpell->IsPositive())
+                bot->InterruptNonMeleeSpells(false);
+        if (!bot->HasUnitState(UNIT_STATE_CASTING)
+            && TryCastFriendlySpell(bot, bot, 586))
+        {
+            std::string raw = BuildRawJson(bot, trashThreatControl.AreaTarget);
+            std::string semantic = BuildSemanticJson(bot,
+                trashThreatControl.AreaTarget, "normal_dungeon_trash",
+                &power, stage, activity);
+            RecordEvent(state, bot, "healer_assignment", bot,
+                "fade_early_trash_swarm_threat_drop",
+                raw.c_str(), semantic.c_str(),
+                float(trashThreatControl.HealerTargetCount),
+                trashThreatControl.EngagedCount, 586);
+            situation = "validation_route_group_heal";
+            action = "fade_early_trash_swarm_threat_drop";
+            return true;
+        }
+    }
+    // The group-heal helper already converges a healer with a Feral tank, but
+    // rerun110 proved ordinary route/combat movement can win first and preserve
+    // a split Flayer topology for several Roar cycles.  Reuse that same
+    // collision-safe four-yard pickup before route movement when a large wave
+    // is forming or the healer already owns at least three hostiles.  Exact
+    // hazard movement ran earlier and remains authoritative; urgent health and
+    // active positive casts still prevent this positioning action.
+    if (std::string(GetDungeonRole(bot)) == "healer"
+        && trashThreatControl.Tank
+        && trashThreatControl.Tank->getClass() == CLASS_DRUID
+        && bot->GetExactDist2d(trashThreatControl.Tank) > 6.0f
+        && !bot->HasUnitState(UNIT_STATE_CASTING)
+        && !bot->IsFalling())
+    {
+        bool proactiveLargeWaveStack =
+            trashThreatControl.EngagedCount >= 12
+            && trashThreatControl.HealerTargetCount == 0
+            && UnitHealthPct(bot) > 0.88f
+            && UnitHealthPct(trashThreatControl.Tank) > 0.88f;
+        bool reactiveHealerStack =
+            trashThreatControl.HealerTargetCount >= 3
+            && UnitHealthPct(bot) > 0.45f
+            && UnitHealthPct(trashThreatControl.Tank) > 0.40f;
+        if (proactiveLargeWaveStack || reactiveHealerStack)
+        {
+            Unit* nearestAttacker = nullptr;
+            float nearestAttackerDistance =
+                std::numeric_limits<float>::max();
+            for (Unit* attacker : bot->getAttackers())
+                if (attacker && attacker->IsAlive()
+                    && attacker->GetMap() == bot->GetMap()
+                    && attacker->GetVictim() == bot
+                    && bot->IsValidAttackTarget(attacker)
+                    && bot->GetExactDist2d(attacker)
+                        < nearestAttackerDistance)
+                {
+                    nearestAttacker = attacker;
+                    nearestAttackerDistance =
+                        bot->GetExactDist2d(attacker);
+                }
+            Unit* approachFrom = nearestAttacker
+                ? nearestAttacker : trashThreatControl.AreaTarget;
+            float pickupAngle = approachFrom
+                ? approachFrom->GetAngle(trashThreatControl.Tank)
+                    - trashThreatControl.Tank->GetOrientation()
+                : trashThreatControl.Tank->GetAngle(bot)
+                    - trashThreatControl.Tank->GetOrientation();
+            Position pickup =
+                trashThreatControl.Tank->GetFirstCollisionPosition(
+                    4.0f, pickupAngle);
+            if (MoveBotToPoint(state, bot,
+                    pickup.GetPositionX(), pickup.GetPositionY(),
+                    pickup.GetPositionZ()))
+            {
+                std::string raw = BuildRawJson(
+                    bot, trashThreatControl.AreaTarget);
+                std::string semantic = BuildSemanticJson(
+                    bot, trashThreatControl.AreaTarget,
+                    "normal_dungeon_trash", &power, stage, activity);
+                RecordEvent(state, bot, "healer_assignment",
+                    trashThreatControl.Tank,
+                    reactiveHealerStack
+                        ? "healer_converge_early_for_feral_trash_pickup"
+                        : "healer_preposition_early_for_feral_trash_pickup",
+                    raw.c_str(), semantic.c_str(),
+                    bot->GetExactDist2d(trashThreatControl.Tank),
+                    trashThreatControl.HealerTargetCount);
+                situation = "validation_route_group_heal";
+                action = reactiveHealerStack
+                    ? "healer_converge_early_for_feral_trash_pickup"
+                    : "healer_preposition_early_for_feral_trash_pickup";
+                return true;
+            }
+        }
+    }
     bool hunterTrashAoeTransferReady = true;
+    float hunterTrashAoeMinRange = 5.0f;
+    static constexpr float HunterTrashAoeMinRangeSafety = 3.0f;
+    static constexpr float HunterTrashMaxRange = 35.0f;
     if (bot->getClass() == CLASS_HUNTER && trashThreatControl.EngagedCount >= 2)
     {
         Unit* areaTarget = trashThreatControl.AreaTarget;
+        if (areaTarget)
+            if (SpellInfo const* multiShot = sSpellMgr->GetSpellInfo(2643))
+            {
+                float spellMinRange = bot->GetSpellMinRangeForTarget(areaTarget, multiShot);
+                if (multiShot->RangeEntry && (multiShot->RangeEntry->Flags & SPELL_RANGE_RANGED))
+                    spellMinRange += bot->GetMeleeRange(areaTarget);
+                hunterTrashAoeMinRange = std::max(hunterTrashAoeMinRange, spellMinRange);
+            }
+        hunterTrashAoeMinRange = std::min(HunterTrashMaxRange - 1.0f,
+            hunterTrashAoeMinRange + HunterTrashAoeMinRangeSafety);
         hunterTrashAoeTransferReady = areaTarget && bot->HasSpell(2643)
             && bot->GetPower(POWER_FOCUS) >= 40
-            && bot->GetExactDist(areaTarget) >= 5.0f && bot->GetExactDist(areaTarget) <= 35.0f
+            && bot->GetExactDist(areaTarget) >= hunterTrashAoeMinRange
+            && bot->GetExactDist(areaTarget) <= HunterTrashMaxRange
             && bot->IsWithinLOSInMap(areaTarget);
     }
     if (std::string(GetDungeonRole(bot)) == "dps"
@@ -14274,22 +17474,24 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             action = "misdirection_aoe_wait_for_focus";
             return true;
         }
-        if (useAreaTransfer && (bot->GetExactDist(target) < 5.0f || bot->GetExactDist(target) > 35.0f
-            || !bot->IsWithinLOSInMap(target)))
+        float transferMinRange = useAreaTransfer ? hunterTrashAoeMinRange : 5.0f;
+        if (bot->GetExactDist(target) < transferMinRange
+            || bot->GetExactDist(target) > HunterTrashMaxRange
+            || !bot->IsWithinLOSInMap(target))
         {
             ResolvedCombatAction rangeAction;
             rangeAction.MovementDirective = "ranged";
             rangeAction.AutoAttackMode = "ranged";
-            rangeAction.MinRange = 5.0f;
-            rangeAction.MaxRange = 35.0f;
+            rangeAction.MinRange = transferMinRange;
+            rangeAction.MaxRange = HunterTrashMaxRange;
             bool moved = MoveBotToProfileRange(state, bot, target, &rangeAction);
             situation = "normal_dungeon_trash";
-            action = moved ? "move_to_misdirection_aoe_range" : "hold_misdirection_aoe_range";
+            action = moved
+                ? (useAreaTransfer ? "move_to_misdirection_aoe_range" : "move_to_misdirection_single_range")
+                : (useAreaTransfer ? "hold_misdirection_aoe_range" : "hold_misdirection_single_range");
             return true;
         }
-        if (useAreaTransfer && bot->isMoving()
-            && bot->GetExactDist(target) >= 5.0f && bot->GetExactDist(target) <= 35.0f
-            && bot->IsWithinLOSInMap(target))
+        if (bot->isMoving())
             bot->StopMoving();
         ResolvedCombatAction transferAction;
         BotActionResult result = BotActionResult::NoAction;
@@ -14302,8 +17504,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             transferAction.DebugName = "cleave";
             transferAction.MovementDirective = "ranged";
             transferAction.AutoAttackMode = "ranged";
-            transferAction.MinRange = 5.0f;
-            transferAction.MaxRange = 35.0f;
+            transferAction.MinRange = hunterTrashAoeMinRange;
+            transferAction.MaxRange = HunterTrashMaxRange;
             BotActionExecutor executor;
             result = executor.ExecuteCombat(bot, bot, transferAction);
             std::string castFailureReason;
@@ -14525,13 +17727,24 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         {
             Player* member = GetLoadedBot(cohortState);
             if (!member || member == bot || !member->IsAlive() || member->GetMap() != bot->GetMap()
-                || member->GetGroup() != bot->GetGroup() || member->getAttackers().empty())
+                || member->GetGroup() != bot->GetGroup())
                 continue;
             std::string memberRole = GetDungeonRole(member);
             if (memberRole == "tank")
                 continue;
+            // Rerun124's terminal Flayer wave was explicitly visible in the
+            // 80-yard victim scan for four decisions while the healer's native
+            // attacker container remained empty. Carry that authoritative
+            // listed-victim observation into the existing deterministic target
+            // selector so the bounded Charge/Roar handoff starts immediately.
+            size_t explicitAttackerCount =
+                member == trashThreatControl.HealerTarget
+                    ? trashThreatControl.HealerTargetCount : 0;
+            size_t attackerCount = std::max(
+                member->getAttackers().size(), explicitAttackerCount);
+            if (!attackerCount)
+                continue;
             uint8 priority = memberRole == "healer" ? 2 : 1;
-            size_t attackerCount = member->getAttackers().size();
             uint32 guid = member->GetGUID().GetCounter();
             if (!defenseTarget || priority > defensePriority
                 || (priority == defensePriority && attackerCount > defenseAttackerCount)
@@ -14541,6 +17754,897 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 defensePriority = priority;
                 defenseAttackerCount = attackerCount;
                 defenseGuid = guid;
+            }
+        }
+        // Rerun95 reached an ordinary-trash Azil follower overlap with 52
+        // engaged hostiles. The boss-add resolver's native Feral defensive
+        // submission did not apply because this manifest node is trash, and
+        // the tank died while still owning 36 followers. Rerun96 then showed
+        // that a 90-percent health sample is still too late for a 49-follower
+        // simultaneous swing: the tank was above the threshold in the final
+        // decision and dead before the next one. Reuse the native off-GCD rule
+        // proactively before bounded pickup movement consumes the decision.
+        // Rerun123 proved twelve is too early: the Feral survived the 12-14
+        // precursor after spending its defensive, then died when the sustained
+        // 30-40-hostile Flayer wave arrived about twenty seconds later. Reserve
+        // the same native action until 24 engaged hostiles, above that observed
+        // precursor and below the failing wave's first 28-30-hostile samples.
+        if (bot->getClass() == CLASS_DRUID
+            && trashThreatControl.EngagedCount >= 24
+            && !bot->HasAura(61336) && !bot->HasAura(22812))
+        {
+            std::array<uint32, 2> defensiveSpells = { 61336, 22812 };
+            for (uint32 defensiveSpellId : defensiveSpells)
+                if (bot->HasSpell(defensiveSpellId)
+                    && TryCastFriendlySpell(bot, bot, defensiveSpellId))
+                {
+                    std::string raw = BuildRawJson(
+                        bot, trashThreatControl.AreaTarget);
+                    std::string semantic = BuildSemanticJson(
+                        bot, trashThreatControl.AreaTarget,
+                        "normal_dungeon_trash", &power, stage, activity);
+                    RecordEvent(state, bot, "defensive", bot,
+                        "tank_trash_swarm_defensive",
+                        raw.c_str(), semantic.c_str(), UnitHealthPct(bot),
+                        trashThreatControl.EngagedCount, defensiveSpellId);
+                    break;
+                }
+        }
+        // Rerun105 passed the all-hostile retention floor, but both remaining
+        // generation-13 exposure bursts flipped already-eligible identities
+        // immediately after a healer cast. In the preceding samples the Feral
+        // owned the whole large wave while fewer than ninety percent had the
+        // existing 2.5x secure-threat margin; the ordinary resolver then moved
+        // toward density instead of submitting its ready native Swipe cycle.
+        // Reinforce that margin before movement when a legal local Swipe is
+        // available. Remote or cooldown cases still fall through unchanged.
+        if (bot->getClass() == CLASS_DRUID
+            && trashThreatControl.EngagedCount >= 12
+            && tankOwnsTrashMajority && insecureTrashSwarm
+            && trashThreatControl.AreaTarget && bot->HasSpell(779)
+            && TryCastCombatSpell(bot, trashThreatControl.AreaTarget, 779))
+        {
+            std::string raw = BuildRawJson(
+                bot, trashThreatControl.AreaTarget);
+            std::string semantic = BuildSemanticJson(
+                bot, trashThreatControl.AreaTarget,
+                "normal_dungeon_trash", &power, stage, activity);
+            RecordEvent(state, bot, "validation_route_threat_pickup",
+                trashThreatControl.AreaTarget,
+                "feral_swipe_secure_trash_threat_margin",
+                raw.c_str(), semantic.c_str(),
+                float(trashThreatControl.SecureTankCount),
+                trashThreatControl.EngagedCount, 779);
+            state.TargetGuid = trashThreatControl.AreaTarget->GetGUID();
+            state.WasInCombat = true;
+            target = trashThreatControl.AreaTarget;
+            situation = "normal_dungeon_trash";
+            action = "feral_swipe_secure_trash_threat_margin";
+            return true;
+        }
+        // Rerun112 localized the all-hostile retention failure to ordinary
+        // opening packs on DPS: five eligible identities remained loose while
+        // the healer-only Feral rescue was inapplicable and the generic area
+        // cycle recovered them one at a time. Rerun113 then showed that an
+        // unbounded rescue chased remote DPS attackers while 21--42 hostiles
+        // were engaged, preempting the established density/healer controller.
+        // Keep the targeted rescue inside the existing tactical radius and
+        // small-pack envelope. This does not assign victims or change threat.
+        if (defenseTarget
+            && std::string(GetDungeonRole(defenseTarget)) != "healer"
+            && bot->getClass() == CLASS_DRUID
+            && trashThreatControl.EngagedCount >= 1
+            && trashThreatControl.EngagedCount <= 8)
+        {
+            std::vector<Unit*> partyAttackers;
+            for (Unit* attacker : defenseTarget->getAttackers())
+                if (attacker && attacker->IsAlive()
+                    && attacker->GetMap() == bot->GetMap()
+                    && attacker->GetVictim() == defenseTarget
+                    && bot->IsValidAttackTarget(attacker)
+                    && bot->IsWithinDistInMap(attacker, 45.0f))
+                    partyAttackers.push_back(attacker);
+
+            if (partyAttackers.size() == 1 && bot->HasSpell(6795)
+                && TryCastCombatSpell(bot, partyAttackers.front(), 6795))
+            {
+                Unit* attacker = partyAttackers.front();
+                std::string raw = BuildRawJson(bot, attacker);
+                std::string semantic = BuildSemanticJson(
+                    bot, attacker, "normal_dungeon_trash",
+                    &power, stage, activity);
+                RecordEvent(state, bot, "validation_route_threat_pickup",
+                    attacker, "feral_growl_lingering_party_trash_attacker",
+                    raw.c_str(), semantic.c_str(),
+                    bot->GetExactDist(attacker), 1.0f, 6795);
+                state.TargetGuid = attacker->GetGUID();
+                state.WasInCombat = true;
+                target = attacker;
+                situation = "normal_dungeon_trash";
+                action = "feral_growl_lingering_party_trash_attacker";
+                return true;
+            }
+
+            Unit* nearbyMissingRoarAttacker = nullptr;
+            uint32 nearbyMissingRoarCount = 0;
+            float nearbyDistance = std::numeric_limits<float>::max();
+            uint32 nearbyGuid = std::numeric_limits<uint32>::max();
+            for (Unit* attacker : partyAttackers)
+            {
+                float distance = bot->GetExactDist(attacker);
+                uint32 guid = attacker->GetGUID().GetCounter();
+                if (bot->GetExactDist2d(attacker) <= 10.0f
+                    && !attacker->HasAura(99, bot->GetGUID()))
+                {
+                    ++nearbyMissingRoarCount;
+                    if (!nearbyMissingRoarAttacker
+                        || distance < nearbyDistance
+                        || (distance == nearbyDistance && guid < nearbyGuid))
+                    {
+                        nearbyMissingRoarAttacker = attacker;
+                        nearbyDistance = distance;
+                        nearbyGuid = guid;
+                    }
+                }
+            }
+            if (nearbyMissingRoarCount >= 2 && bot->HasSpell(99)
+                && TryCastFriendlySpell(bot, bot, 99))
+            {
+                state.DecisionTimer = std::min<uint32>(
+                    state.DecisionTimer, 500);
+                std::string raw = BuildRawJson(
+                    bot, nearbyMissingRoarAttacker);
+                std::string semantic = BuildSemanticJson(
+                    bot, nearbyMissingRoarAttacker,
+                    "normal_dungeon_trash", &power, stage, activity);
+                RecordEvent(state, bot, "validation_route_threat_pickup",
+                    nearbyMissingRoarAttacker,
+                    "feral_demoralizing_roar_party_trash_pickup",
+                    raw.c_str(), semantic.c_str(),
+                    float(nearbyMissingRoarCount),
+                    float(partyAttackers.size()), 99);
+                state.TargetGuid = nearbyMissingRoarAttacker->GetGUID();
+                state.WasInCombat = true;
+                target = nearbyMissingRoarAttacker;
+                situation = "normal_dungeon_trash";
+                action = "feral_demoralizing_roar_party_trash_pickup";
+                return true;
+            }
+
+            Unit* remoteClusterAnchor = nullptr;
+            uint32 remoteClusterCount = 0;
+            float remoteDistance = std::numeric_limits<float>::max();
+            uint32 remoteGuid = std::numeric_limits<uint32>::max();
+            for (Unit* candidate : partyAttackers)
+            {
+                float distance = bot->GetExactDist(candidate);
+                if (distance <= 8.0f)
+                    continue;
+                uint32 clusterCount = 0;
+                for (Unit* neighbor : partyAttackers)
+                    if (candidate->GetExactDist2d(neighbor) <= 10.0f)
+                        ++clusterCount;
+                uint32 guid = candidate->GetGUID().GetCounter();
+                if (!remoteClusterAnchor
+                    || clusterCount > remoteClusterCount
+                    || (clusterCount == remoteClusterCount
+                        && (distance < remoteDistance
+                            || (distance == remoteDistance
+                                && guid < remoteGuid))))
+                {
+                    remoteClusterAnchor = candidate;
+                    remoteClusterCount = clusterCount;
+                    remoteDistance = distance;
+                    remoteGuid = guid;
+                }
+            }
+            if (remoteClusterAnchor && bot->HasSpell(16979)
+                && TryCastCombatSpell(bot, remoteClusterAnchor, 16979))
+            {
+                state.DecisionTimer = std::min<uint32>(
+                    state.DecisionTimer, 500);
+                std::string raw = BuildRawJson(bot, remoteClusterAnchor);
+                std::string semantic = BuildSemanticJson(
+                    bot, remoteClusterAnchor, "normal_dungeon_trash",
+                    &power, stage, activity);
+                RecordEvent(state, bot, "validation_route_threat_pickup",
+                    remoteClusterAnchor,
+                    "feral_charge_remote_party_trash_cluster_pickup",
+                    raw.c_str(), semantic.c_str(), remoteDistance,
+                    float(partyAttackers.size()), 16979);
+                state.TargetGuid = remoteClusterAnchor->GetGUID();
+                state.WasInCombat = true;
+                target = remoteClusterAnchor;
+                situation = "normal_dungeon_trash";
+                action = "feral_charge_remote_party_trash_cluster_pickup";
+                return true;
+            }
+            if (remoteClusterAnchor
+                && !bot->HasUnitState(UNIT_STATE_CASTING)
+                && !bot->IsFalling()
+                && MoveBotToPoint(state, bot,
+                    remoteClusterAnchor->GetPositionX(),
+                    remoteClusterAnchor->GetPositionY(),
+                    remoteClusterAnchor->GetPositionZ()))
+            {
+                state.DecisionTimer = std::min<uint32>(
+                    state.DecisionTimer, 500);
+                std::string raw = BuildRawJson(bot, remoteClusterAnchor);
+                std::string semantic = BuildSemanticJson(
+                    bot, remoteClusterAnchor, "normal_dungeon_trash",
+                    &power, stage, activity);
+                RecordEvent(state, bot, "validation_route_threat_pickup",
+                    remoteClusterAnchor,
+                    "feral_move_remote_party_trash_cluster_pickup",
+                    raw.c_str(), semantic.c_str(), remoteDistance,
+                    float(partyAttackers.size()));
+                state.TargetGuid = remoteClusterAnchor->GetGUID();
+                state.WasInCombat = true;
+                target = remoteClusterAnchor;
+                situation = "normal_dungeon_trash";
+                action = "feral_move_remote_party_trash_cluster_pickup";
+                return true;
+            }
+        }
+        uint64 feralTrashHandoffNowMs = NowMs();
+        Unit* feralTrashHandoffAnchor = nullptr;
+        if (!state.FeralHealerThreatHandoffAnchorGuid.IsEmpty())
+            feralTrashHandoffAnchor = ObjectAccessor::GetUnit(
+                *bot, state.FeralHealerThreatHandoffAnchorGuid);
+        bool feralTrashChargeInFlight = defenseTarget
+            && std::string(GetDungeonRole(defenseTarget)) == "healer"
+            && bot->getClass() == CLASS_DRUID
+            && state.FeralChargePickupUntilMs > feralTrashHandoffNowMs
+            && !state.FeralChargePickupTargetGuid.IsEmpty();
+        Unit* feralTrashChargeTarget = feralTrashChargeInFlight
+            ? ObjectAccessor::GetUnit(*bot, state.FeralChargePickupTargetGuid)
+            : nullptr;
+        bool feralTrashChargeArrived = false;
+        if (feralTrashChargeInFlight
+            && (!feralTrashChargeTarget || !feralTrashChargeTarget->IsAlive()
+                || feralTrashChargeTarget->GetMap() != bot->GetMap()
+                || !bot->IsValidAttackTarget(feralTrashChargeTarget)))
+        {
+            state.FeralChargePickupTargetGuid.Clear();
+            state.FeralChargePickupUntilMs = 0;
+            feralTrashChargeInFlight = false;
+            feralTrashChargeTarget = nullptr;
+        }
+        else if (feralTrashChargeInFlight
+            && bot->GetExactDist2d(feralTrashChargeTarget) > 10.0f)
+        {
+            std::string raw = BuildRawJson(bot, feralTrashChargeTarget);
+            std::string semantic = BuildSemanticJson(
+                bot, feralTrashChargeTarget, "normal_dungeon_trash",
+                &power, stage, activity);
+            RecordEvent(state, bot, "validation_route_threat_pickup",
+                feralTrashChargeTarget,
+                "feral_charge_remote_healer_trash_cluster_in_flight",
+                raw.c_str(), semantic.c_str(),
+                bot->GetExactDist2d(feralTrashChargeTarget),
+                float(defenseAttackerCount), 16979);
+            state.TargetGuid = feralTrashChargeTarget->GetGUID();
+            target = feralTrashChargeTarget;
+            situation = "normal_dungeon_trash";
+            action = "feral_charge_remote_healer_trash_cluster_in_flight";
+            return true;
+        }
+        else if (feralTrashChargeInFlight)
+            feralTrashChargeArrived = true;
+        else if (!state.FeralChargePickupTargetGuid.IsEmpty()
+            || state.FeralChargePickupUntilMs)
+        {
+            state.FeralChargePickupTargetGuid.Clear();
+            state.FeralChargePickupUntilMs = 0;
+        }
+        // Rerun95 also proved that always preserving the densest remote
+        // cluster can starve older ranged stragglers behind each new spawn
+        // burst. Once the Feral has secured an 80 percent victim majority,
+        // keep the same bounded handoff but rebind it deterministically to the
+        // lowest-GUID healer-owned follower. This targets the oldest remaining
+        // identity without assigning a victim or extending the reservation.
+        bool feralTrashOwnsSecureVictimMajority =
+            trashThreatControl.EngagedCount > 0
+            && trashThreatControl.TankOwnedCount * 10
+                >= trashThreatControl.EngagedCount * 8;
+        if (feralTrashOwnsSecureVictimMajority && defenseTarget
+            && std::string(GetDungeonRole(defenseTarget)) == "healer"
+            && bot->getClass() == CLASS_DRUID
+            && state.FeralHealerThreatHandoffUntilMs > feralTrashHandoffNowMs)
+        {
+            Unit* oldestHealerAttacker = nullptr;
+            uint32 oldestHealerAttackerGuid =
+                std::numeric_limits<uint32>::max();
+            for (Unit* attacker : defenseTarget->getAttackers())
+                if (attacker && attacker->IsAlive()
+                    && attacker->GetMap() == bot->GetMap()
+                    && attacker->GetVictim() == defenseTarget
+                    && bot->IsValidAttackTarget(attacker)
+                    && attacker->GetGUID().GetCounter()
+                        < oldestHealerAttackerGuid)
+                {
+                    oldestHealerAttacker = attacker;
+                    oldestHealerAttackerGuid =
+                        attacker->GetGUID().GetCounter();
+                }
+            if (oldestHealerAttacker)
+            {
+                state.FeralHealerThreatHandoffAnchorGuid =
+                    oldestHealerAttacker->GetGUID();
+                feralTrashHandoffAnchor = oldestHealerAttacker;
+            }
+        }
+        if (defenseTarget
+            && std::string(GetDungeonRole(defenseTarget)) == "healer"
+            && feralTrashHandoffAnchor
+            && feralTrashHandoffAnchor->IsAlive()
+            && feralTrashHandoffAnchor->GetMap() == bot->GetMap()
+            && feralTrashHandoffAnchor->GetVictim() != defenseTarget
+            && state.FeralHealerThreatHandoffUntilMs > feralTrashHandoffNowMs)
+        {
+            // A transfer can flip the selected hostile while neighboring
+            // members of the same remote cluster still own the healer. Keep
+            // the bounded cluster rendezvous stable by rebinding only within
+            // the original anchor's ten-yard neighborhood.
+            Unit* reboundAnchor = nullptr;
+            uint32 reboundGuid = std::numeric_limits<uint32>::max();
+            for (Unit* attacker : defenseTarget->getAttackers())
+                if (attacker && attacker->IsAlive()
+                    && attacker->GetMap() == bot->GetMap()
+                    && attacker->GetVictim() == defenseTarget
+                    && bot->IsValidAttackTarget(attacker)
+                    && feralTrashHandoffAnchor->GetExactDist2d(attacker)
+                        <= 10.0f
+                    && attacker->GetGUID().GetCounter() < reboundGuid)
+                {
+                    reboundAnchor = attacker;
+                    reboundGuid = attacker->GetGUID().GetCounter();
+                }
+            if (reboundAnchor)
+            {
+                state.FeralHealerThreatHandoffAnchorGuid =
+                    reboundAnchor->GetGUID();
+                feralTrashHandoffAnchor = reboundAnchor;
+            }
+        }
+        bool feralTrashHandoffActive = defenseTarget
+            && std::string(GetDungeonRole(defenseTarget)) == "healer"
+            && bot->getClass() == CLASS_DRUID
+            && state.FeralHealerThreatHandoffUntilMs > feralTrashHandoffNowMs
+            && state.FeralHealerThreatHandoffTargetGuid
+                == defenseTarget->GetGUID()
+            && feralTrashHandoffAnchor
+            && feralTrashHandoffAnchor->IsAlive()
+            && feralTrashHandoffAnchor->GetMap() == bot->GetMap()
+            && feralTrashHandoffAnchor->GetVictim() == defenseTarget
+            && bot->IsValidAttackTarget(feralTrashHandoffAnchor)
+            && defenseAttackerCount >= 1;
+        if (!feralTrashHandoffActive
+            && (!state.FeralHealerThreatHandoffTargetGuid.IsEmpty()
+                || !state.FeralHealerThreatHandoffAnchorGuid.IsEmpty()
+                || state.FeralHealerThreatHandoffUntilMs
+                || state.FeralHealerThreatHandoffRemoteCluster))
+        {
+            state.FeralHealerThreatHandoffTargetGuid.Clear();
+            state.FeralHealerThreatHandoffAnchorGuid.Clear();
+            state.FeralHealerThreatHandoffUntilMs = 0;
+            state.FeralHealerThreatHandoffRemoteCluster = false;
+            feralTrashHandoffAnchor = nullptr;
+        }
+        bool feralTrashHandoffArrived = false;
+        if (feralTrashHandoffActive)
+        {
+            // Movement ownership was changed to the collision-safe stationary
+            // healer ring after rerun100, but arrival still measured only the
+            // remote hostile GUID. Rerun102 accepted sixteen consecutive ring
+            // movements without reaching that moving hostile. Complete the
+            // same bounded pre-Roar handoff at its actual eight-yard destination
+            // while retaining hostile proximity as alternate arrival proof.
+            // A post-Roar remote-cluster phase instead owns the hostile anchor;
+            // rerun103 proved healer-ring arrival would cancel that accepted
+            // path immediately after the cast.
+            // Rerun109 proved that the one-local arrival exception fragmented
+            // large Flayer packs into 42 small Roars and regressed retention.
+            // Do not require the selected moving anchor itself, but require an
+            // identity-valid nearby majority still missing this Feral's Roar
+            // aura before yielding the accepted handoff to area threat.
+            uint32 currentHealerOwnedDuringHandoff = 0;
+            uint32 localMissingRoarDuringHandoff = 0;
+            for (Unit* attacker : defenseTarget->getAttackers())
+                if (attacker && attacker->IsAlive()
+                    && attacker->GetMap() == bot->GetMap()
+                    && attacker->GetVictim() == defenseTarget
+                    && bot->IsValidAttackTarget(attacker))
+                {
+                    ++currentHealerOwnedDuringHandoff;
+                    if (bot->GetExactDist2d(attacker) <= 10.0f
+                        && !attacker->HasAura(99, bot->GetGUID()))
+                        ++localMissingRoarDuringHandoff;
+                }
+            bool localMissingRoarCoversMajority =
+                localMissingRoarDuringHandoff >= 2
+                && localMissingRoarDuringHandoff * 2
+                    >= currentHealerOwnedDuringHandoff;
+            // Rerun123's opening corridor reached one isolated remote anchor
+            // while all eight hostiles still owned the healer. Anchor distance
+            // alone entered six Roar-hold decisions without a useful local
+            // cast. A remote handoff now uses the already-proven missing-Roar
+            // majority as its sole arrival proof; only the stationary-healer
+            // form retains ring/anchor proximity as an alternate proof.
+            feralTrashHandoffArrived = localMissingRoarCoversMajority
+                || (!state.FeralHealerThreatHandoffRemoteCluster
+                    && (bot->GetExactDist2d(defenseTarget) <= 9.0f
+                        || bot->GetExactDist2d(feralTrashHandoffAnchor)
+                            <= 10.0f));
+            if (!feralTrashHandoffArrived
+                && !bot->HasUnitState(UNIT_STATE_CASTING)
+                && !bot->IsFalling())
+            {
+                // Rerun109 used only eight Charges through a six-minute Flayer
+                // node because an active post-Roar handoff returned ground
+                // movement before the ordinary Charge branch below.  Reuse
+                // native Charge against the already-validated remote anchor;
+                // the strict hazard resolver has already run and the existing
+                // 2.5-second reservation remains unchanged.
+                if (state.FeralHealerThreatHandoffRemoteCluster
+                    && bot->GetExactDist(feralTrashHandoffAnchor) > 8.0f
+                    && bot->HasSpell(16979)
+                    && TryCastCombatSpell(
+                        bot, feralTrashHandoffAnchor, 16979))
+                {
+                    std::string raw = BuildRawJson(
+                        bot, feralTrashHandoffAnchor);
+                    std::string semantic = BuildSemanticJson(
+                        bot, feralTrashHandoffAnchor,
+                        "normal_dungeon_trash", &power, stage, activity);
+                    RecordEvent(state, bot,
+                        "validation_route_threat_pickup",
+                        feralTrashHandoffAnchor,
+                        "feral_charge_remote_healer_trash_cluster_active_handoff",
+                        raw.c_str(), semantic.c_str(),
+                        bot->GetExactDist(feralTrashHandoffAnchor),
+                        float(defenseAttackerCount), 16979);
+                    state.FeralChargePickupTargetGuid =
+                        feralTrashHandoffAnchor->GetGUID();
+                    state.FeralChargePickupUntilMs = NowMs() + 2500;
+                    state.DecisionTimer = std::min<uint32>(
+                        state.DecisionTimer, 250);
+                    state.TargetGuid = feralTrashHandoffAnchor->GetGUID();
+                    state.WasInCombat = true;
+                    target = feralTrashHandoffAnchor;
+                    situation = "normal_dungeon_trash";
+                    action =
+                        "feral_charge_remote_healer_trash_cluster_active_handoff";
+                    return true;
+                }
+                // Rerun120 passed the Feral retention floor after the Swipe
+                // threat-margin correction, but the exact remote-anchor path
+                // still consumed about 3.5 seconds before the first legal
+                // Roar. Preserve the proven hostile identity and stable path
+                // reservation while stopping inside Roar's collision-safe
+                // range. Rerun122 localized its entire remaining exposure to
+                // Azil and observed zero healer exposure at the ordinary-trash
+                // Flayer node, so retain the original eight-yard stand-off for
+                // both rendezvous forms.
+                Position roarIntercept;
+                if (state.FeralHealerThreatHandoffRemoteCluster)
+                    roarIntercept =
+                        feralTrashHandoffAnchor->GetFirstCollisionPosition(
+                            8.0f,
+                            feralTrashHandoffAnchor->GetAngle(bot)
+                                - feralTrashHandoffAnchor->GetOrientation());
+                else
+                    roarIntercept = defenseTarget->GetFirstCollisionPosition(
+                        8.0f,
+                        defenseTarget->GetAngle(bot)
+                            - defenseTarget->GetOrientation());
+                bool continuingRemotePath =
+                    state.FeralHealerThreatHandoffRemoteCluster
+                    && state.ActivePathValid && state.IsMoving
+                    && feralTrashHandoffAnchor->GetExactDist2d(
+                        state.ActivePathToX, state.ActivePathToY) <= 10.0f;
+                bool moved = continuingRemotePath || MoveBotToPoint(state, bot,
+                    roarIntercept.GetPositionX(),
+                    roarIntercept.GetPositionY(),
+                    roarIntercept.GetPositionZ());
+                if (moved)
+                    state.DecisionTimer = std::min<uint32>(
+                        state.DecisionTimer, 500);
+                std::string raw = BuildRawJson(bot, feralTrashHandoffAnchor);
+                std::string semantic = BuildSemanticJson(
+                    bot, feralTrashHandoffAnchor, "normal_dungeon_trash",
+                    &power, stage, activity);
+                RecordEvent(state, bot, "validation_route_threat_pickup",
+                    feralTrashHandoffAnchor,
+                    moved
+                        ? "feral_continue_remote_healer_trash_cluster_handoff"
+                        : "feral_remote_healer_trash_cluster_path_rejected",
+                    raw.c_str(), semantic.c_str(),
+                    bot->GetExactDist2d(feralTrashHandoffAnchor),
+                    float(defenseAttackerCount));
+                state.TargetGuid = feralTrashHandoffAnchor->GetGUID();
+                target = feralTrashHandoffAnchor;
+                situation = "normal_dungeon_trash";
+                action = moved
+                    ? "feral_continue_remote_healer_trash_cluster_handoff"
+                    : "feral_hold_remote_healer_trash_cluster_path_rejected";
+                return true;
+            }
+            if (feralTrashHandoffArrived)
+                bot->StopMoving();
+        }
+        // Rerun92 exposed 11-45-hostile split Flayer waves where ordinary
+        // ground movement needed three or four decisions before the first
+        // remote-cluster Roar. Reuse native Feral Charge before that movement,
+        // selecting the deterministic densest healer-owned cluster and
+        // preserving the charged target above until arrival. Exact hazard
+        // movement already ran and remains the higher authority. Rerun105 also
+        // isolated one remote surviving attacker for 4032 ms: out-of-range
+        // Growl fell through to ordinary route movement because this bounded
+        // Charge path required two attackers. The same identity-safe handoff
+        // is valid for that single remote healer attacker.
+        if (!feralTrashHandoffActive && defenseTarget
+            && std::string(GetDungeonRole(defenseTarget)) == "healer"
+            && bot->getClass() == CLASS_DRUID
+            && defenseAttackerCount >= 1 && bot->HasSpell(16979))
+        {
+            Unit* chargeAnchor = nullptr;
+            uint32 chargeClusterCount = 0;
+            float chargeDistance = std::numeric_limits<float>::max();
+            uint32 chargeGuid = std::numeric_limits<uint32>::max();
+            bool chargeAnchorInNativeBand = false;
+            for (Unit* candidate : defenseTarget->getAttackers())
+            {
+                if (!candidate || !candidate->IsAlive()
+                    || candidate->GetMap() != bot->GetMap()
+                    || candidate->GetVictim() != defenseTarget
+                    || !bot->IsValidAttackTarget(candidate))
+                    continue;
+                float distance = bot->GetExactDist(candidate);
+                if (distance <= 8.0f)
+                    continue;
+                uint32 clusterCount = 0;
+                for (Unit* neighbor : defenseTarget->getAttackers())
+                    if (neighbor && neighbor->IsAlive()
+                        && neighbor->GetMap() == bot->GetMap()
+                        && neighbor->GetVictim() == defenseTarget
+                        && bot->IsValidAttackTarget(neighbor)
+                        && candidate->GetExactDist2d(neighbor) <= 10.0f)
+                        ++clusterCount;
+                bool candidateInNativeChargeBand = false;
+                if (SpellInfo const* chargeInfo =
+                        sSpellMgr->GetSpellInfo(16979))
+                    candidateInNativeChargeBand =
+                        bot->IsWithinLOSInMap(candidate)
+                        && distance <= bot->GetSpellMaxRangeForTarget(
+                            candidate, chargeInfo);
+                uint32 guid = candidate->GetGUID().GetCounter();
+                bool sameChargeBand = candidateInNativeChargeBand
+                    == chargeAnchorInNativeBand;
+                bool betterClusterCandidate =
+                    clusterCount > chargeClusterCount
+                    || (clusterCount == chargeClusterCount
+                        && (distance < chargeDistance
+                            || (distance == chargeDistance
+                                && guid < chargeGuid)));
+                if (!chargeAnchor
+                    || (candidateInNativeChargeBand
+                        && !chargeAnchorInNativeBand)
+                    || (sameChargeBand && betterClusterCandidate))
+                {
+                    chargeAnchor = candidate;
+                    chargeClusterCount = clusterCount;
+                    chargeDistance = distance;
+                    chargeGuid = guid;
+                    chargeAnchorInNativeBand =
+                        candidateInNativeChargeBand;
+                }
+            }
+            if (chargeAnchor
+                && TryCastCombatSpell(bot, chargeAnchor, 16979))
+            {
+                std::string raw = BuildRawJson(bot, chargeAnchor);
+                std::string semantic = BuildSemanticJson(
+                    bot, chargeAnchor, "normal_dungeon_trash",
+                    &power, stage, activity);
+                RecordEvent(state, bot, "validation_route_threat_pickup",
+                    chargeAnchor,
+                    "feral_charge_remote_healer_trash_cluster_handoff",
+                    raw.c_str(), semantic.c_str(), chargeDistance,
+                    float(defenseAttackerCount), 16979);
+                state.FeralChargePickupTargetGuid = chargeAnchor->GetGUID();
+                state.FeralChargePickupUntilMs = NowMs() + 2500;
+                state.DecisionTimer = std::min<uint32>(
+                    state.DecisionTimer, 250);
+                state.TargetGuid = chargeAnchor->GetGUID();
+                state.WasInCombat = true;
+                target = chargeAnchor;
+                situation = "normal_dungeon_trash";
+                action = "feral_charge_remote_healer_trash_cluster_handoff";
+                return true;
+            }
+            // Rerun96 first observed ten healer-owned followers immediately
+            // after strict hazard movement, while Charge was on cooldown and
+            // fewer than two followers were inside Roar range. Falling through
+            // to generic density movement delayed the first legal Roar to 3014
+            // ms. Bind the already-selected deterministic cluster to the same
+            // 2.5-second handoff and 500-ms cadence used after Roar; strict
+            // hazard movement has already run and path rejection still falls
+            // through without changing victims or extending the reservation.
+            if (chargeAnchor
+                && !bot->HasUnitState(UNIT_STATE_CASTING)
+                && !bot->IsFalling())
+            {
+                // Rerun104 proved the healer-ring fallback can declare arrival
+                // with only two of thirteen attackers in Roar range. The
+                // post-Roar remote phase now preserves an accepted endpoint;
+                // use that same proven contract before the first Roar so the
+                // selected densest cluster, rather than the healer ring, owns
+                // the bounded rendezvous. Rerun120 proved that walking to the
+                // anchor's exact point spends the dwell budget unnecessarily;
+                // the native Roar needs only this collision-safe stand-off.
+                // Rerun121 reduced the global dwell maximum to 3026 ms at
+                // eight yards; use nine yards to remove only that final yard
+                // of travel while remaining inside Roar's ten-yard range.
+                Position roarIntercept =
+                    chargeAnchor->GetFirstCollisionPosition(
+                        9.0f,
+                        chargeAnchor->GetAngle(bot)
+                            - chargeAnchor->GetOrientation());
+                bool movedToRemoteCluster = MoveBotToPoint(state, bot,
+                        roarIntercept.GetPositionX(),
+                        roarIntercept.GetPositionY(),
+                        roarIntercept.GetPositionZ());
+                if (movedToRemoteCluster)
+                {
+                    state.FeralHealerThreatHandoffTargetGuid =
+                        defenseTarget->GetGUID();
+                    state.FeralHealerThreatHandoffAnchorGuid =
+                        chargeAnchor->GetGUID();
+                    state.FeralHealerThreatHandoffUntilMs =
+                        feralTrashHandoffNowMs + 2500;
+                    state.FeralHealerThreatHandoffRemoteCluster = true;
+                    state.DecisionTimer = std::min<uint32>(
+                        state.DecisionTimer, 500);
+                    std::string raw = BuildRawJson(bot, chargeAnchor);
+                    std::string semantic = BuildSemanticJson(
+                        bot, chargeAnchor, "normal_dungeon_trash",
+                        &power, stage, activity);
+                    RecordEvent(state, bot,
+                        "validation_route_threat_pickup", chargeAnchor,
+                        "feral_move_remote_healer_trash_cluster_pre_roar",
+                        raw.c_str(), semantic.c_str(), chargeDistance,
+                        float(defenseAttackerCount));
+                    state.TargetGuid = chargeAnchor->GetGUID();
+                    target = chargeAnchor;
+                    situation = "normal_dungeon_trash";
+                    action =
+                        "feral_move_remote_healer_trash_cluster_pre_roar";
+                    return true;
+                }
+            }
+        }
+        // Rerun54 proved the boss-add Roar pickup but also isolated the global
+        // healer-dwell maximum to ordinary crystalspawn trash, where that
+        // specialized resolver never runs. Reuse the same native ten-yard,
+        // healer-owned, aura-bounded action here before the ordinary profile
+        // area cycle. This does not assign victims or move the healer; it only
+        // submits the explicit spell-99 rule after the Feral has reached at
+        // least two of the healer's listed attackers.
+        if (defenseTarget && std::string(GetDungeonRole(defenseTarget)) == "healer"
+            && bot->getClass() == CLASS_DRUID
+            && defenseAttackerCount >= 2 && bot->HasSpell(99))
+        {
+            uint32 nearbyHealerOwnedCount = 0;
+            bool missingOwnedRoar = false;
+            Unit* nearbyHealerOwnedAttacker = nullptr;
+            float nearbyHealerOwnedDistance = std::numeric_limits<float>::max();
+            uint32 nearbyHealerOwnedGuid = std::numeric_limits<uint32>::max();
+            std::vector<Unit*> currentHealerOwnedAttackers;
+            for (Unit* attacker : defenseTarget->getAttackers())
+                if (attacker && attacker->IsAlive()
+                    && bot->IsValidAttackTarget(attacker)
+                    && attacker->GetVictim() == defenseTarget)
+                {
+                    currentHealerOwnedAttackers.push_back(attacker);
+                    if (bot->GetExactDist2d(attacker) > 10.0f)
+                        continue;
+
+                    ++nearbyHealerOwnedCount;
+                    missingOwnedRoar = missingOwnedRoar
+                        || !attacker->HasAura(99, bot->GetGUID());
+                    float distance = bot->GetExactDist(attacker);
+                    uint32 guid = attacker->GetGUID().GetCounter();
+                    if (!nearbyHealerOwnedAttacker
+                        || distance < nearbyHealerOwnedDistance
+                        || (distance == nearbyHealerOwnedDistance
+                            && guid < nearbyHealerOwnedGuid))
+                    {
+                        nearbyHealerOwnedAttacker = attacker;
+                        nearbyHealerOwnedDistance = distance;
+                        nearbyHealerOwnedGuid = guid;
+                    }
+            }
+            if (nearbyHealerOwnedCount >= 2 && missingOwnedRoar
+                && TryCastFriendlySpell(bot, bot, 99))
+            {
+                if (feralTrashChargeArrived)
+                {
+                    state.FeralChargePickupTargetGuid.Clear();
+                    state.FeralChargePickupUntilMs = 0;
+                }
+                // Rerun87 proved the stationary-healer handoff could submit
+                // Roar at the 500 ms GCD boundary yet acquire only four or five
+                // followers per cycle from a 27-47-hostile split topology.
+                // Bind the bounded handoff to the densest currently remote
+                // healer-owned cluster instead. Revalidate this moving GUID on
+                // every tick above, matching the already-proved moving-endpoint
+                // active-swarm pickup without permitting generic target churn.
+                Unit* remoteClusterAnchor = nullptr;
+                uint32 remoteClusterCount = 0;
+                float remoteClusterDistance =
+                    std::numeric_limits<float>::max();
+                uint32 remoteClusterGuid =
+                    std::numeric_limits<uint32>::max();
+                for (Unit* candidate : currentHealerOwnedAttackers)
+                {
+                    float candidateDistance = bot->GetExactDist(candidate);
+                    if (candidateDistance <= 10.0f)
+                        continue;
+                    uint32 clusterCount = 0;
+                    for (Unit* neighbor : currentHealerOwnedAttackers)
+                        if (candidate->GetExactDist2d(neighbor) <= 10.0f)
+                            ++clusterCount;
+                    uint32 guid = candidate->GetGUID().GetCounter();
+                    if (!remoteClusterAnchor
+                        || clusterCount > remoteClusterCount
+                        || (clusterCount == remoteClusterCount
+                            && (candidateDistance < remoteClusterDistance
+                                || (candidateDistance == remoteClusterDistance
+                                    && guid < remoteClusterGuid))))
+                    {
+                        remoteClusterAnchor = candidate;
+                        remoteClusterCount = clusterCount;
+                        remoteClusterDistance = candidateDistance;
+                        remoteClusterGuid = guid;
+                    }
+                }
+                bool remoteClusterRemains = remoteClusterAnchor != nullptr;
+                bool splitClusterHandoff = remoteClusterAnchor
+                    && !bot->HasUnitState(UNIT_STATE_CASTING)
+                    && !bot->IsFalling()
+                    && MoveBotToPoint(state, bot,
+                        remoteClusterAnchor->GetPositionX(),
+                        remoteClusterAnchor->GetPositionY(),
+                        remoteClusterAnchor->GetPositionZ());
+                if (splitClusterHandoff)
+                    state.DecisionTimer = std::min<uint32>(
+                        state.DecisionTimer, 500);
+                if (remoteClusterRemains)
+                {
+                    state.FeralHealerThreatHandoffTargetGuid =
+                        defenseTarget->GetGUID();
+                    state.FeralHealerThreatHandoffAnchorGuid =
+                        remoteClusterAnchor->GetGUID();
+                    state.FeralHealerThreatHandoffUntilMs = NowMs() + 2500;
+                    state.FeralHealerThreatHandoffRemoteCluster = true;
+                }
+                else
+                {
+                    state.FeralHealerThreatHandoffTargetGuid.Clear();
+                    state.FeralHealerThreatHandoffAnchorGuid.Clear();
+                    state.FeralHealerThreatHandoffUntilMs = 0;
+                    state.FeralHealerThreatHandoffRemoteCluster = false;
+                }
+                std::string raw = BuildRawJson(bot, nearbyHealerOwnedAttacker);
+                std::string semantic = BuildSemanticJson(
+                    bot, nearbyHealerOwnedAttacker, "normal_dungeon_trash",
+                    &power, stage, activity);
+                RecordEvent(state, bot, "validation_route_threat_pickup",
+                    nearbyHealerOwnedAttacker,
+                    splitClusterHandoff
+                        ? "feral_demoralizing_roar_remote_healer_trash_cluster_handoff"
+                        : "feral_demoralizing_roar_healer_trash_pickup",
+                    raw.c_str(), semantic.c_str(),
+                    float(nearbyHealerOwnedCount),
+                    float(currentHealerOwnedAttackers.size()), 99);
+                state.TargetGuid = nearbyHealerOwnedAttacker
+                    ? nearbyHealerOwnedAttacker->GetGUID() : ObjectGuid::Empty;
+                target = nearbyHealerOwnedAttacker;
+                situation = "normal_dungeon_trash";
+                action = splitClusterHandoff
+                    ? "feral_demoralizing_roar_remote_healer_trash_cluster_handoff"
+                    : "feral_demoralizing_roar_healer_trash_pickup";
+                state.WasInCombat = true;
+                state.DecisionTimer = std::min<uint32>(
+                    state.DecisionTimer, 250);
+                return true;
+            }
+        }
+        if (feralTrashChargeArrived && defenseTarget
+            && std::string(GetDungeonRole(defenseTarget)) == "healer"
+            && defenseAttackerCount >= 2)
+        {
+            bot->StopMoving();
+            state.DecisionTimer = std::min<uint32>(
+                state.DecisionTimer, 250);
+            std::string raw = BuildRawJson(bot, feralTrashChargeTarget);
+            std::string semantic = BuildSemanticJson(
+                bot, feralTrashChargeTarget, "normal_dungeon_trash",
+                &power, stage, activity);
+            RecordEvent(state, bot, "validation_route_threat_pickup",
+                feralTrashChargeTarget,
+                "feral_hold_charge_trash_arrival_for_roar",
+                raw.c_str(), semantic.c_str(),
+                bot->GetExactDist2d(feralTrashChargeTarget),
+                float(defenseAttackerCount));
+            state.TargetGuid = feralTrashChargeTarget->GetGUID();
+            target = feralTrashChargeTarget;
+            situation = "normal_dungeon_trash";
+            action = "feral_hold_charge_trash_arrival_for_roar";
+            return true;
+        }
+        if (feralTrashHandoffActive && feralTrashHandoffArrived
+            && defenseAttackerCount >= 2)
+        {
+            state.DecisionTimer = std::min<uint32>(
+                state.DecisionTimer, 500);
+            std::string raw = BuildRawJson(bot, feralTrashHandoffAnchor);
+            std::string semantic = BuildSemanticJson(
+                bot, feralTrashHandoffAnchor, "normal_dungeon_trash",
+                &power, stage, activity);
+            RecordEvent(state, bot, "validation_route_threat_pickup",
+                feralTrashHandoffAnchor,
+                "feral_hold_remote_healer_trash_cluster_for_roar",
+                raw.c_str(), semantic.c_str(),
+                bot->GetExactDist2d(feralTrashHandoffAnchor),
+                float(defenseAttackerCount));
+            state.TargetGuid = feralTrashHandoffAnchor->GetGUID();
+            target = feralTrashHandoffAnchor;
+            situation = "normal_dungeon_trash";
+            action = "feral_hold_remote_healer_trash_cluster_for_roar";
+            return true;
+        }
+        // A single Flayer follower survived rerun81's completed area pickup for
+        // 6041 ms because the two-attacker Roar gate no longer applied and the
+        // strict area resolver kept selecting density movement. Use the
+        // explicit native Growl profile for exactly one healer-owned attacker;
+        // this neither assigns a victim nor replaces multi-target pickup.
+        if (defenseTarget && std::string(GetDungeonRole(defenseTarget)) == "healer"
+            && bot->getClass() == CLASS_DRUID
+            && defenseAttackerCount == 1 && bot->HasSpell(6795))
+        {
+            Unit* healerAttacker = nullptr;
+            for (Unit* attacker : defenseTarget->getAttackers())
+                if (attacker && attacker->IsAlive()
+                    && bot->IsValidAttackTarget(attacker)
+                    && (!healerAttacker
+                        || bot->GetExactDist(attacker)
+                            < bot->GetExactDist(healerAttacker)
+                        || (bot->GetExactDist(attacker)
+                                == bot->GetExactDist(healerAttacker)
+                            && attacker->GetGUID().GetCounter()
+                                < healerAttacker->GetGUID().GetCounter())))
+                    healerAttacker = attacker;
+            if (healerAttacker
+                && TryCastCombatSpell(bot, healerAttacker, 6795))
+            {
+                std::string raw = BuildRawJson(bot, healerAttacker);
+                std::string semantic = BuildSemanticJson(
+                    bot, healerAttacker, "normal_dungeon_trash",
+                    &power, stage, activity);
+                RecordEvent(state, bot, "validation_route_threat_pickup",
+                    healerAttacker,
+                    "feral_growl_lingering_healer_trash_attacker",
+                    raw.c_str(), semantic.c_str(),
+                    bot->GetExactDist(healerAttacker),
+                    float(defenseAttackerCount), 6795);
+                state.TargetGuid = healerAttacker->GetGUID();
+                target = healerAttacker;
+                situation = "normal_dungeon_trash";
+                action = "feral_growl_lingering_healer_trash_attacker";
+                state.WasInCombat = true;
+                return true;
             }
         }
         if (defenseTarget && bot->HasSpell(31789) && TryCastFriendlySpell(bot, defenseTarget, 31789))
@@ -14712,7 +18816,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, activity);
                 RecordEvent(state, bot, tankFocusIsRouteTarget ? "validation_route_target_search" : "validation_route_prerequisite", target,
                     moved ? (tankFocusIsRouteTarget ? "assist_tank_focus" : "force_tank_focus") : "tactical_path_rejected", raw.c_str(), semantic.c_str(), bot->GetExactDist(target), Cohort().Config.ValidationRouteTargetEntry);
-                maybeValidationPrerequisiteNoProgressAssist(target, tankFocusIsRouteTarget ? "route_target_path_no_progress" : "force_tank_focus_path_no_progress");
+                if (!moved)
+                    maybeValidationPrerequisiteNoProgressAssist(target, tankFocusIsRouteTarget ? "route_target_path_no_progress" : "force_tank_focus_path_no_progress");
                 return true;
             }
 
@@ -14917,7 +19022,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, activity);
             RecordEvent(state, bot, routeTrashFocus ? "validation_route_target_search" : "validation_route_prerequisite", target,
                 moved ? (routeTrashFocus ? "approach_target" : "assist_focus") : "tactical_path_rejected", raw.c_str(), semantic.c_str(), bot->GetExactDist(target), Cohort().Config.ValidationRouteTargetEntry);
-            maybeValidationPrerequisiteNoProgressAssist(target, routeTrashFocus ? "route_target_path_no_progress" : "assist_focus_path_no_progress");
+            if (!moved)
+                maybeValidationPrerequisiteNoProgressAssist(target, routeTrashFocus ? "route_target_path_no_progress" : "assist_focus_path_no_progress");
             return true;
         }
 
@@ -15108,7 +19214,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, activity);
             RecordEvent(state, bot, routeBossTarget ? "validation_route_target_search" : "validation_route_prerequisite", target,
                 moved ? "approach_target" : "tactical_path_rejected", raw.c_str(), semantic.c_str(), bot->GetExactDist(target), Cohort().Config.ValidationRouteTargetEntry);
-            if (!routeBossTarget)
+            if (!moved && !routeBossTarget)
                 maybeValidationPrerequisiteNoProgressAssist(target, "current_combat_path_no_progress");
             return true;
         }
@@ -15153,7 +19259,35 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     if (Cohort().Config.ValidationRouteKind != "boss" && std::string(GetDungeonRole(bot)) == "tank")
     {
         preAnchorTrashTarget = findTrashClusterThreatTarget();
-        if (!preAnchorTrashTarget && (discoveryLeg || routeDistance <= routeArrivalRadius))
+        if (!preAnchorTrashTarget)
+        {
+            ObjectGuid::LowType canonicalSpawnId = currentValidationRouteTargetSpawnId();
+            Creature* canonicalSource = canonicalSpawnId && bot->GetMap()
+                ? bot->GetMap()->GetCreatureBySpawnId(canonicalSpawnId) : nullptr;
+            if (isEligibleTrashClusterMob(canonicalSource))
+            {
+                preAnchorTrashTarget = canonicalSource;
+                enrollValidationRoutePackMember(canonicalSource,
+                    isValidationCohortCombatLinked(canonicalSource));
+            }
+        }
+        float clusterApproachRadius = std::max(
+            routeArrivalRadius,
+            Cohort().Config.ValidationRouteClusterRadiusYards > 1.0f
+                ? Cohort().Config.ValidationRouteClusterRadiusYards
+                : 90.0f);
+        if (preAnchorTrashTarget && routeDistance > clusterApproachRadius)
+        {
+            Creature* threatCreature = preAnchorTrashTarget->ToCreature();
+            if (!threatCreature || !isValidationCohortCombatLinked(threatCreature))
+                preAnchorTrashTarget = nullptr;
+        }
+        // Rerun74 proved that the canonical source can seed and complete its
+        // pack while another declared current-node patrol remains live beyond
+        // the static arrival radius. Keep that strictly pathable candidate as
+        // pre-anchor movement authority; the existing cluster-approach bound
+        // below still prevents pulling a distant pack before reaching the node.
+        if (!preAnchorTrashTarget)
             preAnchorTrashTarget = findNearestTrashClusterMob();
     }
 
@@ -15249,11 +19383,44 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             }
         }
     }
+    // Azil can survive an evade as a visible but unreachable canonical spawn.
+    // Other bosses, notably Corborus while burrowed, use transient LOS states
+    // that must remain under their native encounter controller.
     if (!routeTarget
         && seenRouteTarget
         && Cohort().Config.ValidationRouteKind == "boss"
+        && Cohort().Config.ValidationRouteTargetEntry == 42333
         && (targetSearchResult == "target_seen_not_attackable" || targetSearchResult == "target_seen_no_los"))
     {
+        bool tankOwnsBossRecovery = std::string(GetDungeonRole(bot)) == "tank";
+        if (tankOwnsBossRecovery)
+            ++state.ValidationRouteTargetSearchMissCount;
+
+        if (tankOwnsBossRecovery && state.ValidationRouteTargetSearchMissCount >= 3)
+        {
+            std::string recoveryResult;
+            bool recoveryInitiated = false;
+            if (tryCanonicalValidationRouteBossRecovery(recoveryResult, recoveryInitiated))
+            {
+                situation = recoveryInitiated ? "validation_route_recovery" : "validation_route_blocked";
+                action = recoveryInitiated ? "recover_canonical_validation_route_boss" : "blocked_no_fallback";
+                return true;
+            }
+        }
+
+        if (tankOwnsBossRecovery
+            && Party().ValidationRouteCanonicalBossRecoveryAttempts >= 2
+            && state.ValidationRouteTargetSearchMissCount >= 6)
+        {
+            std::string raw = BuildRawJson(bot, seenRouteTarget);
+            std::string semantic = BuildSemanticJson(bot, seenRouteTarget, "validation_route_canonical_boss_recovery_no_reachable_target", &power, stage, activity);
+            RecordEvent(state, bot, "validation_route_recovery", seenRouteTarget, "canonical_boss_recovery_no_reachable_target", raw.c_str(), semantic.c_str(), seenRouteTargetDistance, Cohort().Config.ValidationRouteTargetEntry);
+            MarkBotBlocked(state, bot, "canonical_boss_recovery_no_reachable_target");
+            situation = "validation_route_blocked";
+            action = "blocked_no_fallback";
+            return true;
+        }
+
         std::string raw = BuildRawJson(bot, seenRouteTarget);
         std::string semantic = BuildSemanticJson(bot, seenRouteTarget, "validation_route_script_target_blocked", &power, stage, activity);
         RecordEvent(state, bot, "validation_route_target_search", seenRouteTarget, targetSearchResult.c_str(), raw.c_str(), semantic.c_str(), seenRouteTargetDistance, Cohort().Config.ValidationRouteTargetEntry);
@@ -15353,6 +19520,10 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 continue;
             if (creature->IsCritter() || creature->IsPet() || creature->IsTotem() || creature->IsSummon() || creature->IsGuardian() || !creature->GetOwnerGUID().IsEmpty())
                 continue;
+            if (Cohort().Config.ValidationRouteKind == "boss" && Party().ValidationRouteActivationApplied
+                && !isValidationRouteScriptTarget(creature) && !creature->IsInCombat() && !creature->GetVictim()
+                && !isValidationCohortCombatLinked(creature))
+                continue;
 
             float distance = bot->GetExactDist(creature);
             float routeProximity = creature->GetExactDist(Cohort().Config.ValidationRouteX, Cohort().Config.ValidationRouteY, Cohort().Config.ValidationRouteZ);
@@ -15392,7 +19563,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             {
                 bool moved = MoveBotToProfileRange(state, bot, target);
                 RecordEvent(state, bot, "validation_route_prerequisite", target, moved ? "move_to_blocker" : "tactical_path_rejected", raw.c_str(), semantic.c_str(), prerequisiteDistance, Cohort().Config.ValidationRouteTargetEntry);
-                maybeValidationPrerequisiteNoProgressAssist(target, "blocker_path_no_progress");
+                if (!moved)
+                    maybeValidationPrerequisiteNoProgressAssist(target, "blocker_path_no_progress");
                 situation = "validation_route_prerequisite";
                 action = moved ? "move_to_validation_route_prerequisite" : "hold_tactical_path_rejected";
                 return true;
@@ -15413,7 +19585,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             {
                 bool moved = MoveBotToProfileRange(state, bot, target, &profileAction);
                 RecordEvent(state, bot, "validation_route_prerequisite", target, moved ? "approach_target" : "tactical_path_rejected", raw.c_str(), semantic.c_str(), prerequisiteDistance, Cohort().Config.ValidationRouteTargetEntry);
-                maybeValidationPrerequisiteNoProgressAssist(target, "blocker_path_no_progress");
+                if (!moved)
+                    maybeValidationPrerequisiteNoProgressAssist(target, "blocker_path_no_progress");
                 situation = "validation_route_prerequisite";
                 action = moved ? "move_to_validation_route_prerequisite" : "hold_tactical_path_rejected";
                 return true;
@@ -15453,6 +19626,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         {
             bool packHasLiveMobs = trashClusterHasLiveMobs();
             bool partyHasActiveCombatUnit = validationPartyHasActiveCombat();
+            Unit* terminalCombatTarget = !packHasLiveMobs && partyHasActiveCombatUnit
+                ? findBoundedTerminalPartyCombatTarget() : nullptr;
             bool fullCohortAtEndpoint = true;
             uint32 loadedParticipants = 0;
             for (WorldBotState const& cohortState : Party().Bots)
@@ -15474,7 +19649,18 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             uint64 quietElapsedMs = clearCandidateSinceMs ? nowMs - clearCandidateSinceMs : 0;
             uint64 quietRemainingMs = quietElapsedMs >= 2000 ? 0 : 2000 - quietElapsedMs;
 
-            if (Cohort().Config.ValidationRouteAdvanceMode == "terminal"
+            if (terminalCombatTarget)
+            {
+                routeTarget = terminalCombatTarget;
+                targetSearchResult = "terminal_party_combat_focus";
+                state.ValidationRouteTargetSearchMissCount = 0;
+                std::string raw = BuildRawJson(bot, terminalCombatTarget);
+                std::string semantic = BuildSemanticJson(bot, terminalCombatTarget, "validation_route_prerequisite", &power, stage, activity);
+                RecordEvent(state, bot, "validation_route_recovery", terminalCombatTarget,
+                    "terminal_party_combat_focus_acquired", raw.c_str(), semantic.c_str(),
+                    bot->GetExactDist(terminalCombatTarget), terminalCombatTarget->GetEntry());
+            }
+            else if (Cohort().Config.ValidationRouteAdvanceMode == "terminal"
                 && (discoveryLeg ? (Party().ValidationRouteCompletedPackCount > 0 || Party().ValidationRouteObservedDeadScriptTarget)
                     : (Party().ValidationRoutePackObservedEngagement || Party().ValidationRouteObservedDeadScriptTarget))
                 && !packHasLiveMobs
@@ -15540,7 +19726,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_pack_hold", &power, stage, activity);
                 RecordEvent(state, bot, "validation_route_recovery", nullptr, holdReason, raw.str().c_str(), semantic.c_str(), float(Party().ValidationRoutePackMemberGuids.size()), uint32(Party().ValidationRoutePackDeathGuids.size()));
             }
-            return true;
+            if (!routeTarget)
+                return true;
         }
     }
 
@@ -15549,15 +19736,46 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
     if (!routeTarget)
     {
-        if (Cohort().Config.ValidationRouteKind == "boss"
+        bool bossTargetMissing = Cohort().Config.ValidationRouteKind == "boss"
+            && targetSearchResult == "target_not_found";
+        bool tankOwnsBossRecovery = bossTargetMissing && std::string(GetDungeonRole(bot)) == "tank";
+        if (tankOwnsBossRecovery)
+            ++state.ValidationRouteTargetSearchMissCount;
+
+        if (tankOwnsBossRecovery && state.ValidationRouteTargetSearchMissCount >= 3)
+        {
+            std::string recoveryResult;
+            bool recoveryInitiated = false;
+            if (tryCanonicalValidationRouteBossRecovery(recoveryResult, recoveryInitiated))
+            {
+                situation = recoveryInitiated ? "validation_route_recovery" : "validation_route_blocked";
+                action = recoveryInitiated ? "recover_canonical_validation_route_boss" : "blocked_no_fallback";
+                return true;
+            }
+        }
+
+        if (tankOwnsBossRecovery
             && Party().ValidationRouteActivationApplied
-            && targetSearchResult == "target_not_found"
-            && ++state.ValidationRouteTargetSearchMissCount >= 3)
+            && !Party().ValidationRouteCanonicalBossRecoveryAttempts
+            && state.ValidationRouteTargetSearchMissCount >= 3)
         {
             std::string raw = BuildRawJson(bot, nullptr);
             std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_activation_no_visible_target", &power, stage, activity);
             RecordEvent(state, bot, "validation_route_recovery", nullptr, "boss_route_activation_no_visible_target", raw.c_str(), semantic.c_str(), 0.0f, Cohort().Config.ValidationRouteTargetEntry);
             MarkBotBlocked(state, bot, "boss_route_activation_no_visible_target");
+            situation = "validation_route_blocked";
+            action = "blocked_no_fallback";
+            return true;
+        }
+
+        if (tankOwnsBossRecovery
+            && Party().ValidationRouteCanonicalBossRecoveryAttempts >= 2
+            && state.ValidationRouteTargetSearchMissCount >= 6)
+        {
+            std::string raw = BuildRawJson(bot, nullptr);
+            std::string semantic = BuildSemanticJson(bot, nullptr, "validation_route_canonical_boss_recovery_no_visible_target", &power, stage, activity);
+            RecordEvent(state, bot, "validation_route_recovery", nullptr, "canonical_boss_recovery_no_visible_target", raw.c_str(), semantic.c_str(), 0.0f, Cohort().Config.ValidationRouteTargetEntry);
+            MarkBotBlocked(state, bot, "canonical_boss_recovery_no_visible_target");
             situation = "validation_route_blocked";
             action = "blocked_no_fallback";
             return true;
@@ -15619,7 +19837,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         std::string raw = BuildRawJson(bot, target);
         std::string semantic = BuildSemanticJson(bot, target, situation.c_str(), &power, stage, activity);
         RecordEvent(state, bot, "validation_route_target_search", target, moved ? "approach_target" : "tactical_path_rejected", raw.c_str(), semantic.c_str(), bot->GetExactDist(target), Cohort().Config.ValidationRouteTargetEntry);
-        if (Cohort().Config.ValidationRouteKind != "boss")
+        if (!moved && Cohort().Config.ValidationRouteKind != "boss")
             maybeValidationPrerequisiteNoProgressAssist(target, "route_target_path_no_progress");
         return true;
     }
@@ -17185,8 +21403,40 @@ bool BotWorldPopulationMgr::TryValidationRouteReadiness(WorldBotState& state, Pl
                 hunterHasStoredPet = true;
                 break;
             }
+    bool healerUnderSwarmPressure = false;
+    if (bot->getClass() == CLASS_HUNTER)
+        if (Group* group = bot->GetGroup())
+            for (GroupReference* itr = group->GetFirstMember(); itr != nullptr; itr = itr->next())
+            {
+                Player* member = itr->GetSource();
+                if (member && member->IsAlive() && member->IsInWorld()
+                    && std::string(GetDungeonRole(member)) == "healer"
+                    && member->getAttackers().size() >= 3)
+                {
+                    healerUnderSwarmPressure = true;
+                    break;
+                }
+            }
+    bool hunterPetRecoveryDeferred = bot->getClass() == CLASS_HUNTER
+        && hunterHasStoredPet && (!bot->GetPet() || !bot->GetPet()->IsAlive())
+        && healerUnderSwarmPressure;
+    if (hunterPetRecoveryDeferred)
+    {
+        // A pending Revive Pet occupied eight complete decisions during the
+        // longest rerun71 healer-threat episode. Interrupt only that cast while
+        // a real healer-owned swarm needs Misdirection; recovery becomes urgent
+        // again as soon as the pressure clears.
+        if (bot->FindCurrentSpellBySpellId(982))
+            bot->InterruptNonMeleeSpells(false, 982);
+        state.HunterPetRevivePendingUntilMs = 0;
+        state.HunterPetReviveStartedMs = 0;
+        state.ReadinessRetryUntilMs["hunter:revive_pet"] = nowMs + 1000;
+        state.LastPetReadinessAction =
+            "hunter_pet_revive_deferred_for_healer_swarm";
+    }
     bool urgentHunterPetRecovery = bot->getClass() == CLASS_HUNTER
-        && hunterHasStoredPet && (!bot->GetPet() || !bot->GetPet()->IsAlive());
+        && hunterHasStoredPet && (!bot->GetPet() || !bot->GetPet()->IsAlive())
+        && !healerUnderSwarmPressure;
     if (bot->IsInCombat())
     {
         // A completed combat invalidates the old stability window. The next
@@ -17891,7 +22141,7 @@ uint32 BotWorldPopulationMgr::SelectCombatSpell(Player* bot, Unit* target) const
     return best ? best->SpellId : 0;
 }
 
-ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* bot, Unit* target, uint32 hostileCount, bool densityOnly) const
+ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* bot, Unit* target, uint32 hostileCount, bool densityOnly, uint32 excludedSpellId, bool areaOnly) const
 {
     ResolvedCombatAction action;
     action.Valid = false;
@@ -17992,9 +22242,10 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
                     continue;
                 std::vector<BotActionCandidate> spreadCandidates =
                     BotClassSpecActionProfileStore::BuildCandidates(bot, spreadTarget, profile);
-                auto livingBomb = std::find_if(spreadCandidates.begin(), spreadCandidates.end(), [](BotActionCandidate const& candidate)
+                auto livingBomb = std::find_if(spreadCandidates.begin(), spreadCandidates.end(), [excludedSpellId](BotActionCandidate const& candidate)
                 {
-                    return candidate.SpellId == 44457 && candidate.RejectReason.empty();
+                    return candidate.SpellId == 44457 && candidate.SpellId != excludedSpellId
+                        && candidate.RejectReason.empty();
                 });
                 if (livingBomb == spreadCandidates.end())
                     break;
@@ -18049,6 +22300,18 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
     };
     for (BotActionCandidate& candidate : candidates)
     {
+        if (excludedSpellId && candidate.SpellId == excludedSpellId)
+        {
+            candidate.RejectReason = "temporarily_suppressed";
+            continue;
+        }
+        if (areaOnly && candidate.Category != BotCombatActionCategory::Aoe
+            && candidate.Category != BotCombatActionCategory::Cleave)
+        {
+            candidate.RejectReason = "area_action_required";
+            continue;
+        }
+
         SpellInfo const* candidateSpellInfo = sSpellMgr->GetSpellInfo(candidate.SpellId);
         if (bot->HasUnitState(UNIT_STATE_CONTROLLED))
         {
@@ -18426,7 +22689,7 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
     if (!best || !best->SpellId)
     {
         action.DebugName = profile.MissingProfile ? profile.ProfileSource : "no_valid_profile_action";
-        if (!profile.MissingProfile && profile.AutoAttackMode == "melee"
+        if (!profile.MissingProfile && !areaOnly && profile.AutoAttackMode == "melee"
             && bot->IsValidAttackTarget(target))
         {
             action.Valid = true;
@@ -18663,6 +22926,16 @@ bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup(WorldBotState& state,
     if (bot->getClass() == CLASS_HUNTER && target && target->IsAlive() && bot->HasSpell(1130)
         && !target->HasAura(1130, bot->GetGUID()))
     {
+        std::string retryKey = "persistent_setup:hunters_mark:" + std::to_string(target->GetGUID().GetCounter());
+        uint64 nowMs = NowMs();
+        auto retryItr = state.ReadinessRetryUntilMs.find(retryKey);
+        if (retryItr != state.ReadinessRetryUntilMs.end())
+        {
+            if (retryItr->second > nowMs)
+                return false;
+            state.ReadinessRetryUntilMs.erase(retryItr);
+        }
+
         SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(1130);
         if (!spellInfo || bot->HasUnitState(UNIT_STATE_CASTING)
             || bot->GetSpellHistory()->HasGlobalCooldown(spellInfo) || !bot->GetSpellHistory()->IsReady(spellInfo))
@@ -18674,10 +22947,16 @@ bool BotWorldPopulationMgr::TryEnsurePersistentCombatSetup(WorldBotState& state,
         action.SpellId = 1130;
         action.TargetGuid = target->GetGUID();
         action.DebugName = "hunters_mark";
-        BotActionResult result = bot->CastSpell(target, 1130, false) == SPELL_CAST_OK
-            ? BotActionResult::Ok : BotActionResult::CastFailed;
-        RecordCombatAttempt(state, bot, target, "persistent_setup", &action, result,
-            result == BotActionResult::Ok ? "hunters_mark" : "hunters_mark_cast_failed");
+        SpellCastResult castResult = bot->CastSpell(target, 1130, false);
+        BotActionResult result = castResult == SPELL_CAST_OK ? BotActionResult::Ok : BotActionResult::CastFailed;
+        std::string resultReason = result == BotActionResult::Ok
+            ? "hunters_mark"
+            : "hunters_mark_spell_cast_result_" + std::to_string(uint32(castResult));
+        if (result == BotActionResult::Ok)
+            state.ReadinessRetryUntilMs.erase(retryKey);
+        else
+            state.ReadinessRetryUntilMs[retryKey] = nowMs + 5000;
+        RecordCombatAttempt(state, bot, target, "persistent_setup", &action, result, resultReason.c_str());
         return true;
     }
 
@@ -18691,6 +22970,12 @@ bool BotWorldPopulationMgr::TryEnsureCombatTotems(WorldBotState& state, Player* 
         return false;
 
     uint64 const nowMs = NowMs();
+    // Cataclysm combat totems cannot be placed while moving. Defer setup until
+    // route movement stops instead of recording deterministic cast failures on
+    // every retry; the ordinary combat action remains free to run this tick.
+    if (bot->isMoving())
+        return false;
+
     uint32 const totemSpellIds[] = { 8075, 3599, 5394, 8512 };
     for (uint32 spellId : totemSpellIds)
     {
@@ -18779,7 +23064,7 @@ bool BotWorldPopulationMgr::TryEnsureCombatTotems(WorldBotState& state, Player* 
     return false;
 }
 
-BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState* state, Player* bot, Unit* target, ResolvedCombatAction* actionOut, uint32 hostileCount, bool densityOnly) const
+BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState* state, Player* bot, Unit* target, ResolvedCombatAction* actionOut, uint32 hostileCount, bool densityOnly, uint32 excludedSpellId, bool areaOnly) const
 {
     if (state && TryEnsurePersistentCombatSetup(*state, bot, target))
         return BotActionResult::Casting;
@@ -18787,7 +23072,20 @@ BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState*
     if (state && TryEnsureCombatTotems(*state, bot, target, hostileCount))
         return BotActionResult::Casting;
 
-    ResolvedCombatAction action = ResolveProfileCombatAction(bot, target, hostileCount, densityOnly);
+    uint64 const nowMs = NowMs();
+    if (state && state->ProfileCastSuppressedUntilMs <= nowMs)
+    {
+        state->ProfileCastSuppressedSpellId = 0;
+        state->ProfileCastSuppressedTargetGuid.Clear();
+        state->ProfileCastSuppressedUntilMs = 0;
+    }
+    if (!excludedSpellId && state && target
+        && state->ProfileCastSuppressedUntilMs > nowMs
+        && state->ProfileCastSuppressedTargetGuid == target->GetGUID())
+        excludedSpellId = state->ProfileCastSuppressedSpellId;
+
+    ResolvedCombatAction action = ResolveProfileCombatAction(
+        bot, target, hostileCount, densityOnly, excludedSpellId, areaOnly);
     if (actionOut)
         *actionOut = action;
     if (!action.Valid)
@@ -18810,7 +23108,19 @@ BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState*
     {
         std::string castFailureReason;
         if (result == BotActionResult::CastFailed)
+        {
             castFailureReason = "spell_cast_result_" + std::to_string(executor.LastSpellCastResult());
+            if (executor.LastSpellCastResult() == SPELL_FAILED_LINE_OF_SIGHT)
+            {
+                // The map-level preflight can succeed immediately before the
+                // spell-specific LOS check rejects an interrupt. Suppress only
+                // this spell-target pair long enough for the resolver to choose
+                // useful fallback combat instead of repeating the same failure.
+                state->ProfileCastSuppressedSpellId = action.SpellId;
+                state->ProfileCastSuppressedTargetGuid = action.TargetGuid;
+                state->ProfileCastSuppressedUntilMs = nowMs + 5000;
+            }
+        }
         RecordCombatAttempt(*state, bot, target, "cast", &action, result,
             castFailureReason.empty() ? nullptr : castFailureReason.c_str());
     }
@@ -18838,9 +23148,9 @@ BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState*
     return result;
 }
 
-BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(Player* bot, Unit* target, ResolvedCombatAction* actionOut, uint32 hostileCount, bool densityOnly) const
+BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(Player* bot, Unit* target, ResolvedCombatAction* actionOut, uint32 hostileCount, bool densityOnly, uint32 excludedSpellId, bool areaOnly) const
 {
-    return ExecuteProfileCombatAction(nullptr, bot, target, actionOut, hostileCount, densityOnly);
+    return ExecuteProfileCombatAction(nullptr, bot, target, actionOut, hostileCount, densityOnly, excludedSpellId, areaOnly);
 }
 
 bool BotWorldPopulationMgr::TryCastCombatSpell(Player* bot, Unit* target, uint32 spellId) const
@@ -20891,7 +25201,9 @@ void BotWorldPopulationMgr::NotifyCreatureDeath(Creature* killed)
             state.ValidationRouteCombatProgressTargetGuid.Clear();
             state.ValidationRoutePackProgressTargetGuid.Clear();
             state.ValidationRouteCombatNoProgressCount = 0;
+            state.ValidationRouteCombatNoProgressSinceMs = 0;
             state.ValidationRoutePackNoProgressCount = 0;
+            state.ValidationRoutePackNoProgressSinceMs = 0;
             state.ValidationRouteUnresolvedFocusHoldCount = 0;
             state.ValidationRouteTerminalState = true;
             state.ValidationRouteTerminalAtMs = nowMs;
@@ -21787,6 +26099,14 @@ std::string BotWorldPopulationMgr::BuildConfigJson() const
          << ",\"min_replay_importance\":" << Cohort().Config.MinReplayImportance
          << ",\"update_semantic_outcome_stats\":" << (Cohort().Config.UpdateSemanticOutcomeStats ? "true" : "false")
          << ",\"pool_tag_filter\":\"" << JsonEscape(Cohort().Config.PoolTagFilter) << "\""
+         << ",\"exact_party_class_specs\":[";
+    for (size_t index = 0; index < Cohort().Config.PoolClassSpecFilter.size(); ++index)
+    {
+        if (index)
+            json << ',';
+        json << '\"' << JsonEscape(Cohort().Config.PoolClassSpecFilter[index]) << '\"';
+    }
+    json << "]"
          << ",\"validation_route\":{\"enabled\":" << (Cohort().Config.ValidationRouteEnable ? "true" : "false")
          << ",\"manifest_path\":\"" << JsonEscape(Cohort().Config.ValidationRouteManifestPath) << "\""
          << ",\"advance_mode\":\"" << JsonEscape(Cohort().Config.ValidationRouteAdvanceMode) << "\""
@@ -22957,6 +27277,15 @@ std::string BotWorldPopulationMgr::GetStatusJson() const
          << ",\"loaded_profile_count\":" << Cohort().RuntimeProfiles.size()
          << ",\"profile_manifest_path\":\"" << JsonEscape(Cohort().ProfileManifestPath) << "\""
          << ",\"profile_manifest_load_error\":\"" << JsonEscape(Cohort().ProfileManifestLoadError) << "\""
+         << ",\"pool_tag_filter\":\"" << JsonEscape(Cohort().Config.PoolTagFilter) << "\""
+         << ",\"exact_party_class_specs\":[";
+    for (size_t index = 0; index < Cohort().Config.PoolClassSpecFilter.size(); ++index)
+    {
+        if (index)
+            json << ',';
+        json << '\"' << JsonEscape(Cohort().Config.PoolClassSpecFilter[index]) << '\"';
+    }
+    json << "]"
          << ",\"brain\":\"" << JsonEscape(Cohort().Config.BrainVersion)
          << "\",\"active\":" << (status.Active ? "true" : "false")
          << ",\"bots\":" << status.ActiveBots

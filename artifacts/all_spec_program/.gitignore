@@ -1,7 +1,11 @@
 /phase0_baseline_inventory_20260718
 /phase1_live_provisioning_verification_20260719
 /phase8_live_calibration_*
+/phase9_serial_canaries*
+/diagnostic_failed_*phase9*
+/phase9_pairwise_contract_*_preflight
 **/.batch-dvc-cache/
 **/worldserver.validation.conf
 **/runner.log
 **/validation_provisioning_apply/provision_characters.sql
+/phase9_generated_history_through_rerun127_20260802.tar.zst

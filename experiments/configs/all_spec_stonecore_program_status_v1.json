@@ -1,7 +1,7 @@
 {
   "schema": "all_spec_stonecore_program_status_v1",
   "program": "all_spec_stonecore",
-  "updated_date": "2026-07-28",
+  "updated_date": "2026-08-02",
   "active_phase": 9,
   "phase_status": [
     {
@@ -679,6 +679,28 @@
       }
     },
     {
+      "checkpoint": {
+        "branch": "all-spec-stonecore-execution",
+        "checkpoint_kind": "in_progress_not_phase_complete",
+        "generated_history_archive": "artifacts/all_spec_program/phase9_generated_history_through_rerun127_20260802.tar.zst.dvc",
+        "generated_history_archive_md5": "9cb8af3f7a26e34e46d2100db7dd0356",
+        "generated_history_archive_remote_verified": true,
+        "generated_history_archive_size_bytes": 5525534,
+        "last_attempt": {
+          "attempt_label": "rerun127_canary_2",
+          "cleanup_complete": true,
+          "exact_party_verified": true,
+          "failure_reason": "role_quality:Feraltank:healer_target_exposure",
+          "identity_matched": true,
+          "publication_receipt_sha256": "2e176b912ece0f45918a14d06e9509030f5800b0b2d4006da7613e3d272f6769",
+          "raw_payload_evicted_locally": true,
+          "remote_verified": true,
+          "status": "failed_gate"
+        },
+        "live_operator_active": false,
+        "live_worldserver_active": false,
+        "next_thread_handoff": "experiments/configs/all_spec_phase9_next_thread_handoff_20260802.md"
+      },
       "gate": {
         "all_batches_published_and_remotely_verified": false,
         "covering_array_complete": false,
@@ -699,6 +721,9 @@
       "status": "pending"
     }
   ],
-  "blockers": [],
-  "exact_next_handoff_prompt": "Execute Phase 9 only. Generate the deterministic constrained covering array over canonical unordered tank x healer x sorted DPS-triple parties; independently reconstruct all required and excluded tank-healer, tank-DPS, healer-DPS, and compatible DPS-DPS pairs; record coverage, exclusions, representation balance, and composition-to-pair mappings. Select deterministic serial rows whose union represents all 31 canonical targets, then run strict uninterrupted current-manifest clears of the full 14-node Stonecore route one party at a time on one long-lived worldserver with one live operator, one cohort, and one DVC publisher. Publish, remotely verify, and evict raw payloads after each closed batch. Before Phase 10, run .agents/skills/trinity-orchestrator/scripts/check-openai-models.sh and obtain mandatory independent gpt-5.6-sol high-reasoning architecture/evidence approval; no Claude substitute is permitted."
+  "blockers": [
+    "Phase 9 canary 2 rerun127 failed the Feral tank healer-target-exposure role-quality gate; the smallest evidence-backed threat-retention correction is still required.",
+    "Canaries 3-8, the Phase 9 aggregate, and independent gpt-5.6-sol approval remain gated on a passing current-identity canary 2."
+  ],
+  "exact_next_handoff_prompt": "Continue Phase 9 only from experiments/configs/all_spec_phase9_next_thread_handoff_20260802.md. Restore only the minimum rerun127 evidence needed from the remotely verified Phase 9 history archive, diagnose the Feral tank healer-target-exposure/threat-retention failure without weakening strict acceptance, re-evict hydrated evidence after analysis, implement the smallest correction, build worldserver, deterministically reprovision, capture a fresh identity and eight-row plan, and rerun canary 2. Run canaries 3-8 only after canary 2 passes every route, identity, Feral-retention, healer exposure/dwell, publication, cleanup, and eviction gate. Do not begin Phase 10 until the complete Phase 9 contract and mandatory independent gpt-5.6-sol high-reasoning approval pass."
 }

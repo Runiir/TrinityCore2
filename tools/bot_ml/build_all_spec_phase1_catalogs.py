@@ -214,7 +214,7 @@ CLASS_UTILITY = {
     "paladin": ["rebuke", "hand_utility", "divine_protection"],
     "hunter": ["counterattack_utility", "misdirection", "trap_control"],
     "rogue": ["kick", "tricks_of_the_trade", "feint"],
-    "priest": ["dispel_magic", "mass_dispel", "levitate"],
+    "priest": ["dispel_magic", "mass_dispel", "levitate", "threat_drop"],
     "death_knight": ["mind_freeze", "death_grip", "anti_magic_shell"],
     "shaman": ["wind_shear", "totem_utility", "purge"],
     "mage": ["counterspell", "blink", "spellsteal"],
@@ -324,7 +324,7 @@ QUALIFICATION_TUNED_ACTION_SPELL_IDS = {
     "blood_death_knight": [48721, 56815],
     "frost_death_knight": [42650, 45529, 46584, 47568, 77575],
     "unholy_death_knight": [42650, 43265, 45529, 46584, 47568, 48265, 49016, 49206, 77575],
-    "feral_druid_tank": [6807, 80964],
+    "feral_druid_tank": [99, 6807, 80964],
     "holy_paladin": [4987],
     "holy_priest": [34433, 64843, 64901, 88684],
     "restoration_druid": [774, 2782],
@@ -361,7 +361,7 @@ PERSISTENT_SETUP_SPELL_IDS = {
 # 17 Phase 0 profile gaps and are also provisioned as known spells. Later
 # calibration phases may tune priorities without changing the canonical links.
 RUNTIME_ACTION_SPELL_IDS = {
-    "feral_druid_tank": [6795, 779, 22812, 33745, 33878, 77758, 80313],
+    "feral_druid_tank": [99, 6795, 779, 22812, 33745, 33878, 77758, 80313],
     "restoration_shaman": [331, 1064, 8004, 51886, 61295, 77472],
     "arms_warrior": [772, 1464, 5308, 6552, 7384, 12294, 86346],
     "fury_warrior": [1464, 1680, 5308, 6552, 23881, 85288, 86346],

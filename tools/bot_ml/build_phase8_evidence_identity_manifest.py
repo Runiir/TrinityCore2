@@ -39,6 +39,7 @@ DEFAULT_OUTPUT = (
 WORLD_TABLES = (
     "bot_rotation_profile",
     "bot_rotation_action",
+    "spell_threat",
     "spell_proc",
     "spell_script_names",
     "version",
@@ -76,6 +77,10 @@ def _database_identity(config: Path) -> dict[str, Any]:
             "p.`role` AS `profile_role`, a.* FROM `bot_rotation_action` a "
             "JOIN `bot_rotation_profile` p ON p.`id` = a.`profile_id` "
             "ORDER BY p.`class_id`, p.`spec_tag`, p.`role`, a.`priority_bucket`, a.`sort_order`, a.`id`",
+        )
+        spell_threat = _query_rows(
+            world_connection,
+            "SELECT * FROM `spell_threat` ORDER BY `entry`",
         )
         spell_proc = _query_rows(
             world_connection,
@@ -137,6 +142,7 @@ def _database_identity(config: Path) -> dict[str, Any]:
             "version": version,
             "profiles": profiles,
             "actions": actions,
+            "spell_threat": spell_threat,
             "spell_proc": spell_proc,
             "spell_script_names": spell_script_names,
         },
@@ -148,6 +154,7 @@ def _database_identity(config: Path) -> dict[str, Any]:
         "summary": {
             "world_profile_count": len(profiles),
             "world_action_count": len(actions),
+            "world_spell_threat_count": len(spell_threat),
             "world_spell_proc_count": len(spell_proc),
             "world_spell_script_name_count": len(spell_script_names),
             "candidate_count": len(pool),

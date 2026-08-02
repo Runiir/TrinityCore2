@@ -970,10 +970,16 @@ private:
         std::vector<std::string> tokens = Tokenize(args);
         std::string cohortId;
         std::string profileName;
+        std::string poolTag;
+        std::vector<std::string> classSpecs;
         if (tokens.size() >= 2 && sBotWorldPopulationMgr->HasCohort(tokens[0]))
         {
             cohortId = tokens[0];
             profileName = tokens[1];
+            if (tokens.size() > 2)
+                poolTag = tokens[2];
+            if (tokens.size() > 3)
+                classSpecs.assign(tokens.begin() + 3, tokens.end());
         }
         else
         {
@@ -981,8 +987,13 @@ private:
             if (cohortId.empty())
                 return false;
             profileName = tokens.empty() ? "" : tokens[0];
+            if (tokens.size() > 1)
+                poolTag = tokens[1];
+            if (tokens.size() > 2)
+                classSpecs.assign(tokens.begin() + 2, tokens.end());
         }
-        return SendAutoResult(handler, sBotWorldPopulationMgr->PrepareValidationProfileForCohort(cohortId, profileName));
+        return SendAutoResult(handler, sBotWorldPopulationMgr->PrepareValidationProfileForCohort(
+            cohortId, profileName, poolTag, classSpecs));
     }
 
     static bool HandleAutoProfilesCommand(ChatHandler* handler, char const* /*args*/)

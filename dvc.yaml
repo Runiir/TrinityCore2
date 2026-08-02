@@ -186,6 +186,17 @@ stages:
     - sql/custom/world/2026_07_25_12_phase8_demonology_melee_burst.sql
     - sql/custom/world/2026_07_26_00_phase8_shadow_priest_burst.sql
     - sql/custom/world/2026_07_27_00_phase8_balance_druid_apl.sql
+    - sql/custom/world/2026_07_28_00_phase9_arcane_multitarget_liveness.sql
+    - sql/custom/world/2026_07_28_01_phase9_assassination_positional_liveness.sql
+    - sql/custom/world/2026_07_29_00_phase9_blood_aoe_threat_liveness.sql
+    - sql/custom/world/2026_07_29_01_phase9_blood_ground_aoe_threat.sql
+    - sql/custom/world/2026_07_29_02_phase9_feral_aoe_threat_liveness.sql
+    - sql/custom/world/2026_07_29_03_phase9_blood_self_centered_ground_threat.sql
+    - sql/custom/world/2026_07_29_04_phase9_blood_boil_threat_retention.sql
+    - sql/custom/world/2026_07_29_05_phase9_blood_boil_threat_margin.sql
+    - sql/custom/world/2026_07_29_06_phase9_shadow_priest_two_target_liveness.sql
+    - sql/custom/world/2026_07_29_07_phase9_blood_strict_area_category.sql
+    - sql/custom/world/2026_07_30_00_phase9_feral_demoralizing_roar_threat_floor.sql
     outs:
     - dataset/baseline_inventory:
         persist: true
@@ -390,6 +401,22 @@ stages:
     - artifacts/all_spec_program/phase8_live_calibration_20260728_representative_final_r105_campaign/independent_campaign_verification.json
     outs:
     - dataset/all_spec_phase8_live_calibration_contract:
+        persist: true
+  all_spec_phase9_pairwise_contract:
+    cmd: python -m tools.bot_ml.verify_phase9_pairwise_matrix --targets
+      experiments/configs/all_spec_targets_cata_p4_v1.json --policy
+      experiments/configs/stonecore_phase9_pair_policy_v1.json --matrix
+      experiments/configs/stonecore_phase9_pairwise_matrix_v1.json --output-dir
+      dataset/all_spec_phase9_pairwise_contract
+    deps:
+    - tools/bot_ml/build_phase9_pairwise_matrix.py
+    - tools/bot_ml/verify_phase9_pairwise_matrix.py
+    - tools/bot_ml/live_validation_session.py
+    - experiments/configs/all_spec_targets_cata_p4_v1.json
+    - experiments/configs/stonecore_phase9_pair_policy_v1.json
+    - experiments/configs/stonecore_phase9_pairwise_matrix_v1.json
+    outs:
+    - dataset/all_spec_phase9_pairwise_contract:
         persist: true
   validation_provisioning_verify:
     cmd: python -m tools.bot_ml.validate_validation_provisioning --config

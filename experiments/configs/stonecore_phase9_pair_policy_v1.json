@@ -1,0 +1,49 @@
+{
+  "schema": "stonecore_phase9_pair_policy_v1",
+  "policy_incompatible_pairs": [],
+  "serial_canary_policy": {
+    "composition_sha256s": [
+      "e33ae8a3db048b6f5388d7c8e2000173fb6a0fc8c3299ba6294f4ae042111ae0",
+      "6893daf986989d8b1cdeb3b31e1c825cb579a7209b7ede80bc9c2383df6496b1",
+      "5d0c65765654a1da14cea2c8fe6635400fdefb09607cc388fbc6280dbe05aaf3",
+      "3904746e5810df09ac0f759b0b587c0bbaaaef01e3045ac47f5261e0b62cc02e",
+      "59bcbc0d6019a3ed1c9da6ef5e518ae8e4b64b46cbd97cbabda222e3526d2617",
+      "d421aa6b815f4f21e707dda30b20b53a4d8336cd688e7e7094ffa2c5e0f4fff5",
+      "743d591b7ee42befaebf3c21f88e9286ad5df271dab7196f7f4fef8a4cee2213",
+      "137e606f60b77dbecff15d81441de669493f8e11361b1a0965cbf9818680c6f4"
+    ],
+    "composition_count": 8,
+    "role_representation_bounds": {
+      "tank": {
+        "min": 2,
+        "max": 2
+      },
+      "healer": {
+        "min": 1,
+        "max": 2
+      },
+      "dps": {
+        "min": 1,
+        "max": 2
+      }
+    },
+    "native_threat_transfer_support": {
+      "tank_targets": [
+        "blood_death_knight",
+        "feral_druid_tank"
+      ],
+      "support_targets": [
+        "beast_mastery_hunter",
+        "marksmanship_hunter",
+        "survival_hunter"
+      ],
+      "minimum_support_targets_per_composition": 1
+    }
+  },
+  "notes": [
+    "All distinct canonical DPS specialization targets are compatible in the Phase 9 composition policy.",
+    "Tank-tank, healer-healer, and self-pairs are structural exclusions and are reconstructed independently.",
+    "The serial subset is explicitly pinned from the selected covering array so all 31 targets run in exactly eight balanced canaries.",
+    "Blood and Feral tank canaries include native Hunter Misdirection support because Azil activates simultaneous south and west follower waves beyond one self-centered pickup radius."
+  ]
+}
