@@ -16829,7 +16829,15 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             Party().ValidationRouteLargePassiveSwarmStaging
             && Party().ValidationRouteLargePassiveSwarmStagingGeneration
                 == Party().ValidationRouteGeneration;
-        bool largePassiveSwarm = cohortSwarmActive && densityTank
+        // Rerun182 proved the generation-scoped tank observation was not yet
+        // fully authoritative. Remote damage roles still required their own
+        // local cohortSwarmActive view, so they alternated staging with passive
+        // add or route movement as that view changed. Once the living tank has
+        // published the existing 24-plus proof, use that shared fact as the
+        // cardinality authority for every member. The proof is still created
+        // only from the tank's unchanged unengaged 45-yard observation and is
+        // reset with the route generation below.
+        bool largePassiveSwarm = densityTank
             && sharedLargePassiveSwarmStaging;
         Unit* largePassiveSwarmEvidenceTarget = passiveSwarmClusterAnchor
             ? static_cast<Unit*>(passiveSwarmClusterAnchor)
@@ -16879,22 +16887,42 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 Unit* stagingReference = passiveSwarmClusterAnchor
                     ? static_cast<Unit*>(passiveSwarmClusterAnchor)
                     : static_cast<Unit*>(bot);
-                Position staging = densityTank->GetFirstCollisionPosition(
-                    stagingRadius,
-                    stagingReference->GetAngle(densityTank)
-                        - densityTank->GetOrientation() + stagingOffset);
-                moved = MoveBotToPoint(state, bot,
-                    staging.GetPositionX(), staging.GetPositionY(),
-                    staging.GetPositionZ());
-                // Rerun178's healer remained 21.5 yards from the tank after
-                // the preferred collision point was rejected. Fall back once
-                // to the living tank's reachable position; the unchanged
-                // eighteen-yard staged check stops movement on the next tick.
-                if (!moved)
-                    moved = MoveBotToPoint(state, bot,
-                        densityTank->GetPositionX(),
-                        densityTank->GetPositionY(),
-                        densityTank->GetPositionZ());
+                float stagingAngle = stagingReference->GetAngle(densityTank)
+                    - densityTank->GetOrientation() + stagingOffset;
+                // Rerun182's remote Hunter terminalized after both fixed
+                // staging points rejected, while Retribution repeatedly reset
+                // an accepted point path and alternated back to passive adds.
+                // Maintain one native follow generator at the same role-specific
+                // radius instead. This neither teleports nor forces placement;
+                // the ordinary movement generator remains responsible for
+                // terrain traversal and the unchanged 18-yard check remains the
+                // only staging authority.
+                bool followingStagingTank =
+                    bot->GetMotionMaster()->GetCurrentMovementGeneratorType()
+                        == FOLLOW_MOTION_TYPE
+                    && state.ActivePathValid
+                    && std::fabs(state.ActivePathToX
+                        - densityTank->GetPositionX()) <= 0.1f
+                    && std::fabs(state.ActivePathToY
+                        - densityTank->GetPositionY()) <= 0.1f
+                    && std::fabs(state.ActivePathToZ
+                        - densityTank->GetPositionZ()) <= 0.1f;
+                if (!followingStagingTank)
+                {
+                    state.ActivePathFromX = bot->GetPositionX();
+                    state.ActivePathFromY = bot->GetPositionY();
+                    state.ActivePathFromZ = bot->GetPositionZ();
+                    state.ActivePathToX = densityTank->GetPositionX();
+                    state.ActivePathToY = densityTank->GetPositionY();
+                    state.ActivePathToZ = densityTank->GetPositionZ();
+                    state.ActivePathValid = true;
+                    state.LastPathRejectReason.clear();
+                    state.LastPathChangeMs = NowMs();
+                    bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
+                    bot->GetMotionMaster()->MoveFollow(
+                        densityTank, stagingRadius, stagingAngle);
+                }
+                moved = true;
             }
             else if (alreadyStaged && bot->isMoving())
                 bot->StopMoving();

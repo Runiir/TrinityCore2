@@ -3368,7 +3368,7 @@ def test_rerun176_remote_party_uses_tank_visible_passive_swarm_gate():
         "bool BotWorldPopulationMgr::TryValidationRouteObjective",
     )
     marker = route.index("Rerun176 proved the original staging decision")
-    branch = route[marker : marker + 13000]
+    branch = route[marker : marker + 17000]
 
     assert_ordered(
         branch,
@@ -3446,7 +3446,7 @@ def test_rerun178_tank_proof_drives_remote_passive_swarm_staging():
     marker = objective.index(
         "Rerun178 proved that recomputing the tank-visible staging fact"
     )
-    shared = objective[marker - 1300 : marker + 10400]
+    shared = objective[marker - 1300 : marker + 14000]
     pre_anchor = objective[objective.index("bool sharedLargePassiveSwarmStaging =") : marker]
 
     assert "ValidationRouteLargePassiveSwarmStagingGeneration" in pre_anchor
@@ -3458,12 +3458,12 @@ def test_rerun178_tank_proof_drives_remote_passive_swarm_staging():
         "tankVisiblePassiveSwarmAddCount >= 24",
         'if (role == "tank" && tankViewProvesLargePassiveSwarm)',
         "Party().ValidationRouteLargePassiveSwarmStaging = true",
-        "bool largePassiveSwarm = cohortSwarmActive && densityTank",
+        "bool largePassiveSwarm = densityTank",
         "&& sharedLargePassiveSwarmStaging",
         'role != "tank"',
-        "Position staging = densityTank->GetFirstCollisionPosition",
-        "if (!moved)",
-        "densityTank->GetPositionX()",
+        "float stagingAngle =",
+        "FOLLOW_MOTION_TYPE",
+        "MoveFollow(",
         '"stage_for_large_passive_swarm_activation"',
         'role == "tank" && pendingSwarmActivation',
         'activationAction.DebugName = "activate_passive_swarm"',
@@ -3738,6 +3738,39 @@ def test_rerun181_prearrival_handoff_does_not_spend_post_roar_swipe_gcd():
         "if (postRoarAreaThreatReady)",
         '"feral_post_roar_area_threat_retention"',
     )
+
+
+def test_rerun182_shared_passive_swarm_proof_keeps_native_tank_follow():
+    objective = function_body(
+        read(BOT_MGR),
+        "bool BotWorldPopulationMgr::TryValidationRouteObjective",
+    )
+    marker = objective.index(
+        "Rerun182 proved the generation-scoped tank observation"
+    )
+    branch = objective[marker : marker + 12000]
+    staging = branch[
+        branch.index('if (largePassiveSwarm && role != "tank"') :
+        branch.index('if (role == "tank" && pendingSwarmActivation')
+    ]
+
+    assert "cohortSwarmActive && densityTank" not in branch[:800]
+    assert_ordered(
+        branch,
+        "bool largePassiveSwarm = densityTank",
+        "&& sharedLargePassiveSwarmStaging",
+        "member->GetExactDist2d(densityTank) <= 18.0f",
+        'role != "tank"',
+        "FOLLOW_MOTION_TYPE",
+        "state.ActivePathToX = densityTank->GetPositionX()",
+        "MoveFollow(",
+        "densityTank, stagingRadius, stagingAngle",
+        '"stage_for_large_passive_swarm_activation"',
+    )
+    assert "MoveBotToPoint" not in staging
+    assert "largePassiveSwarmPartyStaged" in branch
+    assert 'role == "tank" && pendingSwarmActivation' in branch
+    assert 'activationAction.DebugName = "activate_passive_swarm"' in branch
 
 
 def test_profile_los_failure_is_recorded_before_existing_range_recovery():
