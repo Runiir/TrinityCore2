@@ -13757,6 +13757,38 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
             BotClassSpecActionProfile hazardProfile = BotClassSpecActionProfileStore::Build(
                 bot, GetDungeonRole(bot));
+            // Rerun173's only over-ceiling dwell began when an Azil follower
+            // selected the healer after Hammer of the Righteous had landed on
+            // a different add. The accepted radial hazard exit then returned
+            // before Protection's ordinary single-target rescue for 4032 ms.
+            // Hand of Reckoning is instant and does not replace or clear that
+            // movement. Try it only against the deterministic healer-priority
+            // hostile; failures preserve the area-threat and safe-path chain.
+            if (hazardProfile.SpecTag == "protection"
+                && bot->getClass() == CLASS_PALADIN
+                && areaPriority == 3 && areaTarget)
+            {
+                state.DecisionTimer = std::min<uint32>(
+                    state.DecisionTimer, 250);
+                if (bot->HasSpell(62124)
+                    && TryCastCombatSpell(bot, areaTarget, 62124))
+                {
+                    std::string raw = BuildRawJson(bot, areaTarget);
+                    std::string semantic = BuildSemanticJson(
+                        bot, areaTarget, "validation_route_mechanic",
+                        &power, stage, activity);
+                    RecordEvent(state, bot,
+                        "validation_route_threat_pickup", areaTarget,
+                        "hand_of_reckoning_hazard_healer_pickup",
+                        raw.c_str(), semantic.c_str(), areaDistance,
+                        Cohort().Config.ValidationRouteTargetEntry, 62124);
+                    state.TargetGuid = areaTarget->GetGUID();
+                    state.WasInCombat = true;
+                    situation = "validation_route_mechanic";
+                    action = "hand_of_reckoning_hazard_healer_pickup";
+                    return true;
+                }
+            }
             auto tryFeralHazardThrashRetention = [&]() -> bool
             {
                 // Rerun159 localized all Feral healer exposure to a fully
@@ -17946,10 +17978,27 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     // peaking at eight, so use the shared nine-attacker reservation. Never
     // cancel a positive
     // heal; if one is active, this branch is retried on the next tick.
+    // Rerun173's Protection/Holy composition fully owned the opening corridor
+    // pack before one successful heal flipped four already-eligible hostiles.
+    // The healer was outside every immediate native Paladin rescue range, so
+    // six bounded tank movement ticks still produced 28 strict exposure
+    // samples before Hand of Protection and Righteous Defense recovered them.
+    // Use the existing native Fade at that exact four-hostile threshold only
+    // with a Protection Paladin tank. Other tanks retain the established
+    // nine-hostile reservation for the later large wave, and a rejected cast
+    // changes only the observation cadence while native legality stays final.
+    bool protectionPaladinHealerThreat =
+        trashThreatControl.Tank
+        && trashThreatControl.Tank->getClass() == CLASS_PALADIN
+        && trashThreatControl.HealerTargetCount >= 4;
     if (std::string(GetDungeonRole(bot)) == "healer"
-        && trashThreatControl.HealerTargetCount >= 9
+        && (trashThreatControl.HealerTargetCount >= 9
+            || protectionPaladinHealerThreat)
         && bot->HasSpell(586) && !bot->HasAura(586))
     {
+        if (protectionPaladinHealerThreat)
+            state.DecisionTimer = std::min<uint32>(
+                state.DecisionTimer, 250);
         if (Spell* currentSpell = bot->GetCurrentSpell(CURRENT_GENERIC_SPELL))
             if (!currentSpell->IsPositive())
                 bot->InterruptNonMeleeSpells(false);

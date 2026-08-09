@@ -3270,6 +3270,52 @@ def test_rerun171_feral_arrived_boss_handoff_prefers_native_swipe_before_roar():
     )
 
 
+def test_rerun173_protection_healer_decay_and_hazard_pickup_use_native_responses():
+    manager = read(BOT_MGR)
+    route = function_body(
+        manager,
+        "bool BotWorldPopulationMgr::TryValidationRouteObjective",
+    )
+
+    fade_marker = route.index(
+        "Rerun173's Protection/Holy composition fully owned the opening corridor"
+    )
+    fade_branch = route[fade_marker : fade_marker + 1900]
+    assert "trashThreatControl.Tank->getClass() == CLASS_PALADIN" in fade_branch
+    assert "trashThreatControl.HealerTargetCount >= 4" in fade_branch
+    assert "trashThreatControl.HealerTargetCount >= 9" in fade_branch
+    assert "protectionPaladinHealerThreat" in fade_branch
+    assert "state.DecisionTimer, 250" in fade_branch
+    assert "TryCastFriendlySpell(bot, bot, 586)" in fade_branch
+    assert_ordered(
+        fade_branch,
+        "protectionPaladinHealerThreat =",
+        "trashThreatControl.HealerTargetCount >= 9",
+        "state.DecisionTimer, 250",
+        "TryCastFriendlySpell(bot, bot, 586)",
+        '"fade_early_trash_swarm_threat_drop"',
+    )
+
+    hazard_marker = route.index(
+        "Rerun173's only over-ceiling dwell began when an Azil follower"
+    )
+    hazard_branch = route[hazard_marker - 900 : hazard_marker + 3000]
+    assert 'hazardProfile.SpecTag == "protection"' in hazard_branch
+    assert "bot->getClass() == CLASS_PALADIN" in hazard_branch
+    assert "areaPriority == 3 && areaTarget" in hazard_branch
+    assert "state.DecisionTimer, 250" in hazard_branch
+    assert "TryCastCombatSpell(bot, areaTarget, 62124)" in hazard_branch
+    assert '"hand_of_reckoning_hazard_healer_pickup"' in hazard_branch
+    assert_ordered(
+        hazard_branch,
+        "BotClassSpecActionProfile hazardProfile",
+        'hazardProfile.SpecTag == "protection"',
+        "TryCastCombatSpell(bot, areaTarget, 62124)",
+        '"hand_of_reckoning_hazard_healer_pickup"',
+        "auto tryFeralHazardThrashRetention",
+    )
+
+
 def test_feral_large_tank_owned_trash_wave_prefers_density_before_freshness():
     objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
     selector = objective.split("Rerun142 proved continuous aura-fresh", 1)[1].split(

@@ -1,0 +1,241 @@
+{
+  "schema": "all_spec_phase9_authoritative_gameplay_failure_diagnosis_v1",
+  "scope": {
+    "phase": 9,
+    "rerun": 173,
+    "serial_canary_index": 3,
+    "composition_id": "stonecore_phase9_083_5d0c65765654",
+    "diagnosis_limited_to_failed_immutable_batch": true,
+    "canaries_4_through_8_started": false,
+    "phases_10_through_12_blocked": true
+  },
+  "immutable_evidence": {
+    "batch_identity_sha256": "5149cc6d8b9a642976838a7dcff7c26465c4cd59b90734636e03312a8735913b",
+    "raw_bundle_sha256": "d918d989c2e506a0156ad4a205f497ff25ac2071dd5a42bdcfd18f8d89c87c69",
+    "compact_bundle_sha256": "67f3be3df28d78938eb31b2c51d76c81cd9fd4e2e521f450918057c19bde1f5f",
+    "publication_receipt_sha256": "ab8d319de93c4583c9cb69c0063700eb85a7806dadc1ce505b4745a4f1efc4aa",
+    "raw_dvc_md5": "ae633026335346a708e53054a3c8841b.dir",
+    "compact_dvc_md5": "3e6cc7944366d4c6944dfb3d85fb4f07.dir",
+    "raw_pointer_sha256": "9f1a55eec1c00f969ee113f804055a7a144a69b2cd4a6766d8fe76e35d4a8342",
+    "compact_pointer_sha256": "a5a68d929ea9b21adabf82ae600d6231d34a479f5e0769f49dffea3654bc3dfc",
+    "acceptance_source_report_sha256": "9e9d4192188f0aa9842eb74db43212f6ac056dc71574237da0b9c1320d48b18b",
+    "identity_manifest_sha256": "e2c8ef877d297e02f114da3e6f53b72d3faead3bf4ed66be17d77552187e1622",
+    "run_plan_sha256": "caa39a0648321bb49ec9b8f1c92a05ef7456664b0cdae2388553eeb5b0dd87e6",
+    "evidence_binary_sha256": "149ee6bb0a5a603be5a21bb979956f6b3cf019fc59828373cf54ffebab183c9f"
+  },
+  "independent_capture_and_publication_verifier": {
+    "batch_identity_recomputed": true,
+    "raw_file_manifest_and_bundle_recomputed": true,
+    "compact_file_manifest_and_bundle_recomputed": true,
+    "publication_receipt_recomputed": true,
+    "canonical_dvc_remote_status": "in_sync",
+    "publication_remote_verified": true,
+    "raw_and_compact_payloads_re_evicted": true,
+    "batch_specific_hydration_and_verification_caches_evicted": true,
+    "broad_dvc_gc_used": false
+  },
+  "independent_strict_gate_verifier": {
+    "underlying_returncode": 0,
+    "timed_out": false,
+    "session_closed": true,
+    "identity_complete": true,
+    "identity_manifest_recomputed": true,
+    "run_plan_recomputed": true,
+    "exact_party_sha256": "71f05aeed37bfe1fc988746cdd00e7bf8e4d2dd94258eed65ec58d15201823b2",
+    "exact_party": [
+      "protection_paladin",
+      "holy_priest",
+      "arcane_mage",
+      "assassination_rogue",
+      "fire_mage"
+    ],
+    "serial_attempt_index": 3,
+    "serial_operator_attempt_count": 1,
+    "global_lifecycle_command_count": 0,
+    "server_process_id": 1066084,
+    "server_epoch": 6224318973613335,
+    "session_fingerprint": "55ca1bb7bf132c17244b49cf82b03ca7aa443498798975e46e5a66b92b6d39c3",
+    "profile_generation": 1,
+    "profile_content_hash": "35a587f05d8781d72c62576a6f35392a69e01d5978429f65429ad5b9ed096a22",
+    "max_active_cohorts": 1,
+    "route_terminal_evidence": 14,
+    "route_generations": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14
+    ],
+    "route_manifest_complete": 1,
+    "authoritative_boss_deaths": [
+      43438,
+      43214,
+      42188,
+      42333
+    ],
+    "high_priestess_azil_terminal_and_death": true,
+    "watchdog_clean": true,
+    "teacher_assisted_kills": 0,
+    "forbidden_assistance_observed": false,
+    "cleanup": {
+      "active": false,
+      "active_bots": 0,
+      "lease_count": 0,
+      "party_bot_count": 0
+    },
+    "strict_non_role_gates_passed": true,
+    "role_gate_passed": false
+  },
+  "independent_role_verifier": {
+    "deduplication_key": [
+      "bot_guid",
+      "sequence"
+    ],
+    "threat_acquisition_grace_ms": 3000,
+    "eligible_hostile_denominator": 1463,
+    "tank_owned_hostile_numerator": 1431,
+    "healer_targeting_hostile_numerator": 32,
+    "tank_all_hostile_retention_rate_exact": 0.9781271360218728,
+    "healer_target_exposure_rate_exact": 0.021872863978127138,
+    "max_healer_target_dwell_ms": 4032,
+    "tank_threat_aura_samples": 901,
+    "tank_threat_aura_active_samples": 901,
+    "tank_threat_aura_uptime_rate": 1.0,
+    "non_healer_active_action_coverage": {
+      "Protpally": 1.0,
+      "Arcanemage": 0.9805825242718447,
+      "Assarogue": 1.0,
+      "Firemage": 0.9912280701754386
+    },
+    "cast_failure_rates": {
+      "Protpally": 0.0,
+      "Holypriest": 0.0,
+      "Arcanemage": 0.0,
+      "Assarogue": 0.0,
+      "Firemage": 0.0
+    },
+    "healer_heal_cast_success_rate": 1.0,
+    "missing_required_rotation_groups": [],
+    "hazard_exit_actions": 58,
+    "hazard_exit_failures": 0,
+    "misdirection_aoe_attempts": 0,
+    "misdirection_single_attempts": 0,
+    "misdirection_not_applicable_reason": "exact party has no hunter",
+    "failed_checks": [
+      "healer_target_exposure_rate",
+      "max_healer_target_dwell_ms"
+    ]
+  },
+  "chronology": {
+    "generation_1_remote_corridor_decay": {
+      "hostile_guids": [
+        15,
+        16,
+        17,
+        18
+      ],
+      "initially_tank_owned": true,
+      "last_full_tank_ownership_ms": 1786261984777,
+      "holy_priest_successful_heal_ms": 1786261984796,
+      "healer_target_start_ms": 1786261985031,
+      "eligible_healer_target_samples": 28,
+      "tank_response": [
+        "six 250-ms move_to_trash_density decisions toward healer-owned hostile 17",
+        "native Hand of Protection at 1786261986564",
+        "native Righteous Defense at 1786261986817",
+        "full tank ownership restored by 1786261987073"
+      ],
+      "per_guid_dwell_ms": 1786,
+      "classification": "later healing-threat decay with remote movement/range delay"
+    },
+    "generation_14_azil_hazard_starvation": {
+      "hostile_guid": 617,
+      "healer_target_start_ms": 1786263583749,
+      "healer_target_last_tank_sample_ms": 1786263587781,
+      "dwell_ms": 4032,
+      "initial_tank_action": "successful native Hammer of the Righteous 53595 against separate add 615",
+      "hazard_interval_start_ms": 1786263584760,
+      "hazard_interval_last_exposed_sample_ms": 1786263587781,
+      "tank_actions_during_interval": "strict move_out_of_hazard decisions with no Protection single-target pickup",
+      "eligible_healer_target_samples": 4,
+      "classification": "real add pickup loss prolonged by hazard movement preemption"
+    },
+    "other_healer_target_episodes": {
+      "count": 7,
+      "maximum_dwell_ms": 763,
+      "strict_failures": false
+    }
+  },
+  "hypothesis_results": {
+    "real_initial_pickup_loss": "confirmed only for Azil GUID 617 after a different add received the first area action",
+    "later_threat_decay": "confirmed for generation-1 GUIDs 15-18, which were first fully tank-owned and flipped after a successful Holy Priest heal",
+    "movement_or_hazard_starvation": "confirmed in both failing clusters: remote range movement delayed corridor recovery and strict hazard movement suppressed Protection pickup for GUID 617",
+    "misdirection_failure": "rejected because the exact canary-3 party has no hunter and the run plan does not require Misdirection for this row",
+    "healer_behavior": "contributing in generation 1 because successful healing created legitimate threat while the healer was outside the tank's immediate native rescue range",
+    "audit_attribution_error": "rejected because every counted GUID was alive, engaged, exact-party scoped, older than acquisition grace for exposure scoring, and reproduced directly from identity-scoped raw snapshots",
+    "rerun170_passive_swarm_side_effect": "rejected because the corrected passive-wave deferral enabled the intended Azil encounter and did not assign threat, victims, or suppress ordinary generation-1 behavior"
+  },
+  "authoritative_classification": {
+    "result": "gameplay_failure",
+    "failure_kind": "protection_healer_threat_decay_and_hazard_pickup_starvation",
+    "not_audit_attribution_error": true,
+    "not_infrastructure_abort": true,
+    "not_rerun170_passive_swarm_side_effect": true,
+    "later_rows_blocked": true
+  },
+  "root_cause": {
+    "summary": "Protection held 97.81% of eligible hostile samples with uninterrupted threat aura, but four remotely positioned corridor mobs legitimately flipped from established tank ownership to Holy Priest healing threat and accumulated 28 exposure samples while the tank closed native rescue range. At Azil, GUID 617 targeted the healer before the first area action landed on another add; strict hazard movement then preempted every Protection single-target rescue until dwell reached 4032 ms.",
+    "classification": "later_threat_decay_plus_movement_and_hazard_action_starvation",
+    "excluded": [
+      "global tank threat-aura loss",
+      "cast failure",
+      "missing rotation coverage",
+      "Misdirection failure",
+      "audit scope error",
+      "forbidden assistance",
+      "rerun170 passive-swarm correction"
+    ]
+  },
+  "smallest_evidence_backed_correction": {
+    "file": "src/server/game/Bots/BotWorldPopulationMgr.cpp",
+    "behaviors": [
+      "For an ordinary-trash healer with a Protection Paladin tank, allow the existing native Fade response at four or more exact healer-targeting hostiles and use the existing urgent 250-ms decision cadence; the established nine-hostile reservation remains unchanged for every other tank.",
+      "During an already-authoritative radial hazard exit or safe-side hold, let a Protection Paladin try native Hand of Reckoning on the deterministic healer-owned area target before the existing area-threat fallback; rejected casts preserve the hazard path unchanged."
+    ],
+    "preserved": [
+      "native spell knowledge and legality",
+      "cooldown",
+      "global cooldown",
+      "power",
+      "range",
+      "line of sight",
+      "target validity",
+      "threat and victim semantics",
+      "hazard geometry and accepted movement",
+      "route",
+      "identity",
+      "publication",
+      "cleanup",
+      "all strict thresholds"
+    ]
+  },
+  "validation": {
+    "rerun173_worldserver_stopped_before_tracked_edits": true,
+    "rerun173_unit": "trinity-live-validation-3906e6231ae91f8aeeda895a.service",
+    "focused_tests": "4 passed, 114 deselected",
+    "broader_relevant_tests": "10 passed, 2 pre-existing source-shape failures, 106 deselected",
+    "git_diff_check": "passed",
+    "worldserver_build_passed": true,
+    "corrected_binary_sha256": "106cd26f8dfccb3f82b20bd3f618a351f0b974bb16abbed774a2952a9bcbac2e"
+  },
+  "diagnosis_sha256": "c0606184294895670e3d70443a3478d24f88b8d52de93e1042ff390eb56faccb"
+}
