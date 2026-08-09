@@ -3414,6 +3414,28 @@ def test_rerun176_native_charge_preempts_stampeding_roar_and_small_pack_decay():
     assert "TryCastCombatSpell(bot, feralSecureMarginTarget, 779)" in secure
 
 
+def test_rerun177_moderate_healer_subwave_ignores_tank_owned_cohort_size():
+    objective = function_body(
+        read(BOT_MGR),
+        "bool BotWorldPopulationMgr::TryValidationRouteObjective",
+    )
+    marker = objective.index(
+        "Rerun177's only failing dwell was an eleven-healer-owned"
+    )
+    branch = objective[marker : marker + 1200]
+
+    assert "healerOwnedCount >= 3 && healerOwnedCount < 12" in branch
+    assert "nearbyHealerOwnedCount >= 1" in branch
+    assert "engagedAddCount < 12" not in branch
+    assert_ordered(
+        branch,
+        "bool immediateModerateWavePickup =",
+        "healerOwnedCount >= 3 && healerOwnedCount < 12",
+        "nearbyHealerOwnedCount >= 1",
+        "bool usefulLocalPickup = immediateModerateWavePickup",
+    )
+
+
 def test_rerun175_feral_healer_target_preempts_tank_owned_density():
     manager = read(BOT_MGR)
     route = function_body(

@@ -15397,9 +15397,16 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             // already-bounded post-cast healer handoff for 5.5 seconds. Cast on
             // that one legal local target only for a 3-11 follower wave; large
             // waves retain the established two-target coverage guard.
+            // Rerun177's only failing dwell was an eleven-healer-owned
+            // generation-14 subwave coexisting with four tank-owned followers.
+            // Counting the full engaged set as a large healer wave forced the
+            // Feral to ground-approach until a local majority was covered, so
+            // the first native Roar landed 1.8 seconds after exposure and the
+            // second cleared the last follower at 3820 ms. Classify this
+            // native pickup by the healer-owned wave itself; a true twelve-plus
+            // healer wave still retains the established two-target guard.
             bool immediateModerateWavePickup =
                 healerOwnedCount >= 3 && healerOwnedCount < 12
-                && engagedAddCount < 12
                 && nearbyHealerOwnedCount >= 1;
             bool usefulLocalPickup = immediateModerateWavePickup
                 || (activeClusterArrived
