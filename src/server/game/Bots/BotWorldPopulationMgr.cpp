@@ -15843,16 +15843,24 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         // this arrived handoff waited for another non-damaging Roar. Match the
         // already-proved ordinary-trash recovery: when the local healer-owned
         // set covers a majority of the current wave, submit one native Swipe
-        // before retrying Roar. A rejected cast changes no state and falls
-        // through; native GCD, power, range, LOS, target, and threat semantics
-        // remain authoritative.
+        // before retrying Roar. Rerun190 then proved the same damaging pickup
+        // was still restricted to an already-active, arrived handoff: fresh
+        // local waves instead spent the first legal GCD on Roar, and partial
+        // pickup left six generation-14 identities beyond the strict dwell
+        // ceiling. Admit the same majority proof before a handoff starts while
+        // preserving remote handoff movement until arrival. A rejected cast
+        // changes no state and falls through; native GCD, power, range, LOS,
+        // target, and threat semantics remain authoritative.
         Creature* localHealerOwnedSwipeTarget = nullptr;
         uint32 localHealerOwnedSwipeCount = 0;
         float localHealerOwnedSwipeDistance =
             std::numeric_limits<float>::max();
         uint32 localHealerOwnedSwipeGuid =
             std::numeric_limits<uint32>::max();
-        if (feralHealerHandoffActive && feralHealerHandoffArrived)
+        bool localHealerOwnedSwipeWindow = role == "tank"
+            && profile.SpecTag == "feral_druid_tank" && densityHealer
+            && (!feralHealerHandoffActive || feralHealerHandoffArrived);
+        if (localHealerOwnedSwipeWindow)
             for (Creature* candidate : localAdds)
                 if (candidate && candidate->GetVictim() == densityHealer
                     && bot->GetExactDist2d(candidate) <= 10.0f)

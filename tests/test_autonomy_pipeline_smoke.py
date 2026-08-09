@@ -3256,7 +3256,8 @@ def test_rerun171_feral_arrived_boss_handoff_prefers_native_swipe_before_roar():
         "Rerun171 completed all fourteen route nodes", 1
     )[1].split("Rerun163 reached its identity-bound remote handoff", 1)[0]
 
-    assert "feralHealerHandoffActive && feralHealerHandoffArrived" in recovery
+    assert "localHealerOwnedSwipeWindow" in recovery
+    assert "!feralHealerHandoffActive || feralHealerHandoffArrived" in recovery
     assert "candidate->GetVictim() == densityHealer" in recovery
     assert "bot->GetExactDist2d(candidate) <= 10.0f" in recovery
     assert "localHealerOwnedSwipeCount * 2" in recovery
@@ -3272,6 +3273,32 @@ def test_rerun171_feral_arrived_boss_handoff_prefers_native_swipe_before_roar():
         "Rerun163 reached its identity-bound remote handoff",
         "tryFeralRoarPickup(true)",
     )
+
+
+def test_rerun190_feral_local_majority_swipe_precedes_initial_roar():
+    objective = function_body(
+        read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective"
+    )
+    marker = objective.index(
+        "Rerun190 then proved the same damaging pickup"
+    )
+    recovery = objective[marker - 700 : marker + 5200]
+
+    assert_ordered(
+        recovery,
+        'profile.SpecTag == "feral_druid_tank"',
+        "!feralHealerHandoffActive || feralHealerHandoffArrived",
+        "candidate->GetVictim() == densityHealer",
+        "localHealerOwnedSwipeCount * 2",
+        ">= healerOwnedBeforeHandoffSwipe",
+        "TryCastCombatSpell(bot, localHealerOwnedSwipeTarget, 779)",
+        '"feral_swipe_healer_swarm_retention_before_roar"',
+        "tryFeralRoarPickup(true)",
+    )
+    assert "state.DecisionTimer, 250" in recovery
+    assert "SetVictim" not in recovery
+    assert "AddThreat" not in recovery
+    assert "NearTeleportTo" not in recovery
 
 
 def test_rerun173_protection_healer_decay_and_hazard_pickup_use_native_responses():
