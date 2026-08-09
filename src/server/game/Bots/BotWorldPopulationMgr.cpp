@@ -17266,8 +17266,35 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         // the rescue tools only while every legal area action is unavailable.
         if (role == "tank" && add && addCount >= 2)
         {
+            // Rerun191 captured fifteen Azil followers on the healer while
+            // Protection repeatedly preferred remote Hammer/Avenger targets.
+            // Holy Wrath was natively ready, but the first local wave spent
+            // 7.899 seconds cycling representatives before pickup. When a
+            // majority of the healer-owned wave is already inside the tank's
+            // ten-yard native area, prefer only configured self-centered area
+            // actions. If none passes the unchanged profile and native gates,
+            // preserve the ordinary area, rescue, and movement chain.
+            uint32 localProtectionHealerOwnedCount = 0;
+            size_t protectionHealerAttackerCount = densityHealer
+                ? observedListedAttackerCount(densityHealer) : 0;
+            if (profile.SpecTag == "protection" && densityHealer)
+                for (Creature* candidate : localAdds)
+                    if (candidate && candidate->GetVictim() == densityHealer
+                        && bot->GetExactDist2d(candidate) <= 10.0f)
+                        ++localProtectionHealerOwnedCount;
+            bool preferSelfCenteredProtectionArea = profile.SpecTag == "protection"
+                && localProtectionHealerOwnedCount >= 2
+                && localProtectionHealerOwnedCount * 2
+                    >= protectionHealerAttackerCount;
             ResolvedCombatAction immediateAreaThreat = ResolveProfileCombatAction(
-                bot, add, addCount, true, reservedAreaSpellId, true);
+                bot, add, addCount, true, reservedAreaSpellId, true,
+                preferSelfCenteredProtectionArea);
+            if (!immediateAreaThreat.Valid && preferSelfCenteredProtectionArea)
+            {
+                preferSelfCenteredProtectionArea = false;
+                immediateAreaThreat = ResolveProfileCombatAction(
+                    bot, add, addCount, true, reservedAreaSpellId, true);
+            }
             if (immediateAreaThreat.Valid)
             {
                 float engageRange = immediateAreaThreat.MaxRange > 0.0f
@@ -17393,7 +17420,9 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 }
 
                 BotActionResult areaResult = ExecuteProfileCombatAction(
-                    &state, bot, add, &immediateAreaThreat, addCount, true, reservedAreaSpellId, true);
+                    &state, bot, add, &immediateAreaThreat, addCount, true,
+                    reservedAreaSpellId, true,
+                    preferSelfCenteredProtectionArea);
                 if (areaResult == BotActionResult::Ok)
                 {
                     std::string raw = BuildRawJson(bot, add);
@@ -23883,7 +23912,7 @@ uint32 BotWorldPopulationMgr::SelectCombatSpell(Player* bot, Unit* target) const
     return best ? best->SpellId : 0;
 }
 
-ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* bot, Unit* target, uint32 hostileCount, bool densityOnly, uint32 excludedSpellId, bool areaOnly) const
+ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* bot, Unit* target, uint32 hostileCount, bool densityOnly, uint32 excludedSpellId, bool areaOnly, bool selfCenteredOnly) const
 {
     ResolvedCombatAction action;
     action.Valid = false;
@@ -24051,6 +24080,11 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
             && candidate.Category != BotCombatActionCategory::Cleave)
         {
             candidate.RejectReason = "area_action_required";
+            continue;
+        }
+        if (selfCenteredOnly && candidate.Profile.TargetSelector != "self")
+        {
+            candidate.RejectReason = "self_centered_action_required";
             continue;
         }
         // Rerun165 canary 3 captured a Protection tank owning all 49 Azil
@@ -24840,7 +24874,7 @@ bool BotWorldPopulationMgr::TryEnsureCombatTotems(WorldBotState& state, Player* 
     return false;
 }
 
-BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState* state, Player* bot, Unit* target, ResolvedCombatAction* actionOut, uint32 hostileCount, bool densityOnly, uint32 excludedSpellId, bool areaOnly)
+BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState* state, Player* bot, Unit* target, ResolvedCombatAction* actionOut, uint32 hostileCount, bool densityOnly, uint32 excludedSpellId, bool areaOnly, bool selfCenteredOnly)
 {
     if (state && TryEnsurePersistentCombatSetup(*state, bot, target))
         return BotActionResult::Casting;
@@ -24861,7 +24895,8 @@ BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState*
         excludedSpellId = state->ProfileCastSuppressedSpellId;
 
     ResolvedCombatAction action = ResolveProfileCombatAction(
-        bot, target, hostileCount, densityOnly, excludedSpellId, areaOnly);
+        bot, target, hostileCount, densityOnly, excludedSpellId, areaOnly,
+        selfCenteredOnly);
     if (actionOut)
         *actionOut = action;
     if (!action.Valid)
@@ -24934,9 +24969,11 @@ BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState*
     return result;
 }
 
-BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(Player* bot, Unit* target, ResolvedCombatAction* actionOut, uint32 hostileCount, bool densityOnly, uint32 excludedSpellId, bool areaOnly)
+BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(Player* bot, Unit* target, ResolvedCombatAction* actionOut, uint32 hostileCount, bool densityOnly, uint32 excludedSpellId, bool areaOnly, bool selfCenteredOnly)
 {
-    return ExecuteProfileCombatAction(nullptr, bot, target, actionOut, hostileCount, densityOnly, excludedSpellId, areaOnly);
+    return ExecuteProfileCombatAction(nullptr, bot, target, actionOut,
+        hostileCount, densityOnly, excludedSpellId, areaOnly,
+        selfCenteredOnly);
 }
 
 bool BotWorldPopulationMgr::TryCastCombatSpell(Player* bot, Unit* target, uint32 spellId) const

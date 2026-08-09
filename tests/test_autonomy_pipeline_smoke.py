@@ -3073,7 +3073,7 @@ def test_profile_combat_resolver_prioritizes_density_actions_then_uses_rotation_
     mgr = read(BOT_MGR)
     resolver = function_body(
         mgr,
-        "ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* bot, Unit* target, uint32 hostileCount, bool densityOnly, uint32 excludedSpellId, bool areaOnly) const",
+        "ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction",
     )
     executor = function_body(
         mgr,
@@ -3099,7 +3099,7 @@ def test_hostile_profile_execution_rejects_buffs_and_defers_moving_cast_time_spe
     mgr = read(BOT_MGR)
     resolver = function_body(
         mgr,
-        "ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* bot, Unit* target, uint32 hostileCount, bool densityOnly, uint32 excludedSpellId, bool areaOnly) const",
+        "ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction",
     )
     executor = function_body(read(ROOT / "src/server/game/Bots/BotActionExecutor.cpp"), "BotActionResult BotActionExecutor::ExecuteCombat")
 
@@ -3973,10 +3973,42 @@ def test_rerun189_protection_holy_wrath_uses_existing_self_centered_area_gate():
     assert "NearTeleportTo" not in area_gate
 
 
+def test_rerun192_protection_prefers_profile_self_centered_area_for_local_healer_wave():
+    mgr = read(BOT_MGR)
+    header = read(BOT_MGR_HEADER)
+    objective = function_body(
+        mgr, "bool BotWorldPopulationMgr::TryValidationRouteObjective"
+    )
+    area_gate = objective.split(
+        "Rerun191 captured fifteen Azil followers on the healer", 1
+    )[1].split("if (role == \"tank\" && densityHealer", 1)[0]
+    resolver = function_body(
+        mgr,
+        "ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction",
+    )
+
+    assert "bool selfCenteredOnly = false" in header
+    assert_ordered(
+        area_gate,
+        "localProtectionHealerOwnedCount >= 2",
+        "localProtectionHealerOwnedCount * 2",
+        ">= protectionHealerAttackerCount",
+        "ResolveProfileCombatAction(",
+        "preferSelfCenteredProtectionArea",
+        "!immediateAreaThreat.Valid && preferSelfCenteredProtectionArea",
+    )
+    assert 'candidate.Profile.TargetSelector != "self"' in resolver
+    assert 'candidate.RejectReason = "self_centered_action_required"' in resolver
+    assert "preferSelfCenteredProtectionArea);" in area_gate
+    assert "SetThreat" not in area_gate
+    assert "SetVictim" not in area_gate
+    assert "NearTeleportTo" not in area_gate
+
+
 def test_profile_los_failure_is_recorded_before_existing_range_recovery():
     executor = function_body(
         read(BOT_MGR),
-        "BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState* state, Player* bot, Unit* target, ResolvedCombatAction* actionOut, uint32 hostileCount, bool densityOnly, uint32 excludedSpellId, bool areaOnly)",
+        "BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState* state",
     )
     los = executor.split("SPELL_FAILED_LINE_OF_SIGHT", 1)[1].split(
         "if (state && result == BotActionResult::Ok)", 1
@@ -4498,7 +4530,7 @@ def test_rerun165_density_resolver_rejects_buff_without_removing_recovery_fallba
     marker = resolver.index(
         "Rerun165 canary 3 captured a Protection tank owning all 49 Azil"
     )
-    branch = resolver[marker - 350 : marker + 850]
+    branch = resolver[marker - 650 : marker + 850]
 
     assert "densityOnly && candidate.Category == BotCombatActionCategory::Buff" in branch
     assert 'candidate.RejectReason = "density_buff_not_actionable";' in branch

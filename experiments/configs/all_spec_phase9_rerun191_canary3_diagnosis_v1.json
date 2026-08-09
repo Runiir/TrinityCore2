@@ -1,0 +1,263 @@
+{
+  "schema": "all_spec_phase9_authoritative_gameplay_failure_diagnosis_v1",
+  "diagnosis_sha256": "f8b850a972068af4e9da054d941675a8ec2bef508016040f740ebd4b530e26e3",
+  "hash_scope": "canonical_json_without_diagnosis_sha256",
+  "scope": {
+    "run": "rerun191",
+    "serial_index": 3,
+    "attempt": "phase9_serial_03_stonecore_phase9_083_5d0c65765654",
+    "only_this_immutable_batch_diagnosed": true,
+    "canaries_4_through_8_started": false,
+    "phases_10_through_12_blocked": true
+  },
+  "frozen_identity": {
+    "identity_manifest_sha256": "c7f433638f77d8b275640733edddd7dcd7291762bb76620ab3fa0c519b25a4c3",
+    "run_plan_sha256": "0b415f8cff499eec5ee59c99323eadddae9c0df3bafd14b557c1b4a9a1dbe09b",
+    "evidence_binary_sha256": "e0aa1396b4d3beaab0a790f4a778e98442ffd887f35976fa9d781fb73848b2e9",
+    "server_pid": 1667736,
+    "server_epoch": 8772163532864922,
+    "worldserver_unit": "trinity-live-validation-730a0280597d09e70c1ae00b.service",
+    "session_fingerprint": "b9969c5688c106a9b4a2eb49c4fe031c7d31d61cbda8da829c91986f950f9a79",
+    "profile_generation": 1,
+    "profile_content_hash": "d9d6a60e97756695ea6553b1fa34e9c2c63ebe6e09467e71bc01fb74fe3655ae",
+    "max_active_cohorts": 1
+  },
+  "exact_party": {
+    "class_specs": [
+      "protection_paladin",
+      "holy_priest",
+      "arcane_mage",
+      "assassination_rogue",
+      "fire_mage"
+    ],
+    "party_sha256": "71f05aeed37bfe1fc988746cdd00e7bf8e4d2dd94258eed65ec58d15201823b2",
+    "independently_recomputed": true
+  },
+  "immutable_evidence": {
+    "batch_identity_sha256": "b56f0cf407b3273ddd51219ef0dbaf6ab849d1ef6f494483aab07bb773626187",
+    "raw_bundle_sha256": "9e2e052ffc8088f760c106df8305fc9a42c8fcd8bf8dceaa6fae8d3657da7fc1",
+    "compact_bundle_sha256": "700f9d52d27d0e99e6221d387f65cfd27d17f4145075220567721077d9a152fa",
+    "publication_receipt_sha256": "949c5ac71963ce153d91f074397f55d80be3ac95fddb4d3c54e4fcc99b95b8cf",
+    "publication_receipt_file_sha256": "ea663dcb571fc1e4bf3b308939c59dd5e4287ecc093a059085df19aa1b67b39f",
+    "acceptance_source_report_sha256": "815891b40224aa1bf30fa5e8cbc386a8e2b0ffd573e8be94a5b0ae8de0aa7799",
+    "raw_pointer_sha256": "4c6c92d66e5bc9a740a8b5a0823a23b306970cba849ce803329f88334760a087",
+    "compact_pointer_sha256": "3772e4dbebe7dfc969c3a9550470ccd82c904303dde20c65a3f38e384c89471f",
+    "raw_dvc_object": "5f794cce338a1263da1a6312405c0aba.dir",
+    "compact_dvc_object": "e9a21c414fff63ecff01d402dec4da13.dir"
+  },
+  "independent_capture_and_publication_verifier": {
+    "batch_identity_recomputed": true,
+    "raw_and_compact_bundle_hashes_recomputed": true,
+    "raw_and_compact_file_manifests_recomputed": true,
+    "publication_receipt_recomputed": true,
+    "canonical_dvc_remote_status": "in_sync",
+    "publication_remote_verified": true,
+    "raw_and_compact_payloads_re_evicted": true,
+    "batch_specific_hydration_and_verification_caches_evicted": true,
+    "broad_dvc_gc_used": false
+  },
+  "independent_role_verifier": {
+    "canonical_role_audit_passed": false,
+    "canonical_role_audit_sha256": "b53d04a858b39a0169260a43c8f359803713f32c4dce12877272eab0d1e25137",
+    "independent_verifier_sha256": "e92646178ab2e961ec38ebe5b64d26b0e2088c4f974d802722975f10a9041bbd",
+    "eligible_hostile_denominator": 1826,
+    "tank_owned_hostile_numerator": 1646,
+    "healer_targeting_hostile_numerator": 141,
+    "tank_all_hostile_retention_ratio": 0.9014238773274917,
+    "healer_target_exposure_ratio": 0.07721796276013143,
+    "maximum_healer_target_dwell_ms": 7899,
+    "threat_aura_active_samples": 515,
+    "threat_aura_total_samples": 515,
+    "threat_aura_uptime_ratio": 1.0,
+    "non_healer_active_action_coverage_passed": true,
+    "cast_failure_rate_passed": true,
+    "holy_priest_successful_heal_cast_rate": 0.9863013698630136,
+    "missing_required_rotation_groups": [],
+    "threshold_results": {
+      "tank_retention_at_least_0_90": true,
+      "healer_exposure_at_most_0_01": false,
+      "healer_dwell_at_most_3000_ms": false,
+      "threat_aura_uptime_at_least_0_99": true,
+      "non_healer_active_action_coverage_at_least_0_70": true,
+      "cast_failure_rate_at_most_0_05": true,
+      "healer_heal_cast_success_at_least_0_95": true,
+      "rotation_groups_present": true
+    },
+    "failure_labels": [
+      "Protpally:healer_target_exposure",
+      "Protpally:healer_target_dwell"
+    ]
+  },
+  "route_generation_and_hostile_guid_chronology": {
+    "generation_1": {
+      "eligible": 326,
+      "tank_owned": 275,
+      "healer_targeting": 16,
+      "healer_targeting_guids": [16, 18, 19, 34]
+    },
+    "generation_2": {"eligible": 11, "tank_owned": 11, "healer_targeting": 0},
+    "generation_3": {"eligible": 50, "tank_owned": 48, "healer_targeting": 0},
+    "generation_4": {"eligible": 23, "tank_owned": 23, "healer_targeting": 0},
+    "generation_7": {"eligible": 3, "tank_owned": 3, "healer_targeting": 0},
+    "generation_9": {"eligible": 19, "tank_owned": 18, "healer_targeting": 0},
+    "generation_10": {"eligible": 123, "tank_owned": 123, "healer_targeting": 0},
+    "generation_11": {"eligible": 23, "tank_owned": 23, "healer_targeting": 0},
+    "generation_13": {"eligible": 27, "tank_owned": 27, "healer_targeting": 0},
+    "generation_14": {
+      "eligible": 1221,
+      "tank_owned": 1095,
+      "healer_targeting": 125,
+      "healer_targeting_guids": [657, 658, 660, 663, 666, 667, 668, 669, 670, 671, 672, 673, 674, 675, 676]
+    }
+  },
+  "decisive_episode": {
+    "route_generation": 14,
+    "start_timestamp_ms": 1786316179035,
+    "end_timestamp_ms": 1786316186934,
+    "maximum_dwell_ms": 7899,
+    "initial_healer_owned_count": 15,
+    "initial_tank_owned_count": 11,
+    "long_dwell_guids": {
+      "7899_ms": [658],
+      "5357_ms": [657, 660, 663, 666, 668, 670, 672, 674],
+      "4593_ms": [667, 673],
+      "4341_ms": [675],
+      "4078_ms": [669, 676],
+      "3582_ms": [671]
+    },
+    "chronology": [
+      "At the first eligible sample fifteen followers targeted Holypriest and eleven were tank-owned.",
+      "At +512 ms Hammer of the Righteous 53595 produced only partial pickup.",
+      "At +3582 ms Avenger's Shield 31935 fired while the remaining wave was still healer-owned.",
+      "Repeated changing-representative movement and out-of-range melee fallback followed; a second Hammer fired at +5104 ms.",
+      "Most followers recovered at +5357 ms, but GUID 658 remained healer-owned through +7899 ms.",
+      "The prior successful Holy Wrath was 44384 ms before wave start, so native cooldown availability did not explain its omission."
+    ]
+  },
+  "action_reconstruction": {
+    "protection_profile_spell_attempts": {
+      "holy_wrath_2812": 12,
+      "hammer_of_the_righteous_53595": 35,
+      "consecration_26573": 9,
+      "avengers_shield_31935": 30,
+      "hand_of_reckoning_62124": 4
+    },
+    "feral_only_actions_not_applicable_to_exact_party": {
+      "growl": 0,
+      "swipe": 0,
+      "thrash": 0,
+      "demoralizing_roar": 0,
+      "charge": 0
+    },
+    "movement": {
+      "move_to_boss_add": 47,
+      "move_to_immediate_aoe_threat_range": 1,
+      "healer_preposition_for_add_pickup": 20,
+      "dps_stack_for_swarm_pickup": 72
+    },
+    "hazards": {
+      "move_out_of_hazard": 49,
+      "hold_outside_hazard": 97,
+      "tank_hazard_hold_aoe_threat": 8,
+      "hazard_exit_failures": 0
+    },
+    "misdirection": {
+      "applicable": false,
+      "reason": "the exact party contains no hunter",
+      "actions": 0
+    },
+    "healer_threat_handoff": {
+      "consecration_party_trash_pickup": 6,
+      "hand_of_protection_healer_emergency": 1,
+      "hand_of_salvation_healer_threat_drop": 1,
+      "righteous_defense_healer_pickup": 2,
+      "righteous_defense_party_pickup": 12,
+      "hand_of_reckoning_healer_pickup": 2,
+      "hand_of_reckoning_add_pickup": 2,
+      "healer_preposition_for_add_pickup": 20
+    }
+  },
+  "causal_classification": {
+    "authoritative_gameplay_failure_confirmed": true,
+    "real_pickup_loss": true,
+    "initial_pickup_loss_primary": true,
+    "later_threat_decay_primary": false,
+    "movement_and_action_topology_starvation": true,
+    "hazard_starvation": false,
+    "misdirection_failure": false,
+    "healer_behavior_failure": false,
+    "audit_attribution_error": false,
+    "rerun170_passive_swarm_correction_side_effect": false,
+    "infrastructure_failure": false,
+    "primary_cause": "The configured Protection density resolver correctly knew caster-centered Holy Wrath, but lower-bucket remote Hammer and Avenger actions always outranked it. During the decisive local healer-owned wave, partial remote/cone pickup and changing-representative movement left fifteen identities exposed for up to 7899 ms even though Holy Wrath was off cooldown. Threat aura, hazard handling, healer behavior, and every non-role gate remained healthy."
+  },
+  "bounded_correction": {
+    "worldserver_stopped_before_tracked_edit": true,
+    "description": "For Protection only, when at least two healer-owned followers and a majority of the healer-owned wave are inside the tank's native ten-yard area, constrain the existing profile resolver to configured self-centered area actions first. If none is legal, immediately preserve the ordinary area, rescue, and movement chain.",
+    "changed_files": [
+      "src/server/game/Bots/BotWorldPopulationMgr.cpp",
+      "src/server/game/Bots/BotWorldPopulationMgr.h",
+      "tests/test_autonomy_pipeline_smoke.py"
+    ],
+    "unchanged_contracts": [
+      "all strict thresholds",
+      "runtime profile action authority and priority among eligible self-centered actions",
+      "native spell knowledge cooldown GCD power range line-of-sight target and threat legality",
+      "ordinary Hammer Avenger Righteous Defense Hand of Reckoning and movement fallback",
+      "victim and threat assignment semantics",
+      "hazard movement Misdirection and healer behavior",
+      "rerun170 passive-swarm staging and tank-only native activation",
+      "route exact-party identity publication cleanup and assistance contracts"
+    ]
+  },
+  "independent_strict_verifier": {
+    "underlying_returncode": 0,
+    "timed_out": false,
+    "session_closed": true,
+    "identity_complete": true,
+    "operator_attempt_count": 1,
+    "serial_index": 3,
+    "global_lifecycle_command_count": 0,
+    "scheduler_events": ["admit:3", "close:3"],
+    "cleanup": {
+      "active": false,
+      "active_bots": 0,
+      "lease_count": 0,
+      "party_bot_count": 0
+    },
+    "route_terminal_count": 14,
+    "route_terminal_generations": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+    "authoritative_boss_death_entries": [43438, 43214, 42188, 42333],
+    "high_priestess_azil_terminal_and_death": true,
+    "validation_route_manifest_complete": true,
+    "watchdog_clean": true,
+    "teacher_assisted_kills": 0,
+    "forbidden_completion_assistance": [],
+    "strict_non_role_gates_passed": true,
+    "role_gate_passed": false
+  },
+  "validation_and_reprovisioning": {
+    "focused_tests": "6 passed, 130 deselected",
+    "broad_source_shape_diagnostic": "104 passed, 32 pre-existing unrelated stale source-shape assertions",
+    "git_diff_check_passed": true,
+    "worldserver_rebuild_passed": true,
+    "corrected_worldserver_binary_sha256": "f31a126dd38e07212bc3685a47d2cf513ba472fc4d1fad3fb65c7743af0021d5",
+    "deterministic_all_31_reprovisioning_passed": true,
+    "deterministic_reprovisioning_verifier": "artifacts/all_spec_program/phase9_serial_canaries_20260810_rerun192/preidentity_preparation/provisioning_verifier.json",
+    "accounts_ready": "50/50",
+    "characters_ready": "50/50",
+    "runtime_profiles_ready": "31/31",
+    "provisioning_failure_count": 0,
+    "dvc_status_completed": true,
+    "dvc_push_completed": true,
+    "dvc_push_result": "everything_up_to_date_with_two_known_historical_missing_objects",
+    "broad_dvc_gc_used": false
+  },
+  "next_gate": {
+    "rerun": 192,
+    "fresh_identity_and_eight_row_plan_required": true,
+    "restart_at_canary_2_alone": true,
+    "canaries_3_through_8_blocked_until_preceding_strict_pass": true,
+    "phases_10_through_12_blocked": true
+  }
+}
