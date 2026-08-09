@@ -17195,6 +17195,85 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                         || !bot->IsWithinLOSInMap(add));
                 if (approach)
                 {
+                    // Rerun185 completed Azil but localized 554 healer-target
+                    // samples to repeated remote Protection add waves. The
+                    // configured self-centered area action was valid, so its
+                    // approach returned before the native ranged rescue chain
+                    // below could run; the longest wave spent 4617 ms moving
+                    // before Consecration and reached 6158 ms of healer dwell.
+                    // Only when the selected remote density add is currently
+                    // attacking the healer, try the same native Protection
+                    // rescue order already established for ordinary trash.
+                    // Failed or unavailable casts preserve the existing area
+                    // approach exactly, and no threat or victim is assigned.
+                    if (profile.SpecTag == "protection" && densityHealer
+                        && densityDefenseTarget == densityHealer
+                        && add->GetVictim() == densityHealer)
+                    {
+                        uint32 healerAttackerCount =
+                            observedListedAttackerCount(densityHealer);
+                        if (bot->HasSpell(31789)
+                            && TryCastFriendlySpell(bot, densityHealer, 31789))
+                        {
+                            std::string raw = BuildRawJson(bot, densityHealer);
+                            std::string semantic = BuildSemanticJson(
+                                bot, densityHealer, "dungeon_boss", &power,
+                                stage, activity);
+                            RecordEvent(state, bot, "boss_adds", densityHealer,
+                                "righteous_defense_healer_before_area_approach",
+                                raw.c_str(), semantic.c_str(),
+                                float(healerAttackerCount), addCount, 31789);
+                            state.DecisionTimer = std::min<uint32>(
+                                state.DecisionTimer, 250);
+                            state.TargetGuid = add->GetGUID();
+                            target = add;
+                            situation = "dungeon_boss";
+                            action = "righteous_defense_healer_before_area_approach";
+                            return true;
+                        }
+                        if (bot->HasSpell(62124)
+                            && TryCastCombatSpell(bot, add, 62124))
+                        {
+                            std::string raw = BuildRawJson(bot, add);
+                            std::string semantic = BuildSemanticJson(
+                                bot, add, "dungeon_boss", &power, stage,
+                                activity);
+                            RecordEvent(state, bot, "boss_adds", add,
+                                "hand_of_reckoning_healer_before_area_approach",
+                                raw.c_str(), semantic.c_str(),
+                                bot->GetExactDist(add),
+                                float(healerAttackerCount), 62124);
+                            state.DecisionTimer = std::min<uint32>(
+                                state.DecisionTimer, 250);
+                            state.TargetGuid = add->GetGUID();
+                            state.WasInCombat = true;
+                            target = add;
+                            situation = "dungeon_boss";
+                            action = "hand_of_reckoning_healer_before_area_approach";
+                            return true;
+                        }
+                        if (healerAttackerCount >= 2 && bot->HasSpell(31935)
+                            && TryCastCombatSpell(bot, add, 31935))
+                        {
+                            std::string raw = BuildRawJson(bot, add);
+                            std::string semantic = BuildSemanticJson(
+                                bot, add, "dungeon_boss", &power, stage,
+                                activity);
+                            RecordEvent(state, bot, "boss_adds", add,
+                                "avengers_shield_healer_before_area_approach",
+                                raw.c_str(), semantic.c_str(),
+                                bot->GetExactDist(add),
+                                float(healerAttackerCount), 31935);
+                            state.DecisionTimer = std::min<uint32>(
+                                state.DecisionTimer, 250);
+                            state.TargetGuid = add->GetGUID();
+                            state.WasInCombat = true;
+                            target = add;
+                            situation = "dungeon_boss";
+                            action = "avengers_shield_healer_before_area_approach";
+                            return true;
+                        }
+                    }
                     bool continuingStableApproach = continueStableFeralSwarmApproach(add);
                     bool moved = continuingStableApproach
                         || MoveBotToProfileRange(state, bot, add, &immediateAreaThreat);

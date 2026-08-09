@@ -1,0 +1,239 @@
+{
+  "schema": "all_spec_phase9_authoritative_gameplay_failure_diagnosis_v1",
+  "diagnosis_sha256": "7476ec85cc46a60344f2b48cd1e1eddc4340e7f4fac13a234872c5d51376d2c0",
+  "scope": {
+    "phase": 9,
+    "rerun": 185,
+    "serial_canary_index": 3,
+    "composition_id": "stonecore_phase9_083_5d0c65765654",
+    "attempt": "artifacts/all_spec_program/phase9_serial_canaries_20260809_rerun185/phase9_serial_03_stonecore_phase9_083_5d0c65765654",
+    "diagnosis_limited_to_failed_immutable_batch": true,
+    "only_canary_3_ran_in_this_operator": true,
+    "canaries_4_through_8_started": false,
+    "phases_10_through_12_blocked": true
+  },
+  "immutable_evidence": {
+    "batch_identity_sha256": "9d4e1e2d6e15d2fe2c57a9b098d1ab6415237917c6f6495ebe27d98d6fc5e73e",
+    "raw_bundle_sha256": "387520e99c66699021849f1fa4e486885cd96d3e8d785b6d8087d24d1b16aa95",
+    "compact_bundle_sha256": "d0e692fc6fa53c62b230b99970cc2447fa0b7267309aca491aa14754d65387e6",
+    "publication_receipt_sha256": "7fd5b75a5a24dd2ea6a3b7bec4c297091b80a84e877a7f25a28d97db299d641a",
+    "acceptance_source_report_sha256": "99bfa7dc0db59a1392be617422dd1306f33bf9dcf5bca9b965faf36a4339e878",
+    "raw_pointer_sha256": "7c5eefb1dc03204e9db1209cba5feadb58d7a4c80e720355593b35467183c83b",
+    "compact_pointer_sha256": "8c0a2a8741726900c0542f7400021c1957d1474f676958c784611433a74d27c7",
+    "raw_dvc_object": "8709c71344e1ce5d84c1aa0f0e5aaf2b.dir",
+    "compact_dvc_object": "e49bc361e7fbb3d2ac361c0a2f778b10.dir",
+    "identity_manifest_sha256": "723831f9144bf4b03f8a90ccca11914a6a36aa2935159bc039c58efea63b5424",
+    "run_plan_sha256": "7488c88d69ff6bc741606c1ab29f3fa03082e837ee2d956143e0e02efe6bbcc3",
+    "evidence_binary_sha256": "1b6dd80d3628760f532dbe7f996a82878e6d5a5e72d55f23d6f1c06de5064c4b"
+  },
+  "independent_capture_and_publication_verifier": {
+    "batch_identity_recomputed": true,
+    "raw_and_compact_file_manifests_recomputed": true,
+    "publication_receipt_recomputed": true,
+    "canonical_dvc_remote_status": "in_sync",
+    "publication_remote_verified": true,
+    "raw_and_compact_payloads_re_evicted": true,
+    "batch_specific_hydration_and_verification_caches_evicted": true,
+    "broad_dvc_gc_used": false
+  },
+  "frozen_identity": {
+    "git_head": "6908d8c07302c8bfebd219ee149478e0689f9dd4",
+    "server_process_id": 1431932,
+    "server_epoch": 5490839191958751,
+    "worldserver_unit": "trinity-live-validation-cce263359da8cba937e8c77a.service",
+    "session_fingerprint": "e4dff9506cd094116a41eed7d2cff29807a5d41de0887658f999b4efa4680ccc",
+    "profile_generation": 1,
+    "profile_content_hash": "35a587f05d8781d72c62576a6f35392a69e01d5978429f65429ad5b9ed096a22",
+    "max_active_cohorts": 1,
+    "identity_recomputed_and_matched": true,
+    "plan_recomputed_and_matched": true
+  },
+  "exact_party": {
+    "ordered_specs": [
+      "protection_paladin",
+      "holy_priest",
+      "arcane_mage",
+      "assassination_rogue",
+      "fire_mage"
+    ],
+    "party_sha256": "71f05aeed37bfe1fc988746cdd00e7bf8e4d2dd94258eed65ec58d15201823b2",
+    "recomputed_and_matched": true
+  },
+  "independent_strict_verifier": {
+    "underlying_returncode": 0,
+    "timed_out": false,
+    "session_closed": true,
+    "identity_complete": true,
+    "operator_attempt_count": 1,
+    "serial_index": 3,
+    "global_lifecycle_command_count": 0,
+    "scheduler_events": ["admit:3", "close:3"],
+    "cleanup": {
+      "active": false,
+      "active_bots": 0,
+      "lease_count": 0,
+      "party_bot_count": 0
+    },
+    "route_terminal_count": 14,
+    "route_terminal_generations": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+    "authoritative_boss_death_entries": [43438, 43214, 42188, 42333],
+    "high_priestess_azil_terminal_and_death": true,
+    "validation_route_manifest_complete": true,
+    "watchdog_clean": true,
+    "teacher_assisted_kills": 0,
+    "forbidden_completion_assistance": [],
+    "strict_non_role_gates_passed": true,
+    "role_gate_passed": false
+  },
+  "independent_role_verifier": {
+    "canonical_audit_passed": false,
+    "canonical_audit_artifact_sha256": "406bcdee98f661e1ea41d8d1d838f3460418e18e93005dbf303986422786880e",
+    "independent_verifier_sha256": "1e91fd0abf7bb41ef101d40de7e3424d2ecbd2d4d5be83e8af93ed600e2d65a0",
+    "eligible_hostile_denominator": 3279,
+    "tank_owned_hostile_numerator": 2649,
+    "healer_targeting_hostile_numerator": 574,
+    "tank_all_hostile_retention_ratio": 0.807868252516011,
+    "healer_target_exposure_ratio": 0.17505336992985665,
+    "maximum_healer_target_dwell_ms": 6158,
+    "threat_aura_active_samples": 1098,
+    "threat_aura_total_samples": 1098,
+    "threat_aura_uptime_ratio": 1.0,
+    "non_healer_active_action_coverage": {
+      "Protpally": 1.0,
+      "Arcanemage": 1.0,
+      "Assarogue": 1.0,
+      "Firemage": 1.0
+    },
+    "protection_action_attempts": 584,
+    "protection_cast_failure_rate": 0.011986301369863013,
+    "holy_priest_healer_successful_heal_cast_rate": 1.0,
+    "missing_required_rotation_groups": [],
+    "failed_checks": [
+      "tank_retention_at_least_0_90",
+      "healer_exposure_at_most_0_01",
+      "healer_dwell_at_most_3000_ms"
+    ]
+  },
+  "eligible_exposure_localization": {
+    "generation_1": {"eligible": 424, "tank_owned": 405, "healer_targeting": 16},
+    "generation_2": {"eligible": 79, "tank_owned": 75, "healer_targeting": 4},
+    "generation_3": {"eligible": 164, "tank_owned": 153, "healer_targeting": 0},
+    "generation_4": {"eligible": 33, "tank_owned": 33, "healer_targeting": 0},
+    "generation_7": {"eligible": 12, "tank_owned": 12, "healer_targeting": 0},
+    "generation_8": {"eligible": 14, "tank_owned": 14, "healer_targeting": 0},
+    "generation_10": {"eligible": 31, "tank_owned": 30, "healer_targeting": 0},
+    "generation_11": {"eligible": 12, "tank_owned": 12, "healer_targeting": 0},
+    "generation_13": {"eligible": 89, "tank_owned": 89, "healer_targeting": 0},
+    "generation_14": {
+      "eligible": 2421,
+      "tank_owned": 1826,
+      "healer_targeting": 554,
+      "interpretation": "High Priestess Azil is decisive; all earlier generations together contribute only 20 healer-target samples."
+    }
+  },
+  "action_reconstruction": {
+    "protection_area_threat_actions": {
+      "trash_density_area_threat": 148,
+      "consecration_party_trash_pickup": 2
+    },
+    "protection_native_taunts": {
+      "Hand_of_Reckoning_62124": 17,
+      "Righteous_Defense_healer": 12,
+      "Righteous_Defense_party": 17
+    },
+    "holy_priest_handoff_actions": {
+      "healer_preposition_for_add_pickup": 202,
+      "healer_stack_for_add_pickup": 78,
+      "fade_preemptive": 4,
+      "fade_early": 1
+    },
+    "hazard_exit_actions": 116,
+    "hazard_exit_failures": 0,
+    "misdirection_attempts": 0,
+    "misdirection_not_applicable_reason": "The exact party has no hunter."
+  },
+  "route_and_hostile_chronology": [
+    {
+      "route_generation": 14,
+      "timestamp_ms": 1786295041202,
+      "event": "The longest Azil episode began with two engaged hostiles, both healer-owned and none tank-owned. Protection repeatedly selected move_to_boss_add toward the remote density."
+    },
+    {
+      "route_generation": 14,
+      "timestamp_ms": 1786295044791,
+      "event": "The wave had grown to twenty engaged hostiles, ten healer-owned and none tank-owned; decisions had changed to tank_move_to_immediate_aoe_threat_range."
+    },
+    {
+      "route_generation": 14,
+      "timestamp_ms": 1786295045819,
+      "event": "The first native Consecration submission arrived 4617 ms after the first healer exposure because the valid self-centered area action required approach before the later ranged rescue branches could run."
+    },
+    {
+      "route_generation": 14,
+      "timestamp_ms": 1786295046076,
+      "event": "Native Hand of Reckoning followed Consecration."
+    },
+    {
+      "route_generation": 14,
+      "timestamp_ms": 1786295047360,
+      "event": "Native Hammer of the Righteous landed after 6158 ms, ending the longest dwell episode and improving ownership."
+    }
+  ],
+  "causal_classification": {
+    "authoritative_gameplay_failure": true,
+    "infrastructure_abort": false,
+    "strict_route_failure": false,
+    "role_quality_failure": true,
+    "real_pickup_loss": true,
+    "later_threat_decay_contributing": true,
+    "movement_starvation_primary": true,
+    "hazard_starvation": false,
+    "misdirection_failure": false,
+    "healer_behavior_primary": false,
+    "audit_attribution_error": false,
+    "rerun170_passive_swarm_correction_side_effect": false,
+    "primary_cause": "On repeated remote Azil add waves, the valid self-centered Protection area action entered movement and returned before the already-established native Righteous Defense, Hand of Reckoning, and Avenger's Shield rescue chain could run. This produced 97 episodes over 3000 ms and a decisive 554 healer-target samples in generation 14 despite uninterrupted threat aura and low cast failure."
+  },
+  "smallest_evidence_backed_correction": {
+    "source": "src/server/game/Bots/BotWorldPopulationMgr.cpp",
+    "behavior": "Only when a valid boss-add area action would require approach, the runtime profile is Protection, and the selected remote density add is currently healer-owned, try the existing native rescue order—Righteous Defense, Hand of Reckoning, then multi-attacker Avenger's Shield—before starting or continuing area movement. If every native cast is unavailable or rejected, preserve the existing area approach unchanged.",
+    "preserved": [
+      "all strict thresholds",
+      "native spell knowledge, cooldown, global cooldown, power, range, line of sight, target, victim, threat, and combat legality",
+      "existing self-centered area-threat resolution and movement fallback",
+      "Feral Growl, Swipe, Thrash, Demoralizing Roar, Charge, movement, and hazard ordering",
+      "Misdirection and healer-threat handoff behavior",
+      "route, identity, exact-party, publication, cleanup, serial-isolation, and forbidden-assistance contracts"
+    ]
+  },
+  "pre_edit_safety": {
+    "old_worldserver_stopped_before_tracked_diagnosis_and_source_edit": true,
+    "old_worldserver_active_state": "inactive",
+    "old_worldserver_sub_state": "dead",
+    "old_worldserver_main_pid": 0,
+    "operator_active": false,
+    "publisher_active": false
+  },
+  "validation": {
+    "focused_correction_and_preservation_tests": "19 passed, 112 deselected",
+    "broad_source_shape_diagnostic": "108 passed, 33 pre-existing unrelated stale source-shape assertions",
+    "git_diff_check": "passed",
+    "worldserver_build_passed": true,
+    "corrected_binary_sha256": "38de1ff7f46c178b99f8f6c67eefeecabb92788034ded1dcad91f53b2ad87f14",
+    "deterministic_reprovision_passed": true,
+    "deterministic_reprovision_verifier": "artifacts/all_spec_program/phase9_serial_canaries_20260809_rerun186/preidentity_preparation/provisioning_verifier.json",
+    "accounts_ready": "50/50",
+    "characters_ready": "50/50",
+    "runtime_profiles_ready": "31/31",
+    "provisioning_failure_count": 0
+  },
+  "next_gate": {
+    "attempt_label": "rerun186",
+    "focused_tests_and_worldserver_rebuild_required": true,
+    "deterministically_reprovision_all_31_targets": true,
+    "fresh_identity_and_eight_row_plan_required": true,
+    "restart_at_canary_2_alone": true,
+    "canaries_3_through_8_blocked": true,
+    "phases_10_through_12_blocked": true
+  }
+}

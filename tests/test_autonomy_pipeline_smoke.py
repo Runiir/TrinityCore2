@@ -3825,6 +3825,38 @@ def test_rerun184_feral_prepares_form_before_native_swarm_activation():
     assert "NearTeleportTo" not in branch
 
 
+def test_rerun185_protection_remote_boss_add_rescue_precedes_area_approach():
+    objective = function_body(
+        read(BOT_MGR),
+        "bool BotWorldPopulationMgr::TryValidationRouteObjective",
+    )
+    marker = objective.index(
+        "Rerun185 completed Azil but localized 554 healer-target"
+    )
+    branch = objective[marker - 900 : marker + 6500]
+
+    assert_ordered(
+        branch,
+        "if (approach)",
+        'profile.SpecTag == "protection"',
+        "densityDefenseTarget == densityHealer",
+        "add->GetVictim() == densityHealer",
+        "TryCastFriendlySpell(bot, densityHealer, 31789)",
+        '"righteous_defense_healer_before_area_approach"',
+        "TryCastCombatSpell(bot, add, 62124)",
+        '"hand_of_reckoning_healer_before_area_approach"',
+        "healerAttackerCount >= 2",
+        "TryCastCombatSpell(bot, add, 31935)",
+        '"avengers_shield_healer_before_area_approach"',
+        "continueStableFeralSwarmApproach(add)",
+        "MoveBotToProfileRange(state, bot, add, &immediateAreaThreat)",
+    )
+    assert branch.count("state.DecisionTimer, 250);") >= 3
+    assert "SetVictim" not in branch
+    assert "AddThreat" not in branch
+    assert "NearTeleportTo" not in branch
+
+
 def test_profile_los_failure_is_recorded_before_existing_range_recovery():
     executor = function_body(
         read(BOT_MGR),
