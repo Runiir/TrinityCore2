@@ -16311,6 +16311,34 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 action = "feral_growl_lingering_healer_swarm_attacker";
                 return true;
             }
+            // Rerun188 reduced Azil's final healer-owned wave to one follower,
+            // but native Growl was still on cooldown. The unchanged generic
+            // area resolver then selected periodic Thrash at 2842 ms; the
+            // follower remained healer-owned at the 3094-ms observation and
+            // transferred on the next tick. Try one native instant Swipe on
+            // that same deterministic follower before preserving the existing
+            // movement/profile fallback. Failed range, GCD, power, cooldown,
+            // LOS, or target legality changes no state and falls through.
+            if (healerOwnedAdd && bot->HasSpell(779)
+                && TryCastCombatSpell(bot, healerOwnedAdd, 779))
+            {
+                std::string raw = BuildRawJson(bot, healerOwnedAdd);
+                std::string semantic = BuildSemanticJson(
+                    bot, healerOwnedAdd, "dungeon_boss",
+                    &power, stage, activity);
+                RecordEvent(state, bot, "boss_add_density", healerOwnedAdd,
+                    "feral_swipe_lingering_healer_swarm_attacker",
+                    raw.c_str(), semantic.c_str(),
+                    bot->GetExactDist(healerOwnedAdd), addCount, 779);
+                state.DecisionTimer = std::min<uint32>(
+                    state.DecisionTimer, 250);
+                state.TargetGuid = healerOwnedAdd->GetGUID();
+                state.WasInCombat = true;
+                target = healerOwnedAdd;
+                situation = "dungeon_boss";
+                action = "feral_swipe_lingering_healer_swarm_attacker";
+                return true;
+            }
             // Rerun164 recovered the first of two Azil followers with Growl,
             // then left the generic density fallback bound to that already
             // tank-owned follower while the sole remaining healer attacker

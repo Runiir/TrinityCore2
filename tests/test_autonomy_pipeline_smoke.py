@@ -3893,6 +3893,30 @@ def test_rerun186_boss_handoff_enrolls_remaining_healer_owned_newcomer():
     assert "NearTeleportTo" not in fallback
 
 
+def test_rerun188_lingering_feral_healer_attacker_uses_native_swipe_after_growl():
+    objective = function_body(
+        read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective"
+    )
+    marker = objective.index(
+        "Rerun188 reduced Azil's final healer-owned wave to one follower"
+    )
+    branch = objective[marker - 1900 : marker + 3200]
+
+    assert_ordered(
+        branch,
+        "observedListedAttackerCount(densityHealer) == 1",
+        "TryCastCombatSpell(bot, healerOwnedAdd, 6795)",
+        '"feral_growl_lingering_healer_swarm_attacker"',
+        "TryCastCombatSpell(bot, healerOwnedAdd, 779)",
+        '"feral_swipe_lingering_healer_swarm_attacker"',
+        "add = healerOwnedAdd",
+    )
+    assert "state.DecisionTimer, 250" in branch
+    assert "SetThreat" not in branch
+    assert "SetVictim" not in branch
+    assert "NearTeleportTo" not in branch
+
+
 def test_profile_los_failure_is_recorded_before_existing_range_recovery():
     executor = function_body(
         read(BOT_MGR),
@@ -4390,7 +4414,7 @@ def test_rerun164_failed_single_healer_growl_rebinds_generic_fallback():
     marker = manager.index(
         "Rerun164 recovered the first of two Azil followers with Growl"
     )
-    branch = manager[marker - 1700 : marker + 900]
+    branch = manager[marker - 3400 : marker + 900]
 
     assert "observedListedAttackerCount(densityHealer) == 1" in branch
     assert "TryCastCombatSpell(bot, healerOwnedAdd, 6795)" in branch
