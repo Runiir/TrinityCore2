@@ -3120,6 +3120,7 @@ def test_feral_stampeding_roar_records_every_existing_gate_and_cast_rejection():
     assert "feral_stampeding_roar_gate_v1" in objective
     for gate in [
         "reserved_healer_threat_handoff",
+        "native_charge_ready_for_healer_threat",
         "active_path_valid",
         "state_is_moving",
         "has_spell_77761",
@@ -3135,6 +3136,7 @@ def test_feral_stampeding_roar_records_every_existing_gate_and_cast_rejection():
     assert_ordered(
         objective,
         'failureReason = "reserved_healer_threat_handoff";',
+        'failureReason = "native_charge_ready_for_healer_threat";',
         'failureReason = "inactive_path";',
         'failureReason = "state_not_moving";',
         'failureReason = "missing_spell";',
@@ -3325,9 +3327,12 @@ def test_rerun174_large_passive_swarm_stages_party_before_native_activation():
     marker = route.index(
         "Rerun174 reached this passive 60-follower wave"
     )
-    branch = route[marker - 800 : marker + 11000]
+    branch = route[marker - 800 : marker + 16000]
 
-    assert "engagedAddCount == 0 && addCount >= 24" in branch
+    assert "tankVisiblePassiveSwarmEngagedCount == 0" in branch
+    assert "tankVisiblePassiveSwarmAddCount >= 24" in branch
+    assert "isUsableListedAdd(densityTank, creature)" in branch
+    assert "largePassiveSwarmEvidenceTarget" in branch
     assert_ordered(
         branch,
         "!IsValidationCohortMemberInOriginalInstance",
@@ -3344,6 +3349,7 @@ def test_rerun174_large_passive_swarm_stages_party_before_native_activation():
     assert "state.DecisionTimer, 250" in branch
     assert_ordered(
         branch,
+        "tankVisiblePassiveSwarmAddCount",
         "bool largePassiveSwarm =",
         'role != "tank"',
         '"stage_for_large_passive_swarm_activation"',
@@ -3352,6 +3358,60 @@ def test_rerun174_large_passive_swarm_stages_party_before_native_activation():
         'activationAction.DebugName = "activate_passive_swarm"',
         '"tank_activate_passive_swarm"',
     )
+
+
+def test_rerun176_remote_party_uses_tank_visible_passive_swarm_gate():
+    manager = read(BOT_MGR)
+    route = function_body(
+        manager,
+        "bool BotWorldPopulationMgr::TryValidationRouteObjective",
+    )
+    marker = route.index("Rerun176 proved the original staging decision")
+    branch = route[marker : marker + 13000]
+
+    assert_ordered(
+        branch,
+        "Trinity::AllWorldObjectsInRange tankVisibleCheck(",
+        "densityTank, 45.0f",
+        "isUsableListedAdd(densityTank, creature)",
+        "++tankVisiblePassiveSwarmAddCount",
+        "tankVisiblePassiveSwarmEngagedCount == 0",
+        "tankVisiblePassiveSwarmAddCount >= 24",
+        "largePassiveSwarmEvidenceTarget",
+        'role != "tank"',
+        "stagingReference",
+        '"stage_for_large_passive_swarm_activation"',
+        'role == "tank" && pendingSwarmActivation',
+        'activationAction.DebugName = "activate_passive_swarm"',
+    )
+
+
+def test_rerun176_native_charge_preempts_stampeding_roar_and_small_pack_decay():
+    objective = function_body(
+        read(BOT_MGR),
+        "bool BotWorldPopulationMgr::TryValidationRouteObjective",
+    )
+    charge = objective.split(
+        "bool nativeChargeReadyForHealerThreat = false;", 1
+    )[1].split("std::ostringstream diagnosticRaw;", 1)[0]
+    secure = objective.split(
+        "Rerun176 then recorded 45 of generation 13's 53", 1
+    )[1].split("Rerun112 localized the all-hostile retention failure", 1)[0]
+
+    assert "bot->GetSpellHistory()->HasGlobalCooldown(" in charge
+    assert "bot->GetSpellHistory()->IsReady(chargeInfo)" in charge
+    assert "HasPowerForSpell(bot, chargeInfo)" in charge
+    assert_ordered(
+        charge,
+        "nativeChargeReadyForHealerThreat =",
+        "if (reservedHealerThreatHandoff)",
+        "else if (nativeChargeReadyForHealerThreat)",
+        'failureReason = "native_charge_ready_for_healer_threat";',
+        "TryCastFriendlySpell(",
+    )
+    assert "trashThreatControl.EngagedCount >= 3" in secure
+    assert "tankOwnsTrashMajority && insecureTrashSwarm" in secure
+    assert "TryCastCombatSpell(bot, feralSecureMarginTarget, 779)" in secure
 
 
 def test_rerun175_feral_healer_target_preempts_tank_owned_density():
@@ -3975,7 +4035,7 @@ def test_rerun155_current_healer_threat_preempts_feral_secure_margin_approach():
     marker = manager.index(
         "Rerun155 recovered one of three healer-owned Flayers"
     )
-    branch = manager[marker - 2100 : marker + 1700]
+    branch = manager[marker - 2100 : marker + 3000]
     assert "bool feralCurrentHealerThreat = defenseTarget" in branch
     assert 'std::string(GetDungeonRole(defenseTarget)) == "healer"' in branch
     assert "defenseAttackerCount >= 1" in branch

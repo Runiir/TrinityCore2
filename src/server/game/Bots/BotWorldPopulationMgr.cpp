@@ -10200,6 +10200,21 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             bool const stateMoving = state.IsMoving;
             bool const hasSpell = bot->HasSpell(77761);
             bool const hasAura = bot->HasAura(77761);
+            bool nativeChargeReadyForHealerThreat = false;
+            if (healerThreatDistance > 8.0f && bot->HasSpell(16979)
+                && bot->IsWithinLOSInMap(healerThreatAttacker)
+                && !bot->HasUnitState(UNIT_STATE_CASTING)
+                && !bot->IsFalling())
+                if (SpellInfo const* chargeInfo =
+                        sSpellMgr->GetSpellInfo(16979))
+                    nativeChargeReadyForHealerThreat =
+                        healerThreatDistance
+                            <= bot->GetSpellMaxRangeForTarget(
+                                healerThreatAttacker, chargeInfo)
+                        && !bot->GetSpellHistory()->HasGlobalCooldown(
+                            chargeInfo)
+                        && bot->GetSpellHistory()->IsReady(chargeInfo)
+                        && HasPowerForSpell(bot, chargeInfo);
             bool castAttempted = false;
             bool castSubmitted = false;
             std::string failureReason;
@@ -10211,6 +10226,14 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             // and Charge-first ordering remain authoritative.
             if (reservedHealerThreatHandoff)
                 failureReason = "reserved_healer_threat_handoff";
+            // Rerun176 observed the same ordering gap before a new reservation
+            // existed: Stampeding Roar consumed the GCD while one remote Flayer
+            // owned the healer, so the already-ready native Charge could not
+            // submit and ground pickup crossed the strict grace window. Preserve
+            // the downstream identity-scoped Charge controller whenever this
+            // exact attacker is already inside its native legal band.
+            else if (nativeChargeReadyForHealerThreat)
+                failureReason = "native_charge_ready_for_healer_threat";
             else if (!activePathValid)
                 failureReason = "inactive_path";
             else if (!stateMoving)
@@ -16713,9 +16736,43 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         // a proven very-large passive wave around the living tank before that
         // unchanged native activation. Smaller waves and every active-wave,
         // threat, spell-legality, hazard, and boss rule remain unchanged.
-        bool largePassiveSwarm = pendingSwarmActivation
-            && engagedAddCount == 0 && addCount >= 24
-            && passiveSwarmClusterAnchor && densityTank;
+        // Rerun176 proved the original staging decision was observer-local.
+        // The tank and healer saw the passive 60-follower cluster and held for
+        // the party, while every damage role remained outside that local view
+        // and alternated route/add movement for 192 tank decisions. Reconstruct
+        // the same declared-wave cardinality from the living tank's view so all
+        // party members agree on the staging gate. This changes neither the
+        // listed-add contract nor activation: only the tank still selects the
+        // medoid and submits the native white swing after all members arrive.
+        uint32 tankVisiblePassiveSwarmAddCount = 0;
+        uint32 tankVisiblePassiveSwarmEngagedCount = 0;
+        if (densityTank)
+        {
+            std::vector<WorldObject*> tankVisibleObjects;
+            Trinity::AllWorldObjectsInRange tankVisibleCheck(
+                densityTank, 45.0f);
+            Trinity::WorldObjectListSearcher<
+                Trinity::AllWorldObjectsInRange> tankVisibleSearcher(
+                    densityTank, tankVisibleObjects, tankVisibleCheck);
+            Cell::VisitAllObjects(
+                densityTank, tankVisibleSearcher, 45.0f);
+            for (WorldObject* object : tankVisibleObjects)
+            {
+                Creature* creature = object ? object->ToCreature() : nullptr;
+                if (!isUsableListedAdd(densityTank, creature)
+                    || !densityTank->IsWithinLOSInMap(creature))
+                    continue;
+                ++tankVisiblePassiveSwarmAddCount;
+                if (creature->GetVictim())
+                    ++tankVisiblePassiveSwarmEngagedCount;
+            }
+        }
+        bool largePassiveSwarm = cohortSwarmActive && densityTank
+            && tankVisiblePassiveSwarmEngagedCount == 0
+            && tankVisiblePassiveSwarmAddCount >= 24;
+        Unit* largePassiveSwarmEvidenceTarget = passiveSwarmClusterAnchor
+            ? static_cast<Unit*>(passiveSwarmClusterAnchor)
+            : static_cast<Unit*>(densityTank);
         bool largePassiveSwarmPartyStaged = !largePassiveSwarm;
         uint32 largePassiveSwarmLoadedParticipants = 0;
         uint32 largePassiveSwarmStagedParticipants = 0;
@@ -16758,9 +16815,12 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     ? 4.0f : (meleeProfile ? 6.0f : 12.0f);
                 float stagingOffset =
                     (bot->GetGUID().GetCounter() % 5) * 0.30f;
+                Unit* stagingReference = passiveSwarmClusterAnchor
+                    ? static_cast<Unit*>(passiveSwarmClusterAnchor)
+                    : static_cast<Unit*>(bot);
                 Position staging = densityTank->GetFirstCollisionPosition(
                     stagingRadius,
-                    passiveSwarmClusterAnchor->GetAngle(densityTank)
+                    stagingReference->GetAngle(densityTank)
                         - densityTank->GetOrientation() + stagingOffset);
                 moved = MoveBotToPoint(state, bot,
                     staging.GetPositionX(), staging.GetPositionY(),
@@ -16770,22 +16830,22 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 bot->StopMoving();
 
             std::string raw = BuildRawJson(
-                bot, passiveSwarmClusterAnchor);
+                bot, largePassiveSwarmEvidenceTarget);
             std::string semantic = BuildSemanticJson(
-                bot, passiveSwarmClusterAnchor, "dungeon_boss",
+                bot, largePassiveSwarmEvidenceTarget, "dungeon_boss",
                 &power, stage, activity);
             char const* stagingAction = moved
                 ? "stage_for_large_passive_swarm_activation"
                 : "hold_for_large_passive_swarm_activation";
             RecordEvent(state, bot, "boss_add_density",
-                passiveSwarmClusterAnchor, stagingAction,
+                largePassiveSwarmEvidenceTarget, stagingAction,
                 raw.c_str(), semantic.c_str(),
                 bot->GetExactDist2d(densityTank),
                 largePassiveSwarmStagedParticipants);
             state.DecisionTimer = std::min<uint32>(
                 state.DecisionTimer, 250);
-            state.TargetGuid = passiveSwarmClusterAnchor->GetGUID();
-            target = passiveSwarmClusterAnchor;
+            state.TargetGuid = largePassiveSwarmEvidenceTarget->GetGUID();
+            target = largePassiveSwarmEvidenceTarget;
             situation = "dungeon_boss";
             action = stagingAction;
             return true;
@@ -18697,8 +18757,15 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         // while the other two crossed the dwell limit. Current healer ownership
         // is higher authority even when no handoff reservation exists yet; let
         // the identity-scoped rescue controller below own that same decision.
+        // Rerun176 then recorded 45 of generation 13's 53 healer-exposure
+        // samples when fully tank-owned packs of seven and eleven Flayers were
+        // below this branch's redundant twelve-hostile floor. One later heal
+        // flipped those already-aged insecure identities before reactive pickup.
+        // The insecure-swarm predicate already proves at least three engaged
+        // hostiles, so apply this unchanged native secure-margin action across
+        // that complete predicate instead of only its largest subsets.
         if (bot->getClass() == CLASS_DRUID
-            && trashThreatControl.EngagedCount >= 12
+            && trashThreatControl.EngagedCount >= 3
             && tankOwnsTrashMajority && insecureTrashSwarm
             && feralSecureMarginTarget && bot->HasSpell(779)
             && !feralHealerHandoffPending
