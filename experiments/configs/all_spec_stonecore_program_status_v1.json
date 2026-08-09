@@ -1,13 +1,12 @@
 {
   "active_phase": 9,
   "blockers": [
-    "Rerun185 used frozen identity 723831f9144bf4b03f8a90ccca11914a6a36aa2935159bc039c58efea63b5424, plan 7488c88d69ff6bc741606c1ab29f3fa03082e837ee2d956143e0e02efe6bbcc3, binary 1b6dd80d3628760f532dbe7f996a82878e6d5a5e72d55f23d6f1c06de5064c4b, PID 1431932, and epoch 5490839191958751. Canary 2 passed every strict gate; only canary 3 then ran.",
-    "Rerun185 canary 3 completed all 14 strict terminals and four authoritative boss deaths, including High Priestess Azil. Identity, exact party, serial isolation, cleanup, publication, watchdog, assistance, aura, action, cast, heal, rotation, and hazard gates pass, but Protection retention 2649/3279 = 0.807868252516011, healer exposure 574/3279 = 0.17505336992985665, and maximum dwell 6158 ms fail. Rows 4-8 never started.",
-    "Canonical diagnosis 7476ec85cc46a60344f2b48cd1e1eddc4340e7f4fac13a234872c5d51376d2c0 localizes 554 of 574 healer-target samples to generation 14 and 97 over-3000-ms episodes. Threat aura remained 1098/1098. Repeated valid self-centered Protection area actions entered remote movement before the existing ranged native rescue branches; the longest episode moved 4617 ms before Consecration.",
-    "The bounded rerun186 correction tries native Righteous Defense, Hand of Reckoning, then multi-attacker Avenger's Shield only for a selected remote healer-owned boss add before area-approach movement. Failed or unavailable casts preserve the existing area approach. Nineteen focused preservation tests pass and corrected worldserver 38de1ff7f46c178b99f8f6c67eefeecabb92788034ded1dcad91f53b2ad87f14 builds.",
-    "Rerun186 deterministic all-31 reprovisioning and its independent verifier pass. A fresh composite identity, deterministic eight-row plan, independent plan reconstruction, and canary 2 alone are required after the coherent tracked checkpoint is committed. Canaries 3-8 and Phases 10-12 remain blocked until preceding strict gates pass."
+    "Rerun186 used frozen identity 0f0e9c7169d0e4c54a5f737644161303db22071ba00b9ca7c33b791b8b988ec8, plan 4e7c22cd1f9259826124493b7b774ad14d8350d662fc48d1aa4289d4146e6af8, binary 38de1ff7f46c178b99f8f6c67eefeecabb92788034ded1dcad91f53b2ad87f14, PID 1504640, and epoch 4693955286236440. Only canary 2 ran; rows 3-8 never started.",
+    "Rerun186 canary 2 completed all 14 strict terminals and four authoritative boss deaths, including High Priestess Azil. Identity, exact party, serial isolation, cleanup, publication, watchdog, assistance, retention 2589/2642 = 0.9799394398183194, exposure 13/2642 = 0.004920514761544285, threat aura 589/589, action, cast, heal, rotation, hazard, and Misdirection gates pass. Only maximum Feral healer dwell 3077 ms fails by 77 ms.",
+    "Canonical diagnosis 2f6a8a510e3fefebf9a4540a64a2767e9af28b64dce44cb74ae17719b54aa718 localizes the breach to generation-14 GUID 755. It joined outside the original split-handoff cluster as the first Roar fired; the second Roar transferred that cluster, but the within-cluster-only rebound invalidated the still-live handoff and generic Thrash was observed 77 ms late. This is real pickup loss, not threat decay, hazard or movement starvation, Misdirection/healer misconduct, audit error, infrastructure, or a rerun170 passive-swarm side effect.",
+    "The bounded rerun187 correction preserves original-cluster rebound priority, then enrolls the nearest remaining valid healer-owned follower only when that cluster is empty and the same 2.5-second healer-identity handoff remains active. Thirteen focused preservation tests pass, corrected worldserver 3ec8acb028a872513f090cb6522381520959b0c3f20cb3030dff314c8d5c7849 builds, and deterministic all-31 reprovisioning independently passes. A fresh identity, eight-row plan, independent reconstruction, and canary 2 alone are required after commit; rows 3-8 and Phases 10-12 remain blocked."
   ],
-  "exact_next_handoff_prompt": "Continue Phase 9 only. Treat rerun185 canary-3 diagnosis 7476ec85cc46a60344f2b48cd1e1eddc4340e7f4fac13a234872c5d51376d2c0 as authoritative. Preserve the remote Protection native rescue order, existing area-approach fallback, staged native Bear Form preparation, healer-owned stable-path revalidation, party-wide passive-swarm staging, and every strict contract. Commit the coherent rerun186 checkpoint, capture a fresh rerun186 identity and stable-PID eight-row plan, independently reconstruct the plan, and run canary 2 alone. Keep rows 3-8 and Phases 10-12 blocked until preceding strict gates pass. Never use broad DVC garbage collection.",
+  "exact_next_handoff_prompt": "Continue Phase 9 only. Treat rerun186 canary-2 diagnosis 2f6a8a510e3fefebf9a4540a64a2767e9af28b64dce44cb74ae17719b54aa718 as authoritative. Preserve original-cluster Feral handoff priority and enroll a remaining healer-owned newcomer only inside the unchanged active 2.5-second healer-identity handoff. Preserve the Protection rescue order, Bear Form preparation, stable-path revalidation, party-wide passive-swarm staging, every strict threshold, and all identity/publication contracts. Commit the coherent rerun187 checkpoint, capture a fresh rerun187 identity and stable-PID eight-row plan, independently reconstruct the plan, and run canary 2 alone. Keep rows 3-8 and Phases 10-12 blocked until preceding strict gates pass. Never use broad DVC garbage collection.",
   "phase_status": [
     {
       "evidence": {
@@ -820,22 +819,20 @@
           "status": "infrastructure_aborted_incomplete_evidence"
         },
         "latest_closed_attempt": {
-          "attempt_label": "rerun185_canary_3",
+          "attempt_label": "rerun186_canary_2",
           "status": "authoritative_gameplay_failure",
           "completion_reason": "stonecore_role_quality_audit_failed",
           "failure_reasons": [
-            "role_quality:Protpally:tank_threat_retention",
-            "role_quality:Protpally:healer_target_exposure",
-            "role_quality:Protpally:healer_target_dwell"
+            "role_quality:Feraltank:healer_target_dwell"
           ],
-          "batch_identity": "9d4e1e2d6e15d2fe2c57a9b098d1ab6415237917c6f6495ebe27d98d6fc5e73e",
-          "raw_bundle_sha256": "387520e99c66699021849f1fa4e486885cd96d3e8d785b6d8087d24d1b16aa95",
-          "compact_bundle_sha256": "d0e692fc6fa53c62b230b99970cc2447fa0b7267309aca491aa14754d65387e6",
-          "publication_receipt_sha256": "7fd5b75a5a24dd2ea6a3b7bec4c297091b80a84e877a7f25a28d97db299d641a",
-          "binary_sha256": "1b6dd80d3628760f532dbe7f996a82878e6d5a5e72d55f23d6f1c06de5064c4b",
-          "evidence_identity_manifest_sha256": "723831f9144bf4b03f8a90ccca11914a6a36aa2935159bc039c58efea63b5424",
-          "run_plan_sha256": "7488c88d69ff6bc741606c1ab29f3fa03082e837ee2d956143e0e02efe6bbcc3",
-          "exact_party_sha256": "71f05aeed37bfe1fc988746cdd00e7bf8e4d2dd94258eed65ec58d15201823b2",
+          "batch_identity": "e8edb2e826db4564efaf07ec478d6936055d663de57e9d4e2ba6a848746d9b6e",
+          "raw_bundle_sha256": "b1c4df275cdbced024ae93825ce186390f0efa330b3832f1f61105f3af321025",
+          "compact_bundle_sha256": "1c58a2f9d8e57dc9ed32c3cb77b2f7563f6ed4221ec469a7a746dfa539bcd6ac",
+          "publication_receipt_sha256": "0798f21b5a221216154c641429a628b38a4c6041557f89d50a3444d1bb5b7929",
+          "binary_sha256": "38de1ff7f46c178b99f8f6c67eefeecabb92788034ded1dcad91f53b2ad87f14",
+          "evidence_identity_manifest_sha256": "0f0e9c7169d0e4c54a5f737644161303db22071ba00b9ca7c33b791b8b988ec8",
+          "run_plan_sha256": "4e7c22cd1f9259826124493b7b774ad14d8350d662fc48d1aa4289d4146e6af8",
+          "exact_party_sha256": "524b94c794897f5111bdae0a5e45ba31a31ebb8596d811a3dd8c1caff95bd16a",
           "identity_matched": true,
           "strict_uninterrupted_route": true,
           "route_terminal_count": 14,
@@ -843,12 +840,12 @@
           "watchdog_clean": true,
           "strict_non_role_gates_passed": true,
           "role_quality_passed": false,
-          "tank_owned_samples": 2649,
-          "healer_targeting_samples": 574,
-          "eligible_hostile_samples": 3279,
-          "tank_retention_ratio": 0.807868252516011,
-          "healer_exposure_ratio": 0.17505336992985665,
-          "max_healer_dwell_ms": 6158,
+          "tank_owned_samples": 2589,
+          "healer_targeting_samples": 13,
+          "eligible_hostile_samples": 2642,
+          "tank_retention_ratio": 0.9799394398183194,
+          "healer_exposure_ratio": 0.004920514761544285,
+          "max_healer_dwell_ms": 3077,
           "threat_aura_uptime_ratio": 1.0,
           "remote_verified": true,
           "capture_revalidated": true,
@@ -857,10 +854,10 @@
           "compact_payload_evicted_locally": true,
           "targeted_cache_eviction_complete": true,
           "broad_dvc_gc_used": false,
-          "canary_3_started": true,
-          "canaries_4_through_8_started": false,
-          "diagnosis": "experiments/configs/all_spec_phase9_rerun185_canary3_diagnosis_v1.json",
-          "diagnosis_sha256": "7476ec85cc46a60344f2b48cd1e1eddc4340e7f4fac13a234872c5d51376d2c0"
+          "canary_2_started": true,
+          "canaries_3_through_8_started": false,
+          "diagnosis": "experiments/configs/all_spec_phase9_rerun186_canary2_diagnosis_v1.json",
+          "diagnosis_sha256": "2f6a8a510e3fefebf9a4540a64a2767e9af28b64dce44cb74ae17719b54aa718"
         },
         "latest_gate_passed_attempt": {
           "attempt_label": "rerun185_canary_2",
@@ -889,30 +886,30 @@
         "live_worldserver_active": false,
         "monitor_active": false,
         "next_attempt_setup": {
-          "attempt_label": "rerun186_setup",
+          "attempt_label": "rerun187_setup",
           "status": "checkpoint_ready_for_identity_capture",
           "authorized_corrections": [
-            "before remote area-approach movement, use the established native Protection rescue order only for the selected healer-owned boss add: Righteous Defense, Hand of Reckoning, then multi-attacker Avenger's Shield; preserve the prior area approach if every cast is unavailable or rejected"
+            "preserve the original-cluster Feral handoff rebound first; only when it has no surviving healer-owned candidate and the same bounded healer-identity handoff remains active, rebind to the nearest remaining valid healer-owned follower without extending the handoff lifetime"
           ],
-          "authorized_diagnosis": "experiments/configs/all_spec_phase9_rerun185_canary3_diagnosis_v1.json",
-          "authorized_diagnosis_sha256": "7476ec85cc46a60344f2b48cd1e1eddc4340e7f4fac13a234872c5d51376d2c0",
+          "authorized_diagnosis": "experiments/configs/all_spec_phase9_rerun186_canary2_diagnosis_v1.json",
+          "authorized_diagnosis_sha256": "2f6a8a510e3fefebf9a4540a64a2767e9af28b64dce44cb74ae17719b54aa718",
           "source_change_started": true,
           "source_change_complete": true,
           "sources": [
             "src/server/game/Bots/BotWorldPopulationMgr.cpp",
             "tests/test_autonomy_pipeline_smoke.py"
           ],
-          "focused_regression_tests": "19 passed, 112 deselected",
-          "broad_source_shape_diagnostic": "108 passed, 33 pre-existing unrelated stale assertions",
+          "focused_regression_tests": "13 passed, 119 deselected",
+          "broad_source_shape_diagnostic": "100 passed, 32 pre-existing unrelated stale assertions",
           "git_diff_check": "passed",
           "worldserver_rebuild_passed": true,
-          "worldserver_binary_sha256": "38de1ff7f46c178b99f8f6c67eefeecabb92788034ded1dcad91f53b2ad87f14",
+          "worldserver_binary_sha256": "3ec8acb028a872513f090cb6522381520959b0c3f20cb3030dff314c8d5c7849",
           "old_worldserver_stopped": true,
           "old_worldserver_active_state": "inactive",
           "old_worldserver_sub_state": "dead",
           "old_worldserver_main_pid": 0,
           "deterministic_reprovision_passed": true,
-          "deterministic_reprovision_verifier": "artifacts/all_spec_program/phase9_serial_canaries_20260809_rerun186/preidentity_preparation/provisioning_verifier.json",
+          "deterministic_reprovision_verifier": "artifacts/all_spec_program/phase9_serial_canaries_20260809_rerun187/preidentity_preparation/provisioning_verifier.json",
           "deterministic_reprovision_accounts_ready": "50/50",
           "deterministic_reprovision_characters_ready": "50/50",
           "deterministic_reprovision_runtime_profiles_ready": "31/31",
@@ -938,7 +935,8 @@
             "rerun183_party_wide_shared_passive_swarm_proof_and_native_follow_staging",
             "rerun184_healer_owned_swarm_path_revalidation",
             "rerun185_feral_bear_form_before_passive_swarm_activation",
-            "rerun186_protection_native_rescue_before_remote_area_approach"
+            "rerun186_protection_native_rescue_before_remote_area_approach",
+            "rerun187_active_feral_handoff_enrolls_remaining_healer_owned_newcomer"
           ],
           "dvc_remote_verified_before_exact_eviction": true,
           "exact_targeted_eviction_complete": true,

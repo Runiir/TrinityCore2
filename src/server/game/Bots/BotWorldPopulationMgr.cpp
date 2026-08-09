@@ -15717,6 +15717,37 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     reboundAnchor = candidate;
                     reboundGuid = candidate->GetGUID().GetCounter();
                 }
+            // Rerun186's first Roar started a bounded split-cluster handoff,
+            // then a newly listed healer-owned follower appeared outside the
+            // original remote anchor's ten-yard cluster. The second Roar
+            // transferred that original cluster and invalidated its anchor,
+            // leaving the newcomer behind until generic Thrash exceeded the
+            // strict dwell bound by 77 ms. Preserve the original-cluster
+            // preference above; only when it is empty, rebind the same active,
+            // healer-identity-bound handoff to the nearest remaining follower.
+            // The original 2.5-second lifetime, native Charge/Roar/area casts,
+            // movement, hazard, victim, and threat rules remain unchanged.
+            if (!reboundAnchor)
+            {
+                float reboundDistance = std::numeric_limits<float>::max();
+                for (Creature* candidate : localAdds)
+                    if (candidate && candidate->IsAlive()
+                        && candidate->GetMap() == bot->GetMap()
+                        && candidate->GetVictim() == densityHealer
+                        && bot->IsValidAttackTarget(candidate))
+                    {
+                        float distance = bot->GetExactDist(candidate);
+                        uint32 guid = candidate->GetGUID().GetCounter();
+                        if (!reboundAnchor || distance < reboundDistance
+                            || (distance == reboundDistance
+                                && guid < reboundGuid))
+                        {
+                            reboundAnchor = candidate;
+                            reboundDistance = distance;
+                            reboundGuid = guid;
+                        }
+                    }
+            }
             if (reboundAnchor)
             {
                 state.FeralHealerThreatHandoffAnchorGuid =

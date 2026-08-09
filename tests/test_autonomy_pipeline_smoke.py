@@ -3857,6 +3857,36 @@ def test_rerun185_protection_remote_boss_add_rescue_precedes_area_approach():
     assert "NearTeleportTo" not in branch
 
 
+def test_rerun186_boss_handoff_enrolls_remaining_healer_owned_newcomer():
+    objective = function_body(
+        read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective"
+    )
+    branch = objective.split(
+        "Rerun156 proved the boss handoff discarded a still-valid Azil", 1
+    )[1].split("bool feralHealerRemoteHandoffValid", 1)[0]
+    fallback = branch.split(
+        "Rerun186's first Roar started a bounded split-cluster handoff", 1
+    )[1]
+
+    assert_ordered(
+        branch,
+        "feralHealerHandoffAnchor->GetExactDist2d(candidate)",
+        "<= 10.0f",
+        "if (!reboundAnchor)",
+        "float reboundDistance = std::numeric_limits<float>::max();",
+        "bot->GetExactDist(candidate)",
+        "state.FeralHealerThreatHandoffAnchorGuid =",
+    )
+    assert "candidate->GetVictim() == densityHealer" in fallback
+    assert "bot->IsValidAttackTarget(candidate)" in fallback
+    assert "distance < reboundDistance" in fallback
+    assert "guid < reboundGuid" in fallback
+    assert "FeralHealerThreatHandoffUntilMs =" not in fallback
+    assert "SetThreat" not in fallback
+    assert "SetVictim" not in fallback
+    assert "NearTeleportTo" not in fallback
+
+
 def test_profile_los_failure_is_recorded_before_existing_range_recovery():
     executor = function_body(
         read(BOT_MGR),
@@ -4328,7 +4358,7 @@ def test_rerun156_boss_handoff_rebinds_within_original_healer_cluster():
     marker = manager.index(
         "Rerun156 proved the boss handoff discarded a still-valid Azil"
     )
-    branch = manager[marker - 300 : marker + 2300]
+    branch = manager[marker - 300 : marker + 4300]
     assert "state.FeralHealerThreatHandoffRemoteCluster" in branch
     assert "feralHealerHandoffAnchor->GetVictim() != densityHealer" in branch
     assert "for (Creature* candidate : localAdds)" in branch
