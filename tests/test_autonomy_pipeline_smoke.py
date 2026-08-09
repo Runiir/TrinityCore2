@@ -22,6 +22,7 @@ PALADIN_AOE_THREAT_SQL = ROOT / "sql/custom/world/2026_07_14_03_stonecore_paladi
 MARKSMAN_STATIONARY_SQL = ROOT / "sql/custom/world/2026_07_14_04_marksmanship_cast_time_stationary.sql"
 EMERGENCY_ADD_THREAT_SQL = ROOT / "sql/custom/world/2026_07_15_01_stonecore_emergency_add_threat.sql"
 WOWHEAD_GUIDE_ROTATION_SQL = ROOT / "sql/custom/world/2026_07_16_00_stonecore_wowhead_guide_rotations.sql"
+PROTECTION_HOLY_WRATH_SELF_SQL = ROOT / "sql/custom/world/2026_08_09_00_phase9_protection_holy_wrath_self_center.sql"
 BOT_POLICY = ROOT / "src/server/game/Bots/BotTelemetryPolicy.cpp"
 BOT_BUFFER = ROOT / "src/server/game/Bots/BotTelemetryBuffer.cpp"
 BOT_SEGMENTS = ROOT / "src/server/game/Bots/BotExperimentCoordinator.cpp"
@@ -3915,6 +3916,34 @@ def test_rerun188_lingering_feral_healer_attacker_uses_native_swipe_after_growl(
     assert "SetThreat" not in branch
     assert "SetVictim" not in branch
     assert "NearTeleportTo" not in branch
+
+
+def test_rerun189_protection_holy_wrath_uses_existing_self_centered_area_gate():
+    migration = read(PROTECTION_HOLY_WRATH_SELF_SQL)
+    objective = function_body(
+        read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective"
+    )
+    area_gate = objective.split(
+        "On a multi-target wave, establish area threat before spending", 1
+    )[1].split("if (role == \"tank\" && densityHealer", 1)[0]
+
+    assert "SET a.`target_selector` = 'self'" in migration
+    assert "p.`class_id` = 2" in migration
+    assert "p.`spec_tag` = 'protection'" in migration
+    assert "p.`role` = 'tank'" in migration
+    assert "a.`spell_id` = 2812" in migration
+    assert "min_enemies" not in migration
+    assert "priority_bucket" not in migration
+    assert_ordered(
+        area_gate,
+        "immediateAreaThreat.TargetGuid == bot->GetGUID()",
+        "selfCenteredTargets >= 2",
+        "bot->GetExactDist2d(add) <= 10.0f",
+        "ExecuteProfileCombatAction(",
+    )
+    assert "SetThreat" not in area_gate
+    assert "SetVictim" not in area_gate
+    assert "NearTeleportTo" not in area_gate
 
 
 def test_profile_los_failure_is_recorded_before_existing_range_recovery():
