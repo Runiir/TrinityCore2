@@ -1,0 +1,194 @@
+{
+  "schema": "all_spec_phase9_rerun153_canary3_diagnosis_v1",
+  "diagnosis_sha256": "c95c02254ab840942bcad3672c976733194296e022cc358c4b5e60926a4ce9a8",
+  "hash_scope": "canonical_json_without_diagnosis_sha256",
+  "source_attempt": {
+    "attempt_label": "rerun153_canary_3",
+    "attempt_id": "phase9_serial_03_stonecore_phase9_083_5d0c65765654",
+    "batch_id": "phase9-serial-canary-rerun153-3",
+    "batch_identity_sha256": "25bacd6ad95484ed5fffe19197b8fb8491046f4815ee0b9fccbe342aa8797cba",
+    "composition_id": "stonecore_phase9_083_5d0c65765654",
+    "party_sha256": "71f05aeed37bfe1fc988746cdd00e7bf8e4d2dd94258eed65ec58d15201823b2",
+    "party": [
+      "protection_paladin",
+      "holy_priest",
+      "arcane_mage",
+      "assassination_rogue",
+      "fire_mage"
+    ],
+    "binary_sha256": "2303d0c762539a0aadb17d5a5ee5c8efd6ec67f393fb8225b41b47bd6ff09740",
+    "server_process_id": 363841,
+    "server_epoch": 1079470881992277,
+    "session_fingerprint": "410c78a2bc3cd17a19e9fafaf831de3fa5def7faa09a7734fd2169fb053d00da",
+    "profile_generation": 1,
+    "profile_content_hash": "35a587f05d8781d72c62576a6f35392a69e01d5978429f65429ad5b9ed096a22",
+    "evidence_identity_manifest_sha256": "d0bac5c66a200cd89f488d96d3655cc1b5bc51cfa8f0561b7b25d3b0916139d8",
+    "run_plan_sha256": "482ae69e7febba1cdd074dc4e66e770a33d5939c96fd4babc9a3d0a4a7086a46",
+    "max_active_cohorts": 1
+  },
+  "capture_and_closeout": {
+    "capture_identity_sha256": "25bacd6ad95484ed5fffe19197b8fb8491046f4815ee0b9fccbe342aa8797cba",
+    "raw_part_count": 1,
+    "raw_event_row_count": 250,
+    "compact_row_count": 1,
+    "raw_bundle_sha256": "fa78d2ced6ade8d243b664fc15ae25c8a8e78e25bf55ba61f7afcdc7ce0523a1",
+    "compact_bundle_sha256": "d59d1b3aeb8d9f89ee01c2b585554b604281b86b338c8f095a83ca5596d422c1",
+    "raw_pointer_sha256": "b8fa6293f672c3fda26cc6f167fa3107522a9355e73b220bb3aa06c9928a2dd1",
+    "compact_pointer_sha256": "22144d8a97e1e4ef35e13e4a8941b97327ef53335101487e62b385ca7cb90c08",
+    "publication_receipt_sha256": "be2388c47a1be4a7d2b88bbae471ca1cabbd8e08d4972b829b5c317ca47555a2",
+    "remote_status_sha256": "efed9e5afcfe149915ae98b9ed9e69304eb48f5ce2e2265b18b5b5ed2f155e60",
+    "remote_verified": true,
+    "capture_revalidated_after_hydration": true,
+    "exact_party_verified": true,
+    "identity_matched": true,
+    "inactive_after_attempt": true,
+    "cleanup": {
+      "active": false,
+      "active_bots": 0,
+      "lease_count": 0,
+      "party_bot_count": 0
+    },
+    "broad_dvc_gc_used": false
+  },
+  "strict_route_result": {
+    "completion_reason": "stonecore_role_quality_audit_failed",
+    "operator_failure_reason": "semantic_progress_plateau",
+    "failure_labels": [
+      "semantic_progress_plateau",
+      "role_quality:Protpally:healer_target_exposure",
+      "stonecore_role_quality_audit_failed"
+    ],
+    "route_manifest_complete": false,
+    "route_terminal_count": 13,
+    "expected_route_terminal_count": 14,
+    "real_boss_kill_count": 3,
+    "expected_real_boss_kill_count": 4,
+    "validation_route_no_progress_diagnoses": 0,
+    "semantic_progress_plateau": true,
+    "stuck_events": 0,
+    "death_loop_events": 0,
+    "teacher_assisted_kills": 0,
+    "canaries_4_through_8_started": false
+  },
+  "role_audit": {
+    "passed": false,
+    "failure_labels": [
+      "Protpally:healer_target_exposure"
+    ],
+    "protection_paladin": {
+      "eligible_hostile_samples": 946,
+      "tank_owned_samples": 876,
+      "healer_targeting_samples": 37,
+      "tank_all_hostile_retention_rate": 0.926,
+      "minimum_retention_rate": 0.9,
+      "route_target_retention_rate": 0.9862,
+      "healer_target_exposure_rate": 0.0391,
+      "maximum_exposure_rate": 0.01,
+      "max_healer_target_dwell_ms": 2017,
+      "maximum_healer_target_dwell_ms": 3000,
+      "tank_threat_aura_uptime_rate": 1.0,
+      "deaths": 0
+    }
+  },
+  "ordinary_trash_exposure_localization": {
+    "eligible_samples_by_route_progress_generation": {
+      "generation_0": {
+        "eligible_samples": 493,
+        "tank_owned_samples": 431,
+        "healer_targeting_samples": 37,
+        "retention_rate": 0.8742,
+        "healer_exposure_rate": 0.0751,
+        "note": "These are live ordinary-trash resolver rows between manifest actions. Their empty per-entry route-progress projection does not make their current identity-scoped hostile ownership ineligible."
+      },
+      "nonzero_generations_combined": {
+        "eligible_samples": 453,
+        "tank_owned_samples": 445,
+        "healer_targeting_samples": 0,
+        "retention_rate": 0.9823,
+        "healer_exposure_rate": 0.0
+      }
+    },
+    "eligible_exposure_bursts": [
+      {
+        "first_sample_ms": 1786179271260,
+        "last_sample_ms": 1786179273282,
+        "first_hostile_guids": [15, 16, 17, 18],
+        "later_hostile_guids": [10, 11, 13, 14],
+        "control_sequence": [
+          "trash_density_area_threat:auto_attack_fallback_out_of_range",
+          "consecration_healer_multi_trash_pickup:auto_attack_fallback_out_of_range",
+          "righteous_defense_healer_pickup:auto_attack_fallback_out_of_range",
+          "ownership_recovers_then_an_adjacent_subset_flips",
+          "avengers_shield_healer_multi_trash_pickup:auto_attack_fallback_out_of_range",
+          "trash_density_area_threat:hand_of_reckoning_cooldown",
+          "trash_density_area_threat:hammer_of_the_righteous"
+        ]
+      },
+      {
+        "first_sample_ms": 1786179908187,
+        "last_sample_ms": 1786179908952,
+        "hostile_guids": [207, 209, 210, 212],
+        "control_sequence": [
+          "righteous_defense_healer_pickup:auto_attack_fallback_out_of_range",
+          "avengers_shield_healer_multi_trash_pickup:auto_attack_fallback_out_of_range",
+          "trash_density_area_threat:hand_of_reckoning_cooldown",
+          "trash_density_area_threat:auto_attack_fallback_out_of_range",
+          "tank_ownership_recovers_on_the_next_250_ms_decision"
+        ]
+      }
+    ],
+    "cause": "Rerun153's reactive 250 ms cadence successfully bounds every individual healer-target episode below 3000 ms, but it begins only after at least two hostiles already target the healer. In both eligible bursts the Protection tank initially owns the complete pack, then loses an adjacent subset after ordinary one-second decisions spend several global-cooldown or out-of-range fallbacks without refreshing area threat. The faster reactive chain recovers ownership, but 37 already-eligible hostile samples are exposed before recovery. The identities, threat aura, snapshot attribution, and audit denominator are current and correct.",
+    "audit_attribution_correct": true,
+    "audit_correction_required": false
+  },
+  "azil_plateau_localization": {
+    "route_generation": 14,
+    "route_node_id": "4b2457d42f81a298",
+    "passive_swarm_target_id": 151,
+    "consecutive_same_decision_count": 71,
+    "fingerprint_repeat_count": 78,
+    "last_180_seconds_action_counts": {
+      "tank_activate_passive_swarm": 75,
+      "dps_wait_for_swarm_tank_ownership": 248,
+      "validation_route_readiness_wait": 345
+    },
+    "terminal_tank_state": {
+      "bot_in_combat": false,
+      "victim_guid": 0,
+      "engaged_hostiles": 0,
+      "melee_auto_attacking": false,
+      "blocked_current_reason": "no_line_of_sight",
+      "recovery_mode": "blocked_no_fallback",
+      "recovery_result": "route_destination_unreachable"
+    },
+    "cause": "The passive-swarm activation branch treats BotActionExecutor::ExecuteCombat returning Ok for Attack() as completed activation without first proving line of sight or observing combat. At target 151 the request is accepted every ordinary decision, but no white swing starts, no hostile engages, and the unconditional return prevents the existing route/boss fallback while all DPS wait for tank ownership. This is a real bounded-control defect, not an acceptance or audit error."
+  },
+  "accepted_causal_chain": [
+    "Rerun153 canary 2 passed every independently reconstructed route, identity, retention, exposure/dwell, role, publication, cleanup, and eviction gate before canary 3 was unlocked.",
+    "Canary 3 retained the exact rerun153 process, epoch, profile, planned party, serial isolation, remote publication, cleanup, and local payload eviction contracts.",
+    "The Protection correction reduced maximum healer dwell from rerun152's 7047 ms to 2017 ms and raised all-hostile retention from 0.8468 to 0.9260, but the reactive-only cadence still permits 37 eligible healer-target samples and fails the unchanged 0.01 exposure ceiling.",
+    "Azil then entered an independently reproduced passive-swarm activation loop with no combat or victim and unresolved line of sight, causing the genuine semantic-progress plateau at 13 of 14 terminals.",
+    "The serial operator correctly stopped after canary 3; canaries 4 through 8 and Phases 10 through 12 remain blocked."
+  ],
+  "smallest_safe_corrections": [
+    {
+      "file": "src/server/game/Bots/BotWorldPopulationMgr.cpp",
+      "scope": "Protection Paladin ordinary-trash packs with at least three engaged hostiles",
+      "change": "Lower only the Protection tank's decision timer to the existing bounded 250 ms pickup cadence before healer ownership is lost. Preserve the current spell order, targets, threat rules, movement, cooldown, GCD, power, range, line-of-sight, route, and audit thresholds."
+    },
+    {
+      "file": "src/server/game/Bots/BotWorldPopulationMgr.cpp",
+      "scope": "declared boss-add passive-swarm activation",
+      "change": "Do not report or return from passive-swarm white-swing activation unless the anchor has line of sight. When that anchor is not visible, bypass the pending-swarm resource hold so the existing route/boss fallback can make progress; do not force combat, assign victims, weaken DPS ownership gates, or alter route acceptance."
+    }
+  ],
+  "next_attempt": {
+    "attempt_label": "rerun154_canary_2",
+    "worldserver_rebuild_required": true,
+    "deterministic_reprovision_required": true,
+    "fresh_identity_and_eight_row_plan_required": true,
+    "canary_2_only_until_strict_pass": true,
+    "canaries_3_through_8_started": false,
+    "phases_10_through_12_blocked": true
+  }
+}

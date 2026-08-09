@@ -361,7 +361,7 @@ PERSISTENT_SETUP_SPELL_IDS = {
 # 17 Phase 0 profile gaps and are also provisioned as known spells. Later
 # calibration phases may tune priorities without changing the canonical links.
 RUNTIME_ACTION_SPELL_IDS = {
-    "feral_druid_tank": [99, 6795, 779, 22812, 33745, 33878, 77758, 80313],
+    "feral_druid_tank": [99, 6795, 779, 22812, 33745, 33878, 77758, 77761, 80313],
     "restoration_shaman": [331, 1064, 8004, 51886, 61295, 77472],
     "arms_warrior": [772, 1464, 5308, 6552, 7384, 12294, 86346],
     "fury_warrior": [1464, 1680, 5308, 6552, 23881, 85288, 86346],

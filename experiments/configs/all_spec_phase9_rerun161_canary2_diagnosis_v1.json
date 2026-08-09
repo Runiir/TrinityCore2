@@ -1,0 +1,110 @@
+{
+  "schema": "all_spec_phase9_rerun161_canary2_diagnosis_v1",
+  "diagnosis_sha256": "99e37b856000253a57b61562f81d10d0e478b36885738db211feebe3cf487f81",
+  "hash_scope": "canonical_json_without_diagnosis_sha256",
+  "source_attempt": {
+    "attempt_label": "rerun161_canary_2",
+    "attempt_id": "phase9_serial_02_stonecore_phase9_006_6893daf98698",
+    "batch_id": "phase9-serial-canary-rerun161-2",
+    "batch_identity_sha256": "ea41df209aac95ff9880f82cbd189c63c04b328962d33e698a450e523e28ab5a",
+    "party_sha256": "524b94c794897f5111bdae0a5e45ba31a31ebb8596d811a3dd8c1caff95bd16a",
+    "binary_sha256": "2a7d1c15a485404298efef96294c5c87761318759949a34a0e486f355398e2a5",
+    "evidence_identity_manifest_sha256": "787800741ed24dd99aeb34434c9a76ae1f3b1d0d707b538abad68fbefb5d15dd",
+    "run_plan_sha256": "eba64c5ace456620597eda1daacaa3e6b91c760ee8d6bee07f665ae355950638",
+    "server_process_id": 613130,
+    "server_epoch": 4225974975651662,
+    "session_fingerprint": "3f04767ca00280356f1ee14b8c9f3b5e71b2d16bd7e5112d763d656d994ea20c",
+    "profile_generation": 1,
+    "profile_content_hash": "35a587f05d8781d72c62576a6f35392a69e01d5978429f65429ad5b9ed096a22",
+    "max_active_cohorts": 1
+  },
+  "capture_and_closeout": {
+    "raw_event_row_count": 277,
+    "compact_row_count": 1,
+    "raw_bundle_sha256": "da4d31c0e68c5cb60a6593b190d248d88056c5136052f1fb1c909208c90501d1",
+    "compact_bundle_sha256": "55068fcd6ac1320cbbaf8b2e9f7655e61de60b23af9ce5667f646ed80441efc0",
+    "acceptance_source_report_sha256": "552404f2a6c7bf1a211d2d71bd6b362a120e68ec40a5bb5cef8f8f591e049009",
+    "events_zst_sha256": "34509f04bde5ef06e78b836c34e0b411396aa225ca5aac4f57e5445ef47ca52e",
+    "exact_manifests_sha256": "32fd39e52f670f01f50af660af8776a2a8449305c5d169b7e160047b71988108",
+    "evidence_parquet_sha256": "b7e145042903d988345a007b5efa5380ff6288a5d14c9a5f71e501e1d4553935",
+    "raw_pointer_sha256": "3b9f04f7fdcce6494260159f0325a30efc9a6f5878750850d82d71029ab84c6b",
+    "raw_dvc_md5": "43872414a25c0eb33561fcc641626ce3.dir",
+    "compact_pointer_sha256": "90d083faf0b0b32a8c55ead0c242389ad9bbb01d90e978d9e3d7bf5e6284070e",
+    "compact_dvc_md5": "ddd66d532ea3faab89e80771145be753.dir",
+    "publication_receipt_sha256": "9738959d5fa3425da50639d91bdb8215b646ea6e9ac14d64fcfc31c2c19f583d",
+    "remote_status_sha256": "efed9e5afcfe149915ae98b9ed9e69304eb48f5ce2e2265b18b5b5ed2f155e60",
+    "receipt_canonical_replay_passed": true,
+    "capture_revalidated_after_hydration": true,
+    "remote_verified": true,
+    "identity_matched": true,
+    "exact_party_verified": true,
+    "cleanup": {"active": false, "active_bots": 0, "lease_count": 0, "party_bot_count": 0},
+    "worldserver_stopped_before_tracked_edit": true,
+    "broad_dvc_gc_used": false
+  },
+  "strict_result": {
+    "completion_reason": "stonecore_role_quality_audit_failed",
+    "operator_failure_reason": "role_quality:Feraltank:healer_target_dwell",
+    "failure_labels": ["role_quality:Feraltank:healer_target_dwell", "stonecore_role_quality_audit_failed"],
+    "route_terminal_count": 14,
+    "real_boss_kill_count": 4,
+    "kills": 47,
+    "duration_seconds": 1290,
+    "canaries_3_through_8_started": false
+  },
+  "role_audit": {
+    "eligible_hostile_samples": 1746,
+    "tank_owned_samples": 1708,
+    "healer_targeting_samples": 2,
+    "tank_all_hostile_retention_rate": 0.9782,
+    "healer_target_exposure_rate": 0.0011,
+    "max_healer_target_dwell_ms": 3365,
+    "maximum_healer_target_dwell_ms": 3000,
+    "tank_threat_aura_uptime_rate": 1.0,
+    "deaths": 0
+  },
+  "exposure_localization": {
+    "route_generation": 13,
+    "hostile_guid": 632,
+    "episode_first_timestamp_ms": 1786202884827,
+    "episode_last_timestamp_ms": 1786202888192,
+    "episode_dwell_ms": 3365,
+    "eligible_exposure_samples": 2,
+    "sequence": [
+      "two_of_four_hostiles_target_healer",
+      "stampeding_roar_reposition",
+      "two_250ms_density_movements",
+      "generic_growl_attempt_on_guid_633",
+      "two_more_density_movements",
+      "guid_633_recovers_but_guid_632_remains",
+      "six_density_movements_as_wave_grows_to_thirteen",
+      "feral_charge_guid_632_at_3098ms",
+      "full_recovery_at_3365ms"
+    ],
+    "rerun161_swipe_action_count": 0,
+    "cause": "The audit is correct. Rerun161 passed the strict retention and exposure gates and reduced the only over-limit episode to one identity, but the new Swipe branch never submitted. Its engaged-count >= 12 guard excluded the actionable opening state with two local healer-owned attackers among four engaged hostiles. When the wave later reached thirteen, GUID 633 had already recovered and the remaining single-attacker Growl/Charge chain owned GUID 632 until 3365 ms. The two-attacker and nearby-majority predicates already bound the native area action to the exact local recovery surface; the high-density predicate is not required for safety and is the only condition disproved by this capture.",
+    "audit_attribution_correct": true,
+    "audit_correction_required": false
+  },
+  "corrective_action": {
+    "scope": "existing local Feral two-or-more healer-attacker majority recovery",
+    "change": "Remove only the engaged-count >= 12 condition from the rerun161 native Swipe attempt. Preserve the at-least-two nearby healer owners, nearby-majority coverage, deterministic target, every native legality check, and unchanged Demoralizing Roar and handoff fallthrough.",
+    "acceptance_threshold_changes": [],
+    "gate_weakening": false
+  },
+  "independent_validation": {
+    "capture_hashes_replayed": true,
+    "receipt_canonical_hash_replayed": true,
+    "role_audit_replayed_from_hydrated_raw_evidence": true,
+    "episode_reconstructed_per_identity": true
+  },
+  "eviction": {
+    "status": "exact_re_eviction_verified",
+    "temporary_hydration_root_absent": true,
+    "raw_directory_object_absent": true,
+    "raw_child_objects_absent": true,
+    "compact_directory_object_absent": true,
+    "compact_child_object_absent": true,
+    "broad_dvc_gc_allowed": false
+  }
+}

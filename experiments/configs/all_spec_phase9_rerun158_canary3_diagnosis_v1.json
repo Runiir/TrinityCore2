@@ -1,0 +1,178 @@
+{
+  "schema": "all_spec_phase9_rerun158_canary3_diagnosis_v1",
+  "diagnosis_sha256": "5bed7d832dd6e18ce65a7962c94b8bba8b329c6dd6ba9ea4c1aec06332cbf6dc",
+  "hash_scope": "canonical_json_without_diagnosis_sha256",
+  "source_attempt": {
+    "attempt_label": "rerun158_canary_3",
+    "attempt_id": "phase9_serial_03_stonecore_phase9_083_5d0c65765654",
+    "batch_id": "phase9-serial-canary-rerun158-3",
+    "batch_identity_sha256": "c8b2713f879122a488f254138c23a70d70fdfbc8e17e3a3bbdc1992284eb2760",
+    "composition_id": "stonecore_phase9_083_5d0c65765654",
+    "party_sha256": "71f05aeed37bfe1fc988746cdd00e7bf8e4d2dd94258eed65ec58d15201823b2",
+    "party": [
+      "protection_paladin",
+      "holy_priest",
+      "arcane_mage",
+      "assassination_rogue",
+      "fire_mage"
+    ],
+    "binary_sha256": "144e883d92adb4e966d606133117d46d04a95e36fe6e5b3695ad4e66042a6373",
+    "server_process_id": 523700,
+    "server_epoch": 463153310179871,
+    "session_fingerprint": "3bddc77df384a74c4f1ab9e56eabf0815e241720af21f183db6801999b69d290",
+    "profile_generation": 1,
+    "profile_content_hash": "35a587f05d8781d72c62576a6f35392a69e01d5978429f65429ad5b9ed096a22",
+    "evidence_identity_manifest_sha256": "8bf5b80c5bd071cbe11bbd908fce4a0b869caed092a1738b7b85568c3e6ee0a7",
+    "run_plan_sha256": "186c5f98b9ac66101400b0c482f4435afb1086c289156c3037c31a20f099a0e8",
+    "max_active_cohorts": 1
+  },
+  "capture_and_closeout": {
+    "raw_part_count": 1,
+    "raw_event_row_count": 258,
+    "compact_row_count": 1,
+    "raw_bundle_sha256": "7926fcbabd4ad9be28da469b5dde1992d950377160dd71c54a8be6c0331af9b2",
+    "compact_bundle_sha256": "0f6456eedc810460e59aaa8f4665db73dd3c227a9449272aed6b756d8bff895f",
+    "acceptance_source_report_sha256": "2436ef3013f314cfb952954012dc66f27370c861433e48f01fdbc05015b0a3f7",
+    "raw_pointer_sha256": "e67046141b3132f22bfbe600f9b3af2f956c19bf8275252daa804e67dfd69c57",
+    "raw_dvc_md5": "a0b5f84f0041a566e5d56a900a8cf44a.dir",
+    "compact_pointer_sha256": "a5f3a6b7103e5d09fc384c81e982fe5169ae75da32a89b26a562f98c76c34e3e",
+    "compact_dvc_md5": "b5d92de7b949a42ae657b5be18c9f2e4.dir",
+    "publication_receipt_sha256": "df1069aa52214cb38486a592e0217337c477909c44a454f04680d934a7898862",
+    "publication_receipt_canonical_replay_passed": true,
+    "remote_status_sha256": "efed9e5afcfe149915ae98b9ed9e69304eb48f5ce2e2265b18b5b5ed2f155e60",
+    "remote_verified": true,
+    "targeted_dvc_status": "Cache and remote 'object' are in sync.",
+    "capture_revalidated_after_hydration": true,
+    "role_audit_exact_replay": true,
+    "exact_party_verified": true,
+    "identity_matched": true,
+    "cleanup": {
+      "active": false,
+      "active_bots": 0,
+      "lease_count": 0,
+      "party_bot_count": 0
+    },
+    "broad_dvc_gc_used": false
+  },
+  "strict_result": {
+    "completion_reason": "stonecore_role_quality_audit_failed",
+    "operator_failure_reason": "semantic_progress_plateau",
+    "failure_labels": [
+      "semantic_progress_plateau",
+      "role_quality:Protpally:healer_target_exposure",
+      "stonecore_role_quality_audit_failed"
+    ],
+    "route_manifest_complete": false,
+    "route_terminal_count": 13,
+    "expected_route_terminal_count": 14,
+    "real_boss_kill_count": 3,
+    "expected_real_boss_kill_count": 4,
+    "kills": 43,
+    "duration_seconds": 1158,
+    "party_deaths": 0,
+    "semantic_progress_plateau": true,
+    "canaries_4_through_8_started": false
+  },
+  "role_audit": {
+    "passed": false,
+    "failure_labels": [
+      "Protpally:healer_target_exposure"
+    ],
+    "protection_paladin": {
+      "eligible_hostile_samples": 542,
+      "tank_owned_samples": 520,
+      "healer_targeting_samples": 18,
+      "tank_all_hostile_retention_rate": 0.9594,
+      "minimum_retention_rate": 0.9,
+      "route_target_retention_rate": 0.9872,
+      "healer_target_exposure_rate": 0.0332,
+      "maximum_exposure_rate": 0.01,
+      "max_healer_target_dwell_ms": 1012,
+      "maximum_healer_target_dwell_ms": 3000,
+      "tank_threat_aura_uptime_rate": 1.0,
+      "deaths": 0
+    },
+    "fire_mage": {
+      "active_action_coverage": 0.9954,
+      "minimum_active_action_coverage": 0.8,
+      "cast_failure_rate": 0.0,
+      "maximum_cast_failure_rate": 0.05,
+      "deaths": 0
+    }
+  },
+  "protection_exposure_localization": {
+    "eligible_samples_by_route_generation": {
+      "generation_1": {"eligible": 253, "tank_owned": 232, "healer_targeting": 18},
+      "generation_2": {"eligible": 20, "tank_owned": 20, "healer_targeting": 0},
+      "generation_3": {"eligible": 116, "tank_owned": 116, "healer_targeting": 0},
+      "generation_4": {"eligible": 6, "tank_owned": 6, "healer_targeting": 0},
+      "generation_8": {"eligible": 12, "tank_owned": 12, "healer_targeting": 0},
+      "generation_9": {"eligible": 11, "tank_owned": 11, "healer_targeting": 0},
+      "generation_10": {"eligible": 82, "tank_owned": 82, "healer_targeting": 0},
+      "generation_11": {"eligible": 14, "tank_owned": 14, "healer_targeting": 0},
+      "generation_13": {"eligible": 26, "tank_owned": 25, "healer_targeting": 0},
+      "generation_14": {"eligible": 2, "tank_owned": 2, "healer_targeting": 0}
+    },
+    "dominant_route_generation": 1,
+    "exposed_hostile_samples": {
+      "guid_12": 5,
+      "guid_15": 3,
+      "guid_16": 3,
+      "guid_17": 3,
+      "guid_18": 3,
+      "guid_9": 1
+    },
+    "control_sequence": [
+      "trash_density_area_threat_at_first_healer_owner",
+      "hand_of_protection_healer_trash_emergency_at_five_healer_attackers",
+      "righteous_defense_healer_pickup",
+      "ownership_recovered_next_tick"
+    ],
+    "cause": "All 18 exposed samples occur in generation 1. The tank had owned GUIDs 9-18 for more than three seconds, then one healer owner appeared while the ordinary-trash Hand of Protection branch still required at least three simultaneous healer attackers. The next tick exposed five attackers; Hand of Protection and Righteous Defense then cleared the episode within 1012 ms. The current threshold is therefore reactive enough for dwell but one decision too late for the strict exposure ratio. Firing the same native protection at the first healer attacker is the smallest threat-retention correction and does not alter any audit threshold or ownership gate.",
+    "audit_attribution_correct": true,
+    "audit_correction_required": false
+  },
+  "azil_plateau_localization": {
+    "route_generation": 14,
+    "objective": "High Priestess Azil",
+    "passive_follower_guid": 412,
+    "tank_activation_submissions": 150,
+    "final_repeated_activation_window_decisions": 149,
+    "observed_state_during_repeated_activation": {
+      "bot_in_combat": false,
+      "victim_guid": 0,
+      "melee_auto_attacking": false,
+      "engaged_hostiles": 0,
+      "tank_owned_hostiles": 0
+    },
+    "dps_response": "dps_wait_for_swarm_tank_ownership",
+    "cause": "The passive-swarm activation branch approximates melee reach with GetExactDist2d <= 6.0f. ExecuteCombat returns Ok for the white-swing request even when the engine has not established combat, a victim, or melee-auto uptime. The branch then marks WasInCombat true and returns, while the unchanged DPS ownership gate waits correctly. The fixed-distance approximation is not evidence that a native melee activation is actionable.",
+    "smallest_correction": "Use Unit::IsWithinMeleeRange for prepositioning and activation, and treat an anchor lacking actual melee range or line of sight as non-actionable for the resource hold so the existing route fallback remains available if bounded movement cannot reach it.",
+    "gate_weakening_required": false,
+    "audit_correction_required": false
+  },
+  "corrective_action": {
+    "protection_healer_exposure": "Change only the existing native ordinary-trash Hand of Protection trigger from defenseAttackerCount >= 3 to defenseAttackerCount >= 1.",
+    "azil_passive_swarm": "Replace the fixed six-yard activation approximation with IsWithinMeleeRange and require both engine melee range and line of sight before the pending-swarm resource hold can suppress the existing route fallback.",
+    "acceptance_threshold_changes": [],
+    "gate_weakening": false
+  },
+  "independent_validation": {
+    "capture_hashes_replayed": true,
+    "receipt_canonical_hash_replayed": true,
+    "targeted_remote_status_verified": true,
+    "role_audit_replayed_from_hydrated_raw_evidence": true,
+    "exposure_reconstructed_per_identity_and_generation": true,
+    "plateau_reconstructed_from_final_180_seconds_of_trace": true
+  },
+  "eviction": {
+    "status": "exact_re_eviction_verified",
+    "temporary_hydration_root": "phase9-rerun158-c3-hydrate",
+    "temporary_hydration_root_absent": true,
+    "raw_directory_object_absent": true,
+    "raw_child_objects_absent": true,
+    "compact_directory_object_absent": true,
+    "compact_child_objects_absent": true,
+    "broad_dvc_gc_allowed": false
+  }
+}

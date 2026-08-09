@@ -1,0 +1,181 @@
+{
+  "schema": "all_spec_phase9_rerun147_diagnosis_v1",
+  "diagnosis_sha256": "10df32ac3e431eb7eabe5b18a0bdb468c3f4feb6ec6faeb901f8263e508c4e59",
+  "hash_scope": "canonical_json_without_diagnosis_sha256",
+  "source_attempt": {
+    "attempt_label": "rerun147_canary_2",
+    "attempt_id": "phase9_serial_02_stonecore_phase9_006_6893daf98698",
+    "batch_id": "phase9-serial-canary-rerun147-2",
+    "batch_identity_sha256": "2f0fc84df9b4fdb61e0d4db732694629d33867c334e7b964ec6e79a3eca67311",
+    "composition_id": "stonecore_phase9_006_6893daf98698",
+    "party_sha256": "524b94c794897f5111bdae0a5e45ba31a31ebb8596d811a3dd8c1caff95bd16a",
+    "party": [
+      "feral_druid_tank",
+      "discipline_priest",
+      "fury_warrior",
+      "marksmanship_hunter",
+      "retribution_paladin"
+    ],
+    "binary_sha256": "b254b51e0ab234bad16998b065b3372aacc4ee2ba59462a010696478cf1e3cb8",
+    "server_process_id": 3274588,
+    "server_epoch": 15673627334107616,
+    "session_fingerprint": "e59a44a4b39132ba367ea987e0907b613ecc003d142fa28012e91ee2ca951db5",
+    "profile_generation": 1,
+    "profile_content_hash": "35a587f05d8781d72c62576a6f35392a69e01d5978429f65429ad5b9ed096a22",
+    "evidence_identity_manifest_sha256": "2f426f70933e1f13ef0fffbae3f788a95e8e2b7daef03b2021dbf87a04f5c6f8",
+    "run_plan_sha256": "f1512674823d483c364db5e33b4bed95c220209d51456a776b61df18a9f801bf",
+    "max_active_cohorts": 1
+  },
+  "capture_and_closeout": {
+    "capture_identity_sha256": "2f0fc84df9b4fdb61e0d4db732694629d33867c334e7b964ec6e79a3eca67311",
+    "raw_part_count": 1,
+    "raw_event_row_count": 305,
+    "compact_row_count": 1,
+    "raw_bundle_sha256": "f38d5e63dd00e8395ab5f40f068f2981ec3ae12a63b62f5da903362f4ec7a24a",
+    "compact_bundle_sha256": "b8774e4d6afadbec716a31920a1b19041babf6f4589c6150e3abad0050b62965",
+    "publication_receipt_sha256": "7fbe160a1ab84efe2a913e1b9c2f58cbb7d9c60f33ee7cfe7cb6f9ed49e2ce33",
+    "remote_verified": true,
+    "capture_revalidated_after_hydration": true,
+    "exact_party_verified": true,
+    "identity_matched": true,
+    "inactive_after_attempt": true,
+    "cleanup": {
+      "active": false,
+      "active_bots": 0,
+      "lease_count": 0,
+      "party_bot_count": 0
+    },
+    "broad_dvc_gc_used": false
+  },
+  "strict_route_result": {
+    "completion_reason": "stonecore_role_quality_audit_failed",
+    "failure_reason": "role_quality:Feraltank:healer_target_exposure",
+    "route_terminal_count": 14,
+    "expected_route_terminal_count": 14,
+    "real_boss_kill_count": 4,
+    "expected_real_boss_kill_count": 4,
+    "duration_seconds": 1539,
+    "kills": 61,
+    "stuck_events": 0,
+    "death_loop_events": 0,
+    "no_progress_diagnoses": 0,
+    "canaries_3_through_8_started": false
+  },
+  "role_audit": {
+    "passed": false,
+    "failure_labels": [
+      "Feraltank:healer_target_exposure",
+      "Feraltank:healer_target_dwell"
+    ],
+    "feral_druid_tank": {
+      "eligible_hostile_samples": 2337,
+      "tank_owned_samples": 2232,
+      "healer_targeting_samples": 48,
+      "tank_all_hostile_retention_rate": 0.9551,
+      "route_target_retention_rate": 0.8828,
+      "healer_target_exposure_rate": 0.0205,
+      "max_healer_target_dwell_ms": 3576,
+      "tank_threat_aura_uptime_rate": 1.0,
+      "cast_failure_rate": 0.0,
+      "deaths": 0
+    }
+  },
+  "route_generation_localization": {
+    "generation_3": {
+      "eligible_samples": 536,
+      "tank_owned_samples": 532,
+      "healer_targeting_samples": 3
+    },
+    "generation_13": {
+      "eligible_samples": 533,
+      "tank_owned_samples": 516,
+      "healer_targeting_samples": 6
+    },
+    "generation_14": {
+      "eligible_samples": 909,
+      "tank_owned_samples": 849,
+      "healer_targeting_samples": 39,
+      "share_of_all_healer_targeting_samples": 0.8125
+    },
+    "all_other_generations": {
+      "eligible_samples": 359,
+      "tank_owned_samples": 335,
+      "healer_targeting_samples": 0
+    }
+  },
+  "generation_3_dwell_evidence": {
+    "hostile_guid": 106,
+    "start_ms": 1785919685566,
+    "last_ms": 1785919689142,
+    "dwell_ms": 3576,
+    "prior_growl": {
+      "timestamp_ms": 1785919677527,
+      "action": "feral_growl_lingering_party_trash_attacker",
+      "target_guid": 333
+    },
+    "critical_sequence": [
+      "move_out_of_hazard",
+      "feral_stampeding_roar_healer_threat_reposition",
+      "hold_outside_hazard",
+      "feral_continue_remote_healer_trash_cluster_handoff",
+      "feral_growl_lingering_healer_trash_attacker",
+      "move_to_trash_density",
+      "tank_hazard_hold_aoe_threat"
+    ],
+    "ownership_cleared_at_ms": 1785919689402,
+    "cause": "Growl was correctly spent on the last loose party attacker before GUID 106 appeared. Its native cooldown became available during GUID 106's exposure, but the global Feral healer-exposure cadence block submitted Stampeding Roar first and returned. That global-cooldown action preempted the exact one-hostile Growl pickup, and the remote healer-cluster handoff consumed the first post-GCD decision before Growl finally landed. The healer therefore retained GUID 106 for 3576 ms."
+  },
+  "generation_14_exposure_evidence": {
+    "post_roar_retention_action_count": 0,
+    "observed_hold_actions": [
+      "feral_hold_charge_swarm_arrival_for_roar",
+      "feral_hold_healer_swarm_handoff_for_roar"
+    ],
+    "representative_first_split": {
+      "roar_timestamp_ms": 1785920730693,
+      "roar_action": "feral_demoralizing_roar_split_swarm_handoff",
+      "healer_owned_before_hold": 21,
+      "healer_owned_after_first_transfer": 8,
+      "second_roar_timestamp_ms": 1785920732220
+    },
+    "cause": "The rerun144 post-Roar area-retention resolver requires a local follower to both still target the healer and carry the Feral's Demoralizing Roar aura. A successful Roar transfers affected local followers to the tank, while the followers that remain on the healer are the uncovered set. The conjunction therefore rejects the exact successful local coverage it was intended to prove. The damaging area-retention branch never ran, and the Feral spent repeated decisions holding for another Roar while already acquisition-eligible followers remained on the healer."
+  },
+  "audit_validation": {
+    "audit_attribution_correct": true,
+    "trace_order_monotonic": true,
+    "threat_acquisition_grace_ms": 3000,
+    "recomputed_eligible_hostile_samples": 2337,
+    "recomputed_tank_owned_samples": 2232,
+    "recomputed_healer_targeting_samples": 48,
+    "recomputed_max_healer_target_dwell_ms": 3576,
+    "audit_correction_required": false
+  },
+  "accepted_causal_chain": [
+    "Rerun147 canary 2 matched the fresh identity and deterministic row-2 party, completed all 14 strict routes and all 4 real bosses, published remotely, cleaned up, and remained locally evicted until the bounded diagnosis hydration.",
+    "The official identity-scoped audit is reproducible exactly from the monotonic trace: 48 of 2337 eligible hostile samples target the healer and the longest continuous healer-owned hostile episode is 3576 ms.",
+    "The longest dwell is a single generation-3 hostile whose ready Growl pickup was preempted by the lower-priority Stampeding Roar global-cooldown return.",
+    "Generation 14 contributes 39 of 48 exposure samples because the post-Roar area-retention proof uses a contradictory victim-and-aura predicate and never executes.",
+    "The serial operator correctly stopped after canary 2; canaries 3 through 8 and Phases 10 through 12 remain blocked."
+  ],
+  "smallest_safe_corrections": [
+    {
+      "file": "src/server/game/Bots/BotWorldPopulationMgr.cpp",
+      "scope": "exactly one healer-owned hostile visible to the Feral cadence block",
+      "change": "Try the existing native Growl pickup before the Stampeding Roar movement accelerator. Preserve target identity, spell legality, cooldown, GCD, range, LOS, movement, hazard, and fallback behavior; Stampeding Roar remains unchanged when Growl cannot submit."
+    },
+    {
+      "file": "src/server/game/Bots/BotWorldPopulationMgr.cpp",
+      "scope": "successful local Demoralizing Roar coverage while healer-owned boss followers remain",
+      "change": "Count local Roar-covered followers independently of their post-Roar victim, then invoke the existing strict area-only retention resolver under the unchanged local-count, majority, spell, GCD, cooldown, power, range, LOS, and threat gates."
+    }
+  ],
+  "next_attempt": {
+    "attempt_label": "rerun148_canary_2",
+    "worldserver_rebuild_required": true,
+    "deterministic_reprovision_required": true,
+    "fresh_identity_and_eight_row_plan_required": true,
+    "canary_2_only_until_strict_pass": true,
+    "canaries_3_through_8_started": false,
+    "phases_10_through_12_blocked": true
+  }
+}

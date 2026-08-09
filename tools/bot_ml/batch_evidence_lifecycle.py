@@ -360,6 +360,82 @@ def _batch_cache(repository: Path, cache_dir: Path, *, runner: CommandRunner) ->
             local_config.unlink(missing_ok=True)
 
 
+@contextlib.contextmanager
+def _temporarily_unignore_pointers(
+    repository: Path,
+    pointer_paths: Sequence[Path],
+    *,
+    runner: CommandRunner,
+) -> Iterator[None]:
+    """Expose only exact generated DVC pointer ancestry, then restore ignores."""
+    ignore_files: dict[Path, tuple[bool, bytes, Path]] = {}
+    for pointer_path in pointer_paths:
+        pointer_relative = pointer_path.resolve().relative_to(repository)
+        completed = runner(
+            ["git", "check-ignore", "-v", "--no-index", str(pointer_relative)],
+            repository,
+        )
+        if completed.returncode == 1:
+            continue
+        if completed.returncode != 0:
+            detail = (completed.stderr or completed.stdout or "").strip()
+            raise BatchLifecycleError(
+                f"inspect DVC pointer ignore source failed{': ' + detail if detail else ''}"
+            )
+        ignore_record = completed.stdout.rstrip("\n").split("\t", 1)[0]
+        ignore_fields = ignore_record.rsplit(":", 2)
+        if len(ignore_fields) != 3 or not ignore_fields[0]:
+            raise BatchLifecycleError("git check-ignore returned an invalid pointer record")
+        ignore_source = Path(ignore_fields[0])
+        if not ignore_source.is_absolute():
+            ignore_source = (repository / ignore_source).resolve()
+        repository_git_dir = (repository / ".git").resolve()
+        if ignore_source == repository_git_dir / "info" / "exclude":
+            pattern_base = repository
+        else:
+            try:
+                ignore_source.relative_to(repository)
+            except ValueError as exc:
+                raise BatchLifecycleError(
+                    "DVC pointer is ignored by an external Git exclude file"
+                ) from exc
+            pattern_base = ignore_source.parent
+        if ignore_source not in ignore_files:
+            ignore_files[ignore_source] = (
+                ignore_source.exists(),
+                ignore_source.read_bytes() if ignore_source.exists() else b"",
+                pattern_base,
+            )
+
+    try:
+        for ignore_source, (_, original, pattern_base) in ignore_files.items():
+            additions: list[str] = []
+            for pointer_path in pointer_paths:
+                try:
+                    relative = pointer_path.resolve().relative_to(pattern_base)
+                except ValueError:
+                    continue
+                parts = relative.parts
+                for depth in range(1, len(parts)):
+                    additions.append("!/" + "/".join(parts[:depth]) + "/")
+                additions.append("!/" + relative.as_posix())
+            unique_additions = list(dict.fromkeys(additions))
+            if unique_additions:
+                separator = b"" if not original or original.endswith(b"\n") else b"\n"
+                ignore_source.parent.mkdir(parents=True, exist_ok=True)
+                ignore_source.write_bytes(
+                    original + separator
+                    + ("\n".join(unique_additions) + "\n").encode("utf-8")
+                )
+        yield
+    finally:
+        for ignore_source, (existed, original, _) in ignore_files.items():
+            if existed:
+                ignore_source.write_bytes(original)
+            else:
+                ignore_source.unlink(missing_ok=True)
+
+
 def publish_batch(
     repository: Path,
     batch_root: Path,
@@ -379,18 +455,20 @@ def publish_batch(
     cache_dir = batch_root / ".batch-dvc-cache"
     retained_dir = batch_root / "retained"
     receipt_path = retained_dir / "publication_receipt.json"
+    raw_pointer = batch_root / "raw.dvc"
+    compact_pointer = batch_root / "compact.dvc"
 
     with dvc_repository_lock(repository):
         manifest = validate_capture(batch_root)
-        with _batch_cache(repository, cache_dir, runner=runner):
+        with _temporarily_unignore_pointers(
+            repository, [raw_pointer, compact_pointer], runner=runner
+        ), _batch_cache(repository, cache_dir, runner=runner):
             _checked(
                 ["dvc", "add", str(raw_relative), str(compact_relative)],
                 repository,
                 runner=runner,
                 description="DVC-add immutable batch bundles",
             )
-            raw_pointer = batch_root / "raw.dvc"
-            compact_pointer = batch_root / "compact.dvc"
             pointers = [
                 _pointer_identity(raw_pointer, repository),
                 _pointer_identity(compact_pointer, repository),
@@ -508,9 +586,11 @@ def hydrate_batch(
         raise BatchLifecycleError("hydration requires a publication receipt")
     receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
     cache_dir = batch_root / ".hydrate-dvc-cache"
+    pointers = [batch_root / "raw.dvc", batch_root / "compact.dvc"]
     with dvc_repository_lock(repository):
-        with _batch_cache(repository, cache_dir, runner=runner):
-            pointers = [batch_root / "raw.dvc", batch_root / "compact.dvc"]
+        with _temporarily_unignore_pointers(
+            repository, pointers, runner=runner
+        ), _batch_cache(repository, cache_dir, runner=runner):
             _checked(
                 ["dvc", "pull", *(str(path.relative_to(repository)) for path in pointers)],
                 repository,
@@ -592,6 +672,10 @@ def synthetic_round_trip_contract() -> dict[str, Any]:
     with tempfile.TemporaryDirectory(prefix="bot-phase3-") as temporary:
         root = Path(temporary)
         repository, _ = _init_synthetic_repository(root / "success", runner=_run)
+        # Phase 9 keeps generated campaign payloads ignored in Git. Exercise
+        # the production topology where the immutable DVC pointers inherit
+        # that parent ignore rule and publication must explicitly force-add.
+        (repository / ".gitignore").write_text("/batches/\n", encoding="utf-8")
         batch = repository / "batches" / "synthetic-success"
         capture_batch(
             batch,

@@ -1,0 +1,605 @@
+{
+  "acceptance": {
+    "accepted": false,
+    "completion_reason": "stonecore_role_quality_audit_failed",
+    "failure_labels": [
+      "role_quality:Feraltank:tank_threat_retention",
+      "role_quality:Feraltank:healer_target_exposure",
+      "role_quality:Feraltank:healer_target_dwell",
+      "stonecore_role_quality_audit_failed"
+    ],
+    "recomputed_facts_sha256": "c43a73cecf1b552c5b5a7c38bb5a54dde77afd7771dc0873ca08a9bb57d0833b",
+    "recomputed_result_sha256": "ee9596f0d9997952601b1a11d25a0e914b15b52ff9c22e1c09b974de7582883a",
+    "rejections": [
+      "failure_labels_present",
+      "stonecore_role_quality_audit_failed"
+    ]
+  },
+  "accepted_causal_chain": [
+    "Rerun141 is an exact-current-identity, exact-party, MaxActiveCohorts=1 immutable canary with a complete strict 14-node route, four real boss deaths, complete cleanup, verified publication, and no forbidden assistance.",
+    "The strict failures reproduce exactly as 2800/3145 all-hostile retention, 235/3145 healer exposure, and 5610 ms maximum per-hostile dwell.",
+    "Generation 13 contributes 222 of 235 healer samples; removing generation 13 would pass both aggregate ratio gates, while generation 14 would still fail the dwell ceiling at 3579 ms.",
+    "The two over-limit windows are not the aggregate ratio cause: removing both leaves worse 2044/2330 retention and 176/2330 exposure. Five eligible short/long generation-13 wave groups account for all 222 generation-13 healer samples.",
+    "The dominant 132-sample wave and a second 24-sample wave each show full large-wave tank ownership followed by one nearest-target generic decision and then a mass healer flip. A policy snapshot proves the old nearest target blocked Thrash solely through its owned aura while other area tools were on native cooldown.",
+    "Rerun141 reactive densest-healer targeting successfully converged exposed waves, but it starts after pending healing threat has already flipped eligible identities. The missing behavior is proactive densest tank-owned cluster selection while a large Feral wave is currently owned.",
+    "The independent generation-14 residual missed dwell by 579 ms after exact-anchor boss handoff travel; the ordinary-trash path already proves a collision-safe eight-yard native-Roar intercept.",
+    "The smallest evidence-supported correction is therefore two bounded target/movement changes: extend the current Feral ten-yard density selector to large currently tank-owned trash waves before generic area resolution, and use the same collision-safe eight-yard intercept for boss post-Roar remote-cluster movement. Native cooldowns, victims, threat values, and all acceptance gates remain unchanged."
+  ],
+  "attempt_label": "rerun141_canary_2",
+  "authorized_smallest_correction": {
+    "changes": [
+      {
+        "change": "Retain current tank-owned trash targets. When the Feral tank owns at least 90 percent of a 12-or-more-hostile ordinary-trash wave, deterministically rebind the generic area target to the largest current ten-yard tank-owned cluster before the existing area resolver; prefer a target missing this Feral's Thrash aura, then tie-break by cluster size, distance, and GUID. This is a target-only extension of the rerun141 selector and leaves all spell legality, cooldown, GCD, victim, and threat operations native.",
+        "expected_effect": "A fresh dense cluster can keep Thrash/Swipe legal or receive proactive movement before pending healing threat flips already-eligible identities; the existing reactive healer selector remains authoritative after any flip.",
+        "scope": "ordinary_trash_large_feral_wave",
+        "source": "src/server/game/Bots/BotWorldPopulationMgr.cpp"
+      },
+      {
+        "change": "For the existing identity-bound Feral boss remote-cluster handoff, move to the remote anchor's collision-safe eight-yard native-Roar intercept instead of the hostile exact point, preserving the same anchor, path validation, reservation, cooldowns, and arrival gates.",
+        "expected_effect": "Remove only avoidable exact-anchor travel from the 3579-ms generation-14 residual while preserving the proven bounded handoff contract.",
+        "scope": "boss_post_roar_remote_cluster_handoff",
+        "source": "src/server/game/Bots/BotWorldPopulationMgr.cpp"
+      }
+    ],
+    "preserve": [
+      "native Stampeding Roar, Charge, Growl, Swipe, Thrash, and global cooldowns",
+      "explicit SQL/rule profile runtime authority",
+      "strict uninterrupted 14-node route and four real boss deaths",
+      "exact identity and exact party gates",
+      "0.90 all-hostile retention floor",
+      "0.01 healer-exposure ceiling",
+      "3000 ms per-hostile dwell ceiling",
+      "MaxActiveCohorts=1",
+      "one live worldserver-mutating operator and one DVC publisher"
+    ],
+    "tests": "Add focused source regression assertions for the Feral-only 12-hostile/90-percent proactive tank-owned cluster selector, missing-Thrash preference and deterministic tie-breaks, plus boss remote-handoff eight-yard collision intercept. Rebuild worldserver, deterministically reprovision, capture a fresh identity/plan, and run canary 2 alone."
+  },
+  "causal_wave_findings": [
+    {
+      "causal_defect": "After large-wave ownership, nearest existing tank-owned target selection can suppress a legal self-centered area refresh on the newly acquired dense cluster and allows pending healing threat to flip already-eligible identities before the reactive handoff begins.",
+      "evidence": "The Feral owned 22/22 hostiles, then generic move_to_trash_density retained old target 417; one second later 20 already-eligible hostiles flipped to the healer. The nearest-target policy snapshot rejected ready Thrash only because target 417 already carried its owned aura while Swipe and Growl were on native cooldown. The existing rescue reacquired the split wave within 2495 ms, but the interval contributed 132/222 generation-13 healer samples.",
+      "timestamps_ms": [
+        1785832753015,
+        1785832757512
+      ],
+      "wave": "generation_13_wave_2"
+    },
+    {
+      "causal_defect": "The same post-acquisition nearest-target refresh gap recurred independently.",
+      "evidence": "The Feral reached 21/21 ownership, then generic area threat stayed on old target 774; one second later 11 hostiles flipped to the healer. Reactive movement/Roar recovered the wave in 513 ms, but it still contributed 24 strict healer samples.",
+      "timestamps_ms": [
+        1785832807136,
+        1785832809911
+      ],
+      "wave": "generation_13_wave_4"
+    },
+    {
+      "causal_defect": "Rerun141 corrected reactive healer-cluster selection but left large-wave proactive tank-owned cluster refresh on nearest-target semantics.",
+      "evidence": "A historical diagnosis at 1785832881010 showed 17 tank attackers and 13 healer attackers even though the retained final trace has a sequence gap. Later the retained trace showed 41/41 ownership, followed one second later by another 6-hostile flip and a 46-hostile recovery dominated by move_to_trash_density, auto-attack fallback, and Demoralizing Roar. The reactive densest-healer correction worked but began only after the flip.",
+      "timestamps_ms": [
+        1785832881010,
+        1785832896325
+      ],
+      "wave": "generation_13_waves_8_and_9"
+    },
+    {
+      "causal_defect": "The boss remote-cluster handoff spends avoidable travel budget by targeting the hostile exact point instead of the already-proven native-Roar intercept.",
+      "evidence": "After a successful Demoralizing Roar reduced four healer attackers to one, the last hostile remained on the healer for 3579 ms. The boss post-Roar handoff walked to the exact remote anchor, unlike the collision-safe eight-yard ordinary-trash intercept. Stable movement consumed four 250-ms decisions; Thrash succeeded at 1785833096915, 73 ms after the strict 3000-ms boundary, and the hostile died shortly afterward.",
+      "timestamps_ms": [
+        1785833093842,
+        1785833097682
+      ],
+      "wave": "generation_14_residual"
+    }
+  ],
+  "companion_row_reconciliation": {
+    "audit_effect": "The current audit reports zero Feral deaths because the area-threat companion overwrites the death companion. This defect cannot improve the failed strict metrics and is not used as a behavioral correction.",
+    "causal_event_contract": "Distinct companion rows sharing a sequence are preserved for causal death/action truth.",
+    "official_metric_contract": "Threat ratios are reproduced with the current final-row-per-(bot_guid,sequence) overwrite semantics and are not retroactively altered.",
+    "sequence_1376": [
+      {
+        "action": "trash_density_area_threat",
+        "engaged": 46,
+        "healer_targeting": 0,
+        "tank_owned": 46,
+        "timestamp_ms": 1785832896325
+      },
+      {
+        "action": "death",
+        "engaged": 26,
+        "healer_targeting": 25,
+        "tank_owned": 0,
+        "timestamp_ms": 1785832896454
+      }
+    ]
+  },
+  "diagnosis_scope": "immutable_failed_canary_before_any_behavioral_change_or_rerun",
+  "diagnosis_sha256": "8fee54fc6b7f202fcefda80b18a667d2a37e048fe25d2f085439eb67c90e2aa9",
+  "evidence_paths": {
+    "acceptance_source_report": "artifacts/all_spec_program/phase9_serial_canaries_20260804_rerun141/phase9_serial_02_stonecore_phase9_006_6893daf98698/batch/raw/acceptance_source_report.json",
+    "exact_manifests": "artifacts/all_spec_program/phase9_serial_canaries_20260804_rerun141/phase9_serial_02_stonecore_phase9_006_6893daf98698/batch/raw/exact_manifests.json",
+    "final_manifest": "artifacts/all_spec_program/phase9_serial_canaries_20260804_rerun141/phase9_serial_02_stonecore_phase9_006_6893daf98698/batch/retained/final_manifest.json",
+    "operator_state": "artifacts/all_spec_program/phase9_serial_canaries_20260804_rerun141/operator_state_canary2.json",
+    "publication_receipt": "artifacts/all_spec_program/phase9_serial_canaries_20260804_rerun141/phase9_serial_02_stonecore_phase9_006_6893daf98698/batch/retained/publication_receipt.json",
+    "raw_event_reconstruction": "artifacts/all_spec_program/phase9_serial_canaries_20260804_rerun141/phase9_serial_02_stonecore_phase9_006_6893daf98698/batch/raw/events.jsonl.zst"
+  },
+  "explicitly_rejected_corrections": [
+    "Treat the Feral death, the 5610-ms primary dwell interval, or the 3579-ms residual as the sole aggregate exposure cause.",
+    "Change only audit companion-row retention and claim that it fixes strict role quality.",
+    "Reset, shorten, bypass, or otherwise weaken any native cooldown or global cooldown.",
+    "Raise Swipe/Thrash range in SQL without first correcting the target-selection evidence; the dominant failed wave had ready Thrash rejected by the old target aura, not a proven range-only blocker.",
+    "Force areaOnly globally or remove useful fallback movement for non-Feral tanks or small packs.",
+    "Add survival-only defensive layering as the strict threat correction; survival cannot remove 222 generation-13 healer samples.",
+    "Relax retention, exposure, dwell, route, boss-death, identity, exact-party, publication, cleanup, or capability gates.",
+    "Assign hostile victims directly, move the healer artificially, teleport, teach, force completion, or substitute an instance."
+  ],
+  "feral_strict_reconstruction": {
+    "all_hostile_retention_floor": 0.9,
+    "all_hostile_retention_fraction": "2800/3145",
+    "all_hostile_retention_ratio": 0.890302066772655,
+    "counterfactual_without_generation_13": {
+      "aggregate_exposure_passes": true,
+      "aggregate_retention_passes": true,
+      "eligible": 1612,
+      "exposure_ratio": 0.008064516129032258,
+      "generation_14_dwell_still_fails_ms": 3579,
+      "healer_targeting": 13,
+      "retention_ratio": 0.9491315136476427,
+      "tank_owned": 1530
+    },
+    "eligible_generation_13_wave_concentration": {
+      "wave_2": {
+        "healer_samples": 132,
+        "share_of_generation_13_healer_samples": 0.5945945945945946
+      },
+      "wave_4": {
+        "healer_samples": 24,
+        "share_of_generation_13_healer_samples": 0.10810810810810811
+      },
+      "wave_7": {
+        "healer_samples": 4,
+        "share_of_generation_13_healer_samples": 0.018018018018018018
+      },
+      "wave_8": {
+        "healer_samples": 6,
+        "share_of_generation_13_healer_samples": 0.02702702702702703
+      },
+      "wave_9": {
+        "healer_samples": 56,
+        "share_of_generation_13_healer_samples": 0.25225225225225223
+      }
+    },
+    "eligible_hostile_samples": 3145,
+    "episode_count": 184,
+    "generation_13_exposure_waves": [
+      {
+        "duration_ms": 1267,
+        "eligible_samples": 0,
+        "end_timestamp_ms": 1785832747733,
+        "healer_owned_hostile_guids": [
+          696,
+          699,
+          700,
+          703,
+          704,
+          706,
+          708,
+          712
+        ],
+        "healer_targeting_eligible_samples": 0,
+        "observation_count": 7,
+        "start_timestamp_ms": 1785832746466,
+        "tank_owned_eligible_samples": 0,
+        "wave": 1
+      },
+      {
+        "duration_ms": 2495,
+        "eligible_samples": 212,
+        "end_timestamp_ms": 1785832757512,
+        "healer_owned_hostile_guids": [
+          715,
+          716,
+          717,
+          718,
+          719,
+          720,
+          721,
+          722,
+          723,
+          724,
+          725,
+          726,
+          727,
+          728,
+          729,
+          730,
+          731,
+          732,
+          733,
+          734
+        ],
+        "healer_targeting_eligible_samples": 132,
+        "observation_count": 10,
+        "start_timestamp_ms": 1785832755017,
+        "tank_owned_eligible_samples": 80,
+        "wave": 2
+      },
+      {
+        "duration_ms": 251,
+        "eligible_samples": 0,
+        "end_timestamp_ms": 1785832798837,
+        "healer_owned_hostile_guids": [
+          750,
+          757
+        ],
+        "healer_targeting_eligible_samples": 0,
+        "observation_count": 3,
+        "start_timestamp_ms": 1785832798586,
+        "tank_owned_eligible_samples": 0,
+        "wave": 3
+      },
+      {
+        "duration_ms": 513,
+        "eligible_samples": 48,
+        "end_timestamp_ms": 1785832809652,
+        "healer_owned_hostile_guids": [
+          761,
+          762,
+          763,
+          764,
+          765,
+          766,
+          767,
+          768,
+          769,
+          770,
+          773
+        ],
+        "healer_targeting_eligible_samples": 24,
+        "observation_count": 3,
+        "start_timestamp_ms": 1785832809139,
+        "tank_owned_eligible_samples": 24,
+        "wave": 4
+      },
+      {
+        "duration_ms": 752,
+        "eligible_samples": 0,
+        "end_timestamp_ms": 1785832819719,
+        "healer_owned_hostile_guids": [
+          784,
+          785,
+          786,
+          787,
+          788,
+          789,
+          791,
+          792,
+          793,
+          794,
+          795,
+          796,
+          797,
+          798,
+          799,
+          800
+        ],
+        "healer_targeting_eligible_samples": 0,
+        "observation_count": 4,
+        "start_timestamp_ms": 1785832818967,
+        "tank_owned_eligible_samples": 0,
+        "wave": 5
+      },
+      {
+        "duration_ms": 1534,
+        "eligible_samples": 0,
+        "end_timestamp_ms": 1785832829917,
+        "healer_owned_hostile_guids": [
+          781
+        ],
+        "healer_targeting_eligible_samples": 0,
+        "observation_count": 8,
+        "start_timestamp_ms": 1785832828383,
+        "tank_owned_eligible_samples": 0,
+        "wave": 6
+      },
+      {
+        "duration_ms": 1283,
+        "eligible_samples": 16,
+        "end_timestamp_ms": 1785832873703,
+        "healer_owned_hostile_guids": [
+          807,
+          808,
+          809,
+          810,
+          815,
+          816,
+          817,
+          818,
+          819,
+          820,
+          821,
+          822,
+          823
+        ],
+        "healer_targeting_eligible_samples": 4,
+        "observation_count": 6,
+        "start_timestamp_ms": 1785832872420,
+        "tank_owned_eligible_samples": 12,
+        "wave": 7
+      },
+      {
+        "duration_ms": 253,
+        "eligible_samples": 40,
+        "end_timestamp_ms": 1785832882275,
+        "healer_owned_hostile_guids": [
+          828,
+          831,
+          837,
+          839,
+          841,
+          845
+        ],
+        "healer_targeting_eligible_samples": 6,
+        "observation_count": 2,
+        "start_timestamp_ms": 1785832882022,
+        "tank_owned_eligible_samples": 34,
+        "wave": 8
+      },
+      {
+        "duration_ms": 7371,
+        "eligible_samples": 761,
+        "end_timestamp_ms": 1785832896065,
+        "healer_owned_hostile_guids": [
+          830,
+          832,
+          834,
+          836,
+          848,
+          849,
+          850,
+          851,
+          852,
+          853,
+          854,
+          855,
+          856,
+          857,
+          858,
+          861,
+          865
+        ],
+        "healer_targeting_eligible_samples": 56,
+        "observation_count": 26,
+        "start_timestamp_ms": 1785832888694,
+        "tank_owned_eligible_samples": 705,
+        "wave": 9
+      }
+    ],
+    "healer_target_exposure_ceiling": 0.01,
+    "healer_target_exposure_fraction": "235/3145",
+    "healer_target_exposure_ratio": 0.07472178060413355,
+    "healer_targeting_hostile_samples": 235,
+    "maximum_healer_target_dwell_ms": 5610,
+    "over_limit_episode_count": 11,
+    "over_limit_windows_are_not_aggregate_cause": {
+      "conclusion": "Removing only the two over-limit windows worsens the remaining aggregate ratios; the short generation-13 flips are independently causal.",
+      "primary_window": {
+        "eligible": 761,
+        "exposure_ratio": 0.0735873850197109,
+        "healer_targeting": 56,
+        "retention_ratio": 0.926412614980289,
+        "tank_owned": 705
+      },
+      "secondary_window": {
+        "eligible": 54,
+        "exposure_ratio": 0.05555555555555555,
+        "healer_targeting": 3,
+        "retention_ratio": 0.9444444444444444,
+        "tank_owned": 51
+      },
+      "without_both": {
+        "eligible": 2330,
+        "exposure_ratio": 0.07553648068669527,
+        "healer_targeting": 176,
+        "retention_ratio": 0.8772532188841202,
+        "tank_owned": 2044
+      }
+    },
+    "per_hostile_dwell_ceiling_ms": 3000,
+    "route_generation_contributions": {
+      "1": {
+        "eligible": 198,
+        "healer_targeting": 0,
+        "tank_owned": 186
+      },
+      "10": {
+        "eligible": 36,
+        "healer_targeting": 0,
+        "tank_owned": 27
+      },
+      "11": {
+        "eligible": 695,
+        "healer_targeting": 0,
+        "tank_owned": 675
+      },
+      "12": {
+        "eligible": 37,
+        "healer_targeting": 0,
+        "tank_owned": 37
+      },
+      "13": {
+        "eligible": 1533,
+        "healer_targeting": 222,
+        "tank_owned": 1270
+      },
+      "14": {
+        "eligible": 123,
+        "healer_targeting": 13,
+        "tank_owned": 101
+      },
+      "2": {
+        "eligible": 20,
+        "healer_targeting": 0,
+        "tank_owned": 20
+      },
+      "3": {
+        "eligible": 444,
+        "healer_targeting": 0,
+        "tank_owned": 433
+      },
+      "4": {
+        "eligible": 24,
+        "healer_targeting": 0,
+        "tank_owned": 24
+      },
+      "7": {
+        "eligible": 10,
+        "healer_targeting": 0,
+        "tank_owned": 10
+      },
+      "9": {
+        "eligible": 25,
+        "healer_targeting": 0,
+        "tank_owned": 17
+      }
+    },
+    "tank_owned_hostile_samples": 2800,
+    "tank_threat_aura_uptime_rate": 1.0
+  },
+  "identity": {
+    "binary_sha256": "572318eebfa99961aa6b21926d7764788fc92425a6a185994d6b4e89a872e2a0",
+    "evidence_identity_manifest_sha256": "d041aa64d56663a2847790b26e56b1a27320da295b1e198e6480e9e36e023038",
+    "identity_matched": true,
+    "max_active_cohorts": 1,
+    "profile_content_hash": "35a587f05d8781d72c62576a6f35392a69e01d5978429f65429ad5b9ed096a22",
+    "profile_generation": 1,
+    "run_plan_sha256": "48dea4bc6681fa6d68b4e749baad530e4a00df6c6af1a053802d327884889460",
+    "server_epoch": 9890486386155337,
+    "server_process_id": 2456428,
+    "session_fingerprint": "fc569cebf00ef964009f9c45ecc458e650fb874d6cc631278cd20a74c7e0fcf5"
+  },
+  "non_feral_role_and_capability_audit": {
+    "all_passed": true,
+    "bots": {
+      "Discpriest": {
+        "active_action_coverage": 0.9262,
+        "attempts": 244,
+        "cast_failure_rate": 0.0,
+        "deaths": 0,
+        "heal_cast_success_rate": 1.0,
+        "missing_rotation_groups": [],
+        "role": "healer",
+        "successful_submission_rate": 1.0
+      },
+      "Furywar": {
+        "active_action_coverage": 1.0,
+        "attempts": 220,
+        "cast_failure_rate": 0.0,
+        "deaths": 0,
+        "heal_cast_success_rate": null,
+        "missing_rotation_groups": [],
+        "role": "dps",
+        "successful_submission_rate": 1.0
+      },
+      "Mmhunter": {
+        "active_action_coverage": 1.0,
+        "attempts": 264,
+        "cast_failure_rate": 0.0088,
+        "deaths": 0,
+        "heal_cast_success_rate": null,
+        "missing_rotation_groups": [],
+        "role": "dps",
+        "successful_submission_rate": 0.9912
+      },
+      "Retpally": {
+        "active_action_coverage": 1.0,
+        "attempts": 236,
+        "cast_failure_rate": 0.0,
+        "deaths": 0,
+        "heal_cast_success_rate": null,
+        "missing_rotation_groups": [],
+        "role": "dps",
+        "successful_submission_rate": 1.0
+      }
+    },
+    "failure_labels": [],
+    "mechanics": {
+      "hazard_exit_failures": 0,
+      "hazard_exits": 195,
+      "misdirection_aoe_attempts": 48,
+      "misdirection_aoe_successes": 35,
+      "misdirection_aoe_wrong_spell": 0,
+      "misdirection_single_target_attempts": 35,
+      "misdirection_single_target_successes": 32
+    },
+    "retribution_exorcism_attempts": 63,
+    "retribution_exorcism_spell_id": 879
+  },
+  "party": {
+    "exact_party_verified": true,
+    "ordered_specs": [
+      "feral_druid_tank",
+      "discipline_priest",
+      "fury_warrior",
+      "marksmanship_hunter",
+      "retribution_paladin"
+    ],
+    "party_sha256": "524b94c794897f5111bdae0a5e45ba31a31ebb8596d811a3dd8c1caff95bd16a"
+  },
+  "publication_and_lifecycle": {
+    "batch_identity_sha256": "28e40518dc599b2a523e31897f871c1a9751cdc70b6e3fe527a2d5160e50997e",
+    "broad_dvc_gc_used": false,
+    "compact_bundle_sha256": "c9bf18b1d45f9d2e777083297eb140dfedd00e1fcbf6c0166438b346471fa40a",
+    "compact_dvc_md5": "65b35c893a9b023460ea2205b8d0bb7f.dir",
+    "compact_pointer_sha256": "a6e16a17fa571df455ffe5ad55f92d843f93cb5a016afbc6111a969392a164a0",
+    "expected_gitignore_restored_sha256_after_targeted_eviction": "2616c6981d1728b2725b6a06bbec5289f82b14bbfc493549df464b03c237ae5e",
+    "publication_receipt_sha256": "fd2f7cb7a91e1ec1e1ec4b2001488e95df65c176d51e435fa6d2c8bb643f662d",
+    "raw_bundle_sha256": "5a0d21358e7c5976a1c461863e4c3b0e6df42d5607288c0816bf36c75901059c",
+    "raw_compact_and_batch_cache_retained_for_diagnosis": true,
+    "raw_dvc_md5": "6a6f97d965234c27b07ddd2f2c915037.dir",
+    "raw_pointer_sha256": "987c7c979f344973e6c377fc960447a56b858622ec816d17c6bd6ca9b7fa9ce6",
+    "remote_status_sha256": "efed9e5afcfe149915ae98b9ed9e69304eb48f5ce2e2265b18b5ed2f155e60",
+    "remote_verified": true
+  },
+  "route_and_cleanup": {
+    "canaries_3_through_8_started": false,
+    "cleanup": {
+      "active": false,
+      "active_bots": 0,
+      "lease_count": 0,
+      "party_bot_count": 0
+    },
+    "manifest_complete": true,
+    "monitor_deleted": true,
+    "operator_active": false,
+    "real_boss_death_count": 4,
+    "real_boss_deaths": [
+      {
+        "entry": 43438,
+        "name": "Corborus",
+        "route_generation": 2
+      },
+      {
+        "entry": 43214,
+        "name": "Slabhide",
+        "route_generation": 4
+      },
+      {
+        "entry": 42188,
+        "name": "Ozruk",
+        "route_generation": 11
+      },
+      {
+        "entry": 42333,
+        "name": "High Priestess Azil",
+        "route_generation": 14
+      }
+    ],
+    "route_terminal_count": 14,
+    "strict_uninterrupted_route": true,
+    "teacher_or_forbidden_completion_assistance": false,
+    "timed_out": false,
+    "watchdog_completed": true
+  },
+  "schema": "all_spec_phase9_rerun141_diagnosis_v1"
+}

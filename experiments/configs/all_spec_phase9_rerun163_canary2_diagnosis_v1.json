@@ -1,0 +1,114 @@
+{
+  "schema": "all_spec_phase9_rerun163_canary2_diagnosis_v1",
+  "diagnosis_sha256": "22f0dab5571498c9e7fae182a44d652e07d3a1ddc55d9aeb1af9dd97a66b1e5d",
+  "hash_scope": "canonical_json_without_diagnosis_sha256",
+  "source_attempt": {
+    "attempt_label": "rerun163_canary_2",
+    "attempt_id": "phase9_serial_02_stonecore_phase9_006_6893daf98698",
+    "batch_id": "phase9-serial-canary-rerun163-2",
+    "batch_identity_sha256": "f6cff5c5918f74b42d7ce07aa9f7488b780229b0634526340c4d771f940afc94",
+    "party_sha256": "524b94c794897f5111bdae0a5e45ba31a31ebb8596d811a3dd8c1caff95bd16a",
+    "binary_sha256": "215120510a5f5e1db1cc43c06d90231e34da728048e3a517464812e4c1fc098b",
+    "evidence_identity_manifest_sha256": "b0356f837b8009235d916645e57319fc409c633bf2b2614949df68e7183e79ca",
+    "run_plan_sha256": "ee5e1ba3ca13df2ff60df20bad92786e4da0df4e0b37d8e42664ccbade2a9283",
+    "server_process_id": 675989,
+    "server_epoch": 3386628933739716,
+    "session_fingerprint": "7a87a7679368d6f6f5121aa28bb2bfc972f3c5a0da71dab509c7ff8d8e793485",
+    "profile_generation": 1,
+    "profile_content_hash": "35a587f05d8781d72c62576a6f35392a69e01d5978429f65429ad5b9ed096a22",
+    "max_active_cohorts": 1
+  },
+  "capture_and_closeout": {
+    "raw_event_row_count": 270,
+    "compact_row_count": 1,
+    "raw_bundle_sha256": "2c0b15d3e84e1e49f9244e62ffb1e492eb3d13d1d0eb0de95570a2eefb849ca2",
+    "compact_bundle_sha256": "a21675798ce12351879f0c03c290e2523c84cc99330f3092eaba561f78a4c371",
+    "acceptance_source_report_sha256": "95798ae56145450d5cd464e1340d174001002993aabc6ca2e79f4dbe094c28a9",
+    "events_zst_sha256": "66881bb07323c046e1866464e23c92ef07890025ad8a4f14d39249f7c234989a",
+    "exact_manifests_sha256": "005dd27d8b29f24eb9a91f579ccfb79ec9e011cfec8dc0657ef6baaba0159070",
+    "evidence_parquet_sha256": "aadaddd2e819aec37e6080ec516fb27eab18d370b634313d49234fda545b2c0c",
+    "raw_pointer_sha256": "e7a9096020b45ccb159b1e365cbf53c9a789e5ce4adfcbe07bba1b93b94a7d45",
+    "raw_dvc_md5": "ec8b6de67132d44ee8440c4736605f29.dir",
+    "compact_pointer_sha256": "c5b370bc51410077b1caf22ae24948293fb80bd3f307a8612bb54dd6c1abd4c7",
+    "compact_dvc_md5": "5d56612bdc47c0371a6e9ba88ab6a54b.dir",
+    "publication_receipt_sha256": "e6a9e78a5372d56f8d9d1d6afe247a892c92818def60535e3a51ec0c4760b810",
+    "remote_status_sha256": "efed9e5afcfe149915ae98b9ed9e69304eb48f5ce2e2265b18b5b5ed2f155e60",
+    "capture_revalidated_after_hydration": true,
+    "remote_verified": true,
+    "identity_matched": true,
+    "exact_party_verified": true,
+    "cleanup": {
+      "active": false,
+      "active_bots": 0,
+      "lease_count": 0,
+      "party_bot_count": 0
+    },
+    "worldserver_stopped_before_tracked_edit": true,
+    "broad_dvc_gc_used": false
+  },
+  "strict_result": {
+    "completion_reason": "stonecore_role_quality_audit_failed",
+    "failure_labels": [
+      "role_quality:Feraltank:healer_target_dwell",
+      "stonecore_role_quality_audit_failed"
+    ],
+    "route_terminal_count": 14,
+    "real_boss_kill_count": 4,
+    "kills": 59,
+    "duration_seconds": 1221,
+    "canaries_3_through_8_started": false
+  },
+  "role_audit": {
+    "tank_all_hostile_retention_rate": 0.9809,
+    "healer_target_exposure_rate": 0.0056,
+    "max_healer_target_dwell_ms": 3586,
+    "maximum_healer_target_dwell_ms": 3000,
+    "tank_threat_aura_uptime_rate": 1.0,
+    "combat_attempt_count": 289,
+    "combat_attempt_failure_count": 0,
+    "deaths": 0
+  },
+  "exposure_localization": {
+    "route_generation": 14,
+    "route_node_id": "4b2457d42f81a298",
+    "boss": "High Priestess Azil",
+    "hostile_guids_at_maximum_dwell": [679, 680, 684, 685],
+    "episode_first_timestamp_ms": 1786209477931,
+    "episode_last_timestamp_ms": 1786209481517,
+    "episode_dwell_ms": 3586,
+    "decision_sequence": [
+      "continue_stable_feral_swarm_approach_at_zero_ms_with_12_healer_attackers",
+      "feral_demoralizing_roar_swarm_pickup_at_254_ms",
+      "feral_hold_healer_swarm_handoff_for_roar_at_1534_ms",
+      "feral_post_roar_area_threat_retention_at_1789_ms",
+      "feral_hold_healer_swarm_handoff_for_roar_through_2552_ms",
+      "move_to_boss_add_at_2811_ms",
+      "area_attack_boss_add_density_at_3067_ms",
+      "second_feral_demoralizing_roar_swarm_pickup_at_3325_ms",
+      "maximum_dwell_sample_at_3586_ms",
+      "full_recovery_before_3838_ms_sample"
+    ],
+    "cause": "The audit is correct. Four generation-14 Azil followers retained the healer for 3586 ms. The first native Roar landed 254 ms after exposure and activated the existing bounded remote-cluster handoff. Once that handoff had arrived, the post-Roar damage-retention branch remained ordered before the existing second-Roar resolver and consumed the first available global cooldown at 1789 ms. The arrived handoff then waited through that cooldown; the second native Roar did not land until 3325 ms, and ownership cleared after the 3000 ms dwell ceiling. This is a tactical ordering defect in the identity-bound Feral handoff, not an exposure attribution or threshold defect.",
+    "audit_attribution_correct": true,
+    "audit_correction_required": false
+  },
+  "corrective_action": {
+    "threat_scope": "existing active and arrived Feral healer-threat boss-add handoff",
+    "threat_change": "Before the existing post-Roar damaging area-retention branch can consume an available global cooldown, retry the unchanged native Roar resolver when the same identity-bound handoff has arrived and at least one healer-owned follower is locally eligible. Preserve the existing handoff identity and lifetime, healer-attacker minimum, local coverage rules, spell, cooldown, GCD, power, range, LOS, target, movement, threat, and all fallback behavior. If Roar is unavailable or illegal, the existing post-Roar area-retention path remains unchanged.",
+    "acceptance_threshold_changes": [],
+    "gate_weakening": false
+  },
+  "independent_validation": {
+    "capture_hashes_replayed": true,
+    "role_audit_replayed_from_hydrated_raw_evidence": true,
+    "maximum_episode_reconstructed_per_identity": true,
+    "all_270_raw_rows_replayed": true
+  },
+  "eviction": {
+    "status": "exact_re_eviction_verified",
+    "temporary_hydration_root_absent": true,
+    "raw_directory_object_absent": true,
+    "compact_directory_object_absent": true,
+    "broad_dvc_gc_allowed": false
+  }
+}

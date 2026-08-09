@@ -1,0 +1,176 @@
+{
+  "schema": "all_spec_phase9_rerun152_canary3_diagnosis_v1",
+  "diagnosis_sha256": "3a32a85788b0c36000e2d44cba09b186cffbc1765bec9acb55c3df40324e9a8f",
+  "hash_scope": "canonical_json_without_diagnosis_sha256",
+  "source_attempt": {
+    "attempt_label": "rerun152_canary_3",
+    "attempt_id": "phase9_serial_03_stonecore_phase9_083_5d0c65765654",
+    "batch_id": "phase9-serial-canary-rerun152-3",
+    "batch_identity_sha256": "b677d00f2b9088b47006ae9a81071dac642e72aa9fb20b95acabf78c071b5563",
+    "composition_id": "stonecore_phase9_083_5d0c65765654",
+    "party_sha256": "71f05aeed37bfe1fc988746cdd00e7bf8e4d2dd94258eed65ec58d15201823b2",
+    "party": [
+      "protection_paladin",
+      "holy_priest",
+      "arcane_mage",
+      "assassination_rogue",
+      "fire_mage"
+    ],
+    "binary_sha256": "b973554f7c4a93ca69c742939718a8e1101feba70bffc9094d53056cbeca3bc1",
+    "server_process_id": 326577,
+    "server_epoch": 742389144504448,
+    "session_fingerprint": "f8b3e5246516962ebbc6a012856aaa85ca19910b8d0cc4a533d1a4c59d1a52d4",
+    "profile_generation": 1,
+    "profile_content_hash": "35a587f05d8781d72c62576a6f35392a69e01d5978429f65429ad5b9ed096a22",
+    "evidence_identity_manifest_sha256": "0d8ffe8fa024b3c4b8a455792fcabf31820749fa61e6c3f2bfa306d4d3a1831f",
+    "run_plan_sha256": "20f3fb1c43abdbe3ace13825ea62d52140f9cb1138c78d26e45b07d8e7e5412b",
+    "max_active_cohorts": 1
+  },
+  "capture_and_closeout": {
+    "capture_identity_sha256": "b677d00f2b9088b47006ae9a81071dac642e72aa9fb20b95acabf78c071b5563",
+    "raw_part_count": 1,
+    "raw_event_row_count": 296,
+    "compact_row_count": 1,
+    "raw_bundle_sha256": "da662d13084c221904e10b7bbd8f4010a5cac2061519b953eb14418589c6934a",
+    "compact_bundle_sha256": "0ffc9c697e7e640b5c3cf00b6fa3604713455e087ddd89f14e91f130b56c127a",
+    "raw_pointer_sha256": "25b0de0f306642076a58ef9054052b29d26925153ab3218f5ae97dffcfda2793",
+    "compact_pointer_sha256": "449e17d3db413a98e7da0de5c9f69b7a18e4d89dc46184383e1218a7b72f84c6",
+    "publication_receipt_sha256": "8248e139df0226bc4d6953c5101565ee49cb07566f4c4ed9870b14325d061be8",
+    "remote_status_sha256": "efed9e5afcfe149915ae98b9ed9e69304eb48f5ce2e2265b18b5b5ed2f155e60",
+    "remote_verified": true,
+    "capture_revalidated_after_hydration": true,
+    "exact_party_verified": true,
+    "identity_matched": true,
+    "inactive_after_attempt": true,
+    "cleanup": {
+      "active": false,
+      "active_bots": 0,
+      "lease_count": 0,
+      "party_bot_count": 0
+    },
+    "broad_dvc_gc_used": false
+  },
+  "strict_route_result": {
+    "completion_reason": "stonecore_role_quality_audit_failed",
+    "failure_reason": "role_quality:Protpally:tank_threat_retention",
+    "failure_labels": [
+      "role_quality:Protpally:tank_threat_retention",
+      "role_quality:Protpally:healer_target_exposure",
+      "role_quality:Protpally:healer_target_dwell",
+      "stonecore_role_quality_audit_failed"
+    ],
+    "route_manifest_complete": true,
+    "route_terminal_count": 14,
+    "expected_route_terminal_count": 14,
+    "real_boss_kill_count": 4,
+    "expected_real_boss_kill_count": 4,
+    "transient_no_progress_diagnoses": 4,
+    "final_no_progress_failure_label": false,
+    "stuck_events": 0,
+    "canaries_4_through_8_started": false
+  },
+  "role_audit": {
+    "passed": false,
+    "failure_labels": [
+      "Protpally:tank_threat_retention",
+      "Protpally:healer_target_exposure",
+      "Protpally:healer_target_dwell"
+    ],
+    "protection_paladin": {
+      "eligible_hostile_rows": 495,
+      "eligible_hostile_samples": 2095,
+      "tank_owned_samples": 1774,
+      "healer_targeting_samples": 148,
+      "tank_all_hostile_retention_rate": 0.8468,
+      "minimum_retention_rate": 0.9,
+      "owned_sample_deficit": 112,
+      "route_target_retention_rate": 0.9508,
+      "healer_target_exposure_rate": 0.0706,
+      "max_healer_target_dwell_ms": 7047,
+      "tank_threat_aura_uptime_rate": 1.0,
+      "cast_failure_rate": 0.0194,
+      "deaths": 0
+    }
+  },
+  "route_generation_localization": {
+    "generation_1": {
+      "eligible_samples": 403,
+      "tank_owned_samples": 338,
+      "healer_targeting_samples": 38,
+      "retention_rate": 0.8387,
+      "healer_exposure_rate": 0.0943
+    },
+    "generation_3": {
+      "eligible_samples": 426,
+      "tank_owned_samples": 336,
+      "healer_targeting_samples": 0,
+      "retention_rate": 0.7887,
+      "note": "The loss is on non-healer party targets while hazard movement remains authoritative; it is real retention loss but does not cause the exposure or dwell failures."
+    },
+    "generation_11": {
+      "eligible_samples": 662,
+      "tank_owned_samples": 615,
+      "healer_targeting_samples": 26,
+      "retention_rate": 0.929,
+      "healer_exposure_rate": 0.0393
+    },
+    "generation_14": {
+      "eligible_samples": 413,
+      "tank_owned_samples": 310,
+      "healer_targeting_samples": 83,
+      "retention_rate": 0.7506,
+      "healer_exposure_rate": 0.201
+    }
+  },
+  "protection_paladin_failure_evidence": {
+    "max_episode_hostile_guids": [
+      747,
+      751,
+      752,
+      753,
+      756,
+      760,
+      762,
+      764,
+      766
+    ],
+    "max_episode_start_ms": 1786176606642,
+    "max_episode_last_ms": 1786176613689,
+    "max_episode_dwell_ms": 7047,
+    "generation_14_control_sequence": [
+      "move_to_boss_add:17_engaged:4_tank_owned:13_healer_targeting",
+      "hand_of_reckoning_add_pickup:19_engaged:4_tank_owned:15_healer_targeting",
+      "tank_immediate_aoe_threat:spell=31935:20_engaged:5_tank_owned:15_healer_targeting",
+      "area_attack_boss_add_density:auto_attack_fallback_out_of_range",
+      "hand_of_salvation_healer_threat_drop",
+      "area_attack_boss_add_density:auto_attack_fallback_out_of_range",
+      "righteous_defense_healer_pickup:21_engaged:7_tank_owned:14_healer_targeting",
+      "move_to_boss_add",
+      "tank_immediate_aoe_threat:spell=53595:18_engaged:18_tank_owned:0_healer_targeting"
+    ],
+    "cause": "Protection's one-second ordinary decision cadence is too coarse for a multi-step native pickup chain when a large wave changes ownership at once. In the longest Azil episode the first movement decision observes 13 healer-owned hostiles, but seven subsequent movement, single-taunt, Avenger's Shield, out-of-range area fallback, Salvation, and Righteous Defense decisions consume 7047 ms before native Hammer of the Righteous acquires all 18 remaining hostiles. The same cadence produces smaller eligible healer episodes in generations 1, 11, and 12. Threat aura uptime is 1.0, the identities are current, and the final Hammer transfer proves the snapshot and audit attribution are real.",
+    "audit_attribution_correct": true,
+    "audit_correction_required": false
+  },
+  "accepted_causal_chain": [
+    "Rerun152 canary 2 passed every independently reconstructed route, identity, retention, exposure/dwell, role, publication, cleanup, and eviction gate before canary 3 was unlocked.",
+    "The first canary-3 operator invocation failed before evidence because database credentials were mistakenly supplied to SOAP; its empty attempt directory was evicted, its transport log was retained, and a read-only authenticated ownership probe proved the unchanged PID, epoch, profile, and zero active cohorts before retry.",
+    "The authenticated canary-3 retry completed all 14 route terminals and all four boss kills under the exact planned identity and party, then failed closed only at the Protection Paladin role audit.",
+    "The maximum healer episode is a genuine 7047 ms Azil wave pickup chain; it is not stale identity, audit conflation, missing threat aura, publication failure, or incomplete route evidence.",
+    "The serial operator correctly stopped after canary 3; canaries 4 through 8 and Phases 10 through 12 remain blocked."
+  ],
+  "smallest_safe_correction": {
+    "file": "src/server/game/Bots/BotWorldPopulationMgr.cpp",
+    "scope": "Protection Paladin healer-owned multi-hostile ordinary-trash and declared boss-add pickup only",
+    "change": "While a Protection Paladin tank observes at least two hostiles targeting the healer, lower only that tank's decision timer to the runtime's existing 250 ms specialized pickup cadence. Apply the same bounded cadence to a declared high-density boss-add wave before healer ownership appears. Do not change victims, threat, spell order, movement, cooldowns, GCD, power, range, line-of-sight, route, audit thresholds, or any fallback. The retained sequence has eight native control decisions between first healer ownership and full Hammer pickup; the bounded cadence makes that same chain observable inside the 3000 ms acquisition/dwell ceiling without weakening a gate."
+  },
+  "next_attempt": {
+    "attempt_label": "rerun153_canary_2",
+    "worldserver_rebuild_required": true,
+    "deterministic_reprovision_required": true,
+    "fresh_identity_and_eight_row_plan_required": true,
+    "canary_2_only_until_strict_pass": true,
+    "canaries_3_through_8_started": false,
+    "phases_10_through_12_blocked": true
+  }
+}

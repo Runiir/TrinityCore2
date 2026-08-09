@@ -363,7 +363,7 @@ def test_playerbot_runtime_roles_drive_universal_profile_combat():
         "CURRENT_AUTOREPEAT_SPELL",
         "BotActionResult check = CheckHostileSpell(owner, bot, target, action.SpellId);",
         "TARGET_FLAG_DEST_LOCATION",
-        ": bot->CastSpell(target, action.SpellId, false);",
+        ": bot->CastSpell(target, action.SpellId, castArgs);",
     )
     assert "!bot->IsWithinMeleeRange(actionTarget)" in world_mgr
 
@@ -3071,7 +3071,7 @@ def test_profile_combat_resolver_prioritizes_density_actions_then_uses_rotation_
     mgr = read(BOT_MGR)
     resolver = function_body(
         mgr,
-        "ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* bot, Unit* target, uint32 hostileCount, bool densityOnly)",
+        "ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* bot, Unit* target, uint32 hostileCount, bool densityOnly, uint32 excludedSpellId, bool areaOnly) const",
     )
     executor = function_body(
         mgr,
@@ -3093,18 +3093,352 @@ def test_profile_combat_resolver_prioritizes_density_actions_then_uses_rotation_
     assert "ResolveProfileCombatAction(bot, target, hostileCount, densityOnly)" in executor
 
 
-def test_hostile_profile_execution_rejects_buffs_and_stops_for_cast_time_spells():
+def test_hostile_profile_execution_rejects_buffs_and_defers_moving_cast_time_spells():
     mgr = read(BOT_MGR)
     resolver = function_body(
         mgr,
-        "ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* bot, Unit* target, uint32 hostileCount, bool densityOnly)",
+        "ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* bot, Unit* target, uint32 hostileCount, bool densityOnly, uint32 excludedSpellId, bool areaOnly) const",
     )
     executor = function_body(read(ROOT / "src/server/game/Bots/BotActionExecutor.cpp"), "BotActionResult BotActionExecutor::ExecuteCombat")
 
     assert "candidate.Category == BotCombatActionCategory::Buff" in resolver
     assert 'candidate.RejectReason = "requires_ally_target";' in resolver
     assert "spellInfo->CalcCastTime(bot->getLevel()) > 0" in executor
-    assert_ordered(executor, "bot->StopMoving();", "MoveIdle();", "bot->CastSpell(target, action.SpellId, false)")
+    assert "bot->isMoving() || bot->HasUnitState(UNIT_STATE_MOVING)" in executor
+    assert_ordered(
+        executor,
+        "bot->StopMoving();",
+        "MoveIdle();",
+        "return BotActionResult::Casting;",
+        "bot->CastSpell(target, action.SpellId, castArgs)",
+    )
+
+
+def test_feral_stampeding_roar_records_every_existing_gate_and_cast_rejection():
+    objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
+
+    assert "feral_stampeding_roar_gate_v1" in objective
+    for gate in [
+        "reserved_healer_threat_handoff",
+        "active_path_valid",
+        "state_is_moving",
+        "has_spell_77761",
+        "has_aura_77761",
+        "cast_attempted",
+        "cast_submitted",
+        "failure_reason",
+    ]:
+        assert gate in objective
+    assert "bot, bot, 77761, &failureReason" in objective
+    assert '"feral_stampeding_roar_not_submitted:" + failureReason' in objective
+    assert "healerThreatAttacker, diagnosticResult.c_str()" in objective
+    assert_ordered(
+        objective,
+        'failureReason = "reserved_healer_threat_handoff";',
+        'failureReason = "inactive_path";',
+        'failureReason = "state_not_moving";',
+        'failureReason = "missing_spell";',
+        'failureReason = "aura_active";',
+        "TryCastFriendlySpell(",
+        '"validation_route_threat_pickup_diagnostic"',
+        "std::string diagnosticResult",
+        "if (castSubmitted)",
+    )
+
+
+def test_rerun168_feral_healer_threat_restores_bear_form_before_recovery():
+    objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
+
+    assert_ordered(
+        objective,
+        "if (healerThreatAttacker)",
+        "state.DecisionTimer = std::min<uint32>(state.DecisionTimer, 250);",
+        "if (!bot->HasAura(5487) && bot->HasSpell(5487)",
+        "TryCastFriendlySpell(bot, bot, 5487)",
+        '"feral_bear_form_healer_threat_before_recovery"',
+        "healerThreatAttackerCount == 1",
+        "TryCastCombatSpell(bot, healerThreatAttacker, 6795)",
+    )
+
+
+def test_rerun168_feral_reserved_handoff_preempts_stampeding_roar_gcd():
+    objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
+
+    assert_ordered(
+        objective,
+        "bool const reservedHealerThreatHandoff =",
+        "state.FeralHealerThreatHandoffUntilMs > NowMs()",
+        "!state.FeralHealerThreatHandoffTargetGuid.IsEmpty()",
+        "!state.FeralHealerThreatHandoffAnchorGuid.IsEmpty()",
+        "if (reservedHealerThreatHandoff)",
+        'failureReason = "reserved_healer_threat_handoff";',
+        "TryCastFriendlySpell(\n                    bot, bot, 77761, &failureReason)",
+        "if (castSubmitted)",
+        "if (state.FeralHealerThreatHandoffRemoteCluster",
+        "TryCastCombatSpell(\n                        bot, feralTrashHandoffAnchor, 16979)",
+    )
+
+
+def test_feral_single_healer_threat_growl_preempts_stampeding_roar_gcd():
+    objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
+
+    assert "healerThreatAttackerCount == 1" in objective
+    assert '"feral_growl_single_healer_threat_before_roar"' in objective
+    assert_ordered(
+        objective,
+        "healerThreatAttackerCount == 1",
+        "TryCastCombatSpell(bot, healerThreatAttacker, 6795)",
+        '"feral_growl_single_healer_threat_before_roar"',
+        "bool const activePathValid = state.ActivePathValid;",
+        "TryCastFriendlySpell(",
+        '"feral_stampeding_roar_healer_threat_reposition"',
+    )
+
+
+def test_feral_generic_healer_threat_fallback_preserves_densest_cluster_target():
+    objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    fallback = objective.split("Rerun140 proved the specialized Feral handoffs", 1)[1].split(
+        "Unit* threatFocus = findTrashClusterThreatTarget();", 1
+    )[0]
+
+    assert "std::vector<Unit*> HealerOwnedTargets;" in objective
+    assert "trashThreatControl.HealerOwnedTargets.push_back(creature);" in objective
+    assert 'bot->getClass() == CLASS_DRUID && defenseTarget' in fallback
+    assert 'std::string(GetDungeonRole(defenseTarget)) == "healer"' in fallback
+    assert "candidate->GetVictim() != defenseTarget" in fallback
+    assert "neighbor->GetVictim() == defenseTarget" in fallback
+    assert "candidate->GetExactDist2d(neighbor) <= 10.0f" in fallback
+    assert_ordered(
+        fallback,
+        "clusterCount > densestHealerClusterCount",
+        "distance < densestHealerClusterDistance",
+        "guid < densestHealerClusterGuid",
+        "trashThreatControl.AreaTarget =",
+        "densestHealerClusterTarget;",
+        "ResolveProfileCombatAction(bot, target,",
+    )
+    assert_ordered(
+        objective,
+        '"feral_growl_lingering_healer_trash_attacker"',
+        "Rerun140 proved the specialized Feral handoffs",
+        'action = moved ? "move_to_trash_density"',
+    )
+
+
+def test_rerun160_feral_local_healer_swarm_prefers_native_swipe_with_roar_fallthrough():
+    objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    recovery = objective.split("Rerun160's maximum 6025-ms exposure", 1)[1].split(
+        "if (feralTrashChargeArrived && defenseTarget", 1
+    )[0]
+
+    assert "nearbyHealerOwnedCount * 2" in recovery
+    assert ">= currentHealerOwnedAttackers.size()" in recovery
+    assert "trashThreatControl.EngagedCount >= 12" not in recovery
+    assert "TryCastCombatSpell(bot, nearbyHealerOwnedAttacker, 779)" in recovery
+    assert '"feral_swipe_healer_swarm_retention_before_roar"' in recovery
+    assert_ordered(
+        recovery,
+        "TryCastCombatSpell(bot, nearbyHealerOwnedAttacker, 779)",
+        '"feral_swipe_healer_swarm_retention_before_roar"',
+        "if (nearbyHealerOwnedCount >= 2 && missingOwnedRoar",
+        "TryCastFriendlySpell(bot, bot, 99)",
+        '"feral_demoralizing_roar_remote_healer_trash_cluster_handoff"',
+    )
+
+
+def test_feral_large_tank_owned_trash_wave_prefers_density_before_freshness():
+    objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    selector = objective.split("Rerun142 proved continuous aura-fresh", 1)[1].split(
+        "Rerun140 proved the specialized Feral handoffs", 1
+    )[0]
+    ordering = selector.split("if (!densestTankOwnedClusterTarget", 1)[1]
+
+    assert "std::vector<Unit*> TankOwnedTargets;" in objective
+    assert "trashThreatControl.TankOwnedTargets.push_back(creature);" in objective
+    assert "trashThreatControl.EngagedCount >= 12" in selector
+    assert "tankOwnsTrashMajority" in selector
+    assert "candidate->GetVictim() != trashThreatControl.Tank" in selector
+    assert "neighbor->GetVictim() == trashThreatControl.Tank" in selector
+    assert "candidate->GetExactDist2d(neighbor) <= 10.0f" in selector
+    assert "!candidate->HasAura(77758, bot->GetGUID())" in selector
+    assert_ordered(
+        ordering,
+        "clusterCount > densestTankOwnedClusterCount",
+        "missingThrash",
+        "distance < densestTankOwnedClusterDistance",
+        "guid < densestTankOwnedClusterGuid",
+        "trashThreatControl.AreaTarget =",
+        "densestTankOwnedClusterTarget;",
+        "feralTankOwnedDensitySelected = true;",
+    )
+    assert_ordered(
+        objective,
+        "Rerun142 proved continuous aura-fresh",
+        "Rerun140 proved the specialized Feral handoffs",
+        "ResolveProfileCombatAction(bot, target,",
+    )
+
+
+def test_feral_secure_margin_targets_remote_insecure_cluster_before_swipe():
+    objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    selector = objective.split("Unit* feralSecureMarginTarget = nullptr;", 1)[1].split(
+        "Rerun112 localized the all-hostile retention failure", 1
+    )[0]
+
+    assert "std::vector<Unit*> InsecureTankOwnedTargets;" in objective
+    assert "trashThreatControl.InsecureTankOwnedTargets.push_back(creature);" in objective
+    assert "tankThreat >= 2000.0f" in objective
+    assert "tankThreat >= highestPartyThreat * 2.5f" in objective
+    assert "candidate->GetVictim() != bot" in selector
+    assert "neighbor->GetVictim() == bot" in selector
+    assert "candidate->GetExactDist2d(neighbor) <= 10.0f" in selector
+    assert "state.FeralHealerThreatHandoffUntilMs > NowMs()" in selector
+    assert "!feralHealerHandoffPending" in selector
+    assert_ordered(
+        selector,
+        "clusterCount > feralSecureMarginClusterCount",
+        "distance < feralSecureMarginDistance",
+        "guid < feralSecureMarginGuid",
+        "MoveBotToProfileRange(",
+        '"feral_approach_insecure_trash_threat_cluster"',
+        "TryCastCombatSpell(bot, feralSecureMarginTarget, 779)",
+        '"feral_swipe_secure_trash_threat_margin"',
+    )
+
+
+def test_trash_tactical_focus_and_next_encounter_terminal_ownership_stay_separate():
+    objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    active_combat = objective.split("auto validationPartyHasActiveCombat", 1)[1].split(
+        "auto isBoundedTerminalPartyCombatTarget", 1
+    )[0]
+    bounded_terminal = objective.split("auto isBoundedTerminalPartyCombatTarget", 1)[1].split(
+        "auto findBoundedTerminalPartyCombatTarget", 1
+    )[0]
+    area_focus = objective.split("target = trashThreatControl.AreaTarget;", 1)[1].split(
+        "ResolvedCombatAction areaAction", 1
+    )[0]
+    terminal_start = objective.index("bool packHasLiveMobs = trashClusterHasLiveMobs();")
+    terminal = objective[terminal_start : objective.index("if (terminalCombatTarget)", terminal_start)]
+
+    assert "isImmediateNextValidationRouteEncounterMember" in active_combat
+    assert "transferImmediateNextEncounter" in active_combat
+    assert "isImmediateNextValidationRouteEncounterMember(creature)" in bounded_terminal
+    assert "isImmediateNextValidationRouteBossTarget(creature)" not in bounded_terminal
+    assert "!isImmediateNextValidationRouteEncounterMember(areaCreature)" in area_focus
+    assert "isEligibleTrashClusterMob(areaCreature)" not in area_focus
+    assert 'Cohort().Config.ValidationRouteKind == "boss"' not in area_focus
+    assert "rememberValidationRouteFocus(target);" in area_focus
+    assert_ordered(
+        terminal,
+        "bool packHasLiveMobs = trashClusterHasLiveMobs();",
+        "validationPartyHasActiveCombat(!packHasLiveMobs)",
+        "!packHasLiveMobs && partyHasActiveCombatUnit",
+    )
+
+
+def test_feral_boss_remote_handoff_uses_collision_safe_eight_yard_intercept():
+    objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    handoff = objective.split("Rerun141 left one generation-14 boss-handoff attacker", 1)[1].split(
+        'RecordEvent(state, bot, "boss_add_density", movementAnchor,', 1
+    )[0]
+
+    assert "state.FeralHealerThreatHandoffRemoteCluster" in handoff
+    assert "movementAnchor->GetFirstCollisionPosition(" in handoff
+    assert "8.0f" in handoff
+    assert "movementAnchor->GetAngle(bot)" in handoff
+    assert "- movementAnchor->GetOrientation()" in handoff
+    assert_ordered(
+        handoff,
+        "Position remoteRoarIntercept;",
+        "movementX =",
+        "movementY =",
+        "movementZ =",
+        "continuingRemotePath",
+        "MoveBotToPoint(state, bot,",
+        "movementX, movementY, movementZ",
+    )
+
+
+def test_feral_initial_boss_split_handoff_starts_at_same_roar_intercept():
+    objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    initial_handoff = objective.split(
+        "Rerun150 proved the continuation's collision-safe Roar", 1
+    )[1].split("if (remoteClusterRemains)", 1)[0]
+
+    assert "remoteClusterAnchor->GetFirstCollisionPosition(" in initial_handoff
+    assert "8.0f" in initial_handoff
+    assert "remoteClusterAnchor->GetAngle(bot)" in initial_handoff
+    assert "- remoteClusterAnchor->GetOrientation()" in initial_handoff
+    assert "remoteClusterAnchor->GetPositionX()" not in initial_handoff
+    assert "remoteClusterAnchor->GetPositionY()" not in initial_handoff
+    assert "remoteClusterAnchor->GetPositionZ()" not in initial_handoff
+    assert_ordered(
+        initial_handoff,
+        "Position remoteRoarIntercept;",
+        "splitHandoffX =",
+        "splitHandoffY =",
+        "splitHandoffZ =",
+        "bool splitClusterHandoff = remoteClusterRemains",
+        "MoveBotToPoint(state, bot,",
+        "splitHandoffX, splitHandoffY, splitHandoffZ",
+    )
+
+
+def test_feral_arrived_handoff_retries_roar_before_post_roar_area_threat():
+    objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    post_roar = objective.split("Rerun144 proved that a successful local Roar", 1)[1].split(
+        "Rerun106 isolated two Azil split waves", 1
+    )[0]
+
+    assert "candidate->GetVictim() == densityHealer" not in post_roar
+    assert "bot->GetExactDist2d(candidate) <= 10.0f" in post_roar
+    assert "candidate->HasAura(99, bot->GetGUID())" in post_roar
+    assert "postRoarAreaThreatReady = feralHealerHandoffActive" in post_roar
+    assert "healerOwnedAfterRoar >= 2" in post_roar
+    assert "localRoarCoveredCount >= 2" in post_roar
+    assert "localRoarCoveredCount * 2 >= healerOwnedAfterRoar" in post_roar
+    assert "ResolveProfileCombatAction(" in post_roar
+    assert "addCount, true, 0, true" in post_roar
+    assert "ExecuteProfileCombatAction(" in post_roar
+    assert '"feral_post_roar_area_threat_retention"' in post_roar
+    assert '"feral_hold_post_roar_area_threat_retention"' in post_roar
+    assert_ordered(
+        objective,
+        "Rerun163 reached its identity-bound remote handoff",
+        "feralHealerHandoffActive && feralHealerHandoffArrived",
+        "tryFeralRoarPickup(true)",
+        "Rerun144 proved that a successful local Roar",
+        "feral_post_roar_area_threat_retention",
+        "Rerun106 isolated two Azil split waves",
+        "// A remote Charge must not abandon a useful local healer-owned cluster.",
+    )
+
+    retry = objective.split(
+        "Rerun163 reached its identity-bound remote handoff", 1
+    )[1].split("Rerun144 proved that a successful local Roar", 1)[0]
+    assert "acceptance" not in retry
+    assert "threshold" not in retry
+    assert "tryFeralRoarPickup(true)" in retry
+    assert "return true;" in retry
+
+
+def test_profile_los_failure_is_recorded_before_existing_range_recovery():
+    executor = function_body(
+        read(BOT_MGR),
+        "BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState* state, Player* bot, Unit* target, ResolvedCombatAction* actionOut, uint32 hostileCount, bool densityOnly, uint32 excludedSpellId, bool areaOnly)",
+    )
+    los = executor.split("SPELL_FAILED_LINE_OF_SIGHT", 1)[1].split(
+        "if (state && result == BotActionResult::Ok)", 1
+    )[0]
+
+    assert "ProfileCastSuppressedSpellId = action.SpellId" in los
+    assert "recoverLineOfSight = true;" in los
+    assert_ordered(
+        los,
+        "RecordCombatAttempt(*state, bot, target",
+        "if (recoverLineOfSight && target)",
+        "MoveBotToProfileRange(*state, bot, target, &action);",
+    )
 
 
 def test_native_self_resurrection_uses_only_the_player_spell_cast_path():
@@ -3155,7 +3489,7 @@ def test_validation_route_high_density_adds_pull_the_tank_into_the_swarm_and_fai
     assert "ExecuteProfileCombatAction(&state, bot, add, &profileAction, addCount, true)" in adds
     assert "++densityTankOwnedAddCount;" in adds
     assert "densityTankOwnedAddCount * 10 >= addCount * 8" in adds
-    assert "bool urgentSwarmDamageRelease = cohortSwarmActive && addCount >= 12" in adds
+    assert "bool urgentSwarmDamageRelease = cohortSwarmActive && addCount >= 24" in adds
     assert "bool dpsSwarmDamageRelease = densityTankOwnsSecureMajority || urgentSwarmDamageRelease;" in adds
     assert "!dpsSwarmDamageRelease && !bot->getAttackers().empty()" in adds
     assert '"tank_swarm_defensive"' in adds
@@ -3363,6 +3697,447 @@ def test_healer_candidate_mask_is_db_driven_and_records_rejections():
     assert "return best ? best->SpellId : 0;" in manager
 
 
+def test_rerun145_protection_pickup_and_passive_swarm_repairs_are_bounded():
+    root = Path(__file__).resolve().parents[1]
+    manager = (root / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+
+    assert '"consecration_healer_multi_trash_pickup"' in manager
+    multi_consecration = manager.index('"consecration_healer_multi_trash_pickup"')
+    ordinary_righteous_defense = manager.index(
+        '"righteous_defense_healer_pickup"', multi_consecration
+    )
+    assert multi_consecration < ordinary_righteous_defense
+    assert "defenseAttackerCount >= 2" in manager[
+        multi_consecration - 1200 : multi_consecration
+    ]
+    assert "bot->GetExactDist2d(defenseTarget) <= 8.0f" in manager[
+        multi_consecration - 1200 : multi_consecration
+    ]
+
+    assert "engagedAddCount == 0 && passiveSwarmClusterAnchor" in manager
+    assert 'activationAction.Type = "auto_attack";' in manager
+    assert 'activationAction.AutoAttackMode = "melee";' in manager
+    assert '"tank_activate_passive_swarm"' in manager
+
+
+def test_rerun151_protection_remote_healer_cluster_uses_native_ranged_pickup():
+    root = Path(__file__).resolve().parents[1]
+    manager = (root / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+
+    ranged_pickup = manager.index(
+        '"avengers_shield_healer_multi_trash_pickup"'
+    )
+    ordinary_salvation = manager.index(
+        '"hand_of_salvation_healer_trash_threat_drop"', ranged_pickup
+    )
+    ordinary_righteous_defense = manager.rindex(
+        '"righteous_defense_healer_pickup"', 0, ranged_pickup
+    )
+    branch = manager[ranged_pickup - 2400 : ranged_pickup + 800]
+
+    assert ordinary_righteous_defense < ranged_pickup < ordinary_salvation
+    assert "defenseAttackerCount >= 2" in branch
+    assert "bot->HasSpell(31935)" in branch
+    assert "TryCastCombatSpell(bot, healerClusterTarget, 31935)" in branch
+    assert "defenseTarget->getAttackers()" in branch
+    assert "distance < healerClusterDistance" in branch
+    assert "guid < healerClusterGuid" in branch
+
+
+def test_rerun162_protection_retention_and_passive_swarm_fallback_are_bounded():
+    root = Path(__file__).resolve().parents[1]
+    manager = (root / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+
+    boss_marker = manager.index(
+        "Rerun162 proved the same bounded Protection pickup cadence"
+    )
+    boss_branch = manager[boss_marker : boss_marker + 1800]
+    assert 'role == "tank" && profile.SpecTag == "protection"' in boss_branch
+    assert 'profile.SpecTag == "protection_paladin"' not in boss_branch
+    assert "&& densityHealer" in boss_branch
+    assert "cohortSwarmActive && densityHealer" not in boss_branch
+    assert "engagedAddCount >= 12" in boss_branch
+    assert "observedListedAttackerCount(densityHealer) >= 2" in boss_branch
+    assert "state.DecisionTimer = std::min<uint32>(\n                state.DecisionTimer, 250);" in boss_branch
+
+    trash_marker = manager.index(
+        "Rerun153 proved the reactive cadence from rerun152"
+    )
+    trash_branch = manager[trash_marker : trash_marker + 1900]
+    assert "protectionMultiHostileRetention" in trash_branch
+    assert "trashThreatControl.EngagedCount >= 3" in trash_branch
+    assert "tankOwnsTrashMajority" in trash_branch
+    assert "protectionMultiHostileHealerPickup" in trash_branch
+    assert "bot->getClass() == CLASS_PALADIN" in trash_branch
+    assert 'std::string(GetDungeonRole(defenseTarget)) == "healer"' in trash_branch
+    assert "defenseAttackerCount >= 2" in trash_branch
+    assert "state.DecisionTimer = std::min<uint32>(\n                state.DecisionTimer, 250);" in trash_branch
+    assert trash_marker < manager.index(
+        '"consecration_healer_multi_trash_pickup"', trash_marker
+    )
+
+    passive_marker = manager.index(
+        "Rerun153 reached the passive anchor but had no line of sight"
+    )
+    passive_branch = manager[passive_marker - 2600 : passive_marker + 1500]
+    assert "bot->IsWithinLOSInMap(passiveSwarmClusterAnchor)" in passive_branch
+    assert "passiveSwarmActivationNotActionable" in passive_branch
+    assert "pendingSwarmActivation" in passive_branch
+    assert "!passiveSwarmActivationNotActionable" in passive_branch
+
+
+def test_rerun162_post_death_safe_anchor_uses_route_movement_z_contract():
+    root = Path(__file__).resolve().parents[1]
+    manager = (root / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+
+    marker = manager.index(
+        "Rerun162 selected a remembered post-death anchor"
+    )
+    branch = manager[marker : marker + 1600]
+    assert "safeMap->GetHeight(bot->GetPhaseShift(), safe.X, safe.Y" in branch
+    assert "safeFloorZ <= INVALID_HEIGHT" in branch
+    assert "std::fabs(safeFloorZ - safe.Z) > 4.0f" in branch
+    assert branch.index("std::fabs(safeFloorZ - safe.Z) > 4.0f") < branch.index(
+        "float safeDanger = GetLocalDangerScore"
+    )
+
+
+def test_rerun154_feral_high_density_charge_reselects_remote_wave_target():
+    root = Path(__file__).resolve().parents[1]
+    manager = (root / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+
+    marker = manager.index(
+        "Rerun154 exposed a declared 20-follower wave"
+    )
+    branch = manager[marker - 500 : marker + 4300]
+    assert "feralChargeProtectsHighDensityParty = engagedAddCount >= 12" in branch
+    assert "observedListedAttackerCount(densityHealer) == 0" in branch
+    assert "Unit* feralChargeTarget = add;" in branch
+    assert "bot->GetExactDist(feralChargeTarget) <= 8.0f" in branch
+    assert "candidate->GetVictim() == bot" in branch
+    assert 'GetDungeonRole(candidateVictim)) == "tank"' in branch
+    assert "bot->GetExactDist(candidate) <= 8.0f" in branch
+    assert "distance < remoteChargeDistance" in branch
+    assert "guid < remoteChargeGuid" in branch
+    assert "TryCastCombatSpell(bot, feralChargeTarget, 16979)" in branch
+    assert "state.FeralChargePickupTargetGuid = feralChargeTarget->GetGUID();" in branch
+    assert "state.FeralChargePickupUntilMs = NowMs() + 2500;" in branch
+    assert "state.DecisionTimer = std::min<uint32>(\n                state.DecisionTimer, 250);" in branch
+    assert_ordered(
+        branch,
+        "Unit* feralChargeTarget = add;",
+        "for (Creature* candidate : localAdds)",
+        "if (remoteChargeTarget)",
+        "TryCastCombatSpell(bot, feralChargeTarget, 16979)",
+        "state.FeralChargePickupTargetGuid = feralChargeTarget->GetGUID();",
+    )
+
+
+def test_rerun155_current_healer_threat_preempts_feral_secure_margin_approach():
+    root = Path(__file__).resolve().parents[1]
+    manager = (root / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+
+    marker = manager.index(
+        "Rerun155 recovered one of three healer-owned Flayers"
+    )
+    branch = manager[marker - 2100 : marker + 1700]
+    assert "bool feralCurrentHealerThreat = defenseTarget" in branch
+    assert 'std::string(GetDungeonRole(defenseTarget)) == "healer"' in branch
+    assert "defenseAttackerCount >= 1" in branch
+    assert "bool feralHealerHandoffPending = feralCurrentHealerThreat" in branch
+    assert "tankOwnsTrashMajority && insecureTrashSwarm" in branch
+    assert "&& !feralHealerHandoffPending" in branch
+    assert "&& !feralCurrentHealerThreat" in branch
+    assert_ordered(
+        branch,
+        "bool feralCurrentHealerThreat = defenseTarget",
+        "bool feralHealerHandoffPending = feralCurrentHealerThreat",
+        "Rerun155 recovered one of three healer-owned Flayers",
+        "&& !feralHealerHandoffPending",
+        "&& !feralCurrentHealerThreat",
+        '"feral_approach_insecure_trash_threat_cluster"',
+    )
+
+
+def test_rerun156_active_feral_wave_preempts_pending_swarm_preposition():
+    root = Path(__file__).resolve().parents[1]
+    manager = (root / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+
+    marker = manager.index(
+        "Rerun156 exposed a declared 60-follower Feral wave"
+    )
+    branch = manager[marker - 500 : marker + 1900]
+    assert "feralActiveWavePreemptsPendingSwarmPickup" in branch
+    assert 'profile.SpecTag == "feral_druid_tank"' in branch
+    assert "engagedAddCount >= 12" in branch
+    assert "densityHealer" in branch
+    assert "observedListedAttackerCount(densityHealer) == 0" in branch
+    assert "state.TankPendingSwarmPickupAnchorGuid.Clear();" in branch
+    assert "state.TankPendingSwarmPickupUntilMs = 0;" in branch
+    assert "state.TankPendingSwarmPickupEngagedHandoff = false;" in branch
+    assert "tankPendingSwarmPickup = false;" in branch
+    assert "pendingSwarmPickupAnchor = nullptr;" in branch
+    assert_ordered(
+        manager,
+        "bool feralActiveWavePreemptsPendingSwarmPickup",
+        "if (feralActiveWavePreemptsPendingSwarmPickup)",
+        "if (tankPendingSwarmPickup && pendingSwarmPickupAnchor",
+        "bool feralChargeProtectsHighDensityParty = engagedAddCount >= 12",
+    )
+
+
+def test_rerun156_boss_handoff_rebinds_within_original_healer_cluster():
+    root = Path(__file__).resolve().parents[1]
+    manager = (root / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+
+    marker = manager.index(
+        "Rerun156 proved the boss handoff discarded a still-valid Azil"
+    )
+    branch = manager[marker - 300 : marker + 2300]
+    assert "state.FeralHealerThreatHandoffRemoteCluster" in branch
+    assert "feralHealerHandoffAnchor->GetVictim() != densityHealer" in branch
+    assert "for (Creature* candidate : localAdds)" in branch
+    assert "candidate->GetVictim() == densityHealer" in branch
+    assert "bot->IsValidAttackTarget(candidate)" in branch
+    assert "feralHealerHandoffAnchor->GetExactDist2d(candidate)" in branch
+    assert "<= 10.0f" in branch
+    assert "candidate->GetGUID().GetCounter() < reboundGuid" in branch
+    assert "state.FeralHealerThreatHandoffAnchorGuid =" in branch
+    assert "feralHealerHandoffAnchor = reboundAnchor;" in branch
+    assert "FeralHealerThreatHandoffUntilMs =" not in branch
+    assert_ordered(
+        branch,
+        "if (state.FeralHealerThreatHandoffRemoteCluster",
+        "for (Creature* candidate : localAdds)",
+        "state.FeralHealerThreatHandoffAnchorGuid =",
+        "bool feralHealerRemoteHandoffValid",
+    )
+
+
+def test_rerun164_failed_single_healer_growl_rebinds_generic_fallback():
+    manager = read(BOT_MGR)
+    marker = manager.index(
+        "Rerun164 recovered the first of two Azil followers with Growl"
+    )
+    branch = manager[marker - 1700 : marker + 900]
+
+    assert "observedListedAttackerCount(densityHealer) == 1" in branch
+    assert "TryCastCombatSpell(bot, healerOwnedAdd, 6795)" in branch
+    assert 'action = "feral_growl_lingering_healer_swarm_attacker";' in branch
+    assert "if (healerOwnedAdd)" in branch
+    assert "add = healerOwnedAdd;" in branch
+    assert "sharedFocusValid = false;" in branch
+    assert_ordered(
+        branch,
+        "TryCastCombatSpell(bot, healerOwnedAdd, 6795)",
+        'action = "feral_growl_lingering_healer_swarm_attacker";',
+        "return true;",
+        "Rerun164 recovered the first of two Azil followers with Growl",
+        "add = healerOwnedAdd;",
+        "sharedFocusValid = false;",
+    )
+
+
+def test_rerun165_density_resolver_rejects_buff_without_removing_recovery_fallbacks():
+    manager = read(BOT_MGR)
+    resolver = function_body(
+        manager,
+        "ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction",
+    )
+    marker = resolver.index(
+        "Rerun165 canary 3 captured a Protection tank owning all 49 Azil"
+    )
+    branch = resolver[marker - 350 : marker + 850]
+
+    assert "densityOnly && candidate.Category == BotCombatActionCategory::Buff" in branch
+    assert 'candidate.RejectReason = "density_buff_not_actionable";' in branch
+    assert "BotCombatActionCategory::Defensive" not in branch
+    assert "BotCombatActionCategory::ResourceGenerator" not in branch
+    assert_ordered(
+        branch,
+        "if (areaOnly",
+        "if (densityOnly && candidate.Category == BotCombatActionCategory::Buff)",
+        "SpellInfo const* candidateSpellInfo",
+    )
+    assert "bestDensityRecovery" in resolver
+    assert "bestDensityResourceFallback" in resolver
+    assert "bestDensityGenerator" in resolver
+
+
+def test_rerun169_melee_fallback_exposes_native_range_to_movement_callers():
+    manager = read(BOT_MGR)
+    resolver = function_body(
+        manager,
+        "ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction",
+    )
+    marker = resolver.index(
+        "Rerun169 canary 3 reached a remote healer-owned cluster"
+    )
+    branch = resolver[marker - 300 : marker + 1000]
+
+    assert 'action.DebugName = "melee_auto_attack_fallback";' in branch
+    assert "action.MinRange = 0.0f;" in branch
+    assert "action.MaxRange = std::max(5.0f, bot->GetMeleeRange(target));" in branch
+    assert_ordered(
+        branch,
+        'profile.AutoAttackMode == "melee"',
+        'action.DebugName = "melee_auto_attack_fallback";',
+        "action.MinRange = 0.0f;",
+        "action.MaxRange = std::max(5.0f, bot->GetMeleeRange(target));",
+    )
+
+
+def test_rerun170_defers_passive_azil_followers_until_route_arrival():
+    manager = read(BOT_MGR)
+    route = function_body(
+        manager,
+        "bool BotWorldPopulationMgr::TryValidationRouteObjective",
+    )
+    marker = route.index(
+        "Rerun170 reached Azil's route generation roughly 80-115 yards"
+    )
+    branch = route[marker - 500 : marker + 1200]
+
+    assert "cohortSwarmActive && engagedAddCount == 0" in branch
+    assert "Party().ValidationRouteBossProgressTargetGuid.IsEmpty()" in branch
+    assert "canonicalRouteDistance > routeArrivalRadius" in branch
+    assert_ordered(
+        branch,
+        "bool cohortSwarmActive = cohortAddGuids.size() >= 3;",
+        "cohortSwarmActive && engagedAddCount == 0",
+        "return false;",
+        "Party().ValidationRouteBossAddDensityPhase",
+    )
+
+
+def test_rerun170_protection_healer_pickup_and_approach_use_urgent_cadence():
+    manager = read(BOT_MGR)
+    route = function_body(
+        manager,
+        "bool BotWorldPopulationMgr::TryValidationRouteObjective",
+    )
+    taunt_marker = route.index(
+        "Rerun170 retained 17 eligible healer-target samples"
+    )
+    taunt_branch = route[taunt_marker - 500 : taunt_marker + 3800]
+    move_marker = route.index(
+        "Rerun170's longest Protection exposure began with three"
+    )
+    move_branch = route[move_marker - 500 : move_marker + 1300]
+
+    assert 'cadenceProfile.SpecTag == "protection"' in taunt_branch
+    assert "defenseAttackerCount >= 1" in taunt_branch
+    assert "bot->HasSpell(62124)" in taunt_branch
+    assert "TryCastCombatSpell(bot, healerTauntTarget, 62124)" in taunt_branch
+    assert '"hand_of_reckoning_healer_trash_pickup"' in taunt_branch
+    assert "state.DecisionTimer, 250);" in taunt_branch
+    assert_ordered(
+        taunt_branch,
+        "Righteous Defense was unavailable",
+        "for (Unit* attacker : defenseTarget->getAttackers())",
+        "TryCastCombatSpell(bot, healerTauntTarget, 62124)",
+        "state.DecisionTimer, 250);",
+        "Rerun151 localized Protection's remaining healer exposure",
+    )
+
+    assert 'cadenceProfile.SpecTag == "protection"' in move_branch
+    assert "target->GetVictim()->ToPlayer()" in move_branch
+    assert 'std::string(GetDungeonRole(areaVictim)) == "healer"' in move_branch
+    assert "state.DecisionTimer = std::min<uint32>(" in move_branch
+    assert "state.DecisionTimer, 250);" in move_branch
+    assert_ordered(
+        move_branch,
+        "MoveBotToProfileRange(state, bot, target, &areaAction)",
+        'cadenceProfile.SpecTag == "protection"',
+        'GetDungeonRole(areaVictim)) == "healer"',
+        "state.DecisionTimer, 250);",
+        'action = moved ? "move_to_trash_density"',
+    )
+
+
+def test_rerun157_preserves_global_cooldown_scheduling_identity():
+    manager = read(BOT_MGR)
+    resolver = function_body(
+        manager,
+        "ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction",
+    )
+    executor = function_body(
+        manager,
+        "BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction",
+    )
+
+    assert 'candidate.RejectReason == "global_cooldown"' in resolver
+    assert 'globalCooldownSchedulingWait ? "global_cooldown"' in resolver
+    assert 'action.DebugName == "global_cooldown"' in executor
+    assert "BotActionResult::GlobalCooldown : BotActionResult::NoAction" in executor
+    assert "RecordCombatAttempt(*state, bot, target, \"profile_resolve\", &action," in executor
+    assert "return invalidResult;" in executor
+
+
+def test_rerun157_closes_control_race_and_retains_protection_threat_gates():
+    manager = read(BOT_MGR)
+    action_executor = read(ROOT / "src/server/game/Bots/BotActionExecutor.cpp")
+    hostile_check = function_body(
+        action_executor,
+        "BotActionResult BotActionExecutor::CheckHostileSpell",
+    )
+
+    assert "bot->HasUnitState(UNIT_STATE_CONTROLLED)" in hostile_check
+    assert "return BotActionResult::Throttled;" in hostile_check
+    assert "bool urgentSwarmDamageRelease = cohortSwarmActive && addCount >= 24" in manager
+    marker = manager.index("Rerun157 localized 28 of 37 Protection")
+    branch = manager[marker : marker + 1800]
+    assert 'std::string(GetDungeonRole(defenseTarget)) == "healer"' in branch
+    assert "defenseAttackerCount >= 1" in branch
+    assert "bot->HasSpell(1022)" in branch
+    assert "!defenseTarget->HasAura(1022)" in branch
+    assert "TryCastFriendlySpell(bot, defenseTarget, 1022)" in branch
+    assert '"hand_of_protection_healer_trash_emergency"' in branch
+    assert_ordered(
+        manager,
+        "Rerun157 localized 28 of 37 Protection",
+        '"hand_of_protection_healer_trash_emergency"',
+        "Rerun145 localized Protection's only healer exposure",
+        '"consecration_healer_multi_trash_pickup"',
+    )
+
+
+def test_rerun158_passive_swarm_activation_uses_native_melee_reach():
+    manager = read(BOT_MGR)
+    activation = manager.index('activationAction.DebugName = "activate_passive_swarm";')
+    branch = manager[activation - 2600 : activation + 3600]
+
+    assert "!bot->IsWithinMeleeRange(passiveSwarmClusterAnchor)" in branch
+    assert "bot->IsWithinMeleeRange(passiveSwarmClusterAnchor)" in branch
+    assert "bot->IsWithinLOSInMap(passiveSwarmClusterAnchor)" in branch
+    assert "passiveSwarmActivationNotActionable" in branch
+    assert "!passiveSwarmActivationNotActionable" in branch
+    assert "passiveSwarmActivationLineOfSightBlocked" not in branch
+    assert "bot->GetExactDist2d(passiveSwarmClusterAnchor) <= 6.0f" not in branch
+
+
+def test_rerun159_feral_hazard_retention_prefers_native_thrash_with_fallthrough():
+    manager = read(BOT_MGR)
+    marker = manager.index("Rerun159 localized all Feral healer exposure")
+    branch = manager[marker - 300 : marker + 5200]
+
+    assert 'hazardProfile.SpecTag != "feral_druid_tank"' in branch
+    assert "engagedCount < 12" in branch
+    assert "!areaTarget" in branch
+    assert "!bot->HasSpell(77758)" in branch
+    assert "!TryCastCombatSpell(bot, areaTarget, 77758)" in branch
+    assert '"feral_thrash_hazard_secure_threat_retention"' in branch
+    assert "if (tryFeralHazardThrashRetention())" in branch
+    assert_ordered(
+        manager,
+        "Rerun159 localized all Feral healer exposure",
+        '"feral_thrash_hazard_secure_threat_retention"',
+        '"feral_swipe_hazard_secure_threat_margin"',
+        "if (tryFeralHazardThrashRetention())",
+        '"tank_hazard_hold_aoe_threat"',
+    )
+
+
 def test_stonecore_quality_repairs_cover_hazards_pet_recovery_and_healer_protection():
     root = Path(__file__).resolve().parents[1]
     manager = (root / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
@@ -3534,3 +4309,23 @@ def test_parallel_combat_calibration_is_isolated_and_uses_live_rotations():
     assert '{ "calibrate", rbac::RBAC_PERM_COMMAND_HEALERBOT' in commands
     assert "StartCombatCalibration" in commands
     assert "StopCombatCalibration" in commands
+
+
+def test_rerun148_feral_pre_victim_cadence_and_charge_identity_are_bounded():
+    root = Path(__file__).resolve().parents[1]
+    manager = (root / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+
+    assert "engagedAddCount >= 12 && densityHealer" in manager
+    assert "observedListedAttackerCount(densityHealer) == 0" in manager
+    assert "state.DecisionTimer, 250" in manager
+    assert "feralChargePickupTarget = ObjectAccessor::GetUnit(" in manager
+    assert "state.FeralChargePickupTargetGuid" in manager
+    assert "state.FeralChargePickupUntilMs > feralChargeNowMs" in manager
+
+
+def test_rerun148_hunter_spell_los_failure_forces_one_alternate_lane_search():
+    root = Path(__file__).resolve().parents[1]
+    manager = (root / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+
+    assert "MoveBotToProfileRange(*state, bot, target, &action, true);" in manager
+    assert "if (!forceRangedReposition && distance >= desiredRange - 1.0f" in manager

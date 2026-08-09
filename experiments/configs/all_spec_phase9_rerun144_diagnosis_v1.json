@@ -1,0 +1,187 @@
+{
+  "schema": "all_spec_phase9_rerun144_diagnosis_v1",
+  "diagnosis_sha256": "1e104942947e34adfbfcf95ed3e47bbbe93dc802a6d2461770429d6970e074c2",
+  "hash_scope": "canonical_json_without_diagnosis_sha256",
+  "source_attempt": {
+    "attempt_label": "rerun144_canary_2",
+    "attempt_id": "phase9_serial_02_stonecore_phase9_006_6893daf98698",
+    "batch_id": "phase9-serial-canary-rerun144-2",
+    "batch_identity_sha256": "da1ec85666c1332b8660c4f875f3e080acbe74d2691f6dacfd8e0c8f4c56081b",
+    "composition_id": "stonecore_phase9_006_6893daf98698",
+    "party_sha256": "524b94c794897f5111bdae0a5e45ba31a31ebb8596d811a3dd8c1caff95bd16a",
+    "party": [
+      "feral_druid_tank",
+      "discipline_priest",
+      "fury_warrior",
+      "marksmanship_hunter",
+      "retribution_paladin"
+    ],
+    "binary_sha256": "cf3930eb82d65386373391c84a9fc956c2fd12698c4ff593335c1e0c26e1a10b",
+    "server_process_id": 3202411,
+    "server_epoch": 15346073558078737,
+    "session_fingerprint": "f3d26a4a59217ea77205dfe0221817e5704be39c0485ffdf1582357a72d99b5b",
+    "profile_generation": 1,
+    "profile_content_hash": "35a587f05d8781d72c62576a6f35392a69e01d5978429f65429ad5b9ed096a22",
+    "evidence_identity_manifest_sha256": "2bbb7565c388110a823dd02dda0ad7d15d0d492966691f415c1a57f8f26e5d9e",
+    "run_plan_sha256": "a61c65e81684ba7bf05f511e072fd3cf317097af5d7b3a0a63512c28c7c90261",
+    "max_active_cohorts": 1
+  },
+  "capture_and_closeout": {
+    "capture_identity_sha256": "da1ec85666c1332b8660c4f875f3e080acbe74d2691f6dacfd8e0c8f4c56081b",
+    "raw_part_count": 1,
+    "raw_event_row_count": 274,
+    "compact_row_count": 1,
+    "raw_bundle_sha256": "4d22a1a24f8e4101b6b2d5f2598433593fc5f8850cce8738d0f798bfca7b58d6",
+    "compact_bundle_sha256": "90462118c1f625698613b3ade28005d323bb523c943b0afef9928a0b1c637808",
+    "publication_receipt_sha256": "91f7de19beb9d04463c21f85650061c47e6d392391085bb976c1accc1fac7722",
+    "remote_verified": true,
+    "capture_revalidated_after_hydration": true,
+    "exact_party_verified": true,
+    "identity_matched": true,
+    "inactive_after_attempt": true,
+    "cleanup": {
+      "active": false,
+      "active_bots": 0,
+      "lease_count": 0,
+      "party_bot_count": 0
+    },
+    "publication_interruption": "The automatic publisher rejected raw.dvc because the parent artifacts ignore rule hid the generated pointer. The immutable batch itself was complete; the root publisher temporarily unignored only the exact pointer hierarchy, published and remotely verified both bundles, target-evicted them, then restored the ignore file exactly.",
+    "broad_dvc_gc_used": false
+  },
+  "strict_route_result": {
+    "completion_reason": "validation_route_manifest_complete",
+    "route_terminal_count": 14,
+    "real_boss_kill_count": 4,
+    "stuck_events": 0,
+    "death_loop_events": 0,
+    "no_progress_diagnoses": 0,
+    "forbidden_completion_assists": [],
+    "canaries_3_through_8_started": false
+  },
+  "role_audit": {
+    "passed": false,
+    "failure_labels": [
+      "Feraltank:tank_threat_retention",
+      "Feraltank:healer_target_exposure",
+      "Feraltank:healer_target_dwell",
+      "Mmhunter:cast_failure_rate"
+    ],
+    "feral": {
+      "eligible_hostile_samples": 1428,
+      "tank_owned_samples": 1253,
+      "healer_targeting_samples": 128,
+      "tank_all_hostile_retention_rate": 0.8774509803921569,
+      "healer_target_exposure_rate": 0.0896358543417367,
+      "max_healer_target_dwell_ms": 3382,
+      "tank_threat_aura_uptime_rate": 1.0,
+      "cast_failure_rate": 0.0
+    },
+    "hunter": {
+      "actionable_attempts": 181,
+      "failed_attempts": 11,
+      "cast_failure_rate": 0.0608,
+      "failure_results": {
+        "spell_cast_result_49_line_of_sight": 8,
+        "spell_cast_result_150_prevented_by_mechanic": 3
+      }
+    }
+  },
+  "route_generation_localization": {
+    "generation_3": {
+      "eligible_samples": 46,
+      "tank_owned_samples": 46,
+      "healer_targeting_samples": 0
+    },
+    "generation_13": {
+      "eligible_samples": 49,
+      "tank_owned_samples": 49,
+      "healer_targeting_samples": 0
+    },
+    "generation_14": {
+      "eligible_samples": 223,
+      "tank_owned_samples": 144,
+      "healer_targeting_samples": 78,
+      "tank_retention_rate": 0.6457399103139013,
+      "healer_exposure_rate": 0.34977578475336324
+    },
+    "all_non_generation_14": {
+      "eligible_samples": 1205,
+      "tank_owned_samples": 1109,
+      "healer_targeting_samples": 50,
+      "note": "The generation-zero trace snapshots account for every residual non-generation-14 loss; every explicit route generation except 14 passes at full tank ownership with zero healer exposure."
+    }
+  },
+  "feral_wave_evidence": [
+    {
+      "start_ms": 1785913814648,
+      "last_over_limit_sample_ms": 1785913818030,
+      "max_dwell_ms": 3382,
+      "initial_engaged_tank_healer": [14, 2, 12],
+      "last_engaged_tank_healer": [21, 9, 12],
+      "control_sequence": [
+        "feral_charge_swarm_pickup",
+        "feral_demoralizing_roar_swarm_pickup",
+        "area_attack_boss_add_density_out_of_range",
+        "move_to_boss_add",
+        "continue_stable_feral_swarm_approach",
+        "feral_demoralizing_roar_swarm_pickup",
+        "continue_stable_feral_swarm_approach"
+      ],
+      "combat_falsifier": "After the first Roar, Feraltank produced only one melee damage event during the strict dwell window; no Swipe or Thrash damage landed while specialized movement and a second Roar consumed decisions."
+    },
+    {
+      "start_ms": 1785913877093,
+      "last_over_limit_sample_ms": 1785913880168,
+      "max_dwell_ms": 3075,
+      "initial_engaged_tank_healer": [19, 0, 19],
+      "last_engaged_tank_healer": [19, 2, 17],
+      "control_sequence": [
+        "continue_stable_feral_swarm_approach",
+        "move_to_boss_add",
+        "feral_demoralizing_roar_swarm_pickup",
+        "feral_hold_healer_swarm_handoff_for_roar",
+        "feral_demoralizing_roar_swarm_pickup",
+        "area_attack_boss_add_density_out_of_range"
+      ],
+      "combat_falsifier": "The first Feraltank damage to the follower wave was a melee hit at the 3075 ms sample; no damaging area-threat cast landed before the hard dwell ceiling."
+    }
+  ],
+  "hunter_failure_evidence": {
+    "generation_1": "Three mechanic-prevented submissions targeted scripted/passive corridor creatures; these remain genuine failed submissions and are not relabeled.",
+    "generation_9": "Eight LOS failures targeted the same Stonecore Sentry GUID 133 while the profile cycled Hunter's Mark, Serpent Sting, Aimed Shot, and Kill Shot. The existing five-second suppression is spell-target scoped, so other spells immediately repeat against the same unrecovered LOS topology.",
+    "audit_attribution_correct": true
+  },
+  "accepted_causal_chain": [
+    "Rerun144's focus correction fully repairs the rerun143 generation-3 party split and preserves a strict 14-node, four-boss clear.",
+    "All explicit route generations through generation 13 pass exact hostile retention and exposure; the remaining Feral failure is isolated to two Azil follower waves.",
+    "A successful local Demoralizing Roar returns before the existing immediate damaging area-threat resolver. On the following decisions, specialized stable approach, handoff, and another Roar continue to preempt Swipe or Thrash even while a useful local follower cluster is already in range.",
+    "Roar alone does not overcome accumulated healing threat; the first damaging Feral action arrives at or after the strict dwell ceiling, producing real retention, exposure, and dwell failures.",
+    "Separately, a map-level Hunter LOS preflight succeeds while spell-specific LOS fails against one generation-9 sentry. Per-spell suppression cycles through other spells without moving, creating eight real failed submissions and the Hunter audit failure."
+  ],
+  "smallest_safe_corrections": [
+    {
+      "file": "src/server/game/Bots/BotWorldPopulationMgr.cpp",
+      "scope": "Feral generation-14 healer-owned follower pickup after a successful local Roar",
+      "change": "When at least two local healer-owned followers already carry this Feral's Demoralizing Roar and that covered local set is a majority of the healer-owned wave, run the existing strict area-only profile action before another specialized Roar or stable-approach return. Preserve native range, GCD, cooldown, power, target, threat, and path authority."
+    },
+    {
+      "file": "src/server/game/Bots/BotWorldPopulationMgr.cpp",
+      "scope": "spell-specific LOS failure recovery",
+      "change": "After recording a real SPELL_FAILED_LINE_OF_SIGHT submission, immediately invoke the existing profile-range movement recovery for that same target/action. Keep the failure in the unchanged audit; movement prevents cycling multiple spells from the same blocked point."
+    },
+    {
+      "file": "tools/bot_ml/batch_evidence_lifecycle.py",
+      "scope": "generated DVC pointers beneath an intentionally ignored campaign root",
+      "change": "Discover the exact Git ignore source, temporarily re-include only each immutable pointer's ancestry for DVC publish and hydration, and restore the ignore source byte-for-byte in a finally block. Preserve every publication, remote verification, hydration, and targeted-eviction gate."
+    }
+  ],
+  "next_attempt": {
+    "attempt_label": "rerun145_canary_2",
+    "worldserver_rebuild_required": true,
+    "deterministic_reprovision_required": true,
+    "fresh_identity_and_eight_row_plan_required": true,
+    "canary_2_only_until_strict_pass": true,
+    "canaries_3_through_8_started": false,
+    "phases_10_through_12_blocked": true
+  }
+}

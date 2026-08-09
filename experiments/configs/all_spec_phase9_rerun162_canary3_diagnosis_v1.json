@@ -1,0 +1,125 @@
+{
+  "schema": "all_spec_phase9_rerun162_canary3_diagnosis_v1",
+  "diagnosis_sha256": "941edc8e5d4d796852264a43305f805c1abb7610f230899c301ecbdc9ce0cde9",
+  "hash_scope": "canonical_json_without_diagnosis_sha256",
+  "source_attempt": {
+    "attempt_label": "rerun162_canary_3",
+    "attempt_id": "phase9_serial_03_stonecore_phase9_083_5d0c65765654",
+    "batch_id": "phase9-serial-canary-rerun162-3",
+    "batch_identity_sha256": "2449d53c402538ddfdd7e43665a3671f5d615a1af49b8cddb2726d6e8e55bb59",
+    "party_sha256": "71f05aeed37bfe1fc988746cdd00e7bf8e4d2dd94258eed65ec58d15201823b2",
+    "binary_sha256": "0d40cdbd147f3503bf706b9fa1a46de8d7b9d34e5be3e844c90164042ebf2659",
+    "evidence_identity_manifest_sha256": "6d9b87bb8f91ff21537ce258eceb281203c1af1a263b6f144085bff3c3fa8c18",
+    "run_plan_sha256": "6592893bb2d320276480d6e3a20c5837263c13198db0c514fbbd13dd10993fd9",
+    "server_process_id": 632963,
+    "server_epoch": 4486050351931710,
+    "session_fingerprint": "4a5b5b2a5596c4251ed356d35d100d72ee39b97301b29ef4e7040838254a23b3",
+    "profile_generation": 1,
+    "profile_content_hash": "35a587f05d8781d72c62576a6f35392a69e01d5978429f65429ad5b9ed096a22",
+    "max_active_cohorts": 1
+  },
+  "capture_and_closeout": {
+    "raw_event_row_count": 294,
+    "compact_row_count": 1,
+    "raw_bundle_sha256": "d9b9821454cbaac43ec0c91869962628b4ab76324df267a45d51f6d8dbb08488",
+    "compact_bundle_sha256": "b303861cbd37f7f8568e30fb7e26cce4f96245e571db1962f8c50a3b4e33aac7",
+    "acceptance_source_report_sha256": "291390031d52589ce5228a4548e1cb6324e430a8796ed889c38cf2cfce2cfd77",
+    "events_zst_sha256": "8a7aa557159715380a6a311cdf05aabccd46632f1e477cd97aa23a9062b815ee",
+    "exact_manifests_sha256": "13d7d607347fec76dbb4f2559ea14e7739829f7653b8613de85434ae3b1a3ee1",
+    "evidence_parquet_sha256": "294386f8dab32e95b140a799cfdf7037d54c7dc631dd75f6186336516a5931b4",
+    "raw_pointer_sha256": "16a1f9086ae6b925e705e66f3591b1e25a55d1e7fe78dc16dee773ebe215c3d8",
+    "raw_dvc_md5": "a7aca53650296a73bff5017b5c427ac2.dir",
+    "compact_pointer_sha256": "fc98a7d0459076b9d5f737794408bb136cbf0e0c0ce569f58cea9e3f13c78e8b",
+    "compact_dvc_md5": "1a8b3db2cd7e510c4db115469f8a80a9.dir",
+    "publication_receipt_sha256": "e2f3f3163cf81e8dfb2657895ab325f95a6b686fbf0fb9ab895d4e1fb6a250e1",
+    "remote_status_sha256": "efed9e5afcfe149915ae98b9ed9e69304eb48f5ce2e2265b18b5b5ed2f155e60",
+    "capture_revalidated_after_hydration": true,
+    "remote_verified": true,
+    "identity_matched": true,
+    "exact_party_verified": true,
+    "cleanup": {
+      "active": false,
+      "active_bots": 0,
+      "lease_count": 0,
+      "party_bot_count": 0
+    },
+    "worldserver_stopped_before_tracked_edit": true,
+    "broad_dvc_gc_used": false
+  },
+  "strict_result": {
+    "completion_reason": "stonecore_role_quality_audit_failed",
+    "operator_failure_reason": "semantic_progress_plateau",
+    "failure_labels": [
+      "semantic_progress_plateau",
+      "role_quality:Protpally:healer_target_dwell",
+      "stonecore_role_quality_audit_failed"
+    ],
+    "route_terminal_count": 13,
+    "real_boss_kill_count": 3,
+    "kills": 40,
+    "duration_seconds": 1473,
+    "canaries_4_through_8_started": false
+  },
+  "role_audit": {
+    "tank_all_hostile_retention_rate": 0.9846,
+    "healer_target_exposure_rate": 0.0077,
+    "max_healer_target_dwell_ms": 4029,
+    "maximum_healer_target_dwell_ms": 3000,
+    "tank_threat_aura_uptime_rate": 1.0,
+    "deaths": 0
+  },
+  "exposure_localization": {
+    "route_generation": 2,
+    "boss": "Corborus",
+    "hostile_guid": 509,
+    "episode_first_timestamp_ms": 1786205709747,
+    "episode_last_timestamp_ms": 1786205713776,
+    "episode_dwell_ms": 4029,
+    "decision_sequence": [
+      "hammer_of_the_righteous_at_zero_ms",
+      "automatic_fallback_at_1006_ms",
+      "inquisition_at_2017_ms",
+      "guardian_defensive_at_3025_ms",
+      "hammer_of_the_righteous_at_4029_ms",
+      "full_recovery_before_5039_ms_sample"
+    ],
+    "last_successful_avengers_shield_offset_ms": -12051,
+    "cause": "The audit is correct. A Corborus add wave assigned GUID 509 to the healer for 4029 ms. The existing Protection healer-density recovery chose only legal native actions, but it evaluated at the ordinary one-second boss cadence because this wave was not declared cohortSwarmActive. Avenger's Shield became available during the episode while the generic one-second sequence selected Inquisition and a defensive before Hammer of the Righteous recovered ownership. The declared densityHealer plus two-attacker predicate already identifies the bounded handoff; cohortSwarmActive is the only cadence condition disproved by this capture.",
+    "audit_attribution_correct": true,
+    "audit_correction_required": false
+  },
+  "plateau_localization": {
+    "route_generation": 14,
+    "route_node_id": "4b2457d42f81a298",
+    "boss": "High Priestess Azil",
+    "first_terminal_timestamp_ms": 1786206826015,
+    "terminal_recovery_result": "route_destination_invalid_z_transition",
+    "selected_anchor_reason": "validation_route_safe_memory_after_death_loop",
+    "selected_anchor": [1401.81, 1025.84, 214.661],
+    "cause": "After resurrection, safe-memory selection installed a 120-second route-anchor override without applying MoveBotToPoint's floor and four-yard Z acceptance contract. The selected override was then rejected by that exact contract, marked the generation terminal, and repeated validation_route_failed while the rest of the party held anchor until the semantic-progress watchdog fired.",
+    "route_manifest_or_gate_correction_required": true
+  },
+  "corrective_action": {
+    "threat_scope": "existing Protection healer-density boss-add handoff",
+    "threat_change": "Remove only cohortSwarmActive from the existing 250 ms Protection density cadence. Preserve densityHealer, at least two listed attackers or twelve engaged adds, native spell order, legality, targeting, movement, threat, and every acceptance threshold.",
+    "route_scope": "post-death safe-memory route-anchor candidate selection",
+    "route_change": "Reject safe-memory candidates that do not satisfy the same valid-floor and four-yard Z contract used by MoveBotToPoint, leaving the canonical manifest anchor as the unchanged fallback.",
+    "acceptance_threshold_changes": [],
+    "gate_weakening": false
+  },
+  "independent_validation": {
+    "capture_hashes_replayed": true,
+    "role_audit_replayed_from_hydrated_raw_evidence": true,
+    "maximum_episode_reconstructed_per_identity": true,
+    "terminal_route_sequence_replayed_from_hydrated_raw_evidence": true
+  },
+  "eviction": {
+    "status": "exact_re_eviction_verified",
+    "temporary_hydration_root_absent": true,
+    "raw_directory_object_absent": true,
+    "raw_child_objects_absent": true,
+    "compact_directory_object_absent": true,
+    "compact_child_object_absent": true,
+    "broad_dvc_gc_allowed": false
+  }
+}

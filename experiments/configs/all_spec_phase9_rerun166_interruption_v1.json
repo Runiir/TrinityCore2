@@ -1,0 +1,79 @@
+{
+  "schema": "all_spec_phase9_rerun166_interruption_v1",
+  "interruption_sha256": "ab5381dd8b8b38d2fc5fec852535febad2e8d0083f6f1181d2da9dbffeb0aa07",
+  "hash_scope": "canonical_json_without_interruption_sha256",
+  "program": "all_spec_stonecore",
+  "phase": 9,
+  "date": "2026-08-08",
+  "attempt": {
+    "attempt_label": "rerun166_canary_2",
+    "attempt_id": "phase9_serial_02_stonecore_phase9_006_6893daf98698",
+    "composition_id": "stonecore_phase9_006_6893daf98698",
+    "cohort_id": "phase9-serial-canary-rerun166",
+    "binary_sha256": "ce33e3adbfec362fdbeed50ddc61c22037da2258fe725eefd5a9f0eae4f8b09c",
+    "evidence_identity_manifest_sha256": "254d2fd13039030b59ffcf72697bee1422abd1164b258a2bafdaf9642c629616",
+    "run_plan_sha256": "f7a99dcb41cb1f103e90ee0e3f085eb1f4d9baeed96d0cfc149452a15c9857e7",
+    "exact_party_sha256": "524b94c794897f5111bdae0a5e45ba31a31ebb8596d811a3dd8c1caff95bd16a",
+    "server_process_id": 738883,
+    "server_epoch": 3693047726006478,
+    "session_fingerprint": "466b5d81a303a32095e9fab9759a615fc4f1e5f173550356c4c2e080e10a490f",
+    "profile_generation": 1,
+    "profile_content_hash": "35a587f05d8781d72c62576a6f35392a69e01d5978429f65429ad5b9ed096a22",
+    "max_active_cohorts": 1,
+    "worldserver_unit": "trinity-live-validation-6070c7079e5deac1fb0f659c.service",
+    "observed_operator_process_ids": [739422, 739450],
+    "canaries_3_through_8_started": false
+  },
+  "classification": "mid_attempt_operator_infrastructure_interruption",
+  "admissibility": {
+    "authoritative_gameplay_evidence": false,
+    "counts_as_canary_failure": false,
+    "strict_uninterrupted_attempt_complete": false,
+    "final_acceptance_report_created": false,
+    "immutable_batch_created": false,
+    "publication_required": false,
+    "source_correction_invalidated": false
+  },
+  "last_observed_state": {
+    "heartbeat_count": 21,
+    "first_heartbeat_unix": 1786215473,
+    "last_heartbeat_unix": 1786216078,
+    "active_bots": 5,
+    "completion_reason": "incomplete_evidence",
+    "failure_labels": [],
+    "route_terminal_count": 8,
+    "real_boss_kill_count": 2,
+    "kills": 38,
+    "decisions": 6097,
+    "no_progress_watchdog": false,
+    "death_loop_watchdog": false,
+    "repeated_decision_watchdog": false,
+    "semantic_progress_plateau": false,
+    "teacher_assisted_kills": 0
+  },
+  "cause": {
+    "summary": "Both observed operator processes disappeared before the 2100-second route budget completed, while the managed worldserver and five admitted bots remained active. No operator state, final session closeout, immutable batch capture, publication receipt, or cleanup record was produced. The exact external termination source was not retained, so the interruption is classified as infrastructure rather than gameplay.",
+    "evidence": [
+      "The latest heartbeat and report were frozen at incomplete_evidence with 8/14 route terminals, 2/4 real boss kills, five active bots, and no failure or watchdog condition.",
+      "No run_phase9_serial_canaries or run_live_bot_validation process remained, including the observed operator PIDs 739422 and 739450.",
+      "Worldserver PID 738883 remained active in trinity-live-validation-6070c7079e5deac1fb0f659c.service until the root orchestrator stopped that exact unit before tracked edits.",
+      "The row directory contained only interim heartbeat/report material and no session.json, batch capture, publication receipt, remote verification, or final cleanup evidence."
+    ]
+  },
+  "cleanup": {
+    "operator_processes_absent": true,
+    "worldserver_stopped_before_tracked_edit": true,
+    "worldserver_unit_active_after_stop": false,
+    "runtime_cleanup_command_completed": false,
+    "active_bot_cleanup_observed_before_stop": false,
+    "candidate_state_requires_reprovisioning": true,
+    "broad_dvc_gc_used": false
+  },
+  "correction_contract": {
+    "rerun166_density_only_buff_exclusion_retained": true,
+    "gameplay_source_change_required": false,
+    "acceptance_threshold_changes": [],
+    "gates_weakened": false
+  },
+  "next_action": "Finalize this interruption, program status, and handoff before the next identity. Deterministically reprovision all 31 targets, capture a fresh rerun167 identity and independently verified eight-row plan from the base config, then run canary 2 alone in a harness-tracked background process whose lifetime exceeds the 2100-second route budget."
+}

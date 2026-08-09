@@ -4704,9 +4704,9 @@
     "pair_policy_path": "experiments/configs/stonecore_phase9_pair_policy_v1.json",
     "pair_policy_sha256": "54f48247432de601ce1afed42321dcd074b160e1c8790aa06760655c2da27bf3",
     "target_catalog_path": "experiments/configs/all_spec_targets_cata_p4_v1.json",
-    "target_catalog_sha256": "8ce5e6f3597ddd9c6700fd4948bde734cb249dd66d1ecfc993647806ad218a82"
+    "target_catalog_sha256": "1652e91447f869fd82ff911c6c4b71718e7efcefadff58d0356f6e761ddae16a"
   },
-  "matrix_sha256": "bac3a937ced4063f4c20267812ab621044373fb3e42a620a66e3a75d8fe64921",
+  "matrix_sha256": "3b6028541e75ceb424c42b6fdc2b6390234460245d9b8bb488c5c285a550daab",
   "pair_universe_sha256": "b40d215ba4929b721c411e977c4c72a750bb64474eb589994cd89d58748d19e1",
   "representation": [
     {

@@ -1,0 +1,990 @@
+{
+  "capture_and_closeout": {
+    "acceptance_source_report_sha256": "f128f0631f633c76a7c73a635b357272be40d2ecc847a83fc76afe14944c001c",
+    "broad_dvc_gc_used": false,
+    "capture_revalidated_after_exact_hydration": true,
+    "cleanup": {
+      "active": false,
+      "active_bots": 0,
+      "lease_count": 0,
+      "party_bot_count": 0,
+      "server_epoch": 2947113200703445
+    },
+    "compact_bundle_sha256": "6cc760c26fc6569cde328458a229c1683fd3414f3434fabb668aac299d05b3b7",
+    "compact_pointer_sha256": "f9dd67fde74d471f13fae80a9ffe9fe7e7b1c42e39e561d5137b6f855c314d9f",
+    "compact_row_count": 1,
+    "current_remote_status": "cache_and_remote_object_are_in_sync",
+    "events_zst_sha256": "0d190f3d63b50448a4383ee11ac783af96eed7d2e408b052aefe0acdf0f296a6",
+    "evidence_parquet_sha256": "56774d48066a2021ad7008b9466eee70e3c871c1e1783c92ce866df42ed08e38",
+    "exact_manifests_sha256": "1c81a365047e9249e44e4b8bce87bf2fedf6ad6d0abb5a74678aa07669c954e9",
+    "exact_party_verified": true,
+    "identity_matched": true,
+    "publication_receipt_sha256": "0c8076acd173d3ed2f0d7fa20eebc6b0d126007d76d7404d54b68532cb4142ef",
+    "raw_bundle_sha256": "ad26b57a7f5196ca045612b15034efd8a275a1819b8348ebb1607b1cc7076f2c",
+    "raw_event_row_count": 261,
+    "raw_pointer_sha256": "f5730690f41c8737a8a8a3fc4a31a1f4ae1d187d62060889728b81006171ea6e",
+    "receipt_bundle_hashes_matched": true,
+    "receipt_canonical_hash_recomputed": true,
+    "receipt_manifest_identity_matched": true,
+    "remote_status_sha256": "efed9e5afcfe149915ae98b9ed9e69304eb48f5ce2e2265b18b5b5ed2f155e60",
+    "remote_verified": true,
+    "worldserver_stopped_before_tracked_edit": true,
+    "worldserver_unit": "trinity-live-validation-166542f7ee6bbbc652d011c6"
+  },
+  "corrective_action": {
+    "acceptance_threshold_changes": [],
+    "changes": [
+      "When exact healer threat is visible and the Feral tank is not in Bear Form, submit only native Bear Form before the existing Growl/Roar recovery chain.",
+      "When an exact Feral healer-threat handoff is reserved and unexpired, skip only the global Stampeding Roar submission so the existing identity-valid active-handoff branch retains Charge-first priority."
+    ],
+    "gate_weakening": false,
+    "preserved_behavior": [
+      "all acceptance thresholds",
+      "Growl priority for one healer-owned hostile",
+      "Stampeding Roar when no exact handoff is reserved",
+      "existing handoff identity validation and expiration",
+      "native Charge legality",
+      "Swipe and Demoralizing Roar recovery",
+      "hazard authority",
+      "generic density behavior outside the bounded reservation",
+      "route identity publication cleanup and isolation contracts"
+    ],
+    "preserved_density_only_buff_exclusion": true,
+    "source_scope": "src/server/game/Bots/BotWorldPopulationMgr.cpp",
+    "test_scope": "tests/test_autonomy_pipeline_smoke.py"
+  },
+  "diagnosis_sha256": "5b0b8004bbff2d2c9152ce130dddf7671085fd3c753ee79103a24addad35f43e",
+  "eviction": {
+    "broad_dvc_gc_allowed": false,
+    "compact_directory_absent": true,
+    "compact_restore_pointer_absent": true,
+    "raw_directory_absent": true,
+    "raw_restore_pointer_absent": true,
+    "status": "exact_re_eviction_verified"
+  },
+  "exposure_localization": {
+    "audit_attribution_correct": true,
+    "audit_correction_required": false,
+    "cause": "The audit is correct and the failure is actual runtime pickup latency, not attribution. The primary Flayer episode established an exact one-second remote-cluster handoff, but the global Stampeding Roar branch preempted the existing Charge-first handoff, consumed the GCD, and allowed the reservation to expire into generic density movement while the same healer-owned identities expanded into a twelve-hostile cluster. A separate post-recovery episode began while the Feral tank was out of Bear Form; ordinary route approach spent 2556 ms before restoring Bear Form, so native Growl did not run until 3070 ms after exposure began. Both episodes independently exceed the unchanged 3000-ms dwell ceiling.",
+    "over_ceiling_episode_count": 11,
+    "over_ceiling_episodes": [
+      {
+        "dwell_ms": 4604,
+        "end_ms": 1786223130231,
+        "ended_by_absence_ms": 1786223130489,
+        "guid": 561,
+        "start_ms": 1786223125627
+      },
+      {
+        "dwell_ms": 4604,
+        "end_ms": 1786223130231,
+        "ended_by_absence_ms": 1786223130489,
+        "guid": 562,
+        "start_ms": 1786223125627
+      },
+      {
+        "dwell_ms": 4604,
+        "end_ms": 1786223130231,
+        "ended_by_absence_ms": 1786223130489,
+        "guid": 563,
+        "start_ms": 1786223125627
+      },
+      {
+        "dwell_ms": 3828,
+        "end_ms": 1786223131250,
+        "ended_by_absence_ms": 1786223131500,
+        "guid": 574,
+        "start_ms": 1786223127422
+      },
+      {
+        "dwell_ms": 3828,
+        "end_ms": 1786223131250,
+        "ended_by_absence_ms": 1786223131500,
+        "guid": 577,
+        "start_ms": 1786223127422
+      },
+      {
+        "dwell_ms": 3828,
+        "end_ms": 1786223131250,
+        "ended_by_absence_ms": 1786223131500,
+        "guid": 579,
+        "start_ms": 1786223127422
+      },
+      {
+        "dwell_ms": 3581,
+        "end_ms": 1786223194506,
+        "ended_by_absence_ms": 1786223196775,
+        "guid": 416,
+        "start_ms": 1786223190925
+      },
+      {
+        "dwell_ms": 3322,
+        "end_ms": 1786223130231,
+        "ended_by_absence_ms": 1786223130489,
+        "guid": 575,
+        "start_ms": 1786223126909
+      },
+      {
+        "dwell_ms": 3322,
+        "end_ms": 1786223130231,
+        "ended_by_absence_ms": 1786223130489,
+        "guid": 581,
+        "start_ms": 1786223126909
+      },
+      {
+        "dwell_ms": 3322,
+        "end_ms": 1786223130231,
+        "ended_by_absence_ms": 1786223130489,
+        "guid": 582,
+        "start_ms": 1786223126909
+      },
+      {
+        "dwell_ms": 3066,
+        "end_ms": 1786223130231,
+        "ended_by_absence_ms": 1786223130489,
+        "guid": 576,
+        "start_ms": 1786223127165
+      }
+    ],
+    "primary_episode": {
+      "absence_observed_ms": 1786223130489,
+      "chronology": [
+        {
+          "action": "feral_move_remote_healer_trash_cluster_pre_roar",
+          "bot_in_combat": true,
+          "engaged_hostile_guids": [
+            416,
+            417,
+            561,
+            562,
+            563
+          ],
+          "healer_targeting_hostile_guids": [],
+          "last_combat_attempt": {
+            "debug_name": "aoe",
+            "reason": "global_cooldown",
+            "recorded_at_ms": 1786223122351,
+            "result": "ok",
+            "spell_id": 779
+          },
+          "route_generation": 13,
+          "route_node_id": "3edc010765b5c456",
+          "sequence": 877,
+          "tank_owned_hostile_guids": [
+            416,
+            417,
+            561,
+            562,
+            563
+          ],
+          "target_guid": 578,
+          "timestamp_ms": 1786223125369
+        },
+        {
+          "action": "feral_stampeding_roar_healer_threat_reposition",
+          "bot_in_combat": true,
+          "engaged_hostile_guids": [
+            416,
+            417,
+            561,
+            562,
+            563
+          ],
+          "healer_targeting_hostile_guids": [
+            561,
+            562,
+            563
+          ],
+          "last_combat_attempt": {
+            "debug_name": "aoe",
+            "reason": "global_cooldown",
+            "recorded_at_ms": 1786223122351,
+            "result": "ok",
+            "spell_id": 779
+          },
+          "route_generation": 13,
+          "route_node_id": "3edc010765b5c456",
+          "sequence": 878,
+          "tank_owned_hostile_guids": [
+            416,
+            417
+          ],
+          "target_guid": 562,
+          "timestamp_ms": 1786223125627
+        },
+        {
+          "action": "feral_continue_remote_healer_trash_cluster_handoff",
+          "bot_in_combat": true,
+          "engaged_hostile_guids": [
+            416,
+            417,
+            561,
+            562,
+            563
+          ],
+          "healer_targeting_hostile_guids": [
+            561,
+            562,
+            563
+          ],
+          "last_combat_attempt": {
+            "debug_name": "aoe",
+            "reason": "global_cooldown",
+            "recorded_at_ms": 1786223122351,
+            "result": "ok",
+            "spell_id": 779
+          },
+          "route_generation": 13,
+          "route_node_id": "3edc010765b5c456",
+          "sequence": 879,
+          "tank_owned_hostile_guids": [
+            416,
+            417
+          ],
+          "target_guid": 578,
+          "timestamp_ms": 1786223125888
+        },
+        {
+          "action": "move_to_trash_density",
+          "bot_in_combat": true,
+          "engaged_hostile_guids": [
+            416,
+            417,
+            561,
+            562,
+            563
+          ],
+          "healer_targeting_hostile_guids": [
+            561,
+            562,
+            563
+          ],
+          "last_combat_attempt": {
+            "debug_name": "aoe",
+            "reason": "global_cooldown",
+            "recorded_at_ms": 1786223122351,
+            "result": "ok",
+            "spell_id": 779
+          },
+          "route_generation": 13,
+          "route_node_id": "3edc010765b5c456",
+          "sequence": 881,
+          "tank_owned_hostile_guids": [
+            416,
+            417
+          ],
+          "target_guid": 578,
+          "timestamp_ms": 1786223126399
+        },
+        {
+          "action": "move_to_trash_density",
+          "bot_in_combat": true,
+          "engaged_hostile_guids": [
+            416,
+            417,
+            561,
+            562,
+            563,
+            575,
+            581,
+            582
+          ],
+          "healer_targeting_hostile_guids": [
+            561,
+            562,
+            563,
+            575,
+            581,
+            582
+          ],
+          "last_combat_attempt": {
+            "debug_name": "aoe",
+            "reason": "global_cooldown",
+            "recorded_at_ms": 1786223122351,
+            "result": "ok",
+            "spell_id": 779
+          },
+          "route_generation": 13,
+          "route_node_id": "3edc010765b5c456",
+          "sequence": 883,
+          "tank_owned_hostile_guids": [
+            416,
+            417
+          ],
+          "target_guid": 578,
+          "timestamp_ms": 1786223126909
+        },
+        {
+          "action": "move_to_trash_density",
+          "bot_in_combat": true,
+          "engaged_hostile_guids": [
+            416,
+            417,
+            561,
+            562,
+            563,
+            574,
+            575,
+            576,
+            577,
+            578,
+            579,
+            580,
+            581,
+            582
+          ],
+          "healer_targeting_hostile_guids": [
+            561,
+            562,
+            563,
+            574,
+            575,
+            576,
+            577,
+            578,
+            579,
+            580,
+            581,
+            582
+          ],
+          "last_combat_attempt": {
+            "debug_name": "aoe",
+            "reason": "global_cooldown",
+            "recorded_at_ms": 1786223122351,
+            "result": "ok",
+            "spell_id": 779
+          },
+          "route_generation": 13,
+          "route_node_id": "3edc010765b5c456",
+          "sequence": 885,
+          "tank_owned_hostile_guids": [
+            416,
+            417
+          ],
+          "target_guid": 578,
+          "timestamp_ms": 1786223127422
+        },
+        {
+          "action": "trash_density_area_threat",
+          "bot_in_combat": true,
+          "engaged_hostile_guids": [
+            416,
+            417,
+            561,
+            562,
+            563,
+            574,
+            575,
+            576,
+            577,
+            578,
+            579,
+            580,
+            581,
+            582
+          ],
+          "healer_targeting_hostile_guids": [
+            561,
+            562,
+            563,
+            574,
+            575,
+            576,
+            577,
+            578,
+            579,
+            580,
+            581,
+            582
+          ],
+          "last_combat_attempt": {
+            "debug_name": "taunt",
+            "reason": "cooldown",
+            "recorded_at_ms": 1786223128189,
+            "result": "ok",
+            "spell_id": 6795
+          },
+          "route_generation": 13,
+          "route_node_id": "3edc010765b5c456",
+          "sequence": 888,
+          "tank_owned_hostile_guids": [
+            416,
+            417
+          ],
+          "target_guid": 578,
+          "timestamp_ms": 1786223128189
+        },
+        {
+          "action": "move_to_trash_density",
+          "bot_in_combat": true,
+          "engaged_hostile_guids": [
+            416,
+            417,
+            561,
+            562,
+            563,
+            574,
+            575,
+            576,
+            577,
+            578,
+            579,
+            580,
+            581,
+            582
+          ],
+          "healer_targeting_hostile_guids": [
+            561,
+            562,
+            563,
+            574,
+            575,
+            576,
+            577,
+            579,
+            580,
+            581,
+            582
+          ],
+          "last_combat_attempt": {
+            "debug_name": "taunt",
+            "reason": "cooldown",
+            "recorded_at_ms": 1786223128189,
+            "result": "ok",
+            "spell_id": 6795
+          },
+          "route_generation": 13,
+          "route_node_id": "3edc010765b5c456",
+          "sequence": 889,
+          "tank_owned_hostile_guids": [
+            416,
+            417,
+            578
+          ],
+          "target_guid": 576,
+          "timestamp_ms": 1786223128449
+        },
+        {
+          "action": "feral_demoralizing_roar_remote_healer_trash_cluster_handoff",
+          "bot_in_combat": true,
+          "engaged_hostile_guids": [
+            416,
+            561,
+            562,
+            563,
+            571,
+            572,
+            574,
+            575,
+            576,
+            577,
+            578,
+            579,
+            580,
+            581,
+            582
+          ],
+          "healer_targeting_hostile_guids": [
+            561,
+            562,
+            563,
+            571,
+            572,
+            574,
+            575,
+            576,
+            577,
+            579,
+            580,
+            581,
+            582
+          ],
+          "last_combat_attempt": {
+            "debug_name": "taunt",
+            "reason": "cooldown",
+            "recorded_at_ms": 1786223128189,
+            "result": "ok",
+            "spell_id": 6795
+          },
+          "route_generation": 13,
+          "route_node_id": "3edc010765b5c456",
+          "sequence": 894,
+          "tank_owned_hostile_guids": [
+            416,
+            578
+          ],
+          "target_guid": 575,
+          "timestamp_ms": 1786223129721
+        },
+        {
+          "action": "feral_continue_remote_healer_trash_cluster_handoff",
+          "bot_in_combat": true,
+          "engaged_hostile_guids": [
+            416,
+            561,
+            562,
+            563,
+            571,
+            572,
+            574,
+            575,
+            576,
+            577,
+            578,
+            579,
+            580,
+            581,
+            582
+          ],
+          "healer_targeting_hostile_guids": [
+            561,
+            562,
+            563,
+            571,
+            572,
+            574,
+            575,
+            576,
+            577,
+            579,
+            580,
+            581,
+            582
+          ],
+          "last_combat_attempt": {
+            "debug_name": "taunt",
+            "reason": "cooldown",
+            "recorded_at_ms": 1786223128189,
+            "result": "ok",
+            "spell_id": 6795
+          },
+          "route_generation": 13,
+          "route_node_id": "3edc010765b5c456",
+          "sequence": 896,
+          "tank_owned_hostile_guids": [
+            416,
+            578
+          ],
+          "target_guid": 573,
+          "timestamp_ms": 1786223130231
+        },
+        {
+          "action": "feral_continue_remote_healer_trash_cluster_handoff",
+          "bot_in_combat": true,
+          "engaged_hostile_guids": [
+            416,
+            571,
+            572,
+            574,
+            575,
+            576,
+            577,
+            578,
+            579,
+            580,
+            581,
+            582
+          ],
+          "healer_targeting_hostile_guids": [
+            571,
+            572,
+            574,
+            577,
+            579
+          ],
+          "last_combat_attempt": {
+            "debug_name": "taunt",
+            "reason": "cooldown",
+            "recorded_at_ms": 1786223128189,
+            "result": "ok",
+            "spell_id": 6795
+          },
+          "route_generation": 13,
+          "route_node_id": "3edc010765b5c456",
+          "sequence": 897,
+          "tank_owned_hostile_guids": [
+            416,
+            575,
+            576,
+            578,
+            580,
+            581,
+            582
+          ],
+          "target_guid": 573,
+          "timestamp_ms": 1786223130489
+        },
+        {
+          "action": "feral_continue_remote_healer_trash_cluster_handoff",
+          "bot_in_combat": true,
+          "engaged_hostile_guids": [
+            416,
+            566,
+            568,
+            571,
+            572,
+            573,
+            574,
+            575,
+            576,
+            577,
+            578,
+            579,
+            580,
+            581,
+            582
+          ],
+          "healer_targeting_hostile_guids": [],
+          "last_combat_attempt": {
+            "debug_name": "taunt",
+            "reason": "cooldown",
+            "recorded_at_ms": 1786223128189,
+            "result": "ok",
+            "spell_id": 6795
+          },
+          "route_generation": 13,
+          "route_node_id": "3edc010765b5c456",
+          "sequence": 901,
+          "tank_owned_hostile_guids": [
+            416,
+            566,
+            568,
+            571,
+            572,
+            573,
+            574,
+            575,
+            576,
+            577,
+            578,
+            579,
+            580,
+            581,
+            582
+          ],
+          "target_guid": 561,
+          "timestamp_ms": 1786223131500
+        }
+      ],
+      "classification": "active_combat_remote_cluster_pickup_latency",
+      "guid_scope": [
+        561,
+        562,
+        563
+      ],
+      "last_healer_owned_sample_ms": 1786223130231,
+      "maximum_dwell_ms": 4604,
+      "mechanism": [
+        "A remote-cluster handoff is reserved at 1786223125369 for exactly 1000 ms.",
+        "At 1786223125627, three current victims switch to the healer and the global branch submits Stampeding Roar before the active-handoff Charge branch can run.",
+        "The next two 250-ms decisions continue the handoff, but Charge cannot submit while the speed cast owns the global cooldown.",
+        "At 1786223126399, 1030 ms after reservation, the specialized handoff yields to generic move_to_trash_density while the same three identities still target the healer.",
+        "The healer-owned set expands to twelve of fourteen engaged hostiles; one Growl and later Demoralizing Roar eventually recover the pack after the dwell ceiling.",
+        "GUIDs 561-563 remain healer-owned through the 4604-ms audit sample and disappear from engagement rather than becoming tank-owned before that maximum."
+      ],
+      "start_ms": 1786223125627
+    },
+    "route": {
+      "label": "twilight flayer packs",
+      "route_generation": 13,
+      "route_node_id": "3edc010765b5c456",
+      "source_entry": 42808
+    },
+    "secondary_episode": {
+      "absence_observed_ms": 1786223196775,
+      "chronology": [
+        {
+          "action": "move_to_validation_route_target",
+          "bot_in_combat": false,
+          "engaged_hostile_guids": [
+            416,
+            417
+          ],
+          "healer_targeting_hostile_guids": [
+            416,
+            417
+          ],
+          "last_combat_attempt": {
+            "debug_name": "taunt",
+            "reason": "cooldown",
+            "recorded_at_ms": 1786223143909,
+            "result": "ok",
+            "spell_id": 6795
+          },
+          "route_generation": 13,
+          "route_node_id": "3edc010765b5c456",
+          "sequence": 967,
+          "tank_owned_hostile_guids": [],
+          "target_guid": 417,
+          "timestamp_ms": 1786223190925
+        },
+        {
+          "action": "move_to_validation_route_target",
+          "bot_in_combat": false,
+          "engaged_hostile_guids": [
+            416,
+            417
+          ],
+          "healer_targeting_hostile_guids": [
+            416,
+            417
+          ],
+          "last_combat_attempt": {
+            "debug_name": "taunt",
+            "reason": "cooldown",
+            "recorded_at_ms": 1786223143909,
+            "result": "ok",
+            "spell_id": 6795
+          },
+          "route_generation": 13,
+          "route_node_id": "3edc010765b5c456",
+          "sequence": 976,
+          "tank_owned_hostile_guids": [],
+          "target_guid": 417,
+          "timestamp_ms": 1786223193221
+        },
+        {
+          "action": "validation_route_trash_action",
+          "bot_in_combat": false,
+          "engaged_hostile_guids": [
+            416,
+            417
+          ],
+          "healer_targeting_hostile_guids": [
+            416,
+            417
+          ],
+          "last_combat_attempt": {
+            "debug_name": "bear_form",
+            "reason": "bear_form",
+            "recorded_at_ms": 1786223193481,
+            "result": "ok",
+            "spell_id": 5487
+          },
+          "route_generation": 13,
+          "route_node_id": "3edc010765b5c456",
+          "sequence": 977,
+          "tank_owned_hostile_guids": [],
+          "target_guid": 417,
+          "timestamp_ms": 1786223193481
+        },
+        {
+          "action": "feral_move_remote_healer_trash_cluster_pre_roar",
+          "bot_in_combat": false,
+          "engaged_hostile_guids": [
+            416,
+            417
+          ],
+          "healer_targeting_hostile_guids": [
+            416
+          ],
+          "last_combat_attempt": {
+            "debug_name": "bear_form",
+            "reason": "bear_form",
+            "recorded_at_ms": 1786223193481,
+            "result": "ok",
+            "spell_id": 5487
+          },
+          "route_generation": 13,
+          "route_node_id": "3edc010765b5c456",
+          "sequence": 978,
+          "tank_owned_hostile_guids": [
+            417
+          ],
+          "target_guid": 416,
+          "timestamp_ms": 1786223193735
+        },
+        {
+          "action": "feral_growl_single_healer_threat_before_roar",
+          "bot_in_combat": false,
+          "engaged_hostile_guids": [
+            416,
+            417
+          ],
+          "healer_targeting_hostile_guids": [
+            416
+          ],
+          "last_combat_attempt": {
+            "debug_name": "bear_form",
+            "reason": "bear_form",
+            "recorded_at_ms": 1786223193481,
+            "result": "ok",
+            "spell_id": 5487
+          },
+          "route_generation": 13,
+          "route_node_id": "3edc010765b5c456",
+          "sequence": 979,
+          "tank_owned_hostile_guids": [
+            417
+          ],
+          "target_guid": 416,
+          "timestamp_ms": 1786223193995
+        },
+        {
+          "action": "feral_continue_remote_healer_trash_cluster_handoff",
+          "bot_in_combat": false,
+          "engaged_hostile_guids": [
+            416,
+            417
+          ],
+          "healer_targeting_hostile_guids": [
+            416
+          ],
+          "last_combat_attempt": {
+            "debug_name": "bear_form",
+            "reason": "bear_form",
+            "recorded_at_ms": 1786223193481,
+            "result": "ok",
+            "spell_id": 5487
+          },
+          "route_generation": 13,
+          "route_node_id": "3edc010765b5c456",
+          "sequence": 981,
+          "tank_owned_hostile_guids": [
+            417
+          ],
+          "target_guid": 416,
+          "timestamp_ms": 1786223194506
+        },
+        {
+          "action": "move_out_of_hazard",
+          "bot_in_combat": false,
+          "engaged_hostile_guids": [
+            416,
+            417
+          ],
+          "healer_targeting_hostile_guids": [],
+          "last_combat_attempt": {
+            "debug_name": "aoe",
+            "reason": "global_cooldown",
+            "recorded_at_ms": 1786223195772,
+            "result": "ok",
+            "spell_id": 77758
+          },
+          "route_generation": 13,
+          "route_node_id": "3edc010765b5c456",
+          "sequence": 984,
+          "tank_owned_hostile_guids": [
+            416,
+            417
+          ],
+          "target_guid": 416,
+          "timestamp_ms": 1786223196775
+        }
+      ],
+      "classification": "post_recovery_form_reentry_latency",
+      "guid_scope": [
+        416
+      ],
+      "last_healer_owned_sample_ms": 1786223194506,
+      "maximum_dwell_ms": 3581,
+      "mechanism": [
+        "Two current victims target the healer while the Feral is out of combat and not in Bear Form.",
+        "Route-target movement consumes 2556 ms before the ordinary profile submits Bear Form at 1786223193481.",
+        "The specialized single-target Growl action follows at 1786223193995, 3070 ms after exposure began, already beyond the dwell ceiling.",
+        "GUID 416 remains healer-owned through the 3581-ms audit sample and clears by the next observed sample."
+      ],
+      "start_ms": 1786223190925
+    },
+    "threat_attribution_contract": {
+      "independent_support": [
+        "multiple distinct hostile GUIDs exceeded 3000 ms",
+        "audit deduplication reproduced exactly",
+        "main cluster independently exceeds ceiling without secondary recovery episode"
+      ],
+      "not_an_attribution_failure": true,
+      "result": "current_victim_role_attribution_confirmed",
+      "runtime_contract": "Each alive, valid, in-combat creature within 45 yards is engaged only when its current Player victim belongs to the same group; its GUID is then assigned to tank-owned or healer-targeting according to GetDungeonRole(current victim).",
+      "source_anchors": [
+        "src/server/game/Bots/BotWorldPopulationMgr.cpp:27611",
+        "src/server/game/Bots/BotWorldPopulationMgr.cpp:27621",
+        "src/server/game/Bots/BotWorldPopulationMgr.cpp:27626",
+        "src/server/game/Bots/BotWorldPopulationMgr.cpp:27632"
+      ]
+    }
+  },
+  "hash_scope": "canonical_json_without_diagnosis_sha256",
+  "independent_validation": {
+    "audit_deduplication_reproduced": true,
+    "autonomy_suite": "81 passed, 32 unrelated existing structural assertions failed",
+    "capture_hashes_replayed": true,
+    "capture_verifier_sha256": "281c13715925e749f5c9daf33abf87a5d3f04d595922b2538ef2087083ef62b8",
+    "corrected_worldserver_binary_sha256": "5374a93501626f86729b788f8d30560b13215eec138f544f2ae7ebb4166fbd10",
+    "current_remote_presence_reverified": true,
+    "current_victim_role_attribution_cross_checked_in_source": true,
+    "episode_reconstruction_file_sha256": "36085800abc6b1b944ae03a65ff05d0b098c41ea5e8bba3e9560e251352cfe4e",
+    "episode_reconstruction_sha256": "8696af9900a669ea5f4dd065f96dee9aa8e6f7b7e1e2668f530acb198fbd4cbd",
+    "focused_regression_tests": "4 passed, 109 deselected; correction plus density exclusion: 3 passed, 110 deselected",
+    "git_diff_check": "passed",
+    "maximum_episodes_reconstructed_per_identity": true,
+    "role_audit_replayed_from_hydrated_raw_evidence": true,
+    "role_audit_sha256": "a6612d4fd67c6b544fa6f80b054f06a21479fffead43ef73eb62826a744aee49",
+    "strict_gate_verifier_file_sha256": "108b79ae4b99a2b1f72fd23b77ef173afc6f92dfd7f923c222497a5e43271180",
+    "strict_gate_verifier_sha256": "cd4bd78a28a26b092a2d7b37ac39804884aaca6d4a5cb5c2aaf5ce7f047524ab",
+    "worldserver_build": "passed"
+  },
+  "next_action": "Update Phase 9 status/handoff, deterministically reprovision all 31 targets, capture a fresh rerun169 identity and independently verified eight-row plan, then restart at canary 2 alone. Do not start rerun168 canary 3 or any later row.",
+  "role_audit": {
+    "active_action_coverage": 1.0,
+    "cast_failure_rate": 0.0,
+    "combat_attempt_count": 317,
+    "engaged_denominator": 1879,
+    "healer_target_exposure_rate": 0.032464076636508785,
+    "healer_targeting_numerator": 61,
+    "max_healer_target_dwell_ms": 4604,
+    "maximum_healer_target_dwell_ms": 3000,
+    "maximum_healer_target_exposure_rate": 0.01,
+    "minimum_tank_all_hostile_retention_rate": 0.9,
+    "minimum_tank_threat_aura_uptime_rate": 0.99,
+    "missing_rotation_groups": [],
+    "tank_all_hostile_retention_rate": 0.94252261841405,
+    "tank_deaths": 0,
+    "tank_owned_numerator": 1771,
+    "tank_threat_aura_uptime_rate": 1.0
+  },
+  "schema": "all_spec_phase9_rerun168_canary2_diagnosis_v1",
+  "source_attempt": {
+    "attempt_id": "phase9_serial_02_stonecore_phase9_006_6893daf98698",
+    "attempt_label": "rerun168_canary_2",
+    "batch_id": "phase9-serial-canary-rerun168-2",
+    "batch_identity_sha256": "88fda2f57a67f179fca20073da295e474af0696a856272939e8ba76ed60e6736",
+    "binary_sha256": "a2a4e851fc55b14efe06a4462dfe5ac8faeb6442e9b6372a0cb1ea7292377af9",
+    "evidence_identity_manifest_sha256": "0c6413a22662be41c232347cab23fc118d7e15c71f76e79b11d79480214df492",
+    "max_active_cohorts": 1,
+    "party": [
+      "feral_druid_tank",
+      "discipline_priest",
+      "fury_warrior",
+      "marksmanship_hunter",
+      "retribution_paladin"
+    ],
+    "party_sha256": "524b94c794897f5111bdae0a5e45ba31a31ebb8596d811a3dd8c1caff95bd16a",
+    "profile_content_hash": "35A587F05D8781D72C62576A6F35392A69E01D5978429F65429AD5B9ED096A22",
+    "profile_generation": 1,
+    "run_plan_independent_verifier_sha256": "e516d4365cfe19485c85083815400dc304a40cc18e7485cfd448a56aff43bbdc",
+    "run_plan_sha256": "9712beaac51bf0c64fda6b0424c5e905ae0f6005815166303baa22cd68ed4044",
+    "server_epoch": 2947113200703445,
+    "server_process_id": 794861,
+    "session_fingerprint": "7866c2e301ce0c7b5c50899cdbf3641e2ca9e868b32c693eaacd99d19f5e8f58"
+  },
+  "strict_result": {
+    "canaries_3_through_8_started": false,
+    "classification": "gameplay_failure",
+    "cleanup_passed": true,
+    "completion_reason": "stonecore_role_quality_audit_failed",
+    "failure_labels": [
+      "Feraltank:healer_target_exposure",
+      "Feraltank:healer_target_dwell"
+    ],
+    "forbidden_completion_assists": [],
+    "publication_passed": true,
+    "real_boss_kill_count": 4,
+    "role_gate_passed": false,
+    "route_terminal_count": 14,
+    "serial_isolation_passed": true,
+    "strict_non_role_gates_passed": true,
+    "strict_uninterrupted_route": true,
+    "teacher_assisted_kills": 0,
+    "watchdog_passed": true
+  }
+}

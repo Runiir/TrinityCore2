@@ -10092,8 +10092,13 @@ def test_phase3_database_cleanup_requires_verified_immutable_receipt(tmp_path):
 
 
 def test_phase3_synthetic_round_trip_gate():
+    lifecycle_source = Path(
+        "tools/bot_ml/batch_evidence_lifecycle.py"
+    ).read_text(encoding="utf-8")
     contract = synthetic_round_trip_contract()
 
+    assert "_temporarily_unignore_pointers(" in lifecycle_source
+    assert '["git", "check-ignore", "-v", "--no-index"' in lifecycle_source
     assert contract["gate_passed"] is True
     assert contract["publication"]["remote_verified"] is True
     assert contract["publication"]["targeted_eviction"] is True

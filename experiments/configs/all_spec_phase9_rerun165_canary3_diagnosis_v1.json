@@ -1,0 +1,128 @@
+{
+  "schema": "all_spec_phase9_rerun165_canary3_diagnosis_v1",
+  "diagnosis_sha256": "dc0a2e5a0d9883d91fe4ac8c876d748a3f921daa5d487a5306ab4ebb6c843b14",
+  "hash_scope": "canonical_json_without_diagnosis_sha256",
+  "source_attempt": {
+    "attempt_label": "rerun165_canary_3",
+    "attempt_id": "phase9_serial_03_stonecore_phase9_083_5d0c65765654",
+    "batch_id": "phase9-serial-canary-rerun165-3",
+    "batch_identity_sha256": "fcac819ef9cb56b911b1a0f7442a51a2ff02d9dd60311afe755ca584d2f9371f",
+    "party_sha256": "71f05aeed37bfe1fc988746cdd00e7bf8e4d2dd94258eed65ec58d15201823b2",
+    "binary_sha256": "eebe0d57ab5624696fbf507a0851f6609c1add65080cfae6a9f1f8d97d2d98f6",
+    "evidence_identity_manifest_sha256": "fdfee3bfa9b2a0df936ee290f064ab0654ff5cc4423c0bfa0b7f3ffea72aec70",
+    "run_plan_sha256": "fd532c5226e5707c25a678e4cba7ee47ab8408da85d9922bae0a6fda748db67e",
+    "server_process_id": 709973,
+    "server_epoch": 3533666696640666,
+    "session_fingerprint": "c4ce8bbe25fb6a0198b29bee1cb99b7f5f98a71cdd5fac8c62ae716f7766b827",
+    "profile_generation": 1,
+    "profile_content_hash": "35a587f05d8781d72c62576a6f35392a69e01d5978429f65429ad5b9ed096a22",
+    "max_active_cohorts": 1
+  },
+  "capture_and_closeout": {
+    "raw_event_row_count": 281,
+    "compact_row_count": 1,
+    "raw_bundle_sha256": "551a348eabb714286fa83e8abc026c7c66a99760b83d18edaedcce724ac2483d",
+    "compact_bundle_sha256": "569144dad9e73b56ddf3e6a87aacd68f5ebe81c43307da6e265eb1fc019c4676",
+    "acceptance_source_report_sha256": "7de3f93a3c52dd380e60d6b5c6716fca18e57fbc5bf6312b49aedccd9fc4c509",
+    "events_zst_sha256": "a5513b2442e1f263d105fd9884989a181e4957dd78762896bbf4b8b54dcc74d6",
+    "exact_manifests_sha256": "e6b359127288be718dae79b0ad92ca4b7bbdc477120e6248d21fbd154d32a1c6",
+    "evidence_parquet_sha256": "9a4abcd7bc0c0d0a5d3f7ebfe46ff38a95fefc150b3a9c29998dc5bb198ab219",
+    "raw_pointer_sha256": "cf08287d1abbc6c519fdaeb1d5cd2a592f983b92280ae30fb4af847dd39e63c9",
+    "raw_dvc_md5": "06744786d71a504f87d9d0c93386eeb8.dir",
+    "compact_pointer_sha256": "589e4a5449770cf83484ab82d0c9f6721eb77ae1bb51776e4a494845186bba3c",
+    "compact_dvc_md5": "a2fb153d268565ede638112863eaf85f.dir",
+    "publication_receipt_sha256": "5dffc85b8cced00aaa5f3e495cdfd84147ca3beb8df945bd297859cb0088f557",
+    "remote_status_sha256": "efed9e5afcfe149915ae98b9ed9e69304eb48f5ce2e2265b18b5b5ed2f155e60",
+    "capture_revalidated_after_hydration": true,
+    "remote_verified": true,
+    "identity_matched": true,
+    "exact_party_verified": true,
+    "cleanup": {"active": false, "active_bots": 0, "lease_count": 0, "party_bot_count": 0},
+    "worldserver_stopped_before_tracked_edit": true,
+    "broad_dvc_gc_used": false
+  },
+  "strict_result": {
+    "completion_reason": "stonecore_role_quality_audit_failed",
+    "failure_labels": [
+      "role_quality:Protpally:tank_threat_retention",
+      "role_quality:Protpally:healer_target_exposure",
+      "role_quality:Protpally:healer_target_dwell",
+      "stonecore_role_quality_audit_failed"
+    ],
+    "route_terminal_count": 14,
+    "real_boss_kill_count": 4,
+    "kills": 58,
+    "duration_seconds": 1316,
+    "canaries_4_through_8_started": false
+  },
+  "role_audit": {
+    "tank_all_hostile_retention_rate": 0.8852,
+    "healer_target_exposure_rate": 0.1012,
+    "max_healer_target_dwell_ms": 3015,
+    "maximum_healer_target_dwell_ms": 3000,
+    "tank_threat_aura_uptime_rate": 1.0,
+    "active_action_coverage": 1.0,
+    "combat_attempt_count": 440,
+    "combat_attempt_failure_count": 0,
+    "deaths": 0
+  },
+  "exposure_localization": {
+    "dominant_route_generation": 14,
+    "dominant_route_node_id": "4b2457d42f81a298",
+    "dominant_boss": "High Priestess Azil",
+    "eligible_counts_by_route_generation": {
+      "1": {"engaged": 406, "tank": 367, "healer": 34},
+      "2": {"engaged": 203, "tank": 191, "healer": 4},
+      "3": {"engaged": 155, "tank": 155, "healer": 0},
+      "4": {"engaged": 16, "tank": 16, "healer": 0},
+      "7": {"engaged": 15, "tank": 13, "healer": 0},
+      "9": {"engaged": 19, "tank": 19, "healer": 0},
+      "10": {"engaged": 71, "tank": 71, "healer": 0},
+      "11": {"engaged": 16, "tank": 16, "healer": 0},
+      "13": {"engaged": 32, "tank": 27, "healer": 0},
+      "14": {"engaged": 539, "tank": 428, "healer": 111}
+    },
+    "dominant_wave_sequence": [
+      "49_of_49_tank_owned_then_density_resolver_selected_self_buff_seal_of_truth_spell_31801",
+      "one_second_later_density_resolver_selected_the_same_self_buff_again",
+      "next_density_decision_used_out_of_range_auto_attack_on_a_single_add",
+      "the_following_snapshot_flipped_all_48_eligible_hostiles_to_the_healer",
+      "righteous_defense_then_immediate_area_threat_started_recovery"
+    ],
+    "maximum_dwell_episode": {
+      "route_generation": 2,
+      "hostile_guid": 520,
+      "first_timestamp_ms": 1786213668330,
+      "last_timestamp_ms": 1786213671345,
+      "dwell_ms": 3015,
+      "sequence": [
+        "tank_immediate_aoe_threat_with_22_engaged_14_tank_8_healer",
+        "area_density_fallback_at_1004_ms_with_26_engaged_24_tank_2_healer",
+        "tank_immediate_aoe_threat_at_2006_ms_with_31_engaged_24_tank_2_healer",
+        "hand_of_reckoning_pickup_at_3015_ms_with_35_engaged_30_tank_1_healer"
+      ]
+    },
+    "cause": "The audit is correct. Generation 14 contributes 111 of the healer-target observations and dominates both retention and exposure failure. While Protection owned all 49 eligible Azil hostiles, the generic density resolver admitted a legal self-buff into its unrestricted density fallback and selected Seal of Truth (spell 31801) on two consecutive threat decisions, followed by an out-of-range single-target fallback. The next eligible snapshot assigned all 48 surviving hostiles to the healer. The 3015 ms maximum dwell is a separate generation-2 pickup episode only 15 ms above the unchanged limit and contains the same lost area-threat opportunity. This is a density-action category-selection defect, not an identity attribution, audit, or threshold defect.",
+    "audit_attribution_correct": true,
+    "audit_correction_required": false
+  },
+  "corrective_action": {
+    "threat_scope": "existing profile resolver density-only fallback",
+    "threat_change": "Exclude Buff-category candidates only while densityOnly is active. Preserve interrupts, native area/cleave choices, defensive actions, taunts, resource generators and recovery, candidate legality, movement, cooldown, GCD, resource, range, line-of-sight, target-validity, and every acceptance threshold.",
+    "acceptance_threshold_changes": [],
+    "gate_weakening": false
+  },
+  "independent_validation": {
+    "capture_hashes_replayed": true,
+    "role_audit_replayed_from_hydrated_raw_evidence": true,
+    "maximum_episode_reconstructed_per_identity": true,
+    "all_281_raw_rows_replayed": true
+  },
+  "eviction": {
+    "status": "exact_re_eviction_verified",
+    "temporary_hydration_root_absent": true,
+    "raw_directory_object_absent": true,
+    "compact_directory_object_absent": true,
+    "broad_dvc_gc_allowed": false
+  }
+}

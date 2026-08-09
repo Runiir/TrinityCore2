@@ -1,0 +1,519 @@
+{
+  "schema": "all_spec_phase9_authoritative_gameplay_failure_diagnosis_v1",
+  "diagnosis_sha256": "f8d0037aa2a0284d6fec23a9b5793568a04fe4f126a696323e653d02d9cf0762",
+  "scope": {
+    "phase": 9,
+    "rerun": 170,
+    "serial_canary_index": 3,
+    "composition_id": "stonecore_phase9_083_5d0c65765654",
+    "later_rows_blocked": true,
+    "canaries_4_through_8_started": false,
+    "diagnosis_limited_to_failed_immutable_batch": true
+  },
+  "source_attempt": {
+    "attempt_root": "artifacts/all_spec_program/phase9_serial_canaries_20260809_rerun170/phase9_serial_03_stonecore_phase9_083_5d0c65765654",
+    "batch_id": "phase9-serial-canary-rerun170-3",
+    "party": [
+      "protection_paladin",
+      "holy_priest",
+      "arcane_mage",
+      "assassination_rogue",
+      "fire_mage"
+    ],
+    "party_sha256": "71f05aeed37bfe1fc988746cdd00e7bf8e4d2dd94258eed65ec58d15201823b2",
+    "identity_manifest_sha256": "dbe45679c11f48c1eef2c946d40588034a303023f0fbb9f39082f94925b52647",
+    "identity_manifest_file_sha256": "21a29b916b57a1416bf2afc88b8f3055c5b316dd9bc8d3afe8b19984d5451c32",
+    "run_plan_sha256": "96639b3e602ff307ff0ab9ae1e70ab5a1078a68f81dc1ffda5bdcee1f2ddbade",
+    "run_plan_file_sha256": "d69184ae9ed7b81792a5cda470343777cc971dc596a708b14ff3e7160552c8c0",
+    "run_plan_independent_verifier_sha256": "57db21be8d58c34d48dcaa5a62db73ab93bf6e9f69c874dedf77999bfad85326",
+    "run_plan_independent_verifier_file_sha256": "4cb490f1fd7b4db5b522e6cf1ff5280e41e694a73c1c5bd0f55623958015e40e",
+    "evidence_binary_sha256": "ccabb4a89301cc6f6a0627ed464a9256e35883e86cced8ef55ff4399603349f8",
+    "effective_config_sha256": "a88cd65715b004c554f6592f0c69ac761ecc812333e7fdc2a86a1b8b3a7b6cee",
+    "server_pid": 860931,
+    "server_epoch": 3232093068090770,
+    "worldserver_unit": "trinity-live-validation-e4cc37114090b322cb7f6a2e.service",
+    "session_fingerprint": "d9c9b5b4c8fb4a58873cfdf69bfa294581476eafbc7dd1a8cd879d0fde6cad6b",
+    "profile_generation": 1,
+    "profile_content_hash": "35a587f05d8781d72c62576a6f35392a69e01d5978429f65429ad5b9ed096a22",
+    "max_active_cohorts": 1
+  },
+  "authoritative_classification": {
+    "result": "gameplay_failure",
+    "completion_reason": "stonecore_role_quality_audit_failed",
+    "failure_reason": "semantic_progress_plateau",
+    "failed_checks": [
+      "route",
+      "boss_deaths",
+      "watchdog",
+      "role_efficiency"
+    ],
+    "strict_non_role_gates_passed": false,
+    "role_gate_passed": false,
+    "infrastructure_aborted": false,
+    "interim_incomplete_evidence": false,
+    "wrapper_nonzero_due_to_acceptance_failure": true,
+    "underlying_returncode": 0,
+    "timed_out": false,
+    "command_errors": [],
+    "later_rows_blocked": true,
+    "strict_gate_independent_verifier_sha256": "0816e38f30a169e5c6b6fd0e450b2bec2ef5ab00b6e30d5a276dbd251b886bc9",
+    "strict_gate_independent_verifier_file_sha256": "e47c97fd4e47cdc5edecacd3d17daff0d59783347e6240f9a73aa3154fdb5043",
+    "checks": {
+      "route": false,
+      "four_authoritative_boss_deaths": false,
+      "fourteen_terminal_route_nodes": false,
+      "watchdog": false,
+      "role_efficiency": false,
+      "identity": true,
+      "party": true,
+      "publication": true,
+      "cleanup": true,
+      "serial_isolation": true,
+      "assistance": true
+    }
+  },
+  "immutable_evidence": {
+    "batch_identity_sha256": "0a3089d4de6cb96cb170dc318ae00161390e9a85cd474e79772f15633f68c809",
+    "raw_bundle_sha256": "f3cfa890b8ea325c63603efe71cced8f95d1e8ebb2d494739141ad0f6e56a5a6",
+    "compact_bundle_sha256": "1aeaf386cfab8371e4e82d120be64bb41542c237192f969ecac4254ef8bfc9df",
+    "publication_receipt_sha256": "5168d2c599f0109d2fdec4d1895f22e88861f8248490695c7bd76e7820063cc5",
+    "publication_receipt_file_sha256": "189eac8223b925a8fa8bdf98960fc360f3b9850365e1498773240467fd05aa78",
+    "final_manifest_file_sha256": "13777f7e37a8e4bab1516f9f19cce76ed692a0d57d92606096ee1ee32d4ba135",
+    "raw_dvc_md5": "ef30cffa810b4eeb506747f4090fc079.dir",
+    "compact_dvc_md5": "9550b37de65cf9eb459b1a8e25e35c25.dir",
+    "raw_restore_pointer": "rerun170_canary3_raw_restore.dvc",
+    "compact_restore_pointer": "rerun170_canary3_compact_restore.dvc",
+    "remote_verification": "Cache and remote 'object' are in sync.",
+    "failed_batch_capture_verifier_file_sha256": "d20879a6018b16119fa901f4f35c7dcfb20012befd42f8f19915305bd6101ae4",
+    "raw": {
+      "row_count": 252,
+      "files": {
+        "acceptance_source_report.json": "136ec9b7be11c91f7052d401ef84eab2dd671a2630638d8107651cbc3a25d60c",
+        "events.jsonl.zst": "ef14fbaa4f21b1567586c8bffb5c9a3b31c23dba5afa4fe54212099547902685",
+        "exact_manifests.json": "8901c516f764a9d82babc8a3f09f8958fae4dd8931ea12b8606b408b466bc9b5"
+      }
+    },
+    "compact": {
+      "row_count": 1,
+      "files": {
+        "evidence.parquet": "2df9df27eb946d36047e9db973e90f9db860f9257a1307305beb396aa373ed9f"
+      }
+    }
+  },
+  "strict_thresholds_unchanged": {
+    "tank_all_hostile_retention_floor": 0.9,
+    "healer_target_exposure_ceiling": 0.01,
+    "max_healer_target_dwell_ms": 3000,
+    "tank_threat_aura_uptime_floor": 0.99,
+    "non_healer_active_action_coverage_floor": 0.7,
+    "cast_failure_ceiling": 0.05,
+    "healer_successful_heal_cast_floor_when_sampled": 0.95,
+    "missing_required_rotation_groups_allowed": false
+  },
+  "independent_role_reconstruction": {
+    "audit_file_sha256": "5fe18fa55332199dd3c22a797b5f487a77e4f3dcb3c3b025d99270d6d653612d",
+    "deduplication": {
+      "key": [
+        "bot_guid",
+        "sequence"
+      ],
+      "collision_policy": "last_trace_entry_wins"
+    },
+    "threat_acquisition_grace_ms": 3000,
+    "protection_paladin": {
+      "bot_name": "Protpally",
+      "identity_scoped_threat": true,
+      "eligible_hostile_denominator": 1042,
+      "tank_owned_hostile_numerator": 1014,
+      "healer_targeting_hostile_numerator": 17,
+      "tank_all_hostile_retention_rate_exact": 0.9731285988483686,
+      "healer_target_exposure_rate_exact": 0.016314779270633396,
+      "max_healer_target_dwell_ms": 3017,
+      "tank_threat_aura_uptime_rate": 1.0,
+      "active_action_coverage": 1.0,
+      "attempts": 411,
+      "cast_failure_rate": 0.0,
+      "missing_required_rotation_groups": [],
+      "deaths": 0,
+      "failed_checks": [
+        "healer_target_exposure_rate",
+        "max_healer_target_dwell_ms"
+      ]
+    },
+    "eligible_samples_by_route_generation": {
+      "1": {
+        "engaged": 513,
+        "tank_owned": 486,
+        "healer_targeting": 17,
+        "exposure_rate": 0.03313840155945419
+      },
+      "2": {
+        "engaged": 92,
+        "tank_owned": 92,
+        "healer_targeting": 0
+      },
+      "3": {
+        "engaged": 176,
+        "tank_owned": 175,
+        "healer_targeting": 0
+      },
+      "4": {
+        "engaged": 28,
+        "tank_owned": 28,
+        "healer_targeting": 0
+      },
+      "8": {
+        "engaged": 39,
+        "tank_owned": 39,
+        "healer_targeting": 0
+      },
+      "10": {
+        "engaged": 113,
+        "tank_owned": 113,
+        "healer_targeting": 0
+      },
+      "11": {
+        "engaged": 35,
+        "tank_owned": 35,
+        "healer_targeting": 0
+      },
+      "13": {
+        "engaged": 36,
+        "tank_owned": 36,
+        "healer_targeting": 0
+      },
+      "14": {
+        "engaged": 10,
+        "tank_owned": 10,
+        "healer_targeting": 0
+      }
+    },
+    "eligible_healer_target_samples": [
+      {
+        "timestamp_ms": 1786232735487,
+        "hostile_guids": [
+          9
+        ],
+        "action": "trash_density_area_threat"
+      },
+      {
+        "timestamp_ms": 1786232739537,
+        "hostile_guids": [
+          9
+        ],
+        "action": "righteous_defense_healer_pickup"
+      },
+      {
+        "timestamp_ms": 1786232759647,
+        "hostile_guids": [
+          9
+        ],
+        "action": "righteous_defense_healer_pickup"
+      },
+      {
+        "timestamp_ms": 1786232760650,
+        "hostile_guids": [
+          9
+        ],
+        "action": "hand_of_salvation_healer_trash_threat_drop"
+      },
+      {
+        "timestamp_ms": 1786232794681,
+        "hostile_guids": [
+          56,
+          57,
+          65
+        ],
+        "action": "move_to_trash_density"
+      },
+      {
+        "timestamp_ms": 1786232794938,
+        "hostile_guids": [
+          56,
+          57,
+          65
+        ],
+        "action": "avengers_shield_healer_multi_trash_pickup"
+      },
+      {
+        "timestamp_ms": 1786232795191,
+        "hostile_guids": [
+          56,
+          57,
+          65
+        ],
+        "action": "trash_density_area_threat"
+      },
+      {
+        "timestamp_ms": 1786232795442,
+        "hostile_guids": [
+          56,
+          57,
+          65
+        ],
+        "action": "validation_route_recovery"
+      },
+      {
+        "timestamp_ms": 1786232817099,
+        "hostile_guids": [
+          9
+        ],
+        "action": "trash_density_area_threat"
+      }
+    ],
+    "maximum_dwell_episode": {
+      "hostile_guid": 9,
+      "start_ms": 1786232814082,
+      "end_ms": 1786232817099,
+      "dwell_ms": 3017,
+      "chronology": [
+        {
+          "timestamp_ms": 1786232814082,
+          "action": "move_to_trash_density"
+        },
+        {
+          "timestamp_ms": 1786232815092,
+          "action": "move_to_trash_density"
+        },
+        {
+          "timestamp_ms": 1786232816098,
+          "action": "righteous_defense_healer_pickup"
+        },
+        {
+          "timestamp_ms": 1786232817099,
+          "action": "trash_density_area_threat"
+        }
+      ]
+    },
+    "other_party_members_passed": true
+  },
+  "route_failure": {
+    "missing_terminal": {
+      "route_generation": 14,
+      "route_node_id": "4b2457d42f81a298",
+      "label": "High Priestess Azil",
+      "target_entry": 42333
+    },
+    "missing_boss_death": {
+      "route_generation": 14,
+      "route_node_id": "4b2457d42f81a298",
+      "target_entry": 42333
+    },
+    "observed_authoritative_boss_deaths": [
+      43438,
+      43214,
+      42188
+    ],
+    "watchdog_failure": "semantic_progress_plateau",
+    "repeated_decision_loop": false,
+    "generation_14_trace": {
+      "entry_count": 992,
+      "first_timestamp_ms": 1786233453251,
+      "last_timestamp_ms": 1786233655540,
+      "activation_applied": false,
+      "activation_attempts": 0,
+      "manager_activation_applied": false,
+      "manager_activation_attempts": 0,
+      "pack_members": [],
+      "pack_engaged_count": 0,
+      "pack_transition_count": 0,
+      "observed_dead_script_target": false,
+      "tank_action_counts": {
+        "validation_route_readiness_wait": 117,
+        "hold_pending_swarm_area_threat_resources": 38,
+        "continue_pending_swarm_pickup_preposition": 17,
+        "tank_preposition_for_pending_swarm_pickup": 13,
+        "tank_activate_passive_swarm": 13,
+        "boss_add_density": 3,
+        "validation_route": 1
+      }
+    },
+    "coordinates": {
+      "generation_13_navigation_anchor": [
+        1380.19,
+        1049.55,
+        212.862
+      ],
+      "generation_14_navigation_anchor": [
+        1329.93,
+        985.712,
+        207.804
+      ],
+      "azil_objective": [
+        1337.3,
+        964.894,
+        214.2383
+      ],
+      "observed_tank_and_follower_region": {
+        "x_min": 1329.33,
+        "x_max": 1404.67,
+        "y_min": 1060.13,
+        "y_max": 1101.44,
+        "z_min": 212.49,
+        "z_max": 214.4
+      }
+    },
+    "combat_telemetry": {
+      "generation_14_ability_aggregate_count": 7,
+      "generation_14_recent_event_count": 114,
+      "only_hostile_entry": 42428,
+      "only_hostile_name": "Devout Follower",
+      "azil_entry_42333_observed": false,
+      "tank_damage_done": {
+        "melee": {
+          "event_count": 33,
+          "amount": 108091
+        },
+        "censure": {
+          "event_count": 10,
+          "amount": 15885
+        },
+        "whirling_maw": {
+          "event_count": 18,
+          "amount": 176448
+        },
+        "drain_life": {
+          "event_count": 12,
+          "amount": 212
+        }
+      },
+      "follower_melee_damage_to_tank": {
+        "event_count": 29,
+        "amount": 36896
+      },
+      "first_damage_ms": 1786233455251,
+      "last_damage_ms": 1786233648573,
+      "confirmed_follower_guids_include": [
+        428,
+        414,
+        156,
+        153,
+        173,
+        165,
+        170,
+        166,
+        162,
+        136,
+        134,
+        172
+      ],
+      "kill_evidence_for_followers": false
+    },
+    "reduced_chronology": [
+      "Generation 14 begins with the party approximately 80-115 yards from the Azil navigation anchor and no Azil focus.",
+      "Visible passive Devout Followers satisfy the declared-add swarm detector before route arrival.",
+      "The tank is repeatedly redirected to follower clusters instead of the navigation anchor, submits native white swings, and deals real melee and proc damage.",
+      "Individual followers engage the tank, but no follower kill, Azil acquisition, pack enrollment, concrete activation attempt, or fourth boss death is recorded.",
+      "The transient engagements repeatedly reset group readiness; DPS stack or wait for tank ownership and the party returns to readiness waits.",
+      "The tank remains in the follower region at y=1060-1101 while the Azil navigation anchor is at y=985.712, proving pre-anchor follower interception rather than arrival at the boss platform."
+    ]
+  },
+  "root_causes": {
+    "route": {
+      "summary": "The boss-add handler treated an unengaged visible Devout Follower cluster as an active Azil swarm before the party reached the generation-14 navigation anchor. Because add handling runs before readiness and generic route movement, it repeatedly redirected the tank among passive followers, created transient follower combat, reset readiness, and prevented deterministic arrival and Azil acquisition.",
+      "source_chain": [
+        "Declared add entry 42428 was visible within cohort scan range while Azil entry 42333 was absent.",
+        "cohortSwarmActive became true from at least three visible listed followers without requiring boss focus, route arrival, or engaged adds.",
+        "pendingSwarmActivation selected a deterministic follower medoid, prepositioned the tank, started a native white swing, and held area resources.",
+        "DPS stack/wait branches used the same cohortSwarmActive state.",
+        "These branches returned before readiness and move_to_validation_route.",
+        "Immutable combat telemetry proves repeated real follower combat in the pre-anchor region and no Azil evidence."
+      ]
+    },
+    "protection_role": {
+      "summary": "The remaining Protection exposure consists of short healer-threat reacquisitions after multi-target pickup plus one 3017-ms remote approach. Twelve of seventeen eligible samples came from three continuously engaged hostiles reacquiring the healer together while the native multi-target chain needed multiple telemetry ticks to restore ownership. The maximum dwell used three one-second movement/pickup decisions and crossed the unchanged ceiling by 17 ms.",
+      "separate_from_route_failure": true,
+      "route_generation": 1,
+      "not_generation_14": true
+    },
+    "telemetry_limits": [
+      "Immutable telemetry does not persist every rejected native spell preflight, so no unsupported cooldown, line-of-sight, range, or global-cooldown reason is assigned to each failed helper attempt.",
+      "The recent combat-event ring dropped 1755 older events, but generation-14 aggregates preserve all seven actor/ability summaries and the retained recent window covers the full final-node follower loop.",
+      "No correction assumes that Azil requires a concrete scripted activation field; the proven failure occurs earlier, before route arrival and boss acquisition."
+    ]
+  },
+  "smallest_evidence_backed_corrections": [
+    {
+      "file": "src/server/game/Bots/BotWorldPopulationMgr.cpp",
+      "behavior": "Return from the boss-add handler without acting on a visible declared swarm only when no listed add is engaged, no boss progress target exists, and the current bot remains outside its unchanged route-arrival radius. Any real engagement, boss focus, or arrival preserves the existing add-defense path.",
+      "preserved_behavior": [
+        "Route coordinates, arrival radii, readiness duration, activation contracts, add entries, threat behavior, and boss mechanics remain unchanged.",
+        "Any engaged follower still invokes immediate party protection.",
+        "No threshold or evidence identity contract changes."
+      ]
+    },
+    {
+      "file": "src/server/game/Bots/BotWorldPopulationMgr.cpp",
+      "behavior": "Add native Hand of Reckoning as a deterministic single-healer-attacker Protection fallback after Righteous Defense and before Avenger's Shield, with 250-ms follow-up cadence, and apply the same 250-ms cadence only while Protection is moving toward a currently healer-owned density target.",
+      "preserved_behavior": [
+        "Righteous Defense, Consecration, Avenger's Shield, Hand of Salvation, and density area actions keep their existing order except for the new single-target fallback before the prior ranged multi-target fallback.",
+        "TryCastCombatSpell remains authoritative for target, range, line of sight, cooldown, and spell legality.",
+        "No victim or threat is assigned directly.",
+        "Ordinary non-healer density movement retains its prior cadence."
+      ]
+    }
+  ],
+  "required_preserved_source": "if (densityOnly && candidate.Category == BotCombatActionCategory::Buff) { candidate.RejectReason = \"density_buff_not_actionable\"; continue; }",
+  "validation": {
+    "focused_tests": {
+      "command": "pixi run pytest -q tests/test_autonomy_pipeline_smoke.py -k 'rerun170 or rerun169 or rerun165'",
+      "result": "4 passed, 112 deselected in 0.54s",
+      "passed": true
+    },
+    "full_autonomy_smoke": {
+      "command": "pixi run pytest -q tests/test_autonomy_pipeline_smoke.py",
+      "result": "32 failed, 84 passed in 1.83s",
+      "new_rerun170_contracts_passed": true,
+      "interpretation": "The 32 failures are the pre-existing dirty-worktree structural/source-shape baseline; the rerun170 focused contracts pass."
+    },
+    "git_diff_check": {
+      "passed": true
+    },
+    "worldserver_build": {
+      "command": "cmake --build build --target worldserver -j 2",
+      "passed": true,
+      "corrected_binary_sha256": "e1a568d2657fcf840d047b5268c5bbe9f38c77f2945601d5a279d22f8b2c5362",
+      "prospective_identity": "rerun171",
+      "part_of_rerun170_frozen_identity": false
+    },
+    "old_worldserver_stopped_before_tracked_edits": {
+      "unit": "trinity-live-validation-e4cc37114090b322cb7f6a2e.service",
+      "active_state": "inactive",
+      "sub_state": "dead",
+      "main_pid": 0,
+      "passed": true
+    },
+    "dvc_remote_verified_before_eviction": true
+  },
+  "eviction": {
+    "state": "exact_targeted_eviction_complete",
+    "remote_verified_before_eviction": true,
+    "broad_dvc_gc_used": false,
+    "removed_workspace_and_restore_pointers": [
+      "artifacts/all_spec_program/phase9_serial_canaries_20260809_rerun170/phase9_serial_03_stonecore_phase9_083_5d0c65765654/batch/raw",
+      "artifacts/all_spec_program/phase9_serial_canaries_20260809_rerun170/phase9_serial_03_stonecore_phase9_083_5d0c65765654/batch/compact",
+      "rerun170_canary3_raw_restore.dvc",
+      "rerun170_canary3_compact_restore.dvc"
+    ],
+    "removed_exact_cache_md5s": [
+      "ef30cffa810b4eeb506747f4090fc079.dir",
+      "402a25a8a89c59942c5138e2dd4f2feb",
+      "07130c82755b822149ddb1ecbc9dbd19",
+      "6116bd85f1b3b8b0e172d968e3c06007",
+      "9550b37de65cf9eb459b1a8e25e35c25.dir",
+      "61b08f7022eb413bb1155999310ecd55"
+    ],
+    "retained": [
+      "batch/raw.dvc",
+      "batch/compact.dvc",
+      "batch/retained/publication_receipt.json",
+      "strict_gate_independent_verifier.json",
+      "role_efficiency_independent.json",
+      "failed_batch_independent_capture_verifier.json",
+      "experiments/configs/all_spec_phase9_rerun170_canary3_diagnosis_v1.json"
+    ],
+    "verified_absent": true,
+    "retained_contract_verified_present": true
+  },
+  "next_action": "Update program status and handoff, run dvc status and dvc push, deterministically reprovision all 31 targets, capture a fresh rerun171 identity and independently verified eight-row plan using binary e1a568d2657fcf840d047b5268c5bbe9f38c77f2945601d5a279d22f8b2c5362, make no identity-bearing tracked edits after capture, and restart at canary 2 alone. Phases 10 through 12 remain blocked."
+}

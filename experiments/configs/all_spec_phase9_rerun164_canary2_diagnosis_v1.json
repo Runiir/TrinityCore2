@@ -1,0 +1,102 @@
+{
+  "schema": "all_spec_phase9_rerun164_canary2_diagnosis_v1",
+  "diagnosis_sha256": "95bcbccc276f238c0e78d6b3da6d3915f9edb4b7f4a398e7d78e90bf098e6142",
+  "hash_scope": "canonical_json_without_diagnosis_sha256",
+  "source_attempt": {
+    "attempt_label": "rerun164_canary_2",
+    "attempt_id": "phase9_serial_02_stonecore_phase9_006_6893daf98698",
+    "batch_id": "phase9-serial-canary-rerun164-2",
+    "batch_identity_sha256": "361c97bf7e8c3fe57589e83714378b67ade8c017e58bdae6d1d3445c27a68709",
+    "party_sha256": "524b94c794897f5111bdae0a5e45ba31a31ebb8596d811a3dd8c1caff95bd16a",
+    "binary_sha256": "8270079b50a184abc82f14dde0a81084f674028ac50102f5bfaf9abc511bb2a6",
+    "evidence_identity_manifest_sha256": "4a120349d41bcf0a90ac8716a5d3beb7b2793e0bf932c1c3a2f5fb0366ee59b3",
+    "run_plan_sha256": "743f6d40a90d54d47e392f49b16e218a8d3e5c2537c0e36a700d825721c8157e",
+    "server_process_id": 694497,
+    "server_epoch": 3589276175345857,
+    "session_fingerprint": "9ec8aba4e448e321a91d51352138d91976025d1a8746078281097967df91dffe",
+    "profile_generation": 1,
+    "profile_content_hash": "35a587f05d8781d72c62576a6f35392a69e01d5978429f65429ad5b9ed096a22",
+    "max_active_cohorts": 1
+  },
+  "capture_and_closeout": {
+    "raw_event_row_count": 266,
+    "compact_row_count": 1,
+    "raw_bundle_sha256": "b93794eaaabe7759d5c5223caeeb37ef52d649d2abf81bf113d113af0ea39d22",
+    "compact_bundle_sha256": "1471f03d4952930bb3a8854fb84ac03eb1ab0a78133f1a701956c5e288314603",
+    "acceptance_source_report_sha256": "9d73d5470903591d724dc89d285ab3c8090429bf9550f77038e65d8994516454",
+    "events_zst_sha256": "382c4d2f7c1beea6fc82c1eae5a921b73ced58afd7eb85fe3f1703417297f3a0",
+    "exact_manifests_sha256": "9066417a6678c64c39df47d67e692bcc9c17d53c2811bbd46d404a11d47c9562",
+    "evidence_parquet_sha256": "17748895b3104730f3c5ed3ec8941ac74a5e2f33006c6818970a4cea40a3c61d",
+    "raw_pointer_sha256": "6e81d91db57469cef39c485be40947fb229ecb86415dfa533f8fa98ba13a8fbe",
+    "raw_dvc_md5": "57dac357b61eb1214a11f7b0dd454125.dir",
+    "compact_pointer_sha256": "6a1154c301170d03f6e2d5ec46640c3111d49a1f89e6891e94886515d3aab4a2",
+    "compact_dvc_md5": "e2523d96c86afcab92d1631259ef07d9.dir",
+    "publication_receipt_sha256": "d1d252663eb36d39088202e937a4673bfa6ad0af6635fc7b2a212edecb9513bd",
+    "remote_status_sha256": "efed9e5afcfe149915ae98b9ed9e69304eb48f5ce2e2265b18b5b5ed2f155e60",
+    "capture_revalidated_after_hydration": true,
+    "remote_verified": true,
+    "identity_matched": true,
+    "exact_party_verified": true,
+    "cleanup": {"active": false, "active_bots": 0, "lease_count": 0, "party_bot_count": 0},
+    "worldserver_stopped_before_tracked_edit": true,
+    "broad_dvc_gc_used": false
+  },
+  "strict_result": {
+    "completion_reason": "stonecore_role_quality_audit_failed",
+    "failure_labels": ["role_quality:Feraltank:healer_target_dwell", "stonecore_role_quality_audit_failed"],
+    "route_terminal_count": 14,
+    "real_boss_kill_count": 4,
+    "kills": 55,
+    "duration_seconds": 1189,
+    "canaries_3_through_8_started": false
+  },
+  "role_audit": {
+    "tank_all_hostile_retention_rate": 0.9902,
+    "healer_target_exposure_rate": 0.0015,
+    "max_healer_target_dwell_ms": 3561,
+    "maximum_healer_target_dwell_ms": 3000,
+    "tank_threat_aura_uptime_rate": 1.0,
+    "combat_attempt_count": 304,
+    "combat_attempt_failure_count": 4,
+    "deaths": 0
+  },
+  "exposure_localization": {
+    "route_generation": 14,
+    "route_node_id": "4b2457d42f81a298",
+    "boss": "High Priestess Azil",
+    "hostile_guid_at_maximum_dwell": 641,
+    "episode_first_timestamp_ms": 1786211446565,
+    "episode_last_timestamp_ms": 1786211450126,
+    "episode_dwell_ms": 3561,
+    "decision_sequence": [
+      "generic_move_to_guid_640_at_zero_ms_with_guids_640_and_641_on_healer",
+      "generic_growl_guid_640_success_at_1782_ms",
+      "guid_641_becomes_only_healer_attacker_at_2032_ms",
+      "growl_cooldown_rejects_without_rebinding_generic_fallback",
+      "seven_250_ms_generic_decisions_remain_bound_to_tank_owned_guid_640",
+      "guid_641_last_healer_target_sample_at_3561_ms"
+    ],
+    "cause": "The audit is correct. Generation-14 Azil GUID 641 targeted the healer for 3561 ms. Generic recovery successfully Growled GUID 640 at 1782 ms, leaving GUID 641 as the sole healer-owned attacker. The existing one-attacker Feral branch selected GUID 641 for native Growl, but when the unchanged cooldown gate rejected the cast it fell through without rebinding the generic density target. The fallback therefore stayed on already-tank-owned GUID 640 for seven further 250 ms decisions, including the maximum-dwell sample. This is a stale fallback-target defect, not an audit attribution or threshold defect.",
+    "audit_attribution_correct": true,
+    "audit_correction_required": false
+  },
+  "corrective_action": {
+    "threat_scope": "existing Feral single-healer-attacker boss-add fallback after native Growl rejection",
+    "threat_change": "When the unchanged native Growl submission for the deterministically selected sole healer-owned attacker does not succeed, bind the existing generic density fallback to that same attacker and clear only shared-focus authority. Preserve the successful-Growl return, every native cooldown/GCD/range/LOS/power/target gate, and the unchanged generic movement and combat resolver.",
+    "acceptance_threshold_changes": [],
+    "gate_weakening": false
+  },
+  "independent_validation": {
+    "capture_hashes_replayed": true,
+    "role_audit_replayed_from_hydrated_raw_evidence": true,
+    "maximum_episode_reconstructed_per_identity": true,
+    "all_266_raw_rows_replayed": true
+  },
+  "eviction": {
+    "status": "exact_re_eviction_verified",
+    "temporary_hydration_root_absent": true,
+    "raw_directory_object_absent": true,
+    "compact_directory_object_absent": true,
+    "broad_dvc_gc_allowed": false
+  }
+}

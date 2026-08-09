@@ -1,0 +1,53 @@
+{
+  "schema": "all_spec_phase9_rerun135_interruption_v1",
+  "program": "all_spec_stonecore",
+  "phase": 9,
+  "date": "2026-08-03",
+  "attempt": {
+    "label": "rerun135_canary_2",
+    "composition_id": "stonecore_phase9_006_6893daf98698",
+    "exact_party_sha256": "524b94c794897f5111bdae0a5e45ba31a31ebb8596d811a3dd8c1caff95bd16a",
+    "binary_sha256": "d7d2496b955b9c807625b3161e59d2e2a48a7e072dab1c9fb24dd2dce1a4e5ad",
+    "planned_identity_manifest_sha256": "0d57b2b8c9841c3cec3d8e7c1f1605221d0086223322e4962c34b85e34b91be7",
+    "planned_server_process_id": 1862176,
+    "planned_server_epoch": 7373341424596060,
+    "planned_session_fingerprint": "ecd92734497c698a5ad69faab6d2c1e45bb4deb8a396a3ab68e1ad172b43180b",
+    "observed_server_process_id": 1863954,
+    "observed_server_epoch": 7363643507704192,
+    "observed_session_fingerprint": "7ec1234c8e97e59d7b82868271f8b9ad81bbaa4b6046400966566466ee368396",
+    "operator_unit": "trinity-phase9-rerun135-canary2.service",
+    "operator_returncode": 1,
+    "operator_status": "failed",
+    "canaries_3_through_8_started": false
+  },
+  "classification": "provisioning_identity_infrastructure_abort",
+  "cause": {
+    "summary": "The reusable session restarted before admission because a tracked handoff edit changed the repository dirty-state hash after the evidence identity was captured.",
+    "evidence": [
+      "The planned identity bound PID 1862176, epoch 7373341424596060, and session fingerprint ecd92734497c698a5ad69faab6d2c1e45bb4deb8a396a3ab68e1ad172b43180b.",
+      "The attempt session recorded server_action=started with PID 1863954, epoch 7363643507704192, and session fingerprint 7ec1234c8e97e59d7b82868271f8b9ad81bbaa4b6046400966566466ee368396.",
+      "live_validation_session.py includes tracked dirty state in the session fingerprint and excludes the program-status JSON and artifacts tree, but not the Phase 9 handoff markdown.",
+      "The runner rejected the mismatch before the completion watchdog or authoritative route evidence began."
+    ]
+  },
+  "admissibility": {
+    "authoritative_gameplay_evidence": false,
+    "immutable_batch_created": false,
+    "publication_required": false,
+    "counts_as_canary_failure": false,
+    "source_correction_invalidated": false
+  },
+  "cleanup": {
+    "exact_party_verified_before_identity_rejection": true,
+    "cohort_inactive_after_attempt": true,
+    "active_bots_after_attempt": 0,
+    "lease_count_after_attempt": 0,
+    "party_bot_count_after_attempt": 0,
+    "temporary_gitignore_restored": true,
+    "temporary_gitignore_backup_removed": true,
+    "monitor_job_id": "5ddafb0d",
+    "monitor_deleted": true
+  },
+  "next_action": "Keep the same built correction, finalize all tracked non-excluded status and handoff changes before the next identity, stop the restarted runtime, deterministically reprovision, capture a fresh rerun136 identity and plan, and run canary 2 alone without changing tracked non-excluded files after identity capture.",
+  "interruption_sha256": "1da44af6b02150a71bfa4a13129f0576712c92a5b9fcc8bcbc44df96b2da4d0e"
+}

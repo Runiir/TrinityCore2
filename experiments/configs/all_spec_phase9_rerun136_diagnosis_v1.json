@@ -1,0 +1,2140 @@
+{
+  "accepted_causal_chain": [
+    "Rerun134 correctly found one-second generic transitions, and rerun136 proves the common 250 ms guard closed that observation gap.",
+    "Faster reconsideration alone exposed a deeper limitation: the same stable movement or hold action remained the only legal branch for repeated 250 ms decisions.",
+    "Generation 13 contained one large split trash handoff and one strict hazard-exit wave; generation 14 contained a 17-follower no-victim activation that assigned the healer during an already accepted stable approach.",
+    "Roar, Swipe, Growl, Charge, Fade, and Misdirection were not silently disabled: the trace contains legal submissions where available, but local-radius threat actions could not acquire remote identities before physical repositioning completed.",
+    "The smallest shared behavior correction is therefore to accelerate only an already accepted Feral movement path with native Bear-form Stampeding Roar while current same-party healer exposure is visible. It must not create, replace, or redirect movement and must fall through unchanged when the spell is unknown, unavailable, or rejected."
+  ],
+  "capture_validation": {
+    "batch_identity_sha256": "04bfa0bad460c7ba97249fda0d00b01ac122fc4b89573f5cce7cd5c61b709072",
+    "batch_local_dvc_cache_absent_after_diagnosis": true,
+    "canaries_3_through_8_started": false,
+    "capture_revalidated_after_diagnosis": true,
+    "cleanup": {
+      "active": false,
+      "active_bots": 0,
+      "lease_count": 0,
+      "party_bot_count": 0,
+      "server_epoch": 7555903717840343
+    },
+    "cleanup_complete": true,
+    "compact_bundle_sha256": "43801b6c08c9b3c4ad60ee16a04e3f0b367cab372f65b6f27ceaa52fc7b1abb2",
+    "compact_row_count": 1,
+    "duration_seconds": 1285,
+    "dvc_remote_status": "cache_and_remote_object_are_in_sync",
+    "hydrated_file_verification": [
+      {
+        "path": "acceptance_source_report.json",
+        "sha256": "2368a4bae84f1268ce2362d4092f68cf546b42804285a2f7272c2453c0ff6401",
+        "size": 45468507
+      },
+      {
+        "path": "events.jsonl.zst",
+        "sha256": "e79591bb2bd5ff216b379aa407c2a7fe3e1fbb651e45a6a55cf76b8c249f1248",
+        "size": 1164249
+      },
+      {
+        "path": "exact_manifests.json",
+        "sha256": "ad7b875dbb8da4e5cbb5e5f9c0080b3ae8fa7085022c681c555c9b7e30e9e1ca",
+        "size": 95669
+      },
+      {
+        "path": "evidence.parquet",
+        "sha256": "64c90c61148d10ab0155226ee8b6d354d29ab69688c62e1dd92bc9f0e403f873",
+        "size": 2693
+      }
+    ],
+    "kill_count": 66,
+    "local_raw_and_compact_payloads_evicted_after_diagnosis": true,
+    "manifest_complete": true,
+    "operator_closed": true,
+    "operator_returncode": 1,
+    "operator_status": "failed",
+    "publication_receipt_sha256": "61081bb013e431206ff6b3e8353a8d56753bee679f0b0a68c98c95a4f0f3d05d",
+    "raw_bundle_sha256": "208420d128cd79436c72ff9aecf7d0bd04a35f3c6d461bcb258daa0f02238988",
+    "raw_event_row_count": 277,
+    "raw_part_count": 1,
+    "raw_payload_was_evicted_before_diagnosis_hydration": true,
+    "raw_uncompressed_bytes": 44862443,
+    "real_boss_kill_count": 4,
+    "real_boss_kill_evidence": [
+      {
+        "route_generation": 2,
+        "route_node_id": "da90ef890fb19a87"
+      },
+      {
+        "route_generation": 4,
+        "route_node_id": "b412eea04f2adbfa"
+      },
+      {
+        "route_generation": 11,
+        "route_node_id": "b1c6790bda1c3247"
+      },
+      {
+        "route_generation": 14,
+        "route_node_id": "4b2457d42f81a298"
+      }
+    ],
+    "receipt_hash_valid": true,
+    "receipt_identity_and_bundles_match": true,
+    "recorded_party_death_count": 1,
+    "recurring_monitor_deleted": true,
+    "remote_status_sha256": "efed9e5afcfe149915ae98b9ed9e69304eb48f5ce2e2265b18b5b5ed2f155e60",
+    "remote_verified": true,
+    "route_complete": true,
+    "route_terminal_count": 14,
+    "teacher_assisted_kills": 0,
+    "temporary_diagnosis_gitignore_backup_removed": true,
+    "temporary_diagnosis_gitignore_exception_restored": true,
+    "temporary_operator_gitignore_exception_restored": true,
+    "timed_out": false,
+    "unresolved_route_death_loop_events": 0,
+    "validated_with": "tools.bot_ml.batch_evidence_lifecycle.validate_capture",
+    "watchdog_completed": true
+  },
+  "causal_waves": [
+    {
+      "finding": "The Feral reconsidered at approximately 250 ms, preserved a stable handoff target, and submitted three legal Roars, but remote-cluster travel plus post-cast handoffs kept four to ten hostiles on the healer for multiple native-GCD cycles.",
+      "hostiles": [
+        640,
+        641,
+        642,
+        643,
+        644,
+        645,
+        646,
+        647,
+        648,
+        649
+      ],
+      "maximum_dwell_ms": 5634,
+      "maximum_guid": 642,
+      "name": "generation_13_split_trash_cluster",
+      "timeline": [
+        {
+          "action": "feral_move_remote_healer_trash_cluster_pre_roar",
+          "engaged_count": 18,
+          "healer_targeting_guids": [],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1051,
+          "tank_owned_count": 18,
+          "target_id": 647,
+          "timestamp_ms": 1785762295215
+        },
+        {
+          "action": "feral_continue_remote_healer_trash_cluster_handoff",
+          "engaged_count": 17,
+          "healer_targeting_guids": [
+            641,
+            644,
+            647
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1052,
+          "tank_owned_count": 14,
+          "target_id": 647,
+          "timestamp_ms": 1785762295467
+        },
+        {
+          "action": "feral_continue_remote_healer_trash_cluster_handoff",
+          "engaged_count": 18,
+          "healer_targeting_guids": [
+            641,
+            644,
+            646,
+            647
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1053,
+          "tank_owned_count": 14,
+          "target_id": 647,
+          "timestamp_ms": 1785762295720
+        },
+        {
+          "action": "feral_continue_remote_healer_trash_cluster_handoff",
+          "engaged_count": 18,
+          "healer_targeting_guids": [
+            641,
+            644,
+            646,
+            647
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1054,
+          "tank_owned_count": 14,
+          "target_id": 647,
+          "timestamp_ms": 1785762295977
+        },
+        {
+          "action": "move_to_trash_density",
+          "engaged_count": 18,
+          "healer_targeting_guids": [
+            641,
+            644,
+            646,
+            647
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1055,
+          "tank_owned_count": 14,
+          "target_id": 647,
+          "timestamp_ms": 1785762296237
+        },
+        {
+          "action": "move_to_trash_density",
+          "engaged_count": 18,
+          "healer_targeting_guids": [
+            641,
+            644,
+            646,
+            647
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1056,
+          "tank_owned_count": 14,
+          "target_id": 647,
+          "timestamp_ms": 1785762296493
+        },
+        {
+          "action": "move_to_trash_density",
+          "engaged_count": 20,
+          "healer_targeting_guids": [
+            641,
+            644,
+            646,
+            647,
+            648,
+            649
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1057,
+          "tank_owned_count": 14,
+          "target_id": 647,
+          "timestamp_ms": 1785762296748
+        },
+        {
+          "action": "move_to_trash_density",
+          "engaged_count": 20,
+          "healer_targeting_guids": [
+            641,
+            644,
+            646,
+            647,
+            648,
+            649
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1058,
+          "tank_owned_count": 14,
+          "target_id": 647,
+          "timestamp_ms": 1785762296999
+        },
+        {
+          "action": "move_to_trash_density",
+          "engaged_count": 21,
+          "healer_targeting_guids": [
+            641,
+            642,
+            644,
+            646,
+            647,
+            648,
+            649
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1059,
+          "tank_owned_count": 14,
+          "target_id": 647,
+          "timestamp_ms": 1785762297259
+        },
+        {
+          "action": "move_to_trash_density",
+          "engaged_count": 21,
+          "healer_targeting_guids": [
+            641,
+            642,
+            644,
+            646,
+            647,
+            648,
+            649
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1060,
+          "tank_owned_count": 14,
+          "target_id": 647,
+          "timestamp_ms": 1785762297520
+        },
+        {
+          "action": "move_to_trash_density",
+          "engaged_count": 23,
+          "healer_targeting_guids": [
+            640,
+            641,
+            642,
+            643,
+            644,
+            646,
+            647,
+            648,
+            649
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1061,
+          "tank_owned_count": 14,
+          "target_id": 647,
+          "timestamp_ms": 1785762297776
+        },
+        {
+          "action": "move_to_trash_density",
+          "engaged_count": 24,
+          "healer_targeting_guids": [
+            640,
+            641,
+            642,
+            643,
+            644,
+            645,
+            646,
+            647,
+            648,
+            649
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1062,
+          "tank_owned_count": 14,
+          "target_id": 647,
+          "timestamp_ms": 1785762298036
+        },
+        {
+          "action": "feral_demoralizing_roar_remote_healer_trash_cluster_handoff",
+          "engaged_count": 24,
+          "healer_targeting_guids": [
+            640,
+            641,
+            642,
+            643,
+            644,
+            645,
+            646,
+            647,
+            648,
+            649
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1063,
+          "tank_owned_count": 14,
+          "target_id": 647,
+          "timestamp_ms": 1785762298294
+        },
+        {
+          "action": "feral_continue_remote_healer_trash_cluster_handoff",
+          "engaged_count": 24,
+          "healer_targeting_guids": [
+            640,
+            641,
+            642,
+            643,
+            644,
+            645,
+            646,
+            647,
+            648,
+            649
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1064,
+          "tank_owned_count": 14,
+          "target_id": 649,
+          "timestamp_ms": 1785762298546
+        },
+        {
+          "action": "feral_continue_remote_healer_trash_cluster_handoff",
+          "engaged_count": 24,
+          "healer_targeting_guids": [
+            640,
+            641,
+            642,
+            643,
+            644,
+            645,
+            646,
+            647,
+            648,
+            649
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1065,
+          "tank_owned_count": 14,
+          "target_id": 649,
+          "timestamp_ms": 1785762298806
+        },
+        {
+          "action": "feral_continue_remote_healer_trash_cluster_handoff",
+          "engaged_count": 24,
+          "healer_targeting_guids": [
+            640,
+            642,
+            643,
+            645,
+            646,
+            648,
+            649
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1066,
+          "tank_owned_count": 17,
+          "target_id": 649,
+          "timestamp_ms": 1785762299068
+        },
+        {
+          "action": "feral_continue_remote_healer_trash_cluster_handoff",
+          "engaged_count": 24,
+          "healer_targeting_guids": [
+            640,
+            642,
+            643,
+            645,
+            646,
+            648,
+            649
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1067,
+          "tank_owned_count": 17,
+          "target_id": 649,
+          "timestamp_ms": 1785762299330
+        },
+        {
+          "action": "feral_continue_remote_healer_trash_cluster_handoff",
+          "engaged_count": 24,
+          "healer_targeting_guids": [
+            640,
+            642,
+            643,
+            645,
+            646,
+            648,
+            649
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1068,
+          "tank_owned_count": 17,
+          "target_id": 649,
+          "timestamp_ms": 1785762299584
+        },
+        {
+          "action": "feral_continue_remote_healer_trash_cluster_handoff",
+          "engaged_count": 24,
+          "healer_targeting_guids": [
+            640,
+            642,
+            643,
+            645,
+            646,
+            648,
+            649
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1069,
+          "tank_owned_count": 17,
+          "target_id": 649,
+          "timestamp_ms": 1785762299835
+        },
+        {
+          "action": "feral_continue_remote_healer_trash_cluster_handoff",
+          "engaged_count": 24,
+          "healer_targeting_guids": [
+            640,
+            642,
+            643,
+            645,
+            646,
+            648,
+            649
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1070,
+          "tank_owned_count": 17,
+          "target_id": 649,
+          "timestamp_ms": 1785762300090
+        },
+        {
+          "action": "feral_continue_remote_healer_trash_cluster_handoff",
+          "engaged_count": 24,
+          "healer_targeting_guids": [
+            640,
+            642,
+            643,
+            645,
+            646,
+            648,
+            649
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1071,
+          "tank_owned_count": 17,
+          "target_id": 649,
+          "timestamp_ms": 1785762300348
+        },
+        {
+          "action": "feral_continue_remote_healer_trash_cluster_handoff",
+          "engaged_count": 24,
+          "healer_targeting_guids": [
+            640,
+            642,
+            643,
+            645,
+            646,
+            648,
+            649
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1072,
+          "tank_owned_count": 17,
+          "target_id": 649,
+          "timestamp_ms": 1785762300598
+        },
+        {
+          "action": "feral_demoralizing_roar_remote_healer_trash_cluster_handoff",
+          "engaged_count": 24,
+          "healer_targeting_guids": [
+            640,
+            642,
+            643,
+            645,
+            646,
+            648,
+            649
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1073,
+          "tank_owned_count": 17,
+          "target_id": 646,
+          "timestamp_ms": 1785762300857
+        },
+        {
+          "action": "feral_continue_remote_healer_trash_cluster_handoff",
+          "engaged_count": 23,
+          "healer_targeting_guids": [
+            640,
+            642,
+            643,
+            645
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1074,
+          "tank_owned_count": 19,
+          "target_id": 640,
+          "timestamp_ms": 1785762301110
+        },
+        {
+          "action": "feral_hold_remote_healer_trash_cluster_for_roar",
+          "engaged_count": 23,
+          "healer_targeting_guids": [
+            640,
+            642,
+            643,
+            645
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1075,
+          "tank_owned_count": 19,
+          "target_id": 640,
+          "timestamp_ms": 1785762301361
+        },
+        {
+          "action": "feral_hold_remote_healer_trash_cluster_for_roar",
+          "engaged_count": 23,
+          "healer_targeting_guids": [
+            640,
+            642,
+            643,
+            645
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1076,
+          "tank_owned_count": 19,
+          "target_id": 640,
+          "timestamp_ms": 1785762301615
+        },
+        {
+          "action": "feral_hold_remote_healer_trash_cluster_for_roar",
+          "engaged_count": 23,
+          "healer_targeting_guids": [
+            640,
+            642,
+            643,
+            645
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1077,
+          "tank_owned_count": 19,
+          "target_id": 640,
+          "timestamp_ms": 1785762301865
+        },
+        {
+          "action": "feral_hold_remote_healer_trash_cluster_for_roar",
+          "engaged_count": 23,
+          "healer_targeting_guids": [
+            640,
+            642,
+            643,
+            645
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1078,
+          "tank_owned_count": 19,
+          "target_id": 640,
+          "timestamp_ms": 1785762302119
+        },
+        {
+          "action": "feral_demoralizing_roar_healer_trash_pickup",
+          "engaged_count": 23,
+          "healer_targeting_guids": [
+            640,
+            642,
+            643,
+            645
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1079,
+          "tank_owned_count": 19,
+          "target_id": 645,
+          "timestamp_ms": 1785762302379
+        },
+        {
+          "action": "feral_move_remote_healer_trash_cluster_pre_roar",
+          "engaged_count": 23,
+          "healer_targeting_guids": [
+            640,
+            642,
+            643,
+            645
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1080,
+          "tank_owned_count": 19,
+          "target_id": 642,
+          "timestamp_ms": 1785762302635
+        },
+        {
+          "action": "feral_continue_remote_healer_trash_cluster_handoff",
+          "engaged_count": 23,
+          "healer_targeting_guids": [
+            640,
+            642,
+            643,
+            645
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1081,
+          "tank_owned_count": 19,
+          "target_id": 640,
+          "timestamp_ms": 1785762302893
+        },
+        {
+          "action": "trash_density_area_threat",
+          "engaged_count": 23,
+          "healer_targeting_guids": [],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1082,
+          "tank_owned_count": 23,
+          "target_id": 625,
+          "timestamp_ms": 1785762303143
+        }
+      ]
+    },
+    {
+      "common_dwell_ms": 5216,
+      "finding": "Strict hazard movement retained authority for more than five seconds. Two legal Swipe submissions did not acquire the remote ten-hostile cluster; Fade became observable only at the end of the interval and Charge followed after the hard dwell gate had already failed.",
+      "hostiles": [
+        660,
+        661,
+        662,
+        663,
+        664,
+        665,
+        666,
+        667,
+        668,
+        669
+      ],
+      "name": "generation_13_hazard_exit_split_wave",
+      "timeline": [
+        {
+          "action": "move_out_of_hazard",
+          "engaged_count": 27,
+          "healer_targeting_guids": [
+            660,
+            661,
+            662,
+            663,
+            664,
+            665,
+            666,
+            667,
+            668,
+            669,
+            670,
+            672,
+            675,
+            678
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1094,
+          "tank_owned_count": 13,
+          "target_id": 673,
+          "timestamp_ms": 1785762308706
+        },
+        {
+          "action": "move_out_of_hazard",
+          "engaged_count": 27,
+          "healer_targeting_guids": [
+            660,
+            661,
+            662,
+            663,
+            664,
+            665,
+            666,
+            667,
+            668,
+            669
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1095,
+          "tank_owned_count": 17,
+          "target_id": 675,
+          "timestamp_ms": 1785762308962
+        },
+        {
+          "action": "move_out_of_hazard",
+          "engaged_count": 27,
+          "healer_targeting_guids": [
+            660,
+            661,
+            662,
+            663,
+            664,
+            665,
+            666,
+            667,
+            668,
+            669
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1096,
+          "tank_owned_count": 17,
+          "target_id": 675,
+          "timestamp_ms": 1785762309223
+        },
+        {
+          "action": "move_out_of_hazard",
+          "engaged_count": 27,
+          "healer_targeting_guids": [
+            660,
+            661,
+            662,
+            663,
+            664,
+            665,
+            666,
+            667,
+            668,
+            669
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1097,
+          "tank_owned_count": 17,
+          "target_id": 675,
+          "timestamp_ms": 1785762309484
+        },
+        {
+          "action": "move_out_of_hazard",
+          "engaged_count": 27,
+          "healer_targeting_guids": [
+            660,
+            661,
+            662,
+            663,
+            664,
+            665,
+            666,
+            667,
+            668,
+            669
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1098,
+          "tank_owned_count": 17,
+          "target_id": 675,
+          "timestamp_ms": 1785762309745
+        },
+        {
+          "action": "move_out_of_hazard",
+          "engaged_count": 27,
+          "healer_targeting_guids": [
+            660,
+            661,
+            662,
+            663,
+            664,
+            665,
+            666,
+            667,
+            668,
+            669
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1099,
+          "tank_owned_count": 17,
+          "target_id": 675,
+          "timestamp_ms": 1785762309997
+        },
+        {
+          "action": "feral_swipe_hazard_secure_threat_margin",
+          "engaged_count": 26,
+          "healer_targeting_guids": [
+            660,
+            661,
+            662,
+            663,
+            664,
+            665,
+            666,
+            667,
+            668,
+            669
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1100,
+          "tank_owned_count": 16,
+          "target_id": 675,
+          "timestamp_ms": 1785762310258
+        },
+        {
+          "action": "move_out_of_hazard",
+          "engaged_count": 26,
+          "healer_targeting_guids": [
+            660,
+            661,
+            662,
+            663,
+            664,
+            665,
+            666,
+            667,
+            668,
+            669
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1101,
+          "tank_owned_count": 16,
+          "target_id": 417,
+          "timestamp_ms": 1785762310514
+        },
+        {
+          "action": "move_out_of_hazard",
+          "engaged_count": 26,
+          "healer_targeting_guids": [
+            660,
+            661,
+            662,
+            663,
+            664,
+            665,
+            666,
+            667,
+            668,
+            669
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1102,
+          "tank_owned_count": 16,
+          "target_id": 417,
+          "timestamp_ms": 1785762310765
+        },
+        {
+          "action": "move_out_of_hazard",
+          "engaged_count": 26,
+          "healer_targeting_guids": [
+            660,
+            661,
+            662,
+            663,
+            664,
+            665,
+            666,
+            667,
+            668,
+            669
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1103,
+          "tank_owned_count": 16,
+          "target_id": 417,
+          "timestamp_ms": 1785762311016
+        },
+        {
+          "action": "move_out_of_hazard",
+          "engaged_count": 26,
+          "healer_targeting_guids": [
+            660,
+            661,
+            662,
+            663,
+            664,
+            665,
+            666,
+            667,
+            668,
+            669
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1104,
+          "tank_owned_count": 16,
+          "target_id": 417,
+          "timestamp_ms": 1785762311268
+        },
+        {
+          "action": "move_out_of_hazard",
+          "engaged_count": 26,
+          "healer_targeting_guids": [
+            660,
+            661,
+            662,
+            663,
+            664,
+            665,
+            666,
+            667,
+            668,
+            669
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1105,
+          "tank_owned_count": 16,
+          "target_id": 417,
+          "timestamp_ms": 1785762311528
+        },
+        {
+          "action": "move_out_of_hazard",
+          "engaged_count": 26,
+          "healer_targeting_guids": [
+            660,
+            661,
+            662,
+            663,
+            664,
+            665,
+            666,
+            667,
+            668,
+            669
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1106,
+          "tank_owned_count": 16,
+          "target_id": 417,
+          "timestamp_ms": 1785762311864
+        },
+        {
+          "action": "move_out_of_hazard",
+          "engaged_count": 26,
+          "healer_targeting_guids": [
+            660,
+            661,
+            662,
+            663,
+            664,
+            665,
+            666,
+            667,
+            668,
+            669
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1107,
+          "tank_owned_count": 16,
+          "target_id": 417,
+          "timestamp_ms": 1785762312121
+        },
+        {
+          "action": "move_out_of_hazard",
+          "engaged_count": 26,
+          "healer_targeting_guids": [
+            660,
+            661,
+            662,
+            663,
+            664,
+            665,
+            666,
+            667,
+            668,
+            669
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1108,
+          "tank_owned_count": 16,
+          "target_id": 417,
+          "timestamp_ms": 1785762312380
+        },
+        {
+          "action": "move_out_of_hazard",
+          "engaged_count": 26,
+          "healer_targeting_guids": [
+            660,
+            661,
+            662,
+            663,
+            664,
+            665,
+            666,
+            667,
+            668,
+            669
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1109,
+          "tank_owned_count": 16,
+          "target_id": 417,
+          "timestamp_ms": 1785762312634
+        },
+        {
+          "action": "move_out_of_hazard",
+          "engaged_count": 26,
+          "healer_targeting_guids": [
+            660,
+            661,
+            662,
+            663,
+            664,
+            665,
+            666,
+            667,
+            668,
+            669
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1110,
+          "tank_owned_count": 16,
+          "target_id": 417,
+          "timestamp_ms": 1785762312884
+        },
+        {
+          "action": "move_out_of_hazard",
+          "engaged_count": 26,
+          "healer_targeting_guids": [
+            660,
+            661,
+            662,
+            663,
+            664,
+            665,
+            666,
+            667,
+            668,
+            669
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1111,
+          "tank_owned_count": 16,
+          "target_id": 417,
+          "timestamp_ms": 1785762313141
+        },
+        {
+          "action": "feral_swipe_hazard_secure_threat_margin",
+          "engaged_count": 26,
+          "healer_targeting_guids": [
+            660,
+            661,
+            662,
+            663,
+            664,
+            665,
+            666,
+            667,
+            668,
+            669
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1112,
+          "tank_owned_count": 16,
+          "target_id": 417,
+          "timestamp_ms": 1785762313403
+        },
+        {
+          "action": "move_out_of_hazard",
+          "engaged_count": 26,
+          "healer_targeting_guids": [
+            660,
+            661,
+            662,
+            663,
+            664,
+            665,
+            666,
+            667,
+            668,
+            669
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1113,
+          "tank_owned_count": 16,
+          "target_id": 417,
+          "timestamp_ms": 1785762313661
+        },
+        {
+          "action": "feral_charge_remote_healer_trash_cluster_handoff",
+          "engaged_count": 26,
+          "healer_targeting_guids": [
+            660,
+            661,
+            662,
+            663,
+            664,
+            665,
+            666,
+            667,
+            668,
+            669
+          ],
+          "result": "ok",
+          "route_generation": 13,
+          "sequence": 1114,
+          "tank_owned_count": 16,
+          "target_id": 663,
+          "timestamp_ms": 1785762313922
+        }
+      ]
+    },
+    {
+      "finding": "A 17-follower no-victim wave assigned the healer while the Feral was already on a stable approach. Exact-healer movement, a partial local Roar, remote-cluster handoff, and a second partial Roar consumed 3.3 seconds before most ownership transferred and 4.6 seconds before the final two identities cleared.",
+      "hostiles": [
+        713,
+        714,
+        715,
+        716,
+        717,
+        720,
+        721,
+        722,
+        723,
+        725,
+        726,
+        727,
+        728,
+        729
+      ],
+      "maximum_dwell_ms": 4623,
+      "name": "generation_14_azil_split_swarm",
+      "timeline": [
+        {
+          "action": "feral_move_to_healer_for_split_swarm_pickup",
+          "engaged_count": 18,
+          "healer_targeting_guids": [
+            712,
+            713,
+            714,
+            715,
+            716,
+            717,
+            718,
+            719,
+            720,
+            721,
+            722,
+            723,
+            725,
+            726,
+            727,
+            728,
+            729
+          ],
+          "result": "ok",
+          "route_generation": 14,
+          "sequence": 1343,
+          "tank_owned_count": 1,
+          "target_id": 712,
+          "timestamp_ms": 1785762512662
+        },
+        {
+          "action": "feral_move_to_healer_for_split_swarm_pickup",
+          "engaged_count": 18,
+          "healer_targeting_guids": [
+            712,
+            713,
+            714,
+            715,
+            716,
+            717,
+            718,
+            719,
+            720,
+            721,
+            722,
+            723,
+            725,
+            726,
+            727,
+            728,
+            729
+          ],
+          "result": "ok",
+          "route_generation": 14,
+          "sequence": 1344,
+          "tank_owned_count": 1,
+          "target_id": 712,
+          "timestamp_ms": 1785762512912
+        },
+        {
+          "action": "feral_move_to_healer_for_split_swarm_pickup",
+          "engaged_count": 18,
+          "healer_targeting_guids": [
+            712,
+            713,
+            714,
+            715,
+            716,
+            717,
+            718,
+            719,
+            720,
+            721,
+            722,
+            723,
+            725,
+            726,
+            727,
+            728,
+            729
+          ],
+          "result": "ok",
+          "route_generation": 14,
+          "sequence": 1345,
+          "tank_owned_count": 1,
+          "target_id": 712,
+          "timestamp_ms": 1785762513175
+        },
+        {
+          "action": "feral_move_to_healer_for_split_swarm_pickup",
+          "engaged_count": 18,
+          "healer_targeting_guids": [
+            712,
+            713,
+            714,
+            715,
+            716,
+            717,
+            718,
+            719,
+            720,
+            721,
+            722,
+            723,
+            725,
+            726,
+            727,
+            728,
+            729
+          ],
+          "result": "ok",
+          "route_generation": 14,
+          "sequence": 1346,
+          "tank_owned_count": 1,
+          "target_id": 712,
+          "timestamp_ms": 1785762513434
+        },
+        {
+          "action": "feral_move_to_healer_for_split_swarm_pickup",
+          "engaged_count": 18,
+          "healer_targeting_guids": [
+            712,
+            713,
+            714,
+            715,
+            716,
+            717,
+            718,
+            719,
+            720,
+            721,
+            722,
+            723,
+            725,
+            726,
+            727,
+            728,
+            729
+          ],
+          "result": "ok",
+          "route_generation": 14,
+          "sequence": 1347,
+          "tank_owned_count": 1,
+          "target_id": 712,
+          "timestamp_ms": 1785762513691
+        },
+        {
+          "action": "feral_move_to_healer_for_split_swarm_pickup",
+          "engaged_count": 18,
+          "healer_targeting_guids": [
+            712,
+            713,
+            714,
+            715,
+            716,
+            717,
+            718,
+            719,
+            720,
+            721,
+            722,
+            723,
+            725,
+            726,
+            727,
+            728,
+            729
+          ],
+          "result": "ok",
+          "route_generation": 14,
+          "sequence": 1348,
+          "tank_owned_count": 1,
+          "target_id": 712,
+          "timestamp_ms": 1785762513946
+        },
+        {
+          "action": "feral_demoralizing_roar_split_swarm_handoff",
+          "engaged_count": 18,
+          "healer_targeting_guids": [
+            712,
+            713,
+            714,
+            715,
+            716,
+            717,
+            718,
+            719,
+            720,
+            721,
+            722,
+            723,
+            725,
+            726,
+            727,
+            728,
+            729
+          ],
+          "result": "ok",
+          "route_generation": 14,
+          "sequence": 1349,
+          "tank_owned_count": 1,
+          "target_id": 712,
+          "timestamp_ms": 1785762514205
+        },
+        {
+          "action": "feral_continue_remote_cluster_swarm_handoff",
+          "engaged_count": 19,
+          "healer_targeting_guids": [
+            713,
+            714,
+            715,
+            716,
+            717,
+            720,
+            721,
+            722,
+            723,
+            725,
+            726,
+            727,
+            728,
+            729,
+            730
+          ],
+          "result": "ok",
+          "route_generation": 14,
+          "sequence": 1350,
+          "tank_owned_count": 4,
+          "target_id": 722,
+          "timestamp_ms": 1785762514462
+        },
+        {
+          "action": "feral_continue_remote_cluster_swarm_handoff",
+          "engaged_count": 20,
+          "healer_targeting_guids": [
+            713,
+            714,
+            715,
+            716,
+            717,
+            720,
+            721,
+            722,
+            723,
+            724,
+            725,
+            726,
+            727,
+            728,
+            729,
+            730
+          ],
+          "result": "ok",
+          "route_generation": 14,
+          "sequence": 1351,
+          "tank_owned_count": 4,
+          "target_id": 722,
+          "timestamp_ms": 1785762514723
+        },
+        {
+          "action": "feral_continue_remote_cluster_swarm_handoff",
+          "engaged_count": 20,
+          "healer_targeting_guids": [
+            713,
+            714,
+            715,
+            716,
+            717,
+            720,
+            721,
+            722,
+            723,
+            724,
+            725,
+            726,
+            727,
+            728,
+            729,
+            730
+          ],
+          "result": "ok",
+          "route_generation": 14,
+          "sequence": 1352,
+          "tank_owned_count": 4,
+          "target_id": 722,
+          "timestamp_ms": 1785762514978
+        },
+        {
+          "action": "feral_continue_remote_cluster_swarm_handoff",
+          "engaged_count": 20,
+          "healer_targeting_guids": [
+            713,
+            714,
+            715,
+            716,
+            717,
+            720,
+            721,
+            722,
+            723,
+            724,
+            725,
+            726,
+            727,
+            728,
+            729,
+            730
+          ],
+          "result": "ok",
+          "route_generation": 14,
+          "sequence": 1353,
+          "tank_owned_count": 4,
+          "target_id": 722,
+          "timestamp_ms": 1785762515230
+        },
+        {
+          "action": "feral_continue_remote_cluster_swarm_handoff",
+          "engaged_count": 20,
+          "healer_targeting_guids": [
+            713,
+            714,
+            715,
+            716,
+            717,
+            720,
+            721,
+            722,
+            723,
+            724,
+            725,
+            726,
+            727,
+            728,
+            729,
+            730
+          ],
+          "result": "ok",
+          "route_generation": 14,
+          "sequence": 1354,
+          "tank_owned_count": 4,
+          "target_id": 728,
+          "timestamp_ms": 1785762515485
+        },
+        {
+          "action": "feral_continue_remote_cluster_swarm_handoff",
+          "engaged_count": 20,
+          "healer_targeting_guids": [
+            713,
+            714,
+            715,
+            716,
+            717,
+            720,
+            721,
+            722,
+            723,
+            724,
+            725,
+            726,
+            727,
+            728,
+            729,
+            730
+          ],
+          "result": "ok",
+          "route_generation": 14,
+          "sequence": 1355,
+          "tank_owned_count": 4,
+          "target_id": 728,
+          "timestamp_ms": 1785762515747
+        },
+        {
+          "action": "feral_demoralizing_roar_split_swarm_handoff",
+          "engaged_count": 20,
+          "healer_targeting_guids": [
+            713,
+            714,
+            715,
+            716,
+            717,
+            720,
+            721,
+            722,
+            723,
+            724,
+            725,
+            726,
+            727,
+            728,
+            729,
+            730
+          ],
+          "result": "ok",
+          "route_generation": 14,
+          "sequence": 1356,
+          "tank_owned_count": 4,
+          "target_id": 728,
+          "timestamp_ms": 1785762515999
+        },
+        {
+          "action": "feral_hold_healer_swarm_handoff_for_roar",
+          "engaged_count": 20,
+          "healer_targeting_guids": [
+            713,
+            714,
+            715,
+            716,
+            717,
+            720,
+            721,
+            722,
+            723,
+            724,
+            725,
+            726,
+            727,
+            728,
+            729,
+            730
+          ],
+          "result": "ok",
+          "route_generation": 14,
+          "sequence": 1357,
+          "tank_owned_count": 4,
+          "target_id": 728,
+          "timestamp_ms": 1785762516256
+        },
+        {
+          "action": "feral_hold_healer_swarm_handoff_for_roar",
+          "engaged_count": 20,
+          "healer_targeting_guids": [
+            725,
+            729
+          ],
+          "result": "ok",
+          "route_generation": 14,
+          "sequence": 1358,
+          "tank_owned_count": 18,
+          "target_id": 729,
+          "timestamp_ms": 1785762516513
+        },
+        {
+          "action": "feral_hold_healer_swarm_handoff_for_roar",
+          "engaged_count": 20,
+          "healer_targeting_guids": [
+            725,
+            729
+          ],
+          "result": "ok",
+          "route_generation": 14,
+          "sequence": 1359,
+          "tank_owned_count": 18,
+          "target_id": 729,
+          "timestamp_ms": 1785762516764
+        },
+        {
+          "action": "feral_hold_healer_swarm_handoff_for_roar",
+          "engaged_count": 20,
+          "healer_targeting_guids": [
+            725,
+            729
+          ],
+          "result": "ok",
+          "route_generation": 14,
+          "sequence": 1360,
+          "tank_owned_count": 18,
+          "target_id": 729,
+          "timestamp_ms": 1785762517025
+        },
+        {
+          "action": "feral_hold_healer_swarm_handoff_for_roar",
+          "engaged_count": 20,
+          "healer_targeting_guids": [
+            725,
+            729
+          ],
+          "result": "ok",
+          "route_generation": 14,
+          "sequence": 1361,
+          "tank_owned_count": 18,
+          "target_id": 729,
+          "timestamp_ms": 1785762517285
+        },
+        {
+          "action": "move_to_boss_add",
+          "engaged_count": 13,
+          "healer_targeting_guids": [],
+          "result": "ok",
+          "route_generation": 14,
+          "sequence": 1362,
+          "tank_owned_count": 13,
+          "target_id": 720,
+          "timestamp_ms": 1785762517540
+        }
+      ]
+    }
+  ],
+  "comparison": {
+    "finding": "The common Feral 250 ms decision cap was active, but did not convert the newly realized split waves into threat recovery. The regression is behavioral travel/action starvation, not a remaining one-second observation gap.",
+    "rerun134": {
+      "healer_exposure_fraction": "58/1958",
+      "healer_exposure_rate": 0.0296220633299285,
+      "max_healer_dwell_ms": 4803,
+      "over_limit_episode_count": 12,
+      "tank_retention_fraction": "1788/1958",
+      "tank_retention_rate": 0.9131767109295199
+    },
+    "rerun136": {
+      "healer_exposure_fraction": "228/1832",
+      "healer_exposure_rate": 0.12445414847161572,
+      "max_healer_dwell_ms": 5634,
+      "over_limit_episode_count": 34,
+      "tank_retention_fraction": "1578/1832",
+      "tank_retention_rate": 0.861353711790393
+    }
+  },
+  "diagnosis_sha256": "4ac637549e84d1debfa355a3a437b420eabda90f9e1942bb2687d79220085ca2",
+  "evidence_limitations": [
+    "Trace destination fields describe route context and do not expose every ActivePath endpoint or exact path length, so the diagnosis does not claim a specific geometric shortening.",
+    "Serialized combat_attempt can describe the prior attempted action and is not used to infer failure of the current labeled action.",
+    "The evidence proves movement-dominated starvation but cannot guarantee one speed-buff submission will pass every future realization; the next immutable canary remains authoritative.",
+    "The timer-only guard is retained because it demonstrably closes the rerun134 one-second observation gap; rerun136 rejects only sufficiency, not its bounded scope."
+  ],
+  "hash_scope": "canonical_json_without_diagnosis_sha256",
+  "hypotheses": [
+    {
+      "evidence": "All representative failing sequences show approximately 250 ms Feral decisions.",
+      "name": "common_250_ms_guard_did_not_execute",
+      "outcome": "rejected"
+    },
+    {
+      "evidence": "Rerun136 produced 228/1832 exposure and 34 long episodes despite the guard. The selected branches repeatedly had no immediate legal remote threat action while accepted movement was still in flight.",
+      "name": "common_250_ms_guard_is_sufficient",
+      "outcome": "rejected_primary"
+    },
+    {
+      "evidence": "The ordinary and Azil handoff traces retained stable target identities across repeated continuation actions; source continuation guards preserve already accepted endpoints.",
+      "name": "common_guard_caused_path_reset_or_target_churn",
+      "outcome": "rejected"
+    },
+    {
+      "evidence": "Canonical (bot_guid, sequence) deduplication and unchanged 3000 ms grace independently reproduced 1578/1832 retention, 228/1832 exposure, and 5634 ms maximum dwell.",
+      "name": "audit_scope_or_denominator_error",
+      "outcome": "rejected"
+    },
+    {
+      "evidence": "Current PID/epoch/session identity, exact party, all 14 terminals, four real boss deaths, all non-Feral gates, cleanup, receipt, and remote DVC state independently matched.",
+      "name": "route_identity_publication_cleanup_or_other_role_failure",
+      "outcome": "rejected"
+    },
+    {
+      "evidence": "Every representative long wave consists mainly of accepted movement/continuation/hold decisions at 250 ms cadence; legal local threat actions recover only reached clusters, while remote identities remain on the healer.",
+      "name": "movement_duration_is_the_shared_starvation_surface",
+      "outcome": "supported_primary"
+    },
+    {
+      "evidence": "Feral tank provisioning references Stampeding Roar and the runtime can fail closed through HasSpell/TryCastFriendlySpell. Casting it only while an already accepted path remains active changes neither destination nor hazard geometry and directly targets the measured travel-dominated interval.",
+      "name": "native_movement_acceleration_can_reduce_starvation_without_weakening_authority",
+      "outcome": "supported_for_minimal_correction"
+    }
+  ],
+  "independent_node_reconstruction": {
+    "by_route_generation": {
+      "1": {
+        "eligible": 204,
+        "healer": 0,
+        "tank": 203,
+        "ticks": 67
+      },
+      "10": {
+        "eligible": 72,
+        "healer": 0,
+        "tank": 69,
+        "ticks": 29
+      },
+      "11": {
+        "eligible": 17,
+        "healer": 0,
+        "tank": 17,
+        "ticks": 17
+      },
+      "13": {
+        "eligible": 972,
+        "healer": 152,
+        "tank": 816,
+        "ticks": 77
+      },
+      "14": {
+        "eligible": 336,
+        "healer": 76,
+        "tank": 250,
+        "ticks": 55
+      },
+      "2": {
+        "eligible": 12,
+        "healer": 0,
+        "tank": 12,
+        "ticks": 12
+      },
+      "3": {
+        "eligible": 166,
+        "healer": 0,
+        "tank": 163,
+        "ticks": 65
+      },
+      "4": {
+        "eligible": 33,
+        "healer": 0,
+        "tank": 28,
+        "ticks": 33
+      },
+      "7": {
+        "eligible": 5,
+        "healer": 0,
+        "tank": 5,
+        "ticks": 4
+      },
+      "8": {
+        "eligible": 7,
+        "healer": 0,
+        "tank": 7,
+        "ticks": 4
+      },
+      "9": {
+        "eligible": 8,
+        "healer": 0,
+        "tank": 8,
+        "ticks": 8
+      }
+    },
+    "finding": "All healer-targeting eligible contributions and all 34 strict dwell violations were isolated to route generations 13 and 14."
+  },
+  "long_healer_target_episodes": [
+    {
+      "dwell_ms": 3339,
+      "end_reason": "left_healer_set",
+      "guid": 641,
+      "last_ms": 1785762298806,
+      "start_ms": 1785762295467
+    },
+    {
+      "dwell_ms": 3339,
+      "end_reason": "left_healer_set",
+      "guid": 644,
+      "last_ms": 1785762298806,
+      "start_ms": 1785762295467
+    },
+    {
+      "dwell_ms": 3339,
+      "end_reason": "left_healer_set",
+      "guid": 647,
+      "last_ms": 1785762298806,
+      "start_ms": 1785762295467
+    },
+    {
+      "dwell_ms": 5137,
+      "end_reason": "left_healer_set",
+      "guid": 646,
+      "last_ms": 1785762300857,
+      "start_ms": 1785762295720
+    },
+    {
+      "dwell_ms": 4109,
+      "end_reason": "left_healer_set",
+      "guid": 648,
+      "last_ms": 1785762300857,
+      "start_ms": 1785762296748
+    },
+    {
+      "dwell_ms": 4109,
+      "end_reason": "left_healer_set",
+      "guid": 649,
+      "last_ms": 1785762300857,
+      "start_ms": 1785762296748
+    },
+    {
+      "dwell_ms": 5634,
+      "end_reason": "left_healer_set",
+      "guid": 642,
+      "last_ms": 1785762302893,
+      "start_ms": 1785762297259
+    },
+    {
+      "dwell_ms": 5117,
+      "end_reason": "left_healer_set",
+      "guid": 640,
+      "last_ms": 1785762302893,
+      "start_ms": 1785762297776
+    },
+    {
+      "dwell_ms": 5117,
+      "end_reason": "left_healer_set",
+      "guid": 643,
+      "last_ms": 1785762302893,
+      "start_ms": 1785762297776
+    },
+    {
+      "dwell_ms": 4857,
+      "end_reason": "left_healer_set",
+      "guid": 645,
+      "last_ms": 1785762302893,
+      "start_ms": 1785762298036
+    },
+    {
+      "dwell_ms": 5216,
+      "end_reason": "left_healer_set",
+      "guid": 660,
+      "last_ms": 1785762313922,
+      "start_ms": 1785762308706
+    },
+    {
+      "dwell_ms": 5216,
+      "end_reason": "left_healer_set",
+      "guid": 661,
+      "last_ms": 1785762313922,
+      "start_ms": 1785762308706
+    },
+    {
+      "dwell_ms": 5216,
+      "end_reason": "left_healer_set",
+      "guid": 662,
+      "last_ms": 1785762313922,
+      "start_ms": 1785762308706
+    },
+    {
+      "dwell_ms": 5216,
+      "end_reason": "left_healer_set",
+      "guid": 663,
+      "last_ms": 1785762313922,
+      "start_ms": 1785762308706
+    },
+    {
+      "dwell_ms": 5216,
+      "end_reason": "left_healer_set",
+      "guid": 664,
+      "last_ms": 1785762313922,
+      "start_ms": 1785762308706
+    },
+    {
+      "dwell_ms": 5216,
+      "end_reason": "left_healer_set",
+      "guid": 665,
+      "last_ms": 1785762313922,
+      "start_ms": 1785762308706
+    },
+    {
+      "dwell_ms": 5216,
+      "end_reason": "left_healer_set",
+      "guid": 666,
+      "last_ms": 1785762313922,
+      "start_ms": 1785762308706
+    },
+    {
+      "dwell_ms": 5216,
+      "end_reason": "left_healer_set",
+      "guid": 667,
+      "last_ms": 1785762313922,
+      "start_ms": 1785762308706
+    },
+    {
+      "dwell_ms": 5216,
+      "end_reason": "left_healer_set",
+      "guid": 668,
+      "last_ms": 1785762313922,
+      "start_ms": 1785762308706
+    },
+    {
+      "dwell_ms": 5216,
+      "end_reason": "left_healer_set",
+      "guid": 669,
+      "last_ms": 1785762313922,
+      "start_ms": 1785762308706
+    },
+    {
+      "dwell_ms": 3594,
+      "end_reason": "left_healer_set",
+      "guid": 713,
+      "last_ms": 1785762516256,
+      "start_ms": 1785762512662
+    },
+    {
+      "dwell_ms": 3594,
+      "end_reason": "left_healer_set",
+      "guid": 714,
+      "last_ms": 1785762516256,
+      "start_ms": 1785762512662
+    },
+    {
+      "dwell_ms": 3594,
+      "end_reason": "left_healer_set",
+      "guid": 715,
+      "last_ms": 1785762516256,
+      "start_ms": 1785762512662
+    },
+    {
+      "dwell_ms": 3594,
+      "end_reason": "left_healer_set",
+      "guid": 716,
+      "last_ms": 1785762516256,
+      "start_ms": 1785762512662
+    },
+    {
+      "dwell_ms": 3594,
+      "end_reason": "left_healer_set",
+      "guid": 717,
+      "last_ms": 1785762516256,
+      "start_ms": 1785762512662
+    },
+    {
+      "dwell_ms": 3594,
+      "end_reason": "left_healer_set",
+      "guid": 720,
+      "last_ms": 1785762516256,
+      "start_ms": 1785762512662
+    },
+    {
+      "dwell_ms": 3594,
+      "end_reason": "left_healer_set",
+      "guid": 721,
+      "last_ms": 1785762516256,
+      "start_ms": 1785762512662
+    },
+    {
+      "dwell_ms": 3594,
+      "end_reason": "left_healer_set",
+      "guid": 722,
+      "last_ms": 1785762516256,
+      "start_ms": 1785762512662
+    },
+    {
+      "dwell_ms": 3594,
+      "end_reason": "left_healer_set",
+      "guid": 723,
+      "last_ms": 1785762516256,
+      "start_ms": 1785762512662
+    },
+    {
+      "dwell_ms": 4623,
+      "end_reason": "left_healer_set",
+      "guid": 725,
+      "last_ms": 1785762517285,
+      "start_ms": 1785762512662
+    },
+    {
+      "dwell_ms": 3594,
+      "end_reason": "left_healer_set",
+      "guid": 726,
+      "last_ms": 1785762516256,
+      "start_ms": 1785762512662
+    },
+    {
+      "dwell_ms": 3594,
+      "end_reason": "left_healer_set",
+      "guid": 727,
+      "last_ms": 1785762516256,
+      "start_ms": 1785762512662
+    },
+    {
+      "dwell_ms": 3594,
+      "end_reason": "left_healer_set",
+      "guid": 728,
+      "last_ms": 1785762516256,
+      "start_ms": 1785762512662
+    },
+    {
+      "dwell_ms": 4623,
+      "end_reason": "left_healer_set",
+      "guid": 729,
+      "last_ms": 1785762517285,
+      "start_ms": 1785762512662
+    }
+  ],
+  "observed_role_metrics": {
+    "active_action_coverage_rate": 1.0,
+    "eligible_hostile_sample_denominator": 1832,
+    "exact_healer_exposure_fraction": "228/1832",
+    "exact_tank_retention_fraction": "1578/1832",
+    "feral_action_attempts": 310,
+    "feral_cast_failure_rate": 0.0,
+    "feral_deaths": 0,
+    "healer_target_episode_count": 85,
+    "healer_target_exposure_rate": 0.12445414847161572,
+    "healer_targeting_eligible_sample_numerator": 228,
+    "long_healer_target_episode_count": 34,
+    "max_healer_target_dwell_ms": 5634,
+    "mechanics": {
+      "hazard_exit_actions": 164,
+      "hazard_exit_failures": 0,
+      "misdirection_aoe_attempts": 41,
+      "misdirection_aoe_successes": 32,
+      "misdirection_aoe_wrong_successes": 0,
+      "misdirection_single_attempts": 28,
+      "misdirection_single_successes": 23
+    },
+    "other_role_and_capability_gates_passed": true,
+    "required_healer_exposure_ceiling": 0.01,
+    "required_max_healer_dwell_ms": 3000,
+    "required_tank_retention_floor": 0.9,
+    "role_failure_labels": [
+      "Feraltank:tank_threat_retention",
+      "Feraltank:healer_target_exposure",
+      "Feraltank:healer_target_dwell"
+    ],
+    "successful_submission_rate": 1.0,
+    "tank_all_hostile_retention_rate": 0.861353711790393,
+    "tank_owned_eligible_sample_numerator": 1578,
+    "tank_threat_aura_uptime_rate": 1.0,
+    "threat_acquisition_grace_ms": 3000
+  },
+  "schema": "all_spec_phase9_rerun136_diagnosis_v1",
+  "smallest_safe_correction": {
+    "change": "After the existing identity-scoped healer-exposure scan caps DecisionTimer, conditionally submit native Bear-form Stampeding Roar (77761) on self. Record and return only on a successful cast. Do not create, replace, clear, or retarget the existing path; unavailable or illegal casts fall through to unchanged hazard, handoff, density, and route logic.",
+    "does_not_change": [
+      "route or terminal semantics",
+      "hazard geometry or safe-point selection",
+      "movement destination or path ownership",
+      "victim assignment",
+      "threat values or multipliers",
+      "spell cooldowns or legality",
+      "acceptance thresholds or audit scope",
+      "handoff durations or cluster selection",
+      "teacher or forced completion",
+      "non-Feral profiles",
+      "Feral decisions without current same-party healer exposure",
+      "Feral decisions without an already accepted active path"
+    ],
+    "files": [
+      "src/server/game/Bots/BotWorldPopulationMgr.cpp"
+    ],
+    "scope": "Strict validation-route feral_druid_tank decisions with at least one exact live hostile currently targeting a same-party healer, while ActivePathValid and IsMoving already prove another branch owns an accepted path."
+  },
+  "source_attempt": {
+    "attempt_id": "phase9_serial_02_stonecore_phase9_006_6893daf98698",
+    "batch_id": "phase9-serial-canary-rerun136-2",
+    "batch_identity_sha256": "04bfa0bad460c7ba97249fda0d00b01ac122fc4b89573f5cce7cd5c61b709072",
+    "binary_sha256": "d7d2496b955b9c807625b3161e59d2e2a48a7e072dab1c9fb24dd2dce1a4e5ad",
+    "composition_id": "stonecore_phase9_006_6893daf98698",
+    "evidence_identity_manifest_sha256": "2bd98808f019c1fc1c66a714084301b97c65c8bcd2ac28f2a86c85da3c1fc756",
+    "max_active_cohorts": 1,
+    "party": [
+      "feral_druid_tank",
+      "discipline_priest",
+      "fury_warrior",
+      "marksmanship_hunter",
+      "retribution_paladin"
+    ],
+    "party_sha256": "524b94c794897f5111bdae0a5e45ba31a31ebb8596d811a3dd8c1caff95bd16a",
+    "profile_content_hash": "35a587f05d8781d72c62576a6f35392a69e01d5978429f65429ad5b9ed096a22",
+    "profile_generation": 1,
+    "run_plan_sha256": "2dae8572234419d9cdda9aa792d27bfa3bb5a1f2337e7b5d1241646fee6822b5",
+    "server_epoch": 7555903717840343,
+    "server_process_id": 1867822,
+    "session_fingerprint": "9b9c3aaa4cd1fdec826fe98df456a480e7b2f0bf93ae3626c283de52a8b3ecfd"
+  }
+}

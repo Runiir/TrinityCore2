@@ -323,11 +323,17 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
         return BotActionResult::Throttled;
 
     SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(action.SpellId);
-    if (spellInfo && spellInfo->CalcCastTime(bot->getLevel()) > 0)
+    if (spellInfo && spellInfo->CalcCastTime(bot->getLevel()) > 0
+        && (bot->isMoving() || bot->HasUnitState(UNIT_STATE_MOVING)))
     {
+        // Rerun138 proved that stopping and submitting a cast-time offensive
+        // spell in the same decision can still be rejected as moving. Yield
+        // this tick after stopping so the next profile decision submits only
+        // after the movement state has settled.
         bot->StopMoving();
         bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
         bot->GetMotionMaster()->MoveIdle();
+        return BotActionResult::Casting;
     }
 
     // The client normally has an enemy selected when Shadowfiend is summoned.
@@ -717,6 +723,13 @@ BotActionResult BotActionExecutor::CheckHostileSpell(Player* owner, Player* bot,
         return BotActionResult::NoLineOfSight;
     if (!bot->IsWithinDistInMap(target, std::max(5.0f, spellInfo->GetMaxRange(false))))
         return BotActionResult::OutOfRange;
+    // Rerun157 captured eight spell_cast_result_150 submissions when scripted
+    // control landed between profile resolution and CastSpell. Repeat the
+    // resolver's native controlled-state preflight at the executor boundary;
+    // this is a scheduling wait, so use the existing throttled result rather
+    // than recording a rejected cast.
+    if (bot->HasUnitState(UNIT_STATE_CONTROLLED))
+        return BotActionResult::Throttled;
     if (bot->HasUnitState(UNIT_STATE_CASTING))
         return BotActionResult::Casting;
     if (bot->GetSpellHistory()->HasGlobalCooldown(spellInfo))
