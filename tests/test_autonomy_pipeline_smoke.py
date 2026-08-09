@@ -3316,6 +3316,44 @@ def test_rerun173_protection_healer_decay_and_hazard_pickup_use_native_responses
     )
 
 
+def test_rerun174_large_passive_swarm_stages_party_before_native_activation():
+    manager = read(BOT_MGR)
+    route = function_body(
+        manager,
+        "bool BotWorldPopulationMgr::TryValidationRouteObjective",
+    )
+    marker = route.index(
+        "Rerun174 reached this passive 60-follower wave"
+    )
+    branch = route[marker - 800 : marker + 11000]
+
+    assert "engagedAddCount == 0 && addCount >= 24" in branch
+    assert_ordered(
+        branch,
+        "!IsValidationCohortMemberInOriginalInstance",
+        "++largePassiveSwarmLoadedParticipants",
+        "member->GetExactDist2d(densityTank) <= 18.0f",
+    )
+    assert "member->GetExactDist2d(densityTank) <= 18.0f" in branch
+    assert "largePassiveSwarmStagedParticipants" in branch
+    assert "Cohort().Config.TargetPopulation" in branch
+    assert 'role != "tank"' in branch
+    assert '"stage_for_large_passive_swarm_activation"' in branch
+    assert '"hold_for_large_passive_swarm_activation"' in branch
+    assert '"hold_large_passive_swarm_for_party_staging"' in branch
+    assert "state.DecisionTimer, 250" in branch
+    assert_ordered(
+        branch,
+        "bool largePassiveSwarm =",
+        'role != "tank"',
+        '"stage_for_large_passive_swarm_activation"',
+        'role == "tank" && largePassiveSwarm',
+        '"hold_large_passive_swarm_for_party_staging"',
+        'activationAction.DebugName = "activate_passive_swarm"',
+        '"tank_activate_passive_swarm"',
+    )
+
+
 def test_feral_large_tank_owned_trash_wave_prefers_density_before_freshness():
     objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
     selector = objective.split("Rerun142 proved continuous aura-fresh", 1)[1].split(

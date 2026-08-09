@@ -1,0 +1,267 @@
+{
+  "schema": "all_spec_phase9_rerun174_canary2_diagnosis_v1",
+  "diagnosis_sha256": "a0a7cfa21c74a3c1166c8da723125ba7a57bda01e65ec575002d30738faa85b7",
+  "scope": {
+    "attempt": "artifacts/all_spec_program/phase9_serial_canaries_20260809_rerun174/phase9_serial_02_stonecore_phase9_006_6893daf98698",
+    "batch": "artifacts/all_spec_program/phase9_serial_canaries_20260809_rerun174/phase9_serial_02_stonecore_phase9_006_6893daf98698/batch",
+    "diagnose_only_this_immutable_batch": true,
+    "later_rows_started": false
+  },
+  "immutable_publication": {
+    "batch_identity_sha256": "4e8b5926be343af938623309bc075033d144094b67db5db7ffd8966114f503fb",
+    "raw_bundle_sha256": "21015b35ce7f9d78fc4a420aee0d93ad75289f2b3270c871b86ea1974ffe0f77",
+    "compact_bundle_sha256": "b6e69259001d55ed68aced66e4eec7e27d740fa6e46d5874cfd66548fb3fd8a4",
+    "publication_receipt_sha256": "531f450065e0b5cb1f8271767b09c2d82247a5a268c5eb1be85dc5e69cae1cb8",
+    "acceptance_source_report_sha256": "ef81ba6124b22596677835ad3cc74fbdb007221510a075a00087ccb186bae916",
+    "raw_pointer_sha256": "d344de4ae7137d5b302d6e8ebf27726a7dee4add35176f98a9ab744be236db7e",
+    "compact_pointer_sha256": "0ba339033e1d426f3bd6a5908facb6253cc446987a70b017c8ae3ccb6b44a71b",
+    "raw_dvc_object": "c91243ec6296ce188ffcc12bba69bb86.dir",
+    "compact_dvc_object": "e5eba929a9487c4e75298db9110ba6ea.dir",
+    "capture_and_bundle_hashes_recomputed": true,
+    "receipt_hash_recomputed": true,
+    "exact_remote_status": "Cache and remote 'object' are in sync.",
+    "exact_targeted_eviction_complete": true,
+    "broad_dvc_gc_used": false
+  },
+  "frozen_identity": {
+    "identity_manifest_sha256": "c0859f727cdb6dfff7c5711f90561068aaa511671823df387d9abd7dc7dbba13",
+    "run_plan_sha256": "15fdadc97e2dfed83b3c5149565190b9924e98999238ad753551880fd2ff8707",
+    "binary_sha256": "106cd26f8dfccb3f82b20bd3f618a351f0b974bb16abbed774a2952a9bcbac2e",
+    "server_process_id": 1121855,
+    "server_epoch": 6551604298033314,
+    "session_fingerprint": "284e0c1d496e364ed6a4ca29b80bab61403e32d35ebe42bc18ab04b124623318",
+    "profile_generation": 1,
+    "profile_content_hash": "35a587f05d8781d72c62576a6f35392a69e01d5978429f65429ad5b9ed096a22",
+    "max_active_cohorts": 1,
+    "identity_recomputed_and_matched": true,
+    "plan_recomputed_and_matched": true
+  },
+  "exact_party": {
+    "ordered_specs": [
+      "feral_druid_tank",
+      "discipline_priest",
+      "fury_warrior",
+      "marksmanship_hunter",
+      "retribution_paladin"
+    ],
+    "party_sha256": "524b94c794897f5111bdae0a5e45ba31a31ebb8596d811a3dd8c1caff95bd16a",
+    "recomputed_and_matched": true
+  },
+  "independent_strict_verifier": {
+    "underlying_returncode": 0,
+    "timed_out": false,
+    "operator_attempt_count": 1,
+    "serial_index": 2,
+    "global_lifecycle_command_count": 0,
+    "scheduler_events": [
+      "admit:2",
+      "close:2"
+    ],
+    "cleanup": {
+      "active": false,
+      "active_bots": 0,
+      "lease_count": 0,
+      "party_bot_count": 0
+    },
+    "route_terminal_count": 13,
+    "route_terminal_generations": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13
+    ],
+    "authoritative_boss_death_entries": [
+      43438,
+      43214,
+      42188
+    ],
+    "high_priestess_azil_terminal": false,
+    "high_priestess_azil_death": false,
+    "semantic_progress_plateau": true,
+    "teacher_assisted_kills": 0,
+    "forbidden_completion_assistance": [],
+    "strict_gate_passed": false,
+    "failure_labels": [
+      "semantic_progress_plateau",
+      "route_terminal_missing:High Priestess Azil",
+      "boss_death_missing:High Priestess Azil"
+    ]
+  },
+  "independent_role_verifier": {
+    "canonical_audit_passed": true,
+    "eligible_hostile_denominator": 2268,
+    "tank_owned_hostile_numerator": 2260,
+    "healer_targeting_hostile_numerator": 3,
+    "tank_all_hostile_retention_ratio": 0.9964726631393298,
+    "healer_target_exposure_ratio": 0.0013227513227513227,
+    "maximum_healer_target_dwell_ms": 1036,
+    "threat_aura_active_samples": 440,
+    "threat_aura_total_samples": 440,
+    "threat_aura_uptime_ratio": 1.0,
+    "non_healer_active_action_coverage": {
+      "Feraltank": 1.0,
+      "Furywar": 1.0,
+      "Mmhunter": 1.0,
+      "Retpally": 1.0
+    },
+    "cast_failure_rates": {
+      "Discpriest": 0.0,
+      "Feraltank": 0.0,
+      "Furywar": 0.0,
+      "Mmhunter": 0.018518518518518517,
+      "Retpally": 0.0
+    },
+    "healer_successful_heal_cast_rate": 1.0,
+    "missing_required_rotation_groups": [],
+    "threshold_results": {
+      "tank_retention_at_least_0_90": true,
+      "healer_exposure_at_most_0_01": true,
+      "healer_dwell_at_most_3000_ms": true,
+      "threat_aura_uptime_at_least_0_99": true,
+      "non_healer_active_action_coverage_at_least_0_70": true,
+      "cast_failure_rate_at_most_0_05": true,
+      "healer_heal_cast_success_at_least_0_95": true,
+      "rotation_groups_present": true
+    }
+  },
+  "action_reconstruction": {
+    "feral_native_spell_attempts": {
+      "Growl_6795": 9,
+      "Swipe_779": 44,
+      "Thrash_77758": 28,
+      "Mangle_33878": 27,
+      "Lacerate_33745": 15,
+      "Maul_6807": 9,
+      "Feral_Charge_80964": 6,
+      "Berserk_50334": 5,
+      "Bear_Form_5487": 2,
+      "Barkskin_22812": 1
+    },
+    "demoralizing_roar_party_trash_pickups": 1,
+    "swipe_healer_swarm_retention_before_roar": 1,
+    "feral_charge_remote_party_pickups": 2,
+    "feral_growl_single_healer_pickups": 1,
+    "feral_remote_cluster_movement_actions": 8,
+    "hazard_exit_actions": 121,
+    "hazard_exit_failures": 0,
+    "misdirection_aoe_attempts": 23,
+    "misdirection_aoe_successes": 18,
+    "misdirection_aoe_wrong_successes": 0,
+    "misdirection_single_attempts": 30,
+    "misdirection_single_successes": 18,
+    "healer_preposition_for_feral_swarm_pickup": 69,
+    "move_to_boss_add": 278,
+    "hold_tactical_path_rejected": 269,
+    "validation_route_tactical_retreat": 89
+  },
+  "route_and_hostile_chronology": [
+    {
+      "timestamp_ms": 1786266065935,
+      "route_generation": 13,
+      "event": "Feral tank died in the Twilight Flayer segment; survivors retreated to the preceding accepted anchor at 1329.93,985.712,207.713."
+    },
+    {
+      "timestamp_ms": 1786266075936,
+      "route_generation": 13,
+      "event": "The tank resurrected at the shared retreat anchor; generation 13 later completed."
+    },
+    {
+      "timestamp_ms": 1786266143235,
+      "route_generation": 14,
+      "event": "Azil generation began with the party still spatially split by prior recovery movement."
+    },
+    {
+      "timestamp_ms": 1786266180514,
+      "route_generation": 14,
+      "event": "The Feral tank alone reached the passive-follower medoid and submitted the existing native white-swing activation while other roles were still moving to remote adds or rejecting tactical paths."
+    },
+    {
+      "timestamp_ms": 1786266181013,
+      "route_generation": 14,
+      "event": "All 60 hostile follower GUIDs were engaged and initially tank-owned."
+    },
+    {
+      "timestamp_ms": 1786266182568,
+      "route_generation": 14,
+      "event": "A healer threat handoff left 59/60 followers targeting the Discipline Priest; Feral submitted Stampeding Roar positioning and converged for pickup."
+    },
+    {
+      "timestamp_ms": 1786266183347,
+      "route_generation": 14,
+      "event": "Native Growl 6795 landed during the pickup sequence; a second action followed at 1786266183604 while 58 followers still targeted the healer."
+    },
+    {
+      "timestamp_ms": 1786266188027,
+      "route_generation": 14,
+      "event": "After one follower death the tank owned all 59 survivors, proving pickup succeeded rather than decayed."
+    },
+    {
+      "timestamp_ms": 1786266188027,
+      "route_generation": 14,
+      "event": "The tank then emitted 31 secure-area-threat holds while remote or path-rejected damage roles failed to burn the 59-owned wave."
+    },
+    {
+      "timestamp_ms": 1786266196225,
+      "route_generation": 14,
+      "event": "The tank died with 52 followers still alive; the healer owned all 52 after the death, triggering a second partial-wipe retreat."
+    },
+    {
+      "timestamp_ms": 1786266243244,
+      "route_generation": 14,
+      "event": "Tank and healer recovery completed, but the remaining party stayed out of combat in add-target churn and tactical-path rejection; no trace entry ever targeted Azil entry 42333."
+    }
+  ],
+  "causal_classification": {
+    "authoritative_gameplay_failure": true,
+    "infrastructure_abort": false,
+    "role_quality_failure": false,
+    "pickup_loss": false,
+    "later_threat_decay": false,
+    "movement_or_hazard_starvation": false,
+    "misdirection_failure": false,
+    "healer_behavior_primary": false,
+    "audit_attribution_error": false,
+    "rerun170_passive_swarm_side_effect": true,
+    "primary_cause": "The rerun170 passive-swarm activation allowed a very large passive wave to be started by the tank before the post-recovery party was staged to deliver damage. Pickup succeeded, but incoming damage killed the isolated tank before the party could burn the owned swarm; the resulting evade/path-churn state prevented any Azil engagement."
+  },
+  "bounded_correction": {
+    "source": "src/server/game/Bots/BotWorldPopulationMgr.cpp",
+    "behavior": "For an unengaged declared passive wave of at least 24 adds only, living participants converge within 18 yards of the tank and the tank holds at the accepted medoid until all expected participants are staged. The existing native white-swing activation then runs unchanged.",
+    "unchanged_contracts": [
+      "all strict role thresholds",
+      "native spell knowledge, cooldown, GCD, power, range, LOS, target, and threat legality",
+      "small-wave and already-engaged-wave behavior",
+      "hazard movement authority",
+      "boss and route coordinates and terminal semantics",
+      "identity, serial isolation, cleanup, and DVC publication contracts",
+      "forbidden-assistance prohibition"
+    ]
+  },
+  "verification": {
+    "focused_tests": "7 passed, 112 deselected",
+    "git_diff_check": "passed",
+    "worldserver_build": "passed",
+    "corrected_worldserver_binary_sha256": "87072eda6ec1d911fc2ca5a8d117f8fbcc3c82fa841794aa48e59967b9c28d25",
+    "rerun174_worldserver_stopped_before_tracked_edits": true,
+    "rerun174_worldserver_active_state": "inactive",
+    "rerun174_worldserver_sub_state": "dead",
+    "rerun174_worldserver_main_pid": 0
+  },
+  "next_gate": {
+    "attempt": "rerun175",
+    "deterministic_reprovision_all_31_required": true,
+    "fresh_identity_and_eight_row_plan_required": true,
+    "start_at_canary_2_only": true,
+    "canaries_3_through_8_blocked": true,
+    "phases_10_through_12_blocked": true
+  }
+}

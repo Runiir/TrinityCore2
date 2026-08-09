@@ -16703,6 +16703,93 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     pendingSwarmPickupGuid = guid;
                 }
             }
+        // Rerun174 reached this passive 60-follower wave immediately after a
+        // generation-13 tank resurrection. The tank completed its existing
+        // medoid preposition alone while the damage roles still alternated
+        // between remote add paths and tactical-path rejection. Its native
+        // white swing therefore activated all 60 before the party could burn
+        // them: one heal flipped 59 followers, Feral recovered ownership, then
+        // died after 31 secure-threat holds with only one add dead. Stage only
+        // a proven very-large passive wave around the living tank before that
+        // unchanged native activation. Smaller waves and every active-wave,
+        // threat, spell-legality, hazard, and boss rule remain unchanged.
+        bool largePassiveSwarm = pendingSwarmActivation
+            && engagedAddCount == 0 && addCount >= 24
+            && passiveSwarmClusterAnchor && densityTank;
+        bool largePassiveSwarmPartyStaged = !largePassiveSwarm;
+        uint32 largePassiveSwarmLoadedParticipants = 0;
+        uint32 largePassiveSwarmStagedParticipants = 0;
+        if (largePassiveSwarm)
+        {
+            for (WorldBotState const& cohortState : Party().Bots)
+            {
+                Player* member = GetLoadedBot(cohortState);
+                if (!member)
+                    continue;
+                if (!member->IsAlive() || member->GetMap() != bot->GetMap()
+                    || member->GetGroup() != bot->GetGroup()
+                    || !IsValidationCohortMemberInOriginalInstance(
+                        cohortState, member))
+                    continue;
+                ++largePassiveSwarmLoadedParticipants;
+                if (member->GetExactDist2d(densityTank) <= 18.0f)
+                    ++largePassiveSwarmStagedParticipants;
+            }
+            largePassiveSwarmPartyStaged =
+                largePassiveSwarmLoadedParticipants > 0
+                && largePassiveSwarmStagedParticipants
+                    == largePassiveSwarmLoadedParticipants
+                && (!Cohort().Config.TargetPopulation
+                    || largePassiveSwarmLoadedParticipants
+                        >= Cohort().Config.TargetPopulation);
+        }
+        if (largePassiveSwarm && role != "tank"
+            && !largePassiveSwarmPartyStaged)
+        {
+            bool alreadyStaged = bot->IsAlive()
+                && bot->GetExactDist2d(densityTank) <= 18.0f;
+            bool moved = false;
+            if (!alreadyStaged && !bot->HasUnitState(UNIT_STATE_CASTING)
+                && !bot->IsFalling())
+            {
+                bool meleeProfile = profile.MovementDirective == "melee"
+                    || (profile.MaxRange > 0.0f && profile.MaxRange <= 5.0f);
+                float stagingRadius = role == "healer"
+                    ? 4.0f : (meleeProfile ? 6.0f : 12.0f);
+                float stagingOffset =
+                    (bot->GetGUID().GetCounter() % 5) * 0.30f;
+                Position staging = densityTank->GetFirstCollisionPosition(
+                    stagingRadius,
+                    passiveSwarmClusterAnchor->GetAngle(densityTank)
+                        - densityTank->GetOrientation() + stagingOffset);
+                moved = MoveBotToPoint(state, bot,
+                    staging.GetPositionX(), staging.GetPositionY(),
+                    staging.GetPositionZ());
+            }
+            else if (alreadyStaged && bot->isMoving())
+                bot->StopMoving();
+
+            std::string raw = BuildRawJson(
+                bot, passiveSwarmClusterAnchor);
+            std::string semantic = BuildSemanticJson(
+                bot, passiveSwarmClusterAnchor, "dungeon_boss",
+                &power, stage, activity);
+            char const* stagingAction = moved
+                ? "stage_for_large_passive_swarm_activation"
+                : "hold_for_large_passive_swarm_activation";
+            RecordEvent(state, bot, "boss_add_density",
+                passiveSwarmClusterAnchor, stagingAction,
+                raw.c_str(), semantic.c_str(),
+                bot->GetExactDist2d(densityTank),
+                largePassiveSwarmStagedParticipants);
+            state.DecisionTimer = std::min<uint32>(
+                state.DecisionTimer, 250);
+            state.TargetGuid = passiveSwarmClusterAnchor->GetGUID();
+            target = passiveSwarmClusterAnchor;
+            situation = "dungeon_boss";
+            action = stagingAction;
+            return true;
+        }
         if (role == "tank" && pendingSwarmActivation && passiveSwarmClusterAnchor
             && !bot->IsWithinMeleeRange(passiveSwarmClusterAnchor)
             && (bot->GetExactDist2d(passiveSwarmClusterAnchor) > 6.0f
@@ -16736,6 +16823,32 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 return true;
             }
         }
+        if (role == "tank" && largePassiveSwarm
+            && !largePassiveSwarmPartyStaged
+            && bot->IsWithinMeleeRange(passiveSwarmClusterAnchor)
+            && bot->IsWithinLOSInMap(passiveSwarmClusterAnchor))
+        {
+            if (bot->isMoving())
+                bot->StopMoving();
+            std::string raw = BuildRawJson(
+                bot, passiveSwarmClusterAnchor);
+            std::string semantic = BuildSemanticJson(
+                bot, passiveSwarmClusterAnchor, "dungeon_boss",
+                &power, stage, activity);
+            RecordEvent(state, bot, "boss_add_density",
+                passiveSwarmClusterAnchor,
+                "hold_large_passive_swarm_for_party_staging",
+                raw.c_str(), semantic.c_str(),
+                float(largePassiveSwarmStagedParticipants),
+                largePassiveSwarmLoadedParticipants);
+            state.DecisionTimer = std::min<uint32>(
+                state.DecisionTimer, 250);
+            state.TargetGuid = passiveSwarmClusterAnchor->GetGUID();
+            target = passiveSwarmClusterAnchor;
+            situation = "dungeon_boss";
+            action = "hold_large_passive_swarm_for_party_staging";
+            return true;
+        }
         // A fully passive Azil follower set can remain visible after the tank
         // reaches its reserved pickup anchor. Visibility keeps the swarm gate
         // active, but with no engaged follower the tank resource hold and DPS
@@ -16745,6 +16858,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         // unchanged.
         if (role == "tank" && pendingSwarmActivation
             && engagedAddCount == 0 && passiveSwarmClusterAnchor
+            && largePassiveSwarmPartyStaged
             && bot->IsWithinMeleeRange(passiveSwarmClusterAnchor)
             && bot->IsWithinLOSInMap(passiveSwarmClusterAnchor))
         {
