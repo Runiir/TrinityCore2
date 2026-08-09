@@ -3436,6 +3436,45 @@ def test_rerun177_moderate_healer_subwave_ignores_tank_owned_cohort_size():
     )
 
 
+def test_rerun178_tank_proof_drives_remote_passive_swarm_staging():
+    manager = read(BOT_MGR)
+    objective = function_body(
+        manager,
+        "bool BotWorldPopulationMgr::TryValidationRouteObjective",
+    )
+    marker = objective.index(
+        "Rerun178 proved that recomputing the tank-visible staging fact"
+    )
+    shared = objective[marker - 1300 : marker + 10400]
+    pre_anchor = objective[objective.index("bool sharedLargePassiveSwarmStaging =") : marker]
+
+    assert "ValidationRouteLargePassiveSwarmStagingGeneration" in pre_anchor
+    assert "&& !sharedLargePassiveSwarmStaging" in pre_anchor
+    assert_ordered(
+        shared,
+        "bool tankViewProvesLargePassiveSwarm =",
+        "tankVisiblePassiveSwarmEngagedCount == 0",
+        "tankVisiblePassiveSwarmAddCount >= 24",
+        'if (role == "tank" && tankViewProvesLargePassiveSwarm)',
+        "Party().ValidationRouteLargePassiveSwarmStaging = true",
+        "bool largePassiveSwarm = cohortSwarmActive && densityTank",
+        "&& sharedLargePassiveSwarmStaging",
+        'role != "tank"',
+        "Position staging = densityTank->GetFirstCollisionPosition",
+        "if (!moved)",
+        "densityTank->GetPositionX()",
+        '"stage_for_large_passive_swarm_activation"',
+        'role == "tank" && pendingSwarmActivation',
+        'activationAction.DebugName = "activate_passive_swarm"',
+    )
+    reset = function_body(
+        manager,
+        "void BotWorldPopulationMgr::ResetValidationRouteBossAddDensityState",
+    )
+    assert "ValidationRouteLargePassiveSwarmStaging = false" in reset
+    assert "ValidationRouteLargePassiveSwarmStagingGeneration = 0" in reset
+
+
 def test_rerun175_feral_healer_target_preempts_tank_owned_density():
     manager = read(BOT_MGR)
     route = function_body(

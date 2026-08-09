@@ -1497,6 +1497,8 @@ private:
         uint32 ValidationRouteBossSlowProgressCount = 0;
         bool ValidationRouteBossAddDensityPhase = false;
         uint64 ValidationRouteBossAddDensityGeneration = 0;
+        bool ValidationRouteLargePassiveSwarmStaging = false;
+        uint64 ValidationRouteLargePassiveSwarmStagingGeneration = 0;
         bool ValidationRouteBossAddEscapeActive = false;
         uint64 ValidationRouteBossAddEscapeGeneration = 0;
         float ValidationRouteBossAddEscapeX = 0.0f;

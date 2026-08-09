@@ -3324,6 +3324,8 @@ void BotWorldPopulationMgr::ResetValidationRouteBossAddDensityState()
 {
     Party().ValidationRouteBossAddDensityPhase = false;
     Party().ValidationRouteBossAddDensityGeneration = 0;
+    Party().ValidationRouteLargePassiveSwarmStaging = false;
+    Party().ValidationRouteLargePassiveSwarmStagingGeneration = 0;
     ResetValidationRouteBossAddEscapeState();
 }
 
@@ -14837,9 +14839,14 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         // before arrival is not encounter evidence; let the unchanged route
         // movement reach the boss anchor first. Any engaged follower or observed
         // boss preserves the existing immediate party-protection path.
+        bool sharedLargePassiveSwarmStaging =
+            Party().ValidationRouteLargePassiveSwarmStaging
+            && Party().ValidationRouteLargePassiveSwarmStagingGeneration
+                == Party().ValidationRouteGeneration;
         if (cohortSwarmActive && engagedAddCount == 0
             && Party().ValidationRouteBossProgressTargetGuid.IsEmpty()
-            && canonicalRouteDistance > routeArrivalRadius)
+            && canonicalRouteDistance > routeArrivalRadius
+            && !sharedLargePassiveSwarmStaging)
             return false;
         if (Party().ValidationRouteBossAddDensityPhase
             && (Party().ValidationRouteBossAddDensityGeneration != Party().ValidationRouteGeneration || !cohortSwarmActive))
@@ -16774,9 +16781,34 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     ++tankVisiblePassiveSwarmEngagedCount;
             }
         }
-        bool largePassiveSwarm = cohortSwarmActive && densityTank
+        bool tankViewProvesLargePassiveSwarm = cohortSwarmActive && densityTank
             && tankVisiblePassiveSwarmEngagedCount == 0
             && tankVisiblePassiveSwarmAddCount >= 24;
+        // Rerun178 proved that recomputing the tank-visible staging fact in
+        // every bot's handler was still observer-dependent. The tank held the
+        // passive 60-follower wave for 192 decisions, while all three damage
+        // roles remained 69-87 yards from the route anchor and alternated
+        // remote add/route paths behind the rerun170 pre-anchor bypass. Publish
+        // only the living tank's proven passive-wave observation as a
+        // generation-scoped party fact. The bypass remains unchanged until
+        // that proof exists, and native activation remains tank-only below.
+        if (role == "tank" && tankViewProvesLargePassiveSwarm)
+        {
+            Party().ValidationRouteLargePassiveSwarmStaging = true;
+            Party().ValidationRouteLargePassiveSwarmStagingGeneration =
+                Party().ValidationRouteGeneration;
+        }
+        else if (!densityTank && sharedLargePassiveSwarmStaging)
+        {
+            Party().ValidationRouteLargePassiveSwarmStaging = false;
+            Party().ValidationRouteLargePassiveSwarmStagingGeneration = 0;
+        }
+        sharedLargePassiveSwarmStaging =
+            Party().ValidationRouteLargePassiveSwarmStaging
+            && Party().ValidationRouteLargePassiveSwarmStagingGeneration
+                == Party().ValidationRouteGeneration;
+        bool largePassiveSwarm = cohortSwarmActive && densityTank
+            && sharedLargePassiveSwarmStaging;
         Unit* largePassiveSwarmEvidenceTarget = passiveSwarmClusterAnchor
             ? static_cast<Unit*>(passiveSwarmClusterAnchor)
             : static_cast<Unit*>(densityTank);
@@ -16832,6 +16864,15 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 moved = MoveBotToPoint(state, bot,
                     staging.GetPositionX(), staging.GetPositionY(),
                     staging.GetPositionZ());
+                // Rerun178's healer remained 21.5 yards from the tank after
+                // the preferred collision point was rejected. Fall back once
+                // to the living tank's reachable position; the unchanged
+                // eighteen-yard staged check stops movement on the next tick.
+                if (!moved)
+                    moved = MoveBotToPoint(state, bot,
+                        densityTank->GetPositionX(),
+                        densityTank->GetPositionY(),
+                        densityTank->GetPositionZ());
             }
             else if (alreadyStaged && bot->isMoving())
                 bot->StopMoving();
