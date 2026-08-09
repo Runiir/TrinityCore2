@@ -1,0 +1,23 @@
+{
+  "schema": "all_spec_phase9_infrastructure_interruption_v1",
+  "scope": {"phase": 9, "rerun": 172, "serial_canary_index": 2, "later_rows_blocked": true},
+  "identity_manifest_sha256": "0226cc0350b9424f3bdb2ae54ab5a5461d9c0f68ff35e00d9cab3c5ba3e0fad9",
+  "run_plan_sha256": "81d4c7ba3cd068345d613dec19fc1fc36a7b977aced168fd3f45ec38fee51721",
+  "captured_server_process_id": 1057332,
+  "observed_operator_server_process_id": 1058990,
+  "server_epoch": 6327294135296511,
+  "classification": "pre_admission_runtime_identity_mismatch",
+  "authoritative_gameplay_result": null,
+  "facts": {
+    "identity_matches": false,
+    "exact_party_verified": null,
+    "cleanup_complete": false,
+    "publication_receipt": null,
+    "immutable_batch": false,
+    "gameplay_evidence_complete": false,
+    "operator_returncode": 1
+  },
+  "cause": "The managed worldserver PID changed between identity capture and operator admission, so the frozen live-runtime identity correctly failed closed before gameplay evidence could be accepted.",
+  "required_next_action": "Deterministically reprovision and capture a fresh rerun173 identity whose managed PID remains stable through operator admission, then run canary 2 alone.",
+  "rerun172_unit_stopped": true
+}
