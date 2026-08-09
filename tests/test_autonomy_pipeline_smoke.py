@@ -3773,6 +3773,28 @@ def test_rerun182_shared_passive_swarm_proof_keeps_native_tank_follow():
     assert 'activationAction.DebugName = "activate_passive_swarm"' in branch
 
 
+def test_rerun183_healer_owned_stable_swarm_path_revalidates_early():
+    objective = function_body(
+        read(BOT_MGR),
+        "bool BotWorldPopulationMgr::TryValidationRouteObjective",
+    )
+    marker = objective.index(
+        "Rerun183 exposed one identity-stable healer-owned follower"
+    )
+    branch = objective[marker - 500 : marker + 2300]
+
+    assert_ordered(
+        branch,
+        "auto continueStableFeralSwarmApproach",
+        "bool selectedHealerOwned = densityHealer && selectedAdd",
+        "selectedAdd->GetVictim() == densityHealer",
+        "selectedHealerOwned ? 750 : 2000",
+        "pathAgeMs <= stableApproachLimitMs",
+        "selectedAdd->GetExactDist2d(state.ActivePathToX, state.ActivePathToY)",
+    )
+    assert "cohortSwarmActive" in branch
+
+
 def test_profile_los_failure_is_recorded_before_existing_range_recovery():
     executor = function_body(
         read(BOT_MGR),

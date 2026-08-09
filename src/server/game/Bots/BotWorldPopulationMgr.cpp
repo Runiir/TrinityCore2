@@ -17097,9 +17097,20 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             uint64 pathAgeMs = state.LastPathChangeMs && currentMs >= state.LastPathChangeMs
                 ? currentMs - state.LastPathChangeMs
                 : std::numeric_limits<uint64>::max();
+            // Rerun183 exposed one identity-stable healer-owned follower that
+            // remained behind the generic two-second moving-swarm endpoint for
+            // nine decisions and exceeded the hard dwell gate. That stability
+            // window protects ordinary representative churn; it is too long
+            // once the selected identity is itself current healer threat.
+            // Revalidate only that urgent native path after three 250-ms
+            // decisions. All movement legality and the ordinary two-second
+            // swarm fallback remain unchanged.
+            bool selectedHealerOwned = densityHealer && selectedAdd
+                && selectedAdd->GetVictim() == densityHealer;
+            uint64 stableApproachLimitMs = selectedHealerOwned ? 750 : 2000;
             return role == "tank" && profile.SpecTag == "feral_druid_tank"
                 && cohortSwarmActive && selectedAdd && state.ActivePathValid
-                && state.IsMoving && pathAgeMs <= 2000
+                && state.IsMoving && pathAgeMs <= stableApproachLimitMs
                 && selectedAdd->GetExactDist2d(state.ActivePathToX, state.ActivePathToY)
                     <= TankDensityClusterRadius;
         };
