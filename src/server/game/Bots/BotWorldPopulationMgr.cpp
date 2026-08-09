@@ -16981,6 +16981,53 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 return true;
             }
         }
+        // Rerun184 activated all 59 staged followers onto the Feral, but the
+        // first post-activation density decision still had to enter Bear Form.
+        // That spent the opening native GCD, so the healer's first shield
+        // overtook the zero-margin white-swing threat before Swipe or Thrash
+        // could run. Prepare the unchanged persistent form while the passive
+        // wave and party are already staged, then wait only for that form's
+        // native GCD before allowing the existing tank-only activation.
+        bool feralPassiveSwarmBearFormMissing = role == "tank"
+            && profile.SpecTag == "feral_druid_tank"
+            && largePassiveSwarm && passiveSwarmClusterAnchor
+            && !bot->HasAura(5487);
+        if (feralPassiveSwarmBearFormMissing)
+            TryEnsurePersistentCombatSetup(
+                state, bot, passiveSwarmClusterAnchor);
+        SpellInfo const* passiveSwarmBearFormInfo =
+            sSpellMgr->GetSpellInfo(5487);
+        bool feralPassiveSwarmBearFormGcdPending = role == "tank"
+            && profile.SpecTag == "feral_druid_tank"
+            && largePassiveSwarm && passiveSwarmClusterAnchor
+            && passiveSwarmBearFormInfo
+            && bot->GetSpellHistory()->HasGlobalCooldown(
+                passiveSwarmBearFormInfo);
+        if (feralPassiveSwarmBearFormMissing
+            || feralPassiveSwarmBearFormGcdPending)
+        {
+            char const* preparationAction =
+                feralPassiveSwarmBearFormMissing
+                    ? "feral_prepare_bear_form_before_passive_swarm_activation"
+                    : "feral_hold_bear_form_gcd_before_passive_swarm_activation";
+            std::string raw = BuildRawJson(
+                bot, passiveSwarmClusterAnchor);
+            std::string semantic = BuildSemanticJson(
+                bot, passiveSwarmClusterAnchor, "dungeon_boss",
+                &power, stage, activity);
+            RecordEvent(state, bot, "boss_add_density",
+                passiveSwarmClusterAnchor, preparationAction,
+                raw.c_str(), semantic.c_str(),
+                bot->GetExactDist2d(passiveSwarmClusterAnchor),
+                largePassiveSwarmStagedParticipants, 5487);
+            state.DecisionTimer = std::min<uint32>(
+                state.DecisionTimer, 250);
+            state.TargetGuid = passiveSwarmClusterAnchor->GetGUID();
+            target = passiveSwarmClusterAnchor;
+            situation = "dungeon_boss";
+            action = preparationAction;
+            return true;
+        }
         if (role == "tank" && largePassiveSwarm
             && !largePassiveSwarmPartyStaged
             && bot->IsWithinMeleeRange(passiveSwarmClusterAnchor)

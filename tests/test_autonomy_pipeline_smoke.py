@@ -3328,7 +3328,7 @@ def test_rerun174_large_passive_swarm_stages_party_before_native_activation():
     marker = route.index(
         "Rerun174 reached this passive 60-follower wave"
     )
-    branch = route[marker - 800 : marker + 16000]
+    branch = route[marker - 800 : marker + 21000]
 
     assert "tankVisiblePassiveSwarmEngagedCount == 0" in branch
     assert "tankVisiblePassiveSwarmAddCount >= 24" in branch
@@ -3446,7 +3446,7 @@ def test_rerun178_tank_proof_drives_remote_passive_swarm_staging():
     marker = objective.index(
         "Rerun178 proved that recomputing the tank-visible staging fact"
     )
-    shared = objective[marker - 1300 : marker + 14000]
+    shared = objective[marker - 1300 : marker + 19000]
     pre_anchor = objective[objective.index("bool sharedLargePassiveSwarmStaging =") : marker]
 
     assert "ValidationRouteLargePassiveSwarmStagingGeneration" in pre_anchor
@@ -3748,7 +3748,7 @@ def test_rerun182_shared_passive_swarm_proof_keeps_native_tank_follow():
     marker = objective.index(
         "Rerun182 proved the generation-scoped tank observation"
     )
-    branch = objective[marker : marker + 12000]
+    branch = objective[marker : marker + 17000]
     staging = branch[
         branch.index('if (largePassiveSwarm && role != "tank"') :
         branch.index('if (role == "tank" && pendingSwarmActivation')
@@ -3793,6 +3793,36 @@ def test_rerun183_healer_owned_stable_swarm_path_revalidates_early():
         "selectedAdd->GetExactDist2d(state.ActivePathToX, state.ActivePathToY)",
     )
     assert "cohortSwarmActive" in branch
+
+
+def test_rerun184_feral_prepares_form_before_native_swarm_activation():
+    objective = function_body(
+        read(BOT_MGR),
+        "bool BotWorldPopulationMgr::TryValidationRouteObjective",
+    )
+    marker = objective.index(
+        "Rerun184 activated all 59 staged followers onto the Feral"
+    )
+    branch = objective[marker - 700 : marker + 5200]
+
+    assert_ordered(
+        branch,
+        "feralPassiveSwarmBearFormMissing",
+        'profile.SpecTag == "feral_druid_tank"',
+        "largePassiveSwarm && passiveSwarmClusterAnchor",
+        "!bot->HasAura(5487)",
+        "TryEnsurePersistentCombatSetup(",
+        "feralPassiveSwarmBearFormGcdPending",
+        "HasGlobalCooldown(",
+        '"feral_prepare_bear_form_before_passive_swarm_activation"',
+        '"feral_hold_bear_form_gcd_before_passive_swarm_activation"',
+        'if (role == "tank" && largePassiveSwarm',
+        'activationAction.DebugName = "activate_passive_swarm"',
+    )
+    assert "state.DecisionTimer, 250" in branch
+    assert "SetVictim" not in branch
+    assert "AddThreat" not in branch
+    assert "NearTeleportTo" not in branch
 
 
 def test_profile_los_failure_is_recorded_before_existing_range_recovery():
