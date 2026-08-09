@@ -19909,9 +19909,21 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             // ordering. This changes only the target passed to the native profile
             // resolver; cooldowns, victims, and threat remain intact.
             bool feralTankOwnedDensitySelected = false;
+            // Rerun175's only 14 eligible healer-exposure samples all belonged
+            // to one generation-13 Flayer. The existing remote-handoff path was
+            // unavailable, then this proactive tank-owned cluster selector
+            // repeatedly displaced the already-established healer-owned area
+            // fallback. Four 250-ms movements toward that exact Flayer began
+            // only when the tank briefly lost its victim majority; once the
+            // majority recovered, density retook priority and dwell reached
+            // 6421 ms. Keep the established healer-owned fallback authoritative
+            // while any exact current healer threat exists. Its native profile
+            // action, range, LOS, path, cooldown, GCD, and threat gates remain
+            // unchanged, as does proactive density whenever the healer is clear.
             if (bot->getClass() == CLASS_DRUID
                 && trashThreatControl.EngagedCount >= 12
-                && tankOwnsTrashMajority)
+                && tankOwnsTrashMajority
+                && !feralCurrentHealerThreat)
             {
                 Unit* densestTankOwnedClusterTarget = nullptr;
                 bool densestTankOwnedClusterMissingThrash = false;

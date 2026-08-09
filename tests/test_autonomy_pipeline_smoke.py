@@ -3354,6 +3354,33 @@ def test_rerun174_large_passive_swarm_stages_party_before_native_activation():
     )
 
 
+def test_rerun175_feral_healer_target_preempts_tank_owned_density():
+    manager = read(BOT_MGR)
+    route = function_body(
+        manager,
+        "bool BotWorldPopulationMgr::TryValidationRouteObjective",
+    )
+    marker = route.index(
+        "Rerun175's only 14 eligible healer-exposure samples"
+    )
+    branch_start = route.rindex(
+        "bool feralCurrentHealerThreat =", 0, marker
+    )
+    branch = route[branch_start : marker + 12000]
+
+    assert "feralCurrentHealerThreat" in branch
+    assert_ordered(
+        branch,
+        "bool feralCurrentHealerThreat =",
+        "bool feralTankOwnedDensitySelected = false;",
+        "&& !feralCurrentHealerThreat",
+        "if (!feralTankOwnedDensitySelected",
+        "trashThreatControl.HealerOwnedTargets",
+        "trashThreatControl.AreaTarget =",
+        "ResolveProfileCombatAction(bot, target",
+    )
+
+
 def test_feral_large_tank_owned_trash_wave_prefers_density_before_freshness():
     objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
     selector = objective.split("Rerun142 proved continuous aura-fresh", 1)[1].split(
