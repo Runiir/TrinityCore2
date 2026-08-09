@@ -13789,6 +13789,12 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             // Hand of Reckoning is instant and does not replace or clear that
             // movement. Try it only against the deterministic healer-priority
             // hostile; failures preserve the area-threat and safe-path chain.
+            // Rerun187 then presented two new healer-owned hostiles together.
+            // The single taunt acquired one, but its cooldown left the second
+            // behind while this hazard hold preempted ordinary Righteous
+            // Defense for 3573 ms. Keep the single taunt first, then use the
+            // existing native multi-attacker rescue on the healer before the
+            // bounded safe-side hold. All native spell gates remain unchanged.
             if (hazardProfile.SpecTag == "protection"
                 && bot->getClass() == CLASS_PALADIN
                 && areaPriority == 3 && areaTarget)
@@ -13811,6 +13817,28 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     state.WasInCombat = true;
                     situation = "validation_route_mechanic";
                     action = "hand_of_reckoning_hazard_healer_pickup";
+                    return true;
+                }
+                Player* hazardHealer = areaTarget->GetVictim()
+                    ? areaTarget->GetVictim()->ToPlayer() : nullptr;
+                if (hazardHealer
+                    && GetDungeonRole(hazardHealer) == "healer"
+                    && bot->HasSpell(31789)
+                    && TryCastFriendlySpell(bot, hazardHealer, 31789))
+                {
+                    std::string raw = BuildRawJson(bot, hazardHealer);
+                    std::string semantic = BuildSemanticJson(
+                        bot, hazardHealer, "validation_route_mechanic",
+                        &power, stage, activity);
+                    RecordEvent(state, bot,
+                        "validation_route_threat_pickup", hazardHealer,
+                        "righteous_defense_hazard_healer_pickup",
+                        raw.c_str(), semantic.c_str(), areaDistance,
+                        Cohort().Config.ValidationRouteTargetEntry, 31789);
+                    state.TargetGuid = areaTarget->GetGUID();
+                    state.WasInCombat = true;
+                    situation = "validation_route_mechanic";
+                    action = "righteous_defense_hazard_healer_pickup";
                     return true;
                 }
             }

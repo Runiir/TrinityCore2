@@ -3302,19 +3302,25 @@ def test_rerun173_protection_healer_decay_and_hazard_pickup_use_native_responses
     hazard_marker = route.index(
         "Rerun173's only over-ceiling dwell began when an Azil follower"
     )
-    hazard_branch = route[hazard_marker - 900 : hazard_marker + 3000]
+    hazard_branch = route[hazard_marker - 900 : hazard_marker + 4500]
     assert 'hazardProfile.SpecTag == "protection"' in hazard_branch
     assert "bot->getClass() == CLASS_PALADIN" in hazard_branch
     assert "areaPriority == 3 && areaTarget" in hazard_branch
     assert "state.DecisionTimer, 250" in hazard_branch
     assert "TryCastCombatSpell(bot, areaTarget, 62124)" in hazard_branch
     assert '"hand_of_reckoning_hazard_healer_pickup"' in hazard_branch
+    assert "Player* hazardHealer = areaTarget->GetVictim()" in hazard_branch
+    assert 'GetDungeonRole(hazardHealer) == "healer"' in hazard_branch
+    assert "TryCastFriendlySpell(bot, hazardHealer, 31789)" in hazard_branch
+    assert '"righteous_defense_hazard_healer_pickup"' in hazard_branch
     assert_ordered(
         hazard_branch,
         "BotClassSpecActionProfile hazardProfile",
         'hazardProfile.SpecTag == "protection"',
         "TryCastCombatSpell(bot, areaTarget, 62124)",
         '"hand_of_reckoning_hazard_healer_pickup"',
+        "TryCastFriendlySpell(bot, hazardHealer, 31789)",
+        '"righteous_defense_hazard_healer_pickup"',
         "auto tryFeralHazardThrashRetention",
     )
 
