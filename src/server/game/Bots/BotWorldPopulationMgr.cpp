@@ -15884,7 +15884,13 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 }
         uint32 healerOwnedAfterRoar = densityHealer
             ? uint32(observedListedAttackerCount(densityHealer)) : 0;
+        // Rerun181 showed this resolver could spend native Swipe and its GCD
+        // on already-owned local followers while the remaining healer-owned
+        // cluster was still remote. Preserve its post-arrival retention role,
+        // but leave pre-arrival movement and Charge authoritative so the
+        // healer-owned Swipe-before-Roar path can own the first arrived GCD.
         bool postRoarAreaThreatReady = feralHealerHandoffActive
+            && feralHealerHandoffArrived
             && healerOwnedAfterRoar >= 2 && postRoarAreaTarget
             && localRoarCoveredCount >= 2
             && localRoarCoveredCount * 2 >= healerOwnedAfterRoar;

@@ -3692,7 +3692,10 @@ def test_feral_arrived_handoff_retries_roar_before_post_roar_area_threat():
     assert "candidate->GetVictim() == densityHealer" not in post_roar
     assert "bot->GetExactDist2d(candidate) <= 10.0f" in post_roar
     assert "candidate->HasAura(99, bot->GetGUID())" in post_roar
-    assert "postRoarAreaThreatReady = feralHealerHandoffActive" in post_roar
+    assert (
+        "postRoarAreaThreatReady = feralHealerHandoffActive\n"
+        "            && feralHealerHandoffArrived"
+    ) in post_roar
     assert "healerOwnedAfterRoar >= 2" in post_roar
     assert "localRoarCoveredCount >= 2" in post_roar
     assert "localRoarCoveredCount * 2 >= healerOwnedAfterRoar" in post_roar
@@ -3719,6 +3722,22 @@ def test_feral_arrived_handoff_retries_roar_before_post_roar_area_threat():
     assert "threshold" not in retry
     assert "tryFeralRoarPickup(true)" in retry
     assert "return true;" in retry
+
+
+def test_rerun181_prearrival_handoff_does_not_spend_post_roar_swipe_gcd():
+    objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    post_roar = objective.split("Rerun144 proved that a successful local Roar", 1)[1].split(
+        "Rerun106 isolated two Azil split waves", 1
+    )[0]
+
+    assert_ordered(
+        post_roar,
+        "Rerun181 showed this resolver could spend native Swipe",
+        "postRoarAreaThreatReady = feralHealerHandoffActive",
+        "&& feralHealerHandoffArrived",
+        "if (postRoarAreaThreatReady)",
+        '"feral_post_roar_area_threat_retention"',
+    )
 
 
 def test_profile_los_failure_is_recorded_before_existing_range_recovery():

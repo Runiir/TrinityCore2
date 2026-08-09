@@ -1,13 +1,13 @@
 {
   "active_phase": 9,
   "blockers": [
-    "Rerun180 used frozen identity 7337eb7b811db9be83bc93529e2971f18fdfa2af26a7a88a4b4fe7f655424f74, plan 27930ac9c49ecabc76ff8c16a21e226a8c69b2185f7250380f5643ccf37d26c7, exact party 524b94c794897f5111bdae0a5e45ba31a31ebb8596d811a3dd8c1caff95bd16a, PID 1273730, and epoch 5971579299681332. Only row 2 ran.",
-    "Rerun180 completed all 14 strict terminals and four authoritative boss deaths, including High Priestess Azil, and independently passed identity, party, serial, cleanup, publication, watchdog, assistance, tank-retention, threat-aura, action, cast, heal, rotation, hazard, and Misdirection gates. It is an authoritative gameplay failure only on Feral healer exposure and dwell; no later row started.",
-    "Canonical diagnosis eaa53aa9d58e0df0ec1fcdd4143513d0bbfa0db653e368e36d199b9de1e53ef7 reconstructs 1385/1517 tank ownership, 92/1517 healer targeting, 5172-ms maximum dwell, and 465/465 threat-aura uptime. Every exposure sample belongs to Azil generation 14.",
-    "The bounded rerun181 correction retires a moderate Feral hostile-cluster reservation when the healer-owned wave reaches the established twelve-follower large-wave boundary and prevents that resolver from re-entering while large-wave healer-center movement owns the path. Every native spell, threat, hazard, Misdirection, passive-staging, route, strict-threshold, identity, publication, and assistance contract remains unchanged. Focused tests pass and corrected worldserver cd88e2f3c8ff51fb57fdf13979602e92e3785df59a9de263cb288e234a4205fc builds.",
-    "Rerun181 deterministic all-31 reprovisioning and its independent verifier pass. A fresh composite identity, deterministic eight-row plan, independent plan reconstruction, and canary 2 alone are required after the coherent tracked checkpoint is committed. Canaries 3-8 and Phases 10-12 remain blocked until preceding strict gates pass."
+    "Rerun181 used frozen identity 2e9e5ee78f2f8d78efc7a0b4bec8c9afe7c36936d5b459f4c2b3481acb9d9981, plan 0c6d718671dea299901b48892a3434eb1fd2c6665222c965477b8306031d7ad1, exact party 524b94c794897f5111bdae0a5e45ba31a31ebb8596d811a3dd8c1caff95bd16a, PID 1301192, and epoch 6054277073742567. Only row 2 ran.",
+    "Rerun181 completed all 14 strict terminals and four authoritative boss deaths, including High Priestess Azil, and independently passed identity, party, serial, cleanup, publication, watchdog, assistance, tank-retention, threat-aura, action, cast, heal, rotation, hazard, and Misdirection gates. It is an authoritative gameplay failure only on Feral healer exposure and dwell; no later row started.",
+    "Canonical diagnosis 7d9adafca03af08a8502bd7d2dfad1232f83f46560d2c42555fcb3a259a812ce reconstructs 1862/1945 tank ownership, 31/1945 healer targeting, 4342-ms maximum dwell, and 534/534 threat-aura uptime. Every exposure sample belongs to Azil generation 14.",
+    "The bounded rerun182 correction prevents the generic post-Roar area-threat resolver from consuming native Swipe and its GCD on already-owned local followers before the identity-bound Feral healer handoff arrives. Existing pre-arrival Charge and movement, arrived healer-owned Swipe-before-Roar, and every native spell, threat, hazard, Misdirection, passive-staging, route, strict-threshold, identity, publication, and assistance contract remain unchanged. Nine focused tests pass and corrected worldserver 6e4f06190c7ebf33393af1ba795d8717871077b3c7ed472d0de29830b74a1a8b builds.",
+    "Rerun182 deterministic all-31 reprovisioning and its independent verifier pass. A fresh composite identity, deterministic eight-row plan, independent plan reconstruction, and canary 2 alone are required after the coherent tracked checkpoint is committed. Canaries 3-8 and Phases 10-12 remain blocked until preceding strict gates pass."
   ],
-  "exact_next_handoff_prompt": "Continue Phase 9 only. Treat rerun180 canary-2 diagnosis eaa53aa9d58e0df0ec1fcdd4143513d0bbfa0db653e368e36d199b9de1e53ef7 as authoritative. Preserve the bounded moderate-to-large Feral pickup-reservation correction and every strict contract. Capture a fresh rerun181 identity and stable-PID eight-row plan, independently reconstruct the plan, and run canary 2 alone. Keep rows 3-8 and Phases 10-12 blocked until preceding strict gates pass. Never use broad DVC garbage collection.",
+  "exact_next_handoff_prompt": "Continue Phase 9 only. Treat rerun181 canary-2 diagnosis 7d9adafca03af08a8502bd7d2dfad1232f83f46560d2c42555fcb3a259a812ce as authoritative. Preserve the bounded arrived-handoff guard on generic post-Roar area threat and every strict contract. Capture a fresh rerun182 identity and stable-PID eight-row plan, independently reconstruct the plan, and run canary 2 alone. Keep rows 3-8 and Phases 10-12 blocked until preceding strict gates pass. Never use broad DVC garbage collection.",
   "phase_status": [
     {
       "evidence": {
@@ -689,7 +689,7 @@
         "canaries_4_through_8_started": false,
         "checkpoint_kind": "in_progress_not_phase_complete",
         "current_attempt": {
-          "attempt_label": "rerun180_serial",
+          "attempt_label": "rerun181_serial",
           "status": "canary_2_failed_closed_published_evicted",
           "canary_2_strict_passed": false,
           "canary_2_authoritative_result": "gameplay_failure",
@@ -703,17 +703,17 @@
           "canary_2_cleanup_complete": true,
           "canary_3_started": false,
           "canaries_4_through_8_started": false,
-          "diagnosis": "experiments/configs/all_spec_phase9_rerun180_canary2_diagnosis_v1.json",
-          "diagnosis_sha256": "eaa53aa9d58e0df0ec1fcdd4143513d0bbfa0db653e368e36d199b9de1e53ef7",
-          "batch_identity": "8b45ef2fb4e20033155c27defc5094c6cf2faa071250217117dbde15b7672423",
-          "publication_receipt_sha256": "698a959e4fd4e995a9127a3a3b8f4e65f42675d8920a4d4be11e8dcfe0c68995",
-          "evidence_identity_manifest_sha256": "7337eb7b811db9be83bc93529e2971f18fdfa2af26a7a88a4b4fe7f655424f74",
-          "run_plan_sha256": "27930ac9c49ecabc76ff8c16a21e226a8c69b2185f7250380f5643ccf37d26c7",
-          "evidence_worldserver_binary_sha256": "fc7c0b78cb4595e49e28bec3a3e4ed7c0a0c82a6290eebed10d50a77b69f2792",
-          "corrected_worldserver_binary_sha256": "cd88e2f3c8ff51fb57fdf13979602e92e3785df59a9de263cb288e234a4205fc",
-          "server_process_id": 1273730,
-          "server_epoch": 5971579299681332,
-          "session_fingerprint": "84f8e6b43d00e5f667c0f1ccd0645b315d543d69f77e238e719efddaa9484791",
+          "diagnosis": "experiments/configs/all_spec_phase9_rerun181_canary2_diagnosis_v1.json",
+          "diagnosis_sha256": "7d9adafca03af08a8502bd7d2dfad1232f83f46560d2c42555fcb3a259a812ce",
+          "batch_identity": "7e061224f89cf17a30aa909e91a09bbf77aa2e661a6e09b397cb4336214217c3",
+          "publication_receipt_sha256": "368b6294f36a4c62fc87f9e1e8c314eabdef696c12ca259eaea676154e6e4663",
+          "evidence_identity_manifest_sha256": "2e9e5ee78f2f8d78efc7a0b4bec8c9afe7c36936d5b459f4c2b3481acb9d9981",
+          "run_plan_sha256": "0c6d718671dea299901b48892a3434eb1fd2c6665222c965477b8306031d7ad1",
+          "evidence_worldserver_binary_sha256": "cd88e2f3c8ff51fb57fdf13979602e92e3785df59a9de263cb288e234a4205fc",
+          "corrected_worldserver_binary_sha256": "6e4f06190c7ebf33393af1ba795d8717871077b3c7ed472d0de29830b74a1a8b",
+          "server_process_id": 1301192,
+          "server_epoch": 6054277073742567,
+          "session_fingerprint": "4be9e580fb87fd3e5b7bce9358b0cb9198f643105d5e16bd9af45bc91d09cbab",
           "profile_generation": 1,
           "profile_content_hash": "35a587f05d8781d72c62576a6f35392a69e01d5978429f65429ad5b9ed096a22",
           "worldserver_stopped_before_tracked_edit": true,
@@ -733,7 +733,8 @@
             "rerun178_moderate_healer_owned_subwave_native_roar",
             "rerun179_generation_scoped_large_passive_swarm_staging",
             "rerun180_azil_seismic_shard_empty_seat_guard",
-            "rerun181_large_feral_wave_retires_moderate_pickup_reservation"
+            "rerun181_large_feral_wave_retires_moderate_pickup_reservation",
+            "rerun182_post_roar_area_threat_requires_handoff_arrival"
           ]
         },
         "generated_history_archive": "artifacts/all_spec_program/phase9_generated_history_through_rerun127_20260802.tar.zst.dvc",
@@ -807,20 +808,20 @@
           "status": "infrastructure_aborted_incomplete_evidence"
         },
         "latest_closed_attempt": {
-          "attempt_label": "rerun180_canary_2",
+          "attempt_label": "rerun181_canary_2",
           "status": "authoritative_gameplay_failure",
           "completion_reason": "stonecore_role_quality_audit_failed",
           "failure_reasons": [
             "role_quality:Feraltank:healer_target_exposure",
             "role_quality:Feraltank:healer_target_dwell"
           ],
-          "batch_identity": "8b45ef2fb4e20033155c27defc5094c6cf2faa071250217117dbde15b7672423",
-          "raw_bundle_sha256": "f58338cd1fc3d95f894652010eae8d7fce3a3837cea69ed33f6cef5919428b9a",
+          "batch_identity": "7e061224f89cf17a30aa909e91a09bbf77aa2e661a6e09b397cb4336214217c3",
+          "raw_bundle_sha256": "55dfc3f428f2520d5f787e2c2ca3173258595f35e807d1bad4b2d1903fc950a5",
           "compact_bundle_sha256": "01f6e7bffd7c36a00a7eb196d2e1f6e9c66c043c8e10c4475911c12579894153",
-          "publication_receipt_sha256": "698a959e4fd4e995a9127a3a3b8f4e65f42675d8920a4d4be11e8dcfe0c68995",
-          "binary_sha256": "fc7c0b78cb4595e49e28bec3a3e4ed7c0a0c82a6290eebed10d50a77b69f2792",
-          "evidence_identity_manifest_sha256": "7337eb7b811db9be83bc93529e2971f18fdfa2af26a7a88a4b4fe7f655424f74",
-          "run_plan_sha256": "27930ac9c49ecabc76ff8c16a21e226a8c69b2185f7250380f5643ccf37d26c7",
+          "publication_receipt_sha256": "368b6294f36a4c62fc87f9e1e8c314eabdef696c12ca259eaea676154e6e4663",
+          "binary_sha256": "cd88e2f3c8ff51fb57fdf13979602e92e3785df59a9de263cb288e234a4205fc",
+          "evidence_identity_manifest_sha256": "2e9e5ee78f2f8d78efc7a0b4bec8c9afe7c36936d5b459f4c2b3481acb9d9981",
+          "run_plan_sha256": "0c6d718671dea299901b48892a3434eb1fd2c6665222c965477b8306031d7ad1",
           "exact_party_sha256": "524b94c794897f5111bdae0a5e45ba31a31ebb8596d811a3dd8c1caff95bd16a",
           "identity_matched": true,
           "strict_uninterrupted_route": true,
@@ -829,12 +830,12 @@
           "watchdog_clean": true,
           "strict_non_role_gates_passed": true,
           "role_quality_passed": false,
-          "tank_owned_samples": 1385,
-          "healer_targeting_samples": 92,
-          "eligible_hostile_samples": 1517,
-          "tank_retention_ratio": 0.912986156888596,
-          "healer_exposure_ratio": 0.06064601186552406,
-          "max_healer_dwell_ms": 5172,
+          "tank_owned_samples": 1862,
+          "healer_targeting_samples": 31,
+          "eligible_hostile_samples": 1945,
+          "tank_retention_ratio": 0.9573264781491002,
+          "healer_exposure_ratio": 0.015938303341902313,
+          "max_healer_dwell_ms": 4342,
           "threat_aura_uptime_ratio": 1.0,
           "remote_verified": true,
           "capture_revalidated": true,
@@ -845,8 +846,8 @@
           "broad_dvc_gc_used": false,
           "canary_3_started": false,
           "canaries_4_through_8_started": false,
-          "diagnosis": "experiments/configs/all_spec_phase9_rerun180_canary2_diagnosis_v1.json",
-          "diagnosis_sha256": "eaa53aa9d58e0df0ec1fcdd4143513d0bbfa0db653e368e36d199b9de1e53ef7"
+          "diagnosis": "experiments/configs/all_spec_phase9_rerun181_canary2_diagnosis_v1.json",
+          "diagnosis_sha256": "7d9adafca03af08a8502bd7d2dfad1232f83f46560d2c42555fcb3a259a812ce"
         },
         "latest_gate_passed_attempt": {
           "attempt_label": "rerun173_canary_2",
@@ -875,29 +876,29 @@
         "live_worldserver_active": false,
         "monitor_active": false,
         "next_attempt_setup": {
-          "attempt_label": "rerun181_setup",
+          "attempt_label": "rerun182_setup",
           "status": "checkpoint_ready_for_identity_capture",
           "authorized_corrections": [
-            "when an eleven-or-fewer healer-owned Feral active-cluster reservation grows into a twelve-plus large wave, retire only that moderate reservation before the existing stable healer-center movement and keep the moderate resolver below the twelve-follower boundary"
+            "require the identity-bound Feral healer handoff to be arrived before generic post-Roar area threat may spend native Swipe and its GCD, preserving pre-arrival Charge and movement plus the existing arrived healer-owned Swipe-before-Roar path"
           ],
-          "authorized_diagnosis": "experiments/configs/all_spec_phase9_rerun180_canary2_diagnosis_v1.json",
-          "authorized_diagnosis_sha256": "eaa53aa9d58e0df0ec1fcdd4143513d0bbfa0db653e368e36d199b9de1e53ef7",
+          "authorized_diagnosis": "experiments/configs/all_spec_phase9_rerun181_canary2_diagnosis_v1.json",
+          "authorized_diagnosis_sha256": "7d9adafca03af08a8502bd7d2dfad1232f83f46560d2c42555fcb3a259a812ce",
           "source_change_started": true,
           "source_change_complete": true,
           "sources": [
             "src/server/game/Bots/BotWorldPopulationMgr.cpp",
             "tests/test_autonomy_pipeline_smoke.py"
           ],
-          "focused_regression_tests": "7 passed, 119 deselected",
+          "focused_regression_tests": "9 passed, 118 deselected",
           "git_diff_check": "passed",
           "worldserver_rebuild_passed": true,
-          "worldserver_binary_sha256": "cd88e2f3c8ff51fb57fdf13979602e92e3785df59a9de263cb288e234a4205fc",
+          "worldserver_binary_sha256": "6e4f06190c7ebf33393af1ba795d8717871077b3c7ed472d0de29830b74a1a8b",
           "old_worldserver_stopped": true,
           "old_worldserver_active_state": "inactive",
           "old_worldserver_sub_state": "dead",
           "old_worldserver_main_pid": 0,
           "deterministic_reprovision_passed": true,
-          "deterministic_reprovision_verifier": "artifacts/all_spec_program/phase9_serial_canaries_20260809_rerun181/preidentity_preparation/provisioning_verifier.json",
+          "deterministic_reprovision_verifier": "artifacts/all_spec_program/phase9_serial_canaries_20260809_rerun182/preidentity_preparation/provisioning_verifier.json",
           "deterministic_reprovision_accounts_ready": "50/50",
           "deterministic_reprovision_characters_ready": "50/50",
           "deterministic_reprovision_runtime_profiles_ready": "31/31",
@@ -918,10 +919,13 @@
             "rerun178_moderate_healer_owned_subwave_native_roar",
             "rerun179_generation_scoped_large_passive_swarm_staging",
             "rerun180_azil_seismic_shard_empty_seat_guard",
-            "rerun181_large_feral_wave_retires_moderate_pickup_reservation"
+            "rerun181_large_feral_wave_retires_moderate_pickup_reservation",
+            "rerun182_post_roar_area_threat_requires_handoff_arrival"
           ],
           "dvc_remote_verified_before_exact_eviction": true,
           "exact_targeted_eviction_complete": true,
+          "post_artifact_dvc_status_completed": true,
+          "post_artifact_dvc_push": "everything_up_to_date_with_two_known_historical_missing_objects",
           "broad_dvc_gc_used": false
         },
         "next_thread_handoff": "experiments/configs/all_spec_phase9_next_thread_handoff_20260802.md",
