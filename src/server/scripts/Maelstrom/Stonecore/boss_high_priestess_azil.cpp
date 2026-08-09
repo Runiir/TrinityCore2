@@ -534,7 +534,13 @@ class npc_azil_seismic_shard : public CreatureScript
                         case EVENT_SEISMIC_SHARD_MOUNT:
                             if (Creature* highPriestAzil = _instance->GetCreature(DATA_HIGH_PRIESTESS_AZIL))
                                 if (Vehicle* vehicle = highPriestAzil->GetVehicleKit())
-                                    me->EnterVehicle(highPriestAzil, vehicle->GetNextEmptySeat(0, false)->first);
+                                {
+                                    SeatMap::const_iterator seat = vehicle->GetNextEmptySeat(0, false);
+                                    if (seat != vehicle->Seats.end())
+                                        me->EnterVehicle(highPriestAzil, seat->first);
+                                    else
+                                        me->DespawnOrUnsummon();
+                                }
                             break;
                         default:
                             break;
@@ -555,8 +561,6 @@ class npc_azil_seismic_shard : public CreatureScript
                 path.push_back(point);
 
                 point.z += 25.0f;
-                path.push_back(point);
-
                 path.push_back(point);
             }
 

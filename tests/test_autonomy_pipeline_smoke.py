@@ -31,6 +31,7 @@ MAP_CPP = ROOT / "src/server/game/Maps/Map.cpp"
 PLAYER_CPP = ROOT / "src/server/game/Entities/Player/Player.cpp"
 VALIDATION_SCENARIOS = ROOT / "experiments/configs/validation_scenarios_cata_001.json"
 PYTEST_CONFIG = ROOT / "pytest.ini"
+AZIL_SCRIPT = ROOT / "src/server/scripts/Maelstrom/Stonecore/boss_high_priestess_azil.cpp"
 
 
 def read(path: Path) -> str:
@@ -3473,6 +3474,20 @@ def test_rerun178_tank_proof_drives_remote_passive_swarm_staging():
     )
     assert "ValidationRouteLargePassiveSwarmStaging = false" in reset
     assert "ValidationRouteLargePassiveSwarmStagingGeneration = 0" in reset
+
+
+def test_rerun179_azil_seismic_shards_fail_closed_without_an_empty_seat():
+    script = read(AZIL_SCRIPT)
+    mount = script[script.index("case EVENT_SEISMIC_SHARD_MOUNT:") :]
+    mount = mount[: mount.index("default:")]
+    fill_path = function_body(script, "void FillPath")
+
+    assert "SeatMap::const_iterator seat = vehicle->GetNextEmptySeat(0, false);" in mount
+    assert "if (seat != vehicle->Seats.end())" in mount
+    assert "me->EnterVehicle(highPriestAzil, seat->first);" in mount
+    assert "me->DespawnOrUnsummon();" in mount
+    assert "vehicle->GetNextEmptySeat(0, false)->first" not in mount
+    assert fill_path.count("path.push_back(point);") == 3
 
 
 def test_rerun175_feral_healer_target_preempts_tank_owned_density():
