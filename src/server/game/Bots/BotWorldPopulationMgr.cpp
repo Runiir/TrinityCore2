@@ -15363,6 +15363,21 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             // the existing bounded healer handoff immediately when no useful
             // local Roar exists; once followers enter range, the unchanged Roar
             // path below remains authoritative.
+            // Rerun180 captured a moderate reservation while eleven Azil
+            // followers owned the healer, then the same wave grew to twenty.
+            // The large-wave healer anchor and the older moving-hostile anchor
+            // alternated for seven decisions, delaying the first native Roar
+            // until 2568 ms after exposure. Promote that exact transition to
+            // the existing stable healer anchor by retiring only the moderate
+            // reservation; hazard movement has already run, and native Charge,
+            // Roar, range, cooldown, GCD, and threat rules remain unchanged.
+            if (healerOwnedCount >= 12 && nearbyHealerOwnedCount < 2)
+            {
+                state.FeralActiveSwarmPickupAnchorGuid.Clear();
+                state.FeralActiveSwarmPickupUntilMs = 0;
+                state.FeralActiveSwarmPickupAttempted = false;
+                state.FeralActiveSwarmPickupArrived = false;
+            }
             if (healerOwnedCount >= 12 && nearbyHealerOwnedCount < 2
                 && !centeredOnHealer
                 && !bot->HasUnitState(UNIT_STATE_CASTING)
@@ -16259,6 +16274,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             && profile.SpecTag == "feral_druid_tank"
             && densityHealer
             && observedListedAttackerCount(densityHealer) >= 3
+            && observedListedAttackerCount(densityHealer) < 12
             && engagedAddCount >= 3 && addCount <= 24;
         if (!activeSwarmPickupEligible)
         {

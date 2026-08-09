@@ -3490,6 +3490,34 @@ def test_rerun179_azil_seismic_shards_fail_closed_without_an_empty_seat():
     assert fill_path.count("path.push_back(point);") == 3
 
 
+def test_rerun180_large_feral_wave_retires_moderate_pickup_reservation():
+    objective = function_body(
+        read(BOT_MGR),
+        "bool BotWorldPopulationMgr::TryValidationRouteObjective",
+    )
+    marker = objective.index(
+        "Rerun180 captured a moderate reservation while eleven Azil"
+    )
+    promotion = objective[marker : marker + 2400]
+    active_marker = objective.index("bool activeSwarmPickupEligible =")
+    active = objective[active_marker : active_marker + 650]
+
+    assert "healerOwnedCount >= 12 && nearbyHealerOwnedCount < 2" in promotion
+    assert "state.FeralActiveSwarmPickupAnchorGuid.Clear();" in promotion
+    assert "state.FeralActiveSwarmPickupUntilMs = 0;" in promotion
+    assert "state.FeralActiveSwarmPickupAttempted = false;" in promotion
+    assert "state.FeralActiveSwarmPickupArrived = false;" in promotion
+    assert_ordered(
+        promotion,
+        "state.FeralActiveSwarmPickupAnchorGuid.Clear();",
+        "state.FeralActiveSwarmPickupUntilMs = 0;",
+        "MoveBotToPoint(state, bot,",
+        '"feral_move_to_healer_for_split_swarm_pickup"',
+    )
+    assert "observedListedAttackerCount(densityHealer) >= 3" in active
+    assert "observedListedAttackerCount(densityHealer) < 12" in active
+
+
 def test_rerun175_feral_healer_target_preempts_tank_owned_density():
     manager = read(BOT_MGR)
     route = function_body(
