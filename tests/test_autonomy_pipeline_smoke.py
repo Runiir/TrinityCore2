@@ -3246,6 +3246,30 @@ def test_rerun160_feral_local_healer_swarm_prefers_native_swipe_with_roar_fallth
     )
 
 
+def test_rerun171_feral_arrived_boss_handoff_prefers_native_swipe_before_roar():
+    manager = read(BOT_MGR)
+    recovery = manager.split(
+        "Rerun171 completed all fourteen route nodes", 1
+    )[1].split("Rerun163 reached its identity-bound remote handoff", 1)[0]
+
+    assert "feralHealerHandoffActive && feralHealerHandoffArrived" in recovery
+    assert "candidate->GetVictim() == densityHealer" in recovery
+    assert "bot->GetExactDist2d(candidate) <= 10.0f" in recovery
+    assert "localHealerOwnedSwipeCount * 2" in recovery
+    assert ">= healerOwnedBeforeHandoffSwipe" in recovery
+    assert "TryCastCombatSpell(bot, localHealerOwnedSwipeTarget, 779)" in recovery
+    assert '"feral_swipe_healer_swarm_retention_before_roar"' in recovery
+    assert "state.DecisionTimer, 250" in recovery
+    assert_ordered(
+        manager,
+        "Rerun171 completed all fourteen route nodes",
+        "TryCastCombatSpell(bot, localHealerOwnedSwipeTarget, 779)",
+        '"feral_swipe_healer_swarm_retention_before_roar"',
+        "Rerun163 reached its identity-bound remote handoff",
+        "tryFeralRoarPickup(true)",
+    )
+
+
 def test_feral_large_tank_owned_trash_wave_prefers_density_before_freshness():
     objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
     selector = objective.split("Rerun142 proved continuous aura-fresh", 1)[1].split(

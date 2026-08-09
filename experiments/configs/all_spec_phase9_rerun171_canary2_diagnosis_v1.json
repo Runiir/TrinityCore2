@@ -1,0 +1,96 @@
+{
+  "schema": "all_spec_phase9_authoritative_gameplay_failure_diagnosis_v1",
+  "scope": {
+    "phase": 9,
+    "rerun": 171,
+    "serial_canary_index": 2,
+    "composition_id": "stonecore_phase9_006_6893daf98698",
+    "diagnosis_limited_to_failed_immutable_batch": true,
+    "canaries_3_through_8_started": false,
+    "phases_10_through_12_blocked": true
+  },
+  "immutable_evidence": {
+    "batch_identity_sha256": "6e83356884c0363d051024c1afa656e10c876562adefafcb334d6daa70e85e36",
+    "raw_bundle_sha256": "111115752cffe765768d633a81ca886a13aef5276a1d8c6b2dc78d35b67e4baf",
+    "compact_bundle_sha256": "887d169c1b3b19289463eceb5ab64a2c14f024fd3c8dfe7e43446c04a6563ccd",
+    "publication_receipt_sha256": "66b3b673b5741dd79c8f05928e03e843b64092754e1f3613d69ab80c7235480a",
+    "raw_dvc_md5": "6bebca7106e8a2ed0be7e7c1f28bb289.dir",
+    "compact_dvc_md5": "07bcddc8de6d63accba772bb61b3563a.dir",
+    "acceptance_source_report_sha256": "c2bcbdfdca34628bfe1e13cc91db8955834abc64e027a0740282abbba79bcfb9",
+    "identity_manifest_sha256": "eee58a4f98c10b73bf95e44a9335a9970464fc2397ab0a8fe037743fbc3266a0",
+    "run_plan_sha256": "1501198398b4a86c511b17f83c3d1f349769fd6e210c0edaadbd73a47d588723",
+    "evidence_binary_sha256": "e1a568d2657fcf840d047b5268c5bbe9f38c77f2945601d5a279d22f8b2c5362"
+  },
+  "independent_strict_gate_verifier": {
+    "underlying_returncode": 0,
+    "timed_out": false,
+    "session_closed": true,
+    "identity_complete": true,
+    "exact_party_sha256": "524b94c794897f5111bdae0a5e45ba31a31ebb8596d811a3dd8c1caff95bd16a",
+    "exact_party": ["feral_druid_tank", "discipline_priest", "fury_warrior", "marksmanship_hunter", "retribution_paladin"],
+    "serial_attempt_index": 2,
+    "server_process_id": 898546,
+    "server_epoch": 3357223368041999,
+    "max_active_cohorts": 1,
+    "route_terminal_evidence": 14,
+    "route_manifest_complete": 1,
+    "authoritative_boss_deaths": [43438, 43214, 42188, 42333],
+    "high_priestess_azil_terminal_and_death": true,
+    "watchdog_clean": true,
+    "teacher_assisted_kills": 0,
+    "forbidden_assistance_observed": false,
+    "cleanup": {"active_bots": 0, "lease_count": 0, "party_bot_count": 0},
+    "publication_remote_verified": true,
+    "strict_non_role_gates_passed": true,
+    "role_gate_passed": false
+  },
+  "independent_role_verifier": {
+    "deduplication_key": ["bot_guid", "sequence"],
+    "threat_acquisition_grace_ms": 3000,
+    "eligible_hostile_denominator": 3489,
+    "tank_owned_hostile_numerator": 3309,
+    "healer_targeting_hostile_numerator": 126,
+    "tank_all_hostile_retention_rate_exact": 0.9484092863284609,
+    "healer_target_exposure_rate_exact": 0.03611349957007739,
+    "max_healer_target_dwell_ms": 4108,
+    "tank_threat_aura_samples": 793,
+    "tank_threat_aura_active_samples": 793,
+    "tank_threat_aura_uptime_rate": 1.0,
+    "feral_active_action_coverage": 1.0,
+    "feral_cast_failure_rate": 0.0,
+    "healer_heal_cast_success_rate": 1.0,
+    "missing_required_rotation_groups": [],
+    "hazard_exit_actions": 168,
+    "hazard_exit_failures": 0,
+    "misdirection_aoe_attempts": 55,
+    "misdirection_aoe_successes": 45,
+    "misdirection_single_attempts": 19,
+    "misdirection_single_successes": 14,
+    "failed_checks": ["healer_target_exposure_rate", "max_healer_target_dwell_ms"]
+  },
+  "authoritative_classification": {
+    "result": "gameplay_failure",
+    "failure_kind": "azil_follower_pickup_delay",
+    "not_audit_attribution_error": true,
+    "not_infrastructure_abort": true,
+    "not_rerun170_passive_swarm_side_effect": true,
+    "later_rows_blocked": true
+  },
+  "root_cause": {
+    "summary": "Azil follower swarms become healer-owned faster than the Feral's movement and non-damaging Roar handoff can establish damaging area threat. At arrived handoffs, the controller retries Roar or waits through its GCD instead of attempting native Swipe against the already-local healer-owned majority; successful Misdirection frequently arrives only after the strict exposure/dwell breach.",
+    "classification": "real_pickup_loss_with_movement_handoff_starvation",
+    "excluded": ["later_threat_decay", "threat_aura_loss", "healer_cast_failure", "audit_attribution_error", "forbidden_assistance", "rerun170_passive_swarm_correction"]
+  },
+  "smallest_evidence_backed_correction": {
+    "file": "src/server/game/Bots/BotWorldPopulationMgr.cpp",
+    "behavior": "At an already-active and arrived Feral healer-swarm handoff, when at least two local healer-owned followers cover at least half of current healer ownership, attempt native Swipe 779 once before the existing Roar retry.",
+    "preserved": ["native spell legality", "cooldown", "global cooldown", "power", "range", "line of sight", "target validity", "threat semantics", "route", "identity", "publication", "cleanup", "DPS ownership", "all strict thresholds"]
+  },
+  "validation": {
+    "focused_tests": "4 passed, 113 deselected",
+    "worldserver_build_passed": true,
+    "corrected_binary_sha256": "149ee6bb0a5a603be5a21bb979956f6b3cf019fc59828373cf54ffebab183c9f",
+    "rerun171_worldserver_stopped_before_tracked_edits": true
+  },
+  "diagnosis_sha256": "9b0c4d340fc7c279fdf9acdf655ac8664e7a3498741a8020aef5d2f167d74b1a"
+}

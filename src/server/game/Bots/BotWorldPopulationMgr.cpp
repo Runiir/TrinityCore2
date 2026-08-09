@@ -15695,6 +15695,65 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     : bot->GetExactDist2d(densityHealer) <= 3.0f);
         }
 
+        // Rerun171 completed all fourteen route nodes and all four bosses, but
+        // Azil follower waves remained on the healer for up to 4108 ms while
+        // this arrived handoff waited for another non-damaging Roar. Match the
+        // already-proved ordinary-trash recovery: when the local healer-owned
+        // set covers a majority of the current wave, submit one native Swipe
+        // before retrying Roar. A rejected cast changes no state and falls
+        // through; native GCD, power, range, LOS, target, and threat semantics
+        // remain authoritative.
+        Creature* localHealerOwnedSwipeTarget = nullptr;
+        uint32 localHealerOwnedSwipeCount = 0;
+        float localHealerOwnedSwipeDistance =
+            std::numeric_limits<float>::max();
+        uint32 localHealerOwnedSwipeGuid =
+            std::numeric_limits<uint32>::max();
+        if (feralHealerHandoffActive && feralHealerHandoffArrived)
+            for (Creature* candidate : localAdds)
+                if (candidate && candidate->GetVictim() == densityHealer
+                    && bot->GetExactDist2d(candidate) <= 10.0f)
+                {
+                    ++localHealerOwnedSwipeCount;
+                    float distance = bot->GetExactDist(candidate);
+                    uint32 guid = candidate->GetGUID().GetCounter();
+                    if (!localHealerOwnedSwipeTarget
+                        || distance < localHealerOwnedSwipeDistance
+                        || (distance == localHealerOwnedSwipeDistance
+                            && guid < localHealerOwnedSwipeGuid))
+                    {
+                        localHealerOwnedSwipeTarget = candidate;
+                        localHealerOwnedSwipeDistance = distance;
+                        localHealerOwnedSwipeGuid = guid;
+                    }
+                }
+        uint32 healerOwnedBeforeHandoffSwipe = densityHealer
+            ? uint32(observedListedAttackerCount(densityHealer)) : 0;
+        if (localHealerOwnedSwipeTarget && bot->HasSpell(779)
+            && localHealerOwnedSwipeCount >= 2
+            && localHealerOwnedSwipeCount * 2
+                >= healerOwnedBeforeHandoffSwipe
+            && TryCastCombatSpell(bot, localHealerOwnedSwipeTarget, 779))
+        {
+            std::string raw = BuildRawJson(bot, localHealerOwnedSwipeTarget);
+            std::string semantic = BuildSemanticJson(
+                bot, localHealerOwnedSwipeTarget, "dungeon_boss",
+                &power, stage, activity);
+            RecordEvent(state, bot, "boss_add_density",
+                localHealerOwnedSwipeTarget,
+                "feral_swipe_healer_swarm_retention_before_roar",
+                raw.c_str(), semantic.c_str(),
+                float(localHealerOwnedSwipeCount),
+                float(healerOwnedBeforeHandoffSwipe), 779);
+            state.TargetGuid = localHealerOwnedSwipeTarget->GetGUID();
+            target = localHealerOwnedSwipeTarget;
+            situation = "dungeon_boss";
+            action = "feral_swipe_healer_swarm_retention_before_roar";
+            state.WasInCombat = true;
+            state.DecisionTimer = std::min<uint32>(state.DecisionTimer, 250);
+            return true;
+        }
+
         // Rerun163 reached its identity-bound remote handoff after the first
         // native Roar, but the post-Roar damage resolver consumed the first
         // available global cooldown before the existing second-Roar resolver.
