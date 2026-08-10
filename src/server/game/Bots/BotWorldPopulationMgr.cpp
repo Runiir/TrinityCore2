@@ -15936,6 +15936,20 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         bool localHealerOwnedMajority = localHealerOwnedSwipeCount >= 2
             && localHealerOwnedSwipeCount * 2
                 >= healerOwnedBeforeHandoffSwipe;
+        // Rerun204 proved that the fresh local-majority Thrash gate preserves
+        // retention and exposure, but its final Azil wave first exposed a
+        // useful local minority: twelve followers still owned the healer and
+        // at least two were inside the native area envelope. The existing
+        // large-wave Roar gate accepted that exact topology, then its global
+        // cooldown occupied the arrived handoff until only GUID 744 remained;
+        // the lingering Swipe cleared it after 3338 ms. Give persistent native
+        // Thrash the same already-proved fresh large-wave local-cluster scope
+        // before Roar. Smaller fresh minorities, remote clusters, and every
+        // native cooldown, GCD, power, range, LOS, target, threat, movement,
+        // and hazard gate retain their existing behavior.
+        bool freshLargeLocalHealerCluster = !feralHealerHandoffActive
+            && healerOwnedBeforeHandoffSwipe >= 12
+            && localHealerOwnedSwipeCount >= 2;
         // Rerun198's second failing Azil subwave reached its identity-bound,
         // arrived handoff in 766 ms, but the first damaging GCD used Swipe.
         // Seven followers still owned the healer until the handoff expired;
@@ -15964,7 +15978,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         // range, LOS, target, threat, movement, and hazard gates remain final.
         if (localHealerOwnedSwipeTarget
             && ((feralHealerHandoffActive && feralHealerHandoffArrived)
-                || localHealerOwnedMajority)
+                || localHealerOwnedMajority
+                || freshLargeLocalHealerCluster)
             && healerOwnedBeforeHandoffSwipe >= 2
             && bot->HasSpell(77758)
             && TryCastCombatSpell(bot, localHealerOwnedSwipeTarget, 77758))

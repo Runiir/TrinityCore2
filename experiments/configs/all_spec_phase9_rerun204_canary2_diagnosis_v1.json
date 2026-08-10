@@ -1,0 +1,185 @@
+{
+  "schema": "all_spec_phase9_authoritative_canary_diagnosis_v1",
+  "attempt": {
+    "run": "rerun204",
+    "serial_index": 2,
+    "attempt_id": "phase9_serial_02_stonecore_phase9_006_6893daf98698",
+    "attempt_root": "artifacts/all_spec_program/phase9_serial_canaries_20260810_rerun204/phase9_serial_02_stonecore_phase9_006_6893daf98698",
+    "only_canary_run": 2,
+    "canaries_3_through_8_started": false,
+    "classification": "authoritative_gameplay_failure"
+  },
+  "frozen_identity": {
+    "identity_manifest_sha256": "be5e516eb7bd5d7580e108626b35d7b7cebcc6e1392baaa211f5c51833398219",
+    "run_plan_sha256": "245a2f6812bea1b5dbc2d8fd3a440ec1bcd08c59c23d0c61e1d64567592f0503",
+    "binary_sha256": "ebcc55f7046ed20f836a9de042c2e54fe5bad84e3095ba8fcfface678eba8f38",
+    "server_process_id": 140163,
+    "server_epoch": 1261356804254432,
+    "worldserver_unit": "trinity-live-validation-400394c45c4755ca3caae659",
+    "session_fingerprint": "4238abae2528c6f26d730488d7daca59d189ebcc6b00a2dd6c26bf3a3e697308",
+    "profile_generation": 1,
+    "profile_content_hash": "d9d6a60e97756695ea6553b1fa34e9c2c63ebe6e09467e71bc01fb74fe3655ae",
+    "max_active_cohorts": 1,
+    "identity_recomputed": true,
+    "run_plan_recomputed": true,
+    "worldserver_stopped_before_tracked_diagnosis_or_source_edit": true
+  },
+  "exact_party": {
+    "ordered_specs": [
+      "feral_druid_tank",
+      "discipline_priest",
+      "fury_warrior",
+      "marksmanship_hunter",
+      "retribution_paladin"
+    ],
+    "party_sha256": "524b94c794897f5111bdae0a5e45ba31a31ebb8596d811a3dd8c1caff95bd16a",
+    "recomputed_from_plan_and_raw_report": true
+  },
+  "capture_and_publication": {
+    "batch_identity_sha256": "df3a4a60db1f0db1c0e7e028aa2a77cd38b2a668d5025f9024302cfab313cfd7",
+    "raw_bundle_sha256": "6eaac717f0f371a90fdbfda61ae8167519c822b834ac04f41381b7edadd59975",
+    "compact_bundle_sha256": "1c58a2f9d8e57dc9ed32c3cb77b2f7563f6ed4221ec469a7a746dfa539bcd6ac",
+    "receipt_canonical_sha256": "1112b8f0279bb73b04922077163ce0ba5cf410877c7deff9df9ba07aa4ac68ca",
+    "receipt_file_sha256": "3682cb3fa03b8c369b3c49bc043af10693f852f44b18ca012c7155af7a870181",
+    "acceptance_source_report_sha256": "599fc7a7bfa5b96c913ed702a8a1e80ecb4edf383868576c40a6d3ec5cde2c8a",
+    "raw_pointer_sha256": "d0586ce6bdc67e2f9afa30148060995cba14479f5a5b155b29c8e378598c7e6c",
+    "raw_dvc_md5": "57f2601ccecb41394956da951f10fc0f.dir",
+    "compact_pointer_sha256": "123d00a3d6442e2ad6ca2ee371c111ef46671f02b753bea5f06f54322beeb34a",
+    "compact_dvc_md5": "aaed354edd927d69b65c6bab2bd8250c.dir",
+    "validated_with": "tools.bot_ml.batch_evidence_lifecycle.validate_capture",
+    "canonical_receipt_recomputed": true,
+    "exact_selective_remote_status": "Cache and remote 'object' are in sync.",
+    "raw_and_compact_payloads_re_evicted": true,
+    "batch_specific_caches_re_evicted": true,
+    "dvc_config_local_restored_exactly": true,
+    "broad_dvc_gc_used": false
+  },
+  "independent_verification": {
+    "verifier_path": "artifacts/all_spec_program/phase9_serial_canaries_20260810_rerun204/phase9_serial_02_stonecore_phase9_006_6893daf98698/independent_verifier.json",
+    "verifier_file_sha256": "8334bfc817754ff4daf2787b1cbc6c88fcc764e13c15fb5f9f92a4b21c4bb578",
+    "verifier_canonical_sha256": "1a7a9e69845618fcf8b9fbbccca54cfb9abba93a64e79c6a996ed643abbaaea1",
+    "canonical_role_auditor": "tools.bot_ml.audit_role_efficiency",
+    "canonical_role_audit_file_sha256": "e8341e26a95c9cc3da19f85e67370c41bfd9b4dcf88493b2764f68dbe6e7f410",
+    "canonical_role_audit_sha256": "84e7185353fe35630f3a50a499414bbc59f6258bde97c9e5dc53883effe1c866"
+  },
+  "strict_non_role_reconstruction": {
+    "underlying_returncode": 0,
+    "timed_out": false,
+    "session_closed": true,
+    "identity_complete": true,
+    "serial_isolation": true,
+    "operator_attempt_count": 1,
+    "global_lifecycle_command_count": 0,
+    "cleanup": {
+      "active": false,
+      "active_bots": 0,
+      "lease_count": 0,
+      "party_bot_count": 0
+    },
+    "route_terminal_count": 14,
+    "authoritative_boss_death_entries": [
+      42188,
+      42333,
+      43214,
+      43438
+    ],
+    "high_priestess_azil_terminal_and_death": true,
+    "validation_route_manifest_complete": true,
+    "watchdog_clean": true,
+    "forbidden_completion_assistance": [],
+    "all_non_role_gates_passed": true
+  },
+  "role_reconstruction": {
+    "eligible_hostile_denominator": 1546,
+    "tank_owned_hostile_numerator": 1509,
+    "healer_targeting_hostile_numerator": 2,
+    "tank_all_hostile_retention_ratio": 0.9760672703751617,
+    "healer_target_exposure_ratio": 0.00129366106080207,
+    "maximum_healer_target_dwell_ms": 3338,
+    "maximum_dwell_guid": 744,
+    "threat_aura_active_samples": 468,
+    "threat_aura_total_samples": 468,
+    "threat_aura_uptime_ratio": 1.0,
+    "non_healer_active_action_coverage_passed": true,
+    "cast_failure_rate_passed": true,
+    "discipline_heal_cast_success_rate": 1.0,
+    "required_rotation_groups_present": true,
+    "threshold_results": {
+      "tank_retention_at_least_0_90": true,
+      "healer_exposure_at_most_0_01": true,
+      "maximum_dwell_at_most_3000_ms": false,
+      "threat_aura_uptime_at_least_0_99": true,
+      "non_healer_active_action_coverage_at_least_0_70": true,
+      "cast_failure_rate_at_most_0_05": true,
+      "healer_successful_heal_cast_rate_at_least_0_95": true,
+      "missing_required_rotation_groups_forbidden": true
+    },
+    "per_route_generation": {
+      "1": {"eligible": 265, "tank_owned": 256, "healer_targeting": 0},
+      "2": {"eligible": 13, "tank_owned": 11, "healer_targeting": 0},
+      "3": {"eligible": 117, "tank_owned": 117, "healer_targeting": 0},
+      "4": {"eligible": 35, "tank_owned": 29, "healer_targeting": 0},
+      "7": {"eligible": 10, "tank_owned": 10, "healer_targeting": 0},
+      "8": {"eligible": 10, "tank_owned": 6, "healer_targeting": 0},
+      "9": {"eligible": 5, "tank_owned": 5, "healer_targeting": 0},
+      "10": {"eligible": 6, "tank_owned": 6, "healer_targeting": 0},
+      "11": {"eligible": 26, "tank_owned": 26, "healer_targeting": 0},
+      "13": {"eligible": 855, "tank_owned": 841, "healer_targeting": 0},
+      "14": {"eligible": 204, "tank_owned": 202, "healer_targeting": 2}
+    }
+  },
+  "maximum_dwell_chronology": [
+    {"offset_ms": 0, "event": "A fresh generation-14 Azil wave had 14 of 21 followers on Discipline and seven on Feral; the existing stable Feral approach continued toward the remote representative."},
+    {"offset_ms": 510, "event": "The wave had twelve healer-owned followers. Feral issued boss-add movement; only a local minority was within native area range."},
+    {"offset_ms": 1537, "event": "The first reachable local cluster satisfied the existing large-wave two-target Roar gate but not rerun204's fresh local-majority Thrash gate. Native Demoralizing Roar reduced the healer-owned set to ten."},
+    {"offset_ms": 1794, "event": "Seven followers remained on Discipline while the arrived handoff held through the native Roar global cooldown."},
+    {"offset_ms": 2320, "event": "The same seven followers remained in the final handoff hold observation."},
+    {"offset_ms": 2571, "event": "The wave collapsed to GUID 744 alone on Discipline; GUID 745 was tank-owned."},
+    {"offset_ms": 3087, "event": "The existing lingering-attacker fallback selected native Swipe on GUID 744."},
+    {"offset_ms": 3338, "event": "GUID 744 remained continuously healer-owned at the last sampled observation, exceeding the strict ceiling by 338 ms."},
+    {"offset_ms": 3587, "event": "The next Feral observation showed GUID 744 tank-owned and no healer-targeting followers."}
+  ],
+  "action_reconstruction": {
+    "growl_actual_attempts": 16,
+    "swipe_actual_attempts": 27,
+    "thrash_actual_attempts": 22,
+    "demoralizing_roar_semantic_actions": 4,
+    "charge_semantic_actions": 1,
+    "feral_movement_actions": 58,
+    "healer_handoff_semantic_actions": 4,
+    "hazard_exit_actions": 117,
+    "hazard_exit_failures": 0,
+    "misdirection_aoe_attempts": 40,
+    "misdirection_aoe_successes": 33,
+    "misdirection_aoe_wrong_successes": 0,
+    "misdirection_single_attempts": 24,
+    "misdirection_single_successes": 22,
+    "thrash_action_in_maximum_dwell_episode": false
+  },
+  "causal_classification": {
+    "real_pickup_loss": true,
+    "later_threat_decay": false,
+    "movement_or_hazard_starvation": "remote approach before the first local action contributed; hazard starvation is false",
+    "misdirection_failure": false,
+    "healer_behavior_failure": false,
+    "audit_attribution_error": false,
+    "rerun170_passive_swarm_correction_side_effect": false,
+    "rerun204_local_majority_thrash_correction_side_effect": false,
+    "finding": "The rerun204 gate was not reached: this fresh large Azil wave first exposed a useful two-or-more follower local cluster that was still a minority of the twelve healer-owned followers. The existing code therefore used native Roar, and its GCD occupied the arrived handoff until only GUID 744 remained. The ordinary-trash generation again had zero eligible healer exposure."
+  },
+  "smallest_correction": {
+    "description": "At the existing fresh large-wave gate, when at least twelve exact followers target the healer and at least two are locally reachable, try native Thrash before the unchanged native Roar path. Preserve rerun204 local-majority handling, arrived-handoff local-minority handling, native Swipe and Roar fallbacks, remote movement, and all native legality and strict gates.",
+    "source": "src/server/game/Bots/BotWorldPopulationMgr.cpp",
+    "focused_test": "test_rerun204_fresh_large_local_minority_prefers_thrash_before_roar",
+    "thresholds_changed": false,
+    "direct_threat_or_victim_mutation_added": false,
+    "teleport_added": false,
+    "model_metadata_changed": false
+  },
+  "blocked_scope": {
+    "rerun204_canaries_3_through_8": "blocked",
+    "phases_10_through_12": "blocked",
+    "fresh_rerun205_identity_and_eight_row_plan_required": true,
+    "rerun205_canary_2_only_until_independent_strict_pass": true
+  }
+}
