@@ -20178,6 +20178,49 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 nearbyHealerOwnedCount >= 2
                 && nearbyHealerOwnedCount * 2
                     >= currentHealerOwnedAttackers.size();
+            // Rerun202's generation-13 Flayer swarm entered this proven
+            // local-majority recovery with ten healer-owned identities.
+            // Native Swipe and Growl reduced that set to two within 1543 ms,
+            // but the ordinary-trash path then spent three decisions moving
+            // to density and four selecting an out-of-range representative.
+            // Unlike the arrived boss handoff above, this gate never offered
+            // native Thrash; the last observed Thrash attempt was more than
+            // twenty seconds old and the two identities reached 4395/4915 ms
+            // of continuous healer ownership. Prefer the same persistent
+            // native area threat at this already-established local-majority
+            // recovery point, retaining Swipe below whenever Thrash is
+            // unavailable. Every native spell, target, cooldown, GCD, power,
+            // range, movement, hazard, victim, and threat gate is unchanged.
+            if (nearbyHealerOwnedCoversMajority
+                && nearbyHealerOwnedAttacker && bot->HasSpell(77758)
+                && TryCastCombatSpell(bot, nearbyHealerOwnedAttacker, 77758))
+            {
+                if (feralTrashChargeArrived)
+                {
+                    state.FeralChargePickupTargetGuid.Clear();
+                    state.FeralChargePickupUntilMs = 0;
+                }
+                std::string raw = BuildRawJson(
+                    bot, nearbyHealerOwnedAttacker);
+                std::string semantic = BuildSemanticJson(
+                    bot, nearbyHealerOwnedAttacker,
+                    "normal_dungeon_trash", &power, stage, activity);
+                RecordEvent(state, bot, "validation_route_threat_pickup",
+                    nearbyHealerOwnedAttacker,
+                    "feral_thrash_healer_swarm_retention_before_roar",
+                    raw.c_str(), semantic.c_str(),
+                    float(nearbyHealerOwnedCount),
+                    float(currentHealerOwnedAttackers.size()), 77758);
+                state.TargetGuid = nearbyHealerOwnedAttacker->GetGUID();
+                target = nearbyHealerOwnedAttacker;
+                situation = "normal_dungeon_trash";
+                action =
+                    "feral_thrash_healer_swarm_retention_before_roar";
+                state.WasInCombat = true;
+                state.DecisionTimer = std::min<uint32>(
+                    state.DecisionTimer, 250);
+                return true;
+            }
             if (nearbyHealerOwnedCoversMajority
                 && nearbyHealerOwnedAttacker && bot->HasSpell(779)
                 && TryCastCombatSpell(bot, nearbyHealerOwnedAttacker, 779))

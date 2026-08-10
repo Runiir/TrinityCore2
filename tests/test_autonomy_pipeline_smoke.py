@@ -3292,6 +3292,37 @@ def test_rerun160_feral_local_healer_swarm_prefers_native_swipe_with_roar_fallth
     )
 
 
+def test_rerun202_feral_ordinary_local_majority_prefers_thrash_before_swipe_and_roar():
+    objective = function_body(
+        read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective"
+    )
+    full_recovery = objective.split(
+        "Rerun160's maximum 6025-ms exposure", 1
+    )[1].split("if (feralTrashChargeArrived && defenseTarget", 1)[0]
+    recovery = full_recovery.split(
+        "Rerun202's generation-13 Flayer swarm", 1
+    )[1]
+
+    assert "nearbyHealerOwnedCount >= 2" in full_recovery
+    assert "nearbyHealerOwnedCount * 2" in full_recovery
+    assert ">= currentHealerOwnedAttackers.size()" in full_recovery
+    assert_ordered(
+        recovery,
+        "TryCastCombatSpell(bot, nearbyHealerOwnedAttacker, 77758)",
+        '"feral_thrash_healer_swarm_retention_before_roar"',
+        "TryCastCombatSpell(bot, nearbyHealerOwnedAttacker, 779)",
+        '"feral_swipe_healer_swarm_retention_before_roar"',
+        "if (nearbyHealerOwnedCount >= 2 && missingOwnedRoar",
+        "TryCastFriendlySpell(bot, bot, 99)",
+        '"feral_demoralizing_roar_remote_healer_trash_cluster_handoff"',
+    )
+    assert "state.DecisionTimer, 250" in recovery
+    assert "SetThreat" not in recovery
+    assert "AddThreat" not in recovery
+    assert "SetVictim" not in recovery
+    assert "NearTeleportTo" not in recovery
+
+
 def test_rerun171_feral_arrived_boss_handoff_prefers_native_swipe_before_roar():
     manager = read(BOT_MGR)
     recovery = manager.split(
