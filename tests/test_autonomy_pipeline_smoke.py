@@ -5386,3 +5386,26 @@ def test_rerun206_feral_dps_provisions_and_maintains_cat_form():
     assert '"feral_druid_dps": [768]' in catalogs
     assert '{ CLASS_DRUID, "dps", "feral_druid_dps", 768, 768, 0, "cat_form" }' in manager
     assert 768 in feral["action_profile_spell_ids"]
+
+
+def test_rerun207_feral_dps_shred_repositions_behind_before_native_cast():
+    root = Path(__file__).resolve().parents[1]
+    manager = (root / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+
+    movement = function_body(manager, "bool BotWorldPopulationMgr::MoveBotToProfileRange")
+    execution = function_body(manager, "BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction")
+    assert 'action->SpellId == 5221 && directive == "melee_behind"' in movement
+    assert "reference->HasInArc(nativeFrontArc, &rearPosition)" in movement
+    assert "reference->GetFirstCollisionPosition(" in movement
+    assert "moveToTerrainProjectedPoint(rearPosition.GetPositionX()" in movement
+    assert "target->HasInArc(nativeFrontArc, bot)" in execution
+    assert 'action.MovementDirective = "melee_behind";' in execution
+    assert '"shred_behind_required"' in execution
+    assert "state->ProfileCastSuppressedSpellId = action.SpellId;" in execution
+    assert "state->ProfileCastSuppressedUntilMs = nowMs + 3000;" in execution
+    assert_ordered(
+        execution,
+        "target->HasInArc(nativeFrontArc, bot)",
+        "MoveBotToProfileRange(*state, bot, target, &action)",
+        "BotActionExecutor executor",
+    )

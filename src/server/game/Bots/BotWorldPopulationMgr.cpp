@@ -6255,6 +6255,37 @@ bool BotWorldPopulationMgr::MoveBotToProfileRange(WorldBotState& state, Player* 
     if (profile.MissingProfile || directive.empty())
         return false;
 
+    if (action && action->SpellId == 5221 && directive == "melee_behind")
+    {
+        // Rerun207 canary 4 proved that Cat Form and the rest of the Feral DPS
+        // rotation were live, but all 32 failures were native Shred result 59:
+        // the resolver selected a legal resource/range candidate while the bot
+        // was still in the target's forbidden front arc.  Keep native spell
+        // legality authoritative and use the existing path validator to reach
+        // a collision-safe point inside melee range behind this exact target.
+        float const rearRange = std::max(2.0f,
+            std::min(bot->GetMeleeRange(reference) - 0.5f,
+                bot->GetCombatReach() + reference->GetCombatReach() + 0.5f));
+        float nativeFrontArc = float(M_PI);
+        if (Creature const* creature = reference->ToCreature();
+            creature && creature->HasStaticFlag(CREATURE_STATIC_FLAG_5_240_DEGREE_BACK_ARC))
+            nativeFrontArc -= float(M_PI) / 3.0f;
+
+        for (float rearOffset : { 0.0f, float(M_PI) / 12.0f,
+            -float(M_PI) / 12.0f, float(M_PI) / 6.0f,
+            -float(M_PI) / 6.0f })
+        {
+            Position rearPosition = reference->GetFirstCollisionPosition(
+                rearRange, float(M_PI) + rearOffset);
+            if (reference->HasInArc(nativeFrontArc, &rearPosition))
+                continue;
+            if (moveToTerrainProjectedPoint(rearPosition.GetPositionX(),
+                rearPosition.GetPositionY(), rearPosition.GetPositionZ()))
+                return true;
+        }
+        return false;
+    }
+
     if (directive == "melee" || (minRange <= 0.0f && maxRange <= 5.0f))
         return moveToTerrainProjectedPoint(reference->GetPositionX(), reference->GetPositionY(), reference->GetPositionZ());
 
@@ -25285,6 +25316,37 @@ BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState*
     if (state)
     {
         TryResolveBotBlocker(*state, bot, "profile_action_valid");
+    }
+
+    if (state && bot && target && action.SpellId == 5221)
+    {
+        float nativeFrontArc = float(M_PI);
+        if (Creature const* creature = target->ToCreature();
+            creature && creature->HasStaticFlag(CREATURE_STATIC_FLAG_5_240_DEGREE_BACK_ARC))
+            nativeFrontArc -= float(M_PI) / 3.0f;
+        if (target->HasInArc(nativeFrontArc, bot))
+        {
+            action.MovementDirective = "melee_behind";
+            if (actionOut)
+                *actionOut = action;
+            bool const moved = MoveBotToProfileRange(*state, bot, target, &action);
+            RecordCombatAttempt(*state, bot, target, "positional_reposition", &action,
+                moved ? BotActionResult::Casting : BotActionResult::NoAction,
+                moved ? "shred_behind_required" : "shred_behind_path_rejected");
+            if (moved)
+            {
+                TryResolveBotBlocker(*state, bot, "shred_behind_reposition");
+                return BotActionResult::Casting;
+            }
+
+            // Do not turn an unavailable rear lane into a native cast failure
+            // loop.  Suppress only Shred for a short resolver window so the
+            // unchanged profile can choose Mangle or another legal action.
+            state->ProfileCastSuppressedSpellId = action.SpellId;
+            state->ProfileCastSuppressedTargetGuid = action.TargetGuid;
+            state->ProfileCastSuppressedUntilMs = nowMs + 3000;
+            return BotActionResult::NoAction;
+        }
     }
 
     BotActionExecutor executor;
