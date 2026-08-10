@@ -3219,6 +3219,28 @@ def test_feral_single_healer_threat_growl_preempts_stampeding_roar_gcd():
     )
 
 
+def test_rerun198_multi_healer_wave_reserves_native_pickup_before_stampeding_roar():
+    objective = function_body(
+        read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective"
+    )
+    gate = objective.split(
+        "bool const reservedHealerThreatHandoff =", 1
+    )[1].split("std::ostringstream diagnosticRaw;", 1)[0]
+
+    assert_ordered(
+        gate,
+        "if (reservedHealerThreatHandoff)",
+        "else if (nativeChargeReadyForHealerThreat)",
+        "else if (healerThreatAttackerCount >= 3)",
+        'failureReason = "multi_healer_wave_native_pickup_reserved";',
+        "else if (!activePathValid)",
+        "TryCastFriendlySpell(",
+    )
+    assert "SetVictim" not in gate
+    assert "AddThreat" not in gate
+    assert "NearTeleportTo" not in gate
+
+
 def test_feral_generic_healer_threat_fallback_preserves_densest_cluster_target():
     objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
     fallback = objective.split("Rerun140 proved the specialized Feral handoffs", 1)[1].split(
@@ -3295,6 +3317,29 @@ def test_rerun171_feral_arrived_boss_handoff_prefers_native_swipe_before_roar():
     )
 
 
+def test_rerun198_arrived_boss_handoff_prefers_thrash_with_swipe_fallback():
+    manager = read(BOT_MGR)
+    recovery = manager.split(
+        "Rerun198's second failing Azil subwave", 1
+    )[1].split("Rerun163 reached its identity-bound remote handoff", 1)[0]
+
+    assert "localHealerOwnedMajority" in recovery
+    assert_ordered(
+        recovery,
+        "feralHealerHandoffActive",
+        "feralHealerHandoffArrived",
+        "localHealerOwnedMajority",
+        "TryCastCombatSpell(bot, localHealerOwnedSwipeTarget, 77758)",
+        '"feral_thrash_healer_swarm_retention_before_roar"',
+        "TryCastCombatSpell(bot, localHealerOwnedSwipeTarget, 779)",
+        '"feral_swipe_healer_swarm_retention_before_roar"',
+    )
+    assert "state.DecisionTimer, 250" in recovery
+    assert "SetVictim" not in recovery
+    assert "AddThreat" not in recovery
+    assert "NearTeleportTo" not in recovery
+
+
 def test_rerun190_feral_local_majority_swipe_precedes_initial_roar():
     objective = function_body(
         read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective"
@@ -3302,7 +3347,7 @@ def test_rerun190_feral_local_majority_swipe_precedes_initial_roar():
     marker = objective.index(
         "Rerun190 then proved the same damaging pickup"
     )
-    recovery = objective[marker - 700 : marker + 5200]
+    recovery = objective[marker - 700 : marker + 7200]
 
     assert_ordered(
         recovery,

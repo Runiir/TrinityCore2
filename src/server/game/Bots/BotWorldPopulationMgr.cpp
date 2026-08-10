@@ -10236,6 +10236,15 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             // exact attacker is already inside its native legal band.
             else if (nativeChargeReadyForHealerThreat)
                 failureReason = "native_charge_ready_for_healer_threat";
+            // Rerun198's fourteen-healer Azil wave reached this global cadence
+            // block while its native Charge was unavailable. Stampeding Roar
+            // consumed the first GCD, so the specialized area pickup below did
+            // not submit Demoralizing Roar until 1536 ms after exposure. Keep
+            // the movement accelerator for one- and two-hostile recovery, but
+            // reserve three-plus healer attackers for the existing native area
+            // pickup controller. No victim or threat is changed here.
+            else if (healerThreatAttackerCount >= 3)
+                failureReason = "multi_healer_wave_native_pickup_reserved";
             else if (!activePathValid)
                 failureReason = "inactive_path";
             else if (!stateMoving)
@@ -15924,10 +15933,40 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 }
         uint32 healerOwnedBeforeHandoffSwipe = densityHealer
             ? uint32(observedListedAttackerCount(densityHealer)) : 0;
-        if (localHealerOwnedSwipeTarget && bot->HasSpell(779)
-            && localHealerOwnedSwipeCount >= 2
+        bool localHealerOwnedMajority = localHealerOwnedSwipeCount >= 2
             && localHealerOwnedSwipeCount * 2
-                >= healerOwnedBeforeHandoffSwipe
+                >= healerOwnedBeforeHandoffSwipe;
+        // Rerun198's second failing Azil subwave reached its identity-bound,
+        // arrived handoff in 766 ms, but the first damaging GCD used Swipe.
+        // Seven followers still owned the healer until the handoff expired;
+        // the later native Thrash completed pickup only after 3324 ms. Prefer
+        // that same persistent native area threat on an already-arrived
+        // handoff, retaining Swipe below whenever Thrash is unavailable.
+        if (localHealerOwnedSwipeTarget && feralHealerHandoffActive
+            && feralHealerHandoffArrived && localHealerOwnedMajority
+            && bot->HasSpell(77758)
+            && TryCastCombatSpell(bot, localHealerOwnedSwipeTarget, 77758))
+        {
+            std::string raw = BuildRawJson(bot, localHealerOwnedSwipeTarget);
+            std::string semantic = BuildSemanticJson(
+                bot, localHealerOwnedSwipeTarget, "dungeon_boss",
+                &power, stage, activity);
+            RecordEvent(state, bot, "boss_add_density",
+                localHealerOwnedSwipeTarget,
+                "feral_thrash_healer_swarm_retention_before_roar",
+                raw.c_str(), semantic.c_str(),
+                float(localHealerOwnedSwipeCount),
+                float(healerOwnedBeforeHandoffSwipe), 77758);
+            state.TargetGuid = localHealerOwnedSwipeTarget->GetGUID();
+            target = localHealerOwnedSwipeTarget;
+            situation = "dungeon_boss";
+            action = "feral_thrash_healer_swarm_retention_before_roar";
+            state.WasInCombat = true;
+            state.DecisionTimer = std::min<uint32>(state.DecisionTimer, 250);
+            return true;
+        }
+        if (localHealerOwnedSwipeTarget && bot->HasSpell(779)
+            && localHealerOwnedMajority
             && TryCastCombatSpell(bot, localHealerOwnedSwipeTarget, 779))
         {
             std::string raw = BuildRawJson(bot, localHealerOwnedSwipeTarget);
