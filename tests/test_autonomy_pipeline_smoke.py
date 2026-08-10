@@ -4358,7 +4358,7 @@ def test_rerun210_protection_warrior_charges_remote_healer_wave_before_area_move
         'profile.SpecTag == "protection_warrior"',
         "densityDefenseTarget == densityHealer",
         "add->GetVictim() == densityHealer",
-        "observedListedAttackerCount(densityHealer) >= 3",
+        "warriorHealerAttackerCount >= 3",
         "bot->GetExactDist(add) > 8.0f",
         "bot->HasSpell(100)",
         "TryCastCombatSpell(bot, add, 100)",
@@ -4371,7 +4371,41 @@ def test_rerun210_protection_warrior_charges_remote_healer_wave_before_area_move
     assert "SetThreat" not in branch
     assert "SetVictim" not in branch
     assert "NearTeleportTo" not in branch
-    assert "46968" not in branch
+
+
+def test_rerun211_protection_warrior_closes_native_gap_and_peels_residual_healer_threat():
+    objective = function_body(
+        read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective"
+    )
+    marker = objective.index(
+        "Rerun210's maximum-dwell identity was the one survivor"
+    )
+    branch = objective[marker - 500 : marker + 14500]
+
+    assert_ordered(
+        branch,
+        "warriorHealerAttackerCount > 0",
+        "warriorHealerAttackerCount < 3",
+        "densityDefenseTarget != densityHealer",
+        "guid < warriorResidualHealerGuid",
+        "TryCastCombatSpell(bot, warriorResidualHealerAdd, 355)",
+        '"warrior_taunt_residual_healer_threat"',
+        "Rerun209's generation-14 maximum dwell began with fifteen Azil",
+        "TryCastCombatSpell(bot, add, 100)",
+        '"warrior_charge_healer_swarm_pickup"',
+        "Rerun210 proved the complementary native dead zone",
+        "bot->GetExactDist(add) > 5.0f",
+        "bot->GetExactDist(add) <= 10.0f",
+        "bot->HasSpell(46968)",
+        "TryCastCombatSpell(bot, add, 46968)",
+        '"warrior_shockwave_healer_swarm_gap"',
+        "On a multi-target wave, establish area threat before spending",
+        "ResolveProfileCombatAction(",
+    )
+    assert "state.DecisionTimer, 250" in branch
+    assert "SetThreat" not in branch
+    assert "SetVictim" not in branch
+    assert "NearTeleportTo" not in branch
 
 
 def test_rerun201_protection_honors_ready_local_majority_area_before_remote_approach():

@@ -17504,6 +17504,63 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     <= TankDensityClusterRadius;
         };
 
+        // Rerun210's maximum-dwell identity was the one survivor after
+        // Thunder Clap acquired the rest of an eleven-follower healer wave.
+        // A newer, larger damage-role cluster then won density selection for
+        // the next nine seconds, so the Warrior never submitted its ready
+        // single-target Taunt against that residual healer threat.  Preserve
+        // density priority for the larger damage-role swarm, but peel only a
+        // bounded one- or two-attacker healer remainder first with the
+        // Warrior's existing native Taunt.  Lowest GUID is the deterministic
+        // oldest-spawn tie-breaker; all cooldown, range, LOS, target, stance,
+        // and spell-legality gates remain native.
+        size_t warriorHealerAttackerCount = densityHealer
+            ? observedListedAttackerCount(densityHealer) : 0;
+        Creature* warriorResidualHealerAdd = nullptr;
+        uint32 warriorResidualHealerGuid =
+            std::numeric_limits<uint32>::max();
+        if (role == "tank" && profile.SpecTag == "protection_warrior"
+            && densityHealer && warriorHealerAttackerCount > 0
+            && warriorHealerAttackerCount < 3
+            && densityDefenseTarget != densityHealer)
+        {
+            for (Creature* candidate : localAdds)
+            {
+                if (!candidate || candidate->GetVictim() != densityHealer)
+                    continue;
+                uint32 guid = candidate->GetGUID().GetCounter();
+                if (!warriorResidualHealerAdd
+                    || guid < warriorResidualHealerGuid)
+                {
+                    warriorResidualHealerAdd = candidate;
+                    warriorResidualHealerGuid = guid;
+                }
+            }
+            if (warriorResidualHealerAdd && bot->HasSpell(355)
+                && TryCastCombatSpell(bot, warriorResidualHealerAdd, 355))
+            {
+                std::string raw = BuildRawJson(
+                    bot, warriorResidualHealerAdd);
+                std::string semantic = BuildSemanticJson(
+                    bot, warriorResidualHealerAdd, "dungeon_boss", &power,
+                    stage, activity);
+                RecordEvent(state, bot, "boss_adds",
+                    warriorResidualHealerAdd,
+                    "warrior_taunt_residual_healer_threat", raw.c_str(),
+                    semantic.c_str(),
+                    bot->GetExactDist(warriorResidualHealerAdd),
+                    float(warriorHealerAttackerCount), 355);
+                state.DecisionTimer = std::min<uint32>(
+                    state.DecisionTimer, 250);
+                state.TargetGuid = warriorResidualHealerAdd->GetGUID();
+                state.WasInCombat = true;
+                target = warriorResidualHealerAdd;
+                situation = "dungeon_boss";
+                action = "warrior_taunt_residual_healer_threat";
+                return true;
+            }
+        }
+
         // Rerun209's generation-14 maximum dwell began with fifteen Azil
         // followers on the Restoration Druid while Protection Warrior was
         // outside Thunder Clap range.  The tank spent six seconds on ordinary
@@ -17520,7 +17577,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         if (role == "tank" && profile.SpecTag == "protection_warrior"
             && densityHealer && densityDefenseTarget == densityHealer
             && add && add->GetVictim() == densityHealer
-            && observedListedAttackerCount(densityHealer) >= 3
+            && warriorHealerAttackerCount >= 3
             && bot->GetExactDist(add) > 8.0f && bot->HasSpell(100))
         {
             if (TryCastCombatSpell(bot, add, 100))
@@ -17540,6 +17597,42 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             }
             state.DecisionTimer = std::min<uint32>(
                 state.DecisionTimer, 250);
+        }
+
+        // Rerun210 proved the complementary native dead zone.  The densest
+        // healer-owned representative could already be below Charge's
+        // eight-yard minimum while still outside the melee range required by
+        // the Thunder Clap profile.  That path spent up to 3.322 seconds
+        // approaching before the first area cast, and new waves could extend
+        // the same identity beyond the dwell ceiling.  Shockwave is already
+        // known by the provisioned Warrior; the prior 771/771 out-of-range
+        // result came from unbounded remote submissions.  Permit it only in
+        // this explicit greater-than-five and at-most-ten-yard gap, after the
+        // native Charge attempt and before generic area movement.  Native
+        // facing, range, LOS, cooldown, GCD, power, and cast legality remain
+        // authoritative, and rejection preserves the existing chain.
+        if (role == "tank" && profile.SpecTag == "protection_warrior"
+            && densityHealer && densityDefenseTarget == densityHealer
+            && add && add->GetVictim() == densityHealer
+            && warriorHealerAttackerCount >= 3
+            && bot->GetExactDist(add) > 5.0f
+            && bot->GetExactDist(add) <= 10.0f
+            && bot->HasSpell(46968)
+            && TryCastCombatSpell(bot, add, 46968))
+        {
+            std::string raw = BuildRawJson(bot, add);
+            std::string semantic = BuildSemanticJson(
+                bot, add, "dungeon_boss", &power, stage, activity);
+            RecordEvent(state, bot, "boss_add_density", add,
+                "warrior_shockwave_healer_swarm_gap", raw.c_str(),
+                semantic.c_str(), bot->GetExactDist(add),
+                float(warriorHealerAttackerCount), 46968);
+            state.TargetGuid = add->GetGUID();
+            state.WasInCombat = true;
+            target = add;
+            situation = "dungeon_boss";
+            action = "warrior_shockwave_healer_swarm_gap";
+            return true;
         }
 
         // On a multi-target wave, establish area threat before spending

@@ -1,0 +1,130 @@
+{
+  "schema": "all_spec_phase9_immutable_canary_diagnosis_v1",
+  "rerun": 210,
+  "serial_index": 4,
+  "attempt_id": "phase9_serial_04_stonecore_phase9_004_3904746e5810",
+  "immutable_batch": {
+    "batch_identity_sha256": "a7173e7dfaa57cf5c722cc93f7c7b4930c7fdd8a2b28000bfc4d2e72a6eb03a1",
+    "raw_bundle_sha256": "9104759c78d9ed9de8facc2b48b88a2fc418238da00012d25a8b04b6f2919f1f",
+    "compact_bundle_sha256": "3a4ff76a2e4d65f271f59431038d9196224f6f88e5825a1e86d5bdbfa783565d",
+    "publication_receipt_sha256": "00f6dfb9d7987ccd32ca0972c2913c24f1e69588bf93c69e8bfc57f5a1f63e8e",
+    "source_report_sha256": "a323ae90ccdf83384aadd44e264c7094447d11288ce692a61557647f869f452a",
+    "independent_strict_verifier_canonical_sha256": "61666bf0b8940238bec933ba5ef637c7fecefaa38d8d13534a3bbc8aedde3fcc",
+    "independent_strict_verifier_file_sha256": "8bef7a30ba3a34478f152a0eab9a99a7f957d7fd0084ac4dd48797d3d70999ff",
+    "independent_role_reconstruction_canonical_sha256": "051ef996f25e2c7a40e9622bb4b16a4ec388c490e6603c9bda40bf6d0e762e39",
+    "independent_role_reconstruction_file_sha256": "afdff50bebacd68e1ef6525f2d33b5f2aa36374029b91f7dbc5300cb6823a0f7",
+    "independent_role_audit_canonical_sha256": "6a4b5a73752f55e29bfa891f46fc374f07c26a5ff01389bee1d48460b375e3c0",
+    "independent_role_audit_file_sha256": "ddac0dcb6c2162d1715d13be77d59b5c3ce422cffb792eef08dbf1a5cf446093",
+    "raw_dvc_object": "1cc0a1b8013631cef331e91fac68ad75.dir",
+    "compact_dvc_object": "c222f6b27de36b5a20ea28123fc021ec.dir",
+    "selective_remote_hydration_verified": true,
+    "targeted_eviction_complete": true
+  },
+  "frozen_identity": {
+    "identity_manifest_sha256": "d66296c295c9696f38a57f3a2a85046fc2d9073ccef7800c28a3eaff5e518045",
+    "run_plan_sha256": "c840bc12bcc33d201366e120de559f7fd1a1b2c552853ed23e719c24f1975369",
+    "binary_sha256": "f9c19a7b2d3ae410e9eb3f8b03c0be450b3cf40bb4ef3d6250fe69ddae15fc2b",
+    "server_pid": 308588,
+    "server_epoch": 824470288337020,
+    "unit_name": "trinity-live-validation-b652acfcc535d73f19f592fc",
+    "session_fingerprint": "5f2bbb9d3f2f313379936c18e32efc7dd02ca7af9ccc902ae52166d1a6112949",
+    "profile_generation": 1,
+    "profile_content_hash": "d9d6a60e97756695ea6553b1fa34e9c2c63ebe6e09467e71bc01fb74fe3655ae",
+    "max_active_cohorts": 1
+  },
+  "exact_party": [
+    "protection_warrior",
+    "restoration_druid",
+    "elemental_shaman",
+    "enhancement_shaman",
+    "feral_druid_dps"
+  ],
+  "exact_party_sha256": "e2b92089bf4d84e3fce916843df6441d573eaf6b0ad076f2e8db3b7df6315920",
+  "operator": {
+    "first_launch_classification": "infrastructure_abort_missing_runtime_soap_arguments",
+    "first_launch_entered_gameplay": false,
+    "authoritative_retry_selected_rows": [4],
+    "later_rows_started": false
+  },
+  "authoritative_result": {
+    "classification": "gameplay_failure",
+    "returncode": 124,
+    "timed_out": true,
+    "session_closed": true,
+    "identity_complete": true,
+    "route_terminal_scopes": 13,
+    "expected_route_terminal_scopes": 14,
+    "real_boss_death_scopes": 3,
+    "expected_real_boss_death_scopes": 4,
+    "missing_terminal_generation": 14,
+    "missing_boss_entry": 42333,
+    "cleanup_complete": true,
+    "remote_publication_verified": true,
+    "watchdog_clean": true,
+    "forbidden_completion_assistance": [],
+    "party_deaths": 14,
+    "failure_labels": [
+      "role_quality:Protwar:tank_threat_retention",
+      "role_quality:Protwar:healer_target_exposure",
+      "role_quality:Protwar:healer_target_dwell",
+      "stonecore_role_quality_audit_failed"
+    ]
+  },
+  "independent_role_metrics": {
+    "Protwar": {
+      "eligible_hostile_denominator": 7385,
+      "tank_owned_hostile_numerator": 6265,
+      "healer_targeting_hostile_numerator": 811,
+      "tank_all_hostile_retention_ratio": 0.8483412322274881,
+      "healer_target_exposure_ratio": 0.1098171970209885,
+      "maximum_healer_target_dwell_ms": 9367,
+      "maximum_dwell_guid": 1018,
+      "threat_aura_active_samples": 1016,
+      "threat_aura_total_samples": 1016,
+      "threat_aura_uptime": 1.0,
+      "successful_charge_pickups": 7,
+      "thunder_clap_attempts": 95,
+      "taunt_attempts": 47
+    },
+    "generation_14": {
+      "eligible_hostile_denominator": 6239,
+      "tank_owned_hostile_numerator": 5245,
+      "healer_targeting_hostile_numerator": 800,
+      "tank_all_hostile_retention_ratio": 0.8406795960891168,
+      "healer_target_exposure_ratio": 0.12822567719185768
+    },
+    "other_gates": {
+      "all_non_healer_active_action_coverage_passed": true,
+      "all_cast_failure_rates_passed": true,
+      "restoration_druid_heal_cast_success_rate": 1.0,
+      "missing_required_rotation_groups": []
+    }
+  },
+  "causal_reconstruction": {
+    "primary_root_cause": "Charge improved remote entry but did not cover the native five-to-eight-yard interval below Charge's minimum and outside Thunder Clap profile melee range. The maximum episode spent 3322 ms approaching before Thunder Clap acquired the main healer-owned cluster. One older healer-owned identity remained after that cast; a newer, larger non-healer cluster then won density selection and the residual identity was not Taunted for 9367 ms.",
+    "pickup_vs_decay": "This is real initial pickup and handoff loss. Threat aura uptime is perfect and ownership improves after each successful area cast, excluding later passive decay.",
+    "movement_and_hazard": "Ordinary area approach is causal. Hazard logic is not: 197 exits succeeded and zero hazard exits failed.",
+    "misdirection": "Not applicable because the exact party contains no Hunter.",
+    "healer_behavior": "Restoration Druid heal casts pass at 1.0; ordinary healing threat exposes the tank gap but is not a healer defect.",
+    "audit_attribution": "Correct. Independent identity-scoped GUID reconstruction exactly reproduces the audit denominators and 9367 ms dwell.",
+    "rerun170_relation": "Not causal. Passive-swarm staging and activation completed; the failure occurs in active Azil wave ownership after real native casts.",
+    "thrash_scope": "Feral tank Thrash remains preserved for Feral rows. This row uses Protection Warrior, whose additional native area option is bounded Shockwave after Charge and before Thunder Clap approach."
+  },
+  "minimal_correction": {
+    "residual_healer_taunt": "When only one or two exact healer attackers remain and a larger non-healer cluster wins density selection, try native Taunt on the deterministic lowest-GUID healer attacker before following the larger density target.",
+    "bounded_shockwave_gap": "After the existing Charge attempt, try already-known native Shockwave only when the healer-owned density representative is more than five and at most ten yards away. This directly covers the measured Charge/Thunder-Clap gap while excluding the prior remote 771/771 out-of-range topology.",
+    "failure_fallback": "Every rejected native cast falls through to the unchanged area, rescue, movement, and Thunder Clap resolver chain.",
+    "non_changes": "Do not assign threat or victims, teleport, add completion assistance, change thresholds, alter party/route/identity/publication contracts, or change Feral Thrash."
+  },
+  "gates_unchanged": {
+    "tank_all_hostile_retention_min": 0.9,
+    "healer_target_exposure_max": 0.01,
+    "max_healer_target_dwell_ms": 3000,
+    "tank_threat_aura_uptime_min": 0.99,
+    "non_healer_active_action_coverage_min": 0.7,
+    "cast_failure_rate_max": 0.05,
+    "healer_successful_heal_cast_rate_min": 0.95,
+    "missing_required_rotation_groups_allowed": false
+  },
+  "diagnosis_canonical_sha256": "5c96f1a404d8d8194edfe55c1324251152f558f7676725f3b584a200b99977ce"
+}
