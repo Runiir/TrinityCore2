@@ -3328,13 +3328,41 @@ def test_rerun198_arrived_boss_handoff_prefers_thrash_with_swipe_fallback():
         recovery,
         "feralHealerHandoffActive",
         "feralHealerHandoffArrived",
-        "localHealerOwnedMajority",
+        "healerOwnedBeforeHandoffSwipe >= 2",
         "TryCastCombatSpell(bot, localHealerOwnedSwipeTarget, 77758)",
         '"feral_thrash_healer_swarm_retention_before_roar"',
+        "localHealerOwnedMajority",
         "TryCastCombatSpell(bot, localHealerOwnedSwipeTarget, 779)",
         '"feral_swipe_healer_swarm_retention_before_roar"',
     )
     assert "state.DecisionTimer, 250" in recovery
+    assert "SetVictim" not in recovery
+    assert "AddThreat" not in recovery
+    assert "NearTeleportTo" not in recovery
+
+
+def test_rerun199_arrived_handoff_thrash_accepts_local_minority_before_second_roar():
+    manager = read(BOT_MGR)
+    recovery = manager.split(
+        "Rerun199 then reached the same arrived handoff", 1
+    )[1].split("Rerun144 proved that a successful local Roar", 1)[0]
+    thrash_gate = recovery.split(
+        "if (localHealerOwnedSwipeTarget && feralHealerHandoffActive", 1
+    )[1].split("TryCastCombatSpell(bot, localHealerOwnedSwipeTarget, 77758)", 1)[0]
+
+    assert "feralHealerHandoffArrived" in thrash_gate
+    assert "healerOwnedBeforeHandoffSwipe >= 2" in thrash_gate
+    assert "localHealerOwnedMajority" not in thrash_gate
+    assert_ordered(
+        recovery,
+        "TryCastCombatSpell(bot, localHealerOwnedSwipeTarget, 77758)",
+        '"feral_thrash_healer_swarm_retention_before_roar"',
+        "if (localHealerOwnedSwipeTarget && bot->HasSpell(779)",
+        "localHealerOwnedMajority",
+        "TryCastCombatSpell(bot, localHealerOwnedSwipeTarget, 779)",
+        '"feral_swipe_healer_swarm_retention_before_roar"',
+        "tryFeralRoarPickup(true)",
+    )
     assert "SetVictim" not in recovery
     assert "AddThreat" not in recovery
     assert "NearTeleportTo" not in recovery

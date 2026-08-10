@@ -15942,8 +15942,16 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         // the later native Thrash completed pickup only after 3324 ms. Prefer
         // that same persistent native area threat on an already-arrived
         // handoff, retaining Swipe below whenever Thrash is unavailable.
+        // Rerun199 then reached the same arrived handoff with a real local
+        // healer-owned target that was not a majority. The majority guard
+        // skipped Thrash, a second non-damaging Roar consumed the GCD, and four
+        // continuous identities remained on the healer for 3335 ms. An active,
+        // arrived, healer-identity-bound handoff already proves the narrow
+        // scope; allow its exact local target to receive native Thrash while
+        // fresh waves and the Swipe fallback retain the majority guard.
         if (localHealerOwnedSwipeTarget && feralHealerHandoffActive
-            && feralHealerHandoffArrived && localHealerOwnedMajority
+            && feralHealerHandoffArrived
+            && healerOwnedBeforeHandoffSwipe >= 2
             && bot->HasSpell(77758)
             && TryCastCombatSpell(bot, localHealerOwnedSwipeTarget, 77758))
         {
