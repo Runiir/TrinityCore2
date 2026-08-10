@@ -3331,7 +3331,7 @@ def test_rerun173_protection_healer_decay_and_hazard_pickup_use_native_responses
     fade_marker = route.index(
         "Rerun173's Protection/Holy composition fully owned the opening corridor"
     )
-    fade_branch = route[fade_marker : fade_marker + 1900]
+    fade_branch = route[fade_marker : fade_marker + 3300]
     assert "trashThreatControl.Tank->getClass() == CLASS_PALADIN" in fade_branch
     assert "trashThreatControl.HealerTargetCount >= 4" in fade_branch
     assert "trashThreatControl.HealerTargetCount >= 9" in fade_branch
@@ -4699,18 +4699,69 @@ def test_rerun170_defers_passive_azil_followers_until_route_arrival():
     marker = route.index(
         "Rerun170 reached Azil's route generation roughly 80-115 yards"
     )
-    branch = route[marker - 500 : marker + 1200]
+    branch = route[marker - 500 : marker + 2300]
 
-    assert "cohortSwarmActive && engagedAddCount == 0" in branch
+    assert "addCount > 0 && engagedAddCount == 0" in branch
     assert "Party().ValidationRouteBossProgressTargetGuid.IsEmpty()" in branch
     assert "canonicalRouteDistance > routeArrivalRadius" in branch
     assert_ordered(
         branch,
         "bool cohortSwarmActive = cohortAddGuids.size() >= 3;",
-        "cohortSwarmActive && engagedAddCount == 0",
+        "addCount > 0 && engagedAddCount == 0",
         "return false;",
         "Party().ValidationRouteBossAddDensityPhase",
     )
+
+
+def test_rerun197_passive_listed_adds_cannot_own_generic_boss_focus():
+    objective = function_body(
+        read(BOT_MGR),
+        "bool BotWorldPopulationMgr::TryValidationRouteObjective",
+    )
+    marker = objective.index(
+        "Rerun196 reached Azil's final route generation with no party combat"
+    )
+    branch = objective[marker - 300 : marker + 1900]
+
+    assert_ordered(
+        branch,
+        "bool unengagedListedBossAdd =",
+        "ValidationRouteAddTargetEntries.begin()",
+        "!candidate->IsInCombat() && !candidate->GetVictim()",
+        "if (unengagedListedBossAdd)",
+        "return nullptr;",
+        "if (isValidationRouteCombatTarget(creature))",
+    )
+    assert "SetVictim" not in branch
+    assert "AddThreat" not in branch
+    assert "NearTeleportTo" not in branch
+
+
+def test_rerun197_feral_majority_healer_flip_uses_bounded_native_fade():
+    objective = function_body(
+        read(BOT_MGR),
+        "bool BotWorldPopulationMgr::TryValidationRouteObjective",
+    )
+    marker = objective.index(
+        "Rerun196 then captured a distinct Feral"
+    )
+    branch = objective[marker - 900 : marker + 2600]
+
+    assert_ordered(
+        branch,
+        "bool feralDruidMajorityHealerThreat =",
+        "trashThreatControl.Tank->getClass() == CLASS_DRUID",
+        "trashThreatControl.HealerTargetCount >= 4",
+        "trashThreatControl.HealerTargetCount * 5",
+        ">= trashThreatControl.EngagedCount * 4",
+        "|| feralDruidMajorityHealerThreat",
+        "state.DecisionTimer, 250",
+        "TryCastFriendlySpell(bot, bot, 586)",
+        '"fade_early_trash_swarm_threat_drop"',
+    )
+    assert "SetVictim" not in branch
+    assert "AddThreat" not in branch
+    assert "NearTeleportTo" not in branch
 
 
 def test_rerun170_protection_healer_pickup_and_approach_use_urgent_cadence():

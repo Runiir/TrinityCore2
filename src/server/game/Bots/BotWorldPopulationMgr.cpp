@@ -12302,6 +12302,24 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return explicitTerminalCombatFocus ? candidate : nullptr;
         }
 
+        // Rerun196 reached Azil's final route generation with no party combat,
+        // but one passive Devout Follower remained in the dedicated add focus
+        // while another was refreshed as the generic boss-route focus.  The
+        // generic focus path therefore alternated with the add handler for 127
+        // seconds and never reached the boss anchor.  Passive declared adds are
+        // owned exclusively by the dedicated add handler; admit them here only
+        // after native combat or victim state proves an actual handoff.  This
+        // does not suppress an engaged follower or any configured boss target.
+        bool unengagedListedBossAdd = Cohort().Config.ValidationRouteKind == "boss"
+            && std::find(
+                Cohort().Config.ValidationRouteAddTargetEntries.begin(),
+                Cohort().Config.ValidationRouteAddTargetEntries.end(),
+                creature->GetEntry())
+                != Cohort().Config.ValidationRouteAddTargetEntries.end()
+            && !candidate->IsInCombat() && !candidate->GetVictim();
+        if (unengagedListedBossAdd)
+            return nullptr;
+
         if (isValidationRouteCombatTarget(creature))
             return candidate;
 
@@ -14879,7 +14897,14 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             Party().ValidationRouteLargePassiveSwarmStaging
             && Party().ValidationRouteLargePassiveSwarmStagingGeneration
                 == Party().ValidationRouteGeneration;
-        if (cohortSwarmActive && engagedAddCount == 0
+        // Rerun196 proved the same pre-arrival diversion survives when an
+        // observer sees only one or two passive followers: cohortSwarmActive is
+        // false, so the original guard does not run and the selected add keeps
+        // replacing route movement.  Local addCount is the exact cardinality
+        // authority for this passive-only bypass.  Any engaged local follower,
+        // observed boss, route arrival, or shared large-wave staging proof
+        // preserves the existing immediate add-defense behavior.
+        if (addCount > 0 && engagedAddCount == 0
             && Party().ValidationRouteBossProgressTargetGuid.IsEmpty()
             && canonicalRouteDistance > routeArrivalRadius
             && !sharedLargePassiveSwarmStaging)
@@ -18636,19 +18661,33 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     // six bounded tank movement ticks still produced 28 strict exposure
     // samples before Hand of Protection and Righteous Defense recovered them.
     // Use the existing native Fade at that exact four-hostile threshold only
-    // with a Protection Paladin tank. Other tanks retain the established
-    // nine-hostile reservation for the later large wave, and a rejected cast
-    // changes only the observation cadence while native legality stays final.
+    // with a Protection Paladin tank. Rerun196 then captured a distinct Feral
+    // handoff where four of five already-eligible hostiles flipped together
+    // after one successful heal. Native Swipe recovered all four in 773 ms,
+    // but four 250-ms identity snapshots exceeded the unchanged exposure-ratio
+    // ceiling. Admit the same native Fade only when at least four hostiles and
+    // at least 80% of the current pack already target the healer with a Druid
+    // tank. Smaller Feral precursors and Blood/Warrior tanks retain the
+    // established nine-hostile reservation for a later large wave; a rejected
+    // cast changes only observation cadence while native legality stays final.
     bool protectionPaladinHealerThreat =
         trashThreatControl.Tank
         && trashThreatControl.Tank->getClass() == CLASS_PALADIN
         && trashThreatControl.HealerTargetCount >= 4;
+    bool feralDruidMajorityHealerThreat =
+        trashThreatControl.Tank
+        && trashThreatControl.Tank->getClass() == CLASS_DRUID
+        && trashThreatControl.HealerTargetCount >= 4
+        && trashThreatControl.HealerTargetCount * 5
+            >= trashThreatControl.EngagedCount * 4;
     if (std::string(GetDungeonRole(bot)) == "healer"
         && (trashThreatControl.HealerTargetCount >= 9
-            || protectionPaladinHealerThreat)
+            || protectionPaladinHealerThreat
+            || feralDruidMajorityHealerThreat)
         && bot->HasSpell(586) && !bot->HasAura(586))
     {
-        if (protectionPaladinHealerThreat)
+        if (protectionPaladinHealerThreat
+            || feralDruidMajorityHealerThreat)
             state.DecisionTimer = std::min<uint32>(
                 state.DecisionTimer, 250);
         if (Spell* currentSpell = bot->GetCurrentSpell(CURRENT_GENERIC_SPELL))
