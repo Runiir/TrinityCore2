@@ -13520,7 +13520,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         state.WasInCombat = true;
         return true;
     };
-    auto tryValidationRouteMovementCheck = [this, &state, bot, &power, stage, activity, &situation, &action](Unit* preferredTarget) -> bool
+    auto tryValidationRouteMovementCheck = [this, &state, bot, &power, stage, activity, &situation, &action, &isValidationCohortCombatLinked](Unit* preferredTarget) -> bool
     {
         if (!bot
             || !bot->IsAlive()
@@ -13570,6 +13570,25 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     && (!spellId || definition.DamageSpellId == spellId || definition.DetectionSpellId == spellId))
                     return &definition;
             return nullptr;
+        };
+        auto isScopedGenericCastCandidate = [this, &hazardDefinitionFor, &isValidationCohortCombatLinked,
+            currentNodeHasConfiguredHazard](Unit* candidate) -> bool
+        {
+            if (!currentNodeHasConfiguredHazard)
+                return true;
+
+            Creature* creature = candidate ? candidate->ToCreature() : nullptr;
+            if (!creature || hazardDefinitionFor(creature->GetEntry(), 0)
+                || Party().ValidationRoutePackGeneration != Party().ValidationRouteGeneration
+                || Party().ValidationRoutePackMemberGuids.find(creature->GetGUID())
+                    == Party().ValidationRoutePackMemberGuids.end()
+                || Party().ValidationRoutePackDeathGuids.find(creature->GetGUID())
+                    != Party().ValidationRoutePackDeathGuids.end()
+                || Party().ValidationRoutePackTransitionGuids.find(creature->GetGUID())
+                    != Party().ValidationRoutePackTransitionGuids.end())
+                return false;
+
+            return isValidationCohortCombatLinked(creature);
         };
         uint64 const nowMs = NowMs();
         auto tryFeralInFlightHazardHealerRoar = [&]() -> bool
@@ -14369,10 +14388,13 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         }
 
         // Exact route geometry takes precedence over spell-shape guessing.
-        // Boss phase and shield spells can look like area damage in DBC data;
-        // treating those casts as a hazard moves support players away from the
-        // party even though no damaging ground object is under them.
-        if (!caster && !currentNodeHasConfiguredHazard && profileAllowsGenericCastMovement)
+        // When that configured source is inactive, a different enrolled and
+        // cohort-combat-linked member of the current trash pack can still cast
+        // a second ground danger (rerun208: Crystalspawn Giant Quake alongside
+        // configured Flayer Flay). Keep boss phases, future packs, and unrelated
+        // nearby casters outside this fallback.
+        if (!caster && profileAllowsGenericCastMovement
+            && isScopedGenericCastCandidate(preferredTarget))
             inspectCaster(preferredTarget);
         if (!caster && mechanicProfileRequiresMovement)
         {
@@ -14411,15 +14433,18 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 break;
             }
         }
-        if (!caster && !currentNodeHasConfiguredHazard && profileAllowsGenericCastMovement)
+        if (!caster && profileAllowsGenericCastMovement)
         {
             std::vector<WorldObject*> objects;
             Trinity::AllWorldObjectsInRange check(bot, 35.0f);
             Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(bot, objects, check);
             Cell::VisitAllObjects(bot, searcher, 35.0f);
             for (WorldObject* object : objects)
-                if (inspectCaster(object ? object->ToUnit() : nullptr))
+            {
+                Unit* candidate = object ? object->ToUnit() : nullptr;
+                if (isScopedGenericCastCandidate(candidate) && inspectCaster(candidate))
                     break;
+            }
         }
 
         if (!caster || !castSpell)

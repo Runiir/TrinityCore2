@@ -1758,21 +1758,33 @@ def test_trash_swarm_waits_for_secure_tank_threat_before_dps_release():
     assert '"hand_of_salvation_healer_trash_threat_drop"' in route
 
 
-def test_validation_route_exact_hazards_suppress_generic_boss_cast_dodges():
+def test_validation_route_exact_hazards_scope_secondary_generic_cast_dodges_to_current_pack():
     route_objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
     movement = route_objective[
         route_objective.index("auto tryValidationRouteMovementCheck"):
         route_objective.index("auto tryValidationRouteAdds")
     ]
 
-    assert "bool currentNodeHasConfiguredHazard = _config.ValidationRouteHazardSourceEntry != 0;" in movement
+    assert "bool currentNodeHasConfiguredHazard = Cohort().Config.ValidationRouteHazardSourceEntry != 0;" in movement
     assert "bool profileAllowsGenericCastMovement" in movement
     assert "profileAllowsGenericCastMovement || !hazardDefinitions.empty()" in movement
     assert "for (ValidationRouteManifestNode const& node : _validationRouteManifest)" not in movement
     assert 'previousDefinition->Shape == "radial"\n                    && previousHazard->IsAlive()\n                    && !bot->IsValidAttackTarget(previousHazard)' in movement
     assert 'definition->Shape == "radial"\n                    && !bot->IsValidAttackTarget(hazard)' in movement
-    assert "if (!caster && !currentNodeHasConfiguredHazard && profileAllowsGenericCastMovement)\n            inspectCaster(preferredTarget);" in movement
-    assert movement.count("if (!caster && !currentNodeHasConfiguredHazard && profileAllowsGenericCastMovement)") == 2
+    scoped_candidate = movement[
+        movement.index("auto isScopedGenericCastCandidate"):
+        movement.index("uint64 const nowMs")
+    ]
+    assert "if (!currentNodeHasConfiguredHazard)" in scoped_candidate
+    assert "hazardDefinitionFor(creature->GetEntry(), 0)" in scoped_candidate
+    assert "Party().ValidationRoutePackGeneration != Party().ValidationRouteGeneration" in scoped_candidate
+    assert "Party().ValidationRoutePackMemberGuids.find(creature->GetGUID())" in scoped_candidate
+    assert "Party().ValidationRoutePackDeathGuids.find(creature->GetGUID())" in scoped_candidate
+    assert "Party().ValidationRoutePackTransitionGuids.find(creature->GetGUID())" in scoped_candidate
+    assert "return isValidationCohortCombatLinked(creature);" in scoped_candidate
+    assert "isScopedGenericCastCandidate(preferredTarget)" in movement
+    assert "isScopedGenericCastCandidate(candidate) && inspectCaster(candidate)" in movement
+    assert "if (!caster && !currentNodeHasConfiguredHazard && profileAllowsGenericCastMovement)" not in movement
 
 
 def test_holy_priest_primes_chakra_and_gates_friendly_holy_word_on_serenity():
