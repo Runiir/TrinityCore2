@@ -16120,6 +16120,77 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 if (candidate && candidate->GetVictim() == densityHealer
                     && bot->GetExactDist2d(candidate) <= 10.0f)
                     ++localHealerOwnedBeforeCharge;
+
+        // Rerun193 completed every strict route objective, but two moderate
+        // Azil waves first exposed the healer while only a minority of their
+        // followers were inside native Roar range. The useful local Roar then
+        // consumed the first global cooldown and its bounded ground handoff
+        // needed another global cooldown to reach the remote majority. Give
+        // native Charge one attempt against the densest deterministic remote
+        // healer-owned cluster before that minority Roar. If Charge is not
+        // ready, legal, or reachable, preserve the existing Roar and movement
+        // fallthrough without changing victims or threat.
+        uint32 healerOwnedBeforeCharge = densityHealer
+            ? uint32(observedListedAttackerCount(densityHealer)) : 0;
+        Creature* remoteHealerWaveChargeTarget = nullptr;
+        uint32 remoteHealerWaveClusterCount = 0;
+        float remoteHealerWaveDistance =
+            std::numeric_limits<float>::max();
+        uint32 remoteHealerWaveGuid = std::numeric_limits<uint32>::max();
+        if (!feralChargePickupInFlight && !feralHealerHandoffActive
+            && role == "tank" && profile.SpecTag == "feral_druid_tank"
+            && densityHealer && healerOwnedBeforeCharge >= 1
+            && localHealerOwnedBeforeCharge * 2 < healerOwnedBeforeCharge)
+            for (Creature* candidate : localAdds)
+            {
+                if (!candidate || candidate->GetVictim() != densityHealer
+                    || bot->GetExactDist(candidate) <= 8.0f)
+                    continue;
+                uint32 clusterCount = 0;
+                for (Creature* neighbor : localAdds)
+                    if (neighbor && neighbor->GetVictim() == densityHealer
+                        && candidate->GetExactDist2d(neighbor) <= 10.0f)
+                        ++clusterCount;
+                float distance = bot->GetExactDist(candidate);
+                uint32 guid = candidate->GetGUID().GetCounter();
+                if (!remoteHealerWaveChargeTarget
+                    || clusterCount > remoteHealerWaveClusterCount
+                    || (clusterCount == remoteHealerWaveClusterCount
+                        && (distance < remoteHealerWaveDistance
+                            || (distance == remoteHealerWaveDistance
+                                && guid < remoteHealerWaveGuid))))
+                {
+                    remoteHealerWaveChargeTarget = candidate;
+                    remoteHealerWaveClusterCount = clusterCount;
+                    remoteHealerWaveDistance = distance;
+                    remoteHealerWaveGuid = guid;
+                }
+            }
+        if (remoteHealerWaveChargeTarget && bot->HasSpell(16979)
+            && !bot->HasUnitState(UNIT_STATE_CASTING) && !bot->IsFalling()
+            && TryCastCombatSpell(bot, remoteHealerWaveChargeTarget, 16979))
+        {
+            std::string raw = BuildRawJson(bot, remoteHealerWaveChargeTarget);
+            std::string semantic = BuildSemanticJson(
+                bot, remoteHealerWaveChargeTarget, "dungeon_boss",
+                &power, stage, activity);
+            RecordEvent(state, bot, "boss_add_density",
+                remoteHealerWaveChargeTarget,
+                "feral_charge_remote_healer_wave_before_roar",
+                raw.c_str(), semantic.c_str(), remoteHealerWaveDistance,
+                float(healerOwnedBeforeCharge), 16979);
+            state.FeralChargePickupTargetGuid =
+                remoteHealerWaveChargeTarget->GetGUID();
+            state.FeralChargePickupUntilMs = NowMs() + 2500;
+            state.DecisionTimer = std::min<uint32>(
+                state.DecisionTimer, 250);
+            state.TargetGuid = remoteHealerWaveChargeTarget->GetGUID();
+            state.WasInCombat = true;
+            target = remoteHealerWaveChargeTarget;
+            situation = "dungeon_boss";
+            action = "feral_charge_remote_healer_wave_before_roar";
+            return true;
+        }
         if (localHealerOwnedBeforeCharge >= 2
             && tryFeralRoarPickup(feralHealerHandoffArrived))
             return true;

@@ -4040,6 +4040,37 @@ def test_rerun193_protection_distributes_native_pickup_before_area_gcd():
     assert "NearTeleportTo" not in boss_branch + trash_branch
 
 
+def test_rerun194_feral_remote_healer_wave_charges_before_local_minority_roar():
+    objective = function_body(
+        read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective"
+    )
+    marker = objective.index(
+        "Rerun193 completed every strict route objective"
+    )
+    recovery = objective[marker - 700 : marker + 5200]
+
+    assert "healerOwnedBeforeCharge >= 1" in recovery
+    assert "localHealerOwnedBeforeCharge * 2 < healerOwnedBeforeCharge" in recovery
+    assert "candidate->GetVictim() != densityHealer" in recovery
+    assert "bot->GetExactDist(candidate) <= 8.0f" in recovery
+    assert "candidate->GetExactDist2d(neighbor) <= 10.0f" in recovery
+    assert_ordered(
+        recovery,
+        "clusterCount > remoteHealerWaveClusterCount",
+        "distance < remoteHealerWaveDistance",
+        "guid < remoteHealerWaveGuid",
+        "TryCastCombatSpell(bot, remoteHealerWaveChargeTarget, 16979)",
+        '"feral_charge_remote_healer_wave_before_roar"',
+        "state.FeralChargePickupUntilMs = NowMs() + 2500;",
+        "if (localHealerOwnedBeforeCharge >= 2",
+        "tryFeralRoarPickup(feralHealerHandoffArrived)",
+    )
+    assert "state.DecisionTimer, 250" in recovery
+    assert "SetThreat" not in recovery
+    assert "SetVictim" not in recovery
+    assert "NearTeleportTo" not in recovery
+
+
 def test_profile_los_failure_is_recorded_before_existing_range_recovery():
     executor = function_body(
         read(BOT_MGR),
