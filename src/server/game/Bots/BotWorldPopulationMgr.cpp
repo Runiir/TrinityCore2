@@ -17412,6 +17412,37 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 action = "righteous_defense_healer_before_area_gcd";
                 return true;
             }
+            // Rerun197 captured the complementary native-rescue starvation
+            // path. Righteous Defense was unavailable or rejected against a
+            // twelve-follower healer wave, Hammer acquired only half of it,
+            // and valid area movement then returned on every decision until
+            // the existing Hand of Protection emergency below became
+            // reachable 6646 ms later. Try that same native defensive before
+            // area-GCD work only for the already-established five-attacker
+            // emergency. Native aura, target, cooldown, range, and spell
+            // legality remain authoritative; rejection falls through to the
+            // unchanged area and rescue chain.
+            if (profile.SpecTag == "protection" && densityHealer
+                && protectionHealerAttackerCount >= 5
+                && bot->HasSpell(1022) && !densityHealer->HasAura(1022)
+                && TryCastFriendlySpell(bot, densityHealer, 1022))
+            {
+                std::string raw = BuildRawJson(bot, densityHealer);
+                std::string semantic = BuildSemanticJson(
+                    bot, densityHealer, "dungeon_boss", &power, stage,
+                    activity);
+                RecordEvent(state, bot, "external_defensive", densityHealer,
+                    "hand_of_protection_healer_before_area_gcd",
+                    raw.c_str(), semantic.c_str(),
+                    float(protectionHealerAttackerCount), addCount, 1022);
+                state.DecisionTimer = std::min<uint32>(
+                    state.DecisionTimer, 250);
+                state.TargetGuid = add->GetGUID();
+                target = add;
+                situation = "dungeon_boss";
+                action = "hand_of_protection_healer_before_area_gcd";
+                return true;
+            }
             // Rerun191 captured fifteen Azil followers on the healer while
             // Protection repeatedly preferred remote Hammer/Avenger targets.
             // Holy Wrath was natively ready, but the first local wave spent

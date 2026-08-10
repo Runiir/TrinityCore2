@@ -4066,7 +4066,7 @@ def test_rerun193_protection_distributes_native_pickup_before_area_gcd():
     boss_marker = objective.index(
         "Rerun192 showed two distinct Protection starvation paths"
     )
-    boss_branch = objective[boss_marker - 300 : boss_marker + 3600]
+    boss_branch = objective[boss_marker - 300 : boss_marker + 5600]
     trash_marker = objective.index(
         "Rerun170 retained 17 eligible healer-target samples"
     )
@@ -4092,6 +4092,34 @@ def test_rerun193_protection_distributes_native_pickup_before_area_gcd():
     assert "SetThreat" not in boss_branch + trash_branch
     assert "SetVictim" not in boss_branch + trash_branch
     assert "NearTeleportTo" not in boss_branch + trash_branch
+
+
+def test_rerun198_protection_uses_native_healer_immunity_before_area_starvation():
+    objective = function_body(
+        read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective"
+    )
+    marker = objective.index(
+        "Rerun197 captured the complementary native-rescue"
+    )
+    rescue = objective[marker - 1300 : marker + 3800]
+
+    assert_ordered(
+        rescue,
+        'TryCastFriendlySpell(bot, densityHealer, 31789)',
+        '"righteous_defense_healer_before_area_gcd"',
+        "protectionHealerAttackerCount >= 5",
+        "!densityHealer->HasAura(1022)",
+        "TryCastFriendlySpell(bot, densityHealer, 1022)",
+        '"hand_of_protection_healer_before_area_gcd"',
+        "Rerun191 captured fifteen Azil followers on the healer",
+        "ResolveProfileCombatAction(",
+    )
+    assert "state.DecisionTimer, 250" in rescue
+    lower_emergency = objective.index('"hand_of_protection_healer_emergency"')
+    assert marker < lower_emergency
+    assert "SetThreat" not in rescue
+    assert "SetVictim" not in rescue
+    assert "NearTeleportTo" not in rescue
 
 
 def test_rerun194_feral_remote_healer_wave_charges_before_local_minority_roar():
