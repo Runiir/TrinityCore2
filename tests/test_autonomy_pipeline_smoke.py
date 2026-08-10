@@ -3378,12 +3378,12 @@ def test_rerun199_arrived_handoff_thrash_accepts_local_minority_before_second_ro
         "Rerun199 then reached the same arrived handoff", 1
     )[1].split("Rerun144 proved that a successful local Roar", 1)[0]
     thrash_gate = recovery.split(
-        "if (localHealerOwnedSwipeTarget && feralHealerHandoffActive", 1
+        "if (localHealerOwnedSwipeTarget", 1
     )[1].split("TryCastCombatSpell(bot, localHealerOwnedSwipeTarget, 77758)", 1)[0]
 
     assert "feralHealerHandoffArrived" in thrash_gate
+    assert "|| localHealerOwnedMajority" in thrash_gate
     assert "healerOwnedBeforeHandoffSwipe >= 2" in thrash_gate
-    assert "localHealerOwnedMajority" not in thrash_gate
     assert_ordered(
         recovery,
         "TryCastCombatSpell(bot, localHealerOwnedSwipeTarget, 77758)",
@@ -3399,6 +3399,32 @@ def test_rerun199_arrived_handoff_thrash_accepts_local_minority_before_second_ro
     assert "NearTeleportTo" not in recovery
 
 
+def test_rerun203_fresh_boss_local_majority_prefers_thrash_before_swipe():
+    manager = read(BOT_MGR)
+    recovery = manager.split(
+        "Rerun203 proved the ordinary-trash Thrash correction", 1
+    )[1].split("Rerun144 proved that a successful local Roar", 1)[0]
+    thrash_gate = recovery.split(
+        "if (localHealerOwnedSwipeTarget", 1
+    )[1].split("TryCastCombatSpell(bot, localHealerOwnedSwipeTarget, 77758)", 1)[0]
+
+    assert "feralHealerHandoffActive && feralHealerHandoffArrived" in thrash_gate
+    assert "|| localHealerOwnedMajority" in thrash_gate
+    assert "healerOwnedBeforeHandoffSwipe >= 2" in thrash_gate
+    assert_ordered(
+        recovery,
+        "TryCastCombatSpell(bot, localHealerOwnedSwipeTarget, 77758)",
+        '"feral_thrash_healer_swarm_retention_before_roar"',
+        "TryCastCombatSpell(bot, localHealerOwnedSwipeTarget, 779)",
+        '"feral_swipe_healer_swarm_retention_before_roar"',
+        "tryFeralRoarPickup(true)",
+    )
+    assert "state.DecisionTimer, 250" in recovery
+    assert "SetVictim" not in recovery
+    assert "AddThreat" not in recovery
+    assert "NearTeleportTo" not in recovery
+
+
 def test_rerun190_feral_local_majority_swipe_precedes_initial_roar():
     objective = function_body(
         read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective"
@@ -3406,7 +3432,7 @@ def test_rerun190_feral_local_majority_swipe_precedes_initial_roar():
     marker = objective.index(
         "Rerun190 then proved the same damaging pickup"
     )
-    recovery = objective[marker - 700 : marker + 7200]
+    recovery = objective[marker - 700 : marker + 10000]
 
     assert_ordered(
         recovery,

@@ -15949,8 +15949,22 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         // arrived, healer-identity-bound handoff already proves the narrow
         // scope; allow its exact local target to receive native Thrash while
         // fresh waves and the Swipe fallback retain the majority guard.
-        if (localHealerOwnedSwipeTarget && feralHealerHandoffActive
-            && feralHealerHandoffArrived
+        // Rerun203 proved the ordinary-trash Thrash correction was effective:
+        // generation 13 retained every eligible hostile and the run-wide
+        // healer exposure fell to 3/1766. Its only remaining failure was a
+        // fresh Azil local-majority wave. Native Swipe recovered five of seven
+        // healer-owned followers, but the remaining pair moved outside the
+        // melee-area envelope; repeated out-of-range density selections then
+        // delayed Growl and a second Swipe until GUID 719 reached 3603 ms.
+        // The last accepted Thrash was 27 seconds earlier, yet this fresh-wave
+        // gate offered only Swipe. Match the now-proved ordinary recovery by
+        // preferring persistent native Thrash for this same exact local-
+        // majority proof, while retaining the existing arrived-handoff scope
+        // and unchanged Swipe fallback. Native spell, cooldown, GCD, power,
+        // range, LOS, target, threat, movement, and hazard gates remain final.
+        if (localHealerOwnedSwipeTarget
+            && ((feralHealerHandoffActive && feralHealerHandoffArrived)
+                || localHealerOwnedMajority)
             && healerOwnedBeforeHandoffSwipe >= 2
             && bot->HasSpell(77758)
             && TryCastCombatSpell(bot, localHealerOwnedSwipeTarget, 77758))
