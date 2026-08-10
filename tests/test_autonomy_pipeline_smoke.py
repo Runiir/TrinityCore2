@@ -1615,11 +1615,31 @@ def test_move_bot_to_point_only_terminalizes_strategic_route_failures():
     assert "auto moveToRouteAnchor = [&]() -> bool" in route_objective
     assert "float floorZ = routeMap->GetHeight(bot->GetPhaseShift(), routeAnchorX, routeAnchorY, routeAnchorZ + 2.0f, true, 8.0f);" in route_objective
     assert "if (floorZ > INVALID_HEIGHT && std::fabs(floorZ - routeAnchorZ) <= 8.0f)\n            routeAnchorZ = floorZ;" in route_objective
-    assert "return MoveBotToPoint(state, bot, routeAnchorX, routeAnchorY, routeAnchorZ, true);" in route_objective
+    assert 'bool terminalOnFailure = Cohort().Config.ValidationRouteKind != "descent";' in route_objective
+    assert "return MoveBotToPoint(state, bot, routeAnchorX, routeAnchorY, routeAnchorZ, terminalOnFailure);" in route_objective
     assert "MoveBotToProfileRange(state, bot, target, &profileAction)" in route_objective
     assert "hold_tactical_path_rejected" in route_objective
     assert 'moved ? "approach_target" : "tactical_path_rejected"' in route_objective
     assert "GetFirstCollisionPosition(profileAction.MinRange" not in route_objective
+
+
+def test_rerun195_descent_path_probe_cannot_terminalize_before_native_jump():
+    route_objective = function_body(read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    anchor_move = route_objective.split("auto moveToRouteAnchor = [&]() -> bool", 1)[1].split("auto routeFocusTankOwned", 1)[0]
+    arrival = route_objective.split("if (arrivalRoute && !arrivalCombatActive)", 1)[1].split(
+        'if (Cohort().Config.ValidationRouteKind != "boss"', 1
+    )[0]
+
+    assert 'bool terminalOnFailure = Cohort().Config.ValidationRouteKind != "descent";' in anchor_move
+    assert "MoveBotToPoint(state, bot, routeAnchorX, routeAnchorY, routeAnchorZ, terminalOnFailure)" in anchor_move
+    assert_ordered(
+        arrival,
+        'if (Cohort().Config.ValidationRouteKind == "descent")',
+        "state.ActivePathFromX = bot->GetPositionX();",
+        "bot->GetMotionMaster()->MoveJump(routeAnchorX, routeAnchorY, routeAnchorZ",
+        'action = "move_to_validation_route_anchor";',
+    )
+    assert "state.ValidationRouteTerminalState = true;" not in anchor_move
 
 
 def test_move_bot_to_point_keeps_matching_active_motion():

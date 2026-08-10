@@ -13381,7 +13381,15 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         Cohort().Config.ValidationRouteX, Cohort().Config.ValidationRouteY, Cohort().Config.ValidationRouteZ);
     auto moveToRouteAnchor = [&]() -> bool
     {
-        return MoveBotToPoint(state, bot, routeAnchorX, routeAnchorY, routeAnchorZ, true);
+        // Descent anchors intentionally cross one-way or disconnected mmap
+        // topology and are completed by the native MoveJump path below.
+        // Residual party-combat state can temporarily route a bot through the
+        // ordinary pre-anchor movement branch first.  Preserve that path
+        // rejection as diagnostic evidence, but do not make it terminal or
+        // the bot can never reach the subsequent descent jump after combat
+        // clears while the rest of the cohort continues without it.
+        bool terminalOnFailure = Cohort().Config.ValidationRouteKind != "descent";
+        return MoveBotToPoint(state, bot, routeAnchorX, routeAnchorY, routeAnchorZ, terminalOnFailure);
     };
     auto routeFocusTankOwned = [this, bot](Unit* focus) -> bool
     {

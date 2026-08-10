@@ -1,0 +1,312 @@
+{
+  "schema": "all_spec_phase9_authoritative_gameplay_failure_diagnosis_v1",
+  "diagnosis_sha256": "e3160ce0f779eb91053e772d6a5e7965ffc9b7c4918f7f5a31ea42a1023d6255",
+  "hash_scope": "canonical_json_without_diagnosis_sha256",
+  "scope": {
+    "run": "rerun194",
+    "serial_index": 2,
+    "attempt": "phase9_serial_02_stonecore_phase9_006_6893daf98698",
+    "only_this_immutable_batch_diagnosed": true,
+    "canaries_3_through_8_started": false,
+    "phases_10_through_12_blocked": true
+  },
+  "frozen_identity": {
+    "identity_manifest_sha256": "ee0da6600e4dec4e6055dc59f5d251d15da2b93029bc97ae03b17844fb2ee181",
+    "run_plan_sha256": "1d2cd56804fa544c959a5cd9b56c6009e1e3f3e6cc22db9cc1c700ecd4c3e193",
+    "evidence_binary_sha256": "fb737d8f81cd24f18ec7726d85b91a8f07afb74e21e428890acd6cd5ddba3c5a",
+    "server_pid": 1772254,
+    "server_epoch": 8253454039624672,
+    "worldserver_unit": "trinity-live-validation-cedc72e23e592c870af0d888.service",
+    "session_fingerprint": "7664d0910cb5bcacf57038ea6f52d7fda54ad694e32da23a2ff5f6b7a43e33a8",
+    "profile_generation": 1,
+    "profile_content_hash": "d9d6a60e97756695ea6553b1fa34e9c2c63ebe6e09467e71bc01fb74fe3655ae",
+    "max_active_cohorts": 1
+  },
+  "exact_party": {
+    "class_specs": [
+      "feral_druid_tank",
+      "discipline_priest",
+      "fury_warrior",
+      "marksmanship_hunter",
+      "retribution_paladin"
+    ],
+    "party_sha256": "524b94c794897f5111bdae0a5e45ba31a31ebb8596d811a3dd8c1caff95bd16a",
+    "independently_recomputed": true
+  },
+  "immutable_evidence": {
+    "batch_identity_sha256": "838ba202b851b4a93335237ebdf81a0464fcf8eeee194245892b1ee780148649",
+    "raw_bundle_sha256": "9c3bf93bf3e18ad4852b58eb769ce7f688ea4321c6230e0f3ffaea0c65a0d5ce",
+    "compact_bundle_sha256": "b6e69259001d55ed68aced66e4eec7e27d740fa6e46d5874cfd66548fb3fd8a4",
+    "publication_receipt_sha256": "1c59090d4e255ef09641da63266d39d2c44f97fa587ce4080364eb9b5fee2642",
+    "publication_receipt_file_sha256": "9ced019ead8af9d1bda88c536517bd31073dd8f944b863b29dd1218eb44574db",
+    "acceptance_source_report_sha256": "fa75793295abf2ef58b66644dfeb6adb8edb3801fff02b50285190b2afeb605f",
+    "raw_pointer_sha256": "6306842379298aa92223ecb2c8b6bfe2d5807c6b4881e18ff93ede811a30a6d3",
+    "raw_dvc_md5": "647ba16e2bd59a7d7c65c34494b6a93a.dir",
+    "compact_pointer_sha256": "0ba339033e1d426f3bd6a5908facb6253cc446987a70b017c8ae3ccb6b44a71b",
+    "compact_dvc_md5": "e5eba929a9487c4e75298db9110ba6ea.dir"
+  },
+  "independent_capture_and_publication_verifier": {
+    "independent_verifier_sha256": "3450d8bebb11422f123533e309e757bf7c17a70f49b3a7b91e43fed2c7205c1e",
+    "batch_identity_recomputed": true,
+    "raw_and_compact_bundle_hashes_recomputed": true,
+    "raw_and_compact_file_manifests_recomputed": true,
+    "publication_receipt_recomputed": true,
+    "canonical_dvc_remote_status": "in_sync",
+    "publication_remote_verified": true,
+    "raw_and_compact_payloads_re_evicted": true,
+    "batch_specific_hydration_and_verification_caches_evicted": true,
+    "remaining_batch_entries": [
+      ".gitignore",
+      "compact.dvc",
+      "raw.dvc",
+      "retained"
+    ],
+    "broad_dvc_gc_used": false
+  },
+  "independent_role_verifier": {
+    "canonical_role_audit_passed": true,
+    "canonical_role_audit_sha256": "ce4a7e6d6f021b6950d0566bf1a1d777d29063493d2140e7245aaef8c8bbcd62",
+    "eligible_hostile_denominator": 1231,
+    "tank_owned_hostile_numerator": 1209,
+    "healer_targeting_hostile_numerator": 2,
+    "tank_all_hostile_retention_ratio": 0.9821283509341998,
+    "healer_target_exposure_ratio": 0.0016246953696181965,
+    "maximum_healer_target_dwell_ms": 1789,
+    "threat_aura_active_samples": 498,
+    "threat_aura_total_samples": 498,
+    "threat_aura_uptime_ratio": 1.0,
+    "non_healer_active_action_coverage_passed": true,
+    "cast_failure_rate_passed": true,
+    "marksmanship_hunter_cast_failure_rate": 0.015384615384615385,
+    "discipline_priest_successful_heal_cast_rate": 1.0,
+    "missing_required_rotation_groups": [],
+    "threshold_results": {
+      "tank_retention_at_least_0_90": true,
+      "healer_exposure_at_most_0_01": true,
+      "healer_dwell_at_most_3000_ms": true,
+      "threat_aura_uptime_at_least_0_99": true,
+      "non_healer_active_action_coverage_at_least_0_70": true,
+      "cast_failure_rate_at_most_0_05": true,
+      "healer_heal_cast_success_at_least_0_95": true,
+      "rotation_groups_present": true
+    }
+  },
+  "route_generation_and_hostile_guid_chronology": {
+    "generation_12": {
+      "node_id": "3191b28d8c4a59b2",
+      "kind": "descent",
+      "label": "post-Ozruk flayer approach regroup",
+      "canonical_anchor": {
+        "x": 1329.93,
+        "y": 985.712,
+        "z": 207.804
+      },
+      "previous_anchor": {
+        "x": 1507.859,
+        "y": 1073.26,
+        "z": 217.3286
+      },
+      "first_observed_timestamp_ms": 1786325278671,
+      "last_observed_timestamp_ms": 1786325524281,
+      "tank_owned_residual_hostile_guids": [
+        234,
+        501
+      ],
+      "residual_hostile_entry": 42691,
+      "eligible_hostile_denominator": 4,
+      "tank_owned_hostile_numerator": 4,
+      "healer_targeting_hostile_numerator": 0
+    },
+    "aggregate_generation_metrics": {
+      "generation_1": {
+        "eligible": 179,
+        "tank_owned": 176,
+        "healer_targeting": 0
+      },
+      "generation_3": {
+        "eligible": 248,
+        "tank_owned": 245,
+        "healer_targeting": 0
+      },
+      "generation_10": {
+        "eligible": 62,
+        "tank_owned": 61,
+        "healer_targeting": 0
+      },
+      "generation_11": {
+        "eligible": 677,
+        "tank_owned": 663,
+        "healer_targeting": 2,
+        "healer_targeting_guids": [
+          228
+        ]
+      },
+      "all_other_sampled_generations": {
+        "eligible": 61,
+        "tank_owned": 60,
+        "healer_targeting": 0
+      }
+    }
+  },
+  "action_reconstruction": {
+    "feral_native_actions": {
+      "growl_spell_attempts": 10,
+      "growl_healer_or_party_pickup_trace_actions": 14,
+      "swipe_spell_attempts": 45,
+      "thrash_spell_attempts": 38,
+      "demoralizing_roar_party_pickup_actions": 8,
+      "native_charge_handoff_or_pickup_actions": 6,
+      "rerun194_remote_healer_wave_before_roar_action_fired": false
+    },
+    "movement": {
+      "move_to_validation_route": 205,
+      "move_to_validation_route_anchor": 633,
+      "generation_12_route_destination_unreachable_results": 220,
+      "generation_12_tank_terminal_failures": 232,
+      "tactical_retreat_actions": 7,
+      "retreat_disengage_actions": 1
+    },
+    "hazard": {
+      "move_out_of_hazard": 69,
+      "hold_outside_hazard": 188,
+      "tank_hazard_hold_area_threat": 17,
+      "hazard_starvation_primary": false
+    },
+    "misdirection": {
+      "misdirection_to_tank": 9,
+      "aoe_transfer_actions": 41,
+      "single_target_transfer_actions": 30,
+      "aoe_wait_for_focus_actions": 8,
+      "wrong_target_failure_primary": false
+    },
+    "healer_threat_handoff": {
+      "discipline_fade_actions": 1,
+      "healer_pickup_preposition_actions": 52,
+      "healer_behavior_failure": false
+    }
+  },
+  "independent_strict_verifier": {
+    "underlying_returncode": 0,
+    "timed_out": false,
+    "session_closed": true,
+    "identity_complete": true,
+    "operator_attempt_count": 1,
+    "serial_index": 2,
+    "global_lifecycle_command_count": 0,
+    "scheduler_events": [
+      "admit:2",
+      "close:2"
+    ],
+    "cleanup": {
+      "active": false,
+      "active_bots": 0,
+      "lease_count": 0,
+      "party_bot_count": 0
+    },
+    "authoritative_route_terminal_count": 11,
+    "authoritative_route_terminal_generations": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11
+    ],
+    "aggregate_event_terminal_count": 12,
+    "aggregate_event_terminal_includes_non_authoritative_generation_12_arrival": true,
+    "aggregate_event_count_not_accepted_as_shared_route_advance": true,
+    "authoritative_boss_death_entries": [
+      43438,
+      43214,
+      42188
+    ],
+    "high_priestess_azil_terminal_and_death": false,
+    "azil_and_follower_combat_observed_without_tank": true,
+    "validation_route_manifest_complete": false,
+    "watchdog_semantic_progress_plateau": true,
+    "teacher_assisted_kills": 0,
+    "forbidden_completion_assistance": [],
+    "strict_route_gate_passed": false,
+    "strict_role_gate_passed": true
+  },
+  "decisive_route_episode": {
+    "chronology": [
+      "Generation 12 opened with the tank and the cohort finishing two tank-owned residual flayers, GUIDs 234 and 501, near x=1556.83 and y=1087.93.",
+      "At 1786325283709 the residual hostiles were dead, but transient party-combat state still bypassed the descent-only MoveJump branch. The tank's ordinary path probe from the prior shelf to the canonical descent anchor returned route_destination_unreachable.",
+      "MoveBotToPoint used terminalOnFailure=true for this strategic anchor call, so the tank entered terminal reason route_destination_unreachable before the intended descent jump could run.",
+      "After combat state cleared, the healer and three DPS remained non-terminal and used the existing descent movement to reach the canonical anchor. Their per-bot arrival events made the aggregate evidence counter contain generation 12, but MaybeAdvanceValidationRouteManifest correctly refused shared advance because the tank remained 198.526 yards away.",
+      "The split group pulled High Priestess Azil and Devout Followers at the lower anchor without its tank. Four party deaths, three resurrections, a retreat to the previous route anchor, and native resurrection recovery followed.",
+      "The tank remained permanently terminal on the unreachable ordinary path, while the other four bots repeatedly emitted validation_route_complete. The shared manifest stayed at generation 12 until the semantic-progress watchdog fired."
+    ],
+    "tank_final_position": {
+      "x": 1556.83,
+      "y": 1087.93,
+      "z": 216.003
+    },
+    "tank_final_canonical_route_distance": 198.526,
+    "other_live_party_final_route_distance": 0.0906525
+  },
+  "causal_classification": {
+    "authoritative_gameplay_failure_confirmed": true,
+    "route_navigation_and_cohort_synchronization_failure": true,
+    "real_feral_pickup_loss": false,
+    "later_threat_decay_primary": false,
+    "movement_hazard_threat_starvation_primary": false,
+    "misdirection_failure": false,
+    "healer_behavior_failure": false,
+    "role_audit_attribution_error": false,
+    "rerun170_passive_swarm_correction_side_effect": false,
+    "infrastructure_failure": false,
+    "primary_cause": "A descent node intentionally completed by native MoveJump temporarily traversed the ordinary pre-anchor path branch while residual party-combat state cleared. Its expected disconnected-path rejection was incorrectly made terminal for the tank, preventing the later native descent jump and splitting the cohort."
+  },
+  "bounded_correction": {
+    "worldserver_stopped_before_tracked_edit": true,
+    "description": "For descent nodes only, the existing ordinary route-anchor path probe records every unchanged mmap rejection but passes terminalOnFailure=false. The existing descent MoveJump then becomes authoritative as soon as the unchanged no-active-party-combat gate is satisfied. Every non-descent strategic path rejection remains terminal.",
+    "changed_files": [
+      "src/server/game/Bots/BotWorldPopulationMgr.cpp",
+      "tests/test_autonomy_pipeline_smoke.py"
+    ],
+    "unchanged_contracts": [
+      "all strict thresholds",
+      "all 14 route nodes and exact coordinates",
+      "arrival radius and all-participant manifest advancement",
+      "active-combat pack enrollment and cleanup",
+      "native MoveJump movement and no teleport or teacher assistance",
+      "all non-descent path legality and terminal failure behavior",
+      "Feral threat action order and rerun194 pickup correction",
+      "rerun170 passive-swarm staging",
+      "identity party publication cleanup and serial-isolation contracts"
+    ]
+  },
+  "validation_and_reprovisioning": {
+    "focused_tests": "6 passed, 133 deselected",
+    "broader_autonomy_smoke_tests": "107 passed, 32 known stale structural assertions failed",
+    "role_efficiency_tests": "9 passed, 1 known stale pet assertion failed",
+    "git_diff_check_passed": true,
+    "worldserver_rebuild_passed": true,
+    "corrected_worldserver_binary_sha256": "9baa526b8c7f682c03f14335541a2f2d3c2fafbc9d7ab999d8b1fb598f2c63ca",
+    "deterministic_all_31_reprovisioning_passed": true,
+    "deterministic_reprovisioning_verifier": "artifacts/all_spec_program/phase9_serial_canaries_20260810_rerun195/preidentity_preparation/provisioning_verifier.json",
+    "provisioning_verifier_file_sha256": "a5380939a83101f7117ac2c3d6dfccb14b08835f9bd25613249f3c66bf3ad363",
+    "accounts_ready": "50/50",
+    "characters_ready": "50/50",
+    "runtime_profiles_ready": "31/31",
+    "provisioning_failure_count": 0,
+    "dvc_status_completed": true,
+    "dvc_push_completed": true,
+    "dvc_push_result": "Everything is up to date; only the two known historical missing cache objects c67ee8935753b8ceccbdddbafdfebe.dir and 24b9d133fe3fe1b6f253e500c266562f.dir were reported.",
+    "broad_dvc_gc_used": false
+  },
+  "next_gate": {
+    "rerun": 195,
+    "fresh_identity_and_eight_row_plan_required": true,
+    "restart_at_canary_2_alone": true,
+    "canaries_3_through_8_blocked_until_preceding_strict_pass": true,
+    "phases_10_through_12_blocked": true
+  }
+}
