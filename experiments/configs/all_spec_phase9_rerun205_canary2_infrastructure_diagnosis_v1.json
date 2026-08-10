@@ -1,0 +1,101 @@
+{
+  "schema": "all_spec_phase9_rerun205_canary2_infrastructure_diagnosis_v1",
+  "diagnosis_sha256": "c0b6b0589cb1b19ad3bd5ee105f5a6bcd16ec1c6ce6e1c9645908edf4c09b336",
+  "scope": {
+    "attempt": "artifacts/all_spec_program/phase9_serial_canaries_20260810_rerun205/phase9_serial_02_stonecore_phase9_006_6893daf98698",
+    "operator_state": "artifacts/all_spec_program/phase9_serial_canaries_20260810_rerun205/operator_state_canary2.json",
+    "only_canary_2_ran": true,
+    "later_rows_started": false,
+    "published_batch_exists": false
+  },
+  "frozen_identity": {
+    "identity_manifest_sha256": "de57bb89be86c7fac1aa6e18c06ac8954898db5789a5438d309bb584af086e84",
+    "identity_manifest_file_sha256": "8d28ae111ba274cd715ba93b6c4496c0a26211ae59f9eaf7399c75306eb10501",
+    "run_plan_sha256": "0cc9d8933e8887c4e4f9e8de3521b306e742806000077883d810be34dd28d8bf",
+    "run_plan_file_sha256": "931860f4dcecfc6a26d837e8463848cd45576f5829bc26e5c3a6dc63c8df2955",
+    "binary_sha256": "4158a71ff977d1de1f8b287fd953bad7798059c54a3e217fffdd284b5e864e6f",
+    "server_process_id": 160403,
+    "server_epoch": 1172221483666401,
+    "worldserver_unit": "trinity-live-validation-449d626fde3590badb2b4c55.service",
+    "session_fingerprint": "bf7fa37b8285b0089a16a74c92fac90950f47f08b65cebc881e8e1cf47693caf",
+    "profile_generation": 1,
+    "profile_content_hash": "d9d6a60e97756695ea6553b1fa34e9c2c63ebe6e09467e71bc01fb74fe3655ae",
+    "max_active_cohorts": 1
+  },
+  "exact_party": {
+    "ordered_specs": [
+      "feral_druid_tank",
+      "discipline_priest",
+      "fury_warrior",
+      "marksmanship_hunter",
+      "retribution_paladin"
+    ],
+    "party_sha256": "524b94c794897f5111bdae0a5e45ba31a31ebb8596d811a3dd8c1caff95bd16a"
+  },
+  "observed_before_abort": {
+    "underlying_report_returncode": 0,
+    "underlying_report_timed_out": false,
+    "underlying_report_completion_reason": "incomplete_evidence",
+    "report_file_sha256": "0e52d75117084f5cd4b7e028349ed68992626a38517bd9bcc00367f959937351",
+    "operator_wrapper_returncode": 1,
+    "operator_state_file_sha256": "75181c899659f3f2a5a84a7923c0a512184c384aaa703d334b2e7821a2dbffa8",
+    "route_terminal_count": 13,
+    "route_terminal_generations": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
+    "authoritative_boss_death_entries": [43438, 43214, 42188],
+    "active_route_generation": 14,
+    "active_route_label": "High Priestess Azil",
+    "party_deaths": 1,
+    "watchdog_no_progress": false,
+    "watchdog_death_loop": false,
+    "watchdog_repeated_decision_loop": false,
+    "watchdog_semantic_progress_plateau": false,
+    "teacher_assisted_kills": 0,
+    "worldserver_failure": "SIGSEGV",
+    "worldserver_exit_status": 11,
+    "worldserver_crash_timestamp": "2026-08-10T17:41:13+03:00",
+    "cleanup_complete": false,
+    "publication_started": false,
+    "publication_receipt_present": false
+  },
+  "classification": {
+    "infrastructure_abort": true,
+    "authoritative_gameplay_pass": false,
+    "authoritative_gameplay_failure": false,
+    "incomplete_evidence_is_not_gameplay_failure": true,
+    "independent_role_audit_authorized": false,
+    "source_correction_invalidated": false,
+    "reason": "The reusable worldserver segfaulted before the Azil terminal, cohort stop, identity closeout, cleanup, capture finalization, acceptance_source_report generation, or immutable DVC publication. No role or strict-gate result can be inferred from the partial heartbeat report."
+  },
+  "crash_localization": {
+    "kernel_signal": "segfault at 0 with status 11/SEGV",
+    "kernel_instruction_address": "0x000059a87a64caed",
+    "kernel_module_offset": "0x1a38aed",
+    "symbol": "Position::GetExactDist2dSq(Position const*) const",
+    "source": "src/server/game/Entities/Object/Position.h:147",
+    "inline_caller": "Position::GetExactDist2d(Position const*) const at src/server/game/Entities/Object/Position.cpp:54",
+    "null_position_argument_indicated": true,
+    "core_backtrace_available": false,
+    "core_backtrace_limitation": "coredumpctl is not installed and no accessible file exists under /var/lib/systemd/coredump, so the concrete caller cannot be recovered independently.",
+    "new_thrash_gate_contains_distance_or_position_pointer_access": false,
+    "new_thrash_gate_directly_attributable": false,
+    "evidence": [
+      "The run made normal semantic progress through 13 of 14 terminals and three authoritative boss deaths before the process disappeared.",
+      "The final heartbeat had the exact party, exact epoch and profile, a clean watchdog, one non-looping party death, and High Priestess Azil active.",
+      "The bounded rerun205 source change adds only a fresh-wave boolean predicate and extends the existing non-null native Thrash cast condition; it adds no Position call or pointer dereference.",
+      "Without a closed capture or a caller backtrace, neither gameplay acceptance nor a new source correction is authorized."
+    ]
+  },
+  "recovery": {
+    "source_change_required": false,
+    "preserve_binary_sha256": "4158a71ff977d1de1f8b287fd953bad7798059c54a3e217fffdd284b5e864e6f",
+    "aborted_worldserver_inactive": true,
+    "live_operator_count": 0,
+    "live_publisher_count": 0,
+    "deterministic_reprovision_all_31_required": true,
+    "fresh_identity_and_eight_row_plan_required": true,
+    "next_attempt_label": "rerun206",
+    "canary_2_only_until_strict_pass": true,
+    "canaries_3_through_8_blocked": true,
+    "phases_10_through_12_blocked": true
+  }
+}

@@ -4,9 +4,9 @@
     "Rerun204 froze identity be5e516eb7bd5d7580e108626b35d7b7cebcc6e1392baaa211f5c51833398219, plan 245a2f6812bea1b5dbc2d8fd3a440ec1bcd08c59c23d0c61e1d64567592f0503, binary ebcc55f7046ed20f836a9de042c2e54fe5bad84e3095ba8fcfface678eba8f38, PID 140163, and epoch 1261356804254432. Canary 2 alone failed only Feral maximum healer-target dwell; canaries 3-8 never started.",
     "Rerun204 canary 2 completed all 14 route terminals and four real boss deaths with clean identity, exact party, serial isolation, watchdog, cleanup, publication, assistance, action, cast, heal, rotation, tank retention 1509/1546 = 0.9760672703751617, healer exposure 2/1546 = 0.00129366106080207, maximum dwell 3338 ms, and threat aura 468/468. Dwell exceeded the unchanged 3000 ms ceiling by 338 ms; every other strict gate passed.",
     "Canonical diagnosis 8da34afdab7384e37bac2bf0b0526813fed6c7507e9662901576f2913b78cc56 confirms real initial pickup loss in the final Azil wave. The fresh wave began with fourteen of twenty-one followers on Discipline; Demoralizing Roar reduced the set, but the native GCD and remote approach left GUID 744 healer-owned until Swipe. Ordinary-trash generation 13 again had zero healer exposure, and no audit, healer, hazard, Misdirection, infrastructure, threat-decay, or rerun170 attribution error explains the episode.",
-    "The bounded rerun205 correction lets the fresh large-wave local cluster try native Thrash before the already-authorized Demoralizing Roar path. Four focused tests pass, the source-shape diagnostic is 121 passed with the same 32 stale assertions, the role suite is 9 passed with the same one stale assertion, worldserver 4158a71ff977d1de1f8b287fd953bad7798059c54a3e217fffdd284b5e864e6f builds, and deterministic all-31 reprovisioning independently passes. A fresh identity, eight-row plan, independent reconstruction, and canary 2 alone are required after commit; rows 3-8 and Phases 10-12 remain blocked."
+    "The bounded rerun205 correction lets the fresh large-wave local cluster try native Thrash before the already-authorized Demoralizing Roar path. Rerun205 reached Azil at 13/14 terminals and 3/4 boss deaths, then worldserver PID 160403 segfaulted before closeout; canonical interruption c0b6b0589cb1b19ad3bd5ee105f5a6bcd16ec1c6ce6e1c9645908edf4c09b336 classifies it as incomplete infrastructure evidence, not a gameplay result. The same binary is preserved, rerun206 all-31 reprovisioning independently passes, and a fresh identity, eight-row plan, independent reconstruction, and canary 2 alone are required after commit; rows 3-8 and Phases 10-12 remain blocked."
   ],
-  "exact_next_handoff_prompt": "Continue Phase 9 only. Treat rerun204 canary-2 diagnosis 8da34afdab7384e37bac2bf0b0526813fed6c7507e9662901576f2913b78cc56 as authoritative. Preserve every strict threshold and runtime contract; at the existing fresh large-wave Feral local-healer-cluster gate, try native Thrash before the unchanged Demoralizing Roar path. Commit the coherent rerun205 checkpoint, capture a fresh rerun205 identity and stable-PID eight-row plan, independently reconstruct the plan, and run canary 2 alone. Keep rows 3-8 and Phases 10-12 blocked until preceding strict gates pass. Never use broad DVC garbage collection.",
+  "exact_next_handoff_prompt": "Continue Phase 9 only. Treat rerun204 gameplay diagnosis 8da34afdab7384e37bac2bf0b0526813fed6c7507e9662901576f2913b78cc56 and rerun205 infrastructure interruption c0b6b0589cb1b19ad3bd5ee105f5a6bcd16ec1c6ce6e1c9645908edf4c09b336 as authoritative. Preserve the rerun205 Thrash-first correction and every strict threshold/runtime contract. Commit the coherent rerun206 recovery checkpoint, capture a fresh rerun206 identity and stable-PID eight-row plan using binary 4158a71ff977d1de1f8b287fd953bad7798059c54a3e217fffdd284b5e864e6f, independently reconstruct the plan, and run canary 2 alone. Keep rows 3-8 and Phases 10-12 blocked until preceding strict gates pass. Never use broad DVC garbage collection.",
   "phase_status": [
     {
       "evidence": {
@@ -830,14 +830,16 @@
           "strict_uninterrupted_route": true
         },
         "last_interruption": {
-          "attempt_label": "rerun179_canary_2",
+          "attempt_label": "rerun205_canary_2",
           "classification": "worldserver_sigsegv_infrastructure_abort",
           "exact_party_verified_before_rejection": true,
-          "interruption": "experiments/configs/all_spec_phase9_rerun179_canary2_infrastructure_diagnosis_v1.json",
-          "interruption_file_sha256": "eda18bb2c84f024feb4d94c67f98577c848642d652f0aca9c30b590eb4b0139a",
+          "interruption": "experiments/configs/all_spec_phase9_rerun205_canary2_infrastructure_diagnosis_v1.json",
+          "interruption_file_sha256": "c0b6b0589cb1b19ad3bd5ee105f5a6bcd16ec1c6ce6e1c9645908edf4c09b336",
           "operator_returncode": 1,
           "publication_required": false,
           "source_correction_invalidated": false,
+          "route_terminal_count_before_abort": 13,
+          "real_boss_kill_count_before_abort": 3,
           "status": "infrastructure_aborted_incomplete_evidence"
         },
         "latest_closed_attempt": {
@@ -915,8 +917,8 @@
         "live_worldserver_active": false,
         "monitor_active": false,
         "next_attempt_setup": {
-          "attempt_label": "rerun205_setup",
-          "status": "checkpoint_ready_for_identity_capture",
+          "attempt_label": "rerun206_setup",
+          "status": "same_binary_infrastructure_recovery_ready_for_identity_capture",
           "authorized_corrections": [
             "at the existing fresh large-wave Feral local-healer-cluster recovery gate, try native Thrash before the unchanged Demoralizing Roar path"
           ],
@@ -936,12 +938,16 @@
           "worldserver_binary_sha256": "4158a71ff977d1de1f8b287fd953bad7798059c54a3e217fffdd284b5e864e6f",
           "feral_fresh_large_local_cluster_thrash_before_roar_enabled": true,
           "worker_model_metadata_changed": false,
+          "rerun205_infrastructure_interruption": "experiments/configs/all_spec_phase9_rerun205_canary2_infrastructure_diagnosis_v1.json",
+          "rerun205_infrastructure_interruption_sha256": "c0b6b0589cb1b19ad3bd5ee105f5a6bcd16ec1c6ce6e1c9645908edf4c09b336",
+          "rerun205_authoritative_gameplay_result": "none_incomplete_evidence",
+          "source_change_after_rerun205_abort": false,
           "old_worldserver_stopped": true,
           "old_worldserver_active_state": "inactive",
           "old_worldserver_sub_state": "dead",
           "old_worldserver_main_pid": 0,
           "deterministic_reprovision_passed": true,
-          "deterministic_reprovision_verifier": "artifacts/all_spec_program/phase9_serial_canaries_20260810_rerun205/preidentity_preparation/provisioning_verifier.json",
+          "deterministic_reprovision_verifier": "artifacts/all_spec_program/phase9_serial_canaries_20260810_rerun206/preidentity_preparation/provisioning_verifier.json",
           "deterministic_reprovision_verifier_sha256": "a5380939a83101f7117ac2c3d6dfccb14b08835f9bd25613249f3c66bf3ad363",
           "deterministic_reprovision_accounts_ready": "50/50",
           "deterministic_reprovision_characters_ready": "50/50",
