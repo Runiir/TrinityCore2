@@ -17266,6 +17266,37 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         // the rescue tools only while every legal area action is unavailable.
         if (role == "tank" && add && addCount >= 2)
         {
+            size_t protectionHealerAttackerCount = densityHealer
+                ? observedListedAttackerCount(densityHealer) : 0;
+            // Rerun192 showed two distinct Protection starvation paths.  A
+            // ready multi-target Righteous Defense acquired a prior nine-add
+            // Azil wave within one telemetry tick, but a later wave spent its
+            // opening GCD on Consecration first and then could not submit the
+            // same native rescue until 3063 ms.  Prefer only that existing
+            // multi-target rescue before area-GCD spending while two or more
+            // exact hostiles own the healer; every native cooldown, range,
+            // target, and spell-legality gate remains authoritative.
+            if (profile.SpecTag == "protection" && densityHealer
+                && protectionHealerAttackerCount >= 2
+                && bot->HasSpell(31789)
+                && TryCastFriendlySpell(bot, densityHealer, 31789))
+            {
+                std::string raw = BuildRawJson(bot, densityHealer);
+                std::string semantic = BuildSemanticJson(
+                    bot, densityHealer, "dungeon_boss", &power, stage,
+                    activity);
+                RecordEvent(state, bot, "boss_adds", densityHealer,
+                    "righteous_defense_healer_before_area_gcd",
+                    raw.c_str(), semantic.c_str(),
+                    float(protectionHealerAttackerCount), addCount, 31789);
+                state.DecisionTimer = std::min<uint32>(
+                    state.DecisionTimer, 250);
+                state.TargetGuid = add->GetGUID();
+                target = add;
+                situation = "dungeon_boss";
+                action = "righteous_defense_healer_before_area_gcd";
+                return true;
+            }
             // Rerun191 captured fifteen Azil followers on the healer while
             // Protection repeatedly preferred remote Hammer/Avenger targets.
             // Holy Wrath was natively ready, but the first local wave spent
@@ -17275,8 +17306,6 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             // actions. If none passes the unchanged profile and native gates,
             // preserve the ordinary area, rescue, and movement chain.
             uint32 localProtectionHealerOwnedCount = 0;
-            size_t protectionHealerAttackerCount = densityHealer
-                ? observedListedAttackerCount(densityHealer) : 0;
             if (profile.SpecTag == "protection" && densityHealer)
                 for (Creature* candidate : localAdds)
                     if (candidate && candidate->GetVictim() == densityHealer
@@ -20209,6 +20238,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             Unit* healerTauntTarget = nullptr;
             float healerTauntDistance = std::numeric_limits<float>::max();
             uint32 healerTauntGuid = std::numeric_limits<uint32>::max();
+            bool healerTauntRepeatsCurrentTarget = true;
             for (Unit* attacker : defenseTarget->getAttackers())
             {
                 if (!attacker || !attacker->IsAlive()
@@ -20216,13 +20246,22 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     continue;
                 float distance = bot->GetExactDist(attacker);
                 uint32 guid = attacker->GetGUID().GetCounter();
-                if (!healerTauntTarget || distance < healerTauntDistance
-                    || (distance == healerTauntDistance
-                        && guid < healerTauntGuid))
+                bool repeatsCurrentTarget =
+                    attacker->GetGUID() == state.TargetGuid;
+                if (!healerTauntTarget
+                    || (healerTauntRepeatsCurrentTarget
+                        && !repeatsCurrentTarget)
+                    || (healerTauntRepeatsCurrentTarget
+                            == repeatsCurrentTarget
+                        && (distance < healerTauntDistance
+                            || (distance == healerTauntDistance
+                                && guid < healerTauntGuid))))
                 {
                     healerTauntTarget = attacker;
                     healerTauntDistance = distance;
                     healerTauntGuid = guid;
+                    healerTauntRepeatsCurrentTarget =
+                        repeatsCurrentTarget;
                 }
             }
             if (healerTauntTarget

@@ -4005,6 +4005,41 @@ def test_rerun192_protection_prefers_profile_self_centered_area_for_local_healer
     assert "NearTeleportTo" not in area_gate
 
 
+def test_rerun193_protection_distributes_native_pickup_before_area_gcd():
+    objective = function_body(
+        read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective"
+    )
+    boss_marker = objective.index(
+        "Rerun192 showed two distinct Protection starvation paths"
+    )
+    boss_branch = objective[boss_marker - 300 : boss_marker + 3600]
+    trash_marker = objective.index(
+        "Rerun170 retained 17 eligible healer-target samples"
+    )
+    trash_branch = objective[trash_marker : trash_marker + 4300]
+
+    assert_ordered(
+        boss_branch,
+        'profile.SpecTag == "protection"',
+        "protectionHealerAttackerCount >= 2",
+        "TryCastFriendlySpell(bot, densityHealer, 31789)",
+        '"righteous_defense_healer_before_area_gcd"',
+        "Rerun191 captured fifteen Azil followers on the healer",
+        "ResolveProfileCombatAction(",
+    )
+    assert "state.DecisionTimer, 250" in boss_branch
+    assert_ordered(
+        trash_branch,
+        "bool healerTauntRepeatsCurrentTarget = true;",
+        "attacker->GetGUID() == state.TargetGuid",
+        "&& !repeatsCurrentTarget",
+        "TryCastCombatSpell(bot, healerTauntTarget, 62124)",
+    )
+    assert "SetThreat" not in boss_branch + trash_branch
+    assert "SetVictim" not in boss_branch + trash_branch
+    assert "NearTeleportTo" not in boss_branch + trash_branch
+
+
 def test_profile_los_failure_is_recorded_before_existing_range_recovery():
     executor = function_body(
         read(BOT_MGR),
