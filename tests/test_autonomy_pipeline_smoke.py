@@ -4344,6 +4344,36 @@ def test_rerun200_protection_rescue_preserves_existing_area_approach_chain():
     )
 
 
+def test_rerun210_protection_warrior_charges_remote_healer_wave_before_area_movement():
+    objective = function_body(
+        read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective"
+    )
+    marker = objective.index(
+        "Rerun209's generation-14 maximum dwell began with fifteen Azil"
+    )
+    branch = objective[marker - 500 : marker + 10500]
+
+    assert_ordered(
+        branch,
+        'profile.SpecTag == "protection_warrior"',
+        "densityDefenseTarget == densityHealer",
+        "add->GetVictim() == densityHealer",
+        "observedListedAttackerCount(densityHealer) >= 3",
+        "bot->GetExactDist(add) > 8.0f",
+        "bot->HasSpell(100)",
+        "TryCastCombatSpell(bot, add, 100)",
+        '"warrior_charge_healer_swarm_pickup"',
+        "state.DecisionTimer, 250",
+        "On a multi-target wave, establish area threat before spending",
+        "ResolveProfileCombatAction(",
+    )
+    assert "state.DecisionTimer = std::min" in branch
+    assert "SetThreat" not in branch
+    assert "SetVictim" not in branch
+    assert "NearTeleportTo" not in branch
+    assert "46968" not in branch
+
+
 def test_rerun201_protection_honors_ready_local_majority_area_before_remote_approach():
     objective = function_body(
         read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective"

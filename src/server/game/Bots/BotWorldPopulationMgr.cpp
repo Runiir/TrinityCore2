@@ -17504,6 +17504,44 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                     <= TankDensityClusterRadius;
         };
 
+        // Rerun209's generation-14 maximum dwell began with fifteen Azil
+        // followers on the Restoration Druid while Protection Warrior was
+        // outside Thunder Clap range.  The tank spent six seconds on ordinary
+        // ground approach and one single-target Taunt; the first native Thunder
+        // Clap then acquired almost the complete wave immediately.  Use the
+        // Warrior's already-known native Charge against the deterministic
+        // healer-owned density representative before area-profile movement.
+        // A successful Charge keeps the ordinary one-second decision interval
+        // so its native movement can finish before Thunder Clap resolution.
+        // Native range, LOS, cooldown, stance, combat, GCD, power, and spell
+        // legality remain authoritative.  Rejection falls through unchanged,
+        // but polls this exact urgent healer handoff at the established 250 ms
+        // pickup cadence.
+        if (role == "tank" && profile.SpecTag == "protection_warrior"
+            && densityHealer && densityDefenseTarget == densityHealer
+            && add && add->GetVictim() == densityHealer
+            && observedListedAttackerCount(densityHealer) >= 3
+            && bot->GetExactDist(add) > 8.0f && bot->HasSpell(100))
+        {
+            if (TryCastCombatSpell(bot, add, 100))
+            {
+                std::string raw = BuildRawJson(bot, add);
+                std::string semantic = BuildSemanticJson(
+                    bot, add, "dungeon_boss", &power, stage, activity);
+                RecordEvent(state, bot, "boss_add_density", add,
+                    "warrior_charge_healer_swarm_pickup", raw.c_str(),
+                    semantic.c_str(), bot->GetExactDist(add), addCount, 100);
+                state.TargetGuid = add->GetGUID();
+                state.WasInCombat = true;
+                target = add;
+                situation = "dungeon_boss";
+                action = "warrior_charge_healer_swarm_pickup";
+                return true;
+            }
+            state.DecisionTimer = std::min<uint32>(
+                state.DecisionTimer, 250);
+        }
+
         // On a multi-target wave, establish area threat before spending
         // decision ticks on individual taunts.  Corborus and Azil can assign
         // a complete spawn burst to healing threat in one tick; alternating
