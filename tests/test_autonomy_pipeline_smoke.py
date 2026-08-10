@@ -5374,3 +5374,15 @@ def test_rerun148_hunter_spell_los_failure_forces_one_alternate_lane_search():
 
     assert "MoveBotToProfileRange(*state, bot, target, &action, true);" in manager
     assert "if (!forceRangedReposition && distance >= desiredRange - 1.0f" in manager
+
+
+def test_rerun206_feral_dps_provisions_and_maintains_cat_form():
+    root = Path(__file__).resolve().parents[1]
+    manager = (root / "src/server/game/Bots/BotWorldPopulationMgr.cpp").read_text()
+    catalogs = (root / "tools/bot_ml/build_all_spec_phase1_catalogs.py").read_text()
+    targets = json.loads((root / "experiments/configs/all_spec_targets_cata_p4_v1.json").read_text())
+    feral = next(row for row in targets["targets"] if row["spec_target_id"] == "feral_druid_dps")
+
+    assert '"feral_druid_dps": [768]' in catalogs
+    assert '{ CLASS_DRUID, "dps", "feral_druid_dps", 768, 768, 0, "cat_form" }' in manager
+    assert 768 in feral["action_profile_spell_ids"]

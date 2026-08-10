@@ -1,0 +1,119 @@
+{
+  "schema": "all_spec_phase9_immutable_canary_diagnosis_v1",
+  "rerun": 206,
+  "serial_index": 4,
+  "attempt_id": "phase9_serial_04_stonecore_phase9_004_3904746e5810",
+  "immutable_batch": {
+    "batch_identity_sha256": "a0a988c48032fa9faed7a5aba711f99892b3dbb7d7709004a6dffdcd2aa2bf63",
+    "raw_bundle_sha256": "997c801951704b5ba3185d372de2236a7e6f5e8cd6547107a4a5a8a25be3d4f9",
+    "compact_bundle_sha256": "d550465c5da4eed4b4e537d11fe42dda82bc079f728291470f4fdf5037635c13",
+    "publication_receipt_sha256": "84214adfb39427bbd525fdfaa16409d0c860b24bb32426ac7b5c295c93256f57",
+    "source_report_sha256": "9fbcb8785837832990e5954bf241dc54dc380f5007ffa399a6d44de979533743",
+    "independent_verifier_sha256": "8436c175d3d17ad4e9b0889afbc87365fa350f9ca55aa7c3954b4609eef9f443"
+  },
+  "frozen_identity": {
+    "identity_manifest_sha256": "46c9c4e600e5ea6c390da57903527534d1224bbe9f0ea9fa253af5e39702cb9b",
+    "run_plan_sha256": "e9629126eb00f58d2405993db8f819a1fa89fd65e7b03bbe1ab2199d1a752afc",
+    "binary_sha256": "4158a71ff977d1de1f8b287fd953bad7798059c54a3e217fffdd284b5e864e6f",
+    "server_pid": 172906,
+    "server_epoch": 1402806855355082,
+    "unit_name": "trinity-live-validation-c5ea4afac32bb7a15686bc44",
+    "session_fingerprint": "31b65d4e100d51a9619d22b0cce6c35c1917fde5873b84049dce61de3c556d06"
+  },
+  "exact_party": [
+    "protection_warrior",
+    "restoration_druid",
+    "elemental_shaman",
+    "enhancement_shaman",
+    "feral_druid_dps"
+  ],
+  "exact_party_sha256": "e2b92089bf4d84e3fce916843df6441d573eaf6b0ad076f2e8db3b7df6315920",
+  "authoritative_result": {
+    "classification": "gameplay_failure",
+    "route_terminal_scopes": 13,
+    "expected_route_terminal_scopes": 14,
+    "real_boss_death_scopes": 3,
+    "expected_real_boss_death_scopes": 4,
+    "missing_terminal": "High Priestess Azil",
+    "cleanup_complete": true,
+    "remote_publication_verified": true,
+    "forbidden_completion_assistance": [],
+    "failure_labels": [
+      "role_quality:Feraldps:cast_failure_rate",
+      "role_quality:Protwar:tank_threat_retention",
+      "role_quality:Protwar:healer_target_exposure",
+      "role_quality:Protwar:healer_target_dwell",
+      "stonecore_role_quality_audit_failed",
+      "validation_route_stuck_loop"
+    ]
+  },
+  "independent_role_metrics": {
+    "Feraldps": {
+      "attempts": 483,
+      "successful_attempts": 91,
+      "cast_failures": 392,
+      "cast_failure_rate": 0.8115942028985508,
+      "failure_result": "SPELL_FAILED_ONLY_SHAPESHIFT",
+      "failure_result_code": 96,
+      "failed_spells": {
+        "5217": 190,
+        "80965": 96,
+        "62078": 75,
+        "5221": 31
+      },
+      "successful_spell_submissions": {
+        "50334": 9
+      },
+      "successful_non_spell_fallbacks": 82
+    },
+    "Protwar": {
+      "eligible_hostile_denominator": 5351,
+      "tank_owned_hostile_numerator": 4418,
+      "healer_targeting_hostile_numerator": 691,
+      "tank_all_hostile_retention_ratio": 0.8256400672771445,
+      "healer_target_exposure_ratio": 0.12913474116987478,
+      "maximum_healer_target_dwell_ms": 21183,
+      "maximum_dwell_guid": 1043,
+      "threat_aura_uptime": 1.0
+    }
+  },
+  "causal_reconstruction": {
+    "primary_root_cause": "The canonical feral_druid_dps provisioning set and persistent-combat-setup table omit Cat Form spell/aura 768. Feraldps therefore remained outside Cat Form and every Cat-only rotation submission failed with result 96.",
+    "combat_consequence": "Feraldps dealt only melee and Fury Swipes damage instead of its native builder, area, cooldown, and interrupt rotation. The prolonged Corborus and Azil add phases accumulated hostile waves faster than the remaining party could retire them.",
+    "tank_failure_relationship": "Protwar continued submitting native Taunt, Thunder Clap, Shield Slam, Shield Block, Shockwave, Rend, and movement actions. During the maximum Azil episode, the wave grew from 14 healer-owned hostiles to 50 engaged hostiles; GUID 1043 was never tank-owned. This is a downstream swarm-duration stress effect of the missing Feral DPS rotation, not evidence that Protwar stopped acting or lost its threat aura.",
+    "maximum_episode_chronology": {
+      "guid": 1043,
+      "first_engaged_ms": 1786378522423,
+      "first_healer_target_ms": 1786378523432,
+      "first_eligible_ms": 1786378525456,
+      "last_engaged_ms": 1786378544615,
+      "first_tank_owned_ms": null,
+      "route_generation": 14
+    },
+    "excluded_causes": [
+      "infrastructure_abort",
+      "identity_mismatch",
+      "publication_failure",
+      "cleanup_failure",
+      "forbidden_assistance",
+      "tank_threat_aura_loss",
+      "missing_healer_successful_casts"
+    ]
+  },
+  "minimal_correction": {
+    "catalog": "Add spell 768 only to feral_druid_dps persistent setup so deterministic provisioning treats Cat Form as required.",
+    "runtime": "Add the exact feral_druid_dps Cat Form entry to TryEnsurePersistentCombatSetup, preserving all thresholds, native spell legality, targeting, threat, route, and publication contracts.",
+    "deferred": "Do not separately tune Protection Warrior threat until the same row is retested with the primary Feral DPS form defect removed."
+  },
+  "gates_unchanged": {
+    "tank_all_hostile_retention_min": 0.9,
+    "healer_target_exposure_max": 0.01,
+    "max_healer_target_dwell_ms": 3000,
+    "tank_threat_aura_uptime_min": 0.99,
+    "non_healer_active_action_coverage_min": 0.7,
+    "cast_failure_rate_max": 0.05,
+    "healer_successful_heal_cast_rate_min": 0.95,
+    "missing_required_rotation_groups_allowed": false
+  },
+  "diagnosis_canonical_sha256": "b767009235941ddb2e8eae3ed2a71d80fc1dbcecf0ff129cf4cd786425dfdc44"
+}

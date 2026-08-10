@@ -9888,6 +9888,7 @@
       ],
       "action_profile_identity": "cata_434:11:feral_druid_dps",
       "action_profile_spell_ids": [
+        768,
         1079,
         1822,
         5176,

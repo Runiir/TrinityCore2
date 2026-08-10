@@ -346,6 +346,7 @@ PERSISTENT_SETUP_SPELL_IDS = {
     "retribution_paladin": [20217],
     "blood_death_knight": [48263],
     "feral_druid_tank": [5487],
+    "feral_druid_dps": [768],
     "arcane_mage": [1459, 30482],
     "fire_mage": [759, 1459, 30482],
     "frost_mage": [1459, 30482],
