@@ -14933,7 +14933,18 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         // even while the boss remains attackable.  Waiting for the scripted
         // shield/unavailable phase let Azil followers build lethal healer/DPS
         // threat before the tank's density handler existed.
-        bool swarmDefenseActive = highDensityPhase || cohortSwarmActive;
+        // Rerun195 proved that the shared large-passive-swarm fact could remain
+        // true while a remote damage role's local 45-yard add view flickered
+        // below swarm density. That made densityTank null for that role, so it
+        // alternated the existing tank-follow staging with add/route movement
+        // and could never satisfy the unchanged all-participant 18-yard gate.
+        // The shared proof is already generation-scoped and published only by
+        // the living tank's 24-plus unengaged observation. Use it to resolve
+        // the same loaded tank/healer participants even when this observer has
+        // no local swarm view; all staging movement and tank-only activation
+        // conditions below remain unchanged.
+        bool swarmDefenseActive = highDensityPhase || cohortSwarmActive
+            || sharedLargePassiveSwarmStaging;
         std::string role = GetDungeonRole(bot);
         BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(bot, role.c_str());
         // Preserve Blood's 30-second ground threat for a real follower wave.

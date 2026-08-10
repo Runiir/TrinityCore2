@@ -3827,6 +3827,40 @@ def test_rerun182_shared_passive_swarm_proof_keeps_native_tank_follow():
     assert 'activationAction.DebugName = "activate_passive_swarm"' in branch
 
 
+def test_rerun196_shared_passive_swarm_proof_resolves_remote_staging_tank():
+    objective = function_body(
+        read(BOT_MGR),
+        "bool BotWorldPopulationMgr::TryValidationRouteObjective",
+    )
+    marker = objective.index(
+        "Rerun195 proved that the shared large-passive-swarm fact"
+    )
+    branch = objective[
+        objective.index("bool sharedLargePassiveSwarmStaging =") :
+        objective.index("bool passiveSwarmActivationNotActionable")
+    ]
+
+    assert marker > objective.index("bool sharedLargePassiveSwarmStaging =")
+    assert_ordered(
+        branch,
+        "bool sharedLargePassiveSwarmStaging =",
+        "bool swarmDefenseActive = highDensityPhase || cohortSwarmActive",
+        "|| sharedLargePassiveSwarmStaging;",
+        "if (swarmDefenseActive)",
+        'if (!densityTank && memberRole == "tank")',
+        "densityTank = member;",
+        "bool largePassiveSwarm = densityTank",
+        "&& sharedLargePassiveSwarmStaging",
+        'if (largePassiveSwarm && role != "tank"',
+        "MoveFollow(",
+        'activationAction.DebugName = "activate_passive_swarm"',
+    )
+    assert "member->GetExactDist2d(densityTank) <= 18.0f" in branch
+    assert "SetVictim" not in branch
+    assert "AddThreat" not in branch
+    assert "NearTeleportTo" not in branch
+
+
 def test_rerun183_healer_owned_stable_swarm_path_revalidates_early():
     objective = function_body(
         read(BOT_MGR),
@@ -4265,7 +4299,7 @@ def test_density_tank_centroid_control_prioritizes_loose_healer_targets():
     assert 'if (memberRole == "tank" || member->getAttackers().empty())' in adds
     assert "nearestAttacker->GetAngle(densityTank) - densityTank->GetOrientation()" in adds
     assert "densityTank->GetFirstCollisionPosition(4.0f" in adds
-    assert "bool swarmDefenseActive = highDensityPhase || cohortSwarmActive;" in adds
+    assert "bool swarmDefenseActive = highDensityPhase || cohortSwarmActive\n            || sharedLargePassiveSwarmStaging;" in adds
     assert "if (swarmDefenseActive)" in adds
     assert "defenseScore = attackerCount + (memberRole == \"healer\" ? 3 : 0)" in adds
     assert '"dps_stack_for_swarm_pickup"' in adds
