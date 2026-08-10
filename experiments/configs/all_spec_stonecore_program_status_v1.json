@@ -1,12 +1,12 @@
 {
   "active_phase": 9,
   "blockers": [
-    "Rerun199 froze identity bf03d02c308f36eae8b663a91edc5a387df8b83c1b2a069d5d7b629132d1641d, plan e1b06fb939c3b56ad3a78d56875bec13bc74b2a9db203e050f193b0bd2f6ccfd, binary b46fb5fec26be5d7894d3b1d7fa0ae7b2dd7028b80ec7d6acceb55ec8c22ca7a, PID 1961575, and epoch 7800808968700047. Only canary 2 ran; canaries 3-8 never started.",
-    "Rerun199 canary 2 completed all 14 route terminals and four real boss deaths with clean identity, exact party, serial isolation, watchdog, cleanup, publication, assistance, action, cast, heal, rotation, tank retention 1699/1773 = 0.958262831359278, healer exposure 12/1773 = 0.00676818950930626, and threat aura 503/503. It failed only maximum healer dwell at 3335 ms.",
-    "Canonical diagnosis ab2d8a35faa74b33ca59ee6e10c0c0a45fd3c40e170e7767764cc275eb29be84 confirms a residual Feral split-cluster handoff ordering defect: an active arrived handoff had exact local healer-owned targets but not a local majority, so native Thrash was skipped and non-damaging Roar retries plus holds exceeded the dwell budget. This is not later threat decay, movement/hazard starvation, Misdirection, healer behavior, audit attribution, infrastructure, a direct rerun170 regression, or a rerun199 correction side effect.",
-    "The bounded rerun200 correction allows native Thrash during the already-active arrived identity-bound handoff when at least two exact hostiles still target the healer, while preserving the fresh-wave local-majority guard and native Swipe fallback. Eight focused tests pass, worldserver a4af43d4b0868a02e645072367f0a5f13356183f2902f762e1a0a33cdc899aec builds, and deterministic all-31 reprovisioning independently passes. A fresh identity, eight-row plan, independent reconstruction, and canary 2 alone are required after commit; rows 3-8 and Phases 10-12 remain blocked."
+    "Rerun200 froze identity efc99cd8b8a5531c673b6d6676ba77dcf3b5d9574e0e74980fa9fbe52c42bd91, plan 124d5bd955d4334f0a4e4e249fc6200078ddbc9ca01988db0149263ff2605ae0, binary a4af43d4b0868a02e645072367f0a5f13356183f2902f762e1a0a33cdc899aec, PID 1983721, and epoch 6786486346476631. Canary 2 passed every strict gate. Canary 3 ran next and failed only the Protection Paladin maximum healer-target dwell gate; canaries 4-8 never started.",
+    "Rerun200 canary 3 completed all 14 route terminals and four real boss deaths with clean identity, exact party, serial isolation, watchdog, cleanup, publication, assistance, action, cast, heal, rotation, tank retention 1502/1548 = 0.9702842377260982, healer exposure 14/1548 = 0.00904392764857881, and threat aura 510/510. Two Azil adds remained continuously healer-owned for 3576 ms, exceeding the unchanged 3000 ms dwell threshold.",
+    "Canonical diagnosis f81545b22ed2fca725546f71a72cf5a388aa0c2c44f18822245de72644fda2e2 confirms real Protection initial pickup loss: the generic boss-add resolver spent 2041 ms approaching for self-centered Holy Wrath, then three valid native Hand of Reckoning attempts were rejected. Righteous Defense eventually recovered the adds. This is not later decay, hazard starvation, Misdirection, healer behavior, audit attribution, infrastructure, the rerun170 passive-swarm correction, or the rerun200 Feral Thrash correction.",
+    "The bounded rerun201 correction tries native Avenger's Shield after failed or unavailable Hand of Reckoning for two-plus observed healer attackers and before Consecration fallback. Seven focused tests pass, worldserver 817c5e51ebd105ac2ad10bda5356c93a0e170d8bf874c5b9d51ec096f8713c45 builds, and deterministic all-31 reprovisioning independently passes. A fresh identity, eight-row plan, independent reconstruction, and canary 2 alone are required after commit; rows 3-8 and Phases 10-12 remain blocked."
   ],
-  "exact_next_handoff_prompt": "Continue Phase 9 only. Treat rerun199 canary-2 diagnosis ab2d8a35faa74b33ca59ee6e10c0c0a45fd3c40e170e7767764cc275eb29be84 as authoritative. Preserve every strict threshold and runtime contract; allow native Thrash during an already-active arrived identity-bound Feral healer handoff when at least two exact hostiles still target the healer, preserve the fresh-wave local-majority guard, and retain native Swipe fallback. Commit the coherent rerun200 checkpoint, capture a fresh rerun200 identity and stable-PID eight-row plan, independently reconstruct the plan, and run canary 2 alone. Keep rows 3-8 and Phases 10-12 blocked until preceding strict gates pass. Never use broad DVC garbage collection.",
+  "exact_next_handoff_prompt": "Continue Phase 9 only. Treat rerun200 canary-3 diagnosis f81545b22ed2fca725546f71a72cf5a388aa0c2c44f18822245de72644fda2e2 as authoritative. Preserve every strict threshold and runtime contract; after failed or unavailable native Hand of Reckoning for two-plus observed healer attackers, try native Avenger's Shield before Consecration fallback. Commit the coherent rerun201 checkpoint, capture a fresh rerun201 identity and stable-PID eight-row plan, independently reconstruct the plan, and run canary 2 alone. Keep rows 3-8 and Phases 10-12 blocked until preceding strict gates pass. Never use broad DVC garbage collection.",
   "phase_status": [
     {
       "evidence": {
@@ -688,30 +688,38 @@
         "canaries_4_through_8_started": false,
         "checkpoint_kind": "in_progress_not_phase_complete",
         "current_attempt": {
-          "attempt_label": "rerun199_serial",
-          "status": "canary_2_failed_closed_published_verified_evicted",
-          "canary_2_strict_passed": false,
-          "canary_2_authoritative_result": "gameplay_failure",
-          "canary_2_failure_reasons": [
-            "role_quality:Feraltank:healer_target_dwell"
-          ],
+          "attempt_label": "rerun200_serial",
+          "status": "canary_2_passed_canary_3_failed_closed_published_verified_evicted",
+          "canary_2_strict_passed": true,
+          "canary_2_authoritative_result": "passed",
+          "canary_2_failure_reasons": [],
           "canary_2_route_terminal_count": 14,
           "canary_2_real_boss_kill_count": 4,
           "canary_2_publication_verified": true,
           "canary_2_cleanup_complete": true,
-          "canary_3_started": false,
+          "canary_3_started": true,
+          "canary_3_strict_passed": false,
+          "canary_3_authoritative_result": "gameplay_failure",
+          "canary_3_failure_reasons": [
+            "role_quality:Protpally:healer_target_dwell"
+          ],
+          "canary_3_route_terminal_count": 14,
+          "canary_3_real_boss_kill_count": 4,
+          "canary_3_publication_verified": true,
+          "canary_3_cleanup_complete": true,
           "canaries_4_through_8_started": false,
-          "diagnosis": "experiments/configs/all_spec_phase9_rerun199_canary2_diagnosis_v1.json",
-          "diagnosis_sha256": "ab2d8a35faa74b33ca59ee6e10c0c0a45fd3c40e170e7767764cc275eb29be84",
-          "batch_identity": "4b6d576931aa9dd205a1edca171a4d72feafe360886537ee2b7cbcfaaa1b8202",
-          "publication_receipt_sha256": "48decf160a8baa3e187f519d820c7014850850c088d7eab065e6c877be5a1251",
-          "evidence_identity_manifest_sha256": "bf03d02c308f36eae8b663a91edc5a387df8b83c1b2a069d5d7b629132d1641d",
-          "run_plan_sha256": "e1b06fb939c3b56ad3a78d56875bec13bc74b2a9db203e050f193b0bd2f6ccfd",
-          "evidence_worldserver_binary_sha256": "b46fb5fec26be5d7894d3b1d7fa0ae7b2dd7028b80ec7d6acceb55ec8c22ca7a",
-          "corrected_worldserver_binary_sha256": "a4af43d4b0868a02e645072367f0a5f13356183f2902f762e1a0a33cdc899aec",
-          "server_process_id": 1961575,
-          "server_epoch": 7800808968700047,
-          "session_fingerprint": "12a70e9acce59ce213e36c720968a54deefaf0a1f5ba6792b9bbd180dcdd164d",
+          "diagnosis": "experiments/configs/all_spec_phase9_rerun200_canary3_diagnosis_v1.json",
+          "diagnosis_sha256": "f81545b22ed2fca725546f71a72cf5a388aa0c2c44f18822245de72644fda2e2",
+          "canary_2_batch_identity": "f4041d306c1c83d89966805416c111b44251fd7092f7f1c66ce30a2e027b7d1c",
+          "canary_3_batch_identity": "39fa2183f6218a40f23cb624d9b10855a3720091f79300327abdb9a5647a50a3",
+          "canary_3_publication_receipt_sha256": "545413bd1336941a2206a791d1a8b6567e0e887cc04f644d8618186a1a7d7b3a",
+          "evidence_identity_manifest_sha256": "efc99cd8b8a5531c673b6d6676ba77dcf3b5d9574e0e74980fa9fbe52c42bd91",
+          "run_plan_sha256": "124d5bd955d4334f0a4e4e249fc6200078ddbc9ca01988db0149263ff2605ae0",
+          "evidence_worldserver_binary_sha256": "a4af43d4b0868a02e645072367f0a5f13356183f2902f762e1a0a33cdc899aec",
+          "corrected_worldserver_binary_sha256": "817c5e51ebd105ac2ad10bda5356c93a0e170d8bf874c5b9d51ec096f8713c45",
+          "server_process_id": 1983721,
+          "server_epoch": 6786486346476631,
+          "session_fingerprint": "3fb43dd4b2e9cc3e4786197847e5c5ba67b88232076ea3ca3223cc4917d6861e",
           "profile_generation": 1,
           "profile_content_hash": "d9d6a60e97756695ea6553b1fa34e9c2c63ebe6e09467e71bc01fb74fe3655ae",
           "worldserver_stopped_before_tracked_edit": true,
@@ -753,7 +761,8 @@
             "rerun198_protection_hand_of_protection_before_area_gcd",
             "rerun199_feral_multi_healer_wave_native_pickup_reservation",
             "rerun199_feral_arrived_handoff_thrash_before_swipe",
-            "rerun200_feral_arrived_handoff_thrash_for_local_minority"
+            "rerun200_feral_arrived_handoff_thrash_for_local_minority",
+            "rerun201_protection_avengers_shield_after_taunt_rejection"
           ]
         },
         "generated_history_archive": "artifacts/all_spec_program/phase9_generated_history_through_rerun127_20260802.tar.zst.dvc",
@@ -902,35 +911,33 @@
         "live_worldserver_active": false,
         "monitor_active": false,
         "next_attempt_setup": {
-          "attempt_label": "rerun199_setup",
+          "attempt_label": "rerun201_setup",
           "status": "checkpoint_ready_for_identity_capture",
           "authorized_corrections": [
-            "reserve three-plus exact healer attackers for the existing specialized native Feral area-pickup controller instead of spending Stampeding Roar",
-            "on an identity-bound arrived Feral healer-swarm handoff, try native Thrash before Swipe while retaining Swipe as fallback"
+            "after failed or unavailable native Hand of Reckoning for two-plus observed healer attackers, try native Avenger's Shield before Consecration fallback"
           ],
-          "authorized_diagnosis": "experiments/configs/all_spec_phase9_rerun198_canary2_diagnosis_v1.json",
-          "authorized_diagnosis_sha256": "3e8c6b352468666add0e3172fd84f91cffc46eefefb28780da29028fbb91f690",
+          "authorized_diagnosis": "experiments/configs/all_spec_phase9_rerun200_canary3_diagnosis_v1.json",
+          "authorized_diagnosis_sha256": "f81545b22ed2fca725546f71a72cf5a388aa0c2c44f18822245de72644fda2e2",
           "source_change_started": true,
           "source_change_complete": true,
           "sources": [
             "src/server/game/Bots/BotWorldPopulationMgr.cpp",
             "tests/test_autonomy_pipeline_smoke.py"
           ],
-          "focused_regression_tests": "8 passed, 137 deselected",
+          "focused_regression_tests": "7 passed, 141 deselected",
           "role_audit_module": "9 passed, 1 pre-existing stale pet source-shape assertion",
-          "broad_source_shape_diagnostic": "113 passed, 32 pre-existing stale source-shape assertions; both new focused tests pass",
+          "broad_source_shape_diagnostic": "116 passed, 32 pre-existing stale source-shape assertions; both new focused tests pass",
           "git_diff_check": "passed",
           "worldserver_rebuild_passed": true,
-          "worldserver_binary_sha256": "b46fb5fec26be5d7894d3b1d7fa0ae7b2dd7028b80ec7d6acceb55ec8c22ca7a",
-          "feral_multi_healer_wave_native_pickup_reservation_enabled": true,
-          "feral_arrived_handoff_thrash_before_swipe_enabled": true,
+          "worldserver_binary_sha256": "817c5e51ebd105ac2ad10bda5356c93a0e170d8bf874c5b9d51ec096f8713c45",
+          "protection_avengers_shield_after_taunt_rejection_enabled": true,
           "worker_model_metadata_changed": false,
           "old_worldserver_stopped": true,
           "old_worldserver_active_state": "inactive",
           "old_worldserver_sub_state": "dead",
           "old_worldserver_main_pid": 0,
           "deterministic_reprovision_passed": true,
-          "deterministic_reprovision_verifier": "artifacts/all_spec_program/phase9_serial_canaries_20260810_rerun199/preidentity_preparation/provisioning_verifier.json",
+          "deterministic_reprovision_verifier": "artifacts/all_spec_program/phase9_serial_canaries_20260810_rerun201/preidentity_preparation/provisioning_verifier.json",
           "deterministic_reprovision_accounts_ready": "50/50",
           "deterministic_reprovision_characters_ready": "50/50",
           "deterministic_reprovision_runtime_profiles_ready": "31/31",
@@ -972,7 +979,9 @@
             "rerun197_feral_majority_healer_threat_native_fade",
             "rerun198_protection_hand_of_protection_before_area_gcd",
             "rerun199_feral_multi_healer_wave_native_pickup_reservation",
-            "rerun199_feral_arrived_handoff_thrash_before_swipe"
+            "rerun199_feral_arrived_handoff_thrash_before_swipe",
+            "rerun200_feral_arrived_handoff_thrash_for_local_minority",
+            "rerun201_protection_avengers_shield_after_taunt_rejection"
           ],
           "dvc_remote_verified_before_exact_eviction": true,
           "exact_targeted_eviction_complete": true,

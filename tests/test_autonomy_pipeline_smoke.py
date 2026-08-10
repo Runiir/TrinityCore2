@@ -4195,6 +4195,62 @@ def test_rerun198_protection_uses_native_healer_immunity_before_area_starvation(
     assert "NearTeleportTo" not in rescue
 
 
+def test_rerun200_protection_uses_avengers_shield_after_direct_taunt_rejection():
+    objective = function_body(
+        read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective"
+    )
+    marker = objective.index(
+        "Rerun200's only strict role failure was a remote two-follower Azil"
+    )
+    rescue = objective[marker - 1400 : marker + 3000]
+
+    assert_ordered(
+        rescue,
+        "TryCastCombatSpell(bot, add, 62124)",
+        '"hand_of_reckoning_add_pickup"',
+        'profile.SpecTag == "protection"',
+        "densityDefenseTarget == densityHealer",
+        "addVictim == densityHealer",
+        "observedListedAttackerCount(densityHealer) >= 2",
+        "TryCastCombatSpell(bot, add, 31935)",
+        '"avengers_shield_healer_add_pickup"',
+        '"consecration_healer_pickup"',
+    )
+    assert "state.DecisionTimer, 250" in rescue
+    assert "SetThreat" not in rescue
+    assert "SetVictim" not in rescue
+    assert "NearTeleportTo" not in rescue
+
+
+def test_rerun200_protection_rescue_preserves_existing_area_approach_chain():
+    objective = function_body(
+        read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective"
+    )
+    marker = objective.index(
+        "Rerun200's only strict role failure was a remote two-follower Azil"
+    )
+    rescue = objective[marker - 1800 : marker + 4200]
+
+    assert_ordered(
+        rescue,
+        '"righteous_defense_healer_pickup"',
+        '"hand_of_reckoning_add_pickup"',
+        '"avengers_shield_healer_add_pickup"',
+        '"consecration_healer_pickup"',
+    )
+    area_marker = objective.index(
+        "Rerun185 completed Azil but localized 554 healer-target"
+    )
+    area_rescue = objective[area_marker - 900 : area_marker + 6500]
+    assert_ordered(
+        area_rescue,
+        '"righteous_defense_healer_before_area_approach"',
+        '"hand_of_reckoning_healer_before_area_approach"',
+        '"avengers_shield_healer_before_area_approach"',
+        "MoveBotToProfileRange(state, bot, add, &immediateAreaThreat)",
+    )
+
+
 def test_rerun194_feral_remote_healer_wave_charges_before_local_minority_roar():
     objective = function_body(
         read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective"

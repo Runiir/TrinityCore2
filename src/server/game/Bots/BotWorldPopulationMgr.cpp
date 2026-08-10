@@ -17711,6 +17711,40 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return true;
         }
 
+        // Rerun200's only strict role failure was a remote two-follower Azil
+        // handoff. No area action resolved while the tank was remote, so the
+        // generic profile approached for self-centered Holy Wrath. Once Hand
+        // of Reckoning entered range, the native engine rejected three legal
+        // submissions with SPELL_FAILED_CANT_DO_THAT_RIGHT_NOW; Righteous
+        // Defense recovered the pair at 3576 ms. Reuse the already-configured
+        // ranged multi-target rescue immediately after that direct-taunt
+        // fallback. Native range, line-of-sight, cooldown, GCD, power, target,
+        // and spell-legality checks remain authoritative, and rejection falls
+        // through to the unchanged Consecration and profile movement chain.
+        if (role == "tank" && profile.SpecTag == "protection"
+            && densityHealer && densityDefenseTarget == densityHealer
+            && addVictim == densityHealer
+            && observedListedAttackerCount(densityHealer) >= 2
+            && bot->HasSpell(31935)
+            && TryCastCombatSpell(bot, add, 31935))
+        {
+            std::string raw = BuildRawJson(bot, add);
+            std::string semantic = BuildSemanticJson(
+                bot, add, "dungeon_boss", &power, stage, activity);
+            RecordEvent(state, bot, "boss_adds", add,
+                "avengers_shield_healer_add_pickup", raw.c_str(),
+                semantic.c_str(), bot->GetExactDist(add),
+                float(observedListedAttackerCount(densityHealer)), 31935);
+            state.DecisionTimer = std::min<uint32>(
+                state.DecisionTimer, 250);
+            state.TargetGuid = add->GetGUID();
+            state.WasInCombat = true;
+            target = add;
+            situation = "dungeon_boss";
+            action = "avengers_shield_healer_add_pickup";
+            return true;
+        }
+
         if (role == "tank" && densityDefenseTarget
             && bot->GetExactDist2d(densityDefenseTarget) <= 8.0f
             && bot->HasSpell(26573) && TryCastFriendlySpell(bot, bot, 26573))
