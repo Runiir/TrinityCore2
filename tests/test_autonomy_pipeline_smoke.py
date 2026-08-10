@@ -4251,6 +4251,59 @@ def test_rerun200_protection_rescue_preserves_existing_area_approach_chain():
     )
 
 
+def test_rerun201_protection_honors_ready_local_majority_area_before_remote_approach():
+    objective = function_body(
+        read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective"
+    )
+    marker = objective.index(
+        "Rerun201 proved one exception already encoded by the resolver"
+    )
+    area = objective[marker - 3200 : marker + 10500]
+
+    assert_ordered(
+        area,
+        "localProtectionHealerOwnedCount >= 2",
+        "localProtectionHealerOwnedCount * 2",
+        ">= protectionHealerAttackerCount",
+        "preferSelfCenteredProtectionArea",
+        "uint32 selfCenteredTargets = 0",
+        "bool preferredLocalProtectionAreaReady",
+        "preferSelfCenteredProtectionArea",
+        "immediateAreaThreat.TargetGuid == bot->GetGUID()",
+        "selfCenteredTargets >= 2",
+        "bool selfCenteredAreaReady",
+        "preferredLocalProtectionAreaReady",
+        "|| bot->GetExactDist2d(add) <= 10.0f",
+        "if (approach)",
+        "MoveBotToProfileRange(state, bot, add, &immediateAreaThreat)",
+        "ExecuteProfileCombatAction(",
+    )
+    assert "TryCastCombatSpell(bot, add, 31935)" in area
+    assert "SetThreat" not in area
+    assert "SetVictim" not in area
+    assert "NearTeleportTo" not in area
+
+
+def test_rerun201_local_majority_area_keeps_remote_and_non_protection_movement_contracts():
+    objective = function_body(
+        read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective"
+    )
+    marker = objective.index(
+        "Rerun201 proved one exception already encoded by the resolver"
+    )
+    area = objective[marker - 1200 : marker + 10500]
+
+    assert "preferSelfCenteredProtectionArea" in area
+    assert "preferredLocalProtectionAreaReady" in area
+    assert "!densityDefenseTarget" in area
+    assert "bot->GetExactDist2d(add) <= 10.0f" in area
+    assert "MoveBotToProfileRange(state, bot, add, &immediateAreaThreat)" in area
+    assert "preferSelfCenteredProtectionArea);" in area
+    assert "SetThreat" not in area
+    assert "SetVictim" not in area
+    assert "NearTeleportTo" not in area
+
+
 def test_rerun194_feral_remote_healer_wave_charges_before_local_minority_roar():
     objective = function_body(
         read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective"

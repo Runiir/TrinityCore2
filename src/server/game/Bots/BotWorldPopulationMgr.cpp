@@ -17531,9 +17531,27 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 // the selected urgent pickup is also inside its radius. Otherwise
                 // move into the loose healer/DPS cluster before casting instead of
                 // repeatedly hitting adds the tank already owns.
+                //
+                // Rerun201 proved one exception already encoded by the resolver:
+                // a local majority of the healer-owned Azil wave selected ready
+                // self-centered Holy Wrath, but the remote representative add
+                // kept this final proximity conjunct false. Righteous Defense and
+                // Hand of Reckoning made partial native pickups, Avenger's Shield
+                // was on cooldown, and eight movement returns displaced the ready
+                // area cast. When the bounded Protection local-majority preference
+                // selected a self-centered action, honor that exact topology even
+                // if the deterministic representative remains remote. All native
+                // action, target-count, cooldown, GCD, power, and spell gates stay
+                // inside the existing resolver and executor.
+                bool preferredLocalProtectionAreaReady =
+                    preferSelfCenteredProtectionArea
+                    && immediateAreaThreat.TargetGuid == bot->GetGUID()
+                    && selfCenteredTargets >= 2;
                 bool selfCenteredAreaReady = immediateAreaThreat.TargetGuid == bot->GetGUID()
                     && selfCenteredTargets >= 2
-                    && (!densityDefenseTarget || bot->GetExactDist2d(add) <= 10.0f);
+                    && (preferredLocalProtectionAreaReady
+                        || !densityDefenseTarget
+                        || bot->GetExactDist2d(add) <= 10.0f);
                 bool approach = !selfCenteredAreaReady
                     && (bot->GetExactDist(add) > std::max(5.0f, engageRange - 1.0f)
                         || !bot->IsWithinLOSInMap(add));
