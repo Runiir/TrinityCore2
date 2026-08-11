@@ -116,8 +116,51 @@ def verify(
         for target, role in canonical_roles.items()
         if target not in excluded_targets
     }
-    live_qualification_tanks = sorted(
-        str(value) for value in qualification.get("supported_tank_targets") or []
+    declared_by_role = {
+        role: sorted(
+            str(value)
+            for value in qualification.get(f"supported_{role}_targets") or []
+        )
+        for role in ("tank", "healer", "dps")
+    }
+    active_by_role = {
+        role: sorted(target for target, target_role in roles.items() if target_role == role)
+        for role in ("tank", "healer", "dps")
+    }
+    roster = policy.get("progression_roster_25h") or {}
+    roster_shape = roster.get("default_shape") or {}
+    roster_slots = roster.get("slots") or []
+    roster_slot_names = [
+        str(row.get("slot") or "")
+        for row in roster_slots
+        if isinstance(row, Mapping)
+    ]
+    roster_slot_targets = {
+        str(row.get(key) or "")
+        for row in roster_slots
+        if isinstance(row, Mapping)
+        for key in ("class_spec", "alternate", "alternate_role_spec")
+        if str(row.get(key) or "")
+    }
+    roster_slot_groups = Counter(
+        name.split("_", 1)[0] for name in roster_slot_names
+    )
+    roster_slot_roles_valid = all(
+        canonical_roles.get(str(row.get("class_spec") or ""))
+        == ("tank" if str(row.get("slot") or "").startswith("tank_")
+            else "healer" if str(row.get("slot") or "").startswith("healer_")
+            else "dps")
+        and (
+            not row.get("alternate")
+            or canonical_roles.get(str(row.get("alternate")))
+            == canonical_roles.get(str(row.get("class_spec") or ""))
+        )
+        and (
+            not row.get("alternate_role_spec")
+            or canonical_roles.get(str(row.get("alternate_role_spec"))) == "tank"
+        )
+        for row in roster_slots
+        if isinstance(row, Mapping)
     )
     expected_required, expected_excluded = reconstruct_universe(roles, policy)
     observed_required = set(matrix.get("required_pair_ids") or [])
@@ -233,15 +276,44 @@ def verify(
     checks = {
         "target_catalog_is_canonical_31": len(canonical_roles) == 31
         and Counter(canonical_roles.values()) == Counter({"tank": 4, "healer": 5, "dps": 22}),
-        "live_qualification_exclusion_is_exact": excluded_targets == ["protection_warrior"]
-        and len(exclusion_rows) == 1
-        and str(exclusion_rows[0].get("role") or "") == "tank"
-        and bool(str(exclusion_rows[0].get("reason") or "").strip())
-        and Counter(roles.values()) == Counter({"tank": 3, "healer": 5, "dps": 22})
-        and live_qualification_tanks == sorted(target for target, role in roles.items() if role == "tank")
+        "live_qualification_exclusion_is_exact": excluded_targets == [
+            "arcane_mage",
+            "beast_mastery_hunter",
+            "destruction_warlock",
+            "enhancement_shaman",
+            "frost_mage",
+            "protection_warrior",
+            "subtlety_rogue",
+        ]
+        and len(exclusion_rows) == 7
+        and all(
+            str(row.get("role") or "")
+            == canonical_roles.get(str(row.get("spec_target_id") or ""))
+            and bool(str(row.get("reason") or "").strip())
+            for row in exclusion_rows
+            if isinstance(row, Mapping)
+        )
+        and Counter(roles.values()) == Counter({"tank": 3, "healer": 5, "dps": 16})
+        and declared_by_role == active_by_role
         and matrix.get("canonical_target_count") == 31
         and matrix.get("qualification_excluded_targets") == excluded_targets
         and matrix.get("target_count") == len(roles),
+        "progression_roster_25h_is_exact": roster_shape
+        == {
+            "tank": 2,
+            "healer": 6,
+            "dps": 17,
+            "ranged_dps": 12,
+            "melee_dps": 5,
+            "total": 25,
+        }
+        and len(roster_slots) == 25
+        and len(roster_slot_names) == len(set(roster_slot_names))
+        and "" not in roster_slot_names
+        and roster_slot_groups
+        == Counter({"tank": 2, "healer": 6, "ranged": 12, "melee": 5})
+        and roster_slot_roles_valid
+        and roster_slot_targets == set(roles),
         "input_hashes_match": (matrix.get("inputs") or {}).get("target_catalog_sha256") == sha256_file(targets_path)
         and (matrix.get("inputs") or {}).get("pair_policy_sha256") == sha256_file(policy_path),
         "required_universe_matches_independent_reconstruction": observed_required == expected_required,

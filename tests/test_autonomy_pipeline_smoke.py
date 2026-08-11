@@ -4039,10 +4039,13 @@ def test_rerun183_healer_owned_stable_swarm_path_revalidates_early():
 
     assert_ordered(
         branch,
-        "auto continueStableFeralSwarmApproach",
+        "auto continueStableTankSwarmApproach",
         "bool selectedHealerOwned = densityHealer && selectedAdd",
         "selectedAdd->GetVictim() == densityHealer",
-        "selectedHealerOwned ? 750 : 2000",
+        'bool feralTank = profile.SpecTag == "feral_druid_tank"',
+        'bool protectionPaladin = profile.SpecTag == "protection"',
+        "protectionPaladin ? 1500 : 750",
+        ": 2000",
         "pathAgeMs <= stableApproachLimitMs",
         "selectedAdd->GetExactDist2d(state.ActivePathToX, state.ActivePathToY)",
     )
@@ -4102,10 +4105,38 @@ def test_rerun185_protection_remote_boss_add_rescue_precedes_area_approach():
         "healerAttackerCount >= 2",
         "TryCastCombatSpell(bot, add, 31935)",
         '"avengers_shield_healer_before_area_approach"',
-        "continueStableFeralSwarmApproach(add)",
+        "continueStableTankSwarmApproach(add)",
         "MoveBotToProfileRange(state, bot, add, &immediateAreaThreat)",
     )
     assert branch.count("state.DecisionTimer, 250);") >= 3
+    assert "SetVictim" not in branch
+    assert "AddThreat" not in branch
+    assert "NearTeleportTo" not in branch
+
+
+def test_rerun213_protection_keeps_bounded_stable_swarm_path():
+    objective = function_body(
+        read(BOT_MGR),
+        "bool BotWorldPopulationMgr::TryValidationRouteObjective",
+    )
+    marker = objective.index(
+        "Rerun213 found the equivalent topology gap for Protection"
+    )
+    branch = objective[marker - 1100 : marker + 1800]
+
+    assert_ordered(
+        branch,
+        "auto continueStableTankSwarmApproach",
+        "bool selectedHealerOwned = densityHealer && selectedAdd",
+        'bool feralTank = profile.SpecTag == "feral_druid_tank"',
+        'bool protectionPaladin = profile.SpecTag == "protection"',
+        "protectionPaladin ? 1500 : 750",
+        ": 2000",
+        "role == \"tank\" && (feralTank || protectionPaladin)",
+        "pathAgeMs <= stableApproachLimitMs",
+        "selectedAdd->GetExactDist2d(state.ActivePathToX, state.ActivePathToY)",
+    )
+    assert "3000-ms dwell ceiling" in branch
     assert "SetVictim" not in branch
     assert "AddThreat" not in branch
     assert "NearTeleportTo" not in branch

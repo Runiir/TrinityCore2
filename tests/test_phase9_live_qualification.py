@@ -14,16 +14,28 @@ POLICY = ROOT / "experiments/configs/stonecore_phase9_pair_policy_v1.json"
 MATRIX = ROOT / "experiments/configs/stonecore_phase9_pairwise_matrix_v1.json"
 
 
-def test_phase9_live_qualification_excludes_only_protection_warrior(tmp_path: Path) -> None:
+TARGETED_EXCLUSIONS = [
+    "arcane_mage",
+    "beast_mastery_hunter",
+    "destruction_warlock",
+    "enhancement_shaman",
+    "frost_mage",
+    "protection_warrior",
+    "subtlety_rogue",
+]
+
+
+def test_phase9_live_qualification_matches_targeted_25h_roster(tmp_path: Path) -> None:
     matrix = build_matrix(TARGETS, POLICY)
     assert matrix["canonical_target_count"] == 31
-    assert matrix["target_count"] == 30
-    assert matrix["qualification_excluded_targets"] == ["protection_warrior"]
+    assert matrix["target_count"] == 24
+    assert matrix["qualification_excluded_targets"] == TARGETED_EXCLUSIONS
     assert matrix["uncovered_pair_count"] == 0
-    assert "protection_warrior" not in matrix["serial_target_union"]
+    assert not (set(TARGETED_EXCLUSIONS) & set(matrix["serial_target_union"]))
     assert {
         row["ordered_party"][0] for row in matrix["serial_canaries"]
     } == {"blood_death_knight", "feral_druid_tank", "protection_paladin"}
+    assert matrix["serial_canary_count"] == 6
 
     generated = tmp_path / "matrix.json"
     generated.write_text(json.dumps(matrix, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -31,7 +43,7 @@ def test_phase9_live_qualification_excludes_only_protection_warrior(tmp_path: Pa
     assert report["passed"] is True
 
 
-def test_phase9_serial_plan_preserves_all_non_warrior_specs() -> None:
+def test_phase9_serial_plan_covers_targeted_specs_and_protection_regression() -> None:
     plan = build_plan(
         MATRIX,
         ROOT / "artifacts/all_spec_program/test_phase9_live_qualification_plan",
@@ -40,20 +52,14 @@ def test_phase9_serial_plan_preserves_all_non_warrior_specs() -> None:
         "phase9-serial-canary",
     )
     assert plan["canonical_target_count"] == 31
-    assert plan["qualification_excluded_targets"] == ["protection_warrior"]
-    assert plan["target_union_count"] == 30
-    assert "protection_warrior" not in plan["target_union"]
+    assert plan["qualification_excluded_targets"] == TARGETED_EXCLUSIONS
+    assert plan["target_union_count"] == 24
+    assert not (set(TARGETED_EXCLUSIONS) & set(plan["target_union"]))
     assert plan["attempts"][3]["ordered_party"] == [
         "protection_paladin",
         "restoration_druid",
         "elemental_shaman",
-        "enhancement_shaman",
         "feral_druid_dps",
+        "fire_mage",
     ]
-    assert plan["attempts"][7]["ordered_party"] == [
-        "protection_paladin",
-        "restoration_druid",
-        "arms_warrior",
-        "demonology_warlock",
-        "subtlety_rogue",
-    ]
+    assert len(plan["attempts"]) == 6

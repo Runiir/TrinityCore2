@@ -1,0 +1,6 @@
+outs:
+- md5: 614f17c6575ddbaeb4e9831bcc93c795.dir
+  size: 2553
+  nfiles: 2
+  hash: md5
+  path: phase9_targeted_25h_pairwise_contract

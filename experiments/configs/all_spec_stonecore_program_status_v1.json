@@ -1,12 +1,12 @@
 {
   "active_phase": 9,
   "blockers": [
-    "Rerun212 froze identity 58870473b58a32503d4f5692af1cf473c9829219094b2c47818e9d1d6bf3dc45, plan 7206801f8c073cc2f2ded6df618d0dbb536422a11cf997824c63f6265128d994, binary 77300fda38022275c7033bf00f229a9dd983338c9d94643e6ea8678aa5eee433, PID 570665, and epoch 4202235696864001. Canary 4 alone reached 13/14 terminals and 3/4 real boss deaths; High Priestess Azil ended in validation_route_stuck_loop.",
-    "Independent rerun212 reconstruction measured Protection Warrior ownership 2054/2375 = 0.8648421052631579, healer targeting 142/2375 = 0.059789473684210524, maximum dwell 10114 ms, and threat-aura uptime 568/568. Exact identity, party, serial isolation, cleanup, immutable publication, and zero forbidden assistance independently pass; raw/compact payloads and batch-specific caches were exactly re-evicted.",
-    "By explicit operator direction, Protection Warrior is no longer a live-qualification target. The canonical profile remains provisioned, but Phase 9 live qualification now covers 30 targets with Blood Death Knight, Feral Druid, and Protection Paladin tanks. The two former Warrior serial slots use Protection Paladin so no healer or DPS specialization loses coverage. All strict thresholds remain unchanged.",
-    "Commit the scope decision, regenerated pairwise matrix, verifier, serial-plan contract, status, and handoff. Then capture a fresh rerun213 identity and run the supported replacement canary 4 alone. Rows 5-8 and Phases 10-12 remain blocked until the supported row passes."
+    "Rerun213 canary 4 alone completed the strict 14-node route and four authoritative boss deaths, but Protection Paladin failed role quality at 1386/1693 = 0.8186650915534555 tank ownership, 303/1693 = 0.1789722386296515 healer exposure, and 6896 ms maximum dwell despite 667/667 threat-aura uptime. Exact identity, party, serial isolation, cleanup, publication, watchdog, and zero forbidden assistance independently pass.",
+    "Canonical diagnosis 73478a8d999f2cd19ba450d145a5e0fca28c31b68e55afb1c3e65d069a2bda83 confirms real initial pickup loss: dynamic Azil healer-owned follower representatives churned every 250 ms and repeatedly replaced a still-valid Protection movement path. The bounded correction preserves Feral timing and keeps a valid Protection cluster path for at most 1500 ms, below the unchanged 3000 ms dwell threshold.",
+    "The targeted 25H policy is now 2 tanks, 6 healers, and 17 DPS with 12 ranged and 5 melee; a third Fire Mage supplies the missing twenty-fifth slot. All 31 canonical profiles remain provisioned, while live qualification covers the 24 supported roster specs and excludes Protection Warrior plus Arcane Mage, Frost Mage, Beast Mastery Hunter, Destruction Warlock, Enhancement Shaman, and Subtlety Rogue.",
+    "The 24-target pairwise contract has 263 required pairs, zero uncovered pairs, and six isolated canaries. Rerun214 provisioning and independent live verification pass all 31 profiles. Commit the coherent correction and roster checkpoint, capture a fresh rerun214 identity and six-row plan, then run targeted canary 4 alone. Canaries 1-3 and 5-6 plus Phases 10-12 remain blocked until that regression row passes."
   ],
-  "exact_next_handoff_prompt": "Continue Phase 9 only. Treat decision 3852ebf470bd45417a481832a6fb2d727a3aff94a21df12dcb2edff9567b8a33 as authoritative: Protection Warrior remains provisioned but is excluded from live qualification; supported tanks are Blood Death Knight, Feral Druid, and Protection Paladin. Preserve every strict threshold and runtime/evidence contract. Commit the coherent rerun213 scope checkpoint, capture a fresh identity and 30-target eight-row plan, independently reconstruct it, and run replacement canary 4 alone. Keep rows 5-8 and Phases 10-12 blocked until preceding supported-row gates pass. Never use broad DVC garbage collection.",
+  "exact_next_handoff_prompt": "Continue Phase 9 only. Treat rerun213 diagnosis 73478a8d999f2cd19ba450d145a5e0fca28c31b68e55afb1c3e65d069a2bda83 and the targeted 25H pair policy as authoritative. Preserve all 31 provisioned profiles, qualify only the 24 supported roster specs, and preserve every strict threshold and runtime/evidence contract. Commit the coherent rerun214 correction/roster checkpoint, capture a fresh identity and six-row plan, independently reconstruct it, and run targeted canary 4 alone. Keep canaries 1-3 and 5-6 and Phases 10-12 blocked until the regression row passes. Never use broad DVC garbage collection.",
   "phase_status": [
     {
       "evidence": {
@@ -685,10 +685,10 @@
     {
       "checkpoint": {
         "branch": "all-spec-stonecore-execution",
-        "canaries_4_through_8_started": true,
+        "latest_serial_canary_count": 6,
         "checkpoint_kind": "in_progress_not_phase_complete",
         "current_attempt": {
-          "attempt_label": "rerun211_serial",
+          "attempt_label": "rerun213_serial",
           "status": "canary_4_failed_closed_published_verified_evicted",
           "canary_2_started": false,
           "canary_2_prior_identity_strict_pass_preserved": true,
@@ -698,26 +698,26 @@
           "canary_4_strict_passed": false,
           "canary_4_authoritative_result": "gameplay_failure",
           "canary_4_failure_reasons": [
-            "role_quality:Protwar:tank_threat_retention",
-            "role_quality:Protwar:healer_target_exposure",
-            "role_quality:Protwar:healer_target_dwell"
+            "role_quality:Protpally:tank_threat_retention",
+            "role_quality:Protpally:healer_target_exposure",
+            "role_quality:Protpally:healer_target_dwell"
           ],
-          "canary_4_route_terminal_count": 13,
-          "canary_4_real_boss_kill_count": 3,
+          "canary_4_route_terminal_count": 14,
+          "canary_4_real_boss_kill_count": 4,
           "canary_4_publication_verified": true,
           "canary_4_cleanup_complete": true,
-          "canaries_5_through_8_started": false,
-          "diagnosis": "experiments/configs/all_spec_phase9_rerun211_canary4_diagnosis_v1.json",
-          "diagnosis_sha256": "ac01a8f61724fba731088034752e5e5c45a6240ae648334a16834e0e0a46f1a1",
-          "canary_4_batch_identity": "5163be8151d2974e328cff6697ee7290339cad03512fa2fc48245d9946cd768c",
-          "canary_4_publication_receipt_sha256": "96c1159c5dfc13c1de9c16e3a00d9d7197952f64d381ccc4f835895f07dd0f8f",
-          "evidence_identity_manifest_sha256": "603ac43a16ed8ac05595047575c52fd39b3f4ff9ceadfc5e9ae2f3e3279c864d",
-          "run_plan_sha256": "f40c34b8910a278742684c7c8959100e67abf4260bf19327ec9b83199233c0b8",
-          "evidence_worldserver_binary_sha256": "deac2e0bdb57b6d5bb2a548dc62c31b40f2cb52137670c6e025f5175df8f553d",
-          "corrected_worldserver_binary_sha256": "77300fda38022275c7033bf00f229a9dd983338c9d94643e6ea8678aa5eee433",
-          "server_process_id": 339187,
-          "server_epoch": 972267823509912,
-          "session_fingerprint": "01e4cb7baae0eed1482b62954e212674e7694ba26677953ba6b8a5180b9f5f6e",
+          "canaries_5_through_6_started": false,
+          "diagnosis": "experiments/configs/all_spec_phase9_rerun213_canary4_diagnosis_v1.json",
+          "diagnosis_sha256": "73478a8d999f2cd19ba450d145a5e0fca28c31b68e55afb1c3e65d069a2bda83",
+          "canary_4_batch_identity": "1d0e6c896dc9fe160357a709f718d831d8eba836f515d53cd84fdf897795e842",
+          "canary_4_publication_receipt_sha256": "bb3371563d1b21dbf0699bc2b1487633647ea77e4fae194f3f1917e776432d37",
+          "evidence_identity_manifest_sha256": "832e211545ed3523a089e5a2aaf49132ffcd0893e24cc3b1d381cc5188273529",
+          "run_plan_sha256": "027505ee35af69063ff141d2b0e64832942d64434e98bc8aa2455bab81d0ea80",
+          "evidence_worldserver_binary_sha256": "77300fda38022275c7033bf00f229a9dd983338c9d94643e6ea8678aa5eee433",
+          "corrected_worldserver_binary_sha256": "17b53e07c7a5fb69733e654aa99480c77ca55eaf61463ea603dcfdf6c34d5e11",
+          "server_process_id": 591807,
+          "server_epoch": 4327127150120992,
+          "session_fingerprint": "0fb55a28573b6570334ffb4eb620bec68751ac82c88bd2c160d19c2a4ee0049b",
           "profile_generation": 1,
           "profile_content_hash": "d9d6a60e97756695ea6553b1fa34e9c2c63ebe6e09467e71bc01fb74fe3655ae",
           "worldserver_stopped_before_tracked_edit": true,
@@ -770,7 +770,8 @@
             "rerun209_current_pack_secondary_ground_danger_detection",
             "rerun210_protection_warrior_native_charge_before_remote_area_movement",
             "rerun211_protection_warrior_bounded_shockwave_and_residual_taunt",
-            "rerun212_active_density_unexpected_hostile_admission_and_general_residual_taunt"
+            "rerun212_active_density_unexpected_hostile_admission_and_general_residual_taunt",
+            "rerun213_protection_bounded_stable_swarm_approach"
           ]
         },
         "generated_history_archive": "artifacts/all_spec_program/phase9_generated_history_through_rerun127_20260802.tar.zst.dvc",
@@ -1079,6 +1080,67 @@
             "protection_paladin"
           ],
           "strict_thresholds_changed": false,
+          "broad_dvc_gc_used": false
+        },
+        "rerun213_diagnosis_and_targeted_25h_scope": {
+          "attempt_label": "rerun213_canary_4",
+          "status": "authoritative_gameplay_failure_corrected_and_targeted_roster_ready",
+          "diagnosis": "experiments/configs/all_spec_phase9_rerun213_canary4_diagnosis_v1.json",
+          "diagnosis_sha256": "73478a8d999f2cd19ba450d145a5e0fca28c31b68e55afb1c3e65d069a2bda83",
+          "batch_identity": "1d0e6c896dc9fe160357a709f718d831d8eba836f515d53cd84fdf897795e842",
+          "raw_bundle_sha256": "452e6fe9179709264e9a896362e264d5c5afab14f69309c3f34fe7ee25dd85c3",
+          "compact_bundle_sha256": "5f76b66c87a09f6d2470620827ee61a89dab300f55c0590dddc1206bb18bb023",
+          "publication_receipt_sha256": "bb3371563d1b21dbf0699bc2b1487633647ea77e4fae194f3f1917e776432d37",
+          "route_terminal_count": 14,
+          "real_boss_kill_count": 4,
+          "tank_owned_samples": 1386,
+          "healer_targeting_samples": 303,
+          "eligible_hostile_samples": 1693,
+          "tank_retention_ratio": 0.8186650915534555,
+          "healer_exposure_ratio": 0.1789722386296515,
+          "max_healer_dwell_ms": 6896,
+          "threat_aura_uptime_ratio": 1.0,
+          "primary_cause": "protection_paladin_moving_swarm_path_representative_churn",
+          "worldserver_stopped_before_tracked_edit": true,
+          "corrected_worldserver_binary_sha256": "17b53e07c7a5fb69733e654aa99480c77ca55eaf61463ea603dcfdf6c34d5e11",
+          "strict_thresholds_changed": false,
+          "canonical_profile_count": 31,
+          "live_qualification_target_count": 24,
+          "default_25h_shape": {
+            "tank": 2,
+            "healer": 6,
+            "dps": 17,
+            "ranged_dps": 12,
+            "melee_dps": 5
+          },
+          "excluded_live_qualification_targets": [
+            "arcane_mage",
+            "beast_mastery_hunter",
+            "destruction_warlock",
+            "enhancement_shaman",
+            "frost_mage",
+            "protection_warrior",
+            "subtlety_rogue"
+          ],
+          "pair_policy_file_sha256": "2f28221273e0200e5f9b46be9dbc33dff4da5942b205bcc1a2795e4c359e6415",
+          "pairwise_matrix_file_sha256": "a95328bc62b7b17ac777b0a10a383a5dcd2abfa682549de2a4be2722ee4c4ede",
+          "pairwise_matrix_identity_sha256": "d5c8b21b6b0b386390d3df09941686af14b37fefc65b34d2f2d4bb73eb67dbbe",
+          "pairwise_required_pair_count": 263,
+          "pairwise_uncovered_required_pairs": 0,
+          "serial_canary_count": 6,
+          "pairwise_independent_verifier_passed": true,
+          "pairwise_independent_verifier_identity_sha256": "2a5e4aa71b506e09eac23018f859817d7fbbdf3b0e3d818f7b099f048ad0e3fc",
+          "pairwise_verifier_dvc_md5": "614f17c6575ddbaeb4e9831bcc93c795.dir",
+          "independent_canary_verifier_dvc_md5": "1c23f00107dca7dd619b42169dc78d05.dir",
+          "rerun214_preidentity_provisioning_passed": true,
+          "rerun214_preidentity_verifier_sha256": "a5380939a83101f7117ac2c3d6dfccb14b08835f9bd25613249f3c66bf3ad363",
+          "rerun214_runtime_profiles_ready": "31/31",
+          "post_artifact_dvc_status_completed": true,
+          "post_artifact_dvc_push": "everything available synchronized; only known historical objects 24b9d133fe3fe1b6f253e500c266562f.dir and c67ee8935753b8ceccbdddbafdfebe.dir unavailable",
+          "next_canary_index": 4,
+          "other_canaries_blocked": true,
+          "phases_10_through_12_blocked": true,
+          "exact_targeted_eviction_complete": true,
           "broad_dvc_gc_used": false
         },
         "next_thread_handoff": "experiments/configs/all_spec_phase9_next_thread_handoff_20260802.md",
@@ -1734,12 +1796,12 @@
         "independent_gpt_5_6_sol_architecture_evidence_approval": false,
         "pair_universe_reconstructed": false,
         "passed": false,
-        "serial_canary_rows_cover_all_30_live_qualification_targets": false,
+        "serial_canary_rows_cover_all_24_live_qualification_targets": false,
         "strict_uninterrupted_serial_clears_passed": false
       },
       "name": "pairwise_matrix_and_serial_stonecore_canaries",
       "phase": 9,
-      "scope": "Keep all 31 canonical targets provisioned, exclude Protection Warrior from live qualification by explicit operator direction, independently reconstruct the constrained 30-target unordered pair universe, generate its deterministic covering array, select serial rows whose union represents all 30 live-qualification targets with Blood Death Knight, Feral Druid, and Protection Paladin tanks, and prove strict uninterrupted current-identity clears of the complete 14-node Stonecore route one party at a time.",
+      "scope": "Keep all 31 canonical targets provisioned and qualify the 24 specialization targets represented by the targeted 25H progression roster: Blood Death Knight, Feral Druid, and Protection Paladin tanks; all five healer specs; and sixteen ranged/melee DPS specs. Independently reconstruct the constrained pair universe, generate its deterministic covering array, select a six-row serial union covering all supported targets, and prove strict uninterrupted current-identity clears of the complete 14-node Stonecore route one party at a time.",
       "status": "in_progress"
     },
     {

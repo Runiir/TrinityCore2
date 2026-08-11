@@ -234,6 +234,19 @@ pixi run dvc status
 pixi run dvc push
 ```
 
+### All-spec Phase 9 targeted 25H qualification
+
+Phase 9 keeps all 31 canonical class/spec profiles provisioned but gates the 24 specialization targets represented by the targeted 25-player heroic progression roster. The default roster shape is 2 tanks, 6 healers, and 17 DPS, split 12 ranged to 5 melee; the exact permanent slots, supported flex specs, exclusions, and research provenance are pinned in `experiments/configs/stonecore_phase9_pair_policy_v1.json`. Protection Warrior, Arcane/Frost Mage, Beast Mastery Hunter, Destruction Warlock, Enhancement Shaman, and Subtlety Rogue remain available for diagnostics but do not block progression qualification.
+
+`build_phase9_pairwise_matrix.py` deterministically reconstructs the 24-target pair universe and a complete five-player Stonecore covering array. The pinned six-canary serial union covers every supported target, retains native Hunter threat-transfer support for Blood and Feral tank rows, and runs only one exact party at a time. `verify_phase9_pairwise_matrix.py` independently reconstructs the roster shape, target exclusions, required/excluded pairs, composition hashes, serial union, representation bounds, and matrix identity.
+
+```bash
+pixi run python -m tools.bot_ml.build_phase9_pairwise_matrix
+pixi run python -m tools.bot_ml.verify_phase9_pairwise_matrix
+pixi run dvc status
+pixi run dvc push
+```
+
 The gear generator reads Cataclysm `Item.db2`/`Item-sparse.db2`, `SpellItemEnchantment.dbc`, and `GemProperties.dbc` client data plus hotfix overrides. It also reads `experiments/configs/cata_434_combat_loot_profiles.json` for class/spec archetypes, stat weights, consumable profile metadata, smart-loot validation surfaces, and BiS/source reporting scaffolds. It writes class/spec equipment profiles with selected item IDs, stats, item levels, source labels, `complete_equipment_slots`, socket-compatible gem IDs, permanent enchant IDs, stat-weight manifest hashes, BiS/source summaries, and the exact 45-field `item_instance.enchantments` payload used by the server. The provisioning generator reads `experiments/configs/cata_434_action_profiles.json` for class action and proficiency spells, then writes `account_commands.txt`, `provision_accounts.sql`, `provision_characters.sql`, `manifest.json`, and `report.json`. It does not apply destructive database changes automatically. `provision_accounts.sql` creates only missing validation accounts with deterministic Trinity SRP6 `salt`/`verifier` values and does not overwrite existing account passwords. The verifier checks generated payloads against DBC enchant/gem IDs and can additionally check the configured auth/characters schema plus missing validation accounts with `--check-db`. The scenario generator writes `validation_scenarios.jsonl`, `validation_routes.jsonl`, and `validation_mechanics.jsonl` so Stonecore/BWD planners can consume route and mechanic embeddings without C++ encounter branches. The run-plan generator writes `run_validation_scenarios.sh` with per-scenario `bot-live-validate` commands that apply deterministic provisioning, reset only the matching scenario tag, and preserve the configured instance start positions. The combined validation stage reparses open-world live evidence with scenario reports attached, giving one staged pass/fail artifact across questing, professions, loot, Stonecore, and BWD gates. The current config provisions max-level Stonecore and Blackwing Descent validation rosters with role coverage, skills, glyphs, consumables, complete class/spec equipment slots, gems, enchants, and instance start positions. The gear report intentionally keeps `enchant_applicability_verified_by_server=false` until a live worldserver load validates the generated enchant IDs on equipped items.
 
 Export all learning-loop tables:

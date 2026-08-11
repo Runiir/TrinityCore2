@@ -17490,11 +17490,11 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
 
         // A moving swarm can select a different representative attacker every
         // decision tick. Replacing the path for each target change prevented a
-        // melee Feral tank from reaching an otherwise stable density cluster.
+        // melee tank from reaching an otherwise stable density cluster.
         // Keep one destination briefly, then repath to the current explicit
         // victim cluster so a stale but still nearby endpoint cannot own an
         // unbounded approach.
-        auto continueStableFeralSwarmApproach = [&](Unit* selectedAdd) -> bool
+        auto continueStableTankSwarmApproach = [&](Unit* selectedAdd) -> bool
         {
             uint64 currentMs = NowMs();
             uint64 pathAgeMs = state.LastPathChangeMs && currentMs >= state.LastPathChangeMs
@@ -17510,8 +17510,18 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             // swarm fallback remain unchanged.
             bool selectedHealerOwned = densityHealer && selectedAdd
                 && selectedAdd->GetVictim() == densityHealer;
-            uint64 stableApproachLimitMs = selectedHealerOwned ? 750 : 2000;
-            return role == "tank" && profile.SpecTag == "feral_druid_tank"
+            // Rerun213 found the equivalent topology gap for Protection: its
+            // selected Azil follower changed every 250 ms while a valid path
+            // was already converging on the same healer-owned cluster. Keep
+            // that Protection path for six decisions, still below the hard
+            // 3000-ms dwell ceiling; preserve Feral's proven three-decision
+            // healer-threat bound and the ordinary two-second swarm window.
+            bool feralTank = profile.SpecTag == "feral_druid_tank";
+            bool protectionPaladin = profile.SpecTag == "protection";
+            uint64 stableApproachLimitMs = selectedHealerOwned
+                ? (protectionPaladin ? 1500 : 750)
+                : 2000;
+            return role == "tank" && (feralTank || protectionPaladin)
                 && cohortSwarmActive && selectedAdd && state.ActivePathValid
                 && state.IsMoving && pathAgeMs <= stableApproachLimitMs
                 && selectedAdd->GetExactDist2d(state.ActivePathToX, state.ActivePathToY)
@@ -17868,7 +17878,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                             return true;
                         }
                     }
-                    bool continuingStableApproach = continueStableFeralSwarmApproach(add);
+                    bool continuingStableApproach = continueStableTankSwarmApproach(add);
                     bool moved = continuingStableApproach
                         || MoveBotToProfileRange(state, bot, add, &immediateAreaThreat);
                     char const* moveAction = continuingStableApproach
@@ -18414,7 +18424,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         uint32 spellId = profileAction.SpellId;
         float engageRange = profileAction.MaxRange > 0.0f ? profileAction.MaxRange : routeEngageRange(bot, add, spellId);
         bool approach = bot->GetExactDist(add) > std::max(5.0f, engageRange - 1.0f) || !bot->IsWithinLOSInMap(add);
-        bool continuingStableApproach = approach && continueStableFeralSwarmApproach(add);
+        bool continuingStableApproach = approach && continueStableTankSwarmApproach(add);
         BotActionResult result = BotActionResult::NoAction;
         if (approach && !continuingStableApproach)
             MoveBotToProfileRange(state, bot, add, &profileAction);
@@ -18443,7 +18453,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         state.WasInCombat = true;
         target = add;
         situation = "dungeon_boss";
-        action = continuingStableApproach ? "continue_stable_feral_swarm_approach"
+        action = continuingStableApproach ? "continue_stable_tank_swarm_approach"
             : (approach ? "move_to_boss_add"
                 : (densitySingleTargetFallback ? "focused_attack_boss_add_density"
                     : (densityGenerator ? "generate_resource_boss_add_density"

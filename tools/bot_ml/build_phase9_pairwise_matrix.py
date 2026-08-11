@@ -52,13 +52,71 @@ def target_roles(
     ):
         raise ValueError("Phase 9 live qualification exclusions require the canonical role and a reason")
     roles = {target: role for target, role in canonical_roles.items() if target not in excluded}
-    supported_tanks = sorted(str(value) for value in qualification.get("supported_tank_targets") or [])
-    active_tanks = sorted(target for target, role in roles.items() if role == "tank")
+    declared_by_role = {
+        role: sorted(
+            str(value)
+            for value in qualification.get(f"supported_{role}_targets") or []
+        )
+        for role in ("tank", "healer", "dps")
+    }
+    active_by_role = {
+        role: sorted(target for target, target_role in roles.items() if target_role == role)
+        for role in ("tank", "healer", "dps")
+    }
     if (
-        Counter(roles.values()) != Counter({"tank": 3, "healer": 5, "dps": 22})
-        or supported_tanks != active_tanks
+        Counter(roles.values()) != Counter({"tank": 3, "healer": 5, "dps": 16})
+        or declared_by_role != active_by_role
     ):
-        raise ValueError("Phase 9 live qualification requires the exact three supported tank targets")
+        raise ValueError(
+            "Phase 9 live qualification requires the exact targeted 25H spec surface"
+        )
+
+    roster = policy.get("progression_roster_25h") or {}
+    shape = roster.get("default_shape") or {}
+    slots = roster.get("slots") or []
+    slot_names = [str(row.get("slot") or "") for row in slots if isinstance(row, Mapping)]
+    slot_targets = {
+        str(row.get(key) or "")
+        for row in slots
+        if isinstance(row, Mapping)
+        for key in ("class_spec", "alternate", "alternate_role_spec")
+        if str(row.get(key) or "")
+    }
+    slot_groups = Counter(name.split("_", 1)[0] for name in slot_names)
+    slot_roles_valid = all(
+        canonical_roles.get(str(row.get("class_spec") or ""))
+        == ("tank" if str(row.get("slot") or "").startswith("tank_")
+            else "healer" if str(row.get("slot") or "").startswith("healer_")
+            else "dps")
+        and (
+            not row.get("alternate")
+            or canonical_roles.get(str(row.get("alternate")))
+            == canonical_roles.get(str(row.get("class_spec") or ""))
+        )
+        and (
+            not row.get("alternate_role_spec")
+            or canonical_roles.get(str(row.get("alternate_role_spec"))) == "tank"
+        )
+        for row in slots
+        if isinstance(row, Mapping)
+    )
+    if (
+        shape != {
+            "tank": 2,
+            "healer": 6,
+            "dps": 17,
+            "ranged_dps": 12,
+            "melee_dps": 5,
+            "total": 25,
+        }
+        or len(slots) != 25
+        or len(slot_names) != len(set(slot_names))
+        or "" in slot_names
+        or slot_groups != Counter({"tank": 2, "healer": 6, "ranged": 12, "melee": 5})
+        or not slot_roles_valid
+        or slot_targets != set(roles)
+    ):
+        raise ValueError("Phase 9 targeted 25H roster contract is malformed")
     return roles, excluded
 
 
