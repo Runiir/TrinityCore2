@@ -14921,10 +14921,24 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             considerLocalAdd(creature);
         }
         // The authoritative retention audit includes every hostile creature
-        // attacking this exact party. Admit only a real unexpected swarm here,
-        // so natural encounter overlap cannot be invisible to tank pickup while
+        // attacking this exact party. Admit a real unexpected swarm here, while
         // ordinary route targets remain owned by the route-pack logic.
-        if (unexpectedPartyHostiles.size() >= 3)
+        //
+        // Rerun211's final generation retained one Stonecore Bruiser beside the
+        // tank and healer after three Azil recoveries. The shared density phase
+        // was still active, but the three-hostile admission floor discarded that
+        // exact healer attacker. It therefore remained visible to the strict
+        // threat audit while the add handler returned no_compatible_density_anchor
+        // and never exposed it to the Warrior's native Taunt. During an already
+        // active generation-scoped density recovery, admit every real party-
+        // targeting unexpected hostile; initial natural overlap still requires
+        // the unchanged three-hostile proof.
+        bool sharedDensityRecoveryActive =
+            Party().ValidationRouteBossAddDensityPhase
+            && Party().ValidationRouteBossAddDensityGeneration
+                == Party().ValidationRouteGeneration;
+        if (unexpectedPartyHostiles.size() >= 3
+            || sharedDensityRecoveryActive)
             for (Creature* creature : unexpectedPartyHostiles)
                 considerLocalAdd(creature);
         if (Party().ValidationRouteBossAddDensityPhase && addCount < 3)
@@ -17511,9 +17525,12 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
         // single-target Taunt against that residual healer threat.  Preserve
         // density priority for the larger damage-role swarm, but peel only a
         // bounded one- or two-attacker healer remainder first with the
-        // Warrior's existing native Taunt.  Lowest GUID is the deterministic
-        // oldest-spawn tie-breaker; all cooldown, range, LOS, target, stance,
-        // and spell-legality gates remain native.
+        // Warrior's existing native Taunt. Rerun211 proved the same remainder
+        // can itself be the selected defense target after a recovery; it must
+        // receive the identical Taunt instead of falling through to density
+        // holds. Lowest GUID is the deterministic oldest-spawn tie-breaker;
+        // all cooldown, range, LOS, target, stance, and spell-legality gates
+        // remain native.
         size_t warriorHealerAttackerCount = densityHealer
             ? observedListedAttackerCount(densityHealer) : 0;
         Creature* warriorResidualHealerAdd = nullptr;
@@ -17521,8 +17538,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             std::numeric_limits<uint32>::max();
         if (role == "tank" && profile.SpecTag == "protection_warrior"
             && densityHealer && warriorHealerAttackerCount > 0
-            && warriorHealerAttackerCount < 3
-            && densityDefenseTarget != densityHealer)
+            && warriorHealerAttackerCount < 3)
         {
             for (Creature* candidate : localAdds)
             {

@@ -4386,7 +4386,6 @@ def test_rerun211_protection_warrior_closes_native_gap_and_peels_residual_healer
         branch,
         "warriorHealerAttackerCount > 0",
         "warriorHealerAttackerCount < 3",
-        "densityDefenseTarget != densityHealer",
         "guid < warriorResidualHealerGuid",
         "TryCastCombatSpell(bot, warriorResidualHealerAdd, 355)",
         '"warrior_taunt_residual_healer_threat"',
@@ -4406,6 +4405,44 @@ def test_rerun211_protection_warrior_closes_native_gap_and_peels_residual_healer
     assert "SetThreat" not in branch
     assert "SetVictim" not in branch
     assert "NearTeleportTo" not in branch
+
+
+def test_rerun212_density_recovery_admits_single_party_hostile_for_warrior_taunt():
+    objective = function_body(
+        read(BOT_MGR), "bool BotWorldPopulationMgr::TryValidationRouteObjective"
+    )
+    marker = objective.index(
+        "Rerun211's final generation retained one Stonecore Bruiser"
+    )
+    admission = objective[marker - 900 : marker + 5000]
+    residual_marker = objective.index(
+        "Rerun210's maximum-dwell identity was the one survivor"
+    )
+    residual = objective[residual_marker - 400 : residual_marker + 7000]
+
+    assert_ordered(
+        admission,
+        "isUsableUnexpectedPartyHostile(bot, creature)",
+        "unexpectedPartyHostiles.push_back(creature)",
+        "bool sharedDensityRecoveryActive",
+        "Party().ValidationRouteBossAddDensityGeneration",
+        "== Party().ValidationRouteGeneration",
+        "unexpectedPartyHostiles.size() >= 3",
+        "|| sharedDensityRecoveryActive",
+        "considerLocalAdd(creature)",
+    )
+    assert_ordered(
+        residual,
+        "warriorHealerAttackerCount > 0",
+        "warriorHealerAttackerCount < 3",
+        "TryCastCombatSpell(bot, warriorResidualHealerAdd, 355)",
+        '"warrior_taunt_residual_healer_threat"',
+    )
+    assert "densityDefenseTarget != densityHealer" not in residual
+    correction = admission + residual
+    assert "SetThreat" not in correction
+    assert "SetVictim" not in correction
+    assert "NearTeleportTo" not in correction
 
 
 def test_rerun201_protection_honors_ready_local_majority_area_before_remote_approach():
