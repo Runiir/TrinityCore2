@@ -1,0 +1,194 @@
+{
+  "schema": "all_spec_phase9_authoritative_canary_diagnosis_v1",
+  "attempt": {
+    "run": "rerun203",
+    "serial_index": 2,
+    "attempt_id": "phase9_serial_02_stonecore_phase9_006_6893daf98698",
+    "attempt_root": "artifacts/all_spec_program/phase9_serial_canaries_20260810_rerun203/phase9_serial_02_stonecore_phase9_006_6893daf98698",
+    "only_canary_run": 2,
+    "canaries_3_through_8_started": false,
+    "classification": "authoritative_gameplay_failure"
+  },
+  "frozen_identity": {
+    "identity_manifest_sha256": "2fb17fd391f0e3d1af7bec303520368c7e2f4f1efe151769aeae9487c1803428",
+    "run_plan_sha256": "0c0b8a8dd25cfdf5f70590a42ed7dfdc08105961b7fd874a9eb103db1e417779",
+    "binary_sha256": "743194a8452880fe81084393430c5eacd20d668df4966476072e2de9c298f27c",
+    "server_process_id": 113617,
+    "server_epoch": 2220334149185194,
+    "worldserver_unit": "trinity-live-validation-2915ac216d8ff6cd0b3844ac",
+    "session_fingerprint": "ccf8fa9b7e64255a9b1dc76ed5a5b3e26a4825914c9d2aac2c0c7772d9ecb11b",
+    "profile_generation": 1,
+    "profile_content_hash": "d9d6a60e97756695ea6553b1fa34e9c2c63ebe6e09467e71bc01fb74fe3655ae",
+    "max_active_cohorts": 1,
+    "identity_recomputed": true,
+    "run_plan_recomputed": true,
+    "worldserver_stopped_before_tracked_diagnosis_or_source_edit": true
+  },
+  "exact_party": {
+    "ordered_specs": [
+      "feral_druid_tank",
+      "discipline_priest",
+      "fury_warrior",
+      "marksmanship_hunter",
+      "retribution_paladin"
+    ],
+    "party_sha256": "524b94c794897f5111bdae0a5e45ba31a31ebb8596d811a3dd8c1caff95bd16a",
+    "recomputed_from_plan_and_raw_report": true
+  },
+  "capture_and_publication": {
+    "batch_identity_sha256": "aaf8296f27bd3e3282476cd6b033ea7a2c11fbdcf39da684f1167a2ea2334593",
+    "raw_bundle_sha256": "61ca776f66d6d4afc357c7b902b46b9c5d82192427e89f28bc16a273e2c09c5a",
+    "compact_bundle_sha256": "1c58a2f9d8e57dc9ed32c3cb77b2f7563f6ed4221ec469a7a746dfa539bcd6ac",
+    "receipt_canonical_sha256": "78738489de152117a1d43e83f84dfe81991802886071d73e9b4422247b3a0cec",
+    "receipt_file_sha256": "f3a744d618eba03c6ab2f28c70ea16d7816b7fc430f77449b26c6fee33a20844",
+    "acceptance_source_report_sha256": "eb18c863c69bc9edb987747b394b193f0805a42f4716d839ee9459c0ee01d93d",
+    "raw_pointer_sha256": "f621eb1c52a616a60a9df9ed50c80aef01d062dd1b35de6a344272cfa8a4f836",
+    "raw_dvc_md5": "b9c2db002da8f5e27d9f6d3b52f83f62.dir",
+    "compact_pointer_sha256": "123d00a3d6442e2ad6ca2ee371c111ef46671f02b753bea5f06f54322beeb34a",
+    "compact_dvc_md5": "aaed354edd927d69b65c6bab2bd8250c.dir",
+    "validated_with": "tools.bot_ml.batch_evidence_lifecycle.validate_capture",
+    "canonical_receipt_recomputed": true,
+    "exact_selective_remote_status": "Cache and remote 'object' are in sync.",
+    "raw_and_compact_payloads_re_evicted": true,
+    "batch_specific_caches_re_evicted": true,
+    "dvc_config_local_restored_exactly": true,
+    "broad_dvc_gc_used": false
+  },
+  "independent_verification": {
+    "verifier_path": "artifacts/all_spec_program/phase9_serial_canaries_20260810_rerun203/phase9_serial_02_stonecore_phase9_006_6893daf98698/independent_verifier.json",
+    "verifier_file_sha256": "6385dbdf42df1e8818d1dedd991fa7f06c56fdcc3e7d3e8897e6888134ea7868",
+    "verifier_canonical_sha256": "3cfd9a9cbd37cfdf2039adcf5c69256a73420d79e4512ce83a48f1f8ec3aba37",
+    "canonical_role_auditor": "tools.bot_ml.audit_role_efficiency",
+    "canonical_role_audit_file_sha256": "e1483c6a701cd2ac496993102be51de627e5aa214e1d401a6052b10702599911",
+    "canonical_role_audit_sha256": "a9c9521ae245555715b472d7d98abcea769004694a710ac3846e89d7b4aad3e5"
+  },
+  "strict_non_role_reconstruction": {
+    "underlying_returncode": 0,
+    "timed_out": false,
+    "session_closed": true,
+    "identity_complete": true,
+    "serial_isolation": true,
+    "operator_attempt_count": 1,
+    "global_lifecycle_command_count": 0,
+    "cleanup": {
+      "active": false,
+      "active_bots": 0,
+      "lease_count": 0,
+      "party_bot_count": 0
+    },
+    "route_terminal_count": 14,
+    "authoritative_boss_death_entries": [42188, 42333, 43214, 43438],
+    "high_priestess_azil_terminal_and_death": true,
+    "validation_route_manifest_complete": true,
+    "watchdog_clean": true,
+    "forbidden_completion_assistance": [],
+    "all_non_role_gates_passed": true
+  },
+  "role_reconstruction": {
+    "eligible_hostile_denominator": 1766,
+    "tank_owned_hostile_numerator": 1729,
+    "healer_targeting_hostile_numerator": 3,
+    "tank_all_hostile_retention_ratio": 0.9790486976217441,
+    "healer_target_exposure_ratio": 0.0016987542468856172,
+    "maximum_healer_target_dwell_ms": 3603,
+    "maximum_dwell_guid": 719,
+    "threat_aura_active_samples": 435,
+    "threat_aura_total_samples": 435,
+    "threat_aura_uptime_ratio": 1.0,
+    "non_healer_active_action_coverage_passed": true,
+    "cast_failure_rate_passed": true,
+    "discipline_heal_cast_success_rate": 1.0,
+    "required_rotation_groups_present": true,
+    "threshold_results": {
+      "tank_retention_at_least_0_90": true,
+      "healer_exposure_at_most_0_01": true,
+      "maximum_dwell_at_most_3000_ms": false,
+      "threat_aura_uptime_at_least_0_99": true,
+      "non_healer_active_action_coverage_at_least_0_70": true,
+      "cast_failure_rate_at_most_0_05": true,
+      "healer_successful_heal_cast_rate_at_least_0_95": true,
+      "missing_required_rotation_groups_forbidden": true
+    }
+  },
+  "maximum_dwell_chronology": [
+    {
+      "offset_ms": 0,
+      "event": "Seven Azil followers targeted Discipline while twelve were tank-owned."
+    },
+    {
+      "offset_ms": 258,
+      "event": "The fresh local-majority boss gate accepted native Swipe; five of the seven healer-owned followers transferred during propagation."
+    },
+    {
+      "offset_ms": 1030,
+      "event": "GUIDs 719 and 723 remained healer-owned while sixteen followers were tank-owned; the Feral began moving to the selected boss add."
+    },
+    {
+      "offset_ms": 1289,
+      "event": "The generic density resolver began repeated out-of-range melee-area selections against the moving remainder."
+    },
+    {
+      "offset_ms": 2326,
+      "event": "Native Growl was accepted on GUID 723."
+    },
+    {
+      "offset_ms": 3097,
+      "event": "GUID 723 had transferred, leaving GUID 719 alone on the healer."
+    },
+    {
+      "offset_ms": 3352,
+      "event": "The lingering-attacker fallback accepted native Swipe on GUID 719."
+    },
+    {
+      "offset_ms": 3603,
+      "event": "GUID 719 remained healer-owned at the last sampled observation, exceeding the strict ceiling by 603 ms."
+    },
+    {
+      "offset_ms": 3865,
+      "event": "The first subsequent Feral snapshot showed GUID 719 tank-owned and no healer-targeting followers."
+    }
+  ],
+  "action_reconstruction": {
+    "growl_actual_attempts": 13,
+    "swipe_actual_attempts": 34,
+    "thrash_actual_attempts": 27,
+    "demoralizing_roar_semantic_actions": 4,
+    "charge_semantic_actions": 3,
+    "hazard_exit_actions": 148,
+    "hazard_exit_failures": 0,
+    "misdirection_aoe_attempts": 48,
+    "misdirection_aoe_successes": 38,
+    "misdirection_aoe_wrong_successes": 0,
+    "misdirection_single_attempts": 34,
+    "misdirection_single_successes": 29,
+    "healer_handoff_semantic_actions": 71,
+    "thrash_action_in_maximum_dwell_episode": false,
+    "last_thrash_before_maximum_episode_ms": 27006
+  },
+  "causal_classification": {
+    "real_pickup_loss": true,
+    "later_threat_decay": false,
+    "movement_or_hazard_starvation": "movement_after_partial_pickup_is_primary; hazard starvation is false",
+    "misdirection_failure": false,
+    "healer_behavior_failure": false,
+    "audit_attribution_error": false,
+    "rerun170_passive_swarm_correction_side_effect": false,
+    "rerun203_ordinary_trash_thrash_correction_side_effect": false,
+    "finding": "The rerun203 ordinary-trash Thrash correction worked: generation 13 contributed 1107/1107 tank-owned eligible samples and zero healer exposure. The sole failure is a distinct fresh Azil boss-add local-majority branch that offered Swipe but not Thrash. Swipe partially recovered the wave; the moving remainder then starved the melee-area resolver until sequential Growl and Swipe exceeded the dwell ceiling."
+  },
+  "smallest_correction": {
+    "description": "At the existing fresh or arrived boss-add local-healer-owned-majority gate, try native Thrash before the unchanged native Swipe fallback. Preserve the existing arrived-handoff local-minority scope, remote-handoff movement, Roar chain, single-follower Growl/Swipe fallback, and all native legality and strict gates.",
+    "source": "src/server/game/Bots/BotWorldPopulationMgr.cpp",
+    "focused_test": "test_rerun203_fresh_boss_local_majority_prefers_thrash_before_swipe",
+    "thresholds_changed": false,
+    "direct_threat_or_victim_mutation_added": false,
+    "teleport_added": false,
+    "model_metadata_changed": false
+  },
+  "blocked_scope": {
+    "rerun203_canaries_3_through_8": "blocked",
+    "phases_10_through_12": "blocked",
+    "fresh_rerun204_identity_and_eight_row_plan_required": true,
+    "rerun204_canary_2_only_until_independent_strict_pass": true
+  }
+}

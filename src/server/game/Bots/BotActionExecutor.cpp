@@ -8,6 +8,7 @@
 #include "ObjectAccessor.h"
 #include "Player.h"
 #include "Server/WorldSession.h"
+#include "Spell.h"
 #include "SpellHistory.h"
 #include "SpellInfo.h"
 #include "SpellMgr.h"
@@ -22,6 +23,14 @@
 
 namespace
 {
+constexpr uint32 ActionDarkTransformationSpellId = 63560;
+constexpr uint32 DoomguardEntry = 11859;
+constexpr uint32 DoomBoltSpellId = 85692;
+constexpr uint32 FelguardEntry = 17252;
+constexpr uint32 FelstormSpellId = 89751;
+constexpr uint32 ShadowfiendEntry = 19668;
+constexpr uint32 ShadowfiendSpellId = 34433;
+
 float GetNominalRange(HealerIntent intent)
 {
     return intent == HealerIntent::ExternalDefensive ? 30.0f : 40.0f;
@@ -31,6 +40,12 @@ bool HasEnoughPowerForSpell(Player const* bot, SpellInfo const* spellInfo)
 {
     if (!bot || !spellInfo)
         return false;
+
+    // Dark Transformation consumes the ghoul's Shadow Infusion stacks.  The
+    // owner-side ready aura and native spell script validate that pet resource;
+    // its DBC power fields are not a player-power cost.
+    if (spellInfo->Id == ActionDarkTransformationSpellId)
+        return true;
 
     if (spellInfo->PowerType == POWER_RUNE && spellInfo->RuneCostID && bot->getClass() == CLASS_DEATH_KNIGHT)
     {
@@ -91,6 +106,38 @@ bool IsSchedulingResult(BotActionResult result)
 {
     return result == BotActionResult::Casting || result == BotActionResult::GlobalCooldown;
 }
+
+Item* FindOnUseItemForSpell(Player* player, uint32 spellId)
+{
+    if (!player || !spellId)
+        return nullptr;
+
+    auto matches = [player, spellId](Item* item) -> bool
+    {
+        ItemTemplate const* itemTemplate = item ? item->GetTemplate() : nullptr;
+        if (!itemTemplate || (item->IsPotion() && player->GetLastPotionId()))
+            return false;
+        for (uint8 index = 0; index < itemTemplate->Effects.size(); ++index)
+        {
+            ItemEffect const& effect = itemTemplate->Effects[index];
+            if (effect.SpellID == int32(spellId) && effect.Trigger == ITEM_SPELLTRIGGER_ON_USE
+                && (!effect.Charges || item->GetSpellCharges(index)
+                    || (itemTemplate->GetClass() == ITEM_CLASS_CONSUMABLE && item->GetCount())))
+                return true;
+        }
+        return false;
+    };
+
+    for (uint8 slot = INVENTORY_SLOT_ITEM_START; slot < INVENTORY_SLOT_ITEM_END; ++slot)
+        if (Item* item = player->GetItemByPos(INVENTORY_SLOT_BAG_0, slot); matches(item))
+            return item;
+    for (uint8 bagSlot = INVENTORY_SLOT_BAG_START; bagSlot < INVENTORY_SLOT_BAG_END; ++bagSlot)
+        if (Bag* bag = player->GetBagByPos(bagSlot))
+            for (uint32 slot = 0; slot < bag->GetBagSize(); ++slot)
+                if (Item* item = bag->GetItemByPos(slot); matches(item))
+                    return item;
+    return nullptr;
+}
 }
 
 BotActionResult BotActionExecutor::Execute(Player* owner, Player* bot, ResolvedBotAction const& action)
@@ -147,6 +194,18 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
     }
     if (action.Type == "loot")
         return Loot(bot, target);
+    if (action.Type == "auto_attack")
+    {
+        if (!target || !target->IsAlive() || !bot->IsValidAttackTarget(target))
+            return BotActionResult::InvalidTarget;
+        Face(bot, target);
+        if (action.AutoAttackMode == "melee")
+        {
+            bot->Attack(target, true);
+            return BotActionResult::Ok;
+        }
+        return BotActionResult::NoAction;
+    }
     if (!action.SpellId)
         return BotActionResult::NoAction;
 
@@ -156,22 +215,58 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
         Face(bot, target);
 
     // White swings, Auto Shot, and pet attacks are independent sources of role
-    // uptime.  Start them before checking the selected ability so a GCD or
-    // cooldown does not leave a tank, melee DPS, or hunter doing no damage.
+    // uptime. Start them before checking the selected ability so a GCD or
+    // cooldown does not leave a tank, melee DPS, hunter, or pet class idle.
     if (target != bot && bot->IsValidAttackTarget(target))
     {
         if (action.AutoAttackMode == "melee")
             bot->Attack(target, true);
-        else if (action.AutoAttackMode == "ranged" && bot->getClass() == CLASS_HUNTER)
-        {
-            if (!bot->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL))
-                bot->CastSpell(target, 75, false); // Auto Shot
+        else if (action.AutoAttackMode == "ranged" && bot->getClass() == CLASS_HUNTER
+            && !bot->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL))
+            bot->CastSpell(target, 75, false); // Auto Shot
 
-            if (Pet* pet = bot->GetPet())
-                if (pet->IsAlive() && pet->AI() && pet->IsValidAttackTarget(target)
-                    && (!pet->GetVictim() || pet->GetVictim() == target))
-                    pet->AI()->AttackStart(target);
+        for (Unit* controlled : bot->m_Controlled)
+            if (Creature* minion = controlled ? controlled->ToCreature() : nullptr)
+                if (minion->IsAlive() && minion->AI() && minion->IsValidAttackTarget(target)
+                    && (!minion->GetVictim() || minion->GetVictim() == target))
+                {
+                    minion->SetReactState(REACT_AGGRESSIVE);
+                    minion->AI()->AttackStart(target);
+                    if (!minion->GetVictim())
+                    {
+                        minion->Attack(target, true);
+                        minion->GetMotionMaster()->MoveChase(target);
+                    }
+                    if (minion->GetEntry() == DoomguardEntry && !minion->HasUnitState(UNIT_STATE_CASTING))
+                        if (SpellInfo const* doomBolt = sSpellMgr->GetSpellInfo(DoomBoltSpellId))
+                            if (!minion->GetSpellHistory()->HasGlobalCooldown(doomBolt)
+                                && minion->GetSpellHistory()->IsReady(doomBolt))
+                                minion->CastSpell(target, DoomBoltSpellId, false);
+                }
+
+        // Shadowfiend is a temporary guardian rather than a persistent Pet.  Its
+        // summon can inherit passive react state, so explicitly release it onto
+        // the owner's current hostile target just like the normal controlled set.
+        if (Guardian* guardian = bot->GetGuardianPet(); guardian && guardian->GetEntry() == ShadowfiendEntry
+            && guardian->IsAlive() && guardian->IsValidAttackTarget(target)
+            && (!guardian->GetVictim() || guardian->GetVictim() == target))
+        {
+            guardian->SetReactState(REACT_AGGRESSIVE);
+            if (guardian->AI())
+                guardian->AI()->AttackStart(target);
+            else
+            {
+                guardian->Attack(target, true);
+                guardian->GetMotionMaster()->MoveChase(target);
+            }
         }
+
+        if (Pet* pet = bot->GetPet())
+            if (pet->GetEntry() == FelguardEntry && pet->IsWithinMeleeRange(target)
+                && !pet->HasUnitState(UNIT_STATE_CASTING) && pet->HasSpell(FelstormSpellId))
+                if (SpellInfo const* felstorm = sSpellMgr->GetSpellInfo(FelstormSpellId))
+                    if (pet->GetSpellHistory()->IsReady(felstorm))
+                        pet->CastSpell(pet, FelstormSpellId, false);
     }
 
     // Auto Shot is an autorepeat state, not a spell that should be resubmitted
@@ -182,6 +277,36 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
     if (action.SpellId == 75 && bot->getClass() == CLASS_HUNTER
         && bot->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL))
     {
+        RecordSuccess(bot->GetGUID());
+        return BotActionResult::Ok;
+    }
+
+    if (action.Type == "use_item")
+    {
+        Item* item = FindOnUseItemForSpell(bot, action.SpellId);
+        SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(action.SpellId);
+        if (!item || !spellInfo)
+            return BotActionResult::NoAction;
+        if (bot->HasUnitState(UNIT_STATE_CASTING))
+            return BotActionResult::Casting;
+        if (bot->GetSpellHistory()->HasGlobalCooldown(spellInfo))
+            return BotActionResult::GlobalCooldown;
+        if (!bot->GetSpellHistory()->IsReady(spellInfo))
+            return BotActionResult::Cooldown;
+        if (IsThrottled(bot->GetGUID(), action.SpellId, action.TargetGuid))
+            return BotActionResult::Throttled;
+
+        SpellCastTargets targets;
+        Spell* spell = new Spell(bot, spellInfo, TRIGGERED_NONE);
+        spell->m_CastItem = item;
+        SpellCastResult result = spell->prepare(targets);
+        _lastSpellCastResult = uint32(result);
+        if (result != SPELL_CAST_OK)
+        {
+            RecordFailure(bot->GetGUID(), action.SpellId, action.TargetGuid);
+            return BotActionResult::CastFailed;
+        }
+
         RecordSuccess(bot->GetGUID());
         return BotActionResult::Ok;
     }
@@ -198,16 +323,31 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
         return BotActionResult::Throttled;
 
     SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(action.SpellId);
-    if (spellInfo && spellInfo->CalcCastTime(bot->getLevel()) > 0)
+    if (spellInfo && spellInfo->CalcCastTime(bot->getLevel()) > 0
+        && (bot->isMoving() || bot->HasUnitState(UNIT_STATE_MOVING)))
     {
+        // Rerun138 proved that stopping and submitting a cast-time offensive
+        // spell in the same decision can still be rejected as moving. Yield
+        // this tick after stopping so the next profile decision submits only
+        // after the movement state has settled.
         bot->StopMoving();
         bot->GetMotionMaster()->Clear(MOTION_SLOT_ACTIVE);
         bot->GetMotionMaster()->MoveIdle();
+        return BotActionResult::Casting;
     }
 
+    // The client normally has an enemy selected when Shadowfiend is summoned.
+    // Preserve that contract for server-driven bots so the new guardian can
+    // acquire the intended target in its summon callback.
+    if (action.SpellId == ShadowfiendSpellId && target != bot)
+        bot->SetTarget(target->GetGUID());
+
+    CastSpellExtraArgs castArgs(action.SpellId == ActionDarkTransformationSpellId
+        ? TRIGGERED_IGNORE_POWER_COST
+        : TRIGGERED_NONE);
     SpellCastResult result = spellInfo && (spellInfo->GetExplicitTargetMask() & TARGET_FLAG_DEST_LOCATION)
-        ? bot->CastSpell(Position{ target->GetPositionX(), target->GetPositionY(), target->GetPositionZ() }, action.SpellId, false)
-        : bot->CastSpell(target, action.SpellId, false);
+        ? bot->CastSpell(Position{ target->GetPositionX(), target->GetPositionY(), target->GetPositionZ() }, action.SpellId, castArgs)
+        : bot->CastSpell(target, action.SpellId, castArgs);
     _lastSpellCastResult = uint32(result);
     if (result != SPELL_CAST_OK)
     {
@@ -583,13 +723,21 @@ BotActionResult BotActionExecutor::CheckHostileSpell(Player* owner, Player* bot,
         return BotActionResult::NoLineOfSight;
     if (!bot->IsWithinDistInMap(target, std::max(5.0f, spellInfo->GetMaxRange(false))))
         return BotActionResult::OutOfRange;
+    // Rerun157 captured eight spell_cast_result_150 submissions when scripted
+    // control landed between profile resolution and CastSpell. Repeat the
+    // resolver's native controlled-state preflight at the executor boundary;
+    // this is a scheduling wait, so use the existing throttled result rather
+    // than recording a rejected cast.
+    if (bot->HasUnitState(UNIT_STATE_CONTROLLED))
+        return BotActionResult::Throttled;
     if (bot->HasUnitState(UNIT_STATE_CASTING))
         return BotActionResult::Casting;
     if (bot->GetSpellHistory()->HasGlobalCooldown(spellInfo))
         return BotActionResult::GlobalCooldown;
     if (!bot->GetSpellHistory()->IsReady(spellInfo))
         return BotActionResult::Cooldown;
-    if (spellInfo->NeedsComboPoints() && (bot->GetComboTarget() != target->GetGUID() || !bot->GetComboPoints()))
+    if (spellInfo->NeedsComboPoints()
+        && (!bot->GetComboPoints() || (target != bot && bot->GetComboTarget() != target->GetGUID())))
         return BotActionResult::NoMana;
     if (!HasEnoughPowerForSpell(bot, spellInfo))
         return BotActionResult::NoMana;

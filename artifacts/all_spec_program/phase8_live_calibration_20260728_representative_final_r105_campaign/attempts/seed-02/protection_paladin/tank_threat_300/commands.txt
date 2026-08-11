@@ -1,0 +1,5 @@
+.botauto calibrate p8-s2-protection-paladin-tank-threat-300 start tank_threat_300 protection_paladin 2
+.botauto status p8-s2-protection-paladin-tank-threat-300
+.botauto calibrate p8-s2-protection-paladin-tank-threat-300 status
+.botauto combatlog p8-s2-protection-paladin-tank-threat-300
+.botauto calibrate p8-s2-protection-paladin-tank-threat-300 stop

@@ -843,24 +843,27 @@ class spell_pal_templar_s_verdict : public SpellScript
 
     void HandleDamageBonus(SpellEffIndex /*effIndex*/)
     {
-        int32 damage = GetEffectValue();
+        int32 damage = GetHitDamage();
         float damageMod = 1.f;
 
         if (GetCaster()->HasAura(SPELL_PALADIN_DIVINE_PURPOSE_PROC))
             damageMod = 7.83334f; // 235%
         else
         {
+            // The cast initially consumes one Holy Power. At hit time the
+            // remaining values 0, 1, and 2 represent one-, two-, and
+            // three-Holy-Power casts respectively.
             int32 hp = GetCaster()->GetPower(POWER_HOLY_POWER);
             if (hp >= 1)
                 damageMod = hp > 1 ? 7.83334f : 3.f;
         }
 
-        SetEffectValue(damage * damageMod);
+        SetHitDamage(damage * damageMod);
     }
 
     void Register() override
     {
-        OnEffectLaunchTarget.Register(&spell_pal_templar_s_verdict::HandleDamageBonus, EFFECT_0, SPELL_EFFECT_WEAPON_PERCENT_DAMAGE);
+        OnEffectHitTarget.Register(&spell_pal_templar_s_verdict::HandleDamageBonus, EFFECT_0, SPELL_EFFECT_WEAPON_PERCENT_DAMAGE);
     }
 };
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import contextlib
 import hashlib
 import html
 import json
@@ -13,26 +14,35 @@ import sys
 import time
 import urllib.error
 import urllib.request
-from collections import Counter
+from collections import Counter, deque
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Mapping, Sequence
 from urllib.parse import urlparse
 import re
 
 try:
     from .analyze_combat_log import analyze_combat_log
     from .audit_role_efficiency import build_audit
+    from .batch_evidence_lifecycle import append_heartbeat, capture_batch, finalize_heartbeat, publish_batch, validate_capture
     from .build_validation_provisioning import apply_gear_profiles, build_account_insert_sql, build_character_insert_sql, load_config, load_gear_profiles
     from .common import write_json
     from .extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
-    from .live_validation_session import build_session, ensure_healthy_matching_session, live_validation_lock, stop_session
+    from .live_validation_session import apply_acceptance_evaluation, build_evidence_envelope, build_session, canonical_sha256, ensure_healthy_matching_session, git_dirty_state_sha256, git_head, live_validation_lock, sha256_file, sha256_text, stop_session
+    from .phase8_calibration_adapter import Phase8CalibrationNormalizationError, evaluate_runtime_calibration
+    from .phase8_evidence_identity import validate_manifest as validate_phase8_evidence_manifest
+    from .phase9_evidence_identity import validate_manifest as validate_phase9_evidence_manifest
 except ImportError:
     from analyze_combat_log import analyze_combat_log
     from audit_role_efficiency import build_audit
+    from batch_evidence_lifecycle import append_heartbeat, capture_batch, finalize_heartbeat, publish_batch, validate_capture
     from build_validation_provisioning import apply_gear_profiles, build_account_insert_sql, build_character_insert_sql, load_config, load_gear_profiles
     from common import write_json
     from extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
-    from live_validation_session import build_session, ensure_healthy_matching_session, live_validation_lock, stop_session
+    from live_validation_session import apply_acceptance_evaluation, build_evidence_envelope, build_session, canonical_sha256, ensure_healthy_matching_session, git_dirty_state_sha256, git_head, live_validation_lock, sha256_file, sha256_text, stop_session
+    from phase8_calibration_adapter import Phase8CalibrationNormalizationError, evaluate_runtime_calibration
+    from phase8_evidence_identity import validate_manifest as validate_phase8_evidence_manifest
+    from phase9_evidence_identity import validate_manifest as validate_phase9_evidence_manifest
 
 
 DEFAULT_LIVE_VALIDATION_TIMEOUT_SEC = 90
@@ -42,6 +52,8 @@ DEFAULT_COMPLETION_HEARTBEAT_SEC = 30
 DEFAULT_NO_PROGRESS_WINDOW_SEC = 180
 DEFAULT_MAX_REPEATED_DECISIONS = 20
 DEFAULT_MAX_DEATH_LOOPS = 3
+DEFAULT_MAX_WORLDSERVER_OUTPUT_BYTES = 64 * 1024 * 1024
+WORLDSERVER_OUTPUT_TRUNCATED_MARKER = "\n[worldserver_output_truncated]\n"
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_COMBAT_CALIBRATION_REFERENCE = REPO_ROOT / "dataset/combat_calibration/wowsims_cata_p4.json"
 
@@ -63,6 +75,331 @@ DEFAULT_STAGES = [
     "raid_boss",
     "full_blackwing_descent_clear",
 ]
+
+class BoundedOutputParts(list[str]):
+    def __init__(self, max_bytes: int = DEFAULT_MAX_WORLDSERVER_OUTPUT_BYTES):
+        super().__init__()
+        self.max_bytes = max_bytes
+        self.written_bytes = 0
+        self.truncated = False
+
+    def append(self, value: str) -> None:
+        if self.truncated:
+            return
+        encoded = value.encode("utf-8")
+        remaining = self.max_bytes - self.written_bytes
+        if len(encoded) <= remaining:
+            super().append(value)
+            self.written_bytes += len(encoded)
+            return
+        marker = WORLDSERVER_OUTPUT_TRUNCATED_MARKER.encode("utf-8")
+        prefix = encoded[: max(0, remaining - len(marker))].decode("utf-8", errors="ignore")
+        super().append(prefix + WORLDSERVER_OUTPUT_TRUNCATED_MARKER)
+        self.written_bytes = self.max_bytes
+        self.truncated = True
+
+    def extend(self, values: tuple[str, ...] | list[str]) -> None:
+        for value in values:
+            self.append(value)
+
+
+CommandTransport = Callable[[str, int], tuple[str, int, bool]]
+
+
+@dataclass(frozen=True)
+class ValidationAttempt:
+    cohort_id: str
+    attempt_index: int
+    profile: str
+    output_dir: Path
+    timeout_sec: int
+    observe_sec: int
+
+    def __post_init__(self) -> None:
+        if not re.fullmatch(r"[A-Za-z0-9._-]{1,64}", self.cohort_id):
+            raise ValueError("invalid cohort_id")
+        if self.attempt_index < 1:
+            raise ValueError("attempt_index must be positive")
+        if self.timeout_sec < 1 or self.observe_sec < 0:
+            raise ValueError("attempt timing must be non-negative")
+
+
+@dataclass
+class SerialValidationScheduler:
+    attempts: Sequence[ValidationAttempt]
+    pending: deque[ValidationAttempt] = field(init=False)
+    active: ValidationAttempt | None = field(default=None, init=False)
+    completed: list[ValidationAttempt] = field(default_factory=list, init=False)
+    events: list[dict[str, Any]] = field(default_factory=list, init=False)
+
+    def __post_init__(self) -> None:
+        self.pending = deque(self.attempts)
+        identities = {(attempt.cohort_id, attempt.attempt_index) for attempt in self.attempts}
+        if len(identities) != len(self.attempts):
+            raise ValueError("duplicate cohort attempt identity")
+
+    def admit_next(self) -> ValidationAttempt | None:
+        if self.active is not None:
+            raise RuntimeError("serial scheduler already owns an active attempt")
+        if not self.pending:
+            return None
+        self.active = self.pending.popleft()
+        self.events.append(
+            {
+                "action": "admit",
+                "cohort_id": self.active.cohort_id,
+                "attempt_index": self.active.attempt_index,
+            }
+        )
+        return self.active
+
+    def close_active(self) -> None:
+        if self.active is None:
+            raise RuntimeError("serial scheduler has no active attempt")
+        self.events.append(
+            {
+                "action": "close",
+                "cohort_id": self.active.cohort_id,
+                "attempt_index": self.active.attempt_index,
+            }
+        )
+        self.completed.append(self.active)
+        self.active = None
+
+
+@dataclass
+class CohortCommandExecutor:
+    execute_command: CommandTransport
+    cohort_id: str
+    default_timeout_sec: int = 180
+    commands: list[str] = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        if not re.fullmatch(r"[A-Za-z0-9._-]{1,64}", self.cohort_id):
+            raise ValueError("invalid cohort_id")
+
+    @property
+    def status_command(self) -> str:
+        return f".botauto status {self.cohort_id}"
+
+    def run(self, command: str, timeout_sec: int | None = None) -> tuple[str, int, bool]:
+        tokens = command.split()
+        addressed_actions = {
+            "create",
+            "prepare",
+            "start",
+            "stop",
+            "status",
+            "diagnose",
+            "trace",
+            "combatlog",
+            "calibrate",
+        }
+        if (
+            len(tokens) >= 2
+            and tokens[0] == ".botauto"
+            and tokens[1] in addressed_actions
+            and (len(tokens) < 3 or tokens[2] != self.cohort_id)
+        ):
+            raise RuntimeError("global or cross-cohort botauto command is forbidden")
+        self.commands.append(command)
+        output, returncode, timed_out = self.execute_command(
+            command,
+            max(1, int(timeout_sec or self.default_timeout_sec)),
+        )
+        for payload in parse_json_objects(output):
+            payload_cohort = payload.get("cohort_id")
+            action = str(payload.get("action") or "")
+            if action.startswith("botauto_") and payload_cohort not in {None, self.cohort_id}:
+                raise RuntimeError("cohort command returned cross-cohort payload")
+        return output, returncode, timed_out
+
+    def create(self) -> tuple[str, int, bool]:
+        return self.run(f".botauto create {self.cohort_id}")
+
+    def prepare(
+        self,
+        profile: str,
+        pool_tag: str = "",
+        class_specs: Sequence[str] = (),
+    ) -> tuple[str, int, bool]:
+        exact_party = ""
+        if class_specs:
+            exact_party = " " + " ".join((pool_tag, *class_specs))
+        return self.run(f".botauto prepare {self.cohort_id} {profile}{exact_party}")
+
+    def start(self, profile: str = "") -> tuple[str, int, bool]:
+        suffix = f" {profile}" if profile else ""
+        return self.run(f".botauto start {self.cohort_id}{suffix}")
+
+    def stop(self) -> tuple[str, int, bool]:
+        return self.run(f".botauto stop {self.cohort_id}")
+
+    def diagnose(self, selector: str) -> tuple[str, int, bool]:
+        return self.run(f".botauto diagnose {self.cohort_id} {selector}")
+
+    def trace(self, selector: str, limit: int) -> tuple[str, int, bool]:
+        return self.run(f".botauto trace {self.cohort_id} {selector} {max(1, limit)}")
+
+    def combat_log(self) -> tuple[str, int, bool]:
+        return self.run(f".botauto combatlog {self.cohort_id}")
+
+    def calibration(
+        self,
+        operation: str,
+        *,
+        mode: str = "",
+        target_spec: str = "",
+        seed: int = 1,
+    ) -> tuple[str, int, bool]:
+        if operation not in {"start", "stop", "status"}:
+            raise ValueError("invalid calibration operation")
+        suffix = ""
+        if operation == "start":
+            if not mode or not target_spec:
+                raise ValueError("calibration start requires mode and target_spec")
+            suffix = f" {mode} {target_spec} {max(1, seed)}"
+        return self.run(f".botauto calibrate {self.cohort_id} {operation}{suffix}")
+
+
+@dataclass
+class CohortAttemptWatchdog:
+    executor: CohortCommandExecutor
+    attempt: ValidationAttempt
+
+    def script(
+        self,
+        selector: str,
+        trace_limit: int,
+        combat_calibration: bool = False,
+        *,
+        calibration_mode: str = "single_target_300",
+        calibration_target_spec: str = "protection_paladin",
+        calibration_seed: int = 1,
+        calibration_only: bool = False,
+    ) -> str:
+        return command_script(
+            selector=selector,
+            trace_limit=trace_limit,
+            start=False,
+            stop=False,
+            exit_server=False,
+            combat_calibration=combat_calibration,
+            cohort_id=self.attempt.cohort_id,
+            calibration_mode=calibration_mode,
+            calibration_target_spec=calibration_target_spec,
+            calibration_seed=calibration_seed,
+            calibration_only=calibration_only,
+        )
+
+
+@dataclass
+class ImmutableCaptureWriter:
+    repository: Path
+
+    def capture(
+        self,
+        attempt: ValidationAttempt,
+        report: Mapping[str, Any],
+        output: str,
+        exact_manifests: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        batch_root = attempt.output_dir / "batch"
+        payloads = parse_json_objects(output)
+        raw_rows = [
+            {
+                "batch_id": f"{attempt.cohort_id}-{attempt.attempt_index}",
+                "cohort_id": attempt.cohort_id,
+                "attempt_index": attempt.attempt_index,
+                "sequence": index,
+                "payload": payload,
+            }
+            for index, payload in enumerate(payloads)
+        ]
+        compact_rows = [
+            {
+                "batch_id": f"{attempt.cohort_id}-{attempt.attempt_index}",
+                "cohort_id": attempt.cohort_id,
+                "attempt_index": attempt.attempt_index,
+                "all_passed": bool(report.get("all_passed")),
+                "acceptable_final_evidence": bool(report.get("acceptable_final_evidence")),
+                "failure_reason": str(report.get("failure_reason") or ""),
+                "completion_reason": str(report.get("completion_reason") or ""),
+            }
+        ]
+        return capture_batch(
+            batch_root,
+            batch_id=f"{attempt.cohort_id}-{attempt.attempt_index}",
+            raw_rows=raw_rows,
+            compact_rows=compact_rows,
+            exact_manifests=dict(exact_manifests),
+            summary=compact_rows[0],
+            acceptance_report=dict(report),
+        )
+
+
+def compact_published_report(report: Mapping[str, Any]) -> dict[str, Any]:
+    """Retain acceptance and provenance without duplicating published raw payloads."""
+    keys = (
+        "schema",
+        "generated_at_unix",
+        "returncode",
+        "timed_out",
+        "completion_reason",
+        "failure_reason",
+        "failure_labels",
+        "all_passed",
+        "acceptable_final_evidence",
+        "acceptance_facts",
+        "acceptance_verification",
+        "evidence_envelope",
+        "session",
+        "validation_context",
+        "validation_route_manifest",
+        "requested_calibration",
+        "calibration_acceptance",
+        "role_calibration_identity",
+        "role_calibration_evaluation",
+        "role_efficiency_audit",
+        "role_quality_advisory_labels",
+        "batch_capture",
+        "batch_publication",
+    )
+    compact = {key: report[key] for key in keys if key in report}
+    compact["published_raw_payloads_retained_locally"] = False
+    return compact
+
+
+class AcceptanceRecomputer:
+    def recompute(
+        self,
+        report: dict[str, Any],
+        *,
+        identity_required: bool,
+        session_required: bool,
+    ) -> dict[str, Any]:
+        return apply_acceptance_evaluation(
+            report,
+            identity_required=identity_required,
+            session_required=session_required,
+        )
+
+
+@dataclass
+class SerializedDvcPublisher:
+    repository: Path
+    evict_after_verify: bool = True
+
+    def publish(self, batch_root: Path) -> dict[str, Any]:
+        receipt = publish_batch(
+            self.repository,
+            batch_root,
+            evict_after_verify=self.evict_after_verify,
+        )
+        if not self.evict_after_verify:
+            validate_capture(batch_root)
+        return receipt
+
 
 BOT_MEMORY_TABLES = [
     "bot_memory_daily_cooldowns",
@@ -314,6 +651,7 @@ def write_validation_config(
     autostart: bool = True,
     calibration_only: bool = False,
     calibration_reference_conditions: bool = False,
+    console_enabled: bool | None = None,
 ) -> Path:
     route = validation_route or {}
     if not pool_tag and not route and not validation_route_manifest_path and autostart and not calibration_only:
@@ -329,13 +667,15 @@ def write_validation_config(
     text = base_config.read_text(encoding="utf-8") if base_config.exists() else ""
     text = text.rstrip() + "\n# Generated by tools.bot_ml.run_live_bot_validation for scenario-scoped validation.\n"
     text = upsert_trinity_config(text, "BotWorld.AutoStart", "1" if autostart else "0")
+    if console_enabled is not None:
+        text = upsert_trinity_config(text, "Console.Enable", "1" if console_enabled else "0")
     if pool_tag:
         text = upsert_trinity_config(text, "BotWorld.PoolTagFilter", f'"{pool_tag.replace(chr(34), "")}"')
     if calibration_only:
-        # Calibration requires an active autonomy controller, but its four
-        # clones must remain available for EnsureCalibrationPopulation rather
-        # than being consumed by the normal world cohort.
-        text = upsert_trinity_config(text, "BotWorld.AutoStart", "1")
+        # The runner starts the named calibration cohort after server admission.
+        # Suppress the default cohort so its route/profile cannot consume the
+        # canonical calibration target or deterministic support bots first.
+        text = upsert_trinity_config(text, "BotWorld.AutoStart", "0")
         text = upsert_trinity_config(text, "BotWorld.RuntimeProfile", '""')
         text = upsert_trinity_config(text, "BotWorld.TargetPopulation", "0")
         text = upsert_trinity_config(text, "BotWorld.ValidationRoute.Enable", "0")
@@ -645,6 +985,11 @@ def prepare_bot_pool_reset(
     return report
 
 
+def is_calibration_start_command(command_text: str) -> bool:
+    tokens = command_text.strip().split()
+    return len(tokens) >= 3 and tokens[:2] == [".botauto", "calibrate"] and "start" in tokens[2:4]
+
+
 def command_script(
     selector: str = "all",
     trace_limit: int = 20,
@@ -652,26 +997,40 @@ def command_script(
     stop: bool = False,
     exit_server: bool = True,
     combat_calibration: bool = False,
+    cohort_id: str = "",
+    calibration_mode: str = "single_target_300",
+    calibration_target_spec: str = "protection_paladin",
+    calibration_seed: int = 1,
+    calibration_only: bool = False,
 ) -> str:
+    if cohort_id and not re.fullmatch(r"[A-Za-z0-9._-]{1,64}", cohort_id):
+        raise ValueError("invalid cohort_id")
+    scope = f" {cohort_id}" if cohort_id else ""
     commands: list[str] = []
     if start:
-        commands.append(".botauto start")
+        commands.append(f".botauto start{scope}")
     if combat_calibration:
-        commands.append(".botauto calibrate start")
-    commands.extend(
-        [
-            ".botauto status",
-            f".botauto diagnose {selector}",
-            f".botauto trace {selector} {trace_limit}",
-            *([".botauto calibrate status"] if combat_calibration else []),
-            ".botauto combatlog",
-            ".botexp summary",
-        ]
-    )
+        commands.append(
+            f".botauto calibrate{scope} start {calibration_mode} "
+            f"{calibration_target_spec} {max(1, calibration_seed)}"
+        )
+    commands.append(f".botauto status{scope}")
+    if not calibration_only:
+        commands.extend(
+            [
+                f".botauto diagnose{scope} {selector}",
+                f".botauto trace{scope} {selector} {trace_limit}",
+            ]
+        )
     if combat_calibration:
-        commands.append(".botauto calibrate stop")
+        commands.append(f".botauto calibrate{scope} status")
+    commands.append(f".botauto combatlog{scope}")
+    if not cohort_id and not calibration_only:
+        commands.append(".botexp summary")
+    if combat_calibration:
+        commands.append(f".botauto calibrate{scope} stop")
     if stop:
-        commands.append(".botauto stop")
+        commands.append(f".botauto stop{scope}")
     if exit_server:
         commands.append("server shutdown force 0")
     return "\n".join(commands) + "\n"
@@ -800,58 +1159,66 @@ def enrich_combat_calibration_reference(
 
 
 def apply_calibration_only_acceptance(report: dict[str, Any]) -> dict[str, Any]:
-    """Evaluate telemetry integrity and configured live-performance floors."""
+    """Evaluate one explicit Phase 8 calibration window's transport integrity."""
     calibration = report.get("combat_calibration") or {}
-    completed = calibration.get("completed_windows") or {}
-    best_windows = calibration.get("best_windows") or {}
+    requested = report.get("requested_calibration") or {}
     rejections: list[str] = []
-    expected_classes = {2, 3, 7, 8}
-    live_acceptance = ((calibration.get("external_reference") or {}).get("live_acceptance") or {})
-    minimum_dps = live_acceptance.get("minimum_dps") or {}
-    performance_threshold_applied = bool(minimum_dps)
 
     if report.get("timed_out"):
         rejections.append("calibration_timed_out")
     if int(report.get("returncode") or 0) != 0:
         rejections.append("calibration_worldserver_failed")
-    for mode in ("single_target", "aoe"):
-        if int(completed.get(mode) or 0) < 1:
-            rejections.append(f"missing_{mode}_window")
-            continue
-        bots = best_windows.get(mode) or []
-        classes = {int(bot.get("class_id") or 0) for bot in bots}
-        if not expected_classes.issubset(classes):
-            rejections.append(f"incomplete_{mode}_cohort")
-        if any(float(bot.get("elapsed_seconds") or 0) < 100.0 for bot in bots):
-            rejections.append(f"short_{mode}_window")
-        if any(float(bot.get("dps") or 0) <= 0.0 for bot in bots):
-            rejections.append(f"zero_{mode}_dps")
-        if any(int(bot.get("attempts") or 0) <= 0 for bot in bots):
-            rejections.append(f"missing_{mode}_actions")
-        if any(not bool((bot.get("persistent_setup") or {}).get("ready")) for bot in bots):
-            rejections.append(f"incomplete_{mode}_persistent_setup")
-        if bool((calibration.get("normalization") or {}).get("reference_conditions")):
-            if any(not bool((bot.get("reference_setup") or {}).get("buffs_ready")) for bot in bots):
-                rejections.append(f"incomplete_{mode}_reference_buffs")
-            if any(not bool((bot.get("reference_setup") or {}).get("target_debuffs_ready")) for bot in bots):
-                rejections.append(f"incomplete_{mode}_target_debuffs")
-            if any(not bool((bot.get("reference_setup") or {}).get("heroism_window_observed")) for bot in bots):
-                rejections.append(f"incomplete_{mode}_heroism_window")
-        mode_thresholds = minimum_dps.get(mode) or {}
-        for bot in bots:
-            class_id = int(bot.get("class_id") or 0)
-            minimum = float(mode_thresholds.get(str(class_id)) or 0.0)
-            if minimum > 0.0 and float(bot.get("dps") or 0.0) < minimum:
-                rejections.append(f"below_{mode}_dps_class_{class_id}")
+    if not calibration:
+        rejections.append("missing_calibration_status")
+    if not bool(calibration.get("window_complete")):
+        rejections.append("calibration_window_incomplete")
+    if str(calibration.get("phase") or "") != "complete":
+        rejections.append("calibration_phase_incomplete")
+    if str(calibration.get("mode") or "") != str(requested.get("mode") or ""):
+        rejections.append("calibration_mode_mismatch")
+    if str(calibration.get("target_spec") or "") != str(requested.get("target_spec") or ""):
+        rejections.append("calibration_target_mismatch")
+    if int(calibration.get("seed") or 0) != int(requested.get("seed") or 0):
+        rejections.append("calibration_seed_mismatch")
+    if int(calibration.get("target_guid") or 0) <= 0:
+        rejections.append("missing_calibration_target")
+    if str(calibration.get("runtime_authority") or "") != "explicit_sql_rule_profiles":
+        rejections.append("invalid_runtime_authority")
+    if bool(calibration.get("generic_ml_runtime_authority")):
+        rejections.append("generic_ml_runtime_authority_enabled")
+    if not bool(calibration.get("reset_applied")) or not str(calibration.get("reset_id") or ""):
+        rejections.append("missing_calibration_reset")
+    if int(calibration.get("cross_window_event_count") or 0) != 0:
+        rejections.append("cross_window_contamination")
+    scored_seconds = float(calibration.get("scored_seconds") or 0.0)
+    if not 295.0 <= scored_seconds <= 305.0:
+        rejections.append("scored_window_outside_tolerance")
+    if int(calibration.get("scored_started_at_ms") or 0) <= 0:
+        rejections.append("missing_scored_start")
+    if int(calibration.get("scored_ended_at_ms") or 0) <= 0:
+        rejections.append("missing_scored_end")
+    if int(calibration.get("profile_generation") or 0) <= 0:
+        rejections.append("missing_profile_generation")
+    if not re.fullmatch(r"[0-9A-Fa-f]{64}", str(calibration.get("profile_content_hash") or "")):
+        rejections.append("missing_profile_content_hash")
+
+    bots = ((calibration.get("previous_window") or {}).get("bots") or [])
+    target_guid = int(calibration.get("target_guid") or 0)
+    target = next((bot for bot in bots if int(bot.get("guid") or 0) == target_guid), None)
+    if target is None:
+        rejections.append("missing_target_window_metrics")
+    elif int(target.get("attempts") or 0) <= 0:
+        rejections.append("missing_target_actions")
 
     rejections = list(dict.fromkeys(rejections))
     passed = not rejections
     report["calibration_acceptance"] = {
-        "schema": "bot_combat_calibration_acceptance_v1",
+        "schema": "bot_combat_calibration_acceptance_v2",
         "passed": passed,
-        "performance_threshold_applied": performance_threshold_applied,
-        "minimum_dps": minimum_dps,
-        "expected_class_ids": sorted(expected_classes),
+        "requested": requested,
+        "scored_window_seconds": scored_seconds,
+        "window_tolerance_seconds": 5,
+        "target_guid": target_guid,
         "rejections": rejections,
     }
     report["stages"] = [
@@ -865,6 +1232,78 @@ def apply_calibration_only_acceptance(report: dict[str, Any]) -> dict[str, Any]:
     report["completion_reason"] = "combat_calibration_complete" if passed else "combat_calibration_incomplete"
     report["acceptable_final_evidence"] = passed
     report["all_passed"] = passed
+    return report
+
+
+def attach_phase8_role_calibration(report: dict[str, Any]) -> dict[str, Any]:
+    """Attach canonical target normalization and independent role acceptance."""
+    requested = report.get("requested_calibration") or {}
+    calibration = report.get("combat_calibration") or {}
+    record: dict[str, Any] | None = None
+    try:
+        record, evaluation = evaluate_runtime_calibration(
+            calibration,
+            target_spec=str(requested.get("target_spec") or ""),
+            mode=str(requested.get("mode") or ""),
+        )
+        role_rejections = [str(value) for value in evaluation.get("failure_reasons") or []]
+    except (
+        Phase8CalibrationNormalizationError,
+        OSError,
+        json.JSONDecodeError,
+        KeyError,
+        TypeError,
+        ValueError,
+    ) as exc:
+        role_rejections = [f"normalization_error:{exc}"]
+        evaluation = {
+            "schema": "all_spec_role_calibration_evaluation_v1",
+            "mode": str(requested.get("mode") or ""),
+            "role": "",
+            "reference_ratio": 0.0,
+            "hard_floor_passed": False,
+            "optimization_target_met": False,
+            "checks": {"runtime_normalization_complete": False},
+            "failure_reasons": role_rejections,
+            "passed": False,
+            "record_sha256": None,
+            "policy_sha256": None,
+        }
+
+    role_passed = bool(evaluation.get("passed")) and not role_rejections
+    report["role_calibration_record"] = record
+    report["role_calibration_identity"] = dict(record.get("identity") or {}) if record else {}
+    report["role_calibration_evaluation"] = evaluation
+    report.setdefault("stages", []).append(
+        {
+            "stage": "role_calibration",
+            "passed": role_passed,
+            "missing": role_rejections,
+        }
+    )
+    transport = report.get("calibration_acceptance") or {}
+    transport_rejections = [str(value) for value in transport.get("rejections") or []]
+    combined_rejections = list(
+        dict.fromkeys(
+            [
+                *transport_rejections,
+                *(f"role_calibration:{value}" for value in role_rejections),
+            ]
+        )
+    )
+    transport["transport_passed"] = bool(transport.get("passed"))
+    transport["role_calibration_passed"] = role_passed
+    transport["passed"] = bool(transport["transport_passed"] and role_passed)
+    transport["rejections"] = combined_rejections
+    report["calibration_acceptance"] = transport
+    report["failure_labels"] = combined_rejections
+    report["failure_reason"] = combined_rejections[0] if combined_rejections else None
+    report["completion_reason"] = (
+        "combat_calibration_complete" if not combined_rejections
+        else "combat_calibration_role_gate_failed"
+    )
+    report["acceptable_final_evidence"] = not combined_rejections
+    report["all_passed"] = not combined_rejections
     return report
 
 
@@ -991,7 +1430,7 @@ def command_errors(output: str) -> list[dict[str, str]]:
 
 def should_observe_before_command(command_text: str) -> bool:
     return (
-        command_text == ".botauto status"
+        command_text.startswith(".botauto status")
         or command_text.startswith(".botauto diagnose")
         or command_text.startswith(".botauto trace")
         or command_text == ".botexp summary"
@@ -1032,16 +1471,17 @@ def poll_bot_status(
     execute_command: Callable[[str, int], tuple[str, int, bool]],
     deadline: float,
     *,
+    status_command: str = ".botauto status",
     poll_sec: float = 2.0,
     sleep: Callable[[float], None] = time.sleep,
 ) -> tuple[str, dict[str, Any] | None, int, bool]:
     """Poll a transport-neutral status command until it is ready or inactive."""
-    output_parts: list[str] = []
+    output_parts = BoundedOutputParts()
     last_status: dict[str, Any] | None = None
     while time.monotonic() < deadline:
         remaining = max(1, int(deadline - time.monotonic()))
-        output, returncode, timed_out = execute_command(".botauto status", remaining)
-        output_parts.append("$ .botauto status\n")
+        output, returncode, timed_out = execute_command(status_command, remaining)
+        output_parts.append(f"$ {status_command}\n")
         output_parts.append(output)
         last_status = bot_status_snapshot(output)
         if returncode != 0 or timed_out or last_status is None or not last_status["active"] or bot_status_state(output) is True:
@@ -1054,14 +1494,15 @@ def wait_for_soap_command_available(
     execute_command: Callable[[str, int], tuple[str, int, bool]],
     deadline: float,
     *,
+    status_command: str = ".botauto status",
     poll_sec: float = 2.0,
     sleep: Callable[[float], None] = time.sleep,
 ) -> str:
-    output_parts: list[str] = []
+    output_parts = BoundedOutputParts()
     while time.monotonic() < deadline:
         remaining = max(1, int(deadline - time.monotonic()))
-        output, returncode, timed_out = execute_command(".botauto status", remaining)
-        output_parts.extend(("$ .botauto status\n", output))
+        output, returncode, timed_out = execute_command(status_command, remaining)
+        output_parts.extend((f"$ {status_command}\n", output))
         if returncode == 0 and not timed_out and bot_status_snapshot(output) is not None:
             return "".join(output_parts)
         sleep(min(poll_sec, max(0.0, deadline - time.monotonic())))
@@ -1073,19 +1514,26 @@ def wait_for_bot_status_state(
     expected_active: bool,
     deadline: float,
     *,
+    status_command: str = ".botauto status",
     poll_sec: float = 2.0,
     sleep: Callable[[float], None] = time.sleep,
+    allow_zero_active: bool = False,
 ) -> tuple[str, dict[str, Any] | None]:
-    output_parts: list[str] = []
+    output_parts = BoundedOutputParts()
     last_status: dict[str, Any] | None = None
     while time.monotonic() < deadline:
         remaining = max(1, int(deadline - time.monotonic()))
-        output, returncode, timed_out = execute_command(".botauto status", remaining)
-        output_parts.extend(("$ .botauto status\n", output))
+        output, returncode, timed_out = execute_command(status_command, remaining)
+        output_parts.extend((f"$ {status_command}\n", output))
         status = bot_status_snapshot(output)
         if status is not None:
             last_status = status
-            ready = bot_status_state(output) is True
+            ready = bot_status_state(output) is True or (
+                allow_zero_active
+                and status["active"]
+                and int(status["target_bots"]) == 0
+                and int(status["active_bots"]) == 0
+            )
             inactive = not status["active"] and int(status["active_bots"]) == 0
             if returncode == 0 and not timed_out and ((expected_active and ready) or (not expected_active and inactive)):
                 return "".join(output_parts), status
@@ -2296,7 +2744,7 @@ def attach_stonecore_role_quality_audit(
     validation_context: dict[str, Any] | None,
     validation_route_manifest: dict[str, Any] | None,
 ) -> dict[str, Any]:
-    """Make Stonecore full-clear acceptance depend on the strict role audit."""
+    """Attach the role audit without overriding an authoritative Stonecore clear."""
     context = validation_context or {}
     manifest = validation_route_manifest or {}
     is_full_stonecore = (
@@ -2310,8 +2758,34 @@ def attach_stonecore_role_quality_audit(
 
     source = json.dumps(report, sort_keys=True, separators=(",", ":")).encode("utf-8")
     audit = build_audit(report, hashlib.sha256(source).hexdigest())
+    evidence = report.get("evidence") if isinstance(report.get("evidence"), dict) else {}
+    routes = [route for route in (manifest.get("routes") or []) if isinstance(route, dict)]
+    boss_routes = [route for route in routes if str(route.get("kind") or "") == "boss"]
+    strict = strict_manifest_evidence(evidence, manifest)
+    watchdog = report.get("watchdog_state") if isinstance(report.get("watchdog_state"), dict) else {}
+    authoritative_boss_clear = (
+        len(routes) == 14
+        and len(boss_routes) == 4
+        and bool(evidence.get("manifest_completion_evidence"))
+        and not strict["missing_terminal_route_nodes"]
+        and not strict["missing_boss_route_nodes"]
+        and not evidence.get("forbidden_completion_assists")
+        and int(report.get("returncode") or 0) == 0
+        and not bool(report.get("timed_out"))
+        and not watchdog.get("death_loop")
+        and not watchdog.get("repeated_decision_loop")
+        and str(report.get("completion_reason") or "") != "no_progress_watchdog"
+    )
+    audit["enforcement"] = "advisory" if authoritative_boss_clear else "required"
+    audit["authoritative_boss_clear"] = authoritative_boss_clear
     report["role_efficiency_audit"] = audit
     if audit.get("passed"):
+        return report
+
+    if authoritative_boss_clear:
+        report["role_quality_advisory_labels"] = [
+            f"role_quality:{label}" for label in (audit.get("failure_labels") or [])
+        ]
         return report
 
     labels = list(report.get("failure_labels") or [])
@@ -2378,6 +2852,8 @@ def live_validation_report(
         evidence,
         max_death_loops,
     )
+    if WORLDSERVER_OUTPUT_TRUNCATED_MARKER.strip() in output:
+        failure_labels.append("worldserver_output_truncated")
     scenario_reports = scenario_reports or {}
 
     stage_rows = []
@@ -2445,7 +2921,7 @@ def live_validation_report(
         validation_route_manifest=validation_route_manifest,
         completion=reason,
     )
-    return {
+    report = {
         "schema": "bot_live_validation_report_v1",
         "command": command or [],
         "duration_policy": duration_policy,
@@ -2465,6 +2941,8 @@ def live_validation_report(
         "combat_calibration": combat_calibration,
         "combat_analysis": combat_analysis,
         "scenario_reports": scenario_reports,
+        "validation_context": validation_context or {},
+        "validation_route_manifest": validation_route_manifest or {},
         "command_errors": errors,
         "evidence": evidence,
         "progress_counters": state["progress_counters"],
@@ -2477,11 +2955,12 @@ def live_validation_report(
         "failure_reason": effective_failure_labels[0] if effective_failure_labels else None,
         "stages": stage_rows,
         "passed": passed,
-        "failed": 0 if not rejections else len(stage_rows) - passed,
-        "all_passed": not rejections,
+        "failed": len(stage_rows) - passed,
+        "all_passed": all_passed,
         "runtime_ml_control": "offline_shadow_only",
         "control_eligible": False,
     }
+    return apply_acceptance_evaluation(report)
 
 
 def read_until_console_prompt(process: subprocess.Popen[str], deadline: float, required_text: str = "") -> str:
@@ -2514,13 +2993,13 @@ def bounded_console_deadline(deadline: float, max_wait_sec: int | float) -> floa
 
 
 def expected_command_output_marker(command_text: str) -> str:
-    if command_text == ".botauto status":
+    if command_text.startswith(".botauto status"):
         return '"target_bots"'
     if command_text.startswith(".botauto diagnose"):
         return '"diagnosis_schema_version"'
     if command_text.startswith(".botauto trace"):
         return '"trace_schema_version"'
-    if command_text == ".botauto combatlog":
+    if command_text.startswith(".botauto combatlog"):
         return '"action":"botauto_combatlog_complete"'
     if command_text == ".botexp summary":
         return '"duration_minutes"'
@@ -2533,8 +3012,11 @@ def run_worldserver(binary: Path, config: Path, timeout_sec: int, script: str, o
     command = [str(binary), "--config", str(config)]
     if observe_sec > 0:
         deadline = time.monotonic() + timeout_sec
-        explicit_start = any(line.strip() == ".botauto start" for line in script.splitlines())
-        calibration_start = any(line.strip() == ".botauto calibrate start" for line in script.splitlines())
+        explicit_start = any(line.strip().startswith(".botauto start") for line in script.splitlines())
+        calibration_start = any(
+            is_calibration_start_command(line)
+            for line in script.splitlines()
+        )
         observed_autostart = False
         output_prefix = ""
         process = subprocess.Popen(
@@ -2558,14 +3040,14 @@ def run_worldserver(binary: Path, config: Path, timeout_sec: int, script: str, o
                     observed_autostart = True
                 process.stdin.write(raw_command + "\n")
                 process.stdin.flush()
-                if command_text == ".botauto start":
+                if command_text.startswith(".botauto start"):
                     output_prefix += read_until_console_prompt(process, deadline)
                     if not waited_for_ready:
                         output_prefix += wait_for_bot_status_ready(process, deadline)
                         waited_for_ready = True
                     if not calibration_start:
                         time.sleep(observe_sec)
-                elif command_text == ".botauto calibrate start":
+                elif is_calibration_start_command(command_text):
                     output_prefix += read_until_console_prompt(
                         process,
                         bounded_console_deadline(deadline, 10),
@@ -2609,12 +3091,6 @@ def run_worldserver(binary: Path, config: Path, timeout_sec: int, script: str, o
         return output, 124, True, command
 
 
-def append_jsonl(path: Path, payload: dict[str, Any]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a", encoding="utf-8") as handle:
-        handle.write(json.dumps(payload, sort_keys=True, default=str) + "\n")
-
-
 def heartbeat_commands_from_script(script: str) -> tuple[list[str], list[str], list[str]]:
     startup: list[str] = []
     heartbeat: list[str] = []
@@ -2623,9 +3099,13 @@ def heartbeat_commands_from_script(script: str) -> tuple[list[str], list[str], l
         command_text = raw_command.strip()
         if not command_text:
             continue
-        if command_text in {".botauto start", ".botauto calibrate start"}:
+        if command_text.startswith(".botauto start") or (
+            is_calibration_start_command(command_text)
+        ):
             startup.append(command_text)
-        elif command_text in {".botauto combatlog", ".botauto calibrate stop", ".botauto stop"}:
+        elif command_text.startswith(".botauto combatlog") or (
+            command_text.startswith(".botauto calibrate") and command_text.endswith(" stop")
+        ) or command_text.startswith(".botauto stop"):
             cleanup.append(command_text)
         elif command_text.startswith("server shutdown") or command_text == "server exit":
             continue
@@ -2669,21 +3149,7 @@ def rolling_heartbeat_report(
         report["completion_reason"] = completion_reason_override
     report["heartbeat_index"] = heartbeat_index
     report["heartbeat_generated_at_unix"] = int(time.time())
-    heartbeat_path = output_dir / "heartbeats" / f"{heartbeat_index:06d}.json"
-    write_json(heartbeat_path, report)
-    append_jsonl(
-        output_dir / "heartbeat_events.jsonl",
-        {
-            "heartbeat_index": heartbeat_index,
-            "generated_at_unix": report["heartbeat_generated_at_unix"],
-            "completion_reason": report["completion_reason"],
-            "acceptable_final_evidence": report["acceptable_final_evidence"],
-            "all_passed": report["all_passed"],
-            "failure_labels": report["failure_labels"],
-            "progress_counters": report["progress_counters"],
-            "report": str(heartbeat_path),
-        },
-    )
+    append_heartbeat(output_dir, report)
     write_json(output_dir / "report.json", report)
     return report
 
@@ -2703,6 +3169,7 @@ def run_transport_completion_watchdog(
     no_progress_window_sec: int = DEFAULT_NO_PROGRESS_WINDOW_SEC,
     max_repeated_decisions: int = DEFAULT_MAX_REPEATED_DECISIONS,
     max_death_loops: int = DEFAULT_MAX_DEATH_LOOPS,
+    status_command: str = ".botauto status",
     sleep: Callable[[float], None] = time.sleep,
 ) -> tuple[str, int, bool, list[str]]:
     """Apply completion evidence watchdog policy to any command transport.
@@ -2712,7 +3179,7 @@ def run_transport_completion_watchdog(
     """
     deadline = time.monotonic() + timeout_sec
     startup_commands, heartbeat_commands, cleanup_commands = heartbeat_commands_from_script(script)
-    output_parts: list[str] = []
+    output_parts = BoundedOutputParts()
     heartbeat_index = 0
     last_progress_total = -1
     last_progress_at = time.monotonic()
@@ -2721,6 +3188,14 @@ def run_transport_completion_watchdog(
         remaining = max(1, int(deadline - time.monotonic()))
         output, returncode, timed_out = execute_command(command_text, remaining)
         output_parts.extend((f"$ {command_text}\n", output))
+        if returncode == 0 and is_calibration_start_command(command_text):
+            rejected = any(
+                row.get("action") == "botauto_calibrate_start"
+                and row.get("ok") is False
+                for row in parse_json_objects(output)
+            )
+            if rejected:
+                return 1, timed_out
         return returncode, timed_out
 
     def finish(returncode: int, timed_out: bool) -> tuple[str, int, bool, list[str]]:
@@ -2735,8 +3210,17 @@ def run_transport_completion_watchdog(
         returncode, timed_out = send(command_text)
         if returncode != 0 or timed_out:
             return finish(returncode, timed_out)
-    if startup_commands:
-        status_output, _status, returncode, timed_out = poll_bot_status(execute_command, deadline, sleep=sleep)
+    calibration_startup = any(
+        is_calibration_start_command(command_text)
+        for command_text in startup_commands
+    )
+    if startup_commands and not calibration_startup:
+        status_output, _status, returncode, timed_out = poll_bot_status(
+            execute_command,
+            deadline,
+            status_command=status_command,
+            sleep=sleep,
+        )
         output_parts.append(status_output)
         if returncode != 0 or timed_out:
             return finish(returncode, timed_out)
@@ -2761,13 +3245,14 @@ def run_transport_completion_watchdog(
             last_progress_total = progress_total
             last_progress_at = time.monotonic()
         no_progress_expired = time.monotonic() - last_progress_at >= no_progress_window_sec
-        moved_diagnoses = int(report.get("watchdog_state", {}).get("progress_counters", {}).get("moved_diagnoses") or 0)
         semantic_progress_plateau = (
             last_progress_total >= 0
             and progress_total <= last_progress_total
             and no_progress_expired
-            and moved_diagnoses <= 0
         )
+        calibration = report.get("combat_calibration") or {}
+        if bool(calibration.get("window_complete")):
+            return finish(0, False)
         if report["acceptable_final_evidence"] or report["completion_reason"] in {"repeated_decision_watchdog", "death_loop_watchdog", "machine_failure_predicate"}:
             return finish(0, False)
         if validation_route_manifest and semantic_progress_plateau:
@@ -2781,10 +3266,12 @@ def run_transport_completion_watchdog(
             report["acceptable_final_evidence"] = False
             if "failure_labels_present" not in report["final_evidence_rejections"]:
                 report["final_evidence_rejections"].append("failure_labels_present")
+            finalize_heartbeat(output_dir, report)
             write_json(output_dir / "report.json", report)
             return finish(0, False)
         if report["watchdog_state"].get("no_progress") and no_progress_expired:
             report["completion_reason"] = "no_progress_watchdog"
+            finalize_heartbeat(output_dir, report)
             write_json(output_dir / "report.json", report)
             return finish(0, False)
     return finish(124, True)
@@ -2809,7 +3296,7 @@ def run_worldserver_completion_watchdog(
     command = [str(binary), "--config", str(config)]
     deadline = time.monotonic() + timeout_sec
     startup_commands, heartbeat_commands, cleanup_commands = heartbeat_commands_from_script(script)
-    output_parts: list[str] = []
+    output_parts = BoundedOutputParts()
     heartbeat_index = 0
     last_progress_total = -1
     last_progress_at = time.monotonic()
@@ -2898,12 +3385,10 @@ def run_worldserver_completion_watchdog(
                 last_progress_total = progress_total
                 last_progress_at = time.monotonic()
             no_progress_expired = time.monotonic() - last_progress_at >= no_progress_window_sec
-            moved_diagnoses = int(report.get("watchdog_state", {}).get("progress_counters", {}).get("moved_diagnoses") or 0)
             semantic_progress_plateau = (
                 last_progress_total >= 0
                 and progress_total <= last_progress_total
                 and no_progress_expired
-                and moved_diagnoses <= 0
             )
             if not validation_route_manifest and route_segment_complete(report, validation_route):
                 supersede_transient_route_failures(report)
@@ -2914,6 +3399,7 @@ def run_worldserver_completion_watchdog(
                 if "segment_or_route_context_is_debug_only" not in rejections:
                     rejections.append("segment_or_route_context_is_debug_only")
                 report["final_evidence_rejections"] = rejections
+                finalize_heartbeat(output_dir, report)
                 write_json(output_dir / "report.json", report)
                 break
             if report["acceptable_final_evidence"]:
@@ -2931,10 +3417,12 @@ def run_worldserver_completion_watchdog(
                 report["acceptable_final_evidence"] = False
                 if "failure_labels_present" not in report["final_evidence_rejections"]:
                     report["final_evidence_rejections"].append("failure_labels_present")
+                finalize_heartbeat(output_dir, report)
                 write_json(output_dir / "report.json", report)
                 break
             if report["watchdog_state"].get("no_progress") and no_progress_expired:
                 report["completion_reason"] = "no_progress_watchdog"
+                finalize_heartbeat(output_dir, report)
                 write_json(output_dir / "report.json", report)
                 break
         timed_out = time.monotonic() >= deadline
@@ -3014,11 +3502,14 @@ def execute_soap_command(soap_url: str, username: str, password: str, command_te
 
 
 def run_soap_commands(soap_url: str, username: str, password: str, script: str, timeout_sec: int, observe_sec: int = 0) -> tuple[str, int, bool, list[str]]:
-    output_parts: list[str] = []
+    output_parts = BoundedOutputParts()
     command = ["SOAP", soap_url]
     deadline = time.monotonic() + timeout_sec
-    explicit_start = any(line.strip() == ".botauto start" for line in script.splitlines())
-    calibration_start = any(line.strip() == ".botauto calibrate start" for line in script.splitlines())
+    explicit_start = any(line.strip().startswith(".botauto start") for line in script.splitlines())
+    calibration_start = any(
+        is_calibration_start_command(line)
+        for line in script.splitlines()
+    )
     observed_autostart = False
     for raw_command in script.splitlines():
         command_text = raw_command.strip()
@@ -3036,10 +3527,10 @@ def run_soap_commands(soap_url: str, username: str, password: str, script: str, 
         output_parts.append(payload)
         if returncode != 0 or timed_out:
             return "\n".join(output_parts), returncode, timed_out, command
-        if observe_sec > 0 and command_text == ".botauto start" and not calibration_start:
+        if observe_sec > 0 and command_text.startswith(".botauto start") and not calibration_start:
             output_parts.append(f"$ sleep {observe_sec}")
             time.sleep(observe_sec)
-        elif observe_sec > 0 and command_text == ".botauto calibrate start":
+        elif observe_sec > 0 and is_calibration_start_command(command_text):
             output_parts.append(f"$ sleep {observe_sec}")
             time.sleep(observe_sec)
     return "\n".join(output_parts), 0, False, command
@@ -3076,6 +3567,16 @@ def route_sequence_child_command(args: argparse.Namespace, route: dict[str, Any]
         str(args.trace_limit),
         "--transport",
         args.transport,
+        "--cohort-id",
+        args.cohort_id,
+        "--session-attempt-index",
+        str(max(1, int(context.get("route_step") or 1))),
+        "--session-environment",
+        args.session_environment,
+        "--session-profile",
+        args.session_profile or scenario_id,
+        "--session-transition-timeout-sec",
+        str(args.session_transition_timeout_sec),
         "--observe-sec",
         str(args.observe_sec),
         "--validation-scenario-dir",
@@ -3123,6 +3624,12 @@ def route_sequence_child_command(args: argparse.Namespace, route: dict[str, Any]
         )
     if first_route and args.reset_bot_pool:
         command.append("--reset-bot-pool")
+    if args.publish_batch:
+        command.append("--publish-batch")
+    if args.retain_published_batch:
+        command.append("--retain-published-batch")
+    if first_route and args.reload_rotation_profiles:
+        command.append("--reload-rotation-profiles")
     for tag in args.bot_pool_tag:
         command.extend(["--bot-pool-tag", tag])
     if args.keep_bot_pool_position:
@@ -3249,6 +3756,253 @@ def run_route_sequence(args: argparse.Namespace, routes: list[dict[str, Any]]) -
     return 0 if report["all_passed"] else 1
 
 
+def attempt_evidence_envelope(
+    args: argparse.Namespace,
+    report: dict[str, Any],
+    validation_context: dict[str, Any],
+    validation_route_manifest: dict[str, Any],
+    session_lifecycle: dict[str, Any],
+) -> dict[str, Any]:
+    """Bind one closed attempt to the shared Phase 2 evidence identity."""
+    supplied: dict[str, Any] = {}
+    manifest_path = getattr(args, "evidence_identity_manifest", None)
+    if manifest_path:
+        try:
+            payload = json.loads(Path(manifest_path).read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise SystemExit(f"invalid --evidence-identity-manifest: {exc}") from exc
+        if not isinstance(payload, dict):
+            raise SystemExit("--evidence-identity-manifest must contain a JSON object")
+        if getattr(args, "calibration_only", False):
+            try:
+                payload = validate_phase8_evidence_manifest(
+                    payload,
+                    runtime_identity=session_lifecycle,
+                )
+            except ValueError as exc:
+                raise SystemExit(f"invalid Phase 8 evidence identity manifest: {exc}") from exc
+        supplied = payload
+    supplied_components = supplied.get("component_hashes") if isinstance(supplied.get("component_hashes"), dict) else {}
+    supplied_scopes = supplied.get("scope_ids") if isinstance(supplied.get("scope_ids"), dict) else {}
+    supplied_artifacts = supplied.get("artifact_hashes") if isinstance(supplied.get("artifact_hashes"), dict) else {}
+
+    def file_hash(path: Path, label: str) -> str:
+        return sha256_file(path) if path.is_file() else canonical_sha256({"missing": label, "path": str(path)})
+
+    profile_manifest = Path(trinity_config_string(args.config, "BotWorld.ProfileManifest", "dataset/bot_runtime_profiles/profiles.json"))
+    if not profile_manifest.is_absolute():
+        profile_manifest = REPO_ROOT / profile_manifest
+    target_catalog = REPO_ROOT / "experiments/configs/all_spec_targets_cata_p4_v1.json"
+    reference_catalog = REPO_ROOT / "experiments/configs/all_spec_references_cata_p4_v1.json"
+    policy = REPO_ROOT / "experiments/configs/bot_acceptance_policy_v1.json"
+    scenario_config = REPO_ROOT / "experiments/configs/validation_scenarios_cata_001.json"
+    phase9_matrix = REPO_ROOT / "experiments/configs/stonecore_phase9_pairwise_matrix_v1.json"
+    phase9_pair_policy = REPO_ROOT / "experiments/configs/stonecore_phase9_pair_policy_v1.json"
+    external_names = (
+        "database_snapshot_sha256",
+        "database_schema_sha256",
+        "server_epoch_sha256",
+        "profile_generation_sha256",
+    )
+    incomplete = [name for name in external_names if not re.fullmatch(r"[0-9a-f]{64}", str(supplied_components.get(name) or ""))]
+    process_session = canonical_sha256(
+        {
+            "transport": args.transport,
+            "command": report.get("command") or [],
+            "session_fingerprint": session_lifecycle.get("session_fingerprint") or "",
+            "server_pid": int(session_lifecycle.get("server_pid") or 0),
+            "generated_at_unix": int(report.get("generated_at_unix") or 0),
+        }
+    )
+    components = {
+        "git_commit_sha256": sha256_text(str(session_lifecycle.get("git_head") or git_head(REPO_ROOT))),
+        "git_dirty_state_sha256": str(session_lifecycle.get("git_dirty_state_sha256") or git_dirty_state_sha256(REPO_ROOT)),
+        "binary_sha256": sha256_file(args.worldserver.resolve()),
+        "config_sha256": sha256_file(Path(report.get("config") or args.config).resolve()),
+        "database_snapshot_sha256": str(supplied_components.get("database_snapshot_sha256") or canonical_sha256({"state": "unprobed_database_snapshot"})),
+        "database_schema_sha256": str(supplied_components.get("database_schema_sha256") or canonical_sha256({"state": "unprobed_database_schema"})),
+        "process_session_sha256": process_session,
+        "server_epoch_sha256": str(supplied_components.get("server_epoch_sha256") or canonical_sha256({"state": "unpublished_server_epoch", "process_session_sha256": process_session})),
+        "spec_catalog_sha256": file_hash(target_catalog, "spec_catalog"),
+        "provisioning_sha256": file_hash(args.validation_provisioning_config.resolve(), "provisioning"),
+        "gear_sha256": file_hash(args.gear_profiles.resolve(), "gear"),
+        "profile_generation_sha256": str(supplied_components.get("profile_generation_sha256") or canonical_sha256({"state": "unpublished_profile_generation", "profile_content_sha256": file_hash(profile_manifest, "profile_manifest")})),
+        "reference_sha256": file_hash(reference_catalog, "reference_catalog"),
+        "policy_sha256": file_hash(policy, "acceptance_policy"),
+        "scenario_sha256": canonical_sha256(
+            {
+                "validation_scenario_sha256": file_hash(scenario_config, "scenario_config"),
+                "phase9_matrix_sha256": file_hash(phase9_matrix, "phase9_pairwise_matrix"),
+                "phase9_pair_policy_sha256": file_hash(phase9_pair_policy, "phase9_pair_policy"),
+            }
+        ) if args.party_spec_target else file_hash(scenario_config, "scenario_config"),
+        "route_sha256": canonical_sha256(validation_route_manifest or validation_context or {"state": "no_route"}),
+    }
+    generated = int(report.get("generated_at_unix") or 0)
+    scenario_id = str(validation_context.get("scenario_id") or "unscoped")
+    exact_party_id = canonical_sha256(list(args.party_spec_target)) if args.party_spec_target else scenario_id
+    scope_defaults = {
+        "batch_id": str(args.output_dir.parent.resolve()),
+        "cohort_id": str(args.cohort_id) if args.transport == "session" else (",".join(sorted(str(value) for value in (args.bot_pool_tag or []))) or str(args.selector)),
+        "composition_id": exact_party_id,
+        "party_id": exact_party_id,
+        "instance_id": scenario_id,
+        "attempt_id": f"{args.output_dir.resolve()}:{generated}",
+        "repeat_id": str(validation_context.get("segment_id") or validation_context.get("route_node_id") or "full"),
+        "measurement_window_id": f"observe:{int(args.observe_sec or 0)}:timeout:{int(args.timeout_sec or 0)}",
+    }
+    scopes = {name: str(supplied_scopes.get(name) or value) for name, value in scope_defaults.items()}
+    raw_log = args.output_dir / "worldserver_output.log"
+    compact_payload = {key: value for key, value in report.items() if key not in {"evidence_envelope", "acceptance_facts", "acceptance_verification"}}
+    artifacts = {
+        "raw_artifact_sha256": file_hash(raw_log, "raw_worldserver_output"),
+        "compact_artifact_sha256": canonical_sha256(compact_payload),
+        "dvc_pointer_sha256": str(supplied_artifacts.get("dvc_pointer_sha256") or canonical_sha256({"state": "not_yet_published_to_dvc"})),
+        "remote_verification_receipt_sha256": str(supplied_artifacts.get("remote_verification_receipt_sha256") or canonical_sha256({"state": "not_yet_remote_verified"})),
+    }
+    envelope = build_evidence_envelope(
+        components,
+        scopes,
+        artifacts,
+        freshness="current" if not incomplete else "current_unpublished",
+    )
+    envelope["identity_complete"] = not incomplete
+    envelope["identity_incomplete_reasons"] = [f"missing_external_{name}" for name in incomplete]
+    envelope["identity_manifest"] = str(Path(manifest_path).resolve()) if manifest_path else ""
+    envelope["identity_manifest_sha256"] = (
+        str(supplied.get("manifest_sha256") or "") if manifest_path else ""
+    )
+    return envelope
+
+
+@dataclass
+class ReusableValidationServerOwner:
+    repository: Path
+    environment: str
+    session: Any
+    execute_command: CommandTransport
+    transition_timeout_sec: int
+    lifecycle: dict[str, Any] = field(default_factory=dict)
+
+    def wait_until_ready(self) -> str:
+        output_parts = BoundedOutputParts()
+        deadline = time.monotonic() + self.transition_timeout_sec
+        while time.monotonic() < deadline:
+            remaining = max(1, int(deadline - time.monotonic()))
+            output, returncode, timed_out = self.execute_command(
+                ".botauto cohorts", remaining
+            )
+            output_parts.extend(("$ .botauto cohorts\n", output))
+            payload = next(
+                (
+                    row
+                    for row in reversed(parse_json_objects(output))
+                    if row.get("action") == "botauto_cohorts"
+                ),
+                None,
+            )
+            if returncode == 0 and not timed_out and payload is not None:
+                server_pid = int(self.lifecycle.get("server_pid") or 0)
+                responder_pid = int(payload.get("server_process_id") or 0)
+                self.lifecycle["server_process_id"] = responder_pid
+                self.lifecycle["server_process_identity_verified"] = (
+                    server_pid > 0 and responder_pid == server_pid
+                )
+                if not self.lifecycle["server_process_identity_verified"]:
+                    raise RuntimeError(
+                        "worldserver command responder does not match the owned systemd process"
+                    )
+                self.lifecycle["server_epoch"] = int(payload.get("server_epoch") or 0)
+                self.lifecycle["max_active_cohorts"] = int(
+                    payload.get("max_active_cohorts") or 0
+                )
+                return "".join(output_parts)
+            time.sleep(min(2.0, max(0.0, deadline - time.monotonic())))
+        raise RuntimeError("timed out waiting for reusable worldserver ownership API")
+
+    def reload_rotation_profiles(self) -> dict[str, Any]:
+        output, returncode, timed_out = self.execute_command(
+            ".botauto rotations reload",
+            self.transition_timeout_sec,
+        )
+        payload = next(
+            (
+                row for row in reversed(parse_json_objects(output))
+                if row.get("action") == "botauto_rotations_reload"
+            ),
+            None,
+        )
+        if (
+            returncode != 0
+            or timed_out
+            or payload is None
+            or not bool(payload.get("ok"))
+        ):
+            raise RuntimeError("atomic rotation profile reload failed")
+        result = {
+            "generation": int(payload.get("active_generation") or 0),
+            "content_hash": str(payload.get("active_content_hash") or ""),
+        }
+        self.lifecycle["rotation_reload"] = result
+        return result
+
+    def provision_once(
+        self,
+        identity: Mapping[str, Any],
+        provision: Callable[[], Mapping[str, Any]],
+    ) -> dict[str, Any]:
+        epoch = int(self.lifecycle.get("server_epoch") or 0)
+        if epoch <= 0:
+            raise RuntimeError("server epoch is unavailable for provisioning")
+        state_root = Path("/tmp") / "trinity-cata-live-validation"
+        state_root.mkdir(parents=True, exist_ok=True)
+        state_name = canonical_sha256(
+            {
+                "repository": str(self.repository.resolve()),
+                "environment": self.environment,
+            }
+        )
+        state_path = state_root / f"{state_name}.json"
+        identity_sha256 = canonical_sha256(dict(identity))
+        if state_path.is_file():
+            try:
+                stored = json.loads(state_path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                stored = {}
+            if (
+                int(stored.get("server_epoch") or 0) == epoch
+                and stored.get("identity_sha256") == identity_sha256
+            ):
+                self.lifecycle["provisioning_reused"] = True
+                return dict(stored.get("result") or {})
+        result = dict(provision())
+        payload = {
+            "server_epoch": epoch,
+            "identity_sha256": identity_sha256,
+            "result": result,
+        }
+        temporary = state_path.with_suffix(".tmp")
+        temporary.write_text(
+            json.dumps(payload, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        temporary.replace(state_path)
+        self.lifecycle["provisioning_reused"] = False
+        return result
+
+    @contextlib.contextmanager
+    def owned(self):
+        with live_validation_lock(self.repository, self.environment):
+            action = ensure_healthy_matching_session(self.session)
+            self.lifecycle.update(self.session.metadata())
+            self.lifecycle["transport"] = "session"
+            self.lifecycle["server_action"] = action.action
+            self.lifecycle["server_pid"] = int(
+                action.status.properties.get("MainPID") or 0
+            )
+            yield self
+
+
 def run_reusable_validation_session(
     args: argparse.Namespace,
     script: str,
@@ -3259,20 +4013,30 @@ def run_reusable_validation_session(
     validation_route_manifest_path: Path | None,
     bot_pool_tags: list[str],
 ) -> tuple[str, int, bool, list[str], dict[str, Any]]:
+    del script
     if not args.soap_user or not args.soap_password:
         raise SystemExit("--soap-user and --soap-password are required with --transport session")
     profile_manifest = Path(trinity_config_string(args.config, "BotWorld.ProfileManifest", "dataset/bot_runtime_profiles/profiles.json"))
     if not profile_manifest.is_absolute():
         profile_manifest = REPO_ROOT / profile_manifest
+    phase9_matrix = REPO_ROOT / "experiments/configs/stonecore_phase9_pairwise_matrix_v1.json"
+    phase9_pair_policy = REPO_ROOT / "experiments/configs/stonecore_phase9_pair_policy_v1.json"
     fingerprint_paths = [
         path for path in (
             profile_manifest,
             args.validation_scenario_dir / "validation_routes.jsonl",
             args.validation_provisioning_config,
+            REPO_ROOT / "experiments/configs/phase8_dps_representatives_cata_p4_v1.json",
+            REPO_ROOT / "experiments/configs/wowsims_cata_p4_gear_profiles.json",
             args.gear_profiles,
-        ) if path.is_file()
+            REPO_ROOT / "dataset/validation_provisioning/manifest.json",
+            phase9_matrix if args.party_spec_target else None,
+            phase9_pair_policy if args.party_spec_target else None,
+        ) if path is not None and path.is_file()
     ]
     profile = args.session_profile or str(validation_context.get("scenario_id") or "")
+    if not profile:
+        raise SystemExit("--transport session requires --session-profile or --validation-scenario-id")
     if validation_route_manifest_path and profile_manifest.is_file():
         profiles = json.loads(profile_manifest.read_text(encoding="utf-8"))
         selected = next((row for row in profiles.get("profiles", []) if str(row.get("name") or "") == profile), None)
@@ -3281,66 +4045,246 @@ def run_reusable_validation_session(
         if not configured_manifest or Path(configured_manifest).resolve() != expected_manifest.resolve():
             raise SystemExit("session runtime profile route manifest does not match --validation-scenario-dir")
 
+    restart_components: dict[str, str] = {}
+    identity_payload: dict[str, Any] = {}
+    phase9_artifact_hashes: dict[str, str] = {}
+    if args.party_spec_target:
+        phase9_artifact_hashes = {
+            "target_catalog_sha256": sha256_file(args.all_spec_target_catalog.resolve()),
+            "pair_policy_sha256": sha256_file(phase9_pair_policy),
+            "pairwise_matrix_sha256": sha256_file(phase9_matrix),
+            "route_manifest_sha256": canonical_sha256(validation_route_manifest),
+        }
+    if args.evidence_identity_manifest:
+        try:
+            identity_payload = json.loads(args.evidence_identity_manifest.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise SystemExit(f"invalid --evidence-identity-manifest: {exc}") from exc
+        try:
+            if args.calibration_only:
+                identity_payload = validate_phase8_evidence_manifest(identity_payload)
+            elif args.party_spec_target:
+                identity_payload = validate_phase9_evidence_manifest(
+                    identity_payload,
+                    artifact_hashes=phase9_artifact_hashes,
+                )
+        except (TypeError, ValueError) as exc:
+            phase = "Phase 8" if args.calibration_only else "Phase 9"
+            raise SystemExit(f"invalid {phase} evidence identity manifest: {exc}") from exc
+        identity_components = identity_payload.get("component_hashes") if isinstance(identity_payload, dict) else {}
+        for name in ("database_snapshot_sha256", "database_schema_sha256"):
+            value = str((identity_components or {}).get(name) or "")
+            if not re.fullmatch(r"[0-9a-f]{64}", value):
+                raise SystemExit(f"--evidence-identity-manifest is missing valid {name}")
+            restart_components[name] = value
+
     session = build_session(
         REPO_ROOT, args.session_environment, args.worldserver, args.config,
         fingerprint_paths=fingerprint_paths,
+        restart_components=restart_components,
     )
     command = ["SESSION", session.unit_name, args.soap_url]
-    output_parts: list[str] = []
-    lifecycle: dict[str, Any] = {**session.metadata(), "transport": "session"}
+    output_parts = BoundedOutputParts()
 
     def execute(command_text: str, remaining: int) -> tuple[str, int, bool]:
         return execute_soap_command(args.soap_url, args.soap_user, args.soap_password, command_text, remaining)
 
-    with live_validation_lock(REPO_ROOT, args.session_environment):
-        action = ensure_healthy_matching_session(session)
-        lifecycle["server_action"] = action.action
-        lifecycle["server_pid"] = int(action.status.properties.get("MainPID") or 0)
-        deadline = time.monotonic() + args.session_transition_timeout_sec
+    attempt = ValidationAttempt(
+        cohort_id=args.cohort_id,
+        attempt_index=args.session_attempt_index,
+        profile=profile,
+        output_dir=args.output_dir,
+        timeout_sec=args.timeout_sec,
+        observe_sec=args.observe_sec,
+    )
+    scheduler = SerialValidationScheduler([attempt])
+    admitted = scheduler.admit_next()
+    if admitted is None:
+        raise RuntimeError("serial scheduler did not admit the validation attempt")
+    executor = CohortCommandExecutor(
+        execute,
+        admitted.cohort_id,
+        args.session_transition_timeout_sec,
+    )
+    watchdog = CohortAttemptWatchdog(executor, admitted)
+    owner = ReusableValidationServerOwner(
+        REPO_ROOT,
+        args.session_environment,
+        session,
+        execute,
+        args.session_transition_timeout_sec,
+    )
+    lifecycle = owner.lifecycle
+    lifecycle.update(
+        {
+            "cohort_id": admitted.cohort_id,
+            "attempt_index": admitted.attempt_index,
+            "profile": admitted.profile,
+            "admitted_at_unix": int(time.time()),
+            "scheduler_events": scheduler.events,
+            "exact_party_pool_tag": args.party_pool_tag if args.party_spec_target else "",
+            "exact_party_class_specs": list(args.party_spec_target),
+            "exact_party_sha256": canonical_sha256(list(args.party_spec_target)) if args.party_spec_target else "",
+        }
+    )
+
+    def checked(label: str, result: tuple[str, int, bool]) -> str:
+        output, returncode, timed_out = result
+        output_parts.extend((f"$ {label}\n", output))
+        if returncode != 0 or timed_out:
+            raise RuntimeError(f"cohort command failed: {label}")
+        return output
+
+    def cohort_registry() -> tuple[str, dict[str, Any]]:
+        output, returncode, timed_out = execute(
+            ".botauto cohorts",
+            args.session_transition_timeout_sec,
+        )
+        output_parts.extend(("$ .botauto cohorts\n", output))
+        payload = next(
+            (
+                row for row in reversed(parse_json_objects(output))
+                if row.get("action") == "botauto_cohorts"
+            ),
+            None,
+        )
+        if returncode != 0 or timed_out or payload is None:
+            raise RuntimeError("failed to read cohort registry")
+        return output, payload
+
+    with owner.owned():
+        output_parts.append(owner.wait_until_ready())
+        lifecycle["server_epoch"] = owner.lifecycle["server_epoch"]
+        if int(owner.lifecycle.get("max_active_cohorts") or 0) != 1:
+            raise RuntimeError("serial validation requires max_active_cohorts=1")
+        if args.reload_rotation_profiles:
+            owner.reload_rotation_profiles()
         try:
-            output_parts.append(wait_for_soap_command_available(execute, deadline))
-            stop_output, returncode, timed_out = execute(".botauto stop", args.session_transition_timeout_sec)
-            output_parts.extend(("$ .botauto stop\n", stop_output))
-            if returncode != 0 or timed_out:
-                raise RuntimeError("failed to stop BotWorld before reusable validation")
-            inactive_output, _ = wait_for_bot_status_state(execute, False, deadline)
+            create_output, create_returncode, create_timed_out = executor.create()
+            output_parts.extend((f"$ .botauto create {admitted.cohort_id}\n", create_output))
+            create_payloads = parse_json_objects(create_output)
+            already_exists = any(
+                row.get("failure_reason") == "cohort_already_exists"
+                for row in create_payloads
+            )
+            if (create_returncode != 0 or create_timed_out) and not already_exists:
+                raise RuntimeError("failed to create validation cohort")
+
+            checked(f".botauto stop {admitted.cohort_id}", executor.stop())
+            inactive_output, inactive_status = wait_for_bot_status_state(
+                executor.run,
+                False,
+                time.monotonic() + args.session_transition_timeout_sec,
+                status_command=executor.status_command,
+            )
             output_parts.append(inactive_output)
             lifecycle["inactive_before_preparation"] = True
-
-            preparation: dict[str, Any] = {}
-            if args.reset_bot_pool:
-                preparation["bot_pool_reset"] = prepare_bot_pool_reset(
-                    args.output_dir, args.config, bot_pool_tags, apply=True,
-                    reset_positions=not args.keep_bot_pool_position,
-                    reset_quests=not args.keep_bot_pool_quests,
-                    reset_memory=not args.keep_bot_pool_memory,
-                )
+            lifecycle["preparation"] = {
+                "provisioning_scope": "server_epoch",
+                "server_epoch": lifecycle["server_epoch"],
+                "bot_pool_reset": "cohort_prepare",
+                "profile": admitted.profile,
+            }
             if args.apply_validation_provisioning:
-                preparation["validation_provisioning"] = prepare_validation_provisioning(
-                    args.output_dir, args.validation_provisioning_config, args.gear_profiles, args.config, apply=True,
+                lifecycle["preparation"]["validation_provisioning"] = owner.provision_once(
+                    {
+                        "validation_provisioning_sha256": sha256_file(args.validation_provisioning_config.resolve()),
+                        "gear_profiles_sha256": sha256_file(args.gear_profiles.resolve()),
+                    },
+                    lambda: prepare_validation_provisioning(
+                        args.output_dir,
+                        args.validation_provisioning_config,
+                        args.gear_profiles,
+                        args.config,
+                        apply=True,
+                    ),
                 )
             if validation_route and int(validation_route.get("bot_start_map_id") or 0):
-                preparation["route_bot_start"] = prepare_route_bot_start(
-                    args.output_dir, validation_route, args.config, bot_pool_tags, apply=True,
-                )
-            lifecycle["preparation"] = preparation
+                if args.skip_route_bot_start_mutation:
+                    lifecycle["preparation"]["route_bot_start"] = {
+                        "schema": "bot_live_validation_route_start_v1",
+                        "applied": False,
+                        "reason": "preapplied_before_evidence_identity",
+                    }
+                else:
+                    lifecycle["preparation"]["route_bot_start"] = prepare_route_bot_start(
+                        args.output_dir, validation_route, args.config, bot_pool_tags, apply=True,
+                    )
 
-            start_command = f".botauto start {profile}" if profile else ".botauto start"
-            start_output, returncode, timed_out = execute(start_command, args.session_transition_timeout_sec)
-            output_parts.extend((f"$ {start_command}\n", start_output))
-            if returncode != 0 or timed_out:
-                raise RuntimeError("failed to start BotWorld reusable validation")
-            ready_output, _ = wait_for_bot_status_state(
-                execute, True, time.monotonic() + args.session_transition_timeout_sec,
+            if args.calibration_only:
+                lifecycle["preparation"]["profile"] = "calibration_only"
+                checked(
+                    f".botauto start {admitted.cohort_id}",
+                    executor.start(),
+                )
+            else:
+                prepare_suffix = ""
+                if args.party_spec_target:
+                    prepare_suffix = " " + " ".join((args.party_pool_tag, *args.party_spec_target))
+                checked(
+                    f".botauto prepare {admitted.cohort_id} {admitted.profile}{prepare_suffix}",
+                    executor.prepare(admitted.profile, args.party_pool_tag, args.party_spec_target),
+                )
+                checked(
+                    f".botauto start {admitted.cohort_id} {admitted.profile}",
+                    executor.start(admitted.profile),
+                )
+            ready_output, ready_status = wait_for_bot_status_state(
+                executor.run,
+                True,
+                time.monotonic() + args.session_transition_timeout_sec,
+                status_command=executor.status_command,
+                allow_zero_active=args.calibration_only,
             )
             output_parts.append(ready_output)
+            if ready_status is None:
+                raise RuntimeError("cohort status unavailable after start")
+            ready_payload = ready_status["payload"]
             lifecycle["active_after_start"] = True
+            lifecycle["runtime_attempt_id"] = int(ready_payload.get("attempt_id") or 0)
+            lifecycle["profile_generation"] = int(ready_payload.get("profile_generation") or 0)
+            lifecycle["profile_content_hash"] = str(ready_payload.get("profile_content_hash") or "")
+            lifecycle["lease_count_after_start"] = int(ready_payload.get("lease_count") or 0)
+            if args.party_spec_target:
+                observed_party = [str(value) for value in ready_payload.get("exact_party_class_specs") or []]
+                if observed_party != list(args.party_spec_target):
+                    raise RuntimeError(
+                        f"exact party mismatch after start: expected {args.party_spec_target}, observed {observed_party}"
+                    )
+                if str(ready_payload.get("pool_tag_filter") or "") != args.party_pool_tag:
+                    raise RuntimeError("exact party pool tag mismatch after start")
+                if int(ready_payload.get("lease_count") or 0) != 5 or int(ready_payload.get("bots") or 0) != 5:
+                    raise RuntimeError("exact party did not admit exactly five leased bots")
+                lifecycle["exact_party_verified"] = True
+            if args.evidence_identity_manifest and (args.calibration_only or args.party_spec_target):
+                try:
+                    if args.calibration_only:
+                        validate_phase8_evidence_manifest(
+                            identity_payload,
+                            runtime_identity=lifecycle,
+                        )
+                    else:
+                        validate_phase9_evidence_manifest(
+                            identity_payload,
+                            runtime_identity=lifecycle,
+                            artifact_hashes=phase9_artifact_hashes,
+                        )
+                except ValueError as exc:
+                    raise RuntimeError(
+                        f"live runtime identity mismatch: {exc}"
+                    ) from exc
 
-            watchdog_script = command_script(
-                selector=args.selector, trace_limit=args.trace_limit, start=False, stop=False, exit_server=False,
+            watchdog_script = watchdog.script(
+                args.selector,
+                args.trace_limit,
+                args.combat_calibration,
+                calibration_mode=args.calibration_mode,
+                calibration_target_spec=args.calibration_target_spec,
+                calibration_seed=args.calibration_seed,
+                calibration_only=args.calibration_only,
             )
             output, returncode, timed_out, _ = run_transport_completion_watchdog(
-                execute, command, args.timeout_sec, watchdog_script, args.output_dir,
+                executor.run, command, admitted.timeout_sec, watchdog_script, admitted.output_dir,
                 scenario_reports, validation_context,
                 validation_route_manifest=validation_route_manifest,
                 duration_policy=args.duration_policy,
@@ -3348,45 +4292,67 @@ def run_reusable_validation_session(
                 no_progress_window_sec=args.no_progress_window_sec,
                 max_repeated_decisions=args.max_repeated_decision_count,
                 max_death_loops=args.max_death_loop_count,
+                status_command=executor.status_command,
             )
             output_parts.append(output)
             lifecycle["watchdog_completed"] = True
             return "".join(output_parts), returncode, timed_out, command, lifecycle
         finally:
             try:
-                output_parts.append(wait_for_soap_command_available(
-                    execute, time.monotonic() + args.session_transition_timeout_sec,
-                ))
-                stop_output, returncode, timed_out = execute(".botauto stop", args.session_transition_timeout_sec)
-                output_parts.extend(("$ .botauto stop\n", stop_output))
-                if returncode != 0 or timed_out:
-                    raise RuntimeError("failed to stop BotWorld after reusable validation")
-                inactive_output, _ = wait_for_bot_status_state(
-                    execute, False, time.monotonic() + args.session_transition_timeout_sec,
+                checked(f".botauto stop {admitted.cohort_id}", executor.stop())
+                inactive_output, inactive_status = wait_for_bot_status_state(
+                    execute,
+                    False,
+                    time.monotonic() + args.session_transition_timeout_sec,
+                    status_command=executor.status_command,
                 )
                 output_parts.append(inactive_output)
+                if inactive_status is None:
+                    raise RuntimeError("cohort status unavailable after stop")
+                inactive_payload = inactive_status["payload"]
+                _, registry = cohort_registry()
+                cohort_row = next(
+                    (
+                        row for row in registry.get("cohorts", [])
+                        if row.get("cohort_id") == admitted.cohort_id
+                    ),
+                    None,
+                )
+                clean = (
+                    not inactive_status["active"]
+                    and int(inactive_status["active_bots"]) == 0
+                    and int(inactive_payload.get("lease_count") or 0) == 0
+                    and cohort_row is not None
+                    and not bool(cohort_row.get("active"))
+                    and int(cohort_row.get("lease_count") or 0) == 0
+                    and int(cohort_row.get("party_bot_count") or 0) == 0
+                )
+                if not clean:
+                    raise RuntimeError("cohort cleanup left active bots, leases, or party state")
+                scheduler.close_active()
+                lifecycle["scheduler_events"] = scheduler.events
+                lifecycle["closed_at_unix"] = int(time.time())
                 lifecycle["inactive_after_attempt"] = True
+                lifecycle["cleanup"] = {
+                    "active": False,
+                    "active_bots": 0,
+                    "lease_count": 0,
+                    "party_bot_count": 0,
+                    "server_epoch": int(registry.get("server_epoch") or 0),
+                }
+                if lifecycle["cleanup"]["server_epoch"] != lifecycle["server_epoch"]:
+                    raise RuntimeError("server epoch changed during validation attempt")
             except Exception as exc:
                 lifecycle["inactive_after_attempt"] = False
                 lifecycle["cleanup_failure"] = str(exc)
-                report_path = args.output_dir / "report.json"
-                if report_path.is_file():
-                    try:
-                        failed_report = json.loads(report_path.read_text(encoding="utf-8"))
-                    except json.JSONDecodeError:
-                        failed_report = {}
-                    failed_report["acceptable_final_evidence"] = False
-                    failed_report["all_passed"] = False
-                    failed_report["failure_reason"] = "session_cleanup_failed"
-                    labels = list(failed_report.get("failure_labels") or [])
-                    if "session_cleanup_failed" not in labels:
-                        labels.append("session_cleanup_failed")
-                    failed_report["failure_labels"] = labels
-                    failed_report["session"] = lifecycle
-                    write_json(report_path, failed_report)
                 stop_session(session)
                 raise
             finally:
+                lifecycle["commands"] = executor.commands
+                lifecycle["global_lifecycle_command_count"] = sum(
+                    command_text in {".botauto start", ".botauto stop", ".botauto status"}
+                    for command_text in executor.commands
+                )
                 write_json(args.output_dir / "session.json", lifecycle)
 
 
@@ -3409,20 +4375,35 @@ def main() -> int:
     parser.add_argument("--combat-calibration", action="store_true", help="Run isolated DPS/TPS training-dummy clones beside the validation cohort and attach their status to the report.")
     parser.add_argument("--calibration-only", action="store_true", help="Start an empty autonomy controller and run only the isolated combat-calibration clones, without a route/world cohort.")
     parser.add_argument("--calibration-reference-conditions", action="store_true", help="For calibration-only runs, apply real full-raid reference auras, target debuffs, and class-appropriate flasks without changing damage coefficients.")
+    parser.add_argument("--calibration-mode", choices=["single_target_300", "aoe_300", "tank_threat_300", "healer_controlled_damage_300"], default="single_target_300")
+    parser.add_argument("--calibration-target-spec", default="protection_paladin", help="Canonical all-spec target selected from the calibration candidate pool.")
+    parser.add_argument("--calibration-seed", type=int, default=1, help="Deterministic calibration target/support selection seed.")
     parser.add_argument("--transport", choices=["process", "soap", "session"], default="process")
     parser.add_argument("--soap-url", default="http://127.0.0.1:7878/")
     parser.add_argument("--soap-user", default=os.environ.get("TRINITY_SOAP_USER"))
     parser.add_argument("--soap-password", default=os.environ.get("TRINITY_SOAP_PASSWORD"))
     parser.add_argument("--session-environment", default="default", help="Stable identity for the shared validation server and live-attempt lock.")
+    parser.add_argument("--session-runtime-dir", type=Path, help="Stable directory for the shared session config and route manifest across serial attempts.")
     parser.add_argument("--session-profile", default="", help="Runtime profile selected by .botauto start in reusable session mode; defaults to the scenario ID.")
+    parser.add_argument("--cohort-id", default="live-validation", help="Explicit cohort identity used by every reusable-session command.")
+    parser.add_argument("--session-attempt-index", type=int, default=1, help="Immutable scheduler attempt index for reusable-session evidence.")
+    parser.add_argument("--party-spec-target", action="append", default=[], help="Ordered exact-party class/spec target. Supply exactly five in tank, healer, then sorted DPS order.")
+    parser.add_argument("--party-pool-tag", default="all_spec_candidate_pool", help="Immutable candidate-pool tag used with --party-spec-target.")
+    parser.add_argument("--all-spec-target-catalog", type=Path, default=Path("experiments/configs/all_spec_targets_cata_p4_v1.json"), help="Canonical target catalog used to validate an exact party before live admission.")
     parser.add_argument("--session-transition-timeout-sec", type=int, default=180, help="Bound for reusable-session stop/start state transitions.")
+    parser.add_argument("--publish-batch", action="store_true", help="Capture, DVC-push, remotely verify, and target-evict the closed reusable-session batch.")
+    parser.add_argument("--retain-published-batch", action="store_true", help="Keep raw and compact batch files locally after verified publication.")
+    parser.add_argument("--reload-rotation-profiles", action="store_true", help="Ask the server owner to atomically reload DB-only rotation tuning before admission.")
+    parser.add_argument("--evidence-identity-manifest", type=Path, help="Canonical Phase 2 component hashes and scope IDs; DB/schema/epoch/profile generation hashes are required for certifying acceptance.")
     parser.add_argument("--observe-sec", type=int, default=None, help="Sleep after .botauto start before collecting diagnostics. Defaults to 0 seconds for smoke checks and 300 seconds for boss-route validations.")
     parser.add_argument("--reset-bot-pool", action="store_true", help="Before validation, reset volatile state for enabled bot-pool rows matching --bot-pool-tag.")
     parser.add_argument("--bot-pool-tag", action="append", default=[], help="Experiment tag substring for --reset-bot-pool. Defaults to test_account when omitted.")
     parser.add_argument("--keep-bot-pool-position", action="store_true", help="Do not move reset bot-pool characters back to race/class start positions.")
     parser.add_argument("--keep-bot-pool-quests", action="store_true", help="Do not clear quest/aura/cooldown state for reset bot-pool characters.")
     parser.add_argument("--keep-bot-pool-memory", action="store_true", help="Do not clear persistent bot memory tables for reset bot-pool characters.")
+    parser.add_argument("--skip-route-bot-start-mutation", action="store_true", help="Do not apply route-start character SQL after an evidence identity has been captured.")
     parser.add_argument("--apply-validation-provisioning", action="store_true", help="Apply deterministic Stonecore/BWD validation account and character SQL before running diagnostics.")
+    parser.add_argument("--prepare-only", action="store_true", help="Apply requested deterministic provisioning and route-start state, write a report, and exit without launching a worldserver.")
     parser.add_argument("--validation-provisioning-config", type=Path, default=Path("experiments/configs/validation_provisioning_cata_001.json"))
     parser.add_argument("--gear-profiles", type=Path, default=Path("dataset/validation_gear_profiles/profiles.json"))
     parser.add_argument("--scenario-report-dir", type=Path, help="Optional directory or JSON file containing scenario live reports such as stonecore_5n.json and blackwing_descent_10n.json.")
@@ -3444,6 +4425,42 @@ def main() -> int:
         args.combat_calibration = True
     if args.calibration_reference_conditions and not args.calibration_only:
         raise SystemExit("--calibration-reference-conditions requires --calibration-only")
+    if args.session_runtime_dir and args.transport != "session":
+        raise SystemExit("--session-runtime-dir requires --transport session")
+    if args.prepare_only:
+        if args.transport == "session" or args.input_log or args.dry_run:
+            raise SystemExit("--prepare-only requires a live non-session preparation run")
+        if not args.apply_validation_provisioning:
+            raise SystemExit("--prepare-only requires --apply-validation-provisioning")
+    if args.skip_route_bot_start_mutation and (
+        args.transport != "session" or not args.evidence_identity_manifest
+    ):
+        raise SystemExit("--skip-route-bot-start-mutation requires session transport and an evidence identity manifest")
+
+    exact_party_specs = [str(value) for value in args.party_spec_target]
+    if exact_party_specs:
+        if args.transport != "session":
+            raise SystemExit("--party-spec-target requires --transport session")
+        if args.validation_scenario_id != "stonecore_5n":
+            raise SystemExit("--party-spec-target requires --validation-scenario-id stonecore_5n")
+        if len(exact_party_specs) != 5 or len(set(exact_party_specs)) != 5:
+            raise SystemExit("--party-spec-target requires exactly five unique targets")
+        if not args.party_pool_tag:
+            raise SystemExit("--party-pool-tag must be non-empty with --party-spec-target")
+        target_catalog_path = args.all_spec_target_catalog
+        if not target_catalog_path.is_absolute():
+            target_catalog_path = REPO_ROOT / target_catalog_path
+        target_catalog = json.loads(target_catalog_path.read_text(encoding="utf-8"))
+        target_roles = {
+            str(row.get("spec_target_id") or ""): str(row.get("role") or "")
+            for row in target_catalog.get("targets") or []
+        }
+        if any(target not in target_roles for target in exact_party_specs):
+            raise SystemExit("--party-spec-target contains an unknown canonical target")
+        if [target_roles[target] for target in exact_party_specs] != ["tank", "healer", "dps", "dps", "dps"]:
+            raise SystemExit("--party-spec-target order must be tank, healer, then three DPS")
+        if exact_party_specs[2:] != sorted(exact_party_specs[2:]):
+            raise SystemExit("--party-spec-target DPS targets must be canonically sorted")
 
     if args.duration_policy == "completion-watchdog":
         args.timeout_sec = args.timeout_sec if args.timeout_sec is not None else DEFAULT_BOSS_ROUTE_TIMEOUT_SEC
@@ -3455,11 +4472,13 @@ def main() -> int:
         args.timeout_sec = args.timeout_sec if args.timeout_sec is not None else DEFAULT_LIVE_VALIDATION_TIMEOUT_SEC
         args.observe_sec = args.observe_sec if args.observe_sec is not None else 0
 
-    output_dir_was_nonempty = args.output_dir.exists() and any(args.output_dir.iterdir())
+    output_dir_was_nonempty = args.output_dir.exists() and any(
+        path.name != "runner.log" for path in args.output_dir.iterdir()
+    )
     if args.transport == "session" and output_dir_was_nonempty and not args.dry_run and not args.input_log:
         raise SystemExit("--transport session requires a new or empty --output-dir")
     args.output_dir.mkdir(parents=True, exist_ok=True)
-    bot_pool_tags = args.bot_pool_tag or ["test_account"]
+    bot_pool_tags = [args.party_pool_tag] if exact_party_specs else (args.bot_pool_tag or ["test_account"])
 
     if args.validation_route_sequence:
         if not args.validation_scenario_id:
@@ -3492,6 +4511,11 @@ def main() -> int:
             return 0
         return run_route_sequence(args, sequence_routes)
 
+    session_runtime_dir = (
+        args.session_runtime_dir.resolve()
+        if args.transport == "session" and args.session_runtime_dir
+        else args.output_dir
+    )
     validation_context = validation_context_from_args(args)
     validation_route = load_validation_route(args.validation_scenario_dir, validation_context)
     if validation_route:
@@ -3502,31 +4526,45 @@ def main() -> int:
         if not args.validation_scenario_id:
             raise SystemExit("--validation-route-manifest requires --validation-scenario-id")
         manifest_routes = load_validation_routes_for_scenario(args.validation_scenario_dir, args.validation_scenario_id)
-        validation_route_manifest_path, validation_route_manifest = write_validation_route_manifest(args.output_dir, args.validation_scenario_id, manifest_routes)
+        validation_route_manifest_path, validation_route_manifest = write_validation_route_manifest(
+            session_runtime_dir,
+            args.validation_scenario_id,
+            manifest_routes,
+        )
         if not validation_route and manifest_routes:
             validation_route = manifest_routes[0]
-    pool_tag_filter = str(validation_context.get("scenario_id") or (bot_pool_tags[0] if bot_pool_tags else ""))
+    pool_tag_filter = str(
+        args.party_pool_tag
+        if exact_party_specs
+        else (validation_context.get("scenario_id") or (bot_pool_tags[0] if bot_pool_tags else ""))
+    )
     effective_config = args.config
-    if args.transport == "process" and not args.input_log:
+    if args.transport in {"process", "session"} and not args.input_log:
         effective_config = write_validation_config(
             args.config,
-            args.output_dir,
+            session_runtime_dir,
             pool_tag_filter,
             validation_route,
             validation_route_manifest_path,
-            autostart=True if args.calibration_only else not args.no_start,
+            autostart=False if args.transport == "session" else (True if args.calibration_only else not args.no_start),
             calibration_only=args.calibration_only,
             calibration_reference_conditions=args.calibration_reference_conditions,
+            console_enabled=False if args.transport == "session" else None,
         )
     config_autostart = trinity_config_bool(effective_config, "BotWorld.AutoStart", False)
     send_start_command = not args.no_start and (args.force_start_command or not config_autostart)
     script = command_script(
         selector=args.selector,
         trace_limit=args.trace_limit,
-        start=send_start_command,
-        stop=args.stop,
+        start=send_start_command if args.transport != "session" else False,
+        stop=args.stop if args.transport != "session" else False,
         exit_server=args.transport == "process",
         combat_calibration=args.combat_calibration,
+        cohort_id=args.cohort_id if args.transport == "session" else "",
+        calibration_mode=args.calibration_mode,
+        calibration_target_spec=args.calibration_target_spec,
+        calibration_seed=args.calibration_seed,
+        calibration_only=args.calibration_only,
     )
     (args.output_dir / "commands.txt").write_text(script, encoding="utf-8")
     preparation: dict[str, Any] = {}
@@ -3555,13 +4593,34 @@ def main() -> int:
                 preparation["validation_provisioning"],
             )
     if validation_route and int(validation_route.get("bot_start_map_id") or 0):
-        preparation["route_bot_start"] = prepare_route_bot_start(
-            args.output_dir,
-            validation_route,
-            args.config,
-            bot_pool_tags,
-            apply=not args.dry_run and args.transport != "session",
-        )
+        if args.skip_route_bot_start_mutation:
+            preparation["route_bot_start"] = {
+                "schema": "bot_live_validation_route_start_v1",
+                "applied": False,
+                "reason": "preapplied_before_evidence_identity",
+            }
+        else:
+            preparation["route_bot_start"] = prepare_route_bot_start(
+                args.output_dir,
+                validation_route,
+                args.config,
+                bot_pool_tags,
+                apply=not args.dry_run and args.transport != "session",
+            )
+
+    if args.prepare_only:
+        report = {
+            "schema": "bot_live_validation_preparation_v1",
+            "prepared": True,
+            "worldserver_started": False,
+            "validation_context": validation_context,
+            "validation_route_manifest": validation_route_manifest,
+            "pool_tags": bot_pool_tags,
+            "preparation": preparation,
+        }
+        write_json(args.output_dir / "report.json", report)
+        print(json.dumps(report, indent=2, sort_keys=True))
+        return 0
 
     if args.dry_run:
         report = {
@@ -3572,6 +4631,9 @@ def main() -> int:
             "config": str(effective_config),
             "base_config": str(args.config),
             "pool_tag_filter": pool_tag_filter,
+            "exact_party_pool_tag": args.party_pool_tag if exact_party_specs else "",
+            "exact_party_class_specs": exact_party_specs,
+            "exact_party_sha256": canonical_sha256(exact_party_specs) if exact_party_specs else "",
             "validation_route": validation_route,
             "validation_route_manifest": validation_route_manifest,
             "validation_route_manifest_path": str(validation_route_manifest_path or ""),
@@ -3635,8 +4697,10 @@ def main() -> int:
             else:
                 output, returncode, timed_out, command = run_soap_commands(args.soap_url, args.soap_user, args.soap_password, script, args.timeout_sec, args.observe_sec)
         elif args.transport == "session":
+            session_args = argparse.Namespace(**vars(args))
+            session_args.config = effective_config
             output, returncode, timed_out, command, session_lifecycle = run_reusable_validation_session(
-                args,
+                session_args,
                 script,
                 scenario_reports,
                 validation_context,
@@ -3708,12 +4772,20 @@ def main() -> int:
     report["config"] = str(effective_config)
     report["base_config"] = str(args.config)
     report["pool_tag_filter"] = pool_tag_filter
+    report["exact_party_pool_tag"] = args.party_pool_tag if exact_party_specs else ""
+    report["exact_party_class_specs"] = exact_party_specs
+    report["exact_party_sha256"] = canonical_sha256(exact_party_specs) if exact_party_specs else ""
     report["validation_route"] = validation_route
     report["validation_route_manifest"] = validation_route_manifest
     report["validation_route_manifest_path"] = str(validation_route_manifest_path or "")
     report["start_command"] = send_start_command
     report["calibration_only"] = args.calibration_only
     report["calibration_reference_conditions"] = args.calibration_reference_conditions
+    report["requested_calibration"] = {
+        "mode": args.calibration_mode,
+        "target_spec": args.calibration_target_spec,
+        "seed": max(1, args.calibration_seed),
+    }
     report["preparation"] = preparation
     if args.transport == "session":
         report["session"] = session_lifecycle
@@ -3740,8 +4812,58 @@ def main() -> int:
     attach_stonecore_role_quality_audit(report, validation_context, validation_route_manifest)
     if args.calibration_only:
         apply_calibration_only_acceptance(report)
-    write_json(args.output_dir / "report.json", report)
-    print(json.dumps(report, indent=2, sort_keys=True))
+        attach_phase8_role_calibration(report)
+    report["evidence_envelope"] = attempt_evidence_envelope(
+        args,
+        report,
+        validation_context,
+        validation_route_manifest,
+        session_lifecycle,
+    )
+    AcceptanceRecomputer().recompute(
+        report,
+        identity_required=True,
+        session_required=args.transport == "session",
+    )
+    if args.transport == "session":
+        attempt = ValidationAttempt(
+            cohort_id=args.cohort_id,
+            attempt_index=args.session_attempt_index,
+            profile=args.session_profile or str(validation_context.get("scenario_id") or ""),
+            output_dir=args.output_dir,
+            timeout_sec=args.timeout_sec,
+            observe_sec=args.observe_sec,
+        )
+        capture_manifest = ImmutableCaptureWriter(REPO_ROOT).capture(
+            attempt,
+            report,
+            output,
+            {
+                "evidence_envelope": report["evidence_envelope"],
+                "session": session_lifecycle,
+                "validation_context": validation_context,
+                "validation_route_manifest": validation_route_manifest,
+            },
+        )
+        report["batch_capture"] = capture_manifest
+        if args.publish_batch:
+            report["batch_publication"] = SerializedDvcPublisher(
+                REPO_ROOT,
+                evict_after_verify=not args.retain_published_batch,
+            ).publish(args.output_dir / "batch")
+    stored_report = report
+    if args.transport == "session" and args.publish_batch:
+        stored_report = compact_published_report(report)
+        for name in (
+            "combat_analysis.json",
+            "combat_log.json",
+            "heartbeat_events.jsonl",
+            "latest.json",
+            "worldserver_output.log",
+        ):
+            (args.output_dir / name).unlink(missing_ok=True)
+    write_json(args.output_dir / "report.json", stored_report)
+    print(json.dumps(stored_report, indent=2, sort_keys=True))
     segment_success = route_segment_complete(report, validation_route)
     full_success = bool(report.get("acceptable_final_evidence")) and bool(report.get("all_passed"))
     return 0 if returncode == 0 and not timed_out and (segment_success or full_success) else 1

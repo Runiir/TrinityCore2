@@ -22,6 +22,7 @@ struct BotActionProfileSpell
     float MovementWeight = 0.0f;
     float ProgressionWeight = 0.0f;
     float ProfessionWeight = 0.0f;
+    uint16 SortOrder = 0;
     uint8 PriorityBucket = 5;
     uint8 MinEnemies = 1;
     uint8 MaxEnemies = 0;
@@ -59,6 +60,22 @@ struct BotActionProfileSpell
     bool RequiresStationary = false;
     bool RequiresMoving = false;
     uint8 RequiredSelfAuraStacks = 0;
+    uint8 MaxSelfAuraStacks = 0;
+    uint32 MinSelfAuraRemainingMs = 0;
+    uint32 MaxSelfAuraRemainingMs = 0;
+    uint32 RequiredOwnedTargetAura = 0;
+    uint32 ForbiddenOwnedTargetAura = 0;
+    uint8 MinComboPoints = 0;
+    uint8 MaxComboPoints = 0;
+    uint8 MinReadyRunes = 0;
+    uint8 RequiredShapeshiftForm = 0;
+    bool RequiresPet = false;
+    bool ForbidsPet = false;
+    uint32 RequiredMainHandEnchant = 0;
+    uint32 RequiredOffHandEnchant = 0;
+    std::string CooldownGroup;
+    uint32 TargetCreatureTypeMask = 0;
+    bool RequiresGroundTarget = false;
 };
 
 struct BotActionCandidate
@@ -92,6 +109,8 @@ struct BotClassSpecActionProfile
     float MinRange = 0.0f;
     float MaxRange = 0.0f;
     std::string ProfileSource = "missing_db_rotation_profile";
+    uint64 SnapshotGeneration = 0;
+    std::string SnapshotContentHash;
     bool MissingProfile = true;
     std::vector<BotActionProfileSpell> Spells;
 
@@ -106,7 +125,10 @@ public:
     static std::vector<BotActionCandidate> BuildCandidates(Player const* bot, Unit const* target, BotClassSpecActionProfile const& profile);
     static std::string CandidateMaskJson(std::vector<BotActionCandidate> const& candidates, BotClassSpecActionProfile const& profile, char const* roleGoal, char const* saturationJson, char const* profileSourceOverride = nullptr);
     static std::string ChosenActionJson(BotActionCandidate const* candidate, BotClassSpecActionProfile const& profile, char const* roleGoal, char const* balanceMode, float confidence);
+    static uint64 ActiveDbGeneration();
+    static std::string ActiveDbContentHash();
     static std::string ReloadDbProfiles();
+    static std::string RollbackDbProfiles();
     static std::string DbProfilesJson();
     static std::string DbProfileDumpJson(uint8 classId, std::string const& specTag, std::string const& role);
 };

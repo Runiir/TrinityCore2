@@ -1,0 +1,168 @@
+{
+  "schema": "all_spec_phase9_rerun148_diagnosis_v1",
+  "diagnosis_sha256": "057da21eb255726362a37d118b2734924607585eccd83b9b59f786a04923fea9",
+  "hash_scope": "canonical_json_without_diagnosis_sha256",
+  "source_attempt": {
+    "attempt_label": "rerun148_canary_2",
+    "attempt_id": "phase9_serial_02_stonecore_phase9_006_6893daf98698",
+    "batch_id": "phase9-serial-canary-rerun148-2",
+    "batch_identity_sha256": "58143b248db6f62375a6a067fad98fb544e26a142ee56eb9861cba66d83927b3",
+    "composition_id": "stonecore_phase9_006_6893daf98698",
+    "party_sha256": "524b94c794897f5111bdae0a5e45ba31a31ebb8596d811a3dd8c1caff95bd16a",
+    "party": [
+      "feral_druid_tank",
+      "discipline_priest",
+      "fury_warrior",
+      "marksmanship_hunter",
+      "retribution_paladin"
+    ],
+    "binary_sha256": "a906982734eebd1e4e5d64a7e6cd04e545175be6d2c557696ebf36c75aa44619",
+    "server_process_id": 3298701,
+    "server_epoch": 14651835717605182,
+    "session_fingerprint": "0605e71cc047ae29478bfb850ea9c6dfa64ba09e08d0d8e6e0c200f7f4a1f811",
+    "profile_generation": 1,
+    "profile_content_hash": "35a587f05d8781d72c62576a6f35392a69e01d5978429f65429ad5b9ed096a22",
+    "evidence_identity_manifest_sha256": "b492c4fcf16cbeea21939d3514af4fc1e6823919a608654da7d3bd38765072f8",
+    "run_plan_sha256": "0d57d4700fbc8d6796e5bd49a0cf38a3f92036f05aa17bb723c1197b405e8515",
+    "max_active_cohorts": 1
+  },
+  "capture_and_closeout": {
+    "capture_identity_sha256": "58143b248db6f62375a6a067fad98fb544e26a142ee56eb9861cba66d83927b3",
+    "raw_part_count": 1,
+    "raw_event_row_count": 268,
+    "compact_row_count": 1,
+    "raw_bundle_sha256": "a4f3be173b2ee9469fe7b5b97c8c3bfc7fe0ca7f03d2aa79a63873cede8685df",
+    "compact_bundle_sha256": "18a0999459d0c8a0c4ecd2445eb7f24ef9cdc580c412c0f68ea0140a15b6131a",
+    "publication_receipt_sha256": "566c569eeb3cc04f2e4785e24acbddba67b337e7bcccd09a92476f36493a6ab4",
+    "remote_verified": true,
+    "capture_revalidated_after_hydration": true,
+    "exact_party_verified": true,
+    "identity_matched": true,
+    "inactive_after_attempt": true,
+    "canaries_3_through_8_started": false,
+    "broad_dvc_gc_used": false
+  },
+  "strict_route_result": {
+    "completion_reason": "stonecore_role_quality_audit_failed",
+    "failure_reason": "role_quality:Feraltank:healer_target_exposure",
+    "route_terminal_count": 14,
+    "expected_route_terminal_count": 14,
+    "real_boss_kill_count": 4,
+    "expected_real_boss_kill_count": 4,
+    "duration_seconds": 1192,
+    "kills": 43,
+    "stuck_events": 0,
+    "death_loop_events": 0,
+    "no_progress_diagnoses": 0
+  },
+  "role_audit": {
+    "passed": false,
+    "failure_labels": [
+      "Feraltank:healer_target_exposure",
+      "Feraltank:healer_target_dwell",
+      "Mmhunter:cast_failure_rate"
+    ],
+    "feral_druid_tank": {
+      "eligible_hostile_samples": 1598,
+      "tank_owned_samples": 1485,
+      "healer_targeting_samples": 80,
+      "tank_all_hostile_retention_rate": 0.9293,
+      "healer_target_exposure_rate": 0.0501,
+      "max_healer_target_dwell_ms": 3822,
+      "cast_failure_rate": 0.0,
+      "deaths": 0
+    },
+    "marksmanship_hunter": {
+      "attempts": 198,
+      "cast_failures": 13,
+      "cast_failure_rate": 0.0783,
+      "line_of_sight_failures": 11,
+      "prevented_by_mechanic_failures": 2
+    }
+  },
+  "route_generation_localization": {
+    "generation_1": {"eligible_samples": 185, "tank_owned_samples": 178, "healer_targeting_samples": 0},
+    "generation_2": {"eligible_samples": 12, "tank_owned_samples": 12, "healer_targeting_samples": 0},
+    "generation_3": {"eligible_samples": 149, "tank_owned_samples": 145, "healer_targeting_samples": 0},
+    "generation_4": {"eligible_samples": 27, "tank_owned_samples": 27, "healer_targeting_samples": 0},
+    "generation_7": {"eligible_samples": 13, "tank_owned_samples": 13, "healer_targeting_samples": 0},
+    "generation_9": {"eligible_samples": 8, "tank_owned_samples": 8, "healer_targeting_samples": 0},
+    "generation_10": {"eligible_samples": 32, "tank_owned_samples": 32, "healer_targeting_samples": 0},
+    "generation_11": {"eligible_samples": 10, "tank_owned_samples": 10, "healer_targeting_samples": 0},
+    "generation_13": {"eligible_samples": 528, "tank_owned_samples": 527, "healer_targeting_samples": 0},
+    "generation_14": {"eligible_samples": 634, "tank_owned_samples": 533, "healer_targeting_samples": 80}
+  },
+  "generation_14_causal_evidence": {
+    "first_wave": {
+      "pre_victim_window_start_ms": 1785923087925,
+      "healer_flip_ms": 1785923089956,
+      "engaged_hostiles": 20,
+      "tank_owned_before_flip": 1,
+      "healer_owned_at_flip": 19,
+      "pre_flip_actions": [
+        "continue_stable_feral_swarm_approach",
+        "continue_stable_feral_swarm_approach",
+        "move_to_boss_add",
+        "continue_stable_feral_swarm_approach"
+      ],
+      "cause": "The declared high-density pre-victim wave was already older than the 3000 ms acquisition grace, but the tank spent four decisions preserving ordinary melee approach while only one of twenty followers was tank-owned. Because no follower yet targeted the healer, every reactive Roar and handoff gate remained closed. Healing threat then assigned nineteen followers at once, making the first post-flip sample immediately audit-eligible."
+    },
+    "longest_dwell": {
+      "hostile_guid": 697,
+      "start_ms": 1785923089956,
+      "last_ms": 1785923093778,
+      "dwell_ms": 3822,
+      "charge_accepted_ms": 1785923091991,
+      "charge_target_guid": 697,
+      "next_action_ms": 1785923092242,
+      "next_target_guid": 698,
+      "cause": "The accepted native Charge reservation looked up its target only in the changing local-add snapshot. When GUID 697 was absent from that snapshot on the next decision, the reservation was cleared even though the same live healer-owned unit remained identity-visible through ObjectAccessor. Generic density selection then switched to GUID 698 and left GUID 697 on the healer beyond the dwell gate."
+    },
+    "second_wave": {
+      "healer_flip_ms": 1785923118021,
+      "new_healer_owned_hostiles": 8,
+      "cause": "A later activated follower identity set likewise entered the trace after its engagement-age grace had elapsed and flipped from pre-victim/tank snapshots to healing threat before the tank established proactive area threat."
+    }
+  },
+  "hunter_secondary_gate_evidence": {
+    "result_49_meaning": "SPELL_FAILED_LINE_OF_SIGHT",
+    "result_150_meaning": "SPELL_FAILED_PREVENTED_BY_MECHANIC",
+    "cause": "The map-level LOS preflight passed while spell-specific submission rejected Hunter's Mark and ranged attacks. The existing profile-action recovery suppresses only one spell-target pair and calls ordinary ranged movement, whose early legal-range/map-LOS return issues no movement. The resolver therefore cycled through different spells from the same blocked point, producing eleven distinct LOS failures. The two Multi-Shot mechanic rejections are separate native encounter results and are not reclassified."
+  },
+  "audit_validation": {
+    "audit_attribution_correct": true,
+    "trace_order_monotonic": true,
+    "threat_acquisition_grace_ms": 3000,
+    "recomputed_eligible_hostile_samples": 1598,
+    "recomputed_tank_owned_samples": 1485,
+    "recomputed_healer_targeting_samples": 80,
+    "recomputed_max_healer_target_dwell_ms": 3822,
+    "audit_correction_required": false
+  },
+  "smallest_safe_corrections": [
+    {
+      "file": "src/server/game/Bots/BotWorldPopulationMgr.cpp",
+      "scope": "declared Feral high-density wave with zero healer attackers and fewer than two local followers",
+      "change": "Reserve the existing stable approach for the selected density anchor but lower its decision cadence to the established 250 ms swarm cadence, preserving all native movement, hazard, spell, victim, route, and identity gates."
+    },
+    {
+      "file": "src/server/game/Bots/BotWorldPopulationMgr.cpp",
+      "scope": "existing accepted Feral Charge reservation",
+      "change": "Resolve the exact reserved GUID through ObjectAccessor before falling back to the local-add snapshot, retaining the same 2500 ms lifetime, alive/map/attackable checks, native arrival proof, and no victim reassignment."
+    },
+    {
+      "file": "src/server/game/Bots/BotWorldPopulationMgr.cpp",
+      "scope": "spell-specific Hunter LOS rejection",
+      "change": "Force one bounded alternate ranged-lane search after a profile-action result 49; retain the recorded real failure, Hunter's Mark retry suppression, and all ordinary path, hazard, range, target, and retry gates."
+    }
+  ],
+  "next_attempt": {
+    "attempt_label": "rerun149_canary_2",
+    "worldserver_rebuild_required": true,
+    "deterministic_reprovision_required": true,
+    "fresh_identity_and_eight_row_plan_required": true,
+    "canary_2_only_until_strict_pass": true,
+    "canaries_3_through_8_started": false,
+    "phases_10_through_12_blocked": true
+  }
+}

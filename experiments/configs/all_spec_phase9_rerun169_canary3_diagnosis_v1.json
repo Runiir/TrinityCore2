@@ -1,0 +1,331 @@
+{
+  "schema": "all_spec_phase9_authoritative_gameplay_failure_diagnosis_v1",
+  "diagnosis_sha256": "de8e35167e1a6774ccee0596f14b707bc78d6a42412e4786f4067bdf9ad36c99",
+  "scope": {
+    "phase": 9,
+    "rerun": 169,
+    "serial_canary_index": 3,
+    "composition_id": "stonecore_phase9_083_5d0c65765654",
+    "later_rows_blocked": true,
+    "canaries_4_through_8_started": false,
+    "diagnosis_limited_to_failed_immutable_batch": true
+  },
+  "source_attempt": {
+    "attempt_root": "artifacts/all_spec_program/phase9_serial_canaries_20260809_rerun169/phase9_serial_03_stonecore_phase9_083_5d0c65765654",
+    "batch_id": "phase9-serial-canary-rerun169-3",
+    "party": [
+      "protection_paladin",
+      "holy_priest",
+      "arcane_mage",
+      "assassination_rogue",
+      "fire_mage"
+    ],
+    "party_sha256": "71f05aeed37bfe1fc988746cdd00e7bf8e4d2dd94258eed65ec58d15201823b2",
+    "identity_manifest_sha256": "683314497fc49eb96e76fe6d710314409cc9f78b13551c0922f06dc1e61b1fff",
+    "run_plan_sha256": "dea12eb6cf9ab60f524bda8ac6d15a1b1515c296e3464aac9b3c26534dec3264",
+    "run_plan_independent_verifier_file_sha256": "516aefe7fa2c6270d372fe19c0ed2e0d77885acb3ed2dd8c8f021bc75198de7f",
+    "evidence_binary_sha256": "5374a93501626f86729b788f8d30560b13215eec138f544f2ae7ebb4166fbd10",
+    "effective_config_sha256": "c857032e0aaece78fc6734d884ed837d163c7ddb1810a3a5f042a95df8a278be",
+    "server_pid": 820316,
+    "server_epoch": 3057518621925713,
+    "worldserver_unit": "trinity-live-validation-d14b6db9734dda3d405b6f10.service",
+    "session_fingerprint": "6b73fb9a6f28eb7a46c0efa08cefe735d3d2e2fa43639d4d4770763a97535a00",
+    "profile_generation": 1,
+    "profile_content_hash": "35a587f05d8781d72c62576a6f35392a69e01d5978429f65429ad5b9ed096a22",
+    "max_active_cohorts": 1
+  },
+  "authoritative_classification": {
+    "result": "gameplay_failure",
+    "completion_reason": "stonecore_role_quality_audit_failed",
+    "failure_reason": "role_quality:Protpally:healer_target_exposure",
+    "strict_non_role_gates_passed": true,
+    "role_gate_passed": false,
+    "infrastructure_aborted": false,
+    "interim_incomplete_evidence": false,
+    "later_rows_blocked": true,
+    "strict_gate_independent_verifier_sha256": "13bef802fe36835751c071e2f4c4614951f6aedb2ba5a4504a5222b3e08c6c30",
+    "strict_gate_independent_verifier_file_sha256": "d0a5ffaf14b11ea2ca20f3fb47033ec7d63eb32c5a7e856093d1d9ad8ba2a52e",
+    "all_non_role_checks": {
+      "route": true,
+      "four_authoritative_boss_deaths": true,
+      "fourteen_terminal_route_nodes": true,
+      "identity": true,
+      "party": true,
+      "publication": true,
+      "cleanup": true,
+      "serial_isolation": true,
+      "watchdog": true,
+      "assistance": true
+    }
+  },
+  "immutable_evidence": {
+    "batch_identity_sha256": "a4335bcd595db3c24cef2399fe45f06e026f6a57615344e2fb1325086f202179",
+    "raw_bundle_sha256": "b10487873c79781e5dba3023e99233b2f2eba65b97186a446e2c9066779f0bf3",
+    "compact_bundle_sha256": "eb23887935ae8ecb8ed6f4a3f3e0e0bf32d83f7ab3661ab90f6ccf34a0704853",
+    "publication_receipt_sha256": "824931277883fe700835493aae0ceb85b9303bd331b0dd7e0937d452d12300ac",
+    "raw_dvc_md5": "ea49feb987f25c07cb63dab37c175460.dir",
+    "compact_dvc_md5": "676e71e601554bd05935960d6b8941d1.dir",
+    "raw_restore_pointer": "rerun169_canary3_raw_restore.dvc",
+    "compact_restore_pointer": "rerun169_canary3_compact_restore.dvc",
+    "remote_verification": "Cache and remote 'object' are in sync.",
+    "failed_batch_capture_verifier_sha256": "1c9d7dfba82997a0b24c98096d69f93b8002a440fc4ae278d0ed1999e4f0e2af",
+    "raw": {
+      "row_count": 285,
+      "part_count": 1,
+      "uncompressed_bytes": 48236806,
+      "files": {
+        "acceptance_source_report.json": "37a8028e050afd3f010e0aa460c98ed00de2a7604be1dbed040b48fda8384d0f",
+        "events.jsonl.zst": "a2d3541877e05aea06c73ba2bf9905a5b12ea8194cd2c0281a9e3ed169f4dd74",
+        "exact_manifests.json": "fb32348debe7b66351bdd1755a30bc24cc007c626f1b974346f204150c1089b8"
+      }
+    },
+    "compact": {
+      "row_count": 1,
+      "files": {
+        "evidence.parquet": "d5a55265c6da2cdf519e59200545bccef54fdd44207e2960d17442309ba72e9f"
+      }
+    }
+  },
+  "strict_thresholds_unchanged": {
+    "tank_all_hostile_retention_floor": 0.9,
+    "healer_target_exposure_ceiling": 0.01,
+    "max_healer_target_dwell_ms": 3000,
+    "tank_threat_aura_uptime_floor": 0.99,
+    "non_healer_active_action_coverage_floor": 0.7,
+    "cast_failure_ceiling": 0.05,
+    "healer_successful_heal_cast_floor_when_sampled": 0.95,
+    "missing_required_rotation_groups_allowed": false
+  },
+  "independent_role_reconstruction": {
+    "audit_file_sha256": "f1ea38b29d325253c0a1554fe7ea92090a2fabd6610977812c47b666766f1539",
+    "exposure_reconstruction_file_sha256": "579d0808576d66e605799b0b14e3ce039fbf16f4b3a489f4168bdac695fe3661",
+    "deduplication": {
+      "key": [
+        "bot_guid",
+        "sequence"
+      ],
+      "collision_policy": "last_trace_entry_wins"
+    },
+    "protection_paladin": {
+      "bot_name": "Protpally",
+      "identity_scoped_threat": true,
+      "identity_sample_count": 361,
+      "engaged_hostile_denominator": 2229,
+      "tank_owned_hostile_numerator": 2169,
+      "healer_targeting_hostile_numerator": 32,
+      "tank_all_hostile_retention_rate_exact": 0.9730820995962315,
+      "healer_target_exposure_rate_exact": 0.014356213548676536,
+      "max_healer_target_dwell_ms": 1807,
+      "tank_threat_aura_uptime_rate": 1.0,
+      "active_action_coverage": 1.0,
+      "attempts": 409,
+      "cast_failure_rate": 0.0024,
+      "missing_required_rotation_groups": [],
+      "deaths": 0,
+      "failed_check": "healer_target_exposure_rate"
+    },
+    "other_party_members_passed": {
+      "Holypriest": {
+        "active_action_coverage": 0.3548,
+        "cast_failure_rate": 0.0,
+        "heal_cast_success_rate": 1.0
+      },
+      "Arcanemage": {
+        "active_action_coverage": 0.9492,
+        "cast_failure_rate": 0.0
+      },
+      "Assarogue": {
+        "active_action_coverage": 1.0,
+        "cast_failure_rate": 0.0
+      },
+      "Firemage": {
+        "active_action_coverage": 0.9782,
+        "cast_failure_rate": 0.0069
+      }
+    }
+  },
+  "exposure_localization": {
+    "route_generation": 1,
+    "route_node_id": "4451ee3f40052a9e",
+    "route_label": "Corborus approach corridor",
+    "route_local_healer_numerator": 32,
+    "route_local_engaged_denominator": 299,
+    "route_local_exposure_rate": 0.10702341137123746,
+    "hostile_guids": [
+      15,
+      16,
+      17,
+      18
+    ],
+    "hostile_entry": 43662,
+    "hostile_name": "Unbound Earth Rager",
+    "first_eligible_healer_owned_sample_us": 1786227255317,
+    "final_healer_owned_sample_us": 1786227257124,
+    "ownership_recovery_observed_us": 1786227257382,
+    "dwell_ms_per_identity": 1807,
+    "eligible_samples_per_identity": 8,
+    "engagement_grace_ms": 3000,
+    "engagement_grace_basis": "continuous_hostile_engagement",
+    "current_victim_attribution": "current Player victim and current dungeon role",
+    "genuine_healer_attack_confirmation": {
+      "victim": "Holypriest",
+      "source_entry": 43662,
+      "spell": "melee",
+      "first_damage_event_us": 1786227256150,
+      "distance_range": [
+        2.49,
+        4.97
+      ],
+      "conclusion": "The healer-owned identities were genuinely attacking Holypriest rather than being stale threat attribution."
+    }
+  },
+  "reduced_chronology": [
+    {
+      "time_us": 1786227252235,
+      "event": "Hostile GUIDs 15 through 18 are engaged and tank-owned."
+    },
+    {
+      "time_us": 1786227253515,
+      "event": "The generic density resolver reports builder/global-cooldown state."
+    },
+    {
+      "time_us": 1786227253769,
+      "event": "The generic density resolver reports interrupt/cooldown state."
+    },
+    {
+      "time_us_range": [
+        1786227254027,
+        1786227255057
+      ],
+      "event": "Generic trash_density_area_threat continues on target 13; stored melee fallback diagnostics report out_of_range."
+    },
+    {
+      "time_us": 1786227255317,
+      "event": "GUIDs 15 through 18 switch to Holypriest after already completing engagement grace. Protection targets GUID 17. A remote melee fallback is submitted without movement, and the combat-attempt diagnostic reports out_of_range."
+    },
+    {
+      "time_us_range": [
+        1786227255571,
+        1786227256609
+      ],
+      "event": "Protection continues generic trash_density_area_threat on GUID 17. Six eligible generic rows retain the same remote fallback snapshot and the destination does not change."
+    },
+    {
+      "time_us": 1786227255718,
+      "event": "Holypriest starts healer_stack_for_add_pickup."
+    },
+    {
+      "time_us": 1786227256721,
+      "event": "Holypriest successfully uses fade_threat_drop."
+    },
+    {
+      "time_us": 1786227256869,
+      "event": "Protection successfully uses hand_of_protection_healer_trash_emergency; its trace still carries the preceding fallback diagnostic snapshot."
+    },
+    {
+      "time_us": 1786227257124,
+      "event": "Protection successfully uses righteous_defense_healer_pickup."
+    },
+    {
+      "time_us": 1786227257382,
+      "event": "GUIDs 15 through 18 are tank-owned again."
+    }
+  ],
+  "root_cause": {
+    "summary": "The melee auto-attack fallback retained the overall profile's ranged MaxRange. The ordinary-trash caller therefore considered the remote healer-owned target already in range and skipped its existing movement gate. ExecuteCombat accepted the melee fallback and established the attack target but did not close range. RecordCombatAttempt independently classified the zero-spell fallback as out_of_range. The unchanged remote fallback repeated through most of the eligible exposure interval before native emergency pickups recovered ownership.",
+    "source_chain": [
+      "ResolveProfileCombatAction initialized MinRange and MaxRange from the overall profile.",
+      "Every legal profile candidate had fallen through and the resolver created melee_auto_attack_fallback.",
+      "The fallback inherited the ranged profile maximum.",
+      "The ordinary-trash caller compared target distance to action.MaxRange and skipped MoveBotToProfileRange.",
+      "ExecuteCombat called bot->Attack(target, true) for the melee fallback and returned Ok without moving or chasing.",
+      "RecordCombatAttempt had no SpellInfo for spell ID zero and recorded out_of_range.",
+      "Repeated generic density decisions retained the remote target and unchanged destination until native emergency pickups recovered ownership."
+    ],
+    "telemetry_limit": "Immutable telemetry does not persist every rejected TryCastFriendlySpell or TryCastCombatSpell preflight. It cannot prove a distinct cooldown, line-of-sight, range, or other rejected-helper reason for each of spells 1022, 26573, 31789, and 31935. No unsupported per-spell cause is asserted.",
+    "not_the_cause": [
+      "No strict threshold was too aggressive relative to the approved contract.",
+      "No stale victim attribution produced the numerator.",
+      "No route, identity, publication, cleanup, or serial-isolation failure occurred.",
+      "The maximum individual healer-target dwell stayed below 3000 ms, but the aggregate exposure ratio still exceeded 0.01."
+    ]
+  },
+  "smallest_evidence_backed_correction": {
+    "file": "src/server/game/Bots/BotWorldPopulationMgr.cpp",
+    "behavior": "Set the melee auto-attack fallback's MinRange to 0.0f and MaxRange to max(5.0f, bot->GetMeleeRange(target)) so the existing caller movement gate closes native melee range before submitting the fallback.",
+    "source_contract": [
+      "action.DebugName = \"melee_auto_attack_fallback\";",
+      "action.MinRange = 0.0f;",
+      "action.MaxRange = std::max(5.0f, bot->GetMeleeRange(target));"
+    ],
+    "preserved_behavior": [
+      "No threat values or victim assignments changed.",
+      "No spell cooldown, native pickup order, or urgent cadence changed.",
+      "No route, identity, admission, publication, cleanup, or isolation contract changed.",
+      "The areaOnly exclusion remains unchanged.",
+      "The density-only Buff exclusion remains exactly preserved.",
+      "All strict role thresholds remain unchanged."
+    ],
+    "required_preserved_source": "if (densityOnly && candidate.Category == BotCombatActionCategory::Buff) { candidate.RejectReason = \"density_buff_not_actionable\"; continue; }"
+  },
+  "validation": {
+    "focused_tests": {
+      "command": "pixi run pytest -q tests/test_autonomy_pipeline_smoke.py -k 'rerun169_melee_fallback or rerun165_density_resolver or rerun157_preserves_global_cooldown or rerun157_closes_control_race'",
+      "result": "4 passed, 110 deselected in 0.03s",
+      "passed": true
+    },
+    "full_autonomy_smoke": {
+      "command": "pixi run pytest -q tests/test_autonomy_pipeline_smoke.py",
+      "result": "32 failed, 82 passed in 0.80s",
+      "new_rerun169_contract_passed": true,
+      "interpretation": "The 32 failures are existing dirty-worktree structural/source-shape expectations outside the rerun169 correction; the prior rerun168 diagnosis recorded 81 passes and the same 32 unrelated structural failures."
+    },
+    "git_diff_check": {
+      "passed": true
+    },
+    "worldserver_build": {
+      "passed": true,
+      "corrected_binary_sha256": "ccabb4a89301cc6f6a0627ed464a9256e35883e86cced8ef55ff4399603349f8",
+      "prospective_identity": "rerun170",
+      "part_of_rerun169_frozen_identity": false
+    },
+    "old_worldserver_stopped_before_tracked_edits": {
+      "unit": "trinity-live-validation-d14b6db9734dda3d405b6f10.service",
+      "active_state": "inactive",
+      "sub_state": "dead",
+      "main_pid": 0,
+      "passed": true
+    },
+    "dvc_remote_verified_before_eviction": true
+  },
+  "eviction": {
+    "state": "exact_targeted_eviction_complete",
+    "remote_verified_before_eviction": true,
+    "broad_dvc_gc_used": false,
+    "removed_workspace_and_restore_pointers": [
+      "artifacts/all_spec_program/phase9_serial_canaries_20260809_rerun169/phase9_serial_03_stonecore_phase9_083_5d0c65765654/batch/raw",
+      "artifacts/all_spec_program/phase9_serial_canaries_20260809_rerun169/phase9_serial_03_stonecore_phase9_083_5d0c65765654/batch/compact",
+      "rerun169_canary3_raw_restore.dvc",
+      "rerun169_canary3_compact_restore.dvc"
+    ],
+    "removed_exact_cache_md5s": [
+      "ea49feb987f25c07cb63dab37c175460.dir",
+      "196135a0a9d0bf508ceca8a69fe5db3e",
+      "46dd949a3a476693e0183f67a1cc598a",
+      "53b5d9d4d840aa7c1315ff7b0f0f1893",
+      "676e71e601554bd05935960d6b8941d1.dir",
+      "1d85e754b6ce40db565d688a462c021a"
+    ],
+    "retained": [
+      "batch/raw.dvc",
+      "batch/compact.dvc",
+      "batch/retained/publication_receipt.json",
+      "strict_gate_independent_verifier.json",
+      "protection_paladin_healer_exposure_independent.json",
+      "experiments/configs/all_spec_phase9_rerun169_canary3_diagnosis_v1.json"
+    ],
+    "verified_absent": true,
+    "retained_contract_verified_present": true
+  },
+  "next_action": "After canonical closeout and exact eviction, update program status and handoff, run dvc status and dvc push, deterministically reprovision all 31 targets, capture a fresh rerun170 identity and independently verified eight-row plan using binary ccabb4a89301cc6f6a0627ed464a9256e35883e86cced8ef55ff4399603349f8, make no identity-bearing tracked edits after capture, and restart at canary 2 alone. Phases 10 through 12 remain blocked."
+}

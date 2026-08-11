@@ -1,0 +1,60 @@
+{
+  "acceptance": {
+    "accepted": true,
+    "discrepancies": [],
+    "fail_closed": false,
+    "recomputed": {
+      "accepted": true,
+      "all_stages_passed": true,
+      "facts_sha256": "a490521fd2758006d7d70ff3c736ad783e9dbf00df8f026ef1a4ee4eb391252b",
+      "failed_count": 0,
+      "manifest_complete": false,
+      "passed_count": 2,
+      "rejections": [],
+      "result_sha256": "f052c3cbce2ee4e588e756eee01eee96c5f9924cb5254f5f56514c5dcc2d5301",
+      "schema": "bot_live_acceptance_result_v1"
+    },
+    "schema": "bot_live_acceptance_verification_v1"
+  },
+  "batch_id": "p8-s1-protection-paladin-tank-threat-300-4",
+  "compact": {
+    "bundle_sha256": "9220eda22f47e2fdbb0c0f7e3db34512301318d5c6b8945b6fd3e35c706428be",
+    "files": [
+      {
+        "path": "evidence.parquet",
+        "sha256": "fcded665b7d973b1245cfd1e3d7097b7944a84c602a3e0411892a734361f4600",
+        "size": 2543
+      }
+    ],
+    "format": "parquet_zstd",
+    "row_count": 1
+  },
+  "database_export": null,
+  "duplicate_uncompressed_jsonl_retained": false,
+  "identity_sha256": "3bd734f21f4ea84433ea66bd69bcb04d180cd639e0b6e75d35d2857d97feb43a",
+  "max_pending_raw_bytes": 67108864,
+  "raw": {
+    "bundle_sha256": "e6bc401d99c9a436d7be0ffe3f2f88c9b639300e0449e3f16e3e22ead5927c4e",
+    "files": [
+      {
+        "path": "acceptance_source_report.json",
+        "sha256": "c7e1dd07a8e5c02605b78326b90e836d64846f1c47e74f142a18e7ab6299ef40",
+        "size": 142164
+      },
+      {
+        "path": "events.jsonl.zst",
+        "sha256": "9cd34f6f60e6e5928946fde30d4cae92f5fcdb43440cd39b9c14e2c92ebd838f",
+        "size": 9496
+      },
+      {
+        "path": "exact_manifests.json",
+        "sha256": "44b0a9604e12f2352811bab6ea07915d70d08b550a243b425b3113744abe8ab6",
+        "size": 8051
+      }
+    ],
+    "format": "jsonl.zst",
+    "row_count": 32
+  },
+  "schema": "bot_immutable_batch_manifest_v1",
+  "state": "closed_unpublished"
+}

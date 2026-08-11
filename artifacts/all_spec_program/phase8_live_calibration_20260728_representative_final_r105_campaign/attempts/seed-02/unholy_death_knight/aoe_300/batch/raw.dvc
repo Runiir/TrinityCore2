@@ -1,0 +1,6 @@
+outs:
+- md5: 65087b0578a3b54d759ff20974730cac.dir
+  size: 120846
+  nfiles: 3
+  hash: md5
+  path: raw

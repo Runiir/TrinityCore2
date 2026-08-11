@@ -1,0 +1,27 @@
+{
+  "batch_id": "p8-s1-marksmanship-hunter-aoe-300-19",
+  "batch_identity_sha256": "705ecd5cb61e399a90de3c899bf45f11999baae436d0edccf6702a40cbf8643a",
+  "cache_scope": "batch_specific",
+  "compact_bundle_sha256": "bb657c30f6ab1fc5ac7e58f643cdb37a7d4b15479efcf6eeaea259a1dcc0b207",
+  "pointers": [
+    {
+      "dvc_md5": "197c7fb5ecfd9394e0d18e741fe96500.dir",
+      "nfiles": 3,
+      "path": "artifacts/all_spec_program/phase8_live_calibration_20260728_representative_final_r105_campaign/attempts/seed-01/marksmanship_hunter/aoe_300/batch/raw.dvc",
+      "pointer_sha256": "402854510edf9795311872f9d944ed474272db92d60846a9a7bb156fc1012ffc",
+      "size": 111767
+    },
+    {
+      "dvc_md5": "f739b5b7ed3b6277ee28a5fc333f8a49.dir",
+      "nfiles": 1,
+      "path": "artifacts/all_spec_program/phase8_live_calibration_20260728_representative_final_r105_campaign/attempts/seed-01/marksmanship_hunter/aoe_300/batch/compact.dvc",
+      "pointer_sha256": "700a684860f43bb90a96f06abe89b40089c67d763c3c7a986cce91b9e040d568",
+      "size": 2478
+    }
+  ],
+  "raw_bundle_sha256": "ff2c9e2911b21d26f092dbbe61cded22b3005b556ae2617c3683899ebc90cddb",
+  "receipt_sha256": "be28e781c76d8ba415401532578633f1b3be55fab710bafe22e4a29a78fd35bf",
+  "remote_status_sha256": "efed9e5afcfe149915ae98b9ed9e69304eb48f5ce2e2265b18b5b5ed2f155e60",
+  "remote_verified": true,
+  "schema": "bot_immutable_batch_publication_receipt_v1"
+}

@@ -1,0 +1,9 @@
+{
+  "acceptable_final_evidence": false,
+  "all_passed": false,
+  "attempt_index": 1,
+  "batch_id": "phase6-serial-soak-1",
+  "cohort_id": "phase6-serial-soak",
+  "completion_reason": "no_progress_watchdog",
+  "failure_reason": "bot_diagnosis_error"
+}

@@ -1,0 +1,41 @@
+{
+  "schema": "all_spec_phase9_live_qualification_scope_decision_v1",
+  "decision": "exclude_protection_warrior_from_live_qualification",
+  "decision_sha256": "3852ebf470bd45417a481832a6fb2d727a3aff94a21df12dcb2edff9567b8a33",
+  "operator_direction": "Protection Warrior is not considered viable; continue with Feral Druid, Protection Paladin, and Blood Death Knight tanks.",
+  "immutable_evidence": {
+    "attempt": "artifacts/all_spec_program/phase9_serial_canaries_20260811_rerun212/phase9_serial_04_stonecore_phase9_004_3904746e5810",
+    "batch_identity_sha256": "b71c626bf7a7a74b8854235dbda5ce60a331bc6327174d69ea5ee6703000eb9b",
+    "compact_bundle_sha256": "d550465c5da4eed4b4e537d11fe42dda82bc079f728291470f4fdf5037635c13",
+    "publication_receipt_sha256": "46867ed03c9f077dedb6b06c5f01aa8de44bb0d3a29404090b253f343e853411",
+    "raw_bundle_sha256": "cccf875a35b19a3b84f364605e61c022ebf5aa3605cbc95ca30298a9bf19a7ee",
+    "source_report_sha256": "efb22e3e02e39c0329d26a386ebc855db641bbcac990aa28ebac2db8acf52a98"
+  },
+  "independent_result": {
+    "boss_deaths": 3,
+    "eligible_hostile_denominator": 2375,
+    "forbidden_assistance_count": 0,
+    "healer_target_exposure_ratio": 0.059789473684210524,
+    "healer_targeting_hostile_numerator": 142,
+    "maximum_healer_target_dwell_ms": 10114,
+    "route_terminals": 13,
+    "tank_all_hostile_retention_ratio": 0.8648421052631579,
+    "tank_owned_hostile_numerator": 2054,
+    "threat_aura_uptime_ratio": 1.0
+  },
+  "qualification_contract": {
+    "canonical_profiles_remain_provisioned": 31,
+    "excluded_live_qualification_targets": [
+      "protection_warrior"
+    ],
+    "live_qualification_target_count": 30,
+    "supported_tank_targets": [
+      "blood_death_knight",
+      "feral_druid_tank",
+      "protection_paladin"
+    ],
+    "thresholds_changed": false,
+    "warrior_runtime_code_removed": false
+  },
+  "classification": "explicit_operator_scope_exclusion_after_authoritative_gameplay_failure"
+}

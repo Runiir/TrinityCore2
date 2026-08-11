@@ -1,0 +1,143 @@
+{
+  "schema": "all_spec_phase9_rerun151_canary3_diagnosis_v1",
+  "diagnosis_sha256": "20655a30e72283170ff6461bbd81cb77a368bc40c3ec5120a42c770c0c509e21",
+  "hash_scope": "canonical_json_without_diagnosis_sha256",
+  "source_attempt": {
+    "attempt_label": "rerun151_canary_3",
+    "attempt_id": "phase9_serial_03_stonecore_phase9_083_5d0c65765654",
+    "batch_id": "phase9-serial-canary-rerun151-3",
+    "batch_identity_sha256": "d7863396427801b5152bed9573bfd9b3493ef9c0fd7737906a06a01176223dd0",
+    "composition_id": "stonecore_phase9_083_5d0c65765654",
+    "party_sha256": "71f05aeed37bfe1fc988746cdd00e7bf8e4d2dd94258eed65ec58d15201823b2",
+    "party": [
+      "protection_paladin",
+      "holy_priest",
+      "arcane_mage",
+      "assassination_rogue",
+      "fire_mage"
+    ],
+    "binary_sha256": "6013d8b420887cc240b451bcc938bfe03ffca47dabd326b2a3f69f353dcf6200",
+    "server_process_id": 282272,
+    "server_epoch": 587289205747637,
+    "session_fingerprint": "6c6b3f8cb9c50306eda34ee284c25351185d806e27a8a78c4d70c06b93d02a15",
+    "profile_generation": 1,
+    "profile_content_hash": "35a587f05d8781d72c62576a6f35392a69e01d5978429f65429ad5b9ed096a22",
+    "evidence_identity_manifest_sha256": "7ac95883de48c77d7aa93fc22a8934c7018769a0999db8a56b569180c758fbf2",
+    "run_plan_sha256": "3bc482b6845ae6a7f913348503341c580f519f8aed864c33bbe66aa64da8b1ea",
+    "max_active_cohorts": 1
+  },
+  "capture_and_closeout": {
+    "capture_identity_sha256": "d7863396427801b5152bed9573bfd9b3493ef9c0fd7737906a06a01176223dd0",
+    "raw_part_count": 1,
+    "raw_event_row_count": 288,
+    "compact_row_count": 1,
+    "raw_bundle_sha256": "68a92e534b8e71dd3bff36d95a6d5daf2a32d7c8d36151b5168064e3fcaf6929",
+    "compact_bundle_sha256": "7b7632834e651c1fac42b203aeb297ac9ff385f78d3b42f609d49be599d02bcf",
+    "raw_pointer_sha256": "a43a5cb1700a2a15616fdd3088030f7d566d23eec3150eadbb4fe5dd8fd6127e",
+    "compact_pointer_sha256": "f153791722cde3767330b7fc071073938b7ecb84319072b7f2ac6245df3b2278",
+    "publication_receipt_sha256": "96ffffb2c149f771f41693047a36a14b04a192b41abab0dbdc8d6c2ec8c60349",
+    "remote_status_sha256": "efed9e5afcfe149915ae98b9ed9e69304eb48f5ce2e2265b18b5b5ed2f155e60",
+    "remote_verified": true,
+    "capture_revalidated_after_hydration": true,
+    "exact_party_verified": true,
+    "identity_matched": true,
+    "inactive_after_attempt": true,
+    "cleanup": {
+      "active": false,
+      "active_bots": 0,
+      "lease_count": 0,
+      "party_bot_count": 0
+    },
+    "broad_dvc_gc_used": false
+  },
+  "strict_route_result": {
+    "completion_reason": "stonecore_role_quality_audit_failed",
+    "failure_reason": "role_quality:Protpally:healer_target_exposure",
+    "failure_labels": [
+      "role_quality:Protpally:healer_target_exposure",
+      "role_quality:Protpally:healer_target_dwell",
+      "stonecore_role_quality_audit_failed"
+    ],
+    "route_manifest_complete": true,
+    "route_terminal_count": 14,
+    "expected_route_terminal_count": 14,
+    "real_boss_kill_count": 4,
+    "expected_real_boss_kill_count": 4,
+    "stuck_events": 0,
+    "canaries_4_through_8_started": false
+  },
+  "role_audit": {
+    "passed": false,
+    "failure_labels": [
+      "Protpally:healer_target_exposure",
+      "Protpally:healer_target_dwell"
+    ],
+    "protection_paladin": {
+      "eligible_hostile_samples": 1356,
+      "tank_owned_samples": 1311,
+      "healer_targeting_samples": 28,
+      "tank_all_hostile_retention_rate": 0.9668,
+      "route_target_retention_rate": 0.9797,
+      "healer_target_exposure_rate": 0.0206,
+      "max_healer_target_dwell_ms": 4024,
+      "tank_threat_aura_uptime_rate": 1.0,
+      "cast_failure_rate": 0.0088,
+      "deaths": 0
+    }
+  },
+  "route_generation_localization": {
+    "generation_1": {
+      "eligible_samples": 451,
+      "tank_owned_samples": 409,
+      "healer_targeting_samples": 28,
+      "eligible_healer_exposure_rows": 12
+    },
+    "all_later_generations": {
+      "healer_targeting_samples": 0,
+      "note": "All counted healer exposure belongs to the Corborus approach generation; generations 2 through 14 contain no eligible healer-targeting samples."
+    }
+  },
+  "protection_paladin_exposure_evidence": {
+    "max_episode_hostile_guids": [
+      61,
+      62
+    ],
+    "max_episode_start_ms": 1786171376963,
+    "max_episode_last_ms": 1786171380987,
+    "max_episode_dwell_ms": 4024,
+    "control_sequence": [
+      "righteous_defense_party_pickup",
+      "move_to_trash_density",
+      "move_to_trash_density",
+      "move_to_trash_density",
+      "move_to_trash_density",
+      "hand_of_salvation_healer_trash_threat_drop",
+      "trash_density_area_threat:spell=62124",
+      "validation_route_trash_action"
+    ],
+    "cause": "Righteous Defense is consumed on a different party member immediately before GUIDs 61 and 62 switch to the healer. The Protection Paladin density resolver then selects the native ranged Hand of Reckoning spell 62124, but the generic profile movement envelope makes the tank spend four recorded density decisions approaching the remote target. Salvation consumes the first in-range decision, and Hand of Reckoning is not submitted until 4024 ms after the two-hostile healer episode begins. The adjacent hostile therefore remains on the healer past both strict exposure and dwell gates even though overall tank retention passes.",
+    "audit_attribution_correct": true,
+    "audit_correction_required": false
+  },
+  "accepted_causal_chain": [
+    "Canary 2 passed every independently reconstructed route, identity, retention, exposure/dwell, role, publication, cleanup, and eviction gate before rows 3 through 8 were unlocked.",
+    "Canary 3 completed all 14 route terminals and all four boss kills under the exact planned identity and party, but its strict Protection Paladin role audit failed closed.",
+    "All 28 counted healer-targeting samples are generation-1 ordinary trash; later route generations have zero counted healer exposure.",
+    "The longest remote two-hostile episode is genuine: generic density movement delays the selected native ranged taunt, then Salvation consumes the first in-range decision, producing 4024 ms dwell.",
+    "The serial operator correctly stopped after canary 3; canaries 4 through 8 and Phases 10 through 12 remain blocked."
+  ],
+  "smallest_safe_correction": {
+    "file": "src/server/game/Bots/BotWorldPopulationMgr.cpp",
+    "scope": "Protection Paladin ordinary-trash healer-owned cluster after higher-priority Consecration and Righteous Defense cannot submit",
+    "change": "Before Salvation and the generic density resolver, deterministically select a live healer-owned attacker and try the existing native ranged multi-target Avenger's Shield. The failing episode's prior Avenger's Shield submission was 13063 ms before exposure, so the existing cooldown becomes ready on the third exposure tick; submitting it directly then acquires the two-hostile cluster inside the 3000 ms dwell ceiling instead of waiting for the generic melee-oriented density movement envelope. Preserve spell knowledge, cooldown, GCD, power, range, line-of-sight, target validity, threat, route, and audit gates; all existing Consecration, Righteous Defense, Salvation, and density fallbacks remain intact."
+  },
+  "next_attempt": {
+    "attempt_label": "rerun152_canary_2",
+    "worldserver_rebuild_required": true,
+    "deterministic_reprovision_required": true,
+    "fresh_identity_and_eight_row_plan_required": true,
+    "canary_2_only_until_strict_pass": true,
+    "canaries_3_through_8_started": false,
+    "phases_10_through_12_blocked": true
+  }
+}

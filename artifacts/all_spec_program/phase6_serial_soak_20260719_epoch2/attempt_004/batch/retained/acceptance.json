@@ -1,0 +1,22 @@
+{
+  "accepted": false,
+  "discrepancies": [],
+  "fail_closed": false,
+  "recomputed": {
+    "accepted": false,
+    "all_stages_passed": false,
+    "facts_sha256": "1f91bd702abed7612700507cd8af0c964aabbdc8db37744f7c2ef38f7adb424f",
+    "failed_count": 14,
+    "manifest_complete": false,
+    "passed_count": 1,
+    "rejections": [
+      "not_all_stages_passed",
+      "failure_labels_present",
+      "watchdog_failure_is_not_final_evidence",
+      "incomplete_evidence_identity"
+    ],
+    "result_sha256": "4be651f76f8c16c30f572de86556a09c6162ceb23c82886efea39b88ced9671d",
+    "schema": "bot_live_acceptance_result_v1"
+  },
+  "schema": "bot_live_acceptance_verification_v1"
+}

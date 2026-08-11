@@ -1,0 +1,349 @@
+{
+  "schema": "all_spec_phase9_authoritative_gameplay_failure_diagnosis_v1",
+  "diagnosis_sha256": "73478a8d999f2cd19ba450d145a5e0fca28c31b68e55afb1c3e65d069a2bda83",
+  "hash_scope": "canonical_json_without_diagnosis_sha256",
+  "scope": {
+    "run": "rerun213",
+    "attempt": "phase9_serial_04_stonecore_phase9_090_b41dde5f2086",
+    "serial_index": 4,
+    "only_this_immutable_batch_diagnosed": true,
+    "canaries_5_through_8_started": false,
+    "phases_10_through_12_blocked": true
+  },
+  "frozen_identity": {
+    "identity_manifest_sha256": "832e211545ed3523a089e5a2aaf49132ffcd0893e24cc3b1d381cc5188273529",
+    "run_plan_sha256": "027505ee35af69063ff141d2b0e64832942d64434e98bc8aa2455bab81d0ea80",
+    "evidence_binary_sha256": "77300fda38022275c7033bf00f229a9dd983338c9d94643e6ea8678aa5eee433",
+    "git_head": "50558cae984dae312853ce11268cab7ade4f612e",
+    "server_process_id": 591807,
+    "server_epoch": 4327127150120992,
+    "worldserver_unit": "trinity-live-validation-952c1000f616133b3ffb2fab",
+    "session_fingerprint": "0fb55a28573b6570334ffb4eb620bec68751ac82c88bd2c160d19c2a4ee0049b",
+    "profile_generation": 1,
+    "profile_content_hash": "d9d6a60e97756695ea6553b1fa34e9c2c63ebe6e09467e71bc01fb74fe3655ae",
+    "max_active_cohorts": 1,
+    "identity_and_plan_canonical_hashes_recomputed": true
+  },
+  "exact_party": {
+    "class_specs": [
+      "protection_paladin",
+      "restoration_druid",
+      "elemental_shaman",
+      "enhancement_shaman",
+      "feral_druid_dps"
+    ],
+    "party_sha256": "b3a8fe87454886475073c8e17408a09485d3dd66035d7af9e2d113e01672a0a2",
+    "independently_recomputed": true
+  },
+  "immutable_evidence": {
+    "batch_identity_sha256": "1d0e6c896dc9fe160357a709f718d831d8eba836f515d53cd84fdf897795e842",
+    "acceptance_source_report_sha256": "2277d160959847464daf0ad647ac32c2a9094b23ebd2dbcf4cbee51b4d317c87",
+    "raw_bundle_sha256": "452e6fe9179709264e9a896362e264d5c5afab14f69309c3f34fe7ee25dd85c3",
+    "compact_bundle_sha256": "5f76b66c87a09f6d2470620827ee61a89dab300f55c0590dddc1206bb18bb023",
+    "publication_receipt_sha256": "bb3371563d1b21dbf0699bc2b1487633647ea77e4fae194f3f1917e776432d37",
+    "publication_receipt_file_sha256": "f89aa40b5f19888c53b9cb0196fc96e9108e75b996887eb25e77620fa4e3ad8c",
+    "report_sha256": "65563f4c071dfaf78768734f2d8772f04b0019ebdd4c76ba0799e6e06a87d29f",
+    "operator_state_sha256": "f12d2897e5315eec19f0640871abe17585c537bfda6fa1446b7eedbbdeb98bc5",
+    "raw_pointer_sha256": "da60342a012110722a3240d03b6b755acb6f6e61dbb47c717d4d9e9764a89401",
+    "raw_dvc_md5": "f48a6abbd200b4c702ba774d8d32e5eb.dir",
+    "compact_pointer_sha256": "0cbafc454b4985829cb0eb8536d5ddf3eb58b7182fe375710f3487bc93096197",
+    "compact_dvc_md5": "106c5f9f39b75c48f29db5339db1d25b.dir"
+  },
+  "independent_capture_and_publication_verifier": {
+    "capture_manifest_and_bundle_hashes_recomputed": true,
+    "batch_identity_matches_receipt": true,
+    "publication_receipt_canonical_hash_recomputed": true,
+    "publication_remote_verified": true,
+    "selective_hydration_completed": true,
+    "broad_dvc_gc_used": false
+  },
+  "independent_strict_verifier": {
+    "underlying_returncode": 0,
+    "timed_out": false,
+    "session_closed": true,
+    "identity_complete": true,
+    "identity_matches_frozen_manifest": true,
+    "exact_party_recomputed": true,
+    "operator_attempt_count": 1,
+    "serial_index": 4,
+    "serial_isolation": true,
+    "global_lifecycle_command_count": 0,
+    "scheduler_events": [
+      "admit:4",
+      "close:4"
+    ],
+    "cleanup": {
+      "active": false,
+      "active_bots": 0,
+      "lease_count": 0,
+      "party_bot_count": 0
+    },
+    "route_terminal_count": 14,
+    "route_terminal_generations": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14
+    ],
+    "authoritative_boss_death_entries": [
+      43438,
+      43214,
+      42188,
+      42333
+    ],
+    "high_priestess_azil_terminal_and_death": true,
+    "validation_route_manifest_complete": true,
+    "watchdog_semantic_progress_plateau": false,
+    "watchdog_death_loop": false,
+    "watchdog_no_progress": false,
+    "watchdog_repeated_decision_loop": false,
+    "watchdog_stuck_events": 0,
+    "teacher_assisted_kills": 0,
+    "forbidden_completion_assistance": [],
+    "strict_route_and_non_role_gates_passed": true,
+    "strict_role_gate_passed": false
+  },
+  "independent_role_verifier": {
+    "canonical_auditor": "tools.bot_ml.audit_role_efficiency",
+    "role_audit_artifact_sha256": "801bb727232e5b050330546f7c6743a7177c2dfbe2802bf5e85415aa14783ab7",
+    "eligible_hostile_denominator": 1693,
+    "tank_owned_hostile_numerator": 1386,
+    "healer_targeting_hostile_numerator": 303,
+    "tank_all_hostile_retention_ratio": 0.8186650915534555,
+    "healer_target_exposure_ratio": 0.1789722386296515,
+    "maximum_healer_target_dwell_ms": 6896,
+    "maximum_dwell_guid": 867,
+    "threat_aura_active_samples": 667,
+    "threat_aura_total_samples": 667,
+    "threat_aura_uptime_ratio": 1.0,
+    "non_healer_active_action_coverage": {
+      "Elesham": 0.9314079422382672,
+      "Enhsham": 1.0,
+      "Feraldps": 1.0,
+      "Protpally": 1.0
+    },
+    "cast_failure_rates": {
+      "Elesham": 0.006211180124223602,
+      "Enhsham": 0.0,
+      "Feraldps": 0.0,
+      "Protpally": 0.0,
+      "Restodruid": 0.0
+    },
+    "restoration_druid_successful_heal_casts": 97,
+    "restoration_druid_sampled_heal_casts": 97,
+    "restoration_druid_successful_heal_cast_rate": 1.0,
+    "missing_required_rotation_groups": [],
+    "threshold_results": {
+      "tank_retention_at_least_0_90": false,
+      "healer_exposure_at_most_0_01": false,
+      "healer_dwell_at_most_3000_ms": false,
+      "threat_aura_uptime_at_least_0_99": true,
+      "non_healer_active_action_coverage_at_least_0_70": true,
+      "cast_failure_rate_at_most_0_05": true,
+      "healer_heal_cast_success_at_least_0_95": true,
+      "rotation_groups_present": true
+    },
+    "failure_labels": [
+      "Protpally:tank_threat_retention",
+      "Protpally:healer_target_exposure",
+      "Protpally:healer_target_dwell"
+    ]
+  },
+  "route_generation_and_hostile_guid_chronology": {
+    "generation_role_counts": {
+      "1": {
+        "eligible": 322,
+        "tank_owned": 310,
+        "healer_targeting": 12
+      },
+      "2": {
+        "eligible": 85,
+        "tank_owned": 83,
+        "healer_targeting": 1
+      },
+      "3": {
+        "eligible": 150,
+        "tank_owned": 148,
+        "healer_targeting": 0
+      },
+      "4": {
+        "eligible": 28,
+        "tank_owned": 27,
+        "healer_targeting": 0
+      },
+      "7": {
+        "eligible": 13,
+        "tank_owned": 13,
+        "healer_targeting": 0
+      },
+      "8": {
+        "eligible": 10,
+        "tank_owned": 10,
+        "healer_targeting": 0
+      },
+      "10": {
+        "eligible": 31,
+        "tank_owned": 31,
+        "healer_targeting": 0
+      },
+      "11": {
+        "eligible": 23,
+        "tank_owned": 23,
+        "healer_targeting": 0
+      },
+      "13": {
+        "eligible": 25,
+        "tank_owned": 25,
+        "healer_targeting": 0
+      },
+      "14": {
+        "eligible": 1006,
+        "tank_owned": 716,
+        "healer_targeting": 290,
+        "tank_retention_ratio": 0.7117296222664016,
+        "healer_exposure_ratio": 0.2882703777335984
+      }
+    },
+    "maximum_episode": {
+      "route_generation": 14,
+      "hostile_guid": 867,
+      "first_healer_owned_tank_observation_ms": 1786436102421,
+      "last_healer_owned_tank_observation_ms": 1786436109317,
+      "dwell_ms": 6896,
+      "ever_tank_owned": false,
+      "target_churn_count_at_start": 7,
+      "target_churn_count_at_end": 16
+    },
+    "representative_waves": [
+      {
+        "start_ms": 1786436043829,
+        "healer_owned_at_start": 14,
+        "peak_healer_owned": 19,
+        "target_churn_delta": 8,
+        "first_area_pickup_ms": 1786436046897
+      },
+      {
+        "start_ms": 1786436102421,
+        "healer_owned_at_start": 11,
+        "maximum_dwell_guid": 867,
+        "target_churn_delta": 9,
+        "holy_wrath_pickup_ms": 1786436108803
+      },
+      {
+        "start_ms": 1786436166852,
+        "healer_owned_at_start": 14,
+        "peak_healer_owned": 18,
+        "target_churn_delta": 6
+      },
+      {
+        "start_ms": 1786436193670,
+        "healer_owned_at_start": 19,
+        "target_churn_delta": 8,
+        "residual_guid_978_dwell_ms": 6642
+      }
+    ]
+  },
+  "action_reconstruction": {
+    "protection_native_spell_attempts": {
+      "hammer_of_the_righteous_53595": 100,
+      "judgement_20271": 71,
+      "avengers_shield_31935": 58,
+      "shield_of_the_righteous_24275": 43,
+      "inquisition_84963": 29,
+      "holy_wrath_2812": 16,
+      "hand_of_reckoning_62124": 12,
+      "consecration_26573": 12
+    },
+    "protection_rescue_actions": {
+      "righteous_defense_healer_before_area_gcd": 6,
+      "righteous_defense_healer_pickup": 2,
+      "righteous_defense_party_pickup": 7,
+      "hand_of_reckoning_add_pickup": 6,
+      "hand_of_protection_healer_trash_emergency": 2,
+      "tank_immediate_aoe_threat": 16
+    },
+    "movement": {
+      "move_to_boss_add": 37,
+      "move_to_immediate_aoe_threat_range": 9,
+      "move_to_trash_density": 4,
+      "tank_move_to_add_centroid": 1,
+      "target_churn_during_failed_azil_waves": true
+    },
+    "hazard": {
+      "move_out_of_hazard": 12,
+      "hold_outside_hazard": 34,
+      "tank_hazard_hold_aoe_threat": 11,
+      "hazard_exit_failures": 0,
+      "maximum_dwell_wave_overlapped_tank_hazard_branch": false
+    },
+    "misdirection": {
+      "party_has_hunter": false,
+      "aoe_attempts": 0,
+      "single_target_attempts": 0,
+      "failure_primary": false
+    },
+    "healer_threat_handoff": {
+      "healer_preposition_for_add_pickup": 50,
+      "healer_stack_for_add_pickup": 49,
+      "successful_native_heal_cast_rate": 1.0,
+      "behavior_failure": false
+    },
+    "feral_tank_actions_not_applicable_to_exact_party": {
+      "growl": 0,
+      "swipe": 0,
+      "thrash": 0,
+      "demoralizing_roar": 0,
+      "charge": 0
+    }
+  },
+  "causal_classification": {
+    "authoritative_gameplay_failure_confirmed": true,
+    "infrastructure_failure": false,
+    "real_initial_pickup_loss": true,
+    "later_threat_decay_primary": false,
+    "movement_and_action_topology_starvation_primary": true,
+    "hazard_starvation_primary": false,
+    "misdirection_failure": false,
+    "healer_behavior_failure": false,
+    "role_audit_attribution_error": false,
+    "rerun170_passive_swarm_correction_side_effect": false,
+    "primary_cause": "Repeated dynamic Azil follower waves spawned onto valid Restoration Druid healing threat after the earlier pack was secure. Righteous Defense and Hand of Protection were unavailable or natively rejected, and successful Hammer or Avenger pickups acquired only part of each wave. The remaining Protection melee-area approach repeatedly replaced its movement path as the deterministic representative changed or died. Target churn rose by six to nine identities inside decisive waves; GUID 867 was never tank-owned and remained healer-owned for 6896 ms. The uninterrupted threat aura, successful native casts, clean hazard handling, valid healer behavior, and absence of a Hunter rule out aura loss, cast failure, hazard starvation, healer error, and Misdirection failure.",
+    "why_the_earlier_stonecore_party_passed": "The original Protection Paladin/Holy Priest/Fire Mage/Enhancement Shaman/Hunter clear proved that exact party and timing, including Hunter Misdirection support. Rerun213 canary 4 used Restoration Druid healing and no Hunter; repeated Azil follower waves exposed a Protection movement-topology gap that the earlier composition did not exercise."
+  },
+  "smallest_evidence_backed_correction": {
+    "source": "src/server/game/Bots/BotWorldPopulationMgr.cpp",
+    "behavior": "Extend the existing bounded stable moving-swarm approach to Protection Paladin. While an active Protection path still terminates inside the selected healer-owned follower cluster, keep that legal path for a short Protection-specific window instead of replacing it every 250 ms as the representative GUID churns. Preserve the existing Feral timing and every native rescue, area-spell, movement, cooldown, GCD, range, line-of-sight, threat, and target legality gate.",
+    "preserved": [
+      "all strict thresholds",
+      "Righteous Defense and Hand of Protection priority",
+      "native Hammer of the Righteous, Avenger's Shield, Holy Wrath, Consecration, Hand of Reckoning, and auto-attack behavior",
+      "Feral stable-approach timing and all Growl, Swipe, Thrash, Roar, and Charge behavior",
+      "hazard priority",
+      "Misdirection behavior",
+      "healer positioning and healing",
+      "route, identity, exact-party, serial-isolation, publication, cleanup, and forbidden-assistance contracts"
+    ]
+  },
+  "pre_edit_safety": {
+    "old_worldserver_stopped_before_tracked_diagnosis_and_source_edit": true,
+    "old_worldserver_state": "inactive",
+    "operator_active": false,
+    "publisher_active": false
+  },
+  "next_gate": {
+    "fresh_identity_and_plan_required": true,
+    "restart_at_supported_protection_paladin_canary_alone": true,
+    "later_canaries_blocked": true,
+    "phases_10_through_12_blocked": true
+  }
+}

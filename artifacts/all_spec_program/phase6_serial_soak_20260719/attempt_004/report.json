@@ -1,0 +1,609 @@
+{
+  "acceptable_final_evidence": false,
+  "acceptance_facts": {
+    "acceptance_mode": "standard",
+    "calibration_rejections": [],
+    "completion_reason": "no_progress_watchdog",
+    "evidence": {
+      "action_counts": {
+        "bot_spawned": 5,
+        "validation_group_formed": 5,
+        "validation_role_assignment": 5,
+        "validation_route_failed": 928,
+        "validation_route_wrong_map": 928
+      },
+      "action_names": [
+        "bot_spawned",
+        "validation_group_formed",
+        "validation_role_assignment",
+        "validation_route_failed",
+        "validation_route_wrong_map",
+        "wait"
+      ],
+      "active_decision_evidence": true,
+      "boss_engagement_actions": 0,
+      "boss_kill_evidence": 0,
+      "bot_not_loaded_diagnoses": 0,
+      "decisions": 1866,
+      "diagnosis_action_counts": {
+        "validation_route_wrong_map": 1,
+        "wait": 4
+      },
+      "diagnosis_codes": {
+        "repeated_decision_loop": 1,
+        "validation_cohort_instance_violation": 4
+      },
+      "diagnosis_result_counts": {
+        "failed": 1,
+        "validation_cohort_instance_violation": 4
+      },
+      "diagnosis_severities": {
+        "error": 4,
+        "warning": 1
+      },
+      "duration_minutes": 0.0,
+      "duration_seconds": 933,
+      "error_diagnoses": 4,
+      "failures": [],
+      "forbidden_completion_assists": [],
+      "gear_upgrades": 0,
+      "group_formation_evidence": 5,
+      "healer_assignment_evidence": 0,
+      "hub_acceptance_actions": 0,
+      "instance_reset_evidence": 0,
+      "interrupt_evidence": 0,
+      "kill_evidence": 0,
+      "kills": 0,
+      "loot_action": false,
+      "manifest_completion_evidence": [],
+      "material_farming_action": false,
+      "moved_diagnoses": 0,
+      "non_spawn_trace_entries": 1866,
+      "non_wait_diagnoses": 1,
+      "post_failure_progress": true,
+      "profession_action": false,
+      "quest_objective_progress": 0,
+      "quests_accepted": 0,
+      "quests_completed": 0,
+      "real_boss_kill_evidence": [],
+      "recovery_evidence": 0,
+      "regrouping_evidence": 0,
+      "repath_events": 0,
+      "result_counts": {
+        "dps": 3,
+        "failed": 928,
+        "healer": 1,
+        "ok": 5,
+        "party": 5,
+        "tank": 1,
+        "wrong_map": 928
+      },
+      "role_assignment_evidence": 5,
+      "route_terminal_evidence": [],
+      "scripted_activation_wait_pending": false,
+      "stuck_events": 0,
+      "tank_positioning_evidence": 0,
+      "target_priority_evidence": 0,
+      "teacher_assisted_kills": 0,
+      "trash_action_evidence": 0,
+      "trash_pulls": 0,
+      "trash_route_actions": 0,
+      "unresolved_route_death_loop_events": 0,
+      "unresolved_route_stuck_events": 0,
+      "unstuck_failures": 0,
+      "validation_evidence_counts": {
+        "healer_assignments": 0,
+        "instance_reset": 0,
+        "interrupts": 0,
+        "party_formation": 5,
+        "pulls": 0,
+        "raid_formation": 5,
+        "recovery": 0,
+        "regrouping": 0,
+        "role_assignments": 5,
+        "tank_positioning": 0,
+        "target_priority": 0
+      },
+      "validation_evidence_ready": {
+        "healer_assignments": false,
+        "instance_reset": false,
+        "interrupts": false,
+        "party_formation": true,
+        "pulls": false,
+        "raid_formation": true,
+        "recovery": false,
+        "regrouping": false,
+        "role_assignments": true,
+        "tank_positioning": false,
+        "target_priority": false
+      },
+      "validation_route_actions": 1856,
+      "validation_route_activation_attempts": 0,
+      "validation_route_combat_progress_diagnoses": 0,
+      "validation_route_force_tank_focus_repeats": 0,
+      "validation_route_manifest_complete": 0,
+      "validation_route_no_progress_diagnoses": 0,
+      "validation_route_no_visible_target_activations": 0,
+      "validation_route_prerequisite_repeats": 0,
+      "vendor_or_trainer_action": false
+    },
+    "failure_labels": [
+      "bot_diagnosis_error",
+      "no_progress_observed",
+      "validation_route_no_engagement"
+    ],
+    "identity_complete": false,
+    "identity_required": true,
+    "returncode": 0,
+    "role_quality_audit_failed": false,
+    "schema": "bot_live_acceptance_facts_v1",
+    "session_closed": true,
+    "session_required": true,
+    "stages": [
+      {
+        "missing": [],
+        "stage": "movement_smoke"
+      },
+      {
+        "missing": [
+          "kill_evidence"
+        ],
+        "stage": "kill_quest"
+      },
+      {
+        "missing": [
+          "quest_progress_evidence"
+        ],
+        "stage": "collect_quest"
+      },
+      {
+        "missing": [
+          "accept_hub_quests_action_evidence",
+          "quest_acceptance_evidence"
+        ],
+        "stage": "quest_hub_batching"
+      },
+      {
+        "missing": [
+          "vendor_or_trainer_action_evidence"
+        ],
+        "stage": "trainer_visit"
+      },
+      {
+        "missing": [
+          "vendor_or_trainer_action_evidence"
+        ],
+        "stage": "vendor_repair"
+      },
+      {
+        "missing": [
+          "profession_or_recipe_action_evidence"
+        ],
+        "stage": "profession_recipe_acquisition"
+      },
+      {
+        "missing": [
+          "material_farming_action_evidence"
+        ],
+        "stage": "material_farming"
+      },
+      {
+        "missing": [
+          "loot_or_gear_upgrade_evidence"
+        ],
+        "stage": "smart_loot"
+      },
+      {
+        "missing": [
+          "stonecore_live_clear_report"
+        ],
+        "stage": "normal_dungeon_trash"
+      },
+      {
+        "missing": [
+          "stonecore_live_clear_report"
+        ],
+        "stage": "dungeon_boss"
+      },
+      {
+        "missing": [
+          "stonecore_live_clear_report"
+        ],
+        "stage": "full_stonecore_clear"
+      },
+      {
+        "missing": [
+          "blackwing_descent_live_clear_report"
+        ],
+        "stage": "raid_trash"
+      },
+      {
+        "missing": [
+          "blackwing_descent_live_boss_report"
+        ],
+        "stage": "raid_boss"
+      },
+      {
+        "missing": [
+          "blackwing_descent_live_clear_report"
+        ],
+        "stage": "full_blackwing_descent_clear"
+      }
+    ],
+    "timed_out": false,
+    "validation_context": {
+      "scenario_id": "stonecore_5n"
+    },
+    "validation_route_manifest": {},
+    "watchdog_state": {
+      "death_loop": false,
+      "heartbeat_sec": 30,
+      "max_death_loops": 100000,
+      "max_repeated_decisions": 100000,
+      "no_progress": true,
+      "no_progress_window_sec": 900,
+      "policy": "completion-watchdog",
+      "progress_counters": {
+        "boss_engagement_actions": 0,
+        "boss_kill_evidence": 0,
+        "death_loop_events": 0,
+        "decisions": 1866,
+        "gear_upgrades": 0,
+        "kills": 0,
+        "moved_diagnoses": 0,
+        "non_spawn_trace_entries": 1866,
+        "quest_objective_progress": 0,
+        "quests_accepted": 0,
+        "quests_completed": 0,
+        "repath_events": 0,
+        "repeated_decisions": 0,
+        "stuck_events": 0,
+        "teacher_assisted_kills": 0,
+        "trash_pulls": 0,
+        "validation_route_actions": 1856,
+        "validation_route_combat_progress_diagnoses": 0,
+        "validation_route_manifest_complete": 0,
+        "validation_route_no_progress_diagnoses": 0,
+        "validation_route_terminal_evidence": 0
+      },
+      "progress_total": 0,
+      "repeated_decision_loop": false,
+      "semantic_progress_plateau": false
+    }
+  },
+  "acceptance_verification": {
+    "accepted": false,
+    "all_stages_passed": false,
+    "facts_sha256": "1f91bd702abed7612700507cd8af0c964aabbdc8db37744f7c2ef38f7adb424f",
+    "failed_count": 14,
+    "manifest_complete": false,
+    "passed_count": 1,
+    "rejections": [
+      "not_all_stages_passed",
+      "failure_labels_present",
+      "watchdog_failure_is_not_final_evidence",
+      "incomplete_evidence_identity"
+    ],
+    "result_sha256": "4be651f76f8c16c30f572de86556a09c6162ceb23c82886efea39b88ced9671d",
+    "schema": "bot_live_acceptance_result_v1",
+    "stored_summary_discrepancies": []
+  },
+  "all_passed": false,
+  "batch_capture": {
+    "acceptance": {
+      "accepted": false,
+      "discrepancies": [],
+      "fail_closed": false,
+      "recomputed": {
+        "accepted": false,
+        "all_stages_passed": false,
+        "facts_sha256": "1f91bd702abed7612700507cd8af0c964aabbdc8db37744f7c2ef38f7adb424f",
+        "failed_count": 14,
+        "manifest_complete": false,
+        "passed_count": 1,
+        "rejections": [
+          "not_all_stages_passed",
+          "failure_labels_present",
+          "watchdog_failure_is_not_final_evidence",
+          "incomplete_evidence_identity"
+        ],
+        "result_sha256": "4be651f76f8c16c30f572de86556a09c6162ceb23c82886efea39b88ced9671d",
+        "schema": "bot_live_acceptance_result_v1"
+      },
+      "schema": "bot_live_acceptance_verification_v1"
+    },
+    "batch_id": "phase6-serial-soak-4",
+    "compact": {
+      "bundle_sha256": "8dc4fac642fec12b46e289f8a530fbc292c02f06ddbb475bc1b26a74bf530ae5",
+      "files": [
+        {
+          "path": "evidence.parquet",
+          "sha256": "b526c1c8514ebc4f7907ba923355566f868e73b8c1298320525824528def1412",
+          "size": 2383
+        }
+      ],
+      "format": "parquet_zstd",
+      "row_count": 1
+    },
+    "database_export": null,
+    "duplicate_uncompressed_jsonl_retained": false,
+    "identity_sha256": "110c6ad082b3abeee61b6b100ecc9a075bde7c3b12cf70801aa8b0c06a1b87fd",
+    "max_pending_raw_bytes": 67108864,
+    "raw": {
+      "bundle_sha256": "b28e8261c1e5dba60f55049ef7e0a0e4c941ac56192980abaf1d9f5fd259d771",
+      "files": [
+        {
+          "path": "acceptance_source_report.json",
+          "sha256": "bf424271932633b6aa614f992ebc422efe3a94d9e3c04387996c6978e6c65acb",
+          "size": 6489679
+        },
+        {
+          "path": "events.jsonl.zst",
+          "sha256": "40923140348f8cfca481c8344a56fc657977d496b7bc4a272a7478371d51ac03",
+          "size": 45981
+        },
+        {
+          "path": "exact_manifests.json",
+          "sha256": "0238e503afc7eee332f5474c3bc2bf99a00e97ae997bc4d2fe4344a5f2fe197f",
+          "size": 10372
+        }
+      ],
+      "format": "jsonl.zst",
+      "row_count": 103
+    },
+    "schema": "bot_immutable_batch_manifest_v1",
+    "state": "closed_unpublished"
+  },
+  "batch_publication": {
+    "batch_id": "phase6-serial-soak-4",
+    "batch_identity_sha256": "110c6ad082b3abeee61b6b100ecc9a075bde7c3b12cf70801aa8b0c06a1b87fd",
+    "cache_scope": "batch_specific",
+    "compact_bundle_sha256": "8dc4fac642fec12b46e289f8a530fbc292c02f06ddbb475bc1b26a74bf530ae5",
+    "pointers": [
+      {
+        "dvc_md5": "86b1a997a9cf5e92d405e825c388de01.dir",
+        "nfiles": 3,
+        "path": "artifacts/all_spec_program/phase6_serial_soak_20260719/attempt_004/batch/raw.dvc",
+        "pointer_sha256": "5f8081bf98e4886c804c713003fb3257cd8594833bfc9ebfe858c661c747b62c",
+        "size": 6546032
+      },
+      {
+        "dvc_md5": "00333fea4e05eaaa31ddd09e1b848953.dir",
+        "nfiles": 1,
+        "path": "artifacts/all_spec_program/phase6_serial_soak_20260719/attempt_004/batch/compact.dvc",
+        "pointer_sha256": "3ce174b262a3bd059a1523a12d55ece5a84d48ed902b465c4348d183148be877",
+        "size": 2383
+      }
+    ],
+    "raw_bundle_sha256": "b28e8261c1e5dba60f55049ef7e0a0e4c941ac56192980abaf1d9f5fd259d771",
+    "receipt_sha256": "8698fc092abab7dbb229e8d02e724da1fd38b8ca5be609422e3d884e623c9af7",
+    "remote_status_sha256": "efed9e5afcfe149915ae98b9ed9e69304eb48f5ce2e2265b18b5b5ed2f155e60",
+    "remote_verified": true,
+    "schema": "bot_immutable_batch_publication_receipt_v1"
+  },
+  "completion_reason": "no_progress_watchdog",
+  "evidence_envelope": {
+    "aggregation_identity_sha256": "66cd948e5a9e20479b02426af506076192c20aa42f3cf39e472b733a808a119a",
+    "artifact_hashes": {
+      "compact_artifact_sha256": "b80097f097920fc61e2350ed4f562bc08936d762b38c6e7770cb455f419099af",
+      "dvc_pointer_sha256": "9459596c7537329f66dd8fdd8c3f19578a0c84458b609c0edcc15ecd0266bd40",
+      "raw_artifact_sha256": "2ea4db867a7bfadea93e344fceabbf6cd2d2f36bdd43c78aee8c11f228a5fa95",
+      "remote_verification_receipt_sha256": "769f3caed4707a5daea6c938fa168102030dc02a21f0622e70a7f71828a4ba0d"
+    },
+    "attempt_identity_sha256": "b71c190b59963b09a5a90a7f123811022f472f2b42ad24c717d5d5656eb1c2f9",
+    "component_hashes": {
+      "binary_sha256": "ff2af7b6fc1733993f204b2b5143fae0641c4c58bd6808396a7e9d08452f490b",
+      "config_sha256": "e4059209ab34173259000f58b57c405361b3e97df21d20162687e08d73f727d7",
+      "database_schema_sha256": "eec0069ae22ffb3d81ec5830baf0ea04c096085d621c3cff2fe7be4ab50919f7",
+      "database_snapshot_sha256": "817989ba028303e03959a2e0e3e7987419b4c28d7121a4fbde423f52ffa0c7c5",
+      "gear_sha256": "abb635df87e6eb8f10057738fef7500e3c46c75896993e65dfe83012cebc2a68",
+      "git_commit_sha256": "2477041ccd6c3f5a228036f7a91f806564e27757a539e9b9ac309ffe98f7b8ee",
+      "git_dirty_state_sha256": "a6a3c1471f7d0aa06774cc9573b43319e6cbff0b9830cc3529c48e4864c50004",
+      "policy_sha256": "21174d5a63f5cbc68258773dce0e7a908a9ecc07c4dd390d1f873c7b2b883e44",
+      "process_session_sha256": "43bb3206424281c260620cad34477ebd93180a202f70c0bd2bae7c1c85016ee5",
+      "profile_generation_sha256": "fe1c1c9109b80c70596c5546a75213ac5b0a3859addeab937492e811f1a9bd18",
+      "provisioning_sha256": "01f5891926b069e4da4a42853a6a47f72cdd352dea559f9e99254b4105755df2",
+      "reference_sha256": "86a09b937d5067f844109091319c7dfbeb1d014fc02a1430e934993a0cd3ba9f",
+      "route_sha256": "141836e2b3660516b4c823487db5fe329a0d1880f7c0d0c2d1001299ccbaf5d5",
+      "scenario_sha256": "0e8b9afe6094869fc9362d5558257a43c080740d692c7ecb4a347d706f8bacd1",
+      "server_epoch_sha256": "dabd38f344ce7fb8fae632a0dc1a7c29859555509ab4d1edeb97e5ebc151ff07",
+      "spec_catalog_sha256": "dbe6e23d97af89ccb3b7750bb10d7ed812b93b7e5dfc529890b71bc860e08072"
+    },
+    "freshness": "current_unpublished",
+    "identity_complete": false,
+    "identity_incomplete_reasons": [
+      "missing_external_database_snapshot_sha256",
+      "missing_external_database_schema_sha256",
+      "missing_external_server_epoch_sha256",
+      "missing_external_profile_generation_sha256"
+    ],
+    "identity_manifest": "",
+    "schema": "bot_live_evidence_envelope_v1",
+    "scope_ids": {
+      "attempt_id": "/home/runiir/Games/trinity-cata/artifacts/all_spec_program/phase6_serial_soak_20260719/attempt_004:1784459945",
+      "batch_id": "/home/runiir/Games/trinity-cata/artifacts/all_spec_program/phase6_serial_soak_20260719",
+      "cohort_id": "all",
+      "composition_id": "stonecore_5n",
+      "instance_id": "stonecore_5n",
+      "measurement_window_id": "observe:30:timeout:960",
+      "party_id": "stonecore_5n",
+      "repeat_id": "full"
+    },
+    "superseded_by": null
+  },
+  "failure_labels": [
+    "bot_diagnosis_error",
+    "validation_route_no_engagement",
+    "no_progress_observed"
+  ],
+  "failure_reason": "bot_diagnosis_error",
+  "generated_at_unix": 1784459945,
+  "published_raw_payloads_retained_locally": false,
+  "returncode": 0,
+  "schema": "bot_live_validation_report_v1",
+  "session": {
+    "active_after_start": true,
+    "admitted_at_unix": 1784459011,
+    "attempt_index": 4,
+    "binary_sha256": "ff2af7b6fc1733993f204b2b5143fae0641c4c58bd6808396a7e9d08452f490b",
+    "cleanup": {
+      "active": false,
+      "active_bots": 0,
+      "lease_count": 0,
+      "party_bot_count": 0,
+      "server_epoch": 1784454609191
+    },
+    "closed_at_unix": 1784459945,
+    "cohort_id": "phase6-serial-soak",
+    "commands": [
+      ".botauto create phase6-serial-soak",
+      ".botauto stop phase6-serial-soak",
+      ".botauto status phase6-serial-soak",
+      ".botauto prepare phase6-serial-soak stonecore_5n",
+      ".botauto start phase6-serial-soak stonecore_5n",
+      ".botauto status phase6-serial-soak",
+      ".botauto status phase6-serial-soak",
+      ".botauto diagnose phase6-serial-soak all",
+      ".botauto trace phase6-serial-soak all 128",
+      ".botauto status phase6-serial-soak",
+      ".botauto diagnose phase6-serial-soak all",
+      ".botauto trace phase6-serial-soak all 128",
+      ".botauto status phase6-serial-soak",
+      ".botauto diagnose phase6-serial-soak all",
+      ".botauto trace phase6-serial-soak all 128",
+      ".botauto status phase6-serial-soak",
+      ".botauto diagnose phase6-serial-soak all",
+      ".botauto trace phase6-serial-soak all 128",
+      ".botauto status phase6-serial-soak",
+      ".botauto diagnose phase6-serial-soak all",
+      ".botauto trace phase6-serial-soak all 128",
+      ".botauto status phase6-serial-soak",
+      ".botauto diagnose phase6-serial-soak all",
+      ".botauto trace phase6-serial-soak all 128",
+      ".botauto status phase6-serial-soak",
+      ".botauto diagnose phase6-serial-soak all",
+      ".botauto trace phase6-serial-soak all 128",
+      ".botauto status phase6-serial-soak",
+      ".botauto diagnose phase6-serial-soak all",
+      ".botauto trace phase6-serial-soak all 128",
+      ".botauto status phase6-serial-soak",
+      ".botauto diagnose phase6-serial-soak all",
+      ".botauto trace phase6-serial-soak all 128",
+      ".botauto status phase6-serial-soak",
+      ".botauto diagnose phase6-serial-soak all",
+      ".botauto trace phase6-serial-soak all 128",
+      ".botauto status phase6-serial-soak",
+      ".botauto diagnose phase6-serial-soak all",
+      ".botauto trace phase6-serial-soak all 128",
+      ".botauto status phase6-serial-soak",
+      ".botauto diagnose phase6-serial-soak all",
+      ".botauto trace phase6-serial-soak all 128",
+      ".botauto status phase6-serial-soak",
+      ".botauto diagnose phase6-serial-soak all",
+      ".botauto trace phase6-serial-soak all 128",
+      ".botauto status phase6-serial-soak",
+      ".botauto diagnose phase6-serial-soak all",
+      ".botauto trace phase6-serial-soak all 128",
+      ".botauto status phase6-serial-soak",
+      ".botauto diagnose phase6-serial-soak all",
+      ".botauto trace phase6-serial-soak all 128",
+      ".botauto status phase6-serial-soak",
+      ".botauto diagnose phase6-serial-soak all",
+      ".botauto trace phase6-serial-soak all 128",
+      ".botauto status phase6-serial-soak",
+      ".botauto diagnose phase6-serial-soak all",
+      ".botauto trace phase6-serial-soak all 128",
+      ".botauto status phase6-serial-soak",
+      ".botauto diagnose phase6-serial-soak all",
+      ".botauto trace phase6-serial-soak all 128",
+      ".botauto status phase6-serial-soak",
+      ".botauto diagnose phase6-serial-soak all",
+      ".botauto trace phase6-serial-soak all 128",
+      ".botauto status phase6-serial-soak",
+      ".botauto diagnose phase6-serial-soak all",
+      ".botauto trace phase6-serial-soak all 128",
+      ".botauto status phase6-serial-soak",
+      ".botauto diagnose phase6-serial-soak all",
+      ".botauto trace phase6-serial-soak all 128",
+      ".botauto status phase6-serial-soak",
+      ".botauto diagnose phase6-serial-soak all",
+      ".botauto trace phase6-serial-soak all 128",
+      ".botauto status phase6-serial-soak",
+      ".botauto diagnose phase6-serial-soak all",
+      ".botauto trace phase6-serial-soak all 128",
+      ".botauto status phase6-serial-soak",
+      ".botauto diagnose phase6-serial-soak all",
+      ".botauto trace phase6-serial-soak all 128",
+      ".botauto status phase6-serial-soak",
+      ".botauto diagnose phase6-serial-soak all",
+      ".botauto trace phase6-serial-soak all 128",
+      ".botauto status phase6-serial-soak",
+      ".botauto diagnose phase6-serial-soak all",
+      ".botauto trace phase6-serial-soak all 128",
+      ".botauto status phase6-serial-soak",
+      ".botauto diagnose phase6-serial-soak all",
+      ".botauto trace phase6-serial-soak all 128",
+      ".botauto status phase6-serial-soak",
+      ".botauto diagnose phase6-serial-soak all",
+      ".botauto trace phase6-serial-soak all 128",
+      ".botauto status phase6-serial-soak",
+      ".botauto diagnose phase6-serial-soak all",
+      ".botauto trace phase6-serial-soak all 128",
+      ".botauto status phase6-serial-soak",
+      ".botauto diagnose phase6-serial-soak all",
+      ".botauto trace phase6-serial-soak all 128",
+      ".botauto status phase6-serial-soak",
+      ".botauto diagnose phase6-serial-soak all",
+      ".botauto trace phase6-serial-soak all 128",
+      ".botauto combatlog phase6-serial-soak",
+      ".botauto stop phase6-serial-soak"
+    ],
+    "config_sha256": "e4059209ab34173259000f58b57c405361b3e97df21d20162687e08d73f727d7",
+    "environment_fingerprint": "d3bef154ec8b3f52aa929bca0e038b3c549ea080b3759636024a8512e7cdd92d",
+    "git_dirty_state_sha256": "a6a3c1471f7d0aa06774cc9573b43319e6cbff0b9830cc3529c48e4864c50004",
+    "git_head": "0bd7ad99a70a074841a7a58cb140742bb494c7be",
+    "global_lifecycle_command_count": 0,
+    "inactive_after_attempt": true,
+    "inactive_before_preparation": true,
+    "input_sha256": "c01a12983e03b277d05afa3a5d4b9c40892def39bc119f4162da735046265252",
+    "lease_count_after_start": 5,
+    "max_active_cohorts": 1,
+    "preparation": {
+      "bot_pool_reset": "cohort_prepare",
+      "profile": "stonecore_5n",
+      "provisioning_scope": "server_epoch",
+      "server_epoch": 1784454609191
+    },
+    "profile": "stonecore_5n",
+    "profile_content_hash": "ED7F5B3E14E7EF44D6ECB156D5DC8DB62C06294D9FD3B42B08DB76EF3287CC2C",
+    "profile_generation": 1,
+    "repository_fingerprint": "f98f64a27a22d31093be664211fd31a3f608367fc2a71f3a80ee0e6cabf38c78",
+    "restart_components_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+    "runtime_attempt_id": 5,
+    "scheduler_events": [
+      {
+        "action": "admit",
+        "attempt_index": 4,
+        "cohort_id": "phase6-serial-soak"
+      },
+      {
+        "action": "close",
+        "attempt_index": 4,
+        "cohort_id": "phase6-serial-soak"
+      }
+    ],
+    "schema": "bot_live_validation_session_v2",
+    "server_action": "started",
+    "server_epoch": 1784454609191,
+    "server_pid": 3496861,
+    "session_fingerprint": "54c2afc6a5c7dc94d30dd79fb06c41f1030238702fd4418e552940991c25229d",
+    "transport": "session",
+    "unit_name": "trinity-live-validation-fbab231dd0a384c72f6914b3",
+    "watchdog_completed": true
+  },
+  "timed_out": false,
+  "validation_context": {
+    "scenario_id": "stonecore_5n"
+  },
+  "validation_route_manifest": {}
+}

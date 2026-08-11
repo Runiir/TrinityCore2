@@ -1,0 +1,6 @@
+outs:
+- md5: 7a484c68f22be1716b5d24b967d9147b.dir
+  size: 2608
+  nfiles: 1
+  hash: md5
+  path: compact

@@ -9,153 +9,520 @@
     "protection_paladin": {
       "primary_talent_tree_id": 839,
       "talents": [
-        { "talent_id": 12198, "spell_id": 63648 },
-        { "talent_id": 10324, "spell_id": 20225 },
-        { "talent_id": 12152, "spell_id": 87164 },
-        { "talent_id": 10372, "spell_id": 53696 },
-        { "talent_id": 10332, "spell_id": 20145 },
-        { "talent_id": 10336, "spell_id": 20488 },
-        { "talent_id": 10344, "spell_id": 84633 },
-        { "talent_id": 10346, "spell_id": 84629 },
-        { "talent_id": 10374, "spell_id": 53595 },
-        { "talent_id": 11159, "spell_id": 84636 },
-        { "talent_id": 11161, "spell_id": 20179 },
-        { "talent_id": 11607, "spell_id": 53600 },
-        { "talent_id": 11193, "spell_id": 85043 },
-        { "talent_id": 10680, "spell_id": 26016 },
-        { "talent_id": 10356, "spell_id": 20925 },
-        { "talent_id": 11221, "spell_id": 85646 },
-        { "talent_id": 10334, "spell_id": 70940 },
-        { "talent_id": 10370, "spell_id": 53710 },
-        { "talent_id": 10340, "spell_id": 84854 },
-        { "talent_id": 10350, "spell_id": 31850 },
-        { "talent_id": 10651, "spell_id": 31868 }
+        {
+          "talent_id": 12198,
+          "spell_id": 63648
+        },
+        {
+          "talent_id": 10324,
+          "spell_id": 20225
+        },
+        {
+          "talent_id": 12152,
+          "spell_id": 87164
+        },
+        {
+          "talent_id": 10372,
+          "spell_id": 53696
+        },
+        {
+          "talent_id": 10332,
+          "spell_id": 20145
+        },
+        {
+          "talent_id": 10336,
+          "spell_id": 20488
+        },
+        {
+          "talent_id": 10344,
+          "spell_id": 84633
+        },
+        {
+          "talent_id": 10346,
+          "spell_id": 84629
+        },
+        {
+          "talent_id": 10374,
+          "spell_id": 53595
+        },
+        {
+          "talent_id": 11159,
+          "spell_id": 84636
+        },
+        {
+          "talent_id": 11161,
+          "spell_id": 20179
+        },
+        {
+          "talent_id": 11607,
+          "spell_id": 53600
+        },
+        {
+          "talent_id": 11193,
+          "spell_id": 85043
+        },
+        {
+          "talent_id": 10680,
+          "spell_id": 26016
+        },
+        {
+          "talent_id": 10356,
+          "spell_id": 20925
+        },
+        {
+          "talent_id": 11221,
+          "spell_id": 85646
+        },
+        {
+          "talent_id": 10334,
+          "spell_id": 70940
+        },
+        {
+          "talent_id": 10370,
+          "spell_id": 53710
+        },
+        {
+          "talent_id": 10340,
+          "spell_id": 84854
+        },
+        {
+          "talent_id": 10350,
+          "spell_id": 31850
+        },
+        {
+          "talent_id": 10651,
+          "spell_id": 31868
+        }
       ],
-      "primary_tree_spells": [31878, 31935, 53592, 84839]
+      "primary_tree_spells": [
+        31878,
+        31935,
+        53592,
+        84839
+      ]
     },
     "fire_mage": {
       "primary_talent_tree_id": 851,
       "talents": [
-        { "talent_id": 9154, "spell_id": 12574 },
-        { "talent_id": 9200, "spell_id": 44403 },
-        { "talent_id": 10545, "spell_id": 29075 },
-        { "talent_id": 10531, "spell_id": 84254 },
-        { "talent_id": 10529, "spell_id": 12846 },
-        { "talent_id": 11434, "spell_id": 54734 },
-        { "talent_id": 10537, "spell_id": 12357 },
-        { "talent_id": 11433, "spell_id": 86949 },
-        { "talent_id": 10551, "spell_id": 11113 },
-        { "talent_id": 10573, "spell_id": 44445 },
-        { "talent_id": 10547, "spell_id": 11367 },
-        { "talent_id": 10561, "spell_id": 11129 },
-        { "talent_id": 12121, "spell_id": 44448 },
-        { "talent_id": 11431, "spell_id": 86914 },
-        { "talent_id": 10734, "spell_id": 84674 },
-        { "talent_id": 10571, "spell_id": 31661 },
-        { "talent_id": 10563, "spell_id": 86880 },
-        { "talent_id": 10541, "spell_id": 12873 },
-        { "talent_id": 10577, "spell_id": 44457 },
-        { "talent_id": 11157, "spell_id": 12953 }
+        {
+          "talent_id": 9154,
+          "spell_id": 12574
+        },
+        {
+          "talent_id": 9200,
+          "spell_id": 44403
+        },
+        {
+          "talent_id": 10545,
+          "spell_id": 29075
+        },
+        {
+          "talent_id": 10531,
+          "spell_id": 84254
+        },
+        {
+          "talent_id": 10529,
+          "spell_id": 12846
+        },
+        {
+          "talent_id": 11434,
+          "spell_id": 54734
+        },
+        {
+          "talent_id": 10537,
+          "spell_id": 12357
+        },
+        {
+          "talent_id": 11433,
+          "spell_id": 86949
+        },
+        {
+          "talent_id": 10551,
+          "spell_id": 11113
+        },
+        {
+          "talent_id": 10573,
+          "spell_id": 44445
+        },
+        {
+          "talent_id": 10547,
+          "spell_id": 11367
+        },
+        {
+          "talent_id": 10561,
+          "spell_id": 11129
+        },
+        {
+          "talent_id": 12121,
+          "spell_id": 44448
+        },
+        {
+          "talent_id": 11431,
+          "spell_id": 86914
+        },
+        {
+          "talent_id": 10734,
+          "spell_id": 84674
+        },
+        {
+          "talent_id": 10571,
+          "spell_id": 31661
+        },
+        {
+          "talent_id": 10563,
+          "spell_id": 86880
+        },
+        {
+          "talent_id": 10541,
+          "spell_id": 12873
+        },
+        {
+          "talent_id": 10577,
+          "spell_id": 44457
+        },
+        {
+          "talent_id": 11157,
+          "spell_id": 12953
+        }
       ],
-      "primary_tree_spells": [11366, 84668]
+      "primary_tree_spells": [
+        11366,
+        84668
+      ]
     },
     "marksmanship_hunter": {
       "primary_talent_tree_id": 807,
       "talents": [
-        { "talent_id": 9390, "spell_id": 34954 },
-        { "talent_id": 9380, "spell_id": 19418 },
-        { "talent_id": 9378, "spell_id": 34949 },
-        { "talent_id": 9396, "spell_id": 83356 },
-        { "talent_id": 9402, "spell_id": 53224 },
-        { "talent_id": 9398, "spell_id": 34483 },
-        { "talent_id": 9424, "spell_id": 34490 },
-        { "talent_id": 9406, "spell_id": 35102 },
-        { "talent_id": 11225, "spell_id": 53238 },
-        { "talent_id": 9408, "spell_id": 35110 },
-        { "talent_id": 9412, "spell_id": 19506 },
-        { "talent_id": 9416, "spell_id": 83490 },
-        { "talent_id": 9420, "spell_id": 82894 },
-        { "talent_id": 9422, "spell_id": 53232 },
-        { "talent_id": 9418, "spell_id": 34487 },
-        { "talent_id": 9404, "spell_id": 23989 },
-        { "talent_id": 9426, "spell_id": 83560 },
-        { "talent_id": 9428, "spell_id": 53243 },
-        { "talent_id": 9430, "spell_id": 53209 },
-        { "talent_id": 9432, "spell_id": 52786 }
+        {
+          "talent_id": 9390,
+          "spell_id": 34954
+        },
+        {
+          "talent_id": 9380,
+          "spell_id": 19418
+        },
+        {
+          "talent_id": 9378,
+          "spell_id": 34949
+        },
+        {
+          "talent_id": 9396,
+          "spell_id": 83356
+        },
+        {
+          "talent_id": 9402,
+          "spell_id": 53224
+        },
+        {
+          "talent_id": 9398,
+          "spell_id": 34483
+        },
+        {
+          "talent_id": 9424,
+          "spell_id": 34490
+        },
+        {
+          "talent_id": 9406,
+          "spell_id": 35102
+        },
+        {
+          "talent_id": 11225,
+          "spell_id": 53238
+        },
+        {
+          "talent_id": 9408,
+          "spell_id": 35110
+        },
+        {
+          "talent_id": 9412,
+          "spell_id": 19506
+        },
+        {
+          "talent_id": 9416,
+          "spell_id": 83490
+        },
+        {
+          "talent_id": 9420,
+          "spell_id": 82894
+        },
+        {
+          "talent_id": 9422,
+          "spell_id": 53232
+        },
+        {
+          "talent_id": 9418,
+          "spell_id": 34487
+        },
+        {
+          "talent_id": 9404,
+          "spell_id": 23989
+        },
+        {
+          "talent_id": 9426,
+          "spell_id": 83560
+        },
+        {
+          "talent_id": 9428,
+          "spell_id": 53243
+        },
+        {
+          "talent_id": 9430,
+          "spell_id": 53209
+        },
+        {
+          "talent_id": 9432,
+          "spell_id": 52786
+        }
       ],
-      "primary_tree_spells": [19434, 87326]
+      "primary_tree_spells": [
+        19434,
+        87326
+      ]
     },
     "survival_hunter": {
       "primary_talent_tree_id": 809,
       "talents": [
-        { "talent_id": 9490, "spell_id": 82684 },
-        { "talent_id": 9390, "spell_id": 34954 },
-        { "talent_id": 9380, "spell_id": 19418 },
-        { "talent_id": 9396, "spell_id": 83356 },
-        { "talent_id": 9442, "spell_id": 56340 },
-        { "talent_id": 9432, "spell_id": 52786 },
-        { "talent_id": 9450, "spell_id": 82834 },
-        { "talent_id": 10753, "spell_id": 63458 },
-        { "talent_id": 9484, "spell_id": 34499 },
-        { "talent_id": 9452, "spell_id": 56343 },
-        { "talent_id": 9460, "spell_id": 34493 },
-        { "talent_id": 9462, "spell_id": 56336 },
-        { "talent_id": 9464, "spell_id": 82833 },
-        { "talent_id": 9468, "spell_id": 19386 },
-        { "talent_id": 9474, "spell_id": 53296 },
-        { "talent_id": 9476, "spell_id": 53290 },
-        { "talent_id": 9478, "spell_id": 53304 },
-        { "talent_id": 11698, "spell_id": 87934 },
-        { "talent_id": 9480, "spell_id": 3674 }
+        {
+          "talent_id": 9490,
+          "spell_id": 82684
+        },
+        {
+          "talent_id": 9390,
+          "spell_id": 34954
+        },
+        {
+          "talent_id": 9380,
+          "spell_id": 19418
+        },
+        {
+          "talent_id": 9396,
+          "spell_id": 83356
+        },
+        {
+          "talent_id": 9442,
+          "spell_id": 56340
+        },
+        {
+          "talent_id": 9432,
+          "spell_id": 52786
+        },
+        {
+          "talent_id": 9450,
+          "spell_id": 82834
+        },
+        {
+          "talent_id": 10753,
+          "spell_id": 63458
+        },
+        {
+          "talent_id": 9484,
+          "spell_id": 34499
+        },
+        {
+          "talent_id": 9452,
+          "spell_id": 56343
+        },
+        {
+          "talent_id": 9460,
+          "spell_id": 34493
+        },
+        {
+          "talent_id": 9462,
+          "spell_id": 56336
+        },
+        {
+          "talent_id": 9464,
+          "spell_id": 82833
+        },
+        {
+          "talent_id": 9468,
+          "spell_id": 19386
+        },
+        {
+          "talent_id": 9474,
+          "spell_id": 53296
+        },
+        {
+          "talent_id": 9476,
+          "spell_id": 53290
+        },
+        {
+          "talent_id": 9478,
+          "spell_id": 53304
+        },
+        {
+          "talent_id": 11698,
+          "spell_id": 87934
+        },
+        {
+          "talent_id": 9480,
+          "spell_id": 3674
+        }
       ],
-      "primary_tree_spells": [53301, 84729]
+      "primary_tree_spells": [
+        53301,
+        84729
+      ]
     },
     "enhancement_shaman": {
       "primary_talent_tree_id": 263,
       "talents": [
-        { "talent_id": 11218, "spell_id": 17487 },
-        { "talent_id": 563, "spell_id": 16105 },
-        { "talent_id": 575, "spell_id": 16113 },
-        { "talent_id": 1685, "spell_id": 30674 },
-        { "talent_id": 611, "spell_id": 29079 },
-        { "talent_id": 5560, "spell_id": 77538 },
-        { "talent_id": 607, "spell_id": 51881 },
-        { "talent_id": 11216, "spell_id": 29180 },
-        { "talent_id": 602, "spell_id": 16282 },
-        { "talent_id": 605, "spell_id": 16262 },
-        { "talent_id": 901, "spell_id": 17364 },
-        { "talent_id": 2055, "spell_id": 51527 },
-        { "talent_id": 2083, "spell_id": 77657 },
-        { "talent_id": 1693, "spell_id": 30823 },
-        { "talent_id": 1689, "spell_id": 30808 },
-        { "talent_id": 2057, "spell_id": 51530 },
-        { "talent_id": 5563, "spell_id": 77701 },
-        { "talent_id": 2058, "spell_id": 51533 }
+        {
+          "talent_id": 11218,
+          "spell_id": 17487
+        },
+        {
+          "talent_id": 563,
+          "spell_id": 16105
+        },
+        {
+          "talent_id": 575,
+          "spell_id": 16113
+        },
+        {
+          "talent_id": 1685,
+          "spell_id": 30674
+        },
+        {
+          "talent_id": 611,
+          "spell_id": 29079
+        },
+        {
+          "talent_id": 5560,
+          "spell_id": 77538
+        },
+        {
+          "talent_id": 607,
+          "spell_id": 51881
+        },
+        {
+          "talent_id": 11216,
+          "spell_id": 29180
+        },
+        {
+          "talent_id": 602,
+          "spell_id": 16282
+        },
+        {
+          "talent_id": 605,
+          "spell_id": 16262
+        },
+        {
+          "talent_id": 901,
+          "spell_id": 17364
+        },
+        {
+          "talent_id": 2055,
+          "spell_id": 51527
+        },
+        {
+          "talent_id": 2083,
+          "spell_id": 77657
+        },
+        {
+          "talent_id": 1693,
+          "spell_id": 30823
+        },
+        {
+          "talent_id": 1689,
+          "spell_id": 30808
+        },
+        {
+          "talent_id": 2057,
+          "spell_id": 51530
+        },
+        {
+          "talent_id": 5563,
+          "spell_id": 77701
+        },
+        {
+          "talent_id": 2058,
+          "spell_id": 51533
+        }
       ],
-      "primary_tree_spells": [30814, 51522, 60103, 86629]
+      "primary_tree_spells": [
+        30814,
+        51522,
+        60103,
+        86629
+      ]
     }
   },
   "default_skills": [
-    { "id": 185, "value": 525, "max": 525 },
-    { "id": 129, "value": 525, "max": 525 },
-    { "id": 762, "value": 300, "max": 300 }
+    {
+      "id": 185,
+      "value": 525,
+      "max": 525
+    },
+    {
+      "id": 129,
+      "value": 525,
+      "max": 525
+    },
+    {
+      "id": 762,
+      "value": 300,
+      "max": 300
+    }
   ],
   "default_consumables": [
-    { "item_id": 58085, "slot": 40, "count": 20 },
-    { "item_id": 58086, "slot": 41, "count": 20 },
-    { "item_id": 58257, "slot": 42, "count": 20 }
+    {
+      "item_id": 58085,
+      "slot": 40,
+      "count": 20
+    },
+    {
+      "item_id": 58086,
+      "slot": 41,
+      "count": 20
+    },
+    {
+      "item_id": 58257,
+      "slot": 42,
+      "count": 20
+    }
   ],
   "scenarios": [
     {
       "id": "stonecore_5n",
       "description": "Prepared 5-man group parked inside Stonecore entrance target for end-to-end dungeon validation.",
-      "start_position": { "map_id": 725, "x": 851.052, "y": 986.474, "z": 317.266, "o": 0.0 },
+      "start_position": {
+        "map_id": 725,
+        "x": 851.052,
+        "y": 986.474,
+        "z": 317.266,
+        "o": 0.0
+      },
       "bots": [
-        { "account": "SCVALTANK", "name": "Scvaltank", "legacy_names": ["ScValTank"], "role": "tank", "class_spec": "protection_paladin", "race": 1, "class": 2, "level": 85, "glyphs": [45742, 41098, 43869, 41107, 43367, 43867, 43368, 43340, 43366] },
+        {
+          "account": "SCVALTANK",
+          "name": "Scvaltank",
+          "legacy_names": [
+            "ScValTank"
+          ],
+          "role": "tank",
+          "class_spec": "protection_paladin",
+          "race": 1,
+          "class": 2,
+          "level": 85,
+          "glyphs": [
+            45742,
+            41098,
+            43869,
+            41107,
+            43367,
+            43867,
+            43368,
+            43340,
+            43366
+          ]
+        },
         {
           "account": "SCVALHEAL",
           "name": "Scvalheal",
-          "legacy_names": ["ScValHeal"],
+          "legacy_names": [
+            "ScValHeal"
+          ],
           "role": "healer",
           "class_spec": "holy_priest",
           "race": 1,
@@ -163,43 +530,218 @@
           "level": 85,
           "primary_talent_tree_id": 813,
           "talents": [
-            { "talent_id": 10746, "spell_id": 15020 },
-            { "talent_id": 9553, "spell_id": 33160 },
-            { "talent_id": 9549, "spell_id": 18533 },
-            { "talent_id": 11669, "spell_id": 19236 },
-            { "talent_id": 11765, "spell_id": 88690 },
-            { "talent_id": 9561, "spell_id": 15362 },
-            { "talent_id": 9593, "spell_id": 63542 },
-            { "talent_id": 9577, "spell_id": 34859 },
-            { "talent_id": 11666, "spell_id": 724 },
-            { "talent_id": 12184, "spell_id": 81625 },
-            { "talent_id": 14738, "spell_id": 95649 },
-            { "talent_id": 11670, "spell_id": 20711 },
-            { "talent_id": 9573, "spell_id": 63733 },
-            { "talent_id": 9587, "spell_id": 64129 },
-            { "talent_id": 11667, "spell_id": 14751 },
-            { "talent_id": 11755, "spell_id": 88627 },
-            { "talent_id": 11672, "spell_id": 33145 },
-            { "talent_id": 9597, "spell_id": 47560 },
-            { "talent_id": 9595, "spell_id": 34861 },
-            { "talent_id": 9601, "spell_id": 47788 },
-            { "talent_id": 10736, "spell_id": 14768 },
-            { "talent_id": 8577, "spell_id": 47588 },
-            { "talent_id": 8595, "spell_id": 14520 }
+            {
+              "talent_id": 10746,
+              "spell_id": 15020
+            },
+            {
+              "talent_id": 9553,
+              "spell_id": 33160
+            },
+            {
+              "talent_id": 9549,
+              "spell_id": 18533
+            },
+            {
+              "talent_id": 11669,
+              "spell_id": 19236
+            },
+            {
+              "talent_id": 11765,
+              "spell_id": 88690
+            },
+            {
+              "talent_id": 9561,
+              "spell_id": 15362
+            },
+            {
+              "talent_id": 9593,
+              "spell_id": 63542
+            },
+            {
+              "talent_id": 9577,
+              "spell_id": 34859
+            },
+            {
+              "talent_id": 11666,
+              "spell_id": 724
+            },
+            {
+              "talent_id": 12184,
+              "spell_id": 81625
+            },
+            {
+              "talent_id": 14738,
+              "spell_id": 95649
+            },
+            {
+              "talent_id": 11670,
+              "spell_id": 20711
+            },
+            {
+              "talent_id": 9573,
+              "spell_id": 63733
+            },
+            {
+              "talent_id": 9587,
+              "spell_id": 64129
+            },
+            {
+              "talent_id": 11667,
+              "spell_id": 14751
+            },
+            {
+              "talent_id": 11755,
+              "spell_id": 88627
+            },
+            {
+              "talent_id": 11672,
+              "spell_id": 33145
+            },
+            {
+              "talent_id": 9597,
+              "spell_id": 47560
+            },
+            {
+              "talent_id": 9595,
+              "spell_id": 34861
+            },
+            {
+              "talent_id": 9601,
+              "spell_id": 47788
+            },
+            {
+              "talent_id": 10736,
+              "spell_id": 14768
+            },
+            {
+              "talent_id": 8577,
+              "spell_id": 47588
+            },
+            {
+              "talent_id": 8595,
+              "spell_id": 14520
+            }
           ],
-          "primary_tree_spells": [88625, 87336, 95861, 33167],
-          "spells": [586, 2006, 34433, 64843, 64901, 73325, 88684],
-          "glyphs": [42396, 42409, 45755]
+          "primary_tree_spells": [
+            88625,
+            87336,
+            95861,
+            33167
+          ],
+          "spells": [
+            586,
+            2006,
+            34433,
+            64843,
+            64901,
+            73325,
+            88684
+          ],
+          "glyphs": [
+            42396,
+            42409,
+            45755
+          ]
         },
-        { "account": "SCVALDPSA", "name": "Scvaldpsa", "legacy_names": ["ScValDpsA"], "role": "dps", "class_spec": "fire_mage", "race": 1, "class": 8, "level": 85, "glyphs": [42739, 42743, 42751] },
-        { "account": "SCVALDPSB", "name": "Scvaldpsb", "legacy_names": ["ScValDpsB"], "role": "dps", "class_spec": "survival_hunter", "race": 1, "class": 3, "level": 85, "glyphs": [45731, 45732, 42912], "pet": { "id_offset": 1, "entry": 8959, "modelid": 4124, "created_by_spell": 0, "name": "Scvalwolf", "level": 85, "slot": 0, "active": 1, "spells": [2649, 17253, 61683, 53184, 53186, 52858, 53205, 62760, { "id": 23145, "active": 193 }, { "id": 53401, "active": 193 }, { "id": 53434, "active": 193 }] } },
-        { "account": "SCVALDPSC", "name": "Scvaldpsc", "legacy_names": ["ScValDpsC"], "role": "dps", "class_spec": "enhancement_shaman", "race": 11, "class": 7, "level": 85, "spells": [2894], "glyphs": [41540, 41542, 45771] }
+        {
+          "account": "SCVALDPSA",
+          "name": "Scvaldpsa",
+          "legacy_names": [
+            "ScValDpsA"
+          ],
+          "role": "dps",
+          "class_spec": "fire_mage",
+          "race": 1,
+          "class": 8,
+          "level": 85,
+          "glyphs": [
+            42739,
+            42743,
+            42751
+          ]
+        },
+        {
+          "account": "SCVALDPSB",
+          "name": "Scvaldpsb",
+          "legacy_names": [
+            "ScValDpsB"
+          ],
+          "role": "dps",
+          "class_spec": "survival_hunter",
+          "race": 1,
+          "class": 3,
+          "level": 85,
+          "glyphs": [
+            45731,
+            45732,
+            42912
+          ],
+          "pet": {
+            "id_offset": 1,
+            "entry": 8959,
+            "modelid": 4124,
+            "created_by_spell": 0,
+            "name": "Scvalwolf",
+            "level": 85,
+            "slot": 0,
+            "active": 1,
+            "spells": [
+              2649,
+              17253,
+              61683,
+              53184,
+              53186,
+              52858,
+              53205,
+              62760,
+              {
+                "id": 23145,
+                "active": 193
+              },
+              {
+                "id": 53401,
+                "active": 193
+              },
+              {
+                "id": 53434,
+                "active": 193
+              }
+            ]
+          }
+        },
+        {
+          "account": "SCVALDPSC",
+          "name": "Scvaldpsc",
+          "legacy_names": [
+            "ScValDpsC"
+          ],
+          "role": "dps",
+          "class_spec": "enhancement_shaman",
+          "race": 11,
+          "class": 7,
+          "level": 85,
+          "spells": [
+            2894
+          ],
+          "glyphs": [
+            41540,
+            41542,
+            45771
+          ]
+        }
       ]
     },
     {
       "id": "combat_calibration",
       "description": "Isolated Stonecore-equivalent DPS/TPS calibration cohort parked at the Stormwind training-dummy cluster.",
-      "start_position": { "map_id": 0, "x": -8962.05, "y": -157.16, "z": 81.5856, "o": 0.0 },
+      "start_position": {
+        "map_id": 0,
+        "x": -8962.05,
+        "y": -157.16,
+        "z": 81.5856,
+        "o": 0.0
+      },
       "bots": [
         {
           "account": "CALIBTANK",
@@ -211,52 +753,389 @@
           "level": 85,
           "primary_talent_tree_id": 839,
           "talents": [
-            { "talent_id": 12198, "spell_id": 63648 },
-            { "talent_id": 10324, "spell_id": 20225 },
-            { "talent_id": 10372, "spell_id": 53696 },
-            { "talent_id": 10332, "spell_id": 20145 },
-            { "talent_id": 10344, "spell_id": 84631 },
-            { "talent_id": 10346, "spell_id": 84629 },
-            { "talent_id": 10374, "spell_id": 53595 },
-            { "talent_id": 11159, "spell_id": 84636 },
-            { "talent_id": 11161, "spell_id": 20179 },
-            { "talent_id": 11607, "spell_id": 53600 },
-            { "talent_id": 11193, "spell_id": 85043 },
-            { "talent_id": 10680, "spell_id": 26016 },
-            { "talent_id": 10356, "spell_id": 20925 },
-            { "talent_id": 10334, "spell_id": 70940 },
-            { "talent_id": 10370, "spell_id": 53710 },
-            { "talent_id": 10340, "spell_id": 84854 },
-            { "talent_id": 10350, "spell_id": 31850 },
-            { "talent_id": 10651, "spell_id": 31868 },
-            { "talent_id": 11612, "spell_id": 87175 },
-            { "talent_id": 11269, "spell_id": 87461 },
-            { "talent_id": 11611, "spell_id": 26023 }
+            {
+              "talent_id": 12198,
+              "spell_id": 63648
+            },
+            {
+              "talent_id": 10324,
+              "spell_id": 20225
+            },
+            {
+              "talent_id": 10372,
+              "spell_id": 53696
+            },
+            {
+              "talent_id": 10332,
+              "spell_id": 20145
+            },
+            {
+              "talent_id": 10344,
+              "spell_id": 84631
+            },
+            {
+              "talent_id": 10346,
+              "spell_id": 84629
+            },
+            {
+              "talent_id": 10374,
+              "spell_id": 53595
+            },
+            {
+              "talent_id": 11159,
+              "spell_id": 84636
+            },
+            {
+              "talent_id": 11161,
+              "spell_id": 20179
+            },
+            {
+              "talent_id": 11607,
+              "spell_id": 53600
+            },
+            {
+              "talent_id": 11193,
+              "spell_id": 85043
+            },
+            {
+              "talent_id": 10680,
+              "spell_id": 26016
+            },
+            {
+              "talent_id": 10356,
+              "spell_id": 20925
+            },
+            {
+              "talent_id": 10334,
+              "spell_id": 70940
+            },
+            {
+              "talent_id": 10370,
+              "spell_id": 53710
+            },
+            {
+              "talent_id": 10340,
+              "spell_id": 84854
+            },
+            {
+              "talent_id": 10350,
+              "spell_id": 31850
+            },
+            {
+              "talent_id": 10651,
+              "spell_id": 31868
+            },
+            {
+              "talent_id": 11612,
+              "spell_id": 87175
+            },
+            {
+              "talent_id": 11269,
+              "spell_id": 87461
+            },
+            {
+              "talent_id": 11611,
+              "spell_id": 26023
+            }
           ],
-          "primary_tree_spells": [31878, 31935, 53592, 84839],
-          "glyphs": [45742, 41098, 43869, 41107, 43367, 41101, 43368, 43340, 43366]
+          "primary_tree_spells": [
+            31878,
+            31935,
+            53592,
+            84839
+          ],
+          "glyphs": [
+            45742,
+            41098,
+            43869,
+            41107,
+            43367,
+            41101,
+            43368,
+            43340,
+            43366
+          ]
         },
-        { "account": "CALIBMAGE", "name": "Calibmage", "role": "dps", "class_spec": "fire_mage", "gear_profile": "wowsims_cata_p4_fire_mage", "race": 1, "class": 8, "level": 85, "glyphs": [42739, 42743, 42751] },
-        { "account": "CALIBHUNT", "name": "Calibhunt", "role": "dps", "class_spec": "survival_hunter", "gear_profile": "wowsims_cata_p4_survival_hunter", "race": 1, "class": 3, "level": 85, "glyphs": [45731, 45732, 42912], "pet": { "id_offset": 3, "entry": 8959, "modelid": 4124, "created_by_spell": 0, "name": "Calibwolf", "level": 85, "slot": 0, "active": 1, "spells": [2649, 17253, 61683, 53184, 53186, 52858, 53205, 62760, { "id": 23145, "active": 193 }, { "id": 53401, "active": 193 }, { "id": 53434, "active": 193 }] } },
-        { "account": "CALIBSHAM", "name": "Calibsham", "role": "dps", "class_spec": "enhancement_shaman", "gear_profile": "wowsims_cata_p4_enhancement_shaman", "race": 11, "class": 7, "level": 85, "spells": [2894], "glyphs": [41540, 41542, 45771] }
+        {
+          "account": "CALIBMAGE",
+          "name": "Calibmage",
+          "role": "dps",
+          "class_spec": "fire_mage",
+          "gear_profile": "wowsims_cata_p4_fire_mage",
+          "race": 1,
+          "class": 8,
+          "level": 85,
+          "glyphs": [
+            42739,
+            42743,
+            42751
+          ]
+        },
+        {
+          "account": "CALIBHUNT",
+          "name": "Calibhunt",
+          "role": "dps",
+          "class_spec": "survival_hunter",
+          "gear_profile": "wowsims_cata_p4_survival_hunter",
+          "race": 1,
+          "class": 3,
+          "level": 85,
+          "glyphs": [
+            45731,
+            45732,
+            42912
+          ],
+          "pet": {
+            "id_offset": 3,
+            "entry": 8959,
+            "modelid": 4124,
+            "created_by_spell": 0,
+            "name": "Calibwolf",
+            "level": 85,
+            "slot": 0,
+            "active": 1,
+            "spells": [
+              2649,
+              17253,
+              61683,
+              53184,
+              53186,
+              52858,
+              53205,
+              62760,
+              {
+                "id": 23145,
+                "active": 193
+              },
+              {
+                "id": 53401,
+                "active": 193
+              },
+              {
+                "id": 53434,
+                "active": 193
+              }
+            ]
+          }
+        },
+        {
+          "account": "CALIBSHAM",
+          "name": "Calibsham",
+          "role": "dps",
+          "class_spec": "enhancement_shaman",
+          "gear_profile": "wowsims_cata_p4_enhancement_shaman",
+          "race": 11,
+          "class": 7,
+          "level": 85,
+          "spells": [
+            2894
+          ],
+          "glyphs": [
+            41540,
+            41542,
+            45771
+          ]
+        }
       ]
     },
     {
       "id": "blackwing_descent_10n",
       "description": "Prepared 10-player raid parked inside Blackwing Descent entrance target for raid validation.",
-      "start_position": { "map_id": 669, "x": -345.872, "y": -224.344, "z": 193.127, "o": 0.0 },
+      "start_position": {
+        "map_id": 669,
+        "x": -345.872,
+        "y": -224.344,
+        "z": 193.127,
+        "o": 0.0
+      },
       "bots": [
-        { "account": "BWDVALTKA", "name": "Bwdtanka", "legacy_names": ["BwdTankA"], "role": "tank", "class_spec": "protection_warrior", "race": 1, "class": 1, "level": 85, "glyphs": [43425, 43412, 43414] },
-        { "account": "BWDVALTKB", "name": "Bwdtankb", "legacy_names": ["BwdTankB"], "role": "tank", "class_spec": "blood_death_knight", "race": 1, "class": 6, "level": 85, "glyphs": [43533, 43547, 43549] },
-        { "account": "BWDVALHLA", "name": "Bwdheala", "legacy_names": ["BwdHealA"], "role": "healer", "class_spec": "restoration_druid", "race": 4, "class": 11, "level": 85, "glyphs": [45623, 40906, 40913] },
-        { "account": "BWDVALHLB", "name": "Bwdhealb", "legacy_names": ["BwdHealB"], "role": "healer", "class_spec": "holy_paladin", "race": 1, "class": 2, "level": 85, "glyphs": [45741, 41099, 41105] },
-        { "account": "BWDVALHLC", "name": "Bwdhealc", "legacy_names": ["BwdHealC"], "role": "healer", "class_spec": "discipline_priest", "race": 1, "class": 5, "level": 85, "glyphs": [42409, 42400, 42403] },
-        { "account": "BWDVALDPA", "name": "Bwddpsa", "legacy_names": ["BwdDpsA"], "role": "dps", "class_spec": "fire_mage", "race": 1, "class": 8, "level": 85, "glyphs": [42739, 42743, 42753] },
-        { "account": "BWDVALDPB", "name": "Bwddpsb", "legacy_names": ["BwdDpsB"], "role": "dps", "class_spec": "assassination_rogue", "race": 1, "class": 4, "level": 85, "glyphs": [42954, 42957, 42969] },
-        { "account": "BWDVALDPC", "name": "Bwddpsc", "legacy_names": ["BwdDpsC"], "role": "dps", "class_spec": "affliction_warlock", "race": 1, "class": 9, "level": 85, "glyphs": [42456, 42454, 42464] },
-        { "account": "BWDVALDPD", "name": "Bwddpsd", "legacy_names": ["BwdDpsD"], "role": "dps", "class_spec": "marksmanship_hunter", "race": 1, "class": 3, "level": 85, "glyphs": [42909, 42902, 42915], "pet": { "id_offset": 2, "entry": 8959, "modelid": 4124, "created_by_spell": 0, "name": "Bwdwolf", "level": 85, "slot": 0, "active": 1, "spells": [2649, 17253] } },
-        { "account": "BWDVALDPE", "name": "Bwddpse", "legacy_names": ["BwdDpsE"], "role": "dps", "class_spec": "elemental_shaman", "race": 11, "class": 7, "level": 85, "glyphs": [41524, 41547, 41552] }
+        {
+          "account": "BWDVALTKA",
+          "name": "Bwdtanka",
+          "legacy_names": [
+            "BwdTankA"
+          ],
+          "role": "tank",
+          "class_spec": "protection_warrior",
+          "race": 1,
+          "class": 1,
+          "level": 85,
+          "glyphs": [
+            43425,
+            43412,
+            43414
+          ]
+        },
+        {
+          "account": "BWDVALTKB",
+          "name": "Bwdtankb",
+          "legacy_names": [
+            "BwdTankB"
+          ],
+          "role": "tank",
+          "class_spec": "blood_death_knight",
+          "race": 1,
+          "class": 6,
+          "level": 85,
+          "glyphs": [
+            43533,
+            43547,
+            43549
+          ]
+        },
+        {
+          "account": "BWDVALHLA",
+          "name": "Bwdheala",
+          "legacy_names": [
+            "BwdHealA"
+          ],
+          "role": "healer",
+          "class_spec": "restoration_druid",
+          "race": 4,
+          "class": 11,
+          "level": 85,
+          "glyphs": [
+            45623,
+            40906,
+            40913
+          ]
+        },
+        {
+          "account": "BWDVALHLB",
+          "name": "Bwdhealb",
+          "legacy_names": [
+            "BwdHealB"
+          ],
+          "role": "healer",
+          "class_spec": "holy_paladin",
+          "race": 1,
+          "class": 2,
+          "level": 85,
+          "glyphs": [
+            45741,
+            41099,
+            41105
+          ]
+        },
+        {
+          "account": "BWDVALHLC",
+          "name": "Bwdhealc",
+          "legacy_names": [
+            "BwdHealC"
+          ],
+          "role": "healer",
+          "class_spec": "discipline_priest",
+          "race": 1,
+          "class": 5,
+          "level": 85,
+          "glyphs": [
+            42409,
+            42400,
+            42403
+          ]
+        },
+        {
+          "account": "BWDVALDPA",
+          "name": "Bwddpsa",
+          "legacy_names": [
+            "BwdDpsA"
+          ],
+          "role": "dps",
+          "class_spec": "fire_mage",
+          "race": 1,
+          "class": 8,
+          "level": 85,
+          "glyphs": [
+            42739,
+            42743,
+            42753
+          ]
+        },
+        {
+          "account": "BWDVALDPB",
+          "name": "Bwddpsb",
+          "legacy_names": [
+            "BwdDpsB"
+          ],
+          "role": "dps",
+          "class_spec": "assassination_rogue",
+          "race": 1,
+          "class": 4,
+          "level": 85,
+          "glyphs": [
+            42954,
+            42957,
+            42969
+          ]
+        },
+        {
+          "account": "BWDVALDPC",
+          "name": "Bwddpsc",
+          "legacy_names": [
+            "BwdDpsC"
+          ],
+          "role": "dps",
+          "class_spec": "affliction_warlock",
+          "race": 1,
+          "class": 9,
+          "level": 85,
+          "glyphs": [
+            42456,
+            42454,
+            42464
+          ]
+        },
+        {
+          "account": "BWDVALDPD",
+          "name": "Bwddpsd",
+          "legacy_names": [
+            "BwdDpsD"
+          ],
+          "role": "dps",
+          "class_spec": "marksmanship_hunter",
+          "race": 1,
+          "class": 3,
+          "level": 85,
+          "glyphs": [
+            42909,
+            42902,
+            42915
+          ],
+          "pet": {
+            "id_offset": 2,
+            "entry": 8959,
+            "modelid": 4124,
+            "created_by_spell": 0,
+            "name": "Bwdwolf",
+            "level": 85,
+            "slot": 0,
+            "active": 1,
+            "spells": [
+              2649,
+              17253
+            ]
+          }
+        },
+        {
+          "account": "BWDVALDPE",
+          "name": "Bwddpse",
+          "legacy_names": [
+            "BwdDpsE"
+          ],
+          "role": "dps",
+          "class_spec": "elemental_shaman",
+          "race": 11,
+          "class": 7,
+          "level": 85,
+          "glyphs": [
+            41524,
+            41547,
+            41552
+          ]
+        }
       ]
     }
-  ]
+  ],
+  "canonical_target_catalog": "experiments/configs/all_spec_targets_cata_p4_v1.json",
+  "canonical_candidate_pool_scenario_id": "all_spec_candidate_pool"
 }

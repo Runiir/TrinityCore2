@@ -1,0 +1,171 @@
+{
+  "schema": "stonecore_phase9_pair_policy_v1",
+  "progression_roster_25h": {
+    "default_shape": {
+      "tank": 2,
+      "healer": 6,
+      "dps": 17,
+      "ranged_dps": 12,
+      "melee_dps": 5,
+      "total": 25
+    },
+    "encounter_shapes": [
+      {
+        "tank": 1,
+        "healer": 5,
+        "dps": 19
+      },
+      {
+        "tank": 2,
+        "healer": 5,
+        "dps": 18
+      },
+      {
+        "tank": 2,
+        "healer": 7,
+        "dps": 16
+      }
+    ],
+    "slots": [
+      {"slot": "tank_1", "class_spec": "blood_death_knight"},
+      {"slot": "tank_2", "class_spec": "protection_paladin"},
+      {"slot": "healer_1", "class_spec": "holy_paladin"},
+      {"slot": "healer_2", "class_spec": "holy_paladin"},
+      {"slot": "healer_3", "class_spec": "discipline_priest"},
+      {"slot": "healer_4", "class_spec": "restoration_shaman"},
+      {"slot": "healer_5", "class_spec": "restoration_druid"},
+      {"slot": "healer_6", "class_spec": "holy_priest"},
+      {"slot": "ranged_1", "class_spec": "fire_mage"},
+      {"slot": "ranged_2", "class_spec": "fire_mage"},
+      {"slot": "ranged_3", "class_spec": "fire_mage"},
+      {"slot": "ranged_4", "class_spec": "demonology_warlock", "alternate": "affliction_warlock"},
+      {"slot": "ranged_5", "class_spec": "affliction_warlock", "alternate": "demonology_warlock"},
+      {"slot": "ranged_6", "class_spec": "survival_hunter", "alternate": "marksmanship_hunter"},
+      {"slot": "ranged_7", "class_spec": "marksmanship_hunter", "alternate": "survival_hunter"},
+      {"slot": "ranged_8", "class_spec": "shadow_priest"},
+      {"slot": "ranged_9", "class_spec": "shadow_priest"},
+      {"slot": "ranged_10", "class_spec": "balance_druid"},
+      {"slot": "ranged_11", "class_spec": "balance_druid"},
+      {"slot": "ranged_12", "class_spec": "elemental_shaman"},
+      {"slot": "melee_1", "class_spec": "combat_rogue", "alternate": "assassination_rogue"},
+      {"slot": "melee_2", "class_spec": "arms_warrior", "alternate": "fury_warrior"},
+      {"slot": "melee_3", "class_spec": "retribution_paladin"},
+      {"slot": "melee_4", "class_spec": "unholy_death_knight", "alternate": "frost_death_knight"},
+      {"slot": "melee_5", "class_spec": "feral_druid_dps", "alternate_role_spec": "feral_druid_tank"}
+    ],
+    "research_basis": [
+      "https://www.icy-veins.com/cataclysm-classic/raid-buffs-and-debuffs",
+      "https://www.icy-veins.com/cataclysm-classic/healer-rankings-tier-list-for-cataclysm-classic",
+      "https://www.icy-veins.com/cataclysm-classic/dps-rankings-tier-list-for-cataclysm-classic",
+      "https://www.tauri-veins.com/al-akir-detailed-strategy",
+      "https://www.warcrafttavern.com/cataclysm/guides/spine-of-deathwing-raid-guide/",
+      "https://www.warcrafttavern.com/cataclysm/guides/warlord-zonozz-raid-guide/"
+    ]
+  },
+  "live_qualification_policy": {
+    "excluded_targets": [
+      {
+        "spec_target_id": "arcane_mage",
+        "role": "dps",
+        "reason": "outside_targeted_25h_progression_roster"
+      },
+      {
+        "spec_target_id": "beast_mastery_hunter",
+        "role": "dps",
+        "reason": "outside_targeted_25h_progression_roster"
+      },
+      {
+        "spec_target_id": "destruction_warlock",
+        "role": "dps",
+        "reason": "outside_targeted_25h_progression_roster"
+      },
+      {
+        "spec_target_id": "enhancement_shaman",
+        "role": "dps",
+        "reason": "outside_targeted_25h_progression_roster"
+      },
+      {
+        "spec_target_id": "frost_mage",
+        "role": "dps",
+        "reason": "outside_targeted_25h_progression_roster"
+      },
+      {
+        "spec_target_id": "protection_warrior",
+        "role": "tank",
+        "reason": "operator_declared_not_viable_after_rerun212_canary4"
+      },
+      {
+        "spec_target_id": "subtlety_rogue",
+        "role": "dps",
+        "reason": "outside_targeted_25h_progression_roster"
+      }
+    ],
+    "supported_tank_targets": [
+      "blood_death_knight",
+      "feral_druid_tank",
+      "protection_paladin"
+    ],
+    "supported_healer_targets": [
+      "discipline_priest",
+      "holy_paladin",
+      "holy_priest",
+      "restoration_druid",
+      "restoration_shaman"
+    ],
+    "supported_dps_targets": [
+      "affliction_warlock",
+      "arms_warrior",
+      "assassination_rogue",
+      "balance_druid",
+      "combat_rogue",
+      "demonology_warlock",
+      "elemental_shaman",
+      "feral_druid_dps",
+      "fire_mage",
+      "frost_death_knight",
+      "fury_warrior",
+      "marksmanship_hunter",
+      "retribution_paladin",
+      "shadow_priest",
+      "survival_hunter",
+      "unholy_death_knight"
+    ]
+  },
+  "policy_incompatible_pairs": [],
+  "serial_canary_policy": {
+    "composition_sha256s": [
+      "5fa6cb9c5dded9603bf89deefd264c626bc20720559697388d5bdf95e58635a9",
+      "95d945edcd3285e07ce94226181452f05738704941878edf1aa8da28c0c67544",
+      "6d59c2000776b3a588d8a51edd2fb2d397ce2a0658c02765337a988e2b357210",
+      "f852a689382df6769845faeddd6f09c6a19909eae516d9a50317a4be679ba393",
+      "7f09b51b899868c140f6da957e325a4ab1d623a15ce6071c2bf148123241776b",
+      "fbf54b4a4beb2fe638bf2483afb9e9a2c40a755e7e7f54c5e01f02cfb25d62bd",
+      "2e3d87f152cf51fef7819d49caf1f1e72e42c907916a7cdbcbe76ea9bffcb16e"
+    ],
+    "composition_count": 7,
+    "role_representation_bounds": {
+      "tank": {"min": 2, "max": 3},
+      "healer": {"min": 1, "max": 2},
+      "dps": {"min": 1, "max": 4}
+    },
+    "native_threat_transfer_support": {
+      "tank_targets": [
+        "blood_death_knight",
+        "feral_druid_tank",
+        "protection_paladin"
+      ],
+      "support_targets": [
+        "marksmanship_hunter",
+        "survival_hunter"
+      ],
+      "minimum_support_targets_per_composition": 1
+    }
+  },
+  "notes": [
+    "The 25-character progression roster has 24 supported specialization targets because Holy Paladin and Fire Mage are duplicated while five permanent players maintain an alternate supported spec and the Feral DPS maintains the third-tank offspec.",
+    "The third Fire Mage fills the missing twenty-fifth roster slot and produces the targeted 12 ranged and 5 melee DPS shape.",
+    "All 31 canonical profiles remain provisioned; seven targets outside the progression roster are explicitly excluded from the live qualification universe.",
+    "The serial subset covers all 24 supported specialization targets in seven isolated five-player canaries. Seven is the minimum count that preserves one Hunter threat-transfer specialist in every party while covering all fourteen non-Hunter DPS targets. Canary 4 preserves the Protection Paladin, Restoration Druid, Elemental Shaman, and Feral DPS regression surface from rerun214 while replacing Fire Mage with Survival Hunter.",
+    "Every supported tank canary includes native Hunter Misdirection support because Azil activates simultaneous south and west follower waves beyond one self-centered pickup radius."
+  ]
+}

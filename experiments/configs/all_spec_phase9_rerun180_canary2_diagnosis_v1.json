@@ -1,0 +1,266 @@
+{
+  "schema": "all_spec_phase9_rerun180_canary2_diagnosis_v1",
+  "diagnosis_sha256": "eaa53aa9d58e0df0ec1fcdd4143513d0bbfa0db653e368e36d199b9de1e53ef7",
+  "scope": {
+    "attempt": "artifacts/all_spec_program/phase9_serial_canaries_20260809_rerun180/phase9_serial_02_stonecore_phase9_006_6893daf98698",
+    "batch": "artifacts/all_spec_program/phase9_serial_canaries_20260809_rerun180/phase9_serial_02_stonecore_phase9_006_6893daf98698/batch",
+    "diagnose_only_this_immutable_batch": true,
+    "later_rows_started": false
+  },
+  "immutable_publication": {
+    "batch_identity_sha256": "8b45ef2fb4e20033155c27defc5094c6cf2faa071250217117dbde15b7672423",
+    "raw_bundle_sha256": "f58338cd1fc3d95f894652010eae8d7fce3a3837cea69ed33f6cef5919428b9a",
+    "compact_bundle_sha256": "01f6e7bffd7c36a00a7eb196d2e1f6e9c66c043c8e10c4475911c12579894153",
+    "publication_receipt_sha256": "698a959e4fd4e995a9127a3a3b8f4e65f42675d8920a4d4be11e8dcfe0c68995",
+    "publication_receipt_file_sha256": "c2cb80416d6be01a76573e373403006f65f29644ce2cb3983a11278500cc3293",
+    "acceptance_source_report_sha256": "09c617a399ab20cda58ba83af10f3d38d8c9e357f64f5cfcb4355d3f650138b8",
+    "raw_pointer_sha256": "b5c1e03b30a39caa1dd1f4b30c50797a23adae21e20a6b192696c683d2880e4a",
+    "compact_pointer_sha256": "03b21e6e96eccb3a30dcab699f430c18f9372406069d6ac01b6b356d867d11ff",
+    "raw_dvc_object": "5dbd892badaa24bdabfae7db3e1b2c05.dir",
+    "compact_dvc_object": "975401a0386d40ac0f341305acd60ddc.dir",
+    "capture_and_bundle_hashes_recomputed": true,
+    "receipt_hash_recomputed": true,
+    "exact_remote_status": "Cache and remote 'object' are in sync.",
+    "exact_targeted_eviction_complete": true,
+    "batch_specific_caches_evicted": true,
+    "broad_dvc_gc_used": false
+  },
+  "frozen_identity": {
+    "identity_manifest_sha256": "7337eb7b811db9be83bc93529e2971f18fdfa2af26a7a88a4b4fe7f655424f74",
+    "run_plan_sha256": "27930ac9c49ecabc76ff8c16a21e226a8c69b2185f7250380f5643ccf37d26c7",
+    "binary_sha256": "fc7c0b78cb4595e49e28bec3a3e4ed7c0a0c82a6290eebed10d50a77b69f2792",
+    "server_process_id": 1273730,
+    "server_epoch": 5971579299681332,
+    "worldserver_unit": "trinity-live-validation-4dd6a623d4dd731efc02c356.service",
+    "session_fingerprint": "84f8e6b43d00e5f667c0f1ccd0645b315d543d69f77e238e719efddaa9484791",
+    "profile_generation": 1,
+    "profile_content_hash": "35a587f05d8781d72c62576a6f35392a69e01d5978429f65429ad5b9ed096a22",
+    "max_active_cohorts": 1,
+    "identity_recomputed_and_matched": true,
+    "plan_recomputed_and_matched": true
+  },
+  "exact_party": {
+    "ordered_specs": [
+      "feral_druid_tank",
+      "discipline_priest",
+      "fury_warrior",
+      "marksmanship_hunter",
+      "retribution_paladin"
+    ],
+    "party_sha256": "524b94c794897f5111bdae0a5e45ba31a31ebb8596d811a3dd8c1caff95bd16a",
+    "recomputed_and_matched": true
+  },
+  "independent_role_verifier": {
+    "canonical_audit_passed": false,
+    "canonical_audit_artifact_sha256": "32c8f0db745dbf78b901649145db9019d36f45075d60e9d496638eafb1843d79",
+    "independent_verifier_sha256": "da35a8b8a2f553e995617a17370bda6026980421a101452c476e657e18a26ec3",
+    "eligible_hostile_denominator": 1517,
+    "tank_owned_hostile_numerator": 1385,
+    "healer_targeting_hostile_numerator": 92,
+    "tank_all_hostile_retention_ratio": 0.912986156888596,
+    "healer_target_exposure_ratio": 0.06064601186552406,
+    "maximum_healer_target_dwell_ms": 5172,
+    "threat_aura_active_samples": 465,
+    "threat_aura_total_samples": 465,
+    "threat_aura_uptime_ratio": 1.0,
+    "non_healer_active_action_coverage": {
+      "Feraltank": 1.0,
+      "Furywar": 1.0,
+      "Mmhunter": 1.0,
+      "Retpally": 1.0
+    },
+    "cast_failure_rates": {
+      "Discpriest": 0.0,
+      "Feraltank": 0.0,
+      "Furywar": 0.0,
+      "Mmhunter": 0.007462686567164179,
+      "Retpally": 0.0
+    },
+    "healer_successful_heal_cast_rate": 1.0,
+    "missing_required_rotation_groups": [],
+    "threshold_results": {
+      "tank_retention_at_least_0_90": true,
+      "healer_exposure_at_most_0_01": false,
+      "healer_dwell_at_most_3000_ms": false,
+      "threat_aura_uptime_at_least_0_99": true,
+      "non_healer_active_action_coverage_at_least_0_70": true,
+      "cast_failure_rate_at_most_0_05": true,
+      "healer_heal_cast_success_at_least_0_95": true,
+      "rotation_groups_present": true
+    },
+    "failure_labels": [
+      "Feraltank:healer_target_exposure",
+      "Feraltank:healer_target_dwell"
+    ]
+  },
+  "independent_strict_verifier": {
+    "underlying_returncode": 0,
+    "timed_out": false,
+    "session_closed": true,
+    "identity_complete": true,
+    "operator_attempt_count": 1,
+    "serial_index": 2,
+    "global_lifecycle_command_count": 0,
+    "scheduler_events": [
+      "admit:2",
+      "close:2"
+    ],
+    "cleanup": {
+      "active": false,
+      "active_bots": 0,
+      "lease_count": 0,
+      "party_bot_count": 0
+    },
+    "route_terminal_count": 14,
+    "route_terminal_generations": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+    "authoritative_boss_death_entries": [43438, 43214, 42188, 42333],
+    "high_priestess_azil_terminal": true,
+    "high_priestess_azil_death": true,
+    "watchdog_clear": true,
+    "teacher_assisted_kills": 0,
+    "forbidden_completion_assistance": [],
+    "strict_non_role_gates_passed": true
+  },
+  "route_and_hostile_chronology": {
+    "eligible_samples_by_route_generation": {
+      "1": {"denominator": 211, "tank_owned": 205, "healer_targeting": 0, "guid_range": [9, 65]},
+      "2": {"denominator": 15, "tank_owned": 15, "healer_targeting": 0, "guid_range": [85, 85]},
+      "3": {"denominator": 120, "tank_owned": 120, "healer_targeting": 0, "guid_range": [106, 339]},
+      "4": {"denominator": 21, "tank_owned": 21, "healer_targeting": 0, "guid_range": [86, 86]},
+      "5": {"denominator": 0, "tank_owned": 0, "healer_targeting": 0},
+      "6": {"denominator": 0, "tank_owned": 0, "healer_targeting": 0},
+      "7": {"denominator": 0, "tank_owned": 0, "healer_targeting": 0},
+      "8": {"denominator": 0, "tank_owned": 0, "healer_targeting": 0},
+      "9": {"denominator": 31, "tank_owned": 31, "healer_targeting": 0, "guid_range": [133, 176]},
+      "10": {"denominator": 37, "tank_owned": 37, "healer_targeting": 0, "guid_range": [207, 227]},
+      "11": {"denominator": 11, "tank_owned": 11, "healer_targeting": 0, "guid_range": [207, 207]},
+      "12": {"denominator": 0, "tank_owned": 0, "healer_targeting": 0},
+      "13": {"denominator": 591, "tank_owned": 585, "healer_targeting": 0, "guid_range": [416, 609]},
+      "14": {"denominator": 480, "tank_owned": 360, "healer_targeting": 92, "guid_range": [345, 701]}
+    },
+    "failing_episode": [
+      {
+        "timestamp_ms": 1786280904629,
+        "event": "Eight newly engaged Azil followers were visible with no established victim; the Feral continued the existing stable approach."
+      },
+      {
+        "timestamp_ms": 1786280905143,
+        "event": "Eleven followers targeted the Discipline Priest and none were tank-owned; the Feral began moving to the healer."
+      },
+      {
+        "timestamp_ms": 1786280905901,
+        "event": "After the healer-owned wave grew past the moderate boundary, the previously admitted moving-hostile reservation began alternating with the large-wave healer anchor."
+      },
+      {
+        "timestamp_ms": 1786280907711,
+        "event": "The first native Demoralizing Roar landed after 2568 ms and acquired four of twenty healer-owned followers."
+      },
+      {
+        "timestamp_ms": 1786280908500,
+        "event": "Native Charge became available and submitted against the remote identity-bound handoff cluster."
+      },
+      {
+        "timestamp_ms": 1786280909278,
+        "event": "A second native Demoralizing Roar submitted after Charge arrival; eleven of nineteen followers were tank-owned by 1786280909791, while eight remained on the healer through 1786280910315."
+      },
+      {
+        "timestamp_ms": 1786280910315,
+        "event": "GUIDs 658, 662, 669, 671, 675, and 676 reached the captured maximum 5172-ms healer-target dwell."
+      }
+    ],
+    "all_eligible_healer_exposure_belongs_to_generation_14": true,
+    "azil_generation_duration_ms": 207200,
+    "azil_boss_guid": 630,
+    "azil_boss_minimum_captured_health_ratio": 0.0327809,
+    "azil_authoritative_death_present": true
+  },
+  "action_reconstruction": {
+    "feral_native_spell_attempts": {
+      "Growl_6795": 14,
+      "Swipe_779": 26,
+      "Thrash_77758": 26,
+      "Mangle_33878": 46,
+      "Lacerate_33745": 16,
+      "Maul_6807": 17,
+      "Berserk_50334": 4
+    },
+    "feral_demoralizing_roar_actions": {
+      "boss_swarm": 1,
+      "boss_split_handoff": 2,
+      "trash_healer_pickup": 1,
+      "trash_party_pickup": 3
+    },
+    "feral_charge_actions": {
+      "boss_remote_handoff": 1,
+      "boss_in_flight": 1,
+      "trash_remote_handoff": 2,
+      "hazard_safe_pickup": 1
+    },
+    "failing_episode_movement_actions": {
+      "move_to_healer": 6,
+      "move_to_bounded_hostile_cluster": 1,
+      "continue_bounded_hostile_cluster": 3,
+      "continue_remote_post_roar_handoff": 6
+    },
+    "hazard_exit_actions": 99,
+    "hazard_exit_failures": 0,
+    "misdirection_aoe_attempts": 28,
+    "misdirection_aoe_successes": 24,
+    "misdirection_aoe_wrong_successes": 0,
+    "misdirection_single_attempts": 29,
+    "misdirection_single_successes": 23,
+    "failing_episode_misdirection": "The hunter moved into AoE Misdirection range at 1786280904680 and 1786280908724, but no successful transfer preceded or cleared the failing ownership set.",
+    "failing_episode_healer_handoff": "The Discipline Priest used the declared preposition/hold behavior and remained the stable pickup anchor; healer behavior did not redirect the tank between competing destinations.",
+    "failing_episode_hazard_actions": 0
+  },
+  "causal_classification": {
+    "authoritative_gameplay_failure": true,
+    "infrastructure_abort": false,
+    "strict_route_failure": false,
+    "role_quality_failure": true,
+    "real_initial_pickup_loss": true,
+    "later_threat_decay": false,
+    "movement_priority_starvation": true,
+    "hazard_starvation": false,
+    "misdirection_failure_primary": false,
+    "healer_behavior_primary": false,
+    "audit_attribution_error": false,
+    "rerun170_passive_swarm_side_effect": false,
+    "rerun179_azil_infrastructure_regression": false,
+    "primary_cause": "An Azil wave entered the moderate active-cluster resolver with eleven healer-owned followers, then grew to twelve through twenty while the reservation remained live. The existing large-wave healer-center controller and the older moving-hostile reservation alternated on successive decisions. This path churn delayed the first native Roar to 2568 ms, left only four of twenty followers covered, and forced sequential remote handoffs beyond the strict dwell budget. The wave was spawned during active Azil combat after passive staging and native boss activation had succeeded, so this is not a rerun170 passive-swarm side effect."
+  },
+  "bounded_correction": {
+    "source": "src/server/game/Bots/BotWorldPopulationMgr.cpp",
+    "behavior": "When a healer-owned Feral wave reaches the established twelve-follower large-wave boundary with fewer than two followers locally covered, retire only the older moderate active-cluster reservation before the existing healer-center movement. Keep the moderate resolver eligible only for three through eleven healer-owned followers so it cannot re-enter while the large-wave controller owns movement.",
+    "unchanged_contracts": [
+      "all strict role thresholds",
+      "native spell knowledge, cooldown, GCD, power, range, line-of-sight, target, and threat legality",
+      "Growl, Swipe, Thrash, Demoralizing Roar, Charge, and Misdirection ordering",
+      "victim and threat assignment semantics",
+      "hazard movement authority",
+      "healer preposition and hold behavior",
+      "passive-swarm staging and tank-only native activation",
+      "boss and route coordinates and terminal semantics",
+      "identity, party, serial isolation, publication, cleanup, exact hydration, and eviction contracts",
+      "forbidden-assistance policy"
+    ]
+  },
+  "verification": {
+    "focused_tests": "7 passed, 119 deselected",
+    "git_diff_check": "passed",
+    "worldserver_rebuild": "passed",
+    "corrected_worldserver_binary_sha256": "cd88e2f3c8ff51fb57fdf13979602e92e3785df59a9de263cb288e234a4205fc",
+    "old_worldserver_stopped_before_tracked_edit": true,
+    "old_worldserver_active_state": "inactive",
+    "old_worldserver_sub_state": "dead",
+    "old_worldserver_main_pid": 0
+  },
+  "next_gate": {
+    "attempt_label": "rerun181",
+    "deterministically_reprovision_all_31_targets": true,
+    "fresh_identity_and_eight_row_plan_required": true,
+    "restart_at_canary_2_alone": true,
+    "canaries_3_through_8_blocked": true,
+    "phases_10_through_12_blocked": true
+  }
+}

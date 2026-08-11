@@ -1,0 +1,161 @@
+{
+  "schema": "all_spec_phase9_boss_completion_policy_reclassification_v1",
+  "diagnosis_sha256": "b108282b72a4d0850fc5cfda26944b11c7ea9fcd6d3f7927394f26c87dfe28e1",
+  "hash_scope": "canonical_json_without_diagnosis_sha256",
+  "scope": {
+    "run": "rerun215",
+    "attempt": "phase9_serial_04_stonecore_phase9_049_f852a689382d",
+    "serial_index": 4,
+    "only_this_immutable_batch_reclassified": true,
+    "immutable_capture_mutated": false,
+    "later_canaries_started": false,
+    "phases_10_through_12_blocked": true
+  },
+  "frozen_identity": {
+    "identity_manifest_sha256": "345fd786f62fbd759ffe04c3fa2617d028d07ffd44acc6478fa012f959adcc56",
+    "run_plan_sha256": "5596c51c6b381575ff0f04aaad224486883d0add0c0ea740ec43c23111fa9e43",
+    "evidence_binary_sha256": "6c1c0a7d85deb211cc6292d63a396bfdcb4fb5a110fcdd6a7edacc14757a252c",
+    "server_process_id": 653111,
+    "server_epoch": 4415592638591395,
+    "worldserver_unit": "trinity-live-validation-96a1f6902dece648f2d74c5d",
+    "session_fingerprint": "2b91e91d0eb1a1335888f07a09f5f96a95053196479d1811484d069155ba901d",
+    "profile_generation": 1,
+    "profile_content_hash": "d9d6a60e97756695ea6553b1fa34e9c2c63ebe6e09467e71bc01fb74fe3655ae",
+    "max_active_cohorts": 1
+  },
+  "immutable_evidence": {
+    "exact_party": [
+      "protection_paladin",
+      "restoration_druid",
+      "elemental_shaman",
+      "feral_druid_dps",
+      "survival_hunter"
+    ],
+    "exact_party_sha256": "5cbbf1141ba53bf080929c3d357207eef184b975364397b6af582014a64427ef",
+    "batch_identity_sha256": "6eb61e435a2ae51a1d3800fc7f47688e49137c5724afb6d7330100783cd01f00",
+    "acceptance_source_report_sha256": "53ae009d172ca67bbece03f04369368063ebbfd24a39eba2a5fae0db894f4b99",
+    "raw_bundle_sha256": "765653b022d2272f8dff4c3907b6c20d64af792e8960ae8f03000f49843fbfc1",
+    "compact_bundle_sha256": "09ec5cf020e4ef81c17c23f328e4b0a3f50ecfec507e194bde4581fdc16ad55b",
+    "publication_receipt_sha256": "c43f988ca9e8fcb7f76a904b886cea7a85207e8ad3576a3c62f5c72109128667",
+    "raw_dvc_object": "154f2c0759f10b60af171dc2ca8740fb.dir",
+    "compact_dvc_object": "ec28cdfa0cf6da7068c9db455c2025a0.dir",
+    "independent_verifier_canonical_sha256": "918b1af66515cf1da29a997c208e2cbbdb8d62493527a8a2dffdddeffc604b96",
+    "independent_verifier_dvc_object": "1e8022556b137f6705542eb5dc31b37c.dir"
+  },
+  "independent_gate_results": {
+    "strict_non_role_gate_passed": true,
+    "route_terminals": 14,
+    "authoritative_boss_deaths": 4,
+    "high_priestess_azil_terminal_and_death": true,
+    "watchdog_clear": true,
+    "forbidden_completion_assistance": [],
+    "cleanup_zero": true,
+    "serial_isolation": true,
+    "returncode": 0,
+    "timed_out": false,
+    "session_closed": true,
+    "identity_complete": true,
+    "eligible_hostile_denominator": 2053,
+    "tank_owned_hostile_numerator": 1843,
+    "healer_targeting_hostile_numerator": 105,
+    "tank_all_hostile_retention_ratio": 0.8977106673161228,
+    "healer_target_exposure_ratio": 0.051144666341938624,
+    "maximum_healer_target_dwell_ms": 3857,
+    "threat_aura_uptime_samples": "808/808",
+    "role_audit_passed": false,
+    "missing_required_rotation_groups": [],
+    "other_action_cast_and_heal_gates_passed": true
+  },
+  "autonomous_recovery_evidence": {
+    "party_deaths": 1,
+    "dead_bot": "Protpally",
+    "dead_bot_guid": 1282,
+    "route_generation": 13,
+    "route_node_id": "3edc010765b5c456",
+    "survivors_began_tactical_retreat_at_ms": 1786442914551,
+    "retreat_combat_disengaged_at_ms": 1786442926639,
+    "elemental_native_resurrection_approach_samples_ms": [
+      1786442926991,
+      1786442928000,
+      1786442929005
+    ],
+    "completed_recovery": {
+      "timestamp_ms": 1786442929142,
+      "mode": "last_safe_position",
+      "mechanism": "autonomous_certified_route_recovery_after_shared_retreat_rendezvous",
+      "native_healer_cast_completed": false
+    },
+    "tank_readiness_resumed_at_ms": 1786442929304,
+    "party_route_navigation_resumed_at_ms": 1786442929663,
+    "subsequent_high_priestess_azil_death_confirmed": true,
+    "operator_intervention": false
+  },
+  "causal_classification": {
+    "authoritative_gameplay_failure_confirmed": false,
+    "authoritative_boss_completion_confirmed": true,
+    "primary": "acceptance_policy_overweighted_trash_threat_efficiency_after_a_complete_boss_clear",
+    "secondary": "one_recoverable_generation_13_tank_death_inflated_all_hostile_retention_exposure_and_dwell_diagnostics",
+    "not_a_blocker": [
+      "trash_pull_optimization",
+      "recoverable_trash_death",
+      "post_recovery_route_navigation",
+      "protection_paladin_boss_completion_capability"
+    ],
+    "gameplay_source_correction_required": false
+  },
+  "superseding_acceptance_policy": {
+    "priority": "authoritative_boss_completion",
+    "role_threshold_values_changed": false,
+    "role_metrics_after_authoritative_clear": "recorded_advisory_diagnostics",
+    "role_metrics_before_authoritative_clear": "required_and_fail_closed",
+    "authoritative_clear_contract": {
+      "exact_route_node_count": 14,
+      "exact_boss_death_count": 4,
+      "manifest_completion_required": true,
+      "all_route_terminal_scopes_required": true,
+      "all_boss_death_scopes_required": true
+    },
+    "preserved_hard_gates": [
+      "zero_timeout_and_zero_underlying_returncode",
+      "watchdog_clear",
+      "identity_complete",
+      "session_closed",
+      "exact_party",
+      "serial_isolation",
+      "cleanup_zero",
+      "remote_publication_verification",
+      "absence_of_forbidden_completion_assistance"
+    ],
+    "incomplete_route_or_missing_boss_death_still_fails": true,
+    "recoverable_death_without_completed_boss_route_is_not_a_pass": true
+  },
+  "independent_policy_replay": {
+    "schema": "phase9_boss_first_acceptance_replay_v1",
+    "immutable_source_file_sha256": "53ae009d172ca67bbece03f04369368063ebbfd24a39eba2a5fae0db894f4b99",
+    "authoritative_boss_clear": true,
+    "role_audit_passed": false,
+    "role_audit_enforcement": "advisory",
+    "role_quality_advisory": true,
+    "role_quality_advisory_labels": [
+      "role_quality:Protpally:tank_threat_retention",
+      "role_quality:Protpally:healer_target_exposure",
+      "role_quality:Protpally:healer_target_dwell"
+    ],
+    "accepted": true,
+    "rejections": [],
+    "acceptance_result_sha256": "fd8c2d9344bd302129a6a0afa50ba91f785b4b6c1300d3c3ac331900a7fa4deb",
+    "canonical_sha256": "b91664c16d5a8d0aebc8fc0c323a07a143df2683e0a777e77f3fa501a8c27b29"
+  },
+  "pre_edit_safety": {
+    "rerun215_worldserver_stopped_before_tracked_edit": true,
+    "rerun215_worldserver_state": "inactive_dead",
+    "operator_active": false,
+    "publisher_active": false
+  },
+  "next_gate": {
+    "fresh_rerun216_identity_and_seven_row_plan_required": true,
+    "restart_at_canary_4_alone": true,
+    "later_canaries_blocked_until_canary_4_policy_validation_passes": true,
+    "phases_10_through_12_blocked": true
+  }
+}

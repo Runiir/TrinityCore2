@@ -1,0 +1,161 @@
+{
+  "schema": "all_spec_phase9_rerun143_diagnosis_v1",
+  "diagnosis_sha256": "7fce248e7dd6e47a0cc57b98312f664a863f9ab039d1de0f02ec47d396d97a89",
+  "hash_scope": "canonical_json_without_diagnosis_sha256",
+  "source_attempt": {
+    "attempt_id": "phase9_serial_02_stonecore_phase9_006_6893daf98698",
+    "batch_id": "phase9-serial-canary-rerun143-2",
+    "batch_identity_sha256": "e30a785fb73f92fb645d33e0a5ff16580c4f57b98ffdddd9cb2edd231393a0aa",
+    "composition_id": "stonecore_phase9_006_6893daf98698",
+    "composition_sha256": "6893daf986989d8b1cdeb3b31e1c825cb579a7209b7ede80bc9c2383df6496b1",
+    "party_sha256": "524b94c794897f5111bdae0a5e45ba31a31ebb8596d811a3dd8c1caff95bd16a",
+    "party": [
+      "feral_druid_tank",
+      "discipline_priest",
+      "fury_warrior",
+      "marksmanship_hunter",
+      "retribution_paladin"
+    ],
+    "binary_sha256": "f366b4ade439c146570ddc0c3e2063f89dc20e3a8a571f6071cdf20ffb8f80ec",
+    "server_process_id": 2574219,
+    "server_epoch": 9323573461556517,
+    "session_fingerprint": "dde8b3e85d0810c736c78bfae0e38f20006affaefc5fa860e50b51c46e351f78",
+    "profile_generation": 1,
+    "profile_content_hash": "35a587f05d8781d72c62576a6f35392a69e01d5978429f65429ad5b9ed096a22",
+    "evidence_identity_manifest_file_sha256": "e6e0d000d6f0208f4d465044f5f078df8cb95a3e0357bbd7148081d3dbd6c9c5",
+    "evidence_identity_manifest_sha256": "27897b696ffba722a09c852a2d21d611b6a04ef36136feec64df9a52621c9b0d",
+    "run_plan_file_sha256": "4cb645af65436cec21a6a900e0dddf4a22d2f83384108e78dfbf63424a72bf92",
+    "run_plan_sha256": "c785486f86f71e1f800ee584791a33bd2177afa09fe76453b6deb1ce7f7e1e23",
+    "route_sha256": "fe5c3d2e2a5f28807b7ce2890d08a616255381a3e096f1235642242729745e04",
+    "matrix_file_sha256": "f6adcec9467bf13b7a485177261a1f3a3566c38343f9e08b5567e3cfc597c756",
+    "max_active_cohorts": 1
+  },
+  "capture_validation": {
+    "validated_with": "tools.bot_ml.batch_evidence_lifecycle.validate_capture",
+    "capture_identity_sha256": "e30a785fb73f92fb645d33e0a5ff16580c4f57b98ffdddd9cb2edd231393a0aa",
+    "raw_part_count": 1,
+    "raw_event_row_count": 145,
+    "compact_row_count": 1,
+    "raw_bundle_sha256": "9a2d424a21aa787f700aacf1863ff9fa884a84a68de686d2691e0d35acec3a69",
+    "compact_bundle_sha256": "5ace1f9407492b74a0317d9dad3804e0a2e1ac677cb0427b8c3cf5f204ce5671",
+    "raw_pointer_sha256": "c3524df37f44b5a68e433181af02e2e1fa2ecfd0e81aa471b9fdc308917120df",
+    "raw_dvc_md5": "bb7b99f4f2555e614fb4c69ebaa78e02.dir",
+    "compact_pointer_sha256": "5119f39343a30b221b9b34872ceda33cf351ab98206d352ea1cf198d15ca7b00",
+    "compact_dvc_md5": "4fdf4e4145423a39edd78772fa0c4b15.dir",
+    "publication_receipt_sha256": "f4f85b63912f3724ff9b7f1e5c8b9243c3b12673d1778991eeafe812f514d2ce",
+    "remote_status_sha256": "efed9e5afcfe149915ae98b9ed9e69304eb48f5ce2e2265b18b5b5ed2f155e60",
+    "remote_verified": true,
+    "acceptance_recomputed_without_stored_pass_booleans": true,
+    "exact_party_verified": true,
+    "identity_matched": true,
+    "operator_closed": true,
+    "cleanup_complete": true,
+    "worldserver_stopped_after_diagnosis": true,
+    "route_terminal_count": 2,
+    "real_boss_kill_count": 1,
+    "forbidden_completion_assists": []
+  },
+  "observed_failure": {
+    "completion_reason": "machine_failure_predicate",
+    "failure_reason": "validation_route_stuck_loop",
+    "route_generation": 3,
+    "route_node_id": "b7bad077085f36b1",
+    "route_label": "crystalspawn corridor",
+    "route_anchor": {
+      "x": 1181.82,
+      "y": 1069.07,
+      "z": 264.299
+    },
+    "unresolved_route_stuck_events": 24,
+    "captured_stuck_failures": 16,
+    "validation_route_failed_events": 81,
+    "route_destination_partial_path_events": 23,
+    "route_destination_unreachable_events": 85,
+    "generation_3_unique_follower_anchor_moves": 130,
+    "first_four_stuck_events": [
+      {
+        "timestamp_ms": 1785841907542,
+        "bot": "Retpally"
+      },
+      {
+        "timestamp_ms": 1785841908408,
+        "bot": "Discpriest"
+      },
+      {
+        "timestamp_ms": 1785841908469,
+        "bot": "Furywar"
+      },
+      {
+        "timestamp_ms": 1785841908742,
+        "bot": "Mmhunter"
+      }
+    ],
+    "follower_failure_state": "target_id=0, no engaged hostile in the follower-local threat snapshot, repeated route-anchor recovery",
+    "tank_state": "Feraltank remained in generation-3 combat against party-linked entry 42808 and 42810 hostiles"
+  },
+  "combat_falsifier": {
+    "first_follower_stuck_ms": 1785841907542,
+    "last_captured_combat_ms": 1785841941710,
+    "post_first_stuck_duration_ms": 34168,
+    "post_first_stuck_combat_event_count": 187,
+    "post_first_stuck_tank_outbound_damage_event_count": 95,
+    "post_first_stuck_tank_inbound_damage_event_count": 89,
+    "post_first_stuck_tank_heal_event_count": 3,
+    "combat_log_event_count": 2930,
+    "combat_log_dropped_event_count": 0,
+    "conclusion": "The watchdog did not invent an idle world, but it correctly observed a broken party: the tank continued real combat while all four followers lacked usable assist focus and accumulated stuck failures."
+  },
+  "accepted_causal_chain": [
+    "Rerun143 changed the generic Feral area branch from unconditional shared-focus publication to publication only for boss nodes or isEligibleTrashClusterMob targets.",
+    "Generation 3 legitimately combat-linked the party to nearby Stonecore Flayer entry 42808 while the current node's declared pack entries did not include 42808.",
+    "The Feral selected and attacked the tank-owned 42808 cluster, but the broad new guard did not publish that target as shared route focus.",
+    "For followers, routeUsableCombatTarget also rejects non-current-pack trash unless it is the explicit shared bounded terminal combat focus, so the tank's tactical TargetGuid could not become a usable group focus.",
+    "The four followers fell into no-focus anchor movement and unreachable/partial route recovery while the Feral continued Thrash, Swipe, melee, and incoming combat for another 34.168 seconds.",
+    "Repeated follower-local stuck events triggered the strict machine-failure predicate before generation 3 could terminalize."
+  ],
+  "rejected_alternatives": [
+    {
+      "name": "healthy_coordinated_combat_watchdog_false_positive",
+      "reason": "Only the tank produced all 187 post-failure combat events; four followers had target_id zero and repeated no-focus anchor recovery, so party coordination was genuinely broken."
+    },
+    {
+      "name": "rerun142_density_ordering_failure",
+      "reason": "The proactive density selector requires at least 12 engaged hostiles; the failure is explained earlier by shared-focus eligibility and persists while ordinary tank attacks execute."
+    },
+    {
+      "name": "immediate_next_encounter_ownership_regression",
+      "reason": "Entry 42808 is not an immediate-next generation-4 boss member at generation 3. The intended suppression boundary was broader than the authorized immediate-next-encounter rule."
+    },
+    {
+      "name": "identity_or_publication_failure",
+      "reason": "Exact party and identity matched; the operator closed, cleanup passed, the capture revalidated, and both DVC bundles were remotely verified."
+    }
+  ],
+  "smallest_safe_correction": {
+    "file": "src/server/game/Bots/BotWorldPopulationMgr.cpp",
+    "scope": "generic Feral area target shared-focus publication only",
+    "change": "Publish the selected tactical target as shared focus unless it is a manifest-classified immediate-next-encounter member. This restores current party assist for other combat-linked trash while retaining rerun142's exact next-boss/add isolation.",
+    "does_not_change": [
+      "density ranking",
+      "victim assignment",
+      "native spell cooldown or GCD",
+      "path legality",
+      "threat values or multipliers",
+      "route terminal evidence",
+      "four real boss deaths",
+      "identity or party gates",
+      "role-quality thresholds",
+      "publication, cleanup, or eviction gates",
+      "MaxActiveCohorts=1"
+    ]
+  },
+  "next_attempt": {
+    "attempt_label": "rerun144_canary_2",
+    "worldserver_rebuild_required": true,
+    "deterministic_reprovision_required": true,
+    "fresh_identity_and_eight_row_plan_required": true,
+    "canary_2_only_until_strict_pass": true,
+    "canaries_3_through_8_started": false,
+    "phases_10_through_12_blocked": true
+  }
+}

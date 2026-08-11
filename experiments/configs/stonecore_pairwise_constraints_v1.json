@@ -1,0 +1,219 @@
+{
+  "schema": "stonecore_pairwise_constraints_v1",
+  "composition": {
+    "tank": 1,
+    "healer": 1,
+    "dps": 3
+  },
+  "certification": "strict_uninterrupted_current_manifest_full_clear",
+  "diagnostic_segments_certify": false,
+  "concurrency_before_isolation_gate": "prohibited",
+  "constraints": [
+    "every tank-healer pair appears exactly once",
+    "all party members use unique lease keys",
+    "all three DPS slots are distinct within a party",
+    "only calibration-qualified targets may enter certification"
+  ],
+  "parties": [
+    {
+      "party_id": "stonecore_pair_01",
+      "tank": "protection_warrior",
+      "healer": "holy_paladin",
+      "dps": [
+        "arms_warrior",
+        "fury_warrior",
+        "retribution_paladin"
+      ]
+    },
+    {
+      "party_id": "stonecore_pair_02",
+      "tank": "protection_warrior",
+      "healer": "discipline_priest",
+      "dps": [
+        "beast_mastery_hunter",
+        "marksmanship_hunter",
+        "survival_hunter"
+      ]
+    },
+    {
+      "party_id": "stonecore_pair_03",
+      "tank": "protection_warrior",
+      "healer": "holy_priest",
+      "dps": [
+        "assassination_rogue",
+        "combat_rogue",
+        "subtlety_rogue"
+      ]
+    },
+    {
+      "party_id": "stonecore_pair_04",
+      "tank": "protection_warrior",
+      "healer": "restoration_shaman",
+      "dps": [
+        "frost_death_knight",
+        "unholy_death_knight",
+        "elemental_shaman"
+      ]
+    },
+    {
+      "party_id": "stonecore_pair_05",
+      "tank": "protection_warrior",
+      "healer": "restoration_druid",
+      "dps": [
+        "enhancement_shaman",
+        "arcane_mage",
+        "fire_mage"
+      ]
+    },
+    {
+      "party_id": "stonecore_pair_06",
+      "tank": "protection_paladin",
+      "healer": "holy_paladin",
+      "dps": [
+        "frost_mage",
+        "affliction_warlock",
+        "demonology_warlock"
+      ]
+    },
+    {
+      "party_id": "stonecore_pair_07",
+      "tank": "protection_paladin",
+      "healer": "discipline_priest",
+      "dps": [
+        "destruction_warlock",
+        "shadow_priest",
+        "balance_druid"
+      ]
+    },
+    {
+      "party_id": "stonecore_pair_08",
+      "tank": "protection_paladin",
+      "healer": "holy_priest",
+      "dps": [
+        "feral_druid_dps",
+        "arms_warrior",
+        "fury_warrior"
+      ]
+    },
+    {
+      "party_id": "stonecore_pair_09",
+      "tank": "protection_paladin",
+      "healer": "restoration_shaman",
+      "dps": [
+        "retribution_paladin",
+        "beast_mastery_hunter",
+        "marksmanship_hunter"
+      ]
+    },
+    {
+      "party_id": "stonecore_pair_10",
+      "tank": "protection_paladin",
+      "healer": "restoration_druid",
+      "dps": [
+        "survival_hunter",
+        "assassination_rogue",
+        "combat_rogue"
+      ]
+    },
+    {
+      "party_id": "stonecore_pair_11",
+      "tank": "blood_death_knight",
+      "healer": "holy_paladin",
+      "dps": [
+        "subtlety_rogue",
+        "frost_death_knight",
+        "unholy_death_knight"
+      ]
+    },
+    {
+      "party_id": "stonecore_pair_12",
+      "tank": "blood_death_knight",
+      "healer": "discipline_priest",
+      "dps": [
+        "elemental_shaman",
+        "enhancement_shaman",
+        "arcane_mage"
+      ]
+    },
+    {
+      "party_id": "stonecore_pair_13",
+      "tank": "blood_death_knight",
+      "healer": "holy_priest",
+      "dps": [
+        "fire_mage",
+        "frost_mage",
+        "affliction_warlock"
+      ]
+    },
+    {
+      "party_id": "stonecore_pair_14",
+      "tank": "blood_death_knight",
+      "healer": "restoration_shaman",
+      "dps": [
+        "demonology_warlock",
+        "destruction_warlock",
+        "shadow_priest"
+      ]
+    },
+    {
+      "party_id": "stonecore_pair_15",
+      "tank": "blood_death_knight",
+      "healer": "restoration_druid",
+      "dps": [
+        "balance_druid",
+        "feral_druid_dps",
+        "arms_warrior"
+      ]
+    },
+    {
+      "party_id": "stonecore_pair_16",
+      "tank": "feral_druid_tank",
+      "healer": "holy_paladin",
+      "dps": [
+        "fury_warrior",
+        "retribution_paladin",
+        "beast_mastery_hunter"
+      ]
+    },
+    {
+      "party_id": "stonecore_pair_17",
+      "tank": "feral_druid_tank",
+      "healer": "discipline_priest",
+      "dps": [
+        "marksmanship_hunter",
+        "survival_hunter",
+        "assassination_rogue"
+      ]
+    },
+    {
+      "party_id": "stonecore_pair_18",
+      "tank": "feral_druid_tank",
+      "healer": "holy_priest",
+      "dps": [
+        "combat_rogue",
+        "subtlety_rogue",
+        "frost_death_knight"
+      ]
+    },
+    {
+      "party_id": "stonecore_pair_19",
+      "tank": "feral_druid_tank",
+      "healer": "restoration_shaman",
+      "dps": [
+        "unholy_death_knight",
+        "elemental_shaman",
+        "enhancement_shaman"
+      ]
+    },
+    {
+      "party_id": "stonecore_pair_20",
+      "tank": "feral_druid_tank",
+      "healer": "restoration_druid",
+      "dps": [
+        "arcane_mage",
+        "fire_mage",
+        "frost_mage"
+      ]
+    }
+  ]
+}

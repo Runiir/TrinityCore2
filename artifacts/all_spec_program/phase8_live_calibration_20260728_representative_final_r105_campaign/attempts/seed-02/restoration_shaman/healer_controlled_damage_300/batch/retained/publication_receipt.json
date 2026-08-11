@@ -1,0 +1,27 @@
+{
+  "batch_id": "p8-s2-restoration-shaman-healer-controlled-damage-300-45",
+  "batch_identity_sha256": "80ea698af79bc7184b4dcd177f1c7831e9fdd795d3c251ada233e4488763d893",
+  "cache_scope": "batch_specific",
+  "compact_bundle_sha256": "171864996a89ebdff5ad01116b6044a8df85552096e08a1fe0abd18ab6edbfb1",
+  "pointers": [
+    {
+      "dvc_md5": "b95cc0a36f4245dcd3611b8c992ce0b1.dir",
+      "nfiles": 3,
+      "path": "artifacts/all_spec_program/phase8_live_calibration_20260728_representative_final_r105_campaign/attempts/seed-02/restoration_shaman/healer_controlled_damage_300/batch/raw.dvc",
+      "pointer_sha256": "d4ebb5520b1a612abb439436bb27f7214c6812717d28a9b531e4c0dc67333ade",
+      "size": 231118
+    },
+    {
+      "dvc_md5": "91364a8f385167cb38adc0c327df9f6e.dir",
+      "nfiles": 1,
+      "path": "artifacts/all_spec_program/phase8_live_calibration_20260728_representative_final_r105_campaign/attempts/seed-02/restoration_shaman/healer_controlled_damage_300/batch/compact.dvc",
+      "pointer_sha256": "57c62f0954e54a30630ed2ac19099be0beb0e844062a357e68f235cb80de866d",
+      "size": 2680
+    }
+  ],
+  "raw_bundle_sha256": "a3c760642068cc5f744d629dfc9aa2f8e1a6228fdbc98779ca43fa51e3a2ec13",
+  "receipt_sha256": "a69d90d5c16cb83395ed4ae7b7638abb279523f8b0aba3eecc6a9941f96187aa",
+  "remote_status_sha256": "efed9e5afcfe149915ae98b9ed9e69304eb48f5ce2e2265b18b5b5ed2f155e60",
+  "remote_verified": true,
+  "schema": "bot_immutable_batch_publication_receipt_v1"
+}

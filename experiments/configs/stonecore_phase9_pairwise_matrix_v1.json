@@ -1,0 +1,3583 @@
+{
+  "algorithm": {
+    "candidate_order": "tank_lexical_then_healer_lexical_then_canonical_sorted_dps_triple",
+    "name": "deterministic_greedy_uncovered_pair_cover_v1",
+    "pinned_serial_rows_retained": true,
+    "redundancy_pruning": "reverse_selection_order_when_every_pair_remains_covered",
+    "serial_canary_selection": "policy_pinned_all_live_qualification_target_subset_with_native_threat_transfer_support",
+    "tie_break": "maximum_uncovered_gain_then_minimum_member_representation_then_lexical"
+  },
+  "candidate_composition_count": 8400,
+  "canonical_target_count": 31,
+  "composition_contract": {
+    "certification": "strict_uninterrupted_current_manifest_full_clear",
+    "diagnostic_segments_certify": false,
+    "dps": 3,
+    "dps_triple_order": "lexically_sorted_before_hashing",
+    "healer": 1,
+    "party_order": "tank_then_healer_then_sorted_dps",
+    "tank": 1
+  },
+  "composition_set_sha256": "c0b2b51997cecb87f04f40d7c4c3c81b08e0cc21d87f156544b8682ded2771eb",
+  "composition_to_pair_ids": {
+    "stonecore_phase9_001_64d0724cc829": [
+      "dps_dps:affliction_warlock|arms_warrior",
+      "dps_dps:affliction_warlock|assassination_rogue",
+      "dps_dps:arms_warrior|assassination_rogue",
+      "healer_dps:discipline_priest|affliction_warlock",
+      "healer_dps:discipline_priest|arms_warrior",
+      "healer_dps:discipline_priest|assassination_rogue",
+      "tank_dps:blood_death_knight|affliction_warlock",
+      "tank_dps:blood_death_knight|arms_warrior",
+      "tank_dps:blood_death_knight|assassination_rogue",
+      "tank_healer:blood_death_knight|discipline_priest"
+    ],
+    "stonecore_phase9_002_252c595f6076": [
+      "dps_dps:balance_druid|combat_rogue",
+      "dps_dps:balance_druid|demonology_warlock",
+      "dps_dps:combat_rogue|demonology_warlock",
+      "healer_dps:holy_paladin|balance_druid",
+      "healer_dps:holy_paladin|combat_rogue",
+      "healer_dps:holy_paladin|demonology_warlock",
+      "tank_dps:feral_druid_tank|balance_druid",
+      "tank_dps:feral_druid_tank|combat_rogue",
+      "tank_dps:feral_druid_tank|demonology_warlock",
+      "tank_healer:feral_druid_tank|holy_paladin"
+    ],
+    "stonecore_phase9_003_0c6fd8ac8c17": [
+      "dps_dps:elemental_shaman|feral_druid_dps",
+      "dps_dps:elemental_shaman|fire_mage",
+      "dps_dps:feral_druid_dps|fire_mage",
+      "healer_dps:holy_priest|elemental_shaman",
+      "healer_dps:holy_priest|feral_druid_dps",
+      "healer_dps:holy_priest|fire_mage",
+      "tank_dps:protection_paladin|elemental_shaman",
+      "tank_dps:protection_paladin|feral_druid_dps",
+      "tank_dps:protection_paladin|fire_mage",
+      "tank_healer:protection_paladin|holy_priest"
+    ],
+    "stonecore_phase9_004_1163991a5cb7": [
+      "dps_dps:frost_death_knight|fury_warrior",
+      "dps_dps:frost_death_knight|marksmanship_hunter",
+      "dps_dps:fury_warrior|marksmanship_hunter",
+      "healer_dps:restoration_druid|frost_death_knight",
+      "healer_dps:restoration_druid|fury_warrior",
+      "healer_dps:restoration_druid|marksmanship_hunter",
+      "tank_dps:blood_death_knight|frost_death_knight",
+      "tank_dps:blood_death_knight|fury_warrior",
+      "tank_dps:blood_death_knight|marksmanship_hunter",
+      "tank_healer:blood_death_knight|restoration_druid"
+    ],
+    "stonecore_phase9_005_7e761a4e4fc1": [
+      "dps_dps:retribution_paladin|shadow_priest",
+      "dps_dps:retribution_paladin|survival_hunter",
+      "dps_dps:shadow_priest|survival_hunter",
+      "healer_dps:restoration_shaman|retribution_paladin",
+      "healer_dps:restoration_shaman|shadow_priest",
+      "healer_dps:restoration_shaman|survival_hunter",
+      "tank_dps:feral_druid_tank|retribution_paladin",
+      "tank_dps:feral_druid_tank|shadow_priest",
+      "tank_dps:feral_druid_tank|survival_hunter",
+      "tank_healer:feral_druid_tank|restoration_shaman"
+    ],
+    "stonecore_phase9_006_ec58899b2987": [
+      "dps_dps:balance_druid|frost_death_knight",
+      "dps_dps:balance_druid|unholy_death_knight",
+      "dps_dps:frost_death_knight|unholy_death_knight",
+      "healer_dps:discipline_priest|balance_druid",
+      "healer_dps:discipline_priest|frost_death_knight",
+      "healer_dps:discipline_priest|unholy_death_knight",
+      "tank_dps:protection_paladin|balance_druid",
+      "tank_dps:protection_paladin|frost_death_knight",
+      "tank_dps:protection_paladin|unholy_death_knight",
+      "tank_healer:protection_paladin|discipline_priest"
+    ],
+    "stonecore_phase9_007_e893cbe9fb08": [
+      "dps_dps:elemental_shaman|retribution_paladin",
+      "dps_dps:elemental_shaman|unholy_death_knight",
+      "dps_dps:retribution_paladin|unholy_death_knight",
+      "healer_dps:holy_paladin|elemental_shaman",
+      "healer_dps:holy_paladin|retribution_paladin",
+      "healer_dps:holy_paladin|unholy_death_knight",
+      "tank_dps:blood_death_knight|elemental_shaman",
+      "tank_dps:blood_death_knight|retribution_paladin",
+      "tank_dps:blood_death_knight|unholy_death_knight",
+      "tank_healer:blood_death_knight|holy_paladin"
+    ],
+    "stonecore_phase9_008_8290771d4e85": [
+      "dps_dps:affliction_warlock|combat_rogue",
+      "dps_dps:affliction_warlock|shadow_priest",
+      "dps_dps:combat_rogue|shadow_priest",
+      "healer_dps:restoration_druid|affliction_warlock",
+      "healer_dps:restoration_druid|combat_rogue",
+      "healer_dps:restoration_druid|shadow_priest",
+      "tank_dps:protection_paladin|affliction_warlock",
+      "tank_dps:protection_paladin|combat_rogue",
+      "tank_dps:protection_paladin|shadow_priest",
+      "tank_healer:protection_paladin|restoration_druid"
+    ],
+    "stonecore_phase9_009_14b4bed9a041": [
+      "dps_dps:arms_warrior|fury_warrior",
+      "dps_dps:arms_warrior|unholy_death_knight",
+      "dps_dps:fury_warrior|unholy_death_knight",
+      "healer_dps:holy_priest|arms_warrior",
+      "healer_dps:holy_priest|fury_warrior",
+      "healer_dps:holy_priest|unholy_death_knight",
+      "tank_dps:feral_druid_tank|arms_warrior",
+      "tank_dps:feral_druid_tank|fury_warrior",
+      "tank_dps:feral_druid_tank|unholy_death_knight",
+      "tank_healer:feral_druid_tank|holy_priest"
+    ],
+    "stonecore_phase9_010_fe3a3c0be124": [
+      "dps_dps:assassination_rogue|demonology_warlock",
+      "dps_dps:assassination_rogue|marksmanship_hunter",
+      "dps_dps:demonology_warlock|marksmanship_hunter",
+      "healer_dps:restoration_shaman|assassination_rogue",
+      "healer_dps:restoration_shaman|demonology_warlock",
+      "healer_dps:restoration_shaman|marksmanship_hunter",
+      "tank_dps:protection_paladin|assassination_rogue",
+      "tank_dps:protection_paladin|demonology_warlock",
+      "tank_dps:protection_paladin|marksmanship_hunter",
+      "tank_healer:protection_paladin|restoration_shaman"
+    ],
+    "stonecore_phase9_011_4d2deb684469": [
+      "dps_dps:combat_rogue|feral_druid_dps",
+      "dps_dps:combat_rogue|survival_hunter",
+      "dps_dps:feral_druid_dps|survival_hunter",
+      "healer_dps:discipline_priest|combat_rogue",
+      "healer_dps:discipline_priest|feral_druid_dps",
+      "healer_dps:discipline_priest|survival_hunter",
+      "tank_dps:blood_death_knight|combat_rogue",
+      "tank_dps:blood_death_knight|feral_druid_dps",
+      "tank_dps:blood_death_knight|survival_hunter",
+      "tank_healer:blood_death_knight|discipline_priest"
+    ],
+    "stonecore_phase9_012_be4c7ee17606": [
+      "dps_dps:affliction_warlock|fire_mage",
+      "dps_dps:affliction_warlock|frost_death_knight",
+      "dps_dps:fire_mage|frost_death_knight",
+      "healer_dps:holy_paladin|affliction_warlock",
+      "healer_dps:holy_paladin|fire_mage",
+      "healer_dps:holy_paladin|frost_death_knight",
+      "tank_dps:feral_druid_tank|affliction_warlock",
+      "tank_dps:feral_druid_tank|fire_mage",
+      "tank_dps:feral_druid_tank|frost_death_knight",
+      "tank_healer:feral_druid_tank|holy_paladin"
+    ],
+    "stonecore_phase9_013_243ceb428cc8": [
+      "dps_dps:assassination_rogue|balance_druid",
+      "dps_dps:assassination_rogue|shadow_priest",
+      "dps_dps:balance_druid|shadow_priest",
+      "healer_dps:holy_priest|assassination_rogue",
+      "healer_dps:holy_priest|balance_druid",
+      "healer_dps:holy_priest|shadow_priest",
+      "tank_dps:blood_death_knight|assassination_rogue",
+      "tank_dps:blood_death_knight|balance_druid",
+      "tank_dps:blood_death_knight|shadow_priest",
+      "tank_healer:blood_death_knight|holy_priest"
+    ],
+    "stonecore_phase9_014_f20a23d8a7a1": [
+      "dps_dps:assassination_rogue|elemental_shaman",
+      "dps_dps:assassination_rogue|feral_druid_dps",
+      "dps_dps:elemental_shaman|feral_druid_dps",
+      "healer_dps:restoration_druid|assassination_rogue",
+      "healer_dps:restoration_druid|elemental_shaman",
+      "healer_dps:restoration_druid|feral_druid_dps",
+      "tank_dps:feral_druid_tank|assassination_rogue",
+      "tank_dps:feral_druid_tank|elemental_shaman",
+      "tank_dps:feral_druid_tank|feral_druid_dps",
+      "tank_healer:feral_druid_tank|restoration_druid"
+    ],
+    "stonecore_phase9_015_115975bbfe9e": [
+      "dps_dps:arms_warrior|fury_warrior",
+      "dps_dps:arms_warrior|survival_hunter",
+      "dps_dps:fury_warrior|survival_hunter",
+      "healer_dps:holy_paladin|arms_warrior",
+      "healer_dps:holy_paladin|fury_warrior",
+      "healer_dps:holy_paladin|survival_hunter",
+      "tank_dps:protection_paladin|arms_warrior",
+      "tank_dps:protection_paladin|fury_warrior",
+      "tank_dps:protection_paladin|survival_hunter",
+      "tank_healer:protection_paladin|holy_paladin"
+    ],
+    "stonecore_phase9_016_7f73ebd805c3": [
+      "dps_dps:demonology_warlock|fire_mage",
+      "dps_dps:demonology_warlock|retribution_paladin",
+      "dps_dps:fire_mage|retribution_paladin",
+      "healer_dps:discipline_priest|demonology_warlock",
+      "healer_dps:discipline_priest|fire_mage",
+      "healer_dps:discipline_priest|retribution_paladin",
+      "tank_dps:blood_death_knight|demonology_warlock",
+      "tank_dps:blood_death_knight|fire_mage",
+      "tank_dps:blood_death_knight|retribution_paladin",
+      "tank_healer:blood_death_knight|discipline_priest"
+    ],
+    "stonecore_phase9_017_f981a13e2b50": [
+      "dps_dps:elemental_shaman|marksmanship_hunter",
+      "dps_dps:elemental_shaman|shadow_priest",
+      "dps_dps:marksmanship_hunter|shadow_priest",
+      "healer_dps:discipline_priest|elemental_shaman",
+      "healer_dps:discipline_priest|marksmanship_hunter",
+      "healer_dps:discipline_priest|shadow_priest",
+      "tank_dps:feral_druid_tank|elemental_shaman",
+      "tank_dps:feral_druid_tank|marksmanship_hunter",
+      "tank_dps:feral_druid_tank|shadow_priest",
+      "tank_healer:feral_druid_tank|discipline_priest"
+    ],
+    "stonecore_phase9_018_b0a4d62f1657": [
+      "dps_dps:affliction_warlock|marksmanship_hunter",
+      "dps_dps:affliction_warlock|retribution_paladin",
+      "dps_dps:marksmanship_hunter|retribution_paladin",
+      "healer_dps:holy_priest|affliction_warlock",
+      "healer_dps:holy_priest|marksmanship_hunter",
+      "healer_dps:holy_priest|retribution_paladin",
+      "tank_dps:protection_paladin|affliction_warlock",
+      "tank_dps:protection_paladin|marksmanship_hunter",
+      "tank_dps:protection_paladin|retribution_paladin",
+      "tank_healer:protection_paladin|holy_priest"
+    ],
+    "stonecore_phase9_019_af06ba6568dd": [
+      "dps_dps:arms_warrior|balance_druid",
+      "dps_dps:arms_warrior|feral_druid_dps",
+      "dps_dps:balance_druid|feral_druid_dps",
+      "healer_dps:restoration_shaman|arms_warrior",
+      "healer_dps:restoration_shaman|balance_druid",
+      "healer_dps:restoration_shaman|feral_druid_dps",
+      "tank_dps:blood_death_knight|arms_warrior",
+      "tank_dps:blood_death_knight|balance_druid",
+      "tank_dps:blood_death_knight|feral_druid_dps",
+      "tank_healer:blood_death_knight|restoration_shaman"
+    ],
+    "stonecore_phase9_020_602e10128820": [
+      "dps_dps:demonology_warlock|survival_hunter",
+      "dps_dps:demonology_warlock|unholy_death_knight",
+      "dps_dps:survival_hunter|unholy_death_knight",
+      "healer_dps:restoration_druid|demonology_warlock",
+      "healer_dps:restoration_druid|survival_hunter",
+      "healer_dps:restoration_druid|unholy_death_knight",
+      "tank_dps:feral_druid_tank|demonology_warlock",
+      "tank_dps:feral_druid_tank|survival_hunter",
+      "tank_dps:feral_druid_tank|unholy_death_knight",
+      "tank_healer:feral_druid_tank|restoration_druid"
+    ],
+    "stonecore_phase9_021_182de844afab": [
+      "dps_dps:combat_rogue|fire_mage",
+      "dps_dps:combat_rogue|fury_warrior",
+      "dps_dps:fire_mage|fury_warrior",
+      "healer_dps:restoration_shaman|combat_rogue",
+      "healer_dps:restoration_shaman|fire_mage",
+      "healer_dps:restoration_shaman|fury_warrior",
+      "tank_dps:protection_paladin|combat_rogue",
+      "tank_dps:protection_paladin|fire_mage",
+      "tank_dps:protection_paladin|fury_warrior",
+      "tank_healer:protection_paladin|restoration_shaman"
+    ],
+    "stonecore_phase9_022_9a26c496c8dd": [
+      "dps_dps:feral_druid_dps|frost_death_knight",
+      "dps_dps:feral_druid_dps|shadow_priest",
+      "dps_dps:frost_death_knight|shadow_priest",
+      "healer_dps:holy_paladin|feral_druid_dps",
+      "healer_dps:holy_paladin|frost_death_knight",
+      "healer_dps:holy_paladin|shadow_priest",
+      "tank_dps:blood_death_knight|feral_druid_dps",
+      "tank_dps:blood_death_knight|frost_death_knight",
+      "tank_dps:blood_death_knight|shadow_priest",
+      "tank_healer:blood_death_knight|holy_paladin"
+    ],
+    "stonecore_phase9_023_9c7b668836d1": [
+      "dps_dps:arms_warrior|combat_rogue",
+      "dps_dps:arms_warrior|frost_death_knight",
+      "dps_dps:combat_rogue|frost_death_knight",
+      "healer_dps:holy_priest|arms_warrior",
+      "healer_dps:holy_priest|combat_rogue",
+      "healer_dps:holy_priest|frost_death_knight",
+      "tank_dps:feral_druid_tank|arms_warrior",
+      "tank_dps:feral_druid_tank|combat_rogue",
+      "tank_dps:feral_druid_tank|frost_death_knight",
+      "tank_healer:feral_druid_tank|holy_priest"
+    ],
+    "stonecore_phase9_024_0b926160dbb6": [
+      "dps_dps:balance_druid|fire_mage",
+      "dps_dps:balance_druid|marksmanship_hunter",
+      "dps_dps:fire_mage|marksmanship_hunter",
+      "healer_dps:restoration_druid|balance_druid",
+      "healer_dps:restoration_druid|fire_mage",
+      "healer_dps:restoration_druid|marksmanship_hunter",
+      "tank_dps:protection_paladin|balance_druid",
+      "tank_dps:protection_paladin|fire_mage",
+      "tank_dps:protection_paladin|marksmanship_hunter",
+      "tank_healer:protection_paladin|restoration_druid"
+    ],
+    "stonecore_phase9_025_a873aafa63a6": [
+      "dps_dps:affliction_warlock|demonology_warlock",
+      "dps_dps:affliction_warlock|elemental_shaman",
+      "dps_dps:demonology_warlock|elemental_shaman",
+      "healer_dps:restoration_shaman|affliction_warlock",
+      "healer_dps:restoration_shaman|demonology_warlock",
+      "healer_dps:restoration_shaman|elemental_shaman",
+      "tank_dps:blood_death_knight|affliction_warlock",
+      "tank_dps:blood_death_knight|demonology_warlock",
+      "tank_dps:blood_death_knight|elemental_shaman",
+      "tank_healer:blood_death_knight|restoration_shaman"
+    ],
+    "stonecore_phase9_026_ffc471c6f0a6": [
+      "dps_dps:assassination_rogue|fury_warrior",
+      "dps_dps:assassination_rogue|retribution_paladin",
+      "dps_dps:fury_warrior|retribution_paladin",
+      "healer_dps:discipline_priest|assassination_rogue",
+      "healer_dps:discipline_priest|fury_warrior",
+      "healer_dps:discipline_priest|retribution_paladin",
+      "tank_dps:feral_druid_tank|assassination_rogue",
+      "tank_dps:feral_druid_tank|fury_warrior",
+      "tank_dps:feral_druid_tank|retribution_paladin",
+      "tank_healer:feral_druid_tank|discipline_priest"
+    ],
+    "stonecore_phase9_027_418a16c2a85e": [
+      "dps_dps:assassination_rogue|combat_rogue",
+      "dps_dps:assassination_rogue|unholy_death_knight",
+      "dps_dps:combat_rogue|unholy_death_knight",
+      "healer_dps:holy_paladin|assassination_rogue",
+      "healer_dps:holy_paladin|combat_rogue",
+      "healer_dps:holy_paladin|unholy_death_knight",
+      "tank_dps:protection_paladin|assassination_rogue",
+      "tank_dps:protection_paladin|combat_rogue",
+      "tank_dps:protection_paladin|unholy_death_knight",
+      "tank_healer:protection_paladin|holy_paladin"
+    ],
+    "stonecore_phase9_028_ec25c25b5016": [
+      "dps_dps:affliction_warlock|balance_druid",
+      "dps_dps:affliction_warlock|survival_hunter",
+      "dps_dps:balance_druid|survival_hunter",
+      "healer_dps:holy_priest|affliction_warlock",
+      "healer_dps:holy_priest|balance_druid",
+      "healer_dps:holy_priest|survival_hunter",
+      "tank_dps:blood_death_knight|affliction_warlock",
+      "tank_dps:blood_death_knight|balance_druid",
+      "tank_dps:blood_death_knight|survival_hunter",
+      "tank_healer:blood_death_knight|holy_priest"
+    ],
+    "stonecore_phase9_029_cb2b9f33c708": [
+      "dps_dps:arms_warrior|demonology_warlock",
+      "dps_dps:arms_warrior|retribution_paladin",
+      "dps_dps:demonology_warlock|retribution_paladin",
+      "healer_dps:restoration_druid|arms_warrior",
+      "healer_dps:restoration_druid|demonology_warlock",
+      "healer_dps:restoration_druid|retribution_paladin",
+      "tank_dps:feral_druid_tank|arms_warrior",
+      "tank_dps:feral_druid_tank|demonology_warlock",
+      "tank_dps:feral_druid_tank|retribution_paladin",
+      "tank_healer:feral_druid_tank|restoration_druid"
+    ],
+    "stonecore_phase9_030_6c85d6af8a47": [
+      "dps_dps:elemental_shaman|frost_death_knight",
+      "dps_dps:elemental_shaman|survival_hunter",
+      "dps_dps:frost_death_knight|survival_hunter",
+      "healer_dps:restoration_shaman|elemental_shaman",
+      "healer_dps:restoration_shaman|frost_death_knight",
+      "healer_dps:restoration_shaman|survival_hunter",
+      "tank_dps:protection_paladin|elemental_shaman",
+      "tank_dps:protection_paladin|frost_death_knight",
+      "tank_dps:protection_paladin|survival_hunter",
+      "tank_healer:protection_paladin|restoration_shaman"
+    ],
+    "stonecore_phase9_031_6c12d700d9d6": [
+      "dps_dps:feral_druid_dps|marksmanship_hunter",
+      "dps_dps:feral_druid_dps|unholy_death_knight",
+      "dps_dps:marksmanship_hunter|unholy_death_knight",
+      "healer_dps:holy_paladin|feral_druid_dps",
+      "healer_dps:holy_paladin|marksmanship_hunter",
+      "healer_dps:holy_paladin|unholy_death_knight",
+      "tank_dps:blood_death_knight|feral_druid_dps",
+      "tank_dps:blood_death_knight|marksmanship_hunter",
+      "tank_dps:blood_death_knight|unholy_death_knight",
+      "tank_healer:blood_death_knight|holy_paladin"
+    ],
+    "stonecore_phase9_032_5c20e9da6d12": [
+      "dps_dps:demonology_warlock|fury_warrior",
+      "dps_dps:demonology_warlock|shadow_priest",
+      "dps_dps:fury_warrior|shadow_priest",
+      "healer_dps:holy_priest|demonology_warlock",
+      "healer_dps:holy_priest|fury_warrior",
+      "healer_dps:holy_priest|shadow_priest",
+      "tank_dps:feral_druid_tank|demonology_warlock",
+      "tank_dps:feral_druid_tank|fury_warrior",
+      "tank_dps:feral_druid_tank|shadow_priest",
+      "tank_healer:feral_druid_tank|holy_priest"
+    ],
+    "stonecore_phase9_033_580586097c1c": [
+      "dps_dps:fire_mage|shadow_priest",
+      "dps_dps:fire_mage|unholy_death_knight",
+      "dps_dps:shadow_priest|unholy_death_knight",
+      "healer_dps:restoration_shaman|fire_mage",
+      "healer_dps:restoration_shaman|shadow_priest",
+      "healer_dps:restoration_shaman|unholy_death_knight",
+      "tank_dps:protection_paladin|fire_mage",
+      "tank_dps:protection_paladin|shadow_priest",
+      "tank_dps:protection_paladin|unholy_death_knight",
+      "tank_healer:protection_paladin|restoration_shaman"
+    ],
+    "stonecore_phase9_034_5f0f3a570a7f": [
+      "dps_dps:affliction_warlock|feral_druid_dps",
+      "dps_dps:affliction_warlock|fury_warrior",
+      "dps_dps:feral_druid_dps|fury_warrior",
+      "healer_dps:discipline_priest|affliction_warlock",
+      "healer_dps:discipline_priest|feral_druid_dps",
+      "healer_dps:discipline_priest|fury_warrior",
+      "tank_dps:blood_death_knight|affliction_warlock",
+      "tank_dps:blood_death_knight|feral_druid_dps",
+      "tank_dps:blood_death_knight|fury_warrior",
+      "tank_healer:blood_death_knight|discipline_priest"
+    ],
+    "stonecore_phase9_035_0f2fd4ef2600": [
+      "dps_dps:assassination_rogue|fire_mage",
+      "dps_dps:assassination_rogue|survival_hunter",
+      "dps_dps:fire_mage|survival_hunter",
+      "healer_dps:restoration_druid|assassination_rogue",
+      "healer_dps:restoration_druid|fire_mage",
+      "healer_dps:restoration_druid|survival_hunter",
+      "tank_dps:feral_druid_tank|assassination_rogue",
+      "tank_dps:feral_druid_tank|fire_mage",
+      "tank_dps:feral_druid_tank|survival_hunter",
+      "tank_healer:feral_druid_tank|restoration_druid"
+    ],
+    "stonecore_phase9_036_a3bdcc188d55": [
+      "dps_dps:balance_druid|elemental_shaman",
+      "dps_dps:balance_druid|fury_warrior",
+      "dps_dps:elemental_shaman|fury_warrior",
+      "healer_dps:discipline_priest|balance_druid",
+      "healer_dps:discipline_priest|elemental_shaman",
+      "healer_dps:discipline_priest|fury_warrior",
+      "tank_dps:protection_paladin|balance_druid",
+      "tank_dps:protection_paladin|elemental_shaman",
+      "tank_dps:protection_paladin|fury_warrior",
+      "tank_healer:protection_paladin|discipline_priest"
+    ],
+    "stonecore_phase9_037_2a3681967e8f": [
+      "dps_dps:arms_warrior|combat_rogue",
+      "dps_dps:arms_warrior|marksmanship_hunter",
+      "dps_dps:combat_rogue|marksmanship_hunter",
+      "healer_dps:holy_paladin|arms_warrior",
+      "healer_dps:holy_paladin|combat_rogue",
+      "healer_dps:holy_paladin|marksmanship_hunter",
+      "tank_dps:blood_death_knight|arms_warrior",
+      "tank_dps:blood_death_knight|combat_rogue",
+      "tank_dps:blood_death_knight|marksmanship_hunter",
+      "tank_healer:blood_death_knight|holy_paladin"
+    ],
+    "stonecore_phase9_038_6b86a9245363": [
+      "dps_dps:assassination_rogue|frost_death_knight",
+      "dps_dps:assassination_rogue|retribution_paladin",
+      "dps_dps:frost_death_knight|retribution_paladin",
+      "healer_dps:holy_priest|assassination_rogue",
+      "healer_dps:holy_priest|frost_death_knight",
+      "healer_dps:holy_priest|retribution_paladin",
+      "tank_dps:feral_druid_tank|assassination_rogue",
+      "tank_dps:feral_druid_tank|frost_death_knight",
+      "tank_dps:feral_druid_tank|retribution_paladin",
+      "tank_healer:feral_druid_tank|holy_priest"
+    ],
+    "stonecore_phase9_039_14d86fb7e03b": [
+      "dps_dps:arms_warrior|combat_rogue",
+      "dps_dps:arms_warrior|elemental_shaman",
+      "dps_dps:combat_rogue|elemental_shaman",
+      "healer_dps:restoration_druid|arms_warrior",
+      "healer_dps:restoration_druid|combat_rogue",
+      "healer_dps:restoration_druid|elemental_shaman",
+      "tank_dps:protection_paladin|arms_warrior",
+      "tank_dps:protection_paladin|combat_rogue",
+      "tank_dps:protection_paladin|elemental_shaman",
+      "tank_healer:protection_paladin|restoration_druid"
+    ],
+    "stonecore_phase9_040_4ee672a246df": [
+      "dps_dps:balance_druid|feral_druid_dps",
+      "dps_dps:balance_druid|retribution_paladin",
+      "dps_dps:feral_druid_dps|retribution_paladin",
+      "healer_dps:restoration_shaman|balance_druid",
+      "healer_dps:restoration_shaman|feral_druid_dps",
+      "healer_dps:restoration_shaman|retribution_paladin",
+      "tank_dps:blood_death_knight|balance_druid",
+      "tank_dps:blood_death_knight|feral_druid_dps",
+      "tank_dps:blood_death_knight|retribution_paladin",
+      "tank_healer:blood_death_knight|restoration_shaman"
+    ],
+    "stonecore_phase9_041_0b3620da4011": [
+      "dps_dps:arms_warrior|fire_mage",
+      "dps_dps:arms_warrior|shadow_priest",
+      "dps_dps:fire_mage|shadow_priest",
+      "healer_dps:discipline_priest|arms_warrior",
+      "healer_dps:discipline_priest|fire_mage",
+      "healer_dps:discipline_priest|shadow_priest",
+      "tank_dps:feral_druid_tank|arms_warrior",
+      "tank_dps:feral_druid_tank|fire_mage",
+      "tank_dps:feral_druid_tank|shadow_priest",
+      "tank_healer:feral_druid_tank|discipline_priest"
+    ],
+    "stonecore_phase9_042_b2cc08049375": [
+      "dps_dps:demonology_warlock|feral_druid_dps",
+      "dps_dps:demonology_warlock|frost_death_knight",
+      "dps_dps:feral_druid_dps|frost_death_knight",
+      "healer_dps:holy_paladin|demonology_warlock",
+      "healer_dps:holy_paladin|feral_druid_dps",
+      "healer_dps:holy_paladin|frost_death_knight",
+      "tank_dps:protection_paladin|demonology_warlock",
+      "tank_dps:protection_paladin|feral_druid_dps",
+      "tank_dps:protection_paladin|frost_death_knight",
+      "tank_healer:protection_paladin|holy_paladin"
+    ],
+    "stonecore_phase9_043_112b82e91b5f": [
+      "dps_dps:affliction_warlock|marksmanship_hunter",
+      "dps_dps:affliction_warlock|survival_hunter",
+      "dps_dps:marksmanship_hunter|survival_hunter",
+      "healer_dps:holy_priest|affliction_warlock",
+      "healer_dps:holy_priest|marksmanship_hunter",
+      "healer_dps:holy_priest|survival_hunter",
+      "tank_dps:blood_death_knight|affliction_warlock",
+      "tank_dps:blood_death_knight|marksmanship_hunter",
+      "tank_dps:blood_death_knight|survival_hunter",
+      "tank_healer:blood_death_knight|holy_priest"
+    ],
+    "stonecore_phase9_044_c8a9830bb574": [
+      "dps_dps:affliction_warlock|assassination_rogue",
+      "dps_dps:affliction_warlock|unholy_death_knight",
+      "dps_dps:assassination_rogue|unholy_death_knight",
+      "healer_dps:restoration_druid|affliction_warlock",
+      "healer_dps:restoration_druid|assassination_rogue",
+      "healer_dps:restoration_druid|unholy_death_knight",
+      "tank_dps:feral_druid_tank|affliction_warlock",
+      "tank_dps:feral_druid_tank|assassination_rogue",
+      "tank_dps:feral_druid_tank|unholy_death_knight",
+      "tank_healer:feral_druid_tank|restoration_druid"
+    ],
+    "stonecore_phase9_045_a5eab290c09c": [
+      "dps_dps:balance_druid|combat_rogue",
+      "dps_dps:balance_druid|retribution_paladin",
+      "dps_dps:combat_rogue|retribution_paladin",
+      "healer_dps:restoration_shaman|balance_druid",
+      "healer_dps:restoration_shaman|combat_rogue",
+      "healer_dps:restoration_shaman|retribution_paladin",
+      "tank_dps:protection_paladin|balance_druid",
+      "tank_dps:protection_paladin|combat_rogue",
+      "tank_dps:protection_paladin|retribution_paladin",
+      "tank_healer:protection_paladin|restoration_shaman"
+    ],
+    "stonecore_phase9_046_5fa6cb9c5dde": [
+      "dps_dps:affliction_warlock|marksmanship_hunter",
+      "dps_dps:affliction_warlock|retribution_paladin",
+      "dps_dps:marksmanship_hunter|retribution_paladin",
+      "healer_dps:holy_paladin|affliction_warlock",
+      "healer_dps:holy_paladin|marksmanship_hunter",
+      "healer_dps:holy_paladin|retribution_paladin",
+      "tank_dps:blood_death_knight|affliction_warlock",
+      "tank_dps:blood_death_knight|marksmanship_hunter",
+      "tank_dps:blood_death_knight|retribution_paladin",
+      "tank_healer:blood_death_knight|holy_paladin"
+    ],
+    "stonecore_phase9_047_95d945edcd32": [
+      "dps_dps:demonology_warlock|shadow_priest",
+      "dps_dps:demonology_warlock|survival_hunter",
+      "dps_dps:shadow_priest|survival_hunter",
+      "healer_dps:discipline_priest|demonology_warlock",
+      "healer_dps:discipline_priest|shadow_priest",
+      "healer_dps:discipline_priest|survival_hunter",
+      "tank_dps:feral_druid_tank|demonology_warlock",
+      "tank_dps:feral_druid_tank|shadow_priest",
+      "tank_dps:feral_druid_tank|survival_hunter",
+      "tank_healer:feral_druid_tank|discipline_priest"
+    ],
+    "stonecore_phase9_048_6d59c2000776": [
+      "dps_dps:balance_druid|combat_rogue",
+      "dps_dps:balance_druid|marksmanship_hunter",
+      "dps_dps:combat_rogue|marksmanship_hunter",
+      "healer_dps:restoration_shaman|balance_druid",
+      "healer_dps:restoration_shaman|combat_rogue",
+      "healer_dps:restoration_shaman|marksmanship_hunter",
+      "tank_dps:protection_paladin|balance_druid",
+      "tank_dps:protection_paladin|combat_rogue",
+      "tank_dps:protection_paladin|marksmanship_hunter",
+      "tank_healer:protection_paladin|restoration_shaman"
+    ],
+    "stonecore_phase9_049_f852a689382d": [
+      "dps_dps:elemental_shaman|feral_druid_dps",
+      "dps_dps:elemental_shaman|survival_hunter",
+      "dps_dps:feral_druid_dps|survival_hunter",
+      "healer_dps:restoration_druid|elemental_shaman",
+      "healer_dps:restoration_druid|feral_druid_dps",
+      "healer_dps:restoration_druid|survival_hunter",
+      "tank_dps:protection_paladin|elemental_shaman",
+      "tank_dps:protection_paladin|feral_druid_dps",
+      "tank_dps:protection_paladin|survival_hunter",
+      "tank_healer:protection_paladin|restoration_druid"
+    ],
+    "stonecore_phase9_050_7f09b51b8998": [
+      "dps_dps:arms_warrior|fury_warrior",
+      "dps_dps:arms_warrior|marksmanship_hunter",
+      "dps_dps:fury_warrior|marksmanship_hunter",
+      "healer_dps:holy_priest|arms_warrior",
+      "healer_dps:holy_priest|fury_warrior",
+      "healer_dps:holy_priest|marksmanship_hunter",
+      "tank_dps:blood_death_knight|arms_warrior",
+      "tank_dps:blood_death_knight|fury_warrior",
+      "tank_dps:blood_death_knight|marksmanship_hunter",
+      "tank_healer:blood_death_knight|holy_priest"
+    ],
+    "stonecore_phase9_051_fbf54b4a4beb": [
+      "dps_dps:assassination_rogue|survival_hunter",
+      "dps_dps:assassination_rogue|unholy_death_knight",
+      "dps_dps:survival_hunter|unholy_death_knight",
+      "healer_dps:holy_paladin|assassination_rogue",
+      "healer_dps:holy_paladin|survival_hunter",
+      "healer_dps:holy_paladin|unholy_death_knight",
+      "tank_dps:feral_druid_tank|assassination_rogue",
+      "tank_dps:feral_druid_tank|survival_hunter",
+      "tank_dps:feral_druid_tank|unholy_death_knight",
+      "tank_healer:feral_druid_tank|holy_paladin"
+    ],
+    "stonecore_phase9_052_2e3d87f152cf": [
+      "dps_dps:fire_mage|frost_death_knight",
+      "dps_dps:fire_mage|marksmanship_hunter",
+      "dps_dps:frost_death_knight|marksmanship_hunter",
+      "healer_dps:discipline_priest|fire_mage",
+      "healer_dps:discipline_priest|frost_death_knight",
+      "healer_dps:discipline_priest|marksmanship_hunter",
+      "tank_dps:protection_paladin|fire_mage",
+      "tank_dps:protection_paladin|frost_death_knight",
+      "tank_dps:protection_paladin|marksmanship_hunter",
+      "tank_healer:protection_paladin|discipline_priest"
+    ]
+  },
+  "compositions": [
+    {
+      "composition_id": "stonecore_phase9_001_64d0724cc829",
+      "composition_sha256": "64d0724cc82987c58727f3336f32f2df3ee0d26062c2a1741c2a00e9456634c4",
+      "covered_pair_ids": [
+        "dps_dps:affliction_warlock|arms_warrior",
+        "dps_dps:affliction_warlock|assassination_rogue",
+        "dps_dps:arms_warrior|assassination_rogue",
+        "healer_dps:discipline_priest|affliction_warlock",
+        "healer_dps:discipline_priest|arms_warrior",
+        "healer_dps:discipline_priest|assassination_rogue",
+        "tank_dps:blood_death_knight|affliction_warlock",
+        "tank_dps:blood_death_knight|arms_warrior",
+        "tank_dps:blood_death_knight|assassination_rogue",
+        "tank_healer:blood_death_knight|discipline_priest"
+      ],
+      "dps": [
+        "affliction_warlock",
+        "arms_warrior",
+        "assassination_rogue"
+      ],
+      "healer": "discipline_priest",
+      "lease_keys": [
+        "all_spec_candidate_pool:blood_death_knight",
+        "all_spec_candidate_pool:discipline_priest",
+        "all_spec_candidate_pool:affliction_warlock",
+        "all_spec_candidate_pool:arms_warrior",
+        "all_spec_candidate_pool:assassination_rogue"
+      ],
+      "ordered_party": [
+        "blood_death_knight",
+        "discipline_priest",
+        "affliction_warlock",
+        "arms_warrior",
+        "assassination_rogue"
+      ],
+      "tank": "blood_death_knight"
+    },
+    {
+      "composition_id": "stonecore_phase9_002_252c595f6076",
+      "composition_sha256": "252c595f6076ef05efe051abbc599aa423dbb588283233ba32e198ecc9c2a3a4",
+      "covered_pair_ids": [
+        "dps_dps:balance_druid|combat_rogue",
+        "dps_dps:balance_druid|demonology_warlock",
+        "dps_dps:combat_rogue|demonology_warlock",
+        "healer_dps:holy_paladin|balance_druid",
+        "healer_dps:holy_paladin|combat_rogue",
+        "healer_dps:holy_paladin|demonology_warlock",
+        "tank_dps:feral_druid_tank|balance_druid",
+        "tank_dps:feral_druid_tank|combat_rogue",
+        "tank_dps:feral_druid_tank|demonology_warlock",
+        "tank_healer:feral_druid_tank|holy_paladin"
+      ],
+      "dps": [
+        "balance_druid",
+        "combat_rogue",
+        "demonology_warlock"
+      ],
+      "healer": "holy_paladin",
+      "lease_keys": [
+        "all_spec_candidate_pool:feral_druid_tank",
+        "all_spec_candidate_pool:holy_paladin",
+        "all_spec_candidate_pool:balance_druid",
+        "all_spec_candidate_pool:combat_rogue",
+        "all_spec_candidate_pool:demonology_warlock"
+      ],
+      "ordered_party": [
+        "feral_druid_tank",
+        "holy_paladin",
+        "balance_druid",
+        "combat_rogue",
+        "demonology_warlock"
+      ],
+      "tank": "feral_druid_tank"
+    },
+    {
+      "composition_id": "stonecore_phase9_003_0c6fd8ac8c17",
+      "composition_sha256": "0c6fd8ac8c172c5d94e85deb55dd4ee4a35d37bf70ab8c42ad82d37877d47893",
+      "covered_pair_ids": [
+        "dps_dps:elemental_shaman|feral_druid_dps",
+        "dps_dps:elemental_shaman|fire_mage",
+        "dps_dps:feral_druid_dps|fire_mage",
+        "healer_dps:holy_priest|elemental_shaman",
+        "healer_dps:holy_priest|feral_druid_dps",
+        "healer_dps:holy_priest|fire_mage",
+        "tank_dps:protection_paladin|elemental_shaman",
+        "tank_dps:protection_paladin|feral_druid_dps",
+        "tank_dps:protection_paladin|fire_mage",
+        "tank_healer:protection_paladin|holy_priest"
+      ],
+      "dps": [
+        "elemental_shaman",
+        "feral_druid_dps",
+        "fire_mage"
+      ],
+      "healer": "holy_priest",
+      "lease_keys": [
+        "all_spec_candidate_pool:protection_paladin",
+        "all_spec_candidate_pool:holy_priest",
+        "all_spec_candidate_pool:elemental_shaman",
+        "all_spec_candidate_pool:feral_druid_dps",
+        "all_spec_candidate_pool:fire_mage"
+      ],
+      "ordered_party": [
+        "protection_paladin",
+        "holy_priest",
+        "elemental_shaman",
+        "feral_druid_dps",
+        "fire_mage"
+      ],
+      "tank": "protection_paladin"
+    },
+    {
+      "composition_id": "stonecore_phase9_004_1163991a5cb7",
+      "composition_sha256": "1163991a5cb75104044ad4b693d18a41cfb7484590d3d0330da925e823b5d68d",
+      "covered_pair_ids": [
+        "dps_dps:frost_death_knight|fury_warrior",
+        "dps_dps:frost_death_knight|marksmanship_hunter",
+        "dps_dps:fury_warrior|marksmanship_hunter",
+        "healer_dps:restoration_druid|frost_death_knight",
+        "healer_dps:restoration_druid|fury_warrior",
+        "healer_dps:restoration_druid|marksmanship_hunter",
+        "tank_dps:blood_death_knight|frost_death_knight",
+        "tank_dps:blood_death_knight|fury_warrior",
+        "tank_dps:blood_death_knight|marksmanship_hunter",
+        "tank_healer:blood_death_knight|restoration_druid"
+      ],
+      "dps": [
+        "frost_death_knight",
+        "fury_warrior",
+        "marksmanship_hunter"
+      ],
+      "healer": "restoration_druid",
+      "lease_keys": [
+        "all_spec_candidate_pool:blood_death_knight",
+        "all_spec_candidate_pool:restoration_druid",
+        "all_spec_candidate_pool:frost_death_knight",
+        "all_spec_candidate_pool:fury_warrior",
+        "all_spec_candidate_pool:marksmanship_hunter"
+      ],
+      "ordered_party": [
+        "blood_death_knight",
+        "restoration_druid",
+        "frost_death_knight",
+        "fury_warrior",
+        "marksmanship_hunter"
+      ],
+      "tank": "blood_death_knight"
+    },
+    {
+      "composition_id": "stonecore_phase9_005_7e761a4e4fc1",
+      "composition_sha256": "7e761a4e4fc1d8deae4493fdca76c08bd6ebe8cae95e69c33f217194e92ef069",
+      "covered_pair_ids": [
+        "dps_dps:retribution_paladin|shadow_priest",
+        "dps_dps:retribution_paladin|survival_hunter",
+        "dps_dps:shadow_priest|survival_hunter",
+        "healer_dps:restoration_shaman|retribution_paladin",
+        "healer_dps:restoration_shaman|shadow_priest",
+        "healer_dps:restoration_shaman|survival_hunter",
+        "tank_dps:feral_druid_tank|retribution_paladin",
+        "tank_dps:feral_druid_tank|shadow_priest",
+        "tank_dps:feral_druid_tank|survival_hunter",
+        "tank_healer:feral_druid_tank|restoration_shaman"
+      ],
+      "dps": [
+        "retribution_paladin",
+        "shadow_priest",
+        "survival_hunter"
+      ],
+      "healer": "restoration_shaman",
+      "lease_keys": [
+        "all_spec_candidate_pool:feral_druid_tank",
+        "all_spec_candidate_pool:restoration_shaman",
+        "all_spec_candidate_pool:retribution_paladin",
+        "all_spec_candidate_pool:shadow_priest",
+        "all_spec_candidate_pool:survival_hunter"
+      ],
+      "ordered_party": [
+        "feral_druid_tank",
+        "restoration_shaman",
+        "retribution_paladin",
+        "shadow_priest",
+        "survival_hunter"
+      ],
+      "tank": "feral_druid_tank"
+    },
+    {
+      "composition_id": "stonecore_phase9_006_ec58899b2987",
+      "composition_sha256": "ec58899b29874008929d6d2e56ec9fbe91cbacd24b335944c116643c7a8be5d9",
+      "covered_pair_ids": [
+        "dps_dps:balance_druid|frost_death_knight",
+        "dps_dps:balance_druid|unholy_death_knight",
+        "dps_dps:frost_death_knight|unholy_death_knight",
+        "healer_dps:discipline_priest|balance_druid",
+        "healer_dps:discipline_priest|frost_death_knight",
+        "healer_dps:discipline_priest|unholy_death_knight",
+        "tank_dps:protection_paladin|balance_druid",
+        "tank_dps:protection_paladin|frost_death_knight",
+        "tank_dps:protection_paladin|unholy_death_knight",
+        "tank_healer:protection_paladin|discipline_priest"
+      ],
+      "dps": [
+        "balance_druid",
+        "frost_death_knight",
+        "unholy_death_knight"
+      ],
+      "healer": "discipline_priest",
+      "lease_keys": [
+        "all_spec_candidate_pool:protection_paladin",
+        "all_spec_candidate_pool:discipline_priest",
+        "all_spec_candidate_pool:balance_druid",
+        "all_spec_candidate_pool:frost_death_knight",
+        "all_spec_candidate_pool:unholy_death_knight"
+      ],
+      "ordered_party": [
+        "protection_paladin",
+        "discipline_priest",
+        "balance_druid",
+        "frost_death_knight",
+        "unholy_death_knight"
+      ],
+      "tank": "protection_paladin"
+    },
+    {
+      "composition_id": "stonecore_phase9_007_e893cbe9fb08",
+      "composition_sha256": "e893cbe9fb082ceb3f0024c0bd9075d59580c0678eef9e5d51112490f3ab8247",
+      "covered_pair_ids": [
+        "dps_dps:elemental_shaman|retribution_paladin",
+        "dps_dps:elemental_shaman|unholy_death_knight",
+        "dps_dps:retribution_paladin|unholy_death_knight",
+        "healer_dps:holy_paladin|elemental_shaman",
+        "healer_dps:holy_paladin|retribution_paladin",
+        "healer_dps:holy_paladin|unholy_death_knight",
+        "tank_dps:blood_death_knight|elemental_shaman",
+        "tank_dps:blood_death_knight|retribution_paladin",
+        "tank_dps:blood_death_knight|unholy_death_knight",
+        "tank_healer:blood_death_knight|holy_paladin"
+      ],
+      "dps": [
+        "elemental_shaman",
+        "retribution_paladin",
+        "unholy_death_knight"
+      ],
+      "healer": "holy_paladin",
+      "lease_keys": [
+        "all_spec_candidate_pool:blood_death_knight",
+        "all_spec_candidate_pool:holy_paladin",
+        "all_spec_candidate_pool:elemental_shaman",
+        "all_spec_candidate_pool:retribution_paladin",
+        "all_spec_candidate_pool:unholy_death_knight"
+      ],
+      "ordered_party": [
+        "blood_death_knight",
+        "holy_paladin",
+        "elemental_shaman",
+        "retribution_paladin",
+        "unholy_death_knight"
+      ],
+      "tank": "blood_death_knight"
+    },
+    {
+      "composition_id": "stonecore_phase9_008_8290771d4e85",
+      "composition_sha256": "8290771d4e851ecdc902393859aa261d70f98048b13702e4afc82ac3ac4126aa",
+      "covered_pair_ids": [
+        "dps_dps:affliction_warlock|combat_rogue",
+        "dps_dps:affliction_warlock|shadow_priest",
+        "dps_dps:combat_rogue|shadow_priest",
+        "healer_dps:restoration_druid|affliction_warlock",
+        "healer_dps:restoration_druid|combat_rogue",
+        "healer_dps:restoration_druid|shadow_priest",
+        "tank_dps:protection_paladin|affliction_warlock",
+        "tank_dps:protection_paladin|combat_rogue",
+        "tank_dps:protection_paladin|shadow_priest",
+        "tank_healer:protection_paladin|restoration_druid"
+      ],
+      "dps": [
+        "affliction_warlock",
+        "combat_rogue",
+        "shadow_priest"
+      ],
+      "healer": "restoration_druid",
+      "lease_keys": [
+        "all_spec_candidate_pool:protection_paladin",
+        "all_spec_candidate_pool:restoration_druid",
+        "all_spec_candidate_pool:affliction_warlock",
+        "all_spec_candidate_pool:combat_rogue",
+        "all_spec_candidate_pool:shadow_priest"
+      ],
+      "ordered_party": [
+        "protection_paladin",
+        "restoration_druid",
+        "affliction_warlock",
+        "combat_rogue",
+        "shadow_priest"
+      ],
+      "tank": "protection_paladin"
+    },
+    {
+      "composition_id": "stonecore_phase9_009_14b4bed9a041",
+      "composition_sha256": "14b4bed9a041077fca912ab8d521d3cb389f437b96372a8a875d5cd6fbd32dab",
+      "covered_pair_ids": [
+        "dps_dps:arms_warrior|fury_warrior",
+        "dps_dps:arms_warrior|unholy_death_knight",
+        "dps_dps:fury_warrior|unholy_death_knight",
+        "healer_dps:holy_priest|arms_warrior",
+        "healer_dps:holy_priest|fury_warrior",
+        "healer_dps:holy_priest|unholy_death_knight",
+        "tank_dps:feral_druid_tank|arms_warrior",
+        "tank_dps:feral_druid_tank|fury_warrior",
+        "tank_dps:feral_druid_tank|unholy_death_knight",
+        "tank_healer:feral_druid_tank|holy_priest"
+      ],
+      "dps": [
+        "arms_warrior",
+        "fury_warrior",
+        "unholy_death_knight"
+      ],
+      "healer": "holy_priest",
+      "lease_keys": [
+        "all_spec_candidate_pool:feral_druid_tank",
+        "all_spec_candidate_pool:holy_priest",
+        "all_spec_candidate_pool:arms_warrior",
+        "all_spec_candidate_pool:fury_warrior",
+        "all_spec_candidate_pool:unholy_death_knight"
+      ],
+      "ordered_party": [
+        "feral_druid_tank",
+        "holy_priest",
+        "arms_warrior",
+        "fury_warrior",
+        "unholy_death_knight"
+      ],
+      "tank": "feral_druid_tank"
+    },
+    {
+      "composition_id": "stonecore_phase9_010_fe3a3c0be124",
+      "composition_sha256": "fe3a3c0be12474ee3b53762006247c6fc4cbae89f521aa6dc3c28ccc44adf7a5",
+      "covered_pair_ids": [
+        "dps_dps:assassination_rogue|demonology_warlock",
+        "dps_dps:assassination_rogue|marksmanship_hunter",
+        "dps_dps:demonology_warlock|marksmanship_hunter",
+        "healer_dps:restoration_shaman|assassination_rogue",
+        "healer_dps:restoration_shaman|demonology_warlock",
+        "healer_dps:restoration_shaman|marksmanship_hunter",
+        "tank_dps:protection_paladin|assassination_rogue",
+        "tank_dps:protection_paladin|demonology_warlock",
+        "tank_dps:protection_paladin|marksmanship_hunter",
+        "tank_healer:protection_paladin|restoration_shaman"
+      ],
+      "dps": [
+        "assassination_rogue",
+        "demonology_warlock",
+        "marksmanship_hunter"
+      ],
+      "healer": "restoration_shaman",
+      "lease_keys": [
+        "all_spec_candidate_pool:protection_paladin",
+        "all_spec_candidate_pool:restoration_shaman",
+        "all_spec_candidate_pool:assassination_rogue",
+        "all_spec_candidate_pool:demonology_warlock",
+        "all_spec_candidate_pool:marksmanship_hunter"
+      ],
+      "ordered_party": [
+        "protection_paladin",
+        "restoration_shaman",
+        "assassination_rogue",
+        "demonology_warlock",
+        "marksmanship_hunter"
+      ],
+      "tank": "protection_paladin"
+    },
+    {
+      "composition_id": "stonecore_phase9_011_4d2deb684469",
+      "composition_sha256": "4d2deb68446953b1e1449817e02631b5d9dd6d8398bf9f7ef6b9ac229a73d6b0",
+      "covered_pair_ids": [
+        "dps_dps:combat_rogue|feral_druid_dps",
+        "dps_dps:combat_rogue|survival_hunter",
+        "dps_dps:feral_druid_dps|survival_hunter",
+        "healer_dps:discipline_priest|combat_rogue",
+        "healer_dps:discipline_priest|feral_druid_dps",
+        "healer_dps:discipline_priest|survival_hunter",
+        "tank_dps:blood_death_knight|combat_rogue",
+        "tank_dps:blood_death_knight|feral_druid_dps",
+        "tank_dps:blood_death_knight|survival_hunter",
+        "tank_healer:blood_death_knight|discipline_priest"
+      ],
+      "dps": [
+        "combat_rogue",
+        "feral_druid_dps",
+        "survival_hunter"
+      ],
+      "healer": "discipline_priest",
+      "lease_keys": [
+        "all_spec_candidate_pool:blood_death_knight",
+        "all_spec_candidate_pool:discipline_priest",
+        "all_spec_candidate_pool:combat_rogue",
+        "all_spec_candidate_pool:feral_druid_dps",
+        "all_spec_candidate_pool:survival_hunter"
+      ],
+      "ordered_party": [
+        "blood_death_knight",
+        "discipline_priest",
+        "combat_rogue",
+        "feral_druid_dps",
+        "survival_hunter"
+      ],
+      "tank": "blood_death_knight"
+    },
+    {
+      "composition_id": "stonecore_phase9_012_be4c7ee17606",
+      "composition_sha256": "be4c7ee17606d0242c877748ee5792be9e55758e8f5702e03f241f45a46381b0",
+      "covered_pair_ids": [
+        "dps_dps:affliction_warlock|fire_mage",
+        "dps_dps:affliction_warlock|frost_death_knight",
+        "dps_dps:fire_mage|frost_death_knight",
+        "healer_dps:holy_paladin|affliction_warlock",
+        "healer_dps:holy_paladin|fire_mage",
+        "healer_dps:holy_paladin|frost_death_knight",
+        "tank_dps:feral_druid_tank|affliction_warlock",
+        "tank_dps:feral_druid_tank|fire_mage",
+        "tank_dps:feral_druid_tank|frost_death_knight",
+        "tank_healer:feral_druid_tank|holy_paladin"
+      ],
+      "dps": [
+        "affliction_warlock",
+        "fire_mage",
+        "frost_death_knight"
+      ],
+      "healer": "holy_paladin",
+      "lease_keys": [
+        "all_spec_candidate_pool:feral_druid_tank",
+        "all_spec_candidate_pool:holy_paladin",
+        "all_spec_candidate_pool:affliction_warlock",
+        "all_spec_candidate_pool:fire_mage",
+        "all_spec_candidate_pool:frost_death_knight"
+      ],
+      "ordered_party": [
+        "feral_druid_tank",
+        "holy_paladin",
+        "affliction_warlock",
+        "fire_mage",
+        "frost_death_knight"
+      ],
+      "tank": "feral_druid_tank"
+    },
+    {
+      "composition_id": "stonecore_phase9_013_243ceb428cc8",
+      "composition_sha256": "243ceb428cc893e181b365d949b72da62f231afc0552283039be0511d4b4d5d6",
+      "covered_pair_ids": [
+        "dps_dps:assassination_rogue|balance_druid",
+        "dps_dps:assassination_rogue|shadow_priest",
+        "dps_dps:balance_druid|shadow_priest",
+        "healer_dps:holy_priest|assassination_rogue",
+        "healer_dps:holy_priest|balance_druid",
+        "healer_dps:holy_priest|shadow_priest",
+        "tank_dps:blood_death_knight|assassination_rogue",
+        "tank_dps:blood_death_knight|balance_druid",
+        "tank_dps:blood_death_knight|shadow_priest",
+        "tank_healer:blood_death_knight|holy_priest"
+      ],
+      "dps": [
+        "assassination_rogue",
+        "balance_druid",
+        "shadow_priest"
+      ],
+      "healer": "holy_priest",
+      "lease_keys": [
+        "all_spec_candidate_pool:blood_death_knight",
+        "all_spec_candidate_pool:holy_priest",
+        "all_spec_candidate_pool:assassination_rogue",
+        "all_spec_candidate_pool:balance_druid",
+        "all_spec_candidate_pool:shadow_priest"
+      ],
+      "ordered_party": [
+        "blood_death_knight",
+        "holy_priest",
+        "assassination_rogue",
+        "balance_druid",
+        "shadow_priest"
+      ],
+      "tank": "blood_death_knight"
+    },
+    {
+      "composition_id": "stonecore_phase9_014_f20a23d8a7a1",
+      "composition_sha256": "f20a23d8a7a1954befb2298284103bd261a4f3d298f928a57b04209e9f1c49d0",
+      "covered_pair_ids": [
+        "dps_dps:assassination_rogue|elemental_shaman",
+        "dps_dps:assassination_rogue|feral_druid_dps",
+        "dps_dps:elemental_shaman|feral_druid_dps",
+        "healer_dps:restoration_druid|assassination_rogue",
+        "healer_dps:restoration_druid|elemental_shaman",
+        "healer_dps:restoration_druid|feral_druid_dps",
+        "tank_dps:feral_druid_tank|assassination_rogue",
+        "tank_dps:feral_druid_tank|elemental_shaman",
+        "tank_dps:feral_druid_tank|feral_druid_dps",
+        "tank_healer:feral_druid_tank|restoration_druid"
+      ],
+      "dps": [
+        "assassination_rogue",
+        "elemental_shaman",
+        "feral_druid_dps"
+      ],
+      "healer": "restoration_druid",
+      "lease_keys": [
+        "all_spec_candidate_pool:feral_druid_tank",
+        "all_spec_candidate_pool:restoration_druid",
+        "all_spec_candidate_pool:assassination_rogue",
+        "all_spec_candidate_pool:elemental_shaman",
+        "all_spec_candidate_pool:feral_druid_dps"
+      ],
+      "ordered_party": [
+        "feral_druid_tank",
+        "restoration_druid",
+        "assassination_rogue",
+        "elemental_shaman",
+        "feral_druid_dps"
+      ],
+      "tank": "feral_druid_tank"
+    },
+    {
+      "composition_id": "stonecore_phase9_015_115975bbfe9e",
+      "composition_sha256": "115975bbfe9ecc16c272f802c498d59b1f24a88d3c81536f1632702b54f6ec4d",
+      "covered_pair_ids": [
+        "dps_dps:arms_warrior|fury_warrior",
+        "dps_dps:arms_warrior|survival_hunter",
+        "dps_dps:fury_warrior|survival_hunter",
+        "healer_dps:holy_paladin|arms_warrior",
+        "healer_dps:holy_paladin|fury_warrior",
+        "healer_dps:holy_paladin|survival_hunter",
+        "tank_dps:protection_paladin|arms_warrior",
+        "tank_dps:protection_paladin|fury_warrior",
+        "tank_dps:protection_paladin|survival_hunter",
+        "tank_healer:protection_paladin|holy_paladin"
+      ],
+      "dps": [
+        "arms_warrior",
+        "fury_warrior",
+        "survival_hunter"
+      ],
+      "healer": "holy_paladin",
+      "lease_keys": [
+        "all_spec_candidate_pool:protection_paladin",
+        "all_spec_candidate_pool:holy_paladin",
+        "all_spec_candidate_pool:arms_warrior",
+        "all_spec_candidate_pool:fury_warrior",
+        "all_spec_candidate_pool:survival_hunter"
+      ],
+      "ordered_party": [
+        "protection_paladin",
+        "holy_paladin",
+        "arms_warrior",
+        "fury_warrior",
+        "survival_hunter"
+      ],
+      "tank": "protection_paladin"
+    },
+    {
+      "composition_id": "stonecore_phase9_016_7f73ebd805c3",
+      "composition_sha256": "7f73ebd805c35d34cddce98d5eadb201cd4793ea6cffffdbd5ed9016fd2c58db",
+      "covered_pair_ids": [
+        "dps_dps:demonology_warlock|fire_mage",
+        "dps_dps:demonology_warlock|retribution_paladin",
+        "dps_dps:fire_mage|retribution_paladin",
+        "healer_dps:discipline_priest|demonology_warlock",
+        "healer_dps:discipline_priest|fire_mage",
+        "healer_dps:discipline_priest|retribution_paladin",
+        "tank_dps:blood_death_knight|demonology_warlock",
+        "tank_dps:blood_death_knight|fire_mage",
+        "tank_dps:blood_death_knight|retribution_paladin",
+        "tank_healer:blood_death_knight|discipline_priest"
+      ],
+      "dps": [
+        "demonology_warlock",
+        "fire_mage",
+        "retribution_paladin"
+      ],
+      "healer": "discipline_priest",
+      "lease_keys": [
+        "all_spec_candidate_pool:blood_death_knight",
+        "all_spec_candidate_pool:discipline_priest",
+        "all_spec_candidate_pool:demonology_warlock",
+        "all_spec_candidate_pool:fire_mage",
+        "all_spec_candidate_pool:retribution_paladin"
+      ],
+      "ordered_party": [
+        "blood_death_knight",
+        "discipline_priest",
+        "demonology_warlock",
+        "fire_mage",
+        "retribution_paladin"
+      ],
+      "tank": "blood_death_knight"
+    },
+    {
+      "composition_id": "stonecore_phase9_017_f981a13e2b50",
+      "composition_sha256": "f981a13e2b50f84846810f8b690fb837f180f3c635ff764946cece11ed17bf6a",
+      "covered_pair_ids": [
+        "dps_dps:elemental_shaman|marksmanship_hunter",
+        "dps_dps:elemental_shaman|shadow_priest",
+        "dps_dps:marksmanship_hunter|shadow_priest",
+        "healer_dps:discipline_priest|elemental_shaman",
+        "healer_dps:discipline_priest|marksmanship_hunter",
+        "healer_dps:discipline_priest|shadow_priest",
+        "tank_dps:feral_druid_tank|elemental_shaman",
+        "tank_dps:feral_druid_tank|marksmanship_hunter",
+        "tank_dps:feral_druid_tank|shadow_priest",
+        "tank_healer:feral_druid_tank|discipline_priest"
+      ],
+      "dps": [
+        "elemental_shaman",
+        "marksmanship_hunter",
+        "shadow_priest"
+      ],
+      "healer": "discipline_priest",
+      "lease_keys": [
+        "all_spec_candidate_pool:feral_druid_tank",
+        "all_spec_candidate_pool:discipline_priest",
+        "all_spec_candidate_pool:elemental_shaman",
+        "all_spec_candidate_pool:marksmanship_hunter",
+        "all_spec_candidate_pool:shadow_priest"
+      ],
+      "ordered_party": [
+        "feral_druid_tank",
+        "discipline_priest",
+        "elemental_shaman",
+        "marksmanship_hunter",
+        "shadow_priest"
+      ],
+      "tank": "feral_druid_tank"
+    },
+    {
+      "composition_id": "stonecore_phase9_018_b0a4d62f1657",
+      "composition_sha256": "b0a4d62f1657ec52012cdb4356437830bef07675b2b53ace393bb8934597dc8d",
+      "covered_pair_ids": [
+        "dps_dps:affliction_warlock|marksmanship_hunter",
+        "dps_dps:affliction_warlock|retribution_paladin",
+        "dps_dps:marksmanship_hunter|retribution_paladin",
+        "healer_dps:holy_priest|affliction_warlock",
+        "healer_dps:holy_priest|marksmanship_hunter",
+        "healer_dps:holy_priest|retribution_paladin",
+        "tank_dps:protection_paladin|affliction_warlock",
+        "tank_dps:protection_paladin|marksmanship_hunter",
+        "tank_dps:protection_paladin|retribution_paladin",
+        "tank_healer:protection_paladin|holy_priest"
+      ],
+      "dps": [
+        "affliction_warlock",
+        "marksmanship_hunter",
+        "retribution_paladin"
+      ],
+      "healer": "holy_priest",
+      "lease_keys": [
+        "all_spec_candidate_pool:protection_paladin",
+        "all_spec_candidate_pool:holy_priest",
+        "all_spec_candidate_pool:affliction_warlock",
+        "all_spec_candidate_pool:marksmanship_hunter",
+        "all_spec_candidate_pool:retribution_paladin"
+      ],
+      "ordered_party": [
+        "protection_paladin",
+        "holy_priest",
+        "affliction_warlock",
+        "marksmanship_hunter",
+        "retribution_paladin"
+      ],
+      "tank": "protection_paladin"
+    },
+    {
+      "composition_id": "stonecore_phase9_019_af06ba6568dd",
+      "composition_sha256": "af06ba6568dd1b5e90876066e68fb21970a5f6fcaca9010368e2112b6b7df98a",
+      "covered_pair_ids": [
+        "dps_dps:arms_warrior|balance_druid",
+        "dps_dps:arms_warrior|feral_druid_dps",
+        "dps_dps:balance_druid|feral_druid_dps",
+        "healer_dps:restoration_shaman|arms_warrior",
+        "healer_dps:restoration_shaman|balance_druid",
+        "healer_dps:restoration_shaman|feral_druid_dps",
+        "tank_dps:blood_death_knight|arms_warrior",
+        "tank_dps:blood_death_knight|balance_druid",
+        "tank_dps:blood_death_knight|feral_druid_dps",
+        "tank_healer:blood_death_knight|restoration_shaman"
+      ],
+      "dps": [
+        "arms_warrior",
+        "balance_druid",
+        "feral_druid_dps"
+      ],
+      "healer": "restoration_shaman",
+      "lease_keys": [
+        "all_spec_candidate_pool:blood_death_knight",
+        "all_spec_candidate_pool:restoration_shaman",
+        "all_spec_candidate_pool:arms_warrior",
+        "all_spec_candidate_pool:balance_druid",
+        "all_spec_candidate_pool:feral_druid_dps"
+      ],
+      "ordered_party": [
+        "blood_death_knight",
+        "restoration_shaman",
+        "arms_warrior",
+        "balance_druid",
+        "feral_druid_dps"
+      ],
+      "tank": "blood_death_knight"
+    },
+    {
+      "composition_id": "stonecore_phase9_020_602e10128820",
+      "composition_sha256": "602e1012882077e9342877af4962d8a3bb6991af4661a630f78205ab8b4d85d3",
+      "covered_pair_ids": [
+        "dps_dps:demonology_warlock|survival_hunter",
+        "dps_dps:demonology_warlock|unholy_death_knight",
+        "dps_dps:survival_hunter|unholy_death_knight",
+        "healer_dps:restoration_druid|demonology_warlock",
+        "healer_dps:restoration_druid|survival_hunter",
+        "healer_dps:restoration_druid|unholy_death_knight",
+        "tank_dps:feral_druid_tank|demonology_warlock",
+        "tank_dps:feral_druid_tank|survival_hunter",
+        "tank_dps:feral_druid_tank|unholy_death_knight",
+        "tank_healer:feral_druid_tank|restoration_druid"
+      ],
+      "dps": [
+        "demonology_warlock",
+        "survival_hunter",
+        "unholy_death_knight"
+      ],
+      "healer": "restoration_druid",
+      "lease_keys": [
+        "all_spec_candidate_pool:feral_druid_tank",
+        "all_spec_candidate_pool:restoration_druid",
+        "all_spec_candidate_pool:demonology_warlock",
+        "all_spec_candidate_pool:survival_hunter",
+        "all_spec_candidate_pool:unholy_death_knight"
+      ],
+      "ordered_party": [
+        "feral_druid_tank",
+        "restoration_druid",
+        "demonology_warlock",
+        "survival_hunter",
+        "unholy_death_knight"
+      ],
+      "tank": "feral_druid_tank"
+    },
+    {
+      "composition_id": "stonecore_phase9_021_182de844afab",
+      "composition_sha256": "182de844afab0504e8507670b3c66d6567f2be55c2bc9d83c70944f190dfa4e5",
+      "covered_pair_ids": [
+        "dps_dps:combat_rogue|fire_mage",
+        "dps_dps:combat_rogue|fury_warrior",
+        "dps_dps:fire_mage|fury_warrior",
+        "healer_dps:restoration_shaman|combat_rogue",
+        "healer_dps:restoration_shaman|fire_mage",
+        "healer_dps:restoration_shaman|fury_warrior",
+        "tank_dps:protection_paladin|combat_rogue",
+        "tank_dps:protection_paladin|fire_mage",
+        "tank_dps:protection_paladin|fury_warrior",
+        "tank_healer:protection_paladin|restoration_shaman"
+      ],
+      "dps": [
+        "combat_rogue",
+        "fire_mage",
+        "fury_warrior"
+      ],
+      "healer": "restoration_shaman",
+      "lease_keys": [
+        "all_spec_candidate_pool:protection_paladin",
+        "all_spec_candidate_pool:restoration_shaman",
+        "all_spec_candidate_pool:combat_rogue",
+        "all_spec_candidate_pool:fire_mage",
+        "all_spec_candidate_pool:fury_warrior"
+      ],
+      "ordered_party": [
+        "protection_paladin",
+        "restoration_shaman",
+        "combat_rogue",
+        "fire_mage",
+        "fury_warrior"
+      ],
+      "tank": "protection_paladin"
+    },
+    {
+      "composition_id": "stonecore_phase9_022_9a26c496c8dd",
+      "composition_sha256": "9a26c496c8dde1ab4a7770f8c3a8bd5e9ab6006408498e448ff032715eb37226",
+      "covered_pair_ids": [
+        "dps_dps:feral_druid_dps|frost_death_knight",
+        "dps_dps:feral_druid_dps|shadow_priest",
+        "dps_dps:frost_death_knight|shadow_priest",
+        "healer_dps:holy_paladin|feral_druid_dps",
+        "healer_dps:holy_paladin|frost_death_knight",
+        "healer_dps:holy_paladin|shadow_priest",
+        "tank_dps:blood_death_knight|feral_druid_dps",
+        "tank_dps:blood_death_knight|frost_death_knight",
+        "tank_dps:blood_death_knight|shadow_priest",
+        "tank_healer:blood_death_knight|holy_paladin"
+      ],
+      "dps": [
+        "feral_druid_dps",
+        "frost_death_knight",
+        "shadow_priest"
+      ],
+      "healer": "holy_paladin",
+      "lease_keys": [
+        "all_spec_candidate_pool:blood_death_knight",
+        "all_spec_candidate_pool:holy_paladin",
+        "all_spec_candidate_pool:feral_druid_dps",
+        "all_spec_candidate_pool:frost_death_knight",
+        "all_spec_candidate_pool:shadow_priest"
+      ],
+      "ordered_party": [
+        "blood_death_knight",
+        "holy_paladin",
+        "feral_druid_dps",
+        "frost_death_knight",
+        "shadow_priest"
+      ],
+      "tank": "blood_death_knight"
+    },
+    {
+      "composition_id": "stonecore_phase9_023_9c7b668836d1",
+      "composition_sha256": "9c7b668836d18ce5dc233c3a9dfabb47e2b76ec73df0d6d167ec4bf52ec99884",
+      "covered_pair_ids": [
+        "dps_dps:arms_warrior|combat_rogue",
+        "dps_dps:arms_warrior|frost_death_knight",
+        "dps_dps:combat_rogue|frost_death_knight",
+        "healer_dps:holy_priest|arms_warrior",
+        "healer_dps:holy_priest|combat_rogue",
+        "healer_dps:holy_priest|frost_death_knight",
+        "tank_dps:feral_druid_tank|arms_warrior",
+        "tank_dps:feral_druid_tank|combat_rogue",
+        "tank_dps:feral_druid_tank|frost_death_knight",
+        "tank_healer:feral_druid_tank|holy_priest"
+      ],
+      "dps": [
+        "arms_warrior",
+        "combat_rogue",
+        "frost_death_knight"
+      ],
+      "healer": "holy_priest",
+      "lease_keys": [
+        "all_spec_candidate_pool:feral_druid_tank",
+        "all_spec_candidate_pool:holy_priest",
+        "all_spec_candidate_pool:arms_warrior",
+        "all_spec_candidate_pool:combat_rogue",
+        "all_spec_candidate_pool:frost_death_knight"
+      ],
+      "ordered_party": [
+        "feral_druid_tank",
+        "holy_priest",
+        "arms_warrior",
+        "combat_rogue",
+        "frost_death_knight"
+      ],
+      "tank": "feral_druid_tank"
+    },
+    {
+      "composition_id": "stonecore_phase9_024_0b926160dbb6",
+      "composition_sha256": "0b926160dbb65a93a5f716b6bc77e153b35cd3ed1240527d5195a8e6fcfa33db",
+      "covered_pair_ids": [
+        "dps_dps:balance_druid|fire_mage",
+        "dps_dps:balance_druid|marksmanship_hunter",
+        "dps_dps:fire_mage|marksmanship_hunter",
+        "healer_dps:restoration_druid|balance_druid",
+        "healer_dps:restoration_druid|fire_mage",
+        "healer_dps:restoration_druid|marksmanship_hunter",
+        "tank_dps:protection_paladin|balance_druid",
+        "tank_dps:protection_paladin|fire_mage",
+        "tank_dps:protection_paladin|marksmanship_hunter",
+        "tank_healer:protection_paladin|restoration_druid"
+      ],
+      "dps": [
+        "balance_druid",
+        "fire_mage",
+        "marksmanship_hunter"
+      ],
+      "healer": "restoration_druid",
+      "lease_keys": [
+        "all_spec_candidate_pool:protection_paladin",
+        "all_spec_candidate_pool:restoration_druid",
+        "all_spec_candidate_pool:balance_druid",
+        "all_spec_candidate_pool:fire_mage",
+        "all_spec_candidate_pool:marksmanship_hunter"
+      ],
+      "ordered_party": [
+        "protection_paladin",
+        "restoration_druid",
+        "balance_druid",
+        "fire_mage",
+        "marksmanship_hunter"
+      ],
+      "tank": "protection_paladin"
+    },
+    {
+      "composition_id": "stonecore_phase9_025_a873aafa63a6",
+      "composition_sha256": "a873aafa63a665b4a1a205c6dd7e9eadcc5e9cf480318b8bd859feae9cd66ac7",
+      "covered_pair_ids": [
+        "dps_dps:affliction_warlock|demonology_warlock",
+        "dps_dps:affliction_warlock|elemental_shaman",
+        "dps_dps:demonology_warlock|elemental_shaman",
+        "healer_dps:restoration_shaman|affliction_warlock",
+        "healer_dps:restoration_shaman|demonology_warlock",
+        "healer_dps:restoration_shaman|elemental_shaman",
+        "tank_dps:blood_death_knight|affliction_warlock",
+        "tank_dps:blood_death_knight|demonology_warlock",
+        "tank_dps:blood_death_knight|elemental_shaman",
+        "tank_healer:blood_death_knight|restoration_shaman"
+      ],
+      "dps": [
+        "affliction_warlock",
+        "demonology_warlock",
+        "elemental_shaman"
+      ],
+      "healer": "restoration_shaman",
+      "lease_keys": [
+        "all_spec_candidate_pool:blood_death_knight",
+        "all_spec_candidate_pool:restoration_shaman",
+        "all_spec_candidate_pool:affliction_warlock",
+        "all_spec_candidate_pool:demonology_warlock",
+        "all_spec_candidate_pool:elemental_shaman"
+      ],
+      "ordered_party": [
+        "blood_death_knight",
+        "restoration_shaman",
+        "affliction_warlock",
+        "demonology_warlock",
+        "elemental_shaman"
+      ],
+      "tank": "blood_death_knight"
+    },
+    {
+      "composition_id": "stonecore_phase9_026_ffc471c6f0a6",
+      "composition_sha256": "ffc471c6f0a68be156b9aa5bd33e685b1b670d8c2abdcfbd1f9488aaae4d2436",
+      "covered_pair_ids": [
+        "dps_dps:assassination_rogue|fury_warrior",
+        "dps_dps:assassination_rogue|retribution_paladin",
+        "dps_dps:fury_warrior|retribution_paladin",
+        "healer_dps:discipline_priest|assassination_rogue",
+        "healer_dps:discipline_priest|fury_warrior",
+        "healer_dps:discipline_priest|retribution_paladin",
+        "tank_dps:feral_druid_tank|assassination_rogue",
+        "tank_dps:feral_druid_tank|fury_warrior",
+        "tank_dps:feral_druid_tank|retribution_paladin",
+        "tank_healer:feral_druid_tank|discipline_priest"
+      ],
+      "dps": [
+        "assassination_rogue",
+        "fury_warrior",
+        "retribution_paladin"
+      ],
+      "healer": "discipline_priest",
+      "lease_keys": [
+        "all_spec_candidate_pool:feral_druid_tank",
+        "all_spec_candidate_pool:discipline_priest",
+        "all_spec_candidate_pool:assassination_rogue",
+        "all_spec_candidate_pool:fury_warrior",
+        "all_spec_candidate_pool:retribution_paladin"
+      ],
+      "ordered_party": [
+        "feral_druid_tank",
+        "discipline_priest",
+        "assassination_rogue",
+        "fury_warrior",
+        "retribution_paladin"
+      ],
+      "tank": "feral_druid_tank"
+    },
+    {
+      "composition_id": "stonecore_phase9_027_418a16c2a85e",
+      "composition_sha256": "418a16c2a85e299534df7877a790114052399e367bf31c919670873c0dfefb6b",
+      "covered_pair_ids": [
+        "dps_dps:assassination_rogue|combat_rogue",
+        "dps_dps:assassination_rogue|unholy_death_knight",
+        "dps_dps:combat_rogue|unholy_death_knight",
+        "healer_dps:holy_paladin|assassination_rogue",
+        "healer_dps:holy_paladin|combat_rogue",
+        "healer_dps:holy_paladin|unholy_death_knight",
+        "tank_dps:protection_paladin|assassination_rogue",
+        "tank_dps:protection_paladin|combat_rogue",
+        "tank_dps:protection_paladin|unholy_death_knight",
+        "tank_healer:protection_paladin|holy_paladin"
+      ],
+      "dps": [
+        "assassination_rogue",
+        "combat_rogue",
+        "unholy_death_knight"
+      ],
+      "healer": "holy_paladin",
+      "lease_keys": [
+        "all_spec_candidate_pool:protection_paladin",
+        "all_spec_candidate_pool:holy_paladin",
+        "all_spec_candidate_pool:assassination_rogue",
+        "all_spec_candidate_pool:combat_rogue",
+        "all_spec_candidate_pool:unholy_death_knight"
+      ],
+      "ordered_party": [
+        "protection_paladin",
+        "holy_paladin",
+        "assassination_rogue",
+        "combat_rogue",
+        "unholy_death_knight"
+      ],
+      "tank": "protection_paladin"
+    },
+    {
+      "composition_id": "stonecore_phase9_028_ec25c25b5016",
+      "composition_sha256": "ec25c25b50163878055f3999e2b892174dafb1295b9a836a5a7a80bc93a53337",
+      "covered_pair_ids": [
+        "dps_dps:affliction_warlock|balance_druid",
+        "dps_dps:affliction_warlock|survival_hunter",
+        "dps_dps:balance_druid|survival_hunter",
+        "healer_dps:holy_priest|affliction_warlock",
+        "healer_dps:holy_priest|balance_druid",
+        "healer_dps:holy_priest|survival_hunter",
+        "tank_dps:blood_death_knight|affliction_warlock",
+        "tank_dps:blood_death_knight|balance_druid",
+        "tank_dps:blood_death_knight|survival_hunter",
+        "tank_healer:blood_death_knight|holy_priest"
+      ],
+      "dps": [
+        "affliction_warlock",
+        "balance_druid",
+        "survival_hunter"
+      ],
+      "healer": "holy_priest",
+      "lease_keys": [
+        "all_spec_candidate_pool:blood_death_knight",
+        "all_spec_candidate_pool:holy_priest",
+        "all_spec_candidate_pool:affliction_warlock",
+        "all_spec_candidate_pool:balance_druid",
+        "all_spec_candidate_pool:survival_hunter"
+      ],
+      "ordered_party": [
+        "blood_death_knight",
+        "holy_priest",
+        "affliction_warlock",
+        "balance_druid",
+        "survival_hunter"
+      ],
+      "tank": "blood_death_knight"
+    },
+    {
+      "composition_id": "stonecore_phase9_029_cb2b9f33c708",
+      "composition_sha256": "cb2b9f33c7082575971341009cdf6302f554cf826e37e06efe4a64d2b344598d",
+      "covered_pair_ids": [
+        "dps_dps:arms_warrior|demonology_warlock",
+        "dps_dps:arms_warrior|retribution_paladin",
+        "dps_dps:demonology_warlock|retribution_paladin",
+        "healer_dps:restoration_druid|arms_warrior",
+        "healer_dps:restoration_druid|demonology_warlock",
+        "healer_dps:restoration_druid|retribution_paladin",
+        "tank_dps:feral_druid_tank|arms_warrior",
+        "tank_dps:feral_druid_tank|demonology_warlock",
+        "tank_dps:feral_druid_tank|retribution_paladin",
+        "tank_healer:feral_druid_tank|restoration_druid"
+      ],
+      "dps": [
+        "arms_warrior",
+        "demonology_warlock",
+        "retribution_paladin"
+      ],
+      "healer": "restoration_druid",
+      "lease_keys": [
+        "all_spec_candidate_pool:feral_druid_tank",
+        "all_spec_candidate_pool:restoration_druid",
+        "all_spec_candidate_pool:arms_warrior",
+        "all_spec_candidate_pool:demonology_warlock",
+        "all_spec_candidate_pool:retribution_paladin"
+      ],
+      "ordered_party": [
+        "feral_druid_tank",
+        "restoration_druid",
+        "arms_warrior",
+        "demonology_warlock",
+        "retribution_paladin"
+      ],
+      "tank": "feral_druid_tank"
+    },
+    {
+      "composition_id": "stonecore_phase9_030_6c85d6af8a47",
+      "composition_sha256": "6c85d6af8a477e70b25e81db98117431959f139f3df6477eb9d09dd378ddd6ac",
+      "covered_pair_ids": [
+        "dps_dps:elemental_shaman|frost_death_knight",
+        "dps_dps:elemental_shaman|survival_hunter",
+        "dps_dps:frost_death_knight|survival_hunter",
+        "healer_dps:restoration_shaman|elemental_shaman",
+        "healer_dps:restoration_shaman|frost_death_knight",
+        "healer_dps:restoration_shaman|survival_hunter",
+        "tank_dps:protection_paladin|elemental_shaman",
+        "tank_dps:protection_paladin|frost_death_knight",
+        "tank_dps:protection_paladin|survival_hunter",
+        "tank_healer:protection_paladin|restoration_shaman"
+      ],
+      "dps": [
+        "elemental_shaman",
+        "frost_death_knight",
+        "survival_hunter"
+      ],
+      "healer": "restoration_shaman",
+      "lease_keys": [
+        "all_spec_candidate_pool:protection_paladin",
+        "all_spec_candidate_pool:restoration_shaman",
+        "all_spec_candidate_pool:elemental_shaman",
+        "all_spec_candidate_pool:frost_death_knight",
+        "all_spec_candidate_pool:survival_hunter"
+      ],
+      "ordered_party": [
+        "protection_paladin",
+        "restoration_shaman",
+        "elemental_shaman",
+        "frost_death_knight",
+        "survival_hunter"
+      ],
+      "tank": "protection_paladin"
+    },
+    {
+      "composition_id": "stonecore_phase9_031_6c12d700d9d6",
+      "composition_sha256": "6c12d700d9d603d285260cf1b588fe37a37be3d8f02359307e75bed9dc44178f",
+      "covered_pair_ids": [
+        "dps_dps:feral_druid_dps|marksmanship_hunter",
+        "dps_dps:feral_druid_dps|unholy_death_knight",
+        "dps_dps:marksmanship_hunter|unholy_death_knight",
+        "healer_dps:holy_paladin|feral_druid_dps",
+        "healer_dps:holy_paladin|marksmanship_hunter",
+        "healer_dps:holy_paladin|unholy_death_knight",
+        "tank_dps:blood_death_knight|feral_druid_dps",
+        "tank_dps:blood_death_knight|marksmanship_hunter",
+        "tank_dps:blood_death_knight|unholy_death_knight",
+        "tank_healer:blood_death_knight|holy_paladin"
+      ],
+      "dps": [
+        "feral_druid_dps",
+        "marksmanship_hunter",
+        "unholy_death_knight"
+      ],
+      "healer": "holy_paladin",
+      "lease_keys": [
+        "all_spec_candidate_pool:blood_death_knight",
+        "all_spec_candidate_pool:holy_paladin",
+        "all_spec_candidate_pool:feral_druid_dps",
+        "all_spec_candidate_pool:marksmanship_hunter",
+        "all_spec_candidate_pool:unholy_death_knight"
+      ],
+      "ordered_party": [
+        "blood_death_knight",
+        "holy_paladin",
+        "feral_druid_dps",
+        "marksmanship_hunter",
+        "unholy_death_knight"
+      ],
+      "tank": "blood_death_knight"
+    },
+    {
+      "composition_id": "stonecore_phase9_032_5c20e9da6d12",
+      "composition_sha256": "5c20e9da6d1221cc3f20efec9583a30777d9c92dc33445a722d55c4879fcd1c1",
+      "covered_pair_ids": [
+        "dps_dps:demonology_warlock|fury_warrior",
+        "dps_dps:demonology_warlock|shadow_priest",
+        "dps_dps:fury_warrior|shadow_priest",
+        "healer_dps:holy_priest|demonology_warlock",
+        "healer_dps:holy_priest|fury_warrior",
+        "healer_dps:holy_priest|shadow_priest",
+        "tank_dps:feral_druid_tank|demonology_warlock",
+        "tank_dps:feral_druid_tank|fury_warrior",
+        "tank_dps:feral_druid_tank|shadow_priest",
+        "tank_healer:feral_druid_tank|holy_priest"
+      ],
+      "dps": [
+        "demonology_warlock",
+        "fury_warrior",
+        "shadow_priest"
+      ],
+      "healer": "holy_priest",
+      "lease_keys": [
+        "all_spec_candidate_pool:feral_druid_tank",
+        "all_spec_candidate_pool:holy_priest",
+        "all_spec_candidate_pool:demonology_warlock",
+        "all_spec_candidate_pool:fury_warrior",
+        "all_spec_candidate_pool:shadow_priest"
+      ],
+      "ordered_party": [
+        "feral_druid_tank",
+        "holy_priest",
+        "demonology_warlock",
+        "fury_warrior",
+        "shadow_priest"
+      ],
+      "tank": "feral_druid_tank"
+    },
+    {
+      "composition_id": "stonecore_phase9_033_580586097c1c",
+      "composition_sha256": "580586097c1cf963fa41de3395144e4c661fb53da2b02ad3f589f1ef92d71d11",
+      "covered_pair_ids": [
+        "dps_dps:fire_mage|shadow_priest",
+        "dps_dps:fire_mage|unholy_death_knight",
+        "dps_dps:shadow_priest|unholy_death_knight",
+        "healer_dps:restoration_shaman|fire_mage",
+        "healer_dps:restoration_shaman|shadow_priest",
+        "healer_dps:restoration_shaman|unholy_death_knight",
+        "tank_dps:protection_paladin|fire_mage",
+        "tank_dps:protection_paladin|shadow_priest",
+        "tank_dps:protection_paladin|unholy_death_knight",
+        "tank_healer:protection_paladin|restoration_shaman"
+      ],
+      "dps": [
+        "fire_mage",
+        "shadow_priest",
+        "unholy_death_knight"
+      ],
+      "healer": "restoration_shaman",
+      "lease_keys": [
+        "all_spec_candidate_pool:protection_paladin",
+        "all_spec_candidate_pool:restoration_shaman",
+        "all_spec_candidate_pool:fire_mage",
+        "all_spec_candidate_pool:shadow_priest",
+        "all_spec_candidate_pool:unholy_death_knight"
+      ],
+      "ordered_party": [
+        "protection_paladin",
+        "restoration_shaman",
+        "fire_mage",
+        "shadow_priest",
+        "unholy_death_knight"
+      ],
+      "tank": "protection_paladin"
+    },
+    {
+      "composition_id": "stonecore_phase9_034_5f0f3a570a7f",
+      "composition_sha256": "5f0f3a570a7f3aba2d6c544db24024f285432fc776776372c93065e841f8d9fa",
+      "covered_pair_ids": [
+        "dps_dps:affliction_warlock|feral_druid_dps",
+        "dps_dps:affliction_warlock|fury_warrior",
+        "dps_dps:feral_druid_dps|fury_warrior",
+        "healer_dps:discipline_priest|affliction_warlock",
+        "healer_dps:discipline_priest|feral_druid_dps",
+        "healer_dps:discipline_priest|fury_warrior",
+        "tank_dps:blood_death_knight|affliction_warlock",
+        "tank_dps:blood_death_knight|feral_druid_dps",
+        "tank_dps:blood_death_knight|fury_warrior",
+        "tank_healer:blood_death_knight|discipline_priest"
+      ],
+      "dps": [
+        "affliction_warlock",
+        "feral_druid_dps",
+        "fury_warrior"
+      ],
+      "healer": "discipline_priest",
+      "lease_keys": [
+        "all_spec_candidate_pool:blood_death_knight",
+        "all_spec_candidate_pool:discipline_priest",
+        "all_spec_candidate_pool:affliction_warlock",
+        "all_spec_candidate_pool:feral_druid_dps",
+        "all_spec_candidate_pool:fury_warrior"
+      ],
+      "ordered_party": [
+        "blood_death_knight",
+        "discipline_priest",
+        "affliction_warlock",
+        "feral_druid_dps",
+        "fury_warrior"
+      ],
+      "tank": "blood_death_knight"
+    },
+    {
+      "composition_id": "stonecore_phase9_035_0f2fd4ef2600",
+      "composition_sha256": "0f2fd4ef2600fb856c354917634717ffec19186fbd912df4eb997ceaae00a265",
+      "covered_pair_ids": [
+        "dps_dps:assassination_rogue|fire_mage",
+        "dps_dps:assassination_rogue|survival_hunter",
+        "dps_dps:fire_mage|survival_hunter",
+        "healer_dps:restoration_druid|assassination_rogue",
+        "healer_dps:restoration_druid|fire_mage",
+        "healer_dps:restoration_druid|survival_hunter",
+        "tank_dps:feral_druid_tank|assassination_rogue",
+        "tank_dps:feral_druid_tank|fire_mage",
+        "tank_dps:feral_druid_tank|survival_hunter",
+        "tank_healer:feral_druid_tank|restoration_druid"
+      ],
+      "dps": [
+        "assassination_rogue",
+        "fire_mage",
+        "survival_hunter"
+      ],
+      "healer": "restoration_druid",
+      "lease_keys": [
+        "all_spec_candidate_pool:feral_druid_tank",
+        "all_spec_candidate_pool:restoration_druid",
+        "all_spec_candidate_pool:assassination_rogue",
+        "all_spec_candidate_pool:fire_mage",
+        "all_spec_candidate_pool:survival_hunter"
+      ],
+      "ordered_party": [
+        "feral_druid_tank",
+        "restoration_druid",
+        "assassination_rogue",
+        "fire_mage",
+        "survival_hunter"
+      ],
+      "tank": "feral_druid_tank"
+    },
+    {
+      "composition_id": "stonecore_phase9_036_a3bdcc188d55",
+      "composition_sha256": "a3bdcc188d55f9b3b46e2ffc718b0c54770f3306e3907610640d34feb977a600",
+      "covered_pair_ids": [
+        "dps_dps:balance_druid|elemental_shaman",
+        "dps_dps:balance_druid|fury_warrior",
+        "dps_dps:elemental_shaman|fury_warrior",
+        "healer_dps:discipline_priest|balance_druid",
+        "healer_dps:discipline_priest|elemental_shaman",
+        "healer_dps:discipline_priest|fury_warrior",
+        "tank_dps:protection_paladin|balance_druid",
+        "tank_dps:protection_paladin|elemental_shaman",
+        "tank_dps:protection_paladin|fury_warrior",
+        "tank_healer:protection_paladin|discipline_priest"
+      ],
+      "dps": [
+        "balance_druid",
+        "elemental_shaman",
+        "fury_warrior"
+      ],
+      "healer": "discipline_priest",
+      "lease_keys": [
+        "all_spec_candidate_pool:protection_paladin",
+        "all_spec_candidate_pool:discipline_priest",
+        "all_spec_candidate_pool:balance_druid",
+        "all_spec_candidate_pool:elemental_shaman",
+        "all_spec_candidate_pool:fury_warrior"
+      ],
+      "ordered_party": [
+        "protection_paladin",
+        "discipline_priest",
+        "balance_druid",
+        "elemental_shaman",
+        "fury_warrior"
+      ],
+      "tank": "protection_paladin"
+    },
+    {
+      "composition_id": "stonecore_phase9_037_2a3681967e8f",
+      "composition_sha256": "2a3681967e8fafd7c9d55c9f247cf0ba9586d459bd53fe1b74c935f3ef546817",
+      "covered_pair_ids": [
+        "dps_dps:arms_warrior|combat_rogue",
+        "dps_dps:arms_warrior|marksmanship_hunter",
+        "dps_dps:combat_rogue|marksmanship_hunter",
+        "healer_dps:holy_paladin|arms_warrior",
+        "healer_dps:holy_paladin|combat_rogue",
+        "healer_dps:holy_paladin|marksmanship_hunter",
+        "tank_dps:blood_death_knight|arms_warrior",
+        "tank_dps:blood_death_knight|combat_rogue",
+        "tank_dps:blood_death_knight|marksmanship_hunter",
+        "tank_healer:blood_death_knight|holy_paladin"
+      ],
+      "dps": [
+        "arms_warrior",
+        "combat_rogue",
+        "marksmanship_hunter"
+      ],
+      "healer": "holy_paladin",
+      "lease_keys": [
+        "all_spec_candidate_pool:blood_death_knight",
+        "all_spec_candidate_pool:holy_paladin",
+        "all_spec_candidate_pool:arms_warrior",
+        "all_spec_candidate_pool:combat_rogue",
+        "all_spec_candidate_pool:marksmanship_hunter"
+      ],
+      "ordered_party": [
+        "blood_death_knight",
+        "holy_paladin",
+        "arms_warrior",
+        "combat_rogue",
+        "marksmanship_hunter"
+      ],
+      "tank": "blood_death_knight"
+    },
+    {
+      "composition_id": "stonecore_phase9_038_6b86a9245363",
+      "composition_sha256": "6b86a92453638a405ca3f93937b871df1cb550122be2250856962283c5da4539",
+      "covered_pair_ids": [
+        "dps_dps:assassination_rogue|frost_death_knight",
+        "dps_dps:assassination_rogue|retribution_paladin",
+        "dps_dps:frost_death_knight|retribution_paladin",
+        "healer_dps:holy_priest|assassination_rogue",
+        "healer_dps:holy_priest|frost_death_knight",
+        "healer_dps:holy_priest|retribution_paladin",
+        "tank_dps:feral_druid_tank|assassination_rogue",
+        "tank_dps:feral_druid_tank|frost_death_knight",
+        "tank_dps:feral_druid_tank|retribution_paladin",
+        "tank_healer:feral_druid_tank|holy_priest"
+      ],
+      "dps": [
+        "assassination_rogue",
+        "frost_death_knight",
+        "retribution_paladin"
+      ],
+      "healer": "holy_priest",
+      "lease_keys": [
+        "all_spec_candidate_pool:feral_druid_tank",
+        "all_spec_candidate_pool:holy_priest",
+        "all_spec_candidate_pool:assassination_rogue",
+        "all_spec_candidate_pool:frost_death_knight",
+        "all_spec_candidate_pool:retribution_paladin"
+      ],
+      "ordered_party": [
+        "feral_druid_tank",
+        "holy_priest",
+        "assassination_rogue",
+        "frost_death_knight",
+        "retribution_paladin"
+      ],
+      "tank": "feral_druid_tank"
+    },
+    {
+      "composition_id": "stonecore_phase9_039_14d86fb7e03b",
+      "composition_sha256": "14d86fb7e03b18f36f5176d64f8a39b1ff42b7caba7d7abf74774e62fce3a7ab",
+      "covered_pair_ids": [
+        "dps_dps:arms_warrior|combat_rogue",
+        "dps_dps:arms_warrior|elemental_shaman",
+        "dps_dps:combat_rogue|elemental_shaman",
+        "healer_dps:restoration_druid|arms_warrior",
+        "healer_dps:restoration_druid|combat_rogue",
+        "healer_dps:restoration_druid|elemental_shaman",
+        "tank_dps:protection_paladin|arms_warrior",
+        "tank_dps:protection_paladin|combat_rogue",
+        "tank_dps:protection_paladin|elemental_shaman",
+        "tank_healer:protection_paladin|restoration_druid"
+      ],
+      "dps": [
+        "arms_warrior",
+        "combat_rogue",
+        "elemental_shaman"
+      ],
+      "healer": "restoration_druid",
+      "lease_keys": [
+        "all_spec_candidate_pool:protection_paladin",
+        "all_spec_candidate_pool:restoration_druid",
+        "all_spec_candidate_pool:arms_warrior",
+        "all_spec_candidate_pool:combat_rogue",
+        "all_spec_candidate_pool:elemental_shaman"
+      ],
+      "ordered_party": [
+        "protection_paladin",
+        "restoration_druid",
+        "arms_warrior",
+        "combat_rogue",
+        "elemental_shaman"
+      ],
+      "tank": "protection_paladin"
+    },
+    {
+      "composition_id": "stonecore_phase9_040_4ee672a246df",
+      "composition_sha256": "4ee672a246df58d801b532b0e4bc63b3f38c0e334d99b2e5945ae407e638395b",
+      "covered_pair_ids": [
+        "dps_dps:balance_druid|feral_druid_dps",
+        "dps_dps:balance_druid|retribution_paladin",
+        "dps_dps:feral_druid_dps|retribution_paladin",
+        "healer_dps:restoration_shaman|balance_druid",
+        "healer_dps:restoration_shaman|feral_druid_dps",
+        "healer_dps:restoration_shaman|retribution_paladin",
+        "tank_dps:blood_death_knight|balance_druid",
+        "tank_dps:blood_death_knight|feral_druid_dps",
+        "tank_dps:blood_death_knight|retribution_paladin",
+        "tank_healer:blood_death_knight|restoration_shaman"
+      ],
+      "dps": [
+        "balance_druid",
+        "feral_druid_dps",
+        "retribution_paladin"
+      ],
+      "healer": "restoration_shaman",
+      "lease_keys": [
+        "all_spec_candidate_pool:blood_death_knight",
+        "all_spec_candidate_pool:restoration_shaman",
+        "all_spec_candidate_pool:balance_druid",
+        "all_spec_candidate_pool:feral_druid_dps",
+        "all_spec_candidate_pool:retribution_paladin"
+      ],
+      "ordered_party": [
+        "blood_death_knight",
+        "restoration_shaman",
+        "balance_druid",
+        "feral_druid_dps",
+        "retribution_paladin"
+      ],
+      "tank": "blood_death_knight"
+    },
+    {
+      "composition_id": "stonecore_phase9_041_0b3620da4011",
+      "composition_sha256": "0b3620da4011fc0651d0a93b0690b3045f3767704e4b9c8664228fa17812d801",
+      "covered_pair_ids": [
+        "dps_dps:arms_warrior|fire_mage",
+        "dps_dps:arms_warrior|shadow_priest",
+        "dps_dps:fire_mage|shadow_priest",
+        "healer_dps:discipline_priest|arms_warrior",
+        "healer_dps:discipline_priest|fire_mage",
+        "healer_dps:discipline_priest|shadow_priest",
+        "tank_dps:feral_druid_tank|arms_warrior",
+        "tank_dps:feral_druid_tank|fire_mage",
+        "tank_dps:feral_druid_tank|shadow_priest",
+        "tank_healer:feral_druid_tank|discipline_priest"
+      ],
+      "dps": [
+        "arms_warrior",
+        "fire_mage",
+        "shadow_priest"
+      ],
+      "healer": "discipline_priest",
+      "lease_keys": [
+        "all_spec_candidate_pool:feral_druid_tank",
+        "all_spec_candidate_pool:discipline_priest",
+        "all_spec_candidate_pool:arms_warrior",
+        "all_spec_candidate_pool:fire_mage",
+        "all_spec_candidate_pool:shadow_priest"
+      ],
+      "ordered_party": [
+        "feral_druid_tank",
+        "discipline_priest",
+        "arms_warrior",
+        "fire_mage",
+        "shadow_priest"
+      ],
+      "tank": "feral_druid_tank"
+    },
+    {
+      "composition_id": "stonecore_phase9_042_b2cc08049375",
+      "composition_sha256": "b2cc0804937593e57543637d35650908126597b0dd7a00208b8920ce12b62416",
+      "covered_pair_ids": [
+        "dps_dps:demonology_warlock|feral_druid_dps",
+        "dps_dps:demonology_warlock|frost_death_knight",
+        "dps_dps:feral_druid_dps|frost_death_knight",
+        "healer_dps:holy_paladin|demonology_warlock",
+        "healer_dps:holy_paladin|feral_druid_dps",
+        "healer_dps:holy_paladin|frost_death_knight",
+        "tank_dps:protection_paladin|demonology_warlock",
+        "tank_dps:protection_paladin|feral_druid_dps",
+        "tank_dps:protection_paladin|frost_death_knight",
+        "tank_healer:protection_paladin|holy_paladin"
+      ],
+      "dps": [
+        "demonology_warlock",
+        "feral_druid_dps",
+        "frost_death_knight"
+      ],
+      "healer": "holy_paladin",
+      "lease_keys": [
+        "all_spec_candidate_pool:protection_paladin",
+        "all_spec_candidate_pool:holy_paladin",
+        "all_spec_candidate_pool:demonology_warlock",
+        "all_spec_candidate_pool:feral_druid_dps",
+        "all_spec_candidate_pool:frost_death_knight"
+      ],
+      "ordered_party": [
+        "protection_paladin",
+        "holy_paladin",
+        "demonology_warlock",
+        "feral_druid_dps",
+        "frost_death_knight"
+      ],
+      "tank": "protection_paladin"
+    },
+    {
+      "composition_id": "stonecore_phase9_043_112b82e91b5f",
+      "composition_sha256": "112b82e91b5f395f56c23bbd9cde6d234243231b264159444dd8aaa1a3455292",
+      "covered_pair_ids": [
+        "dps_dps:affliction_warlock|marksmanship_hunter",
+        "dps_dps:affliction_warlock|survival_hunter",
+        "dps_dps:marksmanship_hunter|survival_hunter",
+        "healer_dps:holy_priest|affliction_warlock",
+        "healer_dps:holy_priest|marksmanship_hunter",
+        "healer_dps:holy_priest|survival_hunter",
+        "tank_dps:blood_death_knight|affliction_warlock",
+        "tank_dps:blood_death_knight|marksmanship_hunter",
+        "tank_dps:blood_death_knight|survival_hunter",
+        "tank_healer:blood_death_knight|holy_priest"
+      ],
+      "dps": [
+        "affliction_warlock",
+        "marksmanship_hunter",
+        "survival_hunter"
+      ],
+      "healer": "holy_priest",
+      "lease_keys": [
+        "all_spec_candidate_pool:blood_death_knight",
+        "all_spec_candidate_pool:holy_priest",
+        "all_spec_candidate_pool:affliction_warlock",
+        "all_spec_candidate_pool:marksmanship_hunter",
+        "all_spec_candidate_pool:survival_hunter"
+      ],
+      "ordered_party": [
+        "blood_death_knight",
+        "holy_priest",
+        "affliction_warlock",
+        "marksmanship_hunter",
+        "survival_hunter"
+      ],
+      "tank": "blood_death_knight"
+    },
+    {
+      "composition_id": "stonecore_phase9_044_c8a9830bb574",
+      "composition_sha256": "c8a9830bb574c41a545d6821dafaa0a700f4070b27e522fef8e00cd0b50e0d80",
+      "covered_pair_ids": [
+        "dps_dps:affliction_warlock|assassination_rogue",
+        "dps_dps:affliction_warlock|unholy_death_knight",
+        "dps_dps:assassination_rogue|unholy_death_knight",
+        "healer_dps:restoration_druid|affliction_warlock",
+        "healer_dps:restoration_druid|assassination_rogue",
+        "healer_dps:restoration_druid|unholy_death_knight",
+        "tank_dps:feral_druid_tank|affliction_warlock",
+        "tank_dps:feral_druid_tank|assassination_rogue",
+        "tank_dps:feral_druid_tank|unholy_death_knight",
+        "tank_healer:feral_druid_tank|restoration_druid"
+      ],
+      "dps": [
+        "affliction_warlock",
+        "assassination_rogue",
+        "unholy_death_knight"
+      ],
+      "healer": "restoration_druid",
+      "lease_keys": [
+        "all_spec_candidate_pool:feral_druid_tank",
+        "all_spec_candidate_pool:restoration_druid",
+        "all_spec_candidate_pool:affliction_warlock",
+        "all_spec_candidate_pool:assassination_rogue",
+        "all_spec_candidate_pool:unholy_death_knight"
+      ],
+      "ordered_party": [
+        "feral_druid_tank",
+        "restoration_druid",
+        "affliction_warlock",
+        "assassination_rogue",
+        "unholy_death_knight"
+      ],
+      "tank": "feral_druid_tank"
+    },
+    {
+      "composition_id": "stonecore_phase9_045_a5eab290c09c",
+      "composition_sha256": "a5eab290c09cc05b342ecc553a4b04febf51cb85e76ece74d0c92c4ef548e724",
+      "covered_pair_ids": [
+        "dps_dps:balance_druid|combat_rogue",
+        "dps_dps:balance_druid|retribution_paladin",
+        "dps_dps:combat_rogue|retribution_paladin",
+        "healer_dps:restoration_shaman|balance_druid",
+        "healer_dps:restoration_shaman|combat_rogue",
+        "healer_dps:restoration_shaman|retribution_paladin",
+        "tank_dps:protection_paladin|balance_druid",
+        "tank_dps:protection_paladin|combat_rogue",
+        "tank_dps:protection_paladin|retribution_paladin",
+        "tank_healer:protection_paladin|restoration_shaman"
+      ],
+      "dps": [
+        "balance_druid",
+        "combat_rogue",
+        "retribution_paladin"
+      ],
+      "healer": "restoration_shaman",
+      "lease_keys": [
+        "all_spec_candidate_pool:protection_paladin",
+        "all_spec_candidate_pool:restoration_shaman",
+        "all_spec_candidate_pool:balance_druid",
+        "all_spec_candidate_pool:combat_rogue",
+        "all_spec_candidate_pool:retribution_paladin"
+      ],
+      "ordered_party": [
+        "protection_paladin",
+        "restoration_shaman",
+        "balance_druid",
+        "combat_rogue",
+        "retribution_paladin"
+      ],
+      "tank": "protection_paladin"
+    },
+    {
+      "composition_id": "stonecore_phase9_046_5fa6cb9c5dde",
+      "composition_sha256": "5fa6cb9c5dded9603bf89deefd264c626bc20720559697388d5bdf95e58635a9",
+      "covered_pair_ids": [
+        "dps_dps:affliction_warlock|marksmanship_hunter",
+        "dps_dps:affliction_warlock|retribution_paladin",
+        "dps_dps:marksmanship_hunter|retribution_paladin",
+        "healer_dps:holy_paladin|affliction_warlock",
+        "healer_dps:holy_paladin|marksmanship_hunter",
+        "healer_dps:holy_paladin|retribution_paladin",
+        "tank_dps:blood_death_knight|affliction_warlock",
+        "tank_dps:blood_death_knight|marksmanship_hunter",
+        "tank_dps:blood_death_knight|retribution_paladin",
+        "tank_healer:blood_death_knight|holy_paladin"
+      ],
+      "dps": [
+        "affliction_warlock",
+        "marksmanship_hunter",
+        "retribution_paladin"
+      ],
+      "healer": "holy_paladin",
+      "lease_keys": [
+        "all_spec_candidate_pool:blood_death_knight",
+        "all_spec_candidate_pool:holy_paladin",
+        "all_spec_candidate_pool:affliction_warlock",
+        "all_spec_candidate_pool:marksmanship_hunter",
+        "all_spec_candidate_pool:retribution_paladin"
+      ],
+      "ordered_party": [
+        "blood_death_knight",
+        "holy_paladin",
+        "affliction_warlock",
+        "marksmanship_hunter",
+        "retribution_paladin"
+      ],
+      "tank": "blood_death_knight"
+    },
+    {
+      "composition_id": "stonecore_phase9_047_95d945edcd32",
+      "composition_sha256": "95d945edcd3285e07ce94226181452f05738704941878edf1aa8da28c0c67544",
+      "covered_pair_ids": [
+        "dps_dps:demonology_warlock|shadow_priest",
+        "dps_dps:demonology_warlock|survival_hunter",
+        "dps_dps:shadow_priest|survival_hunter",
+        "healer_dps:discipline_priest|demonology_warlock",
+        "healer_dps:discipline_priest|shadow_priest",
+        "healer_dps:discipline_priest|survival_hunter",
+        "tank_dps:feral_druid_tank|demonology_warlock",
+        "tank_dps:feral_druid_tank|shadow_priest",
+        "tank_dps:feral_druid_tank|survival_hunter",
+        "tank_healer:feral_druid_tank|discipline_priest"
+      ],
+      "dps": [
+        "demonology_warlock",
+        "shadow_priest",
+        "survival_hunter"
+      ],
+      "healer": "discipline_priest",
+      "lease_keys": [
+        "all_spec_candidate_pool:feral_druid_tank",
+        "all_spec_candidate_pool:discipline_priest",
+        "all_spec_candidate_pool:demonology_warlock",
+        "all_spec_candidate_pool:shadow_priest",
+        "all_spec_candidate_pool:survival_hunter"
+      ],
+      "ordered_party": [
+        "feral_druid_tank",
+        "discipline_priest",
+        "demonology_warlock",
+        "shadow_priest",
+        "survival_hunter"
+      ],
+      "tank": "feral_druid_tank"
+    },
+    {
+      "composition_id": "stonecore_phase9_048_6d59c2000776",
+      "composition_sha256": "6d59c2000776b3a588d8a51edd2fb2d397ce2a0658c02765337a988e2b357210",
+      "covered_pair_ids": [
+        "dps_dps:balance_druid|combat_rogue",
+        "dps_dps:balance_druid|marksmanship_hunter",
+        "dps_dps:combat_rogue|marksmanship_hunter",
+        "healer_dps:restoration_shaman|balance_druid",
+        "healer_dps:restoration_shaman|combat_rogue",
+        "healer_dps:restoration_shaman|marksmanship_hunter",
+        "tank_dps:protection_paladin|balance_druid",
+        "tank_dps:protection_paladin|combat_rogue",
+        "tank_dps:protection_paladin|marksmanship_hunter",
+        "tank_healer:protection_paladin|restoration_shaman"
+      ],
+      "dps": [
+        "balance_druid",
+        "combat_rogue",
+        "marksmanship_hunter"
+      ],
+      "healer": "restoration_shaman",
+      "lease_keys": [
+        "all_spec_candidate_pool:protection_paladin",
+        "all_spec_candidate_pool:restoration_shaman",
+        "all_spec_candidate_pool:balance_druid",
+        "all_spec_candidate_pool:combat_rogue",
+        "all_spec_candidate_pool:marksmanship_hunter"
+      ],
+      "ordered_party": [
+        "protection_paladin",
+        "restoration_shaman",
+        "balance_druid",
+        "combat_rogue",
+        "marksmanship_hunter"
+      ],
+      "tank": "protection_paladin"
+    },
+    {
+      "composition_id": "stonecore_phase9_049_f852a689382d",
+      "composition_sha256": "f852a689382df6769845faeddd6f09c6a19909eae516d9a50317a4be679ba393",
+      "covered_pair_ids": [
+        "dps_dps:elemental_shaman|feral_druid_dps",
+        "dps_dps:elemental_shaman|survival_hunter",
+        "dps_dps:feral_druid_dps|survival_hunter",
+        "healer_dps:restoration_druid|elemental_shaman",
+        "healer_dps:restoration_druid|feral_druid_dps",
+        "healer_dps:restoration_druid|survival_hunter",
+        "tank_dps:protection_paladin|elemental_shaman",
+        "tank_dps:protection_paladin|feral_druid_dps",
+        "tank_dps:protection_paladin|survival_hunter",
+        "tank_healer:protection_paladin|restoration_druid"
+      ],
+      "dps": [
+        "elemental_shaman",
+        "feral_druid_dps",
+        "survival_hunter"
+      ],
+      "healer": "restoration_druid",
+      "lease_keys": [
+        "all_spec_candidate_pool:protection_paladin",
+        "all_spec_candidate_pool:restoration_druid",
+        "all_spec_candidate_pool:elemental_shaman",
+        "all_spec_candidate_pool:feral_druid_dps",
+        "all_spec_candidate_pool:survival_hunter"
+      ],
+      "ordered_party": [
+        "protection_paladin",
+        "restoration_druid",
+        "elemental_shaman",
+        "feral_druid_dps",
+        "survival_hunter"
+      ],
+      "tank": "protection_paladin"
+    },
+    {
+      "composition_id": "stonecore_phase9_050_7f09b51b8998",
+      "composition_sha256": "7f09b51b899868c140f6da957e325a4ab1d623a15ce6071c2bf148123241776b",
+      "covered_pair_ids": [
+        "dps_dps:arms_warrior|fury_warrior",
+        "dps_dps:arms_warrior|marksmanship_hunter",
+        "dps_dps:fury_warrior|marksmanship_hunter",
+        "healer_dps:holy_priest|arms_warrior",
+        "healer_dps:holy_priest|fury_warrior",
+        "healer_dps:holy_priest|marksmanship_hunter",
+        "tank_dps:blood_death_knight|arms_warrior",
+        "tank_dps:blood_death_knight|fury_warrior",
+        "tank_dps:blood_death_knight|marksmanship_hunter",
+        "tank_healer:blood_death_knight|holy_priest"
+      ],
+      "dps": [
+        "arms_warrior",
+        "fury_warrior",
+        "marksmanship_hunter"
+      ],
+      "healer": "holy_priest",
+      "lease_keys": [
+        "all_spec_candidate_pool:blood_death_knight",
+        "all_spec_candidate_pool:holy_priest",
+        "all_spec_candidate_pool:arms_warrior",
+        "all_spec_candidate_pool:fury_warrior",
+        "all_spec_candidate_pool:marksmanship_hunter"
+      ],
+      "ordered_party": [
+        "blood_death_knight",
+        "holy_priest",
+        "arms_warrior",
+        "fury_warrior",
+        "marksmanship_hunter"
+      ],
+      "tank": "blood_death_knight"
+    },
+    {
+      "composition_id": "stonecore_phase9_051_fbf54b4a4beb",
+      "composition_sha256": "fbf54b4a4beb2fe638bf2483afb9e9a2c40a755e7e7f54c5e01f02cfb25d62bd",
+      "covered_pair_ids": [
+        "dps_dps:assassination_rogue|survival_hunter",
+        "dps_dps:assassination_rogue|unholy_death_knight",
+        "dps_dps:survival_hunter|unholy_death_knight",
+        "healer_dps:holy_paladin|assassination_rogue",
+        "healer_dps:holy_paladin|survival_hunter",
+        "healer_dps:holy_paladin|unholy_death_knight",
+        "tank_dps:feral_druid_tank|assassination_rogue",
+        "tank_dps:feral_druid_tank|survival_hunter",
+        "tank_dps:feral_druid_tank|unholy_death_knight",
+        "tank_healer:feral_druid_tank|holy_paladin"
+      ],
+      "dps": [
+        "assassination_rogue",
+        "survival_hunter",
+        "unholy_death_knight"
+      ],
+      "healer": "holy_paladin",
+      "lease_keys": [
+        "all_spec_candidate_pool:feral_druid_tank",
+        "all_spec_candidate_pool:holy_paladin",
+        "all_spec_candidate_pool:assassination_rogue",
+        "all_spec_candidate_pool:survival_hunter",
+        "all_spec_candidate_pool:unholy_death_knight"
+      ],
+      "ordered_party": [
+        "feral_druid_tank",
+        "holy_paladin",
+        "assassination_rogue",
+        "survival_hunter",
+        "unholy_death_knight"
+      ],
+      "tank": "feral_druid_tank"
+    },
+    {
+      "composition_id": "stonecore_phase9_052_2e3d87f152cf",
+      "composition_sha256": "2e3d87f152cf51fef7819d49caf1f1e72e42c907916a7cdbcbe76ea9bffcb16e",
+      "covered_pair_ids": [
+        "dps_dps:fire_mage|frost_death_knight",
+        "dps_dps:fire_mage|marksmanship_hunter",
+        "dps_dps:frost_death_knight|marksmanship_hunter",
+        "healer_dps:discipline_priest|fire_mage",
+        "healer_dps:discipline_priest|frost_death_knight",
+        "healer_dps:discipline_priest|marksmanship_hunter",
+        "tank_dps:protection_paladin|fire_mage",
+        "tank_dps:protection_paladin|frost_death_knight",
+        "tank_dps:protection_paladin|marksmanship_hunter",
+        "tank_healer:protection_paladin|discipline_priest"
+      ],
+      "dps": [
+        "fire_mage",
+        "frost_death_knight",
+        "marksmanship_hunter"
+      ],
+      "healer": "discipline_priest",
+      "lease_keys": [
+        "all_spec_candidate_pool:protection_paladin",
+        "all_spec_candidate_pool:discipline_priest",
+        "all_spec_candidate_pool:fire_mage",
+        "all_spec_candidate_pool:frost_death_knight",
+        "all_spec_candidate_pool:marksmanship_hunter"
+      ],
+      "ordered_party": [
+        "protection_paladin",
+        "discipline_priest",
+        "fire_mage",
+        "frost_death_knight",
+        "marksmanship_hunter"
+      ],
+      "tank": "protection_paladin"
+    }
+  ],
+  "covered_pair_count": 263,
+  "covered_pair_counts_by_kind": {
+    "dps_dps": 120,
+    "healer_dps": 80,
+    "tank_dps": 48,
+    "tank_healer": 15
+  },
+  "covered_pair_ids": [
+    "dps_dps:affliction_warlock|arms_warrior",
+    "dps_dps:affliction_warlock|assassination_rogue",
+    "dps_dps:affliction_warlock|balance_druid",
+    "dps_dps:affliction_warlock|combat_rogue",
+    "dps_dps:affliction_warlock|demonology_warlock",
+    "dps_dps:affliction_warlock|elemental_shaman",
+    "dps_dps:affliction_warlock|feral_druid_dps",
+    "dps_dps:affliction_warlock|fire_mage",
+    "dps_dps:affliction_warlock|frost_death_knight",
+    "dps_dps:affliction_warlock|fury_warrior",
+    "dps_dps:affliction_warlock|marksmanship_hunter",
+    "dps_dps:affliction_warlock|retribution_paladin",
+    "dps_dps:affliction_warlock|shadow_priest",
+    "dps_dps:affliction_warlock|survival_hunter",
+    "dps_dps:affliction_warlock|unholy_death_knight",
+    "dps_dps:arms_warrior|assassination_rogue",
+    "dps_dps:arms_warrior|balance_druid",
+    "dps_dps:arms_warrior|combat_rogue",
+    "dps_dps:arms_warrior|demonology_warlock",
+    "dps_dps:arms_warrior|elemental_shaman",
+    "dps_dps:arms_warrior|feral_druid_dps",
+    "dps_dps:arms_warrior|fire_mage",
+    "dps_dps:arms_warrior|frost_death_knight",
+    "dps_dps:arms_warrior|fury_warrior",
+    "dps_dps:arms_warrior|marksmanship_hunter",
+    "dps_dps:arms_warrior|retribution_paladin",
+    "dps_dps:arms_warrior|shadow_priest",
+    "dps_dps:arms_warrior|survival_hunter",
+    "dps_dps:arms_warrior|unholy_death_knight",
+    "dps_dps:assassination_rogue|balance_druid",
+    "dps_dps:assassination_rogue|combat_rogue",
+    "dps_dps:assassination_rogue|demonology_warlock",
+    "dps_dps:assassination_rogue|elemental_shaman",
+    "dps_dps:assassination_rogue|feral_druid_dps",
+    "dps_dps:assassination_rogue|fire_mage",
+    "dps_dps:assassination_rogue|frost_death_knight",
+    "dps_dps:assassination_rogue|fury_warrior",
+    "dps_dps:assassination_rogue|marksmanship_hunter",
+    "dps_dps:assassination_rogue|retribution_paladin",
+    "dps_dps:assassination_rogue|shadow_priest",
+    "dps_dps:assassination_rogue|survival_hunter",
+    "dps_dps:assassination_rogue|unholy_death_knight",
+    "dps_dps:balance_druid|combat_rogue",
+    "dps_dps:balance_druid|demonology_warlock",
+    "dps_dps:balance_druid|elemental_shaman",
+    "dps_dps:balance_druid|feral_druid_dps",
+    "dps_dps:balance_druid|fire_mage",
+    "dps_dps:balance_druid|frost_death_knight",
+    "dps_dps:balance_druid|fury_warrior",
+    "dps_dps:balance_druid|marksmanship_hunter",
+    "dps_dps:balance_druid|retribution_paladin",
+    "dps_dps:balance_druid|shadow_priest",
+    "dps_dps:balance_druid|survival_hunter",
+    "dps_dps:balance_druid|unholy_death_knight",
+    "dps_dps:combat_rogue|demonology_warlock",
+    "dps_dps:combat_rogue|elemental_shaman",
+    "dps_dps:combat_rogue|feral_druid_dps",
+    "dps_dps:combat_rogue|fire_mage",
+    "dps_dps:combat_rogue|frost_death_knight",
+    "dps_dps:combat_rogue|fury_warrior",
+    "dps_dps:combat_rogue|marksmanship_hunter",
+    "dps_dps:combat_rogue|retribution_paladin",
+    "dps_dps:combat_rogue|shadow_priest",
+    "dps_dps:combat_rogue|survival_hunter",
+    "dps_dps:combat_rogue|unholy_death_knight",
+    "dps_dps:demonology_warlock|elemental_shaman",
+    "dps_dps:demonology_warlock|feral_druid_dps",
+    "dps_dps:demonology_warlock|fire_mage",
+    "dps_dps:demonology_warlock|frost_death_knight",
+    "dps_dps:demonology_warlock|fury_warrior",
+    "dps_dps:demonology_warlock|marksmanship_hunter",
+    "dps_dps:demonology_warlock|retribution_paladin",
+    "dps_dps:demonology_warlock|shadow_priest",
+    "dps_dps:demonology_warlock|survival_hunter",
+    "dps_dps:demonology_warlock|unholy_death_knight",
+    "dps_dps:elemental_shaman|feral_druid_dps",
+    "dps_dps:elemental_shaman|fire_mage",
+    "dps_dps:elemental_shaman|frost_death_knight",
+    "dps_dps:elemental_shaman|fury_warrior",
+    "dps_dps:elemental_shaman|marksmanship_hunter",
+    "dps_dps:elemental_shaman|retribution_paladin",
+    "dps_dps:elemental_shaman|shadow_priest",
+    "dps_dps:elemental_shaman|survival_hunter",
+    "dps_dps:elemental_shaman|unholy_death_knight",
+    "dps_dps:feral_druid_dps|fire_mage",
+    "dps_dps:feral_druid_dps|frost_death_knight",
+    "dps_dps:feral_druid_dps|fury_warrior",
+    "dps_dps:feral_druid_dps|marksmanship_hunter",
+    "dps_dps:feral_druid_dps|retribution_paladin",
+    "dps_dps:feral_druid_dps|shadow_priest",
+    "dps_dps:feral_druid_dps|survival_hunter",
+    "dps_dps:feral_druid_dps|unholy_death_knight",
+    "dps_dps:fire_mage|frost_death_knight",
+    "dps_dps:fire_mage|fury_warrior",
+    "dps_dps:fire_mage|marksmanship_hunter",
+    "dps_dps:fire_mage|retribution_paladin",
+    "dps_dps:fire_mage|shadow_priest",
+    "dps_dps:fire_mage|survival_hunter",
+    "dps_dps:fire_mage|unholy_death_knight",
+    "dps_dps:frost_death_knight|fury_warrior",
+    "dps_dps:frost_death_knight|marksmanship_hunter",
+    "dps_dps:frost_death_knight|retribution_paladin",
+    "dps_dps:frost_death_knight|shadow_priest",
+    "dps_dps:frost_death_knight|survival_hunter",
+    "dps_dps:frost_death_knight|unholy_death_knight",
+    "dps_dps:fury_warrior|marksmanship_hunter",
+    "dps_dps:fury_warrior|retribution_paladin",
+    "dps_dps:fury_warrior|shadow_priest",
+    "dps_dps:fury_warrior|survival_hunter",
+    "dps_dps:fury_warrior|unholy_death_knight",
+    "dps_dps:marksmanship_hunter|retribution_paladin",
+    "dps_dps:marksmanship_hunter|shadow_priest",
+    "dps_dps:marksmanship_hunter|survival_hunter",
+    "dps_dps:marksmanship_hunter|unholy_death_knight",
+    "dps_dps:retribution_paladin|shadow_priest",
+    "dps_dps:retribution_paladin|survival_hunter",
+    "dps_dps:retribution_paladin|unholy_death_knight",
+    "dps_dps:shadow_priest|survival_hunter",
+    "dps_dps:shadow_priest|unholy_death_knight",
+    "dps_dps:survival_hunter|unholy_death_knight",
+    "healer_dps:discipline_priest|affliction_warlock",
+    "healer_dps:discipline_priest|arms_warrior",
+    "healer_dps:discipline_priest|assassination_rogue",
+    "healer_dps:discipline_priest|balance_druid",
+    "healer_dps:discipline_priest|combat_rogue",
+    "healer_dps:discipline_priest|demonology_warlock",
+    "healer_dps:discipline_priest|elemental_shaman",
+    "healer_dps:discipline_priest|feral_druid_dps",
+    "healer_dps:discipline_priest|fire_mage",
+    "healer_dps:discipline_priest|frost_death_knight",
+    "healer_dps:discipline_priest|fury_warrior",
+    "healer_dps:discipline_priest|marksmanship_hunter",
+    "healer_dps:discipline_priest|retribution_paladin",
+    "healer_dps:discipline_priest|shadow_priest",
+    "healer_dps:discipline_priest|survival_hunter",
+    "healer_dps:discipline_priest|unholy_death_knight",
+    "healer_dps:holy_paladin|affliction_warlock",
+    "healer_dps:holy_paladin|arms_warrior",
+    "healer_dps:holy_paladin|assassination_rogue",
+    "healer_dps:holy_paladin|balance_druid",
+    "healer_dps:holy_paladin|combat_rogue",
+    "healer_dps:holy_paladin|demonology_warlock",
+    "healer_dps:holy_paladin|elemental_shaman",
+    "healer_dps:holy_paladin|feral_druid_dps",
+    "healer_dps:holy_paladin|fire_mage",
+    "healer_dps:holy_paladin|frost_death_knight",
+    "healer_dps:holy_paladin|fury_warrior",
+    "healer_dps:holy_paladin|marksmanship_hunter",
+    "healer_dps:holy_paladin|retribution_paladin",
+    "healer_dps:holy_paladin|shadow_priest",
+    "healer_dps:holy_paladin|survival_hunter",
+    "healer_dps:holy_paladin|unholy_death_knight",
+    "healer_dps:holy_priest|affliction_warlock",
+    "healer_dps:holy_priest|arms_warrior",
+    "healer_dps:holy_priest|assassination_rogue",
+    "healer_dps:holy_priest|balance_druid",
+    "healer_dps:holy_priest|combat_rogue",
+    "healer_dps:holy_priest|demonology_warlock",
+    "healer_dps:holy_priest|elemental_shaman",
+    "healer_dps:holy_priest|feral_druid_dps",
+    "healer_dps:holy_priest|fire_mage",
+    "healer_dps:holy_priest|frost_death_knight",
+    "healer_dps:holy_priest|fury_warrior",
+    "healer_dps:holy_priest|marksmanship_hunter",
+    "healer_dps:holy_priest|retribution_paladin",
+    "healer_dps:holy_priest|shadow_priest",
+    "healer_dps:holy_priest|survival_hunter",
+    "healer_dps:holy_priest|unholy_death_knight",
+    "healer_dps:restoration_druid|affliction_warlock",
+    "healer_dps:restoration_druid|arms_warrior",
+    "healer_dps:restoration_druid|assassination_rogue",
+    "healer_dps:restoration_druid|balance_druid",
+    "healer_dps:restoration_druid|combat_rogue",
+    "healer_dps:restoration_druid|demonology_warlock",
+    "healer_dps:restoration_druid|elemental_shaman",
+    "healer_dps:restoration_druid|feral_druid_dps",
+    "healer_dps:restoration_druid|fire_mage",
+    "healer_dps:restoration_druid|frost_death_knight",
+    "healer_dps:restoration_druid|fury_warrior",
+    "healer_dps:restoration_druid|marksmanship_hunter",
+    "healer_dps:restoration_druid|retribution_paladin",
+    "healer_dps:restoration_druid|shadow_priest",
+    "healer_dps:restoration_druid|survival_hunter",
+    "healer_dps:restoration_druid|unholy_death_knight",
+    "healer_dps:restoration_shaman|affliction_warlock",
+    "healer_dps:restoration_shaman|arms_warrior",
+    "healer_dps:restoration_shaman|assassination_rogue",
+    "healer_dps:restoration_shaman|balance_druid",
+    "healer_dps:restoration_shaman|combat_rogue",
+    "healer_dps:restoration_shaman|demonology_warlock",
+    "healer_dps:restoration_shaman|elemental_shaman",
+    "healer_dps:restoration_shaman|feral_druid_dps",
+    "healer_dps:restoration_shaman|fire_mage",
+    "healer_dps:restoration_shaman|frost_death_knight",
+    "healer_dps:restoration_shaman|fury_warrior",
+    "healer_dps:restoration_shaman|marksmanship_hunter",
+    "healer_dps:restoration_shaman|retribution_paladin",
+    "healer_dps:restoration_shaman|shadow_priest",
+    "healer_dps:restoration_shaman|survival_hunter",
+    "healer_dps:restoration_shaman|unholy_death_knight",
+    "tank_dps:blood_death_knight|affliction_warlock",
+    "tank_dps:blood_death_knight|arms_warrior",
+    "tank_dps:blood_death_knight|assassination_rogue",
+    "tank_dps:blood_death_knight|balance_druid",
+    "tank_dps:blood_death_knight|combat_rogue",
+    "tank_dps:blood_death_knight|demonology_warlock",
+    "tank_dps:blood_death_knight|elemental_shaman",
+    "tank_dps:blood_death_knight|feral_druid_dps",
+    "tank_dps:blood_death_knight|fire_mage",
+    "tank_dps:blood_death_knight|frost_death_knight",
+    "tank_dps:blood_death_knight|fury_warrior",
+    "tank_dps:blood_death_knight|marksmanship_hunter",
+    "tank_dps:blood_death_knight|retribution_paladin",
+    "tank_dps:blood_death_knight|shadow_priest",
+    "tank_dps:blood_death_knight|survival_hunter",
+    "tank_dps:blood_death_knight|unholy_death_knight",
+    "tank_dps:feral_druid_tank|affliction_warlock",
+    "tank_dps:feral_druid_tank|arms_warrior",
+    "tank_dps:feral_druid_tank|assassination_rogue",
+    "tank_dps:feral_druid_tank|balance_druid",
+    "tank_dps:feral_druid_tank|combat_rogue",
+    "tank_dps:feral_druid_tank|demonology_warlock",
+    "tank_dps:feral_druid_tank|elemental_shaman",
+    "tank_dps:feral_druid_tank|feral_druid_dps",
+    "tank_dps:feral_druid_tank|fire_mage",
+    "tank_dps:feral_druid_tank|frost_death_knight",
+    "tank_dps:feral_druid_tank|fury_warrior",
+    "tank_dps:feral_druid_tank|marksmanship_hunter",
+    "tank_dps:feral_druid_tank|retribution_paladin",
+    "tank_dps:feral_druid_tank|shadow_priest",
+    "tank_dps:feral_druid_tank|survival_hunter",
+    "tank_dps:feral_druid_tank|unholy_death_knight",
+    "tank_dps:protection_paladin|affliction_warlock",
+    "tank_dps:protection_paladin|arms_warrior",
+    "tank_dps:protection_paladin|assassination_rogue",
+    "tank_dps:protection_paladin|balance_druid",
+    "tank_dps:protection_paladin|combat_rogue",
+    "tank_dps:protection_paladin|demonology_warlock",
+    "tank_dps:protection_paladin|elemental_shaman",
+    "tank_dps:protection_paladin|feral_druid_dps",
+    "tank_dps:protection_paladin|fire_mage",
+    "tank_dps:protection_paladin|frost_death_knight",
+    "tank_dps:protection_paladin|fury_warrior",
+    "tank_dps:protection_paladin|marksmanship_hunter",
+    "tank_dps:protection_paladin|retribution_paladin",
+    "tank_dps:protection_paladin|shadow_priest",
+    "tank_dps:protection_paladin|survival_hunter",
+    "tank_dps:protection_paladin|unholy_death_knight",
+    "tank_healer:blood_death_knight|discipline_priest",
+    "tank_healer:blood_death_knight|holy_paladin",
+    "tank_healer:blood_death_knight|holy_priest",
+    "tank_healer:blood_death_knight|restoration_druid",
+    "tank_healer:blood_death_knight|restoration_shaman",
+    "tank_healer:feral_druid_tank|discipline_priest",
+    "tank_healer:feral_druid_tank|holy_paladin",
+    "tank_healer:feral_druid_tank|holy_priest",
+    "tank_healer:feral_druid_tank|restoration_druid",
+    "tank_healer:feral_druid_tank|restoration_shaman",
+    "tank_healer:protection_paladin|discipline_priest",
+    "tank_healer:protection_paladin|holy_paladin",
+    "tank_healer:protection_paladin|holy_priest",
+    "tank_healer:protection_paladin|restoration_druid",
+    "tank_healer:protection_paladin|restoration_shaman"
+  ],
+  "excluded_pair_count": 37,
+  "excluded_pair_counts_by_kind": {
+    "healer_healer": 10,
+    "self": 24,
+    "tank_tank": 3
+  },
+  "excluded_pair_ids": [
+    "healer_healer:discipline_priest|holy_paladin",
+    "healer_healer:discipline_priest|holy_priest",
+    "healer_healer:discipline_priest|restoration_druid",
+    "healer_healer:discipline_priest|restoration_shaman",
+    "healer_healer:holy_paladin|holy_priest",
+    "healer_healer:holy_paladin|restoration_druid",
+    "healer_healer:holy_paladin|restoration_shaman",
+    "healer_healer:holy_priest|restoration_druid",
+    "healer_healer:holy_priest|restoration_shaman",
+    "healer_healer:restoration_druid|restoration_shaman",
+    "self:affliction_warlock|affliction_warlock",
+    "self:arms_warrior|arms_warrior",
+    "self:assassination_rogue|assassination_rogue",
+    "self:balance_druid|balance_druid",
+    "self:blood_death_knight|blood_death_knight",
+    "self:combat_rogue|combat_rogue",
+    "self:demonology_warlock|demonology_warlock",
+    "self:discipline_priest|discipline_priest",
+    "self:elemental_shaman|elemental_shaman",
+    "self:feral_druid_dps|feral_druid_dps",
+    "self:feral_druid_tank|feral_druid_tank",
+    "self:fire_mage|fire_mage",
+    "self:frost_death_knight|frost_death_knight",
+    "self:fury_warrior|fury_warrior",
+    "self:holy_paladin|holy_paladin",
+    "self:holy_priest|holy_priest",
+    "self:marksmanship_hunter|marksmanship_hunter",
+    "self:protection_paladin|protection_paladin",
+    "self:restoration_druid|restoration_druid",
+    "self:restoration_shaman|restoration_shaman",
+    "self:retribution_paladin|retribution_paladin",
+    "self:shadow_priest|shadow_priest",
+    "self:survival_hunter|survival_hunter",
+    "self:unholy_death_knight|unholy_death_knight",
+    "tank_tank:blood_death_knight|feral_druid_tank",
+    "tank_tank:blood_death_knight|protection_paladin",
+    "tank_tank:feral_druid_tank|protection_paladin"
+  ],
+  "inputs": {
+    "candidate_pool_tag": "all_spec_candidate_pool",
+    "pair_policy_path": "experiments/configs/stonecore_phase9_pair_policy_v1.json",
+    "pair_policy_sha256": "41057702c15cfe09ec42957d2f7d6c9ae52cc897ef7df5642a514a2d9105f182",
+    "target_catalog_path": "experiments/configs/all_spec_targets_cata_p4_v1.json",
+    "target_catalog_sha256": "c6411faceabe66d1634aa5688d3db35a61203929f0319cbc6430451cacf3a00d"
+  },
+  "matrix_sha256": "94bf018bb80fcc47755e28e0687da6a940b3144b80f65786213e18bcf8fb3292",
+  "pair_universe_sha256": "2aff067920e9d17a6682f973081c0cd6dfd2457108fcf2b3194c34f882f25ade",
+  "qualification_excluded_targets": [
+    "arcane_mage",
+    "beast_mastery_hunter",
+    "destruction_warlock",
+    "enhancement_shaman",
+    "frost_mage",
+    "protection_warrior",
+    "subtlety_rogue"
+  ],
+  "representation": [
+    {
+      "composition_count": 17,
+      "role": "tank",
+      "spec_target_id": "blood_death_knight"
+    },
+    {
+      "composition_count": 17,
+      "role": "tank",
+      "spec_target_id": "feral_druid_tank"
+    },
+    {
+      "composition_count": 18,
+      "role": "tank",
+      "spec_target_id": "protection_paladin"
+    },
+    {
+      "composition_count": 11,
+      "role": "healer",
+      "spec_target_id": "discipline_priest"
+    },
+    {
+      "composition_count": 11,
+      "role": "healer",
+      "spec_target_id": "holy_paladin"
+    },
+    {
+      "composition_count": 10,
+      "role": "healer",
+      "spec_target_id": "holy_priest"
+    },
+    {
+      "composition_count": 10,
+      "role": "healer",
+      "spec_target_id": "restoration_druid"
+    },
+    {
+      "composition_count": 10,
+      "role": "healer",
+      "spec_target_id": "restoration_shaman"
+    },
+    {
+      "composition_count": 10,
+      "role": "dps",
+      "spec_target_id": "affliction_warlock"
+    },
+    {
+      "composition_count": 10,
+      "role": "dps",
+      "spec_target_id": "arms_warrior"
+    },
+    {
+      "composition_count": 10,
+      "role": "dps",
+      "spec_target_id": "assassination_rogue"
+    },
+    {
+      "composition_count": 10,
+      "role": "dps",
+      "spec_target_id": "balance_druid"
+    },
+    {
+      "composition_count": 10,
+      "role": "dps",
+      "spec_target_id": "combat_rogue"
+    },
+    {
+      "composition_count": 9,
+      "role": "dps",
+      "spec_target_id": "demonology_warlock"
+    },
+    {
+      "composition_count": 9,
+      "role": "dps",
+      "spec_target_id": "elemental_shaman"
+    },
+    {
+      "composition_count": 10,
+      "role": "dps",
+      "spec_target_id": "feral_druid_dps"
+    },
+    {
+      "composition_count": 9,
+      "role": "dps",
+      "spec_target_id": "fire_mage"
+    },
+    {
+      "composition_count": 9,
+      "role": "dps",
+      "spec_target_id": "frost_death_knight"
+    },
+    {
+      "composition_count": 9,
+      "role": "dps",
+      "spec_target_id": "fury_warrior"
+    },
+    {
+      "composition_count": 12,
+      "role": "dps",
+      "spec_target_id": "marksmanship_hunter"
+    },
+    {
+      "composition_count": 10,
+      "role": "dps",
+      "spec_target_id": "retribution_paladin"
+    },
+    {
+      "composition_count": 9,
+      "role": "dps",
+      "spec_target_id": "shadow_priest"
+    },
+    {
+      "composition_count": 11,
+      "role": "dps",
+      "spec_target_id": "survival_hunter"
+    },
+    {
+      "composition_count": 9,
+      "role": "dps",
+      "spec_target_id": "unholy_death_knight"
+    }
+  ],
+  "representation_sha256": "02f50317b9d1819c28f6146757bb34183e2c2d63afa32a925580a48e6d88da05",
+  "required_pair_count": 263,
+  "required_pair_counts_by_kind": {
+    "dps_dps": 120,
+    "healer_dps": 80,
+    "tank_dps": 48,
+    "tank_healer": 15
+  },
+  "required_pair_ids": [
+    "dps_dps:affliction_warlock|arms_warrior",
+    "dps_dps:affliction_warlock|assassination_rogue",
+    "dps_dps:affliction_warlock|balance_druid",
+    "dps_dps:affliction_warlock|combat_rogue",
+    "dps_dps:affliction_warlock|demonology_warlock",
+    "dps_dps:affliction_warlock|elemental_shaman",
+    "dps_dps:affliction_warlock|feral_druid_dps",
+    "dps_dps:affliction_warlock|fire_mage",
+    "dps_dps:affliction_warlock|frost_death_knight",
+    "dps_dps:affliction_warlock|fury_warrior",
+    "dps_dps:affliction_warlock|marksmanship_hunter",
+    "dps_dps:affliction_warlock|retribution_paladin",
+    "dps_dps:affliction_warlock|shadow_priest",
+    "dps_dps:affliction_warlock|survival_hunter",
+    "dps_dps:affliction_warlock|unholy_death_knight",
+    "dps_dps:arms_warrior|assassination_rogue",
+    "dps_dps:arms_warrior|balance_druid",
+    "dps_dps:arms_warrior|combat_rogue",
+    "dps_dps:arms_warrior|demonology_warlock",
+    "dps_dps:arms_warrior|elemental_shaman",
+    "dps_dps:arms_warrior|feral_druid_dps",
+    "dps_dps:arms_warrior|fire_mage",
+    "dps_dps:arms_warrior|frost_death_knight",
+    "dps_dps:arms_warrior|fury_warrior",
+    "dps_dps:arms_warrior|marksmanship_hunter",
+    "dps_dps:arms_warrior|retribution_paladin",
+    "dps_dps:arms_warrior|shadow_priest",
+    "dps_dps:arms_warrior|survival_hunter",
+    "dps_dps:arms_warrior|unholy_death_knight",
+    "dps_dps:assassination_rogue|balance_druid",
+    "dps_dps:assassination_rogue|combat_rogue",
+    "dps_dps:assassination_rogue|demonology_warlock",
+    "dps_dps:assassination_rogue|elemental_shaman",
+    "dps_dps:assassination_rogue|feral_druid_dps",
+    "dps_dps:assassination_rogue|fire_mage",
+    "dps_dps:assassination_rogue|frost_death_knight",
+    "dps_dps:assassination_rogue|fury_warrior",
+    "dps_dps:assassination_rogue|marksmanship_hunter",
+    "dps_dps:assassination_rogue|retribution_paladin",
+    "dps_dps:assassination_rogue|shadow_priest",
+    "dps_dps:assassination_rogue|survival_hunter",
+    "dps_dps:assassination_rogue|unholy_death_knight",
+    "dps_dps:balance_druid|combat_rogue",
+    "dps_dps:balance_druid|demonology_warlock",
+    "dps_dps:balance_druid|elemental_shaman",
+    "dps_dps:balance_druid|feral_druid_dps",
+    "dps_dps:balance_druid|fire_mage",
+    "dps_dps:balance_druid|frost_death_knight",
+    "dps_dps:balance_druid|fury_warrior",
+    "dps_dps:balance_druid|marksmanship_hunter",
+    "dps_dps:balance_druid|retribution_paladin",
+    "dps_dps:balance_druid|shadow_priest",
+    "dps_dps:balance_druid|survival_hunter",
+    "dps_dps:balance_druid|unholy_death_knight",
+    "dps_dps:combat_rogue|demonology_warlock",
+    "dps_dps:combat_rogue|elemental_shaman",
+    "dps_dps:combat_rogue|feral_druid_dps",
+    "dps_dps:combat_rogue|fire_mage",
+    "dps_dps:combat_rogue|frost_death_knight",
+    "dps_dps:combat_rogue|fury_warrior",
+    "dps_dps:combat_rogue|marksmanship_hunter",
+    "dps_dps:combat_rogue|retribution_paladin",
+    "dps_dps:combat_rogue|shadow_priest",
+    "dps_dps:combat_rogue|survival_hunter",
+    "dps_dps:combat_rogue|unholy_death_knight",
+    "dps_dps:demonology_warlock|elemental_shaman",
+    "dps_dps:demonology_warlock|feral_druid_dps",
+    "dps_dps:demonology_warlock|fire_mage",
+    "dps_dps:demonology_warlock|frost_death_knight",
+    "dps_dps:demonology_warlock|fury_warrior",
+    "dps_dps:demonology_warlock|marksmanship_hunter",
+    "dps_dps:demonology_warlock|retribution_paladin",
+    "dps_dps:demonology_warlock|shadow_priest",
+    "dps_dps:demonology_warlock|survival_hunter",
+    "dps_dps:demonology_warlock|unholy_death_knight",
+    "dps_dps:elemental_shaman|feral_druid_dps",
+    "dps_dps:elemental_shaman|fire_mage",
+    "dps_dps:elemental_shaman|frost_death_knight",
+    "dps_dps:elemental_shaman|fury_warrior",
+    "dps_dps:elemental_shaman|marksmanship_hunter",
+    "dps_dps:elemental_shaman|retribution_paladin",
+    "dps_dps:elemental_shaman|shadow_priest",
+    "dps_dps:elemental_shaman|survival_hunter",
+    "dps_dps:elemental_shaman|unholy_death_knight",
+    "dps_dps:feral_druid_dps|fire_mage",
+    "dps_dps:feral_druid_dps|frost_death_knight",
+    "dps_dps:feral_druid_dps|fury_warrior",
+    "dps_dps:feral_druid_dps|marksmanship_hunter",
+    "dps_dps:feral_druid_dps|retribution_paladin",
+    "dps_dps:feral_druid_dps|shadow_priest",
+    "dps_dps:feral_druid_dps|survival_hunter",
+    "dps_dps:feral_druid_dps|unholy_death_knight",
+    "dps_dps:fire_mage|frost_death_knight",
+    "dps_dps:fire_mage|fury_warrior",
+    "dps_dps:fire_mage|marksmanship_hunter",
+    "dps_dps:fire_mage|retribution_paladin",
+    "dps_dps:fire_mage|shadow_priest",
+    "dps_dps:fire_mage|survival_hunter",
+    "dps_dps:fire_mage|unholy_death_knight",
+    "dps_dps:frost_death_knight|fury_warrior",
+    "dps_dps:frost_death_knight|marksmanship_hunter",
+    "dps_dps:frost_death_knight|retribution_paladin",
+    "dps_dps:frost_death_knight|shadow_priest",
+    "dps_dps:frost_death_knight|survival_hunter",
+    "dps_dps:frost_death_knight|unholy_death_knight",
+    "dps_dps:fury_warrior|marksmanship_hunter",
+    "dps_dps:fury_warrior|retribution_paladin",
+    "dps_dps:fury_warrior|shadow_priest",
+    "dps_dps:fury_warrior|survival_hunter",
+    "dps_dps:fury_warrior|unholy_death_knight",
+    "dps_dps:marksmanship_hunter|retribution_paladin",
+    "dps_dps:marksmanship_hunter|shadow_priest",
+    "dps_dps:marksmanship_hunter|survival_hunter",
+    "dps_dps:marksmanship_hunter|unholy_death_knight",
+    "dps_dps:retribution_paladin|shadow_priest",
+    "dps_dps:retribution_paladin|survival_hunter",
+    "dps_dps:retribution_paladin|unholy_death_knight",
+    "dps_dps:shadow_priest|survival_hunter",
+    "dps_dps:shadow_priest|unholy_death_knight",
+    "dps_dps:survival_hunter|unholy_death_knight",
+    "healer_dps:discipline_priest|affliction_warlock",
+    "healer_dps:discipline_priest|arms_warrior",
+    "healer_dps:discipline_priest|assassination_rogue",
+    "healer_dps:discipline_priest|balance_druid",
+    "healer_dps:discipline_priest|combat_rogue",
+    "healer_dps:discipline_priest|demonology_warlock",
+    "healer_dps:discipline_priest|elemental_shaman",
+    "healer_dps:discipline_priest|feral_druid_dps",
+    "healer_dps:discipline_priest|fire_mage",
+    "healer_dps:discipline_priest|frost_death_knight",
+    "healer_dps:discipline_priest|fury_warrior",
+    "healer_dps:discipline_priest|marksmanship_hunter",
+    "healer_dps:discipline_priest|retribution_paladin",
+    "healer_dps:discipline_priest|shadow_priest",
+    "healer_dps:discipline_priest|survival_hunter",
+    "healer_dps:discipline_priest|unholy_death_knight",
+    "healer_dps:holy_paladin|affliction_warlock",
+    "healer_dps:holy_paladin|arms_warrior",
+    "healer_dps:holy_paladin|assassination_rogue",
+    "healer_dps:holy_paladin|balance_druid",
+    "healer_dps:holy_paladin|combat_rogue",
+    "healer_dps:holy_paladin|demonology_warlock",
+    "healer_dps:holy_paladin|elemental_shaman",
+    "healer_dps:holy_paladin|feral_druid_dps",
+    "healer_dps:holy_paladin|fire_mage",
+    "healer_dps:holy_paladin|frost_death_knight",
+    "healer_dps:holy_paladin|fury_warrior",
+    "healer_dps:holy_paladin|marksmanship_hunter",
+    "healer_dps:holy_paladin|retribution_paladin",
+    "healer_dps:holy_paladin|shadow_priest",
+    "healer_dps:holy_paladin|survival_hunter",
+    "healer_dps:holy_paladin|unholy_death_knight",
+    "healer_dps:holy_priest|affliction_warlock",
+    "healer_dps:holy_priest|arms_warrior",
+    "healer_dps:holy_priest|assassination_rogue",
+    "healer_dps:holy_priest|balance_druid",
+    "healer_dps:holy_priest|combat_rogue",
+    "healer_dps:holy_priest|demonology_warlock",
+    "healer_dps:holy_priest|elemental_shaman",
+    "healer_dps:holy_priest|feral_druid_dps",
+    "healer_dps:holy_priest|fire_mage",
+    "healer_dps:holy_priest|frost_death_knight",
+    "healer_dps:holy_priest|fury_warrior",
+    "healer_dps:holy_priest|marksmanship_hunter",
+    "healer_dps:holy_priest|retribution_paladin",
+    "healer_dps:holy_priest|shadow_priest",
+    "healer_dps:holy_priest|survival_hunter",
+    "healer_dps:holy_priest|unholy_death_knight",
+    "healer_dps:restoration_druid|affliction_warlock",
+    "healer_dps:restoration_druid|arms_warrior",
+    "healer_dps:restoration_druid|assassination_rogue",
+    "healer_dps:restoration_druid|balance_druid",
+    "healer_dps:restoration_druid|combat_rogue",
+    "healer_dps:restoration_druid|demonology_warlock",
+    "healer_dps:restoration_druid|elemental_shaman",
+    "healer_dps:restoration_druid|feral_druid_dps",
+    "healer_dps:restoration_druid|fire_mage",
+    "healer_dps:restoration_druid|frost_death_knight",
+    "healer_dps:restoration_druid|fury_warrior",
+    "healer_dps:restoration_druid|marksmanship_hunter",
+    "healer_dps:restoration_druid|retribution_paladin",
+    "healer_dps:restoration_druid|shadow_priest",
+    "healer_dps:restoration_druid|survival_hunter",
+    "healer_dps:restoration_druid|unholy_death_knight",
+    "healer_dps:restoration_shaman|affliction_warlock",
+    "healer_dps:restoration_shaman|arms_warrior",
+    "healer_dps:restoration_shaman|assassination_rogue",
+    "healer_dps:restoration_shaman|balance_druid",
+    "healer_dps:restoration_shaman|combat_rogue",
+    "healer_dps:restoration_shaman|demonology_warlock",
+    "healer_dps:restoration_shaman|elemental_shaman",
+    "healer_dps:restoration_shaman|feral_druid_dps",
+    "healer_dps:restoration_shaman|fire_mage",
+    "healer_dps:restoration_shaman|frost_death_knight",
+    "healer_dps:restoration_shaman|fury_warrior",
+    "healer_dps:restoration_shaman|marksmanship_hunter",
+    "healer_dps:restoration_shaman|retribution_paladin",
+    "healer_dps:restoration_shaman|shadow_priest",
+    "healer_dps:restoration_shaman|survival_hunter",
+    "healer_dps:restoration_shaman|unholy_death_knight",
+    "tank_dps:blood_death_knight|affliction_warlock",
+    "tank_dps:blood_death_knight|arms_warrior",
+    "tank_dps:blood_death_knight|assassination_rogue",
+    "tank_dps:blood_death_knight|balance_druid",
+    "tank_dps:blood_death_knight|combat_rogue",
+    "tank_dps:blood_death_knight|demonology_warlock",
+    "tank_dps:blood_death_knight|elemental_shaman",
+    "tank_dps:blood_death_knight|feral_druid_dps",
+    "tank_dps:blood_death_knight|fire_mage",
+    "tank_dps:blood_death_knight|frost_death_knight",
+    "tank_dps:blood_death_knight|fury_warrior",
+    "tank_dps:blood_death_knight|marksmanship_hunter",
+    "tank_dps:blood_death_knight|retribution_paladin",
+    "tank_dps:blood_death_knight|shadow_priest",
+    "tank_dps:blood_death_knight|survival_hunter",
+    "tank_dps:blood_death_knight|unholy_death_knight",
+    "tank_dps:feral_druid_tank|affliction_warlock",
+    "tank_dps:feral_druid_tank|arms_warrior",
+    "tank_dps:feral_druid_tank|assassination_rogue",
+    "tank_dps:feral_druid_tank|balance_druid",
+    "tank_dps:feral_druid_tank|combat_rogue",
+    "tank_dps:feral_druid_tank|demonology_warlock",
+    "tank_dps:feral_druid_tank|elemental_shaman",
+    "tank_dps:feral_druid_tank|feral_druid_dps",
+    "tank_dps:feral_druid_tank|fire_mage",
+    "tank_dps:feral_druid_tank|frost_death_knight",
+    "tank_dps:feral_druid_tank|fury_warrior",
+    "tank_dps:feral_druid_tank|marksmanship_hunter",
+    "tank_dps:feral_druid_tank|retribution_paladin",
+    "tank_dps:feral_druid_tank|shadow_priest",
+    "tank_dps:feral_druid_tank|survival_hunter",
+    "tank_dps:feral_druid_tank|unholy_death_knight",
+    "tank_dps:protection_paladin|affliction_warlock",
+    "tank_dps:protection_paladin|arms_warrior",
+    "tank_dps:protection_paladin|assassination_rogue",
+    "tank_dps:protection_paladin|balance_druid",
+    "tank_dps:protection_paladin|combat_rogue",
+    "tank_dps:protection_paladin|demonology_warlock",
+    "tank_dps:protection_paladin|elemental_shaman",
+    "tank_dps:protection_paladin|feral_druid_dps",
+    "tank_dps:protection_paladin|fire_mage",
+    "tank_dps:protection_paladin|frost_death_knight",
+    "tank_dps:protection_paladin|fury_warrior",
+    "tank_dps:protection_paladin|marksmanship_hunter",
+    "tank_dps:protection_paladin|retribution_paladin",
+    "tank_dps:protection_paladin|shadow_priest",
+    "tank_dps:protection_paladin|survival_hunter",
+    "tank_dps:protection_paladin|unholy_death_knight",
+    "tank_healer:blood_death_knight|discipline_priest",
+    "tank_healer:blood_death_knight|holy_paladin",
+    "tank_healer:blood_death_knight|holy_priest",
+    "tank_healer:blood_death_knight|restoration_druid",
+    "tank_healer:blood_death_knight|restoration_shaman",
+    "tank_healer:feral_druid_tank|discipline_priest",
+    "tank_healer:feral_druid_tank|holy_paladin",
+    "tank_healer:feral_druid_tank|holy_priest",
+    "tank_healer:feral_druid_tank|restoration_druid",
+    "tank_healer:feral_druid_tank|restoration_shaman",
+    "tank_healer:protection_paladin|discipline_priest",
+    "tank_healer:protection_paladin|holy_paladin",
+    "tank_healer:protection_paladin|holy_priest",
+    "tank_healer:protection_paladin|restoration_druid",
+    "tank_healer:protection_paladin|restoration_shaman"
+  ],
+  "schema": "stonecore_phase9_pairwise_matrix_v1",
+  "selected_composition_count": 52,
+  "serial_canaries": [
+    {
+      "composition_id": "stonecore_phase9_046_5fa6cb9c5dde",
+      "composition_sha256": "5fa6cb9c5dded9603bf89deefd264c626bc20720559697388d5bdf95e58635a9",
+      "new_targets": [
+        "affliction_warlock",
+        "blood_death_knight",
+        "holy_paladin",
+        "marksmanship_hunter",
+        "retribution_paladin"
+      ],
+      "ordered_party": [
+        "blood_death_knight",
+        "holy_paladin",
+        "affliction_warlock",
+        "marksmanship_hunter",
+        "retribution_paladin"
+      ],
+      "serial_index": 1
+    },
+    {
+      "composition_id": "stonecore_phase9_047_95d945edcd32",
+      "composition_sha256": "95d945edcd3285e07ce94226181452f05738704941878edf1aa8da28c0c67544",
+      "new_targets": [
+        "demonology_warlock",
+        "discipline_priest",
+        "feral_druid_tank",
+        "shadow_priest",
+        "survival_hunter"
+      ],
+      "ordered_party": [
+        "feral_druid_tank",
+        "discipline_priest",
+        "demonology_warlock",
+        "shadow_priest",
+        "survival_hunter"
+      ],
+      "serial_index": 2
+    },
+    {
+      "composition_id": "stonecore_phase9_048_6d59c2000776",
+      "composition_sha256": "6d59c2000776b3a588d8a51edd2fb2d397ce2a0658c02765337a988e2b357210",
+      "new_targets": [
+        "balance_druid",
+        "combat_rogue",
+        "protection_paladin",
+        "restoration_shaman"
+      ],
+      "ordered_party": [
+        "protection_paladin",
+        "restoration_shaman",
+        "balance_druid",
+        "combat_rogue",
+        "marksmanship_hunter"
+      ],
+      "serial_index": 3
+    },
+    {
+      "composition_id": "stonecore_phase9_049_f852a689382d",
+      "composition_sha256": "f852a689382df6769845faeddd6f09c6a19909eae516d9a50317a4be679ba393",
+      "new_targets": [
+        "elemental_shaman",
+        "feral_druid_dps",
+        "restoration_druid"
+      ],
+      "ordered_party": [
+        "protection_paladin",
+        "restoration_druid",
+        "elemental_shaman",
+        "feral_druid_dps",
+        "survival_hunter"
+      ],
+      "serial_index": 4
+    },
+    {
+      "composition_id": "stonecore_phase9_050_7f09b51b8998",
+      "composition_sha256": "7f09b51b899868c140f6da957e325a4ab1d623a15ce6071c2bf148123241776b",
+      "new_targets": [
+        "arms_warrior",
+        "fury_warrior",
+        "holy_priest"
+      ],
+      "ordered_party": [
+        "blood_death_knight",
+        "holy_priest",
+        "arms_warrior",
+        "fury_warrior",
+        "marksmanship_hunter"
+      ],
+      "serial_index": 5
+    },
+    {
+      "composition_id": "stonecore_phase9_051_fbf54b4a4beb",
+      "composition_sha256": "fbf54b4a4beb2fe638bf2483afb9e9a2c40a755e7e7f54c5e01f02cfb25d62bd",
+      "new_targets": [
+        "assassination_rogue",
+        "unholy_death_knight"
+      ],
+      "ordered_party": [
+        "feral_druid_tank",
+        "holy_paladin",
+        "assassination_rogue",
+        "survival_hunter",
+        "unholy_death_knight"
+      ],
+      "serial_index": 6
+    },
+    {
+      "composition_id": "stonecore_phase9_052_2e3d87f152cf",
+      "composition_sha256": "2e3d87f152cf51fef7819d49caf1f1e72e42c907916a7cdbcbe76ea9bffcb16e",
+      "new_targets": [
+        "fire_mage",
+        "frost_death_knight"
+      ],
+      "ordered_party": [
+        "protection_paladin",
+        "discipline_priest",
+        "fire_mage",
+        "frost_death_knight",
+        "marksmanship_hunter"
+      ],
+      "serial_index": 7
+    }
+  ],
+  "serial_canary_count": 7,
+  "serial_canary_set_sha256": "05ea9ab471bc5f9ebbf455a9bdf44e9f27c7b71ee312178563a497f2dd6467f5",
+  "serial_representation": [
+    {
+      "composition_count": 2,
+      "role": "tank",
+      "spec_target_id": "blood_death_knight"
+    },
+    {
+      "composition_count": 2,
+      "role": "tank",
+      "spec_target_id": "feral_druid_tank"
+    },
+    {
+      "composition_count": 3,
+      "role": "tank",
+      "spec_target_id": "protection_paladin"
+    },
+    {
+      "composition_count": 2,
+      "role": "healer",
+      "spec_target_id": "discipline_priest"
+    },
+    {
+      "composition_count": 2,
+      "role": "healer",
+      "spec_target_id": "holy_paladin"
+    },
+    {
+      "composition_count": 1,
+      "role": "healer",
+      "spec_target_id": "holy_priest"
+    },
+    {
+      "composition_count": 1,
+      "role": "healer",
+      "spec_target_id": "restoration_druid"
+    },
+    {
+      "composition_count": 1,
+      "role": "healer",
+      "spec_target_id": "restoration_shaman"
+    },
+    {
+      "composition_count": 1,
+      "role": "dps",
+      "spec_target_id": "affliction_warlock"
+    },
+    {
+      "composition_count": 1,
+      "role": "dps",
+      "spec_target_id": "arms_warrior"
+    },
+    {
+      "composition_count": 1,
+      "role": "dps",
+      "spec_target_id": "assassination_rogue"
+    },
+    {
+      "composition_count": 1,
+      "role": "dps",
+      "spec_target_id": "balance_druid"
+    },
+    {
+      "composition_count": 1,
+      "role": "dps",
+      "spec_target_id": "combat_rogue"
+    },
+    {
+      "composition_count": 1,
+      "role": "dps",
+      "spec_target_id": "demonology_warlock"
+    },
+    {
+      "composition_count": 1,
+      "role": "dps",
+      "spec_target_id": "elemental_shaman"
+    },
+    {
+      "composition_count": 1,
+      "role": "dps",
+      "spec_target_id": "feral_druid_dps"
+    },
+    {
+      "composition_count": 1,
+      "role": "dps",
+      "spec_target_id": "fire_mage"
+    },
+    {
+      "composition_count": 1,
+      "role": "dps",
+      "spec_target_id": "frost_death_knight"
+    },
+    {
+      "composition_count": 1,
+      "role": "dps",
+      "spec_target_id": "fury_warrior"
+    },
+    {
+      "composition_count": 4,
+      "role": "dps",
+      "spec_target_id": "marksmanship_hunter"
+    },
+    {
+      "composition_count": 1,
+      "role": "dps",
+      "spec_target_id": "retribution_paladin"
+    },
+    {
+      "composition_count": 1,
+      "role": "dps",
+      "spec_target_id": "shadow_priest"
+    },
+    {
+      "composition_count": 3,
+      "role": "dps",
+      "spec_target_id": "survival_hunter"
+    },
+    {
+      "composition_count": 1,
+      "role": "dps",
+      "spec_target_id": "unholy_death_knight"
+    }
+  ],
+  "serial_target_union": [
+    "affliction_warlock",
+    "arms_warrior",
+    "assassination_rogue",
+    "balance_druid",
+    "blood_death_knight",
+    "combat_rogue",
+    "demonology_warlock",
+    "discipline_priest",
+    "elemental_shaman",
+    "feral_druid_dps",
+    "feral_druid_tank",
+    "fire_mage",
+    "frost_death_knight",
+    "fury_warrior",
+    "holy_paladin",
+    "holy_priest",
+    "marksmanship_hunter",
+    "protection_paladin",
+    "restoration_druid",
+    "restoration_shaman",
+    "retribution_paladin",
+    "shadow_priest",
+    "survival_hunter",
+    "unholy_death_knight"
+  ],
+  "target_count": 24,
+  "uncovered_pair_count": 0,
+  "uncovered_pair_ids": []
+}

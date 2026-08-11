@@ -1,0 +1,126 @@
+{
+  "schema": "all_spec_phase9_rerun149_diagnosis_v1",
+  "source_attempt": {
+    "attempt_label": "rerun149_canary_2",
+    "attempt_id": "phase9_serial_02_stonecore_phase9_006_6893daf98698",
+    "batch_id": "phase9-serial-canary-rerun149-2",
+    "batch_identity_sha256": "24da27d56625cf0607ebb70e8fe81c1a42caaa7bf099032bc6a60420b5bdf319",
+    "composition_id": "stonecore_phase9_006_6893daf98698",
+    "party_sha256": "524b94c794897f5111bdae0a5e45ba31a31ebb8596d811a3dd8c1caff95bd16a",
+    "party": [
+      "feral_druid_tank",
+      "discipline_priest",
+      "fury_warrior",
+      "marksmanship_hunter",
+      "retribution_paladin"
+    ],
+    "binary_sha256": "136fb278732eed55b1147b5d6ff50566c5c4c3f1534cbb512bedb445a6e9f294",
+    "server_process_id": 3323499,
+    "server_epoch": 14898532610493797,
+    "session_fingerprint": "e6ea16fb7d6804f4758bd072de993b075c8d06c38b283afad28eefb695d82209",
+    "profile_generation": 1,
+    "profile_content_hash": "35a587f05d8781d72c62576a6f35392a69e01d5978429f65429ad5b9ed096a22",
+    "evidence_identity_manifest_sha256": "05c50b93ac18ae4804ada5f8b72a5e2f190c3592e14f6cc80f83c14d70111b86",
+    "run_plan_sha256": "f48aa2b6fa14341996c2c0c34d04a9833b256758eda76aa18825edee73b59e12",
+    "max_active_cohorts": 1
+  },
+  "capture_and_closeout": {
+    "capture_identity_sha256": "24da27d56625cf0607ebb70e8fe81c1a42caaa7bf099032bc6a60420b5bdf319",
+    "raw_part_count": 1,
+    "raw_event_row_count": 275,
+    "compact_row_count": 1,
+    "raw_bundle_sha256": "46a53e281b939f9d98abf4d9112f080324c523d51e513d2a6eb52fd9217786d2",
+    "compact_bundle_sha256": "3db03d801206e2969aeed3062d06e7044580e7cd7ca9418bb95c9b056a02ad5b",
+    "publication_receipt_sha256": "bb34a0eac4ec191bc3c0182de321c7cccc124569a77c696dd687ac0b23fa7f8f",
+    "remote_status_sha256": "efed9e5afcfe149915ae98b9ed9e69304eb48f5ce2e2265b18b5b5ed2f155e60",
+    "remote_verified": true,
+    "capture_revalidated_after_hydration": true,
+    "exact_party_verified": true,
+    "identity_matched": true,
+    "inactive_after_attempt": true,
+    "canaries_3_through_8_started": false,
+    "broad_dvc_gc_used": false
+  },
+  "audit_validation": {
+    "audit_attribution_correct": true,
+    "trace_order_monotonic": true,
+    "threat_acquisition_grace_ms": 3000,
+    "recomputed_eligible_hostile_samples": 2027,
+    "recomputed_tank_owned_samples": 1859,
+    "recomputed_healer_targeting_samples": 118,
+    "recomputed_tank_all_hostile_retention_rate": 0.9171,
+    "recomputed_healer_target_exposure_rate": 0.0582,
+    "recomputed_max_healer_target_dwell_ms": 3907,
+    "audit_correction_required": false
+  },
+  "strict_route_result": {
+    "completion_reason": "stonecore_role_quality_audit_failed",
+    "failure_reason": "role_quality:Feraltank:healer_target_exposure",
+    "failure_labels": [
+      "role_quality:Feraltank:healer_target_exposure",
+      "role_quality:Feraltank:healer_target_dwell"
+    ],
+    "route_terminal_count": 14,
+    "expected_route_terminal_count": 14,
+    "real_boss_kill_count": 4,
+    "expected_real_boss_kill_count": 4,
+    "duration_seconds": 1255,
+    "kills": 55,
+    "deaths": 2,
+    "stuck_events": 0,
+    "death_loop_events": 0,
+    "no_progress_diagnoses": 0
+  },
+  "route_generation_localization": {
+    "generation_1": {"eligible_samples": 266, "tank_owned_samples": 225, "healer_targeting_samples": 0},
+    "generation_2": {"eligible_samples": 18, "tank_owned_samples": 17, "healer_targeting_samples": 0},
+    "generation_9": {"eligible_samples": 25, "tank_owned_samples": 22, "healer_targeting_samples": 0},
+    "generation_10": {"eligible_samples": 48, "tank_owned_samples": 47, "healer_targeting_samples": 0},
+    "generation_13": {"eligible_samples": 1257, "tank_owned_samples": 1137, "healer_targeting_samples": 118},
+    "generation_14": {"eligible_samples": 87, "tank_owned_samples": 85, "healer_targeting_samples": 0},
+    "all_other_generations": {"eligible_samples": 326, "tank_owned_samples": 326, "healer_targeting_samples": 0}
+  },
+  "generation_13_causal_evidence": {
+    "first_eligible_flip": {
+      "start_ms": 1785925413324,
+      "resolved_ms": 1785925414856,
+      "eligible_healer_targeting_samples": 30,
+      "eligible_hostile_guids": [577, 579, 580, 582, 583],
+      "actions": [
+        "feral_charge_remote_healer_trash_cluster_handoff",
+        "feral_charge_remote_healer_trash_cluster_in_flight",
+        "feral_demoralizing_roar_remote_healer_trash_cluster_handoff",
+        "feral_continue_remote_healer_trash_cluster_handoff"
+      ]
+    },
+    "longest_and_largest_flip": {
+      "start_ms": 1785925425188,
+      "resolved_ms": 1785925429355,
+      "maximum_counted_dwell_ms": 3907,
+      "maximum_episode_hostile_guids": [599, 600, 602, 605],
+      "eligible_healer_targeting_samples": 88,
+      "initial_eligible_healer_hostile_count": 10,
+      "first_roar_ms": 1785925425706,
+      "remaining_healer_hostile_count_after_first_roar": 4,
+      "local_secure_margin_swipe_ms": 1785925427234,
+      "second_roar_ms": 1785925428840
+    },
+    "cause": "The secure-threat-margin predicate is global, but its native Swipe is submitted against the nearest generic area target. Before both counted flips, aged remote Flayer clusters were tank-owned but below the 2.5x secure margin while local Swipe actions targeted other clusters. The remote identities then flipped to healing threat and were immediately eligible under the unchanged 3000 ms acquisition grace. Reactive Charge and Demoralizing Roar recovered them, but could not undo the exposure samples. During the longest episode, a second local secure-margin Swipe also preempted the first legal follow-up Roar global cooldown, extending four identities to 3907 ms. The audit attribution and thresholds are correct; this is a Feral remote threat-retention target-selection defect, not an audit defect."
+  },
+  "smallest_safe_correction": {
+    "file": "src/server/game/Bots/BotWorldPopulationMgr.cpp",
+    "scope": "existing Feral secure-threat-margin branch for a large tank-owned but globally insecure trash wave",
+    "change": "Select the deterministic densest sub-secure tank-owned cluster, approach that exact cluster when native Swipe is not yet in legal range, and submit the same native Swipe only there. Preserve strict hazard precedence, real spell legality, the 2.5x secure-margin definition, victim ownership, route identity, and all exposure, dwell, role, and publication gates. While an existing healer handoff is active, let its already-authorized Roar recovery run before another secure-margin Swipe can consume the global cooldown."
+  },
+  "next_attempt": {
+    "attempt_label": "rerun150_canary_2",
+    "worldserver_rebuild_required": true,
+    "deterministic_reprovision_required": true,
+    "fresh_identity_and_eight_row_plan_required": true,
+    "canary_2_only_until_strict_pass": true,
+    "canaries_3_through_8_started": false,
+    "phases_10_through_12_blocked": true
+  },
+  "hash_scope": "canonical_json_without_diagnosis_sha256",
+  "diagnosis_sha256": "7a25bb1696fbff4a9caf919e82b37dbf1184cc4c0f2ea30aba24d55509925a8b"
+}

@@ -1,0 +1,34 @@
+{
+  "schema": "all_spec_phase9_rerun146_interruption_v1",
+  "interruption_sha256": "03d27493841a612350ce483715d621d81e897a07116fb04ec9fb555c808cca29",
+  "hash_scope": "canonical_json_without_interruption_sha256",
+  "attempt": {
+    "attempt_label": "rerun146_canary_2",
+    "attempt_id": "phase9_serial_02_stonecore_phase9_006_6893daf98698",
+    "operator_unit": "trinity-phase9-rerun146-canary2.service",
+    "operator_returncode": 1,
+    "planned_identity_manifest_sha256": "70721c8031c31e08f29c1c576c5d357abf791ea6854267dbbbc14220f90baa96",
+    "planned_server_process_id": 3268988,
+    "planned_server_epoch": 15684759460405903,
+    "observed_server_process_id": 3270216,
+    "observed_server_epoch": 15690033722861248,
+    "exact_party_sha256": "524b94c794897f5111bdae0a5e45ba31a31ebb8596d811a3dd8c1caff95bd16a"
+  },
+  "classification": "pre_evidence_identity_infrastructure_abort",
+  "authoritative_gameplay_attempt": false,
+  "report_created": false,
+  "batch_capture_created": false,
+  "publication_required": false,
+  "canaries_3_through_8_started": false,
+  "cleanup": {
+    "active": false,
+    "active_bots": 0,
+    "lease_count": 0,
+    "party_bot_count": 0
+  },
+  "cause": "The identity builder was invoked with the already-generated session runtime config. The serial runner correctly regenerated that config from the base trinity-worldserver-test.conf, producing a different managed-session fingerprint and restarting the worldserver owner. The strict runtime binding immediately rejected the new PID, epoch, and session fingerprint before any authoritative route report or immutable batch capture was created.",
+  "correction": "Stop the superseded managed owner, retain this interruption, reapply deterministic provisioning, build the next identity from the base config exactly as the serial runner does, independently validate the new eight-row plan, and retry canary 2 alone.",
+  "gameplay_source_correction_invalidated": false,
+  "gates_weakened": false,
+  "next_attempt": "rerun147_canary_2"
+}

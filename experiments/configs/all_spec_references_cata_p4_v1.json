@@ -1,0 +1,3490 @@
+{
+  "schema": "all_spec_references_cata_p4_v1",
+  "research_contract": {
+    "first_pass": "one consolidated pass across all ten classes and all 31 targets",
+    "second_pass_scope": [
+      "discipline_priest",
+      "frost_mage",
+      "holy_paladin",
+      "holy_priest",
+      "restoration_druid",
+      "restoration_shaman"
+    ],
+    "second_pass_reason": "WoWSims explicitly marks these healer/Frost Mage records unsupported",
+    "guide_prose_is_sole_runtime_source": false
+  },
+  "references": [
+    {
+      "reference_id": "cata_p4:protection_warrior",
+      "spec_target_id": "protection_warrior",
+      "research_pass": "consolidated_all_target_pass",
+      "review_status": "reviewed",
+      "simulator_support": "launched",
+      "provider": "WoWSims",
+      "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+      "repository": "https://github.com/wowsims/cata",
+      "guide_url": "https://www.icy-veins.com/cataclysm-classic/protection-warrior-pve-guide",
+      "gear": {
+        "phase": "phase_4",
+        "runtime_profile_id": "protection_warrior",
+        "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
+        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "simulator_preset": {
+          "path": "ui/warrior/protection/gear_sets/p4_bis.gear.json",
+          "phase": "phase_4"
+        }
+      },
+      "apl": {
+        "path": "ui/warrior/protection/apls/default.apl.json",
+        "available": true
+      },
+      "talents": {
+        "provider": "WoWSims",
+        "path": "ui/warrior/protection/presets.ts",
+        "talent_string": "320003-002-33213201121210212031"
+      },
+      "test": "sim/warrior/protection/protection_test.go",
+      "results": "sim/warrior/protection/TestProtectionWarrior.results",
+      "source_assets": [
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/warrior/protection/presets.ts",
+          "sha256": "d2c8e7779125a30274cee6060937cd4e64a3605d3187438a00b068aa4349d334",
+          "byte_count": 3893
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/core/talents/trees/warrior.json",
+          "sha256": "d277ce41b42fb3fdce920566ab207d9a20c4acf0c0fc37f463ae2c961e8e14d1",
+          "byte_count": 15043
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/proto/warrior.proto",
+          "sha256": "fe9ef5c706460325121d05556e50e307f6cb54b6f2ca6311ccdbad49ec53d475",
+          "byte_count": 3984
+        },
+        {
+          "url": "https://www.icy-veins.com/cataclysm-classic/protection-warrior-pve-guide",
+          "sha256": "3536e58ed90a6021aa05e701f6c8e894f3146546f0f29e1b344b0c37915ad54f",
+          "byte_count": 140201
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/warrior/protection/gear_sets/p4_bis.gear.json",
+          "sha256": "75dbc67bddc0eff5c2f51704f1567db49cc7e59f3c5dc50b5603324dbc8d1de6",
+          "byte_count": 971
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/warrior/protection/apls/default.apl.json",
+          "sha256": "3c26febf87c8b3a9db36491b94e24b5350187f8384e8aa991c0fff6ca5792772",
+          "byte_count": 5176
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/warrior/protection/protection_test.go",
+          "sha256": "c3ceda9c741390f4f2602efb38e57126eba9e5d584eb2ece35b04312a4951904",
+          "byte_count": 2555
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/warrior/protection/TestProtectionWarrior.results",
+          "sha256": "286c8aca170d8b462b210c8778e5bccd2d11f48470a037ffa8aa4981cb121ac5",
+          "byte_count": 61100
+        }
+      ],
+      "reference_conditions": {
+        "level": 85,
+        "single_target_duration_seconds": 300,
+        "duration_variation_seconds": 5,
+        "raid_buffs": "full_simulator_reference_live_conditions_recorded_separately",
+        "consumables": "simulator_enabled_live_clone_capabilities_recorded",
+        "aoe": "separate_mode_not_mixed_with_single_target"
+      },
+      "rotation_research": {
+        "priority_source": "ui/warrior/protection/apls/default.apl.json",
+        "cooldowns": "explicit_required_rotation_group",
+        "execute": "explicit_required_rotation_group_even_when_not_applicable",
+        "movement": "explicit_required_rotation_group",
+        "aoe": "separate_explicit_required_rotation_group",
+        "pet_form_behavior": [
+          "defensive_stance",
+          "shield_block",
+          "rage_management"
+        ],
+        "interrupts_utility": [
+          "pummel",
+          "heroic_leap",
+          "battle_shout"
+        ]
+      },
+      "expected_output": {
+        "type": "simulator_metrics",
+        "result_key": "TestProtectionWarrior-Average-Default",
+        "metrics": {
+          "dps": 16954.06984,
+          "tps": 97267.44772,
+          "hps": 1414.35072
+        }
+      },
+      "known_trinitycore_deviations": [
+        "TrinityCore 4.3.4 mechanics and bot scheduling differ from the simulator engine",
+        "live clones do not assume every simulator profession, racial, prepot, or raid-buff condition",
+        "the 75 percent hard floor is applied only after Phase 2 establishes compatible live conditions"
+      ]
+    },
+    {
+      "reference_id": "cata_p4:protection_paladin",
+      "spec_target_id": "protection_paladin",
+      "research_pass": "consolidated_all_target_pass",
+      "review_status": "reviewed",
+      "simulator_support": "beta",
+      "provider": "WoWSims",
+      "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+      "repository": "https://github.com/wowsims/cata",
+      "guide_url": "https://www.icy-veins.com/cataclysm-classic/protection-paladin-pve-guide",
+      "gear": {
+        "phase": "phase_4",
+        "runtime_profile_id": "protection_paladin",
+        "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
+        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "simulator_preset": {
+          "path": "ui/paladin/protection/gear_sets/T12.gear.json",
+          "phase": "best_executable_legacy_preset"
+        }
+      },
+      "apl": {
+        "path": "ui/paladin/protection/apls/default.apl.json",
+        "available": true
+      },
+      "talents": {
+        "provider": "WoWSims",
+        "path": "ui/paladin/protection/presets.ts",
+        "talent_string": "-32023013122121101231-032032"
+      },
+      "test": "sim/paladin/protection/protection_test.go",
+      "results": "sim/paladin/protection/TestProtection.results",
+      "source_assets": [
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/paladin/protection/presets.ts",
+          "sha256": "5098a0ab2cd738886db97eb0538605fdb21a090f9f08cdbc4e28ca4a05980b5c",
+          "byte_count": 3159
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/core/talents/trees/paladin.json",
+          "sha256": "9a59407e7c717c804f3b75d959707c1794b9573c39e2546042f14c7ba10c2014",
+          "byte_count": 14953
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/proto/paladin.proto",
+          "sha256": "03d332061d6e4596a326f312b5cd8454438eb165d2b9d4fc74c72fe1a6c2782d",
+          "byte_count": 4214
+        },
+        {
+          "url": "https://www.icy-veins.com/cataclysm-classic/protection-paladin-pve-guide",
+          "sha256": "740b805e3ee8d5c36562bbaf577e02613b61727f22c6376cbe5ff70b40a941c0",
+          "byte_count": 136396
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/paladin/protection/gear_sets/T12.gear.json",
+          "sha256": "fab0c72c16725611683912a8187aad1d012bb7e3c60b5e945612e0e39b02a59d",
+          "byte_count": 979
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/paladin/protection/apls/default.apl.json",
+          "sha256": "6e0fbdb15bdc09e51b6a3eb9bc39f91da361ca25299147ce2a69b473e1e22a61",
+          "byte_count": 7158
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/paladin/protection/protection_test.go",
+          "sha256": "14d3d874287ffd1f02d7f3c731eddef3abc372a34006de417ec850f1bb09d53f",
+          "byte_count": 3554
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/paladin/protection/TestProtection.results",
+          "sha256": "854b3ce43b25d5641ba8964dd5598538ecc773e021d59b1bfe9e1bd8664aa8e5",
+          "byte_count": 49244
+        }
+      ],
+      "reference_conditions": {
+        "level": 85,
+        "single_target_duration_seconds": 300,
+        "duration_variation_seconds": 5,
+        "raid_buffs": "full_simulator_reference_live_conditions_recorded_separately",
+        "consumables": "simulator_enabled_live_clone_capabilities_recorded",
+        "aoe": "separate_mode_not_mixed_with_single_target"
+      },
+      "rotation_research": {
+        "priority_source": "ui/paladin/protection/apls/default.apl.json",
+        "cooldowns": "explicit_required_rotation_group",
+        "execute": "explicit_required_rotation_group_even_when_not_applicable",
+        "movement": "explicit_required_rotation_group",
+        "aoe": "separate_explicit_required_rotation_group",
+        "pet_form_behavior": [
+          "righteous_fury",
+          "holy_power",
+          "shield_of_the_righteous"
+        ],
+        "interrupts_utility": [
+          "rebuke",
+          "hand_utility",
+          "divine_protection"
+        ]
+      },
+      "expected_output": {
+        "type": "simulator_metrics",
+        "result_key": "TestProtection-Average-Default",
+        "metrics": {
+          "dps": 21677.7569,
+          "tps": 108773.33604,
+          "hps": 568.02156
+        }
+      },
+      "known_trinitycore_deviations": [
+        "TrinityCore 4.3.4 mechanics and bot scheduling differ from the simulator engine",
+        "live clones do not assume every simulator profession, racial, prepot, or raid-buff condition",
+        "the 75 percent hard floor is applied only after Phase 2 establishes compatible live conditions",
+        "the pinned executable simulator preset predates Phase 4; the canonical runtime profile is independently generated from Phase 4 item data"
+      ]
+    },
+    {
+      "reference_id": "cata_p4:blood_death_knight",
+      "spec_target_id": "blood_death_knight",
+      "research_pass": "consolidated_all_target_pass",
+      "review_status": "reviewed",
+      "simulator_support": "launched",
+      "provider": "WoWSims",
+      "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+      "repository": "https://github.com/wowsims/cata",
+      "guide_url": "https://www.icy-veins.com/cataclysm-classic/blood-death-knight-pve-guide",
+      "gear": {
+        "phase": "phase_4",
+        "runtime_profile_id": "blood_death_knight",
+        "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
+        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "simulator_preset": {
+          "path": "ui/death_knight/blood/gear_sets/p3-balanced.gear.json",
+          "phase": "best_executable_legacy_preset"
+        }
+      },
+      "apl": {
+        "path": "ui/death_knight/blood/apls/defensive.apl.json",
+        "available": true
+      },
+      "talents": {
+        "provider": "WoWSims",
+        "path": "ui/death_knight/blood/presets.ts",
+        "talent_string": "02323203102122111321-3-033"
+      },
+      "test": "sim/death_knight/blood/blood_test.go",
+      "results": "sim/death_knight/blood/TestBlood.results",
+      "source_assets": [
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/death_knight/blood/presets.ts",
+          "sha256": "55e5ca9c18a28b6642afd9c828e5b16e8ffa0e8d3748b7a77beb41794b3705b9",
+          "byte_count": 4404
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/core/talents/trees/death_knight.json",
+          "sha256": "1199d31366606841a8ea379bca33f4b3bb7ac9b886e3d8125641b46474c74127",
+          "byte_count": 14847
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/proto/death_knight.proto",
+          "sha256": "03e67b148b3fb7c530ae2745b9962634fd7552ec199970930a1c12de75429b8b",
+          "byte_count": 4617
+        },
+        {
+          "url": "https://www.icy-veins.com/cataclysm-classic/blood-death-knight-pve-guide",
+          "sha256": "1b98c90c590fd15dd678f57968734015f9f80a613bb8e287029549832f6eb5e0",
+          "byte_count": 138346
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/death_knight/blood/gear_sets/p3-balanced.gear.json",
+          "sha256": "ec2b36e67764e829057f87c8d479cd5eba363ce057b9dc82022d9a983cb6e469",
+          "byte_count": 816
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/death_knight/blood/apls/defensive.apl.json",
+          "sha256": "c41a20270ffca5e5df93e5463d76e016d566c035748a11feff4bdb76f4933353",
+          "byte_count": 4614
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/death_knight/blood/blood_test.go",
+          "sha256": "c42fbce5d8c52c405fd50cd2f990dbe4f6bb9db8e4e00448f06217ffe2697d73",
+          "byte_count": 2570
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/death_knight/blood/TestBlood.results",
+          "sha256": "22c7de4312dc229cc5dfbe7366c1d33e3ad56d410aa16ea6086ed9cbb5381aa2",
+          "byte_count": 57031
+        }
+      ],
+      "reference_conditions": {
+        "level": 85,
+        "single_target_duration_seconds": 300,
+        "duration_variation_seconds": 5,
+        "raid_buffs": "full_simulator_reference_live_conditions_recorded_separately",
+        "consumables": "simulator_enabled_live_clone_capabilities_recorded",
+        "aoe": "separate_mode_not_mixed_with_single_target"
+      },
+      "rotation_research": {
+        "priority_source": "ui/death_knight/blood/apls/defensive.apl.json",
+        "cooldowns": "explicit_required_rotation_group",
+        "execute": "explicit_required_rotation_group_even_when_not_applicable",
+        "movement": "explicit_required_rotation_group",
+        "aoe": "separate_explicit_required_rotation_group",
+        "pet_form_behavior": [
+          "blood_presence",
+          "death_strike_timing",
+          "rune_and_runic_power"
+        ],
+        "interrupts_utility": [
+          "mind_freeze",
+          "death_grip",
+          "anti_magic_shell"
+        ]
+      },
+      "expected_output": {
+        "type": "simulator_metrics",
+        "result_key": "TestBlood-Average-Default",
+        "metrics": {
+          "dps": 32489.03862,
+          "tps": 176564.60085,
+          "hps": 19418.12351
+        }
+      },
+      "known_trinitycore_deviations": [
+        "TrinityCore 4.3.4 mechanics and bot scheduling differ from the simulator engine",
+        "live clones do not assume every simulator profession, racial, prepot, or raid-buff condition",
+        "the 75 percent hard floor is applied only after Phase 2 establishes compatible live conditions",
+        "the pinned executable simulator preset predates Phase 4; the canonical runtime profile is independently generated from Phase 4 item data"
+      ]
+    },
+    {
+      "reference_id": "cata_p4:feral_druid_tank",
+      "spec_target_id": "feral_druid_tank",
+      "research_pass": "consolidated_all_target_pass",
+      "review_status": "reviewed",
+      "simulator_support": "launched",
+      "provider": "WoWSims",
+      "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+      "repository": "https://github.com/wowsims/cata",
+      "guide_url": "https://www.icy-veins.com/cataclysm-classic/feral-druid-tank-pve-guide",
+      "gear": {
+        "phase": "phase_4",
+        "runtime_profile_id": "feral_druid_tank",
+        "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
+        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "simulator_preset": {
+          "path": "ui/druid/guardian/gear_sets/p4.gear.json",
+          "phase": "phase_4"
+        }
+      },
+      "apl": {
+        "path": "ui/druid/guardian/apls/default.apl.json",
+        "available": true
+      },
+      "talents": {
+        "provider": "WoWSims",
+        "path": "ui/druid/guardian/presets.ts",
+        "talent_string": "-2300322312310001220311-020331"
+      },
+      "test": "sim/druid/guardian/tank_test.go",
+      "results": "sim/druid/guardian/TestGuardian.results",
+      "source_assets": [
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/druid/guardian/presets.ts",
+          "sha256": "ff015bc3921c3bc0a4decb9575e46bf00114a9e4c594e4e4edcd84e6168b0731",
+          "byte_count": 15292
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/core/talents/trees/druid.json",
+          "sha256": "798b6135c375a6d92c560e87d42b33e95aec0c5ac695702eac8ba10a71487dc2",
+          "byte_count": 15768
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/proto/druid.proto",
+          "sha256": "b552aa1cbd685a50d6079a04db40586057602b043a32c45aeccd4967adbc7332",
+          "byte_count": 5339
+        },
+        {
+          "url": "https://www.icy-veins.com/cataclysm-classic/feral-druid-tank-pve-guide",
+          "sha256": "1602d74fc987e7ac8b7a7d8e1de669f9ff9290f41255706298dc3c6e06ac16af",
+          "byte_count": 135090
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/druid/guardian/gear_sets/p4.gear.json",
+          "sha256": "4faa2ed69506c53af61b3f610ad01852a647a5239c97b552963c54a20e2b381b",
+          "byte_count": 965
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/druid/guardian/apls/default.apl.json",
+          "sha256": "116f16c6fd867340bcf6c79fcb70f838f769ec31929b9035bfc50303a6096cb8",
+          "byte_count": 3589
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/druid/guardian/tank_test.go",
+          "sha256": "1de672e4b005500a949b13312837da323600168b4148f00b2057b4c66aa5429c",
+          "byte_count": 3039
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/druid/guardian/TestGuardian.results",
+          "sha256": "46a4762e589fcaa3e83b8246bb0f8fd8a2d65d85f289befbeacb151142d4c97c",
+          "byte_count": 56593
+        }
+      ],
+      "reference_conditions": {
+        "level": 85,
+        "single_target_duration_seconds": 300,
+        "duration_variation_seconds": 5,
+        "raid_buffs": "full_simulator_reference_live_conditions_recorded_separately",
+        "consumables": "simulator_enabled_live_clone_capabilities_recorded",
+        "aoe": "separate_mode_not_mixed_with_single_target"
+      },
+      "rotation_research": {
+        "priority_source": "ui/druid/guardian/apls/default.apl.json",
+        "cooldowns": "explicit_required_rotation_group",
+        "execute": "explicit_required_rotation_group_even_when_not_applicable",
+        "movement": "explicit_required_rotation_group",
+        "aoe": "separate_explicit_required_rotation_group",
+        "pet_form_behavior": [
+          "bear_form",
+          "savage_defense",
+          "rage_management"
+        ],
+        "interrupts_utility": [
+          "skull_bash_or_solar_beam",
+          "rebirth",
+          "stampeding_roar"
+        ]
+      },
+      "expected_output": {
+        "type": "simulator_metrics",
+        "result_key": "TestGuardian-Average-Default",
+        "metrics": {
+          "dps": 19350.94145,
+          "tps": 96836.89009,
+          "hps": 378.54073
+        }
+      },
+      "known_trinitycore_deviations": [
+        "TrinityCore 4.3.4 mechanics and bot scheduling differ from the simulator engine",
+        "live clones do not assume every simulator profession, racial, prepot, or raid-buff condition",
+        "the 75 percent hard floor is applied only after Phase 2 establishes compatible live conditions"
+      ]
+    },
+    {
+      "reference_id": "cata_p4:holy_paladin",
+      "spec_target_id": "holy_paladin",
+      "research_pass": "unsupported_second_pass",
+      "review_status": "reviewed",
+      "simulator_support": "unsupported",
+      "provider": "WoWSims gear plus Icy Veins role reference",
+      "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+      "repository": "https://github.com/wowsims/cata",
+      "guide_url": "https://www.icy-veins.com/cataclysm-classic/holy-paladin-pve-guide",
+      "gear": {
+        "phase": "phase_4",
+        "runtime_profile_id": "holy_paladin",
+        "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
+        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "simulator_preset": {
+          "path": "ui/paladin/holy/gear_sets/p4.gear.json",
+          "phase": "phase_4"
+        }
+      },
+      "apl": {
+        "path": null,
+        "available": false
+      },
+      "talents": {
+        "provider": "Icy Veins",
+        "url": "https://www.icy-veins.com/cataclysm-classic/holy-paladin-pve-spec-builds-talents-glyphs",
+        "encoded_build": "#tc-111222433378899abcccdeeefgghhhjGGFFFmmkkk|0i1v2r3z5k4e6E7a8u"
+      },
+      "test": null,
+      "results": null,
+      "source_assets": [
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/paladin/holy/presets.ts",
+          "sha256": "58beb23d350cb563472d151a9bf4b0e4a752a6ea7df55ef51cafa6a799ecfb0d",
+          "byte_count": 3177
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/core/talents/trees/paladin.json",
+          "sha256": "9a59407e7c717c804f3b75d959707c1794b9573c39e2546042f14c7ba10c2014",
+          "byte_count": 14953
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/proto/paladin.proto",
+          "sha256": "03d332061d6e4596a326f312b5cd8454438eb165d2b9d4fc74c72fe1a6c2782d",
+          "byte_count": 4214
+        },
+        {
+          "url": "https://www.icy-veins.com/cataclysm-classic/holy-paladin-pve-guide",
+          "sha256": "2731255be918b48bed8473473d598ed34004fb0e78423ea5f0524a7326128d92",
+          "byte_count": 137791
+        },
+        {
+          "url": "https://static.icy-veins.com/json/cata-talent-calculator/paladin.json",
+          "sha256": "93e34367be7825d1a0a0f976b686ef677aba4a19903855c8039e7d324708ab83",
+          "byte_count": 43703
+        },
+        {
+          "url": "https://static.icy-veins.com/json/cata-talent-calculator/glyphs.json",
+          "sha256": "dd2bcc43803d7c703f676d833621e876f91ef7318ca5e848c7ee5b730b2c3166",
+          "byte_count": 90047
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/paladin/holy/gear_sets/p4.gear.json",
+          "sha256": "7e0577e978428427fd4b304a371fd7269dfa295539c8f9dc120f8e1aa3bb1bb2",
+          "byte_count": 722
+        }
+      ],
+      "reference_conditions": {
+        "level": 85,
+        "single_target_duration_seconds": 300,
+        "duration_variation_seconds": 5,
+        "raid_buffs": "full_simulator_reference_live_conditions_recorded_separately",
+        "consumables": "simulator_enabled_live_clone_capabilities_recorded",
+        "aoe": "separate_mode_not_mixed_with_single_target"
+      },
+      "rotation_research": {
+        "priority_source": "https://www.icy-veins.com/cataclysm-classic/holy-paladin-pve-guide",
+        "cooldowns": "explicit_required_rotation_group",
+        "execute": "explicit_required_rotation_group_even_when_not_applicable",
+        "movement": "explicit_required_rotation_group",
+        "aoe": "separate_explicit_required_rotation_group",
+        "pet_form_behavior": [
+          "beacon_of_light",
+          "holy_power",
+          "aura_mastery"
+        ],
+        "interrupts_utility": [
+          "rebuke",
+          "hand_utility",
+          "divine_protection"
+        ]
+      },
+      "expected_output": {
+        "type": "deterministic_controlled_party_damage",
+        "success": [
+          "zero_preventable_deaths",
+          "damage_events_covered",
+          "mana_state_recorded",
+          "dispel_and_emergency_response_recorded"
+        ],
+        "external_hps_floor": null
+      },
+      "known_trinitycore_deviations": [
+        "TrinityCore 4.3.4 mechanics and bot scheduling differ from the simulator engine",
+        "live clones do not assume every simulator profession, racial, prepot, or raid-buff condition",
+        "the 75 percent hard floor is applied only after Phase 2 establishes compatible live conditions",
+        "WoWSims does not publish a numeric result for this specialization"
+      ]
+    },
+    {
+      "reference_id": "cata_p4:discipline_priest",
+      "spec_target_id": "discipline_priest",
+      "research_pass": "unsupported_second_pass",
+      "review_status": "reviewed",
+      "simulator_support": "unsupported",
+      "provider": "WoWSims gear plus Icy Veins role reference",
+      "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+      "repository": "https://github.com/wowsims/cata",
+      "guide_url": "https://www.icy-veins.com/cataclysm-classic/discipline-priest-pve-guide",
+      "gear": {
+        "phase": "phase_4",
+        "runtime_profile_id": "discipline_priest",
+        "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
+        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "simulator_preset": {
+          "path": "ui/priest/discipline/gear_sets/p4.gear.json",
+          "phase": "phase_4"
+        }
+      },
+      "apl": {
+        "path": null,
+        "available": false
+      },
+      "talents": {
+        "provider": "Icy Veins",
+        "url": "https://www.icy-veins.com/cataclysm-classic/discipline-priest-pve-spec-builds-talents-glyphs",
+        "encoded_build": "#tc-22211100566a877bbbcceefffghhjjkmmmnnnGGGo|0h1i2G3D4a5H6e7C8u"
+      },
+      "test": null,
+      "results": null,
+      "source_assets": [
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/priest/discipline/presets.ts",
+          "sha256": "b798623f31e00421044633687736601e5fe4fa64c3e78eea314312954155fae5",
+          "byte_count": 4171
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/core/talents/trees/priest.json",
+          "sha256": "72b2a08c9818fb753642ac3043790c3660ac1de1af80befb5c4e3a6441b3faf2",
+          "byte_count": 15830
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/proto/priest.proto",
+          "sha256": "7aa72bd1253d1702233ac4f60fefabc3c1a5384b6b6fcea2a90e0050537cadd4",
+          "byte_count": 4009
+        },
+        {
+          "url": "https://www.icy-veins.com/cataclysm-classic/discipline-priest-pve-guide",
+          "sha256": "6ddaaaf23d00f76a5f9af1a8b755ed9ccd402082cc6dc1b002f8b454bcfc53b5",
+          "byte_count": 139476
+        },
+        {
+          "url": "https://static.icy-veins.com/json/cata-talent-calculator/priest.json",
+          "sha256": "e0b507ed37eccd4651a65ccd259a17c3e6b893e2ba96acea8f9c5846800a371d",
+          "byte_count": 46653
+        },
+        {
+          "url": "https://static.icy-veins.com/json/cata-talent-calculator/glyphs.json",
+          "sha256": "dd2bcc43803d7c703f676d833621e876f91ef7318ca5e848c7ee5b730b2c3166",
+          "byte_count": 90047
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/priest/discipline/gear_sets/p4.gear.json",
+          "sha256": "224bd6bd64b33ffe27fd45b122d5c2d45d75d4a02812f8dd811a9b1e7e1db2b8",
+          "byte_count": 710
+        }
+      ],
+      "reference_conditions": {
+        "level": 85,
+        "single_target_duration_seconds": 300,
+        "duration_variation_seconds": 5,
+        "raid_buffs": "full_simulator_reference_live_conditions_recorded_separately",
+        "consumables": "simulator_enabled_live_clone_capabilities_recorded",
+        "aoe": "separate_mode_not_mixed_with_single_target"
+      },
+      "rotation_research": {
+        "priority_source": "https://www.icy-veins.com/cataclysm-classic/discipline-priest-pve-guide",
+        "cooldowns": "explicit_required_rotation_group",
+        "execute": "explicit_required_rotation_group_even_when_not_applicable",
+        "movement": "explicit_required_rotation_group",
+        "aoe": "separate_explicit_required_rotation_group",
+        "pet_form_behavior": [
+          "power_word_shield",
+          "divine_aegis",
+          "pain_suppression"
+        ],
+        "interrupts_utility": [
+          "dispel_magic",
+          "mass_dispel",
+          "levitate"
+        ]
+      },
+      "expected_output": {
+        "type": "deterministic_controlled_party_damage",
+        "success": [
+          "zero_preventable_deaths",
+          "damage_events_covered",
+          "mana_state_recorded",
+          "dispel_and_emergency_response_recorded"
+        ],
+        "external_hps_floor": null
+      },
+      "known_trinitycore_deviations": [
+        "TrinityCore 4.3.4 mechanics and bot scheduling differ from the simulator engine",
+        "live clones do not assume every simulator profession, racial, prepot, or raid-buff condition",
+        "the 75 percent hard floor is applied only after Phase 2 establishes compatible live conditions",
+        "WoWSims does not publish a numeric result for this specialization"
+      ]
+    },
+    {
+      "reference_id": "cata_p4:holy_priest",
+      "spec_target_id": "holy_priest",
+      "research_pass": "unsupported_second_pass",
+      "review_status": "reviewed",
+      "simulator_support": "unsupported",
+      "provider": "WoWSims gear plus Icy Veins role reference",
+      "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+      "repository": "https://github.com/wowsims/cata",
+      "guide_url": "https://www.icy-veins.com/cataclysm-classic/holy-priest-pve-guide",
+      "gear": {
+        "phase": "phase_4",
+        "runtime_profile_id": "holy_priest",
+        "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
+        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "simulator_preset": {
+          "path": "ui/priest/holy/gear_sets/p4.gear.json",
+          "phase": "phase_4"
+        }
+      },
+      "apl": {
+        "path": null,
+        "available": false
+      },
+      "talents": {
+        "provider": "Icy Veins",
+        "url": "https://www.icy-veins.com/cataclysm-classic/holy-priest-pve-spec-builds-talents-glyphs",
+        "encoded_build": "#tc-nnnmmmllpprrssuuxxvtzAqqoECCCDF22211GGG1D|0k1v2o3z4D5H6e7C8u"
+      },
+      "test": null,
+      "results": null,
+      "source_assets": [
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/priest/holy/presets.ts",
+          "sha256": "f5f953f5706625561867947f5b4b576e11afd44dbc152c5de77881108855ec20",
+          "byte_count": 4233
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/core/talents/trees/priest.json",
+          "sha256": "72b2a08c9818fb753642ac3043790c3660ac1de1af80befb5c4e3a6441b3faf2",
+          "byte_count": 15830
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/proto/priest.proto",
+          "sha256": "7aa72bd1253d1702233ac4f60fefabc3c1a5384b6b6fcea2a90e0050537cadd4",
+          "byte_count": 4009
+        },
+        {
+          "url": "https://www.icy-veins.com/cataclysm-classic/holy-priest-pve-guide",
+          "sha256": "e7107fdd56b9efbe8da74a4be5256eab9a0d10a41b76b3e1b70103d8696ab079",
+          "byte_count": 138342
+        },
+        {
+          "url": "https://static.icy-veins.com/json/cata-talent-calculator/priest.json",
+          "sha256": "e0b507ed37eccd4651a65ccd259a17c3e6b893e2ba96acea8f9c5846800a371d",
+          "byte_count": 46653
+        },
+        {
+          "url": "https://static.icy-veins.com/json/cata-talent-calculator/glyphs.json",
+          "sha256": "dd2bcc43803d7c703f676d833621e876f91ef7318ca5e848c7ee5b730b2c3166",
+          "byte_count": 90047
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/priest/holy/gear_sets/p4.gear.json",
+          "sha256": "224bd6bd64b33ffe27fd45b122d5c2d45d75d4a02812f8dd811a9b1e7e1db2b8",
+          "byte_count": 710
+        }
+      ],
+      "reference_conditions": {
+        "level": 85,
+        "single_target_duration_seconds": 300,
+        "duration_variation_seconds": 5,
+        "raid_buffs": "full_simulator_reference_live_conditions_recorded_separately",
+        "consumables": "simulator_enabled_live_clone_capabilities_recorded",
+        "aoe": "separate_mode_not_mixed_with_single_target"
+      },
+      "rotation_research": {
+        "priority_source": "https://www.icy-veins.com/cataclysm-classic/holy-priest-pve-guide",
+        "cooldowns": "explicit_required_rotation_group",
+        "execute": "explicit_required_rotation_group_even_when_not_applicable",
+        "movement": "explicit_required_rotation_group",
+        "aoe": "separate_explicit_required_rotation_group",
+        "pet_form_behavior": [
+          "chakra_serenity_or_sanctuary",
+          "prayer_of_mending",
+          "guardian_spirit"
+        ],
+        "interrupts_utility": [
+          "dispel_magic",
+          "mass_dispel",
+          "levitate"
+        ]
+      },
+      "expected_output": {
+        "type": "deterministic_controlled_party_damage",
+        "success": [
+          "zero_preventable_deaths",
+          "damage_events_covered",
+          "mana_state_recorded",
+          "dispel_and_emergency_response_recorded"
+        ],
+        "external_hps_floor": null
+      },
+      "known_trinitycore_deviations": [
+        "TrinityCore 4.3.4 mechanics and bot scheduling differ from the simulator engine",
+        "live clones do not assume every simulator profession, racial, prepot, or raid-buff condition",
+        "the 75 percent hard floor is applied only after Phase 2 establishes compatible live conditions",
+        "WoWSims does not publish a numeric result for this specialization"
+      ]
+    },
+    {
+      "reference_id": "cata_p4:restoration_shaman",
+      "spec_target_id": "restoration_shaman",
+      "research_pass": "unsupported_second_pass",
+      "review_status": "reviewed",
+      "simulator_support": "unsupported",
+      "provider": "WoWSims gear plus Icy Veins role reference",
+      "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+      "repository": "https://github.com/wowsims/cata",
+      "guide_url": "https://www.icy-veins.com/cataclysm-classic/restoration-shaman-pve-guide",
+      "gear": {
+        "phase": "phase_4",
+        "runtime_profile_id": "restoration_shaman",
+        "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
+        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "simulator_preset": {
+          "path": "ui/shaman/restoration/gear_sets/p4.gear.json",
+          "phase": "phase_4"
+        }
+      },
+      "apl": {
+        "path": null,
+        "available": false
+      },
+      "talents": {
+        "provider": "Icy Veins",
+        "url": "https://www.icy-veins.com/cataclysm-classic/restoration-shaman-pve-spec-builds-talents-glyphs",
+        "encoded_build": "#tc-EEEDDDFFGGKJJLLLNSQTTTMMVjj000RRCC2266PPP|0E1I2a3A4f5F6q7v8u"
+      },
+      "test": null,
+      "results": null,
+      "source_assets": [
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/shaman/restoration/presets.ts",
+          "sha256": "eb64786e65cb177f8f43e6fa2ad38fb960c058ad39b84b017d8acbf3cbdba58f",
+          "byte_count": 2970
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/core/talents/trees/shaman.json",
+          "sha256": "8636c3ab04234a798d1d8d4e202f577943b82708d3372d5dacdf00bb4c080a3a",
+          "byte_count": 14418
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/proto/shaman.proto",
+          "sha256": "bdbf085c012aa7e6df2518a364d13b3f0af8c29e6ce85bd0f05cfa05cdf7a4de",
+          "byte_count": 6226
+        },
+        {
+          "url": "https://www.icy-veins.com/cataclysm-classic/restoration-shaman-pve-guide",
+          "sha256": "e6eb32c13c00d3a3f366ccfc8a90967025a299dc4a70d1ecb5d5feb272a50784",
+          "byte_count": 135366
+        },
+        {
+          "url": "https://static.icy-veins.com/json/cata-talent-calculator/shaman.json",
+          "sha256": "b788ec785cfcb61cc790d2b67e30030d0eb0c79553dd553f486ae06668dd810d",
+          "byte_count": 45059
+        },
+        {
+          "url": "https://static.icy-veins.com/json/cata-talent-calculator/glyphs.json",
+          "sha256": "dd2bcc43803d7c703f676d833621e876f91ef7318ca5e848c7ee5b730b2c3166",
+          "byte_count": 90047
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/shaman/restoration/gear_sets/p4.gear.json",
+          "sha256": "b23dddd6b7183eac4244ef3c3692ba3f04090bc7916d2f817a407224a5c50719",
+          "byte_count": 710
+        }
+      ],
+      "reference_conditions": {
+        "level": 85,
+        "single_target_duration_seconds": 300,
+        "duration_variation_seconds": 5,
+        "raid_buffs": "full_simulator_reference_live_conditions_recorded_separately",
+        "consumables": "simulator_enabled_live_clone_capabilities_recorded",
+        "aoe": "separate_mode_not_mixed_with_single_target"
+      },
+      "rotation_research": {
+        "priority_source": "https://www.icy-veins.com/cataclysm-classic/restoration-shaman-pve-guide",
+        "cooldowns": "explicit_required_rotation_group",
+        "execute": "explicit_required_rotation_group_even_when_not_applicable",
+        "movement": "explicit_required_rotation_group",
+        "aoe": "separate_explicit_required_rotation_group",
+        "pet_form_behavior": [
+          "earth_shield",
+          "riptide",
+          "spirit_link_totem"
+        ],
+        "interrupts_utility": [
+          "wind_shear",
+          "totem_utility",
+          "purge"
+        ]
+      },
+      "expected_output": {
+        "type": "deterministic_controlled_party_damage",
+        "success": [
+          "zero_preventable_deaths",
+          "damage_events_covered",
+          "mana_state_recorded",
+          "dispel_and_emergency_response_recorded"
+        ],
+        "external_hps_floor": null
+      },
+      "known_trinitycore_deviations": [
+        "TrinityCore 4.3.4 mechanics and bot scheduling differ from the simulator engine",
+        "live clones do not assume every simulator profession, racial, prepot, or raid-buff condition",
+        "the 75 percent hard floor is applied only after Phase 2 establishes compatible live conditions",
+        "WoWSims does not publish a numeric result for this specialization"
+      ]
+    },
+    {
+      "reference_id": "cata_p4:restoration_druid",
+      "spec_target_id": "restoration_druid",
+      "research_pass": "unsupported_second_pass",
+      "review_status": "reviewed",
+      "simulator_support": "unsupported",
+      "provider": "WoWSims gear plus Icy Veins role reference",
+      "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+      "repository": "https://github.com/wowsims/cata",
+      "guide_url": "https://www.icy-veins.com/cataclysm-classic/restoration-druid-pve-guide",
+      "gear": {
+        "phase": "phase_4",
+        "runtime_profile_id": "restoration_druid",
+        "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
+        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "simulator_preset": {
+          "path": "ui/druid/restoration/gear_sets/p4.gear.json",
+          "phase": "phase_4"
+        }
+      },
+      "apl": {
+        "path": null,
+        "available": false
+      },
+      "talents": {
+        "provider": "Icy Veins",
+        "url": "https://www.icy-veins.com/cataclysm-classic/restoration-druid-pve-spec-builds-talents-glyphs",
+        "encoded_build": "#tc-IIJJJMMMGGPOOHHLSSTTVUUUWYYYZR-2200043l44|0m2G1k3B5P4i6p7x8r"
+      },
+      "test": null,
+      "results": null,
+      "source_assets": [
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/druid/restoration/presets.ts",
+          "sha256": "0f78578db9937237846dcd3dd358e5de2287c69852a968766ce1dedd8062f31c",
+          "byte_count": 3643
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/core/talents/trees/druid.json",
+          "sha256": "798b6135c375a6d92c560e87d42b33e95aec0c5ac695702eac8ba10a71487dc2",
+          "byte_count": 15768
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/proto/druid.proto",
+          "sha256": "b552aa1cbd685a50d6079a04db40586057602b043a32c45aeccd4967adbc7332",
+          "byte_count": 5339
+        },
+        {
+          "url": "https://www.icy-veins.com/cataclysm-classic/restoration-druid-pve-guide",
+          "sha256": "6437b2c28e5615bf61b74d118c093832be43504bdeffa41b33a6ca08de8b4565",
+          "byte_count": 132583
+        },
+        {
+          "url": "https://static.icy-veins.com/json/cata-talent-calculator/druid.json",
+          "sha256": "076a565f7e99b4694b7164406d67d3a934985d12930992c2aef77f34c9a41b77",
+          "byte_count": 50266
+        },
+        {
+          "url": "https://static.icy-veins.com/json/cata-talent-calculator/glyphs.json",
+          "sha256": "dd2bcc43803d7c703f676d833621e876f91ef7318ca5e848c7ee5b730b2c3166",
+          "byte_count": 90047
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/druid/restoration/gear_sets/p4.gear.json",
+          "sha256": "a1fe33eaf3d5dd3a2230a522fce9c668deb0771b43faa5827efba448bcd4762d",
+          "byte_count": 680
+        }
+      ],
+      "reference_conditions": {
+        "level": 85,
+        "single_target_duration_seconds": 300,
+        "duration_variation_seconds": 5,
+        "raid_buffs": "full_simulator_reference_live_conditions_recorded_separately",
+        "consumables": "simulator_enabled_live_clone_capabilities_recorded",
+        "aoe": "separate_mode_not_mixed_with_single_target"
+      },
+      "rotation_research": {
+        "priority_source": "https://www.icy-veins.com/cataclysm-classic/restoration-druid-pve-guide",
+        "cooldowns": "explicit_required_rotation_group",
+        "execute": "explicit_required_rotation_group_even_when_not_applicable",
+        "movement": "explicit_required_rotation_group",
+        "aoe": "separate_explicit_required_rotation_group",
+        "pet_form_behavior": [
+          "tree_of_life",
+          "lifebloom_maintenance",
+          "swiftmend_efflorescence"
+        ],
+        "interrupts_utility": [
+          "skull_bash_or_solar_beam",
+          "rebirth",
+          "stampeding_roar"
+        ]
+      },
+      "expected_output": {
+        "type": "deterministic_controlled_party_damage",
+        "success": [
+          "zero_preventable_deaths",
+          "damage_events_covered",
+          "mana_state_recorded",
+          "dispel_and_emergency_response_recorded"
+        ],
+        "external_hps_floor": null
+      },
+      "known_trinitycore_deviations": [
+        "TrinityCore 4.3.4 mechanics and bot scheduling differ from the simulator engine",
+        "live clones do not assume every simulator profession, racial, prepot, or raid-buff condition",
+        "the 75 percent hard floor is applied only after Phase 2 establishes compatible live conditions",
+        "WoWSims does not publish a numeric result for this specialization"
+      ]
+    },
+    {
+      "reference_id": "cata_p4:arms_warrior",
+      "spec_target_id": "arms_warrior",
+      "research_pass": "consolidated_all_target_pass",
+      "review_status": "reviewed",
+      "simulator_support": "launched",
+      "provider": "WoWSims",
+      "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+      "repository": "https://github.com/wowsims/cata",
+      "guide_url": "https://www.icy-veins.com/cataclysm-classic/arms-warrior-pve-guide",
+      "gear": {
+        "phase": "phase_4",
+        "runtime_profile_id": "arms_warrior",
+        "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
+        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "simulator_preset": {
+          "path": "ui/warrior/arms/gear_sets/p4_arms_bis.gear.json",
+          "phase": "phase_4"
+        }
+      },
+      "apl": {
+        "path": "ui/warrior/arms/apls/arms.apl.json",
+        "available": true
+      },
+      "talents": {
+        "provider": "WoWSims",
+        "path": "ui/warrior/arms/presets.ts",
+        "talent_string": "30220303120212312211-0322-3"
+      },
+      "test": "sim/warrior/arms/arms_test.go",
+      "results": "sim/warrior/arms/TestArms.results",
+      "source_assets": [
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/warrior/arms/presets.ts",
+          "sha256": "59813f67cd50a5373e47ebeff3ced434a7ddd67e1c4fccc6d677fda2433cb3bd",
+          "byte_count": 3357
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/core/talents/trees/warrior.json",
+          "sha256": "d277ce41b42fb3fdce920566ab207d9a20c4acf0c0fc37f463ae2c961e8e14d1",
+          "byte_count": 15043
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/proto/warrior.proto",
+          "sha256": "fe9ef5c706460325121d05556e50e307f6cb54b6f2ca6311ccdbad49ec53d475",
+          "byte_count": 3984
+        },
+        {
+          "url": "https://www.icy-veins.com/cataclysm-classic/arms-warrior-pve-guide",
+          "sha256": "5062a677a8fb6494fd6d9c89f767f23765fd05035f59993b6793d8454c1b5ee0",
+          "byte_count": 138612
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/warrior/arms/gear_sets/p4_arms_bis.gear.json",
+          "sha256": "44ff0adc0ab9b5fc60e1731509777230babd1859a42cd61c260f6ae67ee16914",
+          "byte_count": 925
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/warrior/arms/apls/arms.apl.json",
+          "sha256": "9fbce00181b66b79cc305264bd38bd4b0d8ab83089b4002c14eae98dadcd288c",
+          "byte_count": 14296
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/warrior/arms/arms_test.go",
+          "sha256": "ab03ac6c2277f834fa6e5e6f5e07499a247ef9d6a4a3d0f510d6bc0282d307de",
+          "byte_count": 2166
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/warrior/arms/TestArms.results",
+          "sha256": "dbb8e02f546bafcf7099e528de774c442540f0503caef620f1493abc3beb8f09",
+          "byte_count": 49737
+        }
+      ],
+      "reference_conditions": {
+        "level": 85,
+        "single_target_duration_seconds": 300,
+        "duration_variation_seconds": 5,
+        "raid_buffs": "full_simulator_reference_live_conditions_recorded_separately",
+        "consumables": "simulator_enabled_live_clone_capabilities_recorded",
+        "aoe": "separate_mode_not_mixed_with_single_target"
+      },
+      "rotation_research": {
+        "priority_source": "ui/warrior/arms/apls/arms.apl.json",
+        "cooldowns": "explicit_required_rotation_group",
+        "execute": "explicit_required_rotation_group_even_when_not_applicable",
+        "movement": "explicit_required_rotation_group",
+        "aoe": "separate_explicit_required_rotation_group",
+        "pet_form_behavior": [
+          "battle_stance",
+          "rend_maintenance",
+          "execute_phase"
+        ],
+        "interrupts_utility": [
+          "pummel",
+          "heroic_leap",
+          "battle_shout"
+        ]
+      },
+      "expected_output": {
+        "type": "simulator_metrics",
+        "result_key": "TestArms-Average-Default",
+        "metrics": {
+          "dps": 54116.37374,
+          "tps": 34288.14478
+        }
+      },
+      "known_trinitycore_deviations": [
+        "TrinityCore 4.3.4 mechanics and bot scheduling differ from the simulator engine",
+        "live clones do not assume every simulator profession, racial, prepot, or raid-buff condition",
+        "the 75 percent hard floor is applied only after Phase 2 establishes compatible live conditions"
+      ]
+    },
+    {
+      "reference_id": "cata_p4:fury_warrior",
+      "spec_target_id": "fury_warrior",
+      "research_pass": "consolidated_all_target_pass",
+      "review_status": "reviewed",
+      "simulator_support": "launched",
+      "provider": "WoWSims",
+      "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+      "repository": "https://github.com/wowsims/cata",
+      "guide_url": "https://www.icy-veins.com/cataclysm-classic/fury-warrior-pve-guide",
+      "gear": {
+        "phase": "phase_4",
+        "runtime_profile_id": "fury_warrior",
+        "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
+        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "simulator_preset": {
+          "path": "ui/warrior/fury/gear_sets/p4_fury_tg.gear.json",
+          "phase": "phase_4"
+        }
+      },
+      "apl": {
+        "path": "ui/warrior/fury/apls/tg.apl.json",
+        "available": true
+      },
+      "talents": {
+        "provider": "WoWSims",
+        "path": "ui/warrior/fury/presets.ts",
+        "talent_string": "302003-03222203130110122321-2"
+      },
+      "test": "sim/warrior/fury/fury_test.go",
+      "results": "sim/warrior/fury/TestFury.results",
+      "source_assets": [
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/warrior/fury/presets.ts",
+          "sha256": "639baca1b194925a9d2ee840e3abcec6c49ce9a76e127d69c5934442177a01e7",
+          "byte_count": 9693
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/core/talents/trees/warrior.json",
+          "sha256": "d277ce41b42fb3fdce920566ab207d9a20c4acf0c0fc37f463ae2c961e8e14d1",
+          "byte_count": 15043
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/proto/warrior.proto",
+          "sha256": "fe9ef5c706460325121d05556e50e307f6cb54b6f2ca6311ccdbad49ec53d475",
+          "byte_count": 3984
+        },
+        {
+          "url": "https://www.icy-veins.com/cataclysm-classic/fury-warrior-pve-guide",
+          "sha256": "a7f1f10a5814089cfa9559573890746ee5994085d56d7a8523cdc8833cf26656",
+          "byte_count": 140154
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/warrior/fury/gear_sets/p4_fury_tg.gear.json",
+          "sha256": "507d7667ca7108175316bdf7e82f05c745b038e9922141de8953f927ef3f6f7e",
+          "byte_count": 973
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/warrior/fury/apls/tg.apl.json",
+          "sha256": "8a4f711ca6c1165dca340488c44f9b87f33f833932bfdc2b24cc6d46a971b65f",
+          "byte_count": 6185
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/warrior/fury/fury_test.go",
+          "sha256": "f77b34d99140388b71333886a1ed8c3e04869a77dd9052fcc1101d0b88f6fab7",
+          "byte_count": 2868
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/warrior/fury/TestFury.results",
+          "sha256": "21e454c17190eed1e0b3adb6f7270cf09edb907e7318885484efcd2ffab54586",
+          "byte_count": 83583
+        }
+      ],
+      "reference_conditions": {
+        "level": 85,
+        "single_target_duration_seconds": 300,
+        "duration_variation_seconds": 5,
+        "raid_buffs": "full_simulator_reference_live_conditions_recorded_separately",
+        "consumables": "simulator_enabled_live_clone_capabilities_recorded",
+        "aoe": "separate_mode_not_mixed_with_single_target"
+      },
+      "rotation_research": {
+        "priority_source": "ui/warrior/fury/apls/tg.apl.json",
+        "cooldowns": "explicit_required_rotation_group",
+        "execute": "explicit_required_rotation_group_even_when_not_applicable",
+        "movement": "explicit_required_rotation_group",
+        "aoe": "separate_explicit_required_rotation_group",
+        "pet_form_behavior": [
+          "berserker_stance",
+          "titan_grip",
+          "execute_phase"
+        ],
+        "interrupts_utility": [
+          "pummel",
+          "heroic_leap",
+          "battle_shout"
+        ]
+      },
+      "expected_output": {
+        "type": "simulator_metrics",
+        "result_key": "TestFury-Average-Default",
+        "metrics": {
+          "dps": 63000.10093,
+          "tps": 43698.74399
+        }
+      },
+      "known_trinitycore_deviations": [
+        "TrinityCore 4.3.4 mechanics and bot scheduling differ from the simulator engine",
+        "live clones do not assume every simulator profession, racial, prepot, or raid-buff condition",
+        "the 75 percent hard floor is applied only after Phase 2 establishes compatible live conditions"
+      ]
+    },
+    {
+      "reference_id": "cata_p4:retribution_paladin",
+      "spec_target_id": "retribution_paladin",
+      "research_pass": "consolidated_all_target_pass",
+      "review_status": "reviewed",
+      "simulator_support": "launched",
+      "provider": "WoWSims",
+      "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+      "repository": "https://github.com/wowsims/cata",
+      "guide_url": "https://www.icy-veins.com/cataclysm-classic/retribution-paladin-pve-guide",
+      "gear": {
+        "phase": "phase_4",
+        "runtime_profile_id": "retribution_paladin",
+        "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
+        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "simulator_preset": {
+          "path": "ui/paladin/retribution/gear_sets/p4_bis.gear.json",
+          "phase": "phase_4"
+        }
+      },
+      "apl": {
+        "path": "ui/paladin/retribution/apls/default.apl.json",
+        "available": true
+      },
+      "talents": {
+        "provider": "WoWSims",
+        "path": "ui/paladin/retribution/presets.ts",
+        "talent_string": "203002-02-23203213211113002311"
+      },
+      "test": "sim/paladin/retribution/retribution_test.go",
+      "results": "sim/paladin/retribution/TestRetribution.results",
+      "source_assets": [
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/paladin/retribution/presets.ts",
+          "sha256": "e3d22374512ed94e514746eb09e92dcb2ce37206fdf39626cb2299b39d922164",
+          "byte_count": 4742
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/core/talents/trees/paladin.json",
+          "sha256": "9a59407e7c717c804f3b75d959707c1794b9573c39e2546042f14c7ba10c2014",
+          "byte_count": 14953
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/proto/paladin.proto",
+          "sha256": "03d332061d6e4596a326f312b5cd8454438eb165d2b9d4fc74c72fe1a6c2782d",
+          "byte_count": 4214
+        },
+        {
+          "url": "https://www.icy-veins.com/cataclysm-classic/retribution-paladin-pve-guide",
+          "sha256": "f82538e17791ea6d0fb502aa6f8bf75458b42d2a103438089f764d29c8e14a77",
+          "byte_count": 135679
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/paladin/retribution/gear_sets/p4_bis.gear.json",
+          "sha256": "0b38ee7880450e785293a4cba816285fffa3e337f2698e2557758f35891d6510",
+          "byte_count": 942
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/paladin/retribution/apls/default.apl.json",
+          "sha256": "6a92bb6d87a28ce394c9a2f4038eca04977400a0f8f39de066e04c754dc5f7f0",
+          "byte_count": 45923
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/paladin/retribution/retribution_test.go",
+          "sha256": "b9461e1f452958d4c3c8bc7c512ed206b58df460905b16740489dd51d283c151",
+          "byte_count": 4330
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/paladin/retribution/TestRetribution.results",
+          "sha256": "a409aa60ec67483d48f5e814fdc67eba2b4fc6fb2af40f8fed7d423768aa0526",
+          "byte_count": 57076
+        }
+      ],
+      "reference_conditions": {
+        "level": 85,
+        "single_target_duration_seconds": 300,
+        "duration_variation_seconds": 5,
+        "raid_buffs": "full_simulator_reference_live_conditions_recorded_separately",
+        "consumables": "simulator_enabled_live_clone_capabilities_recorded",
+        "aoe": "separate_mode_not_mixed_with_single_target"
+      },
+      "rotation_research": {
+        "priority_source": "ui/paladin/retribution/apls/default.apl.json",
+        "cooldowns": "explicit_required_rotation_group",
+        "execute": "explicit_required_rotation_group_even_when_not_applicable",
+        "movement": "explicit_required_rotation_group",
+        "aoe": "separate_explicit_required_rotation_group",
+        "pet_form_behavior": [
+          "seal_and_judgement",
+          "holy_power",
+          "hammer_of_wrath_execute"
+        ],
+        "interrupts_utility": [
+          "rebuke",
+          "hand_utility",
+          "divine_protection"
+        ]
+      },
+      "expected_output": {
+        "type": "simulator_metrics",
+        "result_key": "TestRetribution-Average-Default",
+        "metrics": {
+          "dps": 49934.66945,
+          "tps": 47251.97161
+        }
+      },
+      "known_trinitycore_deviations": [
+        "TrinityCore 4.3.4 mechanics and bot scheduling differ from the simulator engine",
+        "live clones do not assume every simulator profession, racial, prepot, or raid-buff condition",
+        "the 75 percent hard floor is applied only after Phase 2 establishes compatible live conditions"
+      ]
+    },
+    {
+      "reference_id": "cata_p4:beast_mastery_hunter",
+      "spec_target_id": "beast_mastery_hunter",
+      "research_pass": "consolidated_all_target_pass",
+      "review_status": "reviewed",
+      "simulator_support": "launched",
+      "provider": "WoWSims",
+      "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+      "repository": "https://github.com/wowsims/cata",
+      "guide_url": "https://www.icy-veins.com/cataclysm-classic/beast-mastery-hunter-pve-guide",
+      "gear": {
+        "phase": "phase_4",
+        "runtime_profile_id": "beast_mastery_hunter",
+        "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
+        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "simulator_preset": {
+          "path": "ui/hunter/beast_mastery/gear_sets/p3_bm.gear.json",
+          "phase": "best_executable_legacy_preset"
+        }
+      },
+      "apl": {
+        "path": "ui/hunter/beast_mastery/apls/bm.apl.json",
+        "available": true
+      },
+      "talents": {
+        "provider": "WoWSims",
+        "path": "ui/hunter/beast_mastery/presets.ts",
+        "talent_string": "2330230311320112121-2302-03"
+      },
+      "test": "sim/hunter/beast_mastery/beast_mastery_test.go",
+      "results": "sim/hunter/beast_mastery/TestBM.results",
+      "source_assets": [
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/hunter/beast_mastery/presets.ts",
+          "sha256": "0f4bf2d869c65f7accc80f69cff9abded5071f1f5b58b7edf737e3b60f281742",
+          "byte_count": 3927
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/core/talents/trees/hunter.json",
+          "sha256": "7c15b0e8ba397e5615b57e94b836a5ec81856a4fd2d6a46bb7004728cfe8970d",
+          "byte_count": 14577
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/proto/hunter.proto",
+          "sha256": "3c113c5d7187366c1584941ed5503932ea9a818df19b70629a60a129ffa9aa3b",
+          "byte_count": 7054
+        },
+        {
+          "url": "https://www.icy-veins.com/cataclysm-classic/beast-mastery-hunter-pve-guide",
+          "sha256": "fd62d29a80b1be62a0276865171e95ecc582bb679671bd5ed32ec07d13bbf8f5",
+          "byte_count": 134736
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/hunter/beast_mastery/gear_sets/p3_bm.gear.json",
+          "sha256": "7978ada06289e699af60ce5745891f5f1445bf668c92c88102c32875d14bea68",
+          "byte_count": 985
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/hunter/beast_mastery/apls/bm.apl.json",
+          "sha256": "9c2cadf87cfd57949523971e43bb9e2e4c98f26c12921a2c9c8dd41ceb3129bf",
+          "byte_count": 2385
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/hunter/beast_mastery/beast_mastery_test.go",
+          "sha256": "585b1dba0c659e65a71e7ba163a3d959b925710ae4436c2ddf5af5ad7c125f6d",
+          "byte_count": 3379
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/hunter/beast_mastery/TestBM.results",
+          "sha256": "b18f46c620c854f5a1fc14099efe8dd945066aeac395b856b52b0cbe3fd102a3",
+          "byte_count": 50378
+        }
+      ],
+      "reference_conditions": {
+        "level": 85,
+        "single_target_duration_seconds": 300,
+        "duration_variation_seconds": 5,
+        "raid_buffs": "full_simulator_reference_live_conditions_recorded_separately",
+        "consumables": "simulator_enabled_live_clone_capabilities_recorded",
+        "aoe": "separate_mode_not_mixed_with_single_target"
+      },
+      "rotation_research": {
+        "priority_source": "ui/hunter/beast_mastery/apls/bm.apl.json",
+        "cooldowns": "explicit_required_rotation_group",
+        "execute": "explicit_required_rotation_group_even_when_not_applicable",
+        "movement": "explicit_required_rotation_group",
+        "aoe": "separate_explicit_required_rotation_group",
+        "pet_form_behavior": [
+          "permanent_pet",
+          "bestial_wrath",
+          "focus_management"
+        ],
+        "interrupts_utility": [
+          "counterattack_utility",
+          "misdirection",
+          "trap_control"
+        ]
+      },
+      "expected_output": {
+        "type": "simulator_metrics",
+        "result_key": "TestBM-Average-Default",
+        "metrics": {
+          "dps": 25812.00487,
+          "tps": 16060.94531
+        }
+      },
+      "known_trinitycore_deviations": [
+        "TrinityCore 4.3.4 mechanics and bot scheduling differ from the simulator engine",
+        "live clones do not assume every simulator profession, racial, prepot, or raid-buff condition",
+        "the 75 percent hard floor is applied only after Phase 2 establishes compatible live conditions",
+        "the pinned executable simulator preset predates Phase 4; the canonical runtime profile is independently generated from Phase 4 item data"
+      ]
+    },
+    {
+      "reference_id": "cata_p4:marksmanship_hunter",
+      "spec_target_id": "marksmanship_hunter",
+      "research_pass": "consolidated_all_target_pass",
+      "review_status": "reviewed",
+      "simulator_support": "launched",
+      "provider": "WoWSims",
+      "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+      "repository": "https://github.com/wowsims/cata",
+      "guide_url": "https://www.icy-veins.com/cataclysm-classic/marksmanship-hunter-pve-guide",
+      "gear": {
+        "phase": "phase_4",
+        "runtime_profile_id": "marksmanship_hunter",
+        "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
+        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "simulator_preset": {
+          "path": "ui/hunter/marksmanship/gear_sets/p3_mm.gear.json",
+          "phase": "best_executable_legacy_preset"
+        }
+      },
+      "apl": {
+        "path": "ui/hunter/marksmanship/apls/mm.apl.json",
+        "available": true
+      },
+      "talents": {
+        "provider": "WoWSims",
+        "path": "ui/hunter/marksmanship/presets.ts",
+        "talent_string": "032002-2302320232120231201-03"
+      },
+      "test": "sim/hunter/marksmanship/marksmanship_test.go",
+      "results": "sim/hunter/marksmanship/TestMM.results",
+      "source_assets": [
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/hunter/marksmanship/presets.ts",
+          "sha256": "9be385c02ba0f48e4dff595aa9d8affd81dd175628a56e14e4b4cba4b16eda41",
+          "byte_count": 3807
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/core/talents/trees/hunter.json",
+          "sha256": "7c15b0e8ba397e5615b57e94b836a5ec81856a4fd2d6a46bb7004728cfe8970d",
+          "byte_count": 14577
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/proto/hunter.proto",
+          "sha256": "3c113c5d7187366c1584941ed5503932ea9a818df19b70629a60a129ffa9aa3b",
+          "byte_count": 7054
+        },
+        {
+          "url": "https://www.icy-veins.com/cataclysm-classic/marksmanship-hunter-pve-guide",
+          "sha256": "edbf1b2d147d5226b009fa909a1bb262007ca2e7bef81ba260ad83a7ef3d879e",
+          "byte_count": 134671
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/hunter/marksmanship/gear_sets/p3_mm.gear.json",
+          "sha256": "947891bd310dcf254509722b7a6c1544b3c3ad44008b8c3fb9caba2d379eddae",
+          "byte_count": 915
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/hunter/marksmanship/apls/mm.apl.json",
+          "sha256": "60aedd1aba0b508a4eedaf1a741fb568af1d508213804b1f675511b2c4f92ec6",
+          "byte_count": 2441
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/hunter/marksmanship/marksmanship_test.go",
+          "sha256": "e07dd1ec1662cadad96084a8720e935a2bc825259ac696a5d0c319b1767b432a",
+          "byte_count": 3360
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/hunter/marksmanship/TestMM.results",
+          "sha256": "3035c9ee6145560ce4eb92897b2288590c0f89956da13fd71590ead25e556457",
+          "byte_count": 48687
+        }
+      ],
+      "reference_conditions": {
+        "level": 85,
+        "single_target_duration_seconds": 300,
+        "duration_variation_seconds": 5,
+        "raid_buffs": "full_simulator_reference_live_conditions_recorded_separately",
+        "consumables": "simulator_enabled_live_clone_capabilities_recorded",
+        "aoe": "separate_mode_not_mixed_with_single_target"
+      },
+      "rotation_research": {
+        "priority_source": "ui/hunter/marksmanship/apls/mm.apl.json",
+        "cooldowns": "explicit_required_rotation_group",
+        "execute": "explicit_required_rotation_group_even_when_not_applicable",
+        "movement": "explicit_required_rotation_group",
+        "aoe": "separate_explicit_required_rotation_group",
+        "pet_form_behavior": [
+          "permanent_pet",
+          "steady_focus",
+          "careful_aim_execute_inverse"
+        ],
+        "interrupts_utility": [
+          "counterattack_utility",
+          "misdirection",
+          "trap_control"
+        ]
+      },
+      "expected_output": {
+        "type": "simulator_metrics",
+        "result_key": "TestMM-Average-Default",
+        "metrics": {
+          "dps": 23982.78565,
+          "tps": 21537.70732
+        }
+      },
+      "known_trinitycore_deviations": [
+        "TrinityCore 4.3.4 mechanics and bot scheduling differ from the simulator engine",
+        "live clones do not assume every simulator profession, racial, prepot, or raid-buff condition",
+        "the 75 percent hard floor is applied only after Phase 2 establishes compatible live conditions",
+        "the pinned executable simulator preset predates Phase 4; the canonical runtime profile is independently generated from Phase 4 item data"
+      ]
+    },
+    {
+      "reference_id": "cata_p4:survival_hunter",
+      "spec_target_id": "survival_hunter",
+      "research_pass": "consolidated_all_target_pass",
+      "review_status": "reviewed",
+      "simulator_support": "launched",
+      "provider": "WoWSims",
+      "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+      "repository": "https://github.com/wowsims/cata",
+      "guide_url": "https://www.icy-veins.com/cataclysm-classic/survival-hunter-pve-guide",
+      "gear": {
+        "phase": "phase_4",
+        "runtime_profile_id": "survival_hunter",
+        "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
+        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "simulator_preset": {
+          "path": "ui/hunter/survival/gear_sets/p4_sv.gear.json",
+          "phase": "phase_4"
+        }
+      },
+      "apl": {
+        "path": "ui/hunter/survival/apls/sv.apl.json",
+        "available": true
+      },
+      "talents": {
+        "provider": "WoWSims",
+        "path": "sim/hunter/survival/survival_test.go",
+        "talent_string": "03-2302-23203003023022121311",
+        "selection_basis": "numeric_result_fixture"
+      },
+      "test": "sim/hunter/survival/survival_test.go",
+      "results": "sim/hunter/survival/TestSV.results",
+      "source_assets": [
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/hunter/survival/presets.ts",
+          "sha256": "84aee0d3cb6365b82e7c8d94ae4d8fc53266dde8c70039d536adf07365c6aee0",
+          "byte_count": 4435
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/core/talents/trees/hunter.json",
+          "sha256": "7c15b0e8ba397e5615b57e94b836a5ec81856a4fd2d6a46bb7004728cfe8970d",
+          "byte_count": 14577
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/proto/hunter.proto",
+          "sha256": "3c113c5d7187366c1584941ed5503932ea9a818df19b70629a60a129ffa9aa3b",
+          "byte_count": 7054
+        },
+        {
+          "url": "https://www.icy-veins.com/cataclysm-classic/survival-hunter-pve-guide",
+          "sha256": "e5e3a00906dbe415bd34e1a65f07d225ffcaadc7ada2614bb9469622b09384f6",
+          "byte_count": 133978
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/hunter/survival/gear_sets/p4_sv.gear.json",
+          "sha256": "67a4682a2c8213028ee05979205f972daca4082fd71f19313712151e5a680691",
+          "byte_count": 1103
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/hunter/survival/apls/sv.apl.json",
+          "sha256": "66f2fa1560095697af336afdd7fa2c68d9f712bf96c76ade722a3270aa12f9ec",
+          "byte_count": 2700
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/hunter/survival/survival_test.go",
+          "sha256": "9706d97593a09a44731ceb2fa5216cf328dc1bc1aa5f40e8d581fab0ac403661",
+          "byte_count": 3355
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/hunter/survival/TestSV.results",
+          "sha256": "e0f5e96648d574a75e0f0cf89582de5e8a31aa7a5b08c8d8b8d5cb656bfc912a",
+          "byte_count": 50105
+        }
+      ],
+      "reference_conditions": {
+        "level": 85,
+        "single_target_duration_seconds": 300,
+        "duration_variation_seconds": 5,
+        "raid_buffs": "full_simulator_reference_live_conditions_recorded_separately",
+        "consumables": "simulator_enabled_live_clone_capabilities_recorded",
+        "aoe": "separate_mode_not_mixed_with_single_target"
+      },
+      "rotation_research": {
+        "priority_source": "ui/hunter/survival/apls/sv.apl.json",
+        "cooldowns": "explicit_required_rotation_group",
+        "execute": "explicit_required_rotation_group_even_when_not_applicable",
+        "movement": "explicit_required_rotation_group",
+        "aoe": "separate_explicit_required_rotation_group",
+        "pet_form_behavior": [
+          "permanent_pet",
+          "explosive_shot_lock_and_load",
+          "focus_management"
+        ],
+        "interrupts_utility": [
+          "counterattack_utility",
+          "misdirection",
+          "trap_control"
+        ]
+      },
+      "expected_output": {
+        "type": "simulator_metrics",
+        "result_key": "TestSV-Average-Default",
+        "metrics": {
+          "dps": 50716.5781,
+          "tps": 46274.42774
+        }
+      },
+      "known_trinitycore_deviations": [
+        "TrinityCore 4.3.4 mechanics and bot scheduling differ from the simulator engine",
+        "live clones do not assume every simulator profession, racial, prepot, or raid-buff condition",
+        "the 75 percent hard floor is applied only after Phase 2 establishes compatible live conditions"
+      ]
+    },
+    {
+      "reference_id": "cata_p4:assassination_rogue",
+      "spec_target_id": "assassination_rogue",
+      "research_pass": "consolidated_all_target_pass",
+      "review_status": "reviewed",
+      "simulator_support": "launched",
+      "provider": "WoWSims",
+      "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+      "repository": "https://github.com/wowsims/cata",
+      "guide_url": "https://www.icy-veins.com/cataclysm-classic/assassination-rogue-pve-guide",
+      "gear": {
+        "phase": "phase_4",
+        "runtime_profile_id": "assassination_rogue",
+        "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
+        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "simulator_preset": {
+          "path": "ui/rogue/assassination/gear_sets/p4_assassination.gear.json",
+          "phase": "phase_4"
+        }
+      },
+      "apl": {
+        "path": "ui/rogue/assassination/apls/mutilate.apl.json",
+        "available": true
+      },
+      "talents": {
+        "provider": "WoWSims",
+        "path": "ui/rogue/assassination/presets.ts",
+        "talent_string": "0333230013122110321-002-203003"
+      },
+      "test": "sim/rogue/assassination/assassination_test.go",
+      "results": "sim/rogue/assassination/TestAssassination.results",
+      "source_assets": [
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/rogue/assassination/presets.ts",
+          "sha256": "3528d9f3033ddf7dcf18c401745715854fab173b48be63a196790302a7f9f901",
+          "byte_count": 4591
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/core/talents/trees/rogue.json",
+          "sha256": "8a4eb6230c5500bd4981a6199e2858e23b433508357475aa9e734d1b559ddc47",
+          "byte_count": 14119
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/proto/rogue.proto",
+          "sha256": "c5b409c857c88d9a0909ce725c3683e59b0842b37734daf45b54bd64fb369e73",
+          "byte_count": 4145
+        },
+        {
+          "url": "https://www.icy-veins.com/cataclysm-classic/assassination-rogue-pve-guide",
+          "sha256": "db10ced95ee0e2d9730c9bdebe83e119ed39d3a14291167f4c293cc1c9fad529",
+          "byte_count": 134872
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/rogue/assassination/gear_sets/p4_assassination.gear.json",
+          "sha256": "ffc5cc44ecf0fbd972a70e6639c9af9a113f26eb21d261aa91e7666d0853c05b",
+          "byte_count": 1038
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/rogue/assassination/apls/mutilate.apl.json",
+          "sha256": "4626a33f43635d331c6378295f86fdfa6a37a61f1980d4b842679f5e341e38b4",
+          "byte_count": 3926
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/rogue/assassination/assassination_test.go",
+          "sha256": "03a96ae47e8f4548a31b86346ffdf1e0607d50fc1172a78b90112c8d8e12926d",
+          "byte_count": 4407
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/rogue/assassination/TestAssassination.results",
+          "sha256": "14200113da7cbdb7567a9f7917b020adb3fa1244a1b15f2e35c07711b441971a",
+          "byte_count": 76411
+        }
+      ],
+      "reference_conditions": {
+        "level": 85,
+        "single_target_duration_seconds": 300,
+        "duration_variation_seconds": 5,
+        "raid_buffs": "full_simulator_reference_live_conditions_recorded_separately",
+        "consumables": "simulator_enabled_live_clone_capabilities_recorded",
+        "aoe": "separate_mode_not_mixed_with_single_target"
+      },
+      "rotation_research": {
+        "priority_source": "ui/rogue/assassination/apls/mutilate.apl.json",
+        "cooldowns": "explicit_required_rotation_group",
+        "execute": "explicit_required_rotation_group_even_when_not_applicable",
+        "movement": "explicit_required_rotation_group",
+        "aoe": "separate_explicit_required_rotation_group",
+        "pet_form_behavior": [
+          "poisons",
+          "envenom_uptime",
+          "backstab_execute"
+        ],
+        "interrupts_utility": [
+          "kick",
+          "tricks_of_the_trade",
+          "feint"
+        ]
+      },
+      "expected_output": {
+        "type": "simulator_metrics",
+        "result_key": "TestAssassination-Average-Default",
+        "metrics": {
+          "dps": 29729.69041,
+          "tps": 21108.08019
+        }
+      },
+      "known_trinitycore_deviations": [
+        "TrinityCore 4.3.4 mechanics and bot scheduling differ from the simulator engine",
+        "live clones do not assume every simulator profession, racial, prepot, or raid-buff condition",
+        "the 75 percent hard floor is applied only after Phase 2 establishes compatible live conditions"
+      ]
+    },
+    {
+      "reference_id": "cata_p4:combat_rogue",
+      "spec_target_id": "combat_rogue",
+      "research_pass": "consolidated_all_target_pass",
+      "review_status": "reviewed",
+      "simulator_support": "launched",
+      "provider": "WoWSims",
+      "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+      "repository": "https://github.com/wowsims/cata",
+      "guide_url": "https://www.icy-veins.com/cataclysm-classic/combat-rogue-pve-guide",
+      "gear": {
+        "phase": "phase_4",
+        "runtime_profile_id": "combat_rogue",
+        "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
+        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "simulator_preset": {
+          "path": "ui/rogue/combat/gear_sets/p4_combat.gear.json",
+          "phase": "phase_4"
+        }
+      },
+      "apl": {
+        "path": "ui/rogue/combat/apls/combat.apl.json",
+        "available": true
+      },
+      "talents": {
+        "provider": "WoWSims",
+        "path": "ui/rogue/combat/presets.ts",
+        "talent_string": "0322-2332030310230012321-003"
+      },
+      "test": "sim/rogue/combat/combat_test.go",
+      "results": "sim/rogue/combat/TestCombat.results",
+      "source_assets": [
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/rogue/combat/presets.ts",
+          "sha256": "92339fdbac7dadb208557a12a2aacbde8ac557706197c76abea0ad8a4b15f9f5",
+          "byte_count": 3886
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/core/talents/trees/rogue.json",
+          "sha256": "8a4eb6230c5500bd4981a6199e2858e23b433508357475aa9e734d1b559ddc47",
+          "byte_count": 14119
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/proto/rogue.proto",
+          "sha256": "c5b409c857c88d9a0909ce725c3683e59b0842b37734daf45b54bd64fb369e73",
+          "byte_count": 4145
+        },
+        {
+          "url": "https://www.icy-veins.com/cataclysm-classic/combat-rogue-pve-guide",
+          "sha256": "6447ea266e176b821ca8703eedcd5d99037d6773e241a27b003ce8aef76639b1",
+          "byte_count": 134786
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/rogue/combat/gear_sets/p4_combat.gear.json",
+          "sha256": "320dce47a2d4bc3ac5e42bcebaf210a6a46d425cb37579857e65493674740e14",
+          "byte_count": 1016
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/rogue/combat/apls/combat.apl.json",
+          "sha256": "527d14efc2c832008cef3b5000a1284c225e8f96233b4ad4157998f657cebd7a",
+          "byte_count": 4212
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/rogue/combat/combat_test.go",
+          "sha256": "fbb6d7e9288778f7558d077e5bf0becd342add9c2381af984f9d4d667e367543",
+          "byte_count": 3735
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/rogue/combat/TestCombat.results",
+          "sha256": "ca139c9bdcf7e5e9873d54ffaaf2f9a0bfe4bf56e1f7b819727bb85f6d36f57d",
+          "byte_count": 71832
+        }
+      ],
+      "reference_conditions": {
+        "level": 85,
+        "single_target_duration_seconds": 300,
+        "duration_variation_seconds": 5,
+        "raid_buffs": "full_simulator_reference_live_conditions_recorded_separately",
+        "consumables": "simulator_enabled_live_clone_capabilities_recorded",
+        "aoe": "separate_mode_not_mixed_with_single_target"
+      },
+      "rotation_research": {
+        "priority_source": "ui/rogue/combat/apls/combat.apl.json",
+        "cooldowns": "explicit_required_rotation_group",
+        "execute": "explicit_required_rotation_group_even_when_not_applicable",
+        "movement": "explicit_required_rotation_group",
+        "aoe": "separate_explicit_required_rotation_group",
+        "pet_form_behavior": [
+          "poisons",
+          "bandits_guile",
+          "killing_spree"
+        ],
+        "interrupts_utility": [
+          "kick",
+          "tricks_of_the_trade",
+          "feint"
+        ]
+      },
+      "expected_output": {
+        "type": "simulator_metrics",
+        "result_key": "TestCombat-Average-Default",
+        "metrics": {
+          "dps": 29711.31179,
+          "tps": 21095.03137
+        }
+      },
+      "known_trinitycore_deviations": [
+        "TrinityCore 4.3.4 mechanics and bot scheduling differ from the simulator engine",
+        "live clones do not assume every simulator profession, racial, prepot, or raid-buff condition",
+        "the 75 percent hard floor is applied only after Phase 2 establishes compatible live conditions"
+      ]
+    },
+    {
+      "reference_id": "cata_p4:subtlety_rogue",
+      "spec_target_id": "subtlety_rogue",
+      "research_pass": "consolidated_all_target_pass",
+      "review_status": "reviewed",
+      "simulator_support": "launched",
+      "provider": "WoWSims",
+      "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+      "repository": "https://github.com/wowsims/cata",
+      "guide_url": "https://www.icy-veins.com/cataclysm-classic/subtlety-rogue-pve-guide",
+      "gear": {
+        "phase": "phase_4",
+        "runtime_profile_id": "subtlety_rogue",
+        "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
+        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "simulator_preset": {
+          "path": "ui/rogue/subtlety/gear_sets/p4_subtlety.gear.json",
+          "phase": "phase_4"
+        }
+      },
+      "apl": {
+        "path": "ui/rogue/subtlety/apls/subtlety.apl.json",
+        "available": true
+      },
+      "talents": {
+        "provider": "WoWSims",
+        "path": "ui/rogue/subtlety/presets.ts",
+        "talent_string": "023003-002-0332031321310012321"
+      },
+      "test": "sim/rogue/subtlety/subtlety_test.go",
+      "results": "sim/rogue/subtlety/TestSubtlety.results",
+      "source_assets": [
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/rogue/subtlety/presets.ts",
+          "sha256": "c1cb43bb59a6af63a7ba79f1df35f275efed03ea1fdaa8c8dc1380c90b2e9ec5",
+          "byte_count": 3935
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/core/talents/trees/rogue.json",
+          "sha256": "8a4eb6230c5500bd4981a6199e2858e23b433508357475aa9e734d1b559ddc47",
+          "byte_count": 14119
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/proto/rogue.proto",
+          "sha256": "c5b409c857c88d9a0909ce725c3683e59b0842b37734daf45b54bd64fb369e73",
+          "byte_count": 4145
+        },
+        {
+          "url": "https://www.icy-veins.com/cataclysm-classic/subtlety-rogue-pve-guide",
+          "sha256": "f4392abf79ab5139bf68f37dac88508d86e265721c3db7f541e0ce1f2a9474f2",
+          "byte_count": 134915
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/rogue/subtlety/gear_sets/p4_subtlety.gear.json",
+          "sha256": "cf60b184507548ba5fc46d2e0d88fdb8d3c6742000f55ce0882b958a437f3053",
+          "byte_count": 976
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/rogue/subtlety/apls/subtlety.apl.json",
+          "sha256": "e8b7535ad1b0dd7384e690a2690969833eb5577dc612bd794dc38b4b006d7526",
+          "byte_count": 8320
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/rogue/subtlety/subtlety_test.go",
+          "sha256": "0b9fc6d8cb6d576bb6f44e6bb0373f46b7ee8bed50f9fbd40259c38e0f481a48",
+          "byte_count": 3497
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/rogue/subtlety/TestSubtlety.results",
+          "sha256": "5a2c867abf71b26948921e34c3151eb693c145e49405c19c1ddd08c58dc93547",
+          "byte_count": 72286
+        }
+      ],
+      "reference_conditions": {
+        "level": 85,
+        "single_target_duration_seconds": 300,
+        "duration_variation_seconds": 5,
+        "raid_buffs": "full_simulator_reference_live_conditions_recorded_separately",
+        "consumables": "simulator_enabled_live_clone_capabilities_recorded",
+        "aoe": "separate_mode_not_mixed_with_single_target"
+      },
+      "rotation_research": {
+        "priority_source": "ui/rogue/subtlety/apls/subtlety.apl.json",
+        "cooldowns": "explicit_required_rotation_group",
+        "execute": "explicit_required_rotation_group_even_when_not_applicable",
+        "movement": "explicit_required_rotation_group",
+        "aoe": "separate_explicit_required_rotation_group",
+        "pet_form_behavior": [
+          "poisons",
+          "hemorrhage_or_rupture",
+          "shadow_dance"
+        ],
+        "interrupts_utility": [
+          "kick",
+          "tricks_of_the_trade",
+          "feint"
+        ]
+      },
+      "expected_output": {
+        "type": "simulator_metrics",
+        "result_key": "TestSubtlety-Average-Default",
+        "metrics": {
+          "dps": 26433.00834,
+          "tps": 18767.43592
+        }
+      },
+      "known_trinitycore_deviations": [
+        "TrinityCore 4.3.4 mechanics and bot scheduling differ from the simulator engine",
+        "live clones do not assume every simulator profession, racial, prepot, or raid-buff condition",
+        "the 75 percent hard floor is applied only after Phase 2 establishes compatible live conditions"
+      ]
+    },
+    {
+      "reference_id": "cata_p4:frost_death_knight",
+      "spec_target_id": "frost_death_knight",
+      "research_pass": "consolidated_all_target_pass",
+      "review_status": "reviewed",
+      "simulator_support": "launched",
+      "provider": "WoWSims",
+      "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+      "repository": "https://github.com/wowsims/cata",
+      "guide_url": "https://www.icy-veins.com/cataclysm-classic/frost-death-knight-pve-guide",
+      "gear": {
+        "phase": "phase_4",
+        "runtime_profile_id": "frost_death_knight",
+        "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
+        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "simulator_preset": {
+          "path": "ui/death_knight/frost/gear_sets/p4.masterfrost.gear.json",
+          "phase": "phase_4"
+        }
+      },
+      "apl": {
+        "path": "ui/death_knight/frost/apls/masterfrost.apl.json",
+        "available": true
+      },
+      "talents": {
+        "provider": "WoWSims",
+        "path": "ui/death_knight/frost/presets.ts",
+        "talent_string": "2032-30330012233112012301-03"
+      },
+      "test": "sim/death_knight/frost/frost_test.go",
+      "results": "sim/death_knight/frost/TestFrost.results",
+      "source_assets": [
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/death_knight/frost/presets.ts",
+          "sha256": "f90771be16d9084355dc437bc27c03a467bdc402dadf13ade5ca56d1d4289b51",
+          "byte_count": 10437
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/core/talents/trees/death_knight.json",
+          "sha256": "1199d31366606841a8ea379bca33f4b3bb7ac9b886e3d8125641b46474c74127",
+          "byte_count": 14847
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/proto/death_knight.proto",
+          "sha256": "03e67b148b3fb7c530ae2745b9962634fd7552ec199970930a1c12de75429b8b",
+          "byte_count": 4617
+        },
+        {
+          "url": "https://www.icy-veins.com/cataclysm-classic/frost-death-knight-pve-guide",
+          "sha256": "85b1f9cecee6272117c7603af694108f99c6f8922a2cf9e85c00e0373c731c1c",
+          "byte_count": 136090
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/death_knight/frost/gear_sets/p4.masterfrost.gear.json",
+          "sha256": "4c2472448827cdb2abd3006ef575b76aaaa1f648088582cc613cbcbbcc82bb43",
+          "byte_count": 989
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/death_knight/frost/apls/masterfrost.apl.json",
+          "sha256": "0313a3a2b9fb7701f851745f331b6167ee8aec690c6c770fbdb1a52fe11db758",
+          "byte_count": 17532
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/death_knight/frost/frost_test.go",
+          "sha256": "c43b8ea88f9654729c25425fcd3bf62dba5320e22983815b761214e3719d88dd",
+          "byte_count": 2739
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/death_knight/frost/TestFrost.results",
+          "sha256": "e801c4d8d9c2b529239b848a0a2c1e3bc8954b19cb5764c93508b310d93d5815",
+          "byte_count": 60616
+        }
+      ],
+      "reference_conditions": {
+        "level": 85,
+        "single_target_duration_seconds": 300,
+        "duration_variation_seconds": 5,
+        "raid_buffs": "full_simulator_reference_live_conditions_recorded_separately",
+        "consumables": "simulator_enabled_live_clone_capabilities_recorded",
+        "aoe": "separate_mode_not_mixed_with_single_target"
+      },
+      "rotation_research": {
+        "priority_source": "ui/death_knight/frost/apls/masterfrost.apl.json",
+        "cooldowns": "explicit_required_rotation_group",
+        "execute": "explicit_required_rotation_group_even_when_not_applicable",
+        "movement": "explicit_required_rotation_group",
+        "aoe": "separate_explicit_required_rotation_group",
+        "pet_form_behavior": [
+          "frost_presence",
+          "dual_wield_masterfrost",
+          "runic_power"
+        ],
+        "interrupts_utility": [
+          "mind_freeze",
+          "death_grip",
+          "anti_magic_shell"
+        ]
+      },
+      "expected_output": {
+        "type": "simulator_metrics",
+        "result_key": "TestFrost-Average-Default",
+        "metrics": {
+          "dps": 52293.05757,
+          "tps": 49367.73519,
+          "hps": 1649.40635
+        }
+      },
+      "known_trinitycore_deviations": [
+        "TrinityCore 4.3.4 mechanics and bot scheduling differ from the simulator engine",
+        "live clones do not assume every simulator profession, racial, prepot, or raid-buff condition",
+        "the 75 percent hard floor is applied only after Phase 2 establishes compatible live conditions"
+      ]
+    },
+    {
+      "reference_id": "cata_p4:unholy_death_knight",
+      "spec_target_id": "unholy_death_knight",
+      "research_pass": "consolidated_all_target_pass",
+      "review_status": "reviewed",
+      "simulator_support": "launched",
+      "provider": "WoWSims",
+      "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+      "repository": "https://github.com/wowsims/cata",
+      "guide_url": "https://www.icy-veins.com/cataclysm-classic/unholy-death-knight-pve-guide",
+      "gear": {
+        "phase": "phase_4",
+        "runtime_profile_id": "unholy_death_knight",
+        "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
+        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "simulator_preset": {
+          "path": "ui/death_knight/unholy/gear_sets/p4.bis.gear.json",
+          "phase": "phase_4"
+        }
+      },
+      "apl": {
+        "path": "ui/death_knight/unholy/apls/default.apl.json",
+        "available": true
+      },
+      "talents": {
+        "provider": "WoWSims",
+        "path": "ui/death_knight/unholy/presets.ts",
+        "talent_string": "2032-1-13300321230231021231"
+      },
+      "test": "sim/death_knight/unholy/unholy_test.go",
+      "results": "sim/death_knight/unholy/TestUnholy.results",
+      "source_assets": [
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/death_knight/unholy/presets.ts",
+          "sha256": "a538754669548aa12f19af785cf754fb31603424061afd8f1ab2cc766bef10a6",
+          "byte_count": 4385
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/core/talents/trees/death_knight.json",
+          "sha256": "1199d31366606841a8ea379bca33f4b3bb7ac9b886e3d8125641b46474c74127",
+          "byte_count": 14847
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/proto/death_knight.proto",
+          "sha256": "03e67b148b3fb7c530ae2745b9962634fd7552ec199970930a1c12de75429b8b",
+          "byte_count": 4617
+        },
+        {
+          "url": "https://www.icy-veins.com/cataclysm-classic/unholy-death-knight-pve-guide",
+          "sha256": "d4fe6a58f67234a64dd3a8b7968b4afff363d33fd3411ce9974ef7cb743d35a2",
+          "byte_count": 135613
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/death_knight/unholy/gear_sets/p4.bis.gear.json",
+          "sha256": "b781689d7e2ab4493715001637934dc85387ae2ad569ac26599ff045b5292e43",
+          "byte_count": 996
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/death_knight/unholy/apls/default.apl.json",
+          "sha256": "459e413ef989c0b1a842c6ab9f7f95bf6d7bea5a1834aae2c3f150a2e67863e9",
+          "byte_count": 34778
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/death_knight/unholy/unholy_test.go",
+          "sha256": "a23879b3c6e945289f8a635f85101f10834977dd8f138101a7726acf97db7f90",
+          "byte_count": 2421
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/death_knight/unholy/TestUnholy.results",
+          "sha256": "0fb253070cc39153359223248004241f70bd257b03dde0687d9a2872b9bc6d01",
+          "byte_count": 54262
+        }
+      ],
+      "reference_conditions": {
+        "level": 85,
+        "single_target_duration_seconds": 300,
+        "duration_variation_seconds": 5,
+        "raid_buffs": "full_simulator_reference_live_conditions_recorded_separately",
+        "consumables": "simulator_enabled_live_clone_capabilities_recorded",
+        "aoe": "separate_mode_not_mixed_with_single_target"
+      },
+      "rotation_research": {
+        "priority_source": "ui/death_knight/unholy/apls/default.apl.json",
+        "cooldowns": "explicit_required_rotation_group",
+        "execute": "explicit_required_rotation_group_even_when_not_applicable",
+        "movement": "explicit_required_rotation_group",
+        "aoe": "separate_explicit_required_rotation_group",
+        "pet_form_behavior": [
+          "unholy_presence",
+          "permanent_ghoul",
+          "dark_transformation"
+        ],
+        "interrupts_utility": [
+          "mind_freeze",
+          "death_grip",
+          "anti_magic_shell"
+        ]
+      },
+      "expected_output": {
+        "type": "simulator_metrics",
+        "result_key": "TestUnholy-Average-Default",
+        "metrics": {
+          "dps": 54388.64243,
+          "tps": 37893.20097,
+          "hps": 680.42174
+        }
+      },
+      "known_trinitycore_deviations": [
+        "TrinityCore 4.3.4 mechanics and bot scheduling differ from the simulator engine",
+        "live clones do not assume every simulator profession, racial, prepot, or raid-buff condition",
+        "the 75 percent hard floor is applied only after Phase 2 establishes compatible live conditions"
+      ]
+    },
+    {
+      "reference_id": "cata_p4:elemental_shaman",
+      "spec_target_id": "elemental_shaman",
+      "research_pass": "consolidated_all_target_pass",
+      "review_status": "reviewed",
+      "simulator_support": "launched",
+      "provider": "WoWSims",
+      "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+      "repository": "https://github.com/wowsims/cata",
+      "guide_url": "https://www.icy-veins.com/cataclysm-classic/elemental-shaman-pve-guide",
+      "gear": {
+        "phase": "phase_4",
+        "runtime_profile_id": "elemental_shaman",
+        "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
+        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "simulator_preset": {
+          "path": "ui/shaman/elemental/gear_sets/p4.default.gear.json",
+          "phase": "phase_4"
+        }
+      },
+      "apl": {
+        "path": "ui/shaman/elemental/apls/default.apl.json",
+        "available": true
+      },
+      "talents": {
+        "provider": "WoWSims",
+        "path": "ui/shaman/elemental/presets.ts",
+        "talent_string": "303202321223110132-201-20302"
+      },
+      "test": "sim/shaman/elemental/elemental_test.go",
+      "results": "sim/shaman/elemental/TestElemental.results",
+      "source_assets": [
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/shaman/elemental/presets.ts",
+          "sha256": "791acd74b154dcfeca8ae1a741c06a3dc9ece2c018c7c7c6108fe5971ef6845b",
+          "byte_count": 6790
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/core/talents/trees/shaman.json",
+          "sha256": "8636c3ab04234a798d1d8d4e202f577943b82708d3372d5dacdf00bb4c080a3a",
+          "byte_count": 14418
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/proto/shaman.proto",
+          "sha256": "bdbf085c012aa7e6df2518a364d13b3f0af8c29e6ce85bd0f05cfa05cdf7a4de",
+          "byte_count": 6226
+        },
+        {
+          "url": "https://www.icy-veins.com/cataclysm-classic/elemental-shaman-pve-guide",
+          "sha256": "0c0a5a4dc6b753818a0e229e5971b49966fbc05d4504e542c1e94b8589781d2a",
+          "byte_count": 136000
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/shaman/elemental/gear_sets/p4.default.gear.json",
+          "sha256": "f4c9237aa6334fb89433b7cd9b0f1bf8bc0e3784fc527eae5f6e05cc63821706",
+          "byte_count": 1001
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/shaman/elemental/apls/default.apl.json",
+          "sha256": "cdc73e0dac1a773a252ccb9eaadb35452e721a210af7b81e38d7b2c7d55d19a9",
+          "byte_count": 4817
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/shaman/elemental/elemental_test.go",
+          "sha256": "3307064f29e960f794c608cddc6a08d407b9e1851fced19e8067789d7f3ec13a",
+          "byte_count": 4730
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/shaman/elemental/TestElemental.results",
+          "sha256": "fd0d4c09b8351b3733f854fa36f001f49aec863aee9e3ada295d16c13bd28b4f",
+          "byte_count": 67078
+        }
+      ],
+      "reference_conditions": {
+        "level": 85,
+        "single_target_duration_seconds": 300,
+        "duration_variation_seconds": 5,
+        "raid_buffs": "full_simulator_reference_live_conditions_recorded_separately",
+        "consumables": "simulator_enabled_live_clone_capabilities_recorded",
+        "aoe": "separate_mode_not_mixed_with_single_target"
+      },
+      "rotation_research": {
+        "priority_source": "ui/shaman/elemental/apls/default.apl.json",
+        "cooldowns": "explicit_required_rotation_group",
+        "execute": "explicit_required_rotation_group_even_when_not_applicable",
+        "movement": "explicit_required_rotation_group",
+        "aoe": "separate_explicit_required_rotation_group",
+        "pet_form_behavior": [
+          "lightning_shield",
+          "flame_shock",
+          "lava_burst"
+        ],
+        "interrupts_utility": [
+          "wind_shear",
+          "totem_utility",
+          "purge"
+        ]
+      },
+      "expected_output": {
+        "type": "simulator_metrics",
+        "result_key": "TestElemental-Average-Default",
+        "metrics": {
+          "dps": 51459.13293,
+          "tps": 1772.87577
+        }
+      },
+      "known_trinitycore_deviations": [
+        "TrinityCore 4.3.4 mechanics and bot scheduling differ from the simulator engine",
+        "live clones do not assume every simulator profession, racial, prepot, or raid-buff condition",
+        "the 75 percent hard floor is applied only after Phase 2 establishes compatible live conditions"
+      ]
+    },
+    {
+      "reference_id": "cata_p4:enhancement_shaman",
+      "spec_target_id": "enhancement_shaman",
+      "research_pass": "consolidated_all_target_pass",
+      "review_status": "reviewed",
+      "simulator_support": "launched",
+      "provider": "WoWSims",
+      "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+      "repository": "https://github.com/wowsims/cata",
+      "guide_url": "https://www.icy-veins.com/cataclysm-classic/enhancement-shaman-pve-guide",
+      "gear": {
+        "phase": "phase_4",
+        "runtime_profile_id": "enhancement_shaman",
+        "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
+        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "simulator_preset": {
+          "path": "ui/shaman/enhancement/gear_sets/p4.orc.gear.json",
+          "phase": "phase_4"
+        }
+      },
+      "apl": {
+        "path": "ui/shaman/enhancement/apls/default.apl.json",
+        "available": true
+      },
+      "talents": {
+        "provider": "WoWSims",
+        "path": "ui/shaman/enhancement/presets.ts",
+        "talent_string": "3022003-2333310013003012321"
+      },
+      "test": "sim/shaman/enhancement/enhancement_test.go",
+      "results": "sim/shaman/enhancement/TestEnhancement.results",
+      "source_assets": [
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/shaman/enhancement/presets.ts",
+          "sha256": "1666fb084ef7bc9130acd179c3a5c6a35ed58682b8d8a8e7f16d92627c43cbee",
+          "byte_count": 5418
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/core/talents/trees/shaman.json",
+          "sha256": "8636c3ab04234a798d1d8d4e202f577943b82708d3372d5dacdf00bb4c080a3a",
+          "byte_count": 14418
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/proto/shaman.proto",
+          "sha256": "bdbf085c012aa7e6df2518a364d13b3f0af8c29e6ce85bd0f05cfa05cdf7a4de",
+          "byte_count": 6226
+        },
+        {
+          "url": "https://www.icy-veins.com/cataclysm-classic/enhancement-shaman-pve-guide",
+          "sha256": "87511b9d1de52d7e98be69609bad7df857c8e5b6c0084b79598709b97b801e1c",
+          "byte_count": 136659
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/shaman/enhancement/gear_sets/p4.orc.gear.json",
+          "sha256": "d91bfe3c74be493697ae99778184c7f1ec83057ffffd7e44c2369b1f3cb72971",
+          "byte_count": 989
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/shaman/enhancement/apls/default.apl.json",
+          "sha256": "e0d63724e58c347e43b63b4fc123660613467432a012fdb6299f31fc83b25b94",
+          "byte_count": 2895
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/shaman/enhancement/enhancement_test.go",
+          "sha256": "3f57ac327bf93e56e0f95221f7fa40758a806140db05e20af4ba070fabed95a0",
+          "byte_count": 3150
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/shaman/enhancement/TestEnhancement.results",
+          "sha256": "3a48cdb9268d041861d81fce9bc43fb1085f6e7bec02db6a240fb5c56caaf67f",
+          "byte_count": 52023
+        }
+      ],
+      "reference_conditions": {
+        "level": 85,
+        "single_target_duration_seconds": 300,
+        "duration_variation_seconds": 5,
+        "raid_buffs": "full_simulator_reference_live_conditions_recorded_separately",
+        "consumables": "simulator_enabled_live_clone_capabilities_recorded",
+        "aoe": "separate_mode_not_mixed_with_single_target"
+      },
+      "rotation_research": {
+        "priority_source": "ui/shaman/enhancement/apls/default.apl.json",
+        "cooldowns": "explicit_required_rotation_group",
+        "execute": "explicit_required_rotation_group_even_when_not_applicable",
+        "movement": "explicit_required_rotation_group",
+        "aoe": "separate_explicit_required_rotation_group",
+        "pet_form_behavior": [
+          "weapon_imbues",
+          "maelstrom_weapon",
+          "searing_totem"
+        ],
+        "interrupts_utility": [
+          "wind_shear",
+          "totem_utility",
+          "purge"
+        ]
+      },
+      "expected_output": {
+        "type": "simulator_metrics",
+        "result_key": "TestEnhancement-Average-Default",
+        "metrics": {
+          "dps": 49941.18585,
+          "tps": 33362.08884
+        }
+      },
+      "known_trinitycore_deviations": [
+        "TrinityCore 4.3.4 mechanics and bot scheduling differ from the simulator engine",
+        "live clones do not assume every simulator profession, racial, prepot, or raid-buff condition",
+        "the 75 percent hard floor is applied only after Phase 2 establishes compatible live conditions"
+      ]
+    },
+    {
+      "reference_id": "cata_p4:arcane_mage",
+      "spec_target_id": "arcane_mage",
+      "research_pass": "consolidated_all_target_pass",
+      "review_status": "reviewed",
+      "simulator_support": "launched",
+      "provider": "WoWSims",
+      "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+      "repository": "https://github.com/wowsims/cata",
+      "guide_url": "https://www.icy-veins.com/cataclysm-classic/arcane-mage-pve-guide",
+      "gear": {
+        "phase": "phase_4",
+        "runtime_profile_id": "arcane_mage",
+        "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
+        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "simulator_preset": {
+          "path": "ui/mage/arcane/gear_sets/p4.gear.json",
+          "phase": "phase_4"
+        }
+      },
+      "apl": {
+        "path": "ui/mage/arcane/apls/arcane.apl.json",
+        "available": true
+      },
+      "talents": {
+        "provider": "WoWSims",
+        "path": "ui/mage/arcane/presets.ts",
+        "talent_string": "303302221230122210121-23-03"
+      },
+      "test": "sim/mage/arcane/arcane_test.go",
+      "results": "sim/mage/arcane/TestArcane.results",
+      "source_assets": [
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/mage/arcane/presets.ts",
+          "sha256": "8207b1d3f1f5430ea126292f274698d8e266d89b6dcf332628b3a97595249684",
+          "byte_count": 3797
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/core/talents/trees/mage.json",
+          "sha256": "4f38de3d3020585d1b5828ed99ecba2928d077b082d8c7f22fe90c9ac81f8190",
+          "byte_count": 15398
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/proto/mage.proto",
+          "sha256": "f78505317d8af520af89bf955d794b680088049c8590030b8c0c134aa4a2b9cd",
+          "byte_count": 4314
+        },
+        {
+          "url": "https://www.icy-veins.com/cataclysm-classic/arcane-mage-pve-guide",
+          "sha256": "7a4b609293ac621b4970381ce5ef5882ab6f0ae857cd5d1a8a471d56aad800f8",
+          "byte_count": 135415
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/mage/arcane/gear_sets/p4.gear.json",
+          "sha256": "f4a08e6295444cb45a9c9c1bff747f37f249d238db3888dabba1c801a42097b5",
+          "byte_count": 999
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/mage/arcane/apls/arcane.apl.json",
+          "sha256": "f6b0d1803e87c23d4406f1b9ec7367097bf72c4fa8bca79f4d43b2110b78b893",
+          "byte_count": 5444
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/mage/arcane/arcane_test.go",
+          "sha256": "5a6c50de471633bb8cb378e0256ca6c9c7e18cc7a0d79f2a6b35bb658b19e569",
+          "byte_count": 2142
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/mage/arcane/TestArcane.results",
+          "sha256": "bbf71dc14af1a9306ff21a780f67b816a34499751a9f53246ce623fb1c0d165b",
+          "byte_count": 46999
+        }
+      ],
+      "reference_conditions": {
+        "level": 85,
+        "single_target_duration_seconds": 300,
+        "duration_variation_seconds": 5,
+        "raid_buffs": "full_simulator_reference_live_conditions_recorded_separately",
+        "consumables": "simulator_enabled_live_clone_capabilities_recorded",
+        "aoe": "separate_mode_not_mixed_with_single_target"
+      },
+      "rotation_research": {
+        "priority_source": "ui/mage/arcane/apls/arcane.apl.json",
+        "cooldowns": "explicit_required_rotation_group",
+        "execute": "explicit_required_rotation_group_even_when_not_applicable",
+        "movement": "explicit_required_rotation_group",
+        "aoe": "separate_explicit_required_rotation_group",
+        "pet_form_behavior": [
+          "arcane_charge_cycle",
+          "mana_burn_conserve",
+          "arcane_power"
+        ],
+        "interrupts_utility": [
+          "counterspell",
+          "blink",
+          "spellsteal"
+        ]
+      },
+      "expected_output": {
+        "type": "simulator_metrics",
+        "result_key": "TestArcane-Average-Default",
+        "metrics": {
+          "dps": 38131.35977,
+          "tps": 35072.86566
+        }
+      },
+      "known_trinitycore_deviations": [
+        "TrinityCore 4.3.4 mechanics and bot scheduling differ from the simulator engine",
+        "live clones do not assume every simulator profession, racial, prepot, or raid-buff condition",
+        "the 75 percent hard floor is applied only after Phase 2 establishes compatible live conditions"
+      ]
+    },
+    {
+      "reference_id": "cata_p4:fire_mage",
+      "spec_target_id": "fire_mage",
+      "research_pass": "consolidated_all_target_pass",
+      "review_status": "reviewed",
+      "simulator_support": "launched",
+      "provider": "WoWSims",
+      "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+      "repository": "https://github.com/wowsims/cata",
+      "guide_url": "https://www.icy-veins.com/cataclysm-classic/fire-mage-pve-guide",
+      "gear": {
+        "phase": "phase_4",
+        "runtime_profile_id": "fire_mage",
+        "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
+        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "simulator_preset": {
+          "path": "ui/mage/fire/gear_sets/p4_fire.gear.json",
+          "phase": "phase_4"
+        }
+      },
+      "apl": {
+        "path": "ui/mage/fire/apls/fire.apl.json",
+        "available": true
+      },
+      "talents": {
+        "provider": "WoWSims",
+        "path": "ui/mage/fire/presets.ts",
+        "talent_string": "003-230330221120121213231-03"
+      },
+      "test": "sim/mage/fire/fire_test.go",
+      "results": "sim/mage/fire/TestFire.results",
+      "source_assets": [
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/mage/fire/presets.ts",
+          "sha256": "5ff35fcf162a7f80169b07bf26de0a243cb43869a713281174db1a285318c91c",
+          "byte_count": 7945
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/core/talents/trees/mage.json",
+          "sha256": "4f38de3d3020585d1b5828ed99ecba2928d077b082d8c7f22fe90c9ac81f8190",
+          "byte_count": 15398
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/proto/mage.proto",
+          "sha256": "f78505317d8af520af89bf955d794b680088049c8590030b8c0c134aa4a2b9cd",
+          "byte_count": 4314
+        },
+        {
+          "url": "https://www.icy-veins.com/cataclysm-classic/fire-mage-pve-guide",
+          "sha256": "5800fb01fdf1a9bc8617e947c0a4661f341dfb20cc7794d2d5cf6b6e209f7d44",
+          "byte_count": 135956
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/mage/fire/gear_sets/p4_fire.gear.json",
+          "sha256": "d01e11b235682de67d30fb672344d652aaadebeba9cb197d5958dc3284bc5349",
+          "byte_count": 1009
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/mage/fire/apls/fire.apl.json",
+          "sha256": "f63bae4ec8c853b8dd52f461496822b1f567b8a4a7f0ffd41b93a105022ab168",
+          "byte_count": 6633
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/mage/fire/fire_test.go",
+          "sha256": "71a9228f45b0c57e464971f71a05d8af4588b274efd3d5711645d7012007afc7",
+          "byte_count": 1927
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/mage/fire/TestFire.results",
+          "sha256": "aaaaeb2cb1c3c0307f1a758960d903485c0d48425eb32d351383a225202c8bb8",
+          "byte_count": 46939
+        }
+      ],
+      "reference_conditions": {
+        "level": 85,
+        "single_target_duration_seconds": 300,
+        "duration_variation_seconds": 5,
+        "raid_buffs": "full_simulator_reference_live_conditions_recorded_separately",
+        "consumables": "simulator_enabled_live_clone_capabilities_recorded",
+        "aoe": "separate_mode_not_mixed_with_single_target"
+      },
+      "rotation_research": {
+        "priority_source": "ui/mage/fire/apls/fire.apl.json",
+        "cooldowns": "explicit_required_rotation_group",
+        "execute": "explicit_required_rotation_group_even_when_not_applicable",
+        "movement": "explicit_required_rotation_group",
+        "aoe": "separate_explicit_required_rotation_group",
+        "pet_form_behavior": [
+          "living_bomb",
+          "hot_streak",
+          "combustion"
+        ],
+        "interrupts_utility": [
+          "counterspell",
+          "blink",
+          "spellsteal"
+        ]
+      },
+      "expected_output": {
+        "type": "simulator_metrics",
+        "result_key": "TestFire-Average-Default",
+        "metrics": {
+          "dps": 51059.39052,
+          "tps": 45969.98208
+        }
+      },
+      "known_trinitycore_deviations": [
+        "TrinityCore 4.3.4 mechanics and bot scheduling differ from the simulator engine",
+        "live clones do not assume every simulator profession, racial, prepot, or raid-buff condition",
+        "the 75 percent hard floor is applied only after Phase 2 establishes compatible live conditions"
+      ]
+    },
+    {
+      "reference_id": "cata_p4:frost_mage",
+      "spec_target_id": "frost_mage",
+      "research_pass": "unsupported_second_pass",
+      "review_status": "reviewed",
+      "simulator_support": "unsupported",
+      "provider": "WoWSims gear plus Icy Veins role reference",
+      "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+      "repository": "https://github.com/wowsims/cata",
+      "guide_url": "https://www.icy-veins.com/cataclysm-classic/frost-mage-pve-guide",
+      "gear": {
+        "phase": "phase_4",
+        "runtime_profile_id": "frost_mage",
+        "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
+        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "simulator_preset": {
+          "path": "ui/mage/frost/gear_sets/p3_frost_alliance.gear.json",
+          "phase": "best_executable_legacy_preset"
+        }
+      },
+      "apl": {
+        "path": "ui/mage/frost/apls/frost.apl.json",
+        "available": true
+      },
+      "talents": {
+        "provider": "Icy Veins",
+        "url": "https://www.icy-veins.com/cataclysm-classic/frost-mage-pve-spec-builds-talents-glyphs",
+        "encoded_build": "#tc-HHHGGIIJJJQQQPPPORRRSTTTVWWXXMYllmmmooo22|0o1L2H3l4j5N6I7A8x"
+      },
+      "test": null,
+      "results": null,
+      "source_assets": [
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/mage/frost/presets.ts",
+          "sha256": "09ef24884ed67eee398d3e86a8640a2f21f387f22c5aac77eeb4a283137f8869",
+          "byte_count": 3093
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/core/talents/trees/mage.json",
+          "sha256": "4f38de3d3020585d1b5828ed99ecba2928d077b082d8c7f22fe90c9ac81f8190",
+          "byte_count": 15398
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/proto/mage.proto",
+          "sha256": "f78505317d8af520af89bf955d794b680088049c8590030b8c0c134aa4a2b9cd",
+          "byte_count": 4314
+        },
+        {
+          "url": "https://www.icy-veins.com/cataclysm-classic/frost-mage-pve-guide",
+          "sha256": "a0e9f9c61f27540298be657b0733263d8575a72d9b65fdc5d6c7b15d9e37d48c",
+          "byte_count": 134934
+        },
+        {
+          "url": "https://static.icy-veins.com/json/cata-talent-calculator/mage.json",
+          "sha256": "0420ed1fbfc6c734e42f9de1d5be2f2992eb6127a27478308c917a2a94c0b56f",
+          "byte_count": 44310
+        },
+        {
+          "url": "https://static.icy-veins.com/json/cata-talent-calculator/glyphs.json",
+          "sha256": "dd2bcc43803d7c703f676d833621e876f91ef7318ca5e848c7ee5b730b2c3166",
+          "byte_count": 90047
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/mage/frost/gear_sets/p3_frost_alliance.gear.json",
+          "sha256": "45895b0f74eb1e1b8a8e7d392c67acce35e28e716a8833ea394eed3b71f74819",
+          "byte_count": 725
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/mage/frost/apls/frost.apl.json",
+          "sha256": "862d571a3c2b239324d760327e2df269e325feb1ffb6d744c6a15ee884552094",
+          "byte_count": 1083
+        }
+      ],
+      "reference_conditions": {
+        "level": 85,
+        "single_target_duration_seconds": 300,
+        "duration_variation_seconds": 5,
+        "raid_buffs": "full_simulator_reference_live_conditions_recorded_separately",
+        "consumables": "simulator_enabled_live_clone_capabilities_recorded",
+        "aoe": "separate_mode_not_mixed_with_single_target"
+      },
+      "rotation_research": {
+        "priority_source": "ui/mage/frost/apls/frost.apl.json",
+        "cooldowns": "explicit_required_rotation_group",
+        "execute": "explicit_required_rotation_group_even_when_not_applicable",
+        "movement": "explicit_required_rotation_group",
+        "aoe": "separate_explicit_required_rotation_group",
+        "pet_form_behavior": [
+          "water_elemental",
+          "fingers_of_frost",
+          "deep_freeze"
+        ],
+        "interrupts_utility": [
+          "counterspell",
+          "blink",
+          "spellsteal"
+        ]
+      },
+      "expected_output": {
+        "type": "phase4_guide_priority_reference",
+        "numeric_floor": null
+      },
+      "known_trinitycore_deviations": [
+        "TrinityCore 4.3.4 mechanics and bot scheduling differ from the simulator engine",
+        "live clones do not assume every simulator profession, racial, prepot, or raid-buff condition",
+        "the 75 percent hard floor is applied only after Phase 2 establishes compatible live conditions",
+        "WoWSims does not publish a numeric result for this specialization",
+        "the pinned executable simulator preset predates Phase 4; the canonical runtime profile is independently generated from Phase 4 item data"
+      ]
+    },
+    {
+      "reference_id": "cata_p4:affliction_warlock",
+      "spec_target_id": "affliction_warlock",
+      "research_pass": "consolidated_all_target_pass",
+      "review_status": "reviewed",
+      "simulator_support": "launched",
+      "provider": "WoWSims",
+      "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+      "repository": "https://github.com/wowsims/cata",
+      "guide_url": "https://www.icy-veins.com/cataclysm-classic/affliction-warlock-pve-guide",
+      "gear": {
+        "phase": "phase_4",
+        "runtime_profile_id": "affliction_warlock",
+        "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
+        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "simulator_preset": {
+          "path": "ui/warlock/affliction/gear_sets/p4.gear.json",
+          "phase": "phase_4"
+        }
+      },
+      "apl": {
+        "path": "ui/warlock/affliction/apls/default.apl.json",
+        "available": true
+      },
+      "talents": {
+        "provider": "WoWSims",
+        "path": "ui/warlock/affliction/presets.ts",
+        "talent_string": "223222003013321321-03-33"
+      },
+      "test": "sim/warlock/affliction/affliction_test.go",
+      "results": "sim/warlock/affliction/TestAffliction.results",
+      "source_assets": [
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/warlock/affliction/presets.ts",
+          "sha256": "d38bf0db03928c48dd4cb058b23dbdb93718648541fe3b665d132656ce0eea7e",
+          "byte_count": 3830
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/core/talents/trees/warlock.json",
+          "sha256": "75e3a68ede5a7c8726d8b8499cde61ff504f9721691a1208b434673958340e7f",
+          "byte_count": 13972
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/proto/warlock.proto",
+          "sha256": "4d349c62935460716cc167eb9a9bf6db79f68ea83a778ace05fa8f916fe1d1d2",
+          "byte_count": 3937
+        },
+        {
+          "url": "https://www.icy-veins.com/cataclysm-classic/affliction-warlock-pve-guide",
+          "sha256": "e08257f7b5fc42f062f6c3e6884a8aae49855c0bb0b712a28feb7d6d8c8c0f32",
+          "byte_count": 138414
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/warlock/affliction/gear_sets/p4.gear.json",
+          "sha256": "375047d1f478795ebf4394e1154ce43eb45655fc7f6f4b1e85a6e5a6c6d5c49d",
+          "byte_count": 1008
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/warlock/affliction/apls/default.apl.json",
+          "sha256": "da717ce0edffb9ac733e3c08e162234b8d30d3216380b3fcdaaced3fc35c9ead",
+          "byte_count": 5069
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/warlock/affliction/affliction_test.go",
+          "sha256": "8f38bcba47d99fbac658ea0dba1ccfd11cd1703e5d66b26fec9f4368384d3d64",
+          "byte_count": 16332
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/warlock/affliction/TestAffliction.results",
+          "sha256": "e26392cdef2be9e1557335922e29d2407d206752b290c5ac6dfb18cd75df9750",
+          "byte_count": 49890
+        }
+      ],
+      "reference_conditions": {
+        "level": 85,
+        "single_target_duration_seconds": 300,
+        "duration_variation_seconds": 5,
+        "raid_buffs": "full_simulator_reference_live_conditions_recorded_separately",
+        "consumables": "simulator_enabled_live_clone_capabilities_recorded",
+        "aoe": "separate_mode_not_mixed_with_single_target"
+      },
+      "rotation_research": {
+        "priority_source": "ui/warlock/affliction/apls/default.apl.json",
+        "cooldowns": "explicit_required_rotation_group",
+        "execute": "explicit_required_rotation_group_even_when_not_applicable",
+        "movement": "explicit_required_rotation_group",
+        "aoe": "separate_explicit_required_rotation_group",
+        "pet_form_behavior": [
+          "felhunter_pet",
+          "dot_refresh",
+          "drain_soul_execute"
+        ],
+        "interrupts_utility": [
+          "spell_lock_or_shadowfury",
+          "healthstone",
+          "fear_control"
+        ]
+      },
+      "expected_output": {
+        "type": "simulator_metrics",
+        "result_key": "TestAffliction-Average-Default",
+        "metrics": {
+          "dps": 47274.72379,
+          "tps": 33129.00484
+        }
+      },
+      "known_trinitycore_deviations": [
+        "TrinityCore 4.3.4 mechanics and bot scheduling differ from the simulator engine",
+        "live clones do not assume every simulator profession, racial, prepot, or raid-buff condition",
+        "the 75 percent hard floor is applied only after Phase 2 establishes compatible live conditions"
+      ]
+    },
+    {
+      "reference_id": "cata_p4:demonology_warlock",
+      "spec_target_id": "demonology_warlock",
+      "research_pass": "consolidated_all_target_pass",
+      "review_status": "reviewed",
+      "simulator_support": "launched",
+      "provider": "WoWSims",
+      "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+      "repository": "https://github.com/wowsims/cata",
+      "guide_url": "https://www.icy-veins.com/cataclysm-classic/demonology-warlock-pve-guide",
+      "gear": {
+        "phase": "phase_4",
+        "runtime_profile_id": "demonology_warlock",
+        "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
+        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "simulator_preset": {
+          "path": "ui/warlock/demonology/gear_sets/p4.gear.json",
+          "phase": "phase_4"
+        }
+      },
+      "apl": {
+        "path": "ui/warlock/demonology/apls/incinerate.apl.json",
+        "available": true
+      },
+      "talents": {
+        "provider": "WoWSims",
+        "path": "ui/warlock/demonology/presets.ts",
+        "talent_string": "003-3312222300310212211-03202"
+      },
+      "test": "sim/warlock/demonology/demonology_test.go",
+      "results": "sim/warlock/demonology/TestDemonology.results",
+      "source_assets": [
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/warlock/demonology/presets.ts",
+          "sha256": "87d05eff1a0fff8b78e40056c8cfe004d630ffe7081a5f151c99bb757d164548",
+          "byte_count": 7451
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/core/talents/trees/warlock.json",
+          "sha256": "75e3a68ede5a7c8726d8b8499cde61ff504f9721691a1208b434673958340e7f",
+          "byte_count": 13972
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/proto/warlock.proto",
+          "sha256": "4d349c62935460716cc167eb9a9bf6db79f68ea83a778ace05fa8f916fe1d1d2",
+          "byte_count": 3937
+        },
+        {
+          "url": "https://www.icy-veins.com/cataclysm-classic/demonology-warlock-pve-guide",
+          "sha256": "500bde78d39590f56ac714cf9c284fe8a62d1231de534aaa1cbfdcb5a4ed4f88",
+          "byte_count": 139286
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/warlock/demonology/gear_sets/p4.gear.json",
+          "sha256": "bdaa671c8cd5adc6af8ec50ee4a2149bc57f3adf0cfdff46c7dfa15a85dde106",
+          "byte_count": 1008
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/warlock/demonology/apls/incinerate.apl.json",
+          "sha256": "af2ed53aaa73d819ffc618d96d681d9b208391325956b85bbf3cf07d683e65a9",
+          "byte_count": 7967
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/warlock/demonology/demonology_test.go",
+          "sha256": "394f11d9e26564e6a8c305a3544ddb6df883f826fa70e548c7a7ed391bd6ec4e",
+          "byte_count": 17181
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/warlock/demonology/TestDemonology.results",
+          "sha256": "a7d85ac24829be5b56a4b937c69bac4d578f3c41960c151c8991c6afda3d01cf",
+          "byte_count": 63846
+        }
+      ],
+      "reference_conditions": {
+        "level": 85,
+        "single_target_duration_seconds": 300,
+        "duration_variation_seconds": 5,
+        "raid_buffs": "full_simulator_reference_live_conditions_recorded_separately",
+        "consumables": "simulator_enabled_live_clone_capabilities_recorded",
+        "aoe": "separate_mode_not_mixed_with_single_target"
+      },
+      "rotation_research": {
+        "priority_source": "ui/warlock/demonology/apls/incinerate.apl.json",
+        "cooldowns": "explicit_required_rotation_group",
+        "execute": "explicit_required_rotation_group_even_when_not_applicable",
+        "movement": "explicit_required_rotation_group",
+        "aoe": "separate_explicit_required_rotation_group",
+        "pet_form_behavior": [
+          "felguard_pet",
+          "metamorphosis",
+          "decimation_execute"
+        ],
+        "interrupts_utility": [
+          "spell_lock_or_shadowfury",
+          "healthstone",
+          "fear_control"
+        ]
+      },
+      "expected_output": {
+        "type": "simulator_metrics",
+        "result_key": "TestDemonology-Average-Default",
+        "metrics": {
+          "dps": 48876.40316,
+          "tps": 24377.04044
+        }
+      },
+      "known_trinitycore_deviations": [
+        "TrinityCore 4.3.4 mechanics and bot scheduling differ from the simulator engine",
+        "live clones do not assume every simulator profession, racial, prepot, or raid-buff condition",
+        "the 75 percent hard floor is applied only after Phase 2 establishes compatible live conditions"
+      ]
+    },
+    {
+      "reference_id": "cata_p4:destruction_warlock",
+      "spec_target_id": "destruction_warlock",
+      "research_pass": "consolidated_all_target_pass",
+      "review_status": "reviewed",
+      "simulator_support": "launched",
+      "provider": "WoWSims",
+      "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+      "repository": "https://github.com/wowsims/cata",
+      "guide_url": "https://www.icy-veins.com/cataclysm-classic/destruction-warlock-pve-guide",
+      "gear": {
+        "phase": "phase_4",
+        "runtime_profile_id": "destruction_warlock",
+        "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
+        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "simulator_preset": {
+          "path": "ui/warlock/destruction/gear_sets/p4.gear.json",
+          "phase": "phase_4"
+        }
+      },
+      "apl": {
+        "path": "ui/warlock/destruction/apls/default.apl.json",
+        "available": true
+      },
+      "talents": {
+        "provider": "WoWSims",
+        "path": "ui/warlock/destruction/presets.ts",
+        "talent_string": "003-03202-3320202312201312211"
+      },
+      "test": "sim/warlock/destruction/destruction_test.go",
+      "results": "sim/warlock/destruction/TestDestruction.results",
+      "source_assets": [
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/warlock/destruction/presets.ts",
+          "sha256": "e4aae3cdbc9f3945aa9f1a27b895050ce0fdd7adc2f94e8cbac51b5c0b42aa24",
+          "byte_count": 3965
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/core/talents/trees/warlock.json",
+          "sha256": "75e3a68ede5a7c8726d8b8499cde61ff504f9721691a1208b434673958340e7f",
+          "byte_count": 13972
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/proto/warlock.proto",
+          "sha256": "4d349c62935460716cc167eb9a9bf6db79f68ea83a778ace05fa8f916fe1d1d2",
+          "byte_count": 3937
+        },
+        {
+          "url": "https://www.icy-veins.com/cataclysm-classic/destruction-warlock-pve-guide",
+          "sha256": "2c657d14c81d242a8e135af37f247f16d9e5933923655acaa3cb212a9aa51f94",
+          "byte_count": 139411
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/warlock/destruction/gear_sets/p4.gear.json",
+          "sha256": "375047d1f478795ebf4394e1154ce43eb45655fc7f6f4b1e85a6e5a6c6d5c49d",
+          "byte_count": 1008
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/warlock/destruction/apls/default.apl.json",
+          "sha256": "0b1aaa0de1eeae86ab3cef98ca1827e1e82c4fcca5c4f970e8c5c2e098c76172",
+          "byte_count": 3669
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/warlock/destruction/destruction_test.go",
+          "sha256": "9ac56a33c055f5d6ce888ddf530c40d61028f62fe7df270dbce324c32ff7ef4a",
+          "byte_count": 12943
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/warlock/destruction/TestDestruction.results",
+          "sha256": "fcaf8bb493087165587cb4e99142241fc40087461500d60c31c381ee5ba28559",
+          "byte_count": 50287
+        }
+      ],
+      "reference_conditions": {
+        "level": 85,
+        "single_target_duration_seconds": 300,
+        "duration_variation_seconds": 5,
+        "raid_buffs": "full_simulator_reference_live_conditions_recorded_separately",
+        "consumables": "simulator_enabled_live_clone_capabilities_recorded",
+        "aoe": "separate_mode_not_mixed_with_single_target"
+      },
+      "rotation_research": {
+        "priority_source": "ui/warlock/destruction/apls/default.apl.json",
+        "cooldowns": "explicit_required_rotation_group",
+        "execute": "explicit_required_rotation_group_even_when_not_applicable",
+        "movement": "explicit_required_rotation_group",
+        "aoe": "separate_explicit_required_rotation_group",
+        "pet_form_behavior": [
+          "imp_pet",
+          "improved_soul_fire",
+          "shadowburn_execute"
+        ],
+        "interrupts_utility": [
+          "spell_lock_or_shadowfury",
+          "healthstone",
+          "fear_control"
+        ]
+      },
+      "expected_output": {
+        "type": "simulator_metrics",
+        "result_key": "TestDestruction-Average-Default",
+        "metrics": {
+          "dps": 50183.52655,
+          "tps": 29836.12686
+        }
+      },
+      "known_trinitycore_deviations": [
+        "TrinityCore 4.3.4 mechanics and bot scheduling differ from the simulator engine",
+        "live clones do not assume every simulator profession, racial, prepot, or raid-buff condition",
+        "the 75 percent hard floor is applied only after Phase 2 establishes compatible live conditions"
+      ]
+    },
+    {
+      "reference_id": "cata_p4:shadow_priest",
+      "spec_target_id": "shadow_priest",
+      "research_pass": "consolidated_all_target_pass",
+      "review_status": "reviewed",
+      "simulator_support": "launched",
+      "provider": "WoWSims",
+      "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+      "repository": "https://github.com/wowsims/cata",
+      "guide_url": "https://www.icy-veins.com/cataclysm-classic/shadow-priest-pve-guide",
+      "gear": {
+        "phase": "phase_4",
+        "runtime_profile_id": "shadow_priest",
+        "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
+        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "simulator_preset": {
+          "path": "ui/priest/shadow/gear_sets/p4.gear.json",
+          "phase": "phase_4"
+        }
+      },
+      "apl": {
+        "path": "ui/priest/shadow/apls/p4.apl.json",
+        "available": true
+      },
+      "talents": {
+        "provider": "WoWSims",
+        "path": "ui/priest/shadow/presets.ts",
+        "talent_string": "032212--322032210201222100231"
+      },
+      "test": "sim/priest/shadow/shadow_test.go",
+      "results": "sim/priest/shadow/TestShadow.results",
+      "source_assets": [
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/priest/shadow/presets.ts",
+          "sha256": "e6b7b504af2afd8a9d7920246938125367cbeb0f80d6648b116ec4e71b565034",
+          "byte_count": 7007
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/core/talents/trees/priest.json",
+          "sha256": "72b2a08c9818fb753642ac3043790c3660ac1de1af80befb5c4e3a6441b3faf2",
+          "byte_count": 15830
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/proto/priest.proto",
+          "sha256": "7aa72bd1253d1702233ac4f60fefabc3c1a5384b6b6fcea2a90e0050537cadd4",
+          "byte_count": 4009
+        },
+        {
+          "url": "https://www.icy-veins.com/cataclysm-classic/shadow-priest-pve-guide",
+          "sha256": "6c0c8814a53beb08daa78bb63b57ca705cb04934d04e7d22aa9a8383c024bb4d",
+          "byte_count": 137807
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/priest/shadow/gear_sets/p4.gear.json",
+          "sha256": "c9b399880d5a195fbd0f3058988b89e044ac948c5038bb6754d04c299480409f",
+          "byte_count": 1027
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/priest/shadow/apls/p4.apl.json",
+          "sha256": "5899b39fdedfc369cafc3bb44b938eb22ab9964e71acd827178ce15812aac0b5",
+          "byte_count": 7061
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/priest/shadow/shadow_test.go",
+          "sha256": "528ff74616a6c6a279f5bd3e616fdfbaffc6a7c25c1476664497e42cedb159fb",
+          "byte_count": 2548
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/priest/shadow/TestShadow.results",
+          "sha256": "6a4b57f390ff9fedbbf601e0e9fdab9375daf034c4fbe1d11ae027889c42d7fa",
+          "byte_count": 56667
+        }
+      ],
+      "reference_conditions": {
+        "level": 85,
+        "single_target_duration_seconds": 300,
+        "duration_variation_seconds": 5,
+        "raid_buffs": "full_simulator_reference_live_conditions_recorded_separately",
+        "consumables": "simulator_enabled_live_clone_capabilities_recorded",
+        "aoe": "separate_mode_not_mixed_with_single_target"
+      },
+      "rotation_research": {
+        "priority_source": "ui/priest/shadow/apls/p4.apl.json",
+        "cooldowns": "explicit_required_rotation_group",
+        "execute": "explicit_required_rotation_group_even_when_not_applicable",
+        "movement": "explicit_required_rotation_group",
+        "aoe": "separate_explicit_required_rotation_group",
+        "pet_form_behavior": [
+          "shadowform",
+          "dot_refresh",
+          "shadow_word_death_execute"
+        ],
+        "interrupts_utility": [
+          "dispel_magic",
+          "mass_dispel",
+          "levitate"
+        ]
+      },
+      "expected_output": {
+        "type": "simulator_metrics",
+        "result_key": "TestShadow-Average-Default",
+        "metrics": {
+          "dps": 51977.1577,
+          "tps": 47064.98995
+        }
+      },
+      "known_trinitycore_deviations": [
+        "TrinityCore 4.3.4 mechanics and bot scheduling differ from the simulator engine",
+        "live clones do not assume every simulator profession, racial, prepot, or raid-buff condition",
+        "the 75 percent hard floor is applied only after Phase 2 establishes compatible live conditions"
+      ]
+    },
+    {
+      "reference_id": "cata_p4:balance_druid",
+      "spec_target_id": "balance_druid",
+      "research_pass": "consolidated_all_target_pass",
+      "review_status": "reviewed",
+      "simulator_support": "launched",
+      "provider": "WoWSims",
+      "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+      "repository": "https://github.com/wowsims/cata",
+      "guide_url": "https://www.icy-veins.com/cataclysm-classic/balance-druid-pve-guide",
+      "gear": {
+        "phase": "phase_4",
+        "runtime_profile_id": "wowsims_cata_p4_balance_druid",
+        "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
+        "runtime_manifest": "experiments/configs/wowsims_cata_p4_gear_profiles.json",
+        "simulator_preset": {
+          "path": "ui/druid/balance/gear_sets/t13.gear.json",
+          "phase": "phase_4"
+        }
+      },
+      "apl": {
+        "path": "ui/druid/balance/apls/t13.apl.json",
+        "available": true
+      },
+      "talents": {
+        "provider": "WoWSims",
+        "path": "ui/druid/balance/presets.ts",
+        "talent_string": "33230221123212111001-01-020331"
+      },
+      "test": "sim/druid/balance/balance_test.go",
+      "results": "sim/druid/balance/TestBalance.results",
+      "source_assets": [
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/druid/balance/presets.ts",
+          "sha256": "46254be9a1ed07098a2c64d9a7b154a37a9bf8592f68984db8c1cbf1184e49a5",
+          "byte_count": 4583
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/core/talents/trees/druid.json",
+          "sha256": "798b6135c375a6d92c560e87d42b33e95aec0c5ac695702eac8ba10a71487dc2",
+          "byte_count": 15768
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/proto/druid.proto",
+          "sha256": "b552aa1cbd685a50d6079a04db40586057602b043a32c45aeccd4967adbc7332",
+          "byte_count": 5339
+        },
+        {
+          "url": "https://www.icy-veins.com/cataclysm-classic/balance-druid-pve-guide",
+          "sha256": "b6da480fc74b5a61db591ec59392f954f590f9dad3fe91be505c8ec1dd7ef085",
+          "byte_count": 135823
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/druid/balance/gear_sets/t13.gear.json",
+          "sha256": "3371edc4ddf335d091274b3eaec6f037cb49fb3a6ea8eda324e60312cdb40572",
+          "byte_count": 963
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/druid/balance/apls/t13.apl.json",
+          "sha256": "90cefc9fc0bfaa566e75e5b339f4c1218aa3dcf16ac2df0e1977022d46ba10d2",
+          "byte_count": 7546
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/druid/balance/balance_test.go",
+          "sha256": "b006fd31e0cea891eae20d3c9ce0b1fe8d9a4438f67d59f481c0ed1721c96384",
+          "byte_count": 2449
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/druid/balance/TestBalance.results",
+          "sha256": "e32c6e665a66249ee52d1af68f1376805b827c485e2452724303b7d89929fa19",
+          "byte_count": 50166
+        }
+      ],
+      "reference_conditions": {
+        "level": 85,
+        "single_target_duration_seconds": 300,
+        "duration_variation_seconds": 5,
+        "raid_buffs": "full_simulator_reference_live_conditions_recorded_separately",
+        "consumables": "simulator_enabled_live_clone_capabilities_recorded",
+        "aoe": "separate_mode_not_mixed_with_single_target"
+      },
+      "rotation_research": {
+        "priority_source": "ui/druid/balance/apls/t13.apl.json",
+        "cooldowns": "explicit_required_rotation_group",
+        "execute": "explicit_required_rotation_group_even_when_not_applicable",
+        "movement": "explicit_required_rotation_group",
+        "aoe": "separate_explicit_required_rotation_group",
+        "pet_form_behavior": [
+          "moonkin_form",
+          "eclipse_cycle",
+          "dot_refresh"
+        ],
+        "interrupts_utility": [
+          "skull_bash_or_solar_beam",
+          "rebirth",
+          "stampeding_roar"
+        ]
+      },
+      "expected_output": {
+        "type": "simulator_metrics",
+        "result_key": "TestBalance-Average-Default",
+        "metrics": {
+          "dps": 49383.31452,
+          "tps": 45819.82261
+        }
+      },
+      "known_trinitycore_deviations": [
+        "TrinityCore 4.3.4 mechanics and bot scheduling differ from the simulator engine",
+        "live clones do not assume every simulator profession, racial, prepot, or raid-buff condition",
+        "the 75 percent hard floor is applied only after Phase 2 establishes compatible live conditions"
+      ]
+    },
+    {
+      "reference_id": "cata_p4:feral_druid_dps",
+      "spec_target_id": "feral_druid_dps",
+      "research_pass": "consolidated_all_target_pass",
+      "review_status": "reviewed",
+      "simulator_support": "launched",
+      "provider": "WoWSims",
+      "provider_revision": "70d87383a9b92f30fb9e370c4676d3ce33b6e6b6",
+      "repository": "https://github.com/wowsims/cata",
+      "guide_url": "https://www.icy-veins.com/cataclysm-classic/feral-druid-dps-pve-guide",
+      "gear": {
+        "phase": "phase_4",
+        "runtime_profile_id": "feral_druid_dps",
+        "runtime_builder": "tools/bot_ml/build_validation_gear_profiles.py",
+        "runtime_manifest": "experiments/configs/cata_434_combat_loot_profiles.json",
+        "simulator_preset": {
+          "path": "ui/druid/feral/gear_sets/p4.gear.json",
+          "phase": "phase_4"
+        }
+      },
+      "apl": {
+        "path": "ui/druid/feral/apls/default.apl.json",
+        "available": true
+      },
+      "talents": {
+        "provider": "WoWSims",
+        "path": "ui/druid/feral/presets.ts",
+        "talent_string": "-2320322312012121202301-020301"
+      },
+      "test": "sim/druid/feral/feral_test.go",
+      "results": "sim/druid/feral/TestFeral.results",
+      "source_assets": [
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/druid/feral/presets.ts",
+          "sha256": "ed9d3c0d487fad3330290be4052bb7df2d1c7fc7be90bef8b3d645fb44629c35",
+          "byte_count": 7173
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/core/talents/trees/druid.json",
+          "sha256": "798b6135c375a6d92c560e87d42b33e95aec0c5ac695702eac8ba10a71487dc2",
+          "byte_count": 15768
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/proto/druid.proto",
+          "sha256": "b552aa1cbd685a50d6079a04db40586057602b043a32c45aeccd4967adbc7332",
+          "byte_count": 5339
+        },
+        {
+          "url": "https://www.icy-veins.com/cataclysm-classic/feral-druid-dps-pve-guide",
+          "sha256": "685dbb33d017b6b6209301233ab5e65b1273654046bbc0eb98b33fb8018a3ed7",
+          "byte_count": 133803
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/druid/feral/gear_sets/p4.gear.json",
+          "sha256": "b6e5bbc3ab57cd9173de55e7a8465880aef078d1048a4e017f8de0d2726cbc9a",
+          "byte_count": 933
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/ui/druid/feral/apls/default.apl.json",
+          "sha256": "dc28b8ef263371f133eada7b0428bd8baedf07f68987a7d94155433f64199aa7",
+          "byte_count": 1807
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/druid/feral/feral_test.go",
+          "sha256": "b93511634568697dc949a13f0b22f7efd96526daa58f0ec5992a5b8dcb1b387c",
+          "byte_count": 5643
+        },
+        {
+          "url": "https://raw.githubusercontent.com/wowsims/cata/70d87383a9b92f30fb9e370c4676d3ce33b6e6b6/sim/druid/feral/TestFeral.results",
+          "sha256": "b2f4999171b24212886f58b091db82d0672b8c07dd79596fa2081a5345312a83",
+          "byte_count": 111070
+        }
+      ],
+      "reference_conditions": {
+        "level": 85,
+        "single_target_duration_seconds": 300,
+        "duration_variation_seconds": 5,
+        "raid_buffs": "full_simulator_reference_live_conditions_recorded_separately",
+        "consumables": "simulator_enabled_live_clone_capabilities_recorded",
+        "aoe": "separate_mode_not_mixed_with_single_target"
+      },
+      "rotation_research": {
+        "priority_source": "ui/druid/feral/apls/default.apl.json",
+        "cooldowns": "explicit_required_rotation_group",
+        "execute": "explicit_required_rotation_group_even_when_not_applicable",
+        "movement": "explicit_required_rotation_group",
+        "aoe": "separate_explicit_required_rotation_group",
+        "pet_form_behavior": [
+          "cat_form",
+          "bleed_snapshot",
+          "energy_combo_points"
+        ],
+        "interrupts_utility": [
+          "skull_bash_or_solar_beam",
+          "rebirth",
+          "stampeding_roar"
+        ]
+      },
+      "expected_output": {
+        "type": "simulator_metrics",
+        "result_key": "TestFeral-Average-Default",
+        "metrics": {
+          "dps": 53467.66485,
+          "tps": 72795.16182,
+          "hps": 26.78018
+        }
+      },
+      "known_trinitycore_deviations": [
+        "TrinityCore 4.3.4 mechanics and bot scheduling differ from the simulator engine",
+        "live clones do not assume every simulator profession, racial, prepot, or raid-buff condition",
+        "the 75 percent hard floor is applied only after Phase 2 establishes compatible live conditions"
+      ]
+    }
+  ]
+}

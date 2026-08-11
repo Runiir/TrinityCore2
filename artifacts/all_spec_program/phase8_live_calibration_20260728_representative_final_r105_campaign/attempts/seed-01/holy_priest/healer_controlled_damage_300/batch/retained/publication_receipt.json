@@ -1,0 +1,27 @@
+{
+  "batch_id": "p8-s1-holy-priest-healer-controlled-damage-300-11",
+  "batch_identity_sha256": "d2f15349177780e9b5b06375e54563573157af54c832921d38ef93c8243e0383",
+  "cache_scope": "batch_specific",
+  "compact_bundle_sha256": "73c1774e9577ebbce36e5c52b5f25ac6ed4afc899c0158769677eb201666fdbe",
+  "pointers": [
+    {
+      "dvc_md5": "9d524d3195132c81748f1a29fbd7fde0.dir",
+      "nfiles": 3,
+      "path": "artifacts/all_spec_program/phase8_live_calibration_20260728_representative_final_r105_campaign/attempts/seed-01/holy_priest/healer_controlled_damage_300/batch/raw.dvc",
+      "pointer_sha256": "464d274218128b309873914a41ddf605e87407085d00222c7cc3134ec8525920",
+      "size": 233711
+    },
+    {
+      "dvc_md5": "7a484c68f22be1716b5d24b967d9147b.dir",
+      "nfiles": 1,
+      "path": "artifacts/all_spec_program/phase8_live_calibration_20260728_representative_final_r105_campaign/attempts/seed-01/holy_priest/healer_controlled_damage_300/batch/compact.dvc",
+      "pointer_sha256": "151f156955f8de6dabdf6a9c5453166e31730b9bf4187008e6970da19a131ac3",
+      "size": 2608
+    }
+  ],
+  "raw_bundle_sha256": "3b0ea4ac165130c9d95cdb6010890aafef06b6316389f23135336cece57700d2",
+  "receipt_sha256": "68079c2fd8ec7c1e1ce9729ffedbb22d665b3e7f73dba0fec0a476c5c25eff14",
+  "remote_status_sha256": "efed9e5afcfe149915ae98b9ed9e69304eb48f5ce2e2265b18b5b5ed2f155e60",
+  "remote_verified": true,
+  "schema": "bot_immutable_batch_publication_receipt_v1"
+}

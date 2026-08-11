@@ -7638,17 +7638,17 @@ int32 Unit::MeleeDamageBonusDone(Unit* victim, int32 damage, WeaponAttackType at
         // mods for SPELL_SCHOOL_MASK_NORMAL are already factored in base melee damage calculation
         if (!spellProto || !spellProto->HasAttribute(SPELL_ATTR6_IGNORE_CASTER_DAMAGE_MODIFIERS))
         {
-            float maxModDamagePercentSchool = 0.0f;
             if (GetTypeId() == TYPEID_PLAYER)
             {
+                float maxModDamagePercentSchool = 0.0f;
                 for (uint32 i = SPELL_SCHOOL_HOLY; i < MAX_SPELL_SCHOOL; ++i)
                     if (schoolMask & (1 << i))
                         maxModDamagePercentSchool = std::max(maxModDamagePercentSchool, GetFloatValue(PLAYER_FIELD_MOD_DAMAGE_DONE_PCT + i));
+
+                DoneTotalMod *= maxModDamagePercentSchool;
             }
             else if (spellProto)
-                maxModDamagePercentSchool = GetTotalAuraMultiplierByMiscMask(SPELL_AURA_MOD_DAMAGE_PERCENT_DONE, spellProto->GetSchoolMask());
-
-            DoneTotalMod *= maxModDamagePercentSchool;
+                DoneTotalMod *= GetTotalAuraMultiplierByMiscMask(SPELL_AURA_MOD_DAMAGE_PERCENT_DONE, spellProto->GetSchoolMask());
         }
     }
 
@@ -7748,6 +7748,15 @@ int32 Unit::MeleeDamageBonusTaken(Unit* attacker, int32 pdamage, WeaponAttackTyp
 
         return false;
     });
+
+    // Ranged auto attacks have no spell context, but caster-specific damage
+    // auras can explicitly include Auto Shot in their family mask.
+    if (!spellProto && attType == RANGED_ATTACK)
+        if (SpellInfo const* autoShot = sSpellMgr->GetSpellInfo(75))
+            TakenTotalMod *= GetTotalAuraMultiplier(SPELL_AURA_MOD_DAMAGE_FROM_CASTER, [attacker, autoShot](AuraEffect const* aurEff) -> bool
+            {
+                return aurEff->GetCasterGUID() == attacker->GetGUID() && aurEff->IsAffectingSpell(autoShot);
+            });
 
     // .. taken pct (special attacks)
     if (spellProto)

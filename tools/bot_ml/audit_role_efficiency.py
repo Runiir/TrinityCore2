@@ -273,8 +273,23 @@ def build_audit(report: dict[str, Any], source_hash: str) -> dict[str, Any]:
             failures.append(f"{bot['bot_name']}:active_action_coverage")
         if bot["cast_failure_rate"] is not None and bot["cast_failure_rate"] > 0.05:
             failures.append(f"{bot['bot_name']}:cast_failure_rate")
-        if bot["role"] == "tank" and (bot["tank_threat_retention_rate"] is None or bot["tank_threat_retention_rate"] < 0.90):
-            failures.append(f"{bot['bot_name']}:tank_threat_retention")
+        if bot["role"] == "tank":
+            # Identity-scoped hostile ownership already excludes the configured
+            # acquisition grace and does not confuse scripted boss targeting or
+            # stale readiness snapshots with lost tank threat. Preserve the
+            # route-target-victim metric only for legacy traces without GUIDs.
+            tank_retention_rate = (
+                bot["tank_all_hostile_retention_rate"]
+                if bot["identity_scoped_threat"]
+                else bot["tank_threat_retention_rate"]
+            )
+            if tank_retention_rate is None or tank_retention_rate < 0.90:
+                failures.append(f"{bot['bot_name']}:tank_threat_retention")
+            if bot["identity_scoped_threat"] and bot["bot_name"] != "Scvaltank":
+                if bot["healer_target_exposure_rate"] is None or bot["healer_target_exposure_rate"] > 0.01:
+                    failures.append(f"{bot['bot_name']}:healer_target_exposure")
+                if bot["max_healer_target_dwell_ms"] is None or bot["max_healer_target_dwell_ms"] > 3000:
+                    failures.append(f"{bot['bot_name']}:healer_target_dwell")
         if bot["role"] == "healer" and bot["heal_cast_success_rate"] is not None and bot["heal_cast_success_rate"] < 0.95:
             failures.append(f"{bot['bot_name']}:heal_cast_success_rate")
         if bot["bot_name"] in REQUIRED_ROTATION_GROUPS and bot["deaths"]:

@@ -1,0 +1,540 @@
+{
+  "schema": "all_spec_calibration_scenarios_v1",
+  "acceptance_contract": {
+    "single_target_scored_window_seconds": 300,
+    "single_target_window_tolerance_seconds": 5,
+    "hard_floor_ratio": 0.75,
+    "optimization_target_ratio": 0.8,
+    "aoe_is_separate": true,
+    "healer_damage_model": "deterministic_controlled_party_damage"
+  },
+  "scenarios": [
+    {
+      "spec_target_id": "protection_warrior",
+      "primary": {
+        "scenario_id": "calibration:protection_warrior:primary",
+        "type": "single_target",
+        "scored_window_seconds": 300,
+        "window_tolerance_seconds": 5,
+        "hard_floor_ratio": 0.75,
+        "optimization_target_ratio": 0.8,
+        "individual_floor_enforced": true
+      },
+      "aoe": {
+        "scenario_id": "calibration:protection_warrior:aoe",
+        "type": "separate_aoe_mode",
+        "mixed_with_primary": false
+      }
+    },
+    {
+      "spec_target_id": "protection_paladin",
+      "primary": {
+        "scenario_id": "calibration:protection_paladin:primary",
+        "type": "single_target",
+        "scored_window_seconds": 300,
+        "window_tolerance_seconds": 5,
+        "hard_floor_ratio": 0.75,
+        "optimization_target_ratio": 0.8,
+        "individual_floor_enforced": true
+      },
+      "aoe": {
+        "scenario_id": "calibration:protection_paladin:aoe",
+        "type": "separate_aoe_mode",
+        "mixed_with_primary": false
+      }
+    },
+    {
+      "spec_target_id": "blood_death_knight",
+      "primary": {
+        "scenario_id": "calibration:blood_death_knight:primary",
+        "type": "single_target",
+        "scored_window_seconds": 300,
+        "window_tolerance_seconds": 5,
+        "hard_floor_ratio": 0.75,
+        "optimization_target_ratio": 0.8,
+        "individual_floor_enforced": true
+      },
+      "aoe": {
+        "scenario_id": "calibration:blood_death_knight:aoe",
+        "type": "separate_aoe_mode",
+        "mixed_with_primary": false
+      }
+    },
+    {
+      "spec_target_id": "feral_druid_tank",
+      "primary": {
+        "scenario_id": "calibration:feral_druid_tank:primary",
+        "type": "single_target",
+        "scored_window_seconds": 300,
+        "window_tolerance_seconds": 5,
+        "hard_floor_ratio": 0.75,
+        "optimization_target_ratio": 0.8,
+        "individual_floor_enforced": true
+      },
+      "aoe": {
+        "scenario_id": "calibration:feral_druid_tank:aoe",
+        "type": "separate_aoe_mode",
+        "mixed_with_primary": false
+      }
+    },
+    {
+      "spec_target_id": "holy_paladin",
+      "primary": {
+        "scenario_id": "calibration:holy_paladin:primary",
+        "type": "controlled_party_damage",
+        "scored_window_seconds": 300,
+        "window_tolerance_seconds": 5,
+        "hard_floor_ratio": 0.75,
+        "optimization_target_ratio": 0.8,
+        "individual_floor_enforced": true
+      },
+      "aoe": {
+        "scenario_id": "calibration:holy_paladin:aoe",
+        "type": "separate_aoe_mode",
+        "mixed_with_primary": false
+      }
+    },
+    {
+      "spec_target_id": "discipline_priest",
+      "primary": {
+        "scenario_id": "calibration:discipline_priest:primary",
+        "type": "controlled_party_damage",
+        "scored_window_seconds": 300,
+        "window_tolerance_seconds": 5,
+        "hard_floor_ratio": 0.75,
+        "optimization_target_ratio": 0.8,
+        "individual_floor_enforced": true
+      },
+      "aoe": {
+        "scenario_id": "calibration:discipline_priest:aoe",
+        "type": "separate_aoe_mode",
+        "mixed_with_primary": false
+      }
+    },
+    {
+      "spec_target_id": "holy_priest",
+      "primary": {
+        "scenario_id": "calibration:holy_priest:primary",
+        "type": "controlled_party_damage",
+        "scored_window_seconds": 300,
+        "window_tolerance_seconds": 5,
+        "hard_floor_ratio": 0.75,
+        "optimization_target_ratio": 0.8,
+        "individual_floor_enforced": true
+      },
+      "aoe": {
+        "scenario_id": "calibration:holy_priest:aoe",
+        "type": "separate_aoe_mode",
+        "mixed_with_primary": false
+      }
+    },
+    {
+      "spec_target_id": "restoration_shaman",
+      "primary": {
+        "scenario_id": "calibration:restoration_shaman:primary",
+        "type": "controlled_party_damage",
+        "scored_window_seconds": 300,
+        "window_tolerance_seconds": 5,
+        "hard_floor_ratio": 0.75,
+        "optimization_target_ratio": 0.8,
+        "individual_floor_enforced": true
+      },
+      "aoe": {
+        "scenario_id": "calibration:restoration_shaman:aoe",
+        "type": "separate_aoe_mode",
+        "mixed_with_primary": false
+      }
+    },
+    {
+      "spec_target_id": "restoration_druid",
+      "primary": {
+        "scenario_id": "calibration:restoration_druid:primary",
+        "type": "controlled_party_damage",
+        "scored_window_seconds": 300,
+        "window_tolerance_seconds": 5,
+        "hard_floor_ratio": 0.75,
+        "optimization_target_ratio": 0.8,
+        "individual_floor_enforced": true
+      },
+      "aoe": {
+        "scenario_id": "calibration:restoration_druid:aoe",
+        "type": "separate_aoe_mode",
+        "mixed_with_primary": false
+      }
+    },
+    {
+      "spec_target_id": "arms_warrior",
+      "primary": {
+        "scenario_id": "calibration:arms_warrior:primary",
+        "type": "single_target",
+        "scored_window_seconds": 300,
+        "window_tolerance_seconds": 5,
+        "hard_floor_ratio": 0.75,
+        "optimization_target_ratio": 0.8,
+        "individual_floor_enforced": true
+      },
+      "aoe": {
+        "scenario_id": "calibration:arms_warrior:aoe",
+        "type": "separate_aoe_mode",
+        "mixed_with_primary": false
+      }
+    },
+    {
+      "spec_target_id": "fury_warrior",
+      "primary": {
+        "scenario_id": "calibration:fury_warrior:primary",
+        "type": "single_target",
+        "scored_window_seconds": 300,
+        "window_tolerance_seconds": 5,
+        "hard_floor_ratio": 0.75,
+        "optimization_target_ratio": 0.8,
+        "individual_floor_enforced": true
+      },
+      "aoe": {
+        "scenario_id": "calibration:fury_warrior:aoe",
+        "type": "separate_aoe_mode",
+        "mixed_with_primary": false
+      }
+    },
+    {
+      "spec_target_id": "retribution_paladin",
+      "primary": {
+        "scenario_id": "calibration:retribution_paladin:primary",
+        "type": "single_target",
+        "scored_window_seconds": 300,
+        "window_tolerance_seconds": 5,
+        "hard_floor_ratio": 0.75,
+        "optimization_target_ratio": 0.8,
+        "individual_floor_enforced": true
+      },
+      "aoe": {
+        "scenario_id": "calibration:retribution_paladin:aoe",
+        "type": "separate_aoe_mode",
+        "mixed_with_primary": false
+      }
+    },
+    {
+      "spec_target_id": "beast_mastery_hunter",
+      "primary": {
+        "scenario_id": "calibration:beast_mastery_hunter:primary",
+        "type": "single_target",
+        "scored_window_seconds": 300,
+        "window_tolerance_seconds": 5,
+        "hard_floor_ratio": 0.75,
+        "optimization_target_ratio": 0.8,
+        "individual_floor_enforced": true
+      },
+      "aoe": {
+        "scenario_id": "calibration:beast_mastery_hunter:aoe",
+        "type": "separate_aoe_mode",
+        "mixed_with_primary": false
+      }
+    },
+    {
+      "spec_target_id": "marksmanship_hunter",
+      "primary": {
+        "scenario_id": "calibration:marksmanship_hunter:primary",
+        "type": "single_target",
+        "scored_window_seconds": 300,
+        "window_tolerance_seconds": 5,
+        "hard_floor_ratio": 0.75,
+        "optimization_target_ratio": 0.8,
+        "individual_floor_enforced": true
+      },
+      "aoe": {
+        "scenario_id": "calibration:marksmanship_hunter:aoe",
+        "type": "separate_aoe_mode",
+        "mixed_with_primary": false
+      }
+    },
+    {
+      "spec_target_id": "survival_hunter",
+      "primary": {
+        "scenario_id": "calibration:survival_hunter:primary",
+        "type": "single_target",
+        "scored_window_seconds": 300,
+        "window_tolerance_seconds": 5,
+        "hard_floor_ratio": 0.75,
+        "optimization_target_ratio": 0.8,
+        "individual_floor_enforced": true
+      },
+      "aoe": {
+        "scenario_id": "calibration:survival_hunter:aoe",
+        "type": "separate_aoe_mode",
+        "mixed_with_primary": false
+      }
+    },
+    {
+      "spec_target_id": "assassination_rogue",
+      "primary": {
+        "scenario_id": "calibration:assassination_rogue:primary",
+        "type": "single_target",
+        "scored_window_seconds": 300,
+        "window_tolerance_seconds": 5,
+        "hard_floor_ratio": 0.75,
+        "optimization_target_ratio": 0.8,
+        "individual_floor_enforced": true
+      },
+      "aoe": {
+        "scenario_id": "calibration:assassination_rogue:aoe",
+        "type": "separate_aoe_mode",
+        "mixed_with_primary": false
+      }
+    },
+    {
+      "spec_target_id": "combat_rogue",
+      "primary": {
+        "scenario_id": "calibration:combat_rogue:primary",
+        "type": "single_target",
+        "scored_window_seconds": 300,
+        "window_tolerance_seconds": 5,
+        "hard_floor_ratio": 0.75,
+        "optimization_target_ratio": 0.8,
+        "individual_floor_enforced": true
+      },
+      "aoe": {
+        "scenario_id": "calibration:combat_rogue:aoe",
+        "type": "separate_aoe_mode",
+        "mixed_with_primary": false
+      }
+    },
+    {
+      "spec_target_id": "subtlety_rogue",
+      "primary": {
+        "scenario_id": "calibration:subtlety_rogue:primary",
+        "type": "single_target",
+        "scored_window_seconds": 300,
+        "window_tolerance_seconds": 5,
+        "hard_floor_ratio": 0.75,
+        "optimization_target_ratio": 0.8,
+        "individual_floor_enforced": true
+      },
+      "aoe": {
+        "scenario_id": "calibration:subtlety_rogue:aoe",
+        "type": "separate_aoe_mode",
+        "mixed_with_primary": false
+      }
+    },
+    {
+      "spec_target_id": "frost_death_knight",
+      "primary": {
+        "scenario_id": "calibration:frost_death_knight:primary",
+        "type": "single_target",
+        "scored_window_seconds": 300,
+        "window_tolerance_seconds": 5,
+        "hard_floor_ratio": 0.75,
+        "optimization_target_ratio": 0.8,
+        "individual_floor_enforced": true
+      },
+      "aoe": {
+        "scenario_id": "calibration:frost_death_knight:aoe",
+        "type": "separate_aoe_mode",
+        "mixed_with_primary": false
+      }
+    },
+    {
+      "spec_target_id": "unholy_death_knight",
+      "primary": {
+        "scenario_id": "calibration:unholy_death_knight:primary",
+        "type": "single_target",
+        "scored_window_seconds": 300,
+        "window_tolerance_seconds": 5,
+        "hard_floor_ratio": 0.75,
+        "optimization_target_ratio": 0.8,
+        "individual_floor_enforced": true
+      },
+      "aoe": {
+        "scenario_id": "calibration:unholy_death_knight:aoe",
+        "type": "separate_aoe_mode",
+        "mixed_with_primary": false
+      }
+    },
+    {
+      "spec_target_id": "elemental_shaman",
+      "primary": {
+        "scenario_id": "calibration:elemental_shaman:primary",
+        "type": "single_target",
+        "scored_window_seconds": 300,
+        "window_tolerance_seconds": 5,
+        "hard_floor_ratio": 0.75,
+        "optimization_target_ratio": 0.8,
+        "individual_floor_enforced": true
+      },
+      "aoe": {
+        "scenario_id": "calibration:elemental_shaman:aoe",
+        "type": "separate_aoe_mode",
+        "mixed_with_primary": false
+      }
+    },
+    {
+      "spec_target_id": "enhancement_shaman",
+      "primary": {
+        "scenario_id": "calibration:enhancement_shaman:primary",
+        "type": "single_target",
+        "scored_window_seconds": 300,
+        "window_tolerance_seconds": 5,
+        "hard_floor_ratio": 0.75,
+        "optimization_target_ratio": 0.8,
+        "individual_floor_enforced": true
+      },
+      "aoe": {
+        "scenario_id": "calibration:enhancement_shaman:aoe",
+        "type": "separate_aoe_mode",
+        "mixed_with_primary": false
+      }
+    },
+    {
+      "spec_target_id": "arcane_mage",
+      "primary": {
+        "scenario_id": "calibration:arcane_mage:primary",
+        "type": "single_target",
+        "scored_window_seconds": 300,
+        "window_tolerance_seconds": 5,
+        "hard_floor_ratio": 0.75,
+        "optimization_target_ratio": 0.8,
+        "individual_floor_enforced": true
+      },
+      "aoe": {
+        "scenario_id": "calibration:arcane_mage:aoe",
+        "type": "separate_aoe_mode",
+        "mixed_with_primary": false
+      }
+    },
+    {
+      "spec_target_id": "fire_mage",
+      "primary": {
+        "scenario_id": "calibration:fire_mage:primary",
+        "type": "single_target",
+        "scored_window_seconds": 300,
+        "window_tolerance_seconds": 5,
+        "hard_floor_ratio": 0.75,
+        "optimization_target_ratio": 0.8,
+        "individual_floor_enforced": true
+      },
+      "aoe": {
+        "scenario_id": "calibration:fire_mage:aoe",
+        "type": "separate_aoe_mode",
+        "mixed_with_primary": false
+      }
+    },
+    {
+      "spec_target_id": "frost_mage",
+      "primary": {
+        "scenario_id": "calibration:frost_mage:primary",
+        "type": "single_target",
+        "scored_window_seconds": 300,
+        "window_tolerance_seconds": 5,
+        "hard_floor_ratio": 0.75,
+        "optimization_target_ratio": 0.8,
+        "individual_floor_enforced": true
+      },
+      "aoe": {
+        "scenario_id": "calibration:frost_mage:aoe",
+        "type": "separate_aoe_mode",
+        "mixed_with_primary": false
+      }
+    },
+    {
+      "spec_target_id": "affliction_warlock",
+      "primary": {
+        "scenario_id": "calibration:affliction_warlock:primary",
+        "type": "single_target",
+        "scored_window_seconds": 300,
+        "window_tolerance_seconds": 5,
+        "hard_floor_ratio": 0.75,
+        "optimization_target_ratio": 0.8,
+        "individual_floor_enforced": true
+      },
+      "aoe": {
+        "scenario_id": "calibration:affliction_warlock:aoe",
+        "type": "separate_aoe_mode",
+        "mixed_with_primary": false
+      }
+    },
+    {
+      "spec_target_id": "demonology_warlock",
+      "primary": {
+        "scenario_id": "calibration:demonology_warlock:primary",
+        "type": "single_target",
+        "scored_window_seconds": 300,
+        "window_tolerance_seconds": 5,
+        "hard_floor_ratio": 0.75,
+        "optimization_target_ratio": 0.8,
+        "individual_floor_enforced": true
+      },
+      "aoe": {
+        "scenario_id": "calibration:demonology_warlock:aoe",
+        "type": "separate_aoe_mode",
+        "mixed_with_primary": false
+      }
+    },
+    {
+      "spec_target_id": "destruction_warlock",
+      "primary": {
+        "scenario_id": "calibration:destruction_warlock:primary",
+        "type": "single_target",
+        "scored_window_seconds": 300,
+        "window_tolerance_seconds": 5,
+        "hard_floor_ratio": 0.75,
+        "optimization_target_ratio": 0.8,
+        "individual_floor_enforced": true
+      },
+      "aoe": {
+        "scenario_id": "calibration:destruction_warlock:aoe",
+        "type": "separate_aoe_mode",
+        "mixed_with_primary": false
+      }
+    },
+    {
+      "spec_target_id": "shadow_priest",
+      "primary": {
+        "scenario_id": "calibration:shadow_priest:primary",
+        "type": "single_target",
+        "scored_window_seconds": 300,
+        "window_tolerance_seconds": 5,
+        "hard_floor_ratio": 0.75,
+        "optimization_target_ratio": 0.8,
+        "individual_floor_enforced": true
+      },
+      "aoe": {
+        "scenario_id": "calibration:shadow_priest:aoe",
+        "type": "separate_aoe_mode",
+        "mixed_with_primary": false
+      }
+    },
+    {
+      "spec_target_id": "balance_druid",
+      "primary": {
+        "scenario_id": "calibration:balance_druid:primary",
+        "type": "single_target",
+        "scored_window_seconds": 300,
+        "window_tolerance_seconds": 5,
+        "hard_floor_ratio": 0.75,
+        "optimization_target_ratio": 0.8,
+        "individual_floor_enforced": true
+      },
+      "aoe": {
+        "scenario_id": "calibration:balance_druid:aoe",
+        "type": "separate_aoe_mode",
+        "mixed_with_primary": false
+      }
+    },
+    {
+      "spec_target_id": "feral_druid_dps",
+      "primary": {
+        "scenario_id": "calibration:feral_druid_dps:primary",
+        "type": "single_target",
+        "scored_window_seconds": 300,
+        "window_tolerance_seconds": 5,
+        "hard_floor_ratio": 0.75,
+        "optimization_target_ratio": 0.8,
+        "individual_floor_enforced": true
+      },
+      "aoe": {
+        "scenario_id": "calibration:feral_druid_dps:aoe",
+        "type": "separate_aoe_mode",
+        "mixed_with_primary": false
+      }
+    }
+  ]
+}

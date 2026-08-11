@@ -1,0 +1,16 @@
+{
+  "schema": "phase8_dps_representatives_cata_p4_v1",
+  "qualification_policy": "one_representative_per_class_at_75_percent_floor",
+  "representatives": {
+    "death_knight": "unholy_death_knight",
+    "druid": "balance_druid",
+    "hunter": "marksmanship_hunter",
+    "mage": "fire_mage",
+    "paladin": "retribution_paladin",
+    "priest": "shadow_priest",
+    "rogue": "combat_rogue",
+    "shaman": "enhancement_shaman",
+    "warlock": "demonology_warlock",
+    "warrior": "arms_warrior"
+  }
+}

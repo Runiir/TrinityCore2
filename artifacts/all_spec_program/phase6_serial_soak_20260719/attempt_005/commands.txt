@@ -1,0 +1,4 @@
+.botauto status phase6-serial-soak
+.botauto diagnose phase6-serial-soak all
+.botauto trace phase6-serial-soak all 128
+.botauto combatlog phase6-serial-soak

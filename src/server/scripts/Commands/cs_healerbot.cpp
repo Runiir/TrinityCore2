@@ -805,10 +805,13 @@ public:
 
         static std::vector<ChatCommand> botAutoCommandTable =
         {
+            { "create",  rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoCreateCommand,  "" },
+            { "cohorts", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoCohortsCommand, "" },
+            { "ownership", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoOwnershipCommand, "" },
             { "start",   rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoStartCommand,   "" },
             { "prepare", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoPrepareCommand, "" },
             { "stop",    rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoStopCommand,    "" },
-            { "status",  rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleStatusCommand,      "" },
+            { "status",  rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoStatusCommand,  "" },
             { "profiles", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoProfilesCommand, "" },
             { "profile", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoProfileCommand,  "" },
             { "rotations", rbac::RBAC_PERM_COMMAND_HEALERBOT, true, &HandleAutoRotationsCommand, "" },
@@ -860,6 +863,48 @@ private:
         return tokens;
     }
 
+    static bool SendAutoResult(ChatHandler* handler, std::string const& result)
+    {
+        bool ok = result.find("\"ok\":true") != std::string::npos;
+        if (handler)
+        {
+            handler->PSendSysMessage("%s", result.c_str());
+            if (!ok)
+                handler->SetSentErrorMessage(true);
+        }
+        return ok;
+    }
+
+    static std::string ResolveGlobalAutoCohort(ChatHandler* handler, char const* action)
+    {
+        std::string cohortId = sBotWorldPopulationMgr->ResolveGlobalCohortId();
+        if (!cohortId.empty())
+            return cohortId;
+
+        std::string result = std::string("{\"ok\":false,\"action\":\"") + action
+            + "\",\"failure_reason\":\"ambiguous_global_cohort\",\"hint\":\"provide_cohort_id\"}";
+        SendAutoResult(handler, result);
+        return "";
+    }
+
+    static bool HandleAutoCreateCommand(ChatHandler* handler, char const* args)
+    {
+        std::string cohortId = FirstArg(args);
+        if (cohortId.empty())
+            return SendAutoResult(handler, "{\"ok\":false,\"action\":\"botauto_create\",\"failure_reason\":\"usage: .botauto create <cohort_id>\"}");
+        return SendAutoResult(handler, sBotWorldPopulationMgr->CreateCohort(cohortId));
+    }
+
+    static bool HandleAutoCohortsCommand(ChatHandler* handler, char const* /*args*/)
+    {
+        return SendAutoResult(handler, sBotWorldPopulationMgr->GetCohortRegistryJson());
+    }
+
+    static bool HandleAutoOwnershipCommand(ChatHandler* handler, char const* /*args*/)
+    {
+        return SendAutoResult(handler, sBotWorldPopulationMgr->GetCohortIsolationContractJson());
+    }
+
     static bool HandleStartCommand(ChatHandler* handler, char const* args)
     {
         std::string name = FirstArg(args);
@@ -891,51 +936,70 @@ private:
 
     static bool HandleAutoStartCommand(ChatHandler* handler, char const* args)
     {
-        std::string profileName = FirstArg(args);
-        if (!profileName.empty())
+        std::vector<std::string> tokens = Tokenize(args);
+        std::string cohortId;
+        std::string profileName;
+        if (!tokens.empty() && sBotWorldPopulationMgr->HasCohort(tokens[0]))
         {
-            std::string selectResult = sBotWorldPopulationMgr->SelectRuntimeProfile(profileName);
-            if (selectResult.find("\"ok\":true") == std::string::npos)
-            {
-                if (handler)
-                {
-                    handler->PSendSysMessage("%s", selectResult.c_str());
-                    handler->SetSentErrorMessage(true);
-                }
+            cohortId = tokens[0];
+            if (tokens.size() > 1)
+                profileName = tokens[1];
+        }
+        else
+        {
+            cohortId = ResolveGlobalAutoCohort(handler, "botauto_start");
+            if (cohortId.empty())
                 return false;
-            }
+            if (!tokens.empty())
+                profileName = tokens[0];
         }
 
-        if (!sBotWorldPopulationMgr->StartAutonomy())
-        {
-            if (handler)
-            {
-                handler->PSendSysMessage("{\"ok\":false,\"action\":\"botauto_start\",\"failure_reason\":\"botworld_or_playerbot_disabled_or_no_pool_character\"}");
-                handler->SetSentErrorMessage(true);
-            }
+        if (!profileName.empty()
+            && !SendAutoResult(handler, sBotWorldPopulationMgr->SelectRuntimeProfileForCohort(cohortId, profileName)))
             return false;
-        }
 
-        if (handler)
-            handler->PSendSysMessage("%s", sBotWorldPopulationMgr->GetStatusJson().c_str());
-        return true;
+        if (!sBotWorldPopulationMgr->StartAutonomyForCohort(cohortId))
+            return SendAutoResult(handler, "{\"ok\":false,\"action\":\"botauto_start\",\"cohort_id\":\"" + cohortId
+                + "\",\"failure_reason\":\"max_active_cohorts_or_runtime_start_failed\"}");
+
+        return SendAutoResult(handler, sBotWorldPopulationMgr->GetStatusJsonForCohort(cohortId));
     }
 
     static bool HandleAutoPrepareCommand(ChatHandler* handler, char const* args)
     {
-        std::string profileName = FirstArg(args);
-        std::string result = sBotWorldPopulationMgr->PrepareValidationProfile(profileName);
-        if (handler)
+        std::vector<std::string> tokens = Tokenize(args);
+        std::string cohortId;
+        std::string profileName;
+        std::string poolTag;
+        std::vector<std::string> classSpecs;
+        if (tokens.size() >= 2 && sBotWorldPopulationMgr->HasCohort(tokens[0]))
         {
-            handler->PSendSysMessage("%s", result.c_str());
-            if (result.find("\"ok\":true") == std::string::npos)
-                handler->SetSentErrorMessage(true);
+            cohortId = tokens[0];
+            profileName = tokens[1];
+            if (tokens.size() > 2)
+                poolTag = tokens[2];
+            if (tokens.size() > 3)
+                classSpecs.assign(tokens.begin() + 3, tokens.end());
         }
-        return result.find("\"ok\":true") != std::string::npos;
+        else
+        {
+            cohortId = ResolveGlobalAutoCohort(handler, "botauto_prepare");
+            if (cohortId.empty())
+                return false;
+            profileName = tokens.empty() ? "" : tokens[0];
+            if (tokens.size() > 1)
+                poolTag = tokens[1];
+            if (tokens.size() > 2)
+                classSpecs.assign(tokens.begin() + 2, tokens.end());
+        }
+        return SendAutoResult(handler, sBotWorldPopulationMgr->PrepareValidationProfileForCohort(
+            cohortId, profileName, poolTag, classSpecs));
     }
 
     static bool HandleAutoProfilesCommand(ChatHandler* handler, char const* /*args*/)
     {
+        if (ResolveGlobalAutoCohort(handler, "botauto_profiles").empty())
+            return false;
         if (handler)
             handler->PSendSysMessage("%s", sBotWorldPopulationMgr->GetRuntimeProfilesJson().c_str());
         return true;
@@ -943,6 +1007,8 @@ private:
 
     static bool HandleAutoProfileCommand(ChatHandler* handler, char const* args)
     {
+        if (ResolveGlobalAutoCohort(handler, "botauto_profile").empty())
+            return false;
         std::vector<std::string> tokens = Tokenize(args);
         std::string result;
         if (tokens.empty())
@@ -971,10 +1037,12 @@ private:
             result = BotClassSpecActionProfileStore::DbProfilesJson();
         else if (tokens[0] == "reload")
             result = BotClassSpecActionProfileStore::ReloadDbProfiles();
+        else if (tokens[0] == "rollback")
+            result = BotClassSpecActionProfileStore::RollbackDbProfiles();
         else if (tokens[0] == "dump" && tokens.size() >= 4)
             result = BotClassSpecActionProfileStore::DbProfileDumpJson(uint8(std::atoi(tokens[1].c_str())), tokens[2], tokens[3]);
         else
-            result = "{\"ok\":false,\"action\":\"botauto_rotations\",\"failure_reason\":\"usage: .botauto rotations list|reload|dump <class_id> <spec_tag> <role>\"}";
+            result = "{\"ok\":false,\"action\":\"botauto_rotations\",\"failure_reason\":\"usage: .botauto rotations list|reload|rollback|dump <class_id> <spec_tag> <role>\"}";
 
         if (handler)
         {
@@ -985,16 +1053,25 @@ private:
         return result.find("\"ok\":true") != std::string::npos;
     }
 
-    static bool HandleAutoStopCommand(ChatHandler* handler, char const* /*args*/)
+    static bool HandleAutoStopCommand(ChatHandler* handler, char const* args)
     {
-        sBotWorldPopulationMgr->StopAutonomy();
-        if (handler)
-            handler->PSendSysMessage("{\"ok\":true,\"action\":\"botauto_stop\",\"failure_reason\":null}");
-        return true;
+        std::string cohortId = FirstArg(args);
+        if (cohortId.empty())
+        {
+            cohortId = ResolveGlobalAutoCohort(handler, "botauto_stop");
+            if (cohortId.empty())
+                return false;
+        }
+        if (!sBotWorldPopulationMgr->HasCohort(cohortId))
+            return SendAutoResult(handler, "{\"ok\":false,\"action\":\"botauto_stop\",\"cohort_id\":\"" + cohortId + "\",\"failure_reason\":\"unknown_cohort\"}");
+        sBotWorldPopulationMgr->StopAutonomyForCohort(cohortId);
+        return SendAutoResult(handler, "{\"ok\":true,\"action\":\"botauto_stop\",\"cohort_id\":\"" + cohortId + "\",\"failure_reason\":null}");
     }
 
     static bool HandleAutoSpawnCommand(ChatHandler* handler, char const* args)
     {
+        if (ResolveGlobalAutoCohort(handler, "botauto_spawn").empty())
+            return false;
         std::vector<std::string> tokens = Tokenize(args);
         uint32 count = 1;
         if (!tokens.empty() && tokens[0].find_first_not_of("0123456789") == std::string::npos)
@@ -1027,6 +1104,8 @@ private:
             }
             return false;
         }
+        if (ResolveGlobalAutoCohort(handler, "botauto_despawn").empty())
+            return false;
 
         sBotWorldPopulationMgr->StopAutonomy();
         if (handler)
@@ -1036,6 +1115,8 @@ private:
 
     static bool HandleAutoDebugCommand(ChatHandler* handler, char const* args)
     {
+        if (ResolveGlobalAutoCohort(handler, "botauto_debug").empty())
+            return false;
         std::vector<std::string> tokens = Tokenize(args);
         std::string selector = tokens.empty() ? "" : tokens[0];
         if (handler)
@@ -1046,15 +1127,41 @@ private:
     static bool HandleAutoDiagnoseCommand(ChatHandler* handler, char const* args)
     {
         std::vector<std::string> tokens = Tokenize(args);
-        std::string selector = tokens.empty() ? "all" : tokens[0];
-        if (handler)
-            handler->PSendSysMessage("%s", sBotWorldPopulationMgr->GetBotDiagnosisJson(selector).c_str());
-        return true;
+        std::string cohortId;
+        std::string selector = "all";
+        if (!tokens.empty() && sBotWorldPopulationMgr->HasCohort(tokens[0]))
+        {
+            cohortId = tokens[0];
+            if (tokens.size() > 1)
+                selector = tokens[1];
+        }
+        else
+        {
+            cohortId = ResolveGlobalAutoCohort(handler, "botauto_diagnose");
+            if (cohortId.empty())
+                return false;
+            if (!tokens.empty())
+                selector = tokens[0];
+        }
+        return SendAutoResult(handler, sBotWorldPopulationMgr->GetBotDiagnosisJsonForCohort(cohortId, selector));
     }
 
     static bool HandleAutoTraceCommand(ChatHandler* handler, char const* args)
     {
         std::vector<std::string> tokens = Tokenize(args);
+        std::string cohortId;
+        if (!tokens.empty() && sBotWorldPopulationMgr->HasCohort(tokens[0]))
+        {
+            cohortId = tokens[0];
+            tokens.erase(tokens.begin());
+        }
+        else
+        {
+            cohortId = ResolveGlobalAutoCohort(handler, "botauto_trace");
+            if (cohortId.empty())
+                return false;
+        }
+
         std::string selector = tokens.empty() ? "" : tokens[0];
         uint32 limit = 20;
         if (tokens.size() > 1 && tokens[1].find_first_not_of("0123456789") == std::string::npos)
@@ -1064,14 +1171,21 @@ private:
             limit = std::max<uint32>(1, uint32(strtoul(tokens[0].c_str(), nullptr, 10)));
             selector.clear();
         }
-
-        if (handler)
-            handler->PSendSysMessage("%s", sBotWorldPopulationMgr->GetBotTraceJson(selector, limit).c_str());
-        return true;
+        return SendAutoResult(handler, sBotWorldPopulationMgr->GetBotTraceJsonForCohort(cohortId, selector, limit));
     }
 
-    static bool HandleAutoCombatLogCommand(ChatHandler* handler, char const* /*args*/)
+    static bool HandleAutoCombatLogCommand(ChatHandler* handler, char const* args)
     {
+        std::string cohortId = FirstArg(args);
+        if (cohortId.empty())
+        {
+            cohortId = ResolveGlobalAutoCohort(handler, "botauto_combatlog");
+            if (cohortId.empty())
+                return false;
+        }
+        if (!sBotWorldPopulationMgr->HasCohort(cohortId))
+            return SendAutoResult(handler, "{\"ok\":false,\"action\":\"botauto_combatlog\",\"cohort_id\":\"" + cohortId + "\",\"failure_reason\":\"unknown_cohort\"}");
+
         if (handler && handler->GetSession())
         {
             handler->PSendSysMessage("{\"ok\":false,\"action\":\"botauto_combatlog\",\"failure_reason\":\"console_only_bounded_export\"}");
@@ -1080,7 +1194,7 @@ private:
         }
         if (handler)
         {
-            std::string combatLog = sBotWorldPopulationMgr->GetCombatLogJson();
+            std::string combatLog = sBotWorldPopulationMgr->GetCombatLogJsonForCohort(cohortId);
             static constexpr size_t RawChunkSize = 24 * 1024;
             size_t chunkCount = std::max<size_t>(1, (combatLog.size() + RawChunkSize - 1) / RawChunkSize);
             for (size_t sequence = 0; sequence < chunkCount; ++sequence)
@@ -1090,14 +1204,14 @@ private:
                 std::vector<uint8> raw(combatLog.begin() + offset, combatLog.begin() + offset + length);
                 std::string encoded = Trinity::Encoding::Base64::Encode(raw);
                 handler->PSendSysMessage(
-                    "{\"ok\":true,\"action\":\"botauto_combatlog_chunk\",\"combat_log_chunk_schema_version\":1,"
+                    "{\"ok\":true,\"action\":\"botauto_combatlog_chunk\",\"cohort_id\":\"%s\",\"combat_log_chunk_schema_version\":1,"
                     "\"sequence\":%zu,\"chunk_count\":%zu,\"encoding\":\"base64\",\"data\":\"%s\"}",
-                    sequence, chunkCount, encoded.c_str());
+                    cohortId.c_str(), sequence, chunkCount, encoded.c_str());
             }
             handler->PSendSysMessage(
-                "{\"ok\":true,\"action\":\"botauto_combatlog_complete\",\"combat_log_chunk_schema_version\":1,"
+                "{\"ok\":true,\"action\":\"botauto_combatlog_complete\",\"cohort_id\":\"%s\",\"combat_log_chunk_schema_version\":1,"
                 "\"chunk_count\":%zu,\"total_bytes\":%zu}",
-                chunkCount, combatLog.size());
+                cohortId.c_str(), chunkCount, combatLog.size());
         }
         return true;
     }
@@ -1105,24 +1219,47 @@ private:
     static bool HandleAutoCalibrateCommand(ChatHandler* handler, char const* args)
     {
         std::vector<std::string> tokens = Tokenize(args);
+        std::string cohortId;
+        if (!tokens.empty() && sBotWorldPopulationMgr->HasCohort(tokens[0]))
+        {
+            cohortId = tokens[0];
+            tokens.erase(tokens.begin());
+        }
+        else
+        {
+            cohortId = ResolveGlobalAutoCohort(handler, "botauto_calibrate");
+            if (cohortId.empty())
+                return false;
+        }
+
         std::string operation = tokens.empty() ? "status" : tokens[0];
         std::string result;
         if (operation == "start")
-            result = sBotWorldPopulationMgr->StartCombatCalibration();
-        else if (operation == "stop")
-            result = sBotWorldPopulationMgr->StopCombatCalibration();
-        else if (operation == "status")
-            result = sBotWorldPopulationMgr->GetCombatCalibrationJson();
-        else
-            result = "{\"ok\":false,\"action\":\"botauto_calibrate\",\"failure_reason\":\"usage: .botauto calibrate start|stop|status\"}";
-
-        if (handler)
         {
-            handler->PSendSysMessage("%s", result.c_str());
-            if (result.find("\"ok\":true") == std::string::npos)
-                handler->SetSentErrorMessage(true);
+            std::string mode = tokens.size() > 1 ? tokens[1] : "";
+            std::string targetSpec = tokens.size() > 2 ? tokens[2] : "";
+            uint32 seed = tokens.size() > 3 ? std::max<uint32>(1, uint32(strtoul(tokens[3].c_str(), nullptr, 10))) : 1;
+            result = sBotWorldPopulationMgr->StartCombatCalibrationForCohort(cohortId, mode, targetSpec, seed);
         }
-        return result.find("\"ok\":true") != std::string::npos;
+        else if (operation == "stop")
+            result = sBotWorldPopulationMgr->StopCombatCalibrationForCohort(cohortId);
+        else if (operation == "status")
+            result = sBotWorldPopulationMgr->GetCombatCalibrationJsonForCohort(cohortId);
+        else
+            result = "{\"ok\":false,\"action\":\"botauto_calibrate\",\"failure_reason\":\"usage: .botauto calibrate [cohort_id] start <mode> <target_spec> [seed]|stop|status\"}";
+        return SendAutoResult(handler, result);
+    }
+
+    static bool HandleAutoStatusCommand(ChatHandler* handler, char const* args)
+    {
+        std::string cohortId = FirstArg(args);
+        if (cohortId.empty())
+        {
+            cohortId = ResolveGlobalAutoCohort(handler, "botauto_status");
+            if (cohortId.empty())
+                return false;
+        }
+        return SendAutoResult(handler, sBotWorldPopulationMgr->GetStatusJsonForCohort(cohortId));
     }
 
     static bool HandleStatusCommand(ChatHandler* handler, char const* /*args*/)

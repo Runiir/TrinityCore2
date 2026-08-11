@@ -1,0 +1,65 @@
+{
+  "schema": "all_spec_role_calibration_policy_v1",
+  "scored_window_seconds": 300,
+  "duration_tolerance_seconds": 5,
+  "minimum_warmup_seconds": 15,
+  "hard_reference_ratio": 0.75,
+  "optimization_reference_ratio": 0.8,
+  "runtime_authority": "explicit_sql_rule_profiles",
+  "generic_ml_runtime_authority": false,
+  "modes": {
+    "single_target_300": {
+      "roles": ["dps", "tank"],
+      "target_count": 1,
+      "minimum_active_uptime_ratio": 0.9,
+      "minimum_rotation_group_coverage": 0.8,
+      "maximum_cast_failure_ratio": 0.05,
+      "maximum_resource_capped_ratio": 0.2,
+      "maximum_resource_starved_ratio": 0.2,
+      "maximum_movement_range_loss_ratio": 0.1
+    },
+    "aoe_300": {
+      "roles": ["dps"],
+      "minimum_target_count": 3,
+      "minimum_active_uptime_ratio": 0.9,
+      "minimum_rotation_group_coverage": 0.8,
+      "maximum_cast_failure_ratio": 0.05,
+      "maximum_resource_capped_ratio": 0.2,
+      "maximum_resource_starved_ratio": 0.2,
+      "maximum_movement_range_loss_ratio": 0.1
+    },
+    "tank_threat_300": {
+      "roles": ["tank"],
+      "minimum_target_count": 3,
+      "minimum_snap_threat_success_ratio": 0.95,
+      "minimum_add_threat_success_ratio": 0.95,
+      "minimum_all_hostile_retention_ratio": 0.95,
+      "minimum_threat_aura_uptime_ratio": 0.99,
+      "maximum_healer_exposure_ratio": 0.02,
+      "minimum_mitigation_uptime_ratio": 0.6,
+      "maximum_damage_spike_ratio": 0.45,
+      "minimum_interrupt_success_ratio": 0.9
+    },
+    "healer_controlled_damage_300": {
+      "roles": ["healer"],
+      "required_phases": [
+        "sustained_tank_damage",
+        "burst_tank_damage",
+        "group_damage",
+        "unequal_health_triage",
+        "dispel",
+        "cooldown_required",
+        "mana_endurance"
+      ],
+      "minimum_health_floor_ratio": 0.2,
+      "maximum_overheal_ratio": 0.45,
+      "maximum_response_latency_ms": 1500,
+      "minimum_target_selection_accuracy": 0.9,
+      "minimum_dispel_success_ratio": 1.0,
+      "minimum_cooldown_success_ratio": 1.0,
+      "maximum_idle_ratio_under_demand": 0.1,
+      "maximum_cast_failure_ratio": 0.05,
+      "minimum_remaining_mana_ratio": 0.05
+    }
+  }
+}

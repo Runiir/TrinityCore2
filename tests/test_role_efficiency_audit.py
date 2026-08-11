@@ -1,7 +1,8 @@
 from pathlib import Path
 
 from tools.bot_ml.audit_role_efficiency import build_audit
-from tools.bot_ml.run_live_bot_validation import attach_stonecore_role_quality_audit
+from tools.bot_ml.live_validation_session import acceptance_facts_from_report, evaluate_acceptance
+from tools.bot_ml.run_live_bot_validation import attach_stonecore_role_quality_audit, compact_published_report
 
 
 def _entry(name, guid, sequence, role_goal, result="ok", spell=1, recorded=100):
@@ -250,12 +251,52 @@ def test_role_audit_v3_rejects_missing_tank_threat_aura_during_combat():
     assert "Scvaltank:tank_threat_aura_uptime" in audit["failure_labels"]
 
 
-def test_full_stonecore_acceptance_is_revoked_when_role_quality_fails():
+def _strict_stonecore_manifest_and_evidence():
+    routes = [
+        {
+            "route_node_id": f"stonecore_node_{generation}",
+            "route_generation": generation,
+            "kind": "boss" if generation in {2, 5, 9, 14} else "trash",
+        }
+        for generation in range(1, 15)
+    ]
+    evidence = {
+        "manifest_completion_evidence": {"route_generation": 14},
+        "route_terminal_evidence": [
+            {
+                "route_node_id": route["route_node_id"],
+                "route_generation": route["route_generation"],
+            }
+            for route in routes
+        ],
+        "real_boss_kill_evidence": [
+            {
+                "route_node_id": route["route_node_id"],
+                "route_generation": route["route_generation"],
+            }
+            for route in routes
+            if route["kind"] == "boss"
+        ],
+        "forbidden_completion_assists": [],
+    }
+    return {"routes": routes}, evidence
+
+
+def test_full_stonecore_boss_clear_keeps_failed_role_quality_as_diagnostic():
+    manifest, evidence = _strict_stonecore_manifest_and_evidence()
     report = {
         "all_passed": True,
         "acceptable_final_evidence": True,
         "failure_labels": [],
         "final_evidence_rejections": [],
+        "returncode": 0,
+        "timed_out": False,
+        "completion_reason": "validation_route_manifest_complete",
+        "evidence": evidence,
+        "stages": [{"stage": "stonecore", "missing": []}],
+        "validation_context": {"scenario_id": "stonecore_5n"},
+        "validation_route_manifest": manifest,
+        "watchdog_state": {},
         "status": {"deaths": 1},
         "trace": {"entries": []},
     }
@@ -263,14 +304,57 @@ def test_full_stonecore_acceptance_is_revoked_when_role_quality_fails():
     attach_stonecore_role_quality_audit(
         report,
         {"scenario_id": "stonecore_5n"},
-        {"routes": [{"route_node_id": "entrance"}]},
+        manifest,
     )
 
     assert report["role_efficiency_audit"]["passed"] is False
+    assert report["role_efficiency_audit"]["enforcement"] == "advisory"
+    assert report["role_efficiency_audit"]["authoritative_boss_clear"] is True
+    assert report["role_quality_advisory_labels"]
+    assert report["all_passed"] is True
+    assert report["acceptable_final_evidence"] is True
+    assert report["failure_labels"] == []
+    assert report["final_evidence_rejections"] == []
+    facts = acceptance_facts_from_report(report)
+    assert facts["role_quality_audit_failed"] is True
+    acceptance = evaluate_acceptance(facts)
+    assert acceptance["accepted"] is True
+    assert acceptance["authoritative_stonecore_boss_clear"] is True
+    assert acceptance["role_quality_advisory"] is True
+    compact = compact_published_report(report)
+    assert compact["role_efficiency_audit"]["enforcement"] == "advisory"
+    assert compact["role_quality_advisory_labels"] == report["role_quality_advisory_labels"]
+
+
+def test_incomplete_stonecore_clear_still_enforces_failed_role_quality():
+    manifest, evidence = _strict_stonecore_manifest_and_evidence()
+    evidence["real_boss_kill_evidence"] = evidence["real_boss_kill_evidence"][:-1]
+    report = {
+        "all_passed": False,
+        "acceptable_final_evidence": False,
+        "failure_labels": [],
+        "final_evidence_rejections": ["missing_real_boss_kill_evidence"],
+        "returncode": 0,
+        "timed_out": False,
+        "evidence": evidence,
+        "watchdog_state": {},
+        "status": {"deaths": 1},
+        "trace": {"entries": []},
+    }
+
+    attach_stonecore_role_quality_audit(
+        report,
+        {"scenario_id": "stonecore_5n"},
+        manifest,
+    )
+
+    assert report["role_efficiency_audit"]["enforcement"] == "required"
+    assert report["role_efficiency_audit"]["authoritative_boss_clear"] is False
     assert report["all_passed"] is False
     assert report["acceptable_final_evidence"] is False
     assert "stonecore_role_quality_audit_failed" in report["failure_labels"]
     assert "stonecore_role_quality_audit_failed" in report["final_evidence_rejections"]
+    assert acceptance_facts_from_report(report)["role_quality_audit_failed"] is True
 
 
 def test_stonecore_segment_diagnostics_do_not_run_full_clear_quality_gate():

@@ -1,0 +1,5 @@
+.botauto calibrate p8-s1-restoration-shaman-healer-controlled-damage-300 start healer_controlled_damage_300 restoration_shaman 1
+.botauto status p8-s1-restoration-shaman-healer-controlled-damage-300
+.botauto calibrate p8-s1-restoration-shaman-healer-controlled-damage-300 status
+.botauto combatlog p8-s1-restoration-shaman-healer-controlled-damage-300
+.botauto calibrate p8-s1-restoration-shaman-healer-controlled-damage-300 stop

@@ -1,0 +1,6 @@
+outs:
+- md5: 733a517be99b1824a09db3c29093b3b4.dir
+  size: 2520
+  nfiles: 2
+  hash: md5
+  path: phase9_scope_exclusion_20260811

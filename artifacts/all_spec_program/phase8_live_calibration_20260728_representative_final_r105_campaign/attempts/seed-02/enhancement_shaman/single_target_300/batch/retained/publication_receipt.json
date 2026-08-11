@@ -1,0 +1,27 @@
+{
+  "batch_id": "p8-s2-enhancement-shaman-single-target-300-57",
+  "batch_identity_sha256": "de4623e9fbbe31271a70da3133b34760e04fb58ac35ad75d3f7b542b5ed76442",
+  "cache_scope": "batch_specific",
+  "compact_bundle_sha256": "d72721bd8c167a74362f710115a58e48b023fcc777d65061556d005c3e77b2ca",
+  "pointers": [
+    {
+      "dvc_md5": "140d9e216950306d9076acb6acfe70d4.dir",
+      "nfiles": 3,
+      "path": "artifacts/all_spec_program/phase8_live_calibration_20260728_representative_final_r105_campaign/attempts/seed-02/enhancement_shaman/single_target_300/batch/raw.dvc",
+      "pointer_sha256": "459c900cb051e57028ced0dbbc90b23f84be3b3d5411ec47ca9d3d1b71e69adf",
+      "size": 118190
+    },
+    {
+      "dvc_md5": "496c950f1857ed30f86a5a15803a2fae.dir",
+      "nfiles": 1,
+      "path": "artifacts/all_spec_program/phase8_live_calibration_20260728_representative_final_r105_campaign/attempts/seed-02/enhancement_shaman/single_target_300/batch/compact.dvc",
+      "pointer_sha256": "e1d9bee4808582caaf5a532423a61bccb7327b18d63d9f83de33032c61a221b7",
+      "size": 2568
+    }
+  ],
+  "raw_bundle_sha256": "ac79a5a61e691b3c8ed712ca5ca3e9964cc1d63fb90288e85e972474cae5da9a",
+  "receipt_sha256": "f94f8ce799b35f5a68b8fe00999f657904b37521fc4cfebff69883bf0158a6de",
+  "remote_status_sha256": "efed9e5afcfe149915ae98b9ed9e69304eb48f5ce2e2265b18b5b5ed2f155e60",
+  "remote_verified": true,
+  "schema": "bot_immutable_batch_publication_receipt_v1"
+}

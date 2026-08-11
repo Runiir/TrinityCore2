@@ -1,0 +1,283 @@
+{
+  "schema": "all_spec_phase9_rerun156_canary2_diagnosis_v1",
+  "diagnosis_sha256": "752e5c2d6b76ea8ca23f39d41181f8baa70c99465dfbc68424165515fc5bbfbb",
+  "hash_scope": "canonical_json_without_diagnosis_sha256",
+  "source_attempt": {
+    "attempt_label": "rerun156_canary_2",
+    "attempt_id": "phase9_serial_02_stonecore_phase9_006_6893daf98698",
+    "batch_id": "phase9-serial-canary-rerun156-2",
+    "batch_identity_sha256": "407d15565602da7d5509d08402771a8f4a3665c2edcb8523c01d1b5086e666ae",
+    "composition_id": "stonecore_phase9_006_6893daf98698",
+    "party_sha256": "524b94c794897f5111bdae0a5e45ba31a31ebb8596d811a3dd8c1caff95bd16a",
+    "party": [
+      "feral_druid_tank",
+      "discipline_priest",
+      "fury_warrior",
+      "marksmanship_hunter",
+      "retribution_paladin"
+    ],
+    "binary_sha256": "3d21406039a147bf009411c4cf23ee31d83d6b70c1d044b20c821fdb042a2e86",
+    "server_process_id": 453982,
+    "server_epoch": 199941979989670,
+    "session_fingerprint": "18f7fd470311eb192938b03ed0bb5d825fba50b035696fcf651fb8687ad13c3f",
+    "profile_generation": 1,
+    "profile_content_hash": "35a587f05d8781d72c62576a6f35392a69e01d5978429f65429ad5b9ed096a22",
+    "evidence_identity_manifest_sha256": "c2a011ccce293ca80c9306e04b074113eb413a1b088aff24ed00321ec7e476f7",
+    "run_plan_sha256": "6301100ee0ee709ef6bfd69d6c9c2b52d12a2fe5b919ee76dc4a53a7389de53b",
+    "max_active_cohorts": 1
+  },
+  "capture_and_closeout": {
+    "capture_identity_sha256": "407d15565602da7d5509d08402771a8f4a3665c2edcb8523c01d1b5086e666ae",
+    "raw_part_count": 1,
+    "raw_event_row_count": 273,
+    "compact_row_count": 1,
+    "raw_bundle_sha256": "f144d7f46b3ca51c1e1d01ad6deea4d8bf766c417834ce218e0629fd4d0a71dc",
+    "compact_bundle_sha256": "efcd9e206fa660644c79b5e9046700d3ea84ee121e3b7c68eb812a2c72b9b8ab",
+    "acceptance_source_report_sha256": "268555a0f63f8a615fedc931d8367e790e1f35b565682d6871b891f27c2abb50",
+    "raw_pointer_sha256": "bdb62c8851bbf053568d84ef63b21cdefe8c3421e09dbdb36a7a91e1106ba410",
+    "raw_dvc_md5": "3339073ec3608e179e1c4928404c13aa.dir",
+    "compact_pointer_sha256": "0652e939ec19494e00c81649f993e478f61cfc289f6bbab4d0770fa778734e7e",
+    "compact_dvc_md5": "7cb7c30f329209eaa99f9f0bd9a98199.dir",
+    "publication_receipt_sha256": "fbf9fe9c157bcb00d78f2831a7180cf7be5687468a8931cd90aaf7412d77683d",
+    "remote_status_sha256": "efed9e5afcfe149915ae98b9ed9e69304eb48f5ce2e2265b18b5b5ed2f155e60",
+    "remote_verified": true,
+    "capture_revalidated_after_hydration": true,
+    "exact_party_verified": true,
+    "identity_matched": true,
+    "cleanup": {
+      "active": false,
+      "active_bots": 0,
+      "lease_count": 0,
+      "party_bot_count": 0
+    },
+    "broad_dvc_gc_used": false
+  },
+  "strict_route_result": {
+    "completion_reason": "stonecore_role_quality_audit_failed",
+    "operator_failure_reason": "role_quality:Feraltank:tank_threat_retention",
+    "failure_labels": [
+      "role_quality:Feraltank:tank_threat_retention",
+      "role_quality:Feraltank:healer_target_exposure",
+      "role_quality:Feraltank:healer_target_dwell",
+      "stonecore_role_quality_audit_failed"
+    ],
+    "route_manifest_complete": true,
+    "route_terminal_count": 14,
+    "expected_route_terminal_count": 14,
+    "real_boss_kill_count": 4,
+    "expected_real_boss_kill_count": 4,
+    "kills": 50,
+    "duration_seconds": 1251,
+    "party_deaths": 1,
+    "feral_tank_deaths": 0,
+    "validation_route_no_progress_diagnoses": 0,
+    "stuck_events": 0,
+    "death_loop_events": 0,
+    "teacher_assisted_kills": 0,
+    "canaries_3_through_8_started": false
+  },
+  "role_audit": {
+    "passed": false,
+    "failure_labels": [
+      "Feraltank:tank_threat_retention",
+      "Feraltank:healer_target_exposure",
+      "Feraltank:healer_target_dwell"
+    ],
+    "feral_druid_tank": {
+      "eligible_hostile_samples": 1907,
+      "tank_owned_samples": 1586,
+      "healer_targeting_samples": 26,
+      "tank_all_hostile_retention_rate": 0.8317,
+      "minimum_retention_rate": 0.9,
+      "route_target_retention_rate": 0.9159,
+      "healer_target_exposure_rate": 0.0136,
+      "maximum_exposure_rate": 0.01,
+      "max_healer_target_dwell_ms": 4061,
+      "maximum_healer_target_dwell_ms": 3000,
+      "tank_threat_aura_uptime_rate": 1.0,
+      "deaths": 0
+    },
+    "eligible_samples_by_route_generation": {
+      "generation_1": {
+        "eligible": 188,
+        "tank_owned": 179,
+        "healer_targeting": 0
+      },
+      "generation_2": {
+        "eligible": 15,
+        "tank_owned": 14,
+        "healer_targeting": 0
+      },
+      "generation_3": {
+        "eligible": 97,
+        "tank_owned": 87,
+        "healer_targeting": 0
+      },
+      "generation_4": {
+        "eligible": 30,
+        "tank_owned": 30,
+        "healer_targeting": 0
+      },
+      "generation_9": {
+        "eligible": 20,
+        "tank_owned": 20,
+        "healer_targeting": 0
+      },
+      "generation_10": {
+        "eligible": 58,
+        "tank_owned": 57,
+        "healer_targeting": 0
+      },
+      "generation_11": {
+        "eligible": 17,
+        "tank_owned": 17,
+        "healer_targeting": 0
+      },
+      "generation_13": {
+        "eligible": 1085,
+        "tank_owned": 1063,
+        "healer_targeting": 0
+      },
+      "generation_14": {
+        "eligible": 397,
+        "tank_owned": 119,
+        "healer_targeting": 26
+      }
+    }
+  },
+  "retention_localization": {
+    "dominant_route_generation": 14,
+    "dominant_route_node_id": "4b2457d42f81a298",
+    "objective": "high_priestess_azil",
+    "generation_14_missing_tank_owned_samples": 278,
+    "total_missing_tank_owned_samples": 321,
+    "generation_14_share_of_missing_samples": 0.866,
+    "dominant_wave": {
+      "first_engaged_sequence": 1178,
+      "first_engaged_timestamp_ms": 1786186273896,
+      "engaged_hostiles": 60,
+      "tank_owned_hostiles": 0,
+      "healer_targeting_hostiles": 0,
+      "first_eligible_sequence": 1187,
+      "first_eligible_timestamp_ms": 1786186276948,
+      "time_to_first_eligible_sample_ms": 3052,
+      "eligible_samples_sequence_1187_through_1191": 290,
+      "tank_owned_samples_sequence_1187_through_1191": 38,
+      "missing_tank_owned_samples_sequence_1187_through_1191": 252,
+      "control_sequence": [
+        "continue_pending_swarm_pickup_preposition:60_engaged_0_tank_0_healer",
+        "move_to_boss_add",
+        "continue_stable_feral_swarm_approach",
+        "area_attack_boss_add_density:bear_form",
+        "area_attack_boss_add_density:growl",
+        "area_attack_boss_add_density:out_of_range_auto_attack_x4",
+        "tank_immediate_aoe_threat:thrash",
+        "area_attack_boss_add_density_x4"
+      ]
+    },
+    "cause": "The identity-scoped trace proves the 60 hostiles were genuine same-party attackers: all had party victims, but none initially targeted the tank or healer. The pending-swarm pickup reservation runs before the existing Feral proactive high-density Charge and area controller. It therefore consumed the first active-wave decision at sequence 1178 and returned even though the declared wave already had 60 attackers and zero healer attackers. Native form, Growl, range, GCD, and area actions then consumed the remaining acquisition window; the first Thrash arrived only after the unchanged 3000 ms grace. Five audit samples from sequences 1187-1191 contributed 252 of the run's 321 missing tank-owned samples. The audit is correctly measuring party-owned combat identities and needs no correction.",
+    "audit_attribution_correct": true,
+    "audit_correction_required": false
+  },
+  "exposure_and_dwell_localization": {
+    "route_generation": 14,
+    "healer_targeting_samples": 26,
+    "max_dwell_ms": 4061,
+    "longest_episodes": [
+      {
+        "hostile_guid": 769,
+        "first_timestamp_ms": 1786186367029,
+        "last_timestamp_ms": 1786186371090,
+        "dwell_ms": 4061
+      },
+      {
+        "hostile_guid": 771,
+        "first_timestamp_ms": 1786186367029,
+        "last_timestamp_ms": 1786186371090,
+        "dwell_ms": 4061
+      },
+      {
+        "hostile_guid": 773,
+        "first_timestamp_ms": 1786186367029,
+        "last_timestamp_ms": 1786186371090,
+        "dwell_ms": 4061
+      },
+      {
+        "hostile_guid": 776,
+        "first_timestamp_ms": 1786186367287,
+        "last_timestamp_ms": 1786186371090,
+        "dwell_ms": 3803
+      },
+      {
+        "hostile_guid": 774,
+        "first_timestamp_ms": 1786186367537,
+        "last_timestamp_ms": 1786186371090,
+        "dwell_ms": 3553
+      }
+    ],
+    "control_sequence": [
+      "feral_demoralizing_roar_swarm_pickup:anchor_786",
+      "feral_hold_healer_swarm_handoff_for_roar_x5",
+      "feral_post_roar_area_threat_retention:thrash_anchor_786",
+      "feral_hold_healer_swarm_handoff_for_roar",
+      "anchor_786_recovers_to_tank_while_other_cluster_members_remain_healer_owned",
+      "move_to_boss_add:anchor_775",
+      "continue_stable_feral_swarm_approach_x8"
+    ],
+    "cause": "The existing identity-bound remote handoff was active through the first Roar and post-Roar Thrash. Thrash recovered the reserved anchor 786 to the tank while neighboring followers remained healer-owned. Boss-add handoff validation requires the exact anchor to keep targeting the healer and clears the reservation when that victim changes. Unlike the already-proven ordinary-trash controller, it does not rebind within the original ten-yard cluster. The resolver therefore fell into generic area movement and preserved a stable approach for the remainder of the captured episode, taking five healer identities past the unchanged 3000 ms ceiling.",
+    "audit_attribution_correct": true,
+    "audit_correction_required": false
+  },
+  "rerun155_correction_effect": {
+    "generation_13_healer_targeting_samples_before": 3,
+    "generation_13_healer_targeting_samples_after": 0,
+    "interpretation": "Current healer ownership now correctly preempts the ordinary-trash secure-margin approach. The rerun156 failures are separate generation-14 boss-wave reservation and anchor-continuity defects and do not invalidate the retained rerun155 correction."
+  },
+  "accepted_causal_chain": [
+    "Rerun156 canary 2 retained the exact process, epoch, profile, planned party, serial isolation, remote publication, cleanup, and local payload eviction contracts.",
+    "The route completed all 14 terminals and all four real bosses with zero no-progress diagnoses, stuck events, death loops, or teacher-assisted kills; the one party death did not become a death loop, and the Feral tank had zero deaths.",
+    "The independent capture validator reproduced the 273-row raw and one-row compact bundle identities, and the independent role audit exactly reproduced all published Feral metrics and failure labels.",
+    "A five-sample 60-hostile Azil wave supplies 252 of 321 missing tank-owned samples after the pending pickup reservation returns ahead of the existing proactive Feral wave controller.",
+    "A later Azil healer wave exceeds exposure and dwell only after successful local area recovery changes the exact remote anchor's victim and the boss handoff clears instead of rebinding to surviving healer-owned neighbors.",
+    "The serial operator correctly stopped after canary 2; canaries 3 through 8 and Phases 10 through 12 remain blocked."
+  ],
+  "smallest_safe_correction": {
+    "file": "src/server/game/Bots/BotWorldPopulationMgr.cpp",
+    "scope": "Feral boss-add wave reservation priority and identity-bound remote handoff continuity",
+    "changes": [
+      "When a pending passive-swarm pickup has become a declared active Feral wave with at least 12 same-party attackers and zero healer attackers, clear only that pending preposition reservation and fall through in the same decision to the existing proactive Charge/Roar/area controller.",
+      "When an active remote Feral healer handoff anchor is still alive and in the same map but no longer targets the healer, deterministically rebind only within that anchor's original ten-yard cluster to the lowest-GUID surviving healer-owned listed follower, matching the proven ordinary-trash rule without extending the original handoff lifetime."
+    ],
+    "preserved_gates": [
+      "hazard_authority",
+      "native_spell_known",
+      "native_cooldown",
+      "native_global_cooldown",
+      "native_power",
+      "native_range",
+      "native_line_of_sight",
+      "native_attackability",
+      "victim_identity",
+      "same_party_identity",
+      "route_identity",
+      "evidence_identity",
+      "retention_threshold",
+      "exposure_threshold",
+      "dwell_threshold",
+      "publication",
+      "cleanup",
+      "eviction"
+    ],
+    "gate_weakening": false,
+    "audit_threshold_change": false
+  },
+  "next_attempt": {
+    "attempt_label": "rerun157_canary_2",
+    "worldserver_rebuild_required": true,
+    "deterministic_reprovision_required": true,
+    "fresh_identity_and_eight_row_plan_required": true,
+    "canary_2_only_until_strict_pass": true,
+    "canaries_3_through_8_started": false,
+    "phases_10_through_12_blocked": true
+  }
+}

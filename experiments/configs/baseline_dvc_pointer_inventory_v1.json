@@ -1,0 +1,3607 @@
+{
+  "pointers": [
+    {
+      "artifact_class": "calibration_evidence",
+      "artifact_id": "dvc_calibration_b6a4740d9a272874",
+      "pointer": {
+        "md5": "4191bb475cc98754fc16fe3164855922.dir",
+        "nfiles": 4,
+        "path": "combat_calibration_run_187",
+        "schema": "dvc_pointer_v1",
+        "size": 63462
+      },
+      "pointer_path": "artifacts/live_validation_instances/combat_calibration_run_187.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "calibration_evidence",
+      "artifact_id": "dvc_calibration_0697be90261e3ed3",
+      "pointer": {
+        "md5": "c0fb1985507e64fb9722a7c11d581d99.dir",
+        "nfiles": 9,
+        "path": "combat_calibration_run_189",
+        "schema": "dvc_pointer_v1",
+        "size": 856222
+      },
+      "pointer_path": "artifacts/live_validation_instances/combat_calibration_run_189.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "calibration_evidence",
+      "artifact_id": "dvc_calibration_c742181cf10b7b55",
+      "pointer": {
+        "md5": "b3878f2d4f90c3f4d0e61ef3acbb6dd5.dir",
+        "nfiles": 9,
+        "path": "combat_calibration_run_190",
+        "schema": "dvc_pointer_v1",
+        "size": 854535
+      },
+      "pointer_path": "artifacts/live_validation_instances/combat_calibration_run_190.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "calibration_evidence",
+      "artifact_id": "dvc_calibration_a0a7ed43e2814113",
+      "pointer": {
+        "md5": "2a52e3341134fbe8d6c7a2755bcb1d50.dir",
+        "nfiles": 9,
+        "path": "combat_calibration_run_191",
+        "schema": "dvc_pointer_v1",
+        "size": 855163
+      },
+      "pointer_path": "artifacts/live_validation_instances/combat_calibration_run_191.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "calibration_evidence",
+      "artifact_id": "dvc_calibration_59fe3483eba6b9a6",
+      "pointer": {
+        "md5": "c7443dda5ce18d715c225666be001300.dir",
+        "nfiles": 9,
+        "path": "combat_calibration_run_192",
+        "schema": "dvc_pointer_v1",
+        "size": 856305
+      },
+      "pointer_path": "artifacts/live_validation_instances/combat_calibration_run_192.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "calibration_evidence",
+      "artifact_id": "dvc_calibration_8f953dd4b0ece813",
+      "pointer": {
+        "md5": "896a6eb853a2de169597670226d17c37.dir",
+        "nfiles": 9,
+        "path": "combat_calibration_run_193",
+        "schema": "dvc_pointer_v1",
+        "size": 857169
+      },
+      "pointer_path": "artifacts/live_validation_instances/combat_calibration_run_193.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "calibration_evidence",
+      "artifact_id": "dvc_calibration_7f1ef66becf68a66",
+      "pointer": {
+        "md5": "e13a3719cd768ec60e8a27a17f8481fb.dir",
+        "nfiles": 6,
+        "path": "combat_calibration_run_198",
+        "schema": "dvc_pointer_v1",
+        "size": 319482
+      },
+      "pointer_path": "artifacts/live_validation_instances/combat_calibration_run_198.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_32a3cde80ee0be5f",
+      "pointer": {
+        "md5": "364a1be8fee1bbc41849e1372a21008f.dir",
+        "nfiles": 1,
+        "path": "bot_pool_reset",
+        "schema": "dvc_pointer_v1",
+        "size": 6507
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_attachment_smoke_001031/bot_pool_reset.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_1d6c402d564771ae",
+      "pointer": {
+        "md5": "fadbc044ff7e67c3e61293a23a6e6011",
+        "nfiles": null,
+        "path": "commands.txt",
+        "schema": "dvc_pointer_v1",
+        "size": 100
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_attachment_smoke_001031/commands.txt.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_232274f79e1fa0af",
+      "pointer": {
+        "md5": "7869302c4e93701a298f88a804f2d6d1",
+        "nfiles": null,
+        "path": "report.json",
+        "schema": "dvc_pointer_v1",
+        "size": 527319
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_attachment_smoke_001031/report.json.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_52d91212504224f3",
+      "pointer": {
+        "md5": "d6e3b0609974cc852df8f3cb490e0722.dir",
+        "nfiles": 1,
+        "path": "route_bot_start",
+        "schema": "dvc_pointer_v1",
+        "size": 478
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_attachment_smoke_001031/route_bot_start.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_62ee7688b342def1",
+      "pointer": {
+        "md5": "d035e8f687b3227c8aabcc5170b4af49.dir",
+        "nfiles": 2,
+        "path": "validation_provisioning_apply",
+        "schema": "dvc_pointer_v1",
+        "size": 319267
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_attachment_smoke_001031/validation_provisioning_apply.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_435b0633958c3a7f",
+      "pointer": {
+        "md5": "c713299519addf3215ade3a8008b8c7e",
+        "nfiles": null,
+        "path": "validation_route_manifest.json",
+        "schema": "dvc_pointer_v1",
+        "size": 41567
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_attachment_smoke_001031/validation_route_manifest.json.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_7876c57e8aa52e44",
+      "pointer": {
+        "md5": "58a22f6653ca610ebf241b09ae5761c0",
+        "nfiles": null,
+        "path": "worldserver.validation.conf",
+        "schema": "dvc_pointer_v1",
+        "size": 156097
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_attachment_smoke_001031/worldserver.validation.conf.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_0626fdef17282446",
+      "pointer": {
+        "md5": "1906655b48984ba82a8b9752b1c8cd4c",
+        "nfiles": null,
+        "path": "worldserver_output.log",
+        "schema": "dvc_pointer_v1",
+        "size": 332601
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_attachment_smoke_001031/worldserver_output.log.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_9f103ceac37e730d",
+      "pointer": {
+        "md5": "534a8a86219d2d6839f5f5263f75236d.dir",
+        "nfiles": 9,
+        "path": "stonecore_attachment_smoke_001032",
+        "schema": "dvc_pointer_v1",
+        "size": 1382363
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_attachment_smoke_001032.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_9e0005d6a0c5c797",
+      "pointer": {
+        "md5": "ecf38c32aa8d8353523996276bdb433e.dir",
+        "nfiles": 9,
+        "path": "stonecore_attachment_smoke_001033_r2",
+        "schema": "dvc_pointer_v1",
+        "size": 1395493
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_attachment_smoke_001033_r2.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_eb4a88784a8568b2",
+      "pointer": {
+        "md5": "a391c05b0593e2cbc9b6f6e9d4809562.dir",
+        "nfiles": 9,
+        "path": "stonecore_attachment_smoke_001034_r1",
+        "schema": "dvc_pointer_v1",
+        "size": 1406016
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_attachment_smoke_001034_r1.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_f3c649cc651d0544",
+      "pointer": {
+        "md5": "c59c60baac6982c229a402fcc20b49b5.dir",
+        "nfiles": 9,
+        "path": "stonecore_attachment_smoke_001035_r2",
+        "schema": "dvc_pointer_v1",
+        "size": 1404542
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_attachment_smoke_001035_r2.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_f22555a084ab8dc6",
+      "pointer": {
+        "md5": "b8bb677c2af3e57725524c68e1bfc638.dir",
+        "nfiles": 7,
+        "path": "stonecore_attachment_smoke_001036",
+        "schema": "dvc_pointer_v1",
+        "size": 1292085
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_attachment_smoke_001036.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_5b7357f5202d37ab",
+      "pointer": {
+        "md5": "541658af2914eab28290db492cc0453f.dir",
+        "nfiles": 9,
+        "path": "stonecore_attachment_smoke_001309",
+        "schema": "dvc_pointer_v1",
+        "size": 1407295
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_attachment_smoke_001309.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_1bc2e34e9b24310b",
+      "pointer": {
+        "md5": "d3d2012ed1bcd5d9e9647dea44ba56cc.dir",
+        "nfiles": 13,
+        "path": "stonecore_attachment_smoke_001310",
+        "schema": "dvc_pointer_v1",
+        "size": 3075180
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_attachment_smoke_001310.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_e7b5e38592b5a387",
+      "pointer": {
+        "md5": "20e7d611844414fc49a3e351ffed8fcc.dir",
+        "nfiles": 9,
+        "path": "stonecore_attachment_smoke_001311",
+        "schema": "dvc_pointer_v1",
+        "size": 1438040
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_attachment_smoke_001311.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_38c76d7b69f26369",
+      "pointer": {
+        "md5": "6dae21e08b43dc66773766e308518931.dir",
+        "nfiles": 16,
+        "path": "stonecore_attachment_smoke_001312",
+        "schema": "dvc_pointer_v1",
+        "size": 9533386
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_attachment_smoke_001312.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_d2c88a910680a723",
+      "pointer": {
+        "md5": "2b582412ce7a4568523b930efa1c1395.dir",
+        "nfiles": 9,
+        "path": "stonecore_attachment_smoke_001313",
+        "schema": "dvc_pointer_v1",
+        "size": 1426451
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_attachment_smoke_001313.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_aa65723fbe56e4e0",
+      "pointer": {
+        "md5": "00700c31004479cec0fa52b8362502f2.dir",
+        "nfiles": 9,
+        "path": "stonecore_attachment_smoke_001317",
+        "schema": "dvc_pointer_v1",
+        "size": 1393112
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_attachment_smoke_001317.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_d4f4edf507a84d84",
+      "pointer": {
+        "md5": "174c6e66326221fa8ff2f52f15a9f7d0.dir",
+        "nfiles": 9,
+        "path": "stonecore_attachment_smoke_001318",
+        "schema": "dvc_pointer_v1",
+        "size": 1440470
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_attachment_smoke_001318.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_6b7a902590c9f3a7",
+      "pointer": {
+        "md5": "364a1be8fee1bbc41849e1372a21008f.dir",
+        "nfiles": 1,
+        "path": "bot_pool_reset",
+        "schema": "dvc_pointer_v1",
+        "size": 6507
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_attachment_smoke_001319/bot_pool_reset.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_25d388988e80afe5",
+      "pointer": {
+        "md5": "fadbc044ff7e67c3e61293a23a6e6011",
+        "nfiles": null,
+        "path": "commands.txt",
+        "schema": "dvc_pointer_v1",
+        "size": 100
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_attachment_smoke_001319/commands.txt.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_bc7f343297da9cdc",
+      "pointer": {
+        "md5": "4d0e492b144cc9ca680e01ae628237ff",
+        "nfiles": null,
+        "path": "report.json",
+        "schema": "dvc_pointer_v1",
+        "size": 539566
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_attachment_smoke_001319/report.json.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_2443a5558753a0be",
+      "pointer": {
+        "md5": "d6e3b0609974cc852df8f3cb490e0722.dir",
+        "nfiles": 1,
+        "path": "route_bot_start",
+        "schema": "dvc_pointer_v1",
+        "size": 478
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_attachment_smoke_001319/route_bot_start.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_30f62c6198a46b9f",
+      "pointer": {
+        "md5": "2635eba010108542eda1db206bca029c.dir",
+        "nfiles": 2,
+        "path": "validation_provisioning_apply",
+        "schema": "dvc_pointer_v1",
+        "size": 319781
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_attachment_smoke_001319/validation_provisioning_apply.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_f1a17110f37d541a",
+      "pointer": {
+        "md5": "ba7be8416afce9086c7281469a927ffe",
+        "nfiles": null,
+        "path": "validation_route_manifest.json",
+        "schema": "dvc_pointer_v1",
+        "size": 71421
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_attachment_smoke_001319/validation_route_manifest.json.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_9677c89f2e8a6d89",
+      "pointer": {
+        "md5": "d848ece1564247c7e5fce3cef27f32b8",
+        "nfiles": null,
+        "path": "worldserver.validation.conf",
+        "schema": "dvc_pointer_v1",
+        "size": 156162
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_attachment_smoke_001319/worldserver.validation.conf.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_a12bf4087a09eebe",
+      "pointer": {
+        "md5": "4d1b723743883c34262e69ed12ec55aa",
+        "nfiles": null,
+        "path": "worldserver_output.log",
+        "schema": "dvc_pointer_v1",
+        "size": 312946
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_attachment_smoke_001319/worldserver_output.log.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_9e8ea1db0ab005cf",
+      "pointer": {
+        "md5": "67f2b3941817ff2fda997aa27149709b.dir",
+        "nfiles": 9,
+        "path": "stonecore_attachment_smoke_001320",
+        "schema": "dvc_pointer_v1",
+        "size": 1459051
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_attachment_smoke_001320.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_302e9ff8ecffe2cf",
+      "pointer": {
+        "md5": "a336446cc9525e8903401f02867f3a03.dir",
+        "nfiles": 9,
+        "path": "stonecore_attachment_smoke_001320_r2",
+        "schema": "dvc_pointer_v1",
+        "size": 1471272
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_attachment_smoke_001320_r2.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_80545029dd57534c",
+      "pointer": {
+        "md5": "97203da2574d722a0237ed993704abb0.dir",
+        "nfiles": 21,
+        "path": "stonecore_attachment_smoke_001321",
+        "schema": "dvc_pointer_v1",
+        "size": 22518175
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_attachment_smoke_001321.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_ea91306d02d9a099",
+      "pointer": {
+        "md5": "c0bdb030977c71e3ca120ec32b71e5ae.dir",
+        "nfiles": 9,
+        "path": "stonecore_attachment_smoke_001322",
+        "schema": "dvc_pointer_v1",
+        "size": 1406046
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_attachment_smoke_001322.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_1bdfcb2a1d425644",
+      "pointer": {
+        "md5": "03512ca0f1f7a29167aff02ac838ac1a.dir",
+        "nfiles": 9,
+        "path": "stonecore_attachment_smoke_001323",
+        "schema": "dvc_pointer_v1",
+        "size": 1426734
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_attachment_smoke_001323.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_2762fbb07f9d4856",
+      "pointer": {
+        "md5": "8b99889a6a85530d5a28fc8843c0bdf5.dir",
+        "nfiles": 9,
+        "path": "stonecore_attachment_smoke_001324",
+        "schema": "dvc_pointer_v1",
+        "size": 1451468
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_attachment_smoke_001324.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_48b6cae059bba6c0",
+      "pointer": {
+        "md5": "6d331ae60e78bfcaaa8ff706dd4dadb9.dir",
+        "nfiles": 9,
+        "path": "stonecore_attachment_smoke_001325",
+        "schema": "dvc_pointer_v1",
+        "size": 1427876
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_attachment_smoke_001325.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_9767241083d0f153",
+      "pointer": {
+        "md5": "017d61674d19961fe0d64ce82e6d7356.dir",
+        "nfiles": 16,
+        "path": "stonecore_attachment_smoke_001326",
+        "schema": "dvc_pointer_v1",
+        "size": 8507513
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_attachment_smoke_001326.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_aa104aab2a430f2e",
+      "pointer": {
+        "md5": "dc21f3961d9b6f49fbd33c99746fd329.dir",
+        "nfiles": 9,
+        "path": "stonecore_attachment_smoke_001326_fixed",
+        "schema": "dvc_pointer_v1",
+        "size": 1477454
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_attachment_smoke_001326_fixed.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_5116f97144818b80",
+      "pointer": {
+        "md5": "1be3dc9031669b15fd87d69a192ee018.dir",
+        "nfiles": 9,
+        "path": "stonecore_attachment_smoke_001327",
+        "schema": "dvc_pointer_v1",
+        "size": 1434974
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_attachment_smoke_001327.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_c9192706416732e5",
+      "pointer": {
+        "md5": "d923c414f7abe43d5db3a5bffc7a3406.dir",
+        "nfiles": 9,
+        "path": "stonecore_attachment_smoke_001328",
+        "schema": "dvc_pointer_v1",
+        "size": 1422491
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_attachment_smoke_001328.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_bdb9f8afdc4d5646",
+      "pointer": {
+        "md5": "1c524824f9304efa88c9249df2979c73.dir",
+        "nfiles": 9,
+        "path": "stonecore_attachment_smoke_001398",
+        "schema": "dvc_pointer_v1",
+        "size": 1487082
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_attachment_smoke_001398.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_ea34f8d459ca21ae",
+      "pointer": {
+        "md5": "6a60a50529a9ef2f510c6b756c90ba36.dir",
+        "nfiles": 9,
+        "path": "stonecore_attachment_smoke_001399",
+        "schema": "dvc_pointer_v1",
+        "size": 1437200
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_attachment_smoke_001399.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_e0652566cc54e903",
+      "pointer": {
+        "md5": "d03f5461af123305cb02489ede08e671.dir",
+        "nfiles": 9,
+        "path": "stonecore_attachment_smoke_001400",
+        "schema": "dvc_pointer_v1",
+        "size": 1453795
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_attachment_smoke_001400.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_ed17aa824b381a75",
+      "pointer": {
+        "md5": "999d69a0fce630886a86bfeef25557a0.dir",
+        "nfiles": 9,
+        "path": "stonecore_attachment_smoke_001400_r2",
+        "schema": "dvc_pointer_v1",
+        "size": 1472025
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_attachment_smoke_001400_r2.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_d633d870dca87caa",
+      "pointer": {
+        "md5": "64bca1daef355ef8397ef55bf19aa4b4.dir",
+        "nfiles": 9,
+        "path": "stonecore_attachment_smoke_001400_r3",
+        "schema": "dvc_pointer_v1",
+        "size": 1473345
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_attachment_smoke_001400_r3.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_25833b5c50a4e7b3",
+      "pointer": {
+        "md5": "3fe10b126dab86b59382f53cdb0b6457.dir",
+        "nfiles": 9,
+        "path": "stonecore_attachment_smoke_001401",
+        "schema": "dvc_pointer_v1",
+        "size": 1472111
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_attachment_smoke_001401.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_8a56b69d1c377131",
+      "pointer": {
+        "md5": "29e3339e8cea441237beda68c48efb2c.dir",
+        "nfiles": 9,
+        "path": "stonecore_attachment_smoke_001402",
+        "schema": "dvc_pointer_v1",
+        "size": 1410041
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_attachment_smoke_001402.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_3b5d483893c95d4a",
+      "pointer": {
+        "md5": "20ce0eb4db701c5e3452e5c3fdeb777f.dir",
+        "nfiles": 13,
+        "path": "stonecore_azil_anchor_verify_run_047",
+        "schema": "dvc_pointer_v1",
+        "size": 11008993
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_azil_anchor_verify_run_047.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_152a736bafaeffbe",
+      "pointer": {
+        "md5": "b9cee9703fe282c67a3517491b534785.dir",
+        "nfiles": 10,
+        "path": "stonecore_azil_interrupt_r2",
+        "schema": "dvc_pointer_v1",
+        "size": 1106828
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_azil_interrupt_r2.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_e4c9063abc16944b",
+      "pointer": {
+        "md5": "f3011b640174423e1c0427df2669bddd.dir",
+        "nfiles": 4,
+        "path": "stonecore_azil_swarm_run_133",
+        "schema": "dvc_pointer_v1",
+        "size": 1963564
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_azil_swarm_run_133.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_ead79c94f86bac55",
+      "pointer": {
+        "md5": "6b7948cd7b36946e48949381c0be571f.dir",
+        "nfiles": 7,
+        "path": "stonecore_azil_swarm_run_134",
+        "schema": "dvc_pointer_v1",
+        "size": 12770050
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_azil_swarm_run_134.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_621e975f1712b331",
+      "pointer": {
+        "md5": "d31bc7c951c20ac9af0d50ed09246132.dir",
+        "nfiles": 4,
+        "path": "stonecore_azil_swarm_run_135",
+        "schema": "dvc_pointer_v1",
+        "size": 9714107
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_azil_swarm_run_135.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_46f7d9361ce15e36",
+      "pointer": {
+        "md5": "8ee0832b070b76be20fe5b76f97d48dd.dir",
+        "nfiles": 3,
+        "path": "stonecore_azil_swarm_run_136",
+        "schema": "dvc_pointer_v1",
+        "size": 4396282
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_azil_swarm_run_136.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_4b5d00d37ad80eab",
+      "pointer": {
+        "md5": "47777c684b467aaa3577f07b1fcbe60f.dir",
+        "nfiles": 6,
+        "path": "stonecore_azil_swarm_run_137",
+        "schema": "dvc_pointer_v1",
+        "size": 15700950
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_azil_swarm_run_137.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_b795496e02c0145d",
+      "pointer": {
+        "md5": "2852e03a36de315dcd102ffa9377503d.dir",
+        "nfiles": 3,
+        "path": "stonecore_azil_swarm_run_138",
+        "schema": "dvc_pointer_v1",
+        "size": 8620795
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_azil_swarm_run_138.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_fb89d29135023454",
+      "pointer": {
+        "md5": "44b04ba21a16331a3f194b1dfa5253ac.dir",
+        "nfiles": 3,
+        "path": "stonecore_azil_swarm_run_139",
+        "schema": "dvc_pointer_v1",
+        "size": 9392509
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_azil_swarm_run_139.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_d8f52e22da3e141b",
+      "pointer": {
+        "md5": "1ed65ffe7058a50ab5b6597d928ba8e8.dir",
+        "nfiles": 6,
+        "path": "stonecore_azil_swarm_run_140",
+        "schema": "dvc_pointer_v1",
+        "size": 17091245
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_azil_swarm_run_140.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_80a82fe5fcbaa4a3",
+      "pointer": {
+        "md5": "b06d1c9c815a0bdab5107203306f027d.dir",
+        "nfiles": 69,
+        "path": "stonecore_clear_series_run_01_054",
+        "schema": "dvc_pointer_v1",
+        "size": 1956460252
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_clear_series_run_01_054.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_54b79df7b52fb6f9",
+      "pointer": {
+        "md5": "781246dfb4653298a3252c0b81925511.dir",
+        "nfiles": 60,
+        "path": "stonecore_clear_series_run_01_055",
+        "schema": "dvc_pointer_v1",
+        "size": 1436463694
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_clear_series_run_01_055.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_9e482d3aed49c723",
+      "pointer": {
+        "md5": "2579c649b5d46f5fe85cc824aa28ca94.dir",
+        "nfiles": 32,
+        "path": "stonecore_clear_series_run_01_060",
+        "schema": "dvc_pointer_v1",
+        "size": 312376223
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_clear_series_run_01_060.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_2b1df7f091c34a5f",
+      "pointer": {
+        "md5": "bc461df0c81493ab0671d08b7226a7fa.dir",
+        "nfiles": 52,
+        "path": "stonecore_clear_series_run_01_061",
+        "schema": "dvc_pointer_v1",
+        "size": 1051031712
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_clear_series_run_01_061.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_49f6de997329f7fa",
+      "pointer": {
+        "md5": "c14072499ada57493c85644dc018b855.dir",
+        "nfiles": 53,
+        "path": "stonecore_clear_series_run_01_062",
+        "schema": "dvc_pointer_v1",
+        "size": 1148966481
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_clear_series_run_01_062.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_1857e1eee8195b5e",
+      "pointer": {
+        "md5": "b3ad3774b20f7815c4b86c5d38ca98fb.dir",
+        "nfiles": 62,
+        "path": "stonecore_clear_series_run_01_063",
+        "schema": "dvc_pointer_v1",
+        "size": 965300123
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_clear_series_run_01_063.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_a996a4a8ca4d8141",
+      "pointer": {
+        "md5": "4e8184074ab8880e552ba07826f51751.dir",
+        "nfiles": 87,
+        "path": "stonecore_clear_series_run_01_064",
+        "schema": "dvc_pointer_v1",
+        "size": 2927168362
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_clear_series_run_01_064.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_2f42603f6a1f5ab1",
+      "pointer": {
+        "md5": "0632c9696eeede12b1b835f24c2c6220.dir",
+        "nfiles": 87,
+        "path": "stonecore_clear_series_run_01_065",
+        "schema": "dvc_pointer_v1",
+        "size": 2772568138
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_clear_series_run_01_065.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_86c85ef6daf838e9",
+      "pointer": {
+        "md5": "c5f2daf47b0171b837e71ce0fd8436dc.dir",
+        "nfiles": 87,
+        "path": "stonecore_clear_series_run_01_066",
+        "schema": "dvc_pointer_v1",
+        "size": 2625899249
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_clear_series_run_01_066.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_8d0cf95eab8b438e",
+      "pointer": {
+        "md5": "a6ea098efeaf4426fb8ff9c5c76d17cd.dir",
+        "nfiles": 24,
+        "path": "stonecore_clear_series_run_01_067",
+        "schema": "dvc_pointer_v1",
+        "size": 131706884
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_clear_series_run_01_067.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_b17896c27182a821",
+      "pointer": {
+        "md5": "b780801f9dfc7b1bec460d11ba1a9dc1.dir",
+        "nfiles": 31,
+        "path": "stonecore_clear_series_run_01_068",
+        "schema": "dvc_pointer_v1",
+        "size": 278010882
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_clear_series_run_01_068.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_529716bb05dcbe2a",
+      "pointer": {
+        "md5": "2c6863c4a4a7e8271fb5513e12516005.dir",
+        "nfiles": 35,
+        "path": "stonecore_clear_series_run_01_069",
+        "schema": "dvc_pointer_v1",
+        "size": 391562220
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_clear_series_run_01_069.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_02b4fa7b2ccbe6c8",
+      "pointer": {
+        "md5": "513ccbed5b5522b791f3de26a8b77ab5.dir",
+        "nfiles": 63,
+        "path": "stonecore_clear_series_run_01_070",
+        "schema": "dvc_pointer_v1",
+        "size": 1558035996
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_clear_series_run_01_070.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_b343f37400b80ac2",
+      "pointer": {
+        "md5": "67989db1c38dd890a165ca0718141def.dir",
+        "nfiles": 38,
+        "path": "stonecore_clear_series_run_01_071",
+        "schema": "dvc_pointer_v1",
+        "size": 458523802
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_clear_series_run_01_071.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_e6c33f5cef077ae4",
+      "pointer": {
+        "md5": "6f287fbffc1b60746431c4aacd7d03c7.dir",
+        "nfiles": 17,
+        "path": "stonecore_clear_series_run_01_072",
+        "schema": "dvc_pointer_v1",
+        "size": 10620072
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_clear_series_run_01_072.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_d823b0c2bdb2af4c",
+      "pointer": {
+        "md5": "856d73361c0ba8ff7a4e8d2122c08a94.dir",
+        "nfiles": 23,
+        "path": "stonecore_clear_series_run_01_073",
+        "schema": "dvc_pointer_v1",
+        "size": 108208976
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_clear_series_run_01_073.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_fbe478a00d4e7419",
+      "pointer": {
+        "md5": "05bbbda6b863fb10fb1dab3904a250a4.dir",
+        "nfiles": 28,
+        "path": "stonecore_clear_series_run_01_074",
+        "schema": "dvc_pointer_v1",
+        "size": 213514635
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_clear_series_run_01_074.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_8c39f731dd24710a",
+      "pointer": {
+        "md5": "2f9f42897c739cf2799b66dcae8a7e16.dir",
+        "nfiles": 30,
+        "path": "stonecore_clear_series_run_01_075",
+        "schema": "dvc_pointer_v1",
+        "size": 229560876
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_clear_series_run_01_075.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_a1b0caabe92e7285",
+      "pointer": {
+        "md5": "76219042e9a0b7d8152d4bbb4efd18e4.dir",
+        "nfiles": 19,
+        "path": "stonecore_clear_series_run_01_076",
+        "schema": "dvc_pointer_v1",
+        "size": 62384212
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_clear_series_run_01_076.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_8d331cda696dea3b",
+      "pointer": {
+        "md5": "8b59a935d0245dd42b3be1ed6ec92b40.dir",
+        "nfiles": 35,
+        "path": "stonecore_clear_series_run_01_077",
+        "schema": "dvc_pointer_v1",
+        "size": 339896566
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_clear_series_run_01_077.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_62da96402265f9b7",
+      "pointer": {
+        "md5": "d9a80070cd3ca99f2cc5db153b112d3b.dir",
+        "nfiles": 27,
+        "path": "stonecore_clear_series_run_01_078",
+        "schema": "dvc_pointer_v1",
+        "size": 209144452
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_clear_series_run_01_078.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_cc74e7328492dedd",
+      "pointer": {
+        "md5": "83a4d4d04a9d1d7ae0dfea1996015842.dir",
+        "nfiles": 37,
+        "path": "stonecore_clear_series_run_01_079",
+        "schema": "dvc_pointer_v1",
+        "size": 467179295
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_clear_series_run_01_079.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_44434060e89e4ed9",
+      "pointer": {
+        "md5": "8f2669c0a8b92f04fd0446a5cd1c1f81.dir",
+        "nfiles": 20,
+        "path": "stonecore_clear_series_run_01_080",
+        "schema": "dvc_pointer_v1",
+        "size": 83977976
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_clear_series_run_01_080.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_415e3bfb0a4d8253",
+      "pointer": {
+        "md5": "b0a7341a86d0cb184d97c1339c0f73fd.dir",
+        "nfiles": 24,
+        "path": "stonecore_clear_series_run_01_081",
+        "schema": "dvc_pointer_v1",
+        "size": 144288414
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_clear_series_run_01_081.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_6dab833b9844558f",
+      "pointer": {
+        "md5": "f961a68bae6e292ae3e3cd1f10f452be.dir",
+        "nfiles": 18,
+        "path": "stonecore_clear_series_run_01_082",
+        "schema": "dvc_pointer_v1",
+        "size": 62765424
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_clear_series_run_01_082.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_d4b4958c096b9b96",
+      "pointer": {
+        "md5": "ea113ac839a68e2f48b65247de6bfe80.dir",
+        "nfiles": 17,
+        "path": "stonecore_clear_series_run_01_083",
+        "schema": "dvc_pointer_v1",
+        "size": 52038514
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_clear_series_run_01_083.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_9827fde66fa4f8af",
+      "pointer": {
+        "md5": "170ca8be341e22f15402288316b7f2e0.dir",
+        "nfiles": 25,
+        "path": "stonecore_clear_series_run_01_084",
+        "schema": "dvc_pointer_v1",
+        "size": 152767509
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_clear_series_run_01_084.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_6ce304ae91d3b672",
+      "pointer": {
+        "md5": "38ffaeccadd436e92eb4bac890501636.dir",
+        "nfiles": 27,
+        "path": "stonecore_clear_series_run_01_085",
+        "schema": "dvc_pointer_v1",
+        "size": 205289929
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_clear_series_run_01_085.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_8434a2c635c4e013",
+      "pointer": {
+        "md5": "1c435033904c404de81a25d933a50741.dir",
+        "nfiles": 27,
+        "path": "stonecore_clear_series_run_01_086",
+        "schema": "dvc_pointer_v1",
+        "size": 212813514
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_clear_series_run_01_086.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_cd5bf072b81762cd",
+      "pointer": {
+        "md5": "d8c47dc312df86ce815ade7bfc9a55c1.dir",
+        "nfiles": 27,
+        "path": "stonecore_clear_series_run_01_087",
+        "schema": "dvc_pointer_v1",
+        "size": 211005240
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_clear_series_run_01_087.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_db57acb8c4dcfd12",
+      "pointer": {
+        "md5": "51c7049c1f37421ba34dc1d920a9e80b.dir",
+        "nfiles": 26,
+        "path": "stonecore_clear_series_run_01_088",
+        "schema": "dvc_pointer_v1",
+        "size": 190396765
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_clear_series_run_01_088.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_292a505354dce704",
+      "pointer": {
+        "md5": "73c64345e39bccf9a5ab04a9b5a303c2.dir",
+        "nfiles": 21,
+        "path": "stonecore_clear_series_run_01_089",
+        "schema": "dvc_pointer_v1",
+        "size": 100340042
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_clear_series_run_01_089.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_ad7b43ccfbcc16fe",
+      "pointer": {
+        "md5": "dc23be3ae84f54e060d1a95d3ce8c4ef.dir",
+        "nfiles": 27,
+        "path": "stonecore_clear_series_run_01_090",
+        "schema": "dvc_pointer_v1",
+        "size": 209573993
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_clear_series_run_01_090.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_d219acff090a214e",
+      "pointer": {
+        "md5": "9dddbecf0db3c025fafc2990801946cd.dir",
+        "nfiles": 26,
+        "path": "stonecore_clear_series_run_01_091",
+        "schema": "dvc_pointer_v1",
+        "size": 198724445
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_clear_series_run_01_091.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_597c4b5ae63491b4",
+      "pointer": {
+        "md5": "fcfc135bc66bb5ea47c492def9f96716.dir",
+        "nfiles": 35,
+        "path": "stonecore_clear_series_run_01_092",
+        "schema": "dvc_pointer_v1",
+        "size": 432988267
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_clear_series_run_01_092.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_f19e36a3d00d8a0c",
+      "pointer": {
+        "md5": "0bee7de567ecb84ff5ca9940ed7bd70c.dir",
+        "nfiles": 37,
+        "path": "stonecore_clear_series_run_01_093",
+        "schema": "dvc_pointer_v1",
+        "size": 491770266
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_clear_series_run_01_093.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_c3f079d80cbe5c8d",
+      "pointer": {
+        "md5": "1bb72273e22a3d037b80305fc96e0563.dir",
+        "nfiles": 71,
+        "path": "stonecore_clear_series_run_02_056",
+        "schema": "dvc_pointer_v1",
+        "size": 2102079180
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_clear_series_run_02_056.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_f04951f763e6176d",
+      "pointer": {
+        "md5": "7907aef9de2e1dc1c2d9bb978317097c.dir",
+        "nfiles": 85,
+        "path": "stonecore_clear_series_run_02_057",
+        "schema": "dvc_pointer_v1",
+        "size": 3072065615
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_clear_series_run_02_057.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_60064da671862ee2",
+      "pointer": {
+        "md5": "ea7d2eefb76ed0060daae8c6e065745c.dir",
+        "nfiles": 40,
+        "path": "stonecore_combat_quality_full_run_110",
+        "schema": "dvc_pointer_v1",
+        "size": 637922447
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_combat_quality_full_run_110.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_5d1f1e30239d5eb8",
+      "pointer": {
+        "md5": "12692af5b558742698800cdfa54e1197.dir",
+        "nfiles": 61,
+        "path": "stonecore_combat_quality_full_run_111",
+        "schema": "dvc_pointer_v1",
+        "size": 1608323853
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_combat_quality_full_run_111.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_3e5b780d66ec5ea7",
+      "pointer": {
+        "md5": "adbbabb3ce3f3541ec73c2d9b28f2ca3.dir",
+        "nfiles": 53,
+        "path": "stonecore_combat_quality_full_run_112",
+        "schema": "dvc_pointer_v1",
+        "size": 1151272187
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_combat_quality_full_run_112.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_f473cf142f33b213",
+      "pointer": {
+        "md5": "9346a02ba7bb51e267f299430846238f.dir",
+        "nfiles": 21,
+        "path": "stonecore_combat_quality_full_run_113",
+        "schema": "dvc_pointer_v1",
+        "size": 94794053
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_combat_quality_full_run_113.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_eb41f2ea909f3423",
+      "pointer": {
+        "md5": "5a63ef6081f646164b6ee82f09e3ef07.dir",
+        "nfiles": 53,
+        "path": "stonecore_combat_quality_full_run_114",
+        "schema": "dvc_pointer_v1",
+        "size": 1161024290
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_combat_quality_full_run_114.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_9de45db7aa7e9298",
+      "pointer": {
+        "md5": "123061e608100216f9d9edebcd867ff4.dir",
+        "nfiles": 54,
+        "path": "stonecore_combat_quality_full_run_115",
+        "schema": "dvc_pointer_v1",
+        "size": 1190945506
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_combat_quality_full_run_115.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_a0730aa69bf6ffad",
+      "pointer": {
+        "md5": "047fcebc99b5b716ab8a9a80ce321aeb.dir",
+        "nfiles": 62,
+        "path": "stonecore_combat_quality_full_run_116",
+        "schema": "dvc_pointer_v1",
+        "size": 1688413646
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_combat_quality_full_run_116.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_ecc999d43c7df407",
+      "pointer": {
+        "md5": "8aa9a4f1707a8bcddef19e3e6dad8a66.dir",
+        "nfiles": 16,
+        "path": "stonecore_combat_quality_full_run_117",
+        "schema": "dvc_pointer_v1",
+        "size": 313870047
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_combat_quality_full_run_117.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_ed9de790277ce3ce",
+      "pointer": {
+        "md5": "6105de13cc0df99cbbf7311b31029784.dir",
+        "nfiles": 16,
+        "path": "stonecore_combat_quality_full_run_118",
+        "schema": "dvc_pointer_v1",
+        "size": 295098560
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_combat_quality_full_run_118.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_235abdb9b103496d",
+      "pointer": {
+        "md5": "b514ce690efe1b0bd516b66c9dc71d40.dir",
+        "nfiles": 17,
+        "path": "stonecore_combat_quality_full_run_119",
+        "schema": "dvc_pointer_v1",
+        "size": 292129219
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_combat_quality_full_run_119.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_93dc961bfb74a929",
+      "pointer": {
+        "md5": "bafab6369218acad95cce3983e4c7893.dir",
+        "nfiles": 17,
+        "path": "stonecore_combat_quality_full_run_120",
+        "schema": "dvc_pointer_v1",
+        "size": 270855081
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_combat_quality_full_run_120.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_1da638feb36718d0",
+      "pointer": {
+        "md5": "8885f2fea69416fd5f23ae3d84c7e3ee.dir",
+        "nfiles": 12,
+        "path": "stonecore_combat_quality_full_run_121",
+        "schema": "dvc_pointer_v1",
+        "size": 114906054
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_combat_quality_full_run_121.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_5c3d9caafbded9d0",
+      "pointer": {
+        "md5": "3fe24be453f46a21190d937c7fda58ab.dir",
+        "nfiles": 9,
+        "path": "stonecore_combat_quality_full_run_132",
+        "schema": "dvc_pointer_v1",
+        "size": 107403876
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_combat_quality_full_run_132.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_96267947cd90629d",
+      "pointer": {
+        "md5": "9659a407cb142eeffbf6ea6524a0b343.dir",
+        "nfiles": 7,
+        "path": "stonecore_combat_quality_full_run_141",
+        "schema": "dvc_pointer_v1",
+        "size": 71709179
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_combat_quality_full_run_141.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_3c1ce12da233352c",
+      "pointer": {
+        "md5": "0266ab63147ab93c230eae00adb62823.dir",
+        "nfiles": 4,
+        "path": "stonecore_combat_quality_full_run_142",
+        "schema": "dvc_pointer_v1",
+        "size": 5480427
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_combat_quality_full_run_142.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_84f56414bd9d7fd9",
+      "pointer": {
+        "md5": "f7493a7c88ca66cc2620a7fc8bfb7aac.dir",
+        "nfiles": 4,
+        "path": "stonecore_combat_quality_full_run_143",
+        "schema": "dvc_pointer_v1",
+        "size": 4152046
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_combat_quality_full_run_143.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_94ebebf747d4ea97",
+      "pointer": {
+        "md5": "47ac2ef9faa8b79322f9deb3a777af50.dir",
+        "nfiles": 4,
+        "path": "stonecore_combat_quality_full_run_144",
+        "schema": "dvc_pointer_v1",
+        "size": 6261940
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_combat_quality_full_run_144.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_850c6234ce76e0b8",
+      "pointer": {
+        "md5": "90214a09e2f66c42b1e5cf7aa9be7ee2.dir",
+        "nfiles": 7,
+        "path": "stonecore_combat_quality_full_run_145",
+        "schema": "dvc_pointer_v1",
+        "size": 97429483
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_combat_quality_full_run_145.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_b96e1d9195d0d52a",
+      "pointer": {
+        "md5": "7769f3f0b901bd8f36579935d1cdd955.dir",
+        "nfiles": 39,
+        "path": "stonecore_combatlog_flayer_run_108",
+        "schema": "dvc_pointer_v1",
+        "size": 644523369
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_combatlog_flayer_run_108.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_9fc8b46799519c09",
+      "pointer": {
+        "md5": "e2897c83d39d15ed4afddbe0fb982c8a.dir",
+        "nfiles": 11,
+        "path": "stonecore_combatlog_sample_run_109",
+        "schema": "dvc_pointer_v1",
+        "size": 5585208
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_combatlog_sample_run_109.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_7cec190a874afb77",
+      "pointer": {
+        "md5": "4030a3300dee5961d92f0081e5cc3c32.dir",
+        "nfiles": 9,
+        "path": "stonecore_corborus_engagement_r6",
+        "schema": "dvc_pointer_v1",
+        "size": 950436
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_corborus_engagement_r6.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_999a73d94ede9d20",
+      "pointer": {
+        "md5": "6b8dfaa1b83a302dd7ba9cedf48ce1db.dir",
+        "nfiles": 11,
+        "path": "stonecore_corborus_route_target_assist_r10",
+        "schema": "dvc_pointer_v1",
+        "size": 686344
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_corborus_route_target_assist_r10.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_39bcda4d9c4a5c1e",
+      "pointer": {
+        "md5": "7f565dd4774b3066f062856b5201c4c4.dir",
+        "nfiles": 9,
+        "path": "stonecore_corborus_route_target_assist_r11",
+        "schema": "dvc_pointer_v1",
+        "size": 821364
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_corborus_route_target_assist_r11.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_457569ad17d722ae",
+      "pointer": {
+        "md5": "874a07d3978aa8fd8478f3f52c97fd93.dir",
+        "nfiles": 10,
+        "path": "stonecore_corborus_route_target_assist_r13",
+        "schema": "dvc_pointer_v1",
+        "size": 1148810
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_corborus_route_target_assist_r13.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_bd63f2628ca4d2dc",
+      "pointer": {
+        "md5": "267a4eedddc969ff1145c6ede84105ff.dir",
+        "nfiles": 12,
+        "path": "stonecore_corborus_route_target_assist_r2",
+        "schema": "dvc_pointer_v1",
+        "size": 726850
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_corborus_route_target_assist_r2.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_3af6734b9ca3c27b",
+      "pointer": {
+        "md5": "d072d48b65671ec941ce1b3880fd12ba.dir",
+        "nfiles": 9,
+        "path": "stonecore_corborus_route_target_assist_r3",
+        "schema": "dvc_pointer_v1",
+        "size": 575837
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_corborus_route_target_assist_r3.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_740f251dd1fec816",
+      "pointer": {
+        "md5": "6f298f8dd14f9a20a62d8d8a4aa3cbac.dir",
+        "nfiles": 8,
+        "path": "stonecore_corborus_route_target_assist_r8",
+        "schema": "dvc_pointer_v1",
+        "size": 501224
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_corborus_route_target_assist_r8.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_523bc0e8df041a0d",
+      "pointer": {
+        "md5": "34113c11d0a3e9e6af28c7e7c9e6d88f.dir",
+        "nfiles": 12,
+        "path": "stonecore_corborus_route_target_assist_r9",
+        "schema": "dvc_pointer_v1",
+        "size": 738130
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_corborus_route_target_assist_r9.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_942e8340c5924c11",
+      "pointer": {
+        "md5": "2cdf743f97783553ea6b9fec21ef5cbb.dir",
+        "nfiles": 14,
+        "path": "stonecore_entrance_active_combat_anchor_guard_r1",
+        "schema": "dvc_pointer_v1",
+        "size": 1651596
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_entrance_active_combat_anchor_guard_r1.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_55806d061c0a0402",
+      "pointer": {
+        "md5": "354e1297b239e2a52509c28887828736.dir",
+        "nfiles": 15,
+        "path": "stonecore_entrance_active_focus_guard_r1",
+        "schema": "dvc_pointer_v1",
+        "size": 1833329
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_entrance_active_focus_guard_r1.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_16674a7bc74b8ff7",
+      "pointer": {
+        "md5": "b296eff8c1f16c0f62f75159aadc5a83.dir",
+        "nfiles": 7,
+        "path": "stonecore_entrance_anchor_terminal_fixed_r1",
+        "schema": "dvc_pointer_v1",
+        "size": 872787
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_entrance_anchor_terminal_fixed_r1.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_4d613fd8be26acae",
+      "pointer": {
+        "md5": "dd16905fba9da65afc834eb566393d81.dir",
+        "nfiles": 12,
+        "path": "stonecore_entrance_anchor_terminal_r1",
+        "schema": "dvc_pointer_v1",
+        "size": 731556
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_entrance_anchor_terminal_r1.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_dca9754b6a282163",
+      "pointer": {
+        "md5": "e6702c7830958cadd64e6181009adeb8.dir",
+        "nfiles": 15,
+        "path": "stonecore_entrance_focus_cleanup_r1",
+        "schema": "dvc_pointer_v1",
+        "size": 1834069
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_entrance_focus_cleanup_r1.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_2e74d561010117b6",
+      "pointer": {
+        "md5": "f61502fafae0b66f2b60bada37e61457.dir",
+        "nfiles": 13,
+        "path": "stonecore_entrance_missing_blocker_recovery_r1",
+        "schema": "dvc_pointer_v1",
+        "size": 1434056
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_entrance_missing_blocker_recovery_r1.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_180eea8cfc34e0f2",
+      "pointer": {
+        "md5": "ed12280f085288f072c33aee5ea6180d.dir",
+        "nfiles": 13,
+        "path": "stonecore_entrance_missing_target_blocker_r1",
+        "schema": "dvc_pointer_v1",
+        "size": 1438929
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_entrance_missing_target_blocker_r1.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_ad90f0e338ce12b5",
+      "pointer": {
+        "md5": "3955bcf99ee1f2f5aeaabade543135a0.dir",
+        "nfiles": 7,
+        "path": "stonecore_entrance_route_loop_terminal_diag_r1",
+        "schema": "dvc_pointer_v1",
+        "size": 869215
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_entrance_route_loop_terminal_diag_r1.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_ca2a37c83995b8f8",
+      "pointer": {
+        "md5": "63b78d94ac0a6fe8818be4e604d25336.dir",
+        "nfiles": 7,
+        "path": "stonecore_entrance_route_loop_terminal_r1",
+        "schema": "dvc_pointer_v1",
+        "size": 868204
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_entrance_route_loop_terminal_r1.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_7066d17d0a8a40bb",
+      "pointer": {
+        "md5": "8ffc0b29d4f2a80d921e005fa8784907.dir",
+        "nfiles": 13,
+        "path": "stonecore_entrance_route_progress_reset_r1",
+        "schema": "dvc_pointer_v1",
+        "size": 1450396
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_entrance_route_progress_reset_r1.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_b77410646690b509",
+      "pointer": {
+        "md5": "944e24be0a617b3b104a31ee729b6421.dir",
+        "nfiles": 15,
+        "path": "stonecore_full_clear_r1",
+        "schema": "dvc_pointer_v1",
+        "size": 1313219
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_full_clear_r1.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_5676e0a7c6d8c332",
+      "pointer": {
+        "md5": "9814a2359866f65cb0ac6a47a9522f10.dir",
+        "nfiles": 10,
+        "path": "stonecore_full_clear_r2",
+        "schema": "dvc_pointer_v1",
+        "size": 767830
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_full_clear_r2.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_ce59f34b222ab25e",
+      "pointer": {
+        "md5": "bcc5ed2189d1c368716bfc41fb90ec33.dir",
+        "nfiles": 10,
+        "path": "stonecore_full_clear_route_entry_r1",
+        "schema": "dvc_pointer_v1",
+        "size": 694840
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_full_clear_route_entry_r1.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_7e11d8c3fe0036db",
+      "pointer": {
+        "md5": "4b572ae7a2b44698eba9aedf846dfb26.dir",
+        "nfiles": 8,
+        "path": "stonecore_hybrid_route_graph_r1",
+        "schema": "dvc_pointer_v1",
+        "size": 1114451
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_hybrid_route_graph_r1.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_5b7e3179c10db4cf",
+      "pointer": {
+        "md5": "fd87c0d175ec25bcf13d94fec73bcd14.dir",
+        "nfiles": 27,
+        "path": "stonecore_hybrid_route_graph_r2",
+        "schema": "dvc_pointer_v1",
+        "size": 2811008
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_hybrid_route_graph_r2.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "calibration_evidence",
+      "artifact_id": "dvc_calibration_f7788522987d0f36",
+      "pointer": {
+        "md5": "8043e906dd89ae9735e024f18d86079c.dir",
+        "nfiles": 11,
+        "path": "stonecore_parallel_calibration_run_183",
+        "schema": "dvc_pointer_v1",
+        "size": 107603401
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_parallel_calibration_run_183.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_51f94d5fdfdd838e",
+      "pointer": {
+        "md5": "a0d48c474755ddb2ff59f8e8c1ae797f.dir",
+        "nfiles": 19,
+        "path": "stonecore_quality_corborus_run_094",
+        "schema": "dvc_pointer_v1",
+        "size": 88403205
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_quality_corborus_run_094.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_6b54bd7a8795a3bb",
+      "pointer": {
+        "md5": "c34e6b46d39d2ae6eb2367b87ed74a91.dir",
+        "nfiles": 24,
+        "path": "stonecore_quality_corborus_run_095",
+        "schema": "dvc_pointer_v1",
+        "size": 178410198
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_quality_corborus_run_095.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_4bc6d4d76834cb20",
+      "pointer": {
+        "md5": "1f5bd6539adbdd5e2fd5541fc8e19fb2.dir",
+        "nfiles": 32,
+        "path": "stonecore_quality_corborus_run_096",
+        "schema": "dvc_pointer_v1",
+        "size": 369131178
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_quality_corborus_run_096.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_96e49a6f28d6fbb6",
+      "pointer": {
+        "md5": "b23e3956900688b6598788893b9281fb.dir",
+        "nfiles": 25,
+        "path": "stonecore_quality_corborus_run_097",
+        "schema": "dvc_pointer_v1",
+        "size": 198547726
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_quality_corborus_run_097.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_a4a97e25e1504d9e",
+      "pointer": {
+        "md5": "42f98ccdc5a197e61c7a40d68f6beb60.dir",
+        "nfiles": 20,
+        "path": "stonecore_quality_corborus_run_098",
+        "schema": "dvc_pointer_v1",
+        "size": 103141125
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_quality_corborus_run_098.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_9add768a9dda5241",
+      "pointer": {
+        "md5": "0a4e81477344bc72398be3851f836d76.dir",
+        "nfiles": 25,
+        "path": "stonecore_quality_corborus_run_099",
+        "schema": "dvc_pointer_v1",
+        "size": 198460743
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_quality_corborus_run_099.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_815b66bb26b1b46d",
+      "pointer": {
+        "md5": "e7d8fb7a0324e30a5954e5ecfe4a645a.dir",
+        "nfiles": 21,
+        "path": "stonecore_quality_corborus_run_100",
+        "schema": "dvc_pointer_v1",
+        "size": 126856886
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_quality_corborus_run_100.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_a21f0a8d14243512",
+      "pointer": {
+        "md5": "6ee3eb7c4047cf952161e65c9b033584.dir",
+        "nfiles": 23,
+        "path": "stonecore_quality_corborus_run_101",
+        "schema": "dvc_pointer_v1",
+        "size": 166383092
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_quality_corborus_run_101.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_61e7293a920fd0ac",
+      "pointer": {
+        "md5": "1ecd28980c781839e1d493ad1edef576.dir",
+        "nfiles": 21,
+        "path": "stonecore_quality_corborus_run_102",
+        "schema": "dvc_pointer_v1",
+        "size": 126594460
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_quality_corborus_run_102.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_f248b968d8cea047",
+      "pointer": {
+        "md5": "a5a00f7e2c7aa7d3d2f33a63f58666c6.dir",
+        "nfiles": 23,
+        "path": "stonecore_quality_corborus_run_103",
+        "schema": "dvc_pointer_v1",
+        "size": 165290483
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_quality_corborus_run_103.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_c06c699a42c20d17",
+      "pointer": {
+        "md5": "d43cf7ce21535b8b91539829234ff426.dir",
+        "nfiles": 38,
+        "path": "stonecore_quality_flayer_run_105_manifest_miss",
+        "schema": "dvc_pointer_v1",
+        "size": 601776239
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_quality_flayer_run_105_manifest_miss.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_f2538e9a1d8da6b3",
+      "pointer": {
+        "md5": "19832b36da589c4738d9c65e2b31bcfc.dir",
+        "nfiles": 41,
+        "path": "stonecore_quality_flayer_run_106",
+        "schema": "dvc_pointer_v1",
+        "size": 731884797
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_quality_flayer_run_106.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_d5c9b349a68bfee2",
+      "pointer": {
+        "md5": "e32cb2368652fea8880fed70e13b8bd5.dir",
+        "nfiles": 59,
+        "path": "stonecore_quality_full_run_107",
+        "schema": "dvc_pointer_v1",
+        "size": 1566042988
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_quality_full_run_107.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_270ab3c396b707be",
+      "pointer": {
+        "md5": "e82eae61e81243e159dda8e00671cc2c.dir",
+        "nfiles": 30,
+        "path": "stonecore_quality_slabhide_run_104",
+        "schema": "dvc_pointer_v1",
+        "size": 336229856
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_quality_slabhide_run_104.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_8cfec0827e0bac07",
+      "pointer": {
+        "md5": "05753682cd4b667c265abf9181a4befd.dir",
+        "nfiles": 11,
+        "path": "stonecore_route_assist_evidence_r1",
+        "schema": "dvc_pointer_v1",
+        "size": 989114
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_route_assist_evidence_r1.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_10fa09e282ab4a30",
+      "pointer": {
+        "md5": "4bffb5ea7c99228057e16e4d46fa4684.dir",
+        "nfiles": 11,
+        "path": "stonecore_route_pack_no_progress_r3",
+        "schema": "dvc_pointer_v1",
+        "size": 1047328
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_route_pack_no_progress_r3.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_d98b8159f3f0b0ea",
+      "pointer": {
+        "md5": "b73d2e27da2dd3fe1ade0a0d4405d101.dir",
+        "nfiles": 24,
+        "path": "stonecore_route_sequence_r3",
+        "schema": "dvc_pointer_v1",
+        "size": 1427576
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_route_sequence_r3.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_aa595285bcc08d11",
+      "pointer": {
+        "md5": "b67a81fe8092c6086d67853255b5e56b.dir",
+        "nfiles": 46,
+        "path": "stonecore_route_sequence_r4",
+        "schema": "dvc_pointer_v1",
+        "size": 3988300
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_route_sequence_r4.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_2d38f966c915fe6a",
+      "pointer": {
+        "md5": "0edabbad928fcd0435dde17a3ecaa649.dir",
+        "nfiles": 93,
+        "path": "stonecore_route_sequence_r5",
+        "schema": "dvc_pointer_v1",
+        "size": 19652063
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_route_sequence_r5.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_92228d03525c86a9",
+      "pointer": {
+        "md5": "f1e7206667a7f46437f4c951d6cbd0a2.dir",
+        "nfiles": 66,
+        "path": "stonecore_route_sequence_r6",
+        "schema": "dvc_pointer_v1",
+        "size": 5970808
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_route_sequence_r6.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_8f575ee62fa79fb0",
+      "pointer": {
+        "md5": "1ffceee66ade6e642b71ce6c55e3635b.dir",
+        "nfiles": 73,
+        "path": "stonecore_route_sequence_r8",
+        "schema": "dvc_pointer_v1",
+        "size": 6132074
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_route_sequence_r8.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_0dae7a6b0c901772",
+      "pointer": {
+        "md5": "079e3dd21c3dc106bd64e45578b1ee97.dir",
+        "nfiles": 13,
+        "path": "stonecore_route_stuck_recovery_r2",
+        "schema": "dvc_pointer_v1",
+        "size": 1240447
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_route_stuck_recovery_r2.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_23980f974738111c",
+      "pointer": {
+        "md5": "67311db0b13a60b73c2686120ef285b1.dir",
+        "nfiles": 13,
+        "path": "stonecore_session_reuse_probe_058",
+        "schema": "dvc_pointer_v1",
+        "size": 9211145
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_session_reuse_probe_058.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_528d38a3b05a1809",
+      "pointer": {
+        "md5": "d4cb3f1ca42387b4f1c643b46bedbf07.dir",
+        "nfiles": 13,
+        "path": "stonecore_session_reuse_probe_059",
+        "schema": "dvc_pointer_v1",
+        "size": 9200813
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_session_reuse_probe_059.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_f4ae111c8b5f3d1f",
+      "pointer": {
+        "md5": "30d9488a7c730f2799ba6027706456d7.dir",
+        "nfiles": 10,
+        "path": "stonecore_slabhide_activation_r1",
+        "schema": "dvc_pointer_v1",
+        "size": 1100419
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_slabhide_activation_r1.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_2c229f6d3fe32970",
+      "pointer": {
+        "md5": "541747718f75d3ca34595e7f52882816.dir",
+        "nfiles": 7,
+        "path": "stonecore_slabhide_quality_run_130",
+        "schema": "dvc_pointer_v1",
+        "size": 7610996
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_slabhide_quality_run_130.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_c6d49a5c5bb68d0b",
+      "pointer": {
+        "md5": "4149ae7de47f57b8d0227d851f86a388.dir",
+        "nfiles": 7,
+        "path": "stonecore_slabhide_quality_run_131",
+        "schema": "dvc_pointer_v1",
+        "size": 7617652
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_slabhide_quality_run_131.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_165ac6024ee6d249",
+      "pointer": {
+        "md5": "e1432877df1d34b1342c4c6b9551e17c.dir",
+        "nfiles": 9,
+        "path": "stonecore_slabhide_range_run_122",
+        "schema": "dvc_pointer_v1",
+        "size": 6163880
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_slabhide_range_run_122.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_cd0b1f2b461f4e3b",
+      "pointer": {
+        "md5": "26ed2f79ec4dd55b7640d4eadc5e4894.dir",
+        "nfiles": 4,
+        "path": "stonecore_slabhide_range_run_123",
+        "schema": "dvc_pointer_v1",
+        "size": 5335470
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_slabhide_range_run_123.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_f197a92527a4e2b9",
+      "pointer": {
+        "md5": "709a2a0a9f393403e17b77ae01be7c94.dir",
+        "nfiles": 4,
+        "path": "stonecore_slabhide_range_run_124",
+        "schema": "dvc_pointer_v1",
+        "size": 5341011
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_slabhide_range_run_124.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_a2d0626f714d5099",
+      "pointer": {
+        "md5": "d4b317ef5670ec90104f4a184f633e78.dir",
+        "nfiles": 4,
+        "path": "stonecore_slabhide_range_run_125",
+        "schema": "dvc_pointer_v1",
+        "size": 5190853
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_slabhide_range_run_125.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_3062d449aeca12f5",
+      "pointer": {
+        "md5": "b8766094ab62398680a2f23cc4acf029.dir",
+        "nfiles": 4,
+        "path": "stonecore_slabhide_range_run_126",
+        "schema": "dvc_pointer_v1",
+        "size": 1583070
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_slabhide_range_run_126.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_21fde1b4634715bb",
+      "pointer": {
+        "md5": "1ca3467b7fe2720e71d477f657b68bba.dir",
+        "nfiles": 4,
+        "path": "stonecore_slabhide_range_run_127",
+        "schema": "dvc_pointer_v1",
+        "size": 4117074
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_slabhide_range_run_127.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_dab70551f3846ae3",
+      "pointer": {
+        "md5": "b93a5dedaec966951e7cb5c7a2a19edb.dir",
+        "nfiles": 4,
+        "path": "stonecore_slabhide_range_run_128",
+        "schema": "dvc_pointer_v1",
+        "size": 13671452
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_slabhide_range_run_128.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_eb32c33eb7f8f1f1",
+      "pointer": {
+        "md5": "36449441313560de800b935272e662d0.dir",
+        "nfiles": 7,
+        "path": "stonecore_slabhide_range_run_129",
+        "schema": "dvc_pointer_v1",
+        "size": 7609910
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_slabhide_range_run_129.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_a9f8395355a418c0",
+      "pointer": {
+        "md5": "69dbbf8b982c2e9cf0012f47f5266908.dir",
+        "nfiles": 22,
+        "path": "stonecore_strict_repair_run_001",
+        "schema": "dvc_pointer_v1",
+        "size": 26887116
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_001.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_8a1fed50cc530065",
+      "pointer": {
+        "md5": "b12930bdea5bd4595ba01a54e9fdf7f5.dir",
+        "nfiles": 23,
+        "path": "stonecore_strict_repair_run_002",
+        "schema": "dvc_pointer_v1",
+        "size": 31366503
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_002.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_c9793ec76baff4b3",
+      "pointer": {
+        "md5": "db293f811ec877301f6314192d75708e.dir",
+        "nfiles": 27,
+        "path": "stonecore_strict_repair_run_003",
+        "schema": "dvc_pointer_v1",
+        "size": 48820741
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_003.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_9423f8a282dbe2f2",
+      "pointer": {
+        "md5": "7a684e2c24971b215a08bc21c99e5b03.dir",
+        "nfiles": 23,
+        "path": "stonecore_strict_repair_run_004",
+        "schema": "dvc_pointer_v1",
+        "size": 31304974
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_004.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_6a623c6ca4104c2f",
+      "pointer": {
+        "md5": "6434be9b2f390d7b9ff1954d9060604a.dir",
+        "nfiles": 29,
+        "path": "stonecore_strict_repair_run_005",
+        "schema": "dvc_pointer_v1",
+        "size": 58194694
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_005.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_65a4ba497b0fd5bb",
+      "pointer": {
+        "md5": "4dcac19c2ef759f8e39619a1ffe7d664.dir",
+        "nfiles": 31,
+        "path": "stonecore_strict_repair_run_006",
+        "schema": "dvc_pointer_v1",
+        "size": 69355661
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_006.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_f607aa3bdb4683c8",
+      "pointer": {
+        "md5": "574504e27f4d3d90fb607a5652a87674.dir",
+        "nfiles": 34,
+        "path": "stonecore_strict_repair_run_007",
+        "schema": "dvc_pointer_v1",
+        "size": 92023958
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_007.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_9bc21874aab9aee2",
+      "pointer": {
+        "md5": "57528048394bbd81b72bbc6b742cc64a.dir",
+        "nfiles": 30,
+        "path": "stonecore_strict_repair_run_008",
+        "schema": "dvc_pointer_v1",
+        "size": 235843701
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_008.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_45216d72eff191aa",
+      "pointer": {
+        "md5": "7d14d6b20ab255bbf7faaf27db4bea57.dir",
+        "nfiles": 29,
+        "path": "stonecore_strict_repair_run_009",
+        "schema": "dvc_pointer_v1",
+        "size": 229786845
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_009.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_c6a1e3109277e53d",
+      "pointer": {
+        "md5": "5275db0b6025eff452cb289dda8a18ce.dir",
+        "nfiles": 12,
+        "path": "stonecore_strict_repair_run_010_aborted",
+        "schema": "dvc_pointer_v1",
+        "size": 9606208
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_010_aborted.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_11009b06b99eb0fd",
+      "pointer": {
+        "md5": "2367ac7b6cb40080fa32eaacfad5cdcb.dir",
+        "nfiles": 28,
+        "path": "stonecore_strict_repair_run_011",
+        "schema": "dvc_pointer_v1",
+        "size": 202350627
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_011.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_3bce2b44e5ff7446",
+      "pointer": {
+        "md5": "bda7574a31175597dab6a280b7113b19.dir",
+        "nfiles": 32,
+        "path": "stonecore_strict_repair_run_012",
+        "schema": "dvc_pointer_v1",
+        "size": 283309306
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_012.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_56b67aa24e948515",
+      "pointer": {
+        "md5": "d69bd9d7f7ef43b656d01e3178cf3d2b.dir",
+        "nfiles": 25,
+        "path": "stonecore_strict_repair_run_013",
+        "schema": "dvc_pointer_v1",
+        "size": 151531986
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_013.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_6cb4a000193c9248",
+      "pointer": {
+        "md5": "b64162ca8e00992ccd9a522b1c70f262.dir",
+        "nfiles": 29,
+        "path": "stonecore_strict_repair_run_014",
+        "schema": "dvc_pointer_v1",
+        "size": 228131300
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_014.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_1919d4d17c92d2a1",
+      "pointer": {
+        "md5": "c10fb2f10332f23b7e99ae6945e60ea6.dir",
+        "nfiles": 29,
+        "path": "stonecore_strict_repair_run_015",
+        "schema": "dvc_pointer_v1",
+        "size": 226574898
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_015.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_34bf6202960d5f06",
+      "pointer": {
+        "md5": "d4442641ca35405aef1d5476c9c84fe5.dir",
+        "nfiles": 29,
+        "path": "stonecore_strict_repair_run_016",
+        "schema": "dvc_pointer_v1",
+        "size": 223241781
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_016.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_bd480b39d69c53cd",
+      "pointer": {
+        "md5": "c4766170a2423781617a17754f978be7.dir",
+        "nfiles": 17,
+        "path": "stonecore_strict_repair_run_017_aborted",
+        "schema": "dvc_pointer_v1",
+        "size": 43314074
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_017_aborted.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_80c128f09abfcaf4",
+      "pointer": {
+        "md5": "9c95dc7d76c7ac77b8ee9066e7dad95d.dir",
+        "nfiles": 18,
+        "path": "stonecore_strict_repair_run_018",
+        "schema": "dvc_pointer_v1",
+        "size": 48647613
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_018.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_dd7335cd83b0d9c2",
+      "pointer": {
+        "md5": "83893f7a9e4b3d7c05b04c0c19f4c46a.dir",
+        "nfiles": 22,
+        "path": "stonecore_strict_repair_run_019_aborted",
+        "schema": "dvc_pointer_v1",
+        "size": 103594509
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_019_aborted.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_4f3e123b0b273891",
+      "pointer": {
+        "md5": "618bba85b445dd0100bdc4c2a154ecb6.dir",
+        "nfiles": 22,
+        "path": "stonecore_strict_repair_run_020",
+        "schema": "dvc_pointer_v1",
+        "size": 88337500
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_020.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_e7ac1bdd3127c820",
+      "pointer": {
+        "md5": "8b1a260017385f17db0ef2e099c4a17f.dir",
+        "nfiles": 22,
+        "path": "stonecore_strict_repair_run_021",
+        "schema": "dvc_pointer_v1",
+        "size": 89877700
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_021.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_a475b6b08e2f9ef2",
+      "pointer": {
+        "md5": "5c7dc249d20f7cc2f2b78bde627c84ba.dir",
+        "nfiles": 32,
+        "path": "stonecore_strict_repair_run_022",
+        "schema": "dvc_pointer_v1",
+        "size": 277465947
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_022.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_86a397896fee026f",
+      "pointer": {
+        "md5": "d778d930c897a290538621dd3e53e401.dir",
+        "nfiles": 40,
+        "path": "stonecore_strict_repair_run_023",
+        "schema": "dvc_pointer_v1",
+        "size": 486473425
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_023.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_9a9619d6267173d7",
+      "pointer": {
+        "md5": "8b20fa0f730b3de96d750a9b8292d062.dir",
+        "nfiles": 30,
+        "path": "stonecore_strict_repair_run_024",
+        "schema": "dvc_pointer_v1",
+        "size": 252736673
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_024.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_1fceccba10c232d1",
+      "pointer": {
+        "md5": "cd0b0d527f7b9522af09e1397df5e0da.dir",
+        "nfiles": 24,
+        "path": "stonecore_strict_repair_run_025",
+        "schema": "dvc_pointer_v1",
+        "size": 132521259
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_025.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_a8d024215a38e56b",
+      "pointer": {
+        "md5": "74088f7fd4cd112ac0972c39c6913b1e.dir",
+        "nfiles": 24,
+        "path": "stonecore_strict_repair_run_026",
+        "schema": "dvc_pointer_v1",
+        "size": 135334188
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_026.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_d24f646207dba260",
+      "pointer": {
+        "md5": "4cbccf8519bed38821af779d48718343.dir",
+        "nfiles": 26,
+        "path": "stonecore_strict_repair_run_027",
+        "schema": "dvc_pointer_v1",
+        "size": 157009913
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_027.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_b5448fdafe96b906",
+      "pointer": {
+        "md5": "66be9b4e6bd05daba58f4bd4dbff9eb5.dir",
+        "nfiles": 19,
+        "path": "stonecore_strict_repair_run_028",
+        "schema": "dvc_pointer_v1",
+        "size": 56377705
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_028.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_8466f47ab896d724",
+      "pointer": {
+        "md5": "8b754d13d4dc65f57193f3f512bf5e24.dir",
+        "nfiles": 19,
+        "path": "stonecore_strict_repair_run_029_debug",
+        "schema": "dvc_pointer_v1",
+        "size": 56391831
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_029_debug.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_9e261595a6854bf6",
+      "pointer": {
+        "md5": "8c7792196ef81ce12506150c8a479b7a.dir",
+        "nfiles": 20,
+        "path": "stonecore_strict_repair_run_030_debug",
+        "schema": "dvc_pointer_v1",
+        "size": 56560920
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_030_debug.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_dfa0aa2583d1af30",
+      "pointer": {
+        "md5": "2754a4b3684d08fadd48ad19af36b869.dir",
+        "nfiles": 27,
+        "path": "stonecore_strict_repair_run_031",
+        "schema": "dvc_pointer_v1",
+        "size": 185287051
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_031.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_5bd54db1d3f002ad",
+      "pointer": {
+        "md5": "c53c6da9a9c2124fb9f1f38c87659319.dir",
+        "nfiles": 31,
+        "path": "stonecore_strict_repair_run_032",
+        "schema": "dvc_pointer_v1",
+        "size": 274340161
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_032.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_03621a12398be48f",
+      "pointer": {
+        "md5": "c189687d1e464bd61dfade55ebb57349.dir",
+        "nfiles": 32,
+        "path": "stonecore_strict_repair_run_033",
+        "schema": "dvc_pointer_v1",
+        "size": 296670579
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_033.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_80905628da7c2a49",
+      "pointer": {
+        "md5": "136ec11ac7213f5e43e4c5e84453a5ac.dir",
+        "nfiles": 27,
+        "path": "stonecore_strict_repair_run_034",
+        "schema": "dvc_pointer_v1",
+        "size": 187792370
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_034.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_6b97da517c322291",
+      "pointer": {
+        "md5": "d34a9096cec3ddeef8559a3968288f91.dir",
+        "nfiles": 39,
+        "path": "stonecore_strict_repair_run_035",
+        "schema": "dvc_pointer_v1",
+        "size": 484609545
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_035.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_e500b8b54237ec5d",
+      "pointer": {
+        "md5": "5e210e99c7251bebf2f6c2ca06be6f66.dir",
+        "nfiles": 20,
+        "path": "stonecore_strict_repair_run_036",
+        "schema": "dvc_pointer_v1",
+        "size": 76742378
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_036.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_8bda491ce1f8b2d0",
+      "pointer": {
+        "md5": "4795da6ff9f189f14f66c84f577d80d0.dir",
+        "nfiles": 26,
+        "path": "stonecore_strict_repair_run_037",
+        "schema": "dvc_pointer_v1",
+        "size": 173628216
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_037.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_fd20123f1fc3eeba",
+      "pointer": {
+        "md5": "9276c2986c4a10bc23bf0f1522214b0b.dir",
+        "nfiles": 26,
+        "path": "stonecore_strict_repair_run_038",
+        "schema": "dvc_pointer_v1",
+        "size": 173823503
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_038.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_4548811588dea093",
+      "pointer": {
+        "md5": "baf3726fb6287f74a78384dda994f443.dir",
+        "nfiles": 27,
+        "path": "stonecore_strict_repair_run_039",
+        "schema": "dvc_pointer_v1",
+        "size": 187500714
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_039.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_eadf77b548feb56e",
+      "pointer": {
+        "md5": "34e3a9654224108f6e6e51510cc1d9a1.dir",
+        "nfiles": 26,
+        "path": "stonecore_strict_repair_run_040",
+        "schema": "dvc_pointer_v1",
+        "size": 173656071
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_040.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_4f547c64dcf63285",
+      "pointer": {
+        "md5": "318327a9b37f16097ad3184998a247de.dir",
+        "nfiles": 40,
+        "path": "stonecore_strict_repair_run_041",
+        "schema": "dvc_pointer_v1",
+        "size": 542745053
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_041.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_1ceac930dabc71f6",
+      "pointer": {
+        "md5": "bbc778fae569651926ca1639f376d42b.dir",
+        "nfiles": 45,
+        "path": "stonecore_strict_repair_run_042",
+        "schema": "dvc_pointer_v1",
+        "size": 734289154
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_042.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_8a0a2572610ef738",
+      "pointer": {
+        "md5": "9ba631abb6055196319982da36387d2d.dir",
+        "nfiles": 45,
+        "path": "stonecore_strict_repair_run_043",
+        "schema": "dvc_pointer_v1",
+        "size": 713063480
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_043.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_6b1afdc68d53468b",
+      "pointer": {
+        "md5": "681e6415b671e777fbe8ae83c2831635.dir",
+        "nfiles": 45,
+        "path": "stonecore_strict_repair_run_044",
+        "schema": "dvc_pointer_v1",
+        "size": 723613102
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_044.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_b441b0f56bb34dad",
+      "pointer": {
+        "md5": "f57ba463612827470672dc946c8891c4.dir",
+        "nfiles": 61,
+        "path": "stonecore_strict_repair_run_045",
+        "schema": "dvc_pointer_v1",
+        "size": 1484017960
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_045.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_44a9fdd9f5f58055",
+      "pointer": {
+        "md5": "a51be4b8c77a6693ac24fd37fb36a55d.dir",
+        "nfiles": 67,
+        "path": "stonecore_strict_repair_run_046",
+        "schema": "dvc_pointer_v1",
+        "size": 1808719662
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_046.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_2e1c8a5cb9a1adb1",
+      "pointer": {
+        "md5": "3cb6db8b6e7592992f2edecf7f5e396c.dir",
+        "nfiles": 68,
+        "path": "stonecore_strict_repair_run_048",
+        "schema": "dvc_pointer_v1",
+        "size": 1880254673
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_048.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_97c703e6d921a416",
+      "pointer": {
+        "md5": "a4037b427452cb15485cdccc4c7a4d7d.dir",
+        "nfiles": 68,
+        "path": "stonecore_strict_repair_run_049",
+        "schema": "dvc_pointer_v1",
+        "size": 1860857870
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_049.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_5ca3b9dc9c4a72bf",
+      "pointer": {
+        "md5": "534743e158b720d383b7b91b6e3fca1b.dir",
+        "nfiles": 63,
+        "path": "stonecore_strict_repair_run_050",
+        "schema": "dvc_pointer_v1",
+        "size": 1611795862
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_050.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_615f8eb48d642599",
+      "pointer": {
+        "md5": "8560788580c2ee5cf27f834249c00c18.dir",
+        "nfiles": 66,
+        "path": "stonecore_strict_repair_run_051",
+        "schema": "dvc_pointer_v1",
+        "size": 1796215009
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_051.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_f007a99e9026f08c",
+      "pointer": {
+        "md5": "595a97982fa7195952d967d0e4096bb4.dir",
+        "nfiles": 61,
+        "path": "stonecore_strict_repair_run_052",
+        "schema": "dvc_pointer_v1",
+        "size": 1515081942
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_052.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_1489c1d3f33d5108",
+      "pointer": {
+        "md5": "c67ee8935753b8ceccbdddbafdfebe.dir",
+        "nfiles": 66,
+        "path": "stonecore_strict_repair_run_053",
+        "schema": "dvc_pointer_v1",
+        "size": 1808433602
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_strict_repair_run_053.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_97a8dcbf99d3c885",
+      "pointer": {
+        "md5": "253b9de006bf978adf8cd8d9530833e9.dir",
+        "nfiles": 10,
+        "path": "stonecore_uninterrupted_full_clear_r1",
+        "schema": "dvc_pointer_v1",
+        "size": 763372
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_uninterrupted_full_clear_r1.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_6f47a048861a05c2",
+      "pointer": {
+        "md5": "3d449b85de5e0511372bc6bfdd5b0277.dir",
+        "nfiles": 20,
+        "path": "stonecore_uninterrupted_full_clear_r10",
+        "schema": "dvc_pointer_v1",
+        "size": 8783300
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_uninterrupted_full_clear_r10.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_9ee39ec0e0bec50e",
+      "pointer": {
+        "md5": "22bd066febfc562c6fd63f73a07ac491.dir",
+        "nfiles": 20,
+        "path": "stonecore_uninterrupted_full_clear_r11",
+        "schema": "dvc_pointer_v1",
+        "size": 8463636
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_uninterrupted_full_clear_r11.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_3bb2ff4e251925f7",
+      "pointer": {
+        "md5": "f925850472a48232875e5c1134b67efe.dir",
+        "nfiles": 17,
+        "path": "stonecore_uninterrupted_full_clear_r12",
+        "schema": "dvc_pointer_v1",
+        "size": 5504426
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_uninterrupted_full_clear_r12.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_1936ef3c00f9808d",
+      "pointer": {
+        "md5": "e6d7dbbd62cdc608f6db093bd18125a5.dir",
+        "nfiles": 36,
+        "path": "stonecore_uninterrupted_full_clear_r13",
+        "schema": "dvc_pointer_v1",
+        "size": 18323628
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_uninterrupted_full_clear_r13.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_817bd518404cd648",
+      "pointer": {
+        "md5": "4312fa5f083f557f67273ddbf3f48ab8.dir",
+        "nfiles": 96,
+        "path": "stonecore_uninterrupted_full_clear_r14",
+        "schema": "dvc_pointer_v1",
+        "size": 30948246
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_uninterrupted_full_clear_r14.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_64d356e86ec74a9c",
+      "pointer": {
+        "md5": "399ba804db57842a407bc96e8603e6f6.dir",
+        "nfiles": 10,
+        "path": "stonecore_uninterrupted_full_clear_r2",
+        "schema": "dvc_pointer_v1",
+        "size": 817358
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_uninterrupted_full_clear_r2.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_754318457efb702f",
+      "pointer": {
+        "md5": "a37a9ec8412827e390d663f2e60fac1d.dir",
+        "nfiles": 12,
+        "path": "stonecore_uninterrupted_full_clear_r3",
+        "schema": "dvc_pointer_v1",
+        "size": 1753072
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_uninterrupted_full_clear_r3.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_66662ab0082db381",
+      "pointer": {
+        "md5": "b559598da18a00614722a7871a676ce3.dir",
+        "nfiles": 22,
+        "path": "stonecore_uninterrupted_full_clear_r4",
+        "schema": "dvc_pointer_v1",
+        "size": 10881450
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_uninterrupted_full_clear_r4.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_db26ad89744f6069",
+      "pointer": {
+        "md5": "9c6cdf3d790c55ddccb50e1cd29fb1c9.dir",
+        "nfiles": 12,
+        "path": "stonecore_uninterrupted_full_clear_r5",
+        "schema": "dvc_pointer_v1",
+        "size": 1761210
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_uninterrupted_full_clear_r5.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_4c7eeed7b202c5f5",
+      "pointer": {
+        "md5": "bf14d18a686827c4c301a68b877e8c5b.dir",
+        "nfiles": 12,
+        "path": "stonecore_uninterrupted_full_clear_r6",
+        "schema": "dvc_pointer_v1",
+        "size": 1756493
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_uninterrupted_full_clear_r6.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_7244d59ec564733f",
+      "pointer": {
+        "md5": "aef262e332ae49ae49e9cc4acf01c793.dir",
+        "nfiles": 12,
+        "path": "stonecore_uninterrupted_full_clear_r7",
+        "schema": "dvc_pointer_v1",
+        "size": 1763055
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_uninterrupted_full_clear_r7.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_e0aa45122e2e6602",
+      "pointer": {
+        "md5": "cf58ad6316f3401b5cec3180159aff68.dir",
+        "nfiles": 15,
+        "path": "stonecore_uninterrupted_full_clear_r8",
+        "schema": "dvc_pointer_v1",
+        "size": 3542433
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_uninterrupted_full_clear_r8.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_6fb62713847e317e",
+      "pointer": {
+        "md5": "aac62bd161c6cd65f3ae6cc68c8aa362.dir",
+        "nfiles": 21,
+        "path": "stonecore_uninterrupted_full_clear_r9",
+        "schema": "dvc_pointer_v1",
+        "size": 10015995
+      },
+      "pointer_path": "artifacts/live_validation_instances/stonecore_uninterrupted_full_clear_r9.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_774aa839aa180fe6",
+      "pointer": {
+        "md5": "3b01cb26c81ff1afd6efb6ee6b71d2b1",
+        "nfiles": null,
+        "path": "stonecore_quality_corborus_run_094.json",
+        "schema": "dvc_pointer_v1",
+        "size": 6807
+      },
+      "pointer_path": "artifacts/role_efficiency/stonecore_quality_corborus_run_094.json.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_691e228ffc73eb6b",
+      "pointer": {
+        "md5": "8155cf3200c261870e71682265cc29b3",
+        "nfiles": null,
+        "path": "stonecore_quality_corborus_run_095.json",
+        "schema": "dvc_pointer_v1",
+        "size": 6751
+      },
+      "pointer_path": "artifacts/role_efficiency/stonecore_quality_corborus_run_095.json.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_654622291e13615d",
+      "pointer": {
+        "md5": "b91a34fd8ee2fbcd6ab677cd604d0384",
+        "nfiles": null,
+        "path": "stonecore_quality_corborus_run_096.json",
+        "schema": "dvc_pointer_v1",
+        "size": 7488
+      },
+      "pointer_path": "artifacts/role_efficiency/stonecore_quality_corborus_run_096.json.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_01fdc0218c41058e",
+      "pointer": {
+        "md5": "48d6b03d9509fbe8c44f890ab58733fb",
+        "nfiles": null,
+        "path": "stonecore_quality_corborus_run_097.json",
+        "schema": "dvc_pointer_v1",
+        "size": 7198
+      },
+      "pointer_path": "artifacts/role_efficiency/stonecore_quality_corborus_run_097.json.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_ba4896f2eddae06e",
+      "pointer": {
+        "md5": "54cbd7ae6e513d874cedc7c802002fb4",
+        "nfiles": null,
+        "path": "stonecore_quality_corborus_run_098.json",
+        "schema": "dvc_pointer_v1",
+        "size": 7042
+      },
+      "pointer_path": "artifacts/role_efficiency/stonecore_quality_corborus_run_098.json.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_013722d8a5b56960",
+      "pointer": {
+        "md5": "eb9b492825678b59b4fbcdbc7046281a",
+        "nfiles": null,
+        "path": "stonecore_quality_corborus_run_099.json",
+        "schema": "dvc_pointer_v1",
+        "size": 7230
+      },
+      "pointer_path": "artifacts/role_efficiency/stonecore_quality_corborus_run_099.json.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_7034b6acf86a556d",
+      "pointer": {
+        "md5": "6bcda73368e53dde49d8a9fa74f8bb81",
+        "nfiles": null,
+        "path": "stonecore_quality_corborus_run_100.json",
+        "schema": "dvc_pointer_v1",
+        "size": 7175
+      },
+      "pointer_path": "artifacts/role_efficiency/stonecore_quality_corborus_run_100.json.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_22ce97b583d538cd",
+      "pointer": {
+        "md5": "128f08951107900fd8e0e8ea5f97971f",
+        "nfiles": null,
+        "path": "stonecore_quality_corborus_run_101.json",
+        "schema": "dvc_pointer_v1",
+        "size": 7388
+      },
+      "pointer_path": "artifacts/role_efficiency/stonecore_quality_corborus_run_101.json.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_1b8b30de11f373c3",
+      "pointer": {
+        "md5": "c975499a8dc3a82d9ce27d6c8912851d",
+        "nfiles": null,
+        "path": "stonecore_quality_corborus_run_102.json",
+        "schema": "dvc_pointer_v1",
+        "size": 7725
+      },
+      "pointer_path": "artifacts/role_efficiency/stonecore_quality_corborus_run_102.json.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_909dccbfc5929422",
+      "pointer": {
+        "md5": "22e559b8083e4a19e124aab03186ab71",
+        "nfiles": null,
+        "path": "stonecore_quality_corborus_run_103.json",
+        "schema": "dvc_pointer_v1",
+        "size": 7172
+      },
+      "pointer_path": "artifacts/role_efficiency/stonecore_quality_corborus_run_103.json.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_f3479db8513913cd",
+      "pointer": {
+        "md5": "a0e2e9afb1b91804425d84df9e9817b8",
+        "nfiles": null,
+        "path": "stonecore_quality_flayer_run_105_manifest_miss.json",
+        "schema": "dvc_pointer_v1",
+        "size": 7527
+      },
+      "pointer_path": "artifacts/role_efficiency/stonecore_quality_flayer_run_105_manifest_miss.json.dvc",
+      "temporal_state": "unusable"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_e3f462fde540e45e",
+      "pointer": {
+        "md5": "fced01c2d648b9410cbe01c54891695c",
+        "nfiles": null,
+        "path": "stonecore_quality_flayer_run_106.json",
+        "schema": "dvc_pointer_v1",
+        "size": 7463
+      },
+      "pointer_path": "artifacts/role_efficiency/stonecore_quality_flayer_run_106.json.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_2b06fb794756130f",
+      "pointer": {
+        "md5": "715555224b8ff77efb1030ce1c2d27b3",
+        "nfiles": null,
+        "path": "stonecore_quality_full_run_107.json",
+        "schema": "dvc_pointer_v1",
+        "size": 7693
+      },
+      "pointer_path": "artifacts/role_efficiency/stonecore_quality_full_run_107.json.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_d9927f598693421d",
+      "pointer": {
+        "md5": "87b8db1c6504728c029b3bdc60974ff8",
+        "nfiles": null,
+        "path": "stonecore_quality_slabhide_run_104.json",
+        "schema": "dvc_pointer_v1",
+        "size": 7288
+      },
+      "pointer_path": "artifacts/role_efficiency/stonecore_quality_slabhide_run_104.json.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_c96ed96fa056c47e",
+      "pointer": {
+        "md5": "929a5cebe0d1b436fef393f7ec561b2a",
+        "nfiles": null,
+        "path": "stonecore_run_077.json",
+        "schema": "dvc_pointer_v1",
+        "size": 5205
+      },
+      "pointer_path": "artifacts/role_efficiency/stonecore_run_077.json.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_8dfa5304ea04513a",
+      "pointer": {
+        "md5": "6ef499578442b5962c80920cc5176537",
+        "nfiles": null,
+        "path": "stonecore_run_078.json",
+        "schema": "dvc_pointer_v1",
+        "size": 5554
+      },
+      "pointer_path": "artifacts/role_efficiency/stonecore_run_078.json.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_3f36452465b1c64e",
+      "pointer": {
+        "md5": "8529984f3b570c11de5f2a9868723dde",
+        "nfiles": null,
+        "path": "stonecore_run_079.json",
+        "schema": "dvc_pointer_v1",
+        "size": 5608
+      },
+      "pointer_path": "artifacts/role_efficiency/stonecore_run_079.json.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_60d0ce1e2359ea43",
+      "pointer": {
+        "md5": "93060d69006802072b177d53fffc0ba0",
+        "nfiles": null,
+        "path": "stonecore_run_080.json",
+        "schema": "dvc_pointer_v1",
+        "size": 5044
+      },
+      "pointer_path": "artifacts/role_efficiency/stonecore_run_080.json.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_9b2b23d9f59bff57",
+      "pointer": {
+        "md5": "5f3375a9dd8399fca3857efad334a472",
+        "nfiles": null,
+        "path": "stonecore_run_081.json",
+        "schema": "dvc_pointer_v1",
+        "size": 5290
+      },
+      "pointer_path": "artifacts/role_efficiency/stonecore_run_081.json.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_2dca719d20f9330d",
+      "pointer": {
+        "md5": "435973ff1e1698b18c9abf92796a08d2",
+        "nfiles": null,
+        "path": "stonecore_run_082.json",
+        "schema": "dvc_pointer_v1",
+        "size": 5140
+      },
+      "pointer_path": "artifacts/role_efficiency/stonecore_run_082.json.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_318ee391ed899770",
+      "pointer": {
+        "md5": "195121cd563474620844b43b45835bc8",
+        "nfiles": null,
+        "path": "stonecore_run_083.json",
+        "schema": "dvc_pointer_v1",
+        "size": 5015
+      },
+      "pointer_path": "artifacts/role_efficiency/stonecore_run_083.json.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_a035a6fdf00727c0",
+      "pointer": {
+        "md5": "372b0858cd2886387ef19af86a18d8e8",
+        "nfiles": null,
+        "path": "stonecore_run_084.json",
+        "schema": "dvc_pointer_v1",
+        "size": 5289
+      },
+      "pointer_path": "artifacts/role_efficiency/stonecore_run_084.json.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_ebb0c0350d81bc15",
+      "pointer": {
+        "md5": "19671ffda09bfb93a5abef9d365de02f",
+        "nfiles": null,
+        "path": "stonecore_run_085.json",
+        "schema": "dvc_pointer_v1",
+        "size": 5281
+      },
+      "pointer_path": "artifacts/role_efficiency/stonecore_run_085.json.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_bdb7cee8ac0048b7",
+      "pointer": {
+        "md5": "6b426f8b7880b45eda0e2f950f0fe1ca",
+        "nfiles": null,
+        "path": "stonecore_run_086.json",
+        "schema": "dvc_pointer_v1",
+        "size": 5345
+      },
+      "pointer_path": "artifacts/role_efficiency/stonecore_run_086.json.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_b18905e3293c8511",
+      "pointer": {
+        "md5": "8f655ea5c92afdaf7c79acf60f11a62e",
+        "nfiles": null,
+        "path": "stonecore_run_087.json",
+        "schema": "dvc_pointer_v1",
+        "size": 5520
+      },
+      "pointer_path": "artifacts/role_efficiency/stonecore_run_087.json.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_5331f64cee3a78a3",
+      "pointer": {
+        "md5": "fc498c66e221a54b128474b588e7d30f",
+        "nfiles": null,
+        "path": "stonecore_run_088.json",
+        "schema": "dvc_pointer_v1",
+        "size": 5255
+      },
+      "pointer_path": "artifacts/role_efficiency/stonecore_run_088.json.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_fec643e8467424d5",
+      "pointer": {
+        "md5": "3ae3d8a4e42fe6cb4853399d46dc0a24",
+        "nfiles": null,
+        "path": "stonecore_run_089.json",
+        "schema": "dvc_pointer_v1",
+        "size": 5398
+      },
+      "pointer_path": "artifacts/role_efficiency/stonecore_run_089.json.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_5122d160a5807ca3",
+      "pointer": {
+        "md5": "c70ade9f33868a3f9833d0959d813c32",
+        "nfiles": null,
+        "path": "stonecore_run_090.json",
+        "schema": "dvc_pointer_v1",
+        "size": 5347
+      },
+      "pointer_path": "artifacts/role_efficiency/stonecore_run_090.json.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_dd67e71d3bdb45da",
+      "pointer": {
+        "md5": "09f241c23bdd7ad29807df2930a1b7a9",
+        "nfiles": null,
+        "path": "stonecore_run_091.json",
+        "schema": "dvc_pointer_v1",
+        "size": 5375
+      },
+      "pointer_path": "artifacts/role_efficiency/stonecore_run_091.json.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_e77b2f36b7f3c8cc",
+      "pointer": {
+        "md5": "ab837aaad840376876e98c0538bb0762",
+        "nfiles": null,
+        "path": "stonecore_run_092.json",
+        "schema": "dvc_pointer_v1",
+        "size": 5499
+      },
+      "pointer_path": "artifacts/role_efficiency/stonecore_run_092.json.dvc",
+      "temporal_state": "historical"
+    },
+    {
+      "artifact_class": "stonecore_evidence",
+      "artifact_id": "dvc_stonecore_07a73daf8679dd8f",
+      "pointer": {
+        "md5": "07d658d18db4ed7ab82db8db750ff71e",
+        "nfiles": null,
+        "path": "stonecore_run_093.json",
+        "schema": "dvc_pointer_v1",
+        "size": 5497
+      },
+      "pointer_path": "artifacts/role_efficiency/stonecore_run_093.json.dvc",
+      "temporal_state": "historical"
+    }
+  ],
+  "schema": "baseline_dvc_pointer_inventory_v2",
+  "selection": "all tracked DVC pointers whose path contains stonecore or calibration; unusable naming markers are classified fail-closed"
+}

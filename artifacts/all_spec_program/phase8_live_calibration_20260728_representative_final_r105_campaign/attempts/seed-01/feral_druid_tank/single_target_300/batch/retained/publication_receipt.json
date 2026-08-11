@@ -1,0 +1,27 @@
+{
+  "batch_id": "p8-s1-feral-druid-tank-single-target-300-7",
+  "batch_identity_sha256": "126cb778a57158b4811aea306ad62954268da2b84573b2b034d08119b3b89559",
+  "cache_scope": "batch_specific",
+  "compact_bundle_sha256": "19e48a6edb940b1a2660f3fc5bba413196e9d2a1ec4896469315dcefd043b22a",
+  "pointers": [
+    {
+      "dvc_md5": "4317131edb6d1780ad3504bd4e870273.dir",
+      "nfiles": 3,
+      "path": "artifacts/all_spec_program/phase8_live_calibration_20260728_representative_final_r105_campaign/attempts/seed-01/feral_druid_tank/single_target_300/batch/raw.dvc",
+      "pointer_sha256": "3d890e5aac3be801fe27716ea7dda74b6bad0a5444e60e45c2003138b6f51f34",
+      "size": 103117
+    },
+    {
+      "dvc_md5": "ae1772ca54a8a15b548067a8f67a9ced.dir",
+      "nfiles": 1,
+      "path": "artifacts/all_spec_program/phase8_live_calibration_20260728_representative_final_r105_campaign/attempts/seed-01/feral_druid_tank/single_target_300/batch/compact.dvc",
+      "pointer_sha256": "40c6361723ed6afe6041622925051a630272f02e7e71ccdadb0cee2d033a38cf",
+      "size": 2543
+    }
+  ],
+  "raw_bundle_sha256": "4d81c4b246ba2fe9af300a904661fe6aeb1dbbb2f4fca71a8736b4e6f7e1db6a",
+  "receipt_sha256": "22dc253f462ede14d5d21e6a919c0658a61e1e951a502fccc792f4adfec563a9",
+  "remote_status_sha256": "efed9e5afcfe149915ae98b9ed9e69304eb48f5ce2e2265b18b5b5ed2f155e60",
+  "remote_verified": true,
+  "schema": "bot_immutable_batch_publication_receipt_v1"
+}

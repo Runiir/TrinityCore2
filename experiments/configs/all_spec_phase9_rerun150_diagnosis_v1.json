@@ -1,0 +1,193 @@
+{
+  "schema": "all_spec_phase9_rerun150_diagnosis_v1",
+  "source_attempt": {
+    "attempt_label": "rerun150_canary_2",
+    "attempt_id": "phase9_serial_02_stonecore_phase9_006_6893daf98698",
+    "batch_id": "phase9-serial-canary-rerun150-2",
+    "batch_identity_sha256": "bcbe2b318161835ab97bbbec368fd7eead6a6afa0e53f25cf52eeecf85da1e8a",
+    "composition_id": "stonecore_phase9_006_6893daf98698",
+    "party_sha256": "524b94c794897f5111bdae0a5e45ba31a31ebb8596d811a3dd8c1caff95bd16a",
+    "party": [
+      "feral_druid_tank",
+      "discipline_priest",
+      "fury_warrior",
+      "marksmanship_hunter",
+      "retribution_paladin"
+    ],
+    "binary_sha256": "13234e1ffdc3205da1c3d095886c5218c49434c53d21e69debfd1f33902ad262",
+    "server_process_id": 257023,
+    "server_epoch": 1604725942566847,
+    "session_fingerprint": "fb00317e0da43462b5b4bbf64402ae0d7fd64e2fbb3a987a4e1389708cb8a116",
+    "profile_generation": 1,
+    "profile_content_hash": "35a587f05d8781d72c62576a6f35392a69e01d5978429f65429ad5b9ed096a22",
+    "evidence_identity_manifest_sha256": "c8ddfc52d6abc4ac4813ccc8a2332549f6ac12ea83d7db55c5241168d14b2d86",
+    "run_plan_sha256": "4a27eb019b88658724567c8aae55100867a85477eeb7d2395cfcccdb10d3074c",
+    "max_active_cohorts": 1
+  },
+  "capture_and_closeout": {
+    "capture_identity_sha256": "bcbe2b318161835ab97bbbec368fd7eead6a6afa0e53f25cf52eeecf85da1e8a",
+    "raw_part_count": 1,
+    "raw_event_row_count": 264,
+    "compact_row_count": 1,
+    "raw_bundle_sha256": "43e1947d970fcf48f8bf7144fb3e2f275e26b85786b0f10fc789c1c1a84c8c0b",
+    "compact_bundle_sha256": "21717f0e8debd8bfc5a7620dfc10542f96dd4df12deeb62aeb97eec9c6fc098e",
+    "publication_receipt_sha256": "cfba99c6b60518fa99035b8cb02847665d586914aaa44ec6807d54c820826e98",
+    "remote_status_sha256": "efed9e5afcfe149915ae98b9ed9e69304eb48f5ce2e2265b18b5b5ed2f155e60",
+    "raw_pointer_sha256": "9de548da78150b2499a1dd85ef8bfe7996b016dab2030f7998f072216695db43",
+    "compact_pointer_sha256": "d37da33f4ffe905044f4de26caef1367434feebd1fb5cb07c359e401a948b1b6",
+    "remote_verified": true,
+    "capture_revalidated_after_hydration": true,
+    "exact_party_verified": true,
+    "identity_matched": true,
+    "inactive_after_attempt": true,
+    "cleanup_complete": true,
+    "canaries_3_through_8_started": false,
+    "broad_dvc_gc_used": false
+  },
+  "audit_validation": {
+    "audit_attribution_correct": true,
+    "trace_order_reconstructed_deterministically": true,
+    "threat_acquisition_grace_ms": 3000,
+    "recomputed_eligible_hostile_samples": 806,
+    "recomputed_tank_owned_samples": 759,
+    "recomputed_healer_targeting_samples": 28,
+    "recomputed_tank_all_hostile_retention_rate": 0.9417,
+    "recomputed_healer_target_exposure_rate": 0.0347,
+    "recomputed_max_healer_target_dwell_ms": 4597,
+    "reported_tank_all_hostile_retention_rate": 0.9417,
+    "reported_healer_target_exposure_rate": 0.0347,
+    "reported_max_healer_target_dwell_ms": 4597,
+    "audit_correction_required": false
+  },
+  "strict_route_result": {
+    "completion_reason": "stonecore_role_quality_audit_failed",
+    "failure_reason": "role_quality:Feraltank:healer_target_exposure",
+    "failure_labels": [
+      "role_quality:Feraltank:healer_target_exposure",
+      "role_quality:Feraltank:healer_target_dwell"
+    ],
+    "route_manifest_complete": true,
+    "route_terminal_count": 14,
+    "expected_route_terminal_count": 14,
+    "real_boss_kill_count": 4,
+    "expected_real_boss_kill_count": 4,
+    "duration_seconds": 1190,
+    "kills": 47,
+    "deaths": 0,
+    "stuck_events": 0,
+    "death_loop_events": 0,
+    "no_progress_diagnoses": 0
+  },
+  "route_generation_localization": {
+    "generation_1": {
+      "eligible_samples": 180,
+      "tank_owned_samples": 173,
+      "healer_targeting_samples": 0
+    },
+    "generation_2": {
+      "eligible_samples": 13,
+      "tank_owned_samples": 12,
+      "healer_targeting_samples": 0
+    },
+    "generation_3": {
+      "eligible_samples": 133,
+      "tank_owned_samples": 133,
+      "healer_targeting_samples": 0
+    },
+    "generation_4": {
+      "eligible_samples": 20,
+      "tank_owned_samples": 20,
+      "healer_targeting_samples": 0
+    },
+    "generation_7": {
+      "eligible_samples": 14,
+      "tank_owned_samples": 14,
+      "healer_targeting_samples": 0
+    },
+    "generation_8": {
+      "eligible_samples": 7,
+      "tank_owned_samples": 7,
+      "healer_targeting_samples": 0
+    },
+    "generation_9": {
+      "eligible_samples": 7,
+      "tank_owned_samples": 7,
+      "healer_targeting_samples": 0
+    },
+    "generation_10": {
+      "eligible_samples": 67,
+      "tank_owned_samples": 67,
+      "healer_targeting_samples": 0
+    },
+    "generation_11": {
+      "eligible_samples": 13,
+      "tank_owned_samples": 13,
+      "healer_targeting_samples": 0
+    },
+    "generation_12": {
+      "eligible_samples": 8,
+      "tank_owned_samples": 8,
+      "healer_targeting_samples": 0
+    },
+    "generation_14": {
+      "eligible_samples": 344,
+      "tank_owned_samples": 305,
+      "healer_targeting_samples": 28
+    },
+    "all_other_generations": {
+      "eligible_samples": 0,
+      "tank_owned_samples": 0,
+      "healer_targeting_samples": 0
+    }
+  },
+  "generation_14_causal_evidence": {
+    "single_counted_episode": {
+      "first_healer_targeting_sample_ms": 1786168152242,
+      "first_eligible_healer_targeting_sample_ms": 1786168155307,
+      "last_healer_targeting_sample_ms": 1786168156839,
+      "next_observation_without_these_identities_ms": 1786168165339,
+      "maximum_counted_dwell_ms": 4597,
+      "eligible_healer_targeting_samples": 28,
+      "eligible_exposure_rows": 7,
+      "initial_healer_hostile_count": 14,
+      "initial_engaged_hostile_count": 30,
+      "first_eligible_healer_hostile_count": 10,
+      "remaining_longest_dwell_hostile_guids": [
+        604,
+        610,
+        611
+      ],
+      "post_roar_area_threat_ms": 1786168152494,
+      "growl_ms": 1786168154540,
+      "swipe_ms": 1786168154794,
+      "handoff_expired_between_ms": [
+        1786168153266,
+        1786168153518
+      ],
+      "bounded_cluster_move_ms": 1786168156587,
+      "second_roar_ms": 1786168156839
+    },
+    "previous_correction_evaluation": {
+      "secure_margin_actions_observed": 0,
+      "insecure_cluster_approach_actions_observed": 0,
+      "reason_not_applicable": "The episode began with only 16 of 30 engaged hostiles tank-owned and remained below the secure-margin branch's unchanged 90 percent tank-owned precondition. While the specialized healer handoff was active, the new branch was also intentionally suppressed."
+    },
+    "cause": "The counted exposure is a generation-14 Azil split-wave handoff, not the generation-13 secure-margin topology diagnosed in rerun149. The first native Roar left a remote healer-owned cluster and created the existing 2500 ms identity-bound handoff. Its initial accepted movement still targeted the remote hostile's exact position. Although the continuation block computes a collision-safe eight-yard native-Roar intercept, it preserves any already-active path whose destination lies within ten yards of that hostile, so the original exact-anchor path remains authoritative and the intercept is never submitted. The handoff then expired between 3266 and 3518 ms after the first observed healer ownership; generic boss-density movement, Growl, and Swipe reduced fourteen attackers to three, but the second Roar was not submitted until 4597 ms. The audit correctly attributes 28 eligible samples and the dwell violation. This is a Feral boss split-handoff endpoint defect, not an audit defect."
+  },
+  "smallest_safe_correction": {
+    "file": "src/server/game/Bots/BotWorldPopulationMgr.cpp",
+    "scope": "initial movement created by the existing successful Feral split-wave Roar handoff",
+    "change": "When a deterministic remote cluster anchor exists, start the already-authorized 2500 ms handoff at the same collision-safe eight-yard native-Roar intercept used by its continuation instead of at the hostile's exact position. Preserve the selected hostile identity, deterministic cluster ordering, handoff duration, hazard precedence, real spell and path legality, victim ownership, route identity, and every exposure, dwell, role, publication, cleanup, and eviction gate."
+  },
+  "next_attempt": {
+    "attempt_label": "rerun151_canary_2",
+    "worldserver_rebuild_required": true,
+    "deterministic_reprovision_required": true,
+    "fresh_identity_and_eight_row_plan_required": true,
+    "canary_2_only_until_strict_pass": true,
+    "canaries_3_through_8_started": false,
+    "phases_10_through_12_blocked": true
+  },
+  "hash_scope": "canonical_json_without_diagnosis_sha256",
+  "diagnosis_sha256": "78fd0cd2a5c237aa880a22eb6732b19cb1a0ad266019d7452aa99c934262ae31"
+}

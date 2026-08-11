@@ -1,0 +1,253 @@
+{
+  "schema": "all_spec_phase9_rerun182_canary2_diagnosis_v1",
+  "diagnosis_sha256": "cc64f071e5e83964d379b6b9373501db9f6e5307accc5d3e47f5793b66b7bb68",
+  "scope": {
+    "attempt": "artifacts/all_spec_program/phase9_serial_canaries_20260809_rerun182/phase9_serial_02_stonecore_phase9_006_6893daf98698",
+    "batch": "artifacts/all_spec_program/phase9_serial_canaries_20260809_rerun182/phase9_serial_02_stonecore_phase9_006_6893daf98698/batch",
+    "diagnose_only_this_immutable_batch": true,
+    "only_canary_2_ran": true,
+    "later_rows_started": false
+  },
+  "immutable_publication": {
+    "batch_identity_sha256": "d2b0b2929ca4c10a2a42f9cf6f40c2198f44a9c7e987a1dd5a71d9219741dba5",
+    "raw_bundle_sha256": "338c333a7f74ad1eb97ab00da64fe3f3b9ebeefe79448b33a0423826fd4802fa",
+    "compact_bundle_sha256": "b6e69259001d55ed68aced66e4eec7e27d740fa6e46d5874cfd66548fb3fd8a4",
+    "publication_receipt_sha256": "772fe4be50515149e62023b14144cae514c81c480aed64d5a271525579c50bfd",
+    "publication_receipt_file_sha256": "e9fb753a78441ab5a09f328515c9ef528bac719bf9b7b313c0a6201be49a13ec",
+    "acceptance_source_report_sha256": "ad96ce6bbc154fa16f0a964982461f2afe4e2cd820db1e1ae9602711fd2dea30",
+    "raw_pointer_sha256": "b6692f527b50a87a773a70143208b9a60cfdbf68e06d9d0542a7df7af5468a69",
+    "compact_pointer_sha256": "0ba339033e1d426f3bd6a5908facb6253cc446987a70b017c8ae3ccb6b44a71b",
+    "raw_dvc_object": "b4032d139ad86b8ba239655eccaa5df5.dir",
+    "compact_dvc_object": "e5eba929a9487c4e75298db9110ba6ea.dir",
+    "capture_and_bundle_hashes_recomputed": true,
+    "receipt_hash_recomputed": true,
+    "exact_remote_status": "Cache and remote 'object' are in sync.",
+    "exact_targeted_eviction_complete": true,
+    "batch_specific_caches_evicted": true,
+    "broad_dvc_gc_used": false
+  },
+  "frozen_identity": {
+    "identity_manifest_sha256": "e0eec24bcbb43ac829c2df437ed5642b616ea95ab819ecf8f59f3bbb67b26e63",
+    "run_plan_sha256": "9c96017588498534fa844ebede03c066f78a0442dc2fe73c4f5fa13af5a67380",
+    "binary_sha256": "6e4f06190c7ebf33393af1ba795d8717871077b3c7ed472d0de29830b74a1a8b",
+    "server_process_id": 1326034,
+    "server_epoch": 5175744052292308,
+    "worldserver_unit": "trinity-live-validation-c02264371a51d27d57b7ed7f.service",
+    "session_fingerprint": "c7eb5d47c38d7cdba5ff10b9dfd7d22ce1fe92c7e659c1d40f8d99cfca6933fc",
+    "profile_generation": 1,
+    "profile_content_hash": "35a587f05d8781d72c62576a6f35392a69e01d5978429f65429ad5b9ed096a22",
+    "max_active_cohorts": 1,
+    "identity_recomputed_and_matched": true,
+    "plan_recomputed_and_matched": true
+  },
+  "exact_party": {
+    "ordered_specs": [
+      "feral_druid_tank",
+      "discipline_priest",
+      "fury_warrior",
+      "marksmanship_hunter",
+      "retribution_paladin"
+    ],
+    "party_sha256": "524b94c794897f5111bdae0a5e45ba31a31ebb8596d811a3dd8c1caff95bd16a",
+    "recomputed_and_matched": true
+  },
+  "independent_strict_verifier": {
+    "underlying_returncode": 0,
+    "timed_out": false,
+    "session_closed": true,
+    "identity_complete": true,
+    "operator_attempt_count": 1,
+    "serial_index": 2,
+    "global_lifecycle_command_count": 0,
+    "scheduler_events": [
+      "admit:2",
+      "close:2"
+    ],
+    "cleanup": {
+      "active": false,
+      "active_bots": 0,
+      "lease_count": 0,
+      "party_bot_count": 0
+    },
+    "route_terminal_count": 13,
+    "route_terminal_generations": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
+    "authoritative_boss_death_entries": [43438, 43214, 42188],
+    "high_priestess_azil_terminal": false,
+    "high_priestess_azil_death": false,
+    "validation_route_activation_applied": false,
+    "validation_route_activation_attempts": 0,
+    "watchdog_semantic_progress_plateau": true,
+    "teacher_assisted_kills": 0,
+    "forbidden_completion_assistance": [],
+    "strict_non_role_gates_passed": false,
+    "failure_label": "semantic_progress_plateau"
+  },
+  "independent_role_verifier": {
+    "canonical_audit_passed": true,
+    "canonical_audit_artifact_sha256": "7202a0deeb66339b04f77b034661d76c72399a6a3fbf140e9df26d7e56d61b29",
+    "independent_verifier_sha256": "a826e872e4d3d75fa80b2dca979e327a0e06ec014bca8dcbbac9233bd21e7aaf",
+    "eligible_hostile_denominator": 1498,
+    "tank_owned_hostile_numerator": 1477,
+    "healer_targeting_hostile_numerator": 0,
+    "tank_all_hostile_retention_ratio": 0.985981308411215,
+    "healer_target_exposure_ratio": 0.0,
+    "maximum_healer_target_dwell_ms": 1793,
+    "threat_aura_active_samples": 384,
+    "threat_aura_total_samples": 384,
+    "threat_aura_uptime_ratio": 1.0,
+    "non_healer_active_action_coverage": {
+      "Feraltank": 1.0,
+      "Furywar": 0.9941860465116279,
+      "Mmhunter": 1.0,
+      "Retpally": 1.0
+    },
+    "discipline_active_action_coverage": 0.9828571428571429,
+    "cast_failure_rates": {
+      "Discpriest": 0.0,
+      "Feraltank": 0.0,
+      "Furywar": 0.005813953488372093,
+      "Mmhunter": 0.00684931506849315,
+      "Retpally": 0.0
+    },
+    "healer_successful_heal_cast_rate": 1.0,
+    "missing_required_rotation_groups": [],
+    "threshold_results": {
+      "tank_retention_at_least_0_90": true,
+      "healer_exposure_at_most_0_01": true,
+      "healer_dwell_at_most_3000_ms": true,
+      "threat_aura_uptime_at_least_0_99": true,
+      "non_healer_active_action_coverage_at_least_0_70": true,
+      "cast_failure_rate_at_most_0_05": true,
+      "healer_heal_cast_success_at_least_0_95": true,
+      "rotation_groups_present": true
+    },
+    "failure_labels": []
+  },
+  "action_reconstruction": {
+    "feral_native_spell_attempts": {
+      "Growl_6795": 10,
+      "Swipe_779": 29,
+      "Thrash_77758": 28,
+      "Demoralizing_Roar_80964": 8,
+      "Mangle_33878": 37,
+      "Lacerate_33745": 7,
+      "Maul_6807": 6,
+      "Berserk_50334": 5
+    },
+    "feral_remote_party_charge_actions": 2,
+    "feral_remote_party_movement_actions": 7,
+    "feral_safe_side_hazard_movement_actions": 1,
+    "feral_demoralizing_roar_party_actions": 4,
+    "feral_growl_single_healer_actions": 2,
+    "healer_handoff_actions": 79,
+    "hazard_exit_actions": 152,
+    "hazard_exit_failures": 0,
+    "misdirection_aoe_attempts": 32,
+    "misdirection_aoe_successes": 26,
+    "misdirection_single_attempts": 24,
+    "misdirection_single_successes": 22,
+    "passive_swarm_tank_holds": 190,
+    "passive_swarm_healer_holds": 170,
+    "passive_swarm_fury_stage_actions": 58,
+    "passive_swarm_hunter_stage_actions": 2,
+    "passive_swarm_hunter_hold_actions": 11,
+    "passive_swarm_retribution_stage_actions": 122,
+    "move_to_boss_add_actions": 83,
+    "terminal_validation_route_failures": {
+      "Furywar": 62,
+      "Mmhunter": 104
+    }
+  },
+  "route_and_hostile_chronology": [
+    {
+      "timestamp_ms": 1786285843276,
+      "route_generation": 14,
+      "event": "The High Priestess Azil generation began after all thirteen preceding generations had terminal evidence and three authoritative boss deaths. All five party members were alive; two earlier generation-13 native deaths had recovered."
+    },
+    {
+      "timestamp_ms": 1786285877978,
+      "route_generation": 14,
+      "event": "The Feral tank completed pending-swarm preposition, then published the generation-scoped 24-plus passive-wave proof and began holding native activation for party staging."
+    },
+    {
+      "timestamp_ms": 1786285878026,
+      "route_generation": 14,
+      "event": "Marksmanship first entered shared staging, but only two accepted staging movements and eleven rejected-path holds were retained before its observer-local swarm view stopped satisfying the second gate."
+    },
+    {
+      "timestamp_ms": 1786285885125,
+      "route_generation": 14,
+      "event": "Retribution entered shared staging; Fury followed at 1786285904991. Their staging movement repeatedly alternated with local passive-add pursuit whenever their local follower view changed."
+    },
+    {
+      "timestamp_ms": 1786285938331,
+      "route_generation": 14,
+      "event": "Marksmanship's ordinary route fallback became terminal after route_destination_unreachable. Its terminal hold began 88.7952 yards from the route anchor, inside the unrelated 90-yard terminal regroup bound but far outside the unchanged 18-yard passive-swarm staging bound."
+    },
+    {
+      "timestamp_ms": 1786285979648,
+      "route_generation": 14,
+      "event": "Fury also entered terminal route failure after staging and add/route oscillation. Terminal catchup eventually placed Fury 0.0906525 yards from the anchor, but the terminal state prevented further staging decisions."
+    },
+    {
+      "timestamp_ms": 1786286042758,
+      "route_generation": 14,
+      "event": "At closeout the tank and healer were 6.35566 and 8.89835 yards from the anchor, Fury was 0.0906525 yards away, while Marksmanship and Retribution remained 88.7952 and 83.9257 yards away. All were alive and out of combat; pack members, combat links, activation attempts, and activation application were all zero."
+    },
+    {
+      "route_generation": 14,
+      "event": "The watchdog closed after 199482 ms of generation-14 evidence. No hostile ever activated, no Azil terminal or death appeared, and no teacher or forbidden completion assistance was observed."
+    }
+  ],
+  "causal_classification": {
+    "authoritative_gameplay_failure": true,
+    "infrastructure_abort": false,
+    "strict_route_failure": true,
+    "role_quality_failure": false,
+    "initial_remote_pickup_loss": false,
+    "later_threat_decay": false,
+    "movement_priority_starvation": true,
+    "hazard_starvation": false,
+    "misdirection_failure_primary": false,
+    "healer_behavior_primary": false,
+    "audit_attribution_error": false,
+    "rerun170_passive_swarm_side_effect": true,
+    "rerun178_shared_staging_correction_incomplete": true,
+    "rerun181_feral_handoff_correction_side_effect": false,
+    "primary_cause": "The living tank correctly persisted generation-scoped passive-wave proof, but largePassiveSwarm still required each bot's observer-local cohortSwarmActive value. Remote damage roles therefore alternated shared staging with passive-add or ordinary route movement as their local follower sets changed. Rejected ordinary route movement terminalized Fury and Marksmanship; the 90-yard terminal regroup threshold then held Marksmanship outside the separate 18-yard staging requirement. Retribution's repeatedly rebuilt fixed staging path alternated with local add pursuit and made no material convergence. The party never became simultaneously staged, so the tank-only native activation path could not run."
+  },
+  "bounded_correction": {
+    "source": "src/server/game/Bots/BotWorldPopulationMgr.cpp",
+    "behavior": "Once the living tank's existing 24-plus unengaged passive-wave proof is published for the current route generation, make that shared fact the sole swarm-cardinality authority for party staging instead of requiring every observer to rediscover the same wave. While a remote non-tank is not staged, maintain one native follow movement generator toward the living tank at the existing role-specific staging radius instead of rebuilding observer-local fixed-point paths. Native activation remains tank-only and still requires every loaded eligible participant within eighteen yards.",
+    "unchanged_contracts": [
+      "all strict role thresholds",
+      "native combat spell knowledge, cooldown, GCD, power, range, line-of-sight, target, victim, and threat legality",
+      "Growl, Swipe, Thrash, Demoralizing Roar, Charge, hazard, Misdirection, and healer-threat handoff ordering",
+      "rerun170 pre-anchor bypass until the living tank proves a 24-plus passive wave",
+      "generation-scoped tank proof and its existing reset",
+      "tank-only native passive-wave activation",
+      "all-loaded-participant eighteen-yard staging requirement",
+      "native movement generation without teleport or forced placement",
+      "boss and route coordinates and terminal semantics",
+      "identity, party, serial isolation, publication, cleanup, exact hydration, and eviction contracts",
+      "forbidden-assistance policy"
+    ]
+  },
+  "pre_edit_safety": {
+    "old_worldserver_stopped_before_tracked_diagnosis_and_source_edit": true,
+    "old_worldserver_active_state": "inactive",
+    "old_worldserver_sub_state": "dead",
+    "old_worldserver_main_pid": 0,
+    "operator_active": false,
+    "publisher_active": false
+  },
+  "next_gate": {
+    "attempt_label": "rerun183",
+    "focused_tests_and_worldserver_rebuild_required": true,
+    "deterministically_reprovision_all_31_targets": true,
+    "fresh_identity_and_eight_row_plan_required": true,
+    "restart_at_canary_2_alone": true,
+    "canaries_3_through_8_blocked": true,
+    "phases_10_through_12_blocked": true
+  }
+}

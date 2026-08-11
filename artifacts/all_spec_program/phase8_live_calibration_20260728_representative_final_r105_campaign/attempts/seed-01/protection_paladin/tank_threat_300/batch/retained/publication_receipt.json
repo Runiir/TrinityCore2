@@ -1,0 +1,27 @@
+{
+  "batch_id": "p8-s1-protection-paladin-tank-threat-300-4",
+  "batch_identity_sha256": "3bd734f21f4ea84433ea66bd69bcb04d180cd639e0b6e75d35d2857d97feb43a",
+  "cache_scope": "batch_specific",
+  "compact_bundle_sha256": "9220eda22f47e2fdbb0c0f7e3db34512301318d5c6b8945b6fd3e35c706428be",
+  "pointers": [
+    {
+      "dvc_md5": "9a82fa8ea83788d5f333d28bc9018b01.dir",
+      "nfiles": 3,
+      "path": "artifacts/all_spec_program/phase8_live_calibration_20260728_representative_final_r105_campaign/attempts/seed-01/protection_paladin/tank_threat_300/batch/raw.dvc",
+      "pointer_sha256": "b3508992b59a1f3bb979680e2fd824164daf0909f4c436b47557af6ece575e0c",
+      "size": 159711
+    },
+    {
+      "dvc_md5": "90e6a8b9febc7c98e21228bfd34b4604.dir",
+      "nfiles": 1,
+      "path": "artifacts/all_spec_program/phase8_live_calibration_20260728_representative_final_r105_campaign/attempts/seed-01/protection_paladin/tank_threat_300/batch/compact.dvc",
+      "pointer_sha256": "6cd432a613945e880fa76bbde9fc0ab25dc7aa40fd2df66ca419d0f8189587f5",
+      "size": 2543
+    }
+  ],
+  "raw_bundle_sha256": "e6bc401d99c9a436d7be0ffe3f2f88c9b639300e0449e3f16e3e22ead5927c4e",
+  "receipt_sha256": "ed9d19dadf372d40842046f8dfbec0c205135ad2f9a67b7cb0e39f3972e5192a",
+  "remote_status_sha256": "efed9e5afcfe149915ae98b9ed9e69304eb48f5ce2e2265b18b5b5ed2f155e60",
+  "remote_verified": true,
+  "schema": "bot_immutable_batch_publication_receipt_v1"
+}

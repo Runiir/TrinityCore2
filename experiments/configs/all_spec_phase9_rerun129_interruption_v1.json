@@ -1,0 +1,58 @@
+{
+  "schema": "all_spec_phase9_rerun129_interruption_v1",
+  "record_sha256": "e6cacf7742ba2426535c30358777e64f32ea18b90e81213acae6d75779effd22",
+  "hash_scope": "canonical_json_without_record_sha256",
+  "attempt": {
+    "attempt_id": "phase9_serial_02_stonecore_phase9_006_6893daf98698",
+    "batch_id": "phase9-serial-canary-rerun129-2",
+    "composition_id": "stonecore_phase9_006_6893daf98698",
+    "party_sha256": "524b94c794897f5111bdae0a5e45ba31a31ebb8596d811a3dd8c1caff95bd16a",
+    "evidence_identity_manifest_sha256": "67b5129ddbbea0669d415c05d1be8a117e9a5f57295bc20c884e39db9e68a3b9",
+    "run_plan_sha256": "c505cb12eee3d5e032c1cec2c967f2519d18de2a68255d0adb005503eb10ca32",
+    "server_process_id": 1083015,
+    "server_epoch": 6437137254231564
+  },
+  "interruption": {
+    "operator_state_at_last_heartbeat": "running",
+    "last_heartbeat_index": 10,
+    "last_heartbeat_duration_seconds": 301,
+    "last_heartbeat_route_generation": 2,
+    "last_heartbeat_route_manifest_index": 1,
+    "cause": "The orchestrator incorrectly finalized its turn while the harness-tracked operator was still running. The operator process did not survive to finalization, so its cleanup, final acceptance recomputation, immutable batch capture, publication, and eviction steps never ran.",
+    "operator_log_empty": true,
+    "final_session_json_present": false,
+    "immutable_batch_present": false,
+    "publication_receipt_present": false
+  },
+  "recovery_observation": {
+    "cohort_was_still_active": true,
+    "observed_duration_seconds": 12479,
+    "configured_timeout_seconds": 2100,
+    "exact_party_matched": true,
+    "route_manifest_complete": true,
+    "route_terminal_count": 14,
+    "real_boss_kill_count": 4,
+    "server_epoch_unchanged": true,
+    "finding": "The live world eventually completed the strict route, but the attempt is not admissible because the evidence operator was absent, the configured wall-clock budget was exceeded, and no closed immutable capture or publication contract exists. It cannot evaluate the rerun128 correction or open canaries 3-8."
+  },
+  "cleanup": {
+    "cohort_stop_succeeded": true,
+    "active": false,
+    "active_bots": 0,
+    "lease_count": 0,
+    "gitignore_restored": true,
+    "worldserver_service_stopped": true
+  },
+  "disposition": {
+    "accepted": false,
+    "failure_labels": [
+      "operator_interrupted",
+      "completion_watchdog_not_closed",
+      "configured_timeout_exceeded",
+      "immutable_capture_missing",
+      "publication_missing"
+    ],
+    "canaries_3_through_8_allowed": false,
+    "next_action": "Reprovision deterministically, capture a fresh evidence identity and deterministic eight-row plan, and rerun canary 2 alone under a durable operator without changing code or gates."
+  }
+}

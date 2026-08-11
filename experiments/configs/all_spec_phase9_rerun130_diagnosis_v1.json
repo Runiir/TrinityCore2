@@ -1,0 +1,253 @@
+{
+  "schema": "all_spec_phase9_rerun130_diagnosis_v1",
+  "diagnosis_sha256": "9e4e4ea826029136bf4d1bbece63e85db09c0d6e47c23058d721b859aec2d4cb",
+  "hash_scope": "canonical_json_without_diagnosis_sha256",
+  "source_attempt": {
+    "attempt_id": "phase9_serial_02_stonecore_phase9_006_6893daf98698",
+    "batch_id": "phase9-serial-canary-rerun130-2",
+    "composition_id": "stonecore_phase9_006_6893daf98698",
+    "party_sha256": "524b94c794897f5111bdae0a5e45ba31a31ebb8596d811a3dd8c1caff95bd16a",
+    "party": [
+      "feral_druid_tank",
+      "discipline_priest",
+      "fury_warrior",
+      "marksmanship_hunter",
+      "retribution_paladin"
+    ],
+    "server_process_id": 1197839,
+    "server_epoch": 5663720835953783,
+    "binary_sha256": "00cef1236fc60b7a773bc196317bd40c62f603580ad93921ce7c1922d72954e2",
+    "profile_generation": 1,
+    "profile_content_hash": "35a587f05d8781d72c62576a6f35392a69e01d5978429f65429ad5b9ed096a22",
+    "evidence_identity_manifest_sha256": "5e584ac84d1a4a683cf9fbdd193481fa3b9a674a89d31163b66834148b3aa3c3",
+    "session_fingerprint": "51a641b8ad182347a956a85d235556447bd7df3302c8aa19dbd6d41ab65f7b90",
+    "run_plan_sha256": "2171493a7f7393cf58f22ca11489d8e999df3ab66949dcf821d256b28866c5a4"
+  },
+  "capture_validation": {
+    "validated_with": "tools.bot_ml.batch_evidence_lifecycle.validate_capture",
+    "capture_identity_sha256": "d0d2e039cb45bdb8ef217f50b5ffb021497f7f59269e8eee9223c1a8f224b72a",
+    "raw_part_count": 1,
+    "raw_event_row_count": 262,
+    "raw_uncompressed_bytes": 40608423,
+    "compact_row_count": 1,
+    "raw_bundle_sha256": "db32926103472bfb194fbbf1e7322534143ec9784b8c936b83092a3c8c149e69",
+    "compact_bundle_sha256": "f3b419e4da338a69ecb003fe9b5290f0c46653384ff050c1c8d5451d5fd1c08c",
+    "publication_receipt_sha256": "f0977f1a950b97367f3026439eae9f6caea454d575087200b4d3145af01ce06c",
+    "receipt_hash_valid": true,
+    "receipt_identity_and_bundles_match": true,
+    "remote_verified": true,
+    "acceptance_recomputed_without_stored_pass_booleans": true,
+    "role_audit_recomputed_equal": true,
+    "exact_party_recomputed_equal": true,
+    "operator_closed": true,
+    "cleanup_complete": true,
+    "raw_payload_was_evicted_before_diagnosis_hydration": true,
+    "route_terminal_count": 14,
+    "real_boss_kill_count": 4,
+    "route_complete": true,
+    "watchdog_completed": true,
+    "timed_out": false,
+    "duration_seconds": 1158,
+    "forbidden_completion_assists": []
+  },
+  "observed_role_metrics": {
+    "tank_all_hostile_retention_rate": 0.9492,
+    "healer_target_exposure_rate": 0.0358,
+    "max_healer_target_dwell_ms": 5619,
+    "max_healer_target_dwell_hostile_guid": 647,
+    "max_healer_target_dwell_start_ms": 1785680381358,
+    "max_healer_target_dwell_end_ms": 1785680386977,
+    "tank_threat_aura_uptime_rate": 1.0,
+    "active_action_coverage_rate": 1.0,
+    "feral_action_attempts": 291,
+    "feral_cast_failure_rate": 0.0,
+    "successful_submission_rate": 1.0,
+    "threat_acquisition_grace_ms": 3000,
+    "eligible_hostile_sample_denominator": 1870,
+    "tank_owned_eligible_sample_numerator": 1775,
+    "healer_targeting_eligible_sample_numerator": 67,
+    "exact_tank_retention_fraction": "1775/1870",
+    "exact_healer_exposure_fraction": "67/1870",
+    "required_tank_retention_floor": 0.9,
+    "required_healer_exposure_ceiling": 0.01,
+    "required_max_healer_dwell_ms": 3000
+  },
+  "independent_node_reconstruction": {
+    "dominant_route_generation": 13,
+    "dominant_route_node_id": "3edc010765b5c456",
+    "dominant_route_segment": "16_twilight_flayer_packs",
+    "dominant_node_denominator": 1088,
+    "dominant_node_tank_owned_numerator": 1022,
+    "dominant_node_retention_rate": 0.9393382352941176,
+    "dominant_node_healer_targeting_numerator": 66,
+    "dominant_node_healer_exposure_rate": 0.06066176470588235,
+    "remaining_nodes_denominator": 782,
+    "remaining_nodes_tank_owned_numerator": 753,
+    "remaining_nodes_healer_targeting_numerator": 1,
+    "finding": "The Twilight Flayer node contributed 66 of 67 eligible healer-targeting samples. Route generation 1 contributed the remaining one sample; every other reconstructed node contributed zero eligible healer exposure. Overall retention still passed, so the failure is localized healer protection and dwell rather than global threat collapse."
+  },
+  "dominant_failure_window": {
+    "eligible_window_start_ms": 1785680383382,
+    "eligible_window_end_ms": 1785680389493,
+    "eligible_window_ms": 6111,
+    "route_generation": 13,
+    "route_node_id": "3edc010765b5c456",
+    "eligible_trace_samples": 14,
+    "eligible_healer_targeting_contributions": 53,
+    "maximum_simultaneously_healer_targeting": 10,
+    "unique_healer_targeting_hostile_guids": [
+      417,
+      640,
+      641,
+      642,
+      643,
+      644,
+      645,
+      646,
+      647,
+      648,
+      649
+    ],
+    "maximum_dwell_hostile_guid": 647,
+    "maximum_dwell_start_ms": 1785680381358,
+    "maximum_dwell_end_ms": 1785680386977,
+    "maximum_dwell_ms": 5619
+  },
+  "movement_diagnostic": {
+    "capture_row": 93,
+    "bot_guid": 1284,
+    "current_action": "feral_continue_remote_healer_trash_cluster_handoff",
+    "route_generation": 13,
+    "route_manifest_index": 12,
+    "route_terminal_count": 14,
+    "current_route_distance": 101.726,
+    "active_path_valid": true,
+    "is_moving": true,
+    "distance_moved_since_last_decision": 3.55092,
+    "time_since_last_progress_ms": 0,
+    "time_since_path_change_ms": 140,
+    "consecutive_same_decision_count": 4,
+    "fingerprint_repeat_count": 4,
+    "active_path_from": [1279.63, 1038.53, 209.726],
+    "active_path_to": [1266.04, 1004.63, 208.683],
+    "route_destination": [1380.19, 1049.55, 212.86],
+    "engaged_hostiles": 27,
+    "tank_owned_hostiles": 22,
+    "healer_targeting_hostiles": 5,
+    "healer_targeting_hostile_guids": [640, 642, 643, 646, 649],
+    "finding": "The current handoff path was valid, moving, and making measurable progress. The stored recovery_result was historical state and is not evidence that the current MoveBotToPoint call failed."
+  },
+  "control_flow_timeline": [
+    {
+      "at_ms": 1785680379082,
+      "action": "feral_demoralizing_roar_remote_healer_trash_cluster_handoff",
+      "finding": "Roar secured the 650-659 wave and created a new 2500 ms post-Roar remote-cluster reservation."
+    },
+    {
+      "start_ms": 1785680379336,
+      "end_ms": 1785680380345,
+      "action": "feral_continue_remote_healer_trash_cluster_handoff",
+      "finding": "Continuation remained authoritative while the original wave became fully tank-owned; a new split wave began entering during the same reservation."
+    },
+    {
+      "at_ms": 1785680380853,
+      "action": "feral_continue_remote_healer_trash_cluster_handoff",
+      "finding": "The active handoff had rebound to the new wave: five of 27 engaged identities targeted the healer while the Feral remained on a valid moving path."
+    },
+    {
+      "at_ms": 1785680381358,
+      "action": "feral_continue_remote_healer_trash_cluster_handoff",
+      "finding": "Eight new-wave identities targeted the healer; GUID 647 began the 5619 ms maximum-dwell episode."
+    },
+    {
+      "at_ms": 1785680381867,
+      "action": "feral_move_remote_healer_trash_cluster_pre_roar",
+      "finding": "The prior bounded reservation expired and the ordinary selector immediately established another 2500 ms pre-Roar reservation for the same unresolved split wave."
+    },
+    {
+      "at_ms": 1785680384393,
+      "action": "feral_move_remote_healer_trash_cluster_pre_roar",
+      "finding": "Within 26 ms of the renewed reservation expiring, the selector established a third consecutive pre-Roar reservation instead of yielding one decision to the existing local threat resolver."
+    },
+    {
+      "at_ms": 1785680384904,
+      "action": "feral_demoralizing_roar_remote_healer_trash_cluster_handoff",
+      "finding": "The first Roar against the new wave occurred 3546 ms after the maximum-dwell episode began, already beyond the strict 3000 ms dwell ceiling."
+    },
+    {
+      "at_ms": 1785680386724,
+      "action": "feral_demoralizing_roar_remote_healer_trash_cluster_handoff",
+      "finding": "A second Roar reduced the split wave, but GUID 647 remained healer-owned through 1785680386977."
+    },
+    {
+      "at_ms": 1785680389493,
+      "action": "feral_growl_lingering_healer_trash_attacker",
+      "finding": "The existing single-target recovery cleared the final lingering identity after the chained handoff cycles ended."
+    }
+  ],
+  "hypotheses": [
+    {
+      "name": "rerun128_current_path_rejection_starvation",
+      "outcome": "rejected_and_superseded",
+      "evidence": "Rerun130 emitted continuation rather than path-rejected actions, and the immutable diagnostic showed active_path_valid=true, is_moving=true, 3.55092 yards of decision progress, and zero milliseconds since progress. LastRecoveryResult/recovery_result was stale historical state and cannot prove the current MoveBotToPoint return value."
+    },
+    {
+      "name": "bounded_handoff_rebind_and_immediate_reacquisition",
+      "outcome": "supported_primary",
+      "evidence": "A successful post-Roar reservation remained active as a new split wave appeared, rebound to new healer-owned identities, then was followed at 1785680381867 and again at 1785680384393 by fresh pre-Roar reservations immediately after expiry. Individually bounded 2500 ms reservations therefore formed a longer effective movement-ownership interval."
+    },
+    {
+      "name": "audit_scope_or_denominator_error",
+      "outcome": "rejected",
+      "evidence": "Independent identity-scoped reconstruction exactly matched 1775/1870 tank retention, 67/1870 healer exposure, and 5619 ms maximum per-hostile dwell under the unchanged 3000 ms acquisition grace."
+    },
+    {
+      "name": "missing_tank_threat_aura_or_cast_failure",
+      "outcome": "rejected",
+      "evidence": "Tank threat-aura uptime and active-action coverage were 1.0, 291 Feral attempts had a 0.0 cast-failure rate, and overall tank retention passed at 0.9492."
+    },
+    {
+      "name": "global_threat_multiplier_or_gate_relaxation_needed",
+      "outcome": "rejected",
+      "evidence": "The failure is localized to one Flayer split-wave handoff chain. Global threat inflation or acceptance relaxation would hide a real current-victim exposure episode."
+    }
+  ],
+  "accepted_causal_chain": [
+    "A successful Roar created a nominally bounded 2500 ms post-Roar remote-cluster handoff while the original 650-659 wave became tank-owned.",
+    "A new 640-649 split wave appeared before that reservation fully yielded decision ownership, and secure-majority/cluster rebinding transferred the active handoff anchor to the new healer-owned identities.",
+    "The active path was valid and making real progress, so continuingRemotePath kept moved=true and the rerun128 false-return fallback correctly did not execute.",
+    "When the reservation expired, the ordinary remote-cluster selector immediately established another pre-Roar reservation; when that reservation expired, it established a third reservation 26 ms later.",
+    "Those individually bounded reservations formed a longer effective movement-ownership interval, delaying the first Roar against the new wave until 3546 ms after GUID 647's healer-targeting episode began.",
+    "Repeated continuation, movement, and Roar cycles retained 94.92 percent of all eligible hostile samples but left GUID 647 on the healer for 5619 ms and produced 67 eligible healer-target samples.",
+    "The strict identity-scoped role audit correctly passed tank retention and rejected healer exposure and dwell."
+  ],
+  "evidence_limitations": [
+    "LastRecoveryResult and trace recovery_result persist historical path state and do not identify the current movement call's return value.",
+    "LastMovementProgressMs is refreshed by combat/casting paths and is not independently a movement-only signal; this diagnosis instead uses ActivePathValid, IsMoving, DistanceMovedSinceLastDecision, and the action branch outcome together.",
+    "The exact handoff-expiry transition is inferred from the immutable action timestamps and the compiled 2500 ms reservation contract because the trace does not serialize FeralHealerThreatHandoffUntilMs directly.",
+    "The evidence supports correcting reservation ownership and reacquisition; it does not support changing victim assignment, threat multipliers, route semantics, or audit thresholds."
+  ],
+  "smallest_safe_correction": {
+    "file": "src/server/game/Bots/BotWorldPopulationMgr.cpp",
+    "scope": "ordinary-trash Feral healer-threat handoff expiration and post-Roar remote-cluster movement only",
+    "change": "Treat an expired handoff as a real yield boundary: clear it but prevent the ordinary remote-cluster selector from immediately creating another reservation in that decision, allowing the existing nearby Roar, Growl, or density resolver to own the decision. Keep the actual path-rejection fallback. Use the existing collision-safe Roar stand-off rather than the hostile's exact position when a successful Roar creates a post-Roar remote-cluster path.",
+    "uses_existing_evidence": [
+      "FeralHealerThreatHandoffUntilMs",
+      "active handoff GUIDs",
+      "MoveBotToPoint return value",
+      "existing local Demoralizing Roar, Growl, and density recovery",
+      "collision-safe Roar intercept"
+    ],
+    "does_not_change": [
+      "route semantics",
+      "hazard priority",
+      "victim assignment",
+      "spell legality",
+      "threat multipliers",
+      "audit thresholds",
+      "identity scope",
+      "Misdirection behavior",
+      "teacher_or_forced_completion"
+    ]
+  }
+}

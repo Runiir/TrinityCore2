@@ -1,0 +1,278 @@
+{
+  "schema": "all_spec_phase9_authoritative_gameplay_failure_diagnosis_v1",
+  "diagnosis_sha256": "5c2f643aae51199c763c7f267c85c7b7b8e92413661249bb72661fc470420e40",
+  "hash_scope": "canonical_json_without_diagnosis_sha256",
+  "scope": {
+    "run": "rerun193",
+    "serial_index": 2,
+    "attempt": "phase9_serial_02_stonecore_phase9_006_6893daf98698",
+    "only_this_immutable_batch_diagnosed": true,
+    "canaries_3_through_8_started": false,
+    "phases_10_through_12_blocked": true
+  },
+  "frozen_identity": {
+    "identity_manifest_sha256": "d3a0426665dbe2db637dfc68ec28b051c8c8f8572f6fefcb5b82b469efac38cf",
+    "run_plan_sha256": "b63bc9d2c5164a00caadc359b0d9048c6754a77af131b8e439f8396aaa910296",
+    "evidence_binary_sha256": "6d0dfc0465a2ac4b7ff969aa6b62bf742ff22e8e84c9413c4acbba79aaf9da97",
+    "server_pid": 1746893,
+    "server_epoch": 8162136075748451,
+    "worldserver_unit": "trinity-live-validation-f35b1f18c2ba818e14f7f5ad.service",
+    "session_fingerprint": "1f1903482f1bb7e7f9c50e1525fb464b15fa713e3d922411aaca219c1a072f9b",
+    "profile_generation": 1,
+    "profile_content_hash": "d9d6a60e97756695ea6553b1fa34e9c2c63ebe6e09467e71bc01fb74fe3655ae",
+    "max_active_cohorts": 1
+  },
+  "exact_party": {
+    "class_specs": [
+      "feral_druid_tank",
+      "discipline_priest",
+      "fury_warrior",
+      "marksmanship_hunter",
+      "retribution_paladin"
+    ],
+    "party_sha256": "524b94c794897f5111bdae0a5e45ba31a31ebb8596d811a3dd8c1caff95bd16a",
+    "independently_recomputed": true
+  },
+  "immutable_evidence": {
+    "batch_identity_sha256": "ea92ad48e512c2e3f5962038362b367790cba81bd1134b036579d9f863fbf5cf",
+    "raw_bundle_sha256": "147fd3fde46fa5471658d45370d2562a90384fb951dd07015f6a1e1f88ccbe",
+    "compact_bundle_sha256": "01f6e7bffd7c36a00a7eb196d2e1f6e9c66c043c8e10c4475911c12579894153",
+    "publication_receipt_sha256": "67a102951a6545cab85f243e9e7208cef422fd49b031314b06e1f067e8ddee39",
+    "acceptance_source_report_sha256": "4db470670f769a599d97788fbb15cd9ca895577862ae1e8df342aedceac5cf54",
+    "raw_pointer_sha256": "8f69d49ec24e019eb63746fca07d41d1061592fd3789b9f2648e96920743edbc",
+    "raw_dvc_md5": "2234c4c6fbe9f61e708f640e11137d50.dir",
+    "compact_pointer_sha256": "03b21e6e96eccb3a30dcab699f430c18f9372406069d6ac01b6b356d867d11ff",
+    "compact_dvc_md5": "975401a0386d40ac0f341305acd60ddc.dir"
+  },
+  "independent_capture_and_publication_verifier": {
+    "batch_identity_recomputed": true,
+    "raw_and_compact_bundle_hashes_recomputed": true,
+    "raw_and_compact_file_manifests_recomputed": true,
+    "publication_receipt_recomputed": true,
+    "canonical_dvc_remote_status": "in_sync",
+    "publication_remote_verified": true,
+    "raw_and_compact_payloads_re_evicted": true,
+    "batch_specific_hydration_and_verification_caches_evicted": true,
+    "remaining_batch_entries": [
+      ".gitignore",
+      "compact.dvc",
+      "raw.dvc",
+      "retained"
+    ],
+    "broad_dvc_gc_used": false
+  },
+  "independent_role_verifier": {
+    "canonical_role_audit_passed": false,
+    "canonical_role_audit_sha256": "69d9c2ae5bc66c9c27716b0a9b27697caec8f327ac49885fc8ff66b89d436cc2",
+    "independent_verifier_sha256": "87e4505d61c82bc64f7eb19e1c531711e13522108bafc6adc88e3875a4c393ee",
+    "eligible_hostile_denominator": 1927,
+    "tank_owned_hostile_numerator": 1870,
+    "healer_targeting_hostile_numerator": 27,
+    "tank_all_hostile_retention_ratio": 0.9704203425012974,
+    "healer_target_exposure_ratio": 0.01401141670991178,
+    "maximum_healer_target_dwell_ms": 3822,
+    "threat_aura_active_samples": 620,
+    "threat_aura_total_samples": 620,
+    "threat_aura_uptime_ratio": 1.0,
+    "non_healer_active_action_coverage_passed": true,
+    "cast_failure_rate_passed": true,
+    "discipline_priest_successful_heal_cast_rate_passed": true,
+    "missing_required_rotation_groups": [],
+    "threshold_results": {
+      "tank_retention_at_least_0_90": true,
+      "healer_exposure_at_most_0_01": false,
+      "healer_dwell_at_most_3000_ms": false,
+      "threat_aura_uptime_at_least_0_99": true,
+      "non_healer_active_action_coverage_at_least_0_70": true,
+      "cast_failure_rate_at_most_0_05": true,
+      "healer_heal_cast_success_at_least_0_95": true,
+      "rotation_groups_present": true
+    },
+    "failure_labels": [
+      "Feraltank:healer_target_exposure",
+      "Feraltank:healer_target_dwell"
+    ]
+  },
+  "route_generation_and_hostile_guid_chronology": {
+    "generation_1": {
+      "eligible": 238,
+      "tank_owned": 224,
+      "healer_targeting": 6,
+      "healer_targeting_guids": [32, 34]
+    },
+    "generation_13": {
+      "eligible": 542,
+      "tank_owned": 525,
+      "healer_targeting": 0,
+      "healer_targeting_guids": []
+    },
+    "generation_14": {
+      "eligible": 572,
+      "tank_owned": 549,
+      "healer_targeting": 21,
+      "healer_targeting_guids": [683, 684, 685, 798, 799, 800, 801, 802, 803, 850]
+    },
+    "all_other_generations": {
+      "eligible": 575,
+      "tank_owned": 572,
+      "healer_targeting": 0
+    }
+  },
+  "decisive_episodes": [
+    {
+      "route_generation": 14,
+      "hostile_guids": [683, 684, 685],
+      "maximum_dwell_ms": 3086,
+      "chronology": [
+        "Three healer-owned followers appeared in a moderate split wave.",
+        "A useful local Demoralizing Roar consumed the first decision and began the existing bounded movement handoff.",
+        "Movement and approach continued; Swipe landed at +1533 ms, then the handoff held for native Roar.",
+        "The second Demoralizing Roar at +3086 ms cleared the remaining ownership after the strict dwell ceiling."
+      ]
+    },
+    {
+      "route_generation": 14,
+      "hostile_guids": [798, 799, 800, 801, 802, 803],
+      "maximum_dwell_ms": 3822,
+      "chronology": [
+        "A moderate ten-to-eleven follower healer-owned wave began with only a local minority inside native area range.",
+        "Ground movement preceded the first Demoralizing Roar at +771 ms relative to GUID 801.",
+        "Further movement preceded a second Demoralizing Roar at +2302 ms.",
+        "Movement and handoff hold continued until Swipe at +3822 ms cleared GUID 801; neighboring GUIDs reached 3307-3562 ms."
+      ]
+    },
+    {
+      "route_generation": 14,
+      "hostile_guids": [850],
+      "maximum_dwell_ms": 3073,
+      "chronology": [
+        "One remote healer-owned follower remained after the wave reduced to two active hostiles.",
+        "The generic density representative remained tank-owned, so the ordinary Charge selector did not identify the healer-owned follower.",
+        "Feral ground movement and approach continued; Discipline Fade fired at +2484 ms and Swipe at +2819 ms.",
+        "The next sampled healer ownership at +3073 ms crossed the ceiling before tank ownership was observed by +3330 ms."
+      ]
+    }
+  ],
+  "action_reconstruction": {
+    "feral_native_actions": {
+      "demoralizing_roar_swarm_pickup": 5,
+      "swipe_before_roar": 4,
+      "lingering_healer_swipe": 2,
+      "growl_healer_pickup": 3,
+      "feral_charge_total": 1,
+      "feral_charge_generation_1_remote_trash_only": true,
+      "feral_charge_during_decisive_generation_14_waves": 0
+    },
+    "movement": {
+      "ground_movement_and_approach_present_in_all_decisive_generation_14_episodes": true,
+      "movement_failure_primary": false,
+      "action_topology_delayed_remote_pickup": true
+    },
+    "hazard": {
+      "hazard_failures": 0,
+      "hazard_starvation_in_decisive_episodes": false
+    },
+    "misdirection": {
+      "aoe_attempts": 52,
+      "aoe_successes": 40,
+      "single_target_attempts": 33,
+      "single_target_successes": 27,
+      "wrong_target_attempts": 0,
+      "actions_during_decisive_generation_14_waves": 0,
+      "classification": "absence contributed but was not a wrong-target or native-cast failure"
+    },
+    "healer_threat_handoff": {
+      "discipline_fade_observed": true,
+      "healer_prepositioning_observed": true,
+      "healer_behavior_failure": false,
+      "feral_native_pickup_remained_authoritative": true
+    }
+  },
+  "causal_classification": {
+    "authoritative_gameplay_failure_confirmed": true,
+    "real_pickup_loss": true,
+    "initial_pickup_loss_primary": true,
+    "later_threat_decay_primary": false,
+    "movement_and_action_topology_starvation": true,
+    "hazard_starvation": false,
+    "misdirection_failure": false,
+    "healer_behavior_failure": false,
+    "audit_attribution_error": false,
+    "rerun170_passive_swarm_correction_side_effect": false,
+    "infrastructure_failure": false,
+    "primary_cause": "In moderate Azil healer-owned waves, a useful but minority local Demoralizing Roar ran before ready native Feral Charge. The resulting bounded ground handoff consumed later decisions and global cooldowns before damaging area threat reached the remote majority. A final single remote healer-owned follower was also invisible to the generic Charge selector because its selected density representative remained tank-owned. This is real initial pickup loss under the unchanged exposure and dwell gates."
+  },
+  "bounded_correction": {
+    "worldserver_stopped_before_tracked_edit": true,
+    "description": "For Feral only, when an exact healer-owned wave exists and fewer than half of its followers are inside native Roar range, deterministically select the densest remote healer-owned cluster and attempt native Feral Charge before the local-minority Roar. Accepted Charge retains the existing 2500 ms identity reservation and 250 ms cadence. Cooldown, legality, casting, falling, range, or line-of-sight rejection falls through unchanged to the existing Roar, generic Charge, and movement paths.",
+    "changed_files": [
+      "src/server/game/Bots/BotWorldPopulationMgr.cpp",
+      "tests/test_autonomy_pipeline_smoke.py"
+    ],
+    "unchanged_contracts": [
+      "all strict thresholds",
+      "native spell knowledge cooldown GCD power range line-of-sight target and threat legality",
+      "victim and threat assignment semantics",
+      "existing local-majority Roar protection",
+      "existing bounded Charge reservation and handoff lifetime",
+      "hazard movement Misdirection healer route exact-party identity publication cleanup and assistance contracts",
+      "rerun170 passive-swarm staging"
+    ]
+  },
+  "independent_strict_verifier": {
+    "underlying_returncode": 0,
+    "timed_out": false,
+    "session_closed": true,
+    "identity_complete": true,
+    "operator_attempt_count": 1,
+    "serial_index": 2,
+    "global_lifecycle_command_count": 0,
+    "scheduler_events": ["admit:2", "close:2"],
+    "cleanup": {
+      "active": false,
+      "active_bots": 0,
+      "lease_count": 0,
+      "party_bot_count": 0
+    },
+    "route_terminal_count": 14,
+    "route_terminal_generations": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+    "authoritative_boss_death_entries": [43438, 43214, 42188, 42333],
+    "high_priestess_azil_terminal_and_death": true,
+    "validation_route_manifest_complete": true,
+    "watchdog_clean": true,
+    "teacher_assisted_kills": 0,
+    "forbidden_completion_assistance": [],
+    "strict_non_role_gates_passed": true,
+    "role_gate_passed": false
+  },
+  "validation_and_reprovisioning": {
+    "focused_tests": "6 passed, 132 deselected",
+    "role_audit_module": "9 passed, 1 pre-existing unrelated stale pet-attack source-shape assertion",
+    "broad_source_shape_diagnostic": "106 passed, 32 pre-existing unrelated stale source-shape assertions",
+    "git_diff_check_passed": true,
+    "worldserver_rebuild_passed": true,
+    "corrected_worldserver_binary_sha256": "fb737d8f81cd24f18ec7726d85b91a8f07afb74e21e428890acd6cd5ddba3c5a",
+    "deterministic_all_31_reprovisioning_passed": true,
+    "deterministic_reprovisioning_verifier": "artifacts/all_spec_program/phase9_serial_canaries_20260810_rerun194/preidentity_preparation/provisioning_verifier.json",
+    "provisioning_verifier_file_sha256": "a5380939a83101f7117ac2c3d6dfccb14b08835f9bd25613249f3c66bf3ad363",
+    "accounts_ready": "50/50",
+    "characters_ready": "50/50",
+    "runtime_profiles_ready": "31/31",
+    "provisioning_failure_count": 0,
+    "dvc_status_completed": true,
+    "dvc_push_completed": true,
+    "dvc_push_result": "everything_up_to_date_with_two_known_historical_missing_objects",
+    "known_historical_missing_objects": [
+      "24b9d133fe3fe1b6f253e500c266562f.dir",
+      "c67ee8935753b8ceccbdddbafdfebe.dir"
+    ],
+    "broad_dvc_gc_used": false
+  },
+  "next_gate": {
+    "rerun": 194,
+    "fresh_identity_and_eight_row_plan_required": true,
+    "restart_at_canary_2_alone": true,
+    "canaries_3_through_8_blocked_until_preceding_strict_pass": true,
+    "phases_10_through_12_blocked": true
+  }
+}

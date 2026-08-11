@@ -1,0 +1,258 @@
+{
+  "schema": "all_spec_phase9_rerun157_canary3_diagnosis_v1",
+  "diagnosis_sha256": "c41044eb062476a8405b285a1130f52a887bfd53a14de3c8a84c9e2a9ff5c4d1",
+  "hash_scope": "canonical_json_without_diagnosis_sha256",
+  "source_attempt": {
+    "attempt_label": "rerun157_canary_3",
+    "attempt_id": "phase9_serial_03_stonecore_phase9_083_5d0c65765654",
+    "batch_id": "phase9-serial-canary-rerun157-3",
+    "batch_identity_sha256": "d22bca3e2aedcc43f822a852e21fb407e72a1ac1bd7a0b28c8933ab90549f083",
+    "composition_id": "stonecore_phase9_083_5d0c65765654",
+    "party_sha256": "71f05aeed37bfe1fc988746cdd00e7bf8e4d2dd94258eed65ec58d15201823b2",
+    "party": [
+      "protection_paladin",
+      "holy_priest",
+      "arcane_mage",
+      "assassination_rogue",
+      "fire_mage"
+    ],
+    "binary_sha256": "7858d992e8932826975363a81910203f7fbb6c9a35f0062f105e594f369ecc6d",
+    "server_process_id": 480414,
+    "server_epoch": 294777538636285,
+    "session_fingerprint": "f54b4b0f20d3649a6b099f438140e63ec83335595dc0c39f50de61cc3cfadb02",
+    "profile_generation": 1,
+    "profile_content_hash": "35a587f05d8781d72c62576a6f35392a69e01d5978429f65429ad5b9ed096a22",
+    "evidence_identity_manifest_sha256": "23095ec62efe54ef1fb06fc77e82627a583add2bd87f25d85c90deb435c282c7",
+    "run_plan_sha256": "e34c0baf25b3eb2ea0d4e124e6da9fb9c2575942cf0bdc392881afe3b2a4e5b9",
+    "max_active_cohorts": 1
+  },
+  "capture_and_closeout": {
+    "capture_identity_sha256": "d22bca3e2aedcc43f822a852e21fb407e72a1ac1bd7a0b28c8933ab90549f083",
+    "raw_part_count": 1,
+    "raw_event_row_count": 278,
+    "compact_row_count": 1,
+    "raw_bundle_sha256": "6c54bd14fd5a3ee95b70ad65cba3154b9e0a4f59755b19d0ed9502687798cb0d",
+    "compact_bundle_sha256": "7fe8868b3d5beda6ab4e4bb00155041517291a96da717065e533fd7d494101b8",
+    "acceptance_source_report_sha256": "d36485386ba884e9e22e6fdeec68c0e6463979288aeb69b26247b2dd7f2d9d7b",
+    "raw_pointer_sha256": "2b884dc95783b30990e7f42a09ce9a522acdcfa1a42667f10ec0559cd782a77c",
+    "raw_dvc_md5": "add83cd3a720e4ec63e9e196bb6cd26f.dir",
+    "compact_pointer_sha256": "2783a19aa17e40c0398597711531b3ab45876c3f609d364544f16fd80a079a80",
+    "compact_dvc_md5": "385c4a991fb502e90b9d24e2ee179d99.dir",
+    "publication_receipt_sha256": "b67c714a8613a4273fda2b36f7b98e9bfd2a771ca66f33f20addb0b1a54e2fc5",
+    "remote_status_sha256": "efed9e5afcfe149915ae98b9ed9e69304eb48f5ce2e2265b18b5b5ed2f155e60",
+    "remote_verified": true,
+    "capture_revalidated_after_hydration": true,
+    "role_audit_exact_replay": true,
+    "exact_party_verified": true,
+    "identity_matched": true,
+    "cleanup": {
+      "active": false,
+      "active_bots": 0,
+      "lease_count": 0,
+      "party_bot_count": 0
+    },
+    "broad_dvc_gc_used": false
+  },
+  "strict_route_result": {
+    "completion_reason": "stonecore_role_quality_audit_failed",
+    "operator_failure_reason": "role_quality:Firemage:active_action_coverage",
+    "failure_labels": [
+      "role_quality:Firemage:active_action_coverage",
+      "role_quality:Firemage:cast_failure_rate",
+      "role_quality:Protpally:tank_threat_retention",
+      "role_quality:Protpally:healer_target_exposure",
+      "stonecore_role_quality_audit_failed"
+    ],
+    "route_manifest_complete": true,
+    "route_terminal_count": 14,
+    "expected_route_terminal_count": 14,
+    "real_boss_kill_count": 4,
+    "expected_real_boss_kill_count": 4,
+    "kills": 47,
+    "duration_seconds": 1253,
+    "party_deaths": 1,
+    "validation_route_no_progress_diagnoses": 0,
+    "stuck_events": 0,
+    "death_loop_events": 0,
+    "teacher_assisted_kills": 0,
+    "canaries_4_through_8_started": false
+  },
+  "role_audit": {
+    "passed": false,
+    "failure_labels": [
+      "Firemage:active_action_coverage",
+      "Firemage:cast_failure_rate",
+      "Protpally:tank_threat_retention",
+      "Protpally:healer_target_exposure"
+    ],
+    "fire_mage": {
+      "attempts": 206,
+      "successful_attempts": 125,
+      "no_action_attempts": 72,
+      "cast_failed_attempts": 8,
+      "casting_attempts": 1,
+      "active_action_coverage": 0.6796,
+      "minimum_active_action_coverage": 0.8,
+      "cast_failure_rate": 0.0602,
+      "maximum_cast_failure_rate": 0.05,
+      "successful_submission_rate": 0.9398,
+      "passive_uptime_rate": 0.034,
+      "deaths": 0
+    },
+    "protection_paladin": {
+      "eligible_hostile_samples": 1384,
+      "tank_owned_samples": 1217,
+      "healer_targeting_samples": 37,
+      "tank_all_hostile_retention_rate": 0.8793,
+      "minimum_retention_rate": 0.9,
+      "route_target_retention_rate": 0.9127,
+      "healer_target_exposure_rate": 0.0267,
+      "maximum_exposure_rate": 0.01,
+      "max_healer_target_dwell_ms": 2014,
+      "maximum_healer_target_dwell_ms": 3000,
+      "tank_threat_aura_uptime_rate": 1.0,
+      "deaths": 0
+    }
+  },
+  "fire_active_coverage_localization": {
+    "noncasting_no_action_attempts": 60,
+    "noncasting_no_action_within_1100_ms_after_successful_cast": 52,
+    "median_ms_after_successful_cast": 1007,
+    "cause": "The Fire profile resolver correctly rejects otherwise legal spells during the native global cooldown, but when every candidate is rejected it discards the candidate spell identity and returns no_valid_profile_action with spell_id zero. RecordCombatAttempt therefore cannot observe HasGlobalCooldown and publishes no_action instead of the scheduling result global_cooldown. The one-second alternating cadence and exact 1007 ms median establish that 52 of 60 non-casting no-action rows are scheduler waits, not missing rotation activity. The audit threshold is correct; the runtime diagnostic classification is not.",
+    "audit_attribution_correct": false,
+    "audit_correction_required": true,
+    "threshold_change_required": false
+  },
+  "fire_cast_failure_localization": {
+    "spell_id": 44457,
+    "spell_name": "Living Bomb",
+    "spell_cast_result": 150,
+    "spell_cast_result_name": "SPELL_FAILED_PREVENTED_BY_MECHANIC",
+    "failure_count": 8,
+    "route_generations": {
+      "generation_2_corborus": 2,
+      "generation_14_high_priestess_azil": 6
+    },
+    "target_entries": {
+      "43917_rock_borer": 2,
+      "42428_devout_follower": 6
+    },
+    "cause": "Every failure has known, cooldown, power, range, line-of-sight, alive, and attackability gates true, while core result 150 is emitted by caster-control mechanics. ResolveProfileCombatAction already rejects UNIT_STATE_CONTROLLED, but the hostile executor repeats no controlled-state preflight, leaving a same-tick race between resolution and CastSpell during the Corborus and Azil control waves. This is a real rejected submission, not an audit mismatch.",
+    "audit_attribution_correct": true,
+    "audit_correction_required": false
+  },
+  "protection_retention_localization": {
+    "eligible_samples_by_route_generation": {
+      "generation_1": {"eligible": 428, "tank_owned": 377, "healer_targeting": 28},
+      "generation_2": {"eligible": 169, "tank_owned": 101, "healer_targeting": 2},
+      "generation_3": {"eligible": 162, "tank_owned": 153, "healer_targeting": 0},
+      "generation_4": {"eligible": 39, "tank_owned": 39, "healer_targeting": 0},
+      "generation_7": {"eligible": 8, "tank_owned": 8, "healer_targeting": 0},
+      "generation_8": {"eligible": 7, "tank_owned": 7, "healer_targeting": 0},
+      "generation_9": {"eligible": 6, "tank_owned": 6, "healer_targeting": 0},
+      "generation_10": {"eligible": 24, "tank_owned": 24, "healer_targeting": 0},
+      "generation_11": {"eligible": 23, "tank_owned": 23, "healer_targeting": 0},
+      "generation_13": {"eligible": 30, "tank_owned": 30, "healer_targeting": 0},
+      "generation_14": {"eligible": 488, "tank_owned": 449, "healer_targeting": 7}
+    },
+    "dominant_route_generation": 2,
+    "dominant_route_node_id": "da90ef890fb19a87",
+    "objective": "Corborus",
+    "generation_2_missing_tank_owned_samples": 68,
+    "total_missing_tank_owned_samples": 167,
+    "generation_2_share_of_missing_samples": 0.4072,
+    "dominant_wave_control_sequence": [
+      "hand_of_protection_healer_emergency:17_engaged_8_tank_owned",
+      "tank_swarm_defensive:16_engaged_16_tank_owned",
+      "urgent_swarm_damage_release_at_16_hostiles",
+      "movement_check_jump:17_engaged_8_tank_owned",
+      "move_to_boss_add_x2:10_engaged_1_tank_owned",
+      "righteous_defense_party_pickup:10_engaged_1_tank_owned",
+      "tank_immediate_aoe_threat_avengers_shield",
+      "ownership_recovers_after_wave_contraction"
+    ],
+    "cause": "At 16 hostiles the Protection tank briefly owns the complete Corborus wave, but that ownership comes from emergency taunt/protection control and lacks the existing 2000-threat and 2.5x headroom definition of secure. The addCount >= 12 urgent release bypass immediately unlocks party AoE; one second later ownership is 8 of 17 and then 1 of 10 while the tank crosses to the loose cluster. Generation 2 contributes 68 of 167 missing samples. Raising only the urgent release size above the observed 20-hostile Corborus burst, while remaining below the previously proven 30-hostile runaway boundary, restores the existing secure-headroom gate for this wave without changing retention acceptance.",
+    "audit_attribution_correct": true,
+    "audit_correction_required": false
+  },
+  "protection_exposure_localization": {
+    "dominant_route_generation": 1,
+    "dominant_healer_targeting_samples": 28,
+    "total_healer_targeting_samples": 37,
+    "dominant_share": 0.7568,
+    "hostile_guids": [15, 16, 17, 18],
+    "episode_first_timestamp_ms": 1786189447230,
+    "episode_last_timestamp_ms": 1786189450051,
+    "episode_window_ms": 2821,
+    "max_identity_dwell_ms": 2014,
+    "control_sequence": [
+      "righteous_defense_healer_pickup",
+      "avengers_shield_healer_multi_trash_pickup",
+      "consecration_healer_multi_trash_pickup",
+      "trash_density_area_threat"
+    ],
+    "cause": "Four eligible corridor hostiles remain healer-owned while Protection serially submits its existing native pickup chain. The chain keeps every identity below the unchanged dwell ceiling but still contributes 28 of 37 exposed samples. The boss-add controller already uses native Hand of Protection when at least five attackers hit the healer; applying the same emergency protection at three ordinary-trash attackers removes healer victim ownership before the serial threat recovery without changing any audit gate.",
+    "audit_attribution_correct": true,
+    "audit_correction_required": false
+  },
+  "accepted_causal_chain": [
+    "Rerun157 canary 2 independently passed every strict route, identity, retention, exposure/dwell, role, publication, cleanup, and eviction gate before canary 3 was unlocked.",
+    "Canary 3 retained the exact rerun157 process, epoch, profile, planned party, serial isolation, remote publication, cleanup, and local payload eviction contracts and completed all 14 route terminals and four real bosses.",
+    "Independent capture validation and exact role-audit replay reproduced all four published failure labels.",
+    "Fire active coverage is understated because 52 one-second post-cast global-cooldown waits lose spell identity and are recorded as no_action; the strict 0.8 threshold remains unchanged.",
+    "All eight Fire cast failures are genuine Living Bomb submissions rejected by a caster control mechanic across the two scripted add waves.",
+    "Protection's 16-hostile Corborus wave bypasses the existing secure threat-headroom release gate and contributes 68 of 167 missing ownership samples.",
+    "Four initial corridor hostiles contribute 28 of 37 healer-target samples while the native Protection pickup chain remains inside the strict dwell ceiling.",
+    "The serial operator correctly stopped after canary 3; canaries 4 through 8 and Phases 10 through 12 remain blocked."
+  ],
+  "smallest_safe_corrections": [
+    {
+      "file": "src/server/game/Bots/BotWorldPopulationMgr.cpp",
+      "scope": "profile resolver scheduling diagnostics",
+      "change": "When no action is selected but at least one otherwise legal candidate is rejected only by global cooldown, preserve global_cooldown as the invalid-action reason and record/return BotActionResult::GlobalCooldown instead of NoAction. Do not change candidate eligibility or the role-audit threshold."
+    },
+    {
+      "file": "src/server/game/Bots/BotActionExecutor.cpp",
+      "scope": "hostile spell same-tick control race",
+      "change": "Repeat the existing UNIT_STATE_CONTROLLED preflight immediately before hostile spell submission and return the existing scheduling result throttled while the caster cannot act. Preserve every native spell and target legality check."
+    },
+    {
+      "file": "src/server/game/Bots/BotWorldPopulationMgr.cpp",
+      "scope": "Protection threat retention and healer protection",
+      "change": "Raise only the urgent large-wave DPS release boundary from 12 to 24 hostiles so the observed 16-20 hostile bursts retain the existing 2000-threat/2.5x secure gate, and use native Hand of Protection before the ordinary-trash pickup chain when at least three attackers target the healer."
+    }
+  ],
+  "preserved_gates": [
+    "hazard_authority",
+    "native_spell_known",
+    "native_cooldown",
+    "native_global_cooldown",
+    "native_power",
+    "native_range",
+    "native_line_of_sight",
+    "native_attackability",
+    "victim_identity",
+    "same_party_identity",
+    "route_identity",
+    "evidence_identity",
+    "retention_threshold",
+    "exposure_threshold",
+    "dwell_threshold",
+    "active_coverage_threshold",
+    "cast_failure_threshold",
+    "publication",
+    "cleanup",
+    "eviction"
+  ],
+  "gate_weakening": false,
+  "audit_threshold_change": false,
+  "next_attempt": {
+    "attempt_label": "rerun158_canary_2",
+    "worldserver_rebuild_required": true,
+    "deterministic_reprovision_required": true,
+    "fresh_identity_and_eight_row_plan_required": true,
+    "canary_2_only_until_strict_pass": true,
+    "canaries_3_through_8_started": false,
+    "phases_10_through_12_blocked": true
+  }
+}

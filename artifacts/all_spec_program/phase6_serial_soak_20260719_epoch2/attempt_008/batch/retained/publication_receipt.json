@@ -1,0 +1,27 @@
+{
+  "batch_id": "phase6-serial-soak-8",
+  "batch_identity_sha256": "d4a463d8ac9d24ab4bd07019b3cb677bde375a345d13225838e5941ebd3f82ce",
+  "cache_scope": "batch_specific",
+  "compact_bundle_sha256": "bc026da98c3189890d36362dd7f079a0dfddaa7bcd5742ca5450a5efe428aceb",
+  "pointers": [
+    {
+      "dvc_md5": "2630411e3eeee0f250f105d4927e6ce0.dir",
+      "nfiles": 3,
+      "path": "artifacts/all_spec_program/phase6_serial_soak_20260719_epoch2/attempt_008/batch/raw.dvc",
+      "pointer_sha256": "d1c18ddacc894a152342ed80f0eb2787d67e34f63a90cb11a74922c02d9fac8d",
+      "size": 6558049
+    },
+    {
+      "dvc_md5": "c4adb940865706616456780699e4afbd.dir",
+      "nfiles": 1,
+      "path": "artifacts/all_spec_program/phase6_serial_soak_20260719_epoch2/attempt_008/batch/compact.dvc",
+      "pointer_sha256": "d119c05a145eb8f0a1de2b670ba20619ed000a95143b3284d07a91a8cf15d510",
+      "size": 2383
+    }
+  ],
+  "raw_bundle_sha256": "e4de4d8f09d797ac9377e8ac311699408628ddf6200dd7a53b2146319078243f",
+  "receipt_sha256": "b2b35b87781cf5c8d68be494ed0cdff74460fe90fa513afc296c98d44b57bfd0",
+  "remote_status_sha256": "efed9e5afcfe149915ae98b9ed9e69304eb48f5ce2e2265b18b5b5ed2f155e60",
+  "remote_verified": true,
+  "schema": "bot_immutable_batch_publication_receipt_v1"
+}

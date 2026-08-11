@@ -78,6 +78,9 @@ Build deterministic prepared-character provisioning artifacts for staged live va
 pixi run bot-validation-gear --config experiments/configs/validation_provisioning_cata_001.json --output-dir dataset/validation_gear_profiles
 pixi run bot-validation-provisioning --config experiments/configs/validation_provisioning_cata_001.json --output-dir dataset/validation_provisioning
 pixi run bot-validation-provisioning-verify --config experiments/configs/validation_provisioning_cata_001.json --gear-profiles dataset/validation_gear_profiles/profiles.json --provisioning-report dataset/validation_provisioning/report.json --output dataset/validation_provisioning_verification/report.json
+pixi run bot-baseline-inventory --output-dir dataset/baseline_inventory
+# Explicit, read-only opt-in only; never part of the DVC stage:
+pixi run bot-baseline-inventory --probe-live-db --worldserver-conf trinity-worldserver-test.conf --output-dir dataset/baseline_inventory
 pixi run bot-validation-scenarios --config experiments/configs/validation_scenarios_cata_001.json --provisioning-report dataset/validation_provisioning/report.json --provisioning-verification dataset/validation_provisioning_verification/report.json --output-dir dataset/validation_scenarios
 pixi run dvc repro validation_gear
 pixi run dvc repro validation_provisioning
@@ -87,6 +90,163 @@ pixi run dvc repro live_scenario_reports
 pixi run dvc repro validation_run_plan
 pixi run dvc repro validation_run_status
 pixi run dvc repro live_validation_combined
+```
+
+`bot-baseline-inventory` is the Phase 0 contract/inventory gate. Its DVC stage is deliberately offline: it reads only declared repository inputs and does not opt into DB probing, DVC pulls, or live validation. Checked-in identities and fail-closed temporal classifications for every tracked calibration/Stonecore DVC pointer are recorded in `experiments/configs/baseline_dvc_pointer_inventory_v1.json`, a regular DVC dependency, rather than declaring hundreds of `.dvc` files as graph dependencies. `--probe-live-db` is an explicit read-only diagnostic that reads database URLs only from the existing worldserver config, compares every enabled `bot_rotation_profile` class/spec/role key with the 14 configured candidates, inventories complete world rotation profile/action rows by content hash, records binary/config/database/schema identities, and reports live character pool, alias, talent, glyph, spell, gear, and pet gaps. It never accepts connection URLs or emits credentials. Without an available exact profile-key probe and complete runtime inventory report the Phase 0 gate remains false; even with both, Phase 0 records stored calibration and Stonecore claims without accepting gameplay evidence.
+
+### All-spec Phase 1 catalogs and provisioning
+
+Refresh the pinned WoWSims/Icy Veins source records only when intentionally updating content-addressed provenance, then use the offline command for routine validation and DVC reproduction:
+
+```bash
+pixi run python -m tools.bot_ml.build_all_spec_phase1_catalogs --refresh-sources --output-dir dataset/all_spec_phase1_catalogs
+pixi run python -m tools.bot_ml.build_all_spec_phase1_catalogs --output-dir dataset/all_spec_phase1_catalogs
+pixi run dvc repro validation_gear validation_provisioning all_spec_phase1_catalogs
+```
+
+The refresh is one consolidated pass across all ten Cataclysm classes and all 31 canonical targets. Its second pass is limited to records explicitly marked unsupported by the pinned simulator; it does not repeat complete research. The checked-in catalogs hold exactly 31 stable targets, reviewed and hashed source provenance, local Phase 4 runtime gear identities, calibration contracts, and all 20 tank/healer pairwise Stonecore compositions. `load_config()` materializes the linked `all_spec_candidate_pool` as 31 deterministic, unique, leaseable characters when provisioning artifacts are built.
+
+Runtime action authority remains the explicit `bot_rotation_profile`/`bot_rotation_action` SQL in `sql/custom/world/2026_07_18_00_all_spec_rotation_profile_coverage.sql`; guide prose is provenance, not executable policy, and generic ML remains offline/shadow-only. Apply that migration and the generated account/character provisioning SQL through the normal test-database migration workflow before requesting strict live proof. The live verifier reads database URLs only from `trinity-worldserver-test.conf`, sanitizes them in evidence, and fails closed for missing profiles, profiles without enabled actions, profiles without any spell known by the linked character, incomplete movement/auto-attack directives, or incomplete provisioning:
+
+```bash
+pixi run python -m tools.bot_ml.validate_validation_provisioning \
+  --config experiments/configs/validation_provisioning_cata_001.json \
+  --gear-profiles dataset/validation_gear_profiles/profiles.json \
+  --provisioning-report dataset/validation_provisioning/report.json \
+  --worldserver-conf trinity-worldserver-test.conf \
+  --check-db --require-applied \
+  --output dataset/validation_provisioning_verification/report.json
+```
+
+The DVC verification stage remains reproducible and offline; strict live verification is recorded separately as an immutable receipt so external database state cannot silently rewrite the offline stage result.
+
+### All-spec Phase 2 evidence identity and acceptance
+
+`live_validation_session.py` is the shared evidence envelope for live runners, report builders, and artifact promotion. It binds immutable Git/dirty-state, executable/configuration, database snapshot/schema, process/server epoch, canonical catalog/provisioning/gear/profile/reference/policy/scenario/route hashes; batch through measurement-window IDs; and raw/compact/DVC/remote-receipt hashes. Aggregation is allowed only when all execution-condition hashes and cohort scopes match. Record-local attempt IDs remain unique, and incompatible older envelopes are retained but marked stale or superseded.
+
+Acceptance is recomputed from stage `missing` facts, route-manifest evidence, failure labels, watchdog facts, forbidden assists, identity completeness, and session closure. Stored `passed`, `clear_complete`, `acceptable_final_evidence`, and `all_passed` values are never accepted as inputs. Report generation records discrepancies and fails closed; scenario reports and promotion independently run the same verifier. Every runner attempt gets an envelope automatically. Certification additionally requires `--evidence-identity-manifest` to provide current `database_snapshot_sha256`, `database_schema_sha256`, `server_epoch_sha256`, and `profile_generation_sha256`; without those external identities the attempt remains retained as `current_unpublished` diagnostic evidence and cannot be promoted as accepted.
+
+Profile reloads drain open attempts, publish a new immutable profile generation, and advance the logical evidence epoch. Binary/config/schema/shared-world changes require a new server epoch. Rollbacks also create a new generation and never reuse an earlier identity. Reproduce the deterministic gate proof with:
+
+```bash
+pixi run bot-phase2-evidence-contract --output-dir dataset/all_spec_phase2_evidence_contract
+pixi run dvc repro all_spec_phase2_evidence_contract
+```
+
+### All-spec Phase 3 immutable batch lifecycle
+
+`batch_evidence_lifecycle.py` captures each closed batch as one bounded Zstd-compressed JSONL raw stream plus exact manifests and one Parquet/Zstd analytical representation. Acceptance is independently recomputed before the immutable final manifest is hashed. Live watchdog output uses only `latest.json`, one compact append-only `heartbeat_events.jsonl`, and `heartbeat_manifest.json`; it no longer creates a JSON file for every heartbeat.
+
+Publication holds the repository DVC publisher lock, temporarily adds a batch-specific `cache.dir` while preserving `.dvc/config.local` byte-for-byte, DVC-adds raw and compact bundles as separate identities, pushes immediately, runs remote `dvc status -c`, revalidates content hashes, and writes a receipt. Only then are the raw workspace and that exact batch cache evicted. Failed push, missing receipt, or corruption retains the workspace and cache. Hydration uses the immutable `.dvc` pointers and validates the reconstructed bundle against the receipt. Optional detailed database exports are scoped to immutable batch/window IDs, and deletion requires the verified publication receipt before issuing exact-ID deletes. Raw capture defaults to a 64 MiB pending-byte ceiling.
+
+Reproduce the synthetic local-remote gate, including targeted eviction, immutable hydration, corruption retention, and failed-push retention, with:
+
+```bash
+pixi run bot-phase3-batch-lifecycle --output-dir dataset/all_spec_phase3_batch_lifecycle
+pixi run dvc repro all_spec_phase3_batch_lifecycle
+```
+
+### All-spec Phase 4 immutable rotation snapshots
+
+`BotClassSpecActionProfileStore` publishes the complete 31-profile SQL catalog as an immutable, content-hashed snapshot. Candidate snapshots are validated against the canonical class/spec/role keys, DBC spell records, action taxonomy, target selectors, numeric ranges, and typed predicates before atomic publication. Reload and rollback each allocate a new generation, while a copied decision profile retains the generation and content hash captured for that action attempt. The previous snapshot remains available for controlled runtime rollback. `mechanic_tags` are emitted as descriptive diagnostics and are not evaluated as executable conditions.
+
+The live contract starts one attached worldserver, verifies all 31 profiles, temporarily changes one Fire Mage action to an invalid category, proves the failed reload leaves the active generation/hash unchanged, restores the database value in a fresh connection, then verifies valid reload, rollback, and legacy-alias dump behavior. Database contents and worldserver publication are external live state, so use `dvc repro --force all_spec_phase4_rotation_contract` when intentionally refreshing the checkpoint without changing tracked dependencies:
+
+```bash
+pixi run bot-phase4-rotation-contract \
+  --output-dir dataset/all_spec_phase4_rotation_contract \
+  --worldserver-conf trinity-worldserver-test.conf \
+  --worldserver-binary build/src/server/worldserver/worldserver
+pixi run dvc repro all_spec_phase4_rotation_contract
+```
+
+Apply `sql/custom/world/2026_07_19_00_phase4_rotation_snapshots.sql` and `2026_07_19_01_phase4_rotation_category_normalization.sql` through the normal world updater. The exact pre-migration profile hashes are in `experiments/configs/all_spec_phase4_previous_profile_hashes_v1.json`; the controlled restore payload is under `sql/custom/rollback/world/` so the live updater cannot apply it accidentally.
+
+### All-spec Phase 5 cohort and party ownership
+
+`BotWorldPopulationMgr` remains the process scheduler and registry, while each constructed cohort owns its lifecycle, profile pin, clocks, telemetry, capture, and roster leases through `CohortRuntime`. Party-specific group, instance, route, pending-heal, trace, combat-log, and encounter evidence live under `PartyRuntime`. Bot GUID claims are keyed by server epoch, cohort, attempt, and role slot and are released only by the owning epoch and attempt. Execution remains serial with `MaxActiveCohorts = 1`.
+
+The live contract constructs two probe cohorts, proves fail-closed lease conflicts and isolation across all owned state domains, then verifies cohort-addressed status, diagnosis, trace, calibration, and chunked combat-log responses. Once more than one cohort exists, unaddressed cohort operations reject with `ambiguous_global_cohort` rather than using process-global selection state:
+
+```bash
+pixi run bot-phase5-cohort-ownership-contract \
+  --output-dir dataset/all_spec_phase5_cohort_ownership_contract \
+  --worldserver-conf trinity-worldserver-test.conf \
+  --worldserver-binary build/src/server/worldserver/worldserver
+pixi run dvc repro all_spec_phase5_cohort_ownership_contract
+```
+
+### All-spec Phase 6 reusable-session orchestration
+
+`run_live_bot_validation.py` separates the long-lived server owner, serial admission scheduler, cohort-only command executor, cohort/attempt watchdog, immutable capture writer, independent acceptance recomputer, and serialized DVC publisher. Reusable-session lifecycle commands always include `--cohort-id`; the executor rejects global or cross-cohort forms. Cleanup requires inactive status, zero active bots, zero GUID leases, and an empty party registry entry. Live ownership is repository-wide because all environments share the configured world/SOAP ports: a second managed unit fails closed, and `.botauto cohorts` must report the same process ID as systemd `MainPID` before admission. The process-derived server epoch changes across actual restarts. The server owner can atomically reload DB-backed rotation profiles without restarting the process, while deterministic provisioning is memoized by server epoch and input identity. A changed binary/config/input fingerprint restarts the owned process and therefore creates a new server epoch.
+
+Closed session batches are captured as bounded Zstandard JSONL plus one Parquet/Zstandard compact table. `--publish-batch` pushes raw and compact identities under the single DVC publisher lock, verifies the remote, target-evicts only those payloads, deletes duplicate high-volume runner files, and retains compact reports, manifests, receipts, and `.dvc` pointers. Batch roots must be under a Git-visible path such as `artifacts/all_spec_program/`; the repository-wide ignored `dataset/*` namespace is reserved for stage outputs.
+
+Run or resume the two-hour serial gate with credentials supplied only through the environment, then reproduce its compact contract:
+
+```bash
+TRINITY_SOAP_USER=... TRINITY_SOAP_PASSWORD=... \
+  pixi run bot-phase6-serial-soak-contract --run-soak \
+  --attempt-root artifacts/all_spec_program/phase6_serial_soak_20260719_epoch2 \
+  --output-dir dataset/all_spec_phase6_serial_soak_contract
+pixi run dvc repro all_spec_phase6_serial_soak_contract
+```
+
+The gate requires eight fresh serial attempts on one PID and one server epoch, monotonic runtime attempt IDs, no global lifecycle command, clean lease/party release after every attempt, remote-verified separate raw/compact pointers, targeted local eviction, and at least 7,200 seconds between first admission and final closure.
+
+### All-spec Phase 7 deterministic role calibration
+
+`role_calibration_harness.py` independently evaluates four explicit, non-mixing modes: `single_target_300`, `aoe_300`, `tank_threat_300`, and `healer_controlled_damage_300`. Every record declares its target, buff/debuff/consumable conditions, profile generation/hash, deterministic reset, separate warmup, and one `300 +/-5` second scored window. DPS evaluation records active/elapsed DPS, reference ratio, ability mix, rotation coverage, failures, resource state, uptime, movement/range loss, and pet contribution. Tank evaluation additionally gates TPS, snap/add threat, all-hostile retention, threat aura, healer exposure, mitigation, smoothing, survival, interrupts, and stance/form/presence. Healer evaluation requires scheduled and delivered sustained, burst, group, triage, dispel, cooldown, and mana-endurance phases plus effective HPS, health floors, overheal/absorbs, mana, latency, target selection, dispels, cooldowns, idle time, and failures.
+
+The policy keeps the 75% hard reference floor and 80% optimization target distinct; deaths, missing healer phases, missed dispels, threat loss, illegal actions, or other hard-gate failures cannot be rescued by ratio. The deterministic contract proves successful fixtures and deliberate detection of missing damage delivery, duration mismatch, one-target spam, missed dispels, missing tank stance/form/presence, threat loss, illegal actions, and cross-window contamination:
+
+```bash
+pixi run bot-phase7-role-calibration-contract \
+  --output-dir dataset/all_spec_phase7_role_calibration_contract
+pixi run dvc repro all_spec_phase7_role_calibration_contract
+```
+
+### All-spec Phase 8 live tuning campaign
+
+`run_phase8_all_spec_calibration.py` serializes one active cohort through the complete canonical matrix: three seeds for one selected DPS representative per DPS-capable class (10 single-target/AoE pairs), four tank single-target/threat pairs, and five controlled-damage healer windows. This is 99 real scored 300-second windows across 19 selected targets. The representative map is pinned in `experiments/configs/phase8_dps_representatives_cata_p4_v1.json`; sibling DPS specializations remain cataloged but do not block class-level qualification. Every attempt selects its bot by canonical runtime join key, reuses one managed worldserver owner, independently normalizes the public `.botauto calibrate` status through `phase8_calibration_adapter.py`, evaluates the Phase 7 policy, DVC-publishes the closed immutable batch, verifies its receipt, and target-evicts high-volume local payloads. Published qualification failures remain resumable evidence for tuning; unpublished infrastructure failures stop the campaign.
+
+Supply SOAP credentials only through the process environment. Generate the plan without credentials. Before a live run, build the read-only evidence manifest; it hashes the current world/character schemas and exact 31-candidate/profile/action snapshot, ensures the managed server uses those database restart components, and binds its process/epoch and immutable rotation generation/hash. The campaign requires that manifest, copies it into the campaign root, and refuses resume under a different identity:
+
+```bash
+pixi run bot-phase8-all-spec-calibration --dry-run \
+  --output-root "$CLAUDE_JOB_DIR/tmp/phase8-campaign-plan"
+
+TRINITY_SOAP_USER=... TRINITY_SOAP_PASSWORD=... \
+  pixi run bot-phase8-evidence-identity \
+  --output artifacts/all_spec_program/phase8_live_calibration_20260719/evidence_identity_manifest.json
+
+TRINITY_SOAP_USER=... TRINITY_SOAP_PASSWORD=... \
+  pixi run bot-phase8-all-spec-calibration \
+  --evidence-identity-manifest artifacts/all_spec_program/phase8_live_calibration_20260719/evidence_identity_manifest.json \
+  --output-root artifacts/all_spec_program/phase8_live_calibration_20260719
+```
+
+`build_phase8_all_spec_calibration_contract.py` reconstructs the gate from the campaign identity manifest, pinned DPS representative map, retained reports, final manifests, and canonical remote-verification receipts. It independently rechecks every report against the bound server epoch/process/profile generation, and requires exact 99-attempt/19-target coverage, one passing representative for each of the 10 DPS-capable classes, all tank/healer role gates and 75% floors, one server epoch/process/profile snapshot, at most one active cohort, and an exact 75-80% optimization backlog:
+
+```bash
+pixi run dvc repro all_spec_phase8_live_calibration_contract
+pixi run dvc status
+pixi run dvc push
+```
+
+### All-spec Phase 9 targeted 25H qualification
+
+Phase 9 keeps all 31 canonical class/spec profiles provisioned but gates the 24 specialization targets represented by the targeted 25-player heroic progression roster. The default roster shape is 2 tanks, 6 healers, and 17 DPS, split 12 ranged to 5 melee; the exact permanent slots, supported flex specs, exclusions, and research provenance are pinned in `experiments/configs/stonecore_phase9_pair_policy_v1.json`. Protection Warrior, Arcane/Frost Mage, Beast Mastery Hunter, Destruction Warlock, Enhancement Shaman, and Subtlety Rogue remain available for diagnostics but do not block progression qualification.
+
+`build_phase9_pairwise_matrix.py` deterministically reconstructs the 24-target pair universe and a complete five-player Stonecore covering array. The pinned seven-canary serial union covers every supported target, retains native Hunter threat-transfer support for every supported tank row, and runs only one exact party at a time. Before each serial attempt, the inactive-session runner restores the exact configured Stonecore route start for the candidate pool; this prevents a target reused by a later party from spawning at its previously persisted end-of-route position. The serial operator fails closed unless that restoration is recorded as applied. `verify_phase9_pairwise_matrix.py` independently reconstructs the roster shape, target exclusions, required/excluded pairs, composition hashes, serial union, representation bounds, and matrix identity.
+
+Phase 9 acceptance prioritizes authoritative boss completion. A full Stonecore clear requires the exact 14-node manifest, all 14 identity-scoped terminal records, all four authoritative boss deaths, zero timeout/nonzero return, a clear watchdog, and no forbidden completion assistance. Once those facts are present, the unchanged role-efficiency thresholds remain published advisory diagnostics rather than revoking the clear; before full completion, a failed role audit remains enforced and the route still fails closed. Recoverable trash deaths therefore do not block a completed run, while incomplete recovery, a missing boss death, identity/session/cleanup failure, or operator assistance still does.
+
+```bash
+pixi run python -m tools.bot_ml.build_phase9_pairwise_matrix
+pixi run python -m tools.bot_ml.verify_phase9_pairwise_matrix
+pixi run dvc status
+pixi run dvc push
 ```
 
 The gear generator reads Cataclysm `Item.db2`/`Item-sparse.db2`, `SpellItemEnchantment.dbc`, and `GemProperties.dbc` client data plus hotfix overrides. It also reads `experiments/configs/cata_434_combat_loot_profiles.json` for class/spec archetypes, stat weights, consumable profile metadata, smart-loot validation surfaces, and BiS/source reporting scaffolds. It writes class/spec equipment profiles with selected item IDs, stats, item levels, source labels, `complete_equipment_slots`, socket-compatible gem IDs, permanent enchant IDs, stat-weight manifest hashes, BiS/source summaries, and the exact 45-field `item_instance.enchantments` payload used by the server. The provisioning generator reads `experiments/configs/cata_434_action_profiles.json` for class action and proficiency spells, then writes `account_commands.txt`, `provision_accounts.sql`, `provision_characters.sql`, `manifest.json`, and `report.json`. It does not apply destructive database changes automatically. `provision_accounts.sql` creates only missing validation accounts with deterministic Trinity SRP6 `salt`/`verifier` values and does not overwrite existing account passwords. The verifier checks generated payloads against DBC enchant/gem IDs and can additionally check the configured auth/characters schema plus missing validation accounts with `--check-db`. The scenario generator writes `validation_scenarios.jsonl`, `validation_routes.jsonl`, and `validation_mechanics.jsonl` so Stonecore/BWD planners can consume route and mechanic embeddings without C++ encounter branches. The run-plan generator writes `run_validation_scenarios.sh` with per-scenario `bot-live-validate` commands that apply deterministic provisioning, reset only the matching scenario tag, and preserve the configured instance start positions. The combined validation stage reparses open-world live evidence with scenario reports attached, giving one staged pass/fail artifact across questing, professions, loot, Stonecore, and BWD gates. The current config provisions max-level Stonecore and Blackwing Descent validation rosters with role coverage, skills, glyphs, consumables, complete class/spec equipment slots, gems, enchants, and instance start positions. The gear report intentionally keeps `enchant_applicability_verified_by_server=false` until a live worldserver load validates the generated enchant IDs on equipped items.

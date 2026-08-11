@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import subprocess
 import sys
 import time
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -34,32 +36,63 @@ from tools.bot_ml.build_world_planner_manifests import build_planner_manifests, 
 from tools.bot_ml.build_quest_profession_reports import build_report as build_quest_profession_report
 from tools.bot_ml.validate_world_planner import STAGED_GATES, main as world_planner_validate_main, validate_manifest_coverage
 from tools.bot_ml.build_validation_scenario_manifests import build_manifests as build_validation_scenario_manifests
-from tools.bot_ml.build_live_scenario_reports import build_reports as build_live_scenario_reports, build_reports_from_live_reports, main as live_scenario_reports_main
+from tools.bot_ml.build_live_scenario_reports import attached_full_clear_valid, build_reports as build_live_scenario_reports, build_reports_from_live_reports, main as live_scenario_reports_main
 from tools.bot_ml.build_validation_run_plan import build_plan as build_validation_run_plan
 from tools.bot_ml.build_validation_run_plan import main as validation_run_plan_main
 from tools.bot_ml.build_validation_run_status import build_status as build_validation_run_status
+from tools.bot_ml.batch_evidence_lifecycle import (
+    BatchLifecycleError,
+    append_heartbeat,
+    capture_batch,
+    cleanup_exported_database_rows,
+    publish_batch,
+    synthetic_round_trip_contract,
+    validate_capture,
+)
 from tools.bot_ml.live_validation_session import (
+    EVIDENCE_ARTIFACT_HASHES,
+    EVIDENCE_HASH_COMPONENTS,
+    EVIDENCE_SCOPE_IDS,
     LiveValidationSessionError,
+    acceptance_facts_from_report,
+    advance_evidence_epoch,
+    apply_acceptance_evaluation,
+    build_evidence_envelope,
+    canonical_sha256,
+    classify_evidence_freshness,
     dvc_lock_path,
     dvc_repository_lock,
     ensure_healthy_matching_session,
     build_session,
+    evidence_compatible_for_aggregation,
+    evaluate_acceptance,
     inspect_session,
     live_validation_lock,
     sha256_file,
     systemd_transient_command,
 )
-from tools.bot_ml.run_live_bot_validation import apply_calibration_only_acceptance, boss_route_health_progress, bot_status_snapshot, bounded_console_deadline, build_bot_pool_reset_sql, command_script, heartbeat_commands_from_script, live_validation_report, load_scenario_reports, load_validation_route, main as live_validation_main, parse_json_objects, parse_soap_result, poll_bot_status, read_until_console_prompt, route_segment_complete, run_reusable_validation_session, run_transport_completion_watchdog, run_worldserver, run_worldserver_completion_watchdog, scripted_activation_wait_pending, split_sql_statements, supersede_transient_route_failures, trace_after, trinity_config_bool, unresolved_route_death_loop_count, unresolved_route_stuck_count, upsert_trinity_config, wait_for_bot_status_state, watchdog_state, write_validation_config
+from tools.bot_ml.run_live_bot_validation import BoundedOutputParts, apply_calibration_only_acceptance, attempt_evidence_envelope, boss_route_health_progress, bot_status_snapshot, bounded_console_deadline, build_bot_pool_reset_sql, command_script, heartbeat_commands_from_script, live_validation_report, load_scenario_reports, load_validation_route, main as live_validation_main, parse_json_objects, parse_soap_result, poll_bot_status, read_until_console_prompt, route_segment_complete, run_reusable_validation_session, run_transport_completion_watchdog, run_worldserver, run_worldserver_completion_watchdog, scripted_activation_wait_pending, split_sql_statements, strict_manifest_evidence, supersede_transient_route_failures, trace_after, trinity_config_bool, unresolved_route_death_loop_count, unresolved_route_stuck_count, upsert_trinity_config, wait_for_bot_status_state, watchdog_state, write_validation_config
 from tools.bot_ml.orchestrator_daemon import codex_command, detect_rate_limit, handle_rate_limit, initial_state, run_one_cycle, sleep_until_resume
 from tools.bot_ml.generate_lane_configs import write_lane_config
 from tools.bot_ml.promote_live_validation_artifact import promote
 from tools.bot_ml.build_validation_gear_profiles import SHIELD_CLASSES, build_gem_catalog, build_profiles, build_report, fetch_items, load_gem_properties, load_spell_item_enchantments
-from tools.bot_ml.build_validation_provisioning import apply_gear_profiles, bot_known_spell_ids, bot_primary_tree_spell_ids, bot_spell_ids, bot_talent_spell_ids, build_account_insert_sql, build_character_insert_sql, equipment_cache, glyph_item_to_property_map, glyph_property_type_map, load_config as load_validation_provisioning_config, load_gear_profiles, main as provisioning_main, normalized_glyph_slots, normalized_glyphs, runtime_safe_enchantments, scenario_report, srp6_registration_data, talent_point_count, validate_talent_manifest
+from tools.bot_ml.build_validation_provisioning import apply_gear_profiles, bot_known_spell_ids, bot_primary_tree_spell_ids, bot_spell_ids, bot_talent_spell_ids, build_account_insert_sql, build_character_insert_sql, equipment_cache, glyph_item_to_property_map, glyph_property_type_map, load_config as load_validation_provisioning_config, load_gear_profiles, main as provisioning_main, normalized_glyph_slots, normalized_glyphs, required_equipment_slots_for, runtime_safe_enchantments, scenario_report, srp6_registration_data, talent_point_count, validate_talent_manifest
+from tools.bot_ml.validate_validation_provisioning import REQUIRED_COLUMNS as PROVISIONING_REQUIRED_COLUMNS
 from tools.bot_ml.validate_validation_provisioning import build_report as provisioning_verify_report
 from tools.bot_ml.validate_validation_provisioning import main as provisioning_verify_main
 from tools.bot_ml.validate_validation_provisioning import validate_database as validate_provisioning_database
 from tools.bot_ml.validation_profile_manifests import load_action_profile_manifest, load_combat_loot_profile_manifest
 from tools.bot_ml.validate_data_quality import validate_rows as validate_data_quality_rows
+from tools.bot_ml.build_baseline_inventory import build_inventory, canonical_hash, git_identity, parse_dvc_pointer, reconcile_live_db, reconcile_targets, rotation_tuples, validate_policy, write_bundle
+from tools.bot_ml.build_all_spec_phase1_catalogs import PERSISTENT_SETUP_SPELL_IDS, QUALIFICATION_TUNED_ACTION_SPELL_IDS, RUNTIME_ACTION_SPELL_IDS, build_catalogs as build_phase1_catalogs, validate_catalogs as validate_phase1_catalogs, write_bundle as write_phase1_bundle
+from tools.bot_ml import build_phase4_rotation_contract as phase4_contract
+from tools.bot_ml import build_phase5_cohort_ownership_contract as phase5_contract
+from tools.bot_ml import build_phase6_serial_soak_contract as phase6_contract
+from tools.bot_ml import build_phase7_role_calibration_contract as phase7_contract
+from tools.bot_ml import build_phase8_all_spec_calibration_contract as phase8_contract
+from tools.bot_ml import run_phase8_all_spec_calibration as phase8_runner
+from tools.bot_ml.phase8_evidence_identity import profile_generation_identity, server_epoch_identity, validate_manifest as validate_phase8_evidence_manifest
+from tools.bot_ml.role_calibration_harness import evaluate_calibration, inject_fault, load_policy
 from tools.bot_ml.bt_masked_ga_combined import run as run_bt_masked_ga_combined
 from tools.bot_ml.evaluate_policy_model import policy_score, ranking_metrics
 from tools.bot_ml.train_policy_model import add_synthetic_binary_class, balanced_binary_weights, teacher_choice_training_rows
@@ -1121,6 +1154,7 @@ def test_bot_ml_workflow_has_pixi_tasks_and_documented_dvc_steps():
         "bot-validation-scenarios",
         "bot-validation-run-plan",
         "bot-validation-run-status",
+        "bot-baseline-inventory",
         "bot-live-scenario-reports",
         "bot-live-validate",
         "bot-ml-export",
@@ -3943,9 +3977,9 @@ TC> {"duration_minutes":9.0,"decisions":120,"total_kills":10,"quests_completed":
     report = live_validation_report(output, validation_context={"scenario_id": "stonecore_5n"})
 
     assert report["evidence"]["validation_route_manifest_complete"] == 1
-    assert report["completion_reason"] == "validation_route_manifest_complete"
+    assert report["completion_reason"] == "incomplete_evidence"
     assert report["acceptable_final_evidence"] is False
-    assert "missing_validation_route_manifest" in report["final_evidence_rejections"]
+    assert "not_all_stages_passed" in report["final_evidence_rejections"]
 
 
 def test_live_bot_validation_uses_scenario_reports_for_dungeon_and_raid_gates(tmp_path):
@@ -4031,7 +4065,7 @@ def test_live_scenario_report_builder_rejects_unscoped_cross_scenario_kills(tmp_
     assert reports["stonecore_5n"]["teacher_label_quality"] == "weak"
     assert reports["stonecore_5n"]["ml_training_label"] == "weak_inferred_label"
     assert reports["blackwing_descent_10n"]["raid_boss_kills"] == 0
-    assert reports["blackwing_descent_10n"]["boss_stage_passed"] is True
+    assert reports["blackwing_descent_10n"]["boss_stage_passed"] is False
     assert reports["blackwing_descent_10n"]["clear_complete"] is False
 
 
@@ -4334,7 +4368,12 @@ def test_live_scenario_report_builder_accepts_manifest_backed_uninterrupted_clea
         },
         "failure_labels": [],
         "failure_reason": None,
+        "returncode": 0,
+        "timed_out": False,
+        "stages": [{"stage": "full_stonecore_clear", "missing": []}],
+        "watchdog_state": {},
     }
+    apply_acceptance_evaluation(live_report)
 
     stonecore = build_live_scenario_reports(live_report, scenario_dir)["stonecore_5n"]
 
@@ -4800,14 +4839,32 @@ def test_live_validation_session_hashes_inputs_and_builds_bounded_systemd_comman
     config.write_text("BotWorld.AutoStart = 1\n", encoding="utf-8")
 
     def runner(command):
-        assert command[:4] == ["git", "-C", str(tmp_path), "rev-parse"]
-        return subprocess.CompletedProcess(command, 0, "a" * 40 + "\n", "")
+        assert command[:3] == ["git", "-C", str(tmp_path)]
+        stdout = "a" * 40 + "\n" if command[3] == "rev-parse" else ""
+        return subprocess.CompletedProcess(command, 0, stdout, "")
 
-    session = build_session(tmp_path, "production/token=secret", binary, config, command_runner=runner)
+    session = build_session(
+        tmp_path,
+        "production/token=secret",
+        binary,
+        config,
+        restart_components={"database_schema_sha256": "d" * 64},
+        command_runner=runner,
+    )
+    changed_schema = build_session(
+        tmp_path,
+        "production/token=secret",
+        binary,
+        config,
+        restart_components={"database_schema_sha256": "e" * 64},
+        command_runner=runner,
+    )
     command = systemd_transient_command(session)
 
     assert session.git_head == "a" * 40
     assert session.binary_sha256 == sha256_file(binary)
+    assert session.fingerprint != changed_schema.fingerprint
+    assert session.restart_components_sha256 != changed_schema.restart_components_sha256
     assert session.environment not in session.metadata().values()
     assert "secret" not in str(session.metadata())
     assert command == [
@@ -4868,10 +4925,185 @@ def test_live_validation_session_fails_closed_and_locks_are_repository_scoped(tm
     assert inspect_session(session, command_runner=lambda command: subprocess.CompletedProcess(command, 1, "", "Unit does not exist")).exists is False
     with live_validation_lock(tmp_path, "staging"):
         with pytest.raises(Exception):
-            with live_validation_lock(tmp_path, "staging"):
+            with live_validation_lock(tmp_path, "other-environment"):
                 pass
     with dvc_repository_lock(tmp_path) as lock_path:
         assert lock_path == dvc_lock_path(tmp_path)
+
+
+def phase2_identity_inputs():
+    components = {name: hashlib.sha256(f"component:{name}".encode()).hexdigest() for name in EVIDENCE_HASH_COMPONENTS}
+    scopes = {name: f"scope:{name}" for name in EVIDENCE_SCOPE_IDS}
+    artifacts = {name: hashlib.sha256(f"artifact:{name}".encode()).hexdigest() for name in EVIDENCE_ARTIFACT_HASHES}
+    return components, scopes, artifacts
+
+
+def test_phase2_composite_identity_blocks_incompatible_aggregation_and_supersedes_without_deletion():
+    components, scopes, artifacts = phase2_identity_inputs()
+    baseline = build_evidence_envelope(components, scopes, artifacts)
+
+    for component in EVIDENCE_HASH_COMPONENTS:
+        changed_components = dict(components)
+        changed_components[component] = hashlib.sha256(f"changed:{component}".encode()).hexdigest()
+        changed = build_evidence_envelope(changed_components, scopes, artifacts)
+        assert not evidence_compatible_for_aggregation(baseline, changed), component
+        classified = classify_evidence_freshness([baseline, changed], changed)
+        assert len(classified) == 2
+        assert classified[0]["freshness"] == "superseded"
+        assert classified[0]["superseded_by"] == changed["attempt_identity_sha256"]
+        assert classified[1]["freshness"] == "current"
+
+    changed_attempt = dict(scopes)
+    changed_attempt["attempt_id"] = "scope:attempt_id:repeat-2"
+    repeat = build_evidence_envelope(components, changed_attempt, artifacts)
+    assert evidence_compatible_for_aggregation(baseline, repeat)
+    assert baseline["attempt_identity_sha256"] != repeat["attempt_identity_sha256"]
+
+
+def test_phase2_runner_binds_every_attempt_and_requires_external_epoch_database_identity(tmp_path):
+    worldserver = tmp_path / "worldserver"
+    worldserver.write_bytes(b"binary")
+    config = tmp_path / "worldserver.conf"
+    config.write_text("", encoding="utf-8")
+    provisioning = tmp_path / "provisioning.json"
+    provisioning.write_text("{}", encoding="utf-8")
+    gear = tmp_path / "gear.json"
+    gear.write_text("{}", encoding="utf-8")
+    output_dir = tmp_path / "attempt"
+    output_dir.mkdir()
+    (output_dir / "worldserver_output.log").write_text("TC> evidence\n", encoding="utf-8")
+    args = SimpleNamespace(
+        evidence_identity_manifest=None,
+        config=config,
+        worldserver=worldserver,
+        validation_provisioning_config=provisioning,
+        gear_profiles=gear,
+        transport="process",
+        output_dir=output_dir,
+        bot_pool_tag=["party-a"],
+        selector="all",
+        observe_sec=300,
+        timeout_sec=900,
+    )
+    report = {"command": [str(worldserver)], "config": str(config), "generated_at_unix": 1}
+
+    incomplete = attempt_evidence_envelope(args, report, {"scenario_id": "stonecore_5n"}, {}, {})
+    assert incomplete["identity_complete"] is False
+    assert len(incomplete["identity_incomplete_reasons"]) == 4
+    acceptance_report = {
+        "returncode": 0,
+        "timed_out": False,
+        "stages": [{"stage": "attempt", "missing": []}],
+        "failure_labels": [],
+        "validation_context": {},
+        "evidence": {},
+        "validation_route_manifest": {},
+        "watchdog_state": {},
+    }
+    apply_acceptance_evaluation(acceptance_report)
+    assert acceptance_report["acceptable_final_evidence"] is True
+    acceptance_report["evidence_envelope"] = incomplete
+    apply_acceptance_evaluation(acceptance_report, identity_required=True)
+    assert acceptance_report["acceptable_final_evidence"] is False
+    assert acceptance_report["final_evidence_rejections"] == ["incomplete_evidence_identity"]
+
+    identity_manifest = tmp_path / "identity.json"
+    identity_manifest.write_text(
+        json.dumps(
+            {
+                "component_hashes": {
+                    name: hashlib.sha256(name.encode()).hexdigest()
+                    for name in (
+                        "database_snapshot_sha256",
+                        "database_schema_sha256",
+                        "server_epoch_sha256",
+                        "profile_generation_sha256",
+                    )
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    args.evidence_identity_manifest = identity_manifest
+    complete = attempt_evidence_envelope(args, report, {"scenario_id": "stonecore_5n"}, {}, {})
+    assert complete["identity_complete"] is True
+    assert complete["identity_incomplete_reasons"] == []
+    assert complete["scope_ids"]["measurement_window_id"] == "observe:300:timeout:900"
+    assert complete["artifact_hashes"]["raw_artifact_sha256"] == sha256_file(output_dir / "worldserver_output.log")
+
+
+def test_phase2_epoch_transitions_drain_attempts_and_never_reuse_rollback_generation():
+    restart_v1 = hashlib.sha256(b"restart-v1").hexdigest()
+    restart_v2 = hashlib.sha256(b"restart-v2").hexdigest()
+    profile_v1 = hashlib.sha256(b"profile-v1").hexdigest()
+    profile_v2 = hashlib.sha256(b"profile-v2").hexdigest()
+    first = advance_evidence_epoch(None, restart_identity_sha256=restart_v1, profile_content_sha256=profile_v1)
+    reload = advance_evidence_epoch(first, restart_identity_sha256=restart_v1, profile_content_sha256=profile_v2)
+    rollback = advance_evidence_epoch(reload, restart_identity_sha256=restart_v1, profile_content_sha256=profile_v1)
+
+    assert reload["transition"] == "profile_generation"
+    assert reload["restart_required"] is False
+    assert reload["server_epoch_id"] == first["server_epoch_id"]
+    assert rollback["profile_generation_id"] not in {first["profile_generation_id"], reload["profile_generation_id"]}
+    assert rollback["logical_epoch_id"] not in {first["logical_epoch_id"], reload["logical_epoch_id"]}
+    with pytest.raises(LiveValidationSessionError, match="open attempts"):
+        advance_evidence_epoch(
+            rollback,
+            restart_identity_sha256=restart_v2,
+            profile_content_sha256=profile_v1,
+            open_attempt_count=1,
+        )
+    restarted = advance_evidence_epoch(
+        rollback,
+        restart_identity_sha256=restart_v2,
+        profile_content_sha256=profile_v1,
+    )
+    assert restarted["transition"] == "process_restart"
+    assert restarted["restart_required"] is True
+    assert restarted["server_epoch_id"] != rollback["server_epoch_id"]
+    assert restarted["profile_generation_id"] == rollback["profile_generation_id"]
+
+
+def test_phase2_acceptance_recomputes_facts_and_fails_closed_on_stored_summary_discrepancy():
+    report = {
+        "returncode": 0,
+        "timed_out": False,
+        "stages": [{"stage": "movement_smoke", "passed": False, "missing": []}],
+        "failure_labels": [],
+        "validation_context": {},
+        "evidence": {},
+        "validation_route_manifest": {},
+        "watchdog_state": {},
+        "acceptable_final_evidence": False,
+        "all_passed": False,
+        "passed": 0,
+        "failed": 1,
+        "final_evidence_rejections": ["stored_only_claim"],
+    }
+    facts = acceptance_facts_from_report(report)
+    result = evaluate_acceptance(facts)
+
+    assert result["accepted"] is True
+    assert result["passed_count"] == 1
+    assert "passed" not in facts["stages"][0]
+
+    apply_acceptance_evaluation(report)
+    assert report["acceptable_final_evidence"] is False
+    assert report["acceptance_verification"]["stored_summary_discrepancies"]
+    assert "stored_summary_discrepancy" in report["final_evidence_rejections"]
+
+
+def test_phase2_scenario_acceptance_ignores_stored_clear_booleans():
+    routes = [{"step": 1, "kind": "boss", "route_node_id": "corborus", "route_generation": 1}]
+    stored_claim_only = {
+        "clear_complete": True,
+        "completion_claim_valid": True,
+        "completion_evidence_mode": "uninterrupted_live_clear",
+        "expected_segments": ["01_corborus"],
+        "segment_results": [],
+    }
+
+    assert attached_full_clear_valid(stored_claim_only, routes) is False
 
 
 def test_bot_autonomy_daemon_detects_rate_limit_retry_after():
@@ -6216,7 +6448,9 @@ def test_live_bot_validation_completion_watchdog_writes_heartbeats(tmp_path):
     assert command == [str(fake_worldserver), "--config", str(config)]
     assert "CMD .botauto status" in output
     assert (tmp_path / "validation" / "heartbeat_events.jsonl").exists()
-    assert list((tmp_path / "validation" / "heartbeats").glob("*.json"))
+    assert (tmp_path / "validation" / "latest.json").exists()
+    assert (tmp_path / "validation" / "heartbeat_manifest.json").exists()
+    assert not (tmp_path / "validation" / "heartbeats").exists()
     assert report["duration_policy"] == "completion-watchdog"
     assert report["completion_reason"] == "repeated_decision_watchdog"
 
@@ -7187,9 +7421,26 @@ def test_live_artifact_promotion_requires_accepted_evidence(tmp_path):
     assert not canonical.exists()
 
     source.write_text(json.dumps({"all_passed": True, "acceptable_final_evidence": True}), encoding="utf-8")
+    with pytest.raises(SystemExit):
+        promote(source, canonical, manifest)
+
+    independently_accepted = {
+        "schema": "bot_live_validation_report_v1",
+        "returncode": 0,
+        "timed_out": False,
+        "stages": [{"stage": "movement_smoke", "missing": []}],
+        "failure_labels": [],
+        "validation_context": {},
+        "evidence": {},
+        "validation_route_manifest": {},
+        "watchdog_state": {},
+    }
+    apply_acceptance_evaluation(independently_accepted)
+    source.write_text(json.dumps(independently_accepted), encoding="utf-8")
     accepted = promote(source, canonical, manifest)
 
     assert accepted["accepted"] is True
+    assert accepted["acceptance_verification"]["discrepancies"] == []
     assert json.loads(canonical.read_text(encoding="utf-8"))["all_passed"] is True
 
 
@@ -7650,8 +7901,8 @@ def test_validation_provisioning_generates_reproducible_sql_and_readiness(tmp_pa
     assert "SELECT c.`guid`, 0, 251, 0, 0, 0, 0, 0, 264, 709, 0" in sql
     assert "DELETE FROM `characters`.`item_instance` WHERE `guid` >= 9700000" in sql
     assert manifest["schema"] == "bot_validation_provisioning_manifest_v1"
-    assert manifest["bot_count"] == 19
-    assert generated_report == report
+    assert manifest["bot_count"] == 50
+    assert generated_report == scenario_report(load_validation_provisioning_config(config_path))
 
 
 def test_cata_action_profile_manifest_drives_validation_spells(tmp_path, monkeypatch):
@@ -7660,6 +7911,7 @@ def test_cata_action_profile_manifest_drives_validation_spells(tmp_path, monkeyp
     priest = {"class": 5, "spells": [12345]}
     paladin = {"class": 2, "spells": []}
     hunter = {"class": 3, "spells": []}
+    rogue = {"class": 4, "spells": []}
     shaman = {"class": 7, "spells": []}
     mage = {"class": 8, "spells": []}
     warrior = {"class": 1, "spells": []}
@@ -7677,6 +7929,31 @@ def test_cata_action_profile_manifest_drives_validation_spells(tmp_path, monkeyp
     assert {6673, 469, 355, 2565}.issubset(set(bot_spell_ids(warrior, manifest)))
     assert {25780, 31801, 465, 20217, 19740, 54428}.issubset(set(bot_spell_ids(paladin, manifest)))
     assert {56641, 2643, 77767, 883, 982, 1130, 13165, 34477}.issubset(set(bot_spell_ids(hunter, manifest)))
+    mastery_spells_by_class = {
+        1: 87500,
+        2: 87494,
+        3: 87493,
+        4: 87496,
+        5: 87495,
+        6: 87492,
+        7: 87497,
+        8: 86467,
+        9: 87498,
+        11: 87491,
+    }
+    for bot in (
+        warrior,
+        paladin,
+        hunter,
+        rogue,
+        priest,
+        death_knight,
+        shaman,
+        mage,
+        warlock,
+        druid,
+    ):
+        assert mastery_spells_by_class[bot["class"]] in bot_spell_ids(bot, manifest)
     assert {79104, 79106}.issubset(set(bot_spell_ids(priest, manifest)))
     assert {48263, 49222, 48792, 55233, 49998, 57330, 56222, 45477}.issubset(set(bot_spell_ids(death_knight, manifest)))
     assert 674 in bot_spell_ids(shaman, manifest)
@@ -7858,6 +8135,11 @@ def test_validation_gear_profiles_complete_from_local_db2_files():
     assert next(item for item in profiles["survival_hunter"]["equipment"] if item["slot"] == 15)["name"] == "Kiril, Fury of Beasts"
     assert next(item for item in profiles["survival_hunter"]["equipment"] if item["slot"] == 17)["name"] == "Vishanka, Jaws of the Earth"
     assert 16 not in {item["slot"] for item in profiles["blood_death_knight"]["equipment"]}
+    fury_weapons = [item for item in profiles["fury_warrior"]["equipment"] if item["slot"] in {15, 16}]
+    assert [item["slot"] for item in fury_weapons] == [15, 16]
+    assert all(item["inventory_type"] == 17 and item["subclass"] != 6 for item in fury_weapons)
+    assert fury_weapons[0]["item_id"] != fury_weapons[1]["item_id"]
+    assert 16 in required_equipment_slots_for(profiles["fury_warrior"]["equipment"])
     assert all(
         next(item for item in profile["equipment"] if item["slot"] == 16)["inventory_type"] != 14
         for profile in profiles.values()
@@ -7992,8 +8274,9 @@ def test_stonecore_role_specs_inherit_complete_dbc_legal_talent_and_action_profi
     required = {
         "protection_paladin": {53595, 26573, 31935, 53600, 62124, 1022},
         "fire_mage": {133, 2948, 44457, 92315, 11129},
-        "marksmanship_hunter": {1978, 53209, 56641, 19434, 3045, 34490},
+        "marksmanship_hunter": {1978, 53209, 56641, 19434, 3045},
         "survival_hunter": {1978, 53301, 3674, 77767, 2643, 34477, 3045},
+        "assassination_rogue": {53, 1329, 1766, 1943, 5171, 32645, 57934, 79140},
         "enhancement_shaman": {17364, 60103, 8050, 73680, 403, 421, 51533},
     }
 
@@ -8084,10 +8367,82 @@ def test_validation_provisioning_loads_exact_wowsims_calibration_overlays():
 
     fire = profiles["wowsims_cata_p4_fire_mage"]
     hunter = profiles["wowsims_cata_p4_survival_hunter"]
+    rogue = profiles["assassination_rogue"]
     shaman = profiles["wowsims_cata_p4_enhancement_shaman"]
     assert next(item for item in fire["equipment"] if item["slot"] == 15)["item_id"] == 71086
-    assert next(item for item in hunter["equipment"] if item["slot"] == 17)["item_id"] == 78471
     assert [item["item_id"] for item in shaman["equipment"] if item["slot"] in {15, 16}] == [78472, 78472]
+    rogue_weapons = [item for item in rogue["equipment"] if item["slot"] in {15, 16}]
+    assert [item["item_id"] for item in rogue_weapons] == [77949, 77950]
+    assert [item["source_temp_enchant_id"] for item in rogue_weapons] == [3771, 3769]
+    assert [item["temp_enchant_id"] for item in rogue_weapons] == [7, 323]
+    assert [item["temp_enchant_duration_ms"] for item in rogue_weapons] == [3600000, 3600000]
+    assert [item["enchantments"].split()[3:5] for item in rogue_weapons] == [["7", "3600000"], ["323", "3600000"]]
+
+    expected_hunter = [
+        (0, 78698, 4209, [68778, 71840], [4251, 4295], 165),
+        (1, 71610, 0, [], [], 152),
+        (2, 78737, 4204, [71879, 71879], [4329, 4329], 154),
+        (14, 71415, 4100, [71879, 71879], [4329, 4329], 137),
+        (4, 78661, 4102, [71879, 71879, 71840], [4329, 4329, 4295], 152),
+        (8, 78430, 4258, [71879, 71879], [4329, 4329], 165),
+        (9, 78362, 4107, [71879, 71879, 71879], [4329, 4329, 4329], 151),
+        (5, 78447, 0, [71879, 71879, 71879], [4329, 4329, 4329], 151),
+        (6, 78709, 4126, [71879, 71879, 71879], [4329, 4329, 4329], 165),
+        (7, 78415, 4105, [71879, 71879], [4329, 4329], 154),
+        (10, 78413, 0, [71879], [4329], 151),
+        (11, 78489, 0, [71879], [4329], 159),
+        (12, 77994, 0, [], [], 0),
+        (13, 77999, 0, [], [], 0),
+        (15, 78473, 4227, [], [], 0),
+        (17, 78471, 4267, [], [], 0),
+    ]
+    assert [
+        (
+            item["slot"],
+            item["item_id"],
+            item["enchant_id"],
+            item["gem_item_ids"],
+            item["gem_enchant_ids"],
+            item["reforge_id"],
+        )
+        for item in hunter["equipment"]
+    ] == expected_hunter
+    assert all(item["preserve_socket_enchantments"] is True for item in hunter["equipment"])
+
+
+def test_survival_candidate_generates_exact_wowsims_item_payloads():
+    config = load_validation_provisioning_config(Path("experiments/configs/validation_provisioning_cata_001.json"))
+    profiles = load_gear_profiles(Path("dataset/validation_gear_profiles/profiles.json"))
+    config = apply_gear_profiles(config, profiles)
+    survival = next(
+        bot
+        for scenario in config["scenarios"]
+        if scenario["id"] == "all_spec_candidate_pool"
+        for bot in scenario["bots"]
+        if bot["class_spec"] == "survival_hunter"
+    )
+
+    assert survival["name"] == "Svhunter"
+    assert survival["gear_profile"] == "wowsims_cata_p4_survival_hunter"
+    sql = build_character_insert_sql(
+        {"scenarios": [{"id": "all_spec_candidate_pool", "start_position": {"map_id": 1, "x": 0, "y": 0, "z": 0}, "bots": [survival]}]}
+    )
+    item_lines = [line for line in sql.splitlines() if "item_instance" in line and "'Svhunter'" in line]
+    assert len(item_lines) == len(survival["equipment"]) == 16
+    for item, line in zip(survival["equipment"], item_lines):
+        payload = runtime_safe_enchantments(item)
+        assert f", {item['item_id']}, c.`guid`," in line
+        assert f", '{payload}', 0, 0," in line
+
+
+def test_validation_provisioning_dvc_tracks_static_wowsims_overlay():
+    dvc = Path("dvc.yaml").read_text(encoding="utf-8")
+    provisioning = dvc.split("  validation_provisioning:", 1)[1].split("\n  baseline_inventory:", 1)[0]
+    verification = dvc.split("  validation_provisioning_verify:", 1)[1].split("\n  validation_scenarios:", 1)[0]
+
+    dependency = "experiments/configs/wowsims_cata_p4_gear_profiles.json"
+    assert dependency in provisioning
+    assert dependency in verification
 
 
 def test_validation_provisioning_runtime_gear_verification_fails_missing_hunter_ranged(monkeypatch, tmp_path):
@@ -8243,6 +8598,64 @@ def test_validation_provisioning_database_preflight_reports_missing_accounts(tmp
     assert failures == [{"check": "validation_accounts", "missing_accounts": ["SCVALTANK"], "recovery": "apply generated provision_accounts.sql or run account_commands.txt in the worldserver console"}]
     assert evidence["expected_accounts"] == 1
     assert evidence["existing_accounts"] == 0
+
+
+def test_validation_provisioning_database_fails_closed_on_missing_rotation_profile(tmp_path, monkeypatch):
+    conf = tmp_path / "worldserver.conf"
+    conf.write_text(
+        'LoginDatabaseInfo = "db.example;3306;trinity;secret;auth"\n'
+        'CharacterDatabaseInfo = "db.example;3306;trinity;secret;characters"\n'
+        'WorldDatabaseInfo = "db.example;3306;trinity;secret;world"\n',
+        encoding="utf-8",
+    )
+    catalog = tmp_path / "targets.json"
+    catalog.write_text(
+        json.dumps(
+            {
+                "target_count": 1,
+                "targets": [
+                    {
+                        "spec_target_id": "arms_warrior",
+                        "runtime_rotation_profile": {"class_id": 1, "spec_tag": "arms_warrior", "role": "dps"},
+                        "provisioning_bot": {"account": "ASPC01", "name": "Armswar"},
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+    config = {
+        "canonical_target_catalog": str(catalog),
+        "scenarios": [{"id": "all_spec_candidate_pool", "bots": [{"account": "ASPC01", "name": "Armswar"}]}],
+    }
+
+    all_columns = set().union(*(columns for database in PROVISIONING_REQUIRED_COLUMNS.values() for columns in database.values()))
+    monkeypatch.setattr("tools.bot_ml.validate_validation_provisioning.fetch_columns", lambda _url, _table: all_columns)
+    monkeypatch.setattr("tools.bot_ml.validate_validation_provisioning.fetch_existing_values", lambda _url, _table, _column, values: set(values))
+    monkeypatch.setattr("tools.bot_ml.validate_validation_provisioning.fetch_runtime_rotation_profiles", lambda _url, _keys: {})
+
+    failures, evidence = validate_provisioning_database(config, conf)
+
+    assert {
+        "check": "runtime_rotation_profile",
+        "reason": "missing_db_rotation_profile",
+        "spec_target_id": "arms_warrior",
+        "identity": "1:arms_warrior:dps",
+    } in failures
+    assert evidence["runtime_rotation_profiles"] == {
+        "expected": 1,
+        "existing_enabled": 0,
+        "ready": 0,
+        "targets": {
+            "arms_warrior": {
+                "identity": "1:arms_warrior:dps",
+                "state": "missing_db_rotation_profile",
+                "enabled_action_count": 0,
+                "known_action_count": 0,
+            }
+        },
+    }
+    assert "secret" not in json.dumps(evidence)
 
 
 def test_headless_movement_smoke_records_metrics(tmp_path):
@@ -8771,7 +9184,8 @@ def test_phase14_telemetry_clip_storage_surface():
 
 
 def strict_stonecore_report(routes: list[dict], entries: list[dict]) -> dict:
-    return {
+    report = {
+        "schema": "bot_live_validation_report_v1",
         "source_live_report": "stonecore_strict.json",
         "validation_context": {"scenario_id": "stonecore_5n"},
         "completion_reason": "validation_route_manifest_complete",
@@ -8788,7 +9202,12 @@ def strict_stonecore_report(routes: list[dict], entries: list[dict]) -> dict:
         "evidence": {"failures": 0, "trash_pulls": 1},
         "failure_labels": [],
         "failure_reason": "",
+        "returncode": 0,
+        "timed_out": False,
+        "stages": [{"stage": "full_stonecore_clear", "missing": []}],
+        "watchdog_state": {},
     }
+    return apply_acceptance_evaluation(report)
 
 
 def strict_stonecore_scenario(tmp_path: Path, routes: list[dict]) -> Path:
@@ -9133,3 +9552,1098 @@ def test_validation_status_requires_exact_scoped_terminal_and_boss_evidence(tmp_
     assert status["all_ready"] is True
     assert status["scenarios"][0]["present_segments"] == ["01_trash", "02_boss"]
     assert {row["evidence_source"] for row in status["scenarios"][0]["segment_reports"]} == {"scenario_segment_result"}
+
+
+def test_baseline_inventory_policy_contract_coverage_and_manifest_are_deterministic(tmp_path):
+    root = Path.cwd()
+    inputs = {
+        "policy_path": root / "experiments/configs/bot_acceptance_policy_v1.json",
+        "provisioning_path": root / "experiments/configs/validation_provisioning_cata_001.json",
+        "gear_path": root / "dataset/validation_gear_profiles/profiles.json",
+        "action_path": root / "experiments/configs/cata_434_action_profiles.json",
+    }
+    first = build_inventory(root, **inputs)
+    second = build_inventory(root, **inputs)
+    policy = json.loads(inputs["policy_path"].read_text(encoding="utf-8"))
+    declared_rotations = [root / row["path"] for row in policy["artifact_declarations"] if row["artifact_class"] == "effective_rotation_sql"]
+    with pytest.raises(ValueError, match="declaration order"):
+        build_inventory(root, **inputs, rotation_paths=list(reversed(declared_rotations)))
+    report = first["reconciliation_report.json"]
+    classified = first["artifact_classification.json"]["artifacts"]
+    manifest = first["manifest.json"]
+
+    assert canonical_hash(first) == canonical_hash(second)
+    assert len(report["rows"]) == 31
+    assert report["coverage"] == {"target_count": 31, "role_counts": {"tank": 4, "healer": 5, "dps": 22}, "configured_count": 14, "unsupported_count": 17, "complete": True}
+    assert report["offline_inventory"] == {
+        "complete": True,
+        "artifact_complete": True,
+        "candidate_inventory_complete": True,
+        "configured_coverage_complete": True,
+        "identity_complete": True,
+        "reason_codes": ["offline_inventory_complete"],
+    }
+    assert report["phase0_gate"]["passed"] is False
+    assert all(row["gameplay_payload"] is None for row in report["rows"] if row["status"] == "unsupported")
+    assert report["current_acceptance"] is False
+    assert report["stonecore_gameplay_accepted"] is False
+    assert report["live_db_reconciliation"]["reason_codes"] == ["live_db_not_probed"]
+    policy = json.loads(inputs["policy_path"].read_text(encoding="utf-8"))
+    pointer_inventory = json.loads((root / policy["dvc_pointer_inventory"]).read_text(encoding="utf-8"))
+    assert len(classified) == len(policy["artifact_declarations"]) + len(pointer_inventory["pointers"])
+    assert len(pointer_inventory["pointers"]) >= 250
+    declared_rotation_paths = {row["path"] for row in policy["artifact_declarations"] if row["artifact_class"] == "effective_rotation_sql"}
+    referenced_rotation_paths = {str(path.relative_to(root)) for path in (root / "sql/custom/world").glob("*.sql") if "bot_rotation_profile" in path.read_text(encoding="utf-8")}
+    post_baseline_rotation_paths = {
+        "sql/custom/world/2026_07_18_00_all_spec_rotation_profile_coverage.sql",
+        "sql/custom/world/2026_07_19_00_phase4_rotation_snapshots.sql",
+    }
+    assert declared_rotation_paths == referenced_rotation_paths - post_baseline_rotation_paths
+    assert {row["temporal_state"] for row in classified} <= {"current_diagnostic", "historical", "superseded", "unusable"}
+    assert all("rotation_profile" in row["gameplay_payload"] for row in report["rows"] if row["status"] == "configured")
+    assert all("rotation_profile" not in row["gameplay_payload"] for row in report["rows"] if "missing_rotation_profile" in row["coverage"]["missing_layers"])
+    assert manifest["bundle_hash"] == canonical_hash(manifest["bundle_members"])
+    output_dir = tmp_path / "bundle"
+    output_dir.mkdir()
+    (output_dir / "old.json").write_text("stale", encoding="utf-8")
+    write_bundle(output_dir, first)
+    assert {path.name for path in output_dir.iterdir()} == {"identity_snapshot.json", "artifact_classification.json", "reconciliation_report.json", "manifest.json"}
+    for member in manifest["bundle_members"]:
+        data = (output_dir / member["path"]).read_bytes()
+        assert hashlib.sha256(data).hexdigest() == member["sha256"]
+        assert len(data) == member["byte_count"]
+
+
+def test_baseline_inventory_rotation_coverage_and_policy_validation_report_exact_gaps():
+    root = Path.cwd()
+    policy = json.loads((root / "experiments/configs/bot_acceptance_policy_v1.json").read_text(encoding="utf-8"))
+    provisioning = json.loads((root / "experiments/configs/validation_provisioning_cata_001.json").read_text(encoding="utf-8"))
+    gear = json.loads((root / "dataset/validation_gear_profiles/profiles.json").read_text(encoding="utf-8"))
+    actions = json.loads((root / "experiments/configs/cata_434_action_profiles.json").read_text(encoding="utf-8"))
+    rotations = [{"class_id": 3, "spec_tag": "survival", "role": "dps", "source_path": "survival.sql"}]
+
+    policy["locked_acceptance_contract"]["hard_floor_ratio"] = 0.70
+    with pytest.raises(ValueError, match="locked acceptance contract"):
+        validate_policy(policy)
+    policy["locked_acceptance_contract"]["hard_floor_ratio"] = 0.75
+    policy["scope"]["target_count"] = 999
+    with pytest.raises(ValueError, match="31 targets"):
+        validate_policy(policy)
+    policy["scope"]["target_count"] = 31
+    policy["temporal_state_vocabulary"] = ["current_diagnostic", "historical", "superseded"]
+    with pytest.raises(ValueError, match="temporal-state vocabulary"):
+        validate_policy(policy)
+    policy["temporal_state_vocabulary"] = ["current_diagnostic", "historical", "superseded", "unusable"]
+    rows = reconcile_targets(policy, provisioning, gear, actions, rotations)
+    survival = next(row for row in rows if row["spec_target_id"] == "survival_hunter")
+    protection = next(row for row in rows if row["spec_target_id"] == "protection_warrior")
+    assert survival["status"] == "configured"
+    assert survival["gameplay_payload"]["rotation_profile"]["spec_tag"] == "survival"
+    assert protection["status"] == "incomplete"
+    assert "missing_rotation_profile" in protection["coverage"]["missing_layers"]
+    assert "rotation_profile" not in protection["gameplay_payload"]
+
+
+def test_baseline_inventory_pointer_and_live_db_reconciliation_are_fail_closed(monkeypatch, tmp_path):
+    bad_pointer = tmp_path / "bad.dvc"
+    bad_pointer.write_text("outs:\n- path: report.json\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="malformed DVC pointer"):
+        parse_dvc_pointer(bad_pointer)
+    pointer = tmp_path / "directory.dvc"
+    pointer.write_text("outs:\n- md5: 27f7487de8f6dc9a6f82d42a81c4584e.dir\n  size: 93829\n  nfiles: 2\n  hash: md5\n  path: report\n", encoding="utf-8")
+    assert parse_dvc_pointer(pointer)["md5"].endswith(".dir")
+
+    class Cursor:
+        def __enter__(self):
+            return self
+        def __exit__(self, *_args):
+            return False
+        def execute(self, query):
+            assert query.startswith("SELECT DISTINCT `class_id`, `spec_tag`, `role`")
+            assert "FROM `bot_rotation_profile`" in query
+        def fetchall(self):
+            return [{"class_id": 1, "spec_tag": "protection_warrior", "role": "tank"}]
+    class Connection:
+        def cursor(self):
+            return Cursor()
+        def close(self):
+            pass
+    monkeypatch.setattr("tools.bot_ml.build_baseline_inventory.connect_mysql", lambda _url: Connection())
+    rows = [
+        {"class_id": 1, "rotation_spec_tag": "protection_warrior", "role": "tank"},
+        {"class_id": 2, "rotation_spec_tag": "holy_paladin", "role": "healer"},
+    ]
+    result, identity = reconcile_live_db(rows, True, "mysql://user:secret@db.example:3306/world", None)
+    assert result["available"] is True
+    assert result["exact"] is False
+    assert result["reason_codes"] == ["live_db_mismatch"]
+    assert "secret" not in json.dumps(identity)
+
+
+def test_baseline_inventory_live_db_detects_unexpected_in_scope_profile(monkeypatch):
+    class Cursor:
+        def __enter__(self):
+            return self
+        def __exit__(self, *_args):
+            return False
+        def execute(self, query):
+            assert "FROM `bot_rotation_profile`" in query
+            assert "`enabled` = 1" in query
+        def fetchall(self):
+            return [
+                {"class_id": 1, "spec_tag": "protection_warrior", "role": "tank"},
+                {"class_id": 2, "spec_tag": "holy_paladin", "role": "healer"},
+                {"class_id": 8, "spec_tag": "unexpected_spec", "role": "dps"},
+            ]
+    class Connection:
+        def cursor(self):
+            return Cursor()
+        def close(self):
+            pass
+    monkeypatch.setattr("tools.bot_ml.build_baseline_inventory.connect_mysql", lambda _url: Connection())
+    rows = [
+        {"class_id": 1, "rotation_spec_tag": "protection_warrior", "role": "tank"},
+        {"class_id": 2, "rotation_spec_tag": "holy_paladin", "role": "healer"},
+    ]
+    result, _ = reconcile_live_db(rows, True, "mysql://user:secret@db.example:3306/world", None)
+    assert result["exact"] is False
+    assert result["conflicting_profile_keys"] == [{"class_id": 8, "spec_tag": "unexpected_spec", "role": "dps"}]
+
+
+def test_baseline_inventory_rotation_state_honors_declaration_order_deletes_and_repo_root(tmp_path):
+    root = tmp_path / "checkout"
+    rotations = root / "rotations"
+    rotations.mkdir(parents=True)
+    insert = rotations / "01_insert.sql"
+    disable = rotations / "02_disable.sql"
+    delete = rotations / "03_delete.sql"
+    insert.write_text("INSERT INTO `bot_rotation_profile` (`class_id`, `spec_tag`, `role`) VALUES (3, 'survival', 'dps');", encoding="utf-8")
+    disable.write_text("UPDATE `bot_rotation_profile` SET `enabled` = 0 WHERE `class_id` = 3 AND `spec_tag` = 'survival' AND `role` = 'dps';", encoding="utf-8")
+    delete.write_text("DELETE FROM `bot_rotation_profile` WHERE `class_id` = 3 AND `spec_tag` = 'survival' AND `role` = 'dps';", encoding="utf-8")
+    assert rotation_tuples([insert, disable], root) == []
+    assert rotation_tuples([insert, delete], root) == []
+    with pytest.raises(ValueError, match="inside --repo-root"):
+        rotation_tuples([insert], tmp_path / "other-checkout")
+
+
+def test_baseline_inventory_git_identity_excludes_lock_and_generated_output_cycles(tmp_path):
+    subprocess.run(["git", "init", str(tmp_path)], check=True, capture_output=True)
+    subprocess.run(["git", "-C", str(tmp_path), "config", "user.email", "test@example.invalid"], check=True)
+    subprocess.run(["git", "-C", str(tmp_path), "config", "user.name", "Test"], check=True)
+    (tmp_path / "tracked.txt").write_text("clean", encoding="utf-8")
+    (tmp_path / "dvc.lock").write_text("initial", encoding="utf-8")
+    subprocess.run(["git", "-C", str(tmp_path), "add", "tracked.txt", "dvc.lock"], check=True)
+    subprocess.run(["git", "-C", str(tmp_path), "commit", "-m", "initial"], check=True, capture_output=True)
+    clean = git_identity(tmp_path)
+    (tmp_path / "dvc.lock").write_text("changed", encoding="utf-8")
+    cycle_dir = tmp_path / "dataset" / "baseline_inventory"
+    cycle_dir.mkdir(parents=True)
+    (cycle_dir / "manifest.json").write_text("generated", encoding="utf-8")
+    excluded = git_identity(tmp_path)
+    (tmp_path / "tracked.txt").write_text("dirty", encoding="utf-8")
+    dirty = git_identity(tmp_path)
+    secret = tmp_path / "trinity-worldserver-test.conf"
+    secret.write_text("WorldDatabaseInfo = mysql://user:dictionary-secret@localhost/world", encoding="utf-8")
+    sensitive = git_identity(tmp_path)
+
+    assert clean["identity_hash"] == excluded["identity_hash"]
+    assert clean["worktree_state"] == "clean"
+    assert dirty["worktree_state"] == "dirty"
+    assert dirty["identity_hash"] != clean["identity_hash"]
+    assert sensitive["identity_complete"] is False
+    assert sensitive["sensitive_untracked_present"] is True
+    assert "dictionary-secret" not in json.dumps(sensitive)
+    assert not any("content_sha256" in row for row in sensitive["untracked_files"] if row["path"] == secret.name)
+
+
+def test_phase1_catalog_gate_has_exact_targets_links_and_reviewed_provenance(tmp_path):
+    payloads = build_phase1_catalogs(False)
+    validate_phase1_catalogs(payloads, check_linked=True)
+    targets = payloads["all_spec_targets_cata_p4_v1.json"]["targets"]
+    references = payloads["all_spec_references_cata_p4_v1.json"]["references"]
+    calibrations = payloads["all_spec_calibration_scenarios_v1.json"]["scenarios"]
+
+    assert len(targets) == 31
+    assert {role: sum(row["role"] == role for row in targets) for role in ("tank", "healer", "dps")} == {"tank": 4, "healer": 5, "dps": 22}
+    assert len({row["runtime_join_key"] for row in targets}) == 31
+    assert all(
+        row["gear_profile_id"] == row["spec_target_id"]
+        for row in targets
+        if row["spec_target_id"] != "survival_hunter"
+    )
+    assert all(row["action_profile_spell_ids"] for row in targets)
+    assert all(row["reference_id"] == f"cata_p4:{row['spec_target_id']}" for row in targets)
+    assert {row["spec_target_id"] for row in references} == {row["spec_target_id"] for row in targets}
+    assert all(row["review_status"] == "reviewed" and row["source_assets"] for row in references)
+    assert all(row["guide_url"] in {asset["url"] for asset in row["source_assets"]} for row in references)
+    assert all(row["gear"]["phase"] == "phase_4" and row["gear"]["runtime_profile_id"] == row["spec_target_id"] for row in references)
+    assert len({row["runtime_rotation_profile"]["identity"] for row in targets}) == 31
+    assert all(row["runtime_rotation_profile"]["authority"] == "world_db_bot_rotation_profile" for row in targets)
+    by_target = {row["spec_target_id"]: row for row in targets}
+    assert all(set(spells) <= set(by_target[target_id]["action_profile_spell_ids"]) for target_id, spells in RUNTIME_ACTION_SPELL_IDS.items())
+    assert all(
+        set(spells) <= set(by_target[target_id]["action_profile_spell_ids"])
+        for target_id, spells in QUALIFICATION_TUNED_ACTION_SPELL_IDS.items()
+    )
+    assert all(
+        set(spells) <= set(by_target[target_id]["action_profile_spell_ids"])
+        for target_id, spells in PERSISTENT_SETUP_SPELL_IDS.items()
+    )
+    survival = by_target["survival_hunter"]
+    assert survival["gear_profile_id"] == "wowsims_cata_p4_survival_hunter"
+    assert survival["provisioning_bot"]["gear_profile"] == "wowsims_cata_p4_survival_hunter"
+    assert survival["provisioning_bot"]["race"] == 2
+    assert 20572 in survival["action_profile_spell_ids"]
+    for hunter in (row for row in targets if row["class_name"] == "hunter" and row["spec_target_id"] != "survival_hunter"):
+        pet_spells = {
+            int(spell["id"] if isinstance(spell, dict) else spell): int(spell.get("active", 1) if isinstance(spell, dict) else 1)
+            for spell in hunter["provisioning_bot"]["pet"]["spells"]
+        }
+        assert {
+            19596: 1,
+            53184: 1,
+            53205: 1,
+            53401: 193,
+            53434: 193,
+            61681: 1,
+            61683: 1,
+            61684: 193,
+            62762: 1,
+        }.items() <= pet_spells.items()
+    survival_pet_spells = {
+        int(spell["id"] if isinstance(spell, dict) else spell): int(spell.get("active", 1) if isinstance(spell, dict) else 1)
+        for spell in survival["provisioning_bot"]["pet"]["spells"]
+    }
+    assert {
+        23145: 193,
+        53184: 1,
+        53186: 1,
+        53205: 1,
+        53401: 193,
+        53434: 193,
+        61681: 1,
+        61683: 1,
+        62760: 1,
+    }.items() <= survival_pet_spells.items()
+    for build in (survival["talent_build"], survival["provisioning_bot"]):
+        talents = {row["talent_id"]: row["spell_id"] for row in build["talents"]}
+        assert talents[9442] == 56340  # Hunter vs. Wild rank 2 from the numeric result fixture
+        assert 9440 not in talents  # Entrapment is not selected by the numeric result fixture
+    survival_reference = next(row for row in references if row["spec_target_id"] == "survival_hunter")
+    assert survival_reference["talents"] == {
+        "provider": "WoWSims",
+        "path": "sim/hunter/survival/survival_test.go",
+        "talent_string": "03-2302-23203003023022121311",
+        "selection_basis": "numeric_result_fixture",
+    }
+    assert survival_reference["expected_output"]["metrics"]["dps"] == 50716.5781
+    assert {row["spec_target_id"] for row in calibrations} == {row["spec_target_id"] for row in targets}
+    assert all(row["primary"]["scored_window_seconds"] == 300 for row in calibrations)
+    assert all(row["aoe"]["mixed_with_primary"] is False for row in calibrations)
+
+    write_phase1_bundle(tmp_path, payloads)
+    manifest = json.loads((tmp_path / "manifest.json").read_text(encoding="utf-8"))
+    assert manifest["gate_passed"] is True
+    assert manifest["target_count"] == 31
+    assert len(manifest["bundle_members"]) == 4
+
+
+def test_phase1_research_second_pass_is_limited_to_explicit_unsupported_targets():
+    references = build_phase1_catalogs(False)["all_spec_references_cata_p4_v1.json"]
+    expected = {
+        "discipline_priest",
+        "frost_mage",
+        "holy_paladin",
+        "holy_priest",
+        "restoration_druid",
+        "restoration_shaman",
+    }
+    assert set(references["research_contract"]["second_pass_scope"]) == expected
+    assert {
+        row["spec_target_id"]
+        for row in references["references"]
+        if row["research_pass"] == "unsupported_second_pass"
+    } == expected
+    assert all(
+        row["expected_output"]["type"] == "deterministic_controlled_party_damage"
+        for row in references["references"]
+        if row["spec_target_id"] in expected - {"frost_mage"}
+    )
+
+
+def test_phase1_pairwise_constraints_cover_all_tank_healer_pairs_and_dps():
+    payloads = build_phase1_catalogs(False)
+    targets = payloads["all_spec_targets_cata_p4_v1.json"]["targets"]
+    pairwise = payloads["stonecore_pairwise_constraints_v1.json"]
+    tanks = {row["spec_target_id"] for row in targets if row["role"] == "tank"}
+    healers = {row["spec_target_id"] for row in targets if row["role"] == "healer"}
+    dps = {row["spec_target_id"] for row in targets if row["role"] == "dps"}
+
+    assert len(pairwise["parties"]) == 20
+    assert {(row["tank"], row["healer"]) for row in pairwise["parties"]} == {(tank, healer) for tank in tanks for healer in healers}
+    assert {member for row in pairwise["parties"] for member in row["dps"]} == dps
+    assert all(len(row["dps"]) == len(set(row["dps"])) == 3 for row in pairwise["parties"])
+    assert pairwise["certification"] == "strict_uninterrupted_current_manifest_full_clear"
+    assert pairwise["diagnostic_segments_certify"] is False
+
+
+def test_validation_provisioning_loads_canonical_leaseable_candidate_pool():
+    config = load_validation_provisioning_config(Path("experiments/configs/validation_provisioning_cata_001.json"))
+    scenario = next(row for row in config["scenarios"] if row["id"] == "all_spec_candidate_pool")
+    bots = scenario["bots"]
+
+    assert len(bots) == 31
+    assert len({bot["account"] for bot in bots}) == 31
+    assert len({bot["name"] for bot in bots}) == 31
+    assert len({bot["class_spec"] for bot in bots}) == 31
+    assert all(
+        bot["gear_profile"] == bot["class_spec"]
+        for bot in bots
+        if bot["class_spec"] != "survival_hunter"
+    )
+    assert all(bot["talents"] and bot["primary_tree_spells"] for bot in bots)
+    assert all(3 <= len(bot["glyphs"]) <= 9 for bot in bots)
+    survival = next(bot for bot in bots if bot["class_spec"] == "survival_hunter")
+    assert survival["gear_profile"] == "wowsims_cata_p4_survival_hunter"
+    assert survival["race"] == 2
+    assert 20572 in survival["spells"]
+    survival_pet_spells = {
+        int(spell["id"] if isinstance(spell, dict) else spell): int(spell.get("active", 1) if isinstance(spell, dict) else 1)
+        for spell in survival["pet"]["spells"]
+    }
+    assert {
+        23145: 193,
+        53184: 1,
+        53186: 1,
+        53205: 1,
+        53401: 193,
+        53434: 193,
+        61681: 1,
+        61683: 1,
+        62760: 1,
+    }.items() <= survival_pet_spells.items()
+    survival_talents = {row["talent_id"]: row["spell_id"] for row in survival["talents"]}
+    assert talent_point_count(survival) == 41
+    assert survival_talents[9442] == 56340
+    assert 9440 not in survival_talents
+
+
+def phase3_acceptance_report():
+    return {
+        "schema": "bot_live_validation_report_v1",
+        "returncode": 0,
+        "timed_out": False,
+        "stages": [{"stage": "synthetic", "missing": []}],
+        "failure_labels": [],
+        "validation_context": {},
+        "evidence": {},
+        "validation_route_manifest": {},
+        "watchdog_state": {},
+    }
+
+
+def test_phase3_capture_is_bounded_compressed_and_content_addressed(tmp_path):
+    batch = tmp_path / "batch"
+    manifest = capture_batch(
+        batch,
+        batch_id="batch-001",
+        raw_rows=[{"batch_id": "batch-001", "event": "start"}],
+        compact_rows=[{"metric": "damage", "value": 42.0}],
+        exact_manifests={"config_sha256": hashlib.sha256(b"config").hexdigest()},
+        summary={"closed": True},
+        acceptance_report=phase3_acceptance_report(),
+        database_rows=[
+            {
+                "batch_id": "batch-001",
+                "measurement_window_id": "window-001",
+                "event": "decision",
+            }
+        ],
+        measurement_window_ids=["window-001"],
+    )
+
+    assert manifest["raw"]["format"] == "jsonl.zst"
+    assert manifest["compact"]["format"] == "parquet_zstd"
+    assert manifest["database_export"]["measurement_window_ids"] == ["window-001"]
+    assert manifest["duplicate_uncompressed_jsonl_retained"] is False
+    assert validate_capture(batch)["identity_sha256"] == manifest["identity_sha256"]
+    assert not list(batch.rglob("*.jsonl"))
+
+    oversized = tmp_path / "oversized"
+    with pytest.raises(BatchLifecycleError, match="pending bytes"):
+        capture_batch(
+            oversized,
+            batch_id="batch-oversized",
+            raw_rows=[{"payload": "x" * 256}],
+            compact_rows=[{"metric": "value", "value": 1}],
+            exact_manifests={},
+            summary={},
+            acceptance_report=phase3_acceptance_report(),
+            max_pending_raw_bytes=32,
+        )
+    assert not (oversized / "raw" / "events.jsonl.zst").exists()
+
+
+def test_phase3_heartbeat_uses_latest_stream_and_manifest_only(tmp_path):
+    append_heartbeat(
+        tmp_path,
+        {
+            "heartbeat_index": 1,
+            "heartbeat_generated_at_unix": 10,
+            "completion_reason": "running",
+            "failure_labels": [],
+            "progress_counters": {"decisions": 1},
+        },
+    )
+    append_heartbeat(
+        tmp_path,
+        {
+            "heartbeat_index": 2,
+            "heartbeat_generated_at_unix": 20,
+            "completion_reason": "complete",
+            "failure_labels": [],
+            "progress_counters": {"decisions": 2},
+        },
+    )
+
+    latest = json.loads((tmp_path / "latest.json").read_text(encoding="utf-8"))
+    heartbeat_manifest = json.loads((tmp_path / "heartbeat_manifest.json").read_text(encoding="utf-8"))
+    assert latest["heartbeat_index"] == 2
+    assert heartbeat_manifest["heartbeat_count"] == 2
+    assert heartbeat_manifest["one_file_per_heartbeat"] is False
+    assert len((tmp_path / "heartbeat_events.jsonl").read_text(encoding="utf-8").splitlines()) == 2
+    assert not (tmp_path / "heartbeats").exists()
+
+
+def test_phase3_database_cleanup_requires_verified_immutable_receipt(tmp_path):
+    batch = tmp_path / "batch"
+    manifest = capture_batch(
+        batch,
+        batch_id="batch-db",
+        raw_rows=[{"event": "start"}],
+        compact_rows=[{"metric": "value", "value": 1}],
+        exact_manifests={},
+        summary={},
+        acceptance_report=phase3_acceptance_report(),
+        database_rows=[
+            {
+                "batch_id": "batch-db",
+                "measurement_window_id": "window-db",
+                "event": "decision",
+            }
+        ],
+        measurement_window_ids=["window-db"],
+    )
+
+    class FakeCursor:
+        rowcount = 3
+
+        def __init__(self):
+            self.calls = []
+
+        def execute(self, sql, parameters):
+            self.calls.append((sql, parameters))
+
+        def close(self):
+            pass
+
+    class FakeConnection:
+        def __init__(self):
+            self.db_cursor = FakeCursor()
+            self.committed = False
+            self.rolled_back = False
+
+        def cursor(self):
+            return self.db_cursor
+
+        def commit(self):
+            self.committed = True
+
+        def rollback(self):
+            self.rolled_back = True
+
+    connection = FakeConnection()
+    with pytest.raises(BatchLifecycleError, match="publication receipt"):
+        cleanup_exported_database_rows(connection, batch, tables=["bot_ml_decisions"])
+    assert connection.db_cursor.calls == []
+
+    receipt = {
+        "schema": "bot_immutable_batch_publication_receipt_v1",
+        "batch_id": "batch-db",
+        "batch_identity_sha256": manifest["identity_sha256"],
+        "remote_verified": True,
+    }
+    receipt["receipt_sha256"] = canonical_sha256(receipt)
+    (batch / "retained" / "publication_receipt.json").write_text(
+        json.dumps(receipt, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    cleanup = cleanup_exported_database_rows(
+        connection,
+        batch,
+        tables=["bot_ml_decisions"],
+    )
+    assert cleanup["deleted_rows"] == {"bot_ml_decisions": 3}
+    assert connection.committed is True
+    sql, parameters = connection.db_cursor.calls[0]
+    assert "batch_id = %s" in sql
+    assert "measurement_window_id IN (%s)" in sql
+    assert parameters == ["batch-db", "window-db"]
+
+
+def test_phase3_synthetic_round_trip_gate():
+    lifecycle_source = Path(
+        "tools/bot_ml/batch_evidence_lifecycle.py"
+    ).read_text(encoding="utf-8")
+    contract = synthetic_round_trip_contract()
+
+    assert "_temporarily_unignore_pointers(" in lifecycle_source
+    assert '["git", "check-ignore", "-v", "--no-index"' in lifecycle_source
+    assert contract["gate_passed"] is True
+    assert contract["publication"]["remote_verified"] is True
+    assert contract["publication"]["targeted_eviction"] is True
+    assert contract["hydration"]["hydrated"] is True
+    assert contract["failure_guards"]["corruption_blocks_cleanup"] is True
+    assert contract["failure_guards"]["failed_push_blocks_cleanup"] is True
+
+
+def test_phase3_worldserver_output_is_bounded_and_fails_closed():
+    output = BoundedOutputParts(max_bytes=128)
+    output.append("x" * 256)
+    output.append("ignored")
+
+    rendered = "".join(output)
+    report = live_validation_report(rendered, stages=["movement_smoke"])
+    assert len(rendered.encode("utf-8")) <= 128
+    assert output.truncated is True
+    assert "worldserver_output_truncated" in report["failure_labels"]
+    assert report["acceptable_final_evidence"] is False
+
+
+def test_phase4_rotation_static_contract_and_manifest_are_deterministic(tmp_path):
+    static = phase4_contract.static_contract()
+    assert static["passed"] is True
+    assert all(static["checks"].values())
+
+    first = phase4_contract.build_contract()
+    second = phase4_contract.build_contract()
+    assert first == second
+    assert first["gate_passed"] is True
+    assert first["database"] == {"passed": True, "skipped": True}
+    assert first["publication"] == {"passed": True, "skipped": True}
+
+    phase4_contract.write_contract(tmp_path, first)
+    manifest = json.loads((tmp_path / "manifest.json").read_text(encoding="utf-8"))
+    assert manifest["gate_passed"] is True
+    assert manifest["contract_sha256"] == first["contract_sha256"]
+    assert manifest["files"]["contract.json"] == hashlib.sha256(
+        (tmp_path / "contract.json").read_bytes()
+    ).hexdigest()
+
+
+def test_phase4_live_publication_restores_mutation_after_command_failure(monkeypatch):
+    updates = []
+    connections = []
+
+    class Cursor:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            return False
+
+        def execute(self, sql, parameters=None):
+            if sql.startswith("SELECT a.id, a.category"):
+                self.row = {"id": 77, "category": "builder"}
+            elif sql.startswith("UPDATE bot_rotation_action"):
+                updates.append(parameters)
+
+        def fetchone(self):
+            return self.row
+
+    class Connection:
+        def __init__(self):
+            self.committed = False
+            self.closed = False
+
+        def cursor(self):
+            return Cursor()
+
+        def commit(self):
+            self.committed = True
+
+        def close(self):
+            self.closed = True
+
+    class Session:
+        instance = None
+
+        def __init__(self, _binary, _config):
+            self.commands = 0
+            self.closed = False
+            Session.instance = self
+
+        def wait_for(self, _predicate, _timeout):
+            return "ready"
+
+        def command(self, _command, action, _timeout=30.0):
+            self.commands += 1
+            if self.commands == 1:
+                return {
+                    "ok": True,
+                    "profile_count": 31,
+                    "missing_keys": [],
+                    "active_generation": 1,
+                    "active_content_hash": "snapshot-hash",
+                }
+            if self.commands == 2:
+                return {
+                    "ok": False,
+                    "failure_reason": "invalid_category_phase4_invalid_category",
+                }
+            raise RuntimeError(f"injected failure after {action}")
+
+        def close(self):
+            self.closed = True
+
+    def connect(_url):
+        connection = Connection()
+        connections.append(connection)
+        return connection
+
+    monkeypatch.setattr(phase4_contract, "WorldserverSession", Session)
+    monkeypatch.setattr(phase4_contract, "connect_mysql", connect)
+    monkeypatch.setattr(
+        phase4_contract,
+        "database_url_from_worldserver_conf",
+        lambda _path, _key: "mysql://redacted/world",
+    )
+
+    with pytest.raises(RuntimeError, match="injected failure"):
+        phase4_contract.live_publication_contract(Path("worldserver"), Path("world.conf"))
+
+    assert updates == [
+        ("phase4_invalid_category", 77),
+        ("builder", 77),
+    ]
+    assert all(connection.closed for connection in connections)
+    assert all(connection.committed for connection in connections[1:])
+    assert Session.instance.closed is True
+
+
+def test_phase5_cohort_ownership_static_contract_and_manifest_are_deterministic(tmp_path):
+    static = phase5_contract.static_contract()
+    assert static["passed"] is True
+    assert all(static["checks"].values())
+
+    live = {
+        "passed": True,
+        "checks": {"two_constructed_cohorts_present": True},
+        "server_epoch": 1,
+        "cohort_count": 3,
+        "isolation_checks": {"serial_execution_limit": True},
+    }
+    payload = {
+        "schema": "all_spec_phase5_cohort_ownership_contract_v1",
+        "static": static,
+        "live": live,
+        "gate_passed": True,
+    }
+    payload["contract_sha256"] = phase5_contract._sha256_json(payload)
+    phase5_contract.write_contract(tmp_path, payload)
+
+    manifest = json.loads((tmp_path / "manifest.json").read_text(encoding="utf-8"))
+    assert manifest["gate_passed"] is True
+    assert manifest["contract_sha256"] == payload["contract_sha256"]
+    assert manifest["files"]["contract.json"] == hashlib.sha256(
+        (tmp_path / "contract.json").read_bytes()
+    ).hexdigest()
+
+
+def test_phase6_serial_soak_contract_requires_one_clean_published_epoch(tmp_path):
+    static = phase6_contract._static_contract()
+    assert static["passed"] is True
+    assert all(static["checks"].values())
+
+    for index in (1, 2):
+        root = tmp_path / f"attempt_{index:03d}"
+        (root / "batch/retained").mkdir(parents=True)
+        session = {
+            "cohort_id": "phase6-test",
+            "attempt_index": index,
+            "runtime_attempt_id": 40 + index,
+            "server_action": "started" if index == 1 else "already_healthy",
+            "server_pid": 1234,
+            "server_process_id": 1234,
+            "server_process_identity_verified": True,
+            "server_epoch": 5678,
+            "profile_generation": 9,
+            "profile_content_hash": "a" * 64,
+            "admitted_at_unix": 100 + ((index - 1) * 10),
+            "closed_at_unix": 110 + ((index - 1) * 10),
+            "inactive_after_attempt": True,
+            "global_lifecycle_command_count": 0,
+            "scheduler_events": [
+                {"action": "admit"},
+                {"action": "close"},
+            ],
+            "commands": [
+                ".botauto create phase6-test",
+                ".botauto start phase6-test stonecore_5n",
+                ".botauto status phase6-test",
+                ".botauto stop phase6-test",
+            ],
+            "cleanup": {
+                "active_bots": 0,
+                "lease_count": 0,
+                "party_bot_count": 0,
+            },
+        }
+        report = {
+            "session": {"attempt_index": index},
+            "published_raw_payloads_retained_locally": False,
+        }
+        receipt = {
+            "remote_verified": True,
+            "receipt_sha256": str(index) * 64,
+            "pointers": [
+                {"path": f"{root}/batch/raw.dvc"},
+                {"path": f"{root}/batch/compact.dvc"},
+            ],
+        }
+        (root / "session.json").write_text(json.dumps(session), encoding="utf-8")
+        (root / "report.json").write_text(json.dumps(report), encoding="utf-8")
+        (root / "batch/retained/publication_receipt.json").write_text(
+            json.dumps(receipt), encoding="utf-8"
+        )
+
+    live = phase6_contract._live_contract(tmp_path, minimum_soak_sec=20)
+
+    assert live["passed"] is True
+    assert live["soak_seconds"] == 20
+    assert live["runtime_attempt_ids"] == [41, 42]
+    assert all(row["passed"] for row in live["attempts"])
+
+
+def test_phase7_role_calibration_harness_passes_modes_and_detects_faults():
+    policy = load_policy(
+        Path("experiments/configs/all_spec_role_calibration_policy_v1.json")
+    )
+    records = phase7_contract.baseline_records(policy)
+
+    assert set(records) == {
+        "single_target_300",
+        "aoe_300",
+        "tank_threat_300",
+        "healer_controlled_damage_300",
+    }
+    assert all(evaluate_calibration(record, policy)["passed"] for record in records.values())
+
+    fault_sources = {
+        "missing_damage_delivery": "healer_controlled_damage_300",
+        "duration_mismatch": "single_target_300",
+        "one_target_spam": "healer_controlled_damage_300",
+        "missed_dispels": "healer_controlled_damage_300",
+        "missing_tank_stance": "tank_threat_300",
+        "threat_loss": "tank_threat_300",
+        "illegal_actions": "aoe_300",
+        "cross_window_contamination": "single_target_300",
+    }
+    for fault, mode in fault_sources.items():
+        evaluation = evaluate_calibration(inject_fault(records[mode], fault), policy)
+        assert evaluation["passed"] is False, fault
+        assert evaluation["failure_reasons"], fault
+
+    contract = phase7_contract.build_contract(
+        Path("experiments/configs/all_spec_role_calibration_policy_v1.json").resolve()
+    )
+    assert contract["gate_passed"] is True
+    assert all(contract["checks"].values())
+
+
+def test_phase8_campaign_schedule_and_publication_identity(tmp_path: Path):
+    representatives = phase8_runner.load_dps_representatives()
+    targets = phase8_runner.campaign_targets(
+        phase8_runner.load_targets(), representatives
+    )
+    attempts = phase8_runner.campaign_attempts(targets, [1, 2, 3])
+
+    assert len(attempts) == 99
+    assert len({row["attempt_id"] for row in attempts}) == 99
+    assert sum(row["role"] == "dps" for row in attempts) == 60
+    assert sum(row["role"] == "tank" for row in attempts) == 24
+    assert sum(row["role"] == "healer" for row in attempts) == 15
+
+    attempt = attempts[0]
+    attempt_dir = phase8_runner.attempt_base_dir(tmp_path, attempt)
+    (attempt_dir / "batch/retained").mkdir(parents=True)
+    report = {
+        "requested_calibration": {
+            "mode": attempt["mode"],
+            "target_spec": attempt["runtime_join_key"],
+            "seed": attempt["seed"],
+        },
+        "role_calibration_evaluation": {"passed": True},
+        "role_calibration_identity": {
+            "spec_target_id": attempt["spec_target_id"],
+            "runtime_join_key": attempt["runtime_join_key"],
+            "seed": attempt["seed"],
+        },
+        "session": {"cohort_id": attempt["cohort_id"]},
+        "evidence_envelope": {
+            "identity_complete": True,
+            "identity_manifest_sha256": "f" * 64,
+        },
+    }
+    batch_identity = canonical_sha256({"attempt_id": attempt["attempt_id"]})
+    receipt = {
+        "remote_verified": True,
+        "batch_identity_sha256": batch_identity,
+    }
+    receipt["receipt_sha256"] = canonical_sha256(receipt)
+    (attempt_dir / "report.json").write_text(json.dumps(report), encoding="utf-8")
+    (attempt_dir / "batch/retained/final_manifest.json").write_text(
+        json.dumps({"identity_sha256": batch_identity}), encoding="utf-8"
+    )
+    (attempt_dir / "batch/retained/publication_receipt.json").write_text(
+        json.dumps(receipt), encoding="utf-8"
+    )
+
+    assert phase8_runner.valid_publication(attempt_dir, attempt) is True
+    assert phase8_runner.completed_attempt_dir(tmp_path, attempt) == attempt_dir
+    report["role_calibration_evaluation"]["passed"] = False
+    (attempt_dir / "report.json").write_text(json.dumps(report), encoding="utf-8")
+    assert phase8_runner.valid_publication(attempt_dir, attempt) is True
+    assert phase8_runner.completed_attempt_dir(tmp_path, attempt) is None
+    mismatched = {**attempt, "seed": 99}
+    assert phase8_runner.valid_publication(attempt_dir, mismatched) is False
+
+
+def test_phase8_evidence_manifest_rejects_runtime_mismatch():
+    server_binding = server_epoch_identity(
+        server_epoch=10,
+        server_process_id=20,
+        session_fingerprint="fingerprint",
+    )
+    profile_binding = profile_generation_identity(
+        profile_generation=3,
+        profile_content_hash="a" * 64,
+    )
+    manifest = {
+        "schema": "all_spec_phase8_evidence_identity_manifest_v1",
+        "component_hashes": {
+            "database_snapshot_sha256": "b" * 64,
+            "database_schema_sha256": "c" * 64,
+            "server_epoch_sha256": canonical_sha256(server_binding),
+            "profile_generation_sha256": canonical_sha256(profile_binding),
+        },
+        "runtime_identity": {**server_binding, **profile_binding},
+        "database_summary": {},
+    }
+    manifest["manifest_sha256"] = canonical_sha256(manifest)
+
+    assert validate_phase8_evidence_manifest(manifest)["manifest_sha256"]
+    with pytest.raises(ValueError, match="live runtime does not match"):
+        validate_phase8_evidence_manifest(
+            manifest,
+            runtime_identity={
+                **server_binding,
+                **profile_binding,
+                "server_epoch": 11,
+            },
+        )
+
+
+def test_phase8_contract_reconstructs_all_attempts_and_rejects_duplicate_state(tmp_path: Path):
+    representatives = phase8_runner.load_dps_representatives()
+    targets = phase8_runner.campaign_targets(
+        phase8_runner.load_targets(), representatives
+    )
+    attempts = phase8_runner.campaign_attempts(targets, [1, 2, 3])
+    server_binding = server_epoch_identity(
+        server_epoch=12345,
+        server_process_id=54321,
+        session_fingerprint="session-fingerprint",
+    )
+    profile_binding = profile_generation_identity(
+        profile_generation=7,
+        profile_content_hash="a" * 64,
+    )
+    components = {
+        "database_snapshot_sha256": "b" * 64,
+        "database_schema_sha256": "c" * 64,
+        "server_epoch_sha256": canonical_sha256(server_binding),
+        "profile_generation_sha256": canonical_sha256(profile_binding),
+    }
+    evidence_manifest = {
+        "schema": "all_spec_phase8_evidence_identity_manifest_v1",
+        "component_hashes": components,
+        "runtime_identity": {**server_binding, **profile_binding},
+        "database_summary": {},
+    }
+    evidence_manifest["manifest_sha256"] = canonical_sha256(evidence_manifest)
+    (tmp_path / "evidence_identity_manifest.json").write_text(
+        json.dumps(evidence_manifest),
+        encoding="utf-8",
+    )
+    representatives_payload = {
+        "schema": "phase8_dps_representatives_cata_p4_v1",
+        "qualification_policy": "one_representative_per_class_at_75_percent_floor",
+        "representatives": dict(sorted(representatives.items())),
+        "representatives_sha256": canonical_sha256(
+            dict(sorted(representatives.items()))
+        ),
+    }
+    (tmp_path / "dps_representatives.json").write_text(
+        json.dumps(representatives_payload),
+        encoding="utf-8",
+    )
+    results = []
+    for index, attempt in enumerate(attempts):
+        attempt_dir = phase8_runner.attempt_base_dir(tmp_path, attempt)
+        (attempt_dir / "batch/retained").mkdir(parents=True)
+        reference_ratio = 0.79 if index % 11 == 0 else 0.81
+        optimization_target_met = reference_ratio >= 0.8
+        record_sha256 = canonical_sha256({"record": attempt["attempt_id"]})
+        evaluation = {
+            "passed": True,
+            "hard_floor_passed": True,
+            "optimization_target_met": optimization_target_met,
+            "reference_ratio": reference_ratio,
+            "failure_reasons": [],
+            "record_sha256": record_sha256,
+        }
+        report = {
+            "requested_calibration": {
+                "mode": attempt["mode"],
+                "target_spec": attempt["runtime_join_key"],
+                "seed": attempt["seed"],
+            },
+            "role_calibration_evaluation": evaluation,
+            "role_calibration_identity": {
+                "spec_target_id": attempt["spec_target_id"],
+                "runtime_join_key": attempt["runtime_join_key"],
+                "seed": attempt["seed"],
+                "profile_generation": 7,
+                "profile_content_hash": "a" * 64,
+            },
+            "evidence_envelope": {
+                "identity_complete": True,
+                "identity_manifest_sha256": evidence_manifest["manifest_sha256"],
+                "component_hashes": components,
+            },
+            "session": {
+                "cohort_id": attempt["cohort_id"],
+                "attempt_index": attempt["attempt_index"],
+                "server_epoch": 12345,
+                "server_process_id": 54321,
+                "session_fingerprint": "session-fingerprint",
+                "server_process_identity_verified": True,
+                "max_active_cohorts": 1,
+            },
+        }
+        batch_identity = canonical_sha256({"batch": attempt["attempt_id"]})
+        receipt = {
+            "remote_verified": True,
+            "batch_identity_sha256": batch_identity,
+        }
+        receipt["receipt_sha256"] = canonical_sha256(receipt)
+        report_path = attempt_dir / "report.json"
+        report_path.write_text(json.dumps(report), encoding="utf-8")
+        (attempt_dir / "batch/retained/final_manifest.json").write_text(
+            json.dumps({"identity_sha256": batch_identity}), encoding="utf-8"
+        )
+        (attempt_dir / "batch/retained/publication_receipt.json").write_text(
+            json.dumps(receipt), encoding="utf-8"
+        )
+        results.append(
+            {
+                **attempt,
+                "returncode": 0,
+                "published": True,
+                "passed": True,
+                "hard_floor_passed": True,
+                "optimization_target_met": optimization_target_met,
+                "reference_ratio": reference_ratio,
+                "failure_reasons": [],
+                "record_sha256": record_sha256,
+                "receipt_sha256": receipt["receipt_sha256"],
+                "report_path": str(report_path),
+            }
+        )
+
+    phase8_runner.write_campaign_state(
+        tmp_path,
+        attempts,
+        results,
+        active_attempt=None,
+        dps_representatives=representatives,
+    )
+    contract = phase8_contract.build_contract(tmp_path)
+
+    assert contract["passed"] is True
+    assert all(contract["checks"].values())
+    assert len(contract["optimization_backlog"]) == 9
+
+    state_path = tmp_path / "campaign_state.json"
+    state = json.loads(state_path.read_text(encoding="utf-8"))
+    valid_state = json.loads(json.dumps(state))
+    state["results"][-1]["attempt_id"] = state["results"][0]["attempt_id"]
+    state.pop("state_sha256")
+    state["state_sha256"] = canonical_sha256(state)
+    state_path.write_text(json.dumps(state), encoding="utf-8")
+    rejected = phase8_contract.build_contract(tmp_path)
+
+    assert rejected["passed"] is False
+    assert rejected["checks"]["unique_state_results"] is False
+    assert rejected["checks"]["exact_attempt_coverage"] is False
+
+    backlog_mismatch = json.loads(json.dumps(valid_state))
+    backlog_mismatch["optimization_backlog"].pop()
+    backlog_mismatch["optimization_backlog_count"] -= 1
+    backlog_mismatch.pop("state_sha256")
+    backlog_mismatch["state_sha256"] = canonical_sha256(backlog_mismatch)
+    state_path.write_text(json.dumps(backlog_mismatch), encoding="utf-8")
+    rejected = phase8_contract.build_contract(tmp_path)
+    assert rejected["checks"]["optimization_backlog_complete"] is False
+
+    escaped = json.loads(json.dumps(valid_state))
+    outside_report = tmp_path.parent / "escaped-phase8-report.json"
+    outside_report.write_text("{}", encoding="utf-8")
+    escaped["results"][0]["report_path"] = str(outside_report)
+    escaped.pop("state_sha256")
+    escaped["state_sha256"] = canonical_sha256(escaped)
+    state_path.write_text(json.dumps(escaped), encoding="utf-8")
+    rejected = phase8_contract.build_contract(tmp_path)
+    assert rejected["checks"]["all_reports_inside_campaign"] is False
+
+    invalid_retry = json.loads(json.dumps(valid_state))
+    first_attempt = attempts[0]
+    first_base = phase8_runner.attempt_base_dir(tmp_path, first_attempt)
+    invalid_dir = first_base.parent / f"{first_base.name}-retry-invalid"
+    first_base.rename(invalid_dir)
+    invalid_retry["results"][0]["report_path"] = str(invalid_dir / "report.json")
+    invalid_retry.pop("state_sha256")
+    invalid_retry["state_sha256"] = canonical_sha256(invalid_retry)
+    state_path.write_text(json.dumps(invalid_retry), encoding="utf-8")
+    rejected = phase8_contract.build_contract(tmp_path)
+    assert rejected["checks"]["all_attempt_paths_valid"] is False
+    invalid_dir.rename(first_base)
+
+    duplicate_receipt = json.loads(json.dumps(valid_state))
+    first_receipt_path = first_base / "batch/retained/publication_receipt.json"
+    first_manifest_path = first_base / "batch/retained/final_manifest.json"
+    second_base = phase8_runner.attempt_base_dir(tmp_path, attempts[1])
+    second_receipt_path = second_base / "batch/retained/publication_receipt.json"
+    second_manifest_path = second_base / "batch/retained/final_manifest.json"
+    first_receipt = json.loads(first_receipt_path.read_text(encoding="utf-8"))
+    first_manifest = json.loads(first_manifest_path.read_text(encoding="utf-8"))
+    second_receipt_path.write_text(json.dumps(first_receipt), encoding="utf-8")
+    second_manifest_path.write_text(json.dumps(first_manifest), encoding="utf-8")
+    duplicate_receipt["results"][1]["receipt_sha256"] = first_receipt["receipt_sha256"]
+    duplicate_receipt.pop("state_sha256")
+    duplicate_receipt["state_sha256"] = canonical_sha256(duplicate_receipt)
+    state_path.write_text(json.dumps(duplicate_receipt), encoding="utf-8")
+    rejected = phase8_contract.build_contract(tmp_path)
+    assert rejected["checks"]["unique_receipt_hashes"] is False
+    assert rejected["checks"]["unique_batch_identities"] is False

@@ -1,0 +1,1027 @@
+{
+  "acceptance": {
+    "accepted": false,
+    "completion_reason": "stonecore_role_quality_audit_failed",
+    "failure_labels": [
+      "Feraltank:tank_threat_retention",
+      "Feraltank:healer_target_exposure",
+      "Feraltank:healer_target_dwell"
+    ],
+    "recomputed_facts_sha256": "bcd6cbfda32c6f5b848f2769fa9b099b2c2a609861232baf0cba05f0ee1fb813",
+    "recomputed_result_sha256": "2ad6e52f9d0860f216eab0a039c361f0e9a07bb5ea76d82e1ab1d87e56c510df",
+    "rejections": [
+      "failure_labels_present",
+      "stonecore_role_quality_audit_failed"
+    ]
+  },
+  "accepted_causal_chain": [
+    "Rerun139 used the intended rebuilt binary, deterministic reprovisioning, exact current PID/epoch/session/profile identity, exact five-member party, and MaxActiveCohorts=1.",
+    "The canary completed all 14 strict route terminals and confirmed real deaths for Corborus, Slabhide, Ozruk, and High Priestess Azil with no teacher or forbidden completion assistance.",
+    "The one-tick stationary scheduling barrier corrected the Retribution moving-cast failure: zero cast failures remained across 234 attempts while Exorcism stayed active.",
+    "Independent reconstruction reproduced 1695/1926 strict all-hostile retention, 189/1926 healer exposure, 4863 ms maximum dwell, 21 over-limit episodes, and one causal wave entirely in route generation 13.",
+    "Raw traces contain 69 Stampeding Roar gate evaluations: 68 not submitted and one successful submission at 1785823322535.",
+    "Native client DBC proves the successful Stampeding Roar has an 8000 ms aura and a 120000 ms category cooldown; the sole failing wave occurred 42797-54802 ms after that success, entirely after aura expiry and inside cooldown.",
+    "Existing native charge, movement, Demoralizing Roar, Swipe/area-profile, and handoff behavior continued during the failing wave but did not satisfy the unchanged strict retention, exposure, and per-hostile dwell gates.",
+    "The structured gate payload did not survive immutable capture, so rerun139 cannot attribute each non-submission to its exact precondition or TryCastFriendlySpell rejection without guessing.",
+    "The smallest evidence-supported next correction is telemetry transport only: persist the already-computed bounded failureReason in a trace-visible field guaranteed to survive capture and canonical reconstruction, without changing behavior or any acceptance gate."
+  ],
+  "attempt_label": "rerun139_canary_2",
+  "canonical_reconstruction": {
+    "causal_waves": [
+      {
+        "duration_ms": 12005,
+        "end_timestamp_ms": 1785823377337,
+        "episode_count": 21,
+        "hostile_guids": [
+          653,
+          654,
+          656,
+          657,
+          658,
+          660,
+          661,
+          662,
+          673,
+          674,
+          675,
+          676,
+          677,
+          678,
+          679,
+          681,
+          682,
+          683,
+          685,
+          691,
+          692
+        ],
+        "maximum_dwell_ms": 4863,
+        "route_generations": [
+          13
+        ],
+        "start_timestamp_ms": 1785823365332
+      }
+    ],
+    "eligible_healer_contribution_by_action": {
+      "feral_demoralizing_roar_healer_trash_pickup": {
+        "eligible": 114,
+        "healer": 40,
+        "owned": 74,
+        "sample_count": 5
+      },
+      "feral_hold_remote_healer_trash_cluster_for_roar": {
+        "eligible": 100,
+        "healer": 19,
+        "owned": 81,
+        "sample_count": 3
+      },
+      "feral_move_remote_healer_trash_cluster_pre_roar": {
+        "eligible": 14,
+        "healer": 7,
+        "owned": 7,
+        "sample_count": 1
+      },
+      "move_to_trash_density": {
+        "eligible": 416,
+        "healer": 39,
+        "owned": 366,
+        "sample_count": 24
+      },
+      "trash_density_area_threat": {
+        "eligible": 668,
+        "healer": 84,
+        "owned": 568,
+        "sample_count": 70
+      }
+    },
+    "over_limit_episodes": [
+      {
+        "actions": {
+          "feral_demoralizing_roar_healer_trash_pickup": 2,
+          "move_to_trash_density": 12,
+          "trash_density_area_threat": 6,
+          "validation_route_threat_pickup_diagnostic": 1
+        },
+        "duration_ms": 4855,
+        "eligible_sample_count": 8,
+        "end_reason": "no_longer_targeting_healer",
+        "hostile_guid": 656,
+        "last_timestamp_ms": 1785823370187,
+        "route_generations": [
+          13
+        ],
+        "sample_count": 21,
+        "start_timestamp_ms": 1785823365332
+      },
+      {
+        "actions": {
+          "feral_demoralizing_roar_healer_trash_pickup": 3,
+          "move_to_trash_density": 9,
+          "trash_density_area_threat": 8
+        },
+        "duration_ms": 4863,
+        "eligible_sample_count": 8,
+        "end_reason": "no_longer_targeting_healer",
+        "hostile_guid": 653,
+        "last_timestamp_ms": 1785823371222,
+        "route_generations": [
+          13
+        ],
+        "sample_count": 20,
+        "start_timestamp_ms": 1785823366359
+      },
+      {
+        "actions": {
+          "feral_demoralizing_roar_healer_trash_pickup": 3,
+          "move_to_trash_density": 9,
+          "trash_density_area_threat": 8
+        },
+        "duration_ms": 4863,
+        "eligible_sample_count": 8,
+        "end_reason": "no_longer_targeting_healer",
+        "hostile_guid": 657,
+        "last_timestamp_ms": 1785823371222,
+        "route_generations": [
+          13
+        ],
+        "sample_count": 20,
+        "start_timestamp_ms": 1785823366359
+      },
+      {
+        "actions": {
+          "feral_demoralizing_roar_healer_trash_pickup": 3,
+          "move_to_trash_density": 9,
+          "trash_density_area_threat": 8
+        },
+        "duration_ms": 4863,
+        "eligible_sample_count": 8,
+        "end_reason": "no_longer_targeting_healer",
+        "hostile_guid": 658,
+        "last_timestamp_ms": 1785823371222,
+        "route_generations": [
+          13
+        ],
+        "sample_count": 20,
+        "start_timestamp_ms": 1785823366359
+      },
+      {
+        "actions": {
+          "feral_demoralizing_roar_healer_trash_pickup": 3,
+          "move_to_trash_density": 6,
+          "trash_density_area_threat": 8
+        },
+        "duration_ms": 4099,
+        "eligible_sample_count": 5,
+        "end_reason": "no_longer_targeting_healer",
+        "hostile_guid": 661,
+        "last_timestamp_ms": 1785823371222,
+        "route_generations": [
+          13
+        ],
+        "sample_count": 17,
+        "start_timestamp_ms": 1785823367123
+      },
+      {
+        "actions": {
+          "feral_demoralizing_roar_healer_trash_pickup": 3,
+          "move_to_trash_density": 6,
+          "trash_density_area_threat": 8
+        },
+        "duration_ms": 4099,
+        "eligible_sample_count": 5,
+        "end_reason": "no_longer_targeting_healer",
+        "hostile_guid": 662,
+        "last_timestamp_ms": 1785823371222,
+        "route_generations": [
+          13
+        ],
+        "sample_count": 17,
+        "start_timestamp_ms": 1785823367123
+      },
+      {
+        "actions": {
+          "feral_demoralizing_roar_healer_trash_pickup": 3,
+          "move_to_trash_density": 5,
+          "trash_density_area_threat": 8
+        },
+        "duration_ms": 3848,
+        "eligible_sample_count": 4,
+        "end_reason": "no_longer_targeting_healer",
+        "hostile_guid": 654,
+        "last_timestamp_ms": 1785823371222,
+        "route_generations": [
+          13
+        ],
+        "sample_count": 16,
+        "start_timestamp_ms": 1785823367374
+      },
+      {
+        "actions": {
+          "feral_demoralizing_roar_healer_trash_pickup": 3,
+          "move_to_trash_density": 5,
+          "trash_density_area_threat": 8
+        },
+        "duration_ms": 3848,
+        "eligible_sample_count": 4,
+        "end_reason": "no_longer_targeting_healer",
+        "hostile_guid": 660,
+        "last_timestamp_ms": 1785823371222,
+        "route_generations": [
+          13
+        ],
+        "sample_count": 16,
+        "start_timestamp_ms": 1785823367374
+      },
+      {
+        "actions": {
+          "feral_demoralizing_roar_healer_trash_pickup": 3,
+          "move_to_trash_density": 3,
+          "trash_density_area_threat": 9
+        },
+        "duration_ms": 3594,
+        "eligible_sample_count": 11,
+        "end_reason": "no_longer_targeting_healer",
+        "hostile_guid": 683,
+        "last_timestamp_ms": 1785823371476,
+        "route_generations": [
+          13
+        ],
+        "sample_count": 15,
+        "start_timestamp_ms": 1785823367882
+      },
+      {
+        "actions": {
+          "feral_demoralizing_roar_healer_trash_pickup": 3,
+          "move_to_trash_density": 3,
+          "trash_density_area_threat": 9
+        },
+        "duration_ms": 3594,
+        "eligible_sample_count": 11,
+        "end_reason": "no_longer_targeting_healer",
+        "hostile_guid": 685,
+        "last_timestamp_ms": 1785823371476,
+        "route_generations": [
+          13
+        ],
+        "sample_count": 15,
+        "start_timestamp_ms": 1785823367882
+      },
+      {
+        "actions": {
+          "feral_demoralizing_roar_healer_trash_pickup": 3,
+          "move_to_trash_density": 3,
+          "trash_density_area_threat": 9
+        },
+        "duration_ms": 3594,
+        "eligible_sample_count": 11,
+        "end_reason": "no_longer_targeting_healer",
+        "hostile_guid": 691,
+        "last_timestamp_ms": 1785823371476,
+        "route_generations": [
+          13
+        ],
+        "sample_count": 15,
+        "start_timestamp_ms": 1785823367882
+      },
+      {
+        "actions": {
+          "feral_demoralizing_roar_healer_trash_pickup": 3,
+          "move_to_trash_density": 3,
+          "trash_density_area_threat": 9
+        },
+        "duration_ms": 3594,
+        "eligible_sample_count": 11,
+        "end_reason": "no_longer_targeting_healer",
+        "hostile_guid": 692,
+        "last_timestamp_ms": 1785823371476,
+        "route_generations": [
+          13
+        ],
+        "sample_count": 15,
+        "start_timestamp_ms": 1785823367882
+      },
+      {
+        "actions": {
+          "feral_demoralizing_roar_healer_trash_pickup": 2,
+          "move_to_trash_density": 14,
+          "validation_route_threat_pickup_diagnostic": 1
+        },
+        "duration_ms": 3824,
+        "eligible_sample_count": 4,
+        "end_reason": "no_longer_targeting_healer",
+        "hostile_guid": 674,
+        "last_timestamp_ms": 1785823376568,
+        "route_generations": [
+          13
+        ],
+        "sample_count": 17,
+        "start_timestamp_ms": 1785823372744
+      },
+      {
+        "actions": {
+          "feral_demoralizing_roar_healer_trash_pickup": 2,
+          "move_to_trash_density": 14,
+          "validation_route_threat_pickup_diagnostic": 1
+        },
+        "duration_ms": 3824,
+        "eligible_sample_count": 4,
+        "end_reason": "no_longer_targeting_healer",
+        "hostile_guid": 676,
+        "last_timestamp_ms": 1785823376568,
+        "route_generations": [
+          13
+        ],
+        "sample_count": 17,
+        "start_timestamp_ms": 1785823372744
+      },
+      {
+        "actions": {
+          "feral_demoralizing_roar_healer_trash_pickup": 2,
+          "feral_hold_remote_healer_trash_cluster_for_roar": 3,
+          "move_to_trash_density": 13
+        },
+        "duration_ms": 4335,
+        "eligible_sample_count": 6,
+        "end_reason": "no_longer_targeting_healer",
+        "hostile_guid": 673,
+        "last_timestamp_ms": 1785823377337,
+        "route_generations": [
+          13
+        ],
+        "sample_count": 18,
+        "start_timestamp_ms": 1785823373002
+      },
+      {
+        "actions": {
+          "feral_demoralizing_roar_healer_trash_pickup": 2,
+          "feral_hold_remote_healer_trash_cluster_for_roar": 3,
+          "move_to_trash_density": 13
+        },
+        "duration_ms": 4335,
+        "eligible_sample_count": 6,
+        "end_reason": "no_longer_targeting_healer",
+        "hostile_guid": 675,
+        "last_timestamp_ms": 1785823377337,
+        "route_generations": [
+          13
+        ],
+        "sample_count": 18,
+        "start_timestamp_ms": 1785823373002
+      },
+      {
+        "actions": {
+          "feral_demoralizing_roar_healer_trash_pickup": 2,
+          "feral_hold_remote_healer_trash_cluster_for_roar": 3,
+          "move_to_trash_density": 13
+        },
+        "duration_ms": 4335,
+        "eligible_sample_count": 6,
+        "end_reason": "no_longer_targeting_healer",
+        "hostile_guid": 678,
+        "last_timestamp_ms": 1785823377337,
+        "route_generations": [
+          13
+        ],
+        "sample_count": 18,
+        "start_timestamp_ms": 1785823373002
+      },
+      {
+        "actions": {
+          "feral_demoralizing_roar_healer_trash_pickup": 2,
+          "feral_hold_remote_healer_trash_cluster_for_roar": 3,
+          "move_to_trash_density": 13
+        },
+        "duration_ms": 4335,
+        "eligible_sample_count": 6,
+        "end_reason": "no_longer_targeting_healer",
+        "hostile_guid": 682,
+        "last_timestamp_ms": 1785823377337,
+        "route_generations": [
+          13
+        ],
+        "sample_count": 18,
+        "start_timestamp_ms": 1785823373002
+      },
+      {
+        "actions": {
+          "feral_demoralizing_roar_healer_trash_pickup": 2,
+          "feral_hold_remote_healer_trash_cluster_for_roar": 3,
+          "move_to_trash_density": 12
+        },
+        "duration_ms": 4076,
+        "eligible_sample_count": 5,
+        "end_reason": "no_longer_targeting_healer",
+        "hostile_guid": 677,
+        "last_timestamp_ms": 1785823377337,
+        "route_generations": [
+          13
+        ],
+        "sample_count": 17,
+        "start_timestamp_ms": 1785823373261
+      },
+      {
+        "actions": {
+          "feral_demoralizing_roar_healer_trash_pickup": 2,
+          "feral_hold_remote_healer_trash_cluster_for_roar": 3,
+          "move_to_trash_density": 9
+        },
+        "duration_ms": 3312,
+        "eligible_sample_count": 2,
+        "end_reason": "no_longer_targeting_healer",
+        "hostile_guid": 679,
+        "last_timestamp_ms": 1785823377337,
+        "route_generations": [
+          13
+        ],
+        "sample_count": 14,
+        "start_timestamp_ms": 1785823374025
+      },
+      {
+        "actions": {
+          "feral_demoralizing_roar_healer_trash_pickup": 2,
+          "feral_hold_remote_healer_trash_cluster_for_roar": 3,
+          "move_to_trash_density": 9
+        },
+        "duration_ms": 3312,
+        "eligible_sample_count": 2,
+        "end_reason": "no_longer_targeting_healer",
+        "hostile_guid": 681,
+        "last_timestamp_ms": 1785823377337,
+        "route_generations": [
+          13
+        ],
+        "sample_count": 14,
+        "start_timestamp_ms": 1785823374025
+      }
+    ],
+    "retribution_paladin": {
+      "failure_result_counts": {},
+      "failure_spell_result_counts": {}
+    },
+    "route_generation_contributions": {
+      "1": {
+        "eligible": 160,
+        "healer": 0,
+        "owned": 152,
+        "sample_count": 49
+      },
+      "10": {
+        "eligible": 59,
+        "healer": 0,
+        "owned": 55,
+        "sample_count": 16
+      },
+      "11": {
+        "eligible": 15,
+        "healer": 0,
+        "owned": 15,
+        "sample_count": 15
+      },
+      "13": {
+        "eligible": 1391,
+        "healer": 189,
+        "owned": 1178,
+        "sample_count": 88
+      },
+      "14": {
+        "eligible": 166,
+        "healer": 0,
+        "owned": 166,
+        "sample_count": 21
+      },
+      "2": {
+        "eligible": 12,
+        "healer": 0,
+        "owned": 12,
+        "sample_count": 12
+      },
+      "3": {
+        "eligible": 81,
+        "healer": 0,
+        "owned": 79,
+        "sample_count": 36
+      },
+      "4": {
+        "eligible": 20,
+        "healer": 0,
+        "owned": 16,
+        "sample_count": 20
+      },
+      "7": {
+        "eligible": 9,
+        "healer": 0,
+        "owned": 9,
+        "sample_count": 5
+      },
+      "8": {
+        "eligible": 7,
+        "healer": 0,
+        "owned": 7,
+        "sample_count": 6
+      },
+      "9": {
+        "eligible": 6,
+        "healer": 0,
+        "owned": 6,
+        "sample_count": 6
+      }
+    },
+    "source_path": "/run/user/1000/phase9-rerun139-threat-reconstruction.json",
+    "source_sha256": "46305d860a86c95427a0151ccef33a21b0837d2cee845f7ea1006bf2565d808b",
+    "trace": {
+      "canonical_unique_entry_count": 5034,
+      "deduplication_key": [
+        "bot_guid",
+        "sequence"
+      ],
+      "raw_entry_count": 10303,
+      "tank_entry_count": 971
+    }
+  },
+  "capture_validation": {
+    "batch_identity_sha256": "a7688ac72ad4b8f1cf126d854cef6fc994d3ad05b5f438b103ab28703e785977",
+    "batch_local_dvc_cache_absent_after_diagnosis": true,
+    "batch_local_dvc_cache_retained_for_diagnosis": true,
+    "canaries_3_through_8_started": false,
+    "capture_revalidation_before_targeted_eviction": true,
+    "cleanup": {
+      "active": false,
+      "active_bots": 0,
+      "lease_count": 0,
+      "party_bot_count": 0,
+      "server_epoch": 10558752655525156
+    },
+    "cleanup_complete": true,
+    "compact_bundle_sha256": "ba131e3ecc78afa7c266893f6b6f76a641a18ee81919e123740fc8fc0c9f7209",
+    "compact_row_count": 1,
+    "dvc_cache_scope": "batch_specific",
+    "dvc_remote_status": "cache_and_remote_object_are_in_sync",
+    "exact_party_verified": true,
+    "exact_remote_revalidation_before_targeted_eviction": true,
+    "forbidden_completion_assists": [],
+    "gitignore_restored_sha256": "2616c6981d1728b2725b6a06bbec5289f82b14bbfc493549df464b03c237ae5e",
+    "local_raw_and_compact_payloads_evicted_after_diagnosis": true,
+    "operator_publication_exception_after_capture": true,
+    "operator_returncode": 1,
+    "operator_status": "failed",
+    "operator_unit": "trinity-phase9-rerun139-canary2.service",
+    "operator_wrapper_identity_cleanup_fields_not_authoritative_after_publication_exception": true,
+    "publication_receipt_sha256": "ea727a21b33bbef04749d4605c475b691a118e1019de5422a329ffd0c8b6d688",
+    "publication_recovered_manually": true,
+    "raw_and_compact_payloads_retained_for_diagnosis": true,
+    "raw_bundle_sha256": "e9d590009793bbe95389a1ffa10f3e8a7190433ac942f0f127e63ced213518b8",
+    "raw_event_row_count": 256,
+    "raw_part_count": 1,
+    "raw_uncompressed_bytes": 38848326,
+    "real_boss_kill_count": 4,
+    "receipt_hash_valid": true,
+    "receipt_identity_and_bundles_match": true,
+    "recurring_monitor_deleted": true,
+    "remote_status_sha256": "efed9e5afcfe149915ae98b9ed9e69304eb48f5ce2e2265b18b5b5ed2f155e60",
+    "remote_verified": true,
+    "route_complete": true,
+    "route_terminal_count": 14,
+    "session_identity_verified_independently": true,
+    "teacher_assisted_kills": 0,
+    "temporary_diagnosis_gitignore_exception_restored": true,
+    "temporary_operator_gitignore_exception_restored": true,
+    "timed_out": false,
+    "watchdog_completed": true
+  },
+  "diagnosis_sha256": "e822615b46ab0180dffc830b5eb38e00bd3c127a8eeec3fb606825ad430bbec3",
+  "evidence_limitations": [
+    "The complete feral_stampeding_roar_gate_v1 payload was constructed in source but did not survive immutable evidence transport.",
+    "Canonical (bot_guid, sequence) deduplication can overwrite event traces with companion decision traces; raw report rows were separately reconstructed to count all 69 evaluations.",
+    "Native cooldown proves legal unavailability throughout the causal wave if cast submission was reached, but the missing gate payload prevents claiming that every evaluation reached TryCastFriendlySpell.",
+    "Generation 1 and generation 14 non-submissions are outside the one observed cooldown window; their exact blockers remain unresolved, and neither generation contributed canonical healer-target exposure or an over-limit dwell episode.",
+    "The next immutable canary remains authoritative for the trace-visible failureReason transport."
+  ],
+  "hash_scope": "canonical_json_without_diagnosis_sha256",
+  "hypotheses": [
+    {
+      "evidence": "Current PID, epoch, session fingerprint, profile generation/hash, exact party hash, MaxActiveCohorts=1, 14 terminals, four real boss deaths, zero forbidden completion assists, and cleanup all independently match.",
+      "name": "stale_identity_wrong_party_route_or_assistance_caused_failure",
+      "outcome": "rejected"
+    },
+    {
+      "evidence": "Canonical (bot_guid, sequence) reconstruction with the unchanged 3000 ms grace independently reproduces 1695/1926 retention, 189/1926 healer exposure, 4863 ms maximum dwell, and 21 over-limit episodes.",
+      "name": "feral_audit_scope_or_denominator_error",
+      "outcome": "rejected"
+    },
+    {
+      "evidence": "The current identity contains the verified provisioning and immutable traces contain one successful spell-77761 submission/action at 1785823322535.",
+      "name": "stampeding_roar_remained_unprovisioned_or_never_executed",
+      "outcome": "rejected"
+    },
+    {
+      "evidence": "Retribution produced 234 attempts with 225 ok and 9 scheduling results, zero cast failures, and 52 Exorcism attempts.",
+      "name": "rerun138_moving_cast_correction_failed",
+      "outcome": "rejected"
+    },
+    {
+      "evidence": "The sole 12005 ms failing wave began 42797 ms and ended 54802 ms after the successful submission; native DBC proves an 8000 ms aura and 120000 ms category cooldown, so the full wave occurred after aura expiry and before legal cooldown recovery.",
+      "name": "native_stampeding_roar_cooldown_constrained_the_generation_13_causal_wave",
+      "outcome": "supported_contributing_constraint"
+    },
+    {
+      "evidence": "The source computes every gate and failureReason, but immutable evidence retains only submitted/not-submitted labels. Cooldown proves a legal constraint during the causal wave but does not prove whether each evaluation stopped at active_path_valid, state_is_moving, has_spell, aura_active, or TryCastFriendlySpell.",
+      "name": "specific_existing_gate_or_try_cast_rejection_for_each_non_submission",
+      "outcome": "unresolved_requires_trace_visible_transport"
+    },
+    {
+      "evidence": "The causal wave contains repeated move_to_trash_density, trash_density_area_threat, Demoralizing Roar, and remote-cluster handoff actions while 21 hostiles exceeded 3000 ms dwell and retention/exposure failed.",
+      "name": "other_native_handoff_and_area_actions_alone_met_the_strict_gate",
+      "outcome": "rejected"
+    }
+  ],
+  "observed_role_metrics": {
+    "causal_wave_count": 1,
+    "eligible_hostile_sample_denominator": 1926,
+    "exact_healer_exposure_fraction": "189/1926",
+    "exact_tank_retention_fraction": "1695/1926",
+    "feral_attempts": 282,
+    "feral_cast_failure_rate": 0.0,
+    "feral_deaths": 0,
+    "feral_ordinary_tank_retention_rate": 0.9414,
+    "feral_successful_submission_rate": 1.0,
+    "feral_threat_aura_uptime_rate": 1.0,
+    "healer_target_episode_count": 127,
+    "healer_target_exposure_rate": 0.09813084112149532,
+    "healer_targeting_eligible_sample_numerator": 189,
+    "long_healer_target_episode_count": 21,
+    "max_healer_target_dwell_ms": 4863,
+    "mechanics": {
+      "hazard_exit_actions": 92,
+      "hazard_exit_failures": 0,
+      "misdirection_aoe_attempts": 31,
+      "misdirection_aoe_successes": 23,
+      "misdirection_aoe_wrong_successes": 0,
+      "misdirection_single_attempts": 17,
+      "misdirection_single_successes": 15,
+      "threat_acquisition_grace_ms": 3000
+    },
+    "other_role_rows": {
+      "Discpriest": {
+        "active_action_coverage": 0.8814,
+        "attempts": 194,
+        "cast_failure_rate": 0.0,
+        "deaths": 0,
+        "heal_cast_success_rate": 1.0,
+        "missing_rotation_groups": [],
+        "result_counts": {
+          "no_action": 65,
+          "ok": 129
+        },
+        "successful_submission_rate": 1.0
+      },
+      "Furywar": {
+        "active_action_coverage": 1.0,
+        "attempts": 213,
+        "cast_failure_rate": 0.0,
+        "deaths": 0,
+        "heal_cast_success_rate": null,
+        "missing_rotation_groups": [],
+        "result_counts": {
+          "ok": 213
+        },
+        "successful_submission_rate": 1.0
+      },
+      "Mmhunter": {
+        "active_action_coverage": 1.0,
+        "attempts": 134,
+        "cast_failure_rate": 0.0351,
+        "deaths": 0,
+        "heal_cast_success_rate": null,
+        "missing_rotation_groups": [],
+        "result_counts": {
+          "cast_failed": 4,
+          "global_cooldown": 7,
+          "no_action": 13,
+          "ok": 110
+        },
+        "successful_submission_rate": 0.9649
+      },
+      "Retpally": {
+        "active_action_coverage": 1.0,
+        "attempts": 234,
+        "cast_failure_rate": 0.0,
+        "deaths": 0,
+        "heal_cast_success_rate": null,
+        "missing_rotation_groups": [],
+        "result_counts": {
+          "casting": 9,
+          "ok": 225
+        },
+        "successful_submission_rate": 1.0
+      }
+    },
+    "required_healer_exposure_ceiling": 0.01,
+    "required_max_healer_dwell_ms": 3000,
+    "required_tank_retention_floor": 0.9,
+    "tank_all_hostile_retention_rate": 0.8800623052959502,
+    "tank_owned_eligible_sample_numerator": 1695
+  },
+  "route_proof": {
+    "forbidden_completion_assists": [],
+    "manifest_complete": true,
+    "real_boss_kills": [
+      {
+        "boss": "Corborus",
+        "route_generation": 2,
+        "route_node_id": "da90ef890fb19a87",
+        "target_entry": 43438
+      },
+      {
+        "boss": "Slabhide",
+        "route_generation": 4,
+        "route_node_id": "b412eea04f2adbfa",
+        "target_entry": 43214
+      },
+      {
+        "boss": "Ozruk",
+        "route_generation": 11,
+        "route_node_id": "b1c6790bda1c3247",
+        "target_entry": 42188
+      },
+      {
+        "boss": "High Priestess Azil",
+        "route_generation": 14,
+        "route_node_id": "4b2457d42f81a298",
+        "target_entry": 42333
+      }
+    ],
+    "teacher_assisted_kills": 0,
+    "terminal_count": 14,
+    "terminals": [
+      {
+        "route_generation": 1,
+        "route_node_id": "4451ee3f40052a9e"
+      },
+      {
+        "route_generation": 2,
+        "route_node_id": "da90ef890fb19a87"
+      },
+      {
+        "route_generation": 3,
+        "route_node_id": "b7bad077085f36b1"
+      },
+      {
+        "route_generation": 4,
+        "route_node_id": "b412eea04f2adbfa"
+      },
+      {
+        "route_generation": 5,
+        "route_node_id": "8846ebfdbab1d421"
+      },
+      {
+        "route_generation": 7,
+        "route_node_id": "50d383218465f165"
+      },
+      {
+        "route_generation": 6,
+        "route_node_id": "5f8f449ef78a9118"
+      },
+      {
+        "route_generation": 8,
+        "route_node_id": "ba268068d91aac04"
+      },
+      {
+        "route_generation": 9,
+        "route_node_id": "c72392c2ec87e94f"
+      },
+      {
+        "route_generation": 11,
+        "route_node_id": "b1c6790bda1c3247"
+      },
+      {
+        "route_generation": 14,
+        "route_node_id": "4b2457d42f81a298"
+      },
+      {
+        "route_generation": 10,
+        "route_node_id": "e99508e13ef3da4c"
+      },
+      {
+        "route_generation": 12,
+        "route_node_id": "3191b28d8c4a59b2"
+      },
+      {
+        "route_generation": 13,
+        "route_node_id": "3edc010765b5c456"
+      }
+    ],
+    "unresolved_death_loops": 0,
+    "unresolved_stuck": 0
+  },
+  "schema": "all_spec_phase9_rerun139_diagnosis_v1",
+  "smallest_safe_correction": {
+    "behavior_change": false,
+    "behavioral_corrections_rejected_until_next_evidence": [
+      "cooldown reset or cooldown weakening",
+      "route-specific victim assignment or forced aggro",
+      "global threat inflation",
+      "gate relaxation or audit-denominator exclusion",
+      "speculative movement, target-selection, or action-priority changes without exact persisted blocker evidence"
+    ],
+    "change": "Persist the already-computed Stampeding Roar failureReason in the bounded decision trace result/reason that survives batch capture and canonical reconstruction. Keep the existing diagnostic payload and successful action event.",
+    "does_not_change": [
+      "route nodes, terminal semantics, time budgets, or boss-death requirements",
+      "exact party, target catalog, provisioning, or MaxActiveCohorts",
+      "spell eligibility, native cooldowns, range, line of sight, resources, or target legality",
+      "movement destinations, threat values, victim assignment, fallthrough, or action priority",
+      "Feral retention, healer exposure, per-hostile dwell, role-quality thresholds, audit scope, or acceptance policy",
+      "teacher, teleport, forced completion, instance substitution, or generic ML runtime authority"
+    ],
+    "files": [
+      "src/server/game/Bots/BotWorldPopulationMgr.cpp",
+      "tests/test_autonomy_pipeline_smoke.py"
+    ],
+    "scope": "Strict validation-route feral_druid_tank Stampeding Roar diagnostic event only."
+  },
+  "source_attempt": {
+    "attempt_id": "phase9_serial_02_stonecore_phase9_006_6893daf98698",
+    "batch_id": "phase9-serial-canary-rerun139-2",
+    "batch_identity_sha256": "a7688ac72ad4b8f1cf126d854cef6fc994d3ad05b5f438b103ab28703e785977",
+    "binary_sha256": "a649dbec1150a3d17b7991d6f5dd01785a5bed41f532f5ff2996b052c4d748a6",
+    "composition_id": "stonecore_phase9_006_6893daf98698",
+    "evidence_identity_manifest_sha256": "77143dc476812c5db217e8b6446d6a77c7f364a8784e00ca6a58ea83870174f2",
+    "max_active_cohorts": 1,
+    "party": [
+      "feral_druid_tank",
+      "discipline_priest",
+      "fury_warrior",
+      "marksmanship_hunter",
+      "retribution_paladin"
+    ],
+    "party_sha256": "524b94c794897f5111bdae0a5e45ba31a31ebb8596d811a3dd8c1caff95bd16a",
+    "profile_content_hash": "35a587f05d8781d72c62576a6f35392a69e01d5978429f65429ad5b9ed096a22",
+    "profile_generation": 1,
+    "run_plan_sha256": "194b8ddaeb0bf880b78474dfa89993df5193c51f91341c6729f14106e774e7ab",
+    "server_epoch": 10558752655525156,
+    "server_process_id": 2349843,
+    "session_fingerprint": "c97af5ec53a5fb954bf5e3fadf22696c7b2071099fea922c6be2153430aa59e2"
+  },
+  "source_evidence": {
+    "acceptance_source_report": {
+      "path": "/home/runiir/Games/trinity-cata/artifacts/all_spec_program/phase9_serial_canaries_20260804_rerun139/phase9_serial_02_stonecore_phase9_006_6893daf98698/batch/raw/acceptance_source_report.json",
+      "sha256": "998bfb00c626883ceee3deff590b09e50fb77a52d7c17cf5526320b8ca9834e7"
+    },
+    "evidence_identity_manifest": {
+      "path": "/home/runiir/Games/trinity-cata/artifacts/all_spec_program/phase9_serial_canaries_20260804_rerun139/evidence_identity_manifest.json",
+      "sha256": "1a5647cbc6adb6193fd2287b43b8c26fbe05c9e579f8bde8c5da9d6037369155"
+    },
+    "final_manifest": {
+      "path": "/home/runiir/Games/trinity-cata/artifacts/all_spec_program/phase9_serial_canaries_20260804_rerun139/phase9_serial_02_stonecore_phase9_006_6893daf98698/batch/retained/final_manifest.json",
+      "sha256": "e358ec6654dc796b02b5ce39d015600211cad4e9f39b8a9c911fc185d62947a3"
+    },
+    "gameplay_report": {
+      "path": "/home/runiir/Games/trinity-cata/artifacts/all_spec_program/phase9_serial_canaries_20260804_rerun139/phase9_serial_02_stonecore_phase9_006_6893daf98698/report.json",
+      "sha256": "966630a51fbdea297597765a649d6d85855dc25e9e234647aed3de34f233325a"
+    },
+    "gate_event_reconstruction": {
+      "path": "/run/user/1000/phase9-rerun139-gate-events.json",
+      "sha256": "c561ef5909adbe26e92779b2c15fa49471f66d78a855061c50e04dc145ab33b4"
+    },
+    "operator_state": {
+      "path": "/home/runiir/Games/trinity-cata/artifacts/all_spec_program/phase9_serial_canaries_20260804_rerun139/operator_state_canary2.json",
+      "sha256": "fe2a4e819fbafdb337c91d9c9d14d37ee5b4db5f6052e37f0bbcd0607f8101d1"
+    },
+    "publication_receipt": {
+      "path": "/home/runiir/Games/trinity-cata/artifacts/all_spec_program/phase9_serial_canaries_20260804_rerun139/phase9_serial_02_stonecore_phase9_006_6893daf98698/batch/retained/publication_receipt.json",
+      "sha256": "7e22a578bc34e4351a9b00ad7789bab638ad3b68dcc70bd17b862a972793a6e9"
+    },
+    "run_plan": {
+      "path": "/home/runiir/Games/trinity-cata/artifacts/all_spec_program/phase9_serial_canaries_20260804_rerun139/run_plan.json",
+      "sha256": "f076838ed67cb4f4eff49b972def60feae37819b689a17edefdcf44f6ddd2a01"
+    },
+    "session": {
+      "path": "/home/runiir/Games/trinity-cata/artifacts/all_spec_program/phase9_serial_canaries_20260804_rerun139/phase9_serial_02_stonecore_phase9_006_6893daf98698/session.json",
+      "sha256": "c343416c19fa9914ba8d02b4e3c92d7b90105caf125ef9e6432674704740fa57"
+    },
+    "threat_reconstruction": {
+      "path": "/run/user/1000/phase9-rerun139-threat-reconstruction.json",
+      "sha256": "46305d860a86c95427a0151ccef33a21b0837d2cee845f7ea1006bf2565d808b"
+    },
+    "verification": {
+      "path": "/run/user/1000/phase9-rerun139-verification.json",
+      "sha256": "043a71b212ec94d3a21b1d02b10365c45724191c6a7f38b20e520070edda8c8c"
+    }
+  },
+  "stampeding_roar_diagnosis": {
+    "causal_wave_end_after_success_ms": 54802,
+    "causal_wave_entirely_after_native_aura_expiration": true,
+    "causal_wave_entirely_inside_native_cooldown": true,
+    "causal_wave_start_after_success_ms": 42797,
+    "gate_evaluation_count": 69,
+    "gate_groups": [
+      {
+        "count": 7,
+        "end_timestamp_ms": 1785822561732,
+        "name": "generation_1_pre_success",
+        "not_submitted": 7,
+        "route_generations": [
+          1
+        ],
+        "start_timestamp_ms": 1785822560184,
+        "submitted": 0
+      },
+      {
+        "count": 8,
+        "end_timestamp_ms": 1785823324075,
+        "name": "generation_13_initial_submission_period",
+        "not_submitted": 7,
+        "route_generations": [
+          13
+        ],
+        "start_timestamp_ms": 1785823322280,
+        "submitted": 1
+      },
+      {
+        "count": 2,
+        "end_timestamp_ms": 1785823334637,
+        "name": "generation_13_short_followup",
+        "not_submitted": 2,
+        "route_generations": [
+          13
+        ],
+        "start_timestamp_ms": 1785823334379,
+        "submitted": 0
+      },
+      {
+        "count": 44,
+        "end_timestamp_ms": 1785823377337,
+        "name": "generation_13_strict_failure_causal_wave",
+        "not_submitted": 44,
+        "route_generations": [
+          13
+        ],
+        "start_timestamp_ms": 1785823365332,
+        "submitted": 0
+      },
+      {
+        "count": 8,
+        "end_timestamp_ms": 1785823487186,
+        "name": "generation_14_post_cooldown_period",
+        "not_submitted": 8,
+        "route_generations": [
+          14
+        ],
+        "start_timestamp_ms": 1785823485380,
+        "submitted": 0
+      }
+    ],
+    "generation_counts": {
+      "1": 7,
+      "13": 54,
+      "14": 8
+    },
+    "native_dbc": {
+      "category_recovery_time_ms": 120000,
+      "cooldowns_id": 5737,
+      "duration_index": 31,
+      "duration_ms": 8000,
+      "recovery_time_ms": 0,
+      "spell_cooldowns_dbc_path": "data/dbc/enUS/SpellCooldowns.dbc",
+      "spell_cooldowns_dbc_sha256": "0939c8ffb7902dc4e11546feedf36603b3bead730dfe795289fe977771b71d12",
+      "spell_dbc_path": "data/dbc/enUS/Spell.dbc",
+      "spell_dbc_sha256": "088a14963d3f81a10963702c760215f49ff73132bea751306c57aae0dae9f39f",
+      "spell_duration_dbc_path": "data/dbc/enUS/SpellDuration.dbc",
+      "spell_duration_dbc_sha256": "284e22a843ce4cb85604cd037d228f55a757ea3a608e59e3a5f30cbba02bc727",
+      "start_recovery_time_ms": 1500
+    },
+    "not_submitted_count": 68,
+    "persisted_telemetry": {
+      "diagnostic_action_categories": {
+        "wait": 3
+      },
+      "diagnostic_generations": {
+        "13": 3
+      },
+      "diagnostic_result_counts": {
+        "feral_stampeding_roar_not_submitted": 3
+      },
+      "final_evidence_action_count": 69,
+      "final_evidence_result_count_not_submitted": 68,
+      "final_evidence_result_count_submitted": 1,
+      "gate_payload_fields_persisted": false,
+      "latest_unique_diagnostic_entries": 3,
+      "latest_unique_success_entries": 1,
+      "success_generations": {
+        "13": 1
+      }
+    },
+    "spell_id": 77761,
+    "spell_name": "Stampeding Roar, Bear Form",
+    "successful_action": "feral_stampeding_roar_healer_threat_reposition",
+    "successful_submission_count": 1,
+    "successful_submission_timestamp_ms": 1785823322535,
+    "transport_limitation": {
+      "consequence": "Submitted/not-submitted labels survive, but active_path_valid, state_is_moving, has_spell_77761, has_aura_77761, cast_attempted, cast_submitted, and failure_reason do not.",
+      "database_matching_event_row_count": 0,
+      "reason": "RecordEvent writes bounded decision traces before the RunId guard, but rawJson and semanticJson only reach experiment_bot_events after a nonzero RunId; canonical (bot_guid, sequence) dedup also overwrites many companion event traces.",
+      "structured_payload_constructed_in_source": true,
+      "structured_payload_persisted_in_immutable_capture": false,
+      "structured_payload_schema": "feral_stampeding_roar_gate_v1"
+    }
+  }
+}

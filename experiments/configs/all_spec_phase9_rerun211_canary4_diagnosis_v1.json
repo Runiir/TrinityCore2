@@ -1,0 +1,159 @@
+{
+  "schema": "all_spec_phase9_immutable_canary_diagnosis_v1",
+  "rerun": 211,
+  "serial_index": 4,
+  "attempt_id": "phase9_serial_04_stonecore_phase9_004_3904746e5810",
+  "immutable_batch": {
+    "batch_identity_sha256": "5163be8151d2974e328cff6697ee7290339cad03512fa2fc48245d9946cd768c",
+    "raw_bundle_sha256": "6b0ac6c81d582778bb1460b321d802500812566443ee0b2621b3a4e67be18fd1",
+    "compact_bundle_sha256": "d550465c5da4eed4b4e537d11fe42dda82bc079f728291470f4fdf5037635c13",
+    "publication_receipt_sha256": "96c1159c5dfc13c1de9c16e3a00d9d7197952f64d381ccc4f835895f07dd0f8f",
+    "source_report_sha256": "0c4c79ae6d838a5a05d8d39f231905601e56aada0ee94b74f0c5a246eba669da",
+    "independent_strict_verifier_canonical_sha256": "115acdbae9f27f1d02938b8cad704c1f99161e1b8b18d7026b5b75259b07ca8d",
+    "independent_strict_verifier_file_sha256": "528476552448310dd0d491f071ac4365dd0c6d3bb27c7aef32bd8422ed1232a7",
+    "independent_role_reconstruction_canonical_sha256": "c46336fc6635b107f46784b1135aa6e142e542a16b4fa02c3eca227f5c77a70d",
+    "independent_role_reconstruction_file_sha256": "77a6bacf3b8d06e01ef825e00cab0b1280af95c58c1185cc7bad058a31b188dc",
+    "independent_role_audit_canonical_sha256": "a0100b20ec7db9c151cd0c31baf83e47c4fa25ffa47bb2bc792463fa177a368e",
+    "independent_role_audit_file_sha256": "27e1bc3597a0d879bd2559c5b19f91c652cb87be6a4225d5b254b6b6fa27e76d",
+    "raw_dvc_object": "723c68998654b6de916b7c4a3d726424.dir",
+    "compact_dvc_object": "37011c9c00eb9cc5656954ea5369dc24.dir",
+    "selective_remote_hydration_verified": true,
+    "targeted_eviction_complete": true,
+    "broad_dvc_gc_used": false
+  },
+  "frozen_identity": {
+    "identity_manifest_sha256": "603ac43a16ed8ac05595047575c52fd39b3f4ff9ceadfc5e9ae2f3e3279c864d",
+    "run_plan_sha256": "f40c34b8910a278742684c7c8959100e67abf4260bf19327ec9b83199233c0b8",
+    "binary_sha256": "deac2e0bdb57b6d5bb2a548dc62c31b40f2cb52137670c6e025f5175df8f553d",
+    "server_pid": 339187,
+    "server_epoch": 972267823509912,
+    "unit_name": "trinity-live-validation-c324a40861e392e5f7c0ebf9.service",
+    "session_fingerprint": "01e4cb7baae0eed1482b62954e212674e7694ba26677953ba6b8a5180b9f5f6e",
+    "profile_generation": 1,
+    "profile_content_hash": "d9d6a60e97756695ea6553b1fa34e9c2c63ebe6e09467e71bc01fb74fe3655ae",
+    "max_active_cohorts": 1
+  },
+  "exact_party": [
+    "protection_warrior",
+    "restoration_druid",
+    "elemental_shaman",
+    "enhancement_shaman",
+    "feral_druid_dps"
+  ],
+  "exact_party_sha256": "e2b92089bf4d84e3fce916843df6441d573eaf6b0ad076f2e8db3b7df6315920",
+  "operator": {
+    "selected_rows": [4],
+    "later_rows_started": false,
+    "outer_state_update_interrupted_after_child_closeout": true,
+    "child_capture_complete": true,
+    "child_session_closed": true,
+    "child_publication_complete": true,
+    "operator_process_absent": true
+  },
+  "authoritative_result": {
+    "classification": "gameplay_failure",
+    "returncode": 0,
+    "timed_out": false,
+    "session_closed": true,
+    "identity_complete": true,
+    "route_terminal_scopes": 13,
+    "expected_route_terminal_scopes": 14,
+    "real_boss_death_scopes": 3,
+    "expected_real_boss_death_scopes": 4,
+    "missing_terminal_generation": 14,
+    "missing_terminal_node_id": "4b2457d42f81a298",
+    "missing_boss_entry": 42333,
+    "cleanup_complete": true,
+    "remote_publication_verified": true,
+    "watchdog_clean": true,
+    "forbidden_completion_assistance": [],
+    "party_deaths": 7,
+    "failure_labels": [
+      "role_quality:Protwar:tank_threat_retention",
+      "role_quality:Protwar:healer_target_exposure",
+      "role_quality:Protwar:healer_target_dwell",
+      "stonecore_role_quality_audit_failed",
+      "validation_route_stuck_loop"
+    ]
+  },
+  "independent_role_metrics": {
+    "Protwar": {
+      "eligible_hostile_denominator": 4410,
+      "tank_owned_hostile_numerator": 3552,
+      "healer_targeting_hostile_numerator": 689,
+      "tank_all_hostile_retention_ratio": 0.8054421768707483,
+      "healer_target_exposure_ratio": 0.15623582766439909,
+      "maximum_healer_target_dwell_ms": 39192,
+      "maximum_dwell_guid": 133,
+      "threat_aura_active_samples": 781,
+      "threat_aura_total_samples": 781,
+      "threat_aura_uptime": 1.0,
+      "successful_charge_pickups": 2,
+      "successful_bounded_shockwave_pickups": 0,
+      "successful_residual_healer_taunts": 0,
+      "thunder_clap_attempts": 73,
+      "taunt_attempts": 46
+    },
+    "generation_14": {
+      "eligible_hostile_denominator": 3421,
+      "tank_owned_hostile_numerator": 2685,
+      "healer_targeting_hostile_numerator": 655,
+      "tank_all_hostile_retention_ratio": 0.7848582285881321,
+      "healer_target_exposure_ratio": 0.19146448406898567
+    },
+    "other_gates": {
+      "all_non_healer_active_action_coverage_passed": true,
+      "all_cast_failure_rates_passed": true,
+      "restoration_druid_heal_cast_success_rate": 1.0,
+      "missing_required_rotation_groups": []
+    }
+  },
+  "maximum_dwell_chronology": {
+    "hostile_guid": 133,
+    "hostile_entry": 42692,
+    "hostile_name": "Stonecore Bruiser",
+    "route_generation": 14,
+    "episode_start_ms": 1786393343241,
+    "episode_end_ms": 1786393382433,
+    "episode_duration_ms": 39192,
+    "pre_episode_tank_owned_duration_ms": 11089,
+    "pre_episode_action": "hold_pending_swarm_area_threat_resources",
+    "episode_action": "hold_boss_add_density",
+    "terminal_engaged_hostiles": 1,
+    "terminal_tank_owned_hostiles": 0,
+    "terminal_healer_targeting_hostiles": 1,
+    "no_compatible_density_anchor_observed": true,
+    "tank_route_distance_yards_at_closeout": 84.977,
+    "final_density_phase_active": true,
+    "final_density_generation": 14,
+    "positional_falsifier": "Combat events place the Bruiser at approximately 1319.132,1069.834, the stationary Warrior at approximately 1319.048,1069.868, and the healer within about four yards. Native Shockwave damaged GUID 133 twice during the exposure episode but did not recover ownership. A healer-rejoin movement correction is therefore rejected."
+  },
+  "causal_reconstruction": {
+    "primary_root_cause": "The strict role audit correctly includes every live hostile attacking the exact party. GUID 133 was an unexpected Stonecore Bruiser rather than configured Azil follower entry 42428. The boss-add resolver collected it as an unexpected party hostile but admitted unexpected hostiles into localAdds only at cardinality three or greater. With exactly one Bruiser remaining, add stayed null and the active shared density handler returned no_compatible_density_anchor and hold_boss_add_density for 39192 ms even though the hostile, Warrior, and healer were co-located.",
+    "pickup_vs_decay": "This is later real threat decay after successful pickup: GUID 133 remained tank-owned for 11089 ms before transferring to the healer.",
+    "movement_and_hazard": "Movement is not the final cause. The Warrior, healer, and hostile were already co-located; all 143 hazard exits succeeded and none failed.",
+    "native_action_attribution": "The regular profile damaged GUID 133 with Shockwave twice, but the native single-target Taunt branch could not inspect it because it was absent from localAdds. The rerun211 bounded Shockwave and residual-Taunt branches were not themselves causal.",
+    "misdirection": "Not applicable because the exact party contains no Hunter.",
+    "healer_behavior": "Restoration Druid healing passed at 1.0. Ordinary healing threat exposed the admission mismatch but is not a healer defect.",
+    "audit_attribution": "Correct. Independent identity-scoped reconstruction exactly reproduces the denominator, ownership, exposure, and dwell, and combat positions falsify a remote-target attribution error.",
+    "rerun170_relation": "Not causal. Passive-swarm staging completed; the failure is a post-recovery mismatch between the all-hostile audit and unexpected-hostile admission while an active density phase already exists.",
+    "feral_scope": "Feral tank Growl, Swipe, Thrash, and Demoralizing Roar are not applicable to this Protection Warrior row and remain unchanged."
+  },
+  "minimal_correction": {
+    "unexpected_hostile_admission": "During an already-active, generation-scoped boss density recovery, admit every real unexpected hostile currently targeting the exact party into localAdds. Initial natural encounter overlap retains the existing three-hostile proof.",
+    "residual_taunt": "Allow the existing deterministic one- or two-attacker Protection Warrior native Taunt branch when the healer remainder is itself the selected defense target, not only when a larger damage-role cluster wins selection.",
+    "failure_fallback": "Native range, LOS, cooldown, GCD, power, stance, target, and spell-legality checks remain authoritative; rejected Taunt falls through to the unchanged area, rescue, movement, and profile chain.",
+    "non_changes": "Do not assign threat or victims, teleport, add completion assistance, alter initial unexpected-hostile admission, change thresholds, change party/route/identity/publication contracts, or change Feral Thrash."
+  },
+  "gates_unchanged": {
+    "tank_all_hostile_retention_min": 0.9,
+    "healer_target_exposure_max": 0.01,
+    "max_healer_target_dwell_ms": 3000,
+    "tank_threat_aura_uptime_min": 0.99,
+    "non_healer_active_action_coverage_min": 0.7,
+    "cast_failure_rate_max": 0.05,
+    "healer_successful_heal_cast_rate_min": 0.95,
+    "missing_required_rotation_groups_allowed": false
+  },
+  "diagnosis_canonical_sha256": "ac01a8f61724fba731088034752e5e5c45a6240ae648334a16834e0e0a46f1a1"
+}

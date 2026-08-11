@@ -1,0 +1,57 @@
+{
+  "attempt_count": 8,
+  "attempt_receipts_sha256": "98c5a20ad49427f0b7d052c1aab9a324f4a683f6061cd032293cb2c1e0598247",
+  "attempts": [
+    {
+      "attempt_index": 1,
+      "receipt_sha256": "5d331d48dfe8cfc6021253991f85a1f072b86415621650b2a3db031e3b82d699",
+      "report_file_sha256": "8c3134578d7b2d1b16ff180720a22ea0df6bb5fffb1f62e660ba65e9592d0adf",
+      "session_file_sha256": "0db913e08166c708ef2c9a4ccfb99401057ee2656061f4d694c1084541ac1455"
+    },
+    {
+      "attempt_index": 2,
+      "receipt_sha256": "6f8695dbd09d33a6817247d143948081e480777229a120e2f6a1e62a89fc035e",
+      "report_file_sha256": "c94c2f3ed538d3801e11138b1108a46ad532a349e763c106620adfa2fbcb18eb",
+      "session_file_sha256": "8b215b0d0c310bc3d32b6c27647a78e3df4fe6a1889c6420daf03065e99f25fb"
+    },
+    {
+      "attempt_index": 3,
+      "receipt_sha256": "de52233079789a5fe6a3c67b7353494ac1202ee7f9930696c53c6d0417a7a4af",
+      "report_file_sha256": "0f127998bba405a9e64fbcff1c97aa06a60f93d05bb5fee85a19eaff2fb58484",
+      "session_file_sha256": "564746696d6661c9083d692afd43284b0ff0931aec048e9448d683ec92dda973"
+    },
+    {
+      "attempt_index": 4,
+      "receipt_sha256": "8698fc092abab7dbb229e8d02e724da1fd38b8ca5be609422e3d884e623c9af7",
+      "report_file_sha256": "04c771821d250415ca93618f603f706b65ba3374d3b9a95c3d732dd6e4cb7222",
+      "session_file_sha256": "f76f288013c2012fd56c61c213cce458df6570535730bc143b23aa08a6c7a731"
+    },
+    {
+      "attempt_index": 5,
+      "receipt_sha256": "25c99724958e218edf011d9ae6be8b8b5fa476c4f4b3972e591a7a6e0f9b7da7",
+      "report_file_sha256": "8e87d6d066e3b65692c323c837b8fea4ad4d3b5f6281861d0c73ee94c39b03e8",
+      "session_file_sha256": "c70d4029b76e7da576eb6fc6e0517e816600721c4dc582b4459eb07557fa9585"
+    },
+    {
+      "attempt_index": 6,
+      "receipt_sha256": "59637e8876c2e24acc73e2a67be231588794b2e12a28a0a1d35fc73663f51db7",
+      "report_file_sha256": "b141c040ff1c07ef7a72375416aeed814170d3e4058d0c3fdb72bbc859dcbf64",
+      "session_file_sha256": "ea1839d3062ffbee3cf8ac483e8bdbe2b6b210a3b8c79ac6ef8884440bfb944a"
+    },
+    {
+      "attempt_index": 7,
+      "receipt_sha256": "dfc6d4a39b81bddde8c2d1ab809ebb329090c2045164e131440bb2282630fdf0",
+      "report_file_sha256": "50ebe8fd90bce72639b29e2a934f67eb0da9ef5ba6d88b81259754770ea03d3b",
+      "session_file_sha256": "0f94725fcb5a1b7fd5d30877bb6c9151c18e1ed8656d9796c8c34f77a4b47e6f"
+    },
+    {
+      "attempt_index": 8,
+      "receipt_sha256": "384cd8603b4f51144cee29a8e0b2b4e85a8ce00a14cdc61084590837d7906281",
+      "report_file_sha256": "c782d55c196210a25de86ba5241c115f174ed7747fe225c7f2cb798f1f740e92",
+      "session_file_sha256": "da21d72a34c2b76d8f57a2e808a3ac68ba5f5a43bf3dc75e786ee785be04dee4"
+    }
+  ],
+  "contract_sha256": "339b6065e11abbb948ca1c7d873f356f854a4503e9e0d46b9823dee2ead4e6e1",
+  "gate_passed": false,
+  "schema": "all_spec_phase6_serial_soak_input_manifest_v1"
+}

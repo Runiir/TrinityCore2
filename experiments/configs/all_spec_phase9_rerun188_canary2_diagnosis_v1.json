@@ -1,0 +1,293 @@
+{
+  "schema": "all_spec_phase9_authoritative_gameplay_failure_diagnosis_v1",
+  "diagnosis_sha256": "0ba70f7fe833a22f9ca6fef2225670d4052669ccc55e4d7d686d08a51fefedd0",
+  "hash_scope": "canonical_json_without_diagnosis_sha256",
+  "scope": {
+    "phase": 9,
+    "rerun": 188,
+    "serial_canary_index": 2,
+    "composition_id": "stonecore_phase9_006_6893daf98698",
+    "attempt": "artifacts/all_spec_program/phase9_serial_canaries_20260809_rerun188/phase9_serial_02_stonecore_phase9_006_6893daf98698",
+    "diagnosis_limited_to_failed_immutable_batch": true,
+    "only_canary_2_ran": true,
+    "canaries_3_through_8_started": false,
+    "phases_10_through_12_blocked": true
+  },
+  "immutable_evidence": {
+    "batch_identity_sha256": "f84f22c668923e8e20760aea647efa2ca4b4563ce5fa96c693ce6720f539c837",
+    "raw_bundle_sha256": "75eac96ca3e03d6bb303b0837527a416ad7e26c5f2f7daffa9e2bac0eed2d159",
+    "compact_bundle_sha256": "1c58a2f9d8e57dc9ed32c3cb77b2f7563f6ed4221ec469a7a746dfa539bcd6ac",
+    "publication_receipt_sha256": "31c1f26e60b4e93c9e44951cb72bb4d9117c5d1b3a95cea64b8dc5a59f0e7698",
+    "publication_receipt_file_sha256": "da2e1d0e2c38a2389a927f8f701df9e0984571127d3fdd517d958841c957c4a2",
+    "acceptance_source_report_sha256": "434159d9967b1c96a7e63742e3f9d3672316ba7b6a51862d8b6151de2e846b4e",
+    "raw_pointer_sha256": "89dd0d5950c976e1ce33ab829737ffb87b65cdd1389845567f3ec8d69cd77037",
+    "compact_pointer_sha256": "123d00a3d6442e2ad6ca2ee371c111ef46671f02b753bea5f06f54322beeb34a",
+    "raw_dvc_object": "81d7256ce3002f75ba9da7549d60a01a.dir",
+    "compact_dvc_object": "aaed354edd927d69b65c6bab2bd8250c.dir",
+    "identity_manifest_sha256": "2ca82eea4f85a690b5824a9a0c0c04c1db5cbe486a77e864add8c7ff1db75b4b",
+    "run_plan_sha256": "85643dbc4cc656fbea837e929393814f39f59e78bf3836dc0e028d23768c4f85",
+    "evidence_binary_sha256": "6b6f6bbcb0e2ffd6aca1c3b9ecb47f4ec5c4fcd8270d0229d21ccc305327532a"
+  },
+  "independent_capture_and_publication_verifier": {
+    "batch_identity_recomputed": true,
+    "raw_and_compact_file_manifests_recomputed": true,
+    "publication_receipt_recomputed": true,
+    "canonical_dvc_remote_status": "in_sync",
+    "publication_remote_verified": true,
+    "raw_and_compact_payloads_re_evicted": true,
+    "batch_specific_hydration_and_verification_caches_evicted": true,
+    "broad_dvc_gc_used": false
+  },
+  "frozen_identity": {
+    "git_head": "1cd6217f11b428ac22de1400a087283623dd262d",
+    "server_process_id": 1568806,
+    "server_epoch": 4970359908816239,
+    "worldserver_unit": "trinity-live-validation-5a12726aafa8d1bc5c0ecb66.service",
+    "session_fingerprint": "39cdd0e6429413fe5663ed2d53b6f70511b5769ffd4ec191546b5acea6c7d8ff",
+    "profile_generation": 1,
+    "profile_content_hash": "35a587f05d8781d72c62576a6f35392a69e01d5978429f65429ad5b9ed096a22",
+    "max_active_cohorts": 1,
+    "identity_recomputed_and_matched": true,
+    "plan_recomputed_and_matched": true
+  },
+  "exact_party": {
+    "ordered_specs": [
+      "feral_druid_tank",
+      "discipline_priest",
+      "fury_warrior",
+      "marksmanship_hunter",
+      "retribution_paladin"
+    ],
+    "party_sha256": "524b94c794897f5111bdae0a5e45ba31a31ebb8596d811a3dd8c1caff95bd16a",
+    "recomputed_and_matched": true
+  },
+  "independent_strict_verifier": {
+    "underlying_returncode": 0,
+    "timed_out": false,
+    "session_closed": true,
+    "identity_complete": true,
+    "operator_attempt_count": 1,
+    "serial_index": 2,
+    "global_lifecycle_command_count": 0,
+    "scheduler_events": [
+      "admit:2",
+      "close:2"
+    ],
+    "cleanup": {
+      "active": false,
+      "active_bots": 0,
+      "lease_count": 0,
+      "party_bot_count": 0
+    },
+    "route_terminal_count": 14,
+    "route_terminal_generations": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14
+    ],
+    "authoritative_boss_death_entries": [
+      43438,
+      43214,
+      42188,
+      42333
+    ],
+    "high_priestess_azil_terminal_and_death": true,
+    "validation_route_manifest_complete": true,
+    "watchdog_clean": true,
+    "teacher_assisted_kills": 0,
+    "forbidden_completion_assistance": [],
+    "strict_non_role_gates_passed": true,
+    "role_gate_passed": false
+  },
+  "independent_role_verifier": {
+    "canonical_audit_passed": false,
+    "canonical_audit_artifact_sha256": "707e16e0fd2cdb7fe5ea9c2136e7a4102c8f6e8346854cc7daeea532eef8a063",
+    "independent_verifier_sha256": "03e5b9f2cfe28bbc38f3f4a171123de4a3ab8bb4370412648dc753d725666b7d",
+    "eligible_hostile_denominator": 2930,
+    "tank_owned_hostile_numerator": 2878,
+    "healer_targeting_hostile_numerator": 1,
+    "tank_all_hostile_retention_ratio": 0.9822525597269625,
+    "healer_target_exposure_ratio": 0.00034129692832764505,
+    "maximum_healer_target_dwell_ms": 3094,
+    "threat_aura_active_samples": 536,
+    "threat_aura_total_samples": 536,
+    "threat_aura_uptime_ratio": 1.0,
+    "non_healer_active_action_coverage": {
+      "Feraltank": 1.0,
+      "Furywar": 1.0,
+      "Mmhunter": 1.0,
+      "Retpally": 1.0
+    },
+    "cast_failure_rates": {
+      "Discpriest": 0.0,
+      "Feraltank": 0.0,
+      "Furywar": 0.0,
+      "Mmhunter": 0.017964071856287425,
+      "Retpally": 0.0
+    },
+    "discipline_priest_successful_heal_cast_rate": 1.0,
+    "missing_required_rotation_groups": [],
+    "threshold_results": {
+      "tank_retention_at_least_0_90": true,
+      "healer_exposure_at_most_0_01": true,
+      "healer_dwell_at_most_3000_ms": false,
+      "threat_aura_uptime_at_least_0_99": true,
+      "non_healer_active_action_coverage_at_least_0_70": true,
+      "cast_failure_rate_at_most_0_05": true,
+      "healer_heal_cast_success_at_least_0_95": true,
+      "rotation_groups_present": true
+    },
+    "failure_labels": [
+      "Feraltank:healer_target_dwell"
+    ]
+  },
+  "eligible_exposure_localization": {
+    "generation_1": {"eligible": 286, "tank_owned": 241, "healer_targeting": 0},
+    "generation_2": {"eligible": 13, "tank_owned": 13, "healer_targeting": 0},
+    "generation_3": {"eligible": 275, "tank_owned": 275, "healer_targeting": 0},
+    "generation_4": {"eligible": 47, "tank_owned": 47, "healer_targeting": 0},
+    "generation_7": {"eligible": 12, "tank_owned": 9, "healer_targeting": 0},
+    "generation_8": {"eligible": 13, "tank_owned": 13, "healer_targeting": 0},
+    "generation_9": {"eligible": 5, "tank_owned": 5, "healer_targeting": 0},
+    "generation_10": {"eligible": 63, "tank_owned": 63, "healer_targeting": 0},
+    "generation_11": {"eligible": 14, "tank_owned": 14, "healer_targeting": 0},
+    "generation_13": {"eligible": 1564, "tank_owned": 1562, "healer_targeting": 0},
+    "generation_14": {
+      "eligible": 638,
+      "tank_owned": 636,
+      "healer_targeting": 1,
+      "healer_targeting_guids": [803],
+      "maximum_dwell_ms": 3094,
+      "interpretation": "The sole eligible healer-target sample and only over-threshold episode belong to the final follower of the High Priestess Azil swarm."
+    }
+  },
+  "action_reconstruction": {
+    "native_successful_submissions": {
+      "Growl_6795": 12,
+      "Swipe_779": 43,
+      "Thrash_77758": 36,
+      "Demoralizing_Roar_80964": 8,
+      "Charge_49376": 0
+    },
+    "charge_controller_actions": {
+      "feral_charge_remote_party_trash_cluster_pickup": 3,
+      "feral_charge_remote_healer_trash_cluster_handoff": 1,
+      "feral_charge_remote_healer_trash_cluster_in_flight": 1,
+      "feral_charge_safe_hazard_swarm_pickup": 1
+    },
+    "movement_summary": {
+      "move_to_boss_add": 29,
+      "move_to_focused_trash_target": 13,
+      "move_to_trash_density": 15,
+      "move_to_profile_min_range": 35,
+      "move_to_validation_route": 216,
+      "move_to_validation_route_anchor": 618,
+      "move_out_of_hazard": 152,
+      "hazard_exit_failures": 0
+    },
+    "hazard_summary": {
+      "hold_outside_hazard": 334,
+      "tank_hazard_hold_aoe_threat": 26,
+      "feral_swipe_hazard_secure_threat_margin": 1,
+      "feral_thrash_hazard_secure_threat_retention": 1
+    },
+    "misdirection_summary": {
+      "aoe_attempts": 46,
+      "aoe_successes": 35,
+      "single_target_attempts": 27,
+      "single_target_successes": 23,
+      "wrong_target_successes": 0,
+      "move_to_aoe_range": 24,
+      "move_to_single_range": 5
+    },
+    "healer_threat_handoff_summary": {
+      "feral_hold_healer_swarm_handoff_for_roar": 6,
+      "feral_demoralizing_roar_swarm_pickup": 1,
+      "feral_swipe_healer_swarm_retention_before_roar": 1,
+      "feral_growl_single_healer_threat_before_roar": 2,
+      "healer_preposition_for_feral_swarm_pickup": 63,
+      "dps_stack_for_swarm_pickup": 53
+    }
+  },
+  "decisive_episode": {
+    "route_generation": 14,
+    "hostile_guid": 803,
+    "conservative_start_timestamp_ms": 1786304432028,
+    "conservative_end_timestamp_ms": 1786304435122,
+    "dwell_ms": 3094,
+    "first_clear_observation_timestamp_ms": 1786304435376,
+    "chronology": [
+      "At the conservative start, ten eligible followers targeted the healer while the identity-bound handoff held for native Demoralizing Roar.",
+      "Native Demoralizing Roar submitted at 1786304433308 and the wave contracted to seven healer attackers.",
+      "At 1786304434104 the handoff still observed seven healer attackers; by 1786304434359 only GUID 803 remained and the Feral selected move_to_boss_add.",
+      "At 1786304434619 the stable Feral approach continued. The hunter entered Misdirection AoE range at 1786304434652 but did not transfer GUID 803 before it cleared.",
+      "Growl was unavailable on cooldown, so the existing generic fallback retained movement/profile authority.",
+      "Native Thrash submitted at 1786304434870. GUID 803 was still healer-owned at the conservative endpoint and was tank-owned at the next observation 254 ms later."
+    ]
+  },
+  "causal_classification": {
+    "authoritative_gameplay_failure_confirmed": true,
+    "primary_cause": "real_initial_pickup_loss_of_the_final_healer_owned_follower_after_an_otherwise_successful_feral_swarm_handoff",
+    "mechanism": "Growl was unavailable and the sole-follower path selected delayed movement/profile resolution; the next native periodic area action cleared the follower 94 ms beyond the unchanged dwell ceiling.",
+    "later_threat_decay": false,
+    "movement_or_hazard_starvation": false,
+    "primary_misdirection_failure": false,
+    "healer_behavior_failure": false,
+    "audit_attribution_error": false,
+    "rerun170_passive_swarm_side_effect": false,
+    "rerun187_or_rerun188_correction_side_effect": false,
+    "infrastructure_failure": false
+  },
+  "bounded_correction": {
+    "worldserver_stopped_before_tracked_edit": true,
+    "description": "For the deterministic sole lingering healer-owned attacker, preserve native Growl first. If Growl rejects, try existing native Swipe on that exact follower before the unchanged target rebind and generic movement/profile fallback.",
+    "timer_after_swipe_ms": 250,
+    "changed_files": [
+      "src/server/game/Bots/BotWorldPopulationMgr.cpp",
+      "tests/test_autonomy_pipeline_smoke.py"
+    ],
+    "unchanged_contracts": [
+      "all_strict_thresholds",
+      "native_spell_legality_and_cooldowns",
+      "threat_and_victim_semantics",
+      "movement_and_hazard_authority",
+      "Misdirection_and_healer_handoff",
+      "route_and_exact_party",
+      "identity_publication_cleanup_and_assistance"
+    ]
+  },
+  "validation_and_reprovisioning": {
+    "focused_tests": "20 passed, 113 deselected",
+    "broad_source_shape_diagnostic": "101 passed, 32 known pre-existing stale assertions",
+    "git_diff_check": "passed",
+    "worldserver_rebuild_passed": true,
+    "corrected_worldserver_binary_sha256": "92c5ee02863cf0480cb5bcaeb16414d02a01b24e2c3263c340bbf9f2a307ca8a",
+    "deterministic_all_31_reprovisioning_passed": true,
+    "provisioning_verifier": "artifacts/all_spec_program/phase9_serial_canaries_20260809_rerun189/preidentity_preparation/provisioning_verifier.json",
+    "provisioning_accounts_ready": "50/50",
+    "provisioning_characters_ready": "50/50",
+    "provisioning_runtime_profiles_ready": "31/31",
+    "dvc_status_completed": true,
+    "dvc_push_completed": true,
+    "dvc_push_result": "everything_up_to_date_with_two_known_historical_missing_objects",
+    "broad_dvc_gc_used": false
+  },
+  "next_gate": {
+    "rerun": 189,
+    "fresh_identity_and_eight_row_plan_required": true,
+    "restart_at_canary_2_alone": true,
+    "canaries_3_through_8_blocked_until_preceding_strict_pass": true,
+    "phases_10_through_12_blocked": true
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "acceptance": {
+    "accepted": true,
+    "discrepancies": [],
+    "fail_closed": false,
+    "recomputed": {
+      "accepted": true,
+      "all_stages_passed": true,
+      "facts_sha256": "a490521fd2758006d7d70ff3c736ad783e9dbf00df8f026ef1a4ee4eb391252b",
+      "failed_count": 0,
+      "manifest_complete": false,
+      "passed_count": 2,
+      "rejections": [],
+      "result_sha256": "f052c3cbce2ee4e588e756eee01eee96c5f9924cb5254f5f56514c5dcc2d5301",
+      "schema": "bot_live_acceptance_result_v1"
+    },
+    "schema": "bot_live_acceptance_verification_v1"
+  },
+  "batch_id": "p8-s3-restoration-druid-healer-controlled-damage-300-79",
+  "compact": {
+    "bundle_sha256": "b59f37dd7eef9253913566c341eb3f2836b68f486bc39707e9839b4776914f12",
+    "files": [
+      {
+        "path": "evidence.parquet",
+        "sha256": "94fa4dbb3db2606e1f0a597dd861ef60d5830cdc90c3804dda25e12741b1a753",
+        "size": 2670
+      }
+    ],
+    "format": "parquet_zstd",
+    "row_count": 1
+  },
+  "database_export": null,
+  "duplicate_uncompressed_jsonl_retained": false,
+  "identity_sha256": "598982eb3fabe0741b25688896b440728d59d6f22e22ca88d49920e0aaf47cb0",
+  "max_pending_raw_bytes": 67108864,
+  "raw": {
+    "bundle_sha256": "e0c5fb9892367fbe1e99532f94b436c85ab57a49959515567ae04afb644d7e29",
+    "files": [
+      {
+        "path": "acceptance_source_report.json",
+        "sha256": "5e71104c84281f2b6c2f8818bb8ccb261ee055d66151594da0c528c25066a6e5",
+        "size": 213349
+      },
+      {
+        "path": "events.jsonl.zst",
+        "sha256": "c4c9cf84000cc469ccd27a4a1461e7a170c041f2c2ec4204a244e92396bea611",
+        "size": 7983
+      },
+      {
+        "path": "exact_manifests.json",
+        "sha256": "a5ab4dd755bd8e89d6024d8fb4b89540990a50c779184f309dcdf639112fddef",
+        "size": 8485
+      }
+    ],
+    "format": "jsonl.zst",
+    "row_count": 32
+  },
+  "schema": "bot_immutable_batch_manifest_v1",
+  "state": "closed_unpublished"
+}

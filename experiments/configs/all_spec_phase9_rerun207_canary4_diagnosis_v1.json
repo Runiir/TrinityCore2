@@ -1,0 +1,149 @@
+{
+  "schema": "all_spec_phase9_immutable_canary_diagnosis_v1",
+  "rerun": 207,
+  "serial_index": 4,
+  "attempt_id": "phase9_serial_04_stonecore_phase9_004_3904746e5810",
+  "immutable_batch": {
+    "batch_identity_sha256": "d91f07505f7c40dda78fea8631310d731fbfe2dd243473e873206d1efbaee840",
+    "raw_bundle_sha256": "59e16cf2ed789ef3d49989b1ec02ec38de3926d20ae0b56886630869420c0b8d",
+    "compact_bundle_sha256": "d550465c5da4eed4b4e537d11fe42dda82bc079f728291470f4fdf5037635c13",
+    "publication_receipt_sha256": "b018d28f78ea13b9881d5e9828d1f691fd8a390d21130545b5a8d47e2c24e5c7",
+    "source_report_sha256": "17a3bdd967375d6da69f1eb886cd842e77b2b569de20ee76ede25f50706230ce",
+    "independent_verifier_sha256": "b7d6ddff4b0a7b9bc0e8c463db4a1136af7396a1033bedcc58fcde8d2a231dc3",
+    "independent_verifier_file_sha256": "8b918edb7350bc11dfdac07a8428f46adc8d9b3d7aacab32684d6eb5e4f76182"
+  },
+  "frozen_identity": {
+    "identity_manifest_sha256": "ce4ce8fac5ba506cb7be203aa523561254da84bc1a3d2f14dc7c9ce3c073c81a",
+    "run_plan_sha256": "c74b1f264ac58787c1c4e2c1fe7c29aa91c675b0cbabb0cb4ce83b66dd9df433",
+    "binary_sha256": "6045833fb034515ea4455c8ee147b84b8a486a9c0e6596a774ad213604f741f7",
+    "server_pid": 230067,
+    "server_epoch": 1647098528044267,
+    "unit_name": "trinity-live-validation-0f7796d1a9ec8a8ca0c95f2c",
+    "session_fingerprint": "c35c27559e20edf0e53976de94499c6dc41818df362197e6747afc6c496efd51",
+    "profile_generation": 1,
+    "profile_content_hash": "d9d6a60e97756695ea6553b1fa34e9c2c63ebe6e09467e71bc01fb74fe3655ae",
+    "max_active_cohorts": 1
+  },
+  "exact_party": [
+    "protection_warrior",
+    "restoration_druid",
+    "elemental_shaman",
+    "enhancement_shaman",
+    "feral_druid_dps"
+  ],
+  "exact_party_sha256": "e2b92089bf4d84e3fce916843df6441d573eaf6b0ad076f2e8db3b7df6315920",
+  "authoritative_result": {
+    "classification": "gameplay_failure",
+    "route_terminal_scopes": 2,
+    "expected_route_terminal_scopes": 14,
+    "real_boss_death_scopes": 1,
+    "expected_real_boss_death_scopes": 4,
+    "stalled_route_generation": 3,
+    "cleanup_complete": true,
+    "remote_publication_verified": true,
+    "forbidden_completion_assistance": [],
+    "failure_labels": [
+      "role_quality:Feraldps:cast_failure_rate",
+      "role_quality:Protwar:tank_threat_retention",
+      "role_quality:Protwar:healer_target_exposure",
+      "role_quality:Protwar:healer_target_dwell",
+      "stonecore_role_quality_audit_failed",
+      "validation_route_stuck_loop"
+    ]
+  },
+  "independent_role_metrics": {
+    "Feraldps": {
+      "attempts": 148,
+      "successful_attempts": 116,
+      "cast_failures": 32,
+      "cast_failure_rate": 0.21621621621621623,
+      "failure_result": "SPELL_FAILED_NOT_BEHIND",
+      "failure_result_code": 59,
+      "failed_spells": {
+        "5221": 32
+      },
+      "successful_spell_submissions": {
+        "768": 1,
+        "5217": 9,
+        "5221": 17,
+        "50334": 3,
+        "52610": 6,
+        "62078": 13,
+        "80965": 8
+      },
+      "successful_non_spell_fallbacks": 60
+    },
+    "Protwar": {
+      "eligible_hostile_denominator": 1375,
+      "tank_owned_hostile_numerator": 1152,
+      "healer_targeting_hostile_numerator": 105,
+      "tank_all_hostile_retention_ratio": 0.8378181818181818,
+      "healer_target_exposure_ratio": 0.07636363636363637,
+      "maximum_healer_target_dwell_ms": 39234,
+      "maximum_dwell_guid": 337,
+      "threat_aura_active_samples": 417,
+      "threat_aura_total_samples": 417,
+      "threat_aura_uptime": 1.0
+    }
+  },
+  "causal_reconstruction": {
+    "primary_root_cause": "Cat Form provisioning is fixed, but the profile resolver selects Shred 5221 without testing its native behind-target requirement. The executor faces the target and immediately submits Shred even when Feraldps is in the target's front arc, producing all 32 native result-59 failures.",
+    "combat_consequence": "Feraldps loses repeated builder opportunities despite otherwise legal Cat-form actions. The row then suffers a partial wipe and reaches route generation 3 with two separated living hostiles, after which the route watchdog closes the stalled attempt.",
+    "tank_failure_relationship": "Protwar submitted 217 successful actions and retained its threat aura for 417/417 samples. Tank quality decayed across generations while party damage and recovery deteriorated: retention moved from 343/378 in generation 1 to 363/441 in generation 2 and 446/556 in generation 3. Re-test the exact row with legal Feral positioning before applying any independent Protwar or route tuning.",
+    "maximum_episode_chronology": {
+      "guid": 337,
+      "first_engaged_ms": 1786380675766,
+      "first_tank_owned_ms": 1786380675766,
+      "first_healer_target_ms": 1786380713947,
+      "last_healer_target_sample_ms": 1786380753181,
+      "last_engaged_ms": 1786380770277,
+      "route_generation": 3
+    },
+    "stalled_pack": {
+      "route_generation": 3,
+      "pack_count": 7,
+      "dead_count": 5,
+      "living_hostiles": [
+        {
+          "guid": 338,
+          "entry": 42808,
+          "distance_from_home_yards": 79,
+          "formation_member": true
+        },
+        {
+          "guid": 106,
+          "entry": 42810,
+          "at_home": true,
+          "transition_recorded": true
+        }
+      ]
+    },
+    "excluded_causes": [
+      "infrastructure_abort",
+      "identity_mismatch",
+      "publication_failure",
+      "cleanup_failure",
+      "forbidden_assistance",
+      "tank_threat_aura_loss",
+      "missing_cat_form",
+      "healer_cast_failure",
+      "rerun170_passive_swarm_attribution_side_effect"
+    ]
+  },
+  "minimal_correction": {
+    "resolver": "Recognize only Shred 5221 as a behind-target positional action and do not submit it while the caster remains in the native forbidden front arc.",
+    "movement": "Use the existing path-validated movement contract to approach a bounded point directly behind the selected hostile, then retry the unchanged native rotation. If that bounded path is rejected, allow a legal non-Shred profile fallback without recording an artificial cast failure.",
+    "deferred": "Do not separately tune Protection Warrior threat or the route watchdog until canary 4 is retested with Shred's native positional contract preserved."
+  },
+  "gates_unchanged": {
+    "tank_all_hostile_retention_min": 0.9,
+    "healer_target_exposure_max": 0.01,
+    "max_healer_target_dwell_ms": 3000,
+    "tank_threat_aura_uptime_min": 0.99,
+    "non_healer_active_action_coverage_min": 0.7,
+    "cast_failure_rate_max": 0.05,
+    "healer_successful_heal_cast_rate_min": 0.95,
+    "missing_required_rotation_groups_allowed": false
+  },
+  "diagnosis_canonical_sha256": "246747ba2f4162977e6fe1de4f69ef0803997ec3d5cb39a2e25e5916e477bb8b"
+}

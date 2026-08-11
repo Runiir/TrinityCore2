@@ -1,0 +1,60 @@
+{
+  "acceptance": {
+    "accepted": true,
+    "discrepancies": [],
+    "fail_closed": false,
+    "recomputed": {
+      "accepted": true,
+      "all_stages_passed": true,
+      "facts_sha256": "a490521fd2758006d7d70ff3c736ad783e9dbf00df8f026ef1a4ee4eb391252b",
+      "failed_count": 0,
+      "manifest_complete": false,
+      "passed_count": 2,
+      "rejections": [],
+      "result_sha256": "f052c3cbce2ee4e588e756eee01eee96c5f9924cb5254f5f56514c5dcc2d5301",
+      "schema": "bot_live_acceptance_result_v1"
+    },
+    "schema": "bot_live_acceptance_verification_v1"
+  },
+  "batch_id": "p8-s3-blood-death-knight-single-target-300-71",
+  "compact": {
+    "bundle_sha256": "3251f44929166da5377dbd3d69d1b69ff6d189a66a7aaf68d7e847a79ee92525",
+    "files": [
+      {
+        "path": "evidence.parquet",
+        "sha256": "3b9b9beed88d096bf6e9b568379808dac06e7035fa327e9ac5fd1ca04c576c94",
+        "size": 2568
+      }
+    ],
+    "format": "parquet_zstd",
+    "row_count": 1
+  },
+  "database_export": null,
+  "duplicate_uncompressed_jsonl_retained": false,
+  "identity_sha256": "bbae93263626a7a5a3ebb36f64f1627e98733ded21da9f048384ed21a9e87d87",
+  "max_pending_raw_bytes": 67108864,
+  "raw": {
+    "bundle_sha256": "a738bf5130a3edb8ecf486deaf47f1a01601cb9f0d1a4ff24f0b0424ab0c523d",
+    "files": [
+      {
+        "path": "acceptance_source_report.json",
+        "sha256": "77f2cc0b45164103cb1ae766a841f583b9c90d0b05ef7a3a2d0d66761b299d88",
+        "size": 96706
+      },
+      {
+        "path": "events.jsonl.zst",
+        "sha256": "4c8ffcf1116a6d0a7b2dc949dfa2905e3e5f91f058df134cea3e37536611fc2d",
+        "size": 7719
+      },
+      {
+        "path": "exact_manifests.json",
+        "sha256": "fe2a2edfe8821894635f8214ccd56f818564293a0370d79e8258350fec07f684",
+        "size": 8126
+      }
+    ],
+    "format": "jsonl.zst",
+    "row_count": 32
+  },
+  "schema": "bot_immutable_batch_manifest_v1",
+  "state": "closed_unpublished"
+}

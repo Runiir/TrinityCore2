@@ -1,0 +1,878 @@
+{
+  "schema": "all_spec_phase9_rerun134_diagnosis_v1",
+  "diagnosis_sha256": "3fe4d2614eab8226bd38ba4400783797e0315515fe1b59fc77a6c2011b14ee27",
+  "hash_scope": "canonical_json_without_diagnosis_sha256",
+  "source_attempt": {
+    "attempt_id": "phase9_serial_02_stonecore_phase9_006_6893daf98698",
+    "batch_id": "phase9-serial-canary-rerun134-2",
+    "batch_identity_sha256": "874662a946a5af09ea20f3480351d0ea83df90abf73d3006a8c21873727e0adc",
+    "composition_id": "stonecore_phase9_006_6893daf98698",
+    "party_sha256": "524b94c794897f5111bdae0a5e45ba31a31ebb8596d811a3dd8c1caff95bd16a",
+    "party": [
+      "feral_druid_tank",
+      "discipline_priest",
+      "fury_warrior",
+      "marksmanship_hunter",
+      "retribution_paladin"
+    ],
+    "server_process_id": 1717640,
+    "server_epoch": 8001797029721751,
+    "binary_sha256": "8fd547b6e565dd42141da346ef74a49aea7b6233ea953be79e8d2dfb88501b3f",
+    "profile_generation": 1,
+    "profile_content_hash": "35a587f05d8781d72c62576a6f35392a69e01d5978429f65429ad5b9ed096a22",
+    "evidence_identity_manifest_sha256": "5028ca5bb1d937fb56b7cbafadf39d36d77d7172b233b67bad872bfc6ead2aec",
+    "session_fingerprint": "c77bcaebe2739933ecffb8f355bed157af082ab6cb48bc33e80236b613c46276",
+    "run_plan_sha256": "2d23913f800156b52e4e4000f04411621391afa0a0a1136a642d63fe2343f09c",
+    "max_active_cohorts": 1
+  },
+  "capture_validation": {
+    "validated_with": "tools.bot_ml.batch_evidence_lifecycle.validate_capture",
+    "capture_revalidated_after_diagnosis": true,
+    "batch_identity_sha256": "874662a946a5af09ea20f3480351d0ea83df90abf73d3006a8c21873727e0adc",
+    "raw_part_count": 1,
+    "raw_event_row_count": 275,
+    "raw_uncompressed_bytes": 43836955,
+    "compact_row_count": 1,
+    "raw_bundle_sha256": "44bc61d168e23d5351bdd3fc46a2278f8d8615155552cb33e2b1ce88cfb52cca",
+    "compact_bundle_sha256": "d7e17a4aefc340b1e7ece43bbfd6e94b9aa878256999527026816dfe0ad9390a",
+    "publication_receipt_sha256": "f8c7963cdeaf4832c0abfc8a7b5f16911462e0ad20f79f029bfb76cf9d508a99",
+    "remote_status_sha256": "efed9e5afcfe149915ae98b9ed9e69304eb48f5ce2e2265b18b5b5ed2f155e60",
+    "raw_pointer_sha256": "9d366fbf8c0460f194b1c79eff508349a1cb129afcacf6430db2cbdb21cad8c8",
+    "compact_pointer_sha256": "46b0e9774131d9ba47a21bac8fa79aca6aacef0bf9bd10a5e61192038fd52d89",
+    "receipt_hash_valid": true,
+    "receipt_identity_and_bundles_match": true,
+    "remote_verified": true,
+    "dvc_remote_status": "cache_and_remote_object_are_in_sync",
+    "acceptance_recomputed_without_stored_pass_booleans": true,
+    "role_audit_recomputed_equal": true,
+    "exact_party_recomputed_equal": true,
+    "operator_closed": true,
+    "operator_status": "failed",
+    "operator_returncode": 1,
+    "cleanup_complete": true,
+    "cleanup": {
+      "active": false,
+      "active_bots": 0,
+      "lease_count": 0,
+      "party_bot_count": 0,
+      "server_epoch": 8001797029721751
+    },
+    "raw_payload_was_evicted_before_diagnosis_hydration": true,
+    "route_terminal_count": 14,
+    "real_boss_kill_count": 4,
+    "real_boss_kill_evidence": [
+      {
+        "route_generation": 2,
+        "route_node_id": "da90ef890fb19a87",
+        "target_entry": 43438,
+        "boss": "Corborus",
+        "result": "confirmed_unit_death"
+      },
+      {
+        "route_generation": 4,
+        "route_node_id": "b412eea04f2adbfa",
+        "target_entry": 43214,
+        "boss": "Slabhide",
+        "result": "confirmed_unit_death"
+      },
+      {
+        "route_generation": 11,
+        "route_node_id": "b1c6790bda1c3247",
+        "target_entry": 42188,
+        "boss": "Ozruk",
+        "result": "confirmed_unit_death"
+      },
+      {
+        "route_generation": 14,
+        "route_node_id": "4b2457d42f81a298",
+        "target_entry": 42333,
+        "boss": "High Priestess Azil",
+        "result": "confirmed_unit_death"
+      }
+    ],
+    "route_complete": true,
+    "manifest_complete": true,
+    "watchdog_completed": true,
+    "timed_out": false,
+    "duration_seconds": 1252,
+    "kill_count": 46,
+    "recorded_party_death_count": 2,
+    "teacher_assisted_kills": 0,
+    "unresolved_route_death_loop_events": 0,
+    "unresolved_route_stuck_events": 0,
+    "forbidden_completion_assists": [],
+    "temporary_operator_gitignore_exception_restored": true,
+    "temporary_operator_gitignore_backup_removed": true,
+    "recurring_monitor_deleted": true,
+    "canaries_3_through_8_started": false,
+    "hydrated_file_verification": [
+      {
+        "path": "acceptance_source_report.json",
+        "sha256": "b8b57c2913e3fadabcb6c5efebb3aa3506a8cb161f4686b0585f4371e0121d5d",
+        "size": 45264274
+      },
+      {
+        "path": "events.jsonl.zst",
+        "sha256": "07e13dc8c26cdee30bb218dd145d5b34257b397afc2b2c1c69f4def08cf52f4f",
+        "size": 1154744
+      },
+      {
+        "path": "exact_manifests.json",
+        "sha256": "33ab7e53a076dffbb1fa79083bf1348ab01532d492be24fec81ff4e50bf5c235",
+        "size": 95491
+      },
+      {
+        "path": "evidence.parquet",
+        "sha256": "db5198c5ab75be9715908a5b36a80a0ac70ae761a0d36600fb3fc9fc4fc44d4b",
+        "size": 2698
+      }
+    ],
+    "local_raw_and_compact_payloads_evicted_after_diagnosis": true,
+    "batch_local_dvc_cache_absent_after_diagnosis": true,
+    "temporary_diagnosis_gitignore_exception_restored": true,
+    "temporary_diagnosis_gitignore_backup_removed": true
+  },
+  "observed_role_metrics": {
+    "tank_all_hostile_retention_rate": 0.9132,
+    "healer_target_exposure_rate": 0.0296,
+    "max_healer_target_dwell_ms": 4803,
+    "max_healer_target_dwell_hostile_guids": [
+      417
+    ],
+    "max_healer_target_dwell_start_ms": 1785743439903,
+    "max_healer_target_dwell_end_ms": 1785743444706,
+    "tank_threat_aura_uptime_rate": 1.0,
+    "active_action_coverage_rate": 1.0,
+    "feral_action_attempts": 309,
+    "feral_cast_failure_rate": 0.0097,
+    "successful_submission_rate": 0.9903,
+    "feral_deaths": 0,
+    "threat_acquisition_grace_ms": 3000,
+    "eligible_hostile_sample_denominator": 1958,
+    "tank_owned_eligible_sample_numerator": 1788,
+    "healer_targeting_eligible_sample_numerator": 58,
+    "exact_tank_retention_fraction": "1788/1958",
+    "exact_healer_exposure_fraction": "58/1958",
+    "exact_tank_retention_rate": 0.9131767109295199,
+    "exact_healer_exposure_rate": 0.0296220633299285,
+    "required_tank_retention_floor": 0.9,
+    "required_healer_exposure_ceiling": 0.01,
+    "required_max_healer_dwell_ms": 3000,
+    "healer_target_episode_count": 30,
+    "long_healer_target_episode_count": 12,
+    "other_role_and_capability_gates_passed": true,
+    "role_failure_labels": [
+      "Feraltank:healer_target_exposure",
+      "Feraltank:healer_target_dwell"
+    ],
+    "mechanics": {
+      "hazard_exit_actions": 183,
+      "hazard_exit_failures": 0,
+      "misdirection_aoe_attempts": 49,
+      "misdirection_aoe_successes": 36,
+      "misdirection_aoe_wrong_successes": 0,
+      "misdirection_single_attempts": 28,
+      "misdirection_single_successes": 16,
+      "threat_acquisition_grace_ms": 3000
+    }
+  },
+  "independent_node_reconstruction": {
+    "by_route_generation": {
+      "1": {
+        "eligible_engaged": 297,
+        "healer_targeting": 0,
+        "tank_owned": 249
+      },
+      "10": {
+        "eligible_engaged": 63,
+        "healer_targeting": 0,
+        "tank_owned": 59
+      },
+      "11": {
+        "eligible_engaged": 19,
+        "healer_targeting": 0,
+        "tank_owned": 19
+      },
+      "13": {
+        "eligible_engaged": 1067,
+        "healer_targeting": 46,
+        "tank_owned": 1010
+      },
+      "14": {
+        "eligible_engaged": 330,
+        "healer_targeting": 12,
+        "tank_owned": 270
+      },
+      "2": {
+        "eligible_engaged": 13,
+        "healer_targeting": 0,
+        "tank_owned": 13
+      },
+      "3": {
+        "eligible_engaged": 133,
+        "healer_targeting": 0,
+        "tank_owned": 133
+      },
+      "4": {
+        "eligible_engaged": 14,
+        "healer_targeting": 0,
+        "tank_owned": 14
+      },
+      "7": {
+        "eligible_engaged": 13,
+        "healer_targeting": 0,
+        "tank_owned": 12
+      },
+      "8": {
+        "eligible_engaged": 2,
+        "healer_targeting": 0,
+        "tank_owned": 2
+      },
+      "9": {
+        "eligible_engaged": 7,
+        "healer_targeting": 0,
+        "tank_owned": 7
+      }
+    },
+    "generation_13": {
+      "route_node_id": "3edc010765b5c456",
+      "route_segment": "16_twilight_flayer_packs",
+      "eligible_engaged": 1067,
+      "tank_owned": 1010,
+      "healer_targeting": 46,
+      "retention_rate": 0.9465791940018744,
+      "healer_exposure_rate": 0.04311152764761012,
+      "long_episode_count": 12
+    },
+    "generation_14": {
+      "route_node_id": "4b2457d42f81a298",
+      "route_segment": "High Priestess Azil",
+      "eligible_engaged": 330,
+      "tank_owned": 270,
+      "healer_targeting": 12,
+      "healer_targeting_guids": [
+        393,
+        394,
+        396,
+        402
+      ],
+      "sample_count": 3,
+      "first_sample_ms": 1785743585043,
+      "last_sample_ms": 1785743585807,
+      "sample_span_ms": 764,
+      "long_episode_count": 0,
+      "finding": "Four Azil-wave identities contributed twelve eligible exposure samples across three rapid decisions, but the native Roar and stationary-healer swarm pickup resolved them inside 764 ms and did not contribute to the dwell failure."
+    },
+    "finding": "Every strict dwell violation remained at the generation-13 Twilight Flayer node. Generation 14 contributed twelve aggregate exposure samples but no episode over 3000 ms."
+  },
+  "comparison": {
+    "rerun133": {
+      "tank_retention_fraction": "1804/1979",
+      "tank_retention_rate": 0.9116,
+      "healer_exposure_fraction": "105/1979",
+      "healer_exposure_rate": 0.0531,
+      "max_healer_dwell_ms": 7346
+    },
+    "rerun134": {
+      "tank_retention_fraction": "1788/1958",
+      "tank_retention_rate": 0.9132,
+      "healer_exposure_fraction": "58/1958",
+      "healer_exposure_rate": 0.0296,
+      "max_healer_dwell_ms": 4803
+    },
+    "finding": "The exact expired-cluster boundary and branch-local 250 ms polling reduced exposure by 47 eligible contributions and maximum dwell by 2543 ms while preserving the global retention floor. The remaining failure is incomplete timer coverage outside those specialized branches."
+  },
+  "feral_control_action_counts": {
+    "feral_continue_remote_healer_trash_cluster_handoff": 17,
+    "feral_move_remote_healer_trash_cluster_pre_roar": 5,
+    "feral_demoralizing_roar_party_trash_pickup": 4,
+    "feral_demoralizing_roar_healer_trash_pickup": 1,
+    "feral_demoralizing_roar_remote_healer_trash_cluster_handoff": 1,
+    "feral_demoralizing_roar_swarm_pickup": 1,
+    "feral_growl_lingering_healer_trash_attacker": 1,
+    "feral_swipe_secure_trash_threat_margin": 1,
+    "feral_swipe_hazard_secure_threat_margin": 2,
+    "move_to_trash_density": 12,
+    "trash_density_area_threat": 68,
+    "move_to_validation_route_target": 250,
+    "move_out_of_hazard": 185,
+    "tank_hazard_hold_aoe_threat": 20
+  },
+  "causal_waves": [
+    {
+      "name": "generation_13_density_transition",
+      "long_episodes": [
+        {
+          "guid": 563,
+          "dwell_ms": 3018
+        }
+      ],
+      "timeline": [
+        {
+          "offset_ms": 0,
+          "action": "move_to_trash_density",
+          "healer_targeting_guids": [
+            563,
+            564
+          ]
+        },
+        {
+          "offset_ms": 1001,
+          "action": "move_to_trash_density",
+          "healer_targeting_guids": [
+            563,
+            564,
+            565
+          ]
+        },
+        {
+          "offset_ms": 2008,
+          "action": "trash_density_area_threat",
+          "healer_targeting_guids": [
+            563,
+            564,
+            565
+          ]
+        },
+        {
+          "offset_ms": 2990,
+          "actor": "Discpriest",
+          "action": "fade_threat_drop",
+          "healer_targeting_guids": [
+            563,
+            565
+          ]
+        },
+        {
+          "offset_ms": 3018,
+          "action": "move_to_trash_density",
+          "healer_targeting_guids": [
+            563,
+            565
+          ]
+        }
+      ],
+      "finding": "Generic density movement retained approximately one-second decision intervals while an eligible identity targeted the healer; GUID 563 crossed the dwell ceiling by 18 ms before Fade and subsequent recovery became observable."
+    },
+    {
+      "name": "generation_13_handoff_to_density_to_hazard",
+      "long_episodes": [
+        {
+          "guid": 615,
+          "dwell_ms": 4319
+        },
+        {
+          "guid": 609,
+          "dwell_ms": 4331
+        },
+        {
+          "guid": 610,
+          "dwell_ms": 4331
+        },
+        {
+          "guid": 612,
+          "dwell_ms": 4331
+        },
+        {
+          "guid": 618,
+          "dwell_ms": 4331
+        },
+        {
+          "guid": 613,
+          "dwell_ms": 3321
+        },
+        {
+          "guid": 614,
+          "dwell_ms": 3321
+        },
+        {
+          "guid": 616,
+          "dwell_ms": 3321
+        },
+        {
+          "guid": 617,
+          "dwell_ms": 3321
+        }
+      ],
+      "timeline": [
+        {
+          "at_ms": 1785743388016,
+          "action": "feral_continue_remote_healer_trash_cluster_handoff",
+          "finding": "The active handoff was polled at the intended 250 ms cadence."
+        },
+        {
+          "at_ms": 1785743388783,
+          "action": "move_to_trash_density",
+          "finding": "After the exact prior cluster resolved, control fell to generic density movement."
+        },
+        {
+          "at_ms": 1785743389788,
+          "action": "trash_density_area_threat",
+          "finding": "The next generic decision arrived about one second later while six identities targeted the healer."
+        },
+        {
+          "at_ms": 1785743390798,
+          "action": "feral_swipe_hazard_secure_threat_margin",
+          "finding": "Another approximately one-second transition preceded strict hazard ownership with nine healer-targeting identities."
+        },
+        {
+          "at_ms": 1785743391055,
+          "action": "move_out_of_hazard",
+          "finding": "Once active, hazard movement used the intended approximately 250 ms cadence."
+        },
+        {
+          "at_ms": 1785743393859,
+          "nested_event_action": "feral_in_flight_hazard_healer_roar",
+          "finding": "The legal in-flight Roar was submitted under 250 ms hazard polling."
+        },
+        {
+          "at_ms": 1785743394119,
+          "action": "move_out_of_hazard",
+          "finding": "Long episodes had already reached 3.3-4.3 seconds before the next sample."
+        }
+      ],
+      "finding": "The rerun134 branch-local cadence worked inside the handoff and hazard paths. The remaining dwell came from approximately one-second generic transitions between them, not from a renewed unresolved-cluster chain."
+    },
+    {
+      "name": "generation_13_maximum_route_target_episode",
+      "long_episodes": [
+        {
+          "guid": 416,
+          "dwell_ms": 3290
+        },
+        {
+          "guid": 417,
+          "dwell_ms": 4803
+        }
+      ],
+      "timeline": [
+        {
+          "offset_ms": 0,
+          "action": "move_to_validation_route_target",
+          "healer_targeting_guids": [
+            416,
+            417
+          ]
+        },
+        {
+          "offset_ms": 1003,
+          "action": "move_to_validation_route_target",
+          "healer_targeting_guids": [
+            416,
+            417
+          ]
+        },
+        {
+          "offset_ms": 2005,
+          "action": "move_out_of_hazard",
+          "healer_targeting_guids": [
+            416,
+            417
+          ]
+        },
+        {
+          "offset_ms": 3546,
+          "action": "move_out_of_hazard",
+          "healer_targeting_guids": [
+            417
+          ],
+          "finding": "GUID 416 returned to tank ownership; GUID 417 remained on the healer."
+        },
+        {
+          "offset_ms": 3803,
+          "action": "move_to_validation_route_target",
+          "healer_targeting_guids": [
+            417
+          ],
+          "finding": "The hazard exit completed and the generic route-target branch resumed."
+        },
+        {
+          "offset_ms": 4803,
+          "action": "move_to_validation_route_target",
+          "healer_targeting_guids": [
+            417
+          ],
+          "finding": "A second generic one-second interval established the audit maximum."
+        },
+        {
+          "offset_ms": 5809,
+          "action": "move_to_validation_route_target",
+          "healer_targeting_guids": [],
+          "finding": "GUID 417 was observed back on the tank only after the gate had failed."
+        }
+      ],
+      "finding": "No pre-Roar reservation drove the maximum. The hazard path used 250 ms cadence, but the generic route-target branch before and after it used approximately one-second decisions while exact current-victim evidence still showed healer ownership."
+    }
+  ],
+  "long_healer_target_episodes": [
+    {
+      "guid": 563,
+      "start_ms": 1785743363073,
+      "end_ms": 1785743366091,
+      "dwell_ms": 3018,
+      "route_generations": [
+        13
+      ],
+      "sequences": [
+        923,
+        924,
+        925,
+        926
+      ]
+    },
+    {
+      "guid": 615,
+      "start_ms": 1785743388016,
+      "end_ms": 1785743392335,
+      "dwell_ms": 4319,
+      "route_generations": [
+        13
+      ],
+      "sequences": [
+        960,
+        961,
+        962,
+        963,
+        964,
+        965,
+        966,
+        967,
+        968,
+        969,
+        970,
+        971
+      ]
+    },
+    {
+      "guid": 609,
+      "start_ms": 1785743389788,
+      "end_ms": 1785743394119,
+      "dwell_ms": 4331,
+      "route_generations": [
+        13
+      ],
+      "sequences": [
+        964,
+        965,
+        966,
+        967,
+        968,
+        969,
+        970,
+        971,
+        972,
+        973,
+        974,
+        975,
+        976,
+        977,
+        978
+      ]
+    },
+    {
+      "guid": 610,
+      "start_ms": 1785743389788,
+      "end_ms": 1785743394119,
+      "dwell_ms": 4331,
+      "route_generations": [
+        13
+      ],
+      "sequences": [
+        964,
+        965,
+        966,
+        967,
+        968,
+        969,
+        970,
+        971,
+        972,
+        973,
+        974,
+        975,
+        976,
+        977,
+        978
+      ]
+    },
+    {
+      "guid": 612,
+      "start_ms": 1785743389788,
+      "end_ms": 1785743394119,
+      "dwell_ms": 4331,
+      "route_generations": [
+        13
+      ],
+      "sequences": [
+        964,
+        965,
+        966,
+        967,
+        968,
+        969,
+        970,
+        971,
+        972,
+        973,
+        974,
+        975,
+        976,
+        977,
+        978
+      ]
+    },
+    {
+      "guid": 618,
+      "start_ms": 1785743389788,
+      "end_ms": 1785743394119,
+      "dwell_ms": 4331,
+      "route_generations": [
+        13
+      ],
+      "sequences": [
+        964,
+        965,
+        966,
+        967,
+        968,
+        969,
+        970,
+        971,
+        972,
+        973,
+        974,
+        975,
+        976,
+        977,
+        978
+      ]
+    },
+    {
+      "guid": 613,
+      "start_ms": 1785743390798,
+      "end_ms": 1785743394119,
+      "dwell_ms": 3321,
+      "route_generations": [
+        13
+      ],
+      "sequences": [
+        965,
+        966,
+        967,
+        968,
+        969,
+        970,
+        971,
+        972,
+        973,
+        974,
+        975,
+        976,
+        977,
+        978
+      ]
+    },
+    {
+      "guid": 614,
+      "start_ms": 1785743390798,
+      "end_ms": 1785743394119,
+      "dwell_ms": 3321,
+      "route_generations": [
+        13
+      ],
+      "sequences": [
+        965,
+        966,
+        967,
+        968,
+        969,
+        970,
+        971,
+        972,
+        973,
+        974,
+        975,
+        976,
+        977,
+        978
+      ]
+    },
+    {
+      "guid": 616,
+      "start_ms": 1785743390798,
+      "end_ms": 1785743394119,
+      "dwell_ms": 3321,
+      "route_generations": [
+        13
+      ],
+      "sequences": [
+        965,
+        966,
+        967,
+        968,
+        969,
+        970,
+        971,
+        972,
+        973,
+        974,
+        975,
+        976,
+        977,
+        978
+      ]
+    },
+    {
+      "guid": 617,
+      "start_ms": 1785743390798,
+      "end_ms": 1785743394119,
+      "dwell_ms": 3321,
+      "route_generations": [
+        13
+      ],
+      "sequences": [
+        965,
+        966,
+        967,
+        968,
+        969,
+        970,
+        971,
+        972,
+        973,
+        974,
+        975,
+        976,
+        977,
+        978
+      ]
+    },
+    {
+      "guid": 416,
+      "start_ms": 1785743439903,
+      "end_ms": 1785743443193,
+      "dwell_ms": 3290,
+      "route_generations": [
+        13
+      ],
+      "sequences": [
+        1013,
+        1014,
+        1015,
+        1016,
+        1017,
+        1018,
+        1019,
+        1020
+      ]
+    },
+    {
+      "guid": 417,
+      "start_ms": 1785743439903,
+      "end_ms": 1785743444706,
+      "dwell_ms": 4803,
+      "route_generations": [
+        13
+      ],
+      "sequences": [
+        1013,
+        1014,
+        1015,
+        1016,
+        1017,
+        1018,
+        1019,
+        1020,
+        1021,
+        1022,
+        1023
+      ]
+    }
+  ],
+  "hypotheses": [
+    {
+      "name": "rerun134_exact_expired_cluster_guard_failed_to_bound_the_maximum",
+      "outcome": "rejected",
+      "evidence": "The 4803 ms maximum episode contains no pre-Roar reservation action. It begins and ends in generic route-target movement around an accepted 250 ms hazard interval."
+    },
+    {
+      "name": "branch_local_250_ms_cadence_is_active",
+      "outcome": "supported",
+      "evidence": "Active handoff and hazard sequences were sampled at approximately 250 ms intervals and reduced rerun133's aggregate exposure and maximum dwell."
+    },
+    {
+      "name": "generic_route_and_density_paths_retain_one_second_cadence_during_healer_exposure",
+      "outcome": "supported_primary",
+      "evidence": "GUID 563 crossed at 3018 ms across generic density decisions, wave two contained one-second density-to-action and action-to-hazard transitions, and GUID 417 reached 4803 ms across generic route-target decisions before and after hazard handling."
+    },
+    {
+      "name": "azil_generation_14_caused_the_dwell_failure",
+      "outcome": "rejected",
+      "evidence": "Generation 14 contributed twelve exposure samples from GUIDs 393, 394, 396, and 402, but all three samples spanned only 764 ms and no generation-14 episode exceeded 3000 ms."
+    },
+    {
+      "name": "feral_retention_failed",
+      "outcome": "rejected",
+      "evidence": "Independent reconstruction matched 1788/1958 = 0.9131767109, above the unchanged 0.90 floor."
+    },
+    {
+      "name": "audit_scope_or_denominator_error",
+      "outcome": "rejected",
+      "evidence": "Independent canonical deduplication and the unchanged 3000 ms acquisition grace exactly matched the retained role audit: 1788/1958 retention, 58/1958 exposure, and 4803 ms maximum dwell."
+    },
+    {
+      "name": "route_identity_publication_cleanup_or_other_role_failure",
+      "outcome": "rejected",
+      "evidence": "The exact five-member party and current PID/epoch matched; all 14 terminals and four real boss deaths were present; every non-Feral role/capability gate passed; no forbidden assist occurred; cleanup reached zero bots and leases; and the publication receipt and DVC remote state matched the immutable batch."
+    },
+    {
+      "name": "global_threat_route_or_acceptance_change_needed",
+      "outcome": "rejected",
+      "evidence": "The remaining failure is a narrow observation/redecision timing gap. Global threat inflation, route changes, victim assignment, identity suppression, or weaker gates would conceal rather than correct current healer ownership."
+    }
+  ],
+  "accepted_causal_chain": [
+    "Rerun134 preserved 1788/1958 all-hostile retention while reducing healer exposure from rerun133's 105/1979 to 58/1958 and maximum dwell from 7346 ms to 4803 ms.",
+    "The exact expired-cluster guard prevented the rerun133 distinct-anchor renewal chain, and specialized handoff and hazard paths visibly used approximately 250 ms polling.",
+    "The remaining twelve over-limit episodes all occurred at route generation 13. Generation 14 added only a brief 764 ms four-identity exposure and no dwell violation.",
+    "Generic move_to_trash_density and move_to_validation_route_target decisions continued at approximately one-second intervals while exact 45-yard current-victim evidence showed live hostiles targeting the healer.",
+    "Those generic intervals consumed the strict margin before and after otherwise-correct specialized paths: one episode reached 3018 ms, a split wave reached 3321-4331 ms, and GUID 417 reached the 4803 ms maximum.",
+    "The smallest supported correction is therefore not another movement, threat, or reservation rule. It is a Feral-only 250 ms next-decision cap whenever the same identity-scoped current threat scan used by evidence contains at least one live healer-targeting hostile."
+  ],
+  "evidence_limitations": [
+    "The trace contains both event and decision entries sharing bot_guid/sequence. The canonical role audit keeps the last entry for each key; nested action facts were read from event entries only when explicitly labeled and were not inferred from the later decision label.",
+    "Serialized combat_attempt, recovery_result, ActivePathValid, and IsMoving fields can describe prior or pre-decision state. They do not prove the current movement or spell submission failed.",
+    "The 4803 ms audit maximum is the last eligible sample for GUID 417 before the next sample showed tank ownership. It proves the strict gate failure without claiming continuous ownership beyond that sample.",
+    "The retained final manifest says closed_unpublished because capture finalization precedes publication. The independently verified receipt, matching bundle/pointer identities, remote_verified flag, and DVC cloud status prove publication.",
+    "The evidence supports only faster observation/redecision cadence during exact current Feral healer exposure. It does not support changing action selection, movement authority, hazard geometry, route semantics, victim assignment, spell legality, cooldowns, threat values, audit thresholds, or teacher/forced completion behavior."
+  ],
+  "smallest_safe_correction": {
+    "files": [
+      "src/server/game/Bots/BotWorldPopulationMgr.cpp"
+    ],
+    "scope": "Strict Stonecore validation-route decisions for the feral_druid_tank profile while at least one exact live hostile currently targets a same-party healer inside the existing 45-yard identity-scoped trace radius.",
+    "change": "At the common validation-route decision entry, reuse the evidence scan contract\u2014live attackable creature, current player victim in the same party, healer role, 45-yard radius\u2014and cap only state.DecisionTimer at 250 ms when the acting profile is feral_druid_tank and at least one such identity exists. Do not select an action or target in this guard. Existing hazard, handoff, route-target, density, Growl, Roar, Swipe, and profile branches retain full authority; they are simply reconsidered within 250 ms while current healer exposure remains observable.",
+    "uses_existing_evidence": [
+      "BotClassSpecActionProfile.SpecTag == feral_druid_tank",
+      "existing 45-yard identity-scoped threat snapshot geometry",
+      "Creature::GetVictim current-victim identity",
+      "same-party healer role validation",
+      "existing 250 ms DecisionTimer lower bound"
+    ],
+    "does_not_change": [
+      "movement ownership or path acceptance",
+      "action or target selection",
+      "hazard geometry or priority",
+      "victim assignment",
+      "spell legality or cooldowns",
+      "threat values or multipliers",
+      "route semantics or terminal requirements",
+      "audit thresholds or identity scope",
+      "handoff durations or cluster selection",
+      "teacher_or_forced_completion",
+      "non-Feral profiles",
+      "Feral decisions when no current healer-targeting hostile exists"
+    ],
+    "placement": "Immediately after validation-route manifest/wrong-map terminal guards and before route action lambdas/early returns, so generic route-target, trash-density, hazard, and handoff decisions all inherit the same bounded cadence without changing their authority."
+  }
+}

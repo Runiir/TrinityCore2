@@ -1,0 +1,80 @@
+{
+  "acceptance": {
+    "defects": [],
+    "false_check_count": 0,
+    "hard_floor_failure_count": 0,
+    "infrastructure_failure_count": 0,
+    "optimization_backlog_count": 0,
+    "passing_attempt_count": 99,
+    "published_attempt_count": 99,
+    "qualification_failure_count": 0
+  },
+  "all_passed": true,
+  "campaign_state_sha256": "8f611ec4d877eb5af523fdca782174ab4de741016920d156773fe0aaa17c3324",
+  "coverage": {
+    "attempt_count": 99,
+    "exact": true,
+    "expected_attempt_count": 99,
+    "mode_counts": {
+      "aoe_300": 30,
+      "healer_controlled_damage_300": 15,
+      "single_target_300": 42,
+      "tank_threat_300": 12
+    },
+    "seed_count": 3,
+    "target_count": 19
+  },
+  "identity": {
+    "identity_manifest_hashes": [
+      "e3fc5e9efe78b52a88b01d736739eb9921beb04595e1fde39b57576220b495ae"
+    ],
+    "max_active_cohorts": 1,
+    "profile_content_hashes": [
+      "58BCB30DC53692CBF8EAC93DA6CB1D5FDCA5D56371390AEC0BC41DC6CBD45F44"
+    ],
+    "profile_generations": [
+      1
+    ],
+    "server_epochs": [
+      4626787632286734
+    ],
+    "server_process_ids": [
+      1451945
+    ],
+    "session_fingerprints": [
+      "c192a986e9c6d4b6489080013f15910e89b0ec213e400e551799cf5373be522a"
+    ]
+  },
+  "identity_manifest_sha256": "e3fc5e9efe78b52a88b01d736739eb9921beb04595e1fde39b57576220b495ae",
+  "reference_ratios": {
+    "maximum": 2.350642,
+    "minimum": 0.826993,
+    "per_target_minimum": {
+      "arms_warrior": 1.197294,
+      "balance_druid": 0.882032,
+      "blood_death_knight": 0.9747,
+      "combat_rogue": 1.809619,
+      "demonology_warlock": 0.837497,
+      "discipline_priest": 0.912,
+      "enhancement_shaman": 0.917985,
+      "feral_druid_tank": 0.902129,
+      "fire_mage": 0.897143,
+      "holy_paladin": 0.897475,
+      "holy_priest": 0.986514,
+      "marksmanship_hunter": 1.050026,
+      "protection_paladin": 0.917403,
+      "protection_warrior": 0.848329,
+      "restoration_druid": 0.993308,
+      "restoration_shaman": 0.988416,
+      "retribution_paladin": 0.90174,
+      "shadow_priest": 0.826993,
+      "unholy_death_knight": 0.868773
+    }
+  },
+  "schema": "phase8_r105_independent_campaign_verification_v1",
+  "uniqueness": {
+    "batch_identity_count": 99,
+    "receipt_count": 99,
+    "record_count": 99
+  }
+}

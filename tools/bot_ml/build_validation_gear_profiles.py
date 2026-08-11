@@ -65,6 +65,7 @@ WEAPON_SUBCLASSES_BY_CLASS = {
 SHIELD_CLASSES = {1, 2, 7}
 OFFHAND_WEAPON_CLASSES = {1, 4, 6, 7}
 DUAL_WIELD_CLASS_SPECS = {"assassination_rogue", "enhancement_shaman", "frost_death_knight"}
+TITANS_GRIP_CLASS_SPECS = {"fury_warrior"}
 
 INVENTORY_TO_EQUIPMENT_SLOTS = {
     1: [0],      # head
@@ -82,7 +83,7 @@ INVENTORY_TO_EQUIPMENT_SLOTS = {
     15: [17],    # bow
     16: [14],    # cloak
     13: [15, 16], # one-handed weapon
-    17: [15],    # two-handed weapon
+    17: [15, 16], # two-handed weapon (offhand gated by Titan's Grip)
     20: [4],     # robe
     21: [15],    # main hand
     22: [16],    # off hand weapon
@@ -101,7 +102,7 @@ STAT_WEIGHTS_BY_ROLE = DEFAULT_COMBAT_LOOT_PROFILES["stat_weights_by_archetype"]
 MAX_PLAYER_ACCESSIBLE_CATA_ITEM_LEVEL = 416
 
 CURATED_BIS_NAMES_BY_SPEC = {
-    "fire_mage": ["Lightning Rod"],
+    "fire_mage": ["Dragonwrath, Tarecgosa's Rest"],
     "affliction_warlock": ["Lightning Rod"],
     "elemental_shaman": ["Vagaries of Time", "Ledger of Revolting Rituals"],
     "assassination_rogue": ["Blade of the Unmaker", "Electrowing Dagger"],
@@ -318,7 +319,9 @@ def role_archetype(bot: dict[str, Any], profile_manifest: dict[str, Any] | None 
 def stat_weights_for_bot(bot: dict[str, Any], profile_manifest: dict[str, Any] | None = None) -> dict[str, float]:
     manifest = profile_manifest or DEFAULT_COMBAT_LOOT_PROFILES
     archetype = role_archetype(bot, manifest)
-    return manifest["stat_weights_by_archetype"].get(archetype, {})
+    weights = dict(manifest["stat_weights_by_archetype"].get(archetype, {}))
+    weights.update(manifest.get("stat_weight_overrides_by_spec", {}).get(str(bot.get("class_spec", "")), {}))
+    return weights
 
 
 def stat_map(item: dict[str, Any]) -> dict[str, int]:
@@ -409,6 +412,8 @@ def weapon_slot_allowed(bot: dict[str, Any], item: dict[str, Any], slot: int) ->
     class_spec = str(bot.get("class_spec") or "")
     if slot == 16 and inventory_type == 13:
         return class_spec in DUAL_WIELD_CLASS_SPECS
+    if slot == 16 and inventory_type == 17:
+        return class_spec in TITANS_GRIP_CLASS_SPECS and subclass != 6
     if slot == 17:
         if class_id == 3:
             return item_class == 2 and inventory_type in {15, 26} and subclass in {2, 3, 18}
@@ -548,8 +553,9 @@ def choose_loadout(
 
     used: set[int] = set()
     loadout = []
+    titan_grip = str(bot.get("class_spec") or "") in TITANS_GRIP_CLASS_SPECS
     for slot in REQUIRED_EQUIPMENT_SLOTS:
-        if slot == 16 and any(int(item.get("slot", -1)) == 15 and int(item.get("inventory_type", 0)) == 17 for item in loadout):
+        if slot == 16 and not titan_grip and any(int(item.get("slot", -1)) == 15 and int(item.get("inventory_type", 0)) == 17 for item in loadout):
             continue
         selected = curated_slots.get(slot)
         if selected and int(selected["ID"]) in used:

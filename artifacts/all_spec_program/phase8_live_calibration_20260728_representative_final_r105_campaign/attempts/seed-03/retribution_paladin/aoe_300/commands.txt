@@ -1,0 +1,5 @@
+.botauto calibrate p8-s3-retribution-paladin-aoe-300 start aoe_300 retribution_paladin 3
+.botauto status p8-s3-retribution-paladin-aoe-300
+.botauto calibrate p8-s3-retribution-paladin-aoe-300 status
+.botauto combatlog p8-s3-retribution-paladin-aoe-300
+.botauto calibrate p8-s3-retribution-paladin-aoe-300 stop

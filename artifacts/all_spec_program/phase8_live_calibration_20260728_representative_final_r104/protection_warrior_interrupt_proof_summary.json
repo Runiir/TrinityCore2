@@ -1,0 +1,42 @@
+{
+  "schema": "phase8_protection_warrior_interrupt_proof_summary_v1",
+  "identity_manifest_sha256": "ab98d61e5be36366d10c850af2ae9f11ceb62608f64f36a266d1ba44164cd30f",
+  "server_process_id": 1444291,
+  "server_epoch": 4607381762589968,
+  "profile_generation": 1,
+  "profile_content_hash": "58bcb30dc53692cbf8eac93da6cb1d5fdca5d56371390aec0bc41dc6cbd45f44",
+  "policy": {
+    "minimum_reference_ratio": 0.75,
+    "minimum_interrupt_success_ratio": 0.9
+  },
+  "results": [
+    {
+      "seed": 1,
+      "all_passed": true,
+      "reference_ratio": 0.876776,
+      "snap_threat": true,
+      "interrupt_coverage": true,
+      "remote_verified": true,
+      "failure_reasons": []
+    },
+    {
+      "seed": 2,
+      "all_passed": true,
+      "reference_ratio": 0.869989,
+      "snap_threat": true,
+      "interrupt_coverage": true,
+      "remote_verified": true,
+      "failure_reasons": []
+    },
+    {
+      "seed": 3,
+      "all_passed": true,
+      "reference_ratio": 0.880527,
+      "snap_threat": true,
+      "interrupt_coverage": true,
+      "remote_verified": true,
+      "failure_reasons": []
+    }
+  ],
+  "all_passed": true
+}

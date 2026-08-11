@@ -1,0 +1,330 @@
+{
+  "acceptance": {
+    "accepted": false,
+    "completion_reason": "stonecore_role_quality_audit_failed",
+    "failure_labels": [
+      "role_quality:Feraltank:tank_threat_retention",
+      "role_quality:Feraltank:healer_target_exposure",
+      "role_quality:Feraltank:healer_target_dwell",
+      "stonecore_role_quality_audit_failed"
+    ],
+    "recomputed_facts_sha256": "ad6ef1d2f4d234387a7208dcba3603f84d1f896dafb493c9c27f51cc5899ea7c",
+    "recomputed_result_sha256": "2566411566291bfc66f2337c890cc452816d528b51885b9a4f55ad05d8179b7f",
+    "rejections": [
+      "not_all_stages_passed",
+      "timeout_is_not_final_evidence",
+      "nonzero_return_is_not_final_evidence",
+      "failure_labels_present",
+      "stonecore_role_quality_audit_failed",
+      "watchdog_failure_is_not_final_evidence"
+    ]
+  },
+  "accepted_causal_chain": [
+    "Rerun142 is an exact-current-identity, exact-party, MaxActiveCohorts=1 immutable canary with verified cleanup and immutable DVC publication, but it timed out after 13 of 14 route terminals, three real boss deaths, and a started but incomplete High Priestess Azil encounter.",
+    "The official final-row-per-(bot_guid,sequence), 3000-ms acquisition-grace reconstruction exactly reproduces 5226/5926 all-hostile retention, 517/5926 healer exposure, and 5017 ms maximum per-hostile dwell.",
+    "Route generation 13 alone contributes 4462 eligible samples, 3881 tank-owned samples, 513 of 517 healer-targeting samples, and the 5017-ms maximum dwell. Removing generation 13 yields 1345/1464 retention, 4/1464 exposure, and 2645 ms maximum dwell, passing all three strict Feral gates.",
+    "Generation 13 is the twilight flayer packs objective with enrolled entry 42808. Both enrolled objective GUIDs 416 and 417 were confirmed dead by 1785838124890, yet generation 13 remained open for another 723527 ms while the party fought entry 42428.",
+    "Entry 42428 is not a generation-13 natural-pack member. The exact route manifest lists it as a High Priestess Azil add for immediate next generation 14, and existing natural-pack enrollment already excludes immediate-next-encounter members from generation 13.",
+    "The rerun142 proactive selector repeatedly chose fresh entry-42428 identities because missing this Feral's Thrash aura outranked ten-yard cluster size. Across 104 retained normal proactive area/density rows it changed target 88 times over 103 transitions; 72 mapped selections were entry 42428, zero selected mapped current-objective entry 42808, and no selected target was objective GUID 416 or 417.",
+    "Every tactical area target was then unconditionally published through rememberValidationRouteFocus. That promoted a next-encounter add into explicit shared route focus even though the same add is structurally excluded from the current natural pack, diverting current-node focus and making it eligible as current terminal combat work.",
+    "Current trash terminal checks exclude only the immediate next boss, not that boss node's explicitly listed adds. Consequently generation 13 remained responsible for continuously spawning Azil followers after its own enrolled pack was dead, concentrating 434 of its 513 healer samples after the second objective death and consuming the route budget.",
+    "Generation 14 did start at 1785838848417 and ran for 164653 ms. It emitted 66 boss_started rows and 65 boss_action rows while engaging Azil entry 42333 and add entry 42428. It recorded zero official healer-targeting samples and 2645 ms maximum dwell, but the external timeout arrived before Azil died.",
+    "The smallest evidence-supported correction is one consistency repair across tactical target selection and route ownership: rank actual ten-yard density before Thrash freshness, do not publish a non-current-objective tactical density target as shared route focus, and stop treating explicitly classified immediate-next-encounter members as blockers for the current trash terminal after the current enrolled pack has cleared. The next boss node still owns and must defeat those adds and Azil under unchanged strict route and real-death gates."
+  ],
+  "attempt_label": "rerun142_canary_2",
+  "authorized_smallest_correction": {
+    "changes": [
+      {
+        "change": "For the existing Feral-only proactive tank-owned large-wave selector, make current ten-yard cluster count the primary ordering key and use missing this Feral's Thrash aura only within an equal-density cluster, followed by the existing distance and GUID tie-breakers.",
+        "expected_effect": "Preserve the densest currently owned wave as the tactical acquisition point instead of chasing each newly spawned aura-fresh identity, reducing target churn and avoidable movement while retaining native spell legality and the reactive healer-owned selector.",
+        "scope": "ordinary_trash_large_feral_wave_target_ordering",
+        "source": "src/server/game/Bots/BotWorldPopulationMgr.cpp"
+      },
+      {
+        "change": "Keep tactical threat focus separate from shared validation-route objective focus. Publish the selected area target through rememberValidationRouteFocus only when it is a valid member of the current route objective/pack; never promote an immediate-next-encounter boss or listed add solely because it was selected for tactical density handling.",
+        "expected_effect": "The party continues resolving the current enrolled entry-42808 objective while the tank may still tactically acquire engaged adds, preventing next-node follower identities from replacing current-node route authority.",
+        "scope": "validation_route_focus_ownership",
+        "source": "src/server/game/Bots/BotWorldPopulationMgr.cpp"
+      },
+      {
+        "change": "Apply the existing immediate-next-encounter membership classifier consistently to current-trash terminal combat checks. Once the current enrolled pack is dead, immediate-next-boss listed adds do not keep the prior trash node open; full-cohort endpoint and two-second quiet/stability requirements remain, and the next boss node immediately owns already-engaged listed adds and still requires the real boss death.",
+        "expected_effect": "Transfer entry-42428 handling to generation 14 after the entry-42808 objective clears instead of spending 723527 ms resolving generation-14 waves under generation 13, preserving all 14 route terminals and the Azil death requirement.",
+        "scope": "immediate_next_encounter_terminal_ownership",
+        "source": "src/server/game/Bots/BotWorldPopulationMgr.cpp"
+      }
+    ],
+    "preserve": [
+      "native Stampeding Roar, Charge, Growl, Swipe, Thrash, Taunt, cooldown, global-cooldown, range, path, facing, victim, and threat authority",
+      "explicit SQL/rule profile runtime authority",
+      "strict uninterrupted 14-node route and four real boss deaths",
+      "current entry-42808 pack death before generation-13 terminal",
+      "generation-14 ownership and real handling of entry-42428 adds",
+      "exact identity and exact party gates",
+      "0.90 all-hostile retention floor",
+      "0.01 healer-exposure ceiling",
+      "3000 ms per-hostile dwell ceiling",
+      "MaxActiveCohorts=1",
+      "one live worldserver-mutating operator and one DVC publisher"
+    ],
+    "tests": "Add focused source-contract assertions proving cluster count precedes Thrash freshness, tactical next-encounter targets cannot overwrite current shared route focus, and immediate-next-boss listed adds are excluded consistently from prior-trash terminal combat only after the current enrolled pack is clear. Rebuild worldserver, deterministically reprovision all 31 targets, capture a fresh identity and deterministic eight-row plan, and run canary 2 alone."
+  },
+  "companion_row_reconciliation": {
+    "audit_effect": "The official audit reports zero deaths because later companion rows overwrite death companions at the same (bot_guid,sequence). This does not improve or alter the reproduced strict threat ratios and is not used as the behavioral correction.",
+    "causal_event_contract": "Distinct companion rows sharing a sequence remain valid causal evidence for the Feral and Discipline Priest deaths and recovery near generation-13 closure.",
+    "discipline_priest_sequence_1866": {
+      "death_timestamp_ms": 1785838799961,
+      "official_retained_action": "validation_route_tactical_retreat"
+    },
+    "feral_sequence_2327": {
+      "death_healer_targeting_hostiles": 18,
+      "death_timestamp_ms": 1785838797771,
+      "official_retained_action": "trash_density_area_threat",
+      "official_retained_timestamp_ms": 1785838797117
+    },
+    "official_metric_contract": "Threat ratios retain the current final-row-per-(bot_guid,sequence) overwrite semantics and 3000-ms hostile acquisition grace. Death companions are not used to retroactively change official ratios."
+  },
+  "diagnosis_scope": "immutable_failed_canary_before_any_behavioral_change_or_rerun",
+  "diagnosis_sha256": "b82d80d1339f6c6304218b4adb7763ca98efb46b0c1292c79633a542dd6ac724",
+  "evidence_paths": {
+    "acceptance_source_report": "artifacts/all_spec_program/phase9_serial_canaries_20260804_rerun142/phase9_serial_02_stonecore_phase9_006_6893daf98698/batch/raw/acceptance_source_report.json",
+    "exact_manifests": "artifacts/all_spec_program/phase9_serial_canaries_20260804_rerun142/phase9_serial_02_stonecore_phase9_006_6893daf98698/batch/raw/exact_manifests.json",
+    "final_manifest": "artifacts/all_spec_program/phase9_serial_canaries_20260804_rerun142/phase9_serial_02_stonecore_phase9_006_6893daf98698/batch/retained/final_manifest.json",
+    "operator_state": "artifacts/all_spec_program/phase9_serial_canaries_20260804_rerun142/operator_state_canary2.json",
+    "publication_receipt": "artifacts/all_spec_program/phase9_serial_canaries_20260804_rerun142/phase9_serial_02_stonecore_phase9_006_6893daf98698/batch/retained/publication_receipt.json",
+    "raw_event_reconstruction": "artifacts/all_spec_program/phase9_serial_canaries_20260804_rerun142/phase9_serial_02_stonecore_phase9_006_6893daf98698/batch/raw/events.jsonl.zst"
+  },
+  "explicitly_rejected_corrections": [
+    "Claim generation 14 never started. It started, engaged Azil and her adds for 164653 ms, and was cut short by the external timeout.",
+    "Treat generation 14 as the aggregate Feral exposure cause. It contributed zero official healer samples; generation 13 contributed 513 of 517.",
+    "Remove generation-13 samples from the audit denominator. The samples are real runtime behavior; the correction must change encounter ownership and target behavior, not attribution.",
+    "Advance generation 13 before enrolled entry-42808 objective GUIDs are dead, remove the endpoint/full-cohort/two-second terminal requirements, omit generation 14, or waive Azil's real death.",
+    "Exclude arbitrary non-pack combat from terminal checks. Only the existing manifest-derived immediate-next-encounter boss/add classifier may transfer ownership.",
+    "Disable all tactical handling of Azil adds while generation 13 is active. The tank may still legally acquire engaged threats; only route authority and terminal ownership are separated.",
+    "Keep missing-Thrash as the primary selector key. Continuous fresh GUIDs prove that ordering defeats the stated densest-cluster contract and drives churn.",
+    "Change only audit companion-row retention and claim that it fixes strict role quality.",
+    "Reset, shorten, bypass, or otherwise weaken any native cooldown or global cooldown.",
+    "Assign hostile victims directly, inflate threat, move the healer artificially, teleport, teach, force completion, substitute an instance, or relax retention, exposure, dwell, route, boss-death, identity, exact-party, publication, cleanup, or capability gates."
+  ],
+  "feral_strict_reconstruction": {
+    "all_hostile_retention_floor": 0.9,
+    "all_hostile_retention_fraction": "5226/5926",
+    "all_hostile_retention_ratio": 0.8818764765440432,
+    "counterfactual_without_generation_13": {
+      "all_three_strict_gates_pass": true,
+      "eligible": 1464,
+      "exposure_ratio": 0.00273224043715847,
+      "healer_targeting": 4,
+      "maximum_healer_target_dwell_ms": 2645,
+      "retention_ratio": 0.9187158469945356,
+      "tank_owned": 1345
+    },
+    "eligible_hostile_samples": 5926,
+    "generation_13_objective_split": {
+      "after_second_enrolled_objective_death": {
+        "eligible": 3602,
+        "exposure_ratio": 0.12048861743475847,
+        "healer_targeting": 434,
+        "retention_ratio": 0.8697945585785675,
+        "tank_owned": 3133
+      },
+      "second_enrolled_objective_death_timestamp_ms": 1785838124890,
+      "through_second_enrolled_objective_death": {
+        "eligible": 860,
+        "exposure_ratio": 0.09186046511627907,
+        "healer_targeting": 79,
+        "retention_ratio": 0.8697674418604651,
+        "tank_owned": 748
+      },
+      "terminal_delay_after_second_objective_death_ms": 723527
+    },
+    "healer_target_exposure_ceiling": 0.01,
+    "healer_target_exposure_fraction": "517/5926",
+    "healer_target_exposure_ratio": 0.08724265946675666,
+    "healer_targeting_hostile_samples": 517,
+    "maximum_healer_target_dwell_ms": 5017,
+    "per_hostile_dwell_ceiling_ms": 3000,
+    "route_generation_contributions": {
+      "1": {
+        "eligible": 145,
+        "healer_targeting": 0,
+        "tank_owned": 142
+      },
+      "10": {
+        "eligible": 40,
+        "healer_targeting": 0,
+        "tank_owned": 40
+      },
+      "11": {
+        "eligible": 583,
+        "healer_targeting": 4,
+        "maximum_healer_target_dwell_ms": 2306,
+        "tank_owned": 566
+      },
+      "13": {
+        "duration_ms": 881654,
+        "eligible": 4462,
+        "exposure_ratio": 0.11497086508292245,
+        "healer_targeting": 513,
+        "maximum_healer_target_dwell_ms": 5017,
+        "retention_ratio": 0.8697893321380546,
+        "tank_owned": 3881
+      },
+      "14": {
+        "duration_ms": 164653,
+        "eligible": 246,
+        "healer_targeting": 0,
+        "maximum_healer_target_dwell_ms": 2645,
+        "tank_owned": 184
+      },
+      "2": {
+        "eligible": 19,
+        "healer_targeting": 0,
+        "tank_owned": 8
+      },
+      "3": {
+        "eligible": 388,
+        "healer_targeting": 0,
+        "tank_owned": 373
+      },
+      "4": {
+        "eligible": 26,
+        "healer_targeting": 0,
+        "tank_owned": 19
+      },
+      "7": {
+        "eligible": 1,
+        "healer_targeting": 0,
+        "tank_owned": 1
+      },
+      "9": {
+        "eligible": 16,
+        "healer_targeting": 0,
+        "maximum_healer_target_dwell_ms": 251,
+        "tank_owned": 12
+      }
+    },
+    "tank_owned_hostile_samples": 5226
+  },
+  "identity": {
+    "binary_sha256": "930364148a4670b03df898ee4e2469ddbe097d85d51a26428c7604b48073b8f8",
+    "evidence_identity_manifest_sha256": "de5ce6c3bed2ed599b96b877941380845d68c9d5f2fa230ac522905d9392e38f",
+    "identity_matched": true,
+    "max_active_cohorts": 1,
+    "profile_content_hash": "35a587f05d8781d72c62576a6f35392a69e01d5978429f65429ad5b9ed096a22",
+    "profile_generation": 1,
+    "run_plan_sha256": "733482c3390a645f608921bf32b21572cd0c1ec7c93e36f134f428d58d9251a2",
+    "server_epoch": 9118673134797927,
+    "server_process_id": 2506071,
+    "session_fingerprint": "85677faa7ec22696df10f61302da1a304b8740c882bc6e45cc68b95e0afbcb53"
+  },
+  "party": {
+    "exact_party_verified": true,
+    "ordered_specs": [
+      "feral_druid_tank",
+      "discipline_priest",
+      "fury_warrior",
+      "marksmanship_hunter",
+      "retribution_paladin"
+    ],
+    "party_sha256": "524b94c794897f5111bdae0a5e45ba31a31ebb8596d811a3dd8c1caff95bd16a"
+  },
+  "publication_and_lifecycle": {
+    "batch_identity_sha256": "4e97a1576788e9fced0cbae4391cc35b0f8c164749f18f74f352611a19f14bd1",
+    "broad_dvc_gc_used": false,
+    "compact_bundle_sha256": "dd938ed1a54c42f66898f641be2a0e689652a3d7704b26a9237f9cc8c250b845",
+    "compact_dvc_md5": "95729fe0e6692835451d9135b1ad7143.dir",
+    "compact_pointer_sha256": "383285e1e4f7fb6ae58224a9da887dbaf14ceee037a6cb9abe203e3b1305a93b",
+    "dvc_config_local_restored_sha256": "11a1d3ed72d03b2afed3151d85784dd5c1cbd031e18261807790b26743d159e1",
+    "gitignore_restored_sha256": "2616c6981d1728b2725b6a06bbec5289f82b14bbfc493549df464b03c237ae5e",
+    "monitor_deleted": true,
+    "operator_active": false,
+    "publication_receipt_sha256": "000e40a8f7583b22fa73160b26bbf1a0afa9c7e9b31951d6e0787d50d8ec0578",
+    "raw_bundle_sha256": "069a0a346a36a5a866b50b19a31dc31582db891a9aa24ab293876173be464f55",
+    "raw_compact_and_batch_cache_retained_for_diagnosis": true,
+    "raw_dvc_md5": "95e2c7e89fc20f37f4fb2b1311c7ebd0.dir",
+    "raw_pointer_sha256": "2e99d90d3916acb8f98ed056d0667214c5a6bb16a8c3ada94fe53cc82e1f3938",
+    "remote_status_sha256": "efed9e5afcfe149915ae98b9ed9e69304eb48f5ce2e2265b18b5b5ed2f155e60",
+    "remote_verified": true,
+    "worldserver_active": false
+  },
+  "route_and_cleanup": {
+    "canaries_3_through_8_started": false,
+    "cleanup": {
+      "active": false,
+      "active_bots": 0,
+      "lease_count": 0,
+      "party_bot_count": 0
+    },
+    "generation_13": {
+      "enrolled_target_entry": 42808,
+      "enrolled_target_guids": [
+        416,
+        417
+      ],
+      "name": "twilight flayer packs",
+      "route_node_id": "3edc010765b5c456",
+      "terminal_timestamp_ms": 1785838848417
+    },
+    "generation_14": {
+      "add_entry": 42428,
+      "boss_action_rows": 65,
+      "boss_entry": 42333,
+      "boss_name": "High Priestess Azil",
+      "boss_started_rows": 66,
+      "duration_ms": 164653,
+      "started": true
+    },
+    "manifest_complete": false,
+    "real_boss_death_count": 3,
+    "real_boss_deaths": [
+      {
+        "entry": 43438,
+        "name": "Corborus",
+        "route_generation": 2
+      },
+      {
+        "entry": 43214,
+        "name": "Slabhide",
+        "route_generation": 4
+      },
+      {
+        "entry": 42188,
+        "name": "Ozruk",
+        "route_generation": 11
+      }
+    ],
+    "route_terminal_count": 13,
+    "strict_uninterrupted_route": false,
+    "teacher_or_forbidden_completion_assistance": false,
+    "timed_out": true,
+    "underlying_returncode": 124,
+    "wrapper_returncode": 1,
+    "watchdog_completed": false
+  },
+  "schema": "all_spec_phase9_rerun142_diagnosis_v1",
+  "selector_and_route_ownership_findings": {
+    "current_source_contract": [
+      "natural current-pack enrollment excludes isImmediateNextValidationRouteEncounterMember",
+      "the proactive Feral selector ranks missing Thrash before cluster size",
+      "selected tactical AreaTarget is unconditionally passed to rememberValidationRouteFocus",
+      "non-pack trash focus accepts an explicit remembered bounded terminal combat target",
+      "active-combat terminal filtering excludes only isImmediateNextValidationRouteBossTarget",
+      "bounded terminal combat filtering excludes only the future boss, not its listed adds"
+    ],
+    "generation_13_proactive_rows": {
+      "mapped_current_objective_entry_42808": 0,
+      "mapped_next_encounter_add_entry_42428": 72,
+      "normal_area_density_rows": 104,
+      "target_changes": 88,
+      "target_transitions": 103,
+      "unmapped_by_retained_combat_attempt": 32
+    },
+    "route_manifest_ownership": {
+      "current_generation": 13,
+      "current_target_entry": 42808,
+      "immediate_next_add_entry": 42428,
+      "immediate_next_boss_entry": 42333,
+      "immediate_next_generation": 14
+    }
+  }
+}

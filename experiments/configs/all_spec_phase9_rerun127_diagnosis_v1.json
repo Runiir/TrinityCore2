@@ -1,0 +1,243 @@
+{
+  "schema": "all_spec_phase9_rerun127_diagnosis_v1",
+  "diagnosis_sha256": "3a2a624375997ce2c2967d92b3b7e68fb5b9d82a996b86ff638c1a605198b26b",
+  "hash_scope": "canonical_json_without_diagnosis_sha256",
+  "source_attempt": {
+    "attempt_id": "phase9_serial_02_stonecore_phase9_006_6893daf98698",
+    "batch_id": "phase9-serial-canary-2",
+    "composition_id": "stonecore_phase9_006_6893daf98698",
+    "party_sha256": "524b94c794897f5111bdae0a5e45ba31a31ebb8596d811a3dd8c1caff95bd16a",
+    "party": [
+      "feral_druid_tank",
+      "discipline_priest",
+      "fury_warrior",
+      "marksmanship_hunter",
+      "retribution_paladin"
+    ],
+    "server_process_id": 948629,
+    "server_epoch": 2288763113157716,
+    "profile_generation": 1,
+    "profile_content_hash": "35a587f05d8781d72c62576a6f35392a69e01d5978429f65429ad5b9ed096a22",
+    "evidence_identity_manifest_sha256": "53759ebedbe8fa153f9d3dc95644764b452ec63292b266857b77d18c340f6360",
+    "matrix_identity_sha256": "bac3a937ced4063f4c20267812ab621044373fb3e42a620a66e3a75d8fe64921",
+    "run_plan_sha256": "f57979cbca88493de46477c06d9df202bb1624b1d394d7d183d12f4989a43350",
+    "route_sha256": "fe5c3d2e2a5f28807b7ce2890d08a616255381a3e096f1235642242729745e04"
+  },
+  "capture_validation": {
+    "validated_with": "tools.bot_ml.batch_evidence_lifecycle.validate_capture",
+    "capture_identity_sha256": "0a262279916173bad94d092448fc755b828deea65a8ff9034e7376050cc880cd",
+    "raw_part_count": 1,
+    "raw_event_row_count": 273,
+    "compact_row_count": 1,
+    "raw_bundle_sha256": "13ba9b3f28fd03ab86637e89ac12d21913d51ca78831515c58c30c15e9d21a9f",
+    "compact_bundle_sha256": "01f6e7bffd7c36a00a7eb196d2e1f6e9c66c043c8e10c4475911c12579894153",
+    "publication_receipt_sha256": "2e176b912ece0f45918a14d06e9509030f5800b0b2d4006da7613e3d272f6769",
+    "receipt_hash_valid": true,
+    "receipt_identity_and_bundles_match": true,
+    "remote_status": "cache_and_remote_in_sync",
+    "acceptance_recomputed_without_stored_pass_booleans": true,
+    "role_audit_recomputed_equal": true,
+    "exact_party_recomputed_equal": true,
+    "operator_closed": true,
+    "cleanup_complete": true,
+    "raw_payload_was_evicted_before_diagnosis_hydration": true,
+    "route_terminal_count": 14,
+    "real_boss_kill_count": 4,
+    "manifest_completion_evidence_count": 1,
+    "forbidden_completion_assists": []
+  },
+  "observed_role_metrics": {
+    "tank_all_hostile_retention_rate": 0.9003,
+    "healer_target_exposure_rate": 0.0935,
+    "max_healer_target_dwell_ms": 6556,
+    "tank_threat_aura_uptime_rate": 1.0,
+    "feral_action_attempts": 279,
+    "feral_cast_failure_rate": 0.0,
+    "misdirection_aoe_attempts": 50,
+    "misdirection_aoe_successes": 42,
+    "misdirection_single_attempts": 13,
+    "misdirection_single_successes": 10,
+    "hazard_exit_actions": 144,
+    "hazard_exit_failures": 0,
+    "threat_acquisition_grace_ms": 3000,
+    "eligible_hostile_sample_denominator": 3038,
+    "tank_owned_eligible_sample_numerator": 2735,
+    "healer_targeting_eligible_sample_numerator": 284
+  },
+  "time_aligned_exposure_intervals": [
+    {
+      "start_ms": 1785655730369,
+      "end_ms": 1785655736937,
+      "continuous_ms": 6568,
+      "route_generation": 13,
+      "route_node_id": "3edc010765b5c456",
+      "unique_healer_targeting_hostiles": 10,
+      "eligible_healer_sample_contribution": 40,
+      "control_sequence": [
+        "move_out_of_hazard",
+        "feral_move_remote_healer_trash_cluster_pre_roar",
+        "feral_continue_remote_healer_trash_cluster_handoff",
+        "feral_charge_remote_healer_trash_cluster_handoff",
+        "feral_move_remote_healer_trash_cluster_pre_roar",
+        "feral_continue_remote_healer_trash_cluster_handoff",
+        "feral_demoralizing_roar_remote_healer_trash_cluster_handoff"
+      ]
+    },
+    {
+      "start_ms": 1785655748261,
+      "end_ms": 1785655748517,
+      "continuous_ms": 256,
+      "route_generation": 13,
+      "route_node_id": "3edc010765b5c456",
+      "unique_healer_targeting_hostiles": 4,
+      "eligible_healer_sample_contribution": 0
+    },
+    {
+      "start_ms": 1785655797311,
+      "end_ms": 1785655799088,
+      "continuous_ms": 1777,
+      "route_generation": 13,
+      "route_node_id": "3edc010765b5c456",
+      "unique_healer_targeting_hostiles": 19,
+      "eligible_healer_sample_contribution": 14,
+      "control_sequence": [
+        "feral_charge_remote_healer_trash_cluster_handoff",
+        "feral_charge_remote_healer_trash_cluster_in_flight",
+        "feral_move_remote_healer_trash_cluster_pre_roar",
+        "feral_continue_remote_healer_trash_cluster_handoff",
+        "feral_swipe_secure_trash_threat_margin"
+      ]
+    },
+    {
+      "start_ms": 1785655809934,
+      "end_ms": 1785655820088,
+      "continuous_ms": 10154,
+      "route_generation": 13,
+      "route_node_id": "3edc010765b5c456",
+      "unique_healer_targeting_hostiles": 14,
+      "eligible_healer_sample_contribution": 57,
+      "control_sequence": [
+        "feral_charge_remote_healer_trash_cluster_handoff",
+        "feral_move_remote_healer_trash_cluster_pre_roar",
+        "feral_continue_remote_healer_trash_cluster_handoff",
+        "feral_demoralizing_roar_remote_healer_trash_cluster_handoff"
+      ]
+    },
+    {
+      "start_ms": 1785655826634,
+      "end_ms": 1785655827260,
+      "continuous_ms": 626,
+      "route_generation": 13,
+      "route_node_id": "3edc010765b5c456",
+      "unique_healer_targeting_hostiles": 9,
+      "eligible_healer_sample_contribution": 16
+    },
+    {
+      "start_ms": 1785655860190,
+      "end_ms": 1785655861711,
+      "continuous_ms": 1521,
+      "route_generation": 13,
+      "route_node_id": "3edc010765b5c456",
+      "unique_healer_targeting_hostiles": 12,
+      "eligible_healer_sample_contribution": 2
+    },
+    {
+      "start_ms": 1785655876329,
+      "end_ms": 1785655891744,
+      "continuous_ms": 15415,
+      "route_generation": 13,
+      "route_node_id": "3edc010765b5c456",
+      "unique_healer_targeting_hostiles": 33,
+      "eligible_healer_sample_contribution": 155,
+      "dominant_actions": {
+        "feral_continue_remote_healer_trash_cluster_handoff": 18,
+        "feral_move_remote_healer_trash_cluster_pre_roar": 5,
+        "feral_demoralizing_roar_remote_healer_trash_cluster_handoff": 3
+      }
+    }
+  ],
+  "charge_arrival_control_flow_evidence": [
+    {
+      "charge_ms": 1785655732893,
+      "next_remote_move_ms": 1785655733150,
+      "delay_ms": 257,
+      "charge_target_guid": 662,
+      "new_remote_target_guid": 660
+    },
+    {
+      "charge_ms": 1785655797311,
+      "charge_in_flight_ms": 1785655797573,
+      "next_remote_move_ms": 1785655798583,
+      "delay_ms": 1272,
+      "charge_target_guid": 758,
+      "new_remote_target_guid": 756
+    },
+    {
+      "charge_ms": 1785655813463,
+      "next_remote_move_ms": 1785655813722,
+      "delay_ms": 259,
+      "charge_target_guid": 778,
+      "new_remote_target_guid": 768
+    }
+  ],
+  "hypotheses": [
+    {
+      "name": "true_initial_or_add_wave_pickup_failure",
+      "outcome": "supported",
+      "evidence": "Fresh route-generation-13 follower identities repeatedly selected the healer before tank ownership; all seven eligible exposure contributions are identity-scoped to that node."
+    },
+    {
+      "name": "threat_retention_decay_after_established_pickup",
+      "outcome": "secondary_not_primary",
+      "evidence": "The tank retained 0.9003 overall and entered several waves with existing ownership, but the dominant exposed GUIDs were newly appearing split-wave identities rather than an audit-only loss of already tank-owned GUIDs."
+    },
+    {
+      "name": "hazard_or_path_recovery_starvation",
+      "outcome": "contributing_not_root",
+      "evidence": "The first long interval followed a valid hazard exit and the run recorded 144 successful hazard exits with zero failures; repeated remote handoff movement, not a rejected or unreachable hazard path, dominated the exposed windows."
+    },
+    {
+      "name": "misdirection_missing_or_wrong_target",
+      "outcome": "rejected_as_primary",
+      "evidence": "The audit independently found 42 of 50 AoE and 10 of 13 single-target transfers successful, with no wrong successful AoE spells. Transfers assisted some windows but could not cover every split wave."
+    },
+    {
+      "name": "audit_scope_or_denominator_error",
+      "outcome": "rejected",
+      "evidence": "Independent recomputation exactly matched 2735/3038 tank ownership and 284/3038 healer exposure after the unchanged 3000 ms per-GUID acquisition grace; sampled GUIDs were alive, engaged, current-party victims in the same identity and route node."
+    },
+    {
+      "name": "healer_behavior_primary",
+      "outcome": "rejected_as_primary",
+      "evidence": "The healer repeatedly used the existing Feral convergence and Fade behavior; the reproducible charge-arrival control-flow transition occurs in the tank resolver before the local Roar retry."
+    }
+  ],
+  "accepted_causal_chain": [
+    "Split route-generation-13 follower waves acquire legitimate healing threat while the Feral is controlling an earlier local cluster.",
+    "The Feral selects and successfully charges an identity-valid healer-owned remote hostile.",
+    "After charge arrival, feralTrashChargeArrived is true, but the generic remote-cluster selection block still runs because it is gated only by !feralTrashHandoffActive.",
+    "That block selects another remote healer-owned anchor and returns movement before the arrived cluster reaches the existing nearby Demoralizing Roar retry and charge-arrival hold blocks.",
+    "Repeated charge-to-new-anchor and remote-path decisions keep real hostiles on the healer beyond acquisition and dwell limits; the strict audit correctly rejects the attempt."
+  ],
+  "evidence_limitation": {
+    "precise_numeric_per_hostile_threat_margins_available": false,
+    "reason": "Rerun127 serialized identity-scoped victim ownership arrays and aggregate secure-threat decisions, but not per-party numeric threat values for each hostile.",
+    "impact": "The exact numeric tank-versus-healer/DPS margins cannot be reconstructed retrospectively. This does not change the observed current-victim transitions or the charge-arrival control-flow ordering used for the causal finding."
+  },
+  "smallest_safe_correction": {
+    "file": "src/server/game/Bots/BotWorldPopulationMgr.cpp",
+    "scope": "ordinary-trash Feral healer-threat handoff only",
+    "change": "Do not select or move to a new remote healer cluster while feralTrashChargeArrived is true; allow the existing local Demoralizing Roar retry or bounded charge-arrival hold to run first.",
+    "does_not_change": [
+      "route semantics",
+      "hazard priority",
+      "victim assignment",
+      "spell legality",
+      "threat multipliers",
+      "audit thresholds",
+      "identity scope",
+      "Misdirection behavior",
+      "teacher_or_forced_completion"
+    ]
+  }
+}

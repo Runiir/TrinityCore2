@@ -1,0 +1,545 @@
+{
+  "schema": "all_spec_phase9_rerun133_diagnosis_v1",
+  "diagnosis_sha256": "d4788686944b15b2fbd5872cbe42390555c281bb1074841644c7e678188ec180",
+  "hash_scope": "canonical_json_without_diagnosis_sha256",
+  "source_attempt": {
+    "attempt_id": "phase9_serial_02_stonecore_phase9_006_6893daf98698",
+    "batch_id": "phase9-serial-canary-rerun133-2",
+    "composition_id": "stonecore_phase9_006_6893daf98698",
+    "party_sha256": "524b94c794897f5111bdae0a5e45ba31a31ebb8596d811a3dd8c1caff95bd16a",
+    "party": [
+      "feral_druid_tank",
+      "discipline_priest",
+      "fury_warrior",
+      "marksmanship_hunter",
+      "retribution_paladin"
+    ],
+    "server_process_id": 1631456,
+    "server_epoch": 8652044969660051,
+    "binary_sha256": "63bbf77a89b9bbbdafb8638e30a285656b505dd3eaaa9bb43db25621f5c3aeee",
+    "profile_generation": 1,
+    "profile_content_hash": "35a587f05d8781d72c62576a6f35392a69e01d5978429f65429ad5b9ed096a22",
+    "evidence_identity_manifest_sha256": "605a13791c0a0397cbdaa59f4b447fb0b6e2aeb2c0be2206e0c4a49285861458",
+    "session_fingerprint": "10e9136f4e6bff044ef84b105960e2c395b527db6bd2613cdcebe0ae1ee703ff",
+    "run_plan_sha256": "a02561b62ac009d7c7f8f236d1f56c8aa79addf6c083fc9ec2ae773e2acb84df",
+    "max_active_cohorts": 1
+  },
+  "capture_validation": {
+    "validated_with": "tools.bot_ml.batch_evidence_lifecycle.validate_capture",
+    "capture_identity_sha256": "8122eb29def8daf2015bd360beaa843a84e4e35d7d52f273471606d92e41ce72",
+    "raw_part_count": 1,
+    "raw_event_row_count": 284,
+    "raw_uncompressed_bytes": 45997473,
+    "compact_row_count": 1,
+    "raw_bundle_sha256": "4f3df34d97857e94d71cf5f0357385fe91a99a3f823e2e4e17f2b3c3f63bfdb2",
+    "compact_bundle_sha256": "03e0b463ded85177f21fc8dc7268db51ad1f04c95618a28484636141ac02da28",
+    "publication_receipt_sha256": "637cd714139e4282fc8637c1b17ce85429e1db9461964e1b0915a883a903b469",
+    "remote_status_sha256": "efed9e5afcfe149915ae98b9ed9e69304eb48f5ce2e2265b18b5b5ed2f155e60",
+    "raw_pointer_sha256": "d2daa7950a65047a4e8f2e67f803436c61ffaed96528af16508bbf096ce9c5de",
+    "compact_pointer_sha256": "99520d5f761fb3dfc74b8700e48ad5e6012e66c7ccfe0e3430c428ddcc809c61",
+    "receipt_hash_valid": true,
+    "receipt_identity_and_bundles_match": true,
+    "remote_verified": true,
+    "dvc_remote_status": "cache_and_remote_object_are_in_sync",
+    "acceptance_recomputed_without_stored_pass_booleans": true,
+    "role_audit_recomputed_equal": true,
+    "exact_party_recomputed_equal": true,
+    "operator_closed": true,
+    "operator_status": "failed",
+    "operator_returncode": 1,
+    "cleanup_complete": true,
+    "cleanup": {
+      "active_bots": 0,
+      "lease_count": 0,
+      "party_bot_count": 0,
+      "server_epoch": 8652044969660051
+    },
+    "raw_payload_was_evicted_before_diagnosis_hydration": true,
+    "route_terminal_count": 14,
+    "real_boss_kill_count": 4,
+    "real_boss_kill_evidence": [
+      {
+        "route_generation": 2,
+        "route_node_id": "da90ef890fb19a87",
+        "boss": "Corborus"
+      },
+      {
+        "route_generation": 4,
+        "route_node_id": "b412eea04f2adbfa",
+        "boss": "Slabhide"
+      },
+      {
+        "route_generation": 11,
+        "route_node_id": "b1c6790bda1c3247",
+        "boss": "Ozruk"
+      },
+      {
+        "route_generation": 14,
+        "route_node_id": "4b2457d42f81a298",
+        "boss": "High Priestess Azil"
+      }
+    ],
+    "route_complete": true,
+    "manifest_complete": true,
+    "watchdog_completed": true,
+    "timed_out": false,
+    "duration_seconds": 1317,
+    "kill_count": 82,
+    "recorded_party_death_count": 2,
+    "teacher_assisted_kills": 0,
+    "unresolved_route_death_loop_events": 0,
+    "unresolved_route_stuck_events": 0,
+    "forbidden_completion_assists": [],
+    "temporary_operator_gitignore_exception_restored": true,
+    "temporary_operator_gitignore_backup_removed": true,
+    "recurring_monitor_deleted": true,
+    "canaries_3_through_8_started": false,
+    "hydrated_file_verification": [
+      {
+        "path": "raw/acceptance_source_report.json",
+        "sha256": "5c9e216ef8021629900907854e6b420696a153e7c14399ee0e0baad63a0a59f3",
+        "size": 47473073
+      },
+      {
+        "path": "raw/events.jsonl.zst",
+        "sha256": "cc575e889baa397e2e7434caae9cc7f4af68bbe619154bc5f834bd29f70baa58",
+        "size": 1191708
+      },
+      {
+        "path": "raw/exact_manifests.json",
+        "sha256": "dd728b5647a1effe09d0badb994bcad47512d4bcd569fe49c9341e8eb4902259",
+        "size": 95847
+      },
+      {
+        "path": "compact/evidence.parquet",
+        "sha256": "a6faf8b5ae5c89baecfcd1560fe1907f094ce5299ebb664d88f1594739220178",
+        "size": 2698
+      }
+    ],
+    "capture_revalidated_after_diagnosis": true,
+    "local_raw_and_compact_payloads_evicted_after_diagnosis": true,
+    "batch_local_dvc_cache_absent_after_diagnosis": true,
+    "temporary_diagnosis_gitignore_exception_restored": true,
+    "temporary_diagnosis_gitignore_backup_removed": true
+  },
+  "observed_role_metrics": {
+    "tank_all_hostile_retention_rate": 0.9116,
+    "healer_target_exposure_rate": 0.0531,
+    "max_healer_target_dwell_ms": 7346,
+    "max_healer_target_dwell_hostile_guids": [
+      667
+    ],
+    "max_healer_target_dwell_start_ms": 1785733481188,
+    "max_healer_target_dwell_end_ms": 1785733488534,
+    "tank_threat_aura_uptime_rate": 1.0,
+    "active_action_coverage_rate": 1.0,
+    "feral_action_attempts": 310,
+    "feral_cast_failure_rate": 0.0,
+    "successful_submission_rate": 1.0,
+    "feral_deaths": 0,
+    "threat_acquisition_grace_ms": 3000,
+    "eligible_hostile_sample_denominator": 1979,
+    "tank_owned_eligible_sample_numerator": 1804,
+    "healer_targeting_eligible_sample_numerator": 105,
+    "exact_tank_retention_fraction": "1804/1979",
+    "exact_healer_exposure_fraction": "105/1979",
+    "exact_tank_retention_rate": 0.9115715007579586,
+    "exact_healer_exposure_rate": 0.05305709954522486,
+    "required_tank_retention_floor": 0.9,
+    "required_healer_exposure_ceiling": 0.01,
+    "required_max_healer_dwell_ms": 3000,
+    "long_healer_target_episode_count": 13,
+    "other_role_and_capability_gates_passed": true,
+    "role_failure_labels": [
+      "Feraltank:healer_target_exposure",
+      "Feraltank:healer_target_dwell"
+    ],
+    "mechanics": {
+      "hazard_exit_actions": 194,
+      "hazard_exit_failures": 0,
+      "misdirection_aoe_attempts": 21,
+      "misdirection_aoe_successes": 17,
+      "misdirection_aoe_wrong_spell_successes": 0,
+      "misdirection_single_target_attempts": 34,
+      "misdirection_single_target_successes": 19
+    }
+  },
+  "independent_node_reconstruction": {
+    "dominant_route_generation": 13,
+    "dominant_route_node_id": "3edc010765b5c456",
+    "dominant_route_segment": "16_twilight_flayer_packs",
+    "dominant_node_denominator": 1088,
+    "dominant_node_tank_owned_numerator": 969,
+    "dominant_node_retention_rate": 0.890625,
+    "dominant_node_healer_targeting_numerator": 105,
+    "dominant_node_healer_exposure_rate": 0.09650735294117647,
+    "remaining_nodes_denominator": 891,
+    "remaining_nodes_tank_owned_numerator": 835,
+    "remaining_nodes_healer_targeting_numerator": 0,
+    "finding": "Every eligible healer-targeting contribution occurred at the Twilight Flayer node. Global retention passed, but generation 13 remained below 0.90 locally and failed both healer-protection gates."
+  },
+  "comparison": {
+    "rerun132": {
+      "tank_retention_rate": 0.9202,
+      "healer_exposure_rate": 0.0726,
+      "max_healer_dwell_ms": 6145
+    },
+    "rerun133": {
+      "tank_retention_rate": 0.9116,
+      "healer_exposure_rate": 0.0531,
+      "max_healer_dwell_ms": 7346
+    },
+    "finding": "The one-second reservation and 250 ms polling reduced aggregate healer exposure relative to rerun132 while preserving the global retention floor, but distinct-cluster renewals still formed one longer pre-Roar interval and the maximum per-hostile dwell regressed."
+  },
+  "feral_control_action_counts": {
+    "feral_continue_remote_healer_trash_cluster_handoff": 17,
+    "feral_move_remote_healer_trash_cluster_pre_roar": 5,
+    "feral_demoralizing_roar_party_trash_pickup": 5,
+    "feral_demoralizing_roar_split_swarm_handoff": 1,
+    "feral_demoralizing_roar_swarm_pickup": 1,
+    "feral_growl_lingering_healer_trash_attacker": 1,
+    "feral_swipe_secure_trash_threat_margin": 8,
+    "feral_swipe_hazard_secure_threat_margin": 3,
+    "move_to_trash_density": 13,
+    "trash_density_area_threat": 77,
+    "move_out_of_hazard": 43,
+    "tank_hazard_hold_aoe_threat": 13
+  },
+  "maximum_dwell_timeline": [
+    {
+      "at_ms": 1785733474917,
+      "offset_from_episode_ms": -6271,
+      "bot": "Discpriest",
+      "sequence": 1098,
+      "action": "fade_early_trash_swarm_threat_drop",
+      "engaged_hostiles": 14,
+      "tank_owned_hostiles": 1,
+      "healer_targeting_hostiles": 13,
+      "finding": "Discipline used native Fade to clear an earlier thirteen-hostile transfer; the later maximum-dwell wave began only 6271 ms afterward while Fade remained on native cooldown."
+    },
+    {
+      "at_ms": 1785733481188,
+      "offset_ms": 0,
+      "sequence": 1128,
+      "action": "move_out_of_hazard",
+      "engaged_hostiles": 29,
+      "tank_owned_hostiles": 19,
+      "healer_targeting_hostiles": 10,
+      "healer_targeting_hostile_guids": [
+        664,
+        665,
+        666,
+        667,
+        668,
+        669,
+        670,
+        671,
+        672,
+        673
+      ],
+      "finding": "Ten identities began targeting the healer while the accepted strict hazard-exit path retained movement authority. The same decision submitted legal Growl against one healer-owned hostile without replacing hazard movement."
+    },
+    {
+      "at_ms": 1785733482203,
+      "offset_ms": 1015,
+      "sequence": 1130,
+      "action": "feral_swipe_hazard_secure_threat_margin",
+      "engaged_hostiles": 27,
+      "tank_owned_hostiles": 18,
+      "healer_targeting_hostiles": 9,
+      "finding": "The legal hazard-safe Swipe submitted while nine identities still targeted the healer."
+    },
+    {
+      "at_ms": 1785733483716,
+      "offset_ms": 2528,
+      "sequence": 1133,
+      "action": "move_out_of_hazard",
+      "nested_event_action": "feral_in_flight_hazard_healer_roar",
+      "engaged_hostiles": 25,
+      "tank_owned_hostiles": 19,
+      "healer_targeting_hostiles": 6,
+      "finding": "The first legal local Roar was submitted at 2528 ms; the hazard resolver was polling healer-owned recovery at 500 ms cadence."
+    },
+    {
+      "at_ms": 1785733484219,
+      "offset_ms": 3031,
+      "sequence": 1134,
+      "action": "move_out_of_hazard",
+      "engaged_hostiles": 25,
+      "tank_owned_hostiles": 19,
+      "healer_targeting_hostiles": 6,
+      "healer_targeting_hostile_guids": [
+        664,
+        666,
+        667,
+        668,
+        671,
+        673
+      ],
+      "finding": "Six identities were still sampled on the healer 503 ms after Roar; five reached 3031 ms and crossed the unchanged dwell ceiling by 31 ms under legal hazard ownership."
+    },
+    {
+      "at_ms": 1785733484719,
+      "offset_ms": 3531,
+      "sequence": 1135,
+      "action": "move_out_of_hazard",
+      "engaged_hostiles": 25,
+      "tank_owned_hostiles": 24,
+      "healer_targeting_hostiles": 1,
+      "healer_targeting_hostile_guids": [
+        667
+      ],
+      "finding": "Hazard-safe threat actions recovered every original identity except GUID 667, but only after the strict dwell ceiling had already failed."
+    },
+    {
+      "at_ms": 1785733485228,
+      "offset_ms": 4040,
+      "sequence": 1136,
+      "action": "feral_move_remote_healer_trash_cluster_pre_roar",
+      "target_id": 641,
+      "engaged_hostiles": 25,
+      "tank_owned_hostiles": 19,
+      "healer_targeting_hostiles": 6,
+      "finding": "Ordinary recovery created the first one-second pre-Roar reservation after hazard handling; persistent GUID 667 remained part of the same exposure episode while a newly active cluster also targeted the healer."
+    },
+    {
+      "start_ms": 1785733485486,
+      "end_ms": 1785733486001,
+      "start_offset_ms": 4298,
+      "end_offset_ms": 4813,
+      "sequences": [
+        1137,
+        1138,
+        1139
+      ],
+      "action": "feral_continue_remote_healer_trash_cluster_handoff",
+      "target_id": 641,
+      "finding": "Three 250 ms continuation decisions consumed the first reservation without a Roar or Growl."
+    },
+    {
+      "at_ms": 1785733486254,
+      "offset_ms": 5066,
+      "sequence": 1140,
+      "action": "feral_move_remote_healer_trash_cluster_pre_roar",
+      "target_id": 654,
+      "finding": "At the prior reservation boundary the selector immediately renewed movement ownership for a distinct cluster even though the expired 641 cluster and persistent GUID 667 were unresolved."
+    },
+    {
+      "at_ms": 1785733487279,
+      "offset_ms": 6091,
+      "sequence": 1144,
+      "action": "feral_move_remote_healer_trash_cluster_pre_roar",
+      "target_id": 636,
+      "finding": "A third distinct-cluster reservation followed without an intervening threat action."
+    },
+    {
+      "at_ms": 1785733488285,
+      "offset_ms": 7097,
+      "sequence": 1148,
+      "action": "feral_move_remote_healer_trash_cluster_pre_roar",
+      "target_id": 656,
+      "finding": "A fourth distinct-cluster reservation followed without an intervening threat action."
+    },
+    {
+      "at_ms": 1785733488534,
+      "offset_ms": 7346,
+      "sequence": 1149,
+      "action": "feral_continue_remote_healer_trash_cluster_handoff",
+      "target_id": 656,
+      "engaged_hostiles": 31,
+      "tank_owned_hostiles": 19,
+      "healer_targeting_hostiles": 12,
+      "healer_targeting_hostile_guids": [
+        634,
+        636,
+        640,
+        641,
+        642,
+        656,
+        657,
+        659,
+        661,
+        662,
+        663,
+        667
+      ],
+      "finding": "GUID 667 reached 7346 ms. The four nominally one-second reservations had chained into more than 3.3 seconds of uninterrupted pre-Roar movement ownership, and no Roar or Growl occurred after the hazard Swipe/Roar sequence."
+    }
+  ],
+  "long_healer_target_episodes": [
+    {
+      "guid": 667,
+      "start_ms": 1785733481188,
+      "end_ms": 1785733488534,
+      "dwell_ms": 7346
+    },
+    {
+      "guid": 416,
+      "start_ms": 1785733533874,
+      "end_ms": 1785733537413,
+      "dwell_ms": 3539
+    },
+    {
+      "guid": 634,
+      "start_ms": 1785733485228,
+      "end_ms": 1785733488534,
+      "dwell_ms": 3306
+    },
+    {
+      "guid": 636,
+      "start_ms": 1785733485228,
+      "end_ms": 1785733488534,
+      "dwell_ms": 3306
+    },
+    {
+      "guid": 640,
+      "start_ms": 1785733485228,
+      "end_ms": 1785733488534,
+      "dwell_ms": 3306
+    },
+    {
+      "guid": 641,
+      "start_ms": 1785733485228,
+      "end_ms": 1785733488534,
+      "dwell_ms": 3306
+    },
+    {
+      "guid": 642,
+      "start_ms": 1785733485228,
+      "end_ms": 1785733488534,
+      "dwell_ms": 3306
+    },
+    {
+      "guid": 662,
+      "start_ms": 1785733485486,
+      "end_ms": 1785733488534,
+      "dwell_ms": 3048
+    },
+    {
+      "guid": 664,
+      "start_ms": 1785733481188,
+      "end_ms": 1785733484219,
+      "dwell_ms": 3031
+    },
+    {
+      "guid": 666,
+      "start_ms": 1785733481188,
+      "end_ms": 1785733484219,
+      "dwell_ms": 3031
+    },
+    {
+      "guid": 668,
+      "start_ms": 1785733481188,
+      "end_ms": 1785733484219,
+      "dwell_ms": 3031
+    },
+    {
+      "guid": 671,
+      "start_ms": 1785733481188,
+      "end_ms": 1785733484219,
+      "dwell_ms": 3031
+    },
+    {
+      "guid": 673,
+      "start_ms": 1785733481188,
+      "end_ms": 1785733484219,
+      "dwell_ms": 3031
+    }
+  ],
+  "hypotheses": [
+    {
+      "name": "one_second_reservation_fully_bounds_total_pre_roar_ownership",
+      "outcome": "rejected",
+      "evidence": "Sequences 1136-1149 selected anchors 641, 654, 636, and 656 at successive reservation boundaries. Each reservation was individually bounded, but the unresolved healer-target episode and movement ownership continued without an intervening Roar or Growl."
+    },
+    {
+      "name": "same_cluster_exclusion_is_sufficient",
+      "outcome": "rejected",
+      "evidence": "The selector correctly avoided only the just-expired ten-yard neighborhood, then moved to genuinely distinct anchors while members of the expired cluster still targeted the healer. This preserved retention but did not bound the episode."
+    },
+    {
+      "name": "hazard_movement_alone_caused_the_entire_7346_ms_episode",
+      "outcome": "rejected",
+      "evidence": "Strict hazard ownership consumed the first 3531 ms and already produced five 3031 ms violations, but the remaining 3815 ms came from four distinct ordinary pre-Roar reservations after the hazard interval."
+    },
+    {
+      "name": "hazard_safe_threat_actions_were_absent",
+      "outcome": "rejected",
+      "evidence": "The immutable trace records Growl at episode start, Swipe at 1015 ms, and Roar at 2528 ms without replacing the accepted hazard movement. The residual miss was cadence/ownership timing, not complete starvation."
+    },
+    {
+      "name": "hazard_healer_owned_polling_consumed_the_last_strict_margin",
+      "outcome": "supported_primary",
+      "evidence": "Roar submitted at 2528 ms under the established 500 ms cadence; the next identity sample 503 ms later still showed six healer targets at 3031 ms. A 250 ms observation cadence is the smallest evidence-supported timing change and does not alter hazard geometry or movement authority."
+    },
+    {
+      "name": "unresolved_expired_cluster_allows_distinct_cluster_chaining",
+      "outcome": "supported_primary",
+      "evidence": "The expired 641 cluster still contained healer-targeting GUIDs 634, 636, 640, 641, and 642 when anchors 654, 636, and 656 successively renewed movement ownership. Excluding candidates inside the expired cluster did not require that cluster to be resolved before selecting another."
+    },
+    {
+      "name": "discipline_fade_was_missing_or_never_used",
+      "outcome": "rejected",
+      "evidence": "Discipline legally cast fade_early_trash_swarm_threat_drop against thirteen hostiles 6271 ms before the maximum episode and cleared that precursor wave; native cooldown legitimately prevented reuse for the immediately following wave."
+    },
+    {
+      "name": "audit_scope_or_denominator_error",
+      "outcome": "rejected",
+      "evidence": "Independent identity-scoped reconstruction exactly matched 1804/1979 tank retention, 105/1979 healer exposure, and 7346 ms maximum per-hostile dwell under the unchanged 3000 ms acquisition grace."
+    },
+    {
+      "name": "route_identity_publication_cleanup_or_other_role_failure",
+      "outcome": "rejected",
+      "evidence": "The exact party and current PID/epoch matched, all 14 route terminals and four real boss deaths were present, every non-Feral role/capability gate passed, no forbidden completion assist occurred, cleanup reached zero bots and leases, the publication receipt matched the batch, and DVC remote verification passed."
+    },
+    {
+      "name": "global_threat_multiplier_route_change_or_acceptance_relaxation_needed",
+      "outcome": "rejected",
+      "evidence": "The failure remained localized to generation 13 and to explicit legal timing/selection branches. Global threat inflation, route changes, victim assignment, identity suppression, or weaker gates would conceal current-victim exposure rather than correct it."
+    }
+  ],
+  "accepted_causal_chain": [
+    "Rerun133 shortened each non-Charge pre-Roar movement reservation to one second and polled it at 250 ms, reducing aggregate healer exposure from 0.0726 to 0.0531 while preserving the global 0.90 retention floor.",
+    "A thirteen-hostile precursor correctly consumed Discipline Fade 6271 ms before the maximum episode; a second generation-13 wave therefore required native Feral pickup while Fade remained on cooldown.",
+    "Ten hostiles began targeting the healer while strict hazard movement retained authority. Feral legally used Growl, Swipe, and Roar without changing the hazard path.",
+    "The hazard Roar was not submitted until 2528 ms under the existing 500 ms healer-owned hazard cadence. Six identities were still sampled on the healer at 3031 ms, producing five strict dwell violations by 31 ms before the next sample showed only GUID 667 unresolved.",
+    "After hazard handling, the ordinary selector created a one-second reservation toward anchor 641. At each expiry it excluded only the prior ten-yard neighborhood and immediately selected a distinct anchor: 654, then 636, then 656.",
+    "Members of the expired 641 cluster and persistent GUID 667 remained healer-owned throughout those renewals, so four individually bounded reservations became one uninterrupted pre-Roar interval without a Roar or Growl.",
+    "The combined hazard timing and distinct-cluster renewal chain produced 1804/1979 retention, 105/1979 exposure, and 7346 ms maximum dwell. Retention passed, but both unchanged healer-protection gates failed."
+  ],
+  "evidence_limitations": [
+    "The trace contains both event and decision entries sharing bot_guid/sequence. The canonical role audit deduplicates by that key; nested hazard Growl/Roar facts were independently read from the event entries and are not inferred from the later decision label.",
+    "Serialized ActivePathValid, IsMoving, route_progress, and recovery_result are pre-decision or historical snapshots and do not prove that the just-submitted MoveBotToPoint call failed. The diagnosis therefore does not classify the pre-Roar movement calls as path rejection.",
+    "The 7346 ms maximum ends at the last eligible trace sample before a 22.7-second trace gap and is sufficient to fail the gate; it is not used to claim the hostile remained on the healer through the gap.",
+    "The retained final manifest says closed_unpublished because it records the capture state before publication. The independently recomputed publication receipt, matching pointer/bundle identities, remote_verified flag, and DVC cloud status prove publication.",
+    "The evidence supports only a faster healer-owned hazard observation cadence and an unresolved-expired-cluster boundary. It does not support changing hazard geometry, victim assignment, threat multipliers, route semantics, spell legality, audit thresholds, post-Roar duration, or teacher/forced completion behavior."
+  ],
+  "smallest_safe_correction": {
+    "files": [
+      "src/server/game/Bots/BotWorldPopulationMgr.cpp"
+    ],
+    "scope": "Feral ordinary-trash healer-threat recovery at the strict hazard and pre-Roar reservation boundaries only",
+    "change": "First, when the strict radial-hazard resolver observes a healer-owned Feral pickup, lower only its existing follow-up cadence from 500 ms to 250 ms so already-legal Growl, Swipe, and Roar checks can use the remaining 31 ms margin without changing hazard movement authority. Second, retain the expired anchor state while any live healer-targeting hostile remains within ten yards of that anchor, and permit a new distinct pre-Roar reservation only after that exact cluster resolves. While unresolved, fall through on each decision to the existing legal local Roar/Growl/area-threat recovery instead of renewing movement ownership. This is narrower than rerun131: it does not block every selector merely because a handoff expired and re-enables distinct-cluster selection as soon as the previously reserved cluster is actually resolved.",
+    "uses_existing_evidence": [
+      "existing 250 ms DecisionTimer lower bound",
+      "FeralHealerThreatHandoffAnchorGuid",
+      "feralTrashExpiredHandoffAnchor",
+      "exact current-victim healer attacker identities",
+      "existing local Roar, Growl, Swipe, and area-threat fallthrough",
+      "existing same-cluster geometry and legality checks"
+    ],
+    "does_not_change": [
+      "route semantics",
+      "hazard geometry or movement priority",
+      "victim assignment",
+      "spell legality or cooldowns",
+      "threat multipliers",
+      "audit thresholds",
+      "identity scope",
+      "one-second pre-Roar reservation duration",
+      "2500 ms post-Roar reservation duration",
+      "teacher_or_forced_completion"
+    ],
+    "rerun131_regression_guard": "Do not restore the coarse rule that blocks all remote selectors merely because any handoff expired. Block only while the expired anchor cluster still has an exact live healer-targeting identity; once that cluster resolves, genuinely distinct clusters remain eligible."
+  }
+}

@@ -1,0 +1,67 @@
+{
+  "schema": "phase8_protection_warrior_interrupt_diagnosis_v1",
+  "identity_manifest_sha256": "96a106e663a4eba8ea27c9c4bb6186decfcba58bb3ceb003e48c8e9987ebfa0d",
+  "attempt": "seed-02/protection_warrior/tank_threat_300",
+  "remote_verified": true,
+  "result": {
+    "reference_ratio": 0.852149,
+    "snap_threat_success_ratio": 1.0,
+    "interrupt_success_ratio": 0.8,
+    "failure_reasons": [
+      "interrupt_coverage"
+    ]
+  },
+  "controlled_interrupt_schedule_seconds": [
+    30,
+    90,
+    150,
+    210,
+    270
+  ],
+  "timeline": [
+    {
+      "elapsed_seconds": 45.026,
+      "interrupt_success_ratio": 1.0,
+      "pummel_attempts": 1
+    },
+    {
+      "elapsed_seconds": 105.035,
+      "interrupt_success_ratio": 1.0,
+      "pummel_attempts": 3
+    },
+    {
+      "elapsed_seconds": 165.045,
+      "interrupt_success_ratio": 1.0,
+      "pummel_attempts": 4
+    },
+    {
+      "elapsed_seconds": 225.057,
+      "interrupt_success_ratio": 1.0,
+      "pummel_attempts": 5
+    },
+    {
+      "elapsed_seconds": 285.067,
+      "interrupt_success_ratio": 0.8,
+      "pummel_attempts": 6,
+      "pummel_rejection": "insufficient_resource"
+    },
+    {
+      "elapsed_seconds": 300.0,
+      "interrupt_success_ratio": 0.8,
+      "pummel_attempts": 7,
+      "pummel_rejection": "cooldown_not_ready"
+    }
+  ],
+  "diagnosis": {
+    "missed_opportunity": 5,
+    "missed_opportunity_due_second": 270,
+    "confirmed_defect": "The profile resolver ranks priority_bucket before action category, so a valid declared interrupt in bucket 1 does not preempt an ordinary bucket-0 threat action while the selected target is actively casting.",
+    "observed_contributor": "At the fifth opportunity Pummel was also observed as temporarily invalid for insufficient rage, increasing the need to select it immediately when it becomes valid during the controlled cast.",
+    "telemetry_limit": "The closed batch retains 30-second status snapshots rather than every individual resolver decision, so the exact competing spell at the missed decision was not serialized.",
+    "narrow_correction": "When the selected target is actively casting, prefer the best otherwise-valid declared interrupt candidate over all ordinary candidates; retain real spell readiness, resource, range, and execution checks and do not synthesize success."
+  },
+  "policy_unchanged": {
+    "minimum_interrupt_success_ratio": 0.9,
+    "minimum_reference_ratio": 0.75
+  }
+}

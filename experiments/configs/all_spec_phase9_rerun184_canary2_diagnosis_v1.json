@@ -1,0 +1,283 @@
+{
+  "schema": "all_spec_phase9_rerun184_canary2_diagnosis_v1",
+  "diagnosis_sha256": "40ebdc85b64a476dbffe9af00cae1505a255b1822475e949e3676fb6bf9c4219",
+  "scope": {
+    "attempt": "artifacts/all_spec_program/phase9_serial_canaries_20260809_rerun184/phase9_serial_02_stonecore_phase9_006_6893daf98698",
+    "batch": "artifacts/all_spec_program/phase9_serial_canaries_20260809_rerun184/phase9_serial_02_stonecore_phase9_006_6893daf98698/batch",
+    "diagnose_only_this_immutable_batch": true,
+    "only_canary_2_ran": true,
+    "later_rows_started": false
+  },
+  "immutable_publication": {
+    "batch_identity_sha256": "12efffde7bbbd64890a58959190fe4dc2e6220c77ada971e9cda4e9d10dbffcd",
+    "raw_bundle_sha256": "19aeee209f3ffaadca05e7153bd558500214ebf6b6349a5e98158c3dddd8a9ef",
+    "compact_bundle_sha256": "01f6e7bffd7c36a00a7eb196d2e1f6e9c66c043c8e10c4475911c12579894153",
+    "publication_receipt_sha256": "da0a13d8a1ac06fa4f0f26da4de927463113a07e62c2f283063b785c5d04d903",
+    "publication_receipt_file_sha256": "20ebb38e1e66b4180298a3f4eb02bb4346cd4227378e9837a9cd2350f1b6aade",
+    "acceptance_source_report_sha256": "c2a812b2501daef7cf477ad9746208341ca11cf57390ca325052eee8c2d05f5e",
+    "raw_pointer_sha256": "a922c651420837c455ef1a62604acc4675c643c15c3fc4860278f0f6c4f27d8a",
+    "compact_pointer_sha256": "03b21e6e96eccb3a30dcab699f430c18f9372406069d6ac01b6b356d867d11ff",
+    "raw_dvc_object": "f21ac1f419980434773d67d8fc7f3565.dir",
+    "compact_dvc_object": "975401a0386d40ac0f341305acd60ddc.dir",
+    "raw_row_count": 268,
+    "compact_row_count": 1,
+    "capture_and_bundle_hashes_recomputed": true,
+    "receipt_hash_recomputed": true,
+    "exact_remote_status": "Cache and remote 'object' are in sync.",
+    "exact_targeted_eviction_complete": true,
+    "batch_specific_caches_evicted": true,
+    "broad_dvc_gc_used": false
+  },
+  "frozen_identity": {
+    "identity_manifest_sha256": "2238f222406729e637accd9236c4f72be446c0834141645c3e7d2df56bfc71c0",
+    "run_plan_sha256": "8a1216cdeacbd48b86c486c5dff9e4c4f4d4f08713adb5b5ac60fedfe1d62e01",
+    "binary_sha256": "e71762821047ec226ab8e5e390cd20f2ce25a2e0d5109059fc05250aa828fb72",
+    "git_head": "dbb1b3fa94612adb5978783805a0f3938fba50ec",
+    "server_process_id": 1377947,
+    "server_epoch": 5451396057820086,
+    "worldserver_unit": "trinity-live-validation-f7944af01d042183503dcea6.service",
+    "session_fingerprint": "093db26dea4d702be279319ff3283508b9df1b47a3253ba5c19b630c52b1e5a4",
+    "profile_generation": 1,
+    "profile_content_hash": "35a587f05d8781d72c62576a6f35392a69e01d5978429f65429ad5b9ed096a22",
+    "max_active_cohorts": 1,
+    "identity_recomputed_and_matched": true,
+    "plan_recomputed_and_matched": true
+  },
+  "exact_party": {
+    "ordered_specs": [
+      "feral_druid_tank",
+      "discipline_priest",
+      "fury_warrior",
+      "marksmanship_hunter",
+      "retribution_paladin"
+    ],
+    "party_sha256": "524b94c794897f5111bdae0a5e45ba31a31ebb8596d811a3dd8c1caff95bd16a",
+    "recomputed_and_matched": true
+  },
+  "independent_strict_verifier": {
+    "underlying_returncode": 0,
+    "timed_out": false,
+    "session_closed": true,
+    "identity_complete": true,
+    "operator_attempt_count": 1,
+    "serial_index": 2,
+    "global_lifecycle_command_count": 0,
+    "scheduler_events": [
+      "admit:2",
+      "close:2"
+    ],
+    "cleanup": {
+      "active": false,
+      "active_bots": 0,
+      "lease_count": 0,
+      "party_bot_count": 0
+    },
+    "route_terminal_count": 14,
+    "route_terminal_generations": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+    "authoritative_boss_death_entries": [43438, 43214, 42188, 42333],
+    "high_priestess_azil_terminal": true,
+    "high_priestess_azil_death": true,
+    "validation_route_manifest_complete": true,
+    "watchdog_clear": true,
+    "teacher_assisted_kills": 0,
+    "forbidden_completion_assistance": [],
+    "strict_non_role_gates_passed": true
+  },
+  "independent_role_verifier": {
+    "canonical_audit_passed": false,
+    "canonical_audit_artifact_sha256": "45e2135e6b9fc036db04fc92f1f9f6f82c1cfca21c46772ddbaeac55320a09af",
+    "independent_verifier_sha256": "f7d091a5caeee7228bfe8e4abf76320e1e00e97cdc17910a4af10edcc1e4c986",
+    "eligible_hostile_denominator": 2039,
+    "tank_owned_hostile_numerator": 1961,
+    "healer_targeting_hostile_numerator": 25,
+    "tank_all_hostile_retention_ratio": 0.9617459538989701,
+    "healer_target_exposure_ratio": 0.012260912211868563,
+    "maximum_healer_target_dwell_ms": 2571,
+    "threat_aura_active_samples": 489,
+    "threat_aura_total_samples": 489,
+    "threat_aura_uptime_ratio": 1.0,
+    "non_healer_active_action_coverage": {
+      "Feraltank": 1.0,
+      "Furywar": 1.0,
+      "Mmhunter": 1.0,
+      "Retpally": 1.0
+    },
+    "discipline_active_action_coverage": 0.9847715736040609,
+    "cast_failure_rates": {
+      "Discpriest": 0.0,
+      "Feraltank": 0.0,
+      "Furywar": 0.0,
+      "Mmhunter": 0.006993006993006993,
+      "Retpally": 0.0
+    },
+    "healer_successful_heal_cast_rate": 1.0,
+    "missing_required_rotation_groups": [],
+    "threshold_results": {
+      "tank_retention_at_least_0_90": true,
+      "healer_exposure_at_most_0_01": false,
+      "healer_dwell_at_most_3000_ms": true,
+      "threat_aura_uptime_at_least_0_99": true,
+      "non_healer_active_action_coverage_at_least_0_70": true,
+      "cast_failure_rate_at_most_0_05": true,
+      "healer_heal_cast_success_at_least_0_95": true,
+      "rotation_groups_present": true
+    },
+    "failure_labels": [
+      "Feraltank:healer_target_exposure"
+    ]
+  },
+  "eligible_exposure_localization": {
+    "generation_1": {
+      "eligible_denominator": 238,
+      "tank_owned_numerator": 223,
+      "healer_targeting_numerator": 9,
+      "hostile_guids": [56, 57, 64],
+      "samples_per_guid": 3,
+      "episode_start_ms": 1786290210843,
+      "episode_end_ms": 1786290211354,
+      "episode_dwell_ms": 511,
+      "interpretation": "The already-eligible remote opening pack briefly selected healing threat during native Swipe and area pickup. Full tank ownership was observed at 1786290211611. This real but bounded handoff contributes 9 samples and would pass the global exposure ceiling by itself."
+    },
+    "generation_14": {
+      "eligible_denominator": 509,
+      "tank_owned_numerator": 481,
+      "healer_targeting_numerator": 16,
+      "hostile_guids": [375, 377, 379, 380, 381, 382, 383, 384],
+      "samples_per_guid": 2,
+      "episode_start_ms": 1786291173016,
+      "episode_end_ms": 1786291174802,
+      "episode_dwell_ms": 1786,
+      "interpretation": "The activated 59-follower passive wave was engaged long enough that its eight final healer-owned followers crossed the eligibility clock for two 250-ms observations. These 16 samples are decisive: removing them leaves 9/2039 exposure, below the unchanged ceiling."
+    },
+    "all_other_generations_healer_targeting_numerator": 0
+  },
+  "action_reconstruction": {
+    "feral_native_profile_attempts": {
+      "Growl_6795": 19,
+      "Swipe_779": 34,
+      "Thrash_77758": 34,
+      "Demoralizing_Roar_80964": 7,
+      "Mangle_33878": 44,
+      "Lacerate_33745": 18,
+      "Maul_6807": 14,
+      "Berserk_50334": 7
+    },
+    "specialized_growl_actions": 1,
+    "specialized_swipe_actions": 19,
+    "specialized_demoralizing_roar_actions": 7,
+    "specialized_charge_actions": 5,
+    "move_to_boss_add_actions": 11,
+    "hazard_exit_actions": 137,
+    "hazard_exit_failures": 0,
+    "misdirection_aoe_attempts": 29,
+    "misdirection_aoe_successes": 23,
+    "misdirection_single_attempts": 21,
+    "misdirection_single_successes": 18,
+    "passive_swarm_party_stage_actions": 25,
+    "passive_swarm_party_hold_actions": 27,
+    "rerun184_stable_path_continuation_actions": 0,
+    "healer_threat_handoff_actions_in_generation_14_episode": {
+      "feral_demoralizing_roar_split_swarm_handoff": 1,
+      "feral_hold_healer_swarm_handoff_for_roar": 6,
+      "feral_swipe_healer_swarm_retention_before_roar": 1,
+      "discipline_group_heal_or_shield_before_flip": 1,
+      "discipline_fade_before_clear": 1,
+      "misdirection_boss_adds_before_clear": 1
+    }
+  },
+  "route_and_hostile_chronology": [
+    {
+      "timestamp_ms": 1786291166914,
+      "route_generation": 14,
+      "event": "The shared large-passive-swarm proof began party staging. Twenty-five native follow-stage and twenty-seven hold observations converged without teleport or forced placement."
+    },
+    {
+      "timestamp_ms": 1786291171321,
+      "route_generation": 14,
+      "event": "After native white-swing activation, the first retained Feral density decision found all 59 followers targeting the tank but submitted Bear Form as persistent setup. The form was absent before activation and consumed the opening combat GCD."
+    },
+    {
+      "timestamp_ms": 1786291171582,
+      "route_generation": 14,
+      "event": "Five consecutive Feral density decisions through 1786291172759 selected the native melee-auto fallback while area spells were unavailable. No native area-threat spell was submitted before the healer acted."
+    },
+    {
+      "timestamp_ms": 1786291172824,
+      "route_generation": 14,
+      "event": "The Discipline Priest submitted a successful native shield/group-support cast. The next tank observation showed all 59 engaged followers targeting the healer and none tank-owned. This is ordinary healing threat, not forbidden assistance or an audit attribution artifact."
+    },
+    {
+      "timestamp_ms": 1786291173016,
+      "route_generation": 14,
+      "event": "Native Demoralizing Roar began the split-swarm handoff. By 1786291174038, 51/59 followers were tank-owned and eight remained on the healer."
+    },
+    {
+      "timestamp_ms": 1786291174550,
+      "route_generation": 14,
+      "event": "The remaining eight hostiles first became eligible while still healer-owned, contributing eight exposure samples. Native Swipe ran on their local majority."
+    },
+    {
+      "timestamp_ms": 1786291174802,
+      "route_generation": 14,
+      "event": "The same eight identities contributed their second and final eligible exposure samples. Discipline Fade and the boss-add Misdirection handoff were also active."
+    },
+    {
+      "timestamp_ms": 1786291175059,
+      "route_generation": 14,
+      "event": "All 59 followers were observed tank-owned. The complete pickup lasted 2043 ms from the whole-wave healing-threat flip and 1786 ms for the eight final identities, so dwell passed while exposure narrowly failed."
+    },
+    {
+      "timestamp_ms": 1786291240529,
+      "route_generation": 14,
+      "event": "The final retained tank evidence followed High Priestess Azil terminalization and the fourth authoritative boss death; all fourteen route generations completed with a clean watchdog."
+    }
+  ],
+  "causal_classification": {
+    "authoritative_gameplay_failure": true,
+    "infrastructure_abort": false,
+    "strict_route_failure": false,
+    "role_quality_failure": true,
+    "initial_pickup_loss": true,
+    "later_threat_decay": true,
+    "movement_priority_starvation": false,
+    "hazard_starvation": false,
+    "misdirection_failure_primary": false,
+    "healer_behavior_primary": false,
+    "audit_attribution_error": false,
+    "rerun184_stable_path_correction_side_effect": false,
+    "rerun170_native_passive_swarm_activation_side_effect": true,
+    "primary_cause": "The generation-14 passive wave initially targeted the Feral, so activation and staging succeeded. Bear Form was missing until the first post-activation density decision; persistent setup consumed the opening GCD, and five intervening density decisions provided only white-swing fallback rather than area threat. A legitimate Discipline shield then overtook the zero-margin follower threat. Roar recovered 51 followers and Swipe recovered the last eight within the dwell ceiling, but those eight crossed the already-running eligibility clock twice and pushed exposure from a passing 9/2039 to a failing 25/2039. The rerun184 healer-owned stable-path branch executed zero times."
+  },
+  "bounded_correction": {
+    "source": "src/server/game/Bots/BotWorldPopulationMgr.cpp",
+    "behavior": "Before a Feral tank may perform the existing native white-swing activation of a staged large passive swarm, establish native Bear Form and hold only until Bear Form's native GCD is clear. Party staging remains active during this bounded preparation. The activated wave can therefore use the existing native area-threat resolver on its first combat decision instead of spending that decision and GCD on persistent setup.",
+    "unchanged_contracts": [
+      "all strict role thresholds",
+      "native Bear Form, global-cooldown, spell-knowledge, target, victim, threat, and combat legality",
+      "Growl, Swipe, Thrash, Demoralizing Roar, Charge, movement, hazard, Misdirection, and healer-threat handoff ordering",
+      "generation-scoped passive-swarm proof and native role-radius party staging",
+      "tank-only native white-swing activation and the all-loaded-participant eighteen-yard staging requirement",
+      "native movement without teleport or forced placement",
+      "boss and route coordinates and terminal semantics",
+      "identity, party, serial isolation, publication, cleanup, exact hydration, and eviction contracts",
+      "forbidden-assistance policy"
+    ]
+  },
+  "pre_edit_safety": {
+    "old_worldserver_stopped_before_tracked_diagnosis_and_source_edit": true,
+    "old_worldserver_active_state": "inactive",
+    "old_worldserver_sub_state": "dead",
+    "old_worldserver_main_pid": 0,
+    "operator_active": false,
+    "publisher_active": false
+  },
+  "next_gate": {
+    "attempt_label": "rerun185",
+    "focused_tests_and_worldserver_rebuild_required": true,
+    "deterministically_reprovision_all_31_targets": true,
+    "fresh_identity_and_eight_row_plan_required": true,
+    "restart_at_canary_2_alone": true,
+    "canaries_3_through_8_blocked": true,
+    "phases_10_through_12_blocked": true
+  }
+}

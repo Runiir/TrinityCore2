@@ -1,0 +1,221 @@
+{
+  "schema": "all_spec_phase9_rerun155_canary2_diagnosis_v1",
+  "diagnosis_sha256": "4d586ba983835670f01faa68351a494f456e960d1c643d0d5c106e801639c46d",
+  "hash_scope": "canonical_json_without_diagnosis_sha256",
+  "source_attempt": {
+    "attempt_label": "rerun155_canary_2",
+    "attempt_id": "phase9_serial_02_stonecore_phase9_006_6893daf98698",
+    "batch_id": "phase9-serial-canary-rerun155-2",
+    "batch_identity_sha256": "7848391e749496eb65f723dfe12473d1b58efced8426e607bc9e4075ad53ec43",
+    "composition_id": "stonecore_phase9_006_6893daf98698",
+    "party_sha256": "524b94c794897f5111bdae0a5e45ba31a31ebb8596d811a3dd8c1caff95bd16a",
+    "party": [
+      "feral_druid_tank",
+      "discipline_priest",
+      "fury_warrior",
+      "marksmanship_hunter",
+      "retribution_paladin"
+    ],
+    "binary_sha256": "7ded5546f20aeaf956ebaf84e8346a9ea351a3148de77a1aa129d41fe68a161a",
+    "server_process_id": 433347,
+    "server_epoch": 215801381251342,
+    "session_fingerprint": "3e8656e184ad512dac8eee3d1f44e3c8239102c4444ee85a030bdd4a2054702c",
+    "profile_generation": 1,
+    "profile_content_hash": "35a587f05d8781d72c62576a6f35392a69e01d5978429f65429ad5b9ed096a22",
+    "evidence_identity_manifest_sha256": "377f92d94bbfe2188f608f6f230c1e7a4833022525503adf1c14692f17cb4be5",
+    "run_plan_sha256": "ac1ec8a09d1b092f77d09494563b67ed79f22f138987d138ff3771ab1be41676",
+    "max_active_cohorts": 1
+  },
+  "capture_and_closeout": {
+    "capture_identity_sha256": "7848391e749496eb65f723dfe12473d1b58efced8426e607bc9e4075ad53ec43",
+    "raw_part_count": 1,
+    "raw_event_row_count": 263,
+    "compact_row_count": 1,
+    "raw_bundle_sha256": "e7663ba8aecc136d4b738f13ad32a6ac5fac7548dda2718bb51ba8ab05f12383",
+    "compact_bundle_sha256": "e75ff880816f666fec5c3f90efe23942b5fa41bffcf32bafabee2361518b59bd",
+    "acceptance_source_report_sha256": "f3fdaa403051b90a55249a744d1c4bf35ae2db40f5a662d13bf65d36ce677df6",
+    "raw_pointer_sha256": "014f8aa9797d37a5458b3fa024232a620ce24bdf73b322142d3b4e9e3b933ba2",
+    "compact_pointer_sha256": "15208da93ab163835b81c26d3324d7d10fb55ef9cfbf91b7f295fc2a6ef1e1bc",
+    "publication_receipt_sha256": "acff6baca405e8131028070861bb8697c33745b40ca809aef344af86c1925bb1",
+    "remote_status_sha256": "efed9e5afcfe149915ae98b9ed9e69304eb48f5ce2e2265b18b5b5ed2f155e60",
+    "remote_verified": true,
+    "capture_revalidated_after_hydration": true,
+    "exact_party_verified": true,
+    "identity_matched": true,
+    "inactive_after_attempt": true,
+    "cleanup": {
+      "active": false,
+      "active_bots": 0,
+      "lease_count": 0,
+      "party_bot_count": 0
+    },
+    "broad_dvc_gc_used": false
+  },
+  "strict_route_result": {
+    "completion_reason": "stonecore_role_quality_audit_failed",
+    "operator_failure_reason": "role_quality:Feraltank:healer_target_dwell",
+    "failure_labels": [
+      "role_quality:Feraltank:healer_target_dwell",
+      "stonecore_role_quality_audit_failed"
+    ],
+    "route_manifest_complete": true,
+    "route_terminal_count": 14,
+    "expected_route_terminal_count": 14,
+    "real_boss_kill_count": 4,
+    "expected_real_boss_kill_count": 4,
+    "kills": 44,
+    "duration_seconds": 1158,
+    "validation_route_no_progress_diagnoses": 0,
+    "stuck_events": 0,
+    "death_loop_events": 0,
+    "teacher_assisted_kills": 0,
+    "canaries_3_through_8_started": false
+  },
+  "role_audit": {
+    "passed": false,
+    "failure_labels": [
+      "Feraltank:healer_target_dwell"
+    ],
+    "feral_druid_tank": {
+      "eligible_hostile_samples": 1212,
+      "tank_owned_samples": 1174,
+      "healer_targeting_samples": 3,
+      "tank_all_hostile_retention_rate": 0.9686,
+      "minimum_retention_rate": 0.9,
+      "route_target_retention_rate": 0.9009,
+      "healer_target_exposure_rate": 0.0025,
+      "maximum_exposure_rate": 0.01,
+      "max_healer_target_dwell_ms": 3321,
+      "maximum_healer_target_dwell_ms": 3000,
+      "tank_threat_aura_uptime_rate": 1.0,
+      "deaths": 0
+    },
+    "eligible_samples_by_route_generation": {
+      "generation_1": {
+        "eligible": 207,
+        "tank_owned": 195,
+        "healer_targeting": 0
+      },
+      "generation_3": {
+        "eligible": 336,
+        "tank_owned": 324,
+        "healer_targeting": 0
+      },
+      "generation_13": {
+        "eligible": 455,
+        "tank_owned": 452,
+        "healer_targeting": 3
+      },
+      "generation_14": {
+        "eligible": 120,
+        "tank_owned": 120,
+        "healer_targeting": 0
+      },
+      "other_generations_combined": {
+        "eligible": 94,
+        "tank_owned": 83,
+        "healer_targeting": 0
+      }
+    }
+  },
+  "dwell_localization": {
+    "route_generation": 13,
+    "route_node_id": "3edc010765b5c456",
+    "objective": "twilight_flayer_packs",
+    "episodes": [
+      {
+        "hostile_guid": 617,
+        "first_timestamp_ms": 1786184098462,
+        "last_timestamp_ms": 1786184101783,
+        "dwell_ms": 3321,
+        "sample_count": 14,
+        "first_sequence": 894
+      },
+      {
+        "hostile_guid": 618,
+        "first_timestamp_ms": 1786184098723,
+        "last_timestamp_ms": 1786184101783,
+        "dwell_ms": 3060,
+        "sample_count": 13,
+        "first_sequence": 895
+      }
+    ],
+    "control_sequence": [
+      "feral_stampeding_roar_healer_threat_reposition",
+      "move_to_trash_density x4",
+      "trash_density_area_threat:growl_hostile_619",
+      "move_to_trash_density",
+      "hostile_619_recovers_to_tank_while_617_and_618_remain_on_healer",
+      "feral_approach_insecure_trash_threat_cluster:tank_owned_hostile_634 x7"
+    ],
+    "eligible_exposure_rows": [
+      {
+        "sequence": 906,
+        "timestamp_ms": 1786184101527,
+        "healer_owned_guids": [
+          617,
+          618
+        ],
+        "eligible_healer_owned_guids": [
+          617
+        ],
+        "tank_owned_count": 13,
+        "engaged_count": 15,
+        "action": "feral_approach_insecure_trash_threat_cluster",
+        "target_guid": 634
+      },
+      {
+        "sequence": 907,
+        "timestamp_ms": 1786184101783,
+        "healer_owned_guids": [
+          617,
+          618
+        ],
+        "eligible_healer_owned_guids": [
+          617,
+          618
+        ],
+        "tank_owned_count": 14,
+        "engaged_count": 16,
+        "action": "feral_approach_insecure_trash_threat_cluster",
+        "target_guid": 634
+      }
+    ],
+    "cause": "After Growl recovered hostile 619, the tank-owned majority and insecure-margin predicates became true while hostiles 617 and 618 still targeted the healer. The proactive Feral secure-margin branch suppresses itself only when an identity-bound healer handoff reservation already exists. This episode had current healer attackers but no such reservation, so the branch spent seven 250 ms decisions approaching tank-owned hostile 634 and returned before the later healer-rescue controller. Both remaining healer episodes crossed the unchanged 3000 ms dwell ceiling even though the aggregate exposure rate remained below 0.01.",
+    "audit_attribution_correct": true,
+    "audit_correction_required": false
+  },
+  "rerun154_correction_effect": {
+    "healer_exposure_rate_before": 0.0428,
+    "healer_exposure_rate_after": 0.0025,
+    "exposure_gate_now_passes": true,
+    "tank_retention_rate_before": 0.944,
+    "tank_retention_rate_after": 0.9686,
+    "maximum_dwell_ms_before": 3318,
+    "maximum_dwell_ms_after": 3321,
+    "interpretation": "Remote high-density Charge target reselection removed the generation-14 Azil exposure failure and raised retention. The remaining dwell is an independent ordinary-trash priority inversion and does not invalidate that retained correction."
+  },
+  "accepted_causal_chain": [
+    "Rerun155 canary 2 retained the exact process, epoch, profile, planned party, serial isolation, remote publication, cleanup, and local payload eviction contracts.",
+    "The route completed all 14 terminals and all four real bosses with zero no-progress diagnoses, stuck events, death loops, or teacher-assisted kills.",
+    "The independent role audit reproduced the published metrics and confirmed retention, healer exposure, threat aura, and every non-dwell role gate pass.",
+    "Only two generation-13 healer-target episodes exceed 3000 ms, and the three eligible exposure contributions all occur while the tank approaches an insecure tank-owned cluster ahead of current healer rescue.",
+    "The serial operator correctly stopped after canary 2; canaries 3 through 8 and Phases 10 through 12 remain blocked."
+  ],
+  "smallest_safe_correction": {
+    "file": "src/server/game/Bots/BotWorldPopulationMgr.cpp",
+    "scope": "ordinary-trash Feral secure-margin movement while a current same-party healer still has at least one listed attacker",
+    "change": "Preserve the existing secure-margin selector only while no current healer threat exists. When healer ownership is present, fall through to the existing identity-scoped Feral healer rescue and handoff controller below. Keep the existing active-handoff suppression, all native spell/movement gates, every target and threat rule inside the rescue controller, and all route and audit thresholds unchanged.",
+    "gate_weakening": false,
+    "audit_threshold_change": false
+  },
+  "next_attempt": {
+    "attempt_label": "rerun156_canary_2",
+    "worldserver_rebuild_required": true,
+    "deterministic_reprovision_required": true,
+    "fresh_identity_and_eight_row_plan_required": true,
+    "canary_2_only_until_strict_pass": true,
+    "canaries_3_through_8_started": false,
+    "phases_10_through_12_blocked": true
+  }
+}

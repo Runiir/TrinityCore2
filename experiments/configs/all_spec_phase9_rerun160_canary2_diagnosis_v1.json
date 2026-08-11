@@ -1,0 +1,181 @@
+{
+  "schema": "all_spec_phase9_rerun160_canary2_diagnosis_v1",
+  "diagnosis_sha256": "1767b97e763edf1bc2ef7a9313c5877d4f5276d5732bb5fb528a2fb97a6bb29a",
+  "hash_scope": "canonical_json_without_diagnosis_sha256",
+  "source_attempt": {
+    "attempt_label": "rerun160_canary_2",
+    "attempt_id": "phase9_serial_02_stonecore_phase9_006_6893daf98698",
+    "batch_id": "phase9-serial-canary-rerun160-2",
+    "batch_identity_sha256": "9233a7bf25e44d809a2be9f0127703032f701b1419b14d738498d6fccf76b3d1",
+    "composition_id": "stonecore_phase9_006_6893daf98698",
+    "party_sha256": "524b94c794897f5111bdae0a5e45ba31a31ebb8596d811a3dd8c1caff95bd16a",
+    "party": [
+      "feral_druid_tank",
+      "discipline_priest",
+      "fury_warrior",
+      "marksmanship_hunter",
+      "retribution_paladin"
+    ],
+    "binary_sha256": "951fbd3adf567a36494cb312db3995a302a2d5986978857afcd865723ee21d3c",
+    "server_process_id": 580175,
+    "server_epoch": 4084439532838792,
+    "session_fingerprint": "c9e3a605718215ede44a28b69f17fad2ea1f08fb5158c32c458769297265077b",
+    "profile_generation": 1,
+    "profile_content_hash": "35a587f05d8781d72c62576a6f35392a69e01d5978429f65429ad5b9ed096a22",
+    "evidence_identity_manifest_sha256": "6ecdbdb02f71e2e083af78f175b54b193c8d493d774df48ba7c7c4c1bc14ba69",
+    "run_plan_sha256": "94f39c6491f5cb5daeb9b7c9dd34af55076e858454923862d22ad747a5429b2a",
+    "max_active_cohorts": 1
+  },
+  "capture_and_closeout": {
+    "raw_part_count": 1,
+    "raw_event_row_count": 273,
+    "compact_row_count": 1,
+    "raw_bundle_sha256": "54c9f4270c22b33aecf652995de8dfdd88ab986d57416ceeab52fe4f5fe016db",
+    "compact_bundle_sha256": "fc8d4c8af5d0064ce2ef53c58154c50e3e6e942b7663cb5aa0d5cf6760702aba",
+    "acceptance_source_report_sha256": "d92aefa78c7778b1906e461a7ac1e2cbd4a286e4617f540dca8c2bc03d4c83ea",
+    "events_zst_sha256": "473c5f76c4b9c177594da8feef950be6dc4194045f9eec21136af519344ef83b",
+    "exact_manifests_sha256": "528b0b237765ad0af114761dca73c035ff79a0bce8268f2c87402f8ed12af221",
+    "evidence_parquet_sha256": "a7f811dfd8be43b2c9b41f37b38b6bf07ad9e3771ca7de62c5e39ff36bcf5373",
+    "raw_pointer_sha256": "430c2e9af97467d7b8dda401cacafd832f208ee60052ee3c116125407cd15a3a",
+    "raw_dvc_md5": "55628b89e9f6f23a52dddbbbe66cec6b.dir",
+    "compact_pointer_sha256": "22ab02ae1955e4b29a53e6d8f6950105b564175a0d786fa2697eeeecf35d945b",
+    "compact_dvc_md5": "bab4edd8fdebd0686ac666f2e278e951.dir",
+    "publication_receipt_sha256": "32c8b2005a8d040d7a1a2a95188f24e4fef33cde0b9c00f5b3fca0a8b1f6b5aa",
+    "publication_receipt_canonical_replay_passed": true,
+    "remote_status_sha256": "efed9e5afcfe149915ae98b9ed9e69304eb48f5ce2e2265b18b5b5ed2f155e60",
+    "remote_verified": true,
+    "capture_revalidated_after_hydration": true,
+    "role_audit_exact_replay": true,
+    "exact_party_verified": true,
+    "identity_matched": true,
+    "cleanup": {
+      "active": false,
+      "active_bots": 0,
+      "lease_count": 0,
+      "party_bot_count": 0
+    },
+    "worldserver_stopped_before_tracked_edit": true,
+    "broad_dvc_gc_used": false
+  },
+  "strict_result": {
+    "completion_reason": "stonecore_role_quality_audit_failed",
+    "operator_failure_reason": "role_quality:Feraltank:healer_target_exposure",
+    "failure_labels": [
+      "role_quality:Feraltank:healer_target_exposure",
+      "role_quality:Feraltank:healer_target_dwell",
+      "stonecore_role_quality_audit_failed"
+    ],
+    "route_manifest_complete": true,
+    "route_terminal_count": 14,
+    "expected_route_terminal_count": 14,
+    "real_boss_kill_count": 4,
+    "expected_real_boss_kill_count": 4,
+    "kills": 45,
+    "duration_seconds": 1193,
+    "canaries_3_through_8_started": false
+  },
+  "role_audit": {
+    "passed": false,
+    "feral_druid_tank": {
+      "eligible_hostile_samples": 1969,
+      "tank_owned_samples": 1815,
+      "healer_targeting_samples": 90,
+      "tank_all_hostile_retention_rate": 0.9218,
+      "minimum_retention_rate": 0.9,
+      "route_target_retention_rate": 0.9428,
+      "healer_target_exposure_rate": 0.0457,
+      "maximum_exposure_rate": 0.01,
+      "max_healer_target_dwell_ms": 6025,
+      "maximum_healer_target_dwell_ms": 3000,
+      "tank_threat_aura_uptime_rate": 1.0,
+      "deaths": 0
+    }
+  },
+  "exposure_localization": {
+    "eligible_samples_by_route_generation": {
+      "generation_1": {"eligible": 194, "tank_owned": 193, "healer_targeting": 0},
+      "generation_2": {"eligible": 17, "tank_owned": 16, "healer_targeting": 0},
+      "generation_3": {"eligible": 415, "tank_owned": 385, "healer_targeting": 18},
+      "generation_4": {"eligible": 37, "tank_owned": 37, "healer_targeting": 0},
+      "generation_7": {"eligible": 13, "tank_owned": 13, "healer_targeting": 0},
+      "generation_8": {"eligible": 20, "tank_owned": 20, "healer_targeting": 0},
+      "generation_10": {"eligible": 52, "tank_owned": 52, "healer_targeting": 0},
+      "generation_11": {"eligible": 133, "tank_owned": 132, "healer_targeting": 0},
+      "generation_12": {"eligible": 58, "tank_owned": 58, "healer_targeting": 0},
+      "generation_13": {"eligible": 675, "tank_owned": 623, "healer_targeting": 52},
+      "generation_14": {"eligible": 355, "tank_owned": 286, "healer_targeting": 20}
+    },
+    "dominant_route_generation": 13,
+    "objective": "twilight_flayer_and_devout_follower_wave",
+    "maximum_episode_hostile_guid": 620,
+    "maximum_episode_first_timestamp_ms": 1786199404173,
+    "maximum_episode_last_timestamp_ms": 1786199410198,
+    "maximum_episode_dwell_ms": 6025,
+    "wave_transition": {
+      "first_exposure": {"engaged": 49, "tank_owned": 42, "healer_targeting": 7},
+      "peak_exposure": {"engaged": 51, "tank_owned": 40, "healer_targeting": 11},
+      "first_roar": {"engaged": 51, "tank_owned": 41, "healer_targeting": 10},
+      "after_first_roar": {"engaged": 51, "tank_owned": 44, "healer_targeting": 7},
+      "after_second_roar": {"engaged": 51, "tank_owned": 49, "healer_targeting": 2},
+      "recovered": {"engaged": 51, "tank_owned": 51, "healer_targeting": 0}
+    },
+    "control_sequence": [
+      "six_250ms_move_to_trash_density_decisions",
+      "generic_density_growl_6795_attempt",
+      "four_more_250ms_density_movements",
+      "first_demoralizing_roar_99_at_2864ms",
+      "remote_cluster_handoff_and_native_gcd",
+      "second_demoralizing_roar_99_at_4403ms",
+      "remote_cluster_handoff_and_native_gcd",
+      "third_demoralizing_roar_99_at_6025ms",
+      "full_ownership_recovery"
+    ],
+    "native_area_evidence": {
+      "thrash_77758_tick_timestamps_ms": [
+        1786199402377,
+        1786199404366,
+        1786199406369,
+        1786199408374
+      ],
+      "thrash_targets_at_first_exposure": 38,
+      "maximum_episode_healer_owned_guids_hit_by_existing_thrash": [],
+      "swipe_779_events_during_maximum_episode": 0,
+      "first_roar_local_healer_owned_count": 10,
+      "first_roar_recovered_count": 3,
+      "all_first_roar_healer_owned_positions_within_approximate_eight_yards": true
+    },
+    "cause": "The audit is correct and identity-scoped. The generation-13 split wave lost seven healer identities while the Feral crossed to the remote cluster. At the first legal local recovery point 2864 ms later, combat positions place all ten then-healer-owned followers within approximately eight yards of the Feral. The controller submitted native Demoralizing Roar (99), but that non-damaging debuff recovered only three identities; two further GCD-separated Roars were required, leaving GUID 620 continuously healer-owned for 6025 ms. Native Thrash (77758) was ticking throughout the episode, but its aura covered 38 identities from the prior local cluster and zero of the exposed healer-owned identities. No Swipe (779) event occurred during the episode. The avoidable surface is therefore the local recovery choice: a known native damaging area-threat action was not attempted when the complete exposed cluster was finally inside its engine range.",
+    "audit_attribution_correct": true,
+    "audit_correction_required": false
+  },
+  "corrective_action": {
+    "scope": "feral_druid_tank ordinary-trash healer-cluster recovery at at least twelve engaged hostiles",
+    "change": "At the existing local Demoralizing Roar recovery point, when at least two healer-owned attackers are within ten yards and those nearby identities cover at least half of the current healer-owned set, try known native Swipe (779) against the existing deterministic nearby attacker before Roar. Record and return only on successful native submission; on every rejection fall through to the unchanged Roar, Charge, handoff, density, and movement chain.",
+    "preserve": [
+      "strict hazard authority and path safety",
+      "native spell knowledge, cooldown, GCD, power, range, line-of-sight, and target validity",
+      "victim ownership and threat multipliers",
+      "Feral Charge, Roar, Thrash, Growl, handoff, and density fallbacks",
+      "route, identity, retention, exposure, dwell, role, publication, cleanup, and eviction gates"
+    ],
+    "acceptance_threshold_changes": [],
+    "gate_weakening": false
+  },
+  "independent_validation": {
+    "capture_hashes_replayed": true,
+    "receipt_canonical_hash_replayed": true,
+    "targeted_remote_publication_verified_by_successful_exact_hydration": true,
+    "role_audit_replayed_from_hydrated_raw_evidence": true,
+    "exposure_reconstructed_per_identity_and_generation": true,
+    "native_area_spell_and_position_timeline_reconstructed": true
+  },
+  "eviction": {
+    "status": "exact_re_eviction_verified",
+    "temporary_hydration_root_absent": true,
+    "raw_directory_object_absent": true,
+    "raw_child_objects_absent": true,
+    "compact_directory_object_absent": true,
+    "compact_child_object_absent": true,
+    "broad_dvc_gc_allowed": false
+  }
+}

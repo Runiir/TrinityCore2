@@ -1,0 +1,27 @@
+{
+  "batch_id": "p8-s1-balance-druid-aoe-300-33",
+  "batch_identity_sha256": "210bd9bcf641a03cc4b9944fdd8ecc1b09f65203fd86dce0210a7d30370bd68f",
+  "cache_scope": "batch_specific",
+  "compact_bundle_sha256": "24611d9a4f4f2676156962ecbd031e0daeb92a72d28f7146f7f71299e1eeccea",
+  "pointers": [
+    {
+      "dvc_md5": "f399943271fa7432bf25c20c348648ee.dir",
+      "nfiles": 3,
+      "path": "artifacts/all_spec_program/phase8_live_calibration_20260728_representative_final_r105_campaign/attempts/seed-01/balance_druid/aoe_300/batch/raw.dvc",
+      "pointer_sha256": "e08782807671abfbdfc8e0270f98804437b560e3e213407961d81cb9980b622f",
+      "size": 103327
+    },
+    {
+      "dvc_md5": "8682160ab288c50751d79f14b4306aa7.dir",
+      "nfiles": 1,
+      "path": "artifacts/all_spec_program/phase8_live_calibration_20260728_representative_final_r105_campaign/attempts/seed-01/balance_druid/aoe_300/batch/compact.dvc",
+      "pointer_sha256": "a26d9f71e5ad5d7197d672b604123cd7186623a15768af1efe7eeb85f6856548",
+      "size": 2417
+    }
+  ],
+  "raw_bundle_sha256": "2ef48b0f058c14a54f24510d1676611e194534d60d96fdb6955202b66e8a9a22",
+  "receipt_sha256": "64e751902e9a1bf8fef9b6b1f49f4fc741865509b5a7a00030495058264f23cf",
+  "remote_status_sha256": "efed9e5afcfe149915ae98b9ed9e69304eb48f5ce2e2265b18b5b5ed2f155e60",
+  "remote_verified": true,
+  "schema": "bot_immutable_batch_publication_receipt_v1"
+}

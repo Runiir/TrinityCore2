@@ -1,0 +1,5 @@
+.botauto calibrate p8-s3-unholy-death-knight-aoe-300 start aoe_300 unholy_death_knight 3
+.botauto status p8-s3-unholy-death-knight-aoe-300
+.botauto calibrate p8-s3-unholy-death-knight-aoe-300 status
+.botauto combatlog p8-s3-unholy-death-knight-aoe-300
+.botauto calibrate p8-s3-unholy-death-knight-aoe-300 stop

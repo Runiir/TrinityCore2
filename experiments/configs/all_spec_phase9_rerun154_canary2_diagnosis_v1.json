@@ -1,0 +1,162 @@
+{
+  "schema": "all_spec_phase9_rerun154_canary2_diagnosis_v1",
+  "diagnosis_sha256": "7f0c272bfe1cf5f417b48fb758eb4147c604d9d311b66c3f8e5c1d9d04a88b60",
+  "hash_scope": "canonical_json_without_diagnosis_sha256",
+  "source_attempt": {
+    "attempt_label": "rerun154_canary_2",
+    "attempt_id": "phase9_serial_02_stonecore_phase9_006_6893daf98698",
+    "batch_id": "phase9-serial-canary-rerun154-2",
+    "batch_identity_sha256": "c0e7910ddda3c4785c50133ce2eb855a301f99baa0b50b9679c53126a084732e",
+    "composition_id": "stonecore_phase9_006_6893daf98698",
+    "party_sha256": "524b94c794897f5111bdae0a5e45ba31a31ebb8596d811a3dd8c1caff95bd16a",
+    "party": [
+      "feral_druid_tank",
+      "discipline_priest",
+      "fury_warrior",
+      "marksmanship_hunter",
+      "retribution_paladin"
+    ],
+    "binary_sha256": "d4b3a5d3415cd17b99e53ca27007466a8b4a854e461dd007f64d685e55ee8f6b",
+    "server_process_id": 406847,
+    "server_epoch": 120648621610861,
+    "session_fingerprint": "0b19d5f931d14a89e05a3e2112f4edbb2e9f18adfabb385d44d46d098e014f6f",
+    "profile_generation": 1,
+    "profile_content_hash": "35a587f05d8781d72c62576a6f35392a69e01d5978429f65429ad5b9ed096a22",
+    "evidence_identity_manifest_sha256": "647ab9a47ffb5056d187e064363274a5f89ed6ce358bd0010bba857412778840",
+    "run_plan_sha256": "b73e81b428f93044168a411849d119221380bfb8cebfd54ab33883ad0444e7ba",
+    "max_active_cohorts": 1
+  },
+  "capture_and_closeout": {
+    "capture_identity_sha256": "c0e7910ddda3c4785c50133ce2eb855a301f99baa0b50b9679c53126a084732e",
+    "raw_part_count": 1,
+    "raw_event_row_count": 254,
+    "compact_row_count": 1,
+    "raw_bundle_sha256": "7e642f7c79ce80ab90a619da26e5fb7d403a24ffd4a87e19de4ea00bb7342a94",
+    "compact_bundle_sha256": "ee3876ff3c6ffaaec9d00c27d550f83a09cfd343e3917b814d8e9a00f02ae080",
+    "acceptance_source_report_sha256": "b3ce5365228d65158e7de2b9ba6aa6caae2901465d02a0f6409ee6b14a79294e",
+    "raw_pointer_sha256": "90bc01f6a1f8eb505fabe2bc4459e614b2446f2904dc015e9add2a5ba9ce8605",
+    "compact_pointer_sha256": "01552ef5dfcc1d070329e0cdce06215aaa09afa06580ca978a8b70840461c80e",
+    "publication_receipt_sha256": "67fec75d3094a00e3bb0b6d1a764079dbea1a7964189a9bfb9dac844616cfc12",
+    "remote_status_sha256": "efed9e5afcfe149915ae98b9ed9e69304eb48f5ce2e2265b18b5b5ed2f155e60",
+    "remote_verified": true,
+    "capture_revalidated_after_hydration": true,
+    "exact_party_verified": true,
+    "identity_matched": true,
+    "inactive_after_attempt": true,
+    "cleanup": {
+      "active": false,
+      "active_bots": 0,
+      "lease_count": 0,
+      "party_bot_count": 0
+    },
+    "broad_dvc_gc_used": false
+  },
+  "strict_route_result": {
+    "completion_reason": "stonecore_role_quality_audit_failed",
+    "operator_failure_reason": "role_quality:Feraltank:healer_target_exposure",
+    "failure_labels": [
+      "role_quality:Feraltank:healer_target_exposure",
+      "role_quality:Feraltank:healer_target_dwell",
+      "stonecore_role_quality_audit_failed"
+    ],
+    "route_manifest_complete": true,
+    "route_terminal_count": 14,
+    "expected_route_terminal_count": 14,
+    "real_boss_kill_count": 4,
+    "expected_real_boss_kill_count": 4,
+    "kills": 28,
+    "duration_seconds": 1067,
+    "validation_route_no_progress_diagnoses": 0,
+    "stuck_events": 0,
+    "death_loop_events": 0,
+    "teacher_assisted_kills": 0,
+    "canaries_3_through_8_started": false
+  },
+  "role_audit": {
+    "passed": false,
+    "failure_labels": [
+      "Feraltank:healer_target_exposure",
+      "Feraltank:healer_target_dwell"
+    ],
+    "feral_druid_tank": {
+      "eligible_hostile_samples": 2035,
+      "tank_owned_samples": 1921,
+      "healer_targeting_samples": 87,
+      "tank_all_hostile_retention_rate": 0.944,
+      "minimum_retention_rate": 0.9,
+      "route_target_retention_rate": 0.9432,
+      "healer_target_exposure_rate": 0.0428,
+      "maximum_exposure_rate": 0.01,
+      "max_healer_target_dwell_ms": 3318,
+      "maximum_healer_target_dwell_ms": 3000,
+      "tank_threat_aura_uptime_rate": 1.0,
+      "deaths": 0
+    }
+  },
+  "exposure_localization": {
+    "eligible_exposed_rows": 11,
+    "dominant_route_generation": 14,
+    "dominant_route_node_id": "4b2457d42f81a298",
+    "dominant_encounter": "High Priestess Azil",
+    "dominant_wave": {
+      "hostile_count": 20,
+      "first_listed_timestamp_ms": 1786182292481,
+      "first_healer_ownership_timestamp_ms": 1786182294013,
+      "preownership_listing_ms": 1532,
+      "healer_owned_at_assignment": 19,
+      "tank_owned_at_assignment": 1,
+      "eligible_exposed_samples": 85,
+      "maximum_dwell_ms": 3318,
+      "control_sequence": [
+        "continue_stable_feral_swarm_approach",
+        "area_attack_boss_add_density:growl_on_nearby_representative",
+        "continue_stable_feral_swarm_approach",
+        "nineteen_followers_assign_to_healer",
+        "feral_demoralizing_roar_swarm_pickup",
+        "remote_cluster_approach",
+        "feral_demoralizing_roar_swarm_pickup",
+        "area_attack_boss_add_density:melee_fallback_out_of_range",
+        "remote_cluster_approach",
+        "feral_post_roar_area_threat_retention"
+      ],
+      "ownership_at_first_eligibility": {
+        "engaged": 20,
+        "tank_owned": 5,
+        "healer_owned": 15
+      },
+      "ownership_at_final_captured_tick": {
+        "engaged": 20,
+        "tank_owned": 11,
+        "healer_owned": 9
+      }
+    },
+    "other_eligible_exposure_samples": 2,
+    "cause": "The existing high-density pre-victim Feral Charge branch correctly recognizes a declared 20-follower wave with zero healer attackers, but it tests and casts only against the current density representative. In this episode that representative was already within the branch's eight-yard exclusion, so Charge did not fire even though a remote follower cluster was the intended pickup target. The ordinary density resolver instead spent the proactive window on Growl and stable movement. Nineteen followers then selected the healer; two local Roars and one damaging area action recovered only eleven identities before eligibility and route close, leaving nine healer-owned followers and a 3318 ms dwell episode.",
+    "audit_attribution_correct": true,
+    "audit_correction_required": false,
+    "audit_note": "The audit's engagement-based grace begins while the scripted followers are listed but have no tank or healer owner. That explains why the first eligible row occurs only 1533 ms after healer assignment, but it does not explain away the failure: the independently observed healer episode itself lasts 3318 ms and exceeds the unchanged 3000 ms dwell gate. A runtime pickup correction is therefore required."
+  },
+  "accepted_causal_chain": [
+    "Rerun154 canary 2 retained the exact process, epoch, profile, planned party, serial isolation, remote publication, cleanup, and local payload eviction contracts.",
+    "The route completed all 14 terminals and all four real bosses with zero no-progress diagnoses, stuck events, death loops, or teacher-assisted kills.",
+    "The independent role audit reproduced the published Feral metrics and both strict role failures without discrepancy.",
+    "The dominant 20-follower Azil wave supplied 85 of 87 exposed eligible samples because the proactive Charge branch was bound to a nearby representative instead of selecting a legal remote high-density target.",
+    "The serial operator correctly stopped after canary 2; canaries 3 through 8 and Phases 10 through 12 remain blocked."
+  ],
+  "smallest_safe_correction": {
+    "file": "src/server/game/Bots/BotWorldPopulationMgr.cpp",
+    "scope": "Feral tank, declared high-density boss-add wave, zero healer attackers, current representative already within eight yards",
+    "change": "Retain every existing high-density, role, victim, cooldown, GCD, spell, range, line-of-sight, attackability, handoff, hazard, and route gate, but deterministically select the nearest eligible remote listed follower beyond eight yards as the existing proactive Charge target. If no such target exists or native Charge rejects it, preserve the current fallthrough unchanged.",
+    "gate_weakening": false,
+    "audit_threshold_change": false
+  },
+  "next_attempt": {
+    "attempt_label": "rerun155_canary_2",
+    "worldserver_rebuild_required": true,
+    "deterministic_reprovision_required": true,
+    "fresh_identity_and_eight_row_plan_required": true,
+    "canary_2_only_until_strict_pass": true,
+    "canaries_3_through_8_started": false,
+    "phases_10_through_12_blocked": true
+  }
+}

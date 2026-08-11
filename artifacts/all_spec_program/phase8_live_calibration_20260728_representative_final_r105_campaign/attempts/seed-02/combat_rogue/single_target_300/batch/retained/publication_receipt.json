@@ -1,0 +1,27 @@
+{
+  "batch_id": "p8-s2-combat-rogue-single-target-300-53",
+  "batch_identity_sha256": "c2e2cb71f2c0a2573f9ade34f203103cf54720acd19fd340b48e0556d61efc31",
+  "cache_scope": "batch_specific",
+  "compact_bundle_sha256": "9270b09618f80f3e615f38e9288c96aa43e564feafa4ed8872521ea50f9bfc8f",
+  "pointers": [
+    {
+      "dvc_md5": "a22c1b06ea0e5b1b4598be93f312d52f.dir",
+      "nfiles": 3,
+      "path": "artifacts/all_spec_program/phase8_live_calibration_20260728_representative_final_r105_campaign/attempts/seed-02/combat_rogue/single_target_300/batch/raw.dvc",
+      "pointer_sha256": "5953a76c9283e160f6a85d8d9ca536a51531c382df746735995386c985f963d3",
+      "size": 110285
+    },
+    {
+      "dvc_md5": "b4fca89b3152b660d69fe19ef59a8248.dir",
+      "nfiles": 1,
+      "path": "artifacts/all_spec_program/phase8_live_calibration_20260728_representative_final_r105_campaign/attempts/seed-02/combat_rogue/single_target_300/batch/compact.dvc",
+      "pointer_sha256": "75e9f7a34da4bfcd268c7c4b0e77bece110b12738c0e8dc007d148a9929c327e",
+      "size": 2508
+    }
+  ],
+  "raw_bundle_sha256": "5333bf83b1cd03b16cd15b9dd2dd03be34c0bb0c4a5c9f5f5a84743024c74eef",
+  "receipt_sha256": "4f1a960444711eda65cf051fed83ebf529ea9d5c377bb4938a8694ea085286f5",
+  "remote_status_sha256": "efed9e5afcfe149915ae98b9ed9e69304eb48f5ce2e2265b18b5b5ed2f155e60",
+  "remote_verified": true,
+  "schema": "bot_immutable_batch_publication_receipt_v1"
+}

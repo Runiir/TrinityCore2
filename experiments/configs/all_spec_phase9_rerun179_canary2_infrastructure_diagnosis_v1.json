@@ -1,0 +1,104 @@
+{
+  "schema": "all_spec_phase9_rerun179_canary2_infrastructure_diagnosis_v1",
+  "diagnosis_sha256": "eda18bb2c84f024feb4d94c67f98577c848642d652f0aca9c30b590eb4b0139a",
+  "scope": {
+    "attempt": "artifacts/all_spec_program/phase9_serial_canaries_20260809_rerun179/phase9_serial_02_stonecore_phase9_006_6893daf98698",
+    "operator_state": "artifacts/all_spec_program/phase9_serial_canaries_20260809_rerun179/operator_state_canary2.json",
+    "only_canary_2_ran": true,
+    "later_rows_started": false,
+    "published_batch_exists": false
+  },
+  "frozen_identity": {
+    "identity_manifest_sha256": "826f9d4ef30bc1b998de2ea292295a49a718f41a62f35c30b5ce5c1d25957634",
+    "identity_manifest_file_sha256": "49541c0ad250f8a4be20195f88d01560d0575cc7612696b5deff6996d6f98f81",
+    "run_plan_sha256": "a8d09043e63c955ff8b4e663fae7905b6b4a24077dc1781bfdc210cab5965f13",
+    "run_plan_file_sha256": "a7d881972c50c4b2dd8dca85917f25dd3762d655722d43c8201240918af1f774",
+    "binary_sha256": "0e189d8416290bb3a3f7e350d5de763dad580b78d60bd6013a102b15b093bb04",
+    "server_process_id": 1255152,
+    "server_epoch": 6049977846108911,
+    "worldserver_unit": "trinity-live-validation-d0bb377e036045c42e199301.service",
+    "session_fingerprint": "e88b5c2dc53127586e47f25d608bd8b3b36a127b4a2e6d485ee57f11395ba1bb",
+    "profile_generation": 1,
+    "profile_content_hash": "35a587f05d8781d72c62576a6f35392a69e01d5978429f65429ad5b9ed096a22",
+    "max_active_cohorts": 1
+  },
+  "exact_party": {
+    "ordered_specs": [
+      "feral_druid_tank",
+      "discipline_priest",
+      "fury_warrior",
+      "marksmanship_hunter",
+      "retribution_paladin"
+    ],
+    "party_sha256": "524b94c794897f5111bdae0a5e45ba31a31ebb8596d811a3dd8c1caff95bd16a"
+  },
+  "observed_before_abort": {
+    "underlying_report_returncode": 0,
+    "underlying_report_timed_out": false,
+    "report_file_sha256": "3defce820a7d3a8b478b35fbdf0486c7d9ca4a541d2d565aaa35b63b6b870ca0",
+    "operator_wrapper_returncode": 1,
+    "operator_state_file_sha256": "b891b0671749491e65dcb9c74f29eb32297c5feaa71684d56f7c1411acac267f",
+    "route_terminal_count": 13,
+    "route_terminal_generations": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13],
+    "authoritative_boss_death_entries": [43438, 43214, 42188],
+    "active_route_generation": 14,
+    "active_route_label": "High Priestess Azil",
+    "party_deaths": 2,
+    "worldserver_failure": "SIGSEGV",
+    "worldserver_exit_status": 11,
+    "worldserver_crash_timestamp": "2026-08-09T15:37:51+03:00",
+    "cleanup_complete": false,
+    "publication_started": false,
+    "publication_receipt_present": false
+  },
+  "classification": {
+    "infrastructure_abort": true,
+    "authoritative_gameplay_pass": false,
+    "authoritative_gameplay_failure": false,
+    "incomplete_evidence_is_not_gameplay_failure": true,
+    "independent_role_audit_authorized": false,
+    "reason": "The reusable worldserver crashed before stop, identity closeout, cleanup, capture finalization, or immutable DVC publication. The wrapper therefore had no admissible acceptance_source_report.json to audit and no batch whose stored result could be trusted."
+  },
+  "crash_localization": {
+    "apport_core_available": false,
+    "apport_reason": "The locally built executable did not belong to a package, so apport discarded the core.",
+    "journal_signal": "Each Azil phase-two shard wave logged MoveSplineInitArgs::_checkPathLengths failures for NPC entry 42355. The final wave preceded the SIGSEGV.",
+    "invalid_spline_cause": "npc_azil_seismic_shard::FillPath appended the elevated endpoint twice, creating a zero-length final segment rejected by MoveSplineInitArgs::_checkPathLengths.",
+    "unsafe_iterator_cause": "npc_azil_seismic_shard dereferenced Vehicle::GetNextEmptySeat(0, false) without checking Seats.end(). Vehicle::GetNextEmptySeat explicitly returns Seats.end() when every usable seat is occupied or has a pending join.",
+    "long_fight_trigger": "The route reached repeated seismic-shard cycles during the long Azil encounter, exposing the otherwise latent full-or-pending-full vehicle path.",
+    "rerun179_passive_staging_correction_regressed": false,
+    "evidence": [
+      "Generation 1 terminalized and the run reached 13/14 terminals, so the rerun179 shared passive-swarm staging correction resolved the rerun178 deadlock.",
+      "The crash occurred only after generation 14 began and the journal repeatedly identified seismic-shard entry 42355.",
+      "No bot, role-audit, route-gate, or watchdog result can be inferred after the server process disappeared."
+    ]
+  },
+  "bounded_correction": {
+    "source": "src/server/scripts/Maelstrom/Stonecore/boss_high_priestess_azil.cpp",
+    "behavior": "Remove the duplicate terminal spline point. Preserve the existing reverse seat preference, but compare the returned iterator with vehicle->Seats.end() before dereference; despawn only the orphan shard when no usable or non-pending seat exists.",
+    "unchanged_contracts": [
+      "all Phase 9 role and route thresholds",
+      "all bot spell, threat, movement, hazard, Misdirection, healer-handoff, and passive-staging behavior",
+      "Azil health, damage, phase timing, shard count, target selection, and occupied-seat behavior",
+      "identity, exact party, serial isolation, publication, cleanup, hydration, and targeted-eviction contracts",
+      "forbidden-assistance policy"
+    ]
+  },
+  "verification": {
+    "focused_tests": "3 passed, 122 deselected",
+    "git_diff_check": "passed",
+    "worldserver_rebuild": "passed",
+    "corrected_worldserver_binary_sha256": "fc7c0b78cb4595e49e28bec3a3e4ed7c0a0c82a6290eebed10d50a77b69f2792",
+    "aborted_worldserver_inactive_before_tracked_edit": true,
+    "live_operator_count": 0,
+    "live_publisher_count": 0
+  },
+  "next_gate": {
+    "attempt_label": "rerun180",
+    "deterministic_reprovision_all_31_required": true,
+    "fresh_identity_and_eight_row_plan_required": true,
+    "canary_2_only_until_strict_pass": true,
+    "canaries_3_through_8_blocked": true,
+    "phases_10_through_12_blocked": true
+  }
+}
