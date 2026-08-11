@@ -1,0 +1,80 @@
+{
+  "batch": {
+    "batch_identity_sha256": "4d321e13d0f02fcff7550fc50d028c795d1de52930d76d4d50b490f69e10ec92",
+    "compact_bundle_sha256": "b025f6fdc8ec5bf18f611615c82004ff619d4eef563beb62ba672287e95658fb",
+    "compact_dvc_object": "9e48324ab03305b97900097ec33af5d6.dir",
+    "receipt_sha256": "e1796eb57251e627b66fa121b7a6e86f6f25d85fd8557d9d47017bc2482bbb5d",
+    "raw_bundle_sha256": "9c0afe1757eec2b36c58c61ca92f7e25b9bd169d5bade3e517f3f545dc002689",
+    "raw_dvc_object": "8d7603318933e80b8f5da053da267432.dir"
+  },
+  "capture": {
+    "boss_deaths": 0,
+    "cleanup_complete": true,
+    "forbidden_completion_assistance": [],
+    "identity_complete": true,
+    "remote_verified": true,
+    "returncode": 0,
+    "route_terminals": 0,
+    "timed_out": false,
+    "watchdog_semantic_progress_plateau": true
+  },
+  "classification": {
+    "authoritative_gameplay_failure": false,
+    "authoritative_gameplay_pass": false,
+    "infrastructure_contaminated_attempt": true
+  },
+  "correction": {
+    "change": "Restore the exact configured Stonecore route start while the reusable cohort is inactive before every serial attempt, and make the serial operator fail closed unless the attempt report records that restoration as applied.",
+    "preserved_contracts": [
+      "unchanged gameplay and role thresholds",
+      "one reusable worldserver and MaxActiveCohorts=1",
+      "frozen binary, profile, route, exact-party, and publication identities",
+      "native combat, threat, spell-legality, boss-death, cleanup, and no-assistance gates"
+    ],
+    "scope": [
+      "tools/bot_ml/build_phase9_serial_run_plan.py",
+      "tools/bot_ml/run_phase9_serial_canaries.py"
+    ]
+  },
+  "diagnosis": {
+    "cause": "Canary 4 ran first and persisted the shared Survival hunter at the end of Stonecore. Canary 2 reused that character while its command skipped route-start restoration. The hunter therefore spawned from the saved position 261.017 yards from generation 1, fought a disjoint remote pack, died after 58 seconds, produced zero combat attempts, and was never recorded resurrected. The remaining four bots then attrited and plateaued on the first corridor.",
+    "feral_threat_failure": false,
+    "first_heartbeat_entrance_attacker_guids": [
+      9,
+      10,
+      11,
+      13,
+      14
+    ],
+    "first_heartbeat_hunter_attacker_guids": [
+      435,
+      436,
+      437
+    ],
+    "hunter_combat_attempt_samples": 0,
+    "hunter_first_death_timestamp_ms": 1786454135858,
+    "hunter_partial_path_observations": 184,
+    "hunter_recorded_resurrections": 0,
+    "hunter_spawn_source": "saved_position",
+    "prior_canary4_boss_deaths": 4,
+    "prior_canary4_route_complete": true,
+    "shared_target": "survival_hunter"
+  },
+  "diagnosis_sha256": "4597d6b32c0748beb42bcbaf943e5882b9cc2a336bdfbd9e20c046c106754fec",
+  "independent_verifier_sha256": "40e5aeb949045dcc2e3e0f3a14b9a344262a7f9971c57da8aedb0f3fe10daec8",
+  "role_reconstruction": {
+    "eligible_hostile_denominator": 717,
+    "feral_growl_samples": 1,
+    "feral_swipe_samples": 20,
+    "feral_thrash_samples": 20,
+    "healer_target_exposure_ratio": 0.0,
+    "healer_targeting_hostile_numerator": 0,
+    "maximum_healer_target_dwell_ms": 0,
+    "tank_all_hostile_retention_ratio": 0.9888423988842399,
+    "tank_owned_hostile_numerator": 709,
+    "tank_threat_aura_uptime_denominator": 253,
+    "tank_threat_aura_uptime_numerator": 253,
+    "tank_threat_aura_uptime_ratio": 1.0
+  },
+  "schema": "all_spec_phase9_canary_diagnosis_v1"
+}

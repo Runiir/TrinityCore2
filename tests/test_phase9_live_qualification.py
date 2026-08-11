@@ -5,6 +5,7 @@ from pathlib import Path
 
 from tools.bot_ml.build_phase9_pairwise_matrix import build_matrix
 from tools.bot_ml.build_phase9_serial_run_plan import build_plan
+from tools.bot_ml.run_phase9_serial_canaries import route_start_restored
 from tools.bot_ml.verify_phase9_pairwise_matrix import verify
 
 
@@ -59,7 +60,12 @@ def test_phase9_serial_plan_covers_targeted_specs_and_protection_regression() ->
     assert plan["canonical_target_count"] == 31
     assert plan["qualification_excluded_targets"] == TARGETED_EXCLUSIONS
     assert plan["target_union_count"] == 24
+    assert plan["restore_route_bot_start_each_attempt"] is True
     assert not (set(TARGETED_EXCLUSIONS) & set(plan["target_union"]))
+    assert all(
+        "--skip-route-bot-start-mutation" not in attempt["command"]
+        for attempt in plan["attempts"]
+    )
     assert plan["attempts"][3]["ordered_party"] == [
         "protection_paladin",
         "restoration_druid",
@@ -68,3 +74,27 @@ def test_phase9_serial_plan_covers_targeted_specs_and_protection_regression() ->
         "survival_hunter",
     ]
     assert len(plan["attempts"]) == 7
+
+
+def test_phase9_operator_requires_applied_stonecore_route_start() -> None:
+    assert route_start_restored(
+        {
+            "preparation": {
+                "route_bot_start": {"applied": True, "statements": 1, "map_id": 725}
+            }
+        }
+    )
+    assert not route_start_restored(
+        {
+            "preparation": {
+                "route_bot_start": {"applied": False, "statements": 0, "map_id": 725}
+            }
+        }
+    )
+    assert not route_start_restored(
+        {
+            "preparation": {
+                "route_bot_start": {"applied": True, "statements": 1, "map_id": 1}
+            }
+        }
+    )

@@ -25,6 +25,15 @@ def write_json(path: Path, payload: dict[str, Any]) -> None:
     temporary.replace(path)
 
 
+def route_start_restored(session: dict[str, Any]) -> bool:
+    route_start = (session.get("preparation") or {}).get("route_bot_start") or {}
+    return bool(
+        route_start.get("applied") is True
+        and int(route_start.get("statements") or 0) > 0
+        and int(route_start.get("map_id") or 0) == 725
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--run-plan", type=Path, default=DEFAULT_ROOT / "run_plan.json")
@@ -36,6 +45,10 @@ def main() -> int:
 
     plan = read_json(args.run_plan.resolve())
     attempts = plan.get("attempts") or plan.get("runs") or []
+    if plan.get("restore_route_bot_start_each_attempt") is not True:
+        raise SystemExit("Phase 9 serial plan must restore the route start before every attempt")
+    if any("--skip-route-bot-start-mutation" in (attempt.get("command") or []) for attempt in attempts):
+        raise SystemExit("Phase 9 serial plan disables required per-attempt route-start restoration")
     selected = [
         attempt
         for attempt in attempts
@@ -124,6 +137,7 @@ def main() -> int:
                 "profile_generation": session.get("profile_generation"),
                 "profile_content_hash": str(session.get("profile_content_hash") or "").lower(),
                 "exact_party_verified": session.get("exact_party_verified"),
+                "route_start_restored": route_start_restored(session),
                 "cleanup": cleanup,
             }
         )
@@ -147,6 +161,7 @@ def main() -> int:
             and current["remote_verified"]
             and not current["raw_retained_locally"]
             and current["exact_party_verified"]
+            and current["route_start_restored"]
             and identity_matches
             and cleanup_complete
         )
