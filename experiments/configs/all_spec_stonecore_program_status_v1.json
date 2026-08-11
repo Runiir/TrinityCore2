@@ -2,6 +2,19 @@
   "active_phase": 10,
   "blockers": [],
   "exact_next_handoff_prompt": "Phase 9 is complete. Treat aggregate verifier 8bff23db8fe577f9d9b6248506e5cb7392f305d8164b40cf5a0cbebba458be35 and its DVC pointer artifacts/all_spec_program/phase9_targeted_canary_completion_20260811.dvc as authoritative: all seven targeted 25H Stonecore canaries independently passed the exact 14-node route and four authoritative boss deaths, with exact parties, identity, serial isolation, cleanup, watchdog, publication, and forbidden-assistance gates verified. Protection/Feral trash-role threshold misses are advisory after an authoritative boss clear under the frozen policy. Begin Phase 10 adaptive concurrency from the 24-spec targeted roster; do not reintroduce Protection Warrior and do not rerun Phase 9 unless a Phase 10 identity or isolation check invalidates aggregation. Never use broad DVC garbage collection.",
+  "repository_checkpoint": {
+    "branch": "master",
+    "merge_commit": "abb75dbd90250704053e6566755225f883f25e94",
+    "merge_parent_master": "dcd96bf89df2960e15bd2b77ccc6348595b2d0c1",
+    "merge_parent_stonecore": "43052484e27380cb07b9b99ad858570b4dcf95f3",
+    "remote_published": false,
+    "source_branch": "all-spec-stonecore-execution",
+    "validation": {
+      "ancestry": "passed",
+      "phase9_qualification": "3 passed",
+      "trial_merge": "conflict_free"
+    }
+  },
   "phase_status": [
     {
       "evidence": {

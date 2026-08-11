@@ -2,9 +2,15 @@
 
 ## Authority and purpose
 
-This document is the continuation contract for the approved program in `.codex/plans/all_class_sc_plan.md`. It is not a replacement design exercise and is not a request to enter Plan mode. Execute it directly on branch `all-spec-stonecore-execution`; the current top section records the authoritative Phase 9 completion checkpoint.
+This document is the continuation contract for the approved program in `.codex/plans/all_class_sc_plan.md`. It is not a replacement design exercise and is not a request to enter Plan mode. Execute from `master`, which now contains the completed Stonecore branch; the current top section records the authoritative Phase 9 completion checkpoint.
 
 Phases 0-9 are complete. Phase 10, `adaptive_concurrency_discovery`, is the next phase and has not started. Phases 11-12 remain pending on their predecessor gates.
+
+## Master integration checkpoint
+
+The exact completed source tip `43052484e27380cb07b9b99ad858570b4dcf95f3` from `all-spec-stonecore-execution` was conflict-free trial-merged and then merged into local `master` by merge commit `abb75dbd90250704053e6566755225f883f25e94`. The merge has parents `dcd96bf89df2960e15bd2b77ccc6348595b2d0c1` and `43052484e27380cb07b9b99ad858570b4dcf95f3`, and `git merge-base --is-ancestor` confirms the completed Stonecore tip is contained in `master`. The merge commit includes the required Claude co-author trailer.
+
+No worldserver, validation operator, or DVC publisher was active during the merge. The Phase 9 qualification file passes `3 passed`. A deliberately broad adjacent diagnostic reports `141 passed, 32 failed`; all 32 failures reproduce on the already-committed source branch and are stale structural/source-shape expectations rather than merge conflicts. `dvc status` reports the expected dependency drift and locally evicted outputs from the completed program; no new experiment artifact was produced and no broad DVC garbage collection was used. The local `master` history was not pushed automatically because it was already hundreds of commits ahead of `origin/master`; publishing that history is a separate explicit remote action.
 
 ## Phase 9 completion: seven targeted canaries accepted
 
