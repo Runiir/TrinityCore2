@@ -1,22 +1,36 @@
 {
   "schema": "stonecore_phase9_pair_policy_v1",
+  "live_qualification_policy": {
+    "excluded_targets": [
+      {
+        "spec_target_id": "protection_warrior",
+        "role": "tank",
+        "reason": "operator_declared_not_viable_after_rerun212_canary4"
+      }
+    ],
+    "supported_tank_targets": [
+      "blood_death_knight",
+      "feral_druid_tank",
+      "protection_paladin"
+    ]
+  },
   "policy_incompatible_pairs": [],
   "serial_canary_policy": {
     "composition_sha256s": [
       "e33ae8a3db048b6f5388d7c8e2000173fb6a0fc8c3299ba6294f4ae042111ae0",
       "6893daf986989d8b1cdeb3b31e1c825cb579a7209b7ede80bc9c2383df6496b1",
       "5d0c65765654a1da14cea2c8fe6635400fdefb09607cc388fbc6280dbe05aaf3",
-      "3904746e5810df09ac0f759b0b587c0bbaaaef01e3045ac47f5261e0b62cc02e",
+      "b41dde5f2086c5af74f8309207478be423a3bc2fcfc3e4e135652992d8bc9afe",
       "59bcbc0d6019a3ed1c9da6ef5e518ae8e4b64b46cbd97cbabda222e3526d2617",
       "d421aa6b815f4f21e707dda30b20b53a4d8336cd688e7e7094ffa2c5e0f4fff5",
       "743d591b7ee42befaebf3c21f88e9286ad5df271dab7196f7f4fef8a4cee2213",
-      "137e606f60b77dbecff15d81441de669493f8e11361b1a0965cbf9818680c6f4"
+      "d9060c5fc0dd6e68d870b0872e5ed34d6aff83f392214f5f84fe626b4f4c1afd"
     ],
     "composition_count": 8,
     "role_representation_bounds": {
       "tank": {
         "min": 2,
-        "max": 2
+        "max": 4
       },
       "healer": {
         "min": 1,
@@ -43,7 +57,8 @@
   "notes": [
     "All distinct canonical DPS specialization targets are compatible in the Phase 9 composition policy.",
     "Tank-tank, healer-healer, and self-pairs are structural exclusions and are reconstructed independently.",
-    "The serial subset is explicitly pinned from the selected covering array so all 31 targets run in exactly eight balanced canaries.",
+    "Protection Warrior remains provisioned in the canonical 31-target catalog but is explicitly excluded from live qualification by operator direction after rerun212; the live pair universe and serial union therefore contain 30 targets and three supported tank specializations.",
+    "The serial subset is explicitly pinned from the selected covering array so all 30 live-qualification targets run in exactly eight canaries; Protection Paladin replaces Protection Warrior in the two affected tank slots without dropping their healer or DPS coverage.",
     "Blood and Feral tank canaries include native Hunter Misdirection support because Azil activates simultaneous south and west follower waves beyond one self-centered pickup radius."
   ]
 }

@@ -106,6 +106,7 @@ def build_plan(
     target_union = sorted(
         {target for attempt in attempts for target in attempt["ordered_party"]}
     )
+    expected_target_union = sorted(str(value) for value in matrix.get("serial_target_union") or [])
     plan: dict[str, Any] = {
         "schema": "all_spec_phase9_serial_run_plan_v1",
         "matrix_path": str(matrix_path.relative_to(REPO_ROOT)),
@@ -126,12 +127,18 @@ def build_plan(
         "publish_each_closed_batch": True,
         "remote_verify_before_evict": True,
         "attempt_count": len(attempts),
+        "canonical_target_count": int(matrix.get("canonical_target_count") or matrix.get("target_count") or 0),
+        "qualification_excluded_targets": list(matrix.get("qualification_excluded_targets") or []),
         "target_union": target_union,
         "target_union_count": len(target_union),
         "attempts": attempts,
     }
-    if len(attempts) != int(matrix.get("serial_canary_count") or 0) or len(target_union) != 31:
-        raise ValueError("serial run plan does not preserve the matrix canary set and 31-target union")
+    if (
+        len(attempts) != int(matrix.get("serial_canary_count") or 0)
+        or target_union != expected_target_union
+        or len(target_union) != int(matrix.get("target_count") or 0)
+    ):
+        raise ValueError("serial run plan does not preserve the matrix canary set and live-qualification target union")
     plan["plan_sha256"] = canonical_sha256(plan)
     return plan
 

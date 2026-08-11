@@ -99,11 +99,26 @@ def verify(
     targets = load_object(targets_path)
     policy = load_object(policy_path)
     matrix = load_object(matrix_path)
-    roles = {
+    canonical_roles = {
         str(row["spec_target_id"]): str(row["role"])
         for row in targets.get("targets") or []
         if isinstance(row, Mapping)
     }
+    qualification = policy.get("live_qualification_policy") or {}
+    exclusion_rows = qualification.get("excluded_targets") or []
+    excluded_targets = sorted(
+        str(row.get("spec_target_id") or "")
+        for row in exclusion_rows
+        if isinstance(row, Mapping)
+    )
+    roles = {
+        target: role
+        for target, role in canonical_roles.items()
+        if target not in excluded_targets
+    }
+    live_qualification_tanks = sorted(
+        str(value) for value in qualification.get("supported_tank_targets") or []
+    )
     expected_required, expected_excluded = reconstruct_universe(roles, policy)
     observed_required = set(matrix.get("required_pair_ids") or [])
     observed_excluded = set(matrix.get("excluded_pair_ids") or [])
@@ -216,8 +231,17 @@ def verify(
     matrix_identity = dict(matrix)
     stored_matrix_hash = str(matrix_identity.pop("matrix_sha256", ""))
     checks = {
-        "target_catalog_is_canonical_31": len(roles) == 31
-        and Counter(roles.values()) == Counter({"tank": 4, "healer": 5, "dps": 22}),
+        "target_catalog_is_canonical_31": len(canonical_roles) == 31
+        and Counter(canonical_roles.values()) == Counter({"tank": 4, "healer": 5, "dps": 22}),
+        "live_qualification_exclusion_is_exact": excluded_targets == ["protection_warrior"]
+        and len(exclusion_rows) == 1
+        and str(exclusion_rows[0].get("role") or "") == "tank"
+        and bool(str(exclusion_rows[0].get("reason") or "").strip())
+        and Counter(roles.values()) == Counter({"tank": 3, "healer": 5, "dps": 22})
+        and live_qualification_tanks == sorted(target for target, role in roles.items() if role == "tank")
+        and matrix.get("canonical_target_count") == 31
+        and matrix.get("qualification_excluded_targets") == excluded_targets
+        and matrix.get("target_count") == len(roles),
         "input_hashes_match": (matrix.get("inputs") or {}).get("target_catalog_sha256") == sha256_file(targets_path)
         and (matrix.get("inputs") or {}).get("pair_policy_sha256") == sha256_file(policy_path),
         "required_universe_matches_independent_reconstruction": observed_required == expected_required,
@@ -241,7 +265,7 @@ def verify(
         and len(serial_ids) == len(set(serial_ids)),
         "serial_canaries_match_pinned_policy": len(serial_rows) == expected_serial_count
         and serial_hashes == expected_serial_hashes,
-        "serial_canaries_cover_all_31_targets": serial_union == set(roles)
+        "serial_canaries_cover_all_live_qualification_targets": serial_union == set(roles)
         and sorted(serial_union) == matrix.get("serial_target_union"),
         "serial_canary_representation_matches_compositions": serial_representation
         == dict(serial_counts),

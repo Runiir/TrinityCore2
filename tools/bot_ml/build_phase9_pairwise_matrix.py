@@ -28,16 +28,38 @@ def load_object(path: Path) -> dict[str, Any]:
     return payload
 
 
-def target_roles(target_catalog: Mapping[str, Any]) -> dict[str, str]:
+def target_roles(
+    target_catalog: Mapping[str, Any], policy: Mapping[str, Any]
+) -> tuple[dict[str, str], list[str]]:
     rows = target_catalog.get("targets") or []
-    roles = {
+    canonical_roles = {
         str(row["spec_target_id"]): str(row["role"])
         for row in rows
         if isinstance(row, Mapping)
     }
-    if len(roles) != 31 or Counter(roles.values()) != Counter({"tank": 4, "healer": 5, "dps": 22}):
+    if len(canonical_roles) != 31 or Counter(canonical_roles.values()) != Counter({"tank": 4, "healer": 5, "dps": 22}):
         raise ValueError("Phase 9 requires the canonical 4 tank, 5 healer, and 22 DPS targets")
-    return roles
+    qualification = policy.get("live_qualification_policy") or {}
+    exclusion_rows = qualification.get("excluded_targets") or []
+    excluded = sorted(str(row.get("spec_target_id") or "") for row in exclusion_rows if isinstance(row, Mapping))
+    if not excluded or len(excluded) != len(set(excluded)) or any(target not in canonical_roles for target in excluded):
+        raise ValueError("Phase 9 live qualification exclusions must name unique canonical targets")
+    if any(
+        str(row.get("role") or "") != canonical_roles.get(str(row.get("spec_target_id") or ""))
+        or not str(row.get("reason") or "").strip()
+        for row in exclusion_rows
+        if isinstance(row, Mapping)
+    ):
+        raise ValueError("Phase 9 live qualification exclusions require the canonical role and a reason")
+    roles = {target: role for target, role in canonical_roles.items() if target not in excluded}
+    supported_tanks = sorted(str(value) for value in qualification.get("supported_tank_targets") or [])
+    active_tanks = sorted(target for target, role in roles.items() if role == "tank")
+    if (
+        Counter(roles.values()) != Counter({"tank": 3, "healer": 5, "dps": 22})
+        or supported_tanks != active_tanks
+    ):
+        raise ValueError("Phase 9 live qualification requires the exact three supported tank targets")
+    return roles, excluded
 
 
 def ordered_pair(left: str, right: str, roles: Mapping[str, str]) -> tuple[str, str, str]:
@@ -281,10 +303,19 @@ def build_matrix(
     policy = load_object(policy_path)
     if policy.get("schema") != "stonecore_phase9_pair_policy_v1":
         raise ValueError("unexpected Phase 9 pair-policy schema")
-    roles = target_roles(target_catalog)
+    roles, qualification_excluded_targets = target_roles(target_catalog, policy)
     required, excluded, policy_pairs = build_pair_universe(roles, policy)
     candidates = candidate_rows(roles, policy_pairs)
     selected = greedy_cover(candidates, required)
+    candidate_by_hash = {str(row["composition_sha256"]): row for row in candidates}
+    selected_hashes = {str(row["composition_sha256"]) for row in selected}
+    for pinned_hash in (policy.get("serial_canary_policy") or {}).get("composition_sha256s") or []:
+        pinned_hash = str(pinned_hash)
+        if pinned_hash not in candidate_by_hash:
+            raise ValueError(f"serial canary is not a valid live-qualification composition: {pinned_hash}")
+        if pinned_hash not in selected_hashes:
+            selected.append(candidate_by_hash[pinned_hash])
+            selected_hashes.add(pinned_hash)
 
     rendered_rows: list[dict[str, Any]] = []
     row_by_hash: dict[str, dict[str, Any]] = {}
@@ -337,7 +368,8 @@ def build_matrix(
             "candidate_order": "tank_lexical_then_healer_lexical_then_canonical_sorted_dps_triple",
             "tie_break": "maximum_uncovered_gain_then_minimum_member_representation_then_lexical",
             "redundancy_pruning": "reverse_selection_order_when_every_pair_remains_covered",
-            "serial_canary_selection": "policy_pinned_balanced_all_target_subset_with_native_threat_transfer_support",
+            "serial_canary_selection": "policy_pinned_all_live_qualification_target_subset_with_native_threat_transfer_support",
+            "pinned_serial_rows_retained": True,
         },
         "inputs": {
             "target_catalog_path": str(targets_path.relative_to(REPO_ROOT)),
@@ -355,6 +387,8 @@ def build_matrix(
             "certification": "strict_uninterrupted_current_manifest_full_clear",
             "diagnostic_segments_certify": False,
         },
+        "canonical_target_count": 31,
+        "qualification_excluded_targets": qualification_excluded_targets,
         "target_count": len(roles),
         "candidate_composition_count": len(candidates),
         "selected_composition_count": len(rendered_rows),
