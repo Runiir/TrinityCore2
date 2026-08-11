@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "catalog_id": "cata_raid_strategy_catalog_v1",
+  "updated_at_utc": "2026-08-11T19:30:00Z",
+  "fidelity_target": {
+    "product": "Cataclysm Classic",
+    "patch": "4.4.2",
+    "release_name": "Hour of Twilight",
+    "official_patch_notes_date": "2025-02-18",
+    "official_patch_notes_url": "https://us.forums.blizzard.com/en/wow/t/world-of-warcraft-cataclysm-classic-patch-442-notes/2062030",
+    "launch_build_candidate": 59185,
+    "launch_build_candidate_source": "https://warcraft.wiki.gg/wiki/Public_client_builds",
+    "client_build_frozen": false,
+    "hotfix_cutoff_frozen": false,
+    "client_data_hashes_frozen": false,
+    "state": "research_unresolved",
+    "reason": "The public build table identifies 4.4.2.59185 as the 2025-02-18 live launch, but Phase 0 still lacks a pinned primary client-data extract/content hashes and an exact Blizzard hotfix cutoff."
+  },
+  "source_quality": {
+    "quantitative_hierarchy": [
+      "Blizzard 4.4.2 patch notes/hotfixes and pinned 4.4.2 client data",
+      "multiple known-mode 4.4.2 logs or packet-derived observations",
+      "pinned 4.4.2 BigWigs/DBM modules for ordering and timer ranges",
+      "Wowhead 4.4.2 spell/NPC/encounter data",
+      "current reputable strategy guides for behavior and assignments",
+      "original 4.3.4 sources only when unchanged behavior is independently established"
+    ],
+    "behavior_change_rule": "Two independent strategy sources, or one credible strategy source plus repository confirmation.",
+    "unresolved_rule": "A conflicting or unsupported material value remains fidelity_blocked and must not become a fixed bot timer, target count, or implementation constant."
+  },
+  "raids": {
+    "blackwing_descent": {
+      "map_id": 669,
+      "tier": "t11",
+      "research_state": "baseline_complete_fidelity_blocked",
+      "bosses": [
+        {
+          "boss_slug": "magmaw",
+          "dossier": "docs/bot_raids/strategies/t11/blackwing_descent/magmaw.md",
+          "contract": "experiments/configs/cata_raid_encounters/blackwing_descent/magmaw_v1.json",
+          "ledger": "experiments/configs/cata_raid_encounters/blackwing_descent/magmaw_ledger_v1.json",
+          "modes": ["10N", "10H", "25N", "25H"],
+          "fidelity_state": "fidelity_blocked",
+          "contract_unresolved_material_count": 8
+        },
+        {
+          "boss_slug": "omnotron_defense_system",
+          "dossier": "docs/bot_raids/strategies/t11/blackwing_descent/omnotron_defense_system.md",
+          "contract": "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_v1.json",
+          "ledger": "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_ledger_v1.json",
+          "modes": ["10N", "10H", "25N", "25H"],
+          "fidelity_state": "fidelity_blocked",
+          "contract_unresolved_material_count": 9
+        },
+        {
+          "boss_slug": "maloriak",
+          "dossier": "docs/bot_raids/strategies/t11/blackwing_descent/maloriak.md",
+          "contract": "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_v1.json",
+          "ledger": "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_ledger_v1.json",
+          "modes": ["10N", "10H", "25N", "25H"],
+          "fidelity_state": "fidelity_blocked",
+          "contract_unresolved_material_count": 6
+        },
+        {
+          "boss_slug": "atramedes",
+          "dossier": "docs/bot_raids/strategies/t11/blackwing_descent/atramedes.md",
+          "contract": "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_v1.json",
+          "ledger": "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_ledger_v1.json",
+          "modes": ["10N", "10H", "25N", "25H"],
+          "fidelity_state": "fidelity_blocked",
+          "contract_unresolved_material_count": 9
+        },
+        {
+          "boss_slug": "chimaeron",
+          "dossier": "docs/bot_raids/strategies/t11/blackwing_descent/chimaeron.md",
+          "contract": "experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_v1.json",
+          "ledger": "experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_ledger_v1.json",
+          "modes": ["10N", "10H", "25N", "25H"],
+          "fidelity_state": "fidelity_blocked",
+          "contract_unresolved_material_count": 9
+        },
+        {
+          "boss_slug": "nefarian",
+          "dossier": "docs/bot_raids/strategies/t11/blackwing_descent/nefarian.md",
+          "contract": "experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_v1.json",
+          "ledger": "experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_ledger_v1.json",
+          "modes": ["10N", "10H", "25N", "25H"],
+          "fidelity_state": "fidelity_blocked",
+          "contract_unresolved_material_count": 10
+        }
+      ]
+    }
+  }
+}

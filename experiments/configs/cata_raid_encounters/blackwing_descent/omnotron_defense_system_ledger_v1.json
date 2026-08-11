@@ -1,0 +1,316 @@
+{
+  "schema_version": 1,
+  "ledger_schema": "cata_raid_value_timer_ledger_v1",
+  "raid": "blackwing_descent",
+  "boss_slug": "omnotron_defense_system",
+  "modes": ["10N", "10H", "25N", "25H"],
+  "fidelity_state": "fidelity_blocked",
+  "contract_path": "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_v1.json",
+  "unresolved_material_count": 9,
+  "encounter": "omnotron_defense_system",
+  "instance": "blackwing_descent",
+  "purpose": "Sourced value, timer, target-rule and lifecycle ledger; no live assertion.",
+  "scope": ["10N", "10H", "25N", "25H"],
+  "repository_revision_audited": "889d38cc9451c2b8104db142ce069593b4647a41",
+  "accessed": "2026-08-11",
+  "source_catalog": {
+    "wowhead_cata_classic": {
+      "title": "Omnotron Defense System Strategy Guide",
+      "publisher": "Wowhead",
+      "author": "Beanna",
+      "url": "https://www.wowhead.com/cata/guide/raids/blackwing-descent/omnotron-defense-system-strategy",
+      "published_or_updated": "2024-06-04 (page metadata)",
+      "scope": "Cataclysm guide; no reliable 4.4.2 build/hotfix cutoff exposed"
+    },
+    "icy_veins_cata_classic": {
+      "title": "Omnotron Defense System Encounter Guide",
+      "publisher": "Icy Veins",
+      "url": "https://www.icy-veins.com/cataclysm-classic/omnotron-defense-system-encounter-guide-strategy-abilities-loot",
+      "published_or_updated": "around 2024 (page metadata; exact date not exposed)",
+      "scope": "Cataclysm Classic strategy; exact 4.4.2 hotfix coverage not stated"
+    },
+    "warcraft_wiki_legacy": {
+      "title": "Omnotron Defense System",
+      "publisher": "Warcraft Wiki",
+      "url": "https://warcraft.wiki.gg/wiki/Omnotron_Defense_System",
+      "published_or_updated": "current page; legacy patch history",
+      "scope": "Historical spell/range reference, not proof of Classic 4.4.2"
+    },
+    "guiaswow_heroic_legacy": {
+      "title": "Heroic Mode Omnotron Defense System",
+      "publisher": "Guías WoW",
+      "url": "https://en.guiaswow.com/blackwing-descent/guide-heroic-mode-defense-system-omnotron-defense-system.html",
+      "published_or_updated": "legacy page, approximately 15.5 years old (page metadata)",
+      "scope": "Independent historical heroic strategy; patch/build not stated"
+    },
+    "repo_cpp": {
+      "title": "Omnotron controller, construct AIs and spell scripts",
+      "path": "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_omnotron_defense_system.cpp",
+      "lines": "236-375, 487-536, 630-679, 773-811, 907-1099, 1114-1161, 1178-1545",
+      "scope": "Current checkout implementation evidence"
+    },
+    "repo_instance_loader": {
+      "title": "Blackwing Descent IDs, mapping, forwarding and loader",
+      "paths": [
+        "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/blackwing_descent.h:87-123",
+        "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/instance_blackwing_descent.cpp:31-57,174-183,254-261",
+        "src/server/scripts/EasternKingdoms/eastern_kingdoms_script_loader.cpp:76-80,307-312"
+      ],
+      "scope": "Current checkout registration and lifecycle evidence"
+    },
+    "repo_historical_custom_sql": {
+      "title": "Historical Omnotron template and spell bindings",
+      "path": "sql/old/custom/world/34_2020_02_21/custom_2019_08_20_00_world_updatepack.sql",
+      "lines": "131229-131356",
+      "scope": "Historical custom DB update"
+    },
+    "repo_historical_db": {
+      "title": "Historical Omnotron aura, difficulty entries and encounter row",
+      "paths": [
+        "sql/old/4.3.4/world/10_2016_03_12/2015_10_02_00_world.sql:155-165",
+        "sql/old/4.3.4/world/12_2016_09_28/2016_09_02_00_world.sql:6-9",
+        "sql/old/4.3.4/TDB04_to_TDB05_updates/world/066_instance_encounters.sql:463"
+      ],
+      "scope": "Historical DB evidence"
+    },
+    "repo_current_db_proc": {
+      "title": "Current Omnotron-related proc/static-flag updates",
+      "paths": [
+        "sql/updates/world/4.3.4/2023_08_27_00_world.sql:36437-36461",
+        "sql/updates/world/4.3.4/2025_06_20_00_world.sql:322-333",
+        "sql/updates/world/4.3.4/2025_06_20_01_world.sql:104-111"
+      ],
+      "scope": "Current DB proc/static support; no wall-clock schedule"
+    }
+  },
+  "evidence_policy": {
+    "behavior_change": "Require two independent strategy sources or one credible strategy source plus repository confirmation.",
+    "repository_only": "Implementation evidence is recorded but not treated as external 4.4.2 truth.",
+    "fidelity_blocked": "Conflicting or unverified values must not become fixed bot timers."
+  },
+  "values": [
+    {
+      "key": "shared_health_and_construct_count",
+      "modes": {"10N": "32.2M reported", "10H": "54.1M reported", "25N": "99.2M reported", "25H": "164.9M reported"},
+      "value": "four constructs share one health pool; two are active",
+      "sources": ["wowhead_cata_classic", "icy_veins_cata_classic", "repo_cpp"],
+      "evidence": "cross_source_and_repository",
+      "status": "usable_for_planning; health numbers not 4.4.2 verified",
+      "notes": "The repository links SPELL_SHARED_HEALTH to all four golems at reset and tracks four GUIDs."
+    },
+    {
+      "key": "initial_order",
+      "modes": {"10N": "random", "10H": "random", "25N": "random", "25H": "random"},
+      "value": "controller shuffles all four golem GUIDs at each encounter",
+      "sources": ["repo_cpp"],
+      "evidence": "repository_observed",
+      "status": "usable_for_planning",
+      "notes": "Do not encode a fixed first construct."
+    },
+    {
+      "key": "energy_and_rotation_model",
+      "modes": {"10N": "100 to 0 reported", "10H": "100 to 0 reported", "25N": "100 to 0 reported", "25H": "100 to 0 reported"},
+      "value": "external guides describe an energy bar; at about 50 a shield and next construct appear, at 0 the construct deactivates",
+      "sources": ["icy_veins_cata_classic", "wowhead_cata_classic", "repo_cpp", "warcraft_wiki_legacy"],
+      "evidence": "source_conflict",
+      "status": "fidelity_blocked",
+      "conflicts": ["older Icy Veins reports 90-second 100-to-0 and next activation at 45 seconds", "local AI uses difficulty-specific recharge spells and no explicit energy constants"],
+      "notes": "Use aura/activation/deactivation events until DBC or 4.4.2 run evidence is available."
+    },
+    {
+      "key": "active_golem_rotation",
+      "modes": {"10N": "two active", "10H": "two active", "25N": "two active", "25H": "two active"},
+      "value": "Wowhead reports first active for 60s, second after 30s and subsequent changes about every 30s",
+      "sources": ["wowhead_cata_classic", "icy_veins_cata_classic", "repo_cpp"],
+      "evidence": "two_guides_plus_repository_shape",
+      "status": "fidelity_blocked_for_wall_clock",
+      "notes": "Repository confirms queue rotation but expresses timing through recharge aura rather than a 60s constant."
+    },
+    {
+      "key": "power_generator",
+      "modes": {"10N": "+50%, 5yd, 60s reported", "10H": "+50%, 5yd, 60s reported", "25N": "+50%, 5yd, 60s reported", "25H": "+50%, 5yd, 60s reported"},
+      "value": "benefit field; historical wiki also reports 250 mana per 0.5s normal and 500 heroic",
+      "sources": ["wowhead_cata_classic", "icy_veins_cata_classic", "warcraft_wiki_legacy", "repo_cpp"],
+      "evidence": "multiple_strategy_sources_and_repository_summon",
+      "status": "mechanic_usable; duration/mana rates not 4.4.2 verified",
+      "notes": "Arcanotron local AI casts generator at 16s then repeats 20s; heroic Overcharge replaces/augments it."
+    },
+    {
+      "key": "power_conversion",
+      "modes": {"10N": "+10% magic damage/cast speed per stack reported", "10H": "+10% per stack reported", "25N": "+10% per stack reported", "25H": "+10% per stack reported"},
+      "value": "shield-like cast state; guide reports approximately 40s after activation and 10s",
+      "sources": ["wowhead_cata_classic", "icy_veins_cata_classic", "repo_cpp", "repo_current_db_proc"],
+      "evidence": "two_guides_plus_repository_spell/proc_binding",
+      "status": "mechanic_usable; timer fidelity_blocked",
+      "notes": "Local Arcanotron schedules it at H40/N50; current DB has proc cooldown rows for 79729."
+    },
+    {
+      "key": "electrical_discharge",
+      "modes": {"10N": "about 6s; 25k normal reported", "10H": "about 6s; 45k heroic reported", "25N": "about 6s; chain", "25H": "about 6s; chain"},
+      "value": "up to three targets within 8yd; each jump gains 20%; local trigger randomly chooses one next target",
+      "sources": ["wowhead_cata_classic", "warcraft_wiki_legacy", "repo_cpp"],
+      "evidence": "strategy_sources_plus_repository_target_filter",
+      "status": "target_rule_usable; damage values patch-sensitive",
+      "notes": "Wiki historical ranges are 29.25-30.75 normal and 53.625-56.375 heroic."
+    },
+    {
+      "key": "lightning_conductor",
+      "modes": {"10N": "about 15s current-guide report", "10H": "about 15s current-guide report", "25N": "about 15s current-guide report", "25H": "about 15s current-guide report"},
+      "value": "random mark; guide reports about 20s first cast/repeat and 8yd isolation; historical wiki says 10s normal/15s heroic",
+      "sources": ["wowhead_cata_classic", "icy_veins_cata_classic", "warcraft_wiki_legacy", "repo_cpp"],
+      "evidence": "source_conflict_with_repository_event",
+      "status": "fidelity_blocked_for_duration",
+      "notes": "Local AI schedules first at 16s and repeats 21s; heroic hit triggers Nefarius Shadow Infusion."
+    },
+    {
+      "key": "unstable_shield",
+      "modes": {"10N": "about 40s, 10s reported", "10H": "about 40s, 10s reported", "25N": "about 40s, 10s reported", "25H": "about 40s, 10s reported"},
+      "value": "attacks proc Static Shock at attacker; guide reports about 60k within 6yd",
+      "sources": ["wowhead_cata_classic", "warcraft_wiki_legacy", "repo_cpp", "repo_current_db_proc"],
+      "evidence": "two_references_plus_repository_proc",
+      "status": "stop_damage_mechanic_usable; wall-clock threshold blocked",
+      "notes": "Local Electron schedules H40/N50 and current DB has 79900 proc/cooldown rows."
+    },
+    {
+      "key": "incineration_security_measure",
+      "modes": {"10N": "12k/sec normal reported", "10H": "15k/sec heroic reported", "25N": "normal report", "25H": "heroic report"},
+      "value": "four-second cast/channel; current guide says about 10s then every 30s",
+      "sources": ["wowhead_cata_classic", "warcraft_wiki_legacy", "repo_cpp"],
+      "evidence": "two_references_plus_repository_timer",
+      "status": "movement_mechanic_usable; cadence conflict",
+      "notes": "Local AI schedules 10.5s then repeats 26.5s; Wiki historical range is 14.625-15.375 per second."
+    },
+    {
+      "key": "acquiring_target_and_flamethrower",
+      "modes": {"10N": "one random target", "10H": "one random target", "25N": "one random target", "25H": "one random target"},
+      "value": "about 20s report; four-second lead then four-second flamethrower; guide reports 30k/sec normal and 65k/sec heroic",
+      "sources": ["wowhead_cata_classic", "warcraft_wiki_legacy", "repo_cpp"],
+      "evidence": "two_references_plus_repository_target_filter",
+      "status": "target_and_movement_usable; cadence/damage patch-sensitive",
+      "notes": "Local first cast 21s, repeat 26s; current spell scripts randomly retain one target."
+    },
+    {
+      "key": "barrier_and_backdraft",
+      "modes": {"10N": "about 40s; 900k absorb report", "10H": "about 40s; 450k absorb report", "25N": "about 40s", "25H": "about 40s"},
+      "value": "10-second barrier; breaking by enemy spell causes Backdraft",
+      "sources": ["wowhead_cata_classic", "warcraft_wiki_legacy", "repo_cpp"],
+      "evidence": "two_references_plus_repository_aura_remove_rule",
+      "status": "stop_damage_mechanic_usable; absorb/scaling conflict",
+      "conflicts": ["Warcraft Wiki historical barrier values are 150k normal/300k 25 and Backdraft 73.125-76.875k"],
+      "notes": "Local Magmatron schedules H40/N50."
+    },
+    {
+      "key": "chemical_bomb_and_cloud",
+      "modes": {"10N": "+50% damage taken cloud report", "10H": "+50% plus heroic cloud damage report", "25N": "+50% report", "25H": "+50% plus heroic cloud damage report"},
+      "value": "bomb about 25s after activation; cloud about 30s",
+      "sources": ["wowhead_cata_classic", "icy_veins_cata_classic", "warcraft_wiki_legacy", "repo_cpp"],
+      "evidence": "multiple_strategy_sources_plus_repository_summon",
+      "status": "movement_mechanic_usable; exact timer blocked",
+      "notes": "Local Toxitron casts at 27s and repeats 30s; heroic Nefarius can teleport/grip players into cloud."
+    },
+    {
+      "key": "poison_protocol",
+      "modes": {"10N": "first about 15s, second about 25s reported", "10H": "first about 15s, second about 25s reported", "25N": "first about 15s, second about 25s reported", "25H": "first about 15s, second about 25s reported"},
+      "value": "bomb every 3s in one guide; historical wiki says every 1.5s in 25-player and 3s otherwise",
+      "sources": ["wowhead_cata_classic", "warcraft_wiki_legacy", "repo_cpp"],
+      "evidence": "source_conflict_with_repository_single_schedule",
+      "status": "fidelity_blocked",
+      "conflicts": ["Wowhead summarizes one bomb normal/two heroic while local AI schedules one channel once per activation; Wiki gives cadence rather than the same count."],
+      "notes": "Do not schedule bomb count or cadence without observed spell events."
+    },
+    {
+      "key": "poison_soaked_shell",
+      "modes": {"10N": "about 40s; 5k every 2s report", "10H": "about 30s; 20k every 2s report", "25N": "about 40s", "25H": "about 30s"},
+      "value": "10-second shell; attacks stack Soaked in Poison; Expunge/dispels remove it",
+      "sources": ["wowhead_cata_classic", "icy_veins_cata_classic", "repo_cpp", "repo_current_db_proc"],
+      "evidence": "two_guides_plus_repository_spell/proc",
+      "status": "stop_damage_mechanic_usable; numeric scaling/timer blocked",
+      "notes": "Local Toxitron schedules H30/N40; DB includes proc values 80011/91504/91505/91506."
+    },
+    {
+      "key": "arcane_annihilation",
+      "modes": {"10N": "one random target", "10H": "one random target", "25N": "area/three random targets reported", "25H": "area cast"},
+      "value": "about 3s first cast; local repeats in random 6-7s range; current guide reports about 3s and 40k/80k normal/heroic",
+      "sources": ["wowhead_cata_classic", "repo_cpp", "repo_historical_custom_sql"],
+      "evidence": "credible_strategy_plus_repository_target_rule_and_spell_binding",
+      "status": "interrupt_and_target_rule_usable; damage/cadence patch-sensitive",
+      "notes": "Local AI casts one random target in 10-player and area spell in 25-player; historical tooltip comments also describe 25-player three-target behavior."
+    },
+    {
+      "key": "heroic_nefarius_controller",
+      "modes": {"10H": "summoned", "25H": "summoned"},
+      "value": "only longest-active golem is manipulated at once; cloud can cause teleport/grip, generator can be overcharged, Lightning Conductor can receive Shadow Infusion, Acquiring Target can trigger Encasing Shadows",
+      "sources": ["icy_veins_cata_classic", "guiaswow_heroic_legacy", "repo_cpp", "repo_historical_custom_sql"],
+      "evidence": "credible_strategy_sources_plus_repository_event_paths",
+      "status": "heroic_effects_usable; selection order/cadence fidelity_blocked",
+      "notes": "Historical guide reports random upgrades about every 35s; local controller uses event causes and a 30s cooldown."
+    },
+    {
+      "key": "heroic_overcharge",
+      "modes": {"10H": "+100%/grows/explodes reported", "25H": "+100%/grows/explodes reported"},
+      "value": "overcharged generator grows, then removes auras and causes Arcane Blowback",
+      "sources": ["icy_veins_cata_classic", "warcraft_wiki_legacy", "repo_cpp"],
+      "evidence": "two_strategy_references_plus_repository_script",
+      "status": "heroic mechanic_usable; numeric radius/damage blocked",
+      "notes": "Local overcharge schedules generator handling and despawn; no fixed encounter-time order."
+    }
+  ],
+  "timers": [
+    {"key": "controller_link_shared_health", "value": "5s after reset", "modes": ["10N", "10H", "25N", "25H"], "sources": ["repo_cpp"], "evidence": "repository_observed", "status": "implementation_timer_only"},
+    {"key": "controller_first_recharge", "value": "10s after reset", "modes": ["10N", "10H", "25N", "25H"], "sources": ["repo_cpp"], "evidence": "repository_observed", "status": "implementation_timer_only"},
+    {"key": "electron_activation_events", "value": {"lightning_first": "16s", "lightning_repeat": "21s", "electrical_first": "6s", "electrical_repeat": "6s", "shield": {"heroic": "40s", "normal": "50s"}}, "modes": ["10N", "10H", "25N", "25H"], "sources": ["repo_cpp"], "evidence": "repository_observed", "status": "conflicts_with_some_external_timers"},
+    {"key": "magmatron_activation_events", "value": {"incineration_first": "10.5s", "incineration_repeat": "26.5s", "acquiring_first": "21s", "acquiring_repeat": "26s", "barrier": {"heroic": "40s", "normal": "50s"}}, "modes": ["10N", "10H", "25N", "25H"], "sources": ["repo_cpp"], "evidence": "repository_observed", "status": "conflicts_with_some_external_timers"},
+    {"key": "toxitron_activation_events", "value": {"chemical_bomb_first": "27s", "chemical_bomb_repeat": "30s", "poison_protocol_first": "16s; no repeat in local AI", "poison_soaked_shell": {"heroic": "30s", "normal": "40s"}}, "modes": ["10N", "10H", "25N", "25H"], "sources": ["repo_cpp"], "evidence": "repository_observed", "status": "poison_protocol_fidelity_blocked"},
+    {"key": "arcanotron_activation_events", "value": {"power_generator_first": "16s", "power_generator_repeat": "20s", "arcane_first": "3.3s", "arcane_repeat": "random 6-7s", "power_conversion": {"heroic": "40s", "normal": "50s"}}, "modes": ["10N", "10H", "25N", "25H"], "sources": ["repo_cpp"], "evidence": "repository_observed", "status": "implementation_timer_only"},
+    {"key": "wowhead_rotation_report", "value": {"first_active": "60s", "second_activation": "30s later", "subsequent": "about 30s", "power_generator": "15s then about 20s", "unstable_shield": "about 40s", "chemical_bomb": "about 25s", "poison_protocol": "about 15s then 25s later"}, "modes": ["10N", "10H", "25N", "25H"], "sources": ["wowhead_cata_classic"], "evidence": "guide_reported", "status": "fidelity_blocked_for_fixed_schedule"},
+    {"key": "nefarius_internal_events", "value": {"intro": "4.7s after summon", "chemical_teleport": "2s", "grip_after_teleport": "0.1s", "talk_after_grip": "2s", "teleport_back_after_talk": "1.3s", "overcharge_after_generator": "10s", "overcharge_talk": "5.4s", "shadow_infusion_talk": "6s", "encasing_shadows_cast": "0.3s", "encasing_talk": "5s", "ability_cooldown": "30s"}, "modes": ["10H", "25H"], "sources": ["repo_cpp"], "evidence": "repository_observed", "status": "implementation_timer_only"}
+  ],
+  "random_rules": [
+    {"key": "controller_order", "value": "random shuffle of all four golem GUIDs at each encounter", "modes": ["10N", "10H", "25N", "25H"], "sources": ["repo_cpp"], "evidence": "repository_observed", "status": "usable"},
+    {"key": "electrical_chain_next_target", "value": "randomly retain one eligible next target; chain damage +20% per jump", "modes": ["10N", "10H", "25N", "25H"], "sources": ["warcraft_wiki_legacy", "repo_cpp"], "evidence": "source_plus_repository", "status": "usable"},
+    {"key": "acquiring_target", "value": "randomly retain one eligible target", "modes": ["10N", "10H", "25N", "25H"], "sources": ["wowhead_cata_classic", "repo_cpp"], "evidence": "source_plus_repository", "status": "usable"},
+    {"key": "poison_bomb_fixate", "value": "sample up to 25 random eligible targets; remove targets within 10yd of summoner when alternatives remain; randomly retain one and fixate", "modes": ["10N", "10H", "25N", "25H"], "sources": ["warcraft_wiki_legacy", "repo_cpp"], "evidence": "source_plus_repository", "status": "usable_for_targeting"},
+    {"key": "arcane_targeting", "value": {"10N": "one random target", "10H": "one random target", "25N": "area cast; guide reports three targets", "25H": "area cast"}, "modes": ["10N", "10H", "25N", "25H"], "sources": ["wowhead_cata_classic", "repo_cpp"], "evidence": "source_plus_repository", "status": "usable_target_rule; exact count blocked"},
+    {"key": "nefarius_selection", "value": "historical guide says random active golem; local AI chooses longest-active golem and only accepts one ability while cooldown is clear", "modes": ["10H", "25H"], "sources": ["guiaswow_heroic_legacy", "repo_cpp"], "evidence": "source_conflict", "status": "fidelity_blocked"}
+  ],
+  "difficulty_scaling": [
+    {"key": "reported_shared_health", "values": {"10N": "32.2M", "10H": "54.1M", "25N": "99.2M", "25H": "164.9M"}, "sources": ["wowhead_cata_classic"], "evidence": "guide_reported", "status": "not_4_4_2_verified"},
+    {"key": "heroic_controller", "values": {"10N": false, "10H": true, "25N": false, "25H": true}, "sources": ["icy_veins_cata_classic", "repo_cpp"], "evidence": "strategy_plus_repository", "status": "usable"},
+    {"key": "reported_damage_delta", "values": {"arcane": "40k normal / 80k heroic (Wowhead summary)", "electrical": "25k normal / 45k heroic (Wowhead summary)", "lightning": "25k normal / 50k heroic (Wowhead summary)", "incineration": "12k/sec normal / 15k/sec heroic", "flamethrower": "30k/sec normal / 65k/sec heroic", "poison_soaked": "5k every 2s normal / 20k every 2s heroic"}, "sources": ["wowhead_cata_classic"], "evidence": "guide_reported", "status": "damage_values_fidelity_blocked"},
+    {"key": "historical_damage_ranges", "values": {"arcane_heroic": "102.375-107.625k", "electrical_heroic": "53.625-56.375k", "static_shock": "58.5-61.5k", "backdraft": "73.125-76.875k", "poison_bomb": "146.25-153.75k normal; 195-205k heroic"}, "sources": ["warcraft_wiki_legacy"], "evidence": "legacy_reference", "status": "not_4_4_2_verified"}
+  ],
+  "heroic_controller": [
+    {"key": "summon", "value": "Nefarius is summoned only when controller starts in heroic", "modes": ["10H", "25H"], "sources": ["repo_cpp"], "evidence": "repository_observed", "status": "usable"},
+    {"key": "shadow_infusion", "value": "Lightning Conductor hit can cause Shadow Infusion; Lightning Conductor is removed and Shadow Conductor is cast", "modes": ["10H", "25H"], "sources": ["icy_veins_cata_classic", "repo_cpp"], "evidence": "strategy_plus_repository", "status": "usable"},
+    {"key": "encasing_shadows", "value": "Acquiring Target can request Encasing Shadows; local event casts after 0.3s", "modes": ["10H", "25H"], "sources": ["icy_veins_cata_classic", "repo_cpp"], "evidence": "strategy_plus_repository", "status": "usable"},
+    {"key": "chemical_grip", "value": "Chemical Cloud can trigger teleport, Grip of Death, then teleport back", "modes": ["10H", "25H"], "sources": ["icy_veins_cata_classic", "guiaswow_heroic_legacy", "repo_cpp"], "evidence": "multiple_sources_plus_repository", "status": "usable"},
+    {"key": "overcharged_generator", "value": "Power Generator can be overcharged; growth/explosion and Arcane Blowback follow", "modes": ["10H", "25H"], "sources": ["icy_veins_cata_classic", "warcraft_wiki_legacy", "repo_cpp"], "evidence": "multiple_sources_plus_repository", "status": "usable_mechanic; values_blocked"},
+    {"key": "order_and_cadence", "value": "historical guide reports random upgrade about every 35s; local controller reacts to events and has 30s cooldown", "modes": ["10H", "25H"], "sources": ["guiaswow_heroic_legacy", "repo_cpp"], "evidence": "source_conflict", "status": "fidelity_blocked"}
+  ],
+  "phase_reset_credit": [
+    {"key": "reset", "value": "summon golem group; link shared health after 5s; schedule first recharge at 10s", "modes": ["10N", "10H", "25N", "25H"], "sources": ["repo_cpp"], "evidence": "repository_observed", "status": "usable_implementation_contract"},
+    {"key": "start", "value": "set IN_PROGRESS; clear Static Shock/Poison Bomb/Arcane Annihilator/Flamethrower worldstates; summon Nefarius heroic; zone golems; activate queue", "modes": ["10N", "10H", "25N", "25H"], "sources": ["repo_cpp"], "evidence": "repository_observed", "status": "usable_implementation_contract"},
+    {"key": "deactivation", "value": "activated aura expiry casts Shutting Down; inactive applies Powered Down and makes golem not selectable; queue recharge continues", "modes": ["10N", "10H", "25N", "25H"], "sources": ["repo_cpp"], "evidence": "repository_observed", "status": "usable_implementation_contract"},
+    {"key": "fail", "value": "constructs disengage/despawn; boss state FAIL; raid debuffs removed; summons despawned; controller evades", "modes": ["10N", "10H", "25N", "25H"], "sources": ["repo_cpp"], "evidence": "repository_observed", "status": "usable_implementation_contract"},
+    {"key": "done", "value": "controller calls _JustDied; constructs disengage; debuffs removed; instance forwards Omnotron DONE to generic Nefarius credit", "modes": ["10N", "10H", "25N", "25H"], "sources": ["repo_cpp", "repo_instance_loader"], "evidence": "repository_observed", "status": "usable_implementation_contract"},
+    {"key": "registration", "value": "base boss/construct IDs map into instance data; loader calls AddSC_boss_omnotron_defense_system; historical encounter row is 1027/42180", "modes": ["10N", "10H", "25N", "25H"], "sources": ["repo_instance_loader", "repo_historical_db"], "evidence": "repository_observed", "status": "audit_complete"}
+  ],
+  "conflicts": [
+    "Wowhead current guide: 60s/30s rotation and about 40s shields; local AI: recharge aura and H40/N50 (or Toxitron H30/N40); older Icy Veins: 90s energy and 45s next activation.",
+    "Poison Protocol counts/cadence differ: Wowhead one normal/two heroic summary, Warcraft Wiki 3s (1.5s in 25), local AI one channel schedule per activation.",
+    "Lightning Conductor duration differs: current guide about 15s in all modes versus historical 10s normal/15s heroic.",
+    "Barrier absorbs and ability damage differ between current guide and historical wiki/tooltip pages.",
+    "Heroic Nefarius cadence differs: historical roughly 35s random upgrade versus local event-triggered 30s cooldown."
+  ],
+  "unresolved": [
+    "exact_4_4_2_client_build_and_hotfix_cutoff",
+    "energy_drain_rate_and_exact_shield_threshold",
+    "activation_duration_and_rotation_cadence",
+    "mode_specific_wall_clock_shield_timers",
+    "poison_protocol_bomb_count_and_cadence",
+    "lightning_conductor_duration_by_mode",
+    "exact_4_4_2_health_damage_and_barrier_scaling",
+    "heroic_nefarius_selection_order_and_cadence",
+    "berserk_presence_and_duration"
+  ]
+}

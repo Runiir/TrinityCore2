@@ -1,0 +1,165 @@
+{
+  "schema_version": 1,
+  "contract_schema": "cata_raid_encounter_contract_v1",
+  "raid": "blackwing_descent",
+  "boss_slug": "nefarian",
+  "modes": ["10N", "10H", "25N", "25H"],
+  "fidelity_state": "fidelity_blocked",
+  "dossier_path": "docs/bot_raids/strategies/t11/blackwing_descent/nefarian.md",
+  "ledger_path": "experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_ledger_v1.json",
+  "unresolved_material_count": 10,
+  "encounter": "nefarian",
+  "instance": "blackwing_descent",
+  "scope": ["10N", "10H", "25N", "25H"],
+  "research_state": "planning_only_not_live_validated",
+  "fidelity_policy": "Use observed aura/cast/phase events. Do not schedule values marked fidelity_blocked.",
+  "evidence_rule": "Behavior-changing claims require two independent strategy sources or one credible strategy source plus repository confirmation.",
+  "source_catalog": [
+    {
+      "id": "wowhead_cata_classic",
+      "title": "Nefarian Strategy Guide - Blackwing Descent Raid Cataclysm Classic",
+      "publisher": "Wowhead",
+      "author": "Beanna",
+      "url": "https://www.wowhead.com/cata/guide/raids/blackwing-descent/nefarian-strategy",
+      "edition": "Patch 4.4.2",
+      "published_or_updated": "2024-06-10",
+      "accessed": "2026-08-11",
+      "scope_note": "Current Classic guide; no reliable client build or hotfix cutoff exposed."
+    },
+    {
+      "id": "icy_veins_cata_classic",
+      "title": "Nefarian Encounter Guide: Strategy, Abilities, Loot",
+      "publisher": "Icy Veins",
+      "author": "Abide",
+      "url": "https://www.icy-veins.com/cataclysm-classic/nefarian-encounter-guide-strategy-abilities-loot",
+      "published_or_updated": "2024-07-29",
+      "accessed": "2026-08-11",
+      "scope_note": "Independent Cataclysm Classic guide; exact 4.4.2 build metadata not stated."
+    },
+    {
+      "id": "icy_veins_legacy_heroic",
+      "title": "Nefarian DPS Strategy Guide (Heroic Mode included)",
+      "publisher": "Icy Veins",
+      "url": "https://www.icy-veins.com/wow/nefarian-dps-strategy",
+      "published_or_updated": "legacy page, approximately 14 years old (page metadata)",
+      "accessed": "2026-08-11",
+      "scope_note": "Historical Cataclysm strategy; used only for independent target-count/platform guidance."
+    },
+    {
+      "id": "warcraft_tavern_cata",
+      "title": "Nefarian Raid Guide - Cataclysm Classic",
+      "publisher": "Warcraft Tavern",
+      "url": "https://www.warcrafttavern.com/cataclysm/guides/nefarian-raid-guide/",
+      "published_or_updated": "publication metadata not exposed",
+      "accessed": "2026-08-11",
+      "scope_note": "Qualitative Classic heroic Dominion/Cinders reference; exact counts not relied upon."
+    },
+    {
+      "id": "repo_nefarians_end",
+      "title": "Nefarian's End controller, Onyxia, adds and spell scripts",
+      "publisher": "repository",
+      "revision": "889d38cc9451c2b8104db142ce069593b4647a41",
+      "path": "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_nefarians_end.cpp",
+      "lines": "374-910, 912-1073, 1139-1286, 1288-1388, 1390-1622, 1724-2040",
+      "accessed": "2026-08-11",
+      "scope_note": "Current checkout implementation evidence, not retail proof."
+    },
+    {
+      "id": "repo_instance_header_loader",
+      "title": "Blackwing Descent instance mapping, IDs and script loader",
+      "publisher": "repository",
+      "revision": "889d38cc9451c2b8104db142ce069593b4647a41",
+      "paths": [
+        "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/blackwing_descent.h:25-38,76-84,145-154,225-235",
+        "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/instance_blackwing_descent.cpp:31-57,197-200,276-290,350-380,462-464,490-529",
+        "src/server/scripts/EasternKingdoms/eastern_kingdoms_script_loader.cpp:75-83,307-315"
+      ],
+      "accessed": "2026-08-11",
+      "scope_note": "Current checkout lifecycle, availability and loader evidence."
+    },
+    {
+      "id": "repo_historical_sql",
+      "title": "Historical Nefarian creature templates and encounter registration",
+      "publisher": "repository SQL",
+      "revision": "889d38cc9451c2b8104db142ce069593b4647a41",
+      "paths": [
+        "sql/old/4.3.4/TDB00_to_TDB01_updates/world/004_creature_template.sql:3930-3932,12924,12933-12945",
+        "sql/old/4.3.4/world/12_2016_09_28/2016_09_02_00_world.sql:12",
+        "sql/old/4.3.4/TDB04_to_TDB05_updates/world/066_instance_encounters.sql:462"
+      ],
+      "accessed": "2026-08-11",
+      "scope_note": "Historical base/difficulty templates and encounter row; no ScriptName binding found in searched SQL."
+    }
+  ],
+  "repository_evidence": [
+    "Onyxia starts the encounter and Nefarian prepares landing after a local 24s event; Nefarian cannot be killed before phase 3",
+    "Children of Deathwing triggers at sibling distance <=50yd",
+    "Electrocute is scheduled when Nefarian crosses 90,80,...10% health; local delay is 5s and local Onyxia charge increment is 17 stacks",
+    "three prototypes spawn on fixed platforms; local Blast Nova first cast is 3.5s and repeats 13s",
+    "normal phase 3 waits for all three prototype deaths; heroic schedules phase 3 after the first prototype death",
+    "Dominion builds four portal stalkers per controlled player and selects the farthest portal; local target cap is 5 in 10-player and 2 in 25-player",
+    "Explosive Cinders is scheduled heroic in phase 2 and detonates on aura expiry",
+    "reset/evade removes heroic auras, despawns actors, sets FAIL and schedules a 30s respawn"
+  ],
+  "roles": {
+    "tanks": ["separate_onyxia_nefarian", "face_breath_away", "kite_bone_warriors"],
+    "platform_teams": ["one_healer_and_interrupt_per_platform", "interrupt_every_blast_nova"],
+    "raid": ["electrocute_defensive_rotation", "stay_out_of_breath_and_lightning", "avoid_shadowblaze_fire"],
+    "heroic": ["break_dominion_before_portal", "move_explosive_cinders_off_platform"]
+  },
+  "gates": [
+    "dragons_over_50yd_apart",
+    "onyxia_energy_and_lightning_facing",
+    "electrocute_health_threshold",
+    "bone_warrior_kite_and_reanimation_prevention",
+    "three_platform_assignment",
+    "blast_nova_interrupt",
+    "prototype_death_phase_transition",
+    "shadowblaze_kite"
+  ],
+  "heroic_gates": [
+    "dominion_control_and_farthest_portal",
+    "siphon_power_and_free_your_mind",
+    "explosive_cinders_off_platform",
+    "heroic_prototype_first_death_transition"
+  ],
+  "difficulty_matrix": {
+    "10N": {
+      "health_reported": {"onyxia": "7.0M", "nefarian": "28.5M", "prototype_each": "6.9M"},
+      "heroic": false,
+      "behavior_delta": "normal three-phase contract; exact 4.4.2 coefficients and target counts unresolved"
+    },
+    "10H": {
+      "health_reported": {"onyxia": "9.9M", "nefarian": "54.4M", "prototype_each": "9.8M"},
+      "heroic": true,
+      "behavior_delta": "Dominion and Explosive Cinders; local Dominion cap 5 conflicts with legacy report 1"
+    },
+    "25N": {
+      "health_reported": {"onyxia": "24.7M", "nefarian": "99.6M", "prototype_each": "6.9M"},
+      "heroic": false,
+      "behavior_delta": "normal three-platform contract; exact 25-player spell scaling unresolved"
+    },
+    "25H": {
+      "health_reported": {"onyxia": "34.8M", "nefarian": "179.3M", "prototype_each": "9.8M"},
+      "heroic": true,
+      "behavior_delta": "Dominion and Explosive Cinders; local Dominion cap 2 conflicts with legacy report 5"
+    }
+  },
+  "unresolved": [
+    "exact_4_4_2_client_build_and_hotfix_cutoff",
+    "onyxia_energy_tick_period_and_max_stack_representation",
+    "electrocute_onyxia_charge_local_17_vs_guides_25",
+    "landing_and_phase_wall_clock_timers",
+    "blast_nova_cadence_local_3_5_plus_13_vs_guide_about_8",
+    "shadowflame_barrage_and_explosive_cinders_target_counts_and_cadence",
+    "dominion_target_count_local_5_or_2_vs_legacy_1_or_5",
+    "whether_local_dominion_repeats_in_phase_three",
+    "shadowblaze_tick_period_and_room_coverage",
+    "all_mode_specific_health_damage_and_spell_coefficients"
+  ],
+  "status_labels": {
+    "fidelity_blocked": "Conflicting or unverified value; never use as fixed bot timing/target count.",
+    "repository_observed": "Current checkout behavior; confirms implementation only.",
+    "guide_reported": "External strategy value; not automatically 4.4.2 truth."
+  }
+}

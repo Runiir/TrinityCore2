@@ -1,0 +1,176 @@
+{
+  "schema_version": 1,
+  "ledger_schema": "cata_raid_value_timer_ledger_v1",
+  "raid": "blackwing_descent",
+  "boss_slug": "atramedes",
+  "modes": ["10N", "10H", "25N", "25H"],
+  "fidelity_state": "fidelity_blocked",
+  "contract_path": "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_v1.json",
+  "unresolved_material_count": 9,
+  "encounter": "atramedes",
+  "purpose": "sourced_value_and_timer_ledger; no live assertion",
+  "research_as_of": "2026-08-11",
+  "source_catalog": {
+    "wowhead_442": {
+      "title": "Atramedes Strategy Guide - Blackwing Descent Raid Cataclysm Classic",
+      "publisher": "Wowhead",
+      "author": "Beanna",
+      "updated": "2024-06-04",
+      "patch_label": "4.4.2",
+      "url": "https://www.wowhead.com/cata/guide/raids/blackwing-descent/atramedes-strategy",
+      "accessed": "2026-08-11",
+      "used_for": ["health", "sound_and_shields", "ground_air_timing", "damage_examples", "target_descriptions", "sonar_bomb_counts", "heroic_fiends"],
+      "reliability": "current_patch_labelled_strategy_source"
+    },
+    "icy_cata_classic": {
+      "title": "Atramedes Encounter Guide: Strategy, Abilities, Loot - Cataclysm Classic",
+      "publisher": "Icy Veins",
+      "author": "Abide",
+      "updated": "2024-07-29",
+      "patch_label": "Cataclysm Classic",
+      "url": "https://www.icy-veins.com/cataclysm-classic/atramedes-encounter-guide-strategy-abilities-loot",
+      "accessed": "2026-08-11",
+      "used_for": ["sound_and_shields", "ground_air_execution", "gong_policy", "heroic_fiends", "achievement"],
+      "reliability": "independent_current_era_strategy_source"
+    },
+    "icy_original": {
+      "title": "Atramedes Detailed Strategy Guide (Heroic Mode included)",
+      "publisher": "Icy Veins",
+      "author": "Damien",
+      "updated": "2012-10-08",
+      "patch_label": "page says WoD 6.1.2; historical encounter reference, not 4.4.2 authority",
+      "url": "https://www.icy-veins.com/wow/atramedes-strategy-guide-normal-heroic",
+      "accessed": "2026-08-11",
+      "used_for": ["alternate_health", "alternate_phase_durations", "sound_scaling", "target_counts", "heroic_deltas", "fiend_behavior"],
+      "reliability": "independent_historical_strategy_source_only"
+    },
+    "local_cpp": {
+      "title": "TrinityCore Atramedes encounter script",
+      "publisher": "repository",
+      "path": "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_atramedes.cpp",
+      "lines": "37-1141",
+      "accessed": "2026-08-11",
+      "used_for": ["state_machine", "local_timers", "sound_threshold", "gong_ground_air", "target_filters", "air_tracking", "heroic_fiends", "cleanup", "spell_scripts"],
+      "reliability": "current_local_server_baseline_not_live_4.4.2_evidence"
+    },
+    "local_instance_and_loader": {
+      "title": "Blackwing Descent instance mapping and Eastern Kingdoms loader",
+      "publisher": "repository",
+      "paths": [
+        "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/blackwing_descent.h",
+        "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/instance_blackwing_descent.cpp",
+        "src/server/scripts/EasternKingdoms/eastern_kingdoms_script_loader.cpp"
+      ],
+      "lines": "h:25-145; instance:31-505; loader:76-83,308-315",
+      "accessed": "2026-08-11",
+      "used_for": ["entry_ids", "boss_state_mapping", "shield_spawn_group", "summon_forwarding", "respawn", "loader_registration"],
+      "reliability": "repository_confirmation"
+    },
+    "current_tdb": {
+      "title": "TDB full 4.3.4 world dump",
+      "publisher": "repository database",
+      "path": "data/TDB_full_434.22011_2022_01_09/TDB_full_world_434.22011_2022_01_09.sql",
+      "accessed": "2026-08-11",
+      "used_for": ["difficulty_entries", "base_script_name", "variant_rows", "creature_template_values"],
+      "reliability": "local_dump_provenance_not_4.4.2_client_proof"
+    },
+    "sql_updates": {
+      "title": "Atramedes world SQL bindings, creature addons, and historical spawns",
+      "publisher": "repository SQL",
+      "paths": [
+        "sql/updates/world/4.3.4/2022_01_09_01_world.sql",
+        "sql/updates/world/4.3.4/2023_09_15_00_world.sql",
+        "sql/old/custom/world/34_2020_02_21/custom_2019_08_20_00_world_updatepack.sql",
+        "sql/old/4.3.4/world/10_2016_03_12/2015_10_02_00_world.sql"
+      ],
+      "accessed": "2026-08-11",
+      "used_for": ["current_reverberating_binding", "historical_script_bindings", "spell_scripts", "spellclicks", "conditions", "vehicle_accessory", "ten_shield_spawns"],
+      "reliability": "repository_audit_only"
+    }
+  },
+  "mode_matrix": {
+    "10N": {"health_guide": "32.6M", "health_historical": "26.1M", "heroic": false, "gongs_guide": 10, "gongs_effective": 10, "fiends": 0, "guide_phase_conflict": ["85s_ground_40s_air", "80s_ground_40s_air"]},
+    "10H": {"health_guide": "34.8M", "health_historical": "34.8M", "heroic": true, "gongs_spawned_historical_db": 10, "gongs_effective_guide": 7, "fiends": "heroic_only", "guide_phase_conflict": ["85s_ground_40s_air", "90s_ground_30s_air"]},
+    "25N": {"health_guide": "97.9M", "health_historical": "78.3M", "heroic": false, "gongs_guide": 10, "gongs_effective": 10, "fiends": 0, "guide_phase_conflict": ["85s_ground_40s_air", "80s_ground_40s_air"]},
+    "25H": {"health_guide": "103M", "health_historical": "103M", "heroic": true, "gongs_spawned_historical_db": 10, "gongs_effective_guide": 7, "fiends": "heroic_only", "guide_phase_conflict": ["85s_ground_40s_air", "90s_ground_30s_air"]}
+  },
+  "values": [
+    {"key": "atramedes_health_current_guide", "10N": "32.6M", "10H": "34.8M", "25N": "97.9M", "25H": "103M", "source": "wowhead_442", "confidence": "current_guide_reported"},
+    {"key": "atramedes_health_historical_conflict", "10N": "26.1M", "10H": "34.8M", "25N": "78.3M", "25H": "103M", "source": "icy_original", "confidence": "historical_conflicting_normal_values"},
+    {"key": "sound_failure_threshold", "value": 100, "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442+icy_cata_classic+local_cpp:alternate_power_max", "confidence": "two_current_guides_and_repository_confirmation"},
+    {"key": "silence_is_golden_world_state", "value": "set_when_any_player_reaches_50_sound", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:spell_atramedes_sound_bar", "confidence": "implementation_only_achievement_state"},
+    {"key": "gongs_spawned", "value": 10, "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442+icy_cata_classic+historical_map669_spawn_sql", "confidence": "two_current_guides_and_repository_spawn_confirmation"},
+    {"key": "heroic_effective_gongs", "value": 7, "modes": ["10H", "25H"], "source": "wowhead_442+icy_cata_classic+local_cpp_destroy_shield", "confidence": "two_current_guides_and_repository_confirmation"},
+    {"key": "vertigo_effect", "value": "5s_stun_and_50_percent_damage_taken_increase_guide;local_manual_interrupt_and_aura", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442+icy_cata_classic+local_cpp:resonating_clash_ground", "confidence": "two_current_guides_and_repository_confirmation_but_spell_coefficients_dbc"},
+    {"key": "modulation_guide_damage_and_sound", "10N": "about_32k_shadow_and_plus10_sound", "10H": "about_50k_shadow_and_plus10_sound", "25N": "about_32k_shadow_and_plus10_sound", "25H": "about_50k_shadow_and_plus10_sound", "source": "wowhead_442", "confidence": "current_guide_reported"},
+    {"key": "modulation_local_scaling", "value": "adds_target_alternate_power_percent_to_base_hit_damage", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:spell_atramedes_modulation", "confidence": "implementation_only_dbc_base_unknown"},
+    {"key": "searing_flame_damage", "10N": "20k_every2s_for6s", "10H": "40k_every2s_for6s", "25N": "20k_every2s_for6s", "25H": "40k_every2s_for6s", "source": "wowhead_442+icy_cata_classic", "confidence": "current_guide_examples"},
+    {"key": "searing_flame_fire_scaling", "value": "plus50_percent_fire_damage_each_tick;90k_normal_or180k_heroic_total_guide", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442", "confidence": "current_guide_reported"},
+    {"key": "roaring_flame_ground_patch", "value": "45s_duration;10k_normal_or20k_heroic_initial;8k_normal_or10k_heroic_periodic;plus5_or10_sound", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442", "confidence": "current_guide_reported_conflicts_historical_30s"},
+    {"key": "sonic_breath_damage_and_sound", "10N": "20k_fire_per_second_plus20_sound", "10H": "30k_fire_per_second_plus30_sound", "25N": "20k_fire_per_second_plus20_sound", "25H": "30k_fire_per_second_plus30_sound", "source": "wowhead_442", "confidence": "current_guide_reported"},
+    {"key": "roaring_flame_breath_damage_and_sound", "10N": "17k_fire_per_second_plus3_sound", "10H": "30k_fire_per_second_plus10_sound", "25N": "17k_fire_per_second_plus3_sound", "25H": "30k_fire_per_second_plus10_sound", "source": "wowhead_442", "confidence": "current_guide_reported_conflicts_historical_scaling"},
+    {"key": "sonar_bomb_damage_and_sound", "10N": "20k_arcane_within6yd_plus20_sound", "10H": "30k_arcane_within6yd_plus30_sound", "25N": "20k_arcane_within6yd_plus20_sound", "25H": "30k_arcane_within6yd_plus30_sound", "source": "wowhead_442", "confidence": "current_guide_reported"},
+    {"key": "heroic_all_ability_delta", "value": "current_icy_says_all_listed_abilities_except_roaring_flame_breath_do_more_damage_and_sound_and_scale;sonar_bombs_fall_faster", "modes": ["10H", "25H"], "source": "icy_cata_classic+wowhead_442", "confidence": "two_current_strategy_sources_but_exact_coefficients_unresolved"},
+    {"key": "heroic_fiend_health_historical", "10H": "155k", "25H": "232k", "source": "icy_original", "confidence": "historical_guide_only"},
+    {"key": "heroic_fiend_sound", "value": "plus10_sound_per_Obnoxious_cast", "modes": ["10H", "25H"], "source": "wowhead_442+icy_cata_classic+local_cpp_spell_id", "confidence": "two_current_guides_and_repository_confirmation"}
+  ],
+  "timers": [
+    {"key": "ground_air_duration_current_wowhead", "value": "85s_ground_40s_air", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442", "confidence": "current_guide_approximation"},
+    {"key": "ground_air_duration_current_icy", "value": "90s_ground_30s_air", "modes": ["10N", "10H", "25N", "25H"], "source": "icy_cata_classic", "confidence": "current_guide_approximation_conflicts_wowhead"},
+    {"key": "ground_air_duration_historical_icy", "value": "80s_ground_40s_air", "modes": ["10N", "10H", "25N", "25H"], "source": "icy_original", "confidence": "historical_guide_only"},
+    {"key": "local_initial_ground_schedule", "value": "close_door5s;modulation13s;sonar_pulse14_5s;sonic_breath24s;searing_flame46s;liftoff91s", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:JustEngagedWith", "confidence": "implementation_only"},
+    {"key": "local_ground_repeats", "value": "sonar_pulse11s;modulation_random22_to26s;sonic_breath_random42_to43s", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:UpdateAI", "confidence": "implementation_only"},
+    {"key": "local_liftoff_air", "value": "MoveTakeoff_to_point_then_land_event31s;movement_duration_unmeasured", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:MovementInform/UpdateAI", "confidence": "implementation_only"},
+    {"key": "local_after_landing_ground_schedule", "value": "reengage800ms;sonar14s;modulation13s;sonic_breath22s;searing_flame51s;liftoff93s", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:MovementInform", "confidence": "implementation_only"},
+    {"key": "modulation_after_searing", "value": "rescheduled6s_after_searing_cast", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:EVENT_SEARING_FLAME", "confidence": "implementation_only_patch_comment_4_1"},
+    {"key": "sonar_pulse_local_summon_pipeline", "value": "periodic_trigger400ms_after_summon;movement800ms_later;despawn_at_spline_duration", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:JustSummoned", "confidence": "implementation_only"},
+    {"key": "local_heroic_nefarius", "value": "intro10s;first_fiend30s;repeat35s;reset_at_liftoff;restart30s_after_landing", "modes": ["10H", "25H"], "source": "local_cpp:npc_atramedes_lord_victor_nefarius", "confidence": "implementation_only"},
+    {"key": "heroic_fiend_guide", "value": "current_wowhead_every30s_ground;historical_icy_twice_per_ground_sometimes1_or3", "modes": ["10H", "25H"], "source": "wowhead_442+icy_original", "confidence": "material_guide_conflict"},
+    {"key": "local_fiend_target_pipeline", "value": "focus1s;chase1s;obnoxious1s_after_attachment_then_repeat2_5s", "modes": ["10H", "25H"], "source": "local_cpp:npc_atramedes_obnoxious_fiend", "confidence": "implementation_only"},
+    {"key": "fiend_obnoxious_guide_period", "value": "plus10_sound_every1_5s_current_wowhead", "modes": ["10H", "25H"], "source": "wowhead_442", "confidence": "current_guide_conflicts_local2_5s"},
+    {"key": "air_gong_redirection_local", "value": "interrupt_and_move_to_shield_after2s;track_clicker_after_arrival;nearest100yd_fallback", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:ReverberatingFlameAI", "confidence": "implementation_only"}
+  ],
+  "targeting_and_scaling": [
+    {"key": "sonic_breath_local_target", "target": "area_targets_excluding_current_victim_then_random_one", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:spell_atramedes_sonic_breath", "confidence": "implementation_only"},
+    {"key": "sonic_breath_guide_target_conflict", "target": "current_wowhead_random;historical_icy_highest_sound_and_not_tank", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442+icy_original", "confidence": "material_conflict_unresolved"},
+    {"key": "roaring_flame_breath_local_tracking", "target": "tracking_flames_follow_summoner;air_gong_redirects_to_shield_then_clicker", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:ReverberatingFlameAI+resonating_clash_air", "confidence": "repository_confirmation"},
+    {"key": "roaring_flame_breath_guide_target_conflict", "target": "current_wowhead_random_player;historical_icy_highest_sound", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442+icy_original", "confidence": "material_conflict_unresolved"},
+    {"key": "sonar_pulse_guide_target", "target": "four_disks_toward_random_raid_locations", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442+icy_original", "confidence": "two_strategy_sources_but_historical_target_priority_uncertain"},
+    {"key": "sonar_bomb_guide_target_counts", "10N": "3_locations", "10H": "6_locations", "25N": "3_locations", "25H": "6_locations", "source": "wowhead_442", "confidence": "current_guide_reported_conflicts_historical_5_10n_8_25n"},
+    {"key": "sonar_bomb_historical_target_counts", "10N": "5_locations", "10H": "5_locations", "25N": "8_locations", "25H": "8_locations", "source": "icy_original", "confidence": "historical_guide_only"},
+    {"key": "destroy_shield_local_target", "target": "random_selectable_shield_in_spell_area;not_selectable_shields_removed", "modes": ["10H", "25H"], "source": "local_cpp:spell_atramedes_destroy_shield", "confidence": "implementation_only_area_from_dbc"},
+    {"key": "fiend_local_target", "target": "random_eligible_player_within100yd_excluding_Pestered", "modes": ["10H", "25H"], "source": "local_cpp:npc_atramedes_obnoxious_fiend", "confidence": "implementation_only"},
+    {"key": "modulation_local_damage_scaling", "target": "each_hit_damage_plus_target_alternate_power_percent", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:spell_atramedes_modulation", "confidence": "implementation_only"},
+    {"key": "heroic_scaling_delta", "target": "current_icy_reports_higher_damage_and_sound_for_all_listed_abilities_except_roaring_flame_breath;wowhead_examples_indicate_higher_mode_values", "modes": ["10H", "25H"], "source": "icy_cata_classic+wowhead_442", "confidence": "two_current_sources_but_exact_coefficients_unresolved"}
+  ],
+  "phase_reset_credit": [
+    {"key": "reset", "behavior": "Reset calls _Reset and sets intro phase; custom noisy-player and shield GUID sets are not explicitly cleared", "source": "local_cpp:201-205,484-489", "confidence": "repository_fact_engine_reconstruction_unresolved"},
+    {"key": "engage", "behavior": "sends encounter engage, resets Silence is Golden world state, casts Devastation trigger and Sound Bar, schedules ground phase; Heroic summons Nefarius", "source": "local_cpp:207-225", "confidence": "repository_confirmation"},
+    {"key": "evade", "behavior": "despawn summons; disengage; set FAIL; remove player Nefarius vehicle aura; reopen door; despawn boss; instance respawns shields and boss after30s", "source": "local_cpp:227-237+instance_blackwing_descent.cpp:262-267,458-461", "confidence": "repository_confirmation"},
+    {"key": "death", "behavior": "_JustDied; disengage; remove vehicle aura; reopen door; death talk; instance DONE despawns shield group and notifies generic Nefarius", "source": "local_cpp:239-247+instance_blackwing_descent.cpp:268-274", "confidence": "repository_confirmation_with_base_class_credit"},
+    {"key": "boss_state_mapping", "behavior": "creature41442 maps to DATA_ATRAMEDES=3; loader invokes AddSC_boss_atramedes", "source": "blackwing_descent.h+instance_blackwing_descent.cpp+eastern_kingdoms_script_loader.cpp", "confidence": "repository_confirmation"},
+    {"key": "shield_spawn_and_persistence", "behavior": "instance Create and save-load spawn shield group400; historical map669 SQL lists ten shield creature spawns; used shields become not selectable and are despawned with encounter group", "source": "instance_blackwing_descent.cpp+historical_spawn_sql+local_cpp:npc_shield", "confidence": "repository_confirmation_historical_db"},
+    {"key": "intro_state", "behavior": "instance stores Atramedes intro state; after dwarf groups die it makes the Ancient Bell selectable and can summon/respawn Atramedes", "source": "instance_blackwing_descent.cpp:310-346,451-500", "confidence": "repository_confirmation"}
+  ],
+  "conflicts": [
+    {"key": "phase_duration", "wowhead_442": "85s_ground_40s_air", "icy_cata_classic": "90s_ground_30s_air", "icy_original": "80s_ground_40s_air", "local_cpp": "91s_first_liftoff_31s_air_event_93s_later_liftoff_plus_movement", "resolution": "do_not_schedule_exact_client_phase_timestamp"},
+    {"key": "sonic_breath_cadence", "wowhead_442": "every20s", "icy_cata_classic": "every40s", "icy_original": "twice_per_ground_phase", "local_cpp": "24s_then_random42_to43s;after_landing22s", "resolution": "local_baseline_only_until_live_validation"},
+    {"key": "sonic_breath_target", "wowhead_442": "random_player", "icy_original": "highest_sound_not_tank", "local_cpp": "random_eligible_excluding_victim", "resolution": "unresolved_4_4_2_target_rule"},
+    {"key": "sonar_bomb_counts", "wowhead_442": "3_normal_6_heroic", "icy_original": "5_10_player_8_25_player", "local_cpp": "trigger_only_no_count", "resolution": "unresolved_dbc_mode_target_count"},
+    {"key": "fiend_cadence", "wowhead_442": "every30s_ground", "icy_original": "twice_per_ground_sometimes1_or3", "local_cpp": "30s_then35s_and30s_restart_after_landing", "resolution": "unresolved_heroic_spawn_schedule"},
+    {"key": "fiend_obnoxious_period", "wowhead_442": "1_5s", "local_cpp": "2_5s", "resolution": "unresolved_spell_aura_period"},
+    {"key": "ability_scaling", "icy_cata_classic": "all_listed_except_roaring_flame_breath_higher_and_faster_bombs", "wowhead_442": "individual_higher_damage_examples", "icy_original": "sound_and_damage_scaling_descriptions_differ", "resolution": "unresolved_dbc_coefficients"},
+    {"key": "normal_health", "wowhead_442": "32_6M_10N_97_9M_25N", "icy_original": "26_1M_10N_78_3M_25N", "resolution": "unresolved_build_hotfix_provenance"}
+  ],
+  "unresolved": [
+    "exact_442_client_build_and_hotfix_cutoff",
+    "live_ground_air_movement_and_event_timestamps_all_modes",
+    "exact_sound_gain_dbc_coefficients_and_target_radii",
+    "sonic_breath_random_vs_highest_sound_target_selection",
+    "roaring_flame_breath_initial_target_selection",
+    "sonar_bomb_target_count_by_mode",
+    "heroic_fiend_spawn_period_count_obnoxious_period_and_damage",
+    "ai_guid_reconstruction_reset_after_evade",
+    "whether_historical_custom_sql_pack_is_applied_to_current_database"
+  ]
+}

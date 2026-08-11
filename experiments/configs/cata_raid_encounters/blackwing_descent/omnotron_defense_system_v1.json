@@ -1,0 +1,186 @@
+{
+  "schema_version": 1,
+  "contract_schema": "cata_raid_encounter_contract_v1",
+  "raid": "blackwing_descent",
+  "boss_slug": "omnotron_defense_system",
+  "modes": ["10N", "10H", "25N", "25H"],
+  "fidelity_state": "fidelity_blocked",
+  "dossier_path": "docs/bot_raids/strategies/t11/blackwing_descent/omnotron_defense_system.md",
+  "ledger_path": "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_ledger_v1.json",
+  "unresolved_material_count": 9,
+  "encounter": "omnotron_defense_system",
+  "instance": "blackwing_descent",
+  "scope": ["10N", "10H", "25N", "25H"],
+  "research_state": "planning_only_not_live_validated",
+  "fidelity_policy": "Do not schedule values marked fidelity_blocked; prefer observed encounter events over guide timers.",
+  "evidence_rule": "Behavior-changing claims require two independent strategy sources or one credible strategy source plus repository confirmation.",
+  "source_catalog": [
+    {
+      "id": "wowhead_cata_classic",
+      "title": "Omnotron Defense System Strategy Guide",
+      "publisher": "Wowhead",
+      "author": "Beanna",
+      "url": "https://www.wowhead.com/cata/guide/raids/blackwing-descent/omnotron-defense-system-strategy",
+      "published_or_updated": "2024-06-04 (page metadata)",
+      "accessed": "2026-08-11",
+      "scope_note": "Cataclysm guide; no reliable Classic 4.4.2 build or hotfix cutoff exposed."
+    },
+    {
+      "id": "icy_veins_cata_classic",
+      "title": "Omnotron Defense System Encounter Guide",
+      "publisher": "Icy Veins",
+      "url": "https://www.icy-veins.com/cataclysm-classic/omnotron-defense-system-encounter-guide-strategy-abilities-loot",
+      "published_or_updated": "around 2024 (page metadata; exact date not exposed)",
+      "accessed": "2026-08-11",
+      "scope_note": "Cataclysm Classic strategy; exact 4.4.2 hotfix coverage not stated."
+    },
+    {
+      "id": "warcraft_wiki_legacy",
+      "title": "Omnotron Defense System",
+      "publisher": "Warcraft Wiki",
+      "url": "https://warcraft.wiki.gg/wiki/Omnotron_Defense_System",
+      "published_or_updated": "current page; patch history spans legacy Cataclysm",
+      "accessed": "2026-08-11",
+      "scope_note": "Historical spell/range and patch reference; not proof of Classic 4.4.2 values."
+    },
+    {
+      "id": "guiaswow_heroic_legacy",
+      "title": "Heroic Mode Omnotron Defense System",
+      "publisher": "Guías WoW",
+      "url": "https://en.guiaswow.com/blackwing-descent/guide-heroic-mode-defense-system-omnotron-defense-system.html",
+      "published_or_updated": "legacy page, approximately 15.5 years old (page metadata)",
+      "accessed": "2026-08-11",
+      "scope_note": "Independent historical heroic strategy; patch/build not stated."
+    },
+    {
+      "id": "repo_omnotron_cpp",
+      "title": "Omnotron controller and construct AIs",
+      "publisher": "repository",
+      "path": "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_omnotron_defense_system.cpp",
+      "lines": "236-375, 487-536, 630-679, 773-811, 907-1099, 1114-1161, 1178-1545",
+      "accessed": "2026-08-11",
+      "scope_note": "Current checkout implementation evidence; not independent game-client truth."
+    },
+    {
+      "id": "repo_instance_loader",
+      "title": "Blackwing Descent instance mapping and script loader",
+      "publisher": "repository",
+      "paths": [
+        "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/blackwing_descent.h:87-123",
+        "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/instance_blackwing_descent.cpp:31-57,174-183,254-261",
+        "src/server/scripts/EasternKingdoms/eastern_kingdoms_script_loader.cpp:76-80,307-312"
+      ],
+      "accessed": "2026-08-11",
+      "scope_note": "Entry IDs, forwarding, boss state and loader registration."
+    },
+    {
+      "id": "repo_historical_custom_sql",
+      "title": "Historical Omnotron template and spell bindings",
+      "publisher": "repository SQL",
+      "path": "sql/old/custom/world/34_2020_02_21/custom_2019_08_20_00_world_updatepack.sql",
+      "lines": "131229-131356",
+      "accessed": "2026-08-11",
+      "scope_note": "Historical custom update; confirms names/IDs but not active current update ordering."
+    },
+    {
+      "id": "repo_historical_db",
+      "title": "Historical Omnotron DB templates and encounter registration",
+      "publisher": "repository SQL",
+      "paths": [
+        "sql/old/4.3.4/world/10_2016_03_12/2015_10_02_00_world.sql:155-165",
+        "sql/old/4.3.4/world/12_2016_09_28/2016_09_02_00_world.sql:6-9",
+        "sql/old/4.3.4/TDB04_to_TDB05_updates/world/066_instance_encounters.sql:463"
+      ],
+      "accessed": "2026-08-11",
+      "scope_note": "Historical aura, difficulty-entry and encounter rows."
+    },
+    {
+      "id": "repo_current_db_proc",
+      "title": "Current spell proc and static-flag updates",
+      "publisher": "repository SQL",
+      "paths": [
+        "sql/updates/world/4.3.4/2023_08_27_00_world.sql:36437-36461",
+        "sql/updates/world/4.3.4/2025_06_20_00_world.sql:322-333",
+        "sql/updates/world/4.3.4/2025_06_20_01_world.sql:104-111"
+      ],
+      "accessed": "2026-08-11",
+      "scope_note": "DB proc/static support; does not establish wall-clock encounter timers."
+    }
+  ],
+  "repository_evidence": [
+    "shared health aura is linked at reset after 5s; first recharge begins at 10s",
+    "controller shuffles all four golem GUIDs per encounter",
+    "heroic only summons Lord Victor Nefarius",
+    "10-player Arcane Annihilation selects one random target; 25-player casts area spell",
+    "Electrical Discharge chain target is random and damage gains 20% per jump",
+    "Acquiring Target selects one random target",
+    "Poison Bomb samples up to 25 random eligible targets, excludes within 10yd of summoner when alternatives exist, then fixates one",
+    "Nefarius manipulates only the longest-active golem and uses an internal 30s ability cooldown",
+    "Reset/FAIL/DONE paths remove encounter debuffs and forward DONE credit"
+  ],
+  "roles": {
+    "tanks": ["two_active_golems", "keep_constructs_and_raid_out_of_unintended_fields"],
+    "interrupt": ["arcane_annihilation_or_annihilator"],
+    "ranged": ["control_or_kill_poison_bombs", "move_marked_targets", "handle_flamethrower_line"],
+    "raid": ["stop_damage_on_shield_state", "spread_electrical_chain", "move_chemical_cloud_and_poison_puddle"]
+  },
+  "gates": [
+    "shared_health_targeting",
+    "active_pair_from_controller_events",
+    "arcane_interrupt",
+    "shield_stop_damage",
+    "lightning_conductor_isolation",
+    "acquiring_target_aim",
+    "poison_bomb_fixate_and_puddle",
+    "barrier_break_backdraft_awareness"
+  ],
+  "heroic_gates": [
+    "nefarian_presence",
+    "shadow_infusion_and_shadow_conductor",
+    "encasing_shadows",
+    "grip_of_death_into_chemical_cloud",
+    "overcharged_power_generator"
+  ],
+  "difficulty_matrix": {
+    "10N": {
+      "shared_health_reported": "32.2M",
+      "arcane_targeting": "one random target in local AI",
+      "heroic_controller": false,
+      "fidelity_status": "guide_reported_values_not_4_4_2_verified"
+    },
+    "10H": {
+      "shared_health_reported": "54.1M",
+      "arcane_targeting": "one random target in local AI",
+      "heroic_controller": true,
+      "fidelity_status": "guide_reported_values_not_4_4_2_verified"
+    },
+    "25N": {
+      "shared_health_reported": "99.2M",
+      "arcane_targeting": "area cast in local AI; guide describes three targets",
+      "heroic_controller": false,
+      "fidelity_status": "guide_reported_values_and_area_count_not_4_4_2_verified"
+    },
+    "25H": {
+      "shared_health_reported": "164.9M",
+      "arcane_targeting": "area cast in local AI",
+      "heroic_controller": true,
+      "fidelity_status": "guide_reported_values_not_4_4_2_verified"
+    }
+  },
+  "unresolved": [
+    "exact_4_4_2_client_build_and_hotfix_cutoff",
+    "energy_drain_rate_and_exact_50_or_45_energy_shield_threshold",
+    "activation_duration_and_rotation_cadence",
+    "mode_specific_shield_wall_clock_timers",
+    "poison_protocol_bomb_count_and_cadence_by_mode",
+    "lightning_conductor_normal_duration_vs_heroic_duration",
+    "exact_4_4_2_health_and_damage_scaling",
+    "heroic_nefarius_selection_order_and_encounter_time_cadence",
+    "berserk_presence_and_duration_in_4_4_2"
+  ],
+  "status_labels": {
+    "fidelity_blocked": "Conflicting or unverified value; do not use as a fixed bot timer.",
+    "repository_observed": "Current checkout behavior; confirms implementation only.",
+    "guide_reported": "External strategy report; not automatically 4.4.2 truth."
+  }
+}

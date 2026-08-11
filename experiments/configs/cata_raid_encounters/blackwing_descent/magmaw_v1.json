@@ -1,0 +1,295 @@
+{
+  "schema_version": 1,
+  "contract_schema": "cata_raid_encounter_contract_v1",
+  "raid": "blackwing_descent",
+  "boss_slug": "magmaw",
+  "modes": ["10N", "10H", "25N", "25H"],
+  "fidelity_state": "fidelity_blocked",
+  "dossier_path": "docs/bot_raids/strategies/t11/blackwing_descent/magmaw.md",
+  "ledger_path": "experiments/configs/cata_raid_encounters/blackwing_descent/magmaw_ledger_v1.json",
+  "unresolved_material_count": 8,
+  "encounter": "magmaw",
+  "instance": "blackwing_descent",
+  "scope": ["10N", "10H", "25N", "25H"],
+  "research_state": "phase0_researched_not_live_validated",
+  "evidence_policy": "A behavior-changing claim requires two independent strategy sources or one credible strategy source plus repository confirmation; conflicts remain unresolved.",
+  "source_refs": [
+    "wowhead_cata_magmaw_2024",
+    "icy_veins_cata_magmaw_2024",
+    "warcraft_tavern_cata_magmaw_unknown_date",
+    "blizzard_cataclysm_hotfix_jan26",
+    "blizzard_406_hotfix_mar29",
+    "blizzard_442_notes_2025",
+    "repo_boss_magmaw",
+    "repo_bwd_instance",
+    "repo_bwd_header",
+    "repo_loader",
+    "repo_sql_history",
+    "repo_tdb_snapshot"
+  ],
+  "mode_matrix": {
+    "10N": {
+      "health_guide_reported": 33500000,
+      "magma_spit_targets_repository": 3,
+      "heroic": false,
+      "nefarian_add_repository": false,
+      "behavior_delta": "normal Mangle/Crash/impale loop; no heroic Nefarian events"
+    },
+    "10H": {
+      "health_guide_reported": 39200000,
+      "magma_spit_targets_repository": 3,
+      "heroic": true,
+      "nefarian_add_repository": true,
+      "behavior_delta": "heroic Nefarian, Blazing Inferno/constructs, and Shadow Breath below 30%"
+    },
+    "25N": {
+      "health_guide_reported": 101400000,
+      "magma_spit_targets_repository": 8,
+      "heroic": false,
+      "nefarian_add_repository": false,
+      "behavior_delta": "normal Mangle/Crash/impale loop; no heroic Nefarian events"
+    },
+    "25H": {
+      "health_guide_reported": 120000000,
+      "magma_spit_targets_repository": 8,
+      "heroic": true,
+      "nefarian_add_repository": true,
+      "behavior_delta": "heroic Nefarian, Blazing Inferno/constructs, and Shadow Breath below 30%"
+    }
+  },
+  "roles": {
+    "tank": ["hold melee range", "face boss safely", "survive Mangle", "recover threat after impale if required"],
+    "ranged": ["spread/stack according to the chosen strategy", "move from Pillar", "control parasites", "avoid heroic fire"],
+    "hook_team": ["one player per available pincer", "apply both hooks to one target", "start impale only after both hooks"],
+    "raid": ["evade Massive Crash", "retarget exposed head", "stop heroic Shadow Breath splash" ]
+  },
+  "gates": [
+    "pillar_target_and_impact_evade",
+    "lava_parasite_control",
+    "mangle_survival",
+    "massive_crash_evade",
+    "both_pincers_mounted",
+    "both_hooks_on_same_target",
+    "exposed_head_damage_window"
+  ],
+  "heroic_gates": [
+    "blazing_inferno_positioning",
+    "bone_construct_off_tank_and_armageddon",
+    "shadow_breath_spread_below_30_percent"
+  ],
+  "mechanics": [
+    {
+      "key": "magmaw_positioning",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Magmaw is immobile and the tank keeps it in melee; current guides require melee access.",
+      "values": {"immobile": true, "melee_required": true, "tank_out_of_melee_effect": "repository casts Molten Tantrum", "molten_tantrum_guide": "+100% damage every 1.5s, stacking 10 times (up to +1000%)"},
+      "evidence": ["wowhead_cata_magmaw_2024", "icy_veins_cata_magmaw_2024", "repo_boss_magmaw"],
+      "confidence": "credible_strategy_plus_repository"
+    },
+    {
+      "key": "magma_spit",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Repository removes vehicle occupants and randomly resizes the target list by raid size.",
+      "values": {
+        "targets_by_mode": {"10N": 3, "10H": 3, "25N": 8, "25H": 8},
+        "guide_interval": "roughly 5s",
+        "guide_damage": {"normal_approx": "30000", "heroic_approx": "45000"},
+        "table_damage_range": "39375-50625"
+      },
+      "evidence": ["repo_boss_magmaw", "icy_veins_cata_magmaw_2024", "wowhead_cata_magmaw_2024"],
+      "conflicts": ["Wowhead prose says 3/8 players ‘in heroic difficulty’, while repository and size-based Icy reading are 10/25; use repository size rule only.", "Wowhead narrative damage and ability-table range do not establish a mode mapping."],
+      "confidence": "repository_confirmed_target_rule; timer_and_damage_unresolved"
+    },
+    {
+      "key": "lava_spew",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Raid-wide fire event; current guides describe a six-second sequence and the repository schedules it separately from projectile events.",
+      "values": {
+        "guide_interval": "roughly 20s",
+        "guide_duration": "6s",
+        "guide_damage_each_tick": {"normal_approx": "16000", "heroic_approx": "27000"},
+        "guide_total_approx": {"normal": "48000", "heroic": "81000"},
+        "table_damage_range": "14800-17200",
+        "table_range": "60yd"
+      },
+      "repository_baseline": {"initial": "19s", "repeat": "24s", "projectile_reschedule": "6s"},
+      "evidence": ["wowhead_cata_magmaw_2024", "icy_veins_cata_magmaw_2024", "repo_boss_magmaw"],
+      "conflicts": ["Guide interval and repository event interval differ; exact Classic cadence and mode scaling are unresolved."],
+      "confidence": "mixed_unresolved"
+    },
+    {
+      "key": "pillar_of_flame",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Pillar selects a non-vehicle target and prefers targets beyond 15 yards when available; target should leave the marker before impact.",
+      "values": {
+        "guide_interval": "roughly 30s",
+        "guide_impact_delay": "4-5s",
+        "guide_damage": {"normal_approx": "75000", "heroic_approx": "120000", "radius": "5yd"},
+        "repository_preferred_distance": ">15yd from Magmaw combat reach",
+        "repository_despawn": "7s"
+      },
+      "evidence": ["wowhead_cata_magmaw_2024", "icy_veins_cata_magmaw_2024", "blizzard_cataclysm_hotfix_jan26", "repo_boss_magmaw"],
+      "conflicts": ["A reliable mode-by-mode damage/spawn table was not found; the hotfix is original Cataclysm context and Classic carryover is not proven."],
+      "confidence": "credible_strategy_plus_repository_for_target_rule; scaling_unresolved"
+    },
+    {
+      "key": "lava_parasites",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Pillar creates parasites; infection damage/vomit and parasite target limits are represented in the repository, but the exact live spawn count is not.",
+      "values": {
+        "guide_spawn_count": "up to 7 (Wowhead); conflicting old Icy material reports 9",
+        "infection_damage": "25000 every 2s for 10s (Wowhead normal report; guide total says 125000)",
+        "vomit": {"normal_approx": "20000", "heroic_approx": "45000", "radius": "8yd"},
+        "repository_max_active_parasite_debuffs": 3,
+        "repository_vomit_on_proc": true
+      },
+      "evidence": ["wowhead_cata_magmaw_2024", "blizzard_cataclysm_hotfix_jan26", "repo_boss_magmaw"],
+      "conflicts": ["Exact count and mode scaling are absent from the repository; old Icy content is not 4.4.2 Classic evidence."],
+      "confidence": "target-limit_repository_confirmed; count_and_scaling_fidelity_blocked"
+    },
+    {
+      "key": "mangle",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Mangle is applied to the current victim/current tank by the repository target filter; the current guides describe a defensive 30-second tank event.",
+      "values": {
+        "guide_interval": "roughly 90s",
+        "guide_damage": "roughly 165000 every 2s for 30s",
+        "table_damage_range": "154649-179728 every 2s",
+        "repository_initial": "90s",
+        "repository_repeat": "95s",
+        "repository_target": "current victim after VictimCheck",
+        "sweltering_armor_applied": true
+      },
+      "evidence": ["wowhead_cata_magmaw_2024", "icy_veins_cata_magmaw_2024", "repo_boss_magmaw"],
+      "conflicts": ["Current Wowhead/Icy report 1-minute Sweltering Armor; Warcraft Tavern reports 2 minutes; spell duration is not audited here."],
+      "confidence": "credible_strategy_plus_repository_for_target_and_phase; damage_and_armor_duration_unresolved"
+    },
+    {
+      "key": "massive_crash",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Mangle transitions to a Crash that stops normal boss movement and ejects pincer passengers; raid evades the damage/stun and then mounts.",
+      "values": {
+        "guide_damage": {"normal_approx": "100000", "heroic_approx": "170000", "stun": "3s", "table_shape": "frontal cone"},
+        "table_damage_range": "157250-182750",
+        "repository_prepare_after_mangle": "3.5s",
+        "repository_crash_after_prepare": "5s",
+        "repository_effect": "ejects both pincer passengers"
+      },
+      "evidence": ["wowhead_cata_magmaw_2024", "icy_veins_cata_magmaw_2024", "repo_boss_magmaw", "repo_bwd_header"],
+      "conflicts": ["Wowhead narrative and ability-table damage conflict and do not map cleanly to 10/25; exact mode damage is unresolved."],
+      "confidence": "phase_repository_confirmed; damage_fidelity_blocked"
+    },
+    {
+      "key": "pincers_hooks_and_impale",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Repository has two pincer body parts, selects a free pincer for mounting, and triggers impale only after both hook auras are on one target.",
+      "values": {
+        "repository_pincers": 2,
+        "guide_mount_players": "up to 2 (current Wowhead/Icy); Warcraft Tavern says 3 melee",
+        "guide_hook_tolerance": "less than 1s (Wowhead)",
+        "guide_attempts_before_tank_dies": "roughly 3 (Wowhead)",
+        "repository_hook_condition": "both hook auras on same target",
+        "repository_head_show_after_impale": "5s"
+      },
+      "evidence": ["wowhead_cata_magmaw_2024", "icy_veins_cata_magmaw_2024", "warcraft_tavern_cata_magmaw_unknown_date", "repo_boss_magmaw", "repo_bwd_header"],
+      "conflicts": ["Current and historical strategy sources disagree on two versus three players and exact click timing; repository vehicle topology supports two but does not prove retail interaction tolerance."],
+      "confidence": "repository_two_pincer_and_two_hook_condition; player_count_timing_unresolved"
+    },
+    {
+      "key": "exposed_head",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Successful impale exposes the head; current guides report a 30-second +100% damage vulnerability window and then the normal phase repeats.",
+      "values": {"guide_window": "30s", "guide_damage_modifier": "+100%", "repository_head_vulnerability_spells": ["79010", "79011"]},
+      "evidence": ["wowhead_cata_magmaw_2024", "icy_veins_cata_magmaw_2024", "repo_boss_magmaw"],
+      "confidence": "credible_strategy_plus_repository_for_phase; retail duration not live-validated"
+    },
+    {
+      "key": "heroic_nefarian",
+      "modes": ["10H", "25H"],
+      "summary": "Heroic engage summons Nefarian; Blazing Inferno creates a fire hazard and Bone Constructs, while Shadow Breath is scheduled after Magmaw drops below 30%.",
+      "values": {
+        "blazing_guide_interval": "roughly 35s",
+        "blazing_repository_initial_repeat": "27s then 36s",
+        "inferno_guide_damage": "roughly 75000 within 4yd",
+        "inferno_meteor_delay": "4s",
+        "inferno_trail": "50s and roughly 55000 per hit (Wowhead)",
+        "construct_health_guide": "6000000",
+        "armageddon_threshold_guide": "below 20%",
+        "armageddon_deadline_guide": "8s",
+        "shadow_breath_trigger": "below 30%",
+        "shadow_breath_guide": "roughly 27000 to random target and nearby players within 5yd",
+        "shadow_breath_repository_targeting": "selects two non-vehicle targets"
+      },
+      "evidence": ["wowhead_cata_magmaw_2024", "icy_veins_cata_magmaw_2024", "warcraft_tavern_cata_magmaw_unknown_date", "repo_boss_magmaw"],
+      "conflicts": ["Repository Shadow Breath selection (two targets, non-vehicle) does not by itself establish the guide's splash semantics or exact 1-second cadence; all heroic timer/damage values require live confirmation."],
+      "confidence": "heroic_gate_and_trigger_repository_confirmed; detailed tuning_unresolved"
+    }
+  ],
+  "repository_audit": [
+    {
+      "path": "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_magmaw.cpp",
+      "lines": "210-211",
+      "finding": "RAID_MODE spell IDs are ordered 10N, 25N, 10H, 25H for Parasite/Mangle damage macros."
+    },
+    {
+      "path": "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_magmaw.cpp",
+      "lines": "227-250, 434-523",
+      "finding": "Engage schedules 6s projectile, 19s Spew, 90s Mangle; projectile cadence is 6s with a Pillar after four, Spew repeats 24s, Mangle repeats 95s, and Mangle prepares/executes Crash."
+    },
+    {
+      "path": "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_magmaw.cpp",
+      "lines": "352-369, 602-661, 847-923, 952-987, 1017-1050, 1071-1098",
+      "finding": "Heroic threshold, Nefarian events, Spit size targets, Mangle victim filtering, Pillar >15-yard preference, two-hook impale, and max-three Parasite debuff hotfix comment are implemented."
+    },
+    {
+      "path": "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/blackwing_descent.h",
+      "lines": "25-29, 30-55, 87-111, 196-205",
+      "finding": "BWD has six encounter slots; Magmaw data is slot 0, creature IDs include boss/pincers/heads/Nefarian/constructs, and generic Massive Crash damage spell ID is 88287."
+    },
+    {
+      "path": "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/instance_blackwing_descent.cpp",
+      "lines": "31-57, 69-73, 145-173, 224-253",
+      "finding": "Instance maps Magmaw and heroic Nefarian data, ties the inner chamber door to Magmaw, forwards summons, and cleans Crash dummies/stalkers on FAIL/DONE while notifying generic Nefarius on DONE."
+    },
+    {
+      "path": "src/server/scripts/EasternKingdoms/eastern_kingdoms_script_loader.cpp",
+      "lines": "70-82, 305-312",
+      "finding": "AddSC_boss_magmaw is declared and invoked by the Eastern Kingdoms loader."
+    },
+    {
+      "path": "sql/old/4.3.4/TDB02_to_TDB03_updates/world/025_creature_template.sql; sql/old/4.3.4/world/12_2016_09_28/2016_09_02_00_world.sql; sql/old/4.3.4/TDB04_to_TDB05_updates/world/066_instance_encounters.sql",
+      "lines": "025:775-776,805; 2016_09_02:2-4; 066:458-463",
+      "finding": "Historical 4.3.4 templates/difficulty entries and instance encounter 1024 exist for Magmaw/heads; this is not a current 4.4.2 SQL snapshot."
+    },
+    {
+      "path": "data/TDB_full_434.22011_2022_01_09/TDB_full_world_434.22011_2022_01_09.sql",
+      "lines": "47, 2629, 2682",
+      "finding": "The old world snapshot has map 669 access rows for modes 0/1/2/3 (10N/25N/10H/25H), instance_template map 669 script instance_blackwing_descent, and instance_encounters (1024,0,41570,0,'Magmaw'); it contains no 4.4.2 retail tuning proof."
+    }
+  ],
+  "lifecycle": {
+    "engage": "BossAI engage, encounter frame engage, parasite world state reset, combat phase; heroic summons Nefarian.",
+    "mangle_to_impale": "Mangle cancels projectile/Spew; Crash ejects pincer passengers; both hook auras trigger ACTION_IMPALE_MAGMAW; head is exposed after the impale sequence.",
+    "evade": "FAIL; eject boss/pincers; remove Parasite Infection/Vomit; despawn head/summons/Nefarian; instance removes Crash dummies and room stalkers.",
+    "death": "Remove parasite auras, disengage encounter frames, tell Nefarian to finish, call BossAI::_JustDied; instance DONE cleanup and generic Nefarius progression notification.",
+    "retail_credit_status": "Repository state/credit only; retail loot, achievement, and exact reset persistence are unresolved."
+  },
+  "timer_contract": [
+    {"key": "magma_spit", "modes": ["10N", "10H", "25N", "25H"], "strategy": "roughly 5s", "repository": "6s initial/repeat for four projectiles", "status": "mixed_unresolved"},
+    {"key": "lava_spew", "modes": ["10N", "10H", "25N", "25H"], "strategy": "roughly 20s over 6s", "repository": "19s then 24s; reschedules projectile in 6s", "status": "mixed_unresolved"},
+    {"key": "pillar", "modes": ["10N", "10H", "25N", "25H"], "strategy": "roughly 30s; 4-5s impact", "repository": "after fourth projectile; pillar despawns 7s", "status": "mixed_unresolved"},
+    {"key": "mangle_crash", "modes": ["10N", "10H", "25N", "25H"], "strategy": "roughly 90s; Crash shortly after Mangle", "repository": "Mangle 90s then 95s; prepare +3.5s; Crash +5s", "status": "mixed_unresolved"},
+    {"key": "heroic_blazing_inferno", "modes": ["10H", "25H"], "strategy": "roughly 35s", "repository": "27s first then 36s", "status": "mixed_unresolved"},
+    {"key": "heroic_shadow_breath", "modes": ["10H", "25H"], "strategy": "at 30%; roughly 1s", "repository": "below 30%; first +9s then repeat 1.2s", "status": "mixed_unresolved"}
+  ],
+  "unresolved": [
+    {"key": "exact_442_build_and_hotfix_cutoff", "status": "fidelity_blocked", "detail": "Patch 4.4.2 notes establish the version/date but contain no Magmaw tuning; original Cataclysm hotfixes are not proof of Classic carryover."},
+    {"key": "live_timers_all_modes", "status": "fidelity_blocked", "detail": "Guide timers conflict with repository intervals for Spit, Spew, Pillar, Mangle/Crash, Blazing Inferno, and Shadow Breath."},
+    {"key": "mode_damage_and_health_scaling", "status": "fidelity_blocked", "detail": "Guide health figures are source-only; Crash prose/table and ability ranges do not provide a reliable 10N/10H/25N/25H mapping."},
+    {"key": "parasite_spawn_count_and_scaling", "status": "fidelity_blocked", "detail": "Wowhead says up to 7; old non-Classic Icy material conflicts; repository does not hardcode a count."},
+    {"key": "hook_player_count_and_tolerance", "status": "fidelity_blocked", "detail": "Current guides say up to 2 and old/Tavern text says 3; repository only establishes two pincers and both-hook condition."},
+    {"key": "sweltering_armor_duration", "status": "fidelity_blocked", "detail": "Current Wowhead/Icy say 1m, Warcraft Tavern says 2m; script confirms application/removal but not spell duration."},
+    {"key": "shadow_breath_targeting_and_splash", "status": "fidelity_blocked", "detail": "Repository selects two non-vehicle targets; guides describe random target plus nearby allies. Exact Classic semantics/cadence are unverified."},
+    {"key": "retail_reset_credit_loot", "status": "unresolved", "detail": "Repository FAIL/DONE and Nefarius notification are audited; retail loot/achievement/reset behavior is outside available evidence."}
+  ]
+}

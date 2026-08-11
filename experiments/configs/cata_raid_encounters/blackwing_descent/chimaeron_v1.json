@@ -1,0 +1,322 @@
+{
+  "schema_version": 1,
+  "contract_schema": "cata_raid_encounter_contract_v1",
+  "raid": "blackwing_descent",
+  "boss_slug": "chimaeron",
+  "modes": ["10N", "10H", "25N", "25H"],
+  "fidelity_state": "fidelity_blocked",
+  "dossier_path": "docs/bot_raids/strategies/t11/blackwing_descent/chimaeron.md",
+  "ledger_path": "experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_ledger_v1.json",
+  "unresolved_material_count": 9,
+  "encounter": "chimaeron",
+  "instance": "blackwing_descent",
+  "scope": ["10N", "10H", "25N", "25H"],
+  "research_state": "phase0_researched_not_live_validated",
+  "evidence_policy": "A behavior-changing claim requires two independent strategy sources or one credible strategy source plus repository confirmation; conflicts remain unresolved.",
+  "source_refs": [
+    "wowhead_cata_chimaeron_2024",
+    "icy_veins_cata_chimaeron_2024",
+    "warcraft_tavern_cata_chimaeron_unknown_date",
+    "blizzard_cataclysm_hotfix_jan26",
+    "blizzard_406_hotfix_mar29",
+    "blizzard_442_notes_2025",
+    "repo_boss_chimaeron",
+    "repo_bwd_generic_nefarius",
+    "repo_bwd_instance",
+    "repo_bwd_header",
+    "repo_loader",
+    "repo_sql_history",
+    "repo_tdb_snapshot"
+  ],
+  "mode_matrix": {
+    "10N": {
+      "health_guide_reported": 25900000,
+      "caustic_slime_targets_repository": 2,
+      "caustic_slime_targets_guide_wording": 2,
+      "heroic": false,
+      "nefarius_chimaeron_add_repository": false,
+      "behavior_delta": "normal Feud pacifies melee during Bile-O-Tron outage; phase-two Mortality burn"
+    },
+    "10H": {
+      "health_guide_reported": 36200000,
+      "caustic_slime_targets_repository": 2,
+      "caustic_slime_targets_guide_wording": 4,
+      "heroic": true,
+      "nefarius_chimaeron_add_repository": true,
+      "behavior_delta": "Shadow Whip interrupts Feud behavior during Systems Failure; Mocking Shadows at 20%"
+    },
+    "25N": {
+      "health_guide_reported": 90600000,
+      "caustic_slime_targets_repository": 4,
+      "caustic_slime_targets_guide_wording": 2,
+      "heroic": false,
+      "nefarius_chimaeron_add_repository": false,
+      "behavior_delta": "normal Feud pacifies melee during Bile-O-Tron outage; phase-two Mortality burn"
+    },
+    "25H": {
+      "health_guide_reported": 126800000,
+      "caustic_slime_targets_repository": 4,
+      "caustic_slime_targets_guide_wording": 4,
+      "heroic": true,
+      "nefarius_chimaeron_add_repository": true,
+      "behavior_delta": "Shadow Whip interrupts Feud behavior during Systems Failure; Mocking Shadows at 20%"
+    }
+  },
+  "roles": {
+    "healers": ["keep mixture-protected players above 10000", "heal Double Attack soaker to full", "rotate cooldowns during Systems Failure", "restore raid above 10000 before Massacre"],
+    "break_tank": ["hold normal melee and Break stacks", "taunt exchange after Double Attack", "avoid unnecessary Break stacks during Feud/System Failure"],
+    "double_attack_soaker": ["taunt before the Double Attack swing", "take both hits", "return threat after the pair"],
+    "raid": ["spread 6yd during mixture", "stack within 6yd while mixture is offline", "burn at 20%", "kite/rotate threat in Mortality"],
+    "heroic": ["survive Shadow Whip/Feud melee during outage", "survive Mocking Shadows while Mortality blocks healing"]
+  },
+  "gates": [
+    "bile_o_tron_activation",
+    "mixture_health_floor",
+    "break_and_double_attack_tank_exchange",
+    "six_yard_slime_spread",
+    "massacre_health_floor",
+    "systems_failure_stack_and_cooldowns",
+    "post_outage_massacre_recovery",
+    "mortality_20pct_burn"
+  ],
+  "heroic_gates": [
+    "shadow_whip_interrupts_feud",
+    "offline_window_melee_survival",
+    "mocking_shadows_phase_two"
+  ],
+  "mechanics": [
+    {
+      "key": "bile_o_tron_and_pips_mixture",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Talking to Pip/Finkle activates Bile-O-Tron and wakes Chimaeron; mixture protects targets above its health threshold from lethal damage by leaving them at 1 HP.",
+      "values": {
+        "guide_health_threshold": 10000,
+        "guide_effect": "lethal damage leaves a protected target at 1 HP",
+        "repository_threshold_source": "SpellInfo effect base points",
+        "repository_absorb_condition": "incoming damage >= current health and current health > threshold",
+        "repository_wake_sequence": "Snort +6s, Grunt +6s, Wake +11s",
+        "repository_mixture_removed_if_visual_missing": true
+      },
+      "evidence": ["wowhead_cata_chimaeron_2024", "icy_veins_cata_chimaeron_2024", "warcraft_tavern_cata_chimaeron_unknown_date", "repo_boss_chimaeron"],
+      "confidence": "credible_strategy_plus_repository_for_floor_and_activation; exact spell data unresolved"
+    },
+    {
+      "key": "caustic_slime",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Random Slime targets are filtered by the repository and the damage is split among affected units within 6 yards; the impact also reduces hit chance.",
+      "values": {
+        "repository_targets_by_mode": {"10N": 2, "10H": 2, "25N": 4, "25H": 4},
+        "guide_targets_wording": {"normal": 2, "heroic": 4},
+        "guide_interval": "5s",
+        "guide_damage": {"narrative": "270000", "ability_table": "270480"},
+        "guide_split_radius": "6yd",
+        "guide_hit_reduction": "-75% for 2s",
+        "repository_target_filter": "removes current victim only",
+        "repository_split": "hit damage divided by area target count"
+      },
+      "evidence": ["wowhead_cata_chimaeron_2024", "icy_veins_cata_chimaeron_2024", "repo_boss_chimaeron", "blizzard_406_hotfix_mar29"],
+      "conflicts": ["Guides describe 2 normal/4 heroic while repository uses 2 10-player/4 25-player; historical hotfix says exclude Break targets unless insufficient, but current repository only removes the current victim.", "Wowhead narrative 270000 and ability table 270480 differ."],
+      "confidence": "repository_target_count_and_split_confirmed; Classic target exclusion and mode mapping fidelity_blocked"
+    },
+    {
+      "key": "break",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Break stacks on the current target and increases physical damage taken while reducing healing done; tank exchanges prevent Double Attack from landing on the Break-stacked tank.",
+      "values": {
+        "guide_interval": {"wowhead": "15-20s", "icy_veins": "20s"},
+        "repository_initial": "5s",
+        "repository_repeat": "15s",
+        "repository_after_massacre": "11s",
+        "damage_taken_per_stack": "+25%",
+        "healing_done_reduction_per_stack": "-15%",
+        "duration": "1m",
+        "maximum_stacks": 4,
+        "maximum_damage_taken": "+100%"
+      },
+      "evidence": ["wowhead_cata_chimaeron_2024", "icy_veins_cata_chimaeron_2024", "warcraft_tavern_cata_chimaeron_unknown_date", "repo_boss_chimaeron"],
+      "conflicts": ["Guide cadence differs from implementation cadence; current guides differ on whether the useful cadence is 15-20s or 20s."],
+      "confidence": "stacking_rule_credible_strategy_plus_repository; timer_live_unresolved"
+    },
+    {
+      "key": "double_attack",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Double Attack marks the next melee swing to hit twice; a second tank/soaker taunts before the swing and the Break tank taunts back afterward.",
+      "values": {
+        "guide_interval": "roughly 10s",
+        "repository_initial": "5s",
+        "repository_repeat": "15s",
+        "repository_after_massacre": "11s",
+        "repository_phase_two_first": "1ms",
+        "hotfix_after_massacre": "remove Double Attack aura and reset melee attack cycle",
+        "target_rule": "current melee victim via triggered spell"
+      },
+      "evidence": ["wowhead_cata_chimaeron_2024", "icy_veins_cata_chimaeron_2024", "warcraft_tavern_cata_chimaeron_unknown_date", "blizzard_cataclysm_hotfix_jan26", "repo_boss_chimaeron"],
+      "conflicts": ["Guide timer and repository timer differ; exact attack-cycle timing after Massacre requires Classic validation."],
+      "confidence": "tank_rule_and_hotfix_repository_confirmed; cadence_unresolved"
+    },
+    {
+      "key": "massacre",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Massacre is a raid-wide lethal hit protected by the mixture and is followed by event rescheduling; only phase one schedules it in the repository.",
+      "values": {
+        "guide_interval": "roughly 30s",
+        "guide_damage": "1000000",
+        "repository_initial": "26s",
+        "repository_repeat": "30s",
+        "repository_after_cast": {"caustic_slime": "19s", "break": "11s", "double_attack": "11s"},
+        "guide_phase_limit": "above 20%",
+        "repository_phase": "PHASE_1 only"
+      },
+      "evidence": ["wowhead_cata_chimaeron_2024", "icy_veins_cata_chimaeron_2024", "warcraft_tavern_cata_chimaeron_unknown_date", "repo_boss_chimaeron"],
+      "confidence": "credible_strategy_plus_repository_for_event_and_phase; damage/timing_live_unresolved"
+    },
+    {
+      "key": "systems_failure_and_feud",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "A successful Massacre knockout roll removes the mixture, starts Reroute Power and Feud, and changes the raid from spread to 6-yard stack until the mixture returns and the next Massacre lands.",
+      "values": {
+        "guide_outage_interval": "about 1m",
+        "guide_offline_duration": {"wowhead": "26s", "icy_veins": "26s", "warcraft_tavern": "30s"},
+        "guide_feud_duration_normal": "30s",
+        "guide_offline_slime_start": "15s after outage",
+        "repository_knockout_chance_initial": "40%",
+        "repository_knockout_chance_after_miss": "+20 percentage points",
+        "repository_chance_sequence": "40%, 60%, 80%, 100% unless reset by success",
+        "repository_success_reset": "40%",
+        "repository_feud_effect": "boss _isInFeud; Feud aura MOD_PACIFY",
+        "repository_mixture_returns": "Reroute Power aura removal callback"
+      },
+      "evidence": ["wowhead_cata_chimaeron_2024", "icy_veins_cata_chimaeron_2024", "warcraft_tavern_cata_chimaeron_unknown_date", "repo_boss_chimaeron"],
+      "conflicts": ["Warcraft Tavern says 30s offline while Wowhead/Icy say 26s; repository uses spell duration, not a literal timer. The chance sequence is repository-only and not retail probability proof."],
+      "confidence": "phase_and_stack_rule_credible_strategy_plus_repository; outage_duration_and_probability_fidelity_blocked"
+    },
+    {
+      "key": "phase_two_mortality",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "At 20% Chimaeron enters the final burn: Slime, Break, and Massacre stop; Double Attack continues; Mortality reduces healing and makes taunt unavailable.",
+      "values": {
+        "threshold": "20%",
+        "guide_boss_damage_taken": "+10%",
+        "guide_raid_healing_received": "-99%",
+        "guide_taunt_immunity": true,
+        "guide_removed_abilities": ["Caustic Slime", "Break", "Massacre"],
+        "guide_continued_ability": "Double Attack",
+        "repository_transition": "HealthBelowPctDamaged(20), phase PHASE_2",
+        "repository_immediate_double_attack": "1ms",
+        "repository_mortality_spells": [82890, 82934],
+        "mixture_status": "no further Massacre means no further repository knockout"
+      },
+      "evidence": ["wowhead_cata_chimaeron_2024", "icy_veins_cata_chimaeron_2024", "warcraft_tavern_cata_chimaeron_unknown_date", "repo_boss_chimaeron"],
+      "confidence": "credible_strategy_plus_repository_for_threshold_and_ability_set; spell magnitude/duration_live_unresolved"
+    },
+    {
+      "key": "heroic_nefarius",
+      "modes": ["10H", "25H"],
+      "summary": "Heroic engage summons Nefarius. During a Bile-O-Tron outage he casts Shadow Whip to interrupt Feud behavior; at phase two he casts Mocking Shadows.",
+      "values": {
+        "repository_summon_on_engage": true,
+        "guide_shadow_whip_trigger": "when Bile-O-Tron enters Systems Failure",
+        "guide_shadow_whip_effect": "forces Chimaeron back to melee during outage",
+        "guide_mocking_shadows_trigger": "20% Mortality",
+        "guide_mocking_shadows_damage": "2000 Shadow per second to all players",
+        "repository_shadow_whip_spell": 91304,
+        "repository_mocking_shadows_spell": 91307,
+        "repository_phase_two_action": "Nefarius schedules Mocking Shadows +1ms",
+        "repository_feud_action": "casts Shadow Whip and interrupt script"
+      },
+      "evidence": ["wowhead_cata_chimaeron_2024", "icy_veins_cata_chimaeron_2024", "repo_boss_chimaeron", "repo_bwd_generic_nefarius"],
+      "conflicts": ["Current guides do not give a precise Shadow Whip delay; repository does not expose spell/aura duration or an explicit Feud-aura removal in C++."],
+      "confidence": "heroic_trigger_and_effect_credible_strategy_plus_repository; detailed timing_fidelity_blocked"
+    }
+  ],
+  "repository_audit": [
+    {
+      "path": "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_chimaeron.cpp",
+      "lines": "34-52, 74-121",
+      "finding": "Spell IDs, asleep/phase-one/phase-two states, event IDs, and action IDs identify mixture, outage, Feud, Mortality, and heroic Nefarius interactions."
+    },
+    {
+      "path": "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_chimaeron.cpp",
+      "lines": "131-237",
+      "finding": "Reset/asleep behavior, engage schedules (Slime/Break/Double at 5s and Massacre at 26s), heroic Nefarius summon, evade/death cleanup, kill world state, and 20% transition are implemented."
+    },
+    {
+      "path": "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_chimaeron.cpp",
+      "lines": "239-276, 317-373",
+      "finding": "Successful Massacre resets melee/Double Attack, applies the 40% then +20% knockout chance, starts Feud on success, and schedules Slime/Break/Double after Massacre; normal event repeats and phase handling are explicit."
+    },
+    {
+      "path": "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_chimaeron.cpp",
+      "lines": "380-515",
+      "finding": "Finkle gossip activates Bile-O-Tron and wakes Chimaeron; wake sequence, Bile-O-Tron outage/re-route/return/shutdown, and helper despawn behavior are implemented."
+    },
+    {
+      "path": "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_chimaeron.cpp",
+      "lines": "517-686",
+      "finding": "Slime filters current victim and raid-size target count, splits damage by area target count, Double Attack triggers a second strike, mixture reads the SpellInfo threshold and leaves protected lethal hits at 1 HP, Reroute returns mixture, Feud toggles pacify state, and Shadow Whip interrupts casts."
+    },
+    {
+      "path": "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/blackwing_descent.cpp",
+      "lines": "32-180",
+      "finding": "Generic Nefarius casts Shadow Whip during heroic Feud action and Mocking Shadows immediately on heroic phase-two action; heroic death cleanup is scheduled."
+    },
+    {
+      "path": "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/blackwing_descent.h",
+      "lines": "25-29, 30-39, 67-70, 87-95, 132-135, 216-220",
+      "finding": "BWD has six encounter slots; Chimaeron is DATA_CHIMAERON; boss 43296, Finkle 44202, Bile-O-Tron 44418, and world state 5643 are registered."
+    },
+    {
+      "path": "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/instance_blackwing_descent.cpp",
+      "lines": "31-57, 224-261",
+      "finding": "Instance maps Chimaeron, Bile-O-Tron, and Finkle data; DONE for DATA_CHIMAERON notifies generic Nefarius progression."
+    },
+    {
+      "path": "src/server/scripts/EasternKingdoms/eastern_kingdoms_script_loader.cpp",
+      "lines": "74-83, 307-315",
+      "finding": "AddSC_boss_chimaeron is declared and invoked by the loader."
+    },
+    {
+      "path": "sql/old/4.3.4/TDB01_to_TDB02_updates/world/088_creature_template.sql; sql/old/4.3.4/TDB01_to_TDB02_updates/world/128_creature_template.sql",
+      "lines": "088:84,93,113; 128:471,6182",
+      "finding": "Historical SQL defines Finkle/Bile-O-Tron templates and Chimaeron boss template/attack speed; this is not a current 4.4.2 tuning source."
+    },
+    {
+      "path": "sql/old/4.3.4/world/12_2016_09_28/2016_09_02_00_world.sql; sql/old/4.3.4/TDB04_to_TDB05_updates/world/066_instance_encounters.sql",
+      "lines": "2016_09_02:11; 066:458-463",
+      "finding": "Historical difficulty entries 47774-47776 map to boss 43296 and instance encounter 1023 is Chimaeron."
+    },
+    {
+      "path": "data/TDB_full_434.22011_2022_01_09/TDB_full_world_434.22011_2022_01_09.sql",
+      "lines": "47, 2629, 2682",
+      "finding": "The old snapshot contains map 669 access rows for modes 0/1/2/3, instance_template map 669 script instance_blackwing_descent, and encounter 1023 for creature 43296; it does not establish 4.4.2 retail tuning."
+    }
+  ],
+  "lifecycle": {
+    "engage": "Finkle gossip activates Bile-O-Tron; Chimaeron wake action schedules asleep voice events; engage sends encounter frame/world state and schedules phase-one events. Heroic summons Nefarius.",
+    "phase_one": "Break/Double/Slime/Massacre; successful Massacre Bile-O-Tron knockout starts outage and Feud; normal Feud pacifies melee while Slime continues; mixture returns via Reroute.",
+    "phase_two": "Below 20% sets PHASE_2, applies Mortality, schedules immediate Double Attack, stops phase-one event scheduling; heroic Nefarius casts Mocking Shadows.",
+    "evade": "Disengage, remove boss auras, despawn Bile-O-Tron/Finkle after 0ms+30s, despawn heroic Nefarius, and despawn boss at evade.",
+    "death": "BossAI DONE path, encounter disengage/aura cleanup, Bile-O-Tron shutdown after 6s, Finkle death talk after 6s, heroic Nefarius defeat action; instance DONE notifies generic Nefarius.",
+    "retail_credit_status": "Repository progression state only; retail loot, lockout, achievement, and reset persistence unresolved."
+  },
+  "timer_contract": [
+    {"key": "caustic_slime", "modes": ["10N", "10H", "25N", "25H"], "strategy": "5s", "repository": "5s initial/repeat; +19s after Massacre", "status": "target_and_timing_mixed_unresolved"},
+    {"key": "break", "modes": ["10N", "10H", "25N", "25H"], "strategy": "15-20s", "repository": "5s initial/15s repeat; +11s after Massacre", "status": "mixed_unresolved"},
+    {"key": "double_attack", "modes": ["10N", "10H", "25N", "25H"], "strategy": "10s", "repository": "5s initial/15s repeat; +11s after Massacre; +1ms phase two", "status": "mixed_unresolved"},
+    {"key": "massacre", "modes": ["10N", "10H", "25N", "25H"], "strategy": "30s", "repository": "26s initial/30s repeat", "status": "mixed_unresolved"},
+    {"key": "systems_failure", "modes": ["10N", "10H", "25N", "25H"], "strategy": "about 1m; 26s offline (Tavern 30s)", "repository": "chance-based Massacre knockout; Reroute spell duration", "status": "fidelity_blocked"},
+    {"key": "heroic_shadow_whip", "modes": ["10H", "25H"], "strategy": "on Systems Failure", "repository": "on ACTION_STOP_FEUD; no explicit delay", "status": "trigger_confirmed_timing_unresolved"},
+    {"key": "heroic_mocking_shadows", "modes": ["10H", "25H"], "strategy": "20%; 2000 Shadow/s", "repository": "+1ms phase-two action", "status": "magnitude_and_duration_unresolved"}
+  ],
+  "unresolved": [
+    {"key": "exact_442_build_and_hotfix_cutoff", "status": "fidelity_blocked", "detail": "4.4.2 notes contain no Chimaeron tuning; historical Cataclysm hotfixes are not proof of Classic carryover."},
+    {"key": "caustic_target_mapping", "status": "fidelity_blocked", "detail": "Guides say 2 normal/4 heroic; repository says 2 10-player/4 25-player; official historical target exclusions differ from repository's current-victim-only filter."},
+    {"key": "bileotron_knockout_probability_and_reroute", "status": "fidelity_blocked", "detail": "Repository chance sequence is 40/60/80/100 and reset 40, but live probability and SpellInfo Reroute duration are unverified."},
+    {"key": "event_cadence", "status": "fidelity_blocked", "detail": "Guide timers conflict with repository initial/rescheduled events for Break, Double Attack, Massacre, and outage cycles."},
+    {"key": "spell_data", "status": "fidelity_blocked", "detail": "Mixture threshold source, Feud/Reroute/Mortality/Mocking Shadows durations and exact damage are not independently audited from 4.4.2 Spell data."},
+    {"key": "heroic_shadow_whip", "status": "fidelity_blocked", "detail": "Guides establish the heroic action; repository casts/interruption but does not explicitly remove Feud aura or expose delay."},
+    {"key": "mode_damage_scaling", "status": "fidelity_blocked", "detail": "Health is guide-reported; Slime and Massacre guide damage values have prose/table discrepancies and no complete four-mode table."},
+    {"key": "helper_field_reset", "status": "fidelity_blocked", "detail": "Reset() does not explicitly reinitialize _knockOutChance, _killedPlayerCount, or _isInFeud; lifecycle reset behavior needs controlled validation."},
+    {"key": "retail_reset_credit_loot", "status": "unresolved", "detail": "Repository FAIL/DONE/progression paths audited; retail lockout, loot, and achievement persistence not established."}
+  ]
+}

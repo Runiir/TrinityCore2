@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "program_id": "cata_raid_progression_442_v1",
+  "updated_at_utc": "2026-08-11T19:34:04Z",
+  "active_phase": 0,
+  "active_phase_name": "successor_checkpoint_policy_reconciliation_and_research_framework",
+  "program_status": "in_progress",
+  "raid_base": {
+    "branch_at_freeze": "master",
+    "raid_base_sha": "889d38cc9451c2b8104db142ce069593b4647a41",
+    "stonecore_merge_commit": "abb75dbd90250704053e6566755225f883f25e94",
+    "stonecore_merged_tip": "43052484e27380cb07b9b99ad858570b4dcf95f3",
+    "origin_master_ahead": 430,
+    "origin_master_behind": 0,
+    "remote_master_publish_authorized": false
+  },
+  "integration": {
+    "branch": "raid/cata-raid-progression-integration",
+    "foundation_sha": null,
+    "raid_base_is_ancestor": true,
+    "created_from_exact_local_master": true
+  },
+  "authority": {
+    "approved_plan_path": ".codex/plans/cata_raid_progression_plan.md",
+    "approved_plan_sha256": "ea4cd23208fd3c3c1f2ccc533211fcd35030fb0841c35e0984bba6f03aa0e0fa",
+    "approved_plan_tracked": false,
+    "stonecore_status_path": "experiments/configs/all_spec_stonecore_program_status_v1.json",
+    "stonecore_status_sha256": "ae4fa5dc545a03154cdd7b087939fe6c3b05ebca2f7dad74e0799f5778e1690e",
+    "stonecore_handoff_path": "experiments/configs/all_spec_phase9_next_thread_handoff_20260802.md",
+    "stonecore_handoff_sha256": "2d498983763962d1a7a794f50e58574c866347dfaf82922ea1b933c9c357fa0e",
+    "stonecore_targeted_canary_pointer": "artifacts/all_spec_program/phase9_targeted_canary_completion_20260811.dvc",
+    "stonecore_targeted_canary_pointer_sha256": "6e610c8496a4152b4c7da32c99605cf6030f6286f22852b3e278c4add30ca7f8",
+    "stonecore_targeted_canary_dvc_md5": "38d4e71d1a4374f69fc9bf886b4df817.dir",
+    "stonecore_targeted_canary_remote_status": "cache_and_remote_in_sync",
+    "inherited_evidence_scope": "dungeon_runtime_and_24_mode_class_interaction_only"
+  },
+  "frozen_target": {
+    "product": "Cataclysm Classic",
+    "patch": "4.4.2",
+    "release_name": "Hour of Twilight",
+    "client_build": null,
+    "client_product_locale": null,
+    "client_data_hashes": [],
+    "blizzard_hotfix_cutoff_utc": null,
+    "state": "research_unresolved",
+    "blocker": "Exact client build, locale/data hashes, and Blizzard hotfix cutoff require sourced Phase 0 research."
+  },
+  "stable_roster": {
+    "slot_count": 25,
+    "supported_mode_count": 24,
+    "default_roles": {
+      "tank": 2,
+      "healer": 6,
+      "dps": 17,
+      "ranged_dps": 12,
+      "melee_dps": 5
+    },
+    "permanent_tanks": [
+      "blood_death_knight",
+      "protection_paladin"
+    ],
+    "declared_flex": "feral_druid_tank",
+    "excluded_non_blocking_mode": "protection_warrior",
+    "reconciliation": "Feral tank is one supported offspec on the Feral DPS roster slot, not a permanent third tank slot."
+  },
+  "host_baseline": {
+    "captured_at_utc": "2026-08-11T18:51:55Z",
+    "logical_cpus": 12,
+    "memory_total_gib_observed": 30,
+    "memory_available_gib_observed": 22,
+    "swap_total_gib_observed": 8,
+    "swap_used_mib_observed": 302,
+    "filesystem_available_gib_observed": 46,
+    "filesystem_use_percent_observed": 90,
+    "load_average_observed": [0.39, 0.41, 0.40],
+    "memory_psi_some_avg10": 0.0,
+    "memory_psi_full_avg10": 0.0,
+    "mysql_container": "trinity-cata-db",
+    "mysql_image": "mariadb:10.11",
+    "mysql_health": "healthy",
+    "worldserver_active": false,
+    "validation_operator_active": false,
+    "dvc_publisher_active": false,
+    "heavyweight_build_active": false
+  },
+  "dvc": {
+    "broad_status": "inherited_dependency_drift_and_selectively_evicted_outputs_present",
+    "new_raid_artifact_failure": false,
+    "broad_gc_used": false,
+    "config_local_tracked": false,
+    "known_historical_unavailable_objects": [
+      "24b9d133fe3fe1b6f253e500c266562f.dir",
+      "c67ee8935753b8ceccbdddbafdfebe.dir"
+    ]
+  },
+  "phase_gates": [
+    {
+      "phase": 0,
+      "status": "in_progress",
+      "gate_passed": false,
+      "completed_requirements": [
+        "approved_plan_hash_verified",
+        "trinity_orchestrator_skill_read",
+        "git_checkpoint_verified_clean",
+        "raid_base_sha_frozen",
+        "integration_branch_created_from_exact_local_master",
+        "mysql_health_verified",
+        "no_live_identity_bearing_processes_verified",
+        "stonecore_targeted_canary_remote_sync_verified",
+        "six_bwd_boss_research_packages_completed_by_boss_scoped_luna_xhigh_turns",
+        "bwd_machine_contract_identity_envelopes_normalized",
+        "bwd_strategy_catalog_and_human_index_created",
+        "bwd_research_contract_tests_4_passed"
+      ],
+      "remaining_requirements": [
+        "freeze_exact_442_build_and_hotfix_cutoff",
+        "complete_acceptance_and_resource_policies",
+        "implement_and_adversarially_test_build_coordinator",
+        "audit_all_raid_scripts_db_loaders_and_routes",
+        "resolve_material_bwd_value_timer_conflicts_or_retain_phase0_fidelity_block",
+        "independently_validate_or_block_bwd_10n_scenario",
+        "run_inherited_test_baseline"
+      ]
+    }
+  ],
+  "blockers": [
+    {
+      "blocker_id": "bwd_exact_442_quantitative_identity",
+      "classification": "research_unresolved",
+      "scope": "phase0_fidelity_gate",
+      "detail": "Six boss packages are structurally complete, but exact client-data hashes/hotfix cutoff and multiple material four-mode timers, coefficients, target counts, and guide-versus-repository conflicts remain unresolved. They may not be guessed or promoted to fixed runtime values."
+    }
+  ],
+  "next_action": "Finish and adversarially test the host build coordinator, then pin primary 4.4.2 client/addon/log identities needed to resolve the BWD quantitative blockers before any fidelity acceptance or live boss pull."
+}

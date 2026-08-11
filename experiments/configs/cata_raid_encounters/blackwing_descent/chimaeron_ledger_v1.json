@@ -1,0 +1,300 @@
+{
+  "schema_version": 1,
+  "ledger_schema": "cata_raid_value_timer_ledger_v1",
+  "raid": "blackwing_descent",
+  "boss_slug": "chimaeron",
+  "modes": ["10N", "10H", "25N", "25H"],
+  "fidelity_state": "fidelity_blocked",
+  "contract_path": "experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_v1.json",
+  "unresolved_material_count": 9,
+  "encounter": "chimaeron",
+  "purpose": "source-and-timer ledger for Phase 0 research; no live-validation assertion",
+  "scope": ["10N", "10H", "25N", "25H"],
+  "repository_revision_audited": "889d38cc9451c2b8104db142ce069593b4647a41",
+  "retrieved_utc_date": "2026-08-11",
+  "source_catalog": [
+    {
+      "id": "wowhead_cata_chimaeron_2024",
+      "title": "Chimaeron Strategy Guide - Blackwing Descent Raid Cataclysm Classic",
+      "author": "Beanna",
+      "publisher": "Wowhead",
+      "published_or_updated": "2024-06-04 (updated)",
+      "edition_label": "Patch 4.4.2",
+      "url": "https://www.wowhead.com/cata/guide/raids/blackwing-descent/chimaeron-strategy",
+      "accessed": "2026-08-11",
+      "authority": "current Cataclysm Classic strategy guide",
+      "notes": "Reports health, 10000 mixture floor, approximate timers, target wording, damage, Feud, Mortality, heroic Shadow Whip and Mocking Shadows."
+    },
+    {
+      "id": "icy_veins_cata_chimaeron_2024",
+      "title": "Chimaeron Encounter Guide: Strategy, Abilities, Loot",
+      "author": "Abide",
+      "publisher": "Icy Veins",
+      "published_or_updated": "2024-07-29 (updated)",
+      "url": "https://www.icy-veins.com/cataclysm-classic/chimaeron-encounter-guide-strategy-abilities-loot",
+      "accessed": "2026-08-11",
+      "authority": "current Cataclysm Classic strategy guide",
+      "notes": "Independently reports 10000 floor, tank rotation, 5/10/20/30-second strategy cadence, 26-second outage, Feud, phase-two Mortality, and heroic Nefarius effects."
+    },
+    {
+      "id": "warcraft_tavern_cata_chimaeron_unknown_date",
+      "title": "Chimaeron Raid Guide",
+      "author": "Passion",
+      "publisher": "Warcraft Tavern",
+      "published_or_updated": "publication date not exposed by fetched page/search result",
+      "url": "https://www.warcrafttavern.com/cataclysm/guides/chimaeron-raid-guide/",
+      "accessed": "2026-08-11",
+      "authority": "independent Cataclysm strategy guide; direct page retrieval was access-restricted, content observed in search result",
+      "notes": "Confirms mixture/Break/Massacre/Feud/Mortality and broad spread/stack strategy; says 30-second outage and does not supply current heroic Shadow Whip timing."
+    },
+    {
+      "id": "blizzard_cataclysm_hotfix_jan26",
+      "title": "Cataclysm Hotfixes - Updated Jan. 26",
+      "author": "Blizzard Entertainment",
+      "publisher": "World of Warcraft",
+      "published_or_updated": "historical Cataclysm hotfix page; title updated Jan. 26",
+      "url": "https://worldofwarcraft.blizzard.com/en-us/news/1232869",
+      "accessed": "2026-08-11",
+      "authority": "official historical hotfix source",
+      "notes": "Reports Chimaeron resetting melee cycle and removing Double Attack after Massacre, and Caustic Slime no longer affecting non-player targets; Classic 4.4.2 carryover is not independently established."
+    },
+    {
+      "id": "blizzard_406_hotfix_mar29",
+      "title": "Patch 4.0.6 Hotfixes and 4.0.6a Changes - Last update: March 29",
+      "author": "Blizzard Entertainment",
+      "publisher": "World of Warcraft",
+      "published_or_updated": "historical 4.0.6 hotfix page",
+      "url": "https://worldofwarcraft.blizzard.com/en-gb/news/9981073/patch-406-hotfixes-and-406a-changes-last-update-march-29",
+      "accessed": "2026-08-11",
+      "authority": "official historical hotfix source",
+      "notes": "Reports Chimaeron no longer casts Caustic Slime on Break-affected targets unless insufficient eligible targets remain, plus historical damage adjustments. Current repository only excludes the current victim."
+    },
+    {
+      "id": "blizzard_442_notes_2025",
+      "title": "World of Warcraft: Cataclysm Classic—Patch 4.4.2 Notes",
+      "author": "Kaivax",
+      "publisher": "Blizzard Entertainment forums",
+      "published_or_updated": "2025-02-18",
+      "url": "https://us.forums.blizzard.com/en/wow/t/world-of-warcraft-cataclysm-classic-patch-442-notes/2062030",
+      "accessed": "2026-08-11",
+      "authority": "official Classic version/date note",
+      "notes": "Confirms the Hour of Twilight 4.4.2 version context but contains no Chimaeron-specific tuning or hotfix mapping."
+    },
+    {
+      "id": "repo_boss_chimaeron",
+      "title": "TrinityCore boss_chimaeron.cpp",
+      "author": "TrinityCore contributors",
+      "publisher": "local repository",
+      "revision": "889d38cc9451c2b8104db142ce069593b4647a41",
+      "paths": ["src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_chimaeron.cpp"],
+      "accessed": "2026-08-11",
+      "authority": "repository implementation evidence, not retail proof",
+      "lines": ["34-52", "74-121", "131-237", "239-276", "317-373", "380-515", "517-686"],
+      "notes": "Provides event schedule, target filtering, chance progression, phase transitions, mixture absorb, outage/Feud behavior, and cleanup."
+    },
+    {
+      "id": "repo_bwd_generic_nefarius",
+      "title": "TrinityCore blackwing_descent.cpp generic Lord Victor Nefarius AI",
+      "author": "TrinityCore contributors",
+      "publisher": "local repository",
+      "revision": "889d38cc9451c2b8104db142ce069593b4647a41",
+      "paths": ["src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/blackwing_descent.cpp"],
+      "accessed": "2026-08-11",
+      "authority": "repository implementation evidence",
+      "lines": ["32-180"],
+      "notes": "Provides heroic Shadow Whip, Mocking Shadows, summon intro, and death handling."
+    },
+    {
+      "id": "repo_bwd_instance",
+      "title": "TrinityCore instance_blackwing_descent.cpp",
+      "author": "TrinityCore contributors",
+      "publisher": "local repository",
+      "revision": "889d38cc9451c2b8104db142ce069593b4647a41",
+      "paths": ["src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/instance_blackwing_descent.cpp"],
+      "accessed": "2026-08-11",
+      "authority": "repository implementation evidence",
+      "lines": ["31-57", "224-261"]
+    },
+    {
+      "id": "repo_bwd_header",
+      "title": "TrinityCore blackwing_descent.h",
+      "author": "TrinityCore contributors",
+      "publisher": "local repository",
+      "revision": "889d38cc9451c2b8104db142ce069593b4647a41",
+      "paths": ["src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/blackwing_descent.h"],
+      "accessed": "2026-08-11",
+      "authority": "repository implementation evidence",
+      "lines": ["25-29", "30-39", "67-70", "87-95", "132-135", "216-220"]
+    },
+    {
+      "id": "repo_loader",
+      "title": "TrinityCore Eastern Kingdoms script loader",
+      "author": "TrinityCore contributors",
+      "publisher": "local repository",
+      "revision": "889d38cc9451c2b8104db142ce069593b4647a41",
+      "paths": ["src/server/scripts/EasternKingdoms/eastern_kingdoms_script_loader.cpp"],
+      "accessed": "2026-08-11",
+      "authority": "repository registration evidence",
+      "lines": ["74-83", "307-315"]
+    },
+    {
+      "id": "repo_sql_history",
+      "title": "Historical TrinityCore 4.3.4 Chimaeron SQL",
+      "author": "TrinityCore contributors",
+      "publisher": "local repository",
+      "revision": "889d38cc9451c2b8104db142ce069593b4647a41",
+      "paths": [
+        "sql/old/4.3.4/TDB01_to_TDB02_updates/world/088_creature_template.sql",
+        "sql/old/4.3.4/TDB01_to_TDB02_updates/world/128_creature_template.sql",
+        "sql/old/4.3.4/world/12_2016_09_28/2016_09_02_00_world.sql",
+        "sql/old/4.3.4/TDB04_to_TDB05_updates/world/066_instance_encounters.sql"
+      ],
+      "accessed": "2026-08-11",
+      "authority": "historical SQL evidence, not current 4.4.2 snapshot",
+      "lines": ["088:84,93,113", "128:471,6182", "2016_09_02:11", "066:458-463"]
+    },
+    {
+      "id": "repo_tdb_snapshot",
+      "title": "Historical TDB 4.3.4.22011 world snapshot",
+      "author": "TrinityCore contributors",
+      "publisher": "local repository",
+      "revision": "889d38cc9451c2b8104db142ce069593b4647a41",
+      "paths": ["data/TDB_full_434.22011_2022_01_09/TDB_full_world_434.22011_2022_01_09.sql"],
+      "accessed": "2026-08-11",
+      "authority": "historical DB snapshot, not current 4.4.2 data",
+      "lines": ["47", "2629", "2682"],
+      "notes": "Contains map 669 access modes 0/1/2/3, instance_template script, and encounter 1023 for creature 43296."
+    }
+  ],
+  "values": [
+    {
+      "key": "health_guide_reported",
+      "mode_values": {"10N": 25900000, "10H": 36200000, "25N": 90600000, "25H": 126800000},
+      "unit": "hit points",
+      "source_refs": ["wowhead_cata_chimaeron_2024"],
+      "repository_confirmation": false,
+      "status": "guide_reported_not_repository_verified",
+      "notes": "No current 4.4.2 SQL/DBC tuning snapshot was found."
+    },
+    {
+      "key": "pips_mixture_health_floor",
+      "mode_values": {"10N": 10000, "10H": 10000, "25N": 10000, "25H": 10000},
+      "unit": "health threshold",
+      "source_report": {"effect": "lethal damage leaves protected target at 1 HP while above threshold"},
+      "repository_baseline": {"threshold": "SpellInfo effect base points", "absorb_condition": "damage >= health and health > threshold"},
+      "source_refs": ["wowhead_cata_chimaeron_2024", "icy_veins_cata_chimaeron_2024", "warcraft_tavern_cata_chimaeron_unknown_date", "repo_boss_chimaeron"],
+      "repository_confirmation": "mechanism_confirmed; numeric SpellInfo value not locally audited",
+      "status": "guide_and_implementation_floor"
+    },
+    {
+      "key": "caustic_slime_targets",
+      "mode_values_repository": {"10N": 2, "10H": 2, "25N": 4, "25H": 4},
+      "mode_values_guide_wording": {"10N": 2, "10H": 4, "25N": 2, "25H": 4},
+      "unit": "random targets before area split",
+      "source_refs": ["wowhead_cata_chimaeron_2024", "icy_veins_cata_chimaeron_2024", "repo_boss_chimaeron"],
+      "repository_confirmation": true,
+      "status": "fidelity_blocked_target_mapping",
+      "notes": "Repository uses Is25ManRaid() ? 4 : 2. Both current guides phrase the delta as normal versus heroic."
+    },
+    {
+      "key": "caustic_slime_damage_and_range",
+      "mode_values": {"10N": null, "10H": null, "25N": null, "25H": null},
+      "source_report": {"wowhead_narrative": "270000 Nature", "wowhead_table": "270480 Nature", "split_radius": "6yd", "hit_reduction": "-75% for 2s"},
+      "repository_baseline": {"damage_split": "area target count", "target_filter": "current victim removed"},
+      "source_refs": ["wowhead_cata_chimaeron_2024", "icy_veins_cata_chimaeron_2024", "repo_boss_chimaeron", "blizzard_406_hotfix_mar29"],
+      "repository_confirmation": "split_and_current_victim_filter_only",
+      "status": "fidelity_blocked",
+      "notes": "Official historical hotfix excludes Break targets unless insufficient eligible targets; current repository does not implement that exclusion."
+    },
+    {
+      "key": "break",
+      "mode_values": {"10N": null, "10H": null, "25N": null, "25H": null},
+      "source_report": {"interval_wowhead": "15-20s", "interval_icy_veins": "20s", "physical_damage_taken_per_stack": "+25%", "healing_done_per_stack": "-15%", "duration": "1m", "max_stacks": 4, "max_physical_increase": "+100%"},
+      "repository_baseline": {"initial": "5s", "repeat": "15s", "after_massacre": "11s", "target": "victim"},
+      "source_refs": ["wowhead_cata_chimaeron_2024", "icy_veins_cata_chimaeron_2024", "warcraft_tavern_cata_chimaeron_unknown_date", "repo_boss_chimaeron"],
+      "repository_confirmation": "stack_event_only",
+      "status": "fidelity_blocked_timing_and_spell_scaling"
+    },
+    {
+      "key": "double_attack",
+      "mode_values": {"10N": null, "10H": null, "25N": null, "25H": null},
+      "source_report": {"interval": "roughly 10s", "effect": "next melee attack strikes twice"},
+      "repository_baseline": {"initial": "5s", "repeat": "15s", "after_massacre": "11s", "phase_two_first": "1ms", "triggered_spell": 82882},
+      "source_refs": ["wowhead_cata_chimaeron_2024", "icy_veins_cata_chimaeron_2024", "warcraft_tavern_cata_chimaeron_unknown_date", "repo_boss_chimaeron"],
+      "repository_confirmation": "two-hit mechanism_and_event_only",
+      "status": "fidelity_blocked_timing_and_damage"
+    },
+    {
+      "key": "massacre",
+      "mode_values": {"10N": null, "10H": null, "25N": null, "25H": null},
+      "source_report": {"interval": "roughly 30s", "damage": "1000000", "phase": "above 20%"},
+      "repository_baseline": {"initial": "26s", "repeat": "30s", "after_cast_reschedule": {"slime": "19s", "break": "11s", "double_attack": "11s"}, "phase": "PHASE_1"},
+      "source_refs": ["wowhead_cata_chimaeron_2024", "icy_veins_cata_chimaeron_2024", "warcraft_tavern_cata_chimaeron_unknown_date", "repo_boss_chimaeron"],
+      "repository_confirmation": "phase_and_reschedule_only",
+      "status": "fidelity_blocked_timing_and_damage"
+    },
+    {
+      "key": "systems_failure_bileotron_outage",
+      "mode_values": {"10N": null, "10H": null, "25N": null, "25H": null},
+      "source_report": {"interval": "about 1m", "offline_wowhead": "26s", "offline_icy_veins": "26s", "offline_warcraft_tavern": "30s", "slime_starts_after": "15s"},
+      "repository_baseline": {"knockout_initial_chance": "40%", "increment_after_miss": "+20 percentage points", "success_reset": "40%", "outage_spells": [88853, 88861]},
+      "source_refs": ["wowhead_cata_chimaeron_2024", "icy_veins_cata_chimaeron_2024", "warcraft_tavern_cata_chimaeron_unknown_date", "repo_boss_chimaeron"],
+      "repository_confirmation": "probability_and_spells_only",
+      "status": "fidelity_blocked",
+      "notes": "The 40/60/80/100 progression is implementation behavior, not asserted retail probability. Reroute duration is spell data."
+    },
+    {
+      "key": "feud",
+      "mode_values": {"10N": null, "10H": null, "25N": null, "25H": null},
+      "source_report": {"normal_duration": "30s", "effect": "no melee attacks while outage; Slime continues", "stack_radius": "6yd"},
+      "repository_baseline": {"trigger": "successful Massacre knockout", "aura": 88872, "effect": "_isInFeud plus MOD_PACIFY", "heroic_action": "ACTION_STOP_FEUD"},
+      "source_refs": ["wowhead_cata_chimaeron_2024", "icy_veins_cata_chimaeron_2024", "warcraft_tavern_cata_chimaeron_unknown_date", "repo_boss_chimaeron", "repo_bwd_generic_nefarius"],
+      "repository_confirmation": "trigger_and_pacify_only",
+      "status": "heroic_timing_and_aura_duration_unresolved"
+    },
+    {
+      "key": "mortality_phase_two",
+      "mode_values": {"10N": true, "10H": true, "25N": true, "25H": true},
+      "source_report": {"threshold": "20%", "boss_damage_taken": "+10%", "raid_healing_received": "-99%", "taunt": "immune", "removed": ["Caustic Slime", "Break", "Massacre"], "continued": "Double Attack"},
+      "repository_baseline": {"threshold": "HealthBelowPctDamaged(20)", "phase": "PHASE_2", "spells": [82890, 82934], "first_double_attack": "1ms"},
+      "source_refs": ["wowhead_cata_chimaeron_2024", "icy_veins_cata_chimaeron_2024", "warcraft_tavern_cata_chimaeron_unknown_date", "repo_boss_chimaeron"],
+      "repository_confirmation": "threshold_phase_and_event_only",
+      "status": "guide_and_implementation_phase; spell_tuning_unresolved"
+    },
+    {
+      "key": "heroic_nefarius",
+      "mode_values": {"10N": false, "10H": true, "25N": false, "25H": true},
+      "source_report": {"shadow_whip": "on Systems Failure; ends Feud/melee resumes", "mocking_shadows": "at 20%; 2000 Shadow per second to all players"},
+      "repository_baseline": {"summon": "heroic engage", "shadow_whip_spell": 91304, "mocking_shadows_spell": 91307, "mocking_action_delay": "1ms", "shadow_whip_behavior": "interrupt non-melee spells"},
+      "source_refs": ["wowhead_cata_chimaeron_2024", "icy_veins_cata_chimaeron_2024", "repo_boss_chimaeron", "repo_bwd_generic_nefarius"],
+      "repository_confirmation": "summon_and_actions_confirmed; spell effect details not complete",
+      "status": "fidelity_blocked_timing_and_duration"
+    }
+  ],
+  "timers": [
+    {"key": "wake_sequence", "modes": ["10N", "10H", "25N", "25H"], "strategy_report": "shortly after activation", "repository_baseline": "Snort +6s; Grunt +6s; Wake +11s", "source_refs": ["wowhead_cata_chimaeron_2024", "icy_veins_cata_chimaeron_2024", "repo_boss_chimaeron"], "status": "repository_baseline"},
+    {"key": "caustic_slime", "modes": ["10N", "10H", "25N", "25H"], "strategy_report": "5s", "repository_baseline": "5s initial/repeat; +19s after Massacre", "source_refs": ["wowhead_cata_chimaeron_2024", "icy_veins_cata_chimaeron_2024", "repo_boss_chimaeron"], "status": "target_and_timing_mixed_unresolved"},
+    {"key": "break", "modes": ["10N", "10H", "25N", "25H"], "strategy_report": "15-20s", "repository_baseline": "5s initial/15s repeat; +11s after Massacre", "source_refs": ["wowhead_cata_chimaeron_2024", "icy_veins_cata_chimaeron_2024", "repo_boss_chimaeron"], "status": "mixed_unresolved"},
+    {"key": "double_attack", "modes": ["10N", "10H", "25N", "25H"], "strategy_report": "10s", "repository_baseline": "5s initial/15s repeat; +11s after Massacre; +1ms phase two", "source_refs": ["wowhead_cata_chimaeron_2024", "icy_veins_cata_chimaeron_2024", "repo_boss_chimaeron"], "status": "mixed_unresolved"},
+    {"key": "massacre", "modes": ["10N", "10H", "25N", "25H"], "strategy_report": "30s", "repository_baseline": "26s initial/30s repeat", "source_refs": ["wowhead_cata_chimaeron_2024", "icy_veins_cata_chimaeron_2024", "repo_boss_chimaeron"], "status": "mixed_unresolved"},
+    {"key": "systems_failure", "modes": ["10N", "10H", "25N", "25H"], "strategy_report": "about 1m; 26s offline (Tavern 30s)", "repository_baseline": "Massacre chance-based knockout; Reroute duration in SpellInfo", "source_refs": ["wowhead_cata_chimaeron_2024", "icy_veins_cata_chimaeron_2024", "warcraft_tavern_cata_chimaeron_unknown_date", "repo_boss_chimaeron"], "status": "fidelity_blocked"},
+    {"key": "heroic_shadow_whip", "modes": ["10H", "25H"], "strategy_report": "on Systems Failure", "repository_baseline": "ACTION_STOP_FEUD; no explicit delay", "source_refs": ["wowhead_cata_chimaeron_2024", "icy_veins_cata_chimaeron_2024", "repo_bwd_generic_nefarius"], "status": "trigger_confirmed_timing_unresolved"},
+    {"key": "heroic_mocking_shadows", "modes": ["10H", "25H"], "strategy_report": "at 20%; 2000 Shadow/s", "repository_baseline": "+1ms after phase-two action", "source_refs": ["wowhead_cata_chimaeron_2024", "icy_veins_cata_chimaeron_2024", "repo_bwd_generic_nefarius"], "status": "magnitude_and_duration_unresolved"}
+  ],
+  "lifecycle": [
+    {"key": "engage", "modes": ["10N", "10H", "25N", "25H"], "repository": "Finkle gossip activates Bile-O-Tron; wake sequence; encounter frame/world state; phase-one events; heroic summons Nefarius.", "source_refs": ["repo_boss_chimaeron"], "status": "repository_only"},
+    {"key": "evade_reset", "modes": ["10N", "10H", "25N", "25H"], "repository": "Disengage, remove boss auras, despawn Bile-O-Tron/Finkle after 30s delay, despawn heroic Nefarius, despawn boss at evade.", "source_refs": ["repo_boss_chimaeron"], "status": "repository_only"},
+    {"key": "death_credit", "modes": ["10N", "10H", "25N", "25H"], "repository": "BossAI DONE path; aura/frame cleanup; Bile shutdown +6s; Finkle talk +6s; heroic Nefarius defeat action; instance DONE generic Nefarius notification.", "source_refs": ["repo_boss_chimaeron", "repo_bwd_instance", "repo_bwd_generic_nefarius"], "status": "repository_state_only"}
+  ],
+  "unresolved": [
+    {"key": "exact_442_build_hotfix_cutoff", "status": "fidelity_blocked", "evidence_gap": "4.4.2 notes contain no Chimaeron tuning; historical Cataclysm hotfixes do not prove Classic carryover."},
+    {"key": "caustic_target_mapping_and_break_exclusion", "status": "fidelity_blocked", "evidence_gap": "Guides use normal/heroic wording; repository uses raid size and excludes only current victim; historical hotfix excludes Break targets."},
+    {"key": "bileotron_probability_and_reroute_duration", "status": "fidelity_blocked", "evidence_gap": "Implementation has 40/60/80/100 progression but live probability and Reroute SpellInfo duration are unverified."},
+    {"key": "event_cadence", "status": "fidelity_blocked", "evidence_gap": "Strategy timers conflict with implementation event offsets and post-Massacre rescheduling."},
+    {"key": "spell_data", "status": "fidelity_blocked", "evidence_gap": "Mixture numeric SpellInfo threshold, Feud/Reroute/Mortality/Mocking Shadows durations and exact damage not independently audited."},
+    {"key": "heroic_shadow_whip", "status": "fidelity_blocked", "evidence_gap": "Trigger is independently reported and implemented, but delay and explicit Feud aura-removal behavior are not established."},
+    {"key": "mode_damage_scaling", "status": "fidelity_blocked", "evidence_gap": "Health is guide-only; Slime narrative/table values and mode target semantics conflict; no complete four-mode tuning table."},
+    {"key": "helper_field_reset", "status": "fidelity_blocked", "evidence_gap": "Reset() calls BossAI reset and sets asleep phase but does not explicitly reinitialize knockout chance, killed-player count, or Feud fields."},
+    {"key": "retail_reset_credit_loot", "status": "unresolved", "evidence_gap": "Repository FAIL/DONE/progression paths audited; retail lockout, loot, and achievement persistence are not established."}
+  ]
+}

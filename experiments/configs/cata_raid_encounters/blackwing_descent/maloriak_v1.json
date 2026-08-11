@@ -1,0 +1,121 @@
+{
+  "schema_version": 1,
+  "contract_schema": "cata_raid_encounter_contract_v1",
+  "raid": "blackwing_descent",
+  "boss_slug": "maloriak",
+  "modes": ["10N", "10H", "25N", "25H"],
+  "fidelity_state": "fidelity_blocked",
+  "dossier_path": "docs/bot_raids/strategies/t11/blackwing_descent/maloriak.md",
+  "ledger_path": "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_ledger_v1.json",
+  "unresolved_material_count": 6,
+  "encounter": "maloriak",
+  "scope": ["10N", "10H", "25N", "25H"],
+  "research_state": "planning_only_not_live_validated",
+  "research_as_of": "2026-08-11",
+  "source_urls": [
+    "https://www.wowhead.com/cata/guide/raids/blackwing-descent/maloriak-strategy",
+    "https://www.icy-veins.com/cataclysm-classic/maloriak-encounter-guide-strategy-abilities-loot",
+    "https://www.icy-veins.com/wow/maloriak-strategy-guide-normal-heroic"
+  ],
+  "repository_evidence": [
+    "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_maloriak.cpp",
+    "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/blackwing_descent.h",
+    "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/instance_blackwing_descent.cpp",
+    "src/server/scripts/EasternKingdoms/eastern_kingdoms_script_loader.cpp",
+    "data/TDB_full_434.22011_2022_01_09/TDB_full_world_434.22011_2022_01_09.sql",
+    "sql/updates/world/4.3.4/2025_06_17_01_world.sql",
+    "sql/old/custom/world/34_2020_02_21/custom_2019_08_20_00_world_updatepack.sql",
+    "sql/old/4.3.4/world/10_2016_03_12/2015_10_02_00_world.sql"
+  ],
+  "mode_matrix": {
+    "10N": {
+      "vials": ["red_or_blue", "other_color", "green"],
+      "vials_per_cycle_local": 2,
+      "black_vial": false,
+      "phase_two_threshold": "25_percent",
+      "swills": 0,
+      "prime_subjects": 2,
+      "off_tank_guidance": "one_normally"
+    },
+    "10H": {
+      "vials": ["black", "red_or_blue", "other_color", "green"],
+      "vials_per_cycle_local": 3,
+      "black_vial": true,
+      "phase_two_threshold": "25_percent",
+      "swills": 5,
+      "prime_subjects": 2,
+      "off_tank_guidance": "one_for_black_adds; kite_prime_subjects"
+    },
+    "25N": {
+      "vials": ["red_or_blue", "other_color", "green"],
+      "vials_per_cycle_local": 2,
+      "black_vial": false,
+      "phase_two_threshold": "25_percent",
+      "swills": 0,
+      "prime_subjects": 2,
+      "off_tank_guidance": "two_preferred"
+    },
+    "25H": {
+      "vials": ["black", "red_or_blue", "other_color", "green"],
+      "vials_per_cycle_local": 3,
+      "black_vial": true,
+      "phase_two_threshold": "25_percent",
+      "swills": 5,
+      "prime_subjects": 2,
+      "off_tank_guidance": "two_for_black_adds_and_prime_subjects"
+    }
+  },
+  "roles": {
+    "interrupt": ["arcane_storm_every_cast", "release_aberrations_quota_rotation"],
+    "dispel": ["remedy_remove_or_spellsteal"],
+    "main_tank": ["red_cone_orientation", "black_engulfing_darkness_cooldowns", "phase_two_magma_jets"],
+    "off_tank": ["aberration_kite", "green_window_stack", "heroic_vile_swill_kite", "phase_two_prime_subject_kite"],
+    "raid": ["red_stack_except_consuming_flames", "blue_spread_and_flash_freeze", "green_15s_aoe", "absolute_zero_evade", "acid_nova_cooldowns"]
+  },
+  "gates": [
+    "arcane_storm_interrupt",
+    "remedy_remove",
+    "release_aberrations_quota",
+    "red_scorching_blast_soak",
+    "consuming_flames_leave_cone",
+    "blue_five_yard_spread",
+    "flash_freeze_break_without_chain_shatter",
+    "green_debilitating_slime_15s_aoe",
+    "phase_two_release_all_minions",
+    "phase_two_add_separation",
+    "magma_jets_evade",
+    "absolute_zero_evade",
+    "acid_nova_cooldown_rotation"
+  ],
+  "heroic_gates": [
+    "black_vial_first_and_after_each_green",
+    "five_vile_swills",
+    "dark_sludge_pool_avoidance",
+    "engulfing_darkness_healing_lockout",
+    "heroic_prime_fixate_target_persistence_unconfirmed"
+  ],
+  "known_behavior_summary": [
+    "Normal local order is random Red/Blue, the other color, then Green; Heroic prepends Black and repeats it after each Green.",
+    "Release Aberrations selects up to three non-drowned chamber creatures per successful local cast and has an 18-add reserve (six successful casts).",
+    "The local AI schedules Release Aberrations in Red, Blue, and Green; strategy sources differ on intended color windows, so the bot uses a deliberate quota rather than a color-only rule.",
+    "DamageTaken enters phase two at 25 percent in every mode, releases all remaining minions, and summons two Prime Subjects.",
+    "Current TDB contains Maloriak difficulty entries and boss_maloriak; loader registration is also present. Historical custom SQL explicitly binds the boss and spell scripts."
+  ],
+  "unresolved": [
+    "exact_442_client_build_and_hotfix_cutoff",
+    "live_timer_and_cauldron_movement_confirmation_all_modes",
+    "exact_spell_coefficients_and_target_counts_by_10n_10h_25n_25h",
+    "normal_health_and_enrage_due_current_vs_historical_guide_conflict",
+    "heroic_prime_subject_fixate_implementation",
+    "whether_ai_object_reconstruction_resets_custom_vial_and_add_counters"
+  ],
+  "conflicts": [
+    "guide_first_vial_about_20s_vs_local_first_cauldron_face_15_5s_plus_unmeasured_movement",
+    "guide_dark_phase_about_95s_vs_local_black_return_schedule_90s",
+    "guide_phase_two_magma_acid_absolute_approximations_vs_local_3_5s_8_4s_8_4s_and_6s_20s_7s",
+    "Wowhead_current_biting_chill_three_targets_vs_historical_Icy_Veins_one_10_player_two_25_player",
+    "Wowhead_current_heroic_damage_examples_vs_historical_Icy_Veins_same_damage_for_several_spells",
+    "current_Icy_Veins_six_minute_enrage_wording_vs_historical_7m_normal_12m_heroic",
+    "current_Icy_Veins_red_green_release_description_vs_local_all_color_release_schedule"
+  ]
+}

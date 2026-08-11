@@ -1,0 +1,177 @@
+{
+  "schema_version": 1,
+  "ledger_schema": "cata_raid_value_timer_ledger_v1",
+  "raid": "blackwing_descent",
+  "boss_slug": "maloriak",
+  "modes": ["10N", "10H", "25N", "25H"],
+  "fidelity_state": "fidelity_blocked",
+  "contract_path": "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_v1.json",
+  "unresolved_material_count": 7,
+  "encounter": "maloriak",
+  "purpose": "sourced_value_and_timer_ledger; no live assertion",
+  "research_as_of": "2026-08-11",
+  "source_catalog": {
+    "wowhead_442": {
+      "title": "Maloriak Strategy Guide - Blackwing Descent Raid Cataclysm Classic",
+      "publisher": "Wowhead",
+      "author": "Beanna",
+      "updated": "2024-06-04",
+      "patch_label": "4.4.2",
+      "url": "https://www.wowhead.com/cata/guide/raids/blackwing-descent/maloriak-strategy",
+      "accessed": "2026-08-11",
+      "used_for": ["health", "vial_cadence_and_order", "ability_targets_and_damage_examples", "green_window", "phase_two", "heroic_black"],
+      "reliability": "current_patch_labelled_strategy_source"
+    },
+    "icy_cata_classic": {
+      "title": "Maloriak Encounter Guide: Strategy, Abilities, Loot",
+      "publisher": "Icy Veins",
+      "author": "Abide",
+      "updated": "2024-07-29",
+      "patch_label": "Cataclysm Classic",
+      "url": "https://www.icy-veins.com/cataclysm-classic/maloriak-encounter-guide-strategy-abilities-loot",
+      "accessed": "2026-08-11",
+      "used_for": ["vial_order", "five_vile_swills", "red_blue_green_positioning", "18_add_reserve", "two_prime_subjects", "25_percent_transition"],
+      "reliability": "independent_current_era_strategy_source"
+    },
+    "icy_original": {
+      "title": "Maloriak Detailed Strategy Guide (Heroic Mode included)",
+      "publisher": "Icy Veins",
+      "author": "Damien",
+      "updated": "2012-10-08",
+      "patch_label": "page says WoD 6.1.2; historical encounter reference, not 4.4.2 authority",
+      "url": "https://www.icy-veins.com/wow/maloriak-strategy-guide-normal-heroic",
+      "accessed": "2026-08-11",
+      "used_for": ["phase_duration_ranges", "10_25_target_counts", "enrage_and_heroic_deltas", "dark_duration", "heroic_fixate"],
+      "reliability": "independent_historical_strategy_source_only"
+    },
+    "local_cpp": {
+      "title": "TrinityCore Maloriak encounter script",
+      "publisher": "repository",
+      "path": "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/boss_maloriak.cpp",
+      "lines": "37-1292",
+      "accessed": "2026-08-11",
+      "used_for": ["state_machine", "vial_order", "local_timers", "target_filters", "add_release_selection", "phase_two", "cleanup", "heroic_black"],
+      "reliability": "current_local_server_baseline_not_live_4.4.2_evidence"
+    },
+    "local_instance_and_loader": {
+      "title": "Blackwing Descent instance mapping and Eastern Kingdoms loader",
+      "publisher": "repository",
+      "paths": [
+        "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/blackwing_descent.h",
+        "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/instance_blackwing_descent.cpp",
+        "src/server/scripts/EasternKingdoms/eastern_kingdoms_script_loader.cpp"
+      ],
+      "lines": "h:30-183; instance:31-58,145-196,224-261; loader:76-83,308-315",
+      "accessed": "2026-08-11",
+      "used_for": ["entry_ids", "boss_state_mapping", "summon_forwarding", "loader_registration"],
+      "reliability": "repository_confirmation"
+    },
+    "current_tdb": {
+      "title": "TDB full 4.3.4 world dump",
+      "publisher": "repository database",
+      "path": "data/TDB_full_434.22011_2022_01_09/TDB_full_world_434.22011_2022_01_09.sql",
+      "accessed": "2026-08-11",
+      "used_for": ["difficulty_entry_rows", "script_names", "creature_template_rows"],
+      "reliability": "local_dump_provenance_not_4.4.2_client_proof"
+    },
+    "sql_updates": {
+      "title": "World SQL difficulty and historical script bindings",
+      "publisher": "repository SQL",
+      "paths": [
+        "sql/updates/world/4.3.4/2025_06_17_01_world.sql",
+        "sql/old/custom/world/34_2020_02_21/custom_2019_08_20_00_world_updatepack.sql",
+        "sql/old/4.3.4/world/10_2016_03_12/2015_10_02_00_world.sql"
+      ],
+      "accessed": "2026-08-11",
+      "used_for": ["damage_modifier_groups", "historical_script_binding", "spawn_and_prime_subject_rows"],
+      "reliability": "repository_audit_only"
+    }
+  },
+  "mode_matrix": {
+    "10N": {"vial_order": ["red_or_blue", "other_color", "green"], "vials_per_cycle_local": 2, "black": false, "phase_two": "25_percent", "vile_swills": 0, "prime_subjects": 2},
+    "10H": {"vial_order": ["black", "red_or_blue", "other_color", "green"], "vials_per_cycle_local": 3, "black": true, "phase_two": "25_percent", "vile_swills": 5, "prime_subjects": 2},
+    "25N": {"vial_order": ["red_or_blue", "other_color", "green"], "vials_per_cycle_local": 2, "black": false, "phase_two": "25_percent", "vile_swills": 0, "prime_subjects": 2},
+    "25H": {"vial_order": ["black", "red_or_blue", "other_color", "green"], "vials_per_cycle_local": 3, "black": true, "phase_two": "25_percent", "vile_swills": 5, "prime_subjects": 2}
+  },
+  "values": [
+    {"key": "maloriak_health_guide", "10N": "24.7M", "10H": "34.6M", "25N": "86.6M", "25H": "121.2M", "source": "wowhead_442", "confidence": "current_guide_reported"},
+    {"key": "maloriak_health_historical_conflict", "10N": "19.8M", "10H": "34.6M", "25N": "69.3M", "25H": "121.2M", "source": "icy_original", "confidence": "historical_conflicting_normal_values"},
+    {"key": "phase_two_threshold", "10N": "25_percent", "10H": "25_percent", "25N": "25_percent", "25H": "25_percent", "source": "wowhead_442+local_cpp:DamageTaken", "confidence": "guide_and_repository_confirmation"},
+    {"key": "aberration_reserve", "value": 18, "modes": ["10N", "10H", "25N", "25H"], "source": "icy_cata_classic+local_cpp:spawn_group_and_release_filter", "confidence": "independent_guide_and_repository_confirmation"},
+    {"key": "release_pack_size", "value": 3, "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442+icy_cata_classic+local_cpp:RandomResize(3)", "confidence": "two_guides_and_repository_confirmation"},
+    {"key": "local_release_success_cap", "value": 6, "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:_releasedAberrationsCount_lt_6", "confidence": "implementation_only"},
+    {"key": "green_damage_taken_window", "value": "100_percent_increase_for_15s", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442+icy_cata_classic", "confidence": "two_independent_current_strategy_sources"},
+    {"key": "growth_catalyst_damage_dealt", "10N": "10_percent_per_stack_guide", "10H": "20_percent_per_stack_guide", "25N": "10_percent_per_stack_guide", "25H": "20_percent_per_stack_guide", "source": "wowhead_442", "confidence": "current_guide_reported"},
+    {"key": "growth_catalyst_damage_taken_reduction", "value": "20_percent_per_stack", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442+icy_cata_classic", "confidence": "two_strategy_sources"},
+    {"key": "heroic_vile_swill_count", "value": 5, "modes": ["10H", "25H"], "source": "icy_cata_classic+icy_original+local_cpp:SPELL_VILE_SWILL", "confidence": "two_guides_and_repository_confirmation"},
+    {"key": "phase_two_prime_subject_count", "value": 2, "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442+icy_cata_classic+local_cpp:SPELL_RELEASE_ALL_MINIONS", "confidence": "two_guides_and_repository_confirmation"},
+    {"key": "heroic_prime_fixate", "value": "few_seconds_after_spawn_persists_until_target_death", "modes": ["10H", "25H"], "source": "icy_original", "confidence": "historical_guide_only_local_explicit_logic_absent"},
+    {"key": "arcane_storm_area", "value": "80yd_guide", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442", "confidence": "current_guide_reported"},
+    {"key": "flash_freeze_local_target_filter", "value": "random_one_after_excluding_victim_and_players_attacked_by_aberration", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:spell_maloriak_flash_freeze_targeting", "confidence": "implementation_only"},
+    {"key": "flash_freeze_guide_target", "value": "one_ranged_player_with_5yd_chain_effect", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442+icy_original", "confidence": "two_strategy_sources_but_local_filter_differs"},
+    {"key": "biting_chill_targets_conflict", "value": "wowhead_three_random_raid_members; historical_icy_one_10_player_or_two_25_player_melee_targets", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442+icy_original", "confidence": "material_conflict_unresolved"},
+    {"key": "heroic_damage_delta_examples", "value": "guide_reports_higher_ArcaneStorm_ScorchingBlast_ConsumingFlames_FlashFreeze_BitingChill_MagmaJets_AcidNova_AbsoluteZero; historical_source_reports_some_spells_unchanged", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442+icy_original", "confidence": "material_conflict_spell_coefficients_unresolved"},
+    {"key": "heroic_health_and_damage_modifier_db_groups", "value": "TDB difficulty entries exist; 2025_06_17 groups Maloriak 41378/49974 at DamageModifier 90 and 49980/49986 at 120", "modes": ["10N", "10H", "25N", "25H"], "source": "current_tdb+sql_updates", "confidence": "repository_fact_without_mode_mapping_inference"},
+    {"key": "phase_two_magma_target", "value": "current_victim_local; guide_tank", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:spell_maloriak_magma_jets_script+wowhead_442", "confidence": "guide_and_repository_confirmation"},
+    {"key": "absolute_zero_target", "value": "random_eligible_player_with_3yd_trigger_and_5yd_explosion", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442+local_cpp:SelectTarget", "confidence": "guide_and_repository_confirmation"},
+    {"key": "remedy_effect", "value": "150000_health_first_tick_plus_150000_each_tick_10s_and_2000_mana_per_second_guide", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442", "confidence": "current_guide_reported"}
+  ],
+  "timers": [
+    {"key": "first_vial_guide", "value": "about_20s_after_engage", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442", "confidence": "current_guide_approximation"},
+    {"key": "first_cauldron_face_local", "value": "15.5s_after_engage", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:JustEngagedWith", "confidence": "implementation_only_not_vial_cast"},
+    {"key": "local_first_vial_pipeline", "value": "face_15.5s;throw_+1.3s;move_+1s;travel_unmeasured;drink_+1.5s_after_arrival;imbued_+2.5s", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:MovementInform_and_UpdateAI", "confidence": "implementation_only_movement_unmeasured"},
+    {"key": "normal_vial_face_repeat", "value": "40s_after_imbued_event", "modes": ["10N", "25N"], "source": "local_cpp:ACTION_SCHEDULE_EVENTS_FOR_PHASE", "confidence": "implementation_only"},
+    {"key": "heroic_black_vial_face_repeat", "value": "90s_after_black_imbued_event_local;about_95s_dark_phase_historical_guide", "modes": ["10H", "25H"], "source": "local_cpp+icy_original", "confidence": "conflicting_do_not_schedule_exact"},
+    {"key": "normal_cycle_guide", "value": "40s_per_vial;approximately_2m35s_red_blue_green_cycle_historical", "modes": ["10N", "25N"], "source": "wowhead_442+icy_original", "confidence": "guide_approximation"},
+    {"key": "heroic_black_events_local", "value": "vile_swill_2s;engulfing_darkness_8s_then_repeat_12.5s", "modes": ["10H", "25H"], "source": "local_cpp:ACTION_SCHEDULE_EVENTS_FOR_PHASE/UpdateAI", "confidence": "implementation_only"},
+    {"key": "heroic_dark_guide", "value": "about_95s;seven_EngulfingDarkness_casts;3s_cast_plus_8s_channel;about_11s_cycle", "modes": ["10H", "25H"], "source": "icy_original", "confidence": "historical_guide_only"},
+    {"key": "arcane_storm_local", "value": "red_15.5s_then_repeat_random_15.5_to_17s;blue_6s;green_5s;channel_interrupt_window_6.5s", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:ACTION_SCHEDULE_EVENTS_FOR_PHASE/UpdateAI", "confidence": "implementation_only"},
+    {"key": "remedy_local", "value": "red_20.5s;blue_21.5s;green_7.5s;repeat_24s", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:ACTION_SCHEDULE_EVENTS_FOR_PHASE/UpdateAI", "confidence": "implementation_only"},
+    {"key": "release_aberrations_local", "value": "red_11s;blue_14.5s;green_9s;repeat_random_17_to_18s_until_6_successes", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:ACTION_SCHEDULE_EVENTS_FOR_PHASE/UpdateAI", "confidence": "implementation_only"},
+    {"key": "red_local", "value": "consuming_flames_7s_then_14.5s;scorching_blast_19s_then_17s", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:UpdateAI", "confidence": "implementation_only"},
+    {"key": "blue_local", "value": "biting_chill_13s_then_11s;flash_freeze_17s_then_19s", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:UpdateAI", "confidence": "implementation_only"},
+    {"key": "green_local", "value": "cauldron_slime_effect_on_imbued;cauldron_stalker_evade_after_8s;attack_players_+4s", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:ACTION_SCHEDULE_EVENTS_FOR_PHASE", "confidence": "implementation_only"},
+    {"key": "green_guide", "value": "debilitating_slime_15s;next_vial_about_30s_after_slime_expires", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442+icy_cata_classic", "confidence": "two_strategy_sources_approximate"},
+    {"key": "phase_two_local_pipeline", "value": "enter_1ms;release_all_then_drink_all_5s;unstable_mix_+2.3s;magma_jets_+3.5s;acid_nova_and_absolute_zero_+8.4s", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:DamageTaken/UpdateAI", "confidence": "implementation_only"},
+    {"key": "phase_two_local_repeat", "value": "magma_jets_6s;acid_nova_20s;absolute_zero_7s", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:UpdateAI", "confidence": "implementation_only"},
+    {"key": "phase_two_guide_approx", "value": "magma_jets_about_6s;acid_nova_about_30s;absolute_zero_about_10s", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442", "confidence": "current_guide_approximation_conflicts_local"},
+    {"key": "vile_swill_dark_sludge_local", "value": "first_6s_then_repeat_6s_per_swill_ai", "modes": ["10H", "25H"], "source": "local_cpp:npc_maloriak_vile_swill", "confidence": "implementation_only"},
+    {"key": "vile_swill_dark_sludge_guide", "value": "about_one_new_puddle_per_second;15k_twice_per_second", "modes": ["10H", "25H"], "source": "icy_original", "confidence": "historical_guide_approximation"}
+  ],
+  "targeting_and_scaling": [
+    {"key": "red_scorching_blast", "target": "cone_up_to_60yd_split_among_targets", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442", "confidence": "current_guide_reported"},
+    {"key": "red_consuming_flames", "target": "one_random_raid_player", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442+local_cpp:SelectTarget", "confidence": "guide_and_repository_confirmation"},
+    {"key": "local_random_target_radius", "target": "ConsumingFlames_BitingChill_AbsoluteZero_select_random_within_60yd", "modes": ["10N", "10H", "25N", "25H"], "source": "local_cpp:SelectTarget(60.0f)", "confidence": "implementation_only"},
+    {"key": "blue_flash_freeze", "target": "one_random_eligible_target;5yd chain", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442+local_cpp", "confidence": "guide_and_repository_confirmation_but_ranged_scope_unresolved"},
+    {"key": "blue_biting_chill", "target": "random_player;3yd aura", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442", "confidence": "current_guide_reported_conflicts_historical_10_25_counts"},
+    {"key": "phase_two_absolute_zero", "target": "one_random_player;3yd_trigger;5yd_explosion", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442+local_cpp", "confidence": "guide_and_repository_confirmation"},
+    {"key": "heroic_vile_swill", "target": "five_oozes_spawn_under_boss;random_raid_dark_sludge", "modes": ["10H", "25H"], "source": "icy_cata_classic+icy_original+local_cpp", "confidence": "two_guides_and_repository_confirmation"},
+    {"key": "mode_damage_examples", "target": "wowhead_normal_to_heroic_examples:ArcaneStorm_12k_to_50k;ScorchingBlast_1m_to_2.7m;ConsumingFlames_9k_to_13.5k;AcidNova_7.5k_to_15k;MagmaJets_37k_to_75k;AbsoluteZero_50k_to_100k", "modes": ["10N", "10H", "25N", "25H"], "source": "wowhead_442", "confidence": "guide_reported_scope_and_10_25_mapping_not_reliably_encoded"},
+    {"key": "historical_heroic_delta", "target": "melee_and_aberration_hits_higher;Remedy_regeneration_doubled;ScorchingBlast_ConsumingFlames_AcidNova_higher;ArcaneStorm_BitingChill_FlashFreeze_AbsoluteZero_MagmaJets_reported_unchanged", "modes": ["10H", "25H"], "source": "icy_original", "confidence": "historical_conflict_with_current_guide"}
+  ],
+  "phase_reset_credit": [
+    {"key": "reset", "behavior": "Reset calls _Reset and MakeInterruptable(false), but does not explicitly reset current vial, used vial count, or released Aberration count", "source": "local_cpp:256-260", "confidence": "repository_fact;engine_reconstruction_unresolved"},
+    {"key": "evade_cleanup", "behavior": "despawn Heroic Nefarius; remove player encounter auras; despawn growth chamber spawn group and tracked summons; despawn at evade", "source": "local_cpp:280-288,604-611", "confidence": "repository_confirmation"},
+    {"key": "death_cleanup", "behavior": "remove encounter auras and summons, call _JustDied, then signal Heroic Nefarius death scene", "source": "local_cpp:290-300,604-611", "confidence": "repository_confirmation"},
+    {"key": "boss_state_mapping", "behavior": "creature 41378 maps to DATA_MALORIAK; base BossAI path is expected to set IN_PROGRESS/DONE; instance DONE notifies generic Nefarius", "source": "blackwing_descent.h+instance_blackwing_descent.cpp", "confidence": "repository_confirmation_with_base_class_inference"},
+    {"key": "heroic_title_credit", "behavior": "Lord Victor Nefarius casts spell 89798 after death scene; script applies title ID 188; this is presentation/title credit separate from boss DONE", "source": "local_cpp:762-846,1231-1267", "confidence": "repository_confirmation"}
+  ],
+  "conflicts": [
+    {"key": "first_vial", "guide": "about_20s", "local": "first_face_15.5s_plus_unmeasured_movement_pipeline", "resolution": "do_not_schedule_exact_vial_cast"},
+    {"key": "black_duration", "guide": "about_95s", "local": "90s_face_repeat_after_black_imbued", "resolution": "do_not_schedule_exact_dark_end"},
+    {"key": "phase_two_repeats", "guide": "6s/30s/10s_approx", "local": "6s/20s/7s", "resolution": "local_baseline_only_until_live_validation"},
+    {"key": "biting_chill_targets", "wowhead": "3_random_raid_members", "icy_original": "1_10_player_or_2_25_player_melee_targets", "resolution": "unresolved_spell_target_mode"},
+    {"key": "heroic_coefficients", "wowhead": "many_damage_values_increased", "icy_original": "several_named_spells_unchanged", "resolution": "unresolved_DBC_coefficients"},
+    {"key": "enrage", "icy_cata_classic": "6m_wording", "icy_original": "7m_normal_12m_heroic", "resolution": "unresolved_hotfix_and_page_context"},
+    {"key": "release_color", "icy_cata_classic": "Red_or_Green", "wowhead": "throughout_phase_one", "local": "scheduled_Red_Blue_Green", "resolution": "quota_policy_must_not_depend_on_color_only"}
+  ],
+  "unresolved": [
+    "exact_442_client_build_and_BWD_hotfix_cutoff",
+    "live_timer_and_movement_confirmation_for_10N_10H_25N_25H",
+    "exact_spell_coefficients_and_target_counts_by_mode",
+    "normal_health_and_enrage_values",
+    "heroic_prime_subject_fixate_spell_data_and_target_persistence",
+    "AI_object_reconstruction_and_custom_counter_reset_after_evade",
+    "whether_historical_custom_SQL_pack_is_applied_to_current_database"
+  ]
+}
