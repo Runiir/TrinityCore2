@@ -1,0 +1,6 @@
+outs:
+- md5: d5eb82b9f7e44569e04ad2fd1b951cab.dir
+  size: 12916
+  nfiles: 2
+  hash: md5
+  path: phase9_rerun216_canary4_verification

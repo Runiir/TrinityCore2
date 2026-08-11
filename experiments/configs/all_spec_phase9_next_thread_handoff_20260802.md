@@ -2,9 +2,23 @@
 
 ## Authority and purpose
 
-This document is the continuation contract for the approved program in `.codex/plans/all_class_sc_plan.md`. It is not a replacement design exercise and is not a request to enter Plan mode. Execute it directly on branch `all-spec-stonecore-execution`; the current top section records the authoritative pre-rerun216 checkpoint.
+This document is the continuation contract for the approved program in `.codex/plans/all_class_sc_plan.md`. It is not a replacement design exercise and is not a request to enter Plan mode. Execute it directly on branch `all-spec-stonecore-execution`; the current top section records the authoritative Phase 9 completion checkpoint.
 
-Phases 0-8 are complete. Phase 9, `pairwise_matrix_and_serial_stonecore_canaries`, is the only active phase. The current checkpoint is in progress, not a Phase 9 completion. Phases 10-12 remain blocked until every Phase 9 gate and the mandatory independent review pass.
+Phases 0-9 are complete. Phase 10, `adaptive_concurrency_discovery`, is the next phase and has not started. Phases 11-12 remain pending on their predecessor gates.
+
+## Phase 9 completion: seven targeted canaries accepted
+
+All seven targeted 25H Stonecore canaries are authoritative passes across rerun216, rerun217, and rerun218. The independent aggregate verifier records seven unique serial indices, the exact 24-target union, the supported Blood Death Knight/Feral Druid/Protection Paladin tank set, exclusion of Protection Warrior, `98/98` strict route terminals, and `28/28` authoritative real boss deaths. Its canonical SHA-256 is `8bff23db8fe577f9d9b6248506e5cb7392f305d8164b40cf5a0cbebba458be35`; DVC pointer `artifacts/all_spec_program/phase9_targeted_canary_completion_20260811.dvc` resolves to remote-verified object `38d4e71d1a4374f69fc9bf886b4df817.dir`.
+
+Rerun216 supplies accepted canaries 1 and 4. Rerun217 supplies accepted canaries 2, 3, and 5. Rerun218 supplies accepted canaries 6 and 7. Every accepted row independently satisfies exact-party and frozen-identity binding, session closure, one-at-a-time serial isolation, clear watchdog, zero forbidden completion assistance, cleanup to zero bots/leases/party bots, immutable publication, remote verification, and exact post-verification eviction. Rerun217 canary 6 ended in a worldserver segmentation fault at `13/14` route terminals and `3/4` boss deaths and produced no immutable batch; it is an excluded infrastructure abort, neither a gameplay pass nor a gameplay failure.
+
+Rerun218 canary 6 used Feral Druid/Holy Paladin/Assassination Rogue/Survival Hunter/Unholy Death Knight. Its batch identity is `d8ffc9b44e24b62397a4cd37373a4720b766a9af4e22819d61b37bcb630fb07b`, receipt SHA-256 is `ad9a15a67c68370724eb6779c4bdb6cd32eea8a56595e05193b7a5ee828f79c0`, and independent verifier SHA-256 is `6330bbef2f24aed4f1edcd636333895f309b53eca895a25ce44210502570df7e`. Its independently reconstructed Feral metrics were `1526/1556 = 0.980719794344473` tank-owned, `26/1556 = 0.01670951156812339` healer-targeting, `3347 ms` maximum dwell, and `1.0` threat-aura uptime.
+
+Rerun218 canary 7 used Protection Paladin/Discipline Priest/Fire Mage/Frost Death Knight/Marksmanship Hunter. Its batch identity is `7f86bd1d5f437e11c625b437cbd96a423e9637e356eb0e8cc1cafdc0ef568ba5`, receipt SHA-256 is `88eaabac9a91e3087f82168501d7ffc4981c978132bc88c90ee5b226d43981fc`, and independent verifier SHA-256 is `66a69445d877942c61c45aea9bf3321a00d39b3c27f8444579bc8b74dd2033ef`. Its independently reconstructed Protection metrics were `2241/2674 = 0.8380703066566941` tank-owned, `234/2674 = 0.087509349289454` healer-targeting, `5380 ms` maximum dwell, and `1.0` threat-aura uptime. Both rows completed the full hard boss gate, so their trash-role threshold misses are advisory under the frozen boss-completion policy; the same thresholds remain fail-closed before a full clear.
+
+The exact rerun218 unit `trinity-live-validation-c54b90658170dff05933c973.service` is stopped and inactive. No operator or DVC publisher remains active. All selectively hydrated raw/compact payloads, aggregate staging data, and batch-specific temporary caches were exactly re-evicted after verification; no broad DVC garbage collection was used. The seven individual verification bundles and aggregate bundle are remotely synchronized through their canonical DVC pointers.
+
+Phase 10 is now the next active phase. Do not rerun Phase 9, reintroduce Protection Warrior, or weaken any identity, publication, cleanup, serial-isolation, watchdog, forbidden-assistance, route, or boss-death contract unless new authoritative evidence invalidates this aggregate checkpoint.
 
 ## Current rerun216 serial-start contamination and rerun217 correction
 

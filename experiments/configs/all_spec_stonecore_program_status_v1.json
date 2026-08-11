@@ -1,12 +1,7 @@
 {
-  "active_phase": 9,
-  "blockers": [
-    "Rerun216 canaries 4 and 1 independently passed the exact 14-node route and all four authoritative boss deaths with complete identity, exact serial parties, clear watchdogs, cleanup zero, no forbidden assistance, and remotely verified immutable publication.",
-    "Rerun216 canary 2 is infrastructure-contaminated incomplete evidence, not a gameplay pass or failure. The shared Survival Hunter retained canary 4's saved end-of-route position because serial commands skipped route-start restoration; it spawned 261.017 yards from generation 1, fought disjoint GUIDs, died after about 58 seconds with zero combat attempts, and left the remaining party to attrit at 0/14 terminals and zero bosses.",
-    "Independent replay disproves a Feral regression: tank ownership was 709/717, healer exposure 0/717, maximum dwell 0 ms, threat aura 253/253, with 20 Thrash, 20 Swipe, and one Growl samples. Canonical diagnosis 4597d6b32c0748beb42bcbaf943e5882b9cc2a336bdfbd9e20c046c106754fec ties the correction to immutable batch 4d321e13d0f02fcff7550fc50d028c795d1de52930d76d4d50b490f69e10ec92.",
-    "The narrow rerun217 correction restores the configured Stonecore route start while the cohort is inactive before every serial attempt and makes the operator fail closed unless the report records that restoration. Fresh rerun217 identity is required; run canaries 2, 3, 5, 6, and 7 one at a time. Phases 10-12 remain blocked until all seven rows are authoritative passes."
-  ],
-  "exact_next_handoff_prompt": "Continue Phase 9 only. Treat rerun216 canaries 4 and 1 as immutable authoritative passes. Treat canary 2 batch 4d321e13d0f02fcff7550fc50d028c795d1de52930d76d4d50b490f69e10ec92 as infrastructure-contaminated incomplete evidence caused by skipped per-attempt route-start restoration, not a Feral gameplay failure. Treat canonical diagnosis 4597d6b32c0748beb42bcbaf943e5882b9cc2a336bdfbd9e20c046c106754fec as authoritative. Commit and verify the narrow serial-start correction, deterministically reprovision all 31 targets, capture a fresh rerun217 identity and seven-row plan, independently reconstruct it, then run canaries 2, 3, 5, 6, and 7 one at a time. Keep Phases 10-12 blocked until every row is independently verified. Never use broad DVC garbage collection.",
+  "active_phase": 10,
+  "blockers": [],
+  "exact_next_handoff_prompt": "Phase 9 is complete. Treat aggregate verifier 8bff23db8fe577f9d9b6248506e5cb7392f305d8164b40cf5a0cbebba458be35 and its DVC pointer artifacts/all_spec_program/phase9_targeted_canary_completion_20260811.dvc as authoritative: all seven targeted 25H Stonecore canaries independently passed the exact 14-node route and four authoritative boss deaths, with exact parties, identity, serial isolation, cleanup, watchdog, publication, and forbidden-assistance gates verified. Protection/Feral trash-role threshold misses are advisory after an authoritative boss clear under the frozen policy. Begin Phase 10 adaptive concurrency from the 24-spec targeted roster; do not reintroduce Protection Warrior and do not rerun Phase 9 unless a Phase 10 identity or isolation check invalidates aggregation. Never use broad DVC garbage collection.",
   "phase_status": [
     {
       "evidence": {
@@ -686,8 +681,90 @@
       "checkpoint": {
         "branch": "all-spec-stonecore-execution",
         "latest_serial_canary_count": 7,
-        "checkpoint_kind": "in_progress_not_phase_complete",
-        "current_attempt": {
+        "checkpoint_kind": "phase_complete",
+        "completion_checkpoint": {
+          "status": "all_seven_targeted_canaries_independently_passed",
+          "aggregate_verifier_sha256": "8bff23db8fe577f9d9b6248506e5cb7392f305d8164b40cf5a0cbebba458be35",
+          "aggregate_verifier_pointer": "artifacts/all_spec_program/phase9_targeted_canary_completion_20260811.dvc",
+          "aggregate_verifier_dvc_object": "38d4e71d1a4374f69fc9bf886b4df817.dir",
+          "accepted_canary_count": 7,
+          "canonical_target_count": 24,
+          "strict_route_terminal_total": 98,
+          "authoritative_boss_death_total": 28,
+          "supported_tanks": [
+            "blood_death_knight",
+            "feral_druid_tank",
+            "protection_paladin"
+          ],
+          "excluded_tanks": [
+            "protection_warrior"
+          ],
+          "accepted_canaries": [
+            {
+              "serial_index": 1,
+              "run": "rerun216",
+              "batch_identity": "b82665c6d6efd19ec814330b40904be9c5b3edca712388247e48fc5c2227cda3",
+              "publication_receipt_sha256": "5f9a70321198a808cac8a23cfeaa29c52c0a5566b0aea9f63aea1e9d9cf99db9",
+              "independent_verifier_sha256": "51a7431003a46fd4bcad49a85b666f64f6c4df883ce7fb196dd787f6ed60dc35"
+            },
+            {
+              "serial_index": 2,
+              "run": "rerun217",
+              "batch_identity": "54fa473a0b46b475f9b5e747914618b3b0222e5826bc28069b7662b61f5e54d8",
+              "publication_receipt_sha256": "cf950aa822f6be2dfb440070fb2999677f40ceed2f6da56e47fe268eb1738b77",
+              "independent_verifier_sha256": "e507021fd8a2eccd5412b47718984329c213fab8ecf028c2dced915ea87898f0"
+            },
+            {
+              "serial_index": 3,
+              "run": "rerun217",
+              "batch_identity": "5a561bdb9c420123c53baefaa7a2ed2c8b4c8effb45bf5da1bc066cb0492a332",
+              "publication_receipt_sha256": "21cf634ec67bd0230d2c983fab638a6e38ac1d7e2e367e1fe3326f7dbd20d43b",
+              "independent_verifier_sha256": "4741f1eb2278f9dcb96b952e8d72c4c4a96d8fda91178b3bff575be592f2a682"
+            },
+            {
+              "serial_index": 4,
+              "run": "rerun216",
+              "batch_identity": "04bb297d879b81ac8b14f6cbdc249aeab8965366b7a0f911fceed7a9fe0a5f5c",
+              "publication_receipt_sha256": "48dc93f1c2231af3795127801dc2ab21652ae33799af1a5d9cea3f07a1224f19",
+              "independent_verifier_sha256": "20a5cdb16d9d93c44affef2b32f40a630b9efc68578a0f91774fbc1462803061"
+            },
+            {
+              "serial_index": 5,
+              "run": "rerun217",
+              "batch_identity": "4a66bf913b2de557a781cad8066a54cd7d0f5dd33f20b41603fe77f7b9f49acc",
+              "publication_receipt_sha256": "4290d864b6e13bda60cf146dcf38c4bf830ea51c5006cebcf1fa478055209c5f",
+              "independent_verifier_sha256": "f9d6d4716f248ec2c0ac65386bdf8898cb825229fd01d9a01d3295c9b12e66d2"
+            },
+            {
+              "serial_index": 6,
+              "run": "rerun218",
+              "batch_identity": "d8ffc9b44e24b62397a4cd37373a4720b766a9af4e22819d61b37bcb630fb07b",
+              "publication_receipt_sha256": "ad9a15a67c68370724eb6779c4bdb6cd32eea8a56595e05193b7a5ee828f79c0",
+              "independent_verifier_sha256": "6330bbef2f24aed4f1edcd636333895f309b53eca895a25ce44210502570df7e"
+            },
+            {
+              "serial_index": 7,
+              "run": "rerun218",
+              "batch_identity": "7f86bd1d5f437e11c625b437cbd96a423e9637e356eb0e8cc1cafdc0ef568ba5",
+              "publication_receipt_sha256": "88eaabac9a91e3087f82168501d7ffc4981c978132bc88c90ee5b226d43981fc",
+              "independent_verifier_sha256": "66a69445d877942c61c45aea9bf3321a00d39b3c27f8444579bc8b74dd2033ef"
+            }
+          ],
+          "rerun217_canary6_infrastructure_abort": "excluded_from_gameplay_outcomes",
+          "rerun218_identity_manifest_sha256": "438d0a99b38c4b52a9386e18dbee643b1efc8f3f16142eeef1b38ca3bb072699",
+          "rerun218_run_plan_sha256": "829b16a008ba78aa56552707f4573a1cb73302c0874a14ccf1c614cf06dfac91",
+          "rerun218_binary_sha256": "0e58b3893a02928cae328ba703a06c364ecdfc9943a124f6dd5c620eb08a29f1",
+          "rerun218_worldserver_stopped": true,
+          "operators_active": 0,
+          "publishers_active": 0,
+          "all_hydrated_payloads_re_evicted": true,
+          "all_verification_bundles_remote_verified": true,
+          "broad_dvc_gc_used": false,
+          "role_quality_policy": "advisory_after_authoritative_boss_clear_fail_closed_before_clear",
+          "independent_gpt_5_6_sol_architecture_evidence_approval": true,
+          "remaining_canaries": []
+        },
+        "previous_checkpoint_rerun216": {
           "attempt_label": "rerun216_serial",
           "status": "canaries_4_and_1_passed_canary_2_infrastructure_contaminated_verified_evicted",
           "canary_1_started": true,
@@ -1922,23 +1999,23 @@
         }
       },
       "gate": {
-        "all_batches_published_and_remotely_verified": false,
-        "covering_array_complete": false,
-        "independent_gpt_5_6_sol_architecture_evidence_approval": false,
-        "pair_universe_reconstructed": false,
-        "passed": false,
-        "serial_canary_rows_cover_all_24_live_qualification_targets": false,
-        "strict_uninterrupted_serial_clears_passed": false
+        "all_batches_published_and_remotely_verified": true,
+        "covering_array_complete": true,
+        "independent_gpt_5_6_sol_architecture_evidence_approval": true,
+        "pair_universe_reconstructed": true,
+        "passed": true,
+        "serial_canary_rows_cover_all_24_live_qualification_targets": true,
+        "strict_uninterrupted_serial_clears_passed": true
       },
       "name": "pairwise_matrix_and_serial_stonecore_canaries",
       "phase": 9,
       "scope": "Keep all 31 canonical targets provisioned and qualify the 24 specialization targets represented by the targeted 25H progression roster: Blood Death Knight, Feral Druid, and Protection Paladin tanks; all five healer specs; and sixteen ranged/melee DPS specs. Independently reconstruct the constrained pair universe, generate its deterministic covering array, select a seven-row serial union covering all supported targets with native Hunter threat-transfer support for every tank, and prove strict uninterrupted current-identity clears of the complete 14-node Stonecore route one party at a time.",
-      "status": "in_progress"
+      "status": "completed"
     },
     {
-      "note": "Adaptive concurrency, the full pairwise Stonecore campaign, and the compact static readiness report remain blocked until the Phase 9 serial-correctness gate and mandatory independent gpt-5.6-sol approval pass.",
+      "note": "Phase 9 serial correctness and independent evidence approval passed. Phase 10 adaptive concurrency is unblocked and is the next active phase; Phases 11-12 remain pending on their own predecessor gates.",
       "phase_range": "10-12",
-      "status": "pending"
+      "status": "phase10_unblocked_phases11_12_pending"
     }
   ],
   "program": "all_spec_stonecore",

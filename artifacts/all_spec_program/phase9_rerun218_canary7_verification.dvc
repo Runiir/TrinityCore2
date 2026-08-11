@@ -1,0 +1,6 @@
+outs:
+- md5: 078d135f26fa2a8bb8e3d5f1cecb2984.dir
+  size: 35410
+  nfiles: 4
+  hash: md5
+  path: phase9_rerun218_canary7_verification
