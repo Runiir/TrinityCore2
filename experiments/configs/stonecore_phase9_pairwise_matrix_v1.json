@@ -18,7 +18,7 @@
     "party_order": "tank_then_healer_then_sorted_dps",
     "tank": 1
   },
-  "composition_set_sha256": "dd67dbfa1c46313323e9825b7de6f5669b18bc019410167308a05075cf501cfb",
+  "composition_set_sha256": "c0b2b51997cecb87f04f40d7c4c3c81b08e0cc21d87f156544b8682ded2771eb",
   "composition_to_pair_ids": {
     "stonecore_phase9_001_64d0724cc829": [
       "dps_dps:affliction_warlock|arms_warrior",
@@ -584,53 +584,65 @@
       "tank_dps:feral_druid_tank|survival_hunter",
       "tank_healer:feral_druid_tank|discipline_priest"
     ],
-    "stonecore_phase9_048_ea9d8e7353b8": [
+    "stonecore_phase9_048_6d59c2000776": [
       "dps_dps:balance_druid|combat_rogue",
-      "dps_dps:balance_druid|frost_death_knight",
-      "dps_dps:combat_rogue|frost_death_knight",
+      "dps_dps:balance_druid|marksmanship_hunter",
+      "dps_dps:combat_rogue|marksmanship_hunter",
       "healer_dps:restoration_shaman|balance_druid",
       "healer_dps:restoration_shaman|combat_rogue",
-      "healer_dps:restoration_shaman|frost_death_knight",
+      "healer_dps:restoration_shaman|marksmanship_hunter",
       "tank_dps:protection_paladin|balance_druid",
       "tank_dps:protection_paladin|combat_rogue",
-      "tank_dps:protection_paladin|frost_death_knight",
+      "tank_dps:protection_paladin|marksmanship_hunter",
       "tank_healer:protection_paladin|restoration_shaman"
     ],
-    "stonecore_phase9_049_78236b23d9f5": [
+    "stonecore_phase9_049_f852a689382d": [
       "dps_dps:elemental_shaman|feral_druid_dps",
-      "dps_dps:elemental_shaman|fire_mage",
-      "dps_dps:feral_druid_dps|fire_mage",
+      "dps_dps:elemental_shaman|survival_hunter",
+      "dps_dps:feral_druid_dps|survival_hunter",
       "healer_dps:restoration_druid|elemental_shaman",
       "healer_dps:restoration_druid|feral_druid_dps",
-      "healer_dps:restoration_druid|fire_mage",
+      "healer_dps:restoration_druid|survival_hunter",
       "tank_dps:protection_paladin|elemental_shaman",
       "tank_dps:protection_paladin|feral_druid_dps",
-      "tank_dps:protection_paladin|fire_mage",
+      "tank_dps:protection_paladin|survival_hunter",
       "tank_healer:protection_paladin|restoration_druid"
     ],
-    "stonecore_phase9_050_f36eb97731c6": [
+    "stonecore_phase9_050_7f09b51b8998": [
       "dps_dps:arms_warrior|fury_warrior",
-      "dps_dps:arms_warrior|survival_hunter",
-      "dps_dps:fury_warrior|survival_hunter",
+      "dps_dps:arms_warrior|marksmanship_hunter",
+      "dps_dps:fury_warrior|marksmanship_hunter",
       "healer_dps:holy_priest|arms_warrior",
       "healer_dps:holy_priest|fury_warrior",
-      "healer_dps:holy_priest|survival_hunter",
+      "healer_dps:holy_priest|marksmanship_hunter",
       "tank_dps:blood_death_knight|arms_warrior",
       "tank_dps:blood_death_knight|fury_warrior",
-      "tank_dps:blood_death_knight|survival_hunter",
+      "tank_dps:blood_death_knight|marksmanship_hunter",
       "tank_healer:blood_death_knight|holy_priest"
     ],
-    "stonecore_phase9_051_c54a95ead1f5": [
-      "dps_dps:assassination_rogue|marksmanship_hunter",
+    "stonecore_phase9_051_fbf54b4a4beb": [
+      "dps_dps:assassination_rogue|survival_hunter",
       "dps_dps:assassination_rogue|unholy_death_knight",
-      "dps_dps:marksmanship_hunter|unholy_death_knight",
+      "dps_dps:survival_hunter|unholy_death_knight",
       "healer_dps:holy_paladin|assassination_rogue",
-      "healer_dps:holy_paladin|marksmanship_hunter",
+      "healer_dps:holy_paladin|survival_hunter",
       "healer_dps:holy_paladin|unholy_death_knight",
       "tank_dps:feral_druid_tank|assassination_rogue",
-      "tank_dps:feral_druid_tank|marksmanship_hunter",
+      "tank_dps:feral_druid_tank|survival_hunter",
       "tank_dps:feral_druid_tank|unholy_death_knight",
       "tank_healer:feral_druid_tank|holy_paladin"
+    ],
+    "stonecore_phase9_052_2e3d87f152cf": [
+      "dps_dps:fire_mage|frost_death_knight",
+      "dps_dps:fire_mage|marksmanship_hunter",
+      "dps_dps:frost_death_knight|marksmanship_hunter",
+      "healer_dps:discipline_priest|fire_mage",
+      "healer_dps:discipline_priest|frost_death_knight",
+      "healer_dps:discipline_priest|marksmanship_hunter",
+      "tank_dps:protection_paladin|fire_mage",
+      "tank_dps:protection_paladin|frost_death_knight",
+      "tank_dps:protection_paladin|marksmanship_hunter",
+      "tank_healer:protection_paladin|discipline_priest"
     ]
   },
   "compositions": [
@@ -2374,24 +2386,24 @@
       "tank": "feral_druid_tank"
     },
     {
-      "composition_id": "stonecore_phase9_048_ea9d8e7353b8",
-      "composition_sha256": "ea9d8e7353b86cbf2b73fa9314d9c55aaf42189cc62fa1679d2d94ff986d0f89",
+      "composition_id": "stonecore_phase9_048_6d59c2000776",
+      "composition_sha256": "6d59c2000776b3a588d8a51edd2fb2d397ce2a0658c02765337a988e2b357210",
       "covered_pair_ids": [
         "dps_dps:balance_druid|combat_rogue",
-        "dps_dps:balance_druid|frost_death_knight",
-        "dps_dps:combat_rogue|frost_death_knight",
+        "dps_dps:balance_druid|marksmanship_hunter",
+        "dps_dps:combat_rogue|marksmanship_hunter",
         "healer_dps:restoration_shaman|balance_druid",
         "healer_dps:restoration_shaman|combat_rogue",
-        "healer_dps:restoration_shaman|frost_death_knight",
+        "healer_dps:restoration_shaman|marksmanship_hunter",
         "tank_dps:protection_paladin|balance_druid",
         "tank_dps:protection_paladin|combat_rogue",
-        "tank_dps:protection_paladin|frost_death_knight",
+        "tank_dps:protection_paladin|marksmanship_hunter",
         "tank_healer:protection_paladin|restoration_shaman"
       ],
       "dps": [
         "balance_druid",
         "combat_rogue",
-        "frost_death_knight"
+        "marksmanship_hunter"
       ],
       "healer": "restoration_shaman",
       "lease_keys": [
@@ -2399,36 +2411,36 @@
         "all_spec_candidate_pool:restoration_shaman",
         "all_spec_candidate_pool:balance_druid",
         "all_spec_candidate_pool:combat_rogue",
-        "all_spec_candidate_pool:frost_death_knight"
+        "all_spec_candidate_pool:marksmanship_hunter"
       ],
       "ordered_party": [
         "protection_paladin",
         "restoration_shaman",
         "balance_druid",
         "combat_rogue",
-        "frost_death_knight"
+        "marksmanship_hunter"
       ],
       "tank": "protection_paladin"
     },
     {
-      "composition_id": "stonecore_phase9_049_78236b23d9f5",
-      "composition_sha256": "78236b23d9f55fa42433b1a4b47bf5f4b0272982441559adc9784c85b8621fb8",
+      "composition_id": "stonecore_phase9_049_f852a689382d",
+      "composition_sha256": "f852a689382df6769845faeddd6f09c6a19909eae516d9a50317a4be679ba393",
       "covered_pair_ids": [
         "dps_dps:elemental_shaman|feral_druid_dps",
-        "dps_dps:elemental_shaman|fire_mage",
-        "dps_dps:feral_druid_dps|fire_mage",
+        "dps_dps:elemental_shaman|survival_hunter",
+        "dps_dps:feral_druid_dps|survival_hunter",
         "healer_dps:restoration_druid|elemental_shaman",
         "healer_dps:restoration_druid|feral_druid_dps",
-        "healer_dps:restoration_druid|fire_mage",
+        "healer_dps:restoration_druid|survival_hunter",
         "tank_dps:protection_paladin|elemental_shaman",
         "tank_dps:protection_paladin|feral_druid_dps",
-        "tank_dps:protection_paladin|fire_mage",
+        "tank_dps:protection_paladin|survival_hunter",
         "tank_healer:protection_paladin|restoration_druid"
       ],
       "dps": [
         "elemental_shaman",
         "feral_druid_dps",
-        "fire_mage"
+        "survival_hunter"
       ],
       "healer": "restoration_druid",
       "lease_keys": [
@@ -2436,36 +2448,36 @@
         "all_spec_candidate_pool:restoration_druid",
         "all_spec_candidate_pool:elemental_shaman",
         "all_spec_candidate_pool:feral_druid_dps",
-        "all_spec_candidate_pool:fire_mage"
+        "all_spec_candidate_pool:survival_hunter"
       ],
       "ordered_party": [
         "protection_paladin",
         "restoration_druid",
         "elemental_shaman",
         "feral_druid_dps",
-        "fire_mage"
+        "survival_hunter"
       ],
       "tank": "protection_paladin"
     },
     {
-      "composition_id": "stonecore_phase9_050_f36eb97731c6",
-      "composition_sha256": "f36eb97731c690fcb7093be21f95fa4eb2a9d951c7e8b4caef88ac1b917d5dac",
+      "composition_id": "stonecore_phase9_050_7f09b51b8998",
+      "composition_sha256": "7f09b51b899868c140f6da957e325a4ab1d623a15ce6071c2bf148123241776b",
       "covered_pair_ids": [
         "dps_dps:arms_warrior|fury_warrior",
-        "dps_dps:arms_warrior|survival_hunter",
-        "dps_dps:fury_warrior|survival_hunter",
+        "dps_dps:arms_warrior|marksmanship_hunter",
+        "dps_dps:fury_warrior|marksmanship_hunter",
         "healer_dps:holy_priest|arms_warrior",
         "healer_dps:holy_priest|fury_warrior",
-        "healer_dps:holy_priest|survival_hunter",
+        "healer_dps:holy_priest|marksmanship_hunter",
         "tank_dps:blood_death_knight|arms_warrior",
         "tank_dps:blood_death_knight|fury_warrior",
-        "tank_dps:blood_death_knight|survival_hunter",
+        "tank_dps:blood_death_knight|marksmanship_hunter",
         "tank_healer:blood_death_knight|holy_priest"
       ],
       "dps": [
         "arms_warrior",
         "fury_warrior",
-        "survival_hunter"
+        "marksmanship_hunter"
       ],
       "healer": "holy_priest",
       "lease_keys": [
@@ -2473,35 +2485,35 @@
         "all_spec_candidate_pool:holy_priest",
         "all_spec_candidate_pool:arms_warrior",
         "all_spec_candidate_pool:fury_warrior",
-        "all_spec_candidate_pool:survival_hunter"
+        "all_spec_candidate_pool:marksmanship_hunter"
       ],
       "ordered_party": [
         "blood_death_knight",
         "holy_priest",
         "arms_warrior",
         "fury_warrior",
-        "survival_hunter"
+        "marksmanship_hunter"
       ],
       "tank": "blood_death_knight"
     },
     {
-      "composition_id": "stonecore_phase9_051_c54a95ead1f5",
-      "composition_sha256": "c54a95ead1f5c59d7b0860cedf3fefbf9f02c4b246103948f1c6d5f1fd10024a",
+      "composition_id": "stonecore_phase9_051_fbf54b4a4beb",
+      "composition_sha256": "fbf54b4a4beb2fe638bf2483afb9e9a2c40a755e7e7f54c5e01f02cfb25d62bd",
       "covered_pair_ids": [
-        "dps_dps:assassination_rogue|marksmanship_hunter",
+        "dps_dps:assassination_rogue|survival_hunter",
         "dps_dps:assassination_rogue|unholy_death_knight",
-        "dps_dps:marksmanship_hunter|unholy_death_knight",
+        "dps_dps:survival_hunter|unholy_death_knight",
         "healer_dps:holy_paladin|assassination_rogue",
-        "healer_dps:holy_paladin|marksmanship_hunter",
+        "healer_dps:holy_paladin|survival_hunter",
         "healer_dps:holy_paladin|unholy_death_knight",
         "tank_dps:feral_druid_tank|assassination_rogue",
-        "tank_dps:feral_druid_tank|marksmanship_hunter",
+        "tank_dps:feral_druid_tank|survival_hunter",
         "tank_dps:feral_druid_tank|unholy_death_knight",
         "tank_healer:feral_druid_tank|holy_paladin"
       ],
       "dps": [
         "assassination_rogue",
-        "marksmanship_hunter",
+        "survival_hunter",
         "unholy_death_knight"
       ],
       "healer": "holy_paladin",
@@ -2509,17 +2521,54 @@
         "all_spec_candidate_pool:feral_druid_tank",
         "all_spec_candidate_pool:holy_paladin",
         "all_spec_candidate_pool:assassination_rogue",
-        "all_spec_candidate_pool:marksmanship_hunter",
+        "all_spec_candidate_pool:survival_hunter",
         "all_spec_candidate_pool:unholy_death_knight"
       ],
       "ordered_party": [
         "feral_druid_tank",
         "holy_paladin",
         "assassination_rogue",
-        "marksmanship_hunter",
+        "survival_hunter",
         "unholy_death_knight"
       ],
       "tank": "feral_druid_tank"
+    },
+    {
+      "composition_id": "stonecore_phase9_052_2e3d87f152cf",
+      "composition_sha256": "2e3d87f152cf51fef7819d49caf1f1e72e42c907916a7cdbcbe76ea9bffcb16e",
+      "covered_pair_ids": [
+        "dps_dps:fire_mage|frost_death_knight",
+        "dps_dps:fire_mage|marksmanship_hunter",
+        "dps_dps:frost_death_knight|marksmanship_hunter",
+        "healer_dps:discipline_priest|fire_mage",
+        "healer_dps:discipline_priest|frost_death_knight",
+        "healer_dps:discipline_priest|marksmanship_hunter",
+        "tank_dps:protection_paladin|fire_mage",
+        "tank_dps:protection_paladin|frost_death_knight",
+        "tank_dps:protection_paladin|marksmanship_hunter",
+        "tank_healer:protection_paladin|discipline_priest"
+      ],
+      "dps": [
+        "fire_mage",
+        "frost_death_knight",
+        "marksmanship_hunter"
+      ],
+      "healer": "discipline_priest",
+      "lease_keys": [
+        "all_spec_candidate_pool:protection_paladin",
+        "all_spec_candidate_pool:discipline_priest",
+        "all_spec_candidate_pool:fire_mage",
+        "all_spec_candidate_pool:frost_death_knight",
+        "all_spec_candidate_pool:marksmanship_hunter"
+      ],
+      "ordered_party": [
+        "protection_paladin",
+        "discipline_priest",
+        "fire_mage",
+        "frost_death_knight",
+        "marksmanship_hunter"
+      ],
+      "tank": "protection_paladin"
     }
   ],
   "covered_pair_count": 263,
@@ -2842,11 +2891,11 @@
   "inputs": {
     "candidate_pool_tag": "all_spec_candidate_pool",
     "pair_policy_path": "experiments/configs/stonecore_phase9_pair_policy_v1.json",
-    "pair_policy_sha256": "2f28221273e0200e5f9b46be9dbc33dff4da5942b205bcc1a2795e4c359e6415",
+    "pair_policy_sha256": "41057702c15cfe09ec42957d2f7d6c9ae52cc897ef7df5642a514a2d9105f182",
     "target_catalog_path": "experiments/configs/all_spec_targets_cata_p4_v1.json",
     "target_catalog_sha256": "c6411faceabe66d1634aa5688d3db35a61203929f0319cbc6430451cacf3a00d"
   },
-  "matrix_sha256": "d5c8b21b6b0b386390d3df09941686af14b37fefc65b34d2f2d4bb73eb67dbbe",
+  "matrix_sha256": "94bf018bb80fcc47755e28e0687da6a940b3144b80f65786213e18bcf8fb3292",
   "pair_universe_sha256": "2aff067920e9d17a6682f973081c0cd6dfd2457108fcf2b3194c34f882f25ade",
   "qualification_excluded_targets": [
     "arcane_mage",
@@ -2869,12 +2918,12 @@
       "spec_target_id": "feral_druid_tank"
     },
     {
-      "composition_count": 17,
+      "composition_count": 18,
       "role": "tank",
       "spec_target_id": "protection_paladin"
     },
     {
-      "composition_count": 10,
+      "composition_count": 11,
       "role": "healer",
       "spec_target_id": "discipline_priest"
     },
@@ -2954,7 +3003,7 @@
       "spec_target_id": "fury_warrior"
     },
     {
-      "composition_count": 10,
+      "composition_count": 12,
       "role": "dps",
       "spec_target_id": "marksmanship_hunter"
     },
@@ -2969,7 +3018,7 @@
       "spec_target_id": "shadow_priest"
     },
     {
-      "composition_count": 10,
+      "composition_count": 11,
       "role": "dps",
       "spec_target_id": "survival_hunter"
     },
@@ -2979,7 +3028,7 @@
       "spec_target_id": "unholy_death_knight"
     }
   ],
-  "representation_sha256": "f13b83a5bb9d306943f348a7261b7ce177ff6506d0ade5c0312e09ac44985604",
+  "representation_sha256": "02f50317b9d1819c28f6146757bb34183e2c2d63afa32a925580a48e6d88da05",
   "required_pair_count": 263,
   "required_pair_counts_by_kind": {
     "dps_dps": 120,
@@ -3253,7 +3302,7 @@
     "tank_healer:protection_paladin|restoration_shaman"
   ],
   "schema": "stonecore_phase9_pairwise_matrix_v1",
-  "selected_composition_count": 51,
+  "selected_composition_count": 52,
   "serial_canaries": [
     {
       "composition_id": "stonecore_phase9_046_5fa6cb9c5dde",
@@ -3294,12 +3343,11 @@
       "serial_index": 2
     },
     {
-      "composition_id": "stonecore_phase9_048_ea9d8e7353b8",
-      "composition_sha256": "ea9d8e7353b86cbf2b73fa9314d9c55aaf42189cc62fa1679d2d94ff986d0f89",
+      "composition_id": "stonecore_phase9_048_6d59c2000776",
+      "composition_sha256": "6d59c2000776b3a588d8a51edd2fb2d397ce2a0658c02765337a988e2b357210",
       "new_targets": [
         "balance_druid",
         "combat_rogue",
-        "frost_death_knight",
         "protection_paladin",
         "restoration_shaman"
       ],
@@ -3308,17 +3356,16 @@
         "restoration_shaman",
         "balance_druid",
         "combat_rogue",
-        "frost_death_knight"
+        "marksmanship_hunter"
       ],
       "serial_index": 3
     },
     {
-      "composition_id": "stonecore_phase9_049_78236b23d9f5",
-      "composition_sha256": "78236b23d9f55fa42433b1a4b47bf5f4b0272982441559adc9784c85b8621fb8",
+      "composition_id": "stonecore_phase9_049_f852a689382d",
+      "composition_sha256": "f852a689382df6769845faeddd6f09c6a19909eae516d9a50317a4be679ba393",
       "new_targets": [
         "elemental_shaman",
         "feral_druid_dps",
-        "fire_mage",
         "restoration_druid"
       ],
       "ordered_party": [
@@ -3326,13 +3373,13 @@
         "restoration_druid",
         "elemental_shaman",
         "feral_druid_dps",
-        "fire_mage"
+        "survival_hunter"
       ],
       "serial_index": 4
     },
     {
-      "composition_id": "stonecore_phase9_050_f36eb97731c6",
-      "composition_sha256": "f36eb97731c690fcb7093be21f95fa4eb2a9d951c7e8b4caef88ac1b917d5dac",
+      "composition_id": "stonecore_phase9_050_7f09b51b8998",
+      "composition_sha256": "7f09b51b899868c140f6da957e325a4ab1d623a15ce6071c2bf148123241776b",
       "new_targets": [
         "arms_warrior",
         "fury_warrior",
@@ -3343,13 +3390,13 @@
         "holy_priest",
         "arms_warrior",
         "fury_warrior",
-        "survival_hunter"
+        "marksmanship_hunter"
       ],
       "serial_index": 5
     },
     {
-      "composition_id": "stonecore_phase9_051_c54a95ead1f5",
-      "composition_sha256": "c54a95ead1f5c59d7b0860cedf3fefbf9f02c4b246103948f1c6d5f1fd10024a",
+      "composition_id": "stonecore_phase9_051_fbf54b4a4beb",
+      "composition_sha256": "fbf54b4a4beb2fe638bf2483afb9e9a2c40a755e7e7f54c5e01f02cfb25d62bd",
       "new_targets": [
         "assassination_rogue",
         "unholy_death_knight"
@@ -3358,14 +3405,30 @@
         "feral_druid_tank",
         "holy_paladin",
         "assassination_rogue",
-        "marksmanship_hunter",
+        "survival_hunter",
         "unholy_death_knight"
       ],
       "serial_index": 6
+    },
+    {
+      "composition_id": "stonecore_phase9_052_2e3d87f152cf",
+      "composition_sha256": "2e3d87f152cf51fef7819d49caf1f1e72e42c907916a7cdbcbe76ea9bffcb16e",
+      "new_targets": [
+        "fire_mage",
+        "frost_death_knight"
+      ],
+      "ordered_party": [
+        "protection_paladin",
+        "discipline_priest",
+        "fire_mage",
+        "frost_death_knight",
+        "marksmanship_hunter"
+      ],
+      "serial_index": 7
     }
   ],
-  "serial_canary_count": 6,
-  "serial_canary_set_sha256": "cdceb55d9fe8f1ff5469b3d133499ad163655201e2187003bc119400c733edff",
+  "serial_canary_count": 7,
+  "serial_canary_set_sha256": "05ea9ab471bc5f9ebbf455a9bdf44e9f27c7b71ee312178563a497f2dd6467f5",
   "serial_representation": [
     {
       "composition_count": 2,
@@ -3378,12 +3441,12 @@
       "spec_target_id": "feral_druid_tank"
     },
     {
-      "composition_count": 2,
+      "composition_count": 3,
       "role": "tank",
       "spec_target_id": "protection_paladin"
     },
     {
-      "composition_count": 1,
+      "composition_count": 2,
       "role": "healer",
       "spec_target_id": "discipline_priest"
     },
@@ -3463,7 +3526,7 @@
       "spec_target_id": "fury_warrior"
     },
     {
-      "composition_count": 2,
+      "composition_count": 4,
       "role": "dps",
       "spec_target_id": "marksmanship_hunter"
     },
@@ -3478,7 +3541,7 @@
       "spec_target_id": "shadow_priest"
     },
     {
-      "composition_count": 2,
+      "composition_count": 3,
       "role": "dps",
       "spec_target_id": "survival_hunter"
     },

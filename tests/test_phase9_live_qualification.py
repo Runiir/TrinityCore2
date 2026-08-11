@@ -35,7 +35,12 @@ def test_phase9_live_qualification_matches_targeted_25h_roster(tmp_path: Path) -
     assert {
         row["ordered_party"][0] for row in matrix["serial_canaries"]
     } == {"blood_death_knight", "feral_druid_tank", "protection_paladin"}
-    assert matrix["serial_canary_count"] == 6
+    assert matrix["serial_canary_count"] == 7
+    assert all(
+        {"marksmanship_hunter", "survival_hunter"}
+        & set(row["ordered_party"])
+        for row in matrix["serial_canaries"]
+    )
 
     generated = tmp_path / "matrix.json"
     generated.write_text(json.dumps(matrix, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -60,6 +65,6 @@ def test_phase9_serial_plan_covers_targeted_specs_and_protection_regression() ->
         "restoration_druid",
         "elemental_shaman",
         "feral_druid_dps",
-        "fire_mage",
+        "survival_hunter",
     ]
-    assert len(plan["attempts"]) == 6
+    assert len(plan["attempts"]) == 7

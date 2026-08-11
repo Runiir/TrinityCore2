@@ -136,21 +136,23 @@
     "composition_sha256s": [
       "5fa6cb9c5dded9603bf89deefd264c626bc20720559697388d5bdf95e58635a9",
       "95d945edcd3285e07ce94226181452f05738704941878edf1aa8da28c0c67544",
-      "ea9d8e7353b86cbf2b73fa9314d9c55aaf42189cc62fa1679d2d94ff986d0f89",
-      "78236b23d9f55fa42433b1a4b47bf5f4b0272982441559adc9784c85b8621fb8",
-      "f36eb97731c690fcb7093be21f95fa4eb2a9d951c7e8b4caef88ac1b917d5dac",
-      "c54a95ead1f5c59d7b0860cedf3fefbf9f02c4b246103948f1c6d5f1fd10024a"
+      "6d59c2000776b3a588d8a51edd2fb2d397ce2a0658c02765337a988e2b357210",
+      "f852a689382df6769845faeddd6f09c6a19909eae516d9a50317a4be679ba393",
+      "7f09b51b899868c140f6da957e325a4ab1d623a15ce6071c2bf148123241776b",
+      "fbf54b4a4beb2fe638bf2483afb9e9a2c40a755e7e7f54c5e01f02cfb25d62bd",
+      "2e3d87f152cf51fef7819d49caf1f1e72e42c907916a7cdbcbe76ea9bffcb16e"
     ],
-    "composition_count": 6,
+    "composition_count": 7,
     "role_representation_bounds": {
-      "tank": {"min": 2, "max": 2},
+      "tank": {"min": 2, "max": 3},
       "healer": {"min": 1, "max": 2},
-      "dps": {"min": 1, "max": 2}
+      "dps": {"min": 1, "max": 4}
     },
     "native_threat_transfer_support": {
       "tank_targets": [
         "blood_death_knight",
-        "feral_druid_tank"
+        "feral_druid_tank",
+        "protection_paladin"
       ],
       "support_targets": [
         "marksmanship_hunter",
@@ -163,7 +165,7 @@
     "The 25-character progression roster has 24 supported specialization targets because Holy Paladin and Fire Mage are duplicated while five permanent players maintain an alternate supported spec and the Feral DPS maintains the third-tank offspec.",
     "The third Fire Mage fills the missing twenty-fifth roster slot and produces the targeted 12 ranged and 5 melee DPS shape.",
     "All 31 canonical profiles remain provisioned; seven targets outside the progression roster are explicitly excluded from the live qualification universe.",
-    "The serial subset covers all 24 supported specialization targets in six isolated five-player canaries. Canary 4 preserves the Protection Paladin, Restoration Druid, Elemental Shaman, and Feral DPS regression surface from rerun213 while replacing excluded Enhancement with Fire Mage.",
-    "Blood and Feral tank canaries include native Hunter Misdirection support because Azil activates simultaneous south and west follower waves beyond one self-centered pickup radius."
+    "The serial subset covers all 24 supported specialization targets in seven isolated five-player canaries. Seven is the minimum count that preserves one Hunter threat-transfer specialist in every party while covering all fourteen non-Hunter DPS targets. Canary 4 preserves the Protection Paladin, Restoration Druid, Elemental Shaman, and Feral DPS regression surface from rerun214 while replacing Fire Mage with Survival Hunter.",
+    "Every supported tank canary includes native Hunter Misdirection support because Azil activates simultaneous south and west follower waves beyond one self-centered pickup radius."
   ]
 }
