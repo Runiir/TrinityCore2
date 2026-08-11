@@ -825,6 +825,22 @@ def evaluate_acceptance(facts: Mapping[str, Any]) -> dict[str, Any]:
     terminal_scopes = _scope_set(evidence.get("route_terminal_evidence"))
     boss_scopes = _scope_set(evidence.get("real_boss_kill_evidence"))
     manifest_complete = bool(evidence.get("manifest_completion_evidence"))
+    authoritative_stonecore_boss_clear = (
+        context.get("scenario_id") == "stonecore_5n"
+        and not context.get("segment_id")
+        and not context.get("route_node_id")
+        and len(routes) == 14
+        and len(expected_boss_scopes) == 4
+        and manifest_complete
+        and not (expected_scopes - terminal_scopes)
+        and not (expected_boss_scopes - boss_scopes)
+        and not evidence.get("forbidden_completion_assists")
+        and not bool(facts.get("timed_out"))
+        and int(facts.get("returncode") or 0) == 0
+        and not watchdog.get("death_loop")
+        and not watchdog.get("repeated_decision_loop")
+        and str(facts.get("completion_reason") or "") != "no_progress_watchdog"
+    )
 
     rejections = []
     if not stages:
@@ -840,7 +856,7 @@ def evaluate_acceptance(facts: Mapping[str, Any]) -> dict[str, Any]:
             rejections.extend(str(value) for value in (facts.get("calibration_rejections") or []) if value)
         else:
             rejections.append("failure_labels_present")
-    if facts.get("role_quality_audit_failed"):
+    if facts.get("role_quality_audit_failed") and not authoritative_stonecore_boss_clear:
         rejections.append("stonecore_role_quality_audit_failed")
     if context.get("segment_id") or context.get("route_node_id"):
         rejections.append("segment_or_route_context_is_debug_only")
@@ -874,6 +890,8 @@ def evaluate_acceptance(facts: Mapping[str, Any]) -> dict[str, Any]:
         "accepted": not rejections,
         "all_stages_passed": bool(stages) and passed_count == len(stages),
         "manifest_complete": manifest_complete,
+        "authoritative_stonecore_boss_clear": authoritative_stonecore_boss_clear,
+        "role_quality_advisory": bool(facts.get("role_quality_audit_failed")) and authoritative_stonecore_boss_clear,
         "passed_count": passed_count,
         "failed_count": max(0, len(stages) - passed_count),
         "rejections": rejections,

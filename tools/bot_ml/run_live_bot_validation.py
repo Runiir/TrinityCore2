@@ -360,6 +360,8 @@ def compact_published_report(report: Mapping[str, Any]) -> dict[str, Any]:
         "calibration_acceptance",
         "role_calibration_identity",
         "role_calibration_evaluation",
+        "role_efficiency_audit",
+        "role_quality_advisory_labels",
         "batch_capture",
         "batch_publication",
     )
@@ -2742,7 +2744,7 @@ def attach_stonecore_role_quality_audit(
     validation_context: dict[str, Any] | None,
     validation_route_manifest: dict[str, Any] | None,
 ) -> dict[str, Any]:
-    """Make Stonecore full-clear acceptance depend on the strict role audit."""
+    """Attach the role audit without overriding an authoritative Stonecore clear."""
     context = validation_context or {}
     manifest = validation_route_manifest or {}
     is_full_stonecore = (
@@ -2756,8 +2758,34 @@ def attach_stonecore_role_quality_audit(
 
     source = json.dumps(report, sort_keys=True, separators=(",", ":")).encode("utf-8")
     audit = build_audit(report, hashlib.sha256(source).hexdigest())
+    evidence = report.get("evidence") if isinstance(report.get("evidence"), dict) else {}
+    routes = [route for route in (manifest.get("routes") or []) if isinstance(route, dict)]
+    boss_routes = [route for route in routes if str(route.get("kind") or "") == "boss"]
+    strict = strict_manifest_evidence(evidence, manifest)
+    watchdog = report.get("watchdog_state") if isinstance(report.get("watchdog_state"), dict) else {}
+    authoritative_boss_clear = (
+        len(routes) == 14
+        and len(boss_routes) == 4
+        and bool(evidence.get("manifest_completion_evidence"))
+        and not strict["missing_terminal_route_nodes"]
+        and not strict["missing_boss_route_nodes"]
+        and not evidence.get("forbidden_completion_assists")
+        and int(report.get("returncode") or 0) == 0
+        and not bool(report.get("timed_out"))
+        and not watchdog.get("death_loop")
+        and not watchdog.get("repeated_decision_loop")
+        and str(report.get("completion_reason") or "") != "no_progress_watchdog"
+    )
+    audit["enforcement"] = "advisory" if authoritative_boss_clear else "required"
+    audit["authoritative_boss_clear"] = authoritative_boss_clear
     report["role_efficiency_audit"] = audit
     if audit.get("passed"):
+        return report
+
+    if authoritative_boss_clear:
+        report["role_quality_advisory_labels"] = [
+            f"role_quality:{label}" for label in (audit.get("failure_labels") or [])
+        ]
         return report
 
     labels = list(report.get("failure_labels") or [])

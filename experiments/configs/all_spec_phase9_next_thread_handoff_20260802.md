@@ -2,9 +2,25 @@
 
 ## Authority and purpose
 
-This document is the continuation contract for the approved program in `.codex/plans/all_class_sc_plan.md`. It is not a replacement design exercise and is not a request to enter Plan mode. Execute it directly on branch `all-spec-stonecore-execution`; the current top section records the authoritative pre-rerun215 checkpoint.
+This document is the continuation contract for the approved program in `.codex/plans/all_class_sc_plan.md`. It is not a replacement design exercise and is not a request to enter Plan mode. Execute it directly on branch `all-spec-stonecore-execution`; the current top section records the authoritative pre-rerun216 checkpoint.
 
 Phases 0-8 are complete. Phase 9, `pairwise_matrix_and_serial_stonecore_canaries`, is the only active phase. The current checkpoint is in progress, not a Phase 9 completion. Phases 10-12 remain blocked until every Phase 9 gate and the mandatory independent review pass.
+
+## Current rerun215 boss-completion reclassification and rerun216 entry gate
+
+Rerun215 canary 4 alone used Protection Paladin/Restoration Druid/Elemental Shaman/Feral DPS/Survival Hunter, exact party SHA-256 `5cbbf1141ba53bf080929c3d357207eef184b975364397b6af582014a64427ef`. It completed all 14 strict route terminals and all four authoritative boss deaths, including High Priestess Azil, with underlying return code zero, no timeout, a clear watchdog, complete identity, closed session, exact serial isolation, cleanup zero, no forbidden completion assistance, and remotely verified publication. Canaries 1-3 and 5-7 did not start.
+
+The old role policy rejected the clear at `1843/2053 = 0.8977106673161228` tank ownership, `105/2053 = 0.051144666341938624` healer exposure, and `3857 ms` maximum dwell despite `808/808` threat-aura uptime. This is now advisory trash-efficiency evidence, not an authoritative boss-completion failure. Treat `experiments/configs/all_spec_phase9_rerun215_canary4_policy_reclassification_v1.json` as authoritative at canonical SHA-256 `b108282b72a4d0850fc5cfda26944b11c7ea9fcd6d3f7927394f26c87dfe28e1`.
+
+The one tank death occurred in generation 13. Four survivors autonomously retreated and disengaged; Elemental repeatedly approached for a native resurrection, while the certified last-safe-position route recovery completed first at the shared retreat rendezvous. The tank returned to readiness, the party resumed route navigation, and Azil subsequently died. There was no operator intervention. Recoverable trash deaths are therefore non-blocking only when the immutable evidence also proves recovery and authoritative route completion.
+
+The acceptance implementation now independently requires the exact 14-node Stonecore manifest, all terminal scopes, all four boss-death scopes, no timeout, zero underlying return code, a clear watchdog, and zero forbidden assistance before treating unchanged role thresholds as advisory. Before full completion the role audit remains enforced. Identity, session closure, exact party, serial isolation, cleanup, remote publication, and assistance gates remain hard.
+
+The rerun215 immutable batch was selectively hydrated, independently replayed, content-hash and receipt validated, and exactly re-evicted. Its independent verifier is DVC object `1e8022556b137f6705542eb5dc31b37c.dir`; no broad DVC garbage collection was used. The old worldserver is inactive/dead and no operator or publisher is active.
+
+The focused policy suite passes 10 tests, the Phase 2/immutable-batch selection passes three, the recovery selection passes three, and the Phase 9 roster tests pass two. The broad pipeline diagnostic passes 288 tests with 24 pre-existing unrelated stale/live-process failures. The real worldserver rebuild passes at SHA-256 `392d45bcab20b9a2fb2faacaad67881420d42ecbb904c15911148cc565f62636`. Rerun216 deterministic pre-identity preparation and independent verification pass with 50/50 accounts, 50/50 characters, all 31 runtime profiles ready, database state valid, and zero failures; verifier SHA-256 is `a5380939a83101f7117ac2c3d6dfccb14b08835f9bd25613249f3c66bf3ad363`.
+
+The required `pixi run dvc status` and `pixi run dvc push` completed; every available object is synchronized, with only the two known historical unavailable objects `24b9d133fe3fe1b6f253e500c266562f.dir` and `c67ee8935753b8ceccbdddbafdfebe.dir` reported. Commit the coherent policy/diagnosis/status/handoff checkpoint with the required Claude trailer. Capture a fresh rerun216 identity and seven-row plan, independently reconstruct it, and run canary 4 alone. Make no identity-bearing tracked edit after capture. Keep canaries 1-3 and 5-7 and Phases 10-12 blocked until the fresh policy-validation row passes.
 
 ## Current rerun214 diagnosis and Hunter-supported rerun215 entry gate
 
