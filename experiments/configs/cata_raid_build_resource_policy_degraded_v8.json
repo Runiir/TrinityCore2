@@ -55,6 +55,9 @@
   },
   "mechanical_controls": {
     "cmake_build_type": "Release",
+    "cmake_executable": "/usr/bin/cmake",
+    "cmake_executable_sha256": "6e1dccda39845415d68eabb934c598998949c99ec4668625d571aee1827b05c7",
+    "cmake_export_compile_commands": true,
     "cmake_cxx_flags": "",
     "cmake_release_cxx_flags": "-O1 -DNDEBUG",
     "cmake_cxx_compiler": "/usr/bin/c++",

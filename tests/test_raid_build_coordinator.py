@@ -68,12 +68,18 @@ def initialized_git_repo(path: Path) -> Path:
 def configured_git_repo(path: Path, flags: str = "-O1 -DNDEBUG") -> Path:
     repo = initialized_git_repo(path)
     (repo / ".gitignore").write_text("build/\n", encoding="utf-8")
+    (repo / "CMakeLists.txt").write_text(
+        "cmake_minimum_required(VERSION 3.16)\nproject(raid_fixture CXX)\nadd_executable(raid_fixture main.cpp)\n",
+        encoding="utf-8",
+    )
+    (repo / "main.cpp").write_text("int main() { return 0; }\n", encoding="utf-8")
     cache = repo / "build/CMakeCache.txt"
     cache.parent.mkdir(parents=True)
     cache.write_text(
         "\n".join(
             (
                 "CMAKE_BUILD_TYPE:STRING=Release",
+                "CMAKE_EXPORT_COMPILE_COMMANDS:BOOL=ON",
                 "CMAKE_CXX_FLAGS:STRING=",
                 f"CMAKE_CXX_FLAGS_RELEASE:STRING={flags}",
                 "CMAKE_CXX_COMPILER:FILEPATH=/usr/bin/c++",
@@ -89,7 +95,19 @@ def configured_git_repo(path: Path, flags: str = "-O1 -DNDEBUG") -> Path:
         ),
         encoding="utf-8",
     )
-    subprocess.run(["git", "-C", str(repo), "add", ".gitignore"], check=True)
+    (repo / "build/compile_commands.json").write_text(
+        json.dumps([{
+            "directory": str(repo / "build"),
+            "command": "/usr/bin/c++ -O1 -DNDEBUG -c main.cpp",
+            "file": str(repo / "main.cpp"),
+        }]),
+        encoding="utf-8",
+    )
+    (repo / "build/Makefile").write_text("# generated fixture\n", encoding="utf-8")
+    subprocess.run(
+        ["git", "-C", str(repo), "add", ".gitignore", "CMakeLists.txt", "main.cpp"],
+        check=True,
+    )
     subprocess.run(["git", "-C", str(repo), "commit", "-qm", "freeze cmake cache"], check=True)
     return repo
 
@@ -99,10 +117,7 @@ def seed_configure_lineage(
     frozen: dict,
     tmp_path: Path,
 ) -> dict:
-    fake_cmake = tmp_path / "cmake"
-    fake_cmake.write_text("#!/usr/bin/env python3\n", encoding="utf-8")
-    fake_cmake.chmod(0o700)
-    command = [str(fake_cmake), "-S", ".", "-B", "build"]
+    command = ["/usr/bin/cmake", "-S", ".", "-B", "build"]
     command.extend(f"-D{key}={value}" for key, value in qb.expected_build_configuration(frozen).items())
     code, receipt = qb.run_ticket(
         repo,
@@ -552,6 +567,37 @@ def test_v8_full_cache_drift_during_build_is_provenance_abort(
     ]
 
 
+def test_v8_generated_build_graph_drift_is_provenance_abort(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    state_paths(tmp_path, monkeypatch)
+    repo = configured_git_repo(tmp_path / "repo")
+    frozen = json.loads(
+        (ROOT / "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json").read_text()
+    )
+    monkeypatch.setattr(qb, "resource_snapshot", lambda _: synthetic_snapshot())
+    monkeypatch.setattr(qb, "find_live_validation_processes", lambda *_args, **_kwargs: [])
+    seed_configure_lineage(repo, frozen, tmp_path)
+    flags = repo / "build/CMakeFiles/raid_fixture.dir/flags.make"
+    assert flags.is_file()
+    command = [
+        sys.executable, "-c",
+        "import pathlib; p=pathlib.Path('build/CMakeFiles/raid_fixture.dir/flags.make'); p.write_text(p.read_text().replace('-O1','-O3'))",
+    ]
+    code, receipt = qb.run_ticket(
+        repo, frozen, "worldserver_build", command, None,
+        tmp_path / "graph-drift.json", 2.0,
+    )
+    assert code == 76
+    assert receipt["classification"] == "build_provenance_abort"
+    assert receipt["build_configuration"]["request"]["cache_sha256"] == receipt[
+        "build_configuration"
+    ]["completion"]["cache_sha256"]
+    assert receipt["build_configuration"]["request"]["build_graph"]["manifest_sha256"] != receipt[
+        "build_configuration"
+    ]["completion"]["build_graph"]["manifest_sha256"]
+
+
 def test_fabricated_never_enqueued_receipt_is_rejected(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -590,8 +636,9 @@ def test_v8_configure_command_must_explicitly_bind_every_effective_setting() -> 
         (ROOT / "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json").read_text()
     )
     command = [
-        "cmake", "-S", ".", "-B", "build",
+        "/usr/bin/cmake", "-S", ".", "-B", "build",
         "-DCMAKE_BUILD_TYPE=Release",
+        "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON",
         "-DCMAKE_CXX_FLAGS=",
         "-DCMAKE_CXX_FLAGS_RELEASE=-O1 -DNDEBUG",
         "-DCMAKE_CXX_COMPILER=/usr/bin/c++",
@@ -626,6 +673,17 @@ def test_v8_configure_command_must_explicitly_bind_every_effective_setting() -> 
                 resource_class="configure",
                 policy=frozen,
             )
+    fake_cmake = Path("/tmp/cmake")
+    with pytest.raises(qb.CoordinatorError, match="frozen CMake executable"):
+        qb.validate_command(
+            [str(fake_cmake), *command[1:]], 1,
+            resource_class="configure", policy=frozen,
+        )
+    with pytest.raises(qb.CoordinatorError, match="non-allowlisted"):
+        qb.validate_command(
+            [*command, "-N"], 1,
+            resource_class="configure", policy=frozen,
+        )
 
 
 def test_cmake_integration_applies_compile_and_link_controls() -> None:
@@ -768,6 +826,9 @@ def test_degraded_v8_freezes_complete_low_memory_release_configuration() -> None
     assert v8["parallelism"] == v7["parallelism"]
     assert v8["admission_thresholds"] == v7["admission_thresholds"]
     assert v8["mechanical_controls"]["cmake_build_type"] == "Release"
+    assert v8["mechanical_controls"]["cmake_executable"] == "/usr/bin/cmake"
+    assert len(v8["mechanical_controls"]["cmake_executable_sha256"]) == 64
+    assert v8["mechanical_controls"]["cmake_export_compile_commands"] is True
     assert v8["mechanical_controls"]["cmake_cxx_flags"] == ""
     assert v8["mechanical_controls"]["cmake_release_cxx_flags"] == "-O1 -DNDEBUG"
     assert v8["mechanical_controls"]["cmake_cxx_compiler"] == "/usr/bin/c++"

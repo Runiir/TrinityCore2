@@ -326,6 +326,9 @@ def expected_build_configuration(policy: dict) -> dict[str, str] | None:
         raise CoordinatorError("policy CMake build type is missing")
     return {
         "CMAKE_BUILD_TYPE": build_type,
+        "CMAKE_EXPORT_COMPILE_COMMANDS": (
+            "ON" if controls.get("cmake_export_compile_commands") else "OFF"
+        ),
         "CMAKE_CXX_FLAGS": str(controls.get("cmake_cxx_flags", "")),
         "CMAKE_CXX_FLAGS_RELEASE": release_flags,
         "CMAKE_CXX_COMPILER": str(controls.get("cmake_cxx_compiler", "/usr/bin/c++")),
@@ -387,6 +390,69 @@ def build_configuration_snapshot(worktree: Path, policy: dict) -> dict | None:
         "compiler_sha256": compiler_sha256,
         "expected": expected,
         "matches_policy": actual == expected,
+        "build_graph": build_graph_snapshot(worktree, expected),
+    }
+
+
+def build_graph_snapshot(worktree: Path, expected: dict[str, str]) -> dict:
+    build = (worktree / "build").resolve()
+    compile_commands = build / "compile_commands.json"
+    paths: list[Path] = []
+    for candidate in (build / "Makefile", compile_commands, build / "cmake_install.cmake"):
+        if candidate.is_file():
+            paths.append(candidate)
+    cmake_files = build / "CMakeFiles"
+    if cmake_files.is_dir():
+        for candidate in cmake_files.rglob("*"):
+            if candidate.is_file() and (
+                candidate.name in {"flags.make", "link.txt", "build.make", "Makefile2"}
+                or candidate.suffix == ".cmake"
+            ):
+                paths.append(candidate)
+    entries = [
+        {
+            "path": str(path.relative_to(build)),
+            "sha256": sha256_file(path),
+            "size_bytes": path.stat().st_size,
+        }
+        for path in sorted(set(paths))
+    ]
+    commands_valid = False
+    command_count = 0
+    if compile_commands.is_file():
+        try:
+            commands = json.loads(compile_commands.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            commands = None
+        if isinstance(commands, list) and commands:
+            cxx_commands = [
+                row for row in commands
+                if isinstance(row, dict)
+                and str(row.get("file", "")).lower().endswith((".cc", ".cpp", ".cxx"))
+            ]
+            command_count = len(cxx_commands)
+            required = [expected["CMAKE_CXX_FLAGS_RELEASE"]]
+            forbidden = ("-O2", "-O3", "-flto")
+            commands_valid = bool(cxx_commands) and all(
+                isinstance(row, dict)
+                and isinstance(row.get("command"), str)
+                and all(flag in row["command"] for flag in required)
+                and not any(flag in row["command"] for flag in forbidden)
+                for row in cxx_commands
+            )
+    manifest_sha256 = sha256_bytes(canonical_json(entries))
+    return {
+        "manifest_sha256": manifest_sha256,
+        "file_count": len(entries),
+        "compile_commands_sha256": (
+            sha256_file(compile_commands) if compile_commands.is_file() else None
+        ),
+        "compile_commands_mtime_ns": (
+            compile_commands.stat().st_mtime_ns if compile_commands.is_file() else None
+        ),
+        "compile_command_count": command_count,
+        "compile_commands_valid": commands_valid,
+        "generated": bool(entries and compile_commands.is_file() and commands_valid),
     }
 
 
@@ -394,8 +460,14 @@ def validate_configure_command(command: Sequence[str], policy: dict) -> None:
     expected = expected_build_configuration(policy)
     if expected is None:
         return
-    if not command or Path(command[0]).name != "cmake":
-        raise CoordinatorError("policy-bound configure must invoke cmake directly")
+    controls = policy.get("mechanical_controls", {})
+    cmake_executable = Path(str(controls.get("cmake_executable", "")))
+    if not command or Path(command[0]).resolve() != cmake_executable.resolve():
+        raise CoordinatorError("policy-bound configure must invoke the frozen CMake executable")
+    if not cmake_executable.is_file() or sha256_file(cmake_executable) != controls.get(
+        "cmake_executable_sha256"
+    ):
+        raise CoordinatorError("frozen CMake executable identity mismatch")
     try:
         source_index = command.index("-S")
         build_index = command.index("-B")
@@ -416,6 +488,13 @@ def validate_configure_command(command: Sequence[str], policy: dict) -> None:
             "configure command does not explicitly bind policy CMake settings: "
             + ",".join(missing)
         )
+    allowed = {
+        command[0], "-S", ".", "-B", "build",
+        *(f"-D{key}={value}" for key, value in expected.items()),
+    }
+    unexpected = [token for token in command if token not in allowed]
+    if unexpected:
+        raise CoordinatorError("configure command contains non-allowlisted options")
 
 
 def find_configure_lineage(
@@ -474,6 +553,9 @@ def find_configure_lineage(
                 == requested_configuration.get("settings_sha256")
             and completion.get("compiler_sha256")
                 == requested_configuration.get("compiler_sha256")
+            and completion.get("build_graph", {}).get("generated") is True
+            and completion.get("build_graph", {}).get("manifest_sha256")
+                == requested_configuration.get("build_graph", {}).get("manifest_sha256")
         ):
             continue
         return {
@@ -484,6 +566,7 @@ def find_configure_lineage(
             "completion_cache_sha256": completion["cache_sha256"],
             "completion_settings_sha256": completion["settings_sha256"],
             "compiler_sha256": completion["compiler_sha256"],
+            "completion_build_graph_sha256": completion["build_graph"]["manifest_sha256"],
             "queue_sequence": ticket.get("queue_sequence"),
         }
     return None
@@ -937,9 +1020,15 @@ def run_ticket(
                 == admitted_configuration.get("settings_sha256")
             and requested_configuration.get("cache_sha256")
                 == admitted_configuration.get("cache_sha256")
+            and requested_configuration.get("build_graph", {}).get("generated") is True
+            and admitted_configuration.get("build_graph", {}).get("generated") is True
+            and requested_configuration.get("build_graph", {}).get("manifest_sha256")
+                == admitted_configuration.get("build_graph", {}).get("manifest_sha256")
             and isinstance(configure_lineage, dict)
             and configure_lineage.get("completion_cache_sha256")
                 == requested_configuration.get("cache_sha256")
+            and configure_lineage.get("completion_build_graph_sha256")
+                == requested_configuration.get("build_graph", {}).get("manifest_sha256")
         )
     else:
         configuration_admissible = True
@@ -1008,9 +1097,23 @@ def run_ticket(
     }
     if configuration_required:
         if resource_class == "configure":
+            configure_graph = (
+                completion_configuration.get("build_graph", {})
+                if isinstance(completion_configuration, dict) else {}
+            )
+            try:
+                admitted_timestamp_ns = int(
+                    datetime.fromisoformat(admitted_at_utc.replace("Z", "+00:00")).timestamp()
+                    * 1_000_000_000
+                )
+            except (TypeError, ValueError):
+                admitted_timestamp_ns = 0
             build_configuration_stable = bool(
                 isinstance(completion_configuration, dict)
                 and completion_configuration.get("matches_policy") is True
+                and configure_graph.get("generated") is True
+                and int(configure_graph.get("compile_commands_mtime_ns") or 0)
+                    >= admitted_timestamp_ns - 2_000_000_000
             )
         elif resource_class in {"worldserver_build", "integration_build"}:
             build_configuration_stable = bool(
@@ -1023,6 +1126,10 @@ def run_ticket(
                 and requested_configuration.get("cache_sha256")
                     == admitted_configuration.get("cache_sha256")
                     == completion_configuration.get("cache_sha256")
+                and requested_configuration.get("build_graph", {}).get("manifest_sha256")
+                    == admitted_configuration.get("build_graph", {}).get("manifest_sha256")
+                    == completion_configuration.get("build_graph", {}).get("manifest_sha256")
+                and completion_configuration.get("build_graph", {}).get("generated") is True
             )
         else:
             build_configuration_stable = True
@@ -1274,6 +1381,13 @@ def verify_receipt(path: Path, policy: dict, allow_test_mode: bool = False) -> d
                 raise CoordinatorError("receipt CMake cache hash is invalid")
             if snapshot.get("compiler_sha256") != expected_compiler_sha256:
                 raise CoordinatorError("receipt C++ compiler identity mismatch")
+            graph = snapshot.get("build_graph")
+            if not isinstance(graph, dict) or graph.get("generated") is not True:
+                raise CoordinatorError("receipt generated build graph is missing or invalid")
+            if not isinstance(graph.get("manifest_sha256"), str) or not re.fullmatch(
+                r"[0-9a-f]{64}", graph["manifest_sha256"]
+            ):
+                raise CoordinatorError("receipt generated build graph hash is invalid")
         if resource_class in {"worldserver_build", "integration_build"}:
             if not (
                 request_configuration.get("settings_sha256")
@@ -1287,6 +1401,12 @@ def verify_receipt(path: Path, policy: dict, allow_test_mode: bool = False) -> d
                 == completion_configuration.get("cache_sha256")
             ):
                 raise CoordinatorError("receipt CMake cache changed during build")
+            if not (
+                request_configuration.get("build_graph", {}).get("manifest_sha256")
+                == admission_configuration.get("build_graph", {}).get("manifest_sha256")
+                == completion_configuration.get("build_graph", {}).get("manifest_sha256")
+            ):
+                raise CoordinatorError("receipt generated build graph changed during build")
             lineage = receipt.get("configure_lineage")
             if not isinstance(lineage, dict):
                 raise CoordinatorError("receipt is missing coordinated configure lineage")
@@ -1311,9 +1431,13 @@ def verify_receipt(path: Path, policy: dict, allow_test_mode: bool = False) -> d
                     == request_configuration.get("settings_sha256")
                 and lineage.get("compiler_sha256")
                     == request_configuration.get("compiler_sha256")
+                and lineage.get("completion_build_graph_sha256")
+                    == request_configuration.get("build_graph", {}).get("manifest_sha256")
                 and isinstance(configure_completion, dict)
                 and configure_completion.get("cache_sha256")
                     == lineage.get("completion_cache_sha256")
+                and configure_completion.get("build_graph", {}).get("manifest_sha256")
+                    == lineage.get("completion_build_graph_sha256")
             ):
                 raise CoordinatorError("receipt coordinated configure lineage is invalid")
         elif receipt.get("configure_lineage") is not None:

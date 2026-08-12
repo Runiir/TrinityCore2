@@ -814,6 +814,9 @@ def validate_build_receipt(
         if isinstance(release_flags, str) and release_flags:
             expected_cmake = {
                 "CMAKE_BUILD_TYPE": controls.get("cmake_build_type"),
+                "CMAKE_EXPORT_COMPILE_COMMANDS": (
+                    "ON" if controls.get("cmake_export_compile_commands") else "OFF"
+                ),
                 "CMAKE_CXX_FLAGS": str(controls.get("cmake_cxx_flags", "")),
                 "CMAKE_CXX_FLAGS_RELEASE": release_flags,
                 "CMAKE_CXX_COMPILER": str(
@@ -869,6 +872,17 @@ def validate_build_receipt(
                     == stages[2].get("cache_sha256")
                 ):
                     rejections.append("build_receipt_cmake_cache_changed")
+                if not all(
+                    stage.get("build_graph", {}).get("generated") is True
+                    for stage in stages
+                ):
+                    rejections.append("build_receipt_generated_graph_invalid")
+                if not (
+                    stages[0].get("build_graph", {}).get("manifest_sha256")
+                    == stages[1].get("build_graph", {}).get("manifest_sha256")
+                    == stages[2].get("build_graph", {}).get("manifest_sha256")
+                ):
+                    rejections.append("build_receipt_generated_graph_changed")
                 current_cache_sha256 = sha256_file(cache_path) if cache_path.is_file() else None
                 if stages[2].get("cache_sha256") != current_cache_sha256:
                     rejections.append("build_receipt_cmake_cache_hash_mismatch")
@@ -882,6 +896,8 @@ def validate_build_receipt(
                         == stages[0].get("settings_sha256")
                     and lineage.get("compiler_sha256")
                         == stages[0].get("compiler_sha256")
+                    and lineage.get("completion_build_graph_sha256")
+                        == stages[0].get("build_graph", {}).get("manifest_sha256")
                     and isinstance(lineage.get("receipt_sha256"), str)
                     and isinstance(lineage.get("ticket_id"), str)
                 ):
