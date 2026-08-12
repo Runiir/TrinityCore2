@@ -55,6 +55,9 @@ def test_live_raid_instance_identity_freezes_atomically_from_the_exact_roster():
     assert 'Cohort().LastPopulationFailureReason = "validation_cohort_live_instance_pending";' in group
     assert 'Cohort().LastPopulationFailureReason = "validation_cohort_live_instance_split";' in group
     assert 'Cohort().LastPopulationFailureReason = "validation_cohort_zero_instance_identity";' in group
+    assert "state.ValidationCohortGroupGuid != group->GetGUID()" in group
+    assert "state.ValidationCohortLeaderGuid != group->GetLeaderGUID()" in group
+    assert '"validation_cohort_immutable_group_leader_drift"' in group
     assert "!member->GetInstanceId()" in group
     assert "if (!memberState->ValidationCohortLocked)" in group
     assert '"validation_cohort_immutable_identity_drift"' in group
@@ -64,6 +67,8 @@ def test_live_raid_instance_identity_freezes_atomically_from_the_exact_roster():
     assert "originalCorpse->GetOwnerGUID() == bot->GetGUID()" in original_instance
     assert "originalCorpse->GetInstanceId() == state.ValidationCohortInstanceId" in original_instance
     assert "bot->GetCorpse()->GetInstanceId()" not in original_instance
+    assert "group->GetGUID() != state.ValidationCohortGroupGuid" in original_instance
+    assert "group->GetLeaderGUID() != state.ValidationCohortLeaderGuid" in original_instance
 
 
 def test_raid_size_and_difficulty_are_explicit_and_fail_closed():
@@ -115,6 +120,23 @@ def test_generic_raid_mechanic_contracts_are_typed_executable_and_fail_closed():
     route_end = IMPL.index("bool BotWorldPopulationMgr::IsBossContext", route_start)
     route_runtime = IMPL[route_start:route_end]
     assert route_runtime.count("TryBossMechanics(state, bot, power, stage, activity)") >= 2
+
+
+def test_phase1_magmaw_engagement_contract_has_explicit_safe_target_authority():
+    scenario = json.loads((ROOT / "experiments/configs/validation_scenarios_cata_001.json").read_text())
+    bwd = next(row for row in scenario["scenarios"] if row["id"] == "blackwing_descent_10n")
+    magmaw = next(row for row in bwd["route"] if row["label"] == "Magmaw")
+    assert magmaw["source_entry"] == 41570
+    assert magmaw["mechanic_contract"] == {
+        "id": "phase1_magmaw_native_engagement_recovery_v1",
+        "target_control": "focus_fire",
+        "target_entries": [41570],
+        "allow_area_damage": False,
+        "allow_multidot": False,
+    }
+    assert 'adapter.TargetControl = contract->TargetControl.empty() ? "focus_fire"' in IMPL
+    assert 'raidAdapter.TargetControl == "focus_fire"' in IMPL
+    assert '"raid_focus_fire_target_missing"' in IMPL
 
 
 def test_phase1_target_transfer_and_swap_controls_are_executable():

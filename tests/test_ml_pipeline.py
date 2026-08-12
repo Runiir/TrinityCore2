@@ -2114,7 +2114,11 @@ def test_bwd_magmaw_preserves_boss_source_and_uses_db_ground_anchor():
     assert magmaw["navigation_anchor_y"] == -35.4375
     assert magmaw["navigation_anchor_z"] == 211.815
     assert magmaw["mechanic_contract"] == {
-        "id": "phase1_magmaw_native_engagement_recovery_v1"
+        "id": "phase1_magmaw_native_engagement_recovery_v1",
+        "target_control": "focus_fire",
+        "target_entries": [41570],
+        "allow_area_damage": False,
+        "allow_multidot": False,
     }
 
 

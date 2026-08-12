@@ -4171,6 +4171,11 @@ bool BotWorldPopulationMgr::IsValidationCohortMemberInOriginalInstance(WorldBotS
     if (!Cohort().Config.ValidationRouteEnable || !state.ValidationCohortLocked || !bot)
         return true;
 
+    Group const* group = bot->GetGroup();
+    if (!group || group->GetGUID() != state.ValidationCohortGroupGuid
+        || group->GetLeaderGUID() != state.ValidationCohortLeaderGuid)
+        return false;
+
     // A released ghost must leave an instance to run from the native
     // graveyard back to its entrance.  The corpse remains the immutable
     // authority for the exact original map and instance; alive players never
@@ -6133,6 +6138,17 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
         Cohort().LastPopulationFailureReason = "validation_cohort_formation_pending";
         return;
     }
+
+    for (WorldBotState& state : Party().Bots)
+        if (state.ValidationCohortLocked
+            && (state.ValidationCohortGroupGuid != group->GetGUID()
+                || state.ValidationCohortLeaderGuid != group->GetLeaderGUID()))
+        {
+            MarkValidationCohortViolation(state, GetLoadedBot(state),
+                "validation_cohort_immutable_group_leader_drift");
+            Cohort().LastPopulationFailureReason = "validation_cohort_immutable_group_leader_drift";
+            return;
+        }
 
     if (group->GetDungeonDifficulty() != DUNGEON_DIFFICULTY_NORMAL)
         group->SetDungeonDifficulty(DUNGEON_DIFFICULTY_NORMAL);

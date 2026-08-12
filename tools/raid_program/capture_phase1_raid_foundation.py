@@ -793,6 +793,62 @@ def semantic_progress_signature(status: dict[str, Any], diagnosis: dict[str, Any
     return hashlib.sha256(canonical).hexdigest()
 
 
+def observe_monotonic_semantic_progress(
+    state: dict[str, Any], status: dict[str, Any], diagnosis: dict[str, Any] | None,
+) -> bool:
+    """Update objective high-water marks and report genuine forward progress."""
+    runtime = status.get("raid_runtime") if isinstance(status.get("raid_runtime"), dict) else {}
+    route = status.get("validation_route") if isinstance(status.get("validation_route"), dict) else {}
+    advanced = not state
+
+    counters = {
+        "route_generation": int(route.get("generation") or 0),
+        "route_index": int(route.get("manifest_index") or 0),
+        "route_terminal_count": len(route.get("terminal_evidence") or []),
+        "boss_death_evidence_count": len(route.get("boss_death_evidence") or []),
+        "wipe_generation": int(runtime.get("wipe_generation") or 0),
+        "boss_reset_generation": int(runtime.get("boss_reset_generation") or 0),
+        "recovery_generation": int(runtime.get("recovery_generation") or 0),
+        "kills": int(status.get("kills") or 0),
+        "deaths": int(status.get("deaths") or 0),
+        "raid_boss_kills": int(status.get("raid_boss_kills") or 0),
+        "instance_resets": int(status.get("instance_resets") or 0),
+        "boss_done_count": sum(1 for value in runtime.get("boss_states") or [] if value == 3),
+    }
+    high_water = state.setdefault("high_water", {})
+    for key, value in counters.items():
+        previous = int(high_water.get(key, -1))
+        if value > previous:
+            advanced = True
+            high_water[key] = value
+
+    if runtime.get("encounter_in_progress") is True and not state.get("engagement_observed"):
+        state["engagement_observed"] = True
+        advanced = True
+    if route.get("manifest_complete") is True and not state.get("manifest_complete_observed"):
+        state["manifest_complete_observed"] = True
+        advanced = True
+
+    lowest_hp = state.setdefault("lowest_target_hp", {})
+    if isinstance(diagnosis, dict):
+        for row in diagnosis.get("bots") or []:
+            if not isinstance(row, dict):
+                continue
+            snapshot = row.get("snapshot") if isinstance(row.get("snapshot"), dict) else {}
+            progress = snapshot.get("route_progress") if isinstance(snapshot.get("route_progress"), dict) else {}
+            target = progress.get("target") if isinstance(progress.get("target"), dict) else {}
+            target_id = int(target.get("guid") or target.get("entry") or 0)
+            hp = target.get("best_hp_pct", target.get("hp_pct"))
+            if not target_id or not isinstance(hp, (int, float)) or hp <= 0:
+                continue
+            key = f"{int(runtime.get('instance_id') or 0)}:{int(route.get('generation') or 0)}:{target_id}"
+            previous_hp = float(lowest_hp.get(key, 101.0))
+            if float(hp) < previous_hp:
+                lowest_hp[key] = float(hp)
+                advanced = True
+    return advanced
+
+
 def git_identity(cwd: Path) -> dict[str, Any]:
     head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=cwd, text=True).strip()
     tree = subprocess.check_output(["git", "rev-parse", "HEAD^{tree}"], cwd=cwd, text=True).strip()
@@ -1627,7 +1683,7 @@ def main() -> int:
             seen_statuses = 0
             recovery_accepted = False
             readycheck_requested_for: tuple[Any, ...] | None = None
-            last_semantic_signature: str | None = None
+            semantic_progress_state: dict[str, Any] = {}
             last_semantic_progress_at = time.monotonic()
             unchanged_semantic_samples = 0
             semantic_stall: dict[str, Any] = {"detected": False}
@@ -1655,8 +1711,10 @@ def main() -> int:
                         signature = semantic_progress_signature(
                             statuses[-1], diagnoses_now[-1] if diagnoses_now else None,
                         )
-                        if signature != last_semantic_signature:
-                            last_semantic_signature = signature
+                        if observe_monotonic_semantic_progress(
+                            semantic_progress_state,
+                            statuses[-1], diagnoses_now[-1] if diagnoses_now else None,
+                        ):
                             last_semantic_progress_at = time.monotonic()
                             unchanged_semantic_samples = 1
                         else:
@@ -1669,6 +1727,7 @@ def main() -> int:
                                 "stalled_for_seconds": round(stalled_for, 3),
                                 "unchanged_samples": unchanged_semantic_samples,
                                 "semantic_signature": signature,
+                                "monotonic_progress_state": semantic_progress_state,
                                 "route": statuses[-1].get("validation_route"),
                                 "raid_runtime": statuses[-1].get("raid_runtime"),
                                 "diagnosis_rows": len(diagnoses_now),

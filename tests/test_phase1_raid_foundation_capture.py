@@ -15,6 +15,7 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     evidence_demux_report,
     evidence_demux_rejections,
     semantic_progress_signature,
+    observe_monotonic_semantic_progress,
 )
 
 
@@ -756,3 +757,33 @@ def test_semantic_progress_signature_tracks_boss_and_bot_decisions_not_heartbeat
     assert semantic_progress_signature(status, diagnosis) == baseline
     diagnosis["bots"][0]["snapshot"]["route_progress"]["target"]["hp_pct"] = 74.0
     assert semantic_progress_signature(status, diagnosis) != baseline
+
+
+def test_monotonic_semantic_progress_rejects_cast_victim_and_hp_oscillation():
+    status = accepted_status()
+    status["validation_route"] = {"generation": 1, "manifest_index": 1}
+    diagnosis = {
+        "bots": [{
+            "identity": {"bot_guid": 1001},
+            "snapshot": {"route_progress": {
+                "target": {"guid": 9001, "hp_pct": 75.0, "best_hp_pct": 75.0},
+                "state": {"victim_guid": 9001, "bot_casting": False},
+            }},
+        }],
+    }
+    state = {}
+    assert observe_monotonic_semantic_progress(state, status, diagnosis) is True
+    diagnosis["bots"][0]["snapshot"]["route_progress"]["state"] = {
+        "victim_guid": 9002, "bot_casting": True,
+    }
+    assert observe_monotonic_semantic_progress(state, status, diagnosis) is False
+    diagnosis["bots"][0]["snapshot"]["route_progress"]["target"].update(
+        hp_pct=80.0, best_hp_pct=80.0,
+    )
+    assert observe_monotonic_semantic_progress(state, status, diagnosis) is False
+    diagnosis["bots"][0]["snapshot"]["route_progress"]["target"].update(
+        hp_pct=74.0, best_hp_pct=74.0,
+    )
+    assert observe_monotonic_semantic_progress(state, status, diagnosis) is True
+    status["raid_runtime"]["wipe_generation"] += 1
+    assert observe_monotonic_semantic_progress(state, status, diagnosis) is True
