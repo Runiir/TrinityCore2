@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "audit_id": "cata_raid_runtime_phase1_v1",
+  "updated_at_utc": "2026-08-12T04:03:00Z",
+  "target": {
+    "client": "Cataclysm Classic",
+    "patch": "4.4.2",
+    "build": 59185,
+    "locale": "enUS",
+    "hotfix_cutoff_utc": "2025-02-18T19:31:51.916Z"
+  },
+  "audited_commit": "e5f21443d99531290822c13d8ee4513dd43f3bf3",
+  "gate_state": "in_progress",
+  "existing_verified_surfaces": [
+    "single_active_cohort_limit",
+    "server_epoch_attempt_scoped_guid_leases",
+    "duplicate_guid_lease_rejection",
+    "cohort_owned_party_runtime",
+    "native_group_create_add_and_raid_conversion",
+    "raid_role_counts_and_main_off_tank_selection",
+    "stack_and_spread_anchors",
+    "tank_swap_interrupt_raid_damage_spread_and_add_wave_adapter_families",
+    "raid_role_mechanic_position_gear_and_progression_telemetry",
+    "raid_wipe_and_instance_reset_counters",
+    "status_diagnose_and_trace_json_surfaces"
+  ],
+  "implemented_at_audited_commit": [
+    "one_cohort_owned_raid_runtime",
+    "explicit_10_or_25_expected_size",
+    "explicit_10n_25n_10h_25h_difficulty",
+    "fail_closed_size_difficulty_pairing",
+    "requested_group_difficulty_write_and_readback",
+    "live_map_difficulty_readback",
+    "raid_group_leader_map_instance_and_lockout_save_identity",
+    "deterministic_five_player_subgroups",
+    "roster_slot_active_and_lease_owned_facts",
+    "assignment_generation_and_evidence_sequence",
+    "raid_identity_in_status_diagnose_trace_and_event_context",
+    "bwd_profile_pinned_to_10n"
+  ],
+  "synthetic_checks": {
+    "test_file": "tests/test_cata_raid_runtime_foundation.py",
+    "last_result": "6_passed",
+    "combined_focus_result": "24_passed",
+    "combined_focus_command": "pixi run python -m pytest -q tests/test_cata_raid_research_contracts.py tests/test_cata_raid_runtime_foundation.py tests/test_raid_no_bots_baseline.py tests/test_phase9_live_qualification.py"
+  },
+  "required_open_work": [
+    {
+      "area": "generic_formations",
+      "missing": ["pair", "lane", "quadrant", "ring", "cone", "behind_front_exclusion", "minimum_distance", "per_role_anchor", "per_subgroup_anchor"]
+    },
+    {
+      "area": "assignment_contracts",
+      "missing": ["third_tank", "dispel_rotation_with_backup", "healer_tank_group_ownership", "external_and_raid_cooldown_schedule", "soak_groups", "immunity_and_personal_cooldown", "battle_resurrection_policy"]
+    },
+    {
+      "area": "damage_and_target_control",
+      "missing": ["multidot_permission", "do_not_damage", "controlled_aoe", "kill_synchronization", "tank_swap_triggers_beyond_detected_spike"]
+    },
+    {
+      "area": "encounter_mobility_and_objects",
+      "missing": ["interactable_objects", "extra_action_buttons", "vehicles", "transports", "jump_pads", "encounter_links", "platform_membership", "altitude_flying_state", "cross_platform_transfer"]
+    },
+    {
+      "area": "native_recovery",
+      "missing": ["raid_ready_check_evidence", "authoritative_boss_state_readback", "lockout_save_transition_evidence", "native_full_wipe_reset_release_resurrection_runback_smoke"]
+    },
+    {
+      "area": "immutable_evidence",
+      "missing": ["capture_demultiplex_smoke", "complete_phase1_batch", "independent_acceptance_reconstruction", "dvc_publish_remote_verify_exact_evict"]
+    }
+  ],
+  "phase1_gate_blockers": [
+    "coordinated_worldserver_build_pending",
+    "mandatory_sol_high_adversarial_runtime_review_pending",
+    "generic_primitive_gaps_remain",
+    "serialized_bwd_10n_live_formation_difficulty_wipe_reset_gate_pending"
+  ],
+  "acceptance_policy": "Fail closed. Existing Stonecore and older BWD artifacts do not certify this raid-runtime gate."
+}

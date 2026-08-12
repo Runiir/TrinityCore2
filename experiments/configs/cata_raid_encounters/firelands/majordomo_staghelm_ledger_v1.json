@@ -1,0 +1,209 @@
+{
+  "schema_version": 1,
+  "ledger_schema": "cata_raid_value_timer_ledger_v1",
+  "raid": "firelands",
+  "boss_slug": "majordomo_staghelm",
+  "modes": ["10N", "10H", "25N", "25H"],
+  "fidelity_state": "fidelity_blocked",
+  "contract_path": "experiments/configs/cata_raid_encounters/firelands/majordomo_staghelm_v1.json",
+  "unresolved_material_count": 20,
+  "encounter": "majordomo_staghelm",
+  "purpose": "Source, identity, value, timer, targeting, scaling, form, reset, prerequisite, modifier, and credit ledger for Phase 0 research; no live-validation assertion.",
+  "scope": ["10N", "10H", "25N", "25H"],
+  "target_snapshot": {
+    "product": "Cataclysm Classic",
+    "patch": "4.4.2",
+    "build": 59185,
+    "locale": "enUS",
+    "cutoff_utc": "2025-02-18T19:31:51.916Z"
+  },
+  "repository_revision_audited": "8eb54f0160b3c3d986ed944f9d64ebf83922c0f8",
+  "retrieved_utc_date": "2026-08-12",
+  "research_as_of": "2026-08-12",
+  "source_catalog": [
+    {
+      "id": "blizzard_441_firelands_notes",
+      "title": "World of Warcraft: Cataclysm Classic Patch 4.4.1 Notes",
+      "publisher": "Blizzard Entertainment forums",
+      "published_or_updated": "2024-10-29",
+      "url": "https://us.forums.blizzard.com/en/wow/t/world-of-warcraft-cataclysm-classic-patch-441-notes/1996710",
+      "accessed": "2026-08-12",
+      "authority": "official release notes",
+      "notes": "Firelands release, seven bosses, 10/25 players, Normal/Heroic, and tuning-reversion scope."
+    },
+    {
+      "id": "blizzard_442_notes_59185_cutoff",
+      "title": "World of Warcraft: Cataclysm Classic Patch 4.4.2 Notes",
+      "publisher": "Blizzard Entertainment forums",
+      "author": "Kaivax",
+      "published_or_updated": "2025-02-18 19:31",
+      "url": "https://us.forums.blizzard.com/en/wow/t/world-of-warcraft-cataclysm-classic-patch-442-notes/2062030",
+      "accessed": "2026-08-12",
+      "authority": "official cutoff context",
+      "notes": "Version 4.4.2 Hour of Twilight release context; does not publish Staghelm spell/health data."
+    },
+    {
+      "id": "blizzard_442_firelands_modifier",
+      "title": "Firelands Difficulty Reduction with Hour of Twilight Patch",
+      "publisher": "Blizzard Entertainment forums",
+      "author": "Kaivax",
+      "published_or_updated": "2025-02-13",
+      "url": "https://us.forums.blizzard.com/en/wow/t/firelands-difficulty-reduction-with-hour-of-twilight-patch/2059756",
+      "accessed": "2026-08-12",
+      "authority": "official modifier announcement",
+      "notes": "Power of Stormrage applies 30% health/damage reduction to Firelands enemies; General Taldris Moonfall removes it. IDs/persistence are unpublished."
+    },
+    {
+      "id": "wowhead_cata_majordomo_442",
+      "title": "Majordomo Staghelm Strategy Guide for Firelands - Cataclysm Classic",
+      "publisher": "Wowhead",
+      "author": "Beanna",
+      "published_or_updated": "2024-10-25",
+      "edition_label": "Cataclysm Classic guide",
+      "url": "https://www.wowhead.com/cata/guide/raids/firelands/majordomo-staghelm-strategy-overview",
+      "accessed": "2026-08-12",
+      "authority": "current secondary strategy source",
+      "notes": "Four health observations, form thresholds, energy/Adrenaline/Fury, current spell values, orb/seed behavior, and Heroic Concentration."
+    },
+    {
+      "id": "icy_veins_cata_majordomo_2024",
+      "title": "Majordomo Staghelm Encounter Guide: Strategy, Abilities, Loot",
+      "publisher": "Icy Veins",
+      "author": "Abide",
+      "published_or_updated": "2024-10-08",
+      "url": "https://www.icy-veins.com/cataclysm-classic/majordomo-staghelm-encounter-guide-strategy-abilities-loot",
+      "accessed": "2026-08-12",
+      "authority": "independent current secondary strategy source",
+      "notes": "Form logic, Adrenaline timing table, heroic Concentration, Spirit/Leaping Flames, Seeds/Orbs, and direct conflicts with Wowhead/local behavior."
+    },
+    {
+      "id": "wowhead_majordomo_npc_spells",
+      "title": "Majordomo Staghelm NPC and linked Cataclysm Classic spell pages",
+      "publisher": "Wowhead",
+      "url": "https://www.wowhead.com/cata/npc=52571/majordomo-staghelm",
+      "related_urls": [
+        "https://www.wowhead.com/cata/spell=97238/adrenaline",
+        "https://www.wowhead.com/cata/spell=98476/leaping-flames",
+        "https://www.wowhead.com/cata/spell=98443/fiery-cyclone",
+        "https://www.wowhead.com/cata/spell=98450/searing-seeds",
+        "https://www.wowhead.com/cata/spell=98451/burning-orbs",
+        "https://www.wowhead.com/cata/spell=98245/legendary-concentration"
+      ],
+      "accessed": "2026-08-12",
+      "authority": "community identity/range reference",
+      "notes": "Spell IDs and page-level values; legacy/contradictory fields are recorded as observations only."
+    },
+    {
+      "id": "repo_majordomo_script",
+      "title": "TrinityCore Firelands Majordomo Staghelm implementation",
+      "publisher": "shared TrinityCore repository",
+      "revision": "8eb54f0160b3c3d986ed944f9d64ebf83922c0f8",
+      "paths": ["src/server/scripts/Kalimdor/Firelands/boss_majordomo_staghelm.cpp"],
+      "accessed": "2026-08-12",
+      "authority": "repository executable evidence, not retail proof",
+      "notes": "Local forms, spell identities, 400ms event polling, target filters, seeds, Concentration, orb summons, and lifecycle."
+    },
+    {
+      "id": "repo_firelands_header_instance_loader",
+      "title": "TrinityCore Firelands header, instance, and loader",
+      "publisher": "shared TrinityCore repository",
+      "revision": "8eb54f0160b3c3d986ed944f9d64ebf83922c0f8",
+      "paths": [
+        "src/server/scripts/Kalimdor/Firelands/firelands.h",
+        "src/server/scripts/Kalimdor/Firelands/instance_firelands.cpp",
+        "src/server/scripts/Kalimdor/kalimdor_script_loader.cpp"
+      ],
+      "accessed": "2026-08-12",
+      "authority": "repository identity/boundary/registration evidence",
+      "notes": "Map, boss/data IDs, passage firewall, prerequisite hooks, respawn, and script registration."
+    },
+    {
+      "id": "repo_majordomo_sql_identity",
+      "title": "Historical TrinityCore Majordomo SQL identity and script registration",
+      "publisher": "shared TrinityCore repository",
+      "revision": "8eb54f0160b3c3d986ed944f9d64ebf83922c0f8",
+      "paths": [
+        "sql/old/4.3.4/world/20091_2021_07_06/2020_11_24_00_world.sql",
+        "sql/old/4.3.4/TDB04_to_TDB05_updates/world/066_instance_encounters.sql",
+        "sql/updates/world/4.3.4/2023_09_15_00_world.sql"
+      ],
+      "accessed": "2026-08-12",
+      "authority": "historical DB/model evidence",
+      "notes": "Entry 52571, variants 53856-53861, historical DamageModifier groups, script bindings, and encounter 1185. No authoritative 59185 mode mapping."
+    }
+  ],
+  "mode_matrix": {
+    "10N": {"heroic": false, "boss_health_guide_unmodified": 51000000, "clump_threshold": 7, "concentration": false, "modifier": {"name": "Power of Stormrage", "health_multiplier_if_active": 0.7, "damage_multiplier_if_active": 0.7, "runtime_verified": false}, "status": "fidelity_blocked"},
+    "10H": {"heroic": true, "boss_health_guide_unmodified": 124700000, "clump_threshold": 7, "concentration": true, "modifier": {"name": "Power of Stormrage", "health_multiplier_if_active": 0.7, "damage_multiplier_if_active": 0.7, "runtime_verified": false}, "status": "fidelity_blocked"},
+    "25N": {"heroic": false, "boss_health_guide_unmodified": 178600000, "clump_threshold": 18, "concentration": false, "modifier": {"name": "Power of Stormrage", "health_multiplier_if_active": 0.7, "damage_multiplier_if_active": 0.7, "runtime_verified": false}, "status": "fidelity_blocked"},
+    "25H": {"heroic": true, "boss_health_guide_unmodified": 432100000, "clump_threshold": 18, "concentration": true, "modifier": {"name": "Power of Stormrage", "health_multiplier_if_active": 0.7, "damage_multiplier_if_active": 0.7, "runtime_verified": false}, "status": "fidelity_blocked"}
+  },
+  "values": [
+    {"key": "boss_health", "mode_values_unmodified_guide": {"10N": 51000000, "10H": 124700000, "25N": 178600000, "25H": 432100000}, "if_power_of_stormrage_active": {"10N": 35700000, "10H": 87290000, "25N": 125020000, "25H": 302470000}, "source_refs": ["wowhead_cata_majordomo_442", "blizzard_442_firelands_modifier"], "status": "fidelity_blocked_guide_modifier_interaction"},
+    {"key": "form_threshold", "mode_values": {"10N": 7, "10H": 7, "25N": 18, "25H": 18}, "repository": {"10_player": 7, "25_player": 18, "cluster_ticks": 3, "split_ticks": 3}, "source_refs": ["wowhead_cata_majordomo_442", "icy_veins_cata_majordomo_2024", "repo_majordomo_script"], "status": "threshold_confirmed_controller_timing_blocked"},
+    {"key": "adrenaline", "spell": 97238, "energy_regen": "+20% per stack", "guide_time_to_100": {"0": "18s", "1": "12s", "2": "10s", "3": "8s", "4": "7s", "5": "6s", "6": "5s", "7": "4s"}, "source_refs": ["wowhead_cata_majordomo_442", "icy_veins_cata_majordomo_2024", "repo_majordomo_script"], "status": "fidelity_blocked_energy_rate"},
+    {"key": "fury", "spell": 97235, "guide_special_damage": "+8% per form change", "local_first_form_change": "not cast", "source_refs": ["wowhead_cata_majordomo_442", "icy_veins_cata_majordomo_2024", "repo_majordomo_script"], "status": "fidelity_blocked_initial_stack"},
+    {"key": "flame_scythe", "form_spell": 98379, "spell": 98474, "target": "frontal cone split among hit targets", "guide_normal": "about 1.75M Fire", "guide_heroic": "about 2.5M Fire", "npc_page": "2.7M Fire", "source_refs": ["wowhead_cata_majordomo_442", "wowhead_majordomo_npc_spells", "icy_veins_cata_majordomo_2024", "repo_majordomo_script"], "status": "fidelity_blocked_coefficients"},
+    {"key": "leaping_flames", "form_spell": 98374, "targeting_spell": 101165, "summon_spell": 101222, "target": "local class/spec preference excluding victim; current guides random ranged", "current_page_damage": "30630-34368 Fire", "guide_damage": {"normal": "about 20k", "heroic": "about 28k"}, "alternate_table": "26036-29213 Fire", "range_page": "90yd", "ground": {"width": "12yd", "lifetime": "1m"}, "spirit_entry": 52593, "spirit_stun_hate": 101224, "source_refs": ["wowhead_cata_majordomo_442", "icy_veins_cata_majordomo_2024", "wowhead_majordomo_npc_spells", "repo_majordomo_script"], "status": "fidelity_blocked_target_and_scaling"},
+    {"key": "fiery_cyclone", "spell": 98443, "duration": "3s", "radius": "200yd local spell data", "effect": "stun/action prevention and immunity", "transition": "third animal-form trigger locally", "source_refs": ["wowhead_majordomo_npc_spells", "icy_veins_cata_majordomo_2024", "repo_majordomo_script"], "status": "fidelity_blocked_transition_order"},
+    {"key": "searing_seeds", "spell": 98450, "seed_effect": 98620, "repository_duration": {"10_player": "10s + 5s * target order", "25_player": "10s + 2s * target order"}, "guide_cast": "4s", "guide_duration": "about 14s-1m", "guide_damage": [63750, 64000, 75000], "radius": "12yd", "source_refs": ["wowhead_cata_majordomo_442", "icy_veins_cata_majordomo_2024", "wowhead_majordomo_npc_spells", "repo_majordomo_script"], "status": "fidelity_blocked_target_duration_damage"},
+    {"key": "burning_orbs", "spell": 98451, "orb_entry": 53216, "summon_spell": 98565, "local_count": 5, "wowhead_count": 5, "icy_count": 2, "historical_comment": {"10N": 2, "25N": 5}, "tick": "2s", "wowhead_damage": {"normal": 3750, "heroic": 7650}, "icy_heroic": "double damage", "stack_cap": 50, "reset": "6s", "lifetime": "1m", "target": "nearest player/enemy", "source_refs": ["wowhead_cata_majordomo_442", "icy_veins_cata_majordomo_2024", "repo_majordomo_script"], "status": "fidelity_blocked_count_target_damage"},
+    {"key": "heroic_concentration", "boss_apply": 98256, "script_registration": 98229, "tiers": {"25": 98254, "50": 98253, "75": 98252, "100": 98245}, "guide_output": {"0-24": "0%", "25-49": "+25%", "50-74": "+50%", "75-99": "+75%", "100": "+100%"}, "proc_reset": "local clears tiers and alternate power", "source_refs": ["wowhead_cata_majordomo_442", "icy_veins_cata_majordomo_2024", "wowhead_majordomo_npc_spells", "repo_majordomo_script", "repo_majordomo_sql_identity"], "status": "fidelity_blocked_fill_proc_coverage"},
+    {"key": "power_of_stormrage", "official": {"health": "-30%", "damage": "-30%", "scope": "all Firelands bosses and other enemies", "remove_npc": "General Taldris Moonfall", "aura_id": null, "npc_id": null}, "source_refs": ["blizzard_442_firelands_modifier"], "status": "fidelity_blocked_application_identity"}
+  ],
+  "timers": [
+    {"key": "intro_after_baleroc", "repository": {"first_line": "10s", "next_lines": "11s, 11s"}, "status": "repository_confirmed_local_retail_blocked"},
+    {"key": "form_controller", "repository": {"event_poll": "400ms", "observations_required": 3}, "guide": {"initial_energy": "about 18s", "rapid_swap": "about 15s"}, "status": "fidelity_blocked_periodicity"},
+    {"key": "energy_ramp", "guide": {"0": "18s", "1": "12s", "2": "10s", "3": "8s", "4": "7s", "5": "6s", "6": "5s", "7": "4s"}, "status": "fidelity_blocked_client_energy"},
+    {"key": "animal_to_night_elf", "repository": {"gate": "third change", "ability_reschedule": "400ms"}, "guide": {"cycle": "after third form shift"}, "status": "fidelity_blocked_order"},
+    {"key": "searing_seeds", "repository": {"10_player": "10s + 5s * target order", "25_player": "10s + 2s * target order"}, "guide": {"range": "about 14s-1m"}, "status": "fidelity_blocked_distribution"},
+    {"key": "burning_orbs", "repository": {"summon_count": 5}, "guide": {"stack_reset": "6s", "lifetime": "1m"}, "status": "fidelity_blocked_count_and_lifetime"},
+    {"key": "fail_respawn", "repository": {"delay": "30s"}, "status": "fidelity_blocked_retail_respawn"}
+  ],
+  "targeting_and_scaling": [
+    {"key": "form_clump", "repository": {"threshold_10": 7, "threshold_25": 18, "area_radius": null}, "guides": {"threshold_10": 7, "threshold_25": 18}, "status": "fidelity_blocked_radius_controller"},
+    {"key": "leaping_target", "repository": "exclude victim; prefer hunter/mage/warlock/priest, non-healer paladin, feral druid, enhancement shaman; fallback any", "guides": "random ranged", "status": "fidelity_blocked_target_filter"},
+    {"key": "seeds_targets", "repository": "source-area enemy list with order-based duration", "guides": "raid members, commonly excluding tank", "status": "fidelity_blocked_exclusion_order"},
+    {"key": "orb_target", "repository": "summon only; no nearest-target script", "guides": "nearest player/enemy", "status": "fidelity_blocked_runtime_targeting"},
+    {"key": "heroic_deltas", "repository": "Concentration only explicit IsHeroic branch", "guides": "Flame/Leaping/Orb damage differs by page", "status": "fidelity_blocked_four_mode_scaling"},
+    {"key": "modifier", "official": "0.70 health and damage if active", "runtime": "aura identity and persistence absent", "status": "fidelity_blocked"}
+  ],
+  "phase_reset_credit": [
+    {"key": "form_cycle", "repository": "Druid initial; Scorpion/Cat based on three observations; third trigger casts Cyclone plus Seeds/Orbs and resets form counter", "status": "local_behavior_confirmed_retail_blocked"},
+    {"key": "evade", "repository": "despawn summons, disengage frame, SetBossState FAIL, despawn boss", "status": "local_behavior_confirmed_retail_blocked"},
+    {"key": "respawn", "repository": "instance schedules 30s summon at respawn position", "status": "repository_confirmed_current_lockout_unvalidated"},
+    {"key": "death", "repository": "remove dynamic objects and Seeds, disengage frame, generic BossAI completion", "status": "repository_confirmed_credit_unvalidated"},
+    {"key": "unlock", "repository": "Baleroc DONE action, Druid death count, firewall 208906", "status": "retail_prerequisite_blocked"},
+    {"key": "credit", "repository": "encounter 1185 credit entry 52571; no verified 59185 loot/achievement/lockout recipient", "status": "fidelity_blocked"}
+  ],
+  "conflicts": [
+    {"key": "health_modifier", "sources": ["Wowhead pre-4.4.2 guide health", "official 4.4.2 30% Firelands debuff"], "resolution": "fidelity_blocked; do not silently double-apply"},
+    {"key": "burning_orb_count", "sources": ["local five", "Wowhead current five", "Icy current two", "historical comments 10N two/25N five"], "resolution": "fidelity_blocked"},
+    {"key": "burning_orb_heroic_damage", "sources": ["Wowhead 7650 heroic", "Icy Veins says doubled"], "resolution": "fidelity_blocked"},
+    {"key": "leaping_flames_damage", "sources": ["Wowhead page 30630-34368", "Wowhead guide 20k/28k", "Icy table 26036-29213", "local spell script no coefficient"], "resolution": "fidelity_blocked"},
+    {"key": "form_transition_wording", "sources": ["guides describe third change", "one current narrative shorthand says after each animal form", "local gate >=2 prior switches"], "resolution": "fidelity_blocked"},
+    {"key": "searing_seeds_damage_and_target", "sources": ["page 75k", "guide 63.75k/64k", "local area list", "guide commonly excludes tank"], "resolution": "fidelity_blocked"}
+  ],
+  "unresolved": [
+    {"key": "build_hotfix_lineage_59185_enUS", "status": "fidelity_blocked"},
+    {"key": "power_of_stormrage_identity_default_persistence_and_guide_health_interaction", "status": "fidelity_blocked"},
+    {"key": "post_modifier_four_mode_health_and_damage_table", "status": "fidelity_blocked"},
+    {"key": "baleroc_bridge_druid_prerequisite_and_initial_attackability", "status": "fidelity_blocked"},
+    {"key": "controller_period_radius_and_clump_transition_semantics", "status": "fidelity_blocked"},
+    {"key": "energy_fill_and_adrenaline_reset_timing", "status": "fidelity_blocked"},
+    {"key": "fury_first_stack_and_post_night_elf_semantics", "status": "fidelity_blocked"},
+    {"key": "flame_scythe_range_targeting_and_four_mode_coefficients", "status": "fidelity_blocked"},
+    {"key": "leaping_flames_target_range_ground_fire_and_mode_scaling", "status": "fidelity_blocked"},
+    {"key": "spirit_of_the_flame_health_damage_and_ability_set", "status": "fidelity_blocked"},
+    {"key": "fiery_cyclone_transition_order_immunity_and_energy_state", "status": "fidelity_blocked"},
+    {"key": "searing_seeds_target_exclusions_duration_damage_and_mode_delta", "status": "fidelity_blocked"},
+    {"key": "burning_orb_count_nearest_target_tick_stack_lifetime_and_heroic_delta", "status": "fidelity_blocked"},
+    {"key": "concentration_fill_proc_coverage_and_59185_tiers", "status": "fidelity_blocked"},
+    {"key": "heroic_spell_coefficients_and_modifier_order", "status": "fidelity_blocked"},
+    {"key": "wipe_evade_cleanup_reactivation_and_respawn_semantics", "status": "fidelity_blocked"},
+    {"key": "historical_variant_to_difficulty_mapping", "status": "fidelity_blocked"},
+    {"key": "retail_lockout_loot_achievement_reputation_and_player_credit", "status": "fidelity_blocked"},
+    {"key": "official_release_cutoff_runtime_state", "status": "fidelity_blocked"},
+    {"key": "local_sql_spell_script_and_difficulty_row_provenance", "status": "fidelity_blocked"}
+  ]
+}
