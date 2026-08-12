@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "audit_id": "cata_raid_runtime_phase1_v1",
-  "updated_at_utc": "2026-08-12T12:38:10Z",
+  "updated_at_utc": "2026-08-12T13:02:36Z",
   "target": {
     "client": "Cataclysm Classic",
     "patch": "4.4.2",
@@ -9,15 +9,16 @@
     "locale": "enUS",
     "hotfix_cutoff_utc": "2025-02-20T23:00:00Z"
   },
-  "audited_commit": "42357ba662c2add889bf697c6719a901ad822df2",
+  "audited_commit": "a0dbafca4dd3bfce1c1670e45b6f804a57f3b028",
   "gate_state": "blocked_external_authority_required",
   "foundation": {
-    "foundation_sha": "42357ba662c2add889bf697c6719a901ad822df2",
-    "current_head_sha": "42357ba662c2add889bf697c6719a901ad822df2",
+    "foundation_sha": "a0dbafca4dd3bfce1c1670e45b6f804a57f3b028",
+    "current_head_sha": "a0dbafca4dd3bfce1c1670e45b6f804a57f3b028",
     "prior_sol_high_review": "REJECT",
     "critical_high_remediation": "implemented",
     "mandatory_sol_high_rereview": "zero_locally_closable_critical_high_findings",
     "external_service_requirement": "separately_privileged_signing_execution_service_required",
+    "privileged_protocol_review": "ready_for_external_provisioning_zero_critical_high",
     "acceptance": "blocked_on_external_authority"
   },
   "research": {

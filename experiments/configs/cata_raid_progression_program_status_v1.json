@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "program_id": "cata_raid_progression_442_v1",
-  "updated_at_utc": "2026-08-12T12:38:10Z",
+  "updated_at_utc": "2026-08-12T13:02:36Z",
   "active_phase": 1,
   "active_phase_name": "raid_runtime_formation_difficulty_and_evidence_primitives",
   "program_status": "in_progress",
@@ -16,8 +16,8 @@
   },
   "integration": {
     "branch": "raid/cata-raid-progression-integration",
-    "foundation_sha": "42357ba662c2add889bf697c6719a901ad822df2",
-    "current_head_sha": "42357ba662c2add889bf697c6719a901ad822df2",
+    "foundation_sha": "a0dbafca4dd3bfce1c1670e45b6f804a57f3b028",
+    "current_head_sha": "a0dbafca4dd3bfce1c1670e45b6f804a57f3b028",
     "raid_base_is_ancestor": true,
     "created_from_exact_local_master": true
   },
@@ -27,14 +27,15 @@
     "prior_review_decision": "REJECT",
     "prior_review_scope": "exact 9a7b3c72aed5a2e464635b31e8f4617f2134c8d8",
     "prior_review_counts": {"critical": 1, "high": 6, "medium": 5},
-    "critical_high_remediation_implemented_at": "42357ba662c2add889bf697c6719a901ad822df2",
+    "critical_high_remediation_implemented_at": "a0dbafca4dd3bfce1c1670e45b6f804a57f3b028",
     "mandatory_rereview": "zero_locally_closable_critical_high_findings",
     "external_service_requirement": "separately_privileged_signing_execution_service_required",
+    "privileged_protocol_review": "ready_for_external_provisioning_zero_critical_high",
     "current_acceptance": "blocked_on_external_authority"
   },
   "build_history": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "current_commit": "42357ba662c2add889bf697c6719a901ad822df2",
+    "current_commit": "a0dbafca4dd3bfce1c1670e45b6f804a57f3b028",
     "current_state": "blocked_before_gate_bearing_configure_on_missing_privileged_signing_service",
     "current_result": "external_authority_blocker",
     "successful_build_without_current_policy_receipt_is_invalid": true,
@@ -268,7 +269,9 @@
         "focused_phase1_phase9_and_regression_suite_168_passed",
         "policy_v7_release_retry_frozen_without_weakening_resource_thresholds",
         "policy_v8_exact_configure_build_graph_environment_and_toolchain_authority_frozen",
-        "mandatory_sol_high_review_zero_locally_closable_critical_high_findings_at_42357ba662"
+        "mandatory_sol_high_review_zero_locally_closable_critical_high_findings_at_42357ba662",
+        "privileged_ed25519_build_and_distinct_ledger_attestation_protocol_reviewed_at_a0dbafca4d",
+        "production_policy_service_key_endpoint_and_fresh_inclusion_trust_anchors_fail_closed"
       ],
       "remaining_requirements": [
         "provision_separately_privileged_signing_execution_service_and_immutable_ledger_authority",
@@ -283,7 +286,7 @@
       "blocker_id": "phase1_privileged_build_receipt_authority",
       "classification": "external_new_authority_required",
       "scope": "phase1_build_gate",
-      "detail": "The mandatory Sol-high reviewer reports zero locally closable critical/high findings at 42357ba662. Canonical receipt authenticity still requires a separately privileged UID/service or remote/hardware-backed signer that exclusively owns the signing key and immutable ledger and executes the admitted configure/build. This user-level session cannot create that trust boundary without new authority; no gate-bearing build or canonical capture may proceed."
+      "detail": "The mandatory Sol-high reviewer reports zero locally closable critical/high findings and protocol_ready_for_external_provisioning=true at a0dbafca4dd3bfce1c1670e45b6f804a57f3b028. Production is pinned to the tracked v8 policy, exact service-config hash, distinct build and ledger key identities, HTTPS endpoints, and a fresh signed unique/non-revoked ledger assertion. The tracked service remains deliberately unprovisioned. A separately privileged UID/service or remote/hardware-backed signer must now supply those pinned identities and execute the admitted configure/build; this user-level session cannot create that boundary without new authority."
     },
     {
       "blocker_id": "bwd_exact_442_quantitative_identity",
