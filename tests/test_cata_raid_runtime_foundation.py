@@ -582,6 +582,10 @@ def test_phase1_magmaw_engagement_contract_has_explicit_safe_target_authority():
 
 
 def test_magmaw_body_lifecycle_is_manual_reconstructable_and_fail_closed():
+    reset = MAGMAW_IMPL[
+        MAGMAW_IMPL.index("void Reset() override"):
+        MAGMAW_IMPL.index("void JustAppeared() override")
+    ]
     appeared = MAGMAW_IMPL[
         MAGMAW_IMPL.index("void JustAppeared() override"):
         MAGMAW_IMPL.index("void JustEngagedWith(Unit* who) override")
@@ -591,21 +595,41 @@ def test_magmaw_body_lifecycle_is_manual_reconstructable_and_fail_closed():
         MAGMAW_IMPL.index("void PassengerBoarded", MAGMAW_IMPL.index("void JustEngagedWith(Unit* who) override"))
     ]
     setup = MAGMAW_IMPL[
-        MAGMAW_IMPL.index("void SetupBody()"):
-        MAGMAW_IMPL.index("Creature* GetBodyPart", MAGMAW_IMPL.index("void SetupBody()"))
+        MAGMAW_IMPL.index("uint8 SetupBody()"):
+        MAGMAW_IMPL.index("Creature* GetBodyPart", MAGMAW_IMPL.index("uint8 SetupBody()"))
     ]
 
-    assert "RebuildBody();" in appeared
+    assert "RebuildBody()" in appeared
+    assert "_magmaProjectileCount = 0;" in reset
+    assert "_headEngaged = false;" in reset
+    assert "_heroicPhaseTwoActive = !IsHeroic();" in reset
+    assert "me->SetReactState(REACT_PASSIVE);" in reset
     assert "missingBodyMask = GetMissingBodyMask();" in engaged
-    assert engaged.index("RebuildBody();") < engaged.index("BossAI::JustEngagedWith(who);")
-    held_closed = engaged[engaged.index("if (missingBodyMask)", engaged.index("RebuildBody();")):]
+    assert "RebuildBody();" not in engaged
+    held_closed = engaged[engaged.index("if (missingBodyMask)"):]
     assert "EnterEvadeMode(EVADE_REASON_OTHER);" in held_closed
     assert held_closed.index("EnterEvadeMode(EVADE_REASON_OTHER);") < held_closed.index("return;")
     assert held_closed.index("return;") < held_closed.index("BossAI::JustEngagedWith(who);")
+    missing = MAGMAW_IMPL[
+        MAGMAW_IMPL.index("uint8 GetMissingBodyMask() const"):
+        MAGMAW_IMPL.index("void DespawnBody()")
+    ]
+    assert "!bodyPart->IsAlive()" in missing
+    assert "!bodyPart->IsInWorld()" in missing
+    assert "bodyPart->GetVehicleBase() != me" in missing
     assert setup.count("TEMPSUMMON_MANUAL_DESPAWN") == 4
+    assert "if (!pincer1)" in setup
+    assert "if (!pincer2)" in setup
+    assert setup.index("if (missingBodyMask)") < setup.index("pincer1->EnterVehicle")
+    assert "return missingBodyMask;" in setup
     assert "_bodyPartGUIDs[BODY_PART_EXPOSED_HEAD_1] = exposedHead1->GetGUID();" in setup
     assert "_bodyPartGUIDs[BODY_PART_EXPOSED_HEAD_2] = exposedHead2->GetGUID();" in setup
     assert "DespawnBody();" in setup
+    died = MAGMAW_IMPL[
+        MAGMAW_IMPL.index("void JustDied(Unit* /*killer*/) override"):
+        MAGMAW_IMPL.index("void JustSummoned", MAGMAW_IMPL.index("void JustDied(Unit* /*killer*/) override"))
+    ]
+    assert died.index("DespawnBody();") < died.index("_JustDied();")
 
 
 def test_phase1_diagnosis_retains_exact_live_location_and_recovery_state():

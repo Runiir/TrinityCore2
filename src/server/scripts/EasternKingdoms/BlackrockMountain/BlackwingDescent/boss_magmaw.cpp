@@ -214,14 +214,26 @@ Position const NefarianIntroSummonPos   = { -390.1042f, 40.88411f,  207.8586f, 0
 struct boss_magmaw : public BossAI
 {
     boss_magmaw(Creature* creature) : BossAI(creature, DATA_MAGMAW),
-        _magmaProjectileCount(0), _headEngaged(false), _heroicPhaseTwoActive(!IsHeroic())
+        _bodyPartGUIDs{}, _magmaProjectileCount(0), _headEngaged(false), _heroicPhaseTwoActive(!IsHeroic())
     {
         me->SetReactState(REACT_PASSIVE);
     }
 
+    void Reset() override
+    {
+        DespawnBody();
+        _Reset();
+        _magmaProjectileCount = 0;
+        _headEngaged = false;
+        _heroicPhaseTwoActive = !IsHeroic();
+        me->SetReactState(REACT_PASSIVE);
+        events.SetPhase(PHASE_OUT_OF_COMBAT);
+    }
+
     void JustAppeared() override
     {
-        RebuildBody();
+        if (uint8 missingBodyMask = RebuildBody())
+            TC_LOG_ERROR("scripts", "Magmaw body construction failed on appearance missing_mask=%u; native engagement will remain held closed", missingBodyMask);
         events.SetPhase(PHASE_OUT_OF_COMBAT);
     }
 
@@ -229,19 +241,15 @@ struct boss_magmaw : public BossAI
     {
         // The body is created while the grid first appears, which can be many
         // minutes before a route-directed raid reaches Magmaw. Keep those
-        // encounter-owned parts on an explicit manual lifetime and repair one
-        // incomplete set at the native pull boundary. Never continue into
-        // BossAI engagement/event scheduling after an incomplete-body evade.
+        // encounter-owned parts on an explicit manual lifetime. An incomplete
+        // set fails the pull closed and is rebuilt atomically by JustAppeared
+        // after the native evade/respawn boundary. Never schedule encounter
+        // events while a part is absent, dead, outside the world, or detached
+        // from Magmaw's vehicle.
         uint8 missingBodyMask = GetMissingBodyMask();
         if (missingBodyMask)
         {
-            TC_LOG_WARN("scripts", "Magmaw body incomplete before engagement missing_mask=%u; rebuilding exact body set", missingBodyMask);
-            RebuildBody();
-            missingBodyMask = GetMissingBodyMask();
-        }
-        if (missingBodyMask)
-        {
-            TC_LOG_ERROR("scripts", "Magmaw body reconstruction failed missing_mask=%u; native engagement held closed", missingBodyMask);
+            TC_LOG_ERROR("scripts", "Magmaw body incomplete before engagement missing_mask=%u; native engagement held closed for exact respawn reconstruction", missingBodyMask);
             EnterEvadeMode(EVADE_REASON_OTHER);
             return;
         }
@@ -319,6 +327,7 @@ struct boss_magmaw : public BossAI
         if (Creature* nefarian = instance->GetCreature(DATA_NEFARIAN_MAGMAW))
             nefarian->AI()->DoAction(ACTION_MAGMAW_DEAD);
 
+        DespawnBody();
         _JustDied();
     }
 
@@ -544,8 +553,11 @@ private:
     {
         uint8 missingMask = 0;
         for (uint8 i = BODY_PART_EXPOSED_HEAD_1; i < MAX_BODY_PARTS; ++i)
-            if (!GetBodyPart(BodyParts(i)))
+        {
+            Creature* bodyPart = GetBodyPart(BodyParts(i));
+            if (!bodyPart || !bodyPart->IsAlive() || !bodyPart->IsInWorld() || bodyPart->GetVehicleBase() != me)
                 missingMask |= uint8(1u << i);
+        }
         return missingMask;
     }
 
@@ -561,29 +573,21 @@ private:
         _bodyPartGUIDs.fill(ObjectGuid::Empty);
     }
 
-    void RebuildBody()
+    uint8 RebuildBody()
     {
         DespawnBody();
-        SetupBody();
+        return SetupBody();
     }
 
-    void SetupBody()
+    uint8 SetupBody()
     {
         Creature* pincer1 = DoSummon(NPC_MAGMAWS_PINCER_1, me->GetPosition(), 0, TEMPSUMMON_MANUAL_DESPAWN);
         if (pincer1)
-        {
-            pincer1->EnterVehicle(me, SEAT_MAGMAWS_PINCER_1);
-            pincer1->SetDisplayFromModel(2);
             _bodyPartGUIDs[BODY_PART_PINCER_1] = pincer1->GetGUID();
-        }
 
         Creature* pincer2 = DoSummon(NPC_MAGMAWS_PINCER_2, me->GetPosition(), 0, TEMPSUMMON_MANUAL_DESPAWN);
         if (pincer2)
-        {
-            pincer2->EnterVehicle(me, SEAT_MAGMAWS_PINCER_2);
-            pincer2->SetDisplayFromModel(2);
             _bodyPartGUIDs[BODY_PART_PINCER_2] = pincer2->GetGUID();
-        }
 
         Creature* exposedHead1 = DoSummon(NPC_EXPOSED_HEAD_OF_MAGMAW, ExposedHeadOfMagmawPos, 0, TEMPSUMMON_MANUAL_DESPAWN);
         Creature* exposedHead2 = DoSummon(NPC_EXPOSED_HEAD_OF_MAGMAW_2, me->GetPosition(), 0, TEMPSUMMON_MANUAL_DESPAWN);
@@ -593,11 +597,25 @@ private:
         if (exposedHead2)
             _bodyPartGUIDs[BODY_PART_EXPOSED_HEAD_2] = exposedHead2->GetGUID();
 
-        if (!exposedHead1 || !exposedHead2)
+        uint8 missingBodyMask = 0;
+        if (!exposedHead1)
+            missingBodyMask |= uint8(1u << BODY_PART_EXPOSED_HEAD_1);
+        if (!exposedHead2)
+            missingBodyMask |= uint8(1u << BODY_PART_EXPOSED_HEAD_2);
+        if (!pincer1)
+            missingBodyMask |= uint8(1u << BODY_PART_PINCER_1);
+        if (!pincer2)
+            missingBodyMask |= uint8(1u << BODY_PART_PINCER_2);
+        if (missingBodyMask)
         {
             DespawnBody();
-            return;
+            return missingBodyMask;
         }
+
+        pincer1->EnterVehicle(me, SEAT_MAGMAWS_PINCER_1);
+        pincer1->SetDisplayFromModel(2);
+        pincer2->EnterVehicle(me, SEAT_MAGMAWS_PINCER_2);
+        pincer2->SetDisplayFromModel(2);
 
         exposedHead1->SetReactState(REACT_PASSIVE);
         exposedHead2->SetReactState(REACT_PASSIVE);
@@ -625,6 +643,8 @@ private:
             if (Unit* target = ObjectAccessor::GetUnit(*head, guid))
                 head->CastSpell(target, SPELL_RIDE_VEHICLE_EXPOSED_HEAD, true);
         }, 1s + 200ms);
+
+        return 0;
     }
 
     Creature* GetBodyPart(BodyParts part) const

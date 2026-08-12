@@ -837,6 +837,11 @@ def observe_monotonic_semantic_progress(
     if runtime.get("encounter_in_progress") is True and not state.get("engagement_observed"):
         state["engagement_observed"] = True
         advanced = True
+    encounter_phase = str(runtime.get("encounter_phase") or "")
+    observed_phases = state.setdefault("observed_encounter_phases", [])
+    if encounter_phase and encounter_phase not in observed_phases:
+        observed_phases.append(encounter_phase)
+        advanced = True
     if route.get("manifest_complete") is True and not state.get("manifest_complete_observed"):
         state["manifest_complete_observed"] = True
         advanced = True

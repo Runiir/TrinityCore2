@@ -901,6 +901,7 @@ def test_monotonic_semantic_progress_rejects_cast_victim_and_hp_oscillation():
         }],
     }
     status["deaths"] = 0
+    status["raid_runtime"]["encounter_phase"] = "combat"
     state = {}
     assert observe_monotonic_semantic_progress(state, status, diagnosis) is True
     diagnosis["bots"][0]["snapshot"]["route_progress"]["state"] = {
@@ -910,6 +911,10 @@ def test_monotonic_semantic_progress_rejects_cast_victim_and_hp_oscillation():
     status["deaths"] += 1
     assert observe_monotonic_semantic_progress(state, status, diagnosis) is False
     diagnosis["bots"][0]["snapshot"]["route_progress"]["target"]["guid"] = 9002
+    assert observe_monotonic_semantic_progress(state, status, diagnosis) is False
+    status["raid_runtime"]["encounter_phase"] = "impaled"
+    assert observe_monotonic_semantic_progress(state, status, diagnosis) is True
+    status["raid_runtime"]["encounter_phase"] = "combat"
     assert observe_monotonic_semantic_progress(state, status, diagnosis) is False
     diagnosis["bots"][0]["snapshot"]["route_progress"]["target"].update(
         hp_pct=80.0, best_hp_pct=80.0,
