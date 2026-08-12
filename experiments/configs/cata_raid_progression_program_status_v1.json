@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "program_id": "cata_raid_progression_442_v1",
-  "updated_at_utc": "2026-08-12T14:36:49Z",
+  "updated_at_utc": "2026-08-12T15:10:47Z",
   "active_phase": 1,
   "active_phase_name": "raid_runtime_formation_difficulty_and_evidence_primitives",
   "program_status": "in_progress",
@@ -16,8 +16,8 @@
   },
   "integration": {
     "branch": "raid/cata-raid-progression-integration",
-    "foundation_sha": "d6262156c8eccb1bb4f0f9f272e96e13fef7c430",
-    "current_head_sha": "d6262156c8eccb1bb4f0f9f272e96e13fef7c430",
+    "foundation_sha": "544f774d5a0c3897f2144310f9469f46fb787266",
+    "current_head_sha": "544f774d5a0c3897f2144310f9469f46fb787266",
     "raid_base_is_ancestor": true,
     "created_from_exact_local_master": true
   },
@@ -27,18 +27,18 @@
     "prior_review_decision": "REJECT",
     "prior_review_scope": "exact 9a7b3c72aed5a2e464635b31e8f4617f2134c8d8",
     "prior_review_counts": {"critical": 1, "high": 6, "medium": 5},
-    "critical_high_remediation_implemented_at": "d6262156c8eccb1bb4f0f9f272e96e13fef7c430",
-    "mandatory_rereview": "approved_zero_critical_high_medium_at_7f4833e6f7_before_live_capture",
+    "critical_high_remediation_implemented_at": "544f774d5a0c3897f2144310f9469f46fb787266",
+    "mandatory_rereview": "pending_exact_544f774d5a_after_live_instance_identity_remediation",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "current_acceptance": "live_capture_failed_on_navigation_identity_and_scanner_infrastructure_remediated_rebuild_pending"
+    "current_acceptance": "second_live_capture_failed_on_preentry_zero_instance_identity_remediated_review_and_rebuild_pending"
   },
   "build_history": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "current_commit": "d6262156c8eccb1bb4f0f9f272e96e13fef7c430",
-    "current_state": "idle_exact_remediation_rebuild_pending",
-    "current_result": "successful_7f4833e6f7_receipts_retained_but_stale_after_cxx_remediation",
+    "current_commit": "544f774d5a0c3897f2144310f9469f46fb787266",
+    "current_state": "idle_exact_instance_identity_remediation_review_pending",
+    "current_result": "successful_4012450bb9_receipts_retained_but_stale_after_544f774d5a_remediation",
     "successful_build_without_current_policy_receipt_is_invalid": true,
     "attempts": [
       {
@@ -117,6 +117,17 @@
           "experiments/configs/cata_raid_build_receipts/phase1_foundation_worldserver_success_7f4833e6f7.json"
         ],
         "worldserver_sha256": "5dc3d91c316451abfb9dfa36fc8442154561ece3d7d50ad1a3a586d916d8ad97"
+      },
+      {
+        "policy": "cata_raid_build_resource_policy_degraded_v8",
+        "compiler_jobs": 1,
+        "linker_jobs": 1,
+        "classification": "success_at_4012450bb9_then_stale_after_544f774d5a_instance_identity_remediation",
+        "receipts": [
+          "experiments/configs/cata_raid_build_receipts/phase1_foundation_configure_success_4012450bb9.json",
+          "experiments/configs/cata_raid_build_receipts/phase1_foundation_worldserver_success_4012450bb9.json"
+        ],
+        "worldserver_sha256": "45dca82d24b4e800dfa241be2c4fcb21dfb70b43ae5317c3205c621c92dcf55b"
       }
     ]
   },
@@ -220,6 +231,9 @@
     "phase1_failed_live_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_7f4833e6_20260812.dvc",
     "phase1_failed_live_dvc_md5": "b6ad9092e9716e3535f0b1f7766a49e9.dir",
     "phase1_failed_live_remote_status": "cache_and_remote_verified_exact_payload_and_cache_evicted",
+    "phase1_second_failed_live_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_4012450b_20260812.dvc",
+    "phase1_second_failed_live_dvc_md5": "3026ddaf3954d42646e780ce84df3a44.dir",
+    "phase1_second_failed_live_remote_status": "cache_and_remote_verified_exact_payload_and_cache_evicted",
     "broad_gc_used": false,
     "config_local_tracked": false,
     "known_historical_unavailable_objects": [
@@ -305,11 +319,21 @@
       "db_sourced_magmaw_room_stalker_navigation_anchor_committed_at_d6262156c8",
       "temporary_weapon_enchants_excluded_from_permanent_roster_identity",
       "blocked_no_fallback_diagnostic_excluded_from_positive_assistance_markers",
-      "focused_remediation_suite_171_passed"
+        "focused_remediation_suite_171_passed",
+        "exact_policy_v8_configure_and_worldserver_build_succeeded_at_4012450bb9",
+        "second_canonical_live_capture_completed_with_clean_build_identity_process_isolation_and_cleanup",
+        "second_failed_live_capture_dvc_published_remote_verified_and_exactly_evicted",
+        "preentry_zero_instance_identity_root_cause_reconstructed_from_live_status_diagnose_trace_and_server_log",
+        "canonical_capture_default_changed_to_terminal_gate_driven_uncapped_runtime",
+        "validation_saved_placement_passed_explicitly_through_native_login",
+        "exact_roster_live_instance_identity_now_freezes_atomically_from_positive_map_instance",
+        "released_ghost_corpse_provenance_bound_to_exact_frozen_instance",
+        "focused_identity_and_capture_tests_54_passed_at_544f774d5a"
       ],
       "remaining_requirements": [
-      "complete_exact_policy_v8_release_coordinated_incremental_build_and_regression_gate_at_d6262156c8_or_reviewed_descendant",
-      "rerun_serialized_bwd_10n_entry_formation_difficulty_wipe_reset_evidence_publication_and_cleanup_gate",
+        "mandatory_independent_sol_high_review_of_exact_544f774d5a_with_boss_script_and_bot_decision_audit",
+        "complete_exact_policy_v8_release_coordinated_incremental_build_and_regression_gate_at_reviewed_544f774d5a_descendant",
+        "rerun_uncapped_serialized_bwd_10n_entry_formation_difficulty_wipe_reset_evidence_publication_and_cleanup_gate_with_live_stall_diagnosis",
         "phase1_live_evidence_dvc_publish_remote_verify_and_exact_evict_gate"
       ]
     }
@@ -331,8 +355,8 @@
       "blocker_id": "phase1_current_build_and_live_dvc_gate",
       "classification": "incomplete_evidence",
       "scope": "phase1_build_and_live_gate",
-      "detail": "The exact clean policy-v8 configure/build at 7f4833e6f7 and its trusted-local receipts succeeded, but the canonical 900-second capture isolated three infrastructure findings before Magmaw engagement. Commit d6262156c8 remediates the navigation anchor, temporary-enchant identity drift, and negative no-fallback marker; its exact incremental receipt-bearing rebuild and serialized capture rerun are pending. External signing remains optional hardening and is not a blocker."
+      "detail": "The exact clean policy-v8 configure/build at 4012450bb9 succeeded, but the second live capture proved that pre-entry instance zero was frozen before the exact roster entered native BWD instance 2. The failure artifact is remotely verified and exactly evicted. Commit 544f774d5a makes canonical capture terminal-gate driven and uncapped, passes the resolved saved placement through native login, freezes identity only from the exact roster in one positive live instance, blocks decisions while pending, and binds released-ghost corpse provenance to the exact instance. Independent review and an exact rebuild/rerun remain pending."
     }
   ],
-  "next_action": "Fast-forward the isolated build worktree to this reviewed remediation descendant, run the exact policy-v8 serialized incremental worldserver build, independently verify its successful receipt and regressions, then rerun canonical BWD 10N formation/difficulty/wipe/reset/recovery capture and its DVC publish/remote-verify/exact-evict gate. Keep all 28 research packets and 464 material blockers fidelity-blocked."
+  "next_action": "Run the mandatory independent Sol-high review of exact 544f774d5a, explicitly comparing encounter-script behavior with bot status/diagnose/trace decisions. After zero unresolved critical/high findings, fast-forward the isolated build worktree, run the exact policy-v8 serialized incremental worldserver build, independently verify its receipt and regressions, then rerun uncapped canonical BWD 10N validation. Monitor live progress; on a sustained semantic stall, preserve diagnostics, stop cleanly, fix, review, rebuild, and restart. Keep all 28 research packets and 464 material blockers fidelity-blocked."
 }

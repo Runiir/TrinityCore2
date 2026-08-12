@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "audit_id": "cata_raid_runtime_phase1_v1",
-  "updated_at_utc": "2026-08-12T14:36:49Z",
+  "updated_at_utc": "2026-08-12T15:10:47Z",
   "target": {
     "client": "Cataclysm Classic",
     "patch": "4.4.2",
@@ -9,18 +9,18 @@
     "locale": "enUS",
     "hotfix_cutoff_utc": "2025-02-20T23:00:00Z"
   },
-  "audited_commit": "d6262156c8eccb1bb4f0f9f272e96e13fef7c430",
-  "gate_state": "in_progress_failed_live_infrastructure_remediated_rebuild_pending",
+  "audited_commit": "544f774d5a0c3897f2144310f9469f46fb787266",
+  "gate_state": "in_progress_second_failed_live_instance_identity_remediated_review_and_rebuild_pending",
   "foundation": {
-    "foundation_sha": "d6262156c8eccb1bb4f0f9f272e96e13fef7c430",
-    "current_head_sha": "d6262156c8eccb1bb4f0f9f272e96e13fef7c430",
+    "foundation_sha": "544f774d5a0c3897f2144310f9469f46fb787266",
+    "current_head_sha": "544f774d5a0c3897f2144310f9469f46fb787266",
     "prior_sol_high_review": "REJECT",
     "critical_high_remediation": "implemented",
-    "mandatory_sol_high_rereview": "approved_zero_critical_high_medium_at_7f4833e6f7_before_live_capture",
+    "mandatory_sol_high_rereview": "pending_exact_544f774d5a_after_live_instance_identity_remediation",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "acceptance": "live_infrastructure_findings_remediated_exact_rebuild_and_rerun_pending"
+    "acceptance": "second_live_instance_identity_failure_remediated_review_exact_rebuild_and_uncapped_rerun_pending"
   },
   "research": {
     "required_boss_packets": 28,
@@ -46,8 +46,8 @@
   },
   "build": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "current_state": "successful_7f4833e6f7_build_stale_after_d6262156c8_remediation",
-    "current_result": "rebuild_required_before_canonical_rerun",
+    "current_state": "successful_4012450bb9_build_stale_after_544f774d5a_instance_identity_remediation",
+    "current_result": "mandatory_review_then_exact_rebuild_required_before_uncapped_canonical_rerun",
     "receipt_trust_model": "explicit_trusted_local_operator",
     "trusted_operator": "runiir",
     "trusted_uid": 1000,
@@ -97,35 +97,42 @@
     "interactable_extra_action_vehicle_transport_jump_pad_and_encounter_link_contracts",
     "platform_altitude_flying_and_cross_platform_transfer_contracts",
     "native_boss_state_wipe_reset_recovery_and_ready_state_observation",
-    "fail_closed_capture_demultiplex_and_independent_identity_reconstruction"
+    "fail_closed_capture_demultiplex_and_independent_identity_reconstruction",
+    "canonical_capture_terminal_gate_driven_without_raid_duration_cap",
+    "validation_saved_position_forwarded_as_explicit_native_spawn_placement",
+    "exact_roster_positive_live_instance_atomic_identity_freeze",
+    "formation_pending_decision_hold_before_identity_freeze",
+    "released_ghost_corpse_map_and_instance_provenance"
   ],
   "synthetic_checks": {
     "test_file": "tests/test_cata_raid_runtime_foundation.py",
-    "last_result": "171_passed",
-    "combined_focus_result": "171_passed",
-    "combined_focus_command": "pixi run pytest -q tests/test_ml_pipeline.py::test_bwd_magmaw_preserves_boss_source_and_uses_db_ground_anchor tests/test_ml_pipeline.py::test_validation_scenario_manifest_rejects_partial_navigation_anchor tests/test_phase1_raid_foundation_capture.py tests/test_cata_raid_runtime_foundation.py tests/test_cata_raid_foundation_model.py tests/test_phase9_live_qualification.py"
+    "last_result": "54_patch_focused_passed",
+    "combined_focus_result": "54_passed_158_deselected",
+    "combined_focus_command": "pixi run pytest -q tests/test_cata_raid_runtime_foundation.py tests/test_phase1_raid_foundation_capture.py tests/test_autonomy_pipeline_smoke.py -k 'raid_instance_identity or canonical_capture_is_terminal or validation_bot_reattach or runtime_reconstructs_native or phase1 or foundation'",
+    "broad_comparison": "patched_worktree_329_passed_34_inherited_stale_failures; exact_4012450_control_326_passed_35_failures; no_new_failure"
   },
   "required_open_work": [
     {
       "area": "current_build",
-      "missing": ["successful_exact_policy_v8_release_coordinated_incremental_build_at_d6262156c8_or_reviewed_descendant", "valid_current_production_receipt_bound_to_trusted_local_operator", "post_build_regression_and_orphan_process_check"]
+      "missing": ["successful_exact_policy_v8_release_coordinated_incremental_build_at_reviewed_544f774d5a_descendant", "valid_current_production_receipt_bound_to_trusted_local_operator", "post_build_regression_and_orphan_process_check"]
     },
     {
       "area": "adversarial_review",
-      "missing": ["explicit_4_4_2_fidelity_approval"]
+      "missing": ["zero_unresolved_critical_high_findings_for_544f774d5a_instance_identity_and_uncapped_capture", "explicit_encounter_script_vs_bot_decision_review", "explicit_4_4_2_fidelity_approval"]
     },
     {
       "area": "native_recovery_live_evidence",
-      "missing": ["serialized_bwd_10n_native_entry_and_unlock", "live_ready_check_and_authoritative_boss_state_readback", "lockout_save_transition", "full_wipe_reset_release_resurrection_runback_smoke"]
+      "missing": ["serialized_uncapped_bwd_10n_native_entry_and_unlock", "live_ready_check_and_authoritative_boss_state_readback", "lockout_save_transition", "full_wipe_reset_release_resurrection_runback_smoke"]
     },
     {
       "area": "immutable_evidence",
-      "missing": ["complete_phase1_live_capture", "independent_acceptance_reconstruction", "dvc_publish_remote_verify_exact_evict"]
+      "missing": ["complete_terminal_gate_driven_phase1_live_capture_with_semantic_stall_monitoring", "independent_acceptance_reconstruction", "dvc_publish_remote_verify_exact_evict"]
     }
   ],
   "phase1_gate_blockers": [
-    "coordinated_policy_v8_release_worldserver_rebuild_after_live_infrastructure_remediation_pending",
-    "serialized_bwd_10n_live_formation_difficulty_wipe_reset_gate_rerun_pending",
+    "mandatory_sol_high_review_of_exact_544f774d5a_pending",
+    "coordinated_policy_v8_release_worldserver_rebuild_after_live_instance_identity_remediation_pending",
+    "uncapped_serialized_bwd_10n_live_formation_difficulty_wipe_reset_gate_rerun_pending",
     "phase1_live_dvc_publication_remote_verification_and_exact_eviction_pending",
     "bwd_exact_442_quantitative_and_exact_log_hotfix_evidence_blocks_phase2_fidelity"
   ],
