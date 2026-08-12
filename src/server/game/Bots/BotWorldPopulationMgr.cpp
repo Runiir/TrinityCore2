@@ -6292,7 +6292,11 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
                 {
                     if (enchantSlot)
                         gearIdentity << ',';
-                    gearIdentity << item->GetEnchantmentId(EnchantmentSlot(enchantSlot));
+                    // Raid roster identity is permanent. Weapon oils, poisons,
+                    // and class imbues occupy TEMP_ENCHANTMENT_SLOT and may
+                    // legitimately change after the roster has been frozen.
+                    gearIdentity << (enchantSlot == TEMP_ENCHANTMENT_SLOT
+                        ? 0 : item->GetEnchantmentId(EnchantmentSlot(enchantSlot)));
                 }
             }
         slot.GearIdentity = gearIdentity.str();

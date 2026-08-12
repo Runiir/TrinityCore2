@@ -569,6 +569,16 @@ def test_forbidden_event_markers_are_rejected_while_native_fields_are_not():
     assert all("release_resurrection_pending" not in str(entry) for entry in found)
 
 
+def test_no_fallback_diagnostic_is_not_misclassified_as_fallback_assistance():
+    rows = normalized_batch_payload(
+        b'{"action":"botauto_trace","recovery_mode":"blocked_no_fallback"}\n'
+        b'{"action":"botauto_trace","recovery_mode":"fallback_action"}\n'
+    )
+    found = _forbidden_assistance_entries(rows)
+    assert all(entry["value"] != "blocked_no_fallback" for entry in found)
+    assert any(entry["value"] == "fallback_action" for entry in found)
+
+
 def test_preflight_reports_coordinator_and_protected_process_overlap():
     report = preflight_runtime_exclusions(__import__("pathlib").Path.cwd())
     assert "coordinator_idle" in report

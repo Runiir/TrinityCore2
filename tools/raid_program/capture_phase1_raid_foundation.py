@@ -1279,7 +1279,11 @@ def _forbidden_assistance_entries(rows: list[dict[str, Any]]) -> list[dict[str, 
             for key, child in value.items():
                 if key in FORBIDDEN_ASSISTANCE_FIELDS and child not in (None, False, [], {}, "", 0):
                     found.append({"path": f"{path}.{key}", "value": child})
-                if key in FORBIDDEN_MARKER_FIELDS and isinstance(child, str) and FORBIDDEN_MARKER_RE.search(child):
+                # This diagnostic means that no fallback was available or
+                # executed; its wording must not invert the evidence.
+                negative_fallback_marker = child == "blocked_no_fallback"
+                if (key in FORBIDDEN_MARKER_FIELDS and isinstance(child, str)
+                        and not negative_fallback_marker and FORBIDDEN_MARKER_RE.search(child)):
                     found.append({"path": f"{path}.{key}", "value": child, "kind": "forbidden_event_marker"})
                 visit(child, f"{path}.{key}")
         elif isinstance(value, list):

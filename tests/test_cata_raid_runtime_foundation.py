@@ -317,6 +317,11 @@ def test_permanent_roster_slots_and_exact_role_shapes_fail_closed():
         assert token in IMPL
 
 
+def test_permanent_gear_identity_excludes_temporary_weapon_enchants():
+    assert "enchantSlot == TEMP_ENCHANTMENT_SLOT" in IMPL
+    assert "? 0 : item->GetEnchantmentId" in IMPL
+
+
 def test_native_ready_check_is_explicit_attempt_and_wipe_scoped():
     command = (ROOT / "src/server/scripts/Commands/cs_healerbot.cpp").read_text(encoding="utf-8")
     for token in (

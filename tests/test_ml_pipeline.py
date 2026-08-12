@@ -2087,6 +2087,34 @@ def test_validation_scenario_manifest_rejects_partial_navigation_anchor():
     assert scenario["invalid_route_steps"][0]["reason"] == "navigation_anchor_missing_xyz"
 
 
+def test_bwd_magmaw_preserves_boss_source_and_uses_db_ground_anchor():
+    config = json.loads(
+        Path("experiments/configs/validation_scenarios_cata_001.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    bwd = next(row for row in config["scenarios"] if row["id"] == "blackwing_descent_10n")
+    manifests = build_validation_scenario_manifests(
+        {"scenarios": [bwd]},
+        {
+            "all_ready": True,
+            "scenarios": [{
+                "scenario_id": "blackwing_descent_10n",
+                "ready": True,
+                "missing": [],
+                "role_counts": {"tank": 2, "healer": 3, "dps": 5},
+            }],
+        },
+        {"all_passed": True},
+    )
+    magmaw = next(row for row in manifests["validation_routes"] if row["label"] == "Magmaw")
+    assert magmaw["x"] == -302.467
+    assert magmaw["source_entry"] == 41570
+    assert magmaw["navigation_anchor_x"] == -307.531
+    assert magmaw["navigation_anchor_y"] == -35.4375
+    assert magmaw["navigation_anchor_z"] == 211.815
+
+
 def test_validation_route_bosses_are_scripted_encounter_targets():
     config = json.loads(Path("experiments/configs/validation_scenarios_cata_001.json").read_text(encoding="utf-8"))
     manifests = build_validation_scenario_manifests(
