@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "capture_id": "cata_raid_phase1_bwd_10n_foundation_v1",
+  "classification": "infrastructure_abort",
+  "gameplay_failure": false,
+  "fidelity_claim": false,
+  "source_identity": {
+    "commit": "e75f5ba2fd63646e9ebe432ad59987c76aababab",
+    "clean_at_start": true,
+    "identity_stable_during_run": true
+  },
+  "build": {
+    "policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
+    "configure_receipt_sha256": "5c451d3503a9e3d30993d23fb8a5c69d34f8f805d8c576cf64dd33b76872d3ed",
+    "configure_receipt_file_sha256": "b7d472ef59e7b5f805b18288d00da7f3a30732259712070b896f7241fc0b8df7",
+    "worldserver_receipt_sha256": "f053d8dc440a596fb38c2ae87c51a9009be23786fc7533f424f1bf3fc66e58aa",
+    "worldserver_receipt_file_sha256": "91a724d9ee21d96a9f761894a138fbc690000344745f8aff31387af604f48b86",
+    "worldserver_sha256": "a8a7a586a512d3dd3b09c7758f4bc3149a7741e95707fb0dad273e93e535729a",
+    "worldserver_size_bytes": 60968016,
+    "trusted_local_operator": "runiir",
+    "gate_bearing": true
+  },
+  "preflight": {
+    "provisioning_apply_sha256": "679061f939ff4884f4147eaab03e5d2b58d9177de447afed47962798dc47e808",
+    "full_provisioning_verifier_passed": true,
+    "full_provisioning_verifier_sha256": "2d9f71bb38fec0f61f08b80d76741de818a15f3880c71e373bd5d4e004916373",
+    "readback_schema": "cata_raid_phase1_bwd_provisioning_readback_v4",
+    "readback_passed": true,
+    "readback_sha256": "d00c8205aebd27749f15a811115232ef0d4fb172ee98c860ad44577d602bd189",
+    "character_instance_rows": 0,
+    "group_member_rows": 0,
+    "ghost_aura_rows": 0,
+    "corpse_rows": 0,
+    "corpse_phase_rows": 0
+  },
+  "live_facts": {
+    "exact_roster_size": 10,
+    "composition": {"tanks": 2, "healers": 3, "dps": 5},
+    "map_id": 669,
+    "instance_id": 2,
+    "lockout_save_id": 2,
+    "difficulty": "10N",
+    "entry_trash_kills": 2,
+    "cumulative_deaths": 14,
+    "alive_at_final_sample": 10,
+    "boss_engaged": false,
+    "route_node_index_high_water": 2,
+    "route_generation_high_water": 3,
+    "route_label": "Magmaw",
+    "route_terminal_count": 2,
+    "entrance_junction_live_path_succeeded": true,
+    "native_recovery_evidence_complete": false
+  },
+  "root_cause": {
+    "failure_fingerprint": "missing_explicit_drakonid_prerequisite_pack_contract_and_native_mechanic_decisions",
+    "detail": "The exact cohort reached the Magmaw route node, then generic boss-prerequisite logic repeatedly pulled a native Drakonid Chainwielder and two Drakonid Drudges that were not declared by the Magmaw target contract. The strict dungeon threat gate withheld most raid damage after both tanks already owned the pack. Critical-role deaths then triggered tactical retreat toward the junction, the native pack reset, and the cycle repeated until the semantic-stall watchdog stopped the uncapped run.",
+    "native_script_facts": {
+      "chainwielder_entry": 42649,
+      "chainwielder_spawn_guid": 250050,
+      "chainwielder_spells": [80051, 79578, 79580, 79589],
+      "overhead_smash_marker_entry": 42690,
+      "overhead_smash_spell": 79580,
+      "overhead_smash_radius_yards": 20.0,
+      "drudge_entry": 42362,
+      "drudge_spawn_guids": [250140, 250141],
+      "drudge_area_spell": 79604,
+      "drudge_area_radius_yards": 15.0,
+      "maximum_declared_pack_separation_yards": 47.903
+    },
+    "decision_assessment": "Target selection and local class actions were individually coherent, but the route had no bounded pack ownership, the raid reused a conservative dungeon 2000-threat/2.5x release gate instead of native raid victim-switch headroom, ranged and healers stacked inside the Drudge area spell, and no declared Overhead Smash movement decision existed. Alive-at-final-sample does not prove native recovery because death/corpse/release/runback/reentry/resurrection evidence remained absent.",
+    "remediation_scope": [
+      "insert an explicit bounded Drakonid corridor trash node before Magmaw with exact entries, source GUIDs, cluster radius, Overhead Smash hazard geometry, and Drudge minimum-distance contract",
+      "fail closed on undeclared hostiles while a boss node is active instead of executing generic prerequisite damage",
+      "use the core ThreatManager 1.3 ranged switch boundary for declared raid trash while retaining legacy dungeon tuning elsewhere",
+      "execute and retain ranged/healer minimum-distance decisions plus native radial hazard exits",
+      "independently review, rebuild, reprovision, and rerun uncapped before accepting Phase 1"
+    ]
+  },
+  "telemetry": {
+    "wall_clock_mode": "uncapped",
+    "watchdog_healthy": true,
+    "retained_rows": 379,
+    "bound_rows": 379,
+    "rejected_rows": 0,
+    "unchecked_rows": 0,
+    "required_readycheck_missing_downstream_of_no_native_full_wipe_recovery": true
+  },
+  "semantic_stall": {
+    "detected": true,
+    "seconds": 303.607,
+    "unchanged_samples": 53,
+    "high_water": {"kills": 2, "deaths": 14, "raid_boss_kills": 0, "route_index": 2, "route_generation": 3, "route_terminal_count": 2},
+    "observed_targets": [
+      {"runtime_guid": 27, "entry": 42649, "best_health_pct": 0.66595, "later_reset_to_full": true},
+      {"runtime_guid": 60, "entry": 42362, "best_health_pct": 0.956844, "later_reset_to_full": true}
+    ]
+  },
+  "cleanup": {
+    "gate_passed": true,
+    "stop_observed": true,
+    "stop_ok": true,
+    "zero_bots": true,
+    "zero_leases": true,
+    "worldserver_process_absent": true
+  },
+  "forbidden_assistance": {"observed": false, "gate_passed": true},
+  "artifact": {
+    "pointer": "artifacts/cata_raid_program/phase1_raid_foundation_e75f5ba2_20260813.dvc",
+    "dvc_directory_md5": "679597e1371aecd365c79e8e77dcae94.dir",
+    "size_bytes": 212449797,
+    "nfiles": 8,
+    "raw_jsonl_sha256": "f78d7c68c465338097409add441442845825823cf6b9ba957cf4c1d369ff6118",
+    "capture_report_canonical_sha256": "96dabace8b4d26b10ea9ce450f7d2a64c5e3d22eb3a47eab509ae1d0d02e9e17",
+    "capture_report_file_sha256": "9cb0b3a31ceaaeb18ac75e1d01b553d07a03a9638e7422bebd684490322db0fc",
+    "worldserver_log_sha256": "2fae10d9c9e3ec03cb461689e053c1d296855f752639e4453dc6ac3b77cdf3c0",
+    "targeted_push_completed": true,
+    "targeted_remote_status_before_eviction": "cache_and_remote_in_sync",
+    "workspace_payload_evicted": true,
+    "exact_eight_child_cache_objects_evicted": true,
+    "directory_metadata_retained": true,
+    "broad_gc_used": false
+  },
+  "acceptance": {
+    "phase1_gate_passed": false,
+    "next_gate": "independent Sol-high review of the explicit Drakonid pack and decision remediation, exact coordinated rebuild, exact reprovisioning/full verifier/v4 readback, and uncapped canonical rerun"
+  }
+}

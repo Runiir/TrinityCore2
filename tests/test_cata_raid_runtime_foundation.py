@@ -14,11 +14,12 @@ def test_bwd_entry_to_magmaw_uses_frozen_junction_below_native_path_limit():
         (ROOT / "experiments/configs/validation_scenarios_cata_001.json").read_text()
     )
     bwd = next(row for row in config["scenarios"] if row["id"] == "blackwing_descent_10n")
-    trash, junction, magmaw = bwd["route"][:3]
+    trash, junction, corridor, magmaw = bwd["route"][:4]
 
-    assert (trash["label"], junction["label"], magmaw["label"]) == (
+    assert (trash["label"], junction["label"], corridor["label"], magmaw["label"]) == (
         "entry trash",
         "BWD entrance junction regroup",
+        "Drakonid corridor pack",
         "Magmaw",
     )
     assert junction["kind"] == "regroup"
@@ -44,6 +45,10 @@ def test_bwd_entry_to_magmaw_uses_frozen_junction_below_native_path_limit():
     )
     second_leg = math.dist(
         (junction["x"], junction["y"], junction["z"]),
+        (corridor["x"], corridor["y"], corridor["z"]),
+    )
+    third_leg = math.dist(
+        (corridor["x"], corridor["y"], corridor["z"]),
         (
             magmaw["navigation_anchor"]["x"],
             magmaw["navigation_anchor"]["y"],
@@ -54,6 +59,28 @@ def test_bwd_entry_to_magmaw_uses_frozen_junction_below_native_path_limit():
     assert direct_leg > path_limit_yards
     assert first_leg < path_limit_yards
     assert second_leg < path_limit_yards
+    assert third_leg < path_limit_yards
+
+
+def test_bwd_drakonid_corridor_has_explicit_native_pack_hazard_and_range_contract():
+    config = json.loads(
+        (ROOT / "experiments/configs/validation_scenarios_cata_001.json").read_text()
+    )
+    bwd = next(row for row in config["scenarios"] if row["id"] == "blackwing_descent_10n")
+    corridor = next(row for row in bwd["route"] if row["label"] == "Drakonid corridor pack")
+
+    assert corridor["step"] == 3
+    assert corridor["kind"] == "trash"
+    assert corridor["source_entry"] == 42649
+    assert corridor["source_guid"] == "250050"
+    assert corridor["pack_target_entries"] == [42649, 42362]
+    assert corridor["cluster_radius_yards"] == 48.0
+    assert (corridor["hazard_source_entry"], corridor["hazard_damage_spell_id"]) == (42690, 79580)
+    assert (corridor["hazard_shape"], corridor["hazard_radius_yards"]) == ("radial", 20.0)
+    assert (corridor["minimum_distance_source_entry"], corridor["minimum_distance_yards"]) == (42362, 15.0)
+    assert bwd["mechanic_profiles"]["trash_ground_danger_movement"] == [
+        "ground_danger", "movement_check", "minimum_distance"
+    ]
 
 
 def test_single_cohort_owns_one_raid_runtime():
@@ -554,6 +581,52 @@ def test_route_directed_boss_assist_cannot_bypass_the_typed_contract_authority()
     assert "if (!IsBossContext(bot, result.Target) && !routeDirectedBoss)" in boss_runtime
     assert 'result.Action = "raid_mechanic_contract_fail_closed";' in boss_runtime
     assert "0, false, false, forbidArea, raidAdapter.AllowMultidot" in boss_runtime
+
+
+def test_boss_nodes_fail_closed_on_undeclared_prerequisite_hostiles():
+    route_start = IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    route_end = IMPL.index("bool BotWorldPopulationMgr::IsBossContext", route_start)
+    route_runtime = IMPL[route_start:route_end]
+
+    assert 'if (!tankFocusIsRouteTarget)' in route_runtime
+    assert '"boss_route_target_not_declared"' in route_runtime
+    assert 'action = "boss_route_prerequisite_blocked";' in route_runtime
+    assert '&& !isValidationRouteObjectiveTarget(seenRouteTarget->ToCreature())' in route_runtime
+    assert '"boss_route_undeclared_prerequisite_blocked"' in route_runtime
+    scan_start = route_runtime.index("Creature* prerequisiteTarget = nullptr;")
+    boss_hold = route_runtime.rindex(
+        'if (Cohort().Config.ValidationRouteKind == "boss")', 0, scan_start
+    )
+    assert boss_hold < scan_start
+
+
+def test_raid_trash_uses_native_threat_headroom_and_declared_minimum_distance():
+    route_start = IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    route_end = IMPL.index("bool BotWorldPopulationMgr::IsBossContext", route_start)
+    route_runtime = IMPL[route_start:route_end]
+
+    minimum_start = route_runtime.index("auto tryValidationRouteMinimumDistance")
+    minimum_end = route_runtime.index("auto tryValidationRouteAdds", minimum_start)
+    minimum = route_runtime[minimum_start:minimum_end]
+    assert "ValidationRouteMinimumDistanceSourceEntry" in minimum
+    assert "ValidationRouteMinimumDistanceYards" in minimum
+    assert 'profile.MovementDirective == "ranged"' in minimum
+    assert 'profile.MovementDirective == "healer_support"' in minimum
+    assert 'creature->GetEntry() != sourceEntry' in minimum
+    assert 'safeDistance = minimumDistance + 2.0f' in minimum
+    assert '"minimum_distance_exit_started"' in minimum
+    assert route_runtime.index("if (tryValidationRouteMovementCheck(target))") < route_runtime.index(
+        "if (tryValidationRouteMinimumDistance())"
+    )
+
+    assert 'tankThreat >= highestPartyThreat * 1.3f' in route_runtime
+    assert 'tankThreat >= 2000.0f && tankThreat >= highestPartyThreat * 2.5f' in route_runtime
+    assert 'bot->GetMap()->IsRaid()' in route_runtime
+    assert 'Cohort().Config.ValidationRouteKind != "boss"' in route_runtime
+
+    generator = (ROOT / "tools/bot_ml/build_validation_scenario_manifests.py").read_text()
+    assert '"minimum_distance_source_entry": int(step.get("minimum_distance_source_entry") or 0)' in generator
+    assert '"minimum_distance_yards": float(step.get("minimum_distance_yards") or 0.0)' in generator
 
 
 def test_shared_boss_focus_cannot_bypass_declared_target_or_typed_contract_authority():

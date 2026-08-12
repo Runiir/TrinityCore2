@@ -100,6 +100,8 @@ struct BotWorldExperimentConfig
     std::string ValidationRouteHazardShape;
     float ValidationRouteHazardRadiusYards = 0.0f;
     float ValidationRouteHazardSafetyMarginYards = 0.0f;
+    uint32 ValidationRouteMinimumDistanceSourceEntry = 0;
+    float ValidationRouteMinimumDistanceYards = 0.0f;
     float ValidationRouteClusterRadiusYards = 0.0f;
     uint32 ValidationRouteExpectedAliveCount = 0;
     uint32 ValidationRouteActivationDataId = 0;
@@ -450,6 +452,8 @@ private:
         std::string HazardShape;
         float HazardRadiusYards = 0.0f;
         float HazardSafetyMarginYards = 0.0f;
+        uint32 MinimumDistanceSourceEntry = 0;
+        float MinimumDistanceYards = 0.0f;
         float ClusterRadiusYards = 0.0f;
         uint32 ExpectedAliveCount = 0;
         uint32 ActivationDataId = 0;

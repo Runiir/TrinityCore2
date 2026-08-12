@@ -3355,6 +3355,8 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
     Cohort().Config.ValidationRouteHazardShape = sConfigMgr->GetStringDefault("BotWorld.ValidationRoute.HazardShape", Cohort().Config.ValidationRouteHazardShape);
     Cohort().Config.ValidationRouteHazardRadiusYards = sConfigMgr->GetFloatDefault("BotWorld.ValidationRoute.HazardRadiusYards", Cohort().Config.ValidationRouteHazardRadiusYards);
     Cohort().Config.ValidationRouteHazardSafetyMarginYards = sConfigMgr->GetFloatDefault("BotWorld.ValidationRoute.HazardSafetyMarginYards", Cohort().Config.ValidationRouteHazardSafetyMarginYards);
+    Cohort().Config.ValidationRouteMinimumDistanceSourceEntry = sConfigMgr->GetIntDefault("BotWorld.ValidationRoute.MinimumDistanceSourceEntry", Cohort().Config.ValidationRouteMinimumDistanceSourceEntry);
+    Cohort().Config.ValidationRouteMinimumDistanceYards = sConfigMgr->GetFloatDefault("BotWorld.ValidationRoute.MinimumDistanceYards", Cohort().Config.ValidationRouteMinimumDistanceYards);
     Cohort().Config.ValidationRouteClusterRadiusYards = sConfigMgr->GetFloatDefault("BotWorld.ValidationRoute.ClusterRadiusYards", Cohort().Config.ValidationRouteClusterRadiusYards);
     Cohort().Config.ValidationRouteActivationDataId = sConfigMgr->GetIntDefault("BotWorld.ValidationRoute.ActivationDataId", Cohort().Config.ValidationRouteActivationDataId);
     Cohort().Config.ValidationRouteActivationDataValue = sConfigMgr->GetIntDefault("BotWorld.ValidationRoute.ActivationDataValue", Cohort().Config.ValidationRouteActivationDataValue);
@@ -3766,6 +3768,8 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
         node.HazardShape = ExtractJsonStringField(routeJson, "hazard_shape");
         node.HazardRadiusYards = readFloat(routeJson, "hazard_radius_yards");
         node.HazardSafetyMarginYards = readFloat(routeJson, "hazard_safety_margin_yards");
+        node.MinimumDistanceSourceEntry = uint32(std::max(0, readInt(routeJson, "minimum_distance_source_entry")));
+        node.MinimumDistanceYards = readFloat(routeJson, "minimum_distance_yards");
         node.ClusterRadiusYards = readFloat(routeJson, "cluster_radius_yards");
         node.ExpectedAliveCount = uint32(std::max(0, readInt(routeJson, "expected_alive_count")));
         node.ActivationDataId = uint32(std::max(0, readInt(routeJson, "activation_data_id")));
@@ -3842,6 +3846,8 @@ bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode(size_t index, char 
     Cohort().Config.ValidationRouteHazardShape = node.HazardShape;
     Cohort().Config.ValidationRouteHazardRadiusYards = node.HazardRadiusYards;
     Cohort().Config.ValidationRouteHazardSafetyMarginYards = node.HazardSafetyMarginYards;
+    Cohort().Config.ValidationRouteMinimumDistanceSourceEntry = node.MinimumDistanceSourceEntry;
+    Cohort().Config.ValidationRouteMinimumDistanceYards = node.MinimumDistanceYards;
     Cohort().Config.ValidationRouteClusterRadiusYards = node.ClusterRadiusYards;
     Cohort().Config.ValidationRouteExpectedAliveCount = node.ExpectedAliveCount;
     Party().ValidationRouteAddFocusGuid.Clear();
@@ -16747,6 +16753,79 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             : (configuredHazard ? "hold_hazard_exit_failed" : "hold_tactical_path_rejected");
         return true;
     };
+    auto tryValidationRouteMinimumDistance = [this, &state, bot, &power, stage, activity,
+        &situation, &action, &target, &isValidationCohortCombatLinked]() -> bool
+    {
+        uint32 sourceEntry = Cohort().Config.ValidationRouteMinimumDistanceSourceEntry;
+        float minimumDistance = Cohort().Config.ValidationRouteMinimumDistanceYards;
+        if (!sourceEntry || minimumDistance <= 0.0f
+            || std::string(GetDungeonRole(bot)) == "tank")
+            return false;
+
+        BotClassSpecActionProfile profile = BotClassSpecActionProfileStore::Build(
+            bot, GetDungeonRole(bot));
+        bool rangeAssigned = std::string(GetDungeonRole(bot)) == "healer"
+            || profile.MovementDirective == "ranged"
+            || profile.MovementDirective == "healer_support";
+        if (!rangeAssigned)
+            return false;
+
+        Creature* source = nullptr;
+        float sourceDistance = std::numeric_limits<float>::max();
+        std::vector<WorldObject*> objects;
+        Trinity::AllWorldObjectsInRange check(bot, 60.0f);
+        Trinity::WorldObjectListSearcher<Trinity::AllWorldObjectsInRange> searcher(
+            bot, objects, check);
+        Cell::VisitAllObjects(bot, searcher, 60.0f);
+        for (WorldObject* object : objects)
+        {
+            Creature* creature = object ? object->ToCreature() : nullptr;
+            if (!creature || creature->GetEntry() != sourceEntry
+                || !creature->IsAlive() || !creature->GetHealth()
+                || creature->GetMap() != bot->GetMap()
+                || !bot->IsValidAttackTarget(creature)
+                || !isValidationCohortCombatLinked(creature))
+                continue;
+            float distance = bot->GetExactDist2d(creature);
+            if (!source || distance < sourceDistance)
+            {
+                source = creature;
+                sourceDistance = distance;
+            }
+        }
+        if (!source || sourceDistance >= minimumDistance)
+            return false;
+
+        // The contract distance is the exact native damaging radius.  Move to
+        // a two-yard exterior point so ordinary path endpoint tolerance cannot
+        // leave a ranged/healer assignment inside the effect on the next tick.
+        float safeDistance = minimumDistance + 2.0f;
+        float angle = source->GetAngle(bot);
+        float safeX = source->GetPositionX() + std::cos(angle) * safeDistance;
+        float safeY = source->GetPositionY() + std::sin(angle) * safeDistance;
+        float safeZ = bot->GetPositionZ();
+        if (Map* map = bot->GetMap())
+        {
+            float floorZ = map->GetHeight(
+                bot->GetPhaseShift(), safeX, safeY, safeZ + 4.0f, true, 10.0f);
+            if (floorZ > INVALID_HEIGHT && std::fabs(floorZ - safeZ) <= 10.0f)
+                safeZ = floorZ;
+        }
+
+        bot->InterruptNonMeleeSpells(false);
+        bool moved = MoveBotToPoint(state, bot, safeX, safeY, safeZ);
+        std::string raw = BuildRawJson(bot, source);
+        std::string semantic = BuildSemanticJson(
+            bot, source, "validation_route_mechanic", &power, stage, activity);
+        RecordEvent(state, bot, "validation_route_mechanic", source,
+            moved ? "minimum_distance_exit_started" : "minimum_distance_exit_failed",
+            raw.c_str(), semantic.c_str(), sourceDistance, sourceEntry);
+        target = source;
+        state.TargetGuid = source->GetGUID();
+        situation = "validation_route_mechanic";
+        action = moved ? "move_to_minimum_distance" : "hold_minimum_distance_exit_failed";
+        return true;
+    };
     auto tryValidationRouteAdds = [this, &state, bot, &power, stage, activity,
         &situation, &action, &target, &routeEngageRange, &tryRouteGroupHeal,
         &canonicalRouteDistance, &routeArrivalRadius]() -> bool
@@ -21003,6 +21082,8 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     }
     if (tryValidationRouteMovementCheck(target))
         return true;
+    if (tryValidationRouteMinimumDistance())
+        return true;
 
     struct TrashThreatControl
     {
@@ -21097,7 +21178,18 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 highestPartyThreat = std::max(highestPartyThreat,
                     creature->GetThreatManager().GetThreat(member, true));
             }
-            if (tankThreat >= 2000.0f && tankThreat >= highestPartyThreat * 2.5f)
+            // In a raid trash node, the native ThreatManager's ranged victim
+            // switch threshold (130%) is the observable safety boundary.  The
+            // old dungeon-tuning floor of 2000 threat and 2.5x headroom starved
+            // all five BWD damage slots while both tanks already owned every
+            // declared Drakonid.  Keep that legacy tuning outside raid trash;
+            // here require current native victim ownership plus positive 1.3x
+            // headroom, recomputed on every decision.
+            bool secureThreat = bot->GetMap() && bot->GetMap()->IsRaid()
+                && Cohort().Config.ValidationRouteKind != "boss"
+                ? tankThreat > 0.0f && tankThreat >= highestPartyThreat * 1.3f
+                : tankThreat >= 2000.0f && tankThreat >= highestPartyThreat * 2.5f;
+            if (secureThreat)
                 ++trashThreatControl.SecureTankCount;
             else
                 trashThreatControl.InsecureTankOwnedTargets.push_back(creature);
@@ -23216,6 +23308,33 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 ? (tankFocusIsBossRoute ? (bot->GetMap() && bot->GetMap()->IsRaid() ? "raid_boss" : "dungeon_boss") : "normal_dungeon_trash")
                 : "validation_route_prerequisite";
 
+            if (!tankFocusIsRouteTarget)
+            {
+                // Boss nodes own only their declared objective contract.  An
+                // undeclared corridor hostile must be completed by an explicit
+                // preceding trash node, never by a generic boss prerequisite
+                // assist that bypasses target/area/multidot authority.
+                bot->InterruptNonMeleeSpells(false);
+                bot->AttackStop();
+                if (Pet* pet = bot->GetPet())
+                    pet->AttackStop();
+                for (Unit* controlled : bot->m_Controlled)
+                    if (controlled)
+                        controlled->AttackStop();
+                std::string raw = BuildRawJson(bot, tankFocusTarget);
+                std::string semantic = BuildSemanticJson(
+                    bot, tankFocusTarget, "validation_route_prerequisite", &power, stage, activity);
+                RecordEvent(state, bot, "validation_route_prerequisite_rejected",
+                    tankFocusTarget, "boss_route_target_not_declared", raw.c_str(),
+                    semantic.c_str(), bot->GetExactDist(tankFocusTarget),
+                    Cohort().Config.ValidationRouteTargetEntry);
+                state.TargetGuid.Clear();
+                target = nullptr;
+                situation = "validation_route_prerequisite";
+                action = "boss_route_prerequisite_blocked";
+                return true;
+            }
+
             state.ValidationRouteUnresolvedFocusHoldCount = 0;
             Unit* staleTarget = target && target != tankFocusTarget ? target : nullptr;
             Unit* staleVictim = bot->GetVictim() && bot->GetVictim() != tankFocusTarget ? bot->GetVictim() : nullptr;
@@ -23994,6 +24113,29 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     }
     if (!routeTarget && seenRouteTarget && seenRouteTargetDistance > 8.0f)
     {
+        if (Cohort().Config.ValidationRouteKind == "boss"
+            && !isValidationRouteObjectiveTarget(seenRouteTarget->ToCreature()))
+        {
+            bot->InterruptNonMeleeSpells(false);
+            bot->AttackStop();
+            if (Pet* pet = bot->GetPet())
+                pet->AttackStop();
+            for (Unit* controlled : bot->m_Controlled)
+                if (controlled)
+                    controlled->AttackStop();
+            std::string raw = BuildRawJson(bot, seenRouteTarget);
+            std::string semantic = BuildSemanticJson(
+                bot, seenRouteTarget, "validation_route_prerequisite", &power, stage, activity);
+            RecordEvent(state, bot, "validation_route_prerequisite_rejected",
+                seenRouteTarget, "boss_route_undeclared_prerequisite_blocked",
+                raw.c_str(), semantic.c_str(), seenRouteTargetDistance,
+                Cohort().Config.ValidationRouteTargetEntry);
+            state.TargetGuid.Clear();
+            target = nullptr;
+            situation = "validation_route_prerequisite";
+            action = "boss_route_prerequisite_blocked";
+            return true;
+        }
         tryValidationRouteActivation(seenRouteTarget, targetSearchResult.c_str());
         MoveBotToProfileRange(state, bot, seenRouteTarget);
         std::string raw = BuildRawJson(bot, seenRouteTarget);
@@ -24010,6 +24152,29 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             std::string semantic = BuildSemanticJson(bot, seenRouteTarget, "validation_route_activation", &power, stage, activity);
             RecordEvent(state, bot, "validation_route_target_search", seenRouteTarget, "activation_applied", raw.c_str(), semantic.c_str(), seenRouteTargetDistance, Cohort().Config.ValidationRouteTargetEntry);
             action = "validation_route_activate_target";
+            return true;
+        }
+
+        if (Cohort().Config.ValidationRouteKind == "boss")
+        {
+            bot->InterruptNonMeleeSpells(false);
+            bot->AttackStop();
+            if (Pet* pet = bot->GetPet())
+                pet->AttackStop();
+            for (Unit* controlled : bot->m_Controlled)
+                if (controlled)
+                    controlled->AttackStop();
+            std::string raw = BuildRawJson(bot, seenRouteTarget);
+            std::string semantic = BuildSemanticJson(
+                bot, seenRouteTarget, "validation_route_prerequisite", &power, stage, activity);
+            RecordEvent(state, bot, "validation_route_prerequisite_rejected",
+                seenRouteTarget, "boss_route_undeclared_prerequisite_blocked",
+                raw.c_str(), semantic.c_str(), seenRouteTargetDistance,
+                Cohort().Config.ValidationRouteTargetEntry);
+            state.TargetGuid.Clear();
+            target = nullptr;
+            situation = "validation_route_prerequisite";
+            action = "boss_route_prerequisite_blocked";
             return true;
         }
 
@@ -32982,6 +33147,8 @@ std::string BotWorldPopulationMgr::BuildBotDiagnosisObjectJson(WorldBotState con
          << "{\"name\":\"validation_route_hazard_damage_spell_id\",\"value\":" << Cohort().Config.ValidationRouteHazardDamageSpellId << "},"
          << "{\"name\":\"validation_route_hazard_shape\",\"value\":\"" << JsonEscape(Cohort().Config.ValidationRouteHazardShape) << "\"},"
          << "{\"name\":\"validation_route_hazard_radius_yards\",\"value\":" << Cohort().Config.ValidationRouteHazardRadiusYards << "},"
+         << "{\"name\":\"validation_route_minimum_distance_source_entry\",\"value\":" << Cohort().Config.ValidationRouteMinimumDistanceSourceEntry << "},"
+         << "{\"name\":\"validation_route_minimum_distance_yards\",\"value\":" << Cohort().Config.ValidationRouteMinimumDistanceYards << "},"
          << "{\"name\":\"validation_route_has_activation\",\"value\":" << (hasValidationRouteActivation ? "true" : "false") << "},"
          << "{\"name\":\"validation_route_manager_activation_applied\",\"value\":" << (Party().ValidationRouteActivationApplied ? "true" : "false") << "},"
          << "{\"name\":\"validation_route_manager_activation_attempts\",\"value\":" << Party().ValidationRouteActivationAttempts << "},"
