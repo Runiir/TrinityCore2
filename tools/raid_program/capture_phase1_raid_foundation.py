@@ -1225,6 +1225,8 @@ def _required_telemetry_envelope_report(
             continue
         channel_counts[channel] += 1
         row_reasons: list[str] = []
+        if payload.get("ok") is not True:
+            row_reasons.append(f"evidence_demux_{channel}_envelope_not_ok")
         runtime = payload.get("raid_runtime")
         roster = runtime.get("roster") if isinstance(runtime, dict) else None
         if (

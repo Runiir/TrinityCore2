@@ -722,6 +722,25 @@ def test_live_evidence_demux_rejects_missing_and_duplicate_telemetry_bot_rows():
     assert "evidence_demux_trace_canonical_roster_incomplete" in reasons
 
 
+def test_live_evidence_demux_rejects_failed_telemetry_envelopes_with_full_roster():
+    active = accepted_status()
+    active["cohort_id"] = "raid"
+    bot_rows = [{"bot_guid": 1001 + index} for index in range(10)]
+    failed = []
+    for action in ("botauto_diagnose", "botauto_trace"):
+        failed.append({
+            "ok": False, "action": action, "cohort_id": "raid",
+            "raid_runtime": active["raid_runtime"], "bots": bot_rows,
+            "failure_reason": "synthetic_channel_failure",
+        })
+    rows = normalized_batch_payload(
+        b"\n".join(json.dumps(row).encode() for row in (active, *failed)) + b"\n"
+    )
+    reasons = evidence_demux_rejections(rows)
+    assert "evidence_demux_diagnosis_envelope_not_ok" in reasons
+    assert "evidence_demux_trace_envelope_not_ok" in reasons
+
+
 def test_live_evidence_demux_rejects_unclassified_and_unbound_readycheck():
     active = accepted_status()
     active["cohort_id"] = "raid"
