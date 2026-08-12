@@ -16,6 +16,7 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     evidence_demux_rejections,
     semantic_progress_signature,
     observe_monotonic_semantic_progress,
+    observe_telemetry_freshness,
 )
 
 
@@ -735,7 +736,24 @@ def test_canonical_capture_is_terminal_gate_driven_without_a_raid_duration_cap()
     assert '"wall_clock_mode": "uncapped" if args.observe_sec == 0' in source
     assert '"policy": "capture-process-heartbeat-terminal-gate-driven"' in source
     assert 'parser.add_argument("--semantic-stall-sec", type=int, default=300)' in source
+    assert 'parser.add_argument("--telemetry-timeout-sec", type=int, default=30)' in source
     assert '"classification": "success" if success else (' in source
+
+
+def test_uncapped_capture_fails_closed_when_any_telemetry_channel_is_stale():
+    state = {}
+    assert observe_telemetry_freshness(
+        state, {"status": 1, "diagnosis": 1, "trace": 1}, 100.0, 30.0,
+    ) == []
+    assert observe_telemetry_freshness(
+        state, {"status": 2, "diagnosis": 2, "trace": 1}, 125.0, 30.0,
+    ) == []
+    assert observe_telemetry_freshness(
+        state, {"status": 3, "diagnosis": 3, "trace": 1}, 131.0, 30.0,
+    ) == ["trace"]
+    assert observe_telemetry_freshness(
+        state, {"status": 3, "diagnosis": 3, "trace": 2}, 132.0, 30.0,
+    ) == []
 
 
 def test_semantic_progress_signature_tracks_boss_and_bot_decisions_not_heartbeats():

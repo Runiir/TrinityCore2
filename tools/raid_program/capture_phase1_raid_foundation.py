@@ -849,6 +849,32 @@ def observe_monotonic_semantic_progress(
     return advanced
 
 
+def observe_telemetry_freshness(
+    state: dict[str, dict[str, float | int]], counts: dict[str, int], now: float,
+    timeout_seconds: float,
+) -> list[str]:
+    """Update per-channel heartbeats and return channels whose output is stale.
+
+    The canonical raid runtime is intentionally uncapped, but its control and
+    evidence channels are not. A live worldserver that stops producing any one
+    of status, diagnosis, or trace evidence is an infrastructure failure, not a
+    healthy long boss attempt.
+    """
+    stale: list[str] = []
+    for channel in ("status", "diagnosis", "trace"):
+        channel_state = state.setdefault(channel, {
+            "count": 0,
+            "last_observed_monotonic": now,
+        })
+        count = int(counts.get(channel, 0))
+        if count > int(channel_state["count"]):
+            channel_state["count"] = count
+            channel_state["last_observed_monotonic"] = now
+        if now - float(channel_state["last_observed_monotonic"]) > timeout_seconds:
+            stale.append(channel)
+    return stale
+
+
 def git_identity(cwd: Path) -> dict[str, Any]:
     head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=cwd, text=True).strip()
     tree = subprocess.check_output(["git", "rev-parse", "HEAD^{tree}"], cwd=cwd, text=True).strip()
@@ -1607,6 +1633,7 @@ def main() -> int:
     parser.add_argument("--required-stable-statuses", type=int, default=3)
     parser.add_argument("--semantic-stall-sec", type=int, default=300)
     parser.add_argument("--semantic-stall-min-samples", type=int, default=12)
+    parser.add_argument("--telemetry-timeout-sec", type=int, default=30)
     args = parser.parse_args()
 
     binary = args.binary.resolve()
@@ -1631,6 +1658,8 @@ def main() -> int:
         )
     if args.semantic_stall_sec < 60 or args.semantic_stall_min_samples < 3:
         raise SystemExit("semantic stall detection requires at least 60 seconds and three samples")
+    if args.telemetry_timeout_sec < 15:
+        raise SystemExit("telemetry freshness timeout must be at least 15 seconds")
     preflight = preflight_runtime_exclusions(worktree)
     if not preflight["passed"]:
         raise SystemExit("capture preflight rejected: " + ",".join(preflight["reasons"]))
@@ -1687,6 +1716,9 @@ def main() -> int:
             last_semantic_progress_at = time.monotonic()
             unchanged_semantic_samples = 0
             semantic_stall: dict[str, Any] = {"detected": False}
+            monitor_started_at = time.monotonic()
+            telemetry_freshness: dict[str, dict[str, float | int]] = {}
+            telemetry_abort: dict[str, Any] = {"detected": False}
             while (deadline is None or time.monotonic() < deadline) and not (
                 len(stable) >= args.required_stable_statuses and recovery_accepted
             ):
@@ -1707,6 +1739,29 @@ def main() -> int:
                             stable.clear()
                     seen_statuses = len(statuses)
                     diagnoses_now = json_actions(log_path.read_bytes(), "botauto_diagnose")
+                    traces_now = json_actions(log_path.read_bytes(), "botauto_trace")
+                    telemetry_now = time.monotonic()
+                    stale_channels = observe_telemetry_freshness(
+                        telemetry_freshness,
+                        {
+                            "status": len(statuses),
+                            "diagnosis": len(diagnoses_now),
+                            "trace": len(traces_now),
+                        },
+                        telemetry_now,
+                        args.telemetry_timeout_sec,
+                    )
+                    if stale_channels:
+                        telemetry_abort = {
+                            "detected": True,
+                            "classification": "infrastructure_abort",
+                            "reason": "telemetry_channel_stale",
+                            "stale_channels": stale_channels,
+                            "timeout_seconds": args.telemetry_timeout_sec,
+                            "elapsed_seconds": round(telemetry_now - monitor_started_at, 3),
+                            "channel_state": telemetry_freshness,
+                        }
+                        break
                     if statuses:
                         signature = semantic_progress_signature(
                             statuses[-1], diagnoses_now[-1] if diagnoses_now else None,
@@ -1803,6 +1858,7 @@ def main() -> int:
     identity_stable = identity_before == identity_after
     process_return_code = process.returncode if process is not None else None
     semantic_stall = locals().get("semantic_stall", {"detected": False})
+    telemetry_abort = locals().get("telemetry_abort", {"detected": False})
     success = (
         startup_error is None
         and process_return_code == 0
@@ -1820,12 +1876,15 @@ def main() -> int:
         and profiles[0].get("active_profile") == "blackwing_descent_10n"
         and identity_stable
         and semantic_stall.get("detected") is not True
+        and telemetry_abort.get("detected") is not True
+        and bool(diagnoses)
+        and bool(traces)
     )
     report = {
         "schema_version": 1,
         "capture_id": "cata_raid_phase1_bwd_10n_foundation_v1",
         "classification": "success" if success else (
-            "infrastructure_abort" if startup_error else (
+            "infrastructure_abort" if startup_error or telemetry_abort.get("detected") else (
                 "incomplete_evidence" if semantic_stall.get("detected") else "foundation_gate_failed"
             )
         ),
@@ -1844,6 +1903,7 @@ def main() -> int:
         "native_recovery_accepted": recovery_accepted,
         "native_recovery_rejections": recovery_rejections,
         "semantic_stall": semantic_stall,
+        "telemetry_abort": telemetry_abort,
         "accepted_raid_runtime": stable[-1].get("raid_runtime") if stable else None,
         "diagnose_observed": bool(diagnoses),
         "trace_observed": bool(traces),
@@ -1869,7 +1929,14 @@ def main() -> int:
             "startup_timeout_seconds": args.startup_timeout_sec,
             "semantic_stall_seconds": args.semantic_stall_sec,
             "semantic_stall_min_samples": args.semantic_stall_min_samples,
-            "healthy": startup_error is None and process_return_code == 0 and process_absent,
+            "telemetry_timeout_seconds": args.telemetry_timeout_sec,
+            "required_channels": ["status", "diagnosis", "trace"],
+            "healthy": (
+                startup_error is None
+                and telemetry_abort.get("detected") is not True
+                and bool(statuses) and bool(diagnoses) and bool(traces)
+                and process_return_code == 0 and process_absent
+            ),
         },
         "preflight": preflight,
         "postflight": postflight,
