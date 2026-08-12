@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "capture_id": "cata_raid_phase1_bwd_10n_foundation_v1",
+  "classification": "infrastructure_abort",
+  "gameplay_failure": false,
+  "fidelity_claim": false,
+  "source_identity": {
+    "commit": "9ae33c0d408d515a3bebed0c38b2a5698bef0782",
+    "clean_at_start": true,
+    "identity_stable_during_run": true
+  },
+  "build": {
+    "policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
+    "configure_receipt_sha256": "7541d8c9ec49f731781156b7d2dafe7f004c77289c7f14ec0dfb84b55ec44165",
+    "configure_receipt_file_sha256": "ce83b0feff10ba4783cd029cc04e9c9a395f2f087220a5269ad98b72121e97de",
+    "worldserver_receipt_sha256": "941c38452395ce6d77b321513efad1ed8f0ceb7e66769f5012226b8ec557fa9b",
+    "worldserver_receipt_file_sha256": "da7c3041aa523c3f26bc03f466c2a810c5a295f0e5bd46034de8ee028cf55e56",
+    "worldserver_sha256": "5e098b64289ab691e5888b81a024bade125bcfa86df22c870ad01900b58cb5f7",
+    "worldserver_size_bytes": 60967856,
+    "trusted_local_operator": "runiir",
+    "gate_bearing": true
+  },
+  "preflight": {
+    "provisioning_apply_sha256": "a1f55313eddda3abc329b1f97846e3a238e6a414f6395d1c11c05aad5ebf9e06",
+    "full_provisioning_verifier_passed": true,
+    "full_provisioning_verifier_sha256": "2d9f71bb38fec0f61f08b80d76741de818a15f3880c71e373bd5d4e004916373",
+    "readback_schema": "cata_raid_phase1_bwd_provisioning_readback_v4",
+    "readback_passed": true,
+    "readback_sha256": "d00c8205aebd27749f15a811115232ef0d4fb172ee98c860ad44577d602bd189",
+    "character_instance_rows": 0,
+    "group_member_rows": 0,
+    "ghost_aura_rows": 0,
+    "corpse_rows": 0,
+    "corpse_phase_rows": 0
+  },
+  "live_facts": {
+    "exact_roster_size": 10,
+    "composition": {"tanks": 2, "healers": 3, "dps": 5},
+    "map_id": 669,
+    "instance_id": 2,
+    "lockout_save_id": 2,
+    "difficulty": "10N",
+    "entry_trash_kills": 2,
+    "deaths_before_teardown": 9,
+    "boss_engaged": false,
+    "route_node_index_high_water": 2,
+    "route_generation_high_water": 3,
+    "route_label": "Magmaw",
+    "route_terminal_count": 2,
+    "entrance_junction_live_path_succeeded": true
+  },
+  "root_cause": {
+    "failure_fingerprint": "native_recovery_worldport_raced_completed_admission_identity_guard",
+    "detail": "The new entrance-junction route advanced through the regroup and reached the Magmaw node. Native prerequisite corridor combat then produced nine deaths before boss engagement. Between the final exact ten-member sample and the next poll, completed-admission identity validation atomically removed the cohort and reported validation_raid_admission_identity_drift. Source-order audit strongly supports a legitimate dead member becoming temporarily out of world for an exact native release or BWD-return worldport before TryReattachValidationBot could acknowledge it; the capture did not retain the culprit or far-worldport fields, so that member-level fact is not claimed as directly observed.",
+    "decision_assessment": "The junction/navigation remediation is live-proven. The bots engaged native prerequisite corridor trash before Magmaw, but the infrastructure teardown prevented recovery and prevented any assessment of Magmaw script handling or boss tactics.",
+    "remediation_scope": [
+      "defer completed-admission teardown only for the existing exact corpse/group/leader/map/instance/destination/teleport-type-bound native release and BWD return worldports",
+      "retain fail-closed rejection for missing loaded player, missing group, lease/slot/group/leader/map/instance drift, wrong destination, or ordinary teleport",
+      "emit the exact member GUID and failed immutable predicate for any future admission drift",
+      "independently review, rebuild, reprovision, and rerun uncapped before assessing the corridor pull or Magmaw decisions"
+    ]
+  },
+  "telemetry": {
+    "wall_clock_mode": "uncapped",
+    "watchdog_healthy": true,
+    "heartbeat_rows": 311,
+    "retained_rows": 313,
+    "bound_rows": 131,
+    "rejected_rows": 182,
+    "unchecked_rows": 0,
+    "post_teardown_rows_fail_closed": true,
+    "required_readycheck_missing_downstream_of_no_full_wipe_recovery": true
+  },
+  "semantic_stall": {
+    "detected": true,
+    "seconds": 301.684,
+    "unchanged_samples": 60,
+    "high_water": {"kills": 2, "deaths": 9, "raid_boss_kills": 0, "route_index": 2, "route_generation": 3, "route_terminal_count": 2},
+    "lowest_prerequisite_target_hp": 0.628681,
+    "terminal_reason": "validation_raid_admission_identity_drift"
+  },
+  "cleanup": {
+    "gate_passed": true,
+    "stop_observed": true,
+    "stop_ok": true,
+    "zero_bots": true,
+    "zero_leases": true,
+    "worldserver_process_absent": true
+  },
+  "forbidden_assistance": {"observed": false, "gate_passed": true},
+  "artifact": {
+    "pointer": "artifacts/cata_raid_program/phase1_raid_foundation_9ae33c0d_20260812.dvc",
+    "dvc_directory_md5": "af88aa48da4b3e9a4130ca56395490e9.dir",
+    "size_bytes": 68881810,
+    "nfiles": 8,
+    "raw_jsonl_sha256": "c9677b3aaccbe342188aecded7e22f83c67c4f2f352dfd1b88461dec746a8ad7",
+    "capture_report_canonical_sha256": "c6b6a2593d9d1bbaac4c9faa1f9e439b13f5b2b99825e7d9b456c52186f45a78",
+    "capture_report_file_sha256": "00890dedacd051e2892edc760e0ebbf3c163f6e649f6e26fccfe2aaafd363f1a",
+    "worldserver_log_sha256": "84bc47258d64bca3e5f4f3918d4a6da12855e46ef3ddd009751f09750807f6d0",
+    "targeted_push_completed": true,
+    "targeted_remote_status_before_eviction": "cache_and_remote_in_sync",
+    "workspace_payload_evicted": true,
+    "exact_eight_child_cache_objects_evicted": true,
+    "directory_metadata_retained": true,
+    "broad_gc_used": false
+  },
+  "acceptance": {
+    "phase1_gate_passed": false,
+    "next_gate": "independent Sol-high review of the native-recovery admission remediation, exact coordinated rebuild, exact reprovisioning/full verifier/v4 readback, and uncapped canonical rerun"
+  }
+}

@@ -4644,6 +4644,8 @@ void BotWorldPopulationMgr::EnsurePopulation()
             return;
         if (Cohort().ValidationRaidAdmissionComplete)
         {
+            std::string identityDriftDetail;
+            uint32 nativeRecoveryWorldportsDeferred = 0;
             bool exactIdentity = Party().ValidationRouteManifest.size() > 0
                 && Party().ValidationRouteManifest.front().ExpectedRoster.size() == expectedPopulation
                 && Party().Bots.size() == expectedPopulation
@@ -4662,30 +4664,95 @@ void BotWorldPopulationMgr::EnsurePopulation()
                             return row.Guid.GetCounter() == expected.Guid
                                 && row.RosterSlotId == expected.RosterSlotId;
                         });
-                    Player* bot = state == Party().Bots.end() ? nullptr : GetLoadedBot(*state);
-                    Group* group = bot ? bot->GetGroup() : nullptr;
+                    if (state == Party().Bots.end())
+                    {
+                        exactIdentity = false;
+                        identityDriftDetail = "roster_state_missing:" + std::to_string(expected.Guid);
+                        break;
+                    }
+
+                    Player* bot = GetLoadedBot(*state);
+                    if (!bot)
+                    {
+                        exactIdentity = false;
+                        identityDriftDetail = "loaded_bot_missing:" + std::to_string(expected.Guid);
+                        break;
+                    }
+
+                    Group* group = bot->GetGroup();
+                    if (!group)
+                    {
+                        exactIdentity = false;
+                        identityDriftDetail = "native_group_missing:" + std::to_string(expected.Guid);
+                        break;
+                    }
+
+                    // ReleaseSpirit and the canonical BWD entrance both use a
+                    // native far-worldport.  The player is deliberately out of
+                    // world until TryReattachValidationBot acknowledges it.
+                    // Defer only those two already corpse-, destination-,
+                    // teleport-type-, group-, leader-, map-, and instance-bound
+                    // transitions.  No generic death or teleport grace window
+                    // is permitted here.
+                    bool const nativeRecoveryWorldport = !bot->IsInWorld()
+                        && (IsNativeReleasedGhostWorldport(*state, bot)
+                            || IsNativeBlackwingDescentRunbackWorldport(*state, bot));
                     auto const frozen = Cohort().Raid.RosterByGuid.find(expected.Guid);
-                    if (state == Party().Bots.end() || !bot || !bot->IsInWorld() || !group
-                        || !LeaseOwnedByCurrentCohort(expected.Guid, expected.RosterSlotId)
-                        || frozen == Cohort().Raid.RosterByGuid.end()
+                    if (!bot->IsInWorld() && !nativeRecoveryWorldport)
+                    {
+                        exactIdentity = false;
+                        identityDriftDetail = "not_in_world_without_native_recovery_authority:" + std::to_string(expected.Guid);
+                        break;
+                    }
+                    if (!LeaseOwnedByCurrentCohort(expected.Guid, expected.RosterSlotId))
+                    {
+                        exactIdentity = false;
+                        identityDriftDetail = "lease_identity_mismatch:" + std::to_string(expected.Guid);
+                        break;
+                    }
+                    if (frozen == Cohort().Raid.RosterByGuid.end()
                         || frozen->second.RosterSlotId != expected.RosterSlotId)
                     {
                         exactIdentity = false;
+                        identityDriftDetail = "frozen_roster_slot_mismatch:" + std::to_string(expected.Guid);
                         break;
                     }
+                    if (group->GetGUID() != state->ValidationCohortGroupGuid
+                        || group->GetLeaderGUID() != state->ValidationCohortLeaderGuid)
+                    {
+                        exactIdentity = false;
+                        identityDriftDetail = "frozen_group_or_leader_mismatch:" + std::to_string(expected.Guid);
+                        break;
+                    }
+                    if (!nativeRecoveryWorldport
+                        && !IsValidationCohortMemberInOriginalInstance(*state, bot))
+                    {
+                        exactIdentity = false;
+                        identityDriftDetail = "frozen_map_or_instance_mismatch:" + std::to_string(expected.Guid);
+                        break;
+                    }
+                    if (nativeRecoveryWorldport)
+                        ++nativeRecoveryWorldportsDeferred;
                     if (exactGroupGuid.IsEmpty())
                         exactGroupGuid = group->GetGUID();
                     else if (exactGroupGuid != group->GetGUID())
                     {
                         exactIdentity = false;
+                        identityDriftDetail = "split_native_group:" + std::to_string(expected.Guid);
                         break;
                     }
                 }
                 exactIdentity = exactIdentity && !exactGroupGuid.IsEmpty()
                     && Cohort().Raid.GroupGuid == exactGroupGuid;
+                if (!exactIdentity && identityDriftDetail.empty())
+                    identityDriftDetail = "raid_group_identity_mismatch";
             }
             if (!exactIdentity)
             {
+                if (identityDriftDetail.empty())
+                    identityDriftDetail = "raid_runtime_shape_mismatch";
+                TC_LOG_ERROR("server", "BotWorld validation raid admission identity drift detail=%s",
+                    identityDriftDetail.c_str());
                 std::set<uint32> cleanupGuids = Cohort().RosterLeases;
                 for (WorldBotState const& state : Party().Bots)
                 {
@@ -4705,8 +4772,12 @@ void BotWorldPopulationMgr::EnsurePopulation()
                 Cohort().Metrics.ActiveBots = 0;
                 Cohort().ValidationRaidAdmissionComplete = false;
                 Cohort().ValidationRaidAdmissionFailed = true;
-                Cohort().LastPopulationFailureReason = "validation_raid_admission_identity_drift";
+                Cohort().LastPopulationFailureReason =
+                    "validation_raid_admission_identity_drift:" + identityDriftDetail;
             }
+            else if (nativeRecoveryWorldportsDeferred)
+                TC_LOG_INFO("server", "BotWorld validation raid admission deferred native recovery worldports count=%u",
+                    nativeRecoveryWorldportsDeferred);
             return;
         }
 

@@ -241,6 +241,12 @@ def test_completed_validation_raid_drift_verifies_exact_identity_and_cleans_all_
         "row.RosterSlotId == expected.RosterSlotId",
         "LeaseOwnedByCurrentCohort(expected.Guid, expected.RosterSlotId)",
         "frozen->second.RosterSlotId != expected.RosterSlotId",
+        "IsNativeReleasedGhostWorldport(*state, bot)",
+        "IsNativeBlackwingDescentRunbackWorldport(*state, bot)",
+        "!bot->IsInWorld() && !nativeRecoveryWorldport",
+        "IsValidationCohortMemberInOriginalInstance(*state, bot)",
+        "group->GetGUID() != state->ValidationCohortGroupGuid",
+        "group->GetLeaderGUID() != state->ValidationCohortLeaderGuid",
         "Cohort().Raid.GroupGuid == exactGroupGuid",
         "sBotMgr->RemoveWorldBot(state.Guid);",
         "ReleaseBotGuid(guid);",
@@ -248,12 +254,53 @@ def test_completed_validation_raid_drift_verifies_exact_identity_and_cleans_all_
         "Cohort().Raid = RaidRuntime();",
         "Cohort().RosterLeases.clear();",
         "Cohort().Metrics.ActiveBots = 0;",
-        'Cohort().LastPopulationFailureReason = "validation_raid_admission_identity_drift";',
+        '"validation_raid_admission_identity_drift:" + identityDriftDetail',
     ):
         assert token in complete
     cleanup = complete.index("if (!exactIdentity)")
     latch = complete.index("Cohort().ValidationRaidAdmissionFailed = true;", cleanup)
     assert cleanup < complete.index("sBotMgr->RemoveWorldBot(state.Guid);", cleanup) < latch
+
+
+def test_completed_validation_raid_defers_only_exact_native_recovery_worldports():
+    def accepted(*, in_world, loaded=True, group=True, lease=True, slot=True,
+                 group_identity=True, original_instance=True,
+                 native_release=False, native_runback=False):
+        if not loaded or not group or not lease or not slot or not group_identity:
+            return False
+        native_recovery = (not in_world) and (native_release or native_runback)
+        if not in_world and not native_recovery:
+            return False
+        if not native_recovery and not original_instance:
+            return False
+        return True
+
+    assert accepted(in_world=True)
+    assert accepted(in_world=False, native_release=True)
+    assert accepted(in_world=False, native_runback=True)
+    assert not accepted(in_world=False)
+    assert not accepted(in_world=False, native_release=True, loaded=False)
+    assert not accepted(in_world=False, native_release=True, group=False)
+    assert not accepted(in_world=False, native_release=True, lease=False)
+    assert not accepted(in_world=False, native_release=True, slot=False)
+    assert not accepted(in_world=False, native_release=True, group_identity=False)
+    assert not accepted(in_world=True, original_instance=False)
+
+    population = IMPL[
+        IMPL.index("if (Cohort().ValidationRaidAdmissionComplete)"):
+        IMPL.index("auto terminalFailure")
+    ]
+    assert population.index("bool const nativeRecoveryWorldport") < population.index(
+        "IsValidationCohortMemberInOriginalInstance(*state, bot)")
+    assert "No generic death or teleport grace window" in population
+    assert "validation raid admission deferred native recovery worldports" in population
+    for detail in (
+        "roster_state_missing", "loaded_bot_missing", "native_group_missing",
+        "not_in_world_without_native_recovery_authority", "lease_identity_mismatch",
+        "frozen_roster_slot_mismatch", "frozen_group_or_leader_mismatch",
+        "frozen_map_or_instance_mismatch", "split_native_group",
+    ):
+        assert detail in population
 
 
 def test_validation_raid_candidate_selection_is_exact_frozen_identity_not_role_substitution():
