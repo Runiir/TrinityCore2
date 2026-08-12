@@ -159,7 +159,7 @@ def test_controlled_aoe_counts_only_declared_targets_and_fails_closed_near_undec
         "HandleCancelAuraOpcode(cancel)",
         "bot->RemoveDynObject(action.SpellId);",
         "creature->GetPetAutoSpellOnPos(index)",
-        "bot->SetHostileMultiTargetAutocastSuppressed(suppress);",
+        "BotRaidAreaAuthority::Set(bot->GetGUID().GetRawValue(), suppress);",
         "std::vector<uint32> activeAreaSpells;",
         "controlled->InterruptSpell(spellType, false);",
         "controlled->RemoveAura(spellId);",

@@ -17,6 +17,7 @@
 
 #include "PetAI.h"
 #include "AIException.h"
+#include "Bots/BotRaidAreaAuthority.h"
 #include "CharmInfo.h"
 #include "Creature.h"
 #include "Errors.h"
@@ -182,7 +183,7 @@ void PetAI::UpdateAI(uint32 diff)
             if (!spellInfo)
                 continue;
 
-            if (owner && owner->IsHostileMultiTargetAutocastSuppressed()
+            if (owner && BotRaidAreaAuthority::IsSuppressed(owner->GetGUID().GetRawValue())
                 && SpellHasHostileMultiTargetSemantics(spellInfo))
                 continue;
 

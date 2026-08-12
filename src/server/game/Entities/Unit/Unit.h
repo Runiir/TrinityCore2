@@ -1102,10 +1102,6 @@ class TC_GAME_API Unit : public WorldObject
         Minion* GetFirstMinion() const;
         Unit* GetCharmerOrOwner() const { return IsCharmed() ? GetCharmer() : GetOwner(); }
 
-        // Transient runtime authority used by declarative raid target controls.
-        // It is intentionally not part of pet spell state or persistence.
-        void SetHostileMultiTargetAutocastSuppressed(bool suppressed) { m_hostileMultiTargetAutocastSuppressed = suppressed; }
-        bool IsHostileMultiTargetAutocastSuppressed() const { return m_hostileMultiTargetAutocastSuppressed; }
 
         void SetMinion(Minion *minion, bool apply);
         void GetAllMinionsByEntry(std::list<Creature*>& Minions, uint32 entry);
@@ -1585,7 +1581,6 @@ class TC_GAME_API Unit : public WorldObject
         TransportBase* GetDirectTransport() const;
 
         bool m_ControlledByPlayer;
-        bool m_hostileMultiTargetAutocastSuppressed = false;
 
         bool HandleSpellClick(Unit* clicker, int8 seatId = -1);
         void EnterVehicle(Unit* base, int8 seatId = -1);

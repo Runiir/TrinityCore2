@@ -1,4 +1,5 @@
 #include "Bots/BotActionExecutor.h"
+#include "Bots/BotRaidAreaAuthority.h"
 #include "DataStores/DBCStores.h"
 #include "Entities/Item/Container/Bag.h"
 #include "Entities/Item/Item.h"
@@ -205,7 +206,7 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
     if (!action.Valid)
         return BotActionResult::NoAction;
 
-    bot->SetHostileMultiTargetAutocastSuppressed(action.SuppressAreaDamage);
+    BotRaidAreaAuthority::Set(bot->GetGUID().GetRawValue(), action.SuppressAreaDamage);
 
     Unit* target = action.TargetGuid.IsEmpty() ? nullptr : ObjectAccessor::GetUnit(*bot, action.TargetGuid);
     if (action.Type == "pull" || action.Type == "move_to_range")

@@ -5,6 +5,7 @@
 #include "Bots/BotEncounterMechanicCatalog.h"
 #include "Bots/BotMgr.h"
 #include "Bots/BotProgressionGoalPolicy.h"
+#include "Bots/BotRaidAreaAuthority.h"
 #include "CellImpl.h"
 #include "CharmInfo.h"
 #include "Config.h"
@@ -1748,7 +1749,10 @@ void BotWorldPopulationMgr::Stop()
     if (Cohort().RuntimeMode == BotWorldRuntimeMode::AlwaysOnAutonomy)
     {
         for (WorldBotState const& state : Party().Bots)
+        {
+            BotRaidAreaAuthority::Set(state.Guid.GetRawValue(), false);
             PersistBotPosition(GetBot(state));
+        }
         Cohort().TelemetryBuffer.FlushOpenClips(Cohort().ExperimentId, Cohort().RunId, Cohort().Config.BrainVersion);
         RecordRunStop();
         Cohort().ExperimentCoordinator.Clear();
@@ -1762,6 +1766,7 @@ void BotWorldPopulationMgr::Stop()
 
     for (WorldBotState const& state : Party().Bots)
     {
+        BotRaidAreaAuthority::Set(state.Guid.GetRawValue(), false);
         Player* bot = GetBot(state);
         PersistBotPosition(bot);
         RecordActivityStop(state, bot);
@@ -1838,6 +1843,7 @@ void BotWorldPopulationMgr::StopAutonomy()
 
     for (WorldBotState const& state : Party().Bots)
     {
+        BotRaidAreaAuthority::Set(state.Guid.GetRawValue(), false);
         Player* bot = GetBot(state);
         PersistBotPosition(bot);
         RecordActivityStop(state, bot);
@@ -1864,6 +1870,7 @@ void BotWorldPopulationMgr::Shutdown()
 
     for (WorldBotState const& state : Party().Bots)
     {
+        BotRaidAreaAuthority::Set(state.Guid.GetRawValue(), false);
         if (!state.Guid.IsEmpty() && LeaseOwnedByCurrentCohort(state.Guid.GetCounter()))
         {
             CharacterDatabase.DirectPExecute("UPDATE characters SET online = 0 WHERE guid = %u", state.Guid.GetCounter());
@@ -23757,7 +23764,7 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
     {
         if (!bot)
             return;
-        bot->SetHostileMultiTargetAutocastSuppressed(suppress);
+        BotRaidAreaAuthority::Set(bot->GetGUID().GetRawValue(), suppress);
         if (!suppress)
             return;
 
