@@ -36,6 +36,7 @@ def validate_readback(
     group_member_rows: int,
     ghost_aura_rows: int,
     corpse_rows: int,
+    corpse_phase_rows: int,
 ) -> list[str]:
     reasons: list[str] = []
     expected_by_name = {str(row["name"]): row for row in expected}
@@ -89,6 +90,8 @@ def validate_readback(
         reasons.append("ghost_aura_rows")
     if corpse_rows != 0:
         reasons.append("corpse_rows")
+    if corpse_phase_rows != 0:
+        reasons.append("corpse_phase_rows")
     return sorted(set(reasons))
 
 
@@ -139,6 +142,8 @@ def main() -> int:
             ghost_aura_rows = int(cursor.fetchone()["count"])
             cursor.execute(f"SELECT COUNT(*) AS count FROM corpse WHERE guid IN ({guid_placeholders})", tuple(guids))
             corpse_rows = int(cursor.fetchone()["count"])
+            cursor.execute(f"SELECT COUNT(*) AS count FROM corpse_phases WHERE OwnerGuid IN ({guid_placeholders})", tuple(guids))
+            corpse_phase_rows = int(cursor.fetchone()["count"])
     finally:
         connection.close()
 
@@ -150,9 +155,10 @@ def main() -> int:
         group_member_rows=group_member_rows,
         ghost_aura_rows=ghost_aura_rows,
         corpse_rows=corpse_rows,
+        corpse_phase_rows=corpse_phase_rows,
     )
     payload = {
-        "schema": "cata_raid_phase1_bwd_provisioning_readback_v3",
+        "schema": "cata_raid_phase1_bwd_provisioning_readback_v4",
         "passed": not reasons,
         "reasons": reasons,
         "database": sanitize_database_url(character_url),
@@ -166,7 +172,8 @@ def main() -> int:
         "group_member_rows": group_member_rows,
         "ghost_aura_rows": ghost_aura_rows,
         "corpse_rows": corpse_rows,
-        "query_contract": "exact frozen names joined to character_bot_pool; ordered; exact instance/group/ghost/corpse residue counts",
+        "corpse_phase_rows": corpse_phase_rows,
+        "query_contract": "exact frozen names joined to character_bot_pool; ordered; exact instance/group/ghost/corpse/corpse-phase residue counts",
     }
     write_json(args.output, payload)
     print(json.dumps(payload, sort_keys=True))
