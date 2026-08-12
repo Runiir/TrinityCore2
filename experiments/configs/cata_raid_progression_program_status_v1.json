@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "program_id": "cata_raid_progression_442_v1",
-  "updated_at_utc": "2026-08-12T03:49:30Z",
+  "updated_at_utc": "2026-08-12T04:31:00Z",
   "active_phase": 1,
   "active_phase_name": "raid_runtime_formation_difficulty_and_evidence_primitives",
   "program_status": "in_progress",
@@ -16,7 +16,7 @@
   },
   "integration": {
     "branch": "raid/cata-raid-progression-integration",
-    "foundation_sha": "72323f589090bf9d181da986cd277b1377f8bbaf",
+    "foundation_sha": "b550972efb04d8b4cadf72455e57e1a2e6213e4f",
     "raid_base_is_ancestor": true,
     "created_from_exact_local_master": true
   },
@@ -146,13 +146,20 @@
       "gate_passed": false,
       "completed_requirements": [
         "phase0_foundation_committed",
-        "phase0_no_bots_baseline_remote_verified"
+        "phase0_no_bots_baseline_remote_verified",
+        "cohort_owned_exact_raid_runtime_identity_implemented",
+        "deterministic_10_and_25_member_subgroups_and_unique_lease_readback_implemented",
+        "exact_10n_25n_10h_25h_difficulty_write_and_live_readback_implemented",
+        "generic_declarative_formation_assignment_and_evidence_demultiplex_smokes_125_passed",
+        "native_boss_state_wipe_reset_recovery_and_ready_state_observation_implemented",
+        "canonical_phase1_capture_reconstructs_identity_transitions_and_cleanup",
+        "first_three_compiler_build_resource_abort_preserved",
+        "second_two_compiler_build_resource_abort_preserved",
+        "retry_policy_reduced_to_one_compiler_one_linker_without_weakening_reserves"
       ],
       "remaining_requirements": [
-        "audit_existing_raid_runtime_and_evidence_primitives",
-        "implement_missing_generic_raid_primitives",
-        "add_deterministic_10_and_25_member_formation_difficulty_lease_wipe_and_capture_smokes",
-        "coordinated_build_and_regression_gate",
+        "complete_one_compiler_coordinated_build_and_regression_gate",
+        "mandatory_sol_high_adversarial_foundation_review",
         "serialized_bwd_10n_entry_formation_difficulty_wipe_reset_evidence_publication_and_cleanup_gate"
       ]
     }
@@ -162,7 +169,7 @@
       "blocker_id": "bwd_exact_442_quantitative_identity",
       "classification": "research_unresolved",
       "scope": "phase0_fidelity_gate",
-      "detail": "Build 59185 and the launch-notes timestamp cutoff are frozen. Six BWD packages are structurally complete, but primary client-data hashes, a pinned Wowhead extract, known-mode logs, and multiple material four-mode timers, coefficients, target counts, and guide-versus-repository conflicts remain unresolved. They may not be guessed or promoted to fixed runtime values."
+      "detail": "Build 59185 and the official global Dragon Soul unlock cutoff 2025-02-20T23:00:00Z are frozen. Primary client-data hashes, a pinned Wowhead extract, known-mode logs, and multiple material four-mode timers, coefficients, target counts, and guide-versus-repository conflicts remain unresolved. They may not be guessed or promoted to fixed runtime values."
     },
     {
       "blocker_id": "bwd_native_unlock_runtime_proof",
@@ -171,5 +178,5 @@
       "detail": "Forbidden Atramedes state injection and Nefarian state injection/spawn were removed. The route is structurally valid and DVC-synchronized, but native prerequisite unlock/start/reset behavior is not yet proven live."
     }
   ],
-  "next_action": "Audit the existing one-cohort group runtime against Phase 1 raid ownership and evidence requirements, implement the smallest missing generic primitives with tests, and continue refilling all three Luna xhigh boss-research slots."
+  "next_action": "Finish the one-compiler coordinated Phase 1 build, complete the last three Luna xhigh Dragon Soul research packets, obtain the mandatory Sol high adversarial foundation review, then run and publish the serialized BWD 10N native formation/wipe/reset/recovery capture."
 }

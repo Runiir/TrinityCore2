@@ -1,5 +1,17 @@
 # Cataclysm raid progression handoff
 
+## 2026-08-12T04:31:00Z — Phase 1 runtime complete; serialized build retry active
+
+The Phase 1 foundation now owns exact cohort-scoped raid group/leader, 10/25 size, canonical 10N/25N/10H/25H difficulty write/readback, map/instance/lockout, server epoch/attempt, roster slots, deterministic five-player subgroups, unique leases, assignment generation, strategy, and evidence identity. Status, diagnose, trace, and event context expose the same runtime. Native instance observation now records all boss states, encounter-in-progress, alive membership, wipe generation, boss-reset generation, recovery generation, and reconstructed ready state instead of inert placeholders.
+
+The declarative synthetic compiler covers stack, pair, lane, quadrant, ring, spread, cone, behind/front exclusion, raid/role/subgroup anchors, all required tank-swap triggers and target controls, interrupt/dispel backups, healer/cooldown/soak/immunity/personal/battle-resurrection policies, objects, extra actions, vehicles, transports, jump pads, platform/altitude/flying/cross-platform movement, recovery, and capture demultiplexing. Unknown or incomplete fields fail closed. The focused research/runtime/capture suite passes 138 tests; the runtime/foundation/capture subset passes 128.
+
+The first three-compiler build exposed and fixed an inherited incomplete `Pet` include, then ended as `build_resource_abort` from swap growth. The two-compiler retry reached 74% before the coordinator observed sustained memory PSI while linking `libgame.a`; it also ended as `build_resource_abort`, with about 18.8 GiB minimum available memory and healthy MySQL. Both receipts are preserved. Policy v3 retains every reserve/PSI/load/disk threshold while reducing the retry to exactly one compiler and one linker. A clean reconfigure at commit `2db8059867f15e58721b92da01f8b7ccf26346cf` passed with a valid receipt; the coordinated one-compiler worldserver build is active and no live validation may overlap it.
+
+Research now covers all required encounters through Hagara, Ultraxion, and Yor'sahj. Warmaster Blackhorn, Spine, and Madness are the final active exact Luna xhigh packets. The global research identity was corrected from the patch-note publication timestamp—which predates raid availability—to Blizzard's official Dragon Soul global unlock, `2025-02-20T23:00:00Z`. Build 59185 is unchanged. Later hotfixes and the March Presence modifier remain excluded from the primary snapshot. Material values remain fail-closed pending primary client data and known-mode exact-cutoff evidence.
+
+Exact next action: let the coordinated one-compiler build finish, retain/verify its receipt, run the mandatory Sol high adversarial foundation review after a research slot frees, integrate any critical/high corrections, and only then run the canonical serialized BWD 10N formation/wipe/reset/recovery capture from a clean reviewed commit.
+
 ## 2026-08-12T03:49:30Z — Phase 0 accepted; Phase 1 opened
 
 Phase 0 is accepted at foundation checkpoint `72323f589090bf9d181da986cd277b1377f8bbaf`, descending from frozen `raid_base_sha` `889d38cc9451c2b8104db142ce069593b4647a41`. The clean-worktree no-bots baseline ran at commit `c5654f0facc06cacb0e568c08d5002ce15813a78` with worldserver SHA-256 `e9a5878734a248fe5694d92297d0dacd06abc73ec0efe950111544ff5ed27ed6` and config SHA-256 `e4059209ab34173259000f58b57c405361b3e97df21d20162687e08d73f727d7`.
