@@ -83,6 +83,28 @@ def test_bwd_drakonid_corridor_has_explicit_native_pack_hazard_and_range_contrac
     ]
 
 
+def test_boss_route_rejects_undeclared_engaged_trash_before_shared_actions():
+    route_runtime = IMPL[
+        IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective"):
+        IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteReadiness")
+    ]
+    early_rejection = route_runtime.index(
+        'if (Cohort().Config.ValidationRouteKind == "boss"\n'
+        "        && trashThreatControl.EngagedCount > 0"
+    )
+
+    assert early_rejection < route_runtime.index("bool insecureTrashSwarm")
+    assert early_rejection < route_runtime.index("hunterTrashMisdirectionActive")
+    assert early_rejection < route_runtime.index('action = "misdirection_to_tank";')
+    assert early_rejection < route_runtime.index('action = "trash_density_area_threat";')
+    assert 'rejected, "boss_route_target_not_declared"' in route_runtime[
+        early_rejection:route_runtime.index("bool insecureTrashSwarm")
+    ]
+    assert 'action = "boss_route_prerequisite_blocked";' in route_runtime[
+        early_rejection:route_runtime.index("bool insecureTrashSwarm")
+    ]
+
+
 def test_single_cohort_owns_one_raid_runtime():
     raid_struct = HEADER.index("struct RaidRuntime")
     cohort_struct = HEADER.index("struct CohortRuntime")

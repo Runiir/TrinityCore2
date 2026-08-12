@@ -21195,6 +21195,37 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
                 trashThreatControl.InsecureTankOwnedTargets.push_back(creature);
         }
     }
+    // A boss node has no authority to finish ordinary corridor trash.  The
+    // manifest must place that pack in an explicit preceding trash node.  Run
+    // this rejection immediately after observation and before any of the
+    // shared trash threat, movement, Misdirection, defensive, or profile-action
+    // branches below; a downstream check is too late because many of those
+    // branches return after acting on AreaTarget.
+    if (Cohort().Config.ValidationRouteKind == "boss"
+        && trashThreatControl.EngagedCount > 0
+        && trashThreatControl.AreaTarget)
+    {
+        Unit* rejected = trashThreatControl.AreaTarget;
+        bot->InterruptNonMeleeSpells(false);
+        bot->AttackStop();
+        if (Pet* pet = bot->GetPet())
+            pet->AttackStop();
+        for (Unit* controlled : bot->m_Controlled)
+            if (controlled)
+                controlled->AttackStop();
+        std::string raw = BuildRawJson(bot, rejected);
+        std::string semantic = BuildSemanticJson(
+            bot, rejected, "validation_route_prerequisite", &power, stage, activity);
+        RecordEvent(state, bot, "validation_route_prerequisite_rejected",
+            rejected, "boss_route_target_not_declared", raw.c_str(),
+            semantic.c_str(), bot->GetExactDist(rejected),
+            Cohort().Config.ValidationRouteTargetEntry);
+        state.TargetGuid.Clear();
+        target = nullptr;
+        situation = "validation_route_prerequisite";
+        action = "boss_route_prerequisite_blocked";
+        return true;
+    }
     bool insecureTrashSwarm = trashThreatControl.EngagedCount >= 3
         && trashThreatControl.SecureTankCount * 10 < trashThreatControl.EngagedCount * 9;
     bool tankOwnsTrashMajority = trashThreatControl.EngagedCount > 0
