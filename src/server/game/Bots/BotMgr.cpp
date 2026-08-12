@@ -16,12 +16,14 @@
 #include "MapManager.h"
 #include "MotionMaster.h"
 #include "ObjectAccessor.h"
+#include "ObjectMgr.h"
 #include "Pet.h"
 #include "Player.h"
 #include "QueryHolder.h"
 #include "SpellInfo.h"
 #include "SpellMgr.h"
 #include "Unit.h"
+#include "World.h"
 #include "WorldSession.h"
 #include <algorithm>
 #include <memory>
