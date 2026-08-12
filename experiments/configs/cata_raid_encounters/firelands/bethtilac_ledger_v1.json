@@ -1,0 +1,234 @@
+{
+  "schema_version": 1,
+  "ledger_schema": "cata_raid_value_timer_ledger_v1",
+  "raid": "firelands",
+  "boss_slug": "bethtilac",
+  "modes": ["10N", "10H", "25N", "25H"],
+  "fidelity_state": "fidelity_blocked",
+  "contract_path": "experiments/configs/cata_raid_encounters/firelands/bethtilac_v1.json",
+  "unresolved_material_count": 18,
+  "encounter": "bethtilac",
+  "purpose": "Source, identity, modifier, value, timer, targeting, scaling, phase, reset, unlock, and credit ledger for Phase 0 research; no live-validation assertion.",
+  "scope": ["10N", "10H", "25N", "25H"],
+  "repository_revision_audited": "8eb54f0160b3c3d986ed944f9d64ebf83922c0f8",
+  "retrieved_utc_date": "2026-08-12",
+  "research_as_of": "2026-08-12",
+  "source_catalog": [
+    {
+      "id": "wowhead_cata_beth_2024",
+      "title": "Beth'tilac Strategy Overview - Firelands Raid Cataclysm Classic",
+      "publisher": "Wowhead",
+      "published_or_updated": "2024-10-25 (updated)",
+      "edition_label": "Cataclysm Classic",
+      "url": "https://www.wowhead.com/cata/guide/raids/firelands/bethtilac-strategy-overview",
+      "accessed": "2026-08-12",
+      "authority": "current Cataclysm Classic strategy guide",
+      "used_for": ["four-mode boss health", "web/ground split", "current approximate timers", "add flow", "phase two", "ability examples"],
+      "notes": "Values are guide observations; its source modifier state and full mode table are unspecified. Conflicting narrative/table values are retained as blocked."
+    },
+    {
+      "id": "icy_veins_cata_beth_2024",
+      "title": "Beth'tilac Encounter Guide: Strategy, Abilities, Loot",
+      "author": "Abide",
+      "publisher": "Icy Veins",
+      "published_or_updated": "2024-10-08 (updated)",
+      "url": "https://www.icy-veins.com/cataclysm-classic/bethtilac-encounter-guide-strategy-abilities-loot",
+      "accessed": "2026-08-12",
+      "authority": "current Cataclysm Classic strategy guide",
+      "used_for": ["role split", "heroic Fixate", "Broodling description", "Phase 1/2 flow", "independent target cross-check"],
+      "notes": "Reports four Spiderling locations and Broodling behavior that conflict with other current guidance; no mode tuning table."
+    },
+    {
+      "id": "blizzard_firelands_modifier_2025",
+      "title": "Firelands Difficulty Reduction with Hour of Twilight Patch",
+      "author": "Kaivax",
+      "publisher": "Blizzard Entertainment forums",
+      "published_or_updated": "2025-02-13",
+      "url": "https://us.forums.blizzard.com/en/wow/t/firelands-difficulty-reduction-with-hour-of-twilight-patch/2059756",
+      "accessed": "2026-08-12",
+      "authority": "official 4.4.2 modifier announcement",
+      "used_for": ["30% health reduction", "30% damage reduction", "Power of Stormrage", "General Taldris Moonfall deactivation"],
+      "notes": "Official announcement does not publish aura/NPC IDs or explicit default persistence. State is recorded without inventing those fields."
+    },
+    {
+      "id": "blizzard_441_firelands_notes",
+      "title": "World of Warcraft: Cataclysm Classic Patch 4.4.1 Notes",
+      "publisher": "Blizzard Entertainment forums",
+      "published_or_updated": "2024-11-07",
+      "url": "https://us.forums.blizzard.com/en/wow/t/world-of-warcraft-cataclysm-classic-patch-441-notes/1996710",
+      "accessed": "2026-08-12",
+      "authority": "official release scope",
+      "used_for": ["Firelands seven-boss scope", "10/25 normal/heroic endpoints"],
+      "notes": "Does not freeze Beth spell, health, or hotfix data."
+    },
+    {
+      "id": "blizzard_442_notes_2025",
+      "title": "World of Warcraft: Cataclysm Classic Patch 4.4.2 Notes",
+      "author": "Kaivax",
+      "publisher": "Blizzard Entertainment forums",
+      "published_or_updated": "2025-02-18",
+      "url": "https://us.forums.blizzard.com/en/wow/t/world-of-warcraft-cataclysm-classic-patch-442-notes/2062030",
+      "accessed": "2026-08-12",
+      "authority": "official release context",
+      "used_for": ["4.4.2 cutoff context"],
+      "notes": "No Beth-specific client/DBC hash or mode table."
+    },
+    {
+      "id": "blizzard_42_beth_hotfix_historical",
+      "title": "Cataclysm 4.2 hotfixes",
+      "publisher": "Blizzard Entertainment",
+      "url": "https://worldofwarcraft.blizzard.com/en-us/news/3019413",
+      "accessed": "2026-08-12",
+      "authority": "historical original-Cataclysm hotfix reference",
+      "used_for": ["non-applicable historical 15% Beth reduction conflict"],
+      "notes": "Not used to tune Classic 4.4.2 and must not be stacked with Power of Stormrage."
+    },
+    {
+      "id": "wowhead_beth_identity",
+      "title": "Beth'tilac NPC and Cataclysm Classic spell pages",
+      "publisher": "Wowhead",
+      "url": "https://www.wowhead.com/cata/npc=52498/bethtilac",
+      "related_urls": [
+        "https://www.wowhead.com/cata/spell=99333/venom-rain",
+        "https://www.wowhead.com/cata/spell=99052/smoldering-devastation",
+        "https://www.wowhead.com/cata/spell=98471/burning-acid",
+        "https://www.wowhead.com/cata/spell=97079/seeping-venom",
+        "https://www.wowhead.com/cata/spell=99463/boiling-spatter",
+        "https://www.wowhead.com/cata/spell=99497/frenzy",
+        "https://www.wowhead.com/cata/spell=99476/the-widows-kiss"
+      ],
+      "accessed": "2026-08-12",
+      "authority": "current spell/NPC identity pages",
+      "used_for": ["spell IDs", "NPC IDs", "page-level damage/range examples"],
+      "notes": "Some pages expose legacy difficulty values or malformed text; identity is retained while disputed tuning remains blocked."
+    },
+    {
+      "id": "repo_firelands_beth_absence",
+      "title": "Local Firelands Beth'tilac implementation audit",
+      "publisher": "shared TrinityCore repository",
+      "revision": "8eb54f0160b3c3d986ed944f9d64ebf83922c0f8",
+      "paths": [
+        "src/server/scripts/Kalimdor/Firelands/",
+        "src/server/scripts/Kalimdor/kalimdor_script_loader.cpp"
+      ],
+      "accessed": "2026-08-12",
+      "authority": "repository absence evidence",
+      "used_for": ["no boss_bethtilac.cpp", "no AddSC_boss_bethtilac loader call", "no executable mechanic/reset/credit claims"],
+      "notes": "Other Firelands bosses are present, but Beth's script is absent."
+    },
+    {
+      "id": "repo_firelands_header_instance",
+      "title": "Local Firelands header and instance mapping",
+      "publisher": "shared TrinityCore repository",
+      "revision": "8eb54f0160b3c3d986ed944f9d64ebf83922c0f8",
+      "paths": [
+        "src/server/scripts/Kalimdor/Firelands/firelands.h",
+        "src/server/scripts/Kalimdor/Firelands/instance_firelands.cpp"
+      ],
+      "accessed": "2026-08-12",
+      "authority": "repository identity/slot evidence",
+      "used_for": ["map720", "DATA_BETHTILAC", "entry52498", "door208877", "seven encounter slots"],
+      "notes": "Generic object/door mapping is not Beth encounter behavior."
+    },
+    {
+      "id": "repo_firelands_sql_identity",
+      "title": "Historical TrinityCore Firelands TDB/encounter identity rows",
+      "publisher": "shared TrinityCore repository",
+      "revision": "8eb54f0160b3c3d986ed944f9d64ebf83922c0f8",
+      "paths": [
+        "sql/old/4.3.4/TDB00_to_TDB01_updates/world/004_creature_template.sql",
+        "sql/old/4.3.4/TDB04_to_TDB05_updates/world/066_instance_encounters.sql"
+      ],
+      "accessed": "2026-08-12",
+      "authority": "historical DB identity evidence, not current 4.4.2 tuning",
+      "used_for": ["Beth/add entry identities", "encounter row1197"],
+      "notes": "Variant entries are not assigned to 10/25 or normal/heroic without a verified build/mode mapping."
+    }
+  ],
+  "mode_matrix": {
+    "10N": {"heroic": false, "boss_health_current_guide": 20900000, "modifier": {"name": "Power of Stormrage", "health_multiplier": 0.7, "damage_multiplier": 0.7, "official_state": "announced_applied_with_optional_deactivation", "runtime_default": null}, "status": "fidelity_blocked"},
+    "10H": {"heroic": true, "boss_health_current_guide": 32800000, "modifier": {"name": "Power of Stormrage", "health_multiplier": 0.7, "damage_multiplier": 0.7, "official_state": "announced_applied_with_optional_deactivation", "runtime_default": null}, "status": "fidelity_blocked"},
+    "25N": {"heroic": false, "boss_health_current_guide": 62600000, "modifier": {"name": "Power of Stormrage", "health_multiplier": 0.7, "damage_multiplier": 0.7, "official_state": "announced_applied_with_optional_deactivation", "runtime_default": null}, "status": "fidelity_blocked"},
+    "25H": {"heroic": true, "boss_health_current_guide": 98500000, "modifier": {"name": "Power of Stormrage", "health_multiplier": 0.7, "damage_multiplier": 0.7, "official_state": "announced_applied_with_optional_deactivation", "runtime_default": null}, "status": "fidelity_blocked"}
+  },
+  "values": [
+    {"key": "bethtilac", "boss_entry": 52498, "historical_variants": [52675, 53576, 53577, 53578, 54089], "health_current_guide": {"10N": 20900000, "10H": 32800000, "25N": 62600000, "25H": 98500000}, "status": "guide_health_only_modifier_state_and_runtime_scaling_blocked"},
+    {"key": "power_of_stormrage", "official_health_delta": "-30%", "official_damage_delta": "-30%", "aura_id": null, "toggle_npc": "General Taldris Moonfall", "toggle_npc_id": null, "status": "official_scope_confirmed_runtime_identity_and_default_blocked"},
+    {"key": "venom_rain", "spell": 99333, "page_range": "22874-26583 Fire", "guide_examples": "about15000 normal/about25000 heroic", "status": "identity_confirmed_values_conflict"},
+    {"key": "ember_flare", "spell": 98934, "guide_examples": "about18000 normal/about28000 heroic", "status": "identity_confirmed_mode_values_blocked"},
+    {"key": "smoldering_devastation", "spell": 99052, "cast_time": "8s", "page_range": "380000-420000 Fire", "status": "identity_and_cast_confirmed_mode_damage_blocked"},
+    {"key": "meteor_burn", "spell": 99076, "guide_target": "random web player", "guide_damage": "about40000 Fire", "guide_radius": "about7yd", "status": "target_identity_confirmed_geometry_and_mode_blocked"},
+    {"key": "cinderweb_spinner", "npc": 52524, "burning_acid": 98471, "page_range": "30914-34862 Fire", "status": "identity_confirmed_spawn_and_heroic_delta_blocked"},
+    {"key": "cinderweb_drone", "npc": 52581, "boiling_spatter": 99463, "boiling_spatter_range": "76658-89089 Fire", "burning_acid": 99934, "consume": 99304, "consume_effect": "20% heal;+20% damage/+20% movement per Spiderling", "status": "identity_confirmed_schedules_and_mode_blocked"},
+    {"key": "cinderweb_spiderling", "npc": 52447, "seeping_venom": 97079, "seeping_venom_range": "6937-8062 Nature every2s for10s;6yd leap", "status": "identity_confirmed_lane_and_consume_blocked"},
+    {"key": "engorged_broodling", "npc": 53745, "variants": [53746, 53747, 53748], "heroic_only": true, "volatile_burst": null, "status": "identity_confirmed_behavior_and_scaling_blocked"},
+    {"key": "frenzy", "spell": 99497, "guide_effect": "+5% damage about every5s", "status": "identity_and_qualitative_effect_confirmed_stack_behavior_blocked"},
+    {"key": "widows_kiss", "spell": 99476, "guide_effect": "10% healing reduction every2s for20s; nearby-ally consequence", "status": "identity_confirmed_page_text_conflicts"},
+    {"key": "historical_encounter", "encounter_id": 1197, "boss_entry": 52498, "status": "historical_db_identity_only"}
+  ],
+  "timers": [
+    {"key": "venom_rain", "reported": "about3s", "modes": ["10N", "10H", "25N", "25H"], "status": "guide_observation"},
+    {"key": "ember_flare", "reported": "about5-7s", "modes": ["10N", "10H", "25N", "25H"], "status": "guide_observation_conflicting_values"},
+    {"key": "meteor_burn", "reported": "about25s", "modes": ["10N", "10H", "25N", "25H"], "status": "guide_observation"},
+    {"key": "spinner_spawn", "reported": "pull and after devastation/about1.5m", "modes": ["10N", "10H", "25N", "25H"], "status": "guide_observation"},
+    {"key": "spinner_burning_acid", "reported": "2s cooldown", "modes": ["10N", "10H", "25N", "25H"], "status": "spell_page_identity_guide_conflict"},
+    {"key": "drone_spawn", "reported": "about45s", "modes": ["10N", "10H", "25N", "25H"], "status": "guide_observation"},
+    {"key": "drone_burning_acid", "reported": "about8s", "modes": ["10N", "10H", "25N", "25H"], "status": "guide_observation"},
+    {"key": "spiderling_wave", "reported": "about12s", "modes": ["10N", "10H", "25N", "25H"], "status": "guide_observation_lane_conflict"},
+    {"key": "fire_energy", "reported": "1% per second/about90s natural", "modes": ["10N", "10H", "25N", "25H"], "status": "guide_observation_siphon_unresolved"},
+    {"key": "smoldering_devastation", "reported": "8s cast; after energy reaches zero", "modes": ["10N", "10H", "25N", "25H"], "status": "spell_page_cast_confirmed_event_blocked"},
+    {"key": "phase_two", "reported": "after3 devastations", "modes": ["10N", "10H", "25N", "25H"], "status": "guide_flow_no_local_ai"},
+    {"key": "frenzy", "reported": "about5s per stack", "modes": ["10N", "10H", "25N", "25H"], "status": "guide_observation"}
+  ],
+  "targeting_and_scaling": [
+    {"key": "web_ground", "target_rule": "web group handles Beth; ground group handles adds and Venom Rain", "status": "qualitative_confirmed_aura_filter_blocked"},
+    {"key": "venom_rain", "target_rule": "ground players while Beth remains on web; suppressed by web presence per guide", "status": "relationship_confirmed_runtime_filter_blocked"},
+    {"key": "meteor_burn", "target_rule": "random web player; nearby web players affected", "status": "qualitative_confirmed_mode_blocked"},
+    {"key": "spinner_burning_acid", "target_rule": "random player while hanging", "status": "page_identity_confirmed_mode_blocked"},
+    {"key": "drone", "target_rule": "off-tank; frontal cone away; acid random; heroic Fixate random ground player", "status": "qualitative_confirmed_exact_filters_blocked"},
+    {"key": "spiderling", "target_rule": "highest threat/usually healer; may be consumed by Drone or Beth", "status": "qualitative_confirmed_lane_and_range_blocked"},
+    {"key": "broodling", "target_rule": "heroic random fixate; contact detonation", "status": "presence_confirmed_kill_soak_and_damage_blocked"},
+    {"key": "mode_scaling", "target_rule": "current guide gives four boss-health observations; no authoritative add/spell mode table", "status": "fidelity_blocked"},
+    {"key": "modifier_delta", "target_rule": "officially all Firelands bosses and other enemies; 0.70 health and damage if active", "status": "official_scope_confirmed_runtime_application_blocked"}
+  ],
+  "phase_reset_credit": [
+    {"key": "unlock", "behavior": "No Beth-specific prerequisite is published; Firelands release is a seven-boss normal/heroic raid and local code has no Beth unlock event.", "status": "runtime_unlock_blocked"},
+    {"key": "engage", "behavior": "Header/instance map Beth entry52498 to DATA_BETHTILAC, but no Beth AI/loader registration exists.", "status": "hard_repository_blocker"},
+    {"key": "phase_one", "behavior": "Web, Fire Energy, Spinners, Drones, Spiderlings, and devastations are guide-described only; no local transition handler.", "status": "fidelity_blocked"},
+    {"key": "phase_two", "behavior": "After third reported devastation Beth descends and Frenzy/Widow's Kiss form a soft-enrage; exact aura application is absent.", "status": "fidelity_blocked"},
+    {"key": "reset", "behavior": "No Beth Reset/EnterEvade/add cleanup implementation; historical SQL cannot prove wipe reset.", "status": "hard_repository_blocker"},
+    {"key": "completion_credit", "behavior": "No local JustDied, loot, achievement, lockout, or player credit handler; encounter row1197 is identity only.", "status": "fidelity_blocked"},
+    {"key": "difficulty_delta", "behavior": "All four endpoints are in scope. Heroic Fixate/Broodlings are reported, but exact normal/heroic and 10/25 deltas are unresolved.", "status": "fidelity_blocked"},
+    {"key": "modifier_delta", "behavior": "Power of Stormrage official announcement supplies -30% health/-30% damage for all Firelands enemies with optional deactivation; no aura/NPC/default-state implementation locally.", "status": "official_scope_confirmed_runtime_blocked"},
+    {"key": "db_identity", "behavior": "Historical rows cross-reference Beth52498 and variants, Spiderling52447, Spinner52524, Drone52581, Broodling53745/variants, door208877, encounter1197.", "status": "identity_confirmed_current_runtime_unresolved"}
+  ],
+  "conflicts": [
+    {"key": "modifier_and_health", "official": "-30% health/damage via Power of Stormrage", "guide": "four health values without modifier state", "resolution": "do not apply a second reduction; retain guide values as observations only"},
+    {"key": "historical_beth_hotfix", "historical": "15% Beth health/damage reduction in original Cataclysm hotfix", "resolution": "not applied to Classic 4.4.2 and not stacked"},
+    {"key": "spiderling_lanes", "current_wowhead": "3 lanes", "current_icy_veins": "4 locations", "resolution": "lane count fidelity_blocked"},
+    {"key": "damage_values", "guide_narrative": "lower normal/heroic examples", "spell_pages": "different ranges/legacy values", "resolution": "retain identities/relationships; block coefficients"},
+    {"key": "broodlings", "sources": "contact detonation, raid damage/pool, and differing kill/soak descriptions", "resolution": "heroic presence/identity only; behavior blocked"},
+    {"key": "heroic_spinner", "historical": "Fiery Web Spin reported", "current_guides": "not confirmed", "resolution": "do not make it an execution rule"},
+    {"key": "repository", "header": "DATA_BETHTILAC and door mapping exist", "scripts": "boss AI/loader absent", "resolution": "identity only; no executable lifecycle claim"}
+  ],
+  "unresolved": [
+    "4.4.2 client/DBC build and hotfix cutoff",
+    "Power of Stormrage aura/NPC IDs, default state, persistence, and toggle runtime",
+    "modifier state of current guide health values",
+    "web/ground aura and filament eligibility",
+    "Fire Energy implementation, Drone siphon, and devastation reset/order",
+    "all four-mode spell coefficients and timer jitter",
+    "Spiderling lane count and mode distribution",
+    "heroic Spinner ability presence",
+    "Broodling ID/kill/soak/damage/pool semantics",
+    "Beth and Drone Consume exact target/range/heal behavior",
+    "Phase 2 stack cap and Widow's Kiss exact aura targets",
+    "add cleanup and phase transition event order",
+    "wipe reset and door state",
+    "unlock, lockout, loot, achievement, and credit",
+    "no local Beth AI or loader registration",
+    "historical 15% hotfix applicability (not assumed)",
+    "normal/heroic and 10/25 add scaling",
+    "historical DB variant-to-mode mapping"
+  ]
+}

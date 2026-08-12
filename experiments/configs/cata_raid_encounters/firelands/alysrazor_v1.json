@@ -1,0 +1,430 @@
+{
+  "schema_version": 1,
+  "contract_schema": "cata_raid_encounter_contract_v1",
+  "raid": "firelands",
+  "boss_slug": "alysrazor",
+  "modes": ["10N", "10H", "25N", "25H"],
+  "fidelity_state": "fidelity_blocked",
+  "dossier_path": "docs/bot_raids/strategies/t12/firelands/alysrazor.md",
+  "ledger_path": "experiments/configs/cata_raid_encounters/firelands/alysrazor_ledger_v1.json",
+  "unresolved_material_count": 22,
+  "encounter": "alysrazor",
+  "instance": "firelands",
+  "scope": ["10N", "10H", "25N", "25H"],
+  "research_state": "phase0_researched_not_live_validated",
+  "evidence_policy": "Use current Cataclysm Classic sources for observations, official Blizzard material for the 4.4.2 modifier and release scope, and repository/SQL only for executable or identity claims. Keep conflicting ranges, unknown build/hotfix state, and all boss behavior absent from the local AI fidelity_blocked.",
+  "source_refs": [
+    "wowhead_cata_alysrazor_2024",
+    "icy_veins_cata_alysrazor_2024",
+    "warcraft_tavern_cata_alysrazor_2024",
+    "blizzard_firelands_modifier_2025",
+    "blizzard_441_firelands_notes",
+    "blizzard_442_notes_2025",
+    "wowhead_alysrazor_identity",
+    "repo_firelands_alysrazor_audit",
+    "repo_firelands_sql_alysrazor"
+  ],
+  "mode_matrix": {
+    "10N": {
+      "heroic": false,
+      "boss_health_current_guide": 51500000,
+      "boss_health_status": "guide_observation_modifier_state_unspecified",
+      "historical_base_entry": 52530,
+      "reported_delta": "baseline guide observation; exact mode table blocked",
+      "official_modifier_at_442_cutoff": "Power of Stormrage announced for all Firelands bosses/enemies; 30% health and damage reduction; exact runtime aura state unresolved"
+    },
+    "10H": {
+      "heroic": true,
+      "boss_health_current_guide": 77300000,
+      "boss_health_status": "guide_observation_modifier_state_unspecified",
+      "historical_base_entry": 52530,
+      "reported_delta": "heroic Hatchling/Meteor and damage differences reported; exact mode table blocked",
+      "official_modifier_at_442_cutoff": "Power of Stormrage announced for all Firelands bosses/enemies; 30% health and damage reduction; exact runtime aura state unresolved"
+    },
+    "25N": {
+      "heroic": false,
+      "boss_health_current_guide": 154600000,
+      "boss_health_status": "guide_observation_modifier_state_unspecified",
+      "historical_base_entry": 52530,
+      "reported_delta": "25-player health/add scaling; exact mode table blocked",
+      "official_modifier_at_442_cutoff": "Power of Stormrage announced for all Firelands bosses/enemies; 30% health and damage reduction; exact runtime aura state unresolved"
+    },
+    "25H": {
+      "heroic": true,
+      "boss_health_current_guide": 231900000,
+      "boss_health_status": "guide_observation_modifier_state_unspecified",
+      "historical_base_entry": 52530,
+      "reported_delta": "highest guide health; heroic add/Meteor differences reported; exact mode table blocked",
+      "official_modifier_at_442_cutoff": "Power of Stormrage announced for all Firelands bosses/enemies; 30% health and damage reduction; exact runtime aura state unresolved"
+    }
+  },
+  "roles": {
+    "tanks": [
+      "hold Hatchlings and worms in assigned ground lanes",
+      "keep worms and Clawshapers positioned away from teams",
+      "manage Phase 4 frontal Blazing Claw and vulnerability swaps only after target/range validation"
+    ],
+    "healers": [
+      "cover separated flight and ground teams",
+      "stabilize Hatchling Imprint/Tantrum, worm cones, Vortex, and Burnout",
+      "prepare for Phase 4 Buffet and Full Power while preserving flight-team movement"
+    ],
+    "raid": [
+      "collect feathers only under a validated flight assignment",
+      "fly through rings without assuming geometry or altitude bounds",
+      "spread/avoid Brushfire, Fiery Tornados, Meteors, and frontal cones"
+    ],
+    "dps": [
+      "interrupt Fieroblast and Clawshaper Ignition",
+      "kill or control Initiates, Hatchlings, worms, and heroic Meteors according to validated target rules",
+      "burn during Burnout and the final grounded phase"
+    ]
+  },
+  "gates": [
+    "opening_firestorm_and_volcanic_fire",
+    "phase_one_initiates",
+    "hatchling_imprint_and_feeding",
+    "plump_lava_worm_control",
+    "feathers_wings_and_ring_collection",
+    "flight_altitude_and_arena_bounds",
+    "blazing_power_and_alysras_razor",
+    "phase_two_vortex_and_tornadoes",
+    "phase_three_burnout_and_ignition",
+    "phase_four_claw_buffet_full_power",
+    "power_of_stormrage_modifier_choice"
+  ],
+  "heroic_gates": [
+    "heroic_hatchling_count_and_health",
+    "heroic_molten_meteor_handling",
+    "heroic_worm_count_and_mode_scaling",
+    "heroic_damage_and_timer_table_is_unresolved"
+  ],
+  "mechanics": [
+    {
+      "key": "official_442_power_of_stormrage",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Blizzard announced a 30% reduction to health and damage of all Firelands bosses and other enemies at 4.4.2 launch, implemented by Power of Stormrage; General Taldris Moonfall can deactivate it.",
+      "values": {
+        "health_multiplier_if_active": 0.7,
+        "damage_multiplier_if_active": 0.7,
+        "official_spell_name": "Power of Stormrage",
+        "official_aura_id": null,
+        "toggle_npc": "General Taldris Moonfall",
+        "toggle_npc_id": null,
+        "default_state_exact": null,
+        "guide_health_modifier_state": "unspecified",
+        "historical_15_percent_alysrazor_hotfix": "not verified and not stacked"
+      },
+      "evidence": ["blizzard_firelands_modifier_2025", "blizzard_442_notes_2025"],
+      "status": "official_scope_confirmed_ids_default_persistence_and_runtime_application_blocked"
+    },
+    {
+      "key": "identity_and_repository_state",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Alysrazor is boss entry 52530 in Firelands map 720, encounter slot DATA_ALYSRAZOR=3. The local loader registers only Alysrazor trash/cosmetic scripts, not a boss AI.",
+      "values": {
+        "map": 720,
+        "boss_entry": 52530,
+        "historical_difficulty_entries": [54044, 54045, 54046],
+        "historical_encounter_id": 1206,
+        "data_type": "DATA_ALYSRAZOR",
+        "data_index": 3,
+        "local_boss_ai": false,
+        "local_loader_call": "AddSC_boss_alysrazor",
+        "registered_local_scripts": ["npc_harbinger_of_flame", "npc_blazing_monstrosity", "npc_molten_barrage", "npc_egg_pile", "cosmetic/utility spell scripts"]
+      },
+      "evidence": ["repo_firelands_alysrazor_audit", "repo_firelands_sql_alysrazor"],
+      "status": "identity_confirmed_boss_lifecycle_absent"
+    },
+    {
+      "key": "opening_firestorm",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Current guides report a roleplay opening with Firestorm, knockback, and Volcanic Fire/ground strafe pressure.",
+      "values": {
+        "firestorm_spell_id": null,
+        "volcanic_fire_spell_id": null,
+        "firestorm_damage": null,
+        "knockback_distance": null,
+        "ground_strafe_duration": null,
+        "target_filter": null
+      },
+      "evidence": ["wowhead_cata_alysrazor_2024", "icy_veins_cata_alysrazor_2024", "wowhead_alysrazor_identity"],
+      "status": "qualitative_guide_observation_ids_values_targets_and_reset_blocked"
+    },
+    {
+      "key": "phase_one_ground_teams",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Guides report alternating pairs of Blazing Talon Initiates, Brushfire, and interruptible Fieroblast with Fire It Up stacks.",
+      "values": {
+        "reported_spawn_interval": "about25s",
+        "reported_sets_per_cycle": 4,
+        "reported_initiates_per_set": 2,
+        "brushfire_damage_normal": 30000,
+        "brushfire_damage_heroic": 60000,
+        "fieroblast_initial_normal": 30000,
+        "fieroblast_initial_heroic": 40000,
+        "fieroblast_tick_normal": 15000,
+        "fieroblast_tick_heroic": 20000,
+        "fieroblast_tick_interval": "3s",
+        "fieroblast_duration": "12s",
+        "fire_it_up_stack_delta": "10% damage/cast speed per stack",
+        "source_spell_ids": null
+      },
+      "evidence": ["wowhead_cata_alysrazor_2024", "icy_veins_cata_alysrazor_2024"],
+      "status": "guide_values_not_mode_frozen_and_local_boss_ai_absent"
+    },
+    {
+      "key": "hatchlings_and_feeding",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Two Molten Eggs are reported per set; Voracious Hatchlings hatch shortly afterward, Imprint a nearby/closest player, then become Hungry and can Tantrum until fed.",
+      "values": {
+        "reported_hatchling_count_normal": 4,
+        "reported_hatchling_count_heroic": 6,
+        "reported_hatchling_health_heroic": "reduced; exact value blocked",
+        "reported_egg_to_hatch_delay": "10s",
+        "reported_set_interval": "35s",
+        "imprint_target": "closest player per current guides",
+        "imprint_damage_increase": "+1000%",
+        "imprint_duration": "3m or until target death",
+        "hungry_delay": "10s",
+        "tantrum_chance": "20% per melee according to guides",
+        "tantrum_damage_and_speed": "+50% for10s or until fed",
+        "source_npc_ids": null
+      },
+      "evidence": ["wowhead_cata_alysrazor_2024", "icy_veins_cata_alysrazor_2024"],
+      "status": "qualitative_and_reported_counts_only_exact_target_feeding_and_scaling_blocked"
+    },
+    {
+      "key": "plump_lava_worms",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Guides report rotating cone control by Plump Lava Worms, with Gushing Wound and Lava Spew creating ground-team constraints.",
+      "values": {
+        "npc_historical": 53520,
+        "aura_historical": 99327,
+        "reported_count_normal": 4,
+        "reported_count_heroic": 2,
+        "gushing_wound_cone": "60 degrees",
+        "gushing_wound_interval": "6s",
+        "lava_spew_range": "18yd reported",
+        "damage_table": null,
+        "spawn_geometry": null
+      },
+      "evidence": ["wowhead_cata_alysrazor_2024", "icy_veins_cata_alysrazor_2024", "repo_firelands_sql_alysrazor"],
+      "status": "identity_and_qualitative_behavior_confirmed_count_geometry_and_scaling_blocked"
+    },
+    {
+      "key": "flight_feathers_and_rings",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Up to three Molten Feathers are reported; the third grants Wings of Flame. Flight players collect rings to refresh flight and build Blazing Power.",
+      "values": {
+        "feathers_for_wings": 3,
+        "reported_wings_duration": "30s",
+        "reported_ring_open_window": "3s",
+        "reported_ring_refresh": true,
+        "reported_blazing_power_per_ring": 1,
+        "reported_resource_restore_per_ring": "5% class resource",
+        "ring_geometry": null,
+        "flight_altitude": null,
+        "arena_bounds": null,
+        "flight_eligibility_spell_ids": null
+      },
+      "evidence": ["wowhead_cata_alysrazor_2024", "icy_veins_cata_alysrazor_2024", "warcraft_tavern_cata_alysrazor_2024"],
+      "status": "reported_relationships_confirmed_geometry_altitude_resource_and_runtime_rules_blocked"
+    },
+    {
+      "key": "blazing_power_and_alysras_razor",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Blazing Power is reported as haste per stack up to 25 stacks; the cap grants Alysra's Razor critical-strike benefit.",
+      "values": {
+        "haste_per_stack": "8%",
+        "stack_cap": 25,
+        "reported_razor_critical_delta": "+75%",
+        "reported_razor_duration": "40s",
+        "refreshes_with_rings": true,
+        "resource_type": null,
+        "spell_ids": null
+      },
+      "evidence": ["wowhead_cata_alysrazor_2024", "icy_veins_cata_alysrazor_2024", "warcraft_tavern_cata_alysrazor_2024"],
+      "status": "guide_observation_not_dbc_or_mode_frozen"
+    },
+    {
+      "key": "phase_two_vortex_and_tornadoes",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Phase 2 is reported to create a Fiery Vortex followed by five Fiery Tornados in an outer ring; current Classic guidance describes slower tornado behavior.",
+      "values": {
+        "reported_phase_two_entry": "after Phase 1 interval; exact duration conflicts",
+        "wings_removed": true,
+        "harsh_winds_spell_id": null,
+        "vortex_inner_range": "15yd reported",
+        "vortex_inner_tick": "30k fire every0.5s reported",
+        "vortex_outer_damage": "10k fire per second reported",
+        "reported_tornado_count": 5,
+        "reported_tornado_delay": "10s",
+        "reported_tornado_duration": "20s",
+        "tornado_range": "15-60yd reported",
+        "tornado_damage_normal": 25000,
+        "tornado_damage_heroic": 70000,
+        "tornado_spell_ids_historical": [53698, 99817],
+        "path_speed_altitude_collision": null
+      },
+      "evidence": ["wowhead_cata_alysrazor_2024", "icy_veins_cata_alysrazor_2024", "repo_firelands_sql_alysrazor"],
+      "status": "reported_counts_and_relationships_only_exact_path_speed_altitude_damage_and_targets_blocked"
+    },
+    {
+      "key": "phase_three_burnout_energy_and_clawshapers",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "After the tornado phase, guides report Burnout, a Spark, and two Blazing Talon Clawshapers whose Ignition restores Alysrazor's energy unless interrupted.",
+      "values": {
+        "reported_phase_two_duration": "30s",
+        "burnout_damage_taken_delta": "+50%",
+        "clawshaper_count": 2,
+        "reported_clawshaper_spawn_delay": "5s after crash",
+        "ignition_energy_restore": "1 Molten Power per second reported",
+        "spark_restore_timing": "conflicting sources; about30s narrative",
+        "reported_phase_max": "34s",
+        "clawshaper_npc_historical": 53734,
+        "resource_power_type": null,
+        "spark_spell_id": null,
+        "ignition_spell_id": null
+      },
+      "evidence": ["wowhead_cata_alysrazor_2024", "icy_veins_cata_alysrazor_2024", "repo_firelands_sql_alysrazor"],
+      "status": "guide_flow_only_energy_values_spell_ids_and_interrupt_rules_blocked"
+    },
+    {
+      "key": "phase_four_ground_burn",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "At 50 reported Molten Power, Alysrazor becomes grounded and uses Blazing Claw, Blazing Buffet, and Full Power; a third cycle is reported as permanent ground.",
+      "values": {
+        "entry_energy": 50,
+        "blazing_claw_interval": "1.5s reported",
+        "blazing_claw_damage_normal": 90000,
+        "blazing_claw_damage_heroic": 125000,
+        "claw_vulnerability": "10% physical/fire damage taken for15s per stack reported",
+        "ignited_restore": "2 Molten Power per second reported",
+        "blazing_buffet_interval": "1s",
+        "blazing_buffet_damage_normal": 12000,
+        "blazing_buffet_damage_heroic": 17000,
+        "full_power_time": "25s reported",
+        "full_power_damage_normal": 45000,
+        "full_power_damage_heroic": 70000,
+        "full_power_knockback": "150yd reported",
+        "target_range_stack_reset": null
+      },
+      "evidence": ["wowhead_cata_alysrazor_2024", "icy_veins_cata_alysrazor_2024"],
+      "status": "reported_values_not_mode_or_runtime_frozen"
+    },
+    {
+      "key": "heroic_molten_meteor",
+      "modes": ["10H", "25H"],
+      "summary": "Heroic guidance reports Molten Meteors during Phase 1; the meteor rolls, splits against the wall, and provides a cover/kill mechanic for Firestorm.",
+      "values": {
+        "heroic_only_reported": true,
+        "spell_id": null,
+        "spawn_timing": null,
+        "roll_path": null,
+        "wall_split_count": null,
+        "cover_rule": null,
+        "target_range_damage": null
+      },
+      "evidence": ["warcraft_tavern_cata_alysrazor_2024"],
+      "status": "presence_reported_identity_and_all_execution_fields_blocked"
+    },
+    {
+      "key": "local_trash_only_timer_evidence",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "The local C++ proves only Alysrazor trash/cosmetic behavior; these timers must not be substituted for boss phase timers.",
+      "values": {
+        "harbinger_npc": 53793,
+        "harbinger_fire_it_up": 100093,
+        "harbinger_fieroblast_trash": 100094,
+        "harbinger_fieroclast_barrage": 100095,
+        "harbinger_fire_channeling": 100109,
+        "fieroblast_first_delay": "1ms",
+        "fieroblast_reschedule": "500ms, gated by casting state",
+        "fieroclast_first_delay": "6s",
+        "fieroclast_random_repeat": "9-12s",
+        "monstrosity_start_spitting": "6s",
+        "monstrosity_continue_spitting": "9s",
+        "egg_pile": 53795,
+        "molten_egg": 53914,
+        "hatchling": 53794,
+        "hatchling_summon_spell": 100096,
+        "egg_selection_radius": "20yd",
+        "egg_hidden_duration": "5s",
+        "egg_pile_repeat": "random6-10s",
+        "blazing_monstrosity_left_right": [53786, 53791],
+        "fiery_tornado_historical": [53698, 99817],
+        "plump_lava_worm_historical": [53520, 99327]
+      },
+      "evidence": ["repo_firelands_alysrazor_audit", "repo_firelands_sql_alysrazor"],
+      "status": "repository_confirmed_trash_only_not_boss_behavior"
+    }
+  ],
+  "known_behavior_summary": "Current guides agree on the flight/ground concept, four-phase loop, rings, Blazing Power, and grounded final burn. They disagree or omit build-sensitive timing, scaling, altitude, target, and modifier-state details. The local checkout has no Alysrazor boss AI, so no guide mechanic is executable evidence.",
+  "phase_reset_credit": [
+    {
+      "key": "unlock",
+      "behavior": "Firelands is a seven-boss 10/25 normal/heroic raid; no Alysrazor-specific unlock event is implemented locally.",
+      "status": "runtime_unlock_blocked"
+    },
+    {
+      "key": "engage",
+      "behavior": "Header/instance mapping identifies entry52530 and slot DATA_ALYSRAZOR, but the loaded script contains no boss AI or engage handler.",
+      "status": "identity_confirmed_hard_repository_blocker"
+    },
+    {
+      "key": "phase_loop",
+      "behavior": "Guide-described Phase 1 flight, Phase 2 tornado, Phase 3 Burnout, and Phase 4 ground loop; no local transition handler.",
+      "status": "fidelity_blocked"
+    },
+    {
+      "key": "reset",
+      "behavior": "No Alysrazor Reset/EnterEvade/add-cleanup implementation; only trash scripts have local respawn/despawn behavior.",
+      "status": "hard_repository_blocker"
+    },
+    {
+      "key": "completion_credit",
+      "behavior": "No local Alysrazor JustDied, loot, achievement, lockout, or player-credit handler; historical encounter row1206 is identity only.",
+      "status": "fidelity_blocked"
+    },
+    {
+      "key": "difficulty_delta",
+      "behavior": "All four endpoints are in scope. Heroic Hatchling/Meteor/worm deltas are guide observations; exact normal/heroic and 10/25 coefficients are unresolved.",
+      "status": "fidelity_blocked"
+    },
+    {
+      "key": "modifier_delta",
+      "behavior": "Official announcement supplies -30% health/-30% damage for all Firelands bosses and other enemies with optional deactivation; no local aura/NPC/default-state implementation.",
+      "status": "official_scope_confirmed_runtime_blocked"
+    },
+    {
+      "key": "db_identity",
+      "behavior": "Historical rows cross-reference Alysrazor52530/54044/54045/54046, map720, encounter1206, trash IDs, and historical Vortex/Tornado/Worm/Clawshaper identities.",
+      "status": "identity_confirmed_current_runtime_unresolved"
+    }
+  ],
+  "unresolved": [
+    "Exact 4.4.2 client/DBC build and Firelands hotfix cutoff",
+    "Power of Stormrage aura/NPC IDs, default state, persistence, and runtime toggle",
+    "Whether the current guide health values already include the official modifier",
+    "All four-mode health/damage coefficients and timer jitter",
+    "Opening Firestorm/Volcanic Fire IDs, timing, target, range, and reset",
+    "Phase 1 duration and the conflicting normal/heroic cycle reports",
+    "Initiate spawn cadence, positions, counts, Brushfire/Fieroblast targeting, and scaling",
+    "Hatchling counts, health, hatch timing, Imprint target and duration",
+    "Hungry, Tantrum, Satiated, feeding, and worm interaction semantics",
+    "Worm count, spawn geometry, cone/falloff rules, and scaling",
+    "Feather stack behavior, flight duration, ring geometry, timing, altitude, and arena bounds",
+    "Blazing Power/Razor resource, cap, restoration, duration, and target rules",
+    "Phase 2 entry, Harsh Winds/Vortex filters, and damage/range values",
+    "Fiery Tornado path, count, speed, altitude, collision, and damage",
+    "Phase 3 Burnout, Spark, Molten Power, Clawshaper spawn, and Ignition implementation",
+    "Clawshaper health, interrupt behavior, energy amount, and phase length",
+    "Phase 4 Claw, vulnerability stacks, Buffet, Full Power, knockback, and energy loop",
+    "Heroic Molten Meteor identity, timing, roll/split/cover mechanics, and scaling",
+    "Number of cycles, third-cycle permanent-ground behavior, and soft-enrage state",
+    "Local absence of boss AI means no executable phase/target/reset/add lifecycle",
+    "Wipe reset, spawn/door state, unlock, lockout, loot, achievement, and player credit",
+    "Historical difficulty-entry-to-mode mapping and modifier interaction are not current-build proof"
+  ]
+}

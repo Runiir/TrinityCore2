@@ -1,0 +1,363 @@
+{
+  "schema_version": 1,
+  "contract_schema": "cata_raid_encounter_contract_v1",
+  "raid": "firelands",
+  "boss_slug": "shannox",
+  "modes": ["10N", "10H", "25N", "25H"],
+  "fidelity_state": "fidelity_blocked",
+  "dossier_path": "docs/bot_raids/strategies/t12/firelands/shannox.md",
+  "ledger_path": "experiments/configs/cata_raid_encounters/firelands/shannox_ledger_v1.json",
+  "unresolved_material_count": 18,
+  "encounter": "shannox",
+  "instance": "firelands",
+  "scope": ["10N", "10H", "25N", "25H"],
+  "research_state": "phase0_researched_not_live_validated",
+  "evidence_policy": "Use current Cataclysm Classic sources for observations, official Blizzard material for Firelands release/modifier state, and repository/SQL for executable or identity claims. Keep guide-versus-source conflicts and build/hotfix uncertainty fidelity_blocked.",
+  "source_refs": [
+    "wowhead_cata_shannox_2024",
+    "icy_veins_cata_shannox_2024",
+    "icy_veins_shannox_historical",
+    "blizzard_firelands_modifier_2025",
+    "blizzard_441_firelands_notes",
+    "blizzard_442_notes_2025",
+    "wowhead_shannox_spell_identity",
+    "repo_shannox_script",
+    "repo_firelands_header_instance",
+    "repo_shannox_sql_identity"
+  ],
+  "mode_matrix": {
+    "10N": {
+      "heroic": false,
+      "boss_health_current_guide": 24000000,
+      "riplimb_health_current_guide": 8200000,
+      "rageface_health_current_guide": 8200000,
+      "separation_distance_current_guide": "60yd",
+      "dogs_at_boss_30_percent": "normal sources require both dogs dead before 30%",
+      "official_modifier_at_442_cutoff": "Power of Stormrage announced for all Firelands bosses/enemies; 30% health and damage reduction; exact runtime state unresolved"
+    },
+    "10H": {
+      "heroic": true,
+      "boss_health_current_guide": 33700000,
+      "riplimb_health_current_guide": 4100000,
+      "rageface_health_current_guide": 36500000,
+      "separation_distance_current_guide": "80yd",
+      "dogs_at_boss_30_percent": "current guide says no dog 30% enrage and Rageface may resurrect",
+      "official_modifier_at_442_cutoff": "Power of Stormrage announced for all Firelands bosses/enemies; 30% health and damage reduction; exact runtime state unresolved"
+    },
+    "25N": {
+      "heroic": false,
+      "boss_health_current_guide": 81600000,
+      "riplimb_health_current_guide": 25300000,
+      "rageface_health_current_guide": 25300000,
+      "separation_distance_current_guide": "60yd",
+      "dogs_at_boss_30_percent": "normal sources require both dogs dead before 30%",
+      "official_modifier_at_442_cutoff": "Power of Stormrage announced for all Firelands bosses/enemies; 30% health and damage reduction; exact runtime state unresolved"
+    },
+    "25H": {
+      "heroic": true,
+      "boss_health_current_guide": 114200000,
+      "riplimb_health_current_guide": 14300000,
+      "rageface_health_current_guide": 127800000,
+      "separation_distance_current_guide": "80yd",
+      "dogs_at_boss_30_percent": "current guide says no dog 30% enrage and Rageface may resurrect",
+      "official_modifier_at_442_cutoff": "Power of Stormrage announced for all Firelands bosses/enemies; 30% health and damage reduction; exact runtime state unresolved"
+    }
+  },
+  "roles": {
+    "tanks": [
+      "keep Shannox and Riplimb separated without exceeding the mode distance gate",
+      "face Arcing Slash away from the raid and reset Jagged Tear during spear returns",
+      "route Riplimb through Crystal Prison when a reset window is needed",
+      "kite dogs and preserve healer range without triggering Separation Anxiety"
+    ],
+    "healers": [
+      "cover both tanks through Jagged Tear and pet death Frenzy",
+      "stabilize Face Rage targets and trap mistakes",
+      "prepare raid cooldowns for Magma Rupture in the final burn"
+    ],
+    "raid": [
+      "clear a large patrol area before pull",
+      "avoid freshly thrown traps and spear impact/fire patches",
+      "keep dogs within the distance gate and do not accidentally kill pets before the selected transition",
+      "break Face Rage with the validated single-hit threshold"
+    ],
+    "dps": [
+      "balance Shannox and pets toward the selected normal/heroic transition",
+      "break Face Rage quickly and damage Crystal Prisons only when required",
+      "save offensive cooldowns for the two-pet Frenzy/final Magma Rupture window"
+    ]
+  },
+  "gates": [
+    "trash_clear_and_patrol_activation",
+    "separation_anxiety_distance",
+    "taunt_immune_jagged_tear_management",
+    "spear_landing_and_riplimb_return",
+    "trap_arming_and_target_priority",
+    "rageface_face_rage_break",
+    "normal_pet_death_before_30_percent",
+    "heroic_pet_behavior_delta",
+    "two_pet_frenzy",
+    "magma_rupture_final_burn",
+    "power_of_stormrage_modifier_choice"
+  ],
+  "heroic_gates": [
+    "separation_distance_80yd_reported_but_not_local",
+    "no_dog_30_percent_enrage_and_rageface_resurrection_reported",
+    "heroic_face_rage_threshold_and_pet_health_scaling",
+    "heroic_magma_rupture_and_trap_damage_scaling"
+  ],
+  "mechanics": [
+    {
+      "key": "official_442_power_of_stormrage",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Blizzard announced a 30% reduction to health and damage of all Firelands bosses and other enemies, via Power of Stormrage, with optional removal by General Taldris Moonfall.",
+      "values": {
+        "health_multiplier_if_active": 0.7,
+        "damage_multiplier_if_active": 0.7,
+        "official_spell_name": "Power of Stormrage",
+        "official_aura_id": null,
+        "toggle_npc": "General Taldris Moonfall",
+        "toggle_npc_id": null,
+        "runtime_default_exact": null,
+        "guide_value_modifier_state": "unspecified",
+        "historical_shannox_hotfix_stacking": "not_selected"
+      },
+      "evidence": ["blizzard_firelands_modifier_2025", "blizzard_442_notes_2025"],
+      "status": "official_scope_confirmed_runtime_identity_default_and_persistence_blocked"
+    },
+    {
+      "key": "patrol_activation",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Current guides report Shannox appearing after enough trash and patrolling a circular front-area route; the local instance has no activation threshold or patrol handler.",
+      "values": {
+        "boss_entry": 53691,
+        "controller_entry_historical": 53910,
+        "trash_threshold": null,
+        "patrol_route": "circular front Firelands area per guide",
+        "pull_location": "raid-selected cleared area per guide",
+        "local_activation_handler": false
+      },
+      "evidence": ["wowhead_cata_shannox_2024", "icy_veins_cata_shannox_2024", "repo_shannox_script", "repo_shannox_sql_identity"],
+      "status": "patrol_shape_observed_threshold_and_runtime_activation_blocked"
+    },
+    {
+      "key": "separation_anxiety",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Too much distance between Shannox and pets applies a 4-second 100% damage/attack-speed enrage; current guide reports 60 yards normal and 80 heroic.",
+      "values": {
+        "spell": 99835,
+        "duration": "4s",
+        "damage_and_attack_speed_delta": "+100%",
+        "normal_distance_current_guide": "60yd",
+        "heroic_distance_current_guide": "80yd",
+        "icy_veins_distance": "60yd; heroic value unspecified",
+        "local_distance_handler": false
+      },
+      "evidence": ["wowhead_cata_shannox_2024", "wowhead_shannox_spell_identity", "icy_veins_cata_shannox_2024", "repo_shannox_script"],
+      "status": "spell_effect_confirmed_distance_and_local_application_blocked"
+    },
+    {
+      "key": "arcing_slash_and_jagged_tear",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Shannox's spear-bearing melee replacement is a 125% frontal cone applying stacking Jagged Tear; local and guide cadences differ.",
+      "values": {
+        "arcing_slash_spell": 99931,
+        "arcing_slash_weapon_percent": 125,
+        "arcing_slash_cone": "120deg/10yd guide/page presentation",
+        "jagged_tear_spell": 99936,
+        "jagged_tear_page_damage": "8000 Physical every3s for30s; stacks",
+        "jagged_tear_guide_damage": "about6800 every3s for30s",
+        "local_first_ms": 6000,
+        "local_repeat_ms": 12000,
+        "guide_interval": "about10s",
+        "taunt_immune": true
+      },
+      "evidence": ["wowhead_cata_shannox_2024", "wowhead_shannox_spell_identity", "icy_veins_cata_shannox_2024", "repo_shannox_script"],
+      "status": "identity_and_relationship_confirmed_coefficients_and_cadence_blocked"
+    },
+    {
+      "key": "hurl_spear_and_magma_rupture",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Hurl Spear creates the tank reset window and fire eruptions; when Riplimb is dead the local script substitutes Magma Rupture.",
+      "values": {
+        "hurl_spear_spell": 100002,
+        "hurl_cast_time": "2s",
+        "hurl_page_range": "117000-123000 Physical",
+        "hurl_current_guide_table": "99450-104550 Physical",
+        "hurl_current_guide_target": "random area/player location",
+        "hurl_local_target": "current victim via DoCastVictim",
+        "local_first_ms": 30000,
+        "local_repeat_ms": 45000,
+        "guide_interval": "about45s",
+        "magma_flare_spell": 100495,
+        "magma_flare_guide_example": "about40000 Fire within50yd",
+        "magma_rupture_local_spell": 99840,
+        "magma_rupture_page_spell": 99842,
+        "magma_rupture_page_range": "118750-131250 Fire",
+        "magma_rupture_guide_examples": "about70000 normal/about105000 heroic eruptions"
+      },
+      "evidence": ["wowhead_cata_shannox_2024", "wowhead_shannox_spell_identity", "icy_veins_cata_shannox_2024", "repo_shannox_script"],
+      "status": "local_branch_confirmed_guide_target_and_spell_value_conflicts_blocked"
+    },
+    {
+      "key": "traps",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Shannox throws Immolation and Crystal Prison traps at random players; local trap AI arms after 2 seconds and triggers on nearby dogs/player.",
+      "values": {
+        "immolation_throw_spell": 99839,
+        "immolation_effect_spell": 99838,
+        "immolation_npc": 53724,
+        "crystal_throw_spell": 99836,
+        "crystal_effect_spell": 99837,
+        "crystal_npc": 53713,
+        "local_immolation_first_ms": 8000,
+        "local_crystal_first_ms": 18000,
+        "local_repeat_ms": 25000,
+        "current_guide_interval": "about25s",
+        "random_throw_target": true,
+        "local_arm_ms": 2000,
+        "local_poll_ms": 500,
+        "local_trigger_range": "2.5yd",
+        "local_priority": ["Riplimb", "Rageface", "nearest player"],
+        "immolation_page_duration": "9s",
+        "immolation_page_periodic": "28500-31500 Fire every3s",
+        "immolation_damage_taken_delta": "+40%",
+        "crystal_current_guide_health": "about2.8M",
+        "dog_trap_duration_current_guide": "about10s",
+        "wary_duration_current_guide": "25s"
+      },
+      "evidence": ["wowhead_cata_shannox_2024", "wowhead_shannox_spell_identity", "icy_veins_cata_shannox_2024", "repo_shannox_script"],
+      "status": "local_schedule_and_target_priority_confirmed_retail_damage_health_wary_and_duration_blocked"
+    },
+    {
+      "key": "riplimb_and_spear_return",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Riplimb is a taunt-immune tanked pet that applies Jagged Tear and is reported to fetch the spear after Hurl Spear.",
+      "values": {
+        "npc": 53694,
+        "limb_rip_spell": 99832,
+        "local_first_ms": 6000,
+        "local_repeat_ms": 12000,
+        "guide_interval": "about10s",
+        "spear_fetch": "guide-described; no explicit local movement handler",
+        "dogged_determination": "guide-described movement slow floor/acceleration; spell ID not frozen",
+        "wary": "guide-described trap immunity after dog trap; local aura absent",
+        "spear_npc_historical": 53752,
+        "spear_variant_historical": 54112
+      },
+      "evidence": ["wowhead_cata_shannox_2024", "icy_veins_cata_shannox_2024", "wowhead_shannox_spell_identity", "repo_shannox_script", "repo_shannox_sql_identity"],
+      "status": "identity_and_qualitative_flow_confirmed_return_and_cadence_blocked"
+    },
+    {
+      "key": "rageface_and_face_rage",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Rageface has no normal threat table, switches random victims, and periodically channels Face Rage until a large hit breaks it.",
+      "values": {
+        "npc": 53695,
+        "local_face_rage_spell": 100129,
+        "current_wowhead_face_rage_spell": 99947,
+        "local_target_switch_first_ms": 5000,
+        "local_target_switch_repeat_ms": 10000,
+        "local_face_rage_first_ms": 20000,
+        "local_face_rage_repeat_ms": 30000,
+        "current_guide_target_period": "about15s",
+        "current_guide_face_rage_interval": "about45s",
+        "face_rage_tick": "about8000 true damage every0.5s, ramping",
+        "break_threshold_10_player": 30000,
+        "break_threshold_25_player": 45000,
+        "guaranteed_critical_while_channeling": true,
+        "feeding_frenzy_spell": 100656
+      },
+      "evidence": ["wowhead_cata_shannox_2024", "icy_veins_cata_shannox_2024", "wowhead_shannox_spell_identity", "repo_shannox_script"],
+      "status": "target_relationship_and_break_rule_confirmed_local_timer_and_spell_identity_conflict_blocked"
+    },
+    {
+      "key": "pet_death_phase_and_difficulty",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Pet deaths increase Shannox pressure; normal sources require both dogs dead before 30%, while current heroic guidance describes no 30% dog enrage and possible Rageface resurrection.",
+      "values": {
+        "frenzy_current_wowhead": "+40% attack speed/+25% Physical damage for5m per dog, stacks",
+        "frenzy_current_icy": "different +30% damage/attack-speed description",
+        "frenzy_local_spell": 26662,
+        "local_pet_death_threshold": 2,
+        "frenzied_devotion_spell_current_page": 100064,
+        "local_30_percent_handler": false,
+        "heroic_rageface_resurrection": "current guide observation",
+        "phase_two_magma_when_riplimb_dead": true,
+        "local_pet_despawn_after_boss_death_ms": 5000
+      },
+      "evidence": ["wowhead_cata_shannox_2024", "icy_veins_cata_shannox_2024", "wowhead_shannox_spell_identity", "repo_shannox_script"],
+      "status": "local_pet_action_confirmed_normal_heroic_phase_and_aura_semantics_blocked"
+    }
+  ],
+  "timer_contract": {
+    "status": "fidelity_blocked",
+    "repository_timers": [
+      {"key": "arcing_slash", "first": "6s", "repeat": "12s", "modes": "all", "status": "local_source_fact"},
+      {"key": "immolation_trap_throw", "first": "8s", "repeat": "25s", "modes": "all", "status": "local_source_fact_random_target"},
+      {"key": "crystal_prison_throw", "first": "18s", "repeat": "25s", "modes": "all", "status": "local_source_fact_random_target"},
+      {"key": "hurl_spear_or_magma", "first": "30s", "repeat": "45s", "modes": "all", "status": "local_source_fact_target_branch"},
+      {"key": "berserk", "value": "10m", "modes": "all", "status": "local_source_fact"},
+      {"key": "riplimb_limb_rip", "first": "6s", "repeat": "12s", "modes": "all", "status": "local_source_fact"},
+      {"key": "rageface_target_switch", "first": "5s", "repeat": "10s", "modes": "all", "status": "local_source_fact_random"},
+      {"key": "rageface_face_rage", "first": "20s", "repeat": "30s", "modes": "all", "status": "local_source_fact_random"},
+      {"key": "trap_arm", "value": "2s", "modes": "all", "status": "local_source_fact"},
+      {"key": "trap_trigger_poll", "value": "500ms", "modes": "all", "status": "local_source_fact"},
+      {"key": "trap_despawn_after_trigger", "value": "250ms", "modes": "all", "status": "local_source_fact"}
+    ],
+    "guide_timers": [
+      {"key": "arcing_slash", "value": "about10s", "modes": "all", "status": "conflicts_with_local"},
+      {"key": "hurl_spear", "value": "about45s", "modes": "all", "status": "agrees_with_local_repeat_target_conflict"},
+      {"key": "face_rage", "value": "about45s", "modes": "all", "status": "conflicts_with_local"},
+      {"key": "traps", "value": "about25s", "modes": "all", "status": "agrees_with_local_repeat"}
+    ]
+  },
+  "lifecycle": {
+    "activation": "Guide-described trash threshold/patrol; no local threshold/controller event.",
+    "engage": "Local boss engages both dogs and schedules encounter events.",
+    "reset": "Local Reset clears Frenzy state and disengages; EnterEvade tells dogs to evade, moves boss home, despawns summons, and calls _DespawnAtEvade.",
+    "death": "Local JustDied calls generic _JustDied, disengages, despawns summons, and asks both dogs to despawn after 5 seconds.",
+    "phase": "No local 30% health phase handler; pet death branches Hurl to local Magma Rupture and generic Berserk after two deaths.",
+    "unlock": "No local Shannox unlock branch; guide says enough trash activates patrol.",
+    "door": {"gameobject_entry": null, "instance_mapping": "no Shannox-specific door in firelands.h/instance_firelands.cpp", "runtime_state": null},
+    "completion_credit": "Generic instance boss-state/encounter framework only; retail loot, lockout, achievement, and recipient semantics unresolved.",
+    "status": "local_script_lifecycle_present_but_4_4_2_retail_delta_blocked"
+  },
+  "repository_audit": {
+    "revision": "8eb54f0160b3c3d986ed944f9d64ebf83922c0f8",
+    "map": 720,
+    "encounter_count": 7,
+    "data_id": "DATA_SHANNOX",
+    "boss_entry": 53691,
+    "dog_entries": {"riplimb": 53694, "rageface": 53695},
+    "trap_entries": {"crystal_prison": 53713, "immolation": 53724},
+    "script_path": "src/server/scripts/Kalimdor/Firelands/boss_shannox.cpp",
+    "boss_script_present": true,
+    "loader_registration_present": true,
+    "instance_object_mapping_present": true,
+    "patrol_activation_present": false,
+    "separation_handler_present": false,
+    "historical_encounter_id": 1205,
+    "historical_identity_only": true
+  },
+  "unresolved": [
+    "4.4.2 client/DBC build and hotfix cutoff",
+    "Power of Stormrage aura/NPC IDs, default state, persistence, and runtime toggle",
+    "whether current guide health/pet values include the modifier",
+    "trash threshold, Shannox Controller activation, patrol route, leash, and persistence",
+    "Separation Anxiety distance delta (60 versus80 heroic) and runtime refresh",
+    "Hurl target conflict (local victim versus guide area), spear fetch, landing, deluge, and eruption variants",
+    "Magma Flare/Magma Rupture ID and four-mode coefficients",
+    "Arcing/Limb Rip cadence conflict and Jagged Tear coefficient",
+    "taunt immunity and exact tank reset/spear handoff timing",
+    "Dogged Determination, Wary, crystal health and dog/player trap duration",
+    "Rageface local/current spell IDs and target/cadence conflict",
+    "Face Rage break/Feeding Frenzy mode semantics and heroic resurrection",
+    "normal Frenzied Devotion versus heroic pet behavior and local missing 30% branch",
+    "local generic Berserk versus retail Frenzy aura values",
+    "all four-mode pet and spell scaling",
+    "wipe cleanup and patrol reactivation",
+    "retail lockout, loot, achievement, and player credit",
+    "historical DB variant-to-mode mapping"
+  ]
+}

@@ -1,0 +1,342 @@
+{
+  "schema_version": 1,
+  "contract_schema": "cata_raid_encounter_contract_v1",
+  "raid": "firelands",
+  "boss_slug": "bethtilac",
+  "modes": ["10N", "10H", "25N", "25H"],
+  "fidelity_state": "fidelity_blocked",
+  "dossier_path": "docs/bot_raids/strategies/t12/firelands/bethtilac.md",
+  "ledger_path": "experiments/configs/cata_raid_encounters/firelands/bethtilac_ledger_v1.json",
+  "unresolved_material_count": 18,
+  "encounter": "bethtilac",
+  "instance": "firelands",
+  "scope": ["10N", "10H", "25N", "25H"],
+  "research_state": "phase0_researched_not_live_validated",
+  "evidence_policy": "Use current Cataclysm Classic sources for observations, official Blizzard material for the 4.4.2 modifier and release scope, and repository/SQL only for executable or identity claims. Preserve source conflicts and unknown build/hotfix state as fidelity_blocked.",
+  "source_refs": [
+    "wowhead_cata_beth_2024",
+    "icy_veins_cata_beth_2024",
+    "blizzard_firelands_modifier_2025",
+    "blizzard_441_firelands_notes",
+    "blizzard_442_notes_2025",
+    "blizzard_42_beth_hotfix_historical",
+    "wowhead_beth_identity",
+    "repo_firelands_beth_absence",
+    "repo_firelands_header_instance",
+    "repo_firelands_sql_identity"
+  ],
+  "mode_matrix": {
+    "10N": {
+      "heroic": false,
+      "boss_health_current_guide": 20900000,
+      "boss_health_status": "guide_observation_modifier_state_unspecified",
+      "heroic_delta": "not_applicable",
+      "official_modifier_at_442_cutoff": "Power of Stormrage announced for all Firelands bosses/enemies; 30% health and damage reduction; exact runtime aura state unresolved"
+    },
+    "10H": {
+      "heroic": true,
+      "boss_health_current_guide": 32800000,
+      "boss_health_status": "guide_observation_modifier_state_unspecified",
+      "heroic_delta": "higher health/damage; heroic Drone Fixate and Engorged Broodling behavior reported; exact mode table blocked",
+      "official_modifier_at_442_cutoff": "Power of Stormrage announced for all Firelands bosses/enemies; 30% health and damage reduction; exact runtime aura state unresolved"
+    },
+    "25N": {
+      "heroic": false,
+      "boss_health_current_guide": 62600000,
+      "boss_health_status": "guide_observation_modifier_state_unspecified",
+      "heroic_delta": "not_applicable",
+      "official_modifier_at_442_cutoff": "Power of Stormrage announced for all Firelands bosses/enemies; 30% health and damage reduction; exact runtime aura state unresolved"
+    },
+    "25H": {
+      "heroic": true,
+      "boss_health_current_guide": 98500000,
+      "boss_health_status": "guide_observation_modifier_state_unspecified",
+      "heroic_delta": "higher health/damage; heroic Drone Fixate and Engorged Broodling behavior reported; exact mode table blocked",
+      "official_modifier_at_442_cutoff": "Power of Stormrage announced for all Firelands bosses/enemies; 30% health and damage reduction; exact runtime aura state unresolved"
+    }
+  },
+  "roles": {
+    "tanks": [
+      "assign a web tank for Beth'tilac and a ground tank for Drones/Spinners",
+      "face Boiling Spatter away from the raid",
+      "bring hanging Spinners down and manage Widow's Kiss swaps",
+      "prevent Drones from reaching zero energy and siphoning Beth when the source behavior is validated"
+    ],
+    "healers": [
+      "cover separate web and ground groups",
+      "stabilize Venom Rain/Ember Flare and add damage",
+      "keep Broodling soakers and Fixate targets alive in heroic",
+      "prepare for Smoldering Devastation and Phase 2 Frenzy pressure"
+    ],
+    "raid": [
+      "use filaments to enter/leave the web and leave before devastation",
+      "move from Meteor Burn and preserve safe holes in the web",
+      "stop Spiderlings before Beth or a Drone can Consume them",
+      "keep ground lanes and web impacts separated"
+    ],
+    "dps": [
+      "prioritize Spiderlings, then Drones and grounded Spinners",
+      "handle heroic Fixate/Broodling assignments only after target semantics are validated",
+      "burn Beth during the Phase 2 soft-enrage window"
+    ]
+  },
+  "gates": [
+    "web_ground_realm_split",
+    "filament_entry_and_exit",
+    "fire_energy_drain",
+    "smoldering_devastation_web_exit",
+    "spinner_control",
+    "spiderling_and_drone_consume_prevention",
+    "drone_energy_siphon_prevention",
+    "meteor_burn_web_hole",
+    "three_devastations_to_phase_two",
+    "phase_two_frenzy_and_widows_kiss",
+    "power_of_stormrage_modifier_choice"
+  ],
+  "heroic_gates": [
+    "heroic_drone_fixate",
+    "heroic_engorged_broodling_handling",
+    "heroic_spinner_ability_is_unresolved_and_must_not_be_assumed"
+  ],
+  "mechanics": [
+    {
+      "key": "official_442_power_of_stormrage",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Blizzard announced a 30% reduction to health and damage of all Firelands bosses and other enemies at 4.4.2 launch, implemented by Power of Stormrage; General Taldris Moonfall can deactivate it.",
+      "values": {
+        "health_multiplier_if_active": 0.7,
+        "damage_multiplier_if_active": 0.7,
+        "official_spell_name": "Power of Stormrage",
+        "official_aura_id": null,
+        "toggle_npc": "General Taldris Moonfall",
+        "toggle_npc_id": null,
+        "default_state_exact": null,
+        "guide_health_modifier_state": "unspecified",
+        "historical_15_percent_beth_hotfix": "not_applicable_to_442_modifier_and_must_not_be_stacked"
+      },
+      "evidence": ["blizzard_firelands_modifier_2025", "blizzard_442_notes_2025"],
+      "status": "official_scope_confirmed_ids_default_persistence_and_runtime_application_blocked"
+    },
+    {
+      "key": "web_ground_and_filaments",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Beth begins on the fiery web; groups split between web-level boss duty and ground-level add duty. Filaments move players between regions.",
+      "values": {
+        "web_group": "boss tank/healers/damage",
+        "ground_group": "add tank/healers/damage",
+        "filament_click_required": true,
+        "web_aura_id": null,
+        "ground_aura_id": null,
+        "player_assignment_count": null
+      },
+      "evidence": ["wowhead_cata_beth_2024", "icy_veins_cata_beth_2024", "repo_firelands_beth_absence"],
+      "status": "relationship_confirmed_executable_realm_and_target_rules_blocked"
+    },
+    {
+      "key": "fire_energy_and_smoldering_devastation",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Fire Energy drains; at zero Beth casts an 8-second lethal Smoldering Devastation. Three reported casts precede descent.",
+      "values": {
+        "spell": 99052,
+        "natural_drain": "1% per second (guide observation)",
+        "natural_full_to_empty": "about90s (guide observation)",
+        "cast_time_ms": 8000,
+        "damage_range": "380000-420000 Fire",
+        "reported_casts_before_phase_two": 3,
+        "drone_siphon_accelerates": true,
+        "energy_power_type_id": null
+      },
+      "evidence": ["wowhead_cata_beth_2024", "wowhead_beth_spell_smoldering_99052", "icy_veins_cata_beth_2024"],
+      "status": "spell_identity_and_qualitative_gate_confirmed_energy_event_reset_and_mode_scaling_blocked"
+    },
+    {
+      "key": "venom_rain_and_ember_flare",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Venom Rain pressures ground players while Beth is on the web; Ember Flare pressures web players.",
+      "values": {
+        "venom_rain_spell": 99333,
+        "venom_rain_interval": "about3s",
+        "venom_rain_page_range": "22874-26583 Fire",
+        "venom_rain_guide_examples": "about15000 normal/about25000 heroic",
+        "ember_flare_spell": 98934,
+        "ember_flare_interval": "about5-7s",
+        "ember_flare_guide_examples": "about18000 normal/about28000 heroic",
+        "suppression_rule": "web presence suppresses ground Venom Rain per current guide",
+        "target_filter_runtime": null
+      },
+      "evidence": ["wowhead_cata_beth_2024", "wowhead_beth_spell_venom_99333", "icy_veins_cata_beth_2024"],
+      "status": "relationship_confirmed_values_and_suppression_implementation_blocked"
+    },
+    {
+      "key": "meteor_burn",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Meteor Burn selects a web player, damages nearby players, and burns a hole in the web.",
+      "values": {
+        "spell": 99076,
+        "interval": "about25s",
+        "guide_damage": "about40000 Fire",
+        "guide_radius": "about7yd",
+        "target": "random web player",
+        "hole_persists": null,
+        "mode_scaling": null
+      },
+      "evidence": ["wowhead_cata_beth_2024", "wowhead_beth_spell_meteor_99076"],
+      "status": "qualitative_target_and_identity_confirmed_timer_geometry_and_scaling_blocked"
+    },
+    {
+      "key": "cinderweb_spinner",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Spinners descend on filaments at pull and after devastations; hanging Spinners cast Burning Acid until controlled.",
+      "values": {
+        "npc": 52524,
+        "burning_acid_spell": 98471,
+        "spawn_count": "about4-9",
+        "spawn_timing": "pull and after each devastation/about1.5m guide wording",
+        "burning_acid_interval": "2s cooldown/current page; guide says about2s",
+        "burning_acid_page_range": "30914-34862 Fire",
+        "burning_acid_target": "random player",
+        "filament_interaction": "clickable for web entry",
+        "heroic_fiery_web_spin": "historical-only conflict; not selected"
+      },
+      "evidence": ["wowhead_cata_beth_2024", "wowhead_beth_spell_burning_acid_98471", "repo_firelands_sql_identity"],
+      "status": "identity_and_qualitative_flow_confirmed_spawn_table_and_heroic_delta_blocked"
+    },
+    {
+      "key": "cinderweb_drone",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "A Drone appears about every 45 seconds; its energy, frontal cone, random acid, and Spiderling Consume create the ground priority.",
+      "values": {
+        "npc": 52581,
+        "boiling_spatter_spell": 99463,
+        "boiling_spatter_page_range": "76658-89089 Fire",
+        "burning_acid_spell": 99934,
+        "spawn_interval": "about45s",
+        "drone_energy_drain": "1% per second (guide observation)",
+        "drone_zero_action": "climbs and siphons Beth energy",
+        "consume_spell": 99304,
+        "consume_range": "about10yd",
+        "consume_heal": "20% maximum health",
+        "consume_stack_delta": "+20% damage and +20% movement speed per Spiderling",
+        "heroic_fixate": "random ground player for10s; 75% reduced Drone damage"
+      },
+      "evidence": ["wowhead_cata_beth_2024", "icy_veins_cata_beth_2024", "wowhead_beth_npc_52498", "repo_firelands_sql_identity"],
+      "status": "identity_and_relationship_confirmed_event_target_and_mode_scaling_blocked"
+    },
+    {
+      "key": "cinderweb_spiderling",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Spiderlings run from ground lanes toward high-threat targets and can be consumed by a Drone or Beth.",
+      "values": {
+        "npc": 52447,
+        "wave_count": "3 current-guide observation",
+        "lane_count": "3 current Wowhead/historical reports; Icy Veins reports4",
+        "wave_interval": "about12s",
+        "target": "highest threat, often healer",
+        "seeping_venom_spell": 97079,
+        "seeping_venom_jump_range": "6yd",
+        "seeping_venom_damage": "6937-8062 Nature every2s for10s",
+        "beth_consume_heal": "about10% in current guide/table; exact runtime unresolved",
+        "variants": [53631, 53632, 53765]
+      },
+      "evidence": ["wowhead_cata_beth_2024", "wowhead_beth_spell_seeping_97079", "icy_veins_cata_beth_2024", "repo_firelands_sql_identity"],
+      "status": "identity_and_damage_spell_confirmed_lane_count_consume_target_and_scaling_blocked"
+    },
+    {
+      "key": "engorged_broodling",
+      "modes": ["10H", "25H"],
+      "summary": "Heroic-only Broodlings are reported to fixate players and detonate on contact; current sources disagree on kill/soak semantics and exact damage.",
+      "values": {
+        "npc": 53745,
+        "variants": [53746, 53747, 53748],
+        "heroic_only": true,
+        "current_wave_relationship": "follows Spiderling waves",
+        "target": "random fixated player per guide/community descriptions",
+        "detonation_spell": "Volatile Burst; exact Cataclysm Classic ID not frozen",
+        "kill_or_soak": null,
+        "damage_and_pool": null,
+        "spawn_count_and_lanes": null
+      },
+      "evidence": ["wowhead_cata_beth_2024", "wowhead_beth_npc_broodling_53745", "icy_veins_cata_beth_2024", "repo_firelands_sql_identity"],
+      "status": "heroic_presence_and_identity_confirmed_behavior_and_scaling_blocked"
+    },
+    {
+      "key": "phase_two_frenzy_widows_kiss",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "After three devastations Beth descends, no new adds are reported, and a Frenzy/Widow's Kiss soft-enrage begins.",
+      "values": {
+        "phase_two_trigger": "third Smoldering Devastation",
+        "frenzy_spell": 99497,
+        "frenzy_delta": "+5% damage per stack",
+        "frenzy_interval": "about5s",
+        "widows_kiss_spell": 99476,
+        "widows_kiss_duration": "20s",
+        "widows_kiss_guide_effect": "10% healing reduction every2s with nearby-ally consequence",
+        "new_adds": "none expected in current guides",
+        "consume": "Beth can consume remaining Spiderlings and heal",
+        "exact_stack_cap": null
+      },
+      "evidence": ["wowhead_cata_beth_2024", "wowhead_beth_spell_frenzy_99497", "wowhead_beth_spell_widows_kiss_99476", "icy_veins_cata_beth_2024"],
+      "status": "phase_shape_confirmed_aura_values_target_and_reset_blocked"
+    }
+  ],
+  "timer_contract": {
+    "status": "fidelity_blocked",
+    "timers": [
+      {"key": "venom_rain", "value": "about3s", "mode_scope": "all", "status": "guide_observation"},
+      {"key": "ember_flare", "value": "about5-7s", "mode_scope": "all", "status": "guide_observation_conflicting_values"},
+      {"key": "meteor_burn", "value": "about25s", "mode_scope": "all", "status": "guide_observation"},
+      {"key": "spinner_spawn", "value": "pull and after devastation/about1.5m wording", "mode_scope": "all", "status": "guide_observation"},
+      {"key": "spinner_burning_acid", "value": "2s cooldown", "mode_scope": "all", "status": "page_identity_current_guide_conflict"},
+      {"key": "drone_spawn", "value": "about45s", "mode_scope": "all", "status": "guide_observation"},
+      {"key": "drone_burning_acid", "value": "about8s", "mode_scope": "all", "status": "guide_observation"},
+      {"key": "spiderling_wave", "value": "about12s", "mode_scope": "all", "status": "guide_observation_lane_count_conflict"},
+      {"key": "fire_energy", "value": "1% per second/about90s natural", "mode_scope": "all", "status": "guide_observation_drone_siphon_unresolved"},
+      {"key": "smoldering_devastation_cast", "value": "8s", "mode_scope": "all", "status": "spell_page_identity_confirmed"},
+      {"key": "phase_two_trigger", "value": "after3 devastations", "mode_scope": "all", "status": "current_guides_no_local_ai"},
+      {"key": "frenzy", "value": "about5s per +5% stack", "mode_scope": "all", "status": "guide_observation"}
+    ]
+  },
+  "lifecycle": {
+    "engage": "No local Beth AI or loader entry; pull behavior is not executable evidence.",
+    "phase_reset": "No Beth Reset/EnterEvade/phase handler exists locally; web, energy, adds, and aura cleanup are blocked.",
+    "completion": "No local JustDied/credit/loot/achievement path exists for Beth.",
+    "unlock": "Official release scope includes all Firelands bosses; no Beth-specific prerequisite is published and no local unlock event exists.",
+    "door": {"gameobject_entry": 208877, "instance_mapping": "DATA_BETHTILAC", "runtime_open_close": null},
+    "lockout_and_credit": null,
+    "status": "hard_repository_blocker_for_executable_lifecycle"
+  },
+  "repository_audit": {
+    "revision": "8eb54f0160b3c3d986ed944f9d64ebf83922c0f8",
+    "map": 720,
+    "encounter_count": 7,
+    "data_id": "DATA_BETHTILAC",
+    "boss_entry": 52498,
+    "door_entry": 208877,
+    "script_path": "src/server/scripts/Kalimdor/Firelands/",
+    "boss_script_present": false,
+    "loader_registration_present": false,
+    "instance_mapping_present": true,
+    "historical_encounter_id": 1197,
+    "historical_identity_only": true
+  },
+  "unresolved": [
+    "4.4.2 client/DBC build, hotfix cutoff, and underlying mode table",
+    "Power of Stormrage aura/NPC IDs, default state, persistence, and toggle implementation",
+    "whether current-guide health values include the optional modifier",
+    "web/ground aura, filament click, assignment count, and target eligibility",
+    "Fire Energy runtime type, drain/reset, Drone siphon contribution, and devastation event ordering",
+    "all four-mode spell coefficients and timer jitter",
+    "Spiderling lane count and mode distribution",
+    "heroic Spinner Fiery Web Spin presence and behavior",
+    "Broodling Volatile Burst ID, spawn count, kill/soak semantics, damage, and pools",
+    "Beth Consume target/range/heal and add cleanup",
+    "Phase 2 stack/ramp, Widow's Kiss target/debuff, and soft-enrage duration",
+    "wipe reset, door state, lockout, loot, achievement, and encounter credit",
+    "no local Beth AI/loader means no executable validation contract",
+    "historical 15% Beth hotfix applicability to Classic 4.4.2 (must not be assumed)",
+    "normal versus heroic add scaling beyond reported qualitative deltas",
+    "modifier interaction with any future DB creature damage/health modifiers",
+    "exact source authority for conflicting 3-versus-4 Spiderling lanes",
+    "exact mode mapping of historical Beth/add DB variants"
+  ]
+}

@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "ledger_schema": "cata_raid_value_timer_ledger_v1",
+  "raid": "firelands",
+  "boss_slug": "lord_rhyolith",
+  "modes": ["10N", "10H", "25N", "25H"],
+  "fidelity_state": "fidelity_blocked",
+  "contract_path": "experiments/configs/cata_raid_encounters/firelands/lord_rhyolith_v1.json",
+  "unresolved_material_count": 15,
+  "encounter": "lord_rhyolith",
+  "purpose": "source-and-timer ledger for Phase 0 research; no live-validation assertion",
+  "scope": ["10N", "10H", "25N", "25H"],
+  "repository_revision_audited": "8eb54f0160b3c3d986ed944f9d64ebf83922c0f8",
+  "retrieved_utc_date": "2026-08-12",
+  "research_as_of": "2026-08-12",
+  "source_catalog": [
+    {"id": "wowhead_cata_lord_rhyolith_442", "title": "Lord Rhyolith Strategy Guide for Firelands - Cataclysm Classic", "publisher": "Wowhead", "published_or_updated": "2024-10-25; Patch 4.4.2 label", "url": "https://www.wowhead.com/cata/guide/raids/firelands/lord-rhyolith-strategy-overview", "accessed": "2026-08-12", "authority": "current Cataclysm Classic strategy guide", "notes": "Four health values; steering; Stomp, volcano, Eruption, Magma, adds, Phase 2, Superheated."},
+    {"id": "icy_veins_cata_lord_rhyolith_2024", "title": "Lord Rhyolith Encounter Guide: Strategy, Abilities, Loot", "publisher": "Icy Veins", "published_or_updated": "2024-10-08", "url": "https://www.icy-veins.com/cataclysm-classic/lord-rhyolith-encounter-guide-strategy-abilities-loot", "accessed": "2026-08-12", "authority": "current Cataclysm Classic strategy guide", "notes": "Driver/torso distinction, armor, adds, heroic shape and soft-enrage cross-check."},
+    {"id": "warcraft_tavern_cata_lord_rhyolith_2024", "title": "Lord Rhyolith Raid Guide", "publisher": "Warcraft Tavern", "published_or_updated": "2024 guide; direct access restricted", "url": "https://www.warcrafttavern.com/cataclysm/guides/lord-rhyolith-raid-guide/", "accessed": "2026-08-12", "authority": "independent strategy source; limited retrieval", "notes": "Qualitative cross-check only; no numeric value promoted."},
+    {"id": "blizzard_442_firelands_modifier", "title": "Firelands Difficulty Reduction with Hour of Twilight Patch", "publisher": "Blizzard Entertainment forums", "published_or_updated": "2025-02-13", "url": "https://us.forums.blizzard.com/en/wow/t/firelands-difficulty-reduction-with-hour-of-twilight-patch/2059756", "accessed": "2026-08-12", "authority": "official Cataclysm Classic 4.4.2 announcement", "notes": "Power of Stormrage: optional 30% health/damage reduction for all Firelands bosses and other enemies; removable at General Taldris Moonfall."},
+    {"id": "blizzard_42_rhyolith_hotfixes", "title": "Cataclysm-era Firelands hotfix provenance", "publisher": "Blizzard Entertainment", "published_or_updated": "historical Patch 4.2 hotfix entries", "url": "https://worldofwarcraft.blizzard.com/en-us/news/3019413", "accessed": "2026-08-12", "authority": "official historical hotfix source", "notes": "Historical Rhyolith tuning changes; not proof of 4.4.2 carryover."},
+    {"id": "wowhead_npc_lord_rhyolith_legacy", "title": "Lord Rhyolith NPC reference", "publisher": "Wowhead", "url": "https://www.wowhead.com/cata/npc=52558/lord-rhyolith", "accessed": "2026-08-12", "authority": "legacy community reference", "notes": "Qualitative driving context only."},
+    {"id": "repo_boss_lord_rhyolith", "title": "TrinityCore boss_lord_rhyolith.cpp", "publisher": "local repository", "revision": "8eb54f0160b3c3d986ed944f9d64ebf83922c0f8", "paths": ["src/server/scripts/Kalimdor/Firelands/boss_lord_rhyolith.cpp"], "accessed": "2026-08-12", "authority": "repository implementation evidence, not retail proof", "lines": ["54-108", "175-209", "211-721", "723-838", "840-1002", "1004-1374", "1377-1396"], "notes": "IDs, steering, events, phases, cleanup, add and spell scripts."},
+    {"id": "repo_firelands_header_instance", "title": "TrinityCore Firelands header and instance", "publisher": "local repository", "revision": "8eb54f0160b3c3d986ed944f9d64ebf83922c0f8", "paths": ["src/server/scripts/Kalimdor/Firelands/firelands.h", "src/server/scripts/Kalimdor/Firelands/instance_firelands.cpp"], "accessed": "2026-08-12", "authority": "repository identity/boundary evidence", "lines": ["firelands.h:25-90", "instance_firelands.cpp:30-76"], "notes": "Map, encounter index, creature IDs, object data, boundaries."},
+    {"id": "repo_firelands_loader", "title": "TrinityCore Kalimdor script loader", "publisher": "local repository", "revision": "8eb54f0160b3c3d986ed944f9d64ebf83922c0f8", "paths": ["src/server/scripts/Kalimdor/kalimdor_script_loader.cpp"], "accessed": "2026-08-12", "authority": "repository registration evidence", "lines": ["129-134", "270-275"]},
+    {"id": "repo_rhyolith_sql_history", "title": "Historical TrinityCore 4.3.4 Firelands SQL", "publisher": "local repository", "revision": "8eb54f0160b3c3d986ed944f9d64ebf83922c0f8", "paths": ["sql/old/4.3.4/world/21071_2022_01_09/2021_10_30_00_world.sql", "sql/updates/world/4.3.4/2023_09_15_00_world.sql"], "accessed": "2026-08-12", "authority": "historical DB/model evidence", "notes": "ScriptName/difficulty-entry/model history, world state 5931, credit 1204 -> 53772."},
+    {"id": "repo_firelands_tdb_snapshot", "title": "Historical TrinityCore TDB snapshot", "publisher": "local repository", "revision": "8eb54f0160b3c3d986ed944f9d64ebf83922c0f8", "paths": ["data/TDB_full_434.22011_2022_01_09/TDB_full_world_434.22011_2022_01_09.sql"], "accessed": "2026-08-12", "authority": "historical DB snapshot", "notes": "No current Power of Stormrage or authoritative four-mode tuning found."}
+  ],
+  "mode_matrix": {
+    "10N": {"health_guide_reported": 15500000, "heroic": false, "armor_spell": 98255, "steering_threshold": 3000, "modifier": "optional; execution state required"},
+    "10H": {"health_guide_reported": 23300000, "heroic": true, "armor_spell": 101158, "steering_threshold": 3000, "modifier": "optional; execution state required"},
+    "25N": {"health_guide_reported": 47300000, "heroic": false, "armor_spell": 101157, "steering_threshold": 9000, "modifier": "optional; execution state required"},
+    "25H": {"health_guide_reported": 78100000, "heroic": true, "armor_spell": 101159, "steering_threshold": 9000, "modifier": "optional; execution state required"}
+  },
+  "values": [
+    {"key": "boss_health", "mode_values": {"10N": 15500000, "10H": 23300000, "25N": 47300000, "25H": 78100000}, "unit": "hit points", "source_refs": ["wowhead_cata_lord_rhyolith_442"], "repository_confirmation": false, "status": "fidelity_blocked_guide_modifier_interaction"},
+    {"key": "starting_armor", "mode_values": {"10N": 80, "10H": 80, "25N": 80, "25H": 80}, "unit": "stacks", "source_refs": ["wowhead_cata_lord_rhyolith_442", "icy_veins_cata_lord_rhyolith_2024", "repo_boss_lord_rhyolith"], "status": "starting_value_confirmed"},
+    {"key": "armor_removed_per_heated_volcano", "guide": 10, "repository": 16, "source_refs": ["wowhead_cata_lord_rhyolith_442", "icy_veins_cata_lord_rhyolith_2024", "blizzard_42_rhyolith_hotfixes", "repo_boss_lord_rhyolith"], "status": "fidelity_blocked_conflict"},
+    {"key": "direction_balance", "repository": {"range": [0, 50], "center": 25, "update": "500ms", "damage_window": "two one-second slots", "threshold_10": 3000, "threshold_25": 9000, "controller_radius": 50}, "source_refs": ["icy_veins_cata_lord_rhyolith_2024", "repo_boss_lord_rhyolith"], "status": "fidelity_blocked_retail_steering"},
+    {"key": "concussive_stomp", "guide": {"initial": "15s", "repeat": "30s", "damage_normal": "35000 fire", "damage_heroic": "45000 fire", "volcanoes": "2-3"}, "repository": {"initial": "16s", "repeat": "30s", "spell": 97282, "target_count": "urand(2,3)"}, "source_refs": ["wowhead_cata_lord_rhyolith_442", "repo_boss_lord_rhyolith"], "status": "fidelity_blocked"},
+    {"key": "eruption", "guide": {"targets": "3-6", "tick": "1s", "damage": 12000, "duration": "15s", "cap": 20, "fire_taken_normal": "5%", "fire_taken_heroic": "10%"}, "repository": {"spell": 98264, "aura": 98492, "heated_first": "30s", "heated_repeat": "25s", "activation": "5s"}, "source_refs": ["wowhead_cata_lord_rhyolith_442", "icy_veins_cata_lord_rhyolith_2024", "repo_boss_lord_rhyolith"], "status": "fidelity_blocked_spell_data"},
+    {"key": "magma_flow", "guide": {"lines": 7, "delay": "about 40s", "explosion": "about 5s; about 75000 plus knockback", "crater": "about 20s"}, "repository": {"flow": 97225, "missile": 97230, "damage": 97234, "lines": "urand(4,6)", "lava_line_first": "11s", "lava_line_repeat": "10s"}, "source_refs": ["wowhead_cata_lord_rhyolith_442", "repo_boss_lord_rhyolith"], "status": "fidelity_blocked"},
+    {"key": "fragment_meltdown", "guide": {"count": 5, "timer": "30s", "damage": "50% remaining health", "target": "random player"}, "repository": {"entry": 52620, "spell": 98646}, "source_refs": ["wowhead_cata_lord_rhyolith_442", "repo_boss_lord_rhyolith"], "status": "fidelity_blocked_spell_basepoints"},
+    {"key": "spark_escalation", "guide": {"immolation": "7200 fire per second within 12yd", "rage": "10s then +10% every 5s to +100%"}, "repository": {"entry": 53211, "immolation": 98597, "rage": 98596}, "source_refs": ["wowhead_cata_lord_rhyolith_442", "icy_veins_cata_lord_rhyolith_2024", "repo_boss_lord_rhyolith"], "status": "fidelity_blocked_spell_tick"},
+    {"key": "phase_two", "guide": {"threshold": "25%", "immolation": "about 8000 fire per second", "stomp": "15s", "new_volcanos_or_adds": false}, "repository": {"entry": 53772, "immolation": 99846, "first_stomp": "7s", "stomp": "30s", "eruption_cleared": true}, "source_refs": ["wowhead_cata_lord_rhyolith_442", "repo_boss_lord_rhyolith"], "status": "fidelity_blocked_stomp_conflict"},
+    {"key": "superheated", "guide": {"normal": "6m", "heroic": "5m", "repeat": "10s", "increment": "+10% damage"}, "repository": {"spell": 101304, "normal": "6m", "heroic": "5m", "repeat": "10s"}, "source_refs": ["wowhead_cata_lord_rhyolith_442", "icy_veins_cata_lord_rhyolith_2024", "repo_boss_lord_rhyolith"], "status": "fidelity_blocked_magnitude"},
+    {"key": "power_of_stormrage", "official": {"health": "-30%", "damage": "-30%", "scope": "all Firelands enemies", "remove_npc": "General Taldris Moonfall"}, "repository": {"spell_id": null, "found": false}, "source_refs": ["blizzard_442_firelands_modifier"], "status": "fidelity_blocked_application"}
+  ],
+  "timers": [
+    {"key": "controller", "repository": {"balance": "500ms", "teleport": "1s", "retry": "400ms"}, "status": "fidelity_blocked_retail_latency"},
+    {"key": "phase_one", "repository": {"stomp": "16s then 30s", "heated": "30s then 25s", "thermal_vent": "23s then 23s", "feet_health": "5s", "lava_line": "11s first then 10s", "search": "500ms"}, "guide": {"stomp": "15s then 30s", "adds": "about 20s"}, "status": "fidelity_blocked"},
+    {"key": "phase_two", "repository": {"stand": "3s", "stomp_first": "7s", "stomp": "30s", "heroic_unleashed": "1s then 6s"}, "guide": {"stomp": "15s"}, "status": "fidelity_blocked"},
+    {"key": "soft_enrage", "normal": "6m", "heroic": "5m", "repeat": "10s", "status": "timer_shape_confirmed_magnitude_blocked"}
+  ],
+  "targeting_and_scaling": [
+    {"key": "steering", "repository": "left/right foot damage changes balance; torso does not steer; thresholds 3000/9000", "status": "fidelity_blocked"},
+    {"key": "volcano_selection", "repository": "Heated max one; front preference; Stomp 2-3 target selection", "status": "fidelity_blocked"},
+    {"key": "liquid_obsidian", "repository": {"fuse": 99875, "distance": "<10 2-D", "movement": "toward boss every 1s", "heroic_guard": "not explicit in C++"}, "status": "fidelity_blocked"},
+    {"key": "unleashed_flame", "repository": {"spell": 101324, "target": "random within 50yd", "path": "radius 10, six steps"}, "status": "fidelity_blocked"}
+  ],
+  "phase_reset_credit": [
+    {"key": "transitions", "repository": "75% -> 54192, 50% -> 54199, 25% -> 53772; lethal damage clamped before final entry", "status": "repository_identity_confirmed"},
+    {"key": "phase_two_cleanup", "repository": "feet, active adds, volcano/heated/pillar forms despawn; controller stops; Eruption Aura 98492 removed from players", "status": "repository_confirmed_local_behavior"},
+    {"key": "reset", "repository": "missing feet, controller failure, evade, edge Drink Magma or death", "status": "retail_reset_timing_blocked"},
+    {"key": "credit", "repository": "historical encounter 1204 creditEntry=53772; DATA_LORD_RHYOLITH=1", "status": "repository_identity_confirmed_current_lockout_unvalidated"}
+  ],
+  "conflicts": [
+    {"key": "armor_charge", "sources": ["current guides: 10", "local: 16", "historical hotfixes: changed over time"], "resolution": "fidelity_blocked"},
+    {"key": "phase_two_stomp", "sources": ["current guide: 15s", "local: 30s"], "resolution": "fidelity_blocked"},
+    {"key": "health_modifier", "sources": ["guide health values", "official optional -30% modifier"], "resolution": "fidelity_blocked"},
+    {"key": "add_cadence", "sources": ["guide about 20s", "local 23s", "spell data selection"], "resolution": "fidelity_blocked"}
+  ],
+  "unresolved": [
+    {"key": "build_hotfix_lineage", "status": "fidelity_blocked"},
+    {"key": "power_of_stormrage_application_and_spell_identity", "status": "fidelity_blocked"},
+    {"key": "health_values_and_modifier_interaction", "status": "fidelity_blocked"},
+    {"key": "armor_removal_10_vs_16", "status": "fidelity_blocked"},
+    {"key": "steering_curve_and_foot_scaling", "status": "fidelity_blocked"},
+    {"key": "concussive_stomp_current_timing_damage_and_phase_two_delta", "status": "fidelity_blocked"},
+    {"key": "heated_volcano_and_eruption_spell_scaling", "status": "fidelity_blocked"},
+    {"key": "magma_flow_values_and_crater_lifetime", "status": "fidelity_blocked"},
+    {"key": "add_cadence_and_fragment_spark_spell_values", "status": "fidelity_blocked"},
+    {"key": "fragment_meltdown_basepoints_and_targeting", "status": "fidelity_blocked"},
+    {"key": "spark_infernal_rage_tick_and_scaling", "status": "fidelity_blocked"},
+    {"key": "liquid_obsidian_and_heroic_add_scaling", "status": "fidelity_blocked"},
+    {"key": "unleashed_flame_target_path_and_heroic_delta", "status": "fidelity_blocked"},
+    {"key": "phase_reset_and_superheated_magnitude", "status": "fidelity_blocked"},
+    {"key": "current_db_dbc_mode_rows_and_difficulty_mapping", "status": "fidelity_blocked"}
+  ]
+}

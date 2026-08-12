@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "contract_schema": "cata_raid_encounter_contract_v1",
+  "raid": "firelands",
+  "boss_slug": "baleroc",
+  "modes": ["10N", "10H", "25N", "25H"],
+  "fidelity_state": "fidelity_blocked",
+  "dossier_path": "docs/bot_raids/strategies/t12/firelands/baleroc.md",
+  "ledger_path": "experiments/configs/cata_raid_encounters/firelands/baleroc_ledger_v1.json",
+  "unresolved_material_count": 14,
+  "encounter": "baleroc",
+  "instance": "firelands",
+  "scope": ["10N", "10H", "25N", "25H"],
+  "research_state": "phase0_researched_not_live_validated",
+  "research_as_of": "2026-08-12",
+  "target_snapshot": {"product": "Cataclysm Classic", "patch": "4.4.2", "build": 59185, "locale": "enUS", "hotfix_cutoff_utc": "2025-02-18T19:31:51.916Z"},
+  "evidence_policy": "A material behavior claim requires two independent current strategy sources or one credible source plus repository/official confirmation; disagreements, missing SpellInfo, and build-sensitive values remain fidelity_blocked.",
+  "source_refs": ["wowhead_cata_baleroc_442", "icy_veins_cata_baleroc_2024", "warcraft_tavern_cata_baleroc_2024", "blizzard_firelands_hotfixes", "blizzard_firelands_announcement", "blizzard_442_modifier", "repo_boss_baleroc", "repo_firelands_identity", "repo_baleroc_sql", "repo_public_build_reference"],
+  "mode_matrix": {
+    "10N": {"heroic": false, "health_guide_reported": 42100000, "shards_targets_local": 1, "vital_spark_torment_stacks_guide": 3, "modifier_state": "unknown_optional_power_of_stormrage"},
+    "10H": {"heroic": true, "health_guide_reported": 69900000, "shards_targets_local": 1, "vital_spark_torment_stacks_guide": 5, "modifier_state": "unknown_optional_power_of_stormrage"},
+    "25N": {"heroic": false, "health_guide_reported": 133300000, "shards_targets_local": 2, "vital_spark_torment_stacks_guide": 3, "modifier_state": "unknown_optional_power_of_stormrage"},
+    "25H": {"heroic": true, "health_guide_reported": 195600000, "shards_targets_local": 2, "vital_spark_torment_stacks_guide": 5, "modifier_state": "unknown_optional_power_of_stormrage"}
+  },
+  "roles": {
+    "active_tank": ["take Blaze stacks outside Decimation", "survive rising physical/Inferno pressure", "swap or coordinate for Decimation"],
+    "decimation_tank": ["maintain only enough Blaze health to exceed the 250000 minimum", "taunt for Decimation", "return to full health between strikes"],
+    "soakers": ["cover every shard within 15yd", "rotate before lethal Torment stacks", "avoid tanks and Tormented players"],
+    "healers": ["heal Torment soakers to build Vital Spark when implemented", "use Vital Flame on Blaze tank", "alternate tank/soak assignments"],
+    "heroic_raid": ["meet Countdown within the verified radius before expiry", "avoid spreading Tormented while linking", "never leave a shard unattended"]
+  },
+  "gates": ["two_tank_or_verified_solo_tank_plan", "blaze_health_and_physical_scaling", "blade_type_and_avoidance_plan", "all_shards_soaked", "torment_rotation", "vital_spark_vital_flame_healing_loop", "six_minute_berserk"],
+  "heroic_gates": ["countdown_link_resolution", "tormented_spread_avoidance", "five_torment_per_spark_rule", "heroic_shard_and_blade_damage"],
+  "mechanics": [
+    {"key": "blaze_and_incendiary", "modes": ["10N", "10H", "25N", "25H"], "summary": "Blaze stacks on the current tank and Incendiary Soul stacks on Baleroc scale health, physical pressure, and Fire damage.", "values": {"blaze_spell": 99252, "incendiary_spell": 99369, "guide_interval": "about 10s", "repository_first": "8.5s", "repository_repeat": "11.5s", "health_change": "+20% max health per stack", "physical_taken": "+20% per stack", "fire_damage": "+20% per Incendiary stack", "duration": "infinite until encounter end/reset"}, "evidence": ["wowhead_cata_baleroc_442", "icy_veins_cata_baleroc_2024", "repo_boss_baleroc"], "status": "fidelity_blocked_cadence_and_spell_scaling"},
+    {"key": "inferno_blade", "modes": ["10N", "10H", "25N", "25H"], "summary": "Inferno Blade changes successful melee to Fire for a 15-second window; it is the historical required first blade.", "values": {"spell": 99350, "strike": 99351, "guide_duration": "15s", "guide_damage_normal": "125000 base fire", "guide_damage_heroic": "200000 base fire", "repository_first": "random blade at 30.5s", "repository_repeat": "47s", "repository_weapon_restore": "15s", "historical_hotfix_first": "always Inferno"}, "evidence": ["wowhead_cata_baleroc_442", "blizzard_firelands_hotfixes", "repo_boss_baleroc"], "status": "fidelity_blocked_first_blade_and_damage"},
+    {"key": "decimation_blade", "modes": ["10N", "10H", "25N", "25H"], "summary": "Decimation Blade replaces melee with max-health-scaled Decimating Strike and healing reduction.", "values": {"spell": 99352, "variant": 99405, "strike": 99353, "guide_duration": "15s", "health_fraction": "90%", "minimum": 250000, "guide_attack_speed_slow": "150%", "guide_max_strikes": 4, "healing_reduction": "90% for 4s", "repository_damage_rule": "90% victim max health, minimum 250000"}, "evidence": ["wowhead_cata_baleroc_442", "icy_veins_cata_baleroc_2024", "repo_boss_baleroc"], "status": "fidelity_blocked_attack_cycle_and_mode_scaling"},
+    {"key": "shards", "modes": ["10N", "10H", "25N", "25H"], "summary": "Shards spawn crystals which must be soaked; local target count is one in 10-player and two in 25-player.", "values": {"summon_spell": 99259, "followup_spell": 99260, "guide_first": "5s", "guide_repeat": "35s", "repository_first": "5s", "repository_repeat": "34s", "targets_10": 1, "targets_25": 2, "guide_location": "melee and ranged groups in 25-player", "local_tank_filter": "remove current victim only when target list exceeds count", "cosmetic_delay": "5s", "soak_range_local": "15yd", "shard_lifetime_guide": "25s"}, "evidence": ["wowhead_cata_baleroc_442", "warcraft_tavern_cata_baleroc_2024", "repo_boss_baleroc"], "status": "fidelity_blocked_interval_location_and_target_filter"},
+    {"key": "wave_and_torment", "modes": ["10N", "10H", "25N", "25H"], "summary": "An unattended shard casts raid-wide Wave; a nearby player receives stacking Torment instead.", "values": {"torment": 99254, "periodic": 99255, "wave": 99261, "guide_wave_normal": "20000 shadow per second", "guide_wave_heroic": "40000 shadow per second", "guide_torment_normal": "3000 shadow per second", "guide_torment_heroic": "4500 shadow per second", "guide_ticks": 25, "local_damage_comment_normal": [3000, 4000], "local_damage_comment_heroic": [4250, 5000], "local_wave_threshold": ">15yd or no target", "local_target_rule": "nearest eligible target"}, "evidence": ["wowhead_cata_baleroc_442", "repo_boss_baleroc"], "status": "fidelity_blocked_damage_tick_and_expiry"},
+    {"key": "tormented", "modes": ["10N", "10H", "25N", "25H"], "summary": "Leaving after Torment applies a healing/magic-damage penalty; heroic can spread it.", "values": {"normal_variant": 99257, "heroic_variants": [99402, 99403, 99404], "guide_magic_taken": "+500%", "guide_healing": "-50%", "guide_duration": "1m", "repository_normal_on_remove": 99257, "repository_heroic_on_remove": 99403, "heroic_spread_script": 99403}, "evidence": ["wowhead_cata_baleroc_442", "icy_veins_cata_baleroc_2024", "repo_boss_baleroc"], "status": "fidelity_blocked_variant_duration_and_spread_radius"},
+    {"key": "vital_spark_flame", "modes": ["10N", "10H", "25N", "25H"], "summary": "Direct healing of Torment soakers builds Vital Spark; healing a Blaze tank converts it to Vital Flame.", "values": {"vital_spark": 99262, "vital_flame": 99263, "guide_normal_stacks_per_spark": 3, "guide_heroic_stacks_per_spark": 5, "guide_spark_duration": "60s", "guide_flame_duration": "15s", "guide_flame_healing": "+5% per Spark stack", "repository_implementation": "explicit TODO; no aura scripts"}, "evidence": ["icy_veins_cata_baleroc_2024", "blizzard_firelands_hotfixes", "repo_boss_baleroc"], "status": "fidelity_blocked_missing_local_system"},
+    {"key": "countdown", "modes": ["10H", "25H"], "summary": "Heroic links two non-tank players; they must meet before expiry or trigger raid damage.", "values": {"spell": 99515, "link": 99519, "target_aura": 99516, "remove_spell": 99517, "expiry_spell": 99518, "guide_first": "about 45s", "guide_repeat": "45s", "repository_first": "26s", "repository_repeat": "48s", "targets": 2, "tank_exclusion": true, "guide_duration": "8s", "guide_meet_radius": "4yd", "guide_explosion_radius": "100yd", "guide_damage_wowhead": 125000, "guide_damage_icy_veins": 85000}, "evidence": ["wowhead_cata_baleroc_442", "icy_veins_cata_baleroc_2024", "repo_boss_baleroc"], "status": "fidelity_blocked_damage_radius_and_cadence"},
+    {"key": "berserk", "modes": ["10N", "10H", "25N", "25H"], "summary": "Single hard enrage at six minutes.", "values": {"spell": 26662, "repository_timer": "6m", "guide_timer": "6m", "magnitude": null}, "evidence": ["wowhead_cata_baleroc_442", "repo_boss_baleroc"], "status": "fidelity_blocked_spell_magnitude"},
+    {"key": "power_of_stormrage", "modes": ["10N", "10H", "25N", "25H"], "summary": "Official optional Firelands-wide enemy modifier for the requested 4.4.2 snapshot.", "values": {"name": "Power of Stormrage", "health_reduction": "30%", "damage_reduction": "30%", "scope": "all Firelands bosses and other enemies", "remove_npc": "General Taldris Moonfall", "spell_id": null, "default_enabled": null, "local_presence": false}, "evidence": ["blizzard_442_modifier"], "status": "fidelity_blocked_application_state"}
+  ],
+  "timer_contract": [
+    {"key": "boss_events", "repository": {"blaze_incendiary": "8.5s then 11.5s", "shards": "5s then 34s", "countdown_heroic": "26s then 48s", "blade": "30.5s then 47s", "berserk": "6m"}, "guide": {"blaze": "about 10s", "shards": "5s then 35s", "countdown": "45s", "blade": "30s then 45s", "berserk": "6m"}, "status": "fidelity_blocked_conflicting_cadence"},
+    {"key": "blade_window", "repository": {"weapon_restore": "15s"}, "guide": {"inferno_or_decimation": "15s"}, "status": "window_shape_confirmed"},
+    {"key": "shard_lifecycle", "repository": {"cosmetic": "5s then Torment", "soak_check": ">15yd triggers Wave"}, "guide": {"lifetime": "25s", "torment_ticks": 25}, "status": "fidelity_blocked_spell_period"},
+    {"key": "countdown", "repository": {"link": "after selection", "expiry": "SpellInfo-driven; local casts 99518 on expiration"}, "guide": {"duration": "8s", "meet": "4yd"}, "status": "fidelity_blocked_spell_radius"}
+  ],
+  "lifecycle": {"phases": ["single phase; no health transition"], "reset": ["evade", "wipe", "historical gate/shard reset behavior"], "completion": "BossAI::_JustDied and encounter-frame disengage", "credit": "historical instance_encounters entry 1200 creditEntry=53494", "achievement": "criteria 17577 / achievement_share_the_pain; local counter rejects any player over 3 Tormented applications", "live_validation": false},
+  "repository_audit": {"boss_source": "src/server/scripts/Kalimdor/Firelands/boss_baleroc.cpp:40-850", "identity_source": "src/server/scripts/Kalimdor/Firelands/firelands.h:39-70", "instance_source": "src/server/scripts/Kalimdor/Firelands/instance_firelands.cpp:30-65", "loader_source": "src/server/scripts/Kalimdor/kalimdor_script_loader.cpp", "historical_sql": "sql/old/4.3.4/world/11_2016_08_28/2016_07_03_00_world.sql; sql/old/4.3.4/TDB04_to_TDB05_updates/world/066_instance_encounters.sql; sql/updates/world/4.3.4/2023_09_15_00_world.sql", "revision": "8eb54f0160b3c3d986ed944f9d64ebf83922c0f8", "finding": "Local identities, spell scripts, event schedules, reset/death/credit, and achievement hook were cross-referenced; Vital Spark/Vital Flame are explicitly not implemented."},
+  "heroic_scaling": {"confirmed_shape": ["Countdown only heroic", "local heroic spell paths select stronger SpellInfo", "guide reports 40k Wave/4.5k Torment and 200k Inferno base versus normal 20k/3k/125k", "heroic Vital Spark threshold is five per guide/hotfix"], "unresolved": ["exact mode SpellInfo values", "Tormented spread/duration", "Countdown explosion 85k versus 125k", "health/damage after modifier"]},
+  "unresolved": [
+    {"key": "build_hotfix_spellinfo_lineage", "status": "fidelity_blocked"},
+    {"key": "power_of_stormrage_application_and_spell_identity", "status": "fidelity_blocked"},
+    {"key": "health_values_and_modifier_interaction", "status": "fidelity_blocked"},
+    {"key": "blaze_incendiary_cadence_and_scaling", "status": "fidelity_blocked"},
+    {"key": "first_blade_rule_cadence_and_inferno_damage", "status": "fidelity_blocked"},
+    {"key": "decimation_attack_cycle_and_mode_scaling", "status": "fidelity_blocked"},
+    {"key": "shard_interval_location_and_target_filter", "status": "fidelity_blocked"},
+    {"key": "wave_torment_damage_ticks_ranges_and_lifetime", "status": "fidelity_blocked"},
+    {"key": "tormented_variants_duration_magnitude_and_spread", "status": "fidelity_blocked"},
+    {"key": "vital_spark_and_vital_flame_missing_implementation", "status": "fidelity_blocked"},
+    {"key": "countdown_cadence_radius_and_damage_conflict", "status": "fidelity_blocked"},
+    {"key": "berserk_spell_magnitude", "status": "fidelity_blocked"},
+    {"key": "reset_gate_aura_cleanup_and_credit_semantics", "status": "fidelity_blocked"},
+    {"key": "current_db_dbc_mode_locale_mapping", "status": "fidelity_blocked"}
+  ]
+}

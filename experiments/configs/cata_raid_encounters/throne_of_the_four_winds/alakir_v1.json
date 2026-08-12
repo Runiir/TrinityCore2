@@ -1,0 +1,468 @@
+{
+  "schema_version": 1,
+  "contract_schema": "cata_raid_encounter_contract_v1",
+  "raid": "throne_of_the_four_winds",
+  "instance": "throne_of_the_four_winds",
+  "boss_slug": "alakir",
+  "encounter": "alakir",
+  "modes": ["10N", "10H", "25N", "25H"],
+  "scope": ["10N", "10H", "25N", "25H"],
+  "fidelity_state": "fidelity_blocked",
+  "dossier_path": "docs/bot_raids/strategies/t11/throne_of_the_four_winds/alakir.md",
+  "ledger_path": "experiments/configs/cata_raid_encounters/throne_of_the_four_winds/alakir_ledger_v1.json",
+  "unresolved_material_count": 22,
+  "research_state": "phase0_researched_not_live_validated",
+  "research_as_of": "2026-08-12",
+  "evidence_policy": "A behavior-changing claim requires two independent current-era strategy sources or one credible current strategy source plus repository confirmation; guide values, historical SQL, and local timers do not become 4.4.2 invariants without frozen client evidence or live validation.",
+  "fidelity_policy": "Do not promote guide-reported values, historical hotfixes, or local implementation timers to Cataclysm Classic 4.4.2 retail truth. Keep material conflicts and unresolved build/hotfix fields blocked.",
+  "source_refs": [
+    "wowhead_cata_alakir_442",
+    "icy_veins_cata_alakir_2024",
+    "warcraft_tavern_cata_alakir_2024",
+    "blizzard_cata_442_notes",
+    "repo_boss_alakir",
+    "repo_instance_throne",
+    "repo_throne_header",
+    "repo_throne_sql_setup",
+    "repo_alakir_historical_sql",
+    "repo_historical_instance_encounter_sql"
+  ],
+  "source_urls": [
+    "https://www.wowhead.com/cata/guide/raids/throne-of-the-four-winds/alakir-strategy",
+    "https://www.icy-veins.com/cataclysm-classic/al-akir-encounter-guide-strategy-abilities-loot",
+    "https://www.warcrafttavern.com/cataclysm/guides/alakir-raid-guide/",
+    "https://us.forums.blizzard.com/en/wow/t/world-of-warcraft-cataclysm-classic-patch-442-notes/2062030"
+  ],
+  "repository_audit": {
+    "revision": "8eb54f0160b3c3d986ed944f9d64ebf83922c0f8",
+    "boss_source": "src/server/scripts/Kalimdor/ThroneOfTheFourWinds/boss_alakir.cpp",
+    "instance_source": "src/server/scripts/Kalimdor/ThroneOfTheFourWinds/instance_throne_of_the_four_winds.cpp",
+    "header_source": "src/server/scripts/Kalimdor/ThroneOfTheFourWinds/throne_of_the_four_winds.h",
+    "loader_source": "src/server/scripts/Kalimdor/kalimdor_script_loader.cpp",
+    "sql_setup_source": "sql/old/4.3.4/TDB04_to_TDB05_updates/world/023_throne_of_the_four_winds.sql",
+    "sql_addon_source": "sql/old/4.3.4/TDB04_to_TDB05_updates/world/025_creature_template_addon.sql",
+    "sql_encounter_source": "sql/old/4.3.4/TDB04_to_TDB05_updates/world/066_instance_encounters.sql",
+    "sql_historical_alakir_source": "sql/old/custom/world/34_2020_02_21/custom_2018_12_21_00_world_updatepack.sql",
+    "implementation_is_not_retail_proof": true
+  },
+  "mode_matrix": {
+    "10N": {
+      "heroic": false,
+      "guide_health": "30.0M",
+      "guide_health_status": "Wowhead table; not repository or client verified",
+      "local_difficulty_entry": 46753,
+      "local_acid_rain_spell": 88290,
+      "local_acid_rain_damage_spell": 88301,
+      "local_mode_delta": "normal Lightning Strike periodic path; no heroic Static Shock or heroic chain caster"
+    },
+    "10H": {
+      "heroic": true,
+      "guide_health": "48.1M",
+      "guide_health_status": "Wowhead table; not repository or client verified",
+      "local_difficulty_entry": 50217,
+      "local_acid_rain_spell": 101452,
+      "local_acid_rain_damage_spell": 93280,
+      "local_mode_delta": "heroic Static Shock and heroic Lightning Strike chain-caster path; coefficients unresolved"
+    },
+    "25N": {
+      "heroic": false,
+      "guide_health": "105.2M",
+      "guide_health_status": "Wowhead table; not repository or client verified",
+      "local_difficulty_entry": 50203,
+      "local_acid_rain_spell": 101451,
+      "local_acid_rain_damage_spell": 93279,
+      "local_mode_delta": "normal Lightning Strike periodic path; no heroic Static Shock or heroic chain caster"
+    },
+    "25H": {
+      "heroic": true,
+      "guide_health": "168.3M",
+      "guide_health_status": "Wowhead table; not repository or client verified",
+      "local_difficulty_entry": 50231,
+      "local_acid_rain_spell": 101453,
+      "local_acid_rain_damage_spell": 93281,
+      "local_mode_delta": "heroic Static Shock and heroic Lightning Strike chain-caster path; coefficients unresolved"
+    }
+  },
+  "roles": {
+    "tanks": [
+      "hold Al'Akir in melee during ground phases so Electrocute drops",
+      "keep the boss oriented safely and move from Ice Storm/Squall Line gaps",
+      "maintain a stable altitude and horizontal position in phase 3"
+    ],
+    "healers": [
+      "cover Wind Burst recovery and phase-2 Acid Rain pressure",
+      "spot heal Stormling proximity damage and Feedback windows",
+      "track same-altitude Lightning Rod and Lightning Clouds damage in phase 3"
+    ],
+    "dps": [
+      "spread or group only according to the verified Lightning Strike contract",
+      "move through Squall Line gaps and leave Ice Storm patches",
+      "kill or control Stormlings without losing the boss to Acid Rain attrition",
+      "preserve damage and movement capacity for the phase-3 flying race"
+    ],
+    "raid": [
+      "complete Conclave before engaging; Al'Akir is locally immune until that state",
+      "use the four slipstreams to reach the unlocked Al'Akir platform",
+      "keep vertical and horizontal spacing explicit in phase 3"
+    ]
+  },
+  "gates": [
+    "conclave_completion_unlock",
+    "melee_range_electrocute_drop",
+    "lightning_strike_primary_and_cone_avoidance",
+    "wind_burst_knockback_recovery",
+    "static_shock_heroic_interrupt",
+    "ice_storm_patch_movement",
+    "squall_line_gap_and_rotation",
+    "acid_rain_phase_two_pressure",
+    "stormling_and_feedback_control",
+    "phase_three_platform_break",
+    "flying_altitude_and_horizontal_spacing",
+    "lightning_rod_same_altitude_spacing",
+    "lightning_clouds_altitude_rotation",
+    "relentless_storm_vehicle_avoidance",
+    "reset_and_out_of_bounds_recovery"
+  ],
+  "heroic_gates": [
+    "heroic_static_shock_local_gate",
+    "heroic_lightning_strike_chain_caster",
+    "heroic_acid_rain_variant",
+    "heroic_stormling_and_p3_coefficients_unresolved"
+  ],
+  "known_behavior_summary": [
+    "Al'Akir is entry 46753 on map 754; the historical spawn is (-49.64583, 815.0816, 191.1009), with InhabitType 12 in historical SQL.",
+    "The repository requires Conclave of Wind DONE before removing Al'Akir's immune-to-player flag and summoning four slipstreams (47066).",
+    "The local ground-phase scheduler starts Wind Burst at 23s, Lightning Strike at 9s, Ice Storm at 5s, Squall Line at 10s, and Berserk at 10m; heroic Static Shock starts at 5s.",
+    "The local 80% gate starts mode-selected Acid Rain and Stormlings; the 25% gate enables flight, breaks the platform, starts Relentless Storm, and removes ground-phase hazards.",
+    "Local phase-3 selectors use 110 yards exact 2D for the Relentless Storm ride exclusion, 10 yards vertical for Lightning Clouds damage, and 5 yards vertical for Lightning Rod damage.",
+    "Current guides agree qualitatively on Electrocute, Lightning Strike, Wind Burst, Ice Storm, Squall Line, Acid Rain, Stormlings, platform break, altitude clouds, and Lightning Rod, but exact 4.4.2 quantitative behavior is not frozen.",
+    "On local death, Acid Rain is removed, Serenity is cast, chest 95386 is summoned and tracked world-trigger auras are removed; historical loot/currency rows are not current-client proof."
+  ],
+  "mechanics": [
+    {
+      "key": "identity_unlock_and_platform",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Al'Akir is a flying-capable boss on the central Skywall platform; the Conclave completion state unlocks him and creates the slipstreams.",
+      "values": {
+        "map": 754,
+        "boss_entry": 46753,
+        "spawn": [-49.64583, 815.0816, 191.1009],
+        "platform_gameobject": 207737,
+        "center_draft_gameobject": 207922,
+        "slipstream_entry": 47066,
+        "slipstream_click_spell_historical": 87742,
+        "local_conclave_state_required": "DONE",
+        "local_unlock_action": "ACTION_CONCLAVE_DEFEATED"
+      },
+      "evidence": ["repo_throne_header", "repo_instance_throne", "repo_throne_sql_setup", "repo_alakir_historical_sql"],
+      "confidence": "repository identity and unlock confirmed; current Classic database and platform geometry unresolved"
+    },
+    {
+      "key": "electrocute",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "When the victim is outside melee, the local boss fallback attack applies an escalating periodic Electrocute aura; entering melee removes it.",
+      "values": {
+        "spell": 88427,
+        "local_base_points": 3600,
+        "local_tick_formula": "basePoints += 50% of 3600 * (tickNumber - 1)",
+        "local_first_values": [3600, 5400, 7200, 9000],
+        "local_remove_condition": "caster is within melee range of target",
+        "guide_base_damage": "4,000 Nature per second",
+        "guide_increment": "4,000 Nature per subsequent tick"
+      },
+      "evidence": ["wowhead_cata_alakir_442", "icy_veins_cata_alakir_2024", "repo_boss_alakir"],
+      "conflicts": ["guide narrative and spell-table values differ from the local formula; DBC tick period and retail scaling are not frozen"],
+      "confidence": "fallback identity and local removal/formula confirmed; retail coefficient blocked"
+    },
+    {
+      "key": "lightning_strike",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "A primary random target is selected. Normal uses a periodic cone; heroic uses a chain-caster summon, while the local damage script halves non-primary damage.",
+      "values": {
+        "targeting_spell": 91327,
+        "normal_periodic_spell": 88238,
+        "heroic_chain_caster_entry": 50254,
+        "heroic_chain_summon_spell": 93250,
+        "damage_spell": 88214,
+        "visual_spell": 88230,
+        "local_primary_damage_multiplier": 1.0,
+        "local_non_primary_damage_multiplier": 0.5,
+        "local_cone_angle": "60 degrees",
+        "local_cone_segments": 10,
+        "local_cone_segment_range": "75 yards",
+        "local_first_timer": "9s",
+        "local_repeat_timer": "8s",
+        "guide_description": "random-player cone with nearby chain/bounce behavior",
+        "guide_duration": "15s",
+        "guide_initial_damage": {"normal": "4,000 Nature", "heroic": "20,000 Nature"},
+        "guide_periodic_damage": {"normal": "4,000 Nature/s", "heroic": "10,000 Nature/s"},
+        "guide_bounce_range": "10 yards"
+      },
+      "evidence": ["wowhead_cata_alakir_442", "icy_veins_cata_alakir_2024", "repo_boss_alakir", "repo_alakir_historical_sql"],
+      "conflicts": ["current guide prose describes approximately 10s cadence and bounce groups, while local events are 9s then 8s and heroic changes implementation path"],
+      "confidence": "spell identities, local primary reduction and cone construction confirmed; target/bounce/timing/scaling blocked"
+    },
+    {
+      "key": "wind_burst_and_knockback",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Wind Burst knocks platform occupants away in the ground phases and is represented by a periodic aura path in phase 3.",
+      "values": {
+        "spell": 87770,
+        "local_ground_first": "23s",
+        "local_ground_repeat": "26s",
+        "local_phase_three_periodic_event": "6s initial event; C++ does not repeat the EventMap entry",
+        "guide_cast_time": "approximately 4s",
+        "guide_knockback_range": "approximately 90 yards",
+        "guide_damage": {"normal": "25,000 Nature", "heroic": "50,000 Nature"},
+        "wind_burst_speed_buff_spell": 93106,
+        "local_can_fly_update": true
+      },
+      "evidence": ["wowhead_cata_alakir_442", "icy_veins_cata_alakir_2024", "repo_boss_alakir", "repo_throne_header"],
+      "conflicts": ["guide cadence/damage and local timer differ; return path after a knockback is not represented as a 4.4.2 invariant"],
+      "confidence": "local scheduling and CanFly hook confirmed; damage, geometry and retail period blocked"
+    },
+    {
+      "key": "static_shock",
+      "modes": ["10H", "25H"],
+      "summary": "Static Shock is locally heroic-only, periodically cast across the encounter, and is described by current guides as an interrupting Nature shock near the boss.",
+      "values": {
+        "spell": 87873,
+        "local_first": "5s",
+        "local_repeat": "6s",
+        "guide_radius": "45 yards",
+        "guide_effect": "Nature damage and cast interruption",
+        "guide_damage": "5,000 Nature"
+      },
+      "evidence": ["wowhead_cata_alakir_442", "icy_veins_cata_alakir_2024", "repo_boss_alakir"],
+      "confidence": "heroic gate and local timer confirmed; exact 4.4.2 target/damage/interrupt behavior blocked"
+    },
+    {
+      "key": "ice_storm",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Ice Storm targets a random in-range player and creates a moving hazardous patch; the local trigger applies the damage aura after its previsual delay.",
+      "values": {
+        "boss_spell": 88239,
+        "local_summoned_entry": 46973,
+        "historical_sql_scripted_entry": 46734,
+        "historical_sql_field_entry": 46973,
+        "ping_spell": 87406,
+        "charge_spell": 87103,
+        "previsual_spell": 87472,
+        "aura_spell": 87469,
+        "local_target_range": "70 yards",
+        "local_first": "5s",
+        "local_repeat": "16s",
+        "local_aura_delay": "3.5s after summon",
+        "guide_effect": "moving clockwise/counter-clockwise patch, slow and periodic Frost damage",
+        "guide_damage_per_half_second": {"normal": "2,000 Frost", "heroic": "7,000 Frost"},
+        "guide_slow": "50% while standing in patch",
+        "guide_patch_melt": "15s"
+      },
+      "evidence": ["wowhead_cata_alakir_442", "icy_veins_cata_alakir_2024", "repo_boss_alakir", "repo_alakir_historical_sql"],
+      "conflicts": ["current header/local summon identity is 46973, while historical SQL binds npc_alakir_ice_storm to 46734 and separately configures 46973 as the field entry"],
+      "confidence": "local selector/delay confirmed; trigger identity, path, radius, damage, slow, duration and mode scaling blocked"
+    },
+    {
+      "key": "squall_line",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Alternating Squall Line vehicles move around the platform; a local random two-seat gap and temporary spell immunity are applied to target selection/hits.",
+      "values": {
+        "left_spell": 88781,
+        "right_spell": 91104,
+        "script_spell": 91129,
+        "script_spell_2": 91110,
+        "force_cast_spell": 88779,
+        "vehicle_sw_entry": 47034,
+        "vehicle_se_entry": 48852,
+        "accessory_sw_entry": 48854,
+        "accessory_se_entry": 48855,
+        "local_first": "10s",
+        "local_repeat": "31s",
+        "local_gap_seat_range": "urand(0,4), removes seatIndex and seatIndex+2",
+        "local_motion_radius": "distance from Al'Akir to (-13.16094,780.8931,191.1842)",
+        "local_motion_period_parameter": "11s",
+        "local_hit_immunity": "6s",
+        "guide_full_rotation": "30s",
+        "guide_hit_control_loss": "5s",
+        "guide_damage_per_second": {"normal": "10,000 Nature/s", "heroic": "40,000 Nature/s"},
+        "guide_total_damage": {"normal": "50,000 Nature", "heroic": "200,000 Nature"}
+      },
+      "evidence": ["wowhead_cata_alakir_442", "icy_veins_cata_alakir_2024", "repo_boss_alakir", "repo_alakir_historical_sql"],
+      "conflicts": ["guide rotation and damage descriptions do not establish local seat/vehicle geometry as retail 4.4.2 truth"],
+      "confidence": "local IDs, alternation, gap selector and timer confirmed; live geometry/damage/duration blocked"
+    },
+    {
+      "key": "acid_rain_phase_two",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "At the local 80% damage gate, mode-selected Acid Rain starts and phase-2 weather changes to heavy rain; it is removed at phase 3, death or evade.",
+      "values": {
+        "start_threshold": "below 80% via HealthBelowPctDamaged",
+        "end_threshold": "below 25% via HealthBelowPctDamaged",
+        "aura_spells": {"10N": 88290, "25N": 101451, "10H": 101452, "25H": 101453},
+        "damage_spells": {"10N": 88301, "25N": 93279, "10H": 93280, "25H": 93281},
+        "local_weather_start": "HEAVY_RAIN",
+        "local_weather_end": "NOT_STARTED",
+        "guide_initial_damage_per_second": {"normal": "500 Nature/s", "heroic": "1,000 Nature/s"},
+        "guide_stack_interval": "15s",
+        "guide_after_five_stacks": {"normal": "2,500 Nature/s", "heroic": "5,000 Nature/s"},
+        "guide_after_two_minutes": {"normal": "5,000 Nature/s", "heroic": "10,000 Nature/s"}
+      },
+      "evidence": ["wowhead_cata_alakir_442", "icy_veins_cata_alakir_2024", "repo_boss_alakir", "repo_instance_throne"],
+      "conflicts": ["guides report stacking periodic pressure and local source confirms only mode IDs/start/removal; tick, stack and cap are blocked"],
+      "confidence": "phase gate, IDs and cleanup confirmed; all quantitative behavior blocked"
+    },
+    {
+      "key": "stormlings_and_feedback",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Phase 2 schedules random-target Stormling pre-effects, which become melee adds; local death casts Feedback on Al'Akir.",
+      "values": {
+        "pre_effect_entry": 47177,
+        "stormling_entry": 47175,
+        "summon_spell": 88272,
+        "previsual_spell": 87913,
+        "summon_spell_after_previsual": 87914,
+        "feedback_spell": 87904,
+        "local_first_timer": "random 10-11s after phase transition",
+        "local_repeat": "20s",
+        "local_previsual_to_add": "3.5s",
+        "local_attack_enable": "2.3s after add summon",
+        "local_despawn_after_death": "4s",
+        "local_target_range": "100 yards",
+        "guide_health": {"10N": "258k", "10H": "412k", "25N": "902k", "25H": "1.4M"},
+        "guide_effect": "nearby Nature damage and Feedback damage-taken increase on Al'Akir",
+        "guide_proximity_range": "5 yards",
+        "guide_proximity_damage": "5,000 Nature/s",
+        "guide_feedback": "10% increased damage taken per stack",
+        "guide_feedback_duration": {"normal": "30s", "heroic": "20s"}
+      },
+      "evidence": ["wowhead_cata_alakir_442", "icy_veins_cata_alakir_2024", "repo_boss_alakir", "repo_throne_header", "repo_alakir_historical_sql"],
+      "conflicts": ["guide health/proximity/Feedback values are not independently client-verified; local source does not encode a coefficient"],
+      "confidence": "local add identities, sequencing, selector and death hook confirmed; scaling/targeting blocked"
+    },
+    {
+      "key": "phase_three_relentless_storm_and_flying",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "At 25% the central platform breaks, Al'Akir becomes passive and fly-capable, the draft opens, and Relentless Storm vehicles are created.",
+      "values": {
+        "phase_threshold": "below 25% via HealthBelowPctDamaged",
+        "initial_vehicle_ride_trigger": 89528,
+        "initial_vehicle_ride": 89527,
+        "relentless_channel": 88875,
+        "eye_of_the_storm": 82724,
+        "eye_of_the_storm_local_first": "7s",
+        "initial_vehicle_teleport_delay": "7s",
+        "teleport_reference": [-126.0, 838.0, 316.0],
+        "teleport_random_offset": "frand(-15,+15) independently on x,y,z",
+        "relentless_vehicle_entry": 47807,
+        "relentless_vehicle_count": 8,
+        "relentless_circle_radius": 107.3,
+        "relentless_circle_period_parameter": "11s",
+        "storm_distance_check": 88899,
+        "ride_spell": 89104,
+        "local_ride_exclusion": "targets within 110 yards exact 2D are removed",
+        "local_platform_state": "central platform 207737 destroyed; center draft 207922 used"
+        ,"guide_eye_of_storm_speed": "+300% movement speed",
+        "guide_wind_burst": {"cadence": "25s", "damage": {"normal": "30,000 Nature", "heroic": "60,000 Nature"}},
+        "guide_lightning": {"cadence": "4s", "damage": {"normal": "30,000 Nature", "heroic": "45,000 Nature"}}
+      },
+      "evidence": ["wowhead_cata_alakir_442", "icy_veins_cata_alakir_2024", "repo_boss_alakir", "repo_instance_throne", "repo_throne_header"],
+      "conflicts": ["guides describe Eye of the Storm movement and being pushed/falling; vehicle collision, catch, flight and exact safe-region geometry are not frozen"],
+      "confidence": "local phase transition, IDs, positions and filters confirmed; retail flying/vehicle behavior blocked"
+    },
+    {
+      "key": "phase_three_lightning_rod_clouds",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Phase 3 uses random altitude Lightning Clouds, same-altitude Lightning Rod ally filtering, and a local heroic Lightning event.",
+      "values": {
+        "wind_burst_periodic": 89638,
+        "lightning_clouds_periodic": 89639,
+        "lightning_clouds_summon": 89565,
+        "lightning_clouds_visual_dest": 89569,
+        "lightning_clouds_damage_aura": 89587,
+        "lightning_rod_periodic": 89690,
+        "lightning": 89644,
+        "cloud_bottom_entry": 51597,
+        "cloud_entry": 48190,
+        "cloud_local_first_event": "26s",
+        "cloud_target_radius": "80 yards random point",
+        "cloud_altitude_offset": "frand(-10,+10) yards",
+        "cloud_damage_vertical_filter": "abs(target.z-caster.z) <= 10 yards",
+        "rod_vertical_filter": "abs(target.z-caster.z) <= 5 yards",
+        "cloud_damage_arm_delay": "5s after summon",
+        "local_heroic_lightning_first_event": "6s; C++ entry is not repeated",
+        "guide_description": "random Lightning, delayed Lightning Rod and recurring altitude clouds",
+        "guide_lightning_rod": {"delay": "5s", "damage_per_second": {"normal": "10,000 Nature/s", "heroic": "15,000 Nature/s"}, "horizontal_radius": "20 yards", "duration": "5s"},
+        "guide_clouds": {"first": "15s", "repeat": "10s", "damage_per_second": {"normal": "25,000 Nature/s", "heroic": "50,000 Nature/s"}, "duration": "30s"}
+      },
+      "evidence": ["wowhead_cata_alakir_442", "icy_veins_cata_alakir_2024", "repo_boss_alakir", "repo_alakir_historical_sql"],
+      "conflicts": ["guide cloud cadence/damage and Lightning Rod range differ or are not exposed; local C++ only schedules initial events and relies on DBC periodic auras"],
+      "confidence": "IDs, local altitude filters and random placement confirmed; periods, radii, duration, damage and mode deltas blocked"
+    }
+  ],
+  "timer_contract": {
+    "engage": [
+      {"event": "Wind Burst", "spell": 87770, "local_first": "23s", "local_repeat": "26s", "guide_report": "roughly 25s; approximately 4s cast", "status": "local_and_guide_conflict"},
+      {"event": "Lightning Strike", "spell": 91327, "local_first": "9s", "local_repeat": "8s", "guide_report": "roughly 10s", "status": "local_and_guide_conflict"},
+      {"event": "Ice Storm", "spell": 88239, "local_first": "5s", "local_repeat": "16s", "status": "local_timer_only"},
+      {"event": "Squall Line", "spells": [88781, 91104], "local_first": "10s", "local_repeat": "31s", "status": "local_timer_only"},
+      {"event": "Static Shock heroic", "spell": 87873, "local_first": "5s", "local_repeat": "6s", "status": "local_timer_only"},
+      {"event": "Berserk", "spell": 26662, "local_first": "10min", "status": "local_timer_only_retail_status_blocked"}
+    ],
+    "phase_two": [
+      {"event": "Stormling", "spell": 88272, "local_first": "random 10-11s", "local_repeat": "20s", "target": "random hostile within 100 yards", "status": "local_timer_and_selector"},
+      {"event": "Acid Rain", "spells": [88290, 101451, 101452, 101453], "local_start": "80% damage threshold", "local_end": "25% damage threshold", "status": "local gate; periodic DBC values blocked"},
+      {"event": "Squall Line", "spells": [88781, 91104], "local_repeat": "31s through phase 2", "status": "local; cancelled at phase 3"}
+    ],
+    "phase_three": [
+      {"event": "Wind Burst periodic", "spell": 89638, "local_event": "6s initial EventMap entry", "status": "DBC periodic period blocked"},
+      {"event": "Lightning Rod periodic", "spell": 89690, "local_event": "6s initial EventMap entry", "status": "DBC periodic period blocked"},
+      {"event": "Eye of the Storm", "spell": 82724, "local_first": "7s", "status": "local one-shot event"},
+      {"event": "Lightning Clouds periodic", "spell": 89639, "local_event": "26s initial EventMap entry", "status": "DBC periodic period blocked"},
+      {"event": "Lightning heroic", "spell": 89644, "local_event": "6s initial EventMap entry", "status": "local gate; C++ does not repeat"},
+      {"event": "Initial vehicle teleport", "spell": 89661, "local_delay": "7s after 89527", "status": "local timer and random offset"}
+    ],
+    "timer_policy": "Every timer above is either local implementation evidence or a clearly labelled guide report; no unresolved timer is a retail invariant."
+  },
+  "lifecycle": {
+    "precondition": "Conclave of Wind DATA_CONCLAVE_OF_WIND must be DONE; otherwise instance creation applies UNIT_FLAG_IMMUNE_TO_PC to Al'Akir.",
+    "engage": "BossAI::JustEngagedWith sets encounter frame, aggressive reaction, phase one and ground timers; slipstreams are despawned.",
+    "phase_transitions": [
+      "HealthBelowPctDamaged(80, damage) while phase one starts Acid Rain, heavy rain and Stormling scheduling.",
+      "HealthBelowPctDamaged(25, damage) while phase two enables CanFly, stops ground attack, removes Acid Rain/too-close knockback, cancels Squall Line and starts phase-three actors."
+    ],
+    "reset": "Reset invokes BossAI reset and respawns the slipstream summon group only when Conclave is DONE.",
+    "evade": "Evade removes player Acid Rain, despawns summons, restores platform/draft, removes world-trigger auras and despawns at evade; instance FAIL restores weather/light and clears tracked phase-three vehicles.",
+    "death": "JustDied invokes BossAI death handling, removes Acid Rain, casts Serenity 89750 to players, summons chest 95386, moves the boss with MoveFall and removes world-trigger auras.",
+    "credit": "Historical instance encounter row is 46753 -> encounter 317 ('Al'Akir'); historical currency rows exist for 46753/50203/50217/50231 and creature lootid is 0. Current Classic credit/loot is unresolved.",
+    "difficulty_delta": "Heroic local behavior is Static Shock scheduling and the Lightning Strike chain-caster path; mode coefficients and current difficulty entries are not frozen."
+  },
+  "unresolved": [
+    "exact Cataclysm Classic 4.4.2 client/build and Al'Akir hotfix cutoff",
+    "all four mode health values and damage/absorb coefficients",
+    "DBC spell periods and basepoints for every quantitative mechanic",
+    "Electrocute tick cadence, retail scaling and melee-removal behavior",
+    "Lightning Strike random target, bounce/chain range, cadence and mode values",
+    "Wind Burst cast cadence, damage, knockback recovery and phase-three period",
+    "heroic Static Shock target, damage and interruption details",
+    "Ice Storm patch path, radius, damage, slow, duration, target and mode scaling",
+    "Squall Line wall geometry, gap/seat mapping, damage, duration and immunity behavior",
+    "exact damage-boundary and phase-transition semantics in the live client",
+    "Acid Rain tick, stack, cap, reset and mode scaling",
+    "Stormling count, health, proximity damage, Feedback values and target rules",
+    "phase-three CanFly, flight, fall, altitude and Eye of the Storm behavior",
+    "Relentless Storm vehicle positions, path, ride behavior and 110-yard safe region",
+    "phase-three Lightning target, cadence, damage and heroic delta",
+    "Lightning Rod delay, cadence, horizontal radius, vertical filter and damage",
+    "Lightning Clouds initial/repeat period, duration, damage and altitude targeting",
+    "wind-wall knockback return, fall/catch and death behavior",
+    "retail Berserk status and exact timer; local implementation schedules 10 minutes",
+    "reset/evade/full-state timing and weather/platform restoration in 4.4.2",
+    "encounter loot, chest, currency and player encounter-credit semantics",
+    "historical SQL difficulty-entry and reward rows are not proof of the current Classic database"
+  ],
+  "conflicts": [
+    "Current guides report Lightning Strike, Wind Burst, Ice Storm, Squall Line, Acid Rain and phase-three cadence/values that do not exactly match local C++ event timings or do not expose a four-mode matrix.",
+    "Local heroic gating is explicit for Static Shock and Lightning Strike chain caster, while guide prose is not sufficient to promote every heroic quantitative delta.",
+    "Historical SQL has identity, difficulty-entry, spell-binding, summon-group, reward and loot rows, but it is not a current 4.4.2 database snapshot."
+  ]
+}
