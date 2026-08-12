@@ -30,8 +30,8 @@ class DeclarativeMechanicContract:
     minimum_distance: float
     tank_swap_trigger: str
     target_control: str
-    interrupt_backup: bool
-    dispel_backup: bool
+    interrupt_backup: bool | None
+    dispel_backup: bool | None
     healer_ownership: str
     cooldown_schedule: str
     soak_policy: str
@@ -224,11 +224,13 @@ def formation_points(
     raise ValueError(f"formation_unknown_family:{family}")
 
 
-def compile_mechanic_contract(payload: dict[str, Any]) -> DeclarativeMechanicContract:
+def compile_mechanic_contract(
+    payload: dict[str, Any], *, allow_undeclared: bool = False
+) -> DeclarativeMechanicContract:
     supplied = frozenset(payload)
     missing = sorted(MECHANIC_CONTRACT_FIELDS - supplied)
     unknown = sorted(supplied - MECHANIC_CONTRACT_FIELDS)
-    if missing:
+    if missing and not allow_undeclared:
         raise ValueError(f"mechanic_contract_missing_fields:{','.join(missing)}")
     if unknown:
         raise ValueError(f"mechanic_contract_unknown_fields:{','.join(unknown)}")
@@ -237,17 +239,19 @@ def compile_mechanic_contract(payload: dict[str, Any]) -> DeclarativeMechanicCon
     if not strategy_id:
         raise ValueError("mechanic_contract_empty_strategy_id")
     formation = _choice("formation", payload["formation"], FORMATION_FAMILIES)
-    anchor_scope = _choice("anchor_scope", payload["anchor_scope"], ANCHOR_SCOPES)
-    tank_swap_trigger = _choice("tank_swap_trigger", payload["tank_swap_trigger"], TANK_SWAP_TRIGGERS)
+    anchor_scope = "not_declared" if allow_undeclared and "anchor_scope" not in payload else _choice("anchor_scope", payload["anchor_scope"], ANCHOR_SCOPES)
+    tank_swap_trigger = "not_declared" if allow_undeclared and "tank_swap_trigger" not in payload else _choice("tank_swap_trigger", payload["tank_swap_trigger"], TANK_SWAP_TRIGGERS)
     target_control = _choice("target_control", payload["target_control"], TARGET_CONTROLS)
-    interaction_kind = _choice("interaction_kind", payload["interaction_kind"], INTERACTION_KINDS)
-    movement_link = _choice("movement_link", payload["movement_link"], MOVEMENT_LINKS)
-    platform_policy = _choice("platform_policy", payload["platform_policy"], PLATFORM_POLICIES)
-    recovery_policy = _choice("recovery_policy", payload["recovery_policy"], RECOVERY_POLICIES)
+    interaction_kind = "not_declared" if allow_undeclared and "interaction_kind" not in payload else _choice("interaction_kind", payload["interaction_kind"], INTERACTION_KINDS)
+    movement_link = "not_declared" if allow_undeclared and "movement_link" not in payload else _choice("movement_link", payload["movement_link"], MOVEMENT_LINKS)
+    platform_policy = "not_declared" if allow_undeclared and "platform_policy" not in payload else _choice("platform_policy", payload["platform_policy"], PLATFORM_POLICIES)
+    recovery_policy = "not_declared" if allow_undeclared and "recovery_policy" not in payload else _choice("recovery_policy", payload["recovery_policy"], RECOVERY_POLICIES)
     minimum_distance = float(payload["minimum_distance"])
     if minimum_distance <= 0:
         raise ValueError("mechanic_contract_bad_minimum_distance")
     for field in ("interrupt_backup", "dispel_backup"):
+        if field not in payload and allow_undeclared:
+            continue
         if not isinstance(payload[field], bool):
             raise ValueError(f"mechanic_contract_non_boolean:{field}")
 
@@ -261,7 +265,7 @@ def compile_mechanic_contract(payload: dict[str, Any]) -> DeclarativeMechanicCon
     )
     normalized_policies: dict[str, str] = {}
     for field in policy_fields:
-        value = str(payload[field]).strip()
+        value = str(payload.get(field, "not_declared")).strip()
         if not value:
             raise ValueError(f"mechanic_contract_empty_policy:{field}")
         normalized_policies[field] = value
@@ -273,8 +277,8 @@ def compile_mechanic_contract(payload: dict[str, Any]) -> DeclarativeMechanicCon
         minimum_distance=minimum_distance,
         tank_swap_trigger=tank_swap_trigger,
         target_control=target_control,
-        interrupt_backup=payload["interrupt_backup"],
-        dispel_backup=payload["dispel_backup"],
+        interrupt_backup=payload.get("interrupt_backup"),
+        dispel_backup=payload.get("dispel_backup"),
         healer_ownership=normalized_policies["healer_ownership"],
         cooldown_schedule=normalized_policies["cooldown_schedule"],
         soak_policy=normalized_policies["soak_policy"],
