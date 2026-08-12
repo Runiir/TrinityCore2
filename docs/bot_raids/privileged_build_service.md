@@ -37,9 +37,13 @@ and a base64 Ed25519 signature. It also carries `attestation_sha256`, calculated
 the full envelope except that field.
 
 The verifier then fetches the record from the policy-pinned HTTPS ledger endpoint.
-The independently signed checkpoint must prove unique, non-revoked inclusion and bind
+The independently signed, fresh record assertion must report unique, non-revoked
+inclusion and bind
 the ledger head/sequence, record ID, attestation-record hash, attestation payload hash,
-and receipt hash. Its signing key is distinct and separately pinned by the policy.
+and receipt hash. Its signing key and public-key hash must be distinct from the build
+signer and are separately pinned by policy. This v1 protocol trusts the separately
+privileged ledger service's append-only operation; it does not claim a Merkle inclusion
+or cross-checkpoint consistency proof.
 
 Verification is fail-closed:
 
@@ -55,5 +59,6 @@ requires privileged attestation; its JSON explicitly reports `gate_bearing: fals
 Canonical Phase 1 capture additionally requires `--build-attestation`; the capture
 cannot begin while the tracked service state is unprovisioned, the public key identity
 differs, local receipt reconstruction fails, or the external signature is invalid.
-Ephemeral test keys are allowed only under the coordinator's explicit test mode and
-never satisfy a production gate.
+Ephemeral test keys are allowed only when both the verifier flag and the underlying
+coordinator receipt are explicitly test mode. Such verification reports
+`gate_bearing: false` and never satisfies a production gate.

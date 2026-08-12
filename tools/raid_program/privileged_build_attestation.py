@@ -221,6 +221,8 @@ def verify_privileged_attestation(
     policy = load_json(policy_path)
     receipt = load_json(receipt_path)
     attestation = load_json(attestation_path)
+    if allow_test_mode and receipt.get("test_mode") is not True:
+        raise CoordinatorError("test trust rules require a coordinator test-mode receipt")
     controls = policy.get("mechanical_controls", {})
     declared_service_path = _policy_service_config(policy)
     if service_config_path is not None and service_config_path.resolve() != declared_service_path:
@@ -266,6 +268,10 @@ def verify_privileged_attestation(
             raise CoordinatorError(
                 f"privileged service field {service_field} is not policy-pinned"
             )
+    if service["key_id"] == service["ledger_key_id"]:
+        raise CoordinatorError("build and ledger signing key IDs must be distinct")
+    if service["public_key_sha256"] == service["ledger_public_key_sha256"]:
+        raise CoordinatorError("build and ledger signing public keys must be distinct")
     if service.get("signed_identity_scope") != REQUIRED_SIGNED_SCOPE:
         raise CoordinatorError("privileged service signed identity scope is incomplete")
     if service.get("required_authority_boundary") != REQUIRED_AUTHORITY_BOUNDARY:
@@ -401,6 +407,7 @@ def verify_privileged_attestation(
         "commit": receipt["commit"],
         "classification": receipt["classification"],
         "test_mode": bool(receipt.get("test_mode")),
+        "gate_bearing": not bool(receipt.get("test_mode")),
     }
 
 

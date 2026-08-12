@@ -862,6 +862,8 @@ def test_privileged_ed25519_attestation_binds_exact_success_receipt(
     assert report["receipt_sha256"] == receipt["receipt_sha256"]
     assert report["ledger_sequence"] == 1
     assert report["ledger_head_sequence"] == 1
+    assert report["test_mode"] is True
+    assert report["gate_bearing"] is False
 
     caller_service = tmp_path / "caller-selected-service.json"
     caller_service.write_text(json.dumps(service), encoding="utf-8")
@@ -876,6 +878,16 @@ def test_privileged_ed25519_attestation_binds_exact_success_receipt(
     forged["attestation_sha256"] = qb.sha256_bytes(qb.canonical_json(forged))
     attestation_path.write_text(json.dumps(forged), encoding="utf-8")
     with pytest.raises(qb.CoordinatorError, match="payload differs"):
+        pba.verify_privileged_attestation(
+            attestation_path, receipt_path, policy_path, None,
+            allow_test_mode=True,
+        )
+    service["ledger_key_id"] = service["key_id"]
+    service_config.write_text(json.dumps(service), encoding="utf-8")
+    controls["privileged_build_service_config_sha256"] = qb.sha256_file(service_config)
+    controls["privileged_ledger_key_id"] = service["ledger_key_id"]
+    policy_path.write_text(json.dumps(frozen), encoding="utf-8")
+    with pytest.raises(qb.CoordinatorError, match="key IDs must be distinct"):
         pba.verify_privileged_attestation(
             attestation_path, receipt_path, policy_path, None,
             allow_test_mode=True,
@@ -899,6 +911,19 @@ def test_tracked_privileged_service_is_policy_pinned_and_unprovisioned(
     with pytest.raises(qb.CoordinatorError, match="not provisioned"):
         pba.verify_privileged_attestation(
             dummy_attestation, dummy_receipt, policy_path, None,
+        )
+
+
+def test_test_trust_rules_reject_a_non_test_receipt(tmp_path: Path) -> None:
+    policy = tmp_path / "policy.json"
+    receipt = tmp_path / "receipt.json"
+    attestation = tmp_path / "attestation.json"
+    policy.write_text("{}", encoding="utf-8")
+    receipt.write_text(json.dumps({"test_mode": False}), encoding="utf-8")
+    attestation.write_text("{}", encoding="utf-8")
+    with pytest.raises(qb.CoordinatorError, match="test trust rules"):
+        pba.verify_privileged_attestation(
+            attestation, receipt, policy, None, allow_test_mode=True,
         )
 
 
