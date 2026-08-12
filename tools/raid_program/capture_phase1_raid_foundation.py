@@ -981,8 +981,14 @@ def validate_build_receipt(
             "binary_sha256": sha256_file(binary) if binary.is_file() else None,
             "binary_size_bytes": binary.stat().st_size if binary.is_file() else 0,
             "binary_is_elf": is_elf,
-            "binary_binding": "privileged_ed25519_attestation_plus_coordinator_receipt_path_size_sha256_commit_and_timestamp_verified",
+            "binary_binding": (
+                "privileged_ed25519_attestation_plus_coordinator_receipt_path_size_sha256_commit_and_timestamp_verified"
+                if privileged_verification is not None
+                else "explicit_trusted_local_operator_coordinator_receipt_path_size_sha256_commit_and_timestamp_verified"
+            ),
             "privileged_attestation": privileged_verification,
+            "receipt_trust_model": verification.get("receipt_trust_model"),
+            "operator_identity": verification.get("operator_identity"),
         }
     except Exception as error:  # fail closed, while retaining a useful rejection
         return {
@@ -1476,7 +1482,7 @@ def main() -> int:
     parser.add_argument("--raw-output", type=Path, default=None)
     parser.add_argument("--server-log-output", type=Path, default=None)
     parser.add_argument("--build-receipt", type=Path, required=True)
-    parser.add_argument("--build-attestation", type=Path, required=True)
+    parser.add_argument("--build-attestation", type=Path, default=None)
     parser.add_argument("--worktree", type=Path, default=ROOT)
     parser.add_argument("--observe-sec", type=int, default=900)
     parser.add_argument("--startup-timeout-sec", type=int, default=180)
@@ -1515,7 +1521,7 @@ def main() -> int:
         args.build_receipt.resolve(),
         (worktree / "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json").resolve(),
         worktree, binary, config,
-        args.build_attestation.resolve(),
+        args.build_attestation.resolve() if args.build_attestation is not None else None,
     )
     if not build_provenance.get("valid"):
         raise SystemExit("build receipt rejected: " + ",".join(build_provenance.get("rejections", [])))

@@ -14,6 +14,7 @@ import fcntl
 import hashlib
 import json
 import os
+import pwd
 import re
 import selectors
 import shlex
@@ -958,6 +959,9 @@ def finalize_ticket(paths: Paths, ticket_id: str, receipt: dict) -> None:
             "environment_contract_sha256": sha256_bytes(
                 canonical_json(receipt["environment_contract"])
             ),
+            "operator_identity_sha256": sha256_bytes(
+                canonical_json(receipt["operator_identity"])
+            ),
             "output_artifacts_sha256": sha256_bytes(
                 canonical_json(receipt["output_artifacts"])
             ),
@@ -1293,6 +1297,14 @@ def run_ticket(
         "error": error_message,
         "test_mode": os.environ.get("TRINITY_RAID_BUILD_TESTING") == "1",
         "policy_sha256": sha256_bytes(canonical_json(policy)),
+        "operator_identity": {
+            "uid": os.getuid(),
+            "effective_uid": os.geteuid(),
+            "username": pwd.getpwuid(os.getuid()).pw_name,
+            "trust_model": policy.get("mechanical_controls", {}).get(
+                "receipt_trust_model"
+            ),
+        },
     }
     receipt = dict(receipt_without_hash)
     receipt["receipt_sha256"] = sha256_bytes(canonical_json(receipt_without_hash))
@@ -1336,6 +1348,7 @@ def verify_receipt(path: Path, policy: dict, allow_test_mode: bool = False) -> d
         "linker_job_ceiling",
         "peak_observations",
         "log_sha256",
+        "operator_identity",
     }
     missing = sorted(required - receipt.keys())
     if missing:
@@ -1378,6 +1391,9 @@ def verify_receipt(path: Path, policy: dict, allow_test_mode: bool = False) -> d
             ),
             "environment_contract_sha256": sha256_bytes(
                 canonical_json(receipt.get("environment_contract"))
+            ),
+            "operator_identity_sha256": sha256_bytes(
+                canonical_json(receipt.get("operator_identity"))
             ),
             "output_artifacts_sha256": sha256_bytes(
                 canonical_json(receipt.get("output_artifacts"))
@@ -1442,6 +1458,33 @@ def verify_receipt(path: Path, policy: dict, allow_test_mode: bool = False) -> d
         raise CoordinatorError("receipt linker ceiling exceeds policy")
     if receipt.get("test_mode") and not allow_test_mode:
         raise CoordinatorError("synthetic/test receipt cannot satisfy a production build gate")
+    controls = policy.get("mechanical_controls", {})
+    trust_model = controls.get("receipt_trust_model")
+    if trust_model == "explicit_trusted_local_operator":
+        operator = receipt.get("operator_identity")
+        expected_uid = controls.get("trusted_local_operator_uid")
+        expected_name = controls.get("trusted_local_operator_name")
+        if not isinstance(expected_uid, int) or expected_uid < 0:
+            raise CoordinatorError("trusted local operator UID is invalid")
+        if not isinstance(expected_name, str) or not expected_name:
+            raise CoordinatorError("trusted local operator name is invalid")
+        if not isinstance(operator, dict) or operator != {
+            "uid": expected_uid,
+            "effective_uid": expected_uid,
+            "username": expected_name,
+            "trust_model": trust_model,
+        }:
+            raise CoordinatorError("receipt trusted local operator identity mismatch")
+        if os.getuid() != expected_uid or os.geteuid() != expected_uid:
+            raise CoordinatorError("current verifier is not the authorized local operator")
+        try:
+            current_name = pwd.getpwuid(os.getuid()).pw_name
+        except KeyError as error:
+            raise CoordinatorError("current local operator account is unavailable") from error
+        if current_name != expected_name:
+            raise CoordinatorError("current local operator name mismatch")
+    elif trust_model not in {None, "privileged_external_attestation"}:
+        raise CoordinatorError("unsupported receipt trust model")
     expected_configuration = expected_build_configuration(policy)
     configuration = receipt.get("build_configuration")
     if not isinstance(configuration, dict):
@@ -1606,9 +1649,12 @@ def verify_receipt(path: Path, policy: dict, allow_test_mode: bool = False) -> d
     return {
         "valid": True,
         "local_semantics_valid": True,
-        "gate_bearing": not bool(
-            policy.get("mechanical_controls", {}).get(
-                "privileged_receipt_signature_required"
+        "gate_bearing": (
+            not bool(receipt.get("test_mode"))
+            and not bool(
+                policy.get("mechanical_controls", {}).get(
+                    "privileged_receipt_signature_required"
+                )
             )
         ),
         "privileged_attestation_required": bool(
@@ -1616,6 +1662,8 @@ def verify_receipt(path: Path, policy: dict, allow_test_mode: bool = False) -> d
                 "privileged_receipt_signature_required"
             )
         ),
+        "receipt_trust_model": trust_model,
+        "operator_identity": receipt.get("operator_identity"),
         "receipt_sha256": claimed,
         "ticket_id": receipt["ticket_id"],
         "classification": receipt["classification"],

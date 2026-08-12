@@ -534,12 +534,43 @@ def test_v8_receipt_binds_effective_cmake_settings_and_current_cache(
     local_report = qb.verify_receipt(receipt_path, frozen, allow_test_mode=True)
     assert local_report["valid"] is True
     assert local_report["gate_bearing"] is False
-    assert local_report["privileged_attestation_required"] is True
+    assert local_report["privileged_attestation_required"] is False
 
     cache = repo / "build/CMakeCache.txt"
     cache.write_text(cache.read_text().replace("-O1", "-O3"), encoding="utf-8")
     with pytest.raises(qb.CoordinatorError, match="current effective CMake settings"):
         qb.verify_receipt(receipt_path, frozen, allow_test_mode=True)
+
+
+def test_v8_explicit_local_operator_production_receipt_is_gate_bearing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("TRINITY_RAID_BUILD_TESTING", raising=False)
+    monkeypatch.delenv("TRINITY_RAID_BUILD_STATE_DIR_OVERRIDE", raising=False)
+    repo = configured_git_repo(tmp_path / "repo")
+    frozen = json.loads(
+        (ROOT / "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json").read_text()
+    )
+    monkeypatch.setattr(qb, "resource_snapshot", lambda _: synthetic_snapshot())
+    monkeypatch.setattr(qb, "find_live_validation_processes", lambda *_args, **_kwargs: [])
+    seed_configure_lineage(repo, frozen, tmp_path)
+    receipt_path = tmp_path / "production-build.json"
+    code, receipt = qb.run_ticket(
+        repo, frozen, "worldserver_build", exact_worldserver_build(frozen), None,
+        receipt_path, 2.0,
+    )
+    assert code == 0
+    assert receipt["test_mode"] is False
+    report = qb.verify_receipt(receipt_path, frozen)
+    assert report["valid"] is True
+    assert report["gate_bearing"] is True
+    assert report["receipt_trust_model"] == "explicit_trusted_local_operator"
+    assert report["operator_identity"] == {
+        "uid": 1000,
+        "effective_uid": 1000,
+        "username": "runiir",
+        "trust_model": "explicit_trusted_local_operator",
+    }
 
 
 def test_v8_full_cache_drift_during_build_is_provenance_abort(
@@ -987,6 +1018,12 @@ def test_receipt_rejects_worldserver_not_produced_by_ticket(tmp_path: Path) -> N
                 "TRINITY_RAID_BUILD_TICKET", "TRINITY_RAID_BUILD_COMPILER_JOBS",
                 "TRINITY_RAID_BUILD_LINKER_JOBS", "TRINITY_RAID_BUILD_LINK_LOCK",
             }),
+        },
+        "operator_identity": {
+            "uid": 1000,
+            "effective_uid": 1000,
+            "username": "runiir",
+            "trust_model": None,
         },
         "command_sha256": "0" * 64,
         "resource_class": "worldserver_build",
