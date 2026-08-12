@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from math import cos, pi, sin
+from math import cos, hypot, pi, sin
 from typing import Any, Iterable
 
 
@@ -56,6 +56,49 @@ class RaidMember:
     active: bool = True
     lease_owned: bool = True
     roster_slot_id: str | None = None
+
+
+@dataclass(frozen=True)
+class SavedRaidPlacement:
+    guid: int
+    map_id: int
+    x: float
+    y: float
+    z: float
+
+
+def preflight_validation_raid_spawn(
+    planned_guids: Iterable[int],
+    saved_placements: Iterable[SavedRaidPlacement],
+    *,
+    route_start_map_id: int,
+    route_start_x: float,
+    route_start_y: float,
+    route_start_z: float,
+    horizontal_tolerance_yards: float = 5.0,
+    vertical_tolerance_yards: float = 3.0,
+) -> tuple[SavedRaidPlacement, ...]:
+    """Validate the complete immutable raid spawn plan without side effects."""
+    guids = tuple(planned_guids)
+    placements = tuple(saved_placements)
+    if not guids or any(guid <= 0 for guid in guids) or len(set(guids)) != len(guids):
+        raise ValueError("validation_raid_preflight_roster_not_unique")
+    if route_start_map_id <= 0 or horizontal_tolerance_yards <= 0 or vertical_tolerance_yards <= 0:
+        raise ValueError("validation_raid_preflight_route_start_invalid")
+
+    by_guid = {placement.guid: placement for placement in placements}
+    if len(by_guid) != len(placements) or set(by_guid) != set(guids):
+        raise ValueError("validation_raid_preflight_saved_placement_missing")
+    for guid in guids:
+        placement = by_guid[guid]
+        if (
+            placement.map_id != route_start_map_id
+            or hypot(placement.x - route_start_x, placement.y - route_start_y)
+            > horizontal_tolerance_yards
+            or abs(placement.z - route_start_z) > vertical_tolerance_yards
+        ):
+            raise ValueError("validation_raid_preflight_route_start_mismatch")
+    return tuple(by_guid[guid] for guid in guids)
 
 
 @dataclass(frozen=True)

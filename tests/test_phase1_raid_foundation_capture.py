@@ -800,6 +800,16 @@ def test_canonical_capture_is_terminal_gate_driven_without_a_raid_duration_cap()
     assert '"classification": "success" if success else (' in source
 
 
+def test_phase1_capture_uses_only_approved_incomplete_or_infrastructure_taxonomy():
+    source = (
+        Path(__file__).resolve().parents[1]
+        / "tools/raid_program/capture_phase1_raid_foundation.py"
+    ).read_text(encoding="utf-8")
+    assert 'else "incomplete_evidence"' in source
+    assert '"infrastructure_abort" if (' in source
+    assert '"foundation_gate_failed"' not in source
+
+
 def test_uncapped_capture_fails_closed_when_any_telemetry_channel_is_stale():
     state = {}
     assert observe_telemetry_freshness(

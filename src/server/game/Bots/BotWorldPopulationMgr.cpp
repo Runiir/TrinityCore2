@@ -3728,6 +3728,11 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
         ExtractJsonNumberField(routeJson, "navigation_anchor_y", node.NavigationAnchorY);
         ExtractJsonNumberField(routeJson, "navigation_anchor_z", node.NavigationAnchorZ);
         ExtractJsonNumberField(routeJson, "navigation_anchor_o", node.NavigationAnchorO);
+        node.BotStartMapId = uint32(std::max(0, readInt(routeJson, "bot_start_map_id")));
+        node.BotStartX = readFloat(routeJson, "bot_start_x");
+        node.BotStartY = readFloat(routeJson, "bot_start_y");
+        node.BotStartZ = readFloat(routeJson, "bot_start_z");
+        node.BotStartO = readFloat(routeJson, "bot_start_o");
         node.TargetEntry = uint32(std::max(0, readInt(routeJson, "source_entry")));
         std::string targetSpawnIdText = ExtractJsonStringField(routeJson, "source_guid");
         if (!targetSpawnIdText.empty())
@@ -4428,6 +4433,84 @@ void BotWorldPopulationMgr::EnsurePopulation()
     }
 
     uint32 const expectedPopulation = raidMode ? uint32(rosterPlan.size()) : Cohort().Config.TargetPopulation;
+    struct PlannedValidationRaidSpawn
+    {
+        std::string RosterSlotId;
+        uint32 Guid = 0;
+        SpawnPlacement Placement;
+    };
+    std::vector<PlannedValidationRaidSpawn> validationRaidSpawnPlan;
+
+    // A validation raid is admitted as one exact saved-position roster.  Read
+    // and validate every GUID and placement before the first lease or native
+    // login, using the route-start identity generated from the authoritative
+    // scenario/provisioning contract.  This intentionally performs no repair:
+    // a missing/stale member leaves no new bot, lease, or group behind.
+    bool const validationRaidPreflight = raidMode
+        && Cohort().Config.ValidationRouteEnable && Party().Bots.empty();
+    if (validationRaidPreflight)
+    {
+        if (!Cohort().RosterLeases.empty())
+        {
+            Cohort().LastPopulationFailureReason = "validation_raid_preflight_existing_lease";
+            return;
+        }
+        if (Party().ValidationRouteManifest.empty())
+        {
+            Cohort().LastPopulationFailureReason = "validation_raid_preflight_route_start_missing";
+            return;
+        }
+
+        ValidationRouteManifestNode const& routeStart = Party().ValidationRouteManifest.front();
+        static constexpr float RouteStartHorizontalToleranceYards = 5.0f;
+        static constexpr float RouteStartVerticalToleranceYards = 3.0f;
+        if (!routeStart.BotStartMapId
+            || routeStart.ExpectedBotCount != rosterPlan.size()
+            || !MapManager::IsValidMapCoord(routeStart.BotStartMapId, routeStart.BotStartX,
+                routeStart.BotStartY, routeStart.BotStartZ, routeStart.BotStartO))
+        {
+            Cohort().LastPopulationFailureReason = "validation_raid_preflight_route_start_invalid";
+            return;
+        }
+
+        std::set<uint32> plannedGuids;
+        validationRaidSpawnPlan.reserve(rosterPlan.size());
+        for (RaidRosterPlanSlot const& slot : rosterPlan)
+        {
+            uint32 const candidateGuid = SelectPoolCandidateGuid(slot.RosterSlotId, &plannedGuids);
+            if (!candidateGuid)
+            {
+                Cohort().LastPopulationFailureReason = "validation_raid_preflight_exact_roster_missing";
+                return;
+            }
+
+            SpawnPlacement placement;
+            if (!ResolveSavedSpawnPlacement(candidateGuid, placement)
+                || placement.Source != "saved_position")
+            {
+                Cohort().LastPopulationFailureReason = "validation_raid_preflight_saved_placement_missing";
+                return;
+            }
+            if (placement.MapId != routeStart.BotStartMapId
+                || Distance2d(placement.X, placement.Y, routeStart.BotStartX, routeStart.BotStartY)
+                    > RouteStartHorizontalToleranceYards
+                || std::fabs(placement.Z - routeStart.BotStartZ) > RouteStartVerticalToleranceYards)
+            {
+                Cohort().LastPopulationFailureReason = "validation_raid_preflight_route_start_mismatch";
+                return;
+            }
+
+            plannedGuids.insert(candidateGuid);
+            validationRaidSpawnPlan.push_back({ slot.RosterSlotId, candidateGuid, placement });
+        }
+        if (validationRaidSpawnPlan.size() != rosterPlan.size()
+            || plannedGuids.size() != rosterPlan.size())
+        {
+            Cohort().LastPopulationFailureReason = "validation_raid_preflight_roster_not_unique";
+            return;
+        }
+    }
+
     uint32 attempts = 0;
     uint32 maxAttempts = std::max<uint32>(1, expectedPopulation * 2);
     while (Cohort().Active && Party().Bots.size() < expectedPopulation && attempts < maxAttempts)
@@ -4440,7 +4523,23 @@ void BotWorldPopulationMgr::EnsurePopulation()
             break;
         }
 
-        uint32 candidateGuid = SelectPoolCandidateGuid(rosterSlotId);
+        PlannedValidationRaidSpawn const* plannedSpawn = nullptr;
+        if (validationRaidPreflight)
+        {
+            auto const planned = std::find_if(validationRaidSpawnPlan.begin(), validationRaidSpawnPlan.end(),
+                [&rosterSlotId](PlannedValidationRaidSpawn const& row)
+                {
+                    return row.RosterSlotId == rosterSlotId;
+                });
+            if (planned == validationRaidSpawnPlan.end())
+            {
+                Cohort().LastPopulationFailureReason = "validation_raid_preflight_slot_missing";
+                break;
+            }
+            plannedSpawn = &*planned;
+        }
+
+        uint32 candidateGuid = plannedSpawn ? plannedSpawn->Guid : SelectPoolCandidateGuid(rosterSlotId);
         if (!candidateGuid)
         {
             Cohort().LastPopulationFailureReason = Cohort().Config.PoolTagFilter.empty() ? "no_available_pool_candidate" : "no_available_pool_candidate_for_tag";
@@ -4454,8 +4553,8 @@ void BotWorldPopulationMgr::EnsurePopulation()
             continue;
         }
 
-        SpawnPlacement placement;
-        if (!ResolveSpawnPlacement(candidateGuid, placement))
+        SpawnPlacement placement = plannedSpawn ? plannedSpawn->Placement : SpawnPlacement();
+        if (!plannedSpawn && !ResolveSpawnPlacement(candidateGuid, placement))
         {
             TC_LOG_ERROR("server", "BotWorld spawn skipped bot_guid=%u spawn_mode=%s fallback=%u reason=no_saved_or_local_spawn",
                 candidateGuid, Cohort().Config.SpawnMode.c_str(), Cohort().Config.AllowConfiguredCenterFallback ? 1 : 0);
@@ -9010,7 +9109,7 @@ std::string BotWorldPopulationMgr::GetBotClassSpec(Player const* bot) const
     return {};
 }
 
-uint32 BotWorldPopulationMgr::SelectPoolCandidateGuid(std::string const& rosterSlotId) const
+uint32 BotWorldPopulationMgr::SelectPoolCandidateGuid(std::string const& rosterSlotId, std::set<uint32> const* excludedGuids) const
 {
     std::ostringstream query;
     query << "SELECT cbp.guid FROM character_bot_pool cbp INNER JOIN characters c ON c.guid = cbp.guid "
@@ -9043,11 +9142,14 @@ uint32 BotWorldPopulationMgr::SelectPoolCandidateGuid(std::string const& rosterS
         query << " AND cbp.class_spec = '" << escapedSpec << "'";
     }
 
-    if (!Cohort().FailedSpawnGuids.empty())
+    std::set<uint32> rejectedGuids = Cohort().FailedSpawnGuids;
+    if (excludedGuids)
+        rejectedGuids.insert(excludedGuids->begin(), excludedGuids->end());
+    if (!rejectedGuids.empty())
     {
         query << " AND cbp.guid NOT IN (";
         bool first = true;
-        for (uint32 guid : Cohort().FailedSpawnGuids)
+        for (uint32 guid : rejectedGuids)
         {
             if (!first)
                 query << ',';
@@ -22816,6 +22918,51 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             return true;
 
         bool routeTrashFocus = Cohort().Config.ValidationRouteKind != "boss";
+        if (!routeTrashFocus)
+        {
+            // A shared boss-route focus is hostile authority only when the
+            // current route contract declares it.  Never let a stale or
+            // prerequisite focus fall through to an unrestricted profile
+            // action merely because another group member selected it.
+            Creature const* focusCreature = target->ToCreature();
+            if (!isValidationRouteObjectiveTarget(focusCreature))
+            {
+                bot->InterruptNonMeleeSpells(false);
+                bot->AttackStop();
+                if (Pet* pet = bot->GetPet())
+                    pet->AttackStop();
+                for (Unit* controlled : bot->m_Controlled)
+                    if (controlled)
+                        controlled->AttackStop();
+                situation = "validation_route_prerequisite";
+                action = "raid_target_not_declared_hold";
+                return true;
+            }
+
+            // The typed authority owns target selection plus the contract's
+            // allow_area_damage and allow_multidot policy.  A declared shared
+            // focus that cannot establish that authority must remain closed.
+            BossMechanicActionResult mechanic = TryBossMechanics(state, bot, power, stage, activity);
+            if (mechanic.Handled)
+            {
+                situation = mechanic.Situation;
+                action = mechanic.Action;
+                target = mechanic.Target;
+                return true;
+            }
+
+            bot->InterruptNonMeleeSpells(false);
+            bot->AttackStop();
+            if (Pet* pet = bot->GetPet())
+                pet->AttackStop();
+            for (Unit* controlled : bot->m_Controlled)
+                if (controlled)
+                    controlled->AttackStop();
+            situation = bot->GetMap() && bot->GetMap()->IsRaid() ? "raid_boss" : "dungeon_boss";
+            action = "raid_mechanic_contract_fail_closed";
+            return true;
+        }
+
         char const* focusSituation = routeTrashFocus ? "validation_route" : "validation_route_prerequisite";
         bool botIsTank = std::string(GetDungeonRole(bot)) == "tank";
         ResolvedCombatAction profileAction = ResolveProfileCombatAction(bot, target);

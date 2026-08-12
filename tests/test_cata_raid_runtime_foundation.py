@@ -88,6 +88,42 @@ def test_validation_saved_position_is_route_map_bound_without_spawn_fallback():
     assert "mapId != Cohort().Config.ValidationRouteMapId" in resume
 
 
+def test_validation_raid_preflights_exact_saved_roster_before_first_claim_or_spawn():
+    population = IMPL[
+        IMPL.index("void BotWorldPopulationMgr::EnsurePopulation()"):
+        IMPL.index("void BotWorldPopulationMgr::EnsureCalibrationPopulation()")
+    ]
+    manifest = IMPL[
+        IMPL.index("void BotWorldPopulationMgr::LoadValidationRouteManifest()"):
+        IMPL.index("bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode")
+    ]
+    preflight = population.index("if (validationRaidPreflight)")
+    first_claim = population.index("ClaimBotGuid(candidateGuid, rosterSlotId)")
+    first_spawn = population.index('sBotMgr->SpawnWorldBot("any"')
+
+    assert preflight < first_claim < first_spawn
+    for field in ("bot_start_map_id", "bot_start_x", "bot_start_y", "bot_start_z", "bot_start_o"):
+        assert field in manifest
+    for token in (
+        "Party().ValidationRouteManifest.front()",
+        "routeStart.ExpectedBotCount != rosterPlan.size()",
+        "SelectPoolCandidateGuid(slot.RosterSlotId, &plannedGuids)",
+        "ResolveSavedSpawnPlacement(candidateGuid, placement)",
+        "placement.MapId != routeStart.BotStartMapId",
+        "RouteStartHorizontalToleranceYards",
+        "RouteStartVerticalToleranceYards",
+        'validation_raid_preflight_route_start_mismatch',
+    ):
+        assert token in population
+    before_claim = population[preflight:first_claim]
+    assert "ClaimBotGuid(" not in before_claim
+    assert "SpawnWorldBot" not in before_claim
+    assert "SpawnWorldBotInGroup" not in before_claim
+    assert "new Group" not in before_claim
+    assert "ResolveSpawnPlacement(candidateGuid, placement)" not in before_claim
+    assert "plannedSpawn ? plannedSpawn->Placement" in population
+
+
 def test_raid_size_and_difficulty_are_explicit_and_fail_closed():
     assert "uint8 RaidSize = 10;" in HEADER
     assert "uint8 RaidDifficulty = 0;" in HEADER
@@ -181,6 +217,41 @@ def test_route_directed_boss_assist_cannot_bypass_the_typed_contract_authority()
     assert "if (!IsBossContext(bot, result.Target) && !routeDirectedBoss)" in boss_runtime
     assert 'result.Action = "raid_mechanic_contract_fail_closed";' in boss_runtime
     assert "0, false, false, forbidArea, raidAdapter.AllowMultidot" in boss_runtime
+
+
+def test_shared_boss_focus_cannot_bypass_declared_target_or_typed_contract_authority():
+    route_start = IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    route_end = IMPL.index("bool BotWorldPopulationMgr::IsBossContext", route_start)
+    route_runtime = IMPL[route_start:route_end]
+    focus_start = route_runtime.index("if (Unit* focusTarget = routeGroupFocusTarget())")
+    focus_end = route_runtime.index(
+        'if (std::string(GetDungeonRole(bot)) != "tank"\n        && (', focus_start
+    )
+    shared_focus = route_runtime[focus_start:focus_end]
+
+    heal = shared_focus.index("if (tryRouteGroupHeal(bot, target))")
+    boss_authority = shared_focus.index("if (!routeTrashFocus)")
+    profile_action = shared_focus.index(
+        "ResolvedCombatAction profileAction = ResolveProfileCombatAction(bot, target);"
+    )
+    assert heal < boss_authority < profile_action
+
+    typed_boss_path = shared_focus[boss_authority:profile_action]
+    assert "if (!isValidationRouteObjectiveTarget(focusCreature))" in typed_boss_path
+    assert 'action = "raid_target_not_declared_hold";' in typed_boss_path
+    assert "BossMechanicActionResult mechanic = TryBossMechanics(state, bot, power, stage, activity);" in typed_boss_path
+    assert "if (mechanic.Handled)" in typed_boss_path
+    assert 'action = "raid_mechanic_contract_fail_closed";' in typed_boss_path
+    assert typed_boss_path.count("return true;") >= 3
+
+    boss_start = IMPL.index("BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMechanics")
+    boss_end = IMPL.index(
+        "BotWorldPopulationMgr::RaidRoleAssignment BotWorldPopulationMgr::BuildRaidRoleAssignment",
+        boss_start,
+    )
+    boss_runtime = IMPL[boss_start:boss_end]
+    assert "forbidArea, raidAdapter.AllowMultidot" in boss_runtime
+    assert 'RecordRaidTelemetry(state, bot, focus, "raid_focus_fire", "declared_target_selected"' in boss_runtime
 
 
 def test_phase1_target_transfer_and_swap_controls_are_executable():

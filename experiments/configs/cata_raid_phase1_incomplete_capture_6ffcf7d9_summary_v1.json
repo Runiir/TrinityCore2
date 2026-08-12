@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "capture_id": "cata_raid_phase1_bwd_10n_foundation_v1",
+  "classification": "incomplete_evidence",
+  "source_identity": {"commit": "6ffcf7d9c19c9b4291d065fc687079cc5f2a75b6", "tree": "613fa58437b0131b1add3e5a18516c01353e719e", "clean_at_start": true},
+  "binary_sha256": "e46f032a583aedb7e19aa3a16baf93f86ee7ef6353c68b404f3c0c4a6f344f07",
+  "worldserver_exit_code": 0,
+  "semantic_stall": {"detected": true, "seconds": 301.36, "unchanged_samples": 60, "signature": "559bab764af21c9daa9d02f3ff530da69b025e36bd549169a517ca579c1c6467", "route_node_id": "89616cef23a42a2e", "route_label": "entry trash", "raid_runtime_active": false, "accepted_stable_statuses": 0},
+  "cleanup": {"gate_passed": true, "stop_observed": true, "stop_ok": true, "zero_bots": true, "zero_leases": true, "worldserver_process_absent": true, "postflight_passed": true},
+  "forbidden_assistance": {"observed": false, "gate_passed": true},
+  "telemetry": {"watchdog_healthy": true, "wall_clock_mode": "uncapped", "heartbeat_rows": 182, "status_rows": 62, "diagnosis_rows": 60, "trace_rows": 60, "active_raid_identity_missing": true, "demux_gate_passed": false},
+  "artifact": {
+    "pointer": "artifacts/cata_raid_program/phase1_raid_foundation_6ffcf7d9_20260812.dvc",
+    "dvc_directory_md5": "3b098a87841a913ea9c8febd975f6703.dir",
+    "size_bytes": 15828763,
+    "nfiles": 3,
+    "raw_jsonl": {"md5": "47b7ada2a502e99ad82c3da99d8d4c69", "sha256": "1b3a9cccd42b39ac4373ca597b4fe74acd35b00db5e1ed8b40d4ff2991a7775c", "rows": 184},
+    "report": {"md5": "de2a78f652310c6b211ebd01f3a8425a", "file_sha256": "efe2fd3edc7cef15bd23655c22f8fedd81a8832585010ac5f3f159d94865a2a9", "canonical_report_sha256": "b474c8a6447467c9a4474bbdb1c334e8df8362a0104e5b9abcc828a4e0a2434d"},
+    "worldserver_log": {"md5": "f510dc412b0677ba2e95012b6dd5a167", "sha256": "bb83f5f1c6e5fa4eaa0d29276e10977cabd3a2086bb1884ce61ff66299dc7c68", "bytes": 7906548},
+    "targeted_push_completed": true,
+    "targeted_remote_status": "cache_and_remote_in_sync_before_eviction",
+    "workspace_payload_evicted": true,
+    "exact_three_child_cache_objects_evicted": true,
+    "directory_metadata_retained": true,
+    "broad_gc_used": false
+  },
+  "acceptance": {"phase1_gate_passed": false, "gameplay_failure": false, "fidelity_claim": false, "root_cause": "stale persisted map-0 leader prevented exact BWD native instance formation"}
+}

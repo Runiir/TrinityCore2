@@ -420,6 +420,11 @@ private:
         float NavigationAnchorY = 0.0f;
         float NavigationAnchorZ = 0.0f;
         float NavigationAnchorO = 0.0f;
+        uint32 BotStartMapId = 0;
+        float BotStartX = 0.0f;
+        float BotStartY = 0.0f;
+        float BotStartZ = 0.0f;
+        float BotStartO = 0.0f;
         uint32 TargetEntry = 0;
         ObjectGuid::LowType TargetSpawnId = 0;
         uint32 OpenerTargetEntry = 0;
@@ -1416,7 +1421,7 @@ private:
     std::vector<RaidRosterPlanSlot> BuildRosterPlan() const;
     std::string SelectNextRosterSlot() const;
     std::string GetBotClassSpec(Player const* bot) const;
-    uint32 SelectPoolCandidateGuid(std::string const& rosterSlotId = {}) const;
+    uint32 SelectPoolCandidateGuid(std::string const& rosterSlotId = {}, std::set<uint32> const* excludedGuids = nullptr) const;
     uint32 SelectCalibrationPoolCandidateGuid(size_t slot) const;
     Unit* SelectSafeTarget(WorldBotState& state, Player* bot);
     Unit* SelectQuestObjectiveTarget(Player* bot, QuestObjectivePlan const& plan) const;

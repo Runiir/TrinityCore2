@@ -12,9 +12,19 @@
     "database_verifier_existing_characters": 50,
     "database_verifier_expected_characters": 50,
     "database_verifier_runtime_gear_ready": true,
-    "generated_artifact_verifier_passed": false,
-    "generated_artifact_verifier_failure": "preexisting_dataset_validation_provisioning_report_json_content_hash_mismatch",
-    "generated_artifact_failure_is_not_a_database_application_failure": true
+    "generated_artifact_verifier_passed_at_initial_readback": false,
+    "initial_generated_artifact_verifier_failure": "absolute_worktree_path_made_dataset_validation_provisioning_report_json_nonportable",
+    "initial_generated_artifact_failure_is_not_a_database_application_failure": true,
+    "post_remediation_verifier": {
+      "source_commit": "95e8e398aa5d9ec4ac5a406cdbfd5e599df4b42c",
+      "all_passed": true,
+      "database_valid": true,
+      "failure_count": 0,
+      "provisioning_all_ready": true,
+      "report_sha256": "96062abfe2bdcf806d570b1d3e58148ad1f0d44a15bb5756d3babbb8cca27558",
+      "reconstructed_in_isolated_worktree": true,
+      "action_profile_manifest_path": "experiments/configs/cata_434_action_profiles.json"
+    }
   },
   "blackwing_descent_10n_readback": {
     "character_count": 10,
@@ -27,20 +37,22 @@
     "role_counts": {"tank": 2, "healer": 3, "dps": 5},
     "character_instance_rows": 0,
     "group_member_rows": 0,
+    "query_contract": "characters joined to character_bot_pool by guid; exact ten names; ordered by name; separate counts for character_instance and group_member",
+    "raw_readback_sha256": "0f8fcd255f2bc1c8c6e274e2f9e242e9fd9e9389a34ce2ec60da4d5edc0f74e1",
     "roster": [
-      {"guid": 1271, "name": "Bwdtanka", "role": "tank", "class_spec": "protection_paladin"},
-      {"guid": 1272, "name": "Bwdtankb", "role": "tank", "class_spec": "blood_death_knight"},
-      {"guid": 1273, "name": "Bwdheala", "role": "healer", "class_spec": "restoration_druid"},
-      {"guid": 1274, "name": "Bwdhealb", "role": "healer", "class_spec": "holy_paladin"},
-      {"guid": 1275, "name": "Bwdhealc", "role": "healer", "class_spec": "discipline_priest"},
-      {"guid": 1276, "name": "Bwddpsa", "role": "dps", "class_spec": "fire_mage"},
-      {"guid": 1277, "name": "Bwddpsb", "role": "dps", "class_spec": "assassination_rogue"},
-      {"guid": 1278, "name": "Bwddpsc", "role": "dps", "class_spec": "affliction_warlock"},
-      {"guid": 1279, "name": "Bwddpsd", "role": "dps", "class_spec": "marksmanship_hunter"},
-      {"guid": 1280, "name": "Bwddpse", "role": "dps", "class_spec": "elemental_shaman"}
+      {"guid": 1271, "name": "Bwdtanka", "map": 669, "position": [-345.872, -224.344, 193.127], "online": 0, "enabled": 1, "in_use": 0, "role": "tank", "class_spec": "protection_paladin"},
+      {"guid": 1272, "name": "Bwdtankb", "map": 669, "position": [-345.872, -224.344, 193.127], "online": 0, "enabled": 1, "in_use": 0, "role": "tank", "class_spec": "blood_death_knight"},
+      {"guid": 1273, "name": "Bwdheala", "map": 669, "position": [-345.872, -224.344, 193.127], "online": 0, "enabled": 1, "in_use": 0, "role": "healer", "class_spec": "restoration_druid"},
+      {"guid": 1274, "name": "Bwdhealb", "map": 669, "position": [-345.872, -224.344, 193.127], "online": 0, "enabled": 1, "in_use": 0, "role": "healer", "class_spec": "holy_paladin"},
+      {"guid": 1275, "name": "Bwdhealc", "map": 669, "position": [-345.872, -224.344, 193.127], "online": 0, "enabled": 1, "in_use": 0, "role": "healer", "class_spec": "discipline_priest"},
+      {"guid": 1276, "name": "Bwddpsa", "map": 669, "position": [-345.872, -224.344, 193.127], "online": 0, "enabled": 1, "in_use": 0, "role": "dps", "class_spec": "fire_mage"},
+      {"guid": 1277, "name": "Bwddpsb", "map": 669, "position": [-345.872, -224.344, 193.127], "online": 0, "enabled": 1, "in_use": 0, "role": "dps", "class_spec": "assassination_rogue"},
+      {"guid": 1278, "name": "Bwddpsc", "map": 669, "position": [-345.872, -224.344, 193.127], "online": 0, "enabled": 1, "in_use": 0, "role": "dps", "class_spec": "affliction_warlock"},
+      {"guid": 1279, "name": "Bwddpsd", "map": 669, "position": [-345.872, -224.344, 193.127], "online": 0, "enabled": 1, "in_use": 0, "role": "dps", "class_spec": "marksmanship_hunter"},
+      {"guid": 1280, "name": "Bwddpse", "map": 669, "position": [-345.872, -224.344, 193.127], "online": 0, "enabled": 1, "in_use": 0, "role": "dps", "class_spec": "elemental_shaman"}
     ]
   },
   "credentials_recorded": false,
   "worldserver_active_during_application": false,
-  "next_gate": "independent_review_and_exact_build_of_saved_route_map_fail_closed_guard_then_uncapped_capture_restart"
+  "next_gate": "independent_review_and_exact_build_of_atomic_saved_route_start_preflight_and_contract_authority_then_uncapped_capture_restart"
 }

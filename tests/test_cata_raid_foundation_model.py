@@ -4,10 +4,12 @@ import pytest
 
 from ml.raid.foundation import (
     RaidMember,
+    SavedRaidPlacement,
     compile_mechanic_contract,
     form_raid,
     formation_points,
     generic_assignment_smoke,
+    preflight_validation_raid_spawn,
     validate_evidence_demultiplex,
 )
 
@@ -20,6 +22,61 @@ def roster(size: int) -> list[RaidMember]:
         *[RaidMember(1100 + index, "healer") for index in range(healers)],
         *[RaidMember(1200 + index, "melee_dps" if index % 2 else "ranged_dps") for index in range(size - healers - 2)],
     ]
+
+
+def test_validation_raid_spawn_preflight_is_all_roster_and_side_effect_free():
+    planned = tuple(range(1001, 1011))
+    placements = tuple(
+        SavedRaidPlacement(guid, 669, -345.872 + index * 0.1, -224.344, 193.127)
+        for index, guid in enumerate(planned)
+    )
+    admitted = preflight_validation_raid_spawn(
+        planned,
+        placements,
+        route_start_map_id=669,
+        route_start_x=-345.872,
+        route_start_y=-224.344,
+        route_start_z=193.127,
+    )
+    assert tuple(row.guid for row in admitted) == planned
+
+    external_state = {"bots": [], "leases": set(), "group": None}
+    stale = (*placements[:-1], SavedRaidPlacement(planned[-1], 669, -300.0, -224.344, 193.127))
+    with pytest.raises(ValueError, match="route_start_mismatch"):
+        preflight_validation_raid_spawn(
+            planned,
+            stale,
+            route_start_map_id=669,
+            route_start_x=-345.872,
+            route_start_y=-224.344,
+            route_start_z=193.127,
+        )
+    assert external_state == {"bots": [], "leases": set(), "group": None}
+
+
+@pytest.mark.parametrize(
+    "placements,error",
+    [
+        ((SavedRaidPlacement(1001, 669, 1.0, 2.0, 3.0),), "saved_placement_missing"),
+        (
+            (
+                SavedRaidPlacement(1001, 669, 1.0, 2.0, 3.0),
+                SavedRaidPlacement(1002, 670, 1.0, 2.0, 3.0),
+            ),
+            "route_start_mismatch",
+        ),
+    ],
+)
+def test_validation_raid_spawn_preflight_rejects_incomplete_or_wrong_map(placements, error):
+    with pytest.raises(ValueError, match=error):
+        preflight_validation_raid_spawn(
+            (1001, 1002),
+            placements,
+            route_start_map_id=669,
+            route_start_x=1.0,
+            route_start_y=2.0,
+            route_start_z=3.0,
+        )
 
 
 @pytest.mark.parametrize(("size", "difficulty", "difficulty_id"), [(10, "10n", 0), (10, "10h", 2), (25, "25n", 1), (25, "25h", 3)])
