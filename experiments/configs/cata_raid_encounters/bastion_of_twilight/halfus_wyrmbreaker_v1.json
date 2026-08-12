@@ -1,0 +1,521 @@
+{
+  "schema_version": 1,
+  "contract_schema": "cata_raid_encounter_contract_v1",
+  "raid": "bastion_of_twilight",
+  "instance": "bastion_of_twilight",
+  "boss_slug": "halfus_wyrmbreaker",
+  "encounter": "halfus_wyrmbreaker",
+  "modes": ["10N", "10H", "25N", "25H"],
+  "scope": ["10N", "10H", "25N", "25H"],
+  "fidelity_state": "fidelity_blocked",
+  "dossier_path": "docs/bot_raids/strategies/t11/bastion_of_twilight/halfus_wyrmbreaker.md",
+  "ledger_path": "experiments/configs/cata_raid_encounters/bastion_of_twilight/halfus_wyrmbreaker_ledger_v1.json",
+  "unresolved_material_count": 9,
+  "research_state": "phase0_researched_not_live_validated",
+  "research_as_of": "2026-08-12",
+  "evidence_policy": "A behavior-changing claim requires two independent current strategy sources or one credible strategy source plus repository confirmation; conflicts and unverified coefficients remain unresolved.",
+  "fidelity_policy": "Do not promote guide-reported values, historical hotfixes, or local implementation timers to 4.4.2 retail invariants without frozen client data or live evidence.",
+  "source_refs": [
+    "wowhead_442",
+    "icy_cata_classic",
+    "warcraft_tavern_cata",
+    "blizzard_406_notes",
+    "blizzard_442_notes",
+    "local_halfus_cpp",
+    "local_bastion_instance_cpp",
+    "local_bastion_header",
+    "local_bastion_loader",
+    "local_halfus_sql_setup",
+    "local_halfus_sql_history"
+  ],
+  "source_urls": [
+    "https://www.wowhead.com/cata/guide/raids/the-bastion-of-twilight/halfus-wyrmbreaker-strategy",
+    "https://www.icy-veins.com/cataclysm-classic/halfus-wyrmbreaker-encounter-guide-strategy-abilities-loot",
+    "https://www.warcrafttavern.com/cataclysm/guides/halfus-wyrmbreaker-raid-guide/",
+    "https://worldofwarcraft.blizzard.com/en-us/news/2166872",
+    "https://us.forums.blizzard.com/en/wow/t/world-of-warcraft-cataclysm-classic-patch-442-notes/2062030"
+  ],
+  "repository_audit": {
+    "revision": "8eb54f0160b3c3d986ed944f9d64ebf83922c0f8",
+    "boss_source": "src/server/scripts/EasternKingdoms/BastionOfTwilight/boss_halfus_wyrmbreaker.cpp",
+    "instance_source": "src/server/scripts/EasternKingdoms/BastionOfTwilight/instance_bastion_of_twilight.cpp",
+    "header_source": "src/server/scripts/EasternKingdoms/BastionOfTwilight/bastion_of_twilight.h",
+    "loader_source": "src/server/scripts/EasternKingdoms/eastern_kingdoms_script_loader.cpp",
+    "sql_setup_source": "sql/updates/world/4.3.4/2023_12_19_00_world.sql",
+    "sql_history_source": "sql/old/4.3.4/world/28_2018_04_15/2018_04_14_00_world.sql",
+    "implementation_is_not_retail_proof": true
+  },
+  "mode_matrix": {
+    "10N": {
+      "heroic": false,
+      "health_guide": "32.5M",
+      "health_repository_verified": false,
+      "active_drake_types": "3_of_5_random_weekly",
+      "unresponsive_drake_types": 2,
+      "whelp_pack_size_if_active": 8,
+      "local_mode_rule": "!map->IsHeroic(): random three flags",
+      "behavior_delta": "normal active-drake rotation; no local raid-size branch for Shadow Nova"
+    },
+    "10H": {
+      "heroic": true,
+      "health_guide": "51.5M",
+      "health_repository_verified": false,
+      "active_drake_types": "all_5",
+      "unresponsive_drake_types": 0,
+      "whelp_pack_size_if_active": 8,
+      "local_mode_rule": "map->IsHeroic(): DRAGON_FLAG_ALL_ACTIVE",
+      "behavior_delta": "all five drake types active; guide-reported heroic coefficients unresolved"
+    },
+    "25N": {
+      "heroic": false,
+      "health_guide": "115.9M",
+      "health_repository_verified": false,
+      "active_drake_types": "3_of_5_random_weekly",
+      "unresponsive_drake_types": 2,
+      "whelp_pack_size_if_active": 8,
+      "local_mode_rule": "!map->IsHeroic(): random three flags",
+      "behavior_delta": "same local Normal branch as 10N; 25-player coefficients unresolved"
+    },
+    "25H": {
+      "heroic": true,
+      "health_guide": "184.7M",
+      "health_repository_verified": false,
+      "active_drake_types": "all_5",
+      "unresponsive_drake_types": 0,
+      "whelp_pack_size_if_active": 8,
+      "local_mode_rule": "map->IsHeroic(): DRAGON_FLAG_ALL_ACTIVE",
+      "behavior_delta": "all five drake types active; guide-reported heroic coefficients unresolved"
+    }
+  },
+  "roles": {
+    "guide_composition_report": {
+      "10_player": {"tanks": 2, "healers": "2-3", "dps": "5-6"},
+      "25_player": {"tanks": "2-3", "healers": "5-8", "dps": "14-18"},
+      "source": "wowhead_442",
+      "status": "guide_reported_not_bot_invariant"
+    },
+    "tanks": [
+      "hold Halfus and released drakes separately",
+      "stack released drakes for cleave when safe",
+      "swap Halfus for Malevolent Strikes",
+      "use opening and Furious Roar defensive cooldowns"
+    ],
+    "interrupt_team": [
+      "interrupt Shadow Nova whenever Storm Rider is active",
+      "reserve an immediate post-Furious-Roar interrupt"
+    ],
+    "dps": [
+      "release and kill the selected drakes",
+      "cleave the eight-whelp pack",
+      "burn Halfus after enough Dragon's Vengeance stacks"
+    ],
+    "healers": [
+      "stabilize the opening drake and boss damage",
+      "cover Scorching Breath, Fireball Barrage overlap, Malevolent Strikes, and Furious Roar"
+    ],
+    "raid": [
+      "read active/unresponsive drake state",
+      "move from Proto-Behemoth fireball impact areas",
+      "follow the current release and kill order"
+    ]
+  },
+  "gates": [
+    "active_drake_state_read",
+    "release_interaction",
+    "released_drake_threat",
+    "shadow_nova_interrupt",
+    "fireball_barrage_avoidance",
+    "scorching_breath_mitigation",
+    "malevolent_strikes_tank_swap",
+    "drake_kill_dragons_vengeance",
+    "furious_roar_recovery",
+    "enrage_timer_evidence"
+  ],
+  "heroic_gates": [
+    "all_five_drake_types_active",
+    "heroic_health_and_damage_scaling_unresolved",
+    "heroic_malevolent_strikes_scaling_unresolved"
+  ],
+  "known_behavior_summary": [
+    "Normal selects three of five drake flags in the Bastion instance constructor; Heroic sets all five active.",
+    "JustAppeared applies active Slate, Nether, and Storm buffs and spawns setup group 462.",
+    "Releasing a non-whelp drake removes its unresponsive state, applies its counter-debuff after a local 2.5 second delay, binds it to Halfus, and makes it aggressive; whelps use the cage and the same counter-debuff pipeline.",
+    "Non-whelp deaths apply spell 87683 through Proto-Behemoth; the eight-whelp pack applies it after all eight whelps die.",
+    "Storm Rider schedules Shadow Nova at 7 seconds and every 8 seconds locally; Time Warden schedules Fireball Barrage locally at 13 seconds and every 31 seconds; Whelps schedule Scorching Breath at 13 or 24 seconds and every 31 seconds.",
+    "Below 50 percent Halfus schedules a three-cast Furious Roar sequence; the local internal timing differs from current strategy approximations.",
+    "The local boss schedules Berserk at 10 minutes while current strategy sources report a 6-minute enrage."
+  ],
+  "mechanics": [
+    {
+      "key": "active_drake_rotation",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Five drake types are present; Normal has three random active types and two Unresponsive types, while Heroic has all five active.",
+      "values": {
+        "types": ["nether_scion", "slate_dragon", "storm_rider", "time_warden", "orphaned_emerald_whelps"],
+        "normal_active_type_count": 3,
+        "normal_unresponsive_type_count": 2,
+        "heroic_active_type_count": 5,
+        "whelp_pack_size": 8
+      },
+      "evidence": ["wowhead_442", "icy_cata_classic", "local_bastion_instance_cpp", "local_bastion_header"],
+      "confidence": "two_current_guides_plus_repository_confirmation_for_selection_rule"
+    },
+    {
+      "key": "release_and_bind_pipeline",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Released drakes become hostile and apply their counter-debuff before binding to Halfus; whelps are released from the cage.",
+      "repository_values": {
+        "non_whelp_liftoff_after_release": "1ms",
+        "whelp_move_after_cage_use": "1ms",
+        "counter_debuff_after_movement": "2.5s",
+        "bind_will_after_counter_debuff": "2s",
+        "engage_players_after_bind": "1s",
+        "spell_bind_will": 84246,
+        "spell_bind_will_triggered": 83432,
+        "setup_spawn_group": 462
+      },
+      "evidence": ["wowhead_442", "icy_cata_classic", "local_halfus_cpp", "local_halfus_sql_setup"],
+      "confidence": "qualitative_guide_plus_repository; local_delays_not_retail_timers"
+    },
+    {
+      "key": "slate_dragon",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Slate Dragon grants Halfus Malevolent Strikes while imprisoned and applies Stone Touch after release.",
+      "guide_values": {
+        "healing_reduction_per_stack_normal": "6%",
+        "healing_reduction_per_stack_heroic": "8%",
+        "maximum_reported_reduction": "100%",
+        "reported_duration": "30s",
+        "release_stun": "12s Halfus stun",
+        "ability_table_reduction": "8% per stack",
+        "tank_swap_report": "5-8 stacks",
+        "icy_source_name": "Stone Grip",
+        "icy_damage_taken_increase": "+100% report"
+      },
+      "repository_spell_ids": {
+        "malevolent_strikes": 39171,
+        "stone_touch": 83603,
+        "paralysis": 84030
+      },
+      "evidence": ["wowhead_442", "icy_cata_classic", "local_halfus_cpp"],
+      "confidence": "behavior_confirmed; coefficients_duration_and_period_fidelity_blocked"
+    },
+    {
+      "key": "nether_scion",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Nether Scion grants Frenzied Assault; release applies Nether Blindness to Halfus.",
+      "guide_values": {
+        "frenzied_assault_attack_speed": "+120% current Wowhead report",
+        "nether_blindness_hit_reduction": "25%",
+        "nether_blindness_attack_speed_reduction": "25%",
+        "nether_blindness_physical_damage_reduction": "25%"
+      },
+      "repository_spell_ids": {
+        "frenzied_assault": 83693,
+        "nether_blindness": 83611
+      },
+      "evidence": ["wowhead_442", "icy_cata_classic", "local_halfus_cpp"],
+      "confidence": "qualitative_behavior_confirmed; exact_spell_tuning_unresolved"
+    },
+    {
+      "key": "storm_rider_shadow_nova",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Storm Rider grants Shadow Nova; releasing it applies Cyclone Winds so the cast can be interrupted.",
+      "guide_values": {
+        "interval": "roughly 8s",
+        "damage_normal": "roughly 25k",
+        "damage_heroic": "roughly 50k",
+        "effect": "raid-area Shadow damage and knockback",
+        "target_radius_narrative": "30yd",
+        "target_radius_table": "50000yd",
+        "ability_table_damage_range": "47500-52500 Shadow",
+        "cyclone_cast_time_report": "0.25s to roughly 1.25s"
+      },
+      "repository_values": {
+        "initial": "7s",
+        "repeat": "8s",
+        "shadow_wrapped_spell": 83952,
+        "shadow_nova_spell": 83703,
+        "cyclone_winds_spell": 83612,
+        "cyclone_destination_offset": "7yd from released Storm Rider"
+      },
+      "evidence": ["wowhead_442", "icy_cata_classic", "blizzard_406_notes", "local_halfus_cpp"],
+      "confidence": "interrupt_gate_confirmed; cadence_and_damage_scaling_mixed_unresolved"
+    },
+    {
+      "key": "time_warden_fireball_barrage",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Time Warden grants Proto-Behemoth Fireball Barrage; release applies Time Dilation.",
+      "guide_values": {
+        "barrage_cadence": "roughly 20s",
+        "stream_duration": "roughly 10s",
+        "impact_radius": "4yd",
+        "damage_normal": "roughly 40k",
+        "damage_heroic": "roughly 60k",
+        "time_dilation": "50% slower cast/travel report"
+      },
+      "repository_values": {
+        "ordinary_fireball_initial": "1s",
+        "ordinary_fireball_repeat_without_time_dilation": "2.5s",
+        "ordinary_fireball_repeat_with_time_dilation": "3.5s",
+        "barrage_initial": "13s",
+        "barrage_repeat": "31s",
+        "barrage_targets_after_filter": 1,
+        "dancing_flames_distance_window": ">40yd and <100yd",
+        "dancing_flames_spell": 84106,
+        "fireball_spell": 86058,
+        "fireball_slow_spell": 83862,
+        "fireball_barrage_spell": 83706,
+        "fireball_barrage_fast_spell": 83720,
+        "fireball_barrage_slow_spell": 83733,
+        "time_dilation_spell": 83601
+      },
+      "evidence": ["wowhead_442", "icy_cata_classic", "local_halfus_cpp"],
+      "confidence": "target_filter_repository_confirmed; guide cadence_and_mode_tuning_unresolved"
+    },
+    {
+      "key": "orphaned_emerald_whelps_scorching_breath",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Eight whelps grant Proto-Behemoth Scorching Breath; release applies Atrophic Poison to the Proto-Behemoth.",
+      "guide_values": {
+        "whelp_count": 8,
+        "breath_interval": "roughly 20s",
+        "breath_duration": "roughly 8s",
+        "breath_damage_normal_per_second": "roughly 8k",
+        "breath_damage_heroic_per_second": "roughly 12k",
+        "breath_after_whelps_normal_per_second": "roughly 2k",
+        "breath_after_whelps_heroic_per_second": "roughly 6k",
+        "breath_total_normal": "roughly 64k",
+        "breath_total_heroic": "roughly 96k",
+        "atrophic_poison_per_whelp": "750 damage reduction report",
+        "atrophic_poison_total": "6000 reduction report",
+        "ability_table_damage": "12000 Fire"
+      },
+      "repository_values": {
+        "whelp_pack_size": 8,
+        "breath_initial_with_time_warden": "24s",
+        "breath_initial_without_time_warden": "13s",
+        "breath_repeat": "31s",
+        "superheated_breath_spell": 83956,
+        "scorching_breath_spell": 83707,
+        "atrophic_poison_spell": 83609,
+        "unresponsive_dragon_spell": 86003,
+        "unresponsive_whelp_spell": 86022
+      },
+      "evidence": ["wowhead_442", "icy_cata_classic", "local_halfus_cpp", "local_halfus_sql_setup"],
+      "confidence": "pack_size_and_state_machine_confirmed; Classic spawn_health_damage_and_cadence_fidelity_blocked"
+    },
+    {
+      "key": "dragons_vengeance",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Each defeated released drake increases Halfus damage taken; the local whelp pack applies once after all eight whelps die.",
+      "guide_values": {
+        "damage_taken_increase_per_defeated_drake": "+100%"
+      },
+      "repository_values": {
+        "spell": 87683,
+        "non_whelp_trigger": "each non-whelp JustDied",
+        "whelp_trigger": "after eight pack members report dead",
+        "official_historical_rule": "kill rather than release trigger"
+      },
+      "evidence": ["wowhead_442", "icy_cata_classic", "blizzard_406_notes", "local_halfus_cpp"],
+      "confidence": "kill_trigger_repository_and_historical_official_confirmation; aura_stack_coefficients_unresolved"
+    },
+    {
+      "key": "furious_roar",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Below 50% Halfus begins a recurring three-cast raid-wide knockdown sequence.",
+      "guide_values": {
+        "threshold": "50%",
+        "casts_per_sequence": 3,
+        "sequence_interval": "roughly 30s",
+        "cast_spacing": "within roughly 2s",
+        "sequence_stun": "roughly 6s total",
+        "damage_normal": "roughly 8k per cast current Wowhead; Icy reports roughly 60k total",
+        "damage_heroic": "roughly 20k per cast current Wowhead",
+        "ability_table_damage_range": "19000-21000 Physical"
+      },
+      "repository_values": {
+        "trigger": "HealthBelowPct(50)",
+        "first_schedule": "1ms",
+        "cast_spacing": "3s",
+        "post_third_repeat": "25s",
+        "furious_roar_spell": 83710
+      },
+      "evidence": ["wowhead_442", "icy_cata_classic", "warcraft_tavern_cata", "local_halfus_cpp"],
+      "confidence": "phase_and_three_cast_shape_confirmed; damage_and_timer_fidelity_blocked"
+    },
+    {
+      "key": "berserk",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Halfus has a hard enrage/Berserk timer, but current guide and local implementation values disagree.",
+      "guide_report": "6 minutes",
+      "repository_baseline": "10 minutes after JustEngagedWith",
+      "repository_spell": 26662,
+      "evidence": ["wowhead_442", "warcraft_tavern_cata", "local_halfus_cpp"],
+      "confidence": "material_timer_conflict_fidelity_blocked"
+    },
+    {
+      "key": "stone_touch_period",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Wowhead reports Stone Touch triggering Paralysis every 35 seconds; the local aura script delegates the period to spell data.",
+      "guide_report": "35s",
+      "repository_baseline": "SPELL_STONE_TOUCH 83603 periodic dummy -> SPELL_PARALYSIS 84030; period not encoded in C++",
+      "evidence": ["wowhead_442", "icy_cata_classic", "local_halfus_cpp"],
+      "confidence": "guide_timer_repository_spell_identity; period_unresolved"
+    }
+  ],
+  "timer_contract": [
+    {
+      "key": "shadow_nova",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "guide_report": "roughly 8s while Storm Rider active",
+      "repository_baseline": "7s initial, 8s repeat",
+      "status": "mixed_unresolved",
+      "source_refs": ["wowhead_442", "icy_cata_classic", "blizzard_406_notes", "local_halfus_cpp"]
+    },
+    {
+      "key": "proto_fireball",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "guide_report": "random Fireball/Barrage impacts; Time Warden barrage roughly every 20s",
+      "repository_baseline": "1s initial, 2.5s repeat or 3.5s with Time Dilation; barrage 13s then every31s",
+      "status": "mixed_unresolved",
+      "source_refs": ["wowhead_442", "icy_cata_classic", "local_halfus_cpp"]
+    },
+    {
+      "key": "scorching_breath",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "guide_report": "roughly 20s interval, 8s sequence",
+      "repository_baseline": "13s initial without Time Warden, 24s with Time Warden, then every31s",
+      "status": "mixed_unresolved",
+      "source_refs": ["wowhead_442", "icy_cata_classic", "local_halfus_cpp"]
+    },
+    {
+      "key": "furious_roar",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "guide_report": "below50%; three casts within about2s; cycle roughly30s",
+      "repository_baseline": "first1ms; casts every3s; next sequence25s after third",
+      "status": "mixed_unresolved",
+      "source_refs": ["wowhead_442", "icy_cata_classic", "local_halfus_cpp"]
+    },
+    {
+      "key": "berserk",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "guide_report": "6m",
+      "repository_baseline": "10m",
+      "status": "fidelity_blocked",
+      "source_refs": ["wowhead_442", "warcraft_tavern_cata", "local_halfus_cpp"]
+    },
+    {
+      "key": "release_pipeline",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "guide_report": "release then counter-debuff and hostile add",
+      "repository_baseline": "2.5s counter-debuff, 2s bind, 1s engage after movement",
+      "status": "repository_only_timing",
+      "source_refs": ["wowhead_442", "icy_cata_classic", "local_halfus_cpp"]
+    },
+    {
+      "key": "stone_touch_paralysis",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "guide_report": "every35s while Slate Dragon release debuff is active",
+      "repository_baseline": "periodic Stone Touch aura casts Paralysis; exact period in spell data, not C++",
+      "status": "guide_timer_not_live_validated",
+      "source_refs": ["wowhead_442", "icy_cata_classic", "local_halfus_cpp"]
+    }
+  ],
+  "lifecycle": [
+    {
+      "key": "appearance",
+      "behavior": "Read active flags, apply active Halfus buffs, spawn setup group 462.",
+      "source_refs": ["local_halfus_cpp", "local_bastion_instance_cpp", "local_halfus_sql_setup"],
+      "status": "repository_only"
+    },
+    {
+      "key": "engage",
+      "behavior": "Engage encounter frame, reset world state 5607, schedule Berserk, zone Proto-Behemoth into combat, update drake entries, open whelp cage when active, and schedule Shadow Nova if Storm Rider is active.",
+      "source_refs": ["local_halfus_cpp"],
+      "status": "repository_confirmation"
+    },
+    {
+      "key": "release",
+      "behavior": "Instance event forwarding invokes ACTION_DRAGON_FREED; non-whelps lift off and whelps move from cage, cast counter-debuff, bind to Halfus, and engage players.",
+      "source_refs": ["local_halfus_cpp", "local_bastion_instance_cpp"],
+      "status": "repository_confirmation"
+    },
+    {
+      "key": "drake_death",
+      "behavior": "Non-whelp JustDied casts Dragon's Vengeance through Proto-Behemoth; whelp pack counts deaths and casts once at eight.",
+      "source_refs": ["blizzard_406_notes", "local_halfus_cpp"],
+      "status": "repository_confirmation_with_historical_official_rule"
+    },
+    {
+      "key": "evade_reset",
+      "behavior": "Base evade, summon cleanup, encounter disengage, setup group despawn, and _DespawnAtEvade; private Halfus counters are not explicitly reset in this class.",
+      "source_refs": ["local_halfus_cpp"],
+      "status": "repository_behavior; private_state_reconstruction_unresolved"
+    },
+    {
+      "key": "death_credit",
+      "behavior": "_JustDied, encounter disengage, setup group despawn; instance DONE notifies Cho'gall progression dialogue.",
+      "source_refs": ["local_halfus_cpp", "local_bastion_instance_cpp"],
+      "status": "repository_state_only"
+    },
+    {
+      "key": "boss_state_mapping",
+      "behavior": "Creature 44600 maps to DATA_HALFUS_WYRMBREAKER=0; doors 205222/205223 are tied to this state; loader registers AddSC_boss_halfus_wyrmbreaker.",
+      "source_refs": ["local_bastion_header", "local_bastion_instance_cpp", "local_bastion_loader"],
+      "status": "repository_confirmation"
+    }
+  ],
+  "unresolved": [
+    "exact_442_client_build_hotfix_cutoff_and_client_data_hashes",
+    "guide_health_values_against_live_442_tdb_dbc",
+    "berserk_six_minutes_guide_vs_ten_minutes_local",
+    "live_shadow_nova_furious_roar_proto_event_timestamps_all_modes",
+    "mode_specific_spell_coefficients_durations_radii_and_target_counts",
+    "whelp_health_damage_and_retail_vengeance_stack_semantics",
+    "normal_rotation_seed_and_weekly_reset_behavior",
+    "private_ai_state_reset_after_evade",
+    "retail_loot_credit_achievement_and_progression_semantics"
+  ],
+  "conflicts": [
+    {
+      "key": "berserk_timer",
+      "wowhead_442": "6m",
+      "warcraft_tavern_cata": "6m indexed result",
+      "local_cpp": "10m",
+      "resolution": "do_not_schedule exact retail timer; fidelity_blocked"
+    },
+    {
+      "key": "shadow_nova_10_player_frequency",
+      "blizzard_406_notes": "less frequent in 10-player modes historically",
+      "local_cpp": "same 7s initial/8s repeat path for all modes",
+      "resolution": "historical change does not prove 4.4.2 local behavior"
+    },
+    {
+      "key": "furious_roar_timing_and_damage",
+      "wowhead_442": "three casts within about2s; roughly8k Normal or20k Heroic per cast; cycle about30s",
+      "icy_cata_classic": "about60k total and6s stun",
+      "local_cpp": "3s spacing and25s post-third repeat",
+      "resolution": "phase shape only; numeric timing/damage fidelity_blocked"
+    },
+    {
+      "key": "proto_event_timing",
+      "wowhead_442_and_icy_cata_classic": "roughly20s guide cadence",
+      "local_cpp": "Fireball 1s/2.5s or3.5s; Barrage/Scorching 13s or24s then31s",
+      "resolution": "repository baseline only until live/client-data validation"
+    },
+    {
+      "key": "mode_scaling",
+      "current_guides": "heroic examples and health values, but no complete 10N/10H/25N/25H table",
+      "local_data": "historical creature difficulty rows and spell IDs, no audited 4.4.2 client coefficients",
+      "resolution": "do not interpolate or certify coefficients"
+    }
+  ],
+  "status_labels": {
+    "fidelity_blocked": "material value or behavior cannot be certified for frozen 4.4.2",
+    "repository_confirmation": "local implementation fact, not retail proof",
+    "guide_reported": "current strategy report, not locally verified",
+    "mixed_unresolved": "guide and repository evidence disagree or lack mode coverage"
+  }
+}

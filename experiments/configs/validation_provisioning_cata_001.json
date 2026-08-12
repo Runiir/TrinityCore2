@@ -956,14 +956,20 @@
             "BwdTankA"
           ],
           "role": "tank",
-          "class_spec": "protection_warrior",
+          "class_spec": "protection_paladin",
           "race": 1,
-          "class": 1,
+          "class": 2,
           "level": 85,
           "glyphs": [
-            43425,
-            43412,
-            43414
+            45742,
+            41098,
+            43869,
+            41107,
+            43367,
+            43867,
+            43368,
+            43340,
+            43366
           ]
         },
         {

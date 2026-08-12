@@ -1,0 +1,357 @@
+{
+  "schema_version": 1,
+  "ledger_schema": "cata_raid_value_timer_ledger_v1",
+  "raid": "bastion_of_twilight",
+  "boss_slug": "valiona_and_theralion",
+  "modes": ["10N", "10H", "25N", "25H"],
+  "fidelity_state": "fidelity_blocked",
+  "contract_path": "experiments/configs/cata_raid_encounters/bastion_of_twilight/valiona_and_theralion_v1.json",
+  "unresolved_material_count": 13,
+  "encounter": "valiona_and_theralion",
+  "purpose": "source-and-timer ledger for Phase 0 research; no live-validation assertion",
+  "scope": ["10N", "10H", "25N", "25H"],
+  "repository_revision_audited": "8eb54f0160b3c3d986ed944f9d64ebf83922c0f8",
+  "retrieved_utc_date": "2026-08-12",
+  "research_as_of": "2026-08-12",
+  "source_catalog": [
+    {
+      "id": "wowhead_cata_valiona_theralion_2024",
+      "title": "Valiona & Theralion Strategy Guide - The Bastion of Twilight Raid Cataclysm Classic",
+      "author": "Beanna",
+      "publisher": "Wowhead",
+      "published_or_updated": "2024-06-04 (updated)",
+      "edition_label": "Patch 4.4.2",
+      "url": "https://www.wowhead.com/cata/guide/raids/the-bastion-of-twilight/valiona-theralion-strategy",
+      "accessed": "2026-08-12",
+      "authority": "current Cataclysm Classic strategy guide",
+      "notes": "Reports four-mode health, shared health, phase/ability descriptions, approximate timers, target guidance, Twilight Realm handling, damage examples, and heroic Sentries. Narrative and ability-table values conflict for several spells."
+    },
+    {
+      "id": "icy_veins_cata_valiona_theralion_2024",
+      "title": "Valiona and Theralion Encounter Guide: Strategy, Abilities, Loot",
+      "author": "Abide",
+      "publisher": "Icy Veins",
+      "published_or_updated": "2024-07-29 (updated)",
+      "url": "https://www.icy-veins.com/cataclysm-classic/valiona-and-theralion-encounter-guide-strategy-abilities-loot",
+      "accessed": "2026-08-12",
+      "authority": "current Cataclysm Classic strategy guide",
+      "notes": "Independently describes shared health, role execution, Blackout collapse, Deep Breath, Twilight Shift, heroic Sentries, and realm handling; exact timer tables are not exposed."
+    },
+    {
+      "id": "icy_veins_historical_valiona_theralion_2012",
+      "title": "Valiona and Theralion Detailed Strategy Guide (Heroic Mode included)",
+      "author": "Damien",
+      "publisher": "Icy Veins",
+      "published_or_updated": "2012-10-08 (last updated; page marked WoD 6.1.2)",
+      "url": "https://www.icy-veins.com/wow/valiona-and-theralion-strategy-guide-normal-heroic",
+      "accessed": "2026-08-12",
+      "authority": "historical encounter reference only",
+      "notes": "Used for alternate health, phase/timer, target-count, and heroic descriptions; not treated as 4.4.2 authority."
+    },
+    {
+      "id": "blizzard_442_notes_2025",
+      "title": "World of Warcraft: Cataclysm Classic—Patch 4.4.2 Notes",
+      "author": "Kaivax",
+      "publisher": "Blizzard Entertainment forums",
+      "published_or_updated": "2025-02-18",
+      "url": "https://us.forums.blizzard.com/en/wow/t/world-of-warcraft-cataclysm-classic-patch-442-notes/2062030",
+      "accessed": "2026-08-12",
+      "authority": "official Classic version/date note",
+      "notes": "Confirms the 4.4.2 release context but contains no Valiona/Theralion-specific tuning or client/DBC hash."
+    },
+    {
+      "id": "blizzard_cata_hotfixes_june27",
+      "title": "Cataclysm Classic Hotfixes — June 27",
+      "author": "Kaivax",
+      "publisher": "Blizzard Entertainment forums",
+      "published_or_updated": "historical hotfix stream page",
+      "url": "https://us.forums.blizzard.com/en/wow/t/cataclysm-classic-hotfixes-june-27/1843458",
+      "accessed": "2026-08-12",
+      "authority": "official Classic hotfix audit",
+      "notes": "No Valiona or Theralion tuning entry was found in the relevant published page; this does not prove absence from every hotfix build."
+    },
+    {
+      "id": "repo_boss_theralion_and_valiona",
+      "title": "TrinityCore boss_theralion_and_valiona.cpp",
+      "author": "TrinityCore contributors",
+      "publisher": "local repository",
+      "revision": "8eb54f0160b3c3d986ed944f9d64ebf83922c0f8",
+      "paths": ["src/server/scripts/EasternKingdoms/BastionOfTwilight/boss_theralion_and_valiona.cpp"],
+      "accessed": "2026-08-12",
+      "authority": "repository implementation evidence, not retail proof",
+      "lines": ["35-180", "228-451", "454-760", "762-839", "852-1077", "1079-1265", "1267-1600"],
+      "notes": "Provides spell IDs, local event/movement schedule, realm phase filters, random target filters, split/distance/proc relationships, heroic hooks, and cleanup. Spell coefficients delegated to data are not treated as verified."
+    },
+    {
+      "id": "repo_bot_instance_bastion_of_twilight",
+      "title": "TrinityCore instance_bastion_of_twilight.cpp",
+      "author": "TrinityCore contributors",
+      "publisher": "local repository",
+      "revision": "8eb54f0160b3c3d986ed944f9d64ebf83922c0f8",
+      "paths": ["src/server/scripts/EasternKingdoms/BastionOfTwilight/instance_bastion_of_twilight.cpp"],
+      "accessed": "2026-08-12",
+      "authority": "repository instance evidence",
+      "lines": ["28-377"],
+      "notes": "Maps bosses and support summons, forwards summons, tracks Valiona dummy/portal/Unstable GUIDs, and handles FAIL/DONE cleanup and portal count."
+    },
+    {
+      "id": "repo_bot_header",
+      "title": "TrinityCore bastion_of_twilight.h",
+      "author": "TrinityCore contributors",
+      "publisher": "local repository",
+      "revision": "8eb54f0160b3c3d986ed944f9d64ebf83922c0f8",
+      "paths": ["src/server/scripts/EasternKingdoms/BastionOfTwilight/bastion_of_twilight.h"],
+      "accessed": "2026-08-12",
+      "authority": "repository identity evidence",
+      "lines": ["20-190"],
+      "notes": "Confirms map 671, boss/support entries, encounter data IDs, doors, phase IDs/groups, and generic Berserk identity."
+    },
+    {
+      "id": "repo_loader",
+      "title": "TrinityCore Eastern Kingdoms script loader",
+      "author": "TrinityCore contributors",
+      "publisher": "local repository",
+      "revision": "8eb54f0160b3c3d986ed944f9d64ebf83922c0f8",
+      "paths": ["src/server/scripts/EasternKingdoms/eastern_kingdoms_script_loader.cpp"],
+      "accessed": "2026-08-12",
+      "authority": "repository registration evidence",
+      "lines": ["28-33", "260-265"],
+      "notes": "Confirms the dedicated encounter and instance scripts are declared and registered."
+    },
+    {
+      "id": "repo_sql_history",
+      "title": "Historical TrinityCore 4.3.4 Valiona and Theralion SQL",
+      "author": "TrinityCore contributors",
+      "publisher": "local repository",
+      "revision": "8eb54f0160b3c3d986ed944f9d64ebf83922c0f8",
+      "paths": [
+        "sql/old/4.3.4/TDB01_to_TDB02_updates/world/086_creature_template.sql",
+        "sql/old/4.3.4/world/20051_2020_09_22/2020_07_11_02_world.sql",
+        "sql/old/4.3.4/world/28_2018_04_15/2018_04_14_00_world.sql",
+        "sql/updates/world/4.3.4/2023_09_15_00_world.sql"
+      ],
+      "accessed": "2026-08-12",
+      "authority": "historical SQL identity/spawn evidence, not current 4.4.2 tuning",
+      "notes": "Confirms old creature template/model bindings, BaseVariance/DamageModifier history, and map-671 support spawns only."
+    },
+    {
+      "id": "repo_tdb_snapshot",
+      "title": "Historical TDB 4.3.4.22011 world snapshot",
+      "author": "TrinityCore contributors",
+      "publisher": "local repository database",
+      "revision": "8eb54f0160b3c3d986ed944f9d64ebf83922c0f8",
+      "paths": ["data/TDB_full_434.22011_2022_01_09/TDB_full_world_434.22011_2022_01_09.sql"],
+      "accessed": "2026-08-12",
+      "authority": "historical DB snapshot, not current 4.4.2 data",
+      "notes": "Contains base rows for entries 45992/45993, ScriptNames boss_valiona/boss_theralion, level 88, base health fields 1,250,000, and variant/model provenance; no four-mode 4.4.2 health table."
+    }
+  ],
+  "mode_matrix": {
+    "10N": {
+      "health_guide_reported": 32200000,
+      "health_historical_reported": 25800000,
+      "heroic": false,
+      "grounded_first": "Valiona",
+      "airborne_first": "Theralion",
+      "repository_engulfing_targets": 1,
+      "repository_heroic_delta": "none_in_local_engage"
+    },
+    "10H": {
+      "health_guide_reported": 54100000,
+      "health_historical_reported": 48100000,
+      "heroic": true,
+      "grounded_first": "Valiona",
+      "airborne_first": "Theralion",
+      "repository_engulfing_targets": 1,
+      "repository_heroic_delta": "Twilight Shift on engage; Twilight Zone/Sentry auras via Valiona dummy"
+    },
+    "25N": {
+      "health_guide_reported": 97900000,
+      "health_historical_reported": 78300000,
+      "heroic": false,
+      "grounded_first": "Valiona",
+      "airborne_first": "Theralion",
+      "repository_engulfing_targets": 3,
+      "repository_heroic_delta": "none_in_local_engage"
+    },
+    "25H": {
+      "health_guide_reported": 164900000,
+      "health_historical_reported": 164000000,
+      "heroic": true,
+      "grounded_first": "Valiona",
+      "airborne_first": "Theralion",
+      "repository_engulfing_targets": 3,
+      "repository_heroic_delta": "Twilight Shift on engage; Twilight Zone/Sentry auras via Valiona dummy"
+    }
+  },
+  "values": [
+    {
+      "key": "shared_health_and_initial_roles",
+      "mode_values": {"10N": "shared", "10H": "shared", "25N": "shared", "25H": "shared"},
+      "source_report": {"grounded_first": "Valiona", "airborne_first": "Theralion", "enrage": "10m"},
+      "repository_baseline": {"share_health_spells": {"Theralion": 90346, "Valiona": 90345}, "berserk": 26662, "encounter_state": "DATA_THERALION_AND_VALIONA"},
+      "source_refs": ["wowhead_cata_valiona_theralion_2024", "icy_veins_cata_valiona_theralion_2024", "repo_boss_theralion_and_valiona"],
+      "repository_confirmation": "shared_health_initial_roles_and_berserk_schedule",
+      "status": "health_values_fidelity_blocked"
+    },
+    {
+      "key": "health_four_mode_conflict",
+      "mode_values_current_wowhead": {"10N": 32200000, "10H": 54100000, "25N": 97900000, "25H": 164900000},
+      "mode_values_historical_icy": {"10N": 25800000, "10H": 48100000, "25N": 78300000, "25H": 164000000},
+      "repository_baseline": "TDB base creature health 1250000 for entries 45992/45993 is not four-mode tuning",
+      "source_refs": ["wowhead_cata_valiona_theralion_2024", "icy_veins_historical_valiona_theralion_2012", "repo_tdb_snapshot"],
+      "repository_confirmation": false,
+      "status": "fidelity_blocked_build_and_hotfix_provenance"
+    },
+    {
+      "key": "blackout",
+      "mode_values": {"10N": null, "10H": null, "25N": null, "25H": null},
+      "source_report": {"target": "one random target", "absorb": "75000 in current ability table; narrative differs", "damage": "975000-1025000 Shadow within8yd in table; narrative differs", "interval": "about10s then45s", "expiry": "15s in narrative"},
+      "repository_baseline": {"targeting_spell": 86673, "damage_spell": 86825, "initial": "10.5s", "repeat": "46s", "on_remove": "enemy spell or expiry", "split": "damage divided by area target count"},
+      "source_refs": ["wowhead_cata_valiona_theralion_2024", "icy_veins_cata_valiona_theralion_2024", "repo_boss_theralion_and_valiona"],
+      "repository_confirmation": "random_target_removal_and_split_only",
+      "status": "fidelity_blocked_absorb_damage_expiry_and_cadence"
+    },
+    {
+      "key": "devouring_flames",
+      "mode_values": {"10N": null, "10H": null, "25N": null, "25H": null},
+      "source_report": {"interval": "every25s current; historical says twice per phase", "damage": "90000 Shadow per second table; narrative says64000 normal/90000 heroic", "shape": "180-degree frontal cone", "cast": "2.5s"},
+      "repository_baseline": {"targeting_spell": 86832, "damage_spell": 86840, "initial": "25s", "repeat": "41s", "target": "random one after Twilight-phase exclusion", "scaling": "distance-based reduction"},
+      "source_refs": ["wowhead_cata_valiona_theralion_2024", "icy_veins_historical_valiona_theralion_2012", "repo_boss_theralion_and_valiona"],
+      "repository_confirmation": "target_filter_and_distance_relationship_only",
+      "status": "fidelity_blocked_cone_tick_mode_values_and_cadence"
+    },
+    {
+      "key": "twilight_blast",
+      "mode_values": {"10N": null, "10H": null, "25N": null, "25H": null},
+      "source_report": {"interval": "roughly3s current;2s historical", "damage": "25000 normal/35000 heroic narrative;34125-35875 table", "radius": "8yd"},
+      "repository_baseline": {"spell": 86369, "initial": "400ms after flight movement", "repeat": "2.4s", "target": "random valid target within100yd", "cancelled_by": "Dazzling Destruction"},
+      "source_refs": ["wowhead_cata_valiona_theralion_2024", "icy_veins_historical_valiona_theralion_2012", "repo_boss_theralion_and_valiona"],
+      "repository_confirmation": "random_splash_and_transition_interaction_only",
+      "status": "fidelity_blocked_cadence_and_coefficients"
+    },
+    {
+      "key": "dazzling_destruction",
+      "mode_values": {"10N": null, "10H": null, "25N": null, "25H": null},
+      "source_report": {"start": "about85s air", "casts": 3, "interval": "5s", "telegraph": "4s", "damage": "about15000 Shadow;14625-15375 table within12yd"},
+      "repository_baseline": {"script_spell": 86379, "targeting_spell": 86380, "dummy_spell": 86408, "twilight_spell": 93063, "stalker_entry": 46374, "stalker_visual": 86383, "initial": "1m22s", "passes": 3, "repeat": "4.7s", "land_after_third": "4s"},
+      "source_refs": ["wowhead_cata_valiona_theralion_2024", "icy_veins_historical_valiona_theralion_2012", "repo_boss_theralion_and_valiona"],
+      "repository_confirmation": "three_pass_state_and_realm_filter_only",
+      "status": "fidelity_blocked_geometry_telegraph_and_coefficients"
+    },
+    {
+      "key": "engulfing_magic",
+      "mode_values": {"10N": null, "10H": null, "25N": null, "25H": null},
+      "source_report": {"targets": "1-3 ranged current; one10-player/two25-player historical", "interval": "35s current;15s historical page wording varies", "effect": "+100% damage/healing with allied splash within10yd"},
+      "repository_baseline": {"targeting_spell": 86607, "triggered_spell": 86631, "initial": "12s after landing", "repeat": "40s", "targets": "one non-25-player or up to three 25-player", "filter": "removes Hunter/Warrior/Death Knight and Meteorite-targeted units", "scaling": "proc amount equals damage plus healing amount"},
+      "source_refs": ["wowhead_cata_valiona_theralion_2024", "icy_veins_historical_valiona_theralion_2012", "repo_boss_theralion_and_valiona"],
+      "repository_confirmation": "proc_scaling_and_local_filter_only",
+      "status": "fidelity_blocked_target_mapping_cadence_and_coefficients"
+    },
+    {
+      "key": "fabulous_flames",
+      "mode_values": {"10N": null, "10H": null, "25N": null, "25H": null},
+      "source_report": {"interval": "roughly15-17s", "duration": "35s current narrative", "damage": "12000 Shadow per second narrative;23125-26875 table in10yd"},
+      "repository_baseline": {"targeting_spell": 86495, "initial": "3.6s after landing", "repeat": "15.7s", "target": "one random valid target after Twilight-phase exclusion", "summon_entry": 46448},
+      "source_refs": ["wowhead_cata_valiona_theralion_2024", "icy_veins_cata_valiona_theralion_2024", "repo_boss_theralion_and_valiona"],
+      "repository_confirmation": "random_zone_targeting_only",
+      "status": "fidelity_blocked_duration_damage_and_scaling"
+    },
+    {
+      "key": "twilight_meteorite",
+      "mode_values": {"10N": null, "10H": null, "25N": null, "25H": null},
+      "source_report": {"warning": "5-6s", "cadence": "6s historical; current narrative describes repeated marks", "damage": "235000 normal/300000 heroic narrative;292500-307500 table", "radius": "6yd", "split": "nearby targets"},
+      "repository_baseline": {"targeting_spell": 88518, "initial": "2s after takeoff movement", "repeat": "1.2s until Deep Breath", "target": "random after removing Theralion victim and Twilight-phase units", "split": "damage divided by destination-area count", "ground_tank_excluded": true},
+      "source_refs": ["wowhead_cata_valiona_theralion_2024", "icy_veins_historical_valiona_theralion_2012", "repo_boss_theralion_and_valiona"],
+      "repository_confirmation": "split_and_local_exclusion_only",
+      "status": "fidelity_blocked_warning_cadence_target_rule_and_coefficients"
+    },
+    {
+      "key": "deep_breath_and_twilight_flames",
+      "mode_values": {"10N": null, "10H": null, "25N": null, "25H": null},
+      "source_report": {"transition": "about100s air/current;95s historical", "passes": 3, "geometry": "one-third room", "damage": "29250-30750 table and realm transfer"},
+      "repository_baseline": {"trigger_spell": 86194, "strafe_spell": 86144, "speed_spell": 86077, "initial": "1m25.1s", "passes": 3, "lane_waypoints": 3, "side": "nearest configured side then random lane", "announce": "200ms", "fly_to_start": "1.7s", "cross": "3.8s", "next_pass": "1s", "land_after_final_prepare": "1s"},
+      "source_refs": ["wowhead_cata_valiona_theralion_2024", "icy_veins_historical_valiona_theralion_2012", "repo_boss_theralion_and_valiona"],
+      "repository_confirmation": "three_pass_local_movement_only",
+      "status": "fidelity_blocked_phase_lane_damage_and_realm_behavior"
+    },
+    {
+      "key": "twilight_realm_orbs_and_portals",
+      "mode_values": {"10N": null, "10H": null, "25N": null, "25H": null},
+      "source_report": {"orb_damage": "20000 normal/40000 heroic examples", "Twilight Zone": "stack every2s;4000/5000 and +5%/+10% Shadow examples", "portal": "random position and about1m relocation"},
+      "repository_baseline": {"phase_id": 290, "phase_group": 525, "unstable_entry": 46304, "unstable_dummy": 86301, "unstable_damage": 86305, "unstable_move": "random5yd every1s", "unstable_despawn": "2.5s after hit", "portal_entry": 46301, "portal_spell": 86291, "portal_count": "instance periodic gate allows up to three tracked"},
+      "source_refs": ["wowhead_cata_valiona_theralion_2024", "icy_veins_historical_valiona_theralion_2012", "repo_boss_theralion_and_valiona", "repo_bot_instance_bastion_of_twilight"],
+      "repository_confirmation": "realm_phase_filter_movement_and_spell_click_registration_only",
+      "status": "fidelity_blocked_aura_coefficients_portal_lifetime_count_and_reset"
+    },
+    {
+      "key": "heroic_twilight_shift_and_sentries",
+      "mode_values": {"10N": "not_local_heroic", "10H": null, "25N": "not_local_heroic", "25H": null},
+      "source_report": {"stack_trigger": 5, "sentry_interval": "roughly20s", "rift_blast": "roughly25000 Shadow every3s", "tank": "heroic taunt/realm handoff"},
+      "repository_baseline": {"twilight_shift": 93053, "twilight_protection": 86415, "shifting_reality": 93055, "twilight_shift_ally": 93064, "twilight_zone": 86210, "sentry_periodic_dummy": 93029, "sentry_entry": 50008, "rift_entry": 50014, "rift_spell": 93017, "stack_trigger": 5},
+      "source_refs": ["wowhead_cata_valiona_theralion_2024", "icy_veins_cata_valiona_theralion_2024", "repo_boss_theralion_and_valiona"],
+      "repository_confirmation": "heroic_hook_entries_and_stack_transition_only",
+      "status": "fidelity_blocked_stack_period_sentry_target_and_scaling"
+    }
+  ],
+  "timers": [
+    {"key": "ground_air_phase_schedule", "strategy": "current guides describe about105s Valiona ground/140s Theralion ground; historical guide says100s/140s", "repository": "movement/event timers include initial liftoff and travel; exact retail phase length not exposed", "modes": ["10N", "10H", "25N", "25H"], "source_refs": ["wowhead_cata_valiona_theralion_2024", "icy_veins_historical_valiona_theralion_2012", "repo_boss_theralion_and_valiona"], "status": "fidelity_blocked_do_not_schedule_exact_phase_timestamp"},
+    {"key": "blackout", "strategy": "about10s then45s current; historical40s cooldown", "repository": "10.5s initial;46s repeat", "modes": ["10N", "10H", "25N", "25H"], "source_refs": ["wowhead_cata_valiona_theralion_2024", "icy_veins_historical_valiona_theralion_2012", "repo_boss_theralion_and_valiona"], "status": "fidelity_blocked"},
+    {"key": "devouring_flames", "strategy": "every25s current; historical says twice per Valiona phase", "repository": "25s initial;41s repeat", "modes": ["10N", "10H", "25N", "25H"], "source_refs": ["wowhead_cata_valiona_theralion_2024", "icy_veins_historical_valiona_theralion_2012", "repo_boss_theralion_and_valiona"], "status": "fidelity_blocked"},
+    {"key": "twilight_blast", "strategy": "roughly3s current;2s historical", "repository": "400ms after flight movement;2.4s repeat;cancelled by Dazzling", "modes": ["10N", "10H", "25N", "25H"], "source_refs": ["wowhead_cata_valiona_theralion_2024", "icy_veins_historical_valiona_theralion_2012", "repo_boss_theralion_and_valiona"], "status": "fidelity_blocked"},
+    {"key": "dazzling_destruction", "strategy": "about85s air;3 casts;5s interval;4s telegraph", "repository": "1m22s initial;3 passes;4.7s repeat;land4s after third", "modes": ["10N", "10H", "25N", "25H"], "source_refs": ["wowhead_cata_valiona_theralion_2024", "icy_veins_historical_valiona_theralion_2012", "repo_boss_theralion_and_valiona"], "status": "fidelity_blocked"},
+    {"key": "fabulous_flames", "strategy": "roughly15-17s;35s persistence in current narrative", "repository": "3.6s after landing;15.7s repeat", "modes": ["10N", "10H", "25N", "25H"], "source_refs": ["wowhead_cata_valiona_theralion_2024", "repo_boss_theralion_and_valiona"], "status": "fidelity_blocked"},
+    {"key": "engulfing_magic", "strategy": "35s current;historical target-count description differs", "repository": "12s after landing;40s repeat", "modes": ["10N", "10H", "25N", "25H"], "source_refs": ["wowhead_cata_valiona_theralion_2024", "icy_veins_historical_valiona_theralion_2012", "repo_boss_theralion_and_valiona"], "status": "fidelity_blocked"},
+    {"key": "twilight_meteorite", "strategy": "5-6s warning;historical6s cadence", "repository": "2s after takeoff movement;1.2s repeat until Deep Breath", "modes": ["10N", "10H", "25N", "25H"], "source_refs": ["wowhead_cata_valiona_theralion_2024", "icy_veins_historical_valiona_theralion_2012", "repo_boss_theralion_and_valiona"], "status": "fidelity_blocked"},
+    {"key": "deep_breath", "strategy": "about100s air/current;95s historical;three passes", "repository": "1m25.1s initial;movement delays;three passes", "modes": ["10N", "10H", "25N", "25H"], "source_refs": ["wowhead_cata_valiona_theralion_2024", "icy_veins_historical_valiona_theralion_2012", "repo_boss_theralion_and_valiona"], "status": "fidelity_blocked"},
+    {"key": "berserk", "strategy": "10m", "repository": "SPELL_BERSERK 26662 at10m", "modes": ["10N", "10H", "25N", "25H"], "source_refs": ["icy_veins_cata_valiona_theralion_2024", "repo_boss_theralion_and_valiona"], "status": "implementation_confirmed_live_validation_pending"},
+    {"key": "unstable_twilight_and_portal", "strategy": "orb/portal timing and lifetime not fixed by current sources", "repository": "random5yd move every1s;2.5s post-hit despawn;portal periodic count gate", "modes": ["10N", "10H", "25N", "25H"], "source_refs": ["wowhead_cata_valiona_theralion_2024", "repo_boss_theralion_and_valiona", "repo_bot_instance_bastion_of_twilight"], "status": "fidelity_blocked"},
+    {"key": "heroic_sentry_and_rift", "strategy": "roughly20s Sentry;roughly3s Rift Blast", "repository": "periodic dummy summon;NPC50008 casts93017;period supplied by spell data", "modes": ["10H", "25H"], "source_refs": ["wowhead_cata_valiona_theralion_2024", "repo_boss_theralion_and_valiona"], "status": "fidelity_blocked"}
+  ],
+  "targeting_and_scaling": [
+    {"key": "blackout_target_and_split", "target": "local random one target from source-area enemies; damage on removal/expiry divided by area target count", "modes": ["10N", "10H", "25N", "25H"], "source_refs": ["wowhead_cata_valiona_theralion_2024", "repo_boss_theralion_and_valiona"], "status": "fidelity_blocked_retail_filter_and_coefficients"},
+    {"key": "devouring_flames_target", "target": "local random target after Twilight-phase removal; distance-based damage reduction", "modes": ["10N", "10H", "25N", "25H"], "source_refs": ["wowhead_cata_valiona_theralion_2024", "repo_boss_theralion_and_valiona"], "status": "fidelity_blocked_cone_and_mode_scaling"},
+    {"key": "twilight_blast_target", "target": "local random valid target within100yd with splash within spell area", "modes": ["10N", "10H", "25N", "25H"], "source_refs": ["wowhead_cata_valiona_theralion_2024", "repo_boss_theralion_and_valiona"], "status": "fidelity_blocked_retail_filter_and_damage"},
+    {"key": "dazzling_realm_filter", "target": "local stalker/dummy path separates normal-realm units from phase290/phase-group525 units and uses 93063 for Twilight realm", "modes": ["10N", "10H", "25N", "25H"], "source_refs": ["repo_boss_theralion_and_valiona"], "status": "repository_confirmed_retail_geometry_unresolved"},
+    {"key": "engulfing_magic_targets", "target": "local filter removes Hunter/Warrior/Death Knight and Meteorite targets; one target in non-25 maps, up to three in 25-player maps", "modes": ["10N", "10H", "25N", "25H"], "source_refs": ["wowhead_cata_valiona_theralion_2024", "icy_veins_historical_valiona_theralion_2012", "repo_boss_theralion_and_valiona"], "status": "fidelity_blocked_retail_target_mapping"},
+    {"key": "engulfing_magic_proc", "target": "local triggered amount equals the selected unit's damage plus healing proc amount; allied splash relationship is spell-data dependent", "modes": ["10N", "10H", "25N", "25H"], "source_refs": ["wowhead_cata_valiona_theralion_2024", "repo_boss_theralion_and_valiona"], "status": "repository_relationship_confirmed_coefficients_unresolved"},
+    {"key": "meteorite_target_and_split", "target": "local excludes Theralion current victim and Twilight-phase units, selects one random target, and divides damage by destination-area target count", "modes": ["10N", "10H", "25N", "25H"], "source_refs": ["wowhead_cata_valiona_theralion_2024", "repo_boss_theralion_and_valiona"], "status": "fidelity_blocked_current_guide_target_conflict"},
+    {"key": "deep_breath_lanes", "target": "local chooses nearest configured side then random lane waypoint pair among three; pass has middle/top/bottom strafe triggers", "modes": ["10N", "10H", "25N", "25H"], "source_refs": ["repo_boss_theralion_and_valiona"], "status": "repository_movement_confirmed_retail_lane_geometry_unresolved"},
+    {"key": "twilight_phase_objects", "target": "Unstable Twilight moves to random point within5yd each second and detonates on dummy hit; portal is spell-click tracked by instance", "modes": ["10N", "10H", "25N", "25H"], "source_refs": ["wowhead_cata_valiona_theralion_2024", "repo_boss_theralion_and_valiona", "repo_bot_instance_bastion_of_twilight"], "status": "fidelity_blocked_orb_portal_coefficients_and_lifetime"},
+    {"key": "heroic_shift_and_sentry", "target": "local stack transition applies phase/protection/ally auras at five; Sentry owns Rift summon; guide gives approximate Sentry/Rift target behavior", "modes": ["10H", "25H"], "source_refs": ["wowhead_cata_valiona_theralion_2024", "icy_veins_cata_valiona_theralion_2024", "repo_boss_theralion_and_valiona"], "status": "fidelity_blocked_stack_period_target_and_damage"}
+  ],
+  "phase_reset_credit": [
+    {"key": "reset", "behavior": "Both boss AIs call BossAI reset, return to PHASE_INTRO, and restore share-health auras; not every helper counter/waypoint is explicitly reinitialized.", "source_refs": ["repo_boss_theralion_and_valiona"], "status": "repository_behavior_confirmed_helper_reconstruction_unresolved"},
+    {"key": "engage", "behavior": "Valiona schedules Blackout/Devouring and Theralion calls liftoff; both engage the encounter frame; heroic path applies Twilight Shift and Valiona dummy auras.", "source_refs": ["repo_boss_theralion_and_valiona"], "status": "repository_confirmed"},
+    {"key": "transition", "behavior": "Theralion's three Dazzling passes lead to landing and Valiona's three randomized Deep Breath lane passes lead to landing; movement travel time is part of local implementation and not a 4.4.2 guarantee.", "source_refs": ["repo_boss_theralion_and_valiona", "wowhead_cata_valiona_theralion_2024", "icy_veins_historical_valiona_theralion_2012"], "status": "fidelity_blocked_exact_schedule"},
+    {"key": "evade", "behavior": "Either boss disengages, restores gravity, despawns its summons, and calls _DespawnAtEvade; instance FAIL delays Valiona dummy/Unstable cleanup 30s and clears selected GUID sets.", "source_refs": ["repo_boss_theralion_and_valiona", "repo_bot_instance_bastion_of_twilight"], "status": "repository_confirmed"},
+    {"key": "death_and_credit", "behavior": "Ground-phase death casts sibling instakill 95741/95742, then generic _JustDied and encounter-frame disengage; instance DONE cleans dummy/Unstable and schedules Cho'gall response after6s. Loot, achievement, and retail lockout credit are not proven.", "source_refs": ["repo_boss_theralion_and_valiona", "repo_bot_instance_bastion_of_twilight"], "status": "repository_boss_state_confirmed_retail_credit_unresolved"},
+    {"key": "boss_state_mapping", "behavior": "Map671 uses DATA_THERALION_AND_VALIONA=1 with boss entries 45993 Theralion and45992 Valiona; loader registers AddSC_boss_theralion_and_valiona.", "source_refs": ["repo_bot_header", "repo_bot_instance_bastion_of_twilight", "repo_loader"], "status": "repository_confirmed"},
+    {"key": "difficulty_delta", "behavior": "Local engage adds Twilight Shift and Twilight Zone/Sentry periodic hooks only in heroic; Engulfing local cap is one for non-25-player maps and up to three for 25-player maps. Exact retail coefficients and target tables remain unresolved.", "source_refs": ["repo_boss_theralion_and_valiona", "wowhead_cata_valiona_theralion_2024", "icy_veins_cata_valiona_theralion_2024"], "status": "heroic_hook_confirmed_retail_scaling_unresolved"},
+    {"key": "database_identity", "behavior": "Historical TDB/SQL identifies level-88 entries 45992/45993, ScriptNames boss_valiona/boss_theralion, model bindings, and map671 support spawns; base health is not four-mode current tuning.", "source_refs": ["repo_tdb_snapshot", "repo_sql_history"], "status": "repository_identity_confirmed_current_build_unresolved"}
+  ],
+  "conflicts": [
+    {"key": "health", "current_wowhead": "32.2M/54.1M/97.9M/164.9M", "historical_icy": "25.8M/48.1M/78.3M/164M", "repository": "base TDB health 1.25M per creature row", "resolution": "do not select a four-mode health invariant until exact 4.4.2 build/hotfix and client data are frozen"},
+    {"key": "phase_schedule", "current_wowhead": "105s Valiona ground and140s Theralion ground; Dazzling about85s; Deep Breath about100s", "historical_icy": "100s/140s; transitions around85s/95s", "repository": "movement/event schedule with1m22s Dazzling and1m25.1s Deep Breath local starts", "resolution": "do not schedule exact retail phase timestamps"},
+    {"key": "ability_timers", "blackout": "45s current/40s historical/46s local", "devouring": "25s current/41s local", "twilight_blast": "3s current/2s historical/2.4s local", "engulfing": "35s current/40s local", "meteorite": "5-6s warning or6s historical/1.2s local", "resolution": "keep strategy guidance and local baseline separate; fidelity blocked"},
+    {"key": "targeting_and_scaling", "engulfing": "current1-3 ranged versus historical size counts versus local class and raid-size filters", "meteorite": "current random prose versus local ground-tank exclusion", "blackout_and_devouring": "guide prose versus local random/filter implementation", "resolution": "do not encode disputed target tables or spell coefficients"},
+    {"key": "spell_values", "current_guide": "narrative and ability tables disagree for Blackout, Devouring, Twilight Blast, Dazzling, Fabulous, Meteorite, Deep Breath, and Twilight Zone/orbs", "repository": "C++ confirms relationships but delegates coefficients/radii/aura periods to spell data", "resolution": "all disputed numeric fields remain fidelity_blocked"},
+    {"key": "heroic", "current_guides": "five-stack Twilight Shift and approximate Sentry/Rift cadence", "repository": "heroic hooks and entries but periodic data not in C++", "resolution": "heroic trigger identity is usable; cadence, target, damage, and mode delta are unresolved"},
+    {"key": "reset_credit", "repository": "FAIL/DONE/instakill and cleanup paths are explicit", "retail": "lockout, loot, achievement, and helper-state persistence are not established", "resolution": "do not assert retail reset/credit semantics"}
+  ],
+  "unresolved": [
+    {"key": "exact_442_client_build_and_hotfix_cutoff", "status": "fidelity_blocked", "detail": "Official 4.4.2 notes and the audited published hotfix page do not expose client/DBC hashes or a Valiona/Theralion tuning cutoff."},
+    {"key": "four_mode_health_and_scaling", "status": "fidelity_blocked", "detail": "Current Wowhead and historical Icy Veins health tables differ materially; local TDB base health is not a current four-mode table."},
+    {"key": "phase_lengths_and_movement", "status": "fidelity_blocked", "detail": "Current guide, historical guide, and local movement/event timers disagree for transitions and travel time."},
+    {"key": "blackout_spell_data", "status": "fidelity_blocked", "detail": "Narrative/table damage, absorb, expiry, radius, and local removal semantics are not reconciled to 4.4.2 spell data."},
+    {"key": "devouring_and_breath_coefficients", "status": "fidelity_blocked", "detail": "Cone, tick, distance formula, lane damage, and mode values require validated spell/DBC data."},
+    {"key": "dazzling_geometry_and_targeting", "status": "fidelity_blocked", "detail": "Local stalker/phase filters and guide zone counts/telegraphs do not establish current client target geometry."},
+    {"key": "engulfing_target_mapping", "status": "fidelity_blocked", "detail": "Current 1-3 wording, historical size counts, and local class/raid-size exclusions conflict."},
+    {"key": "meteorite_target_and_timer", "status": "fidelity_blocked", "detail": "Current random-target prose conflicts with local ground-tank exclusion and local1.2s repeat; warning and split values differ."},
+    {"key": "deep_breath_and_twilight_flames", "status": "fidelity_blocked", "detail": "Current/historical transition timestamps differ from local three-pass movement; lane, cast, and realm damage data are incomplete."},
+    {"key": "realm_aura_portal_and_orb_data", "status": "fidelity_blocked", "detail": "Twilight Zone, Unstable Twilight, portal lifetime/count, and realm reset values are not fully represented in C++."},
+    {"key": "heroic_sentry_period_and_scaling", "status": "fidelity_blocked", "detail": "Local periodic setup has no exact cadence; guide estimates do not establish target, Rift Blast, or mode coefficients."},
+    {"key": "ai_helper_reset", "status": "fidelity_blocked", "detail": "Reset does not explicitly clear every phase counter/waypoint/helper field; post-evade reconstruction is unvalidated."},
+    {"key": "retail_reset_credit_loot", "status": "unresolved", "detail": "Repository FAIL/DONE/instakill paths audited; retail lockout, loot, achievement, and persistence semantics are not established."}
+  ]
+}

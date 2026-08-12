@@ -1,0 +1,121 @@
+{
+  "schema_version": 1,
+  "policy_id": "cata_raid_acceptance_policy_v1",
+  "fidelity_target": {
+    "product": "Cataclysm Classic",
+    "patch": "4.4.2",
+    "release_name": "Hour of Twilight",
+    "locale": "enUS",
+    "client_build": 59185,
+    "client_build_status": "frozen_from_public_secondary_build_table",
+    "official_notes_published_at_utc": "2025-02-18T19:31:51.916Z",
+    "hotfix_cutoff_utc": "2025-02-18T19:31:51.916Z",
+    "hotfix_cutoff_semantics": "Include only official Blizzard behavior published at or before the version-1 launch notes timestamp; later hotfixes require a new target identity.",
+    "client_data_hashes": [],
+    "client_data_status": "unavailable_blocks_quantitative_fidelity_acceptance",
+    "quantitative_source_registry": "experiments/configs/cata_raid_quantitative_source_registry_v1.json",
+    "fidelity_gate": "research_unresolved"
+  },
+  "classifications": [
+    "authoritative_boss_pass",
+    "authoritative_full_clear_pass",
+    "gameplay_failure",
+    "infrastructure_abort",
+    "incomplete_evidence",
+    "diagnostic_only"
+  ],
+  "quantitative_evidence_hierarchy": [
+    {
+      "rank": 1,
+      "kind": "primary_client_and_official_blizzard",
+      "uses": ["client_build_identity", "client_table_values", "official_patch_and_hotfix_behavior"],
+      "requirements": "Freeze product/locale/build plus hashes of the exact extracted client inputs, and preserve official Blizzard source metadata at the chosen cutoff."
+    },
+    {
+      "rank": 2,
+      "kind": "cutoff_compatible_combat_logs",
+      "uses": ["observed_timers", "target_counts", "phase_order", "difficulty_deltas"],
+      "requirements": "Pin report/log identity and date, prove exact raid size and difficulty, and retain enough event context to distinguish random ranges from fixed cadence."
+    },
+    {
+      "rank": 3,
+      "kind": "cutoff_compatible_addon_release",
+      "uses": ["timer_ranges", "spell_ids", "phase_triggers"],
+      "requirements": "Pin repository, immutable tag/commit and file hash; treat warnings and scheduling as corroboration rather than encounter authority."
+    },
+    {
+      "rank": 4,
+      "kind": "contemporaneous_guides_and_databases",
+      "uses": ["mechanic_descriptions", "assignment_constraints", "cross_checks"],
+      "requirements": "Use concise original summaries with URL/title/date metadata and at least one independent corroborating source for material quantitative claims."
+    },
+    {
+      "rank": 5,
+      "kind": "repository_implementation",
+      "uses": ["current_behavior_inventory", "spell_and_script_cross_reference", "gap_detection"],
+      "requirements": "Never treat existing code as proof of retail fidelity; every material constant must map upward to a resolved ledger row."
+    }
+  ],
+  "target_source_metadata": {
+    "official_launch_notes": {
+      "url": "https://us.forums.blizzard.com/en/wow/t/cataclysm-classic-hour-of-twilight-update-notes/2062030",
+      "topic_id": 2062030,
+      "post_id": 26314648,
+      "post_version": 1,
+      "published_at_utc": "2025-02-18T19:31:51.916Z",
+      "authority": "official_blizzard"
+    },
+    "launch_build_candidate": {
+      "build": 59185,
+      "published_live_date": "2025-02-18",
+      "authority": "public_secondary_build_table",
+      "acceptance_use": "candidate_only_until_primary_client_identity_is_available"
+    }
+  },
+  "authoritative_requirements": {
+    "native_encounter_activation": true,
+    "authoritative_death_and_boss_state": true,
+    "exact_raid_size_and_difficulty_readback": true,
+    "exact_roster_slots_subgroups_and_leases": true,
+    "required_mechanics_observed": true,
+    "watchdog_capture_cleanup_and_publication": true,
+    "independent_reconstruction_ignores_stored_pass_fields": true,
+    "zero_forbidden_assistance": true,
+    "zero_unresolved_material_fidelity_fields_for_verified_label": true
+  },
+  "forbidden_certification_assistance": [
+    "forced_kill",
+    "victim_assignment",
+    "encounter_state_injection",
+    "combat_teleport_or_coordinate_mutation",
+    "direct_resurrection",
+    "door_unlock",
+    "missing_boss_or_actor_spawn",
+    "aura_manipulation",
+    "difficulty_argument_without_map_readback",
+    "future_tier_overgear",
+    "stale_or_incompatible_identity"
+  ],
+  "identity_components": [
+    "git_commit_and_dirty_content",
+    "binary_config_and_database_hashes",
+    "server_process_epoch",
+    "raid_roster_subgroups_difficulty_and_lockout",
+    "gear_talents_glyphs_and_profile_generation",
+    "strategy_contract_route_readiness_and_policy",
+    "zone_modifier_state",
+    "capture_publisher_and_performance_policy"
+  ],
+  "full_clear_rule": "Every required boss must pass in one coherent legitimate lockout with compatible identity; wipes and native recovery are allowed.",
+  "research_rule": "No material value, timer, range, target rule, scaling rule, or phase rule may be guessed. Unresolved material evidence blocks blizzlike_4_4_2_verified.",
+  "build_rule": "Every configure, compile, link, heavyweight CTest, and integration build requires a verified production coordinator receipt with no overlapping heavyweight lease.",
+  "storage_rule": "Publish immutable artifacts through DVC, verify remote receipts, hydrate selectively, evict exact payloads, and never run broad dvc gc.",
+  "live_serialization": {
+    "worldserver": 1,
+    "operator": 1,
+    "cohort": 1,
+    "capture_writer": 1,
+    "dvc_publisher": 1,
+    "heavyweight_builds_during_live_validation": 0
+  }
+}

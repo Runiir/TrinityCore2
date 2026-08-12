@@ -10,11 +10,12 @@
     "official_patch_notes_url": "https://us.forums.blizzard.com/en/wow/t/world-of-warcraft-cataclysm-classic-patch-442-notes/2062030",
     "launch_build_candidate": 59185,
     "launch_build_candidate_source": "https://warcraft.wiki.gg/wiki/Public_client_builds",
-    "client_build_frozen": false,
-    "hotfix_cutoff_frozen": false,
+    "client_build_frozen": true,
+    "hotfix_cutoff_utc": "2025-02-18T19:31:51.916Z",
+    "hotfix_cutoff_frozen": true,
     "client_data_hashes_frozen": false,
     "state": "research_unresolved",
-    "reason": "The public build table identifies 4.4.2.59185 as the 2025-02-18 live launch, but Phase 0 still lacks a pinned primary client-data extract/content hashes and an exact Blizzard hotfix cutoff."
+    "reason": "Build 59185 and the launch-notes timestamp cutoff are frozen. Phase 0 still lacks a pinned primary client-data extract/content hashes, an exact Wowhead 4.4.2 extract, and known-mode logs for material quantitative rows."
   },
   "source_quality": {
     "quantitative_hierarchy": [

@@ -1,0 +1,330 @@
+{
+  "schema_version": 1,
+  "ledger_schema": "cata_raid_value_timer_ledger_v1",
+  "raid": "throne_of_the_four_winds",
+  "boss_slug": "conclave_of_wind",
+  "encounter": "conclave_of_wind",
+  "modes": ["10N", "10H", "25N", "25H"],
+  "scope": ["10N", "10H", "25N", "25H"],
+  "fidelity_state": "fidelity_blocked",
+  "contract_path": "experiments/configs/cata_raid_encounters/throne_of_the_four_winds/conclave_of_wind_v1.json",
+  "unresolved_material_count": 16,
+  "purpose": "sourced value, target, scaling, and timer ledger; no live or retail assertion",
+  "research_as_of": "2026-08-12",
+  "retrieved_utc_date": "2026-08-12",
+  "repository_revision_audited": "8eb54f0160b3c3d986ed944f9d64ebf83922c0f8",
+  "source_catalog": {
+    "wowhead_cata_conclave_442": {
+      "title": "Conclave of Wind Strategy Guide - Throne of the Four Winds Raid Cataclysm Classic",
+      "publisher": "Wowhead",
+      "author": "Beanna",
+      "updated": "2024-06-04",
+      "patch_label": "4.4.2",
+      "url": "https://www.wowhead.com/cata/guide/raids/throne-of-the-four-winds/conclave-of-wind-strategy",
+      "accessed": "2026-08-12",
+      "used_for": ["platforms", "60_second_sync_rule", "guide_health", "ability_values", "guide_timers", "role_guidance"],
+      "reliability": "current_patch_labelled_strategy_source",
+      "notes": "Reports health as 4.3M/6.9M/14.6M/23.4M per djinn for 10N/10H/25N/25H; ability table is not a complete four-mode matrix."
+    },
+    "icy_veins_cata_conclave_2024": {
+      "title": "Conclave of Wind Encounter Guide: Strategy, Abilities, Loot",
+      "publisher": "Icy Veins",
+      "author": "Abide",
+      "updated": "2024-07-29",
+      "patch_label": "Cataclysm Classic",
+      "url": "https://www.icy-veins.com/cataclysm-classic/conclave-of-wind-encounter-guide-strategy-abilities-loot",
+      "accessed": "2026-08-12",
+      "used_for": ["90_energy_claim", "platform_roles", "ability_list", "qualitative_scaling", "Stay_Chill_description"],
+      "reliability": "independent_current_era_strategy_source"
+    },
+    "warcraft_tavern_cata_conclave_2024": {
+      "title": "The Conclave of Wind Raid Guide - Cataclysm Classic",
+      "publisher": "Warcraft Tavern",
+      "author": "not exposed by fetched page",
+      "updated": "not exposed by fetched page",
+      "patch_label": "Cataclysm Classic",
+      "url": "https://www.warcrafttavern.com/cataclysm/guides/conclave-of-wind-raid-guide/",
+      "accessed": "2026-08-12",
+      "used_for": ["platform_roles", "100_energy_narrative", "qualitative_cross_platform_plan"],
+      "reliability": "indexed_current_strategy_source",
+      "retrieval_note": "Direct fetch returned 403; search extract was used only for qualitative corroboration, not exact coefficients."
+    },
+    "blizzard_cata_442_notes": {
+      "title": "World of Warcraft: Cataclysm Classic Patch 4.4.2 Notes",
+      "publisher": "Blizzard Entertainment / Kaivax",
+      "updated": "2025-02-18",
+      "patch_label": "4.4.2 Hour of Twilight",
+      "url": "https://us.forums.blizzard.com/en/wow/t/world-of-warcraft-cataclysm-classic-patch-442-notes/2062030",
+      "accessed": "2026-08-12",
+      "used_for": ["Classic_version_context"],
+      "reliability": "official_version_context; no Conclave tuning in notes"
+    },
+    "repo_boss_conclave": {
+      "title": "TrinityCore Conclave of Wind encounter script",
+      "publisher": "repository",
+      "path": "src/server/scripts/Kalimdor/ThroneOfTheFourWinds/boss_conclave_of_wind.cpp",
+      "revision": "8eb54f0160b3c3d986ed944f9d64ebf83922c0f8",
+      "accessed": "2026-08-12",
+      "lines": "36-133, 159-219, 221-467, 469-699, 703-968, 1002-1298",
+      "used_for": ["spell_ids", "platform_target_filter", "local_timers", "heroic_gate", "energy_actions", "synchronized_death_gate", "reset_cleanup", "SpellScripts"],
+      "reliability": "local server baseline; not live 4.4.2 evidence"
+    },
+    "repo_instance_throne": {
+      "title": "TrinityCore Throne of the Four Winds instance script",
+      "publisher": "repository",
+      "path": "src/server/scripts/Kalimdor/ThroneOfTheFourWinds/instance_throne_of_the_four_winds.cpp",
+      "revision": "8eb54f0160b3c3d986ed944f9d64ebf83922c0f8",
+      "accessed": "2026-08-12",
+      "lines": "26-69, 78-215, 243-348",
+      "used_for": ["map_754", "boss_state_mapping", "energy_controller", "80s_warning", "90s_full_strength", "113.5s_repeat", "8min_berserk", "completion_unlock"],
+      "reliability": "local server baseline; not retail proof"
+    },
+    "repo_throne_header": {
+      "title": "TrinityCore Throne of the Four Winds header",
+      "publisher": "repository",
+      "path": "src/server/scripts/Kalimdor/ThroneOfTheFourWinds/throne_of_the_four_winds.h",
+      "revision": "8eb54f0160b3c3d986ed944f9d64ebf83922c0f8",
+      "accessed": "2026-08-12",
+      "lines": "25-134",
+      "used_for": ["creature_ids", "helper_ids", "shared_spells", "gameobject_ids", "instance_data_ids"],
+      "reliability": "repository identity reference"
+    },
+    "repo_throne_sql_setup": {
+      "title": "Historical Throne of the Four Winds creature/gameobject setup SQL",
+      "publisher": "repository SQL",
+      "path": "sql/old/4.3.4/TDB04_to_TDB05_updates/world/023_throne_of_the_four_winds.sql",
+      "accessed": "2026-08-12",
+      "used_for": ["map_754_spawns", "platform_coordinates", "difficulty_entry_context", "prefight_auras", "helper_spawns"],
+      "reliability": "historical SQL provenance; not current Classic database proof"
+    },
+    "repo_historical_instance_encounter_sql": {
+      "title": "Historical instance encounter row",
+      "publisher": "repository SQL",
+      "path": "sql/old/4.3.4/TDB04_to_TDB05_updates/world/066_instance_encounters.sql",
+      "accessed": "2026-08-12",
+      "used_for": ["encounter_credit_identity"],
+      "reliability": "historical database provenance; current loot/credit unresolved"
+    }
+  },
+  "mode_matrix": {
+    "10N": {"heroic": false, "guide_health_each_djinn": "4.3M", "health_status": "guide_only", "difficulty_entries": {"anshal": 45870, "nezir": 45871, "rohash": 45872}, "mode_spell_ids": {"withering": 85576, "chilling": 85578, "deafening": 85573, "gather": 86307, "wind_chill": 84645}},
+    "10H": {"heroic": true, "guide_health_each_djinn": "6.9M", "health_status": "guide_only", "difficulty_entries": {"anshal": 50113, "nezir": 50108, "rohash": 50105}, "mode_spell_ids": {"withering": 93182, "chilling": 93148, "deafening": 93191, "gather": 101445, "wind_chill": 93124}},
+    "25N": {"heroic": false, "guide_health_each_djinn": "14.6M", "health_status": "guide_only", "difficulty_entries": {"anshal": 50103, "nezir": 50098, "rohash": 50095}, "mode_spell_ids": {"withering": 93181, "chilling": 93147, "deafening": 93190, "gather": 101444, "wind_chill": 93123}},
+    "25H": {"heroic": true, "guide_health_each_djinn": "23.4M", "health_status": "guide_only", "difficulty_entries": {"anshal": 50123, "nezir": 50118, "rohash": 50115}, "mode_spell_ids": {"withering": 93183, "chilling": 93149, "deafening": 93192, "gather": 101446, "wind_chill": 93125}}
+  },
+  "values": [
+    {
+      "key": "djinn_health",
+      "10N": "4.3M each",
+      "10H": "6.9M each",
+      "25N": "14.6M each",
+      "25H": "23.4M each",
+      "unit": "hit points",
+      "source": "wowhead_cata_conclave_442",
+      "repository_confirmation": false,
+      "status": "guide_reported_not_4.4.2_verified",
+      "notes": "Wowhead table values; no independent complete mode matrix or frozen client data."
+    },
+    {
+      "key": "energy_threshold_and_gain",
+      "10N": "90/+1s (Icy) versus 100/~90s (Wowhead)",
+      "10H": "same conflict",
+      "25N": "same conflict",
+      "25H": "same conflict",
+      "unit": "energy and cadence",
+      "source": "wowhead_cata_conclave_442+icy_veins_cata_conclave_2024+repo_instance_throne",
+      "repository_confirmation": true,
+      "status": "conflicting_guide_and_local_baselines"
+    },
+    {
+      "key": "platform_radius",
+      "all_modes": "65yd exact-2D local filter",
+      "unit": "yards",
+      "source": "repo_boss_conclave",
+      "repository_confirmation": true,
+      "status": "local_only_not_retail_verified"
+    },
+    {
+      "key": "soothing_breeze",
+      "all_modes": "40k HP/s normal; 80k HP/s heroic; 10yd; 30s guide report",
+      "unit": "healing/radius/duration",
+      "spell": 86205,
+      "source": "wowhead_cata_conclave_442+repo_boss_conclave",
+      "repository_confirmation": false,
+      "status": "guide_values_and_local_timer_conflict"
+    },
+    {
+      "key": "nurture_and_creepers",
+      "all_modes": "5 adds; guide health 343k normal / 687k heroic",
+      "unit": "count/hit points",
+      "spells": [85422, 85428, 85429],
+      "add_entry": 45812,
+      "source": "wowhead_cata_conclave_442+icy_veins_cata_conclave_2024+repo_boss_conclave",
+      "repository_confirmation": {"spell_identity": true, "health_and_count": false},
+      "status": "coefficients_blocked"
+    },
+    {
+      "key": "wind_chill",
+      "10N": "8k Frost guide; +10% Frost damage/stack; 35s",
+      "10H": "15k Frost guide; +10% Frost damage/stack; 35s",
+      "25N": "not independently exposed",
+      "25H": "not independently exposed",
+      "unit": "debuff",
+      "spells": {"10N": 84645, "25N": 93123, "10H": 93124, "25H": 93125},
+      "source": "wowhead_cata_conclave_442+icy_veins_cata_conclave_2024+repo_boss_conclave",
+      "repository_confirmation": {"identity": true, "values": false},
+      "status": "mode_scaling_and_timer_blocked"
+    },
+    {
+      "key": "permafrost",
+      "10N": "25k Frost/s guide",
+      "10H": "50k Frost/s guide",
+      "25N": "not independently exposed",
+      "25H": "not independently exposed",
+      "unit": "3s tank-facing cone",
+      "spell": 86082,
+      "source": "wowhead_cata_conclave_442+icy_veins_cata_conclave_2024+repo_boss_conclave",
+      "repository_confirmation": {"identity": true, "values": false},
+      "status": "target_timer_and_scaling_blocked"
+    },
+    {
+      "key": "ice_patch",
+      "10N": "6k Frost/s guide",
+      "10H": "20k Frost/s guide",
+      "25N": "not independently exposed",
+      "25H": "not independently exposed",
+      "unit": "10yd patch; 10% stacking slow; 3s guide report",
+      "spell": 86122,
+      "source": "wowhead_cata_conclave_442+icy_veins_cata_conclave_2024+repo_boss_conclave",
+      "repository_confirmation": {"identity": true, "values": false},
+      "status": "target_timer_and_scaling_blocked"
+    },
+    {
+      "key": "sleet_storm",
+      "10N": "50k Frost/s split guide",
+      "10H": "225k Frost/s split guide",
+      "25N": "not independently exposed",
+      "25H": "not independently exposed",
+      "unit": "15s platform AoE split by target count",
+      "spell": 84644,
+      "source": "wowhead_cata_conclave_442+icy_veins_cata_conclave_2024+repo_boss_conclave",
+      "repository_confirmation": {"split_script": true, "coefficients": false},
+      "status": "damage_and_target_count_blocked"
+    },
+    {
+      "key": "slicing_gale",
+      "all_modes": "28.5k-31.5k Nature guide table; random in-range target",
+      "unit": "Nature damage",
+      "spell": 86182,
+      "source": "wowhead_cata_conclave_442+repo_boss_conclave",
+      "repository_confirmation": {"identity_and_random_filter": true, "coefficient": false},
+      "status": "timer_and_coefficient_blocked"
+    },
+    {
+      "key": "wind_blast",
+      "all_modes": "47.5k-52.5k Nature; 6s rotating frontal wind guide report",
+      "unit": "Nature damage/knockback",
+      "spells": [86193, 85480],
+      "source": "wowhead_cata_conclave_442+icy_veins_cata_conclave_2024+repo_boss_conclave",
+      "repository_confirmation": {"identity": true, "direction_and_coefficients": false},
+      "status": "timer_direction_and_coefficients_blocked"
+    },
+    {
+      "key": "hurricane",
+      "10N": "4k Nature/s guide",
+      "10H": "7.5k Nature/s guide",
+      "25N": "not independently exposed",
+      "25H": "not independently exposed",
+      "unit": "15s vortex plus fall damage",
+      "spells": [84643, 86481],
+      "source": "wowhead_cata_conclave_442+icy_veins_cata_conclave_2024+repo_boss_conclave",
+      "repository_confirmation": {"spell_identity": true, "vehicle_and_fall": false},
+      "status": "mode_scaling_and_vehicle_behavior_blocked"
+    },
+    {
+      "key": "storm_shield_heroic",
+      "10N": "not scheduled locally",
+      "10H": "450k absorb guide report",
+      "25N": "not scheduled locally",
+      "25H": "450k absorb guide report",
+      "unit": "heroic-only shield and nearby Nature aura",
+      "spell": 93059,
+      "source": "wowhead_cata_conclave_442+repo_boss_conclave",
+      "repository_confirmation": {"heroic_gate": true, "absorb_and_damage": false},
+      "status": "heroic_values_blocked"
+    },
+    {
+      "key": "synchronized_death",
+      "all_modes": "60s between all three deaths, otherwise full-health respawn per Wowhead",
+      "unit": "completion window",
+      "source": "wowhead_cata_conclave_442+repo_boss_conclave",
+      "repository_confirmation": "local gathering-state gate, no explicit 60s timer",
+      "status": "retail_reset_semantics_blocked"
+    },
+    {
+      "key": "stay_chill_credit",
+      "all_modes": "everyone has at least 7 Wind Chill stacks per Icy Veins",
+      "unit": "achievement requirement",
+      "spell": 94119,
+      "source": "icy_veins_cata_conclave_2024+repo_boss_conclave",
+      "repository_confirmation": "spell identity declared but no cast path in local source",
+      "status": "achievement_credit_blocked"
+    }
+  ],
+  "timers": [
+    {"key": "controller_energy", "guide_range": "90 energy/+1s or 100 energy/~90s", "repository_baseline": "1ms start; 1s gain; 80s warning; 90s full; 23.5s post-full delay; 113.5s full repeat", "random": false, "status": "conflict"},
+    {"key": "soothing_breeze", "guide_range": "15s then ~30s", "repository_baseline": "15.5s then random 31-33s", "random": true, "status": "conflict"},
+    {"key": "nurture", "guide_range": "about 30s cycle", "repository_baseline": "27s first; 35s after ultimate", "random": false, "status": "conflict"},
+    {"key": "toxic_spores", "guide_range": "not stable in guides", "repository_baseline": "20.5s after Nurture, then 20s", "random": false, "status": "repository_only"},
+    {"key": "wind_chill", "guide_range": "10s", "repository_baseline": "11s then 11s", "random": false, "status": "conflict"},
+    {"key": "permafrost", "guide_range": "about 10s", "repository_baseline": "12s then 12s", "random": false, "status": "conflict"},
+    {"key": "ice_patch", "guide_range": "about 15s", "repository_baseline": "14s then 14s", "random": false, "status": "conflict"},
+    {"key": "slicing_gale", "guide_range": "roughly 3-5s", "repository_baseline": "1s then 2.1s", "random": false, "status": "conflict"},
+    {"key": "wind_blast", "guide_range": "30s then ~60s; 6s", "repository_baseline": "32.5s then 60s; finish event at 11s", "random": false, "status": "conflict"},
+    {"key": "hurricane_sleet_zephyr", "guide_range": "15s", "repository_baseline": "cast 2.5s after full strength; reengage 15s", "random": false, "status": "qualitative_match_not_build_proof"},
+    {"key": "storm_shield", "guide_range": "heroic-only periodic", "repository_baseline": "30.1s first, 37.5s after reengage if mana >=30", "random": false, "status": "local_only"},
+    {"key": "berserk", "guide_range": "not consistently exposed", "repository_baseline": "8min", "random": false, "status": "local_only"},
+    {"key": "synchronized_death", "guide_range": "60s window", "repository_baseline": "no explicit timer", "random": false, "status": "conflict"}
+  ],
+  "targeting_and_scaling": {
+    "platform_filter": "local IsTargetOnPlatform(home_position,target) rejects vehicles and requires exact 2D distance <65 yards",
+    "anshal": ["Soothing Breeze selects a random friendly target in guide prose; local spell handles field", "Nurture summons five local add triggers; exact add targeting/health blocked", "Toxic Spores is area/stack behavior but aura coefficients blocked", "Zephyr heals allies within guide-reported 90 yards and empowers surviving adds; mode coefficients blocked"],
+    "nezir": ["Wind Chill is local AOE and stacks Frost vulnerability", "Permafrost uses current victim and a forward cone", "Ice Patch selects a random valid in-range player locally", "Sleet Storm SpellScript divides damage by selected target count; exact client target list and mode scaling blocked"],
+    "rohash": ["Slicing Gale selects a random in-range hostile target", "Tornado count is three in guide/source identity; movement path is random/DB-driven", "Wind Blast redirects its target to a world trigger and copies cone targets", "Hurricane applies a ride-vehicle spell to hit units and selects a free hurricane vehicle"],
+    "difficulty": "Only five macro spell families have explicit RAID_MODE IDs in C++ (wind damage, gather strength, Wind Chill); most ability coefficients are in spell/DBC data not audited here. Heroic explicitly schedules Storm Shield."
+  },
+  "phase_reset_credit": {
+    "phase_model": "No discrete phases; three platform-local bosses share repeating global energy/ultimate cycles.",
+    "engage": "Instance DATA_CONCLAVE_OF_WIND IN_PROGRESS zones Anshal, Nezir, and Rohash into combat and schedules global events.",
+    "gathering": "At below 1% local DamageTaken calls KillConclaveIfAllowed; if two other councillors are gathering it KillSelf()s all, otherwise lethal damage is clamped, events reset, and Gather Strength is cast.",
+    "reset": "Councilor evade disengages its frame, despawns summons, and despawns at evade. Instance failure cancels energy/warning/full-strength/Berserk events, resets Skywall DJIN states, despawns hurricane vehicles, and does not expose an explicit 60s full-health respawn timer.",
+    "completion": "Nezir JustDied casts 88835; instance DONE removes Al'Akir UNIT_FLAG_IMMUNE_TO_PC and calls ACTION_CONCLAVE_DEFEATED. Historical encounter row is spell 88835, but retail loot/credit behavior is not asserted.",
+    "achievement": "Spell 94119 is declared for Stay Chill but unused by the local file; Icy Veins requires seven Wind Chill stacks on everyone. Credit is blocked.",
+    "cross_platform": "Guides describe walking into wind launchers/air lifts between West-North-East; local bosses require victims to remain within each home radius. Exact launch vector, failure behavior, and client 4.4.2 movement are blocked."
+  },
+  "conflicts": [
+    "Energy threshold/cadence conflicts: Icy Veins says 90/+1s; Wowhead says 100 and about 1.5 minutes; local controller emits at 90s and repeats at 113.5s.",
+    "Every recurring local timer differs at least slightly from guide cadence; no exact range is promoted.",
+    "Guide normal/heroic numbers are not independently available for all four modes; local spell IDs do not prove coefficients.",
+    "Wowhead's 60-second synchronized-death/full-health respawn rule is not implemented as an explicit local timer.",
+    "Local source declares Stay Chill credit spell 94119 but never casts it; retail achievement/loot/credit is unresolved."
+  ],
+  "unresolved": [
+    "exact Cataclysm Classic 4.4.2 client/build and Conclave hotfix cutoff",
+    "90 versus 100 full-energy threshold and whether each boss truly gains one energy per second in 4.4.2",
+    "energy reset/cycle timing after each ultimate and the live Berserk duration",
+    "all four mode health values and per-mode damage/absorption coefficients",
+    "Soothing Breeze radius, heal, duration, random-friendly target selector, and timer",
+    "Ravenous Creeper count/health, Toxic Spores stacking/targeting, and heroic proximity damage",
+    "Wind Chill stack duration, damage, and mode scaling",
+    "Permafrost cone target/damage/timer and Ice Patch target/radius/damage/timer",
+    "Sleet Storm target count and exact split/damage coefficients",
+    "Tornado movement/random path and Wind Blast rotation direction/target cone",
+    "Hurricane vehicle/fall behavior and Storm Shield heroic coefficients",
+    "live platform radius and launch-pad cross-platform motion",
+    "whether the retail 60-second synchronized-death rule is still implemented as guide-described in 4.4.2",
+    "reset/full-health respawn behavior after a missed synchronization",
+    "loot, encounter credit, Stay Chill achievement credit, and Al'Akir unlock behavior",
+    "historical SQL difficulty-entry rows are not proof of the current Classic database"
+  ]
+}

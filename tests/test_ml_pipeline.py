@@ -2028,13 +2028,15 @@ def test_validation_scenario_manifests_link_routes_mechanics_and_provisioning():
     assert slabhide["node_kind"] == "boss"
     assert slabhide["completion_policy"] == "boss_kill"
     assert nefarian["expected_bot_count"] == 10
-    assert atramedes["activation_data_id"] == 10
-    assert nefarian["activation_data_id"] == 35
+    assert atramedes["activation_data_id"] == 0
+    assert atramedes["source_guid"] == "native_instance_unlock"
+    assert nefarian["activation_data_id"] == 0
     assert nefarian["activation_spawn_group_id"] == 0
     assert nefarian["activation_action_entry"] == 0
     assert nefarian["activation_action_id"] == 0
-    assert nefarian["activation_summon_entry"] == 41376
-    assert nefarian["activation_summon_z"] == 40.48163
+    assert nefarian["activation_summon_entry"] == 0
+    assert nefarian["activation_summon_z"] == 0.0
+    assert nefarian["source_guid"] == "native_instance_unlock"
     assert nefarian["opener_target_entry"] == 41270
     assert nefarian["opener_summon_entry"] == 0
     assert nefarian["bot_start_map_id"] == 669

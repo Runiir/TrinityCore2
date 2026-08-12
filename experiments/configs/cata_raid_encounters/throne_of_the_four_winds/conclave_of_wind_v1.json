@@ -1,0 +1,382 @@
+{
+  "schema_version": 1,
+  "contract_schema": "cata_raid_encounter_contract_v1",
+  "raid": "throne_of_the_four_winds",
+  "instance": "throne_of_the_four_winds",
+  "boss_slug": "conclave_of_wind",
+  "encounter": "conclave_of_wind",
+  "modes": ["10N", "10H", "25N", "25H"],
+  "scope": ["10N", "10H", "25N", "25H"],
+  "fidelity_state": "fidelity_blocked",
+  "dossier_path": "docs/bot_raids/strategies/t11/throne_of_the_four_winds/conclave_of_wind.md",
+  "ledger_path": "experiments/configs/cata_raid_encounters/throne_of_the_four_winds/conclave_of_wind_ledger_v1.json",
+  "unresolved_material_count": 16,
+  "research_state": "phase0_researched_not_live_validated",
+  "research_as_of": "2026-08-12",
+  "evidence_policy": "A behavior-changing claim requires two independent current-era strategy sources or one credible current strategy source plus repository confirmation; guide values, historical SQL, and local timers do not become 4.4.2 invariants without frozen client evidence or live validation.",
+  "fidelity_policy": "Do not promote guide-reported values, historical hotfixes, or local implementation timers to Cataclysm Classic 4.4.2 retail truth. Keep material conflicts and unresolved build/hotfix fields blocked.",
+  "source_refs": [
+    "wowhead_cata_conclave_442",
+    "icy_veins_cata_conclave_2024",
+    "warcraft_tavern_cata_conclave_2024",
+    "blizzard_cata_442_notes",
+    "repo_boss_conclave",
+    "repo_instance_throne",
+    "repo_throne_header",
+    "repo_throne_sql_setup",
+    "repo_historical_instance_encounter_sql"
+  ],
+  "source_urls": [
+    "https://www.wowhead.com/cata/guide/raids/throne-of-the-four-winds/conclave-of-wind-strategy",
+    "https://www.icy-veins.com/cataclysm-classic/conclave-of-wind-encounter-guide-strategy-abilities-loot",
+    "https://www.warcrafttavern.com/cataclysm/guides/conclave-of-wind-raid-guide/",
+    "https://us.forums.blizzard.com/en/wow/t/world-of-warcraft-cataclysm-classic-patch-442-notes/2062030"
+  ],
+  "repository_audit": {
+    "revision": "8eb54f0160b3c3d986ed944f9d64ebf83922c0f8",
+    "boss_source": "src/server/scripts/Kalimdor/ThroneOfTheFourWinds/boss_conclave_of_wind.cpp",
+    "instance_source": "src/server/scripts/Kalimdor/ThroneOfTheFourWinds/instance_throne_of_the_four_winds.cpp",
+    "header_source": "src/server/scripts/Kalimdor/ThroneOfTheFourWinds/throne_of_the_four_winds.h",
+    "loader_source": "src/server/scripts/Kalimdor/kalimdor_script_loader.cpp",
+    "sql_setup_source": "sql/old/4.3.4/TDB04_to_TDB05_updates/world/023_throne_of_the_four_winds.sql",
+    "sql_addon_source": "sql/old/4.3.4/TDB04_to_TDB05_updates/world/025_creature_template_addon.sql",
+    "sql_encounter_source": "sql/old/4.3.4/TDB04_to_TDB05_updates/world/066_instance_encounters.sql",
+    "implementation_is_not_retail_proof": true
+  },
+  "mode_matrix": {
+    "10N": {
+      "heroic": false,
+      "guide_health_each_djinn": "4.3M",
+      "guide_health_status": "Wowhead table; not repository or client verified",
+      "local_difficulty_entries": {"anshal": 45870, "nezir": 45871, "rohash": 45872},
+      "local_mode_spell_ids": {"withering_winds": 85576, "chilling_winds": 85578, "deafening_winds": 85573, "gather_strength": 86307, "wind_chill": 84645},
+      "behavior_delta": "normal spell variants; no Storm Shield event"
+    },
+    "10H": {
+      "heroic": true,
+      "guide_health_each_djinn": "6.9M",
+      "guide_health_status": "Wowhead table; not repository or client verified",
+      "local_difficulty_entries": {"anshal": 50113, "nezir": 50108, "rohash": 50105},
+      "local_mode_spell_ids": {"withering_winds": 93182, "chilling_winds": 93148, "deafening_winds": 93191, "gather_strength": 101445, "wind_chill": 93124},
+      "behavior_delta": "heroic spell variants and Rohash Storm Shield; coefficients remain blocked"
+    },
+    "25N": {
+      "heroic": false,
+      "guide_health_each_djinn": "14.6M",
+      "guide_health_status": "Wowhead table; not repository or client verified",
+      "local_difficulty_entries": {"anshal": 50103, "nezir": 50098, "rohash": 50095},
+      "local_mode_spell_ids": {"withering_winds": 93181, "chilling_winds": 93147, "deafening_winds": 93190, "gather_strength": 101444, "wind_chill": 93123},
+      "behavior_delta": "25-player normal spell variants; no Storm Shield event"
+    },
+    "25H": {
+      "heroic": true,
+      "guide_health_each_djinn": "23.4M",
+      "guide_health_status": "Wowhead table; not repository or client verified",
+      "local_difficulty_entries": {"anshal": 50123, "nezir": 50118, "rohash": 50115},
+      "local_mode_spell_ids": {"withering_winds": 93183, "chilling_winds": 93149, "deafening_winds": 93192, "gather_strength": 101446, "wind_chill": 93125},
+      "behavior_delta": "heroic 25-player spell variants and Rohash Storm Shield; coefficients remain blocked"
+    }
+  },
+  "roles": {
+    "tanks": ["one tank on Anshal", "one tank on Nezir", "coordinate tank/healer swaps between West and North to shed Wind Chill", "Rohash has no conventional tank requirement"],
+    "healers": ["split across all three platforms", "prepare cooldowns for Sleet Storm", "cover Wind Chill and Permafrost on North", "keep the lone Rohash-platform survivor alive through Hurricane/fall"],
+    "dps": ["kill Ravenous Creepers before Zephyr", "avoid Tornado and Wind Blast", "regroup on North for Sleet Storm if the selected strategy requires it", "balance the three health pools for synchronized completion"],
+    "raid": ["remain within the assigned platform", "use the wind launchers to cross platforms", "move bosses/adds out of Soothing Breeze and Ice Patch", "finish all three djinns inside the verified synchronized-death window"]
+  },
+  "gates": [
+    "three_platform_assignment",
+    "platform_local_targeting",
+    "soothing_breeze_displacement",
+    "ravenous_creeper_and_toxic_spores_control",
+    "wind_chill_stack_swap",
+    "permafrost_cone_and_ice_patch_movement",
+    "sleet_storm_soak",
+    "slicing_gale_and_tornado_avoidance",
+    "wind_blast_rotation_avoidance",
+    "hurricane_survival",
+    "health_balance_and_synchronized_death",
+    "out_of_range_reset_response"
+  ],
+  "heroic_gates": [
+    "heroic_wind_damage_variants",
+    "rohash_storm_shield_break",
+    "heroic_energy_and_health_coefficients_unresolved"
+  ],
+  "known_behavior_summary": [
+    "The encounter is three independent djinns: Anshal (West/Life), Nezir (North/Frost), and Rohash (East/Wind), on map 754.",
+    "Current guides agree that the raid is split across platforms and all three djinns must be killed within a synchronized window; Wowhead explicitly reports 60 seconds and full-health respawn when that window is missed.",
+    "The repository uses a 65-yard platform-distance check, rejects vehicle targets, stops a djinn attacking a victim outside its home platform, and escalates an out-of-range warning aura; this is implementation evidence, not a 4.4.2 retail contract.",
+    "The repository instance controller energizes all three bosses through world trigger 21252, announces near-full strength at 80 seconds, sends all three ultimates at 90 seconds, and schedules a global eight-minute Berserk. Current sources describe 90 or 100 energy and approximately 90 seconds; the exact Classic threshold/cadence is blocked.",
+    "Anshal periodically places Soothing Breeze, summons five Ravenous Creepers, and uses Zephyr at full strength; Nezir applies Wind Chill, Permafrost, Ice Patch, and Sleet Storm; Rohash uses Slicing Gale, Tornadoes, Wind Blast, and Hurricane.",
+    "The local script prevents lethal damage while a single djinn is below 1%, marks it as gathering strength, and kills all three only when the other two are also gathering; the guide-reported 60-second reset/respawn rule is not encoded as a local timer.",
+    "Heroic-only local behavior is Rohash Storm Shield. The source contains an achievement spell identity (94119 Stay Chill) but no active cast path for it, so achievement credit is not asserted."
+  ],
+  "mechanics": [
+    {
+      "key": "platform_topology_and_targeting",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Anshal is West, Nezir North, and Rohash East. Each boss attacks only victims inside its home-platform radius; vehicles are excluded.",
+      "values": {
+        "map": 754,
+        "anshal_entry": 45870,
+        "nezir_entry": 45871,
+        "rohash_entry": 45872,
+        "anshal_spawn": [-47.9531, 1053.44, 200.0943],
+        "nezir_spawn": [189.394, 812.569, 200.0943],
+        "rohash_spawn": [-51.4635, 576.25, 200.0943],
+        "platform_radius_local": "<65.0 yards exact 2D distance",
+        "cross_platform_travel": "wind launchers/air lifts reported by current guides; exact client motion unresolved"
+      },
+      "evidence": ["wowhead_cata_conclave_442", "icy_veins_cata_conclave_2024", "repo_boss_conclave", "repo_throne_sql_setup"],
+      "confidence": "platform_roles_and_qualitative_travel_two_guides_plus_repository; radius_and_motion_not_retail_verified"
+    },
+    {
+      "key": "energy_and_ultimate_cycle",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Each djinn has an energy resource and uses its platform ultimate at full strength; the exact 4.4.2 threshold and cycle are disputed.",
+      "values": {
+        "current_guide_icy": "starts at 0; +1 energy/sec; ultimate at 90",
+        "current_guide_wowhead": "100 energy; approximately every 1.5 minutes",
+        "repository_power_gain_spell": 89898,
+        "repository_power_drain_spell": 89840,
+        "repository_announce": "80s",
+        "repository_first_full_strength": "90s",
+        "repository_post_ultimate_energize_delay": "23.5s",
+        "repository_full_strength_repeat": "113.5s via EventMap",
+        "repository_berserk": "8min, spell 26662",
+        "ultimate_duration_guide": "15s reported by Wowhead/Icy; exact channel/aura build unresolved"
+      },
+      "evidence": ["wowhead_cata_conclave_442", "icy_veins_cata_conclave_2024", "repo_instance_throne", "repo_boss_conclave"],
+      "conflicts": ["90 versus 100 threshold; guide cadence versus local event schedule; no frozen 4.4.2 energy/bar evidence"],
+      "confidence": "ultimate identities confirmed; threshold, gain, cycle, and Berserk retail status fidelity_blocked"
+    },
+    {
+      "key": "anshal_soothing_breeze",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Soothing Breeze is a ground field on a random friendly target; it heals allies and silences/pacifies enemies inside, so move Anshal and adds out.",
+      "values": {
+        "spell": 86205,
+        "repository_first": "15.5s after engage",
+        "repository_repeat": "31-33s random",
+        "guide_cadence": "15s then approximately every 30s",
+        "guide_radius": "10yd",
+        "guide_duration": "30s",
+        "guide_heal": {"normal": "40,000 HP/s", "heroic": "80,000 HP/s"},
+        "guide_enemy_effect": "silence and pacify"
+      },
+      "evidence": ["wowhead_cata_conclave_442", "icy_veins_cata_conclave_2024", "repo_boss_conclave"],
+      "conflicts": ["guide values are not reconciled to current spell data; local timer has a 31-33s random range"],
+      "confidence": "mechanic_two_guides_plus_repository; radius, healing, and timer fidelity_blocked"
+    },
+    {
+      "key": "anshal_nurture_creepers_toxic_spores",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Nurture summons Ravenous Creepers. Toxic Spores punishes nearby players and can stack; control/kill or kite the adds before Zephyr.",
+      "values": {
+        "nurture_spell": 85422,
+        "nurture_first_local": "27s",
+        "toxic_spores_spell": 86290,
+        "toxic_spores_first_local": "20.5s after Nurture",
+        "toxic_spores_repeat_local": "20s",
+        "nurture_add_count_guide": 5,
+        "guide_add_health": {"normal": "343k", "heroic": "687k"},
+        "guide_toxic_range": "10yd",
+        "guide_toxic_values": {"normal": "800 Nature damage/sec", "heroic": "20,000 Nature damage/sec"},
+        "trigger_entry": 85428,
+        "summon_spell": 85429,
+        "add_entry": 45812
+      },
+      "evidence": ["wowhead_cata_conclave_442", "icy_veins_cata_conclave_2024", "repo_boss_conclave", "repo_throne_header"],
+      "conflicts": ["Wowhead narrative reports additional heroic 100k/sec proximity damage; exact aura stack, duration, count, and 4.4.2 coefficients are unresolved"],
+      "confidence": "summon identity and local sequencing confirmed; scaling and random/target behavior fidelity_blocked"
+    },
+    {
+      "key": "anshal_zephyr",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "At full strength Anshal teleports to center and channels Zephyr, healing allies and empowering surviving Creepers.",
+      "values": {
+        "spell": 84638,
+        "local_cast_delay_after_full_strength": "2.5s",
+        "local_channel_reengage": "15s",
+        "guide_heal": {"normal": "50,000 HP/s", "heroic": "100,000 HP/s"},
+        "guide_duration": "15s",
+        "guide_creeper_damage_stack": "15% per tick, up to +225%"
+      },
+      "evidence": ["wowhead_cata_conclave_442", "icy_veins_cata_conclave_2024", "repo_boss_conclave"],
+      "confidence": "qualitative mechanic confirmed; health/damage coefficients and exact full-strength timing fidelity_blocked"
+    },
+    {
+      "key": "nezir_wind_chill_permafrost_ice_patch",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Nezir repeatedly applies raid/platform Frost pressure, a tank-facing Permafrost cone, and a random-target Ice Patch that must be left.",
+      "values": {
+        "wind_chill": {"10N": 84645, "25N": 93123, "10H": 93124, "25H": 93125},
+        "wind_chill_local_first": "11s",
+        "wind_chill_local_repeat": "11s",
+        "guide_tick": "every 10s",
+        "wind_chill_damage": {"normal": "8,000 Frost", "heroic": "15,000 Frost"},
+        "guide_frost_taken_increase": "10% per stack; 35s duration",
+        "permafrost_spell": 86082,
+        "permafrost_local_first": "12s; repeat 12s",
+        "guide_duration": "3s",
+        "permafrost_damage": {"normal": "25,000 Frost/s", "heroic": "50,000 Frost/s"},
+        "ice_patch_spell": 86122,
+        "ice_patch_local_first": "14s; repeat 14s",
+        "guide_radius": "10yd",
+        "ice_patch_damage": {"normal": "6,000 Frost/s", "heroic": "20,000 Frost/s"},
+        "guide_slow": "10% stacking"
+      },
+      "evidence": ["wowhead_cata_conclave_442", "icy_veins_cata_conclave_2024", "repo_boss_conclave"],
+      "conflicts": ["current guides and local event timers differ; guide spell-table numbers are not a complete four-mode matrix"],
+      "confidence": "target roles and movement behavior confirmed; all exact values/timers/scaling fidelity_blocked"
+    },
+    {
+      "key": "nezir_sleet_storm",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Nezir's full-strength ultimate is a 15-second Frost storm whose damage is divided among units on the platform; the raid must gather enough players to survive.",
+      "values": {
+        "spell": 84644,
+        "local_cast_delay_after_full_strength": "2.5s",
+        "local_channel_reengage": "15s",
+        "guide_duration": "15s",
+        "guide_damage": {"normal": "50,000 Frost/s split", "heroic": "225,000 Frost/s split"},
+        "repository_split_implementation": "SpellScript divides hit damage by selected target count",
+        "local_frost_go": 206700,
+        "achievement_credit_spell_declared_but_not_cast": 94119
+      },
+      "evidence": ["wowhead_cata_conclave_442", "icy_veins_cata_conclave_2024", "repo_boss_conclave", "repo_throne_header"],
+      "conflicts": ["guide role plans differ in the number of players left behind; exact target filtering and 4.4.2 damage are unresolved"],
+      "confidence": "split-damage mechanic confirmed; target count, coefficient, and achievement credit fidelity_blocked"
+    },
+    {
+      "key": "rohash_slicing_gale_tornado_wind_blast",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Rohash has no conventional melee attack. Slicing Gale hits a random in-range target; three Tornadoes move around the platform; Wind Blast rotates a wind wall and knocks victims away.",
+      "values": {
+        "slicing_gale_spell": 86182,
+        "slicing_gale_local_first": "1s; repeat 2.1s",
+        "guide_damage": {"normal": "28,500-31,500 Nature", "heroic": "guide reports approximately 30,000 Nature"},
+        "tornado_spell": 86192,
+        "tornado_count": 3,
+        "wind_blast_spell": 86193,
+        "wind_blast_triggered_spell": 85480,
+        "wind_blast_local_first": "32.5s; repeat 60s",
+        "wind_blast_local_finish": "11s after event; Slicing Gale rescheduled 12s",
+        "guide_first": "30s",
+        "guide_duration": "6s",
+        "guide_damage": "47,500-52,500 Nature per second/impact description",
+        "trigger_entry": 46419
+      },
+      "evidence": ["wowhead_cata_conclave_442", "icy_veins_cata_conclave_2024", "repo_boss_conclave", "repo_throne_header"],
+      "conflicts": ["guide prose and local event cadence differ; tornado movement and Wind Blast periodic spell details are DB/client-driven"],
+      "confidence": "qualitative hazards plus spell identities confirmed; all timer/damage/random-direction fields fidelity_blocked"
+    },
+    {
+      "key": "rohash_hurricane_and_storm_shield",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "At full strength Rohash launches platform occupants in Hurricane. In local heroic only, Storm Shield is scheduled while he has enough mana.",
+      "values": {
+        "hurricane_spell": 84643,
+        "hurricane_vehicle_spell": 86481,
+        "local_cast_delay_after_full_strength": "2.5s",
+        "local_reengage": "15s",
+        "guide_duration": "15s",
+        "guide_damage": {"normal": "4,000 Nature/s", "heroic": "7,500 Nature/s"},
+        "storm_shield_spell": 93059,
+        "storm_shield_local_first_heroic": "30.1s; repeat after reengage 37.5s",
+        "storm_shield_local_gate": "POWER_MANA >= 30",
+        "guide_absorb": "450,000 damage",
+        "guide_aura_damage": "28,500-31,500 Nature/s"
+      },
+      "evidence": ["wowhead_cata_conclave_442", "icy_veins_cata_conclave_2024", "repo_boss_conclave"],
+      "conflicts": ["exact vehicle/fall damage and Storm Shield mode coefficients are not proven for 4.4.2"],
+      "confidence": "ultimate and local heroic gate confirmed; coefficients and vehicle handling fidelity_blocked"
+    },
+    {
+      "key": "out_of_range_reset_and_cross_platform",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "When no valid victim remains on a platform, the local boss casts a platform-wide escalating wind aura and attempts to teleport back to its platform center; leaving a platform triggers a warning unless its ultimate is active.",
+      "values": {
+        "distance_checker": 85763,
+        "anshal_out_of_range": {"aura": 85576, "damage": 93168, "reset_aura": 89137, "center_teleport": 89844},
+        "nezir_out_of_range": {"aura": 85578, "damage": 93163, "reset_aura": 89135, "center_teleport": 89843},
+        "rohash_out_of_range": {"aura": 85573, "damage": 93166, "reset_aura": 89136, "no_center_teleport_in_local_case": true},
+        "warning_spell": 96508,
+        "local_warning_repeat": "2.5s",
+        "local_teleport_delay": "1s after warning expiry",
+        "guide_rule": "stay on assigned platform; use launch pads intentionally"
+      },
+      "evidence": ["wowhead_cata_conclave_442", "icy_veins_cata_conclave_2024", "repo_boss_conclave"],
+      "confidence": "repository behavior confirmed; live aura coefficients and reset semantics fidelity_blocked"
+    },
+    {
+      "key": "synchronized_death_and_completion",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "All three djinns must be completed together. The local source uses a 1%-health gathering state and only kills all three when the other two are also gathering strength; current Wowhead reports a 60-second completion window and full-health respawn on failure.",
+      "values": {
+        "local_health_threshold": "below 1% damaged",
+        "gather_strength": {"10N": 86307, "25N": 101444, "10H": 101445, "25H": 101446},
+        "local_gathering_state": "lethal damage clamped to health-1; EventMap reset; passive; ultimate/gather aura",
+        "local_kill_condition": "two other councillors report DATA_IS_GATHERING_STRENGTH, then KillSelf all three",
+        "guide_sync_window": "60s; missed window respawns full health",
+        "all_dead_spell": 88835,
+        "instance_done": "DATA_CONCLAVE_OF_WIND DONE; removes Al'Akir immunity and sends ACTION_CONCLAVE_DEFEATED",
+        "berserk_local": "8min spell 26662"
+      },
+      "evidence": ["wowhead_cata_conclave_442", "icy_veins_cata_conclave_2024", "repo_boss_conclave", "repo_instance_throne"],
+      "conflicts": ["the local script has no explicit 60-second timer/full-health respawn implementation; exact retail reset, loot, and credit sequence is unresolved"],
+      "confidence": "synchronized completion qualitative plus repository mechanism; window/reset/credit fidelity_blocked"
+    }
+  ],
+  "timer_contract": {
+    "status": "fidelity_blocked",
+    "policy": "Store guide cadence and local implementation baselines separately; no timer is a 4.4.2 invariant.",
+    "entries": [
+      {"key": "energy_full_strength", "guide": "90 energy/+1 per second (Icy) or 100 energy/~90s (Wowhead)", "repository": "80s warning, 90s ultimate, then 113.5s repeat", "status": "conflict"},
+      {"key": "soothing_breeze", "guide": "15s then ~30s", "repository": "15.5s then random 31-33s", "status": "conflict"},
+      {"key": "nurture", "guide": "~30s after first cycle", "repository": "27s first; 35s after ultimate", "status": "conflict"},
+      {"key": "toxic_spores", "guide": "add aura behavior; cadence not stable", "repository": "20.5s after Nurture then 20s", "status": "repository_only"},
+      {"key": "wind_chill", "guide": "every 10s", "repository": "11s then 11s", "status": "conflict"},
+      {"key": "permafrost", "guide": "about every 10s", "repository": "12s then 12s", "status": "conflict"},
+      {"key": "ice_patch", "guide": "about every 15s", "repository": "14s then 14s", "status": "conflict"},
+      {"key": "slicing_gale", "guide": "roughly 3-5s", "repository": "1s then 2.1s", "status": "conflict"},
+      {"key": "wind_blast", "guide": "30s then ~60s; 6s", "repository": "32.5s then 60s; finish 11s", "status": "conflict"},
+      {"key": "storm_shield", "guide": "heroic-only shield", "repository": "30.1s then 37.5s, mana >=30", "status": "local_only"},
+      {"key": "ultimate_duration", "guide": "15s", "repository": "reengage after 15s", "status": "qualitative_match_not_build_proof"},
+      {"key": "berserk", "guide": "not consistently exposed", "repository": "8min", "status": "local_only"},
+      {"key": "synchronized_death", "guide": "60s window", "repository": "gathering-state gate, no explicit window", "status": "conflict"}
+    ]
+  },
+  "lifecycle": {
+    "engage": "Setting DATA_CONCLAVE_OF_WIND IN_PROGRESS zones all three bosses into combat and starts energy, warning, ultimate, and Berserk events.",
+    "phase_model": "No discrete phase transition; repeating synchronized energy/ultimate cycles with platform-local events.",
+    "reset": "Boss evade calls _EnterEvadeMode, disengages each encounter frame, despawns summons, and _DespawnAtEvade; instance cancels global events and resets skywall effects/hurricane vehicles.",
+    "completion": "On the final councillor death the instance reaches DONE, unlocks Al'Akir, and calls ACTION_CONCLAVE_DEFEATED. Exact retail loot/credit/achievement semantics are not proven.",
+    "failure_and_respawn": "Current guide says a missed 60-second synchronization causes full-health respawn; repository has gathering-strength logic but no explicit retail-window timer. Keep reset semantics blocked.",
+    "achievement": "Icy Veins describes Stay Chill as seven Wind Chill stacks on everyone; source declares spell 94119 but does not invoke it in this file. Do not certify achievement credit."
+  },
+  "unresolved": [
+    "exact Cataclysm Classic 4.4.2 client/build and Conclave hotfix cutoff",
+    "90 versus 100 full-energy threshold and whether each boss truly gains one energy per second in 4.4.2",
+    "energy reset/cycle timing after each ultimate and the live Berserk duration",
+    "all four mode health values and per-mode damage/absorption coefficients",
+    "Soothing Breeze radius, heal, duration, random-friendly target selector, and timer",
+    "Ravenous Creeper count/health, Toxic Spores stacking/targeting, and heroic proximity damage",
+    "Wind Chill stack duration, damage, and mode scaling",
+    "Permafrost cone target/damage/timer and Ice Patch target/radius/damage/timer",
+    "Sleet Storm target count and exact split/damage coefficients",
+    "Tornado movement/random path and Wind Blast rotation direction/target cone",
+    "Hurricane vehicle/fall behavior and Storm Shield heroic coefficients",
+    "live platform radius and launch-pad cross-platform motion",
+    "whether the retail 60-second synchronized-death rule is still implemented as guide-described in 4.4.2",
+    "reset/full-health respawn behavior after a missed synchronization",
+    "loot, encounter credit, Stay Chill achievement credit, and Al'Akir unlock behavior",
+    "historical SQL difficulty-entry rows are not proof of the current Classic database"
+  ],
+  "conflicts": [
+    "Icy Veins reports 90 energy and +1/sec; Wowhead ability text reports 100 energy and approximately 1.5 minutes; repository schedules the first ultimate at 90 seconds.",
+    "Guide timers generally differ from the local C++ event schedule for all recurring platform abilities.",
+    "Current guides report exact normal/heroic values, but neither provides a complete independently verified 10N/10H/25N/25H matrix and the local code does not encode most coefficients.",
+    "Wowhead reports a 60-second respawn window, while local completion is a gathering-state gate without an explicit timer."
+  ]
+}

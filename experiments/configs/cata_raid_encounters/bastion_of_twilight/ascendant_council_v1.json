@@ -1,0 +1,418 @@
+{
+  "schema_version": 1,
+  "contract_schema": "cata_raid_encounter_contract_v1",
+  "raid": "bastion_of_twilight",
+  "instance": "bastion_of_twilight",
+  "boss_slug": "ascendant_council",
+  "modes": ["10N", "10H", "25N", "25H"],
+  "fidelity_state": "fidelity_blocked",
+  "dossier_path": "docs/bot_raids/strategies/t11/bastion_of_twilight/ascendant_council.md",
+  "ledger_path": "experiments/configs/cata_raid_encounters/bastion_of_twilight/ascendant_council_ledger_v1.json",
+  "unresolved_material_count": 15,
+  "encounter": "ascendant_council",
+  "instance": "bastion_of_twilight",
+  "scope": ["10N", "10H", "25N", "25H"],
+  "research_state": "phase0_researched_not_live_validated",
+  "research_as_of": "2026-08-12",
+  "evidence_policy": "A behavior-changing claim requires two independent current-era strategy sources or one credible current strategy source plus repository confirmation; historical SQL/hotfix values remain repository or historical evidence only, and conflicts remain unresolved.",
+  "fidelity_policy": "Do not promote guide-reported values, historical hotfixes, or local implementation timers to 4.4.2 retail invariants without frozen client data or live evidence.",
+  "source_urls": [
+    "https://www.wowhead.com/cata/guide/raids/the-bastion-of-twilight/ascendant-council-strategy",
+    "https://www.icy-veins.com/cataclysm-classic/ascendant-council-encounter-guide-strategy-abilities-loot",
+    "https://www.warcrafttavern.com/cataclysm/guides/ascendant-council-raid-guide/",
+    "https://us.forums.blizzard.com/en/wow/t/world-of-warcraft-cataclysm-classic-patch-442-notes/2062030"
+  ],
+  "repository_audit": {
+    "boss_source": "src/server/scripts/EasternKingdoms/BastionOfTwilight/boss_ascendant_council.cpp",
+    "instance_source": "src/server/scripts/EasternKingdoms/BastionOfTwilight/instance_bastion_of_twilight.cpp",
+    "header_source": "src/server/scripts/EasternKingdoms/BastionOfTwilight/bastion_of_twilight.h",
+    "loader_source": "src/server/scripts/EasternKingdoms/eastern_kingdoms_script_loader.cpp",
+    "historical_sql_source": "sql/old/custom/world/34_2020_02_21/custom_2018_12_21_00_world_updatepack.sql",
+    "implementation_is_not_retail_proof": true
+  },
+  "source_refs": [
+    "wowhead_cata_ascendant_council_442",
+    "icy_veins_cata_ascendant_council_2024",
+    "warcraft_tavern_cata_ascendant_council_2024",
+    "blizzard_442_notes_2025",
+    "blizzard_cata_hotfix_jan26",
+    "blizzard_cata_hotfix_jan26_liquid_ice",
+    "blizzard_forum_cata_council_bug_reports",
+    "repo_boss_ascendant_council",
+    "repo_bot_header",
+    "repo_bot_instance",
+    "repo_loader",
+    "repo_historical_council_sql"
+  ],
+  "mode_matrix": {
+    "10N": {
+      "heroic": false,
+      "guide_reported_ignacious_health": 6900000,
+      "guide_health_scope": "Wowhead table under Ignacious; not independently established for all four councilors",
+      "local_historical_entries": {"ignacious": 43686, "feludius": 43687, "arion": 43688, "terrastra": 43689, "monstrosity": 43735},
+      "lightning_rod_local_target_count": 1,
+      "gravity_crush_local_target_count": 1,
+      "behavior_delta": "normal elemental counter-buff loop; no heroic helper spells"
+    },
+    "10H": {
+      "heroic": true,
+      "guide_reported_ignacious_health": 12800000,
+      "guide_health_scope": "Wowhead table under Ignacious; not independently established for all four councilors",
+      "local_historical_entries": {"ignacious": 49616, "feludius": 49613, "arion": 49607, "terrastra": 49610, "monstrosity": 49620},
+      "lightning_rod_local_target_count": 1,
+      "gravity_crush_local_target_count": 1,
+      "behavior_delta": "higher heroic spell variants plus Static Overload, Gravity Core, Frozen Orb, and Flame Strike"
+    },
+    "25N": {
+      "heroic": false,
+      "guide_reported_ignacious_health": 21900000,
+      "guide_health_scope": "Wowhead table under Ignacious; not independently established for all four councilors",
+      "local_historical_entries": {"ignacious": 49615, "feludius": 49612, "arion": 49606, "terrastra": 49609, "monstrosity": 49619},
+      "lightning_rod_local_target_count": 3,
+      "gravity_crush_local_target_count": 3,
+      "behavior_delta": "normal elemental counter-buff loop; 25-player local target filters"
+    },
+    "25H": {
+      "heroic": true,
+      "guide_reported_ignacious_health": 38000000,
+      "guide_health_scope": "Wowhead table under Ignacious; not independently established for all four councilors",
+      "local_historical_entries": {"ignacious": 49617, "feludius": 49614, "arion": 49608, "terrastra": 49611, "monstrosity": 49621},
+      "lightning_rod_local_target_count": 3,
+      "gravity_crush_local_target_count": 3,
+      "behavior_delta": "higher heroic spell variants plus Static Overload, Gravity Core, Frozen Orb, and Flame Strike"
+    }
+  },
+  "roles": {
+    "tanks": ["two tanks for phases 1 and 2, one tank for phase 3", "keep active councilors close for cleave while moving from telegraphed hazards", "keep Feludius away during Glaciate", "drag Monstrosity around the edge out of Liquid Ice"],
+    "interrupts": ["Hydro Lance", "Rising Flames after Aegis breaks", "Lightning Blast", "Harden Skin"],
+    "healers": ["pre-heal Glaciate, Aegis/Rising Flames, Quake/Thundershock and Gravity Crush targets", "prioritize Gravity Crush victims for the full 6.5s channel", "rotate raid cooldowns for phase-three Electric Instability and Liquid Ice damage"],
+    "phase_one_raid": ["clear Waterlogged in Inferno Rush fire before Glaciate", "spread for Water Bomb and Inferno Leap", "spread Heart of Ice and Burning Blood imbues before dispel", "balance Feludius and Ignacious to 25%"],
+    "phase_two_raid": ["isolate Lightning Rod targets by at least 15yd", "obtain Swirling Winds before Quake", "obtain Grounded before Thundershock", "move from Eruption and break Harden Skin", "on heroic pair Static Overload and Gravity Core carriers"],
+    "phase_three_raid": ["spread ranged groups for Electric Instability", "move from Lava Seed", "leave melee range while Monstrosity is trapped over Liquid Ice", "burn before soft-enrage overwhelms healing"],
+    "heroic": ["kite Frozen Orb into Flame Strike fire", "avoid Flame Strike impact and lingering fire", "clear Static Overload and Gravity Core by meeting carriers away from raid"]
+  },
+  "gates": [
+    "interrupt_hydro_lance",
+    "waterlogged_fire_clear_before_glaciate",
+    "aegis_break_and_rising_flames_interrupt",
+    "heart_of_ice_burning_blood_spread_and_opposite_imbue",
+    "phase_one_25pct_balanced_transition",
+    "lightning_rod_isolation_and_lightning_blast_interrupt",
+    "swirling_winds_for_quake",
+    "grounded_for_thundershock",
+    "eruption_and_harden_skin_response",
+    "phase_two_25pct_balanced_transition",
+    "liquid_ice_edge_kiting",
+    "electric_instability_spread",
+    "lava_seed_avoidance",
+    "gravity_crush_healing",
+    "phase_three_dps_race"
+  ],
+  "heroic_gates": [
+    "static_overload_gravity_core_carrier_pair",
+    "frozen_orb_flame_strike_interaction",
+    "flame_strike_fire_avoidance"
+  ],
+  "phases": [
+    {
+      "id": "phase_1",
+      "name": "feludius_ignacious",
+      "active_councilors": ["feludius", "ignacious"],
+      "transition_trigger": "either active councilor reaches 25 percent health",
+      "repository_control": "DamageTaken calls ACTION_SWITCH_COUNCILLORS and clamps lethal damage so councilors survive at 1 HP",
+      "guide_behavior": "current guides describe both bosses teleporting away when one reaches 25 percent",
+      "heroic_assist": ["Arion Static Overload", "Terrastra Gravity Core", "after transition Feludius Frozen Orb", "after transition Ignacious Flame Strike"]
+    },
+    {
+      "id": "phase_2",
+      "name": "arion_terrastra",
+      "active_councilors": ["arion", "terrastra"],
+      "transition_trigger": "either active councilor reaches 25 percent health",
+      "repository_control": "DamageTaken calls ACTION_UNITE_COUNCILLORS and clamps lethal damage so all four remain for merge",
+      "guide_behavior": "current guides describe the same 25 percent transition and balancing requirement",
+      "heroic_assist": ["inactive Feludius Frozen Orb", "inactive Ignacious Flame Strike"]
+    },
+    {
+      "id": "phase_3",
+      "name": "elementium_monstrosity",
+      "active_councilors": ["elementium_monstrosity"],
+      "transition_trigger": "controller schedules merge 14.5s after phase-two unite",
+      "repository_control": "Merge Health 82344 sums current health of Feludius, Ignacious, Arion, and Terrastra, then Elementium Monstrosity uses the sum",
+      "guide_behavior": "all four remaining health pools combine; Electric Instability and Liquid Ice create a soft enrage"
+    }
+  ],
+  "mechanics": [
+    {
+      "key": "feludius_hydro_lance",
+      "phase": "phase_1",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Random non-tank Frost cast that must be interrupted.",
+      "values": {"guide_damage_normal_narrative": "120000", "guide_damage_heroic_narrative": "220000", "guide_ability_table_range": "180000-220000", "repository_first": "8.5s", "repository_repeat": "13s", "repository_mode_spells": {"10N": 82752, "25N": 92509, "10H": 92510, "25H": 92511}},
+      "evidence": ["wowhead_cata_ascendant_council_442", "icy_veins_cata_ascendant_council_2024", "repo_boss_ascendant_council"],
+      "conflicts": ["Wowhead narrative and ability table disagree on damage; guide cadence differs from local event schedule."],
+      "confidence": "target_and_interrupt_two_guides_plus_repository; coefficient_and_cadence_fidelity_blocked"
+    },
+    {
+      "key": "feludius_water_bomb_waterlogged_glaciate",
+      "phase": "phase_1",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Water Bomb damages units within 6yd and applies Waterlogged; fire from Inferno Rush clears it before Glaciate. Glaciate damage falls with distance and freezes Waterlogged targets.",
+      "values": {"water_bomb_guide_radius": "6yd", "water_bomb_guide_damage": "10000", "waterlogged_movement_reduction": "25%", "waterlogged_guide_duration": "45s", "glaciate_cast": "3s", "glaciate_guide_melee_damage_normal": "200000", "glaciate_guide_melee_damage_heroic": "500000", "glaciate_guide_damage_at_20_to_25yd": "10000", "repository_glaciate_floor": "10000", "repository_distance_loss_per_yard": {"normal": 20000, "heroic": 25000}, "repository_pipeline": [82697, 82675, 82699, 82700, 82762, 82746]},
+      "evidence": ["wowhead_cata_ascendant_council_442", "icy_veins_cata_ascendant_council_2024", "warcraft_tavern_cata_ascendant_council_2024", "repo_boss_ascendant_council", "repo_historical_council_sql"],
+      "conflicts": ["Exact Water Bomb count/target selection is in server-side spell/condition data rather than the C++ event code; local preparation cadence differs from guide cadence."],
+      "confidence": "qualitative_two_guides_plus_repository; exact 4.4.2 values_blocked"
+    },
+    {
+      "key": "feludius_heart_of_ice",
+      "phase": "phase_1",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Random non-tank increasing Frost periodic debuff that grants nearby Frost Imbued; dispel after spreading.",
+      "values": {"guide_interval": "roughly 20s", "repository_first": "15.5s", "repository_repeat": "24s", "guide_tick": "2000 Frost every 2s with increasing amount", "repository_tick_growth": "10% of previous amount", "spread_radius": "10yd", "spell": 82665, "imbue_spell": 82666},
+      "evidence": ["wowhead_cata_ascendant_council_442", "icy_veins_cata_ascendant_council_2024", "repo_boss_ascendant_council"],
+      "conflicts": ["Guide interval and exact aura growth/duration are not reconciled with local script/DBC."],
+      "confidence": "behavior_two_guides_plus_repository; timer_and_coefficient_blocked"
+    },
+    {
+      "key": "ignacious_flame_torrent",
+      "phase": "phase_1",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Frontal fire cone that must face away from the raid.",
+      "values": {"guide_first": "about 10s", "guide_repeat": "15s", "guide_damage_per_second_normal": "55000", "guide_damage_per_second_heroic": "75000", "guide_duration": "3s", "repository_first": "8.5s", "repository_repeat": "10s", "spell": 82777},
+      "evidence": ["wowhead_cata_ascendant_council_442", "icy_veins_cata_ascendant_council_2024", "repo_boss_ascendant_council"],
+      "conflicts": ["Guide and local cadence differ; exact damage is guide-reported only."],
+      "confidence": "qualitative_two_guides_plus_repository; timer_and_coefficient_blocked"
+    },
+    {
+      "key": "ignacious_inferno_leap_rush",
+      "phase": "phase_1",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Leap to a distant/random ranged target, knock nearby players back, and leave a fire path on return; fire clears Waterlogged.",
+      "values": {"guide_first": "15s", "guide_repeat": "30s", "guide_leap_damage_normal": "15000", "guide_leap_damage_heroic": "25000", "guide_radius": "10yd", "guide_rush_damage_normal": "5000_per_0.5s", "guide_rush_damage_heroic": "15000_per_0.5s", "repository_phase_prep_delay": "500ms", "repository_ignite_delay": "2s", "repository_path_step": "6yd", "spells": [82856, 82859, 88578, 88579]},
+      "evidence": ["wowhead_cata_ascendant_council_442", "icy_veins_cata_ascendant_council_2024", "repo_boss_ascendant_council", "blizzard_forum_cata_council_bug_reports"],
+      "conflicts": ["Current Classic bug reports describe missing fire trails; exact Classic path reliability is unresolved."],
+      "confidence": "behavior_two_guides_plus_repository; bug/hotfix_and_timer_blocked"
+    },
+    {
+      "key": "ignacious_aegis_rising_flames",
+      "phase": "phase_1",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Aegis shields Ignacious and makes him interruption-immune while Rising Flames channels raid-wide fire damage; break shield and interrupt channel.",
+      "values": {"guide_first": "30s", "guide_repeat": "60s", "guide_absorb_normal": "1500000", "guide_absorb_heroic": "2000000", "guide_channel": "20s", "guide_tick": "every 2s", "guide_tick_damage_normal": "15000", "guide_tick_damage_heroic": "20000", "repository_aegis_first_after_prepare": "16.5s", "repository_rising_after_aegis": "3.5s", "repository_mode_spells": {"10N": 82631, "25N": 92512, "10H": 92513, "25H": 92514}, "rising_spell": 82636},
+      "evidence": ["wowhead_cata_ascendant_council_442", "icy_veins_cata_ascendant_council_2024", "repo_boss_ascendant_council"],
+      "conflicts": ["Guide cadence and local event schedule differ; exact shield/channel coefficients are DBC/build-dependent."],
+      "confidence": "mechanic_two_guides_plus_repository; timer_and_coefficient_blocked"
+    },
+    {
+      "key": "ignacious_burning_blood",
+      "phase": "phase_1",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Random non-tank increasing Fire periodic debuff that spreads Flame Imbued to nearby allies and empowers attacks against Feludius.",
+      "values": {"guide_interval": "about 60s", "repository_first": "30s", "repository_repeat": "21s", "guide_tick": "2000 Fire every 2s, increasing", "spread_radius": "10yd", "spell": 82660, "imbue_spell": 82663},
+      "evidence": ["wowhead_cata_ascendant_council_442", "icy_veins_cata_ascendant_council_2024", "repo_boss_ascendant_council"],
+      "conflicts": ["Timer and exact aura duration/growth are unresolved."],
+      "confidence": "behavior_two_guides_plus_repository; timer_and_coefficient_blocked"
+    },
+    {
+      "key": "phase_one_imbues_and_threshold",
+      "phase": "phase_1",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Opposite elemental imbues double damage to the corresponding councilor locally; either active councilor crossing 25% starts the teleport swap and both active councilors are protected from death.",
+      "values": {"threshold": "25%", "repository_damage_multiplier_from_flame_imbued": "2x Feludius", "repository_damage_multiplier_from_frost_imbued": "2x Ignacious", "repository_lethal_clamp": "damage reduced to health-1", "repository_phase_action": "ACTION_SWITCH_COUNCILLORS"},
+      "evidence": ["wowhead_cata_ascendant_council_442", "icy_veins_cata_ascendant_council_2024", "repo_boss_ascendant_council"],
+      "confidence": "threshold_and_local_control_confirmed; retail damage multiplier and exact transition timing blocked"
+    },
+    {
+      "key": "arion_call_winds_swirl",
+      "phase": "phase_2",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Call Winds creates a moving cyclone; touching it grants Swirling Winds needed to mitigate Quake.",
+      "values": {"guide_first": "about 10s", "guide_repeat": "about 30s", "guide_cyclone_lifetime": "50s", "guide_lashing_damage": "5000 Nature", "guide_swirl_duration": "2m", "repository_first": "9.3s", "repository_repeat": "31.5s", "repository_waypoint_move": "random 10-14s", "spells": [83491, 83475, 83500]},
+      "evidence": ["wowhead_cata_ascendant_council_442", "icy_veins_cata_ascendant_council_2024", "warcraft_tavern_cata_ascendant_council_2024", "repo_boss_ascendant_council"],
+      "conflicts": ["Local helper does not encode the guide-reported 50s lifetime."],
+      "confidence": "behavior_multi_source_plus_repository; lifetime_and_timer_blocked"
+    },
+    {
+      "key": "arion_lightning_rod_chain",
+      "phase": "phase_2",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Lightning Rod marks players for delayed Chain Lightning; marked players must isolate from the raid.",
+      "values": {"guide_interval": "about 20s", "guide_marked_players": 3, "guide_isolation": "15yd", "guide_chain_damage_normal": "10000", "guide_chain_damage_heroic": "30000", "repository_first": "17.9s", "repository_repeat": "19.4s", "repository_chain_delay": "8-10s", "repository_target_count": {"10N": 1, "10H": 1, "25N": 3, "25H": 3}, "spells": [83099, 83300]},
+      "evidence": ["wowhead_cata_ascendant_council_442", "icy_veins_cata_ascendant_council_2024", "repo_boss_ascendant_council"],
+      "conflicts": ["Current Wowhead prose says three players without a clear 10/25 mapping; local uses raid-size mapping."],
+      "confidence": "isolation_behavior_two_guides_plus_repository; mode_target_count_blocked"
+    },
+    {
+      "key": "arion_disperse_lightning_blast",
+      "phase": "phase_2",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Disperse teleports Arion away, then Lightning Blast targets his victim and must be interrupted.",
+      "values": {"guide_interval": "about 30s", "guide_blast_cast": "4s", "guide_damage_normal": "110000", "guide_damage_heroic": "200000", "repository_first_disperse": "20.5s", "repository_repeat_disperse": "24s", "repository_blast_delay": "2s", "repository_disperse_excludes_distance": "10yd", "repository_mode_spells": {"10N": 83070, "25N": 92454, "10H": 92455, "25H": 92456}},
+      "evidence": ["wowhead_cata_ascendant_council_442", "icy_veins_cata_ascendant_council_2024", "repo_boss_ascendant_council"],
+      "conflicts": ["Guide and local cadence/cast pipeline differ; local target stalker selection requires DB conditions."],
+      "confidence": "interrupt behavior_two_guides_plus_repository; timer_and_target_blocked"
+    },
+    {
+      "key": "arion_thundershock_grounded",
+      "phase": "phase_2",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Thundershock is raid-wide; Grounded from Gravity Well reduces it locally by 99%.",
+      "values": {"guide_interval": "about 60s", "guide_damage_normal": "80000", "guide_damage_heroic": "150000", "repository_warning_first": "55.7s", "repository_cast_after_warning": "10s", "repository_repeat_warning": "60s", "repository_grounded_damage_percent": 1, "spells": [83067, 83581]},
+      "evidence": ["wowhead_cata_ascendant_council_442", "icy_veins_cata_ascendant_council_2024", "repo_boss_ascendant_council"],
+      "conflicts": ["Local warning/cast schedule is not independently confirmed by current guides."],
+      "confidence": "counter-buff behavior_two_guides_plus_repository; timer_and_coefficient_blocked"
+    },
+    {
+      "key": "terrastra_gravity_well_grounded",
+      "phase": "phase_2",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Gravity Well creates a pull zone and Grounded; Grounded is needed for Thundershock and cancels Swirling Winds.",
+      "values": {"guide_first": "about 10s", "guide_repeat": "about 20s", "guide_damage": "3000 Nature within 7yd", "guide_grounded_duration": "2m", "repository_first": "6.9s", "repository_repeat": "17s", "repository_pre_visual": 95760, "repository_spells": [83572, 83579, 83587, 83583], "buff_exclusion": "local Gravity Well removes Swirling Winds"},
+      "evidence": ["wowhead_cata_ascendant_council_442", "icy_veins_cata_ascendant_council_2024", "repo_boss_ascendant_council"],
+      "conflicts": ["Guide and local cadence differ; exact pull/aura durations are spell-data dependent."],
+      "confidence": "counter-buff behavior_two_guides_plus_repository; timer_and_aura_blocked"
+    },
+    {
+      "key": "terrastra_eruption",
+      "phase": "phase_2",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Five local spike targets erupt around Terrastra, dealing area Physical damage and knocking players up; move the melee group.",
+      "values": {"guide_interval": "15s", "guide_delay": "about 4s", "guide_radius": "4yd", "guide_damage_normal": "25000", "guide_damage_heroic": "50000", "repository_first": "9.3s", "repository_repeat": "17s", "repository_damage_delay": "3.9s", "repository_spike_count": 5, "spells": [83675, 83661, 83692]},
+      "evidence": ["wowhead_cata_ascendant_council_442", "icy_veins_cata_ascendant_council_2024", "repo_boss_ascendant_council"],
+      "conflicts": ["Guide and local event cadence differ."],
+      "confidence": "shape_and_response_two_guides_plus_repository; timer_and_coefficient_blocked"
+    },
+    {
+      "key": "terrastra_harden_skin",
+      "phase": "phase_2",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Interrupt Harden Skin; if it lands, Terrastra gains a damage-absorbing shield and physical damage increase until broken, then Shatter returns accumulated absorbed damage locally.",
+      "values": {"guide_interval": "15s", "guide_cast": "1s", "guide_absorb_normal": "50% up to 1650000", "guide_absorb_heroic": "50% up to 2100000", "guide_damage_increase_normal": "20%", "guide_damage_increase_heroic": "100%", "repository_first": "22.7s", "repository_repeat": "43.8s", "spells": [83718, 83760]},
+      "evidence": ["wowhead_cata_ascendant_council_442", "icy_veins_cata_ascendant_council_2024", "repo_boss_ascendant_council"],
+      "conflicts": ["Icy Veins omits cadence; local DBC amount is percentage-based and the local timer differs materially from Wowhead."],
+      "confidence": "interrupt/response_two_guides_plus_repository; timer_and_coefficient_blocked"
+    },
+    {
+      "key": "terrastra_quake_swirl",
+      "phase": "phase_2",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Quake hits non-Swirling-Winds targets locally; obtain Swirling Winds from a cyclone before the cast.",
+      "values": {"guide_first": "about 30s", "guide_repeat": "60s", "guide_damage_normal": "70000", "guide_damage_heroic": "150000", "guide_mitigation": "90% with Swirling Winds", "repository_warning_first": "19.2s", "repository_quake_first": "27.5s", "repository_quake_repeat": "68s", "repository_warning_repeat": "59.7s", "repository_target_filter": "remove Swirling Winds aura", "spells": [83565, 83500]},
+      "evidence": ["wowhead_cata_ascendant_council_442", "icy_veins_cata_ascendant_council_2024", "repo_boss_ascendant_council"],
+      "conflicts": ["Guide and local cadence differ; exact local spell reduction is target filtering rather than a numeric 90% modifier."],
+      "confidence": "counter-buff behavior_two_guides_plus_repository; timer_and_damage_mapping_blocked"
+    },
+    {
+      "key": "heroic_static_overload_gravity_core",
+      "phase": "phase_1_and_phase_2",
+      "modes": ["10H", "25H"],
+      "summary": "Inactive Arion/Terrastra assist on heroic; each selects one target while excluding carriers of the opposite debuff. The two carriers meet away from the raid to clear both auras.",
+      "values": {"static_guide_damage": "6500 Nature every 2s for 10s; 10000 heroic example", "gravity_core_guide_damage": "10000 Physical every 2s", "spread_radius": "10yd", "repository_static_first": "19.7s", "repository_gravity_first": "22.7s", "repository_repeat": "20s", "spells": [92067, 92075]},
+      "evidence": ["wowhead_cata_ascendant_council_442", "icy_veins_cata_ascendant_council_2024", "repo_boss_ascendant_council"],
+      "conflicts": ["Exact current heroic coefficients/durations and phase-relative schedule are unresolved."],
+      "confidence": "heroic behavior_repository_plus_current_guide; coefficients_and_timer_blocked"
+    },
+    {
+      "key": "heroic_frozen_orb_flame_strike",
+      "phase": "phase_2",
+      "modes": ["10H", "25H"],
+      "summary": "Inactive Feludius pursues a random player with Frozen Orb; inactive Ignacious targets Flame Strike fire. Guide strategy is to kite the orb through lingering fire to remove it.",
+      "values": {"repository_frozen_orb_first": "24s after phase switch", "repository_flame_strike_first": "32s after phase switch", "repository_repeat": "20s", "guide_flame_strike_delay": "about 4s", "guide_flame_strike_damage": "200000 within 7yd", "repository_orb_target_count": 1, "repository_orb_speed_tick": "1s", "spells": [92267, 95883, 92307, 92303, 92548, 92080, 92212, 92211, 92215]},
+      "evidence": ["wowhead_cata_ascendant_council_442", "icy_veins_cata_ascendant_council_2024", "repo_boss_ascendant_council", "repo_historical_council_sql"],
+      "conflicts": ["Local timer/trigger pipeline and current guide prose do not establish exact wipe/expiry behavior for 4.4.2."],
+      "confidence": "interaction_current_guides_plus_repository; timer_and_spell_behavior_blocked"
+    },
+    {
+      "key": "phase_two_unite_merge_health",
+      "phase": "phase_2_to_phase_3",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "At 25% of Arion or Terrastra, all four councilors enter the merge RP; Elementium Monstrosity receives the sum of their remaining health.",
+      "values": {"threshold": "25%", "repository_merge_delay": "14.5s", "repository_merge_spell": 82344, "repository_targets": [43687, 43686, 43688, 43689], "repository_clamp": "each councilor survives at health-1 until despawn", "guide_rule": "sum of remaining health"},
+      "evidence": ["wowhead_cata_ascendant_council_442", "icy_veins_cata_ascendant_council_2024", "repo_boss_ascendant_council", "repo_historical_council_sql"],
+      "conflicts": ["The guide rule is qualitative; exact current Merge Health spell effects and client state are not validated."],
+      "confidence": "threshold_and_sum_repository_plus_guides; spell_pipeline_blocked"
+    },
+    {
+      "key": "elementium_liquid_ice",
+      "phase": "phase_3",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Cryogenic Aura creates/scales Liquid Ice under the boss; the pool expands while the boss remains in it and creates a damage race.",
+      "values": {"guide_interval": "about 2.5s", "guide_boss_damage_taken_reduction": "25% while in pool", "guide_damage_normal": "10000 Frost/sec", "guide_damage_heroic": "25000 Frost/sec", "repository_aura": 84918, "repository_summon": 84916, "repository_scale": 84917, "repository_liquid_ice": 84915, "repository_historical_difficulty_variants": [92497, 92498, 92499], "repository_npc": 45452},
+      "evidence": ["wowhead_cata_ascendant_council_442", "icy_veins_cata_ascendant_council_2024", "repo_boss_ascendant_council", "blizzard_cata_hotfix_jan26_liquid_ice"],
+      "conflicts": ["Historical Blizzard hotfix reverted a Liquid Ice damage increase because of hitbox/avoidance issues; no 4.4.2-specific coefficient proof is available."],
+      "confidence": "mechanic_current_guides_plus_repository; damage_and_hotfix_cutoff_blocked"
+    },
+    {
+      "key": "elementium_electric_instability",
+      "phase": "phase_3",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Every-second Nature chain that ramps the number of selected targets and pressures spread ranged groups.",
+      "values": {"guide_tick": "1s", "guide_damage_normal": "7000", "guide_damage_heroic": "16000", "guide_chain_radius": "10yd", "repository_target_count_start": 1, "repository_target_count_increment": "one per 20 aura ticks", "repository_spells": [84526, 84529]},
+      "evidence": ["wowhead_cata_ascendant_council_442", "icy_veins_cata_ascendant_council_2024", "repo_boss_ascendant_council"],
+      "conflicts": ["Current guide says more targets over time but does not specify cap; exact mode coefficient is not validated."],
+      "confidence": "ramp_behavior_guides_plus_repository; cap_and_coefficient_blocked"
+    },
+    {
+      "key": "elementium_lava_seed",
+      "phase": "phase_3",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Random floor kernels erupt after a warning and must be avoided.",
+      "values": {"guide_first": "about 20s", "guide_repeat": "about 30s", "guide_delay": "4s", "guide_radius": "4yd", "guide_damage_normal": "50000", "guide_damage_heroic": "100000", "repository_first": "19.7s", "repository_repeat": "21.7s", "repository_plume_delay": "1.1s", "repository_spells": [84913, 84911, 84912]},
+      "evidence": ["wowhead_cata_ascendant_council_442", "icy_veins_cata_ascendant_council_2024", "repo_boss_ascendant_council"],
+      "conflicts": ["Local plume timing and guide explosion timing are different stages; exact mode damage is guide-reported."],
+      "confidence": "avoidance_behavior_two_guides_plus_repository; timer_and_coefficient_blocked"
+    },
+    {
+      "key": "elementium_gravity_crush",
+      "phase": "phase_3",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Gravity bubble removes the current tank from selection locally, lifts targets, and applies 9% maximum-health damage every 0.5s for 6.5s.",
+      "values": {"guide_interval": "about 30s", "guide_target_count": 3, "guide_damage": "9% max health every 0.5s for 6.5s", "guide_total_before_fall": "117% max health", "guide_fall_damage": "50000", "repository_first": "32.9s", "repository_repeat": "random 24-28s", "repository_target_count": {"10N": 1, "10H": 1, "25N": 3, "25H": 3}, "repository_excludes_victim": true, "spells": [84948, 84947, 84952]},
+      "evidence": ["wowhead_cata_ascendant_council_442", "icy_veins_cata_ascendant_council_2024", "repo_boss_ascendant_council"],
+      "conflicts": ["Both current guides say three targets, while local target filtering maps count by raid size (one in 10-player, three in 25-player)."],
+      "confidence": "damage_and_channel_two_guides_plus_repository; mode_target_count_blocked"
+    }
+  ],
+  "reset_and_credit": {
+    "reset": "Controller Reset schedules EVENT_RESET_BOSS_STATE after 1ms unless boss is DONE; that event sets NOT_STARTED and summons all four councilors.",
+    "evade": "ACTION_STOP_ENCOUNTER disengages/despawns four councilors and Monstrosity, removes four player helper auras, marks FAIL, resets events/phase, and schedules fresh summons after 30s.",
+    "phase_three_death": "Monstrosity JustDied calls ACTION_FINISH_ENCOUNTER; controller removes player helper auras and sets DATA_ASCENDANT_COUNCIL DONE.",
+    "instance_mapping": "DATA_ASCENDANT_COUNCIL is encounter index 2; boss IDs 43686, 43687, 43688, 43689 and 43735 are mapped in instance data; doors are 205226/205227.",
+    "loader": "AddSC_boss_ascendant_council is registered by eastern_kingdoms_script_loader.",
+    "retail_credit": "Retail lockout, loot, achievement, and reset semantics are not asserted from repository behavior."
+  },
+  "repository_evidence": {
+    "cpp": "src/server/scripts/EasternKingdoms/BastionOfTwilight/boss_ascendant_council.cpp",
+    "header": "src/server/scripts/EasternKingdoms/BastionOfTwilight/bastion_of_twilight.h",
+    "instance": "src/server/scripts/EasternKingdoms/BastionOfTwilight/instance_bastion_of_twilight.cpp",
+    "loader": "src/server/scripts/EasternKingdoms/eastern_kingdoms_script_loader.cpp",
+    "historical_sql": "sql/old/custom/world/34_2020_02_21/custom_2018_12_21_00_world_updatepack.sql",
+    "sql_facts": ["historical difficulty entries and script names for councilors 6445-6461", "helper script bindings 6462-6485", "Merge Health/Water Bomb/Cyclone/Disperse/Lava Seed/Liquid Ice/Flame Strike conditions 6593-6607"],
+    "repository_reliability": "current local implementation baseline; historical SQL is not 4.4.2 client/database proof"
+  },
+  "unresolved": [
+    "exact_cataclysm_classic_4_4_2_client_build_and_bastion_hotfix_cutoff",
+    "whether_wowhead_ignacious_health_table_applies_to_all_four_councilors",
+    "exact_4_4_2_health_and_damage_coefficients_for_all_four_modes",
+    "exact_harden_skin_aegis_liquid_ice_and_aura_durations",
+    "hydro_lance_lightning_rod_and_gravity_crush_mode_target_counts",
+    "all_guide_vs_local_event_cadences_and_random_ranges",
+    "water_bomb_server_side_target_count_and_selection",
+    "inferno_rush_fire_trail_reliability_and_classic_bug_hotfix",
+    "heroic_static_overload_gravity_core_frozen_orb_flame_strike_spell_behavior",
+    "merge_health_spell_effects_and_current_health_sum_timing",
+    "electric_instability_target_cap_and_mode_coefficients",
+    "liquid_ice_damage_hotfix_state_in_classic",
+    "controller_and_councilor_custom_state_reset_after_evade",
+    "retail_reset_lockout_loot_and_credit_semantics",
+    "live_validation_evidence_for_10n_10h_25n_25h"
+  ],
+  "conflicts": [
+    "Wowhead Hydro Lance narrative 120k/220k conflicts with its 180k-220k ability table.",
+    "Guide timers differ materially from local EventMap timers for most events.",
+    "Wowhead says three Lightning Rod targets without mode mapping; local filters one 10-player and three 25-player.",
+    "Both current guides say three Gravity Crush targets; local filters one 10-player and three 25-player.",
+    "Wowhead Harden Skin cadence/damage and local cadence/DBC absorb logic differ.",
+    "Current Classic player reports document intermittent missing Inferno Rush fire trails.",
+    "Historical Blizzard Liquid Ice hotfixes are original-Cataclysm evidence and do not establish the 4.4.2 value."
+  ]
+}

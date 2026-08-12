@@ -1,0 +1,371 @@
+{
+  "schema_version": 1,
+  "contract_schema": "cata_raid_encounter_contract_v1",
+  "raid": "bastion_of_twilight",
+  "boss_slug": "sinestra",
+  "modes": ["10H", "25H"],
+  "normal_mode_endpoints": {
+    "status": "rejected_not_applicable",
+    "modes": ["10N", "25N"],
+    "reason": "Sinestra is heroic-only; no normal-mode endpoint is modeled."
+  },
+  "fidelity_state": "fidelity_blocked",
+  "dossier_path": "docs/bot_raids/strategies/t11/bastion_of_twilight/sinestra.md",
+  "ledger_path": "experiments/configs/cata_raid_encounters/bastion_of_twilight/sinestra_ledger_v1.json",
+  "unresolved_material_count": 16,
+  "encounter": "sinestra",
+  "instance": "bastion_of_twilight",
+  "scope": ["10H", "25H"],
+  "research_state": "phase0_researched_not_live_validated",
+  "evidence_policy": "Use current 4.4.2-labelled sources for observations; require repository confirmation for executable claims; preserve contradictory or unverified values as fidelity_blocked.",
+  "source_refs": [
+    "wowhead_cata_sinestra_2024",
+    "icy_veins_cata_sinestra_2024",
+    "wowpedia_sinestra_tactics",
+    "darkwolves_bastion_sinestra",
+    "blizzard_442_notes_2025",
+    "repo_sinestra_absence",
+    "repo_bastion_header_instance",
+    "repo_sinestra_sql_identity",
+    "wowhead_sinestra_spell_identity"
+  ],
+  "mode_matrix": {
+    "10H": {
+      "heroic": true,
+      "normal_endpoint": false,
+      "boss_health_current_guide": 42900000,
+      "boss_health_status": "guide_observation_fidelity_blocked",
+      "initial_health_percent": 60,
+      "phase_one_end_health_percent": 30,
+      "egg_count": 2,
+      "egg_health_current_guide_each": 4100000,
+      "egg_health_status": "not_mode_split_fidelity_blocked",
+      "heroic_delta": "heroic_only_bonus_encounter; no normal comparator"
+    },
+    "25H": {
+      "heroic": true,
+      "normal_endpoint": false,
+      "boss_health_current_guide": 128800000,
+      "boss_health_status": "guide_observation_fidelity_blocked",
+      "initial_health_percent": 60,
+      "phase_one_end_health_percent": 30,
+      "egg_count": 2,
+      "egg_health_current_guide_each": 4100000,
+      "egg_health_status": "not_mode_split_fidelity_blocked",
+      "heroic_delta": "heroic_only_bonus_encounter; no normal comparator"
+    }
+  },
+  "roles": {
+    "tank": [
+      "keep Sinestra in melee range to prevent Twilight Blast",
+      "hold Whelps without killing them in Phase 1",
+      "control Twilight Drake facing away from the raid",
+      "swap or reposition only when validated Twilight Spit handling exists"
+    ],
+    "healers": [
+      "manage Wrack ramp and two-player bounce",
+      "protect Calen during Phase 2",
+      "use Fiery Barrier for Twilight Extinction",
+      "stabilize Flame Breath, orb, pool, and Spitecaller pressure"
+    ],
+    "raid": [
+      "avoid Shadow Orb proximity and the Twilight Slicer beam",
+      "keep out of growing Twilight Essence pools",
+      "use the Calen barrier during Twilight Extinction",
+      "split ranged damage across both eggs during the Carapace window"
+    ],
+    "dps": [
+      "reach 30% before the Phase 1 timing gate is missed",
+      "soft-control Spitecallers without unsafe stun/interrupt behavior",
+      "kill both exposed eggs in one 30s exposure if possible",
+      "finish Phase 3 without creating unmanageable whelp pools"
+    ]
+  },
+  "gates": [
+    "heroic_only_unlock_after_chogall_heroic",
+    "drained_60_to_30_phase_one",
+    "tank_in_melee_range",
+    "wrack_ramp_and_bounce",
+    "shadow_orb_and_twilight_slicer_avoidance",
+    "whelp_spit_and_essence_pool_control",
+    "calen_fiery_barrier_twilight_extinction",
+    "mana_barrier_40_percent_egg_exposure",
+    "both_pulsing_twilight_eggs_destroyed",
+    "spitecaller_soft_control_and_drake_facing",
+    "essence_of_red_phase_three"
+  ],
+  "heroic_gates": [
+    "normal_modes_rejected",
+    "heroic_unlock_and_instance_slot",
+    "10h_25h_scaling_must_be_frozen_before_execution",
+    "phase_two_egg_window_and_add_control"
+  ],
+  "mechanics": [
+    {
+      "key": "unlock_and_normal_rejection",
+      "modes": ["10H", "25H"],
+      "summary": "Sinestra is a bonus encounter available after Cho'gall Heroic; normal-mode endpoints are not applicable.",
+      "values": {
+        "heroic_only": true,
+        "unlock_prerequisite": "Cho'gall defeated on Heroic",
+        "normal_modes": "rejected_not_applicable",
+        "repository_data_id": 4,
+        "repository_boss_entry": 45213,
+        "repository_normal_boss_count": 4,
+        "repository_heroic_boss_count": 5
+      },
+      "evidence": ["wowhead_cata_sinestra_2024", "icy_veins_cata_sinestra_2024", "repo_bastion_header_instance"],
+      "status": "heroic_only_observed_but_runtime_unlock_fidelity_blocked"
+    },
+    {
+      "key": "drained_phase_one",
+      "modes": ["10H", "25H"],
+      "summary": "Sinestra starts at 60% health with Drained and reaches Phase 2 at 30%; Drained reduces her damage by 40%.",
+      "values": {
+        "drained_spell": 89350,
+        "initial_health_percent": 60,
+        "phase_two_threshold_percent": 30,
+        "drained_damage_modifier_percent": -40,
+        "phase_three_drained": false
+      },
+      "evidence": ["wowhead_cata_sinestra_2024", "wowhead_sinestra_spell_identity", "repo_sinestra_sql_identity"],
+      "status": "qualitative_and_aura_identity_confirmed_health_transition_runtime_blocked"
+    },
+    {
+      "key": "health_and_mode_scaling",
+      "modes": ["10H", "25H"],
+      "summary": "Current guide reports materially different heroic boss health by raid size; no authoritative mode/hotfix table is available.",
+      "values": {
+        "10H_current_guide": 42900000,
+        "25H_current_guide": 128800000,
+        "10H_runtime": null,
+        "25H_runtime": null,
+        "egg_health_current_guide_each": 4100000,
+        "egg_health_10H": null,
+        "egg_health_25H": null
+      },
+      "evidence": ["wowhead_cata_sinestra_2024", "blizzard_442_notes_2025"],
+      "status": "fidelity_blocked_build_hotfix_and_mode_scaling"
+    },
+    {
+      "key": "phase_one_breath_and_wrack",
+      "modes": ["10H", "25H"],
+      "summary": "Flame Breath is raid-wide in current strategy guidance; Wrack selects a non-tank, ramps every 2s, and bounces to two targets when dispelled.",
+      "values": {
+        "flame_breath_spell": 90125,
+        "flame_breath_current_guide_interval": "roughly20s",
+        "flame_breath_current_guide_phase_one_damage": "about60000 Fire",
+        "flame_breath_ability_page_range": "95000-105000 Fire",
+        "wrack_spell": 89421,
+        "wrack_initial_current_guide": "15s after combat",
+        "wrack_repeat_current_guide": "every70s",
+        "wrack_tick_period": "2s",
+        "wrack_first_tick": 2000,
+        "wrack_ramp": "+50% each tick",
+        "wrack_duration": "1m",
+        "wrack_target": "random non-tank",
+        "wrack_dispel_bounce_targets": 2,
+        "wrack_dispel_resets_ramp": true,
+        "wrack_dispel_resets_duration": false
+      },
+      "evidence": ["wowhead_cata_sinestra_2024", "wowhead_sinestra_spell_identity", "icy_veins_cata_sinestra_2024"],
+      "conflicts": ["Current narrative, ability-page values, and historical ranges do not provide a mode-specific cast table."],
+      "status": "behavior_confirmed_coefficients_and_schedule_fidelity_blocked"
+    },
+    {
+      "key": "shadow_orbs_and_twilight_slicer",
+      "modes": ["10H", "25H"],
+      "summary": "Two orbs attach to random raid members, follow for a finite period, pulse nearby, and connect with a damaging beam.",
+      "values": {
+        "orb_count": 2,
+        "orb_current_guide_interval": "every30s",
+        "orb_follow_duration": "15s",
+        "orb_pulse_current_guide": "30000 Shadow per second within5yd",
+        "twilight_pulse_spell": 92958,
+        "twilight_pulse_ability_range": "27000-33000 Shadow",
+        "twilight_slicer_spell": 92852,
+        "twilight_slicer_current_guide": "50000 Shadow per second beam",
+        "orb_target": "random raid member each"
+      },
+      "evidence": ["wowhead_cata_sinestra_2024", "wowhead_sinestra_spell_identity", "icy_veins_cata_sinestra_2024"],
+      "conflicts": ["Current guide narrative and spell page differ on pulse presentation/radius and do not expose 10H/25H scaling."],
+      "status": "orb_count_and_relationship_confirmed_damage_radius_and_timer_fidelity_blocked"
+    },
+    {
+      "key": "whelps_spit_and_essence",
+      "modes": ["10H", "25H"],
+      "summary": "Five Twilight Whelps arrive periodically. Their Spit stacks Shadow vulnerability; deaths create growing Essence pools and can revive whelps once.",
+      "values": {
+        "whelp_spawner_entry": 48052,
+        "whelp_entry": 48049,
+        "whelp_count": 5,
+        "whelp_first_current_guide": "30s after combat",
+        "whelp_repeat_current_guide": "every50s in Phase 1",
+        "twilight_spit_spell": 89299,
+        "twilight_spit_current_guide_damage": "about4000 Shadow",
+        "twilight_spit_ability_range": "3800-4200 Shadow",
+        "twilight_spit_vulnerability": "+10% Shadow damage taken",
+        "twilight_spit_duration": "1m",
+        "twilight_essence_spell": 88146,
+        "twilight_essence_ability_range": "9250-10750 Shadow",
+        "pool_growth": true,
+        "death_revives_touching_whelp_once": true,
+        "revived_whelp_drops_new_pool": false
+      },
+      "evidence": ["wowhead_cata_sinestra_2024", "wowhead_sinestra_spell_identity", "icy_veins_cata_sinestra_2024", "repo_sinestra_sql_identity"],
+      "conflicts": ["Current guide gives approximately 4k/10k values and timers; spell pages expose legacy ranges but no raid-size table."],
+      "status": "identity_and_flow_confirmed_damage_growth_cadence_scaling_fidelity_blocked"
+    },
+    {
+      "key": "calen_barrier_and_twilight_extinction",
+      "modes": ["10H", "25H"],
+      "summary": "Calen's Fiery Barrier protects the raid from the Phase 2 extinction cast while Calen sustains a duel and must be healed.",
+      "values": {
+        "calen_entry": 46277,
+        "fiery_barrier_spell": 87231,
+        "fiery_resolve_spell": 87221,
+        "pyrrhic_focus_spell": 87323,
+        "twilight_extinction_spell": 86226,
+        "extinction_current_guide_lead_in": "8s",
+        "extinction_current_guide_damage": "about500000 Shadow raid-wide",
+        "fiery_barrier_shadow_reduction": "100% per current guide",
+        "calen_must_be_healed": true
+      },
+      "evidence": ["wowhead_cata_sinestra_2024", "icy_veins_cata_sinestra_2024", "wowhead_sinestra_spell_identity", "repo_sinestra_sql_identity"],
+      "status": "flow_and_identity_confirmed_cast_order_and_scaling_fidelity_blocked"
+    },
+    {
+      "key": "mana_barrier_and_pulsing_eggs",
+      "modes": ["10H", "25H"],
+      "summary": "Mana Barrier converts damage into mana loss; at 40% mana the Carapace drops and two eggs are attackable for 30s.",
+      "values": {
+        "mana_barrier_spell": 87299,
+        "twilight_carapace_spell": 87654,
+        "egg_entry": 46842,
+        "egg_count": 2,
+        "mana_window_percent": 40,
+        "egg_exposure_current_guide": "30s",
+        "egg_health_current_guide_each": 4100000,
+        "egg_health_10H": null,
+        "egg_health_25H": null,
+        "failed_window": "guide says repeat Mana Barrier reduction to 40%"
+      },
+      "evidence": ["wowhead_cata_sinestra_2024", "icy_veins_cata_sinestra_2024", "wowhead_sinestra_spell_identity", "repo_sinestra_sql_identity"],
+      "status": "two_egg_flow_confirmed_exact_runtime_scaling_and_retry_fidelity_blocked"
+    },
+    {
+      "key": "phase_two_spitecaller_and_drake",
+      "modes": ["10H", "25H"],
+      "summary": "Phase 2 adds Twilight Spitecallers and Twilight Drakes. Spitecaller Unleash Essence is stopped by soft control; regular stun/interrupt behavior is unsafe.",
+      "values": {
+        "spitecaller_entry": 48415,
+        "drake_entry": 48436,
+        "spitecaller_current_guide_health": 2900000,
+        "spitecaller_current_guide_spawn": "roughly every30s",
+        "unleash_essence_spell": 90028,
+        "unleash_essence_current_guide_interval": "every8s",
+        "unleash_essence_damage": "10% max health every1s",
+        "unleash_essence_duration": "10s",
+        "indomitable": "unsafe stun/regular interrupt state",
+        "twilight_breath": "face Drake away; exact spell identity/scaling blocked"
+      },
+      "evidence": ["wowhead_cata_sinestra_2024", "icy_veins_cata_sinestra_2024", "wowhead_sinestra_spell_identity", "repo_sinestra_sql_identity"],
+      "status": "add_identity_and_control_guidance_confirmed_spawn_target_and_scaling_fidelity_blocked"
+    },
+    {
+      "key": "phase_three_essence_of_red",
+      "modes": ["10H", "25H"],
+      "summary": "Egg destruction and Calen's death lead to full-health, non-Drained Sinestra and Essence of the Red; Phase 1 mechanics continue at full damage.",
+      "values": {
+        "essence_of_red_spell": 87946,
+        "boss_health_reset": "full health per current guides",
+        "drained_active": false,
+        "current_guide_haste": "+100% melee/ranged/spell haste",
+        "current_guide_mana_regeneration": "+5% maximum mana per second",
+        "current_guide_duration": "3m",
+        "phase_three_whelps_current_guide": "continue approximately every30s",
+        "phase_three_whelp_tank_swap": "about50-60 Twilight Spit stacks per current guide"
+      },
+      "evidence": ["wowhead_cata_sinestra_2024", "icy_veins_cata_sinestra_2024", "wowhead_sinestra_spell_identity"],
+      "status": "phase_relationship_confirmed_exact_reset_cadence_and_scaling_fidelity_blocked"
+    },
+    {
+      "key": "reset_credit_and_repository_absence",
+      "modes": ["10H", "25H"],
+      "summary": "The repository has identity/slot data but no executable Sinestra encounter implementation, so reset, wipe cleanup, completion credit, loot, and achievement behavior cannot be asserted.",
+      "values": {
+        "boss_script_present": false,
+        "loader_registration_present": false,
+        "instance_entry_mapping_present": true,
+        "instance_data_id": 4,
+        "retail_reset": null,
+        "retail_credit": null,
+        "retail_loot": null,
+        "retail_achievement": null
+      },
+      "evidence": ["repo_sinestra_absence", "repo_bastion_header_instance", "repo_sinestra_sql_identity"],
+      "status": "hard_repository_blocker"
+    }
+  ],
+  "timer_contract": [
+    {"key": "wrack", "modes": ["10H", "25H"], "current_guide": "15s initial; every70s thereafter; 2s ticks; 1m duration", "status": "fidelity_blocked"},
+    {"key": "flame_breath", "modes": ["10H", "25H"], "current_guide": "roughly20s; Phase 1 about60k and Phase 3 about100k", "status": "fidelity_blocked"},
+    {"key": "shadow_orbs", "modes": ["10H", "25H"], "current_guide": "two every30s; follow15s", "status": "fidelity_blocked"},
+    {"key": "whelps", "modes": ["10H", "25H"], "current_guide": "five after30s then every50s in Phase 1", "status": "fidelity_blocked"},
+    {"key": "twilight_extinction", "modes": ["10H", "25H"], "current_guide": "8s lead-in; spell page 475000-525000 Shadow", "status": "fidelity_blocked"},
+    {"key": "egg_exposure", "modes": ["10H", "25H"], "current_guide": "30s at 40% Sinestra mana", "status": "fidelity_blocked"},
+    {"key": "spitecaller", "modes": ["10H", "25H"], "current_guide": "roughly30s spawn; Unleash Essence roughly8s", "status": "fidelity_blocked"},
+    {"key": "essence_of_red", "modes": ["10H", "25H"], "current_guide": "3m duration", "status": "fidelity_blocked"},
+    {"key": "berserk", "modes": ["10H", "25H"], "repository": "generic SPELL_BERSERK 26662 exists in header", "status": "fidelity_blocked_no_sinestra_ai"}
+  ],
+  "lifecycle": {
+    "unlock": "Cho'gall Heroic prerequisite is documented by current guides; local executable unlock absent.",
+    "engage": "No local Sinestra AI to define engage or pull target state.",
+    "phase_transitions": "P1 60% to 30%, P2 eggs/Calen, P3 after eggs and Calen; exact event order unimplemented locally.",
+    "reset": "fidelity_blocked; no boss_sinestra.cpp, no loader registration, no Sinestra-specific instance reset.",
+    "completion": "fidelity_blocked; no local JustDied/loot/achievement/credit path.",
+    "difficulty_delta": "Only heroic slot count and heroic-only source behavior are established; 10H versus 25H tuning is not.",
+    "fail_closed_rule": "Do not schedule, target, scale, unlock, or award Sinestra from this contract until executable AI and exact 4.4.2 data are supplied."
+  },
+  "repository_audit": {
+    "revision": "8eb54f0160b3c3d986ed944f9d64ebf83922c0f8",
+    "map_id": 671,
+    "header_path": "src/server/scripts/EasternKingdoms/BastionOfTwilight/bastion_of_twilight.h",
+    "instance_path": "src/server/scripts/EasternKingdoms/BastionOfTwilight/instance_bastion_of_twilight.cpp",
+    "loader_path": "src/server/scripts/EasternKingdoms/eastern_kingdoms_script_loader.cpp",
+    "sinestra_script_path": "src/server/scripts/EasternKingdoms/BastionOfTwilight/boss_sinestra.cpp",
+    "sinestra_script_present": false,
+    "loader_registration_present": false,
+    "header_identity": {"data_id": 4, "boss_entry": 45213, "normal_boss_count": 4, "heroic_boss_count": 5},
+    "historical_db_identity": {
+      "sinestra": 45213,
+      "sinestra_variant": 49744,
+      "controller": 46834,
+      "channel_target": 46835,
+      "egg": 46842,
+      "calen": 46277,
+      "spitecaller": 48415,
+      "drake": 48436,
+      "whelp": 48049,
+      "whelp_spawner": 48052
+    }
+  },
+  "unresolved": [
+    {"key": "exact_442_build_hotfix_and_client_data", "status": "fidelity_blocked", "detail": "Official notes do not freeze client/DBC hashes or a Sinestra tuning cutoff."},
+    {"key": "executable_sinestra_ai_absent", "status": "fidelity_blocked", "detail": "No boss_sinestra.cpp, loader registration, unlock, reset, or credit implementation exists locally."},
+    {"key": "10h_25h_boss_health", "status": "fidelity_blocked", "detail": "Current guide health is observation only and has no repository mode table."},
+    {"key": "egg_whelp_add_scaling", "status": "fidelity_blocked", "detail": "Egg, Whelp, Spitecaller, Drake, Calen, and pool mode scaling is not verified."},
+    {"key": "wrack_values_and_targeting", "status": "fidelity_blocked", "detail": "Ramp, bounce selection, dispel timing, and mode coefficients need exact data."},
+    {"key": "flame_breath_and_twilight_blast", "status": "fidelity_blocked", "detail": "Timer, target geometry, and Phase 1/3 mode damage are not frozen."},
+    {"key": "orb_pulse_slicer", "status": "fidelity_blocked", "detail": "Guide narrative and spell pages differ on radius/value presentation."},
+    {"key": "whelp_spit_essence_pool", "status": "fidelity_blocked", "detail": "Cadence, pool growth, revival timing, and exact damage are not mode verified."},
+    {"key": "calen_and_extinction", "status": "fidelity_blocked", "detail": "Barrier area, cast ordering, Calen health/mana duel, and failure behavior are unimplemented locally."},
+    {"key": "egg_exposure_and_retry", "status": "fidelity_blocked", "detail": "40% mana and 30s exposure are guide observations; exact retry/reset behavior is unknown."},
+    {"key": "spitecaller_drake", "status": "fidelity_blocked", "detail": "NPC identities are cross-referenced but spawn count, targets, breath, and control state are not runtime evidence."},
+    {"key": "phase_three_reset_and_essence", "status": "fidelity_blocked", "detail": "Full-health reset, Calen death, buff duration, and whelp schedule lack executable confirmation."},
+    {"key": "wipe_reset_cleanup", "status": "fidelity_blocked", "detail": "No local Sinestra reset/evade/summon cleanup path."},
+    {"key": "unlock_credit_loot_achievements", "status": "fidelity_blocked", "detail": "Historical encounter rows do not prove current unlock persistence, credit, loot, or achievements."},
+    {"key": "normal_endpoint", "status": "rejected_not_applicable", "detail": "10N and 25N are explicitly excluded because Sinestra is heroic-only."},
+    {"key": "calter_pulsar_aliases", "status": "fidelity_blocked", "detail": "No separate Calter or Pulsar identity was found; dossier normalizes these user terms to Calen and Pulsing Twilight Egg."}
+  ]
+}

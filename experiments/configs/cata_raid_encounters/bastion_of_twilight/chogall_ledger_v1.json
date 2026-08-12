@@ -1,0 +1,320 @@
+{
+  "schema_version": 1,
+  "ledger_schema": "cata_raid_value_timer_ledger_v1",
+  "raid": "bastion_of_twilight",
+  "boss_slug": "chogall",
+  "modes": ["10N", "10H", "25N", "25H"],
+  "fidelity_state": "fidelity_blocked",
+  "contract_path": "experiments/configs/cata_raid_encounters/bastion_of_twilight/chogall_v1.json",
+  "unresolved_material_count": 13,
+  "encounter": "chogall",
+  "purpose": "source-and-timer ledger for Phase 0 research; no live-validation assertion",
+  "scope": ["10N", "10H", "25N", "25H"],
+  "repository_revision_audited": "8eb54f0160b3c3d986ed944f9d64ebf83922c0f8",
+  "retrieved_utc_date": "2026-08-12",
+  "research_as_of": "2026-08-12",
+  "source_catalog": [
+    {
+      "id": "wowhead_cata_chogall_2024",
+      "title": "Cho'gall Strategy Guide - The Bastion of Twilight Raid Cataclysm Classic",
+      "author": "Beanna",
+      "publisher": "Wowhead",
+      "published_or_updated": "2024-06-04 (updated)",
+      "edition_label": "Patch 4.4.2",
+      "url": "https://www.wowhead.com/cata/guide/raids/the-bastion-of-twilight/chogall-strategy",
+      "accessed": "2026-08-12",
+      "authority": "current Cataclysm Classic strategy guide",
+      "notes": "Reports 10N/10H/25N/25H health, corruption thresholds/effects, phase descriptions, orders, Adherents, Fester Blood, phase-two creations, and heroic 25-player two-Adherent behavior. The guide's numeric corruption examples conflict with Blizzard's historical 4.2 notes."
+    },
+    {
+      "id": "icy_veins_cata_chogall_2024",
+      "title": "Chogall Encounter Guide: Strategy, Abilities, Loot - Cataclysm Classic",
+      "author": "Abide",
+      "publisher": "Icy Veins",
+      "published_or_updated": "2024-07-29 (updated)",
+      "url": "https://www.icy-veins.com/cataclysm-classic/chogall-encounter-guide-strategy-abilities-loot",
+      "accessed": "2026-08-12",
+      "authority": "current Cataclysm Classic strategy guide",
+      "notes": "Independently reports corruption amounts, orders and heroic elemental handling, Conversion interruption, Adherent/Crash/Depravity/Fester sequence, 25% phase transition, Darkened Creations, role guidance, and achievement wording. Exact four-mode tuning is not provided."
+    },
+    {
+      "id": "warcraft_tavern_cata_chogall_2026_retrieval",
+      "title": "Cho'gall Raid Guide - Cataclysm Classic",
+      "author": "Passion",
+      "publisher": "Warcraft Tavern",
+      "published_or_updated": "current page; publication date not exposed",
+      "url": "https://www.warcrafttavern.com/cataclysm/guides/chogall-raid-guide/",
+      "accessed": "2026-08-12",
+      "authority": "independent Cataclysm strategy guide",
+      "notes": "Qualitatively checks Conversion, orders, Adherent timing/placement, Depravity/Crash, Fester Blood, Blood fixate, 25% transition, and Darkened Creations; no four-mode tuning table."
+    },
+    {
+      "id": "wowhead_npc_chogall_43324_legacy",
+      "title": "Cho'gall - NPC - Cataclysm Classic",
+      "author": "Wowhead community/NPC page",
+      "publisher": "Wowhead",
+      "published_or_updated": "legacy NPC strategy/comments page",
+      "url": "https://www.wowhead.com/cata/npc=43324/chogall",
+      "accessed": "2026-08-12",
+      "authority": "historical reference only",
+      "notes": "Used only for legacy claims such as 4/10 Darkened Creations and older phase-one descriptions; not treated as current 4.4.2 authority."
+    },
+    {
+      "id": "blizzard_patch_42_chogall_nerfs",
+      "title": "Rage of the Firelands Patch 4.2 Notes - Updated 6/28",
+      "author": "Zarhym",
+      "publisher": "Blizzard Entertainment",
+      "published_or_updated": "2011-06-28",
+      "url": "https://worldofwarcraft.blizzard.com/en-us/news/2993743/rage-of-the-firelands-patch-42-notes-updated-628",
+      "accessed": "2026-08-12",
+      "authority": "official historical patch notes",
+      "notes": "Documents 20% reductions to Cho'gall health/melee/selected spell damage, Crash/Depravity corruption reduced from 10 to 5, Corruption-of-the-Old-God scaling reduced from 3% to 2%, Debilitating Beam reduced 20%, and shorter Twisted Devotion. Does not identify the Classic 4.4.2 client/hotfix row."
+    },
+    {
+      "id": "blizzard_442_notes_2025",
+      "title": "World of Warcraft: Cataclysm Classic Patch 4.4.2 Notes",
+      "author": "Kaivax",
+      "publisher": "Blizzard Entertainment forums",
+      "published_or_updated": "2025-02-18",
+      "url": "https://us.forums.blizzard.com/en/wow/t/world-of-warcraft-cataclysm-classic-patch-442-notes/2062030",
+      "accessed": "2026-08-12",
+      "authority": "official Classic version/date note",
+      "notes": "Anchors the 4.4.2 Hour of Twilight release context; no Cho'gall-specific tuning, hotfix cutoff, or client/DBC hash."
+    },
+    {
+      "id": "repo_boss_chogall",
+      "title": "TrinityCore boss_chogall.cpp",
+      "author": "TrinityCore contributors",
+      "publisher": "local repository",
+      "revision": "8eb54f0160b3c3d986ed944f9d64ebf83922c0f8",
+      "paths": ["src/server/scripts/EasternKingdoms/BastionOfTwilight/boss_chogall.cpp"],
+      "accessed": "2026-08-12",
+      "authority": "repository implementation evidence, not retail proof",
+      "lines": ["70-246", "286-546", "553-804", "806-945", "947-1105", "1124-1424"],
+      "notes": "Provides spell identities, local event offsets/random ranges, target filters, corruption/worship scripts, elemental absorb/stack scaling hooks, phase transitions, heroic Spiked Tentacle and disabled trapdoor path, reset/evade/death, and summon cleanup."
+    },
+    {
+      "id": "repo_bot_instance_bastion_of_twilight",
+      "title": "TrinityCore instance_bastion_of_twilight.cpp",
+      "author": "TrinityCore contributors",
+      "publisher": "local repository",
+      "revision": "8eb54f0160b3c3d986ed944f9d64ebf83922c0f8",
+      "paths": ["src/server/scripts/EasternKingdoms/BastionOfTwilight/instance_bastion_of_twilight.cpp"],
+      "accessed": "2026-08-12",
+      "authority": "repository instance evidence",
+      "lines": ["30-50", "82-218", "267-299"],
+      "notes": "Maps boss/support entries and instance data; confirms map 671, encounter index 3, Sinestra heroic slot, DATA_FULL_HEROIC_ID returning false, door/object state, and generic lifecycle dispatch."
+    },
+    {
+      "id": "repo_bot_header",
+      "title": "TrinityCore bastion_of_twilight.h",
+      "author": "TrinityCore contributors",
+      "publisher": "local repository",
+      "revision": "8eb54f0160b3c3d986ed944f9d64ebf83922c0f8",
+      "paths": ["src/server/scripts/EasternKingdoms/BastionOfTwilight/bastion_of_twilight.h"],
+      "accessed": "2026-08-12",
+      "authority": "repository identity evidence",
+      "lines": ["23-198"],
+      "notes": "Confirms map/encounter IDs, boss and support entries, generic Berserk, world state 5659, doors, and local registration names."
+    },
+    {
+      "id": "repo_loader",
+      "title": "TrinityCore Eastern Kingdoms script loader",
+      "author": "TrinityCore contributors",
+      "publisher": "local repository",
+      "revision": "8eb54f0160b3c3d986ed944f9d64ebf83922c0f8",
+      "paths": ["src/server/scripts/EasternKingdoms/eastern_kingdoms_script_loader.cpp"],
+      "accessed": "2026-08-12",
+      "authority": "repository registration evidence",
+      "lines": ["32", "264"],
+      "notes": "Confirms Cho'gall AI declaration and registration."
+    },
+    {
+      "id": "repo_sql_history",
+      "title": "Historical TrinityCore 4.3.4 Cho'gall SQL/model/spawn data",
+      "author": "TrinityCore contributors",
+      "publisher": "local repository",
+      "revision": "8eb54f0160b3c3d986ed944f9d64ebf83922c0f8",
+      "paths": [
+        "sql/old/4.3.4/world/28_2018_04_15/2018_04_14_00_world.sql",
+        "sql/old/4.3.4/TDB01_to_TDB02_updates/world/131_misc.sql",
+        "sql/old/4.3.4/TDB01_to_TDB02_updates/world/189_creature_template.sql",
+        "sql/updates/world/4.3.4/2023_09_15_00_world.sql"
+      ],
+      "accessed": "2026-08-12",
+      "authority": "historical SQL identity/spawn evidence, not current 4.4.2 tuning",
+      "notes": "Confirms map-671 difficulty-6 spawn/aura history, movement/flag updates, and model rows verified 15595 for boss and event/support entries."
+    },
+    {
+      "id": "repo_tdb_snapshot",
+      "title": "Historical TDB 4.3.4.22011 world snapshot",
+      "author": "TrinityCore contributors",
+      "publisher": "local repository database",
+      "revision": "8eb54f0160b3c3d986ed944f9d64ebf83922c0f8",
+      "paths": ["data/TDB_full_434.22011_2022_01_09/TDB_full_world_434.22011_2022_01_09.sql"],
+      "accessed": "2026-08-12",
+      "authority": "historical DB snapshot, not current 4.4.2 data",
+      "notes": "Creature-template row 43324 identifies Cho'gall, level 88, base health 2500000, and ScriptName boss_chogall; base row is not a four-mode health table."
+    }
+  ],
+  "mode_matrix": {
+    "10N": {"health_guide_reported": 33500000, "heroic": false, "adherent_repository": "one random", "conversion_repository_targets": 2, "depravity_spell": 81713, "darkened_repeat": "30s"},
+    "10H": {"health_guide_reported": 56700000, "heroic": true, "adherent_repository": "one random", "conversion_repository_targets": 2, "depravity_spell": 93176, "darkened_repeat": "40s"},
+    "25N": {"health_guide_reported": 101400000, "heroic": false, "adherent_repository": "one random", "conversion_repository_targets": 4, "depravity_spell": 93175, "darkened_repeat": "30s"},
+    "25H": {"health_guide_reported": 175200000, "heroic": true, "adherent_repository": "both left/right", "conversion_repository_targets": 4, "depravity_spell": 93177, "darkened_repeat": "40s"}
+  },
+  "values": [
+    {
+      "key": "health_and_phase_boundary",
+      "mode_values": {"10N": 33500000, "10H": 56700000, "25N": 101400000, "25H": 175200000},
+      "unit": "hit points",
+      "source_refs": ["wowhead_cata_chogall_2024", "blizzard_patch_42_chogall_nerfs", "repo_tdb_snapshot", "repo_boss_chogall"],
+      "repository_baseline": "HealthBelowPctDamaged(25) enters PHASE_2; TDB base health 2500000 is not mode tuning",
+      "status": "guide_reported_health_and_4_4_2_tuning_fidelity_blocked",
+      "notes": "Wowhead current values are not independently verified against a current four-mode 4.4.2 table; official 4.2 notes document 20% health reduction but not Classic client lineage."
+    },
+    {
+      "key": "corruption_thresholds_and_increments",
+      "mode_values": {"10N": null, "10H": null, "25N": null, "25H": null},
+      "repository_baseline": {"max": 100, "achievement_cap": 30, "threshold_spells": {"25": 81836, "50": 81829, "75": 82125, "100": [82170, 82193]}, "increments": {"Crash": 10, "Depravity": 10, "SpilledBlood": 5, "Sickness": 5, "SprayedCorruption": 5, "CorruptionOfOldGod": 1, "Accelerated": 2, "CorruptedBite": 2}, "world_state": 5659},
+      "guide_report": {"accelerated": "+2/s", "sickness_hit": "+5", "old_god_scaling": "3% per corruption in current guides"},
+      "official_historical_report": {"crash_depravity": 5, "old_god_scaling": "2% per corruption"},
+      "source_refs": ["wowhead_cata_chogall_2024", "icy_veins_cata_chogall_2024", "blizzard_patch_42_chogall_nerfs", "repo_boss_chogall"],
+      "status": "fidelity_blocked_hotfix_lineage_and_mode_scaling"
+    },
+    {
+      "key": "fury_orders_and_elementals",
+      "mode_values": {"10N": null, "10H": null, "25N": null, "25H": null},
+      "repository_baseline": {"fury": {"spell": 82524, "initial": "33s", "repeat": "47s"}, "flames_orders": {"spell": 81171, "initial": "6.1s", "repeat": "40s", "portal": 81186}, "shadows_orders": {"spell": 81556, "initial": "20.8s", "repeat": "40s", "portal": 81558}, "elemental_power": {"fire": 93245, "shadow": 93301, "initial_stacks": 10, "periodic_rule": "clamp stacks to ceil(elemental healthPct / 10), only lowers stacks", "absorb_initial": "10.5s"}},
+      "guide_report": {"fury": "about45s; +20% Physical/Shadow taken", "orders": "alternating; fire melee/puddles, shadow raid pulse about3s", "heroic": "elemental health at absorb converts to stacks"},
+      "source_refs": ["wowhead_cata_chogall_2024", "icy_veins_cata_chogall_2024", "warcraft_tavern_cata_chogall_2026_retrieval", "repo_boss_chogall"],
+      "status": "fidelity_blocked_timer_absorb_and_spell_scaling"
+    },
+    {
+      "key": "conversion_worshipping_targets",
+      "mode_values": {"10N": 2, "10H": 2, "25N": 4, "25H": 4},
+      "repository_baseline": {"conversion": 91303, "worshipping": 91317, "linked": 92314, "initial": "11s", "repeat": "random21-25s", "target_rule": "random resize 2 non-25 or 4 25", "control": "root, face boss, linked channel"},
+      "guide_report": {"targets": "2 in10;5 in25", "effect": "Worshipping grants Twisted Devotion every3s; interrupt immediately"},
+      "source_refs": ["wowhead_cata_chogall_2024", "icy_veins_cata_chogall_2024", "warcraft_tavern_cata_chogall_2026_retrieval", "repo_boss_chogall"],
+      "status": "fidelity_blocked_target_count_channel_and_devotion"
+    },
+    {
+      "key": "adherent_summon_rule",
+      "mode_values": {"10N": "one", "10H": "one", "25N": "one", "25H": "two"},
+      "repository_baseline": {"aoe": 81628, "left": 81611, "right": 81618, "initial": "39s", "repeat": "92.3s", "rule": "both portals only if 25-player heroic; otherwise random left/right"},
+      "guide_report": {"spawn": "about90s; current guide says 2 on heroic and Wowhead ability notes specifically 25H"},
+      "source_refs": ["wowhead_cata_chogall_2024", "icy_veins_cata_chogall_2024", "warcraft_tavern_cata_chogall_2026_retrieval", "repo_boss_chogall"],
+      "status": "fidelity_blocked_heroic_count_and_cadence"
+    },
+    {
+      "key": "crash_and_depravity",
+      "mode_values": {"10N": null, "10H": null, "25N": null, "25H": null},
+      "repository_baseline": {"crash": {"spell": 81685, "initial": {"10N": "10s", "10H": "10s", "25N": "6s", "25H": "6s"}, "repeat": "6s", "target": "random valid within100yd"}, "depravity": {"spells": {"10N": 81713, "25N": 93175, "10H": 93176, "25H": 93177}, "initial": "random8-9s", "repeat": {"10N": "random11-12s", "10H": "random11-12s", "25N": "random5-6s", "25H": "random5-6s"}}, "increments": {"local": 10, "official_4_2": 5}},
+      "guide_report": {"crash": "+10 corruption; avoid impact", "depravity": "+10 corruption; interruptible area damage"},
+      "source_refs": ["wowhead_cata_chogall_2024", "icy_veins_cata_chogall_2024", "blizzard_patch_42_chogall_nerfs", "repo_boss_chogall"],
+      "status": "fidelity_blocked_hotfix_target_damage_and_timer"
+    },
+    {
+      "key": "fester_pools_and_blood_entities",
+      "mode_values": {"10N": null, "10H": null, "25N": null, "25H": null},
+      "repository_baseline": {"fester": 82299, "schedule": "+39s after each summon", "death_spells": [81771, 81757], "pool_delay": "5.1s", "dead_pool_summons": 4, "blood_engage": "2.2s", "blood_target": "random valid; local threat100000000", "increments": {"spilled": 5, "festering": 5, "blood_melee": 2}},
+      "guide_report": {"fester": "30-40s after spawn", "blood": "fixates random player and adds corruption on melee; slow/kill"},
+      "source_refs": ["wowhead_cata_chogall_2024", "icy_veins_cata_chogall_2024", "warcraft_tavern_cata_chogall_2026_retrieval", "repo_boss_chogall"],
+      "status": "fidelity_blocked_pool_lifetime_blood_count_health_and_coefficients"
+    },
+    {
+      "key": "phase_two_consume_and_room_corruption",
+      "mode_values": {"10N": null, "10H": null, "25N": null, "25H": null},
+      "repository_baseline": {"threshold": "below25%", "consume_spell": 82630, "triggered_blood": 82659, "corrupted_chogall": 95821, "consume_delay": "+1ms", "check": "+5.1s", "cleanup": "Adherents become passive and despawn6.75s after Consume hit"},
+      "guide_report": {"room_effect": "6337-6662 Shadow every2s", "corruption_scaling": "+3% per corruption in current guide; DPS race"},
+      "official_historical_report": {"corruption_scaling": "2% per corruption after 4.2"},
+      "source_refs": ["wowhead_cata_chogall_2024", "icy_veins_cata_chogall_2024", "blizzard_patch_42_chogall_nerfs", "repo_boss_chogall"],
+      "status": "fidelity_blocked_room_damage_scaling_and_mode_values"
+    },
+    {
+      "key": "darkened_creations",
+      "mode_values": {"10N": null, "10H": null, "25N": null, "25H": null},
+      "repository_baseline": {"aoe": 82414, "visual": 82452, "transform_spell": 82451, "void_visual": 82397, "beam": 82411, "first": "+6s after Consume with first announcement suppressed", "repeat": {"10N": "30s", "10H": "40s", "25N": "30s", "25H": "40s"}, "transform_delay": "3.5s", "beam_initial": "1.3s after transform", "beam_repeat": "1.5s", "beam_target": "temporary summon summoner"},
+      "guide_report": {"count": {"10N": 4, "10H": 4, "25N": 10, "25H": 10}, "beam": "random player, interruptible, -75% damage/healing; exact damage unresolved"},
+      "source_refs": ["wowhead_npc_chogall_43324_legacy", "icy_veins_cata_chogall_2024", "warcraft_tavern_cata_chogall_2026_retrieval", "repo_boss_chogall"],
+      "status": "fidelity_blocked_creation_count_geometry_target_and_beam_scaling"
+    },
+    {
+      "key": "heroic_spiked_tentacle",
+      "mode_values": {"10N": null, "10H": null, "25N": null, "25H": null},
+      "repository_baseline": {"trigger": 93315, "initial": "+16.8s after Consume", "repeat": "20s", "engage": "2.2s", "death_despawn": "4s"},
+      "guide_report": "heroic creates Spiked Tentacles around the room; avoid melee/knockback and prioritize Darkened Creations",
+      "source_refs": ["wowhead_cata_chogall_2024", "icy_veins_cata_chogall_2024", "repo_boss_chogall"],
+      "status": "fidelity_blocked_health_knockback_damage_and_targeting"
+    },
+    {
+      "key": "heroic_trapdoor_death_gate",
+      "mode_values": {"10H": null, "25H": null},
+      "repository_baseline": {"gate": "DATA_FULL_HEROIC_ID false in instance", "if_enabled": {"lethal_hold": "health-1", "walk": "HeroicDeathPos", "trapdoor": "+3s", "fall_teleport": "+4s", "suicide": 3617, "heroic_death_position": [-1161.89, -798.441, 835.8751], "heroic_teleport_position": [-1130.75, -817.314, 467.747, 5.191174]}},
+      "source_refs": ["repo_boss_chogall", "repo_bot_instance_bastion_of_twilight"],
+      "status": "local_gate_confirmed_retail_heroic_behavior_unresolved"
+    },
+    {
+      "key": "berserk",
+      "mode_values": {"10N": "10m", "10H": "10m", "25N": "10m", "25H": "10m"},
+      "repository_baseline": {"spell": 26662, "schedule": "10m"},
+      "source_refs": ["repo_boss_chogall", "repo_bot_header"],
+      "status": "repository_baseline_live_validation_pending"
+    }
+  ],
+  "timers": [
+    {"key": "fury", "modes": ["10N", "10H", "25N", "25H"], "strategy_report": "about45s", "repository_baseline": "33s initial/47s repeat", "source_refs": ["wowhead_cata_chogall_2024", "warcraft_tavern_cata_chogall_2026_retrieval", "repo_boss_chogall"], "status": "fidelity_blocked"},
+    {"key": "orders", "modes": ["10N", "10H", "25N", "25H"], "strategy_report": "alternating; exact table not exposed", "repository_baseline": "Flames6.1s then40s; Shadows20.8s then40s", "source_refs": ["wowhead_cata_chogall_2024", "icy_veins_cata_chogall_2024", "repo_boss_chogall"], "status": "fidelity_blocked"},
+    {"key": "adherent_summon", "modes": ["10N", "10H", "25N", "25H"], "strategy_report": "about90s", "repository_baseline": "39s initial/92.3s repeat", "source_refs": ["wowhead_cata_chogall_2024", "warcraft_tavern_cata_chogall_2026_retrieval", "repo_boss_chogall"], "status": "fidelity_blocked"},
+    {"key": "crash", "modes": ["10N", "10H", "25N", "25H"], "strategy_report": "about10s", "repository_baseline": "10s initial in10-player;6s initial in25-player;6s repeat", "source_refs": ["icy_veins_cata_chogall_2024", "repo_boss_chogall"], "status": "fidelity_blocked"},
+    {"key": "depravity", "modes": ["10N", "10H", "25N", "25H"], "strategy_report": "repeated interruptible cast", "repository_baseline": "random8-9s initial;5-6s repeat in25 or11-12s otherwise", "source_refs": ["icy_veins_cata_chogall_2024", "repo_boss_chogall"], "status": "fidelity_blocked"},
+    {"key": "conversion", "modes": ["10N", "10H", "25N", "25H"], "strategy_report": "periodic, exact cadence not exposed", "repository_baseline": "11s initial/random21-25s repeat", "source_refs": ["wowhead_cata_chogall_2024", "icy_veins_cata_chogall_2024", "repo_boss_chogall"], "status": "fidelity_blocked"},
+    {"key": "fester_blood", "modes": ["10N", "10H", "25N", "25H"], "strategy_report": "30-40s after Adherent", "repository_baseline": "+39s after each summon", "source_refs": ["wowhead_cata_chogall_2024", "warcraft_tavern_cata_chogall_2026_retrieval", "repo_boss_chogall"], "status": "fidelity_blocked"},
+    {"key": "phase_two_consume", "modes": ["10N", "10H", "25N", "25H"], "strategy_report": "at25%", "repository_baseline": "+1ms Consume/+5.1s check/+6s Darkened; +16.8s Spiked heroic", "source_refs": ["wowhead_cata_chogall_2024", "icy_veins_cata_chogall_2024", "repo_boss_chogall"], "status": "boundary_confirmed_local_schedule_not_retail_invariant"},
+    {"key": "darkened_creations", "modes": ["10N", "10H", "25N", "25H"], "strategy_report": "frequent, exact cadence not exposed", "repository_baseline": "30s normal/40s heroic; beam1.3s then1.5s", "source_refs": ["icy_veins_cata_chogall_2024", "repo_boss_chogall"], "status": "fidelity_blocked"},
+    {"key": "spiked_tentacle", "modes": ["10H", "25H"], "strategy_report": "frequent heroic add", "repository_baseline": "+16.8s then20s", "source_refs": ["wowhead_cata_chogall_2024", "icy_veins_cata_chogall_2024", "repo_boss_chogall"], "status": "fidelity_blocked"},
+    {"key": "berserk", "modes": ["10N", "10H", "25N", "25H"], "strategy_report": "not independently timed in current guide", "repository_baseline": "10m SPELL_BERSERK26662", "source_refs": ["repo_boss_chogall", "repo_bot_header"], "status": "repository_baseline_live_validation_pending"}
+  ],
+  "targeting_and_scaling": [
+    {"key": "conversion_targets", "target": "local random resize 2 in 10-player maps or4 in25-player maps; guide says2/5", "modes": ["10N", "10H", "25N", "25H"], "source_refs": ["wowhead_cata_chogall_2024", "icy_veins_cata_chogall_2024", "repo_boss_chogall"], "status": "fidelity_blocked_target_count"},
+    {"key": "adherent_summon_scaling", "target": "local random left/right except both portals in25H; guide says two on heroic", "modes": ["10N", "10H", "25N", "25H"], "source_refs": ["wowhead_cata_chogall_2024", "icy_veins_cata_chogall_2024", "repo_boss_chogall"], "status": "fidelity_blocked_heroic_mode_mapping"},
+    {"key": "crash_depravity_targeting", "target": "Crash random valid within100yd; Depravity AOE; local corruption increments10, historical 4.2 notes say5", "modes": ["10N", "10H", "25N", "25H"], "source_refs": ["blizzard_patch_42_chogall_nerfs", "repo_boss_chogall"], "status": "fidelity_blocked_range_damage_and_hotfix"},
+    {"key": "blood_targeting", "target": "local random valid target with100000000 threat; guides describe random fixate and melee corruption", "modes": ["10N", "10H", "25N", "25H"], "source_refs": ["wowhead_cata_chogall_2024", "icy_veins_cata_chogall_2024", "repo_boss_chogall"], "status": "repository_relationship_confirmed_health_and_movement_unresolved"},
+    {"key": "elemental_stack_scaling", "target": "local records aura stacks on PassengerBoarded; heroic aura scripts alter triggered spell amount by10%/5% per stack", "modes": ["10H", "25H"], "source_refs": ["icy_veins_cata_chogall_2024", "repo_boss_chogall"], "status": "repository_relationship_confirmed_retail_coefficients_unresolved"},
+    {"key": "darkened_beam_target", "target": "local temporary summon casts toward its summoner every1.5s; guides say random player and interruptible", "modes": ["10N", "10H", "25N", "25H"], "source_refs": ["icy_veins_cata_chogall_2024", "warcraft_tavern_cata_chogall_2026_retrieval", "repo_boss_chogall"], "status": "fidelity_blocked_target_and_interrupt_behavior"},
+    {"key": "corruption_stage_behavior", "target": "local threshold spell auras at25/50/75/100; guides describe dispel/vomit/tentacle/unhealable progression", "modes": ["10N", "10H", "25N", "25H"], "source_refs": ["wowhead_cata_chogall_2024", "icy_veins_cata_chogall_2024", "repo_boss_chogall"], "status": "threshold_relationship_confirmed_spell_coefficients_unresolved"}
+  ],
+  "phase_reset_credit": [
+    {"key": "engage", "behavior": "BossAI engage; encounter frame engage; world state5659=0; Corrupted Blood93104; phase-one timers scheduled", "source_refs": ["repo_boss_chogall"], "status": "repository_confirmed"},
+    {"key": "phase_two", "behavior": "DamageTaken below25% switches phase and queues Consume; local check supplies triggered aura82659 if absent; Darkened and heroic Spiked events follow", "source_refs": ["repo_boss_chogall"], "status": "repository_confirmed_retail_spell_tuning_unresolved"},
+    {"key": "reset", "behavior": "Reset calls _Reset, Initialize, and casts Boss Hittin' Ya73878; helper fields elemental stacks/first Darkened/allowDeath are initialized", "source_refs": ["repo_boss_chogall"], "status": "repository_confirmed_post_evade_retail_state_unresolved"},
+    {"key": "evade", "behavior": "_EnterEvadeMode; encounter disengage; summons despawn; corruption creature auras removed; _DespawnAtEvade", "source_refs": ["repo_boss_chogall"], "status": "repository_confirmed_retail_reset_lockout_unresolved"},
+    {"key": "death", "behavior": "_JustDied; encounter disengage; corruption auras removed; normal death voice unless full heroic gate and heroic; generic BossAI state path supplies local completion", "source_refs": ["repo_boss_chogall"], "status": "repository_boss_state_confirmed_retail_credit_unresolved"},
+    {"key": "boss_state_mapping", "behavior": "map671, DATA_CHOGALL index3, boss43324; encounter slot count4 normal/5 heroic because Sinestra uses slot4", "source_refs": ["repo_bot_header", "repo_bot_instance_bastion_of_twilight", "repo_loader"], "status": "repository_confirmed"},
+    {"key": "difficulty_delta", "behavior": "local 25H only summons both Adherents; heroic adds elemental aura hooks and P2 Spiked; full heroic death data false", "source_refs": ["repo_boss_chogall", "repo_bot_instance_bastion_of_twilight", "icy_veins_cata_chogall_2024"], "status": "heroic_hook_confirmed_retail_mode_delta_unresolved"},
+    {"key": "database_identity", "behavior": "TDB 4.3.4 row43324 level88/base health2500000/ScriptName boss_chogall; historical map671 support spawns/model rows; no current four-mode tuning", "source_refs": ["repo_tdb_snapshot", "repo_sql_history"], "status": "repository_identity_confirmed_current_build_unresolved"}
+  ],
+  "conflicts": [
+    {"key": "health", "current_wowhead": "33.5M/56.7M/101.4M/175.2M", "historical_official": "4.2 notes say Cho'gall health reduced20% but omit resulting mode table", "repository": "TDB base health2500000", "resolution": "do not select a four-mode health invariant"},
+    {"key": "corruption", "current_guides": "Crash/Depravity +10 and room damage +3% per corruption", "official_42": "Crash/Depravity reduced to5 and room scaling reduced to2%", "repository": "local registrations use10 and local room spell data is unaudited", "resolution": "4.4.2 hotfix lineage fidelity_blocked"},
+    {"key": "conversion", "guide": "2 targets in10/5 in25", "repository": "random resize2 non-25/4 25", "resolution": "target count and devotion values fidelity_blocked"},
+    {"key": "heroic_adherents", "guide": "2 heroic", "repository": "both only25H", "resolution": "mode mapping fidelity_blocked"},
+    {"key": "timers", "guide": "Adherent about90s, Fester30-40s, Fury about45s", "repository": "Adherent92.3s after39s, Fester+39s, Fury33s/47s", "resolution": "preserve both; do not schedule retail exact values"},
+    {"key": "creation_count", "legacy_npc_page": "4 in10/10 in25", "current_guides": "frequent creations without complete count table", "repository": "AOE summon spell and C++ do not expose count", "resolution": "count fidelity_blocked"}
+  ],
+  "unresolved": [
+    {"key": "exact_442_client_build_hotfix_cutoff", "status": "fidelity_blocked", "detail": "No 4.4.2 Cho'gall tuning row, client/DBC hash, or Classic hotfix cutoff is published in the audited official notes."},
+    {"key": "four_mode_health_and_damage", "status": "fidelity_blocked", "detail": "Current guide health is guide-only; 4.2 official reductions and local TDB base row do not establish current four-mode values."},
+    {"key": "corruption_hotfix_lineage", "status": "fidelity_blocked", "detail": "Current guides/local code use +10 Crash/Depravity and 3% room scaling while official 4.2 notes document +5 and 2%."},
+    {"key": "conversion_target_and_devotion", "status": "fidelity_blocked", "detail": "Local 2/4 target count conflicts with guide 2/5; channel break timing and Twisted Devotion values are not frozen."},
+    {"key": "orders_elemental_scaling", "status": "fidelity_blocked", "detail": "Exact alternation, absorb timing, health-to-stack conversion, and four-mode aura coefficients are unresolved."},
+    {"key": "adherent_count_and_cadence", "status": "fidelity_blocked", "detail": "Local two-add path is 25H-only while guide says heroic; event offsets differ from approximations."},
+    {"key": "adherent_spell_data", "status": "fidelity_blocked", "detail": "Crash/Depravity radius, damage, interrupts, pool effects, and mode coefficients are not audited against 4.4.2 data."},
+    {"key": "fester_and_blood_entities", "status": "fidelity_blocked", "detail": "Pool lifetime, Blood count/health/movement, living spray damage, and exact corruption are incomplete."},
+    {"key": "phase_two_creation_count_and_beam", "status": "fidelity_blocked", "detail": "Legacy count/guide beam claims do not reconcile with local summon and target relationships."},
+    {"key": "spiked_tentacle_scaling", "status": "fidelity_blocked", "detail": "Local trigger cadence exists but health, knockback, damage, target, and mode scaling do not."},
+    {"key": "heroic_death_path", "status": "fidelity_blocked", "detail": "DATA_FULL_HEROIC_ID returns false locally; active retail heroic trapdoor behavior is unproven."},
+    {"key": "helper_reset", "status": "fidelity_blocked", "detail": "Local helper initialization is explicit but post-evade/reload retail state reconstruction is not validated."},
+    {"key": "retail_reset_credit_loot", "status": "fidelity_blocked", "detail": "Generic local boss-state paths are known; retail lockout, loot, achievement, Sinestra unlock, and player credit are not established."}
+  ]
+}

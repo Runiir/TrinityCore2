@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "registry_id": "cata_raid_quantitative_source_registry_v1",
+  "captured_at_utc": "2026-08-12T03:20:00Z",
+  "target": {
+    "product": "Cataclysm Classic",
+    "patch": "4.4.2",
+    "locale": "enUS",
+    "launch_build": 59185,
+    "launch_build_source_status": "frozen_from_public_secondary_build_table",
+    "hotfix_cutoff_utc": "2025-02-18T19:31:51.916Z",
+    "hotfix_cutoff_status": "frozen_at_official_launch_notes_version_1_timestamp",
+    "primary_client_data_status": "unavailable",
+    "primary_client_data_hashes": []
+  },
+  "sources": [
+    {
+      "source_id": "blizzard_launch_notes_2062030_post_26314648_v1",
+      "kind": "official_blizzard",
+      "url": "https://us.forums.blizzard.com/en/wow/t/cataclysm-classic-hour-of-twilight-update-notes/2062030",
+      "published_at_utc": "2025-02-18T19:31:51.916Z",
+      "identity": {"topic_id": 2062030, "post_id": 26314648, "post_version": 1},
+      "status": "pinned_metadata",
+      "use": "release name, patch identity and launch-cutoff boundary; not encounter quantitative authority"
+    },
+    {
+      "source_id": "warcraft_wiki_public_client_builds_59185",
+      "kind": "public_secondary_build_table",
+      "url": "https://warcraft.wiki.gg/wiki/Public_client_builds",
+      "identity": {"patch": "4.4.2", "build": 59185, "channel": "Live", "live_date": "2025-02-18"},
+      "status": "pinned_metadata_secondary",
+      "use": "launch-build identity only; cannot replace primary client-data hashes"
+    },
+    {
+      "source_id": "bigwigs_cataclysm_v11_0_13",
+      "kind": "cutoff_compatible_addon_release",
+      "repository": "https://github.com/BigWigsMods/BigWigs_Cataclysm",
+      "tag": "v11.0.13",
+      "commit": "650bab03981eb06b5fa6ded88e47c523caa3c7c3",
+      "commit_time_utc": "2025-02-05T19:03:44Z",
+      "archive_sha256": "64bb21e414918df72d103a431adec23979f6768c994a7b96f5f85b40f55b21c9",
+      "status": "pinned_immutable",
+      "use": "corroborating spell IDs, ordering and timer ranges across all planned raids"
+    },
+    {
+      "source_id": "dbm_cataclysm_prelaunch_4b02efe",
+      "kind": "cutoff_compatible_addon_commit",
+      "repository": "https://github.com/DeadlyBossMods/DBM-Cataclysm",
+      "tag": null,
+      "commit": "4b02efec4552aef3df43c75fb19c6d8c7fdb3e6e",
+      "commit_time_utc": "2025-02-08T21:45:13Z",
+      "archive_sha256": "5f3fad38c677796f0dcefb694d25f9569078ee7787c85f4da03ed033a6f29383",
+      "status": "pinned_immutable",
+      "use": "independent corroboration of spell IDs, variance ranges and phase ordering"
+    },
+    {
+      "source_id": "wowhead_442_quantitative_extract",
+      "kind": "database",
+      "url": "https://www.wowhead.com/cata",
+      "status": "unresolved_no_pinned_442_extract",
+      "use": "material spell and NPC values remain blocked until exact content identity is captured"
+    },
+    {
+      "source_id": "warcraftlogs_442_known_mode_reports",
+      "kind": "combat_logs",
+      "url": "https://www.warcraftlogs.com/zone/reports?zone=1023",
+      "status": "unresolved_no_pinned_reports",
+      "use": "material observed timer ranges, target counts and difficulty deltas remain blocked"
+    }
+  ],
+  "gate": {
+    "build_and_cutoff_frozen": true,
+    "addon_inputs_pinned": true,
+    "primary_client_data_pinned": false,
+    "wowhead_extract_pinned": false,
+    "known_mode_logs_pinned": false,
+    "quantitative_fidelity_acceptance": "blocked"
+  }
+}

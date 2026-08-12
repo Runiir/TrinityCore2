@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "program_id": "cata_raid_progression_442_v1",
-  "updated_at_utc": "2026-08-12T02:42:30Z",
+  "updated_at_utc": "2026-08-12T03:41:47Z",
   "active_phase": 0,
   "active_phase_name": "successor_checkpoint_policy_reconciliation_and_research_framework",
   "program_status": "in_progress",
@@ -38,12 +38,13 @@
     "product": "Cataclysm Classic",
     "patch": "4.4.2",
     "release_name": "Hour of Twilight",
-    "client_build": null,
-    "client_product_locale": null,
+    "client_build": 59185,
+    "client_product_locale": "enUS",
     "client_data_hashes": [],
-    "blizzard_hotfix_cutoff_utc": null,
-    "state": "research_unresolved",
-    "blocker": "Exact client build, locale/data hashes, and Blizzard hotfix cutoff require sourced Phase 0 research."
+    "blizzard_hotfix_cutoff_utc": "2025-02-18T19:31:51.916Z",
+    "state": "identity_frozen_quantitative_inputs_unresolved",
+    "source_registry": "experiments/configs/cata_raid_quantitative_source_registry_v1.json",
+    "blocker": "The launch build and cutoff are frozen, but primary client-data hashes, a pinned Wowhead 4.4.2 extract, known-mode logs, and material encounter values remain unresolved."
   },
   "stable_roster": {
     "slot_count": 25,
@@ -86,6 +87,9 @@
   "dvc": {
     "broad_status": "inherited_dependency_drift_and_selectively_evicted_outputs_present",
     "new_raid_artifact_failure": false,
+    "validation_scenario_stage_remote_status": "cache_and_remote_in_sync",
+    "validation_scenario_dvc_md5": "1561d7d875757ed989349dcbdb61beb8.dir",
+    "validation_provisioning_dvc_md5": "2c6a0dc150fe9c9f86e6d65d9fd7bb88.dir",
     "broad_gc_used": false,
     "config_local_tracked": false,
     "known_historical_unavailable_objects": [
@@ -118,15 +122,22 @@
         "production_coordinated_configure_succeeded_and_receipt_verified",
         "production_coordinated_worldserver_build_succeeded_and_receipt_verified",
         "post_build_mysql_health_and_orphan_process_checks_passed"
+        ,"clean_request_worldserver_receipt_verified"
+        ,"exact_442_launch_build_and_hotfix_cutoff_frozen"
+        ,"precutoff_bigwigs_and_dbm_inputs_pinned"
+        ,"acceptance_policy_and_quantitative_hierarchy_created"
+        ,"raid_wide_script_loader_and_read_only_db_shape_audit_completed"
+        ,"stable_roster_reconstructed_as_25_slots_and_24_modes"
+        ,"bwd_route_forbidden_activation_removed_and_dvc_regenerated"
+        ,"bwd_10n_2_3_5_provisioning_corrected_to_supported_tanks"
+        ,"bwd_scenario_explicitly_blocked_pending_native_unlock_proof"
+        ,"focused_phase0_policy_coordinator_and_inherited_tests_23_passed"
+        ,"broad_legacy_diagnostic_289_passed_23_inherited_stale_failures"
       ],
       "remaining_requirements": [
-        "freeze_exact_442_build_and_hotfix_cutoff",
-        "complete_acceptance_and_resource_policies",
-        "produce_clean_request_worldserver_receipt_after_receipt_checkpoint",
-        "audit_all_raid_scripts_db_loaders_and_routes",
-        "resolve_material_bwd_value_timer_conflicts_or_retain_phase0_fidelity_block",
-        "independently_validate_or_block_bwd_10n_scenario",
-        "run_inherited_test_baseline"
+        "capture_coordinated_no_bots_worldserver_performance_baseline_after_clean_checkpoint",
+        "retain_bwd_quantitative_fidelity_block_until_primary_data_and_known_mode_evidence_exist",
+        "complete_user_requested_all_remaining_boss_research_wave"
       ]
     }
   ],
@@ -135,8 +146,14 @@
       "blocker_id": "bwd_exact_442_quantitative_identity",
       "classification": "research_unresolved",
       "scope": "phase0_fidelity_gate",
-      "detail": "Six boss packages are structurally complete, but exact client-data hashes/hotfix cutoff and multiple material four-mode timers, coefficients, target counts, and guide-versus-repository conflicts remain unresolved. They may not be guessed or promoted to fixed runtime values."
+      "detail": "Build 59185 and the launch-notes timestamp cutoff are frozen. Six BWD packages are structurally complete, but primary client-data hashes, a pinned Wowhead extract, known-mode logs, and multiple material four-mode timers, coefficients, target counts, and guide-versus-repository conflicts remain unresolved. They may not be guessed or promoted to fixed runtime values."
+    },
+    {
+      "blocker_id": "bwd_native_unlock_runtime_proof",
+      "classification": "incomplete_evidence",
+      "scope": "phase0_scenario_gate",
+      "detail": "Forbidden Atramedes state injection and Nefarian state injection/spawn were removed. The route is structurally valid and DVC-synchronized, but native prerequisite unlock/start/reset behavior is not yet proven live."
     }
   ],
-  "next_action": "Checkpoint the first two production receipts, produce a final clean-request coordinated worldserver receipt, then complete the raid-wide readiness and BWD scenario audits."
+  "next_action": "Checkpoint the completed Phase 0 policy/readiness/route corrections, then capture the no-bots worldserver baseline under the clean committed identity while the Luna xhigh all-boss research queue continues."
 }

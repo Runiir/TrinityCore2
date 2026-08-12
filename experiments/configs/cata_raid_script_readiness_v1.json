@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "audit_id": "cata_raid_script_readiness_v1",
+  "repository_commit": "8eb54f0160b3c3d986ed944f9d64ebf83922c0f8",
+  "audited_at_utc": "2026-08-12T02:45:00Z",
+  "status_semantics": {
+    "source_present_not_runtime_validated": "Dedicated source and loader shape exist; DB, difficulty, reset, credit and live behavior still require encounter-level verification.",
+    "missing_dedicated_implementation": "Required boss has no dedicated source/loader implementation and must use the isolated Luna xhigh boss-PR workflow.",
+    "instance_foundation_incomplete": "Instance file exists but does not expose the full state/door/transport/save surfaces required by the raid."
+  },
+  "database_baseline": {
+    "snapshot": "data/TDB_full_434.22011_2022_01_09/TDB_full_world_434.22011_2022_01_09.sql",
+    "instance_template_maps_present": [669, 671, 720, 754, 967],
+    "runtime_database_instance_template_audited_at_utc": "2026-08-12T02:50:51Z",
+    "runtime_database_instance_template_audit_pending": false,
+    "runtime_database_encounter_template_audited_at_utc": "2026-08-12T02:50:51Z",
+    "runtime_database_encounter_template_audit_pending": false,
+    "instance_template_scripts": {
+      "669": "instance_blackwing_descent",
+      "671": "instance_bastion_of_twilight",
+      "720": "instance_firelands",
+      "754": "instance_throne_of_the_four_winds",
+      "967": "instance_dragon_soul"
+    },
+    "blackwing_descent_read_only_observations": {
+      "direct_spawns": {"41378": 1, "41570": 1, "42186": 1, "43296": 1},
+      "not_directly_spawned": [41270, 41376, 41442, 42166, 42178, 42179, 42180],
+      "omnotron_controller_summon_group": [42166, 42178, 42179, 42180],
+      "nefarian_summon_group": [41270, 42098, 42844, 42856],
+      "interpretation": "Absence from world.creature is not by itself a missing actor: Omnotron and Nefarian use native summon groups, while Atramedes is controlled by the instance script. Native unlock and runtime behavior remain unverified."
+    },
+    "raid_map_shape_observations": {
+      "669": {"creature_spawns": 152, "distinct_creature_entries": 43, "distinct_nonempty_script_names": 11, "gameobject_spawns": 45, "distinct_gameobject_entries": 18, "entrance_teleports": 1},
+      "671": {"creature_spawns": 607, "distinct_creature_entries": 58, "distinct_nonempty_script_names": 11, "gameobject_spawns": 42, "distinct_gameobject_entries": 42, "entrance_teleports": 1},
+      "720": {"creature_spawns": 789, "distinct_creature_entries": 91, "distinct_nonempty_script_names": 8, "gameobject_spawns": 35, "distinct_gameobject_entries": 19, "entrance_teleports": 1},
+      "754": {"creature_spawns": 38, "distinct_creature_entries": 15, "distinct_nonempty_script_names": 4, "gameobject_spawns": 17, "distinct_gameobject_entries": 17, "entrance_teleports": 1},
+      "967": {"creature_spawns": 343, "distinct_creature_entries": 62, "distinct_nonempty_script_names": 2, "gameobject_spawns": 12, "distinct_gameobject_entries": 12, "entrance_teleports": 1}
+    },
+    "audit_limit": "Counts and registrations are source/DB readiness evidence only. They do not prove spell correctness, difficulty deltas, native resets, credits, doors, transports, or runtime readiness; those remain encounter gates."
+  },
+  "raids": [
+    {
+      "raid": "blackwing_descent",
+      "map_id": 669,
+      "instance_source": "src/server/scripts/EasternKingdoms/BlackrockMountain/BlackwingDescent/instance_blackwing_descent.cpp",
+      "loader": "src/server/scripts/EasternKingdoms/eastern_kingdoms_script_loader.cpp",
+      "instance_surfaces": ["boss_state", "door_data", "save_load", "heroic_branch", "elevator", "bell_unlock"],
+      "source_shape_status": "complete_dedicated_shape_not_runtime_validated",
+      "encounters": [
+        {"boss": "magmaw", "source": "boss_magmaw.cpp", "status": "source_present_not_runtime_validated"},
+        {"boss": "omnotron_defense_system", "source": "boss_omnotron_defense_system.cpp", "status": "source_present_not_runtime_validated"},
+        {"boss": "maloriak", "source": "boss_maloriak.cpp", "status": "source_present_not_runtime_validated"},
+        {"boss": "atramedes", "source": "boss_atramedes.cpp", "status": "source_present_not_runtime_validated"},
+        {"boss": "chimaeron", "source": "boss_chimaeron.cpp", "status": "source_present_not_runtime_validated"},
+        {"boss": "nefarian", "source": "boss_nefarians_end.cpp", "status": "source_present_not_runtime_validated"}
+      ]
+    },
+    {
+      "raid": "bastion_of_twilight",
+      "map_id": 671,
+      "instance_source": "src/server/scripts/EasternKingdoms/BastionOfTwilight/instance_bastion_of_twilight.cpp",
+      "loader": "src/server/scripts/EasternKingdoms/eastern_kingdoms_script_loader.cpp",
+      "instance_surfaces": ["boss_state", "door_data", "heroic_encounter_count"],
+      "source_shape_status": "heroic_endpoint_missing",
+      "encounters": [
+        {"boss": "halfus_wyrmbreaker", "source": "boss_halfus_wyrmbreaker.cpp", "status": "source_present_not_runtime_validated"},
+        {"boss": "valiona_and_theralion", "source": "boss_theralion_and_valiona.cpp", "status": "source_present_not_runtime_validated"},
+        {"boss": "ascendant_council", "source": "boss_ascendant_council.cpp", "status": "source_present_not_runtime_validated"},
+        {"boss": "chogall", "source": "boss_chogall.cpp", "status": "source_present_not_runtime_validated"},
+        {"boss": "sinestra", "source": null, "status": "missing_dedicated_implementation"}
+      ]
+    },
+    {
+      "raid": "throne_of_the_four_winds",
+      "map_id": 754,
+      "instance_source": "src/server/scripts/Kalimdor/ThroneOfTheFourWinds/instance_throne_of_the_four_winds.cpp",
+      "loader": "src/server/scripts/Kalimdor/kalimdor_script_loader.cpp",
+      "instance_surfaces": ["boss_state", "platform_effect_objects", "save_load"],
+      "source_shape_status": "complete_dedicated_shape_platform_runtime_unvalidated",
+      "encounters": [
+        {"boss": "conclave_of_wind", "source": "boss_conclave_of_wind.cpp", "status": "source_present_not_runtime_validated"},
+        {"boss": "alakir", "source": "boss_alakir.cpp", "status": "source_present_not_runtime_validated"}
+      ]
+    },
+    {
+      "raid": "firelands",
+      "map_id": 720,
+      "instance_source": "src/server/scripts/Kalimdor/Firelands/instance_firelands.cpp",
+      "loader": "src/server/scripts/Kalimdor/kalimdor_script_loader.cpp",
+      "instance_surfaces": ["boss_state", "door_data", "boundaries", "save_load"],
+      "source_shape_status": "normal_endpoint_missing",
+      "encounters": [
+        {"boss": "bethtilac", "source": null, "status": "missing_dedicated_implementation"},
+        {"boss": "lord_rhyolith", "source": "boss_lord_rhyolith.cpp", "status": "source_present_not_runtime_validated"},
+        {"boss": "shannox", "source": "boss_shannox.cpp", "status": "source_present_not_runtime_validated"},
+        {"boss": "alysrazor", "source": "boss_alysrazor.cpp", "status": "source_present_not_runtime_validated"},
+        {"boss": "baleroc", "source": "boss_baleroc.cpp", "status": "source_present_not_runtime_validated"},
+        {"boss": "majordomo_staghelm", "source": "boss_majordomo_staghelm.cpp", "status": "source_present_not_runtime_validated"},
+        {"boss": "ragnaros", "source": "boss_ragnaros_firelands.cpp", "status": "source_present_not_runtime_validated"}
+      ]
+    },
+    {
+      "raid": "dragon_soul",
+      "map_id": 967,
+      "instance_source": "src/server/scripts/Kalimdor/CavernsOfTime/DragonSoul/instance_dragon_soul.cpp",
+      "loader": "src/server/scripts/Kalimdor/kalimdor_script_loader.cpp",
+      "instance_surfaces": ["door_data", "object_data"],
+      "source_shape_status": "instance_foundation_incomplete",
+      "encounters": [
+        {"boss": "morchok", "source": null, "status": "missing_dedicated_implementation"},
+        {"boss": "warlord_zonozz", "source": null, "status": "missing_dedicated_implementation"},
+        {"boss": "yorsahj_the_unsleeping", "source": null, "status": "missing_dedicated_implementation"},
+        {"boss": "hagara_the_stormbinder", "source": null, "status": "missing_dedicated_implementation"},
+        {"boss": "ultraxion", "source": null, "status": "missing_dedicated_implementation"},
+        {"boss": "warmaster_blackhorn", "source": null, "status": "missing_dedicated_implementation"},
+        {"boss": "spine_of_deathwing", "source": null, "status": "missing_dedicated_implementation"},
+        {"boss": "madness_of_deathwing", "source": "boss_madness_of_deathwing.cpp", "status": "source_present_not_runtime_validated"}
+      ]
+    }
+  ],
+  "summary": {
+    "required_named_encounters": 28,
+    "dedicated_source_present": 19,
+    "missing_dedicated_implementation": 9,
+    "instance_foundation_incomplete": 1,
+    "runtime_ready": 0,
+    "loader_registration_complete_for_present_sources": true,
+    "known_missing_bosses": ["sinestra", "bethtilac", "morchok", "warlord_zonozz", "yorsahj_the_unsleeping", "hagara_the_stormbinder", "ultraxion", "warmaster_blackhorn", "spine_of_deathwing"],
+    "note": "The plan's explicit encounter catalog contains 27 normal endpoints plus heroic-only Sinestra, for 28 named encounters. Dragon Soul's shared instance foundation is tracked separately from the nine missing boss implementations."
+  }
+}

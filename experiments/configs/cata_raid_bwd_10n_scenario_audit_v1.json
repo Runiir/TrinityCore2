@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "audit_id": "cata_raid_bwd_10n_scenario_audit_v1",
+  "audited_at_utc": "2026-08-12T03:25:00Z",
+  "scenario_id": "blackwing_descent_10n",
+  "source_config": "experiments/configs/validation_scenarios_cata_001.json",
+  "generated_routes": "dataset/validation_scenarios/validation_routes.jsonl",
+  "generated_routes_sha256": "4fd6b998fa7bffa616725704b8b83d4ba63de450bb26aa4279e10cc4377aedac",
+  "dvc_stage": "validation_scenarios",
+  "dvc_output_md5": "1561d7d875757ed989349dcbdb61beb8.dir",
+  "dvc_remote_status": "cache_and_remote_in_sync",
+  "independent_checks": {
+    "map_id": {"expected": 669, "observed": 669, "passed": true},
+    "difficulty": {"expected": "normal_10man", "observed": "normal_10man", "passed": true},
+    "roster_roles": {"expected": {"tank": 2, "healer": 3, "dps": 5}, "observed": {"tank": 2, "healer": 3, "dps": 5}, "passed": true},
+    "boss_count": {"expected": 6, "observed": 6, "passed": true},
+    "boss_entries": {
+      "expected": [41570, 42166, 41378, 41442, 43296, 41376],
+      "observed": [41570, 42166, 41378, 41442, 43296, 41376],
+      "passed": true
+    },
+    "coordinates": {"structurally_valid_count": 8, "route_node_count": 8, "passed": true},
+    "provisioning_report_all_ready": true,
+    "provisioning_verification_all_passed": true,
+    "stable_roster_compatible_after_correction": true
+  },
+  "activation_review": [
+    {
+      "boss": "omnotron_defense_system",
+      "result": "legitimate_action_shape_runtime_unverified",
+      "detail": "Controller entry 42186 action 1 uses the encounter's native controller summon group; live start and reset still require proof."
+    },
+    {
+      "boss": "atramedes",
+      "result": "corrected_then_blocked",
+      "removed_forbidden_assistance": ["encounter_state_injection"],
+      "detail": "The prior route wrote instance data ID 10. Certification now requires the native prerequisite/bell unlock, which is not yet proven live."
+    },
+    {
+      "boss": "nefarian",
+      "result": "corrected_then_blocked",
+      "removed_forbidden_assistance": ["encounter_state_injection", "missing_boss_or_actor_spawn"],
+      "detail": "The prior route wrote instance data ID 35 and spawned entry 41376. Certification now requires native prerequisite completion and instance-script activation, which are not yet proven live."
+    }
+  ],
+  "forbidden_activation_fields_after_correction": {
+    "boss_activation_data_ids_nonzero": 0,
+    "boss_activation_summon_entries_nonzero": 0
+  },
+  "provisioning_correction": {
+    "slot": "Bwdtanka",
+    "removed_spec": "protection_warrior",
+    "replacement_spec": "protection_paladin",
+    "reason": "Protection Warrior is explicitly excluded and non-blocking in the frozen 24-mode raid roster; the permanent tank_2 slot is Protection Paladin.",
+    "regeneration_required": false,
+    "regenerated_validation_gear_md5": "edd31980b182119c53d9c8af1049796b.dir",
+    "regenerated_validation_provisioning_md5": "2c6a0dc150fe9c9f86e6d65d9fd7bb88.dir",
+    "dvc_remote_status": "cache_and_remote_in_sync"
+  },
+  "legacy_test_context": {
+    "test": "tests/test_ml_pipeline.py::test_validation_scenario_manifests_link_routes_mechanics_and_provisioning",
+    "status": "inherited_stale_failure_before_bwd_assertions",
+    "reason": "The test still expects an absent Stonecore node named Ozruk approach clearance; Stonecore Phases 10-12 are out of scope and were not resumed."
+  },
+  "certification_status": "blocked_native_unlock_and_runtime_behavior_not_proven",
+  "authoritative_pass_claimed": false
+}
