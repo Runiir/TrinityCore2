@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "program_id": "cata_raid_progression_442_v1",
-  "updated_at_utc": "2026-08-13T01:48:00Z",
+  "updated_at_utc": "2026-08-12T23:42:00Z",
   "active_phase": 1,
   "active_phase_name": "raid_runtime_formation_difficulty_and_evidence_primitives",
   "program_status": "in_progress",
@@ -16,8 +16,8 @@
   },
   "integration": {
     "branch": "raid/cata-raid-progression-integration",
-    "foundation_sha": "cb1b2ce919f59b6ae5f8a64db6db54d07f1e2a45",
-    "current_head_sha": "cb1b2ce919f59b6ae5f8a64db6db54d07f1e2a45",
+    "foundation_sha": "af3d5229bf6f00f9b4c84632ce758e83c2607231",
+    "current_head_sha": "af3d5229bf6f00f9b4c84632ce758e83c2607231",
     "raid_base_is_ancestor": true,
     "created_from_exact_local_master": true
   },
@@ -27,18 +27,18 @@
     "prior_review_decision": "REJECT",
     "prior_review_scope": "exact 9a7b3c72aed5a2e464635b31e8f4617f2134c8d8",
     "prior_review_counts": {"critical": 1, "high": 6, "medium": 5},
-    "critical_high_remediation_implemented_at": "cb1b2ce919f59b6ae5f8a64db6db54d07f1e2a45",
-    "mandatory_rereview": "initial_exact_5ead547e17_review_rejected_zero_critical_four_high; all_findings_remediated_at_cb1b2ce919; exact_descendant_rereview_pending",
+    "critical_high_remediation_implemented_at": "af3d5229bf6f00f9b4c84632ce758e83c2607231",
+    "mandatory_rereview": "exact_af3d5229bf_review_approved_zero_critical_high_medium_and_build_succeeded; eleventh_live_capture_exposed_new_native_full_wipe_and_forced_respawn_assistance_defects; remediation_and_fresh_exact_rereview_pending",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "current_acceptance": "tenth_capture_phase1_false; first_magmaw_lifecycle_review_rejected; reset_atomic_body_exact_mask_attachment_death_cleanup_and_distinct_phase_progress_remediated_at_cb1b2ce919; mandatory_rereview_rebuild_and_rerun_pending"
+    "current_acceptance": "eleventh_capture_phase1_false; corridor_live_clear_repeated; typed_magmaw_decisions_and_ground_danger_observed_but_no_stable_native_engagement; partial_death_tactical_retreat_and_direct_boss_respawn_recovery_rejected; native_full_wipe_no_assistance_remediation_review_rebuild_and_rerun_pending"
   },
   "build_history": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "current_commit": "cb1b2ce919f59b6ae5f8a64db6db54d07f1e2a45",
-    "current_state": "idle_exact_cb1_magmaw_lifecycle_review_remediation_rereview_pending",
-    "current_result": "successful exact-291 receipts are retained in DVC but binary is stale after cb1b2ce919 C++ and capture remediation",
+    "current_commit": "af3d5229bf6f00f9b4c84632ce758e83c2607231",
+    "current_state": "idle_after_exact_af3_build_and_eleventh_uncapped_semantic_stall_capture",
+    "current_result": "exact-af3 configure and worldserver receipts are successful and retained in the eleventh DVC batch; the binary becomes stale for the pending native-full-wipe/no-forced-respawn remediation",
     "successful_build_without_current_policy_receipt_is_invalid": true,
     "attempts": [
       {
@@ -492,9 +492,20 @@
       ,"magmaw_reset_atomic_all_four_body_exact_failure_mask_attachment_and_death_cleanup_closed_at_cb1b2ce919"
       ,"semantic_monitor_distinct_encounter_phase_progress_without_oscillation_closed_at_cb1b2ce919"
       ,"post_review_remediation_phase1_research_coordinator_and_phase9_partition_251_passed"
+      ,"mandatory_sol_high_review_approved_exact_af3d5229bf_with_zero_critical_high_medium"
+      ,"exact_policy_v8_configure_and_worldserver_build_succeeded_at_af3d5229bf"
+      ,"receipt_bound_worldserver_9bc453f0257ae5bcac15b659a4473f5785e171715a173eb20a235d3ef6350d27"
+      ,"fresh_full_provisioning_verifier_and_v4_readback_passed_before_eleventh_live_start"
+      ,"eleventh_uncapped_capture_live_cleared_entry_and_exact_three_member_drakonid_corridor"
+      ,"eleventh_capture_observed_typed_entry41570_boss_position_single_target_heal_and_ground_danger_decisions"
+      ,"eleventh_capture_semantic_monitor_stopped_after_304_073_seconds_without_objective_progress"
+      ,"eleventh_capture_diagnosed_partial_death_tactical_retreat_and_direct_boss_respawn_recovery_assistance_loop"
+      ,"eleventh_capture_eight_file_dvc_artifact_pushed_remote_verified_and_compactly_summarized"
+      ,"eleventh_capture_cleanup_proved_zero_bots_leases_and_processes"
       ],
       "remaining_requirements": [
-      "mandatory_independent_sol_high_review_of_exact_magmaw_lifecycle_remediation",
+      "implement_native_full_wipe_policy_and_remove_direct_boss_respawn_recovery_for_validation_raids",
+      "mandatory_independent_sol_high_review_of_exact_native_full_wipe_no_assistance_remediation",
       "complete_exact_policy_v8_release_coordinated_incremental_build_and_regression_gate_at_reviewed_descendant",
         "rerun_uncapped_serialized_bwd_10n_entry_formation_difficulty_wipe_reset_evidence_publication_and_cleanup_gate_with_live_stall_diagnosis",
         "phase1_live_evidence_dvc_publish_remote_verify_and_exact_evict_gate"
@@ -518,8 +529,8 @@
       "blocker_id": "phase1_current_build_and_live_dvc_gate",
       "classification": "incomplete_evidence",
       "scope": "phase1_build_and_live_gate",
-      "detail": "Exact clean 291653c154 review, policy-v8 build, provisioning verifier, and v4 readback succeeded. The tenth uncapped run formed the exact BWD 10N raid and live-cleared both entry mobs plus the exact Chainwielder/two-Drudge corridor with native hazard and union-safe minimum-distance decisions. At Magmaw, repeated entry-41570 runtime replacements disappeared without durable IN_PROGRESS evidence while partial deaths and native runbacks recycled. The first 5ead review found four lifecycle gaps. Checkpoint cb1b2ce919 now resets all pull-local state and passive behavior, creates and cleans the four-part body atomically with exact failure mask and live attachment validation, explicitly owns death cleanup, and records each distinct encounter phase as bounded semantic progress. Exact re-review, build, reprovision, and rerun remain pending."
+      "detail": "Exact clean af3d5229bf mandatory review, policy-v8 configure/build, fresh provisioning verifier, and v4 readback all succeeded. The eleventh uncapped run formed BWD 10N instance/save 8 and again live-cleared both entry targets plus the exact Chainwielder/two-Drudge corridor. At Magmaw, bots issued typed entry-41570 tank, single-target, healing, and ground-danger decisions, but individual critical-role deaths triggered tactical retreat before a stable native full wipe. The route then directly advanced or forced boss respawn and repeated the loop. The semantic monitor correctly stopped after 304.073 seconds; cleanup proved zero bots, leases and processes. Direct boss respawn recovery is forbidden assistance despite the capture scanner not classifying its result marker. Native-full-wipe/no-assistance remediation, exact review, rebuild, reprovision and rerun remain pending."
     }
   ],
-  "next_action": "Obtain mandatory independent Sol-high re-review of the exact clean status descendant of cb1b2ce919. With zero unresolved Critical/High findings, run exact policy-v8 rebuild, fresh reprovision/full verifier/v4 readback, and uncapped Phase 1 rerun with Luna-xhigh babysitting. Require durable native Magmaw engagement, actual script event/decision review, full wipe/reset/release/runback/reentry/resurrection/readycheck ordering, cleanup, DVC publication and exact eviction. Do not infer Magmaw fidelity from this smoke. Later parallel boss diagnostics still require root to prestart and verify the worldserver and every shard before one Luna-xhigh babysitter per boss. Keep all 464 material fidelity blockers fail-closed."
+  "next_action": "Complete the scoped Phase 1 native-full-wipe policy and remove direct Creature/Map respawn or LoadFromDB recovery for validation raid bosses. Obtain mandatory independent Sol-high review of the exact clean remediation. With zero unresolved Critical/High findings, run an exact policy-v8 rebuild, fresh reprovision/full verifier/v4 readback, and another uncapped Phase 1 rerun with the worldserver started and verified before Luna-xhigh babysitting. Require durable native Magmaw engagement, actual script event and bot-decision review, full wipe/reset/release/runback/reentry/resurrection/readycheck ordering, cleanup, DVC publication and exact eviction. Do not infer Magmaw fidelity from this smoke. Parallel boss diagnostics remain downstream and require one prestarted verified worldserver, six isolated boss-ready shards, and one Luna-xhigh babysitter per boss; final qualification remains three sequential full clears plus a fourth on material disagreement. Keep all 464 material fidelity blockers fail-closed."
 }
