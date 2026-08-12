@@ -175,13 +175,21 @@ stages:
   validation_provisioning:
     cmd: python -m tools.bot_ml.build_validation_provisioning --config 
       experiments/configs/validation_provisioning_cata_001.json --gear-profiles 
-      dataset/validation_gear_profiles/profiles.json --output-dir 
-      dataset/validation_provisioning
+      dataset/validation_gear_profiles/profiles.json --dbc-dir data/dbc/enUS 
+      --output-dir dataset/validation_provisioning
     deps:
+    - path: data/dbc/enUS/GemProperties.dbc
+      hash: md5
+      md5: edfb518041fec829681d8a1bf2d7219f
+      size: 21693
     - path: data/dbc/enUS/GlyphProperties.dbc
       hash: md5
       md5: 2e0589081740fcf230438e5db9329e4c
       size: 5573
+    - path: data/dbc/enUS/Item-sparse.db2
+      hash: md5
+      md5: 61c97067db73be61379002ef18993c5d
+      size: 30858357
     - path: data/dbc/enUS/Talent.dbc
       hash: md5
       md5: 7941baeb6562621a8e5e23a1d9be7815
@@ -213,8 +221,8 @@ stages:
       size: 10453
     - path: tools/bot_ml/build_validation_provisioning.py
       hash: md5
-      md5: 34c9ea3ea840661a66299c2d30589770
-      size: 41243
+      md5: 6ca5c0332bf39fe72d44a0bad2ef9d15
+      size: 45267
     - path: tools/bot_ml/validation_profile_manifests.py
       hash: md5
       md5: 1cc965005f6c606d244e270487ecad9e
@@ -222,8 +230,8 @@ stages:
     outs:
     - path: dataset/validation_provisioning
       hash: md5
-      md5: 2c6a0dc150fe9c9f86e6d65d9fd7bb88.dir
-      size: 3211372
+      md5: d6a978130d493e0e9ef73d8836b32079.dir
+      size: 3213851
       nfiles: 8
   validation_gear:
     cmd: python -m tools.bot_ml.build_validation_gear_profiles --config 
@@ -264,8 +272,8 @@ stages:
       size: 36768
     - path: tools/bot_ml/build_validation_provisioning.py
       hash: md5
-      md5: 34c9ea3ea840661a66299c2d30589770
-      size: 41243
+      md5: 6ca5c0332bf39fe72d44a0bad2ef9d15
+      size: 45267
     - path: tools/bot_ml/extract_world_knowledge.py
       hash: md5
       md5: 9f9d6ddb0fcae27397951db8b02c3d68
@@ -308,10 +316,11 @@ stages:
       md5: edd31980b182119c53d9c8af1049796b.dir
       size: 841136
       nfiles: 3
-    - path: dataset/validation_provisioning/report.json
+    - path: dataset/validation_provisioning
       hash: md5
-      md5: 12d4bd0e4f29163b1002b1ca0e9610dc
-      size: 6859
+      md5: d6a978130d493e0e9ef73d8836b32079.dir
+      size: 3213851
+      nfiles: 8
     - path: experiments/configs/all_spec_targets_cata_p4_v1.json
       hash: md5
       md5: 300943155fcdcc1aa7208e9a8e9d2181
@@ -338,16 +347,16 @@ stages:
       size: 36768
     - path: tools/bot_ml/build_validation_provisioning.py
       hash: md5
-      md5: 34c9ea3ea840661a66299c2d30589770
-      size: 41243
+      md5: 6ca5c0332bf39fe72d44a0bad2ef9d15
+      size: 45267
     - path: tools/bot_ml/extract_world_knowledge.py
       hash: md5
       md5: 9f9d6ddb0fcae27397951db8b02c3d68
       size: 31879
     - path: tools/bot_ml/validate_validation_provisioning.py
       hash: md5
-      md5: 93e1e5eedd604adbb1c2705f95ebef8f
-      size: 37155
+      md5: ab5e4802fac9c6cf64b7c931fc7a6f3c
+      size: 43323
     - path: tools/bot_ml/validation_profile_manifests.py
       hash: md5
       md5: 1cc965005f6c606d244e270487ecad9e
@@ -355,8 +364,8 @@ stages:
     outs:
     - path: dataset/validation_provisioning_verification/report.json
       hash: md5
-      md5: 626bc7c876333dd8502b4bf8cc48270b
-      size: 603
+      md5: 7f58fb42d06c9099631df4ff68418bfa
+      size: 1525
   validation_scenarios:
     cmd: python -m tools.bot_ml.build_validation_scenario_manifests --config 
       experiments/configs/validation_scenarios_cata_001.json 
