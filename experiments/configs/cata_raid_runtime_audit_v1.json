@@ -9,18 +9,18 @@
     "locale": "enUS",
     "hotfix_cutoff_utc": "2025-02-20T23:00:00Z"
   },
-  "audited_commit": "7bd199619c64c820e77680a8c75a8748f0cd3348",
+  "audited_commit": "6b5990534a5b9c98be4f7d063f6a7375d4ea2bb4",
   "gate_state": "in_progress_exact_9c9_review_build_and_fourth_live_capture_complete_native_ghost_worldport_remediated_review_rebuild_and_live_rerun_pending",
   "foundation": {
-    "foundation_sha": "7bd199619c64c820e77680a8c75a8748f0cd3348",
-    "current_head_sha": "7bd199619c64c820e77680a8c75a8748f0cd3348",
+    "foundation_sha": "6b5990534a5b9c98be4f7d063f6a7375d4ea2bb4",
+    "current_head_sha": "6b5990534a5b9c98be4f7d063f6a7375d4ea2bb4",
     "prior_sol_high_review": "REJECT",
     "critical_high_remediation": "implemented",
-    "mandatory_sol_high_rereview": "pending_exact_status_descendant_of_7bd199619c_after_native_bwd_ghost_worldport_remediation",
+    "mandatory_sol_high_rereview": "pending_exact_status_descendant_of_6b5990534a_after_native_bwd_ghost_worldport_and_core_auto_resurrection_remediation",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "acceptance": "exact_9c9_review_build_and_fourth_capture_complete_native_worldport_infrastructure_abort_remediated_at_7bd199619c_exact_review_rebuild_uncapped_rerun_pending"
+    "acceptance": "exact_9c9_review_build_and_fourth_capture_complete_native_worldport_infrastructure_abort_remediated_at_6b5990534a_exact_review_rebuild_uncapped_rerun_pending"
   },
   "research": {
     "required_boss_packets": 28,
@@ -46,7 +46,7 @@
   },
   "build": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "current_state": "successful_9c9dec8b_build_stale_after_7bd199619c_native_worldport_remediation",
+    "current_state": "successful_9c9dec8b_build_stale_after_6b5990534a_native_worldport_remediation",
     "current_result": "mandatory_review_then_exact_incremental_rebuild_required_before_uncapped_canonical_rerun",
     "receipt_trust_model": "explicit_trusted_local_operator",
     "trusted_operator": "runiir",
@@ -138,11 +138,11 @@
   "required_open_work": [
     {
       "area": "current_build",
-      "missing": ["successful_exact_policy_v8_release_coordinated_incremental_build_at_reviewed_status_descendant_of_7bd199619c", "valid_current_production_receipt_bound_to_trusted_local_operator", "post_build_regression_and_orphan_process_check"]
+      "missing": ["successful_exact_policy_v8_release_coordinated_incremental_build_at_reviewed_status_descendant_of_6b5990534a", "valid_current_production_receipt_bound_to_trusted_local_operator", "post_build_regression_and_orphan_process_check"]
     },
     {
       "area": "adversarial_review",
-      "missing": ["zero_unresolved_critical_high_findings_for_native_bwd_worldport_remediation_descendant_of_7bd199619c", "explicit_encounter_script_vs_bot_decision_review", "explicit_non_fidelity_phase1_engagement_scope_approval"]
+      "missing": ["zero_unresolved_critical_high_findings_for_native_bwd_worldport_remediation_descendant_of_6b5990534a", "explicit_encounter_script_vs_bot_decision_review", "explicit_non_fidelity_phase1_engagement_scope_approval"]
     },
     {
       "area": "native_recovery_live_evidence",
@@ -154,7 +154,7 @@
     }
   ],
   "phase1_gate_blockers": [
-    "mandatory_sol_high_review_of_exact_status_descendant_of_7bd199619c_pending",
+    "mandatory_sol_high_review_of_exact_status_descendant_of_6b5990534a_pending",
     "coordinated_policy_v8_release_worldserver_rebuild_after_native_bwd_worldport_remediation_pending",
     "uncapped_serialized_bwd_10n_live_formation_difficulty_wipe_reset_gate_rerun_pending",
     "phase1_live_dvc_publication_remote_verification_and_exact_eviction_pending",
