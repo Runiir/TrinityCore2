@@ -4328,6 +4328,8 @@ bool BotWorldPopulationMgr::IsNativeReleasedGhostWorldport(WorldBotState const& 
     float const* graveyardOrientation = sObjectMgr->GetGraveyardOrientation(graveyard->ID);
     float expectedOrientation = graveyardOrientation ? *graveyardOrientation : bot->GetOrientation();
     return destination.GetMapId() == graveyard->Continent
+        && !bot->GetTeleportDestInstanceId()
+        && bot->GetTeleportDestOptions() == TELE_TO_NONE
         && std::fabs(destination.GetPositionX() - graveyard->Loc.X) <= 0.01f
         && std::fabs(destination.GetPositionY() - graveyard->Loc.Y) <= 0.01f
         && std::fabs(destination.GetPositionZ() - graveyard->Loc.Z) <= 0.01f
@@ -4351,6 +4353,8 @@ bool BotWorldPopulationMgr::IsNativeBlackwingDescentRunbackWorldport(WorldBotSta
     WorldLocation const& destination = bot->GetTeleportDest();
     return bot->GetMapId() == entranceEntry->ContinentID
         && destination.GetMapId() == entranceDestination->target_mapId
+        && !bot->GetTeleportDestInstanceId()
+        && bot->GetTeleportDestOptions() == TELE_TO_NOT_LEAVE_TRANSPORT
         && std::fabs(destination.GetPositionX() - entranceDestination->target_X) <= 0.01f
         && std::fabs(destination.GetPositionY() - entranceDestination->target_Y) <= 0.01f
         && std::fabs(destination.GetPositionZ() - entranceDestination->target_Z) <= 0.01f

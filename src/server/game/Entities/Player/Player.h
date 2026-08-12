@@ -1892,6 +1892,7 @@ class TC_GAME_API Player : public Unit, public GridObject<Player>
 
         WorldLocation& GetTeleportDest() { return m_teleport_dest; }
         Optional<uint32> GetTeleportDestInstanceId() const { return m_teleport_instanceId; }
+        TeleportToOptions GetTeleportDestOptions() const { return m_teleport_options; }
         bool IsBeingTeleported() const { return mSemaphoreTeleport_Near || mSemaphoreTeleport_Far; }
         bool IsBeingTeleportedNear() const { return mSemaphoreTeleport_Near; }
         bool IsBeingTeleportedFar() const { return mSemaphoreTeleport_Far; }

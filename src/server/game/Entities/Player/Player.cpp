@@ -1381,7 +1381,8 @@ bool Player::TeleportTo(uint32 mapid, float x, float y, float z, float orientati
             WorldSafeLocsEntry const* graveyard = sObjectMgr->GetClosestGraveyard(*this, GetTeam(), this);
             float const* graveyardOrientation = graveyard ? sObjectMgr->GetGraveyardOrientation(graveyard->ID) : nullptr;
             float expectedOrientation = graveyardOrientation ? *graveyardOrientation : GetOrientation();
-            nativeGhostRelease = corpse && graveyard
+            nativeGhostRelease = options == TELE_TO_NONE && !instanceId
+                && corpse && graveyard
                 && corpse->GetOwnerGUID() == GetGUID()
                 && corpse->GetMapId() == GetMapId()
                 && corpse->GetInstanceId() == GetInstanceId()

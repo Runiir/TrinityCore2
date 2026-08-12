@@ -346,7 +346,10 @@ def test_bwd_native_ghost_runback_acks_only_corpse_bound_worldports_and_canonica
     assert "destination.GetPositionY() - graveyard->Loc.Y" in native_release
     assert "destination.GetPositionZ() - graveyard->Loc.Z" in native_release
     assert "GetGraveyardOrientation(graveyard->ID)" in native_release
+    assert "!bot->GetTeleportDestInstanceId()" in native_release
+    assert "bot->GetTeleportDestOptions() == TELE_TO_NONE" in native_release
     assert "destination.GetMapId() == entranceDestination->target_mapId" in native_release
+    assert "bot->GetTeleportDestOptions() == TELE_TO_NOT_LEAVE_TRANSPORT" in native_release
 
     assert "ResolveNativeBlackwingDescentEntrance(entranceEntry, entranceDestination)" in native_runback
     assert "bot->GetMapId() == entranceEntry->ContinentID" in native_runback
@@ -372,6 +375,7 @@ def test_bot_dungeon_cross_map_guard_allows_only_exact_native_ghost_graveyard_re
     assert "corpse->GetInstanceId() == GetInstanceId()" in teleport
     assert "sObjectMgr->GetClosestGraveyard(*this, GetTeam(), this)" in teleport
     assert "mapid == graveyard->Continent" in teleport
+    assert "options == TELE_TO_NONE && !instanceId" in teleport
     assert "std::fabs(x - graveyard->Loc.X) <= 0.01f" in teleport
     assert "std::fabs(y - graveyard->Loc.Y) <= 0.01f" in teleport
     assert "std::fabs(z - graveyard->Loc.Z) <= 0.01f" in teleport
