@@ -24481,9 +24481,19 @@ raid_cooldown_complete:
             if (!controlledAoeReleased)
             {
                 if (Spell* current = bot->GetCurrentSpell(CURRENT_GENERIC_SPELL))
-                    if (SpellInfo const* spellInfo = current->GetSpellInfo();
-                        spellInfo && spellInfo->IsAffectingArea())
-                        bot->InterruptSpell(CURRENT_GENERIC_SPELL, false);
+                    if (SpellInfo const* spellInfo = current->GetSpellInfo())
+                    {
+                        bool chainedDamage = false;
+                        for (uint8 effectIndex = 0; effectIndex < MAX_SPELL_EFFECTS; ++effectIndex)
+                            if (spellInfo->Effects[effectIndex].IsEffect()
+                                && spellInfo->Effects[effectIndex].ChainTarget > 1)
+                            {
+                                chainedDamage = true;
+                                break;
+                            }
+                        if (spellInfo->IsAffectingArea() || chainedDamage)
+                            bot->InterruptSpell(CURRENT_GENERIC_SPELL, false);
+                    }
                 bot->InterruptSpell(CURRENT_CHANNELED_SPELL, false);
                 if (Creature* fireTotem = bot->m_SummonSlot[SUMMON_SLOT_TOTEM_FIRE] && bot->GetMap()
                         ? bot->GetMap()->GetCreature(bot->m_SummonSlot[SUMMON_SLOT_TOTEM_FIRE]) : nullptr)
