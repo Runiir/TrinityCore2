@@ -1358,8 +1358,13 @@ BotWorldPopulationMgr* BotWorldPopulationMgr::instance()
 bool BotWorldPopulationMgr::StartAutonomyForCohort(std::string const& cohortId, BotWorldExperimentConfig const* overrideConfig)
 {
     CohortRuntime* runtime = FindCohort(cohortId);
-    if (!runtime || (!runtime->Active && ActiveCohortCount() >= MaxActiveCohorts))
+    if (!runtime)
         return false;
+    if (!runtime->Active && ActiveCohortCount() >= MaxActiveCohorts)
+    {
+        runtime->RuntimeProfileSelectionPending = false;
+        return false;
+    }
 
     std::string previous = _selectedCohortId;
     _selectedCohortId = cohortId;

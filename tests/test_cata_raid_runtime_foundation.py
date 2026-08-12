@@ -187,6 +187,13 @@ def test_explicit_runtime_profile_survives_start_config_reload():
     reload_profile = reload_profile[:reload_profile.index("bool BotWorldPopulationMgr::SelectConfiguredRuntimeProfile()")]
     assert "RuntimeProfileSelectionPending = true" not in reload_profile
 
+    cohort_start = IMPL[IMPL.index("bool BotWorldPopulationMgr::StartAutonomyForCohort("):]
+    cohort_start = cohort_start[:cohort_start.index("std::string BotWorldPopulationMgr::StopAutonomyForCohort(")]
+    capacity_rejection = cohort_start.index("ActiveCohortCount() >= MaxActiveCohorts")
+    rollback = cohort_start.index("runtime->RuntimeProfileSelectionPending = false;", capacity_rejection)
+    rejection = cohort_start.index("return false;", rollback)
+    assert capacity_rejection < rollback < rejection
+
 
 def test_focus_fire_owns_target_and_cancels_every_wrong_attacker():
     focus_start = IMPL.index('raidAdapter.TargetControl == "focus_fire"')
