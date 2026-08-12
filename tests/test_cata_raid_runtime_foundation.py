@@ -20,6 +20,16 @@ def test_single_cohort_owns_one_raid_runtime():
     assert "std::map<uint32, RaidRosterSlot> RosterByGuid" in HEADER[raid_struct:cohort_struct]
 
 
+def test_no_pch_runtime_declares_roster_plan_before_use_and_compares_transport_identity_by_guid():
+    group_start = IMPL.index("void BotWorldPopulationMgr::EnsureValidationCohortGroup()")
+    group_end = IMPL.index("bool BotWorldPopulationMgr::ResolveSpawnPlacement", group_start)
+    group_runtime = IMPL[group_start:group_end]
+    assert group_runtime.index("std::vector<RaidRosterPlanSlot> const rosterPlan") < group_runtime.index("rosterPlan.size()")
+    assert '#include "VehicleDefines.h"' in IMPL[:IMPL.index("namespace")]
+    assert "transport->GetTransportGUID() == gameObject->GetGUID()" in IMPL
+    assert "bot->GetTransport() == gameObject->ToTransport()" not in IMPL
+
+
 def test_raid_size_and_difficulty_are_explicit_and_fail_closed():
     assert "uint8 RaidSize = 10;" in HEADER
     assert "uint8 RaidDifficulty = 0;" in HEADER
@@ -62,7 +72,7 @@ def test_generic_raid_mechanic_contracts_are_typed_executable_and_fail_closed():
     assert 'raidAdapter.TargetControl == "kill_sync"' in IMPL
     assert "HandleGameObjectUseOpcode(use)" in IMPL
     assert "HandleSpellClick(click)" in IMPL
-    assert "bot->GetTransport() == gameObject->ToTransport()" in IMPL
+    assert "transport->GetTransportGUID() == gameObject->GetGUID()" in IMPL
     assert "HandleAreaTriggerOpcode(areaTrigger)" in IMPL
     assert "declarative_area_damage_forbidden" in IMPL
 

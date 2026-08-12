@@ -46,6 +46,7 @@
 #include "Totem.h"
 #include "TotemAI.h"
 #include "Unit.h"
+#include "VehicleDefines.h"
 #include "Creature.h"
 #include "CreatureGroups.h"
 #include "WorldSession.h"
@@ -5995,6 +5996,7 @@ void BotWorldPopulationMgr::EnsureValidationCohortGroup()
     }
 
     bool const raidValidation = Cohort().Config.AllowRaids || members.size() > MAXGROUPSIZE || (leader->GetMap() && leader->GetMap()->IsRaid());
+    std::vector<RaidRosterPlanSlot> const rosterPlan = BuildRosterPlan();
     if (raidValidation && !group->isRaidGroup())
         group->ConvertToRaid();
 
@@ -24027,7 +24029,8 @@ raid_cooldown_complete:
                 }
                 if (raidAdapter.TransportEntry && gameObject->GetEntry() == raidAdapter.TransportEntry)
                 {
-                    if (bot->GetTransport() == gameObject->ToTransport())
+                    if (TransportBase* transport = bot->GetTransport();
+                        transport && transport->GetTransportGUID() == gameObject->GetGUID())
                     {
                         result.Action = "raid_transport_native_boarded";
                         RecordRaidTelemetry(state, bot, result.Target, "raid_transport", "native_postcondition",
