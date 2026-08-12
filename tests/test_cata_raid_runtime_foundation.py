@@ -75,6 +75,10 @@ def test_generic_raid_mechanic_contracts_are_typed_executable_and_fail_closed():
     assert "transport->GetTransportGUID() == gameObject->GetGUID()" in IMPL
     assert "HandleAreaTriggerOpcode(areaTrigger)" in IMPL
     assert "declarative_area_damage_forbidden" in IMPL
+    route_start = IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteObjective")
+    route_end = IMPL.index("bool BotWorldPopulationMgr::IsBossContext", route_start)
+    route_runtime = IMPL[route_start:route_end]
+    assert route_runtime.count("TryBossMechanics(state, bot, power, stage, activity)") >= 2
 
 
 def test_phase1_target_transfer_and_swap_controls_are_executable():
@@ -163,7 +167,8 @@ def test_focus_fire_owns_target_and_cancels_every_wrong_attacker():
     ):
         assert token in focus
     assert 'raidAdapter.TargetControl != "focus_fire"' in IMPL
-    assert '(node.TargetControl != "focus_fire" || !node.AllowMultidot)' in IMPL
+    assert '(node.TargetControl != "focus_fire" || (!node.AllowMultidot && !node.AllowAreaDamage))' in IMPL
+    assert "state.WasInCombat = true;" in IMPL
 
 
 def test_platform_completion_requires_all_declared_destination_dimensions():
@@ -205,6 +210,7 @@ def test_phase1_jump_platform_altitude_and_flying_require_native_postconditions(
     assert "&& jumpTransferResolved" in IMPL
     assert "state.LastRaidJumpPadEntrySubmitted == raidAdapter.JumpPadEntry" in IMPL
     assert "state.LastRaidJumpPadRouteGeneration == Party().ValidationRouteGeneration" in IMPL
+    assert 'if (raidAdapter.InteractionKind == "jump_pad")' in IMPL
 
 
 def test_generic_contract_has_explicit_soak_dispel_and_cooldown_assignments():

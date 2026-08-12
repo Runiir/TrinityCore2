@@ -709,6 +709,9 @@ def accepted_native_recovery(statuses: list[dict[str, Any]]) -> tuple[bool, list
                 reasons.append("native_per_member_recovery_order_invalid")
             elif not _positive_int(selected_engagement_sequence) or sequences[0] <= selected_engagement_sequence:
                 reasons.append("native_per_member_recovery_predates_latest_engagement")
+            elif wipe_index is None or not _positive_int(runtimes[wipe_index].get("evidence_sequence")) \
+                    or sequences[0] > runtimes[wipe_index]["evidence_sequence"]:
+                reasons.append("native_per_member_death_postdates_latest_wipe_snapshot")
             elif not _positive_int(final_runtime.get("evidence_sequence")) or any(
                 value > final_runtime["evidence_sequence"] for value in sequences
             ):

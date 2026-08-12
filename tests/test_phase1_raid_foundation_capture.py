@@ -172,18 +172,18 @@ def test_native_wipe_reset_recovery_is_reconstructed_across_statuses():
     )
     wiped = accepted_status()
     wiped["raid_runtime"].update(
-        evidence_sequence=3, alive_size=0, ready_check_satisfied=False, wipe_generation=1,
+        evidence_sequence=70, alive_size=0, ready_check_satisfied=False, wipe_generation=1,
         encounter_in_progress=False, recovery_state="release_resurrection_pending",
         wipe_state="wiped",
     )
     reset = accepted_status()
     reset["raid_runtime"].update(
-        evidence_sequence=4, alive_size=0, boss_reset_generation=1, wipe_generation=1,
+        evidence_sequence=71, alive_size=0, boss_reset_generation=1, wipe_generation=1,
         recovery_state="release_resurrection_pending", wipe_state="wiped",
     )
     recovered = accepted_status()
     recovered["raid_runtime"].update(
-        evidence_sequence=70, boss_reset_generation=1, wipe_generation=1, recovery_generation=1,
+        evidence_sequence=72, boss_reset_generation=1, wipe_generation=1, recovery_generation=1,
         recovery_state="recovered_ready_check", wipe_state="ready",
     )
     recovered["raid_runtime"]["native_recovery"] = {
@@ -193,7 +193,7 @@ def test_native_wipe_reset_recovery_is_reconstructed_across_statuses():
         "ready_check_action_generation": 2, "ready_check_action_attempt_id": 1,
         "ready_check_action_wipe_generation": 1,
         "ready_check_assignment_generation": 1,
-        "ready_check_action_evidence_sequence": 70,
+        "ready_check_action_evidence_sequence": 72,
         "recovery_wipe_generation": 1,
         "members": [
             {
@@ -221,6 +221,22 @@ def test_native_wipe_reset_recovery_is_reconstructed_across_statuses():
     accepted, reasons = accepted_native_recovery(stale)
     assert accepted is False
     assert "native_per_member_recovery_predates_latest_engagement" in reasons
+
+    future_deaths = json.loads(json.dumps([ready, engaged, wiped, reset, recovered]))
+    future_deaths[1]["raid_runtime"]["evidence_sequence"] = 101
+    future_deaths[2]["raid_runtime"]["evidence_sequence"] = 102
+    future_deaths[3]["raid_runtime"]["evidence_sequence"] = 180
+    future_deaths[4]["raid_runtime"]["evidence_sequence"] = 240
+    future_deaths[4]["raid_runtime"]["native_recovery"]["ready_check_action_evidence_sequence"] = 240
+    for index, member in enumerate(future_deaths[4]["raid_runtime"]["native_recovery"]["members"]):
+        for offset, field in enumerate((
+            "death_sequence", "corpse_sequence", "release_sequence",
+            "runback_sequence", "reentry_sequence", "resurrection_sequence",
+        )):
+            member[field] = 120 + index * 6 + offset
+    accepted, reasons = accepted_native_recovery(future_deaths)
+    assert accepted is False
+    assert "native_per_member_death_postdates_latest_wipe_snapshot" in reasons
 
 
 def test_native_recovery_requires_post_wipe_reset_increment_and_bounded_member_sequences():
@@ -284,7 +300,7 @@ def test_native_recovery_requires_post_wipe_reset_increment_and_bounded_member_s
         [ready, engaged, wiped, unchanged_reset, valid]
     )
     assert accepted is False
-    assert "native_per_member_recovery_sequence_exceeds_runtime" in reasons
+    assert "native_per_member_death_postdates_latest_wipe_snapshot" in reasons
 
 
 def test_native_recovery_does_not_cross_pair_reset_from_an_earlier_wipe():

@@ -3567,7 +3567,7 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
             bool const targetResolved = node.TargetControl.empty()
                 || ((node.TargetControl == "focus_fire" || node.TargetControl == "multidot"
                         || node.TargetControl == "do_not_damage") && !node.TargetEntries.empty()
-                    && (node.TargetControl != "focus_fire" || !node.AllowMultidot))
+                    && (node.TargetControl != "focus_fire" || (!node.AllowMultidot && !node.AllowAreaDamage)))
                 || (node.TargetControl == "controlled_aoe" && node.AllowAreaDamage
                     && !node.AllowMultidot && node.ControlledAoeMinimumTargets > 0
                     && !node.TargetEntries.empty())
@@ -22730,6 +22730,17 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             enrollValidationRoutePackMember(creature, isValidationCohortCombatLinked(creature));
         if (routeBossTarget)
             rememberValidationRouteFocus(target);
+        if (routeBossTarget && Cohort().Config.ValidationRouteKind == "boss")
+        {
+            BossMechanicActionResult mechanic = TryBossMechanics(state, bot, power, stage, activity);
+            if (mechanic.Handled)
+            {
+                situation = mechanic.Situation;
+                action = mechanic.Action;
+                target = mechanic.Target;
+                return true;
+            }
+        }
         if (tryRouteGroupHeal(bot, target))
             return true;
         if (routeBossTarget && Cohort().Config.ValidationRouteKind == "boss" && tryValidationRouteInterrupt(target, "route_boss_focus_interrupt"))
@@ -23416,6 +23427,17 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
     if (Cohort().Config.ValidationRouteKind != "boss")
         enrollValidationRoutePackMember(target->ToCreature(), isValidationCohortCombatLinked(target->ToCreature()));
     rememberValidationRouteFocus(target);
+    if (Cohort().Config.ValidationRouteKind == "boss")
+    {
+        BossMechanicActionResult mechanic = TryBossMechanics(state, bot, power, stage, activity);
+        if (mechanic.Handled)
+        {
+            situation = mechanic.Situation;
+            action = mechanic.Action;
+            target = mechanic.Target;
+            return true;
+        }
+    }
     if (tryRouteGroupHeal(bot, target))
         return true;
     if (Cohort().Config.ValidationRouteKind == "boss" && tryValidationRouteInterrupt(target, "route_target_interrupt"))
@@ -23723,6 +23745,7 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
         ++state.RaidAttempts;
         state.LastRaidTankSwapTriggerKey.clear();
         state.LastRaidTankSwapMs = NowMs();
+        state.WasInCombat = true;
     }
 
     std::string raw = BuildRawJson(bot, result.Target);
@@ -24107,6 +24130,11 @@ raid_cooldown_complete:
                     WorldPacket areaTrigger(CMSG_AREATRIGGER, sizeof(uint32));
                     areaTrigger << raidAdapter.TransferAreaTriggerId;
                     bot->GetSession()->HandleAreaTriggerOpcode(areaTrigger);
+                    if (raidAdapter.InteractionKind == "jump_pad")
+                    {
+                        state.LastRaidJumpPadEntrySubmitted = raidAdapter.JumpPadEntry;
+                        state.LastRaidJumpPadRouteGeneration = Party().ValidationRouteGeneration;
+                    }
                 }
                 result.Action = "raid_platform_native_transfer_pending_postcondition";
                 return result;
@@ -24399,8 +24427,7 @@ raid_cooldown_complete:
         for (WorldObject* object : nearbyObjects)
         {
             Creature* candidate = object ? object->ToCreature() : nullptr;
-            if (!candidate || !candidate->IsAlive() || candidate == result.Target
-                || candidate->IsDungeonBoss() || candidate->isWorldBoss()
+            if (!candidate || !candidate->IsAlive()
                 || !bot->IsValidAttackTarget(candidate) || !bot->IsWithinLOSInMap(candidate))
                 continue;
             auto declared = std::find(raidAdapter.TargetEntries.begin(), raidAdapter.TargetEntries.end(),
