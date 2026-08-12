@@ -764,6 +764,8 @@ def validate_build_receipt(
     worktree: Path,
     binary: Path,
     config: Path | None = None,
+    attestation_path: Path | None = None,
+    service_config_path: Path | None = None,
 ) -> dict[str, Any]:
     """Reconstruct the production build gate without trusting receipt pass fields."""
 
@@ -773,6 +775,23 @@ def validate_build_receipt(
         policy = load_json(policy_path)
         receipt = load_json(receipt_path)
         verification = verify_receipt(receipt_path, policy, allow_test_mode=False)
+        privileged_verification = None
+        if policy.get("mechanical_controls", {}).get(
+            "privileged_receipt_signature_required"
+        ):
+            if attestation_path is None or service_config_path is None:
+                raise RuntimeError("privileged build attestation and service config are required")
+            from tools.raid_program.privileged_build_attestation import (
+                verify_privileged_attestation,
+            )
+
+            privileged_verification = verify_privileged_attestation(
+                attestation_path,
+                receipt_path,
+                policy_path,
+                service_config_path,
+                allow_test_mode=False,
+            )
         identity = git_identity(worktree)
         rejections: list[str] = []
         if verification.get("classification") != "success" or receipt.get("classification") != "success":
@@ -963,7 +982,8 @@ def validate_build_receipt(
             "binary_sha256": sha256_file(binary) if binary.is_file() else None,
             "binary_size_bytes": binary.stat().st_size if binary.is_file() else 0,
             "binary_is_elf": is_elf,
-            "binary_binding": "coordinator_receipt_path_size_sha256_commit_and_timestamp_verified",
+            "binary_binding": "privileged_ed25519_attestation_plus_coordinator_receipt_path_size_sha256_commit_and_timestamp_verified",
+            "privileged_attestation": privileged_verification,
         }
     except Exception as error:  # fail closed, while retaining a useful rejection
         return {
@@ -1457,6 +1477,12 @@ def main() -> int:
     parser.add_argument("--raw-output", type=Path, default=None)
     parser.add_argument("--server-log-output", type=Path, default=None)
     parser.add_argument("--build-receipt", type=Path, required=True)
+    parser.add_argument("--build-attestation", type=Path, required=True)
+    parser.add_argument(
+        "--build-service-config",
+        type=Path,
+        default=ROOT / "experiments/configs/cata_raid_privileged_build_service_v1.json",
+    )
     parser.add_argument(
         "--build-policy",
         type=Path,
@@ -1497,7 +1523,8 @@ def main() -> int:
     if not runtime_assets["passed"]:
         raise SystemExit("runtime profile assets rejected: " + ",".join(runtime_assets["reasons"]))
     build_provenance = validate_build_receipt(
-        args.build_receipt.resolve(), args.build_policy.resolve(), worktree, binary, config
+        args.build_receipt.resolve(), args.build_policy.resolve(), worktree, binary, config,
+        args.build_attestation.resolve(), args.build_service_config.resolve(),
     )
     if not build_provenance.get("valid"):
         raise SystemExit("build receipt rejected: " + ",".join(build_provenance.get("rejections", [])))

@@ -89,6 +89,8 @@
     "gnu_reduce_memory_overheads_final_link": true,
     "process_group_watchdog": true,
     "receipt_verification_required": true,
+    "privileged_receipt_signature_required": true,
+    "privileged_build_service_config": "experiments/configs/cata_raid_privileged_build_service_v1.json",
     "receipt_worldserver_sha256_required": true,
     "test_mode_receipt_satisfies_production_gate": false,
     "cgroup_scope": "use_when_available_and_validated",

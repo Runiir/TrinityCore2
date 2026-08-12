@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import base64
 import json
 import os
 import signal
@@ -13,6 +14,7 @@ from pathlib import Path
 import pytest
 
 from tools.raid_program import queued_build as qb
+from tools.raid_program import privileged_build_attestation as pba
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -715,6 +717,101 @@ def test_v8_worldserver_command_and_environment_are_policy_owned(
     assert environment["PATH"] == qb.SAFE_BUILD_PATH
     assert environment["LANG"] == environment["LC_ALL"] == "C.UTF-8"
     assert qb.toolchain_snapshot(frozen)["matches_policy"] is True
+
+
+def test_privileged_ed25519_attestation_binds_exact_success_receipt(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    state_paths(tmp_path, monkeypatch)
+    repo = configured_git_repo(tmp_path / "repo")
+    frozen = json.loads(
+        (ROOT / "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json").read_text()
+    )
+    policy_path = tmp_path / "policy.json"
+    policy_path.write_text(json.dumps(frozen), encoding="utf-8")
+    monkeypatch.setattr(qb, "resource_snapshot", lambda _: synthetic_snapshot())
+    monkeypatch.setattr(qb, "find_live_validation_processes", lambda *_args, **_kwargs: [])
+    seed_configure_lineage(repo, frozen, tmp_path)
+    receipt_path = tmp_path / "build-receipt.json"
+    code, receipt = qb.run_ticket(
+        repo, frozen, "worldserver_build", exact_worldserver_build(frozen), None,
+        receipt_path, 2.0,
+    )
+    assert code == 0
+
+    private_key = tmp_path / "private.pem"
+    public_key = tmp_path / "public.pem"
+    subprocess.run(
+        ["/usr/bin/openssl", "genpkey", "-algorithm", "ED25519", "-out", str(private_key)],
+        check=True, capture_output=True,
+    )
+    subprocess.run(
+        ["/usr/bin/openssl", "pkey", "-in", str(private_key), "-pubout", "-out", str(public_key)],
+        check=True, capture_output=True,
+    )
+    service_config = tmp_path / "service.json"
+    service = {
+        "schema_version": 1,
+        "service_id": "test-privileged-service",
+        "state": "provisioned",
+        "key_id": "test-ed25519-key-1",
+        "public_key_path": str(public_key),
+        "public_key_sha256": qb.sha256_file(public_key),
+        "minimum_ledger_sequence": 1,
+    }
+    service_config.write_text(json.dumps(service), encoding="utf-8")
+    attestation = {
+        "schema_version": 1,
+        "service_id": service["service_id"],
+        "key_id": service["key_id"],
+        "ledger_sequence": 1,
+        "ledger_record_id": "test-ledger-record-0001",
+        "signed_at_utc": qb.utc_now(),
+    }
+    payload = pba.signed_payload(receipt, attestation)
+    payload_path = tmp_path / "payload.json"
+    signature_path = tmp_path / "signature.bin"
+    payload_path.write_bytes(qb.canonical_json(payload))
+    subprocess.run(
+        [
+            "/usr/bin/openssl", "pkeyutl", "-sign", "-inkey", str(private_key),
+            "-rawin", "-in", str(payload_path), "-out", str(signature_path),
+        ],
+        check=True, capture_output=True,
+    )
+    attestation["payload"] = payload
+    attestation["payload_sha256"] = qb.sha256_bytes(qb.canonical_json(payload))
+    attestation["signature_base64"] = base64.b64encode(signature_path.read_bytes()).decode()
+    attestation["attestation_sha256"] = qb.sha256_bytes(qb.canonical_json(attestation))
+    attestation_path = tmp_path / "attestation.json"
+    attestation_path.write_text(json.dumps(attestation), encoding="utf-8")
+
+    report = pba.verify_privileged_attestation(
+        attestation_path, receipt_path, policy_path, service_config,
+        allow_test_mode=True,
+    )
+    assert report["valid"] is True
+    assert report["receipt_sha256"] == receipt["receipt_sha256"]
+    assert report["ledger_sequence"] == 1
+
+    unprovisioned = dict(service) | {"state": "unprovisioned_external_authority_required"}
+    service_config.write_text(json.dumps(unprovisioned), encoding="utf-8")
+    with pytest.raises(qb.CoordinatorError, match="not provisioned"):
+        pba.verify_privileged_attestation(
+            attestation_path, receipt_path, policy_path, service_config,
+            allow_test_mode=True,
+        )
+    service_config.write_text(json.dumps(service), encoding="utf-8")
+    forged = copy.deepcopy(attestation)
+    forged["ledger_sequence"] = 2
+    forged.pop("attestation_sha256")
+    forged["attestation_sha256"] = qb.sha256_bytes(qb.canonical_json(forged))
+    attestation_path.write_text(json.dumps(forged), encoding="utf-8")
+    with pytest.raises(qb.CoordinatorError, match="payload differs"):
+        pba.verify_privileged_attestation(
+            attestation_path, receipt_path, policy_path, service_config,
+            allow_test_mode=True,
+        )
 
 
 def test_cmake_integration_applies_compile_and_link_controls() -> None:

@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "service_id": "cata_raid_privileged_build_service",
+  "state": "unprovisioned_external_authority_required",
+  "protocol": "ed25519_signed_coordinator_receipt_v1",
+  "key_id": null,
+  "public_key_path": null,
+  "public_key_sha256": null,
+  "minimum_ledger_sequence": 1,
+  "submission_endpoint": null,
+  "ledger_verification_endpoint": null,
+  "required_authority_boundary": {
+    "execution_principal": "separate_os_uid_or_remote_service",
+    "private_key_readable_by_capture_principal": false,
+    "ledger_mutable_by_capture_principal": false,
+    "service_executes_admitted_configure_and_build": true,
+    "append_only_ledger": true,
+    "hardware_backed_or_remote_signer_allowed": true
+  },
+  "signed_identity_scope": [
+    "service_and_key_identity",
+    "ledger_sequence_and_record_id",
+    "signing_time",
+    "receipt_and_policy_identity",
+    "ticket_queue_resource_and_command_identity",
+    "source_commit_tree_and_cleanliness_identity",
+    "configure_lineage_cache_and_generated_build_graph_identity",
+    "toolchain_and_positive_environment_identity",
+    "worldserver_output_artifact_identity"
+  ],
+  "provisioning_state_reason": "No separately privileged signing/execution service or public verification key has been authorized or supplied. Production verification must fail closed until an administrator provisions this contract."
+}

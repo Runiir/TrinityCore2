@@ -60,6 +60,7 @@ profession-smoke = "python experiments/run_experiment.py experiments/configs/hea
 autonomous-smoke = "python experiments/run_experiment.py experiments/configs/headless_autonomous_loop_smoke_001.json --local"
 setup-dvc-s3 = "python scripts/setup_dvc_s3_remote.py"
 raid-build = "python tools/raid_program/queued_build.py"
+raid-build-attestation-verify = "python -m tools.raid_program.privileged_build_attestation"
 raid-client-extract = "python tools/raid_program/extract_442_client_spell_rows.py"
 raid-phase1-generic-smoke = "python -m tools.raid_program.run_phase1_generic_mechanic_smoke"
 raid-phase1-generic-verify = "python -m tools.raid_program.verify_phase1_generic_mechanic_smoke"
