@@ -31,6 +31,29 @@ constexpr uint32 FelstormSpellId = 89751;
 constexpr uint32 ShadowfiendEntry = 19668;
 constexpr uint32 ShadowfiendSpellId = 34433;
 
+bool SpellHasHostileMultiTargetSemantics(SpellInfo const* spellInfo, uint8 depth = 0)
+{
+    if (!spellInfo || depth > 4)
+        return false;
+    if (spellInfo->Id == 48505 || spellInfo->Id == FelstormSpellId)
+        return true;
+    for (uint8 effectIndex = 0; effectIndex < MAX_SPELL_EFFECTS; ++effectIndex)
+    {
+        SpellEffectInfo const& effect = spellInfo->Effects[effectIndex];
+        if (!effect.IsEffect())
+            continue;
+        if (!spellInfo->IsPositiveEffect(effectIndex)
+            && (effect.ChainTarget > 1 || effect.IsTargetingArea()
+                || effect.IsEffect(SPELL_EFFECT_PERSISTENT_AREA_AURA)
+                || effect.IsAreaAuraEffect()))
+            return true;
+        if (effect.TriggerSpell
+            && SpellHasHostileMultiTargetSemantics(sSpellMgr->GetSpellInfo(effect.TriggerSpell), depth + 1))
+            return true;
+    }
+    return false;
+}
+
 float GetNominalRange(HealerIntent intent)
 {
     return intent == HealerIntent::ExternalDefensive ? 30.0f : 40.0f;
@@ -208,6 +231,9 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
     }
     if (!action.SpellId)
         return BotActionResult::NoAction;
+    if (action.SuppressAreaDamage
+        && SpellHasHostileMultiTargetSemantics(sSpellMgr->GetSpellInfo(action.SpellId)))
+        return BotActionResult::NoAction;
 
     if (!target || !target->IsAlive() || (target != bot && !bot->IsValidAttackTarget(target)))
         return BotActionResult::InvalidTarget;
@@ -263,6 +289,7 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
 
         if (Pet* pet = bot->GetPet())
             if (pet->GetEntry() == FelguardEntry && pet->IsWithinMeleeRange(target)
+                && !action.SuppressAreaDamage
                 && !pet->HasUnitState(UNIT_STATE_CASTING) && pet->HasSpell(FelstormSpellId))
                 if (SpellInfo const* felstorm = sSpellMgr->GetSpellInfo(FelstormSpellId))
                     if (pet->GetSpellHistory()->IsReady(felstorm))

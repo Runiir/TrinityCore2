@@ -885,6 +885,7 @@ def normalized_batch_payload(log_bytes: bytes) -> list[dict[str, Any]]:
         "botauto_status": "status",
         "botauto_diagnose": "diagnosis",
         "botauto_trace": "trace",
+        "botauto_profile": "profile_selection",
         "botauto_readycheck": "native_action",
         "botauto_stop": "cleanup",
     }
@@ -915,7 +916,7 @@ def evidence_demux_report(rows: list[dict[str, Any]]) -> dict[str, Any]:
 
     reasons: list[str] = []
     known_actions = {
-        "botauto_status", "botauto_diagnose", "botauto_trace",
+        "botauto_profile", "botauto_status", "botauto_diagnose", "botauto_trace",
         "botauto_readycheck", "botauto_stop",
     }
     canonical_identity: tuple[Any, ...] | None = None
@@ -924,6 +925,7 @@ def evidence_demux_report(rows: list[dict[str, Any]]) -> dict[str, Any]:
     roster_guids: set[int] = set()
     canonical_identity_sha256: str | None = None
     canonical_roster_sha256: str | None = None
+    canonical_active_sequence: int | None = None
 
     for row in rows:
         # An outer annotation is evidence output, not evidence input.  Replace
@@ -954,6 +956,7 @@ def evidence_demux_report(rows: list[dict[str, Any]]) -> dict[str, Any]:
             canonical_identity = identity
             canonical_roster = roster_identity
             canonical_cohort = cohort
+            canonical_active_sequence = row.get("capture_sequence")
             roster_guids = {int(member[3]) for member in roster_identity if _positive_int(member[3])}
             canonical_roster_sha256 = _canonical_object_sha256(roster_identity)
             canonical_identity_sha256 = _canonical_object_sha256(
@@ -983,6 +986,7 @@ def evidence_demux_report(rows: list[dict[str, Any]]) -> dict[str, Any]:
     observed_actions: set[str] = set()
     previous_strategy: str | None = None
     previous_route_advance = 0
+    profile_selection_seen = False
     for expected_sequence, row in enumerate(rows, start=1):
         binding = row["identity_binding"]
         binding.update(
@@ -1009,6 +1013,22 @@ def evidence_demux_report(rows: list[dict[str, Any]]) -> dict[str, Any]:
             reject("evidence_demux_unclassified_row")
             continue
         observed_actions.add(str(action))
+
+        if action == "botauto_profile":
+            binding["scope"] = "pre_start_profile"
+            if canonical_cohort != "default" or payload.get("cohort_id") != canonical_cohort:
+                reject("evidence_demux_profile_cohort_mismatch")
+            if payload.get("ok") is not True or payload.get("active_profile") != "blackwing_descent_10n":
+                reject("evidence_demux_profile_selection_invalid")
+            if profile_selection_seen:
+                reject("evidence_demux_duplicate_profile_selection")
+            if (not isinstance(canonical_active_sequence, int)
+                    or expected_sequence >= canonical_active_sequence):
+                reject("evidence_demux_profile_selection_not_before_active_status")
+            profile_selection_seen = True
+            if not row_reasons:
+                binding["state"] = "bound"
+            continue
 
         runtime_key = "raid_runtime_before_cleanup" if action == "botauto_stop" else "raid_runtime"
         runtime = payload.get(runtime_key)
@@ -1092,7 +1112,7 @@ def evidence_demux_report(rows: list[dict[str, Any]]) -> dict[str, Any]:
         reasons.append("evidence_demux_cleanup_missing")
     if not inactive_cleanup_seen:
         reasons.append("evidence_demux_inactive_cleanup_missing")
-    for required_action in known_actions:
+    for required_action in known_actions - {"botauto_profile"}:
         if required_action not in observed_actions:
             reasons.append(f"evidence_demux_required_action_missing:{required_action}")
     unique_reasons = list(dict.fromkeys(reasons))
@@ -1375,6 +1395,7 @@ def main() -> int:
     ]
     diagnoses = json_actions(log_bytes, "botauto_diagnose")
     traces = json_actions(log_bytes, "botauto_trace")
+    profiles = json_actions(log_bytes, "botauto_profile")
     stop_rows = json_actions(log_bytes, "botauto_stop")
     recovery_accepted, recovery_rejections = accepted_native_recovery(active_statuses)
     cleanup_status = statuses[-1] if statuses else {}
@@ -1396,6 +1417,10 @@ def main() -> int:
         and postflight["passed"]
         and not forbidden_entries
         and not demux_rejections
+        and len(profiles) == 1
+        and profiles[0].get("ok") is True
+        and profiles[0].get("cohort_id") == "default"
+        and profiles[0].get("active_profile") == "blackwing_descent_10n"
         and identity_stable
     )
     report = {
@@ -1418,6 +1443,7 @@ def main() -> int:
         "accepted_raid_runtime": stable[-1].get("raid_runtime") if stable else None,
         "diagnose_observed": bool(diagnoses),
         "trace_observed": bool(traces),
+        "profile_selection_observed": len(profiles) == 1,
         "stop_observed": bool(stop_rows),
         "native_event_evidence": {
             "source": "botauto_status.raid_runtime",

@@ -21,6 +21,7 @@ def test_canonical_capture_explicitly_starts_the_frozen_bwd_10n_profile():
         / "tools/raid_program/capture_phase1_raid_foundation.py"
     ).read_text(encoding="utf-8")
     assert 'process.stdin.write(b"botauto start blackwing_descent_10n\\n")' in source
+    assert '"botauto_profile": "profile_selection"' in source
 
 
 def accepted_status() -> dict:

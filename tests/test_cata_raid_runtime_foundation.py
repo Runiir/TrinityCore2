@@ -153,6 +153,12 @@ def test_controlled_aoe_counts_only_declared_targets_and_fails_closed_near_undec
         "candidate->RemoveAura(44457, bot->GetGUID());",
         "spellInfo->IsAffectingArea()",
         "spellInfo->Effects[effectIndex].ChainTarget > 1",
+        "declarative_area_damage_semantics_forbidden",
+        "action.SuppressAreaDamage = forbidArea;",
+        "raid_area_damage_contamination_fail_closed",
+        "HandleCancelAuraOpcode(cancel)",
+        "bot->RemoveDynObject(action.SpellId);",
+        'raidAdapter.TargetControl == "controlled_aoe" && !controlledAoeReleased',
         "bot->InterruptSpell(CURRENT_CHANNELED_SPELL, false);",
     ):
         assert token in IMPL

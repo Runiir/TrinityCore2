@@ -1016,6 +1016,31 @@ std::string BuildSpellTagJson(SpellInfo const* spellInfo, bool mustInterrupt, bo
     tags << "]";
     return tags.str();
 }
+
+bool SpellHasHostileMultiTargetSemantics(SpellInfo const* spellInfo, uint8 depth = 0)
+{
+    if (!spellInfo || depth > 4)
+        return false;
+    // Starfall's owner aura delegates hostile selection to triggered spells;
+    // retain the explicit root as a conservative client-data semantic guard.
+    if (spellInfo->Id == 48505 || spellInfo->Id == 89751)
+        return true;
+    for (uint8 effectIndex = 0; effectIndex < MAX_SPELL_EFFECTS; ++effectIndex)
+    {
+        SpellEffectInfo const& effect = spellInfo->Effects[effectIndex];
+        if (!effect.IsEffect())
+            continue;
+        if (!spellInfo->IsPositiveEffect(effectIndex)
+            && (effect.ChainTarget > 1 || effect.IsTargetingArea()
+                || effect.IsEffect(SPELL_EFFECT_PERSISTENT_AREA_AURA)
+                || effect.IsAreaAuraEffect()))
+            return true;
+        if (effect.TriggerSpell
+            && SpellHasHostileMultiTargetSemantics(sSpellMgr->GetSpellInfo(effect.TriggerSpell), depth + 1))
+            return true;
+    }
+    return false;
+}
 }
 
 BotWorldPopulationMgr::BotWorldPopulationMgr() : _serverEpoch(BuildServerEpoch())
@@ -2948,6 +2973,7 @@ std::string BotWorldPopulationMgr::SelectRuntimeProfile(std::string const& name)
     Cohort().RuntimeProfileDirty = true;
     std::ostringstream json;
     json << "{\"ok\":true,\"action\":\"botauto_profile\",\"active_profile\":\"" << JsonEscape(Cohort().SelectedProfileName)
+         << "\",\"cohort_id\":\"" << JsonEscape(Cohort().Id)
          << "\",\"profile_count\":" << Cohort().RuntimeProfiles.size()
          << ",\"failure_reason\":null}";
     return json.str();
@@ -23902,6 +23928,38 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
     }
 raid_cooldown_complete:
 
+    auto closeRecallableAreaDamage = [bot]() -> bool
+    {
+        if (!bot)
+            return false;
+        for (CurrentSpellTypes spellType : { CURRENT_GENERIC_SPELL, CURRENT_CHANNELED_SPELL })
+            if (Spell* current = bot->GetCurrentSpell(spellType))
+                if (SpellHasHostileMultiTargetSemantics(current->GetSpellInfo()))
+                    bot->InterruptSpell(spellType, false);
+        if (bot->HasAura(48505))
+        {
+            WorldPacket cancel(CMSG_CANCEL_AURA, sizeof(uint32));
+            cancel << uint32(48505);
+            bot->GetSession()->HandleCancelAuraOpcode(cancel);
+        }
+        for (Unit* controlled : bot->m_Controlled)
+            if (controlled)
+            {
+                if (Spell* current = controlled->GetCurrentSpell(CURRENT_GENERIC_SPELL))
+                    if (SpellHasHostileMultiTargetSemantics(current->GetSpellInfo()))
+                        controlled->InterruptSpell(CURRENT_GENERIC_SPELL, false);
+                if (Spell* channel = controlled->GetCurrentSpell(CURRENT_CHANNELED_SPELL))
+                    if (SpellHasHostileMultiTargetSemantics(channel->GetSpellInfo()))
+                        controlled->InterruptSpell(CURRENT_CHANNELED_SPELL, false);
+            }
+
+        BotClassSpecActionProfile const profile = BotClassSpecActionProfileStore::Build(bot, GetDungeonRole(bot));
+        for (BotActionProfileSpell const& action : profile.Spells)
+            if (SpellHasHostileMultiTargetSemantics(sSpellMgr->GetSpellInfo(action.SpellId)))
+                bot->RemoveDynObject(action.SpellId);
+        return true;
+    };
+
     if (result.Features.RaidEncounter && raidAdapter.ContractResolved
         && raidAdapter.TargetControl == "do_not_damage" && std::string(role) != "healer"
         && result.Target && std::find(raidAdapter.TargetEntries.begin(), raidAdapter.TargetEntries.end(),
@@ -23909,6 +23967,12 @@ raid_cooldown_complete:
         && (!raidAnchors.Active || bot->GetExactDist2d(raidAnchors.ResolvedX, raidAnchors.ResolvedY)
             <= raidAnchors.ArrivalToleranceYards))
     {
+        if (!closeRecallableAreaDamage())
+        {
+            result.Action = "raid_area_damage_contamination_fail_closed";
+            result.Failure = true;
+            return result;
+        }
         bot->AttackStop();
         if (Spell* current = bot->GetCurrentSpell(CURRENT_GENERIC_SPELL))
             if (Unit* castTarget = current->m_targets.GetUnitTarget();
@@ -23932,6 +23996,12 @@ raid_cooldown_complete:
     if (result.Features.RaidEncounter && raidAdapter.ContractResolved
         && raidAdapter.TargetControl == "focus_fire" && std::string(role) != "healer")
     {
+        if (!closeRecallableAreaDamage())
+        {
+            result.Action = "raid_area_damage_contamination_fail_closed";
+            result.Failure = true;
+            return result;
+        }
         Unit* focus = nullptr;
         size_t focusPriority = raidAdapter.TargetEntries.size();
         std::vector<WorldObject*> focusObjects;
@@ -24461,6 +24531,25 @@ raid_cooldown_complete:
 
     ObjectGuid const addTargetGuid = controlledAoeTarget
         ? controlledAoeTarget->GetGUID() : result.Features.PriorityAddGuid;
+    bool const controlledAoeReleased = raidAdapter.ContractResolved
+        && raidAdapter.TargetControl == "controlled_aoe"
+        && !undeclaredControlledAoeHostile
+        && declaredControlledAoeTargets >= raidAdapter.ControlledAoeMinimumTargets;
+    if (raidAdapter.ContractResolved && raidAdapter.TargetControl == "controlled_aoe"
+        && !controlledAoeReleased)
+    {
+        if (!closeRecallableAreaDamage())
+        {
+            result.Action = "raid_area_damage_contamination_fail_closed";
+            result.Failure = true;
+            return result;
+        }
+        if (Creature* fireTotem = bot->m_SummonSlot[SUMMON_SLOT_TOTEM_FIRE] && bot->GetMap()
+                ? bot->GetMap()->GetCreature(bot->m_SummonSlot[SUMMON_SLOT_TOTEM_FIRE]) : nullptr)
+            if (fireTotem->GetUInt32Value(UNIT_CREATED_BY_SPELL) == 8190)
+                if (Totem* magma = fireTotem->ToTotem())
+                    magma->UnSummon();
+    }
     if (result.Features.AddsActive && !addTargetGuid.IsEmpty() && std::string(role) != "healer"
         && raidAdapter.TargetControl != "kill_sync" && raidAdapter.TargetControl != "focus_fire")
     {
@@ -24474,12 +24563,14 @@ raid_cooldown_complete:
                 return result;
             }
             ResolvedCombatAction profileAction;
-            bool const controlledAoeReleased = raidAdapter.ContractResolved
-                && raidAdapter.TargetControl == "controlled_aoe"
-                && !undeclaredControlledAoeHostile
-                && declaredControlledAoeTargets >= raidAdapter.ControlledAoeMinimumTargets;
             if (!controlledAoeReleased)
             {
+                if (!closeRecallableAreaDamage())
+                {
+                    result.Action = "raid_area_damage_contamination_fail_closed";
+                    result.Failure = true;
+                    return result;
+                }
                 if (Spell* current = bot->GetCurrentSpell(CURRENT_GENERIC_SPELL))
                     if (SpellInfo const* spellInfo = current->GetSpellInfo())
                     {
@@ -24569,7 +24660,9 @@ raid_cooldown_complete:
     }
 
     ResolvedCombatAction profileAction;
-    bool const forbidArea = raidAdapter.ContractResolved && !raidAdapter.AllowAreaDamage;
+    bool const forbidArea = raidAdapter.ContractResolved
+        && (!raidAdapter.AllowAreaDamage
+            || (raidAdapter.TargetControl == "controlled_aoe" && !controlledAoeReleased));
     BotActionResult actionResult = ExecuteProfileCombatAction(
         &state, bot, result.Target, &profileAction, result.Features.AddCount, false,
         0, false, false, forbidArea, raidAdapter.AllowMultidot);
@@ -27086,6 +27179,11 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
         }
 
         SpellInfo const* candidateSpellInfo = sSpellMgr->GetSpellInfo(candidate.SpellId);
+        if (forbidArea && SpellHasHostileMultiTargetSemantics(candidateSpellInfo))
+        {
+            candidate.RejectReason = "declarative_area_damage_semantics_forbidden";
+            continue;
+        }
         if (bot->HasUnitState(UNIT_STATE_CONTROLLED))
         {
             candidate.RejectReason = "caster_controlled";
@@ -27506,6 +27604,7 @@ ResolvedCombatAction BotWorldPopulationMgr::ResolveProfileCombatAction(Player* b
     if (!selfTarget)
         action.MinRange = effectiveSpellMinRange(*best, action.MinRange);
     action.MaxRange = selfTarget ? 0.0f : (best->Profile.MaxRange > 0.0f ? best->Profile.MaxRange : profile.MaxRange);
+    action.SuppressAreaDamage = forbidArea;
     if (!selfTarget && best->Profile.MaxRange <= 0.0f)
         if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(best->SpellId))
             action.MaxRange = std::max(5.0f, spellInfo->GetMaxRange(false));

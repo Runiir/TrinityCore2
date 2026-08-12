@@ -220,6 +220,9 @@ struct ResolvedCombatAction
     std::string AutoAttackMode;
     float MinRange = 0.0f;
     float MaxRange = 0.0f;
+    // Declarative raid target-control authority.  The executor must not start
+    // implicit pet or spell damage capable of reaching additional hostiles.
+    bool SuppressAreaDamage = false;
 };
 
 enum class HealerMode : uint8
