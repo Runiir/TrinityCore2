@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "program_id": "cata_raid_progression_442_v1",
-  "updated_at_utc": "2026-08-12T04:31:00Z",
+  "updated_at_utc": "2026-08-12T06:51:24Z",
   "active_phase": 1,
   "active_phase_name": "raid_runtime_formation_difficulty_and_evidence_primitives",
   "program_status": "in_progress",
@@ -16,9 +16,104 @@
   },
   "integration": {
     "branch": "raid/cata-raid-progression-integration",
-    "foundation_sha": "b550972efb04d8b4cadf72455e57e1a2e6213e4f",
+    "foundation_sha": "35c9e61b85407d2ccbe6f3be1b3eaae8ce6eb407",
+    "current_head_sha": "35c9e61b85407d2ccbe6f3be1b3eaae8ce6eb407",
     "raid_base_is_ancestor": true,
     "created_from_exact_local_master": true
+  },
+  "foundation_review": {
+    "mandatory_reviewer": "gpt-5.6-sol",
+    "required_effort": "high",
+    "prior_review_decision": "REJECT",
+    "prior_review_scope": "exact 9a7b3c72aed5a2e464635b31e8f4617f2134c8d8",
+    "prior_review_counts": {"critical": 1, "high": 6, "medium": 5},
+    "critical_high_remediation_implemented_at": "35c9e61b85407d2ccbe6f3be1b3eaae8ce6eb407",
+    "mandatory_rereview": "pending",
+    "current_acceptance": "not_promoted"
+  },
+  "build_history": {
+    "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v7.json",
+    "current_commit": "35c9e61b85407d2ccbe6f3be1b3eaae8ce6eb407",
+    "current_state": "idle_pending_clean_release_reconfigure_and_build",
+    "current_result": "pending",
+    "successful_build_without_current_policy_receipt_is_invalid": true,
+    "attempts": [
+      {
+        "policy": "cata_raid_build_resource_policy_v1",
+        "compiler_jobs": 3,
+        "linker_jobs": 1,
+        "classification": "build_resource_abort",
+        "receipt": "experiments/configs/cata_raid_build_receipts/phase1_foundation_worldserver_resource_abort_20260812.json"
+      },
+      {
+        "policy": "cata_raid_build_resource_policy_degraded_v2",
+        "compiler_jobs": 2,
+        "linker_jobs": 1,
+        "classification": "build_resource_abort",
+        "receipt": "experiments/configs/cata_raid_build_receipts/phase1_foundation_worldserver_resource_abort_3bd65f6b.json"
+      },
+      {
+        "policy": "cata_raid_build_resource_policy_degraded_v3",
+        "compiler_jobs": 1,
+        "linker_jobs": 1,
+        "classification": "prior_abort_then_prior_success_not_current_gate",
+        "receipts": [
+          "experiments/configs/cata_raid_build_receipts/phase1_foundation_worldserver_resource_abort_2db80598.json",
+          "experiments/configs/cata_raid_build_receipts/phase1_foundation_worldserver_success_e55fb6d82e.json"
+        ]
+      },
+      {
+        "policy": "cata_raid_build_resource_policy_degraded_v4",
+        "compiler_jobs": 1,
+        "linker_jobs": 1,
+        "classification": "build_resource_abort",
+        "receipts": [
+          "experiments/configs/cata_raid_build_receipts/phase1_foundation_worldserver_resource_abort_a9dfa67cb7.json",
+          "experiments/configs/cata_raid_build_receipts/phase1_foundation_worldserver_resource_abort_a12299aa1d.json"
+        ]
+      },
+      {
+        "policy": "cata_raid_build_resource_policy_degraded_v5",
+        "compiler_jobs": 1,
+        "linker_jobs": 1,
+        "unity_builds": false,
+        "classification": "build_resource_abort",
+        "receipt": "experiments/configs/cata_raid_build_receipts/phase1_foundation_worldserver_resource_abort_no_unity_e07638a31e.json"
+      },
+      {
+        "policy": "cata_raid_build_resource_policy_degraded_v6",
+        "compiler_jobs": 1,
+        "linker_jobs": 1,
+        "unity_builds": false,
+        "precompiled_headers": false,
+        "classification": "build_resource_abort",
+        "receipt": "experiments/configs/cata_raid_build_receipts/phase1_foundation_worldserver_resource_abort_no_pch_3f43ef5cd4.json"
+      },
+      {
+        "policy": "cata_raid_build_resource_policy_degraded_v7",
+        "compiler_jobs": 1,
+        "linker_jobs": 1,
+        "unity_builds": false,
+        "precompiled_headers": false,
+        "cmake_build_type": "Release",
+        "classification": "pending"
+      }
+    ]
+  },
+  "research_summary": {
+    "required_boss_packet_count": 28,
+    "completed_boss_packet_count": 28,
+    "packet_scope": {
+      "blackwing_descent": 6,
+      "bastion_of_twilight": 5,
+      "throne_of_the_four_winds": 2,
+      "firelands": 7,
+      "dragon_soul": 8
+    },
+    "ledger_blocker_count": 464,
+    "fidelity_promoted_count": 0,
+    "fidelity_state": "all_packets_fidelity_blocked",
+    "policy": "unresolved material values, timers, target rules, scaling, hotfix lineage, and exact-mode evidence remain fail-closed"
   },
   "authority": {
     "approved_plan_path": ".codex/plans/cata_raid_progression_plan.md",
@@ -40,11 +135,20 @@
     "release_name": "Hour of Twilight",
     "client_build": 59185,
     "client_product_locale": "enUS",
-    "client_data_hashes": [],
+    "client_data_hashes": [
+      {
+        "artifact_pointer": "artifacts/cata_raid_program/phase0_client_spell_rows_442_59185_20260812.json.dvc",
+        "pointer_sha256": "ceb785fb8e1e902ed3de43b6a9ecf8c22502c9d8d2737f7156b95407293f7234",
+        "dvc_md5": "eff38325fc3aeac0fa15d0c81b2be901",
+        "payload_sha256": "481c903afd07a03b8e705fa2c776106f71f5a136d38ece97dfce35b1ead002d3",
+        "scope": "11 Wago DB2 CSV tables at build 4.4.2.59185; referenced spell rows plus complete small lookup tables",
+        "state": "cache_and_remote_verified_exact_payload_evicted"
+      }
+    ],
     "blizzard_hotfix_cutoff_utc": "2025-02-20T23:00:00Z",
     "state": "identity_frozen_quantitative_inputs_unresolved",
     "source_registry": "experiments/configs/cata_raid_quantitative_source_registry_v1.json",
-    "blocker": "The launch build and cutoff are frozen, but primary client-data hashes, a pinned Wowhead 4.4.2 extract, known-mode logs, and material encounter values remain unresolved."
+    "blocker": "Build 59185 and the official global Dragon Soul unlock cutoff are frozen, and a bounded primary client spell-data extract is pinned. An exact Wowhead 4.4.2 extract, known-mode logs, and material encounter values remain unresolved; no fidelity claim may be promoted."
   },
   "stable_roster": {
     "slot_count": 25,
@@ -82,7 +186,7 @@
     "worldserver_active": false,
     "validation_operator_active": false,
     "dvc_publisher_active": false,
-    "heavyweight_build_active": false
+    "heavyweight_build_active": true
   },
   "dvc": {
     "broad_status": "inherited_dependency_drift_and_selectively_evicted_outputs_present",
@@ -152,15 +256,22 @@
         "exact_10n_25n_10h_25h_difficulty_write_and_live_readback_implemented",
         "generic_declarative_formation_assignment_and_evidence_demultiplex_smokes_125_passed",
         "native_boss_state_wipe_reset_recovery_and_ready_state_observation_implemented",
-        "canonical_phase1_capture_reconstructs_identity_transitions_and_cleanup",
+        "canonical_phase1_capture_harness_implemented_fail_closed",
         "first_three_compiler_build_resource_abort_preserved",
         "second_two_compiler_build_resource_abort_preserved",
-        "retry_policy_reduced_to_one_compiler_one_linker_without_weakening_reserves"
+        "retry_policy_reduced_to_one_compiler_one_linker_without_weakening_reserves",
+        "exact_9a7_sol_review_recorded_as_1_critical_6_high_5_medium",
+        "critical_high_findings_from_9a7_review_remediated_at_35c9e61b85",
+        "strict_receipt_v2_source_provenance_and_all_row_evidence_demux_implemented",
+        "live_declarative_mechanic_contract_fail_closed_and_required_primitives_implemented",
+        "focused_phase1_phase9_and_regression_suite_168_passed",
+        "policy_v7_release_retry_frozen_without_weakening_resource_thresholds"
       ],
       "remaining_requirements": [
-        "complete_one_compiler_coordinated_build_and_regression_gate",
-        "mandatory_sol_high_adversarial_foundation_review",
-        "serialized_bwd_10n_entry_formation_difficulty_wipe_reset_evidence_publication_and_cleanup_gate"
+        "complete_policy_v7_release_coordinated_reconfigure_build_and_regression_gate",
+        "mandatory_sol_high_adversarial_foundation_rereview_with_zero_unresolved_critical_or_high_findings",
+        "serialized_bwd_10n_entry_formation_difficulty_wipe_reset_evidence_publication_and_cleanup_gate",
+        "phase1_live_evidence_dvc_publish_remote_verify_and_exact_evict_gate"
       ]
     }
   ],
@@ -169,14 +280,26 @@
       "blocker_id": "bwd_exact_442_quantitative_identity",
       "classification": "research_unresolved",
       "scope": "phase0_fidelity_gate",
-      "detail": "Build 59185 and the official global Dragon Soul unlock cutoff 2025-02-20T23:00:00Z are frozen. Primary client-data hashes, a pinned Wowhead extract, known-mode logs, and multiple material four-mode timers, coefficients, target counts, and guide-versus-repository conflicts remain unresolved. They may not be guessed or promoted to fixed runtime values."
+      "detail": "Build 59185 and the official global Dragon Soul unlock cutoff 2025-02-20T23:00:00Z are frozen, and the bounded primary client spell-data extract is pinned and DVC-verified. The exact Wowhead extract, known-mode logs, and 464 material ledger blockers across all 28 packets remain unresolved. They may not be guessed or promoted to fixed runtime values."
     },
     {
       "blocker_id": "bwd_native_unlock_runtime_proof",
       "classification": "incomplete_evidence",
       "scope": "phase0_scenario_gate",
       "detail": "Forbidden Atramedes state injection and Nefarian state injection/spawn were removed. The route is structurally valid and DVC-synchronized, but native prerequisite unlock/start/reset behavior is not yet proven live."
+    },
+    {
+      "blocker_id": "phase1_sol_adversarial_rereview",
+      "classification": "review_gate_pending",
+      "scope": "phase1_foundation_gate",
+      "detail": "The mandatory gpt-5.6-sol high review rejected exact checkpoint 9a7 with one critical and six high findings. Those findings are remediated at 35c9e61b85407d2ccbe6f3be1b3eaae8ce6eb407 with 168 focused tests passing, but a fresh independent review of this remediation is pending."
+    },
+    {
+      "blocker_id": "phase1_current_build_and_live_dvc_gate",
+      "classification": "incomplete_evidence",
+      "scope": "phase1_build_and_live_gate",
+      "detail": "Policy-v5 and policy-v6 single-compiler attempts ended as build_resource_abort under the unchanged PSI threshold. Policy-v7 retains all safety limits, disables unity/PCH, and switches to Release; its clean coordinated configure/build and valid production receipt are pending before serialized live capture."
     }
   ],
-  "next_action": "Finish the one-compiler coordinated Phase 1 build, complete the last three Luna xhigh Dragon Soul research packets, obtain the mandatory Sol high adversarial foundation review, then run and publish the serialized BWD 10N native formation/wipe/reset/recovery capture."
+  "next_action": "Commit this status checkpoint, fast-forward the isolated build worktree to 35c9e61b85, run a clean policy-v7 Release reconfigure and serialized worldserver build, then obtain mandatory fresh Sol-high review before any canonical BWD 10N live capture. Keep all 28 research packets and 464 material blockers fidelity-blocked."
 }
