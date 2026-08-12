@@ -1,5 +1,11 @@
 # Cataclysm raid progression handoff
 
+## 2026-08-12T02:42:30Z — First production coordinator jobs passed
+
+Committed coordinator foundation `ae07ef2aa233554c147f476fa456da6cfd78912a` admitted two real production jobs. Queue sequence 1 reconfigured the existing Unix Makefiles build tree with the coordinator's three-compiler/one-linker controls and produced verified receipt SHA-256 `50f58b5fc43b4b3e3731543a6ccfc13120583923818569d9605b989e4a89d257`. Queue sequence 2 built `worldserver` successfully and produced verified receipt SHA-256 `a2504d232815dfd30681841214fb056d8bbc0ba7c009a21735839a2f6aa030cc`. The resulting binary SHA-256 is `fb444fb63b88318cf63837012b64a32934caed6c0563293feff5daa18a5a0c7a`.
+
+The build used at most three compiler jobs and one linker, recorded zero pressure reason, peaked at load 0.61, retained at least 23.3 GB `MemAvailable`, and left MySQL healthy with no coordinator/compiler/linker/worldserver process. Both canonical receipt hashes independently verify. The configure request began clean; the build request correctly records dirty state only because the first receipt was then untracked. Checkpoint these receipts and status, then rerun the already-current worldserver target once to obtain the final production receipt from a clean request identity.
+
 ## 2026-08-12T02:40:30Z — Build coordinator foundation ready for real job
 
 The host-wide build coordinator and frozen resource policy are implemented in `tools/raid_program/queued_build.py` and `experiments/configs/cata_raid_build_resource_policy_v1.json`, exposed through `pixi run raid-build`. CMake consumes the coordinator lease identity, caps compilation at three jobs, creates one-linker job pools, and serializes link rule launch through the Git-common lock. Queue state and sanitized receipts live beneath the shared Git common directory, so all worktrees use one FIFO lease.

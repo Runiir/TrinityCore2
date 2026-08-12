@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "program_id": "cata_raid_progression_442_v1",
-  "updated_at_utc": "2026-08-12T02:40:30Z",
+  "updated_at_utc": "2026-08-12T02:42:30Z",
   "active_phase": 0,
   "active_phase_name": "successor_checkpoint_policy_reconciliation_and_research_framework",
   "program_status": "in_progress",
@@ -114,12 +114,15 @@
         "host_wide_build_coordinator_implemented",
         "build_resource_policy_frozen",
         "build_coordinator_adversarial_tests_8_passed",
-        "combined_phase0_and_inherited_qualification_tests_15_passed"
+        "combined_phase0_and_inherited_qualification_tests_15_passed",
+        "production_coordinated_configure_succeeded_and_receipt_verified",
+        "production_coordinated_worldserver_build_succeeded_and_receipt_verified",
+        "post_build_mysql_health_and_orphan_process_checks_passed"
       ],
       "remaining_requirements": [
         "freeze_exact_442_build_and_hotfix_cutoff",
         "complete_acceptance_and_resource_policies",
-        "run_first_real_coordinated_configure_build_and_verify_receipt",
+        "produce_clean_request_worldserver_receipt_after_receipt_checkpoint",
         "audit_all_raid_scripts_db_loaders_and_routes",
         "resolve_material_bwd_value_timer_conflicts_or_retain_phase0_fidelity_block",
         "independently_validate_or_block_bwd_10n_scenario",
@@ -135,5 +138,5 @@
       "detail": "Six boss packages are structurally complete, but exact client-data hashes/hotfix cutoff and multiple material four-mode timers, coefficients, target counts, and guide-versus-repository conflicts remain unresolved. They may not be guessed or promoted to fixed runtime values."
     }
   ],
-  "next_action": "Commit the coordinator foundation, run the first real coordinated configure/build with a production receipt, then complete the raid-wide readiness and BWD scenario audits."
+  "next_action": "Checkpoint the first two production receipts, produce a final clean-request coordinated worldserver receipt, then complete the raid-wide readiness and BWD scenario audits."
 }
