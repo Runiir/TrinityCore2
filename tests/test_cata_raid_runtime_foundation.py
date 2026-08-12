@@ -113,6 +113,7 @@ def test_tank_swap_level_triggers_are_edge_latched_until_the_condition_clears():
         "state.LastRaidTankSwapWipeGeneration != Cohort().Raid.WipeGeneration",
         "state.LastRaidTankSwapWipeGeneration = Cohort().Raid.WipeGeneration;",
         "memberState.LastRaidTankSwapTriggerKey = tankSwapTriggerKey;",
+        "memberState.LastRaidTankSwapWipeGeneration = Cohort().Raid.WipeGeneration;",
         "state.LastRaidTankSwapTriggerKey.clear();",
     ):
         assert token in IMPL

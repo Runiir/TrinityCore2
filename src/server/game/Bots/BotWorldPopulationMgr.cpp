@@ -24220,6 +24220,7 @@ raid_cooldown_complete:
                     {
                         memberState.LastRaidTankSwapTriggerSpellId = result.Features.CastSpellId;
                         memberState.LastRaidTankSwapTriggerKey = tankSwapTriggerKey;
+                        memberState.LastRaidTankSwapWipeGeneration = Cohort().Raid.WipeGeneration;
                         memberState.LastRaidTankSwapMs = swapAtMs;
                     }
             }
