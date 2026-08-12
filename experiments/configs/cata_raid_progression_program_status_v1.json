@@ -16,8 +16,8 @@
   },
   "integration": {
     "branch": "raid/cata-raid-progression-integration",
-    "foundation_sha": "6b5990534a5b9c98be4f7d063f6a7375d4ea2bb4",
-    "current_head_sha": "6b5990534a5b9c98be4f7d063f6a7375d4ea2bb4",
+    "foundation_sha": "333e23b4d8ba5f434aeb7247b1ac995f88d6817f",
+    "current_head_sha": "333e23b4d8ba5f434aeb7247b1ac995f88d6817f",
     "raid_base_is_ancestor": true,
     "created_from_exact_local_master": true
   },
@@ -27,18 +27,18 @@
     "prior_review_decision": "REJECT",
     "prior_review_scope": "exact 9a7b3c72aed5a2e464635b31e8f4617f2134c8d8",
     "prior_review_counts": {"critical": 1, "high": 6, "medium": 5},
-    "critical_high_remediation_implemented_at": "6b5990534a5b9c98be4f7d063f6a7375d4ea2bb4",
-    "mandatory_rereview": "pending_exact_status_descendant_of_6b5990534a_after_native_bwd_ghost_worldport_and_core_auto_resurrection_remediation",
+    "critical_high_remediation_implemented_at": "333e23b4d8ba5f434aeb7247b1ac995f88d6817f",
+    "mandatory_rereview": "pending_exact_status_descendant_of_333e23b4d8_after_exact_native_bwd_graveyard_worldport_and_core_auto_resurrection_remediation",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "current_acceptance": "exact_9c9_review_and_build_succeeded_fourth_uncapped_run_found_native_ghost_worldport_infrastructure_abort_remediated_at_6b5990534a_exact_review_rebuild_and_live_rerun_pending"
+    "current_acceptance": "exact_9c9_review_and_build_succeeded_fourth_uncapped_run_found_native_ghost_worldport_infrastructure_abort_remediated_at_333e23b4d8_exact_review_rebuild_and_live_rerun_pending"
   },
   "build_history": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "current_commit": "6b5990534a5b9c98be4f7d063f6a7375d4ea2bb4",
+    "current_commit": "333e23b4d8ba5f434aeb7247b1ac995f88d6817f",
     "current_state": "idle_exact_9c9_build_and_fourth_capture_complete_native_runback_remediation_review_pending",
-    "current_result": "successful_9c9dec8b_receipt_retained_but_stale_after_6b5990534a_native_worldport_remediation",
+    "current_result": "successful_9c9dec8b_receipt_retained_but_stale_after_333e23b4d8_native_worldport_remediation",
     "successful_build_without_current_policy_receipt_is_invalid": true,
     "attempts": [
       {
@@ -392,8 +392,8 @@
       "expanded_focused_suite_242_passed"
       ],
       "remaining_requirements": [
-      "mandatory_independent_sol_high_review_of_exact_status_descendant_of_6b5990534a_native_runback_remediation",
-      "complete_exact_policy_v8_release_coordinated_incremental_build_and_regression_gate_at_reviewed_descendant_of_6b5990534a",
+      "mandatory_independent_sol_high_review_of_exact_status_descendant_of_333e23b4d8_native_runback_remediation",
+      "complete_exact_policy_v8_release_coordinated_incremental_build_and_regression_gate_at_reviewed_descendant_of_333e23b4d8",
         "rerun_uncapped_serialized_bwd_10n_entry_formation_difficulty_wipe_reset_evidence_publication_and_cleanup_gate_with_live_stall_diagnosis",
         "phase1_live_evidence_dvc_publish_remote_verify_and_exact_evict_gate"
       ]
@@ -419,5 +419,5 @@
       "detail": "Exact clean 9c9dec8b source review and policy-v8 build succeeded. The fourth uncapped run formed the exact BWD 10N raid, killed both entry-trash objectives, and observed native release spirit, then classified a clean infrastructure abort because the core bot-session dungeon guard blocked native RepopAtGraveyard cross-map transfer. The current remediation narrowly permits only an exact owned-corpse native graveyard destination, independently matches that pending worldport, preserves exact trigger-6581 return authority, and accepts core auto-resurrection only in the frozen map/instance/group identity. The failed batch is DVC-published, remote-verified, compactly summarized, and exactly evicted. Mandatory review, rebuild, and rerun remain pending."
     }
   ],
-  "next_action": "Complete the mandatory independent Sol-high review of the exact status descendant of 6b5990534a. After zero unresolved critical/high findings, fast-forward the isolated build worktree, run exact policy-v8 configure/build receipts outside the worktree, verify the 242-test regression gate and exact provisioning readback, then restart uncapped canonical BWD 10N Phase 1. For later parallel boss diagnostics, root must fully start and verify the worldserver and every shard before spawning one Luna-xhigh live babysitter per boss; immediately exactly evict remotely verified diagnostic payloads after fixes/checkpoints are secured. Keep all 464 material fidelity blockers fail-closed."
+  "next_action": "Complete the mandatory independent Sol-high review of the exact status descendant of 333e23b4d8. After zero unresolved critical/high findings, fast-forward the isolated build worktree, run exact policy-v8 configure/build receipts outside the worktree, verify the 242-test regression gate and exact provisioning readback, then restart uncapped canonical BWD 10N Phase 1. For later parallel boss diagnostics, root must fully start and verify the worldserver and every shard before spawning one Luna-xhigh live babysitter per boss; immediately exactly evict remotely verified diagnostic payloads after fixes/checkpoints are secured. Keep all 464 material fidelity blockers fail-closed."
 }
