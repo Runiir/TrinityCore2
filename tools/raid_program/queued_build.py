@@ -647,6 +647,8 @@ def run_ticket(
             raise CoordinatorError(f"admission timeout for {ticket_id}: {','.join(reasons)}")
         time.sleep(poll)
     admitted_monotonic = time.monotonic()
+    with locked_state(paths) as state:
+        admitted_at_utc = state["tickets"][ticket_id]["admission"]["admitted_at_utc"]
     log_path = paths.logs / f"{ticket_id}.log"
     environment = coordinated_environment(policy, paths, ticket_id)
     returncode = 1
@@ -681,7 +683,7 @@ def run_ticket(
         "command_arguments_retained": False,
         "queue_sequence": ticket["queue_sequence"],
         "queue_wait_seconds": round(admitted_monotonic - started_wait, 6),
-        "admitted_at_utc": preflight["captured_at_utc"],
+        "admitted_at_utc": admitted_at_utc,
         "ended_at_utc": ended,
         "compiler_job_ceiling": compiler_jobs,
         "linker_job_ceiling": int(policy["parallelism"]["maximum_linker_jobs"]),
