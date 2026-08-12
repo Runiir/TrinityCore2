@@ -67,7 +67,7 @@ stages:
   validation_provisioning:
     cmd: python -m tools.bot_ml.build_validation_provisioning --config
       experiments/configs/validation_provisioning_cata_001.json --gear-profiles
-      dataset/validation_gear_profiles/profiles.json --output-dir
+      dataset/validation_gear_profiles/profiles.json --dbc-dir data/dbc/enUS --output-dir
       dataset/validation_provisioning
     deps:
     - tools/bot_ml/build_validation_provisioning.py
@@ -79,6 +79,8 @@ stages:
     - data/dbc/enUS/Talent.dbc
     - data/dbc/enUS/TalentTreePrimarySpells.dbc
     - data/dbc/enUS/GlyphProperties.dbc
+    - data/dbc/enUS/Item-sparse.db2
+    - data/dbc/enUS/GemProperties.dbc
     - dataset/validation_gear_profiles
     outs:
     - dataset/validation_provisioning:
@@ -436,7 +438,7 @@ stages:
     - experiments/configs/cata_434_action_profiles.json
     - experiments/configs/cata_434_combat_loot_profiles.json
     - dataset/validation_gear_profiles
-    - dataset/validation_provisioning/report.json
+    - dataset/validation_provisioning
     - data/dbc/enUS/Item.db2
     - data/dbc/enUS/Item-sparse.db2
     - data/dbc/enUS/SpellItemEnchantment.dbc

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import struct
 from pathlib import Path
@@ -17,7 +18,7 @@ try:
         load_spell_item_enchantments,
         SPELL_ITEM_ENCHANTMENT_FMT,
     )
-    from .build_validation_provisioning import EQUIPMENT_SLOT_END, REQUIRED_EQUIPMENT_SLOTS, apply_gear_profiles, bot_known_spell_ids, bot_talent_spell_ids, equipment_cache, gem_item_enchant_map, load_config, load_gear_profiles, load_wdbc_values, normalized_glyphs, required_equipment_slots_for, runtime_safe_enchantments, scenario_report, talent_point_count
+    from .build_validation_provisioning import EQUIPMENT_SLOT_END, REQUIRED_EQUIPMENT_SLOTS, account_commands, apply_gear_profiles, bot_known_spell_ids, bot_talent_spell_ids, build_account_insert_sql, build_character_insert_sql, equipment_cache, gem_item_enchant_map, load_config, load_gear_profiles, load_wdbc_values, normalized_glyphs, required_equipment_slots_for, runtime_safe_enchantments, scenario_report, talent_point_count
     from .common import stable_hash, write_json
     from .extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
 except ImportError:
@@ -31,7 +32,7 @@ except ImportError:
         load_spell_item_enchantments,
         SPELL_ITEM_ENCHANTMENT_FMT,
     )
-    from build_validation_provisioning import EQUIPMENT_SLOT_END, REQUIRED_EQUIPMENT_SLOTS, apply_gear_profiles, bot_known_spell_ids, bot_talent_spell_ids, equipment_cache, gem_item_enchant_map, load_config, load_gear_profiles, load_wdbc_values, normalized_glyphs, required_equipment_slots_for, runtime_safe_enchantments, scenario_report, talent_point_count
+    from build_validation_provisioning import EQUIPMENT_SLOT_END, REQUIRED_EQUIPMENT_SLOTS, account_commands, apply_gear_profiles, bot_known_spell_ids, bot_talent_spell_ids, build_account_insert_sql, build_character_insert_sql, equipment_cache, gem_item_enchant_map, load_config, load_gear_profiles, load_wdbc_values, normalized_glyphs, required_equipment_slots_for, runtime_safe_enchantments, scenario_report, talent_point_count
     from common import stable_hash, write_json
     from extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
 
@@ -244,6 +245,8 @@ def validate_payloads(config: dict[str, Any], dbc_dir: Path, hotfix_url: str | N
                     failures.append({"check": "socket_gem_items", "bot": bot.get("name"), "item_id": item.get("item_id"), "sockets": len(socket_colors), "gems": len(gem_item_ids)})
                 if socket_colors and len(gem_enchant_ids) != len(socket_colors):
                     failures.append({"check": "socket_gem_enchants", "bot": bot.get("name"), "item_id": item.get("item_id"), "sockets": len(socket_colors), "gem_enchants": len(gem_enchant_ids)})
+                if (gem_item_ids or gem_enchant_ids) and len(gem_item_ids) != len(gem_enchant_ids):
+                    failures.append({"check": "socket_gem_mapping_length", "bot": bot.get("name"), "item_id": item.get("item_id"), "gem_items": len(gem_item_ids), "gem_enchants": len(gem_enchant_ids)})
                 if len(gem_item_ids) > len(SOCKET_ENCHANTMENT_FIELD_OFFSETS) or len(gem_enchant_ids) > len(SOCKET_ENCHANTMENT_FIELD_OFFSETS):
                     failures.append({"check": "socket_gem_capacity", "bot": bot.get("name"), "item_id": item.get("item_id"), "gem_items": len(gem_item_ids), "gem_enchants": len(gem_enchant_ids), "capacity": len(SOCKET_ENCHANTMENT_FIELD_OFFSETS)})
                 for offset, gem_enchant_id in zip(SOCKET_ENCHANTMENT_FIELD_OFFSETS, gem_enchant_ids):
@@ -409,7 +412,12 @@ def fetch_runtime_rotation_profiles(
         conn.close()
 
 
-def validate_database(config: dict[str, Any], worldserver_conf: Path, require_applied: bool = False) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+def validate_database(
+    config: dict[str, Any],
+    worldserver_conf: Path,
+    require_applied: bool = False,
+    dbc_dir: Path = Path("data/dbc/enUS"),
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     failures: list[dict[str, Any]] = []
     auth_url = database_url_from_worldserver_conf(worldserver_conf, "LoginDatabaseInfo")
     character_url = database_url_from_worldserver_conf(worldserver_conf, "CharacterDatabaseInfo")
@@ -447,6 +455,7 @@ def validate_database(config: dict[str, Any], worldserver_conf: Path, require_ap
 
     runtime_gear_report: dict[str, Any] = {}
     runtime: dict[str, dict[str, Any]] = {}
+    gem_mapping = gem_item_enchant_map(dbc_dir)
     if require_applied and not missing_characters:
         runtime = fetch_runtime_gear(character_url, expected_characters)
         for bot in configured_bots(config):
@@ -455,7 +464,7 @@ def validate_database(config: dict[str, Any], worldserver_conf: Path, require_ap
             expected_slots = set(required_equipment_slots_for(equipment))
             expected_by_slot = {int(item.get("slot", -1)): int(item.get("item_id") or 0) for item in equipment}
             expected_modifier_payload_by_slot = {
-                int(item.get("slot", -1)): parse_enchantment_payload(runtime_safe_enchantments(item))
+                int(item.get("slot", -1)): parse_enchantment_payload(runtime_safe_enchantments(item, gem_mapping))
                 for item in equipment
             }
             expected_durability_by_slot = {int(item.get("slot", -1)): int(item.get("durability") or 0) for item in equipment}
@@ -706,6 +715,38 @@ def load_or_build_gear_profiles(path: Path, config: dict[str, Any], dbc_dir: Pat
     return build_profiles(config, items, enchantments, gems)
 
 
+def validate_generated_artifacts(config: dict[str, Any], provisioning_report_path: Path, dbc_dir: Path) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    output_dir = provisioning_report_path.parent
+    expected_report = scenario_report(config)
+    expected_payloads = {
+        "account_commands.txt": account_commands(config).encode("utf-8"),
+        "provision_accounts.sql": build_account_insert_sql(config).encode("utf-8"),
+        "provision_characters.sql": build_character_insert_sql(config, gem_mapping=gem_item_enchant_map(dbc_dir)).encode("utf-8"),
+        "report.json": (json.dumps(expected_report, indent=2, sort_keys=True, default=str) + "\n").encode("utf-8"),
+    }
+    manifest = load_json(output_dir / "manifest.json")
+    manifest_hashes = manifest.get("output_sha256", {}) if isinstance(manifest, dict) else {}
+    failures: list[dict[str, Any]] = []
+    evidence: dict[str, Any] = {"output_sha256": {}, "expected_output_sha256": {}}
+    if manifest.get("config_hash") != stable_hash(config):
+        failures.append({"check": "provisioning_manifest_config_hash"})
+    for name, expected in sorted(expected_payloads.items()):
+        path = output_dir / name
+        expected_hash = hashlib.sha256(expected).hexdigest()
+        actual = path.read_bytes() if path.is_file() else None
+        actual_hash = hashlib.sha256(actual).hexdigest() if actual is not None else None
+        evidence["expected_output_sha256"][name] = expected_hash
+        evidence["output_sha256"][name] = actual_hash
+        if actual_hash != expected_hash:
+            failures.append({"check": "provisioning_output_content", "path": name, "expected_sha256": expected_hash, "actual_sha256": actual_hash})
+        if manifest_hashes.get(name) != actual_hash:
+            failures.append({"check": "provisioning_manifest_output_hash", "path": name, "manifest_sha256": manifest_hashes.get(name), "actual_sha256": actual_hash})
+    evidence["manifest_hashes_complete"] = set(manifest_hashes) == set(expected_payloads)
+    if not evidence["manifest_hashes_complete"]:
+        failures.append({"check": "provisioning_manifest_output_set", "expected": sorted(expected_payloads), "actual": sorted(manifest_hashes)})
+    return failures, evidence
+
+
 def build_report(
     config: dict[str, Any],
     provisioning_report: dict[str, Any],
@@ -713,8 +754,11 @@ def build_report(
     payload_evidence: dict[str, Any],
     db_failures: list[dict[str, Any]],
     db_evidence: dict[str, Any],
+    generated_failures: list[dict[str, Any]] | None = None,
+    generated_evidence: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    failures = payload_failures + db_failures
+    generated_failures = generated_failures or []
+    failures = payload_failures + generated_failures + db_failures
     return {
         "schema": "bot_validation_provisioning_verifier_report_v1",
         "config_hash": stable_hash(config),
@@ -725,6 +769,7 @@ def build_report(
         "failure_count": len(failures),
         "failures": failures,
         "payload_evidence": payload_evidence,
+        "generated_artifact_evidence": generated_evidence or {},
         "database_evidence": db_evidence,
         "runtime_ml_control": "disabled_teacher_policy_validation_only",
     }
@@ -747,12 +792,13 @@ def main() -> int:
     config = apply_gear_profiles(base_config, load_or_build_gear_profiles(args.gear_profiles, base_config, args.dbc_dir, hotfix_url))
     provisioning_report = load_json(args.provisioning_report) or scenario_report(config)
     payload_failures, payload_evidence = validate_payloads(config, args.dbc_dir, hotfix_url)
+    generated_failures, generated_evidence = validate_generated_artifacts(config, args.provisioning_report, args.dbc_dir)
     db_failures: list[dict[str, Any]] = []
     db_evidence: dict[str, Any] = {}
     if args.check_db or args.require_applied:
-        db_failures, db_evidence = validate_database(config, args.worldserver_conf, require_applied=args.require_applied)
+        db_failures, db_evidence = validate_database(config, args.worldserver_conf, require_applied=args.require_applied, dbc_dir=args.dbc_dir)
 
-    report = build_report(config, provisioning_report, payload_failures, payload_evidence, db_failures, db_evidence)
+    report = build_report(config, provisioning_report, payload_failures, payload_evidence, db_failures, db_evidence, generated_failures, generated_evidence)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     write_json(args.output, report)
     print(json.dumps(report, indent=2, sort_keys=True))

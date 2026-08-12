@@ -80,7 +80,7 @@ from tools.bot_ml.build_validation_provisioning import apply_gear_profiles, bot_
 from tools.bot_ml.validate_validation_provisioning import REQUIRED_COLUMNS as PROVISIONING_REQUIRED_COLUMNS
 from tools.bot_ml.validate_validation_provisioning import build_report as provisioning_verify_report
 from tools.bot_ml.validate_validation_provisioning import main as provisioning_verify_main
-from tools.bot_ml.validate_validation_provisioning import validate_database as validate_provisioning_database, validate_payloads as validate_provisioning_payloads
+from tools.bot_ml.validate_validation_provisioning import validate_database as validate_provisioning_database, validate_generated_artifacts as validate_provisioning_generated_artifacts, validate_payloads as validate_provisioning_payloads
 from tools.bot_ml.validation_profile_manifests import load_action_profile_manifest, load_combat_loot_profile_manifest
 from tools.bot_ml.validate_data_quality import validate_rows as validate_data_quality_rows
 from tools.bot_ml.build_baseline_inventory import build_inventory, canonical_hash, git_identity, parse_dvc_pointer, reconcile_live_db, reconcile_targets, rotation_tuples, validate_policy, write_bundle
@@ -7904,7 +7904,16 @@ def test_validation_provisioning_generates_reproducible_sql_and_readiness(tmp_pa
     assert "DELETE FROM `characters`.`item_instance` WHERE `guid` >= 9700000" in sql
     assert manifest["schema"] == "bot_validation_provisioning_manifest_v1"
     assert manifest["bot_count"] == 50
+    assert set(manifest["output_sha256"]) == {"account_commands.txt", "provision_accounts.sql", "provision_characters.sql", "report.json"}
     assert generated_report == scenario_report(load_validation_provisioning_config(config_path))
+
+    generated_config = load_validation_provisioning_config(config_path)
+    artifact_failures, artifact_evidence = validate_provisioning_generated_artifacts(generated_config, tmp_path / "report.json", Path("data/dbc/enUS"))
+    assert artifact_failures == []
+    assert artifact_evidence["manifest_hashes_complete"] is True
+    (tmp_path / "provision_characters.sql").write_text(sql + "-- tampered\n", encoding="utf-8")
+    artifact_failures, _artifact_evidence = validate_provisioning_generated_artifacts(generated_config, tmp_path / "report.json", Path("data/dbc/enUS"))
+    assert {failure["check"] for failure in artifact_failures} == {"provisioning_output_content", "provisioning_manifest_output_hash"}
 
 
 def test_cata_action_profile_manifest_drives_validation_spells(tmp_path, monkeypatch):
@@ -8402,6 +8411,12 @@ def test_validation_provisioning_rejects_incomplete_gem_mapping():
     assert fields[6] == "0"
     assert fields[9] == "0"
 
+    failures, _evidence = validate_provisioning_payloads(
+        {"scenarios": [{"bots": [{"name": "Mage", "equipment": [{"item_id": 7000, "gem_item_ids": [68779, 52260], "gem_enchant_ids": [4252]}]}]}]},
+        Path("data/dbc/enUS"),
+    )
+    assert {failure["check"] for failure in failures} >= {"socket_gem_mapping_length"}
+
 
 def test_validation_provisioning_rejects_positive_but_wrong_gem_mapping():
     fields = runtime_safe_enchantments(
@@ -8536,6 +8551,9 @@ def test_validation_provisioning_dvc_tracks_static_wowsims_overlay():
     dependency = "experiments/configs/wowsims_cata_p4_gear_profiles.json"
     assert dependency in provisioning
     assert dependency in verification
+    assert "data/dbc/enUS/Item-sparse.db2" in provisioning
+    assert "data/dbc/enUS/GemProperties.dbc" in provisioning
+    assert "- dataset/validation_provisioning\n" in verification
 
 
 def test_validation_provisioning_runtime_gear_verification_fails_missing_hunter_ranged(monkeypatch, tmp_path):
