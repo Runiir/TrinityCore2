@@ -8463,6 +8463,12 @@ def test_validation_gear_gem_selection_respects_equipped_category_limit():
     assert select_gem(1, [gems[0]], {"strength": 1.0}, {}, {}) is None
 
 
+def test_validation_gear_hotfix_query_preserves_item_limit_category():
+    source = Path("tools/bot_ml/build_validation_gear_profiles.py").read_text(encoding="utf-8")
+    query = source[source.index("def fetch_hotfix_items"):source.index("def fetch_items")]
+    assert "s.GemProperties, s.ItemLimitCategory" in query
+
+
 def test_validation_provisioning_payload_rejects_equipped_socket_gem_limit():
     equipment = [
         {"slot": slot, "item_id": 7000 + slot, "gem_item_ids": [52260], "gem_enchant_ids": [4037]}

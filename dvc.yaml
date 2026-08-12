@@ -82,6 +82,7 @@ stages:
     - data/dbc/enUS/GlyphProperties.dbc
     - data/dbc/enUS/Item-sparse.db2
     - data/dbc/enUS/GemProperties.dbc
+    - data/dbc/enUS/SpellItemEnchantment.dbc
     - data/dbc/enUS/ItemLimitCategory.dbc
     - dataset/validation_gear_profiles
     outs:

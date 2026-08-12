@@ -553,6 +553,7 @@ def fetch_hotfix_items(hotfix_url: str, min_item_level: int, max_required_level:
             cursor.execute(
                 "SELECT i.ID, s.Display, i.ClassID, i.SubclassID, COALESCE(NULLIF(i.InventoryType, 0), s.InventoryType) AS InventoryType, "
                 "s.Quality, s.ItemLevel, s.RequiredLevel, s.AllowableClass, s.SocketColor1, s.SocketColor2, s.SocketColor3, "
+                "s.GemProperties, s.ItemLimitCategory, "
                 + ", ".join(f"s.ItemStatType{i}, s.ItemStatValue{i}" for i in range(1, 11))
                 + " FROM item i JOIN item_sparse s ON s.ID = i.ID "
                 "WHERE i.ClassID IN (2, 4) AND s.Quality >= 3 AND s.RequiredLevel <= %s AND s.ItemLevel >= %s",
