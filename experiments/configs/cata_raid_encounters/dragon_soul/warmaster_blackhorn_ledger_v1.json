@@ -1,0 +1,225 @@
+{
+  "schema_version": 1,
+  "ledger_schema": "cata_raid_value_timer_ledger_v1",
+  "raid": "dragon_soul",
+  "boss_slug": "warmaster_blackhorn",
+  "modes": ["10N", "10H", "25N", "25H"],
+  "fidelity_state": "fidelity_blocked",
+  "contract_path": "experiments/configs/cata_raid_encounters/dragon_soul/warmaster_blackhorn_v1.json",
+  "unresolved_material_count": 19,
+  "encounter": "warmaster_blackhorn",
+  "purpose": "Source, identity, value, timer, targeting, scaling, phase, reset, prerequisite, modifier, ship, and credit ledger for Phase 0 research; no live-validation assertion.",
+  "scope": ["10N", "10H", "25N", "25H"],
+  "target_snapshot": {
+    "product": "Cataclysm Classic",
+    "patch": "4.4.2",
+    "build": 59185,
+    "locale": "enUS",
+    "cutoff_utc": "2025-02-20T23:00:00Z"
+  },
+  "repository_revision_audited": "b550972efb04d8b4cadf72455e57e1a2e6213e4f",
+  "retrieved_utc_date": "2026-08-12",
+  "research_as_of": "2026-08-12",
+  "source_catalog": [
+    {
+      "id": "blizzard_442_notes_59185_cutoff",
+      "title": "World of Warcraft: Cataclysm Classic Patch 4.4.2 Notes",
+      "author": "Kaivax",
+      "publisher": "Blizzard Entertainment forums",
+      "published_or_updated": "2025-02-18 19:31",
+      "url": "https://us.forums.blizzard.com/en/wow/t/world-of-warcraft-cataclysm-classic-patch-442-notes/2062030",
+      "accessed": "2026-08-12",
+      "authority": "official cutoff context",
+      "notes": "Dragon Soul opens February 20 at 3:00 p.m. PST; eight bosses, 10/25 players, Normal/Heroic. No Blackhorn tuning table."
+    },
+    {
+      "id": "blizzard_presence_dragon_soul_2025",
+      "title": "Presence of the Dragon Soul begins March 18",
+      "author": "Kaivax",
+      "publisher": "Blizzard Entertainment forums",
+      "published_or_updated": "2025-03-12",
+      "url": "https://us.forums.blizzard.com/en/wow/t/presence-of-the-dragon-soul-begins-march-18/2074792",
+      "accessed": "2026-08-12",
+      "authority": "official post-cutoff modifier announcement",
+      "notes": "Presence reduces Dragon Soul enemy health/damage by 5%, grows by 5 percentage points every two weeks to 30%, and can be removed by Lord Devrestrasz. It is outside the requested cutoff."
+    },
+    {
+      "id": "wowhead_cata_blackhorn_2025",
+      "title": "Warmaster Blackhorn Strategy Guide for Dragon Soul - Cataclysm Classic",
+      "author": "Riyani",
+      "publisher": "Wowhead",
+      "published_or_updated": "2025-02-19",
+      "edition_label": "Cataclysm Classic guide, Patch 4.4.2",
+      "url": "https://www.wowhead.com/cata/guide/raids/dragon-soul/warmaster-blackhorn-strategy-overview",
+      "accessed": "2026-08-12",
+      "authority": "current secondary strategy source, pre-release",
+      "used_for": ["21/37/51/90M health observations", "three-wave/six-drake gate", "Barrage/Onslaught relationships", "Vengeance and phase observations", "Normal/Heroic threshold observations"],
+      "notes": "Updated 2025-02-19, one day before the official 2025-02-20T23:00:00Z global unlock; retained as pre-release observation only, not exact unlock-state tuning."
+    },
+    {
+      "id": "icy_veins_cata_blackhorn_2025",
+      "title": "Warmaster Blackhorn Encounter Guide: Strategy, Abilities, Loot",
+      "author": "Abide",
+      "publisher": "Icy Veins",
+      "published_or_updated": "2025-02-15",
+      "url": "https://www.icy-veins.com/cataclysm-classic/warmaster-blackhorn-encounter-guide-strategy-abilities-loot",
+      "accessed": "2026-08-12",
+      "authority": "independent current Cataclysm Classic strategy source",
+      "used_for": ["Swayze pull", "ship/add behavior", "Barrage/Onslaught", "Heroic deck fire", "Goriona landing and Shroud", "role targeting"],
+      "notes": "Does not establish a four-mode build-59185 table; exact values and thresholds remain blocked where sources conflict."
+    },
+    {
+      "id": "icy_veins_blackhorn_historical",
+      "title": "Warmaster Blackhorn Detailed Strategy Guide (Heroic Mode included)",
+      "publisher": "Icy Veins",
+      "published_or_updated": "2012-07-25",
+      "url": "https://www.icy-veins.com/wow/warmaster-blackhorn-strategy-guide-normal-heroic",
+      "accessed": "2026-08-12",
+      "authority": "historical retail corroboration only",
+      "used_for": ["legacy Blackhorn/Goriona/add health table", "4-minute Phase 2 enrage observation", "legacy Heroic threshold and coefficients"],
+      "notes": "Not Cataclysm Classic 4.4.2 evidence; no value is promoted without a current source."
+    },
+    {
+      "id": "wowhead_blackhorn_spell_identity",
+      "title": "Wowhead Warmaster Blackhorn NPC and linked Cataclysm Classic spell pages",
+      "publisher": "Wowhead",
+      "url": "https://www.wowhead.com/cata/npc=56427/warmaster-blackhorn",
+      "related_urls": [
+        "https://www.wowhead.com/cata/spell=106401/twilight-onslaught",
+        "https://www.wowhead.com/cata/spell=107439/twilight-barrage",
+        "https://www.wowhead.com/cata/spell=107558/degeneration",
+        "https://www.wowhead.com/cata/spell=107567/brutal-strike",
+        "https://www.wowhead.com/cata/spell=108042/devastate",
+        "https://www.wowhead.com/cata/spell=108043/sunder-armor",
+        "https://www.wowhead.com/cata/spell=108044/disrupting-roar",
+        "https://www.wowhead.com/cata/spell=108045/vengeance",
+        "https://www.wowhead.com/cata/spell=108046/shockwave",
+        "https://www.wowhead.com/cata/spell=108051/twilight-flames"
+      ],
+      "accessed": "2026-08-12",
+      "authority": "community identity/range reference",
+      "used_for": ["NPC/spell IDs", "page-level ranges/effects", "legacy mode rows"],
+      "notes": "Page fields mix current, legacy, and mode-specific values; identity is retained while exact cutoff tuning is blocked."
+    },
+    {
+      "id": "repo_dragon_soul_header_instance_loader",
+      "title": "Local TrinityCore Dragon Soul header, instance, and loader audit",
+      "publisher": "shared TrinityCore repository",
+      "revision": "b550972efb04d8b4cadf72455e57e1a2e6213e4f",
+      "paths": [
+        "src/server/scripts/Kalimdor/CavernsOfTime/DragonSoul/dragon_soul.h",
+        "src/server/scripts/Kalimdor/CavernsOfTime/DragonSoul/instance_dragon_soul.cpp",
+        "src/server/scripts/Kalimdor/kalimdor_script_loader.cpp"
+      ],
+      "accessed": "2026-08-12",
+      "authority": "repository executable/boundary evidence",
+      "used_for": ["map 967", "eight encounters", "DATA_WARMASTER_BLACKHORN=5", "absence of boss/ship/add AI and instance wiring"],
+      "notes": "Only Madness of Deathwing is in local creatureData; no Blackhorn implementation is present."
+    },
+    {
+      "id": "repo_dragon_soul_sql_identity",
+      "title": "Historical TrinityCore Dragon Soul creature and encounter identity rows",
+      "publisher": "shared TrinityCore repository",
+      "revision": "b550972efb04d8b4cadf72455e57e1a2e6213e4f",
+      "paths": [
+        "sql/old/4.3.4/TDB00_to_TDB01_updates/world/004_creature_template.sql",
+        "sql/old/4.3.4/TDB04_to_TDB05_updates/world/066_instance_encounters.sql"
+      ],
+      "accessed": "2026-08-12",
+      "authority": "historical DB/model identity evidence",
+      "used_for": ["56427/56781/56598/56848/56854/56855/56923 identities", "55870/56681/57920 support entries", "historical variants", "1298 encounter row"],
+      "notes": "Rows do not prove 59185 difficulty mapping, spawn sequencing, spell behavior, ship health, or runtime scaling."
+    }
+  ],
+  "mode_matrix": {
+    "10N": {"heroic": false, "blackhorn_health_current_guide_pre_unlock": 21000000, "historical_goriona_health": 13000000, "historical_add_health": {"elite": 2800000, "drake": 890000, "sapper": 340000}, "modifier_at_cutoff": "not active at 2025-02-20T23:00:00Z unlock boundary; announced later", "status": "fidelity_blocked"},
+    "10H": {"heroic": true, "blackhorn_health_current_guide_pre_unlock": 37000000, "historical_goriona_health": 26000000, "historical_add_health": {"elite": 4000000, "drake": 1500000, "sapper": 475000}, "modifier_at_cutoff": "not active at 2025-02-20T23:00:00Z unlock boundary; announced later", "status": "fidelity_blocked"},
+    "25N": {"heroic": false, "blackhorn_health_current_guide_pre_unlock": 51000000, "historical_goriona_health": 40000000, "historical_add_health": {"elite": 8500000, "drake": 2500000, "sapper": 1200000}, "modifier_at_cutoff": "not active at 2025-02-20T23:00:00Z unlock boundary; announced later", "status": "fidelity_blocked"},
+    "25H": {"heroic": true, "blackhorn_health_current_guide_pre_unlock": 90000000, "historical_goriona_health": 80000000, "historical_add_health": {"elite": 13600000, "drake": 4800000, "sapper": 1700000}, "modifier_at_cutoff": "not active at 2025-02-20T23:00:00Z unlock boundary; announced later", "status": "fidelity_blocked"}
+  },
+  "values": [
+    {"key": "blackhorn_health", "guide_pre_unlock_values": {"10N": 21000000, "10H": 37000000, "25N": 51000000, "25H": 90000000}, "source_refs": ["wowhead_cata_blackhorn_2025", "icy_veins_blackhorn_historical"], "status": "pre_unlock_or_legacy_observation_not_59185_assertion"},
+    {"key": "historical_goriona_health", "values": {"10N": 13000000, "10H": 26000000, "25N": 40000000, "25H": 80000000}, "source_refs": ["icy_veins_blackhorn_historical"], "status": "legacy_only_not_cutoff_assertion"},
+    {"key": "historical_add_health", "values": {"10N": {"elite": 2800000, "drake": 890000, "sapper": 340000}, "10H": {"elite": 4000000, "drake": 1500000, "sapper": 475000}, "25N": {"elite": 8500000, "drake": 2500000, "sapper": 1200000}, "25H": {"elite": 13600000, "drake": 4800000, "sapper": 1700000}}, "source_refs": ["icy_veins_blackhorn_historical"], "status": "legacy_only_not_cutoff_assertion"},
+    {"key": "phase_one_wave_gate", "wave_count": 3, "drakes_per_wave": 2, "elite_pair_per_wave": 1, "drakes_to_phase_two": 6, "source_refs": ["wowhead_cata_blackhorn_2025", "icy_veins_cata_blackhorn_2025"], "status": "relationship_confirmed_exact_runtime_gate_blocked"},
+    {"key": "twilight_barrage", "spell": 107439, "radius": "5yd", "current_page_damage": "280000 Shadow", "mode_rows": {"10N": 140000, "10H": 280000, "25N": 140000, "25H": 280000}, "heroic_delta": "+50% Shadow damage taken", "duration_conflict": ["6s current", "15s historical"], "source_refs": ["wowhead_blackhorn_spell_identity", "icy_veins_cata_blackhorn_2025", "icy_veins_blackhorn_historical"], "status": "fidelity_blocked_mode_rows_ship_split_and_debuff_duration"},
+    {"key": "twilight_onslaught", "spell": 106401, "radius": "10yd", "page_damage": "3000000 Shadow", "mode_rows": {"10N": 800000, "10H": 1200000, "25N": 2000000, "25H": 3000000}, "interval": "35s current guide", "first_cast": "about 48s observation", "source_refs": ["wowhead_blackhorn_spell_identity", "icy_veins_cata_blackhorn_2025"], "status": "fidelity_blocked_distribution_first_cast_and_mode_rows"},
+    {"key": "degeneration", "spell": 107558, "summary": "114000-126000 Shadow frontal plus 9000 every 2s for 1m", "radius": "5yd page", "source_refs": ["wowhead_blackhorn_spell_identity"], "status": "fidelity_blocked_mode_coefficients_and_target_filter"},
+    {"key": "brutal_strike", "spell": 107567, "summary": "150% weapon plus 9000 Physical every 2s for 1m", "source_refs": ["wowhead_blackhorn_spell_identity"], "status": "fidelity_blocked_mode_coefficients_and_target_filter"},
+    {"key": "twilight_sapper", "entry": 56923, "ship_damage": "20% maximum durability", "first_spawn": "about 70s", "interval": "about 40s", "detonate_spell": null, "source_refs": ["wowhead_cata_blackhorn_2025", "icy_veins_cata_blackhorn_2025", "repo_dragon_soul_sql_identity"], "status": "fidelity_blocked_timer_stealth_path_and_spell_identity"},
+    {"key": "devastate_and_sunder", "devastate_spell": 108042, "weapon_damage": "120%", "sunder_spell": 108043, "armor_delta": "-20% per stack", "duration": "30s", "page_stack_cap": 5, "source_refs": ["wowhead_blackhorn_spell_identity", "icy_veins_cata_blackhorn_2025"], "status": "relationship_confirmed_mode_scaling_blocked"},
+    {"key": "disrupting_roar", "spell": 108044, "damage": "92625-102375 Physical", "interrupt_radius": "10yd", "silence_duration": "8s", "interval": "about 20s current guide", "source_refs": ["wowhead_blackhorn_spell_identity", "wowhead_cata_blackhorn_2025", "icy_veins_cata_blackhorn_2025"], "status": "fidelity_blocked_cadence_and_mode_coefficients"},
+    {"key": "shockwave", "spell": 108046, "damage": "95000-105000 Physical", "cone": "80yd", "cast": "2.5s", "stun": "4s", "interval": "about 25s historical guide", "source_refs": ["wowhead_blackhorn_spell_identity", "icy_veins_blackhorn_historical"], "status": "fidelity_blocked_cadence_and_mode_coefficients"},
+    {"key": "vengeance", "spell": 108045, "scaling": "+1% damage per 1% missing health", "at_10_percent": "+90% current guide", "source_refs": ["wowhead_blackhorn_spell_identity", "wowhead_cata_blackhorn_2025"], "status": "fidelity_blocked_runtime_implementation"},
+    {"key": "goriona_thresholds", "entry": 56781, "normal_leave": ["20% current", "25% historical"], "heroic_land": ["80% current", "90% historical"], "source_refs": ["wowhead_cata_blackhorn_2025", "icy_veins_cata_blackhorn_2025", "icy_veins_blackhorn_historical"], "status": "fidelity_blocked_threshold_conflict"},
+    {"key": "twilight_flames", "spell": 108051, "impact_radius": "8yd", "patch_radius": "7yd", "patch_duration": "30s", "tick": "1s", "damage": "57000-63000 impact / 43875-46125 patch", "source_refs": ["wowhead_blackhorn_spell_identity", "wowhead_cata_blackhorn_2025"], "status": "fidelity_blocked_mode_and_spawn_scaling"},
+    {"key": "heroic_goriona_support", "twilight_breath_spell": null, "consuming_shroud_spell": null, "siphon_vitality_spell": null, "shroud_rule": "healing absorbed becomes raid damage", "siphon_trigger": "Blackhorn at 20% while Goriona remains", "source_refs": ["icy_veins_cata_blackhorn_2025", "icy_veins_blackhorn_historical"], "status": "fidelity_blocked_spell_ids_values_and_order"},
+    {"key": "deck_fire", "heroic_only": true, "controller_entry": 57920, "spawn_rule": "current guidance says ship health thresholds; exact thresholds unresolved", "source_refs": ["icy_veins_cata_blackhorn_2025", "repo_dragon_soul_sql_identity"], "status": "fidelity_blocked_threshold_cleanup_and_damage"},
+    {"key": "presence_of_the_dragon_soul", "official": {"initial_reduction": "5% health/damage", "increment": "5 percentage points every two weeks", "maximum_reduction": "30%", "start": "2025-03-18", "toggle": "Lord Devrestrasz", "active_at_cutoff": false}, "source_refs": ["blizzard_presence_dragon_soul_2025"], "status": "official_post_unlock_scope_confirmed_ids_blocked"}
+  ],
+  "timers": [
+    {"key": "twilight_onslaught", "current_guide": "35s", "first_cast": "about 48s", "source_refs": ["wowhead_cata_blackhorn_2025", "icy_veins_cata_blackhorn_2025"], "status": "guide_observation_exact_schedule_blocked"},
+    {"key": "twilight_sapper", "first": "about 70s", "interval": "about 40s", "source_refs": ["wowhead_cata_blackhorn_2025"], "status": "legacy/comment observation build_and_rng_blocked"},
+    {"key": "elite_debuffs", "duration": "1m", "blade_rush": ["15-20s Heroic comment", "20-30s Normal historical comment"], "source_refs": ["wowhead_cata_blackhorn_2025", "wowhead_blackhorn_spell_identity"], "status": "duration_observed_cadence_blocked"},
+    {"key": "disrupting_roar", "interval": "about 20s current guide", "source_refs": ["wowhead_cata_blackhorn_2025", "icy_veins_cata_blackhorn_2025"], "status": "guide_observation_exact_build_blocked"},
+    {"key": "shockwave", "interval": "about 25s historical guide", "cast": "2.5s", "source_refs": ["icy_veins_blackhorn_historical", "wowhead_blackhorn_spell_identity"], "status": "cadence_blocked_cast_observed"},
+    {"key": "twilight_flames", "patch_duration": "30s", "tick": "1s", "source_refs": ["wowhead_blackhorn_spell_identity"], "status": "runtime_spawn_and_mode_blocked"},
+    {"key": "phase_two_enrage", "duration": "4m from Phase 2 historical observation", "source_refs": ["icy_veins_blackhorn_historical"], "status": "cutoff_runtime_blocked"}
+  ],
+  "targeting_and_scaling": [
+    {"key": "barrage", "target": "random 5yd deck location", "no_player_hit": "Skyfire takes full hit", "heroic": "+50% Shadow damage taken", "source_refs": ["wowhead_blackhorn_spell_identity", "icy_veins_cata_blackhorn_2025"], "status": "relationship_confirmed_mode_rows_and_ship_rule_blocked"},
+    {"key": "onslaught", "target": "random 10yd deck location", "mode_values": {"10N": 800000, "10H": 1200000, "25N": 2000000, "25H": 3000000}, "source_refs": ["wowhead_blackhorn_spell_identity"], "status": "page_observation_not_cutoff_assertion"},
+    {"key": "sapper", "target": "bridge/command center", "ship_damage": "20% maximum durability", "source_refs": ["icy_veins_cata_blackhorn_2025"], "status": "relationship_confirmed_timer_and_spell_blocked"},
+    {"key": "blackhorn", "target": "tank Devastate; random player Shockwave; all raid Roar", "scaling": "Vengeance +1% damage per 1% missing health", "source_refs": ["wowhead_cata_blackhorn_2025", "icy_veins_cata_blackhorn_2025"], "status": "relationship_confirmed_runtime_scaling_blocked"},
+    {"key": "goriona", "normal": "airborne then flees", "heroic": "lands and must be tanked; Breath/Shroud/Siphon", "source_refs": ["wowhead_cata_blackhorn_2025", "icy_veins_cata_blackhorn_2025"], "status": "threshold_and_spell_scaling_blocked"},
+    {"key": "historical_mode_health", "blackhorn": {"10N": 21000000, "10H": 37000000, "25N": 51000000, "25H": 90000000}, "goriona": {"10N": 13000000, "10H": 26000000, "25N": 40000000, "25H": 80000000}, "source_refs": ["wowhead_cata_blackhorn_2025", "icy_veins_blackhorn_historical"], "status": "pre_unlock_or_legacy_not_59185_assertion"},
+    {"key": "presence_modifier", "target": "all Dragon Soul enemies", "health_damage": "-5% initially, +5 points every two weeks to -30%", "active_at_cutoff": false, "source_refs": ["blizzard_presence_dragon_soul_2025"], "status": "post_cutoff_official_scope_runtime_identity_blocked"}
+  ],
+  "phase_reset_credit": [
+    {"key": "phase_transition", "behavior": "three waves and all six Assault Drakes defeated; Blackhorn lands after brief delay", "source_refs": ["wowhead_cata_blackhorn_2025", "icy_veins_cata_blackhorn_2025"], "status": "relationship_confirmed_exact_transition_blocked"},
+    {"key": "heroic_goriona_transition", "behavior": "current 80% landing observation conflicts with historical 90%; later leave threshold also conflicts", "source_refs": ["wowhead_cata_blackhorn_2025", "icy_veins_blackhorn_historical"], "status": "fidelity_blocked"},
+    {"key": "ship_failure", "behavior": "Skyfire durability loss from unsplit soaks, Sapper Detonate, and other Phase 1 damage is encounter failure", "source_refs": ["wowhead_cata_blackhorn_2025", "icy_veins_cata_blackhorn_2025"], "status": "fidelity_blocked_threshold_and_order"},
+    {"key": "reset", "behavior": "No Blackhorn AI or boss-specific reset/evade path exists locally", "source_refs": ["repo_dragon_soul_header_instance_loader"], "status": "repository_absence_confirmed"},
+    {"key": "unlock", "behavior": "Swayze-after-Ultraxion is a secondary observation; no local gate", "source_refs": ["wowhead_cata_blackhorn_2025", "repo_dragon_soul_header_instance_loader"], "status": "fidelity_blocked_prerequisite"},
+    {"key": "credit", "behavior": "Historical encounter 1298 maps entry 56427; lockout, loot, achievement, parachute, and player credit unresolved", "source_refs": ["repo_dragon_soul_sql_identity"], "status": "fidelity_blocked"}
+  ],
+  "conflicts": [
+    {"key": "cutoff_and_health", "sources": ["official 2025-02-20T23:00:00Z global unlock", "Wowhead guide updated 2025-02-19 before unlock", "historical Icy table"], "resolution": "retain health as pre-release/legacy observation; do not assert build-59185 unlock-state tuning"},
+    {"key": "barrage_values", "sources": ["current Wowhead page 280000", "page legacy rows 140000/280000", "historical guide damage rows"], "resolution": "record all observations and block exact four-mode coefficient"},
+    {"key": "barrage_debuff_duration", "sources": ["current Classic 6s", "historical material 15s"], "resolution": "do not choose duration"},
+    {"key": "goriona_thresholds", "sources": ["current Classic 20% leave / 80% land", "historical 25% leave / 90% land"], "resolution": "retain threshold arrays and block runtime"},
+    {"key": "onslaught_distribution", "sources": ["spell page says damage to enemies in area", "encounter pages say ship is always included"], "resolution": "retain relationship and block exact ship split/order"},
+    {"key": "heroic_support_ids", "sources": ["current guide names Breath/Shroud/Siphon", "local historical SQL lacks stable spell bindings"], "resolution": "keep names and null IDs; no guessed IDs"}
+  ],
+  "lifecycle": {
+    "instance_map": 967,
+    "encounter_data_id": 5,
+    "historical_encounter_id": 1298,
+    "boss_entry": 56427,
+    "support_entries": {"goriona": 56781, "skyfire": 56598, "sky_captain_swayze": 55870, "harpoon_gun": 56681, "deck_fire_controller": 57920},
+    "variant_entries": [57698, 57699, 57700, 57701, 57702, 57703, 57704, 57717, 57718, 57837, 57838, 57839, 57840, 57841, 57842, 57843, 57844, 57845, 57846, 57847, 57848, 57937, 57938, 57939],
+    "source_refs": ["repo_dragon_soul_header_instance_loader", "repo_dragon_soul_sql_identity"],
+    "status": "identity_confirmed_runtime_lifecycle_blocked"
+  },
+  "unresolved": [
+    {"key": "build_59185_hotfix_lineage_and_unlock_cutoff_observation", "status": "fidelity_blocked"},
+    {"key": "four_mode_blackhorn_goriona_ship_add_health_damage_and_variant_mapping", "status": "fidelity_blocked"},
+    {"key": "presence_aura_toggle_ids_persistence_and_application_order", "status": "fidelity_blocked"},
+    {"key": "twilight_barrage_mode_coefficients_ship_split_and_heroic_debuff_duration", "status": "fidelity_blocked"},
+    {"key": "twilight_onslaught_mode_coefficients_ship_distribution_and_first_cast", "status": "fidelity_blocked"},
+    {"key": "harpoon_hit_reload_leash_reel_and_despawn_semantics", "status": "fidelity_blocked"},
+    {"key": "elite_blade_rush_identity_cadence_and_mode_coefficients", "status": "fidelity_blocked"},
+    {"key": "degeneration_and_brutal_strike_exact_mode_coefficients", "status": "fidelity_blocked"},
+    {"key": "sapper_spawn_stealth_path_detonate_identity_and_timer", "status": "fidelity_blocked"},
+    {"key": "deck_fire_threshold_spawn_cleanup_and_damage", "status": "fidelity_blocked"},
+    {"key": "normal_goriona_leave_threshold_conflict", "status": "fidelity_blocked"},
+    {"key": "heroic_goriona_landing_threshold_conflict_and_targeting", "status": "fidelity_blocked"},
+    {"key": "twilight_breath_consuming_shroud_siphon_and_goriona_spell_ids", "status": "fidelity_blocked"},
+    {"key": "disrupting_roar_shockwave_cadence_and_vengeance_runtime", "status": "fidelity_blocked"},
+    {"key": "phase_two_enrage_start_and_effective_failure_timestamp", "status": "fidelity_blocked"},
+    {"key": "ship_health_threshold_failure_order_and_reset", "status": "fidelity_blocked"},
+    {"key": "retail_prerequisite_pull_dialogue_and_initial_attackability", "status": "fidelity_blocked"},
+    {"key": "wipe_reactivation_parachute_next_boss_lockout_loot_and_achievement", "status": "fidelity_blocked"},
+    {"key": "missing_local_boss_ship_add_implementation_and_player_credit", "status": "fidelity_blocked"}
+  ]
+}
