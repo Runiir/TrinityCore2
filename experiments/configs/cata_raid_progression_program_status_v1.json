@@ -16,8 +16,8 @@
   },
   "integration": {
     "branch": "raid/cata-raid-progression-integration",
-    "foundation_sha": "c8acc065cd55975a3bb517797a03f637764bf75d",
-    "current_head_sha": "c8acc065cd55975a3bb517797a03f637764bf75d",
+    "foundation_sha": "64b959d78c70ac8fbcc2e16b18b614010913e922",
+    "current_head_sha": "64b959d78c70ac8fbcc2e16b18b614010913e922",
     "raid_base_is_ancestor": true,
     "created_from_exact_local_master": true
   },
@@ -27,8 +27,8 @@
     "prior_review_decision": "REJECT",
     "prior_review_scope": "exact 9a7b3c72aed5a2e464635b31e8f4617f2134c8d8",
     "prior_review_counts": {"critical": 1, "high": 6, "medium": 5},
-    "critical_high_remediation_implemented_at": "c8acc065cd55975a3bb517797a03f637764bf75d",
-    "mandatory_rereview": "pending_exact_status_descendant_of_c8acc065cd_after_exact_native_bwd_graveyard_worldport_and_core_auto_resurrection_remediation",
+    "critical_high_remediation_implemented_at": "64b959d78c70ac8fbcc2e16b18b614010913e922",
+    "mandatory_rereview": "pending_exact_status_descendant_of_64b959d78c_after_validation_full_stat_and_pre_corpse_party_resurrection_remediation",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
@@ -36,9 +36,9 @@
   },
   "build_history": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "current_commit": "c8acc065cd55975a3bb517797a03f637764bf75d",
-    "current_state": "idle_exact_9c9_build_and_fourth_capture_complete_native_runback_remediation_review_pending",
-    "current_result": "successful_9c9dec8b_receipt_retained_but_stale_after_c8acc065cd_native_worldport_remediation",
+    "current_commit": "64b959d78c70ac8fbcc2e16b18b614010913e922",
+    "current_state": "idle_exact_82f_build_and_fifth_capture_complete_full_stat_and_pre_corpse_resurrection_remediation_review_pending",
+    "current_result": "successful_82fce3fc_receipt_retained_but_stale_after_64b959d78c_remediation",
     "successful_build_without_current_policy_receipt_is_invalid": true,
     "attempts": [
       {

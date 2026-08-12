@@ -9,14 +9,14 @@
     "locale": "enUS",
     "hotfix_cutoff_utc": "2025-02-20T23:00:00Z"
   },
-  "audited_commit": "working_tree_descendant_of_e236373b20_pending_exact_commit",
+  "audited_commit": "64b959d78c70ac8fbcc2e16b18b614010913e922",
   "gate_state": "in_progress_exact_82f_review_build_and_fifth_live_capture_complete_under_healed_spawn_and_pre_corpse_resurrection_remediated_review_rebuild_and_live_rerun_pending",
   "foundation": {
-    "foundation_sha": "working_tree_descendant_of_e236373b20_pending_exact_commit",
-    "current_head_sha": "working_tree_descendant_of_e236373b20_pending_exact_commit",
+    "foundation_sha": "64b959d78c70ac8fbcc2e16b18b614010913e922",
+    "current_head_sha": "64b959d78c70ac8fbcc2e16b18b614010913e922",
     "prior_sol_high_review": "REJECT",
     "critical_high_remediation": "implemented",
-    "mandatory_sol_high_rereview": "pending_exact_commit_after_validation_full_stat_and_pre_corpse_party_resurrection_remediation",
+    "mandatory_sol_high_rereview": "pending_exact_status_descendant_of_64b959d78c_after_validation_full_stat_and_pre_corpse_party_resurrection_remediation",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
