@@ -2844,7 +2844,7 @@ def test_validation_route_healer_uses_native_party_resurrection():
     assert "member->GetSession()->IsBotSession()" in native
     assert "candidate.Guid == member->GetGUID()" in native
     assert "deadMemberPriority" in native
-    assert "requestedByHealer ? 2" in native
+    assert "requestedByHealer ? 100" in native
     assert "memberState->NativeResurrectionPendingUntilMs > nowMs" in native
     assert "deadMember->IsResurrectRequestedBy(healer->GetGUID())" in native
     assert "HandleResurrectResponseOpcode(response)" in native

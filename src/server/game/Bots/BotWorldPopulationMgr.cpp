@@ -26743,7 +26743,16 @@ bool BotWorldPopulationMgr::TryNativePartyResurrection(WorldBotState& state, Pla
         if (!managedBot || member == healer || member->IsAlive() || !member->IsInWorld()
             || !member->GetSession() || !member->GetSession()->IsBotSession()
             || !healer->IsInSameGroupWith(member) || member->GetMap() != healer->GetMap()
-            || member->GetInstanceId() != healer->GetInstanceId())
+            || member->GetInstanceId() != healer->GetInstanceId()
+            // A raid-validation death is not a valid spell target until the
+            // core has created the exact corpse in the frozen raid instance.
+            // Before that point KillPlayer leaves only a dead Player object;
+            // selecting it makes the native corpse spell fail with
+            // SPELL_FAILED_BAD_TARGETS and can starve the release path.
+            // Non-validation party resurrection deliberately keeps its
+            // existing target-selection behavior.
+            || (Cohort().Config.ValidationRouteEnable && Cohort().Config.AllowRaids
+                && !HasNativeRaidCorpseAuthority(*memberState, member)))
             continue;
         bool requestedByHealer = member->IsResurrectRequestedBy(healer->GetGUID());
         bool pendingByHealer = memberState->NativeResurrectionPendingUntilMs > nowMs

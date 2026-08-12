@@ -27,6 +27,11 @@ INVENTORY_BAG_SLOTS = 4
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_DBC_DIR = Path("data/dbc/enUS")
 DEFAULT_WOWSIMS_GEAR_PROFILES = REPO_ROOT / "experiments/configs/wowsims_cata_p4_gear_profiles.json"
+# Player::LoadFromDB restores these unsigned database values through the
+# native SetHealth/SetPower path after UpdateAllStats.  The deliberately high
+# seed is clamped to each character's computed maxima, unlike the old literal
+# 100 which loaded as a nearly-dead character.
+VALIDATION_FULL_STAT_SEED = 4294967295
 SPELL_EFFECT_LEARN_GLYPH = 74
 ITEM_SPARSE_FMT = "niiiffiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiifiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiisssssiiiiiiiiiiiiiiiiiiiiiifiiifii"
 SPELL_ITEM_ENCHANTMENT_FMT = "nxiiiiiixxxiiisiiiiiiix"
@@ -631,7 +636,7 @@ def build_character_insert_sql(
                 "INSERT INTO `characters`.`characters` "
                 "(`guid`, `account`, `name`, `slot`, `race`, `class`, `gender`, `level`, `xp`, `money`, `position_x`, `position_y`, `position_z`, `map`, `orientation`, `taximask`, `online`, `cinematic`, `totaltime`, `leveltime`, `logout_time`, `health`, `power1`, `talentGroupsCount`, `activeTalentGroup`, `talentTree`, `equipmentCache`) "
                 f"SELECT COALESCE(MAX(c.`guid`), 0) + 1, a.`id`, {sql_quote(name)}, {slot}, {int(bot['race'])}, {int(bot['class'])}, {int(bot.get('gender', 0))}, {int(bot.get('level', 85))}, 0, {int(bot.get('money', config.get('default_money', 10000000)))}, "
-                f"{float(start['x'])}, {float(start['y'])}, {float(start['z'])}, {int(start['map_id'])}, {float(start.get('o', 0.0))}, '', 0, 1, 0, 0, 0, 100, 100, 1, 0, {sql_quote(talent_tree)}, {sql_quote(cache)} "
+                f"{float(start['x'])}, {float(start['y'])}, {float(start['z'])}, {int(start['map_id'])}, {float(start.get('o', 0.0))}, '', 0, 1, 0, 0, 0, {VALIDATION_FULL_STAT_SEED}, {VALIDATION_FULL_STAT_SEED}, 1, 0, {sql_quote(talent_tree)}, {sql_quote(cache)} "
                 f"FROM `auth`.`account` a LEFT JOIN `characters`.`characters` c ON 1 = 1 WHERE a.`username` = {sql_quote(account)} GROUP BY a.`id`;"
             )
             lines.append(

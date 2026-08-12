@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from tools.bot_ml.build_validation_provisioning import load_config
+from tools.bot_ml.build_validation_provisioning import VALIDATION_FULL_STAT_SEED, load_config
 from tools.bot_ml.common import write_json
 from tools.bot_ml.extract_world_knowledge import (
     connect_mysql,
@@ -62,6 +62,10 @@ def validate_readback(
             reasons.append(f"{name}:position")
         if int(row.get("online") or 0) != 0:
             reasons.append(f"{name}:online")
+        if int(row.get("health") or 0) != VALIDATION_FULL_STAT_SEED:
+            reasons.append(f"{name}:health_seed")
+        if int(row.get("power1") or 0) != VALIDATION_FULL_STAT_SEED:
+            reasons.append(f"{name}:power1_seed")
         if int(row.get("enabled") or 0) != 1 or int(row.get("in_use") or 0) != 0:
             reasons.append(f"{name}:pool_state")
         if str(row.get("experiment_tags")) != "blackwing_descent_10n":
@@ -101,7 +105,7 @@ def main() -> int:
         placeholders = ", ".join(["%s"] * len(names))
         with connection.cursor() as cursor:
             cursor.execute(
-                "SELECT c.guid, c.name, c.class AS class_id, c.map AS map_id, "
+                "SELECT c.guid, c.name, c.class AS class_id, c.map AS map_id, c.health, c.power1, "
                 "c.position_x AS x, c.position_y AS y, c.position_z AS z, c.orientation AS o, c.online, "
                 "p.role, p.class_spec, p.enabled, p.in_use, p.experiment_tags "
                 "FROM characters c JOIN character_bot_pool p ON p.guid = c.guid "
@@ -126,7 +130,7 @@ def main() -> int:
         group_member_rows=group_member_rows,
     )
     payload = {
-        "schema": "cata_raid_phase1_bwd_provisioning_readback_v1",
+        "schema": "cata_raid_phase1_bwd_provisioning_readback_v2",
         "passed": not reasons,
         "reasons": reasons,
         "database": sanitize_database_url(character_url),

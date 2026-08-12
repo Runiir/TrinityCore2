@@ -360,6 +360,30 @@ def test_bwd_native_ghost_runback_acks_only_corpse_bound_worldports_and_canonica
     assert "ResurrectPlayer" not in native_runback
 
 
+def test_validation_party_resurrection_fails_closed_until_exact_corpse_authority_exists():
+    start = IMPL.index("bool BotWorldPopulationMgr::TryNativePartyResurrection")
+    end = IMPL.index("bool BotWorldPopulationMgr::TryValidationRouteReadiness", start)
+    native = IMPL[start:end]
+
+    gate = "Cohort().Config.ValidationRouteEnable && Cohort().Config.AllowRaids"
+    assert gate in native
+    assert "!HasNativeRaidCorpseAuthority(*memberState, member)" in native
+    assert native.index("memberState != nullptr") < native.index(gate) < native.index("bool requestedByHealer")
+    assert "KillPlayer leaves only a dead Player object" in native
+    assert "Non-validation party resurrection deliberately keeps its" in native
+
+    authority_start = IMPL.index("bool BotWorldPopulationMgr::HasNativeRaidCorpseAuthority")
+    authority_end = IMPL.index("bool BotWorldPopulationMgr::ResolveNativeBlackwingDescentEntrance", authority_start)
+    authority = IMPL[authority_start:authority_end]
+    for rejection in (
+        "!bot->HasCorpse()",
+        "bot->GetCorpseLocation().GetMapId() != state.ValidationCohortMapId",
+        "originalCorpse->GetOwnerGUID() == bot->GetGUID()",
+        "originalCorpse->GetInstanceId() == state.ValidationCohortInstanceId",
+    ):
+        assert rejection in authority
+
+
 def test_bot_dungeon_cross_map_guard_allows_only_exact_native_ghost_graveyard_release():
     player_impl = (ROOT / "src/server/game/Entities/Player/Player.cpp").read_text()
     teleport = player_impl[

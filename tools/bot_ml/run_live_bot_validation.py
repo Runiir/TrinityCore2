@@ -25,7 +25,7 @@ try:
     from .analyze_combat_log import analyze_combat_log
     from .audit_role_efficiency import build_audit
     from .batch_evidence_lifecycle import append_heartbeat, capture_batch, finalize_heartbeat, publish_batch, validate_capture
-    from .build_validation_provisioning import apply_gear_profiles, build_account_insert_sql, build_character_insert_sql, load_config, load_gear_profiles
+    from .build_validation_provisioning import VALIDATION_FULL_STAT_SEED, apply_gear_profiles, build_account_insert_sql, build_character_insert_sql, load_config, load_gear_profiles
     from .common import write_json
     from .extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
     from .live_validation_session import apply_acceptance_evaluation, build_evidence_envelope, build_session, canonical_sha256, ensure_healthy_matching_session, git_dirty_state_sha256, git_head, live_validation_lock, sha256_file, sha256_text, stop_session
@@ -36,7 +36,7 @@ except ImportError:
     from analyze_combat_log import analyze_combat_log
     from audit_role_efficiency import build_audit
     from batch_evidence_lifecycle import append_heartbeat, capture_batch, finalize_heartbeat, publish_batch, validate_capture
-    from build_validation_provisioning import apply_gear_profiles, build_account_insert_sql, build_character_insert_sql, load_config, load_gear_profiles
+    from build_validation_provisioning import VALIDATION_FULL_STAT_SEED, apply_gear_profiles, build_account_insert_sql, build_character_insert_sql, load_config, load_gear_profiles
     from common import write_json
     from extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
     from live_validation_session import apply_acceptance_evaluation, build_evidence_envelope, build_session, canonical_sha256, ensure_healthy_matching_session, git_dirty_state_sha256, git_head, live_validation_lock, sha256_file, sha256_text, stop_session
@@ -848,7 +848,7 @@ def build_bot_pool_reset_sql(tags: list[str] | None = None, world_database: str 
             "UPDATE `characters`.`characters` c "
             "JOIN `characters`.`character_bot_pool` p ON p.`guid` = c.`guid` "
             f"JOIN `{world_database}`.`playercreateinfo` pci ON pci.`race` = c.`race` AND pci.`class` = c.`class` "
-            "SET c.`map` = pci.`map`, c.`position_x` = pci.`position_x`, c.`position_y` = pci.`position_y`, c.`position_z` = pci.`position_z`, c.`orientation` = pci.`orientation`, c.`health` = 100, c.`power1` = 100 "
+            f"SET c.`map` = pci.`map`, c.`position_x` = pci.`position_x`, c.`position_y` = pci.`position_y`, c.`position_z` = pci.`position_z`, c.`orientation` = pci.`orientation`, c.`health` = {VALIDATION_FULL_STAT_SEED}, c.`power1` = {VALIDATION_FULL_STAT_SEED} "
             "WHERE p.`enabled` = 1 AND "
             + predicate
             + ";"
@@ -924,7 +924,7 @@ def prepare_route_bot_start(output_dir: Path, route: dict[str, Any], worldserver
         "UPDATE `characters`.`characters` c "
         "JOIN `characters`.`character_bot_pool` p ON p.`guid` = c.`guid` "
         f"SET c.`map` = {map_id}, c.`position_x` = {x}, c.`position_y` = {y}, c.`position_z` = {z}, c.`orientation` = {o}, "
-        "c.`health` = 100, c.`power1` = 100, c.`online` = 0 "
+        f"c.`health` = {VALIDATION_FULL_STAT_SEED}, c.`power1` = {VALIDATION_FULL_STAT_SEED}, c.`online` = 0 "
         "WHERE p.`enabled` = 1 AND "
         + predicate
         + ";\n"

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "audit_id": "cata_raid_runtime_phase1_v1",
-  "updated_at_utc": "2026-08-12T17:48:39Z",
+  "updated_at_utc": "2026-08-12T19:05:00Z",
   "target": {
     "client": "Cataclysm Classic",
     "patch": "4.4.2",
@@ -9,18 +9,18 @@
     "locale": "enUS",
     "hotfix_cutoff_utc": "2025-02-20T23:00:00Z"
   },
-  "audited_commit": "c8acc065cd55975a3bb517797a03f637764bf75d",
-  "gate_state": "in_progress_exact_9c9_review_build_and_fourth_live_capture_complete_native_ghost_worldport_remediated_review_rebuild_and_live_rerun_pending",
+  "audited_commit": "working_tree_descendant_of_e236373b20_pending_exact_commit",
+  "gate_state": "in_progress_exact_82f_review_build_and_fifth_live_capture_complete_under_healed_spawn_and_pre_corpse_resurrection_remediated_review_rebuild_and_live_rerun_pending",
   "foundation": {
-    "foundation_sha": "c8acc065cd55975a3bb517797a03f637764bf75d",
-    "current_head_sha": "c8acc065cd55975a3bb517797a03f637764bf75d",
+    "foundation_sha": "working_tree_descendant_of_e236373b20_pending_exact_commit",
+    "current_head_sha": "working_tree_descendant_of_e236373b20_pending_exact_commit",
     "prior_sol_high_review": "REJECT",
     "critical_high_remediation": "implemented",
-    "mandatory_sol_high_rereview": "pending_exact_status_descendant_of_c8acc065cd_after_exact_native_bwd_graveyard_worldport_and_core_auto_resurrection_remediation",
+    "mandatory_sol_high_rereview": "pending_exact_commit_after_validation_full_stat_and_pre_corpse_party_resurrection_remediation",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "acceptance": "exact_9c9_review_build_and_fourth_capture_complete_native_worldport_infrastructure_abort_remediated_at_c8acc065cd_exact_review_rebuild_uncapped_rerun_pending"
+    "acceptance": "exact_82f_review_build_and_fifth_capture_complete_under_healed_spawn_and_pre_corpse_resurrection_infrastructure_abort_remediated_exact_review_rebuild_uncapped_rerun_pending"
   },
   "research": {
     "required_boss_packets": 28,
@@ -46,7 +46,7 @@
   },
   "build": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "current_state": "successful_9c9dec8b_build_stale_after_c8acc065cd_native_worldport_remediation",
+    "current_state": "successful_82fce3fc_build_stale_after_full_stat_and_pre_corpse_resurrection_remediation",
     "current_result": "mandatory_review_then_exact_incremental_rebuild_required_before_uncapped_canonical_rerun",
     "receipt_trust_model": "explicit_trusted_local_operator",
     "trusted_operator": "runiir",
@@ -127,22 +127,27 @@
     ,"corpse_group_instance_authorized_native_released_ghost_worldport_acknowledgement"
     ,"canonical_bwd_trigger_6581_native_area_trigger_return_without_direct_teleport_or_resurrection"
     ,"fourth_capture_remote_verified_compactly_summarized_and_exactly_evicted"
+    ,"exact_82f_reviewed_built_and_live_verified_raid_formation_difficulty_identity_and_two_entry_trash_kills"
+    ,"fifth_capture_under_healed_spawn_and_pre_corpse_party_resurrection_failure_diagnosed"
+    ,"validation_full_stat_seed_clamped_by_native_player_load"
+    ,"validation_raid_party_resurrection_requires_exact_native_corpse_authority"
+    ,"fifth_capture_remote_verified_compactly_summarized_and_exactly_evicted"
   ],
   "synthetic_checks": {
     "test_file": "tests/test_cata_raid_runtime_foundation.py",
-    "last_result": "243_expanded_focused_passed_with_coordinator_race_isolated_rerun",
-    "combined_focus_result": "211_non_coordinator_plus_32_coordinator_passed",
+    "last_result": "245_expanded_focused_passed",
+    "combined_focus_result": "213_non_coordinator_plus_32_coordinator_passed",
     "combined_focus_command": "pixi run pytest -q tests/test_cata_raid_runtime_foundation.py tests/test_cata_raid_foundation_model.py tests/test_cata_raid_research_contracts.py tests/test_phase1_raid_foundation_capture.py tests/test_raid_build_coordinator.py tests/test_phase1_provisioning_readback.py tests/test_phase9_live_qualification.py",
     "broad_comparison": "patched_worktree_329_passed_34_inherited_stale_failures; exact_4012450_control_326_passed_35_failures; no_new_failure"
   },
   "required_open_work": [
     {
       "area": "current_build",
-      "missing": ["successful_exact_policy_v8_release_coordinated_incremental_build_at_reviewed_status_descendant_of_c8acc065cd", "valid_current_production_receipt_bound_to_trusted_local_operator", "post_build_regression_and_orphan_process_check"]
+      "missing": ["successful_exact_policy_v8_release_coordinated_incremental_build_at_reviewed_full_stat_and_pre_corpse_resurrection_remediation", "valid_current_production_receipt_bound_to_trusted_local_operator", "post_build_regression_and_orphan_process_check"]
     },
     {
       "area": "adversarial_review",
-      "missing": ["zero_unresolved_critical_high_findings_for_native_bwd_worldport_remediation_descendant_of_c8acc065cd", "explicit_encounter_script_vs_bot_decision_review", "explicit_non_fidelity_phase1_engagement_scope_approval"]
+      "missing": ["zero_unresolved_critical_high_findings_for_full_stat_and_pre_corpse_resurrection_remediation", "explicit_encounter_script_vs_bot_decision_review", "explicit_non_fidelity_phase1_engagement_scope_approval"]
     },
     {
       "area": "native_recovery_live_evidence",
@@ -154,8 +159,8 @@
     }
   ],
   "phase1_gate_blockers": [
-    "mandatory_sol_high_review_of_exact_status_descendant_of_c8acc065cd_pending",
-    "coordinated_policy_v8_release_worldserver_rebuild_after_native_bwd_worldport_remediation_pending",
+    "mandatory_sol_high_review_of_exact_full_stat_and_pre_corpse_resurrection_remediation_pending",
+    "coordinated_policy_v8_release_worldserver_rebuild_after_review_pending",
     "uncapped_serialized_bwd_10n_live_formation_difficulty_wipe_reset_gate_rerun_pending",
     "phase1_live_dvc_publication_remote_verification_and_exact_eviction_pending",
     "bwd_exact_442_quantitative_and_exact_log_hotfix_evidence_blocks_phase2_fidelity"
