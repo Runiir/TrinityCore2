@@ -147,6 +147,7 @@ def test_controlled_aoe_counts_only_declared_targets_and_fails_closed_near_undec
         "allowMultidot && !forbidArea",
         "magma->UnSummon();",
         "candidate->RemoveAura(44457, bot->GetGUID());",
+        "bot->InterruptSpell(CURRENT_CHANNELED_SPELL, false);",
     ):
         assert token in IMPL
 
@@ -159,6 +160,7 @@ def test_focus_fire_owns_target_and_cancels_every_wrong_attacker():
         "auto stopWrongFocusTarget = [focus](Unit* attacker)",
         "attacker->InterruptSpell(CURRENT_GENERIC_SPELL, false);",
         "attacker->InterruptSpell(CURRENT_AUTOREPEAT_SPELL, false);",
+        "attacker->InterruptSpell(CURRENT_CHANNELED_SPELL, false);",
         "stopWrongFocusTarget(bot);",
         "stopWrongFocusTarget(pet);",
         "stopWrongFocusTarget(controlled);",

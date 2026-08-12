@@ -23961,6 +23961,8 @@ raid_cooldown_complete:
             if (Spell* repeat = attacker->GetCurrentSpell(CURRENT_AUTOREPEAT_SPELL))
                 if (!focus || repeat->m_targets.GetUnitTarget() != focus)
                     attacker->InterruptSpell(CURRENT_AUTOREPEAT_SPELL, false);
+            if (attacker->GetCurrentSpell(CURRENT_CHANNELED_SPELL))
+                attacker->InterruptSpell(CURRENT_CHANNELED_SPELL, false);
         };
         if (!focus)
         {
@@ -24471,11 +24473,14 @@ raid_cooldown_complete:
                 && !undeclaredControlledAoeHostile
                 && declaredControlledAoeTargets >= raidAdapter.ControlledAoeMinimumTargets;
             if (!controlledAoeReleased)
+            {
+                bot->InterruptSpell(CURRENT_CHANNELED_SPELL, false);
                 if (Creature* fireTotem = bot->m_SummonSlot[SUMMON_SLOT_TOTEM_FIRE] && bot->GetMap()
                         ? bot->GetMap()->GetCreature(bot->m_SummonSlot[SUMMON_SLOT_TOTEM_FIRE]) : nullptr)
                     if (fireTotem->GetUInt32Value(UNIT_CREATED_BY_SPELL) == 8190)
                         if (Totem* magma = fireTotem->ToTotem())
                             magma->UnSummon();
+            }
             bool const forbidArea = raidAdapter.ContractResolved
                 && (!raidAdapter.AllowAreaDamage || (raidAdapter.TargetControl == "controlled_aoe" && !controlledAoeReleased));
             uint32 const combatAddCount = raidAdapter.TargetControl == "controlled_aoe"
