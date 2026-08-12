@@ -326,6 +326,12 @@ def test_bwd_native_ghost_runback_acks_only_corpse_bound_worldports_and_canonica
     assert "(6581, 'Blackwing Descent (Enterance)', 669," in bwd_entrance_sql
     assert "HasNativeRaidCorpseAuthority(state, bot)" in reattach
     assert "session->HandleMoveWorldportAck()" in reattach
+    assert "HandleMoveWorldportAck performs the core's native" in reattach
+    assert "bot->IsInWorld() && bot->IsAlive()" in reattach
+    assert "!bot->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST)" in reattach
+    assert "!bot->HasCorpse()" in reattach
+    assert "group->GetGUID() == state.ValidationCohortGroupGuid" in reattach
+    assert "group->GetLeaderGUID() == state.ValidationCohortLeaderGuid" in reattach
     assert "Never cancel or reattach a native recovery worldport" in reattach
     assert "if (state.NativeReleaseRequested && !nativeRecoveryWorldport" in reattach
     assert "bot->CancelDelayedTeleport()" not in reattach.split("if (nativeRecoveryWorldport)", 1)[1].split("if (destination.GetMapId()", 1)[0]

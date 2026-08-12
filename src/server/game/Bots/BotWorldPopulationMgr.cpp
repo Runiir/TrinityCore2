@@ -4182,21 +4182,33 @@ bool BotWorldPopulationMgr::TryReattachValidationBot(WorldBotState& state, Playe
             if (WorldSession* session = bot->GetSession())
             {
                 session->HandleMoveWorldportAck();
-                bool nativeWorldportComplete = bot->IsInWorld() && !bot->IsAlive()
-                    && bot->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST)
-                    && HasNativeRaidCorpseAuthority(state, bot);
+                bool nativeWorldportComplete = false;
                 if (nativeReleasedGhostWorldport)
                 {
                     AreaTriggerEntry const* entranceEntry = nullptr;
                     AreaTriggerStruct const* entranceDestination = nullptr;
-                    nativeWorldportComplete = nativeWorldportComplete
+                    nativeWorldportComplete = bot->IsInWorld() && !bot->IsAlive()
+                        && bot->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST)
+                        && HasNativeRaidCorpseAuthority(state, bot)
                         && ResolveNativeBlackwingDescentEntrance(entranceEntry, entranceDestination)
                         && bot->GetMapId() == entranceEntry->ContinentID;
                 }
                 else
-                    nativeWorldportComplete = nativeWorldportComplete
+                {
+                    // HandleMoveWorldportAck performs the core's native
+                    // dungeon-corpse resurrection after adding the player to
+                    // the exact destination map.  Accept that postcondition,
+                    // not a still-ghost state, and independently retain the
+                    // frozen native group/leader identity.
+                    Group const* group = bot->GetGroup();
+                    nativeWorldportComplete = bot->IsInWorld() && bot->IsAlive()
+                        && !bot->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST)
+                        && !bot->HasCorpse()
                         && bot->GetMapId() == state.ValidationCohortMapId
-                        && bot->GetInstanceId() == state.ValidationCohortInstanceId;
+                        && bot->GetInstanceId() == state.ValidationCohortInstanceId
+                        && group && group->GetGUID() == state.ValidationCohortGroupGuid
+                        && group->GetLeaderGUID() == state.ValidationCohortLeaderGuid;
+                }
 
                 if (nativeWorldportComplete)
                 {
