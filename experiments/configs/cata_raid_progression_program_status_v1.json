@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "program_id": "cata_raid_progression_442_v1",
-  "updated_at_utc": "2026-08-12T16:59:54Z",
+  "updated_at_utc": "2026-08-12T17:48:39Z",
   "active_phase": 1,
   "active_phase_name": "raid_runtime_formation_difficulty_and_evidence_primitives",
   "program_status": "in_progress",
@@ -16,8 +16,8 @@
   },
   "integration": {
     "branch": "raid/cata-raid-progression-integration",
-    "foundation_sha": "a9994c4aee496774fb71281e933241895e2919d8",
-    "current_head_sha": "a9994c4aee496774fb71281e933241895e2919d8",
+    "foundation_sha": "7bd199619c64c820e77680a8c75a8748f0cd3348",
+    "current_head_sha": "7bd199619c64c820e77680a8c75a8748f0cd3348",
     "raid_base_is_ancestor": true,
     "created_from_exact_local_master": true
   },
@@ -27,18 +27,18 @@
     "prior_review_decision": "REJECT",
     "prior_review_scope": "exact 9a7b3c72aed5a2e464635b31e8f4617f2134c8d8",
     "prior_review_counts": {"critical": 1, "high": 6, "medium": 5},
-    "critical_high_remediation_implemented_at": "a9994c4aee496774fb71281e933241895e2919d8",
-    "mandatory_rereview": "pending_exact_status_descendant_of_a9994c4aee_after_transaction_rollback_frozen_roster_bound_target_and_db_backed_dvc_evidence",
+    "critical_high_remediation_implemented_at": "7bd199619c64c820e77680a8c75a8748f0cd3348",
+    "mandatory_rereview": "pending_exact_status_descendant_of_7bd199619c_after_native_bwd_ghost_worldport_remediation",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "current_acceptance": "review_278b_rejected_four_high_all_remediated_at_a9994c4aee_fresh_exact_review_rebuild_and_live_rerun_pending"
+    "current_acceptance": "exact_9c9_review_and_build_succeeded_fourth_uncapped_run_found_native_ghost_worldport_infrastructure_abort_remediated_at_7bd199619c_exact_review_rebuild_and_live_rerun_pending"
   },
   "build_history": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "current_commit": "a9994c4aee496774fb71281e933241895e2919d8",
-    "current_state": "idle_exact_transaction_frozen_roster_bound_target_and_evidence_remediation_review_pending",
-    "current_result": "successful_6ffcf7d9c1_receipt_retained_but_stale_after_a9994c4aee_remediation",
+    "current_commit": "7bd199619c64c820e77680a8c75a8748f0cd3348",
+    "current_state": "idle_exact_9c9_build_and_fourth_capture_complete_native_runback_remediation_review_pending",
+    "current_result": "successful_9c9dec8b_receipt_retained_but_stale_after_7bd199619c_native_worldport_remediation",
     "successful_build_without_current_policy_receipt_is_invalid": true,
     "attempts": [
       {
@@ -381,11 +381,19 @@
       "capture_identity_loss_crash_capture_loss_and_forbidden_assistance_taxonomy_corrected",
       "validation_provisioning_verify_and_validation_scenarios_dvc_stages_regenerated_pushed_and_in_sync",
       "fresh_db_backed_phase1_provisioning_readback_dvc_artifact_pushed_and_remote_verified",
-      "expanded_focused_suite_227_passed_and_coordinator_rerun_32_passed"
+      "expanded_focused_suite_227_passed_and_coordinator_rerun_32_passed",
+      "mandatory_sol_high_review_approved_exact_9c9dec8b88_with_zero_critical_high",
+      "exact_policy_v8_configure_and_worldserver_build_succeeded_at_9c9dec8b88",
+      "receipt_bound_worldserver_eed28b5aeafaac382a80a4f31115778de01a6c91323b7fda26e3ec1d0a48a0d5",
+      "fourth_uncapped_capture_formed_exact_bwd_10n_instance2_and_killed_two_entry_trash_objectives",
+      "fourth_capture_native_release_spirit_observed_then_classified_infrastructure_abort_on_cancelled_graveyard_worldport",
+      "fourth_capture_dvc_published_remote_verified_and_exactly_evicted",
+      "native_bwd_released_ghost_worldport_and_exact_trigger_6581_return_remediated_at_7bd199619c",
+      "expanded_focused_suite_242_passed"
       ],
       "remaining_requirements": [
-      "mandatory_independent_sol_high_review_of_exact_status_descendant_of_a9994c4aee_full_review_remediation",
-      "complete_exact_policy_v8_release_coordinated_incremental_build_and_regression_gate_at_reviewed_descendant",
+      "mandatory_independent_sol_high_review_of_exact_status_descendant_of_7bd199619c_native_runback_remediation",
+      "complete_exact_policy_v8_release_coordinated_incremental_build_and_regression_gate_at_reviewed_descendant_of_7bd199619c",
         "rerun_uncapped_serialized_bwd_10n_entry_formation_difficulty_wipe_reset_evidence_publication_and_cleanup_gate_with_live_stall_diagnosis",
         "phase1_live_evidence_dvc_publish_remote_verify_and_exact_evict_gate"
       ]
@@ -408,8 +416,8 @@
       "blocker_id": "phase1_current_build_and_live_dvc_gate",
       "classification": "incomplete_evidence",
       "scope": "phase1_build_and_live_gate",
-      "detail": "Exact clean build 6ffcf7d9c1 succeeded and its uncapped capture correctly stopped as incomplete evidence after a 301-second semantic stall. Review of 278b found four High gaps. Exact a9994c4aee now binds the permanent ten GUID/name/role/spec roster in every route row, makes admission a terminal all-or-nothing transaction with full rollback and post-admission cleanup, binds declared shared boss targets into typed authority, corrects capture taxonomy, and publishes a fresh DB-backed DVC readback. Mandatory exact review and rebuild/rerun remain pending."
+      "detail": "Exact clean 9c9dec8b source review and policy-v8 build succeeded. The fourth uncapped run formed the exact BWD 10N raid, killed both entry-trash objectives, and observed native release spirit, then classified a clean infrastructure abort because generic validation reattach cancelled the native graveyard worldport. Exact 7bd199619c now preserves only corpse/group/instance-authorized native release and exact trigger-6581 return worldports. The failed batch is DVC-published, remote-verified, compactly summarized, and exactly evicted. Mandatory review, rebuild, and rerun remain pending."
     }
   ],
-  "next_action": "Complete the mandatory independent Sol-high review of the exact status descendant of a9994c4aee. After zero unresolved critical/high findings, fast-forward the isolated build worktree, run exact policy-v8 configure/build receipts outside the worktree, verify regressions and exact provisioning readback, then restart uncapped canonical BWD 10N Phase 1. For later parallel boss diagnostics, root must fully start and verify the worldserver and every shard before spawning one Luna-xhigh live babysitter per boss; immediately exactly evict remotely verified diagnostic payloads after fixes/checkpoints are secured. Keep all 464 material fidelity blockers fail-closed."
+  "next_action": "Complete the mandatory independent Sol-high review of the exact status descendant of 7bd199619c. After zero unresolved critical/high findings, fast-forward the isolated build worktree, run exact policy-v8 configure/build receipts outside the worktree, verify the 242-test regression gate and exact provisioning readback, then restart uncapped canonical BWD 10N Phase 1. For later parallel boss diagnostics, root must fully start and verify the worldserver and every shard before spawning one Luna-xhigh live babysitter per boss; immediately exactly evict remotely verified diagnostic payloads after fixes/checkpoints are secured. Keep all 464 material fidelity blockers fail-closed."
 }
