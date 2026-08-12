@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "program_id": "cata_raid_progression_442_v1",
-  "updated_at_utc": "2026-08-12T19:45:27Z",
+  "updated_at_utc": "2026-08-12T20:29:00Z",
   "active_phase": 1,
   "active_phase_name": "raid_runtime_formation_difficulty_and_evidence_primitives",
   "program_status": "in_progress",
@@ -16,8 +16,8 @@
   },
   "integration": {
     "branch": "raid/cata-raid-progression-integration",
-    "foundation_sha": "508368a5e30f311c8be5a4d130cc02b4e25a53a9",
-    "current_head_sha": "508368a5e30f311c8be5a4d130cc02b4e25a53a9",
+    "foundation_sha": "c3007076a1f8856a59f3bf7dc6ed5af619d79e0a",
+    "current_head_sha": "c3007076a1f8856a59f3bf7dc6ed5af619d79e0a",
     "raid_base_is_ancestor": true,
     "created_from_exact_local_master": true
   },
@@ -27,18 +27,18 @@
     "prior_review_decision": "REJECT",
     "prior_review_scope": "exact 9a7b3c72aed5a2e464635b31e8f4617f2134c8d8",
     "prior_review_counts": {"critical": 1, "high": 6, "medium": 5},
-    "critical_high_remediation_implemented_at": "508368a5e30f311c8be5a4d130cc02b4e25a53a9",
-    "mandatory_rereview": "pending_exact_status_descendant_of_508368a5e3_after_persisted_recovery_state_admission_remediation",
+    "critical_high_remediation_implemented_at": "c3007076a1f8856a59f3bf7dc6ed5af619d79e0a",
+    "mandatory_rereview": "pending_exact_c3007076a1_native_path_length_route_remediation",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "current_acceptance": "exact_afeb_review_and_build_succeeded_sixth_uncapped_run_found_persisted_prior_ghost_aura_corpse_and_instance_state_infrastructure_abort_remediated_review_rebuild_and_live_rerun_pending"
+    "current_acceptance": "exact_552_review_build_provisioning_and_seventh_uncapped_capture_succeeded_through_entry_trash_then_native_path_length_infrastructure_abort_c300_route_remediation_review_rebuild_and_live_rerun_pending"
   },
   "build_history": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "current_commit": "508368a5e30f311c8be5a4d130cc02b4e25a53a9",
-    "current_state": "idle_exact_afeb_build_and_sixth_capture_complete_persisted_recovery_state_admission_remediation_review_pending",
-    "current_result": "successful_afeb52c7_receipts_retained_in_dvc_but_binary_stale_after_508368a5e3_remediation",
+    "current_commit": "c3007076a1f8856a59f3bf7dc6ed5af619d79e0a",
+    "current_state": "idle_exact_552_build_and_seventh_capture_complete_native_path_length_route_remediation_review_pending",
+    "current_result": "successful_55297462_receipts_retained_in_dvc_but_exact_binary_stale_after_c3007076a1_route_manifest_remediation",
     "successful_build_without_current_policy_receipt_is_invalid": true,
     "attempts": [
       {
@@ -150,6 +150,16 @@
         "worldserver_receipt_sha256": "eb00e7e6df924ef7881e9f20b5fd77c061b708804542d375d67c0fd58833bbc8",
         "worldserver_sha256": "3e305f7cc2edd09004b815466cd04c830bf6a8ae073c0dbd70babcdef2bb8afd",
         "receipt_retention": "seven_file_remote_verified_phase1_afeb_dvc_artifact"
+      },
+      {
+        "policy": "cata_raid_build_resource_policy_degraded_v8",
+        "compiler_jobs": 1,
+        "linker_jobs": 1,
+        "classification": "configure_and_worldserver_success_at_552974620b_then_stale_after_c3007076a1_native_path_length_route_remediation",
+        "configure_receipt_sha256": "758a7bab6909bd809564db4e5f9042b474c6e3902e3aa3021a825ecb8b840dad",
+        "worldserver_receipt_sha256": "05261d0ac6ce0a3f42f341f77725933503ec8c1efbb11441233b29070c739807",
+        "worldserver_sha256": "cb0037117b6a4bf36873e144c4b7e6e30fce9ec7e2aa1bc002edaf1d7ead0669",
+        "receipt_retention": "eight_file_remote_verified_phase1_55297462_dvc_artifact"
       }
     ]
   },
@@ -422,10 +432,19 @@
       ,"preclaim_persisted_recovery_state_and_final_live_alive_map_instance_admission_fail_closed"
       ,"live_v3_readback_passed_zero_instance_group_ghost_aura_and_corpse_residue"
       ,"expanded_focused_suite_214_non_coordinator_plus_32_coordinator_passed"
+      ,"mandatory_sol_high_review_approved_exact_552974620b_with_zero_critical_high"
+      ,"exact_policy_v8_configure_and_worldserver_build_succeeded_at_552974620b"
+      ,"receipt_bound_worldserver_cb0037117b6a4bf36873e144c4b7e6e30fce9ec7e2aa1bc002edaf1d7ead0669"
+      ,"live_v4_readback_passed_zero_instance_group_ghost_aura_corpse_and_corpse_phase_residue"
+      ,"seventh_uncapped_capture_formed_exact_bwd_10n_instance2_and_killed_two_entry_trash_objectives"
+      ,"seventh_capture_diagnosed_native_path_length_route_destination_unreachable_before_magmaw"
+      ,"seventh_capture_eight_file_dvc_artifact_published_remote_verified_compactly_summarized_and_exactly_evicted"
+      ,"post_trash_to_magmaw_route_split_at_exact_frozen_entrance_junction_below_native_path_limit"
+      ,"current_focused_suite_215_passed_with_one_inherited_stale_stonecore_structural_failure_and_32_coordinator_passed"
       ],
       "remaining_requirements": [
-      "mandatory_independent_sol_high_review_of_exact_persisted_recovery_state_admission_remediation",
-      "complete_exact_policy_v8_release_coordinated_incremental_build_and_regression_gate_at_reviewed_508368a5e3_descendant",
+      "mandatory_independent_sol_high_review_of_exact_c3007076a1_native_path_length_route_remediation",
+      "complete_exact_policy_v8_release_coordinated_incremental_build_and_regression_gate_at_reviewed_c3007076a1_descendant",
         "rerun_uncapped_serialized_bwd_10n_entry_formation_difficulty_wipe_reset_evidence_publication_and_cleanup_gate_with_live_stall_diagnosis",
         "phase1_live_evidence_dvc_publish_remote_verify_and_exact_evict_gate"
       ]
@@ -448,8 +467,8 @@
       "blocker_id": "phase1_current_build_and_live_dvc_gate",
       "classification": "incomplete_evidence",
       "scope": "phase1_build_and_live_gate",
-      "detail": "Exact clean afeb52c7 source review and policy-v8 build succeeded. The sixth uncapped run formed the exact BWD 10N raid and killed both entry-trash objectives, then classified a clean infrastructure abort because Bwddpsa entered duration zero with persisted prior ghost flag, aura 8326 and corpse state. The seven-file batch, including exact receipts and provisioning proofs, is DVC-published, remote-verified, compactly summarized, and exactly evicted. Deterministic provisioning now clears ghost/resurrect flags, aura, corpse, corpse phases and stale character-instance rows; preclaim and final admission independently fail closed on recovery contamination. Live verifier and v3 exact readback pass. Mandatory review, rebuild, and rerun remain pending."
+      "detail": "Exact clean 55297462 review, policy-v8 build, provisioning verifier, and v4 readback succeeded. The seventh uncapped run formed the exact BWD 10N raid and killed both entry-trash targets, then classified a clean infrastructure abort because the direct post-trash-to-Magmaw leg exceeded PathGenerator's 296-yard hard limit and failed closed as route_destination_unreachable. The eight-file batch is DVC-published, remote-verified, compactly summarized, and exactly evicted. Checkpoint c3007076a1 splits the transition at the exact frozen entrance junction into two sub-limit native path legs without teleport, door, encounter-state, or guessed-waypoint mutation. Mandatory review, rebuild, and rerun remain pending."
     }
   ],
-  "next_action": "Complete the mandatory independent Sol-high review of the exact persisted-recovery-state admission remediation checkpoint. After zero unresolved critical/high findings, fast-forward the isolated build worktree, run exact policy-v8 configure/build receipts outside the worktree, reapply and independently verify the v3 BWD readback, then restart uncapped canonical BWD 10N Phase 1. For later parallel boss diagnostics, root must fully start and verify the worldserver and every shard before spawning one Luna-xhigh live babysitter per boss; immediately exactly evict remotely verified diagnostic payloads after fixes/checkpoints are secured. Keep all 464 material fidelity blockers fail-closed."
+  "next_action": "Complete the mandatory independent Sol-high review of exact c3007076a1 native path-length route remediation. After zero unresolved critical/high findings, fast-forward the isolated build worktree, run exact policy-v8 configure/build receipts outside the worktree, reapply and independently verify the v4 BWD readback, then restart uncapped canonical BWD 10N Phase 1. For later parallel boss diagnostics, root must fully start and verify the worldserver and every shard before spawning one Luna-xhigh live babysitter per boss; immediately exactly evict remotely verified diagnostic payloads after fixes/checkpoints are secured. Keep all 464 material fidelity blockers fail-closed."
 }

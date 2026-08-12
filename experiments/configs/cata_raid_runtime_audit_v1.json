@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "audit_id": "cata_raid_runtime_phase1_v1",
-  "updated_at_utc": "2026-08-12T19:45:27Z",
+  "updated_at_utc": "2026-08-12T20:29:00Z",
   "target": {
     "client": "Cataclysm Classic",
     "patch": "4.4.2",
@@ -9,18 +9,18 @@
     "locale": "enUS",
     "hotfix_cutoff_utc": "2025-02-20T23:00:00Z"
   },
-  "audited_commit": "508368a5e30f311c8be5a4d130cc02b4e25a53a9",
-  "gate_state": "in_progress_exact_afeb_review_build_and_sixth_live_capture_complete_persisted_prior_recovery_state_remediated_review_rebuild_and_live_rerun_pending",
+  "audited_commit": "c3007076a1f8856a59f3bf7dc6ed5af619d79e0a",
+  "gate_state": "in_progress_exact_552_review_build_provisioning_and_seventh_live_capture_complete_native_path_length_route_remediated_review_rebuild_and_live_rerun_pending",
   "foundation": {
-    "foundation_sha": "508368a5e30f311c8be5a4d130cc02b4e25a53a9",
-    "current_head_sha": "508368a5e30f311c8be5a4d130cc02b4e25a53a9",
+    "foundation_sha": "c3007076a1f8856a59f3bf7dc6ed5af619d79e0a",
+    "current_head_sha": "c3007076a1f8856a59f3bf7dc6ed5af619d79e0a",
     "prior_sol_high_review": "REJECT",
     "critical_high_remediation": "implemented",
-    "mandatory_sol_high_rereview": "pending_exact_status_descendant_of_508368a5e3_after_persisted_recovery_state_admission_remediation",
+    "mandatory_sol_high_rereview": "pending_exact_c3007076a1_native_path_length_route_remediation",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "acceptance": "exact_afeb_review_build_and_sixth_capture_complete_persisted_prior_ghost_aura_corpse_instance_infrastructure_abort_remediated_exact_review_rebuild_uncapped_rerun_pending"
+    "acceptance": "exact_552_review_build_provisioning_and_seventh_capture_complete_native_path_length_infrastructure_abort_c300_route_remediation_exact_review_rebuild_uncapped_rerun_pending"
   },
   "research": {
     "required_boss_packets": 28,
@@ -46,8 +46,8 @@
   },
   "build": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "current_state": "successful_afeb52c7_build_stale_after_508368a5e3_persisted_recovery_state_admission_remediation",
-    "current_result": "mandatory_review_then_exact_incremental_rebuild_required_before_uncapped_canonical_rerun",
+    "current_state": "successful_55297462_build_stale_after_c3007076a1_native_path_length_route_remediation",
+    "current_result": "mandatory_review_then_exact_incremental_rebuild_required_before_next_uncapped_canonical_rerun",
     "receipt_trust_model": "explicit_trusted_local_operator",
     "trusted_operator": "runiir",
     "trusted_uid": 1000,
@@ -138,22 +138,27 @@
     ,"preclaim_persisted_recovery_state_and_final_live_alive_map_instance_admission_fail_closed"
     ,"sixth_capture_seven_file_remote_verified_compactly_summarized_and_exactly_evicted"
     ,"live_v3_readback_passed_zero_instance_group_ghost_aura_and_corpse_residue"
+    ,"exact_552_reviewed_built_provisioned_and_live_verified_raid_formation_difficulty_identity_and_two_entry_trash_kills"
+    ,"live_v4_readback_passed_zero_instance_group_ghost_aura_corpse_and_corpse_phase_residue"
+    ,"seventh_capture_native_path_length_infrastructure_abort_diagnosed"
+    ,"bwd_entry_to_magmaw_split_at_exact_frozen_entrance_junction_below_native_path_limit"
+    ,"seventh_capture_eight_file_remote_verified_compactly_summarized_and_exactly_evicted"
   ],
   "synthetic_checks": {
     "test_file": "tests/test_cata_raid_runtime_foundation.py",
-    "last_result": "245_expanded_focused_passed",
-    "combined_focus_result": "214_non_coordinator_plus_32_coordinator_passed",
+    "last_result": "215_current_focused_passed_plus_one_inherited_stale_stonecore_structural_failure",
+    "combined_focus_result": "199_core_plus_32_coordinator_passed",
     "combined_focus_command": "pixi run pytest -q tests/test_cata_raid_runtime_foundation.py tests/test_cata_raid_foundation_model.py tests/test_cata_raid_research_contracts.py tests/test_phase1_raid_foundation_capture.py tests/test_raid_build_coordinator.py tests/test_phase1_provisioning_readback.py tests/test_phase9_live_qualification.py",
     "broad_comparison": "patched_worktree_329_passed_34_inherited_stale_failures; exact_4012450_control_326_passed_35_failures; no_new_failure"
   },
   "required_open_work": [
     {
       "area": "current_build",
-      "missing": ["successful_exact_policy_v8_release_coordinated_incremental_build_at_reviewed_persisted_recovery_state_admission_remediation", "valid_current_production_receipt_bound_to_trusted_local_operator", "post_build_regression_and_orphan_process_check"]
+      "missing": ["successful_exact_policy_v8_release_coordinated_incremental_build_at_reviewed_native_path_length_route_remediation", "valid_current_production_receipt_bound_to_trusted_local_operator", "post_build_regression_and_orphan_process_check"]
     },
     {
       "area": "adversarial_review",
-      "missing": ["zero_unresolved_critical_high_findings_for_persisted_recovery_state_admission_remediation", "explicit_encounter_script_vs_bot_decision_review", "explicit_non_fidelity_phase1_engagement_scope_approval"]
+      "missing": ["zero_unresolved_critical_high_findings_for_native_path_length_route_remediation", "explicit_encounter_script_vs_bot_decision_review", "explicit_non_fidelity_phase1_engagement_scope_approval"]
     },
     {
       "area": "native_recovery_live_evidence",
@@ -165,7 +170,7 @@
     }
   ],
   "phase1_gate_blockers": [
-    "mandatory_sol_high_review_of_exact_persisted_recovery_state_admission_remediation_pending",
+    "mandatory_sol_high_review_of_exact_c300_native_path_length_route_remediation_pending",
     "coordinated_policy_v8_release_worldserver_rebuild_after_review_pending",
     "uncapped_serialized_bwd_10n_live_formation_difficulty_wipe_reset_gate_rerun_pending",
     "phase1_live_dvc_publication_remote_verification_and_exact_eviction_pending",
