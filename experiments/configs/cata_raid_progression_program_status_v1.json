@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
   "program_id": "cata_raid_progression_442_v1",
-  "updated_at_utc": "2026-08-12T03:41:47Z",
-  "active_phase": 0,
-  "active_phase_name": "successor_checkpoint_policy_reconciliation_and_research_framework",
+  "updated_at_utc": "2026-08-12T03:49:30Z",
+  "active_phase": 1,
+  "active_phase_name": "raid_runtime_formation_difficulty_and_evidence_primitives",
   "program_status": "in_progress",
   "raid_base": {
     "branch_at_freeze": "master",
@@ -16,7 +16,7 @@
   },
   "integration": {
     "branch": "raid/cata-raid-progression-integration",
-    "foundation_sha": null,
+    "foundation_sha": "72323f589090bf9d181da986cd277b1377f8bbaf",
     "raid_base_is_ancestor": true,
     "created_from_exact_local_master": true
   },
@@ -90,6 +90,9 @@
     "validation_scenario_stage_remote_status": "cache_and_remote_in_sync",
     "validation_scenario_dvc_md5": "1561d7d875757ed989349dcbdb61beb8.dir",
     "validation_provisioning_dvc_md5": "2c6a0dc150fe9c9f86e6d65d9fd7bb88.dir",
+    "phase0_no_bots_baseline_pointer": "artifacts/cata_raid_program/phase0_no_bots_worldserver_20260812.dvc",
+    "phase0_no_bots_baseline_dvc_md5": "fa6ca050a2ddd41eece7f05d89424a2f.dir",
+    "phase0_no_bots_baseline_remote_status": "cache_and_remote_in_sync_exact_payload_and_cache_evicted",
     "broad_gc_used": false,
     "config_local_tracked": false,
     "known_historical_unavailable_objects": [
@@ -100,8 +103,8 @@
   "phase_gates": [
     {
       "phase": 0,
-      "status": "in_progress",
-      "gate_passed": false,
+      "status": "complete",
+      "gate_passed": true,
       "completed_requirements": [
         "approved_plan_hash_verified",
         "trinity_orchestrator_skill_read",
@@ -133,11 +136,24 @@
         ,"bwd_scenario_explicitly_blocked_pending_native_unlock_proof"
         ,"focused_phase0_policy_coordinator_and_inherited_tests_23_passed"
         ,"broad_legacy_diagnostic_289_passed_23_inherited_stale_failures"
+        ,"no_bots_worldserver_baseline_passed_published_verified_and_exactly_evicted"
+      ],
+      "remaining_requirements": []
+    },
+    {
+      "phase": 1,
+      "status": "in_progress",
+      "gate_passed": false,
+      "completed_requirements": [
+        "phase0_foundation_committed",
+        "phase0_no_bots_baseline_remote_verified"
       ],
       "remaining_requirements": [
-        "capture_coordinated_no_bots_worldserver_performance_baseline_after_clean_checkpoint",
-        "retain_bwd_quantitative_fidelity_block_until_primary_data_and_known_mode_evidence_exist",
-        "complete_user_requested_all_remaining_boss_research_wave"
+        "audit_existing_raid_runtime_and_evidence_primitives",
+        "implement_missing_generic_raid_primitives",
+        "add_deterministic_10_and_25_member_formation_difficulty_lease_wipe_and_capture_smokes",
+        "coordinated_build_and_regression_gate",
+        "serialized_bwd_10n_entry_formation_difficulty_wipe_reset_evidence_publication_and_cleanup_gate"
       ]
     }
   ],
@@ -155,5 +171,5 @@
       "detail": "Forbidden Atramedes state injection and Nefarian state injection/spawn were removed. The route is structurally valid and DVC-synchronized, but native prerequisite unlock/start/reset behavior is not yet proven live."
     }
   ],
-  "next_action": "Checkpoint the completed Phase 0 policy/readiness/route corrections, then capture the no-bots worldserver baseline under the clean committed identity while the Luna xhigh all-boss research queue continues."
+  "next_action": "Audit the existing one-cohort group runtime against Phase 1 raid ownership and evidence requirements, implement the smallest missing generic primitives with tests, and continue refilling all three Luna xhigh boss-research slots."
 }

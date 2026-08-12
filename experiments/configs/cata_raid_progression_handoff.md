@@ -1,5 +1,13 @@
 # Cataclysm raid progression handoff
 
+## 2026-08-12T03:49:30Z — Phase 0 accepted; Phase 1 opened
+
+Phase 0 is accepted at foundation checkpoint `72323f589090bf9d181da986cd277b1377f8bbaf`, descending from frozen `raid_base_sha` `889d38cc9451c2b8104db142ce069593b4647a41`. The clean-worktree no-bots baseline ran at commit `c5654f0facc06cacb0e568c08d5002ce15813a78` with worldserver SHA-256 `e9a5878734a248fe5694d92297d0dacd06abc73ec0efe950111544ff5ed27ed6` and config SHA-256 `e4059209ab34173259000f58b57c405361b3e97df21d20162687e08d73f727d7`.
+
+The passing 30-second measurement observed zero bots and zero leases, clean worldserver exit, stable clean Git identity, 30 resource samples, maximum RSS 1,439,461,376 bytes, mean CPU 1.401% of one core, maximum 1-minute load 0.383, minimum `MemAvailable` 21,844,103,168 bytes, zero memory PSI, and six successful MySQL probes with maximum latency 43.829 ms. The compact report is remotely verified at `artifacts/cata_raid_program/phase0_no_bots_worldserver_20260812.dvc`, object `fa6ca050a2ddd41eece7f05d89424a2f.dir`. After remote verification, only that exact output and its two exact cache objects were removed; the pointer can recover it. The first parser-only attempt was classified `infrastructure_abort`, not gameplay failure, because the harness incorrectly expected an `active_bots` field instead of the runtime's `bots` plus `lease_count`; the parser was corrected and tested before the successful fresh identity.
+
+Phase 1 is active. Its first task is a fail-closed audit of the existing one-cohort runtime against raid GUID/size/difficulty/lockout ownership, five deterministic subgroups, slot leases, assignments, generic formations/swaps/targeting/interrupts/dispels/healer/soak/interactable/platform/recovery primitives, difficulty readback, and immutable evidence demultiplexing. Do not assume prior BWD experimental artifacts certify any raid gate; the corrected BWD route remains blocked until native unlock behavior is proven.
+
 ## 2026-08-12T03:41:47Z — Phase 0 policy, target, readiness and route audit checkpoint
 
 The launch target is now frozen as Cataclysm Classic `4.4.2.59185`, locale `enUS`, with the hotfix cutoff at the official Blizzard version-1 launch-note timestamp `2025-02-18T19:31:51.916Z`. The primary launch-note topic/post/version metadata is pinned, as are pre-cutoff BigWigs Cataclysm tag `v11.0.13` commit `650bab03981eb06b5fa6ded88e47c523caa3c7c3` and DBM Cataclysm commit `4b02efec4552aef3df43c75fb19c6d8c7fdb3e6e`, including archive SHA-256 identities. Primary client-data hashes, a pinned Wowhead 4.4.2 quantitative extract, and known-mode logs remain unavailable, so all unresolved material BWD rows remain fail-closed and no boss is labeled verified.
