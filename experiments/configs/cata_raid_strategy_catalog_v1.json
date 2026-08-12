@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "catalog_id": "cata_raid_strategy_catalog_v1",
-  "updated_at_utc": "2026-08-11T19:30:00Z",
+  "updated_at_utc": "2026-08-12T04:46:09Z",
   "fidelity_target": {
     "product": "Cataclysm Classic",
     "patch": "4.4.2",
@@ -42,7 +42,8 @@
           "ledger": "experiments/configs/cata_raid_encounters/blackwing_descent/magmaw_ledger_v1.json",
           "modes": ["10N", "10H", "25N", "25H"],
           "fidelity_state": "fidelity_blocked",
-          "contract_unresolved_material_count": 8
+          "contract_unresolved_material_count": 8,
+          "ledger_unresolved_material_count": 8
         },
         {
           "boss_slug": "omnotron_defense_system",
@@ -51,7 +52,8 @@
           "ledger": "experiments/configs/cata_raid_encounters/blackwing_descent/omnotron_defense_system_ledger_v1.json",
           "modes": ["10N", "10H", "25N", "25H"],
           "fidelity_state": "fidelity_blocked",
-          "contract_unresolved_material_count": 9
+          "contract_unresolved_material_count": 9,
+          "ledger_unresolved_material_count": 9
         },
         {
           "boss_slug": "maloriak",
@@ -60,7 +62,8 @@
           "ledger": "experiments/configs/cata_raid_encounters/blackwing_descent/maloriak_ledger_v1.json",
           "modes": ["10N", "10H", "25N", "25H"],
           "fidelity_state": "fidelity_blocked",
-          "contract_unresolved_material_count": 6
+          "contract_unresolved_material_count": 6,
+          "ledger_unresolved_material_count": 7
         },
         {
           "boss_slug": "atramedes",
@@ -69,7 +72,8 @@
           "ledger": "experiments/configs/cata_raid_encounters/blackwing_descent/atramedes_ledger_v1.json",
           "modes": ["10N", "10H", "25N", "25H"],
           "fidelity_state": "fidelity_blocked",
-          "contract_unresolved_material_count": 9
+          "contract_unresolved_material_count": 9,
+          "ledger_unresolved_material_count": 9
         },
         {
           "boss_slug": "chimaeron",
@@ -78,7 +82,8 @@
           "ledger": "experiments/configs/cata_raid_encounters/blackwing_descent/chimaeron_ledger_v1.json",
           "modes": ["10N", "10H", "25N", "25H"],
           "fidelity_state": "fidelity_blocked",
-          "contract_unresolved_material_count": 9
+          "contract_unresolved_material_count": 9,
+          "ledger_unresolved_material_count": 9
         },
         {
           "boss_slug": "nefarian",
@@ -87,7 +92,256 @@
           "ledger": "experiments/configs/cata_raid_encounters/blackwing_descent/nefarian_ledger_v1.json",
           "modes": ["10N", "10H", "25N", "25H"],
           "fidelity_state": "fidelity_blocked",
-          "contract_unresolved_material_count": 10
+          "contract_unresolved_material_count": 10,
+          "ledger_unresolved_material_count": 10
+        }
+      ]
+    },
+    "bastion_of_twilight": {
+      "map_id": 671,
+      "tier": "t11",
+      "research_state": "phase0_researched_fidelity_blocked",
+      "bosses": [
+        {
+          "boss_slug": "halfus_wyrmbreaker",
+          "dossier": "docs/bot_raids/strategies/t11/bastion_of_twilight/halfus_wyrmbreaker.md",
+          "contract": "experiments/configs/cata_raid_encounters/bastion_of_twilight/halfus_wyrmbreaker_v1.json",
+          "ledger": "experiments/configs/cata_raid_encounters/bastion_of_twilight/halfus_wyrmbreaker_ledger_v1.json",
+          "modes": ["10N", "10H", "25N", "25H"],
+          "fidelity_state": "fidelity_blocked",
+          "contract_unresolved_material_count": 9,
+          "ledger_unresolved_material_count": 9
+        },
+        {
+          "boss_slug": "valiona_and_theralion",
+          "dossier": "docs/bot_raids/strategies/t11/bastion_of_twilight/valiona_and_theralion.md",
+          "contract": "experiments/configs/cata_raid_encounters/bastion_of_twilight/valiona_and_theralion_v1.json",
+          "ledger": "experiments/configs/cata_raid_encounters/bastion_of_twilight/valiona_and_theralion_ledger_v1.json",
+          "modes": ["10N", "10H", "25N", "25H"],
+          "fidelity_state": "fidelity_blocked",
+          "contract_unresolved_material_count": 13,
+          "ledger_unresolved_material_count": 13
+        },
+        {
+          "boss_slug": "ascendant_council",
+          "dossier": "docs/bot_raids/strategies/t11/bastion_of_twilight/ascendant_council.md",
+          "contract": "experiments/configs/cata_raid_encounters/bastion_of_twilight/ascendant_council_v1.json",
+          "ledger": "experiments/configs/cata_raid_encounters/bastion_of_twilight/ascendant_council_ledger_v1.json",
+          "modes": ["10N", "10H", "25N", "25H"],
+          "fidelity_state": "fidelity_blocked",
+          "contract_unresolved_material_count": 15,
+          "ledger_unresolved_material_count": 15
+        },
+        {
+          "boss_slug": "chogall",
+          "dossier": "docs/bot_raids/strategies/t11/bastion_of_twilight/chogall.md",
+          "contract": "experiments/configs/cata_raid_encounters/bastion_of_twilight/chogall_v1.json",
+          "ledger": "experiments/configs/cata_raid_encounters/bastion_of_twilight/chogall_ledger_v1.json",
+          "modes": ["10N", "10H", "25N", "25H"],
+          "fidelity_state": "fidelity_blocked",
+          "contract_unresolved_material_count": 13,
+          "ledger_unresolved_material_count": 13
+        },
+        {
+          "boss_slug": "sinestra",
+          "dossier": "docs/bot_raids/strategies/t11/bastion_of_twilight/sinestra.md",
+          "contract": "experiments/configs/cata_raid_encounters/bastion_of_twilight/sinestra_v1.json",
+          "ledger": "experiments/configs/cata_raid_encounters/bastion_of_twilight/sinestra_ledger_v1.json",
+          "modes": ["10H", "25H"],
+          "fidelity_state": "fidelity_blocked",
+          "contract_unresolved_material_count": 16,
+          "ledger_unresolved_material_count": 16
+        }
+      ]
+    },
+    "throne_of_the_four_winds": {
+      "map_id": 754,
+      "tier": "t11",
+      "research_state": "phase0_researched_fidelity_blocked",
+      "bosses": [
+        {
+          "boss_slug": "conclave_of_wind",
+          "dossier": "docs/bot_raids/strategies/t11/throne_of_the_four_winds/conclave_of_wind.md",
+          "contract": "experiments/configs/cata_raid_encounters/throne_of_the_four_winds/conclave_of_wind_v1.json",
+          "ledger": "experiments/configs/cata_raid_encounters/throne_of_the_four_winds/conclave_of_wind_ledger_v1.json",
+          "modes": ["10N", "10H", "25N", "25H"],
+          "fidelity_state": "fidelity_blocked",
+          "contract_unresolved_material_count": 16,
+          "ledger_unresolved_material_count": 16
+        },
+        {
+          "boss_slug": "alakir",
+          "dossier": "docs/bot_raids/strategies/t11/throne_of_the_four_winds/alakir.md",
+          "contract": "experiments/configs/cata_raid_encounters/throne_of_the_four_winds/alakir_v1.json",
+          "ledger": "experiments/configs/cata_raid_encounters/throne_of_the_four_winds/alakir_ledger_v1.json",
+          "modes": ["10N", "10H", "25N", "25H"],
+          "fidelity_state": "fidelity_blocked",
+          "contract_unresolved_material_count": 22,
+          "ledger_unresolved_material_count": 22
+        }
+      ]
+    },
+    "firelands": {
+      "map_id": 720,
+      "tier": "t12",
+      "research_state": "phase0_researched_fidelity_blocked",
+      "bosses": [
+        {
+          "boss_slug": "bethtilac",
+          "dossier": "docs/bot_raids/strategies/t12/firelands/bethtilac.md",
+          "contract": "experiments/configs/cata_raid_encounters/firelands/bethtilac_v1.json",
+          "ledger": "experiments/configs/cata_raid_encounters/firelands/bethtilac_ledger_v1.json",
+          "modes": ["10N", "10H", "25N", "25H"],
+          "fidelity_state": "fidelity_blocked",
+          "contract_unresolved_material_count": 18,
+          "ledger_unresolved_material_count": 18
+        },
+        {
+          "boss_slug": "lord_rhyolith",
+          "dossier": "docs/bot_raids/strategies/t12/firelands/lord_rhyolith.md",
+          "contract": "experiments/configs/cata_raid_encounters/firelands/lord_rhyolith_v1.json",
+          "ledger": "experiments/configs/cata_raid_encounters/firelands/lord_rhyolith_ledger_v1.json",
+          "modes": ["10N", "10H", "25N", "25H"],
+          "fidelity_state": "fidelity_blocked",
+          "contract_unresolved_material_count": 15,
+          "ledger_unresolved_material_count": 15
+        },
+        {
+          "boss_slug": "shannox",
+          "dossier": "docs/bot_raids/strategies/t12/firelands/shannox.md",
+          "contract": "experiments/configs/cata_raid_encounters/firelands/shannox_v1.json",
+          "ledger": "experiments/configs/cata_raid_encounters/firelands/shannox_ledger_v1.json",
+          "modes": ["10N", "10H", "25N", "25H"],
+          "fidelity_state": "fidelity_blocked",
+          "contract_unresolved_material_count": 18,
+          "ledger_unresolved_material_count": 18
+        },
+        {
+          "boss_slug": "alysrazor",
+          "dossier": "docs/bot_raids/strategies/t12/firelands/alysrazor.md",
+          "contract": "experiments/configs/cata_raid_encounters/firelands/alysrazor_v1.json",
+          "ledger": "experiments/configs/cata_raid_encounters/firelands/alysrazor_ledger_v1.json",
+          "modes": ["10N", "10H", "25N", "25H"],
+          "fidelity_state": "fidelity_blocked",
+          "contract_unresolved_material_count": 22,
+          "ledger_unresolved_material_count": 22
+        },
+        {
+          "boss_slug": "baleroc",
+          "dossier": "docs/bot_raids/strategies/t12/firelands/baleroc.md",
+          "contract": "experiments/configs/cata_raid_encounters/firelands/baleroc_v1.json",
+          "ledger": "experiments/configs/cata_raid_encounters/firelands/baleroc_ledger_v1.json",
+          "modes": ["10N", "10H", "25N", "25H"],
+          "fidelity_state": "fidelity_blocked",
+          "contract_unresolved_material_count": 14,
+          "ledger_unresolved_material_count": 14
+        },
+        {
+          "boss_slug": "majordomo_staghelm",
+          "dossier": "docs/bot_raids/strategies/t12/firelands/majordomo_staghelm.md",
+          "contract": "experiments/configs/cata_raid_encounters/firelands/majordomo_staghelm_v1.json",
+          "ledger": "experiments/configs/cata_raid_encounters/firelands/majordomo_staghelm_ledger_v1.json",
+          "modes": ["10N", "10H", "25N", "25H"],
+          "fidelity_state": "fidelity_blocked",
+          "contract_unresolved_material_count": 20,
+          "ledger_unresolved_material_count": 20
+        },
+        {
+          "boss_slug": "ragnaros",
+          "dossier": "docs/bot_raids/strategies/t12/firelands/ragnaros.md",
+          "contract": "experiments/configs/cata_raid_encounters/firelands/ragnaros_v1.json",
+          "ledger": "experiments/configs/cata_raid_encounters/firelands/ragnaros_ledger_v1.json",
+          "modes": ["10N", "10H", "25N", "25H"],
+          "fidelity_state": "fidelity_blocked",
+          "contract_unresolved_material_count": 19,
+          "ledger_unresolved_material_count": 19
+        }
+      ]
+    },
+    "dragon_soul": {
+      "map_id": 967,
+      "tier": "t13",
+      "research_state": "phase0_researched_fidelity_blocked",
+      "bosses": [
+        {
+          "boss_slug": "morchok",
+          "dossier": "docs/bot_raids/strategies/t13/dragon_soul/morchok.md",
+          "contract": "experiments/configs/cata_raid_encounters/dragon_soul/morchok_v1.json",
+          "ledger": "experiments/configs/cata_raid_encounters/dragon_soul/morchok_ledger_v1.json",
+          "modes": ["10N", "10H", "25N", "25H"],
+          "fidelity_state": "fidelity_blocked",
+          "contract_unresolved_material_count": 26,
+          "ledger_unresolved_material_count": 26
+        },
+        {
+          "boss_slug": "warlord_zonozz",
+          "dossier": "docs/bot_raids/strategies/t13/dragon_soul/warlord_zonozz.md",
+          "contract": "experiments/configs/cata_raid_encounters/dragon_soul/warlord_zonozz_v1.json",
+          "ledger": "experiments/configs/cata_raid_encounters/dragon_soul/warlord_zonozz_ledger_v1.json",
+          "modes": ["10N", "10H", "25N", "25H"],
+          "fidelity_state": "fidelity_blocked",
+          "contract_unresolved_material_count": 15,
+          "ledger_unresolved_material_count": 15
+        },
+        {
+          "boss_slug": "yorsahj_the_unsleeping",
+          "dossier": "docs/bot_raids/strategies/t13/dragon_soul/yorsahj_the_unsleeping.md",
+          "contract": "experiments/configs/cata_raid_encounters/dragon_soul/yorsahj_the_unsleeping_v1.json",
+          "ledger": "experiments/configs/cata_raid_encounters/dragon_soul/yorsahj_the_unsleeping_ledger_v1.json",
+          "modes": ["10N", "10H", "25N", "25H"],
+          "fidelity_state": "fidelity_blocked",
+          "contract_unresolved_material_count": 26,
+          "ledger_unresolved_material_count": 26
+        },
+        {
+          "boss_slug": "hagara",
+          "dossier": "docs/bot_raids/strategies/t13/dragon_soul/hagara.md",
+          "contract": "experiments/configs/cata_raid_encounters/dragon_soul/hagara_v1.json",
+          "ledger": "experiments/configs/cata_raid_encounters/dragon_soul/hagara_ledger_v1.json",
+          "modes": ["10N", "10H", "25N", "25H"],
+          "fidelity_state": "fidelity_blocked",
+          "contract_unresolved_material_count": 30,
+          "ledger_unresolved_material_count": 30
+        },
+        {
+          "boss_slug": "ultraxion",
+          "dossier": "docs/bot_raids/strategies/t13/dragon_soul/ultraxion.md",
+          "contract": "experiments/configs/cata_raid_encounters/dragon_soul/ultraxion_v1.json",
+          "ledger": "experiments/configs/cata_raid_encounters/dragon_soul/ultraxion_ledger_v1.json",
+          "modes": ["10N", "10H", "25N", "25H"],
+          "fidelity_state": "fidelity_blocked",
+          "contract_unresolved_material_count": 16,
+          "ledger_unresolved_material_count": 16
+        },
+        {
+          "boss_slug": "warmaster_blackhorn",
+          "dossier": "docs/bot_raids/strategies/t13/dragon_soul/warmaster_blackhorn.md",
+          "contract": "experiments/configs/cata_raid_encounters/dragon_soul/warmaster_blackhorn_v1.json",
+          "ledger": "experiments/configs/cata_raid_encounters/dragon_soul/warmaster_blackhorn_ledger_v1.json",
+          "modes": ["10N", "10H", "25N", "25H"],
+          "fidelity_state": "fidelity_blocked",
+          "contract_unresolved_material_count": 19,
+          "ledger_unresolved_material_count": 19
+        },
+        {
+          "boss_slug": "spine_of_deathwing",
+          "dossier": "docs/bot_raids/strategies/t13/dragon_soul/spine_of_deathwing.md",
+          "contract": "experiments/configs/cata_raid_encounters/dragon_soul/spine_of_deathwing_v1.json",
+          "ledger": "experiments/configs/cata_raid_encounters/dragon_soul/spine_of_deathwing_ledger_v1.json",
+          "modes": ["10N", "10H", "25N", "25H"],
+          "fidelity_state": "fidelity_blocked",
+          "contract_unresolved_material_count": 26,
+          "ledger_unresolved_material_count": 26
+        },
+        {
+          "boss_slug": "madness_of_deathwing",
+          "dossier": "docs/bot_raids/strategies/t13/dragon_soul/madness_of_deathwing.md",
+          "contract": "experiments/configs/cata_raid_encounters/dragon_soul/madness_of_deathwing_v1.json",
+          "ledger": "experiments/configs/cata_raid_encounters/dragon_soul/madness_of_deathwing_ledger_v1.json",
+          "modes": ["10N", "10H", "25N", "25H"],
+          "fidelity_state": "fidelity_blocked",
+          "contract_unresolved_material_count": 24,
+          "ledger_unresolved_material_count": 24
         }
       ]
     }

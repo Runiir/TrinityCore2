@@ -23,11 +23,137 @@ BWD_BOSSES = {
     "nefarian",
 }
 
+EXPECTED_RAID_BOSSES = {
+    "blackwing_descent": {
+        "map_id": 669,
+        "bosses": {
+            "magmaw",
+            "omnotron_defense_system",
+            "maloriak",
+            "atramedes",
+            "chimaeron",
+            "nefarian",
+        },
+    },
+    "bastion_of_twilight": {
+        "map_id": 671,
+        "bosses": {
+            "halfus_wyrmbreaker",
+            "valiona_and_theralion",
+            "ascendant_council",
+            "chogall",
+            "sinestra",
+        },
+    },
+    "throne_of_the_four_winds": {
+        "map_id": 754,
+        "bosses": {"conclave_of_wind", "alakir"},
+    },
+    "firelands": {
+        "map_id": 720,
+        "bosses": {
+            "bethtilac",
+            "lord_rhyolith",
+            "shannox",
+            "alysrazor",
+            "baleroc",
+            "majordomo_staghelm",
+            "ragnaros",
+        },
+    },
+    "dragon_soul": {
+        "map_id": 967,
+        "bosses": {
+            "morchok",
+            "warlord_zonozz",
+            "yorsahj_the_unsleeping",
+            "hagara",
+            "ultraxion",
+            "warmaster_blackhorn",
+            "spine_of_deathwing",
+            "madness_of_deathwing",
+        },
+    },
+}
+LEDGER_SCHEMAS = {
+    "cata_raid_value_timer_ledger_v1",
+    "cata_raid_encounter_ledger_v1",
+}
+
 
 def load(path: Path) -> dict:
     value = json.loads(path.read_text(encoding="utf-8"))
     assert isinstance(value, dict)
     return value
+
+
+def catalog_rows(catalog: dict) -> list[dict]:
+    return [
+        {**row, "raid": raid_name}
+        for raid_name, raid in catalog["raids"].items()
+        for row in raid["bosses"]
+    ]
+
+
+def test_catalog_covers_all_approved_raid_endpoints() -> None:
+    catalog = load(CATALOG)
+    assert set(catalog["raids"]) == set(EXPECTED_RAID_BOSSES)
+    rows = catalog_rows(catalog)
+    assert len(rows) == 28
+    assert len({(row["raid"], row["boss_slug"]) for row in rows}) == 28
+    for raid_name, expected in EXPECTED_RAID_BOSSES.items():
+        raid = catalog["raids"][raid_name]
+        assert raid["map_id"] == expected["map_id"]
+        assert {row["boss_slug"] for row in raid["bosses"]} == expected["bosses"]
+        assert raid["research_state"].endswith("fidelity_blocked")
+        for row in raid["bosses"]:
+            assert row["fidelity_state"] == "fidelity_blocked"
+            assert row["modes"]
+            assert row["contract_unresolved_material_count"] > 0
+            assert row["ledger_unresolved_material_count"] > 0
+            for key in ("dossier", "contract", "ledger"):
+                assert (ROOT / row[key]).is_file()
+
+
+def test_all_catalog_triplets_reconcile_identity_and_fail_closed() -> None:
+    catalog = load(CATALOG)
+    for row in catalog_rows(catalog):
+        contract = load(ROOT / row["contract"])
+        ledger = load(ROOT / row["ledger"])
+        dossier = ROOT / row["dossier"]
+        assert contract["contract_schema"] == "cata_raid_encounter_contract_v1"
+        assert ledger["ledger_schema"] in LEDGER_SCHEMAS
+        for document in (contract, ledger):
+            assert document["raid"] == row["raid"]
+            assert document["boss_slug"] == row["boss_slug"]
+            assert document["fidelity_state"] == "fidelity_blocked"
+            assert document["unresolved_material_count"] > 0
+            assert len(document["unresolved"]) == document["unresolved_material_count"]
+        assert contract["dossier_path"] == row["dossier"]
+        assert contract["ledger_path"] == row["ledger"]
+        assert ledger["contract_path"] == row["contract"]
+        if "dossier_path" in ledger:
+            assert ledger["dossier_path"] == row["dossier"]
+        assert contract["modes"] == row["modes"]
+        if isinstance(ledger.get("modes"), list):
+            assert ledger["modes"] == row["modes"]
+        else:
+            assert ledger["scope"] == row["modes"]
+        assert row["contract_unresolved_material_count"] == contract["unresolved_material_count"]
+        assert row["ledger_unresolved_material_count"] == ledger["unresolved_material_count"]
+        assert dossier.is_file()
+
+
+def test_all_catalog_dossiers_disclose_sources_and_blocked_state() -> None:
+    catalog = load(CATALOG)
+    for row in catalog_rows(catalog):
+        text = (ROOT / row["dossier"]).read_text(encoding="utf-8")
+        lowered = text.lower()
+        assert "4.4.2" in text
+        assert "fidelity_blocked" in lowered or "unresolved" in lowered
+        assert "wowhead.com" in lowered
+        assert "icy-veins.com" in lowered
+        assert "repository" in lowered
 
 
 def test_bwd_catalog_is_complete_and_fail_closed() -> None:
