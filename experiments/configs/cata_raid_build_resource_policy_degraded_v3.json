@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "policy_id": "cata_raid_build_resource_policy_degraded_v3",
+  "host_identity": {
+    "logical_cpu_count": 12,
+    "physical_memory_gib_approx": 31,
+    "captured_at_utc": "2026-08-12T04:25:00Z"
+  },
+  "supersedes_for_retry": "experiments/configs/cata_raid_build_resource_policy_degraded_v2.json",
+  "reduction_reason": "The two-compiler retry reached 74 percent and was terminated as build_resource_abort when sustained memory PSI crossed the frozen thresholds during static-library linking. Available memory and MySQL remained healthy; the retry ceiling is reduced to one compiler and one linker without weakening any reserve or pressure threshold.",
+  "coordination": {
+    "state_location": "git_common_dir/raid_program/build_queue_v1",
+    "queue_order": "fifo",
+    "maximum_active_heavyweight_leases": 1,
+    "heartbeat_interval_seconds": 1.0,
+    "stale_heartbeat_seconds": 15.0,
+    "termination_grace_seconds": 5.0,
+    "admission_poll_seconds": 0.25,
+    "default_admission_timeout_seconds": 21600
+  },
+  "parallelism": {
+    "maximum_compiler_jobs": 1,
+    "maximum_linker_jobs": 1,
+    "integration_owner_maximum_compiler_jobs": 1,
+    "compiler_ceiling_increase_requires_recorded_stress_gate": true
+  },
+  "admission_thresholds": {
+    "minimum_memory_available_gib": 8,
+    "minimum_memory_available_fraction": 0.30,
+    "maximum_swap_growth_mib_per_job": 512,
+    "maximum_memory_psi_some_avg10": 0.20,
+    "maximum_memory_psi_full_avg10": 0.05,
+    "maximum_load_average_1m": 9.0,
+    "minimum_filesystem_available_gib": 20,
+    "sustained_unsafe_sample_count": 3,
+    "sample_interval_seconds": 0.5
+  },
+  "resource_classes": {
+    "configure": "heavyweight",
+    "worldserver_build": "heavyweight",
+    "integration_build": "heavyweight",
+    "high_load_ctest": "heavyweight",
+    "synthetic": "test_only"
+  },
+  "live_validation_exclusion": {
+    "enabled": true,
+    "process_patterns": [
+      "worldserver",
+      "run_live_bot_validation.py",
+      "live_validation_session.py",
+      "run_phase9_serial_canaries.py",
+      "publish_live_validation",
+      "dvc push"
+    ]
+  },
+  "mechanical_controls": {
+    "cmake_build_parallel_level": 1,
+    "makeflags_jobs": 1,
+    "ninja_jobs": 1,
+    "cmake_compile_job_pool": 1,
+    "cmake_link_job_pool": 1,
+    "link_rule_flock": true,
+    "process_group_watchdog": true,
+    "receipt_verification_required": true,
+    "test_mode_receipt_satisfies_production_gate": false,
+    "cgroup_scope": "use_when_available_and_validated",
+    "uncoordinated_success_satisfies_gate": false
+  },
+  "classification": {
+    "resource_pressure_termination": "build_resource_abort",
+    "resource_pressure_is_code_failure": false,
+    "resource_pressure_is_gameplay_failure": false
+  }
+}
