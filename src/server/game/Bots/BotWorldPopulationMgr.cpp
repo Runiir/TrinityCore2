@@ -23928,7 +23928,7 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
     }
 raid_cooldown_complete:
 
-    auto closeRecallableAreaDamage = [bot]() -> bool
+    auto closeRecallableAreaDamage = [this, bot]() -> bool
     {
         if (!bot)
             return false;
