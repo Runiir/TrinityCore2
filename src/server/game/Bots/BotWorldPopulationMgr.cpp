@@ -23753,8 +23753,64 @@ BotWorldPopulationMgr::BossMechanicFeatures BotWorldPopulationMgr::BuildBossMech
 BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMechanics(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity)
 {
     BossMechanicActionResult result;
+    auto reconcileRaidAreaAutocasts = [&state, bot](bool suppress)
+    {
+        if (!bot)
+            return;
+
+        if (!suppress)
+        {
+            for (WorldBotState::SuppressedRaidAutocast const& saved : state.SuppressedRaidAreaAutocasts)
+                if (Unit* controlled = ObjectAccessor::GetUnit(*bot, saved.UnitGuid))
+                    if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(saved.SpellId))
+                    {
+                        if (Pet* pet = controlled->ToPet())
+                            pet->ToggleAutocast(spellInfo, true);
+                        else if (CharmInfo* charmInfo = controlled->GetCharmInfo())
+                            charmInfo->ToggleCreatureAutocast(spellInfo, true);
+                        if (CharmInfo* charmInfo = controlled->GetCharmInfo())
+                            charmInfo->SetSpellAutocast(spellInfo, true);
+                    }
+            state.SuppressedRaidAreaAutocasts.clear();
+            return;
+        }
+
+        for (Unit* controlled : bot->m_Controlled)
+        {
+            if (!controlled)
+                continue;
+            std::vector<uint32> enabledAreaSpells;
+            for (uint8 index = 0; index < controlled->GetPetAutoSpellSize(); ++index)
+                if (uint32 const spellId = controlled->GetPetAutoSpellOnPos(index))
+                    if (SpellHasHostileMultiTargetSemantics(sSpellMgr->GetSpellInfo(spellId)))
+                        enabledAreaSpells.push_back(spellId);
+            for (uint32 spellId : enabledAreaSpells)
+            {
+                bool const alreadySaved = std::any_of(state.SuppressedRaidAreaAutocasts.begin(),
+                    state.SuppressedRaidAreaAutocasts.end(), [controlled, spellId](WorldBotState::SuppressedRaidAutocast const& saved)
+                    {
+                        return saved.UnitGuid == controlled->GetGUID() && saved.SpellId == spellId;
+                    });
+                if (!alreadySaved)
+                    state.SuppressedRaidAreaAutocasts.push_back({ controlled->GetGUID(), spellId });
+                if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId))
+                {
+                    if (Pet* pet = controlled->ToPet())
+                        pet->ToggleAutocast(spellInfo, false);
+                    else if (CharmInfo* charmInfo = controlled->GetCharmInfo())
+                        charmInfo->ToggleCreatureAutocast(spellInfo, false);
+                    if (CharmInfo* charmInfo = controlled->GetCharmInfo())
+                        charmInfo->SetSpellAutocast(spellInfo, false);
+                }
+                controlled->RemoveDynObject(spellId);
+            }
+        }
+    };
     if (!IsBossContext(bot, nullptr))
+    {
+        reconcileRaidAreaAutocasts(false);
         return result;
+    }
 
     result.Target = FindBossTarget(bot);
     if (!result.Target && !state.TargetGuid.IsEmpty())
@@ -23798,6 +23854,7 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
 
     if (result.Features.RaidEncounter && !raidAdapter.ContractResolved)
     {
+        reconcileRaidAreaAutocasts(true);
         bot->InterruptNonMeleeSpells(false);
         bot->AttackStop();
         if (Pet* pet = bot->GetPet())
@@ -23812,6 +23869,9 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
             raidAdapter, raidGearPlan, heroicProgression, raw.c_str(), semantic.c_str());
         return result;
     }
+
+    if (result.Features.RaidEncounter && raidAdapter.ContractResolved)
+        reconcileRaidAreaAutocasts(!raidAdapter.AllowAreaDamage);
 
     bool battleResOwner = raidAdapter.BattleResurrectionPolicy != "assigned_only"
         ? (raidAdapter.BattleResurrectionSlots.empty()
@@ -23928,10 +23988,11 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
     }
 raid_cooldown_complete:
 
-    auto closeRecallableAreaDamage = [this, bot]() -> bool
+    auto closeRecallableAreaDamage = [this, bot, &reconcileRaidAreaAutocasts]() -> bool
     {
         if (!bot)
             return false;
+        reconcileRaidAreaAutocasts(true);
         for (CurrentSpellTypes spellType : { CURRENT_GENERIC_SPELL, CURRENT_CHANNELED_SPELL })
             if (Spell* current = bot->GetCurrentSpell(spellType))
                 if (SpellHasHostileMultiTargetSemantics(current->GetSpellInfo()))
@@ -24535,6 +24596,8 @@ raid_cooldown_complete:
         && raidAdapter.TargetControl == "controlled_aoe"
         && !undeclaredControlledAoeHostile
         && declaredControlledAoeTargets >= raidAdapter.ControlledAoeMinimumTargets;
+    if (raidAdapter.ContractResolved && raidAdapter.TargetControl == "controlled_aoe")
+        reconcileRaidAreaAutocasts(!controlledAoeReleased);
     if (raidAdapter.ContractResolved && raidAdapter.TargetControl == "controlled_aoe"
         && !controlledAoeReleased)
     {

@@ -158,6 +158,12 @@ def test_controlled_aoe_counts_only_declared_targets_and_fails_closed_near_undec
         "raid_area_damage_contamination_fail_closed",
         "HandleCancelAuraOpcode(cancel)",
         "bot->RemoveDynObject(action.SpellId);",
+        "state.SuppressedRaidAreaAutocasts.push_back",
+        "controlled->GetPetAutoSpellOnPos(index)",
+        "pet->ToggleAutocast(spellInfo, false);",
+        "charmInfo->ToggleCreatureAutocast(spellInfo, false);",
+        "reconcileRaidAreaAutocasts(!controlledAoeReleased);",
+        "reconcileRaidAreaAutocasts(false);",
         'raidAdapter.TargetControl == "controlled_aoe" && !controlledAoeReleased',
         "bot->InterruptSpell(CURRENT_CHANNELED_SPELL, false);",
     ):

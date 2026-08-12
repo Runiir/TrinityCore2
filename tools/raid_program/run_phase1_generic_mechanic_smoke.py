@@ -734,6 +734,13 @@ def build_raw_evidence(config_path: Path = DEFAULT_CONFIG) -> dict[str, Any]:
         "provenance": {
             "fixture_sha256": _sha256_file(config_path),
             "runner_sha256": _sha256_file(Path(__file__).resolve()),
+            "verifier_sha256": _sha256_file(
+                ROOT / "tools/raid_program/verify_phase1_generic_mechanic_smoke.py"
+            ),
+            "foundation_sha256": _sha256_file(ROOT / "ml/raid/foundation.py"),
+            "provisioning_source_sha256": _sha256_file(
+                ROOT / "tools/raid_program/capture_phase1_raid_foundation.py"
+            ),
             "commit_sha": _repository_commit(),
             "roster_sha256": canonical_sha256(roster),
             "provisioning_sha256": canonical_sha256(provisioned_bots),

@@ -78,6 +78,36 @@ def _commit_sha() -> str:
         return "unknown"
 
 
+def _git_blob(commit_sha: str, relative_path: str) -> bytes | None:
+    try:
+        return subprocess.check_output(
+            ["git", "show", f"{commit_sha}:{relative_path}"],
+            cwd=ROOT,
+            stderr=subprocess.DEVNULL,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return None
+
+
+def _source_commit_is_ancestor(commit_sha: str) -> bool:
+    if len(commit_sha) != 40 or any(char not in "0123456789abcdef" for char in commit_sha):
+        return False
+    try:
+        return subprocess.run(
+            ["git", "merge-base", "--is-ancestor", commit_sha, "HEAD"],
+            cwd=ROOT,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        ).returncode == 0
+    except OSError:
+        return False
+
+
+def _sha256_bytes(payload: bytes | None) -> str | None:
+    return hashlib.sha256(payload).hexdigest() if payload is not None else None
+
+
 def _load_fixture(path: Path) -> dict[str, Any]:
     payload = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
@@ -304,11 +334,23 @@ def _failures_for_raw(config_path: Path, raw: dict[str, Any]) -> list[str]:
     expected_fixture_sha = _sha256_file(config_path)
     if provenance.get("fixture_sha256") != expected_fixture_sha:
         failures.append("fixture_sha256")
-    runner_path = ROOT / "tools/raid_program/run_phase1_generic_mechanic_smoke.py"
-    if provenance.get("runner_sha256") != _sha256_file(runner_path):
-        failures.append("runner_sha256")
-    if provenance.get("commit_sha") != _commit_sha():
-        failures.append("commit_sha")
+    source_commit = str(provenance.get("commit_sha") or "")
+    if not _source_commit_is_ancestor(source_commit):
+        failures.append("source_commit_not_ancestor")
+    source_files = {
+        "runner_sha256": "tools/raid_program/run_phase1_generic_mechanic_smoke.py",
+        "verifier_sha256": "tools/raid_program/verify_phase1_generic_mechanic_smoke.py",
+        "fixture_sha256": "experiments/configs/cata_raid_phase1_generic_mechanic_smoke_v1.json",
+        "foundation_sha256": "ml/raid/foundation.py",
+        "provisioning_source_sha256": "tools/raid_program/capture_phase1_raid_foundation.py",
+    }
+    for field, relative_path in source_files.items():
+        source_hash = _sha256_bytes(_git_blob(source_commit, relative_path))
+        current_hash = _sha256_file(ROOT / relative_path)
+        if not source_hash or provenance.get(field) != source_hash:
+            failures.append(f"{field}_source_tree")
+        if source_hash != current_hash:
+            failures.append(f"{field}_current_drift")
     if raw.get("identity") != _identity(foundation):
         failures.append("foundation_identity")
     expected_roster = list(roster)

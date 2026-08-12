@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+import subprocess
 
 from tools.raid_program.run_phase1_generic_mechanic_smoke import (
     build_raw_evidence,
@@ -144,6 +145,32 @@ def test_independent_verifier_rejects_tampered_raw_event_even_if_pass_fields_are
 
     assert verification["verification_gate_passed"] is False
     assert any("assignment_events_recomputed_mismatch" in reason for reason in verification["failures"])
+
+
+def test_independent_verifier_accepts_evidence_source_commit_as_ancestor(monkeypatch):
+    raw = build_raw_evidence(FIXTURE)
+    parent = subprocess.check_output(
+        ["git", "rev-parse", "HEAD^"], cwd=ROOT, text=True
+    ).strip()
+    monkeypatch.setattr(
+        "tools.raid_program.verify_phase1_generic_mechanic_smoke._source_commit_is_ancestor",
+        lambda commit: commit == parent,
+    )
+    raw["provenance"]["commit_sha"] = parent
+    for field, relative_path in {
+        "runner_sha256": "tools/raid_program/run_phase1_generic_mechanic_smoke.py",
+        "verifier_sha256": "tools/raid_program/verify_phase1_generic_mechanic_smoke.py",
+        "fixture_sha256": "experiments/configs/cata_raid_phase1_generic_mechanic_smoke_v1.json",
+        "foundation_sha256": "ml/raid/foundation.py",
+        "provisioning_source_sha256": "tools/raid_program/capture_phase1_raid_foundation.py",
+    }.items():
+        blob = subprocess.check_output(["git", "show", f"{parent}:{relative_path}"], cwd=ROOT)
+        raw["provenance"][field] = __import__("hashlib").sha256(blob).hexdigest()
+
+    verification = verify_raw_evidence(FIXTURE, raw)
+
+    drift = [reason for reason in verification["failures"] if reason.endswith("_current_drift")]
+    assert verification["verification_gate_passed"] is (not drift)
 
 
 def test_run_gate_consumes_independent_outcome_verification(monkeypatch):
