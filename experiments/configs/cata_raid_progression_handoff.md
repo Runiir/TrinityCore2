@@ -1,5 +1,13 @@
 # Cataclysm raid progression handoff
 
+## 2026-08-12T02:40:30Z — Build coordinator foundation ready for real job
+
+The host-wide build coordinator and frozen resource policy are implemented in `tools/raid_program/queued_build.py` and `experiments/configs/cata_raid_build_resource_policy_v1.json`, exposed through `pixi run raid-build`. CMake consumes the coordinator lease identity, caps compilation at three jobs, creates one-linker job pools, and serializes link rule launch through the Git-common lock. Queue state and sanitized receipts live beneath the shared Git common directory, so all worktrees use one FIFO lease.
+
+Eight adversarial tests pass: fan-out validation and shell-wrapper rejection; deterministic FIFO admission; queued-waiter cancellation; PID/start-time-safe stale recovery; actual killed CLI owner recovery; synthetic sustained-pressure abort with complete descendant process-group cleanup; two simultaneous CLI runs with non-overlapping admissions and canonical receipts; and common queue identity across every registered worktree. Production receipt verification rejects synthetic/test receipts. The combined coordinator, BWD research, and inherited Phase 9 qualification suite passes `15 passed`; `git diff --check` is clean. MySQL remained healthy and no worldserver/operator/publisher or compiler/linker process was active.
+
+The coordinator has not yet claimed its real integration-build gate. Commit this foundation first, then invoke the first clean CMake configure/build only through `pixi run raid-build run`, retain and verify its production receipt, confirm zero orphan compilers/linkers and MySQL responsiveness, and update the status before proceeding to boss worktrees.
+
 ## 2026-08-11T19:34:04Z — Six-boss BWD research wave completed
 
 Six boss-scoped `gpt-5.6-luna` xhigh turns independently revised Magmaw, Omnotron Defense System, Maloriak, Atramedes, Chimaeron, and Nefarian. Each turn was restricted to its human dossier, machine contract, and value/timer ledger; agents did not delegate, build, run live validation, mutate DB/DVC, or commit. Because the harness has three worker slots, the same three idle agent threads were reused for the second three boss-scoped turns, with fresh disjoint prompts and no inherited acceptance conclusion.

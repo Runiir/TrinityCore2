@@ -17,6 +17,34 @@ set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 # Set projectname (must be done AFTER setting configurationtypes)
 project(TrinityCore)
 
+# Raid-program builds are admitted by tools/raid_program/queued_build.py.  When
+# its lease environment is present, cap compilation and serialize link commands
+# mechanically for both Ninja job pools and Make/Ninja rule launches.
+if(DEFINED ENV{TRINITY_RAID_BUILD_COORDINATED} AND "$ENV{TRINITY_RAID_BUILD_COORDINATED}" STREQUAL "1")
+  foreach(REQUIRED_RAID_BUILD_ENV
+      TRINITY_RAID_BUILD_TICKET
+      TRINITY_RAID_BUILD_COMPILER_JOBS
+      TRINITY_RAID_BUILD_LINKER_JOBS
+      TRINITY_RAID_BUILD_LINK_LOCK)
+    if(NOT DEFINED ENV{${REQUIRED_RAID_BUILD_ENV}} OR "$ENV{${REQUIRED_RAID_BUILD_ENV}}" STREQUAL "")
+      message(FATAL_ERROR "Coordinated raid build is missing ${REQUIRED_RAID_BUILD_ENV}")
+    endif()
+  endforeach()
+
+  set_property(GLOBAL PROPERTY JOB_POOLS
+    "trinity_raid_compile_pool=$ENV{TRINITY_RAID_BUILD_COMPILER_JOBS}"
+    "trinity_raid_link_pool=$ENV{TRINITY_RAID_BUILD_LINKER_JOBS}")
+  set(CMAKE_JOB_POOL_COMPILE trinity_raid_compile_pool)
+  set(CMAKE_JOB_POOL_LINK trinity_raid_link_pool)
+  find_program(TRINITY_RAID_FLOCK_EXECUTABLE flock REQUIRED)
+  set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK
+    "${TRINITY_RAID_FLOCK_EXECUTABLE} $ENV{TRINITY_RAID_BUILD_LINK_LOCK}")
+  message(STATUS
+    "Raid build coordinator ticket $ENV{TRINITY_RAID_BUILD_TICKET}: "
+    "$ENV{TRINITY_RAID_BUILD_COMPILER_JOBS} compiler jobs, "
+    "$ENV{TRINITY_RAID_BUILD_LINKER_JOBS} linker job")
+endif()
+
 # CMake policies (can not be handled elsewhere)
 cmake_policy(SET CMP0005 NEW)
 cmake_policy(SET CMP0043 NEW) # Ignore COMPILE_DEFINITIONS_<Config> properties
