@@ -1,0 +1,182 @@
+{
+  "schema_version": 1,
+  "ledger_schema": "cata_raid_value_timer_ledger_v1",
+  "raid": "dragon_soul",
+  "boss_slug": "warlord_zonozz",
+  "modes": ["10N", "10H", "25N", "25H"],
+  "fidelity_state": "fidelity_blocked",
+  "contract_path": "experiments/configs/cata_raid_encounters/dragon_soul/warlord_zonozz_v1.json",
+  "unresolved_material_count": 15,
+  "encounter": "warlord_zonozz",
+  "purpose": "Source, identity, value, timer, targeting, scaling, orb collision, add, phase, reset, modifier, prerequisite, and credit ledger for Phase 0 research; no live-validation assertion.",
+  "scope": ["10N", "10H", "25N", "25H"],
+  "target_snapshot": {
+    "product": "Cataclysm Classic",
+    "patch": "4.4.2",
+    "build": 59185,
+    "locale": "enUS",
+    "cutoff_utc": "2025-02-18T19:31:51.916Z"
+  },
+  "repository_revision_audited": "c07dbd90c17d9fb10241898b858566e8812545fc",
+  "retrieved_utc_date": "2026-08-12",
+  "research_as_of": "2026-08-12",
+  "source_catalog": [
+    {
+      "id": "blizzard_442_notes_59185_cutoff",
+      "title": "World of Warcraft: Cataclysm Classic Patch 4.4.2 Notes",
+      "author": "Kaivax",
+      "publisher": "Blizzard Entertainment forums",
+      "published_or_updated": "2025-02-18 19:31",
+      "url": "https://us.forums.blizzard.com/en/wow/t/world-of-warcraft-cataclysm-classic-patch-442-notes/2062030",
+      "accessed": "2026-08-12",
+      "authority": "official cutoff context",
+      "notes": "Dragon Soul opens February 20 at 3:00 p.m. PST; 10/25-player, eight bosses, Normal/Heroic. No encounter tuning table."
+    },
+    {
+      "id": "blizzard_presence_dragon_soul_2025",
+      "title": "Presence of the Dragon Soul begins March 18",
+      "author": "Kaivax",
+      "publisher": "Blizzard Entertainment forums",
+      "published_or_updated": "2025-03-12",
+      "url": "https://us.forums.blizzard.com/en/wow/t/presence-of-the-dragon-soul-begins-march-18/2074792",
+      "accessed": "2026-08-12",
+      "authority": "official post-cutoff modifier announcement",
+      "notes": "Presence reduces Dragon Soul enemy health/damage by 5%, grows by 5% every two weeks to 30%, and can be removed by Lord Devrestrasz. This source is outside the requested cutoff."
+    },
+    {
+      "id": "wowhead_cata_zonozz_2025",
+      "title": "Warlord Zon'ozz Strategy Guide for Dragon Soul - Cataclysm Classic",
+      "author": "Riyani",
+      "publisher": "Wowhead",
+      "published_or_updated": "2025-02-19",
+      "edition_label": "Patch 4.4.2",
+      "url": "https://www.wowhead.com/cata/guide/raids/dragon-soul/warlord-zonozz-strategy-overview",
+      "accessed": "2026-08-12",
+      "authority": "current Cataclysm Classic strategy guide, post-cutoff",
+      "used_for": ["four health observations", "orb bounce/collision rules", "add composition", "phase and enrage observations", "target counts", "spell links"],
+      "notes": "Updated one day after the requested cutoff; retained as observation only, not as exact 59185 cutoff evidence."
+    },
+    {
+      "id": "icy_veins_cata_zonozz_2024",
+      "title": "Warlord Zonozz Encounter Guide: Strategy, Abilities, Loot - Cataclysm Classic",
+      "publisher": "Icy Veins",
+      "url": "https://www.icy-veins.com/cataclysm-classic/warlord-zonozz-encounter-guide-strategy-abilities-loot",
+      "accessed": "2026-08-12",
+      "authority": "independent current Cataclysm Classic strategy guide",
+      "used_for": ["Focused Anger cadence", "heroic add behavior", "Black Blood timing", "role targeting", "source conflict comparison"],
+      "notes": "Does not establish a four-mode 59185 tuning table."
+    },
+    {
+      "id": "wowhead_zonozz_spell_identity",
+      "title": "Wowhead Warlord Zon'ozz NPC and linked Cataclysm Classic spell pages",
+      "publisher": "Wowhead",
+      "url": "https://www.wowhead.com/cata/npc=55308/warlord-zonozz",
+      "related_urls": [
+        "https://www.wowhead.com/cata/spell=104543/focused-anger",
+        "https://www.wowhead.com/cata/spell=104322/psychic-drain",
+        "https://www.wowhead.com/cata/spell=103434/disrupting-shadows",
+        "https://www.wowhead.com/cata/spell=108794/black-blood-eruption",
+        "https://www.wowhead.com/cata/spell=104377/black-blood-of-gorath",
+        "https://www.wowhead.com/cata/spell=109391/shadow-gaze"
+      ],
+      "accessed": "2026-08-12",
+      "authority": "community identity/range reference",
+      "used_for": ["spell IDs", "NPC IDs", "page-level ranges/effects"],
+      "notes": "Legacy and contradictory mode fields are preserved as blocked observations."
+    },
+    {
+      "id": "repo_dragon_soul_header_instance_loader",
+      "title": "Local TrinityCore Dragon Soul header, instance, and loader audit",
+      "publisher": "shared TrinityCore repository",
+      "revision": "c07dbd90c17d9fb10241898b858566e8812545fc",
+      "paths": [
+        "src/server/scripts/Kalimdor/CavernsOfTime/DragonSoul/dragon_soul.h",
+        "src/server/scripts/Kalimdor/CavernsOfTime/DragonSoul/instance_dragon_soul.cpp",
+        "src/server/scripts/Kalimdor/kalimdor_script_loader.cpp"
+      ],
+      "accessed": "2026-08-12",
+      "authority": "repository executable/boundary evidence",
+      "used_for": ["map 967", "eight encounter count", "DATA_WARLORD_ZONOZZ=1", "absence of boss/add AI and instance wiring"],
+      "notes": "Only Madness of Deathwing is bound in local creatureData; no Zon'ozz script is present."
+    },
+    {
+      "id": "repo_dragon_soul_sql_identity",
+      "title": "Historical TrinityCore Dragon Soul creature and encounter identity rows",
+      "publisher": "shared TrinityCore repository",
+      "revision": "c07dbd90c17d9fb10241898b858566e8812545fc",
+      "paths": [
+        "sql/old/4.3.4/TDB00_to_TDB01_updates/world/004_creature_template.sql",
+        "sql/old/4.3.4/TDB04_to_TDB05_updates/world/066_instance_encounters.sql"
+      ],
+      "accessed": "2026-08-12",
+      "authority": "historical DB/model identity evidence",
+      "used_for": ["55308 boss and 55309-55311 variants", "55334/58473 Void", "55416-55418 tentacle identities", "1294 encounter row"],
+      "notes": "Rows do not prove 59185 mode mapping, spell behavior, or runtime scaling."
+    }
+  ],
+  "mode_matrix": {
+    "10N": {"heroic": false, "boss_health_current_guide_post_cutoff": 68000000, "heroic_adds": null, "modifier_at_cutoff": "not announced/active; raid opens after cutoff", "status": "fidelity_blocked"},
+    "10H": {"heroic": true, "boss_health_current_guide_post_cutoff": 86000000, "heroic_adds": {"total": 8, "flail": 2, "eye": 5, "claw": 1}, "modifier_at_cutoff": "not announced/active; raid opens after cutoff", "status": "fidelity_blocked"},
+    "25N": {"heroic": false, "boss_health_current_guide_post_cutoff": 204000000, "heroic_adds": null, "modifier_at_cutoff": "not announced/active; raid opens after cutoff", "status": "fidelity_blocked"},
+    "25H": {"heroic": true, "boss_health_current_guide_post_cutoff": 260000000, "heroic_adds": {"total": 14, "flail": 4, "eye": 8, "claw": 2}, "modifier_at_cutoff": "not announced/active; raid opens after cutoff", "status": "fidelity_blocked"}
+  },
+  "values": [
+    {"key": "boss_health", "mode_values_current_guide_post_cutoff": {"10N": 68000000, "10H": 86000000, "25N": 204000000, "25H": 260000000}, "source_refs": ["wowhead_cata_zonozz_2025"], "status": "fidelity_blocked_cutoff_and_hotfix_lineage"},
+    {"key": "focused_anger", "spell": 104543, "guide_effect": "+20% Physical damage and +5% attack speed per stack", "source_refs": ["wowhead_cata_zonozz_2025", "icy_veins_cata_zonozz_2024", "wowhead_zonozz_spell_identity"], "status": "fidelity_blocked_cadence_and_mode_coefficients"},
+    {"key": "psychic_drain", "spell": 104322, "cone": "30 degrees", "page_range": "100yd", "self_heal": "10x damage", "source_refs": ["wowhead_cata_zonozz_2025", "wowhead_zonozz_spell_identity"], "status": "fidelity_blocked_mode_values_and_cadence"},
+    {"key": "disrupting_shadows", "spell": 103434, "duration": "20s", "tick": "2s", "target_count": {"10_player": "1-3", "25_player": "6-8"}, "page_damage": "42099-48926 Shadow", "heroic_dispel_splash": "10yd", "source_refs": ["wowhead_cata_zonozz_2025", "icy_veins_cata_zonozz_2024", "wowhead_zonozz_spell_identity"], "status": "fidelity_blocked_exact_mode_and_dispel_semantics"},
+    {"key": "void_collision", "npc": {"current": 58473, "historical": 55334}, "damage_immune": true, "aggro": false, "bounce_growth": "+20% next bounce", "boss_taken_growth": "+5% per bounce", "nearby_damage_sharing": true, "source_refs": ["wowhead_cata_zonozz_2025", "icy_veins_cata_zonozz_2024", "wowhead_zonozz_spell_identity"], "status": "collision_rule_confirmed_geometry_and_base_damage_blocked"},
+    {"key": "black_blood_eruption", "spell": 108794, "page_damage": "119400-120600 Shadow", "knockback": true, "source_refs": ["wowhead_cata_zonozz_2025", "wowhead_zonozz_spell_identity"], "status": "page_identity_confirmed_runtime_wall_geometry_blocked"},
+    {"key": "black_blood_intermission", "spell": 104377, "duration": "30s", "periodicity_conflict": ["1s ability summary", "2s guide/page presentation"], "source_refs": ["wowhead_cata_zonozz_2025", "icy_veins_cata_zonozz_2024", "wowhead_zonozz_spell_identity"], "status": "fidelity_blocked_periodicity_and_mode_damage"},
+    {"key": "heroic_add_composition", "10H": {"total": 8, "flail": 2, "eye": 5, "claw": 1}, "25H": {"total": 14, "flail": 4, "eye": 8, "claw": 2}, "source_refs": ["wowhead_cata_zonozz_2025", "icy_veins_cata_zonozz_2024"], "status": "count_confirmed_health_damage_spawn_blocked"},
+    {"key": "shadow_gaze", "spell": 109391, "target": "random player", "cast": "3s", "page_damage": "21375-23625 Shadow", "source_refs": ["wowhead_cata_zonozz_2025", "wowhead_zonozz_spell_identity", "repo_dragon_soul_sql_identity"], "status": "fidelity_blocked_mode_coefficients"},
+    {"key": "presence_of_the_dragon_soul", "health_damage_reduction": "5% from 2025-03-18; +5 percentage points every 2 weeks to 30%", "toggle": "Lord Devrestrasz", "active_at_cutoff": false, "source_refs": ["blizzard_presence_dragon_soul_2025"], "status": "official_post_cutoff_scope_confirmed_ids_and_persistence_blocked"}
+  ],
+  "timers": [
+    {"key": "focused_anger", "guide": {"stack_interval": "6-8s"}, "source_refs": ["icy_veins_cata_zonozz_2024"], "status": "guide_observation_exact_build_blocked"},
+    {"key": "disrupting_shadows", "page": {"duration": "20s", "tick": "2s", "cast_cooldown": "3s"}, "source_refs": ["wowhead_zonozz_spell_identity"], "status": "page_confirmed_mode_values_blocked"},
+    {"key": "void_recollision", "guide": {"cooldown": "5s"}, "source_refs": ["wowhead_cata_zonozz_2025"], "status": "guide_observation_geometry_blocked"},
+    {"key": "intermission", "guide": {"duration": "30s", "center_settle": "about12s"}, "icy_veins": {"no_auto_attack": "first15s"}, "source_refs": ["wowhead_cata_zonozz_2025", "icy_veins_cata_zonozz_2024"], "status": "duration_confirmed_subtiming_blocked"},
+    {"key": "enrage", "guide": {"duration": "6m"}, "source_refs": ["wowhead_cata_zonozz_2025"], "status": "guide_observation_runtime_blocked"}
+  ],
+  "targeting_and_scaling": [
+    {"key": "psychic_drain", "target": "tank frontal cone; keep raid out", "cone": "30 degrees", "source_refs": ["wowhead_cata_zonozz_2025", "icy_veins_cata_zonozz_2024"], "status": "relationship_confirmed_coefficients_blocked"},
+    {"key": "disrupting_shadows", "target_count": {"10_player": "1-3", "25_player": "6-8"}, "heroic_dispel": "10yd splash", "source_refs": ["wowhead_cata_zonozz_2025", "icy_veins_cata_zonozz_2024"], "status": "count_and_heroic_delta_observed_exact_filter_blocked"},
+    {"key": "void_bounce", "target": "player collision; nearby players share hit", "boss_collision": "+5% damage taken per bounce", "source_refs": ["wowhead_cata_zonozz_2025", "icy_veins_cata_zonozz_2024"], "status": "relationship_confirmed_radius_and_base_damage_blocked"},
+    {"key": "heroic_black_blood", "target": "all raid", "scaling": "living tentacle count", "source_refs": ["wowhead_cata_zonozz_2025", "icy_veins_cata_zonozz_2024"], "status": "qualitative_confirmed_coefficient_blocked"},
+    {"key": "mode_health", "target": "Warlord Zon'ozz", "values": {"10N": 68000000, "10H": 86000000, "25N": 204000000, "25H": 260000000}, "source_refs": ["wowhead_cata_zonozz_2025"], "status": "post_cutoff_observation_not_59185_assertion"},
+    {"key": "presence_modifier", "target": "all Dragon Soul enemies", "health_damage": "-5% initially, +5 points every 2 weeks to -30%", "toggle": "Lord Devrestrasz", "source_refs": ["blizzard_presence_dragon_soul_2025"], "status": "post_cutoff_official_scope_runtime_identity_blocked"}
+  ],
+  "phase_reset_credit": [
+    {"key": "main_to_intermission", "behavior": "boss collision with orb removes Focused Anger and starts Black Blood; transition is player-controlled by bounce count", "source_refs": ["wowhead_cata_zonozz_2025", "icy_veins_cata_zonozz_2024"], "status": "phase_relationship_confirmed"},
+    {"key": "intermission_to_main", "behavior": "30-second intermission ends and a new orb/main phase is reported", "source_refs": ["wowhead_cata_zonozz_2025", "icy_veins_cata_zonozz_2024"], "status": "phase_relationship_confirmed_exact_reset_blocked"},
+    {"key": "wall_failure", "behavior": "wall collision triggers Black Blood Eruption and raid-failure behavior", "source_refs": ["wowhead_cata_zonozz_2025", "wowhead_zonozz_spell_identity"], "status": "behavior_confirmed_runtime_cleanup_blocked"},
+    {"key": "repository_reset", "behavior": "No Zon'ozz AI or boss-specific reset/evade path exists locally", "source_refs": ["repo_dragon_soul_header_instance_loader"], "status": "repository_absence_confirmed"},
+    {"key": "unlock", "behavior": "Official notes establish raid availability but not a Zon'ozz prerequisite/order gate", "source_refs": ["blizzard_442_notes_59185_cutoff", "repo_dragon_soul_header_instance_loader"], "status": "fidelity_blocked"},
+    {"key": "credit", "behavior": "Historical encounter 1294 maps entry55308; loot, lockout, achievement, and player-credit recipient are not established", "source_refs": ["repo_dragon_soul_sql_identity"], "status": "fidelity_blocked"}
+  ],
+  "conflicts": [
+    {"key": "cutoff_health", "sources": ["Wowhead page updated 2025-02-19", "requested cutoff 2025-02-18 before raid open"], "resolution": "retain health as post-cutoff observation and leave exact 59185 values blocked"},
+    {"key": "black_blood_periodicity", "sources": ["Wowhead ability summary 1s", "Wowhead guide/Icy Veins 2s"], "resolution": "do not select a cadence without build/hotfix evidence"},
+    {"key": "void_damage_and_geometry", "sources": ["guides describe shared hit and 5s cooldown", "no local AI or cutoff spell data"], "resolution": "record relationships but block radius, speed, base damage, and reset"},
+    {"key": "heroic_add_scaling", "sources": ["current guides give add counts and qualitative living-add scaling", "local implementation absent"], "resolution": "counts retained; health/damage/spawn coefficients blocked"},
+    {"key": "modifier_state", "sources": ["official Presence announcement 2025-03-12", "cutoff 2025-02-18"], "resolution": "modifier is post-cutoff and active_at_cutoff=false; IDs/persistence blocked"}
+  ],
+  "unresolved": [
+    {"key": "build_59185_hotfix_lineage_and_preopen_cutoff", "status": "fidelity_blocked"},
+    {"key": "four_mode_health_damage_and_historical_variant_mapping", "status": "fidelity_blocked"},
+    {"key": "presence_aura_and_toggle_ids_default_persistence_and_application_order", "status": "fidelity_blocked"},
+    {"key": "focused_anger_cadence_and_mode_values", "status": "fidelity_blocked"},
+    {"key": "psychic_drain_coefficients_cadence_and_target_filter", "status": "fidelity_blocked"},
+    {"key": "disrupting_shadows_mode_damage_target_filter_and_dispel_semantics", "status": "fidelity_blocked"},
+    {"key": "void_collision_radius_speed_base_damage_and_reset", "status": "fidelity_blocked"},
+    {"key": "black_blood_periodicity_and_heroic_living_add_coefficient", "status": "fidelity_blocked"},
+    {"key": "normal_eye_count_and_all_tentacle_health_damage_spawn_data", "status": "fidelity_blocked"},
+    {"key": "intermission_center_settle_auto_attack_and_enrage_runtime", "status": "fidelity_blocked"},
+    {"key": "unlock_pull_order_and_prerequisite", "status": "fidelity_blocked"},
+    {"key": "wipe_reset_despawn_reactivation_and_lockout", "status": "fidelity_blocked"},
+    {"key": "loot_achievement_and_player_credit", "status": "fidelity_blocked"},
+    {"key": "missing_local_boss_and_add_implementation", "status": "fidelity_blocked"},
+    {"key": "cutoff_runtime_observation_unavailable_before_raid_open", "status": "fidelity_blocked"}
+  ]
+}

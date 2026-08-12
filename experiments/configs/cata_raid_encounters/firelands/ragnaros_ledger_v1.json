@@ -1,0 +1,210 @@
+{
+  "schema_version": 1,
+  "ledger_schema": "cata_raid_value_timer_ledger_v1",
+  "raid": "firelands",
+  "boss_slug": "ragnaros",
+  "modes": ["10N", "10H", "25N", "25H"],
+  "fidelity_state": "fidelity_blocked",
+  "contract_path": "experiments/configs/cata_raid_encounters/firelands/ragnaros_v1.json",
+  "dossier_path": "docs/bot_raids/strategies/t12/firelands/ragnaros.md",
+  "unresolved_material_count": 19,
+  "encounter": "Ragnaros",
+  "purpose": "Source, value, timer, target, scaling, phase, reset and credit ledger for Phase 0 research; no live-validation assertion.",
+  "scope": ["10N", "10H", "25N", "25H"],
+  "repository_revision_audited": "8eb54f0160b3c3d986ed944f9d64ebf83922c0f8",
+  "retrieved_utc_date": "2026-08-12",
+  "research_as_of": "2026-08-12",
+  "target_snapshot": {
+    "product": "Cataclysm Classic",
+    "patch": "4.4.2",
+    "build": 59185,
+    "locale": "enUS",
+    "hotfix_cutoff_utc": "2025-02-18T19:31:51.916Z"
+  },
+  "source_catalog": [
+    {
+      "id": "wowhead_cata_ragnaros_442",
+      "title": "Ragnaros Strategy Guide for Firelands - Cataclysm Classic",
+      "publisher": "Wowhead",
+      "published_or_updated": "2024-10-25; page labeled Patch 4.4.2",
+      "url": "https://www.wowhead.com/cata/guide/raids/firelands/ragnaros-strategy-overview",
+      "accessed": "2026-08-12",
+      "authority": "current Cataclysm Classic strategy guide",
+      "notes": "Reports four-mode boss and add health, phase thresholds, ability values, intermissions, Molten Power, Blazing Heat, Living Meteor and heroic phase summaries."
+    },
+    {
+      "id": "icy_veins_cata_ragnaros_2024",
+      "title": "Ragnaros Encounter Guide: Strategy, Abilities, Loot",
+      "publisher": "Icy Veins",
+      "published_or_updated": "2024-10-08",
+      "url": "https://www.icy-veins.com/cataclysm-classic/ragnaros-encounter-guide-strategy-abilities-loot",
+      "accessed": "2026-08-12",
+      "authority": "current Cataclysm Classic strategy guide",
+      "notes": "Corroborates arena/tank rules, intermission handling, heroic random Son positions, World in Flames, Molten Power, Dreadflame, Cloudburst, Breadth, Empower and the absence of Magma Geyser in Classic."
+    },
+    {
+      "id": "warcraft_tavern_cata_ragnaros_2024",
+      "title": "Ragnaros Raid Guide",
+      "publisher": "Warcraft Tavern",
+      "published_or_updated": "2024 guide; direct detail limited during audit",
+      "url": "https://www.warcrafttavern.com/cataclysm/guides/ragnaros-raid-guide/",
+      "accessed": "2026-08-12",
+      "authority": "secondary Cataclysm strategy corroboration",
+      "notes": "Used only for broad phase and progression context; no unique numeric field promoted."
+    },
+    {
+      "id": "blizzard_442_modifier",
+      "title": "Firelands Difficulty Reduction with Hour of Twilight Patch",
+      "publisher": "Blizzard Entertainment forums",
+      "published_or_updated": "2025-02-13",
+      "url": "https://us.forums.blizzard.com/en/wow/t/firelands-difficulty-reduction-with-hour-of-twilight-patch/2059756",
+      "accessed": "2026-08-12",
+      "authority": "official 4.4.2 modifier announcement",
+      "notes": "States optional Power of Stormrage reduces health and damage of all Firelands bosses and other enemies by 30%; General Taldris Moonfall removes it."
+    },
+    {
+      "id": "blizzard_firelands_hotfixes",
+      "title": "Patch 4.2 Hotfixes",
+      "publisher": "Blizzard Entertainment",
+      "published_or_updated": "historical Cataclysm hotfix page",
+      "url": "https://worldofwarcraft.blizzard.com/en-us/news/3019413",
+      "accessed": "2026-08-12",
+      "authority": "official historical tuning provenance",
+      "notes": "Retained as historical provenance; exact carryover to the requested 4.4.2 cutoff is not asserted."
+    },
+    {
+      "id": "repo_boss_ragnaros",
+      "title": "TrinityCore boss_ragnaros_firelands.cpp",
+      "publisher": "local repository",
+      "revision": "8eb54f0160b3c3d986ed944f9d64ebf83922c0f8",
+      "paths": ["src/server/scripts/Kalimdor/Firelands/boss_ragnaros_firelands.cpp"],
+      "accessed": "2026-08-12",
+      "authority": "repository implementation evidence, not retail proof",
+      "lines": ["39-2450"],
+      "notes": "Spell IDs, phases, local event schedules, target-count overrides, add AIs, heroic transition, platform, grid, reset, death and credit."
+    },
+    {
+      "id": "repo_firelands_identity",
+      "title": "TrinityCore Firelands identity and instance scripts",
+      "publisher": "local repository",
+      "revision": "8eb54f0160b3c3d986ed944f9d64ebf83922c0f8",
+      "paths": ["src/server/scripts/Kalimdor/Firelands/firelands.h", "src/server/scripts/Kalimdor/Firelands/instance_firelands.cpp", "src/server/scripts/Kalimdor/Firelands/firelands.cpp"],
+      "accessed": "2026-08-12",
+      "authority": "repository identity, spawn, door and platform evidence",
+      "lines": ["firelands.h:25-158", "instance_firelands.cpp:28-290", "firelands.cpp:24-45"],
+      "notes": "Map 720, encounter slot 6, boss/add/gameobject IDs, spawn groups, area-trigger spawn and 961-cell Dreadflame grid."
+    },
+    {
+      "id": "repo_ragnaros_sql",
+      "title": "Historical TrinityCore Ragnaros SQL and encounter credit",
+      "publisher": "local repository",
+      "revision": "8eb54f0160b3c3d986ed944f9d64ebf83922c0f8",
+      "paths": ["sql/updates/world/4.3.4/2022_02_02_00_world.sql", "sql/old/4.3.4/TDB04_to_TDB05_updates/world/066_instance_encounters.sql"],
+      "accessed": "2026-08-12",
+      "authority": "historical DB/model/script-registration evidence",
+      "lines": ["2022_02_02_00_world.sql:2-47", "2022_02_02_00_world.sql:672-842", "066_instance_encounters.sql:596"],
+      "notes": "Attaches scripts, records spawn groups and target conditions, sets platform/door locations, and maps instance encounter 1203 to Ragnaros then kill-credit spell 102237."
+    },
+    {
+      "id": "repo_spellmgr_lava_bolt",
+      "title": "TrinityCore SpellMgr Firelands fixes",
+      "publisher": "local repository",
+      "revision": "8eb54f0160b3c3d986ed944f9d64ebf83922c0f8",
+      "paths": ["src/server/game/Spells/SpellMgr.cpp"],
+      "accessed": "2026-08-12",
+      "authority": "repository mode-targeting evidence",
+      "lines": ["4595-4627"],
+      "notes": "Confirms Lava Bolt mode families and local maximum target corrections: four in 10-player and ten in 25-player; also removes World in Flames channel flag."
+    },
+    {
+      "id": "repo_public_build_reference",
+      "title": "Public client builds reference",
+      "publisher": "Warcraft Wiki",
+      "url": "https://warcraft.wiki.gg/wiki/Public_client_builds",
+      "accessed": "2026-08-12",
+      "authority": "secondary build reference",
+      "notes": "Used as corroboration for Cataclysm Classic 4.4.2 build 59185; requested locale and cutoff are task-supplied."
+    }
+  ],
+  "mode_matrix": {
+    "10N": {"health_guide_reported": 67000000, "heroic": false, "intermission_one_son_health": 124000, "intermission_two_son_health": 1500000, "wrath_targets_local": 1, "molten_seed_targets_local": 10, "lava_bolt_targets_local": 4, "dreadflame_casts_local": 2, "cloudburst_clicks_local": 1, "modifier": "optional; execution state required"},
+    "10H": {"health_guide_reported": 74200000, "heroic": true, "intermission_one_son_health": 212000, "intermission_two_son_health": 2500000, "wrath_targets_local": 1, "molten_seed_targets_local": 10, "lava_bolt_targets_local": 4, "dreadflame_casts_local": 2, "cloudburst_clicks_local": 1, "modifier": "optional; execution state required"},
+    "25N": {"health_guide_reported": 201000000, "heroic": false, "intermission_one_son_health": 622000, "intermission_two_son_health": 4700000, "wrath_targets_local": 3, "molten_seed_targets_local": 20, "lava_bolt_targets_local": 10, "dreadflame_casts_local": 5, "cloudburst_clicks_local": 3, "modifier": "optional; execution state required"},
+    "25H": {"health_guide_reported": 246900000, "heroic": true, "intermission_one_son_health": 1100000, "intermission_two_son_health": 7400000, "wrath_targets_local": 3, "molten_seed_targets_local": 20, "lava_bolt_targets_local": 10, "dreadflame_casts_local": 5, "cloudburst_clicks_local": 3, "modifier": "optional; execution state required"}
+  },
+  "values": [
+    {"key": "boss_health", "mode_values": {"10N": 67000000, "10H": 74200000, "25N": 201000000, "25H": 246900000}, "unit": "hit points", "source_refs": ["wowhead_cata_ragnaros_442"], "repository_confirmation": false, "status": "fidelity_blocked_guide_modifier_interaction"},
+    {"key": "burning_wound", "guide": {"damage_normal": 4000, "damage_heroic": 5500, "tick": "2s", "duration": "20s", "stacks": "unlimited", "swap": "4-6 stacks"}, "repository": {"spell": 99401, "burning_blast": 99400, "proc_scaling": "+10% calculated base per wound stack"}, "source_refs": ["wowhead_cata_ragnaros_442", "repo_boss_ragnaros"], "status": "fidelity_blocked"},
+    {"key": "magma_blast", "guide": {"damage": "about 75000 every 2s", "fire_taken": "+50% stacking"}, "repository": {"spell": 98313, "condition": "used when victim is not in melee; exact SpellInfo values not audited"}, "source_refs": ["wowhead_cata_ragnaros_442", "repo_boss_ragnaros"], "status": "fidelity_blocked"},
+    {"key": "wrath", "guide": {"first": "about 5s", "repeat": "30s", "damage_normal": 45000, "damage_heroic": 64000, "range": "6yd", "target": "random ranged"}, "repository": {"spell": 98259, "first": "6s", "repeat": "30s", "targets": {"10": 1, "25": 3}}, "source_refs": ["wowhead_cata_ragnaros_442", "repo_boss_ragnaros"], "status": "fidelity_blocked"},
+    {"key": "hand", "guide": {"first": "about 25s", "damage_normal": 22000, "damage_heroic": 34000, "range": "55yd", "effect": "knockback"}, "repository": {"spell": 98237, "first": "26s", "repeat": "26s"}, "source_refs": ["wowhead_cata_ragnaros_442", "repo_boss_ragnaros"], "status": "fidelity_blocked"},
+    {"key": "magma_trap", "guide": {"first": "about 15s", "repeat": "about 30s", "damage_normal": 60000, "damage_heroic": 100000, "target": "random ranged location", "persistent": true}, "repository": {"aoe": 98159, "visual": 98179, "periodic": 98172, "eruption": 98175, "first": "16s", "repeat": "26s", "max_targets": 1}, "source_refs": ["wowhead_cata_ragnaros_442", "icy_veins_cata_ragnaros_2024", "repo_boss_ragnaros"], "status": "fidelity_blocked"},
+    {"key": "sulfuras_smash", "guide": {"repeat": "about 30s", "impact_normal": 105000, "impact_heroic": 550000, "impact_range": "5yd", "wave_normal": 75000, "wave_heroic": 125000, "wave_followup_normal": 110000, "wave_followup_heroic": 210000}, "repository": {"aoe": 98703, "summon": 98706, "impact": 98710, "waves": [98874, 98876, 98875], "pool": 98712, "scorched_ground": 100119, "first": "31s", "repeat": "30s except 40s in phase 2", "wrath_delay": "5.5s"}, "source_refs": ["wowhead_cata_ragnaros_442", "repo_boss_ragnaros"], "status": "fidelity_blocked"},
+    {"key": "splitting_blow", "guide": {"thresholds": ["70%", "40%"], "son_count": 8, "normal_positions": "fixed", "heroic_positions": "random", "duration": "about 45s to 1m"}, "repository": {"spell": 98951, "candidate_positions": 15, "exclusion": "30yd from selected hammer", "selection": "random eight", "announce": "42s", "finish_normal": "5s later", "finish_heroic": "20s later", "finish_on_all_dead": "1.5s"}, "source_refs": ["wowhead_cata_ragnaros_442", "icy_veins_cata_ragnaros_2024", "repo_boss_ragnaros"], "status": "fidelity_blocked"},
+    {"key": "son_of_flame", "guide": {"health": {"10N": 124000, "10H": 212000, "25N": 622000, "25H": 1100000}, "speed": "+75% per 5% health above 50%, up to +750%", "supernova_normal": 100000, "supernova_heroic": 500000}, "repository": {"entry": 53140, "burning_speed": 98473, "speed_formula": "ceil(health_pct / 10)", "move_delay": "2.5s", "arrival": "4.4yd", "supernova": 99112, "suicide": 3617}, "source_refs": ["wowhead_cata_ragnaros_442", "repo_boss_ragnaros"], "status": "fidelity_blocked"},
+    {"key": "lava_bolt", "guide": {"interval": "4s", "targets_normal": 4, "targets_heroic": 10, "damage_normal": 45000, "damage_heroic": 70000}, "repository": {"spells_10": [98981, 100290], "spells_25": [100289, 100291], "max_targets_10": 4, "max_targets_25": 10}, "source_refs": ["wowhead_cata_ragnaros_442", "repo_spellmgr_lava_bolt"], "status": "fidelity_blocked"},
+    {"key": "molten_seed", "guide": {"first": "15s", "repeat": "60s", "impact_range": "6yd", "impact_normal": 42000, "impact_heroic": 63000, "inferno_delay": "10s", "elemental_health": 350000}, "repository": {"spell": 98333, "seed_aoe": 98497, "visual": 98520, "max_targets": {"10": 10, "25": 20}, "repeat": "60s", "inferno": 100253, "falloff": "damage / (distance_2d / 5) beyond 5yd"}, "source_refs": ["wowhead_cata_ragnaros_442", "repo_boss_ragnaros"], "status": "fidelity_blocked"},
+    {"key": "molten_power", "guide": {"heroic_damage": "+25% per nearby elemental within 6yd", "all_twenty": "+475%", "cc": "immune", "size": "+10%"}, "repository": {"spell": 100158, "applied": "on final seed visual tick", "creature_entries": [53189, 53810, 53811, 53812]}, "source_refs": ["wowhead_cata_ragnaros_442", "icy_veins_cata_ragnaros_2024", "repo_boss_ragnaros", "repo_ragnaros_sql"], "status": "fidelity_blocked"},
+    {"key": "engulfing_flames", "guide": {"segments": 3, "damage_normal": 55000, "damage_heroic": 75000, "duration": "about 3s warning plus ticks"}, "repository": {"spell": 99171, "near": 99172, "middle": 99235, "far": 99236, "parameter": "urand(0,2)", "first_phase_2": "40s", "repeat_phase_2": "60s", "first_phase_3": "30s", "repeat_phase_3": "30s"}, "source_refs": ["wowhead_cata_ragnaros_442", "repo_boss_ragnaros"], "status": "fidelity_blocked"},
+    {"key": "world_in_flames", "guide": {"chain": "four different segments"}, "repository": {"spells": [100171, 100190], "local_rule": "periodic script avoids immediately previous segment", "channel_fix": "SpellMgr clears channel flag"}, "source_refs": ["icy_veins_cata_ragnaros_2024", "repo_boss_ragnaros", "repo_spellmgr_lava_bolt"], "status": "fidelity_blocked"},
+    {"key": "blazing_heat", "guide": {"scions": 2, "repeat": "about 20s", "target": "one random player per Scion", "delay": "3s", "trail": "each second for 10s", "damage_normal": 38000, "damage_heroic": 60000, "range": "3yd", "son_heal": "10% max health/s"}, "repository": {"scion": 53231, "spell": 100459, "aura": 99128, "first": "15s", "repeat": "23s", "max_targets": 1}, "source_refs": ["wowhead_cata_ragnaros_442", "repo_boss_ragnaros"], "status": "fidelity_blocked"},
+    {"key": "living_meteor", "guide": {"repeat": "45s", "sequence": [1, 1, 2, 2, 4], "landing_damage": 65000, "landing_range": "5yd", "impact_normal": 120000, "impact_heroic": 500000, "impact_range": "8yd", "reduction": "99%", "knockback": "100yd", "reknock": "5s"}, "repository": {"spell": 99267, "entry": 53500, "fixate": 99849, "combustible": 99296, "impact": 99287, "reduction": 100904, "first": "45s", "repeat": "60s", "local_fixate": "3s", "local_combustible": "2.5s"}, "source_refs": ["wowhead_cata_ragnaros_442", "icy_veins_cata_ragnaros_2024", "repo_boss_ragnaros"], "status": "fidelity_blocked"},
+    {"key": "heroic_transition", "guide": {"threshold": "10%", "return_health": "50%", "allies": ["Cenarius", "Malfurion Stormrage", "Hamuul Runetotem"]}, "repository": {"legs_submerge": 100312, "legs_heal": 100346, "transform": 100420, "local_heal_delay": "5.5s", "face_home": "8s", "emerge": "500ms", "talk": "3s", "break_free": "10s", "platform": 208835}, "source_refs": ["wowhead_cata_ragnaros_442", "icy_veins_cata_ragnaros_2024", "repo_boss_ragnaros"], "status": "fidelity_blocked"},
+    {"key": "superheated", "guide": {"damage": 6000, "tick": "1s", "scaling": "+10% each tick, stacking"}, "repository": {"spell": 100593, "local_start": "5s after Break Free", "target_filter": "units without Breadth of Frost"}, "source_refs": ["wowhead_cata_ragnaros_442", "repo_boss_ragnaros"], "status": "fidelity_blocked"},
+    {"key": "breadth_roots_empower", "guide": {"breadth": "blocks/resets Superheated; can freeze meteors", "roots": "10s stun and +50% damage reported", "empower": "5s cast; completed melee wipes"}, "repository": {"breadth_trigger": 100472, "breadth_aura": 100503, "roots": 100645, "empower": 100604, "breadth_first": "6s", "breadth_repeat": "46s", "roots_first": "41s", "roots_repeat": "55s", "empower_delay": "15s after roots"}, "source_refs": ["icy_veins_cata_ragnaros_2024", "repo_boss_ragnaros"], "status": "fidelity_blocked"},
+    {"key": "dreadflame", "guide": {"spread": "about 3.5s", "initial_damage": "49725-52275", "periodic_damage": 3400, "periodic": "1s for 30s"}, "repository": {"controller": 100679, "periodic": 100691, "missile": 100675, "area": 100692, "damage": 100941, "grid_cells": 961, "grid_step": "5yd", "initial_count_10": 2, "initial_count_25": 5, "spread": "cardinal neighbors; ceil(occupied/2)", "next_tick": "9 - min(floor(tick/2),8)"}, "source_refs": ["wowhead_cata_ragnaros_442", "icy_veins_cata_ragnaros_2024", "repo_boss_ragnaros", "repo_firelands_identity"], "status": "fidelity_blocked"},
+    {"key": "cloudburst_deluge", "guide": {"deluge": "immune to Dreadflame and extinguishes patches", "clicks_10": 1, "clicks_25": 3}, "repository": {"cloudburst": 100751, "visual": 100758, "deluge": 100713, "local_delay": "27s after Malfurion draw-out", "clicks_10": 1, "clicks_25": 3, "reset": "remove Deluge from players"}, "source_refs": ["icy_veins_cata_ragnaros_2024", "repo_boss_ragnaros"], "status": "fidelity_blocked"},
+    {"key": "power_of_stormrage", "official": {"health": "-30%", "damage": "-30%", "scope": "all Firelands enemies", "remove_npc": "General Taldris Moonfall"}, "repository": {"spell_id": null, "default_enabled": null, "found": false}, "source_refs": ["blizzard_442_modifier"], "status": "fidelity_blocked_application"}
+  ],
+  "timers": [
+    {"key": "phase_one", "repository": {"wrath": "6s/30s", "hand": "26s/26s", "magma_trap": "16s/26s", "sulfuras": "31s/30s"}, "guide": {"wrath": "5s/30s", "hand": "about 25s", "magma_trap": "15s/30s", "sulfuras": "about 30s"}, "status": "fidelity_blocked"},
+    {"key": "intermission", "repository": {"announce": "42s", "normal_finish": "5s later", "heroic_finish": "20s later", "all_sons_finish": "1.5s"}, "guide": {"duration": "about 45s or 1m"}, "status": "fidelity_blocked"},
+    {"key": "phase_two", "repository": {"sulfuras": "5.5s/40s", "seed": "15s/60s", "engulfing": "40s/60s"}, "guide": {"seed": "15s/60s", "engulfing": "about 60s"}, "status": "fidelity_blocked"},
+    {"key": "phase_three", "repository": {"sulfuras": "15s/30s", "engulfing": "30s/30s", "meteor": "45s/60s"}, "guide": {"meteor": "45s; 1,1,2,2,4"}, "status": "fidelity_blocked"},
+    {"key": "phase_four", "repository": {"superheated": "5s after Break Free", "breadth": "6s/46s", "roots": "41s/55s", "empower": "15s after roots", "dreadflame": "16s", "cloudburst": "27s after draw-out"}, "guide": {"breadth": "about 45s", "dreadflame_spread": "about 3.5s", "empower_cast": "5s"}, "status": "fidelity_blocked"}
+  ],
+  "targeting_and_scaling": [
+    {"key": "wrath", "repository": "max one target in 10-player and three in 25-player", "guide": "random ranged subset; exact 10/25 and exclusions unresolved", "status": "fidelity_blocked"},
+    {"key": "molten_seed", "repository": "max ten in 10-player and twenty in 25-player", "guide": "one seed at each player location", "status": "fidelity_blocked_snapshot_and_spellinfo"},
+    {"key": "lava_bolt", "repository": "SpellMgr max four for 10-player family and ten for 25-player family", "guide": "four normal/ten heroic targets", "status": "fidelity_blocked_damage_and_cadence"},
+    {"key": "heroic_dreadflame", "repository": "2/5 initial cells and 1/3 Cloudburst clicks by raid size", "guide": "spread and Deluge behavior", "status": "fidelity_blocked_spell_period_and_damage"},
+    {"key": "power_modifier", "repository": "no spell/application found", "official": "optional -30% health and damage", "status": "fidelity_blocked"}
+  ],
+  "phase_reset_credit": [
+    {"key": "phase_transitions", "repository": "70%, 40%, 10%; normal ends at 10%, heroic enters phase 4 and permits lethal damage after Break Free", "status": "repository_observed_but_spell_values_blocked"},
+    {"key": "prerequisite_and_spawn", "repository": "map 720, DATA_RAGNAROS=6, area trigger spawns group 458 when boss absent/not DONE; door 209073 is room door", "status": "fidelity_blocked_prerequisite"},
+    {"key": "reset", "repository": "despawn summons/stalkers, remove Deluge, restore platform, despawn heroic archdruids, _DespawnAtEvade", "status": "fidelity_blocked_aura_and_door_cleanup"},
+    {"key": "normal_completion", "repository": "achievement 101091, reputation 101620, chest 101095, death 99430, bind players", "status": "repository_observed_but_loot_lockout_unvalidated"},
+    {"key": "heroic_completion", "repository": "archdruid outro, no normal chest/bind path shown in local branch", "status": "fidelity_blocked_loot_lockout"},
+    {"key": "encounter_credit", "repository": "historical entry 1203 credits 52409; update maps encounter credit to spell 102237; local casts 102237 and updates encounter state", "status": "fidelity_blocked_current_semantics"},
+    {"key": "heart_and_achievement", "repository": "Heart of Ragnaros 101253 remains TODO; achievement check 101091 is cast", "status": "fidelity_blocked"}
+  ],
+  "conflicts": [
+    {"key": "phase_one_cadence", "sources": ["current guide: Wrath 5s/30s, Hand about 25s, Trap 15s/30s, Smash about 30s", "local: 6s/30s, 26s/26s, 16s/26s, 31s/30s"], "resolution": "fidelity_blocked"},
+    {"key": "intermission_duration", "sources": ["current guides: about 45s or 1m", "local: 42s announce plus 5s normal or 20s heroic, or 1.5s after eight deaths"], "resolution": "fidelity_blocked"},
+    {"key": "living_meteor_cadence_and_count", "sources": ["Wowhead: 45s; first two casts one, later casts two", "Icy Veins: 50s example sequence 1,1,2,2,4", "local: first 45s then 60s and max one target override"], "resolution": "fidelity_blocked"},
+    {"key": "heroic_phase_four_magma_geyser", "sources": ["Icy Veins: current Classic version omits Magma Geyser", "local: no Ragnaros Geyser event; only magma knockback helper"], "resolution": "omit_from_contract_but_retain_as_audited_absence"},
+    {"key": "power_of_stormrage_state", "sources": ["official: optional 30% health/damage debuff removable by NPC", "local: no verified spell or state"], "resolution": "fidelity_blocked"}
+  ],
+  "unresolved": [
+    {"key": "build_hotfix_spellinfo_and_locale", "status": "fidelity_blocked"},
+    {"key": "power_of_stormrage_identity_default_and_override", "status": "fidelity_blocked"},
+    {"key": "health_values_and_modifier_interaction", "status": "fidelity_blocked"},
+    {"key": "phase1_event_cadence_conflicts", "status": "fidelity_blocked"},
+    {"key": "wrath_target_filter_and_damage", "status": "fidelity_blocked"},
+    {"key": "hand_knockback_target_radius_and_damage", "status": "fidelity_blocked"},
+    {"key": "magma_trap_cadence_vulnerability_and_damage", "status": "fidelity_blocked"},
+    {"key": "burning_wound_magma_blast_spell_variants", "status": "fidelity_blocked"},
+    {"key": "sulfuras_smash_lava_wave_timing_damage_and_safe_geometry", "status": "fidelity_blocked"},
+    {"key": "intermission_splitting_blow_target_and_son_placement", "status": "fidelity_blocked"},
+    {"key": "son_health_lava_bolt_and_supernova_scaling", "status": "fidelity_blocked"},
+    {"key": "molten_seed_snapshot_elemental_health_and_power", "status": "fidelity_blocked"},
+    {"key": "engulfing_flames_world_in_flames_cadence_and_damage", "status": "fidelity_blocked"},
+    {"key": "lava_scion_blazing_heat_target_cadence_and_health", "status": "fidelity_blocked"},
+    {"key": "living_meteor_count_cadence_impact_and_knockback", "status": "fidelity_blocked"},
+    {"key": "heroic_phase_transition_heal_platform_and_druid_spells", "status": "fidelity_blocked"},
+    {"key": "heroic_dreadflame_breadth_cloudburst_deluge_and_empower", "status": "fidelity_blocked"},
+    {"key": "reset_prerequisite_door_platform_and_aura_cleanup", "status": "fidelity_blocked"},
+    {"key": "credit_loot_lockout_achievement_and_heart", "status": "fidelity_blocked"}
+  ]
+}

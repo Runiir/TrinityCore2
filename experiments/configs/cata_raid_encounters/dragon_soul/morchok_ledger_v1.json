@@ -1,0 +1,237 @@
+{
+  "schema_version": 1,
+  "ledger_schema": "cata_raid_value_timer_ledger_v1",
+  "raid": "dragon_soul",
+  "boss_slug": "morchok",
+  "modes": ["10N", "10H", "25N", "25H"],
+  "fidelity_state": "fidelity_blocked",
+  "contract_path": "experiments/configs/cata_raid_encounters/dragon_soul/morchok_v1.json",
+  "unresolved_material_count": 26,
+  "encounter": "morchok",
+  "purpose": "Source, identity, modifier, value, timer, target, scaling, phase, reset, prerequisite, and credit ledger for Phase 0 research; no live-validation assertion.",
+  "scope": ["10N", "10H", "25N", "25H"],
+  "target": {
+    "client": "Cataclysm Classic",
+    "version": "4.4.2",
+    "build": 59185,
+    "locale": "enUS",
+    "cutoff_utc": "2025-02-18T19:31:51.916Z"
+  },
+  "repository_revision_audited": "6f94d85117cca3155ae4bce179beaee7754d6267",
+  "retrieved_utc_date": "2026-08-12",
+  "research_as_of": "2026-08-12",
+  "source_catalog": [
+    {
+      "id": "wowhead_cata_morchok_guide",
+      "title": "Morchok Strategy Overview - Dragon Soul Raid Cataclysm Classic",
+      "publisher": "Wowhead",
+      "published_or_updated": "2025-02-19 (updated)",
+      "edition_label": "Cataclysm Classic",
+      "url": "https://www.wowhead.com/cata/guide/raids/dragon-soul/morchok-strategy-overview",
+      "accessed": "2026-08-12",
+      "authority": "current Cataclysm Classic strategy guide",
+      "used_for": ["four-mode guide health", "Stomp/crystal", "phase loop", "Earth shards", "Black Blood", "heroic split"],
+      "notes": "Updated one day after the requested cutoff; observations are retained as post-cutoff corroboration and not asserted as cutoff runtime. Its Stomp and Earth-pull figures conflict with other references."
+    },
+    {
+      "id": "icy_veins_cata_morchok_guide",
+      "title": "Morchok Encounter Guide: Strategy, Abilities, Loot",
+      "publisher": "Icy Veins",
+      "published_or_updated": "2025-02-15 (updated)",
+      "edition_label": "Cataclysm Classic",
+      "url": "https://www.icy-veins.com/cataclysm-classic/morchok-encounter-guide-strategy-abilities-loot",
+      "accessed": "2026-08-12",
+      "authority": "current Cataclysm Classic strategy guide",
+      "used_for": ["phase ordering", "heroic twin", "Stomp", "crystal", "Black Blood", "achievement semantics"],
+      "notes": "Before the requested cutoff, but narrative guide material does not supply a complete four-mode coefficient/timer table."
+    },
+    {
+      "id": "warcraft_tavern_cata_morchok_guide",
+      "title": "Morchok Raid Guide - Cataclysm Classic",
+      "publisher": "Warcraft Tavern",
+      "edition_label": "Cataclysm Classic",
+      "url": "https://www.warcrafttavern.com/cataclysm/guides/morchok-raid-guide/",
+      "accessed": "2026-08-12",
+      "authority": "secondary Cataclysm Classic strategy guide",
+      "used_for": ["qualitative Stomp/crystal/Black Blood corroboration"],
+      "notes": "Used only as concise secondary corroboration; no exact value from this source is promoted over conflicts."
+    },
+    {
+      "id": "wowhead_morchok_npc",
+      "title": "Morchok NPC - Dragon Soul Encounter Journal",
+      "publisher": "Wowhead",
+      "edition_label": "Cataclysm Classic",
+      "url": "https://www.wowhead.com/cata/npc=55265/morchok",
+      "accessed": "2026-08-12",
+      "authority": "NPC/Encounter Journal and spell reference",
+      "used_for": ["entry identity", "generic ability values", "Crush Armor", "Furious", "Earth shards", "Black Blood"],
+      "notes": "The page reports generic Stomp 2,000,000 and Earth pull 5% per second, both retained as conflicts rather than mode/runtime truth."
+    },
+    {
+      "id": "wowhead_morchok_spells",
+      "title": "Morchok Cataclysm Classic spell references",
+      "publisher": "Wowhead",
+      "edition_label": "Cataclysm Classic",
+      "url": "https://www.wowhead.com/cata/spell=103414/stomp",
+      "accessed": "2026-08-12",
+      "authority": "spell identity/reference pages",
+      "used_for": ["103414 Stomp", "103494 Resonating Crystal", "103785 Black Blood", "103687 Crush Armor", "103846 Furious"],
+      "related_urls": [
+        "https://www.wowhead.com/cata/spell=103494/resonating-crystal",
+        "https://www.wowhead.com/cata/spell=103785/black-blood-of-the-earth",
+        "https://www.wowhead.com/cata/spell=103687/crush-armor",
+        "https://www.wowhead.com/cata/spell=103846/furious"
+      ],
+      "notes": "Spell-page effects identify values but can expose aura/tick or legacy difficulty rows; they are not treated as a complete 4.4.2 mode table."
+    },
+    {
+      "id": "blizzard_442_notes_mirror",
+      "title": "World of Warcraft: Cataclysm Classic Patch 4.4.2 Notes",
+      "publisher": "Blizzard Entertainment (Blue Tracker mirror)",
+      "published_or_updated": "2025-02-18",
+      "url": "https://www.bluetracker.gg/wow/topic/us-en/2062030-world-of-warcraft-cataclysm-classic-patch-442-notes/",
+      "accessed": "2026-08-12",
+      "authority": "official 4.4.2 release notes mirror",
+      "used_for": ["Dragon Soul eight-boss scope", "10/25 normal/heroic scope", "Dragon Soul opening 2025-02-20"],
+      "notes": "The post timestamp is after the requested cutoff but records the announced opening date; it does not publish Morchok tuning or client hash."
+    },
+    {
+      "id": "blizzard_classic_presence_dragon_soul",
+      "title": "Presence of the Dragon Soul Begins March 18",
+      "author": "Kaivax",
+      "publisher": "Blizzard Entertainment forums",
+      "published_or_updated": "2025-03-12",
+      "url": "https://us.forums.blizzard.com/en/wow/t/presence-of-the-dragon-soul-begins-march-18/2074792",
+      "accessed": "2026-08-12",
+      "authority": "official Cataclysm Classic modifier announcement",
+      "used_for": ["5% initial health/damage reduction", "5% biweekly increments", "30% cap", "Lord Devrestrasz toggle"],
+      "post_cutoff": true,
+      "notes": "Later than the requested cutoff and therefore never applied to cutoff values. Aura/NPC IDs and default persistence are not supplied."
+    },
+    {
+      "id": "blizzard_retail_power_aspects",
+      "title": "Dragon Soul Difficulty Changes",
+      "publisher": "Blizzard Entertainment",
+      "published_or_updated": "2012-01-19",
+      "url": "https://worldofwarcraft.blizzard.com/en-us/news/4326384/dragon-soul-difficulty-changes",
+      "accessed": "2026-08-12",
+      "authority": "original Cataclysm retail modifier announcement",
+      "used_for": ["historical Power of the Aspects comparison"],
+      "notes": "Historical retail evidence only; not substituted for Classic Presence of the Dragon Soul."
+    },
+    {
+      "id": "repo_dragon_soul_morchok_audit",
+      "title": "Local Dragon Soul Morchok implementation audit",
+      "publisher": "shared TrinityCore repository",
+      "revision": "6f94d85117cca3155ae4bce179beaee7754d6267",
+      "paths": [
+        "src/server/scripts/Kalimdor/CavernsOfTime/DragonSoul/dragon_soul.h",
+        "src/server/scripts/Kalimdor/CavernsOfTime/DragonSoul/instance_dragon_soul.cpp",
+        "src/server/scripts/Kalimdor/CavernsOfTime/DragonSoul/boss_madness_of_deathwing.cpp",
+        "src/server/scripts/Kalimdor/kalimdor_script_loader.cpp"
+      ],
+      "accessed": "2026-08-12",
+      "authority": "repository executable/identity evidence",
+      "used_for": ["map 967", "DATA_MORCHOK index 0", "EncounterCount 8", "no Morchok boss file/loader/object mapping", "Madness-only instance behavior"],
+      "notes": "No boss_morchok.cpp or Morchok spawn/object lifecycle was found in the current checkout."
+    },
+    {
+      "id": "repo_dragon_soul_morchok_sql",
+      "title": "Historical TrinityCore Dragon Soul SQL identity and access rows",
+      "publisher": "shared TrinityCore repository",
+      "revision": "6f94d85117cca3155ae4bce179beaee7754d6267",
+      "paths": [
+        "sql/old/4.3.4/TDB04_to_TDB05_updates/world/066_instance_encounters.sql",
+        "sql/old/4.3.4/TDB00_to_TDB01_updates/world/004_creature_template.sql",
+        "sql/old/4.3.4/TDB01_to_TDB02_updates/world/189_creature_template.sql",
+        "sql/old/4.3.4/TDB01_to_TDB02_updates/world/128_creature_template.sql",
+        "sql/old/4.3.4/world/12_2016_09_28/2016_09_20_08_world.sql",
+        "sql/old/4.3.4/TDB01_to_TDB02_updates/world/192_access_requirement.sql"
+      ],
+      "accessed": "2026-08-12",
+      "authority": "historical DB identity evidence",
+      "used_for": ["entry 55265", "encounter 1292", "difficulty variant slots", "historical access rows", "normal/heroic labels"],
+      "notes": "Historical rows do not prove current 4.4.2 tuning, variant-mode mapping, spawn, lockout, or loot behavior."
+    }
+  ],
+  "mode_matrix": {
+    "10N": {"boss_health_guide_observation": 36000000, "stomp_guide_observation": 750000, "crystal_targets_guide_observation": 3, "modifier_applied": false},
+    "10H": {"boss_health_guide_observation": 42000000, "stomp_guide_observation": 750000, "crystal_targets_guide_observation": 3, "modifier_applied": false},
+    "25N": {"boss_health_guide_observation": 102000000, "stomp_guide_observation": 2500000, "crystal_targets_guide_observation": 7, "modifier_applied": false},
+    "25H": {"boss_health_guide_observation": 180000000, "stomp_guide_observation": 2000000, "crystal_targets_guide_observation": 7, "modifier_applied": false}
+  },
+  "values": [
+    {"key": "boss_entry", "value": 55265, "modes": ["10N", "10H", "25N", "25H"], "status": "historical_identity_confirmed"},
+    {"key": "historical_encounter_id", "value": 1292, "modes": ["10N", "10H", "25N", "25H"], "status": "historical_identity_confirmed"},
+    {"key": "stomp_spell", "spell_id": 103414, "cast_seconds": 1.5, "split_range_yards": 25, "generic_damage": 2000000, "guide_mode_damage": {"10N": 750000, "10H": 750000, "25N": 2500000, "25H": 2000000}, "tank_nearest_portion_multiplier": 2, "status": "conflicted_fidelity_blocked"},
+    {"key": "heroic_stomp_debuff", "physical_taken_multiplier": 2, "duration_seconds": 10, "status": "effect_reported_target_stack_reset_blocked"},
+    {"key": "resonating_crystal", "spell_id": 103494, "detonation_seconds": 12, "target_counts": {"10N": 3, "10H": 3, "25N": 7, "25H": 7}, "damage_type": "Shadow", "status": "selection_curve_cadence_blocked"},
+    {"key": "crush_armor", "spell_id": 103687, "weapon_damage_multiplier": 1.2, "armor_reduction_percent": 10, "duration_seconds": 20, "stack_limit": 10, "normal_only_report": true, "status": "cadence_and_runtime_gate_blocked"},
+    {"key": "furious", "spell_id": 103846, "health_threshold_percent": 20, "damage_multiplier": 1.2, "attack_speed_multiplier": 1.3, "status": "activation_blocked"},
+    {"key": "earth_intermission", "reported_pull_damage_percent_per_second": {"strategy": 1, "npc_page": 5}, "duration_seconds": 5, "shard_damage": 15000, "shard_radius_yards": 2, "status": "conflict_and_identity_blocked"},
+    {"key": "black_blood", "spell_id": 103785, "damage_per_tick": 5000, "nature_taken_multiplier": 2, "stack_limit": 20, "spell_page_aura_seconds": 6, "encounter_channel_seconds": 15, "status": "duration_conflict_blocked"},
+    {"key": "heroic_split", "threshold_percent": 90, "twin": "Kohcrom", "shared_health": true, "reported_offset": "a few seconds", "status": "entry_sync_partition_credit_blocked"},
+    {"key": "enrage", "reported_minutes": 7, "status": "spell_identity_runtime_blocked"},
+    {"key": "classic_modifier", "name": "Presence of the Dragon Soul", "first_stage_health_multiplier": 0.95, "first_stage_damage_multiplier": 0.95, "increment": "5% every two weeks", "cap": "30%", "toggle": "Lord Devrestrasz", "status": "post_cutoff_identity_default_blocked"}
+  ],
+  "timers": [
+    {"key": "stomp_cooldown", "reported_or_verified": null, "status": "fidelity_blocked"},
+    {"key": "crystal_detonation", "seconds": 12, "status": "guide_and_reference_reported"},
+    {"key": "first_earth_intermission", "reported_seconds": [55, 60], "status": "source_range_conflict"},
+    {"key": "earth_pull", "seconds": 5, "status": "reported_duration_damage_conflict"},
+    {"key": "black_blood_channel", "reported_seconds": 15, "spell_page_aura_seconds": 6, "status": "duration_conflict"},
+    {"key": "heroic_twin_offset", "reported": "a few seconds", "status": "exact_jitter_blocked"},
+    {"key": "enrage", "reported_minutes": 7, "status": "runtime_blocked"}
+  ],
+  "targeting_and_scaling": [
+    {"key": "stomp", "targets": "all eligible units within 25 yards; current target and nearest ally receive double portions", "mode_counts": null, "status": "eligible_filter_and_timer_blocked"},
+    {"key": "crystal", "target_counts": {"10N": 3, "10H": 3, "25N": 7, "25H": 7}, "selection_conflict": ["nearest", "random"], "distance_curve": null, "status": "fidelity_blocked"},
+    {"key": "crush_armor", "target": "current melee target", "mode_gate": "normal reported only", "status": "cadence_blocked"},
+    {"key": "black_blood", "target": "players in exposed pool/line of sight", "cross_side_heroic_rule": null, "status": "range_and_twin_filter_blocked"},
+    {"key": "heroic_partition", "target": "one tank and assigned group per boss", "shared_health": true, "cross_side_targeting": null, "status": "strategy_only"},
+    {"key": "difficulty_scaling", "health_observations": {"10N": 36000000, "10H": 42000000, "25N": 102000000, "25H": 180000000}, "damage_coefficients": null, "modifier_interaction": null, "status": "fidelity_blocked"}
+  ],
+  "phase_reset_credit": [
+    {"key": "prerequisite", "historical_access": "967 difficulties 0/1 no quest; 2/3 quest 6177", "current_semantics": null, "status": "fidelity_blocked"},
+    {"key": "phase_loop", "reported": "Stomp/crystal -> Earth shards -> Black Blood -> repeat", "status": "fidelity_blocked"},
+    {"key": "wipe_reset", "value": null, "status": "fidelity_blocked_no_local_ai"},
+    {"key": "evade_cleanup", "value": null, "status": "fidelity_blocked_no_local_ai"},
+    {"key": "heroic_completion", "value": "requires both twin sides to finish; exact synchronization/credit window unknown", "status": "fidelity_blocked"},
+    {"key": "loot_and_credit", "historical_loot_identity": 55265, "current_player_credit": null, "status": "fidelity_blocked"}
+  ],
+  "conflicts": [
+    {"key": "stomp_damage", "sources": ["guide mode table: 750000/750000/2500000/2000000", "NPC/spell references: generic 2000000 and legacy effect rows"], "resolution": "preserve all reports; no fixed mode value"},
+    {"key": "earth_pull_damage", "sources": ["strategy guide: 1% total health per second", "NPC page: 5% total health per second", "both for 5 seconds"], "resolution": "fidelity_blocked"},
+    {"key": "crystal_target_selection", "sources": ["current guides: nearest", "NPC/reference text: random"], "resolution": "fidelity_blocked"},
+    {"key": "black_blood_duration", "sources": ["encounter guides: approximately 15-second channel", "spell aura page: 6-second aura"], "resolution": "do not substitute aura duration for channel timer"},
+    {"key": "modifier_identity", "sources": ["original retail: Power of the Aspects", "Classic later announcement: Presence of the Dragon Soul"], "resolution": "Classic later announcement is post-cutoff; neither is applied to cutoff values"}
+  ],
+  "unresolved": [
+    {"key": "exact_442_build_and_hotfix_cutoff", "status": "fidelity_blocked", "detail": "The requested build/locale/cutoff is metadata only; no matching DBC or hotfix export was audited."},
+    {"key": "cutoff_raid_availability_and_modifier_default", "status": "fidelity_blocked", "detail": "4.4.2 notes put Dragon Soul opening after the cutoff; default runtime modifier state cannot be inferred."},
+    {"key": "presence_dragon_soul_identity_toggle_persistence", "status": "fidelity_blocked", "detail": "Official later announcement names the aura and Lord Devrestrasz but gives no aura/NPC IDs or persistence semantics."},
+    {"key": "power_of_aspects_vs_presence_identity", "status": "fidelity_blocked", "detail": "Retail Power of the Aspects is historical and must not be substituted for Classic Presence of the Dragon Soul."},
+    {"key": "four_mode_health_damage_tables", "status": "fidelity_blocked", "detail": "Guide health observations do not freeze all four mode coefficients or modifier state."},
+    {"key": "stomp_mode_damage_conflict", "status": "fidelity_blocked", "detail": "Current guide, NPC page, and spell page report incompatible damage values."},
+    {"key": "stomp_timer_order_and_jitter", "status": "fidelity_blocked", "detail": "No build-matched source freezes Stomp cooldown, ordering, or jitter."},
+    {"key": "stomp_target_selection_range", "status": "fidelity_blocked", "detail": "The 25-yard split is reported, but exact eligible-target ordering and runtime filter are unverified."},
+    {"key": "heroic_stomp_debuff_target_stack_reset", "status": "fidelity_blocked", "detail": "The 10-second heroic physical-vulnerability effect is reported, but target, stack, and reset behavior are not frozen."},
+    {"key": "resonating_crystal_spawn_cadence", "status": "fidelity_blocked", "detail": "No authoritative spawn interval or positional selection is available."},
+    {"key": "resonating_crystal_target_selection", "status": "fidelity_blocked", "detail": "Sources conflict between nearest and random target selection."},
+    {"key": "resonating_crystal_distance_damage_and_link", "status": "fidelity_blocked", "detail": "Exact distance curve, link range/visual, knockback, and exclusions are not established."},
+    {"key": "crush_armor_cadence_and_normal_only", "status": "fidelity_blocked", "detail": "Spell values and reported normal-only gate exist, but cadence and current heroic enforcement are unverified."},
+    {"key": "furious_threshold_and_runtime", "status": "fidelity_blocked", "detail": "Reported 20%/20%/30% values lack build-matched activation and cancellation evidence."},
+    {"key": "earth_consume_pull_and_damage_conflict", "status": "fidelity_blocked", "detail": "Sources conflict between 1% and 5% total-health damage per second for the five-second pull."},
+    {"key": "earth_vengeance_shard_geometry_count_damage", "status": "fidelity_blocked", "detail": "Shard identity/15,000 Physical/2-yard report lacks count, geometry, timing, and current spell identity."},
+    {"key": "black_blood_channel_vs_aura_duration", "status": "fidelity_blocked", "detail": "Spell page exposes a six-second aura while encounter sources describe a roughly 15-second channel."},
+    {"key": "phase_loop_and_intermission_timing", "status": "fidelity_blocked", "detail": "First transition is reported around 55 seconds or one minute and exact loop/grace timers are absent."},
+    {"key": "heroic_split_shared_health_and_twin_credit", "status": "fidelity_blocked", "detail": "Kohcrom split/shared-health narrative has no local spawn, synchronization, or credit implementation."},
+    {"key": "heroic_raid_partition_and_cross_side_targeting", "status": "fidelity_blocked", "detail": "Two groups/one tank each are guide strategy, not an authoritative target filter or cross-side rule."},
+    {"key": "enrage_runtime_and_furious_interaction", "status": "fidelity_blocked", "detail": "Seven-minute enrage is guide prose with no spell identity or interaction proof."},
+    {"key": "mode_crystal_target_count_scaling", "status": "fidelity_blocked", "detail": "Three versus seven is guide evidence, while random/nearest semantics and any heroic delta conflict."},
+    {"key": "reset_evade_cleanup", "status": "fidelity_blocked", "detail": "Current checkout has no Morchok reset/evade/phase cleanup or crystal/shard despawn logic."},
+    {"key": "prerequisite_access_lockout", "status": "fidelity_blocked", "detail": "Historical access rows exist, but quest 6177 meaning and current Classic entry/lockout behavior are not verified."},
+    {"key": "loot_achievement_credit", "status": "fidelity_blocked", "detail": "Historical encounter/loot identity exists; current completion, achievement, loot, and player credit are not implemented or validated."},
+    {"key": "historical_difficulty_variant_mode_mapping_and_no_local_ai", "status": "fidelity_blocked", "detail": "Historical variant slots 57409/57771/57772 cannot be mapped confidently to four current modes, and no local Morchok AI/loader/spawn proof exists."}
+  ]
+}

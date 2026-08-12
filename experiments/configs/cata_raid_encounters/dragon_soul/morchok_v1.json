@@ -1,0 +1,365 @@
+{
+  "schema_version": 1,
+  "contract_schema": "cata_raid_encounter_contract_v1",
+  "raid": "dragon_soul",
+  "boss_slug": "morchok",
+  "modes": ["10N", "10H", "25N", "25H"],
+  "fidelity_state": "fidelity_blocked",
+  "dossier_path": "docs/bot_raids/strategies/t13/dragon_soul/morchok.md",
+  "ledger_path": "experiments/configs/cata_raid_encounters/dragon_soul/morchok_ledger_v1.json",
+  "unresolved_material_count": 26,
+  "encounter": "morchok",
+  "instance": "dragon_soul",
+  "scope": ["10N", "10H", "25N", "25H"],
+  "research_state": "phase0_researched_not_live_validated",
+  "target": {
+    "client": "Cataclysm Classic",
+    "version": "4.4.2",
+    "build": 59185,
+    "locale": "enUS",
+    "cutoff_utc": "2025-02-18T19:31:51.916Z"
+  },
+  "evidence_policy": "Use official Blizzard material for 4.4.2 release and Dragon Soul modifier scope, current Cataclysm Classic sources for observations, and repository/SQL only for executable or identity claims. Preserve source conflicts and post-cutoff evidence. Never schedule a value marked fidelity_blocked.",
+  "source_refs": [
+    "wowhead_cata_morchok_guide",
+    "icy_veins_cata_morchok_guide",
+    "warcraft_tavern_cata_morchok_guide",
+    "wowhead_morchok_npc",
+    "wowhead_morchok_spells",
+    "blizzard_442_notes_mirror",
+    "blizzard_classic_presence_dragon_soul",
+    "blizzard_retail_power_aspects",
+    "repo_dragon_soul_morchok_audit",
+    "repo_dragon_soul_morchok_sql"
+  ],
+  "mode_matrix": {
+    "10N": {
+      "heroic": false,
+      "boss_health_guide_observation": 36000000,
+      "health_status": "current_guide_value_modifier_state_unspecified",
+      "stomp_guide_observation": 750000,
+      "crystal_target_guide_observation": 3,
+      "reported_difficulty_delta": "normal; Crush Armor reported, no twin split",
+      "cutoff_modifier_state": "Dragon Soul was not open at the requested cutoff; no Classic Presence aura can be asserted"
+    },
+    "10H": {
+      "heroic": true,
+      "boss_health_guide_observation": 42000000,
+      "health_status": "current_guide_value_modifier_state_unspecified",
+      "stomp_guide_observation": 750000,
+      "crystal_target_guide_observation": 3,
+      "reported_difficulty_delta": "heroic split at 90% and heroic Stomp physical-vulnerability debuff; Crush Armor reported absent",
+      "cutoff_modifier_state": "Dragon Soul was not open at the requested cutoff; no Classic Presence aura can be asserted"
+    },
+    "25N": {
+      "heroic": false,
+      "boss_health_guide_observation": 102000000,
+      "health_status": "current_guide_value_modifier_state_unspecified",
+      "stomp_guide_observation": 2500000,
+      "crystal_target_guide_observation": 7,
+      "reported_difficulty_delta": "25-player normal; Crush Armor reported, no twin split",
+      "cutoff_modifier_state": "Dragon Soul was not open at the requested cutoff; no Classic Presence aura can be asserted"
+    },
+    "25H": {
+      "heroic": true,
+      "boss_health_guide_observation": 180000000,
+      "health_status": "current_guide_value_modifier_state_unspecified",
+      "stomp_guide_observation": 2000000,
+      "crystal_target_guide_observation": 7,
+      "reported_difficulty_delta": "heroic split at 90%, shared health, and heroic Stomp physical-vulnerability debuff; Crush Armor reported absent",
+      "cutoff_modifier_state": "Dragon Soul was not open at the requested cutoff; no Classic Presence aura can be asserted"
+    }
+  },
+  "identity_repository_state": {
+    "map": 967,
+    "data_header": "DS",
+    "boss_entry": 55265,
+    "historical_encounter_id": 1292,
+    "data_key": "DATA_MORCHOK",
+    "data_index": 0,
+    "historical_difficulty_entry_slots": [57409, 57771, 57772],
+    "difficulty_slot_mode_mapping": null,
+    "local_boss_ai": false,
+    "local_loader_registration": false,
+    "local_instance_object_mapping": false,
+    "historical_access_rows": [
+      {"map": 967, "difficulty": 0, "required_quest": 0, "label": "Dragon Soul (Entrance) - 10N"},
+      {"map": 967, "difficulty": 1, "required_quest": 0, "label": "Dragon Soul (Entrance) - 25N"},
+      {"map": 967, "difficulty": 2, "required_quest": 6177, "label": "Dragon Soul (Entrance) - 10H"},
+      {"map": 967, "difficulty": 3, "required_quest": 6177, "label": "Dragon Soul (Entrance) - 25H"}
+    ]
+  },
+  "official_modifier_timeline": {
+    "at_requested_cutoff": {
+      "state": "not_applicable_before_raid_open",
+      "reason": "Official 4.4.2 notes place Dragon Soul opening on 2025-02-20, after the requested 2025-02-18 cutoff",
+      "applied_to_contract_values": false
+    },
+    "classic_presence_of_the_dragon_soul": {
+      "official_name": "Presence of the Dragon Soul",
+      "health_multiplier_if_active": 0.95,
+      "damage_multiplier_if_active": 0.95,
+      "first_stage_start": "2025-03-18 weekly reset",
+      "increment": "5% every two weeks",
+      "announced_cap": "30% by end of May 2025",
+      "toggle_npc": "Lord Devrestrasz",
+      "aura_id": null,
+      "npc_id": null,
+      "default_state_and_persistence": null,
+      "status": "official_schedule_post_cutoff_runtime_identity_blocked"
+    },
+    "retail_power_of_the_aspects": {
+      "official_name": "Power of the Aspects",
+      "historical_effect": "progressive reduction of Dragon Soul enemy health and damage; Lord Afrasastrasz toggle",
+      "classic_applicability": "not_promoted",
+      "status": "historical_non_applicable_identity_conflict"
+    }
+  },
+  "roles": {
+    "tanks": [
+      "keep the Stomp target and one intended nearest ally inside the 25-yard split",
+      "hold one boss each after heroic Kohcrom appears and preserve each side's soak group",
+      "swap normal Crush Armor only after a build-verified stack/duration rule"
+    ],
+    "healers": [
+      "cover Stomp's split physical damage and the heroic physical-vulnerability window",
+      "stabilize crystal soakers, Earth intermission damage, Black Blood transitions, and twin-side separation"
+    ],
+    "raid": [
+      "remain within the validated Stomp split range when assigned",
+      "send only the validated nearest crystal targets and use Earth shards as line-of-sight cover",
+      "maintain the two heroic groups without assuming cross-side target eligibility"
+    ],
+    "dps": [
+      "burn the active boss or shared-health pool while preserving assigned Stomp/crystal positions",
+      "avoid Black Blood and Earth shard proximity hazards; do not infer a fixed spell timer"
+    ]
+  },
+  "gates": [
+    "entrance_trash_and_morchok_pull",
+    "stomp_25yd_split_and_crush_armor_normal",
+    "resonating_crystal_soak",
+    "earth_intermission_and_shards",
+    "black_blood_line_of_sight",
+    "repeat_phase_until_20_percent_and_furious",
+    "seven_minute_enrage_or_source_verified_equivalent",
+    "dragon_soul_presence_modifier_choice"
+  ],
+  "heroic_gates": [
+    "90_percent_kohcrom_split",
+    "shared_health_and_two_tank_partition",
+    "same_spells_with_desynchronization",
+    "heroic_stomp_physical_vulnerability",
+    "crystal_assignment_on_both_sides",
+    "synchronized_twin_completion_and_credit"
+  ],
+  "mechanics": [
+    {
+      "key": "identity_and_local_implementation",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Historical SQL identifies Morchok as entry 55265 and encounter 1292 on map 967. The current checkout has DATA_MORCHOK but no Morchok boss script, loader call, spawn/object mapping, phase, reset, or credit handler.",
+      "values": {"map": 967, "entry": 55265, "encounter_id": 1292, "data_index": 0, "boss_ai_present": false},
+      "evidence": ["repo_dragon_soul_morchok_audit", "repo_dragon_soul_morchok_sql"],
+      "status": "identity_confirmed_lifecycle_unimplemented"
+    },
+    {
+      "key": "stomp",
+      "spell_id": 103414,
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Stomp is a 1.5-second cast that splits physical damage among eligible targets within 25 yards; the current target and nearest ally take double portions. Heroic sources add a 100% physical-damage-taken effect for 10 seconds.",
+      "values": {
+        "cast_time_seconds": 1.5,
+        "split_radius_yards": 25,
+        "generic_page_damage": 2000000,
+        "guide_damage_by_mode": {"10N": 750000, "10H": 750000, "25N": 2500000, "25H": 2000000},
+        "tank_and_nearest_multiplier": 2,
+        "heroic_physical_taken_multiplier": 2,
+        "heroic_effect_duration_seconds": 10,
+        "cooldown_seconds": null,
+        "target_order_and_eligibility": null
+      },
+      "evidence": ["wowhead_cata_morchok_guide", "wowhead_morchok_npc", "wowhead_morchok_spells", "icy_veins_cata_morchok_guide"],
+      "status": "identity_and_qualitative_split_confirmed_mode_damage_and_timer_conflicted"
+    },
+    {
+      "key": "resonating_crystal",
+      "spell_id": 103494,
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "A crystal appears near a boss and explodes after 12 seconds. Guides disagree whether its three-player/25-player target selection is nearest or random; sources agree that damage scales by distance and the link itself is not damage.",
+      "values": {
+        "detonation_delay_seconds": 12,
+        "target_count_by_mode_guide": {"10N": 3, "10H": 3, "25N": 7, "25H": 7},
+        "selection": null,
+        "damage_type": "Shadow",
+        "distance_scaling_curve": null,
+        "link_range_and_visual_rule": null,
+        "spawn_cadence_seconds": null,
+        "periodic_trigger_interval_page_seconds": 1,
+        "knockback": null
+      },
+      "evidence": ["wowhead_cata_morchok_guide", "wowhead_morchok_npc", "wowhead_morchok_spells", "icy_veins_cata_morchok_guide"],
+      "status": "spell_identity_and_delay_confirmed_targeting_and_scaling_blocked"
+    },
+    {
+      "key": "crush_armor_normal_only",
+      "spell_id": 103687,
+      "modes": ["10N", "25N"],
+      "summary": "Normal-mode guides report Crush Armor on the current target; heroic guides report it absent. The spell page says 120% normal melee, reduces armor by 10% for 20 seconds, and stacks to 10.",
+      "values": {
+        "weapon_damage_multiplier": 1.2,
+        "armor_reduction_percent": 10,
+        "duration_seconds": 20,
+        "stack_limit": 10,
+        "range_yards": 5,
+        "application_cadence_seconds": null,
+        "heroic_presence": false
+      },
+      "evidence": ["wowhead_cata_morchok_guide", "wowhead_morchok_spells", "icy_veins_cata_morchok_guide"],
+      "status": "spell_values_confirmed_application_cadence_and_runtime_mode_gate_blocked"
+    },
+    {
+      "key": "furious",
+      "spell_id": 103846,
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "At 20% reported health, Furious increases damage by 20% and attack speed by 30% until cancelled.",
+      "values": {"health_threshold_percent": 20, "damage_multiplier": 1.2, "attack_speed_multiplier": 1.3, "duration": null},
+      "evidence": ["wowhead_cata_morchok_guide", "wowhead_morchok_npc", "wowhead_morchok_spells"],
+      "status": "reported_threshold_and_effect_confirmed_activation_runtime_blocked"
+    },
+    {
+      "key": "earth_intermission",
+      "spell_id": null,
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Guides describe an Earth pull followed by circular Earth shards used as line-of-sight cover. Sources conflict on the pull damage: the strategy guide reports 1% total health per second for 5 seconds, while the NPC page reports 5% per second for 5 seconds.",
+      "values": {
+        "reported_first_intermission_seconds": [55, 60],
+        "pull_damage_guide_percent_health_per_second": 1,
+        "pull_damage_npc_page_percent_health_per_second": 5,
+        "pull_duration_seconds": 5,
+        "shard_damage": 15000,
+        "shard_damage_type": "Physical",
+        "shard_nearby_radius_yards": 2,
+        "shard_count_geometry": null,
+        "pull_spell_identity": null
+      },
+      "evidence": ["wowhead_cata_morchok_guide", "wowhead_morchok_npc", "icy_veins_cata_morchok_guide"],
+      "status": "phase_shape_confirmed_damage_and_timing_conflicted"
+    },
+    {
+      "key": "black_blood_of_the_earth",
+      "spell_id": 103785,
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Black Blood is a Nature-damage channel; players use shards/pillars for line of sight. The spell page exposes a six-second aura while encounter guides describe a roughly 15-second channel, so the aura duration is not treated as the encounter timer.",
+      "values": {
+        "damage_per_tick": 5000,
+        "damage_type": "Nature",
+        "nature_taken_multiplier": 2,
+        "stack_limit": 20,
+        "spell_page_aura_duration_seconds": 6,
+        "encounter_channel_duration_seconds": 15,
+        "radius_yards": 300,
+        "tick_interval_seconds": null,
+        "line_of_sight_rule": "hide behind Earth shards/pillars",
+        "pool_count_heroic": null
+      },
+      "evidence": ["wowhead_cata_morchok_guide", "wowhead_morchok_npc", "wowhead_morchok_spells", "icy_veins_cata_morchok_guide"],
+      "status": "damage_effect_confirmed_channel_and_aura_duration_conflict"
+    },
+    {
+      "key": "heroic_kohcrom_split",
+      "spell_id": null,
+      "modes": ["10H", "25H"],
+      "summary": "At approximately 90% remaining health, guides report a Kohcrom twin with a shared health pool and the same spells a few seconds later. Each side uses one tank and an assigned raid group.",
+      "values": {
+        "split_threshold_percent": 90,
+        "twin_entry": "Kohcrom",
+        "twin_entry_id": null,
+        "shared_health_pool": true,
+        "reported_spell_offset": "a few seconds",
+        "tank_groups": 2,
+        "cross_side_targeting": null,
+        "completion_sync_window_seconds": null,
+        "credit_rule": null
+      },
+      "evidence": ["wowhead_cata_morchok_guide", "wowhead_morchok_npc", "icy_veins_cata_morchok_guide"],
+      "status": "qualitative_heroic_split_confirmed_exact_runtime_and_credit_blocked"
+    },
+    {
+      "key": "enrage_and_loop",
+      "spell_id": null,
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "Sources describe alternating Stomp/crystal and Black Blood phases until death or a seven-minute enrage; the exact loop clock, first intermission, post-intermission grace, and enrage implementation are not repository-backed.",
+      "values": {
+        "reported_enrage_minutes": 7,
+        "loop_order": ["Stomp/crystal", "Earth shards", "Black Blood", "repeat"],
+        "first_intermission_seconds": [55, 60],
+        "reported_post_intermission_stomp_grace_seconds": 15,
+        "exact_timer_jitter": null,
+        "enrage_spell_id": null
+      },
+      "evidence": ["wowhead_cata_morchok_guide", "icy_veins_cata_morchok_guide"],
+      "status": "qualitative_loop_confirmed_exact_schedule_and_enrage_blocked"
+    },
+    {
+      "key": "official_dragon_soul_modifier",
+      "spell_id": null,
+      "modes": ["10N", "10H", "25N", "25H"],
+      "summary": "The requested cutoff predates Dragon Soul opening. A later official Classic announcement schedules Presence of the Dragon Soul from March 18, increasing by 5% every two weeks to 30%; Lord Devrestrasz can remove the aura. The aura/NPC IDs and default persistence are not published.",
+      "values": {
+        "cutoff_applied": false,
+        "classic_modifier_name": "Presence of the Dragon Soul",
+        "first_stage_health_multiplier": 0.95,
+        "first_stage_damage_multiplier": 0.95,
+        "increment_percent": 5,
+        "cap_percent": 30,
+        "toggle_npc": "Lord Devrestrasz",
+        "toggle_npc_id": null,
+        "aura_id": null,
+        "default_state": null,
+        "retail_name_not_applied": "Power of the Aspects"
+      },
+      "evidence": ["blizzard_442_notes_mirror", "blizzard_classic_presence_dragon_soul", "blizzard_retail_power_aspects"],
+      "status": "official_scope_and_later_schedule_confirmed_runtime_identity_blocked"
+    }
+  ],
+  "phase_reset_credit": {
+    "pull_prerequisite": "historical access rows require no quest for normal and quest 6177 for heroic; current 4.4.2 lockout/entry semantics unresolved",
+    "phase_reset": null,
+    "wipe_reset": null,
+    "evade_cleanup": null,
+    "shard_crystal_cleanup": null,
+    "encounter_completion": null,
+    "loot": "historical loot identity is tied to lootid 55265; current 4.4.2 loot/lockout behavior not verified",
+    "achievement_credit": null,
+    "player_credit": null,
+    "status": "fidelity_blocked_no_local_morchok_lifecycle"
+  },
+  "unresolved": [
+    {"key": "exact_442_build_and_hotfix_cutoff", "status": "fidelity_blocked", "detail": "The requested build/locale/cutoff is metadata only; no matching DBC or hotfix export was audited."},
+    {"key": "cutoff_raid_availability_and_modifier_default", "status": "fidelity_blocked", "detail": "4.4.2 notes put Dragon Soul opening after the cutoff; default runtime modifier state cannot be inferred."},
+    {"key": "presence_dragon_soul_identity_toggle_persistence", "status": "fidelity_blocked", "detail": "Official later announcement names the aura and Lord Devrestrasz but gives no aura/NPC IDs or persistence semantics."},
+    {"key": "power_of_aspects_vs_presence_identity", "status": "fidelity_blocked", "detail": "Retail Power of the Aspects is historical and must not be substituted for Classic Presence of the Dragon Soul."},
+    {"key": "four_mode_health_damage_tables", "status": "fidelity_blocked", "detail": "Guide health observations do not freeze all four mode coefficients or modifier state."},
+    {"key": "stomp_mode_damage_conflict", "status": "fidelity_blocked", "detail": "Current guide, NPC page, and spell page report incompatible damage values."},
+    {"key": "stomp_timer_order_and_jitter", "status": "fidelity_blocked", "detail": "No build-matched source freezes Stomp cooldown, ordering, or jitter."},
+    {"key": "stomp_target_selection_range", "status": "fidelity_blocked", "detail": "The 25-yard split is reported, but exact eligible-target ordering and runtime filter are unverified."},
+    {"key": "heroic_stomp_debuff_target_stack_reset", "status": "fidelity_blocked", "detail": "The 10-second heroic physical-vulnerability effect is reported, but target, stack, and reset behavior are not frozen."},
+    {"key": "resonating_crystal_spawn_cadence", "status": "fidelity_blocked", "detail": "No authoritative spawn interval or positional selection is available."},
+    {"key": "resonating_crystal_target_selection", "status": "fidelity_blocked", "detail": "Sources conflict between nearest and random target selection."},
+    {"key": "resonating_crystal_distance_damage_and_link", "status": "fidelity_blocked", "detail": "Exact distance curve, link range/visual, knockback, and exclusions are not established."},
+    {"key": "crush_armor_cadence_and_normal_only", "status": "fidelity_blocked", "detail": "Spell values and reported normal-only gate exist, but cadence and current heroic enforcement are unverified."},
+    {"key": "furious_threshold_and_runtime", "status": "fidelity_blocked", "detail": "Reported 20%/20%/30% values lack build-matched activation and cancellation evidence."},
+    {"key": "earth_consume_pull_and_damage_conflict", "status": "fidelity_blocked", "detail": "Sources conflict between 1% and 5% total-health damage per second for the five-second pull."},
+    {"key": "earth_vengeance_shard_geometry_count_damage", "status": "fidelity_blocked", "detail": "Shard identity/15,000 Physical/2-yard report lacks count, geometry, timing, and current spell identity."},
+    {"key": "black_blood_channel_vs_aura_duration", "status": "fidelity_blocked", "detail": "Spell page exposes a six-second aura while encounter sources describe a roughly 15-second channel."},
+    {"key": "phase_loop_and_intermission_timing", "status": "fidelity_blocked", "detail": "First transition is reported around 55 seconds or one minute and exact loop/grace timers are absent."},
+    {"key": "heroic_split_shared_health_and_twin_credit", "status": "fidelity_blocked", "detail": "Kohcrom split/shared-health narrative has no local spawn, synchronization, or credit implementation."},
+    {"key": "heroic_raid_partition_and_cross_side_targeting", "status": "fidelity_blocked", "detail": "Two groups/one tank each are guide strategy, not an authoritative target filter or cross-side rule."},
+    {"key": "enrage_runtime_and_furious_interaction", "status": "fidelity_blocked", "detail": "Seven-minute enrage is guide prose with no spell identity or interaction proof."},
+    {"key": "mode_crystal_target_count_scaling", "status": "fidelity_blocked", "detail": "Three versus seven is guide evidence, while random/nearest semantics and any heroic delta conflict."},
+    {"key": "reset_evade_cleanup", "status": "fidelity_blocked", "detail": "Current checkout has no Morchok reset/evade/phase cleanup or crystal/shard despawn logic."},
+    {"key": "prerequisite_access_lockout", "status": "fidelity_blocked", "detail": "Historical access rows exist, but quest 6177 meaning and current Classic entry/lockout behavior are not verified."},
+    {"key": "loot_achievement_credit", "status": "fidelity_blocked", "detail": "Historical encounter/loot identity exists; current completion, achievement, loot, and player credit are not implemented or validated."},
+    {"key": "historical_difficulty_variant_mode_mapping_and_no_local_ai", "status": "fidelity_blocked", "detail": "Historical variant slots 57409/57771/57772 cannot be mapped confidently to four current modes, and no local Morchok AI/loader/spawn proof exists."}
+  ]
+}
