@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "program_id": "cata_raid_progression_442_v1",
-  "updated_at_utc": "2026-08-12T13:18:58Z",
+  "updated_at_utc": "2026-08-12T14:36:49Z",
   "active_phase": 1,
   "active_phase_name": "raid_runtime_formation_difficulty_and_evidence_primitives",
   "program_status": "in_progress",
@@ -16,8 +16,8 @@
   },
   "integration": {
     "branch": "raid/cata-raid-progression-integration",
-    "foundation_sha": "3aa35b1d6a64789a2fec5c59cebbabe3cb872d87",
-    "current_head_sha": "3aa35b1d6a64789a2fec5c59cebbabe3cb872d87",
+    "foundation_sha": "d6262156c8eccb1bb4f0f9f272e96e13fef7c430",
+    "current_head_sha": "d6262156c8eccb1bb4f0f9f272e96e13fef7c430",
     "raid_base_is_ancestor": true,
     "created_from_exact_local_master": true
   },
@@ -27,18 +27,18 @@
     "prior_review_decision": "REJECT",
     "prior_review_scope": "exact 9a7b3c72aed5a2e464635b31e8f4617f2134c8d8",
     "prior_review_counts": {"critical": 1, "high": 6, "medium": 5},
-    "critical_high_remediation_implemented_at": "3aa35b1d6a64789a2fec5c59cebbabe3cb872d87",
-    "mandatory_rereview": "approved_zero_critical_high_at_3aa35b1d6a",
+    "critical_high_remediation_implemented_at": "d6262156c8eccb1bb4f0f9f272e96e13fef7c430",
+    "mandatory_rereview": "approved_zero_critical_high_medium_at_7f4833e6f7_before_live_capture",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "current_acceptance": "approved_to_run_exact_coordinated_configure_and_build"
+    "current_acceptance": "live_capture_failed_on_navigation_identity_and_scanner_infrastructure_remediated_rebuild_pending"
   },
   "build_history": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "current_commit": "3aa35b1d6a64789a2fec5c59cebbabe3cb872d87",
-    "current_state": "idle_approved_for_exact_policy_v8_configure_build",
-    "current_result": "pending_exact_policy_v8_local_operator_receipts",
+    "current_commit": "d6262156c8eccb1bb4f0f9f272e96e13fef7c430",
+    "current_state": "idle_exact_remediation_rebuild_pending",
+    "current_result": "successful_7f4833e6f7_receipts_retained_but_stale_after_cxx_remediation",
     "successful_build_without_current_policy_receipt_is_invalid": true,
     "attempts": [
       {
@@ -111,7 +111,12 @@
         "receipt_trust_model": "explicit_trusted_local_operator",
         "trusted_operator": "runiir",
         "trusted_uid": 1000,
-        "classification": "pending"
+        "classification": "success_at_7f4833e6f7_then_stale_after_d6262156c8_remediation",
+        "receipts": [
+          "experiments/configs/cata_raid_build_receipts/phase1_foundation_configure_success_7f4833e6f7.json",
+          "experiments/configs/cata_raid_build_receipts/phase1_foundation_worldserver_success_7f4833e6f7.json"
+        ],
+        "worldserver_sha256": "5dc3d91c316451abfb9dfa36fc8442154561ece3d7d50ad1a3a586d916d8ad97"
       }
     ]
   },
@@ -205,13 +210,16 @@
   },
   "dvc": {
     "broad_status": "inherited_dependency_drift_and_selectively_evicted_outputs_present",
-    "new_raid_artifact_failure": false,
+    "new_raid_artifact_failure": true,
     "validation_scenario_stage_remote_status": "cache_and_remote_in_sync",
-    "validation_scenario_dvc_md5": "1561d7d875757ed989349dcbdb61beb8.dir",
+    "validation_scenario_dvc_md5": "5860365b5c53a066409b96ceaeded02f.dir",
     "validation_provisioning_dvc_md5": "2c6a0dc150fe9c9f86e6d65d9fd7bb88.dir",
     "phase0_no_bots_baseline_pointer": "artifacts/cata_raid_program/phase0_no_bots_worldserver_20260812.dvc",
     "phase0_no_bots_baseline_dvc_md5": "fa6ca050a2ddd41eece7f05d89424a2f.dir",
     "phase0_no_bots_baseline_remote_status": "cache_and_remote_in_sync_exact_payload_and_cache_evicted",
+    "phase1_failed_live_pointer": "artifacts/cata_raid_program/phase1_raid_foundation_7f4833e6_20260812.dvc",
+    "phase1_failed_live_dvc_md5": "b6ad9092e9716e3535f0b1f7766a49e9.dir",
+    "phase1_failed_live_remote_status": "cache_and_remote_verified_exact_payload_and_cache_evicted",
     "broad_gc_used": false,
     "config_local_tracked": false,
     "known_historical_unavailable_objects": [
@@ -287,11 +295,21 @@
         "production_policy_service_key_endpoint_and_fresh_inclusion_trust_anchors_fail_closed",
         "user_authorized_explicit_trusted_local_operator_build_receipts_only_at_3aa35b1d6a",
         "mandatory_sol_high_review_approved_exact_3aa35b1d6a_with_zero_critical_high",
-        "external_privileged_signer_reclassified_as_optional_build_hardening"
+      "external_privileged_signer_reclassified_as_optional_build_hardening",
+      "exact_policy_v8_configure_and_worldserver_build_succeeded_at_7f4833e6f7",
+      "exact_local_operator_receipts_and_worldserver_sha256_retained",
+      "focused_post_build_suite_200_passed",
+      "mandatory_sol_high_review_approved_exact_7f4833e6f7_with_zero_critical_high_medium",
+      "canonical_900_second_bwd_10n_capture_completed_with_clean_identity_and_cleanup_but_failed_before_boss_engagement",
+      "failed_live_capture_dvc_published_remote_verified_and_exactly_evicted",
+      "db_sourced_magmaw_room_stalker_navigation_anchor_committed_at_d6262156c8",
+      "temporary_weapon_enchants_excluded_from_permanent_roster_identity",
+      "blocked_no_fallback_diagnostic_excluded_from_positive_assistance_markers",
+      "focused_remediation_suite_171_passed"
       ],
       "remaining_requirements": [
-        "complete_exact_policy_v8_release_coordinated_reconfigure_build_and_regression_gate_with_trusted_local_operator_receipts",
-        "serialized_bwd_10n_entry_formation_difficulty_wipe_reset_evidence_publication_and_cleanup_gate",
+      "complete_exact_policy_v8_release_coordinated_incremental_build_and_regression_gate_at_d6262156c8_or_reviewed_descendant",
+      "rerun_serialized_bwd_10n_entry_formation_difficulty_wipe_reset_evidence_publication_and_cleanup_gate",
         "phase1_live_evidence_dvc_publish_remote_verify_and_exact_evict_gate"
       ]
     }
