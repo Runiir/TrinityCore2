@@ -301,6 +301,20 @@ def test_worldserver_artifact_hash_helper(tmp_path: Path) -> None:
     assert qb.sha256_file(binary) == "f0ad5a96d17f421decff47373c360f97e12dce40c367ec85646dcdb6d4076c57"
 
 
+def test_degraded_v4_retains_thresholds_and_freezes_link_mitigations() -> None:
+    v3 = json.loads(
+        (ROOT / "experiments/configs/cata_raid_build_resource_policy_degraded_v3.json").read_text()
+    )
+    v4 = json.loads(
+        (ROOT / "experiments/configs/cata_raid_build_resource_policy_degraded_v4.json").read_text()
+    )
+    assert v4["parallelism"] == v3["parallelism"]
+    assert v4["admission_thresholds"] == v3["admission_thresholds"]
+    assert v4["mechanical_controls"]["gnu_thin_intermediate_archives"] is True
+    assert v4["mechanical_controls"]["gnu_reduce_memory_overheads_final_link"] is True
+    assert v4["mechanical_controls"]["receipt_worldserver_sha256_required"] is True
+
+
 def test_live_validation_scan_matches_argv_not_unrelated_prose(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

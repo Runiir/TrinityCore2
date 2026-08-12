@@ -772,6 +772,31 @@ def verify_receipt(path: Path, policy: dict, allow_test_mode: bool = False) -> d
         raise CoordinatorError("receipt linker ceiling exceeds policy")
     if receipt.get("test_mode") and not allow_test_mode:
         raise CoordinatorError("synthetic/test receipt cannot satisfy a production build gate")
+    require_worldserver_hash = bool(
+        policy.get("mechanical_controls", {}).get("receipt_worldserver_sha256_required")
+    )
+    if (
+        require_worldserver_hash
+        and receipt.get("classification") == "success"
+        and receipt.get("resource_class") in {"worldserver_build", "integration_build"}
+    ):
+        artifacts = receipt.get("output_artifacts")
+        worldserver = next(
+            (
+                row for row in artifacts
+                if isinstance(row, dict) and row.get("kind") == "worldserver_elf"
+            ),
+            None,
+        ) if isinstance(artifacts, list) else None
+        if (
+            not worldserver
+            or not isinstance(worldserver.get("path"), str)
+            or not isinstance(worldserver.get("size_bytes"), int)
+            or worldserver["size_bytes"] <= 0
+            or not isinstance(worldserver.get("sha256"), str)
+            or not re.fullmatch(r"[0-9a-f]{64}", worldserver["sha256"])
+        ):
+            raise CoordinatorError("receipt is missing the required worldserver artifact identity")
     return {
         "valid": True,
         "receipt_sha256": claimed,
