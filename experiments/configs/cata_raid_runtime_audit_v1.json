@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "audit_id": "cata_raid_runtime_phase1_v1",
-  "updated_at_utc": "2026-08-12T16:18:00Z",
+  "updated_at_utc": "2026-08-12T16:37:51Z",
   "target": {
     "client": "Cataclysm Classic",
     "patch": "4.4.2",
@@ -9,18 +9,18 @@
     "locale": "enUS",
     "hotfix_cutoff_utc": "2025-02-20T23:00:00Z"
   },
-  "audited_commit": "1affcc226557e89da3dbd528341768dba5c24068",
-  "gate_state": "in_progress_third_live_saved_position_stall_reprovisioned_fail_closed_guard_review_and_rebuild_pending",
+  "audited_commit": "cd99025d89a7ac13a6bfb5f7f9b0fe1bc535de71",
+  "gate_state": "in_progress_atomic_saved_roster_shared_focus_and_provisioning_reproducibility_remediated_review_and_rebuild_pending",
   "foundation": {
-    "foundation_sha": "1affcc226557e89da3dbd528341768dba5c24068",
-    "current_head_sha": "1affcc226557e89da3dbd528341768dba5c24068",
+    "foundation_sha": "cd99025d89a7ac13a6bfb5f7f9b0fe1bc535de71",
+    "current_head_sha": "cd99025d89a7ac13a6bfb5f7f9b0fe1bc535de71",
     "prior_sol_high_review": "REJECT",
     "critical_high_remediation": "implemented",
-    "mandatory_sol_high_rereview": "pending_exact_1affcc2265_after_saved_route_map_fail_closed_remediation",
+    "mandatory_sol_high_rereview": "pending_exact_status_descendant_of_cd99025d89_after_atomic_saved_roster_and_shared_focus_contract_authority",
     "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
     "external_service_requirement": "optional_hardening_not_a_phase1_gate",
     "privileged_protocol_review": "available_as_optional_external_hardening",
-    "acceptance": "third_live_stale_saved_position_incomplete_evidence_published_evicted_reprovisioned_and_fail_closed_guard_review_exact_rebuild_uncapped_rerun_pending"
+    "acceptance": "third_live_incomplete_evidence_compactly_reconstructable_published_evicted_provisioning_reproducible_atomic_roster_and_shared_focus_remediated_exact_review_rebuild_uncapped_rerun_pending"
   },
   "research": {
     "required_boss_packets": 28,
@@ -46,7 +46,7 @@
   },
   "build": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "current_state": "successful_6ffcf7d9c1_build_stale_after_1affcc2265_saved_route_map_guard",
+    "current_state": "successful_6ffcf7d9c1_build_stale_after_cd99025d89_atomic_roster_and_shared_focus_remediation",
     "current_result": "mandatory_review_then_exact_incremental_rebuild_required_before_uncapped_canonical_rerun",
     "receipt_trust_model": "explicit_trusted_local_operator",
     "trusted_operator": "runiir",
@@ -111,22 +111,27 @@
     ,"immediate_exact_post_diagnosis_dvc_eviction_policy"
     ,"validation_saved_position_map_bound_to_route_and_no_fallback"
     ,"exact_bwd_10n_provisioning_database_readback"
+    ,"complete_unique_saved_roster_preflight_before_first_claim_spawn_or_group"
+    ,"bounded_exact_route_start_map_xy_z_saved_placement_identity"
+    ,"shared_boss_focus_declared_target_and_typed_contract_authority"
+    ,"portable_repo_relative_provisioning_manifest_provenance"
+    ,"compact_remotely_verified_third_capture_classification_and_cleanup_reconstruction"
   ],
   "synthetic_checks": {
     "test_file": "tests/test_cata_raid_runtime_foundation.py",
-    "last_result": "212_expanded_focused_passed",
-    "combined_focus_result": "212_passed",
-    "combined_focus_command": "pixi run pytest -q tests/test_cata_raid_runtime_foundation.py tests/test_phase1_raid_foundation_capture.py tests/test_autonomy_pipeline_smoke.py -k 'raid_instance_identity or canonical_capture_is_terminal or validation_bot_reattach or runtime_reconstructs_native or phase1 or foundation'",
+    "last_result": "218_expanded_focused_passed",
+    "combined_focus_result": "218_passed",
+    "combined_focus_command": "pixi run pytest -q tests/test_cata_raid_runtime_foundation.py tests/test_phase1_raid_foundation_capture.py tests/test_raid_build_coordinator.py tests/test_cata_raid_foundation_model.py tests/test_phase9_live_qualification.py",
     "broad_comparison": "patched_worktree_329_passed_34_inherited_stale_failures; exact_4012450_control_326_passed_35_failures; no_new_failure"
   },
   "required_open_work": [
     {
       "area": "current_build",
-      "missing": ["successful_exact_policy_v8_release_coordinated_incremental_build_at_reviewed_1affcc2265", "valid_current_production_receipt_bound_to_trusted_local_operator", "post_build_regression_and_orphan_process_check"]
+      "missing": ["successful_exact_policy_v8_release_coordinated_incremental_build_at_reviewed_status_descendant_of_cd99025d89", "valid_current_production_receipt_bound_to_trusted_local_operator", "post_build_regression_and_orphan_process_check"]
     },
     {
       "area": "adversarial_review",
-      "missing": ["zero_unresolved_critical_high_findings_for_1affcc2265_saved_route_map_fail_closed_guard", "explicit_encounter_script_vs_bot_decision_review", "explicit_non_fidelity_phase1_engagement_scope_approval"]
+      "missing": ["zero_unresolved_critical_high_findings_for_atomic_saved_roster_and_shared_focus_contract_authority_descendant_of_cd99025d89", "explicit_encounter_script_vs_bot_decision_review", "explicit_non_fidelity_phase1_engagement_scope_approval"]
     },
     {
       "area": "native_recovery_live_evidence",
@@ -138,7 +143,7 @@
     }
   ],
   "phase1_gate_blockers": [
-    "mandatory_sol_high_review_of_exact_1affcc2265_pending",
+    "mandatory_sol_high_review_of_exact_status_descendant_of_cd99025d89_pending",
     "coordinated_policy_v8_release_worldserver_rebuild_after_live_instance_identity_remediation_pending",
     "uncapped_serialized_bwd_10n_live_formation_difficulty_wipe_reset_gate_rerun_pending",
     "phase1_live_dvc_publication_remote_verification_and_exact_eviction_pending",
