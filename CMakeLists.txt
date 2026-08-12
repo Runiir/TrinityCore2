@@ -49,6 +49,14 @@ if(DEFINED ENV{TRINITY_RAID_BUILD_COORDINATED} AND "$ENV{TRINITY_RAID_BUILD_COOR
     set(CMAKE_C_ARCHIVE_CREATE "<CMAKE_AR> qcT <TARGET> <LINK_FLAGS> <OBJECTS>")
     message(STATUS "Raid build coordinator: GNU-compatible thin intermediate archives enabled")
   endif()
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    # The one-compiler retry completed every object and archive, but GNU ld's
+    # final worldserver link crossed the frozen PSI-full threshold. This flag
+    # trades link time for the lower-memory symbol-table algorithm without
+    # changing the coordinator's reserve or pressure limits.
+    string(APPEND CMAKE_EXE_LINKER_FLAGS " -Wl,--reduce-memory-overheads")
+    message(STATUS "Raid build coordinator: GNU low-memory executable linking enabled")
+  endif()
   message(STATUS
     "Raid build coordinator ticket $ENV{TRINITY_RAID_BUILD_TICKET}: "
     "$ENV{TRINITY_RAID_BUILD_COMPILER_JOBS} compiler jobs, "

@@ -1,0 +1,50 @@
+{
+  "admitted_at_utc": "2026-08-12T04:44:45.446830Z",
+  "classification": "build_resource_abort",
+  "command_arguments_retained": false,
+  "command_sha256": "dadab1cf86d50ec263bd078aaec4806c66b88c337fe1702a2409951d9c2bac81",
+  "commit": "6989485d452b10c40408b259c43e251f8af80cd2",
+  "compiler_job_ceiling": 1,
+  "ended_at_utc": "2026-08-12T04:55:23.515575Z",
+  "error": null,
+  "exit_code": -15,
+  "linker_job_ceiling": 1,
+  "log_sha256": "ca5d354e18221d99e98b2daf3d5120c27aec240d751d4351c0f4571a3b11d11f",
+  "peak_observations": {
+    "maximum_load_average_1m": 3.220703125,
+    "maximum_memory_psi_full_avg10": 0.18,
+    "maximum_memory_psi_some_avg10": 0.18,
+    "maximum_swap_used_bytes": 1205055488,
+    "minimum_filesystem_available_bytes": 34771857408,
+    "minimum_memory_available_bytes": 19818921984,
+    "sample_count": 1259
+  },
+  "policy_id": "cata_raid_build_resource_policy_degraded_v3",
+  "policy_sha256": "59c68ed1e4d7d59d74a3007cd91d514d9125543676fe24f043740bb38d9f2205",
+  "preflight": {
+    "captured_at_utc": "2026-08-12T04:44:45.446830Z",
+    "filesystem_available_bytes": 36602716160,
+    "load_average_15m": 1.90185546875,
+    "load_average_1m": 1.55615234375,
+    "load_average_5m": 1.97412109375,
+    "memory_available_bytes": 23410454528,
+    "memory_psi_full_avg10": 0.0,
+    "memory_psi_some_avg10": 0.0,
+    "memory_total_bytes": 32513720320,
+    "swap_used_bytes": 1197219840
+  },
+  "pressure_reasons": [
+    "memory_psi_full"
+  ],
+  "queue_sequence": 11,
+  "queue_wait_seconds": 0.008014,
+  "receipt_sha256": "0dcb2de881abd425b009b38db0b433f94fa7c5c25950eec06db419fc21296cef",
+  "resource_class": "worldserver_build",
+  "schema_version": 1,
+  "signal": 15,
+  "test_mode": false,
+  "ticket_id": "raid-build-72d1959da8f54ef689bb4d5a19700982",
+  "worktree": "/home/runiir/Games/trinity-cata-worktrees/phase1-foundation-build",
+  "worktree_dirty_at_request": true,
+  "worktree_porcelain_sha256_at_request": "c65d64793eb20ea4d2f03593fa840593de1a1dad81fa0e412f4f177d29e113d7"
+}

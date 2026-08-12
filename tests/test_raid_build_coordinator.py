@@ -291,6 +291,8 @@ def test_cmake_integration_applies_compile_and_link_controls() -> None:
     assert "RULE_LAUNCH_LINK" in cmake
     assert 'CMAKE_CXX_ARCHIVE_CREATE "<CMAKE_AR> qcT' in cmake
     assert "thin intermediate archives enabled" in cmake
+    assert "-Wl,--reduce-memory-overheads" in cmake
+    assert "GNU low-memory executable linking enabled" in cmake
 
 
 def test_live_validation_scan_matches_argv_not_unrelated_prose(
