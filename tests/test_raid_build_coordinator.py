@@ -315,6 +315,19 @@ def test_degraded_v4_retains_thresholds_and_freezes_link_mitigations() -> None:
     assert v4["mechanical_controls"]["receipt_worldserver_sha256_required"] is True
 
 
+def test_degraded_v5_retains_thresholds_and_disables_unity() -> None:
+    v4 = json.loads(
+        (ROOT / "experiments/configs/cata_raid_build_resource_policy_degraded_v4.json").read_text()
+    )
+    v5 = json.loads(
+        (ROOT / "experiments/configs/cata_raid_build_resource_policy_degraded_v5.json").read_text()
+    )
+    assert v5["parallelism"] == v4["parallelism"]
+    assert v5["admission_thresholds"] == v4["admission_thresholds"]
+    assert v5["mechanical_controls"]["unity_builds"] is False
+    assert v5["mechanical_controls"]["gnu_reduce_memory_overheads_final_link"] is True
+
+
 def test_live_validation_scan_matches_argv_not_unrelated_prose(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
