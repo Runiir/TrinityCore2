@@ -60,6 +60,7 @@ profession-smoke = "python experiments/run_experiment.py experiments/configs/hea
 autonomous-smoke = "python experiments/run_experiment.py experiments/configs/headless_autonomous_loop_smoke_001.json --local"
 setup-dvc-s3 = "python scripts/setup_dvc_s3_remote.py"
 raid-build = "python tools/raid_program/queued_build.py"
+raid-client-extract = "python tools/raid_program/extract_442_client_spell_rows.py"
 
 [dependencies]
 dvc = ">=3.67.1,<4"

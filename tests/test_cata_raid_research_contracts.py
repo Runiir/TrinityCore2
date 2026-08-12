@@ -36,7 +36,7 @@ def test_bwd_catalog_is_complete_and_fail_closed() -> None:
     assert target["patch"] == "4.4.2"
     assert target["client_build_frozen"] is True
     assert target["hotfix_cutoff_frozen"] is True
-    assert target["client_data_hashes_frozen"] is False
+    assert target["client_data_hashes_frozen"] is True
     assert target["state"] == "research_unresolved"
 
     bosses = catalog["raids"]["blackwing_descent"]["bosses"]
@@ -102,7 +102,7 @@ def test_raid_acceptance_policy_fails_closed_until_identity_is_frozen() -> None:
     assert target["locale"] == "enUS"
     assert target["client_build"] == 59185
     assert target["client_build_status"] == "frozen_from_public_secondary_build_table"
-    assert target["client_data_hashes"] == []
+    assert target["client_data_hashes"][0]["dvc_md5"] == "eff38325fc3aeac0fa15d0c81b2be901"
     assert target["fidelity_gate"] == "research_unresolved"
     assert policy["authoritative_requirements"]["zero_forbidden_assistance"] is True
     forbidden = set(policy["forbidden_certification_assistance"])
@@ -130,7 +130,7 @@ def test_quantitative_source_registry_pins_available_inputs_and_blocks_missing_i
     assert registry["gate"] == {
         "build_and_cutoff_frozen": True,
         "addon_inputs_pinned": True,
-        "primary_client_data_pinned": False,
+        "primary_client_data_pinned": True,
         "wowhead_extract_pinned": False,
         "known_mode_logs_pinned": False,
         "quantitative_fidelity_acceptance": "blocked",

@@ -10,8 +10,14 @@
     "launch_build_source_status": "frozen_from_public_secondary_build_table",
     "hotfix_cutoff_utc": "2025-02-20T23:00:00Z",
     "hotfix_cutoff_status": "frozen_at_official_global_dragon_soul_unlock",
-    "primary_client_data_status": "unavailable",
-    "primary_client_data_hashes": []
+    "primary_client_data_status": "pinned_bounded_spell_tables",
+    "primary_client_data_hashes": [
+      {
+        "pointer": "artifacts/cata_raid_program/phase0_client_spell_rows_442_59185_20260812.json.dvc",
+        "dvc_md5": "eff38325fc3aeac0fa15d0c81b2be901",
+        "scope": "eleven build-4.4.2.59185 spell DB2 CSV table hashes plus encounter-referenced rows and complete small lookup tables"
+      }
+    ]
   },
   "sources": [
     {
@@ -43,6 +49,16 @@
       },
       "status": "pinned_metadata",
       "use": "content-availability and target cutoff boundary; not encounter quantitative authority"
+    },
+    {
+      "source_id": "wago_tools_442_59185_client_spell_tables",
+      "kind": "primary_client_data_extract",
+      "provider": "wago.tools",
+      "build": "4.4.2.59185",
+      "pointer": "artifacts/cata_raid_program/phase0_client_spell_rows_442_59185_20260812.json.dvc",
+      "dvc_md5": "eff38325fc3aeac0fa15d0c81b2be901",
+      "status": "pinned_immutable_bounded_extract",
+      "use": "spell names, effects, difficulty rows, static durations/radii/ranges/cast indexes, targeting, cooldown and scaling rows; not server event schedules or live-mode observations"
     },
     {
       "source_id": "bigwigs_cataclysm_v11_0_13",
@@ -84,7 +100,7 @@
   "gate": {
     "build_and_cutoff_frozen": true,
     "addon_inputs_pinned": true,
-    "primary_client_data_pinned": false,
+    "primary_client_data_pinned": true,
     "wowhead_extract_pinned": false,
     "known_mode_logs_pinned": false,
     "quantitative_fidelity_acceptance": "blocked"

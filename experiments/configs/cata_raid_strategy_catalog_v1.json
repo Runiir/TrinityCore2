@@ -13,9 +13,9 @@
     "client_build_frozen": true,
     "hotfix_cutoff_utc": "2025-02-20T23:00:00Z",
     "hotfix_cutoff_frozen": true,
-    "client_data_hashes_frozen": false,
+    "client_data_hashes_frozen": true,
     "state": "research_unresolved",
-    "reason": "Build 59185 and the official global Dragon Soul unlock cutoff are frozen. The program still lacks a pinned primary client-data extract/content hashes, an exact Wowhead 4.4.2 extract, and known-mode logs for material quantitative rows."
+    "reason": "Build 59185, the official global Dragon Soul unlock cutoff, and a bounded primary spell-DB2 extract are frozen. The program still lacks an exact Wowhead 4.4.2 extract and known-mode logs for material server schedules and live quantitative rows."
   },
   "source_quality": {
     "quantitative_hierarchy": [

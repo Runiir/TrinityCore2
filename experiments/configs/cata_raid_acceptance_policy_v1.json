@@ -11,8 +11,14 @@
     "official_notes_published_at_utc": "2025-02-18T19:31:51.916Z",
     "hotfix_cutoff_utc": "2025-02-20T23:00:00Z",
     "hotfix_cutoff_semantics": "Include official 4.4.2 behavior effective no later than the global Dragon Soul unlock at 2025-02-20 15:00 PST (23:00 UTC). Exclude later hotfixes and Presence of the Dragon Soul unless a separately identified optional policy explicitly enables them.",
-    "client_data_hashes": [],
-    "client_data_status": "unavailable_blocks_quantitative_fidelity_acceptance",
+    "client_data_hashes": [
+      {
+        "pointer": "artifacts/cata_raid_program/phase0_client_spell_rows_442_59185_20260812.json.dvc",
+        "dvc_md5": "eff38325fc3aeac0fa15d0c81b2be901",
+        "scope": "bounded encounter-referenced build-59185 spell DB2 extract with full upstream table hashes"
+      }
+    ],
+    "client_data_status": "pinned_spell_scope_only_server_timers_and_live_values_still_blocked",
     "quantitative_source_registry": "experiments/configs/cata_raid_quantitative_source_registry_v1.json",
     "fidelity_gate": "research_unresolved"
   },
