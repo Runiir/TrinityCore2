@@ -32,6 +32,32 @@
 #include "SpellMgr.h"
 #include "Util.h"
 
+namespace
+{
+bool SpellHasHostileMultiTargetSemantics(SpellInfo const* spellInfo, uint8 depth = 0)
+{
+    if (!spellInfo || depth > 4)
+        return false;
+    if (spellInfo->Id == 48505 || spellInfo->Id == 89751)
+        return true;
+    for (uint8 effectIndex = 0; effectIndex < MAX_SPELL_EFFECTS; ++effectIndex)
+    {
+        SpellEffectInfo const& effect = spellInfo->Effects[effectIndex];
+        if (!effect.IsEffect())
+            continue;
+        if (!spellInfo->IsPositiveEffect(effectIndex)
+            && (effect.ChainTarget > 1 || effect.IsTargetingArea()
+                || effect.IsEffect(SPELL_EFFECT_PERSISTENT_AREA_AURA)
+                || effect.IsAreaAuraEffect()))
+            return true;
+        if (effect.TriggerSpell
+            && SpellHasHostileMultiTargetSemantics(sSpellMgr->GetSpellInfo(effect.TriggerSpell), depth + 1))
+            return true;
+    }
+    return false;
+}
+}
+
 int32 PetAI::Permissible(Creature const* creature)
 {
     if (creature->HasUnitTypeMask(UNIT_MASK_CONTROLABLE_GUARDIAN))
@@ -154,6 +180,10 @@ void PetAI::UpdateAI(uint32 diff)
 
             SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellID);
             if (!spellInfo)
+                continue;
+
+            if (owner && owner->IsHostileMultiTargetAutocastSuppressed()
+                && SpellHasHostileMultiTargetSemantics(spellInfo))
                 continue;
 
             if (me->GetSpellHistory()->HasGlobalCooldown(spellInfo))

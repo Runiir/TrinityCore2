@@ -205,6 +205,8 @@ BotActionResult BotActionExecutor::ExecuteCombat(Player* owner, Player* bot, Res
     if (!action.Valid)
         return BotActionResult::NoAction;
 
+    bot->SetHostileMultiTargetAutocastSuppressed(action.SuppressAreaDamage);
+
     Unit* target = action.TargetGuid.IsEmpty() ? nullptr : ObjectAccessor::GetUnit(*bot, action.TargetGuid);
     if (action.Type == "pull" || action.Type == "move_to_range")
     {

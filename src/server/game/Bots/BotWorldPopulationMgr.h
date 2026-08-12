@@ -550,12 +550,6 @@ private:
         std::string LastRaidTankSwapTriggerKey;
         uint64 LastRaidTankSwapMs = 0;
         uint64 LastRaidTankSwapWipeGeneration = 0;
-        struct SuppressedRaidAutocast
-        {
-            ObjectGuid UnitGuid;
-            uint32 SpellId = 0;
-        };
-        std::vector<SuppressedRaidAutocast> SuppressedRaidAreaAutocasts;
         uint32 LastRaidJumpPadEntrySubmitted = 0;
         uint64 LastRaidJumpPadRouteGeneration = 0;
         ObjectGuid NativeResurrectionCasterGuid;

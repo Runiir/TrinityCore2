@@ -23753,33 +23753,32 @@ BotWorldPopulationMgr::BossMechanicFeatures BotWorldPopulationMgr::BuildBossMech
 BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMechanics(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity)
 {
     BossMechanicActionResult result;
-    auto reconcileRaidAreaAutocasts = [&state, bot](bool suppress)
+    auto reconcileRaidAreaAutocasts = [bot](bool suppress)
     {
         if (!bot)
             return;
-
+        bot->SetHostileMultiTargetAutocastSuppressed(suppress);
         if (!suppress)
-        {
-            for (WorldBotState::SuppressedRaidAutocast const& saved : state.SuppressedRaidAreaAutocasts)
-                if (Unit* controlled = ObjectAccessor::GetUnit(*bot, saved.UnitGuid))
-                    if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(saved.SpellId))
-                    {
-                        if (Pet* pet = controlled->ToPet())
-                            pet->ToggleAutocast(spellInfo, true);
-                        else if (CharmInfo* charmInfo = controlled->GetCharmInfo())
-                            charmInfo->ToggleCreatureAutocast(spellInfo, true);
-                        if (CharmInfo* charmInfo = controlled->GetCharmInfo())
-                            charmInfo->SetSpellAutocast(spellInfo, true);
-                    }
-            state.SuppressedRaidAreaAutocasts.clear();
             return;
-        }
 
         for (Unit* controlled : bot->m_Controlled)
         {
             Creature* creature = controlled ? controlled->ToCreature() : nullptr;
             if (!creature)
                 continue;
+            std::vector<uint32> activeAreaSpells;
+            for (CurrentSpellTypes spellType : { CURRENT_GENERIC_SPELL, CURRENT_CHANNELED_SPELL })
+                if (Spell* current = controlled->GetCurrentSpell(spellType))
+                    if (SpellHasHostileMultiTargetSemantics(current->GetSpellInfo()))
+                    {
+                        activeAreaSpells.push_back(current->GetSpellInfo()->Id);
+                        controlled->InterruptSpell(spellType, false);
+                    }
+            for (uint32 spellId : activeAreaSpells)
+            {
+                controlled->RemoveAura(spellId);
+                controlled->RemoveDynObject(spellId);
+            }
             std::vector<uint32> enabledAreaSpells;
             for (uint8 index = 0; index < creature->GetPetAutoSpellSize(); ++index)
                 if (uint32 const spellId = creature->GetPetAutoSpellOnPos(index))
@@ -23787,22 +23786,7 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
                         enabledAreaSpells.push_back(spellId);
             for (uint32 spellId : enabledAreaSpells)
             {
-                bool const alreadySaved = std::any_of(state.SuppressedRaidAreaAutocasts.begin(),
-                    state.SuppressedRaidAreaAutocasts.end(), [controlled, spellId](WorldBotState::SuppressedRaidAutocast const& saved)
-                    {
-                        return saved.UnitGuid == controlled->GetGUID() && saved.SpellId == spellId;
-                    });
-                if (!alreadySaved)
-                    state.SuppressedRaidAreaAutocasts.push_back({ controlled->GetGUID(), spellId });
-                if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId))
-                {
-                    if (Pet* pet = controlled->ToPet())
-                        pet->ToggleAutocast(spellInfo, false);
-                    else if (CharmInfo* charmInfo = controlled->GetCharmInfo())
-                        charmInfo->ToggleCreatureAutocast(spellInfo, false);
-                    if (CharmInfo* charmInfo = controlled->GetCharmInfo())
-                        charmInfo->SetSpellAutocast(spellInfo, false);
-                }
+                controlled->RemoveAura(spellId);
                 controlled->RemoveDynObject(spellId);
             }
         }
