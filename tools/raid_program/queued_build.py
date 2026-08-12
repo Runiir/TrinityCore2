@@ -248,11 +248,39 @@ def find_live_validation_processes(policy: dict, ignore_pids: Iterable[int] = ()
         if not entry.name.isdigit() or int(entry.name) in ignored:
             continue
         try:
-            command = (entry / "cmdline").read_bytes().replace(b"\0", b" ").decode(errors="replace")
+            arguments = [
+                value.decode(errors="replace")
+                for value in (entry / "cmdline").read_bytes().split(b"\0")
+                if value
+            ]
         except OSError:
             continue
-        if command and any(pattern in command for pattern in patterns):
-            found.append({"pid": int(entry.name), "matched_pattern": next(p for p in patterns if p in command)})
+        if not arguments:
+            continue
+        basenames = [Path(value).name for value in arguments]
+        matched_pattern: str | None = None
+        for pattern in patterns:
+            tokens = pattern.split()
+            if len(tokens) == 1:
+                # Match executable/script argv elements, never arbitrary prose or
+                # build-target arguments that happen to mention a protected name.
+                executable_positions = basenames[:1]
+                if basenames and basenames[0].startswith("python"):
+                    executable_positions = basenames[:2]
+                if tokens[0] in executable_positions:
+                    matched_pattern = pattern
+                    break
+            else:
+                for index in range(len(arguments) - len(tokens) + 1):
+                    window = arguments[index : index + len(tokens)]
+                    normalized = [Path(window[0]).name, *window[1:]]
+                    if normalized == tokens:
+                        matched_pattern = pattern
+                        break
+                if matched_pattern:
+                    break
+        if matched_pattern:
+            found.append({"pid": int(entry.name), "matched_pattern": matched_pattern})
     return sorted(found, key=lambda row: int(row["pid"]))
 
 

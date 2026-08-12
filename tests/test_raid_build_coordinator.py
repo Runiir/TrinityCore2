@@ -293,6 +293,32 @@ def test_cmake_integration_applies_compile_and_link_controls() -> None:
     assert "thin intermediate archives enabled" in cmake
 
 
+def test_live_validation_scan_matches_argv_not_unrelated_prose(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    proc = tmp_path / "proc"
+    proc.mkdir()
+    unrelated = proc / "101"
+    unrelated.mkdir()
+    (unrelated / "cmdline").write_bytes(
+        b"/usr/bin/python\0-c\0print('worldserver and dvc push')\0"
+    )
+    protected = proc / "102"
+    protected.mkdir()
+    (protected / "cmdline").write_bytes(
+        b"/opt/trinity/worldserver\0--config\0test.conf\0"
+    )
+    original_path = qb.Path
+
+    def redirected_path(value: str) -> Path:
+        return proc if value == "/proc" else original_path(value)
+
+    monkeypatch.setattr(qb, "Path", redirected_path)
+    assert qb.find_live_validation_processes(policy()) == [
+        {"pid": 102, "matched_pattern": "worldserver"}
+    ]
+
+
 def test_all_registered_worktrees_share_git_common_queue_state() -> None:
     main_common = qb.git_common_dir(ROOT)
     output = qb.git_output(ROOT, "worktree", "list", "--porcelain")
