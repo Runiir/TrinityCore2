@@ -2025,13 +2025,18 @@ def main() -> int:
         "schema_version": 1,
         "capture_id": "cata_raid_phase1_bwd_10n_foundation_v1",
         "classification": "success" if success else (
+            "diagnostic_only" if forbidden_entries else (
             "infrastructure_abort" if (
                 startup_error
+                or process_return_code != 0
                 or telemetry_abort.get("detected")
                 or not process_absent
                 or not postflight["passed"]
                 or not cleanup_ok
-            ) else "incomplete_evidence"
+                or not identity_stable
+                or bool(demux_rejections)
+                or not telemetry_envelopes["gate_passed"]
+            ) else "incomplete_evidence")
         ),
         "started_at_utc": started_utc,
         "identity": identity_before,

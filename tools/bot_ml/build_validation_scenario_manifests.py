@@ -378,6 +378,7 @@ def build_manifests(config: dict[str, Any], provisioning_report: dict[str, Any],
                 route["expected_alive_count"] = expected_alive_count(step, cluster_entries)
             route["route_node_id"] = stable_hash(route)[:16]
             route["expected_bot_count"] = expected_bot_count
+            route["roster_identity"] = scenario.get("roster_identity") or []
             alternate_target_entries = []
             for entry in step.get("alternate_target_entries") or []:
                 entry_id = int(entry or 0)

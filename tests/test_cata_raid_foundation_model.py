@@ -5,11 +5,14 @@ import pytest
 from ml.raid.foundation import (
     RaidMember,
     SavedRaidPlacement,
+    ValidationRaidAdmissionState,
     compile_mechanic_contract,
     form_raid,
     formation_points,
     generic_assignment_smoke,
     preflight_validation_raid_spawn,
+    transact_validation_raid_admission,
+    validate_completed_validation_raid_admission,
     validate_evidence_demultiplex,
 )
 
@@ -77,6 +80,65 @@ def test_validation_raid_spawn_preflight_rejects_incomplete_or_wrong_map(placeme
             route_start_y=2.0,
             route_start_z=3.0,
         )
+
+
+@pytest.mark.parametrize(("failure_kind", "failure_index"), [("claim", 8), ("spawn", 9)])
+def test_validation_raid_admission_late_failure_rolls_back_and_latches_terminal(
+    failure_kind: str, failure_index: int
+):
+    planned = tuple(range(1001, 1011))
+    placements = tuple(
+        SavedRaidPlacement(guid, 669, -345.872, -224.344, 193.127)
+        for guid in planned
+    )
+    state = ValidationRaidAdmissionState()
+    kwargs = {f"fail_{failure_kind}_at": failure_index}
+    with pytest.raises(ValueError, match=f"admission_{failure_kind}_failed"):
+        transact_validation_raid_admission(
+            planned,
+            placements,
+            route_start_map_id=669,
+            route_start_x=-345.872,
+            route_start_y=-224.344,
+            route_start_z=193.127,
+            state=state,
+            **kwargs,
+        )
+    assert state.bots == []
+    assert state.leases == set()
+    assert state.group_guid is None
+    assert state.complete is False
+    assert state.terminal_failure is True
+    assert state.pinned_guids == planned
+
+    snapshot = (list(state.bots), set(state.leases), state.group_guid, state.pinned_guids)
+    with pytest.raises(ValueError, match="terminal_failure"):
+        transact_validation_raid_admission(
+            tuple(reversed(planned)),
+            tuple(reversed(placements)),
+            route_start_map_id=669,
+            route_start_x=-345.872,
+            route_start_y=-224.344,
+            route_start_z=193.127,
+            state=state,
+        )
+    assert (state.bots, state.leases, state.group_guid, state.pinned_guids) == snapshot
+
+
+def test_completed_validation_raid_identity_drift_cleans_every_partial_identity():
+    expected = tuple(range(1001, 1011))
+    state = ValidationRaidAdmissionState(
+        bots=list(expected), leases=set(expected), group_guid=44,
+        pinned_guids=expected, complete=True,
+    )
+    state.leases.remove(expected[-1])
+    with pytest.raises(ValueError, match="identity_drift"):
+        validate_completed_validation_raid_admission(expected, state)
+    assert state.bots == []
+    assert state.leases == set()
+    assert state.group_guid is None
+    assert state.complete is False
+    assert state.terminal_failure is True
 
 
 @pytest.mark.parametrize(("size", "difficulty", "difficulty_id"), [(10, "10n", 0), (10, "10h", 2), (25, "25n", 1), (25, "25h", 3)])

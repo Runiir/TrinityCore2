@@ -1730,6 +1730,8 @@ bool BotWorldPopulationMgr::Start(std::string const& experimentName, BotWorldExp
     Cohort().ExperimentCoordinator.Clear();
     Cohort().FailedSpawnGuids.clear();
     Cohort().LastPopulationFailureReason.clear();
+    Cohort().ValidationRaidAdmissionComplete = false;
+    Cohort().ValidationRaidAdmissionFailed = false;
     Cohort().Metrics = BotWorldStatus();
     Cohort().Metrics.Active = true;
     Cohort().Metrics.Mode = BotWorldRuntimeMode::ManualExperiment;
@@ -1824,6 +1826,8 @@ bool BotWorldPopulationMgr::StartAutonomy(BotWorldExperimentConfig const* overri
     Cohort().ExperimentCoordinator.Configure(0, Cohort().Config.BrainVersion);
     Cohort().FailedSpawnGuids.clear();
     Cohort().LastPopulationFailureReason.clear();
+    Cohort().ValidationRaidAdmissionComplete = false;
+    Cohort().ValidationRaidAdmissionFailed = false;
     Cohort().Metrics = BotWorldStatus();
     Cohort().Metrics.Active = true;
     Cohort().Metrics.Mode = BotWorldRuntimeMode::AlwaysOnAutonomy;
@@ -3770,6 +3774,17 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
         node.OpenerSummonZ = readFloat(routeJson, "opener_summon_z");
         node.OpenerSummonO = readFloat(routeJson, "opener_summon_o");
         node.ExpectedBotCount = uint32(std::max(0, readInt(routeJson, "expected_bot_count")));
+        for (std::string const& identityJson : ExtractJsonObjectArrayItems(
+            ExtractJsonArrayField(routeJson, "roster_identity")))
+        {
+            ValidationRouteManifestNode::RosterIdentity identity;
+            identity.RosterSlotId = ExtractJsonStringField(identityJson, "roster_slot_id");
+            identity.Guid = uint32(std::max(0, readInt(identityJson, "guid")));
+            identity.Name = ExtractJsonStringField(identityJson, "name");
+            identity.Role = ExtractJsonStringField(identityJson, "role");
+            identity.ClassSpec = ExtractJsonStringField(identityJson, "class_spec");
+            node.ExpectedRoster.push_back(std::move(identity));
+        }
         if (!node.NodeId.empty() && !node.Kind.empty())
             Party().ValidationRouteManifest.push_back(node);
     }
@@ -4441,23 +4456,122 @@ void BotWorldPopulationMgr::EnsurePopulation()
     };
     std::vector<PlannedValidationRaidSpawn> validationRaidSpawnPlan;
 
-    // A validation raid is admitted as one exact saved-position roster.  Read
-    // and validate every GUID and placement before the first lease or native
-    // login, using the route-start identity generated from the authoritative
-    // scenario/provisioning contract.  This intentionally performs no repair:
-    // a missing/stale member leaves no new bot, lease, or group behind.
-    bool const validationRaidPreflight = raidMode
-        && Cohort().Config.ValidationRouteEnable && Party().Bots.empty();
-    if (validationRaidPreflight)
+    // Validation-raid admission is a one-shot transaction. A failed attempt is
+    // terminal for this cohort attempt: later ticks may neither reselect an
+    // unpinned candidate nor enter the generic placement/fallback path.
+    bool const validationRaidAdmission = raidMode && Cohort().Config.ValidationRouteEnable;
+    if (validationRaidAdmission)
     {
-        if (!Cohort().RosterLeases.empty())
+        if (Cohort().ValidationRaidAdmissionFailed)
+            return;
+        if (Cohort().ValidationRaidAdmissionComplete)
         {
-            Cohort().LastPopulationFailureReason = "validation_raid_preflight_existing_lease";
+            bool exactIdentity = Party().ValidationRouteManifest.size() > 0
+                && Party().ValidationRouteManifest.front().ExpectedRoster.size() == expectedPopulation
+                && Party().Bots.size() == expectedPopulation
+                && Cohort().RosterLeases.size() == expectedPopulation
+                && Cohort().Raid.RosterComplete && Cohort().Raid.UniqueLeases
+                && Cohort().Raid.RosterByGuid.size() == expectedPopulation;
+            ObjectGuid exactGroupGuid = ObjectGuid::Empty;
+            if (exactIdentity)
+            {
+                ValidationRouteManifestNode const& routeStart = Party().ValidationRouteManifest.front();
+                for (ValidationRouteManifestNode::RosterIdentity const& expected : routeStart.ExpectedRoster)
+                {
+                    auto const state = std::find_if(Party().Bots.begin(), Party().Bots.end(),
+                        [&expected](WorldBotState const& row)
+                        {
+                            return row.Guid.GetCounter() == expected.Guid
+                                && row.RosterSlotId == expected.RosterSlotId;
+                        });
+                    Player* bot = state == Party().Bots.end() ? nullptr : GetLoadedBot(*state);
+                    Group* group = bot ? bot->GetGroup() : nullptr;
+                    auto const frozen = Cohort().Raid.RosterByGuid.find(expected.Guid);
+                    if (state == Party().Bots.end() || !bot || !bot->IsInWorld() || !group
+                        || !LeaseOwnedByCurrentCohort(expected.Guid, expected.RosterSlotId)
+                        || frozen == Cohort().Raid.RosterByGuid.end()
+                        || frozen->second.RosterSlotId != expected.RosterSlotId)
+                    {
+                        exactIdentity = false;
+                        break;
+                    }
+                    if (exactGroupGuid.IsEmpty())
+                        exactGroupGuid = group->GetGUID();
+                    else if (exactGroupGuid != group->GetGUID())
+                    {
+                        exactIdentity = false;
+                        break;
+                    }
+                }
+                exactIdentity = exactIdentity && !exactGroupGuid.IsEmpty()
+                    && Cohort().Raid.GroupGuid == exactGroupGuid;
+            }
+            if (!exactIdentity)
+            {
+                std::set<uint32> cleanupGuids = Cohort().RosterLeases;
+                for (WorldBotState const& state : Party().Bots)
+                {
+                    cleanupGuids.insert(state.Guid.GetCounter());
+                    BotRaidAreaAuthority::Set(state.Guid.GetRawValue(), false);
+                    sBotMgr->RemoveWorldBot(state.Guid);
+                }
+                for (uint32 guid : cleanupGuids)
+                {
+                    ReleaseBotGuid(guid);
+                    CharacterDatabase.DirectPExecute(
+                        "UPDATE character_bot_pool SET in_use = 0 WHERE guid = %u", guid);
+                }
+                Party() = PartyRuntime();
+                Cohort().Raid = RaidRuntime();
+                Cohort().RosterLeases.clear();
+                Cohort().Metrics.ActiveBots = 0;
+                Cohort().ValidationRaidAdmissionComplete = false;
+                Cohort().ValidationRaidAdmissionFailed = true;
+                Cohort().LastPopulationFailureReason = "validation_raid_admission_identity_drift";
+            }
             return;
         }
+
+        auto terminalFailure = [this](char const* reason)
+        {
+            Cohort().ValidationRaidAdmissionComplete = false;
+            Cohort().ValidationRaidAdmissionFailed = true;
+            Cohort().LastPopulationFailureReason = reason;
+        };
+
+        // An admission transaction may only start from a demonstrably empty
+        // cohort. Clean up any inherited partial state, then latch failure
+        // instead of treating it as a resumable roster.
+        if (!Party().Bots.empty() || !Cohort().RosterLeases.empty())
+        {
+            std::set<uint32> cleanupGuids = Cohort().RosterLeases;
+            for (WorldBotState const& state : Party().Bots)
+            {
+                cleanupGuids.insert(state.Guid.GetCounter());
+                BotRaidAreaAuthority::Set(state.Guid.GetRawValue(), false);
+                sBotMgr->RemoveWorldBot(state.Guid);
+            }
+            for (uint32 guid : cleanupGuids)
+            {
+                ReleaseBotGuid(guid);
+                CharacterDatabase.DirectPExecute(
+                    "UPDATE character_bot_pool SET in_use = 0 WHERE guid = %u", guid);
+            }
+            Party() = PartyRuntime();
+            Cohort().Raid = RaidRuntime();
+            Cohort().RosterLeases.clear();
+            Cohort().Metrics.ActiveBots = 0;
+            terminalFailure("validation_raid_admission_nonempty_start");
+            return;
+        }
+
+        // Read and validate every GUID and saved placement before the first
+        // lease or native login, using the route-start identity generated from
+        // the authoritative scenario/provisioning contract. No teleport,
+        // alternate placement, or live repair is permitted.
         if (Party().ValidationRouteManifest.empty())
         {
-            Cohort().LastPopulationFailureReason = "validation_raid_preflight_route_start_missing";
+            terminalFailure("validation_raid_preflight_route_start_missing");
             return;
         }
 
@@ -4466,10 +4580,11 @@ void BotWorldPopulationMgr::EnsurePopulation()
         static constexpr float RouteStartVerticalToleranceYards = 3.0f;
         if (!routeStart.BotStartMapId
             || routeStart.ExpectedBotCount != rosterPlan.size()
+            || routeStart.ExpectedRoster.size() != rosterPlan.size()
             || !MapManager::IsValidMapCoord(routeStart.BotStartMapId, routeStart.BotStartX,
                 routeStart.BotStartY, routeStart.BotStartZ, routeStart.BotStartO))
         {
-            Cohort().LastPopulationFailureReason = "validation_raid_preflight_route_start_invalid";
+            terminalFailure("validation_raid_preflight_route_start_invalid");
             return;
         }
 
@@ -4477,10 +4592,22 @@ void BotWorldPopulationMgr::EnsurePopulation()
         validationRaidSpawnPlan.reserve(rosterPlan.size());
         for (RaidRosterPlanSlot const& slot : rosterPlan)
         {
-            uint32 const candidateGuid = SelectPoolCandidateGuid(slot.RosterSlotId, &plannedGuids);
+            auto const expected = std::find_if(routeStart.ExpectedRoster.begin(), routeStart.ExpectedRoster.end(),
+                [&slot](ValidationRouteManifestNode::RosterIdentity const& row)
+                {
+                    return row.RosterSlotId == slot.RosterSlotId;
+                });
+            if (expected == routeStart.ExpectedRoster.end() || !expected->Guid || expected->Name.empty()
+                || expected->Role != slot.Role || expected->ClassSpec.empty())
+            {
+                terminalFailure("validation_raid_preflight_roster_identity_invalid");
+                return;
+            }
+            uint32 const candidateGuid = SelectPoolCandidateGuid(slot.RosterSlotId, &plannedGuids,
+                expected->Guid, expected->Name, expected->ClassSpec);
             if (!candidateGuid)
             {
-                Cohort().LastPopulationFailureReason = "validation_raid_preflight_exact_roster_missing";
+                terminalFailure("validation_raid_preflight_exact_roster_missing");
                 return;
             }
 
@@ -4488,7 +4615,7 @@ void BotWorldPopulationMgr::EnsurePopulation()
             if (!ResolveSavedSpawnPlacement(candidateGuid, placement)
                 || placement.Source != "saved_position")
             {
-                Cohort().LastPopulationFailureReason = "validation_raid_preflight_saved_placement_missing";
+                terminalFailure("validation_raid_preflight_saved_placement_missing");
                 return;
             }
             if (placement.MapId != routeStart.BotStartMapId
@@ -4496,7 +4623,7 @@ void BotWorldPopulationMgr::EnsurePopulation()
                     > RouteStartHorizontalToleranceYards
                 || std::fabs(placement.Z - routeStart.BotStartZ) > RouteStartVerticalToleranceYards)
             {
-                Cohort().LastPopulationFailureReason = "validation_raid_preflight_route_start_mismatch";
+                terminalFailure("validation_raid_preflight_route_start_mismatch");
                 return;
             }
 
@@ -4506,9 +4633,153 @@ void BotWorldPopulationMgr::EnsurePopulation()
         if (validationRaidSpawnPlan.size() != rosterPlan.size()
             || plannedGuids.size() != rosterPlan.size())
         {
-            Cohort().LastPopulationFailureReason = "validation_raid_preflight_roster_not_unique";
+            terminalFailure("validation_raid_preflight_roster_not_unique");
             return;
         }
+
+        PartyRuntime const partyBeforeAdmission = Party();
+        RaidRuntime const raidBeforeAdmission = Cohort().Raid;
+        BotWorldStatus const metricsBeforeAdmission = Cohort().Metrics;
+        std::set<uint32> const failedSpawnGuidsBeforeAdmission = Cohort().FailedSpawnGuids;
+        std::vector<uint32> claimedGuids;
+        std::vector<ObjectGuid> spawnedGuids;
+        auto rollbackAdmission = [this, &partyBeforeAdmission, &raidBeforeAdmission,
+            &metricsBeforeAdmission, &failedSpawnGuidsBeforeAdmission,
+            &claimedGuids, &spawnedGuids, &terminalFailure](char const* reason)
+        {
+            for (auto itr = spawnedGuids.rbegin(); itr != spawnedGuids.rend(); ++itr)
+            {
+                BotRaidAreaAuthority::Set(itr->GetRawValue(), false);
+                sBotMgr->RemoveWorldBot(*itr);
+            }
+            for (uint32 guid : claimedGuids)
+            {
+                ReleaseBotGuid(guid);
+                CharacterDatabase.DirectPExecute(
+                    "UPDATE character_bot_pool SET in_use = 0 WHERE guid = %u", guid);
+            }
+            Party() = partyBeforeAdmission;
+            Cohort().Raid = raidBeforeAdmission;
+            Cohort().Metrics = metricsBeforeAdmission;
+            Cohort().FailedSpawnGuids = failedSpawnGuidsBeforeAdmission;
+            Cohort().RosterLeases.clear();
+            terminalFailure(reason);
+        };
+
+        for (PlannedValidationRaidSpawn const& planned : validationRaidSpawnPlan)
+        {
+            if (!ClaimBotGuid(planned.Guid, planned.RosterSlotId))
+            {
+                rollbackAdmission("validation_raid_admission_claim_failed");
+                return;
+            }
+            claimedGuids.push_back(planned.Guid);
+
+            Player* groupAnchor = nullptr;
+            for (WorldBotState const& state : Party().Bots)
+            {
+                Player* candidate = GetLoadedBot(state);
+                if (candidate && candidate->IsInWorld() && candidate->GetGroup())
+                {
+                    groupAnchor = candidate;
+                    break;
+                }
+            }
+
+            Player* bot = groupAnchor
+                ? sBotMgr->SpawnWorldBotInGroup(groupAnchor, "any", std::to_string(planned.Guid),
+                    planned.Placement.MapId, planned.Placement.X, planned.Placement.Y,
+                    planned.Placement.Z, planned.Placement.O)
+                : sBotMgr->SpawnWorldBot("any", std::to_string(planned.Guid),
+                    planned.Placement.MapId, planned.Placement.X, planned.Placement.Y,
+                    planned.Placement.Z, planned.Placement.O);
+            if (!bot)
+            {
+                rollbackAdmission("validation_raid_admission_spawn_failed");
+                return;
+            }
+            spawnedGuids.push_back(bot->GetGUID());
+
+            WorldBotState state;
+            state.Guid = bot->GetGUID();
+            state.RosterSlotId = planned.RosterSlotId;
+            for (RaidRosterPlanSlot const& slot : rosterPlan)
+                if (slot.RosterSlotId == planned.RosterSlotId)
+                {
+                    state.RosterRole = slot.Role;
+                    break;
+                }
+            state.RosterClassSpec = GetBotClassSpec(bot);
+            state.RosterAverageItemLevel = bot->GetAverageItemLevel();
+            state.ValidationRouteGeneration = Party().ValidationRouteGeneration;
+            state.DecisionTimer = urand(0, sConfigMgr->GetIntDefault("BotWorld.DecisionTickMs", 3000));
+            state.LastX = bot->GetPositionX();
+            state.LastY = bot->GetPositionY();
+            state.LastZ = bot->GetPositionZ();
+            state.SpawnedMs = NowMs();
+            state.SpawnSource = planned.Placement.Source;
+            state.RaceStartFallbackUsed = false;
+            state.SpawnMapId = bot->GetMapId();
+            state.SpawnX = bot->GetPositionX();
+            state.SpawnY = bot->GetPositionY();
+            state.SpawnZ = bot->GetPositionZ();
+            state.SpawnO = bot->GetOrientation();
+            Party().Bots.push_back(state);
+            Cohort().Metrics.ActiveBots = uint32(Party().Bots.size());
+
+            RecordActivityStart(Party().Bots.back(), bot);
+            BotRolePowerBreakdown power = BotLongTermProgressionBrain::CalculateRolePower(bot);
+            BotProgressionStage stage = BotLongTermProgressionBrain::ClassifyStage(bot, power);
+            std::string raw = BuildRawJson(bot, nullptr);
+            std::string semantic = BuildSemanticJson(bot, nullptr, "idle", &power, stage);
+            RecordSpawnResolved(Party().Bots.back(), bot, planned.Placement, planned.Placement.Source.c_str());
+            RecordEvent(Party().Bots.back(), bot, "bot_spawned", nullptr, "ok", raw.c_str(), semantic.c_str());
+            if (bot->GetMap() && bot->GetMap()->IsRaid())
+            {
+                RaidRoleAssignment assignment = BuildRaidRoleAssignment(bot);
+                BossMechanicFeatures features = BuildBossMechanicFeatures(bot, nullptr);
+                RaidPositioningAnchors anchors = BuildRaidPositioningAnchors(bot, nullptr, assignment, features);
+                RaidMechanicAdapter adapter = BuildRaidMechanicAdapter(bot, nullptr, assignment, features);
+                RaidGearTargetPlan gearPlan = BuildRaidGearTargetPlan(bot, power, stage);
+                HeroicRaidProgression progression = BuildHeroicRaidProgression(Party().Bots.back(), bot, power, stage);
+                RecordRaidTelemetry(Party().Bots.back(), bot, nullptr, "raid_role_assignment", "assigned",
+                    features, assignment, anchors, adapter, gearPlan, progression, raw.c_str(), semantic.c_str());
+            }
+            EnsureValidationCohortGroup();
+        }
+
+        EnsureValidationCohortGroup();
+        bool exactNativeGroup = Party().Bots.size() == expectedPopulation
+            && Cohort().RosterLeases.size() == expectedPopulation
+            && Cohort().Raid.RosterComplete && Cohort().Raid.UniqueLeases;
+        ObjectGuid admittedGroupGuid = ObjectGuid::Empty;
+        for (WorldBotState const& state : Party().Bots)
+        {
+            Player* bot = GetLoadedBot(state);
+            Group* group = bot ? bot->GetGroup() : nullptr;
+            if (!bot || !bot->IsInWorld() || !group)
+            {
+                exactNativeGroup = false;
+                break;
+            }
+            if (admittedGroupGuid.IsEmpty())
+                admittedGroupGuid = group->GetGUID();
+            else if (admittedGroupGuid != group->GetGUID())
+            {
+                exactNativeGroup = false;
+                break;
+            }
+        }
+        if (!exactNativeGroup)
+        {
+            rollbackAdmission("validation_raid_admission_exact_group_failed");
+            return;
+        }
+
+        Cohort().ValidationRaidAdmissionComplete = true;
+        Cohort().ValidationRaidAdmissionFailed = false;
+        Cohort().LastPopulationFailureReason.clear();
+        return;
     }
 
     uint32 attempts = 0;
@@ -4523,23 +4794,7 @@ void BotWorldPopulationMgr::EnsurePopulation()
             break;
         }
 
-        PlannedValidationRaidSpawn const* plannedSpawn = nullptr;
-        if (validationRaidPreflight)
-        {
-            auto const planned = std::find_if(validationRaidSpawnPlan.begin(), validationRaidSpawnPlan.end(),
-                [&rosterSlotId](PlannedValidationRaidSpawn const& row)
-                {
-                    return row.RosterSlotId == rosterSlotId;
-                });
-            if (planned == validationRaidSpawnPlan.end())
-            {
-                Cohort().LastPopulationFailureReason = "validation_raid_preflight_slot_missing";
-                break;
-            }
-            plannedSpawn = &*planned;
-        }
-
-        uint32 candidateGuid = plannedSpawn ? plannedSpawn->Guid : SelectPoolCandidateGuid(rosterSlotId);
+        uint32 candidateGuid = SelectPoolCandidateGuid(rosterSlotId);
         if (!candidateGuid)
         {
             Cohort().LastPopulationFailureReason = Cohort().Config.PoolTagFilter.empty() ? "no_available_pool_candidate" : "no_available_pool_candidate_for_tag";
@@ -4553,8 +4808,8 @@ void BotWorldPopulationMgr::EnsurePopulation()
             continue;
         }
 
-        SpawnPlacement placement = plannedSpawn ? plannedSpawn->Placement : SpawnPlacement();
-        if (!plannedSpawn && !ResolveSpawnPlacement(candidateGuid, placement))
+        SpawnPlacement placement;
+        if (!ResolveSpawnPlacement(candidateGuid, placement))
         {
             TC_LOG_ERROR("server", "BotWorld spawn skipped bot_guid=%u spawn_mode=%s fallback=%u reason=no_saved_or_local_spawn",
                 candidateGuid, Cohort().Config.SpawnMode.c_str(), Cohort().Config.AllowConfiguredCenterFallback ? 1 : 0);
@@ -9109,12 +9364,26 @@ std::string BotWorldPopulationMgr::GetBotClassSpec(Player const* bot) const
     return {};
 }
 
-uint32 BotWorldPopulationMgr::SelectPoolCandidateGuid(std::string const& rosterSlotId, std::set<uint32> const* excludedGuids) const
+uint32 BotWorldPopulationMgr::SelectPoolCandidateGuid(std::string const& rosterSlotId,
+    std::set<uint32> const* excludedGuids, uint32 expectedGuid,
+    std::string const& expectedName, std::string const& expectedClassSpec) const
 {
     std::ostringstream query;
     query << "SELECT cbp.guid FROM character_bot_pool cbp INNER JOIN characters c ON c.guid = cbp.guid "
           << "WHERE cbp.enabled = 1 AND cbp.in_use = 0 "
           << "AND c.level BETWEEN " << uint32(Cohort().Config.MinLevel) << " AND " << uint32(Cohort().Config.MaxLevel);
+    if (expectedGuid)
+    {
+        if (expectedName.empty() || expectedClassSpec.empty())
+            return 0;
+        std::string escapedName = expectedName;
+        std::string escapedExpectedSpec = expectedClassSpec;
+        CharacterDatabase.EscapeString(escapedName);
+        CharacterDatabase.EscapeString(escapedExpectedSpec);
+        query << " AND cbp.guid = " << expectedGuid
+              << " AND c.name = '" << escapedName << "'"
+              << " AND cbp.class_spec = '" << escapedExpectedSpec << "'";
+    }
     if (!Cohort().Config.PoolTagFilter.empty())
     {
         std::string escapedTag = Cohort().Config.PoolTagFilter;
@@ -22942,7 +23211,7 @@ bool BotWorldPopulationMgr::TryValidationRouteObjective(WorldBotState& state, Pl
             // The typed authority owns target selection plus the contract's
             // allow_area_damage and allow_multidot policy.  A declared shared
             // focus that cannot establish that authority must remain closed.
-            BossMechanicActionResult mechanic = TryBossMechanics(state, bot, power, stage, activity);
+            BossMechanicActionResult mechanic = TryBossMechanics(state, bot, power, stage, activity, target);
             if (mechanic.Handled)
             {
                 situation = mechanic.Situation;
@@ -24093,7 +24362,7 @@ BotWorldPopulationMgr::BossMechanicFeatures BotWorldPopulationMgr::BuildBossMech
     return features;
 }
 
-BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMechanics(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity)
+BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMechanics(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, Unit* boundRouteTarget)
 {
     BossMechanicActionResult result;
     auto reconcileRaidAreaAutocasts = [bot](bool suppress)
@@ -24134,8 +24403,12 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
             }
         }
     };
-    result.Target = FindBossTarget(bot);
-    if (!result.Target && !state.TargetGuid.IsEmpty())
+    // A caller that already resolved an authoritative route focus must not be
+    // retargeted by FindBossTarget through this bot's victim, a group victim,
+    // or an unrelated nearby boss. Ordinary boss dispatch remains unchanged
+    // when no target is bound.
+    result.Target = boundRouteTarget ? boundRouteTarget : FindBossTarget(bot);
+    if (!result.Target && !boundRouteTarget && !state.TargetGuid.IsEmpty())
         result.Target = ObjectAccessor::GetUnit(*bot, state.TargetGuid);
     if (!result.Target)
     {
@@ -24155,6 +24428,22 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
             || std::find(Cohort().Config.ValidationRouteAlternateTargetEntries.begin(),
                 Cohort().Config.ValidationRouteAlternateTargetEntries.end(), routeCreature->GetEntry())
                 != Cohort().Config.ValidationRouteAlternateTargetEntries.end());
+    if (boundRouteTarget && !routeDirectedBoss)
+    {
+        reconcileRaidAreaAutocasts(true);
+        bot->InterruptNonMeleeSpells(false);
+        bot->AttackStop();
+        if (Pet* pet = bot->GetPet())
+            pet->AttackStop();
+        for (Unit* controlled : bot->m_Controlled)
+            if (controlled)
+                controlled->AttackStop();
+        result.Handled = true;
+        result.Situation = bot->GetMap() && bot->GetMap()->IsRaid() ? "raid_boss" : "dungeon_boss";
+        result.Action = "raid_target_not_declared_hold";
+        result.Failure = true;
+        return result;
+    }
     if (!IsBossContext(bot, result.Target) && !routeDirectedBoss)
     {
         reconcileRaidAreaAutocasts(false);

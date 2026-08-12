@@ -97,17 +97,18 @@ def test_validation_raid_preflights_exact_saved_roster_before_first_claim_or_spa
         IMPL.index("void BotWorldPopulationMgr::LoadValidationRouteManifest()"):
         IMPL.index("bool BotWorldPopulationMgr::ApplyValidationRouteManifestNode")
     ]
-    preflight = population.index("if (validationRaidPreflight)")
-    first_claim = population.index("ClaimBotGuid(candidateGuid, rosterSlotId)")
-    first_spawn = population.index('sBotMgr->SpawnWorldBot("any"')
+    admission = population.index("if (validationRaidAdmission)")
+    first_claim = population.index("ClaimBotGuid(planned.Guid, planned.RosterSlotId)")
+    first_spawn = population.index('sBotMgr->SpawnWorldBot("any", std::to_string(planned.Guid)')
+    generic_population = population.index("uint32 attempts = 0;")
 
-    assert preflight < first_claim < first_spawn
+    assert admission < first_claim < first_spawn < generic_population
     for field in ("bot_start_map_id", "bot_start_x", "bot_start_y", "bot_start_z", "bot_start_o"):
         assert field in manifest
     for token in (
         "Party().ValidationRouteManifest.front()",
         "routeStart.ExpectedBotCount != rosterPlan.size()",
-        "SelectPoolCandidateGuid(slot.RosterSlotId, &plannedGuids)",
+        "SelectPoolCandidateGuid(slot.RosterSlotId, &plannedGuids,",
         "ResolveSavedSpawnPlacement(candidateGuid, placement)",
         "placement.MapId != routeStart.BotStartMapId",
         "RouteStartHorizontalToleranceYards",
@@ -115,13 +116,136 @@ def test_validation_raid_preflights_exact_saved_roster_before_first_claim_or_spa
         'validation_raid_preflight_route_start_mismatch',
     ):
         assert token in population
-    before_claim = population[preflight:first_claim]
+    before_claim = population[admission:first_claim]
     assert "ClaimBotGuid(" not in before_claim
     assert "SpawnWorldBot" not in before_claim
     assert "SpawnWorldBotInGroup" not in before_claim
     assert "new Group" not in before_claim
     assert "ResolveSpawnPlacement(candidateGuid, placement)" not in before_claim
-    assert "plannedSpawn ? plannedSpawn->Placement" in population
+    admission_runtime = population[admission:generic_population]
+    assert "ResolveSpawnPlacement(" not in admission_runtime
+    assert "AllowConfiguredCenterFallback" not in admission_runtime
+    assert "validationRaidSpawnPlan" in admission_runtime
+
+
+def test_validation_raid_admission_rolls_back_late_failures_and_cannot_retry_unpinned():
+    population = IMPL[
+        IMPL.index("void BotWorldPopulationMgr::EnsurePopulation()"):
+        IMPL.index("void BotWorldPopulationMgr::EnsureCalibrationPopulation()")
+    ]
+    admission = population.index("if (validationRaidAdmission)")
+    generic_population = population.index("uint32 attempts = 0;")
+    runtime = population[admission:generic_population]
+
+    for token in (
+        "Cohort().ValidationRaidAdmissionFailed",
+        "Cohort().ValidationRaidAdmissionComplete",
+        "rollbackAdmission(\"validation_raid_admission_claim_failed\")",
+        "rollbackAdmission(\"validation_raid_admission_spawn_failed\")",
+        "rollbackAdmission(\"validation_raid_admission_exact_group_failed\")",
+        "sBotMgr->RemoveWorldBot(*itr);",
+        "ReleaseBotGuid(guid);",
+        "Party() = partyBeforeAdmission;",
+        "Cohort().Raid = raidBeforeAdmission;",
+        "Cohort().Metrics = metricsBeforeAdmission;",
+        "Cohort().RosterLeases.clear();",
+    ):
+        assert token in runtime
+
+    terminal_check = runtime.index("if (Cohort().ValidationRaidAdmissionFailed)")
+    pinned_selection = runtime.index("SelectPoolCandidateGuid(slot.RosterSlotId, &plannedGuids,")
+    transaction_claim = runtime.index("ClaimBotGuid(planned.Guid, planned.RosterSlotId)")
+    assert terminal_check < pinned_selection < transaction_claim
+    assert runtime.count("SelectPoolCandidateGuid(") == 1
+    assert "SelectPoolCandidateGuid(rosterSlotId)" not in runtime
+    assert "ResolveSpawnPlacement(candidateGuid, placement)" not in runtime
+    assert "continue;" not in runtime[transaction_claim:]
+
+    cohort = HEADER[
+        HEADER.index("struct CohortRuntime"):
+        HEADER.index("struct BotGuidLease")
+    ]
+    assert "bool ValidationRaidAdmissionComplete = false;" in cohort
+    assert "bool ValidationRaidAdmissionFailed = false;" in cohort
+
+
+def test_completed_validation_raid_drift_verifies_exact_identity_and_cleans_all_state():
+    population = IMPL[
+        IMPL.index("void BotWorldPopulationMgr::EnsurePopulation()"):
+        IMPL.index("void BotWorldPopulationMgr::EnsureCalibrationPopulation()")
+    ]
+    complete = population[
+        population.index("if (Cohort().ValidationRaidAdmissionComplete)"):
+        population.index("auto terminalFailure")
+    ]
+    for token in (
+        "routeStart.ExpectedRoster",
+        "row.Guid.GetCounter() == expected.Guid",
+        "row.RosterSlotId == expected.RosterSlotId",
+        "LeaseOwnedByCurrentCohort(expected.Guid, expected.RosterSlotId)",
+        "frozen->second.RosterSlotId != expected.RosterSlotId",
+        "Cohort().Raid.GroupGuid == exactGroupGuid",
+        "sBotMgr->RemoveWorldBot(state.Guid);",
+        "ReleaseBotGuid(guid);",
+        "Party() = PartyRuntime();",
+        "Cohort().Raid = RaidRuntime();",
+        "Cohort().RosterLeases.clear();",
+        "Cohort().Metrics.ActiveBots = 0;",
+        'Cohort().LastPopulationFailureReason = "validation_raid_admission_identity_drift";',
+    ):
+        assert token in complete
+    cleanup = complete.index("if (!exactIdentity)")
+    latch = complete.index("Cohort().ValidationRaidAdmissionFailed = true;", cleanup)
+    assert cleanup < complete.index("sBotMgr->RemoveWorldBot(state.Guid);", cleanup) < latch
+
+
+def test_validation_raid_candidate_selection_is_exact_frozen_identity_not_role_substitution():
+    population = IMPL[
+        IMPL.index("void BotWorldPopulationMgr::EnsurePopulation()"):
+        IMPL.index("void BotWorldPopulationMgr::EnsureCalibrationPopulation()")
+    ]
+    selector = IMPL[
+        IMPL.index("uint32 BotWorldPopulationMgr::SelectPoolCandidateGuid"):
+        IMPL.index("uint32 BotWorldPopulationMgr::SelectCalibrationPoolCandidateGuid")
+    ]
+    for token in (
+        "routeStart.ExpectedRoster.size() != rosterPlan.size()",
+        "expected->Role != slot.Role",
+        "expected->Guid, expected->Name, expected->ClassSpec",
+        'terminalFailure("validation_raid_preflight_roster_identity_invalid")',
+    ):
+        assert token in population
+    for token in (
+        'query << " AND cbp.guid = " << expectedGuid',
+        '" AND c.name = \'" << escapedName << "\'"',
+        '" AND cbp.class_spec = \'" << escapedExpectedSpec << "\'"',
+    ):
+        assert token in selector
+
+    # A lower-GUID same-tag/role/spec row still cannot match the exact GUID and
+    # name predicates; ORDER BY is only deterministic ordering after identity.
+    expected = {"guid": 1271, "name": "Bwdtanka", "role": "tank", "class_spec": "protection_paladin"}
+    extra = {"guid": 1, "name": "Substitute", "role": "tank", "class_spec": "protection_paladin"}
+    assert extra["guid"] < expected["guid"]
+    assert extra["role"] == expected["role"] and extra["class_spec"] == expected["class_spec"]
+    assert not (extra["guid"] == expected["guid"] and extra["name"] == expected["name"])
+
+
+def test_bwd_route_source_and_generator_bind_exact_roster_identity():
+    scenario = json.loads((ROOT / "experiments/configs/validation_scenarios_cata_001.json").read_text())
+    bwd = next(row for row in scenario["scenarios"] if row["id"] == "blackwing_descent_10n")
+    identities = bwd["roster_identity"]
+    assert len(identities) == 10
+    assert [row["roster_slot_id"] for row in identities] == [
+        "raid_tank_1", "raid_tank_2",
+        "raid_healer_1", "raid_healer_2", "raid_healer_3",
+        "raid_dps_1", "raid_dps_2", "raid_dps_3", "raid_dps_4", "raid_dps_5",
+    ]
+    assert len({row["guid"] for row in identities}) == 10
+    assert len({row["name"] for row in identities}) == 10
+    assert all(row["guid"] > 0 and row["name"] and row["role"] and row["class_spec"] for row in identities)
+    generator = (ROOT / "tools/bot_ml/build_validation_scenario_manifests.py").read_text()
+    assert 'route["roster_identity"] = scenario.get("roster_identity") or []' in generator
 
 
 def test_raid_size_and_difficulty_are_explicit_and_fail_closed():
@@ -239,7 +363,7 @@ def test_shared_boss_focus_cannot_bypass_declared_target_or_typed_contract_autho
     typed_boss_path = shared_focus[boss_authority:profile_action]
     assert "if (!isValidationRouteObjectiveTarget(focusCreature))" in typed_boss_path
     assert 'action = "raid_target_not_declared_hold";' in typed_boss_path
-    assert "BossMechanicActionResult mechanic = TryBossMechanics(state, bot, power, stage, activity);" in typed_boss_path
+    assert "BossMechanicActionResult mechanic = TryBossMechanics(state, bot, power, stage, activity, target);" in typed_boss_path
     assert "if (mechanic.Handled)" in typed_boss_path
     assert 'action = "raid_mechanic_contract_fail_closed";' in typed_boss_path
     assert typed_boss_path.count("return true;") >= 3
@@ -250,8 +374,22 @@ def test_shared_boss_focus_cannot_bypass_declared_target_or_typed_contract_autho
         boss_start,
     )
     boss_runtime = IMPL[boss_start:boss_end]
+    assert "result.Target = boundRouteTarget ? boundRouteTarget : FindBossTarget(bot);" in boss_runtime
+    assert "if (!result.Target && !boundRouteTarget && !state.TargetGuid.IsEmpty())" in boss_runtime
+    assert "if (boundRouteTarget && !routeDirectedBoss)" in boss_runtime
+    assert 'result.Action = "raid_target_not_declared_hold";' in boss_runtime
     assert "forbidArea, raidAdapter.AllowMultidot" in boss_runtime
     assert 'RecordRaidTelemetry(state, bot, focus, "raid_focus_fire", "declared_target_selected"' in boss_runtime
+
+    find_start = IMPL.index("Unit* BotWorldPopulationMgr::FindBossTarget")
+    find_end = IMPL.index(
+        "BotWorldPopulationMgr::BossMechanicFeatures BotWorldPopulationMgr::BuildBossMechanicFeatures",
+        find_start,
+    )
+    unbound_search = IMPL[find_start:find_end]
+    assert "usableBoss(bot->GetVictim())" in unbound_search
+    assert "usableBoss(member->GetVictim())" in unbound_search
+    assert "Cell::VisitAllObjects(bot, searcher, 60.0f);" in unbound_search
 
 
 def test_phase1_target_transfer_and_swap_controls_are_executable():

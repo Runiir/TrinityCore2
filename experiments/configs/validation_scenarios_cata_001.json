@@ -40,6 +40,18 @@
       "difficulty": "normal_10man",
       "provisioning_scenario_id": "blackwing_descent_10n",
       "start_position": { "map_id": 669, "x": -345.872, "y": -224.344, "z": 193.127, "o": 0.0 },
+      "roster_identity": [
+        {"roster_slot_id":"raid_tank_1","guid":1271,"name":"Bwdtanka","role":"tank","class_spec":"protection_paladin"},
+        {"roster_slot_id":"raid_tank_2","guid":1272,"name":"Bwdtankb","role":"tank","class_spec":"blood_death_knight"},
+        {"roster_slot_id":"raid_healer_1","guid":1273,"name":"Bwdheala","role":"healer","class_spec":"restoration_druid"},
+        {"roster_slot_id":"raid_healer_2","guid":1274,"name":"Bwdhealb","role":"healer","class_spec":"holy_paladin"},
+        {"roster_slot_id":"raid_healer_3","guid":1275,"name":"Bwdhealc","role":"healer","class_spec":"discipline_priest"},
+        {"roster_slot_id":"raid_dps_1","guid":1276,"name":"Bwddpsa","role":"dps","class_spec":"fire_mage"},
+        {"roster_slot_id":"raid_dps_2","guid":1277,"name":"Bwddpsb","role":"dps","class_spec":"assassination_rogue"},
+        {"roster_slot_id":"raid_dps_3","guid":1278,"name":"Bwddpsc","role":"dps","class_spec":"affliction_warlock"},
+        {"roster_slot_id":"raid_dps_4","guid":1279,"name":"Bwddpsd","role":"dps","class_spec":"marksmanship_hunter"},
+        {"roster_slot_id":"raid_dps_5","guid":1280,"name":"Bwddpse","role":"dps","class_spec":"elemental_shaman"}
+      ],
       "required_roles": { "tank": 2, "healer": 3, "dps": 5 },
       "route": [
         { "step": 1, "kind": "trash", "label": "entry trash", "x": -338.622, "y": -347.5, "z": 214.159, "source_entry": 42800, "source_guid": "250049", "source_table": "creature", "source_sql": "world.creature" },

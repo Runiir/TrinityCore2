@@ -342,6 +342,14 @@ private:
 
     struct ValidationRouteManifestNode
     {
+        struct RosterIdentity
+        {
+            std::string RosterSlotId;
+            uint32 Guid = 0;
+            std::string Name;
+            std::string Role;
+            std::string ClassSpec;
+        };
         std::string ScenarioId;
         std::string NodeId;
         std::string Label;
@@ -458,6 +466,7 @@ private:
         float OpenerSummonZ = 0.0f;
         float OpenerSummonO = 0.0f;
         uint32 ExpectedBotCount = 0;
+        std::vector<RosterIdentity> ExpectedRoster;
     };
 
     struct ValidationRouteEvidence
@@ -1421,7 +1430,8 @@ private:
     std::vector<RaidRosterPlanSlot> BuildRosterPlan() const;
     std::string SelectNextRosterSlot() const;
     std::string GetBotClassSpec(Player const* bot) const;
-    uint32 SelectPoolCandidateGuid(std::string const& rosterSlotId = {}, std::set<uint32> const* excludedGuids = nullptr) const;
+    uint32 SelectPoolCandidateGuid(std::string const& rosterSlotId = {}, std::set<uint32> const* excludedGuids = nullptr,
+        uint32 expectedGuid = 0, std::string const& expectedName = {}, std::string const& expectedClassSpec = {}) const;
     uint32 SelectCalibrationPoolCandidateGuid(size_t slot) const;
     Unit* SelectSafeTarget(WorldBotState& state, Player* bot);
     Unit* SelectQuestObjectiveTarget(Player* bot, QuestObjectivePlan const& plan) const;
@@ -1460,7 +1470,7 @@ private:
     bool IsBossContext(Player* bot, Unit const* target) const;
     Unit* FindBossTarget(Player* bot) const;
     BossMechanicFeatures BuildBossMechanicFeatures(Player* bot, Unit const* boss) const;
-    BossMechanicActionResult TryBossMechanics(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity);
+    BossMechanicActionResult TryBossMechanics(WorldBotState& state, Player* bot, BotRolePowerBreakdown const& power, BotProgressionStage stage, BotProgressionActivity activity, Unit* boundRouteTarget = nullptr);
     RaidRoleAssignment BuildRaidRoleAssignment(Player* bot) const;
     RaidPositioningAnchors BuildRaidPositioningAnchors(Player* bot, Unit const* boss, RaidRoleAssignment const& assignment, BossMechanicFeatures const& features) const;
     RaidMechanicAdapter BuildRaidMechanicAdapter(Player* bot, Unit const* boss, RaidRoleAssignment const& assignment, BossMechanicFeatures const& features) const;
@@ -1912,6 +1922,8 @@ private:
         uint32 CalibrationCompletedAoeWindows = 0;
         std::set<uint32> FailedSpawnGuids;
         std::string LastPopulationFailureReason;
+        bool ValidationRaidAdmissionComplete = false;
+        bool ValidationRaidAdmissionFailed = false;
         BotWorldStatus Metrics;
         BotTelemetryBuffer TelemetryBuffer;
         BotExperimentCoordinator ExperimentCoordinator;

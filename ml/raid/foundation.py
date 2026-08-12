@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from math import cos, hypot, pi, sin
 from typing import Any, Iterable
 
@@ -67,6 +67,16 @@ class SavedRaidPlacement:
     z: float
 
 
+@dataclass
+class ValidationRaidAdmissionState:
+    bots: list[int] = field(default_factory=list)
+    leases: set[int] = field(default_factory=set)
+    group_guid: int | None = None
+    pinned_guids: tuple[int, ...] = ()
+    complete: bool = False
+    terminal_failure: bool = False
+
+
 def preflight_validation_raid_spawn(
     planned_guids: Iterable[int],
     saved_placements: Iterable[SavedRaidPlacement],
@@ -99,6 +109,82 @@ def preflight_validation_raid_spawn(
         ):
             raise ValueError("validation_raid_preflight_route_start_mismatch")
     return tuple(by_guid[guid] for guid in guids)
+
+
+def transact_validation_raid_admission(
+    planned_guids: Iterable[int],
+    saved_placements: Iterable[SavedRaidPlacement],
+    *,
+    route_start_map_id: int,
+    route_start_x: float,
+    route_start_y: float,
+    route_start_z: float,
+    state: ValidationRaidAdmissionState,
+    fail_claim_at: int | None = None,
+    fail_spawn_at: int | None = None,
+) -> ValidationRaidAdmissionState:
+    """Model the one-shot all-or-nothing runtime admission transaction."""
+    if state.terminal_failure:
+        raise ValueError("validation_raid_admission_terminal_failure")
+    if state.complete:
+        return state
+    if state.bots or state.leases or state.group_guid is not None:
+        state.bots.clear()
+        state.leases.clear()
+        state.group_guid = None
+        state.pinned_guids = ()
+        state.terminal_failure = True
+        raise ValueError("validation_raid_admission_nonempty_start")
+
+    placements = preflight_validation_raid_spawn(
+        planned_guids,
+        saved_placements,
+        route_start_map_id=route_start_map_id,
+        route_start_x=route_start_x,
+        route_start_y=route_start_y,
+        route_start_z=route_start_z,
+    )
+    state.pinned_guids = tuple(placement.guid for placement in placements)
+    try:
+        for index, placement in enumerate(placements):
+            if fail_claim_at == index:
+                raise ValueError("validation_raid_admission_claim_failed")
+            state.leases.add(placement.guid)
+            if fail_spawn_at == index:
+                raise ValueError("validation_raid_admission_spawn_failed")
+            state.bots.append(placement.guid)
+            state.group_guid = 1
+    except ValueError:
+        state.bots.clear()
+        state.leases.clear()
+        state.group_guid = None
+        state.terminal_failure = True
+        raise
+
+    state.complete = True
+    return state
+
+
+def validate_completed_validation_raid_admission(
+    expected_guids: Iterable[int], state: ValidationRaidAdmissionState
+) -> ValidationRaidAdmissionState:
+    expected = tuple(expected_guids)
+    exact = (
+        state.complete
+        and not state.terminal_failure
+        and tuple(state.bots) == expected
+        and state.leases == set(expected)
+        and state.group_guid is not None
+        and state.pinned_guids == expected
+    )
+    if exact:
+        return state
+    state.bots.clear()
+    state.leases.clear()
+    state.group_guid = None
+    state.complete = False
+    state.terminal_failure = True
+    raise ValueError("validation_raid_admission_identity_drift")
 
 
 @dataclass(frozen=True)
