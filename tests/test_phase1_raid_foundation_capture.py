@@ -212,6 +212,16 @@ def test_native_wipe_reset_recovery_is_reconstructed_across_statuses():
     assert accepted is True
     assert reasons == []
 
+    stale = json.loads(json.dumps([ready, engaged, wiped, reset, recovered]))
+    stale[1]["raid_runtime"]["evidence_sequence"] = 101
+    stale[2]["raid_runtime"]["evidence_sequence"] = 102
+    stale[3]["raid_runtime"]["evidence_sequence"] = 103
+    stale[4]["raid_runtime"]["evidence_sequence"] = 170
+    stale[4]["raid_runtime"]["native_recovery"]["ready_check_action_evidence_sequence"] = 170
+    accepted, reasons = accepted_native_recovery(stale)
+    assert accepted is False
+    assert "native_per_member_recovery_predates_latest_engagement" in reasons
+
 
 def test_native_recovery_requires_post_wipe_reset_increment_and_bounded_member_sequences():
     ready = accepted_status()
@@ -501,7 +511,20 @@ def test_live_evidence_demux_rejects_strategy_drift():
     rows = normalized_batch_payload(
         (json.dumps(active) + "\n" + json.dumps(drifted) + "\n").encode()
     )
-    assert "evidence_demux_cross_identity_row" in evidence_demux_rejections(rows)
+    assert "evidence_demux_strategy_transition_without_route_advancement" in evidence_demux_rejections(rows)
+
+    drifted["raid_runtime"].update(
+        route_progress={"generation": 1, "node_index": 1},
+        strategy_transition={
+            "from_strategy": active["raid_runtime"]["strategy_id"],
+            "to_strategy": "different_strategy",
+            "advanced": True,
+        },
+    )
+    rows = normalized_batch_payload(
+        (json.dumps(active) + "\n" + json.dumps(drifted) + "\n").encode()
+    )
+    assert "evidence_demux_strategy_transition_without_route_advancement" not in evidence_demux_rejections(rows)
 
 
 def test_live_evidence_demux_binds_readycheck_stop_and_inactive_cleanup():

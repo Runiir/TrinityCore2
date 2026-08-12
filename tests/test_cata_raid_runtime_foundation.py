@@ -106,6 +106,7 @@ def test_tank_swap_level_triggers_are_edge_latched_until_the_condition_clears():
         "state.LastRaidTankSwapTriggerKey != tankSwapTriggerKey",
         "state.LastRaidTankSwapTriggerKey.clear();",
         "memberState.LastRaidTankSwapTriggerKey = tankSwapTriggerKey;",
+        "state.LastRaidTankSwapTriggerKey.clear();",
     ):
         assert token in IMPL
 
@@ -121,6 +122,8 @@ def test_battle_res_slots_allow_native_capable_non_healers_and_role_priority_is_
         'targetPolicy == "tank_then_healer_then_dps"',
         'deadRole == "tank" ? 3 : deadRole == "healer" ? 2 : 1',
         "requestedByHealer ? 100 : pendingByHealer ? 90 : rolePriority",
+        "uniqueBattleResSlots.size() == node.BattleResurrectionSlots.size()",
+        "slot > 0 && slot <= Cohort().Config.RaidSize",
     ):
         assert token in IMPL
 
@@ -136,6 +139,10 @@ def test_controlled_aoe_counts_only_declared_targets_and_fails_closed_near_undec
         "declaredControlledAoeTargets >= raidAdapter.ControlledAoeMinimumTargets",
         '? declaredControlledAoeTargets : result.Features.AddCount',
         "&profileAction, combatAddCount, controlledAoeReleased",
+        "TryEnsureCombatTotems(*state, bot, target, forbidArea ? 1 : hostileCount)",
+        "allowMultidot && !forbidArea",
+        "magma->UnSummon();",
+        "candidate->RemoveAura(44457, bot->GetGUID());",
     ):
         assert token in IMPL
 
@@ -156,6 +163,7 @@ def test_focus_fire_owns_target_and_cancels_every_wrong_attacker():
     ):
         assert token in focus
     assert 'raidAdapter.TargetControl != "focus_fire"' in IMPL
+    assert '(node.TargetControl != "focus_fire" || !node.AllowMultidot)' in IMPL
 
 
 def test_platform_completion_requires_all_declared_destination_dimensions():
@@ -193,8 +201,10 @@ def test_phase1_jump_platform_altitude_and_flying_require_native_postconditions(
     ):
         assert token in IMPL
     assert 'node.InteractionKind != "jump_pad"' in IMPL
-    assert 'node.MovementLink != "none" && node.PlatformPolicy != "ground"' in IMPL
+    assert 'node.MovementLink != "none" && node.MovementLink != "regroup"' in IMPL
     assert "&& jumpTransferResolved" in IMPL
+    assert "state.LastRaidJumpPadEntrySubmitted == raidAdapter.JumpPadEntry" in IMPL
+    assert "state.LastRaidJumpPadRouteGeneration == Party().ValidationRouteGeneration" in IMPL
 
 
 def test_generic_contract_has_explicit_soak_dispel_and_cooldown_assignments():

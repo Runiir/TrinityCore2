@@ -3566,9 +3566,11 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
                         || node.FormationArcRadians > 0.0f));
             bool const targetResolved = node.TargetControl.empty()
                 || ((node.TargetControl == "focus_fire" || node.TargetControl == "multidot"
-                        || node.TargetControl == "do_not_damage") && !node.TargetEntries.empty())
+                        || node.TargetControl == "do_not_damage") && !node.TargetEntries.empty()
+                    && (node.TargetControl != "focus_fire" || !node.AllowMultidot))
                 || (node.TargetControl == "controlled_aoe" && node.AllowAreaDamage
-                    && node.ControlledAoeMinimumTargets > 0 && !node.TargetEntries.empty())
+                    && !node.AllowMultidot && node.ControlledAoeMinimumTargets > 0
+                    && !node.TargetEntries.empty())
                 || (node.TargetControl == "kill_sync" && node.KillSyncTolerancePct > 0.0f
                     && node.KillSyncExecutionFloorPct > 0.0f && !node.TargetEntries.empty());
             bool const tankSwapResolved = node.TankSwapTrigger.empty()
@@ -3597,8 +3599,14 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
             bool const knownBattleRes = node.BattleResurrectionPolicy == "native_rotation"
                 || node.BattleResurrectionPolicy == "tank_then_healer_then_dps"
                 || node.BattleResurrectionPolicy == "assigned_only";
+            std::set<uint32> const uniqueBattleResSlots(
+                node.BattleResurrectionSlots.begin(), node.BattleResurrectionSlots.end());
+            bool const battleResSlotsValid = node.BattleResurrectionSlots.empty()
+                || (uniqueBattleResSlots.size() == node.BattleResurrectionSlots.size()
+                    && std::all_of(node.BattleResurrectionSlots.begin(), node.BattleResurrectionSlots.end(),
+                        [this](uint32 slot) { return slot > 0 && slot <= Cohort().Config.RaidSize; }));
             bool const battleResResolved = node.BattleResurrectionPolicy != "assigned_only"
-                || !node.BattleResurrectionSlots.empty();
+                ? battleResSlotsValid : (!node.BattleResurrectionSlots.empty() && battleResSlotsValid);
             bool const knownInteraction = node.InteractionKind == "none" || node.InteractionKind == "object"
                 || node.InteractionKind == "extra_action" || node.InteractionKind == "vehicle"
                 || node.InteractionKind == "transport" || node.InteractionKind == "jump_pad";
@@ -3616,7 +3624,8 @@ void BotWorldPopulationMgr::LoadValidationRouteManifest()
                 || node.PlatformDestinationMapId > 0 || node.PlatformDestinationAreaId > 0
                 || node.PlatformMaximumZ > node.PlatformMinimumZ;
             bool const jumpTransferResolved = node.InteractionKind != "jump_pad"
-                || (node.MovementLink != "none" && node.PlatformPolicy != "ground"
+                || (node.MovementLink != "none" && node.MovementLink != "regroup"
+                    && node.PlatformPolicy != "ground"
                     && (node.PlatformDestinationMapId > 0 || node.PlatformDestinationAreaId > 0
                         || node.PlatformMaximumZ > node.PlatformMinimumZ));
             node.MechanicContractResolved = !node.MechanicContractId.empty()
@@ -23712,6 +23721,7 @@ BotWorldPopulationMgr::BossMechanicActionResult BotWorldPopulationMgr::TryBossMe
     if (result.Features.RaidEncounter && !state.WasInCombat)
     {
         ++state.RaidAttempts;
+        state.LastRaidTankSwapTriggerKey.clear();
         state.LastRaidTankSwapMs = NowMs();
     }
 
@@ -23931,6 +23941,15 @@ raid_cooldown_complete:
         };
         if (!focus)
         {
+            for (WorldObject* object : focusObjects)
+                if (Unit* candidate = object ? object->ToUnit() : nullptr;
+                    candidate && candidate->HasAura(44457, bot->GetGUID()))
+                    candidate->RemoveAura(44457, bot->GetGUID());
+            if (Creature* fireTotem = bot->m_SummonSlot[SUMMON_SLOT_TOTEM_FIRE] && bot->GetMap()
+                    ? bot->GetMap()->GetCreature(bot->m_SummonSlot[SUMMON_SLOT_TOTEM_FIRE]) : nullptr)
+                if (fireTotem->GetUInt32Value(UNIT_CREATED_BY_SPELL) == 8190)
+                    if (Totem* magma = fireTotem->ToTotem())
+                        magma->UnSummon();
             stopWrongFocusTarget(bot);
             if (Pet* pet = bot->GetPet())
                 stopWrongFocusTarget(pet);
@@ -23940,6 +23959,15 @@ raid_cooldown_complete:
             result.Failure = true;
             return result;
         }
+        for (WorldObject* object : focusObjects)
+            if (Unit* candidate = object ? object->ToUnit() : nullptr;
+                candidate && candidate != focus && candidate->HasAura(44457, bot->GetGUID()))
+                candidate->RemoveAura(44457, bot->GetGUID());
+        if (Creature* fireTotem = bot->m_SummonSlot[SUMMON_SLOT_TOTEM_FIRE] && bot->GetMap()
+                ? bot->GetMap()->GetCreature(bot->m_SummonSlot[SUMMON_SLOT_TOTEM_FIRE]) : nullptr)
+            if (fireTotem->GetUInt32Value(UNIT_CREATED_BY_SPELL) == 8190)
+                if (Totem* magma = fireTotem->ToTotem())
+                    magma->UnSummon();
         stopWrongFocusTarget(bot);
         if (Pet* pet = bot->GetPet())
             stopWrongFocusTarget(pet);
@@ -23974,7 +24002,10 @@ raid_cooldown_complete:
                 <= raidAnchors.ArrivalToleranceYards;
         bool const transferPostcondition = raidAdapter.MovementLink != "none"
             && raidAdapter.MovementLink != "regroup" && raidAdapter.PlatformPolicy != "ground"
-            && platformPostcondition && altitudePostcondition && flyingPostcondition;
+            && platformPostcondition && altitudePostcondition && flyingPostcondition
+            && (raidAdapter.InteractionKind != "jump_pad"
+                || (state.LastRaidJumpPadEntrySubmitted == raidAdapter.JumpPadEntry
+                    && state.LastRaidJumpPadRouteGeneration == Party().ValidationRouteGeneration));
         if (regroupPostcondition || transferPostcondition)
         {
             result.Action = raidAdapter.MovementLink == "regroup"
@@ -24024,6 +24055,8 @@ raid_cooldown_complete:
                     WorldPacket use(CMSG_GAMEOBJ_USE, sizeof(uint64));
                     use << gameObject->GetGUID();
                     bot->GetSession()->HandleGameObjectUseOpcode(use);
+                    state.LastRaidJumpPadEntrySubmitted = gameObject->GetEntry();
+                    state.LastRaidJumpPadRouteGeneration = Party().ValidationRouteGeneration;
                     result.Action = "raid_jump_pad_native_submitted";
                     return result;
                 }
@@ -24375,6 +24408,8 @@ raid_cooldown_complete:
             if (declared == raidAdapter.TargetEntries.end())
             {
                 undeclaredControlledAoeHostile = true;
+                if (candidate->HasAura(44457, bot->GetGUID()))
+                    candidate->RemoveAura(44457, bot->GetGUID());
                 continue;
             }
             ++declaredControlledAoeTargets;
@@ -24408,6 +24443,12 @@ raid_cooldown_complete:
                 && raidAdapter.TargetControl == "controlled_aoe"
                 && !undeclaredControlledAoeHostile
                 && declaredControlledAoeTargets >= raidAdapter.ControlledAoeMinimumTargets;
+            if (!controlledAoeReleased)
+                if (Creature* fireTotem = bot->m_SummonSlot[SUMMON_SLOT_TOTEM_FIRE] && bot->GetMap()
+                        ? bot->GetMap()->GetCreature(bot->m_SummonSlot[SUMMON_SLOT_TOTEM_FIRE]) : nullptr)
+                    if (fireTotem->GetUInt32Value(UNIT_CREATED_BY_SPELL) == 8190)
+                        if (Totem* magma = fireTotem->ToTotem())
+                            magma->UnSummon();
             bool const forbidArea = raidAdapter.ContractResolved
                 && (!raidAdapter.AllowAreaDamage || (raidAdapter.TargetControl == "controlled_aoe" && !controlledAoeReleased));
             uint32 const combatAddCount = raidAdapter.TargetControl == "controlled_aoe"
@@ -27773,7 +27814,7 @@ BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState*
     if (state && TryEnsurePersistentCombatSetup(*state, bot, target))
         return BotActionResult::Casting;
 
-    if (state && TryEnsureCombatTotems(*state, bot, target, hostileCount))
+    if (state && TryEnsureCombatTotems(*state, bot, target, forbidArea ? 1 : hostileCount))
         return BotActionResult::Casting;
 
     uint64 const nowMs = NowMs();
@@ -27790,7 +27831,7 @@ BotActionResult BotWorldPopulationMgr::ExecuteProfileCombatAction(WorldBotState*
 
     ResolvedCombatAction action = ResolveProfileCombatAction(
         bot, target, hostileCount, densityOnly, excludedSpellId, areaOnly,
-        selfCenteredOnly, forbidArea, allowMultidot);
+        selfCenteredOnly, forbidArea, allowMultidot && !forbidArea);
     if (actionOut)
         *actionOut = action;
     if (!action.Valid)

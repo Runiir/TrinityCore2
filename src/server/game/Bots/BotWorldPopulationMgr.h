@@ -549,6 +549,8 @@ private:
         uint32 LastRaidTankSwapTriggerSpellId = 0;
         std::string LastRaidTankSwapTriggerKey;
         uint64 LastRaidTankSwapMs = 0;
+        uint32 LastRaidJumpPadEntrySubmitted = 0;
+        uint64 LastRaidJumpPadRouteGeneration = 0;
         ObjectGuid NativeResurrectionCasterGuid;
         uint32 NativeResurrectionSpellId = 0;
         ObjectGuid NativeResurrectionRejectedTargetGuid;

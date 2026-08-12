@@ -472,8 +472,10 @@ def accepted_native_recovery(statuses: list[dict[str, Any]]) -> tuple[bool, list
     previous_route_advance = 0
     previous_transition_state: tuple[Any, ...] | None = None
     engagement_index: int | None = None
+    latest_engagement_index: int | None = None
     wipe_index: int | None = None
     selected_wipe_generation = 0
+    selected_engagement_sequence = 0
     boss_reset_generation_at_wipe: int | None = None
     recovery_generation_at_wipe: int | None = None
     reset_index: int | None = None
@@ -584,6 +586,11 @@ def accepted_native_recovery(statuses: list[dict[str, Any]]) -> tuple[bool, list
         ):
             engagement_index = index
         if (
+            runtime.get("encounter_in_progress") is True
+            or any(state == 1 for state in (runtime.get("boss_states") or []))
+        ):
+            latest_engagement_index = index
+        if (
             engagement_index is not None
             and index > engagement_index
             and generations[0] > selected_wipe_generation
@@ -593,6 +600,10 @@ def accepted_native_recovery(statuses: list[dict[str, Any]]) -> tuple[bool, list
         ):
             wipe_index = index
             selected_wipe_generation = generations[0]
+            selected_engagement_sequence = (
+                runtimes[latest_engagement_index].get("evidence_sequence", 0)
+                if latest_engagement_index is not None and latest_engagement_index < index else 0
+            )
             reset_index = None
             recovery_index = None
             declared_reset_baseline = runtime.get("boss_reset_generation_at_wipe")
@@ -696,6 +707,8 @@ def accepted_native_recovery(statuses: list[dict[str, Any]]) -> tuple[bool, list
                 left < right for left, right in zip(sequences, sequences[1:])
             ):
                 reasons.append("native_per_member_recovery_order_invalid")
+            elif not _positive_int(selected_engagement_sequence) or sequences[0] <= selected_engagement_sequence:
+                reasons.append("native_per_member_recovery_predates_latest_engagement")
             elif not _positive_int(final_runtime.get("evidence_sequence")) or any(
                 value > final_runtime["evidence_sequence"] for value in sequences
             ):
@@ -930,7 +943,7 @@ def evidence_demux_report(rows: list[dict[str, Any]]) -> dict[str, Any]:
         runtime = payload.get("raid_runtime")
         if not isinstance(runtime, dict) or runtime.get("active") is not True:
             continue
-        identity = _runtime_identity(runtime, include_strategy=True)
+        identity = _runtime_identity(runtime, include_strategy=False)
         roster = runtime.get("roster")
         roster_identity = _roster_identity(roster) if isinstance(roster, list) else None
         cohort = payload.get("cohort_id")
@@ -965,6 +978,8 @@ def evidence_demux_report(rows: list[dict[str, Any]]) -> dict[str, Any]:
     stop_seen = False
     inactive_cleanup_seen = False
     observed_actions: set[str] = set()
+    previous_strategy: str | None = None
+    previous_route_advance = 0
     for expected_sequence, row in enumerate(rows, start=1):
         binding = row["identity_binding"]
         binding.update(
@@ -1005,7 +1020,7 @@ def evidence_demux_report(rows: list[dict[str, Any]]) -> dict[str, Any]:
             if (
                 payload.get("server_epoch") != canonical_identity[9]
                 or payload.get("attempt_id") != canonical_identity[10]
-                or _runtime_identity(runtime, include_strategy=True) != canonical_identity
+                or _runtime_identity(runtime, include_strategy=False) != canonical_identity
             ):
                 reject("evidence_demux_cross_identity_row")
             inactive_cleanup_seen = True
@@ -1019,12 +1034,31 @@ def evidence_demux_report(rows: list[dict[str, Any]]) -> dict[str, Any]:
         if not isinstance(runtime, dict) or runtime.get("active") is not True:
             reject("evidence_demux_identity_missing")
             continue
-        identity = _runtime_identity(runtime, include_strategy=True)
+        identity = _runtime_identity(runtime, include_strategy=False)
         roster = runtime.get("roster")
         roster_identity = _roster_identity(roster) if isinstance(roster, list) else None
         if (identity != canonical_identity or roster_identity != canonical_roster
                 or payload.get("cohort_id") != canonical_cohort):
             reject("evidence_demux_cross_identity_row")
+        strategy = runtime.get(STRATEGY_FIELD)
+        route_marker = _route_advancement_marker(runtime)
+        if not isinstance(strategy, str) or not strategy.strip():
+            reject("evidence_demux_strategy_identity_missing")
+        elif previous_strategy is not None and strategy != previous_strategy:
+            transition = runtime.get("strategy_transition")
+            if not (
+                isinstance(transition, dict)
+                and transition.get("from_strategy") == previous_strategy
+                and transition.get("to_strategy") == strategy
+                and transition.get("advanced") is True
+                and route_marker is not None
+                and route_marker > previous_route_advance
+            ):
+                reject("evidence_demux_strategy_transition_without_route_advancement")
+        if route_marker is not None:
+            previous_route_advance = max(previous_route_advance, route_marker)
+        if isinstance(strategy, str) and strategy.strip():
+            previous_strategy = strategy
 
         if action == "botauto_stop":
             if stop_seen:
