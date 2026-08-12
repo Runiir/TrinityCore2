@@ -75,7 +75,7 @@ from tools.bot_ml.run_live_bot_validation import BoundedOutputParts, apply_calib
 from tools.bot_ml.orchestrator_daemon import codex_command, detect_rate_limit, handle_rate_limit, initial_state, run_one_cycle, sleep_until_resume
 from tools.bot_ml.generate_lane_configs import write_lane_config
 from tools.bot_ml.promote_live_validation_artifact import promote
-from tools.bot_ml.build_validation_gear_profiles import SHIELD_CLASSES, build_gem_catalog, build_profiles, build_report, fetch_items, load_gem_properties, load_spell_item_enchantments
+from tools.bot_ml.build_validation_gear_profiles import SHIELD_CLASSES, build_gem_catalog, build_profiles, build_report, fetch_items, load_gem_properties, load_item_limit_categories, load_spell_item_enchantments, select_gem
 from tools.bot_ml.build_validation_provisioning import apply_gear_profiles, bot_known_spell_ids, bot_primary_tree_spell_ids, bot_spell_ids, bot_talent_spell_ids, build_account_insert_sql, build_character_insert_sql, equipment_cache, glyph_item_to_property_map, glyph_property_type_map, load_config as load_validation_provisioning_config, load_gear_profiles, main as provisioning_main, normalized_glyph_slots, normalized_glyphs, required_equipment_slots_for, runtime_safe_enchantments, scenario_report, srp6_registration_data, talent_point_count, validate_talent_manifest
 from tools.bot_ml.validate_validation_provisioning import REQUIRED_COLUMNS as PROVISIONING_REQUIRED_COLUMNS
 from tools.bot_ml.validate_validation_provisioning import build_report as provisioning_verify_report
@@ -8445,6 +8445,60 @@ def test_validation_provisioning_rejects_more_gems_than_runtime_capacity():
     assert fields[12] == "0"
 
 
+def test_validation_gear_gem_selection_respects_equipped_category_limit():
+    gems = [
+        {"item_id": 52260, "color": 1, "enchant_id": 4037, "item_level": 85, "item_limit_category": 2, "stats": {"strength": 67}},
+        {"item_id": 71879, "color": 1, "enchant_id": 4329, "item_level": 85, "item_limit_category": 0, "stats": {"strength": 50}},
+    ]
+    limits = {2: {"quantity": 3, "flags": 1}}
+    counts = {2: 3}
+
+    selected = select_gem(1, gems, {"strength": 1.0}, counts, limits)
+
+    assert selected is not None
+    assert selected["item_id"] == 71879
+    assert load_item_limit_categories(Path("data/dbc/enUS"))[2] == {"quantity": 3, "flags": 1}
+
+    assert select_gem(1, [dict(gems[1], item_limit_category=0)], {"strength": 1.0}, {0: 99}, limits)["item_id"] == 71879
+    assert select_gem(1, [gems[0]], {"strength": 1.0}, {}, {}) is None
+
+
+def test_validation_provisioning_payload_rejects_equipped_socket_gem_limit():
+    equipment = [
+        {"slot": slot, "item_id": 7000 + slot, "gem_item_ids": [52260], "gem_enchant_ids": [4037]}
+        for slot in range(4)
+    ]
+
+    failures, _evidence = validate_provisioning_payloads(
+        {"scenarios": [{"bots": [{"name": "Tank", "equipment": equipment}]}]},
+        Path("data/dbc/enUS"),
+    )
+
+    assert {failure["check"] for failure in failures} >= {"equipped_item_or_socket_gem_limit"}
+
+
+def test_validation_provisioning_payload_rejects_equipped_item_category_limit():
+    failures, _evidence = validate_provisioning_payloads(
+        {"scenarios": [{"bots": [{
+            "name": "Tank",
+            "equipment": [
+                {"slot": 0, "item_id": 5509},
+                {"slot": 1, "item_id": 5510},
+            ],
+        }]}]},
+        Path("data/dbc/enUS"),
+    )
+
+    limit_failures = [failure for failure in failures if failure["check"] == "equipped_item_or_socket_gem_limit"]
+    assert limit_failures == [{
+        "check": "equipped_item_or_socket_gem_limit",
+        "bot": "Tank",
+        "category": 3,
+        "count": 2,
+        "quantity": 1,
+    }]
+
+
 def test_validation_provisioning_payload_verifier_rejects_wrong_gem_identity():
     config = {
         "scenarios": [{
@@ -8465,9 +8519,28 @@ def test_validation_provisioning_payload_verifier_rejects_wrong_gem_identity():
 
     mappings = [failure for failure in failures if failure["check"] == "gem_item_enchant_mapping"]
     assert mappings == [
-        {"check": "gem_item_enchant_mapping", "bot": "Mage", "item_id": 7000, "gem_item_id": 68779, "expected_enchant_id": 4252, "actual_enchant_id": 4037},
-        {"check": "gem_item_enchant_mapping", "bot": "Mage", "item_id": 7000, "gem_item_id": 52260, "expected_enchant_id": 4037, "actual_enchant_id": 4252},
+        {"check": "gem_item_enchant_mapping", "bot": "Mage", "item_id": 7000, "gem_item_id": 68779, "expected_enchant_id": 4252, "actual_enchant_id": 4037, "runtime_source_item_id": 52260},
+        {"check": "gem_item_enchant_mapping", "bot": "Mage", "item_id": 7000, "gem_item_id": 52260, "expected_enchant_id": 4037, "actual_enchant_id": 4252, "runtime_source_item_id": 68779},
     ]
+
+
+def test_validation_provisioning_rejects_forward_only_gem_mapping():
+    failures, _evidence = validate_provisioning_payloads({
+        "scenarios": [{"bots": [{
+            "name": "Mage",
+            "equipment": [{
+                "slot": 0,
+                "item_id": 7000,
+                "gem_item_ids": [37301],
+                "gem_enchant_ids": [2686],
+            }],
+        }]}],
+    }, Path("data/dbc/enUS"))
+
+    mapping = next(failure for failure in failures if failure["check"] == "gem_item_enchant_mapping")
+    assert mapping["gem_item_id"] == 37301
+    assert mapping["expected_enchant_id"] is None
+    assert mapping["runtime_source_item_id"] == 23233
 
 
 def test_validation_provisioning_loads_exact_wowsims_calibration_overlays():

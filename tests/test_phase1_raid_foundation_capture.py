@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 from tools.raid_program.capture_phase1_raid_foundation import (
     accepted_foundation_status,
@@ -10,9 +11,80 @@ from tools.raid_program.capture_phase1_raid_foundation import (
     expected_bwd_10n_roster,
     _expected_identity_by_slot,
     preflight_runtime_exclusions,
+    validate_runtime_profile_assets,
     evidence_demux_report,
     evidence_demux_rejections,
 )
+
+
+def _write_runtime_profile_assets(root: Path, route_payload: str) -> None:
+    profile_dir = root / "dataset/bot_runtime_profiles"
+    route_dir = root / "dataset/validation_scenarios"
+    profile_dir.mkdir(parents=True, exist_ok=True)
+    route_dir.mkdir(parents=True, exist_ok=True)
+    (profile_dir / "profiles.json").write_text(json.dumps({
+        "profiles": [{
+            "name": "blackwing_descent_10n",
+            "validation_route": {
+                "enable": True,
+                "manifest_path": "dataset/validation_scenarios/validation_routes.jsonl",
+                "scenario_id": "blackwing_descent_10n",
+            },
+        }],
+    }), encoding="utf-8")
+    (route_dir / "validation_routes.jsonl").write_text(route_payload, encoding="utf-8")
+
+
+def test_capture_preflight_requires_matching_hydrated_route_manifest(tmp_path: Path):
+    worktree = tmp_path / "worktree"
+    reference = tmp_path / "reference"
+    route = "".join(json.dumps({
+        "scenario_id": "blackwing_descent_10n",
+        "step": step,
+        "route_node_id": f"node-{step}",
+        "kind": "boss",
+    }) + "\n" for step in range(1, 9))
+    _write_runtime_profile_assets(worktree, route)
+    _write_runtime_profile_assets(reference, route)
+
+    accepted = validate_runtime_profile_assets(worktree, reference, require_dvc_lineage=False)
+    assert accepted["passed"] is True
+    assert accepted["matching_route_rows"] == 8
+    assert accepted["route_sha256"] == accepted["reference_route_sha256"]
+
+    (worktree / "dataset/validation_scenarios/validation_routes.jsonl").unlink()
+    missing = validate_runtime_profile_assets(worktree, reference, require_dvc_lineage=False)
+    assert missing["passed"] is False
+    assert "worktree_route_manifest_unreadable" in missing["reasons"]
+
+    _write_runtime_profile_assets(worktree, json.dumps({
+        "scenario_id": "stonecore_5n", "route_node_id": "wrong", "kind": "boss",
+    }) + "\n")
+    wrong = validate_runtime_profile_assets(worktree, reference, require_dvc_lineage=False)
+    assert wrong["passed"] is False
+    assert "worktree_route_expected_eight_rows" in wrong["reasons"]
+    assert "runtime_route_differs_from_reference" in wrong["reasons"]
+
+
+def test_capture_preflight_rejects_dirty_dvc_lineage(tmp_path: Path, monkeypatch):
+    worktree = tmp_path / "worktree"
+    reference = tmp_path / "reference"
+    route = "".join(json.dumps({
+        "scenario_id": "blackwing_descent_10n",
+        "route_node_id": f"node-{step}",
+        "kind": "boss",
+    }) + "\n" for step in range(8))
+    _write_runtime_profile_assets(worktree, route)
+    _write_runtime_profile_assets(reference, route)
+    monkeypatch.setattr(
+        "tools.raid_program.capture_phase1_raid_foundation.subprocess.run",
+        lambda *args, **kwargs: SimpleNamespace(returncode=0, stdout="validation_scenarios:\n\tchanged deps:\n"),
+    )
+
+    rejected = validate_runtime_profile_assets(worktree, reference)
+
+    assert rejected["passed"] is False
+    assert "runtime_route_dvc_lineage_dirty" in rejected["reasons"]
 
 
 def test_canonical_capture_explicitly_starts_the_frozen_bwd_10n_profile():

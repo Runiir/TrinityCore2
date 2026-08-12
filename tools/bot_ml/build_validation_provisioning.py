@@ -29,10 +29,14 @@ DEFAULT_DBC_DIR = Path("data/dbc/enUS")
 DEFAULT_WOWSIMS_GEAR_PROFILES = REPO_ROOT / "experiments/configs/wowsims_cata_p4_gear_profiles.json"
 SPELL_EFFECT_LEARN_GLYPH = 74
 ITEM_SPARSE_FMT = "niiiffiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiifiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiisssssiiiiiiiiiiiiiiiiiiiiiifiiifii"
+SPELL_ITEM_ENCHANTMENT_FMT = "nxiiiiiixxxiiisiiiiiiix"
 _GLYPH_ITEM_TO_PROPERTY_CACHE: dict[Path, dict[int, int]] = {}
 _GLYPH_PROPERTY_TYPE_CACHE: dict[Path, dict[int, int]] = {}
 _TALENT_DATA_CACHE: dict[Path, tuple[dict[int, list[Any]], dict[int, list[int]]]] = {}
 _GEM_ITEM_ENCHANT_CACHE: dict[Path, dict[int, int]] = {}
+_ENCHANTMENT_SOURCE_ITEM_CACHE: dict[Path, dict[int, int]] = {}
+_ITEM_LIMIT_CATEGORY_BY_ITEM_CACHE: dict[Path, dict[int, int]] = {}
+_ITEM_LIMIT_CATEGORY_QUANTITY_CACHE: dict[Path, dict[int, int]] = {}
 
 
 def required_equipment_slots_for(equipment: list[dict[str, Any]]) -> list[int]:
@@ -246,6 +250,24 @@ def equipment_cache(equipment: list[dict[str, Any]], bag_slots: int = INVENTORY_
     return " ".join(str(value) for value in values) + " "
 
 
+def enchantment_source_item_map(dbc_dir: Path = DEFAULT_DBC_DIR) -> dict[int, int]:
+    dbc_dir = dbc_dir.resolve()
+    cached = _ENCHANTMENT_SOURCE_ITEM_CACHE.get(dbc_dir)
+    if cached is not None:
+        return cached
+    path = dbc_dir / "SpellItemEnchantment.dbc"
+    if not path.is_file():
+        _ENCHANTMENT_SOURCE_ITEM_CACHE[dbc_dir] = {}
+        return {}
+    mapping = {
+        int(row[0]): int(row[17])
+        for row in load_wdbc_values(path, SPELL_ITEM_ENCHANTMENT_FMT)
+        if int(row[0]) > 0 and int(row[17]) > 0
+    }
+    _ENCHANTMENT_SOURCE_ITEM_CACHE[dbc_dir] = mapping
+    return mapping
+
+
 def gem_item_enchant_map(dbc_dir: Path = DEFAULT_DBC_DIR) -> dict[int, int]:
     dbc_dir = dbc_dir.resolve()
     cached = _GEM_ITEM_ENCHANT_CACHE.get(dbc_dir)
@@ -261,12 +283,51 @@ def gem_item_enchant_map(dbc_dir: Path = DEFAULT_DBC_DIR) -> dict[int, int]:
         for row in load_wdbc_values(properties_path, "nixxii")
         if int(row[0]) > 0 and int(row[1]) > 0
     }
+    source_items = enchantment_source_item_map(dbc_dir)
     mapping = {
         int(row[0]): gem_properties[int(row[125])]
         for row in load_wdb2_values(sparse_path, ITEM_SPARSE_FMT)
-        if int(row[0]) > 0 and int(row[125]) in gem_properties
+        if int(row[0]) > 0
+        and int(row[125]) in gem_properties
+        and source_items.get(gem_properties[int(row[125])]) == int(row[0])
     }
     _GEM_ITEM_ENCHANT_CACHE[dbc_dir] = mapping
+    return mapping
+
+
+def item_limit_category_by_item_map(dbc_dir: Path = DEFAULT_DBC_DIR) -> dict[int, int]:
+    dbc_dir = dbc_dir.resolve()
+    cached = _ITEM_LIMIT_CATEGORY_BY_ITEM_CACHE.get(dbc_dir)
+    if cached is not None:
+        return cached
+    sparse_path = dbc_dir / "Item-sparse.db2"
+    if not sparse_path.is_file():
+        _ITEM_LIMIT_CATEGORY_BY_ITEM_CACHE[dbc_dir] = {}
+        return {}
+    mapping = {
+        int(row[0]): int(row[128])
+        for row in load_wdb2_values(sparse_path, ITEM_SPARSE_FMT)
+        if int(row[0]) > 0 and int(row[128]) > 0
+    }
+    _ITEM_LIMIT_CATEGORY_BY_ITEM_CACHE[dbc_dir] = mapping
+    return mapping
+
+
+def item_limit_category_quantity_map(dbc_dir: Path = DEFAULT_DBC_DIR) -> dict[int, int]:
+    dbc_dir = dbc_dir.resolve()
+    cached = _ITEM_LIMIT_CATEGORY_QUANTITY_CACHE.get(dbc_dir)
+    if cached is not None:
+        return cached
+    path = dbc_dir / "ItemLimitCategory.dbc"
+    if not path.is_file():
+        _ITEM_LIMIT_CATEGORY_QUANTITY_CACHE[dbc_dir] = {}
+        return {}
+    mapping = {
+        int(row[0]): int(row[2])
+        for row in load_wdbc_values(path, "nxii")
+        if int(row[0]) > 0 and int(row[2]) > 0
+    }
+    _ITEM_LIMIT_CATEGORY_QUANTITY_CACHE[dbc_dir] = mapping
     return mapping
 
 
@@ -810,6 +871,29 @@ def main() -> int:
     ]
     if invalid_gem_pairs:
         raise ValueError(f"validation provisioning has {len(invalid_gem_pairs)} gem pairs absent from the selected client DBC oracle")
+    item_limit_categories = item_limit_category_by_item_map(args.dbc_dir)
+    category_quantities = item_limit_category_quantity_map(args.dbc_dir)
+    enchantment_source_items = enchantment_source_item_map(args.dbc_dir)
+    if not item_limit_categories or not category_quantities or not enchantment_source_items:
+        raise ValueError("validation provisioning requires nonempty item-limit and enchant-source DBC oracles")
+    invalid_equipped_limits = []
+    for scenario in config.get("scenarios", []):
+        for bot in scenario.get("bots", []):
+            counts: dict[int, int] = {}
+            for item in bot.get("equipment", []):
+                item_category = item_limit_categories.get(int(item.get("item_id") or 0), 0)
+                if item_category:
+                    counts[item_category] = counts.get(item_category, 0) + 1
+                for gem_item_id in item.get("gem_item_ids", []):
+                    category = item_limit_categories.get(int(gem_item_id or 0), 0)
+                    if category:
+                        counts[category] = counts.get(category, 0) + 1
+            for category, count in counts.items():
+                quantity = category_quantities.get(category, 0)
+                if not quantity or count > quantity:
+                    invalid_equipped_limits.append((str(bot.get("name") or ""), category, count, quantity))
+    if invalid_equipped_limits:
+        raise ValueError(f"validation provisioning has {len(invalid_equipped_limits)} equipped item-or-gem limit violations")
     args.output_dir.mkdir(parents=True, exist_ok=True)
     account_command_text = account_commands(config)
     account_sql = build_account_insert_sql(config)

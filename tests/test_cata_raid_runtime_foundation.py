@@ -195,6 +195,18 @@ def test_explicit_runtime_profile_survives_start_config_reload():
     assert capacity_rejection < rollback < rejection
 
 
+def test_named_validation_profile_fails_before_provisioning_without_native_route():
+    prepare = IMPL[IMPL.index("bool BotWorldPopulationMgr::PrepareCurrentValidationProfile"):]
+    prepare = prepare[:prepare.index("bool BotWorldPopulationMgr::ApplyValidationProvisioningSql")]
+    route_guard = prepare.index("Party().ValidationRouteManifestLoadError")
+    provisioning = prepare.index("ApplyValidationProvisioningSql")
+    pool_reset = prepare.index("ResetValidationBotPool")
+    assert route_guard < provisioning < pool_reset
+    assert "Party().ValidationRouteManifest.empty()" in prepare
+    assert "Party().ValidationRouteGeneration != 1" in prepare
+    assert "Cohort().Config.ValidationRouteScenarioId != Cohort().Config.Name" in prepare
+
+
 def test_focus_fire_owns_target_and_cancels_every_wrong_attacker():
     focus_start = IMPL.index('raidAdapter.TargetControl == "focus_fire"')
     focus_end = IMPL.index('if (result.Features.RaidEncounter && raidAdapter.ContractResolved)\n    {', focus_start)

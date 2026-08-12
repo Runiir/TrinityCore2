@@ -2608,6 +2608,21 @@ bool BotWorldPopulationMgr::PrepareCurrentValidationProfile(char const* reason)
         return false;
     }
 
+    // LoadConfig resolves the selected profile and loads its route before any
+    // provisioning, leases, or bot population changes. A named validation
+    // profile must never degrade to anchor-only autonomy when that immutable
+    // route is absent or contains no native-loadable node.
+    if (Cohort().Config.ValidationRouteScenarioId != Cohort().Config.Name
+        || !Party().ValidationRouteManifestLoadError.empty()
+        || Party().ValidationRouteManifest.empty()
+        || Party().ValidationRouteGeneration != 1)
+    {
+        Cohort().LastPopulationFailureReason = !Party().ValidationRouteManifestLoadError.empty()
+            ? "validation_route_" + Party().ValidationRouteManifestLoadError
+            : "validation_route_not_initialized";
+        return false;
+    }
+
     if (sConfigMgr->GetBoolDefault("BotWorld.ValidationProvisionOnPrepare", false)
         && !ApplyValidationProvisioningSql(reason))
         return false;

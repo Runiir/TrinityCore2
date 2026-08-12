@@ -14,11 +14,13 @@ try:
         build_profiles,
         fetch_items,
         load_gem_properties,
+        load_enchantment_source_items,
+        load_item_limit_categories,
         load_wdbc,
         load_spell_item_enchantments,
         SPELL_ITEM_ENCHANTMENT_FMT,
     )
-    from .build_validation_provisioning import EQUIPMENT_SLOT_END, REQUIRED_EQUIPMENT_SLOTS, account_commands, apply_gear_profiles, bot_known_spell_ids, bot_talent_spell_ids, build_account_insert_sql, build_character_insert_sql, equipment_cache, gem_item_enchant_map, load_config, load_gear_profiles, load_wdbc_values, normalized_glyphs, required_equipment_slots_for, runtime_safe_enchantments, scenario_report, talent_point_count
+    from .build_validation_provisioning import EQUIPMENT_SLOT_END, REQUIRED_EQUIPMENT_SLOTS, account_commands, apply_gear_profiles, bot_known_spell_ids, bot_talent_spell_ids, build_account_insert_sql, build_character_insert_sql, enchantment_source_item_map, equipment_cache, gem_item_enchant_map, item_limit_category_by_item_map, load_config, load_gear_profiles, load_wdbc_values, normalized_glyphs, required_equipment_slots_for, runtime_safe_enchantments, scenario_report, talent_point_count
     from .common import stable_hash, write_json
     from .extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
 except ImportError:
@@ -28,11 +30,13 @@ except ImportError:
         build_profiles,
         fetch_items,
         load_gem_properties,
+        load_enchantment_source_items,
+        load_item_limit_categories,
         load_wdbc,
         load_spell_item_enchantments,
         SPELL_ITEM_ENCHANTMENT_FMT,
     )
-    from build_validation_provisioning import EQUIPMENT_SLOT_END, REQUIRED_EQUIPMENT_SLOTS, account_commands, apply_gear_profiles, bot_known_spell_ids, bot_talent_spell_ids, build_account_insert_sql, build_character_insert_sql, equipment_cache, gem_item_enchant_map, load_config, load_gear_profiles, load_wdbc_values, normalized_glyphs, required_equipment_slots_for, runtime_safe_enchantments, scenario_report, talent_point_count
+    from build_validation_provisioning import EQUIPMENT_SLOT_END, REQUIRED_EQUIPMENT_SLOTS, account_commands, apply_gear_profiles, bot_known_spell_ids, bot_talent_spell_ids, build_account_insert_sql, build_character_insert_sql, enchantment_source_item_map, equipment_cache, gem_item_enchant_map, item_limit_category_by_item_map, load_config, load_gear_profiles, load_wdbc_values, normalized_glyphs, required_equipment_slots_for, runtime_safe_enchantments, scenario_report, talent_point_count
     from common import stable_hash, write_json
     from extract_world_knowledge import connect_mysql, database_url_from_worldserver_conf, sanitize_database_url
 
@@ -187,16 +191,31 @@ def validate_payloads(config: dict[str, Any], dbc_dir: Path, hotfix_url: str | N
     gem_properties = load_gem_properties(dbc_dir)
     gem_enchantment_ids = {int(row["enchant_id"]) for row in gem_properties.values()}
     gem_item_enchantments = gem_item_enchant_map(dbc_dir)
+    enchantment_source_items = enchantment_source_item_map(dbc_dir)
+    item_limit_categories_by_item = item_limit_category_by_item_map(dbc_dir)
+    item_limit_categories = load_item_limit_categories(dbc_dir)
+    if not gem_item_enchantments:
+        failures.append({"check": "gem_item_enchant_oracle", "reason": "missing_or_empty"})
+    if not enchantment_source_items:
+        failures.append({"check": "enchantment_source_item_oracle", "reason": "missing_or_empty"})
+    if not item_limit_categories:
+        failures.append({"check": "item_limit_category_oracle", "reason": "missing_or_empty"})
     gem_catalog_count = 0
     if hotfix_url:
         try:
             items = fetch_items(hotfix_url, dbc_dir, min_item_level=1, max_required_level=85)
-            gem_catalog_count = len(build_gem_catalog(items, gem_properties, enchantments))
+            gem_catalog_count = len(build_gem_catalog(
+                items,
+                gem_properties,
+                enchantments,
+                load_enchantment_source_items(dbc_dir),
+            ))
         except Exception as exc:  # pragma: no cover - defensive path for unavailable DBs
             failures.append({"check": "gem_catalog", "reason": "unable_to_build_from_items", "detail": str(exc)})
 
     for scenario in config.get("scenarios", []):
         for bot in scenario.get("bots", []):
+            gem_limit_counts: dict[int, int] = {}
             class_spec = str(bot.get("class_spec") or "")
             if class_spec in config.get("talent_builds_by_spec", {}):
                 points = talent_point_count(bot, dbc_dir)
@@ -208,6 +227,9 @@ def validate_payloads(config: dict[str, Any], dbc_dir: Path, hotfix_url: str | N
             if missing_slots:
                 failures.append({"check": "equipment_slots", "bot": bot.get("name"), "missing_slots": missing_slots})
             for item in equipment:
+                item_category = item_limit_categories_by_item.get(int(item.get("item_id") or 0), 0)
+                if item_category:
+                    gem_limit_counts[item_category] = gem_limit_counts.get(item_category, 0) + 1
                 enchant_id = int(item.get("enchant_id") or 0)
                 payload = parse_enchantment_payload(item.get("enchantments", ""))
                 reforge_id = int(item.get("reforge_id") or 0)
@@ -258,7 +280,8 @@ def validate_payloads(config: dict[str, Any], dbc_dir: Path, hotfix_url: str | N
                     if int(gem_item_id) == 0 and int(gem_enchant_id) == 0:
                         continue
                     catalog_enchant_id = gem_item_enchantments.get(int(gem_item_id))
-                    if catalog_enchant_id != int(gem_enchant_id):
+                    runtime_source_item_id = enchantment_source_items.get(int(gem_enchant_id))
+                    if catalog_enchant_id != int(gem_enchant_id) or runtime_source_item_id != int(gem_item_id):
                         failures.append({
                             "check": "gem_item_enchant_mapping",
                             "bot": bot.get("name"),
@@ -266,11 +289,19 @@ def validate_payloads(config: dict[str, Any], dbc_dir: Path, hotfix_url: str | N
                             "gem_item_id": int(gem_item_id),
                             "expected_enchant_id": catalog_enchant_id,
                             "actual_enchant_id": int(gem_enchant_id),
+                            "runtime_source_item_id": runtime_source_item_id,
                         })
+                    category = item_limit_categories_by_item.get(int(gem_item_id), 0)
+                    if category:
+                        gem_limit_counts[category] = gem_limit_counts.get(category, 0) + 1
                 if reforge_id and reforge_id not in reforge_ids:
                     failures.append({"check": "reforge_id", "bot": bot.get("name"), "item_id": item.get("item_id"), "reforge_id": reforge_id})
                 if reforge_id and payload and payload[24] != reforge_id:
                     failures.append({"check": "reforge_payload", "bot": bot.get("name"), "item_id": item.get("item_id"), "payload_value": payload[24], "reforge_id": reforge_id})
+            for category, count in sorted(gem_limit_counts.items()):
+                quantity = int(item_limit_categories.get(category, {}).get("quantity") or 0)
+                if not quantity or count > quantity:
+                    failures.append({"check": "equipped_item_or_socket_gem_limit", "bot": bot.get("name"), "category": category, "count": count, "quantity": quantity})
 
     evidence = {
         "enchantment_count": len(enchantments),
@@ -279,6 +310,9 @@ def validate_payloads(config: dict[str, Any], dbc_dir: Path, hotfix_url: str | N
         "reforge_count": len(reforge_ids),
         "gem_property_count": len(gem_properties),
         "gem_catalog_count": gem_catalog_count,
+        "item_limit_category_count": len(item_limit_categories),
+        "item_limit_categorized_item_count": len(item_limit_categories_by_item),
+        "enchantment_source_item_count": len(enchantment_source_items),
     }
     return failures, evidence
 
@@ -711,8 +745,13 @@ def load_or_build_gear_profiles(path: Path, config: dict[str, Any], dbc_dir: Pat
         return profiles
     items = fetch_items(hotfix_url or "", dbc_dir, min_item_level=1, max_required_level=85)
     enchantments = load_spell_item_enchantments(dbc_dir)
-    gems = build_gem_catalog(items, load_gem_properties(dbc_dir), {int(enchantment["id"]): enchantment for enchantment in enchantments})
-    return build_profiles(config, items, enchantments, gems)
+    gems = build_gem_catalog(
+        items,
+        load_gem_properties(dbc_dir),
+        {int(enchantment["id"]): enchantment for enchantment in enchantments},
+        load_enchantment_source_items(dbc_dir),
+    )
+    return build_profiles(config, items, enchantments, gems, item_limit_categories=load_item_limit_categories(dbc_dir))
 
 
 def validate_generated_artifacts(config: dict[str, Any], provisioning_report_path: Path, dbc_dir: Path) -> tuple[list[dict[str, Any]], dict[str, Any]]:

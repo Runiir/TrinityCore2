@@ -1227,6 +1227,119 @@ def preflight_runtime_exclusions(worktree: Path) -> dict[str, Any]:
     }
 
 
+def validate_runtime_profile_assets(
+    worktree: Path,
+    reference_worktree: Path = ROOT,
+    profile_name: str = "blackwing_descent_10n",
+    require_dvc_lineage: bool = True,
+) -> dict[str, Any]:
+    """Fail closed when the isolated live worktree lacks frozen route data."""
+
+    reasons: list[str] = []
+    profile_relative = Path("dataset/bot_runtime_profiles/profiles.json")
+
+    def load_profile(root: Path) -> tuple[dict[str, Any] | None, Path | None, str | None]:
+        manifest = root / profile_relative
+        try:
+            payload = json.loads(manifest.read_text(encoding="utf-8"))
+        except (OSError, ValueError, TypeError):
+            return None, None, "profile_manifest_unreadable"
+        profiles = payload.get("profiles") if isinstance(payload, dict) else None
+        matches = [row for row in profiles or [] if isinstance(row, dict) and row.get("name") == profile_name]
+        if len(matches) != 1:
+            return None, None, "profile_missing_or_duplicated"
+        profile = matches[0]
+        route = profile.get("validation_route")
+        if not isinstance(route, dict) or route.get("enable") is not True:
+            return profile, None, "profile_route_disabled"
+        route_text = route.get("manifest_path")
+        if not isinstance(route_text, str) or not route_text:
+            return profile, None, "profile_route_path_missing"
+        if route.get("scenario_id") != profile_name:
+            return profile, None, "profile_route_scenario_mismatch"
+        route_relative = Path(route_text)
+        if route_relative.is_absolute() or ".." in route_relative.parts:
+            return profile, None, "profile_route_path_outside_worktree"
+        route_path = (root / route_relative).resolve()
+        try:
+            route_path.relative_to(root.resolve())
+        except ValueError:
+            return profile, None, "profile_route_path_outside_worktree"
+        return profile, route_path, None
+
+    worktree_profile, route_path, worktree_error = load_profile(worktree)
+    reference_profile, reference_route_path, reference_error = load_profile(reference_worktree)
+    if worktree_error:
+        reasons.append(f"worktree_{worktree_error}")
+    if reference_error:
+        reasons.append(f"reference_{reference_error}")
+
+    route_rows = 0
+    route_sha256 = None
+    reference_route_sha256 = None
+    if route_path is not None:
+        try:
+            route_bytes = route_path.read_bytes()
+            if not route_bytes:
+                reasons.append("worktree_route_manifest_empty")
+            if len(route_bytes) > 4 * 1024 * 1024:
+                reasons.append("worktree_route_manifest_oversized")
+            route_sha256 = hashlib.sha256(route_bytes).hexdigest()
+            rows = [json.loads(line) for line in route_bytes.decode("utf-8").splitlines() if line.strip()]
+            matching_rows = [row for row in rows if isinstance(row, dict) and row.get("scenario_id") == profile_name]
+            route_rows = len(matching_rows)
+            if route_rows != 8:
+                reasons.append("worktree_route_expected_eight_rows")
+            node_ids = [str(row.get("route_node_id") or "") for row in matching_rows]
+            kinds = [str(row.get("kind") or "") for row in matching_rows]
+            if any(not node_id for node_id in node_ids):
+                reasons.append("worktree_route_node_id_missing")
+            if len(set(node_ids)) != len(node_ids):
+                reasons.append("worktree_route_node_id_duplicated")
+            if any(not kind for kind in kinds):
+                reasons.append("worktree_route_kind_missing")
+        except (OSError, UnicodeError, ValueError, TypeError):
+            reasons.append("worktree_route_manifest_unreadable")
+    if reference_route_path is not None:
+        try:
+            reference_route_sha256 = sha256_file(reference_route_path)
+        except OSError:
+            reasons.append("reference_route_manifest_unreadable")
+
+    if worktree_profile is not None and reference_profile is not None and worktree_profile != reference_profile:
+        reasons.append("runtime_profile_differs_from_reference")
+    if route_sha256 is not None and reference_route_sha256 is not None and route_sha256 != reference_route_sha256:
+        reasons.append("runtime_route_differs_from_reference")
+
+    dvc_status = None
+    if require_dvc_lineage:
+        result = subprocess.run(
+            ["pixi", "run", "dvc", "status", "validation_scenarios"],
+            cwd=worktree,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            timeout=60,
+            check=False,
+        )
+        dvc_status = result.stdout.strip()
+        if result.returncode != 0 or dvc_status != "Data and pipelines are up to date.":
+            reasons.append("runtime_route_dvc_lineage_dirty")
+
+    return {
+        "profile_name": profile_name,
+        "profile_manifest": str(worktree / profile_relative),
+        "route_manifest": str(route_path) if route_path else None,
+        "route_sha256": route_sha256,
+        "reference_route_sha256": reference_route_sha256,
+        "matching_route_rows": route_rows,
+        "dvc_stage": "validation_scenarios",
+        "dvc_status": dvc_status,
+        "reasons": reasons,
+        "passed": not reasons,
+    }
+
+
 def _artifact_record(path: Path, kind: str) -> dict[str, Any]:
     if not path.is_file():
         raise RuntimeError(f"immutable artifact missing: {path}")
@@ -1283,6 +1396,9 @@ def main() -> int:
     identity_before = git_identity(worktree)
     if not identity_before["clean"]:
         raise SystemExit("canonical phase1 capture requires a clean worktree")
+    runtime_assets = validate_runtime_profile_assets(worktree)
+    if not runtime_assets["passed"]:
+        raise SystemExit("runtime profile assets rejected: " + ",".join(runtime_assets["reasons"]))
     build_provenance = validate_build_receipt(
         args.build_receipt.resolve(), args.build_policy.resolve(), worktree, binary, config
     )
@@ -1431,6 +1547,7 @@ def main() -> int:
         "identity": identity_before,
         "identity_stable_during_run": identity_stable,
         "build_provenance": build_provenance,
+        "runtime_profile_assets": runtime_assets,
         "binary_sha256": build_provenance.get("binary_sha256"),
         "config_sha256": sha256_file(config),
         "worldserver_exit_code": process_return_code,

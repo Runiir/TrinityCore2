@@ -122,6 +122,7 @@ ITEM_FMT = "niiiiiii"
 ITEM_SPARSE_FMT = "niiiffiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiifiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiisssssiiiiiiiiiiiiiiiiiiiiiifiiifii"
 SPELL_ITEM_ENCHANTMENT_FMT = "nxiiiiiixxxiiisiiiiiiix"
 GEM_PROPERTIES_FMT = "nixxii"
+ITEM_LIMIT_CATEGORY_FMT = "nxii"
 ITEM_ENCHANTMENT_TYPE_STAT = 5
 MAX_ENCHANTMENT_SLOT = 15
 MAX_ENCHANTMENT_OFFSET = 3
@@ -235,6 +236,7 @@ def load_db2_item_rows(dbc_dir: Path) -> list[dict[str, Any]]:
             "SocketColor2": int(values[119]),
             "SocketColor3": int(values[120]),
             "GemProperties": int(values[125]),
+            "ItemLimitCategory": int(values[128]),
             "source": "client_db2",
         }
         for index in range(1, 11):
@@ -295,6 +297,31 @@ def load_gem_properties(dbc_dir: Path) -> dict[int, dict[str, int]]:
             "min_item_level": int(values[5]),
         }
     return properties
+
+
+def load_enchantment_source_items(dbc_dir: Path) -> dict[int, int]:
+    path = dbc_dir / "SpellItemEnchantment.dbc"
+    if not path.exists():
+        return {}
+    return {
+        int(row["values"][0]): int(row["values"][17])
+        for row in load_wdbc(path, SPELL_ITEM_ENCHANTMENT_FMT)
+        if int(row["values"][0]) > 0 and int(row["values"][17]) > 0
+    }
+
+
+def load_item_limit_categories(dbc_dir: Path) -> dict[int, dict[str, int]]:
+    path = dbc_dir / "ItemLimitCategory.dbc"
+    if not path.exists():
+        return {}
+    return {
+        int(row["values"][0]): {
+            "quantity": int(row["values"][2]),
+            "flags": int(row["values"][3]),
+        }
+        for row in load_wdbc(path, ITEM_LIMIT_CATEGORY_FMT)
+        if int(row["values"][0]) > 0 and int(row["values"][2]) > 0
+    }
 
 
 def role_archetype(bot: dict[str, Any], profile_manifest: dict[str, Any] | None = None) -> str:
@@ -453,7 +480,12 @@ def select_enchantment(enchantments: list[dict[str, Any]], weights: dict[str, fl
     return next((enchantment for score, _id, enchantment in ranked if score > 0.0), None)
 
 
-def build_gem_catalog(items: list[dict[str, Any]], gem_properties: dict[int, dict[str, int]], enchantments_by_id: dict[int, dict[str, Any]]) -> list[dict[str, Any]]:
+def build_gem_catalog(
+    items: list[dict[str, Any]],
+    gem_properties: dict[int, dict[str, int]],
+    enchantments_by_id: dict[int, dict[str, Any]],
+    enchantment_source_items: dict[int, int] | None = None,
+) -> list[dict[str, Any]]:
     gems = []
     for item in items:
         gem_property_id = int(item.get("GemProperties") or 0)
@@ -462,6 +494,8 @@ def build_gem_catalog(items: list[dict[str, Any]], gem_properties: dict[int, dic
             continue
         enchantment = enchantments_by_id.get(int(gem_property["enchant_id"]))
         if not enchantment:
+            continue
+        if enchantment_source_items is not None and enchantment_source_items.get(int(gem_property["enchant_id"])) != int(item["ID"]):
             continue
         gems.append(
             {
@@ -473,14 +507,37 @@ def build_gem_catalog(items: list[dict[str, Any]], gem_properties: dict[int, dic
                 "gem_property_id": gem_property_id,
                 "enchant_id": int(gem_property["enchant_id"]),
                 "color": int(gem_property["color"]),
+                "item_limit_category": int(item.get("ItemLimitCategory") or 0),
                 "stats": enchantment.get("stats", {}),
             }
         )
     return gems
 
 
-def select_gem(socket_color: int, gems: list[dict[str, Any]], weights: dict[str, float]) -> dict[str, Any] | None:
-    compatible = [gem for gem in gems if int(gem.get("color") or 0) & int(socket_color)]
+def select_gem(
+    socket_color: int,
+    gems: list[dict[str, Any]],
+    weights: dict[str, float],
+    limit_counts: dict[int, int] | None = None,
+    limit_categories: dict[int, dict[str, int]] | None = None,
+) -> dict[str, Any] | None:
+    if limit_counts is None:
+        limit_counts = {}
+    if limit_categories is None:
+        limit_categories = {}
+    compatible = []
+    for gem in gems:
+        if not (int(gem.get("color") or 0) & int(socket_color)):
+            continue
+        category = int(gem.get("item_limit_category") or 0)
+        limit = int(limit_categories.get(category, {}).get("quantity") or 0)
+        if category:
+            # A category without a quantity oracle is not safe to equip.  The
+            # core applies the category quantity to socketed gems regardless
+            # of the category's HAVE/EQUIP flag when validating equipment.
+            if not limit or limit_counts.get(category, 0) >= limit:
+                continue
+        compatible.append(gem)
     ranked = sorted(
         ((sum(float(value) * weights.get(name, 0.0) for name, value in gem.get("stats", {}).items()), int(gem["item_level"]), int(gem["item_id"]), gem) for gem in compatible),
         key=lambda row: (row[0], row[1], row[2]),
@@ -531,6 +588,7 @@ def choose_loadout(
     enchantments: list[dict[str, Any]] | None = None,
     gems: list[dict[str, Any]] | None = None,
     profile_manifest: dict[str, Any] | None = None,
+    item_limit_categories: dict[int, dict[str, int]] | None = None,
 ) -> list[dict[str, Any]]:
     class_id = int(bot["class"])
     profile_manifest = profile_manifest or DEFAULT_COMBAT_LOOT_PROFILES
@@ -554,22 +612,49 @@ def choose_loadout(
     used: set[int] = set()
     loadout = []
     titan_grip = str(bot.get("class_spec") or "") in TITANS_GRIP_CLASS_SPECS
+    gem_limit_counts: dict[int, int] = defaultdict(int)
+    item_limit_categories = item_limit_categories or {}
+
+    def limit_category_available(item: dict[str, Any]) -> bool:
+        category = int(item.get("ItemLimitCategory") or 0)
+        if not category:
+            return True
+        quantity = int(item_limit_categories.get(category, {}).get("quantity") or 0)
+        return quantity > 0 and gem_limit_counts[category] < quantity
+
     for slot in REQUIRED_EQUIPMENT_SLOTS:
         if slot == 16 and not titan_grip and any(int(item.get("slot", -1)) == 15 and int(item.get("inventory_type", 0)) == 17 for item in loadout):
             continue
         selected = curated_slots.get(slot)
-        if selected and int(selected["ID"]) in used:
+        if selected and (int(selected["ID"]) in used or not limit_category_available(selected)):
             selected = None
         if not selected:
             ranked = sorted(candidates_by_slot.get(slot, []), key=lambda pair: (pair[0], int(pair[1].get("ItemLevel") or 0), int(pair[1].get("ID") or 0)), reverse=True)
-            selected = next((item for _score, item in ranked if int(item["ID"]) not in used), None)
+            selected = next(
+                (item for _score, item in ranked if int(item["ID"]) not in used and limit_category_available(item)),
+                None,
+            )
         if not selected:
             continue
         used.add(int(selected["ID"]))
+        selected_category = int(selected.get("ItemLimitCategory") or 0)
+        if selected_category:
+            gem_limit_counts[selected_category] += 1
         sockets = [int(selected.get(f"SocketColor{i}") or 0) for i in range(1, 4)]
         enchant_id = int(selected_enchantment["id"]) if selected_enchantment else 0
         socket_colors = [socket for socket in sockets if socket]
-        selected_gems = [select_gem(socket, gems or [], weights) for socket in socket_colors]
+        selected_gems = []
+        for socket in socket_colors:
+            gem = select_gem(socket, gems or [], weights, gem_limit_counts, item_limit_categories)
+            if gems and gem is None:
+                raise ValueError(
+                    f"no runtime-legal gem for profile={bot.get('class_spec')} slot={slot} socket_color={socket}"
+                )
+            selected_gems.append(gem)
+            if gem:
+                category = int(gem.get("item_limit_category") or 0)
+                if category:
+                    gem_limit_counts[category] += 1
         gem_item_ids = [int(gem["item_id"]) for gem in selected_gems if gem]
         gem_enchant_ids = [int(gem["enchant_id"]) for gem in selected_gems if gem]
         loadout.append(
@@ -608,6 +693,7 @@ def build_profiles(
     enchantments: list[dict[str, Any]] | None = None,
     gems: list[dict[str, Any]] | None = None,
     profile_manifest: dict[str, Any] | None = None,
+    item_limit_categories: dict[int, dict[str, int]] | None = None,
 ) -> dict[str, Any]:
     profile_manifest = profile_manifest or DEFAULT_COMBAT_LOOT_PROFILES
     profiles: dict[str, Any] = {}
@@ -626,7 +712,7 @@ def build_profiles(
                         "schema": profile_manifest["schema"],
                         "hash": profile_manifest["hash"],
                     },
-                    "equipment": choose_loadout(bot, items, enchantments, gems, profile_manifest),
+                    "equipment": choose_loadout(bot, items, enchantments, gems, profile_manifest, item_limit_categories),
                     "enchant_selection_mode": "dbc_stat_score_unverified_slot_applicability" if enchantments else "none",
                     "gem_selection_mode": "gem_properties_dbc_socket_color_score" if gems else "none",
                 },
@@ -729,8 +815,17 @@ def main() -> int:
     items = fetch_items(hotfix_url, args.dbc_dir, args.min_item_level, args.max_required_level)
     enchantments = load_spell_item_enchantments(args.dbc_dir, args.max_required_level) if args.dbc_dir else []
     enchantments_by_id = {int(enchantment["id"]): enchantment for enchantment in enchantments}
-    gems = build_gem_catalog(items, load_gem_properties(args.dbc_dir), enchantments_by_id) if args.dbc_dir else []
-    profiles = build_profiles(config, items, enchantments, gems, profile_manifest)
+    enchantment_source_items = load_enchantment_source_items(args.dbc_dir) if args.dbc_dir else {}
+    gems = build_gem_catalog(
+        items,
+        load_gem_properties(args.dbc_dir),
+        enchantments_by_id,
+        enchantment_source_items,
+    ) if args.dbc_dir else []
+    item_limit_categories = load_item_limit_categories(args.dbc_dir) if args.dbc_dir else {}
+    if args.dbc_dir and (not enchantment_source_items or not item_limit_categories):
+        raise ValueError("validation gear requires nonempty enchant-source and item-limit-category DBC oracles")
+    profiles = build_profiles(config, items, enchantments, gems, profile_manifest, item_limit_categories)
     source_database = sanitize_database_url(hotfix_url)
     report = build_report(profiles, source_database, profile_manifest)
     args.output_dir.mkdir(parents=True, exist_ok=True)
