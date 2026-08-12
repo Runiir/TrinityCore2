@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 import tempfile
 import time
@@ -27,6 +28,15 @@ def report_path(path: Path) -> str:
         return str(path.relative_to(ROOT))
     except ValueError:
         return str(path)
+
+
+def zero_bot_status_observed(log_bytes: bytes) -> bool:
+    statuses = re.findall(rb"\{[^\r\n]*\"action\":\"botauto_status\"[^\r\n]*\}", log_bytes)
+    return any(
+        re.search(rb'\"bots\"\s*:\s*0(?:\D|$)', status)
+        and re.search(rb'\"lease_count\"\s*:\s*0(?:\D|$)', status)
+        for status in statuses
+    )
 
 
 def tracked_identity() -> dict[str, Any]:
@@ -188,7 +198,7 @@ def main() -> int:
     tick_rate = os.sysconf(os.sysconf_names["SC_CLK_TCK"])
     elapsed = samples[-1]["monotonic_sec"] - samples[0]["monotonic_sec"] if len(samples) > 1 else 0.0
     cpu_ticks = samples[-1]["process_cpu_ticks"] - samples[0]["process_cpu_ticks"] if len(samples) > 1 else 0
-    active_bots_zero = b'"active_bots":0' in log_bytes
+    active_bots_zero = zero_bot_status_observed(log_bytes)
     success = process.returncode == 0 and before == after and active_bots_zero and all(row["ok"] for row in mysql_samples)
     report = {
         "schema_version": 1,

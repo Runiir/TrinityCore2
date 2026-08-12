@@ -56,3 +56,11 @@ def test_report_path_preserves_external_binary_identity(monkeypatch, tmp_path: P
     monkeypatch.setattr(baseline, "ROOT", root)
     assert baseline.report_path(root / "config.conf") == "config.conf"
     assert baseline.report_path(tmp_path / "shared-build/worldserver") == str(tmp_path / "shared-build/worldserver")
+
+
+def test_zero_bot_status_requires_zero_bots_and_leases() -> None:
+    clean = b'TC> {"ok":true,"action":"botauto_status","lease_count": 0,"bots":0,"target_bots":0}\n'
+    assert baseline.zero_bot_status_observed(clean) is True
+    assert baseline.zero_bot_status_observed(clean.replace(b'"bots":0', b'"bots":1')) is False
+    assert baseline.zero_bot_status_observed(clean.replace(b'"lease_count": 0', b'"lease_count": 1')) is False
+    assert baseline.zero_bot_status_observed(b'{"action":"other","bots":0,"lease_count":0}') is False
