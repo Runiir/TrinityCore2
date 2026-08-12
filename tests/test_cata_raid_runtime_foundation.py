@@ -299,6 +299,52 @@ def test_generic_raid_mechanic_contracts_are_typed_executable_and_fail_closed():
     assert route_runtime.count("TryBossMechanics(state, bot, power, stage, activity, target)") == 4
 
 
+def test_bwd_native_ghost_runback_acks_only_corpse_bound_worldports_and_canonical_entrance():
+    bwd_entrance_sql = (
+        ROOT / "sql/old/4.3.4/TDB00_to_TDB01_updates/world/090_areatrigger_teleport.sql"
+    ).read_text(encoding="utf-8")
+    reattach = IMPL[
+        IMPL.index("bool BotWorldPopulationMgr::TryReattachValidationBot"):
+        IMPL.index("bool BotWorldPopulationMgr::HasNativeRaidCorpseAuthority")
+    ]
+    native_release = IMPL[
+        IMPL.index("bool BotWorldPopulationMgr::IsNativeReleasedGhostWorldport"):
+        IMPL.index("bool BotWorldPopulationMgr::IsValidationCohortMemberInOriginalInstance")
+    ]
+    corpse_authority = IMPL[
+        IMPL.index("bool BotWorldPopulationMgr::HasNativeRaidCorpseAuthority"):
+        IMPL.index("bool BotWorldPopulationMgr::ResolveNativeBlackwingDescentEntrance")
+    ]
+    native_runback = IMPL[
+        IMPL.index("if (Cohort().Config.ValidationRouteEnable && Cohort().Config.AllowRaids)"):
+        IMPL.index("// A critical-role death can make the survivors retreat", IMPL.index("if (Cohort().Config.ValidationRouteEnable && Cohort().Config.AllowRaids)"))
+    ]
+
+    assert "constexpr uint32 BlackwingDescentMapId = 669;" in IMPL
+    assert "constexpr uint32 BlackwingDescentEntranceMapId = 0;" in IMPL
+    assert "constexpr uint32 BlackwingDescentEntranceTriggerId = 6581;" in IMPL
+    assert "(6581, 'Blackwing Descent (Enterance)', 669," in bwd_entrance_sql
+    assert "HasNativeRaidCorpseAuthority(state, bot)" in reattach
+    assert "session->HandleMoveWorldportAck()" in reattach
+    assert "Never cancel or reattach a native recovery worldport" in reattach
+    assert "if (state.NativeReleaseRequested && !nativeRecoveryWorldport" in reattach
+    assert "bot->CancelDelayedTeleport()" not in reattach.split("if (nativeRecoveryWorldport)", 1)[1].split("if (destination.GetMapId()", 1)[0]
+
+    assert "originalMap->GetCorpseByPlayer(bot->GetGUID())" in corpse_authority
+    assert "originalCorpse->GetOwnerGUID() == bot->GetGUID()" in corpse_authority
+    assert "originalCorpse->GetInstanceId() == state.ValidationCohortInstanceId" in corpse_authority
+    assert "ResolveNativeBlackwingDescentEntrance" in native_release
+    assert "destination.GetMapId() == entranceDestination->target_mapId" in native_release
+
+    assert "ResolveNativeBlackwingDescentEntrance(entranceEntry, entranceDestination)" in native_runback
+    assert "bot->GetMapId() == entranceEntry->ContinentID" in native_runback
+    assert "uint32 entranceTriggerId = BlackwingDescentEntranceTriggerId;" in native_runback
+    assert "WorldPacket areaTrigger(CMSG_AREATRIGGER" in native_runback
+    assert "TeleportTo(" not in native_runback
+    assert "NearTeleportTo(" not in native_runback
+    assert "ResurrectPlayer" not in native_runback
+
+
 def test_phase1_magmaw_engagement_contract_has_explicit_safe_target_authority():
     scenario = json.loads((ROOT / "experiments/configs/validation_scenarios_cata_001.json").read_text())
     bwd = next(row for row in scenario["scenarios"] if row["id"] == "blackwing_descent_10n")

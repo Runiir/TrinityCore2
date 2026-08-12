@@ -75,6 +75,13 @@
 
 namespace
 {
+// Blackwing Descent's native entrance is the only runback contract used by
+// the phase-one validation route.  Keep these IDs tied to the DBC/SQL
+// contract instead of selecting an arbitrary area trigger at runtime.
+constexpr uint32 BlackwingDescentMapId = 669;
+constexpr uint32 BlackwingDescentEntranceMapId = 0;
+constexpr uint32 BlackwingDescentEntranceTriggerId = 6581;
+
 uint64 CurrentProcessId()
 {
 #if defined(_WIN32)
@@ -4138,20 +4145,79 @@ bool BotWorldPopulationMgr::MaybeAdvanceValidationRouteManifest()
 
 bool BotWorldPopulationMgr::TryReattachValidationBot(WorldBotState& state, Player* bot, char const* context)
 {
+    bool const nativeReleasedGhostWorldport = IsNativeReleasedGhostWorldport(state, bot);
+    bool const nativeBlackwingDescentRunbackWorldport = IsNativeBlackwingDescentRunbackWorldport(state, bot);
+    bool const nativeRecoveryWorldport = nativeReleasedGhostWorldport || nativeBlackwingDescentRunbackWorldport;
+
     if (!Cohort().Config.ValidationRouteEnable || !bot)
         return false;
 
     if (!state.ValidationCohortLocked
         || bot->IsInWorld()
-        || bot->GetMapId() != state.ValidationCohortMapId
-        || bot->GetInstanceId() != state.ValidationCohortInstanceId
-        || !bot->GetMap())
+        || !bot->GetMap()
+        || (!nativeRecoveryWorldport
+            && (bot->GetMapId() != state.ValidationCohortMapId
+                || bot->GetInstanceId() != state.ValidationCohortInstanceId)))
+        return false;
+
+    // Once a native release/runback is pending, a different far-teleport is
+    // not recoverable by cancelling it or reattaching to the frozen map.  The
+    // immutable corpse contract is the only authority for this exception.
+    if (state.NativeReleaseRequested && !nativeRecoveryWorldport
+        && !bot->IsAlive() && bot->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST)
+        && HasNativeRaidCorpseAuthority(state, bot))
         return false;
 
     if (bot->IsBeingTeleportedFar())
     {
         WorldLocation const& destination = bot->GetTeleportDest();
         Optional<uint32> destinationInstance = bot->GetTeleportDestInstanceId();
+        if (nativeRecoveryWorldport)
+        {
+            // ReleaseSpirit and the area-trigger entrance both use the
+            // server's native far-worldport protocol.  A validation bot is
+            // allowed to acknowledge only the corpse-authorized BWD release
+            // or the exact canonical 6581 return destination; arbitrary
+            // outside teleports still fail closed below.
+            if (WorldSession* session = bot->GetSession())
+            {
+                session->HandleMoveWorldportAck();
+                bool nativeWorldportComplete = bot->IsInWorld() && !bot->IsAlive()
+                    && bot->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST)
+                    && HasNativeRaidCorpseAuthority(state, bot);
+                if (nativeReleasedGhostWorldport)
+                {
+                    AreaTriggerEntry const* entranceEntry = nullptr;
+                    AreaTriggerStruct const* entranceDestination = nullptr;
+                    nativeWorldportComplete = nativeWorldportComplete
+                        && ResolveNativeBlackwingDescentEntrance(entranceEntry, entranceDestination)
+                        && bot->GetMapId() == entranceEntry->ContinentID;
+                }
+                else
+                    nativeWorldportComplete = nativeWorldportComplete
+                        && bot->GetMapId() == state.ValidationCohortMapId
+                        && bot->GetInstanceId() == state.ValidationCohortInstanceId;
+
+                if (nativeWorldportComplete)
+                {
+                    if (nativeBlackwingDescentRunbackWorldport)
+                    {
+                        state.NativeReleaseRequested = false;
+                        state.NativeRunbackAreaTriggerId = 0;
+                    }
+                    TC_LOG_INFO("server", "BotWorld native raid worldport complete bot=%s context=%s map=%u instance=%u release=%u runback=%u",
+                        bot->GetGUID().ToString().c_str(), context ? context : "", bot->GetMapId(), bot->GetInstanceId(),
+                        nativeReleasedGhostWorldport ? 1u : 0u, nativeBlackwingDescentRunbackWorldport ? 1u : 0u);
+                    return true;
+                }
+            }
+
+            // Never cancel or reattach a native recovery worldport.  The
+            // caller will mark the validation member invalid if its ACK did
+            // not land in the exact corpse-authorized state.
+            return false;
+        }
+
         if (destination.GetMapId() == state.ValidationCohortMapId
             && (!destinationInstance || *destinationInstance == state.ValidationCohortInstanceId))
         {
@@ -4184,6 +4250,85 @@ bool BotWorldPopulationMgr::TryReattachValidationBot(WorldBotState& state, Playe
     TC_LOG_INFO("server", "BotWorld validation same-instance reattach complete bot=%s context=%s map=%u instance=%u",
         bot->GetGUID().ToString().c_str(), context ? context : "", bot->GetMapId(), bot->GetInstanceId());
     return true;
+}
+
+bool BotWorldPopulationMgr::HasNativeRaidCorpseAuthority(WorldBotState const& state, Player const* bot) const
+{
+    if (!Cohort().Config.ValidationRouteEnable || !state.ValidationCohortLocked || !bot
+        || !state.ValidationCohortMapId || !state.ValidationCohortInstanceId
+        || !bot->HasCorpse()
+        || bot->GetCorpseLocation().GetMapId() != state.ValidationCohortMapId)
+        return false;
+
+    Group const* group = bot->GetGroup();
+    if (!group || group->GetGUID() != state.ValidationCohortGroupGuid
+        || group->GetLeaderGUID() != state.ValidationCohortLeaderGuid)
+        return false;
+
+    // Player::GetCorpse() follows the current map, which is deliberately the
+    // outdoor graveyard after native release.  Resolve the corpse from the
+    // frozen raid map/instance instead and require ownership plus exact
+    // instance identity before authorizing any native worldport.
+    Map* originalMap = sMapMgr->FindMap(state.ValidationCohortMapId, state.ValidationCohortInstanceId);
+    Corpse* originalCorpse = originalMap ? originalMap->GetCorpseByPlayer(bot->GetGUID()) : nullptr;
+    return originalCorpse
+        && originalCorpse->GetOwnerGUID() == bot->GetGUID()
+        && originalCorpse->GetMapId() == state.ValidationCohortMapId
+        && originalCorpse->GetInstanceId() == state.ValidationCohortInstanceId;
+}
+
+bool BotWorldPopulationMgr::ResolveNativeBlackwingDescentEntrance(AreaTriggerEntry const*& entry, AreaTriggerStruct const*& destination) const
+{
+    entry = sAreaTriggerStore.LookupEntry(BlackwingDescentEntranceTriggerId);
+    destination = entry ? sObjectMgr->GetAreaTrigger(BlackwingDescentEntranceTriggerId) : nullptr;
+    return entry
+        && destination
+        && entry->ID == BlackwingDescentEntranceTriggerId
+        && entry->ContinentID == BlackwingDescentEntranceMapId
+        && destination->target_mapId == BlackwingDescentMapId
+        && sMapStore.LookupEntry(entry->ContinentID)
+        && sMapStore.LookupEntry(BlackwingDescentMapId);
+}
+
+bool BotWorldPopulationMgr::IsNativeReleasedGhostWorldport(WorldBotState const& state, Player const* bot) const
+{
+    if (!state.NativeReleaseRequested || state.NativeRunbackAreaTriggerId
+        || state.ValidationCohortMapId != BlackwingDescentMapId || !bot
+        || bot->IsInWorld() || !bot->IsBeingTeleportedFar()
+        || bot->IsAlive() || !bot->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST)
+        || bot->GetMapId() != state.ValidationCohortMapId
+        || !HasNativeRaidCorpseAuthority(state, bot))
+        return false;
+
+    AreaTriggerEntry const* entranceEntry = nullptr;
+    AreaTriggerStruct const* entranceDestination = nullptr;
+    if (!ResolveNativeBlackwingDescentEntrance(entranceEntry, entranceDestination))
+        return false;
+
+    return bot->GetTeleportDest().GetMapId() == entranceEntry->ContinentID;
+}
+
+bool BotWorldPopulationMgr::IsNativeBlackwingDescentRunbackWorldport(WorldBotState const& state, Player const* bot) const
+{
+    if (!state.NativeReleaseRequested || state.NativeRunbackAreaTriggerId != BlackwingDescentEntranceTriggerId
+        || state.ValidationCohortMapId != BlackwingDescentMapId || !bot
+        || bot->IsInWorld() || !bot->IsBeingTeleportedFar()
+        || bot->IsAlive() || !bot->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_GHOST)
+        || !HasNativeRaidCorpseAuthority(state, bot))
+        return false;
+
+    AreaTriggerEntry const* entranceEntry = nullptr;
+    AreaTriggerStruct const* entranceDestination = nullptr;
+    if (!ResolveNativeBlackwingDescentEntrance(entranceEntry, entranceDestination))
+        return false;
+
+    WorldLocation const& destination = bot->GetTeleportDest();
+    return bot->GetMapId() == entranceEntry->ContinentID
+        && destination.GetMapId() == entranceDestination->target_mapId
+        && std::fabs(destination.GetPositionX() - entranceDestination->target_X) <= 0.01f
+        && std::fabs(destination.GetPositionY() - entranceDestination->target_Y) <= 0.01f
+        && std::fabs(destination.GetPositionZ() - entranceDestination->target_Z) <= 0.01f
+        && std::fabs(destination.GetOrientation() - entranceDestination->target_Orientation) <= 0.01f;
 }
 
 bool BotWorldPopulationMgr::IsValidationCohortMemberInOriginalInstance(WorldBotState const& state, Player const* bot) const
@@ -8641,6 +8786,15 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
         }
     }
 
+    // A successful native resurrection closes the release episode.  Do not
+    // let a later unrelated death inherit permission to ACK an outside
+    // worldport as if it were the BWD runback.
+    if (bot->IsAlive())
+    {
+        state.NativeReleaseRequested = false;
+        state.NativeRunbackAreaTriggerId = 0;
+    }
+
     Cohort().TelemetryBuffer.Observe(bot, bot->IsInCombat() ? "combat" : "ambient", nullptr, nullptr, nullptr);
     Cohort().TelemetryBuffer.FlushClosedClips(Cohort().ExperimentId, Cohort().RunId, Cohort().Config.BrainVersion, bot->GetGUID());
 
@@ -8734,33 +8888,23 @@ void BotWorldPopulationMgr::UpdateBot(WorldBotState& state, uint32 diff)
 
                 uint32 originalMapId = state.ValidationCohortMapId;
                 AreaTriggerEntry const* entranceEntry = nullptr;
-                uint32 entranceTriggerId = state.NativeRunbackAreaTriggerId;
-                if (entranceTriggerId)
-                    entranceEntry = sAreaTriggerStore.LookupEntry(entranceTriggerId);
-                if (!entranceEntry)
-                    for (uint32 triggerId = 0; triggerId < sAreaTriggerStore.GetNumRows(); ++triggerId)
-                    {
-                        AreaTriggerEntry const* candidate = sAreaTriggerStore.LookupEntry(triggerId);
-                        AreaTriggerStruct const* destination = candidate ? sObjectMgr->GetAreaTrigger(triggerId) : nullptr;
-                        if (!candidate || !destination || candidate->ContinentID != bot->GetMapId()
-                            || destination->target_mapId != originalMapId)
-                            continue;
-                        if (!entranceEntry || bot->GetExactDist(candidate->Pos.X, candidate->Pos.Y, candidate->Pos.Z)
-                            < bot->GetExactDist(entranceEntry->Pos.X, entranceEntry->Pos.Y, entranceEntry->Pos.Z))
-                        {
-                            entranceEntry = candidate;
-                            entranceTriggerId = triggerId;
-                        }
-                    }
+                AreaTriggerStruct const* entranceDestination = nullptr;
+                bool const corpseAuthorized = HasNativeRaidCorpseAuthority(state, bot);
+                bool const entranceContractProven = originalMapId == BlackwingDescentMapId
+                    && corpseAuthorized
+                    && ResolveNativeBlackwingDescentEntrance(entranceEntry, entranceDestination)
+                    && bot->GetMapId() == entranceEntry->ContinentID;
 
-                if (!entranceEntry)
+                if (!entranceContractProven)
                 {
                     state.DeadTimer = 0;
-                    RecordEvent(state, bot, "native_runback_blocked", nullptr, "raid_entrance_area_trigger_missing",
+                    RecordEvent(state, bot, "native_runback_blocked", nullptr,
+                        corpseAuthorized ? "bwd_entrance_area_trigger_contract_unproven" : "native_corpse_authority_missing",
                         raw.c_str(), semantic.c_str(), 0.0f, originalMapId);
                     return;
                 }
 
+                uint32 entranceTriggerId = BlackwingDescentEntranceTriggerId;
                 state.NativeRunbackAreaTriggerId = entranceTriggerId;
                 if (!bot->IsInAreaTriggerRadius(entranceEntry))
                 {

@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "capture_id": "cata_raid_phase1_bwd_10n_foundation_v1",
+  "classification": "infrastructure_abort",
+  "gameplay_failure": false,
+  "fidelity_claim": false,
+  "source_identity": {
+    "commit": "9c9dec8b8811cc3094ddebffd5aed3626d36f301",
+    "tree": "ddd5d832796e8033e870cdce15dd789b2f9b08a6",
+    "clean_at_start": true,
+    "identity_stable_during_run": true
+  },
+  "build": {
+    "policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
+    "worldserver_sha256": "eed28b5aeafaac382a80a4f31115778de01a6c91323b7fda26e3ec1d0a48a0d5",
+    "worldserver_receipt_sha256": "2c9e191d6d4e41f6d295bef07d35b15894623aa108df8975da744c86dba5e6af",
+    "worldserver_exit_code": 0,
+    "trusted_local_operator": "runiir",
+    "gate_bearing": true
+  },
+  "live_facts": {
+    "exact_roster_size": 10,
+    "composition": {"tanks": 2, "healers": 3, "dps": 5},
+    "map_id": 669,
+    "instance_id": 2,
+    "lockout_save_id": 2,
+    "group_difficulty": 0,
+    "map_difficulty": 0,
+    "difficulty_matches": true,
+    "profile_selected": "blackwing_descent_10n",
+    "entry_trash_kills": 2,
+    "deaths": 1,
+    "native_release_spirit_opcode_observed": true,
+    "native_runback_completed": false,
+    "boss_engaged": false
+  },
+  "root_cause": {
+    "failure_fingerprint": "raid_entrance_area_trigger_missing_after_native_release",
+    "detail": "The validation reattach path cancelled the legitimate far worldport created by native RepopAtGraveyard because its destination was the outdoor BWD graveyard map, then reattached the ghost to frozen map 669 instance 2. The ghost therefore could not reach canonical BWD entrance trigger 6581 on map 0.",
+    "classification_basis": "headless native worldport completion defect before boss engagement",
+    "remediation_scope": "corpse-authorized native release worldport acknowledgement and exact BWD trigger-6581 return only"
+  },
+  "telemetry": {
+    "wall_clock_mode": "uncapped",
+    "watchdog_healthy": true,
+    "heartbeat_rows": 251,
+    "status_rows": 85,
+    "diagnosis_rows": 83,
+    "trace_rows": 83,
+    "required_envelopes_gate_passed": true,
+    "normalized_rows": 253,
+    "bound_rows": 253,
+    "rejected_rows": 0,
+    "unchecked_rows": 0,
+    "demux_only_missing_action": "botauto_readycheck",
+    "missing_readycheck_is_downstream_of_no_boss_wipe": true
+  },
+  "semantic_stall": {
+    "detected": true,
+    "seconds": 303.563,
+    "unchanged_samples": 60,
+    "signature": "b3d3cab575de070d59ad472ac00df7486e206a67b09821d3024fe9e57aa36164"
+  },
+  "cleanup": {
+    "gate_passed": true,
+    "stop_observed": true,
+    "stop_ok": true,
+    "zero_bots": true,
+    "zero_leases": true,
+    "worldserver_process_absent": true
+  },
+  "forbidden_assistance": {"observed": false, "gate_passed": true},
+  "artifact": {
+    "pointer": "artifacts/cata_raid_program/phase1_raid_foundation_9c9dec8b_20260812.dvc",
+    "dvc_directory_md5": "e5ceb1891ab269ecacde6495321e7def.dir",
+    "size_bytes": 126958523,
+    "nfiles": 3,
+    "raw_jsonl": {
+      "md5": "bd3f79e1587a3967630ec48e2d4fc9d2",
+      "sha256": "b586fc5e27e818d19205b925659539440b88cc780c445b520afad982d587d1d0",
+      "rows": 253,
+      "bytes": 63463014
+    },
+    "report": {
+      "md5": "ba3731e001efe7a9510b8371616bd8a3",
+      "file_sha256": "8a877bbb31e54d637df8cbdbf898fd77ddd1da290ae9fbf380995773ed195d5e",
+      "canonical_report_sha256": "72e773c8c81279205e7b0df1921fdc9065026cb87de40f5acebe53d3be89ea6f",
+      "bytes": 81897
+    },
+    "worldserver_log": {
+      "md5": "ae25182c1fce93fec854e7e0e677f5ee",
+      "sha256": "9630df715267dd3f41ae32f7df4ba775bd3be490795b689f2b9cd89edb887724",
+      "bytes": 63413612
+    },
+    "targeted_push_completed": true,
+    "targeted_remote_status_before_eviction": "cache_and_remote_in_sync",
+    "workspace_payload_evicted": true,
+    "exact_three_child_cache_objects_evicted": true,
+    "directory_metadata_retained": true,
+    "broad_gc_used": false
+  },
+  "acceptance": {
+    "phase1_gate_passed": false,
+    "next_gate": "mandatory independent Sol-high review of the exact remediation checkpoint, then an exact coordinated rebuild and uncapped canonical rerun"
+  }
+}

@@ -23,6 +23,8 @@ class Player;
 class Quest;
 class Unit;
 class WorldObject;
+struct AreaTriggerEntry;
+struct AreaTriggerStruct;
 
 enum class BotWorldRuntimeMode
 {
@@ -1407,6 +1409,10 @@ private:
     void UpdateBot(WorldBotState& state, uint32 diff);
     void TryRespondNativeRaidReadyCheck(WorldBotState& state, Player* bot);
     bool TryReattachValidationBot(WorldBotState& state, Player* bot, char const* context);
+    bool HasNativeRaidCorpseAuthority(WorldBotState const& state, Player const* bot) const;
+    bool ResolveNativeBlackwingDescentEntrance(AreaTriggerEntry const*& entry, AreaTriggerStruct const*& destination) const;
+    bool IsNativeReleasedGhostWorldport(WorldBotState const& state, Player const* bot) const;
+    bool IsNativeBlackwingDescentRunbackWorldport(WorldBotState const& state, Player const* bot) const;
     void RememberSafePosition(WorldBotState& state, Player* bot, uint32 diff);
     void PruneSafePositions(WorldBotState& state, uint64 nowMs) const;
     void RememberVisiblePois(WorldBotState& state, Player* bot, uint32 diff);
