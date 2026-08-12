@@ -1,0 +1,6 @@
+outs:
+- md5: 0559d2a6facf6d73e1c90a805c6df6da.dir
+  size: 92493
+  nfiles: 3
+  hash: md5
+  path: phase1_generic_mechanic_smoke_50d3b930e4
