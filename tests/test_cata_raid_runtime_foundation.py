@@ -171,6 +171,15 @@ def test_controlled_aoe_counts_only_declared_targets_and_fails_closed_near_undec
         assert token in IMPL
 
 
+def test_explicit_runtime_profile_survives_start_config_reload():
+    load_config = IMPL[IMPL.index("void BotWorldPopulationMgr::LoadConfig("):]
+    configured_profile = load_config.index("SelectConfiguredRuntimeProfile()")
+    dirty_guard = load_config.rfind("!Cohort().RuntimeProfileDirty", 0, configured_profile)
+    apply_selected = load_config.index("ApplyRuntimeProfile(profileItr->second)", configured_profile)
+    assert dirty_guard >= 0
+    assert dirty_guard < configured_profile < apply_selected
+
+
 def test_focus_fire_owns_target_and_cancels_every_wrong_attacker():
     focus_start = IMPL.index('raidAdapter.TargetControl == "focus_fire"')
     focus_end = IMPL.index('if (result.Features.RaidEncounter && raidAdapter.ContractResolved)\n    {', focus_start)

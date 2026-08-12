@@ -3358,7 +3358,12 @@ void BotWorldPopulationMgr::LoadConfig(std::string const& name, BotWorldExperime
         Cohort().PolicyModelConfig.Mode = "shadow";
     ValidatePolicyModelDeployment();
 
-    if (!overrideConfig && !SelectConfiguredRuntimeProfile())
+    // A native `.botauto profile` selection is an explicit operator choice.
+    // Do not overwrite that pending dirty selection with BotWorld.RuntimeProfile
+    // while rebuilding the runtime config for the ensuing start.  Initial and
+    // ordinary starts still resolve the configured profile when no explicit
+    // selection is pending.
+    if (!overrideConfig && !Cohort().RuntimeProfileDirty && !SelectConfiguredRuntimeProfile())
     {
         Cohort().Config.TargetPopulation = 0;
         return;
