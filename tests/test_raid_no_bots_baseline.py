@@ -48,3 +48,11 @@ def test_process_sample_has_resource_fields() -> None:
     assert sample["process_rss_bytes"] > 0
     assert sample["memory_available_bytes"] > 0
     assert sample["host_load_1m"] >= 0.0
+
+
+def test_report_path_preserves_external_binary_identity(monkeypatch, tmp_path: Path) -> None:
+    root = tmp_path / "worktree"
+    root.mkdir()
+    monkeypatch.setattr(baseline, "ROOT", root)
+    assert baseline.report_path(root / "config.conf") == "config.conf"
+    assert baseline.report_path(tmp_path / "shared-build/worldserver") == str(tmp_path / "shared-build/worldserver")

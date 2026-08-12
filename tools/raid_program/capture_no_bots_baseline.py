@@ -22,6 +22,13 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def report_path(path: Path) -> str:
+    try:
+        return str(path.relative_to(ROOT))
+    except ValueError:
+        return str(path)
+
+
 def tracked_identity() -> dict[str, Any]:
     head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
     listed = subprocess.check_output(
@@ -191,8 +198,8 @@ def main() -> int:
         "observe_sec": args.observe_sec,
         "identity": before,
         "identity_stable_during_run": before == after,
-        "binary": {"path": str(binary.relative_to(ROOT)), "sha256": sha256_file(binary)},
-        "config": {"path": str(config.relative_to(ROOT)), "sha256": sha256_file(config)},
+        "binary": {"path": report_path(binary), "sha256": sha256_file(binary)},
+        "config": {"path": report_path(config), "sha256": sha256_file(config)},
         "worldserver": {
             "exit_code": process.returncode,
             "active_bots_zero_observed": active_bots_zero,
