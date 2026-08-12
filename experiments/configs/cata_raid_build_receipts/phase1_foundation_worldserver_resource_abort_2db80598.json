@@ -1,0 +1,50 @@
+{
+  "admitted_at_utc": "2026-08-12T04:28:48.123410Z",
+  "classification": "build_resource_abort",
+  "command_arguments_retained": false,
+  "command_sha256": "d042cd57384053c5fbf68d8ce2a8fb557e44bf4a092a938cc14f1506fb97315c",
+  "commit": "2db8059867f15e58721b92da01f8b7ccf26346cf",
+  "compiler_job_ceiling": 1,
+  "ended_at_utc": "2026-08-12T04:40:28.641630Z",
+  "error": null,
+  "exit_code": -15,
+  "linker_job_ceiling": 1,
+  "log_sha256": "97e15ca69c03651faa8b7f3b92a4fd0619de43c9c1fec84310237eeb84f61a2a",
+  "peak_observations": {
+    "maximum_load_average_1m": 4.5283203125,
+    "maximum_memory_psi_full_avg10": 0.18,
+    "maximum_memory_psi_some_avg10": 0.18,
+    "maximum_swap_used_bytes": 1200607232,
+    "minimum_filesystem_available_bytes": 35515101184,
+    "minimum_memory_available_bytes": 20396396544,
+    "sample_count": 1366
+  },
+  "policy_id": "cata_raid_build_resource_policy_degraded_v3",
+  "policy_sha256": "59c68ed1e4d7d59d74a3007cd91d514d9125543676fe24f043740bb38d9f2205",
+  "preflight": {
+    "captured_at_utc": "2026-08-12T04:28:48.123410Z",
+    "filesystem_available_bytes": 38874320896,
+    "load_average_15m": 1.693359375,
+    "load_average_1m": 0.97607421875,
+    "load_average_5m": 1.29736328125,
+    "memory_available_bytes": 23641563136,
+    "memory_psi_full_avg10": 0.0,
+    "memory_psi_some_avg10": 0.0,
+    "memory_total_bytes": 32513720320,
+    "swap_used_bytes": 1200607232
+  },
+  "pressure_reasons": [
+    "memory_psi_full"
+  ],
+  "queue_sequence": 9,
+  "queue_wait_seconds": 0.00795,
+  "receipt_sha256": "7b66738591d29a2492e6b274384cff2d0334e2f16804073dd8c2d86b1ad0dcf4",
+  "resource_class": "worldserver_build",
+  "schema_version": 1,
+  "signal": 15,
+  "test_mode": false,
+  "ticket_id": "raid-build-dac16537688142298fca34c98e94929c",
+  "worktree": "/home/runiir/Games/trinity-cata-worktrees/phase1-foundation-build",
+  "worktree_dirty_at_request": false,
+  "worktree_porcelain_sha256_at_request": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+}

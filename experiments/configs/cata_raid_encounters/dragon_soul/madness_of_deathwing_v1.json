@@ -1,0 +1,331 @@
+{
+  "schema_version": 1,
+  "contract_schema": "cata_raid_encounter_contract_v1",
+  "raid": "dragon_soul",
+  "boss_slug": "madness_of_deathwing",
+  "encounter": "madness_of_deathwing",
+  "instance": "dragon_soul",
+  "modes": ["10N", "10H", "25N", "25H"],
+  "scope": ["10N", "10H", "25N", "25H"],
+  "fidelity_state": "fidelity_blocked",
+  "research_state": "phase0_researched_not_live_validated",
+  "research_as_of": "2026-08-12",
+  "dossier_path": "docs/bot_raids/strategies/t13/dragon_soul/madness_of_deathwing.md",
+  "ledger_path": "experiments/configs/cata_raid_encounters/dragon_soul/madness_of_deathwing_ledger_v1.json",
+  "unresolved_material_count": 24,
+  "target_snapshot": {
+    "product": "Cataclysm Classic",
+    "patch": "4.4.2",
+    "build": 59185,
+    "locale": "enUS",
+    "cutoff_utc": "2025-02-20T23:00:00Z",
+    "cutoff_semantics": "Dragon Soul official unlock boundary; no pre-unlock encounter observation is implied"
+  },
+  "evidence_policy": "Official Blizzard material controls release and later modifier state; Cataclysm Classic guides provide dated observable corroboration; repository C++ and historical SQL provide executable and identity evidence only. Conflicts, guide-published values without build-matched tuning proof, mode-sensitive values, and unverified retail semantics remain fidelity_blocked.",
+  "source_refs": [
+    "blizzard_442_notes_59185_cutoff",
+    "blizzard_presence_dragon_soul_2025",
+    "wowhead_cata_madness_2025",
+    "icy_veins_cata_madness",
+    "warcraft_tavern_cata_madness",
+    "repo_dragon_soul_madness_cpp",
+    "repo_dragon_soul_sql_identity"
+  ],
+  "encounter_identity": {
+    "map": 967,
+    "data_key": "DATA_MADNESS_OF_DEATHWING",
+    "data_index": 7,
+    "boss_entry": 56173,
+    "phase_two_head_entry": 57962,
+    "historical_encounter_id": 1299,
+    "kill_credit_spell": 111533,
+    "local_header": "src/server/scripts/Kalimdor/CavernsOfTime/DragonSoul/dragon_soul.h",
+    "local_instance": "src/server/scripts/Kalimdor/CavernsOfTime/DragonSoul/instance_dragon_soul.cpp",
+    "local_ai": "src/server/scripts/Kalimdor/CavernsOfTime/DragonSoul/boss_madness_of_deathwing.cpp",
+    "status": "identity_audited_behavior_blocked"
+  },
+  "mode_matrix": {
+    "10N": {
+      "heroic": false,
+      "raid_size": 10,
+      "guide_health_post_cutoff": 25000000,
+      "phase_two_fragment_count_observed": 3,
+      "heroic_parasite": false,
+      "heroic_congealing_blood": false,
+      "reward_gameobject_local": 210079,
+      "presence_at_cutoff": {"active": false, "reason": "official modifier starts 2025-03-18, after cutoff"},
+      "status": "fidelity_blocked"
+    },
+    "10H": {
+      "heroic": true,
+      "raid_size": 10,
+      "guide_health_post_cutoff": 29000000,
+      "phase_two_fragment_count_observed": 3,
+      "heroic_parasite": true,
+      "heroic_congealing_blood": true,
+      "reward_gameobject_local": 210219,
+      "presence_at_cutoff": {"active": false, "reason": "official modifier starts 2025-03-18, after cutoff"},
+      "status": "fidelity_blocked"
+    },
+    "25N": {
+      "heroic": false,
+      "raid_size": 25,
+      "guide_health_post_cutoff": 76000000,
+      "phase_two_fragment_count_observed": 8,
+      "heroic_parasite": false,
+      "heroic_congealing_blood": false,
+      "reward_gameobject_local": 210218,
+      "lfr_reward_gameobject_local": 210220,
+      "presence_at_cutoff": {"active": false, "reason": "official modifier starts 2025-03-18, after cutoff"},
+      "status": "fidelity_blocked"
+    },
+    "25H": {
+      "heroic": true,
+      "raid_size": 25,
+      "guide_health_post_cutoff": 87000000,
+      "phase_two_fragment_count_observed": 8,
+      "heroic_parasite": true,
+      "heroic_congealing_blood": true,
+      "reward_gameobject_local": 210217,
+      "presence_at_cutoff": {"active": false, "reason": "official modifier starts 2025-03-18, after cutoff"},
+      "status": "fidelity_blocked"
+    }
+  },
+  "roles": {
+    "tanks": ["hold Mutated Corruption and Regenerative Blood", "rotate Impale and Tetanus", "keep Bloods/adds controlled without assuming retail target filters"],
+    "healers": ["cover Burning Blood, Blistering Heat, Bolt impact, and Corrupted Blood", "plan tank cooldowns for Impale/Tetanus", "heal Heroic Corrupting Parasite targets pending exact mode behavior"],
+    "raid": ["stand on the intended platform before start", "use Carrying Winds between platforms", "spread for Crush and respect Bolt/Parasite distance", "single-target Blistering Tentacles when not Cauterized"],
+    "dps": ["prioritize Bolt, Heroic Parasite, Mutated Corruption, Bloods, then limb", "swap to phase-two Fragments/Terrors and Heroic Congealing Blood", "do not infer a fixed platform order from a recommendation"]
+  },
+  "gates": [
+    "official_unlock_boundary_and_presence_cutoff_state",
+    "four_platform_assault_selection_and_carrying_winds",
+    "aspect_presence_and_loss_order",
+    "limb_burning_blood_and_blistering_thresholds",
+    "hemorrhage_regenerative_blood_energy_and_bite",
+    "mutated_corruption_crush_and_impale",
+    "elementium_bolt_travel_impact_and_time_zone",
+    "cataclysm_platform_failure",
+    "heroic_corrupting_parasite_and_unstable_corruption",
+    "limb_death_health_transfer_and_phase_two_entry",
+    "phase_two_head_corrupted_blood_thresholds",
+    "fragment_shrapnel_targeting_and_recurring_waves",
+    "terror_tetanus_and_recurring_waves",
+    "heroic_congealing_blood_thresholds_and_heal",
+    "enrage_and_failure_boundary",
+    "reset_prerequisite_credit_lockout_and_reward"
+  ],
+  "heroic_gates": [
+    "corrupting_parasite_target_frequency_and_explosion",
+    "unstable_corruption_remaining_health_damage",
+    "congealing_blood_count_and_control_immunity",
+    "heroic_mode_health_and_coefficients"
+  ],
+  "mechanics": [
+    {
+      "key": "platform_assault_and_aspects",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "values": {
+        "platform_count": 4,
+        "limb_entries": [56167, 56168, 56846],
+        "selection_rule_guide": "platform with most players",
+        "selection_rule_local": "counts players by nearest platform reference point and chooses living platform with greatest count",
+        "travel": "Carrying Winds",
+        "local_jump_spell_ids": [106673, 106675, 106669, 106671, 106677, 106666],
+        "aspect_npcs": {"Ysera": 56100, "Kalecgos": 56101, "Nozdormu": 56102, "Alexstrasza": 56099}
+      },
+      "evidence": ["wowhead_cata_madness_2025", "icy_veins_cata_madness", "repo_dragon_soul_madness_cpp"],
+      "status": "fidelity_blocked_selection_filter_and_order"
+    },
+    {
+      "key": "aspect_buffs",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "values": {
+        "Alexstrasza": {"presence_spell": 105825, "reported_max_health": "+20%", "cauterize_spell": 105565, "reported_cauterize": "lethal over about 5s; also reduces Corrupted Blood"},
+        "Nozdormu": {"presence_spell": 105823, "time_zone_spell": 106919, "reported_haste": "+20%", "reported_enemy_attack_speed": "-50% in Time Zone", "bolt_missiles": [105799, 107055]},
+        "Ysera": {"presence_spell": 106456, "dream_spell": 106463, "reported_healing": "+20%", "reported_damage_reduction": "50% for 2.5s"},
+        "Kalecgos": {"presence_spell": 106026, "spellweaver_spell": 106039, "reported_damage": "+20%", "reported_spellweave_arcane": "19500-20500 within 6yd excluding current target"},
+        "loss": "Aspect stops buffing after its limb dies and focuses on containment; buffs return in guide phase-two model",
+        "local_trigger_spell": 106943,
+        "local_concentration_spell_ids": [106644, 106643, 106641, 106642]
+      },
+      "evidence": ["wowhead_cata_madness_2025", "icy_veins_cata_madness", "repo_dragon_soul_madness_cpp"],
+      "status": "fidelity_blocked_coefficients_aura_order_and_restoration"
+    },
+    {
+      "key": "limb_burning_blood",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "values": {"spell": 105401, "target": "raid", "guide_interval": "2s", "scaling": "increases as limb health decreases", "local_trigger": "below 90%; local spell script derives stacks from lost health"},
+      "evidence": ["wowhead_cata_madness_2025", "icy_veins_cata_madness", "repo_dragon_soul_madness_cpp"],
+      "status": "fidelity_blocked_coefficients_and_build_state"
+    },
+    {
+      "key": "blistering_tentacles",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "values": {"spawn_spell": 105551, "guide_thresholds": [70, 40], "local_thresholds": [75, 50, 25], "guide_count": "several/wave", "local_max_waves": 3, "aoe_immune": true, "blistering_heat": {"reported_damage": "3750 Fire", "reported_interval": "2s", "reported_stack_increment": "+5% for 3s"}, "alexstrasza": "Cauterize kills them when active"},
+      "evidence": ["wowhead_cata_madness_2025", "icy_veins_cata_madness", "repo_dragon_soul_madness_cpp"],
+      "status": "fidelity_blocked_threshold_and_coefficients_conflict"
+    },
+    {
+      "key": "hemorrhage_regenerative_blood",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "values": {"hemorrhage_spell": 105853, "periodic_spell": 105932, "script_spell": 105934, "heal_spell": 105937, "guide_initial": "about 90s into combat", "guide_count": 6, "guide_energy_gain": "10/s", "guide_full_heal": "at 100 energy", "local_periodic": "heal at ticks 11 and 20; remove at tick 20"},
+      "evidence": ["wowhead_cata_madness_2025", "icy_veins_cata_madness", "repo_dragon_soul_madness_cpp"],
+      "status": "fidelity_blocked_count_cadence_and_energy_runtime"
+    },
+    {
+      "key": "degenerative_bite",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "values": {"guide_damage": "2340-2460 Shadow every 1s for 10s; stacks", "mode_spell_ids_local_order": [105841, 109625, 109626, 109627], "target": "Regenerative Blood melee victim / tank observation"},
+      "evidence": ["wowhead_cata_madness_2025", "repo_dragon_soul_madness_cpp"],
+      "status": "fidelity_blocked_mode_mapping_and_target_filter"
+    },
+    {
+      "key": "mutated_corruption",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "values": {"entry": 56471, "spawn_guide": "about 10s after platform selection", "movement_guide": "stationary", "local_attack_start": "800ms nearest player", "crush_targeting": 106382, "crush": 106385, "reported_crush_damage": "130000 Physical line/cone", "impale": 106400, "reported_impale_damage": "1200000 Physical", "local_crush_first": "5s then 14s", "local_impale_first": "10.5s then 36s"},
+      "evidence": ["wowhead_cata_madness_2025", "icy_veins_cata_madness", "repo_dragon_soul_madness_cpp"],
+      "status": "fidelity_blocked_geometry_targeting_and_timer"
+    },
+    {
+      "key": "elementium_bolt",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "values": {"spell": 105651, "blast": 105723, "periodic": 110628, "visual": 106242, "guide_time": "about 45s per platform", "local_event_offsets": {"first_assault": "41s", "later_assault": "58s"}, "guide_initial_damage": "456300-479700 Fire, distance-reduced", "guide_periodic_damage": "380250-399750 Fire every 5s after landing", "nozdormu": "Time Zone slows travel", "local_nozdormu_velocity": 2.5},
+      "evidence": ["wowhead_cata_madness_2025", "icy_veins_cata_madness", "repo_dragon_soul_madness_cpp"],
+      "status": "fidelity_blocked_timer_travel_and_coefficients"
+    },
+    {
+      "key": "cataclysm",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "values": {"spell": 106523, "guide_start": "2m into assault", "guide_cast": "60s and wipe if completed", "icy_failure": "3m per platform", "guide_damage": "1462500-1537500 Fire", "local_offsets": {"first_assault": "1m55s", "later_assault": "2m13s"}, "local_cancel": "when current limb dies", "local_aspect_event": "Expose Weakness/channel interaction"},
+      "evidence": ["wowhead_cata_madness_2025", "icy_veins_cata_madness", "repo_dragon_soul_madness_cpp"],
+      "status": "fidelity_blocked_start_duration_and_failure_boundary"
+    },
+    {
+      "key": "corrupting_parasite_heroic",
+      "modes": ["10H", "25H"],
+      "values": {"heroic_only": true, "target": "random player", "debuff": "increasing Shadow damage", "reported_duration": "10s", "reported_explosion": "250000 Fire within 10yd", "spawn_add": "Corrupting Parasite at detachment", "unstable_corruption": "10s cast; raid damage equal to 10% remaining health in Icy Veins account", "wowhead": "remaining-health explosion; exact coefficient not given", "frequency": "two per platform in Wowhead/Icy Veins strategy accounts", "local_ai": "no Parasite AI or enum in boss script"},
+      "evidence": ["wowhead_cata_madness_2025", "icy_veins_cata_madness", "repo_dragon_soul_madness_cpp"],
+      "status": "fidelity_blocked_local_absence_frequency_target_and_coefficients"
+    },
+    {
+      "key": "limb_death_and_phase_transition",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "values": {"local_shared_health_spells": [109547, 109548], "reported_effect": "stuns Deathwing and inflicts 20% of his health", "local_concentration": 106940, "local_limb_cleanup": "3.6s", "local_next_assault": "6.5s", "fourth_limb": {"slump": 106708, "head_selectable": true, "corrupted_blood": 106843, "fragments_event": "11s", "timezone_event": "26s", "terrors_event": "36s"}, "phase_two_head_reported_health": "about 20%"},
+      "evidence": ["wowhead_cata_madness_2025", "icy_veins_cata_madness", "repo_dragon_soul_madness_cpp"],
+      "status": "fidelity_blocked_health_transfer_and_transition_runtime"
+    },
+    {
+      "key": "corrupted_blood",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "values": {"spell": 106843, "guide_interval": "2s", "target": "raid", "thresholds": [15, 10, 5], "effect": "damage increases at each threshold"},
+      "evidence": ["wowhead_cata_madness_2025", "icy_veins_cata_madness", "repo_dragon_soul_madness_cpp"],
+      "status": "fidelity_blocked_curve_and_threshold_increment"
+    },
+    {
+      "key": "elementium_fragments_and_shrapnel",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "values": {"fragment_entry": 56724, "guide_count": {"10": 3, "25": 8}, "guide_wave_interval": "90s", "guide_shrapnel_cast": "about 7s", "shrapnel": 106791, "guide_damage": "390000-410000 unresistable Physical", "target": "random player", "local_first_event": "11s", "local_pairing": "one fragment per selected player; random resize if players exceed fragments", "local_periodic_aura": 106818},
+      "evidence": ["wowhead_cata_madness_2025", "icy_veins_cata_madness", "repo_dragon_soul_madness_cpp"],
+      "status": "fidelity_blocked_count_cadence_target_pairing_and_recurrence"
+    },
+    {
+      "key": "elementium_terrors_and_tetanus",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "values": {"terror_entry": 56710, "guide_count": 2, "guide_relation": "about 25s after Fragment wave", "tetanus_mode_spell_ids_local_order": [106730, 109603, 109604, 109605], "guide_damage": "93600-98400 Physical plus 35100-36900 Physical every 1s; stacks", "local_event": "36s one-shot summon"},
+      "evidence": ["wowhead_cata_madness_2025", "icy_veins_cata_madness", "repo_dragon_soul_madness_cpp"],
+      "status": "fidelity_blocked_mode_mapping_cadence_and_coefficients"
+    },
+    {
+      "key": "congealing_blood_heroic",
+      "modes": ["10H", "25H"],
+      "values": {"heroic_only": true, "thresholds": [15, 10, 5], "wowhead_count": 10, "icy_veins_count": 8, "effect": "moves to Deathwing; each reaching him heals 1% maximum health", "control": "guides report slows but no stun/root", "local_spell_script_count": {"10": 3, "25": 8}, "local_entries_historical": [57788, 57798]},
+      "evidence": ["wowhead_cata_madness_2025", "icy_veins_cata_madness", "repo_dragon_soul_madness_cpp", "repo_dragon_soul_sql_identity"],
+      "status": "fidelity_blocked_count_control_and_local_heroic_gate"
+    },
+    {
+      "key": "enrage",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "values": {"guide_observation": "15m", "local_event": null, "release_note_value": null},
+      "evidence": ["wowhead_cata_madness_2025", "warcraft_tavern_cata_madness"],
+      "status": "fidelity_blocked_enforcement_and_boundary"
+    },
+    {
+      "key": "presence_of_the_dragon_soul",
+      "modes": ["10N", "10H", "25N", "25H"],
+      "values": {"name": "Presence of the Dragon Soul", "start": "2025-03-18 weekly reset", "initial_reduction": "5% health and damage", "increment": "5 percentage points every two weeks", "maximum_reduction": "30% by end of May 2025", "removal_npc": "Lord Devrestrasz", "active_at_cutoff": false, "aura_id": null, "removal_npc_id": null},
+      "evidence": ["blizzard_presence_dragon_soul_2025"],
+      "status": "fidelity_blocked_post_cutoff_ids_persistence_and_application"
+    }
+  ],
+  "timer_contract": [
+    {"key": "mutated_corruption", "guide_spawn": "about 10s after selection", "local_spawn_observation": "not explicit in Deathwing event; local add starts after 800ms when summoned", "local_crush": "5s then every 14s", "local_impale": "10.5s then every 36s", "status": "fidelity_blocked"},
+    {"key": "hemorrhage", "guide_initial": "about 90s", "local_first_assault": "1m26s", "local_later_assault": "1m43s", "regenerative_blood_followup": "2.5s local", "status": "fidelity_blocked"},
+    {"key": "elementium_bolt", "guide": "about 45s", "local_first_assault": "41s", "local_later_assault": "58s", "landed_pulse": "every 5s guide", "status": "fidelity_blocked"},
+    {"key": "cataclysm", "guide_start": "2m", "guide_failure": "3m", "local_first": "1m55s", "local_later": "2m13s", "status": "fidelity_blocked"},
+    {"key": "blistering_thresholds", "guide": [70, 40], "local": [75, 50, 25], "status": "fidelity_blocked_conflict"},
+    {"key": "phase_two_fragments", "guide": "about 90s recurring", "local_first": "11s; no recurring Deathwing event", "status": "fidelity_blocked"},
+    {"key": "phase_two_terrors", "guide": "about 25s after Fragment wave", "local_first": "36s; no recurring Deathwing event", "status": "fidelity_blocked"},
+    {"key": "heroic_parasite", "guide": "10s player debuff and 10s add cast; second guide route about 50s later", "status": "fidelity_blocked"},
+    {"key": "enrage", "guide": "15m", "local": null, "status": "fidelity_blocked"}
+  ],
+  "targeting_and_scaling": [
+    {"key": "platform_selection", "guide": "most players", "local": "nearest reference point counts living platforms", "status": "fidelity_blocked_tie_filter"},
+    {"key": "aspect_buffs", "target": "raid/player effects while corresponding limb lives", "status": "fidelity_blocked_coefficients_and_aura_runtime"},
+    {"key": "limb", "target": "no melee target; raid Burning Blood", "scaling": "Burning Blood ramps with lost health", "status": "fidelity_blocked"},
+    {"key": "blistering", "target": "raid pulse; immune to AoE", "mode_delta": "same guide mechanic; Heroic coefficient unresolved", "status": "fidelity_blocked"},
+    {"key": "mutated_crush", "target": "random player / line from add to target in guide; local current-platform filter and one random target", "status": "fidelity_blocked"},
+    {"key": "mutated_impale", "target": "tank or nearest player if aggro target out of range in guide", "status": "fidelity_blocked"},
+    {"key": "elementium_bolt", "target": "assaulted platform; impact distance falloff", "status": "fidelity_blocked"},
+    {"key": "heroic_parasite", "target": "random player, explosion excludes/affects 10yd proximity per guide", "status": "fidelity_blocked"},
+    {"key": "fragment_shrapnel", "target": "random player; local filters players and random-pairs fragments", "status": "fidelity_blocked"},
+    {"key": "terror_tetanus", "target": "tank melee victim", "mode_spell_order": ["10N", "25N", "10H", "25H"], "status": "fidelity_blocked_coefficients"},
+    {"key": "congealing_blood", "target": "moves toward Deathwing", "effect": "1% max-health heal on arrival", "status": "fidelity_blocked_count_and_control"},
+    {"key": "health_observations", "guide_post_cutoff": {"10N": 25000000, "10H": 29000000, "25N": 76000000, "25H": 87000000}, "status": "post_cutoff_observation_not_exact_59185_tuning"},
+    {"key": "presence_modifier", "target": "all Dragon Soul enemies", "health_damage": "-5%, increasing to -30%", "active_at_cutoff": false, "status": "fidelity_blocked_runtime_identity"}
+  ],
+  "phase_reset_credit": [
+    {"key": "phase_one", "behavior": "four living limbs/platforms; assault ends when selected limb dies", "status": "fidelity_blocked_runtime"},
+    {"key": "phase_two", "behavior": "head becomes selectable; Corrupted Blood and adds; guides report about 20% head health", "status": "fidelity_blocked_health_transfer"},
+    {"key": "reset", "local": "Thrall gossip starts only outside IN_PROGRESS; evade despawns encounter summons and cleanup", "retail": null, "status": "fidelity_blocked"},
+    {"key": "prerequisite", "official": "raid release only; no Madness-specific prerequisite published", "local": "Thrall gossip menu 13295", "status": "fidelity_blocked"},
+    {"key": "phase_outro", "local": {"damage_floor": "1%", "slump_outro": 110062, "death": 110101, "disengage": "9s"}, "status": "fidelity_blocked_cinematic_and_order"},
+    {"key": "credit", "local": "achievement/kill spell 111533, reward recipient from phase-two head, state DONE", "historical_sql": "encounter 1299", "status": "fidelity_blocked_retail_semantics"},
+    {"key": "lockout_reward", "local": "PermBindAllPlayers; mode-specific GO for one week; 25N LFR alternative", "status": "fidelity_blocked"},
+    {"key": "local_wiring", "map": 967, "encounter_index": 7, "loader": "AddSC_boss_madness_of_deathwing", "status": "repository_identity_confirmed"}
+  ],
+  "conflicts": [
+    {"key": "blistering_thresholds", "sources": ["Wowhead/Icy Veins 70% and 40%", "local AI 75%, 50%, 25%"], "resolution": "retain both; no selection"},
+    {"key": "cataclysm_timing", "sources": ["Wowhead starts at 2m with 60s cast", "Icy Veins reports 3m failure", "local 1m55s first / 2m13s later"], "resolution": "block start, duration, and failure boundary"},
+    {"key": "phase_two_adds", "sources": ["Icy Veins recurring 90s Fragments and 25s Terrors", "local one-shot 11s/36s events"], "resolution": "retain guide observation and local implementation separately"},
+    {"key": "heroic_congealing_count", "sources": ["Wowhead 10", "Icy Veins 8", "local script 3 on 10 and 8 on 25 without Heroic gate"], "resolution": "block count and gate"},
+    {"key": "health", "sources": ["Wowhead page updated 2025-02-19", "requested unlock-boundary snapshot"], "resolution": "retain values as guide-published observations only"},
+    {"key": "presence", "sources": ["official modifier begins 2025-03-18", "requested cutoff 2025-02-20"], "resolution": "active_at_cutoff=false; IDs and default state null"}
+  ],
+  "unresolved": [
+    {"key": "build_59185_hotfix_lineage_and_unlock_boundary", "status": "fidelity_blocked"},
+    {"key": "four_mode_health_damage_and_phase_two_tuning", "status": "fidelity_blocked"},
+    {"key": "presence_aura_ids_application_persistence_and_default_toggle", "status": "fidelity_blocked"},
+    {"key": "limb_blistering_threshold_conflict", "status": "fidelity_blocked"},
+    {"key": "cataclysm_start_duration_and_failure_boundary", "status": "fidelity_blocked"},
+    {"key": "assault_timing_transition_and_player_count_filter", "status": "fidelity_blocked"},
+    {"key": "aspect_coefficients_aura_order_loss_and_restoration", "status": "fidelity_blocked"},
+    {"key": "heroic_parasite_frequency_target_explosion_and_cauterize", "status": "fidelity_blocked"},
+    {"key": "burning_blood_and_blistering_heat_coefficients", "status": "fidelity_blocked"},
+    {"key": "hemorrhage_count_timer_and_blood_scaling", "status": "fidelity_blocked"},
+    {"key": "blood_energy_heal_and_degenerative_bite_modes", "status": "fidelity_blocked"},
+    {"key": "crush_geometry_filter_and_impale_semantics", "status": "fidelity_blocked"},
+    {"key": "elementium_bolt_timer_travel_impact_and_coefficients", "status": "fidelity_blocked"},
+    {"key": "limb_death_health_transfer_and_phase_two_health", "status": "fidelity_blocked"},
+    {"key": "fragment_count_shrapnel_targeting_and_recurrence", "status": "fidelity_blocked"},
+    {"key": "terror_tetanus_cadence_modes_and_coefficients", "status": "fidelity_blocked"},
+    {"key": "corrupted_blood_curve_and_threshold_increments", "status": "fidelity_blocked"},
+    {"key": "heroic_congealing_count_control_and_healing", "status": "fidelity_blocked"},
+    {"key": "fifteen_minute_enrage_enforcement", "status": "fidelity_blocked"},
+    {"key": "wipe_evade_cleanup_respawn_and_reengagement", "status": "fidelity_blocked"},
+    {"key": "retail_start_prerequisite_and_initial_platform", "status": "fidelity_blocked"},
+    {"key": "loot_lockout_achievement_and_player_credit", "status": "fidelity_blocked"},
+    {"key": "historical_variant_to_mode_mapping", "status": "fidelity_blocked"},
+    {"key": "official_scaling_and_presence_interaction", "status": "fidelity_blocked"}
+  ]
+}
