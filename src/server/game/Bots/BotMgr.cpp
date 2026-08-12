@@ -1,4 +1,5 @@
 #include "Bots/BotMgr.h"
+#include "Bots/BotRaidAreaAuthority.h"
 #include "Chat.h"
 #include "Config.h"
 #include "DataStores/DBCStores.h"
@@ -1265,6 +1266,10 @@ void BotMgr::CleanupBot(ObjectGuid botGuid, bool logoutPlayer)
     if (botGuid.IsEmpty() || _removingBots.find(botGuid) != _removingBots.end())
         return;
 
+    // CleanupBot is the common teardown path, including headless world-bot
+    // removal that bypasses BotWorldPopulationMgr.  Never let transient raid
+    // damage authority survive reuse of the persistent character GUID.
+    BotRaidAreaAuthority::Set(botGuid.GetRawValue(), false);
     TC_LOG_INFO("server", "PlayerBot cleanup begin bot=%s logout=%u", botGuid.ToString().c_str(), logoutPlayer ? 1 : 0);
     _removingBots.insert(botGuid);
     if (logoutPlayer)
