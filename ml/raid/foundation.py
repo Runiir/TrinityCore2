@@ -12,6 +12,40 @@ RAID_DIFFICULTIES = {
     "25h": (25, 3),
 }
 
+FORMATION_FAMILIES = frozenset({"stack", "pair", "lane", "quadrant", "ring", "spread", "cone", "behind", "front_exclusion"})
+ANCHOR_SCOPES = frozenset({"raid", "role", "subgroup"})
+TANK_SWAP_TRIGGERS = frozenset({"debuff_stacks", "timer", "boss_cast", "add_spawn", "phase_transition"})
+TARGET_CONTROLS = frozenset({"focus_fire", "multidot", "do_not_damage", "controlled_aoe", "kill_synchronization"})
+INTERACTION_KINDS = frozenset({"none", "object", "extra_action", "vehicle", "transport", "jump_pad"})
+MOVEMENT_LINKS = frozenset({"none", "encounter_link", "cross_platform"})
+PLATFORM_POLICIES = frozenset({"ground", "platform", "altitude", "flying"})
+RECOVERY_POLICIES = frozenset({"release_resurrect_runback_ready_check", "raid_entrance_teleporter_ready_check"})
+
+
+@dataclass(frozen=True)
+class DeclarativeMechanicContract:
+    strategy_id: str
+    formation: str
+    anchor_scope: str
+    minimum_distance: float
+    tank_swap_trigger: str
+    target_control: str
+    interrupt_backup: bool
+    dispel_backup: bool
+    healer_ownership: str
+    cooldown_schedule: str
+    soak_policy: str
+    immunity_policy: str
+    personal_cooldown_policy: str
+    battle_resurrection_policy: str
+    interaction_kind: str
+    movement_link: str
+    platform_policy: str
+    recovery_policy: str
+
+
+MECHANIC_CONTRACT_FIELDS = frozenset(DeclarativeMechanicContract.__dataclass_fields__)
+
 
 @dataclass(frozen=True)
 class RaidMember:
@@ -157,6 +191,131 @@ def formation_points(
     raise ValueError(f"formation_unknown_family:{family}")
 
 
+def compile_mechanic_contract(payload: dict[str, Any]) -> DeclarativeMechanicContract:
+    supplied = frozenset(payload)
+    missing = sorted(MECHANIC_CONTRACT_FIELDS - supplied)
+    unknown = sorted(supplied - MECHANIC_CONTRACT_FIELDS)
+    if missing:
+        raise ValueError(f"mechanic_contract_missing_fields:{','.join(missing)}")
+    if unknown:
+        raise ValueError(f"mechanic_contract_unknown_fields:{','.join(unknown)}")
+
+    strategy_id = str(payload["strategy_id"]).strip()
+    if not strategy_id:
+        raise ValueError("mechanic_contract_empty_strategy_id")
+    formation = _choice("formation", payload["formation"], FORMATION_FAMILIES)
+    anchor_scope = _choice("anchor_scope", payload["anchor_scope"], ANCHOR_SCOPES)
+    tank_swap_trigger = _choice("tank_swap_trigger", payload["tank_swap_trigger"], TANK_SWAP_TRIGGERS)
+    target_control = _choice("target_control", payload["target_control"], TARGET_CONTROLS)
+    interaction_kind = _choice("interaction_kind", payload["interaction_kind"], INTERACTION_KINDS)
+    movement_link = _choice("movement_link", payload["movement_link"], MOVEMENT_LINKS)
+    platform_policy = _choice("platform_policy", payload["platform_policy"], PLATFORM_POLICIES)
+    recovery_policy = _choice("recovery_policy", payload["recovery_policy"], RECOVERY_POLICIES)
+    minimum_distance = float(payload["minimum_distance"])
+    if minimum_distance <= 0:
+        raise ValueError("mechanic_contract_bad_minimum_distance")
+    for field in ("interrupt_backup", "dispel_backup"):
+        if not isinstance(payload[field], bool):
+            raise ValueError(f"mechanic_contract_non_boolean:{field}")
+
+    policy_fields = (
+        "healer_ownership",
+        "cooldown_schedule",
+        "soak_policy",
+        "immunity_policy",
+        "personal_cooldown_policy",
+        "battle_resurrection_policy",
+    )
+    normalized_policies: dict[str, str] = {}
+    for field in policy_fields:
+        value = str(payload[field]).strip()
+        if not value:
+            raise ValueError(f"mechanic_contract_empty_policy:{field}")
+        normalized_policies[field] = value
+
+    return DeclarativeMechanicContract(
+        strategy_id=strategy_id,
+        formation=formation,
+        anchor_scope=anchor_scope,
+        minimum_distance=minimum_distance,
+        tank_swap_trigger=tank_swap_trigger,
+        target_control=target_control,
+        interrupt_backup=payload["interrupt_backup"],
+        dispel_backup=payload["dispel_backup"],
+        healer_ownership=normalized_policies["healer_ownership"],
+        cooldown_schedule=normalized_policies["cooldown_schedule"],
+        soak_policy=normalized_policies["soak_policy"],
+        immunity_policy=normalized_policies["immunity_policy"],
+        personal_cooldown_policy=normalized_policies["personal_cooldown_policy"],
+        battle_resurrection_policy=normalized_policies["battle_resurrection_policy"],
+        interaction_kind=interaction_kind,
+        movement_link=movement_link,
+        platform_policy=platform_policy,
+        recovery_policy=recovery_policy,
+    )
+
+
+def generic_assignment_smoke(
+    foundation: RaidFoundation,
+    contract: DeclarativeMechanicContract,
+    *,
+    assignment_generation: int,
+) -> tuple[dict[str, Any], ...]:
+    if assignment_generation <= 0:
+        raise ValueError("raid_assignment_generation_invalid")
+    if any(not member.active or not member.lease_owned for member in foundation.members):
+        raise ValueError("raid_assignment_inactive_or_unleased_member")
+
+    points = formation_points(contract.formation, len(foundation.members), minimum_distance=contract.minimum_distance)
+    events: list[dict[str, Any]] = []
+    for member, point in zip(foundation.members, points, strict=True):
+        if contract.anchor_scope == "role":
+            anchor = f"role:{member.role}"
+        elif contract.anchor_scope == "subgroup":
+            anchor = f"subgroup:{member.subgroup}"
+        else:
+            anchor = "raid"
+        events.append(
+            {
+                "group_guid": foundation.identity.group_guid,
+                "server_epoch": foundation.identity.server_epoch,
+                "attempt_id": foundation.identity.attempt_id,
+                "instance_id": foundation.identity.instance_id,
+                "difficulty_id": foundation.identity.difficulty_id,
+                "raid_size": foundation.identity.raid_size,
+                "strategy_id": contract.strategy_id,
+                "assignment_generation": assignment_generation,
+                "member_guid": member.guid,
+                "slot": member.slot,
+                "subgroup": member.subgroup,
+                "role": member.role,
+                "anchor": anchor,
+                "formation": contract.formation,
+                "formation_point": point,
+                "tank_swap_trigger": contract.tank_swap_trigger,
+                "target_control": contract.target_control,
+                "interrupt_primary": foundation.interrupt_rotation[0],
+                "interrupt_backup": foundation.interrupt_rotation[1] if contract.interrupt_backup else None,
+                "dispel_primary": foundation.dispel_rotation[0],
+                "dispel_backup": foundation.dispel_rotation[1] if contract.dispel_backup else None,
+                "healer_ownership": contract.healer_ownership,
+                "cooldown_schedule": contract.cooldown_schedule,
+                "soak_policy": contract.soak_policy,
+                "immunity_policy": contract.immunity_policy,
+                "personal_cooldown_policy": contract.personal_cooldown_policy,
+                "battle_resurrection_policy": contract.battle_resurrection_policy,
+                "interaction_kind": contract.interaction_kind,
+                "movement_link": contract.movement_link,
+                "platform_policy": contract.platform_policy,
+                "recovery_policy": contract.recovery_policy,
+            }
+        )
+    validate_evidence_demultiplex(events, foundation.identity)
+    if len({event["member_guid"] for event in events}) != foundation.identity.raid_size:
+        raise ValueError("raid_assignment_cross_member_attribution")
+    return tuple(events)
+
+
 def validate_evidence_demultiplex(events: Iterable[dict[str, Any]], identity: RaidIdentity) -> int:
     observed = 0
     for event in events:
@@ -189,3 +348,10 @@ def _member(value: RaidMember | dict[str, Any]) -> RaidMember:
 
 def _member_by_guid(members: tuple[RaidMember, ...], guid: int) -> RaidMember:
     return next(member for member in members if member.guid == guid)
+
+
+def _choice(field: str, value: Any, allowed: frozenset[str]) -> str:
+    normalized = str(value)
+    if normalized not in allowed:
+        raise ValueError(f"mechanic_contract_unknown_{field}:{normalized}")
+    return normalized

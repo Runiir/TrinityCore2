@@ -2,7 +2,14 @@ from math import dist
 
 import pytest
 
-from ml.raid.foundation import RaidMember, form_raid, formation_points, validate_evidence_demultiplex
+from ml.raid.foundation import (
+    RaidMember,
+    compile_mechanic_contract,
+    form_raid,
+    formation_points,
+    generic_assignment_smoke,
+    validate_evidence_demultiplex,
+)
 
 
 def roster(size: int) -> list[RaidMember]:
@@ -66,3 +73,91 @@ def test_evidence_demultiplex_rejects_cross_attribution():
     assert validate_evidence_demultiplex([event, event], runtime.identity) == 2
     with pytest.raises(ValueError, match="cross_attribution"):
         validate_evidence_demultiplex([{**event, "attempt_id": 902}], runtime.identity)
+
+
+def mechanic_payload(**overrides) -> dict:
+    payload = {
+        "strategy_id": "synthetic_phase1",
+        "formation": "quadrant",
+        "anchor_scope": "subgroup",
+        "minimum_distance": 6.0,
+        "tank_swap_trigger": "debuff_stacks",
+        "target_control": "do_not_damage",
+        "interrupt_backup": True,
+        "dispel_backup": True,
+        "healer_ownership": "tank_and_subgroup",
+        "cooldown_schedule": "external_then_raid",
+        "soak_policy": "subgroup_rotation",
+        "immunity_policy": "assigned_only",
+        "personal_cooldown_policy": "assigned_or_emergency",
+        "battle_resurrection_policy": "tank_then_healer_then_dps",
+        "interaction_kind": "extra_action",
+        "movement_link": "cross_platform",
+        "platform_policy": "altitude",
+        "recovery_policy": "release_resurrect_runback_ready_check",
+    }
+    payload.update(overrides)
+    return payload
+
+
+@pytest.mark.parametrize("trigger", ["debuff_stacks", "timer", "boss_cast", "add_spawn", "phase_transition"])
+@pytest.mark.parametrize("target_control", ["focus_fire", "multidot", "do_not_damage", "controlled_aoe", "kill_synchronization"])
+def test_generic_assignment_contract_covers_trigger_and_target_families(trigger: str, target_control: str):
+    runtime = form_raid(
+        roster(10), difficulty="10n", group_guid=501, leader_guid=1001,
+        map_id=669, instance_id=701, lockout_save_id=701, server_epoch=801, attempt_id=901,
+    )
+    contract = compile_mechanic_contract(mechanic_payload(tank_swap_trigger=trigger, target_control=target_control))
+    events = generic_assignment_smoke(runtime, contract, assignment_generation=2)
+    assert len(events) == 10
+    assert {event["slot"] for event in events} == set(range(10))
+    assert {event["subgroup"] for event in events} == {0, 1}
+    assert {event["tank_swap_trigger"] for event in events} == {trigger}
+    assert {event["target_control"] for event in events} == {target_control}
+    assert all(event["interrupt_primary"] and event["interrupt_backup"] for event in events)
+    assert all(event["dispel_primary"] and event["dispel_backup"] for event in events)
+
+
+@pytest.mark.parametrize("anchor_scope", ["raid", "role", "subgroup"])
+@pytest.mark.parametrize("interaction_kind", ["none", "object", "extra_action", "vehicle", "transport", "jump_pad"])
+@pytest.mark.parametrize("platform_policy", ["ground", "platform", "altitude", "flying"])
+def test_assignment_smoke_covers_anchor_interaction_and_platform_contracts(
+    anchor_scope: str, interaction_kind: str, platform_policy: str
+):
+    runtime = form_raid(
+        roster(10), difficulty="10h", group_guid=501, leader_guid=1001,
+        map_id=669, instance_id=701, lockout_save_id=701, server_epoch=801, attempt_id=901,
+    )
+    contract = compile_mechanic_contract(
+        mechanic_payload(anchor_scope=anchor_scope, interaction_kind=interaction_kind, platform_policy=platform_policy)
+    )
+    events = generic_assignment_smoke(runtime, contract, assignment_generation=4)
+    assert {event["interaction_kind"] for event in events} == {interaction_kind}
+    assert {event["platform_policy"] for event in events} == {platform_policy}
+    assert all(event["assignment_generation"] == 4 for event in events)
+    assert all(event["recovery_policy"].endswith("ready_check") for event in events)
+
+
+def test_contract_rejects_unknown_missing_and_bad_fields():
+    with pytest.raises(ValueError, match="unknown_fields"):
+        compile_mechanic_contract({**mechanic_payload(), "boss_name_switch": "magmaw"})
+    missing = mechanic_payload()
+    missing.pop("target_control")
+    with pytest.raises(ValueError, match="missing_fields"):
+        compile_mechanic_contract(missing)
+    with pytest.raises(ValueError, match="unknown_formation"):
+        compile_mechanic_contract(mechanic_payload(formation="teleport_to_safety"))
+    with pytest.raises(ValueError, match="bad_minimum_distance"):
+        compile_mechanic_contract(mechanic_payload(minimum_distance=0))
+    with pytest.raises(ValueError, match="non_boolean:interrupt_backup"):
+        compile_mechanic_contract(mechanic_payload(interrupt_backup="false"))
+
+
+def test_assignment_generation_and_membership_fail_closed():
+    runtime = form_raid(
+        roster(10), difficulty="10n", group_guid=501, leader_guid=1001,
+        map_id=669, instance_id=701, lockout_save_id=701, server_epoch=801, attempt_id=901,
+    )
+    contract = compile_mechanic_contract(mechanic_payload())
+    with pytest.raises(ValueError, match="generation_invalid"):
+        generic_assignment_smoke(runtime, contract, assignment_generation=0)
