@@ -1651,11 +1651,14 @@ def verify_receipt(path: Path, policy: dict, allow_test_mode: bool = False) -> d
         "local_semantics_valid": True,
         "gate_bearing": (
             not bool(receipt.get("test_mode"))
+            and receipt.get("classification") == "success"
+            and receipt.get("exit_code") == 0
             and not bool(
                 policy.get("mechanical_controls", {}).get(
                     "privileged_receipt_signature_required"
                 )
             )
+            and trust_model == "explicit_trusted_local_operator"
         ),
         "privileged_attestation_required": bool(
             policy.get("mechanical_controls", {}).get(

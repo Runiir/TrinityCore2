@@ -573,6 +573,34 @@ def test_v8_explicit_local_operator_production_receipt_is_gate_bearing(
     }
 
 
+def test_v8_failed_local_operator_receipt_is_not_gate_bearing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.delenv("TRINITY_RAID_BUILD_TESTING", raising=False)
+    monkeypatch.delenv("TRINITY_RAID_BUILD_STATE_DIR_OVERRIDE", raising=False)
+    repo = configured_git_repo(tmp_path / "repo")
+    frozen = json.loads(
+        (ROOT / "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json").read_text()
+    )
+    monkeypatch.setattr(qb, "resource_snapshot", lambda _: synthetic_snapshot())
+    monkeypatch.setattr(qb, "find_live_validation_processes", lambda *_args, **_kwargs: [])
+    seed_configure_lineage(repo, frozen, tmp_path)
+    monkeypatch.setattr(
+        qb, "execute_process",
+        lambda *_args: (2, "command_failed", [synthetic_snapshot()], []),
+    )
+    receipt_path = tmp_path / "failed-build.json"
+    code, receipt = qb.run_ticket(
+        repo, frozen, "worldserver_build", exact_worldserver_build(frozen), None,
+        receipt_path, 2.0,
+    )
+    assert code == 2
+    assert receipt["classification"] == "command_failed"
+    report = qb.verify_receipt(receipt_path, frozen)
+    assert report["valid"] is True
+    assert report["gate_bearing"] is False
+
+
 def test_v8_full_cache_drift_during_build_is_provenance_abort(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

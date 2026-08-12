@@ -1,9 +1,14 @@
 # Privileged raid build service contract
 
-Phase 1 gate-bearing configure/build receipts require an authority boundary that the
-capture user cannot rewrite. The service is external to this repository. It may be a
-separate OS service account, a remote builder, or a hardware-backed signer, provided
-all of these properties hold:
+This protocol is an optional external hardening path. On 2026-08-12 the user explicitly
+authorized the `explicit_trusted_local_operator` model for build receipts produced and
+verified by local user `runiir`; policy v8 therefore does not require this service for
+Phase 1. All non-build gameplay, fidelity, live-evidence, DVC, and review gates remain
+unchanged and fail closed.
+
+If enabled again, the service supplies an authority boundary that the capture user
+cannot rewrite. It may be a separate OS service account, a remote builder, or a
+hardware-backed signer, provided all of these properties hold:
 
 - only the service can read or use the Ed25519 private key;
 - only the service can append to the authoritative ledger;
@@ -15,7 +20,7 @@ all of these properties hold:
   CMake cache, generated build graph, positive environment, declared toolchain, and
   resulting worldserver ELF identities.
 
-The tracked service contract is
+The tracked optional service contract is
 `experiments/configs/cata_raid_privileged_build_service_v1.json`. It deliberately
 remains `unprovisioned_external_authority_required` until an administrator supplies:
 
@@ -56,9 +61,11 @@ pixi run raid-build-attestation-verify \
 
 Standalone `raid-build verify` proves only local receipt semantics when the policy
 requires privileged attestation; its JSON explicitly reports `gate_bearing: false`.
-Canonical Phase 1 capture additionally requires `--build-attestation`; the capture
-cannot begin while the tracked service state is unprovisioned, the public key identity
-differs, local receipt reconstruction fails, or the external signature is invalid.
+Canonical Phase 1 capture requires `--build-attestation` only when the active policy
+sets `privileged_receipt_signature_required=true`. Under the authorized local model,
+the coordinator receipt must instead bind UID/eUID `1000`, username `runiir`, a success
+classification, zero exit status, and every existing source/configuration/graph/tool/
+command/output invariant. Test and failed receipts are never gate-bearing.
 Ephemeral test keys are allowed only when both the verifier flag and the underlying
 coordinator receipt are explicitly test mode. Such verification reports
 `gate_bearing: false` and never satisfies a production gate.

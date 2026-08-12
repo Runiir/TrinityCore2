@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "program_id": "cata_raid_progression_442_v1",
-  "updated_at_utc": "2026-08-12T13:02:36Z",
+  "updated_at_utc": "2026-08-12T13:18:58Z",
   "active_phase": 1,
   "active_phase_name": "raid_runtime_formation_difficulty_and_evidence_primitives",
   "program_status": "in_progress",
@@ -16,8 +16,8 @@
   },
   "integration": {
     "branch": "raid/cata-raid-progression-integration",
-    "foundation_sha": "a0dbafca4dd3bfce1c1670e45b6f804a57f3b028",
-    "current_head_sha": "a0dbafca4dd3bfce1c1670e45b6f804a57f3b028",
+    "foundation_sha": "3aa35b1d6a64789a2fec5c59cebbabe3cb872d87",
+    "current_head_sha": "3aa35b1d6a64789a2fec5c59cebbabe3cb872d87",
     "raid_base_is_ancestor": true,
     "created_from_exact_local_master": true
   },
@@ -27,17 +27,18 @@
     "prior_review_decision": "REJECT",
     "prior_review_scope": "exact 9a7b3c72aed5a2e464635b31e8f4617f2134c8d8",
     "prior_review_counts": {"critical": 1, "high": 6, "medium": 5},
-    "critical_high_remediation_implemented_at": "a0dbafca4dd3bfce1c1670e45b6f804a57f3b028",
-    "mandatory_rereview": "zero_locally_closable_critical_high_findings",
-    "external_service_requirement": "separately_privileged_signing_execution_service_required",
-    "privileged_protocol_review": "ready_for_external_provisioning_zero_critical_high",
-    "current_acceptance": "blocked_on_external_authority"
+    "critical_high_remediation_implemented_at": "3aa35b1d6a64789a2fec5c59cebbabe3cb872d87",
+    "mandatory_rereview": "approved_zero_critical_high_at_3aa35b1d6a",
+    "receipt_trust_model": "explicit_trusted_local_operator_runiir_uid_1000",
+    "external_service_requirement": "optional_hardening_not_a_phase1_gate",
+    "privileged_protocol_review": "available_as_optional_external_hardening",
+    "current_acceptance": "approved_to_run_exact_coordinated_configure_and_build"
   },
   "build_history": {
     "current_policy": "experiments/configs/cata_raid_build_resource_policy_degraded_v8.json",
-    "current_commit": "a0dbafca4dd3bfce1c1670e45b6f804a57f3b028",
-    "current_state": "blocked_before_gate_bearing_configure_on_missing_privileged_signing_service",
-    "current_result": "external_authority_blocker",
+    "current_commit": "3aa35b1d6a64789a2fec5c59cebbabe3cb872d87",
+    "current_state": "idle_approved_for_exact_policy_v8_configure_build",
+    "current_result": "pending_exact_policy_v8_local_operator_receipts",
     "successful_build_without_current_policy_receipt_is_invalid": true,
     "attempts": [
       {
@@ -98,6 +99,18 @@
         "unity_builds": false,
         "precompiled_headers": false,
         "cmake_build_type": "Release",
+        "classification": "superseded_unexecuted_by_policy_v8"
+      },
+      {
+        "policy": "cata_raid_build_resource_policy_degraded_v8",
+        "compiler_jobs": 1,
+        "linker_jobs": 1,
+        "unity_builds": false,
+        "precompiled_headers": false,
+        "cmake_build_type": "Release",
+        "receipt_trust_model": "explicit_trusted_local_operator",
+        "trusted_operator": "runiir",
+        "trusted_uid": 1000,
         "classification": "pending"
       }
     ]
@@ -271,23 +284,19 @@
         "policy_v8_exact_configure_build_graph_environment_and_toolchain_authority_frozen",
         "mandatory_sol_high_review_zero_locally_closable_critical_high_findings_at_42357ba662",
         "privileged_ed25519_build_and_distinct_ledger_attestation_protocol_reviewed_at_a0dbafca4d",
-        "production_policy_service_key_endpoint_and_fresh_inclusion_trust_anchors_fail_closed"
+        "production_policy_service_key_endpoint_and_fresh_inclusion_trust_anchors_fail_closed",
+        "user_authorized_explicit_trusted_local_operator_build_receipts_only_at_3aa35b1d6a",
+        "mandatory_sol_high_review_approved_exact_3aa35b1d6a_with_zero_critical_high",
+        "external_privileged_signer_reclassified_as_optional_build_hardening"
       ],
       "remaining_requirements": [
-        "provision_separately_privileged_signing_execution_service_and_immutable_ledger_authority",
-        "complete_policy_v8_release_coordinated_reconfigure_build_and_regression_gate_through_privileged_service",
+        "complete_exact_policy_v8_release_coordinated_reconfigure_build_and_regression_gate_with_trusted_local_operator_receipts",
         "serialized_bwd_10n_entry_formation_difficulty_wipe_reset_evidence_publication_and_cleanup_gate",
         "phase1_live_evidence_dvc_publish_remote_verify_and_exact_evict_gate"
       ]
     }
   ],
   "blockers": [
-    {
-      "blocker_id": "phase1_privileged_build_receipt_authority",
-      "classification": "external_new_authority_required",
-      "scope": "phase1_build_gate",
-      "detail": "The mandatory Sol-high reviewer reports zero locally closable critical/high findings and protocol_ready_for_external_provisioning=true at a0dbafca4dd3bfce1c1670e45b6f804a57f3b028. Production is pinned to the tracked v8 policy, exact service-config hash, distinct build and ledger key identities, HTTPS endpoints, and a fresh signed unique/non-revoked ledger assertion. The tracked service remains deliberately unprovisioned. A separately privileged UID/service or remote/hardware-backed signer must now supply those pinned identities and execute the admitted configure/build; this user-level session cannot create that boundary without new authority."
-    },
     {
       "blocker_id": "bwd_exact_442_quantitative_identity",
       "classification": "research_unresolved",
@@ -301,17 +310,11 @@
       "detail": "Forbidden Atramedes state injection and Nefarian state injection/spawn were removed. The route is structurally valid and DVC-synchronized, but native prerequisite unlock/start/reset behavior is not yet proven live."
     },
     {
-      "blocker_id": "phase1_sol_adversarial_rereview",
-      "classification": "review_gate_pending",
-      "scope": "phase1_foundation_gate",
-      "detail": "The mandatory gpt-5.6-sol high review rejected exact checkpoint 9a7 with one critical and six high findings. Those findings are remediated at 35c9e61b85407d2ccbe6f3be1b3eaae8ce6eb407 with 168 focused tests passing, but a fresh independent review of this remediation is pending."
-    },
-    {
       "blocker_id": "phase1_current_build_and_live_dvc_gate",
       "classification": "incomplete_evidence",
       "scope": "phase1_build_and_live_gate",
-      "detail": "Policy-v5 and policy-v6 single-compiler attempts ended as build_resource_abort under the unchanged PSI threshold. Policy-v7 retains all safety limits, disables unity/PCH, and switches to Release; its clean coordinated configure/build and valid production receipt are pending before serialized live capture."
+      "detail": "The mandatory Sol-high review approved exact 3aa35b1d6a with zero critical/high findings under the user-authorized local runiir/UID 1000 build-receipt trust model. Policy v8 retains all safety and provenance limits. Its exact clean coordinated configure/build and valid successful production receipts are pending before serialized live capture. External signing remains optional hardening and is not a blocker."
     }
   ],
-  "next_action": "Commit this status checkpoint, fast-forward the isolated build worktree to 35c9e61b85, run a clean policy-v7 Release reconfigure and serialized worldserver build, then obtain mandatory fresh Sol-high review before any canonical BWD 10N live capture. Keep all 28 research packets and 464 material blockers fidelity-blocked."
+  "next_action": "Commit this trusted-local build checkpoint, fast-forward the isolated build worktree to the exact descendant, run the exact clean policy-v8 Release configure and serialized worldserver build, independently verify both successful receipts and regressions, then execute serialized canonical BWD 10N formation/difficulty/wipe/reset/recovery capture and its DVC publish/remote-verify/exact-evict gate. Keep all 28 research packets and 464 material blockers fidelity-blocked."
 }
